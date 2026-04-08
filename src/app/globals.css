@@ -1,0 +1,178 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  /* Design tokens — Handwerks-Funnel (Dunkelgrün statt Schwarz) */
+  --acc: #1b4332;
+  --border: #e8e8e8;
+  --text: #0f1f18;
+  --funnel-hero-bg: #142920;
+  --funnel-hero-inner: #15261f;
+  --text2: #666666;
+  --text3: #999999;
+  --r: 12px;
+  --r-lg: 18px;
+  --r-pill: 999px;
+
+  --background: #ffffff;
+  --foreground: var(--text);
+
+  --accent: var(--acc);
+  --card: #ffffff;
+  --card-foreground: var(--text);
+  --popover: #ffffff;
+  --popover-foreground: var(--text);
+
+  --primary: var(--acc);
+  --primary-foreground: #ffffff;
+
+  --secondary: #f4f4f4;
+  --secondary-foreground: var(--text);
+
+  --muted: #f4f4f4;
+  --muted-foreground: var(--text2);
+
+  --accent-muted: #f4f4f4;
+  --accent-muted-foreground: var(--text);
+
+  --destructive: #dc2626;
+  --destructive-foreground: #ffffff;
+
+  --input: var(--border);
+  --ring: var(--acc);
+
+  --radius: var(--r);
+
+  --text-primary: var(--text);
+  --text-secondary: var(--text2);
+  --text-tertiary: var(--text3);
+  --border-default: var(--border);
+
+  --info-bg: #f6f8fe;
+  --info-border: #dce6ff;
+  --info-text: #315aa8;
+
+  --warning-bg: #fff7f7;
+  --warning-border: #f2cfcf;
+  --warning-text: #c0392b;
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+}
+
+@layer components {
+  .info-box {
+    @apply rounded-[var(--r)] border border-info-border bg-info-bg px-[13px] py-2.5 text-xs leading-[1.55] text-info-text;
+  }
+  .warning-box {
+    @apply rounded-[var(--r)] border border-warning-border bg-warning-bg px-[13px] py-2.5 text-xs leading-[1.55] text-warning-text;
+  }
+  .card-funnel {
+    @apply rounded-[var(--r-lg)] border border-border-default bg-white p-6;
+  }
+  .btn-pill-primary {
+    @apply w-full rounded-[var(--r-pill)] bg-funnel-accent py-3 text-center text-sm font-medium text-white;
+  }
+  .btn-text-link {
+    @apply border-0 bg-transparent p-0 text-text-primary underline-offset-4 hover:underline;
+  }
+}
+
+.fade-in {
+  animation: funnel-fade-in 0.28s ease-out forwards;
+}
+
+@keyframes funnel-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+input[type="range"].funnel-range {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 20px;
+  background: transparent;
+}
+
+input[type="range"].funnel-range:focus {
+  outline: none;
+}
+
+input[type="range"].funnel-range::-webkit-slider-runnable-track {
+  height: 4px;
+  border-radius: var(--r-pill);
+  background: var(--border);
+}
+
+input[type="range"].funnel-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  margin-top: -8px;
+  border-radius: 50%;
+  background: var(--acc);
+  border: 3px solid #fff;
+  box-shadow: 0 0 0 1.5px var(--acc);
+  cursor: pointer;
+}
+
+input[type="range"].funnel-range::-moz-range-track {
+  height: 4px;
+  border-radius: var(--r-pill);
+  background: var(--border);
+}
+
+input[type="range"].funnel-range::-moz-range-thumb {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--acc);
+  border: 3px solid #fff;
+  box-shadow: 0 0 0 1.5px var(--acc);
+  cursor: pointer;
+}
+
+.pb-footer-safe {
+  padding-bottom: max(0.75rem, env(safe-area-inset-bottom));
+}
+
+@keyframes funnel-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-funnel-spin {
+  animation: funnel-spin 3s linear infinite;
+}
+
+@keyframes funnel-dots {
+  0%,
+  80%,
+  100% {
+    opacity: 0.25;
+  }
+  40% {
+    opacity: 0.9;
+  }
+}
+
+.funnel-dot-pulse {
+  animation: funnel-dots 0.9s ease-in-out infinite;
+}
