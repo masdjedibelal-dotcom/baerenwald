@@ -1,0 +1,817 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bärenwald — Preisrechner</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;1,9..144,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --forest: #1B3829;
+  --forest-mid: #2A5040;
+  --moss: #4A7C59;
+  --sage: #8FB99A;
+  --sage-light: #C4D9C8;
+  --cream: #F4EFE4;
+  --cream-mid: #EDE5D4;
+  --cream-dark: #E2D8C4;
+  --bark: #8B6A3E;
+  --bark-light: #C4A06A;
+  --white: #FAFAF6;
+  --text: #1A1A16;
+  --text-mid: #4A4A40;
+  --text-light: #7A7A6E;
+  --border: rgba(27,56,41,0.10);
+  --border-mid: rgba(27,56,41,0.18);
+  --border-strong: rgba(27,56,41,0.26);
+  --r: 12px;
+  --r-lg: 18px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--text);min-height:100vh;display:flex;flex-direction:column}
+
+/* HEADER */
+header{background:var(--forest);height:64px;padding:0 2.5rem;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100}
+.logo{display:flex;align-items:center;gap:10px;text-decoration:none}
+.logo-bear{width:34px;height:34px;background:var(--moss);border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:17px;line-height:1}
+.logo-name{font-family:'Fraunces',serif;font-size:19px;font-weight:600;color:var(--cream);letter-spacing:-0.02em}
+.logo-name em{font-style:italic;color:var(--bark-light)}
+nav{display:flex;align-items:center;gap:1.8rem}
+nav a{font-size:13px;color:var(--sage);text-decoration:none;opacity:.75;transition:opacity .2s}
+nav a:hover{opacity:1}
+.nav-btn{background:var(--moss);color:var(--white)!important;opacity:1!important;padding:8px 16px;border-radius:8px;font-weight:500!important;font-size:13px!important}
+
+/* HERO */
+.hero{background:var(--forest);padding:3.5rem 2rem 2.5rem;text-align:center}
+.hero-pill{display:inline-flex;align-items:center;gap:6px;background:rgba(143,185,154,.15);border:1px solid rgba(143,185,154,.3);border-radius:20px;padding:5px 14px;font-size:12px;font-weight:500;color:var(--sage);letter-spacing:.05em;margin-bottom:1.2rem}
+.hero-title{font-family:'Fraunces',serif;font-size:clamp(1.8rem,4vw,2.8rem);font-weight:600;color:var(--cream);line-height:1.15;letter-spacing:-.02em;margin-bottom:.8rem}
+.hero-title em{font-style:italic;color:var(--bark-light)}
+.hero-sub{font-size:15px;color:var(--sage);font-weight:300;max-width:420px;margin:0 auto;line-height:1.65;opacity:.85}
+
+/* MAIN */
+main{flex:1;padding:2.5rem 1rem 5rem;display:flex;justify-content:center}
+.funnel{width:100%;max-width:580px}
+
+/* PROGRESS */
+.prog-wrap{margin-bottom:1.75rem}
+.prog-track{display:flex;gap:5px;margin-bottom:6px}
+.prog-seg{flex:1;height:3px;border-radius:2px;background:var(--border-strong);transition:background .4s}
+.prog-seg.done{background:var(--moss)}
+.prog-seg.active{background:var(--bark-light)}
+.prog-label{font-size:11px;color:var(--text-light);text-align:right}
+
+/* SCREEN */
+.screen{display:none}
+.screen.active{display:block}
+
+/* CARD */
+.card{background:var(--white);border:1px solid var(--border-mid);border-radius:var(--r-lg);padding:2rem;margin-bottom:.75rem}
+.step-lbl{font-size:11px;font-weight:500;letter-spacing:.08em;text-transform:uppercase;color:var(--moss);margin-bottom:.4rem}
+.card-title{font-family:'Fraunces',serif;font-size:21px;font-weight:600;color:var(--text);margin-bottom:.35rem;letter-spacing:-.01em;line-height:1.25}
+.card-sub{font-size:13px;color:var(--text-light);margin-bottom:1.4rem;line-height:1.55}
+
+/* TILES */
+.tile-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.tile{border:1px solid var(--border-strong);border-radius:var(--r);padding:13px;cursor:pointer;background:var(--white);transition:all .2s}
+.tile:hover{border-color:var(--moss);background:#F0F6F1}
+.tile.sel{border:1.5px solid var(--moss);background:#EAF2EC}
+.tile-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:3px;gap:6px}
+.tile-name{font-size:13px;font-weight:500;color:var(--text)}
+.tile.sel .tile-name{color:var(--forest)}
+.tile-hint{font-size:11px;color:var(--text-light);line-height:1.4}
+.itag{font-size:10px;padding:2px 7px;border-radius:10px;white-space:nowrap;font-weight:500;flex-shrink:0}
+.tg{background:#DFF0DC;color:#1F6A2D}
+.ta{background:#FDF3DC;color:#8A5A00}
+.tr{background:#FDECEA;color:#9C2B2B}
+.expand{margin-top:9px;padding:8px 10px;background:var(--cream);border-left:2px solid var(--moss);border-radius:0 8px 8px 0;font-size:11px;color:var(--text-mid);line-height:1.5}
+.expand.hidden{display:none}
+
+/* CHIPS */
+.chip-row{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px}
+.chip{border:1px solid var(--border-strong);border-radius:20px;padding:7px 16px;font-size:13px;font-family:'DM Sans',sans-serif;color:var(--text-mid);cursor:pointer;background:var(--white);transition:all .18s}
+.chip:hover{border-color:var(--moss);color:var(--forest)}
+.chip.act{background:#EAF2EC;border-color:var(--moss);color:var(--forest);font-weight:500}
+.info-inline{font-size:12px;color:var(--text-mid);background:var(--cream-mid);padding:10px 13px;border-radius:var(--r);margin-bottom:12px;line-height:1.55;border:1px solid var(--border)}
+.info-inline strong{font-weight:500;color:var(--text)}
+
+/* SLIDER */
+.slider-block{margin-bottom:1.5rem}
+.slider-head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px}
+.slider-lbl{font-size:14px;color:var(--text-mid)}
+.slider-val{font-family:'Fraunces',serif;font-size:24px;font-weight:600;color:var(--forest)}
+.slider-val small{font-size:13px;font-family:'DM Sans',sans-serif;color:var(--text-light);font-weight:300}
+input[type=range]{width:100%;-webkit-appearance:none;height:4px;border-radius:2px;background:var(--border-strong);outline:none;cursor:pointer;margin-bottom:4px}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;height:20px;border-radius:50%;background:var(--forest);border:3px solid var(--white);box-shadow:0 0 0 1.5px var(--moss);cursor:pointer}
+.slider-range-row{display:flex;justify-content:space-between;font-size:11px;color:var(--text-light)}
+
+/* MULTI SELECT LEISTUNGEN */
+.leistung-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.lchip{border:1px solid var(--border-strong);border-radius:var(--r);padding:11px 13px;cursor:pointer;background:var(--white);transition:all .18s;display:flex;align-items:flex-start;gap:8px}
+.lchip:hover{border-color:var(--moss)}
+.lchip.sel{border:1.5px solid var(--moss);background:#EAF2EC}
+.lchip-check{width:16px;height:16px;border-radius:4px;border:1.5px solid var(--border-strong);flex-shrink:0;margin-top:1px;display:flex;align-items:center;justify-content:center;transition:all .18s}
+.lchip.sel .lchip-check{background:var(--moss);border-color:var(--moss)}
+.lchip-check svg{display:none}
+.lchip.sel .lchip-check svg{display:block}
+.lchip-body{}
+.lchip-name{font-size:13px;font-weight:500;color:var(--text)}
+.lchip.sel .lchip-name{color:var(--forest)}
+.lchip-price{font-size:11px;color:var(--moss);margin-top:1px}
+.lchip-hint{font-size:11px;color:var(--text-light);margin-top:2px;line-height:1.35}
+
+/* LIVE PREVIEW BAR */
+.live-bar{background:var(--forest);border-radius:var(--r);padding:12px 16px;margin-bottom:.75rem;display:flex;align-items:center;justify-content:space-between}
+.live-label{font-size:12px;color:var(--sage);opacity:.8}
+.live-range{font-family:'Fraunces',serif;font-size:20px;font-weight:600;color:var(--cream)}
+.live-note{font-size:11px;color:var(--sage);opacity:.65;margin-top:2px}
+
+/* LOADING */
+#screen-loading .card{text-align:center;padding:3rem 2rem}
+.loading-icon{width:56px;height:56px;border-radius:50%;background:var(--cream-mid);border:2px solid var(--border-strong);display:flex;align-items:center;justify-content:center;font-size:24px;margin:0 auto 1.2rem;animation:spin-slow 3s linear infinite}
+@keyframes spin-slow{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+.loading-title{font-family:'Fraunces',serif;font-size:20px;font-weight:600;color:var(--text);margin-bottom:.5rem}
+.loading-sub{font-size:13px;color:var(--text-light);line-height:1.6;margin-bottom:1.5rem}
+.loading-dots{display:flex;justify-content:center;gap:6px}
+.dot{width:6px;height:6px;border-radius:50%;background:var(--moss);opacity:.3;animation:pulse .9s ease-in-out infinite}
+.dot:nth-child(2){animation-delay:.2s}
+.dot:nth-child(3){animation-delay:.4s}
+@keyframes pulse{0%,100%{opacity:.25}50%{opacity:1}}
+
+/* RESULT */
+.result-header{background:var(--forest);border-radius:var(--r-lg);padding:1.8rem;margin-bottom:.75rem}
+.result-eyebrow{font-size:11px;font-weight:500;letter-spacing:.08em;text-transform:uppercase;color:var(--sage);margin-bottom:.6rem}
+.result-title{font-family:'Fraunces',serif;font-size:clamp(1.6rem,4vw,2.2rem);font-weight:600;color:var(--cream);letter-spacing:-.02em;line-height:1.2;margin-bottom:.5rem}
+.result-sub{font-size:13px;color:var(--sage);opacity:.8;line-height:1.5}
+
+.result-range-card{background:var(--cream-mid);border:1px solid var(--border-mid);border-radius:var(--r);padding:1.4rem;margin-bottom:.75rem}
+.range-row{display:flex;align-items:flex-end;gap:.5rem;margin-bottom:.3rem}
+.range-min{font-family:'Fraunces',serif;font-size:2.4rem;font-weight:600;color:var(--forest);letter-spacing:-.02em}
+.range-sep{font-size:1.2rem;color:var(--text-light);margin-bottom:.4rem}
+.range-max{font-family:'Fraunces',serif;font-size:2.4rem;font-weight:600;color:var(--forest);letter-spacing:-.02em}
+.range-unit{font-size:14px;color:var(--text-light);margin-bottom:.5rem}
+.range-note{font-size:12px;color:var(--text-mid);line-height:1.5}
+
+.breakdown{background:var(--white);border:1px solid var(--border-mid);border-radius:var(--r);overflow:hidden;margin-bottom:.75rem}
+.breakdown-row{display:flex;justify-content:space-between;align-items:center;padding:11px 16px;border-bottom:1px solid var(--border);font-size:13px}
+.breakdown-row:last-child{border-bottom:none}
+.br-label{color:var(--text-mid)}
+.br-val{font-weight:500;color:var(--text)}
+.br-val.accent{color:var(--moss)}
+.breakdown-total{background:var(--cream-mid);padding:12px 16px;display:flex;justify-content:space-between;align-items:center}
+.bt-label{font-size:13px;font-weight:500;color:var(--text-mid)}
+.bt-val{font-family:'Fraunces',serif;font-size:18px;font-weight:600;color:var(--forest)}
+
+.story-note{background:var(--cream-mid);border:1px solid var(--border);border-radius:var(--r);padding:12px 14px;margin-bottom:.75rem;font-size:12px;color:var(--text-mid);line-height:1.6}
+.story-note strong{font-weight:500;color:var(--text)}
+
+/* FOTO UPLOAD */
+.upload-card{background:var(--white);border:1px solid var(--border-mid);border-radius:var(--r-lg);padding:1.5rem;margin-bottom:.75rem}
+.upload-title{font-size:14px;font-weight:500;color:var(--text);margin-bottom:.3rem}
+.upload-sub{font-size:12px;color:var(--text-light);margin-bottom:1rem;line-height:1.5}
+.upload-zone{border:1.5px dashed var(--border-strong);border-radius:var(--r);padding:2rem 1rem;text-align:center;cursor:pointer;transition:all .2s;background:var(--cream)}
+.upload-zone:hover{border-color:var(--moss);background:#EAF2EC}
+.upload-zone.has-files{border-color:var(--moss);background:#EAF2EC}
+.upload-icon{font-size:28px;margin-bottom:.6rem;opacity:.7}
+.upload-cta{font-size:13px;font-weight:500;color:var(--forest);margin-bottom:.3rem}
+.upload-hint{font-size:11px;color:var(--text-light)}
+.upload-input{display:none}
+.file-preview{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.preview-thumb{width:68px;height:68px;border-radius:8px;object-fit:cover;border:1px solid var(--border-mid)}
+.preview-more{width:68px;height:68px;border-radius:8px;background:var(--cream-mid);border:1px solid var(--border-mid);display:flex;align-items:center;justify-content:center;font-size:12px;color:var(--text-light);font-weight:500}
+
+/* LEAD FORM */
+.lead-card{background:var(--white);border:1px solid var(--border-mid);border-radius:var(--r-lg);padding:1.5rem;margin-bottom:.75rem}
+.lead-title{font-size:14px;font-weight:500;color:var(--text);margin-bottom:.3rem}
+.lead-sub{font-size:12px;color:var(--text-light);margin-bottom:1.2rem;line-height:1.5}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px}
+.form-row.full{grid-template-columns:1fr}
+input[type=text],input[type=email],input[type=tel]{width:100%;padding:10px 13px;border:1px solid var(--border-strong);border-radius:var(--r);font-family:'DM Sans',sans-serif;font-size:13px;color:var(--text);background:var(--white);outline:none;transition:border-color .18s}
+input[type=text]:focus,input[type=email]:focus,input[type=tel]:focus{border-color:var(--moss)}
+input::placeholder{color:var(--text-light)}
+.privacy-note{font-size:11px;color:var(--text-light);line-height:1.5;margin-top:6px}
+
+/* CTAs */
+.cta-primary{width:100%;padding:14px;border-radius:var(--r);font-size:15px;font-weight:500;font-family:'DM Sans',sans-serif;border:none;cursor:pointer;background:var(--forest);color:var(--cream);transition:background .2s;letter-spacing:.01em}
+.cta-primary:hover{background:var(--forest-mid)}
+.cta-secondary{width:100%;padding:11px;border-radius:var(--r);font-size:13px;font-family:'DM Sans',sans-serif;border:1px solid var(--border-strong);cursor:pointer;background:transparent;color:var(--text-mid);margin-top:8px;transition:all .2s}
+.cta-secondary:hover{border-color:var(--moss);color:var(--forest)}
+
+/* FOOTER */
+footer{background:var(--forest);padding:3rem 2.5rem 2rem}
+.footer-inner{max-width:1100px;margin:0 auto}
+.footer-top{display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:3rem;margin-bottom:2.5rem}
+.footer-brand .logo-name{color:var(--cream);font-size:18px}
+.footer-tagline{font-size:13px;color:var(--sage);opacity:.7;margin-top:.75rem;line-height:1.55;max-width:220px}
+.footer-col-title{font-size:12px;font-weight:500;letter-spacing:.07em;text-transform:uppercase;color:var(--sage);margin-bottom:.9rem;opacity:.7}
+.footer-links{display:flex;flex-direction:column;gap:.5rem}
+.footer-links a{font-size:13px;color:var(--sage);text-decoration:none;opacity:.6;transition:opacity .2s}
+.footer-links a:hover{opacity:1}
+.footer-bottom{border-top:1px solid rgba(143,185,154,.15);padding-top:1.2rem;display:flex;justify-content:space-between;align-items:center}
+.footer-copy{font-size:12px;color:var(--sage);opacity:.45}
+.footer-badges{display:flex;gap:.75rem}
+.badge-pill{font-size:10px;padding:3px 9px;border-radius:10px;background:rgba(143,185,154,.12);color:var(--sage);border:1px solid rgba(143,185,154,.2);opacity:.7}
+
+/* NAV BUTTONS */
+.btn-row{display:flex;gap:10px;margin-top:.5rem}
+.btn-back{flex:0 0 auto;padding:12px 20px;border-radius:var(--r);font-size:14px;font-family:'DM Sans',sans-serif;border:1px solid var(--border-strong);cursor:pointer;background:transparent;color:var(--text-mid);transition:all .2s}
+.btn-back:hover{border-color:var(--moss);color:var(--forest)}
+.btn-next{flex:1;padding:13px;border-radius:var(--r);font-size:15px;font-weight:500;font-family:'DM Sans',sans-serif;border:none;cursor:pointer;background:var(--forest);color:var(--cream);transition:background .2s}
+.btn-next:hover{background:var(--forest-mid)}
+.btn-next:disabled{opacity:.4;cursor:not-allowed}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header>
+  <a class="logo" href="#">
+    <div class="logo-bear">🌲</div>
+    <span class="logo-name">Bären<em>wald</em></span>
+  </a>
+  <nav>
+    <a href="#">Leistungen</a>
+    <a href="#">Projekte</a>
+    <a href="#">Über uns</a>
+    <a href="#" class="nav-btn">Termin anfragen</a>
+  </nav>
+</header>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="hero-pill">🌿 Kostenloser Preisrechner</div>
+  <h1 class="hero-title">Was kostet dein<br><em>Wunschgarten?</em></h1>
+  <p class="hero-sub">In 2 Minuten zu deinem persönlichen Preisrahmen — ohne Anruf, ohne Verpflichtung.</p>
+</div>
+
+<!-- MAIN -->
+<main>
+<div class="funnel">
+
+  <!-- PROGRESS -->
+  <div class="prog-wrap">
+    <div class="prog-track">
+      <div class="prog-seg active" id="p1"></div>
+      <div class="prog-seg" id="p2"></div>
+      <div class="prog-seg" id="p3"></div>
+      <div class="prog-seg" id="p4"></div>
+      <div class="prog-seg" id="p5"></div>
+    </div>
+    <div class="prog-label" id="prog-label">Schritt 1 von 4</div>
+  </div>
+
+  <!-- SCREEN 1: ROLLE -->
+  <div class="screen active" id="screen-1">
+    <div class="card">
+      <div class="step-lbl">Schritt 1 — Kundenprofil</div>
+      <h2 class="card-title">Wer bist du?</h2>
+      <p class="card-sub">Beeinflusst Leistungsumfang & steuerliche Hinweise.</p>
+      <div class="tile-grid">
+        <div class="tile" onclick="selectRole(this,'eigentuemer')">
+          <div class="tile-top"><span class="tile-name">Eigentümer</span><span class="itag tg">Vollzugriff</span></div>
+          <div class="tile-hint">Haus, Wohnung oder Grundstück</div>
+          <div class="expand hidden">Alle Leistungen buchbar — kein Vermieter-OK nötig. Gestaltung, Bewässerung & Dauerpflege komplett möglich.</div>
+        </div>
+        <div class="tile" onclick="selectRole(this,'mieter')">
+          <div class="tile-top"><span class="tile-name">Mieter</span><span class="itag ta">Eingeschränkt</span></div>
+          <div class="tile-hint">Garten oder Balkon im Mietvertrag</div>
+          <div class="expand hidden">Pflege meist problemlos — bauliche Veränderungen (Wege, Mauern) nur mit Vermieter-Zustimmung. Kosten nicht auf Nebenkosten umlagefähig.</div>
+        </div>
+        <div class="tile" onclick="selectRole(this,'gewerbe')">
+          <div class="tile-top"><span class="tile-name">Gewerbe</span><span class="itag tg">Steuerlich absetzbar</span></div>
+          <div class="tile-hint">Firmengelände, Praxis, Außenanlage</div>
+          <div class="expand hidden">Gartenarbeiten als Betriebsausgabe absetzbar. Netto-Abrechnung, Rechnung mit MwSt. Jahresvertrag oft steuerlich vorteilhafter als Einzelaufträge.</div>
+        </div>
+        <div class="tile" onclick="selectRole(this,'neubau')">
+          <div class="tile-top"><span class="tile-name">Neubau</span><span class="itag tr">Höherer Erstaufwand</span></div>
+          <div class="tile-hint">Erstanlage von Grund auf planen</div>
+          <div class="expand hidden">Oft verdichteter Boden & Bauschutt — Mutterboden muss vor Bepflanzung eingebracht werden. Planung spart später viel Geld.</div>
+        </div>
+      </div>
+    </div>
+    <div class="btn-row">
+      <button class="btn-next" onclick="goTo(2)" id="btn-next-1" disabled>Weiter →</button>
+    </div>
+  </div>
+
+  <!-- SCREEN 2: FLÄCHE & ZUSTAND -->
+  <div class="screen" id="screen-2">
+    <div class="card">
+      <div class="step-lbl">Schritt 2 — Objekt</div>
+      <h2 class="card-title">Wie groß ist dein Garten?</h2>
+      <p class="card-sub">Zieh den Regler — Schätzwert reicht.</p>
+
+      <div class="slider-block">
+        <div class="slider-head">
+          <span class="slider-lbl">Gartenfläche</span>
+          <span class="slider-val" id="flaecheVal">200 <small>m²</small></span>
+        </div>
+        <input type="range" id="flaeche" min="20" max="1200" step="10" value="200" oninput="updateFlaeche(this.value)">
+        <div class="slider-range-row"><span>20 m²</span><span>1.200 m²</span></div>
+      </div>
+
+      <div style="margin-bottom:1.2rem">
+        <p class="card-sub" style="margin-bottom:.6rem">Zustand des Gartens?</p>
+        <div class="chip-row">
+          <div class="chip act" onclick="selectChip(this,'zustand','gepflegt')">Gepflegt</div>
+          <div class="chip" onclick="selectChip(this,'zustand','verwildert')">Verwildert</div>
+          <div class="chip" onclick="selectChip(this,'zustand','neubau')">Neubau / leer</div>
+        </div>
+        <div class="info-inline" id="zustand-info"><strong>Gepflegt</strong> — kein erhöhter Erstaufwand. Direkter Einstieg in Regelpflege möglich. Günstigste Kalkulationsgrundlage.</div>
+      </div>
+
+      <div>
+        <p class="card-sub" style="margin-bottom:.6rem">Zugänglichkeit?</p>
+        <div class="chip-row">
+          <div class="chip act" onclick="selectChip(this,'zugang','gut')">Gut erreichbar</div>
+          <div class="chip" onclick="selectChip(this,'zugang','eingeschraenkt')">Eingeschränkt</div>
+          <div class="chip" onclick="selectChip(this,'zugang','hanglage')">Hanglage</div>
+        </div>
+        <div class="info-inline" id="zugang-info"><strong>Gut erreichbar</strong> — Maschinen & Fahrzeuge können direkt ran. Kein Aufpreis.</div>
+      </div>
+    </div>
+    <div class="btn-row">
+      <button class="btn-back" onclick="goTo(1)">← Zurück</button>
+      <button class="btn-next" onclick="goTo(3)">Weiter →</button>
+    </div>
+  </div>
+
+  <!-- SCREEN 3: LEISTUNGEN & FREQUENZ -->
+  <div class="screen" id="screen-3">
+    <div class="card">
+      <div class="step-lbl">Schritt 3 — Leistungen</div>
+      <h2 class="card-title">Was soll gemacht werden?</h2>
+      <p class="card-sub">Mehrere Bereiche möglich — Preisvorschau aktualisiert sich live.</p>
+      <div class="leistung-grid" id="leistung-grid">
+        <div class="lchip sel" onclick="toggleLeistung(this,'pflege')">
+          <div class="lchip-check"><svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4L3.5 6.5L9 1" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+          <div class="lchip-body">
+            <div class="lchip-name">Gartenpflege</div>
+            <div class="lchip-price">ab 2,20 €/m²·Monat</div>
+            <div class="lchip-hint">Mähen, Schneiden, Aufräumen</div>
+          </div>
+        </div>
+        <div class="lchip" onclick="toggleLeistung(this,'gestaltung')">
+          <div class="lchip-check"><svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4L3.5 6.5L9 1" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+          <div class="lchip-body">
+            <div class="lchip-name">Gestaltung</div>
+            <div class="lchip-price">80–180 €/m² (Material)</div>
+            <div class="lchip-hint">Wege, Terrassen, Mauern</div>
+          </div>
+        </div>
+        <div class="lchip" onclick="toggleLeistung(this,'bepflanzung')">
+          <div class="lchip-check"><svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4L3.5 6.5L9 1" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+          <div class="lchip-body">
+            <div class="lchip-name">Bepflanzung</div>
+            <div class="lchip-price">25–60 €/m²</div>
+            <div class="lchip-hint">Rasen, Beete, Pflanzen</div>
+          </div>
+        </div>
+        <div class="lchip" onclick="toggleLeistung(this,'bewaesserung')">
+          <div class="lchip-check"><svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4L3.5 6.5L9 1" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+          <div class="lchip-body">
+            <div class="lchip-name">Bewässerung</div>
+            <div class="lchip-price">ab 1.800 € Einbau</div>
+            <div class="lchip-hint">Anlage & Steuerung</div>
+          </div>
+        </div>
+        <div class="lchip" onclick="toggleLeistung(this,'winterdienst')">
+          <div class="lchip-check"><svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4L3.5 6.5L9 1" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+          <div class="lchip-body">
+            <div class="lchip-name">Winterdienst</div>
+            <div class="lchip-price">ab 35 €/Einsatz</div>
+            <div class="lchip-hint">Räumen & Streuen (Haftung!)</div>
+          </div>
+        </div>
+        <div class="lchip" onclick="toggleLeistung(this,'baumfaellung')">
+          <div class="lchip-check"><svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4L3.5 6.5L9 1" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+          <div class="lchip-body">
+            <div class="lchip-name">Baumfällung</div>
+            <div class="lchip-price">300–2.500 € je Baum</div>
+            <div class="lchip-hint">Fällen & Entsorgung</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-bottom:.75rem">
+      <p class="card-sub" style="margin-bottom:.75rem">Wie oft soll gepflegt werden?</p>
+      <div class="chip-row">
+        <div class="chip" onclick="selectChip(this,'frequenz','einmalig')">Einmalig</div>
+        <div class="chip act" onclick="selectChip(this,'frequenz','saison')">Saison-Abo</div>
+        <div class="chip" onclick="selectChip(this,'frequenz','ganzjaehrig')">Ganzjährig</div>
+      </div>
+      <div class="info-inline" id="frequenz-info"><strong>Saison-Abo (April–Oktober)</strong> — 7 Monate Regelpflege. 10% günstiger als Einzeltermine. Fixtermine alle 3–4 Wochen.</div>
+    </div>
+
+    <!-- LIVE PREVIEW -->
+    <div class="live-bar">
+      <div><div class="live-label">Vorläufiger Preisrahmen</div><div class="live-note">Aktualisiert sich live mit deinen Angaben</div></div>
+      <div class="live-range" id="live-range">580 – 920 €</div>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn-back" onclick="goTo(2)">← Zurück</button>
+      <button class="btn-next" onclick="startLoading()">Jetzt berechnen →</button>
+    </div>
+  </div>
+
+  <!-- LOADING SCREEN -->
+  <div class="screen" id="screen-loading">
+    <div class="card">
+      <div class="loading-icon">🌿</div>
+      <div class="loading-title">Dein Preisrahmen wird berechnet…</div>
+      <div class="loading-sub">Wir kalkulieren Fläche, Leistungen, Zustand<br>und aktuelle Münchner Marktpreise.</div>
+      <div class="loading-dots">
+        <div class="dot"></div>
+        <div class="dot"></div>
+        <div class="dot"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- RESULT SCREEN -->
+  <div class="screen" id="screen-result">
+
+    <div class="result-header">
+      <div class="result-eyebrow">Dein persönlicher Preisrahmen</div>
+      <div class="result-title" id="result-title">Dein Garten in <em>besten Händen</em></div>
+      <div class="result-sub" id="result-sub">Basierend auf deinen Angaben — unverbindlich</div>
+    </div>
+
+    <div class="result-range-card">
+      <div style="font-size:12px;color:var(--text-light);margin-bottom:.5rem">Gesamtpreisrahmen (Jahresbasis)</div>
+      <div class="range-row">
+        <span class="range-min" id="range-min">–</span>
+        <span class="range-sep">bis</span>
+        <span class="range-max" id="range-max">–</span>
+        <span class="range-unit">€</span>
+      </div>
+      <div class="range-note" id="range-note">Endpreis nach kostenlosem Vor-Ort-Termin. Material & Aufmaß fließen erst dann ein.</div>
+    </div>
+
+    <div class="breakdown" id="breakdown-block"></div>
+
+    <div class="story-note" id="story-note"></div>
+
+    <!-- FOTO UPLOAD -->
+    <div class="upload-card">
+      <div class="upload-title">📸 Fotos von deinem Garten (optional)</div>
+      <div class="upload-sub">Hilft uns, beim Vor-Ort-Termin gezielter zu planen. JPG, PNG oder HEIC — max. 10 MB pro Foto.</div>
+      <div class="upload-zone" id="upload-zone" onclick="document.getElementById('file-input').click()">
+        <div class="upload-icon">🌳</div>
+        <div class="upload-cta">Fotos auswählen oder hier ablegen</div>
+        <div class="upload-hint">Bis zu 6 Fotos möglich</div>
+        <div class="file-preview" id="file-preview"></div>
+      </div>
+      <input type="file" id="file-input" class="upload-input" accept="image/*" multiple onchange="handleFiles(this.files)">
+    </div>
+
+    <!-- LEAD FORM -->
+    <div class="lead-card">
+      <div class="lead-title">Kostenlosen Vor-Ort-Termin anfragen</div>
+      <div class="lead-sub">Kein Auftragszwang. Wir kommen, schauen, erklären — du entscheidest.</div>
+      <div class="form-row">
+        <input type="text" placeholder="Vorname" id="f-vorname">
+        <input type="text" placeholder="Nachname" id="f-nachname">
+      </div>
+      <div class="form-row">
+        <input type="email" placeholder="E-Mail" id="f-email">
+        <input type="tel" placeholder="Telefon" id="f-tel">
+      </div>
+      <div class="form-row full">
+        <input type="text" placeholder="PLZ & Ort" id="f-ort">
+      </div>
+      <div class="privacy-note">Mit dem Absenden stimmst du zu, dass wir dich kontaktieren dürfen. Keine Weitergabe an Dritte.</div>
+    </div>
+
+    <button class="cta-primary" onclick="submitLead()">Termin anfragen & Ergebnis sichern →</button>
+    <button class="cta-secondary" onclick="sendEmail()">Ergebnis per E-Mail zuschicken</button>
+
+  </div>
+
+</div>
+</main>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-inner">
+    <div class="footer-top">
+      <div class="footer-brand">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:.75rem">
+          <div class="logo-bear" style="width:30px;height:30px;font-size:15px">🌲</div>
+          <span class="logo-name" style="font-size:17px">Bären<em style="color:var(--bark-light)">wald</em></span>
+        </div>
+        <div class="footer-tagline">Professionelle Gartengestaltung & -pflege im Großraum München seit 2008.</div>
+      </div>
+      <div>
+        <div class="footer-col-title">Leistungen</div>
+        <div class="footer-links">
+          <a href="#">Gartenpflege</a>
+          <a href="#">Gartengestaltung</a>
+          <a href="#">Bewässerungsanlagen</a>
+          <a href="#">Winterdienst</a>
+          <a href="#">Baumfällung</a>
+        </div>
+      </div>
+      <div>
+        <div class="footer-col-title">Unternehmen</div>
+        <div class="footer-links">
+          <a href="#">Über uns</a>
+          <a href="#">Projekte</a>
+          <a href="#">Team</a>
+          <a href="#">Karriere</a>
+          <a href="#">Kontakt</a>
+        </div>
+      </div>
+      <div>
+        <div class="footer-col-title">Rechtliches</div>
+        <div class="footer-links">
+          <a href="#">Impressum</a>
+          <a href="#">Datenschutz</a>
+          <a href="#">AGB</a>
+        </div>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <span class="footer-copy">© 2025 Bärenwald GmbH · München</span>
+      <div class="footer-badges">
+        <span class="badge-pill">Meisterbetrieb</span>
+        <span class="badge-pill">Zertifiziert GaLaBau</span>
+        <span class="badge-pill">München</span>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<script>
+const state = {
+  rolle: null,
+  flaeche: 200,
+  zustand: 'gepflegt',
+  zugang: 'gut',
+  leistungen: new Set(['pflege']),
+  frequenz: 'saison'
+};
+
+// Preiskalkulation — realistische Münchner Marktpreise 2024/25
+const PREISE = {
+  pflege: {
+    basis: 2.20,  // €/m²/Monat
+    monate: { einmalig: 1, saison: 7, ganzjaehrig: 12 }
+  },
+  gestaltung: {
+    min: 90,  // €/m² (Beton/Klinker)
+    max: 175  // €/m² (Naturstein)
+  },
+  bepflanzung: {
+    min: 28,
+    max: 58   // €/m² inkl. Material
+  },
+  bewaesserung: {
+    basis: 1800,
+    proQm: 4.5  // €/m² Leitungsaufwand
+  },
+  winterdienst: {
+    proEinsatz: 38,
+    einsaetzeJahr: 22  // ~Nov–März
+  },
+  baumfaellung: {
+    min: 350,
+    max: 1800  // je Baum, pauschal 1 Baum angenommen
+  }
+};
+
+const ZUSTAND_FAKTOR = { gepflegt: 1.0, verwildert: 1.65, neubau: 1.85 };
+const ZUGANG_FAKTOR = { gut: 1.0, eingeschraenkt: 1.12, hanglage: 1.22 };
+const FREQUENZ_RABATT = { einmalig: 1.0, saison: 0.90, ganzjaehrig: 0.83 };
+const ROLLE_HINT = {
+  eigentuemer: 'Eigentümer',
+  mieter: 'Mieter (Pflege)',
+  gewerbe: 'Gewerbe (netto)',
+  neubau: 'Neubau'
+};
+
+function calcPrice() {
+  const f = state.flaeche;
+  const zf = ZUSTAND_FAKTOR[state.zustand];
+  const zugf = ZUGANG_FAKTOR[state.zugang];
+  const rabatt = FREQUENZ_RABATT[state.frequenz];
+  let minTotal = 0, maxTotal = 0;
+  const breakdown = [];
+
+  if (state.leistungen.has('pflege')) {
+    const monate = PREISE.pflege.monate[state.frequenz];
+    const base = f * PREISE.pflege.basis * monate;
+    const min = Math.round(base * zugf * rabatt * 0.92);
+    const max = Math.round(base * zf * zugf * rabatt * 1.12);
+    minTotal += min; maxTotal += max;
+    breakdown.push({ label: 'Gartenpflege', sub: `${f} m² × ${monate} Monate`, min, max });
+  }
+  if (state.leistungen.has('gestaltung')) {
+    const anteil = Math.min(f * 0.25, 120);  // Terrasse/Wege ~25% der Fläche
+    const min = Math.round(anteil * PREISE.gestaltung.min * zugf);
+    const max = Math.round(anteil * PREISE.gestaltung.max * zugf * zf);
+    minTotal += min; maxTotal += max;
+    breakdown.push({ label: 'Gestaltung', sub: `ca. ${Math.round(anteil)} m² Nutzfläche`, min, max, note: 'Exakter Preis nach Aufmaß' });
+  }
+  if (state.leistungen.has('bepflanzung')) {
+    const anteil = Math.min(f * 0.3, 150);
+    const min = Math.round(anteil * PREISE.bepflanzung.min);
+    const max = Math.round(anteil * PREISE.bepflanzung.max * zf);
+    minTotal += min; maxTotal += max;
+    breakdown.push({ label: 'Bepflanzung', sub: `ca. ${Math.round(anteil)} m² Beetfläche`, min, max });
+  }
+  if (state.leistungen.has('bewaesserung')) {
+    const min = Math.round(PREISE.bewaesserung.basis + f * PREISE.bewaesserung.proQm * 0.85);
+    const max = Math.round(PREISE.bewaesserung.basis * 1.4 + f * PREISE.bewaesserung.proQm * 1.3);
+    minTotal += min; maxTotal += max;
+    breakdown.push({ label: 'Bewässerungsanlage', sub: 'Einmaliger Einbau', min, max });
+  }
+  if (state.leistungen.has('winterdienst')) {
+    const min = Math.round(PREISE.winterdienst.proEinsatz * PREISE.winterdienst.einsaetzeJahr * 0.88);
+    const max = Math.round(PREISE.winterdienst.proEinsatz * PREISE.winterdienst.einsaetzeJahr * 1.15);
+    minTotal += min; maxTotal += max;
+    breakdown.push({ label: 'Winterdienst', sub: 'Saison Nov–März, ~22 Einsätze', min, max });
+  }
+  if (state.leistungen.has('baumfaellung')) {
+    breakdown.push({ label: 'Baumfällung', sub: 'Je nach Höhe & Stammdurchmesser', min: PREISE.baumfaellung.min, max: PREISE.baumfaellung.max, note: 'Vor Ort kalkulierbar' });
+    minTotal += PREISE.baumfaellung.min;
+    maxTotal += PREISE.baumfaellung.max;
+  }
+
+  return { minTotal, maxTotal, breakdown };
+}
+
+function fmt(n) {
+  return Math.round(n).toLocaleString('de-DE');
+}
+
+function updateLiveBar() {
+  const { minTotal, maxTotal } = calcPrice();
+  document.getElementById('live-range').textContent = `${fmt(minTotal)} – ${fmt(maxTotal)} €`;
+}
+
+// Role selection
+function selectRole(el, role) {
+  document.querySelectorAll('#screen-1 .tile').forEach(t => {
+    t.classList.remove('sel');
+    t.querySelector('.expand').classList.add('hidden');
+  });
+  el.classList.add('sel');
+  el.querySelector('.expand').classList.remove('hidden');
+  state.rolle = role;
+  document.getElementById('btn-next-1').disabled = false;
+}
+
+// Flaeche slider
+function updateFlaeche(val) {
+  state.flaeche = parseInt(val);
+  document.getElementById('flaecheVal').innerHTML = `${val} <small>m²</small>`;
+  updateLiveBar();
+}
+
+// Generic chip
+const chipInfos = {
+  zustand: {
+    gepflegt: '<strong>Gepflegt</strong> — kein erhöhter Erstaufwand. Direkter Einstieg in Regelpflege möglich. Günstigste Kalkulationsgrundlage.',
+    verwildert: '<strong>Verwildert</strong> — Erstpflege kostet 1,5–2× mehr. Wildwuchs & überwucherte Flächen müssen zuerst bereinigt werden. Danach normaler Pflegepreis.',
+    neubau: '<strong>Neubau / leer</strong> — oft verdichteter Boden & Bauschutt. Mutterboden nötig bevor Bepflanzung möglich. Planung spart langfristig Kosten.'
+  },
+  zugang: {
+    gut: '<strong>Gut erreichbar</strong> — Maschinen & Fahrzeuge können direkt ran. Kein Aufpreis.',
+    eingeschraenkt: '<strong>Eingeschränkt</strong> — enger Durchgang, Stufen oder kein direkter Fahrzeugzugang. +12% auf Arbeitskosten durch Mehraufwand.',
+    hanglage: '<strong>Hanglage</strong> — erhöhter Sicherheitsaufwand, Spezialmaschinen nötig. +22% auf Arbeitskosten. Bitte im Termin besprechen.'
+  },
+  frequenz: {
+    einmalig: '<strong>Einmaliger Einsatz</strong> — keine Bindung, höchster Einzelpreis. Sinnvoll für Sonderaktionen (Erstpflege, Baumfällung).',
+    saison: '<strong>Saison-Abo (April–Oktober)</strong> — 7 Monate Regelpflege. 10% günstiger als Einzeltermine. Fixtermine alle 3–4 Wochen.',
+    ganzjaehrig: '<strong>Jahresvertrag</strong> — inkl. Winterdienst & Herbstlaub. 17% günstiger als Einzeltermine. Höchste Planungssicherheit für beide Seiten.'
+  }
+};
+
+function selectChip(el, group, val) {
+  el.closest('.chip-row').querySelectorAll('.chip').forEach(c => c.classList.remove('act'));
+  el.classList.add('act');
+  state[group] = val;
+  const info = chipInfos[group];
+  if (info && info[val]) {
+    document.getElementById(group + '-info').innerHTML = info[val];
+  }
+  updateLiveBar();
+}
+
+// Leistungen toggle
+function toggleLeistung(el, key) {
+  el.classList.toggle('sel');
+  if (state.leistungen.has(key)) state.leistungen.delete(key);
+  else state.leistungen.add(key);
+  updateLiveBar();
+}
+
+// Navigation
+function goTo(step) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('screen-' + step).classList.add('active');
+  updateProgress(step, 4);
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function updateProgress(current, total) {
+  for (let i = 1; i <= 5; i++) {
+    const seg = document.getElementById('p' + i);
+    if (i < current) { seg.classList.add('done'); seg.classList.remove('active'); }
+    else if (i === current) { seg.classList.add('active'); seg.classList.remove('done'); }
+    else { seg.classList.remove('done', 'active'); }
+  }
+  document.getElementById('prog-label').textContent = current <= total ? `Schritt ${current} von ${total}` : 'Dein Ergebnis';
+}
+
+// Loading → Result
+function startLoading() {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('screen-loading').classList.add('active');
+  updateProgress(5, 4);
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+  setTimeout(buildResult, 2200);
+}
+
+function buildResult() {
+  const { minTotal, maxTotal, breakdown } = calcPrice();
+
+  document.getElementById('range-min').textContent = fmt(minTotal);
+  document.getElementById('range-max').textContent = fmt(maxTotal);
+
+  const leistArr = Array.from(state.leistungen);
+  const leistLabels = { pflege:'Gartenpflege', gestaltung:'Gestaltung', bepflanzung:'Bepflanzung', bewaesserung:'Bewässerung', winterdienst:'Winterdienst', baumfaellung:'Baumfällung' };
+  document.getElementById('result-title').innerHTML = `Dein Angebot für <em>${state.flaeche} m²</em>`;
+  document.getElementById('result-sub').textContent = `${leistArr.map(l => leistLabels[l]).join(', ')} · ${ROLLE_HINT[state.rolle] || 'Privat'} · ${state.frequenz === 'saison' ? 'Saison-Abo' : state.frequenz === 'ganzjaehrig' ? 'Jahresvertrag' : 'Einmalig'}`;
+
+  // Breakdown
+  let html = '';
+  breakdown.forEach(row => {
+    html += `<div class="breakdown-row"><span class="br-label">${row.label}<br><small style="color:var(--text-light);font-size:11px">${row.sub}</small></span><span class="br-val accent">${fmt(row.min)} – ${fmt(row.max)} €${row.note ? `<br><small style="font-weight:300;color:var(--text-light);font-size:10px">${row.note}</small>` : ''}</span></div>`;
+  });
+  html += `<div class="breakdown-total"><span class="bt-label">Gesamt (Jahresbasis)</span><span class="bt-val">${fmt(minTotal)} – ${fmt(maxTotal)} €</span></div>`;
+  document.getElementById('breakdown-block').innerHTML = html;
+
+  // Story note
+  const stunden = Math.round(state.flaeche / 50 * 1.8 * (state.frequenz === 'ganzjaehrig' ? 12 : state.frequenz === 'saison' ? 7 : 1));
+  const zeitwert = Math.round(stunden * 24);
+  document.getElementById('story-note').innerHTML = `<strong>Deine Zeit hat einen Wert.</strong> Für einen ${state.flaeche} m² Garten investierst du selbst ca. <strong>${stunden} Stunden pro Jahr</strong> — das entspricht einem Zeitwert von <strong>~${fmt(zeitwert)} €</strong> (bei 24 €/h). Professionelle Pflege liegt in einem ähnlichen Rahmen — mit deutlich besserem Ergebnis.`;
+
+  document.getElementById('screen-loading').classList.remove('active');
+  document.getElementById('screen-result').classList.add('active');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// Foto Upload
+function handleFiles(files) {
+  const zone = document.getElementById('upload-zone');
+  const preview = document.getElementById('file-preview');
+  preview.innerHTML = '';
+  zone.classList.add('has-files');
+  const max = Math.min(files.length, 6);
+  for (let i = 0; i < max; i++) {
+    const file = files[i];
+    if (!file.type.startsWith('image/')) continue;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      if (i < 5) {
+        const img = document.createElement('img');
+        img.src = e.target.result;
+        img.className = 'preview-thumb';
+        img.alt = 'Vorschau';
+        preview.appendChild(img);
+      } else {
+        const more = document.createElement('div');
+        more.className = 'preview-more';
+        more.textContent = `+${files.length - 5}`;
+        preview.appendChild(more);
+      }
+    };
+    reader.readAsDataURL(file);
+  }
+  // Update hint text
+  zone.querySelector('.upload-cta').textContent = `${max} Foto${max > 1 ? 's' : ''} ausgewählt ✓`;
+  zone.querySelector('.upload-hint').textContent = 'Klicken um weitere hinzuzufügen';
+}
+
+// Drag & Drop
+const zone = document.getElementById('upload-zone');
+zone.addEventListener('dragover', e => { e.preventDefault(); zone.style.borderColor = 'var(--moss)'; });
+zone.addEventListener('dragleave', () => { zone.style.borderColor = ''; });
+zone.addEventListener('drop', e => { e.preventDefault(); zone.style.borderColor = ''; handleFiles(e.dataTransfer.files); });
+
+function submitLead() {
+  alert('✓ Anfrage gesendet! Wir melden uns innerhalb von 24h.\n\n(Demo — keine echte Übertragung)');
+}
+function sendEmail() {
+  alert('✓ Ergebnis wird per E-Mail zugeschickt.\n\n(Demo — keine echte Übertragung)');
+}
+
+// Init
+updateLiveBar();
+</script>
+</body>
+</html>
