@@ -6,7 +6,6 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState, type FormEvent } from "react";
 
 import { MarketingFooter } from "@/components/layout/MarketingFooter";
-import { CTA } from "@/lib/cta-config";
 import { SITE_CONFIG } from "@/lib/config";
 import type { Situation as FunnelSituation } from "@/lib/funnel/types";
 import { HOME_FAQ_ITEMS } from "@/lib/home-content";
@@ -365,11 +364,6 @@ export default function BaerenwaldLandingClient() {
                     {c.label}
                   </Link>
                 ))}
-              </div>
-              <div className="hero-btns fade-up d3">
-                <Link href="/rechner" className="btn-hero-cta">
-                  {CTA.hero}
-                </Link>
               </div>
             </div>
             <div className="hero-visual fade-up d2">
