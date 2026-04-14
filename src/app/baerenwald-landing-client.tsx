@@ -300,10 +300,10 @@ export default function BaerenwaldLandingClient({
           <span>Bärenwald</span>
         </Link>
         <nav className="nav-links" aria-label="Hauptnavigation">
-          <a href="#leistungen">Leistungen</a>
           <a href="#how">Wie es funktioniert</a>
+          <a href="#leistungen">Leistungen</a>
           <a href="#faq">FAQ</a>
-          <Link href="/kontakt">Kontakt</Link>
+          <a href="#faq">Kontakt</a>
         </nav>
         <Link href="/rechner" className="nav-cta">
           Angebot anfordern
@@ -321,6 +321,7 @@ export default function BaerenwaldLandingClient({
         <div className="hero-section">
           <div className="hero">
             <div>
+              <p className="hero-eyebrow">Handwerker München</p>
               <h1 className="hero-h1-split">
                 <span className="hero-h1-line--1 au">Kein Vergleichsportal.</span>
                 <span className="hero-h1-line--2 au d2">Ein Ansprechpartner.</span>
@@ -400,8 +401,8 @@ export default function BaerenwaldLandingClient({
                           aria-selected={idx === suggestActive}
                           className={
                             idx === suggestActive
-                              ? "hero-search-suggestion hero-search-suggestion--active"
-                              : "hero-search-suggestion"
+                              ? "search-suggestion search-suggestion--active"
+                              : "search-suggestion"
                           }
                           onMouseDown={(e) => {
                             e.preventDefault();
@@ -409,12 +410,10 @@ export default function BaerenwaldLandingClient({
                           }}
                           onMouseEnter={() => setSuggestActive(idx)}
                         >
-                          <span className="hero-search-suggestion-label">
-                            {s.label}
+                          <span className="suggestion-emoji" aria-hidden>
+                            {s.emoji}
                           </span>
-                          <span className="hero-search-suggestion-sub">
-                            {s.subtitle}
-                          </span>
+                          <span className="suggestion-title">{s.label}</span>
                         </li>
                       ))}
                     </ul>

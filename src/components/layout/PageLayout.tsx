@@ -157,6 +157,9 @@ export function PageLayout({ children }: PageLayoutProps) {
           </Link>
 
           <nav className="site-header-nav" aria-label="Hauptnavigation">
+            <Link href="/#how" onClick={closeAll}>
+              Wie es funktioniert
+            </Link>
             <div
               className={`site-header-dropdown-wrap${openDropdown === "leistungen" ? " is-open" : ""}`}
             >
@@ -219,6 +222,10 @@ export function PageLayout({ children }: PageLayoutProps) {
               ) : null}
             </div>
 
+            <Link href="/#faq" onClick={closeAll}>
+              FAQ
+            </Link>
+
             <div
               className={`site-header-dropdown-wrap site-header-dropdown-wrap--end${openDropdown === "information" ? " is-open" : ""}`}
             >
@@ -242,7 +249,7 @@ export function PageLayout({ children }: PageLayoutProps) {
                     Über uns
                   </Link>
                   <Link
-                    href="/kontakt"
+                    href="/#faq"
                     role="menuitem"
                     onClick={() => setOpenDropdown(null)}
                   >
@@ -293,11 +300,20 @@ export function PageLayout({ children }: PageLayoutProps) {
           </div>
 
           <nav className="site-mobile-links" aria-label="Hauptnavigation">
-            <Link href="/ratgeber" onClick={closeAll}>
-              Ratgeber-Übersicht
+            <Link href="/#how" onClick={closeAll}>
+              Wie es funktioniert
             </Link>
             <Link href="/#leistungen" onClick={closeAll}>
               Leistungen auf der Startseite
+            </Link>
+            <Link href="/#faq" onClick={closeAll}>
+              FAQ
+            </Link>
+            <Link href="/#faq" onClick={closeAll}>
+              Kontakt
+            </Link>
+            <Link href="/ratgeber" onClick={closeAll}>
+              Ratgeber-Übersicht
             </Link>
           </nav>
 

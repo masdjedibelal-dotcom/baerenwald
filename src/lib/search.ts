@@ -98,7 +98,7 @@ export function buildSearchUrl(query: string): string {
 export interface HeroSearchSuggestion {
   slug: string;
   label: string;
-  subtitle: string;
+  emoji: string;
 }
 
 const DEFAULT_HERO_SUGGESTION_SLUGS: string[] = [
@@ -122,7 +122,7 @@ export function getHeroSearchSuggestions(
     const out: HeroSearchSuggestion[] = [];
     for (const slug of DEFAULT_HERO_SUGGESTION_SLUGS) {
       const l = LEISTUNGEN.find((x) => x.slug === slug);
-      if (l) out.push({ slug: l.slug, label: l.label, subtitle: l.kurz });
+      if (l) out.push({ slug: l.slug, label: l.label, emoji: l.icon });
       if (out.length >= max) break;
     }
     return out;
@@ -160,6 +160,6 @@ export function getHeroSearchSuggestions(
   return scored.slice(0, max).map(({ l }) => ({
     slug: l.slug,
     label: l.label,
-    subtitle: l.kurz,
+    emoji: l.icon,
   }));
 }

@@ -21,15 +21,12 @@ type CarouselLeistung = {
   emoji: string;
   href: string;
   rechnerHref: string;
-  /** Wenn gesetzt: bei aktivem Chip nur anzeigen, wenn Chip in dieser Liste. Fehlt: immer anzeigen. */
-  forChips?: string[];
 };
 
 type Kategorie = {
   id: string;
   label: string;
   icon: KatIconName;
-  chips: string[];
   leistungen: CarouselLeistung[];
 };
 
@@ -38,13 +35,6 @@ const KATEGORIEN: Kategorie[] = [
     id: "renovieren",
     label: "Renovieren",
     icon: "haus",
-    chips: [
-      "Wände streichen",
-      "Neues Bad",
-      "Neuer Boden",
-      "Küche auffrischen",
-      "Fenster tauschen",
-    ],
     leistungen: [
       {
         slug: "malerarbeiten",
@@ -53,7 +43,6 @@ const KATEGORIEN: Kategorie[] = [
         emoji: "🖌️",
         href: "/leistungen/malerarbeiten-muenchen",
         rechnerHref: "/rechner?situation=renovieren",
-        forChips: ["Wände streichen", "Küche auffrischen"],
       },
       {
         slug: "badezimmer-sanierung",
@@ -62,7 +51,6 @@ const KATEGORIEN: Kategorie[] = [
         emoji: "🚿",
         href: "/leistungen/badezimmer-sanierung-muenchen",
         rechnerHref: "/rechner?situation=renovieren",
-        forChips: ["Neues Bad"],
       },
       {
         slug: "bodenbelag",
@@ -71,7 +59,6 @@ const KATEGORIEN: Kategorie[] = [
         emoji: "🪵",
         href: "/leistungen/bodenbelag-muenchen",
         rechnerHref: "/rechner?situation=renovieren",
-        forChips: ["Neuer Boden", "Küche auffrischen"],
       },
       {
         slug: "fenster-tueren",
@@ -80,7 +67,6 @@ const KATEGORIEN: Kategorie[] = [
         emoji: "🪟",
         href: "/leistungen/fenster-tueren-muenchen",
         rechnerHref: "/rechner?situation=renovieren",
-        forChips: ["Fenster tauschen"],
       },
       {
         slug: "trockenbau",
@@ -96,13 +82,6 @@ const KATEGORIEN: Kategorie[] = [
     id: "sanieren",
     label: "Sanieren",
     icon: "werkzeug",
-    chips: [
-      "Heizung tauschen",
-      "Wärmepumpe",
-      "Elektrik erneuern",
-      "Dach reparieren",
-      "Fassade dämmen",
-    ],
     leistungen: [
       {
         slug: "heizung-sanitaer",
@@ -111,7 +90,6 @@ const KATEGORIEN: Kategorie[] = [
         emoji: "🔧",
         href: "/leistungen/heizung-sanitaer-muenchen",
         rechnerHref: "/rechner?situation=sanieren",
-        forChips: ["Heizung tauschen", "Wärmepumpe"],
       },
       {
         slug: "elektroarbeiten",
@@ -120,7 +98,6 @@ const KATEGORIEN: Kategorie[] = [
         emoji: "⚡",
         href: "/leistungen/elektroarbeiten-muenchen",
         rechnerHref: "/rechner?situation=sanieren",
-        forChips: ["Elektrik erneuern"],
       },
       {
         slug: "dacharbeiten",
@@ -129,7 +106,6 @@ const KATEGORIEN: Kategorie[] = [
         emoji: "🏠",
         href: "/leistungen/dacharbeiten-muenchen",
         rechnerHref: "/rechner?situation=sanieren",
-        forChips: ["Dach reparieren", "Fassade dämmen"],
       },
     ],
   },
@@ -137,13 +113,6 @@ const KATEGORIEN: Kategorie[] = [
     id: "garten",
     label: "Garten & Außen",
     icon: "garten",
-    chips: [
-      "Regelmäßige Pflege",
-      "Gartengestaltung",
-      "Baumarbeiten",
-      "Terrasse bauen",
-      "Einfahrt pflastern",
-    ],
     leistungen: [
       {
         slug: "gartenpflege",
@@ -152,7 +121,6 @@ const KATEGORIEN: Kategorie[] = [
         emoji: "🌿",
         href: "/leistungen/gartenpflege-muenchen",
         rechnerHref: "/rechner?situation=betreuung",
-        forChips: ["Regelmäßige Pflege"],
       },
       {
         slug: "gartengestaltung",
@@ -161,20 +129,6 @@ const KATEGORIEN: Kategorie[] = [
         emoji: "🌳",
         href: "/leistungen/gartengestaltung-muenchen",
         rechnerHref: "/rechner?situation=neubauen",
-        forChips: [
-          "Gartengestaltung",
-          "Baumarbeiten",
-          "Terrasse bauen",
-          "Einfahrt pflastern",
-        ],
-      },
-      {
-        slug: "winterdienst",
-        name: "Winterdienst",
-        hint: "Räumen und Streuen — Haftung weg",
-        emoji: "❄️",
-        href: "/leistungen/winterdienst-muenchen",
-        rechnerHref: "/rechner?situation=betreuung",
       },
     ],
   },
@@ -182,12 +136,6 @@ const KATEGORIEN: Kategorie[] = [
     id: "service",
     label: "Service & Betreuung",
     icon: "shield",
-    chips: [
-      "Hausmeisterservice",
-      "Regelmäßige Betreuung",
-      "Gebäudereinigung",
-      "Notfallreparatur",
-    ],
     leistungen: [
       {
         slug: "hausmeisterservice",
@@ -197,18 +145,36 @@ const KATEGORIEN: Kategorie[] = [
         href: "/leistungen/hausmeisterservice-muenchen",
         rechnerHref: "/rechner?situation=betreuung",
       },
+      {
+        slug: "gebauedereinigung",
+        name: "Gebäudereinigung",
+        hint: "Treppenhaus, Gemeinschaftsflächen, regelmäßig oder einmalig",
+        emoji: "🧹",
+        href: "/leistungen/hausmeisterservice-muenchen",
+        rechnerHref: "/rechner?situation=betreuung",
+      },
+      {
+        slug: "wartung",
+        name: "Wartung & Pflege",
+        hint: "Heizungswartung, Lüftung, regelmäßige Kontrollen",
+        emoji: "🔩",
+        href: "/leistungen/heizung-sanitaer-muenchen",
+        rechnerHref: "/rechner?situation=betreuung",
+      },
+      {
+        slug: "winterdienst-service",
+        name: "Winterdienst",
+        hint: "Räumen und Streuen — Streupflicht übernehmen wir",
+        emoji: "❄️",
+        href: "/leistungen/winterdienst-muenchen",
+        rechnerHref: "/rechner?situation=betreuung",
+      },
     ],
   },
   {
     id: "notfall",
     label: "Notfall",
     icon: "blitz",
-    chips: [
-      "Heizung ausgefallen",
-      "Rohrbruch",
-      "Strom weg",
-      "Wasserschaden",
-    ],
     leistungen: [
       {
         slug: "heizung-sanitaer-notfall",
@@ -217,7 +183,6 @@ const KATEGORIEN: Kategorie[] = [
         emoji: "🔥",
         href: "/leistungen/heizung-sanitaer-muenchen",
         rechnerHref: "/rechner?situation=notfall",
-        forChips: ["Heizung ausgefallen"],
       },
       {
         slug: "wasser-notfall",
@@ -226,7 +191,6 @@ const KATEGORIEN: Kategorie[] = [
         emoji: "💧",
         href: "/leistungen/heizung-sanitaer-muenchen",
         rechnerHref: "/rechner?situation=notfall",
-        forChips: ["Rohrbruch", "Wasserschaden"],
       },
       {
         slug: "elektro-notfall",
@@ -235,7 +199,6 @@ const KATEGORIEN: Kategorie[] = [
         emoji: "⚡",
         href: "/leistungen/elektroarbeiten-muenchen",
         rechnerHref: "/rechner?situation=notfall",
-        forChips: ["Strom weg"],
       },
     ],
   },
@@ -291,20 +254,8 @@ function KatIcon({ name }: { name: KatIconName }) {
   );
 }
 
-function filterLeistungen(
-  list: CarouselLeistung[],
-  activeChip: string | null
-): CarouselLeistung[] {
-  if (!activeChip) return list;
-  return list.filter((l) => {
-    if (!l.forChips || l.forChips.length === 0) return true;
-    return l.forChips.includes(activeChip);
-  });
-}
-
 export function LeistungenCarousel() {
   const [activeKat, setActiveKat] = useState(KATEGORIEN[0]!.id);
-  const [activeChip, setActiveChip] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
 
   const cardsRef = useRef<HTMLDivElement>(null);
@@ -315,11 +266,6 @@ export function LeistungenCarousel() {
   const kat = useMemo(
     () => KATEGORIEN.find((k) => k.id === activeKat) ?? KATEGORIEN[0]!,
     [activeKat]
-  );
-
-  const filtered = useMemo(
-    () => filterLeistungen(kat.leistungen, activeChip),
-    [kat, activeChip]
   );
 
   const telHref = `tel:${SITE_CONFIG.phone.replace(/\s/g, "")}`;
@@ -334,7 +280,7 @@ export function LeistungenCarousel() {
   useEffect(() => {
     const el = cardsRef.current;
     if (el) el.scrollLeft = 0;
-  }, [activeKat, activeChip]);
+  }, [activeKat]);
 
   const onCardsMouseDown = (e: ReactMouseEvent<HTMLDivElement>) => {
     if (e.button !== 0 || !cardsRef.current) return;
@@ -395,35 +341,13 @@ export function LeistungenCarousel() {
               role="tab"
               aria-selected={activeKat === k.id}
               id={`kat-tab-${k.id}`}
-              className={`kat-tab${activeKat === k.id ? " active" : ""}${k.id === "notfall" ? " notfall" : ""}`}
-              onClick={() => {
-                setActiveKat(k.id);
-                setActiveChip(null);
-              }}
+              className={`kat-tab${activeKat === k.id ? " active" : ""}`}
+              onClick={() => setActiveKat(k.id)}
             >
               <span className="kat-tab-icon">
                 <KatIcon name={k.icon} />
               </span>
               {k.label}
-            </button>
-          ))}
-        </div>
-
-        <div
-          className="kat-chips"
-          role="toolbar"
-          aria-label={`Themen in ${kat.label}`}
-        >
-          {kat.chips.map((chip) => (
-            <button
-              key={chip}
-              type="button"
-              className={`kat-chip${activeChip === chip ? " active" : ""}${isNotfall ? " notfall-chip" : ""}`}
-              onClick={() =>
-                setActiveChip(activeChip === chip ? null : chip)
-              }
-            >
-              {chip}
             </button>
           ))}
         </div>
@@ -453,12 +377,8 @@ export function LeistungenCarousel() {
             onMouseLeave={() => setIsDragging(false)}
             onClickCapture={onCardClickCapture}
           >
-            {filtered.map((l) => (
-              <Link
-                key={l.slug}
-                href={l.href}
-                className="leistung-card"
-              >
+            {kat.leistungen.map((l) => (
+              <div key={l.slug} className="leistung-card">
                 <div className="leistung-card-visual">
                   <span className="leistung-card-visual-icon">{l.emoji}</span>
                   <span className="leistung-card-visual-bg" aria-hidden>
@@ -470,10 +390,14 @@ export function LeistungenCarousel() {
                   <div className="leistung-card-name">{l.name}</div>
                   <p className="leistung-card-hint">{l.hint}</p>
                   <div className="leistung-card-cta">
-                    <span className="leistung-card-cta-text">
-                      Details ansehen
-                    </span>
-                    <span className="leistung-card-cta-arrow">
+                    <Link href={l.href} className="leistung-card-cta-link">
+                      Mehr Infos
+                    </Link>
+                    <Link
+                      href={l.rechnerHref}
+                      className="leistung-card-cta-arrow"
+                      title="Preisrahmen berechnen →"
+                    >
                       <svg viewBox="0 0 12 12" fill="none" aria-hidden>
                         <path
                           d="M2 6h8M7 3l3 3-3 3"
@@ -483,23 +407,23 @@ export function LeistungenCarousel() {
                           strokeLinejoin="round"
                         />
                       </svg>
-                    </span>
+                    </Link>
                   </div>
                 </div>
-              </Link>
+              </div>
             ))}
 
             <Link
-              href="/leistungen"
+              href="/rechner"
               className="leistung-card leistung-card--more"
             >
               <div className="leistung-card-visual leistung-card-visual--more">
                 <span className="leistung-card-visual-icon">→</span>
               </div>
               <div className="leistung-card-body">
-                <div className="leistung-card-name">Alle ansehen</div>
+                <div className="leistung-card-name">Direkt anfragen</div>
                 <p className="leistung-card-hint">
-                  Alle {kat.leistungen.length} Leistungen in dieser Kategorie
+                  Beschreib einfach was du brauchst
                 </p>
               </div>
             </Link>
