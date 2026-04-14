@@ -1,106 +1,88 @@
 "use client";
 
-import type { Situation } from "@/lib/types";
-import type { SituationTagType } from "@/lib/situation-options";
-import { SituationIconPath } from "@/lib/situation-icons";
+import type { ReactNode } from "react";
+
 import { cn } from "@/lib/utils";
 
-const TAG_STYLES: Record<
-  SituationTagType,
-  { bg: string; color: string }
-> = {
-  multi: { bg: "#E6F1FB", color: "#0C447C" },
-  abo: { bg: "#EAF3DE", color: "#27500A" },
-  urgent: { bg: "#FDECEA", color: "#9C2B2B" },
-};
+export type SituationCardTagType = "multi" | "abo" | "notfall";
 
-export interface SituationCardProps {
-  situation: Situation;
+export interface SituationCardOption {
+  value: string;
   label: string;
   hint: string;
-  tag: string;
-  tagType: SituationTagType;
+  tag?: string;
+  tagType?: SituationCardTagType;
+}
+
+export interface SituationCardProps {
+  option: SituationCardOption;
+  icon: ReactNode;
+  watermarkIcon?: ReactNode;
   selected: boolean;
   onClick: () => void;
-  wide?: boolean;
-  accentColor?: string;
   className?: string;
 }
 
+const TAG_CLASS: Record<SituationCardTagType, string> = {
+  multi: "bg-blue-50 text-blue-800",
+  abo: "bg-green-50 text-green-800",
+  notfall: "bg-red-50 text-red-700",
+};
+
 export function SituationCard({
-  situation,
-  label,
-  hint,
-  tag,
-  tagType,
+  option,
+  icon,
+  watermarkIcon,
   selected,
   onClick,
-  wide = false,
-  accentColor = "#1B4332",
   className,
 }: SituationCardProps) {
-  const ts = TAG_STYLES[tagType];
+  const wm = watermarkIcon ?? icon;
+  const tagType = option.tagType;
+  const tagClass = tagType ? TAG_CLASS[tagType] : "bg-muted text-text-secondary";
 
   return (
     <button
       type="button"
       onClick={onClick}
       className={cn(
-        "relative w-full cursor-pointer overflow-hidden rounded-[18px] border border-[#e8e8e8] px-[14px] pb-[13px] pt-4 text-left transition-colors hover:border-[#bbb]",
-        wide && "sm:col-span-2 sm:flex sm:flex-row sm:items-center sm:gap-3",
+        "relative w-full overflow-hidden rounded-[18px] border border-border-default p-4 text-left transition-colors hover:border-text-tertiary",
+        selected &&
+          "border-[1.5px] border-funnel-accent bg-funnel-accent/5",
         className
       )}
-      style={
-        selected
-          ? {
-              borderWidth: 1.5,
-              borderColor: accentColor,
-              backgroundColor: "#fafafa",
-            }
-          : undefined
-      }
     >
       <div
-        className="pointer-events-none absolute -bottom-1.5 -right-1.5 opacity-[0.05]"
+        className="pointer-events-none absolute bottom-0 right-0 size-16 opacity-5"
         aria-hidden
       >
-        <div className="size-[70px] text-text-primary">
-          <SituationIconPath situation={situation} />
-        </div>
+        {wm}
       </div>
 
       <div
         className={cn(
-          "relative z-[1] mb-[9px] flex size-[38px] shrink-0 items-center justify-center rounded-[9px] border border-[#e8e8e8] bg-[#f5f5f5]",
-          !selected && "text-text-primary",
-          wide && "mb-0"
+          "relative z-[1] mb-2 flex size-[38px] items-center justify-center rounded-full bg-muted text-text-primary",
+          selected && "bg-funnel-accent text-white"
         )}
-        style={
-          selected
-            ? {
-                backgroundColor: accentColor,
-                borderColor: accentColor,
-                color: "#fff",
-              }
-            : undefined
-        }
       >
-        <div className="size-[22px]">
-          <SituationIconPath situation={situation} />
-        </div>
+        <span className="flex size-[18px] items-center justify-center [&_svg]:size-[18px] [&_svg]:stroke-current">
+          {icon}
+        </span>
       </div>
 
-      <div className={cn("relative z-[1] min-w-0 flex-1", wide && "flex flex-wrap items-center gap-x-3 gap-y-1")}>
-        <div>
-          <p className="mb-0.5 text-[13px] font-semibold text-text-primary">{label}</p>
-          <p className="text-[11px] leading-snug text-[#666]">{hint}</p>
-        </div>
-        <span
-          className="mt-[7px] inline-block rounded-lg px-2 py-0.5 text-[10px] font-medium sm:mt-0"
-          style={{ backgroundColor: ts.bg, color: ts.color }}
-        >
-          {tag}
-        </span>
+      <div className="relative z-[1]">
+        <p className="text-[13px] font-semibold text-text-primary">{option.label}</p>
+        <p className="mt-0.5 text-[11px] text-text-secondary">{option.hint}</p>
+        {option.tag ? (
+          <span
+            className={cn(
+              "mt-1.5 inline-block rounded-lg px-2 py-0.5 text-[10px] font-medium",
+              tagClass
+            )}
+          >
+            {option.tag}
+          </span>
+        ) : null}
       </div>
     </button>
   );

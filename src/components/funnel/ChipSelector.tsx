@@ -49,10 +49,10 @@ export function ChipSelector({
             type="button"
             onClick={() => toggle(opt.value)}
             className={cn(
-              "rounded-[999px] border border-[#e8e8e8] bg-white px-[15px] py-[7px] text-[13px] transition-colors",
+              "rounded-[999px] border border-border-default bg-surface-card px-[15px] py-[7px] text-[13px] transition-colors",
               active
                 ? "border-transparent text-white"
-                : "text-[#666] hover:border-[#bbb] hover:text-text-primary"
+                : "text-text-secondary hover:border-border-strong hover:text-text-primary"
             )}
             style={
               active

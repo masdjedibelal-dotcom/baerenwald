@@ -22,34 +22,36 @@ export function StepWrapper({
   className,
   animateKey = 0,
 }: StepWrapperProps) {
-  const [mounted, setMounted] = useState(false);
+  const [show, setShow] = useState(false);
 
   useEffect(() => {
-    setMounted(false);
-    const id = requestAnimationFrame(() => setMounted(true));
+    setShow(false);
+    const id = requestAnimationFrame(() => setShow(true));
     return () => cancelAnimationFrame(id);
   }, [animateKey]);
 
   return (
     <div
       className={cn(
-        "mx-auto w-full max-w-[540px] px-[18px]",
-        mounted && "fade-in",
+        "mx-auto max-w-xl px-6 pb-32 pt-8",
+        show && "animate-fade-in",
         className
       )}
     >
       {stepLabel ? (
-        <p className="mb-2 text-[11px] font-medium uppercase tracking-[0.07em] text-[#999]">
+        <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-widest text-text-tertiary">
           {stepLabel}
         </p>
       ) : null}
       {question ? (
-        <h1 className="mb-2 text-xl font-semibold leading-[1.25] tracking-[-0.01em] text-text-primary">
+        <h1 className="text-[22px] font-extrabold leading-tight tracking-tight text-text-primary">
           {question}
         </h1>
       ) : null}
       {subtext ? (
-        <p className="mb-6 text-[13px] leading-normal text-[#666]">{subtext}</p>
+        <p className="mb-6 mt-2 text-sm leading-relaxed text-text-secondary">
+          {subtext}
+        </p>
       ) : question ? (
         <div className="mb-6" />
       ) : null}

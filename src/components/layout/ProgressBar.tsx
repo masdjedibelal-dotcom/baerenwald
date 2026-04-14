@@ -34,7 +34,7 @@ export function ProgressBar({
   return (
     <div
       className={cn(
-        "fixed left-0 right-0 top-[60px] z-40 border-b border-[#e8e8e8] bg-white px-[18px] py-3",
+        "fixed left-0 right-0 top-[60px] z-40 border-b border-border-default bg-surface-card px-[18px] py-3",
         className
       )}
     >

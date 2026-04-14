@@ -24,7 +24,7 @@ export function Footer({
   return (
     <footer
       className={cn(
-        "sticky bottom-0 z-50 flex min-h-[60px] w-full items-center justify-between gap-3 border-t border-[#e8e8e8] bg-white px-[18px] py-3",
+        "sticky bottom-0 z-50 flex min-h-[60px] w-full items-center justify-between gap-3 border-t border-border-default bg-surface-card px-[18px] py-3",
         className
       )}
       style={{
@@ -39,7 +39,7 @@ export function Footer({
           <button
             type="button"
             onClick={onBack}
-            className="rounded-[var(--r-pill)] border border-[#e8e8e8] bg-white px-4 py-2.5 text-sm font-medium text-text-primary transition-colors hover:border-[#bbb]"
+            className="rounded-[var(--r-pill)] border border-border-default bg-surface-card px-4 py-2.5 text-sm font-medium text-text-primary transition-colors hover:border-border-strong"
           >
             Zurück
           </button>

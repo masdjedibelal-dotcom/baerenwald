@@ -73,7 +73,7 @@ export function SliderCard({
           className="mt-4 rounded-[var(--r)] px-[14px] py-[11px]"
           style={{ backgroundColor: accentColor }}
         >
-          <p className="text-[11px] text-white/60">Vorläufiger Preisrahmen</p>
+          <p className="text-[11px] text-white/70">Vorläufiger Preisrahmen</p>
           <p className="mt-0.5 text-[17px] font-semibold tracking-[-0.01em] text-white">
             {formatCurrencyEUR(livePrice.min).replace(/\s/g, " ")} –{" "}
             {formatCurrencyEUR(livePrice.max).replace(/\s/g, " ")}

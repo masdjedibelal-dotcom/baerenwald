@@ -84,7 +84,7 @@ function notfallMultiplier(d: Dringlichkeit | null): number {
 }
 
 /**
- * Summiert alle aktiven Gewerke zu min/max und liefert eine Zeile pro Gewerk.
+ * Summiert alle aktiven Leistungspositionen zu min/max (eine Zeile pro Position).
  */
 export function calculatePrice(state: FunnelState): {
   min: number;
@@ -139,8 +139,8 @@ export function calculatePrice(state: FunnelState): {
 
   if (gewerke.has("sanitaer")) {
     add({
-      gewerk: "Sanitär",
-      beschreibung: "Bad-Komplett / Sanitär",
+      gewerk: "Wasser & Heizung",
+      beschreibung: "Bad komplett — Rohre, Armaturen, Anschlüsse",
       min: 5800,
       max: 18000,
       einheit: "Projekt",

@@ -81,7 +81,7 @@ export function PhotoUpload({
   const hasFiles = files.length > 0;
 
   return (
-    <div className={cn("fade-in", className)}>
+    <div className={cn(className)}>
       <input
         ref={inputRef}
         type="file"
@@ -100,18 +100,16 @@ export function PhotoUpload({
         onDragLeave={() => setDragOver(false)}
         onDrop={onDrop}
         className={cn(
-          "relative w-full rounded-[var(--r)] border-[1.5px] border-dashed border-[#e8e8e8] bg-[#fafafa] px-4 py-[22px] text-center transition-colors",
-          dragOver && "border-funnel-accent bg-[#f8f8f8]",
-          hasFiles && "border-funnel-accent bg-[#f8f8f8]"
+          "relative w-full cursor-pointer rounded-xl border-2 border-dashed border-border-default p-6 text-center transition-colors hover:border-text-tertiary",
+          dragOver && "border-funnel-accent bg-funnel-accent/[0.03]",
+          hasFiles && "border-funnel-accent bg-funnel-accent/[0.03]"
         )}
       >
-        <div className="mx-auto flex size-10 items-center justify-center rounded-lg bg-[#e8e8e8] text-text-primary">
+        <div className="mx-auto mb-2 text-text-tertiary" aria-hidden>
           <svg
-            width="22"
-            height="22"
+            className="mx-auto size-10"
             viewBox="0 0 24 24"
             fill="none"
-            aria-hidden
           >
             <rect
               x="3"
@@ -131,24 +129,21 @@ export function PhotoUpload({
             />
           </svg>
         </div>
-        <p className="mt-3 text-[13px] font-medium text-text-primary">
-          Fotos hier ablegen oder klicken
+        <p className="text-sm font-medium text-text-primary">
+          Fotos hochladen (optional)
         </p>
-        <p className="mt-1 text-[11px] text-[#999]">
-          Bis {maxFiles} Bilder, max. 10 MB je Datei
+        <p className="mt-1 text-xs text-text-tertiary">
+          Hilft beim Vor-Ort-Termin · max. {maxFiles} Fotos
         </p>
-        <span className="absolute right-3 top-3 rounded-full bg-funnel-accent px-2 py-0.5 text-[11px] font-medium text-white">
-          {files.length}/{maxFiles}
-        </span>
       </button>
       {files.length > 0 ? (
-        <ul className="mt-4 flex flex-wrap gap-2">
+        <ul className="mt-3 flex flex-wrap gap-2">
           {files.map((f, i) => {
             const key = `${f.name}-${f.size}`;
             const src = previews[key];
             return (
               <li key={key} className="relative">
-                <div className="size-16 overflow-hidden rounded-lg border border-[#e8e8e8] bg-muted">
+                <div className="size-16 overflow-hidden rounded-lg border border-border-default bg-muted">
                   {src ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img
@@ -157,7 +152,7 @@ export function PhotoUpload({
                       className="size-full object-cover"
                     />
                   ) : (
-                    <div className="flex size-full items-center justify-center text-[10px] text-[#999]">
+                    <div className="flex size-full items-center justify-center text-[10px] text-text-tertiary">
                       …
                     </div>
                   )}

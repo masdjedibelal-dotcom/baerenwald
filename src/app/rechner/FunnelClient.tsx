@@ -366,32 +366,21 @@ export function FunnelClient() {
             const selected = multi
               ? selectedMulti.includes(opt.value)
               : selectedSingle === opt.value;
-            const expandInfo =
-              selected && opt.infoExpand ? opt.infoExpand : undefined;
-            const expandWarn =
-              selected && opt.warnText ? opt.warnText : undefined;
-            const expandText = expandInfo ?? expandWarn;
-            const expandType = expandWarn ? "warn" : "info";
             return (
               <SelectionTile
                 key={opt.value}
-                label={opt.label}
-                hint={opt.hint}
+                option={opt}
                 icon={tileIconForStepValue(opt.value)}
-                priceTag={opt.priceTag}
-                expandText={expandText}
-                expandType={expandType}
                 selected={selected}
                 multi={multi}
-                accentColor={ACC}
-                onChange={(sel) => {
+                onChange={(value, sel) => {
                   if (multi) {
                     const set = new Set(selectedMulti);
-                    if (sel) set.add(opt.value);
-                    else set.delete(opt.value);
+                    if (sel) set.add(value);
+                    else set.delete(value);
                     setAnswer(step.id, Array.from(set));
                   } else {
-                    setAnswer(step.id, sel ? opt.value : "");
+                    setAnswer(step.id, sel ? value : "");
                   }
                 }}
               />
@@ -488,7 +477,6 @@ export function FunnelClient() {
           <SituationStep
             value={funnel.situation}
             onSelect={(s) => startSituation(s)}
-            accentColor={ACC}
           />
         </StepWrapper>
       );
@@ -548,11 +536,7 @@ export function FunnelClient() {
     if (screen === resultScreen) {
       return (
         <StepWrapper stepLabel="Ergebnis" animateKey="result">
-          <ResultScreen
-            state={funnel}
-            companyPhone={SITE_CONFIG.phone}
-            accentColor={ACC}
-          />
+          <ResultScreen state={funnel} companyPhone={SITE_CONFIG.phone} />
         </StepWrapper>
       );
     }
@@ -573,7 +557,7 @@ export function FunnelClient() {
           />
 
           {isAkutNotfall(funnel) ? (
-            <div className="mb-4 rounded-[var(--r)] border border-[#e8e8e8] bg-[#fff7f7] p-4 text-center">
+            <div className="mb-4 rounded-[var(--r)] border border-border-default bg-[#fff7f7] p-4 text-center">
               <p className="text-sm font-semibold text-[#C0392B]">Notfall</p>
               <a
                 href={`tel:${tel}`}
@@ -605,12 +589,11 @@ export function FunnelClient() {
                     },
                   });
                 }}
-                accentColor={ACC}
                 className="mb-3"
               />
               <button
                 type="button"
-                className="mb-6 text-[12px] font-medium text-[#666] underline underline-offset-2"
+                className="mb-6 text-[12px] font-medium text-text-secondary underline underline-offset-2"
                 onClick={() => dispatch({ type: "SET_SKIP_CALENDAR", value: true })}
               >
                 Termin später festlegen →
@@ -650,7 +633,7 @@ export function FunnelClient() {
   };
 
   return (
-    <div className="min-h-screen bg-white pb-24 pt-[132px]">
+    <div className="min-h-screen bg-background pb-24 pt-[132px]">
       <Header
         companyName={SITE_CONFIG.companyName}
         phone={SITE_CONFIG.phone}

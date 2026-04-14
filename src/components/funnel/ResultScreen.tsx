@@ -1,16 +1,17 @@
 "use client";
 
+import { useMemo, useState } from "react";
+
 import { isAkutNotfall, shouldShowConsultationOnly } from "@/lib/funnel-config";
 import { formatCurrencyEUR } from "@/lib/price-calc";
 import { SituationIconPath } from "@/lib/situation-icons";
-import type { FunnelState, PriceLineItem } from "@/lib/types";
+import type { FunnelState, PriceLineItem, Situation } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 export interface ResultScreenProps {
   state: FunnelState;
   companyPhone: string;
   cityLabel?: string;
-  accentColor?: string;
   className?: string;
 }
 
@@ -19,21 +20,18 @@ function gewerkLabel(key: string): string {
   return key.charAt(0).toUpperCase() + key.slice(1).replace(/_/g, " ");
 }
 
-function gewerkVisual(g: string): { bg: string; fg: string } {
+function gewerkSquareClass(g: string): string {
   const x = g.toLowerCase();
-  if (x.includes("maler"))
-    return { bg: "#F0F4FF", fg: "#185FA5" };
+  if (x.includes("maler")) return "bg-[#F0F4FF] text-[#185FA5]";
   if (x.includes("boden") || x.includes("fliesen") || x.includes("garten"))
-    return { bg: "#EAF3DE", fg: "#3B6D11" };
+    return "bg-[#EAF3DE] text-[#3B6D11]";
   if (x.includes("sanitaer") || x.includes("bad"))
-    return { bg: "#E6F1FB", fg: "#0C447C" };
-  if (x.includes("elektro"))
-    return { bg: "#FDF3DC", fg: "#854F0B" };
+    return "bg-[#E6F1FB] text-[#0C447C]";
+  if (x.includes("elektro")) return "bg-[#FDF3DC] text-[#854F0B]";
   if (x.includes("shk") || x.includes("heizung"))
-    return { bg: "#FDECEA", fg: "#9C2B2B" };
-  if (x.includes("reinigung"))
-    return { bg: "#F1EFE8", fg: "#5F5E5A" };
-  return { bg: "#F0F4FF", fg: "#185FA5" };
+    return "bg-[#FDECEA] text-[#9C2B2B]";
+  if (x.includes("reinigung")) return "bg-[#F1EFE8] text-[#5F5E5A]";
+  return "bg-[#F0F4FF] text-[#185FA5]";
 }
 
 function seasonMonths(frequenz: string): number {
@@ -56,13 +54,14 @@ function seasonMonths(frequenz: string): number {
 }
 
 function BreakdownRow({ row }: { row: PriceLineItem }) {
-  const { bg, fg } = gewerkVisual(row.gewerk);
   return (
-    <div className="flex items-start justify-between gap-3 border-b border-[#e8e8e8] px-[13px] py-2.5 last:border-0">
+    <div className="flex items-start justify-between gap-3 border-b border-border-default px-3.5 py-2.5 last:border-b-0">
       <div className="flex min-w-0 gap-2">
         <div
-          className="flex size-[26px] shrink-0 items-center justify-center rounded-md"
-          style={{ backgroundColor: bg, color: fg }}
+          className={cn(
+            "flex size-[26px] shrink-0 items-center justify-center rounded-md",
+            gewerkSquareClass(row.gewerk)
+          )}
         >
           <svg className="size-3.5" viewBox="0 0 24 24" fill="none">
             <path
@@ -76,7 +75,7 @@ function BreakdownRow({ row }: { row: PriceLineItem }) {
         </div>
         <div className="min-w-0">
           <p className="text-[13px] font-medium text-text-primary">{row.gewerk}</p>
-          <p className="text-[11px] text-[#666]">{row.beschreibung}</p>
+          <p className="text-[11px] text-text-secondary">{row.beschreibung}</p>
         </div>
       </div>
       <p className="shrink-0 text-[13px] font-medium tabular-nums text-text-primary">
@@ -96,11 +95,25 @@ function B2bPrioLabel(v: string): string {
   return m[v] ?? v;
 }
 
+function storyNote(
+  situation: Situation | null,
+  flaeche: number,
+  hours: number,
+  zeitwert: number
+): string | null {
+  if (situation === "renovierung" || situation === "neubau") {
+    return `Für ${flaeche} m² investierst du selbst ca. ${hours} Stunden pro Jahr — Zeitwert ~${formatCurrencyEUR(zeitwert)}.`;
+  }
+  if (situation === "pflege") {
+    return "Regelmäßige Pflege kostet weniger als ein einmaliger Notfalleinsatz.";
+  }
+  return null;
+}
+
 export function ResultScreen({
   state,
   companyPhone,
   cityLabel = "München & Umgebung",
-  accentColor = "#1B4332",
   className,
 }: ResultScreenProps) {
   const b2bConsult = shouldShowConsultationOnly(state);
@@ -113,32 +126,41 @@ export function ResultScreen({
   const zeitwert = hours * 24;
   const year = new Date().getFullYear();
 
+  const [budgetChoice, setBudgetChoice] = useState<"ja" | "hoch" | null>(null);
+
+  const showUsp = state.gewerke.length > 1 || state.mode === "multi";
+
+  const story = useMemo(
+    () => storyNote(situation, flaeche, hours, zeitwert),
+    [situation, flaeche, hours, zeitwert]
+  );
+
   if (notfall) {
     const tel = companyPhone.replace(/\s/g, "");
     return (
-      <div className={cn("fade-in space-y-6", className)}>
-        <div
-          className="relative overflow-hidden rounded-[18px] px-5 py-[22px] text-center text-white"
-          style={{ backgroundColor: "#C0392B" }}
-        >
+      <div className={cn("space-y-6", className)}>
+        <div className="relative overflow-hidden rounded-[18px] bg-[#C0392B] p-5 text-center text-white">
           {situation ? (
             <div
-              className="pointer-events-none absolute right-3 top-1/2 w-[100px] -translate-y-1/2 opacity-[0.07]"
+              className="pointer-events-none absolute right-3 top-1/2 w-24 -translate-y-1/2 text-white opacity-[0.07]"
               aria-hidden
             >
               <SituationIconPath situation={situation} />
             </div>
           ) : null}
-          <p className="text-[10px] font-medium uppercase tracking-[0.08em] text-white/70">
+          <p className="text-[11px] font-medium uppercase tracking-widest text-white/70">
             Notfall
           </p>
           <p className="mt-3 text-lg font-semibold">Wir sind jetzt erreichbar</p>
-          <a href={`tel:${tel}`} className="mt-2 block text-3xl font-bold tracking-tight">
+          <a
+            href={`tel:${tel}`}
+            className="mt-2 block text-3xl font-extrabold tracking-tight"
+          >
             {companyPhone}
           </a>
           <a
             href={`tel:${tel}`}
-            className="mt-5 inline-flex w-full max-w-xs justify-center rounded-[999px] bg-white px-6 py-3 text-sm font-semibold text-[#C0392B]"
+            className="mt-5 inline-flex w-full max-w-xs justify-center rounded-full bg-surface-card px-6 py-3 text-sm font-semibold text-[#C0392B]"
           >
             Jetzt anrufen
           </a>
@@ -149,19 +171,18 @@ export function ResultScreen({
 
   if (b2bConsult) {
     return (
-      <div className={cn("fade-in space-y-6", className)}>
-        <div className="rounded-[18px] border border-[#e8e8e8] bg-white p-5">
+      <div className={cn("space-y-6", className)}>
+        <div className="rounded-[18px] border border-border-default bg-surface-card p-5">
           <h2 className="text-lg font-semibold text-text-primary">
             Persönliches Angebot
           </h2>
-          <p className="mt-2 text-[13px] leading-normal text-[#666]">
+          <p className="mt-2 text-sm leading-relaxed text-text-secondary">
             Für eure Standortstruktur planen wir am besten gemeinsam im
             Beratungsgespräch — der Online-Rechner reicht hier nicht.
           </p>
           <button
             type="button"
-            className="mt-6 w-full rounded-[999px] py-3 text-sm font-semibold text-white"
-            style={{ backgroundColor: accentColor }}
+            className="mt-6 w-full rounded-full bg-funnel-accent py-3 text-sm font-semibold text-white"
           >
             Beratungsgespräch vereinbaren
           </button>
@@ -178,48 +199,46 @@ export function ResultScreen({
   ].filter(Boolean);
 
   return (
-    <div className={cn("fade-in space-y-5", className)}>
-      <div className="relative overflow-hidden rounded-[18px] bg-[var(--funnel-hero-bg)] px-5 py-[22px] text-white">
+    <div className={cn("space-y-5", className)}>
+      <div className="relative overflow-hidden rounded-[18px] bg-surface-dark p-5 text-white">
         {situation ? (
           <div
-            className="pointer-events-none absolute right-3 top-1/2 w-[100px] -translate-y-1/2 opacity-[0.07]"
+            className="pointer-events-none absolute right-3 top-1/2 w-24 -translate-y-1/2 text-white opacity-[0.07]"
             aria-hidden
           >
             <SituationIconPath situation={situation} />
           </div>
         ) : null}
-        <p className="text-[10px] font-medium uppercase tracking-[0.08em] text-[#777]">
+        <p className="text-[11px] font-medium uppercase tracking-widest text-[#777]">
           Dein Preisrahmen
         </p>
-        <div className="mt-2 flex flex-wrap items-baseline gap-2">
-          <span className="text-[38px] font-bold tracking-[-0.02em]">
+        <div className="mt-2 flex flex-wrap items-baseline gap-1">
+          <span className="text-[38px] font-extrabold leading-none tracking-tight text-white">
             {formatCurrencyEUR(state.priceMin)}
           </span>
-          <span className="text-base text-[#555]">–</span>
-          <span className="text-[38px] font-bold tracking-[-0.02em]">
+          <span className="text-lg text-[#555]">–</span>
+          <span className="text-[38px] font-extrabold leading-none tracking-tight text-white">
             {formatCurrencyEUR(state.priceMax)}
           </span>
-          <span className="text-[15px] text-[#777]">€</span>
+          <span className="text-sm text-[#777]">€</span>
         </div>
-        <p className="mt-2 text-[11px] leading-normal text-[#666]">
+        <p className="mt-1.5 text-[11px] leading-relaxed text-[#666]">
           {noteParts.join(" · ")}
         </p>
-        <div className="mt-3 flex flex-wrap gap-2">
+        <div className="mt-3 flex flex-wrap gap-1.5">
           {state.gewerke.map((g) => (
             <span
               key={g}
-              className="rounded-[999px] bg-white/10 px-2 py-0.5 text-[10px] text-[#aaa]"
+              className="rounded-full bg-surface-card/10 px-2.5 py-0.5 text-[10px] text-[#aaa]"
             >
               {gewerkLabel(g)}
             </span>
           ))}
         </div>
 
-        {state.mode === "multi" ? (
-          <div
-            className="mt-4 flex gap-2 rounded-[9px] border border-white/[0.08] bg-[var(--funnel-hero-inner)] p-2.5"
-          >
-            <div className="flex size-[30px] shrink-0 items-center justify-center rounded-[7px] bg-white/[0.07] text-white">
+        {showUsp ? (
+          <div className="mt-3 flex items-start gap-3 rounded-xl border border-white/[0.08] bg-white/10 p-3">
+            <div className="flex size-[30px] shrink-0 items-center justify-center rounded-lg bg-white/[0.07] text-white">
               <svg className="size-4" viewBox="0 0 24 24" fill="none">
                 <path
                   d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2M9 11a4 4 0 100-8 4 4 0 000 8zM23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"
@@ -229,53 +248,90 @@ export function ResultScreen({
                 />
               </svg>
             </div>
-            <div className="min-w-0 text-[11px] leading-snug text-[#aaa]">
-              <p>
-                <span className="font-semibold text-white">
-                  Ein Ansprechpartner, alle Gewerke
-                </span>
-              </p>
-              <p className="mt-0.5">
+            <p className="text-[11px] leading-relaxed text-[#aaa]">
+              <strong className="font-medium text-white">
+                Ein Ansprechpartner, alle Handwerksleistungen
+              </strong>
+              <span className="mt-0.5 block">
                 {state.situation === "b2b" && state.b2bPrio
                   ? `Euer Fokus: ${B2bPrioLabel(state.b2bPrio)} — wir spiegeln das in der Betreuung.`
                   : "Koordination aus einer Hand — weniger Stress für dich."}
-              </p>
-            </div>
+              </span>
+            </p>
           </div>
         ) : state.situation === "b2b" && state.b2bPrio ? (
-          <div className="mt-4 flex gap-2 rounded-[9px] border border-white/[0.08] bg-[var(--funnel-hero-inner)] p-2.5">
-            <div className="text-[11px] leading-snug text-[#aaa]">
-              <span className="font-semibold text-white">Eure Priorität: </span>
+          <div className="mt-3 flex items-start gap-3 rounded-xl border border-white/[0.08] bg-white/10 p-3">
+            <p className="text-[11px] leading-relaxed text-[#aaa]">
+              <strong className="font-medium text-white">Eure Priorität: </strong>
               {B2bPrioLabel(state.b2bPrio)}
-            </div>
+            </p>
           </div>
         ) : null}
       </div>
 
       {!state.entscheider ? (
-        <div className="rounded-[var(--r)] border border-[#DCE6FF] bg-[#F6F8FE] px-[13px] py-2.5 text-[12px] leading-relaxed text-[#315AA8]">
+        <div className="rounded-xl border border-[#DCE6FF] bg-[#F6F8FE] p-3 text-[12px] leading-relaxed text-[#315AA8]">
           Ergebnis per Mail schicken zum Weiterleiten — du kannst trotzdem
           direkt anfragen, wenn du möchtest.
         </div>
       ) : null}
 
-      <div className="overflow-hidden rounded-[var(--r)] border border-[#e8e8e8] bg-white">
+      <div className="mt-2.5 overflow-hidden rounded-xl border border-border-default bg-surface-card">
         {state.priceBreakdown.map((row, i) => (
           <BreakdownRow key={`${row.gewerk}-${i}`} row={row} />
         ))}
-        <div className="flex items-center justify-between bg-[#fafafa] px-[13px] py-2.5">
-          <span className="text-[13px] font-bold text-text-primary">Gesamt</span>
-          <span className="text-[15px] font-semibold tabular-nums text-text-primary">
+        <div className="flex items-center justify-between bg-muted px-3.5 py-2.5 font-semibold">
+          <span className="text-[13px] text-text-primary">Gesamt</span>
+          <span className="text-[15px] tabular-nums text-text-primary">
             {formatCurrencyEUR(state.priceMin)} –{" "}
             {formatCurrencyEUR(state.priceMax)}
           </span>
         </div>
       </div>
 
-      <div className="rounded-[var(--r)] border border-[#DCE6FF] bg-[#F6F8FE] px-[13px] py-2.5 text-[12px] leading-snug text-[#315AA8]">
-        Für {flaeche} m² investierst du selbst ca. {hours}h/Jahr — Zeitwert ~{" "}
-        {formatCurrencyEUR(zeitwert)}.
+      <div>
+        <p className="mb-3 mt-5 text-sm font-medium text-text-primary">
+          Passt dieser Rahmen zu deinem Budget?
+        </p>
+        <div className="flex flex-wrap gap-2">
+          <button
+            type="button"
+            onClick={() => setBudgetChoice("ja")}
+            className={cn(
+              "rounded-full border border-border-default px-4 py-2 text-sm font-medium transition-colors",
+              budgetChoice === "ja"
+                ? "border-funnel-accent bg-funnel-accent text-white"
+                : "bg-surface-card text-text-secondary hover:border-text-tertiary"
+            )}
+          >
+            Ja, passt gut
+          </button>
+          <button
+            type="button"
+            onClick={() => setBudgetChoice("hoch")}
+            className={cn(
+              "rounded-full border border-border-default px-4 py-2 text-sm font-medium transition-colors",
+              budgetChoice === "hoch"
+                ? "border-funnel-accent bg-funnel-accent text-white"
+                : "bg-surface-card text-text-secondary hover:border-text-tertiary"
+            )}
+          >
+            Eher zu hoch
+          </button>
+        </div>
+        {budgetChoice === "hoch" ? (
+          <p className="mt-3 rounded-xl border border-border-default bg-muted p-3 text-sm leading-relaxed text-text-secondary">
+            Kein Problem — beim Termin besprechen wir Optionen die in dein
+            Budget passen.
+          </p>
+        ) : null}
       </div>
+
+      {story ? (
+        <div className="mt-3 rounded-xl border border-[#DCE6FF] bg-[#F6F8FE] p-3 text-[12px] leading-relaxed text-[#315AA8]">
+          {story}
+        </div>
+      ) : null}
     </div>
   );
 }

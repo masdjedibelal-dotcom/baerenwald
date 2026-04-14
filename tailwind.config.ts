@@ -10,10 +10,38 @@ const config: Config = {
   theme: {
     extend: {
       fontFamily: {
-        sans: ["var(--font-dm-sans)", "system-ui", "sans-serif"],
-        display: ["var(--font-fraunces)", "Georgia", "serif"],
+        sans: ["var(--font-sans)", "Helvetica Neue", "Arial", "sans-serif"],
+        display: ["var(--font-display)", "Georgia", "serif"],
       },
       colors: {
+        accent: {
+          DEFAULT: "#2E7D52",
+          dark: "#1A3D2B",
+          light: "#EAF3DE",
+          hover: "#256642",
+          foreground: "#FFFFFF",
+        },
+        sand: {
+          DEFAULT: "#C4922A",
+          light: "#FEF3DC",
+          dark: "#8B6914",
+        },
+        surface: {
+          page: "#F5F2ED",
+          card: "#FFFFFF",
+          muted: "#EDEAE4",
+          dark: "#1A3D2B",
+        },
+        text: {
+          primary: "#1E1E1F",
+          secondary: "#727272",
+          tertiary: "#9E9E9E",
+          inverse: "#FFFFFF",
+          brand: "#2E7D52",
+        },
+        "border-default": "var(--border-default)",
+        "border-strong": "var(--border-strong)",
+        "border-light": "var(--border-light)",
         acc: "var(--acc)",
         border: "var(--border)",
         input: "var(--input)",
@@ -36,10 +64,6 @@ const config: Config = {
           DEFAULT: "var(--muted)",
           foreground: "var(--muted-foreground)",
         },
-        accent: {
-          DEFAULT: "var(--accent-muted)",
-          foreground: "var(--accent-muted-foreground)",
-        },
         popover: {
           DEFAULT: "var(--popover)",
           foreground: "var(--popover-foreground)",
@@ -48,11 +72,7 @@ const config: Config = {
           DEFAULT: "var(--card)",
           foreground: "var(--card-foreground)",
         },
-        "text-primary": "var(--text-primary)",
-        "text-secondary": "var(--text-secondary)",
-        "text-tertiary": "var(--text-tertiary)",
         "funnel-accent": "var(--accent)",
-        "border-default": "var(--border-default)",
         info: {
           bg: "var(--info-bg)",
           border: "var(--info-border)",
@@ -65,11 +85,21 @@ const config: Config = {
         },
       },
       borderRadius: {
-        lg: "var(--radius)",
-        md: "calc(var(--radius) - 2px)",
-        sm: "calc(var(--radius) - 4px)",
+        none: "0",
+        sm: "4px",
+        md: "8px",
+        lg: "12px",
+        xl: "16px",
+        "2xl": "20px",
+        full: "9999px",
+        tile: "14px",
         card: "18px",
-        tile: "12px",
+        pill: "999px",
+      },
+      boxShadow: {
+        card: "0 2px 16px rgba(0,0,0,0.08)",
+        cardHover: "0 4px 24px rgba(0,0,0,0.12)",
+        sm: "0 1px 6px rgba(0,0,0,0.08)",
       },
       keyframes: {
         "accordion-down": {
@@ -84,11 +114,21 @@ const config: Config = {
           from: { opacity: "0", transform: "translateY(6px)" },
           to: { opacity: "1", transform: "translateY(0)" },
         },
+        fadeIn: {
+          from: { opacity: "0", transform: "translateY(6px)" },
+          to: { opacity: "1", transform: "translateY(0)" },
+        },
+        "funnel-spin": {
+          to: { transform: "rotate(360deg)" },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
-        "fade-in": "fade-in 0.28s ease-out forwards",
+        "fade-in": "fade-in 0.25s ease-out forwards",
+        "fade-in-screen": "fadeIn 0.25s ease-out forwards",
+        "funnel-spin": "funnel-spin 2s linear infinite",
+        "spin-slow": "spin 2s linear infinite",
       },
       spacing: {
         header: "60px",

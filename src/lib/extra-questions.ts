@@ -26,7 +26,7 @@ const RENOV: ExtraQuestionDef[] = [
       {
         whenValue: "ja_bleibe",
         variant: "info",
-        text: "Bei bewohnter Renovierung planen wir Gewerke gestaffelt — immer nur 1 Raum gleichzeitig gesperrt.",
+        text: "Bei bewohnter Renovierung planen wir Handwerker gestaffelt — immer nur 1 Raum gleichzeitig gesperrt.",
       },
     ],
   },

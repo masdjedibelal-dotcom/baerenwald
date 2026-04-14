@@ -1,51 +1,52 @@
-import { createClient } from "@supabase/supabase-js";
 import { NextResponse } from "next/server";
+import { Resend } from "resend";
 
-/*
-CREATE TABLE leads (
-  id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
-  created_at timestamptz DEFAULT now(),
-  situation text,
-  mode text,
-  gewerke text[],
-  flaeche integer,
-  zustand text,
-  price_min integer,
-  price_max integer,
-  name text NOT NULL,
-  email text NOT NULL,
-  telefon text NOT NULL,
-  plz text,
-  zeitraum text,
-  dringlichkeit text,
-  selected_slot text,
-  anmerkungen text,
-  photo_count integer DEFAULT 0
-);
-*/
+import { SITE_CONFIG } from "@/lib/config";
 
-type LeadBody = {
-  situation?: string | null;
-  mode?: string | null;
-  gewerke?: string[];
-  flaeche?: number;
-  zustand?: string;
-  priceMin?: number;
-  priceMax?: number;
+export type BwLeadBody = {
   name?: string;
   email?: string;
   telefon?: string;
+  situation?: string | null;
+  bereiche?: string[];
+  priceMin?: number;
+  priceMax?: number;
   plz?: string;
-  zeitraum?: string;
+  zeitraum?: string | null;
+  budgetCheck?: string | null;
+  budgetGespraech?: boolean;
+  selectedSlot?: { date: string; time: string } | null;
+  photoCount?: number;
   dringlichkeit?: string | null;
-  selectedSlot?: string | null;
-  anmerkungen?: string;
-  photos?: { name?: string }[];
+  umfang?: string | null;
 };
+
+function budgetLine(body: BwLeadBody): string {
+  if (body.budgetGespraech) return "Budgetgespräch gewünscht (Rahmen zu hoch)";
+  if (body.budgetCheck === "ok") return "Passt gut";
+  if (body.budgetCheck === "zu_hoch") return "Eher zu hoch";
+  return body.budgetCheck ?? "—";
+}
+
+function slotLine(slot: BwLeadBody["selectedSlot"]): string {
+  if (!slot?.date || !slot?.time) return "—";
+  try {
+    const d = new Date(slot.date);
+    if (Number.isNaN(d.getTime())) return `${slot.date} · ${slot.time}`;
+    return `${d.toLocaleDateString("de-DE", {
+      weekday: "long",
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+    })} · ${slot.time}`;
+  } catch {
+    return `${slot.date} · ${slot.time}`;
+  }
+}
 
 export async function POST(request: Request) {
   try {
-    const body = (await request.json()) as LeadBody;
+    const body = (await request.json()) as BwLeadBody;
 
     const name = (body.name ?? "").trim();
     const email = (body.email ?? "").trim();
@@ -58,56 +59,60 @@ export async function POST(request: Request) {
       );
     }
 
-    const url = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
-    const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? "";
-    const photoCount = Array.isArray(body.photos) ? body.photos.length : 0;
-
-    const row = {
-      situation: body.situation ?? null,
-      mode: body.mode ?? null,
-      gewerke: body.gewerke ?? [],
-      flaeche: typeof body.flaeche === "number" ? Math.round(body.flaeche) : null,
-      zustand: body.zustand ?? "",
-      price_min: typeof body.priceMin === "number" ? Math.round(body.priceMin) : null,
-      price_max: typeof body.priceMax === "number" ? Math.round(body.priceMax) : null,
-      name,
-      email,
-      telefon,
-      plz: body.plz ?? "",
-      zeitraum: body.zeitraum ?? "",
-      dringlichkeit: body.dringlichkeit ?? null,
-      selected_slot: body.selectedSlot ?? null,
-      anmerkungen: body.anmerkungen ?? "",
-      photo_count: photoCount,
-    };
-
-    if (!url || !key) {
-      console.info("[leads] Kein Supabase env — Lead nur geloggt:", row);
-      return NextResponse.json({
-        success: true,
-        leadId: `local-${Date.now()}`,
-      });
+    const apiKey = process.env.RESEND_API_KEY;
+    if (!apiKey) {
+      console.warn("[leads] RESEND_API_KEY fehlt — Lead nicht per E-Mail versendet");
+      return NextResponse.json(
+        {
+          success: false,
+          error: "E-Mail-Versand nicht konfiguriert (RESEND_API_KEY)",
+        },
+        { status: 503 }
+      );
     }
 
-    const supabase = createClient(url, key);
-    const { data, error } = await supabase
-      .from("leads")
-      .insert(row)
-      .select("id")
-      .single();
+    const resend = new Resend(apiKey);
+    const situation = body.situation ?? "—";
+    const bereiche = (body.bereiche ?? []).join(", ") || "—";
+    const preisrange = `${body.priceMin ?? 0} – ${body.priceMax ?? 0} €`;
+    const plz = body.plz ?? "—";
+    const zeitraum = body.zeitraum ?? "—";
+    const fotos = String(body.photoCount ?? 0);
+
+    const text = [
+      `Name: ${name}`,
+      `Telefon: ${telefon}`,
+      `E-Mail: ${email}`,
+      `Situation: ${situation}`,
+      `Bereiche: ${bereiche}`,
+      `Preisrange: ${preisrange}`,
+      `PLZ: ${plz}`,
+      `Zeitraum: ${zeitraum}`,
+      `Budget: ${budgetLine(body)}`,
+      `Termin: ${slotLine(body.selectedSlot)}`,
+      `Fotos: ${fotos}`,
+      body.dringlichkeit ? `Dringlichkeit: ${body.dringlichkeit}` : "",
+      body.umfang ? `Umfang: ${body.umfang}` : "",
+    ]
+      .filter(Boolean)
+      .join("\n");
+
+    const { error } = await resend.emails.send({
+      from: process.env.RESEND_FROM ?? "Bärenwald <onboarding@resend.dev>",
+      to: SITE_CONFIG.email,
+      subject: `Neuer Lead: ${name} — ${situation}`,
+      text,
+    });
 
     if (error) {
-      console.error("[leads] Supabase:", error.message);
+      console.error("[leads] Resend:", error);
       return NextResponse.json(
         { success: false, error: error.message },
         { status: 500 }
       );
     }
 
-    return NextResponse.json({
-      success: true,
-      leadId: data?.id ?? "unknown",
-    });
+    return NextResponse.json({ success: true });
   } catch (e) {
     const msg = e instanceof Error ? e.message : "Ungültige Anfrage";
     return NextResponse.json({ success: false, error: msg }, { status: 400 });

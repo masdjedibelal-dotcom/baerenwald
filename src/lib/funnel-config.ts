@@ -62,7 +62,7 @@ const STEPS_RENOVIERUNG: FunnelStep[] = [
       {
         value: "bad",
         label: "Bad / WC",
-        hint: "Sanitär, Fliesen, Lüftung",
+        hint: "Wasser & Heizung, Fliesen, Lüftung",
         triggerGewerke: ["sanitaer", "fliesen", "elektro"],
       },
       {
@@ -633,7 +633,7 @@ function collectGewerkeFromStep(
   return gewerke;
 }
 
-/** Aktualisiert abgeleitete Felder aus `answers` (Gewerke, Fläche, PLZ, …). */
+/** Aktualisiert abgeleitete Felder aus `answers` (Leistungs-Keys, Fläche, PLZ, …). */
 export function syncDerivedFromAnswers(state: FunnelState): FunnelState {
   const steps = getStepsForSituation(state.situation);
   const gewerkeSet = new Set<string>();

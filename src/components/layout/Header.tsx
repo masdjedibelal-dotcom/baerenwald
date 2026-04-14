@@ -42,7 +42,7 @@ export function Header({
   return (
     <header
       className={cn(
-        "sticky top-0 z-50 flex h-[60px] min-h-[60px] items-center justify-between border-b border-[#e8e8e8] bg-white/80 px-[18px] backdrop-blur-[12px]",
+        "sticky top-0 z-50 flex h-[60px] min-h-[60px] items-center justify-between border-b border-border-default bg-surface-card/80 px-[18px] backdrop-blur-[12px]",
         className
       )}
     >

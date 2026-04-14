@@ -3,10 +3,7 @@
 import { useMemo, useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
-import {
-  getSlotsForDay,
-  isSlotAlwaysFull,
-} from "@/lib/calendar-seed-rng";
+import { getSlotsForDay, isSlotAlwaysFull } from "@/lib/calendar-seed-rng";
 import type { SelectedSlot } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
@@ -27,14 +24,15 @@ function isToday(d: Date): boolean {
 export interface CalendarPickerProps {
   selectedSlot: SelectedSlot | null;
   onSlotSelect: (date: Date, time: string) => void;
-  accentColor?: string;
+  /** Optional: z. B. Fokus auf Lead-Form oder zusätzliche Aktion */
+  onConfirmBook?: () => void;
   className?: string;
 }
 
 export function CalendarPicker({
   selectedSlot,
   onSlotSelect,
-  accentColor = "#1B4332",
+  onConfirmBook,
   className,
 }: CalendarPickerProps) {
   const today = new Date();
@@ -100,24 +98,24 @@ export function CalendarPicker({
   };
 
   return (
-    <div className={cn("fade-in space-y-2.5", className)}>
-      <div className="overflow-hidden rounded-[18px] border border-[#e8e8e8] bg-white">
-        <div className="flex items-center justify-between border-b border-[#e8e8e8] px-4 py-[13px]">
+    <div className={cn("space-y-2.5", className)}>
+      <div className="overflow-hidden rounded-[18px] border border-border-default bg-surface-card">
+        <div className="flex items-center justify-between border-b border-border-default px-4 py-3.5">
           <button
             type="button"
             onClick={() => setCursor(new Date(year, month - 1, 1))}
-            className="flex size-7 items-center justify-center rounded-[7px] border border-[#e8e8e8]"
+            className="flex size-7 items-center justify-center rounded-lg border border-border-default"
             aria-label="Vorheriger Monat"
           >
             <ChevronLeft className="size-4 text-text-primary" />
           </button>
-          <span className="text-[14px] font-semibold capitalize text-text-primary">
+          <span className="text-sm font-semibold capitalize text-text-primary">
             {monthTitle}
           </span>
           <button
             type="button"
             onClick={() => setCursor(new Date(year, month + 1, 1))}
-            className="flex size-7 items-center justify-center rounded-[7px] border border-[#e8e8e8]"
+            className="flex size-7 items-center justify-center rounded-lg border border-border-default"
             aria-label="Nächster Monat"
           >
             <ChevronRight className="size-4 text-text-primary" />
@@ -125,7 +123,7 @@ export function CalendarPicker({
         </div>
 
         <div className="px-3.5 py-3">
-          <div className="grid grid-cols-7 gap-[3px] text-center text-[11px] font-medium text-[#999]">
+          <div className="grid grid-cols-7 gap-0.5 text-center text-[11px] font-medium text-text-tertiary">
             {WEEKDAYS.map((w) => (
               <div key={w} className="py-1">
                 {w}
@@ -149,7 +147,10 @@ export function CalendarPicker({
               const todayCell = isToday(cell);
 
               return (
-                <div key={cell.toISOString()} className="aspect-square min-h-[36px] p-0">
+                <div
+                  key={cell.toISOString()}
+                  className="aspect-square min-h-[36px] p-0"
+                >
                   <button
                     type="button"
                     disabled={disabled}
@@ -158,31 +159,22 @@ export function CalendarPicker({
                       setPickedTime(null);
                     }}
                     className={cn(
-                      "relative flex size-full items-center justify-center rounded-[7px] text-[13px]",
-                      disabled && "cursor-default text-[#ddd]",
+                      "relative flex size-full items-center justify-center rounded-lg text-[13px]",
+                      disabled && "cursor-default opacity-40",
                       !disabled &&
                         !sel &&
-                        "cursor-pointer font-medium text-text-primary hover:bg-[#f5f5f5]",
-                      sel && "text-white"
+                        "cursor-pointer font-medium text-text-primary hover:bg-muted",
+                      sel && "bg-funnel-accent font-medium text-white",
+                      todayCell && !sel && "ring-1 ring-inset ring-border-default"
                     )}
-                    style={
-                      sel
-                        ? { backgroundColor: accentColor }
-                        : todayCell && !sel
-                          ? {
-                              boxShadow: "inset 0 0 0 1px #e8e8e8",
-                            }
-                          : undefined
-                    }
                   >
                     {cell.getDate()}
                     {!disabled && hasSlots ? (
                       <span
                         className={cn(
-                          "absolute bottom-[3px] left-1/2 size-1 -translate-x-1/2 rounded-full",
-                          sel ? "bg-white" : "bg-funnel-accent"
+                          "absolute bottom-0.5 left-1/2 size-1 -translate-x-1/2 rounded-full bg-funnel-accent",
+                          sel && "bg-surface-card"
                         )}
-                        style={!sel ? { backgroundColor: accentColor } : undefined}
                       />
                     ) : null}
                   </button>
@@ -195,7 +187,9 @@ export function CalendarPicker({
 
       {pickedDay && slotsForPicked.length > 0 ? (
         <div>
-          <p className="mb-2 text-[12px] font-medium text-[#666]">{dayLabel}</p>
+          <p className="mb-2 text-xs font-medium text-text-secondary">
+            {dayLabel}
+          </p>
           <div className="grid grid-cols-3 gap-2">
             {slotsForPicked.map((time) => {
               const full = isSlotAlwaysFull(time);
@@ -207,31 +201,21 @@ export function CalendarPicker({
                   disabled={full}
                   onClick={() => pickSlot(time)}
                   className={cn(
-                    "rounded-[9px] border border-[#e8e8e8] px-1.5 py-[9px] text-center transition-colors",
-                    full &&
-                      "cursor-not-allowed opacity-35 line-through",
-                    sel && "bg-[#fafafa]"
+                    "rounded-lg border border-border-default px-1.5 py-2 text-center transition-colors",
+                    full && "cursor-not-allowed opacity-35 line-through",
+                    sel &&
+                      "border-[1.5px] border-funnel-accent bg-funnel-accent/5"
                   )}
-                  style={
-                    sel
-                      ? {
-                          borderWidth: 1.5,
-                          borderColor: accentColor,
-                        }
-                      : undefined
-                  }
                 >
                   <span
                     className={cn(
-                      "block text-[13px] font-medium",
-                      sel ? "" : "text-text-primary",
-                      full && "text-text-primary"
+                      "block text-[13px] font-medium text-text-primary",
+                      sel && "text-funnel-accent"
                     )}
-                    style={sel ? { color: accentColor } : undefined}
                   >
                     {time}
                   </span>
-                  <span className="mt-0.5 block text-[10px] text-[#999]">
+                  <span className="mt-0.5 block text-[10px] text-text-tertiary">
                     30 Min.
                   </span>
                 </button>
@@ -242,13 +226,20 @@ export function CalendarPicker({
       ) : null}
 
       {pickedDay && pickedTime && !isSlotAlwaysFull(pickedTime) ? (
-        <div className="flex items-center justify-between gap-3 rounded-[var(--r)] border border-[#e8e8e8] bg-[#fafafa] px-[13px] py-[11px]">
-          <div>
-            <p className="text-[13px] font-medium text-text-primary">{confirmLabel}</p>
-            <p className="text-[11px] text-[#666]">
+        <div className="flex items-center justify-between gap-3 rounded-xl bg-muted p-3">
+          <div className="min-w-0">
+            <p className="text-sm font-medium text-text-primary">{confirmLabel}</p>
+            <p className="text-[11px] text-text-secondary">
               Kostenloser Vor-Ort-Termin · 30 Min.
             </p>
           </div>
+          <button
+            type="button"
+            onClick={() => onConfirmBook?.()}
+            className="shrink-0 rounded-full bg-funnel-accent px-4 py-2 text-xs font-semibold text-white"
+          >
+            Termin buchen →
+          </button>
         </div>
       ) : null}
     </div>
