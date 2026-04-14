@@ -1,5 +1,7 @@
 "use client";
 
+import type { ReactNode } from "react";
+
 import { cn } from "@/lib/utils";
 
 export interface FunnelFooterProps {
@@ -8,6 +10,8 @@ export interface FunnelFooterProps {
   nextDisabled?: boolean;
   showBack?: boolean;
   nextLabel?: string;
+  /** Zusatzzeile unter der Button-Zeile (z. B. Hinweis bei Beratungs-Flow) */
+  belowActions?: ReactNode;
   className?: string;
 }
 
@@ -17,6 +21,7 @@ export function FunnelFooter({
   nextDisabled = false,
   showBack = true,
   nextLabel = "Weiter →",
+  belowActions,
   className,
 }: FunnelFooterProps) {
   return (
@@ -27,34 +32,39 @@ export function FunnelFooter({
         className
       )}
     >
-      <div className="mx-auto flex max-w-xl items-center justify-between gap-4">
-        <p className="text-xs text-text-tertiary">
-          Kein Auftragszwang · Kostenlos
-        </p>
-        <div className="flex shrink-0 items-center gap-3">
-          {showBack && onBack ? (
-            <button
-              type="button"
-              onClick={onBack}
-              className="text-sm font-medium text-text-secondary transition-colors hover:text-text-primary"
-            >
-              Zurück
-            </button>
-          ) : null}
-          {onNext ? (
-            <button
-              type="button"
-              disabled={nextDisabled}
-              onClick={onNext}
-              className={cn(
-                "rounded-full bg-funnel-accent px-5 py-2.5 text-sm font-medium text-white transition-opacity",
-                nextDisabled && "cursor-not-allowed opacity-40"
-              )}
-            >
-              {nextLabel}
-            </button>
-          ) : null}
+      <div className="mx-auto max-w-xl">
+        <div className="flex items-center justify-between gap-4">
+          <p className="text-xs text-text-tertiary">
+            Kein Auftragszwang · Kostenlos
+          </p>
+          <div className="flex shrink-0 items-center gap-3">
+            {showBack && onBack ? (
+              <button
+                type="button"
+                onClick={onBack}
+                className="text-sm font-medium text-text-secondary transition-colors hover:text-text-primary"
+              >
+                Zurück
+              </button>
+            ) : null}
+            {onNext ? (
+              <button
+                type="button"
+                disabled={nextDisabled}
+                onClick={onNext}
+                className={cn(
+                  "rounded-full bg-funnel-accent px-5 py-2.5 text-sm font-medium text-white transition-opacity",
+                  nextDisabled && "cursor-not-allowed opacity-40"
+                )}
+              >
+                {nextLabel}
+              </button>
+            ) : null}
+          </div>
         </div>
+        {belowActions ? (
+          <div className="mt-2 pb-0.5 text-center">{belowActions}</div>
+        ) : null}
       </div>
     </footer>
   );

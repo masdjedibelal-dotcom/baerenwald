@@ -1,4 +1,110 @@
-import type { FunnelStep, Situation, StepOption } from "./types";
+import type { FunnelStep, Kundentyp, Situation, StepOption } from "./types";
+
+function kundentypOption(
+  value: Kundentyp,
+  label: string,
+  hint: string,
+  infoText?: string,
+  warnText?: string
+): StepOption {
+  return { value, label, hint, infoText, warnText };
+}
+
+const GEWERBE_GASTRO_TILES: StepOption[] = [
+  kundentypOption(
+    "gewerbe",
+    "Gewerbliches Objekt",
+    "Büro, Laden, Praxis, Lager",
+    undefined,
+    "Gewerbeprojekte kalkulieren wir individuell — kein automatischer Preis möglich. Wir melden uns persönlich bei dir."
+  ),
+  kundentypOption(
+    "gastro",
+    "Gastronomie",
+    "Restaurant, Café, Bar, Hotel",
+    undefined,
+    "Gastro-Umbauten sind komplex und stark reguliert. Wir besprechen das persönlich mit dir."
+  ),
+];
+
+function withGewerbeGastro(base: StepOption[]): StepOption[] {
+  return [...base, ...GEWERBE_GASTRO_TILES];
+}
+
+/** Optionen für den Schritt „Kundentyp“ — abhängig von der Situation */
+export function getKundentypOptions(situation: Situation): StepOption[] {
+  switch (situation) {
+    case "renovieren":
+    case "sanieren":
+      return withGewerbeGastro([
+        kundentypOption(
+          "eigentuemer",
+          "Ich bin Eigentümer",
+          "Eigentumswohnung oder Haus"
+        ),
+        kundentypOption(
+          "mieter",
+          "Ich bin Mieter",
+          "Mietwohnung oder gemietetes Haus",
+          "Bei Mietwohnungen brauchen wir in manchen Fällen die Zustimmung des Vermieters. Wir klären das gemeinsam beim Termin."
+        ),
+      ]);
+    case "notfall":
+      return withGewerbeGastro([
+        kundentypOption(
+          "eigentuemer",
+          "Ich bin Eigentümer",
+          "Eigentumswohnung oder Haus"
+        ),
+        kundentypOption(
+          "mieter",
+          "Ich bin Mieter",
+          "Mietwohnung oder gemietetes Haus",
+          "Bei Notfällen in Mietwohnungen gilt: Haupthahn schließen, dann Vermieter informieren. Wir kommen sofort."
+        ),
+        kundentypOption(
+          "hausverwaltung",
+          "Hausverwaltung",
+          "Ich verwalte das Objekt"
+        ),
+      ]);
+    case "neubauen":
+      return withGewerbeGastro([
+        kundentypOption(
+          "eigentuemer",
+          "Ich bin Eigentümer",
+          "Eigentumswohnung oder Haus"
+        ),
+      ]);
+    case "betreuung":
+      return withGewerbeGastro([
+        kundentypOption(
+          "eigentuemer",
+          "Ich bin Eigentümer",
+          "Eigentumswohnung oder Haus"
+        ),
+        kundentypOption(
+          "hausverwaltung",
+          "Hausverwaltung",
+          "Mehrfamilienhaus oder Wohnanlage",
+          "Für Hausverwaltungen bieten wir individuelle Servicepakete an. Wir besprechen das gerne persönlich."
+        ),
+      ]);
+    default:
+      return [];
+  }
+}
+
+export function getKundentypStep(situation: Situation): FunnelStep {
+  return {
+    id: "kundentyp",
+    question: "Für wen ist das Objekt?",
+    subtext:
+      "Hilft uns bei der richtigen Planung — du kannst auch überspringen.",
+    inputType: "tiles-single",
+    options: getKundentypOptions(situation),
+  };
+}
 
 /** Schritt „Größe“ für Betreuung — Optionen abhängig von gewählten Bereichen */
 export function getBetreuungGroesseOptions(bereiche: string[]): StepOption[] {

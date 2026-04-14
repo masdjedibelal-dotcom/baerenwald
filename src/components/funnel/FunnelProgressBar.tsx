@@ -8,7 +8,7 @@ const LABELS = [
   "Vorhaben",
   "Details",
   "Umfang",
-  "Größe",
+  "Fast fertig",
   "Ergebnis",
 ] as const;
 

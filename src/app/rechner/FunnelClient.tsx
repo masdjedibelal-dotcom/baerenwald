@@ -12,7 +12,10 @@ import { ExtraQuestion } from "@/components/funnel/ExtraQuestion";
 import { LeadForm } from "@/components/funnel/LeadForm";
 import { LoadingScreen } from "@/components/funnel/LoadingScreen";
 import { PhotoUpload } from "@/components/funnel/PhotoUpload";
-import { ResultScreen } from "@/components/funnel/ResultScreen";
+import {
+  LeadAvailabilityHint,
+  ResultScreen,
+} from "@/components/funnel/ResultScreen";
 import { SelectionTile } from "@/components/funnel/SelectionTile";
 import { SituationStep } from "@/components/funnel/SituationStep";
 import { SliderCard } from "@/components/funnel/SliderCard";
@@ -550,6 +553,7 @@ export function FunnelClient() {
           subtext="Optional Fotos, Terminwunsch und Kontakt — wir melden uns."
           animateKey="contact"
         >
+          <LeadAvailabilityHint className="mb-4" />
           <PhotoUpload
             files={funnel.photos}
             onChange={(files) => dispatch({ type: "SET_PHOTOS", photos: files })}

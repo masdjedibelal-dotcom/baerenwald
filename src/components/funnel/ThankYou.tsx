@@ -3,7 +3,7 @@
 import { cn } from "@/lib/utils";
 
 export interface ThankYouProps {
-  variant?: "termin" | "anfrage";
+  variant?: "termin" | "anfrage" | "beratung";
   dateLabel?: string;
   timeLabel?: string;
   typ?: string;
@@ -19,11 +19,14 @@ export function ThankYou({
   dauer = "30 Min.",
   className,
 }: ThankYouProps) {
-  const openBlank = () => {
-    window.open("about:blank", "_blank", "noopener,noreferrer");
-  };
-
   const isTermin = variant === "termin";
+  const isBeratung = variant === "beratung";
+
+  const showWunschterminSummary =
+    isTermin && Boolean(dateLabel?.trim()) && Boolean(timeLabel?.trim());
+
+  const followUpSubline =
+    "Wir prüfen die Verfügbarkeit und melden uns innerhalb von 24h per Telefon oder E-Mail zur Terminbestätigung.";
 
   return (
     <div
@@ -47,56 +50,51 @@ export function ThankYou({
         </svg>
       </div>
       <h2 className="mt-4 text-xl font-semibold text-text-primary">
-        {isTermin ? "Termin bestätigt!" : "Anfrage eingegangen!"}
+        {isBeratung
+          ? "Wir melden uns persönlich bei dir."
+          : "Anfrage eingegangen!"}
       </h2>
       <p className="mt-2 max-w-sm text-sm text-text-secondary">
-        {isTermin
-          ? "Wir freuen uns auf den Termin bei dir."
-          : "Wir melden uns schnellstmöglich bei dir."}
+        {isBeratung
+          ? "Deine Anfrage ist bei uns eingegangen. Ein Kollege meldet sich bei dir — in der Regel innerhalb von 24 Stunden."
+          : followUpSubline}
       </p>
 
-      {isTermin && dateLabel && timeLabel ? (
-        <div className="mt-6 w-full rounded-xl bg-muted p-4 text-left">
-          {(
-            [
-              ["Datum", dateLabel],
-              ["Uhrzeit", timeLabel],
-              ["Typ", typ],
-              ["Dauer", dauer],
-            ] as const
-          ).map(([k, v]) => (
-            <div
-              key={k}
-              className="flex justify-between gap-4 border-b border-border-default py-2 text-sm last:border-b-0"
-            >
-              <span className="text-text-secondary">{k}</span>
-              <span className="font-medium text-text-primary">{v}</span>
-            </div>
-          ))}
-        </div>
-      ) : null}
-
-      {isTermin ? (
-        <div className="mt-6 flex flex-wrap justify-center gap-2">
-          {(["Google Kalender", "Apple Kalender", "Outlook"] as const).map(
-            (t) => (
-              <button
-                key={t}
-                type="button"
-                onClick={openBlank}
-                className="rounded-full border border-border-default bg-surface-card px-3 py-1.5 text-xs text-text-secondary transition-colors hover:border-text-tertiary"
+      {showWunschterminSummary ? (
+        <div className="mt-6 w-full text-left">
+          <p className="mb-2 text-sm font-semibold text-text-primary">
+            Dein Wunschtermin
+          </p>
+          <div className="rounded-xl bg-muted p-4">
+            {(
+              [
+                ["Datum", dateLabel],
+                ["Uhrzeit", timeLabel],
+                ["Typ", typ],
+                ["Dauer", dauer],
+              ] as const
+            ).map(([k, v]) => (
+              <div
+                key={k}
+                className="flex justify-between gap-4 border-b border-border-default py-2 text-sm last:border-b-0"
               >
-                {t}
-              </button>
-            )
-          )}
+                <span className="text-text-secondary">{k}</span>
+                <span className="font-medium text-text-primary">{v}</span>
+              </div>
+            ))}
+          </div>
+          <p className="mt-4 max-w-md text-center text-xs leading-relaxed text-text-tertiary">
+            Sobald wir die Verfügbarkeit bestätigt haben, kannst du den Termin
+            in deinen Kalender eintragen.
+          </p>
         </div>
       ) : null}
 
-      <p className="mt-6 max-w-md text-center text-xs leading-relaxed text-text-tertiary">
-        Ein Ansprechpartner koordiniert alle Handwerker — du brauchst dich um
-        nichts zu kümmern.
-      </p>
+      {!isBeratung ? (
+        <p className="mt-6 max-w-md text-center text-xs leading-relaxed text-text-tertiary">
+          Ein Ansprechpartner — wir koordinieren alle Handwerker
+        </p>
+      ) : null}
     </div>
   );
 }

@@ -2,7 +2,6 @@ import Link from "next/link";
 
 import { SemanticFaq } from "@/components/common/SemanticFaq";
 import { SITE_CONFIG } from "@/lib/config";
-import { CTA } from "@/lib/cta-config";
 import type { LeistungsData } from "@/lib/leistungen/types";
 import { ratgeberHref } from "@/lib/routes";
 
@@ -15,18 +14,13 @@ function formatPreisDe(n: number): string {
   }).format(n);
 }
 
-function CheckIcon() {
-  return (
-    <svg aria-hidden viewBox="0 0 20 20" fill="none">
-      <path
-        d="M16.667 5L7.5 14.167 3.333 10"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
+function vorteilParts(text: string): { title: string; desc: string } {
+  const i = text.indexOf("—");
+  if (i === -1) return { title: text.trim(), desc: "" };
+  return {
+    title: text.slice(0, i).trim(),
+    desc: text.slice(i + 1).trim(),
+  };
 }
 
 const telHref = `tel:${SITE_CONFIG.phone.replace(/\s/g, "")}`;
@@ -50,155 +44,158 @@ export function LeistungsPage({ slug, data }: LeistungsPageProps) {
             <span className="breadcrumb-sep">›</span>
             <span className="breadcrumb-current">{data.label}</span>
           </nav>
-          <div className="page-hero-tag">Leistungen in München</div>
+
+          <div className="page-hero-tag">München &amp; Umgebung</div>
+
           <h1 className="page-hero-h1">{data.headline}</h1>
           <p className="page-hero-sub">{data.subline}</p>
+
           <div className="page-hero-btns">
             <Link href={rechnerHref} className="page-hero-btn-primary">
-              Was kostet das bei mir?
+              Preisrahmen berechnen →
             </Link>
             <Link href={telHref} className="page-hero-btn-secondary">
               Direkt anrufen
             </Link>
           </div>
+
           <div className="page-hero-trust">
-            <span>✓ Kostenlos & unverbindlich</span>
-            <span>✓ Meisterbetriebe</span>
-            <span>✓ München & Umgebung</span>
+            <span>Meisterbetriebe München</span>
+            <span>Anfahrt wird bei Auftrag angerechnet</span>
+            <span>Festpreisangebot</span>
           </div>
         </div>
       </div>
 
-      <section className="content-section content-section--white">
-        <div className="content-section-inner fade-up d1">
-          <div className="content-two-col">
-            <div>
-              <h2 className="section-h2">Was wir für dich tun</h2>
-              <p className="section-sub" style={{ marginBottom: 0 }}>
-                {data.beschreibung}
-              </p>
-            </div>
-            <div>
-              <p className="section-eyebrow section-eyebrow--muted">
-                Das übernehmen wir
-              </p>
-              <ul className="check-list">
-                {data.wasWirMachen.map((line) => (
-                  <li key={line}>
-                    <span className="check-list-icon">
-                      <CheckIcon />
-                    </span>
-                    {line}
-                  </li>
-                ))}
-              </ul>
-            </div>
+      <section
+        className="article-section article-section--lg content-section content-section--white fade-up d1"
+      >
+        <div className="article-section-inner">
+          <span className="chapter-label">Was wir für dich tun</span>
+
+          <div className="article-body">
+            <p>{data.beschreibung}</p>
           </div>
+
+          <ol className="simple-list">
+            {data.wasWirMachen.map((item, i) => (
+              <li key={item}>
+                <span className="simple-list-num">
+                  {String(i + 1).padStart(2, "0")}
+                </span>
+                {item}
+              </li>
+            ))}
+          </ol>
         </div>
       </section>
 
-      <section className="content-section content-section--muted">
-        <div className="content-section-inner fade-up d2">
-          <div className="section-eyebrow">Preise München 2024/25</div>
+      <div className="article-divider" aria-hidden />
+
+      <section
+        className="article-section content-section content-section--muted fade-up d2"
+      >
+        <div className="article-section-inner">
+          <span className="chapter-label">Preise München 2024/25</span>
           <h2 className="section-h2">Was kostet das?</h2>
-          <p className="section-sub">
-            Richtwerte für München — der genaue Preis folgt nach dem
-            kostenlosen Vor-Ort-Termin.
-          </p>
-          <div className="preis-box">
-            <div className="preis-box-head">Richtwert München 2024/25</div>
-            <div className="preis-box-body">
-              <div className="preis-rows">
-                <div className="preis-row">
-                  <span className="preis-row-label">Preis von</span>
-                  <div className="preis-range" style={{ marginBottom: 0 }}>
-                    <span className="preis-range-value">
-                      {formatPreisDe(data.preisVon)} €
-                    </span>
-                    <span className="preis-range-unit">{data.preisEinheit}</span>
-                  </div>
-                </div>
-                <div className="preis-row">
-                  <span className="preis-row-label">Preis bis</span>
-                  <div className="preis-range" style={{ marginBottom: 0 }}>
-                    <span className="preis-range-value">
-                      {formatPreisDe(data.preisBis)} €
-                    </span>
-                    <span className="preis-range-unit">{data.preisEinheit}</span>
-                  </div>
-                </div>
-              </div>
-              <div className="preis-hint">{data.preisHinweis}</div>
-            </div>
-            <div className="preis-foot">
-              Kostenloser Vor-Ort-Termin für genaues Angebot
-            </div>
+
+          <div className="preis-inline">
+            <span className="preis-inline-value">
+              {formatPreisDe(data.preisVon)} – {formatPreisDe(data.preisBis)} €
+            </span>
+            <span className="preis-inline-unit">{data.preisEinheit}</span>
           </div>
+
+          <div className="hinweis">
+            <p>{data.preisHinweis}</p>
+          </div>
+
           <Link
             href={rechnerHref}
             className="page-hero-btn-primary"
-            style={{ marginTop: "16px", display: "inline-block" }}
+            style={{ display: "inline-block", marginTop: "20px" }}
           >
-            {CTA.section} →
+            Preis für mein Projekt berechnen →
           </Link>
         </div>
       </section>
 
-      <section className="content-section content-section--white">
-        <div className="content-section-inner fade-up d3">
-          <h2 className="section-h2">Warum Bärenwald für {data.label}</h2>
-          <p className="section-sub">
-            Kurz gesagt: ein Ansprechpartner, klare Preise, saubere Arbeit.
-          </p>
-          <div className="vorteile-grid">
-            {data.vorteile.map((v) => (
-              <div key={v.text}>
-                <div className="vorteil-card-icon" aria-hidden>
-                  {v.icon}
+      <div className="article-divider" aria-hidden />
+
+      <section
+        className="article-section content-section content-section--white fade-up d3"
+      >
+        <div className="article-section-inner">
+          <span className="chapter-label">Warum Bärenwald</span>
+
+          <div className="vorteile-inline">
+            {data.vorteile.map((v) => {
+              const { title, desc } = vorteilParts(v.text);
+              return (
+                <div key={v.text} className="vorteil-item">
+                  <span className="vorteil-item-emoji" aria-hidden>
+                    {v.icon}
+                  </span>
+                  <div className="vorteil-item-title">{title}</div>
+                  {desc ? <div className="vorteil-item-text">{desc}</div> : null}
                 </div>
-                <p className="vorteil-card-text">{v.text}</p>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       </section>
 
-      <section className="content-section content-section--muted">
-        <div className="content-section-inner fade-up d4">
+      <div className="article-divider" aria-hidden />
+
+      <section
+        className="article-section content-section content-section--muted fade-up d4"
+      >
+        <div className="article-section-inner">
+          <span className="chapter-label">Häufige Fragen</span>
+          <h2 className="section-h2" style={{ marginBottom: "28px" }}>
+            Was Kunden uns fragen
+          </h2>
+
+          <div className="article-faq">
+            <SemanticFaq items={data.faq} />
+          </div>
+        </div>
+      </section>
+
+      <div className="article-divider" aria-hidden />
+
+      <section
+        className="article-section--sm content-section content-section--white fade-up d1"
+        style={{ padding: "36px 2rem" }}
+      >
+        <div className="article-section-inner">
           <div className="koordination-box">
             <div>
-              <h2 className="section-h2" style={{ marginBottom: "8px" }}>
+              <div
+                style={{
+                  fontSize: "13px",
+                  fontWeight: 700,
+                  color: "var(--fl-accent-dark)",
+                  marginBottom: "4px",
+                }}
+              >
                 Noch nicht sicher?
-              </h2>
-              <p className="koordination-box-text">
-                In unserem Ratgeber erklären wir alles, was du vor der
-                Beauftragung wissen solltest — Kosten, Ablauf, Zeitaufwand und
-                mehr.
+              </div>
+              <p
+                style={{
+                  fontSize: "14px",
+                  color: "var(--fl-text-2)",
+                  margin: 0,
+                  lineHeight: 1.6,
+                }}
+              >
+                In unserem Ratgeber erklären wir alles was du vorher wissen
+                solltest — Kosten, Ablauf und Zeitaufwand.
               </p>
             </div>
-            <Link
-              href={ratgeberHref(data.ratgeberSlug)}
-              className="koordination-box-link"
-            >
+            <Link href={ratgeberHref(data.ratgeberSlug)} className="koordination-box-link">
               {data.ratgeberLabel} →
             </Link>
-          </div>
-        </div>
-      </section>
-
-      <section className="content-section content-section--white">
-        <div className="content-section-inner">
-          <div
-            className="faq-inner fade-up d1"
-            style={{ gridTemplateColumns: "1fr 2fr" }}
-          >
-            <div>
-              <h2 className="section-h2">Häufige Fragen</h2>
-              <p className="section-sub" style={{ marginBottom: 0 }}>
-                Zu {data.label} in München
-              </p>
-            </div>
-            <SemanticFaq items={data.faq} />
           </div>
         </div>
       </section>
@@ -208,7 +205,7 @@ export function LeistungsPage({ slug, data }: LeistungsPageProps) {
         <div className="final-cta-inner">
           <h2 className="final-cta-h2">Bereit für dein Projekt?</h2>
           <p className="final-cta-sub">
-            Kostenloser Vor-Ort-Termin — kein Auftragszwang.
+            Preisrahmen berechnen — Anfahrt wird bei Beauftragung angerechnet.
           </p>
           <div className="final-cta-btns">
             <Link href={rechnerHref} className="final-cta-btn-primary">
@@ -219,7 +216,7 @@ export function LeistungsPage({ slug, data }: LeistungsPageProps) {
             </Link>
           </div>
           <p className="final-cta-trust">
-            Kostenlos · Unverbindlich · Festpreis
+            Unverbindlich · Festpreisangebot · Meisterbetriebe München
           </p>
         </div>
       </div>

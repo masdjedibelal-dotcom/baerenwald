@@ -5,6 +5,7 @@ import { useSearchParams } from "next/navigation";
 
 import { BwResultScreen } from "@/components/funnel/BwResultScreen";
 import { CalendarPicker } from "@/components/funnel/CalendarPicker";
+import { LeadAvailabilityHint } from "@/components/funnel/ResultScreen";
 import { FunnelFooter } from "@/components/funnel/FunnelFooter";
 import { FunnelHeader } from "@/components/funnel/FunnelHeader";
 import { FunnelProgressBar } from "@/components/funnel/FunnelProgressBar";
@@ -16,10 +17,14 @@ import { SelectionTile } from "@/components/funnel/SelectionTile";
 import { StepWrapper } from "@/components/funnel/StepWrapper";
 import { ThankYou } from "@/components/funnel/ThankYou";
 import { useFunnelState } from "@/hooks/funnel/useFunnelState";
-import { getResolvedStepsForSituation } from "@/lib/funnel/config";
+import {
+  getKundentypStep,
+  getResolvedStepsForSituation,
+} from "@/lib/funnel/config";
 import { calculatePrice } from "@/lib/funnel/price-calc";
 import type {
   FunnelStep,
+  Kundentyp,
   Situation,
   StepOption as FunnelStepOption,
   Zeitraum,
@@ -29,17 +34,24 @@ import type { StepOption as LibStepOption } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 const LEAD_FORM_ID = "bw-funnel-lead";
+const BERATUNG_LEAD_FORM_ID = "bw-beratung-lead";
 
 type Screen =
   | "situation"
   | "bereiche"
+  | "kundentyp"
   | "umfang"
   | "groesse"
   | "ort"
   | "loading"
   | "result"
   | "lead"
+  | "beratung-lead"
   | "danke";
+
+function isBeratungKundentyp(k: Kundentyp | null): boolean {
+  return k === "gewerbe" || k === "gastro";
+}
 
 const SIT_ORDER: Situation[] = [
   "renovieren",
@@ -66,10 +78,10 @@ function asLibOpt(o: FunnelStepOption): LibStepOption {
 }
 
 function progressStep(s: Screen): number {
-  if (s === "situation") return 1;
-  if (s === "bereiche") return 2;
-  if (s === "umfang") return 3;
-  if (s === "groesse") return 4;
+  if (s === "situation" || s === "bereiche") return 1;
+  if (s === "kundentyp") return 2;
+  if (s === "umfang" || s === "groesse") return 3;
+  if (s === "ort" || s === "loading") return 4;
   return 5;
 }
 
@@ -130,6 +142,7 @@ function FunnelRechnerInner() {
     addPhotos,
     setDringlichkeit,
     setSubmitted,
+    setKundentyp,
   } = useFunnelState();
 
   const resolvedSteps = useMemo(
@@ -146,6 +159,11 @@ function FunnelRechnerInner() {
   const stepBereiche = resolvedSteps[0] ?? null;
   const stepUmfang = resolvedSteps[1] ?? null;
   const stepGroesse = resolvedSteps[2] ?? null;
+
+  const stepKundentyp = useMemo(
+    () => (state.situation ? getKundentypStep(state.situation) : null),
+    [state.situation]
+  );
 
   const umfangOk =
     state.situation === "notfall"
@@ -172,7 +190,14 @@ function FunnelRechnerInner() {
         if (state.situation) setScreen("bereiche");
         break;
       case "bereiche":
-        if (state.bereiche.length > 0) setScreen("umfang");
+        if (state.bereiche.length > 0) setScreen("kundentyp");
+        break;
+      case "kundentyp":
+        if (isBeratungKundentyp(state.kundentyp)) {
+          setScreen("beratung-lead");
+        } else {
+          setScreen("umfang");
+        }
         break;
       case "umfang":
         if (umfangOk) goGroesseOrOrt();
@@ -193,6 +218,13 @@ function FunnelRechnerInner() {
       case "lead":
         (document.getElementById(LEAD_FORM_ID) as HTMLFormElement | null)?.requestSubmit();
         break;
+      case "beratung-lead":
+        (
+          document.getElementById(
+            BERATUNG_LEAD_FORM_ID
+          ) as HTMLFormElement | null
+        )?.requestSubmit();
+        break;
       default:
         break;
     }
@@ -209,8 +241,11 @@ function FunnelRechnerInner() {
       case "bereiche":
         setScreen("situation");
         break;
-      case "umfang":
+      case "kundentyp":
         setScreen("bereiche");
+        break;
+      case "umfang":
+        setScreen("kundentyp");
         break;
       case "groesse":
         setScreen("umfang");
@@ -227,6 +262,9 @@ function FunnelRechnerInner() {
       case "lead":
         setScreen("result");
         break;
+      case "beratung-lead":
+        setScreen("kundentyp");
+        break;
       default:
         break;
     }
@@ -238,6 +276,8 @@ function FunnelRechnerInner() {
         return !state.situation;
       case "bereiche":
         return state.bereiche.length === 0;
+      case "kundentyp":
+        return false;
       case "umfang":
         return !umfangOk;
       case "groesse":
@@ -254,6 +294,13 @@ function FunnelRechnerInner() {
           !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(state.email.trim()) ||
           state.telefon.trim().length < 5
         );
+      case "beratung-lead":
+        return (
+          !state.vorname.trim() ||
+          !state.nachname.trim() ||
+          !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(state.email.trim()) ||
+          state.telefon.trim().length < 5
+        );
       default:
         return true;
     }
@@ -262,6 +309,7 @@ function FunnelRechnerInner() {
   const nextLabel = useMemo(() => {
     if (screen === "ort") return "Preis berechnen";
     if (screen === "lead") return "Absenden →";
+    if (screen === "beratung-lead") return "Rückruf anfordern →";
     return "Weiter →";
   }, [screen]);
 
@@ -286,6 +334,43 @@ function FunnelRechnerInner() {
       photoCount: state.photos.length,
       dringlichkeit: state.dringlichkeit,
       umfang: state.umfang,
+      kundentyp: state.kundentyp ?? "nicht angegeben",
+      leadType: "system" as const,
+    };
+    const res = await fetch("/api/leads", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+    const data = (await res.json()) as { success?: boolean };
+    if (!res.ok || !data.success) return;
+    setSubmitted(true);
+    setScreen("danke");
+  };
+
+  const handleBeratungLeadSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (nextDisabled && screen === "beratung-lead") return;
+    const name = `${state.vorname} ${state.nachname}`.trim();
+    const body = {
+      name,
+      email: state.email.trim(),
+      telefon: state.telefon.trim(),
+      situation: state.situation,
+      bereiche: state.bereiche,
+      beschreibung: state.leadBeschreibung.trim(),
+      photoCount: state.photos.length,
+      kundentyp: state.kundentyp ?? "nicht angegeben",
+      leadType: "beratung" as const,
+      priceMin: 0,
+      priceMax: 0,
+      plz: state.plz || "",
+      zeitraum: null,
+      budgetCheck: null,
+      budgetGespraech: false,
+      selectedSlot: null,
+      dringlichkeit: null,
+      umfang: null,
     };
     const res = await fetch("/api/leads", {
       method: "POST",
@@ -459,12 +544,51 @@ function FunnelRechnerInner() {
       case "bereiche":
         return (
           <StepWrapper
-            stepLabel="Details"
+            stepLabel="Vorhaben"
             question={stepBereiche?.question ?? ""}
             subtext={stepBereiche?.subtext}
             animateKey={`${screen}-${state.situation}`}
           >
             {renderTiles(stepBereiche)}
+          </StepWrapper>
+        );
+
+      case "kundentyp":
+        return (
+          <StepWrapper
+            stepLabel="Details"
+            question={stepKundentyp?.question ?? ""}
+            subtext={stepKundentyp?.subtext}
+            animateKey={`${screen}-${state.situation}`}
+          >
+            <div className="space-y-3">
+              {stepKundentyp?.options?.map((opt) => {
+                const libOpt = asLibOpt(opt);
+                const selected = state.kundentyp === opt.value;
+                return (
+                  <SelectionTile
+                    key={opt.value}
+                    option={libOpt}
+                    icon={tileIconForStepValue(opt.value)}
+                    selected={selected}
+                    multi={false}
+                    onChange={(value, sel) => {
+                      setKundentyp(sel ? (value as Kundentyp) : null);
+                    }}
+                  />
+                );
+              })}
+            </div>
+            <button
+              type="button"
+              className="mt-3 w-full text-center text-[13px] text-text-tertiary underline-offset-2 hover:underline"
+              onClick={() => {
+                setKundentyp(null);
+                setScreen("umfang");
+              }}
+            >
+              Diese Frage überspringen →
+            </button>
           </StepWrapper>
         );
 
@@ -483,7 +607,7 @@ function FunnelRechnerInner() {
       case "groesse":
         return (
           <StepWrapper
-            stepLabel="Größe"
+            stepLabel="Umfang"
             question={stepGroesse?.question ?? ""}
             subtext={stepGroesse?.subtext}
             animateKey={`${screen}-${state.situation}`}
@@ -503,7 +627,7 @@ function FunnelRechnerInner() {
       case "ort":
         return (
           <StepWrapper
-            stepLabel="Ort"
+            stepLabel="Fast fertig"
             question="Wo soll es stattfinden?"
             subtext="PLZ und gewünschter Zeitraum."
             animateKey={screen}
@@ -537,14 +661,104 @@ function FunnelRechnerInner() {
           </StepWrapper>
         );
 
+      case "beratung-lead":
+        return (
+          <div
+            className="w-full min-h-[50vh]"
+            style={{ backgroundColor: "var(--fl-accent-dark)" }}
+          >
+            <div className="mx-auto max-w-xl px-4 pb-8 pt-6 sm:px-6">
+            <h2 className="text-xl font-semibold leading-snug text-white">
+              Wir planen das persönlich mit dir.
+            </h2>
+            <p className="mt-3 text-sm leading-relaxed text-white/60">
+              Gewerbeprojekte und Gastro-Umbauten sind individuell — kein
+              Rechner kann das abbilden. Beschreib kurz was du planst, wir
+              melden uns innerhalb von 24h.
+            </p>
+
+            <div className="mt-6 rounded-2xl bg-white p-4 shadow-sm sm:p-5">
+              <form
+                id={BERATUNG_LEAD_FORM_ID}
+                onSubmit={handleBeratungLeadSubmit}
+                className="space-y-3"
+              >
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                  <input
+                    className="w-full rounded-xl border border-border-default px-3 py-2.5 text-sm text-text-primary outline-none focus:border-funnel-accent"
+                    placeholder="Vorname"
+                    value={state.vorname}
+                    onChange={(e) =>
+                      updateLeadField("vorname", e.target.value)
+                    }
+                    autoComplete="given-name"
+                  />
+                  <input
+                    className="w-full rounded-xl border border-border-default px-3 py-2.5 text-sm text-text-primary outline-none focus:border-funnel-accent"
+                    placeholder="Nachname"
+                    value={state.nachname}
+                    onChange={(e) =>
+                      updateLeadField("nachname", e.target.value)
+                    }
+                    autoComplete="family-name"
+                  />
+                </div>
+                <input
+                  type="tel"
+                  className="w-full rounded-xl border border-border-default px-3 py-2.5 text-sm text-text-primary outline-none focus:border-funnel-accent"
+                  placeholder="Telefon"
+                  value={state.telefon}
+                  onChange={(e) =>
+                    updateLeadField("telefon", e.target.value)
+                  }
+                  autoComplete="tel"
+                  required
+                />
+                <input
+                  type="email"
+                  className="w-full rounded-xl border border-border-default px-3 py-2.5 text-sm text-text-primary outline-none focus:border-funnel-accent"
+                  placeholder="E-Mail"
+                  value={state.email}
+                  onChange={(e) =>
+                    updateLeadField("email", e.target.value)
+                  }
+                  autoComplete="email"
+                />
+                <textarea
+                  rows={3}
+                  className="w-full resize-y rounded-xl border border-border-default px-3 py-2.5 text-sm text-text-primary outline-none focus:border-funnel-accent"
+                  placeholder="Was soll gemacht werden? Wo liegt das Objekt?"
+                  value={state.leadBeschreibung}
+                  onChange={(e) =>
+                    updateLeadField("leadBeschreibung", e.target.value)
+                  }
+                />
+                <PhotoUpload
+                  files={state.photos}
+                  onChange={addPhotos}
+                  buttonTitle="Fotos oder Video hochladen — optional"
+                  buttonHint={`Bilder helfen uns bei der Einordnung · max. 6 Dateien`}
+                  className="pt-1"
+                />
+                <p className="text-[11px] leading-relaxed text-text-tertiary">
+                  Mit Absenden akzeptierst du, dass wir dich zur Beratung
+                  kontaktieren. Du kannst der Nutzung jederzeit widersprechen.
+                </p>
+              </form>
+            </div>
+            </div>
+          </div>
+        );
+
       case "lead":
         return (
           <StepWrapper
-            stepLabel="Kontakt"
+            stepLabel="Ergebnis"
             question="Fast geschafft"
             subtext="Optional Fotos, Terminwunsch — wir melden uns."
             animateKey="lead"
           >
+            <LeadAvailabilityHint className="mb-4" />
             <PhotoUpload
               files={state.photos}
               onChange={addPhotos}
@@ -602,7 +816,13 @@ function FunnelRechnerInner() {
       case "danke":
         return (
           <ThankYou
-            variant={bookingSummary ? "termin" : "anfrage"}
+            variant={
+              isBeratungKundentyp(state.kundentyp)
+                ? "beratung"
+                : bookingSummary
+                  ? "termin"
+                  : "anfrage"
+            }
             dateLabel={bookingSummary?.dateLabel}
             timeLabel={bookingSummary?.timeLabel}
           />
@@ -625,6 +845,13 @@ function FunnelRechnerInner() {
           nextDisabled={nextDisabled}
           showBack={screen !== "situation"}
           nextLabel={nextLabel}
+          belowActions={
+            screen === "beratung-lead" ? (
+              <p className="text-xs text-text-tertiary">
+                Wir melden uns innerhalb von 24h — kein Auftragszwang.
+              </p>
+            ) : null
+          }
         />
       ) : null}
     </div>

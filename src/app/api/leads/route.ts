@@ -19,6 +19,10 @@ export type BwLeadBody = {
   photoCount?: number;
   dringlichkeit?: string | null;
   umfang?: string | null;
+  /** Später HubSpot-Property; vorerst nur E-Mail */
+  kundentyp?: string | null;
+  leadType?: "beratung" | "system";
+  beschreibung?: string;
 };
 
 function budgetLine(body: BwLeadBody): string {
@@ -78,29 +82,62 @@ export async function POST(request: Request) {
     const plz = body.plz ?? "—";
     const zeitraum = body.zeitraum ?? "—";
     const fotos = String(body.photoCount ?? 0);
+    const kundentyp = body.kundentyp?.trim() || "nicht angegeben";
 
-    const text = [
-      `Name: ${name}`,
-      `Telefon: ${telefon}`,
-      `E-Mail: ${email}`,
-      `Situation: ${situation}`,
-      `Bereiche: ${bereiche}`,
-      `Preisrange: ${preisrange}`,
-      `PLZ: ${plz}`,
-      `Zeitraum: ${zeitraum}`,
-      `Budget: ${budgetLine(body)}`,
-      `Termin: ${slotLine(body.selectedSlot)}`,
-      `Fotos: ${fotos}`,
-      body.dringlichkeit ? `Dringlichkeit: ${body.dringlichkeit}` : "",
-      body.umfang ? `Umfang: ${body.umfang}` : "",
-    ]
-      .filter(Boolean)
-      .join("\n");
+    const leadType: "beratung" | "system" =
+      body.leadType === "beratung" ||
+      kundentyp === "gewerbe" ||
+      kundentyp === "gastro"
+        ? "beratung"
+        : "system";
+
+    const beschreibung = (body.beschreibung ?? "").trim();
+
+    const text =
+      leadType === "beratung"
+        ? [
+            `Lead-Typ: Beratung (Gewerbe/Gastro)`,
+            `Name: ${name}`,
+            `Telefon: ${telefon}`,
+            `E-Mail: ${email}`,
+            `Situation: ${situation}`,
+            `Kundentyp: ${kundentyp}`,
+            `Bereiche: ${bereiche}`,
+            beschreibung ? `Beschreibung: ${beschreibung}` : "",
+            `Fotos: ${fotos}`,
+            `PLZ: ${plz || "—"}`,
+          ]
+            .filter(Boolean)
+            .join("\n")
+        : [
+            `Lead-Typ: System (Rechner)`,
+            `Name: ${name}`,
+            `Telefon: ${telefon}`,
+            `E-Mail: ${email}`,
+            `Situation: ${situation}`,
+            `Kundentyp: ${kundentyp}`,
+            `Bereiche: ${bereiche}`,
+            `Preisrange: ${preisrange}`,
+            `PLZ: ${plz}`,
+            `Zeitraum: ${zeitraum}`,
+            `Budget: ${budgetLine(body)}`,
+            `Termin: ${slotLine(body.selectedSlot)}`,
+            `Fotos: ${fotos}`,
+            body.dringlichkeit ? `Dringlichkeit: ${body.dringlichkeit}` : "",
+            body.umfang ? `Umfang: ${body.umfang}` : "",
+          ]
+            .filter(Boolean)
+            .join("\n");
+
+    const subject =
+      leadType === "beratung"
+        ? `Beratungsanfrage: ${name} — ${kundentyp}`
+        : `Neuer Lead: ${name} — ${situation}`;
 
     const { error } = await resend.emails.send({
       from: process.env.RESEND_FROM ?? "Bärenwald <onboarding@resend.dev>",
       to: SITE_CONFIG.email,
-      subject: `Neuer Lead: ${name} — ${situation}`,
+      subject,
       text,
     });
 

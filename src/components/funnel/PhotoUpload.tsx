@@ -11,6 +11,10 @@ export interface PhotoUploadProps {
   onChange: (files: File[]) => void;
   maxFiles?: number;
   className?: string;
+  /** Überschreibt den Standard-Button-Titel */
+  buttonTitle?: string;
+  /** Überschreibt den Hinweis unter dem Titel */
+  buttonHint?: string;
 }
 
 export function PhotoUpload({
@@ -18,6 +22,8 @@ export function PhotoUpload({
   onChange,
   maxFiles = 6,
   className,
+  buttonTitle = "Fotos hochladen (optional)",
+  buttonHint,
 }: PhotoUploadProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [previews, setPreviews] = useState<Record<string, string>>({});
@@ -129,11 +135,10 @@ export function PhotoUpload({
             />
           </svg>
         </div>
-        <p className="text-sm font-medium text-text-primary">
-          Fotos hochladen (optional)
-        </p>
+        <p className="text-sm font-medium text-text-primary">{buttonTitle}</p>
         <p className="mt-1 text-xs text-text-tertiary">
-          Hilft beim Vor-Ort-Termin · max. {maxFiles} Fotos
+          {buttonHint ??
+            `Hilft beim Vor-Ort-Termin · max. ${maxFiles} Fotos`}
         </p>
       </button>
       {files.length > 0 ? (

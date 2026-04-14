@@ -15,7 +15,6 @@ import { MarketingFooter } from "@/components/layout/MarketingFooter";
 import {
   LEISTUNGEN,
   RATGEBER,
-  RATGEBER_SITUATIONEN,
   leistungHref,
   ratgeberHref,
 } from "@/lib/routes";
@@ -216,17 +215,6 @@ export function PageLayout({ children }: PageLayoutProps) {
                       {r.label}
                     </Link>
                   ))}
-                  <p className="site-header-dropdown-label">Situationen</p>
-                  {RATGEBER_SITUATIONEN.map((r) => (
-                    <Link
-                      key={r.slug}
-                      href={ratgeberHref(r.slug)}
-                      role="menuitem"
-                      onClick={() => setOpenDropdown(null)}
-                    >
-                      {r.label}
-                    </Link>
-                  ))}
                 </div>
               ) : null}
             </div>
@@ -329,15 +317,6 @@ export function PageLayout({ children }: PageLayoutProps) {
           <div className="site-mobile-section">
             <p className="site-mobile-section-title">Ratgeber — Was kostet …</p>
             {RATGEBER.map((r) => (
-              <Link key={r.slug} href={ratgeberHref(r.slug)} onClick={closeAll}>
-                {r.label}
-              </Link>
-            ))}
-          </div>
-
-          <div className="site-mobile-section">
-            <p className="site-mobile-section-title">Ratgeber — Situationen</p>
-            {RATGEBER_SITUATIONEN.map((r) => (
               <Link key={r.slug} href={ratgeberHref(r.slug)} onClick={closeAll}>
                 {r.label}
               </Link>

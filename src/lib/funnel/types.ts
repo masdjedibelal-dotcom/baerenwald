@@ -5,6 +5,13 @@ export type Situation =
   | "neubauen"
   | "betreuung";
 
+export type Kundentyp =
+  | "eigentuemer"
+  | "mieter"
+  | "hausverwaltung"
+  | "gewerbe"
+  | "gastro";
+
 export type Zeitraum = "sofort" | "4wochen" | "1-3monate" | "offen";
 
 export type BudgetCheck = "ok" | "zu_hoch" | null;
@@ -20,6 +27,7 @@ export interface PriceLineItem {
 export interface FunnelState {
   situation: Situation | null;
   bereiche: string[];
+  kundentyp: Kundentyp | null;
   umfang: string | null;
   umfangFaktor: number;
   groesse: number | null;
@@ -33,6 +41,9 @@ export interface FunnelState {
   dringlichkeit: "akut" | "stabil" | "nutzbar" | "keine_eile" | null;
   photos: File[];
   name: string;
+  vorname: string;
+  nachname: string;
+  leadBeschreibung: string;
   email: string;
   telefon: string;
   selectedSlot: { date: string; time: string } | null;

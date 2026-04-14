@@ -93,3 +93,73 @@ export function buildSearchUrl(query: string): string {
   }
   return `/rechner?q=${encodeURIComponent(raw)}`;
 }
+
+/** Ein Eintrag für die Hero-Suchvorschläge (Leistungen). */
+export interface HeroSearchSuggestion {
+  slug: string;
+  label: string;
+  subtitle: string;
+}
+
+const DEFAULT_HERO_SUGGESTION_SLUGS: string[] = [
+  "badezimmer-sanierung",
+  "malerarbeiten",
+  "heizung-sanitaer",
+  "elektroarbeiten",
+  "bodenbelag",
+];
+
+/**
+ * Bis zu `max` Vorschläge für die Landing-Suche: bei leerem Feld beliebte Leistungen,
+ * sonst Filter nach Label, Slug, Kurztext und Hint.
+ */
+export function getHeroSearchSuggestions(
+  query: string,
+  max = 5
+): HeroSearchSuggestion[] {
+  const q = normalize(query.trim());
+  if (!q) {
+    const out: HeroSearchSuggestion[] = [];
+    for (const slug of DEFAULT_HERO_SUGGESTION_SLUGS) {
+      const l = LEISTUNGEN.find((x) => x.slug === slug);
+      if (l) out.push({ slug: l.slug, label: l.label, subtitle: l.kurz });
+      if (out.length >= max) break;
+    }
+    return out;
+  }
+
+  const scored: { l: (typeof LEISTUNGEN)[number]; score: number }[] = [];
+
+  for (const l of LEISTUNGEN) {
+    const labelN = normalize(l.label);
+    const kurzN = normalize(l.kurz);
+    const hintN = normalize(l.hint);
+    const slugN = normalize(l.slug.replace(/-/g, " "));
+    const firstWord = labelN.split(/[^a-z0-9]+/)[0] || labelN;
+    const slugFirst = slugN.split(/[^a-z0-9]+/)[0] || "";
+
+    let score = 0;
+    if (labelN.startsWith(q)) score += 120;
+    else if (firstWord.startsWith(q)) score += 105;
+    else if (slugFirst.startsWith(q)) score += 95;
+    else if (labelN.includes(q)) score += 70;
+    else if (slugN.includes(q)) score += 55;
+
+    if (q.length >= 2) {
+      if (kurzN.includes(q)) score += 30;
+      if (hintN.includes(q)) score += 12;
+    }
+
+    if (score > 0) scored.push({ l, score });
+  }
+
+  scored.sort(
+    (a, b) => b.score - a.score || a.l.label.localeCompare(b.l.label, "de")
+  );
+
+  return scored.slice(0, max).map(({ l }) => ({
+    slug: l.slug,
+    label: l.label,
+    subtitle: l.kurz,
+  }));
+}

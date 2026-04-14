@@ -14,20 +14,6 @@ function formatEuro(n: number): string {
   }).format(n);
 }
 
-function CheckIcon() {
-  return (
-    <svg aria-hidden viewBox="0 0 20 20" fill="none">
-      <path
-        d="M16.667 5L7.5 14.167 3.333 10"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-}
-
 const telHref = `tel:${SITE_CONFIG.phone.replace(/\s/g, "")}`;
 
 function splitIconText(line: string): { icon: string; text: string } {
@@ -35,7 +21,7 @@ function splitIconText(line: string): { icon: string; text: string } {
   if (sp > 0) {
     return { icon: line.slice(0, sp), text: line.slice(sp + 1).trim() };
   }
-  return { icon: "📍", text: line };
+  return { icon: "", text: line };
 }
 
 export interface RatgeberPageProps {
@@ -51,10 +37,21 @@ export function RatgeberPage({ data }: RatgeberPageProps) {
   });
   const rechnerHref = `/rechner?situation=${encodeURIComponent(data.rechnerSituation)}`;
   const leistungUrl = leistungHref(data.leistungsSlug);
-  const fk = data.kosten.faktoren;
-  const half = Math.ceil(fk.length / 2);
-  const faktorenLinks = fk.slice(0, half);
-  const faktorenRechts = fk.slice(half);
+
+  const wbPunkte = data.wannBrauche.punkte;
+  const introLead =
+    wbPunkte.length > 0 ? wbPunkte[0]! : data.wannBrauche.title;
+  const introRest = wbPunkte.length > 1 ? wbPunkte.slice(1) : [];
+
+  const faktorenText =
+    data.kosten.faktoren.length > 0
+      ? data.kosten.faktoren.join(", ")
+      : "Umfang, Material und Zustand vor Ort";
+
+  const zeitFaktorenText =
+    data.zeitaufwand.faktoren.length > 0
+      ? data.zeitaufwand.faktoren.join(", ")
+      : "Koordination und Umfang";
 
   return (
     <div className="baerenwald-landing">
@@ -67,43 +64,51 @@ export function RatgeberPage({ data }: RatgeberPageProps) {
             <span className="breadcrumb-sep">›</span>
             <span className="breadcrumb-current">{data.titel}</span>
           </nav>
-          <div className="ratgeber-tag">Ratgeber & Kosten</div>
+
+          <div className="ratgeber-tag">Ratgeber &amp; Kosten</div>
+
           <h1 className="page-hero-h1">{data.hero.headline}</h1>
           <p className="page-hero-sub">{data.hero.subline}</p>
+
           <div className="ratgeber-meta">
             <span>München 2024/25</span>
             <span>Lesezeit: ca. {lesezeit} Min.</span>
-            <span>Letztes Update: {updated}</span>
+            <span>Update: {updated}</span>
           </div>
         </div>
       </div>
 
-      <section className="content-section content-section--white">
-        <div className="content-section-inner fade-up d1">
-          <h2 className="section-h2">{data.wannBrauche.title}</h2>
-          <ul className="check-list">
-            {data.wannBrauche.punkte.map((p) => (
+      <div className="ratgeber-intro content-section content-section--white fade-up d1">
+        <p className="ratgeber-intro-lead">{introLead}</p>
+        {introRest.length > 0 ? (
+          <ol className="simple-list">
+            {introRest.map((p) => (
               <li key={p}>
-                <span className="check-list-icon">
-                  <CheckIcon />
-                </span>
+                <span className="simple-list-num">—</span>
                 {p}
               </li>
             ))}
-          </ul>
-        </div>
-      </section>
+          </ol>
+        ) : null}
+      </div>
 
-      <section className="content-section content-section--muted">
-        <div className="content-section-inner fade-up d2">
+      <div className="article-divider" aria-hidden />
+
+      <section
+        className="article-section content-section content-section--muted fade-up d2"
+      >
+        <div className="article-section-inner">
+          <span className="chapter-label">Schritt für Schritt</span>
           <h2 className="section-h2">So läuft das ab</h2>
-          <p className="section-sub">
-            Von der Anfrage bis zur Abnahme — typischer Ablauf in München.
-          </p>
+
           <div className="ablauf-timeline">
             <div className="ablauf-timeline-line" aria-hidden />
             {data.ablauf.map((s, i) => (
-              <div key={s.schritt} className="ablauf-step">
+              <div
+                key={s.schritt}
+                className="ablauf-step fade-up"
+                style={{ transitionDelay: `${i * 0.06}s` }}
+              >
                 <div className="ablauf-step-num">{i + 1}</div>
                 <h3 className="ablauf-step-title">{s.schritt}</h3>
                 <p className="ablauf-step-text">{s.text}</p>
@@ -113,230 +118,246 @@ export function RatgeberPage({ data }: RatgeberPageProps) {
         </div>
       </section>
 
-      <section className="content-section content-section--white">
-        <div className="content-section-inner fade-up d3">
-          <h2 className="section-h2">Was du vorher wissen solltest</h2>
-          <ul className="check-list">
+      <div className="article-divider" aria-hidden />
+
+      <section
+        className="article-section content-section content-section--white fade-up d3"
+      >
+        <div className="article-section-inner">
+          <span className="chapter-label">Was du vorher wissen solltest</span>
+          <div className="article-body">
             {data.voraussetzungen.map((v) => (
-              <li key={v}>
-                <span className="check-list-icon">
-                  <CheckIcon />
-                </span>
-                {v}
-              </li>
-            ))}
-          </ul>
-        </div>
-      </section>
-
-      <section className="content-section content-section--muted">
-        <div className="content-section-inner fade-up d4">
-          <h2 className="section-h2">Materialien & Varianten</h2>
-          <p className="section-sub">
-            Übersicht über gängige Optionen — dein Festpreis ergibt sich aus
-            Umfang und Materialwahl.
-          </p>
-          <div className="material-grid">
-            {data.materialien.map((m) => (
-              <div key={m.name} className="material-card">
-                <div className="material-card-name">{m.name}</div>
-                <p className="material-card-desc">{m.beschreibung}</p>
-                <span className="material-card-price">{m.vonBis}</span>
-                <div className="material-card-for">
-                  Geeignet für: {m.fuer}
-                </div>
-              </div>
+              <p key={v}>{v}</p>
             ))}
           </div>
         </div>
       </section>
 
-      <section className="content-section content-section--white">
-        <div className="content-section-inner fade-up d1">
-          <h2 className="section-h2">Was kostet das in München?</h2>
-          <div className="preis-box">
-            <div className="preis-box-head">Richtwert München 2024/25</div>
-            <div className="preis-box-body">
-              <div className="preis-range">
-                <span className="preis-range-value">
-                  {formatEuro(data.kosten.von)} – {formatEuro(data.kosten.bis)}{" "}
-                  €
-                </span>
-                <span className="preis-range-unit">{data.kosten.einheit}</span>
-              </div>
-              <div className="kosten-split">
-                <div>
-                  <p
-                    className="section-eyebrow section-eyebrow--muted"
-                    style={{ marginBottom: "8px" }}
-                  >
-                    Was den Preis erhöht
-                  </p>
-                  <ul className="kosten-list">
-                    {faktorenLinks.map((f) => (
-                      <li key={f}>
-                        <span className="kosten-list-dot" aria-hidden>
-                          •
-                        </span>
-                        {f}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-                <div>
-                  {faktorenRechts.length > 0 ? (
-                    <>
-                      <p
-                        className="section-eyebrow section-eyebrow--muted"
-                        style={{ marginBottom: "8px" }}
-                      >
-                        Weitere Faktoren
-                      </p>
-                      <ul className="kosten-list">
-                        {faktorenRechts.map((f) => (
-                          <li key={f}>
-                            <span className="kosten-list-dot" aria-hidden>
-                              •
-                            </span>
-                            {f}
-                          </li>
-                        ))}
-                      </ul>
-                    </>
-                  ) : null}
-                  <p
-                    className="section-eyebrow section-eyebrow--muted"
-                    style={{
-                      marginBottom: "8px",
-                      marginTop: faktorenRechts.length ? "16px" : 0,
-                    }}
-                  >
-                    Beispielkalkulation
-                  </p>
-                  <div className="preis-hint" style={{ marginTop: 0 }}>
-                    {data.kosten.beispiel}
-                  </div>
-                </div>
-              </div>
-            </div>
+      <div className="article-divider" aria-hidden />
+
+      <section
+        className="article-section content-section content-section--muted fade-up d4"
+      >
+        <div className="article-section-inner">
+          <span className="chapter-label">Materialien &amp; Varianten</span>
+          <h2 className="section-h2">Welche Optionen gibt es?</h2>
+
+          <table className="preis-table">
+            <thead>
+              <tr>
+                <th>Material</th>
+                <th>Preis</th>
+                <th>Geeignet für</th>
+              </tr>
+            </thead>
+            <tbody>
+              {data.materialien.map((m) => (
+                <tr key={m.name}>
+                  <td>
+                    <div>{m.name}</div>
+                    <div
+                      style={{
+                        fontSize: "12px",
+                        fontWeight: 400,
+                        color: "var(--fl-text-3)",
+                        marginTop: "2px",
+                      }}
+                    >
+                      {m.beschreibung}
+                    </div>
+                  </td>
+                  <td style={{ whiteSpace: "nowrap" }}>{m.vonBis}</td>
+                  <td>{m.fuer}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <div className="article-divider" aria-hidden />
+
+      <section
+        className="article-section content-section content-section--white fade-up d1"
+      >
+        <div className="article-section-inner">
+          <span className="chapter-label">Preise München 2024/25</span>
+          <h2 className="section-h2">Was kostet das wirklich?</h2>
+
+          <div className="preis-inline">
+            <span className="preis-inline-value">
+              {formatEuro(data.kosten.von)} – {formatEuro(data.kosten.bis)} €
+            </span>
+            <span className="preis-inline-unit">{data.kosten.einheit}</span>
           </div>
+
+          <div className="article-body">
+            <p>
+              <strong>Was den Preis beeinflusst:</strong> {faktorenText}.
+            </p>
+            <p>{data.kosten.beispiel}</p>
+          </div>
+
+          <div className="hinweis">
+            <p>
+              Alle Preise sind Richtwerte für München 2024/25. Der genaue Preis
+              hängt von Zustand, Zugänglichkeit und Materialwahl ab — beim
+              Vor-Ort-Termin nennen wir einen festen Preis.
+            </p>
+          </div>
+
           <Link
             href={rechnerHref}
             className="page-hero-btn-primary"
-            style={{ marginTop: "16px", display: "inline-block" }}
+            style={{ display: "inline-block", marginTop: "20px" }}
           >
             Preis für mein Projekt berechnen →
           </Link>
         </div>
       </section>
 
-      <section className="content-section content-section--muted">
-        <div className="content-section-inner fade-up d2">
+      <div className="article-divider" aria-hidden />
+
+      <section
+        className="article-section--sm content-section content-section--muted fade-up d2"
+        style={{ padding: "48px 2rem" }}
+      >
+        <div className="article-section-inner">
+          <span className="chapter-label">Zeitaufwand</span>
           <h2 className="section-h2">Wie lange dauert das?</h2>
-          <div className="zeit-grid">
-            <div className="zeit-card">
-              <div className="zeit-card-label">Klein</div>
-              <div className="zeit-card-value">{data.zeitaufwand.klein}</div>
+
+          <div className="zeit-inline">
+            <div className="zeit-inline-item">
+              <div className="zeit-inline-label">Klein</div>
+              <div className="zeit-inline-value">{data.zeitaufwand.klein}</div>
             </div>
-            <div className="zeit-card">
-              <div className="zeit-card-label">Mittel</div>
-              <div className="zeit-card-value">{data.zeitaufwand.mittel}</div>
+            <div className="zeit-inline-item">
+              <div className="zeit-inline-label">Mittel</div>
+              <div className="zeit-inline-value">{data.zeitaufwand.mittel}</div>
             </div>
-            <div className="zeit-card">
-              <div className="zeit-card-label">Groß</div>
-              <div className="zeit-card-value">{data.zeitaufwand.gross}</div>
+            <div className="zeit-inline-item">
+              <div className="zeit-inline-label">Groß</div>
+              <div className="zeit-inline-value">{data.zeitaufwand.gross}</div>
             </div>
           </div>
-          <h3
-            className="section-eyebrow section-eyebrow--muted"
-            style={{ marginTop: "28px" }}
-          >
-            Was die Dauer beeinflusst
-          </h3>
-          <ul className="check-list">
-            {data.zeitaufwand.faktoren.map((f) => (
-              <li key={f}>
-                <span className="check-list-icon">
-                  <CheckIcon />
-                </span>
-                {f}
-              </li>
-            ))}
-          </ul>
+
+          <div className="article-body">
+            <p>
+              <strong>Was die Dauer beeinflusst:</strong> {zeitFaktorenText}.
+            </p>
+          </div>
         </div>
       </section>
 
-      <section className="content-section content-section--white">
-        <div className="content-section-inner fade-up d3">
+      <div className="article-divider" aria-hidden />
+
+      <section
+        className="article-section content-section content-section--white fade-up d3"
+      >
+        <div className="article-section-inner">
           <div className="koordination-box">
             <div>
-              <h2 className="section-h2" style={{ marginBottom: "10px" }}>
+              <div
+                style={{
+                  fontSize: "13px",
+                  fontWeight: 700,
+                  color: "var(--fl-accent-dark)",
+                  marginBottom: "6px",
+                }}
+              >
                 Was wir koordinieren
-              </h2>
-              <p className="koordination-box-text">{data.koordination}</p>
+              </div>
+              <p
+                style={{
+                  fontSize: "15px",
+                  color: "var(--fl-text-2)",
+                  margin: "0 0 12px",
+                  lineHeight: 1.65,
+                }}
+              >
+                {data.koordination}
+              </p>
+              <div
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "4px",
+                }}
+              >
+                {data.koordinationUsps.map((u) => (
+                  <span
+                    key={u}
+                    style={{
+                      fontSize: "13px",
+                      color: "var(--fl-accent)",
+                      fontWeight: 600,
+                    }}
+                  >
+                    → {u}
+                  </span>
+                ))}
+              </div>
             </div>
             <Link href={leistungUrl} className="koordination-box-link">
               Zur Leistungsseite →
             </Link>
           </div>
-          <div className="koordination-usps">
-            {data.koordinationUsps.map((u) => (
-              <div key={u} className="koordination-usp">
-                {u}
-              </div>
-            ))}
-          </div>
         </div>
       </section>
 
-      <section className="content-section content-section--muted">
-        <div className="content-section-inner">
-          <div
-            className="faq-inner fade-up d4"
-            style={{ gridTemplateColumns: "1fr 2fr" }}
-          >
-            <div>
-              <h2 className="section-h2">Häufige Fragen</h2>
-            </div>
+      <div className="article-divider" aria-hidden />
+
+      <section
+        className="article-section content-section content-section--muted fade-up d4"
+      >
+        <div className="article-section-inner">
+          <span className="chapter-label">Häufige Fragen</span>
+          <h2 className="section-h2" style={{ marginBottom: "28px" }}>
+            Was Kunden fragen
+          </h2>
+
+          <div className="article-faq">
             <SemanticFaq items={data.faq} />
           </div>
         </div>
       </section>
 
-      <section className="content-section content-section--white">
-        <div className="content-section-inner fade-up d1">
-          <h2 className="section-h2">Woran erkennst du gute Qualität?</h2>
-          <p className="section-sub">
-            Diese Punkte solltest du bei der gemeinsamen Kontrolle am Ende
-            prüfen.
-          </p>
-          <ul className="qualitaet-list">
+      <div className="article-divider" aria-hidden />
+
+      <section
+        className="article-section content-section content-section--white fade-up d1"
+      >
+        <div className="article-section-inner">
+          <span className="chapter-label">Qualität erkennen</span>
+          <h2 className="section-h2">Woran erkennst du gute Arbeit?</h2>
+          <div className="article-body">
             {data.qualitaet.map((q) => (
-              <li key={q} className="qualitaet-item">
-                <div className="qualitaet-dot" aria-hidden />
-                {q}
-              </li>
+              <p key={q}>{q}</p>
             ))}
-          </ul>
+          </div>
         </div>
       </section>
 
-      <section className="content-section content-section--muted">
-        <div className="content-section-inner fade-up d2">
+      <div className="article-divider" aria-hidden />
+
+      <section
+        className="article-section content-section content-section--muted fade-up d2"
+      >
+        <div className="article-section-inner">
+          <span className="chapter-label">München spezifisch</span>
           <h2 className="section-h2">Besonderheiten in München</h2>
-          <p className="section-sub">
-            Typische Rahmenbedingungen in der Region — kurz zusammengefasst.
-          </p>
-          <div className="muenchen-grid">
+          <div className="article-body">
             {data.muenchen.map((m) => {
               const { icon, text } = splitIconText(m);
               return (
-                <div key={m} className="muenchen-item">
-                  <span className="muenchen-item-icon" aria-hidden>
-                    {icon}
-                  </span>
+                <p key={m}>
+                  {icon ? (
+                    <span style={{ marginRight: "8px" }} aria-hidden>
+                      {icon}
+                    </span>
+                  ) : null}
                   {text}
-                </div>
+                </p>
               );
             })}
           </div>
@@ -348,7 +369,7 @@ export function RatgeberPage({ data }: RatgeberPageProps) {
         <div className="final-cta-inner">
           <h2 className="final-cta-h2">Bereit für dein Projekt?</h2>
           <p className="final-cta-sub">
-            Kostenloser Vor-Ort-Termin — kein Auftragszwang.
+            Preisrahmen berechnen — Anfahrt wird bei Beauftragung angerechnet.
           </p>
           <div className="final-cta-btns">
             <Link href={rechnerHref} className="final-cta-btn-primary">
@@ -358,9 +379,6 @@ export function RatgeberPage({ data }: RatgeberPageProps) {
               Direkt anrufen
             </Link>
           </div>
-          <p className="final-cta-trust">
-            Kostenlos · Unverbindlich · Festpreis
-          </p>
           <Link href={leistungUrl} className="final-cta-link">
             Zur Leistungsseite →
           </Link>

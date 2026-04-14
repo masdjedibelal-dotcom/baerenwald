@@ -8,6 +8,31 @@ import { SituationIconPath } from "@/lib/situation-icons";
 import type { FunnelState, PriceLineItem, Situation } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
+/** Hinweis vor Foto-Upload / Lead (export für Rechner & FunnelClient) */
+export function LeadAvailabilityHint({
+  className,
+}: {
+  className?: string;
+}) {
+  return (
+    <div
+      className={cn(
+        "border-l-[3px] border-funnel-accent py-3 pl-3.5 pr-3.5 text-[13px] leading-snug",
+        className
+      )}
+      style={{
+        backgroundColor: "var(--fl-accent-light, var(--accent-light, #EAF3DE))",
+        color: "var(--fl-accent-dark, var(--accent-dark, #1a3d2b))",
+        borderRadius: "0 8px 8px 0",
+      }}
+      role="note"
+    >
+      Wir prüfen nach deiner Anfrage die Verfügbarkeit unserer Handwerker und
+      melden uns innerhalb von 24h zur Terminbestätigung.
+    </div>
+  );
+}
+
 export interface ResultScreenProps {
   state: FunnelState;
   companyPhone: string;

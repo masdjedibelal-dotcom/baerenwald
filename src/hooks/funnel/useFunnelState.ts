@@ -5,6 +5,7 @@ import { useCallback, useMemo, useReducer } from "react";
 import type {
   BudgetCheck,
   FunnelState,
+  Kundentyp,
   PriceLineItem,
   Situation,
   Zeitraum,
@@ -19,7 +20,17 @@ export type BwFunnelAction =
   | { type: "SET_PLZ"; plz: string }
   | { type: "SET_ZEITRAUM"; zeitraum: Zeitraum | null }
   | { type: "SET_PHOTOS"; files: File[] }
-  | { type: "UPDATE_LEAD_FIELD"; field: "name" | "email" | "telefon"; value: string }
+  | {
+      type: "UPDATE_LEAD_FIELD";
+      field:
+        | "name"
+        | "email"
+        | "telefon"
+        | "vorname"
+        | "nachname"
+        | "leadBeschreibung";
+      value: string;
+    }
   | { type: "SET_SLOT"; date: string; time: string }
   | { type: "CLEAR_SLOT" }
   | {
@@ -35,12 +46,14 @@ export type BwFunnelAction =
       value: "akut" | "stabil" | "nutzbar" | "keine_eile" | null;
     }
   | { type: "SET_SUBMITTED"; value: boolean }
+  | { type: "SET_KUNDENTYP"; value: Kundentyp | null }
   | { type: "RESET" };
 
 export function createInitialBwFunnelState(): FunnelState {
   return {
     situation: null,
     bereiche: [],
+    kundentyp: null,
     umfang: null,
     umfangFaktor: 1,
     groesse: null,
@@ -54,6 +67,9 @@ export function createInitialBwFunnelState(): FunnelState {
     dringlichkeit: null,
     photos: [],
     name: "",
+    vorname: "",
+    nachname: "",
+    leadBeschreibung: "",
     email: "",
     telefon: "",
     selectedSlot: null,
@@ -120,8 +136,13 @@ function bwFunnelReducer(
     case "SET_PHOTOS":
       return { ...state, photos: [...action.files] };
 
-    case "UPDATE_LEAD_FIELD":
-      return { ...state, [action.field]: action.value };
+    case "UPDATE_LEAD_FIELD": {
+      const next = { ...state, [action.field]: action.value };
+      if (action.field === "vorname" || action.field === "nachname") {
+        next.name = `${next.vorname} ${next.nachname}`.trim();
+      }
+      return next;
+    }
 
     case "SET_SLOT":
       return {
@@ -148,6 +169,9 @@ function bwFunnelReducer(
 
     case "SET_SUBMITTED":
       return { ...state, submitted: action.value };
+
+    case "SET_KUNDENTYP":
+      return { ...state, kundentyp: action.value };
 
     default:
       return state;
@@ -211,7 +235,16 @@ export function useBwFunnelState() {
   }, []);
 
   const updateLeadField = useCallback((field: string, value: string) => {
-    if (field !== "name" && field !== "email" && field !== "telefon") return;
+    if (
+      field !== "name" &&
+      field !== "email" &&
+      field !== "telefon" &&
+      field !== "vorname" &&
+      field !== "nachname" &&
+      field !== "leadBeschreibung"
+    ) {
+      return;
+    }
     dispatch({
       type: "UPDATE_LEAD_FIELD",
       field,
@@ -238,6 +271,10 @@ export function useBwFunnelState() {
     dispatch({ type: "SET_SUBMITTED", value });
   }, []);
 
+  const setKundentyp = useCallback((value: Kundentyp | null) => {
+    dispatch({ type: "SET_KUNDENTYP", value });
+  }, []);
+
   return useMemo(
     () => ({
       state,
@@ -245,6 +282,7 @@ export function useBwFunnelState() {
       setSituation,
       setBereiche,
       toggleBereich,
+      setKundentyp,
       setUmfang,
       setGroesse,
       setPlz,
@@ -263,6 +301,7 @@ export function useBwFunnelState() {
       setSituation,
       setBereiche,
       toggleBereich,
+      setKundentyp,
       setUmfang,
       setGroesse,
       setPlz,

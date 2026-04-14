@@ -151,15 +151,6 @@ export const RATGEBER: RatgeberRoute[] = [
   },
 ];
 
-/** Fünf Situations-Ratgeber (Header-Dropdown „Ratgeber“) */
-export const RATGEBER_SITUATIONEN: RatgeberRoute[] = [
-  { slug: "renovieren-ratgeber-muenchen", label: "Renovieren: Planung & Kosten" },
-  { slug: "sanieren-energetisch-muenchen", label: "Sanieren & energetische Modernisierung" },
-  { slug: "notfall-handwerk-muenchen", label: "Notfall im Haus — was tun?" },
-  { slug: "neubau-ausbau-muenchen", label: "Neubau, Ausbau & Umbau" },
-  { slug: "betreuung-haus-garten-muenchen", label: "Betreuung: Haus, Garten & Winterdienst" },
-];
-
 export function leistungHref(slug: string): string {
   return `/leistungen/${slug}-muenchen`;
 }

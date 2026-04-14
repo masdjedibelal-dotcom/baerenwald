@@ -6,7 +6,6 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import {
   LEISTUNGEN,
   RATGEBER,
-  RATGEBER_SITUATIONEN,
   leistungHref,
   ratgeberHref,
 } from "@/lib/routes";
@@ -200,24 +199,8 @@ export function SiteHeader() {
                 <p className="px-4 pb-1 pt-1 text-[10px] font-semibold uppercase tracking-widest text-text-tertiary">
                   Was kostet …
                 </p>
-                <ul className="max-h-[40vh] overflow-y-auto border-b border-border-default px-2 py-1">
+                <ul className="max-h-[40vh] overflow-y-auto px-2 py-1">
                   {RATGEBER.map((r) => (
-                    <li key={r.slug}>
-                      <Link
-                        href={ratgeberHref(r.slug)}
-                        className="block rounded-lg px-3 py-1.5 text-sm text-text-secondary hover:bg-muted hover:text-text-primary"
-                        onClick={closeAll}
-                      >
-                        {r.label}
-                      </Link>
-                    </li>
-                  ))}
-                </ul>
-                <p className="px-4 pb-1 pt-3 text-[10px] font-semibold uppercase tracking-widest text-text-tertiary">
-                  Situationen
-                </p>
-                <ul className="max-h-[28vh] overflow-y-auto px-2 py-1">
-                  {RATGEBER_SITUATIONEN.map((r) => (
                     <li key={r.slug}>
                       <Link
                         href={ratgeberHref(r.slug)}
@@ -313,16 +296,6 @@ export function SiteHeader() {
                 Ratgeber
               </p>
               {RATGEBER.map((r) => (
-                <Link
-                  key={r.slug}
-                  href={ratgeberHref(r.slug)}
-                  className="rounded-lg py-2 text-sm text-text-secondary hover:bg-muted hover:text-text-primary"
-                  onClick={closeAll}
-                >
-                  {r.label}
-                </Link>
-              ))}
-              {RATGEBER_SITUATIONEN.map((r) => (
                 <Link
                   key={r.slug}
                   href={ratgeberHref(r.slug)}

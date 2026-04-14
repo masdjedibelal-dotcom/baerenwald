@@ -3,64 +3,57 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useState, type FormEvent } from "react";
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type FormEvent,
+  type KeyboardEvent,
+  type ReactNode,
+} from "react";
 
 import { MarketingFooter } from "@/components/layout/MarketingFooter";
 import { SITE_CONFIG } from "@/lib/config";
 import type { Situation as FunnelSituation } from "@/lib/funnel/types";
 import { HOME_FAQ_ITEMS } from "@/lib/home-content";
-import { LEISTUNGEN, leistungHref } from "@/lib/routes";
-import { buildSearchUrl } from "@/lib/search";
-const FACTS_CARDS = [
-  {
-    icon: "trend" as const,
-    stat: "Ein Ansprechpartner",
-    body: "Maler, Elektriker, Bodenleger — kein Abstimmen zwischen mehreren Betrieben.",
-  },
-  {
-    icon: "clock" as const,
-    stat: "Festpreisangebot",
-    body: "Kein böses Erwachen — der Preis steht vor Auftragsbeginn fest.",
-  },
-  {
-    icon: "target" as const,
-    stat: "Meisterbetriebe",
-    body: "Nur geprüfte Fachbetriebe aus München und Umgebung.",
-  },
-];
-
+import {
+  buildSearchUrl,
+  getHeroSearchSuggestions,
+  type HeroSearchSuggestion,
+} from "@/lib/search";
 const HOW_STEPS = [
   {
     emoji: "🔍",
-    title: "Was brauchst du?",
-    desc: "Beschreib einfach dein Vorhaben — Bad renovieren, Heizung kaputt, Garten pflegen. In 2 Minuten siehst du einen realistischen Preisrahmen.",
+    title: "Beschreib dein Vorhaben",
+    desc: "Bad renovieren, Heizung kaputt, Garten pflegen — in 2 Minuten siehst du was dein Projekt ungefähr kostet. Direkt online, ohne Anruf.",
   },
   {
-    emoji: "📅",
-    title: "Wir kommen vorbei",
-    desc: "Kostenloser Vor-Ort-Termin. Wir schauen uns alles an und erstellen ein genaues Festpreisangebot. Kein Auftragszwang.",
+    emoji: "📋",
+    title: "Wir koordinieren alles",
+    desc: "Ein Vor-Ort-Termin — dann übernehmen wir. Wir stimmen alle Handwerker ab, planen die Reihenfolge und melden uns wenn etwas fertig ist. Du sprichst nur noch mit uns.",
   },
   {
-    emoji: "✅",
-    title: "Alles wird erledigt",
-    desc: "Du lehnst dich zurück. Wir koordinieren alle Handwerker, Termine und Materialien. Eine Rechnung am Ende.",
+    emoji: "✓",
+    title: "Fertig. Eine Rechnung.",
+    desc: "Kein Abstimmen mit drei verschiedenen Betrieben. Keine drei Rechnungen. Alles läuft über Bärenwald — du lehnst dich zurück.",
   },
 ];
 
 const EINSATZ_BLOCKS = [
   {
-    titel: "Neue Anfragen generieren",
-    text: "Der Preisrechner auf deiner Website holt Kunden genau dann ab wenn sie einen konkreten Bedarf haben.",
+    titel: "Ein Ansprechpartner",
+    text: "Maler, Elektriker, Bodenleger — wir koordinieren alle Handwerker. Du rufst einmal an, wir kümmern uns um den Rest.",
     variant: "dark" as const,
   },
   {
-    titel: "Schnelle Orientierung",
-    text: "Kunden sehen sofort was ihr Projekt kosten könnte — das spart beiden Seiten unnötige Gespräche.",
+    titel: "Preistransparenz",
+    text: "Du siehst sofort was dein Projekt ungefähr kostet — bevor du überhaupt anrufst. Kein Preispoker, keine versteckten Kosten, kein böses Erwachen.",
     variant: "mist" as const,
   },
   {
-    titel: "Ein Termin reicht",
-    text: "Kein Abstimmen mit drei Handwerkern. Ein Anruf, ein Termin, wir koordinieren den Rest.",
+    titel: "Du weißt immer was läuft",
+    text: "Statusupdates per Mail, digitales Abnahmeprotokoll, alles dokumentiert. Kein Anruf nötig um zu fragen wann jemand kommt.",
     variant: "soft" as const,
   },
 ];
@@ -80,7 +73,7 @@ const TESTIMONIALS = [
     initials: "LM",
     color: "teal" as const,
     quote:
-      "Ein Ansprechpartner für Maler und Elektro. Hat uns so viel Koordination erspart. Einfach angerufen und alles lief.",
+      "Ich hätte nie gedacht dass Bad-Renovierung so reibungslos läuft. Fliesen, Sanitär, Elektro — ich hatte einen Ansprechpartner für alles. Kein einziger Anruf den ich selbst koordinieren musste.",
   },
   {
     name: "Thomas R.",
@@ -88,7 +81,7 @@ const TESTIMONIALS = [
     initials: "TR",
     color: "amber" as const,
     quote:
-      "Kostenlose Erstberatung, kein Druck. Das Angebot kam schnell und war klar. So wünscht man sich Handwerk.",
+      "Unverbindliche Beratung, kein Druck. Das Angebot kam schnell und war klar. So wünscht man sich Handwerk.",
   },
   {
     name: "Sandra B.",
@@ -108,15 +101,6 @@ const TESTIMONIALS = [
   },
 ];
 
-const BENEFITS_POINTS = [
-  "Einmal anfragen — alles läuft",
-  "Kostenloser Vor-Ort-Termin",
-  "Festpreis vor Auftragsbeginn",
-  "Meisterbetriebe aus München",
-  "Ein Ansprechpartner für alle Gewerke",
-  "Kein Auftragszwang",
-];
-
 const TESTIMONIAL_COLORS: Record<
   (typeof TESTIMONIALS)[number]["color"],
   { bg: string; color: string }
@@ -129,73 +113,22 @@ const TESTIMONIAL_COLORS: Record<
 };
 
 const HERO_CHIPS: { label: string; situation: FunnelSituation }[] = [
-  { label: "Renovieren", situation: "renovieren" },
-  { label: "Sanieren", situation: "sanieren" },
-  { label: "Notfall", situation: "notfall" },
-  { label: "Garten & Haus", situation: "betreuung" },
+  { label: "Wohnung renovieren", situation: "renovieren" },
+  { label: "Heizung & Sanitär", situation: "sanieren" },
+  { label: "Notfall — sofort", situation: "notfall" },
 ];
-
-const RENOVIERUNG = new Set([
-  "malerarbeiten",
-  "badezimmer-sanierung",
-  "bodenbelag",
-  "fenster-tueren",
-  "trockenbau",
-]);
-const SANIERUNG = new Set(["heizung-sanitaer", "elektroarbeiten", "dacharbeiten"]);
-const AUSSEN = new Set(["gartenpflege", "gartengestaltung", "winterdienst"]);
-
-function leistungKategorie(slug: string): string {
-  if (RENOVIERUNG.has(slug)) return "Renovierung";
-  if (SANIERUNG.has(slug)) return "Sanierung";
-  if (AUSSEN.has(slug)) return "Außen & Garten";
-  return "Service";
-}
-
-function situationForSlug(slug: string): FunnelSituation {
-  if (RENOVIERUNG.has(slug)) return "renovieren";
-  if (SANIERUNG.has(slug)) return "sanieren";
-  if (AUSSEN.has(slug)) return "betreuung";
-  return "betreuung";
-}
-
-function FactsIcon({ type }: { type: "trend" | "clock" | "target" }) {
-  const cls = "facts-card-icon-svg";
-  if (type === "trend") {
-    return (
-      <svg className={cls} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
-        <path d="M3 3v18h18" strokeLinecap="round" />
-        <path d="m7 12 4-4 4 4 6-6" strokeLinecap="round" strokeLinejoin="round" />
-      </svg>
-    );
-  }
-  if (type === "clock") {
-    return (
-      <svg className={cls} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
-        <circle cx="12" cy="12" r="10" />
-        <path d="M12 6v6l4 2" strokeLinecap="round" />
-      </svg>
-    );
-  }
-  return (
-    <svg className={cls} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
-      <circle cx="12" cy="12" r="10" />
-      <circle cx="12" cy="12" r="6" />
-      <circle cx="12" cy="12" r="2" fill="currentColor" stroke="none" />
-    </svg>
-  );
-}
 
 function EinsatzIcon({ index }: { index: number }) {
   const cls = "vertrieb-ec-card-icon";
-  if (index === 0) {
+  const i = index % 3;
+  if (i === 0) {
     return (
       <svg className={cls} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden>
         <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" strokeLinejoin="round" />
       </svg>
     );
   }
-  if (index === 1) {
+  if (i === 1) {
     return (
       <svg className={cls} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden>
         <circle cx="12" cy="12" r="10" />
@@ -213,10 +146,24 @@ function EinsatzIcon({ index }: { index: number }) {
 
 const tel = SITE_CONFIG.phone.replace(/\s/g, "");
 
-export default function BaerenwaldLandingClient() {
+export default function BaerenwaldLandingClient({
+  leistungenSection,
+}: {
+  leistungenSection?: ReactNode;
+}) {
   const router = useRouter();
+  const searchComboRef = useRef<HTMLDivElement>(null);
   const [searchQ, setSearchQ] = useState("");
+  const [searchFocused, setSearchFocused] = useState(false);
+  const [suggestActive, setSuggestActive] = useState(-1);
   const [faqOpen, setFaqOpen] = useState<number | null>(0);
+
+  const searchSuggestions = useMemo(
+    () => getHeroSearchSuggestions(searchQ, 5),
+    [searchQ]
+  );
+  const showSearchSuggestions =
+    searchFocused && searchSuggestions.length > 0;
 
   useEffect(() => {
     const root = document.querySelector(".baerenwald-landing");
@@ -287,9 +234,60 @@ export default function BaerenwaldLandingClient() {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
+  useEffect(() => {
+    if (!searchFocused) return;
+    const onDocDown = (ev: MouseEvent) => {
+      if (!searchComboRef.current?.contains(ev.target as Node)) {
+        setSearchFocused(false);
+        setSuggestActive(-1);
+      }
+    };
+    document.addEventListener("mousedown", onDocDown);
+    return () => document.removeEventListener("mousedown", onDocDown);
+  }, [searchFocused]);
+
+  useEffect(() => {
+    setSuggestActive(-1);
+  }, [searchQ]);
+
+  const goToSuggestion = (s: HeroSearchSuggestion) => {
+    router.push(
+      `/rechner?leistung=${encodeURIComponent(s.slug)}&q=${encodeURIComponent(s.label)}`
+    );
+    setSearchFocused(false);
+    setSuggestActive(-1);
+  };
+
   const onSearch = (e: FormEvent) => {
     e.preventDefault();
+    if (
+      showSearchSuggestions &&
+      suggestActive >= 0 &&
+      suggestActive < searchSuggestions.length
+    ) {
+      goToSuggestion(searchSuggestions[suggestActive]!);
+      return;
+    }
     router.push(buildSearchUrl(searchQ));
+  };
+
+  const onSearchKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
+    if (!showSearchSuggestions) return;
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      setSuggestActive((i) =>
+        i < searchSuggestions.length - 1 ? i + 1 : 0
+      );
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      setSuggestActive((i) =>
+        i <= 0 ? searchSuggestions.length - 1 : i - 1
+      );
+    } else if (e.key === "Escape") {
+      e.preventDefault();
+      setSearchFocused(false);
+      setSuggestActive(-1);
+    }
   };
 
   return (
@@ -324,34 +322,103 @@ export default function BaerenwaldLandingClient() {
           <div className="hero">
             <div>
               <h1 className="hero-h1-split">
-                <span className="hero-h1-line--1 au">Dein Projekt.</span>
-                <span className="hero-h1-line--2 au d2">Wir kümmern uns.</span>
-                <span className="hero-h1-line--3 au d3">Einfach.</span>
+                <span className="hero-h1-line--1 au">Kein Vergleichsportal.</span>
+                <span className="hero-h1-line--2 au d2">Ein Ansprechpartner.</span>
+                <span className="hero-h1-line--3 au d3">Für alles.</span>
               </h1>
               <p className="hero-lead au d4">
-                Beschreib was du brauchst — wir berechnen den Preisrahmen und
-                koordinieren alle Handwerker.
+                Du rufst einmal an — wir koordinieren Maler, Elektriker, Bodenleger
+                und alle weiteren Handwerker. Kein Abstimmen, keine drei
+                Rechnungen.
               </p>
-              <div className="hero-benefit-chips fade-up">
-                <span className="hero-benefit-chip">
-                  🏠 München &amp; Umgebung
-                </span>
-                <span className="hero-benefit-chip">⭐ Meisterbetriebe</span>
-                <span className="hero-benefit-chip">✓ Kein Auftragszwang</span>
-              </div>
-              <form className="fade-up d1" onSubmit={onSearch}>
-                <div className="hero-search-row">
-                  <input
-                    className="hero-search-input"
-                    type="search"
-                    value={searchQ}
-                    onChange={(e) => setSearchQ(e.target.value.slice(0, 80))}
-                    placeholder="Was brauchst du? z.B. Bad, Heizung, Garten …"
-                    aria-label="Suche"
-                  />
-                  <button type="submit" className="hero-search-btn">
-                    Suchen
-                  </button>
+              <form className="fade-up d1 hero-search-form" onSubmit={onSearch}>
+                <div ref={searchComboRef} className="hero-search-combo">
+                  <div className="hero-search-row">
+                    <input
+                      className="hero-search-input"
+                      type="search"
+                      value={searchQ}
+                      onChange={(e) =>
+                        setSearchQ(e.target.value.slice(0, 80))
+                      }
+                      onFocus={() => setSearchFocused(true)}
+                      onBlur={() => {
+                        requestAnimationFrame(() => {
+                          const root = searchComboRef.current;
+                          const ae = document.activeElement;
+                          if (!root || !ae || !root.contains(ae)) {
+                            setSearchFocused(false);
+                            setSuggestActive(-1);
+                          }
+                        });
+                      }}
+                      onKeyDown={onSearchKeyDown}
+                      placeholder="Was suchst du?"
+                      aria-label="Was suchst du?"
+                      aria-autocomplete="list"
+                      aria-controls="hero-search-listbox"
+                      aria-expanded={showSearchSuggestions}
+                      aria-activedescendant={
+                        showSearchSuggestions && suggestActive >= 0
+                          ? `hero-search-opt-${suggestActive}`
+                          : undefined
+                      }
+                      autoComplete="off"
+                    />
+                    <button
+                      type="submit"
+                      className="hero-search-btn"
+                      aria-label="Suchen"
+                    >
+                      <svg
+                        className="hero-search-btn-icon"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2.25"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        aria-hidden
+                      >
+                        <circle cx="11" cy="11" r="7.5" />
+                        <path d="m20 20-4.2-4.2" />
+                      </svg>
+                    </button>
+                  </div>
+                  {showSearchSuggestions ? (
+                    <ul
+                      id="hero-search-listbox"
+                      className="hero-search-suggestions"
+                      role="listbox"
+                      aria-label="Vorschläge"
+                    >
+                      {searchSuggestions.map((s, idx) => (
+                        <li
+                          key={s.slug}
+                          id={`hero-search-opt-${idx}`}
+                          role="option"
+                          aria-selected={idx === suggestActive}
+                          className={
+                            idx === suggestActive
+                              ? "hero-search-suggestion hero-search-suggestion--active"
+                              : "hero-search-suggestion"
+                          }
+                          onMouseDown={(e) => {
+                            e.preventDefault();
+                            goToSuggestion(s);
+                          }}
+                          onMouseEnter={() => setSuggestActive(idx)}
+                        >
+                          <span className="hero-search-suggestion-label">
+                            {s.label}
+                          </span>
+                          <span className="hero-search-suggestion-sub">
+                            {s.subtitle}
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : null}
                 </div>
               </form>
               <div className="hero-chips fade-up d2">
@@ -369,7 +436,7 @@ export default function BaerenwaldLandingClient() {
             <div className="hero-visual fade-up d2">
               <div className="hero-float-wrap">
                 <div className="hero-floating-card hero-floating-card--top">
-                  Kostenlos &amp; unverbindlich
+                  Meisterbetriebe München
                 </div>
                 <div className="hero-phones-clip">
                   <Image
@@ -382,7 +449,7 @@ export default function BaerenwaldLandingClient() {
                   />
                 </div>
                 <div className="hero-floating-card hero-floating-card--bottom">
-                  1 Ansprechpartner für alle Gewerke
+                  Einer für alles
                 </div>
               </div>
             </div>
@@ -390,26 +457,6 @@ export default function BaerenwaldLandingClient() {
         </div>
 
         <div className="hero-bottom-round" aria-hidden />
-      </section>
-
-      <section className="facts-section section-soft-top">
-        <div className="facts-inner">
-          <h2 className="facts-h2 fade-up">Warum Bärenwald?</h2>
-          <p className="facts-sub fade-up d1">Handwerk aus einer Hand — transparent und meisterlich.</p>
-          <div className="facts-grid">
-            {FACTS_CARDS.map((card, i) => (
-              <div key={card.stat} className={`facts-card fade-up d${Math.min(i + 1, 4)}`}>
-                <div className="facts-card-icon">
-                  <FactsIcon type={card.icon} />
-                </div>
-                <p className="facts-card-stat">{card.stat}</p>
-                <div className="facts-card-rule" />
-                <p className="facts-card-body">{card.body}</p>
-              </div>
-            ))}
-          </div>
-          <p className="facts-note fade-up">Alle Koordination über Bärenwald — du sprichst nur mit uns.</p>
-        </div>
       </section>
 
       <section className="how-section" id="how">
@@ -448,53 +495,16 @@ export default function BaerenwaldLandingClient() {
         </div>
       </section>
 
-      <section className="checks-section" id="leistungen">
-        <div className="inner">
-          <h2 className="checks-section-headline fade-up">Unsere Leistungen</h2>
-          <div className="checks-section-taglines fade-up d1">
-            <p className="checks-section-tagline">Von der Einzelreparatur bis zur Komplettsanierung.</p>
-            <p className="checks-section-tagline">Details zur Leistung — oder direkt den Preisrahmen berechnen.</p>
-          </div>
-          <div className="ck-cards">
-            {LEISTUNGEN.map((l, i) => (
-              <article key={l.slug} className={`ck-card fade-up d${(i % 4) + 1}`}>
-                <div className="ck-card-preview">
-                  <span className="ck-card-icon-lg" aria-hidden>
-                    {l.icon}
-                  </span>
-                </div>
-                <div className="ck-card-right">
-                  <div>
-                    <p className="ck-card-cat">{leistungKategorie(l.slug)}</p>
-                    <p className="ck-card-name">{l.label}</p>
-                    <p className="ck-card-hook">{l.kurz}</p>
-                    <p className="ck-card-erlebnis">{l.hint}</p>
-                  </div>
-                  <div className="ck-card-foot">
-                    <div className="ck-card-btns">
-                      <Link href={leistungHref(l.slug)} className="ck-demo">
-                        Details →
-                      </Link>
-                      <Link
-                        href={`/rechner?situation=${situationForSlug(l.slug)}`}
-                        className="ck-buy"
-                      >
-                        Preisrahmen
-                      </Link>
-                    </div>
-                  </div>
-                </div>
-              </article>
-            ))}
-          </div>
-        </div>
-      </section>
+      {leistungenSection}
 
       <section className="vertrieb-ec">
         <div className="vertrieb-ec-inner">
           <div className="vertrieb-ec-head fade-up">
-            <h2 className="vertrieb-ec-h2">Dein Vorteil</h2>
-            <p className="vertrieb-ec-sub">So arbeiten wir — damit du Zeit und Nerven sparst.</p>
+            <h2 className="vertrieb-ec-h2">Warum Bärenwald?</h2>
+            <p className="vertrieb-ec-sub">
+              Bei MyHammer vergleichst du Angebote und koordinierst selbst. Bei
+              Bärenwald rufst du einmal an — wir übernehmen den Rest.
+            </p>
           </div>
           <div className="vertrieb-ec-grid">
             {EINSATZ_BLOCKS.map((b, i) => (
@@ -546,48 +556,6 @@ export default function BaerenwaldLandingClient() {
                 </div>
               );
             })}
-          </div>
-        </div>
-      </section>
-
-      <section className="benefits-section">
-          <div className="benefits-premium-shell fade-up">
-          <div className="benefits-premium-card">
-            <h2 className="benefits-premium-h2">Handwerk ohne Stress</h2>
-            <div className="benefits-premium-sub">
-              <p>Alles was du brauchst um dein Projekt stressfrei umzusetzen.</p>
-            </div>
-            <p className="benefits-premium-list-head">Das bekommst du</p>
-            <ul className="benefits-premium-list">
-              {BENEFITS_POINTS.map((pt, gi) => {
-                const gid = `bw-check-grad-${gi}`;
-                return (
-                  <li key={pt} className="benefits-premium-row">
-                    <span className="benefits-premium-row-text">{pt}</span>
-                    <span className="benefits-premium-check" aria-hidden>
-                      <svg className="benefits-premium-check-svg" viewBox="0 0 24 24" fill="none">
-                        <defs>
-                          <linearGradient id={gid} x1="0" y1="0" x2="1" y2="1">
-                            <stop offset="0%" stopColor="#ddd6fe" />
-                            <stop offset="50%" stopColor="#a7f3d0" />
-                            <stop offset="100%" stopColor="#99f6e4" />
-                          </linearGradient>
-                        </defs>
-                        <path
-                          d="M20 6L9 17l-5-5"
-                          stroke={`url(#${gid})`}
-                          strokeWidth="2.5"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        />
-                      </svg>
-                    </span>
-                  </li>
-                );
-              })}
-            </ul>
-            <div className="benefits-premium-divider" />
-            <p className="benefits-premium-bottom">Bärenwald Handwerksgruppe · München</p>
           </div>
         </div>
       </section>

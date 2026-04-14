@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 
 import BaerenwaldLandingClient from "./baerenwald-landing-client";
+import { LeistungenCarousel } from "@/components/ui/LeistungenCarousel";
 import { CTA } from "@/lib/cta-config";
 import { HOME_FAQ_ITEMS } from "@/lib/home-content";
 import { faqSchema } from "@/lib/schema";
@@ -11,7 +12,7 @@ const title =
   "Bärenwald Handwerksgruppe München — Maler, Elektriker, Bodenleger — alles aus einer Hand";
 
 const description =
-  `Kostenloser Preisrechner für Handwerksleistungen in München. Malerarbeiten, Bad, Elektro, Garten und mehr. Ein Ansprechpartner, wir kümmern uns um alle Handwerker — kein Auftragszwang. ${CTA.heroSub}.`;
+  `Kostenloser Preisrechner für Handwerksleistungen in München. Malerarbeiten, Bad, Elektro, Garten und mehr. Ein Ansprechpartner, wir kümmern uns um alle Handwerker — unverbindliche Beratung, Anfahrt wird bei Beauftragung angerechnet. ${CTA.heroSub}.`;
 
 const keywords = [
   "Handwerker München",
@@ -47,7 +48,9 @@ export default function HomePage() {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: faqJson }}
       />
-      <BaerenwaldLandingClient />
+      <BaerenwaldLandingClient
+        leistungenSection={<LeistungenCarousel />}
+      />
     </>
   );
 }

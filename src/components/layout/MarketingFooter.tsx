@@ -4,7 +4,6 @@ import { SITE_CONFIG } from "@/lib/config";
 import {
   LEISTUNGEN,
   RATGEBER,
-  RATGEBER_SITUATIONEN,
   leistungHref,
   ratgeberHref,
 } from "@/lib/routes";
@@ -53,14 +52,6 @@ export function MarketingFooter() {
             <p className="site-footer-col-title">Ratgeber & Kosten</p>
             <ul className="site-footer-links">
               {RATGEBER.map((r) => (
-                <li key={r.slug}>
-                  <a href={ratgeberHref(r.slug)}>{r.label}</a>
-                </li>
-              ))}
-            </ul>
-            <p className="site-footer-subtitle">Situationen</p>
-            <ul className="site-footer-links">
-              {RATGEBER_SITUATIONEN.map((r) => (
                 <li key={r.slug}>
                   <a href={ratgeberHref(r.slug)}>{r.label}</a>
                 </li>

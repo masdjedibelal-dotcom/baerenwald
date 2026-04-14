@@ -37,7 +37,7 @@ export const LEISTUNGEN_DATA: Record<string, LeistungsData> = {
     preisBis: 22,
     preisEinheit: "pro m² Wandfläche",
     preisHinweis:
-      "Der Preis hängt davon ab wie groß die Fläche ist und ob die Wände in gutem Zustand sind. Beim kostenlosen Termin sehen wir uns alles an und nennen dir einen festen Preis — ohne böse Überraschungen.",
+      "Der Preis hängt davon ab wie groß die Fläche ist und ob die Wände in gutem Zustand sind. Beim Vor-Ort-Termin sehen wir uns alles an und nennen dir einen festen Preis. Anfahrt wird bei Beauftragung angerechnet.",
     vorteile: vorteil(
       ["🎯", "Ein Ansprechpartner für alles"],
       ["✓", "Geprüfte Meisterbetriebe"],
@@ -515,7 +515,7 @@ export const LEISTUNGEN_DATA: Record<string, LeistungsData> = {
     preisBis: 180,
     preisEinheit: "pro m² Dachfläche",
     preisHinweis:
-      "Kleine Reparaturen ab 250 € pauschal. Größere Schäden schauen wir uns beim kostenlosen Termin an und nennen dir einen festen Preis. Bei Sturmschäden helfen wir auch bei der Versicherung.",
+      "Kleine Reparaturen ab 250 € pauschal. Größere Schäden schauen wir uns beim Vor-Ort-Termin an und nennen dir einen festen Preis. Anfahrt wird bei Beauftragung angerechnet. Bei Sturmschäden helfen wir auch bei der Versicherung.",
     vorteile: vorteil(
       ["🏡", "Notfall & schnelle Abdichtung"],
       ["🛡", "Fachbetriebe für alle Dachformen"],

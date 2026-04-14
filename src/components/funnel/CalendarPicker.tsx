@@ -99,6 +99,16 @@ export function CalendarPicker({
 
   return (
     <div className={cn("space-y-2.5", className)}>
+      <div>
+        <p className="text-sm font-semibold text-text-primary">
+          Wunschtermin für den Vor-Ort-Termin
+        </p>
+        <p className="mb-3.5 mt-1 text-xs leading-relaxed text-text-tertiary">
+          Wähle einen Wunschtermin — wir bestätigen die Verfügbarkeit innerhalb
+          von 24h.
+        </p>
+      </div>
+
       <div className="overflow-hidden rounded-[18px] border border-border-default bg-surface-card">
         <div className="flex items-center justify-between border-b border-border-default px-4 py-3.5">
           <button
@@ -226,20 +236,28 @@ export function CalendarPicker({
       ) : null}
 
       {pickedDay && pickedTime && !isSlotAlwaysFull(pickedTime) ? (
-        <div className="flex items-center justify-between gap-3 rounded-xl bg-muted p-3">
-          <div className="min-w-0">
-            <p className="text-sm font-medium text-text-primary">{confirmLabel}</p>
-            <p className="text-[11px] text-text-secondary">
-              Kostenloser Vor-Ort-Termin · 30 Min.
-            </p>
+        <div>
+          <div className="flex items-center justify-between gap-3 rounded-xl bg-muted p-3">
+            <div className="min-w-0">
+              <p className="text-sm font-medium text-text-primary">
+                {confirmLabel}
+              </p>
+              <p className="text-[11px] text-text-secondary">
+                Kostenloser Vor-Ort-Termin · 30 Min.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => onConfirmBook?.()}
+              className="shrink-0 rounded-full bg-funnel-accent px-4 py-2 text-xs font-semibold text-white"
+            >
+              Wunschtermin anfragen →
+            </button>
           </div>
-          <button
-            type="button"
-            onClick={() => onConfirmBook?.()}
-            className="shrink-0 rounded-full bg-funnel-accent px-4 py-2 text-xs font-semibold text-white"
-          >
-            Termin buchen →
-          </button>
+          <p className="mt-2 text-center text-[11px] leading-relaxed text-text-tertiary">
+            Kein garantierter Termin — wir prüfen die Verfügbarkeit und
+            bestätigen per Telefon oder E-Mail.
+          </p>
         </div>
       ) : null}
     </div>
