@@ -84,10 +84,11 @@ export async function POST(request: Request) {
     const fotos = String(body.photoCount ?? 0);
     const kundentyp = body.kundentyp?.trim() || "nicht angegeben";
 
+    const situationNorm = (body.situation ?? "").trim();
     const leadType: "beratung" | "system" =
       body.leadType === "beratung" ||
-      kundentyp === "gewerbe" ||
-      kundentyp === "gastro"
+      situationNorm === "gewerbe" ||
+      situationNorm === "gastro"
         ? "beratung"
         : "system";
 
@@ -131,7 +132,7 @@ export async function POST(request: Request) {
 
     const subject =
       leadType === "beratung"
-        ? `Beratungsanfrage: ${name} — ${kundentyp}`
+        ? `Beratungsanfrage: ${name} — ${situationNorm || kundentyp}`
         : `Neuer Lead: ${name} — ${situation}`;
 
     const { error } = await resend.emails.send({

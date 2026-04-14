@@ -65,6 +65,8 @@ export function createInitialBwFunnelState(): FunnelState {
     breakdown: [],
     budgetCheck: null,
     dringlichkeit: null,
+    zugaenglichkeit: null,
+    zustand: null,
     photos: [],
     name: "",
     vorname: "",

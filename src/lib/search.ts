@@ -42,6 +42,16 @@ const SEARCH_MAP: Record<string, Situation> = {
   terrasse: "neubauen",
   ausbauen: "neubauen",
   "wand einziehen": "neubauen",
+  büro: "gewerbe",
+  buero: "gewerbe",
+  praxis: "gewerbe",
+  laden: "gewerbe",
+  gewerbe: "gewerbe",
+  restaurant: "gastro",
+  gastronomie: "gastro",
+  gastro: "gastro",
+  cafe: "gastro",
+  hotel: "gastro",
 };
 
 function normalize(s: string): string {

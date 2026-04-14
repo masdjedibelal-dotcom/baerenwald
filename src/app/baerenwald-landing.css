@@ -323,6 +323,12 @@
   }
 }
 
+/* Linke Spalte über Hero-Bild & Floating-Cards — Such-Autocomplete nicht verdecken */
+.hero > div:first-child {
+  position: relative;
+  z-index: 6;
+}
+
 /* Sofort sichtbar: Hero liegt oben — fade-up darf nicht auf IO warten */
 .hero .fade-up {
   opacity: 1;
@@ -334,9 +340,9 @@
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.15em;
-  color: var(--fl-accent-light);
-  margin-bottom: 16px;
-  opacity: 0.8;
+  color: var(--fl-accent);
+  margin: 0 0 16px;
+  opacity: 0.88;
 }
 
 .hero-h1-split {
@@ -378,6 +384,7 @@
 
 .hero-search-combo {
   position: relative;
+  z-index: 2;
   max-width: 500px;
   margin-bottom: 12px;
 }
@@ -392,21 +399,22 @@
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
 }
 
-.hero-search-suggestions {
-  list-style: none;
-  margin: 8px 0 0;
-  padding: 6px 0;
-  position: absolute;
-  left: 0;
-  right: 0;
-  width: 100%;
-  z-index: 200;
-  background: #fff;
-  border: 1px solid rgba(30, 30, 31, 0.12);
-  border-radius: 16px;
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.12);
+/* Portal in document.body — überlagert Hero-Bild / Stacking-Kontexte */
+.search-dropdown-portal {
+  background: var(--fl-bg-card);
+  border: 1px solid var(--fl-border);
+  border-radius: var(--fl-radius-sm);
+  box-shadow: var(--fl-shadow-hover);
+  z-index: 9999;
   max-height: min(320px, 52vh);
+  overflow-x: hidden;
   overflow-y: auto;
+}
+
+.search-dropdown-portal-list {
+  list-style: none;
+  margin: 0;
+  padding: 6px 0;
 }
 
 .search-suggestion {
@@ -417,6 +425,9 @@
   padding: 10px 16px;
   cursor: pointer;
   transition: background 0.15s;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--fl-text);
 }
 
 .search-suggestion:hover {
@@ -566,6 +577,8 @@
 }
 
 .hero-visual {
+  position: relative;
+  z-index: 1;
   display: flex;
   justify-content: center;
   align-items: center;
@@ -1567,6 +1580,10 @@
   color: var(--fl-accent);
 }
 
+.site-mobile-links a:last-child {
+  border-bottom: none;
+}
+
 .site-mobile-cta {
   margin-top: 32px;
   background: var(--fl-accent);
@@ -1753,9 +1770,9 @@
 }
 
 .site-mobile-section:first-of-type {
-  margin-top: 8px;
-  padding-top: 0;
-  border-top: none;
+  margin-top: 0;
+  padding-top: 18px;
+  border-top: 1px solid var(--fl-border-light);
 }
 
 .site-mobile-section-title {
@@ -2834,6 +2851,7 @@
   overflow-x: auto;
   scrollbar-width: none;
   -webkit-overflow-scrolling: touch;
+  touch-action: pan-x pan-y;
   margin-bottom: 0;
 }
 
@@ -2943,7 +2961,8 @@
   gap: 14px;
   overflow-x: auto;
   overflow-y: hidden;
-  touch-action: pan-x;
+  /* waagrecht wischen, vertikal Seite scrollen (pan-x allein blockiert y auf Touch) */
+  touch-action: pan-x pan-y;
   scroll-snap-type: x mandatory;
   -webkit-overflow-scrolling: touch;
   scrollbar-width: none;

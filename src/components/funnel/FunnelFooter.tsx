@@ -34,10 +34,7 @@ export function FunnelFooter({
     >
       <div className="mx-auto max-w-xl">
         <div className="flex items-center justify-between gap-4">
-          <p className="text-xs text-text-tertiary">
-            Kein Auftragszwang · Kostenlos
-          </p>
-          <div className="flex shrink-0 items-center gap-3">
+          <div className="min-w-0">
             {showBack && onBack ? (
               <button
                 type="button"
@@ -47,6 +44,8 @@ export function FunnelFooter({
                 Zurück
               </button>
             ) : null}
+          </div>
+          <div className="shrink-0">
             {onNext ? (
               <button
                 type="button"

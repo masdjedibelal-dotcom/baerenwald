@@ -2,6 +2,7 @@
 
 import { formatCurrencyEUR } from "@/lib/price-calc";
 import type { BudgetCheck, FunnelState, PriceLineItem } from "@/lib/funnel/types";
+import { getBwPreisFaktorHint } from "@/lib/funnel/price-calc";
 import { SITE_CONFIG } from "@/lib/config";
 import { cn } from "@/lib/utils";
 
@@ -96,6 +97,9 @@ export function BwResultScreen({
   }
 
   const hasRange = state.priceMin > 0 && state.priceMax > 0;
+  const preisFaktorHint = getBwPreisFaktorHint(state);
+  const preisFaktorStandard =
+    preisFaktorHint === "Standardpreis für München 2024/25";
 
   return (
     <div className={cn("space-y-5", className)}>
@@ -116,6 +120,20 @@ export function BwResultScreen({
           </div>
           <p className="mt-1.5 text-[11px] leading-relaxed text-[#666]">
             Richtwert für {SITE_CONFIG.region} — unverbindlich.
+          </p>
+          <p
+            className="mt-2 text-[12px] leading-relaxed"
+            style={{
+              color: "var(--fl-text-3, #9e9e9e)",
+            }}
+          >
+            {preisFaktorStandard ? (
+              preisFaktorHint
+            ) : (
+              <>
+                Preis beeinflusst durch: {preisFaktorHint}
+              </>
+            )}
           </p>
           <div className="mt-3 flex flex-wrap gap-1.5">
             {state.bereiche.map((g) => (

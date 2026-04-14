@@ -3,14 +3,14 @@ export type Situation =
   | "sanieren"
   | "notfall"
   | "neubauen"
-  | "betreuung";
+  | "betreuung"
+  | "gewerbe"
+  | "gastro";
 
 export type Kundentyp =
   | "eigentuemer"
   | "mieter"
-  | "hausverwaltung"
-  | "gewerbe"
-  | "gastro";
+  | "hausverwaltung";
 
 export type Zeitraum = "sofort" | "4wochen" | "1-3monate" | "offen";
 
@@ -39,6 +39,10 @@ export interface FunnelState {
   breakdown: PriceLineItem[];
   budgetCheck: BudgetCheck;
   dringlichkeit: "akut" | "stabil" | "nutzbar" | "keine_eile" | null;
+  /** Optional: Zugänglichkeit der Baustelle (Preisfaktoren) */
+  zugaenglichkeit?: "einfach" | "mittel" | "schwer" | null;
+  /** Optional: Zustand der Fläche (Preisfaktoren) */
+  zustand?: "gut" | "mittel" | "schlecht" | null;
   photos: File[];
   name: string;
   vorname: string;

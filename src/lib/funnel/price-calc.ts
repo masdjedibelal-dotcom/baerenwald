@@ -1,9 +1,32 @@
 import type { FunnelState, PriceLineItem } from "./types";
 
-/** Basispreise München 2024/25 */
-const PREISE = {
+/** Echte Kollegenpreise (Richtwerte) */
+const PREIS_ECHT = {
+  sanitaer: {
+    verstopfung: { min: 120, max: 350, einheit: "pauschal" },
+    leck: { min: 150, max: 600, einheit: "pauschal" },
+    wc: { min: 120, max: 350, einheit: "pauschal" },
+    armatur: { min: 120, max: 280, einheit: "pauschal" },
+  },
+  elektro: {
+    steckdose: { min: 80, max: 180, einheit: "pro Punkt" },
+    fi_schalter: { min: 150, max: 350, einheit: "pauschal" },
+    fehlersuche: { min: 150, max: 600, einheit: "pauschal" },
+  },
+  garten: {
+    rasen: { min: 1.5, max: 3.0, einheit: "pro m²" },
+    hecke: { min: 8, max: 35, einheit: "pro m² Hecke" },
+    pflaster: { min: 90, max: 180, einheit: "pro m²" },
+  },
+} as const;
+
+type EchtService = keyof typeof PREIS_ECHT;
+
+/** Platzhalter / Marktpreise München (bestehende Logik) */
+const PREIS_MARKT = {
   maler: { min: 12, max: 22 },
-  boden_standard: { min: 35, max: 55 },
+  /** Platzhalter Münchner Markt, pro m² */
+  boden: { min: 35, max: 130 },
   boden_premium: { min: 75, max: 140 },
   bad: { min: 6500, max: 20000 },
   kueche: { min: 650, max: 1800 },
@@ -25,6 +48,65 @@ const PREISE = {
   terrasse: { min: 280, max: 650 },
 } as const;
 
+export const FAKTOREN = {
+  zugaenglichkeit: {
+    einfach: 1.0,
+    mittel: 1.3,
+    schwer: 1.6,
+  },
+  zustand: {
+    gut: 1.0,
+    mittel: 1.4,
+    schlecht: 2.0,
+  },
+  dringlichkeit: {
+    /** Notfall „akut“ im Funnel */
+    akut: 2.0,
+    sofort: 2.0,
+    stabil: 1.5,
+    nutzbar: 1.2,
+    keine_eile: 1.0,
+    flexibel: 1.0,
+  },
+  umfang: {
+    auffrischen: 1.0,
+    teil: 1.5,
+    komplett: 2.2,
+    unsicher: 1.5,
+    ersetzen: 1.0,
+    modernisieren: 1.6,
+    beratung: 1.6,
+    woechentlich: 0.85,
+    zweiwochentlich: 0.9,
+    monatlich: 1.0,
+    saisonal: 1.1,
+    einmalig: 1.3,
+    idee: 1.2,
+    vorstellung: 1.0,
+    plaene: 0.9,
+    bereit: 0.85,
+  },
+} as const;
+
+const ECHT_GEWERK_LABEL: Record<EchtService, string> = {
+  sanitaer: "Sanitär",
+  elektro: "Elektro",
+  garten: "Garten",
+};
+
+const ECHT_TYP_LABEL: Record<string, string> = {
+  verstopfung: "Verstopfung",
+  leck: "Leck / Rohr",
+  wc: "Heizung / Warmwasser",
+  armatur: "Bad — Armaturen / Einzelteile",
+  steckdose: "Steckdose / Punkt",
+  fi_schalter: "FI / Sicherungskasten",
+  fehlersuche: "Fehlersuche",
+  rasen: "Rasenpflege",
+  hecke: "Hecke",
+  pflaster: "Pflaster / Terrasse",
+};
+
 function effektiveFlaeche(state: FunnelState): number {
   const g = state.groesse;
   if (g != null && g > 0) return g;
@@ -41,6 +123,8 @@ function notfallDringlichkeitsFaktor(
   d: FunnelState["dringlichkeit"]
 ): number {
   switch (d) {
+    case "akut":
+      return 1.8;
     case "stabil":
       return 1.5;
     case "nutzbar":
@@ -69,17 +153,24 @@ function pushLine(
   });
 }
 
+function round50(n: number): number {
+  return Math.round(n / 50) * 50;
+}
+
 function finalizeRange(
   rawMin: number,
   rawMax: number,
   breakdown: PriceLineItem[]
 ): { min: number; max: number; breakdown: PriceLineItem[] } {
-  const finalMin = Math.round((rawMin * 0.85) / 100) * 100;
-  const finalMax = Math.round((rawMax * 1.15) / 100) * 100;
+  const finalMin = round50(rawMin * 0.85);
+  const finalMax = round50(rawMax * 1.15);
   return { min: finalMin, max: finalMax, breakdown };
 }
 
-function sumBreakdown(breakdown: PriceLineItem[]): { rawMin: number; rawMax: number } {
+function sumBreakdown(breakdown: PriceLineItem[]): {
+  rawMin: number;
+  rawMax: number;
+} {
   return breakdown.reduce(
     (acc, b) => ({
       rawMin: acc.rawMin + b.min,
@@ -89,19 +180,159 @@ function sumBreakdown(breakdown: PriceLineItem[]): { rawMin: number; rawMax: num
   );
 }
 
-function calcRenovieren(state: FunnelState): PriceLineItem[] {
+/** Funnel-Antworten → Echtpreis-Untertyp (leer = Platzhalter-Pfad) */
+export function mapToServiceType(state: FunnelState): {
+  service: EchtService | "";
+  type: string;
+} {
+  const { situation, bereiche } = state;
+
+  if (situation === "notfall" && bereiche.includes("wasser")) {
+    return { service: "sanitaer", type: "leck" };
+  }
+  if (situation === "notfall" && bereiche.includes("heizung")) {
+    return { service: "sanitaer", type: "wc" };
+  }
+  if (situation === "notfall" && bereiche.includes("strom")) {
+    return { service: "elektro", type: "fehlersuche" };
+  }
+
+  if (situation === "renovieren" && bereiche.includes("bad")) {
+    return { service: "sanitaer", type: "armatur" };
+  }
+
+  if (situation === "sanieren" && bereiche.includes("elektrik")) {
+    if (state.umfang === "ersetzen") {
+      return { service: "elektro", type: "steckdose" };
+    }
+    return { service: "elektro", type: "fi_schalter" };
+  }
+
+  if (situation === "renovieren" && bereiche.includes("garten")) {
+    return { service: "garten", type: "rasen" };
+  }
+
+  if (situation === "neubauen" && bereiche.includes("terrasse")) {
+    return { service: "garten", type: "pflaster" };
+  }
+
+  return { service: "", type: "" };
+}
+
+function getEchtBasis(service: string, type: string) {
+  if (service !== "sanitaer" && service !== "elektro" && service !== "garten") {
+    return null;
+  }
+  const block = PREIS_ECHT[service];
+  return (block as Record<string, { min: number; max: number; einheit: string }>)[
+    type
+  ];
+}
+
+function echtGesamtFaktor(state: FunnelState): number {
+  const zugFaktor =
+    FAKTOREN.zugaenglichkeit[
+      (state.zugaenglichkeit ?? "einfach") as keyof typeof FAKTOREN.zugaenglichkeit
+    ] ?? 1.0;
+  const zustandFaktor =
+    FAKTOREN.zustand[
+      (state.zustand ?? "gut") as keyof typeof FAKTOREN.zustand
+    ] ?? 1.0;
+  const dringKey =
+    (state.dringlichkeit ?? "flexibel") as keyof typeof FAKTOREN.dringlichkeit;
+  const dringFaktor = FAKTOREN.dringlichkeit[dringKey] ?? 1.0;
+  const umfangKey = (state.umfang ?? "auffrischen") as keyof typeof FAKTOREN.umfang;
+  const umfangFaktor = FAKTOREN.umfang[umfangKey] ?? 1.0;
+  return zugFaktor * zustandFaktor * dringFaktor * umfangFaktor;
+}
+
+function buildEchtLine(
+  service: EchtService,
+  type: string,
+  state: FunnelState
+): PriceLineItem | null {
+  const basis = getEchtBasis(service, type);
+  if (!basis) return null;
+
+  const gesamtFaktor = echtGesamtFaktor(state);
+  const groesse = state.groesse ?? effektiveFlaeche(state);
+  const einheit = basis.einheit;
+  const multiplier =
+    einheit.includes("m²") && !einheit.includes("Monat") ? groesse : 1;
+
+  const rawMin = basis.min * multiplier * gesamtFaktor;
+  const rawMax = basis.max * multiplier * gesamtFaktor;
+
+  return {
+    gewerk: ECHT_GEWERK_LABEL[service],
+    beschreibung: ECHT_TYP_LABEL[type] ?? type,
+    min: round50(rawMin),
+    max: round50(rawMax),
+    einheit,
+  };
+}
+
+/** Eine oder mehrere Echtpreis-Zeilen; leer = Platzhalter-Pfad */
+function collectMappedEchtLines(state: FunnelState): PriceLineItem[] {
+  if (state.situation === "betreuung") {
+    const b = state.bereiche;
+    const lines: PriceLineItem[] = [];
+    if (b.includes("gestaltung")) {
+      const line = buildEchtLine("garten", "pflaster", state);
+      if (line) lines.push(line);
+    }
+    if (b.includes("garten")) {
+      const line = buildEchtLine("garten", "rasen", state);
+      if (line) lines.push(line);
+    }
+    if (lines.length > 0) return lines;
+  }
+
+  const { service, type } = mapToServiceType(state);
+  if (!service || !type) return [];
+  const line = buildEchtLine(service, type, state);
+  return line ? [line] : [];
+}
+
+/** Kurztext für die Ergebnis-Karte (Preisfaktoren) */
+export function getBwPreisFaktorHint(state: FunnelState): string {
+  const parts: string[] = [];
+  if (state.zugaenglichkeit && state.zugaenglichkeit !== "einfach") {
+    parts.push("Zugänglichkeit");
+  }
+  if (state.zustand && state.zustand !== "gut") {
+    parts.push("Zustand der Fläche");
+  }
+  if (state.dringlichkeit === "akut") {
+    parts.push("Soforteinsatz");
+  }
+  if (state.dringlichkeit === "stabil") {
+    parts.push("Dringende Bearbeitung");
+  }
+  if (state.dringlichkeit === "nutzbar") {
+    parts.push("Zeitnahe Bearbeitung");
+  }
+  return parts.length > 0
+    ? parts.join(" · ")
+    : "Standardpreis für München 2024/25";
+}
+
+function calcRenovieren(
+  state: FunnelState,
+  opts?: { skipBad?: boolean }
+): PriceLineItem[] {
   const b = state.bereiche;
   const f = state.umfangFaktor || 1;
   const breakdown: PriceLineItem[] = [];
   const qm = effektiveFlaeche(state);
 
-  if (b.includes("bad")) {
+  if (b.includes("bad") && !opts?.skipBad) {
     pushLine(
       breakdown,
       "Bad",
       "Badsanierung",
-      PREISE.bad.min * f,
-      PREISE.bad.max * f,
+      PREIS_MARKT.bad.min * f,
+      PREIS_MARKT.bad.max * f,
       "Pauschale"
     );
   }
@@ -110,8 +341,8 @@ function calcRenovieren(state: FunnelState): PriceLineItem[] {
       breakdown,
       "Küche",
       "Küchenanschluss & Ausbau",
-      PREISE.kueche.min * f,
-      PREISE.kueche.max * f,
+      PREIS_MARKT.kueche.min * f,
+      PREIS_MARKT.kueche.max * f,
       "Pauschale"
     );
   }
@@ -121,16 +352,16 @@ function calcRenovieren(state: FunnelState): PriceLineItem[] {
       breakdown,
       "Maler",
       "Wände streichen / tapezieren",
-      wandQm * PREISE.maler.min * f,
-      wandQm * PREISE.maler.max * f,
+      wandQm * PREIS_MARKT.maler.min * f,
+      wandQm * PREIS_MARKT.maler.max * f,
       "€"
     );
     pushLine(
       breakdown,
       "Boden",
       "Boden Standard",
-      qm * PREISE.boden_standard.min * f,
-      qm * PREISE.boden_standard.max * f,
+      qm * PREIS_MARKT.boden.min * f,
+      qm * PREIS_MARKT.boden.max * f,
       "€"
     );
   }
@@ -140,15 +371,18 @@ function calcRenovieren(state: FunnelState): PriceLineItem[] {
       breakdown,
       "Fenster",
       "ca. 3 Fenster / Türen",
-      stueck * PREISE.fenster.min * f,
-      stueck * PREISE.fenster.max * f,
+      stueck * PREIS_MARKT.fenster.min * f,
+      stueck * PREIS_MARKT.fenster.max * f,
       "€"
     );
   }
   return breakdown;
 }
 
-function calcSanieren(state: FunnelState): PriceLineItem[] {
+function calcSanieren(
+  state: FunnelState,
+  opts?: { skipElektrik?: boolean }
+): PriceLineItem[] {
   const b = state.bereiche;
   const f = state.umfangFaktor || 1;
   const breakdown: PriceLineItem[] = [];
@@ -159,8 +393,8 @@ function calcSanieren(state: FunnelState): PriceLineItem[] {
       breakdown,
       "Heizung",
       "Heizungssanierung / Tausch",
-      PREISE.heizung.min * f,
-      PREISE.heizung.max * f,
+      PREIS_MARKT.heizung.min * f,
+      PREIS_MARKT.heizung.max * f,
       "Pauschale"
     );
   }
@@ -170,8 +404,8 @@ function calcSanieren(state: FunnelState): PriceLineItem[] {
       breakdown,
       "Dach",
       "Dachfläche (ca. 0,8 × Wohnfläche)",
-      dachQm * PREISE.dach.min * f,
-      dachQm * PREISE.dach.max * f,
+      dachQm * PREIS_MARKT.dach.min * f,
+      dachQm * PREIS_MARKT.dach.max * f,
       "€"
     );
   }
@@ -181,18 +415,18 @@ function calcSanieren(state: FunnelState): PriceLineItem[] {
       breakdown,
       "Fassade",
       "Fassadenfläche (ca. 2,2 × Wohnfläche)",
-      fassQm * PREISE.fassade.min * f,
-      fassQm * PREISE.fassade.max * f,
+      fassQm * PREIS_MARKT.fassade.min * f,
+      fassQm * PREIS_MARKT.fassade.max * f,
       "€"
     );
   }
-  if (b.includes("elektrik")) {
+  if (b.includes("elektrik") && !opts?.skipElektrik) {
     pushLine(
       breakdown,
       "Elektro",
       "Elektro nach Fläche",
-      qm * PREISE.elektro_qm.min * f,
-      qm * PREISE.elektro_qm.max * f,
+      qm * PREIS_MARKT.elektro_qm.min * f,
+      qm * PREIS_MARKT.elektro_qm.max * f,
       "€"
     );
   }
@@ -202,8 +436,8 @@ function calcSanieren(state: FunnelState): PriceLineItem[] {
       breakdown,
       "Fenster",
       "Fenstertausch / Dämmung",
-      stueck * PREISE.fenster.min,
-      stueck * PREISE.fenster.max,
+      stueck * PREIS_MARKT.fenster.min,
+      stueck * PREIS_MARKT.fenster.max,
       "€"
     );
     const fassAnteil = qm * 0.5;
@@ -211,8 +445,8 @@ function calcSanieren(state: FunnelState): PriceLineItem[] {
       breakdown,
       "Fassade",
       "Dämmung / Fassade (Anteil)",
-      fassAnteil * PREISE.fassade.min * f,
-      fassAnteil * PREISE.fassade.max * f,
+      fassAnteil * PREIS_MARKT.fassade.min * f,
+      fassAnteil * PREIS_MARKT.fassade.max * f,
       "€"
     );
   }
@@ -232,8 +466,8 @@ function calcNotfall(state: FunnelState): PriceLineItem[] {
       breakdown,
       "Heizung",
       "Notfall / Wartung",
-      PREISE.heizung_wartung.min * df,
-      PREISE.heizung_wartung.max * df,
+      PREIS_MARKT.heizung_wartung.min * df,
+      PREIS_MARKT.heizung_wartung.max * df,
       "Pauschale"
     );
   }
@@ -243,8 +477,8 @@ function calcNotfall(state: FunnelState): PriceLineItem[] {
       breakdown,
       "Wasser & Rohre",
       `Kurzeinsatz ca. ${h} h`,
-      PREISE.sanitaer_std.min * h * df,
-      PREISE.sanitaer_std.max * h * df,
+      PREIS_MARKT.sanitaer_std.min * h * df,
+      PREIS_MARKT.sanitaer_std.max * h * df,
       "€"
     );
   }
@@ -254,15 +488,18 @@ function calcNotfall(state: FunnelState): PriceLineItem[] {
       breakdown,
       "Elektro",
       `ca. ${punkte} Arbeitspunkte`,
-      PREISE.elektro_punkt.min * punkte * df,
-      PREISE.elektro_punkt.max * punkte * df,
+      PREIS_MARKT.elektro_punkt.min * punkte * df,
+      PREIS_MARKT.elektro_punkt.max * punkte * df,
       "€"
     );
   }
   return breakdown;
 }
 
-function calcNeubauen(state: FunnelState): PriceLineItem[] {
+function calcNeubauen(
+  state: FunnelState,
+  opts?: { skipTerrasseAnbau?: boolean }
+): PriceLineItem[] {
   const b = state.bereiche;
   const planF = state.umfangFaktor || 1;
   const breakdown: PriceLineItem[] = [];
@@ -273,48 +510,54 @@ function calcNeubauen(state: FunnelState): PriceLineItem[] {
       breakdown,
       "Ausbau",
       "Keller / DG / Umbau",
-      qm * PREISE.ausbau.min * planF,
-      qm * PREISE.ausbau.max * planF,
+      qm * PREIS_MARKT.ausbau.min * planF,
+      qm * PREIS_MARKT.ausbau.max * planF,
       "€"
     );
   }
-  if (b.includes("terrasse") || b.includes("anbau")) {
+  if (
+    !opts?.skipTerrasseAnbau &&
+    (b.includes("terrasse") || b.includes("anbau"))
+  ) {
     pushLine(
       breakdown,
       "Terrasse / Außen",
       "Terrasse, Carport, Anbau",
-      qm * PREISE.terrasse.min * planF,
-      qm * PREISE.terrasse.max * planF,
+      qm * PREIS_MARKT.terrasse.min * planF,
+      qm * PREIS_MARKT.terrasse.max * planF,
       "€"
     );
   }
   return breakdown;
 }
 
-function calcBetreuung(state: FunnelState): PriceLineItem[] {
+function calcBetreuung(
+  state: FunnelState,
+  opts?: { skipGarten?: boolean; skipGestaltung?: boolean }
+): PriceLineItem[] {
   const b = state.bereiche;
   const hf = state.umfangFaktor || 1;
   const breakdown: PriceLineItem[] = [];
   const qm = effektiveFlaeche(state);
   const monateGarten = 7;
 
-  if (b.includes("garten")) {
+  if (b.includes("garten") && !opts?.skipGarten) {
     pushLine(
       breakdown,
       "Gartenpflege",
       `ca. ${monateGarten} Monate (Saison)`,
-      qm * PREISE.gartenpflege.min * monateGarten * hf,
-      qm * PREISE.gartenpflege.max * monateGarten * hf,
+      qm * PREIS_MARKT.gartenpflege.min * monateGarten * hf,
+      qm * PREIS_MARKT.gartenpflege.max * monateGarten * hf,
       "€"
     );
   }
-  if (b.includes("gestaltung")) {
+  if (b.includes("gestaltung") && !opts?.skipGestaltung) {
     pushLine(
       breakdown,
       "Gartengestaltung",
       "Einmalige Gestaltung",
-      qm * PREISE.gartengestalt.min,
-      qm * PREISE.gartengestalt.max,
+      qm * PREIS_MARKT.gartengestalt.min,
+      qm * PREIS_MARKT.gartengestalt.max,
       "€"
     );
   }
@@ -324,8 +567,8 @@ function calcBetreuung(state: FunnelState): PriceLineItem[] {
       breakdown,
       "Baumpflege",
       `ca. ${n} Baum/Bäume`,
-      n * PREISE.baum.min,
-      n * PREISE.baum.max,
+      n * PREIS_MARKT.baum.min,
+      n * PREIS_MARKT.baum.max,
       "€"
     );
   }
@@ -334,8 +577,8 @@ function calcBetreuung(state: FunnelState): PriceLineItem[] {
       breakdown,
       "Winterdienst",
       "Saisonpauschale",
-      PREISE.winterdienst.min,
-      PREISE.winterdienst.max,
+      PREIS_MARKT.winterdienst.min,
+      PREIS_MARKT.winterdienst.max,
       "Pauschale"
     );
   }
@@ -345,8 +588,8 @@ function calcBetreuung(state: FunnelState): PriceLineItem[] {
       breakdown,
       "Reinigung",
       `ca. ${monate} Monate`,
-      qm * PREISE.reinigung.min * monate * hf,
-      qm * PREISE.reinigung.max * monate * hf,
+      qm * PREIS_MARKT.reinigung.min * monate * hf,
+      qm * PREIS_MARKT.reinigung.max * monate * hf,
       "€"
     );
   }
@@ -367,6 +610,63 @@ export function calculatePrice(state: FunnelState): {
 
   if (state.situation === "notfall" && state.dringlichkeit === "akut") {
     return { min: 0, max: 0, breakdown: [] };
+  }
+
+  const mappedLines = collectMappedEchtLines(state);
+  if (mappedLines.length > 0) {
+    let breakdown = [...mappedLines];
+    const b = state.bereiche;
+
+    if (
+      state.situation === "neubauen" &&
+      b.includes("terrasse") &&
+      (b.includes("keller_dg") ||
+        b.includes("umbau") ||
+        b.includes("anbau"))
+    ) {
+      breakdown = [
+        ...breakdown,
+        ...calcNeubauen(state, { skipTerrasseAnbau: true }),
+      ];
+    }
+
+    if (
+      state.situation === "sanieren" &&
+      b.includes("elektrik") &&
+      b.some((x) => x !== "elektrik")
+    ) {
+      breakdown = [
+        ...breakdown,
+        ...calcSanieren(state, { skipElektrik: true }),
+      ];
+    }
+
+    if (
+      state.situation === "renovieren" &&
+      b.includes("bad") &&
+      b.some((x) => x !== "bad")
+    ) {
+      breakdown = [
+        ...breakdown,
+        ...calcRenovieren(state, { skipBad: true }),
+      ];
+    }
+
+    if (
+      state.situation === "betreuung" &&
+      (b.includes("garten") || b.includes("gestaltung"))
+    ) {
+      breakdown = [
+        ...breakdown,
+        ...calcBetreuung(state, {
+          skipGarten: true,
+          skipGestaltung: true,
+        }),
+      ];
+    }
+
+    const { rawMin, rawMax } = sumBreakdown(breakdown);
+    return finalizeRange(rawMin, rawMax, breakdown);
   }
 
   let breakdown: PriceLineItem[] = [];

@@ -10,33 +10,12 @@ function kundentypOption(
   return { value, label, hint, infoText, warnText };
 }
 
-const GEWERBE_GASTRO_TILES: StepOption[] = [
-  kundentypOption(
-    "gewerbe",
-    "Gewerbliches Objekt",
-    "Büro, Laden, Praxis, Lager",
-    undefined,
-    "Gewerbeprojekte kalkulieren wir individuell — kein automatischer Preis möglich. Wir melden uns persönlich bei dir."
-  ),
-  kundentypOption(
-    "gastro",
-    "Gastronomie",
-    "Restaurant, Café, Bar, Hotel",
-    undefined,
-    "Gastro-Umbauten sind komplex und stark reguliert. Wir besprechen das persönlich mit dir."
-  ),
-];
-
-function withGewerbeGastro(base: StepOption[]): StepOption[] {
-  return [...base, ...GEWERBE_GASTRO_TILES];
-}
-
 /** Optionen für den Schritt „Kundentyp“ — abhängig von der Situation */
 export function getKundentypOptions(situation: Situation): StepOption[] {
   switch (situation) {
     case "renovieren":
     case "sanieren":
-      return withGewerbeGastro([
+      return [
         kundentypOption(
           "eigentuemer",
           "Ich bin Eigentümer",
@@ -48,9 +27,9 @@ export function getKundentypOptions(situation: Situation): StepOption[] {
           "Mietwohnung oder gemietetes Haus",
           "Bei Mietwohnungen brauchen wir in manchen Fällen die Zustimmung des Vermieters. Wir klären das gemeinsam beim Termin."
         ),
-      ]);
+      ];
     case "notfall":
-      return withGewerbeGastro([
+      return [
         kundentypOption(
           "eigentuemer",
           "Ich bin Eigentümer",
@@ -67,17 +46,17 @@ export function getKundentypOptions(situation: Situation): StepOption[] {
           "Hausverwaltung",
           "Ich verwalte das Objekt"
         ),
-      ]);
+      ];
     case "neubauen":
-      return withGewerbeGastro([
+      return [
         kundentypOption(
           "eigentuemer",
           "Ich bin Eigentümer",
           "Eigentumswohnung oder Haus"
         ),
-      ]);
+      ];
     case "betreuung":
-      return withGewerbeGastro([
+      return [
         kundentypOption(
           "eigentuemer",
           "Ich bin Eigentümer",
@@ -89,7 +68,10 @@ export function getKundentypOptions(situation: Situation): StepOption[] {
           "Mehrfamilienhaus oder Wohnanlage",
           "Für Hausverwaltungen bieten wir individuelle Servicepakete an. Wir besprechen das gerne persönlich."
         ),
-      ]);
+      ];
+    case "gewerbe":
+    case "gastro":
+      return [];
     default:
       return [];
   }
@@ -156,7 +138,7 @@ export function getBetreuungGroesseStep(bereiche: string[]): FunnelStep {
 
 export const SITUATIONEN_CONFIG: Record<
   Situation,
-  { steps: FunnelStep[]; skipGroesse?: boolean }
+  { steps: FunnelStep[]; skipGroesse?: boolean; skipUmfang?: boolean }
 > = {
   renovieren: {
     steps: [
@@ -609,6 +591,76 @@ export const SITUATIONEN_CONFIG: Record<
             hint: "Nur jetzt dieses eine Mal",
             faktor: 1.3,
             infoText: "Kein Vertrag, kein Abo. Einmaliger Einsatz.",
+          },
+        ],
+      },
+    ],
+  },
+  gewerbe: {
+    skipGroesse: true,
+    skipUmfang: true,
+    steps: [
+      {
+        id: "gew_beschreibung",
+        question: "Was soll gemacht werden?",
+        subtext:
+          "Kurz beschreiben reicht — wir melden uns persönlich.",
+        inputType: "tiles-single",
+        options: [
+          {
+            value: "umbau",
+            label: "Umbau oder Renovierung",
+            hint: "Büro, Laden, Praxis umbauen",
+          },
+          {
+            value: "neubau",
+            label: "Neu einrichten",
+            hint: "Komplette Neugestaltung",
+          },
+          {
+            value: "wartung",
+            label: "Wartung & Service",
+            hint: "Regelmäßige Betreuung",
+          },
+          {
+            value: "sonstiges",
+            label: "Sonstiges",
+            hint: "Anderes Vorhaben",
+          },
+        ],
+      },
+    ],
+  },
+  gastro: {
+    skipGroesse: true,
+    skipUmfang: true,
+    steps: [
+      {
+        id: "gas_beschreibung",
+        question: "Was planst du?",
+        subtext:
+          "Gastro-Projekte sind komplex — wir besprechen alles persönlich.",
+        inputType: "tiles-single",
+        options: [
+          {
+            value: "umbau",
+            label: "Umbau oder Renovierung",
+            hint: "Gastraum, Küche, Bar",
+          },
+          {
+            value: "neueroeffnung",
+            label: "Neueröffnung",
+            hint: "Kompletter Ausbau",
+          },
+          {
+            value: "wartung",
+            label: "Wartung & Reparatur",
+            hint: "Laufende Instandhaltung",
+          },
+          {
+            value: "terrasse",
+            label: "Terrasse oder Außenbereich",
+            hint: "Außengastronomie ausbauen",
           },
         ],
       },

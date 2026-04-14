@@ -4,7 +4,9 @@ import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
+  useCallback,
   useEffect,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -12,6 +14,7 @@ import {
   type KeyboardEvent,
   type ReactNode,
 } from "react";
+import { createPortal } from "react-dom";
 
 import { MarketingFooter } from "@/components/layout/MarketingFooter";
 import { SITE_CONFIG } from "@/lib/config";
@@ -153,10 +156,13 @@ export default function BaerenwaldLandingClient({
 }) {
   const router = useRouter();
   const searchComboRef = useRef<HTMLDivElement>(null);
+  const portalDropdownRef = useRef<HTMLDivElement>(null);
   const [searchQ, setSearchQ] = useState("");
   const [searchFocused, setSearchFocused] = useState(false);
   const [suggestActive, setSuggestActive] = useState(-1);
   const [faqOpen, setFaqOpen] = useState<number | null>(0);
+  const [mounted, setMounted] = useState(false);
+  const [dropdownPos, setDropdownPos] = useState({ top: 0, left: 0, width: 0 });
 
   const searchSuggestions = useMemo(
     () => getHeroSearchSuggestions(searchQ, 5),
@@ -164,6 +170,37 @@ export default function BaerenwaldLandingClient({
   );
   const showSearchSuggestions =
     searchFocused && searchSuggestions.length > 0;
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  const updateDropdownPos = useCallback(() => {
+    const el = searchComboRef.current;
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
+    setDropdownPos({
+      top: rect.bottom,
+      left: rect.left,
+      width: rect.width,
+    });
+  }, []);
+
+  useLayoutEffect(() => {
+    if (!mounted || !showSearchSuggestions) return;
+    updateDropdownPos();
+  }, [mounted, showSearchSuggestions, updateDropdownPos, searchSuggestions]);
+
+  useEffect(() => {
+    if (!mounted || !showSearchSuggestions) return;
+    updateDropdownPos();
+    window.addEventListener("scroll", updateDropdownPos, true);
+    window.addEventListener("resize", updateDropdownPos);
+    return () => {
+      window.removeEventListener("scroll", updateDropdownPos, true);
+      window.removeEventListener("resize", updateDropdownPos);
+    };
+  }, [mounted, showSearchSuggestions, updateDropdownPos]);
 
   useEffect(() => {
     const root = document.querySelector(".baerenwald-landing");
@@ -237,10 +274,11 @@ export default function BaerenwaldLandingClient({
   useEffect(() => {
     if (!searchFocused) return;
     const onDocDown = (ev: MouseEvent) => {
-      if (!searchComboRef.current?.contains(ev.target as Node)) {
-        setSearchFocused(false);
-        setSuggestActive(-1);
-      }
+      const t = ev.target as Node;
+      if (searchComboRef.current?.contains(t)) return;
+      if (portalDropdownRef.current?.contains(t)) return;
+      setSearchFocused(false);
+      setSuggestActive(-1);
     };
     document.addEventListener("mousedown", onDocDown);
     return () => document.removeEventListener("mousedown", onDocDown);
@@ -346,7 +384,9 @@ export default function BaerenwaldLandingClient({
                       onBlur={() => {
                         requestAnimationFrame(() => {
                           const root = searchComboRef.current;
+                          const portal = portalDropdownRef.current;
                           const ae = document.activeElement;
+                          if (portal && ae && portal.contains(ae)) return;
                           if (!root || !ae || !root.contains(ae)) {
                             setSearchFocused(false);
                             setSuggestActive(-1);
@@ -386,39 +426,54 @@ export default function BaerenwaldLandingClient({
                       </svg>
                     </button>
                   </div>
-                  {showSearchSuggestions ? (
-                    <ul
-                      id="hero-search-listbox"
-                      className="hero-search-suggestions"
-                      role="listbox"
-                      aria-label="Vorschläge"
-                    >
-                      {searchSuggestions.map((s, idx) => (
-                        <li
-                          key={s.slug}
-                          id={`hero-search-opt-${idx}`}
-                          role="option"
-                          aria-selected={idx === suggestActive}
-                          className={
-                            idx === suggestActive
-                              ? "search-suggestion search-suggestion--active"
-                              : "search-suggestion"
-                          }
-                          onMouseDown={(e) => {
-                            e.preventDefault();
-                            goToSuggestion(s);
-                          }}
-                          onMouseEnter={() => setSuggestActive(idx)}
-                        >
-                          <span className="suggestion-emoji" aria-hidden>
-                            {s.emoji}
-                          </span>
-                          <span className="suggestion-title">{s.label}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  ) : null}
                 </div>
+                {mounted &&
+                  showSearchSuggestions &&
+                  createPortal(
+                    <div
+                      ref={portalDropdownRef}
+                      className="search-dropdown-portal"
+                      style={{
+                        position: "fixed",
+                        top: dropdownPos.top + 8,
+                        left: dropdownPos.left,
+                        width: dropdownPos.width,
+                        zIndex: 9999,
+                      }}
+                    >
+                      <ul
+                        id="hero-search-listbox"
+                        className="search-dropdown-portal-list"
+                        role="listbox"
+                        aria-label="Vorschläge"
+                      >
+                        {searchSuggestions.map((s, idx) => (
+                          <li
+                            key={s.slug}
+                            id={`hero-search-opt-${idx}`}
+                            role="option"
+                            aria-selected={idx === suggestActive}
+                            className={
+                              idx === suggestActive
+                                ? "search-suggestion search-suggestion--active"
+                                : "search-suggestion"
+                            }
+                            onMouseDown={(e) => {
+                              e.preventDefault();
+                              goToSuggestion(s);
+                            }}
+                            onMouseEnter={() => setSuggestActive(idx)}
+                          >
+                            <span className="suggestion-emoji" aria-hidden>
+                              {s.emoji}
+                            </span>
+                            <span className="suggestion-title">{s.label}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>,
+                    document.body
+                  )}
               </form>
               <div className="hero-chips fade-up d2">
                 {HERO_CHIPS.map((c) => (

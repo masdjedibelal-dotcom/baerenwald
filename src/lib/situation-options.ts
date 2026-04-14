@@ -1,6 +1,10 @@
+import type { Situation as BwSituation } from "@/lib/funnel/types";
 import type { Situation } from "@/lib/types";
 
 export type SituationTagType = "multi" | "abo" | "notfall";
+
+/** Tags für den Bärenwald-Rechner (Schritt 1) — inkl. B2B */
+export type BwFunnelStep1TagType = "multi" | "abo" | "notfall" | "neutral";
 
 export const SITUATION_OPTIONS: {
   id: Situation;
@@ -45,3 +49,60 @@ export const SITUATION_OPTIONS: {
     tagType: "multi",
   },
 ];
+
+/** Bärenwald-Funnel Schritt 1 — Situationen (lib/funnel/types) */
+export const BW_FUNNEL_STEP1_OPTIONS: {
+  id: BwSituation;
+  label: string;
+  hint: string;
+  tag?: string;
+  tagType?: BwFunnelStep1TagType;
+}[] = [
+  {
+    id: "renovieren",
+    label: "Renovieren",
+    hint: "Bad, Küche, Wände, Fenster",
+    tagType: "multi",
+  },
+  {
+    id: "sanieren",
+    label: "Sanieren",
+    hint: "Heizung, Dach, Elektrik, Förderung",
+    tagType: "multi",
+  },
+  {
+    id: "notfall",
+    label: "Notfall",
+    hint: "Heizung, Wasser, Strom — schnelle Hilfe",
+    tagType: "notfall",
+  },
+  {
+    id: "neubauen",
+    label: "Neubau / Ausbau",
+    hint: "Keller, DG, Terrasse, Umbau",
+    tagType: "multi",
+  },
+  {
+    id: "betreuung",
+    label: "Betreuung",
+    hint: "Garten, Reinigung, Winterdienst",
+    tagType: "abo",
+  },
+  {
+    id: "gewerbe",
+    label: "Gewerbe oder Büro",
+    hint: "Büro, Laden, Praxis, Lager — wir planen individuell mit dir",
+    tag: "B2B",
+    tagType: "neutral",
+  },
+  {
+    id: "gastro",
+    label: "Gastronomie",
+    hint: "Restaurant, Café, Bar, Hotel — komplex und individuell",
+    tag: "B2B",
+    tagType: "neutral",
+  },
+];
+
+export const BW_FUNNEL_STEP1_ORDER: BwSituation[] =
+  BW_FUNNEL_STEP1_OPTIONS.map((o) => o.id);

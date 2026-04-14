@@ -21,6 +21,10 @@ import {
   getKundentypStep,
   getResolvedStepsForSituation,
 } from "@/lib/funnel/config";
+import {
+  BW_FUNNEL_STEP1_OPTIONS,
+  BW_FUNNEL_STEP1_ORDER,
+} from "@/lib/situation-options";
 import { calculatePrice } from "@/lib/funnel/price-calc";
 import type {
   FunnelStep,
@@ -49,21 +53,23 @@ type Screen =
   | "beratung-lead"
   | "danke";
 
-function isBeratungKundentyp(k: Kundentyp | null): boolean {
-  return k === "gewerbe" || k === "gastro";
+function isB2bSituation(s: Situation | null): boolean {
+  return s === "gewerbe" || s === "gastro";
 }
-
-const SIT_ORDER: Situation[] = [
-  "renovieren",
-  "sanieren",
-  "notfall",
-  "neubauen",
-  "betreuung",
-];
 
 function isSituation(x: string): x is Situation {
-  return (SIT_ORDER as readonly string[]).includes(x);
+  return (BW_FUNNEL_STEP1_ORDER as readonly string[]).includes(x);
 }
+
+const BW_TAG_CLASS: Record<
+  "multi" | "abo" | "notfall" | "neutral",
+  string
+> = {
+  multi: "bg-blue-50 text-blue-800",
+  abo: "bg-green-50 text-green-800",
+  notfall: "bg-red-50 text-red-700",
+  neutral: "bg-muted text-text-secondary",
+};
 
 function asLibOpt(o: FunnelStepOption): LibStepOption {
   return {
@@ -93,32 +99,6 @@ function groesseEinheit(state: {
   if (state.bereiche.includes("baum")) return "stueck";
   if (state.bereiche.includes("winter")) return "meter";
   return "qm";
-}
-
-function situationMeta(s: Situation): { title: string; hint: string } {
-  const m: Record<Situation, { title: string; hint: string }> = {
-    renovieren: {
-      title: "Renovieren",
-      hint: "Bad, Küche, Wände, Fenster",
-    },
-    sanieren: {
-      title: "Sanieren",
-      hint: "Heizung, Dach, Elektrik, Förderung",
-    },
-    notfall: {
-      title: "Notfall",
-      hint: "Heizung, Wasser, Strom — schnelle Hilfe",
-    },
-    neubauen: {
-      title: "Neubau / Ausbau",
-      hint: "Keller, DG, Terrasse, Umbau",
-    },
-    betreuung: {
-      title: "Betreuung",
-      hint: "Garten, Reinigung, Winterdienst",
-    },
-  };
-  return m[s];
 }
 
 function FunnelRechnerInner() {
@@ -190,14 +170,13 @@ function FunnelRechnerInner() {
         if (state.situation) setScreen("bereiche");
         break;
       case "bereiche":
-        if (state.bereiche.length > 0) setScreen("kundentyp");
+        if (state.bereiche.length > 0) {
+          if (isB2bSituation(state.situation)) setScreen("beratung-lead");
+          else setScreen("kundentyp");
+        }
         break;
       case "kundentyp":
-        if (isBeratungKundentyp(state.kundentyp)) {
-          setScreen("beratung-lead");
-        } else {
-          setScreen("umfang");
-        }
+        setScreen("umfang");
         break;
       case "umfang":
         if (umfangOk) goGroesseOrOrt();
@@ -263,12 +242,12 @@ function FunnelRechnerInner() {
         setScreen("result");
         break;
       case "beratung-lead":
-        setScreen("kundentyp");
+        setScreen(isB2bSituation(state.situation) ? "bereiche" : "kundentyp");
         break;
       default:
         break;
     }
-  }, [screen, hasGroesseStep]);
+  }, [screen, hasGroesseStep, state.situation]);
 
   const nextDisabled = useMemo(() => {
     switch (screen) {
@@ -360,7 +339,9 @@ function FunnelRechnerInner() {
       bereiche: state.bereiche,
       beschreibung: state.leadBeschreibung.trim(),
       photoCount: state.photos.length,
-      kundentyp: state.kundentyp ?? "nicht angegeben",
+      kundentyp: isB2bSituation(state.situation)
+        ? (state.situation ?? "b2b")
+        : (state.kundentyp ?? "nicht angegeben"),
       leadType: "beratung" as const,
       priceMin: 0,
       priceMax: 0,
@@ -514,14 +495,15 @@ function FunnelRechnerInner() {
             animateKey={screen}
           >
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-              {SIT_ORDER.map((id) => {
-                const meta = situationMeta(id);
-                const active = state.situation === id;
+              {BW_FUNNEL_STEP1_OPTIONS.map((opt) => {
+                const active = state.situation === opt.id;
+                const tagType = opt.tagType;
+                const tagClass = tagType ? BW_TAG_CLASS[tagType] : "";
                 return (
                   <button
-                    key={id}
+                    key={opt.id}
                     type="button"
-                    onClick={() => setSituation(id)}
+                    onClick={() => setSituation(opt.id)}
                     className={cn(
                       "rounded-[18px] border border-border-default p-4 text-left transition-colors hover:border-text-tertiary",
                       active &&
@@ -529,11 +511,21 @@ function FunnelRechnerInner() {
                     )}
                   >
                     <p className="text-[13px] font-semibold text-text-primary">
-                      {meta.title}
+                      {opt.label}
                     </p>
                     <p className="mt-0.5 text-[11px] text-text-secondary">
-                      {meta.hint}
+                      {opt.hint}
                     </p>
+                    {opt.tag && tagType ? (
+                      <span
+                        className={cn(
+                          "mt-1.5 inline-block rounded-lg px-2 py-0.5 text-[10px] font-medium",
+                          tagClass
+                        )}
+                      >
+                        {opt.tag}
+                      </span>
+                    ) : null}
                   </button>
                 );
               })}
@@ -661,94 +653,99 @@ function FunnelRechnerInner() {
           </StepWrapper>
         );
 
-      case "beratung-lead":
+      case "beratung-lead": {
+        const b2bHeadline =
+          state.situation === "gastro"
+            ? "Gastro-Projekte besprechen wir persönlich."
+            : "Wir planen das persönlich mit dir.";
         return (
           <div
             className="w-full min-h-[50vh]"
             style={{ backgroundColor: "var(--fl-accent-dark)" }}
           >
             <div className="mx-auto max-w-xl px-4 pb-8 pt-6 sm:px-6">
-            <h2 className="text-xl font-semibold leading-snug text-white">
-              Wir planen das persönlich mit dir.
-            </h2>
-            <p className="mt-3 text-sm leading-relaxed text-white/60">
-              Gewerbeprojekte und Gastro-Umbauten sind individuell — kein
-              Rechner kann das abbilden. Beschreib kurz was du planst, wir
-              melden uns innerhalb von 24h.
-            </p>
+              <h2 className="text-xl font-semibold leading-snug text-white">
+                {b2bHeadline}
+              </h2>
+              <p className="mt-3 text-sm leading-relaxed text-white/60">
+                Beschreib kurz was du planst — wir melden uns innerhalb von
+                24h.
+              </p>
 
-            <div className="mt-6 rounded-2xl bg-white p-4 shadow-sm sm:p-5">
-              <form
-                id={BERATUNG_LEAD_FORM_ID}
-                onSubmit={handleBeratungLeadSubmit}
-                className="space-y-3"
-              >
-                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <div className="mt-6 rounded-2xl bg-white p-4 shadow-sm sm:p-5">
+                <form
+                  id={BERATUNG_LEAD_FORM_ID}
+                  onSubmit={handleBeratungLeadSubmit}
+                  className="space-y-3"
+                >
+                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                    <input
+                      className="w-full rounded-xl border border-border-default px-3 py-2.5 text-sm text-text-primary outline-none focus:border-funnel-accent"
+                      placeholder="Vorname"
+                      value={state.vorname}
+                      onChange={(e) =>
+                        updateLeadField("vorname", e.target.value)
+                      }
+                      autoComplete="given-name"
+                    />
+                    <input
+                      className="w-full rounded-xl border border-border-default px-3 py-2.5 text-sm text-text-primary outline-none focus:border-funnel-accent"
+                      placeholder="Nachname"
+                      value={state.nachname}
+                      onChange={(e) =>
+                        updateLeadField("nachname", e.target.value)
+                      }
+                      autoComplete="family-name"
+                    />
+                  </div>
                   <input
+                    type="tel"
                     className="w-full rounded-xl border border-border-default px-3 py-2.5 text-sm text-text-primary outline-none focus:border-funnel-accent"
-                    placeholder="Vorname"
-                    value={state.vorname}
+                    placeholder="Telefon"
+                    value={state.telefon}
                     onChange={(e) =>
-                      updateLeadField("vorname", e.target.value)
+                      updateLeadField("telefon", e.target.value)
                     }
-                    autoComplete="given-name"
+                    autoComplete="tel"
+                    required
                   />
                   <input
+                    type="email"
                     className="w-full rounded-xl border border-border-default px-3 py-2.5 text-sm text-text-primary outline-none focus:border-funnel-accent"
-                    placeholder="Nachname"
-                    value={state.nachname}
+                    placeholder="E-Mail"
+                    value={state.email}
                     onChange={(e) =>
-                      updateLeadField("nachname", e.target.value)
+                      updateLeadField("email", e.target.value)
                     }
-                    autoComplete="family-name"
+                    autoComplete="email"
+                    required
                   />
-                </div>
-                <input
-                  type="tel"
-                  className="w-full rounded-xl border border-border-default px-3 py-2.5 text-sm text-text-primary outline-none focus:border-funnel-accent"
-                  placeholder="Telefon"
-                  value={state.telefon}
-                  onChange={(e) =>
-                    updateLeadField("telefon", e.target.value)
-                  }
-                  autoComplete="tel"
-                  required
-                />
-                <input
-                  type="email"
-                  className="w-full rounded-xl border border-border-default px-3 py-2.5 text-sm text-text-primary outline-none focus:border-funnel-accent"
-                  placeholder="E-Mail"
-                  value={state.email}
-                  onChange={(e) =>
-                    updateLeadField("email", e.target.value)
-                  }
-                  autoComplete="email"
-                />
-                <textarea
-                  rows={3}
-                  className="w-full resize-y rounded-xl border border-border-default px-3 py-2.5 text-sm text-text-primary outline-none focus:border-funnel-accent"
-                  placeholder="Was soll gemacht werden? Wo liegt das Objekt?"
-                  value={state.leadBeschreibung}
-                  onChange={(e) =>
-                    updateLeadField("leadBeschreibung", e.target.value)
-                  }
-                />
-                <PhotoUpload
-                  files={state.photos}
-                  onChange={addPhotos}
-                  buttonTitle="Fotos oder Video hochladen — optional"
-                  buttonHint={`Bilder helfen uns bei der Einordnung · max. 6 Dateien`}
-                  className="pt-1"
-                />
-                <p className="text-[11px] leading-relaxed text-text-tertiary">
-                  Mit Absenden akzeptierst du, dass wir dich zur Beratung
-                  kontaktieren. Du kannst der Nutzung jederzeit widersprechen.
-                </p>
-              </form>
-            </div>
+                  <textarea
+                    rows={3}
+                    className="w-full resize-y rounded-xl border border-border-default px-3 py-2.5 text-sm text-text-primary outline-none focus:border-funnel-accent"
+                    placeholder="Kurze Beschreibung, Ort, Zeitplan…"
+                    value={state.leadBeschreibung}
+                    onChange={(e) =>
+                      updateLeadField("leadBeschreibung", e.target.value)
+                    }
+                  />
+                  <PhotoUpload
+                    files={state.photos}
+                    onChange={addPhotos}
+                    buttonTitle="Fotos oder Video hochladen — optional"
+                    buttonHint="Bilder helfen uns bei der Einordnung · max. 6 Dateien"
+                    className="pt-1"
+                  />
+                  <p className="text-[11px] leading-relaxed text-text-tertiary">
+                    Mit Absenden akzeptierst du, dass wir dich zur Beratung
+                    kontaktieren. Du kannst der Nutzung jederzeit widersprechen.
+                  </p>
+                </form>
+              </div>
             </div>
           </div>
         );
+      }
 
       case "lead":
         return (
@@ -817,7 +814,7 @@ function FunnelRechnerInner() {
         return (
           <ThankYou
             variant={
-              isBeratungKundentyp(state.kundentyp)
+              isB2bSituation(state.situation)
                 ? "beratung"
                 : bookingSummary
                   ? "termin"
@@ -825,6 +822,12 @@ function FunnelRechnerInner() {
             }
             dateLabel={bookingSummary?.dateLabel}
             timeLabel={bookingSummary?.timeLabel}
+            beratungHeadline={
+              isB2bSituation(state.situation)
+                ? "Wir melden uns persönlich bei dir."
+                : undefined
+            }
+            beratungSubline={undefined}
           />
         );
 
@@ -848,7 +851,7 @@ function FunnelRechnerInner() {
           belowActions={
             screen === "beratung-lead" ? (
               <p className="text-xs text-text-tertiary">
-                Wir melden uns innerhalb von 24h — kein Auftragszwang.
+                Wir melden uns innerhalb von 24h — unverbindliche Beratung.
               </p>
             ) : null
           }

@@ -300,17 +300,8 @@ export function PageLayout({ children }: PageLayoutProps) {
           </div>
 
           <nav className="site-mobile-links" aria-label="Hauptnavigation">
-            <Link href="/#how" onClick={closeAll}>
-              Wie es funktioniert
-            </Link>
-            <Link href="/#leistungen" onClick={closeAll}>
-              Leistungen auf der Startseite
-            </Link>
-            <Link href="/#faq" onClick={closeAll}>
-              FAQ
-            </Link>
-            <Link href="/#faq" onClick={closeAll}>
-              Kontakt
+            <Link href="/" onClick={closeAll}>
+              Startseite
             </Link>
             <Link href="/ratgeber" onClick={closeAll}>
               Ratgeber-Übersicht
@@ -337,16 +328,6 @@ export function PageLayout({ children }: PageLayoutProps) {
                 {r.label}
               </Link>
             ))}
-          </div>
-
-          <div className="site-mobile-section">
-            <p className="site-mobile-section-title">Information</p>
-            <Link href="/ueber-uns" onClick={closeAll}>
-              Über uns
-            </Link>
-            <Link href="/kontakt" onClick={closeAll}>
-              Kontakt
-            </Link>
           </div>
 
           <Link href="/rechner" className="site-mobile-cta" onClick={closeAll}>

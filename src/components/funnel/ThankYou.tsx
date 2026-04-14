@@ -8,6 +8,9 @@ export interface ThankYouProps {
   timeLabel?: string;
   typ?: string;
   dauer?: string;
+  /** Optional: z. B. Gewerbe/Gastro B2B-Danke-Text */
+  beratungHeadline?: string;
+  beratungSubline?: string;
   className?: string;
 }
 
@@ -17,6 +20,8 @@ export function ThankYou({
   timeLabel = "",
   typ = "Vor-Ort-Termin",
   dauer = "30 Min.",
+  beratungHeadline,
+  beratungSubline,
   className,
 }: ThankYouProps) {
   const isTermin = variant === "termin";
@@ -51,12 +56,13 @@ export function ThankYou({
       </div>
       <h2 className="mt-4 text-xl font-semibold text-text-primary">
         {isBeratung
-          ? "Wir melden uns persönlich bei dir."
+          ? beratungHeadline ?? "Wir melden uns persönlich bei dir."
           : "Anfrage eingegangen!"}
       </h2>
       <p className="mt-2 max-w-sm text-sm text-text-secondary">
         {isBeratung
-          ? "Deine Anfrage ist bei uns eingegangen. Ein Kollege meldet sich bei dir — in der Regel innerhalb von 24 Stunden."
+          ? beratungSubline ??
+            "Deine Anfrage ist bei uns eingegangen. Ein Kollege meldet sich bei dir — in der Regel innerhalb von 24 Stunden."
           : followUpSubline}
       </p>
 

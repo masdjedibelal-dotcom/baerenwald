@@ -20,6 +20,8 @@ const SUBTITLES_BW: Partial<Record<BwSituation, string>> = {
   notfall: "Wir prüfen Verfügbarkeit und Einsatzrahmen…",
   neubauen: "Wir schätzen Ausbau und Außenarbeiten…",
   betreuung: "Wir berechnen Pflege- und Servicepakete…",
+  gewerbe: "Wir bereiten deine Anfrage für die persönliche Planung vor …",
+  gastro: "Wir bereiten deine Anfrage für die persönliche Planung vor …",
 };
 
 export interface LoadingScreenProps {
