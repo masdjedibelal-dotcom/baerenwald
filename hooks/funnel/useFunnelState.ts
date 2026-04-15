@@ -76,6 +76,7 @@ export function createInitialBwFunnelState(): FunnelState {
     zugaenglichkeit: null,
     zustand: null,
     fachdetails: {},
+    showOmitHint: false,
     photos: [],
     name: "",
     vorname: "",
