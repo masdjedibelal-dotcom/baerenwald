@@ -12,9 +12,52 @@ export type Kundentyp =
   | "mieter"
   | "hausverwaltung";
 
-export type Zeitraum = "sofort" | "4wochen" | "1-3monate" | "offen";
+/** Gewünschter Start / Dringlichkeit (PLZ-Schritt) */
+export type Zeitraum = "sofort" | "heute" | "woche" | "flexibel";
+
+export type Zugaenglichkeit = "einfach" | "mittel" | "schwer";
+
+export type ObjektZustand = "gut" | "mittel" | "schlecht";
 
 export type BudgetCheck = "ok" | "zu_hoch" | null;
+
+/** Detailantworten Schritt „fachdetails“ (Elektro / Sanitär / Heizung / weitere Gewerke) */
+export type FachdetailsState = {
+  elektro?: {
+    problem?: string;
+    folge?: string;
+  };
+  sanitaer?: {
+    lage?: string;
+    badWas?: string;
+    badObjekte?: string[];
+    rohre?: string;
+  };
+  heizung?: {
+    typ?: string;
+    alter?: string;
+    vorhaben?: string;
+  };
+  maler?: {
+    was?: string;
+    zustand?: string;
+    fassade?: string;
+  };
+  boden?: {
+    aktuell?: string;
+    verlegung?: string;
+  };
+  dach?: {
+    vorhaben?: string;
+    alter?: string;
+  };
+  garten?: {
+    was?: string;
+    haeufigkeit?: string;
+    baumgroesse?: string;
+    gestaltung?: string[];
+  };
+};
 
 export interface PriceLineItem {
   gewerk: string;
@@ -39,10 +82,9 @@ export interface FunnelState {
   breakdown: PriceLineItem[];
   budgetCheck: BudgetCheck;
   dringlichkeit: "akut" | "stabil" | "nutzbar" | "keine_eile" | null;
-  /** Optional: Zugänglichkeit der Baustelle (Preisfaktoren) */
-  zugaenglichkeit?: "einfach" | "mittel" | "schwer" | null;
-  /** Optional: Zustand der Fläche (Preisfaktoren) */
-  zustand?: "gut" | "mittel" | "schlecht" | null;
+  zugaenglichkeit: Zugaenglichkeit | null;
+  zustand: ObjektZustand | null;
+  fachdetails: FachdetailsState;
   photos: File[];
   name: string;
   vorname: string;
@@ -77,7 +119,8 @@ export interface FunnelStep {
     | "tiles-multi"
     | "chips-single"
     | "slider"
-    | "plz";
+    | "plz"
+    | "fachdetails";
   options?: StepOption[];
   sliderConfig?: {
     min: number;

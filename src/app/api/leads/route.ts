@@ -19,9 +19,8 @@ export type BwLeadBody = {
   photoCount?: number;
   dringlichkeit?: string | null;
   umfang?: string | null;
-  /** Später HubSpot-Property; vorerst nur E-Mail */
   kundentyp?: string | null;
-  leadType?: "beratung" | "system";
+  leadType?: "beratung" | "system" | "ausserhalb";
   beschreibung?: string;
 };
 
@@ -85,67 +84,92 @@ export async function POST(request: Request) {
     const kundentyp = body.kundentyp?.trim() || "nicht angegeben";
 
     const situationNorm = (body.situation ?? "").trim();
-    const leadType: "beratung" | "system" =
-      body.leadType === "beratung" ||
-      situationNorm === "gewerbe" ||
-      situationNorm === "gastro"
-        ? "beratung"
-        : "system";
+    const leadType: "beratung" | "system" | "ausserhalb" =
+      body.leadType === "ausserhalb"
+        ? "ausserhalb"
+        : body.leadType === "beratung" ||
+            situationNorm === "gewerbe" ||
+            situationNorm === "gastro"
+          ? "beratung"
+          : "system";
 
     const beschreibung = (body.beschreibung ?? "").trim();
 
     const text =
-      leadType === "beratung"
+      leadType === "ausserhalb"
         ? [
-            `Lead-Typ: Beratung (Gewerbe/Gastro)`,
+            `Lead-Typ: Außerhalb Radius`,
             `Name: ${name}`,
             `Telefon: ${telefon}`,
-            `E-Mail: ${email}`,
-            `Situation: ${situation}`,
-            `Kundentyp: ${kundentyp}`,
-            `Bereiche: ${bereiche}`,
+            `E-Mail: ${email || "—"}`,
+            `PLZ: ${plz}`,
             beschreibung ? `Beschreibung: ${beschreibung}` : "",
-            `Fotos: ${fotos}`,
-            `PLZ: ${plz || "—"}`,
           ]
             .filter(Boolean)
             .join("\n")
-        : [
-            `Lead-Typ: System (Rechner)`,
-            `Name: ${name}`,
-            `Telefon: ${telefon}`,
-            `E-Mail: ${email}`,
-            `Situation: ${situation}`,
-            `Kundentyp: ${kundentyp}`,
-            `Bereiche: ${bereiche}`,
-            `Preisrange: ${preisrange}`,
-            `PLZ: ${plz}`,
-            `Zeitraum: ${zeitraum}`,
-            `Budget: ${budgetLine(body)}`,
-            `Termin: ${slotLine(body.selectedSlot)}`,
-            `Fotos: ${fotos}`,
-            body.dringlichkeit ? `Dringlichkeit: ${body.dringlichkeit}` : "",
-            body.umfang ? `Umfang: ${body.umfang}` : "",
-          ]
-            .filter(Boolean)
-            .join("\n");
+        : leadType === "beratung"
+          ? [
+              `Lead-Typ: Beratung (Gewerbe/Gastro)`,
+              `Name: ${name}`,
+              `Telefon: ${telefon}`,
+              `E-Mail: ${email}`,
+              `Situation: ${situation}`,
+              `Kundentyp: ${kundentyp}`,
+              `Bereiche: ${bereiche}`,
+              beschreibung ? `Beschreibung: ${beschreibung}` : "",
+              `Fotos: ${fotos}`,
+              `PLZ: ${plz || "—"}`,
+            ]
+              .filter(Boolean)
+              .join("\n")
+          : [
+              `Lead-Typ: System (Rechner)`,
+              `Name: ${name}`,
+              `Telefon: ${telefon}`,
+              `E-Mail: ${email}`,
+              `Situation: ${situation}`,
+              `Kundentyp: ${kundentyp}`,
+              `Bereiche: ${bereiche}`,
+              `Preisrange: ${preisrange}`,
+              `PLZ: ${plz}`,
+              `Zeitraum: ${zeitraum}`,
+              `Budget: ${budgetLine(body)}`,
+              `Termin: ${slotLine(body.selectedSlot)}`,
+              `Fotos: ${fotos}`,
+              body.dringlichkeit ? `Dringlichkeit: ${body.dringlichkeit}` : "",
+              body.umfang ? `Umfang: ${body.umfang}` : "",
+            ]
+              .filter(Boolean)
+              .join("\n");
 
     const subject =
-      leadType === "beratung"
-        ? `Beratungsanfrage: ${name} — ${situationNorm || kundentyp}`
-        : `Neuer Lead: ${name} — ${situation}`;
+      leadType === "ausserhalb"
+        ? `Außerhalb Radius: ${name} — PLZ ${plz}`
+        : leadType === "beratung"
+          ? `Beratungsanfrage: ${name} — ${situationNorm || kundentyp}`
+          : `Neuer Lead: ${name} — ${situation}`;
 
-    const { error } = await resend.emails.send({
-      from: process.env.RESEND_FROM ?? "Bärenwald <onboarding@resend.dev>",
-      to: SITE_CONFIG.email,
-      subject,
-      text,
-    });
+    // Resend mit 5s Timeout
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 5000);
 
-    if (error) {
-      console.error("[leads] Resend:", error);
+    let sendError: string | undefined;
+    try {
+      const { error } = await resend.emails.send({
+        from: process.env.RESEND_FROM ?? "Bärenwald <onboarding@resend.dev>",
+        to: SITE_CONFIG.email,
+        subject,
+        text,
+      });
+      if (error) sendError = error.message;
+    } finally {
+      clearTimeout(timeoutId);
+    }
+
+    if (sendError) {
+      console.error("[leads] Resend:", sendError);
       return NextResponse.json(
-        { success: false, error: error.message },
+        { success: false, error: sendError },
         { status: 500 }
       );
     }

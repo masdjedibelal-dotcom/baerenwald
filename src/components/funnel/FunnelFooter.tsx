@@ -64,6 +64,17 @@ export function FunnelFooter({
         {belowActions ? (
           <div className="mt-2 pb-0.5 text-center">{belowActions}</div>
         ) : null}
+        <div className="funnel-footer-legal">
+          <span>* Alle Preisangaben unverbindlich</span>
+          <span className="funnel-footer-dot" aria-hidden>·</span>
+          <a href="/impressum" target="_blank" rel="noopener noreferrer">
+            Impressum
+          </a>
+          <span className="funnel-footer-dot" aria-hidden>·</span>
+          <a href="/datenschutz" target="_blank" rel="noopener noreferrer">
+            Datenschutz
+          </a>
+        </div>
       </div>
     </footer>
   );

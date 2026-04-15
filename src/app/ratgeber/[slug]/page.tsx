@@ -22,13 +22,21 @@ export async function generateMetadata({ params }: PageProps) {
   if (!data) {
     return { title: "Ratgeber — Bärenwald Handwerksgruppe" };
   }
+
+  const title = `${data.metaTitle} — Kosten & Ablauf München 2026`;
+  const description = `${data.metaDescription} Aktuelle Preise für München 2026, Ablauf und Tipps.`;
+  const canonical = `https://baerenwaldmuenchen.de/ratgeber/${params.slug}`;
+
   return {
-    title: data.metaTitle,
-    description: data.metaDescription,
+    title,
+    description,
+    alternates: { canonical },
     openGraph: {
-      title: data.metaTitle,
-      description: data.metaDescription,
-      url: `${SITE_CONFIG.url}/ratgeber/${params.slug}`,
+      type: "article",
+      title,
+      description,
+      url: canonical,
+      images: [{ url: "/og-image.png" }],
     },
   };
 }

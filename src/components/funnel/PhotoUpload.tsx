@@ -11,6 +11,8 @@ export interface PhotoUploadProps {
   onChange: (files: File[]) => void;
   maxFiles?: number;
   className?: string;
+  /** Roter Rahmen / Hintergrund (z. B. Validierungsfehler) */
+  uploadHasError?: boolean;
   /** Überschreibt den Standard-Button-Titel */
   buttonTitle?: string;
   /** Überschreibt den Hinweis unter dem Titel */
@@ -22,6 +24,7 @@ export function PhotoUpload({
   onChange,
   maxFiles = 6,
   className,
+  uploadHasError = false,
   buttonTitle = "Fotos hochladen (optional)",
   buttonHint,
 }: PhotoUploadProps) {
@@ -106,9 +109,10 @@ export function PhotoUpload({
         onDragLeave={() => setDragOver(false)}
         onDrop={onDrop}
         className={cn(
-          "relative w-full cursor-pointer rounded-xl border-2 border-dashed border-border-default p-6 text-center transition-colors hover:border-text-tertiary",
+          "photo-upload-area relative w-full cursor-pointer rounded-xl border-2 border-dashed border-border-default p-6 text-center transition-colors hover:border-text-tertiary",
           dragOver && "border-funnel-accent bg-funnel-accent/[0.03]",
-          hasFiles && "border-funnel-accent bg-funnel-accent/[0.03]"
+          hasFiles && !uploadHasError && "border-funnel-accent bg-funnel-accent/[0.03]",
+          uploadHasError && "photo-upload-error"
         )}
       >
         <div className="mx-auto mb-2 text-text-tertiary" aria-hidden>

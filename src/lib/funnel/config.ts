@@ -1,4 +1,155 @@
-import type { FunnelStep, Kundentyp, Situation, StepOption } from "./types";
+import type {
+  FachdetailsState,
+  FunnelState,
+  FunnelStep,
+  Kundentyp,
+  Situation,
+  StepOption,
+} from "./types";
+
+/** Slider + Chips + Direkteingabe (Rechner „Größe“) */
+export type GroesseSliderConfig = {
+  min: number;
+  max: number;
+  step: number;
+  default: number;
+  einheit: string;
+  einheitKurz: string;
+  chips: { label: string; value: number }[];
+};
+
+export const GROESSE_CONFIG: {
+  flaeche: GroesseSliderConfig;
+  wohnflaeche: GroesseSliderConfig;
+  stueck: GroesseSliderConfig;
+  garten: GroesseSliderConfig;
+  laufmeter: GroesseSliderConfig;
+  pauschal: null;
+} = {
+  flaeche: {
+    min: 10,
+    max: 200,
+    step: 5,
+    default: 50,
+    einheit: "Fläche in m²",
+    einheitKurz: "m²",
+    chips: [
+      { label: "bis 30 m²", value: 25 },
+      { label: "30–60 m²", value: 45 },
+      { label: "60–100 m²", value: 80 },
+      { label: "100–150 m²", value: 125 },
+      { label: "über 150 m²", value: 175 },
+    ],
+  },
+  wohnflaeche: {
+    min: 20,
+    max: 300,
+    step: 10,
+    default: 80,
+    einheit: "Wohnfläche in m²",
+    einheitKurz: "m²",
+    chips: [
+      { label: "bis 50 m²", value: 40 },
+      { label: "50–80 m²", value: 65 },
+      { label: "80–120 m²", value: 100 },
+      { label: "120–200 m²", value: 160 },
+      { label: "über 200 m²", value: 230 },
+    ],
+  },
+  stueck: {
+    min: 1,
+    max: 20,
+    step: 1,
+    default: 3,
+    einheit: "Anzahl Stück",
+    einheitKurz: "Stück",
+    chips: [
+      { label: "1 Stück", value: 1 },
+      { label: "2–3 Stück", value: 2 },
+      { label: "4–6 Stück", value: 5 },
+      { label: "7–10 Stück", value: 8 },
+      { label: "über 10", value: 12 },
+    ],
+  },
+  garten: {
+    min: 20,
+    max: 1000,
+    step: 10,
+    default: 150,
+    einheit: "Gartenfläche in m²",
+    einheitKurz: "m²",
+    chips: [
+      { label: "bis 50 m²", value: 35 },
+      { label: "50–150 m²", value: 100 },
+      { label: "150–300 m²", value: 225 },
+      { label: "300–600 m²", value: 450 },
+      { label: "über 600 m²", value: 700 },
+    ],
+  },
+  laufmeter: {
+    min: 5,
+    max: 80,
+    step: 5,
+    default: 18,
+    einheit: "Gehweglänge in m",
+    einheitKurz: "m",
+    chips: [
+      { label: "Bis 10 m", value: 7 },
+      { label: "10–25 m", value: 18 },
+      { label: "über 25 m", value: 35 },
+    ],
+  },
+  pauschal: null,
+};
+
+export function groesseEinheitFromConfig(
+  c: GroesseSliderConfig
+): "qm" | "stueck" | "meter" {
+  if (c.einheitKurz === "Stück") return "stueck";
+  if (c.einheitKurz === "m" && !c.einheit.includes("m²")) return "meter";
+  return "qm";
+}
+
+export function getGroesseConfig(
+  state: Pick<FunnelState, "situation" | "bereiche">
+): GroesseSliderConfig | null {
+  const { situation, bereiche } = state;
+  const b = bereiche;
+
+  if (situation === "notfall") {
+    return GROESSE_CONFIG.pauschal;
+  }
+
+  const fensterLike =
+    b.includes("fenster_tueren") ||
+    b.includes("fenster_daemmung") ||
+    b.includes("fenster") ||
+    b.includes("tueren");
+  if (fensterLike) {
+    return GROESSE_CONFIG.stueck;
+  }
+
+  if (
+    situation === "betreuung" &&
+    (b.includes("garten") || b.includes("gestaltung"))
+  ) {
+    return GROESSE_CONFIG.garten;
+  }
+
+  if (situation === "betreuung" && b.includes("winter")) {
+    return GROESSE_CONFIG.laufmeter;
+  }
+
+  if (situation === "betreuung" && b.includes("baum")) {
+    return GROESSE_CONFIG.stueck;
+  }
+
+  if (b.includes("bad") || b.includes("heizung")) {
+    return GROESSE_CONFIG.wohnflaeche;
+  }
+
+  return GROESSE_CONFIG.flaeche;
+}
 
 function kundentypOption(
   value: Kundentyp,
@@ -668,6 +819,144 @@ export const SITUATIONEN_CONFIG: Record<
   },
 };
 
+/** Relevante Bereiche für den Schritt „Fachdetails“ (nach Bereiche, vor Kundentyp) */
+export function bereicheNeedFachdetails(bereiche: string[]): boolean {
+  const s = new Set(bereiche);
+  return (
+    s.has("strom") ||
+    s.has("elektrik") ||
+    s.has("elektro") ||
+    s.has("bad") ||
+    s.has("wasser") ||
+    s.has("sanitaer") ||
+    s.has("heizung") ||
+    s.has("maler") ||
+    s.has("streichen") ||
+    s.has("waende_boeden") ||
+    s.has("boden") ||
+    s.has("dach") ||
+    s.has("garten") ||
+    s.has("gestaltung") ||
+    s.has("baum") ||
+    s.has("baumarbeiten")
+  );
+}
+
+/** Dynamische Detailfragen je Gewerk */
+export const BW_FUNNEL_STEP_FACHDETAILS: FunnelStep = {
+  id: "fachdetails",
+  question: "Ein paar Detailfragen",
+  subtext:
+    "Folgefragen sind optional — mit „Weiß ich nicht“ kommst du auch weiter.",
+  inputType: "fachdetails",
+};
+
+/** Weiter nur wenn je sichtbarem Block die Hauptfrage beantwortet ist */
+export function isFachdetailsStepComplete(state: {
+  bereiche: string[];
+  fachdetails: FachdetailsState;
+}): boolean {
+  if (!bereicheNeedFachdetails(state.bereiche)) return true;
+  const b = state.bereiche;
+  const fd = state.fachdetails;
+  const s = new Set(b);
+  const needE =
+    s.has("strom") || s.has("elektrik") || s.has("elektro");
+  if (needE && !fd.elektro?.problem) return false;
+  const needSan =
+    s.has("bad") || s.has("wasser") || s.has("sanitaer");
+  if (needSan) {
+    if (!fd.sanitaer?.lage) return false;
+    if (b.includes("bad") && !fd.sanitaer?.badWas) return false;
+  }
+  if (s.has("heizung") && !fd.heizung?.typ) return false;
+
+  const needMaler =
+    s.has("maler") || s.has("streichen") || s.has("waende_boeden");
+  if (needMaler && !fd.maler?.was) return false;
+
+  const needBoden = s.has("boden") || s.has("waende_boeden");
+  if (needBoden && !fd.boden?.aktuell) return false;
+
+  if (s.has("dach") && !fd.dach?.vorhaben) return false;
+
+  const needGarten =
+    s.has("garten") ||
+    s.has("gestaltung") ||
+    s.has("baum") ||
+    s.has("baumarbeiten");
+  if (needGarten && !fd.garten?.was) return false;
+
+  return true;
+}
+
+/** Nach Umfang/Planung — für Preisfaktor Zugänglichkeit (renovieren / sanieren / neubauen) */
+export const BW_FUNNEL_STEP_ZUGAENGLICHKEIT: FunnelStep = {
+  id: "zugaenglichkeit",
+  question: "Wie gut ist das Objekt erreichbar?",
+  inputType: "tiles-single",
+  options: [
+    {
+      value: "einfach",
+      label: "Normal erreichbar",
+      hint: "Erdgeschoss oder Lift vorhanden",
+      faktor: 1.0,
+    },
+    {
+      value: "mittel",
+      label: "Etwas schwierig",
+      hint: "Hohes Stockwerk, enger Aufgang",
+      faktor: 1.3,
+    },
+    {
+      value: "schwer",
+      label: "Schwer erreichbar",
+      hint: "Dachgeschoss, Keller, enge Zufahrt",
+      faktor: 1.6,
+    },
+  ],
+};
+
+/** Nach Zugänglichkeit — nur renovieren / sanieren (Preisfaktor Zustand) */
+export const BW_FUNNEL_STEP_ZUSTAND: FunnelStep = {
+  id: "zustand",
+  question: "Wie ist der aktuelle Zustand?",
+  inputType: "tiles-single",
+  options: [
+    {
+      value: "gut",
+      label: "Gut — nur optisch veraltet",
+      hint: "Alles funktioniert, sieht alt aus",
+      faktor: 1.0,
+    },
+    {
+      value: "mittel",
+      label: "Mittel — kleinere Schäden",
+      hint: "Risse, kleine Schäden, abgenutzt",
+      faktor: 1.4,
+    },
+    {
+      value: "schlecht",
+      label: "Schlecht — größere Schäden",
+      hint: "Schimmel, starke Schäden, alles muss raus",
+      faktor: 2.0,
+    },
+  ],
+};
+
+function insertBeforeGroesse(
+  steps: FunnelStep[],
+  toInsert: FunnelStep[]
+): FunnelStep[] {
+  const gIdx = steps.findIndex((s) =>
+    s.id.toLowerCase().includes("groesse")
+  );
+  if (gIdx < 0) return steps;
+  const next = [...steps];
+  next.splice(gIdx, 0, ...toInsert);
+  return next;
+}
+
 /** Aufgelöste Schritte inkl. dynamischem Betreuung-Größen-Schritt */
 export function getResolvedStepsForSituation(
   situation: Situation | null,
@@ -675,10 +964,30 @@ export function getResolvedStepsForSituation(
 ): FunnelStep[] {
   if (!situation) return [];
   const cfg = SITUATIONEN_CONFIG[situation];
-  if (situation !== "betreuung") return cfg.steps;
-  return [
-    cfg.steps[0]!,
-    cfg.steps[1]!,
-    getBetreuungGroesseStep(bereiche),
-  ];
+
+  if (situation === "betreuung") {
+    const stepsBetreuung: FunnelStep[] = [cfg.steps[0]!];
+    if (bereicheNeedFachdetails(bereiche)) {
+      stepsBetreuung.push(BW_FUNNEL_STEP_FACHDETAILS);
+    }
+    stepsBetreuung.push(cfg.steps[1]!, getBetreuungGroesseStep(bereiche));
+    return stepsBetreuung;
+  }
+
+  let steps = [...cfg.steps];
+
+  if (situation === "renovieren" || situation === "sanieren") {
+    steps = insertBeforeGroesse(steps, [
+      BW_FUNNEL_STEP_ZUGAENGLICHKEIT,
+      BW_FUNNEL_STEP_ZUSTAND,
+    ]);
+  } else if (situation === "neubauen") {
+    steps = insertBeforeGroesse(steps, [BW_FUNNEL_STEP_ZUGAENGLICHKEIT]);
+  }
+
+  if (bereicheNeedFachdetails(bereiche)) {
+    steps.splice(1, 0, BW_FUNNEL_STEP_FACHDETAILS);
+  }
+
+  return steps;
 }

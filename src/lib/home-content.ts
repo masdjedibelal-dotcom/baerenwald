@@ -14,16 +14,24 @@ export const HOME_FAQ_ITEMS: HomeFaqItem[] = [
     a: "Wenn du dein Bad renovierst brauchst du Fliesenleger, Sanitär und oft auch Elektro. Normalerweise rufst du jeden Betrieb einzeln an und stimmst Termine selbst ab. Bei Bärenwald rufst du einmal an. Wir wissen welcher Handwerker wann kommen muss und stimmen alles intern ab. Du bekommst Updates wenn etwas fertig ist — und am Ende eine Rechnung.",
   },
   {
+    q: "Wer führt die Arbeiten durch — Bärenwald selbst oder Subunternehmer?",
+    a: "Beides — je nach Gewerk. Für Garten und Landschaftsbau, Hausmeisterservice, Winterdienst und Gebäudereinigung haben wir eigene Teams vor Ort. Für Elektro, Sanitär, Heizung, Dach und Innenausbau arbeiten wir mit einem festen Netzwerk geprüfter Münchner Partnerbetriebe — alles Meisterbetriebe, zertifiziert und versichert. Den Unterschied merkt der Kunde nicht — denn die Verantwortung liegt in beiden Fällen bei Bärenwald. Ein Ansprechpartner, eine Rechnung.",
+  },
+  {
+    q: "Wie behalte ich den Überblick über mein Projekt?",
+    a: "Du bekommst während des gesamten Projekts automatische Status-Updates per Mail — wenn etwas gestartet wird, wenn ein Meilenstein erreicht ist und wenn alles fertig ist. Nach Abschluss erhältst du ein digitales Abnahmeprotokoll mit Fotos — alles dokumentiert, alles nachvollziehbar. Kein Anruf nötig um zu fragen was gerade passiert.",
+  },
+  {
+    q: "Arbeitet ihr nur mit Privatpersonen oder auch mit Verwaltungen und Gewerbe?",
+    a: "Beides. Wir arbeiten für: Privatkunden — Eigentümer und Mieter die ihre Wohnung oder ihr Haus renovieren, sanieren oder regelmäßig betreuen lassen wollen. Hausverwaltungen — für laufende Objektbetreuung, Schäden und wiederkehrende Maßnahmen im Bestand mit klarer Dokumentation. Gewerbekunden — für Umbauten, Modernisierungen und technische Maßnahmen mit mehreren Gewerken und klarer Projektführung. Für Gewerbe und Hausverwaltungen erstellen wir individuelle Angebote — einfach direkt anrufen oder anfragen.",
+  },
+  {
     q: "Wie funktioniert der Preisrechner?",
     a: "Du beantwortest ein paar kurze Fragen zu deinem Vorhaben — Situation, Bereich, Umfang und Größe. In 2 Minuten siehst du einen realistischen Preisrahmen für dein Projekt. Danach kannst du einen Vor-Ort-Termin vereinbaren — die Anfahrt wird bei Beauftragung angerechnet.",
   },
   {
     q: "Wie läuft der Vor-Ort-Termin ab?",
     a: "Wir kommen zu dir und schauen uns alles an. Die Anfahrtskosten werden bei Beauftragung vollständig auf den Auftrag angerechnet — du zahlst also nur wenn wir auch wirklich arbeiten. Nach dem Termin bekommst du ein genaues Festpreisangebot. Du entscheidest danach ob du uns beauftragst. Sagst du ab, zahlst du nur die Anfahrt.",
-  },
-  {
-    q: "Arbeitet Bärenwald selbst oder mit Subunternehmern?",
-    a: "Wir koordinieren ein Netzwerk geprüfter Meisterbetriebe aus München und Umgebung. Alle Betriebe sind zertifiziert und versichert. Du hast immer Bärenwald als Ansprechpartner — egal welche Leistung.",
   },
   {
     q: "Was passiert wenn etwas nicht stimmt?",

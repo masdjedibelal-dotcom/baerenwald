@@ -18,32 +18,78 @@ const lora = Lora({
   variable: "--font-display",
 });
 
-const metadataBase = new URL(SITE_CONFIG.url);
+const BASE_URL = "https://baerenwaldmuenchen.de";
 
 export const metadata: Metadata = {
-  metadataBase,
+  metadataBase: new URL(BASE_URL),
+
   title: {
-    default: "Bärenwald Handwerksgruppe München",
-    template: "%s | Bärenwald Handwerksgruppe",
+    default: "Bärenwald München — Handwerker aus einer Hand",
+    template: "%s — Bärenwald München",
   },
+
   description:
-    "Ein Ansprechpartner für Handwerksleistungen in München & Umgebung — Maler, Bad, Elektro, Garten, Winterdienst und mehr. Kostenloser Preisrechner.",
+    "Handwerker in München — ein Ansprechpartner für alle Gewerke. Malerarbeiten, Bad, Elektro, Garten und mehr. Preisrahmen online berechnen.",
+
+  keywords: [
+    "Handwerker München",
+    "Renovierung München",
+    "Malerarbeiten München",
+    "Badezimmer sanieren München",
+    "Elektriker München",
+    "Gartenpflege München",
+    "Hausmeisterservice München",
+    "Handwerk München",
+  ],
+
+  authors: [{ name: "Beran Cakmak" }],
+  creator: "Bärenwald München",
+  publisher: "Bärenwald München",
+
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+    },
+  },
+
   openGraph: {
     type: "website",
     locale: "de_DE",
-    url: SITE_CONFIG.url,
-    siteName: SITE_CONFIG.companyName,
-    title: "Bärenwald Handwerksgruppe München",
+    url: BASE_URL,
+    siteName: "Bärenwald München",
+    title: "Bärenwald München — Handwerker aus einer Hand",
     description:
-      "Handwerkskoordination und Leistungen in München & Umgebung — transparent, meisterlich, aus einer Hand.",
+      "Ein Ansprechpartner für alle Handwerksleistungen in München. Preisrahmen online berechnen — unverbindlich.",
+    images: [
+      {
+        url: "/og-image.png",
+        width: 1200,
+        height: 630,
+        alt: "Bärenwald München — Handwerker aus einer Hand",
+      },
+    ],
   },
+
   twitter: {
     card: "summary_large_image",
-    title: "Bärenwald Handwerksgruppe München",
+    title: "Bärenwald München — Handwerker aus einer Hand",
     description:
-      "Ein Ansprechpartner. Wir kümmern uns um alle Handwerker. Jetzt Preisrechner starten.",
+      "Ein Ansprechpartner für alle Handwerksleistungen in München.",
+    images: ["/og-image.png"],
   },
-  robots: { index: true, follow: true },
+
+  icons: {
+    icon: "/favicon.png",
+    shortcut: "/favicon.png",
+    apple: "/favicon.png",
+  },
+
+  alternates: {
+    canonical: BASE_URL,
+  },
 };
 
 export const viewport: Viewport = {

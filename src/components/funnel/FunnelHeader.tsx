@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useId, useState } from "react";
 
@@ -37,7 +38,6 @@ export function FunnelHeader({ className }: FunnelHeaderProps) {
   const dialogDescId = useId();
   const [exitOpen, setExitOpen] = useState(false);
 
-  const initials = SITE_CONFIG.logoInitials.slice(0, 2).toUpperCase();
   const tel = SITE_CONFIG.phone.replace(/\s/g, "");
 
   const closeExit = useCallback(() => setExitOpen(false), []);
@@ -69,12 +69,14 @@ export function FunnelHeader({ className }: FunnelHeaderProps) {
         )}
       >
         <div className="flex min-w-0 flex-1 items-center gap-3">
-          <div
-            className="flex size-10 shrink-0 items-center justify-center rounded-full bg-funnel-accent text-xs font-semibold text-white"
-            aria-hidden
-          >
-            {initials}
-          </div>
+          <Image
+            src="/logo.png"
+            alt="Bärenwald München"
+            width={36}
+            height={36}
+            className="shrink-0"
+            style={{ objectFit: "contain" }}
+          />
           <span className="truncate font-semibold text-text-primary">
             {SITE_CONFIG.companyName}
           </span>

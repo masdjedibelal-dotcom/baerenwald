@@ -4,11 +4,14 @@ import { useCallback, useMemo, useReducer } from "react";
 
 import type {
   BudgetCheck,
+  FachdetailsState,
   FunnelState,
   Kundentyp,
+  ObjektZustand,
   PriceLineItem,
   Situation,
   Zeitraum,
+  Zugaenglichkeit,
 } from "@/lib/funnel/types";
 
 export type BwFunnelAction =
@@ -19,6 +22,9 @@ export type BwFunnelAction =
   | { type: "SET_GROESSE"; n: number | null; einheit: "qm" | "stueck" | "meter" | null }
   | { type: "SET_PLZ"; plz: string }
   | { type: "SET_ZEITRAUM"; zeitraum: Zeitraum | null }
+  | { type: "SET_ZUGAENGLICHKEIT"; value: Zugaenglichkeit | null }
+  | { type: "SET_ZUSTAND"; value: ObjektZustand | null }
+  | { type: "SET_FACHDETAILS"; patch: Partial<FachdetailsState> }
   | { type: "SET_PHOTOS"; files: File[] }
   | {
       type: "UPDATE_LEAD_FIELD";
@@ -67,6 +73,7 @@ export function createInitialBwFunnelState(): FunnelState {
     dringlichkeit: null,
     zugaenglichkeit: null,
     zustand: null,
+    fachdetails: {},
     photos: [],
     name: "",
     vorname: "",
@@ -99,6 +106,9 @@ function bwFunnelReducer(
         bereiche: [...action.values],
         groesse: null,
         groesseEinheit: null,
+        zugaenglichkeit: null,
+        zustand: null,
+        fachdetails: {},
       };
 
     case "TOGGLE_BEREICH": {
@@ -110,6 +120,9 @@ function bwFunnelReducer(
         bereiche: Array.from(set),
         groesse: null,
         groesseEinheit: null,
+        zugaenglichkeit: null,
+        zustand: null,
+        fachdetails: {},
       };
     }
 
@@ -120,6 +133,9 @@ function bwFunnelReducer(
         umfangFaktor: action.faktor,
         groesse: null,
         groesseEinheit: null,
+        zugaenglichkeit: null,
+        zustand: null,
+        fachdetails: {},
       };
 
     case "SET_GROESSE":
@@ -134,6 +150,53 @@ function bwFunnelReducer(
 
     case "SET_ZEITRAUM":
       return { ...state, zeitraum: action.zeitraum };
+
+    case "SET_ZUGAENGLICHKEIT":
+      return {
+        ...state,
+        zugaenglichkeit: action.value,
+        zustand: null,
+      };
+
+    case "SET_ZUSTAND":
+      return { ...state, zustand: action.value };
+
+    case "SET_FACHDETAILS": {
+      const p = action.patch;
+      return {
+        ...state,
+        fachdetails: {
+          elektro:
+            p.elektro !== undefined
+              ? { ...state.fachdetails.elektro, ...p.elektro }
+              : state.fachdetails.elektro,
+          sanitaer:
+            p.sanitaer !== undefined
+              ? { ...state.fachdetails.sanitaer, ...p.sanitaer }
+              : state.fachdetails.sanitaer,
+          heizung:
+            p.heizung !== undefined
+              ? { ...state.fachdetails.heizung, ...p.heizung }
+              : state.fachdetails.heizung,
+          maler:
+            p.maler !== undefined
+              ? { ...state.fachdetails.maler, ...p.maler }
+              : state.fachdetails.maler,
+          boden:
+            p.boden !== undefined
+              ? { ...state.fachdetails.boden, ...p.boden }
+              : state.fachdetails.boden,
+          dach:
+            p.dach !== undefined
+              ? { ...state.fachdetails.dach, ...p.dach }
+              : state.fachdetails.dach,
+          garten:
+            p.garten !== undefined
+              ? { ...state.fachdetails.garten, ...p.garten }
+              : state.fachdetails.garten,
+        },
+      };
+    }
 
     case "SET_PHOTOS":
       return { ...state, photos: [...action.files] };
@@ -217,8 +280,20 @@ export function useBwFunnelState() {
     dispatch({ type: "SET_PLZ", plz });
   }, []);
 
-  const setZeitraum = useCallback((z: Zeitraum) => {
+  const setZeitraum = useCallback((z: Zeitraum | null) => {
     dispatch({ type: "SET_ZEITRAUM", zeitraum: z });
+  }, []);
+
+  const setZugaenglichkeit = useCallback((value: Zugaenglichkeit | null) => {
+    dispatch({ type: "SET_ZUGAENGLICHKEIT", value });
+  }, []);
+
+  const setZustand = useCallback((value: ObjektZustand | null) => {
+    dispatch({ type: "SET_ZUSTAND", value });
+  }, []);
+
+  const setFachdetails = useCallback((patch: Partial<FachdetailsState>) => {
+    dispatch({ type: "SET_FACHDETAILS", patch });
   }, []);
 
   const setPrice = useCallback(
@@ -289,6 +364,9 @@ export function useBwFunnelState() {
       setGroesse,
       setPlz,
       setZeitraum,
+      setZugaenglichkeit,
+      setZustand,
+      setFachdetails,
       setPrice,
       setBudgetCheck,
       setSlot,
@@ -308,6 +386,9 @@ export function useBwFunnelState() {
       setGroesse,
       setPlz,
       setZeitraum,
+      setZugaenglichkeit,
+      setZustand,
+      setFachdetails,
       setPrice,
       setBudgetCheck,
       setSlot,

@@ -1,0 +1,692 @@
+/**
+ * Daten für den dynamischen Schritt „Fachdetails“ (Elektro / Sanitär / Heizung).
+ * UI-Logik in {@link FachdetailsStep}.
+ */
+
+export type FachdetailOptionDef = {
+  value: string;
+  label: string;
+  hint?: string;
+  /** Kurzer Hinweis neben der Option (aufklappbar) */
+  education?: string;
+  followUpId?: string | null;
+};
+
+export type FachdetailQuestionDef = {
+  id: string;
+  title: string;
+  education?: string;
+  inputType: "single" | "multi";
+  options: FachdetailOptionDef[];
+};
+
+export const ELEKTRO_Q1: FachdetailQuestionDef = {
+  id: "elektro_problem",
+  title: "Was ist das Problem?",
+  education:
+    "Ein FI-Schalter der auslöst kann auf einen Erdschluss hinweisen — das sollte schnell geprüft werden.",
+  inputType: "single",
+  options: [
+    {
+      value: "sicherung",
+      label: "Sicherung fliegt raus",
+      hint: "FI oder LS-Schalter löst aus",
+      followUpId: "elektro_folge_sicherung",
+    },
+    {
+      value: "strom_weg",
+      label: "Strom weg in einem Raum",
+      hint: "Ein Bereich hat keinen Strom",
+    },
+    {
+      value: "steckdose",
+      label: "Steckdose / Schalter defekt",
+      hint: "Einzelne Punkte funktionieren nicht",
+      followUpId: "elektro_folge_steckdose",
+    },
+    {
+      value: "neue_leitungen",
+      label: "Neue Leitungen / Nachrüsten",
+      hint: "Erweiterung oder neue Installation",
+      followUpId: "elektro_folge_leitungen",
+    },
+    {
+      value: "weiss_nicht",
+      label: "Weiß ich nicht genau",
+      hint: "Kein Problem — wir schauen uns das beim Termin an",
+    },
+  ],
+};
+
+export const ELEKTRO_FOLLOWUPS: Record<string, FachdetailQuestionDef> = {
+  elektro_folge_sicherung: {
+    id: "elektro_folge_sicherung",
+    title: "Welche Sicherung ist es?",
+    inputType: "single",
+    options: [
+      {
+        value: "fi",
+        label: "FI-Schalter",
+        hint: "Großer Schalter, löst bei Fehlerstrom aus",
+      },
+      {
+        value: "ls",
+        label: "Leitungsschutzschalter",
+        hint: "Kleiner Schalter pro Stromkreis",
+      },
+      { value: "weiss_nicht", label: "Weiß ich nicht genau", hint: "" },
+    ],
+  },
+  elektro_folge_steckdose: {
+    id: "elektro_folge_steckdose",
+    title: "Wie viele Punkte sind betroffen?",
+    inputType: "single",
+    options: [
+      {
+        value: "einzeln",
+        label: "1–2 Punkte",
+        hint: "Einzelne Steckdose / Schalter",
+      },
+      {
+        value: "mehrere",
+        label: "3–5 Punkte",
+        hint: "Mehrere in einem Bereich",
+      },
+      {
+        value: "viele",
+        label: "Mehr als 5",
+        hint: "Größerer Bereich betroffen",
+      },
+    ],
+  },
+  elektro_folge_leitungen: {
+    id: "elektro_folge_leitungen",
+    title: "Wie sollen die Leitungen verlegt werden?",
+    education:
+      "Unterputz bedeutet Stemmen und Verputzen — erhöht den Aufwand und die Dauer.",
+    inputType: "single",
+    options: [
+      {
+        value: "unterputz",
+        label: "Unterputz",
+        hint: "In der Wand — saubereres Ergebnis, mehr Aufwand",
+      },
+      {
+        value: "aufputz",
+        label: "Aufputz",
+        hint: "Sichtbar an der Wand — schneller und günstiger",
+      },
+      { value: "weiss_nicht", label: "Weiß ich nicht genau", hint: "" },
+    ],
+  },
+};
+
+export const SANITAER_Q1: FachdetailQuestionDef = {
+  id: "sanitaer_lage",
+  title: "Wo sitzt das Problem?",
+  education:
+    "Lecks hinter der Wand bedeuten oft Stemmarbeiten — das erhöht den Aufwand und den Preis deutlich.",
+  inputType: "single",
+  options: [
+    {
+      value: "sichtbar",
+      label: "Sichtbar zugänglich",
+      hint: "Unter Waschbecken, Spüle oder Dusche",
+    },
+    {
+      value: "wand",
+      label: "Hinter der Wand",
+      hint: "Unterputz-Leitung oder -Anschluss",
+      followUpId: "sanitaer_folge_rohre",
+    },
+    {
+      value: "keller",
+      label: "Keller / Hauptleitung",
+      hint: "Zuleitung oder Hauptabsperrung",
+    },
+    {
+      value: "weiss_nicht",
+      label: "Weiß ich nicht genau",
+      hint: "Kein Problem — wir schauen uns das an",
+    },
+  ],
+};
+
+export const SANITAER_FOLLOWUPS: Record<string, FachdetailQuestionDef> = {
+  sanitaer_folge_rohre: {
+    id: "sanitaer_folge_rohre",
+    title: "Was für Rohre sind verbaut?",
+    inputType: "single",
+    options: [
+      {
+        value: "kupfer",
+        label: "Kupferrohre",
+        hint: "Rötlich, ältere Häuser",
+      },
+      {
+        value: "kunststoff",
+        label: "Kunststoffrohre",
+        hint: "Weiß oder grau, neuere Häuser",
+      },
+      { value: "weiss_nicht", label: "Weiß ich nicht genau", hint: "" },
+    ],
+  },
+};
+
+export const SANITAER_BAD_Q: FachdetailQuestionDef = {
+  id: "sanitaer_bad_was",
+  title: "Was soll am Bad gemacht werden?",
+  education:
+    "Ein komplettes Bad braucht Fliesen, Sanitär und Elektro — wir koordinieren alle drei Gewerke für dich.",
+  inputType: "single",
+  options: [
+    {
+      value: "fliesen",
+      label: "Nur Fliesen",
+      hint: "Wände oder Boden neu fliesen",
+    },
+    {
+      value: "objekte",
+      label: "Sanitärobjekte tauschen",
+      hint: "WC, Dusche, Wanne, Waschbecken",
+      followUpId: "sanitaer_bad_objekte_multi",
+    },
+    {
+      value: "komplett",
+      label: "Alles komplett",
+      hint: "Fliesen + Objekte + Elektro",
+    },
+    {
+      value: "reparatur",
+      label: "Einzelne Reparatur",
+      hint: "Kleines Problem beheben",
+    },
+    {
+      value: "weiss_nicht",
+      label: "Weiß ich nicht genau",
+      hint: "",
+    },
+  ],
+};
+
+export const SANITAER_BAD_OBJEKTE_MULTI: FachdetailQuestionDef = {
+  id: "sanitaer_bad_objekte_multi",
+  title: "Was genau wird getauscht?",
+  inputType: "multi",
+  options: [
+    { value: "wc", label: "WC", hint: "" },
+    { value: "dusche", label: "Dusche / Wanne", hint: "" },
+    { value: "waschbecken", label: "Waschbecken", hint: "" },
+    { value: "armatur", label: "Armaturen", hint: "" },
+  ],
+};
+
+export const HEIZUNG_Q1: FachdetailQuestionDef = {
+  id: "heizung_typ",
+  title: "Was für eine Heizung hast du?",
+  education:
+    "Wärmepumpen und ältere Ölheizungen brauchen Spezialisten — das beeinflusst den Preis und die Verfügbarkeit unserer Handwerker.",
+  inputType: "single",
+  options: [
+    {
+      value: "gas",
+      label: "Gas-Therme",
+      hint: "Gasheizung mit Therme",
+    },
+    {
+      value: "oel",
+      label: "Ölheizung",
+      hint: "Öltank im Keller",
+      followUpId: "heizung_folge_oel_alter",
+    },
+    {
+      value: "waermepumpe",
+      label: "Wärmepumpe",
+      hint: "Luft- oder Erdwärmepumpe",
+      followUpId: "heizung_folge_wp_vorhaben",
+    },
+    {
+      value: "fernwaerme",
+      label: "Fernwärme",
+      hint: "Anschluss ans Fernwärmenetz",
+    },
+    {
+      value: "weiss_nicht",
+      label: "Weiß ich nicht genau",
+      hint: "Kein Problem — wir schauen uns das an",
+    },
+  ],
+};
+
+export const HEIZUNG_FOLLOWUPS: Record<string, FachdetailQuestionDef> = {
+  heizung_folge_oel_alter: {
+    id: "heizung_folge_oel_alter",
+    title: "Wie alt ist die Ölheizung?",
+    education:
+      "Heizungen über 20 Jahre müssen laut GEG eventuell ausgetauscht werden — wir beraten dich dazu.",
+    inputType: "single",
+    options: [
+      {
+        value: "unter20",
+        label: "Unter 20 Jahre",
+        hint: "Noch relativ neu",
+      },
+      {
+        value: "ueber20",
+        label: "Über 20 Jahre",
+        hint: "Älteres System",
+      },
+      { value: "weiss_nicht", label: "Weiß ich nicht genau", hint: "" },
+    ],
+  },
+  heizung_folge_wp_vorhaben: {
+    id: "heizung_folge_wp_vorhaben",
+    title: "Was soll gemacht werden?",
+    education:
+      "Wärmepumpen-Einbau ist ein größeres Projekt — wir planen das persönlich mit dir.",
+    inputType: "single",
+    options: [
+      {
+        value: "wartung",
+        label: "Wartung / Service",
+        hint: "Jährliche Kontrolle",
+      },
+      {
+        value: "reparatur",
+        label: "Reparatur",
+        hint: "Etwas funktioniert nicht",
+      },
+      {
+        value: "neu",
+        label: "Neue Wärmepumpe einbauen",
+        hint: "Erstinstallation",
+      },
+    ],
+  },
+};
+
+export const MALER_Q1: FachdetailQuestionDef = {
+  id: "maler_was",
+  title: "Was soll gestrichen werden?",
+  education:
+    "Decken streichen dauert oft länger als Wände — wegen Abdecken, Gerüst und längerer Trockenzeit.",
+  inputType: "single",
+  options: [
+    {
+      value: "waende",
+      label: "Nur Wände",
+      hint: "Innenräume streichen",
+      followUpId: null,
+    },
+    {
+      value: "waende_decke",
+      label: "Wände + Decke",
+      hint: "Kompletter Raum",
+      followUpId: "maler_folge_zustand",
+    },
+    {
+      value: "komplett",
+      label: "Wände + Decke + Türen / Fenster",
+      hint: "Alles in einem Raum",
+      followUpId: "maler_folge_zustand",
+    },
+    {
+      value: "fassade",
+      label: "Fassade außen",
+      hint: "Außenwände streichen oder verputzen",
+      followUpId: "maler_folge_fassade",
+    },
+    {
+      value: "weiss_nicht",
+      label: "Weiß ich nicht genau",
+      hint: "",
+      followUpId: null,
+    },
+  ],
+};
+
+export const MALER_FOLLOWUPS: Record<string, FachdetailQuestionDef> = {
+  maler_folge_zustand: {
+    id: "maler_folge_zustand",
+    title: "Wie ist der aktuelle Zustand der Wände?",
+    inputType: "single",
+    options: [
+      {
+        value: "glatt",
+        label: "Glatt und sauber",
+        hint: "Nur neue Farbe nötig",
+      },
+      {
+        value: "risse",
+        label: "Kleine Risse oder Flecken",
+        hint: "Vorarbeiten nötig",
+        education:
+          "Risse müssen gespachtelt und geschliffen werden — das erhöht den Aufwand.",
+      },
+      {
+        value: "stark",
+        label: "Starke Schäden",
+        hint: "Größere Ausbesserungen nötig",
+      },
+      {
+        value: "weiss_nicht",
+        label: "Weiß ich nicht genau",
+        hint: "",
+      },
+    ],
+  },
+  maler_folge_fassade: {
+    id: "maler_folge_fassade",
+    title: "Was für eine Fassade ist es?",
+    inputType: "single",
+    options: [
+      {
+        value: "putz",
+        label: "Verputzte Fassade",
+        hint: "Glatter oder rauer Putz",
+      },
+      {
+        value: "klinker",
+        label: "Klinker / Backstein",
+        hint: "Sichtmauerwerk",
+        education:
+          "Klinker-Fassaden brauchen spezielle Reinigung und Imprägnierung — kein normaler Anstrich.",
+      },
+      {
+        value: "holz",
+        label: "Holzfassade",
+        hint: "Holzverkleidung außen",
+      },
+      {
+        value: "weiss_nicht",
+        label: "Weiß ich nicht genau",
+        hint: "",
+      },
+    ],
+  },
+};
+
+export const BODEN_Q1: FachdetailQuestionDef = {
+  id: "boden_aktuell",
+  title: "Was liegt aktuell?",
+  education:
+    "Fliesen entfernen ist aufwendig und laut — oft braucht man 1–2 Tage nur für den Rückbau bevor der neue Boden verlegt werden kann.",
+  inputType: "single",
+  options: [
+    {
+      value: "teppich",
+      label: "Teppich",
+      hint: "Teppichboden vorhanden",
+      followUpId: null,
+    },
+    {
+      value: "fliesen",
+      label: "Fliesen",
+      hint: "Keramik oder Steinzeug",
+      followUpId: "boden_folge_fliesen",
+    },
+    {
+      value: "laminat",
+      label: "Laminat oder Parkett",
+      hint: "Schwimmend verlegt oder geklebt",
+      followUpId: "boden_folge_laminat",
+    },
+    {
+      value: "estrich",
+      label: "Estrich / nichts",
+      hint: "Rohboden oder Betonboden",
+      followUpId: null,
+    },
+    {
+      value: "weiss_nicht",
+      label: "Weiß ich nicht genau",
+      hint: "",
+      followUpId: null,
+    },
+  ],
+};
+
+export const BODEN_FOLLOWUPS: Record<string, FachdetailQuestionDef> = {
+  boden_folge_fliesen: {
+    id: "boden_folge_fliesen",
+    title: "Wie sind die Fliesen verlegt?",
+    inputType: "single",
+    options: [
+      {
+        value: "normal",
+        label: "Normal verklebt",
+        hint: "Standard-Verlegung",
+      },
+      {
+        value: "dick",
+        label: "Dickbettmörtel",
+        hint: "Ältere Verlegung, sehr fest",
+        education:
+          "Dickbett-Fliesen sind sehr aufwendig zu entfernen — erhöht den Rückbau-Aufwand erheblich.",
+      },
+      {
+        value: "weiss_nicht",
+        label: "Weiß ich nicht genau",
+        hint: "",
+      },
+    ],
+  },
+  boden_folge_laminat: {
+    id: "boden_folge_laminat",
+    title: "Ist es geklebt oder schwimmend?",
+    inputType: "single",
+    options: [
+      {
+        value: "schwimmend",
+        label: "Schwimmend verlegt",
+        hint: "Liegt lose — einfach zu entfernen",
+      },
+      {
+        value: "geklebt",
+        label: "Geklebt",
+        hint: "Fest mit Untergrund verbunden",
+        education:
+          "Geklebtes Parkett ist aufwendig zu entfernen — oft muss der Untergrund danach geschliffen werden.",
+      },
+      {
+        value: "weiss_nicht",
+        label: "Weiß ich nicht genau",
+        hint: "",
+      },
+    ],
+  },
+};
+
+export const DACH_Q1: FachdetailQuestionDef = {
+  id: "dach_vorhaben",
+  title: "Was ist das Problem oder Vorhaben?",
+  education:
+    "Einzelne Ziegel tauschen geht oft an einem Tag — eine Komplettsanierung dauert mehrere Wochen.",
+  inputType: "single",
+  options: [
+    {
+      value: "ziegel",
+      label: "Einzelne Ziegel defekt",
+      hint: "Wenige Stellen reparieren",
+      followUpId: null,
+    },
+    {
+      value: "daemmung",
+      label: "Dachdämmung erneuern",
+      hint: "Wärmedämmung verbessern",
+      followUpId: "dach_folge_alter",
+    },
+    {
+      value: "komplett",
+      label: "Komplett neu eindecken",
+      hint: "Gesamtes Dach sanieren",
+      followUpId: "dach_folge_alter",
+    },
+    {
+      value: "dachfenster",
+      label: "Dachfenster einbauen",
+      hint: "Neues Fenster im Dach",
+      followUpId: null,
+    },
+    {
+      value: "regenrinne",
+      label: "Regenrinne / Ablauf",
+      hint: "Rinnen reparieren oder tauschen",
+      followUpId: null,
+    },
+    {
+      value: "weiss_nicht",
+      label: "Weiß ich nicht genau",
+      hint: "",
+      followUpId: null,
+    },
+  ],
+};
+
+export const DACH_FOLLOWUPS: Record<string, FachdetailQuestionDef> = {
+  dach_folge_alter: {
+    id: "dach_folge_alter",
+    title: "Wie alt ist das Dach?",
+    inputType: "single",
+    options: [
+      {
+        value: "unter20",
+        label: "Unter 20 Jahre",
+        hint: "Noch relativ neu",
+      },
+      {
+        value: "zwanzig_vierzig",
+        label: "20–40 Jahre",
+        hint: "Mittleres Alter",
+      },
+      {
+        value: "ueber40",
+        label: "Über 40 Jahre",
+        hint: "Älteres Dach",
+        education:
+          "Dächer über 40 Jahre haben oft zusätzliche Schäden die erst beim Aufdecken sichtbar werden — wir kalkulieren einen Puffer ein.",
+      },
+      {
+        value: "weiss_nicht",
+        label: "Weiß ich nicht genau",
+        hint: "",
+      },
+    ],
+  },
+};
+
+export const GARTEN_Q1: FachdetailQuestionDef = {
+  id: "garten_was",
+  title: "Was soll gemacht werden?",
+  education:
+    "Baumfällungen über 3 m brauchen in München oft eine Genehmigung — wir klären das für dich.",
+  inputType: "single",
+  options: [
+    {
+      value: "pflege",
+      label: "Regelmäßig mähen und pflegen",
+      hint: "Laufende Gartenpflege",
+      followUpId: "garten_folge_haeufigkeit",
+    },
+    {
+      value: "hecke",
+      label: "Hecke schneiden",
+      hint: "Einmalig oder regelmäßig",
+      followUpId: null,
+    },
+    {
+      value: "baum",
+      label: "Bäume fällen oder beschneiden",
+      hint: "Baumarbeiten",
+      followUpId: "garten_folge_baum",
+    },
+    {
+      value: "gestaltung",
+      label: "Neu gestalten oder bepflanzen",
+      hint: "Garten umgestalten",
+      followUpId: "garten_folge_gestaltung",
+    },
+    {
+      value: "weiss_nicht",
+      label: "Weiß ich nicht genau",
+      hint: "",
+      followUpId: null,
+    },
+  ],
+};
+
+export const GARTEN_FOLLOWUPS: Record<string, FachdetailQuestionDef> = {
+  garten_folge_haeufigkeit: {
+    id: "garten_folge_haeufigkeit",
+    title: "Wie oft soll gepflegt werden?",
+    inputType: "single",
+    options: [
+      {
+        value: "woechentlich",
+        label: "Wöchentlich",
+        hint: "Intensivpflege",
+      },
+      {
+        value: "zweiwochentlich",
+        label: "Alle 2 Wochen",
+        hint: "Standard",
+      },
+      {
+        value: "monatlich",
+        label: "Monatlich",
+        hint: "Grundpflege",
+      },
+      {
+        value: "einmalig",
+        label: "Einmalig",
+        hint: "Nur einmal aufräumen",
+      },
+    ],
+  },
+  garten_folge_baum: {
+    id: "garten_folge_baum",
+    title: "Wie groß sind die Bäume?",
+    inputType: "single",
+    options: [
+      {
+        value: "klein",
+        label: "Unter 3 Meter",
+        hint: "Kleine Bäume oder Sträucher",
+      },
+      {
+        value: "mittel",
+        label: "3–6 Meter",
+        hint: "Mittelgroße Bäume",
+      },
+      {
+        value: "gross",
+        label: "Über 6 Meter",
+        hint: "Große Bäume",
+        education:
+          "Große Bäume brauchen Spezialausrüstung und oft eine Genehmigung der Stadt München — Bearbeitungszeit 2–4 Wochen.",
+      },
+      {
+        value: "weiss_nicht",
+        label: "Weiß ich nicht genau",
+        hint: "",
+      },
+    ],
+  },
+  garten_folge_gestaltung: {
+    id: "garten_folge_gestaltung",
+    title: "Was soll neu entstehen?",
+    inputType: "multi",
+    options: [
+      { value: "rasen", label: "Neuer Rasen" },
+      { value: "bepflanzung", label: "Bepflanzung / Beete" },
+      { value: "wege", label: "Wege oder Terrasse" },
+      { value: "zaun", label: "Zaun oder Sichtschutz" },
+      {
+        value: "bewaesserung",
+        label: "Bewässerungsanlage",
+        education:
+          "Automatische Bewässerung braucht Wasseranschluss und Steuereinheit — planen wir separat.",
+      },
+    ],
+  },
+};

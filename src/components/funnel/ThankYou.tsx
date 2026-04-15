@@ -2,6 +2,39 @@
 
 import { cn } from "@/lib/utils";
 
+const TIMELINE_STEPS = [
+  {
+    title: "Anfrage eingegangen",
+    sub: "Wir haben deine Anfrage und alle Angaben erhalten.",
+  },
+  {
+    title: "Verfügbarkeit wird geprüft",
+    sub: "Wir melden uns innerhalb von 24h zur Terminbestätigung per Telefon oder E-Mail.",
+  },
+  {
+    title: "Vor-Ort-Termin",
+    sub: "Wir schauen uns alles an und erstellen ein genaues Festpreisangebot.",
+  },
+  {
+    title: "Auftrag & Umsetzung",
+    sub: "Nach deiner Zusage koordinieren wir alle Handwerker — du lehnst dich zurück.",
+  },
+] as const;
+
+function TimelineCheck() {
+  return (
+    <svg width="10" height="10" viewBox="0 0 10 10" fill="none" aria-hidden>
+      <path
+        d="M2 5l2.5 2.5 3.5-4"
+        stroke="white"
+        strokeWidth="1.6"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
 export interface ThankYouProps {
   variant?: "termin" | "anfrage" | "beratung";
   dateLabel?: string;
@@ -97,9 +130,27 @@ export function ThankYou({
       ) : null}
 
       {!isBeratung ? (
-        <p className="mt-6 max-w-md text-center text-xs leading-relaxed text-text-tertiary">
-          Ein Ansprechpartner — wir koordinieren alle Handwerker
-        </p>
+        <div className="submit-timeline w-full text-left">
+          {TIMELINE_STEPS.map((step, i) => (
+            <div
+              key={step.title}
+              className={`submit-timeline-step${i === 0 ? " active" : ""}`}
+            >
+              <div className="submit-timeline-left">
+                <div className="submit-timeline-dot">
+                  {i === 0 ? <TimelineCheck /> : <span>{i + 1}</span>}
+                </div>
+                {i < TIMELINE_STEPS.length - 1 ? (
+                  <div className="submit-timeline-line" />
+                ) : null}
+              </div>
+              <div className="submit-timeline-content">
+                <div className="submit-timeline-title">{step.title}</div>
+                <div className="submit-timeline-sub">{step.sub}</div>
+              </div>
+            </div>
+          ))}
+        </div>
       ) : null}
     </div>
   );

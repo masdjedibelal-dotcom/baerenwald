@@ -392,3 +392,8 @@ input[type="range"].funnel-range::-moz-range-thumb {
   animation: funnel-dots 0.9s ease-in-out infinite;
 }
 
+/* Rechner-Funnel: Foto-Pflicht Fehlerzustand */
+.photo-upload-error {
+  border-color: #c0392b !important;
+  background: #fff5f5 !important;
+}

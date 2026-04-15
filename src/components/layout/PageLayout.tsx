@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import {
   useCallback,
@@ -152,7 +153,13 @@ export function PageLayout({ children }: PageLayoutProps) {
       >
         <div className="site-header-inner">
           <Link href="/" className="site-header-logo" onClick={closeAll}>
-            <div className="site-header-logo-mark">🐻</div>
+            <Image
+              src="/logo.png"
+              alt="Bärenwald München"
+              width={36}
+              height={36}
+              className="site-header-logo-img"
+            />
             <span className="site-header-logo-name">Bärenwald</span>
           </Link>
 
@@ -286,7 +293,13 @@ export function PageLayout({ children }: PageLayoutProps) {
         <div className="site-mobile-menu" role="dialog" aria-modal="true">
           <div className="site-mobile-menu-head">
             <Link href="/" className="site-header-logo" onClick={closeAll}>
-              <div className="site-header-logo-mark">🐻</div>
+              <Image
+                src="/logo.png"
+                alt="Bärenwald München"
+                width={36}
+                height={36}
+                className="site-header-logo-img"
+              />
               <span className="site-header-logo-name">Bärenwald</span>
             </Link>
             <button

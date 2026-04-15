@@ -22,17 +22,22 @@ export async function generateMetadata({ params }: PageProps) {
   if (!data) {
     return { title: "Leistung — Bärenwald Handwerksgruppe" };
   }
-  const title = `${data.label} München — ${SITE_CONFIG.companyName}`;
+
+  const title = `${data.label} München — Preise & Angebot`;
   const description =
     data.metaDescription ??
-    `${data.subline.replace(/\s+/g, " ").trim().slice(0, 155)}`;
+    `${data.label} in München — Preisrahmen online berechnen, unverbindlich anfragen. Meisterbetriebe, ein Ansprechpartner.`;
+  const canonical = `https://baerenwaldmuenchen.de/leistungen/${params.slug}`;
+
   return {
     title,
     description,
+    alternates: { canonical },
     openGraph: {
       title,
       description,
-      url: `${SITE_CONFIG.url}/leistungen/${params.slug}`,
+      url: canonical,
+      images: [{ url: "/og-image.png" }],
     },
   };
 }

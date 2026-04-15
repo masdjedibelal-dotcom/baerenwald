@@ -34,7 +34,7 @@ const HOW_STEPS = [
   {
     emoji: "📋",
     title: "Wir koordinieren alles",
-    desc: "Ein Vor-Ort-Termin — dann übernehmen wir. Wir stimmen alle Handwerker ab, planen die Reihenfolge und melden uns wenn etwas fertig ist. Du sprichst nur noch mit uns.",
+    desc: "Ein Vor-Ort-Termin — dann übernehmen wir. Ob eigene Teams oder Partnerbetriebe: wir stimmen alle Handwerker ab, planen die Reihenfolge und melden uns wenn etwas fertig ist. Du sprichst nur noch mit uns.",
   },
   {
     emoji: "✓",
@@ -56,7 +56,7 @@ const EINSATZ_BLOCKS = [
   },
   {
     titel: "Du weißt immer was läuft",
-    text: "Statusupdates per Mail, digitales Abnahmeprotokoll, alles dokumentiert. Kein Anruf nötig um zu fragen wann jemand kommt.",
+    text: "Automatische Status-Updates per Mail, digitales Abnahmeprotokoll mit Fotos — alles nachvollziehbar dokumentiert. Kein Anruf nötig. Kein Nachfragen. Du siehst was passiert.",
     variant: "soft" as const,
   },
 ];
@@ -332,9 +332,13 @@ export default function BaerenwaldLandingClient({
     <div className="baerenwald-landing">
       <header className="landing-nav">
         <Link href="/" className="logo">
-          <span className="logo-mark" aria-hidden>
-            🐻
-          </span>
+          <Image
+            src="/logo-white.png"
+            alt="Bärenwald München Logo"
+            width={36}
+            height={36}
+            className="logo-img"
+          />
           <span>Bärenwald</span>
         </Link>
         <nav className="nav-links" aria-label="Hauptnavigation">
@@ -621,9 +625,14 @@ export default function BaerenwaldLandingClient({
             <p className="how-tl-sub" style={{ marginTop: "12px" }}>
               Nicht dabei? Ruf uns an — wir helfen persönlich weiter.
             </p>
-            <a href={`tel:${tel}`} className="btn-cta" style={{ marginTop: "20px" }}>
-              {SITE_CONFIG.phone}
-            </a>
+            <div style={{ marginTop: "20px", display: "flex", flexWrap: "wrap", gap: "10px", alignItems: "center" }}>
+              <a href={SITE_CONFIG.phoneHref} className="btn-cta">
+                Mobil: {SITE_CONFIG.phone}
+              </a>
+              <a href={SITE_CONFIG.phoneFestnetHref} className="btn-cta" style={{ background: "transparent", border: "1.5px solid currentColor" }}>
+                Büro: {SITE_CONFIG.phoneFestnetz}
+              </a>
+            </div>
           </div>
           <div className="faq fade-up d2">
             {HOME_FAQ_ITEMS.map((item, i) => {

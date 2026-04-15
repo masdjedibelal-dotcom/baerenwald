@@ -1,90 +1,87 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 
-import type { Situation as LegacySituation } from "@/lib/types";
 import type { Situation as BwSituation } from "@/lib/funnel/types";
-import { cn } from "@/lib/utils";
-
-const SUBTITLES_LEGACY: Partial<Record<LegacySituation, string>> = {
-  renovierung: "Wir kalkulieren Maler, Boden und deine Leistungen…",
-  neubau: "Wir prüfen Ausbau-Pakete und aktuelle Preise…",
-  akut: "Wir prüfen Verfügbarkeit und Stundenpreise…",
-  pflege: "Wir berechnen dein Abo-Paket…",
-  b2b: "Wir erstellen deinen Rahmenvertrag-Richtwert…",
-};
-
-const SUBTITLES_BW: Partial<Record<BwSituation, string>> = {
-  renovieren: "Wir kalkulieren deine Leistungen und Flächen…",
-  sanieren: "Wir summieren Sanierung und Förderoptionen…",
-  notfall: "Wir prüfen Verfügbarkeit und Einsatzrahmen…",
-  neubauen: "Wir schätzen Ausbau und Außenarbeiten…",
-  betreuung: "Wir berechnen Pflege- und Servicepakete…",
-  gewerbe: "Wir bereiten deine Anfrage für die persönliche Planung vor …",
-  gastro: "Wir bereiten deine Anfrage für die persönliche Planung vor …",
-};
 
 export interface LoadingScreenProps {
-  situation: LegacySituation | BwSituation | null;
+  situation: BwSituation | string | null;
   onComplete: () => void;
-  durationMs?: number;
   className?: string;
 }
 
-export function LoadingScreen({
-  situation,
-  onComplete,
-  durationMs = 2200,
-  className,
-}: LoadingScreenProps) {
-  useEffect(() => {
-    const t = window.setTimeout(() => onComplete(), durationMs);
-    return () => window.clearTimeout(t);
-  }, [onComplete, durationMs]);
+export function LoadingScreen({ onComplete, className }: LoadingScreenProps) {
+  const [step, setStep] = useState<0 | 1 | 2 | 3>(0);
 
-  const sub =
-    situation && SUBTITLES_BW[situation as BwSituation]
-      ? SUBTITLES_BW[situation as BwSituation]
-      : situation && SUBTITLES_LEGACY[situation as LegacySituation]
-        ? SUBTITLES_LEGACY[situation as LegacySituation]
-        : "Wir bereiten dein Ergebnis vor …";
+  useEffect(() => {
+    const t1 = window.setTimeout(() => setStep(1), 700);
+    const t2 = window.setTimeout(() => setStep(2), 1500);
+    const t3 = window.setTimeout(() => setStep(3), 2300);
+    const t4 = window.setTimeout(() => onComplete(), 2800);
+    return () => {
+      window.clearTimeout(t1);
+      window.clearTimeout(t2);
+      window.clearTimeout(t3);
+      window.clearTimeout(t4);
+    };
+  }, [onComplete]);
+
+  const steps: { text: string }[] = [
+    { text: "Münchner Marktpreise werden abgerufen…" },
+    { text: "Faktoren werden berechnet…" },
+    { text: "Preisrahmen wird erstellt…" },
+  ];
 
   return (
-    <div
-      className={cn(
-        "flex flex-col items-center px-6 py-16 text-center",
-        className
-      )}
-    >
-      <div className="text-funnel-accent" aria-hidden>
+    <div className={`loading-screen${className ? ` ${className}` : ""}`}>
+      <div className="loading-icon" aria-hidden>
         <svg
-          className="size-12 animate-funnel-spin"
+          width="32"
+          height="32"
           viewBox="0 0 24 24"
           fill="none"
+          style={{
+            color: "var(--fl-accent)",
+            animation: "pulse 1.2s ease-in-out infinite",
+          }}
         >
-          <circle
-            className="opacity-25"
-            cx="12"
-            cy="12"
-            r="10"
+          <rect
+            x="3"
+            y="3"
+            width="18"
+            height="18"
+            rx="3"
             stroke="currentColor"
-            strokeWidth="2"
+            strokeWidth="1.5"
           />
           <path
-            fill="currentColor"
-            d="M12 2a10 10 0 0110 10h-3a7 7 0 00-7-7V2z"
+            d="M8 8h2v2H8zM11 8h5M11 11h5M8 12h2v2H8zM8 16h8"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            strokeLinecap="round"
           />
         </svg>
       </div>
-      <h2 className="mt-4 text-lg font-semibold text-text-primary">
-        Dein Preisrahmen wird berechnet…
-      </h2>
-      <p className="mt-2 max-w-sm text-sm text-text-secondary">{sub}</p>
-      <div className="mt-6 flex gap-1.5" aria-hidden>
-        <span className="size-1.5 rounded-full bg-funnel-accent [animation:pulse_1.2s_ease-in-out_infinite]" />
-        <span className="size-1.5 rounded-full bg-funnel-accent [animation:pulse_1.2s_ease-in-out_infinite] [animation-delay:0.2s]" />
-        <span className="size-1.5 rounded-full bg-funnel-accent [animation:pulse_1.2s_ease-in-out_infinite] [animation-delay:0.4s]" />
+
+      <div className="loading-steps">
+        {steps.map((s, i) => {
+          const idx = i + 1;
+          const cls =
+            step > idx
+              ? "loading-step done"
+              : step === idx
+                ? "loading-step active"
+                : "loading-step";
+          return (
+            <div key={s.text} className={cls}>
+              <div className="loading-step-dot" />
+              <span>{s.text}</span>
+            </div>
+          );
+        })}
       </div>
+
+      <p className="loading-sub">Basierend auf aktuellen Preisen für München 2026</p>
     </div>
   );
 }
