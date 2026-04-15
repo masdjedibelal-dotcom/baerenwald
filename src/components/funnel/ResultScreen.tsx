@@ -17,13 +17,12 @@ export function LeadAvailabilityHint({
   return (
     <div
       className={cn(
-        "border-l-[3px] border-funnel-accent py-3 pl-3.5 pr-3.5 text-[13px] leading-snug",
+        "rounded-lg px-3.5 py-3 text-[13px] leading-snug",
         className
       )}
       style={{
         backgroundColor: "var(--fl-accent-light, var(--accent-light, #EAF3DE))",
         color: "var(--fl-accent-dark, var(--accent-dark, #1a3d2b))",
-        borderRadius: "0 8px 8px 0",
       }}
       role="note"
     >

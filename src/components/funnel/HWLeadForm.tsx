@@ -10,7 +10,6 @@ import { cn } from "@/lib/utils";
 export interface HWLeadFormProps {
   photos: File[];
   onPhotosChange: (files: File[]) => void;
-  photoError?: boolean;
   selectedSlot: SelectedSlot | null;
   onSlotSelect: (date: Date, time: string) => void;
   name: string;
@@ -28,7 +27,6 @@ export interface HWLeadFormProps {
 export function HWLeadForm({
   photos,
   onPhotosChange,
-  photoError = false,
   selectedSlot,
   onSlotSelect,
   name,
@@ -47,24 +45,7 @@ export function HWLeadForm({
         files={photos}
         onChange={onPhotosChange}
         className="mb-4"
-        uploadHasError={photoError}
       />
-      {photoError ? (
-        <p
-          style={{
-            fontSize: "13px",
-            color: "#C0392B",
-            marginTop: "8px",
-            marginBottom: "16px",
-            display: "flex",
-            alignItems: "center",
-            gap: "6px",
-          }}
-        >
-          ⚠ Bitte lade mindestens 2 Fotos hoch — das hilft uns den Aufwand
-          einzuschätzen.
-        </p>
-      ) : null}
 
       <div className="calendar-opt-wrap mb-6">
         <button

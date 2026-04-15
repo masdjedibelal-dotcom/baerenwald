@@ -45,7 +45,7 @@ export function StepWrapper({
   return (
     <div
       className={cn(
-        "mx-auto max-w-xl px-6 pb-32 pt-8",
+        "mx-auto max-w-xl px-6 pb-4 pt-8",
         show && "animate-fade-in",
         className
       )}

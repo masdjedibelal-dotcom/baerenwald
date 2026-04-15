@@ -5,9 +5,8 @@
   --fl-accent-dark: #1a3d2b;
   --fl-accent-light: #eaf3de;
   --fl-accent-hover: #256642;
-  --fl-sand: #c4922a;
-  --fl-sand-light: #fef3dc;
-  --fl-bg: #f5f2ed;
+  /* Neutrales Seitengrau (ohne warmen Sand-/Beige-Stich) */
+  --fl-bg: #f4f4f3;
   --fl-bg-card: #ffffff;
   --fl-bg-dark: #1a3d2b;
   --fl-text: #1e1c1a;
@@ -94,11 +93,19 @@
   background: rgba(46, 125, 82, 0.02);
 }
 
+/*
+ * Rechner: einheitlicher Abstand bis zur sticky Footer-Leiste
+ * (nur hier — StepWrapper hat nur noch wenig pb, kein Doppel-Abstand)
+ */
+.funnel-rechner-main {
+  padding-bottom: calc(6.5rem + env(safe-area-inset-bottom, 0px));
+}
+
 .funnel-step-tiles-card {
   background: var(--fl-bg-card);
   border-radius: var(--fl-radius);
   padding: 16px;
-  border: 1px solid var(--fl-border-light);
+  border: 1px solid transparent;
 }
 
 .funnel-main--strip-a {
@@ -106,7 +113,7 @@
 }
 
 .funnel-main--strip-b {
-  background: var(--fl-bg);
+  background: var(--fl-bg-card);
 }
 
 .funnel-back-btn {
@@ -134,28 +141,6 @@
   display: inline-block;
   min-width: 118px;
   min-height: 38px;
-}
-
-.skip-btn {
-  display: block;
-  width: 100%;
-  text-align: center;
-  background: none;
-  border: 1.5px dashed var(--fl-border);
-  border-radius: 12px;
-  padding: 12px;
-  font-size: 13px;
-  font-weight: 500;
-  color: var(--fl-text-3);
-  font-family: var(--fl-font-sans);
-  cursor: pointer;
-  margin-top: 8px;
-  transition: all 0.15s;
-}
-
-.skip-btn:hover {
-  border-color: var(--fl-text-2);
-  color: var(--fl-text-2);
 }
 
 .folgefrage-wrap {
@@ -2386,8 +2371,8 @@
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.1em;
-  color: var(--fl-sand);
-  background: var(--fl-sand-light);
+  color: var(--fl-accent-dark);
+  background: var(--fl-accent-light);
   border-radius: 999px;
   padding: 4px 12px;
   margin-bottom: 16px;
@@ -3898,7 +3883,7 @@
   border: 1px solid var(--fl-border);
   border-radius: 8px;
   padding: 6px 10px;
-  font-size: 15px;
+  font-size: 16px;
   font-weight: 600;
   font-family: var(--fl-font-sans);
   color: var(--fl-text);
@@ -4483,7 +4468,7 @@
 
 /* ── Funnel Footer (kompakt) ── */
 .funnel-footer {
-  border-top: 1px solid var(--fl-border-light);
+  border-top: 1px solid transparent;
   background: var(--fl-bg-card);
   padding: 10px 16px max(12px, env(safe-area-inset-bottom));
 }
@@ -4533,7 +4518,7 @@
   flex-wrap: wrap;
   padding-top: 4px;
   margin-top: 4px;
-  border-top: 1px solid var(--fl-border-light);
+  border-top: 1px solid transparent;
   font-size: 10px;
   color: var(--fl-text-3);
 }
@@ -5181,7 +5166,7 @@
   border: 1.5px solid var(--fl-border);
   border-radius: 12px;
   padding: 12px 14px;
-  font-size: 15px;
+  font-size: 16px;
   font-weight: 400;
   font-family: var(--fl-font-sans);
   color: var(--fl-text);
@@ -5215,7 +5200,7 @@
   border: 1px solid var(--fl-border);
   border-radius: 12px;
   padding: 12px 14px;
-  font-size: 14px;
+  font-size: 16px;
   font-family: var(--fl-font-sans);
   color: var(--fl-text);
   background: var(--fl-bg-card);

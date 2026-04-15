@@ -4,12 +4,7 @@ import { useCallback, useMemo, useState } from "react";
 
 import { formatCurrencyEUR } from "@/lib/price-calc";
 import { getResolvedStepsForSituation } from "@/lib/funnel/config";
-import type {
-  BudgetCheck,
-  FunnelState,
-  ObjektZustand,
-  PriceLineItem,
-} from "@/lib/funnel/types";
+import type { FunnelState, ObjektZustand, PriceLineItem } from "@/lib/funnel/types";
 import {
   calculatePrice,
   getBwResultModus,
@@ -389,7 +384,6 @@ function ResultTestimonialCard() {
 
 export interface BwResultScreenProps {
   state: FunnelState;
-  onBudgetChange?: (v: BudgetCheck) => void;
   mindestauftragAktiv?: boolean;
   plzFaktor?: number;
   koordinationsRabatt?: number;
@@ -410,7 +404,8 @@ function bereicheDisplayLabels(state: FunnelState): string[] {
   const step0 = getResolvedStepsForSituation(
     state.situation,
     state.bereiche,
-    state.fachdetails
+    state.fachdetails,
+    state.umfang
   )[0];
   const opts = step0?.options ?? [];
   return state.bereiche.map((v) => {
@@ -423,6 +418,7 @@ function zustandEinordnungLabel(z: ObjektZustand | null): string | null {
   if (!z) return null;
   if (z === "gut") return "Gepflegt";
   if (z === "mittel") return "Normale Abnutzung";
+  if (z === "unknown") return "Weiß ich nicht";
   return "Sanierungsbedürftig";
 }
 
@@ -722,7 +718,6 @@ function ZuKomplexScreen({
 
 export function BwResultScreen({
   state,
-  onBudgetChange,
   mindestauftragAktiv,
   plzFaktor = 1.0,
   koordinationsRabatt = 1.0,
@@ -735,11 +730,9 @@ export function BwResultScreen({
   const [saveEmail, setSaveEmail] = useState("");
   const [saveEmailSent, setSaveEmailSent] = useState(false);
   const [saveEmailError, setSaveEmailError] = useState("");
-  const [showBudgetOkFeedback, setShowBudgetOkFeedback] = useState(false);
 
   const notfallAkut =
     state.situation === "notfall" && state.dringlichkeit === "akut";
-  const budget = state.budgetCheck;
 
   if (notfallAkut) {
     return (
@@ -798,15 +791,6 @@ export function BwResultScreen({
   const hasRange = state.priceMin > 0 && state.priceMax > 0;
   const rabattChipProzent =
     koordinationsRabatt <= 0.9 ? 10 : koordinationsRabatt < 1 ? 5 : 0;
-
-  const scrollToLeadForm = useCallback(() => {
-    window.setTimeout(() => {
-      document.getElementById("lead-form")?.scrollIntoView({
-        behavior: "smooth",
-        block: "start",
-      });
-    }, 150);
-  }, []);
 
   const handleSaveEmail = useCallback(async () => {
     setSaveEmailError("");
@@ -913,66 +897,6 @@ export function BwResultScreen({
 
       {hasRange && !state.istFallback ? (
         <PreisAccordion state={state} koordinationsRabatt={koordinationsRabatt} />
-      ) : null}
-
-      {hasRange ? (
-        <div className="budget-check">
-          <p className="budget-check-label">Passt dieser Rahmen?</p>
-          <div className="budget-check-btns">
-            <button
-              type="button"
-              className={cn(
-                "budget-btn",
-                budget === "ok" && "active"
-              )}
-              onClick={() => {
-                onBudgetChange?.("ok");
-                setShowBudgetOkFeedback(true);
-                scrollToLeadForm();
-              }}
-            >
-              ✓ Ja, passt
-            </button>
-            <button
-              type="button"
-              className={cn(
-                "budget-btn",
-                budget === "zu_hoch" && "active"
-              )}
-              onClick={() => {
-                setShowBudgetOkFeedback(false);
-                onBudgetChange?.("zu_hoch");
-              }}
-            >
-              Eher zu hoch
-            </button>
-          </div>
-        </div>
-      ) : null}
-
-      {hasRange ? (
-        <>
-          {showBudgetOkFeedback && budget === "ok" ? (
-            <p className="budget-ok-feedback">Super — dann los.</p>
-          ) : null}
-          {budget === "zu_hoch" ? (
-            <div className="budget-hint-box">
-              <p className="budget-hint-head">Kein Problem.</p>
-              <p className="budget-hint-text">
-                Beim Vor-Ort-Termin schauen wir gemeinsam was in deinem Budget
-                möglich ist — ohne Druck und ohne Auftragszwang. Viele Projekte
-                lassen sich auch in Phasen umsetzen.
-              </p>
-              <button
-                type="button"
-                className="budget-hint-cta"
-                onClick={scrollToLeadForm}
-              >
-                Trotzdem Termin anfragen →
-              </button>
-            </div>
-          ) : null}
-        </>
       ) : null}
 
       {hasRange ? <ResultTestimonialCard /> : null}

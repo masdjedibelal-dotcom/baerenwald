@@ -194,7 +194,7 @@ export function HomeLanding() {
                   maxLength={80}
                   inputMode="search"
                   enterKeyHint="search"
-                  className="w-full rounded-2xl border-0 bg-surface-card py-4 pl-5 pr-36 text-[15px] text-text-primary shadow-[0_0_0_1px_rgba(255,255,255,0.1)] outline-none transition-shadow placeholder:text-text-tertiary focus:shadow-[0_0_0_2px_rgba(46,125,82,0.4)]"
+                  className="w-full rounded-2xl border-0 bg-surface-card py-4 pl-5 pr-36 text-base text-text-primary shadow-[0_0_0_1px_rgba(255,255,255,0.1)] outline-none transition-shadow placeholder:text-text-tertiary focus:shadow-[0_0_0_2px_rgba(46,125,82,0.4)]"
                   aria-label={CTA.hero}
                 />
                 <button

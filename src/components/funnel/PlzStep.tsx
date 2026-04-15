@@ -13,25 +13,25 @@ const ZEITRAUM_OPTIONS: {
   {
     value: "sofort",
     label: "So schnell wie möglich",
-    hint: "Sehr eilig — wir priorisieren passende Termine",
+    hint: "Wir priorisieren dein Projekt",
     emoji: "⚡",
   },
   {
     value: "heute",
     label: "Diese Woche",
-    hint: "Start oder Besichtigung in den nächsten 7 Tagen",
+    hint: "Kurzfristige Umsetzung",
     emoji: "📅",
   },
   {
     value: "woche",
     label: "Innerhalb 4 Wochen",
-    hint: "Zeitfenster in den kommenden Wochen",
+    hint: "Normale Planung",
     emoji: "🗓️",
   },
   {
     value: "flexibel",
     label: "Ich bin flexibel",
-    hint: "Wir finden mit dir den besten Zeitpunkt",
+    hint: "Mehr Spielraum bei der Planung",
     emoji: "✅",
   },
 ];
@@ -98,7 +98,7 @@ export function PlzStep({
 
         {plzStatus === "erlaubt" && (
           <p className="plz-hint plz-hint--ok">
-            ✓ Perfekt — wir arbeiten in deiner Nähe
+            ✓ Perfekt — wir sind in deiner Nähe
           </p>
         )}
 
@@ -128,6 +128,9 @@ export function PlzStep({
 
       {!isAusserhalb && (
         <div className="funnel-step-tiles-card flex flex-col gap-2.5">
+          <h3 className="text-base font-semibold leading-snug text-text-primary">
+            Wann soll es losgehen?
+          </h3>
           {ZEITRAUM_OPTIONS.map((c) => {
             const active = zeitraum === c.value;
             return (

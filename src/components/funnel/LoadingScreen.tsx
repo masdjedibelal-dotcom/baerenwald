@@ -27,9 +27,9 @@ export function LoadingScreen({ onComplete, className }: LoadingScreenProps) {
   }, [onComplete]);
 
   const steps: { text: string }[] = [
-    { text: "Münchner Marktpreise werden abgerufen…" },
-    { text: "Faktoren werden berechnet…" },
-    { text: "Preisrahmen wird erstellt…" },
+    { text: "Münchner Marktpreise werden berechnet…" },
+    { text: "Dein Projekt wird eingeordnet…" },
+    { text: "Dein Preisrahmen wird erstellt…" },
   ];
 
   return (

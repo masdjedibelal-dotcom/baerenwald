@@ -12,8 +12,7 @@
   --fl-accent-light: #eaf3de;
   --accent-light: #eaf3de;
   --accent-foreground: #ffffff;
-  --sand: #c4922a;
-  --surface-page: #f5f2ed;
+  --surface-page: #f4f4f3;
   --surface-card: #ffffff;
   --surface-muted: #edeae4;
   --radius-card: 18px;
@@ -247,10 +246,6 @@ h3 {
   background: var(--accent-light);
   color: var(--accent-dark);
 }
-.tag-sand {
-  background: #fef3dc;
-  color: #8b6914;
-}
 .tag-neutral {
   background: #edeae4;
   color: #6b6560;
@@ -396,4 +391,15 @@ input[type="range"].funnel-range::-moz-range-thumb {
 .photo-upload-error {
   border-color: #c0392b !important;
   background: #fff5f5 !important;
+}
+
+/*
+ * Mobile (iOS Safari): Auto-Zoom beim Fokus vermeiden — Schrift in Eingaben min. 16px.
+ * !important: setzt sich gegen Tailwind-Utilities (z. B. text-sm) auf denselben Elementen durch.
+ * Ausnahmen: Range, Checkbox, Radio, Hidden, reine Button-Inputs (Layout unverändert).
+ */
+input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="hidden"]):not([type="button"]):not([type="submit"]):not([type="reset"]):not([type="image"]),
+textarea,
+select {
+  font-size: 16px !important;
 }

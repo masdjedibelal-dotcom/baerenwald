@@ -25,6 +25,7 @@ import { useFunnelState } from "@/hooks/funnel/useFunnelState";
 import {
   getGroesseConfig,
   getKundentypStep,
+  BW_FUNNEL_PREIS_HINWEIS_ZUG_ZUSTAND,
   getResolvedStepsForSituation,
   groesseEinheitFromConfig,
   isFachdetailsStepComplete,
@@ -35,7 +36,6 @@ import {
   BW_FUNNEL_STEP1_OPTIONS,
   BW_FUNNEL_STEP1_ORDER,
 } from "@/lib/situation-options";
-import { isBwLeadPhotoRequired } from "@/lib/funnel/photo-requirement";
 import {
   calculatePrice,
   getBwResultModus,
@@ -75,29 +75,6 @@ type Screen =
   | "ausserhalb"
   | "danke";
 
-const SCREEN_STRIP_ORDER: Screen[] = [
-  "situation",
-  "bereiche",
-  "umfang",
-  "zugaenglichkeit",
-  "zustand",
-  "groesse",
-  "fachdetails",
-  "kundentyp",
-  "ort",
-  "loading",
-  "result",
-  "lead",
-  "beratung-lead",
-  "ausserhalb",
-];
-
-function funnelMainStripClass(screen: Screen): string {
-  const i = SCREEN_STRIP_ORDER.indexOf(screen);
-  const idx = i >= 0 ? i : 0;
-  return idx % 2 === 0 ? "funnel-main--strip-a" : "funnel-main--strip-b";
-}
-
 function isB2bSituation(s: Situation | null): boolean {
   return s === "gewerbe" || s === "gastro";
 }
@@ -106,14 +83,10 @@ function isSituation(x: string): x is Situation {
   return (BW_FUNNEL_STEP1_ORDER as readonly string[]).includes(x);
 }
 
-const BW_TAG_CLASS: Record<
-  "multi" | "abo" | "notfall" | "neutral",
-  string
-> = {
+const BW_TAG_CLASS: Record<"multi" | "abo" | "notfall", string> = {
   multi: "bg-blue-50 text-blue-800",
   abo: "bg-green-50 text-green-800",
   notfall: "bg-amber-50 text-amber-900",
-  neutral: "bg-muted text-text-secondary",
 };
 
 function asLibOpt(o: FunnelStepOption): LibStepOption {
@@ -134,7 +107,6 @@ function FunnelRechnerInner() {
   const searchParams = useSearchParams();
   const urlInit = useRef(false);
   const [screen, setScreen] = useState<Screen>("situation");
-  const [photoError, setPhotoError] = useState(false);
   const [mindestauftragAktiv, setMindestauftrag] = useState(false);
   const [plzFaktor, setPlzFaktor] = useState(1.0);
   const [koordinationsRabatt, setKoordinationsRabatt] = useState(1.0);
@@ -162,7 +134,6 @@ function FunnelRechnerInner() {
     setPlz,
     setZeitraum,
     setPrice,
-    setBudgetCheck,
     setSlot,
     updateLeadField,
     addPhotos,
@@ -184,9 +155,10 @@ function FunnelRechnerInner() {
       getResolvedStepsForSituation(
         state.situation,
         state.bereiche,
-        state.fachdetails
+        state.fachdetails,
+        state.umfang
       ),
-    [state.situation, state.bereiche, state.fachdetails]
+    [state.situation, state.bereiche, state.fachdetails, state.umfang]
   );
 
   const hasGroesseStep = useMemo(
@@ -264,10 +236,12 @@ function FunnelRechnerInner() {
   }, [searchParams, setSituation]);
 
   useEffect(() => {
-    if (state.photos.length >= 2) {
-      setPhotoError(false);
-    }
-  }, [state.photos]);
+    const id = requestAnimationFrame(() => {
+      if (window.scrollY < 1) return;
+      window.scrollTo(0, 0);
+    });
+    return () => cancelAnimationFrame(id);
+  }, [screen]);
 
   useEffect(() => {
     if (!microNote) return;
@@ -300,8 +274,9 @@ function FunnelRechnerInner() {
 
   const goAfterUmfang = useCallback(() => {
     if (stepZugaenglichkeit) setScreen("zugaenglichkeit");
+    else if (stepZustand) setScreen("zustand");
     else goGroesseOrPostGroesse();
-  }, [stepZugaenglichkeit, goGroesseOrPostGroesse]);
+  }, [stepZugaenglichkeit, stepZustand, goGroesseOrPostGroesse]);
 
   const goAfterZugaenglichkeit = useCallback(() => {
     if (stepZustand) setScreen("zustand");
@@ -346,15 +321,11 @@ function FunnelRechnerInner() {
           const nextAfterFach: Screen = hasKundentypStep
             ? "kundentyp"
             : "ort";
-          setMicroNote({
-            target: nextAfterFach,
-            text: "Wir kennen dein Projekt jetzt ziemlich gut",
-          });
           setScreen(nextAfterFach);
         }
         break;
       case "kundentyp":
-        setScreen("ort");
+        if (state.kundentyp) setScreen("ort");
         break;
       case "umfang":
         if (umfangOk) goAfterUmfang();
@@ -405,13 +376,6 @@ function FunnelRechnerInner() {
         setScreen("lead");
         break;
       case "lead": {
-        if (
-          isBwLeadPhotoRequired(state) &&
-          state.photos.length < 2
-        ) {
-          setPhotoError(true);
-          return;
-        }
         (
           document.getElementById(LEAD_FORM_ID) as HTMLFormElement | null
         )?.requestSubmit();
@@ -480,7 +444,8 @@ function FunnelRechnerInner() {
         setScreen("umfang");
         break;
       case "zustand":
-        setScreen("zugaenglichkeit");
+        if (stepZugaenglichkeit) setScreen("zugaenglichkeit");
+        else setScreen("umfang");
         break;
       case "groesse":
         if (fachdetailsBeforeGroesse && hasFachdetailsStep) {
@@ -566,7 +531,7 @@ function FunnelRechnerInner() {
       case "fachdetails":
         return !isFachdetailsStepComplete(state);
       case "kundentyp":
-        return false;
+        return !state.kundentyp;
       case "umfang":
         return !umfangOk;
       case "zugaenglichkeit":
@@ -617,10 +582,6 @@ function FunnelRechnerInner() {
   const handleLeadSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (nextDisabled && screen === "lead") return;
-    if (isBwLeadPhotoRequired(state) && state.photos.length < 2) {
-      setPhotoError(true);
-      return;
-    }
     const nameTrim = state.name.trim();
     const body = {
       name: nameTrim,
@@ -856,8 +817,8 @@ function FunnelRechnerInner() {
         return (
           <StepWrapper
             stepLabel="Vorhaben"
-            question="Was möchtest du erledigen?"
-            subtext="Wähle dein Vorhaben — wir passen die Fragen an."
+            question="Was planst du?"
+            subtext="Beantworte 3–4 Fragen und erhalte eine realistische Preisrange für dein Projekt."
             animateKey={screen}
             tilesCard
           >
@@ -895,11 +856,6 @@ function FunnelRechnerInner() {
                 );
               })}
             </div>
-            <ul className="funnel-screen1-trust mt-5 list-none space-y-2.5 border-t border-border-default pt-5 text-left text-[13px] leading-snug text-text-secondary">
-              <li>✓ 3–4 Fragen, keine Anmeldung</li>
-              <li>✓ Realistische Preisrange München</li>
-              <li>✓ Optionaler Vor-Ort-Termin</li>
-            </ul>
           </StepWrapper>
         );
 
@@ -919,8 +875,7 @@ function FunnelRechnerInner() {
       case "fachdetails":
         return (
           <StepWrapper
-            stepLabel="Details"
-            question="Kurz zu den Fachdetails"
+            question="Fachdetails"
             subtext="Folgefragen sind optional — „Weiß ich nicht“ ist immer möglich."
             animateKey={`${screen}-${state.bereiche.join(",")}`}
           >
@@ -957,16 +912,6 @@ function FunnelRechnerInner() {
                 );
               })}
             </div>
-            <button
-              type="button"
-              className="skip-btn"
-              onClick={() => {
-                setKundentyp(null);
-                setScreen("ort");
-              }}
-            >
-              Diese Frage überspringen →
-            </button>
           </StepWrapper>
         );
 
@@ -989,7 +934,7 @@ function FunnelRechnerInner() {
           <StepWrapper
             stepLabel="Umfang"
             question={stepZugaenglichkeit?.question ?? ""}
-            subtext={undefined}
+            subtext={stepZugaenglichkeit?.subtext}
             animateKey={`${screen}-${state.situation}`}
             tilesCard
           >
@@ -1001,9 +946,7 @@ function FunnelRechnerInner() {
                   <SelectionTile
                     key={opt.value}
                     option={libOpt}
-                    icon={
-                      libOpt.emoji ? undefined : tileIconForStepValue(opt.value)
-                    }
+                    icon={null}
                     selected={selected}
                     multi={false}
                     onChange={(value, sel) => {
@@ -1015,6 +958,9 @@ function FunnelRechnerInner() {
                 );
               })}
             </div>
+            <p className="mt-3 text-center text-[12px] leading-snug text-text-tertiary">
+              {BW_FUNNEL_PREIS_HINWEIS_ZUG_ZUSTAND}
+            </p>
           </StepWrapper>
         );
 
@@ -1023,7 +969,7 @@ function FunnelRechnerInner() {
           <StepWrapper
             stepLabel="Umfang"
             question={stepZustand?.question ?? ""}
-            subtext={undefined}
+            subtext={stepZustand?.subtext}
             animateKey={`${screen}-${state.situation}`}
             tilesCard
           >
@@ -1035,9 +981,7 @@ function FunnelRechnerInner() {
                   <SelectionTile
                     key={opt.value}
                     option={libOpt}
-                    icon={
-                      libOpt.emoji ? undefined : tileIconForStepValue(opt.value)
-                    }
+                    icon={null}
                     selected={selected}
                     multi={false}
                     onChange={(value, sel) => {
@@ -1047,6 +991,9 @@ function FunnelRechnerInner() {
                 );
               })}
             </div>
+            <p className="mt-3 text-center text-[12px] leading-snug text-text-tertiary">
+              {BW_FUNNEL_PREIS_HINWEIS_ZUG_ZUSTAND}
+            </p>
           </StepWrapper>
         );
 
@@ -1073,8 +1020,8 @@ function FunnelRechnerInner() {
         return (
           <StepWrapper
             stepLabel="Fast fertig"
-            question="Wo soll es stattfinden?"
-            subtext="PLZ und gewünschter Zeitraum."
+            question="Wo ist dein Projekt?"
+            subtext="Wir arbeiten in München und Umgebung"
             banner={microBannerFor("ort")}
             animateKey={screen}
           >
@@ -1103,7 +1050,6 @@ function FunnelRechnerInner() {
           <StepWrapper stepLabel="Ergebnis" animateKey="result">
             <BwResultScreen
               state={state}
-              onBudgetChange={setBudgetCheck}
               mindestauftragAktiv={mindestauftragAktiv}
               plzFaktor={plzFaktor}
               koordinationsRabatt={koordinationsRabatt}
@@ -1237,7 +1183,6 @@ function FunnelRechnerInner() {
               <HWLeadForm
                 photos={state.photos}
                 onPhotosChange={addPhotos}
-                photoError={photoError}
                 selectedSlot={
                   state.selectedSlot
                     ? {
@@ -1403,10 +1348,10 @@ function FunnelRechnerInner() {
   };
 
   return (
-    <div className={cn("min-h-screen", funnelMainStripClass(screen))}>
+    <div className="min-h-dvh funnel-main--strip-a">
       <FunnelHeader />
       <FunnelProgressBar currentStep={getBwFunnelProgressStep(screen)} />
-      <main className="pb-24">{main()}</main>
+      <main className="funnel-rechner-main w-full">{main()}</main>
       {showFooterNav ? (
         <FunnelFooter
           onNext={handleNext}

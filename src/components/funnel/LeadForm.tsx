@@ -65,7 +65,7 @@ function validateForm(data: LeadData): FieldErrors {
 }
 
 const baseCls =
-  "funnel-input w-full rounded-xl border border-border-default px-3 py-2.5 text-sm text-text-primary outline-none transition-colors focus:border-funnel-accent";
+  "funnel-input w-full rounded-xl border border-border-default px-3 py-2.5 text-base text-text-primary outline-none transition-colors focus:border-funnel-accent";
 
 function fieldCls(
   key: FieldKey,

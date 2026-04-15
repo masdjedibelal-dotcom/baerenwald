@@ -310,7 +310,7 @@ export function FunnelClient() {
             Postleitzahl
           </label>
           <Input
-            className="h-11 rounded-[var(--r)] border border-[#e8e8e8] px-3 text-[13px] focus-visible:border-funnel-accent"
+            className="h-11 rounded-[var(--r)] border border-[#e8e8e8] px-3 text-base focus-visible:border-funnel-accent"
             inputMode="numeric"
             maxLength={5}
             value={cur.plz}
@@ -443,7 +443,7 @@ export function FunnelClient() {
       return (
         <textarea
           rows={4}
-          className="w-full rounded-[var(--r)] border border-[#e8e8e8] p-3 text-[13px] text-text-primary outline-none focus-visible:border-funnel-accent"
+          className="w-full rounded-[var(--r)] border border-[#e8e8e8] p-3 text-base text-text-primary outline-none focus-visible:border-funnel-accent"
           placeholder="Kurz beschreiben …"
           value={typeof raw === "string" ? raw : ""}
           onChange={(e) => setAnswer(step.id, e.target.value)}
@@ -473,8 +473,8 @@ export function FunnelClient() {
       return (
         <StepWrapper
           stepLabel="Vorhaben"
-          question="Was möchtest du erledigen?"
-          subtext="Wähle dein Vorhaben — wir passen die Fragen an."
+          question="Was planst du?"
+          subtext="Beantworte 3–4 Fragen und erhalte eine realistische Preisrange für dein Projekt."
           animateKey="sit"
         >
           <SituationStep
