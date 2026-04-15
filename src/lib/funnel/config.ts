@@ -1,6 +1,10 @@
 import {
   getAktiveFachdetailGewerke,
 } from "./fachdetails-notfall";
+import {
+  shouldSwapFachdetailsBeforeGroesse,
+  skipGroesseForSanierenDachKleinjob,
+} from "./dach-step-order";
 import type {
   FachdetailsState,
   FunnelState,
@@ -9,6 +13,8 @@ import type {
   Situation,
   StepOption,
 } from "./types";
+
+export { shouldSwapFachdetailsBeforeGroesse, skipGroesseForSanierenDachKleinjob };
 
 /** Slider + Chips + Direkteingabe (Rechner „Größe“) */
 export type GroesseSliderConfig = {
@@ -158,10 +164,11 @@ function kundentypOption(
   value: Kundentyp,
   label: string,
   hint: string,
+  emoji: string,
   infoText?: string,
   warnText?: string
 ): StepOption {
-  return { value, label, hint, infoText, warnText };
+  return { value, label, hint, emoji, infoText, warnText };
 }
 
 /** Optionen für den Schritt „Kundentyp“ — abhängig von der Situation */
@@ -173,12 +180,14 @@ export function getKundentypOptions(situation: Situation): StepOption[] {
         kundentypOption(
           "eigentuemer",
           "Ich bin Eigentümer",
-          "Eigentumswohnung oder Haus"
+          "Eigentumswohnung oder Haus",
+          "🏠"
         ),
         kundentypOption(
           "mieter",
           "Ich bin Mieter",
           "Mietwohnung oder gemietetes Haus",
+          "🔑",
           "Bei Mietwohnungen brauchen wir in manchen Fällen die Zustimmung des Vermieters. Wir klären das gemeinsam beim Termin."
         ),
       ];
@@ -187,18 +196,21 @@ export function getKundentypOptions(situation: Situation): StepOption[] {
         kundentypOption(
           "eigentuemer",
           "Ich bin Eigentümer",
-          "Eigentumswohnung oder Haus"
+          "Eigentumswohnung oder Haus",
+          "🏠"
         ),
         kundentypOption(
           "mieter",
           "Ich bin Mieter",
           "Mietwohnung oder gemietetes Haus",
+          "🔑",
           "Bei Notfällen in Mietwohnungen gilt: Haupthahn schließen, dann Vermieter informieren. Wir kommen sofort."
         ),
         kundentypOption(
           "hausverwaltung",
           "Hausverwaltung",
-          "Ich verwalte das Objekt"
+          "Ich verwalte das Objekt",
+          "🏢"
         ),
       ];
     case "neubauen":
@@ -206,7 +218,8 @@ export function getKundentypOptions(situation: Situation): StepOption[] {
         kundentypOption(
           "eigentuemer",
           "Ich bin Eigentümer",
-          "Eigentumswohnung oder Haus"
+          "Eigentumswohnung oder Haus",
+          "🏠"
         ),
       ];
     case "betreuung":
@@ -214,12 +227,14 @@ export function getKundentypOptions(situation: Situation): StepOption[] {
         kundentypOption(
           "eigentuemer",
           "Ich bin Eigentümer",
-          "Eigentumswohnung oder Haus"
+          "Eigentumswohnung oder Haus",
+          "🏠"
         ),
         kundentypOption(
           "hausverwaltung",
           "Hausverwaltung",
           "Mehrfamilienhaus oder Wohnanlage",
+          "🏢",
           "Für Hausverwaltungen bieten wir individuelle Servicepakete an. Wir besprechen das gerne persönlich."
         ),
       ];
@@ -236,7 +251,7 @@ export function getKundentypStep(situation: Situation): FunnelStep {
     id: "kundentyp",
     question: "Für wen ist das Objekt?",
     subtext:
-      "Hilft uns bei der richtigen Planung — du kannst auch überspringen.",
+      "Damit wir die richtigen Fragen stellen.\nHilft uns bei Zugang, Abstimmung und Planung — überspringen geht auch.",
     inputType: "tiles-single",
     options: getKundentypOptions(situation),
   };
@@ -246,38 +261,38 @@ export function getKundentypStep(situation: Situation): FunnelStep {
 export function getBetreuungGroesseOptions(bereiche: string[]): StepOption[] {
   if (bereiche.includes("garten")) {
     return [
-      { value: "s", label: "Bis 100 m²", groesse: 70 },
-      { value: "m", label: "100–300 m²", groesse: 200 },
-      { value: "l", label: "300–600 m²", groesse: 450 },
-      { value: "xl", label: "Über 600 m²", groesse: 800 },
+      { value: "s", label: "Bis 100 m²", groesse: 70, emoji: "📐" },
+      { value: "m", label: "100–300 m²", groesse: 200, emoji: "📐" },
+      { value: "l", label: "300–600 m²", groesse: 450, emoji: "📐" },
+      { value: "xl", label: "Über 600 m²", groesse: 800, emoji: "📐" },
     ];
   }
   if (bereiche.includes("baum")) {
     return [
-      { value: "ein", label: "1 Baum", groesse: 1 },
-      { value: "wenige", label: "2–4 Bäume", groesse: 3 },
-      { value: "viele", label: "5 oder mehr", groesse: 6 },
+      { value: "ein", label: "1 Baum", groesse: 1, emoji: "🌲" },
+      { value: "wenige", label: "2–4 Bäume", groesse: 3, emoji: "🌲" },
+      { value: "viele", label: "5 oder mehr", groesse: 6, emoji: "🌲" },
     ];
   }
   if (bereiche.includes("reinigung")) {
     return [
-      { value: "s", label: "Bis 60 m²", groesse: 45 },
-      { value: "m", label: "60–120 m²", groesse: 90 },
-      { value: "l", label: "Über 120 m²", groesse: 160 },
+      { value: "s", label: "Bis 60 m²", groesse: 45, emoji: "📐" },
+      { value: "m", label: "60–120 m²", groesse: 90, emoji: "📐" },
+      { value: "l", label: "Über 120 m²", groesse: 160, emoji: "📐" },
     ];
   }
   if (bereiche.includes("winter")) {
     return [
-      { value: "kurz", label: "Bis 10 m Gehweg", groesse: 7 },
-      { value: "mittel", label: "10–25 m", groesse: 18 },
-      { value: "lang", label: "Über 25 m", groesse: 35 },
+      { value: "kurz", label: "Bis 10 m Gehweg", groesse: 7, emoji: "❄️" },
+      { value: "mittel", label: "10–25 m", groesse: 18, emoji: "❄️" },
+      { value: "lang", label: "Über 25 m", groesse: 35, emoji: "❄️" },
     ];
   }
   return [
-    { value: "s", label: "Kleine Wohnung / ETW", groesse: 55 },
-    { value: "m", label: "Reihenhaus / DHH", groesse: 120 },
-    { value: "l", label: "Einfamilienhaus", groesse: 180 },
-    { value: "xl", label: "Mehrfamilienhaus", groesse: 400 },
+    { value: "s", label: "Kleine Wohnung / ETW", groesse: 55, emoji: "📐" },
+    { value: "m", label: "Reihenhaus / DHH", groesse: 120, emoji: "📐" },
+    { value: "l", label: "Einfamilienhaus", groesse: 180, emoji: "📐" },
+    { value: "xl", label: "Mehrfamilienhaus", groesse: 400, emoji: "📐" },
   ];
 }
 
@@ -306,6 +321,7 @@ export const SITUATIONEN_CONFIG: Record<
             value: "bad",
             label: "Das Bad",
             hint: "Wasser & Heizung, Fliesen, Lüftung",
+            emoji: "🚿",
             infoText:
               "Komplettes Bad: Fliesen, WC, Dusche und Waschtisch, ggf. Lüftung. Größter Eingriff aber auch größter Wertzuwachs.",
             triggerGewerke: ["bad", "fliesen", "sanitaer"],
@@ -314,6 +330,7 @@ export const SITUATIONEN_CONFIG: Record<
             value: "kueche",
             label: "Die Küche",
             hint: "Anschlüsse, Boden, Wände",
+            emoji: "🍳",
             infoText:
               "Wasser, Strom, Gas anschließen plus Boden und Wände. Meist 1–3 Tage.",
             triggerGewerke: ["kueche", "boden", "maler"],
@@ -322,6 +339,7 @@ export const SITUATIONEN_CONFIG: Record<
             value: "waende_boeden",
             label: "Wände & Böden",
             hint: "Ein oder mehrere Räume",
+            emoji: "🖌️",
             infoText:
               "Streichen, tapezieren, neuer Boden. Preis hängt stark von Fläche und Materialwahl ab.",
             triggerGewerke: ["maler", "boden"],
@@ -330,9 +348,19 @@ export const SITUATIONEN_CONFIG: Record<
             value: "fenster_tueren",
             label: "Fenster oder Türen",
             hint: "Tausch oder Reparatur",
+            emoji: "🪟",
             infoText:
               "Moderne Fenster senken Heizkosten und Lärmbelastung. Preis pro Stück.",
             triggerGewerke: ["fenster"],
+          },
+          {
+            value: "feuchtigkeit_schimmel",
+            label: "Feuchtigkeit oder Schimmel",
+            hint: "Wasserflecken, muffiger Geruch, sichtbarer Befall",
+            emoji: "🍄",
+            infoText:
+              "Sanierung und Ursachenklärung planen wir mit Maler- und Sanitärgewerk — in Ruhe und ohne Druck.",
+            triggerGewerke: ["maler", "sanitaer"],
           },
         ],
       },
@@ -346,7 +374,8 @@ export const SITUATIONEN_CONFIG: Record<
           {
             value: "auffrischen",
             label: "Nur auffrischen",
-            hint: "Streichen, kleine Reparaturen",
+            hint: "Kleines Auffrischen",
+            emoji: "✨",
             faktor: 1.0,
             infoText:
               "Kein Abriss, keine neuen Leitungen. Schnellste Variante. Typisch 1–3 Tage.",
@@ -354,7 +383,8 @@ export const SITUATIONEN_CONFIG: Record<
           {
             value: "teil",
             label: "Teilrenovierung",
-            hint: "Ein Bereich wird komplett erneuert",
+            hint: "Teilrenovierung",
+            emoji: "🔨",
             faktor: 1.5,
             infoText:
               "Ein oder zwei Bereiche werden erneuert. Beispiel: neue Fliesen, WC und Waschtisch bleiben. Typisch 3–7 Tage.",
@@ -362,7 +392,8 @@ export const SITUATIONEN_CONFIG: Record<
           {
             value: "komplett",
             label: "Komplettrenovierung",
-            hint: "Alles kommt raus — alles wird neu",
+            hint: "Komplettrenovierung",
+            emoji: "🏗️",
             faktor: 2.2,
             infoText:
               "Größter Eingriff, größter Wertzuwachs. Typisch 2–4 Wochen. Vor-Ort-Termin zwingend nötig.",
@@ -370,10 +401,11 @@ export const SITUATIONEN_CONFIG: Record<
           {
             value: "unsicher",
             label: "Ich bin noch nicht sicher",
-            hint: "Wir schauen uns alles vor Ort an",
-            faktor: 1.5,
+            hint: "Wir beraten beim Termin",
+            emoji: "💭",
+            faktor: 1.1,
             infoText:
-              "Kein Problem — beim kostenlosen Vor-Ort-Termin klären wir gemeinsam was wirklich nötig ist.",
+              "Kein Problem — wir rechnen mit einem Durchschnittswert. Beim Vor-Ort-Termin klären wir gemeinsam, was wirklich nötig ist.",
           },
         ],
       },
@@ -382,10 +414,10 @@ export const SITUATIONEN_CONFIG: Record<
         question: "Wie groß ist die Fläche ungefähr?",
         inputType: "tiles-single",
         options: [
-          { value: "s", label: "Bis 50 m²", groesse: 35 },
-          { value: "m", label: "50–100 m²", groesse: 75 },
-          { value: "l", label: "100–200 m²", groesse: 150 },
-          { value: "xl", label: "Über 200 m²", groesse: 250 },
+          { value: "s", label: "Bis 50 m²", groesse: 35, emoji: "📐" },
+          { value: "m", label: "50–100 m²", groesse: 75, emoji: "📐" },
+          { value: "l", label: "100–200 m²", groesse: 150, emoji: "📐" },
+          { value: "xl", label: "Über 200 m²", groesse: 250, emoji: "📐" },
         ],
       },
     ],
@@ -403,6 +435,7 @@ export const SITUATIONEN_CONFIG: Record<
             value: "heizung",
             label: "Die Heizung",
             hint: "Komplett tauschen oder modernisieren",
+            emoji: "🔥",
             infoText:
               "Heizungstausch wird mit bis zu 70% durch BAFA und KfW gefördert. Wir helfen beim Förderantrag.",
             triggerGewerke: ["heizung"],
@@ -411,6 +444,7 @@ export const SITUATIONEN_CONFIG: Record<
             value: "dach",
             label: "Dach oder Fassade",
             hint: "Sanierung oder Dämmung",
+            emoji: "🏠",
             infoText:
               "Gute Dämmung spart bis zu 30% Heizkosten. Oft förderbar.",
             triggerGewerke: ["dach", "fassade"],
@@ -419,6 +453,7 @@ export const SITUATIONEN_CONFIG: Record<
             value: "elektrik",
             label: "Elektrik oder Leitungen",
             hint: "Sicherungskasten, Steckdosen",
+            emoji: "⚡",
             infoText:
               "Alte Elektrik ist ein Sicherheitsrisiko. Nur von Fachbetrieb durchführbar.",
             triggerGewerke: ["elektro"],
@@ -427,9 +462,19 @@ export const SITUATIONEN_CONFIG: Record<
             value: "fenster_daemmung",
             label: "Fenster & Dämmung",
             hint: "Energetische Verbesserung",
+            emoji: "🧱",
             infoText:
               "Neue Fenster + Dämmung verbessern Energieausweis und steigern den Immobilienwert.",
             triggerGewerke: ["fenster", "daemmung"],
+          },
+          {
+            value: "feuchtigkeit_schimmel",
+            label: "Feuchtigkeit oder Schimmel",
+            hint: "Wasserflecken, muffiger Geruch, sichtbarer Befall",
+            emoji: "🍄",
+            infoText:
+              "Ursache klären, Schimmel fachgerecht entfernen und Flächen wiederherstellen — wir koordinieren Sanitär und Maler.",
+            triggerGewerke: ["sanitaer", "maler"],
           },
         ],
       },
@@ -442,6 +487,7 @@ export const SITUATIONEN_CONFIG: Record<
             value: "ersetzen",
             label: "Nur austauschen was defekt ist",
             hint: "1:1 Ersatz, kein Umbau",
+            emoji: "🔧",
             faktor: 1.0,
             infoText: "Schnellste Variante. Typisch wenn die Anlage nicht mehr funktioniert.",
           },
@@ -449,6 +495,7 @@ export const SITUATIONEN_CONFIG: Record<
             value: "modernisieren",
             label: "Modernisieren & effizienter machen",
             hint: "Neue Technologie, Wärmepumpe",
+            emoji: "✨",
             faktor: 1.6,
             infoText:
               "Höhere Investition, niedrigere Betriebskosten. Oft durch KfW / BAFA förderbar.",
@@ -457,6 +504,7 @@ export const SITUATIONEN_CONFIG: Record<
             value: "komplett",
             label: "Komplettsanierung auf einmal",
             hint: "Alles zusammen — eine Baustelle",
+            emoji: "🏗️",
             faktor: 2.5,
             infoText:
               "Teuerste Option aber einmalige Baustelle. Oft langfristig die wirtschaftlichste Lösung.",
@@ -465,6 +513,7 @@ export const SITUATIONEN_CONFIG: Record<
             value: "beratung",
             label: "Erstmal beraten lassen",
             hint: "Was lohnt sich wirklich?",
+            emoji: "💬",
             faktor: 1.6,
             infoText:
               "Wir zeigen was Sinn macht und welche Förderungen verfügbar sind.",
@@ -476,10 +525,10 @@ export const SITUATIONEN_CONFIG: Record<
         question: "Wie groß ist die Wohnfläche?",
         inputType: "tiles-single",
         options: [
-          { value: "s", label: "Bis 80 m²", groesse: 60 },
-          { value: "m", label: "80 bis 150 m²", groesse: 115 },
-          { value: "l", label: "150 bis 250 m²", groesse: 200 },
-          { value: "xl", label: "Über 250 m²", groesse: 300 },
+          { value: "s", label: "Bis 80 m²", groesse: 60, emoji: "📐" },
+          { value: "m", label: "80 bis 150 m²", groesse: 115, emoji: "📐" },
+          { value: "l", label: "150 bis 250 m²", groesse: 200, emoji: "📐" },
+          { value: "xl", label: "Über 250 m²", groesse: 300, emoji: "📐" },
         ],
       },
     ],
@@ -497,12 +546,14 @@ export const SITUATIONEN_CONFIG: Record<
             value: "heizung",
             label: "Heizung oder kein warmes Wasser",
             hint: "Heizung ausgefallen",
+            emoji: "🔥",
             triggerGewerke: ["heizung", "sanitaer"],
           },
           {
             value: "wasser",
             label: "Wasser läuft — Rohr oder Leck",
             hint: "Rohrbruch, Verstopfung, Leck",
+            emoji: "💧",
             warnText:
               "Bei aktivem Wasseraustritt sofort den Haupthahn schließen.",
             triggerGewerke: ["sanitaer"],
@@ -511,15 +562,8 @@ export const SITUATIONEN_CONFIG: Record<
             value: "strom",
             label: "Strom weg oder Elektro defekt",
             hint: "Ausfall, Kurzschluss, defekt",
+            emoji: "⚡",
             triggerGewerke: ["elektro"],
-          },
-          {
-            value: "schaden",
-            label: "Feuchtigkeit oder Schimmel",
-            hint: "Wasserschaden, Schimmel entdeckt",
-            warnText:
-              "Schimmel sollte schnell behandelt werden — für die Gesundheit und die Substanz.",
-            triggerGewerke: ["sanitaer", "maler"],
           },
         ],
       },
@@ -530,30 +574,34 @@ export const SITUATIONEN_CONFIG: Record<
         options: [
           {
             value: "akut",
-            label: "Es wird aktiv schlimmer",
-            hint: "Wasser läuft, Strom weg, Winter",
+            label: "Akuter Notfall",
+            hint: "Wird schlimmer oder akut gefährlich",
+            emoji: "🚨",
             faktor: 1.8,
             warnText:
               "Bitte ruf uns direkt an — beim Notfall ist der Rechner zu langsam.",
           },
           {
             value: "stabil",
-            label: "Nicht mehr nutzbar aber stabil",
-            hint: "Funktioniert nicht, stabil",
+            label: "Ausgefallen aber stabil",
+            hint: "Geht nicht, aber nichts wird schlimmer",
+            emoji: "⚠️",
             faktor: 1.5,
             infoText: "Termin innerhalb 24–48h.",
           },
           {
             value: "nutzbar",
-            label: "Noch nutzbar aber dringend",
-            hint: "Nervt, muss diese Woche weg",
+            label: "Eingeschränkt nutzbar",
+            hint: "Noch nutzbar, sollte bald weg",
+            emoji: "⏱️",
             faktor: 1.2,
             infoText: "Termin innerhalb 3–5 Tage.",
           },
           {
             value: "keine_eile",
-            label: "Keine Eile",
-            hint: "Irgendwann in den nächsten Wochen",
+            label: "Kein akuter Notfall",
+            hint: "Kann mit normalem Termin laufen",
+            emoji: "📅",
             faktor: 1.0,
             infoText: "Wir planen einen regulären Termin.",
           },
@@ -572,8 +620,9 @@ export const SITUATIONEN_CONFIG: Record<
         options: [
           {
             value: "keller_dg",
-            label: "Keller oder DG ausbauen",
+            label: "Keller oder Dachgeschoss ausbauen",
             hint: "Wohnraum gewinnen",
+            emoji: "🏗️",
             infoText:
               "Dachgeschoss-Ausbau ist oft die günstigste Art Wohnfläche zu gewinnen.",
             triggerGewerke: ["ausbau", "elektro", "sanitaer"],
@@ -582,18 +631,21 @@ export const SITUATIONEN_CONFIG: Record<
             value: "anbau",
             label: "Anbau oder Garage",
             hint: "Erweiterung des Hauses",
+            emoji: "🔨",
             triggerGewerke: ["bau", "elektro"],
           },
           {
             value: "terrasse",
             label: "Terrasse oder Carport",
             hint: "Außenbereich gestalten",
+            emoji: "🪵",
             triggerGewerke: ["terrasse", "metall"],
           },
           {
             value: "umbau",
             label: "Innen umbauen",
             hint: "Wände raus oder neu",
+            emoji: "📐",
             infoText:
               "Tragende Wände nur nach statischer Prüfung entfernen. Wir koordinieren das.",
             triggerGewerke: ["bau", "elektro", "sanitaer"],
@@ -609,6 +661,7 @@ export const SITUATIONEN_CONFIG: Record<
             value: "idee",
             label: "Nur eine Idee",
             hint: "Noch nichts geplant",
+            emoji: "💡",
             faktor: 1.2,
             infoText:
               "Kein Problem — wir beraten kostenlos und entwickeln gemeinsam eine Lösung.",
@@ -617,6 +670,7 @@ export const SITUATIONEN_CONFIG: Record<
             value: "vorstellung",
             label: "Ich habe eine Vorstellung",
             hint: "Grobe Idee, kein Plan",
+            emoji: "📋",
             faktor: 1.0,
             infoText: "Beim Vor-Ort-Termin konkretisieren wir gemeinsam.",
           },
@@ -624,6 +678,7 @@ export const SITUATIONEN_CONFIG: Record<
             value: "plaene",
             label: "Pläne liegen vor",
             hint: "Skizzen oder Zeichnungen",
+            emoji: "📐",
             faktor: 0.9,
             infoText: "Perfekt — das beschleunigt die Kalkulation erheblich.",
           },
@@ -631,6 +686,7 @@ export const SITUATIONEN_CONFIG: Record<
             value: "bereit",
             label: "Kann sofort losgehen",
             hint: "Alles geklärt, suche Ausführung",
+            emoji: "🚀",
             faktor: 0.85,
             infoText: "Sehr gut — wir können direkt ein konkretes Angebot erstellen.",
           },
@@ -641,10 +697,10 @@ export const SITUATIONEN_CONFIG: Record<
         question: "Wie groß wird die neue Fläche?",
         inputType: "tiles-single",
         options: [
-          { value: "s", label: "Bis 20 m²", groesse: 15 },
-          { value: "m", label: "20 bis 50 m²", groesse: 35 },
-          { value: "l", label: "50 bis 100 m²", groesse: 75 },
-          { value: "xl", label: "Über 100 m²", groesse: 120 },
+          { value: "s", label: "Bis 20 m²", groesse: 15, emoji: "📐" },
+          { value: "m", label: "20 bis 50 m²", groesse: 35, emoji: "📐" },
+          { value: "l", label: "50 bis 100 m²", groesse: 75, emoji: "📐" },
+          { value: "xl", label: "Über 100 m²", groesse: 120, emoji: "📐" },
         ],
       },
     ],
@@ -662,6 +718,7 @@ export const SITUATIONEN_CONFIG: Record<
             value: "garten",
             label: "Gartenpflege",
             hint: "Mähen, Schneiden, Aufräumen",
+            emoji: "🌿",
             infoText:
               "Regelmäßige Pflege ist günstiger als einmalige Großaktionen.",
             triggerGewerke: ["gartenpflege"],
@@ -670,6 +727,7 @@ export const SITUATIONEN_CONFIG: Record<
             value: "gestaltung",
             label: "Gartengestaltung",
             hint: "Neuanlage, Terrasse, Bepflanzung",
+            emoji: "🌳",
             infoText:
               "Professionelle Gestaltung steigert den Immobilienwert nachweislich.",
             triggerGewerke: ["gartengestaltung"],
@@ -678,6 +736,7 @@ export const SITUATIONEN_CONFIG: Record<
             value: "baum",
             label: "Baumarbeiten",
             hint: "Fällen oder zurückschneiden",
+            emoji: "🌲",
             infoText:
               "Bäume über 80 cm Stammumfang sind in München genehmigungspflichtig.",
             triggerGewerke: ["baum"],
@@ -686,6 +745,7 @@ export const SITUATIONEN_CONFIG: Record<
             value: "winter",
             label: "Winterdienst",
             hint: "Räumen und Streuen",
+            emoji: "❄️",
             warnText:
               "In München streupflichtig ab 7 Uhr werktags. Bei Nichterfüllung persönliche Haftung.",
             triggerGewerke: ["winterdienst"],
@@ -694,12 +754,14 @@ export const SITUATIONEN_CONFIG: Record<
             value: "reinigung",
             label: "Gebäudereinigung",
             hint: "Treppenhaus, Gemeinschaftsflächen",
+            emoji: "🧹",
             triggerGewerke: ["reinigung"],
           },
           {
             value: "hausmeister",
             label: "Hausmeisterservice",
             hint: "Alles zusammen — ein Ansprechpartner",
+            emoji: "🔑",
             infoText:
               "Ein Ansprechpartner für alles. Wir kümmern uns um alle Handwerker und sind Ihr fester Ansprechpartner.",
             triggerGewerke: ["gartenpflege", "winterdienst", "reinigung"],
@@ -715,6 +777,7 @@ export const SITUATIONEN_CONFIG: Record<
             value: "woechentlich",
             label: "Wöchentlich",
             hint: "Reinigung, intensiver Hausmeister",
+            emoji: "📆",
             faktor: 0.85,
             infoText: "Günstigster Stückpreis durch hohe Frequenz.",
           },
@@ -722,6 +785,7 @@ export const SITUATIONEN_CONFIG: Record<
             value: "zweiwochentlich",
             label: "Alle 2 Wochen",
             hint: "Standard Gartenpflege",
+            emoji: "📅",
             faktor: 0.9,
             infoText: "Empfehlung für die meisten Gärten April–Oktober.",
           },
@@ -729,6 +793,7 @@ export const SITUATIONEN_CONFIG: Record<
             value: "monatlich",
             label: "Monatlich",
             hint: "Kontrollgänge, leichte Pflege",
+            emoji: "🗓️",
             faktor: 1.0,
             infoText: "Gut für pflegeleichte Objekte.",
           },
@@ -736,6 +801,7 @@ export const SITUATIONEN_CONFIG: Record<
             value: "saisonal",
             label: "Saisonal",
             hint: "Frühjahr und Herbst",
+            emoji: "🍂",
             faktor: 1.1,
             infoText: "Zwei Haupteinsätze pro Jahr.",
           },
@@ -743,6 +809,7 @@ export const SITUATIONEN_CONFIG: Record<
             value: "einmalig",
             label: "Einmalig",
             hint: "Nur jetzt dieses eine Mal",
+            emoji: "📌",
             faktor: 1.3,
             infoText: "Kein Vertrag, kein Abo. Einmaliger Einsatz.",
           },
@@ -765,21 +832,25 @@ export const SITUATIONEN_CONFIG: Record<
             value: "umbau",
             label: "Umbau oder Renovierung",
             hint: "Büro, Laden, Praxis umbauen",
+            emoji: "🏢",
           },
           {
             value: "neubau",
             label: "Neu einrichten",
             hint: "Komplette Neugestaltung",
+            emoji: "✨",
           },
           {
             value: "wartung",
             label: "Wartung & Service",
             hint: "Regelmäßige Betreuung",
+            emoji: "🔧",
           },
           {
             value: "sonstiges",
             label: "Sonstiges",
             hint: "Anderes Vorhaben",
+            emoji: "💬",
           },
         ],
       },
@@ -800,21 +871,25 @@ export const SITUATIONEN_CONFIG: Record<
             value: "umbau",
             label: "Umbau oder Renovierung",
             hint: "Gastraum, Küche, Bar",
+            emoji: "🍽️",
           },
           {
             value: "neueroeffnung",
             label: "Neueröffnung",
             hint: "Kompletter Ausbau",
+            emoji: "🎉",
           },
           {
             value: "wartung",
             label: "Wartung & Reparatur",
             hint: "Laufende Instandhaltung",
+            emoji: "🔧",
           },
           {
             value: "terrasse",
             label: "Terrasse oder Außenbereich",
             hint: "Außengastronomie ausbauen",
+            emoji: "🪵",
           },
         ],
       },
@@ -841,7 +916,8 @@ export function bereicheNeedFachdetails(bereiche: string[]): boolean {
     s.has("garten") ||
     s.has("gestaltung") ||
     s.has("baum") ||
-    s.has("baumarbeiten")
+    s.has("baumarbeiten") ||
+    s.has("feuchtigkeit_schimmel")
   );
 }
 
@@ -850,7 +926,7 @@ export const BW_FUNNEL_STEP_FACHDETAILS: FunnelStep = {
   id: "fachdetails",
   question: "Ein paar Detailfragen",
   subtext:
-    "Folgefragen sind optional — mit „Weiß ich nicht“ kommst du auch weiter.",
+    "Je sichtbarem Bereich die Hauptfrage beantworten — Folgefragen und „Weiß ich nicht“ sind möglich.",
   inputType: "fachdetails",
 };
 
@@ -909,20 +985,23 @@ export const BW_FUNNEL_STEP_ZUGAENGLICHKEIT: FunnelStep = {
   options: [
     {
       value: "einfach",
-      label: "Normal erreichbar",
-      hint: "Erdgeschoss oder Lift vorhanden",
+      label: "Einfach erreichbar",
+      hint: "Erdgeschoss oder Lift",
+      emoji: "✅",
       faktor: 1.0,
     },
     {
       value: "mittel",
-      label: "Etwas schwierig",
+      label: "Etwas aufwendiger",
       hint: "Hohes Stockwerk, enger Aufgang",
+      emoji: "⚠️",
       faktor: 1.3,
     },
     {
       value: "schwer",
-      label: "Schwer erreichbar",
+      label: "Schwer zugänglich",
       hint: "Dachgeschoss, Keller, enge Zufahrt",
+      emoji: "🔴",
       faktor: 1.6,
     },
   ],
@@ -936,20 +1015,23 @@ export const BW_FUNNEL_STEP_ZUSTAND: FunnelStep = {
   options: [
     {
       value: "gut",
-      label: "Gut — nur optisch veraltet",
-      hint: "Alles funktioniert, sieht alt aus",
+      label: "Gepflegt",
+      hint: "Wirkt gepflegt, ggf. optisch veraltet",
+      emoji: "✅",
       faktor: 1.0,
     },
     {
       value: "mittel",
-      label: "Mittel — kleinere Schäden",
+      label: "Normale Abnutzung",
       hint: "Risse, kleine Schäden, abgenutzt",
+      emoji: "🟡",
       faktor: 1.4,
     },
     {
       value: "schlecht",
-      label: "Schlecht — größere Schäden",
-      hint: "Schimmel, starke Schäden, alles muss raus",
+      label: "Sanierungsbedürftig",
+      hint: "Starke Schäden, viel muss erneuert werden",
+      emoji: "🔴",
       faktor: 2.0,
     },
   ],
@@ -971,17 +1053,21 @@ function insertBeforeGroesse(
 /** Aufgelöste Schritte inkl. dynamischem Betreuung-Größen-Schritt */
 export function getResolvedStepsForSituation(
   situation: Situation | null,
-  bereiche: string[]
+  bereiche: string[],
+  fachdetails?: FachdetailsState
 ): FunnelStep[] {
   if (!situation) return [];
   const cfg = SITUATIONEN_CONFIG[situation];
 
   if (situation === "betreuung") {
-    const stepsBetreuung: FunnelStep[] = [cfg.steps[0]!];
+    const stepsBetreuung: FunnelStep[] = [
+      cfg.steps[0]!,
+      cfg.steps[1]!,
+      getBetreuungGroesseStep(bereiche),
+    ];
     if (bereicheNeedFachdetails(bereiche)) {
       stepsBetreuung.push(BW_FUNNEL_STEP_FACHDETAILS);
     }
-    stepsBetreuung.push(cfg.steps[1]!, getBetreuungGroesseStep(bereiche));
     return stepsBetreuung;
   }
 
@@ -997,7 +1083,33 @@ export function getResolvedStepsForSituation(
   }
 
   if (bereicheNeedFachdetails(bereiche)) {
-    steps.splice(1, 0, BW_FUNNEL_STEP_FACHDETAILS);
+    const gIdx = steps.findIndex((s) => s.id.toLowerCase().includes("groesse"));
+    if (gIdx >= 0) {
+      steps = [...steps];
+      steps.splice(gIdx + 1, 0, BW_FUNNEL_STEP_FACHDETAILS);
+    } else {
+      steps = [...steps, BW_FUNNEL_STEP_FACHDETAILS];
+    }
+  }
+
+  if (shouldSwapFachdetailsBeforeGroesse(situation, bereiche)) {
+    const gIdx = steps.findIndex((s) => s.id.toLowerCase().includes("groesse"));
+    const fIdx = steps.findIndex((s) => s.id === "fachdetails");
+    if (gIdx >= 0 && fIdx >= 0 && fIdx > gIdx) {
+      const next = [...steps];
+      const [fachStep] = next.splice(fIdx, 1);
+      next.splice(gIdx, 0, fachStep);
+      steps = next;
+    }
+  }
+
+  if (
+    situation === "sanieren" &&
+    bereiche.length === 1 &&
+    bereiche[0] === "dach" &&
+    skipGroesseForSanierenDachKleinjob(fachdetails)
+  ) {
+    steps = steps.filter((s) => !s.id.toLowerCase().includes("groesse"));
   }
 
   return steps;

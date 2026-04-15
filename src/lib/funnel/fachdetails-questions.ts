@@ -7,6 +7,7 @@ export type FachdetailOptionDef = {
   value: string;
   label: string;
   hint?: string;
+  emoji?: string;
   /** Kurzer Hinweis neben der Option (aufklappbar) */
   education?: string;
   followUpId?: string | null;
@@ -32,7 +33,7 @@ export const ELEKTRO_Q1: FachdetailQuestionDef = {
     {
       value: "sicherung",
       label: "Sicherung fliegt raus",
-      hint: "FI oder LS-Schalter löst aus",
+      hint: "Schutzschalter löst wiederholt aus",
       followUpId: "elektro_folge_sicherung",
     },
     {
@@ -68,13 +69,13 @@ export const ELEKTRO_FOLLOWUPS: Record<string, FachdetailQuestionDef> = {
     options: [
       {
         value: "fi",
-        label: "FI-Schalter",
-        hint: "Großer Schalter, löst bei Fehlerstrom aus",
+        label: "Großer Schalter (FI)",
+        hint: "Fehlerstrom-Schutz — typisch breiter Schalter",
       },
       {
         value: "ls",
-        label: "Leitungsschutzschalter",
-        hint: "Kleiner Schalter pro Stromkreis",
+        label: "Kleiner Schalter (LS)",
+        hint: "Leitungsschutz — ein schmaler Schalter pro Kreis",
       },
       { value: "weiss_nicht", label: "Weiß ich nicht genau", hint: "" },
     ],
@@ -105,18 +106,18 @@ export const ELEKTRO_FOLLOWUPS: Record<string, FachdetailQuestionDef> = {
     id: "elektro_folge_leitungen",
     title: "Wie sollen die Leitungen verlegt werden?",
     education:
-      "Unterputz bedeutet Stemmen und Verputzen — erhöht den Aufwand und die Dauer.",
+      "Unterputz: Kabel in der Wand — oft stemmen und wieder verputzen. Aufputz: Leitungen in Kästen/Kanälen sichtbar — schneller, weniger Staub.",
     inputType: "single",
     options: [
       {
         value: "unterputz",
         label: "Unterputz",
-        hint: "In der Wand — saubereres Ergebnis, mehr Aufwand",
+        hint: "Verlegung in der Wand — optisch am saubersten",
       },
       {
         value: "aufputz",
         label: "Aufputz",
-        hint: "Sichtbar an der Wand — schneller und günstiger",
+        hint: "Auf der Wand / in Kanal — weniger Eingriff in den Putz",
       },
       { value: "weiss_nicht", label: "Weiß ich nicht genau", hint: "" },
     ],
@@ -143,8 +144,8 @@ export const SANITAER_Q1: FachdetailQuestionDef = {
     },
     {
       value: "keller",
-      label: "Keller / Hauptleitung",
-      hint: "Zuleitung oder Hauptabsperrung",
+      label: "Am Haupthahn / im Keller",
+      hint: "Hauptabsperrung oder Zuleitung",
     },
     {
       value: "weiss_nicht",
@@ -219,7 +220,11 @@ export const SANITAER_BAD_OBJEKTE_MULTI: FachdetailQuestionDef = {
     { value: "wc", label: "WC", hint: "" },
     { value: "dusche", label: "Dusche / Wanne", hint: "" },
     { value: "waschbecken", label: "Waschbecken", hint: "" },
-    { value: "armatur", label: "Armaturen", hint: "" },
+    {
+      value: "armatur",
+      label: "Wasserhähne / Armaturen",
+      hint: "Waschtisch, Küche, Badewanne …",
+    },
   ],
 };
 
@@ -250,7 +255,9 @@ export const HEIZUNG_Q1: FachdetailQuestionDef = {
     {
       value: "fernwaerme",
       label: "Fernwärme",
-      hint: "Anschluss ans Fernwärmenetz",
+      hint: "Hausanschluss ans Fernwärmenetz",
+      education:
+        "Störungen und Wartung klären wir mit deinem örtlichen Fernwärmeversorger oder einem zertifizierten Betrieb — wir helfen bei der Abstimmung.",
     },
     {
       value: "weiss_nicht",
@@ -328,14 +335,14 @@ export const MALER_Q1: FachdetailQuestionDef = {
     },
     {
       value: "komplett",
-      label: "Wände + Decke + Türen / Fenster",
-      hint: "Alles in einem Raum",
+      label: "Alles komplett",
+      hint: "Wände, Decke und Türen/Fenster im Raum",
       followUpId: "maler_folge_zustand",
     },
     {
       value: "fassade",
       label: "Fassade außen",
-      hint: "Außenwände streichen oder verputzen",
+      hint: "Außenfarbe erneuern oder ausbessern",
       followUpId: "maler_folge_fassade",
     },
     {
@@ -367,8 +374,8 @@ export const MALER_FOLLOWUPS: Record<string, FachdetailQuestionDef> = {
       },
       {
         value: "stark",
-        label: "Starke Schäden",
-        hint: "Größere Ausbesserungen nötig",
+        label: "Größere Ausbesserungen nötig",
+        hint: "Löcher, starke Flecken, loser Putz",
       },
       {
         value: "weiss_nicht",
@@ -392,7 +399,7 @@ export const MALER_FOLLOWUPS: Record<string, FachdetailQuestionDef> = {
         label: "Klinker / Backstein",
         hint: "Sichtmauerwerk",
         education:
-          "Klinker-Fassaden brauchen spezielle Reinigung und Imprägnierung — kein normaler Anstrich.",
+          "Klinker bleibt sichtbar — wir reinigen, imprägnieren oder fassen Fugen gezielt an, statt „über alles zu streichen“.",
       },
       {
         value: "holz",
@@ -412,7 +419,7 @@ export const BODEN_Q1: FachdetailQuestionDef = {
   id: "boden_aktuell",
   title: "Was liegt aktuell?",
   education:
-    "Fliesen entfernen ist aufwendig und laut — oft braucht man 1–2 Tage nur für den Rückbau bevor der neue Boden verlegt werden kann.",
+    "Fliesenrückbau kann Staub und Lärm bedeuten — Dauer hängt von Fläche und Verlegung ab. Wir planen Staubschutz und Entsorgung mit ein.",
   inputType: "single",
   options: [
     {
@@ -430,13 +437,13 @@ export const BODEN_Q1: FachdetailQuestionDef = {
     {
       value: "laminat",
       label: "Laminat oder Parkett",
-      hint: "Schwimmend verlegt oder geklebt",
+      hint: "Klickt zusammen oder ist verklebt",
       followUpId: "boden_folge_laminat",
     },
     {
       value: "estrich",
-      label: "Estrich / nichts",
-      hint: "Rohboden oder Betonboden",
+      label: "Rohboden / Estrich",
+      hint: "Noch kein fertiger Bodenbelag",
       followUpId: null,
     },
     {
@@ -464,7 +471,7 @@ export const BODEN_FOLLOWUPS: Record<string, FachdetailQuestionDef> = {
         label: "Dickbettmörtel",
         hint: "Ältere Verlegung, sehr fest",
         education:
-          "Dickbett-Fliesen sind sehr aufwendig zu entfernen — erhöht den Rückbau-Aufwand erheblich.",
+          "Dickbett-Verlegung braucht beim Rückbau mehr Zeit und Werkzeug — wir planen das im Termin mit ein.",
       },
       {
         value: "weiss_nicht",
@@ -481,12 +488,12 @@ export const BODEN_FOLLOWUPS: Record<string, FachdetailQuestionDef> = {
       {
         value: "schwimmend",
         label: "Schwimmend verlegt",
-        hint: "Liegt lose — einfach zu entfernen",
+        hint: "Klickt oder liegt auf Dämmung — meist schneller Rückbau",
       },
       {
         value: "geklebt",
         label: "Geklebt",
-        hint: "Fest mit Untergrund verbunden",
+        hint: "Vollflächig verklebt — Rückbau oft aufwendiger",
         education:
           "Geklebtes Parkett ist aufwendig zu entfernen — oft muss der Untergrund danach geschliffen werden.",
       },
@@ -503,7 +510,7 @@ export const DACH_Q1: FachdetailQuestionDef = {
   id: "dach_vorhaben",
   title: "Was ist das Problem oder Vorhaben?",
   education:
-    "Einzelne Ziegel tauschen geht oft an einem Tag — eine Komplettsanierung dauert mehrere Wochen.",
+    "Einzelziegel oder Rinne: oft kurzer Einsatz. Dämmung oder Komplett-Eindeckung: mehrere Tage bis Wochen, abhängig von Wetter und Fläche.",
   inputType: "single",
   options: [
     {
@@ -533,7 +540,7 @@ export const DACH_Q1: FachdetailQuestionDef = {
     {
       value: "regenrinne",
       label: "Regenrinne / Ablauf",
-      hint: "Rinnen reparieren oder tauschen",
+      hint: "Dachrinne, Fallrohr, Laubfang oder Anschluss",
       followUpId: null,
     },
     {
@@ -566,7 +573,7 @@ export const DACH_FOLLOWUPS: Record<string, FachdetailQuestionDef> = {
         label: "Über 40 Jahre",
         hint: "Älteres Dach",
         education:
-          "Dächer über 40 Jahre haben oft zusätzliche Schäden die erst beim Aufdecken sichtbar werden — wir kalkulieren einen Puffer ein.",
+          "Ab ca. 40 Jahren sind Unterspannbahn, Latten und Dämmung oft mit zu planen — genauer Aufwand sieht man erst nach dem Aufdecken, deshalb kalkulieren wir einen Planungs-Puffer ein.",
       },
       {
         value: "weiss_nicht",
@@ -581,7 +588,7 @@ export const GARTEN_Q1: FachdetailQuestionDef = {
   id: "garten_was",
   title: "Was soll gemacht werden?",
   education:
-    "Baumfällungen über 3 m brauchen in München oft eine Genehmigung — wir klären das für dich.",
+    "In München gilt oft: Fällung oder starke Rückschnitte an Bäumen ab ca. 3 m Stammhöhe (oder geschützte Arten) brauchen eine Genehmigung — wir prüfen das mit dir.",
   inputType: "single",
   options: [
     {
@@ -641,7 +648,7 @@ export const GARTEN_FOLLOWUPS: Record<string, FachdetailQuestionDef> = {
       {
         value: "einmalig",
         label: "Einmalig",
-        hint: "Nur einmal aufräumen",
+        hint: "Ein Termin — z. B. Frühjahrsputz oder Urlaubsvertretung",
       },
     ],
   },
@@ -681,7 +688,7 @@ export const GARTEN_FOLLOWUPS: Record<string, FachdetailQuestionDef> = {
     options: [
       { value: "rasen", label: "Neuer Rasen" },
       { value: "bepflanzung", label: "Bepflanzung / Beete" },
-      { value: "wege", label: "Wege oder Terrasse" },
+      { value: "wege", label: "Wege, Terrasse oder Pflaster" },
       { value: "zaun", label: "Zaun oder Sichtschutz" },
       {
         value: "bewaesserung",

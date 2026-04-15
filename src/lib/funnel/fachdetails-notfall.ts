@@ -48,7 +48,11 @@ export const FACHDETAILS_NOTFALL = {
     options: [
       { value: "geht_nicht", label: "Heizung geht nicht an", hint: "" },
       { value: "kein_warmwasser", label: "Kein warmes Wasser", hint: "" },
-      { value: "geraeusch", label: "Komisches Geräusch", hint: "" },
+      {
+        value: "geraeusch",
+        label: "Ungewöhnliche Geräusche",
+        hint: "Klopfen, Rauschen, Pfeifen",
+      },
       {
         value: "fehlermeldung",
         label: "Fehlermeldung am Display",
@@ -83,13 +87,23 @@ export function bereichMatchesFachdetailGewerk(
   const s = new Set(bereiche);
   switch (gewerk) {
     case "sanitaer":
-      return s.has("bad") || s.has("wasser") || s.has("sanitaer");
+      return (
+        s.has("bad") ||
+        s.has("wasser") ||
+        s.has("sanitaer") ||
+        s.has("feuchtigkeit_schimmel")
+      );
     case "heizung":
       return s.has("heizung");
     case "elektro":
       return s.has("strom") || s.has("elektrik") || s.has("elektro");
     case "maler":
-      return s.has("maler") || s.has("streichen") || s.has("waende_boeden");
+      return (
+        s.has("maler") ||
+        s.has("streichen") ||
+        s.has("waende_boeden") ||
+        s.has("feuchtigkeit_schimmel")
+      );
     case "boden":
       return s.has("boden") || s.has("waende_boeden");
     case "dach":

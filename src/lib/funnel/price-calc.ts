@@ -197,7 +197,7 @@ export const FAKTOREN = {
     auffrischen: 1.0,
     teil: 1.5,
     komplett: 2.2,
-    unsicher: 1.5,
+    unsicher: 1.1,
     ersetzen: 1.0,
     modernisieren: 1.6,
     beratung: 1.6,
@@ -459,6 +459,13 @@ export function mapToServiceType(state: FunnelState): {
   const { situation, bereiche } = state;
   const fd = state.fachdetails;
 
+  if (
+    (situation === "renovieren" || situation === "sanieren") &&
+    bereiche.includes("feuchtigkeit_schimmel")
+  ) {
+    return { service: "maler", type: "waende_decke" };
+  }
+
   // ── NOTFALL ──
   if (situation === "notfall" && bereiche.includes("wasser")) {
     return { service: "sanitaer", type: "leck" };
@@ -512,6 +519,8 @@ export function mapToServiceType(state: FunnelState): {
   if (bereiche.includes("dach")) {
     const vorhaben = fd?.dach?.vorhaben;
     if (vorhaben === "ziegel") return { service: "dach", type: "ziegel" };
+    if (vorhaben === "dachfenster")
+      return { service: "fenster", type: "dachfenster" };
     if (vorhaben === "regenrinne") return { service: "dach", type: "regenrinne" };
     return { service: "dach", type: "komplett" };
   }
@@ -613,6 +622,37 @@ function fachdetailsDachAlterBonus(state: FunnelState): number {
   return state.fachdetails?.dach?.alter === "ueber40" ? 1.5 : 1;
 }
 
+/** „Weiß ich nicht“-Antworten in Fachdetails → leichter Unsicherheits-Puffer */
+function fachdetailsWeissNichtFactor(state: FunnelState): number {
+  const fd = state.fachdetails;
+  if (!fd) return 1;
+  const w = (v: string | undefined) => v === "weiss_nicht";
+  if (
+    w(fd.elektro?.problem) ||
+    w(fd.elektro?.folge) ||
+    w(fd.sanitaer?.lage) ||
+    w(fd.sanitaer?.rohre) ||
+    w(fd.sanitaer?.badWas) ||
+    w(fd.sanitaer?.notfallSchwere) ||
+    w(fd.heizung?.typ) ||
+    w(fd.heizung?.alter) ||
+    w(fd.heizung?.vorhaben) ||
+    w(fd.maler?.was) ||
+    w(fd.maler?.zustand) ||
+    w(fd.maler?.fassade) ||
+    w(fd.boden?.aktuell) ||
+    w(fd.boden?.verlegung) ||
+    w(fd.dach?.vorhaben) ||
+    w(fd.dach?.alter) ||
+    w(fd.garten?.was) ||
+    w(fd.garten?.haeufigkeit) ||
+    w(fd.garten?.baumgroesse)
+  ) {
+    return 1.1;
+  }
+  return 1;
+}
+
 function echtGesamtFaktor(state: FunnelState): number {
   const umfangKey =
     (state.umfang ?? "auffrischen") as keyof typeof FAKTOREN.umfang;
@@ -648,7 +688,8 @@ function echtGesamtFaktor(state: FunnelState): number {
     zugFaktor *
     zustandFaktor *
     dringFaktor *
-    kundentypFaktor
+    kundentypFaktor *
+    fachdetailsWeissNichtFactor(state)
   );
 }
 
@@ -803,6 +844,25 @@ function calcRenovieren(
       );
     }
   }
+  if (b.includes("feuchtigkeit_schimmel")) {
+    const wandQm = qm * 2;
+    pushLine(
+      breakdown,
+      "Feuchte / Schimmel",
+      "Flächen trocknen, Ursache prüfen, Malerarbeiten",
+      wandQm * PREIS_MARKT.maler_waende_decke.min * f,
+      wandQm * PREIS_MARKT.maler_waende_decke.max * f,
+      PREIS_MARKT.maler_waende_decke.einheit
+    );
+    pushLine(
+      breakdown,
+      "Sanitär",
+      "Anschlüsse / Leitungsbereich (Anteil)",
+      PREIS_MARKT.bad_objekte.min * 0.35 * f,
+      PREIS_MARKT.bad_objekte.max * 0.55 * f,
+      PREIS_MARKT.bad_objekte.einheit
+    );
+  }
   if (needBodenLine) {
     const bodenAktuell = state.fachdetails?.boden?.aktuell;
     const bodenPreis =
@@ -860,15 +920,61 @@ function calcSanieren(
   }
   if (b.includes("dach")) {
     const dachVorhaben = state.fachdetails?.dach?.vorhaben;
-    const dachPreis = dachVorhaben === "ziegel" ? PREIS_MARKT.dach_ziegel : PREIS_MARKT.dach_komplett;
-    const dachQm = qm * 0.8;
+    if (dachVorhaben === "dachfenster") {
+      const stueck = Math.max(1, Math.round(qm / 80));
+      pushLine(
+        breakdown,
+        "Dachfenster",
+        `ca. ${stueck} Fenster (Schätzung)`,
+        stueck * PREIS_MARKT.fenster_dachfenster.min * f,
+        stueck * PREIS_MARKT.fenster_dachfenster.max * f,
+        PREIS_MARKT.fenster_dachfenster.einheit
+      );
+    } else if (dachVorhaben === "regenrinne") {
+      const lm = Math.max(10, Math.round(qm / 12));
+      pushLine(
+        breakdown,
+        "Dach",
+        `Regenrinne / Fallrohr (ca. ${lm} m)`,
+        lm * PREIS_MARKT.dach_regenrinne.min * f,
+        lm * PREIS_MARKT.dach_regenrinne.max * f,
+        PREIS_MARKT.dach_regenrinne.einheit
+      );
+    } else {
+      const dachPreis =
+        dachVorhaben === "ziegel"
+          ? PREIS_MARKT.dach_ziegel
+          : PREIS_MARKT.dach_komplett;
+      const dachQm = qm * 0.8;
+      pushLine(
+        breakdown,
+        "Dach",
+        dachVorhaben === "ziegel"
+          ? "Einzelne Ziegel"
+          : "Dachfläche (ca. 0,8 × Wohnfläche)",
+        dachQm * dachPreis.min * f,
+        dachQm * dachPreis.max * f,
+        dachPreis.einheit
+      );
+    }
+  }
+  if (b.includes("feuchtigkeit_schimmel")) {
+    const wandQm = qm * 2;
     pushLine(
       breakdown,
-      "Dach",
-      dachVorhaben === "ziegel" ? "Einzelne Ziegel" : "Dachfläche (ca. 0,8 × Wohnfläche)",
-      dachQm * dachPreis.min * f,
-      dachQm * dachPreis.max * f,
-      dachPreis.einheit
+      "Feuchte / Schimmel",
+      "Sanierung mit Sanitär- und Maleranteil",
+      wandQm * PREIS_MARKT.maler_waende_decke.min * f,
+      wandQm * PREIS_MARKT.maler_waende_decke.max * f,
+      PREIS_MARKT.maler_waende_decke.einheit
+    );
+    pushLine(
+      breakdown,
+      "Sanitär",
+      "Leitungen / Abdichtung (Anteil)",
+      PREIS_MARKT.bad_objekte.min * 0.4 * f,
+      PREIS_MARKT.bad_objekte.max * 0.6 * f,
+      PREIS_MARKT.bad_objekte.einheit
     );
   }
   if (b.includes("fassade")) {
@@ -933,7 +1039,7 @@ function calcNotfall(state: FunnelState): PriceLineItem[] {
       PREIS_MARKT.heizung_wartung.einheit
     );
   }
-  if (b.includes("wasser") || b.includes("schaden")) {
+  if (b.includes("wasser")) {
     const h = 3;
     pushLine(
       breakdown,
@@ -1080,7 +1186,8 @@ export type BwResultModus =
  * Gibt resultModus + schwellenwertAusgeloest zurück.
  */
 function applyThreshold(
-  rangeResult: ReturnType<typeof finalizeRange> & { istFallback?: boolean }
+  rangeResult: ReturnType<typeof finalizeRange> & { istFallback?: boolean },
+  options?: BwCalculatePriceOptions
 ): ReturnType<typeof finalizeRange> & {
   resultModus: BwResultModus;
   schwellenwertAusgeloest: boolean;
@@ -1095,6 +1202,14 @@ function applyThreshold(
     };
   }
   if (rangeResult.min > SCHWELLE_ZU_KOMPLEX) {
+    if (options?.preview) {
+      return {
+        ...rangeResult,
+        resultModus: "zu_komplex",
+        schwellenwertAusgeloest: true,
+        istFallback: false,
+      };
+    }
     return {
       ...rangeResult,
       min: 0,
@@ -1153,7 +1268,7 @@ function buildFallbackPrice(state: FunnelState): {
   };
 }
 
-type CalculatePriceResult = {
+export type BwCalculatePriceResult = {
   min: number;
   max: number;
   breakdown: PriceLineItem[];
@@ -1165,23 +1280,31 @@ type CalculatePriceResult = {
   istFallback: boolean;
 };
 
+export type BwCalculatePriceOptions = {
+  /** Live-Vorschau: trotz Notfall akut / zu_komplex einen Rahmen berechnen */
+  preview?: boolean;
+};
+
 function withMaybeZeroFallback(
   state: FunnelState,
-  result: Omit<CalculatePriceResult, "istFallback"> & {
+  result: Omit<BwCalculatePriceResult, "istFallback"> & {
     istFallback?: boolean;
-  }
-): CalculatePriceResult {
-  const base: CalculatePriceResult = {
+  },
+  options?: BwCalculatePriceOptions
+): BwCalculatePriceResult {
+  const base: BwCalculatePriceResult = {
     ...result,
     istFallback: Boolean(result.istFallback),
   };
   if (base.istFallback) return base;
   if (!state.situation) return { ...base, istFallback: false };
-  if (state.situation === "notfall" && state.dringlichkeit === "akut") {
-    return { ...base, istFallback: false };
-  }
-  if (getBwResultModus(state) === "zu_komplex") {
-    return { ...base, istFallback: false };
+  if (!options?.preview) {
+    if (state.situation === "notfall" && state.dringlichkeit === "akut") {
+      return { ...base, istFallback: false };
+    }
+    if (getBwResultModus(state) === "zu_komplex") {
+      return { ...base, istFallback: false };
+    }
   }
   if (base.schwellenwertAusgeloest && base.resultModus === "zu_komplex") {
     return { ...base, istFallback: false };
@@ -1195,8 +1318,12 @@ function withMaybeZeroFallback(
   return { ...base, istFallback: false };
 }
 
-export function calculatePrice(state: FunnelState): CalculatePriceResult {
-  const noResult: CalculatePriceResult = {
+export function calculatePrice(
+  state: FunnelState,
+  options?: BwCalculatePriceOptions
+): BwCalculatePriceResult {
+  const preview = options?.preview === true;
+  const noResult: BwCalculatePriceResult = {
     min: 0,
     max: 0,
     breakdown: [] as PriceLineItem[],
@@ -1212,11 +1339,11 @@ export function calculatePrice(state: FunnelState): CalculatePriceResult {
     return noResult;
   }
 
-  if (state.situation === "notfall" && state.dringlichkeit === "akut") {
+  if (!preview && state.situation === "notfall" && state.dringlichkeit === "akut") {
     return noResult;
   }
 
-  if (getBwResultModus(state) === "zu_komplex") {
+  if (!preview && getBwResultModus(state) === "zu_komplex") {
     return noResult;
   }
 
@@ -1277,7 +1404,8 @@ export function calculatePrice(state: FunnelState): CalculatePriceResult {
     const { rawMin, rawMax } = sumBreakdown(breakdown);
     return withMaybeZeroFallback(
       state,
-      applyThreshold(finalizeRange(rawMin, rawMax, breakdown, state))
+      applyThreshold(finalizeRange(rawMin, rawMax, breakdown, state), options),
+      options
     );
   }
 
@@ -1292,6 +1420,25 @@ export function calculatePrice(state: FunnelState): CalculatePriceResult {
       break;
     case "notfall":
       breakdown = calcNotfall(state);
+      if (
+        preview &&
+        state.dringlichkeit === "akut" &&
+        breakdown.length === 0
+      ) {
+        return {
+          min: 150,
+          max: 600,
+          breakdown: [],
+          mindestauftragAktiv: false,
+          plzFaktor: getPlzFaktor(state.plz ?? ""),
+          koordinationsRabatt: getKoordinationsRabatt(
+            Math.max(1, state.bereiche?.length ?? 1)
+          ),
+          resultModus: "preisrahmen",
+          schwellenwertAusgeloest: false,
+          istFallback: true,
+        };
+      }
       break;
     case "neubauen":
       breakdown = calcNeubauen(state);
@@ -1312,6 +1459,7 @@ export function calculatePrice(state: FunnelState): CalculatePriceResult {
 
   return withMaybeZeroFallback(
     state,
-    applyThreshold(finalizeRange(rawMin, rawMax, breakdown, state))
+    applyThreshold(finalizeRange(rawMin, rawMax, breakdown, state), options),
+    options
   );
 }

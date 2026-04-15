@@ -104,6 +104,8 @@ export interface StepOption {
   value: string;
   label: string;
   hint?: string;
+  /** Kachel-Icon (ersetzt SVG wo gesetzt) */
+  emoji?: string;
   priceTag?: string;
   /** Multiplikator für Preislogik (optional) */
   faktor?: number;

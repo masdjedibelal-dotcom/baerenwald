@@ -81,6 +81,7 @@ export interface StepOption {
   value: string;
   label: string;
   hint?: string;
+  emoji?: string;
   priceTag?: string;
   infoExpand?: string;
   triggerGewerke?: string[];

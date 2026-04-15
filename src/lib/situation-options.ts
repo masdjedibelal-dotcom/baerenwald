@@ -55,6 +55,7 @@ export const BW_FUNNEL_STEP1_OPTIONS: {
   id: BwSituation;
   label: string;
   hint: string;
+  emoji: string;
   tag?: string;
   tagType?: BwFunnelStep1TagType;
 }[] = [
@@ -62,36 +63,42 @@ export const BW_FUNNEL_STEP1_OPTIONS: {
     id: "renovieren",
     label: "Renovieren",
     hint: "Bad, Küche, Wände, Fenster",
+    emoji: "🏠",
     tagType: "multi",
   },
   {
     id: "sanieren",
     label: "Sanieren",
-    hint: "Heizung, Dach, Elektrik, Förderung",
+    hint: "Heizung, Dach, Elektrik, Leitungen",
+    emoji: "🔧",
     tagType: "multi",
   },
   {
     id: "notfall",
     label: "Notfall",
-    hint: "Heizung, Wasser, Strom — schnelle Hilfe",
+    hint: "Heizung, Wasser, Strom — wir kommen schnell",
+    emoji: "⚡",
     tagType: "notfall",
   },
   {
     id: "neubauen",
     label: "Neubau / Ausbau",
-    hint: "Keller, DG, Terrasse, Umbau",
+    hint: "Keller, Dachgeschoss, Terrasse, Umbau",
+    emoji: "🏗️",
     tagType: "multi",
   },
   {
     id: "betreuung",
     label: "Betreuung",
     hint: "Garten, Reinigung, Winterdienst",
+    emoji: "🌿",
     tagType: "abo",
   },
   {
     id: "gewerbe",
     label: "Gewerbe oder Büro",
     hint: "Büro, Laden, Praxis, Lager — wir planen individuell mit dir",
+    emoji: "🏢",
     tag: "B2B",
     tagType: "neutral",
   },
@@ -99,6 +106,7 @@ export const BW_FUNNEL_STEP1_OPTIONS: {
     id: "gastro",
     label: "Gastronomie",
     hint: "Restaurant, Café, Bar, Hotel — komplex und individuell",
+    emoji: "🍽️",
     tag: "B2B",
     tagType: "neutral",
   },
