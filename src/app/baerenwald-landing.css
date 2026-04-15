@@ -4123,13 +4123,21 @@
   gap: 28px;
 }
 
-/* ── Preis-Karte (hell) ── */
+/* ── Preis-Karte (Marken-Grün) ── */
 .preis-karte {
-  background: var(--fl-bg-card);
-  border: 1px solid var(--fl-border-light);
+  background: linear-gradient(
+    165deg,
+    #1e4a33 0%,
+    var(--fl-accent-dark) 42%,
+    #142e1f 100%
+  );
+  border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: var(--fl-radius);
   padding: 24px;
   text-align: center;
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.06) inset,
+    0 12px 32px -8px rgba(10, 30, 20, 0.45);
 }
 
 .preis-karte-kicker {
@@ -4138,7 +4146,7 @@
   font-weight: 600;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: var(--fl-text-3);
+  color: rgba(255, 255, 255, 0.55);
 }
 
 .preis-karte-range {
@@ -4153,13 +4161,14 @@
   font-size: clamp(32px, 6vw, 48px);
   font-weight: 800;
   letter-spacing: -0.04em;
-  color: var(--fl-accent);
+  color: #f4faf6;
+  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.2);
   line-height: 1;
 }
 
 .preis-karte-trenner {
   font-size: 20px;
-  color: var(--fl-text-3);
+  color: rgba(255, 255, 255, 0.45);
   margin: 0 8px;
   font-weight: 500;
 }
@@ -4199,29 +4208,22 @@
   color: var(--fl-accent);
 }
 
-.preis-karte-einheit {
-  margin: 4px 0 0;
-  font-size: 13px;
-  color: var(--fl-text-3);
+/* Einordnung innerhalb der grünen Preis-Karte */
+.preis-karte .result-einordnung {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.14);
 }
 
-.preis-karte-chips {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 6px;
-  margin-top: 12px;
+.preis-karte .result-einordnung-title {
+  color: rgba(255, 255, 255, 0.72);
 }
 
-.preis-karte-chip {
-  display: inline-flex;
-  align-items: center;
-  background: var(--fl-bg);
-  border: 1px solid var(--fl-border-light);
-  border-radius: 999px;
-  padding: 4px 10px;
-  font-size: 11px;
-  color: var(--fl-text-2);
+.preis-karte .result-einordnung-list {
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.preis-karte .result-einordnung-list li span[aria-hidden] {
+  color: #c8ebd4;
 }
 
 .preis-karte-fallback,
@@ -4229,12 +4231,12 @@
   margin: 12px 0 0;
   font-size: 12px;
   line-height: 1.5;
-  color: var(--fl-text-2);
+  color: rgba(255, 255, 255, 0.78);
   text-align: center;
 }
 
 .preis-karte-warn-einzeiler {
-  color: #92400e;
+  color: #fde68a;
 }
 
 .result-meta-einzeiler {

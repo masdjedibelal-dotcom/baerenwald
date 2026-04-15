@@ -385,7 +385,6 @@ function ResultTestimonialCard() {
 export interface BwResultScreenProps {
   state: FunnelState;
   mindestauftragAktiv?: boolean;
-  plzFaktor?: number;
   koordinationsRabatt?: number;
   resultModus?: BwResultModus;
   schwellenwertAusgeloest?: boolean;
@@ -719,7 +718,6 @@ function ZuKomplexScreen({
 export function BwResultScreen({
   state,
   mindestauftragAktiv,
-  plzFaktor = 1.0,
   koordinationsRabatt = 1.0,
   resultModus,
   schwellenwertAusgeloest = false,
@@ -789,8 +787,6 @@ export function BwResultScreen({
   }
 
   const hasRange = state.priceMin > 0 && state.priceMax > 0;
-  const rabattChipProzent =
-    koordinationsRabatt <= 0.9 ? 10 : koordinationsRabatt < 1 ? 5 : 0;
 
   const handleSaveEmail = useCallback(async () => {
     setSaveEmailError("");
@@ -843,25 +839,6 @@ export function BwResultScreen({
             </span>
           </div>
           <ResultEinordnung state={state} />
-          <p className="preis-karte-einheit">
-            Richtwert für {SITE_CONFIG.region} — unverbindlich
-          </p>
-
-          <div className="preis-karte-chips">
-            {state.bereiche.map((g) => (
-              <span key={g} className="preis-karte-chip">
-                {gewerkLabel(g)}
-              </span>
-            ))}
-            {plzFaktor > 1.08 ? (
-              <span className="preis-karte-chip">📍 Innenstadt</span>
-            ) : null}
-            {rabattChipProzent > 0 ? (
-              <span className="preis-karte-chip">
-                🏷 {rabattChipProzent}% Rabatt
-              </span>
-            ) : null}
-          </div>
 
           {state.istFallback ? (
             <p className="preis-karte-fallback">

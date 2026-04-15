@@ -108,7 +108,6 @@ function FunnelRechnerInner() {
   const urlInit = useRef(false);
   const [screen, setScreen] = useState<Screen>("situation");
   const [mindestauftragAktiv, setMindestauftrag] = useState(false);
-  const [plzFaktor, setPlzFaktor] = useState(1.0);
   const [koordinationsRabatt, setKoordinationsRabatt] = useState(1.0);
   const [isAusserhalbLead, setIsAusserhalbLead] = useState(false);
   const [ausserhalbBeschreibung, setAusserhalbBeschreibung] = useState("");
@@ -304,10 +303,6 @@ function FunnelRechnerInner() {
         if (state.bereiche.length > 0) {
           if (isB2bSituation(state.situation)) setScreen("beratung-lead");
           else {
-            setMicroNote({
-              target: "umfang",
-              text: "Gut — wir wissen schon was du brauchst",
-            });
             setScreen("umfang");
           }
         }
@@ -361,7 +356,6 @@ function FunnelRechnerInner() {
           max,
           breakdown,
           mindestauftragAktiv,
-          plzFaktor: pf,
           koordinationsRabatt: kr,
           resultModus: rm,
           schwellenwertAusgeloest: swa,
@@ -369,7 +363,6 @@ function FunnelRechnerInner() {
         } = calculatePrice(state);
         setPrice(min, max, breakdown, istFallback);
         setMindestauftrag(mindestauftragAktiv);
-        setPlzFaktor(pf);
         setKoordinationsRabatt(kr);
         setResultModus(rm);
         setSchwellenwertAusgeloest(swa);
@@ -822,7 +815,7 @@ function FunnelRechnerInner() {
           <StepWrapper
             stepLabel="Vorhaben"
             question="Was planst du?"
-            subtext="Beantworte 3–4 Fragen und erhalte eine realistische Preisrange für dein Projekt."
+            subtext="Beantworte unsere Fragen, um eine erste Preisindikation zu erhalten."
             animateKey={screen}
             tilesCard
           >
@@ -1055,7 +1048,6 @@ function FunnelRechnerInner() {
             <BwResultScreen
               state={state}
               mindestauftragAktiv={mindestauftragAktiv}
-              plzFaktor={plzFaktor}
               koordinationsRabatt={koordinationsRabatt}
               resultModus={resultModus}
               schwellenwertAusgeloest={schwellenwertAusgeloest}

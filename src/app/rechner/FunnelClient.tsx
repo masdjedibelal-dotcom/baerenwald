@@ -474,7 +474,7 @@ export function FunnelClient() {
         <StepWrapper
           stepLabel="Vorhaben"
           question="Was planst du?"
-          subtext="Beantworte 3–4 Fragen und erhalte eine realistische Preisrange für dein Projekt."
+          subtext="Beantworte unsere Fragen, um eine erste Preisindikation zu erhalten."
           animateKey="sit"
         >
           <SituationStep
