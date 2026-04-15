@@ -1,3 +1,6 @@
+import {
+  getAktiveFachdetailGewerke,
+} from "./fachdetails-notfall";
 import type {
   FachdetailsState,
   FunnelState,
@@ -851,42 +854,50 @@ export const BW_FUNNEL_STEP_FACHDETAILS: FunnelStep = {
   inputType: "fachdetails",
 };
 
-/** Weiter nur wenn je sichtbarem Block die Hauptfrage beantwortet ist */
+/** Weiter nur wenn je sichtbarem Block (max. 2) die Hauptfrage beantwortet ist */
 export function isFachdetailsStepComplete(state: {
+  situation: Situation | null;
   bereiche: string[];
   fachdetails: FachdetailsState;
 }): boolean {
   if (!bereicheNeedFachdetails(state.bereiche)) return true;
   const b = state.bereiche;
   const fd = state.fachdetails;
-  const s = new Set(b);
-  const needE =
-    s.has("strom") || s.has("elektrik") || s.has("elektro");
-  if (needE && !fd.elektro?.problem) return false;
-  const needSan =
-    s.has("bad") || s.has("wasser") || s.has("sanitaer");
-  if (needSan) {
-    if (!fd.sanitaer?.lage) return false;
-    if (b.includes("bad") && !fd.sanitaer?.badWas) return false;
+  const notfall = state.situation === "notfall";
+  const active = getAktiveFachdetailGewerke(b, 2);
+
+  for (const g of active) {
+    switch (g) {
+      case "elektro":
+        if (!fd.elektro?.problem) return false;
+        break;
+      case "sanitaer":
+        if (notfall) {
+          if (!fd.sanitaer?.notfallSchwere) return false;
+        } else {
+          if (!fd.sanitaer?.lage) return false;
+          if (b.includes("bad") && !fd.sanitaer?.badWas) return false;
+        }
+        break;
+      case "heizung":
+        if (!fd.heizung?.typ) return false;
+        break;
+      case "maler":
+        if (!fd.maler?.was) return false;
+        break;
+      case "boden":
+        if (!fd.boden?.aktuell) return false;
+        break;
+      case "dach":
+        if (!fd.dach?.vorhaben) return false;
+        break;
+      case "garten":
+        if (!fd.garten?.was) return false;
+        break;
+      default:
+        break;
+    }
   }
-  if (s.has("heizung") && !fd.heizung?.typ) return false;
-
-  const needMaler =
-    s.has("maler") || s.has("streichen") || s.has("waende_boeden");
-  if (needMaler && !fd.maler?.was) return false;
-
-  const needBoden = s.has("boden") || s.has("waende_boeden");
-  if (needBoden && !fd.boden?.aktuell) return false;
-
-  if (s.has("dach") && !fd.dach?.vorhaben) return false;
-
-  const needGarten =
-    s.has("garten") ||
-    s.has("gestaltung") ||
-    s.has("baum") ||
-    s.has("baumarbeiten");
-  if (needGarten && !fd.garten?.was) return false;
-
   return true;
 }
 

@@ -1080,11 +1080,20 @@ export type BwResultModus =
  * Gibt resultModus + schwellenwertAusgeloest zurück.
  */
 function applyThreshold(
-  rangeResult: ReturnType<typeof finalizeRange>
+  rangeResult: ReturnType<typeof finalizeRange> & { istFallback?: boolean }
 ): ReturnType<typeof finalizeRange> & {
   resultModus: BwResultModus;
   schwellenwertAusgeloest: boolean;
+  istFallback?: boolean;
 } {
+  if (rangeResult.istFallback) {
+    return {
+      ...rangeResult,
+      resultModus: "preisrahmen",
+      schwellenwertAusgeloest: false,
+      istFallback: true,
+    };
+  }
   if (rangeResult.min > SCHWELLE_ZU_KOMPLEX) {
     return {
       ...rangeResult,
@@ -1093,14 +1102,23 @@ function applyThreshold(
       breakdown: [],
       resultModus: "zu_komplex",
       schwellenwertAusgeloest: true,
+      istFallback: false,
     };
   }
   const resultModus: BwResultModus =
     rangeResult.min >= SCHWELLE_WARNUNG ? "preisrahmen_warnung" : "preisrahmen";
-  return { ...rangeResult, resultModus, schwellenwertAusgeloest: false };
+  return {
+    ...rangeResult,
+    resultModus,
+    schwellenwertAusgeloest: false,
+    istFallback: Boolean(rangeResult.istFallback),
+  };
 }
 
-export function calculatePrice(state: FunnelState): {
+const FALLBACK_MIN = 450;
+const FALLBACK_MAX = 1800;
+
+function buildFallbackPrice(state: FunnelState): {
   min: number;
   max: number;
   breakdown: PriceLineItem[];
@@ -1109,8 +1127,76 @@ export function calculatePrice(state: FunnelState): {
   koordinationsRabatt: number;
   resultModus: BwResultModus;
   schwellenwertAusgeloest: boolean;
+  istFallback: boolean;
 } {
-  const noResult = {
+  const breakdown: PriceLineItem[] = [
+    {
+      gewerk: "allgemein",
+      beschreibung: "Handwerksleistung",
+      min: FALLBACK_MIN,
+      max: FALLBACK_MAX,
+      einheit: "pauschal",
+    },
+  ];
+  return {
+    min: FALLBACK_MIN,
+    max: FALLBACK_MAX,
+    breakdown,
+    mindestauftragAktiv: false,
+    plzFaktor: getPlzFaktor(state.plz ?? ""),
+    koordinationsRabatt: getKoordinationsRabatt(
+      Math.max(1, state.bereiche?.length ?? 1)
+    ),
+    resultModus: "preisrahmen",
+    schwellenwertAusgeloest: false,
+    istFallback: true,
+  };
+}
+
+type CalculatePriceResult = {
+  min: number;
+  max: number;
+  breakdown: PriceLineItem[];
+  mindestauftragAktiv: boolean;
+  plzFaktor: number;
+  koordinationsRabatt: number;
+  resultModus: BwResultModus;
+  schwellenwertAusgeloest: boolean;
+  istFallback: boolean;
+};
+
+function withMaybeZeroFallback(
+  state: FunnelState,
+  result: Omit<CalculatePriceResult, "istFallback"> & {
+    istFallback?: boolean;
+  }
+): CalculatePriceResult {
+  const base: CalculatePriceResult = {
+    ...result,
+    istFallback: Boolean(result.istFallback),
+  };
+  if (base.istFallback) return base;
+  if (!state.situation) return { ...base, istFallback: false };
+  if (state.situation === "notfall" && state.dringlichkeit === "akut") {
+    return { ...base, istFallback: false };
+  }
+  if (getBwResultModus(state) === "zu_komplex") {
+    return { ...base, istFallback: false };
+  }
+  if (base.schwellenwertAusgeloest && base.resultModus === "zu_komplex") {
+    return { ...base, istFallback: false };
+  }
+  if (
+    (base.breakdown?.length ?? 0) === 0 ||
+    base.min <= 0
+  ) {
+    return buildFallbackPrice(state);
+  }
+  return { ...base, istFallback: false };
+}
+
+export function calculatePrice(state: FunnelState): CalculatePriceResult {
+  const noResult: CalculatePriceResult = {
     min: 0,
     max: 0,
     breakdown: [] as PriceLineItem[],
@@ -1119,6 +1205,7 @@ export function calculatePrice(state: FunnelState): {
     koordinationsRabatt: 1.0,
     resultModus: "zu_komplex" as BwResultModus,
     schwellenwertAusgeloest: false,
+    istFallback: false,
   };
 
   if (!state.situation) {
@@ -1188,7 +1275,10 @@ export function calculatePrice(state: FunnelState): {
 
     breakdown = applyFachdetailsLegacyScaling(breakdown, state);
     const { rawMin, rawMax } = sumBreakdown(breakdown);
-    return applyThreshold(finalizeRange(rawMin, rawMax, breakdown, state));
+    return withMaybeZeroFallback(
+      state,
+      applyThreshold(finalizeRange(rawMin, rawMax, breakdown, state))
+    );
   }
 
   let breakdown: PriceLineItem[] = [];
@@ -1217,8 +1307,11 @@ export function calculatePrice(state: FunnelState): {
 
   const { rawMin, rawMax } = sumBreakdown(breakdown);
   if (breakdown.length === 0) {
-    return noResult;
+    return buildFallbackPrice(state);
   }
 
-  return applyThreshold(finalizeRange(rawMin, rawMax, breakdown, state));
+  return withMaybeZeroFallback(
+    state,
+    applyThreshold(finalizeRange(rawMin, rawMax, breakdown, state))
+  );
 }

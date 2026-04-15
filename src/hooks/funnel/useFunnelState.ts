@@ -44,6 +44,7 @@ export type BwFunnelAction =
       min: number;
       max: number;
       breakdown: PriceLineItem[];
+      istFallback?: boolean;
     }
   | { type: "SET_BUDGET_CHECK"; value: BudgetCheck }
   /** Notfall: zweiter Schritt (Dringlichkeit) */
@@ -69,6 +70,7 @@ export function createInitialBwFunnelState(): FunnelState {
     priceMin: 0,
     priceMax: 0,
     breakdown: [],
+    istFallback: false,
     budgetCheck: null,
     dringlichkeit: null,
     zugaenglichkeit: null,
@@ -224,6 +226,7 @@ function bwFunnelReducer(
         priceMin: action.min,
         priceMax: action.max,
         breakdown: [...action.breakdown],
+        istFallback: Boolean(action.istFallback),
       };
 
     case "SET_BUDGET_CHECK":
@@ -297,8 +300,19 @@ export function useBwFunnelState() {
   }, []);
 
   const setPrice = useCallback(
-    (min: number, max: number, breakdown: PriceLineItem[]) => {
-      dispatch({ type: "SET_PRICE", min, max, breakdown });
+    (
+      min: number,
+      max: number,
+      breakdown: PriceLineItem[],
+      istFallback?: boolean
+    ) => {
+      dispatch({
+        type: "SET_PRICE",
+        min,
+        max,
+        breakdown,
+        istFallback,
+      });
     },
     []
   );

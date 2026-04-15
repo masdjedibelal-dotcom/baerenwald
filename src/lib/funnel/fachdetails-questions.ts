@@ -10,6 +10,8 @@ export type FachdetailOptionDef = {
   /** Kurzer Hinweis neben der Option (aufklappbar) */
   education?: string;
   followUpId?: string | null;
+  /** z. B. Warnung bei Auswahl (Notfall) */
+  warnText?: string;
 };
 
 export type FachdetailQuestionDef = {

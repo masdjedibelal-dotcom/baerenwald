@@ -32,6 +32,8 @@ export type FachdetailsState = {
     badWas?: string;
     badObjekte?: string[];
     rohre?: string;
+    /** Notfall-Flow: nur Schwere, ohne Lage/Rohre */
+    notfallSchwere?: string;
   };
   heizung?: {
     typ?: string;
@@ -80,6 +82,8 @@ export interface FunnelState {
   priceMin: number;
   priceMax: number;
   breakdown: PriceLineItem[];
+  /** Preis aus Fallback-Mapping (450–1800 €), kein Accordion */
+  istFallback: boolean;
   budgetCheck: BudgetCheck;
   dringlichkeit: "akut" | "stabil" | "nutzbar" | "keine_eile" | null;
   zugaenglichkeit: Zugaenglichkeit | null;
