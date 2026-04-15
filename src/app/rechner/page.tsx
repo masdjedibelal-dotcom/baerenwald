@@ -237,6 +237,10 @@ function FunnelRechnerInner() {
 
   useEffect(() => {
     const id = requestAnimationFrame(() => {
+      if (screen === "loading") {
+        window.scrollTo(0, 0);
+        return;
+      }
       if (window.scrollY < 1) return;
       window.scrollTo(0, 0);
     });

@@ -1,8 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { Loader2 } from "lucide-react";
 
 import type { Situation as BwSituation } from "@/lib/funnel/types";
+import { cn } from "@/lib/utils";
 
 export interface LoadingScreenProps {
   situation: BwSituation | string | null;
@@ -10,7 +12,11 @@ export interface LoadingScreenProps {
   className?: string;
 }
 
-export function LoadingScreen({ onComplete, className }: LoadingScreenProps) {
+export function LoadingScreen({
+  situation: _situation,
+  onComplete,
+  className,
+}: LoadingScreenProps) {
   const [step, setStep] = useState<0 | 1 | 2 | 3>(0);
 
   useEffect(() => {
@@ -33,55 +39,63 @@ export function LoadingScreen({ onComplete, className }: LoadingScreenProps) {
   ];
 
   return (
-    <div className={`loading-screen${className ? ` ${className}` : ""}`}>
-      <div className="loading-icon" aria-hidden>
-        <svg
-          width="32"
-          height="32"
-          viewBox="0 0 24 24"
-          fill="none"
-          style={{
-            color: "var(--fl-accent)",
-            animation: "pulse 1.2s ease-in-out infinite",
-          }}
-        >
-          <rect
-            x="3"
-            y="3"
-            width="18"
-            height="18"
-            rx="3"
-            stroke="currentColor"
-            strokeWidth="1.5"
-          />
-          <path
-            d="M8 8h2v2H8zM11 8h5M11 11h5M8 12h2v2H8zM8 16h8"
-            stroke="currentColor"
-            strokeWidth="1.5"
-            strokeLinecap="round"
-          />
-        </svg>
+    <div className={cn("loading-screen", className)}>
+      <div
+        className="loading-screen-card"
+        role="status"
+        aria-busy="true"
+        aria-live="polite"
+        aria-label="Preis wird berechnet"
+      >
+        <p className="loading-screen-kicker">Einen Moment</p>
+        <h2 className="loading-screen-title">Dein Preisrahmen entsteht</h2>
+
+        <div className="loading-screen-icon-wrap" aria-hidden>
+          <div className="loading-screen-ring" />
+          <div className="loading-screen-icon-inner">
+            <Loader2
+              className="loading-screen-spinner"
+              strokeWidth={2}
+              size={28}
+              aria-hidden
+            />
+          </div>
+        </div>
+
+        <div className="loading-progress" aria-hidden>
+          {[0, 1, 2].map((i) => (
+            <div
+              key={i}
+              className={cn(
+                "loading-progress-seg",
+                step > i && "loading-progress-seg--fill"
+              )}
+            />
+          ))}
+        </div>
+
+        <ol className="loading-steps">
+          {steps.map((s, i) => {
+            const idx = i + 1;
+            const cls =
+              step > idx
+                ? "loading-step done"
+                : step === idx
+                  ? "loading-step active"
+                  : "loading-step";
+            return (
+              <li key={s.text} className={cls}>
+                <span className="loading-step-dot" />
+                <span className="loading-step-text">{s.text}</span>
+              </li>
+            );
+          })}
+        </ol>
       </div>
 
-      <div className="loading-steps">
-        {steps.map((s, i) => {
-          const idx = i + 1;
-          const cls =
-            step > idx
-              ? "loading-step done"
-              : step === idx
-                ? "loading-step active"
-                : "loading-step";
-          return (
-            <div key={s.text} className={cls}>
-              <div className="loading-step-dot" />
-              <span>{s.text}</span>
-            </div>
-          );
-        })}
-      </div>
-
-      <p className="loading-sub">Basierend auf aktuellen Preisen für München 2026</p>
+      <p className="loading-sub">
+        Basierend auf aktuellen Preisen für München 2026
+      </p>
     </div>
   );
 }
