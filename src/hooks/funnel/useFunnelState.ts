@@ -2,6 +2,7 @@
 
 import { useCallback, useMemo, useReducer } from "react";
 
+import { countFachdetailGewerke } from "@/lib/funnel/fachdetails-notfall";
 import type {
   BudgetCheck,
   FachdetailsState,
@@ -76,6 +77,7 @@ export function createInitialBwFunnelState(): FunnelState {
     zugaenglichkeit: null,
     zustand: null,
     fachdetails: {},
+    showOmitHint: false,
     photos: [],
     name: "",
     vorname: "",
@@ -102,29 +104,34 @@ function bwFunnelReducer(
         situation: action.situation,
       };
 
-    case "SET_BEREICHE":
+    case "SET_BEREICHE": {
+      const bereiche = [...action.values];
       return {
         ...state,
-        bereiche: [...action.values],
+        bereiche,
         groesse: null,
         groesseEinheit: null,
         zugaenglichkeit: null,
         zustand: null,
         fachdetails: {},
+        showOmitHint: countFachdetailGewerke(bereiche) > 2,
       };
+    }
 
     case "TOGGLE_BEREICH": {
       const set = new Set(state.bereiche);
       if (set.has(action.value)) set.delete(action.value);
       else set.add(action.value);
+      const bereiche = Array.from(set);
       return {
         ...state,
-        bereiche: Array.from(set),
+        bereiche,
         groesse: null,
         groesseEinheit: null,
         zugaenglichkeit: null,
         zustand: null,
         fachdetails: {},
+        showOmitHint: countFachdetailGewerke(bereiche) > 2,
       };
     }
 

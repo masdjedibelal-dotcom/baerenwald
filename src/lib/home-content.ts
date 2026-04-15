@@ -34,8 +34,20 @@ export const HOME_FAQ_ITEMS: HomeFaqItem[] = [
     a: "Wir kommen zu dir und schauen uns alles an. Die Anfahrtskosten werden bei Beauftragung vollständig auf den Auftrag angerechnet — du zahlst also nur wenn wir auch wirklich arbeiten. Nach dem Termin bekommst du ein genaues Festpreisangebot. Du entscheidest danach ob du uns beauftragst. Sagst du ab, zahlst du nur die Anfahrt.",
   },
   {
+    q: "Was passiert wenn beim Projekt unerwartete Probleme auftauchen?",
+    a: "Das kommt vor — besonders bei älteren Gebäuden können hinter Wänden Dinge zum Vorschein kommen die vorher nicht sichtbar waren. In diesem Fall informieren wir dich sofort und besprechen gemeinsam wie wir vorgehen. Kein Nachtrag ohne deine ausdrückliche Zustimmung — das ist unser Versprechen.",
+  },
+  {
+    q: "Wie sauber wird die Baustelle hinterlassen?",
+    a: "Wir behandeln dein Zuhause so wie unser eigenes. Das bedeutet: Staubschutz für alle angrenzenden Bereiche, tägliche Reinigung nach Arbeitsende und vollständige Entsorgung von Bauschutt und Verpackungen. Nach Projektabschluss übergeben wir dir den Raum besenrein — und mit einem digitalen Abnahmeprotokoll damit alles dokumentiert ist.",
+  },
+  {
     q: "Was passiert wenn etwas nicht stimmt?",
     a: "Bärenwald steht als Generalunternehmer gerade. Bei Mängeln kümmern wir uns um die Nachbesserung — du musst nicht selbst mit einzelnen Handwerkern verhandeln.",
+  },
+  {
+    q: "Was wenn ich mit dem Ergebnis nicht zufrieden bin?",
+    a: "Wir nehmen jeden Mangel ernst. Beim Abschlusstermin gehen wir gemeinsam durch was gemacht wurde — das digitale Abnahmeprotokoll hält alles fest. Wenn etwas nicht stimmt kommt unser Team zur Nachbesserung — ohne Diskussion und ohne Extrakosten. Die gesetzliche Gewährleistung von 2 Jahren gilt selbstverständlich.",
   },
   {
     q: "Wie schnell kann es losgehen?",

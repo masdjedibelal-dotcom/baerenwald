@@ -89,6 +89,8 @@ export interface FunnelState {
   zugaenglichkeit: Zugaenglichkeit | null;
   zustand: ObjektZustand | null;
   fachdetails: FachdetailsState;
+  /** Mehr als zwei Fachdetail-Gewerke möglich — es werden nur zwei abgefragt */
+  showOmitHint: boolean;
   photos: File[];
   name: string;
   vorname: string;
@@ -114,6 +116,29 @@ export interface StepOption {
   triggerGewerke?: string[];
   /** Für Größen-Tiles: repräsentativer Zahlenwert (z. B. m², Stück, Laufmeter) */
   groesse?: number;
+}
+
+/** Nur für Rechner-Navigation / Progress (nicht der Konfig-Schritt `FunnelStep`). */
+/** Trust-Zwischenscreens im Bärenwald-Rechner (Navigation, kein Konfig-Schritt). */
+export type BwTrustScreenId =
+  | "trust_intro"
+  | "trust_preis"
+  | "trust_qualitaet";
+
+export function isBwTrustScreenId(step: string): step is BwTrustScreenId {
+  return (
+    step === "trust_intro" ||
+    step === "trust_preis" ||
+    step === "trust_qualitaet"
+  );
+}
+
+export function isFachdetailStep(step: string): boolean {
+  return step.startsWith("fachdetails_");
+}
+
+export function getFachdetailGewerk(step: string): string {
+  return step.replace(/^fachdetails_/, "");
 }
 
 export interface FunnelStep {
