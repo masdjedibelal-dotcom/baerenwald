@@ -256,7 +256,7 @@ export interface FachdetailsStepProps {
   totalGewerke: number;
   gewerkIndex: number;
   isLastFachdetailScreen: boolean;
-  showOmitHint: boolean;
+  showOmitHint?: boolean;
   state: FunnelState;
   onChange: (patch: Partial<FachdetailsState>) => void;
   className?: string;
@@ -1496,7 +1496,7 @@ export function FachdetailsStep({
           )}
         </section>
       ) : null}
-      {isLastFachdetailScreen && showOmitHint ? (
+      {isLastFachdetailScreen && (showOmitHint ?? false) ? (
         <div className="fachdetail-omit-hinweis">
           <p>
             Weitere Details zu anderen Gewerken klären wir beim Vor-Ort-Termin.

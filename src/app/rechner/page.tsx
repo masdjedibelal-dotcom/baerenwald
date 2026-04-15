@@ -537,6 +537,7 @@ function FunnelRechnerInner() {
   }, [screen, state, umfangOk]);
 
   const nextLabel = useMemo(() => {
+    if (screen === "trust_intro") return "Los geht's →";
     if (screen === "ort") return "Preis berechnen";
     if (screen === "lead") return "Absenden →";
     if (screen === "beratung-lead") return "Rückruf anfordern →";
@@ -545,10 +546,7 @@ function FunnelRechnerInner() {
     return "Weiter →";
   }, [screen, resultModus]);
 
-  const showFooterNav =
-    screen !== "danke" &&
-    screen !== "ausserhalb" &&
-    screen !== "trust_intro";
+  const showFooterNav = screen !== "danke" && screen !== "ausserhalb";
 
   const handleLeadSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -801,7 +799,7 @@ function FunnelRechnerInner() {
             isLastFachdetailScreen={
               gewerkIndex >= 0 && gewerkIndex === aktive.length - 1
             }
-            showOmitHint={state.showOmitHint}
+            showOmitHint={state.showOmitHint ?? false}
             state={state}
             onChange={setFachdetails}
           />
@@ -810,11 +808,11 @@ function FunnelRechnerInner() {
     }
     switch (screen) {
       case "trust_intro":
-        return <TrustScreen variant="intro" onWeiter={handleNext} />;
+        return <TrustScreen variant="intro" />;
       case "trust_preis":
-        return <TrustScreen variant="preis" onWeiter={handleNext} />;
+        return <TrustScreen variant="preis" />;
       case "trust_qualitaet":
-        return <TrustScreen variant="qualitaet" onWeiter={handleNext} />;
+        return <TrustScreen variant="qualitaet" />;
       case "situation":
         return (
           <StepWrapper
@@ -1346,14 +1344,7 @@ function FunnelRechnerInner() {
         isBwTrustScreenId(screen) && "trust-screen-active"
       )}
     >
-      {screen !== "trust_intro" ? (
-        <FunnelHeader
-          className={cn(
-            (screen === "trust_preis" || screen === "trust_qualitaet") &&
-              "funnel-header--trust-transparent"
-          )}
-        />
-      ) : null}
+      <FunnelHeader />
       <FunnelProgressBar currentStep={progressStep} />
       <main className="funnel-rechner-main w-full">{main()}</main>
       {showFooterNav ? (

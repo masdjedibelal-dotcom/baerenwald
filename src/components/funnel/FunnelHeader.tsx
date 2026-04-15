@@ -62,7 +62,7 @@ export function FunnelHeader({ className }: FunnelHeaderProps) {
     <>
       <header
         className={cn(
-          "sticky top-0 z-50 grid h-[60px] grid-cols-[1fr_auto_1fr] items-center gap-2 border-b border-border-default bg-surface-card/90 px-3 backdrop-blur-sm sm:px-6",
+          "funnel-header sticky top-0 z-50 grid h-[60px] grid-cols-[1fr_auto_1fr] items-center gap-2 border-b border-border-default bg-surface-card/90 px-3 backdrop-blur-sm sm:px-6",
           className
         )}
       >

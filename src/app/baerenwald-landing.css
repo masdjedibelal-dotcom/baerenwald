@@ -335,7 +335,7 @@
   /* Kein overflow-x:hidden: erzeugt auf iOS oft einen Scroll-Port im Hero
      und „hängenden“ Touch-Scroll beim Verlassen des Bereichs. */
   overflow: visible;
-  padding-bottom: 32px;
+  padding-bottom: 16px;
   background: linear-gradient(180deg, #f7f6f3 0%, #f3f1eb 100%);
   isolation: isolate;
 }
@@ -430,14 +430,14 @@
 .hero-section {
   position: relative;
   z-index: 2;
-  padding: 128px 2rem 110px;
+  padding: 128px 2rem 72px;
   max-width: 1100px;
   margin: 0 auto;
 }
 
 @media (max-width: 768px) {
   .hero-section {
-    padding: 108px 1.25rem 86px;
+    padding: 108px 1.25rem 56px;
   }
 }
 
@@ -927,8 +927,7 @@
 
 .how-section {
   background: var(--fl-bg);
-  /* Mehr Abstand nach oben: früher wirkte die Facts-Section als Puffer */
-  padding: 96px 2rem 80px;
+  padding: 40px 2rem 72px;
 }
 
 .how-section-inner {
@@ -5766,21 +5765,26 @@
 }
 
 /* ── Trust-Zwischenscreens (Rechner) ── */
+.trust-screen-wrap {
+  width: 100%;
+  max-width: 36rem;
+  margin: 0 auto;
+  padding: 0 1.5rem;
+}
+
 .trust-screen {
-  min-height: 100dvh;
+  min-height: unset;
+  height: auto;
   display: flex;
   flex-direction: column;
   background: var(--fl-accent-dark);
-}
-
-.trust-screen--under-header {
-  margin-top: -60px;
-  padding-top: 60px;
+  border-radius: var(--fl-radius);
+  overflow: hidden;
 }
 
 .trust-image-wrap {
   position: relative;
-  height: 55dvh;
+  height: 45dvh;
   flex-shrink: 0;
   overflow: hidden;
 }
@@ -5812,11 +5816,11 @@
 }
 
 .trust-content {
-  flex: 1;
-  padding: 24px 24px max(32px, env(safe-area-inset-bottom));
+  flex: 0 1 auto;
+  padding: 20px 24px max(24px, env(safe-area-inset-bottom));
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 10px;
 }
 
 .trust-eyebrow {
@@ -5843,53 +5847,25 @@
   color: rgba(255, 255, 255, 0.65);
   line-height: 1.65;
   margin: 0;
-  flex: 1;
 }
 
-.trust-cta {
-  width: 100%;
-  background: white;
-  color: var(--fl-accent-dark);
-  border: none;
-  border-radius: 999px;
-  padding: 16px 24px;
-  font-size: 16px;
-  font-weight: 800;
-  font-family: var(--fl-font-sans);
-  cursor: pointer;
-  margin-top: 8px;
-  transition: opacity 0.15s;
-  letter-spacing: -0.01em;
-}
-
-.trust-cta:hover {
-  opacity: 0.92;
-}
-
-.trust-skip {
-  position: absolute;
-  top: 16px;
-  right: 16px;
-  z-index: 10;
-  background: rgba(255, 255, 255, 0.15);
-  border: none;
-  border-radius: 999px;
-  padding: 8px 16px;
-  font-size: 13px;
-  font-weight: 600;
-  color: white;
-  cursor: pointer;
-  font-family: var(--fl-font-sans);
-  backdrop-filter: blur(8px);
+.trust-screen-active > header.funnel-header {
+  background: var(--surface-card) !important;
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border-light) !important;
+  box-shadow: none;
 }
 
 .trust-screen-active .funnel-progress {
   display: none;
 }
 
-.funnel-header--trust-transparent {
-  background: transparent !important;
-  border-bottom: none !important;
-  box-shadow: none !important;
-  backdrop-filter: none !important;
+@media (max-width: 640px) {
+  .trust-screen-wrap {
+    padding: 0;
+  }
+
+  .trust-screen {
+    border-radius: 0;
+  }
 }
