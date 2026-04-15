@@ -13,6 +13,7 @@ import {
   type ReactNode,
 } from "react";
 
+import { ProjektGalerie } from "@/components/home/ProjektGalerie";
 import { MarketingFooter } from "@/components/layout/MarketingFooter";
 import { SITE_CONFIG } from "@/lib/config";
 import type { Situation as FunnelSituation } from "@/lib/funnel/types";
@@ -24,36 +25,36 @@ import {
 } from "@/lib/search";
 const HOW_STEPS = [
   {
-    emoji: "🔍",
-    title: "Beschreib dein Vorhaben",
-    desc: "Bad renovieren, Heizung kaputt, Garten pflegen — in 2 Minuten siehst du was dein Projekt ungefähr kostet. Direkt online, ohne Anruf.",
+    emoji: "📞",
+    title: "Du rufst einmal an.",
+    desc: "Kein stundenlanges Erklären, kein Vergleichen von Angeboten. Du beschreibst was du dir vorstellst — wir machen daraus einen Plan.",
   },
   {
-    emoji: "📋",
-    title: "Wir koordinieren alles",
-    desc: "Ein Vor-Ort-Termin — dann übernehmen wir. Ob eigene Teams oder Partnerbetriebe: wir stimmen alle Handwerker ab, planen die Reihenfolge und melden uns wenn etwas fertig ist. Du sprichst nur noch mit uns.",
+    emoji: "🛠️",
+    title: "Wir übernehmen alles.",
+    desc: "Maler, Elektriker, Fliesenleger — wir wissen wer wann kommen muss und in welcher Reihenfolge. Du bekommst Updates. Keine Überraschungen.",
   },
   {
     emoji: "✓",
-    title: "Fertig. Eine Rechnung.",
-    desc: "Kein Abstimmen mit drei verschiedenen Betrieben. Keine drei Rechnungen. Alles läuft über Bärenwald — du lehnst dich zurück.",
+    title: "Du nimmst ab.",
+    desc: "Gemeinsame Abnahme, digitales Protokoll — und du weißt dass alles erledigt ist. So wie es sein sollte.",
   },
 ];
 
 const EINSATZ_BLOCKS = [
   {
     titel: "Ein Ansprechpartner",
-    text: "Maler, Elektriker, Bodenleger — wir koordinieren alle Handwerker. Du rufst einmal an, wir kümmern uns um den Rest.",
+    text: "Nicht drei Nummern die du anrufst. Nicht du als Projektmanager zwischen den Gewerken. Einer der alles kennt — und alles koordiniert.",
     variant: "dark" as const,
   },
   {
     titel: "Preistransparenz",
-    text: "Du siehst sofort was dein Projekt ungefähr kostet — bevor du überhaupt anrufst. Kein Preispoker, keine versteckten Kosten, kein böses Erwachen.",
+    text: "Du siehst was dein Projekt kostet bevor du überhaupt anrufst. Nach dem Termin ein verbindlicher Festpreis. Kein Nachtrag ohne deine Zustimmung.",
     variant: "mist" as const,
   },
   {
-    titel: "Du weißt immer was läuft",
-    text: "Automatische Status-Updates per Mail, digitales Abnahmeprotokoll mit Fotos — alles nachvollziehbar dokumentiert. Kein Anruf nötig. Kein Nachfragen. Du siehst was passiert.",
+    titel: "Immer auf dem Stand",
+    text: "Statusupdates während des Projekts. Digitales Abnahmeprotokoll am Ende. Du weißt immer was läuft — ohne einmal nachfragen zu müssen.",
     variant: "soft" as const,
   },
 ];
@@ -334,9 +335,9 @@ export default function BaerenwaldLandingClient({
                 <span className="hero-h1-line--3 au d3">Für alles.</span>
               </h1>
               <p className="hero-lead au d4">
-                Du rufst einmal an — wir koordinieren Maler, Elektriker, Bodenleger
-                und alle weiteren Handwerker. Kein Abstimmen, keine drei
-                Rechnungen.
+                Du willst renovieren — aber nicht drei Handwerker koordinieren,
+                auf Rückrufe warten und am Ende selbst nachfragen ob alles
+                stimmt. Bärenwald übernimmt das.
               </p>
               <form className="fade-up d1 hero-search-form" onSubmit={onSearch}>
                 <div ref={searchComboRef} className="hero-search-combo">
@@ -474,8 +475,12 @@ export default function BaerenwaldLandingClient({
       <section className="how-section" id="how">
         <div className="how-section-inner">
           <div className="how-tl-header fade-up">
-            <h2 className="how-h2">Wie es funktioniert</h2>
-            <p className="how-tl-sub">Drei klare Schritte von der ersten Idee bis zur fertigen Leistung.</p>
+            <h2 className="how-h2">So läuft es bei uns.</h2>
+            <p className="how-tl-sub">
+              Kein Abstimmen. Kein Nachfragen.
+              <br />
+              Kein Stress.
+            </p>
           </div>
           <div className="how-timeline-block">
             <div className="how-timeline-wrap">
@@ -514,8 +519,9 @@ export default function BaerenwaldLandingClient({
           <div className="vertrieb-ec-head fade-up">
             <h2 className="vertrieb-ec-h2">Warum Bärenwald?</h2>
             <p className="vertrieb-ec-sub">
-              Bei MyHammer vergleichst du Angebote und koordinierst selbst. Bei
-              Bärenwald rufst du einmal an — wir übernehmen den Rest.
+              Wir glauben dass Handwerk
+              <br />
+              anders geht.
             </p>
           </div>
           <div className="vertrieb-ec-grid">
@@ -530,6 +536,33 @@ export default function BaerenwaldLandingClient({
               </div>
             ))}
           </div>
+        </div>
+      </section>
+
+      <section
+        className="vision-section fade-up"
+        aria-labelledby="vision-heading"
+      >
+        <div className="vision-section-inner">
+          <p className="vision-eyebrow">Wer hinter Bärenwald steht</p>
+          <h2 id="vision-heading" className="vision-headline">
+            Gegründet weil Handwerk
+            <br />
+            besser geht.
+          </h2>
+          <p className="vision-text">
+            Wir haben Bärenwald 2020 gegründet weil wir selbst erlebt haben wie
+            frustrierend eine Renovierung sein kann. Drei verschiedene
+            Handwerker, drei verschiedene Meinungen — und niemand der das
+            Gesamtbild sieht.
+          </p>
+          <div className="vision-divider" aria-hidden />
+          <p className="vision-text">
+            Unsere Vision ist ein Handwerk das koordiniert, kommuniziert und
+            dokumentiert. Transparent von Anfang an — mit einem festen Preis,
+            einem festen Ansprechpartner und einem digitalen Protokoll am Ende.
+            So wie es sein sollte.
+          </p>
         </div>
       </section>
 
@@ -571,6 +604,8 @@ export default function BaerenwaldLandingClient({
           </div>
         </div>
       </section>
+
+      <ProjektGalerie />
 
       <section className="faq-section" id="faq">
         <div className="faq-inner">

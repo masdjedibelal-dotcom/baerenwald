@@ -13,7 +13,7 @@ const LABELS = [
 ] as const;
 
 export interface FunnelProgressBarProps {
-  currentStep: number;
+  currentStep: number | null;
   className?: string;
 }
 
@@ -42,10 +42,12 @@ export function FunnelProgressBar({
   currentStep,
   className,
 }: FunnelProgressBarProps) {
+  if (currentStep === null) return null;
+
   return (
     <div
       className={cn(
-        "border-b border-border-default bg-surface-card px-4 py-3",
+        "funnel-progress border-b border-border-default bg-surface-card px-4 py-3",
         className
       )}
     >

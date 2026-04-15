@@ -9,12 +9,10 @@ import {
 } from "react";
 
 import { SelectionTile } from "@/components/funnel/SelectionTile";
-import type { FachdetailsState, FunnelState } from "@/lib/funnel/types";
 import { isFachdetailGewerkChainComplete } from "@/lib/funnel/fachdetails-chain-complete";
+import type { FachdetailsState, FunnelState } from "@/lib/funnel/types";
 import {
-  countFachdetailGewerke,
   FACHDETAILS_NOTFALL,
-  getAktiveFachdetailGewerke,
   type FachdetailGewerkKey,
 } from "@/lib/funnel/fachdetails-notfall";
 import {
@@ -53,6 +51,55 @@ function asLibOptFromFach(o: FachdetailOptionDef): LibStepOption {
         ? "Kein Problem — wir rechnen mit einem Durchschnittswert"
         : undefined),
   };
+}
+
+const GEWERK_EMOJI: Record<FachdetailGewerkKey, string> = {
+  sanitaer: "🚿",
+  heizung: "🔥",
+  elektro: "⚡",
+  boden: "🪵",
+  maler: "🖌️",
+  dach: "🏠",
+  garten: "🌿",
+};
+
+const GEWERK_LABEL: Record<FachdetailGewerkKey, string> = {
+  sanitaer: "Sanitär & Bad",
+  heizung: "Heizung",
+  elektro: "Elektro",
+  boden: "Bodenbelag",
+  maler: "Malerarbeiten",
+  dach: "Dach",
+  garten: "Garten",
+};
+
+function getFachdetailIntroQuestionTitle(
+  gewerk: FachdetailGewerkKey,
+  isNotfall: boolean
+): string {
+  if (isNotfall) {
+    if (gewerk === "elektro") return FACHDETAILS_NOTFALL.elektro.title;
+    if (gewerk === "sanitaer") return FACHDETAILS_NOTFALL.sanitaer.title;
+    if (gewerk === "heizung") return FACHDETAILS_NOTFALL.heizung.title;
+  }
+  switch (gewerk) {
+    case "elektro":
+      return ELEKTRO_Q1.title;
+    case "sanitaer":
+      return SANITAER_Q1.title;
+    case "heizung":
+      return HEIZUNG_Q1.title;
+    case "maler":
+      return MALER_Q1.title;
+    case "boden":
+      return BODEN_Q1.title;
+    case "dach":
+      return DACH_Q1.title;
+    case "garten":
+      return GARTEN_Q1.title;
+    default:
+      return "Details";
+  }
 }
 
 function FollowUpPanel({
@@ -205,12 +252,22 @@ function SingleQuestionBlock({
 }
 
 export interface FachdetailsStepProps {
+  gewerk: FachdetailGewerkKey;
+  totalGewerke: number;
+  gewerkIndex: number;
+  isLastFachdetailScreen: boolean;
+  showOmitHint: boolean;
   state: FunnelState;
   onChange: (patch: Partial<FachdetailsState>) => void;
   className?: string;
 }
 
 export function FachdetailsStep({
+  gewerk,
+  totalGewerke,
+  gewerkIndex,
+  isLastFachdetailScreen,
+  showOmitHint,
   state,
   onChange,
   className,
@@ -218,16 +275,6 @@ export function FachdetailsStep({
   const b = state.bereiche;
   const fd = state.fachdetails;
   const isNotfall = state.situation === "notfall";
-  const aktiveGewerke = useMemo(
-    () => getAktiveFachdetailGewerke(b, 2),
-    [b]
-  );
-  const showOmitHint = countFachdetailGewerke(b) > 2;
-
-  const showGewerk = useCallback(
-    (g: FachdetailGewerkKey) => aktiveGewerke.includes(g),
-    [aktiveGewerke]
-  );
 
   const needElektro = useMemo(() => {
     const s = new Set(b);
@@ -344,63 +391,44 @@ export function FachdetailsStep({
     return GARTEN_FOLLOWUPS[id] ?? null;
   }, [fd.garten?.was]);
 
-  /** Reihenfolge wie im Layout — vorheriges Gewerk „fertig“, dann nächste Sektion. */
-  const gewerkUnlockOrder = useMemo((): FachdetailGewerkKey[] => {
-    const order: FachdetailGewerkKey[] = [
-      "elektro",
-      "sanitaer",
-      "heizung",
-      "maler",
-      "boden",
-      "dach",
-      "garten",
-    ];
-    return order.filter((g) => aktiveGewerke.includes(g));
-  }, [aktiveGewerke]);
-
-  const isGewerkChainComplete = useCallback(
-    (g: FachdetailGewerkKey): boolean =>
-      isFachdetailGewerkChainComplete(b, isNotfall, fd, g),
-    [b, isNotfall, fd]
-  );
-
-  const isGewerkSectionUnlocked = useCallback(
-    (g: FachdetailGewerkKey): boolean => {
-      const idx = gewerkUnlockOrder.indexOf(g);
-      if (idx <= 0) return true;
-      for (let j = 0; j < idx; j++) {
-        if (!isGewerkChainComplete(gewerkUnlockOrder[j])) return false;
-      }
-      return true;
-    },
-    [gewerkUnlockOrder, isGewerkChainComplete]
-  );
-
   return (
     <div className={cn("space-y-6", className)}>
+      <div className="fachdetail-header">
+        <div className="fachdetail-pill">
+          <span className="fachdetail-emoji" aria-hidden>
+            {GEWERK_EMOJI[gewerk]}
+          </span>
+          <span className="fachdetail-name">{GEWERK_LABEL[gewerk]}</span>
+          {totalGewerke > 1 ? (
+            <span className="fachdetail-count">
+              {gewerkIndex + 1} von {totalGewerke}
+            </span>
+          ) : null}
+        </div>
+        <h2 className="fachdetail-question">
+          {getFachdetailIntroQuestionTitle(gewerk, isNotfall)}
+        </h2>
+        <p className="fachdetail-why">
+          {isNotfall
+            ? "Damit wir vorbereitet sind wenn wir kommen."
+            : "Damit wir den Aufwand einschätzen können."}
+        </p>
+      </div>
+
       {b.includes("bad") &&
       (b.includes("elektro") ||
         b.includes("strom") ||
-        b.includes("elektrik")) ? (
+        b.includes("elektrik")) &&
+      (gewerk === "sanitaer" || gewerk === "elektro") ? (
         <p className="rounded-xl border border-border-default bg-surface-muted/90 px-3.5 py-2.5 text-[12px] leading-snug text-text-secondary">
           <span className="font-semibold text-text-primary">Bad + Elektro:</span>{" "}
           Wir koordinieren Wasser, Strom und Termine zwischen Sanitär- und
           Elektroarbeit — ein Ansprechpartner für den Ablauf.
         </p>
       ) : null}
-      {showOmitHint ? (
-        <p className="fachdetails-hinweis">
-          Weitere Details klären wir beim Vor-Ort-Termin.
-        </p>
-      ) : null}
 
-      {showGewerk("elektro") &&
-      needElektro &&
-      isGewerkSectionUnlocked("elektro") ? (
+      {gewerk === "elektro" && needElektro ? (
         <section className="space-y-3">
-          <p className="text-[11px] font-semibold uppercase tracking-wide text-text-tertiary">
-            Elektro
-          </p>
           {isNotfall ? (
             <SingleQuestionBlock
               q={FACHDETAILS_NOTFALL.elektro}
@@ -499,11 +527,8 @@ export function FachdetailsStep({
         </section>
       ) : null}
 
-      {showGewerk("sanitaer") && needSan && isGewerkSectionUnlocked("sanitaer") ? (
+      {gewerk === "sanitaer" && needSan ? (
         <section className="space-y-3">
-          <p className="text-[11px] font-semibold uppercase tracking-wide text-text-tertiary">
-            Sanitär
-          </p>
           {isNotfall ? (
             <SingleQuestionBlock
               q={FACHDETAILS_NOTFALL.sanitaer}
@@ -524,7 +549,7 @@ export function FachdetailsStep({
                 });
               }}
             />
-          ) : !isGewerkChainComplete("sanitaer") ? (
+          ) : !isFachdetailGewerkChainComplete(b, isNotfall, fd, "sanitaer") ? (
             <>
               {!fd.sanitaer?.lage ? (
                 <SingleQuestionBlock
@@ -757,13 +782,8 @@ export function FachdetailsStep({
         </section>
       ) : null}
 
-      {showGewerk("heizung") &&
-      needHeizung &&
-      isGewerkSectionUnlocked("heizung") ? (
+      {gewerk === "heizung" && needHeizung ? (
         <section className="space-y-3">
-          <p className="text-[11px] font-semibold uppercase tracking-wide text-text-tertiary">
-            Heizung
-          </p>
           {isNotfall ? (
             <SingleQuestionBlock
               q={FACHDETAILS_NOTFALL.heizung}
@@ -896,11 +916,8 @@ export function FachdetailsStep({
         </section>
       ) : null}
 
-      {showGewerk("maler") && needMaler && isGewerkSectionUnlocked("maler") ? (
+      {gewerk === "maler" && needMaler ? (
         <section className="space-y-3">
-          <p className="text-[11px] font-semibold uppercase tracking-wide text-text-tertiary">
-            Maler
-          </p>
           {!fd.maler?.was ? (
             <SingleQuestionBlock
               q={MALER_Q1}
@@ -1021,11 +1038,8 @@ export function FachdetailsStep({
         </section>
       ) : null}
 
-      {showGewerk("boden") && needBoden && isGewerkSectionUnlocked("boden") ? (
+      {gewerk === "boden" && needBoden ? (
         <section className="space-y-3">
-          <p className="text-[11px] font-semibold uppercase tracking-wide text-text-tertiary">
-            Bodenbelag
-          </p>
           {!fd.boden?.aktuell ? (
             <SingleQuestionBlock
               q={BODEN_Q1}
@@ -1113,11 +1127,8 @@ export function FachdetailsStep({
         </section>
       ) : null}
 
-      {showGewerk("dach") && needDach && isGewerkSectionUnlocked("dach") ? (
+      {gewerk === "dach" && needDach ? (
         <section className="space-y-3">
-          <p className="text-[11px] font-semibold uppercase tracking-wide text-text-tertiary">
-            Dach
-          </p>
           {!fd.dach?.vorhaben ? (
             <SingleQuestionBlock
               q={DACH_Q1}
@@ -1209,11 +1220,8 @@ export function FachdetailsStep({
         </section>
       ) : null}
 
-      {showGewerk("garten") && needGarten && isGewerkSectionUnlocked("garten") ? (
+      {gewerk === "garten" && needGarten ? (
         <section className="space-y-3">
-          <p className="text-[11px] font-semibold uppercase tracking-wide text-text-tertiary">
-            Garten
-          </p>
           {!fd.garten?.was ? (
             <SingleQuestionBlock
               q={GARTEN_Q1}
@@ -1487,6 +1495,13 @@ export function FachdetailsStep({
             </>
           )}
         </section>
+      ) : null}
+      {isLastFachdetailScreen && showOmitHint ? (
+        <div className="fachdetail-omit-hinweis">
+          <p>
+            Weitere Details zu anderen Gewerken klären wir beim Vor-Ort-Termin.
+          </p>
+        </div>
       ) : null}
     </div>
   );

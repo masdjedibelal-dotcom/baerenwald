@@ -13,6 +13,7 @@ import { LeadAvailabilityHint } from "@/components/funnel/ResultScreen";
 import { FunnelFooter } from "@/components/funnel/FunnelFooter";
 import { FunnelHeader } from "@/components/funnel/FunnelHeader";
 import { FunnelProgressBar } from "@/components/funnel/FunnelProgressBar";
+import { TrustScreen } from "@/components/funnel/TrustScreen";
 import { GroesseStep } from "@/components/funnel/GroesseStep";
 import { LoadingScreen } from "@/components/funnel/LoadingScreen";
 import { PhotoUpload } from "@/components/funnel/PhotoUpload";
@@ -28,9 +29,19 @@ import {
   BW_FUNNEL_PREIS_HINWEIS_ZUG_ZUSTAND,
   getResolvedStepsForSituation,
   groesseEinheitFromConfig,
-  isFachdetailsStepComplete,
   shouldSwapFachdetailsBeforeGroesse,
 } from "@/lib/funnel/config";
+import {
+  firstFachdetailsScreenId,
+  getBwRechnerScreenSequence,
+  getNextBwRechnerScreen,
+  getPreviousBwRechnerScreen,
+  getBwFachdetailGewerkFromScreen,
+  isBwFachdetailScreenId,
+  type FachdetailsScreenId,
+} from "@/lib/funnel/bw-rechner-sequence";
+import { isFachdetailGewerkChainComplete } from "@/lib/funnel/fachdetails-chain-complete";
+import { getAktiveFachdetailGewerke } from "@/lib/funnel/fachdetails-notfall";
 import { getBwFunnelProgressStep } from "@/lib/funnel/bw-funnel-progress";
 import {
   BW_FUNNEL_STEP1_OPTIONS,
@@ -51,6 +62,7 @@ import type {
   Zeitraum,
   Zugaenglichkeit,
 } from "@/lib/funnel/types";
+import { isBwTrustScreenId } from "@/lib/funnel/types";
 import { tileIconForStepValue } from "@/lib/funnel-tile-icons";
 import type { StepOption as LibStepOption } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -59,9 +71,12 @@ const LEAD_FORM_ID = "bw-funnel-lead";
 const BERATUNG_LEAD_FORM_ID = "bw-beratung-lead";
 
 type Screen =
+  | "trust_intro"
+  | "trust_preis"
+  | "trust_qualitaet"
   | "situation"
   | "bereiche"
-  | "fachdetails"
+  | FachdetailsScreenId
   | "kundentyp"
   | "umfang"
   | "zugaenglichkeit"
@@ -106,7 +121,7 @@ function FunnelRechnerInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const urlInit = useRef(false);
-  const [screen, setScreen] = useState<Screen>("situation");
+  const [screen, setScreen] = useState<Screen>("trust_intro");
   const [mindestauftragAktiv, setMindestauftrag] = useState(false);
   const [koordinationsRabatt, setKoordinationsRabatt] = useState(1.0);
   const [isAusserhalbLead, setIsAusserhalbLead] = useState(false);
@@ -265,21 +280,16 @@ function FunnelRechnerInner() {
   );
 
   const goPostGroesseChain = useCallback(() => {
-    if (hasFachdetailsStep) setScreen("fachdetails");
+    const firstFd = firstFachdetailsScreenId(state.bereiche);
+    if (firstFd) setScreen(firstFd);
     else if (hasKundentypStep) setScreen("kundentyp");
     else setScreen("ort");
-  }, [hasFachdetailsStep, hasKundentypStep]);
+  }, [hasKundentypStep, state.bereiche]);
 
   const goGroesseOrPostGroesse = useCallback(() => {
     if (hasGroesseStep) setScreen("groesse");
     else goPostGroesseChain();
   }, [hasGroesseStep, goPostGroesseChain]);
-
-  const goAfterUmfang = useCallback(() => {
-    if (stepZugaenglichkeit) setScreen("zugaenglichkeit");
-    else if (stepZustand) setScreen("zustand");
-    else goGroesseOrPostGroesse();
-  }, [stepZugaenglichkeit, stepZustand, goGroesseOrPostGroesse]);
 
   const goAfterZugaenglichkeit = useCallback(() => {
     if (stepZustand) setScreen("zustand");
@@ -288,13 +298,56 @@ function FunnelRechnerInner() {
 
   const goAfterZustandScreen = useCallback(() => {
     if (fachdetailsBeforeGroesse && hasFachdetailsStep) {
-      setScreen("fachdetails");
-      return;
+      const firstFd = firstFachdetailsScreenId(state.bereiche);
+      if (firstFd) {
+        setScreen(firstFd);
+        return;
+      }
     }
     goGroesseOrPostGroesse();
-  }, [fachdetailsBeforeGroesse, hasFachdetailsStep, goGroesseOrPostGroesse]);
+  }, [
+    fachdetailsBeforeGroesse,
+    hasFachdetailsStep,
+    goGroesseOrPostGroesse,
+    state.bereiche,
+  ]);
 
   const handleNext = useCallback(() => {
+    const fachGewerk = getBwFachdetailGewerkFromScreen(screen);
+    if (fachGewerk) {
+      if (
+        !isFachdetailGewerkChainComplete(
+          state.bereiche,
+          state.situation === "notfall",
+          state.fachdetails,
+          fachGewerk
+        )
+      ) {
+        return;
+      }
+      const next = getNextBwRechnerScreen(state, screen);
+      if (next) {
+        if (
+          next === "groesse" &&
+          fachdetailsBeforeGroesse &&
+          hasGroesseStep
+        ) {
+          setMicroNote({
+            target: "groesse",
+            text: "Fast geschafft — noch die ungefähre Fläche",
+          });
+        }
+        setScreen(next as Screen);
+      }
+      return;
+    }
+
+    if (isBwTrustScreenId(screen)) {
+      const nextTrust = getNextBwRechnerScreen(state, screen);
+      if (nextTrust) setScreen(nextTrust as Screen);
+      return;
+    }
+
     switch (screen) {
       case "situation":
         if (state.situation) setScreen("bereiche");
@@ -303,31 +356,23 @@ function FunnelRechnerInner() {
         if (state.bereiche.length > 0) {
           if (isB2bSituation(state.situation)) setScreen("beratung-lead");
           else {
-            setScreen("umfang");
+            const nextAfterBereiche = getNextBwRechnerScreen(
+              state,
+              "bereiche"
+            );
+            if (nextAfterBereiche) setScreen(nextAfterBereiche as Screen);
+            else setScreen("umfang");
           }
-        }
-        break;
-      case "fachdetails":
-        if (isFachdetailsStepComplete(state)) {
-          if (fachdetailsBeforeGroesse && hasGroesseStep) {
-            setMicroNote({
-              target: "groesse",
-              text: "Fast geschafft — noch die ungefähre Fläche",
-            });
-            setScreen("groesse");
-            break;
-          }
-          const nextAfterFach: Screen = hasKundentypStep
-            ? "kundentyp"
-            : "ort";
-          setScreen(nextAfterFach);
         }
         break;
       case "kundentyp":
         if (state.kundentyp) setScreen("ort");
         break;
       case "umfang":
-        if (umfangOk) goAfterUmfang();
+        if (umfangOk) {
+          const nextAfterUmfang = getNextBwRechnerScreen(state, "umfang");
+          if (nextAfterUmfang) setScreen(nextAfterUmfang as Screen);
+        }
         break;
       case "zugaenglichkeit":
         if (state.zugaenglichkeit) goAfterZugaenglichkeit();
@@ -341,7 +386,10 @@ function FunnelRechnerInner() {
             if (hasKundentypStep) setScreen("kundentyp");
             else setScreen("ort");
           } else if (hasFachdetailsStep) {
-            setScreen("fachdetails");
+            const firstFd = firstFachdetailsScreenId(state.bereiche);
+            if (firstFd) setScreen(firstFd);
+            else if (hasKundentypStep) setScreen("kundentyp");
+            else setScreen("ort");
           } else if (hasKundentypStep) {
             setScreen("kundentyp");
           } else {
@@ -393,7 +441,6 @@ function FunnelRechnerInner() {
     state,
     umfangOk,
     goGroesseOrPostGroesse,
-    goAfterUmfang,
     goAfterZugaenglichkeit,
     goAfterZustandScreen,
     fachdetailsBeforeGroesse,
@@ -404,92 +451,13 @@ function FunnelRechnerInner() {
   ]);
 
   const handleBack = useCallback(() => {
+    const seq = getBwRechnerScreenSequence(state);
+    const idx = seq.indexOf(screen);
+    if (idx > 0) {
+      setScreen(seq[idx - 1] as Screen);
+      return;
+    }
     switch (screen) {
-      case "bereiche":
-        setScreen("situation");
-        break;
-      case "kundentyp":
-        if (fachdetailsBeforeGroesse) {
-          if (hasGroesseStep) setScreen("groesse");
-          else if (hasFachdetailsStep) setScreen("fachdetails");
-          else if (stepZustand) setScreen("zustand");
-          else if (stepZugaenglichkeit) setScreen("zugaenglichkeit");
-          else setScreen("umfang");
-        } else {
-          if (hasFachdetailsStep) setScreen("fachdetails");
-          else if (hasGroesseStep) setScreen("groesse");
-          else if (stepZustand) setScreen("zustand");
-          else if (stepZugaenglichkeit) setScreen("zugaenglichkeit");
-          else setScreen("umfang");
-        }
-        break;
-      case "fachdetails":
-        if (fachdetailsBeforeGroesse) {
-          if (stepZustand) setScreen("zustand");
-          else if (stepZugaenglichkeit) setScreen("zugaenglichkeit");
-          else setScreen("umfang");
-        } else if (hasGroesseStep) {
-          setScreen("groesse");
-        } else {
-          setScreen("umfang");
-        }
-        break;
-      case "umfang":
-        setScreen("bereiche");
-        break;
-      case "zugaenglichkeit":
-        setScreen("umfang");
-        break;
-      case "zustand":
-        if (stepZugaenglichkeit) setScreen("zugaenglichkeit");
-        else setScreen("umfang");
-        break;
-      case "groesse":
-        if (fachdetailsBeforeGroesse && hasFachdetailsStep) {
-          setScreen("fachdetails");
-        } else if (stepZustand) {
-          setScreen("zustand");
-        } else if (stepZugaenglichkeit) {
-          setScreen("zugaenglichkeit");
-        } else {
-          setScreen("umfang");
-        }
-        break;
-      case "ort": {
-        if (hasKundentypStep) {
-          setScreen("kundentyp");
-          break;
-        }
-        if (fachdetailsBeforeGroesse) {
-          if (hasGroesseStep) {
-            setScreen("groesse");
-            break;
-          }
-          if (hasFachdetailsStep) {
-            setScreen("fachdetails");
-            break;
-          }
-        } else {
-          if (hasFachdetailsStep) {
-            setScreen("fachdetails");
-            break;
-          }
-          if (hasGroesseStep) {
-            setScreen("groesse");
-            break;
-          }
-        }
-        if (stepZustand) {
-          setScreen("zustand");
-          break;
-        }
-        if (stepZugaenglichkeit) {
-          setScreen("zugaenglichkeit");
-          break;
-        }
-        setScreen("umfang");
-        break;
-      }
       case "loading":
         setScreen("ort");
         break;
@@ -508,25 +476,28 @@ function FunnelRechnerInner() {
       default:
         break;
     }
-  }, [
-    screen,
-    hasGroesseStep,
-    hasFachdetailsStep,
-    state.situation,
-    stepZustand,
-    stepZugaenglichkeit,
-    hasKundentypStep,
-    fachdetailsBeforeGroesse,
-  ]);
+  }, [screen, state]);
 
   const nextDisabled = useMemo(() => {
+    if (isBwFachdetailScreenId(screen)) {
+      const g = getBwFachdetailGewerkFromScreen(screen);
+      if (!g) return true;
+      return !isFachdetailGewerkChainComplete(
+        state.bereiche,
+        state.situation === "notfall",
+        state.fachdetails,
+        g
+      );
+    }
     switch (screen) {
+      case "trust_intro":
+      case "trust_preis":
+      case "trust_qualitaet":
+        return false;
       case "situation":
         return !state.situation;
       case "bereiche":
         return state.bereiche.length === 0;
-      case "fachdetails":
-        return !isFachdetailsStepComplete(state);
       case "kundentyp":
         return !state.kundentyp;
       case "umfang":
@@ -574,7 +545,10 @@ function FunnelRechnerInner() {
     return "Weiter →";
   }, [screen, resultModus]);
 
-  const showFooterNav = screen !== "danke" && screen !== "ausserhalb";
+  const showFooterNav =
+    screen !== "danke" &&
+    screen !== "ausserhalb" &&
+    screen !== "trust_intro";
 
   const handleLeadSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -809,7 +783,38 @@ function FunnelRechnerInner() {
   }, [state.selectedSlot]);
 
   const main = () => {
+    if (isBwFachdetailScreenId(screen)) {
+      const g = getBwFachdetailGewerkFromScreen(screen);
+      if (!g) return null;
+      const aktive = getAktiveFachdetailGewerke(state.bereiche, 2);
+      const gewerkIndex = aktive.indexOf(g);
+      return (
+        <StepWrapper
+          stepLabel="Details"
+          animateKey={`${screen}-${state.bereiche.join(",")}`}
+          banner={microBannerFor(screen)}
+        >
+          <FachdetailsStep
+            gewerk={g}
+            totalGewerke={aktive.length}
+            gewerkIndex={gewerkIndex >= 0 ? gewerkIndex : 0}
+            isLastFachdetailScreen={
+              gewerkIndex >= 0 && gewerkIndex === aktive.length - 1
+            }
+            showOmitHint={state.showOmitHint}
+            state={state}
+            onChange={setFachdetails}
+          />
+        </StepWrapper>
+      );
+    }
     switch (screen) {
+      case "trust_intro":
+        return <TrustScreen variant="intro" onWeiter={handleNext} />;
+      case "trust_preis":
+        return <TrustScreen variant="preis" onWeiter={handleNext} />;
+      case "trust_qualitaet":
+        return <TrustScreen variant="qualitaet" onWeiter={handleNext} />;
       case "situation":
         return (
           <StepWrapper
@@ -866,17 +871,6 @@ function FunnelRechnerInner() {
             tilesCard
           >
             {renderTiles(stepBereiche)}
-          </StepWrapper>
-        );
-
-      case "fachdetails":
-        return (
-          <StepWrapper
-            question="Fachdetails"
-            subtext="Folgefragen sind optional — „Weiß ich nicht“ ist immer möglich."
-            animateKey={`${screen}-${state.bereiche.join(",")}`}
-          >
-            <FachdetailsStep state={state} onChange={setFachdetails} />
           </StepWrapper>
         );
 
@@ -1343,16 +1337,35 @@ function FunnelRechnerInner() {
     }
   };
 
+  const progressStep = getBwFunnelProgressStep(screen);
+
   return (
-    <div className="min-h-dvh funnel-main--strip-a">
-      <FunnelHeader />
-      <FunnelProgressBar currentStep={getBwFunnelProgressStep(screen)} />
+    <div
+      className={cn(
+        "min-h-dvh funnel-main--strip-a",
+        isBwTrustScreenId(screen) && "trust-screen-active"
+      )}
+    >
+      {screen !== "trust_intro" ? (
+        <FunnelHeader
+          className={cn(
+            (screen === "trust_preis" || screen === "trust_qualitaet") &&
+              "funnel-header--trust-transparent"
+          )}
+        />
+      ) : null}
+      <FunnelProgressBar currentStep={progressStep} />
       <main className="funnel-rechner-main w-full">{main()}</main>
       {showFooterNav ? (
         <FunnelFooter
           onNext={handleNext}
           onBack={() => {
             if (screen === "situation") {
+              const prevSit = getPreviousBwRechnerScreen(state, "situation");
+              if (prevSit) {
+                setScreen(prevSit as Screen);
+                return;
+              }
               router.push("/");
               return;
             }
