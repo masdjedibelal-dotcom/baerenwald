@@ -90,7 +90,7 @@ export interface FunnelState {
   zustand: ObjektZustand | null;
   fachdetails: FachdetailsState;
   /** Mehr als zwei Fachdetail-Gewerke möglich — es werden nur zwei abgefragt */
-  showOmitHint: boolean;
+  showOmitHint?: boolean;
   photos: File[];
   name: string;
   vorname: string;
