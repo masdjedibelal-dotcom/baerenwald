@@ -15,9 +15,9 @@ export type Kundentyp =
 /** Gewünschter Start / Dringlichkeit (PLZ-Schritt) */
 export type Zeitraum = "sofort" | "heute" | "woche" | "flexibel";
 
-export type Zugaenglichkeit = "einfach" | "mittel" | "schwer";
+export type Zugaenglichkeit = "einfach" | "mittel" | "schwer" | "unknown";
 
-export type ObjektZustand = "gut" | "mittel" | "schlecht";
+export type ObjektZustand = "gut" | "mittel" | "schlecht" | "unknown";
 
 export type BudgetCheck = "ok" | "zu_hoch" | null;
 

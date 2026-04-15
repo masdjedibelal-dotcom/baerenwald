@@ -163,6 +163,7 @@ export const ZUGAENGLICHKEIT_FAKTOR = {
   einfach: 1.0,
   mittel: 1.3,
   schwer: 1.6,
+  unknown: 1.1,
 } as const;
 
 /** Zustand der Fläche / Substanz */
@@ -170,6 +171,7 @@ export const ZUSTAND_FAKTOR = {
   gut: 1.0,
   mittel: 1.4,
   schlecht: 2.0,
+  unknown: 1.1,
 } as const;
 
 /**
@@ -744,11 +746,22 @@ function collectMappedEchtLines(state: FunnelState): PriceLineItem[] {
 /** Kurztext für die Ergebnis-Karte (Preisfaktoren) */
 export function getBwPreisFaktorHint(state: FunnelState): string {
   const parts: string[] = [];
-  if (state.zugaenglichkeit && state.zugaenglichkeit !== "einfach") {
+  if (
+    state.zugaenglichkeit &&
+    state.zugaenglichkeit !== "einfach" &&
+    state.zugaenglichkeit !== "unknown"
+  ) {
     parts.push("Zugänglichkeit");
   }
-  if (state.zustand && state.zustand !== "gut") {
+  if (
+    state.zustand &&
+    state.zustand !== "gut" &&
+    state.zustand !== "unknown"
+  ) {
     parts.push("Zustand der Fläche");
+  }
+  if (state.zugaenglichkeit === "unknown" || state.zustand === "unknown") {
+    parts.push("Unsicherheit bei Angaben");
   }
   if (state.dringlichkeit === "akut") {
     parts.push("Soforteinsatz");

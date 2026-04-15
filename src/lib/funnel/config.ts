@@ -1,6 +1,5 @@
-import {
-  getAktiveFachdetailGewerke,
-} from "./fachdetails-notfall";
+import { isFachdetailGewerkChainComplete } from "./fachdetails-chain-complete";
+import { getAktiveFachdetailGewerke } from "./fachdetails-notfall";
 import {
   shouldSwapFachdetailsBeforeGroesse,
   skipGroesseForSanierenDachKleinjob,
@@ -249,9 +248,8 @@ export function getKundentypOptions(situation: Situation): StepOption[] {
 export function getKundentypStep(situation: Situation): FunnelStep {
   return {
     id: "kundentyp",
-    question: "Für wen ist das Objekt?",
-    subtext:
-      "Damit wir die richtigen Fragen stellen.\nHilft uns bei Zugang, Abstimmung und Planung — überspringen geht auch.",
+    question: "Für wen ist das Projekt?",
+    subtext: "Das hilft uns bei Planung und Abstimmung",
     inputType: "tiles-single",
     options: getKundentypOptions(situation),
   };
@@ -313,8 +311,8 @@ export const SITUATIONEN_CONFIG: Record<
     steps: [
       {
         id: "renovieren_bereiche",
-        question: "Was soll renoviert werden?",
-        subtext: "Mehrfachauswahl möglich.",
+        question: "Was soll gemacht werden?",
+        subtext: "Wähle die Bereiche aus, die betroffen sind.",
         inputType: "tiles-multi",
         options: [
           {
@@ -366,15 +364,13 @@ export const SITUATIONEN_CONFIG: Record<
       },
       {
         id: "renovieren_umfang",
-        question: "In welchem Umfang soll renoviert werden?",
-        subtext:
-          "Tippe auf eine Option — wir erklären was das bedeutet.",
+        question: "In welchem Umfang soll das Projekt umgesetzt werden?",
         inputType: "tiles-single",
         options: [
           {
             value: "auffrischen",
-            label: "Nur auffrischen",
-            hint: "Kleines Auffrischen",
+            label: "Kleines Auffrischen",
+            hint: "Nur einzelne Bereiche oder optische Verbesserungen",
             emoji: "✨",
             faktor: 1.0,
             infoText:
@@ -383,7 +379,7 @@ export const SITUATIONEN_CONFIG: Record<
           {
             value: "teil",
             label: "Teilrenovierung",
-            hint: "Teilrenovierung",
+            hint: "Mehrere Bereiche werden überarbeitet",
             emoji: "🔨",
             faktor: 1.5,
             infoText:
@@ -392,7 +388,7 @@ export const SITUATIONEN_CONFIG: Record<
           {
             value: "komplett",
             label: "Komplettrenovierung",
-            hint: "Komplettrenovierung",
+            hint: "Alles wird neu gemacht",
             emoji: "🏗️",
             faktor: 2.2,
             infoText:
@@ -400,8 +396,8 @@ export const SITUATIONEN_CONFIG: Record<
           },
           {
             value: "unsicher",
-            label: "Ich bin noch nicht sicher",
-            hint: "Wir beraten beim Termin",
+            label: "Noch nicht sicher",
+            hint: "Wir beraten dich beim Termin",
             emoji: "💭",
             faktor: 1.1,
             infoText:
@@ -427,8 +423,8 @@ export const SITUATIONEN_CONFIG: Record<
     steps: [
       {
         id: "sanieren_bereiche",
-        question: "Was soll erneuert werden?",
-        subtext: "Mehrfachauswahl möglich.",
+        question: "Was soll gemacht werden?",
+        subtext: "Wähle die Bereiche aus, die betroffen sind.",
         inputType: "tiles-multi",
         options: [
           {
@@ -924,13 +920,13 @@ export function bereicheNeedFachdetails(bereiche: string[]): boolean {
 /** Dynamische Detailfragen je Gewerk */
 export const BW_FUNNEL_STEP_FACHDETAILS: FunnelStep = {
   id: "fachdetails",
-  question: "Ein paar Detailfragen",
+  question: "Fachdetails",
   subtext:
-    "Je sichtbarem Bereich die Hauptfrage beantworten — Folgefragen und „Weiß ich nicht“ sind möglich.",
+    "Pro sichtbarem Gewerk nacheinander beantworten — Folgefragen erscheinen erst nach der jeweiligen Antwort; „Weiß ich nicht“ ist möglich.",
   inputType: "fachdetails",
 };
 
-/** Weiter nur wenn je sichtbarem Block (max. 2) die Hauptfrage beantwortet ist */
+/** Weiter nur wenn je sichtbarem Block (max. 2) die gestaffelten Fragen vollständig beantwortet sind */
 export function isFachdetailsStepComplete(state: {
   situation: Situation | null;
   bereiche: string[];
@@ -943,66 +939,44 @@ export function isFachdetailsStepComplete(state: {
   const active = getAktiveFachdetailGewerke(b, 2);
 
   for (const g of active) {
-    switch (g) {
-      case "elektro":
-        if (!fd.elektro?.problem) return false;
-        break;
-      case "sanitaer":
-        if (notfall) {
-          if (!fd.sanitaer?.notfallSchwere) return false;
-        } else {
-          if (!fd.sanitaer?.lage) return false;
-          if (b.includes("bad") && !fd.sanitaer?.badWas) return false;
-        }
-        break;
-      case "heizung":
-        if (!fd.heizung?.typ) return false;
-        break;
-      case "maler":
-        if (!fd.maler?.was) return false;
-        break;
-      case "boden":
-        if (!fd.boden?.aktuell) return false;
-        break;
-      case "dach":
-        if (!fd.dach?.vorhaben) return false;
-        break;
-      case "garten":
-        if (!fd.garten?.was) return false;
-        break;
-      default:
-        break;
-    }
+    if (!isFachdetailGewerkChainComplete(b, notfall, fd, g)) return false;
   }
   return true;
 }
 
+/** Kurz-Hinweis unter Zugänglichkeit + Zustand (Rechner) */
+export const BW_FUNNEL_PREIS_HINWEIS_ZUG_ZUSTAND =
+  "Diese Angabe hilft uns, den Preis genauer einzuschätzen.";
+
 /** Nach Umfang/Planung — für Preisfaktor Zugänglichkeit (renovieren / sanieren / neubauen) */
 export const BW_FUNNEL_STEP_ZUGAENGLICHKEIT: FunnelStep = {
   id: "zugaenglichkeit",
-  question: "Wie gut ist das Objekt erreichbar?",
+  question: "Wie einfach kommen wir an die Baustelle?",
   inputType: "tiles-single",
   options: [
     {
       value: "einfach",
       label: "Einfach erreichbar",
-      hint: "Erdgeschoss oder Lift",
-      emoji: "✅",
+      hint: "Erdgeschoss oder mit Aufzug",
       faktor: 1.0,
     },
     {
       value: "mittel",
       label: "Etwas aufwendiger",
-      hint: "Hohes Stockwerk, enger Aufgang",
-      emoji: "⚠️",
+      hint: "Ohne Aufzug oder längere Wege",
       faktor: 1.3,
     },
     {
       value: "schwer",
       label: "Schwer zugänglich",
-      hint: "Dachgeschoss, Keller, enge Zufahrt",
-      emoji: "🔴",
+      hint: "Altbau, eng oder schwierig erreichbar",
       faktor: 1.6,
+    },
+    {
+      value: "unknown",
+      label: "Weiß ich nicht",
+      hint: "Kein Problem — wir berücksichtigen das beim Termin",
+      faktor: 1.1,
     },
   ],
 };
@@ -1010,32 +984,84 @@ export const BW_FUNNEL_STEP_ZUGAENGLICHKEIT: FunnelStep = {
 /** Nach Zugänglichkeit — nur renovieren / sanieren (Preisfaktor Zustand) */
 export const BW_FUNNEL_STEP_ZUSTAND: FunnelStep = {
   id: "zustand",
-  question: "Wie ist der aktuelle Zustand?",
+  question: "Wie ist der Zustand der Räume?",
   inputType: "tiles-single",
   options: [
     {
       value: "gut",
       label: "Gepflegt",
-      hint: "Wirkt gepflegt, ggf. optisch veraltet",
-      emoji: "✅",
+      hint: "Alles funktioniert, nur optisch verbessern",
       faktor: 1.0,
     },
     {
       value: "mittel",
       label: "Normale Abnutzung",
-      hint: "Risse, kleine Schäden, abgenutzt",
-      emoji: "🟡",
+      hint: "Böden oder Wände älter, kleinere Schäden",
       faktor: 1.4,
     },
     {
       value: "schlecht",
       label: "Sanierungsbedürftig",
-      hint: "Starke Schäden, viel muss erneuert werden",
-      emoji: "🔴",
+      hint: "Mehrere Dinge müssen erneuert werden",
       faktor: 2.0,
+    },
+    {
+      value: "unknown",
+      label: "Weiß ich nicht",
+      hint: "Kein Problem — wir rechnen mit einem Durchschnittswert",
+      faktor: 1.1,
     },
   ],
 };
+
+/** Dynamische Zustands-Frage je nach gewählten Bereichen */
+export function getZustandQuestionForBereiche(bereiche: string[]): string {
+  const b = new Set(bereiche);
+  if (b.has("bad")) return "Wie ist der Zustand vom Bad?";
+  if (b.has("heizung") || b.has("sanitaer") || b.has("wasser")) {
+    return "Wie ist der Zustand der Anlage?";
+  }
+  if (b.has("elektro") || b.has("strom") || b.has("elektrik")) {
+    return "Wie alt wirkt die Elektrik?";
+  }
+  if (b.has("boden") || b.has("waende_boeden")) {
+    return "Wie ist der Zustand vom Boden?";
+  }
+  return "Wie ist der Zustand der Räume?";
+}
+
+/** @see getZustandQuestionForBereiche — API mit State-Schnittstelle */
+export function getZustandLabel(
+  state: Pick<FunnelState, "bereiche">
+): string {
+  return getZustandQuestionForBereiche(state.bereiche);
+}
+
+/** Zugänglichkeit: nur renovieren / sanieren / neubauen; nicht bei Mini-Jobs (ein Bereich ohne großen Umfang). */
+export function shouldIncludeZugaenglichkeitStep(
+  situation: Situation,
+  umfang: string | null,
+  bereiche: string[]
+): boolean {
+  if (!["renovieren", "sanieren", "neubauen"].includes(situation)) return false;
+  if (!umfang) return false;
+  if (situation === "neubauen") return true;
+  if (bereiche.length === 1 && umfang !== "komplett") return false;
+  return true;
+}
+
+/** Zustand: renovieren & sanieren immer (wenn Schritt eingebunden); neubauen nur bei Bestand (Keller/DG, Umbau, Anbau). */
+export function shouldIncludeZustandStep(
+  situation: Situation,
+  bereiche: string[]
+): boolean {
+  if (situation === "renovieren" || situation === "sanieren") return true;
+  if (situation === "neubauen") {
+    const b = new Set(bereiche);
+    return b.has("ausbau") || b.has("bau");
+  }
+  return false;
+}
 
 function insertBeforeGroesse(
   steps: FunnelStep[],
@@ -1054,7 +1080,8 @@ function insertBeforeGroesse(
 export function getResolvedStepsForSituation(
   situation: Situation | null,
   bereiche: string[],
-  fachdetails?: FachdetailsState
+  fachdetails?: FachdetailsState,
+  umfang: string | null = null
 ): FunnelStep[] {
   if (!situation) return [];
   const cfg = SITUATIONEN_CONFIG[situation];
@@ -1073,13 +1100,24 @@ export function getResolvedStepsForSituation(
 
   let steps = [...cfg.steps];
 
-  if (situation === "renovieren" || situation === "sanieren") {
-    steps = insertBeforeGroesse(steps, [
-      BW_FUNNEL_STEP_ZUGAENGLICHKEIT,
-      BW_FUNNEL_STEP_ZUSTAND,
-    ]);
-  } else if (situation === "neubauen") {
-    steps = insertBeforeGroesse(steps, [BW_FUNNEL_STEP_ZUGAENGLICHKEIT]);
+  const zugZustandSteps: FunnelStep[] = [];
+  if (
+    situation === "renovieren" ||
+    situation === "sanieren" ||
+    situation === "neubauen"
+  ) {
+    if (shouldIncludeZugaenglichkeitStep(situation, umfang, bereiche)) {
+      zugZustandSteps.push(BW_FUNNEL_STEP_ZUGAENGLICHKEIT);
+    }
+    if (shouldIncludeZustandStep(situation, bereiche)) {
+      zugZustandSteps.push({
+        ...BW_FUNNEL_STEP_ZUSTAND,
+        question: getZustandLabel({ bereiche }),
+      });
+    }
+    if (zugZustandSteps.length > 0) {
+      steps = insertBeforeGroesse(steps, zugZustandSteps);
+    }
   }
 
   if (bereicheNeedFachdetails(bereiche)) {

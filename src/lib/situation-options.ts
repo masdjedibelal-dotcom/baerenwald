@@ -4,7 +4,7 @@ import type { Situation } from "@/lib/types";
 export type SituationTagType = "multi" | "abo" | "notfall";
 
 /** Tags für den Bärenwald-Rechner (Schritt 1) — inkl. B2B */
-export type BwFunnelStep1TagType = "multi" | "abo" | "notfall" | "neutral";
+export type BwFunnelStep1TagType = "multi" | "abo" | "notfall";
 
 export const SITUATION_OPTIONS: {
   id: Situation;
@@ -99,16 +99,12 @@ export const BW_FUNNEL_STEP1_OPTIONS: {
     label: "Gewerbe oder Büro",
     hint: "Büro, Laden, Praxis, Lager — wir planen individuell mit dir",
     emoji: "🏢",
-    tag: "B2B",
-    tagType: "neutral",
   },
   {
     id: "gastro",
     label: "Gastronomie",
     hint: "Restaurant, Café, Bar, Hotel — komplex und individuell",
     emoji: "🍽️",
-    tag: "B2B",
-    tagType: "neutral",
   },
 ];
 
