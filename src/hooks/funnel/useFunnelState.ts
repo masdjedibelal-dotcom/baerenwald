@@ -77,6 +77,7 @@ export function createInitialBwFunnelState(): FunnelState {
     zugaenglichkeit: null,
     zustand: null,
     fachdetails: {},
+    /** Mehr als zwei Fachdetail-Gewerke — Hinweis im Funnel */
     showOmitHint: false,
     photos: [],
     name: "",
@@ -87,7 +88,7 @@ export function createInitialBwFunnelState(): FunnelState {
     telefon: "",
     selectedSlot: null,
     submitted: false,
-  };
+  } satisfies FunnelState;
 }
 
 function bwFunnelReducer(
