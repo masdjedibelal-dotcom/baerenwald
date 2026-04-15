@@ -57,38 +57,46 @@ export type BwFunnelAction =
   | { type: "SET_KUNDENTYP"; value: Kundentyp | null }
   | { type: "RESET" };
 
+/** Vollständiger Default — muss alle `FunnelState`-Felder setzen (inkl. `showOmitHint`). */
+export const BW_FUNNEL_INITIAL_STATE: FunnelState = {
+  situation: null,
+  bereiche: [],
+  kundentyp: null,
+  umfang: null,
+  umfangFaktor: 1,
+  groesse: null,
+  groesseEinheit: null,
+  plz: "",
+  zeitraum: null,
+  priceMin: 0,
+  priceMax: 0,
+  breakdown: [],
+  istFallback: false,
+  budgetCheck: null,
+  dringlichkeit: null,
+  zugaenglichkeit: null,
+  zustand: null,
+  fachdetails: {},
+  showOmitHint: false,
+  photos: [],
+  name: "",
+  vorname: "",
+  nachname: "",
+  leadBeschreibung: "",
+  email: "",
+  telefon: "",
+  selectedSlot: null,
+  submitted: false,
+};
+
 export function createInitialBwFunnelState(): FunnelState {
   return {
-    situation: null,
+    ...BW_FUNNEL_INITIAL_STATE,
     bereiche: [],
-    kundentyp: null,
-    umfang: null,
-    umfangFaktor: 1,
-    groesse: null,
-    groesseEinheit: null,
-    plz: "",
-    zeitraum: null,
-    priceMin: 0,
-    priceMax: 0,
     breakdown: [],
-    istFallback: false,
-    budgetCheck: null,
-    dringlichkeit: null,
-    zugaenglichkeit: null,
-    zustand: null,
     fachdetails: {},
-    /** Mehr als zwei Fachdetail-Gewerke — Hinweis im Funnel */
-    showOmitHint: false,
     photos: [],
-    name: "",
-    vorname: "",
-    nachname: "",
-    leadBeschreibung: "",
-    email: "",
-    telefon: "",
-    selectedSlot: null,
-    submitted: false,
-  } satisfies FunnelState;
+  };
 }
 
 function bwFunnelReducer(
