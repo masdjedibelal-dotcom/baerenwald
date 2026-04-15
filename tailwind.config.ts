@@ -33,9 +33,9 @@ const config: Config = {
           dark: "#1A3D2B",
         },
         text: {
-          primary: "#1E1E1F",
-          secondary: "#727272",
-          tertiary: "#9E9E9E",
+          primary: "#1E1C1A",
+          secondary: "#6B6560",
+          tertiary: "#9E9890",
           inverse: "#FFFFFF",
           brand: "#2E7D52",
         },
@@ -72,7 +72,9 @@ const config: Config = {
           DEFAULT: "var(--card)",
           foreground: "var(--card-foreground)",
         },
-        "funnel-accent": "var(--accent)",
+        "funnel-accent": "#2E7D52",
+        "funnel-accent-bg": "rgba(46, 125, 82, 0.06)",
+        "funnel-accent-hover": "rgba(46, 125, 82, 0.03)",
         info: {
           bg: "var(--info-bg)",
           border: "var(--info-border)",
@@ -132,7 +134,7 @@ const config: Config = {
       },
       spacing: {
         header: "60px",
-        footer: "60px",
+        footer: "56px",
       },
     },
   },
