@@ -3,12 +3,18 @@
 import { useCallback, useMemo, useState } from "react";
 
 import { formatCurrencyEUR } from "@/lib/price-calc";
-import type { BudgetCheck, FunnelState, PriceLineItem } from "@/lib/funnel/types";
+import { getResolvedStepsForSituation } from "@/lib/funnel/config";
+import type {
+  BudgetCheck,
+  FunnelState,
+  ObjektZustand,
+  PriceLineItem,
+} from "@/lib/funnel/types";
 import {
-  getBwPreisFaktorHint,
+  calculatePrice,
   getBwResultModus,
+  type BwResultModus,
 } from "@/lib/funnel/price-calc";
-import type { BwResultModus } from "@/lib/funnel/price-calc";
 import { SITE_CONFIG } from "@/lib/config";
 import { cn } from "@/lib/utils";
 import { DatenschutzCheckbox } from "./DatenschutzCheckbox";
@@ -40,100 +46,204 @@ const RESULT_TESTIMONIALS = [
   },
 ] as const;
 
-const TRUST_POINTS = [
-  "Meisterbetriebe München",
-  "Ein Ansprechpartner",
-  "Anfahrt bei Auftrag angerechnet",
-] as const;
+const LEISTUNGS_LABELS: Record<string, string> = {
+  "sanitaer.verstopfung": "Rohrreinigung",
+  "sanitaer.leck": "Leck / Rohrbruch",
+  "sanitaer.wc": "WC / Heizung",
+  "sanitaer.armatur": "Armatur / Bad",
+  "elektro.steckdose": "Elektro (einzelne Punkte)",
+  "elektro.fi_schalter": "Elektrik erneuern",
+  "elektro.fehlersuche": "Elektro Fehlersuche",
+  "elektro.qm": "Elektrik (nach Fläche)",
+  "elektro.punkte": "Elektro (einzelne Punkte)",
+  "garten.rasen": "Rasenpflege",
+  "garten.hecke": "Heckenschnitt",
+  "garten.pflaster": "Pflaster / Terrasse",
+  "maler.waende": "Wände streichen",
+  "maler.waende_decke": "Wände + Decke streichen",
+  "maler.fassade": "Fassade streichen",
+  "boden.laminat": "Laminat verlegen",
+  "boden.parkett": "Parkett verlegen",
+  "boden.vinyl": "Vinyl / Designboden",
+  "boden.fliesen": "Fliesen verlegen",
+  "boden.teppich": "Teppich verlegen",
+  "bad.fliesen": "Bad fliesen",
+  "bad.komplett": "Bad komplett",
+  "bad.objekte": "Sanitärobjekte",
+  "heizung.gas": "Heizung (Gas)",
+  "heizung.wartung": "Heizungswartung",
+  "dach.ziegel": "Dach reparieren",
+  "dach.komplett": "Dach sanieren",
+  "dach.regenrinne": "Regenrinne",
+  "fassade.anstrich": "Fassade streichen",
+  "fassade.daemmung": "Fassade / Dämmung",
+  "fenster.standard": "Fenster / Türen",
+  "kueche.aufbau": "Küche Montage",
+  "ausbau.umbau": "Ausbau / Umbau",
+  "terrasse.aussen": "Terrasse / Außen",
+  "gartenpflege.saison": "Gartenpflege",
+  "gartengestaltung.einmal": "Gartengestaltung",
+  "baum.pflege": "Baumpflege",
+  "wasser.einsatz": "Wasser & Rohre",
+  "reinigung.regelmaessig": "Reinigung",
+  "reinigung.einmalig": "Reinigung",
+  "allgemein.allgemein": "Handwerksleistung",
+};
 
-function CheckIcon() {
-  return (
-    <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden>
-      <path
-        d="M2 6l3 3 5-5"
-        stroke="var(--fl-accent)"
-        strokeWidth="1.8"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
+const GEWERK_SERVICE_SLUG: Record<string, string> = {
+  Sanitär: "sanitaer",
+  Elektro: "elektro",
+  Garten: "garten",
+  Maler: "maler",
+  Boden: "boden",
+  Bad: "bad",
+  Heizung: "heizung",
+  Dach: "dach",
+  Küche: "kueche",
+  Kueche: "kueche",
+  Fassade: "fassade",
+  Fenster: "fenster",
+  Reinigung: "reinigung",
+  Gartenpflege: "gartenpflege",
+  Gartengestaltung: "gartengestaltung",
+  Baumpflege: "baum",
+  Ausbau: "ausbau",
+  "Terrasse / Außen": "terrasse",
+  "Wasser & Rohre": "wasser",
+};
+
+function beschreibungToTypeSlug(
+  beschreibung: string,
+  gewerk: string
+): string {
+  const b = beschreibung.trim().toLowerCase();
+
+  if (gewerk === "Bad") {
+    if (b.includes("komplett")) return "komplett";
+    if (b.includes("einzelobj") || b.includes("sanitärobj")) return "objekte";
+    if (b.includes("fliesen")) return "fliesen";
+    if (b.includes("badsanierung")) return "fliesen";
+    return "fliesen";
+  }
+  if (gewerk === "Boden") {
+    if (b.includes("laminat")) return "laminat";
+    if (b.includes("parkett")) return "parkett";
+    if (b.includes("vinyl") || b.includes("designboden")) return "vinyl";
+    if (b.includes("fliesen")) return "fliesen";
+    if (b.includes("teppich")) return "teppich";
+    return "vinyl";
+  }
+  if (gewerk === "Maler") {
+    if (b.includes("decke")) return "waende_decke";
+    if (b.includes("wände") || b.includes("wand")) return "waende";
+    return "waende";
+  }
+  if (gewerk === "Fassade") {
+    if (b.includes("außen") || b.includes("aussen")) return "fassade";
+    if (b.includes("dämmung") || b.includes("daemmung")) return "daemmung";
+    if (b.includes("anteil")) return "daemmung";
+    if (b.includes("fassadenfläche") || b.includes("anstrich")) return "anstrich";
+    return "anstrich";
+  }
+  if (gewerk === "Heizung") {
+    if (b.includes("wartung") || b.includes("notfall")) return "wartung";
+    return "gas";
+  }
+  if (gewerk === "Dach") {
+    if (b.includes("ziegel")) return "ziegel";
+    if (b.includes("regenrinne") || b.includes("ablauf")) return "regenrinne";
+    return "komplett";
+  }
+  if (gewerk === "Elektro") {
+    if (b.includes("fehlersuche")) return "fehlersuche";
+    if (b.includes("fi") || b.includes("sicherungs")) return "fi_schalter";
+    if (b.includes("fläche") || b.includes("nach fläche")) return "qm";
+    if (b.includes("punkt") || b.includes("arbeitspunkt")) return "punkte";
+    if (b.includes("steckdose")) return "steckdose";
+    return "qm";
+  }
+  if (gewerk === "Sanitär") {
+    if (b.includes("verstopf")) return "verstopfung";
+    if (b.includes("leck") || b.includes("rohr")) return "leck";
+    if (b.includes("armatur") || b.includes("einzelteil")) return "armatur";
+    if (b.includes("warmwasser") || b.includes("wc")) return "wc";
+    return "armatur";
+  }
+  if (gewerk === "Garten") {
+    if (b.includes("rasen")) return "rasen";
+    if (b.includes("hecke")) return "hecke";
+    if (b.includes("pflaster") || b.includes("terrasse")) return "pflaster";
+    return "rasen";
+  }
+  if (gewerk === "Küche" || gewerk === "Kueche") {
+    return "aufbau";
+  }
+  if (gewerk === "Fenster") {
+    if (b.includes("dachfenster")) return "standard";
+    return "standard";
+  }
+  if (gewerk === "Gartenpflege") return "saison";
+  if (gewerk === "Gartengestaltung") return "einmal";
+  if (gewerk === "Baumpflege") return "pflege";
+  if (gewerk === "Ausbau") return "umbau";
+  if (gewerk === "Terrasse / Außen") return "aussen";
+  if (gewerk === "Wasser & Rohre") return "einsatz";
+  if (gewerk === "Reinigung") {
+    if (b.includes("einmal")) return "einmalig";
+    return "regelmaessig";
+  }
+
+  if (b.includes("verstopf")) return "verstopfung";
+  if (b.includes("leck")) return "leck";
+  if (b.includes("steckdose")) return "steckdose";
+  if (b.includes("fi ")) return "fi_schalter";
+  if (b.includes("fehlersuche")) return "fehlersuche";
+  if (b.includes("rasen")) return "rasen";
+  if (b.includes("hecke")) return "hecke";
+  if (b.includes("pflaster")) return "pflaster";
+  if (b.includes("wände + decke") || b.includes("waende + decke"))
+    return "waende_decke";
+  if (b.includes("wände streichen")) return "waende";
+  if (b.includes("fassade")) return "anstrich";
+  if (b.includes("laminat")) return "laminat";
+  if (b.includes("parkett")) return "parkett";
+  if (b.includes("vinyl")) return "vinyl";
+  if (b.includes("fliesen boden")) return "fliesen";
+  if (b.includes("fliesen")) return "fliesen";
+  if (b.includes("teppich")) return "teppich";
+  if (b.includes("bad — fliesen") || b.includes("bad fliesen")) return "fliesen";
+  if (b.includes("komplettsanierung")) return "komplett";
+  if (b.includes("sanitärobj")) return "objekte";
+  if (b.includes("gasheizung")) return "gas";
+  if (b.includes("wartung")) return "wartung";
+  if (b.includes("ziegel")) return "ziegel";
+  if (b.includes("dach komplett")) return "komplett";
+  if (b.includes("regenrinne")) return "regenrinne";
+  if (b.includes("montage")) return "aufbau";
+
+  return "allgemein";
 }
 
-function getPreisfaktoren(state: FunnelState): string[] {
-  const punkte: string[] = [];
-
-  if (state.zustand === "mittel") {
-    punkte.push("Vorarbeiten nötig — Fläche muss vorbereitet werden");
-  }
-  if (state.zustand === "schlecht") {
-    punkte.push("Erheblicher Mehraufwand durch den Zustand der Fläche");
-  }
-  if (state.zugaenglichkeit === "mittel") {
-    punkte.push("Erschwerte Erreichbarkeit erhöht den Materialaufwand");
-  }
-  if (state.zugaenglichkeit === "schwer") {
-    punkte.push("Schwer zugängliches Objekt — Spezialausrüstung erforderlich");
-  }
-  if (
-    state.dringlichkeit === "akut" ||
-    state.dringlichkeit === "stabil"
-  ) {
-    punkte.push("Kurzfristiger Einsatz — Terminpriorität berücksichtigt");
-  }
-  if (state.zeitraum === "sofort" || state.zeitraum === "heute") {
-    punkte.push("Kurzfristiger Einsatz — Terminpriorität berücksichtigt");
-  }
-  if (state.kundentyp === "mieter") {
-    punkte.push("Mietobjekt — Abstimmung mit Vermieter möglicherweise nötig");
-  }
-  if (state.fachdetails?.sanitaer?.lage === "wand") {
-    punkte.push("Leck hinter der Wand — Stemmarbeiten wahrscheinlich");
-  }
-  if (state.fachdetails?.boden?.verlegung === "geklebt") {
-    punkte.push("Geklebter Altbelag muss aufwendig entfernt werden");
-  }
-  if (state.fachdetails?.boden?.aktuell === "fliesen") {
-    punkte.push("Fliesenrückbau ist zeitaufwendig und materialintensiv");
-  }
-  if (state.fachdetails?.maler?.zustand === "risse") {
-    punkte.push("Wandvorbereitung nötig — Spachteln und Schleifen");
-  }
-  if (state.fachdetails?.maler?.zustand === "stark") {
-    punkte.push("Starke Schäden erfordern umfangreiche Vorarbeiten");
-  }
-  if (state.fachdetails?.dach?.alter === "ueber40") {
-    punkte.push("Älteres Dach — mögliche Zusatzschäden beim Aufdecken");
-  }
-  if (state.bereiche.length >= 3) {
-    punkte.push("Mehrere Gewerke — wir koordinieren alle Arbeiten");
-  }
-
-  const seen = new Set<string>();
-  return punkte.filter((p) => {
-    if (seen.has(p)) return false;
-    seen.add(p);
-    return true;
-  });
+function serviceSlugForLine(item: PriceLineItem): string {
+  const g = item.gewerk;
+  const b = item.beschreibung.toLowerCase();
+  if (g === "Fassade" && (b.includes("außen") || b.includes("aussen")))
+    return "maler";
+  return GEWERK_SERVICE_SLUG[g] ?? g.toLowerCase().replace(/\s+/g, "_");
 }
 
-function PhoneIconKomplex() {
+function getLeistungsLabel(gewerk: string, type: string): string {
+  const key = `${gewerk}.${type}`;
+  return LEISTUNGS_LABELS[key] ?? `${gewerk} — ${type}`;
+}
+
+function lineLeistungsLabel(item: PriceLineItem): string {
+  const slug = serviceSlugForLine(item);
+  const type = beschreibungToTypeSlug(item.beschreibung, item.gewerk);
+  const key = `${slug}.${type}`;
   return (
-    <svg
-      width="18"
-      height="18"
-      viewBox="0 0 24 24"
-      fill="none"
-      aria-hidden
-    >
-      <path
-        d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"
-        stroke="currentColor"
-        strokeWidth="1.75"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
+    LEISTUNGS_LABELS[key] ??
+    (item.beschreibung.trim() || getLeistungsLabel(slug, type))
   );
 }
 
@@ -161,21 +271,6 @@ function EnvelopeIcon16() {
   );
 }
 
-function TagIcon() {
-  return (
-    <svg width="12" height="12" viewBox="0 0 16 16" fill="none" aria-hidden>
-      <path
-        d="M2 2h6l6 6-6 6-6-6V2z"
-        stroke="currentColor"
-        strokeWidth="1.5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-      <circle cx="5.5" cy="5.5" r="1" fill="currentColor" />
-    </svg>
-  );
-}
-
 function PreisAccordion({
   state,
   koordinationsRabatt,
@@ -184,7 +279,6 @@ function PreisAccordion({
   koordinationsRabatt: number;
 }) {
   const [open, setOpen] = useState(false);
-  const faktoren = useMemo(() => getPreisfaktoren(state), [state]);
 
   if (state.breakdown.length === 0) return null;
 
@@ -199,7 +293,7 @@ function PreisAccordion({
         onClick={() => setOpen((v) => !v)}
         aria-expanded={open}
       >
-        <span>Wie setzt sich der Preis zusammen?</span>
+        <span>Preisdetails ansehen</span>
         <svg
           className="preis-accordion-arrow"
           width="16"
@@ -231,7 +325,7 @@ function PreisAccordion({
             <tbody>
               {state.breakdown.map((item, i) => (
                 <tr key={i}>
-                  <td>{item.beschreibung}</td>
+                  <td>{lineLeistungsLabel(item)}</td>
                   <td>{item.min.toLocaleString("de")} €</td>
                   <td>{item.max.toLocaleString("de")} €</td>
                 </tr>
@@ -256,53 +350,38 @@ function PreisAccordion({
               ) : null}
             </tbody>
           </table>
-
-          {faktoren.length > 0 ? (
-            <div className="preis-faktoren">
-              <p className="preis-faktoren-label">Warum dieser Preisrahmen?</p>
-              <ul className="preis-faktoren-list">
-                {faktoren.map((f, i) => (
-                  <li key={i}>{f}</li>
-                ))}
-              </ul>
-            </div>
-          ) : null}
         </div>
       ) : null}
     </div>
   );
 }
 
-function ResultTrustBlock() {
-  const t = useMemo(
-    () => RESULT_TESTIMONIALS[Math.floor(Math.random() * RESULT_TESTIMONIALS.length)],
+function ResultTestimonialCard() {
+  const testimonial = useMemo(
+    () =>
+      RESULT_TESTIMONIALS[
+        Math.floor(Math.random() * RESULT_TESTIMONIALS.length)
+      ],
     []
   );
   return (
-    <div className="result-trust-block">
-      <div className="result-trust-quote">
-        <div className="result-trust-stars">{"★".repeat(5)}</div>
-        <p className="result-trust-text">„{t.quote}"</p>
-        <div className="result-trust-author">
-          <div
-            className="result-trust-avatar"
-            style={{ background: t.bg, color: t.color }}
-          >
-            {t.initials}
-          </div>
-          <div>
-            <div className="result-trust-name">{t.name}</div>
-            <div className="result-trust-ort">{t.ort}</div>
-          </div>
+    <div className="result-testimonial-card">
+      <div className="result-stars">{"★".repeat(5)}</div>
+      <p className="result-quote">„{testimonial.quote}“</p>
+      <div className="result-author">
+        <div
+          className="result-avatar"
+          style={{
+            background: testimonial.bg,
+            color: testimonial.color,
+          }}
+        >
+          {testimonial.initials}
         </div>
-      </div>
-      <div className="result-trust-points">
-        {TRUST_POINTS.map((point) => (
-          <div key={point} className="result-trust-point">
-            <CheckIcon />
-            <span>{point}</span>
-          </div>
-        ))}
+        <div>
+          <div className="result-name">{testimonial.name}</div>
+          <div className="result-ort">{testimonial.ort}</div>
+        </div>
       </div>
     </div>
   );
@@ -326,46 +405,70 @@ function gewerkLabel(key: string): string {
   return key.charAt(0).toUpperCase() + key.slice(1).replace(/_/g, " ");
 }
 
-function gewerkSquareClass(g: string): string {
-  const x = g.toLowerCase();
-  if (x.includes("bad") || x.includes("küche") || x.includes("kueche"))
-    return "bg-[#E6F1FB] text-[#0C447C]";
-  if (x.includes("heizung") || x.includes("sanit"))
-    return "bg-[#FDECEA] text-[#9C2B2B]";
-  if (x.includes("garten") || x.includes("baum"))
-    return "bg-[#EAF3DE] text-[#3B6D11]";
-  if (x.includes("elektro")) return "bg-[#FDF3DC] text-[#854F0B]";
-  return "bg-[#F0F4FF] text-[#185FA5]";
+function bereicheDisplayLabels(state: FunnelState): string[] {
+  if (!state.situation) return state.bereiche.map(gewerkLabel);
+  const step0 = getResolvedStepsForSituation(
+    state.situation,
+    state.bereiche,
+    state.fachdetails
+  )[0];
+  const opts = step0?.options ?? [];
+  return state.bereiche.map((v) => {
+    const o = opts.find((x) => x.value === v);
+    return o?.label ?? gewerkLabel(v);
+  });
 }
 
-function BreakdownRow({ row }: { row: PriceLineItem }) {
+function zustandEinordnungLabel(z: ObjektZustand | null): string | null {
+  if (!z) return null;
+  if (z === "gut") return "Gepflegt";
+  if (z === "mittel") return "Normale Abnutzung";
+  return "Sanierungsbedürftig";
+}
+
+function groesseEinordnungLine(state: FunnelState): string | null {
+  if (state.groesse == null) return null;
+  if (state.groesseEinheit === "stueck") {
+    return `ca. ${state.groesse} Stück`;
+  }
+  if (state.groesseEinheit === "meter") {
+    return `ca. ${state.groesse} m`;
+  }
+  return `ca. ${state.groesse} m²`;
+}
+
+function ResultEinordnung({ state }: { state: FunnelState }) {
+  const labels = bereicheDisplayLabels(state);
+  const top = labels.slice(0, 2);
+  const gewerkLine =
+    top.length === 0
+      ? null
+      : top.length === 1
+        ? top[0]
+        : `${top[0]} + ${top[1]}`;
+  const zLine = zustandEinordnungLabel(state.zustand);
+  const gLine = groesseEinordnungLine(state);
+  if (!gewerkLine && !zLine && !gLine) return null;
   return (
-    <div className="flex items-start justify-between gap-3 border-b border-border-default px-3.5 py-2.5 last:border-b-0">
-      <div className="flex min-w-0 gap-2">
-        <div
-          className={cn(
-            "flex size-[26px] shrink-0 items-center justify-center rounded-md",
-            gewerkSquareClass(row.gewerk)
-          )}
-        >
-          <svg className="size-3.5" viewBox="0 0 24 24" fill="none">
-            <path
-              d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"
-              stroke="currentColor"
-              strokeWidth="1.5"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </svg>
-        </div>
-        <div className="min-w-0">
-          <p className="text-[13px] font-medium text-text-primary">{row.gewerk}</p>
-          <p className="text-[11px] text-text-secondary">{row.beschreibung}</p>
-        </div>
-      </div>
-      <p className="shrink-0 text-[13px] font-medium tabular-nums text-text-primary">
-        {formatCurrencyEUR(row.min)} – {formatCurrencyEUR(row.max)}
-      </p>
+    <div className="result-einordnung">
+      <p className="result-einordnung-title">Das ist typisch für:</p>
+      <ul className="result-einordnung-list">
+        {gewerkLine ? (
+          <li>
+            <span aria-hidden>✓</span> {gewerkLine}
+          </li>
+        ) : null}
+        {zLine ? (
+          <li>
+            <span aria-hidden>✓</span> {zLine}
+          </li>
+        ) : null}
+        {gLine ? (
+          <li>
+            <span aria-hidden>✓</span> {gLine}
+          </li>
+        ) : null}
+      </ul>
     </div>
   );
 }
@@ -377,6 +480,26 @@ function validateKomplexTelefon(raw: string): string | undefined {
     return "Bitte gib eine gültige Telefonnummer ein.";
   }
   return undefined;
+}
+
+function PhoneIconKomplex() {
+  return (
+    <svg
+      width="18"
+      height="18"
+      viewBox="0 0 24 24"
+      fill="none"
+      aria-hidden
+    >
+      <path
+        d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"
+        stroke="currentColor"
+        strokeWidth="1.75"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
 }
 
 function ZuKomplexScreen({
@@ -402,13 +525,11 @@ function ZuKomplexScreen({
   >("idle");
   const [errorMessage, setErrorMessage] = useState("");
 
-  const headline = schwellenwertAusgeloest
-    ? "Für dieses Projekt brauchen wir ein persönliches Gespräch."
-    : "Dieses Projekt planen wir persönlich mit dir.";
-
-  const sub = schwellenwertAusgeloest
-    ? "Bei Projekten dieser Größenordnung ist ein automatischer Preis nicht seriös — zu viele Details beeinflussen das Ergebnis."
-    : "Zu viele Faktoren beeinflussen den Preis. Ein kurzes Gespräch ist hier sinnvoller als eine automatische Berechnung.";
+  const preisPreview = useMemo(
+    () => calculatePrice(state, { preview: true }),
+    [state]
+  );
+  const abMin = preisPreview.min > 0 ? preisPreview.min : 1200;
 
   const handleKomplexSubmit = useCallback(async () => {
     setErrors({});
@@ -489,13 +610,21 @@ function ZuKomplexScreen({
         <div className="komplex-icon" aria-hidden>
           💬
         </div>
-        <h2 className="komplex-headline">{headline}</h2>
-        <p className="komplex-sub">{sub}</p>
+        <h2 className="komplex-headline">
+          Dein Projekt startet ab ca. {formatCurrencyEUR(abMin)}.
+        </h2>
+        <p className="komplex-sub">
+          Für einen seriösen Preis kommen wir um einen Vor-Ort-Termin nicht
+          herum.
+        </p>
       </div>
 
       <div className="komplex-option">
         <div className="komplex-option-label">Sofort sprechen</div>
-        <a href={SITE_CONFIG.phoneHref} className="komplex-call-btn">
+        <a
+          href={SITE_CONFIG.phoneHref}
+          className="komplex-call-btn komplex-call-btn--hero"
+        >
           <PhoneIconKomplex />
           {SITE_CONFIG.phone}
         </a>
@@ -615,7 +744,7 @@ export function BwResultScreen({
   if (notfallAkut) {
     return (
       <div className={cn("space-y-6", className)}>
-        <div className="relative overflow-hidden rounded-[18px] bg-surface-dark p-5 text-center text-white">
+        <div className="relative overflow-hidden rounded-[18px] bg-surface-dark p-6 text-center text-white">
           <div className="flex justify-center">
             <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2.5 py-1 text-[11px] font-semibold text-amber-950">
               <span aria-hidden>⚡</span> Dringend
@@ -624,25 +753,29 @@ export function BwResultScreen({
           <p className="mt-3 text-[11px] font-medium uppercase tracking-widest text-white/70">
             Notfall
           </p>
-          <p className="mt-2 text-lg font-semibold">Wir sind jetzt erreichbar</p>
-          <a
-            href={SITE_CONFIG.phoneHref}
-            className="mt-2 block text-3xl font-extrabold tracking-tight text-white"
-          >
-            {SITE_CONFIG.phone}
-          </a>
-          <p className="mt-1 text-sm text-white/70">
-            Mobil · oder Büro:{" "}
-            <a href={SITE_CONFIG.phoneFestnetHref} className="underline text-white">
-              {SITE_CONFIG.phoneFestnetz}
-            </a>
+          <p className="mt-3 text-base leading-snug text-white/90">
+            Typischer Einsatz:{" "}
+            <strong className="text-white">150–600 €</strong>
+          </p>
+          <p className="mt-2 text-sm text-white/80">
+            Für akute Fälle ruf uns direkt an.
           </p>
           <a
             href={SITE_CONFIG.phoneHref}
-            className="mt-5 inline-flex w-full max-w-xs justify-center rounded-full bg-funnel-accent px-6 py-3 text-sm font-semibold text-white transition-opacity hover:opacity-90"
+            className="bw-akut-tel-btn mt-5 inline-flex w-full max-w-sm items-center justify-center gap-2 rounded-2xl bg-funnel-accent px-5 py-4 text-lg font-bold text-white shadow-lg transition-opacity hover:opacity-95"
           >
-            Jetzt anrufen
+            <PhoneIconKomplex />
+            {SITE_CONFIG.phone}
           </a>
+          <p className="mt-3 text-xs text-white/60">
+            Mobil · Büro:{" "}
+            <a
+              href={SITE_CONFIG.phoneFestnetHref}
+              className="underline decoration-white/40 underline-offset-2"
+            >
+              {SITE_CONFIG.phoneFestnetz}
+            </a>
+          </p>
         </div>
       </div>
     );
@@ -663,9 +796,8 @@ export function BwResultScreen({
   }
 
   const hasRange = state.priceMin > 0 && state.priceMax > 0;
-  const preisFaktorHint = getBwPreisFaktorHint(state);
-  const preisFaktorStandard =
-    preisFaktorHint === "Standardpreis für München 2026";
+  const rabattChipProzent =
+    koordinationsRabatt <= 0.9 ? 10 : koordinationsRabatt < 1 ? 5 : 0;
 
   const scrollToLeadForm = useCallback(() => {
     window.setTimeout(() => {
@@ -713,83 +845,51 @@ export function BwResultScreen({
   ]);
 
   return (
-    <div className={cn("space-y-5", className)}>
+    <div className={cn("bw-result-screen", className)}>
       {hasRange ? (
-        <div className="relative overflow-hidden rounded-[18px] bg-surface-dark p-5 text-white">
-          <p className="text-[11px] font-medium uppercase tracking-widest text-[#777]">
-            Dein Preisrahmen
-          </p>
-          <div className="mt-2 flex flex-wrap items-baseline gap-1">
-            <span className="text-[38px] font-extrabold leading-none tracking-tight">
+        <div className="preis-karte">
+          <p className="preis-karte-kicker">Dein Preisrahmen</p>
+          <div className="preis-karte-range">
+            <span className="preis-karte-zahl">
               {formatCurrencyEUR(state.priceMin)}
             </span>
-            <span className="text-lg text-[#555]">–</span>
-            <span className="text-[38px] font-extrabold leading-none tracking-tight">
+            <span className="preis-karte-trenner">–</span>
+            <span className="preis-karte-zahl">
               {formatCurrencyEUR(state.priceMax)}
             </span>
-            <span className="text-sm text-[#777]">€</span>
           </div>
-          <p className="mt-1.5 text-[11px] leading-relaxed text-[#666]">
-            Richtwert für {SITE_CONFIG.region} — unverbindlich.
+          <ResultEinordnung state={state} />
+          <p className="preis-karte-einheit">
+            Richtwert für {SITE_CONFIG.region} — unverbindlich
           </p>
-          <p
-            className="mt-2 text-[12px] leading-relaxed"
-            style={{
-              color: "var(--fl-text-3, #9e9e9e)",
-            }}
-          >
-            {preisFaktorStandard ? (
-              preisFaktorHint
-            ) : (
-              <>
-                Preis beeinflusst durch: {preisFaktorHint}
-              </>
-            )}
-          </p>
-          {plzFaktor > 1.08 ? (
-            <p style={{ fontSize: "12px", color: "var(--fl-text-3, #9e9e9e)", marginTop: "6px" }}>
-              Münchner Innenstadtlage berücksichtigt
-            </p>
-          ) : null}
-          {koordinationsRabatt < 1.0 ? (
-            <div
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                gap: "6px",
-                fontSize: "12px",
-                fontWeight: 600,
-                color: "var(--fl-accent)",
-                background: "var(--fl-accent-light)",
-                borderRadius: "999px",
-                padding: "4px 10px",
-                marginTop: "8px",
-              }}
-            >
-              <TagIcon />
-              {koordinationsRabatt <= 0.90
-                ? "10% Koordinationsrabatt für mehrere Gewerke"
-                : "5% Koordinationsrabatt für mehrere Gewerke"}
-            </div>
-          ) : null}
-          <div className="mt-3 flex flex-wrap gap-1.5">
+
+          <div className="preis-karte-chips">
             {state.bereiche.map((g) => (
-              <span
-                key={g}
-                className="rounded-full bg-surface-card/10 px-2.5 py-0.5 text-[10px] text-[#aaa]"
-              >
+              <span key={g} className="preis-karte-chip">
                 {gewerkLabel(g)}
               </span>
             ))}
+            {plzFaktor > 1.08 ? (
+              <span className="preis-karte-chip">📍 Innenstadt</span>
+            ) : null}
+            {rabattChipProzent > 0 ? (
+              <span className="preis-karte-chip">
+                🏷 {rabattChipProzent}% Rabatt
+              </span>
+            ) : null}
           </div>
+
           {state.istFallback ? (
-            <div className="hinweis" style={{ marginTop: "12px" }}>
-              <p>
-                Für deine Auswahl haben wir noch keinen genauen Richtwert — der
-                Preisrahmen basiert auf allgemeinen Münchner Marktpreisen. Beim
-                Vor-Ort-Termin nennen wir dir einen genauen Preis.
-              </p>
-            </div>
+            <p className="preis-karte-fallback">
+              Für deine Auswahl nutzen wir allgemeine Münchner Marktpreise — beim
+              Vor-Ort-Termin nennen wir dir einen genauen Preis.
+            </p>
+          ) : null}
+          {resultModus === "preisrahmen_warnung" ? (
+            <p className="preis-karte-warn-einzeiler">
+              Größeres Projekt: der finale Preis kann stärker abweichen — Festpreis
+              nach Vor-Ort-Termin.
+            </p>
           ) : null}
         </div>
       ) : (
@@ -801,46 +901,91 @@ export function BwResultScreen({
 
       {hasRange ? (
         <p className="preis-disclaimer">
-          * Unverbindlicher Richtwert basierend auf Ihren Angaben. Das
-          verbindliche Festpreisangebot erhalten Sie nach dem Vor-Ort-Termin.
-          Preise inkl. MwSt.
+          Unverbindlicher Richtwert — Festpreis nach Vor-Ort-Termin.
         </p>
       ) : null}
 
-      {hasRange && resultModus === "preisrahmen_warnung" ? (
-        <div className="preis-warnung-box">
-          <div className="preis-warnung-icon">⚠</div>
-          <div>
-            <p className="preis-warnung-head">Größeres Projekt — Richtwert</p>
-            <p className="preis-warnung-text">
-              Bei Projekten dieser Größenordnung kann der finale Preis stärker
-              abweichen. Wir schauen uns das beim Vor-Ort-Termin genau an und
-              erstellen ein verbindliches Festpreisangebot.
-            </p>
-          </div>
-        </div>
+      {mindestauftragAktiv && hasRange ? (
+        <p className="result-meta-einzeiler">
+          Mindestauftrag 150 € inkl. Anfahrt und erster Einschätzung vor Ort.
+        </p>
       ) : null}
 
       {hasRange && !state.istFallback ? (
         <PreisAccordion state={state} koordinationsRabatt={koordinationsRabatt} />
       ) : null}
 
-      {mindestauftragAktiv ? (
-        <div
-          className="hinweis"
-          style={{ marginTop: "12px" }}
-        >
-          <p>
-            Mindestauftragswert 150 € — inklusive Anfahrt und erster Einschätzung
-            vor Ort.
-          </p>
+      {hasRange ? (
+        <div className="budget-check">
+          <p className="budget-check-label">Passt dieser Rahmen?</p>
+          <div className="budget-check-btns">
+            <button
+              type="button"
+              className={cn(
+                "budget-btn",
+                budget === "ok" && "active"
+              )}
+              onClick={() => {
+                onBudgetChange?.("ok");
+                setShowBudgetOkFeedback(true);
+                scrollToLeadForm();
+              }}
+            >
+              ✓ Ja, passt
+            </button>
+            <button
+              type="button"
+              className={cn(
+                "budget-btn",
+                budget === "zu_hoch" && "active"
+              )}
+              onClick={() => {
+                setShowBudgetOkFeedback(false);
+                onBudgetChange?.("zu_hoch");
+              }}
+            >
+              Eher zu hoch
+            </button>
+          </div>
         </div>
       ) : null}
 
-      {hasRange ? <ResultTrustBlock /> : null}
+      {hasRange ? (
+        <>
+          {showBudgetOkFeedback && budget === "ok" ? (
+            <p className="budget-ok-feedback">Super — dann los.</p>
+          ) : null}
+          {budget === "zu_hoch" ? (
+            <div className="budget-hint-box">
+              <p className="budget-hint-head">Kein Problem.</p>
+              <p className="budget-hint-text">
+                Beim Vor-Ort-Termin schauen wir gemeinsam was in deinem Budget
+                möglich ist — ohne Druck und ohne Auftragszwang. Viele Projekte
+                lassen sich auch in Phasen umsetzen.
+              </p>
+              <button
+                type="button"
+                className="budget-hint-cta"
+                onClick={scrollToLeadForm}
+              >
+                Trotzdem Termin anfragen →
+              </button>
+            </div>
+          ) : null}
+        </>
+      ) : null}
+
+      {hasRange ? <ResultTestimonialCard /> : null}
+
+      {hasRange ? (
+        <p className="result-trust-inline">
+          ✓ Meisterbetriebe München · ✓ Ein Ansprechpartner · ✓ Anfahrt bei
+          Auftrag angerechnet
+        </p>
+      ) : null}
 
       {hasRange && !saveEmailSent ? (
-        <div className="preis-save-wrap">
+        <div className="preis-save-wrap preis-save-wrap--compact">
           {!emailSaveOpen ? (
             <button
               type="button"
@@ -848,13 +993,12 @@ export function BwResultScreen({
               onClick={() => setEmailSaveOpen(true)}
             >
               <EnvelopeIcon16 />
-              Preisrahmen per E-Mail speichern
+              Preisrahmen per E-Mail
             </button>
           ) : (
             <div className="preis-save-form">
               <p className="preis-save-label">
-                Wir schicken dir den Preisrahmen direkt zu — kein Spam, nur dein
-                Ergebnis.
+                Wir schicken dir den Preisrahmen zu — kein Spam.
               </p>
               <div className="preis-save-row">
                 <input
@@ -893,73 +1037,7 @@ export function BwResultScreen({
       {hasRange && saveEmailSent ? (
         <div className="preis-save-success">
           <span aria-hidden>✓</span>
-          Preisrahmen wurde gesendet — schau in dein Postfach.
-        </div>
-      ) : null}
-
-      {hasRange ? (
-        <div>
-          <p className="mb-3 mt-5 text-sm font-medium text-text-primary">
-            Passt dieser Rahmen zu deinem Budget?
-          </p>
-          <div className="flex flex-wrap gap-2">
-            <button
-              type="button"
-              onClick={() => {
-                onBudgetChange?.("ok");
-                setShowBudgetOkFeedback(true);
-                scrollToLeadForm();
-              }}
-              className={cn(
-                "rounded-full border border-border-default bg-surface-card px-4 py-2 text-sm font-medium text-text-secondary transition-colors",
-                budget === "ok"
-                  ? "funnel-tile-selected text-text-primary"
-                  : "funnel-tile-hover"
-              )}
-            >
-              ✓ Ja, passt gut
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setShowBudgetOkFeedback(false);
-                onBudgetChange?.("zu_hoch");
-              }}
-              className={cn(
-                "rounded-full border border-border-default bg-surface-card px-4 py-2 text-sm font-medium text-text-secondary transition-colors",
-                budget === "zu_hoch"
-                  ? "funnel-tile-selected text-text-primary"
-                  : "funnel-tile-hover"
-              )}
-            >
-              Eher zu hoch
-            </button>
-          </div>
-          {showBudgetOkFeedback && budget === "ok" ? (
-            <p
-              className="mt-3 text-sm font-semibold"
-              style={{ color: "var(--fl-accent, #2e7d52)" }}
-            >
-              Super — dann los.
-            </p>
-          ) : null}
-          {budget === "zu_hoch" ? (
-            <div className="budget-hint-box">
-              <p className="budget-hint-head">Kein Problem.</p>
-              <p className="budget-hint-text">
-                Beim Vor-Ort-Termin schauen wir gemeinsam was in deinem Budget
-                möglich ist — ohne Druck und ohne Auftragszwang. Viele Projekte
-                lassen sich auch in Phasen umsetzen.
-              </p>
-              <button
-                type="button"
-                className="budget-hint-cta"
-                onClick={scrollToLeadForm}
-              >
-                Trotzdem Termin anfragen →
-              </button>
-            </div>
-          ) : null}
+          Gesendet — bitte Postfach prüfen.
         </div>
       ) : null}
 

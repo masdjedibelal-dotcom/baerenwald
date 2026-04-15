@@ -23,16 +23,143 @@
   --fl-font-display: "Lora", Georgia, serif;
 }
 
-/* Einheitlicher Selected-State für Funnel-Kacheln */
+/* ── Funnel: einheitliche Kachel (Rechner & Auswahl) ── */
+.funnel-tile {
+  border-radius: 16px;
+  border: 1.5px solid var(--fl-border);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  cursor: pointer;
+  transition:
+    border-color 0.15s,
+    background 0.15s;
+  background: var(--fl-bg-card);
+  text-align: left;
+  width: 100%;
+  font-family: var(--fl-font-sans);
+}
+
+.funnel-tile:hover:not(.selected) {
+  border-color: rgba(46, 125, 82, 0.4);
+  background: rgba(46, 125, 82, 0.02);
+}
+
+.funnel-tile.selected {
+  border-color: var(--fl-accent);
+  border-width: 1.5px;
+  background: rgba(46, 125, 82, 0.06);
+}
+
+.funnel-tile-emoji {
+  font-size: 22px;
+  line-height: 1;
+  margin-bottom: 4px;
+  display: block;
+}
+
+.funnel-tile-icon-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  margin-bottom: 4px;
+}
+
+.funnel-tile-icon-wrap svg {
+  width: 22px;
+  height: 22px;
+}
+
+.funnel-tile-label {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--fl-text);
+}
+
+.funnel-tile-hint {
+  font-size: 12px;
+  color: var(--fl-text-2);
+  line-height: 1.4;
+}
+
+/* Kompakte Chips / Kalender (ohne volle .funnel-tile-Fläche) */
 .funnel-tile-selected {
   border: 1.5px solid var(--fl-accent) !important;
   background: rgba(46, 125, 82, 0.06) !important;
 }
 
-/* Einheitlicher Hover-State (Kacheln / Chips) */
 .funnel-tile-hover:hover {
-  border-color: var(--fl-accent);
-  background: rgba(46, 125, 82, 0.03);
+  border-color: rgba(46, 125, 82, 0.4);
+  background: rgba(46, 125, 82, 0.02);
+}
+
+.funnel-step-tiles-card {
+  background: var(--fl-bg-card);
+  border-radius: var(--fl-radius);
+  padding: 16px;
+  border: 1px solid var(--fl-border-light);
+}
+
+.funnel-main--strip-a {
+  background: var(--fl-bg-card);
+}
+
+.funnel-main--strip-b {
+  background: var(--fl-bg);
+}
+
+.funnel-back-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--fl-bg);
+  border: 1.5px solid var(--fl-border);
+  border-radius: 999px;
+  padding: 9px 18px;
+  font-size: 13px;
+  font-weight: 600;
+  font-family: var(--fl-font-sans);
+  color: var(--fl-text-2);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.funnel-back-btn:hover {
+  border-color: var(--fl-text-2);
+  color: var(--fl-text);
+}
+
+.funnel-back-spacer {
+  display: inline-block;
+  min-width: 118px;
+  min-height: 38px;
+}
+
+.skip-btn {
+  display: block;
+  width: 100%;
+  text-align: center;
+  background: none;
+  border: 1.5px dashed var(--fl-border);
+  border-radius: 12px;
+  padding: 12px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--fl-text-3);
+  font-family: var(--fl-font-sans);
+  cursor: pointer;
+  margin-top: 8px;
+  transition: all 0.15s;
+}
+
+.skip-btn:hover {
+  border-color: var(--fl-text-2);
+  color: var(--fl-text-2);
+}
+
+.folgefrage-wrap {
+  scroll-margin-top: 100px;
 }
 
 *,
@@ -409,6 +536,16 @@
   margin-bottom: 12px;
 }
 
+/* Vorschlagsliste: am Suchfeld verankert (kein fixed/Portal) — bleibt bei fade-up & Scroll stabil */
+.hero-search-combo .search-dropdown-portal {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: calc(100% + 8px);
+  width: auto;
+  z-index: 25;
+}
+
 .hero-search-row {
   display: flex;
   gap: 0;
@@ -419,13 +556,11 @@
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
 }
 
-/* Portal in document.body — überlagert Hero-Bild / Stacking-Kontexte */
 .search-dropdown-portal {
   background: var(--fl-bg-card);
   border: 1px solid var(--fl-border);
   border-radius: var(--fl-radius-sm);
   box-shadow: var(--fl-shadow-hover);
-  z-index: 9999;
   max-height: min(320px, 52vh);
   overflow-x: hidden;
   overflow-y: auto;
@@ -3772,6 +3907,13 @@
   outline: none;
 }
 
+.groesse-input.funnel-input {
+  width: 80px;
+  text-align: center;
+  font-weight: 600;
+  padding: 8px 10px;
+}
+
 .groesse-input:focus {
   border-color: var(--fl-accent);
   box-shadow: 0 0 0 3px rgba(46, 125, 82, 0.15);
@@ -3862,39 +4004,169 @@
   margin: 0;
 }
 
-/* ── Funnel: Result Trust Block ── */
-.result-trust-block {
-  background: var(--fl-bg);
-  border-radius: var(--fl-radius);
-  padding: 20px;
-  margin: 20px 0;
+/* ── Funnel: Result Screen Layout ── */
+.bw-result-screen {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 28px;
 }
 
-.result-trust-stars {
-  color: #f59e0b;
-  font-size: 13px;
-  letter-spacing: 1px;
-  margin-bottom: 8px;
+/* ── Preis-Karte (hell) ── */
+.preis-karte {
+  background: var(--fl-bg-card);
+  border: 1px solid var(--fl-border-light);
+  border-radius: var(--fl-radius);
+  padding: 24px;
+  text-align: center;
 }
 
-.result-trust-text {
-  font-size: 14px;
-  font-style: italic;
-  color: var(--fl-text);
-  line-height: 1.6;
-  margin: 0 0 12px;
+.preis-karte-kicker {
+  margin: 0 0 8px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--fl-text-3);
 }
 
-.result-trust-author {
+.preis-karte-range {
   display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: center;
+  gap: 0;
+}
+
+.preis-karte-zahl {
+  font-size: clamp(32px, 6vw, 48px);
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  color: var(--fl-accent);
+  line-height: 1;
+}
+
+.preis-karte-trenner {
+  font-size: 20px;
+  color: var(--fl-text-3);
+  margin: 0 8px;
+  font-weight: 500;
+}
+
+.result-einordnung {
+  margin: 16px auto 0;
+  max-width: 340px;
+  padding: 14px 16px;
+  text-align: left;
+  background: var(--fl-bg);
+  border: 1px solid var(--fl-border-light);
+  border-radius: var(--fl-radius-sm);
+}
+
+.result-einordnung-title {
+  margin: 0 0 8px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--fl-text-2);
+}
+
+.result-einordnung-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--fl-text-2);
+}
+
+.result-einordnung-list li {
+  margin: 6px 0 0;
+}
+
+.result-einordnung-list li span[aria-hidden] {
+  margin-right: 6px;
+  color: var(--fl-accent);
+}
+
+.preis-karte-einheit {
+  margin: 4px 0 0;
+  font-size: 13px;
+  color: var(--fl-text-3);
+}
+
+.preis-karte-chips {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 6px;
+  margin-top: 12px;
+}
+
+.preis-karte-chip {
+  display: inline-flex;
   align-items: center;
+  background: var(--fl-bg);
+  border: 1px solid var(--fl-border-light);
+  border-radius: 999px;
+  padding: 4px 10px;
+  font-size: 11px;
+  color: var(--fl-text-2);
+}
+
+.preis-karte-fallback,
+.preis-karte-warn-einzeiler {
+  margin: 12px 0 0;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--fl-text-2);
+  text-align: center;
+}
+
+.preis-karte-warn-einzeiler {
+  color: #92400e;
+}
+
+.result-meta-einzeiler {
+  margin: -12px 0 0;
+  font-size: 11px;
+  line-height: 1.5;
+  color: var(--fl-text-3);
+  text-align: center;
+}
+
+/* ── Result: Testimonial Card ── */
+.result-testimonial-card {
+  background: var(--fl-bg);
+  border: 1px solid var(--fl-border-light);
+  border-radius: var(--fl-radius);
+  padding: 18px 20px;
+  display: flex;
+  flex-direction: column;
   gap: 10px;
 }
 
-.result-trust-avatar {
+.result-stars {
+  color: #f59e0b;
+  font-size: 13px;
+  letter-spacing: 1px;
+}
+
+.result-quote {
+  font-size: 13px;
+  font-style: italic;
+  color: var(--fl-text);
+  line-height: 1.6;
+  margin: 0;
+}
+
+.result-author {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--fl-border-light);
+}
+
+.result-avatar {
   width: 32px;
   height: 32px;
   border-radius: 50%;
@@ -3906,31 +4178,98 @@
   flex-shrink: 0;
 }
 
-.result-trust-name {
+.result-name {
   font-size: 13px;
   font-weight: 600;
   color: var(--fl-text);
 }
 
-.result-trust-ort {
-  font-size: 12px;
+.result-ort {
+  font-size: 11px;
   color: var(--fl-text-3);
+  margin-top: 1px;
 }
 
-.result-trust-points {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  padding-top: 16px;
-  border-top: 1px solid var(--fl-border-light);
+.result-trust-inline {
+  font-size: 11px;
+  color: var(--fl-text-3);
+  text-align: center;
+  line-height: 1.6;
+  margin: 0;
 }
 
-.result-trust-point {
+.budget-ok-feedback {
+  margin: -8px 0 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--fl-accent);
+  text-align: center;
+}
+
+/* ── Budget inline (Result) ── */
+.budget-check {
   display: flex;
   align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px 0;
+  border-top: 1px solid var(--fl-border-light);
+  border-bottom: 1px solid var(--fl-border-light);
+}
+
+.budget-check-label {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--fl-text);
+  margin: 0;
+  flex-shrink: 0;
+}
+
+.budget-check-btns {
+  display: flex;
   gap: 8px;
+}
+
+.budget-btn {
+  border: 1.5px solid var(--fl-border);
+  border-radius: 999px;
+  padding: 8px 16px;
   font-size: 13px;
+  font-weight: 600;
+  font-family: var(--fl-font-sans);
   color: var(--fl-text-2);
+  background: var(--fl-bg-card);
+  cursor: pointer;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+
+.budget-btn:hover {
+  border-color: var(--fl-accent);
+  color: var(--fl-accent);
+}
+
+.budget-btn.active {
+  background: var(--fl-accent);
+  border-color: var(--fl-accent);
+  color: white;
+}
+
+@media (max-width: 480px) {
+  .budget-check {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .budget-check-btns {
+    justify-content: stretch;
+  }
+
+  .budget-btn {
+    flex: 1;
+    text-align: center;
+    justify-content: center;
+  }
 }
 
 /* ── Funnel: Hinweis (Mindestauftrag u. a.) ── */
@@ -3985,7 +4324,7 @@
   border: 1px solid var(--fl-border-light);
   border-radius: var(--fl-radius-sm);
   overflow: hidden;
-  margin: 16px 0;
+  margin: 0;
 }
 
 .preis-accordion-trigger {
@@ -4081,44 +4420,6 @@
   padding-top: 12px;
 }
 
-.preis-faktoren {
-  padding-top: 4px;
-}
-
-.preis-faktoren-label {
-  font-size: 11px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: var(--fl-text-3);
-  margin: 0 0 10px;
-}
-
-.preis-faktoren-list {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 7px;
-}
-
-.preis-faktoren-list li {
-  font-size: 13px;
-  color: var(--fl-text-2);
-  line-height: 1.5;
-  padding-left: 16px;
-  position: relative;
-}
-
-.preis-faktoren-list li::before {
-  content: "–";
-  position: absolute;
-  left: 0;
-  color: var(--fl-accent);
-  font-weight: 700;
-}
-
 .preis-breakdown-rabatt td {
   border-bottom: none;
   font-size: 12px;
@@ -4131,9 +4432,10 @@
   font-size: 11px;
   color: var(--fl-text-3);
   line-height: 1.55;
-  margin: 8px 0 0;
-  padding-top: 8px;
-  border-top: 1px solid var(--fl-border-light);
+  margin: 0;
+  padding: 0;
+  text-align: center;
+  border: none;
 }
 
 /* ── Datenschutz-Checkbox ── */
@@ -4220,20 +4522,6 @@
 .funnel-footer-next:disabled {
   opacity: 0.35;
   cursor: not-allowed;
-}
-
-.funnel-footer-back {
-  background: none;
-  border: none;
-  font-size: 13px;
-  color: var(--fl-text-2);
-  cursor: pointer;
-  font-family: var(--fl-font-sans);
-  padding: 8px 0;
-}
-
-.funnel-footer-back:hover {
-  color: var(--fl-text);
 }
 
 /* ── Funnel Footer Legal ── */
@@ -4635,6 +4923,10 @@
   margin: 16px 0;
 }
 
+.preis-save-wrap--compact {
+  margin: 8px 0 0;
+}
+
 .preis-save-trigger {
   display: flex;
   align-items: center;
@@ -4834,6 +5126,15 @@
   opacity: 0.88;
 }
 
+.komplex-call-btn--hero {
+  width: 100%;
+  max-width: 320px;
+  margin-inline: auto;
+  padding: 18px 28px;
+  font-size: 19px;
+  border-radius: 16px;
+}
+
 .komplex-call-hint {
   font-size: 12px;
   color: var(--fl-text-3);
@@ -4877,21 +5178,36 @@
 
 .funnel-input {
   width: 100%;
-  border: 1px solid var(--fl-border);
+  border: 1.5px solid var(--fl-border);
   border-radius: 12px;
   padding: 12px 14px;
-  font-size: 14px;
+  font-size: 15px;
+  font-weight: 400;
   font-family: var(--fl-font-sans);
   color: var(--fl-text);
   background: var(--fl-bg-card);
   outline: none;
   line-height: 1.4;
   box-sizing: border-box;
+  transition:
+    border-color 0.15s,
+    box-shadow 0.15s;
+  -webkit-appearance: none;
+  appearance: none;
 }
 
 .funnel-input:focus {
   border-color: var(--fl-accent);
-  box-shadow: 0 0 0 3px rgba(46, 125, 82, 0.15);
+  box-shadow: 0 0 0 3px rgba(46, 125, 82, 0.12);
+}
+
+.funnel-input.input-error {
+  border-color: #c0392b;
+  background: #fff5f5;
+}
+
+.funnel-input.input-valid {
+  border-color: var(--fl-accent);
 }
 
 .funnel-textarea {

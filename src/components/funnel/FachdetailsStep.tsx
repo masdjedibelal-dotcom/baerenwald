@@ -1,6 +1,12 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 
 import { SelectionTile } from "@/components/funnel/SelectionTile";
 import type { FachdetailsState, FunnelState } from "@/lib/funnel/types";
@@ -30,7 +36,9 @@ import {
   SANITAER_FOLLOWUPS,
   SANITAER_Q1,
 } from "@/lib/funnel/fachdetails-questions";
+import { calculatePrice } from "@/lib/funnel/price-calc";
 import { tileIconForStepValue } from "@/lib/funnel-tile-icons";
+import { formatCurrencyEUR } from "@/lib/price-calc";
 import type { StepOption as LibStepOption } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
@@ -39,7 +47,13 @@ function asLibOptFromFach(o: FachdetailOptionDef): LibStepOption {
     value: o.value,
     label: o.label,
     hint: o.hint,
+    emoji: o.emoji,
     warnText: o.warnText,
+    infoExpand:
+      o.education ??
+      (o.value === "weiss_nicht"
+        ? "Kein Problem — wir rechnen mit einem Durchschnittswert"
+        : undefined),
   };
 }
 
@@ -59,10 +73,16 @@ function FollowUpPanel({
     if (!show) return;
     const el = wrapRef.current;
     if (!el) return;
-    const id = window.setTimeout(() => {
-      el.scrollIntoView({ behavior: "smooth", block: "start" });
-    }, 100);
-    return () => window.clearTimeout(id);
+    let cancelled = false;
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        if (cancelled) return;
+        el.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      });
+    });
+    return () => {
+      cancelled = true;
+    };
   }, [show, scrollDep]);
 
   return (
@@ -223,7 +243,12 @@ export function FachdetailsStep({
   }, [b]);
   const needSan = useMemo(() => {
     const s = new Set(b);
-    return s.has("bad") || s.has("wasser") || s.has("sanitaer");
+    return (
+      s.has("bad") ||
+      s.has("wasser") ||
+      s.has("sanitaer") ||
+      s.has("feuchtigkeit_schimmel")
+    );
   }, [b]);
   const needHeizung = b.includes("heizung");
   const needBadExtra = b.includes("bad");
@@ -266,7 +291,12 @@ export function FachdetailsStep({
 
   const needMaler = useMemo(() => {
     const s = new Set(b);
-    return s.has("maler") || s.has("streichen") || s.has("waende_boeden");
+    return (
+      s.has("maler") ||
+      s.has("streichen") ||
+      s.has("waende_boeden") ||
+      s.has("feuchtigkeit_schimmel")
+    );
   }, [b]);
 
   const needBoden = useMemo(() => {
@@ -322,8 +352,33 @@ export function FachdetailsStep({
     return GARTEN_FOLLOWUPS[id] ?? null;
   }, [fd.garten?.was]);
 
+  const livePreisZeile = useMemo(() => {
+    if (state.situation === "notfall" && state.dringlichkeit === "akut") {
+      return { min: 150, max: 600 };
+    }
+    const r = calculatePrice(state, { preview: true });
+    if (r.min <= 0 || r.max <= 0) return null;
+    return { min: r.min, max: r.max };
+  }, [state]);
+
   return (
     <div className={cn("space-y-6", className)}>
+      {livePreisZeile ? (
+        <p className="funnel-live-price-hint text-center text-[13px] font-semibold text-text-primary">
+          Aktueller Schätzwert: ca. {formatCurrencyEUR(livePreisZeile.min)} –{" "}
+          {formatCurrencyEUR(livePreisZeile.max)}
+        </p>
+      ) : null}
+      {b.includes("bad") &&
+      (b.includes("elektro") ||
+        b.includes("strom") ||
+        b.includes("elektrik")) ? (
+        <p className="rounded-xl border border-border-default bg-surface-muted/90 px-3.5 py-2.5 text-[12px] leading-snug text-text-secondary">
+          <span className="font-semibold text-text-primary">Bad + Elektro:</span>{" "}
+          Wir koordinieren Wasser, Strom und Termine zwischen Sanitär- und
+          Elektroarbeit — ein Ansprechpartner für den Ablauf.
+        </p>
+      ) : null}
       {showOmitHint ? (
         <p className="fachdetails-hinweis">
           Weitere Details klären wir beim Vor-Ort-Termin.

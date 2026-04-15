@@ -110,7 +110,7 @@ export function GroesseStep({
         <span className="groesse-input-label">Genaue Angabe:</span>
         <input
           type="number"
-          className="groesse-input"
+          className="groesse-input funnel-input"
           value={inputValue}
           placeholder="z.B. 65"
           onChange={(e) => {

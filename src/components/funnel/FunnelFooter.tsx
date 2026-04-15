@@ -8,7 +8,6 @@ export interface FunnelFooterProps {
   onNext?: () => void;
   onBack?: () => void;
   nextDisabled?: boolean;
-  showBack?: boolean;
   nextLabel?: string;
   /** Zusatzzeile unter der Button-Zeile (z. B. Hinweis bei Beratungs-Flow) */
   belowActions?: ReactNode;
@@ -19,7 +18,6 @@ export function FunnelFooter({
   onNext,
   onBack,
   nextDisabled = false,
-  showBack = true,
   nextLabel = "Weiter →",
   belowActions,
   className,
@@ -31,15 +29,17 @@ export function FunnelFooter({
       <div className="mx-auto max-w-xl funnel-footer-inner">
         <div className="funnel-footer-actions">
           <div className="min-w-0">
-            {showBack && onBack ? (
+            {onBack ? (
               <button
                 type="button"
                 onClick={onBack}
-                className="funnel-footer-back"
+                className="funnel-back-btn"
               >
-                Zurück
+                ← Zurück
               </button>
-            ) : null}
+            ) : (
+              <span className="funnel-back-spacer" aria-hidden />
+            )}
           </div>
           <div className="shrink-0">
             {onNext ? (

@@ -8,26 +8,31 @@ const ZEITRAUM_OPTIONS: {
   value: string;
   label: string;
   hint: string;
+  emoji: string;
 }[] = [
   {
     value: "sofort",
     label: "So schnell wie möglich",
-    hint: "Notfall oder dringend",
+    hint: "Sehr eilig — wir priorisieren passende Termine",
+    emoji: "⚡",
   },
   {
     value: "heute",
     label: "Diese Woche",
-    hint: "Innerhalb der nächsten 7 Tage",
+    hint: "Start oder Besichtigung in den nächsten 7 Tagen",
+    emoji: "📅",
   },
   {
     value: "woche",
     label: "Innerhalb 4 Wochen",
-    hint: "Kein Stress aber bald",
+    hint: "Zeitfenster in den kommenden Wochen",
+    emoji: "🗓️",
   },
   {
     value: "flexibel",
     label: "Ich bin flexibel",
-    hint: "Kein fixer Zeitplan",
+    hint: "Wir finden mit dir den besten Zeitpunkt",
+    emoji: "✅",
   },
 ];
 
@@ -78,7 +83,11 @@ export function PlzStep({
           placeholder="PLZ"
           value={plz}
           onChange={(e) => handlePlzChange(e.target.value)}
-          className="w-full max-w-[180px] rounded-xl border border-border-default p-3 text-[15px] text-text-primary outline-none transition-colors focus:border-funnel-accent"
+          className={cn(
+            "funnel-input max-w-[180px]",
+            plzStatus === "ungueltig" && "input-error",
+            plzStatus === "erlaubt" && "input-valid"
+          )}
         />
 
         {plzStatus === "ungueltig" && (
@@ -88,7 +97,9 @@ export function PlzStep({
         )}
 
         {plzStatus === "erlaubt" && (
-          <p className="plz-hint plz-hint--ok">✓ Wir sind in deiner Region aktiv</p>
+          <p className="plz-hint plz-hint--ok">
+            ✓ Perfekt — wir arbeiten in deiner Nähe
+          </p>
         )}
 
         {isAusserhalb && (
@@ -115,9 +126,8 @@ export function PlzStep({
         )}
       </div>
 
-      {/* Zeitraum nur anzeigen wenn nicht ausserhalb */}
       {!isAusserhalb && (
-        <div className="flex flex-col gap-2.5">
+        <div className="funnel-step-tiles-card flex flex-col gap-2.5">
           {ZEITRAUM_OPTIONS.map((c) => {
             const active = zeitraum === c.value;
             return (
@@ -125,17 +135,13 @@ export function PlzStep({
                 key={c.value}
                 type="button"
                 onClick={() => onZeitraumChange(c.value)}
-                className={cn(
-                  "rounded-xl border border-border-default bg-surface-card px-4 py-3 text-left transition-colors",
-                  active ? "funnel-tile-selected" : "funnel-tile-hover"
-                )}
+                className={cn("funnel-tile", active && "selected")}
               >
-                <span className="block text-sm font-medium text-text-primary">
-                  {c.label}
+                <span className="funnel-tile-emoji" aria-hidden>
+                  {c.emoji}
                 </span>
-                <span className="mt-0.5 block text-[11px] leading-snug text-text-tertiary">
-                  {c.hint}
-                </span>
+                <span className="funnel-tile-label">{c.label}</span>
+                <span className="funnel-tile-hint">{c.hint}</span>
               </button>
             );
           })}

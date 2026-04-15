@@ -6,8 +6,8 @@ import { cn } from "@/lib/utils";
 
 const LABELS = [
   "Vorhaben",
-  "Details",
   "Umfang",
+  "Details",
   "Fast fertig",
   "Ergebnis",
 ] as const;

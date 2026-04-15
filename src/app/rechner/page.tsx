@@ -1,7 +1,7 @@
 "use client";
 
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 
 import "@/app/baerenwald-landing.css";
 
@@ -28,6 +28,7 @@ import {
   getResolvedStepsForSituation,
   groesseEinheitFromConfig,
   isFachdetailsStepComplete,
+  shouldSwapFachdetailsBeforeGroesse,
 } from "@/lib/funnel/config";
 import { getBwFunnelProgressStep } from "@/lib/funnel/bw-funnel-progress";
 import {
@@ -74,6 +75,29 @@ type Screen =
   | "ausserhalb"
   | "danke";
 
+const SCREEN_STRIP_ORDER: Screen[] = [
+  "situation",
+  "bereiche",
+  "umfang",
+  "zugaenglichkeit",
+  "zustand",
+  "groesse",
+  "fachdetails",
+  "kundentyp",
+  "ort",
+  "loading",
+  "result",
+  "lead",
+  "beratung-lead",
+  "ausserhalb",
+];
+
+function funnelMainStripClass(screen: Screen): string {
+  const i = SCREEN_STRIP_ORDER.indexOf(screen);
+  const idx = i >= 0 ? i : 0;
+  return idx % 2 === 0 ? "funnel-main--strip-a" : "funnel-main--strip-b";
+}
+
 function isB2bSituation(s: Situation | null): boolean {
   return s === "gewerbe" || s === "gastro";
 }
@@ -97,6 +121,7 @@ function asLibOpt(o: FunnelStepOption): LibStepOption {
     value: o.value,
     label: o.label,
     hint: o.hint,
+    emoji: o.emoji,
     priceTag: o.priceTag,
     infoExpand: o.infoText,
     warnText: o.warnText,
@@ -105,6 +130,7 @@ function asLibOpt(o: FunnelStepOption): LibStepOption {
 }
 
 function FunnelRechnerInner() {
+  const router = useRouter();
   const searchParams = useSearchParams();
   const urlInit = useRef(false);
   const [screen, setScreen] = useState<Screen>("situation");
@@ -121,6 +147,10 @@ function FunnelRechnerInner() {
   const [resultModus, setResultModus] = useState<BwResultModus>("preisrahmen");
   const [schwellenwertAusgeloest, setSchwellenwertAusgeloest] = useState(false);
   const [komplexRueckrufDanke, setKomplexRueckrufDanke] = useState(false);
+  const [microNote, setMicroNote] = useState<{
+    target: Screen;
+    text: string;
+  } | null>(null);
 
   const {
     state,
@@ -144,9 +174,19 @@ function FunnelRechnerInner() {
     setFachdetails,
   } = useFunnelState();
 
-  const resolvedSteps = useMemo(
-    () => getResolvedStepsForSituation(state.situation, state.bereiche),
+  const fachdetailsBeforeGroesse = useMemo(
+    () => shouldSwapFachdetailsBeforeGroesse(state.situation, state.bereiche),
     [state.situation, state.bereiche]
+  );
+
+  const resolvedSteps = useMemo(
+    () =>
+      getResolvedStepsForSituation(
+        state.situation,
+        state.bereiche,
+        state.fachdetails
+      ),
+    [state.situation, state.bereiche, state.fachdetails]
   );
 
   const hasGroesseStep = useMemo(
@@ -203,6 +243,11 @@ function FunnelRechnerInner() {
     [state.situation]
   );
 
+  const hasKundentypStep = useMemo(
+    () => Boolean(stepKundentyp?.options && stepKundentyp.options.length > 0),
+    [stepKundentyp]
+  );
+
   const umfangOk =
     state.situation === "notfall"
       ? Boolean(state.dringlichkeit)
@@ -224,19 +269,52 @@ function FunnelRechnerInner() {
     }
   }, [state.photos]);
 
-  const goGroesseOrOrt = useCallback(() => {
-    setScreen(hasGroesseStep ? "groesse" : "ort");
-  }, [hasGroesseStep]);
+  useEffect(() => {
+    if (!microNote) return;
+    if (screen !== microNote.target) {
+      setMicroNote(null);
+      return;
+    }
+    const id = window.setTimeout(() => setMicroNote(null), 9000);
+    return () => window.clearTimeout(id);
+  }, [screen, microNote]);
+
+  const microBannerFor = useCallback(
+    (target: Screen) =>
+      microNote?.target === target ? (
+        <span className="font-medium text-text-primary">{microNote.text}</span>
+      ) : null,
+    [microNote]
+  );
+
+  const goPostGroesseChain = useCallback(() => {
+    if (hasFachdetailsStep) setScreen("fachdetails");
+    else if (hasKundentypStep) setScreen("kundentyp");
+    else setScreen("ort");
+  }, [hasFachdetailsStep, hasKundentypStep]);
+
+  const goGroesseOrPostGroesse = useCallback(() => {
+    if (hasGroesseStep) setScreen("groesse");
+    else goPostGroesseChain();
+  }, [hasGroesseStep, goPostGroesseChain]);
 
   const goAfterUmfang = useCallback(() => {
     if (stepZugaenglichkeit) setScreen("zugaenglichkeit");
-    else goGroesseOrOrt();
-  }, [stepZugaenglichkeit, goGroesseOrOrt]);
+    else goGroesseOrPostGroesse();
+  }, [stepZugaenglichkeit, goGroesseOrPostGroesse]);
 
   const goAfterZugaenglichkeit = useCallback(() => {
     if (stepZustand) setScreen("zustand");
-    else goGroesseOrOrt();
-  }, [stepZustand, goGroesseOrOrt]);
+    else goGroesseOrPostGroesse();
+  }, [stepZustand, goGroesseOrPostGroesse]);
+
+  const goAfterZustandScreen = useCallback(() => {
+    if (fachdetailsBeforeGroesse && hasFachdetailsStep) {
+      setScreen("fachdetails");
+      return;
+    }
+    goGroesseOrPostGroesse();
+  }, [fachdetailsBeforeGroesse, hasFachdetailsStep, goGroesseOrPostGroesse]);
 
   const handleNext = useCallback(() => {
     switch (screen) {
@@ -246,18 +324,37 @@ function FunnelRechnerInner() {
       case "bereiche":
         if (state.bereiche.length > 0) {
           if (isB2bSituation(state.situation)) setScreen("beratung-lead");
-          else if (hasFachdetailsStep) setScreen("fachdetails");
-          else if (state.situation === "notfall") setScreen("umfang");
-          else setScreen("kundentyp");
+          else {
+            setMicroNote({
+              target: "umfang",
+              text: "Gut — wir wissen schon was du brauchst",
+            });
+            setScreen("umfang");
+          }
         }
         break;
       case "fachdetails":
         if (isFachdetailsStepComplete(state)) {
-          setScreen(state.situation === "notfall" ? "umfang" : "kundentyp");
+          if (fachdetailsBeforeGroesse && hasGroesseStep) {
+            setMicroNote({
+              target: "groesse",
+              text: "Fast geschafft — noch die ungefähre Fläche",
+            });
+            setScreen("groesse");
+            break;
+          }
+          const nextAfterFach: Screen = hasKundentypStep
+            ? "kundentyp"
+            : "ort";
+          setMicroNote({
+            target: nextAfterFach,
+            text: "Wir kennen dein Projekt jetzt ziemlich gut",
+          });
+          setScreen(nextAfterFach);
         }
         break;
       case "kundentyp":
-        setScreen("umfang");
+        setScreen("ort");
         break;
       case "umfang":
         if (umfangOk) goAfterUmfang();
@@ -266,10 +363,21 @@ function FunnelRechnerInner() {
         if (state.zugaenglichkeit) goAfterZugaenglichkeit();
         break;
       case "zustand":
-        if (state.zustand) goGroesseOrOrt();
+        if (state.zustand) goAfterZustandScreen();
         break;
       case "groesse":
-        if (state.groesse != null) setScreen("ort");
+        if (state.groesse != null) {
+          if (fachdetailsBeforeGroesse) {
+            if (hasKundentypStep) setScreen("kundentyp");
+            else setScreen("ort");
+          } else if (hasFachdetailsStep) {
+            setScreen("fachdetails");
+          } else if (hasKundentypStep) {
+            setScreen("kundentyp");
+          } else {
+            setScreen("ort");
+          }
+        }
         break;
       case "ort": {
         if (state.plz.length < 4 || !state.zeitraum) break;
@@ -323,10 +431,14 @@ function FunnelRechnerInner() {
     screen,
     state,
     umfangOk,
-    goGroesseOrOrt,
+    goGroesseOrPostGroesse,
     goAfterUmfang,
     goAfterZugaenglichkeit,
+    goAfterZustandScreen,
+    fachdetailsBeforeGroesse,
+    hasGroesseStep,
     hasFachdetailsStep,
+    hasKundentypStep,
     setPrice,
   ]);
 
@@ -336,20 +448,33 @@ function FunnelRechnerInner() {
         setScreen("situation");
         break;
       case "kundentyp":
-        if (hasFachdetailsStep) setScreen("fachdetails");
-        else setScreen("bereiche");
+        if (fachdetailsBeforeGroesse) {
+          if (hasGroesseStep) setScreen("groesse");
+          else if (hasFachdetailsStep) setScreen("fachdetails");
+          else if (stepZustand) setScreen("zustand");
+          else if (stepZugaenglichkeit) setScreen("zugaenglichkeit");
+          else setScreen("umfang");
+        } else {
+          if (hasFachdetailsStep) setScreen("fachdetails");
+          else if (hasGroesseStep) setScreen("groesse");
+          else if (stepZustand) setScreen("zustand");
+          else if (stepZugaenglichkeit) setScreen("zugaenglichkeit");
+          else setScreen("umfang");
+        }
         break;
       case "fachdetails":
-        setScreen("bereiche");
+        if (fachdetailsBeforeGroesse) {
+          if (stepZustand) setScreen("zustand");
+          else if (stepZugaenglichkeit) setScreen("zugaenglichkeit");
+          else setScreen("umfang");
+        } else if (hasGroesseStep) {
+          setScreen("groesse");
+        } else {
+          setScreen("umfang");
+        }
         break;
       case "umfang":
-        setScreen(
-          state.situation === "notfall"
-            ? hasFachdetailsStep
-              ? "fachdetails"
-              : "bereiche"
-            : "kundentyp"
-        );
+        setScreen("bereiche");
         break;
       case "zugaenglichkeit":
         setScreen("umfang");
@@ -358,14 +483,39 @@ function FunnelRechnerInner() {
         setScreen("zugaenglichkeit");
         break;
       case "groesse":
-        if (stepZustand) setScreen("zustand");
-        else if (stepZugaenglichkeit) setScreen("zugaenglichkeit");
-        else setScreen("umfang");
+        if (fachdetailsBeforeGroesse && hasFachdetailsStep) {
+          setScreen("fachdetails");
+        } else if (stepZustand) {
+          setScreen("zustand");
+        } else if (stepZugaenglichkeit) {
+          setScreen("zugaenglichkeit");
+        } else {
+          setScreen("umfang");
+        }
         break;
       case "ort": {
-        if (hasGroesseStep) {
-          setScreen("groesse");
+        if (hasKundentypStep) {
+          setScreen("kundentyp");
           break;
+        }
+        if (fachdetailsBeforeGroesse) {
+          if (hasGroesseStep) {
+            setScreen("groesse");
+            break;
+          }
+          if (hasFachdetailsStep) {
+            setScreen("fachdetails");
+            break;
+          }
+        } else {
+          if (hasFachdetailsStep) {
+            setScreen("fachdetails");
+            break;
+          }
+          if (hasGroesseStep) {
+            setScreen("groesse");
+            break;
+          }
         }
         if (stepZustand) {
           setScreen("zustand");
@@ -388,7 +538,7 @@ function FunnelRechnerInner() {
         setScreen("result");
         break;
       case "beratung-lead":
-        setScreen(isB2bSituation(state.situation) ? "bereiche" : "kundentyp");
+        setScreen("bereiche");
         break;
       case "ausserhalb":
         setScreen("ort");
@@ -403,7 +553,8 @@ function FunnelRechnerInner() {
     state.situation,
     stepZustand,
     stepZugaenglichkeit,
-    hasFachdetailsStep,
+    hasKundentypStep,
+    fachdetailsBeforeGroesse,
   ]);
 
   const nextDisabled = useMemo(() => {
@@ -602,7 +753,9 @@ function FunnelRechnerInner() {
             <SelectionTile
               key={opt.value}
               option={libOpt}
-              icon={tileIconForStepValue(opt.value)}
+              icon={
+                libOpt.emoji ? undefined : tileIconForStepValue(opt.value)
+              }
               selected={selected}
               multi={multi}
               onChange={(value, sel) => {
@@ -631,7 +784,9 @@ function FunnelRechnerInner() {
               <SelectionTile
                 key={opt.value}
                 option={libOpt}
-                icon={tileIconForStepValue(opt.value)}
+                icon={
+                  libOpt.emoji ? undefined : tileIconForStepValue(opt.value)
+                }
                 selected={selected}
                 multi={false}
                 onChange={(value, sel) => {
@@ -660,7 +815,9 @@ function FunnelRechnerInner() {
             <SelectionTile
               key={opt.value}
               option={libOpt}
-              icon={tileIconForStepValue(opt.value)}
+              icon={
+                libOpt.emoji ? undefined : tileIconForStepValue(opt.value)
+              }
               selected={selected}
               multi={false}
               onChange={(value, sel) => {
@@ -702,6 +859,7 @@ function FunnelRechnerInner() {
             question="Was möchtest du erledigen?"
             subtext="Wähle dein Vorhaben — wir passen die Fragen an."
             animateKey={screen}
+            tilesCard
           >
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               {BW_FUNNEL_STEP1_OPTIONS.map((opt) => {
@@ -714,16 +872,15 @@ function FunnelRechnerInner() {
                     type="button"
                     onClick={() => setSituation(opt.id)}
                     className={cn(
-                      "rounded-[18px] border border-border-default p-4 text-left transition-colors",
-                      active ? "funnel-tile-selected" : "funnel-tile-hover"
+                      "funnel-tile",
+                      active && "selected"
                     )}
                   >
-                    <p className="text-[13px] font-semibold text-text-primary">
-                      {opt.label}
-                    </p>
-                    <p className="mt-0.5 text-[11px] text-text-secondary">
-                      {opt.hint}
-                    </p>
+                    <span className="funnel-tile-emoji" aria-hidden>
+                      {opt.emoji}
+                    </span>
+                    <span className="funnel-tile-label">{opt.label}</span>
+                    <span className="funnel-tile-hint">{opt.hint}</span>
                     {opt.tag && tagType ? (
                       <span
                         className={cn(
@@ -738,6 +895,11 @@ function FunnelRechnerInner() {
                 );
               })}
             </div>
+            <ul className="funnel-screen1-trust mt-5 list-none space-y-2.5 border-t border-border-default pt-5 text-left text-[13px] leading-snug text-text-secondary">
+              <li>✓ 3–4 Fragen, keine Anmeldung</li>
+              <li>✓ Realistische Preisrange München</li>
+              <li>✓ Optionaler Vor-Ort-Termin</li>
+            </ul>
           </StepWrapper>
         );
 
@@ -748,6 +910,7 @@ function FunnelRechnerInner() {
             question={stepBereiche?.question ?? ""}
             subtext={stepBereiche?.subtext}
             animateKey={`${screen}-${state.situation}`}
+            tilesCard
           >
             {renderTiles(stepBereiche)}
           </StepWrapper>
@@ -756,7 +919,7 @@ function FunnelRechnerInner() {
       case "fachdetails":
         return (
           <StepWrapper
-            stepLabel="Vorhaben"
+            stepLabel="Details"
             question="Kurz zu den Fachdetails"
             subtext="Folgefragen sind optional — „Weiß ich nicht“ ist immer möglich."
             animateKey={`${screen}-${state.bereiche.join(",")}`}
@@ -771,9 +934,10 @@ function FunnelRechnerInner() {
             stepLabel="Details"
             question={stepKundentyp?.question ?? ""}
             subtext={stepKundentyp?.subtext}
+            banner={microBannerFor("kundentyp")}
             animateKey={`${screen}-${state.situation}`}
           >
-            <div className="space-y-3">
+            <div className="funnel-step-tiles-card space-y-3">
               {stepKundentyp?.options?.map((opt) => {
                 const libOpt = asLibOpt(opt);
                 const selected = state.kundentyp === opt.value;
@@ -781,7 +945,9 @@ function FunnelRechnerInner() {
                   <SelectionTile
                     key={opt.value}
                     option={libOpt}
-                    icon={tileIconForStepValue(opt.value)}
+                    icon={
+                      libOpt.emoji ? undefined : tileIconForStepValue(opt.value)
+                    }
                     selected={selected}
                     multi={false}
                     onChange={(value, sel) => {
@@ -793,10 +959,10 @@ function FunnelRechnerInner() {
             </div>
             <button
               type="button"
-              className="mt-3 w-full text-center text-[13px] text-text-tertiary underline-offset-2 hover:underline"
+              className="skip-btn"
               onClick={() => {
                 setKundentyp(null);
-                setScreen("umfang");
+                setScreen("ort");
               }}
             >
               Diese Frage überspringen →
@@ -810,7 +976,9 @@ function FunnelRechnerInner() {
             stepLabel="Umfang"
             question={stepUmfang?.question ?? ""}
             subtext={stepUmfang?.subtext}
+            banner={microBannerFor("umfang")}
             animateKey={`${screen}-${state.situation}`}
+            tilesCard
           >
             {renderUmfangTiles()}
           </StepWrapper>
@@ -819,10 +987,11 @@ function FunnelRechnerInner() {
       case "zugaenglichkeit":
         return (
           <StepWrapper
-            stepLabel="Details"
+            stepLabel="Umfang"
             question={stepZugaenglichkeit?.question ?? ""}
             subtext={undefined}
             animateKey={`${screen}-${state.situation}`}
+            tilesCard
           >
             <div className="space-y-3">
               {stepZugaenglichkeit?.options?.map((opt) => {
@@ -832,7 +1001,9 @@ function FunnelRechnerInner() {
                   <SelectionTile
                     key={opt.value}
                     option={libOpt}
-                    icon={tileIconForStepValue(opt.value)}
+                    icon={
+                      libOpt.emoji ? undefined : tileIconForStepValue(opt.value)
+                    }
                     selected={selected}
                     multi={false}
                     onChange={(value, sel) => {
@@ -850,10 +1021,11 @@ function FunnelRechnerInner() {
       case "zustand":
         return (
           <StepWrapper
-            stepLabel="Details"
+            stepLabel="Umfang"
             question={stepZustand?.question ?? ""}
             subtext={undefined}
             animateKey={`${screen}-${state.situation}`}
+            tilesCard
           >
             <div className="space-y-3">
               {stepZustand?.options?.map((opt) => {
@@ -863,7 +1035,9 @@ function FunnelRechnerInner() {
                   <SelectionTile
                     key={opt.value}
                     option={libOpt}
-                    icon={tileIconForStepValue(opt.value)}
+                    icon={
+                      libOpt.emoji ? undefined : tileIconForStepValue(opt.value)
+                    }
                     selected={selected}
                     multi={false}
                     onChange={(value, sel) => {
@@ -883,6 +1057,7 @@ function FunnelRechnerInner() {
             question={stepGroesse?.question ?? ""}
             subtext={stepGroesse?.subtext}
             animateKey={`${screen}-${state.situation}-${state.bereiche.join(",")}`}
+            tilesCard
           >
             <GroesseStep
               config={groesseSliderConfig}
@@ -900,6 +1075,7 @@ function FunnelRechnerInner() {
             stepLabel="Fast fertig"
             question="Wo soll es stattfinden?"
             subtext="PLZ und gewünschter Zeitraum."
+            banner={microBannerFor("ort")}
             animateKey={screen}
           >
             <PlzStep
@@ -973,7 +1149,7 @@ function FunnelRechnerInner() {
                       inputMode="text"
                       autoComplete="given-name"
                       autoCapitalize="words"
-                      className="w-full rounded-xl border border-border-default px-3 py-2.5 text-sm text-text-primary outline-none focus:border-funnel-accent"
+                      className="funnel-input"
                       placeholder="Vorname"
                       value={state.vorname}
                       onChange={(e) =>
@@ -985,7 +1161,7 @@ function FunnelRechnerInner() {
                       inputMode="text"
                       autoComplete="family-name"
                       autoCapitalize="words"
-                      className="w-full rounded-xl border border-border-default px-3 py-2.5 text-sm text-text-primary outline-none focus:border-funnel-accent"
+                      className="funnel-input"
                       placeholder="Nachname"
                       value={state.nachname}
                       onChange={(e) =>
@@ -997,7 +1173,7 @@ function FunnelRechnerInner() {
                     type="tel"
                     inputMode="tel"
                     autoComplete="tel"
-                    className="w-full rounded-xl border border-border-default px-3 py-2.5 text-sm text-text-primary outline-none focus:border-funnel-accent"
+                    className="funnel-input"
                     placeholder="+49 oder 0..."
                     value={state.telefon}
                     onChange={(e) =>
@@ -1010,7 +1186,7 @@ function FunnelRechnerInner() {
                     autoComplete="email"
                     autoCapitalize="none"
                     autoCorrect="off"
-                    className="w-full rounded-xl border border-border-default px-3 py-2.5 text-sm text-text-primary outline-none focus:border-funnel-accent"
+                    className="funnel-input"
                     placeholder="E-Mail"
                     value={state.email}
                     onChange={(e) =>
@@ -1019,7 +1195,7 @@ function FunnelRechnerInner() {
                   />
                   <textarea
                     rows={3}
-                    className="w-full resize-y rounded-xl border border-border-default px-3 py-2.5 text-sm text-text-primary outline-none focus:border-funnel-accent"
+                    className="funnel-textarea"
                     placeholder="Kurze Beschreibung, Ort, Zeitplan…"
                     value={state.leadBeschreibung}
                     onChange={(e) =>
@@ -1057,28 +1233,30 @@ function FunnelRechnerInner() {
             animateKey="lead"
           >
             <LeadAvailabilityHint className="mb-4" />
-            <HWLeadForm
-              photos={state.photos}
-              onPhotosChange={addPhotos}
-              photoError={photoError}
-              selectedSlot={
-                state.selectedSlot
-                  ? {
-                      dateISO: state.selectedSlot.date,
-                      time: state.selectedSlot.time,
-                    }
-                  : null
-              }
-              onSlotSelect={(date, time) => {
-                setSlot(date.toISOString(), time);
-              }}
-              name={state.name}
-              email={state.email}
-              telefon={state.telefon}
-              onFieldChange={(field, value) => updateLeadField(field, value)}
-              formId={LEAD_FORM_ID}
-              onSubmit={handleLeadSubmit}
-            />
+            <div className="funnel-step-tiles-card">
+              <HWLeadForm
+                photos={state.photos}
+                onPhotosChange={addPhotos}
+                photoError={photoError}
+                selectedSlot={
+                  state.selectedSlot
+                    ? {
+                        dateISO: state.selectedSlot.date,
+                        time: state.selectedSlot.time,
+                      }
+                    : null
+                }
+                onSlotSelect={(date, time) => {
+                  setSlot(date.toISOString(), time);
+                }}
+                name={state.name}
+                email={state.email}
+                telefon={state.telefon}
+                onFieldChange={(field, value) => updateLeadField(field, value)}
+                formId={LEAD_FORM_ID}
+                onSubmit={handleLeadSubmit}
+              />
+            </div>
           </StepWrapper>
         );
 
@@ -1090,6 +1268,7 @@ function FunnelRechnerInner() {
             subtext={`Unser Einsatzgebiet ist aktuell München und Umgebung bis ca. 50 km. Hinterlasse deine Kontaktdaten — wir schauen was wir für dich tun können.`}
             animateKey="ausserhalb"
           >
+            <div className="funnel-step-tiles-card">
             <form
               onSubmit={handleAusserhalbLeadSubmit}
               className="space-y-3"
@@ -1100,7 +1279,7 @@ function FunnelRechnerInner() {
                   inputMode="text"
                   autoComplete="given-name"
                   autoCapitalize="words"
-                  className="w-full rounded-xl border border-border-default px-3 py-2.5 text-sm text-text-primary outline-none focus:border-funnel-accent"
+                  className="funnel-input"
                   placeholder="Vorname"
                   value={state.vorname}
                   onChange={(e) => updateLeadField("vorname", e.target.value)}
@@ -1110,7 +1289,7 @@ function FunnelRechnerInner() {
                   inputMode="text"
                   autoComplete="family-name"
                   autoCapitalize="words"
-                  className="w-full rounded-xl border border-border-default px-3 py-2.5 text-sm text-text-primary outline-none focus:border-funnel-accent"
+                  className="funnel-input"
                   placeholder="Nachname"
                   value={state.nachname}
                   onChange={(e) => updateLeadField("nachname", e.target.value)}
@@ -1121,7 +1300,7 @@ function FunnelRechnerInner() {
                 inputMode="tel"
                 autoComplete="tel"
                 required
-                className="w-full rounded-xl border border-border-default px-3 py-2.5 text-sm text-text-primary outline-none focus:border-funnel-accent"
+                className="funnel-input"
                 placeholder="+49 oder 0... (Pflicht)"
                 value={state.telefon}
                 onChange={(e) => updateLeadField("telefon", e.target.value)}
@@ -1132,7 +1311,7 @@ function FunnelRechnerInner() {
                 autoComplete="email"
                 autoCapitalize="none"
                 autoCorrect="off"
-                className="w-full rounded-xl border border-border-default px-3 py-2.5 text-sm text-text-primary outline-none focus:border-funnel-accent"
+                className="funnel-input"
                 placeholder="E-Mail"
                 value={state.email}
                 onChange={(e) => updateLeadField("email", e.target.value)}
@@ -1141,7 +1320,7 @@ function FunnelRechnerInner() {
                 type="text"
                 inputMode="numeric"
                 autoComplete="postal-code"
-                className="w-full max-w-[180px] rounded-xl border border-border-default px-3 py-2.5 text-sm text-text-primary outline-none focus:border-funnel-accent"
+                className="funnel-input max-w-[180px]"
                 placeholder="PLZ"
                 value={state.plz}
                 readOnly
@@ -1149,7 +1328,7 @@ function FunnelRechnerInner() {
               <textarea
                 autoCapitalize="sentences"
                 autoCorrect="on"
-                className="w-full rounded-xl border border-border-default px-3 py-2.5 text-sm text-text-primary outline-none focus:border-funnel-accent"
+                className="funnel-textarea resize-y"
                 placeholder="Kurze Beschreibung deines Vorhabens (optional)"
                 rows={3}
                 value={ausserhalbBeschreibung}
@@ -1174,6 +1353,7 @@ function FunnelRechnerInner() {
                 Wir melden uns innerhalb von 48h — unverbindlich.
               </p>
             </form>
+            </div>
           </StepWrapper>
         );
 
@@ -1223,16 +1403,21 @@ function FunnelRechnerInner() {
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className={cn("min-h-screen", funnelMainStripClass(screen))}>
       <FunnelHeader />
       <FunnelProgressBar currentStep={getBwFunnelProgressStep(screen)} />
       <main className="pb-24">{main()}</main>
       {showFooterNav ? (
         <FunnelFooter
           onNext={handleNext}
-          onBack={screen === "situation" ? undefined : handleBack}
+          onBack={() => {
+            if (screen === "situation") {
+              router.push("/");
+              return;
+            }
+            handleBack();
+          }}
           nextDisabled={nextDisabled}
-          showBack={screen !== "situation"}
           nextLabel={nextLabel}
           belowActions={
             screen === "beratung-lead" ? (

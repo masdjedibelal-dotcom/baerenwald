@@ -121,7 +121,7 @@ export function HWLeadForm({
             inputMode="text"
             autoComplete="name"
             autoCapitalize="words"
-            className="w-full rounded-xl border border-border-default px-3 py-2.5 text-sm outline-none focus:border-funnel-accent"
+            className="funnel-input"
             placeholder="Name"
             value={name}
             onChange={(e) => onFieldChange("name", e.target.value)}
@@ -132,7 +132,7 @@ export function HWLeadForm({
             autoComplete="email"
             autoCapitalize="none"
             autoCorrect="off"
-            className="w-full rounded-xl border border-border-default px-3 py-2.5 text-sm outline-none focus:border-funnel-accent"
+            className="funnel-input"
             placeholder="E-Mail"
             value={email}
             onChange={(e) => onFieldChange("email", e.target.value)}
@@ -142,7 +142,7 @@ export function HWLeadForm({
           type="tel"
           inputMode="tel"
           autoComplete="tel"
-          className="w-full rounded-xl border border-border-default px-3 py-2.5 text-sm outline-none focus:border-funnel-accent"
+          className="funnel-input"
           placeholder="+49 oder 0..."
           value={telefon}
           onChange={(e) => onFieldChange("telefon", e.target.value)}

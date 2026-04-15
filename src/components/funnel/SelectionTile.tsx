@@ -9,7 +9,8 @@ export type SelectionTileOption = StepOption;
 
 export interface SelectionTileProps {
   option: SelectionTileOption;
-  icon: ReactNode;
+  /** Nur wenn `option.emoji` fehlt (z. B. Fachdetails) */
+  icon?: ReactNode | null;
   selected: boolean;
   multi: boolean;
   onChange: (value: string, selected: boolean) => void;
@@ -37,14 +38,15 @@ export function SelectionTile({
 }: SelectionTileProps) {
   const { text: expandText, variant } = expandCopy(option);
   const showExpand = selected && Boolean(expandText);
+  const emoji = option.emoji;
 
   return (
     <button
       type="button"
       onClick={() => onChange(option.value, !selected)}
       className={cn(
-        "relative w-full rounded-xl border border-border-default p-3 text-left transition-colors",
-        selected ? "funnel-tile-selected" : "funnel-tile-hover",
+        "funnel-tile relative text-left",
+        selected && "selected",
         className
       )}
     >
@@ -81,28 +83,25 @@ export function SelectionTile({
         )}
       </div>
 
-      <div className="flex gap-3 pr-8">
-        <div
-          className={cn(
-            "flex size-[26px] shrink-0 items-center justify-center rounded-md bg-muted text-text-primary",
-            selected && "bg-funnel-accent text-white"
-          )}
-        >
-          <span className="flex size-4 items-center justify-center [&_svg]:size-4">
+      <div className="pr-8">
+        {emoji ? (
+          <span className="funnel-tile-emoji" aria-hidden>
+            {emoji}
+          </span>
+        ) : icon ? (
+          <span className="funnel-tile-icon-wrap" aria-hidden>
             {icon}
           </span>
-        </div>
-        <div className="min-w-0 flex-1">
-          <p className="text-[13px] font-medium text-text-primary">{option.label}</p>
-          {option.hint ? (
-            <p className="mt-1 text-[11px] text-text-secondary">{option.hint}</p>
-          ) : null}
-          {option.priceTag ? (
-            <span className="mt-1.5 inline-block rounded bg-green-50 px-1.5 py-0.5 text-[10px] font-medium text-green-800">
-              {option.priceTag}
-            </span>
-          ) : null}
-        </div>
+        ) : null}
+        <p className="funnel-tile-label">{option.label}</p>
+        {option.hint ? (
+          <p className="funnel-tile-hint">{option.hint}</p>
+        ) : null}
+        {option.priceTag ? (
+          <span className="mt-1.5 inline-block rounded bg-green-50 px-1.5 py-0.5 text-[10px] font-medium text-green-800">
+            {option.priceTag}
+          </span>
+        ) : null}
       </div>
 
       {showExpand && expandText ? (
