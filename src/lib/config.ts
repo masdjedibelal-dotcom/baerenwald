@@ -12,13 +12,13 @@ const siteUrl =
     : "https://www.baerenwald.de";
 
 export const SITE_CONFIG = {
-  companyName: "Bärenwald Handwerksgruppe",
+  companyName: "Bärenwald",
   logoInitials: "BW",
   accentColor: accentFromEnv,
   /** Kanonische Site-URL für Schema & Open Graph */
   url: siteUrl,
   phone: "+49 163 7316161",
-  phoneHref: "tel:+4916373161​61",
+  phoneHref: "tel:+491637316161",
   phoneFestnetz: "089 99733904",
   phoneFestnetHref: "tel:+498999733904",
   email: "info@baerenwald-muenchen.de",

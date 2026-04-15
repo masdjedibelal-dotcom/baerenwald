@@ -20,7 +20,7 @@ export function generateStaticParams() {
 export async function generateMetadata({ params }: PageProps) {
   const data = ratgeberDataForSlug(params.slug);
   if (!data) {
-    return { title: "Ratgeber — Bärenwald Handwerksgruppe" };
+    return { title: "Ratgeber — Bärenwald" };
   }
 
   const title = `${data.metaTitle} — Kosten & Ablauf München 2026`;

@@ -217,7 +217,7 @@ export function SiteFooter() {
             "sm:flex-row sm:items-center sm:justify-between"
           )}
         >
-          <p>© {year} Bärenwald Handwerksgruppe</p>
+          <p>© {year} Bärenwald</p>
           <div className="flex flex-wrap gap-x-3 gap-y-1">
             <Link href="/impressum" className="hover:text-white/50">
               Impressum

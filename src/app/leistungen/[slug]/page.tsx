@@ -20,7 +20,7 @@ export async function generateMetadata({ params }: PageProps) {
   const base = leistungBaseSlugFromParam(params.slug);
   const data = base ? LEISTUNGEN_DATA[base] : undefined;
   if (!data) {
-    return { title: "Leistung — Bärenwald Handwerksgruppe" };
+    return { title: "Leistung — Bärenwald" };
   }
 
   const title = `${data.label} München — Preise & Angebot`;

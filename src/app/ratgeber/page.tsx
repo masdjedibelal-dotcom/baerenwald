@@ -4,7 +4,7 @@ import { PageLayout } from "@/components/layout/PageLayout";
 import { RATGEBER, ratgeberHref } from "@/lib/routes";
 
 export const metadata = {
-  title: "Ratgeber — Kosten & Ablauf | Bärenwald Handwerksgruppe München",
+  title: "Ratgeber — Kosten & Ablauf | Bärenwald München",
   description:
     "Kosten, Ablauf und Tipps zu Renovierung, Bad, Boden, Heizung, Garten und mehr — speziell für München.",
 };

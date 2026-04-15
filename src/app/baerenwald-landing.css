@@ -2878,7 +2878,6 @@
 .kat-tabs {
   display: flex;
   gap: 0;
-  border-bottom: 1.5px solid var(--fl-border-light);
   overflow-x: auto;
   scrollbar-width: none;
   -webkit-overflow-scrolling: touch;
@@ -2904,11 +2903,7 @@
   font-size: 13px;
   font-weight: 500;
   white-space: nowrap;
-  border-bottom: 2.5px solid transparent;
-  margin-bottom: -1.5px;
-  transition:
-    color 0.15s,
-    border-color 0.15s;
+  transition: color 0.15s;
   flex-shrink: 0;
 }
 
@@ -2918,7 +2913,6 @@
 
 .kat-tab.active {
   color: var(--fl-accent);
-  border-bottom-color: var(--fl-accent);
   font-weight: 700;
 }
 

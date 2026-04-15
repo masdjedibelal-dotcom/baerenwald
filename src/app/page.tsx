@@ -9,7 +9,7 @@ import { faqSchema } from "@/lib/schema";
 import "@/app/baerenwald-landing.css";
 
 const title =
-  "Bärenwald Handwerksgruppe München — Maler, Elektriker, Bodenleger — alles aus einer Hand";
+  "Bärenwald München — Maler, Elektriker, Bodenleger — alles aus einer Hand";
 
 const description =
   `Kostenloser Preisrechner für Handwerksleistungen in München. Malerarbeiten, Bad, Elektro, Garten und mehr. Ein Ansprechpartner, wir kümmern uns um alle Handwerker — unverbindliche Beratung, Anfahrt wird bei Beauftragung angerechnet. ${CTA.heroSub}.`;
@@ -30,11 +30,13 @@ export async function generateMetadata(): Promise<Metadata> {
       title: { absolute: title },
       description,
       type: "website",
+      images: [{ url: "/og-image.png", width: 1200, height: 630, alt: title }],
     },
     twitter: {
       card: "summary_large_image",
       title: { absolute: title },
       description,
+      images: ["/og-image.png"],
     },
   };
 }

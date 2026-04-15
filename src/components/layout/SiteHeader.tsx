@@ -120,9 +120,6 @@ export function SiteHeader() {
           <span className="font-sans text-[20px] font-extrabold leading-none tracking-tight text-accent">
             Bärenwald
           </span>
-          <span className="text-[10px] font-medium uppercase tracking-[0.15em] text-text-tertiary">
-            Handwerksgruppe München
-          </span>
         </Link>
 
         <nav

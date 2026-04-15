@@ -38,8 +38,6 @@ export function FunnelHeader({ className }: FunnelHeaderProps) {
   const dialogDescId = useId();
   const [exitOpen, setExitOpen] = useState(false);
 
-  const tel = SITE_CONFIG.phone.replace(/\s/g, "");
-
   const closeExit = useCallback(() => setExitOpen(false), []);
   const confirmExit = useCallback(() => {
     setExitOpen(false);
@@ -64,24 +62,11 @@ export function FunnelHeader({ className }: FunnelHeaderProps) {
     <>
       <header
         className={cn(
-          "sticky top-0 z-50 flex h-[60px] items-center justify-between gap-3 border-b border-border-default bg-surface-card/90 px-4 backdrop-blur-sm sm:px-6",
+          "sticky top-0 z-50 grid h-[60px] grid-cols-[1fr_auto_1fr] items-center gap-2 border-b border-border-default bg-surface-card/90 px-3 backdrop-blur-sm sm:px-6",
           className
         )}
       >
-        <div className="flex min-w-0 flex-1 items-center gap-3">
-          <Image
-            src="/logo.png"
-            alt="Bärenwald München"
-            width={36}
-            height={36}
-            className="shrink-0"
-            style={{ objectFit: "contain" }}
-          />
-          <span className="truncate font-semibold text-text-primary">
-            {SITE_CONFIG.companyName}
-          </span>
-        </div>
-        <div className="flex shrink-0 items-center gap-2 sm:gap-3">
+        <div className="flex min-w-0 justify-start">
           <button
             type="button"
             onClick={() => setExitOpen(true)}
@@ -89,8 +74,28 @@ export function FunnelHeader({ className }: FunnelHeaderProps) {
           >
             Abbrechen
           </button>
+        </div>
+
+        <div className="flex min-w-0 flex-col items-center justify-center gap-0.5 text-center">
+          <Image
+            src="/logo.png"
+            alt="Bärenwald"
+            width={40}
+            height={40}
+            className="shrink-0"
+            style={{ objectFit: "contain" }}
+          />
+          <span
+            className="max-w-[200px] truncate text-sm font-semibold leading-none text-text-primary sm:max-w-none"
+            aria-hidden
+          >
+            {SITE_CONFIG.companyName}
+          </span>
+        </div>
+
+        <div className="flex min-w-0 justify-end">
           <a
-            href={`tel:${tel}`}
+            href={SITE_CONFIG.phoneHref}
             className="flex shrink-0 items-center gap-1.5 text-sm text-text-tertiary"
           >
             <PhoneIcon className="shrink-0 text-text-tertiary" />

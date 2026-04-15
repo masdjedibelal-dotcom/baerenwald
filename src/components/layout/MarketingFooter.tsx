@@ -103,7 +103,7 @@ export function MarketingFooter() {
             <span className="footer-slim-sep" aria-hidden>
               ·
             </span>
-            <span className="footer-slim-tag">Handwerksgruppe München.</span>
+            <span className="footer-slim-tag">München &amp; Umgebung.</span>
           </p>
           <nav className="footer-slim-nav" aria-label="Rechtliches">
             <a href="/impressum">Impressum</a>

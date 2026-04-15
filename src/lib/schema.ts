@@ -9,7 +9,7 @@ export function localBusinessSchema(): Record<string, unknown> {
     "@type": "HomeAndConstructionBusiness",
     name: "Bärenwald München",
     description:
-      "Handwerksgruppe München — ein Ansprechpartner für alle Gewerke. Renovierung, Sanierung, Garten und mehr.",
+      "Bärenwald München — ein Ansprechpartner für alle Gewerke. Renovierung, Sanierung, Garten und mehr.",
     url: BASE_URL,
     telephone: "+4916373161616",
     email: "info@baerenwald-muenchen.de",

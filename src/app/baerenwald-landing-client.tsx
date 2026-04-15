@@ -175,6 +175,7 @@ export default function BaerenwaldLandingClient({
     setMounted(true);
   }, []);
 
+  /** Viewport-Koordinaten (ohne scrollX/Y) — für position: fixed unter dem Suchfeld */
   const updateDropdownPos = useCallback(() => {
     const el = searchComboRef.current;
     if (!el) return;
@@ -189,18 +190,44 @@ export default function BaerenwaldLandingClient({
   useLayoutEffect(() => {
     if (!mounted || !showSearchSuggestions) return;
     updateDropdownPos();
-  }, [mounted, showSearchSuggestions, updateDropdownPos, searchSuggestions]);
+  }, [
+    mounted,
+    showSearchSuggestions,
+    updateDropdownPos,
+    searchSuggestions,
+    searchQ,
+  ]);
 
   useEffect(() => {
     if (!mounted || !showSearchSuggestions) return;
+
     updateDropdownPos();
-    window.addEventListener("scroll", updateDropdownPos, true);
+
+    const scrollOpts: AddEventListenerOptions = { passive: true };
+    window.addEventListener("scroll", updateDropdownPos, scrollOpts);
     window.addEventListener("resize", updateDropdownPos);
+
+    const vv = window.visualViewport;
+    if (vv) {
+      vv.addEventListener("resize", updateDropdownPos);
+      vv.addEventListener("scroll", updateDropdownPos);
+    }
+
     return () => {
-      window.removeEventListener("scroll", updateDropdownPos, true);
+      window.removeEventListener("scroll", updateDropdownPos, scrollOpts);
       window.removeEventListener("resize", updateDropdownPos);
+      if (vv) {
+        vv.removeEventListener("resize", updateDropdownPos);
+        vv.removeEventListener("scroll", updateDropdownPos);
+      }
     };
-  }, [mounted, showSearchSuggestions, updateDropdownPos]);
+  }, [
+    mounted,
+    showSearchSuggestions,
+    updateDropdownPos,
+    searchQ,
+    searchSuggestions,
+  ]);
 
   useEffect(() => {
     const root = document.querySelector(".baerenwald-landing");
