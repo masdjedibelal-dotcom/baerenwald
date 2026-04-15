@@ -62,6 +62,7 @@ export const BW_FUNNEL_INITIAL_STATE: FunnelState = {
   situation: null,
   bereiche: [],
   kundentyp: null,
+  showOmitHint: false,
   umfang: null,
   umfangFaktor: 1,
   groesse: null,
@@ -77,7 +78,6 @@ export const BW_FUNNEL_INITIAL_STATE: FunnelState = {
   zugaenglichkeit: null,
   zustand: null,
   fachdetails: {},
-  showOmitHint: false,
   photos: [],
   name: "",
   vorname: "",
@@ -96,7 +96,6 @@ export function createInitialBwFunnelState(): FunnelState {
     breakdown: [],
     fachdetails: {},
     photos: [],
-    showOmitHint: false,
   };
 }
 
