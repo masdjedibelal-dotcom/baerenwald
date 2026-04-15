@@ -96,6 +96,7 @@ export function createInitialBwFunnelState(): FunnelState {
     breakdown: [],
     fachdetails: {},
     photos: [],
+    showOmitHint: false,
   };
 }
 
