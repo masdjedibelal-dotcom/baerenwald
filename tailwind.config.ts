@@ -21,13 +21,8 @@ const config: Config = {
           hover: "#256642",
           foreground: "#FFFFFF",
         },
-        sand: {
-          DEFAULT: "#C4922A",
-          light: "#FEF3DC",
-          dark: "#8B6914",
-        },
         surface: {
-          page: "#F5F2ED",
+          page: "#F4F4F3",
           card: "#FFFFFF",
           muted: "#EDEAE4",
           dark: "#1A3D2B",
