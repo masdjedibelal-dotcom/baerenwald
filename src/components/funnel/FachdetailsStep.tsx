@@ -1,9 +1,15 @@
 "use client";
 
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { SelectionTile } from "@/components/funnel/SelectionTile";
 import type { FachdetailsState, FunnelState } from "@/lib/funnel/types";
+import {
+  countFachdetailGewerke,
+  FACHDETAILS_NOTFALL,
+  getAktiveFachdetailGewerke,
+  type FachdetailGewerkKey,
+} from "@/lib/funnel/fachdetails-notfall";
 import {
   BODEN_FOLLOWUPS,
   BODEN_Q1,
@@ -17,6 +23,7 @@ import {
   HEIZUNG_Q1,
   MALER_FOLLOWUPS,
   MALER_Q1,
+  type FachdetailOptionDef,
   type FachdetailQuestionDef,
   SANITAER_BAD_OBJEKTE_MULTI,
   SANITAER_BAD_Q,
@@ -27,25 +34,37 @@ import { tileIconForStepValue } from "@/lib/funnel-tile-icons";
 import type { StepOption as LibStepOption } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
-function asLibOptFromFach(o: {
-  value: string;
-  label: string;
-  hint?: string;
-}): LibStepOption {
+function asLibOptFromFach(o: FachdetailOptionDef): LibStepOption {
   return {
     value: o.value,
     label: o.label,
     hint: o.hint,
+    warnText: o.warnText,
   };
 }
 
 function FollowUpPanel({
   show,
   children,
+  scrollDep,
 }: {
   show: boolean;
   children: React.ReactNode;
+  /** Änderung (z. B. Folgefragen-ID) triggert erneutes Scrollen, solange `show` true ist */
+  scrollDep?: string | number;
 }) {
+  const wrapRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!show) return;
+    const el = wrapRef.current;
+    if (!el) return;
+    const id = window.setTimeout(() => {
+      el.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 100);
+    return () => window.clearTimeout(id);
+  }, [show, scrollDep]);
+
   return (
     <div
       className={cn(
@@ -56,7 +75,15 @@ function FollowUpPanel({
         transform: show ? "translateY(0)" : "translateY(-6px)",
       }}
     >
-      {show ? <div className="pt-3">{children}</div> : null}
+      {show ? (
+        <div
+          key={String(scrollDep ?? "folge")}
+          ref={wrapRef}
+          className="folgefrage-wrap pt-3"
+        >
+          {children}
+        </div>
+      ) : null}
     </div>
   );
 }
@@ -112,7 +139,7 @@ function SingleQuestionBlock({
         </div>
       ) : null}
       <div className="mt-3 space-y-2">
-        {q.options.map((opt) => {
+        {q.options.map((opt: FachdetailOptionDef) => {
           const lib = asLibOptFromFach(opt);
           const sel = selected === opt.value;
           const oKey = optionEduKey(q.id, opt.value);
@@ -178,6 +205,17 @@ export function FachdetailsStep({
 }: FachdetailsStepProps) {
   const b = state.bereiche;
   const fd = state.fachdetails;
+  const isNotfall = state.situation === "notfall";
+  const aktiveGewerke = useMemo(
+    () => getAktiveFachdetailGewerke(b, 2),
+    [b]
+  );
+  const showOmitHint = countFachdetailGewerke(b) > 2;
+
+  const showGewerk = useCallback(
+    (g: FachdetailGewerkKey) => aktiveGewerke.includes(g),
+    [aktiveGewerke]
+  );
 
   const needElektro = useMemo(() => {
     const s = new Set(b);
@@ -197,30 +235,34 @@ export function FachdetailsStep({
   }, []);
 
   const elektroFollowQ = useMemo(() => {
+    if (isNotfall) return null;
     const p = fd.elektro?.problem;
     if (!p) return null;
     const opt = ELEKTRO_Q1.options.find((o) => o.value === p);
     const id = opt?.followUpId;
     if (!id) return null;
     return ELEKTRO_FOLLOWUPS[id] ?? null;
-  }, [fd.elektro?.problem]);
+  }, [fd.elektro?.problem, isNotfall]);
 
   const sanFollowQ = useMemo(() => {
+    if (isNotfall) return null;
     if (fd.sanitaer?.lage !== "wand") return null;
     return SANITAER_FOLLOWUPS.sanitaer_folge_rohre;
-  }, [fd.sanitaer?.lage]);
+  }, [fd.sanitaer?.lage, isNotfall]);
 
   const badFollowMulti = useMemo(() => {
+    if (isNotfall) return null;
     if (fd.sanitaer?.badWas !== "objekte") return null;
     return SANITAER_BAD_OBJEKTE_MULTI;
-  }, [fd.sanitaer?.badWas]);
+  }, [fd.sanitaer?.badWas, isNotfall]);
 
   const heizFollowQ = useMemo(() => {
+    if (isNotfall) return null;
     const t = fd.heizung?.typ;
     if (t === "oel") return HEIZUNG_FOLLOWUPS.heizung_folge_oel_alter;
     if (t === "waermepumpe") return HEIZUNG_FOLLOWUPS.heizung_folge_wp_vorhaben;
     return null;
-  }, [fd.heizung?.typ]);
+  }, [fd.heizung?.typ, isNotfall]);
 
   const needMaler = useMemo(() => {
     const s = new Set(b);
@@ -282,13 +324,19 @@ export function FachdetailsStep({
 
   return (
     <div className={cn("space-y-6", className)}>
-      {needElektro ? (
+      {showOmitHint ? (
+        <p className="fachdetails-hinweis">
+          Weitere Details klären wir beim Vor-Ort-Termin.
+        </p>
+      ) : null}
+
+      {showGewerk("elektro") && needElektro ? (
         <section className="space-y-3">
           <p className="text-[11px] font-semibold uppercase tracking-wide text-text-tertiary">
             Elektro
           </p>
           <SingleQuestionBlock
-            q={ELEKTRO_Q1}
+            q={isNotfall ? FACHDETAILS_NOTFALL.elektro : ELEKTRO_Q1}
             selected={fd.elektro?.problem}
             educationOpen={Boolean(eduKeys.elektro_q1)}
             onToggleEdu={() => toggleEdu("elektro_q1")}
@@ -303,75 +351,107 @@ export function FachdetailsStep({
               });
             }}
           />
-          <FollowUpPanel show={Boolean(elektroFollowQ)}>
-            {elektroFollowQ ? (
-              <SingleQuestionBlock
-                q={elektroFollowQ}
-                selected={fd.elektro?.folge}
-                educationOpen={Boolean(eduKeys[elektroFollowQ.id])}
-                onToggleEdu={() => toggleEdu(elektroFollowQ.id)}
-                optionEduOpen={eduKeys}
-                onToggleOptionEdu={toggleEdu}
-                onSelect={(value) => {
-                  onChange({
-                    elektro: {
-                      ...fd.elektro,
-                      problem: fd.elektro?.problem,
-                      folge: value,
-                    },
-                  });
-                }}
-              />
-            ) : null}
-          </FollowUpPanel>
+          {!isNotfall ? (
+            <FollowUpPanel
+              show={Boolean(elektroFollowQ)}
+              scrollDep={elektroFollowQ?.id}
+            >
+              {elektroFollowQ ? (
+                <SingleQuestionBlock
+                  q={elektroFollowQ}
+                  selected={fd.elektro?.folge}
+                  educationOpen={Boolean(eduKeys[elektroFollowQ.id])}
+                  onToggleEdu={() => toggleEdu(elektroFollowQ.id)}
+                  optionEduOpen={eduKeys}
+                  onToggleOptionEdu={toggleEdu}
+                  onSelect={(value) => {
+                    onChange({
+                      elektro: {
+                        ...fd.elektro,
+                        problem: fd.elektro?.problem,
+                        folge: value,
+                      },
+                    });
+                  }}
+                />
+              ) : null}
+            </FollowUpPanel>
+          ) : null}
         </section>
       ) : null}
 
-      {needSan ? (
+      {showGewerk("sanitaer") && needSan ? (
         <section className="space-y-3">
           <p className="text-[11px] font-semibold uppercase tracking-wide text-text-tertiary">
             Sanitär
           </p>
-          <SingleQuestionBlock
-            q={SANITAER_Q1}
-            selected={fd.sanitaer?.lage}
-            educationOpen={Boolean(eduKeys.san_q1)}
-            onToggleEdu={() => toggleEdu("san_q1")}
-            optionEduOpen={eduKeys}
-            onToggleOptionEdu={toggleEdu}
-            onSelect={(value) => {
-              onChange({
-                sanitaer: {
-                  ...fd.sanitaer,
-                  lage: value,
-                  rohre: value === "wand" ? fd.sanitaer?.rohre : undefined,
-                },
-              });
-            }}
-          />
-          <FollowUpPanel show={Boolean(sanFollowQ)}>
-            {sanFollowQ ? (
+          {isNotfall ? (
+            <SingleQuestionBlock
+              q={FACHDETAILS_NOTFALL.sanitaer}
+              selected={fd.sanitaer?.notfallSchwere}
+              educationOpen={Boolean(eduKeys.san_notfall)}
+              onToggleEdu={() => toggleEdu("san_notfall")}
+              optionEduOpen={eduKeys}
+              onToggleOptionEdu={toggleEdu}
+              onSelect={(value) => {
+                onChange({
+                  sanitaer: {
+                    notfallSchwere: value,
+                    lage: undefined,
+                    rohre: undefined,
+                    badWas: undefined,
+                    badObjekte: undefined,
+                  },
+                });
+              }}
+            />
+          ) : (
+            <>
               <SingleQuestionBlock
-                q={sanFollowQ}
-                selected={fd.sanitaer?.rohre}
-                educationOpen={Boolean(eduKeys[sanFollowQ.id])}
-                onToggleEdu={() => toggleEdu(sanFollowQ.id)}
+                q={SANITAER_Q1}
+                selected={fd.sanitaer?.lage}
+                educationOpen={Boolean(eduKeys.san_q1)}
+                onToggleEdu={() => toggleEdu("san_q1")}
                 optionEduOpen={eduKeys}
                 onToggleOptionEdu={toggleEdu}
                 onSelect={(value) => {
                   onChange({
                     sanitaer: {
                       ...fd.sanitaer,
-                      lage: fd.sanitaer?.lage,
-                      rohre: value,
+                      lage: value,
+                      rohre: value === "wand" ? fd.sanitaer?.rohre : undefined,
                     },
                   });
                 }}
               />
-            ) : null}
-          </FollowUpPanel>
+              <FollowUpPanel
+                show={Boolean(sanFollowQ)}
+                scrollDep={sanFollowQ?.id}
+              >
+                {sanFollowQ ? (
+                  <SingleQuestionBlock
+                    q={sanFollowQ}
+                    selected={fd.sanitaer?.rohre}
+                    educationOpen={Boolean(eduKeys[sanFollowQ.id])}
+                    onToggleEdu={() => toggleEdu(sanFollowQ.id)}
+                    optionEduOpen={eduKeys}
+                    onToggleOptionEdu={toggleEdu}
+                    onSelect={(value) => {
+                      onChange({
+                        sanitaer: {
+                          ...fd.sanitaer,
+                          lage: fd.sanitaer?.lage,
+                          rohre: value,
+                        },
+                      });
+                    }}
+                  />
+                ) : null}
+              </FollowUpPanel>
+            </>
+          )}
 
-          {needBadExtra ? (
+          {!isNotfall && needBadExtra ? (
             <div className="space-y-3 pt-1">
               <SingleQuestionBlock
                 q={SANITAER_BAD_Q}
@@ -395,7 +475,10 @@ export function FachdetailsStep({
                   });
                 }}
               />
-              <FollowUpPanel show={Boolean(badFollowMulti)}>
+              <FollowUpPanel
+                show={Boolean(badFollowMulti)}
+                scrollDep={badFollowMulti?.id}
+              >
                 {badFollowMulti ? (
                   <div className="rounded-xl border border-border-default bg-surface-card p-4">
                     <h3 className="text-[15px] font-semibold text-text-primary">
@@ -424,10 +507,10 @@ export function FachdetailsStep({
                               });
                             }}
                             className={cn(
-                              "rounded-full border px-3 py-1.5 text-[12px] font-medium transition-colors",
+                              "rounded-full border border-border-default bg-surface-card px-3 py-1.5 text-[12px] font-medium text-text-secondary transition-colors",
                               active
-                                ? "border-funnel-accent bg-funnel-accent text-white"
-                                : "border-border-default bg-surface-card text-text-secondary"
+                                ? "funnel-tile-selected text-text-primary"
+                                : "funnel-tile-hover"
                             )}
                           >
                             {opt.label}
@@ -443,13 +526,13 @@ export function FachdetailsStep({
         </section>
       ) : null}
 
-      {needHeizung ? (
+      {showGewerk("heizung") && needHeizung ? (
         <section className="space-y-3">
           <p className="text-[11px] font-semibold uppercase tracking-wide text-text-tertiary">
             Heizung
           </p>
           <SingleQuestionBlock
-            q={HEIZUNG_Q1}
+            q={isNotfall ? FACHDETAILS_NOTFALL.heizung : HEIZUNG_Q1}
             selected={fd.heizung?.typ}
             educationOpen={Boolean(eduKeys.heiz_q1)}
             onToggleEdu={() => toggleEdu("heiz_q1")}
@@ -465,45 +548,50 @@ export function FachdetailsStep({
               });
             }}
           />
-          <FollowUpPanel show={Boolean(heizFollowQ)}>
-            {heizFollowQ ? (
-              <SingleQuestionBlock
-                q={heizFollowQ}
-                selected={
-                  heizFollowQ.id === "heizung_folge_oel_alter"
-                    ? fd.heizung?.alter
-                    : fd.heizung?.vorhaben
-                }
-                educationOpen={Boolean(eduKeys[heizFollowQ.id])}
-                onToggleEdu={() => toggleEdu(heizFollowQ.id)}
-                optionEduOpen={eduKeys}
-                onToggleOptionEdu={toggleEdu}
-                onSelect={(value) => {
-                  if (heizFollowQ.id === "heizung_folge_oel_alter") {
-                    onChange({
-                      heizung: {
-                        typ: fd.heizung?.typ,
-                        alter: value,
-                        vorhaben: undefined,
-                      },
-                    });
-                  } else {
-                    onChange({
-                      heizung: {
-                        typ: fd.heizung?.typ,
-                        alter: fd.heizung?.alter,
-                        vorhaben: value,
-                      },
-                    });
+          {!isNotfall ? (
+            <FollowUpPanel
+              show={Boolean(heizFollowQ)}
+              scrollDep={heizFollowQ?.id}
+            >
+              {heizFollowQ ? (
+                <SingleQuestionBlock
+                  q={heizFollowQ}
+                  selected={
+                    heizFollowQ.id === "heizung_folge_oel_alter"
+                      ? fd.heizung?.alter
+                      : fd.heizung?.vorhaben
                   }
-                }}
-              />
-            ) : null}
-          </FollowUpPanel>
+                  educationOpen={Boolean(eduKeys[heizFollowQ.id])}
+                  onToggleEdu={() => toggleEdu(heizFollowQ.id)}
+                  optionEduOpen={eduKeys}
+                  onToggleOptionEdu={toggleEdu}
+                  onSelect={(value) => {
+                    if (heizFollowQ.id === "heizung_folge_oel_alter") {
+                      onChange({
+                        heizung: {
+                          typ: fd.heizung?.typ,
+                          alter: value,
+                          vorhaben: undefined,
+                        },
+                      });
+                    } else {
+                      onChange({
+                        heizung: {
+                          typ: fd.heizung?.typ,
+                          alter: fd.heizung?.alter,
+                          vorhaben: value,
+                        },
+                      });
+                    }
+                  }}
+                />
+              ) : null}
+            </FollowUpPanel>
+          ) : null}
         </section>
       ) : null}
 
-      {needMaler ? (
+      {showGewerk("maler") && needMaler ? (
         <section className="space-y-3">
           <p className="text-[11px] font-semibold uppercase tracking-wide text-text-tertiary">
             Maler
@@ -528,7 +616,7 @@ export function FachdetailsStep({
               });
             }}
           />
-          <FollowUpPanel show={Boolean(malerFollowQ)}>
+          <FollowUpPanel show={Boolean(malerFollowQ)} scrollDep={malerFollowQ?.id}>
             {malerFollowQ ? (
               <SingleQuestionBlock
                 q={malerFollowQ}
@@ -566,7 +654,7 @@ export function FachdetailsStep({
         </section>
       ) : null}
 
-      {needBoden ? (
+      {showGewerk("boden") && needBoden ? (
         <section className="space-y-3">
           <p className="text-[11px] font-semibold uppercase tracking-wide text-text-tertiary">
             Bodenbelag
@@ -591,7 +679,7 @@ export function FachdetailsStep({
               });
             }}
           />
-          <FollowUpPanel show={Boolean(bodenFollowQ)}>
+          <FollowUpPanel show={Boolean(bodenFollowQ)} scrollDep={bodenFollowQ?.id}>
             {bodenFollowQ ? (
               <SingleQuestionBlock
                 q={bodenFollowQ}
@@ -614,7 +702,7 @@ export function FachdetailsStep({
         </section>
       ) : null}
 
-      {needDach ? (
+      {showGewerk("dach") && needDach ? (
         <section className="space-y-3">
           <p className="text-[11px] font-semibold uppercase tracking-wide text-text-tertiary">
             Dach
@@ -641,7 +729,7 @@ export function FachdetailsStep({
               });
             }}
           />
-          <FollowUpPanel show={Boolean(dachFollowQ)}>
+          <FollowUpPanel show={Boolean(dachFollowQ)} scrollDep={dachFollowQ?.id}>
             {dachFollowQ ? (
               <SingleQuestionBlock
                 q={dachFollowQ}
@@ -664,7 +752,7 @@ export function FachdetailsStep({
         </section>
       ) : null}
 
-      {needGarten ? (
+      {showGewerk("garten") && needGarten ? (
         <section className="space-y-3">
           <p className="text-[11px] font-semibold uppercase tracking-wide text-text-tertiary">
             Garten
@@ -692,7 +780,10 @@ export function FachdetailsStep({
               });
             }}
           />
-          <FollowUpPanel show={Boolean(gartenFollowQ)}>
+          <FollowUpPanel
+            show={Boolean(gartenFollowQ)}
+            scrollDep={gartenFollowQ?.id}
+          >
             {gartenFollowQ?.inputType === "multi" ? (
               <div className="rounded-xl border border-border-default bg-surface-card p-4">
                 <h3 className="text-[15px] font-semibold text-text-primary">
@@ -724,10 +815,10 @@ export function FachdetailsStep({
                               });
                             }}
                             className={cn(
-                              "rounded-full border px-3 py-1.5 text-[12px] font-medium transition-colors",
+                              "rounded-full border border-border-default bg-surface-card px-3 py-1.5 text-[12px] font-medium text-text-secondary transition-colors",
                               active
-                                ? "border-funnel-accent bg-funnel-accent text-white"
-                                : "border-border-default bg-surface-card text-text-secondary"
+                                ? "funnel-tile-selected text-text-primary"
+                                : "funnel-tile-hover"
                             )}
                           >
                             {opt.label}

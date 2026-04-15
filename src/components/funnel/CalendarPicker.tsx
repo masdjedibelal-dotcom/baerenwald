@@ -171,20 +171,15 @@ export function CalendarPicker({
                     className={cn(
                       "relative flex size-full items-center justify-center rounded-lg text-[13px]",
                       disabled && "cursor-default opacity-40",
-                      !disabled &&
-                        !sel &&
-                        "cursor-pointer font-medium text-text-primary hover:bg-muted",
-                      sel && "bg-funnel-accent font-medium text-white",
+                      !disabled && !sel && "funnel-tile-hover cursor-pointer font-medium text-text-primary",
+                      sel && "funnel-tile-selected font-medium text-text-primary",
                       todayCell && !sel && "ring-1 ring-inset ring-border-default"
                     )}
                   >
                     {cell.getDate()}
                     {!disabled && hasSlots ? (
                       <span
-                        className={cn(
-                          "absolute bottom-0.5 left-1/2 size-1 -translate-x-1/2 rounded-full bg-funnel-accent",
-                          sel && "bg-surface-card"
-                        )}
+                        className="absolute bottom-0.5 left-1/2 size-1 -translate-x-1/2 rounded-full bg-funnel-accent"
                       />
                     ) : null}
                   </button>
@@ -213,16 +208,11 @@ export function CalendarPicker({
                   className={cn(
                     "rounded-lg border border-border-default px-1.5 py-2 text-center transition-colors",
                     full && "cursor-not-allowed opacity-35 line-through",
-                    sel &&
-                      "border-[1.5px] border-funnel-accent bg-funnel-accent/5"
+                    sel && "funnel-tile-selected",
+                    !full && !sel && "funnel-tile-hover"
                   )}
                 >
-                  <span
-                    className={cn(
-                      "block text-[13px] font-medium text-text-primary",
-                      sel && "text-funnel-accent"
-                    )}
-                  >
+                  <span className="block text-[13px] font-medium text-text-primary">
                     {time}
                   </span>
                   <span className="mt-0.5 block text-[10px] text-text-tertiary">

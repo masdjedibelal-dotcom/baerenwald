@@ -26,20 +26,16 @@ export function FunnelFooter({
 }: FunnelFooterProps) {
   return (
     <footer
-      className={cn(
-        "sticky bottom-0 z-50 border-t border-border-default bg-surface-card px-6 pt-3",
-        "pb-[max(1.75rem,env(safe-area-inset-bottom))]",
-        className
-      )}
+      className={cn("sticky bottom-0 z-50 funnel-footer", className)}
     >
-      <div className="mx-auto max-w-xl">
-        <div className="flex items-center justify-between gap-4">
+      <div className="mx-auto max-w-xl funnel-footer-inner">
+        <div className="funnel-footer-actions">
           <div className="min-w-0">
             {showBack && onBack ? (
               <button
                 type="button"
                 onClick={onBack}
-                className="text-sm font-medium text-text-secondary transition-colors hover:text-text-primary"
+                className="funnel-footer-back"
               >
                 Zurück
               </button>
@@ -51,10 +47,7 @@ export function FunnelFooter({
                 type="button"
                 disabled={nextDisabled}
                 onClick={onNext}
-                className={cn(
-                  "rounded-full bg-funnel-accent px-5 py-2.5 text-sm font-medium text-white transition-opacity",
-                  nextDisabled && "cursor-not-allowed opacity-40"
-                )}
+                className="funnel-footer-next"
               >
                 {nextLabel}
               </button>
@@ -62,7 +55,7 @@ export function FunnelFooter({
           </div>
         </div>
         {belowActions ? (
-          <div className="mt-2 pb-0.5 text-center">{belowActions}</div>
+          <div className="mt-1.5 text-center">{belowActions}</div>
         ) : null}
         <div className="funnel-footer-legal">
           <span>* Alle Preisangaben unverbindlich</span>

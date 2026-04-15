@@ -2,9 +2,11 @@ import { NextResponse } from "next/server";
 import { Resend } from "resend";
 
 import { SITE_CONFIG } from "@/lib/config";
+import { generateConfirmationEmail } from "@/lib/email/confirmation";
 
 export type BwLeadBody = {
   name?: string;
+  vorname?: string;
   email?: string;
   telefon?: string;
   situation?: string | null;
@@ -20,7 +22,7 @@ export type BwLeadBody = {
   dringlichkeit?: string | null;
   umfang?: string | null;
   kundentyp?: string | null;
-  leadType?: "beratung" | "system" | "ausserhalb";
+  leadType?: "beratung" | "system" | "ausserhalb" | "komplex_rueckruf";
   beschreibung?: string;
 };
 
@@ -51,11 +53,20 @@ export async function POST(request: Request) {
   try {
     const body = (await request.json()) as BwLeadBody;
 
-    const name = (body.name ?? "").trim();
+    let name = (body.name ?? "").trim();
     const email = (body.email ?? "").trim();
     const telefon = (body.telefon ?? "").trim();
+    const isKomplexRueckruf = body.leadType === "komplex_rueckruf";
 
-    if (!name || !email || !telefon) {
+    if (isKomplexRueckruf) {
+      if (!telefon) {
+        return NextResponse.json(
+          { success: false, error: "Pflichtfeld: telefon" },
+          { status: 400 }
+        );
+      }
+      if (!name) name = "Ohne Namenangabe";
+    } else if (!name || !email || !telefon) {
       return NextResponse.json(
         { success: false, error: "Pflichtfelder: name, email, telefon" },
         { status: 400 }
@@ -84,14 +95,16 @@ export async function POST(request: Request) {
     const kundentyp = body.kundentyp?.trim() || "nicht angegeben";
 
     const situationNorm = (body.situation ?? "").trim();
-    const leadType: "beratung" | "system" | "ausserhalb" =
-      body.leadType === "ausserhalb"
-        ? "ausserhalb"
-        : body.leadType === "beratung" ||
-            situationNorm === "gewerbe" ||
-            situationNorm === "gastro"
-          ? "beratung"
-          : "system";
+    const leadType: "beratung" | "system" | "ausserhalb" | "komplex_rueckruf" =
+      body.leadType === "komplex_rueckruf"
+        ? "komplex_rueckruf"
+        : body.leadType === "ausserhalb"
+          ? "ausserhalb"
+          : body.leadType === "beratung" ||
+              situationNorm === "gewerbe" ||
+              situationNorm === "gastro"
+            ? "beratung"
+            : "system";
 
     const beschreibung = (body.beschreibung ?? "").trim();
 
@@ -107,6 +120,22 @@ export async function POST(request: Request) {
           ]
             .filter(Boolean)
             .join("\n")
+        : leadType === "komplex_rueckruf"
+          ? [
+              `Lead-Typ: Rückruf (Rechner „zu komplex“)`,
+              `Name: ${name}`,
+              `Telefon: ${telefon}`,
+              `E-Mail: ${email || "—"}`,
+              `Situation: ${situation}`,
+              `Kundentyp: ${kundentyp}`,
+              `Bereiche: ${bereiche}`,
+              `Preisrange: ${preisrange}`,
+              `PLZ: ${plz}`,
+              `Zeitraum: ${zeitraum}`,
+              beschreibung ? `Beschreibung: ${beschreibung}` : "",
+            ]
+              .filter(Boolean)
+              .join("\n")
         : leadType === "beratung"
           ? [
               `Lead-Typ: Beratung (Gewerbe/Gastro)`,
@@ -145,9 +174,11 @@ export async function POST(request: Request) {
     const subject =
       leadType === "ausserhalb"
         ? `Außerhalb Radius: ${name} — PLZ ${plz}`
-        : leadType === "beratung"
-          ? `Beratungsanfrage: ${name} — ${situationNorm || kundentyp}`
-          : `Neuer Lead: ${name} — ${situation}`;
+        : leadType === "komplex_rueckruf"
+          ? `Rückruf zu komplex: ${name} — ${situationNorm || "Rechner"}`
+          : leadType === "beratung"
+            ? `Beratungsanfrage: ${name} — ${situationNorm || kundentyp}`
+            : `Neuer Lead: ${name} — ${situation}`;
 
     // Resend mit 5s Timeout
     const controller = new AbortController();
@@ -172,6 +203,42 @@ export async function POST(request: Request) {
         { success: false, error: sendError },
         { status: 500 }
       );
+    }
+
+    const customerEmail = email.trim();
+    if (
+      customerEmail &&
+      customerEmail.includes("@") &&
+      customerEmail.length > 5
+    ) {
+      try {
+        const vn =
+          (body.vorname ?? "").trim() ||
+          name.split(/\s+/).filter(Boolean)[0] ||
+          "";
+        const { error: confirmErr } = await resend.emails.send({
+          from:
+            process.env.RESEND_FROM_NOREPLY ??
+            "Bärenwald München <noreply@baerenwaldmuenchen.de>",
+          to: customerEmail,
+          subject:
+            "Deine Anfrage bei Bärenwald München — wir melden uns",
+          html: generateConfirmationEmail({
+            vorname: vn,
+            situation: situationNorm || situation,
+            bereiche: body.bereiche ?? [],
+            priceMin: body.priceMin,
+            priceMax: body.priceMax,
+            wunschtermin: body.selectedSlot ?? null,
+            plz,
+          }),
+        });
+        if (confirmErr) {
+          console.error("Bestätigungs-E-Mail Fehler:", confirmErr);
+        }
+      } catch (err) {
+        console.error("Bestätigungs-E-Mail Fehler:", err);
+      }
     }
 
     return NextResponse.json({ success: true });

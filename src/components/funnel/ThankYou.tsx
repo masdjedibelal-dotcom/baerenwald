@@ -44,6 +44,8 @@ export interface ThankYouProps {
   /** Optional: z. B. Gewerbe/Gastro B2B-Danke-Text */
   beratungHeadline?: string;
   beratungSubline?: string;
+  /** Ablauf-Timeline unter dem Text (nur bei variant „termin“ / „anfrage“). */
+  showTimeline?: boolean;
   className?: string;
 }
 
@@ -55,6 +57,7 @@ export function ThankYou({
   dauer = "30 Min.",
   beratungHeadline,
   beratungSubline,
+  showTimeline = true,
   className,
 }: ThankYouProps) {
   const isTermin = variant === "termin";
@@ -129,7 +132,7 @@ export function ThankYou({
         </div>
       ) : null}
 
-      {!isBeratung ? (
+      {!isBeratung && showTimeline !== false ? (
         <div className="submit-timeline w-full text-left">
           {TIMELINE_STEPS.map((step, i) => (
             <div

@@ -26,7 +26,7 @@ export interface SituationCardProps {
 const TAG_CLASS: Record<SituationCardTagType, string> = {
   multi: "bg-blue-50 text-blue-800",
   abo: "bg-green-50 text-green-800",
-  notfall: "bg-red-50 text-red-700",
+  notfall: "bg-amber-50 text-amber-900",
 };
 
 export function SituationCard({
@@ -46,9 +46,8 @@ export function SituationCard({
       type="button"
       onClick={onClick}
       className={cn(
-        "relative w-full overflow-hidden rounded-[18px] border border-border-default p-4 text-left transition-colors hover:border-text-tertiary",
-        selected &&
-          "border-[1.5px] border-funnel-accent bg-funnel-accent/5",
+        "relative w-full overflow-hidden rounded-[18px] border border-border-default p-4 text-left transition-colors",
+        selected ? "funnel-tile-selected" : "funnel-tile-hover",
         className
       )}
     >

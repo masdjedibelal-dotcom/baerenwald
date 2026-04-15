@@ -7,20 +7,32 @@
   --fl-accent-hover: #256642;
   --fl-sand: #c4922a;
   --fl-sand-light: #fef3dc;
-  --fl-bg: #f7f6f3;
+  --fl-bg: #f5f2ed;
   --fl-bg-card: #ffffff;
   --fl-bg-dark: #1a3d2b;
-  --fl-text: #1e1e1f;
-  --fl-text-2: #6b6b6b;
-  --fl-text-3: #9e9e9e;
-  --fl-border: rgba(30, 30, 31, 0.1);
-  --fl-border-light: rgba(30, 30, 31, 0.06);
+  --fl-text: #1e1c1a;
+  --fl-text-2: #6b6560;
+  --fl-text-3: #9e9890;
+  --fl-border: rgba(30, 28, 26, 0.1);
+  --fl-border-light: rgba(30, 28, 26, 0.06);
   --fl-shadow-card: 0 2px 16px rgba(0, 0, 0, 0.07);
   --fl-shadow-hover: 0 6px 28px rgba(0, 0, 0, 0.12);
   --fl-radius: 16px;
   --fl-radius-sm: 10px;
   --fl-font-sans: "Plus Jakarta Sans", system-ui, sans-serif;
   --fl-font-display: "Lora", Georgia, serif;
+}
+
+/* Einheitlicher Selected-State für Funnel-Kacheln */
+.funnel-tile-selected {
+  border: 1.5px solid var(--fl-accent) !important;
+  background: rgba(46, 125, 82, 0.06) !important;
+}
+
+/* Einheitlicher Hover-State (Kacheln / Chips) */
+.funnel-tile-hover:hover {
+  border-color: var(--fl-accent);
+  background: rgba(46, 125, 82, 0.03);
 }
 
 *,
@@ -4167,6 +4179,63 @@
   opacity: 0.75;
 }
 
+/* ── Funnel Footer (kompakt) ── */
+.funnel-footer {
+  border-top: 1px solid var(--fl-border-light);
+  background: var(--fl-bg-card);
+  padding: 10px 16px max(12px, env(safe-area-inset-bottom));
+}
+
+.funnel-footer-inner {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.funnel-footer-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.funnel-footer-next {
+  background: var(--fl-accent);
+  color: white;
+  border: none;
+  border-radius: 999px;
+  padding: 10px 20px;
+  font-size: 14px;
+  font-weight: 700;
+  font-family: var(--fl-font-sans);
+  cursor: pointer;
+  transition: opacity 0.15s;
+  white-space: nowrap;
+}
+
+.funnel-footer-next:hover {
+  opacity: 0.88;
+}
+
+.funnel-footer-next:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.funnel-footer-back {
+  background: none;
+  border: none;
+  font-size: 13px;
+  color: var(--fl-text-2);
+  cursor: pointer;
+  font-family: var(--fl-font-sans);
+  padding: 8px 0;
+}
+
+.funnel-footer-back:hover {
+  color: var(--fl-text);
+}
+
 /* ── Funnel Footer Legal ── */
 .funnel-footer-legal {
   display: flex;
@@ -4174,10 +4243,10 @@
   justify-content: center;
   gap: 8px;
   flex-wrap: wrap;
-  padding-top: 12px;
-  margin-top: 12px;
+  padding-top: 4px;
+  margin-top: 4px;
   border-top: 1px solid var(--fl-border-light);
-  font-size: 11px;
+  font-size: 10px;
   color: var(--fl-text-3);
 }
 
@@ -4236,6 +4305,24 @@
   animation: spin 0.7s linear infinite;
   flex-shrink: 0;
   display: inline-block;
+}
+
+.btn-spinner--dark {
+  border-color: rgba(30, 28, 26, 0.2);
+  border-top-color: var(--fl-text-2);
+}
+
+.photo-compressing {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--fl-text-3);
+  margin-top: 8px;
+}
+
+.photo-compressing--notice {
+  color: var(--fl-text-2);
 }
 
 .submit-error-box {
@@ -4522,4 +4609,396 @@
   .legal-body ul li {
     font-size: 14px;
   }
+}
+
+/* ── Fachdetails: Folgefragen (Scroll + Einblend-Animation) ───────── */
+
+.folgefrage-wrap {
+  scroll-margin-top: 80px;
+  animation: folgefrage-in 0.25s ease-out forwards;
+}
+
+@keyframes folgefrage-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ── Rechner: Preisrahmen per E-Mail + Budget-Hinweis ───────────────── */
+
+.preis-save-wrap {
+  margin: 16px 0;
+}
+
+.preis-save-trigger {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: none;
+  border: 1px solid var(--fl-border);
+  border-radius: 999px;
+  padding: 10px 18px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--fl-text-2);
+  font-family: var(--fl-font-sans);
+  cursor: pointer;
+  transition: all 0.15s;
+  width: 100%;
+  justify-content: center;
+}
+
+.preis-save-trigger:hover {
+  border-color: var(--fl-accent);
+  color: var(--fl-accent);
+}
+
+.preis-save-form {
+  background: var(--fl-bg);
+  border-radius: var(--fl-radius-sm);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  animation: folgefrage-in 0.2s ease-out;
+}
+
+.preis-save-label {
+  font-size: 13px;
+  color: var(--fl-text-2);
+  line-height: 1.5;
+  margin: 0;
+}
+
+.preis-save-row {
+  display: flex;
+  gap: 8px;
+}
+
+.preis-save-row .funnel-input {
+  flex: 1;
+}
+
+.preis-save-btn {
+  background: var(--fl-accent);
+  color: white;
+  border: none;
+  border-radius: 999px;
+  padding: 10px 18px;
+  font-size: 13px;
+  font-weight: 700;
+  font-family: var(--fl-font-sans);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: opacity 0.15s;
+  flex-shrink: 0;
+}
+
+.preis-save-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.preis-save-success {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--fl-accent);
+  padding: 10px 0;
+}
+
+.budget-hint-box {
+  background: var(--fl-accent-light);
+  border: 1px solid rgba(46, 125, 82, 0.2);
+  border-radius: var(--fl-radius);
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  animation: folgefrage-in 0.25s ease-out;
+  margin-top: 12px;
+}
+
+.budget-hint-head {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--fl-accent-dark);
+  margin: 0;
+}
+
+.budget-hint-text {
+  font-size: 14px;
+  color: var(--fl-accent-dark);
+  line-height: 1.65;
+  margin: 0;
+  opacity: 0.8;
+}
+
+.budget-hint-cta {
+  background: var(--fl-accent);
+  color: white;
+  border: none;
+  border-radius: 999px;
+  padding: 12px 20px;
+  font-size: 14px;
+  font-weight: 700;
+  font-family: var(--fl-font-sans);
+  cursor: pointer;
+  align-self: flex-start;
+  transition: opacity 0.15s;
+}
+
+.budget-hint-cta:hover {
+  opacity: 0.88;
+}
+
+/* ── Rechner: „Zu komplex“ + Rückruf-Formular ─────────────────────── */
+
+.komplex-screen {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  padding: 8px 0;
+}
+
+.komplex-header {
+  text-align: center;
+  padding: 24px 0 8px;
+}
+
+.komplex-icon {
+  font-size: 40px;
+  margin-bottom: 16px;
+}
+
+.komplex-headline {
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: -0.025em;
+  color: var(--fl-text);
+  line-height: 1.2;
+  margin: 0 0 12px;
+}
+
+.komplex-sub {
+  font-size: 14px;
+  color: var(--fl-text-2);
+  line-height: 1.65;
+  margin: 0 auto;
+  max-width: 400px;
+}
+
+.komplex-option {
+  background: var(--fl-bg);
+  border: 1px solid var(--fl-border);
+  border-radius: var(--fl-radius);
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.komplex-option-label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--fl-text-3);
+}
+
+.komplex-call-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  background: var(--fl-accent);
+  color: white;
+  border: none;
+  border-radius: 999px;
+  padding: 14px 24px;
+  font-size: 17px;
+  font-weight: 700;
+  font-family: var(--fl-font-sans);
+  text-decoration: none;
+  transition: opacity 0.15s;
+}
+
+.komplex-call-btn:hover {
+  opacity: 0.88;
+}
+
+.komplex-call-hint {
+  font-size: 12px;
+  color: var(--fl-text-3);
+  text-align: center;
+  margin: 0;
+}
+
+.komplex-divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--fl-text-3);
+  font-size: 13px;
+}
+
+.komplex-divider::before,
+.komplex-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--fl-border-light);
+}
+
+.komplex-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.komplex-form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+@media (max-width: 400px) {
+  .komplex-form-row {
+    grid-template-columns: 1fr;
+  }
+}
+
+.funnel-input {
+  width: 100%;
+  border: 1px solid var(--fl-border);
+  border-radius: 12px;
+  padding: 12px 14px;
+  font-size: 14px;
+  font-family: var(--fl-font-sans);
+  color: var(--fl-text);
+  background: var(--fl-bg-card);
+  outline: none;
+  line-height: 1.4;
+  box-sizing: border-box;
+}
+
+.funnel-input:focus {
+  border-color: var(--fl-accent);
+  box-shadow: 0 0 0 3px rgba(46, 125, 82, 0.15);
+}
+
+.funnel-textarea {
+  width: 100%;
+  border: 1px solid var(--fl-border);
+  border-radius: 12px;
+  padding: 12px 14px;
+  font-size: 14px;
+  font-family: var(--fl-font-sans);
+  color: var(--fl-text);
+  background: var(--fl-bg-card);
+  resize: none;
+  outline: none;
+  line-height: 1.5;
+  box-sizing: border-box;
+}
+
+.funnel-textarea:focus {
+  border-color: var(--fl-accent);
+  box-shadow: 0 0 0 3px rgba(46, 125, 82, 0.15);
+}
+
+.komplex-submit-btn {
+  width: 100%;
+  background: var(--fl-accent);
+  color: white;
+  border: none;
+  border-radius: 999px;
+  padding: 14px 24px;
+  font-size: 15px;
+  font-weight: 700;
+  font-family: var(--fl-font-sans);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: opacity 0.15s;
+}
+
+.komplex-submit-btn:hover {
+  opacity: 0.88;
+}
+
+.komplex-submit-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* ── Lead: optionaler Kalender (Handwerker / Rechner) ─────────────── */
+
+.calendar-opt-wrap {
+  border: 1px solid var(--fl-border-light);
+  border-radius: var(--fl-radius);
+  overflow: hidden;
+}
+
+.calendar-opt-trigger {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+  background: var(--fl-bg);
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.15s;
+  font-family: var(--fl-font-sans);
+}
+
+.calendar-opt-trigger:hover {
+  background: var(--fl-accent-light);
+}
+
+.calendar-opt-icon {
+  font-size: 20px;
+  flex-shrink: 0;
+}
+
+.calendar-opt-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--fl-text);
+}
+
+.calendar-opt-sub {
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--fl-text-2);
+  line-height: 1.45;
+  margin-top: 2px;
+}
+
+.calendar-opt-chevron {
+  flex-shrink: 0;
+}
+
+.calendar-opt-body {
+  padding: 0 12px 16px;
+  border-top: 1px solid var(--fl-border-light);
+  background: var(--fl-bg-card);
+}
+
+.fachdetails-hinweis {
+  font-size: 12px;
+  color: var(--fl-text-3);
+  text-align: center;
+  padding: 8px 0;
 }

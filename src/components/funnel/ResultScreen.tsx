@@ -323,10 +323,10 @@ export function ResultScreen({
             type="button"
             onClick={() => setBudgetChoice("ja")}
             className={cn(
-              "rounded-full border border-border-default px-4 py-2 text-sm font-medium transition-colors",
+              "rounded-full border border-border-default bg-surface-card px-4 py-2 text-sm font-medium text-text-secondary transition-colors",
               budgetChoice === "ja"
-                ? "border-funnel-accent bg-funnel-accent text-white"
-                : "bg-surface-card text-text-secondary hover:border-text-tertiary"
+                ? "funnel-tile-selected text-text-primary"
+                : "funnel-tile-hover"
             )}
           >
             Ja, passt gut
@@ -335,10 +335,10 @@ export function ResultScreen({
             type="button"
             onClick={() => setBudgetChoice("hoch")}
             className={cn(
-              "rounded-full border border-border-default px-4 py-2 text-sm font-medium transition-colors",
+              "rounded-full border border-border-default bg-surface-card px-4 py-2 text-sm font-medium text-text-secondary transition-colors",
               budgetChoice === "hoch"
-                ? "border-funnel-accent bg-funnel-accent text-white"
-                : "bg-surface-card text-text-secondary hover:border-text-tertiary"
+                ? "funnel-tile-selected text-text-primary"
+                : "funnel-tile-hover"
             )}
           >
             Eher zu hoch

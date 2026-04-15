@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 
 import { formatCurrencyEUR } from "@/lib/price-calc";
 import type { BudgetCheck, FunnelState, PriceLineItem } from "@/lib/funnel/types";
@@ -11,6 +11,7 @@ import {
 import type { BwResultModus } from "@/lib/funnel/price-calc";
 import { SITE_CONFIG } from "@/lib/config";
 import { cn } from "@/lib/utils";
+import { DatenschutzCheckbox } from "./DatenschutzCheckbox";
 
 const RESULT_TESTIMONIALS = [
   {
@@ -114,6 +115,50 @@ function getPreisfaktoren(state: FunnelState): string[] {
     seen.add(p);
     return true;
   });
+}
+
+function PhoneIconKomplex() {
+  return (
+    <svg
+      width="18"
+      height="18"
+      viewBox="0 0 24 24"
+      fill="none"
+      aria-hidden
+    >
+      <path
+        d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"
+        stroke="currentColor"
+        strokeWidth="1.75"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+function BtnSpinner() {
+  return <span className="btn-spinner" aria-hidden />;
+}
+
+function EnvelopeIcon16() {
+  return (
+    <svg
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      fill="none"
+      aria-hidden
+    >
+      <path
+        d="M4 6h16v12H4V6zm0 0l8 6 8-6"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
 }
 
 function TagIcon() {
@@ -271,6 +316,8 @@ export interface BwResultScreenProps {
   koordinationsRabatt?: number;
   resultModus?: BwResultModus;
   schwellenwertAusgeloest?: boolean;
+  /** Nach erfolgreichem Rückruf-Formular („zu komplex“). */
+  onKomplexRueckrufSuccess?: () => void;
   className?: string;
 }
 
@@ -323,6 +370,227 @@ function BreakdownRow({ row }: { row: PriceLineItem }) {
   );
 }
 
+function validateKomplexTelefon(raw: string): string | undefined {
+  const tel = raw.replace(/[\s\-]/g, "");
+  if (!tel) return "Telefonnummer wird benötigt.";
+  if (!/^(\+49|0)[1-9]\d{6,13}$/.test(tel)) {
+    return "Bitte gib eine gültige Telefonnummer ein.";
+  }
+  return undefined;
+}
+
+function ZuKomplexScreen({
+  state,
+  schwellenwertAusgeloest,
+  onKomplexRueckrufSuccess,
+  className,
+}: {
+  state: FunnelState;
+  schwellenwertAusgeloest: boolean;
+  onKomplexRueckrufSuccess?: () => void;
+  className?: string;
+}) {
+  const [vorname, setVorname] = useState("");
+  const [nachname, setNachname] = useState("");
+  const [telefon, setTelefon] = useState("");
+  const [beschreibung, setBeschreibung] = useState("");
+  const [datenschutz, setDatenschutz] = useState(false);
+  const [showDatenschutzError, setShowDatenschutzError] = useState(false);
+  const [errors, setErrors] = useState<{ telefon?: string }>({});
+  const [submitStatus, setSubmitStatus] = useState<
+    "idle" | "loading" | "error"
+  >("idle");
+  const [errorMessage, setErrorMessage] = useState("");
+
+  const headline = schwellenwertAusgeloest
+    ? "Für dieses Projekt brauchen wir ein persönliches Gespräch."
+    : "Dieses Projekt planen wir persönlich mit dir.";
+
+  const sub = schwellenwertAusgeloest
+    ? "Bei Projekten dieser Größenordnung ist ein automatischer Preis nicht seriös — zu viele Details beeinflussen das Ergebnis."
+    : "Zu viele Faktoren beeinflussen den Preis. Ein kurzes Gespräch ist hier sinnvoller als eine automatische Berechnung.";
+
+  const handleKomplexSubmit = useCallback(async () => {
+    setErrors({});
+    const telErr = validateKomplexTelefon(telefon);
+    if (telErr) {
+      setErrors({ telefon: telErr });
+      return;
+    }
+    if (!datenschutz) {
+      setShowDatenschutzError(true);
+      return;
+    }
+    setSubmitStatus("loading");
+    setErrorMessage("");
+    const name =
+      `${vorname.trim()} ${nachname.trim()}`.trim() || "Ohne Namenangabe";
+    const body = {
+      name,
+      email: "",
+      telefon: telefon.trim(),
+      situation: state.situation,
+      bereiche: state.bereiche,
+      priceMin: state.priceMin,
+      priceMax: state.priceMax,
+      plz: state.plz,
+      zeitraum: state.zeitraum,
+      budgetCheck: state.budgetCheck,
+      budgetGespraech: state.budgetCheck === "zu_hoch",
+      selectedSlot: state.selectedSlot,
+      photoCount: 0,
+      dringlichkeit: state.dringlichkeit,
+      umfang: state.umfang,
+      kundentyp: state.kundentyp ?? "nicht angegeben",
+      beschreibung: beschreibung.trim(),
+      leadType: "komplex_rueckruf" as const,
+    };
+    try {
+      const res = await fetch("/api/leads", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      const data = (await res.json()) as {
+        success?: boolean;
+        error?: string;
+      };
+      if (!res.ok || !data.success) {
+        setSubmitStatus("error");
+        setErrorMessage(
+          data.error ?? "Versuch es bitte erneut oder ruf uns direkt an."
+        );
+        return;
+      }
+      onKomplexRueckrufSuccess?.();
+    } catch {
+      setSubmitStatus("error");
+      setErrorMessage(
+        "Netzwerkfehler. Bitte versuche es erneut oder nutze den Anruf-Button."
+      );
+    }
+  }, [
+    beschreibung,
+    datenschutz,
+    nachname,
+    onKomplexRueckrufSuccess,
+    state,
+    telefon,
+    vorname,
+  ]);
+
+  const telTrim = telefon.trim();
+  const submitDisabled =
+    !telTrim || !datenschutz || submitStatus === "loading";
+
+  return (
+    <div className={cn("komplex-screen", className)}>
+      <div className="komplex-header">
+        <div className="komplex-icon" aria-hidden>
+          💬
+        </div>
+        <h2 className="komplex-headline">{headline}</h2>
+        <p className="komplex-sub">{sub}</p>
+      </div>
+
+      <div className="komplex-option">
+        <div className="komplex-option-label">Sofort sprechen</div>
+        <a href={SITE_CONFIG.phoneHref} className="komplex-call-btn">
+          <PhoneIconKomplex />
+          {SITE_CONFIG.phone}
+        </a>
+        <p className="komplex-call-hint">
+          Mo–Fr 7–18 Uhr · Sa 8–14 Uhr
+        </p>
+      </div>
+
+      <div className="komplex-divider">
+        <span>oder</span>
+      </div>
+
+      <div className="komplex-option">
+        <div className="komplex-option-label">Rückruf anfordern</div>
+
+        <div className="komplex-form">
+          <div className="komplex-form-row">
+            <input
+              type="text"
+              placeholder="Vorname"
+              autoComplete="given-name"
+              className="funnel-input"
+              value={vorname}
+              onChange={(e) => setVorname(e.target.value)}
+            />
+            <input
+              type="text"
+              placeholder="Nachname"
+              autoComplete="family-name"
+              className="funnel-input"
+              value={nachname}
+              onChange={(e) => setNachname(e.target.value)}
+            />
+          </div>
+
+          <input
+            type="tel"
+            placeholder="Telefon *"
+            autoComplete="tel"
+            inputMode="tel"
+            className="funnel-input"
+            value={telefon}
+            onChange={(e) => {
+              setTelefon(e.target.value);
+              if (errors.telefon) setErrors({});
+            }}
+          />
+          {errors.telefon ? (
+            <p className="field-error">{errors.telefon}</p>
+          ) : null}
+
+          <textarea
+            placeholder="Kurze Beschreibung deines Projekts (optional)"
+            className="funnel-textarea"
+            rows={3}
+            value={beschreibung}
+            onChange={(e) => setBeschreibung(e.target.value)}
+          />
+
+          <DatenschutzCheckbox
+            checked={datenschutz}
+            onChange={(v) => {
+              setDatenschutz(v);
+              if (v) setShowDatenschutzError(false);
+            }}
+            showError={showDatenschutzError}
+          />
+
+          <button
+            type="button"
+            className="komplex-submit-btn"
+            onClick={() => void handleKomplexSubmit()}
+            disabled={submitDisabled}
+          >
+            {submitStatus === "loading" ? (
+              <>
+                <BtnSpinner />
+                Wird gesendet…
+              </>
+            ) : (
+              "Rückruf anfordern →"
+            )}
+          </button>
+
+          {submitStatus === "error" ? (
+            <div className="submit-error-box">
+              <p className="submit-error-text">{errorMessage}</p>
+            </div>
+          ) : null}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function BwResultScreen({
   state,
   onBudgetChange,
@@ -331,8 +599,15 @@ export function BwResultScreen({
   koordinationsRabatt = 1.0,
   resultModus,
   schwellenwertAusgeloest = false,
+  onKomplexRueckrufSuccess,
   className,
 }: BwResultScreenProps) {
+  const [emailSaveOpen, setEmailSaveOpen] = useState(false);
+  const [saveEmail, setSaveEmail] = useState("");
+  const [saveEmailSent, setSaveEmailSent] = useState(false);
+  const [saveEmailError, setSaveEmailError] = useState("");
+  const [showBudgetOkFeedback, setShowBudgetOkFeedback] = useState(false);
+
   const notfallAkut =
     state.situation === "notfall" && state.dringlichkeit === "akut";
   const budget = state.budgetCheck;
@@ -340,14 +615,19 @@ export function BwResultScreen({
   if (notfallAkut) {
     return (
       <div className={cn("space-y-6", className)}>
-        <div className="relative overflow-hidden rounded-[18px] bg-[#C0392B] p-5 text-center text-white">
-          <p className="text-[11px] font-medium uppercase tracking-widest text-white/70">
+        <div className="relative overflow-hidden rounded-[18px] bg-surface-dark p-5 text-center text-white">
+          <div className="flex justify-center">
+            <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2.5 py-1 text-[11px] font-semibold text-amber-950">
+              <span aria-hidden>⚡</span> Dringend
+            </span>
+          </div>
+          <p className="mt-3 text-[11px] font-medium uppercase tracking-widest text-white/70">
             Notfall
           </p>
-          <p className="mt-3 text-lg font-semibold">Wir sind jetzt erreichbar</p>
+          <p className="mt-2 text-lg font-semibold">Wir sind jetzt erreichbar</p>
           <a
             href={SITE_CONFIG.phoneHref}
-            className="mt-2 block text-3xl font-extrabold tracking-tight"
+            className="mt-2 block text-3xl font-extrabold tracking-tight text-white"
           >
             {SITE_CONFIG.phone}
           </a>
@@ -359,7 +639,7 @@ export function BwResultScreen({
           </p>
           <a
             href={SITE_CONFIG.phoneHref}
-            className="mt-5 inline-flex w-full max-w-xs justify-center rounded-full bg-surface-card px-6 py-3 text-sm font-semibold text-[#C0392B]"
+            className="mt-5 inline-flex w-full max-w-xs justify-center rounded-full bg-funnel-accent px-6 py-3 text-sm font-semibold text-white transition-opacity hover:opacity-90"
           >
             Jetzt anrufen
           </a>
@@ -372,37 +652,13 @@ export function BwResultScreen({
     resultModus === "zu_komplex" || getBwResultModus(state) === "zu_komplex";
 
   if (isZuKomplex) {
-    const zuKomplexSubline = schwellenwertAusgeloest
-      ? "Dein Projekt liegt in einer Größenordnung, wo ein automatischer Preis nicht seriös wäre — zu viele Details beeinflussen das Ergebnis. Wir besprechen das persönlich und erstellen ein genaues Festpreisangebot."
-      : "Wir melden uns gern telefonisch und gehen alles mit dir durch.";
-
     return (
-      <div className={cn("space-y-5", className)}>
-        <div className="rounded-[18px] border border-amber-200 bg-amber-50/90 p-5 text-center">
-          <p className="text-[11px] font-semibold uppercase tracking-widest text-amber-900/70">
-            Individuelle Planung
-          </p>
-          <p className="mt-2 text-[15px] font-semibold leading-snug text-text-primary">
-            Für dein Vorhaben brauchen wir einen persönlichen Termin — ein
-            fester Online-Preisrahmen wäre hier irreführend.
-          </p>
-          <p className="mt-2 text-[13px] leading-relaxed text-text-secondary">
-            {zuKomplexSubline}
-          </p>
-          <a
-            href={SITE_CONFIG.phoneHref}
-            className="mt-4 inline-flex w-full max-w-xs justify-center rounded-full bg-funnel-accent px-6 py-3 text-sm font-semibold text-white"
-          >
-            {SITE_CONFIG.phone} — anrufen
-          </a>
-          <p className="mt-2 text-[12px] text-text-secondary">
-            Oder Büro:{" "}
-            <a href={SITE_CONFIG.phoneFestnetHref} className="underline">
-              {SITE_CONFIG.phoneFestnetz}
-            </a>
-          </p>
-        </div>
-      </div>
+      <ZuKomplexScreen
+        state={state}
+        schwellenwertAusgeloest={schwellenwertAusgeloest}
+        onKomplexRueckrufSuccess={onKomplexRueckrufSuccess}
+        className={className}
+      />
     );
   }
 
@@ -410,6 +666,51 @@ export function BwResultScreen({
   const preisFaktorHint = getBwPreisFaktorHint(state);
   const preisFaktorStandard =
     preisFaktorHint === "Standardpreis für München 2026";
+
+  const scrollToLeadForm = useCallback(() => {
+    window.setTimeout(() => {
+      document.getElementById("lead-form")?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+    }, 150);
+  }, []);
+
+  const handleSaveEmail = useCallback(async () => {
+    setSaveEmailError("");
+    const email = saveEmail.trim();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      setSaveEmailError("Bitte eine gültige E-Mail-Adresse eingeben.");
+      return;
+    }
+    try {
+      const res = await fetch("/api/save-price", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email,
+          priceMin: state.priceMin,
+          priceMax: state.priceMax,
+          situation: state.situation,
+          bereiche: state.bereiche,
+          plz: state.plz,
+        }),
+      });
+      if (!res.ok) throw new Error("save failed");
+      setSaveEmailSent(true);
+    } catch {
+      setSaveEmailError(
+        "Senden fehlgeschlagen — bitte versuche es erneut."
+      );
+    }
+  }, [
+    saveEmail,
+    state.priceMin,
+    state.priceMax,
+    state.situation,
+    state.bereiche,
+    state.plz,
+  ]);
 
   return (
     <div className={cn("space-y-5", className)}>
@@ -481,6 +782,15 @@ export function BwResultScreen({
               </span>
             ))}
           </div>
+          {state.istFallback ? (
+            <div className="hinweis" style={{ marginTop: "12px" }}>
+              <p>
+                Für deine Auswahl haben wir noch keinen genauen Richtwert — der
+                Preisrahmen basiert auf allgemeinen Münchner Marktpreisen. Beim
+                Vor-Ort-Termin nennen wir dir einen genauen Preis.
+              </p>
+            </div>
+          ) : null}
         </div>
       ) : (
         <div className="rounded-[18px] border border-border-default bg-muted p-5 text-center text-sm text-text-secondary">
@@ -511,7 +821,9 @@ export function BwResultScreen({
         </div>
       ) : null}
 
-      {hasRange ? <PreisAccordion state={state} koordinationsRabatt={koordinationsRabatt} /> : null}
+      {hasRange && !state.istFallback ? (
+        <PreisAccordion state={state} koordinationsRabatt={koordinationsRabatt} />
+      ) : null}
 
       {mindestauftragAktiv ? (
         <div
@@ -527,6 +839,64 @@ export function BwResultScreen({
 
       {hasRange ? <ResultTrustBlock /> : null}
 
+      {hasRange && !saveEmailSent ? (
+        <div className="preis-save-wrap">
+          {!emailSaveOpen ? (
+            <button
+              type="button"
+              className="preis-save-trigger"
+              onClick={() => setEmailSaveOpen(true)}
+            >
+              <EnvelopeIcon16 />
+              Preisrahmen per E-Mail speichern
+            </button>
+          ) : (
+            <div className="preis-save-form">
+              <p className="preis-save-label">
+                Wir schicken dir den Preisrahmen direkt zu — kein Spam, nur dein
+                Ergebnis.
+              </p>
+              <div className="preis-save-row">
+                <input
+                  type="email"
+                  inputMode="email"
+                  autoComplete="email"
+                  autoCapitalize="none"
+                  autoCorrect="off"
+                  placeholder="deine@email.de"
+                  className="funnel-input"
+                  value={saveEmail}
+                  onChange={(e) => {
+                    setSaveEmail(e.target.value);
+                    if (saveEmailError) setSaveEmailError("");
+                  }}
+                />
+                <button
+                  type="button"
+                  className="preis-save-btn"
+                  disabled={
+                    !saveEmail.includes("@") || saveEmail.trim().length < 5
+                  }
+                  onClick={() => void handleSaveEmail()}
+                >
+                  Senden
+                </button>
+              </div>
+              {saveEmailError ? (
+                <p className="field-error">{saveEmailError}</p>
+              ) : null}
+            </div>
+          )}
+        </div>
+      ) : null}
+
+      {hasRange && saveEmailSent ? (
+        <div className="preis-save-success">
+          <span aria-hidden>✓</span>
+          Preisrahmen wurde gesendet — schau in dein Postfach.
+        </div>
+      ) : null}
+
       {hasRange ? (
         <div>
           <p className="mb-3 mt-5 text-sm font-medium text-text-primary">
@@ -535,36 +905,70 @@ export function BwResultScreen({
           <div className="flex flex-wrap gap-2">
             <button
               type="button"
-              onClick={() => onBudgetChange?.("ok")}
+              onClick={() => {
+                onBudgetChange?.("ok");
+                setShowBudgetOkFeedback(true);
+                scrollToLeadForm();
+              }}
               className={cn(
-                "rounded-full border border-border-default px-4 py-2 text-sm font-medium transition-colors",
+                "rounded-full border border-border-default bg-surface-card px-4 py-2 text-sm font-medium text-text-secondary transition-colors",
                 budget === "ok"
-                  ? "border-funnel-accent bg-funnel-accent text-white"
-                  : "bg-surface-card text-text-secondary hover:border-text-tertiary"
+                  ? "funnel-tile-selected text-text-primary"
+                  : "funnel-tile-hover"
               )}
             >
-              Ja, passt gut
+              ✓ Ja, passt gut
             </button>
             <button
               type="button"
-              onClick={() => onBudgetChange?.("zu_hoch")}
+              onClick={() => {
+                setShowBudgetOkFeedback(false);
+                onBudgetChange?.("zu_hoch");
+              }}
               className={cn(
-                "rounded-full border border-border-default px-4 py-2 text-sm font-medium transition-colors",
+                "rounded-full border border-border-default bg-surface-card px-4 py-2 text-sm font-medium text-text-secondary transition-colors",
                 budget === "zu_hoch"
-                  ? "border-funnel-accent bg-funnel-accent text-white"
-                  : "bg-surface-card text-text-secondary hover:border-text-tertiary"
+                  ? "funnel-tile-selected text-text-primary"
+                  : "funnel-tile-hover"
               )}
             >
               Eher zu hoch
             </button>
           </div>
-          {budget === "zu_hoch" ? (
-            <p className="mt-3 rounded-xl border border-border-default bg-muted p-3 text-sm leading-relaxed text-text-secondary">
-              Kein Problem — beim Termin besprechen wir Optionen die in dein
-              Budget passen.
+          {showBudgetOkFeedback && budget === "ok" ? (
+            <p
+              className="mt-3 text-sm font-semibold"
+              style={{ color: "var(--fl-accent, #2e7d52)" }}
+            >
+              Super — dann los.
             </p>
           ) : null}
+          {budget === "zu_hoch" ? (
+            <div className="budget-hint-box">
+              <p className="budget-hint-head">Kein Problem.</p>
+              <p className="budget-hint-text">
+                Beim Vor-Ort-Termin schauen wir gemeinsam was in deinem Budget
+                möglich ist — ohne Druck und ohne Auftragszwang. Viele Projekte
+                lassen sich auch in Phasen umsetzen.
+              </p>
+              <button
+                type="button"
+                className="budget-hint-cta"
+                onClick={scrollToLeadForm}
+              >
+                Trotzdem Termin anfragen →
+              </button>
+            </div>
+          ) : null}
         </div>
+      ) : null}
+
+      {hasRange ? (
+        <div
+          id="lead-form"
+          className="pointer-events-none h-px w-full scroll-mt-24 opacity-0"
+          aria-hidden
+        />
       ) : null}
     </div>
   );

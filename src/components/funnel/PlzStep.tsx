@@ -126,10 +126,8 @@ export function PlzStep({
                 type="button"
                 onClick={() => onZeitraumChange(c.value)}
                 className={cn(
-                  "rounded-xl border-2 border-border-default px-4 py-3 text-left transition-colors",
-                  active
-                    ? "border-funnel-accent bg-funnel-accent/[0.06]"
-                    : "bg-surface-card hover:border-text-tertiary"
+                  "rounded-xl border border-border-default bg-surface-card px-4 py-3 text-left transition-colors",
+                  active ? "funnel-tile-selected" : "funnel-tile-hover"
                 )}
               >
                 <span className="block text-sm font-medium text-text-primary">

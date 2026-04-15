@@ -43,8 +43,8 @@ export function SelectionTile({
       type="button"
       onClick={() => onChange(option.value, !selected)}
       className={cn(
-        "relative w-full rounded-xl border border-border-default p-3 text-left transition-colors hover:border-text-tertiary",
-        selected && "border-[1.5px] border-funnel-accent bg-funnel-accent/[0.04]",
+        "relative w-full rounded-xl border border-border-default p-3 text-left transition-colors",
+        selected ? "funnel-tile-selected" : "funnel-tile-hover",
         className
       )}
     >

@@ -7,7 +7,8 @@ import "@/app/baerenwald-landing.css";
 
 import { BwResultScreen } from "@/components/funnel/BwResultScreen";
 import { FachdetailsStep } from "@/components/funnel/FachdetailsStep";
-import { CalendarPicker } from "@/components/funnel/CalendarPicker";
+import { FunnelErrorBoundary } from "@/components/funnel/FunnelErrorBoundary";
+import { HWLeadForm } from "@/components/funnel/HWLeadForm";
 import { LeadAvailabilityHint } from "@/components/funnel/ResultScreen";
 import { FunnelFooter } from "@/components/funnel/FunnelFooter";
 import { FunnelHeader } from "@/components/funnel/FunnelHeader";
@@ -28,12 +29,16 @@ import {
   groesseEinheitFromConfig,
   isFachdetailsStepComplete,
 } from "@/lib/funnel/config";
+import { getBwFunnelProgressStep } from "@/lib/funnel/bw-funnel-progress";
 import {
   BW_FUNNEL_STEP1_OPTIONS,
   BW_FUNNEL_STEP1_ORDER,
 } from "@/lib/situation-options";
 import { isBwLeadPhotoRequired } from "@/lib/funnel/photo-requirement";
-import { calculatePrice } from "@/lib/funnel/price-calc";
+import {
+  calculatePrice,
+  getBwResultModus,
+} from "@/lib/funnel/price-calc";
 import type { BwResultModus } from "@/lib/funnel/price-calc";
 import { getPlzStatus } from "@/lib/funnel/plz";
 import type {
@@ -83,7 +88,7 @@ const BW_TAG_CLASS: Record<
 > = {
   multi: "bg-blue-50 text-blue-800",
   abo: "bg-green-50 text-green-800",
-  notfall: "bg-red-50 text-red-700",
+  notfall: "bg-amber-50 text-amber-900",
   neutral: "bg-muted text-text-secondary",
 };
 
@@ -97,21 +102,6 @@ function asLibOpt(o: FunnelStepOption): LibStepOption {
     warnText: o.warnText,
     triggerGewerke: o.triggerGewerke,
   };
-}
-
-function progressStep(s: Screen): number {
-  if (s === "situation" || s === "bereiche" || s === "fachdetails") return 1;
-  if (s === "kundentyp") return 2;
-  if (
-    s === "umfang" ||
-    s === "zugaenglichkeit" ||
-    s === "zustand" ||
-    s === "groesse"
-  ) {
-    return 3;
-  }
-  if (s === "ort" || s === "loading") return 4;
-  return 5;
 }
 
 function FunnelRechnerInner() {
@@ -130,6 +120,7 @@ function FunnelRechnerInner() {
   const [ausserhalbDatenschutzError, setAusserhalbDatenschutzError] = useState(false);
   const [resultModus, setResultModus] = useState<BwResultModus>("preisrahmen");
   const [schwellenwertAusgeloest, setSchwellenwertAusgeloest] = useState(false);
+  const [komplexRueckrufDanke, setKomplexRueckrufDanke] = useState(false);
 
   const {
     state,
@@ -180,14 +171,21 @@ function FunnelRechnerInner() {
       ) ?? null,
     [resolvedSteps]
   );
-  const stepZugaenglichkeit = useMemo(
-    () => resolvedSteps.find((s) => s.id === "zugaenglichkeit") ?? null,
-    [resolvedSteps]
-  );
-  const stepZustand = useMemo(
-    () => resolvedSteps.find((s) => s.id === "zustand") ?? null,
-    [resolvedSteps]
-  );
+  const stepZugaenglichkeit = useMemo(() => {
+    if (state.situation === "notfall") return null;
+    if (state.situation === "gewerbe" || state.situation === "gastro")
+      return null;
+    if (getBwResultModus(state) === "zu_komplex") return null;
+    return resolvedSteps.find((s) => s.id === "zugaenglichkeit") ?? null;
+  }, [resolvedSteps, state]);
+
+  const stepZustand = useMemo(() => {
+    if (state.situation === "notfall") return null;
+    if (state.situation === "gewerbe" || state.situation === "gastro")
+      return null;
+    if (getBwResultModus(state) === "zu_komplex") return null;
+    return resolvedSteps.find((s) => s.id === "zustand") ?? null;
+  }, [resolvedSteps, state]);
   const stepGroesse = useMemo(
     () =>
       resolvedSteps.find((s) => s.id.toLowerCase().includes("groesse")) ??
@@ -249,11 +247,14 @@ function FunnelRechnerInner() {
         if (state.bereiche.length > 0) {
           if (isB2bSituation(state.situation)) setScreen("beratung-lead");
           else if (hasFachdetailsStep) setScreen("fachdetails");
+          else if (state.situation === "notfall") setScreen("umfang");
           else setScreen("kundentyp");
         }
         break;
       case "fachdetails":
-        if (isFachdetailsStepComplete(state)) setScreen("kundentyp");
+        if (isFachdetailsStepComplete(state)) {
+          setScreen(state.situation === "notfall" ? "umfang" : "kundentyp");
+        }
         break;
       case "kundentyp":
         setScreen("umfang");
@@ -273,14 +274,17 @@ function FunnelRechnerInner() {
       case "ort": {
         if (state.plz.length < 4 || !state.zeitraum) break;
         const {
-          min, max, breakdown,
+          min,
+          max,
+          breakdown,
           mindestauftragAktiv,
           plzFaktor: pf,
           koordinationsRabatt: kr,
           resultModus: rm,
           schwellenwertAusgeloest: swa,
+          istFallback,
         } = calculatePrice(state);
-        setPrice(min, max, breakdown);
+        setPrice(min, max, breakdown, istFallback);
         setMindestauftrag(mindestauftragAktiv);
         setPlzFaktor(pf);
         setKoordinationsRabatt(kr);
@@ -339,7 +343,13 @@ function FunnelRechnerInner() {
         setScreen("bereiche");
         break;
       case "umfang":
-        setScreen("kundentyp");
+        setScreen(
+          state.situation === "notfall"
+            ? hasFachdetailsStep
+              ? "fachdetails"
+              : "bereiche"
+            : "kundentyp"
+        );
         break;
       case "zugaenglichkeit":
         setScreen("umfang");
@@ -393,6 +403,7 @@ function FunnelRechnerInner() {
     state.situation,
     stepZustand,
     stepZugaenglichkeit,
+    hasFachdetailsStep,
   ]);
 
   const nextDisabled = useMemo(() => {
@@ -459,8 +470,10 @@ function FunnelRechnerInner() {
       setPhotoError(true);
       return;
     }
+    const nameTrim = state.name.trim();
     const body = {
-      name: state.name.trim(),
+      name: nameTrim,
+      vorname: nameTrim.split(/\s+/)[0] ?? "",
       email: state.email.trim(),
       telefon: state.telefon.trim(),
       situation: state.situation,
@@ -499,6 +512,7 @@ function FunnelRechnerInner() {
     const name = `${state.vorname} ${state.nachname}`.trim();
     const body = {
       name,
+      vorname: state.vorname.trim(),
       email: state.email.trim(),
       telefon: state.telefon.trim(),
       situation: state.situation,
@@ -540,6 +554,7 @@ function FunnelRechnerInner() {
     if (!state.telefon.trim()) return;
     const body = {
       name: name || state.name.trim(),
+      vorname: state.vorname.trim(),
       email: state.email.trim(),
       telefon: state.telefon.trim(),
       situation: state.situation,
@@ -699,9 +714,8 @@ function FunnelRechnerInner() {
                     type="button"
                     onClick={() => setSituation(opt.id)}
                     className={cn(
-                      "rounded-[18px] border border-border-default p-4 text-left transition-colors hover:border-text-tertiary",
-                      active &&
-                        "border-[1.5px] border-funnel-accent bg-funnel-accent/5"
+                      "rounded-[18px] border border-border-default p-4 text-left transition-colors",
+                      active ? "funnel-tile-selected" : "funnel-tile-hover"
                     )}
                   >
                     <p className="text-[13px] font-semibold text-text-primary">
@@ -919,6 +933,11 @@ function FunnelRechnerInner() {
               koordinationsRabatt={koordinationsRabatt}
               resultModus={resultModus}
               schwellenwertAusgeloest={schwellenwertAusgeloest}
+              onKomplexRueckrufSuccess={() => {
+                setKomplexRueckrufDanke(true);
+                setSubmitted(true);
+                setScreen("danke");
+              }}
             />
           </StepWrapper>
         );
@@ -1038,29 +1057,10 @@ function FunnelRechnerInner() {
             animateKey="lead"
           >
             <LeadAvailabilityHint className="mb-4" />
-            <PhotoUpload
-              files={state.photos}
-              onChange={addPhotos}
-              className="mb-4"
-              uploadHasError={photoError}
-            />
-            {photoError ? (
-              <p
-                style={{
-                  fontSize: "13px",
-                  color: "#C0392B",
-                  marginTop: "8px",
-                  marginBottom: "16px",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "6px",
-                }}
-              >
-                ⚠ Bitte lade mindestens 2 Fotos hoch — das hilft uns den
-                Aufwand einzuschätzen.
-              </p>
-            ) : null}
-            <CalendarPicker
+            <HWLeadForm
+              photos={state.photos}
+              onPhotosChange={addPhotos}
+              photoError={photoError}
               selectedSlot={
                 state.selectedSlot
                   ? {
@@ -1072,47 +1072,13 @@ function FunnelRechnerInner() {
               onSlotSelect={(date, time) => {
                 setSlot(date.toISOString(), time);
               }}
-              className="mb-6"
+              name={state.name}
+              email={state.email}
+              telefon={state.telefon}
+              onFieldChange={(field, value) => updateLeadField(field, value)}
+              formId={LEAD_FORM_ID}
+              onSubmit={handleLeadSubmit}
             />
-            <form id={LEAD_FORM_ID} onSubmit={handleLeadSubmit} className="space-y-3">
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                <input
-                  type="text"
-                  inputMode="text"
-                  autoComplete="name"
-                  autoCapitalize="words"
-                  className="w-full rounded-xl border border-border-default px-3 py-2.5 text-sm outline-none focus:border-funnel-accent"
-                  placeholder="Name"
-                  value={state.name}
-                  onChange={(e) => updateLeadField("name", e.target.value)}
-                />
-                <input
-                  type="email"
-                  inputMode="email"
-                  autoComplete="email"
-                  autoCapitalize="none"
-                  autoCorrect="off"
-                  className="w-full rounded-xl border border-border-default px-3 py-2.5 text-sm outline-none focus:border-funnel-accent"
-                  placeholder="E-Mail"
-                  value={state.email}
-                  onChange={(e) => updateLeadField("email", e.target.value)}
-                />
-              </div>
-              <input
-                type="tel"
-                inputMode="tel"
-                autoComplete="tel"
-                className="w-full rounded-xl border border-border-default px-3 py-2.5 text-sm outline-none focus:border-funnel-accent"
-                placeholder="+49 oder 0..."
-                value={state.telefon}
-                onChange={(e) => updateLeadField("telefon", e.target.value)}
-              />
-              <p className="text-[11px] leading-relaxed text-text-tertiary">
-                Mit Absenden akzeptierst du, dass wir dich zum Termin /
-                Angebot kontaktieren. Du kannst der Nutzung jederzeit
-                widersprechen.
-              </p>
-            </form>
           </StepWrapper>
         );
 
@@ -1212,6 +1178,16 @@ function FunnelRechnerInner() {
         );
 
       case "danke":
+        if (komplexRueckrufDanke) {
+          return (
+            <ThankYou
+              variant="beratung"
+              beratungHeadline="Wir melden uns persönlich."
+              beratungSubline="Wir rufen dich innerhalb von 24h zurück — unverbindlich."
+              showTimeline={false}
+            />
+          );
+        }
         if (isAusserhalbLead) {
           return (
             <ThankYou
@@ -1249,8 +1225,8 @@ function FunnelRechnerInner() {
   return (
     <div className="min-h-screen bg-background">
       <FunnelHeader />
-      <FunnelProgressBar currentStep={progressStep(screen)} />
-      <main className="pb-28">{main()}</main>
+      <FunnelProgressBar currentStep={getBwFunnelProgressStep(screen)} />
+      <main className="pb-24">{main()}</main>
       {showFooterNav ? (
         <FunnelFooter
           onNext={handleNext}
@@ -1264,8 +1240,12 @@ function FunnelRechnerInner() {
                 Wir melden uns innerhalb von 24h — unverbindliche Beratung.
               </p>
             ) : screen === "result" && resultModus === "preisrahmen_warnung" ? (
-              <p className="text-xs text-text-tertiary text-center" style={{ marginTop: "8px" }}>
-                Wir erstellen dir nach dem Termin ein verbindliches Festpreisangebot.
+              <p
+                className="text-xs text-text-tertiary text-center"
+                style={{ marginTop: "8px" }}
+              >
+                Wir erstellen dir nach dem Termin ein verbindliches
+                Festpreisangebot.
               </p>
             ) : null
           }
@@ -1282,7 +1262,9 @@ export default function RechnerPage() {
         <div className="min-h-screen bg-background" aria-label="Laden" />
       }
     >
-      <FunnelRechnerInner />
+      <FunnelErrorBoundary>
+        <FunnelRechnerInner />
+      </FunnelErrorBoundary>
     </Suspense>
   );
 }
