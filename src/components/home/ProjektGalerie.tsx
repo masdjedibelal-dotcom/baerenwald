@@ -9,115 +9,98 @@ import {
   type MouseEvent as ReactMouseEvent,
 } from "react";
 
-export const PROJEKTE = [
-  {
-    id: 1,
-    bild: "/images/projekt-bad-schwabing.jpg",
-    bildAlt: "Renoviertes Badezimmer in Schwabing München",
-    gewerk: "Bad Renovierung",
-    stadtteil: "Schwabing",
-    jahr: "2024",
-    beschreibung:
-      "Komplette Badsanierung inkl. neue Fliesen, Sanitärobjekte und Elektro — alles aus einer Hand.",
-    emoji: "🚿",
-  },
-  {
-    id: 2,
-    bild: "/images/projekt-wohnung-maxvorstadt.jpg",
-    bildAlt: "Renovierte Wohnung in der Maxvorstadt München",
-    gewerk: "Wohnungsrenovierung",
-    stadtteil: "Maxvorstadt",
-    jahr: "2024",
-    beschreibung:
-      "Wände, Böden und Decken komplett erneuert — Maler, Bodenleger und Elektriker koordiniert in 10 Tagen.",
-    emoji: "🏠",
-  },
-  {
-    id: 3,
-    bild: "/images/projekt-garten-bogenhausen.jpg",
-    bildAlt: "Neugestalteter Garten in Bogenhausen München",
-    gewerk: "Gartengestaltung",
-    stadtteil: "Bogenhausen",
-    jahr: "2024",
-    beschreibung:
-      "Neuer Rasen, Terrassenpflaster und Bepflanzung — fertig in einer Woche.",
-    emoji: "🌿",
-  },
-  {
-    id: 4,
-    bild: "/images/projekt-kueche-haidhausen.jpg",
-    bildAlt: "Neue Küche in Haidhausen München",
-    gewerk: "Küche & Boden",
-    stadtteil: "Haidhausen",
-    jahr: "2023",
-    beschreibung:
-      "Küchenmontage, neuer Vinylboden und frischer Anstrich — ein Ansprechpartner, eine Rechnung.",
-    emoji: "🍳",
-  },
-  {
-    id: 5,
-    bild: "/images/projekt-heizung-pasing.jpg",
-    bildAlt: "Neue Heizungsanlage in Pasing München",
-    gewerk: "Heizungssanierung",
-    stadtteil: "Pasing",
-    jahr: "2023",
-    beschreibung:
-      "Alte Gasheizung gegen neue Anlage getauscht — inklusive Förderberatung und Abnahmeprotokoll.",
-    emoji: "🔥",
-  },
-  {
-    id: 6,
-    bild: "/images/projekt-dachgeschoss-schwabing.jpg",
-    bildAlt: "Ausgebautes Dachgeschoss in Schwabing München",
-    gewerk: "Dachgeschoss Ausbau",
-    stadtteil: "Schwabing",
-    jahr: "2023",
-    beschreibung:
-      "Kompletter DG-Ausbau mit Trockenbau, Elektro, Boden und Malerarbeiten — schlüsselfertig übergeben.",
-    emoji: "🏗️",
-  },
-] as const;
+import { cn } from "@/lib/utils";
+
+export type BaerenwaldProjektTag =
+  | "notfall"
+  | "gewerbe"
+  | "verwaltung"
+  | "privat";
+
+export type BaerenwaldProjekt = {
+  id: number;
+  bild: string;
+  bildAlt: string;
+  gewerk: string;
+  stadtteil: string;
+  jahr: string;
+  tag: BaerenwaldProjektTag;
+  problem: string;
+  loesung: string;
+  ergebnis: string;
+  /** Gradient unter dem Bild bis echte Assets da sind */
+  placeholderGradient: string;
+  placeholderEmoji: string;
+};
+
+const PROJEKT_TAG_LABEL: Record<BaerenwaldProjektTag, string> = {
+  notfall: "Notfall",
+  gewerbe: "Gewerbe",
+  verwaltung: "Verwaltung",
+  privat: "Privat",
+};
 
 const SCROLL_STEP = 376;
 
 function ProjektBild({
-  src,
-  alt,
-  emoji,
-}: {
-  src: string;
-  alt: string;
-  emoji: string;
-}) {
+  bild,
+  bildAlt,
+  placeholderGradient,
+  placeholderEmoji,
+}: Pick<
+  BaerenwaldProjekt,
+  | "bild"
+  | "bildAlt"
+  | "placeholderGradient"
+  | "placeholderEmoji"
+>) {
+  const [loaded, setLoaded] = useState(false);
   const [failed, setFailed] = useState(false);
 
-  if (failed) {
-    return (
-      <div className="projekt-placeholder">
-        <span className="projekt-placeholder-emoji" aria-hidden>
-          {emoji}
-        </span>
-        <span className="projekt-placeholder-text">[Foto folgt]</span>
-      </div>
-    );
-  }
+  const showPlaceholder = !loaded || failed;
 
   return (
-    <>
-      <Image
-        src={src}
-        alt={alt}
-        fill
-        className="projekt-bild"
-        sizes="(max-width: 680px) 85vw, 380px"
-        onError={() => setFailed(true)}
-      />
-      <div className="projekt-bild-gradient" aria-hidden />
-    </>
+    <div
+      className="projekt-bild-wrap"
+      style={{ background: placeholderGradient }}
+    >
+      <div
+        className={cn(
+          "projekt-bild-placeholder-layer",
+          !showPlaceholder && "projekt-bild-placeholder-layer--hidden"
+        )}
+        aria-hidden
+      >
+        <span className="projekt-placeholder-emoji projekt-placeholder-emoji--card">
+          {placeholderEmoji}
+        </span>
+      </div>
+      {!failed ? (
+        <Image
+          src={bild}
+          alt={bildAlt}
+          fill
+          className={cn("projekt-bild", loaded && "projekt-bild--loaded")}
+          sizes="(max-width: 680px) 85vw, 380px"
+          onLoadingComplete={() => setLoaded(true)}
+          onError={() => {
+            setFailed(true);
+            setLoaded(false);
+          }}
+        />
+      ) : null}
+      {loaded && !failed ? (
+        <div className="projekt-bild-gradient" aria-hidden />
+      ) : null}
+    </div>
   );
 }
 
-export function ProjektGalerie() {
+export function ProjektGalerie({
+  projekte,
+}: {
+  projekte: readonly BaerenwaldProjekt[];
+}) {
   const [activeIndex, setActiveIndex] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
 
@@ -153,7 +136,7 @@ export function ProjektGalerie() {
     el.addEventListener("scroll", onScroll, { passive: true });
     updateActiveFromScroll();
     return () => el.removeEventListener("scroll", onScroll);
-  }, [updateActiveFromScroll]);
+  }, [updateActiveFromScroll, projekte.length]);
 
   const scrollByDir = useCallback((dir: "left" | "right") => {
     carouselRef.current?.scrollBy({
@@ -219,8 +202,8 @@ export function ProjektGalerie() {
             Echte Ergebnisse.
           </h2>
           <p className="section-sub">
-            Alle Projekte in München und Umgebung — koordiniert, pünktlich,
-            sauber übergeben.
+            Von Notfalleinsätzen bis zur kompletten Außenanlage — koordiniert,
+            pünktlich, sauber abgeschlossen.
           </p>
         </div>
 
@@ -249,22 +232,31 @@ export function ProjektGalerie() {
             onMouseLeave={() => setIsDragging(false)}
             onClickCapture={onCarouselClickCapture}
           >
-            {PROJEKTE.map((projekt, i) => (
+            {projekte.map((projekt, i) => (
               <div
                 key={projekt.id}
                 className="projekt-card fade-up"
                 style={{ transitionDelay: `${i * 0.06}s` }}
               >
-                <div className="projekt-bild-wrap">
-                  <ProjektBild
-                    src={projekt.bild}
-                    alt={projekt.bildAlt}
-                    emoji={projekt.emoji}
-                  />
-                </div>
+                <ProjektBild
+                  bild={projekt.bild}
+                  bildAlt={projekt.bildAlt}
+                  placeholderGradient={projekt.placeholderGradient}
+                  placeholderEmoji={projekt.placeholderEmoji}
+                />
                 <div className="projekt-info">
-                  <div className="projekt-meta">
-                    <span className="projekt-gewerk">{projekt.gewerk}</span>
+                  <div className="projekt-meta projekt-meta--tags">
+                    <span
+                      className={cn(
+                        "projekt-tag",
+                        `projekt-tag--${projekt.tag}`
+                      )}
+                    >
+                      {PROJEKT_TAG_LABEL[projekt.tag]}
+                    </span>
+                  </div>
+                  <div className="projekt-meta projekt-meta--detail">
+                    <span className="projekt-gewerk-name">{projekt.gewerk}</span>
                     <span className="projekt-meta-dot" aria-hidden>
                       ·
                     </span>
@@ -274,7 +266,27 @@ export function ProjektGalerie() {
                     </span>
                     <span className="projekt-jahr">{projekt.jahr}</span>
                   </div>
-                  <p className="projekt-beschreibung">{projekt.beschreibung}</p>
+
+                  <div className="projekt-ple">
+                    <div className="projekt-ple-row">
+                      <span className="projekt-ple-icon" aria-hidden>
+                        ⚡
+                      </span>
+                      <p className="projekt-ple-text">{projekt.problem}</p>
+                    </div>
+                    <div className="projekt-ple-row">
+                      <span className="projekt-ple-icon" aria-hidden>
+                        🔧
+                      </span>
+                      <p className="projekt-ple-text">{projekt.loesung}</p>
+                    </div>
+                    <div className="projekt-ple-row projekt-ple-row--ergebnis">
+                      <span className="projekt-ple-icon" aria-hidden>
+                        ✓
+                      </span>
+                      <p className="projekt-ple-text">{projekt.ergebnis}</p>
+                    </div>
+                  </div>
                 </div>
               </div>
             ))}
@@ -299,7 +311,7 @@ export function ProjektGalerie() {
         </div>
 
         <div className="projekte-dots" role="tablist" aria-label="Projekte">
-          {PROJEKTE.map((_, i) => (
+          {projekte.map((_, i) => (
             <button
               key={i}
               type="button"

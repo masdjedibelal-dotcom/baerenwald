@@ -4,7 +4,7 @@ import { useCallback, useMemo, useState } from "react";
 
 import { formatCurrencyEUR } from "@/lib/price-calc";
 import { getResolvedStepsForSituation } from "@/lib/funnel/config";
-import type { FunnelState, ObjektZustand, PriceLineItem } from "@/lib/funnel/types";
+import type { FunnelState, ObjektZustand } from "@/lib/funnel/types";
 import {
   calculatePrice,
   getBwResultModus,
@@ -41,205 +41,113 @@ const RESULT_TESTIMONIALS = [
   },
 ] as const;
 
-const LEISTUNGS_LABELS: Record<string, string> = {
-  "sanitaer.verstopfung": "Rohrreinigung",
-  "sanitaer.leck": "Leck / Rohrbruch",
-  "sanitaer.wc": "WC / Heizung",
-  "sanitaer.armatur": "Armatur / Bad",
-  "elektro.steckdose": "Elektro (einzelne Punkte)",
-  "elektro.fi_schalter": "Elektrik erneuern",
-  "elektro.fehlersuche": "Elektro Fehlersuche",
-  "elektro.qm": "Elektrik (nach Fläche)",
-  "elektro.punkte": "Elektro (einzelne Punkte)",
-  "garten.rasen": "Rasenpflege",
-  "garten.hecke": "Heckenschnitt",
-  "garten.pflaster": "Pflaster / Terrasse",
-  "maler.waende": "Wände streichen",
-  "maler.waende_decke": "Wände + Decke streichen",
-  "maler.fassade": "Fassade streichen",
-  "boden.laminat": "Laminat verlegen",
-  "boden.parkett": "Parkett verlegen",
-  "boden.vinyl": "Vinyl / Designboden",
-  "boden.fliesen": "Fliesen verlegen",
-  "boden.teppich": "Teppich verlegen",
-  "bad.fliesen": "Bad fliesen",
-  "bad.komplett": "Bad komplett",
-  "bad.objekte": "Sanitärobjekte",
-  "heizung.gas": "Heizung (Gas)",
-  "heizung.wartung": "Heizungswartung",
-  "dach.ziegel": "Dach reparieren",
-  "dach.komplett": "Dach sanieren",
-  "dach.regenrinne": "Regenrinne",
-  "fassade.anstrich": "Fassade streichen",
-  "fassade.daemmung": "Fassade / Dämmung",
-  "fenster.standard": "Fenster / Türen",
-  "kueche.aufbau": "Küche Montage",
-  "ausbau.umbau": "Ausbau / Umbau",
-  "terrasse.aussen": "Terrasse / Außen",
-  "gartenpflege.saison": "Gartenpflege",
-  "gartengestaltung.einmal": "Gartengestaltung",
-  "baum.pflege": "Baumpflege",
-  "wasser.einsatz": "Wasser & Rohre",
-  "reinigung.regelmaessig": "Reinigung",
-  "reinigung.einmalig": "Reinigung",
-  "allgemein.allgemein": "Handwerksleistung",
+const KOORDINATION_REIHENFOLGE: Record<
+  string,
+  { emoji: string; label: string; hinweis: string; prioritaet: number }
+> = {
+  elektro: {
+    emoji: "⚡",
+    label: "Elektroarbeiten",
+    hinweis:
+      "Vor Wänden und Boden — Leitungen müssen zuerst verlegt werden",
+    prioritaet: 1,
+  },
+  sanitaer: {
+    emoji: "🚿",
+    label: "Sanitär & Bad",
+    hinweis: "Vor den Fliesen — Rohre und Anschlüsse zuerst",
+    prioritaet: 1,
+  },
+  heizung: {
+    emoji: "🔥",
+    label: "Heizung",
+    hinweis: "Unabhängig planbar — wir stimmen den Termin ab",
+    prioritaet: 2,
+  },
+  maler: {
+    emoji: "🖌️",
+    label: "Malerarbeiten",
+    hinweis: "Nach Elektro und Sanitär — vor dem Bodenbelag",
+    prioritaet: 3,
+  },
+  boden: {
+    emoji: "🪵",
+    label: "Bodenbelag",
+    hinweis: "Immer zuletzt — nach allen anderen Gewerken",
+    prioritaet: 4,
+  },
+  dach: {
+    emoji: "🏠",
+    label: "Dacharbeiten",
+    hinweis: "Vor Innenarbeiten — Dach muss dicht sein",
+    prioritaet: 1,
+  },
+  garten: {
+    emoji: "🌿",
+    label: "Gartenarbeiten",
+    hinweis: "Unabhängig planbar — parallel zu Innenarbeiten",
+    prioritaet: 5,
+  },
+  trockenbau: {
+    emoji: "🧱",
+    label: "Trockenbau",
+    hinweis: "Nach Elektro — vor Maler und Boden",
+    prioritaet: 2,
+  },
 };
 
-const GEWERK_SERVICE_SLUG: Record<string, string> = {
-  Sanitär: "sanitaer",
-  Elektro: "elektro",
-  Garten: "garten",
-  Maler: "maler",
-  Boden: "boden",
-  Bad: "bad",
-  Heizung: "heizung",
-  Dach: "dach",
-  Küche: "kueche",
-  Kueche: "kueche",
-  Fassade: "fassade",
-  Fenster: "fenster",
-  Reinigung: "reinigung",
-  Gartenpflege: "gartenpflege",
-  Gartengestaltung: "gartengestaltung",
-  Baumpflege: "baum",
-  Ausbau: "ausbau",
-  "Terrasse / Außen": "terrasse",
-  "Wasser & Rohre": "wasser",
-};
+function getAktiveGewerke(state: FunnelState): string[] {
+  const gewerke: string[] = [];
+  const { bereiche } = state;
 
-function beschreibungToTypeSlug(
-  beschreibung: string,
-  gewerk: string
-): string {
-  const b = beschreibung.trim().toLowerCase();
+  const push = (g: string) => {
+    if (!gewerke.includes(g)) gewerke.push(g);
+  };
 
-  if (gewerk === "Bad") {
-    if (b.includes("komplett")) return "komplett";
-    if (b.includes("einzelobj") || b.includes("sanitärobj")) return "objekte";
-    if (b.includes("fliesen")) return "fliesen";
-    if (b.includes("badsanierung")) return "fliesen";
-    return "fliesen";
+  if (
+    bereiche.includes("bad") ||
+    bereiche.includes("wasser") ||
+    bereiche.includes("sanitaer")
+  ) {
+    push("sanitaer");
   }
-  if (gewerk === "Boden") {
-    if (b.includes("laminat")) return "laminat";
-    if (b.includes("parkett")) return "parkett";
-    if (b.includes("vinyl") || b.includes("designboden")) return "vinyl";
-    if (b.includes("fliesen")) return "fliesen";
-    if (b.includes("teppich")) return "teppich";
-    return "vinyl";
+  if (bereiche.includes("heizung")) push("heizung");
+  if (
+    bereiche.includes("strom") ||
+    bereiche.includes("elektrik") ||
+    bereiche.includes("elektro")
+  ) {
+    push("elektro");
   }
-  if (gewerk === "Maler") {
-    if (b.includes("decke")) return "waende_decke";
-    if (b.includes("wände") || b.includes("wand")) return "waende";
-    return "waende";
+  if (
+    bereiche.includes("maler") ||
+    bereiche.includes("waende_boeden") ||
+    bereiche.includes("streichen") ||
+    bereiche.includes("fassade")
+  ) {
+    push("maler");
   }
-  if (gewerk === "Fassade") {
-    if (b.includes("außen") || b.includes("aussen")) return "fassade";
-    if (b.includes("dämmung") || b.includes("daemmung")) return "daemmung";
-    if (b.includes("anteil")) return "daemmung";
-    if (b.includes("fassadenfläche") || b.includes("anstrich")) return "anstrich";
-    return "anstrich";
+  if (bereiche.includes("boden") || bereiche.includes("terrasse")) {
+    push("boden");
   }
-  if (gewerk === "Heizung") {
-    if (b.includes("wartung") || b.includes("notfall")) return "wartung";
-    return "gas";
+  if (bereiche.includes("dach")) push("dach");
+  if (
+    bereiche.includes("garten") ||
+    bereiche.includes("gestaltung") ||
+    bereiche.includes("baum")
+  ) {
+    push("garten");
   }
-  if (gewerk === "Dach") {
-    if (b.includes("ziegel")) return "ziegel";
-    if (b.includes("regenrinne") || b.includes("ablauf")) return "regenrinne";
-    return "komplett";
-  }
-  if (gewerk === "Elektro") {
-    if (b.includes("fehlersuche")) return "fehlersuche";
-    if (b.includes("fi") || b.includes("sicherungs")) return "fi_schalter";
-    if (b.includes("fläche") || b.includes("nach fläche")) return "qm";
-    if (b.includes("punkt") || b.includes("arbeitspunkt")) return "punkte";
-    if (b.includes("steckdose")) return "steckdose";
-    return "qm";
-  }
-  if (gewerk === "Sanitär") {
-    if (b.includes("verstopf")) return "verstopfung";
-    if (b.includes("leck") || b.includes("rohr")) return "leck";
-    if (b.includes("armatur") || b.includes("einzelteil")) return "armatur";
-    if (b.includes("warmwasser") || b.includes("wc")) return "wc";
-    return "armatur";
-  }
-  if (gewerk === "Garten") {
-    if (b.includes("rasen")) return "rasen";
-    if (b.includes("hecke")) return "hecke";
-    if (b.includes("pflaster") || b.includes("terrasse")) return "pflaster";
-    return "rasen";
-  }
-  if (gewerk === "Küche" || gewerk === "Kueche") {
-    return "aufbau";
-  }
-  if (gewerk === "Fenster") {
-    if (b.includes("dachfenster")) return "standard";
-    return "standard";
-  }
-  if (gewerk === "Gartenpflege") return "saison";
-  if (gewerk === "Gartengestaltung") return "einmal";
-  if (gewerk === "Baumpflege") return "pflege";
-  if (gewerk === "Ausbau") return "umbau";
-  if (gewerk === "Terrasse / Außen") return "aussen";
-  if (gewerk === "Wasser & Rohre") return "einsatz";
-  if (gewerk === "Reinigung") {
-    if (b.includes("einmal")) return "einmalig";
-    return "regelmaessig";
+  if (
+    bereiche.includes("trockenbau") ||
+    bereiche.includes("keller_dg") ||
+    bereiche.includes("umbau") ||
+    bereiche.includes("anbau")
+  ) {
+    push("trockenbau");
   }
 
-  if (b.includes("verstopf")) return "verstopfung";
-  if (b.includes("leck")) return "leck";
-  if (b.includes("steckdose")) return "steckdose";
-  if (b.includes("fi ")) return "fi_schalter";
-  if (b.includes("fehlersuche")) return "fehlersuche";
-  if (b.includes("rasen")) return "rasen";
-  if (b.includes("hecke")) return "hecke";
-  if (b.includes("pflaster")) return "pflaster";
-  if (b.includes("wände + decke") || b.includes("waende + decke"))
-    return "waende_decke";
-  if (b.includes("wände streichen")) return "waende";
-  if (b.includes("fassade")) return "anstrich";
-  if (b.includes("laminat")) return "laminat";
-  if (b.includes("parkett")) return "parkett";
-  if (b.includes("vinyl")) return "vinyl";
-  if (b.includes("fliesen boden")) return "fliesen";
-  if (b.includes("fliesen")) return "fliesen";
-  if (b.includes("teppich")) return "teppich";
-  if (b.includes("bad — fliesen") || b.includes("bad fliesen")) return "fliesen";
-  if (b.includes("komplettsanierung")) return "komplett";
-  if (b.includes("sanitärobj")) return "objekte";
-  if (b.includes("gasheizung")) return "gas";
-  if (b.includes("wartung")) return "wartung";
-  if (b.includes("ziegel")) return "ziegel";
-  if (b.includes("dach komplett")) return "komplett";
-  if (b.includes("regenrinne")) return "regenrinne";
-  if (b.includes("montage")) return "aufbau";
-
-  return "allgemein";
-}
-
-function serviceSlugForLine(item: PriceLineItem): string {
-  const g = item.gewerk;
-  const b = item.beschreibung.toLowerCase();
-  if (g === "Fassade" && (b.includes("außen") || b.includes("aussen")))
-    return "maler";
-  return GEWERK_SERVICE_SLUG[g] ?? g.toLowerCase().replace(/\s+/g, "_");
-}
-
-function getLeistungsLabel(gewerk: string, type: string): string {
-  const key = `${gewerk}.${type}`;
-  return LEISTUNGS_LABELS[key] ?? `${gewerk} — ${type}`;
-}
-
-function lineLeistungsLabel(item: PriceLineItem): string {
-  const slug = serviceSlugForLine(item);
-  const type = beschreibungToTypeSlug(item.beschreibung, item.gewerk);
-  const key = `${slug}.${type}`;
-  return (
-    LEISTUNGS_LABELS[key] ??
-    (item.beschreibung.trim() || getLeistungsLabel(slug, type))
-  );
+  return gewerke;
 }
 
 function BtnSpinner() {
@@ -266,19 +174,19 @@ function EnvelopeIcon16() {
   );
 }
 
-function PreisAccordion({
-  state,
-  koordinationsRabatt,
-}: {
-  state: FunnelState;
-  koordinationsRabatt: number;
-}) {
+function KoordinationAccordion({ state }: { state: FunnelState }) {
   const [open, setOpen] = useState(false);
+  const aktiveGewerke = useMemo(() => getAktiveGewerke(state), [state]);
 
-  if (state.breakdown.length === 0) return null;
+  if (aktiveGewerke.length === 0) return null;
 
-  const hasRabatt = koordinationsRabatt < 1.0;
-  const rabattProzent = Math.round((1 - koordinationsRabatt) * 100);
+  const sorted = [...aktiveGewerke].sort(
+    (a, b) =>
+      (KOORDINATION_REIHENFOLGE[a]?.prioritaet ?? 99) -
+      (KOORDINATION_REIHENFOLGE[b]?.prioritaet ?? 99)
+  );
+
+  const mehrere = aktiveGewerke.length >= 2;
 
   return (
     <div className="preis-accordion">
@@ -288,7 +196,7 @@ function PreisAccordion({
         onClick={() => setOpen((v) => !v)}
         aria-expanded={open}
       >
-        <span>Preisdetails ansehen</span>
+        <span>Wie wir dein Projekt koordinieren</span>
         <svg
           className="preis-accordion-arrow"
           width="16"
@@ -309,42 +217,38 @@ function PreisAccordion({
 
       {open ? (
         <div className="preis-accordion-body">
-          <table className="preis-breakdown-table">
-            <thead>
-              <tr>
-                <th>Leistung</th>
-                <th>Von</th>
-                <th>Bis</th>
-              </tr>
-            </thead>
-            <tbody>
-              {state.breakdown.map((item, i) => (
-                <tr key={i}>
-                  <td>{lineLeistungsLabel(item)}</td>
-                  <td>{item.min.toLocaleString("de")} €</td>
-                  <td>{item.max.toLocaleString("de")} €</td>
-                </tr>
-              ))}
-              {hasRabatt ? (
-                <tr className="preis-breakdown-rabatt">
-                  <td>Koordinationsrabatt</td>
-                  <td
-                    colSpan={2}
-                    style={{ color: "var(--fl-accent)", textAlign: "right" }}
-                  >
-                    −{rabattProzent}&thinsp;%
-                  </td>
-                </tr>
-              ) : null}
-              {state.breakdown.length > 1 ? (
-                <tr className="preis-breakdown-total">
-                  <td>Gesamt</td>
-                  <td>{state.priceMin.toLocaleString("de")} €</td>
-                  <td>{state.priceMax.toLocaleString("de")} €</td>
-                </tr>
-              ) : null}
-            </tbody>
-          </table>
+          {mehrere ? (
+            <div className="koordination-list">
+              {sorted.map((gewerk, i) => {
+                const info = KOORDINATION_REIHENFOLGE[gewerk];
+                if (!info) return null;
+                return (
+                  <div key={gewerk} className="koordination-item">
+                    <div className="koordination-item-left">
+                      <span className="koordination-step">{i + 1}</span>
+                      <span className="koordination-emoji" aria-hidden>
+                        {info.emoji}
+                      </span>
+                    </div>
+                    <div className="koordination-item-right">
+                      <div className="koordination-label">{info.label}</div>
+                      <div className="koordination-hinweis">{info.hinweis}</div>
+                    </div>
+                  </div>
+                );
+              })}
+              <div className="koordination-footer">
+                <p>
+                  Wir stimmen alle Gewerke intern ab — du hast einen
+                  Ansprechpartner und eine Rechnung am Ende.
+                </p>
+              </div>
+            </div>
+          ) : (
+            <p className="koordination-einzel-hinweis">
+              Wir übernehmen die komplette Abwicklung für dich.
+            </p>
+          )}
         </div>
       ) : null}
     </div>
@@ -385,7 +289,6 @@ function ResultTestimonialCard() {
 export interface BwResultScreenProps {
   state: FunnelState;
   mindestauftragAktiv?: boolean;
-  koordinationsRabatt?: number;
   resultModus?: BwResultModus;
   schwellenwertAusgeloest?: boolean;
   /** Nach erfolgreichem Rückruf-Formular („zu komplex“). */
@@ -718,7 +621,6 @@ function ZuKomplexScreen({
 export function BwResultScreen({
   state,
   mindestauftragAktiv,
-  koordinationsRabatt = 1.0,
   resultModus,
   schwellenwertAusgeloest = false,
   onKomplexRueckrufSuccess,
@@ -787,6 +689,14 @@ export function BwResultScreen({
   }
 
   const hasRange = state.priceMin > 0 && state.priceMax > 0;
+
+  const showVergleichHint =
+    hasRange &&
+    state.situation !== "notfall" &&
+    resultModus !== "notfall_akut" &&
+    (resultModus === "preisrahmen" ||
+      resultModus === "preisrahmen_warnung" ||
+      resultModus === undefined);
 
   const handleSaveEmail = useCallback(async () => {
     setSaveEmailError("");
@@ -866,6 +776,16 @@ export function BwResultScreen({
         </p>
       ) : null}
 
+      {showVergleichHint ? (
+        <div className="vergleich-hint">
+          <p className="vergleich-hint-text">
+            Haben Sie bereits ein günstigeres Angebot erhalten? Laden Sie es im
+            nächsten Schritt einfach hoch — wir prüfen es ehrlich und sagen Ihnen
+            ob wir mithalten können.
+          </p>
+        </div>
+      ) : null}
+
       {mindestauftragAktiv && hasRange ? (
         <p className="result-meta-einzeiler">
           Mindestauftrag 150 € inkl. Anfahrt und erster Einschätzung vor Ort.
@@ -873,7 +793,7 @@ export function BwResultScreen({
       ) : null}
 
       {hasRange && !state.istFallback ? (
-        <PreisAccordion state={state} koordinationsRabatt={koordinationsRabatt} />
+        <KoordinationAccordion state={state} />
       ) : null}
 
       {hasRange ? <ResultTestimonialCard /> : null}

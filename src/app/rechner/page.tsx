@@ -123,7 +123,6 @@ function FunnelRechnerInner() {
   const urlInit = useRef(false);
   const [screen, setScreen] = useState<Screen>("trust_intro");
   const [mindestauftragAktiv, setMindestauftrag] = useState(false);
-  const [koordinationsRabatt, setKoordinationsRabatt] = useState(1.0);
   const [isAusserhalbLead, setIsAusserhalbLead] = useState(false);
   const [ausserhalbBeschreibung, setAusserhalbBeschreibung] = useState("");
   const [beratungDatenschutz, setBeratungDatenschutz] = useState(false);
@@ -136,6 +135,11 @@ function FunnelRechnerInner() {
   const [microNote, setMicroNote] = useState<{
     target: Screen;
     text: string;
+  } | null>(null);
+  /** Pro Fachdetail-Screen: letzter bekannter Vollständigkeitszustand (für Auto-Weiter ohne Skip beim Zurück). */
+  const fachdetailVisitRef = useRef<{
+    id: string;
+    wasComplete: boolean;
   } | null>(null);
 
   const {
@@ -312,6 +316,39 @@ function FunnelRechnerInner() {
     state.bereiche,
   ]);
 
+  const goNextFromCompletedFachdetailScreen = useCallback(
+    (fromScreen: Screen) => {
+      const g = getBwFachdetailGewerkFromScreen(fromScreen);
+      if (!g) return;
+      if (
+        !isFachdetailGewerkChainComplete(
+          state.bereiche,
+          state.situation === "notfall",
+          state.fachdetails,
+          g
+        )
+      ) {
+        return;
+      }
+      const next = getNextBwRechnerScreen(state, fromScreen);
+      if (!next) return;
+      if (next === "groesse" && fachdetailsBeforeGroesse && hasGroesseStep) {
+        setMicroNote({
+          target: "groesse",
+          text: "Fast geschafft — noch die ungefähre Fläche",
+        });
+      }
+      setScreen(next as Screen);
+    },
+    [
+      state.bereiche,
+      state.situation,
+      state.fachdetails,
+      fachdetailsBeforeGroesse,
+      hasGroesseStep,
+    ]
+  );
+
   const handleNext = useCallback(() => {
     const fachGewerk = getBwFachdetailGewerkFromScreen(screen);
     if (fachGewerk) {
@@ -325,20 +362,7 @@ function FunnelRechnerInner() {
       ) {
         return;
       }
-      const next = getNextBwRechnerScreen(state, screen);
-      if (next) {
-        if (
-          next === "groesse" &&
-          fachdetailsBeforeGroesse &&
-          hasGroesseStep
-        ) {
-          setMicroNote({
-            target: "groesse",
-            text: "Fast geschafft — noch die ungefähre Fläche",
-          });
-        }
-        setScreen(next as Screen);
-      }
+      goNextFromCompletedFachdetailScreen(screen);
       return;
     }
 
@@ -404,14 +428,12 @@ function FunnelRechnerInner() {
           max,
           breakdown,
           mindestauftragAktiv,
-          koordinationsRabatt: kr,
           resultModus: rm,
           schwellenwertAusgeloest: swa,
           istFallback,
         } = calculatePrice(state);
         setPrice(min, max, breakdown, istFallback);
         setMindestauftrag(mindestauftragAktiv);
-        setKoordinationsRabatt(kr);
         setResultModus(rm);
         setSchwellenwertAusgeloest(swa);
         setScreen("loading");
@@ -448,6 +470,39 @@ function FunnelRechnerInner() {
     hasFachdetailsStep,
     hasKundentypStep,
     setPrice,
+    goNextFromCompletedFachdetailScreen,
+  ]);
+
+  useEffect(() => {
+    if (!isBwFachdetailScreenId(screen)) {
+      fachdetailVisitRef.current = null;
+      return;
+    }
+    const g = getBwFachdetailGewerkFromScreen(screen);
+    if (!g) return;
+    const complete = isFachdetailGewerkChainComplete(
+      state.bereiche,
+      state.situation === "notfall",
+      state.fachdetails,
+      g
+    );
+    const visit = fachdetailVisitRef.current;
+    if (!visit || visit.id !== screen) {
+      fachdetailVisitRef.current = { id: screen, wasComplete: complete };
+      return;
+    }
+    if (complete && !visit.wasComplete) {
+      goNextFromCompletedFachdetailScreen(screen);
+      fachdetailVisitRef.current = { id: screen, wasComplete: true };
+      return;
+    }
+    fachdetailVisitRef.current = { id: screen, wasComplete: complete };
+  }, [
+    screen,
+    state.bereiche,
+    state.situation,
+    state.fachdetails,
+    goNextFromCompletedFachdetailScreen,
   ]);
 
   const handleBack = useCallback(() => {
@@ -561,6 +616,7 @@ function FunnelRechnerInner() {
       bereiche: state.bereiche,
       priceMin: state.priceMin,
       priceMax: state.priceMax,
+      breakdown: state.breakdown,
       plz: state.plz,
       zeitraum: state.zeitraum,
       budgetCheck: state.budgetCheck,
@@ -1040,7 +1096,6 @@ function FunnelRechnerInner() {
             <BwResultScreen
               state={state}
               mindestauftragAktiv={mindestauftragAktiv}
-              koordinationsRabatt={koordinationsRabatt}
               resultModus={resultModus}
               schwellenwertAusgeloest={schwellenwertAusgeloest}
               onKomplexRueckrufSuccess={() => {

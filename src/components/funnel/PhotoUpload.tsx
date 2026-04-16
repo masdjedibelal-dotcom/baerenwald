@@ -7,6 +7,27 @@ import { cn } from "@/lib/utils";
 const MAX_FILE_SIZE = 10 * 1024 * 1024;
 const MAX_TOTAL_SIZE = 30 * 1024 * 1024;
 
+const UPLOAD_ACCEPT =
+  "image/*,video/*,application/pdf,.pdf,.doc,.docx,.jpg,.jpeg,.png,.heic";
+
+function isAcceptedUploadFile(file: File): boolean {
+  const t = file.type;
+  if (t.startsWith("image/") || t.startsWith("video/")) return true;
+  if (t === "application/pdf") return true;
+  if (t === "application/msword") return true;
+  if (
+    t ===
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+  ) {
+    return true;
+  }
+  const n = file.name.toLowerCase();
+  if (n.endsWith(".pdf") || n.endsWith(".doc") || n.endsWith(".docx"))
+    return true;
+  if (/\.(jpe?g|png|heic|heif)$/.test(n)) return true;
+  return false;
+}
+
 async function compressImage(
   file: File,
   maxWidth = 1920,
@@ -80,6 +101,8 @@ export interface PhotoUploadProps {
   buttonTitle?: string;
   /** Überschreibt den Hinweis unter dem Titel */
   buttonHint?: string;
+  /** Zusatz-Hinweis zu günstigeren Fremdangeboten (unter dem Upload-Bereich) */
+  showCompareOfferHint?: boolean;
 }
 
 export function PhotoUpload({
@@ -88,8 +111,9 @@ export function PhotoUpload({
   maxFiles = 6,
   className,
   uploadHasError = false,
-  buttonTitle = "Fotos hochladen (optional)",
-  buttonHint,
+  buttonTitle = "Fotos oder Vergleichsangebote hochladen",
+  buttonHint = "Projektfotos, Skizzen oder bestehende Angebote — alles hilft uns bei der Vorbereitung",
+  showCompareOfferHint = false,
 }: PhotoUploadProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [previews, setPreviews] = useState<Record<string, string>>({});
@@ -143,7 +167,9 @@ export function PhotoUpload({
       for (let i = 0; i < incoming.length; i++) {
         const raw = incoming[i];
         if (!raw.type.startsWith("image/")) continue;
-        savedImages += Math.max(0, raw.size - compressed[i].size);
+        const out = compressed[i];
+        if (!out.type.startsWith("image/")) continue;
+        savedImages += Math.max(0, raw.size - out.size);
       }
       if (savedImages > 100 * 1024) {
         showCompressionNotice(savedImages);
@@ -161,7 +187,7 @@ export function PhotoUpload({
       const next: File[] = [...files];
       const added: File[] = [];
       for (const f of compressed) {
-        if (!f.type.startsWith("image/")) continue;
+        if (!isAcceptedUploadFile(f)) continue;
         if (next.length >= maxFiles) break;
         const dup = next.some((x) => x.name === f.name && x.size === f.size);
         if (!dup) {
@@ -180,7 +206,7 @@ export function PhotoUpload({
 
       setUploadError("");
       for (const f of added) {
-        readPreview(f);
+        if (f.type.startsWith("image/")) readPreview(f);
       }
       onChange(next);
     },
@@ -221,7 +247,7 @@ export function PhotoUpload({
       <input
         ref={inputRef}
         type="file"
-        accept="image/*"
+        accept={UPLOAD_ACCEPT}
         multiple
         className="hidden"
         onChange={onInput}
@@ -267,11 +293,17 @@ export function PhotoUpload({
           </svg>
         </div>
         <p className="text-sm font-medium text-text-primary">{buttonTitle}</p>
-        <p className="mt-1 text-xs text-text-tertiary">
-          {buttonHint ??
-            `Hilft beim Vor-Ort-Termin · max. ${maxFiles} Fotos · je max. 10 MB, gesamt max. 30 MB`}
+        <p className="mt-1 text-xs text-text-tertiary">{buttonHint}</p>
+        <p className="mt-0.5 text-[11px] text-text-tertiary">
+          Max. {maxFiles} Dateien · je max. 10 MB, gesamt max. 30 MB
         </p>
       </button>
+      {showCompareOfferHint ? (
+        <p className="upload-hint-sub">
+          Sie haben ein günstigeres Angebot? Einfach hier hochladen — wir schauen
+          es uns an.
+        </p>
+      ) : null}
       {isCompressing ? (
         <p className="photo-compressing">
           <span className="btn-spinner btn-spinner--dark" aria-hidden />

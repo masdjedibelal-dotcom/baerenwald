@@ -483,47 +483,7 @@ export function FachdetailsStep({
                 }}
               />
             </FollowUpPanel>
-          ) : (
-            <>
-              <SingleQuestionBlock
-                q={ELEKTRO_Q1}
-                selected={fd.elektro?.problem}
-                educationOpen={Boolean(eduKeys.elektro_q1)}
-                onToggleEdu={() => toggleEdu("elektro_q1")}
-                optionEduOpen={eduKeys}
-                onToggleOptionEdu={toggleEdu}
-                onSelect={(value) => {
-                  onChange({
-                    elektro: {
-                      problem: value,
-                      folge: undefined,
-                    },
-                  });
-                }}
-              />
-              {elektroFollowQ && fd.elektro?.folge !== undefined ? (
-                <div className="pt-1">
-                  <SingleQuestionBlock
-                    q={elektroFollowQ}
-                    selected={fd.elektro?.folge}
-                    educationOpen={Boolean(eduKeys[elektroFollowQ.id])}
-                    onToggleEdu={() => toggleEdu(elektroFollowQ.id)}
-                    optionEduOpen={eduKeys}
-                    onToggleOptionEdu={toggleEdu}
-                    onSelect={(value) => {
-                      onChange({
-                        elektro: {
-                          ...fd.elektro,
-                          problem: fd.elektro?.problem,
-                          folge: value,
-                        },
-                      });
-                    }}
-                  />
-                </div>
-              ) : null}
-            </>
-          )}
+          ) : null}
         </section>
       ) : null}
 
@@ -664,121 +624,7 @@ export function FachdetailsStep({
                 </FollowUpPanel>
               ) : null}
             </>
-          ) : (
-            <>
-              <SingleQuestionBlock
-                q={SANITAER_Q1}
-                selected={fd.sanitaer?.lage}
-                educationOpen={Boolean(eduKeys.san_q1)}
-                onToggleEdu={() => toggleEdu("san_q1")}
-                optionEduOpen={eduKeys}
-                onToggleOptionEdu={toggleEdu}
-                onSelect={(value) => {
-                  onChange({
-                    sanitaer: {
-                      ...fd.sanitaer,
-                      lage: value,
-                      rohre: value === "wand" ? fd.sanitaer?.rohre : undefined,
-                    },
-                  });
-                }}
-              />
-              {fd.sanitaer?.lage === "wand" && sanFollowQ ? (
-                <div className="pt-1">
-                  <SingleQuestionBlock
-                    q={sanFollowQ}
-                    selected={fd.sanitaer?.rohre}
-                    educationOpen={Boolean(eduKeys[sanFollowQ.id])}
-                    onToggleEdu={() => toggleEdu(sanFollowQ.id)}
-                    optionEduOpen={eduKeys}
-                    onToggleOptionEdu={toggleEdu}
-                    onSelect={(value) => {
-                      onChange({
-                        sanitaer: {
-                          ...fd.sanitaer,
-                          lage: fd.sanitaer?.lage,
-                          rohre: value,
-                        },
-                      });
-                    }}
-                  />
-                </div>
-              ) : null}
-              {needBadExtra ? (
-                <>
-                  <div className="pt-1">
-                    <SingleQuestionBlock
-                      q={SANITAER_BAD_Q}
-                      selected={fd.sanitaer?.badWas}
-                      educationOpen={Boolean(eduKeys.san_bad)}
-                      onToggleEdu={() => toggleEdu("san_bad")}
-                      optionEduOpen={eduKeys}
-                      onToggleOptionEdu={toggleEdu}
-                      onSelect={(value) => {
-                        onChange({
-                          sanitaer: {
-                            ...fd.sanitaer,
-                            lage: fd.sanitaer?.lage,
-                            rohre: fd.sanitaer?.rohre,
-                            badWas: value,
-                            badObjekte:
-                              value === "objekte"
-                                ? fd.sanitaer?.badObjekte
-                                : undefined,
-                          },
-                        });
-                      }}
-                    />
-                  </div>
-                  {fd.sanitaer?.badWas === "objekte" && badFollowMulti ? (
-                    <div className="pt-1">
-                      <div className="rounded-xl border border-border-default bg-surface-card p-4">
-                        <h3 className="text-[15px] font-semibold text-text-primary">
-                          {badFollowMulti.title}
-                        </h3>
-                        <div className="mt-3 flex flex-wrap gap-2">
-                          {badFollowMulti.options.map((opt) => {
-                            const set = new Set(fd.sanitaer?.badObjekte ?? []);
-                            const active = set.has(opt.value);
-                            return (
-                              <button
-                                key={opt.value}
-                                type="button"
-                                onClick={() => {
-                                  const next = new Set(
-                                    fd.sanitaer?.badObjekte ?? []
-                                  );
-                                  if (next.has(opt.value)) next.delete(opt.value);
-                                  else next.add(opt.value);
-                                  onChange({
-                                    sanitaer: {
-                                      ...fd.sanitaer,
-                                      lage: fd.sanitaer?.lage,
-                                      rohre: fd.sanitaer?.rohre,
-                                      badWas: fd.sanitaer?.badWas,
-                                      badObjekte: Array.from(next),
-                                    },
-                                  });
-                                }}
-                                className={cn(
-                                  "rounded-full border border-border-default bg-surface-card px-3 py-1.5 text-[12px] font-medium text-text-secondary transition-colors",
-                                  active
-                                    ? "funnel-tile-selected text-text-primary"
-                                    : "funnel-tile-hover"
-                                )}
-                              >
-                                {opt.label}
-                              </button>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    </div>
-                  ) : null}
-                </>
-              ) : null}
-            </>
-          )}
+          ) : null}
         </section>
       ) : null}
 
@@ -857,62 +703,7 @@ export function FachdetailsStep({
                 }}
               />
             </FollowUpPanel>
-          ) : (
-            <>
-              <SingleQuestionBlock
-                q={HEIZUNG_Q1}
-                selected={fd.heizung?.typ}
-                educationOpen={Boolean(eduKeys.heiz_q1)}
-                onToggleEdu={() => toggleEdu("heiz_q1")}
-                optionEduOpen={eduKeys}
-                onToggleOptionEdu={toggleEdu}
-                onSelect={(value) => {
-                  onChange({
-                    heizung: {
-                      typ: value,
-                      alter: undefined,
-                      vorhaben: undefined,
-                    },
-                  });
-                }}
-              />
-              {heizFollowQ ? (
-                <div className="pt-1">
-                  <SingleQuestionBlock
-                    q={heizFollowQ}
-                    selected={
-                      heizFollowQ.id === "heizung_folge_oel_alter"
-                        ? fd.heizung?.alter
-                        : fd.heizung?.vorhaben
-                    }
-                    educationOpen={Boolean(eduKeys[heizFollowQ.id])}
-                    onToggleEdu={() => toggleEdu(heizFollowQ.id)}
-                    optionEduOpen={eduKeys}
-                    onToggleOptionEdu={toggleEdu}
-                    onSelect={(value) => {
-                      if (heizFollowQ.id === "heizung_folge_oel_alter") {
-                        onChange({
-                          heizung: {
-                            typ: fd.heizung?.typ,
-                            alter: value,
-                            vorhaben: undefined,
-                          },
-                        });
-                      } else {
-                        onChange({
-                          heizung: {
-                            typ: fd.heizung?.typ,
-                            alter: fd.heizung?.alter,
-                            vorhaben: value,
-                          },
-                        });
-                      }
-                    }}
-                  />
-                </div>
-              ) : null}
-            </>
-          )}
+          ) : null}
         </section>
       ) : null}
 
@@ -976,65 +767,7 @@ export function FachdetailsStep({
                 }}
               />
             </FollowUpPanel>
-          ) : (
-            <>
-              <SingleQuestionBlock
-                q={MALER_Q1}
-                selected={fd.maler?.was}
-                educationOpen={Boolean(eduKeys.maler_q1)}
-                onToggleEdu={() => toggleEdu("maler_q1")}
-                optionEduOpen={eduKeys}
-                onToggleOptionEdu={toggleEdu}
-                onSelect={(value) => {
-                  const needsZustand =
-                    value === "waende_decke" || value === "komplett";
-                  const needsFassade = value === "fassade";
-                  onChange({
-                    maler: {
-                      was: value,
-                      zustand: needsZustand ? fd.maler?.zustand : undefined,
-                      fassade: needsFassade ? fd.maler?.fassade : undefined,
-                    },
-                  });
-                }}
-              />
-              {malerFollowQ ? (
-                <div className="pt-1">
-                  <SingleQuestionBlock
-                    q={malerFollowQ}
-                    selected={
-                      malerFollowQ.id === "maler_folge_fassade"
-                        ? fd.maler?.fassade
-                        : fd.maler?.zustand
-                    }
-                    educationOpen={Boolean(eduKeys[malerFollowQ.id])}
-                    onToggleEdu={() => toggleEdu(malerFollowQ.id)}
-                    optionEduOpen={eduKeys}
-                    onToggleOptionEdu={toggleEdu}
-                    onSelect={(value) => {
-                      if (malerFollowQ.id === "maler_folge_fassade") {
-                        onChange({
-                          maler: {
-                            was: fd.maler?.was,
-                            zustand: undefined,
-                            fassade: value,
-                          },
-                        });
-                      } else {
-                        onChange({
-                          maler: {
-                            was: fd.maler?.was,
-                            zustand: value,
-                            fassade: undefined,
-                          },
-                        });
-                      }
-                    }}
-                  />
-                </div>
-              ) : null}
-            </>
-          )}
+          ) : null}
         </section>
       ) : null}
 
@@ -1080,50 +813,7 @@ export function FachdetailsStep({
                 }}
               />
             </FollowUpPanel>
-          ) : (
-            <>
-              <SingleQuestionBlock
-                q={BODEN_Q1}
-                selected={fd.boden?.aktuell}
-                educationOpen={Boolean(eduKeys.boden_q1)}
-                onToggleEdu={() => toggleEdu("boden_q1")}
-                optionEduOpen={eduKeys}
-                onToggleOptionEdu={toggleEdu}
-                onSelect={(value) => {
-                  const prev = fd.boden?.aktuell;
-                  const sameFollow =
-                    (value === "fliesen" && prev === "fliesen") ||
-                    (value === "laminat" && prev === "laminat");
-                  onChange({
-                    boden: {
-                      aktuell: value,
-                      verlegung: sameFollow ? fd.boden?.verlegung : undefined,
-                    },
-                  });
-                }}
-              />
-              {bodenFollowQ ? (
-                <div className="pt-1">
-                  <SingleQuestionBlock
-                    q={bodenFollowQ}
-                    selected={fd.boden?.verlegung}
-                    educationOpen={Boolean(eduKeys[bodenFollowQ.id])}
-                    onToggleEdu={() => toggleEdu(bodenFollowQ.id)}
-                    optionEduOpen={eduKeys}
-                    onToggleOptionEdu={toggleEdu}
-                    onSelect={(value) => {
-                      onChange({
-                        boden: {
-                          aktuell: fd.boden?.aktuell,
-                          verlegung: value,
-                        },
-                      });
-                    }}
-                  />
-                </div>
-              ) : null}
-            </>
-          )}
+          ) : null}
         </section>
       ) : null}
 
@@ -1171,52 +861,7 @@ export function FachdetailsStep({
                 }}
               />
             </FollowUpPanel>
-          ) : (
-            <>
-              <SingleQuestionBlock
-                q={DACH_Q1}
-                selected={fd.dach?.vorhaben}
-                educationOpen={Boolean(eduKeys.dach_q1)}
-                onToggleEdu={() => toggleEdu("dach_q1")}
-                optionEduOpen={eduKeys}
-                onToggleOptionEdu={toggleEdu}
-                onSelect={(value) => {
-                  const prevNeeds =
-                    fd.dach?.vorhaben === "daemmung" ||
-                    fd.dach?.vorhaben === "komplett";
-                  const needsAlter =
-                    value === "daemmung" || value === "komplett";
-                  onChange({
-                    dach: {
-                      vorhaben: value,
-                      alter:
-                        needsAlter && prevNeeds ? fd.dach?.alter : undefined,
-                    },
-                  });
-                }}
-              />
-              {dachFollowQ ? (
-                <div className="pt-1">
-                  <SingleQuestionBlock
-                    q={dachFollowQ}
-                    selected={fd.dach?.alter}
-                    educationOpen={Boolean(eduKeys[dachFollowQ.id])}
-                    onToggleEdu={() => toggleEdu(dachFollowQ.id)}
-                    optionEduOpen={eduKeys}
-                    onToggleOptionEdu={toggleEdu}
-                    onSelect={(value) => {
-                      onChange({
-                        dach: {
-                          vorhaben: fd.dach?.vorhaben,
-                          alter: value,
-                        },
-                      });
-                    }}
-                  />
-                </div>
-              ) : null}
-            </>
-          )}
+          ) : null}
         </section>
       ) : null}
 
@@ -1358,142 +1003,7 @@ export function FachdetailsStep({
                 />
               )}
             </FollowUpPanel>
-          ) : (
-            <>
-              <SingleQuestionBlock
-                q={GARTEN_Q1}
-                selected={fd.garten?.was}
-                educationOpen={Boolean(eduKeys.garten_q1)}
-                onToggleEdu={() => toggleEdu("garten_q1")}
-                optionEduOpen={eduKeys}
-                onToggleOptionEdu={toggleEdu}
-                onSelect={(value) => {
-                  onChange({
-                    garten: {
-                      was: value,
-                      haeufigkeit:
-                        value === "pflege" ? fd.garten?.haeufigkeit : undefined,
-                      baumgroesse:
-                        value === "baum" ? fd.garten?.baumgroesse : undefined,
-                      gestaltung:
-                        value === "gestaltung"
-                          ? fd.garten?.gestaltung
-                          : undefined,
-                    },
-                  });
-                }}
-              />
-              {gartenFollowQ ? (
-                <div className="pt-1">
-                  {gartenFollowQ.inputType === "multi" ? (
-                    <div className="rounded-xl border border-border-default bg-surface-card p-4">
-                      <h3 className="text-[15px] font-semibold text-text-primary">
-                        {gartenFollowQ.title}
-                      </h3>
-                      <div className="mt-3 space-y-3">
-                        {gartenFollowQ.options.map((opt) => {
-                          const set = new Set(fd.garten?.gestaltung ?? []);
-                          const active = set.has(opt.value);
-                          const oKey = optionEduKey(gartenFollowQ.id, opt.value);
-                          const optEduOpen = Boolean(eduKeys[oKey]);
-                          return (
-                            <div key={opt.value} className="space-y-1">
-                              <div className="flex flex-wrap items-center gap-2">
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    const next = new Set(
-                                      fd.garten?.gestaltung ?? []
-                                    );
-                                    if (next.has(opt.value))
-                                      next.delete(opt.value);
-                                    else next.add(opt.value);
-                                    onChange({
-                                      garten: {
-                                        ...fd.garten,
-                                        was: fd.garten?.was,
-                                        haeufigkeit: fd.garten?.haeufigkeit,
-                                        baumgroesse: fd.garten?.baumgroesse,
-                                        gestaltung: Array.from(next),
-                                      },
-                                    });
-                                  }}
-                                  className={cn(
-                                    "rounded-full border border-border-default bg-surface-card px-3 py-1.5 text-[12px] font-medium text-text-secondary transition-colors",
-                                    active
-                                      ? "funnel-tile-selected text-text-primary"
-                                      : "funnel-tile-hover"
-                                  )}
-                                >
-                                  {opt.label}
-                                </button>
-                                {opt.education ? (
-                                  <button
-                                    type="button"
-                                    onClick={() => toggleEdu(oKey)}
-                                    className="text-[13px] text-text-tertiary hover:text-text-secondary"
-                                    aria-label="Hinweis zur Option"
-                                  >
-                                    ℹ
-                                  </button>
-                                ) : null}
-                              </div>
-                              {opt.education && optEduOpen ? (
-                                <div
-                                  className="rounded-lg px-3 py-2 text-[12px] leading-relaxed"
-                                  style={{
-                                    color: "var(--fl-text-3, #9e9e9e)",
-                                    background:
-                                      "var(--fl-bg, var(--surface-muted))",
-                                  }}
-                                >
-                                  {opt.education}
-                                </div>
-                              ) : null}
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  ) : (
-                    <SingleQuestionBlock
-                      q={gartenFollowQ}
-                      selected={
-                        gartenFollowQ.id === "garten_folge_haeufigkeit"
-                          ? fd.garten?.haeufigkeit
-                          : fd.garten?.baumgroesse
-                      }
-                      educationOpen={Boolean(eduKeys[gartenFollowQ.id])}
-                      onToggleEdu={() => toggleEdu(gartenFollowQ.id)}
-                      optionEduOpen={eduKeys}
-                      onToggleOptionEdu={toggleEdu}
-                      onSelect={(value) => {
-                        if (gartenFollowQ.id === "garten_folge_haeufigkeit") {
-                          onChange({
-                            garten: {
-                              was: fd.garten?.was,
-                              haeufigkeit: value,
-                              baumgroesse: fd.garten?.baumgroesse,
-                              gestaltung: fd.garten?.gestaltung,
-                            },
-                          });
-                        } else {
-                          onChange({
-                            garten: {
-                              was: fd.garten?.was,
-                              haeufigkeit: fd.garten?.haeufigkeit,
-                              baumgroesse: value,
-                              gestaltung: fd.garten?.gestaltung,
-                            },
-                          });
-                        }
-                      }}
-                    />
-                  )}
-                </div>
-              ) : null}
-            </>
-          )}
+          ) : null}
         </section>
       ) : null}
       {isLastFachdetailScreen && (showOmitHint ?? false) ? (

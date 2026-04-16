@@ -13,7 +13,10 @@ import {
   type ReactNode,
 } from "react";
 
-import { ProjektGalerie } from "@/components/home/ProjektGalerie";
+import {
+  ProjektGalerie,
+  type BaerenwaldProjekt,
+} from "@/components/home/ProjektGalerie";
 import { MarketingFooter } from "@/components/layout/MarketingFooter";
 import { SITE_CONFIG } from "@/lib/config";
 import type { Situation as FunnelSituation } from "@/lib/funnel/types";
@@ -117,6 +120,71 @@ const HERO_CHIPS: { label: string; situation: FunnelSituation }[] = [
   { label: "Wohnung renovieren", situation: "renovieren" },
   { label: "Heizung & Sanitär", situation: "sanieren" },
   { label: "Notfall — sofort", situation: "notfall" },
+];
+
+/** Echte Bärenwald-Referenzprojekte (Bildpfade Platzhalter bis finale Assets). */
+const PROJEKTE: readonly BaerenwaldProjekt[] = [
+  {
+    id: 1,
+    bild: "/images/projekt-heizung-notfall.jpg",
+    bildAlt: "Heizungsanlage nach Notfalleinsatz in München",
+    gewerk: "Notfalleinsatz",
+    stadtteil: "München",
+    jahr: "2024",
+    tag: "notfall",
+    problem: "Heizungsausfall im Winter — mehrere Wohnungen betroffen.",
+    loesung:
+      "Team kurzfristig organisiert, Fehler gefunden, Anlage wieder in Betrieb gebracht.",
+    ergebnis: "Alle Wohnungen wieder warm — Problem vollständig gelöst.",
+    placeholderGradient: "linear-gradient(135deg, #1A3D2B, #2E7D52)",
+    placeholderEmoji: "⚡",
+  },
+  {
+    id: 2,
+    bild: "/images/projekt-burgermeister-abriss.jpg",
+    bildAlt: "Abrissarbeiten Burgermeister Projekt München",
+    gewerk: "Abriss & Entsorgung",
+    stadtteil: "München",
+    jahr: "2024",
+    tag: "gewerbe",
+    problem:
+      "Kurzfristige Abrissarbeiten an Feiertagen — viele Firmen haben abgelehnt.",
+    loesung:
+      "Über unser Netzwerk kurzfristig Personal und Entsorgung organisiert.",
+    ergebnis: "Projekt fristgerecht abgeschlossen.",
+    placeholderGradient: "linear-gradient(135deg, #2D2520, #5C4033)",
+    placeholderEmoji: "🔨",
+  },
+  {
+    id: 3,
+    bild: "/images/projekt-hausverwaltung.jpg",
+    bildAlt:
+      "Koordinierte Handwerksleistungen für Hausverwaltung München",
+    gewerk: "Hausverwaltung",
+    stadtteil: "München",
+    jahr: "2024",
+    tag: "verwaltung",
+    problem: "Sanitär, Elektro, Wartung — viele einzelne Firmen, viel Chaos.",
+    loesung:
+      "Alle Gewerke über eine Struktur koordiniert — ein Ansprechpartner.",
+    ergebnis: "Saubere Abläufe, weniger Stress für die Verwaltung.",
+    placeholderGradient: "linear-gradient(135deg, #1A2D3D, #2E5C7D)",
+    placeholderEmoji: "🏢",
+  },
+  {
+    id: 4,
+    bild: "/images/projekt-garten-privat.jpg",
+    bildAlt: "Fertig gestaltete Außenanlage München",
+    gewerk: "Gartengestaltung",
+    stadtteil: "München",
+    jahr: "2024",
+    tag: "privat",
+    problem: "Außenanlage komplett neu gestalten.",
+    loesung: "Planung, Material und Umsetzung komplett koordiniert.",
+    ergebnis: "Fertige Anlage aus einer Hand.",
+    placeholderGradient: "linear-gradient(135deg, #1A3D2B, #4A7D2E)",
+    placeholderEmoji: "🌿",
+  },
 ];
 
 function EinsatzIcon({ index }: { index: number }) {
@@ -605,7 +673,7 @@ export default function BaerenwaldLandingClient({
         </div>
       </section>
 
-      <ProjektGalerie />
+      <ProjektGalerie projekte={PROJEKTE} />
 
       <section className="faq-section" id="faq">
         <div className="faq-inner">

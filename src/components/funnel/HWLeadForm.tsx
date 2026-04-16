@@ -45,6 +45,7 @@ export function HWLeadForm({
         files={photos}
         onChange={onPhotosChange}
         className="mb-4"
+        showCompareOfferHint={true}
       />
 
       <div className="calendar-opt-wrap mb-6">

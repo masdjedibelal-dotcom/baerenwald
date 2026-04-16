@@ -3,6 +3,7 @@ import { Resend } from "resend";
 
 import { SITE_CONFIG } from "@/lib/config";
 import { generateConfirmationEmail } from "@/lib/email/confirmation";
+import type { PriceLineItem } from "@/lib/funnel/types";
 
 export type BwLeadBody = {
   name?: string;
@@ -13,6 +14,7 @@ export type BwLeadBody = {
   bereiche?: string[];
   priceMin?: number;
   priceMax?: number;
+  breakdown?: PriceLineItem[];
   plz?: string;
   zeitraum?: string | null;
   budgetCheck?: string | null;
@@ -229,6 +231,7 @@ export async function POST(request: Request) {
             bereiche: body.bereiche ?? [],
             priceMin: body.priceMin,
             priceMax: body.priceMax,
+            breakdown: Array.isArray(body.breakdown) ? body.breakdown : undefined,
             wunschtermin: body.selectedSlot ?? null,
             plz,
           }),
