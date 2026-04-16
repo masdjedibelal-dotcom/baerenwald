@@ -17,10 +17,12 @@ export const SITE_CONFIG = {
   accentColor: accentFromEnv,
   /** Kanonische Site-URL für Schema & Open Graph */
   url: siteUrl,
-  phone: "+49 163 7316161",
-  phoneHref: "tel:+491637316161",
-  phoneFestnetz: "089 99733904",
-  phoneFestnetHref: "tel:+498999733904",
+  /** Öffentliche Erreichbarkeit (UI, Header, Funnel, CTAs) — Festnetz */
+  phone: "089 99733904",
+  phoneHref: "tel:+498999733904",
+  /** Nur intern / Impressum & Pflichtangaben — nicht im allgemeinen UI */
+  phoneMobil: "+49 163 7316161",
+  phoneMobilHref: "tel:+491637316161",
   email: "info@baerenwald-muenchen.de",
   region: "München & Umgebung",
   plzRadius: ["80", "81", "82", "83", "85"],

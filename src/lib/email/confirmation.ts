@@ -2,6 +2,7 @@
  * HTML-Bestätigungsmail an Kundinnen (inline CSS für gängige Clients).
  */
 
+import { SITE_CONFIG } from "@/lib/config";
 import { lineLeistungsLabel } from "@/lib/funnel/breakdown-labels";
 import type { PriceLineItem } from "@/lib/funnel/types";
 
@@ -176,8 +177,7 @@ export function generateConfirmationEmail(
       Bei Fragen erreichst du uns:
     </p>
     <p style="margin:0;font-family:Arial,Helvetica,sans-serif;font-size:14px;line-height:1.65;color:#1e1c1a;">
-      Telefon: <a href="tel:+491637316161" style="color:#2e7d52;">+49 163 7316161</a><br/>
-      Büro: <a href="tel:+498999733904" style="color:#2e7d52;">089 99733904</a><br/>
+      Telefon: <a href="${escHtml(SITE_CONFIG.phoneHref)}" style="color:#2e7d52;">${escHtml(SITE_CONFIG.phone)}</a><br/>
       E-Mail: <a href="mailto:info@baerenwald-muenchen.de" style="color:#2e7d52;">info@baerenwald-muenchen.de</a>
     </p>
     <p style="margin:20px 0 0;font-family:Arial,Helvetica,sans-serif;font-size:14px;line-height:1.55;color:#1e1c1a;">

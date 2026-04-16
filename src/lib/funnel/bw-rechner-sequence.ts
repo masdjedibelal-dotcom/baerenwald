@@ -1,4 +1,4 @@
-import type { FunnelState, FunnelStep } from "@/lib/funnel/types";
+import type { FunnelState, FunnelStep, Situation } from "@/lib/funnel/types";
 import { getKundentypStep, getResolvedStepsForSituation } from "@/lib/funnel/config";
 import {
   getAktiveFachdetailGewerke,
@@ -19,11 +19,47 @@ export function getBwFachdetailGewerkFromScreen(
   return step.slice("fachdetails_".length) as FachdetailGewerkKey;
 }
 
+export type BwTrustScreenVariant =
+  | "trust_intro"
+  | "trust_preis"
+  | "trust_qualitaet";
+
+/** Trust-Slides nur für passende Situationen (s. Produkt-Matrix). */
+export function showTrustScreen(
+  variant: BwTrustScreenVariant,
+  situation: Situation | null
+): boolean {
+  if (!situation) {
+    return variant === "trust_intro";
+  }
+  if (situation === "notfall") {
+    return false;
+  }
+  if (situation === "gewerbe" || situation === "gastro") {
+    return false;
+  }
+  if (situation === "betreuung" || situation === "neubauen") {
+    return variant === "trust_intro" || variant === "trust_preis";
+  }
+  return true;
+}
+
 /** Aufgelöste Rechner-Screens (ohne loading / result / lead / …) */
 export function getBwRechnerScreenSequence(state: FunnelState): string[] {
   const sit = state.situation;
-  if (!sit || sit === "gewerbe" || sit === "gastro") {
-    return ["trust_intro", "situation", "bereiche"];
+
+  if (!sit) {
+    const head: string[] = [];
+    if (showTrustScreen("trust_intro", null)) {
+      head.push("trust_intro");
+    }
+    head.push("situation", "bereiche");
+    return head;
+  }
+
+  /** Gewerbe/Gastro: keine Bereiche — direkt zur B2B-Anfrage */
+  if (sit === "gewerbe" || sit === "gastro") {
+    return ["situation", "beratung-lead"];
   }
 
   const steps = getResolvedStepsForSituation(
@@ -33,23 +69,32 @@ export function getBwRechnerScreenSequence(state: FunnelState): string[] {
     state.umfang
   );
 
-  const out: string[] = ["trust_intro", "situation", "bereiche"];
+  const out: string[] = [];
+  if (showTrustScreen("trust_intro", sit)) {
+    out.push("trust_intro");
+  }
+  out.push("situation", "bereiche");
 
   for (let i = 1; i < steps.length; i++) {
     out.push(...funnelConfigStepToScreens(steps[i]!, state.bereiche));
   }
 
-  const umfangIdx = out.lastIndexOf("umfang");
-  if (umfangIdx >= 0) {
-    out.splice(umfangIdx + 1, 0, "trust_preis");
+  if (showTrustScreen("trust_preis", sit)) {
+    const umfangIdx = out.lastIndexOf("umfang");
+    if (umfangIdx >= 0) {
+      out.splice(umfangIdx + 1, 0, "trust_preis");
+    }
   }
 
-  let lastFachIdx = -1;
-  for (let i = 0; i < out.length; i++) {
-    if (isBwFachdetailScreenId(out[i]!)) lastFachIdx = i;
-  }
-  if (lastFachIdx >= 0) {
-    out.splice(lastFachIdx + 1, 0, "trust_qualitaet");
+  if (showTrustScreen("trust_qualitaet", sit)) {
+    const fachIds = out.filter((s) => isBwFachdetailScreenId(s));
+    const letztesFachdetail = fachIds[fachIds.length - 1];
+    if (letztesFachdetail) {
+      const idx = out.lastIndexOf(letztesFachdetail);
+      if (idx >= 0) {
+        out.splice(idx + 1, 0, "trust_qualitaet");
+      }
+    }
   }
 
   const kt = getKundentypStep(sit);

@@ -1,3 +1,5 @@
+import type { Situation } from "@/lib/funnel/types";
+
 /**
  * Fortschritts-Gruppe (1–5) für die Bärenwald-Rechner-Progressbar.
  * Gruppen: Vorhaben → Umfang & Größe → Fachdetails & Kundentyp → Ort → Ergebnis
@@ -32,4 +34,18 @@ export function getBwFunnelProgressStep(screen: string): number | null {
     return 5;
   }
   return 1;
+}
+
+/** Zwei-Schritte-Flow nur für Gewerbe/Gastro (Situation → Anfrage). */
+export function getB2BFunnelProgressStep(screen: string): number {
+  if (screen === "situation") return 1;
+  if (screen === "beratung-lead") return 2;
+  if (screen === "danke") return 2;
+  return 1;
+}
+
+export function isB2bProgressSituation(
+  situation: Situation | null | undefined
+): boolean {
+  return situation === "gewerbe" || situation === "gastro";
 }
