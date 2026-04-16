@@ -293,6 +293,8 @@ export interface BwResultScreenProps {
   schwellenwertAusgeloest?: boolean;
   /** Nach erfolgreichem Rückruf-Formular („zu komplex“). */
   onKomplexRueckrufSuccess?: () => void;
+  /** Funnel neu ab Situation / Trust — State wird im Parent zurückgesetzt. */
+  onReset?: () => void;
   className?: string;
 }
 
@@ -560,7 +562,7 @@ function ZuKomplexScreen({
 
           <input
             type="tel"
-            placeholder="Telefon *"
+            placeholder="+49 151 23456789"
             autoComplete="tel"
             inputMode="tel"
             className="funnel-input"
@@ -624,6 +626,7 @@ export function BwResultScreen({
   resultModus,
   schwellenwertAusgeloest = false,
   onKomplexRueckrufSuccess,
+  onReset,
   className,
 }: BwResultScreenProps) {
   const [emailSaveOpen, setEmailSaveOpen] = useState(false);
@@ -660,15 +663,6 @@ export function BwResultScreen({
             <PhoneIconKomplex />
             {SITE_CONFIG.phone}
           </a>
-          <p className="mt-3 text-xs text-white/60">
-            Mobil · Büro:{" "}
-            <a
-              href={SITE_CONFIG.phoneFestnetHref}
-              className="underline decoration-white/40 underline-offset-2"
-            >
-              {SITE_CONFIG.phoneFestnetz}
-            </a>
-          </p>
         </div>
       </div>
     );
@@ -774,6 +768,12 @@ export function BwResultScreen({
         <p className="preis-disclaimer">
           Unverbindlicher Richtwert — Festpreis nach Vor-Ort-Termin.
         </p>
+      ) : null}
+
+      {onReset ? (
+        <button type="button" className="angaben-aendern-btn" onClick={onReset}>
+          ← Angaben ändern
+        </button>
       ) : null}
 
       {showVergleichHint ? (

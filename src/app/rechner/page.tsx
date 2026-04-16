@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 
 import "@/app/baerenwald-landing.css";
 
+import { BwBeratungLead } from "@/components/funnel/BwBeratungLead";
 import { BwResultScreen } from "@/components/funnel/BwResultScreen";
 import { FachdetailsStep } from "@/components/funnel/FachdetailsStep";
 import { FunnelErrorBoundary } from "@/components/funnel/FunnelErrorBoundary";
@@ -16,7 +17,6 @@ import { FunnelProgressBar } from "@/components/funnel/FunnelProgressBar";
 import { TrustScreen } from "@/components/funnel/TrustScreen";
 import { GroesseStep } from "@/components/funnel/GroesseStep";
 import { LoadingScreen } from "@/components/funnel/LoadingScreen";
-import { PhotoUpload } from "@/components/funnel/PhotoUpload";
 import { PlzStep } from "@/components/funnel/PlzStep";
 import { SelectionTile } from "@/components/funnel/SelectionTile";
 import { StepWrapper } from "@/components/funnel/StepWrapper";
@@ -161,6 +161,7 @@ function FunnelRechnerInner() {
     setZugaenglichkeit,
     setZustand,
     setFachdetails,
+    reset,
   } = useFunnelState();
 
   const fachdetailsBeforeGroesse = useMemo(
@@ -248,10 +249,27 @@ function FunnelRechnerInner() {
     const raw = searchParams.get("situation");
     if (raw && isSituation(raw)) {
       setSituation(raw);
-      setScreen("bereiche");
+      if (raw === "gewerbe" || raw === "gastro") {
+        setScreen("beratung-lead");
+      } else {
+        setScreen("bereiche");
+      }
     }
     urlInit.current = true;
   }, [searchParams, setSituation]);
+
+  useEffect(() => {
+    const seq = getBwRechnerScreenSequence(state);
+    if (isBwTrustScreenId(screen) && !seq.includes(screen)) {
+      setScreen((seq[0] ?? "situation") as Screen);
+    }
+  }, [
+    screen,
+    state.situation,
+    state.bereiche,
+    state.fachdetails,
+    state.umfang,
+  ]);
 
   useEffect(() => {
     const id = requestAnimationFrame(() => {
@@ -349,6 +367,38 @@ function FunnelRechnerInner() {
     ]
   );
 
+  const handleReset = useCallback(() => {
+    const prevSit = state.situation;
+    fachdetailVisitRef.current = null;
+    reset();
+    setSubmitted(false);
+    setMindestauftrag(false);
+    setIsAusserhalbLead(false);
+    setAusserhalbBeschreibung("");
+    setBeratungDatenschutz(false);
+    setBeratungDatenschutzError(false);
+    setAusserhalbDatenschutz(false);
+    setAusserhalbDatenschutzError(false);
+    setResultModus("preisrahmen");
+    setSchwellenwertAusgeloest(false);
+    setKomplexRueckrufDanke(false);
+    setMicroNote(null);
+
+    const first: Screen =
+      prevSit === "notfall" ||
+      prevSit === "gewerbe" ||
+      prevSit === "gastro"
+        ? "situation"
+        : "trust_intro";
+    setScreen(first);
+
+    window.scrollTo({
+      top: 0,
+      left: 0,
+      behavior: "instant" as ScrollBehavior,
+    });
+  }, [reset, setSubmitted, state.situation]);
+
   const handleNext = useCallback(() => {
     const fachGewerk = getBwFachdetailGewerkFromScreen(screen);
     if (fachGewerk) {
@@ -374,7 +424,13 @@ function FunnelRechnerInner() {
 
     switch (screen) {
       case "situation":
-        if (state.situation) setScreen("bereiche");
+        if (state.situation) {
+          if (isB2bSituation(state.situation)) {
+            setScreen("beratung-lead");
+          } else {
+            setScreen("bereiche");
+          }
+        }
         break;
       case "bereiche":
         if (state.bereiche.length > 0) {
@@ -512,6 +568,25 @@ function FunnelRechnerInner() {
       setScreen(seq[idx - 1] as Screen);
       return;
     }
+    if (idx < 0 && isBwFachdetailScreenId(screen)) {
+      const g = getBwFachdetailGewerkFromScreen(screen);
+      if (g) {
+        const order = getAktiveFachdetailGewerke(state.bereiche, 2);
+        const gi = order.indexOf(g);
+        if (gi > 0) {
+          const prevId = `fachdetails_${order[gi - 1]!}` as Screen;
+          if (seq.includes(prevId)) {
+            setScreen(prevId);
+            return;
+          }
+        }
+        const firstFdIdx = seq.findIndex((s) => isBwFachdetailScreenId(s));
+        if (firstFdIdx > 0) {
+          setScreen(seq[firstFdIdx - 1] as Screen);
+          return;
+        }
+      }
+    }
     switch (screen) {
       case "loading":
         setScreen("ort");
@@ -523,7 +598,11 @@ function FunnelRechnerInner() {
         setScreen("result");
         break;
       case "beratung-lead":
-        setScreen("bereiche");
+        if (isB2bSituation(state.situation)) {
+          setScreen("situation");
+        } else {
+          setScreen("bereiche");
+        }
         break;
       case "ausserhalb":
         setScreen("ort");
@@ -1103,115 +1182,34 @@ function FunnelRechnerInner() {
                 setSubmitted(true);
                 setScreen("danke");
               }}
+              onReset={handleReset}
             />
           </StepWrapper>
         );
 
-      case "beratung-lead": {
-        const b2bHeadline =
-          state.situation === "gastro"
-            ? "Gastro-Projekte besprechen wir persönlich."
-            : "Wir planen das persönlich mit dir.";
-        return (
-          <div
-            className="w-full min-h-[50vh]"
-            style={{ backgroundColor: "var(--fl-accent-dark)" }}
-          >
-            <div className="mx-auto max-w-xl px-4 pb-8 pt-6 sm:px-6">
-              <h2 className="text-xl font-semibold leading-snug text-white">
-                {b2bHeadline}
-              </h2>
-              <p className="mt-3 text-sm leading-relaxed text-white/60">
-                Beschreib kurz was du planst — wir melden uns innerhalb von
-                24h.
-              </p>
-
-              <div className="mt-6 rounded-2xl bg-white p-4 shadow-sm sm:p-5">
-                <form
-                  id={BERATUNG_LEAD_FORM_ID}
-                  onSubmit={handleBeratungLeadSubmit}
-                  className="space-y-3"
-                >
-                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                    <input
-                      type="text"
-                      inputMode="text"
-                      autoComplete="given-name"
-                      autoCapitalize="words"
-                      className="funnel-input"
-                      placeholder="Vorname"
-                      value={state.vorname}
-                      onChange={(e) =>
-                        updateLeadField("vorname", e.target.value)
-                      }
-                    />
-                    <input
-                      type="text"
-                      inputMode="text"
-                      autoComplete="family-name"
-                      autoCapitalize="words"
-                      className="funnel-input"
-                      placeholder="Nachname"
-                      value={state.nachname}
-                      onChange={(e) =>
-                        updateLeadField("nachname", e.target.value)
-                      }
-                    />
-                  </div>
-                  <input
-                    type="tel"
-                    inputMode="tel"
-                    autoComplete="tel"
-                    className="funnel-input"
-                    placeholder="+49 oder 0..."
-                    value={state.telefon}
-                    onChange={(e) =>
-                      updateLeadField("telefon", e.target.value)
-                    }
-                  />
-                  <input
-                    type="email"
-                    inputMode="email"
-                    autoComplete="email"
-                    autoCapitalize="none"
-                    autoCorrect="off"
-                    className="funnel-input"
-                    placeholder="E-Mail"
-                    value={state.email}
-                    onChange={(e) =>
-                      updateLeadField("email", e.target.value)
-                    }
-                  />
-                  <textarea
-                    rows={3}
-                    className="funnel-textarea"
-                    placeholder="Kurze Beschreibung, Ort, Zeitplan…"
-                    value={state.leadBeschreibung}
-                    onChange={(e) =>
-                      updateLeadField("leadBeschreibung", e.target.value)
-                    }
-                  />
-                  <PhotoUpload
-                    files={state.photos}
-                    onChange={addPhotos}
-                    buttonTitle="Fotos oder Video hochladen — optional"
-                    buttonHint="Bilder helfen uns bei der Einordnung · max. 6 Dateien"
-                    className="pt-1"
-                  />
-                  <DatenschutzCheckbox
-                    checked={beratungDatenschutz}
-                    onChange={(v) => {
-                      setBeratungDatenschutz(v);
-                      if (v) setBeratungDatenschutzError(false);
-                    }}
-                    showError={beratungDatenschutzError}
-                  />
-                </form>
-              </div>
-            </div>
-          </div>
-        );
-      }
+      case "beratung-lead":
+        if (state.situation === "gewerbe" || state.situation === "gastro") {
+          return (
+            <BwBeratungLead
+              situation={state.situation}
+              vorname={state.vorname}
+              nachname={state.nachname}
+              telefon={state.telefon}
+              email={state.email}
+              beschreibung={state.leadBeschreibung}
+              datenschutz={beratungDatenschutz}
+              datenschutzError={beratungDatenschutzError}
+              onDatenschutzChange={(v) => {
+                setBeratungDatenschutz(v);
+                if (v) setBeratungDatenschutzError(false);
+              }}
+              onFieldChange={updateLeadField}
+              formId={BERATUNG_LEAD_FORM_ID}
+              onSubmit={handleBeratungLeadSubmit}
+            />
+          );
+        }
+        return null;
 
       case "lead":
         return (
@@ -1289,7 +1287,7 @@ function FunnelRechnerInner() {
                 autoComplete="tel"
                 required
                 className="funnel-input"
-                placeholder="+49 oder 0... (Pflicht)"
+                placeholder="+49 151 23456789"
                 value={state.telefon}
                 onChange={(e) => updateLeadField("telefon", e.target.value)}
               />
@@ -1353,6 +1351,7 @@ function FunnelRechnerInner() {
               beratungHeadline="Wir melden uns persönlich."
               beratungSubline="Wir rufen dich innerhalb von 24h zurück — unverbindlich."
               showTimeline={false}
+              onReset={handleReset}
             />
           );
         }
@@ -1362,26 +1361,33 @@ function FunnelRechnerInner() {
               variant="beratung"
               beratungHeadline="Anfrage eingegangen"
               beratungSubline="Wir prüfen ob wir in deiner Region helfen können und melden uns innerhalb von 48h persönlich."
+              onReset={handleReset}
+            />
+          );
+        }
+        if (isB2bSituation(state.situation)) {
+          const gastro = state.situation === "gastro";
+          return (
+            <ThankYou
+              variant="beratung"
+              beratungHeadline="Anfrage eingegangen."
+              beratungSubline={
+                gastro
+                  ? "Gastro-Projekte planen wir persönlich. Wir melden uns innerhalb von 24h."
+                  : "Wir melden uns innerhalb von 24h persönlich bei dir — unverbindlich."
+              }
+              showTimeline={false}
+              showCalendar={false}
+              onReset={handleReset}
             />
           );
         }
         return (
           <ThankYou
-            variant={
-              isB2bSituation(state.situation)
-                ? "beratung"
-                : bookingSummary
-                  ? "termin"
-                  : "anfrage"
-            }
+            variant={bookingSummary ? "termin" : "anfrage"}
             dateLabel={bookingSummary?.dateLabel}
             timeLabel={bookingSummary?.timeLabel}
-            beratungHeadline={
-              isB2bSituation(state.situation)
-                ? "Wir melden uns persönlich bei dir."
-                : undefined
-            }
-            beratungSubline={undefined}
+            onReset={handleReset}
           />
         );
 
@@ -1399,8 +1405,12 @@ function FunnelRechnerInner() {
         isBwTrustScreenId(screen) && "trust-screen-active"
       )}
     >
-      <FunnelHeader />
-      <FunnelProgressBar currentStep={progressStep} />
+      <FunnelHeader onFunnelReset={handleReset} />
+      <FunnelProgressBar
+        currentStep={progressStep}
+        situation={state.situation}
+        activeScreen={screen}
+      />
       <main className="funnel-rechner-main w-full">{main()}</main>
       {showFooterNav ? (
         <FunnelFooter
@@ -1421,8 +1431,8 @@ function FunnelRechnerInner() {
           nextLabel={nextLabel}
           belowActions={
             screen === "beratung-lead" ? (
-              <p className="text-xs text-text-tertiary">
-                Wir melden uns innerhalb von 24h — unverbindliche Beratung.
+              <p className="text-center text-xs text-text-tertiary">
+                Wir melden uns innerhalb von 24h
               </p>
             ) : screen === "result" && resultModus === "preisrahmen_warnung" ? (
               <p

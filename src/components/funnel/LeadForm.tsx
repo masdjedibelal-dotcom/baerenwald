@@ -237,7 +237,7 @@ export function LeadForm({
           type="tel"
           inputMode="tel"
           autoComplete="tel"
-          placeholder="+49 oder 0..."
+          placeholder="+49 151 23456789"
           className={fieldCls("telefon", touched, errors)}
           value={data.telefon}
           onChange={(e) => onChange({ telefon: e.target.value })}

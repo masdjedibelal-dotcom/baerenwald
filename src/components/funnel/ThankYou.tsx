@@ -46,6 +46,10 @@ export interface ThankYouProps {
   beratungSubline?: string;
   /** Ablauf-Timeline unter dem Text (nur bei variant „termin“ / „anfrage“). */
   showTimeline?: boolean;
+  /** Hinweis unter dem Wunschtermin-Kasten (Kalender). */
+  showCalendar?: boolean;
+  /** Funnel komplett neu starten (z. B. nach Danke-Screen). */
+  onReset?: () => void;
   className?: string;
 }
 
@@ -58,6 +62,8 @@ export function ThankYou({
   beratungHeadline,
   beratungSubline,
   showTimeline = true,
+  showCalendar = true,
+  onReset,
   className,
 }: ThankYouProps) {
   const isTermin = variant === "termin";
@@ -72,7 +78,7 @@ export function ThankYou({
   return (
     <div
       className={cn(
-        "mx-auto flex max-w-lg flex-col items-center px-6 py-12 text-center",
+        "mx-auto flex w-full max-w-lg flex-col items-center px-6 py-12 text-center",
         className
       )}
     >
@@ -125,10 +131,12 @@ export function ThankYou({
               </div>
             ))}
           </div>
-          <p className="mt-4 max-w-md text-center text-xs leading-relaxed text-text-tertiary">
-            Sobald wir die Verfügbarkeit bestätigt haben, kannst du den Termin
-            in deinen Kalender eintragen.
-          </p>
+          {showCalendar !== false ? (
+            <p className="mt-4 max-w-md text-center text-xs leading-relaxed text-text-tertiary">
+              Sobald wir die Verfügbarkeit bestätigt haben, kannst du den Termin
+              in deinen Kalender eintragen.
+            </p>
+          ) : null}
         </div>
       ) : null}
 
@@ -154,6 +162,12 @@ export function ThankYou({
             </div>
           ))}
         </div>
+      ) : null}
+
+      {onReset ? (
+        <button type="button" className="neue-anfrage-btn" onClick={onReset}>
+          Neue Anfrage starten →
+        </button>
       ) : null}
     </div>
   );

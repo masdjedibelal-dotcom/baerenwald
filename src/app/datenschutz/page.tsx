@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { PageLayout } from "@/components/layout/PageLayout";
+import { SITE_CONFIG } from "@/lib/config";
 
 export const metadata: Metadata = {
   title: "Datenschutz — Bärenwald München",
@@ -32,8 +33,16 @@ export default function DatenschutzPage() {
                 Beran Cakmak<br />
                 Bärenwaldstraße 20<br />
                 81737 München<br />
-                E-Mail: <a href="mailto:info@baerenwald-muenchen.de">info@baerenwald-muenchen.de</a><br />
-                Telefon: <a href="tel:+4916373161​61">+49 163 7316161</a>
+                E-Mail:{" "}
+                <a href="mailto:info@baerenwald-muenchen.de">
+                  info@baerenwald-muenchen.de
+                </a>
+                <br />
+                Telefon (Festnetz):{" "}
+                <a href={SITE_CONFIG.phoneHref}>{SITE_CONFIG.phone}</a>
+                <br />
+                Mobil:{" "}
+                <a href={SITE_CONFIG.phoneMobilHref}>{SITE_CONFIG.phoneMobil}</a>
               </p>
 
               <strong>2. Erhebung und Speicherung personenbezogener Daten</strong>

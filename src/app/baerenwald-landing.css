@@ -103,6 +103,97 @@
   padding-bottom: calc(6.5rem + env(safe-area-inset-bottom, 0px));
 }
 
+/* B2B-Anfrage (Gewerbe/Gastro): gleiche Lesart wie StepWrapper */
+.bw-beratung-lead .step-wrapper {
+  margin: 0;
+}
+
+.bw-beratung-lead .step-eyebrow {
+  margin: 0 0 6px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--fl-text-3);
+}
+
+.bw-beratung-lead .step-question {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 800;
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+  color: var(--fl-text);
+}
+
+.bw-beratung-lead .step-sub {
+  margin: 10px 0 0;
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--fl-text-2);
+  white-space: pre-line;
+}
+
+.bw-beratung-lead .b2b-form {
+  margin-top: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.bw-beratung-lead .form-row {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+}
+
+@media (min-width: 640px) {
+  .bw-beratung-lead .form-row {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.angaben-aendern-btn {
+  display: block;
+  background: none;
+  border: none;
+  font-size: 12px;
+  color: var(--fl-text-3);
+  cursor: pointer;
+  font-family: var(--fl-font-sans);
+  padding: 8px 0;
+  margin: 4px auto 0;
+  text-align: center;
+  transition: color 0.15s;
+}
+
+.angaben-aendern-btn:hover {
+  color: var(--fl-text-2);
+}
+
+.neue-anfrage-btn {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  background: none;
+  border: 1.5px solid var(--fl-border);
+  border-radius: 999px;
+  padding: 12px 24px;
+  font-size: 14px;
+  font-weight: 600;
+  font-family: var(--fl-font-sans);
+  color: var(--fl-text-2);
+  cursor: pointer;
+  margin-top: 24px;
+  transition: all 0.15s;
+  text-align: center;
+}
+
+.neue-anfrage-btn:hover {
+  border-color: var(--fl-accent);
+  color: var(--fl-accent);
+}
+
 .funnel-step-tiles-card {
   background: var(--fl-bg-card);
   border-radius: var(--fl-radius);
@@ -1446,22 +1537,6 @@
 
 .projekte-carousel::-webkit-scrollbar {
   display: none;
-}
-
-.projekte-carousel-wrap::after {
-  content: "";
-  position: absolute;
-  top: 0;
-  right: 0;
-  bottom: 4px;
-  width: 80px;
-  background: linear-gradient(
-    to right,
-    transparent,
-    var(--fl-bg-card)
-  );
-  pointer-events: none;
-  z-index: 1;
 }
 
 .projekt-card {

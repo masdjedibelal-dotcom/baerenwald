@@ -125,7 +125,7 @@ export function HWLeadForm({
           inputMode="tel"
           autoComplete="tel"
           className="funnel-input"
-          placeholder="+49 oder 0..."
+          placeholder="+49 151 23456789"
           value={telefon}
           onChange={(e) => onFieldChange("telefon", e.target.value)}
         />

@@ -75,6 +75,8 @@ function segmentProgress(
 export function FunnelClient() {
   const searchParams = useSearchParams();
   const urlInit = useRef(false);
+  /** Nach erstem „Preis berechnen“-Sprung: auf letztem Konfig-Schritt wieder „Weiter“ zeigen (z. B. nach Zurück vom Ergebnis). */
+  const hasConfirmedPriceStepRef = useRef(false);
   const { funnel, dispatch, startSituation, setAnswer } = useFunnelState();
   const [screen, setScreen] = useState(0);
   const [loadKey, setLoadKey] = useState(0);
@@ -116,11 +118,16 @@ export function FunnelClient() {
     const valid = (x: string): x is Situation =>
       ["renovierung", "neubau", "akut", "pflege", "b2b"].includes(x);
     if (raw && valid(raw)) {
+      hasConfirmedPriceStepRef.current = false;
       startSituation(raw);
       setScreen(1);
     }
     urlInit.current = true;
   }, [searchParams, startSituation]);
+
+  useEffect(() => {
+    if (screen === 0) hasConfirmedPriceStepRef.current = false;
+  }, [screen]);
 
   const patchLead = useCallback(
     (
@@ -171,6 +178,7 @@ export function FunnelClient() {
   const handleNext = useCallback(() => {
     if (screen === 0) {
       if (!funnel.situation) return;
+      hasConfirmedPriceStepRef.current = false;
       setScreen(1);
       return;
     }
@@ -196,6 +204,7 @@ export function FunnelClient() {
           priceMax: max,
           priceBreakdown: breakdown,
         });
+        hasConfirmedPriceStepRef.current = true;
         setLoadKey((k) => k + 1);
         setScreen(loadScreen);
         return;
@@ -241,7 +250,7 @@ export function FunnelClient() {
       return;
     }
     setScreen((s) => s - 1);
-  }, [contactScreen, loadScreen, plzScreen, resultScreen, screen]);
+  }, [contactScreen, E, loadScreen, plzScreen, resultScreen, screen]);
 
   const slotOk =
     skipCal ||
@@ -282,7 +291,9 @@ export function FunnelClient() {
   ]);
 
   const nextLabel = useMemo(() => {
-    if (screen === plzScreen) return "Preis berechnen";
+    if (screen === plzScreen) {
+      return hasConfirmedPriceStepRef.current ? "Weiter" : "Preis berechnen";
+    }
     if (screen === resultScreen) {
       return funnel.entscheider
         ? "Weiter"

@@ -70,10 +70,7 @@ export function MarketingFooter() {
             <p className="site-footer-col-title">Kontakt</p>
             <div className="site-footer-contact">
               <p>
-                <a href={SITE_CONFIG.phoneHref}>Mobil: {SITE_CONFIG.phone}</a>
-              </p>
-              <p>
-                <a href={SITE_CONFIG.phoneFestnetHref}>Büro: {SITE_CONFIG.phoneFestnetz}</a>
+                <a href={SITE_CONFIG.phoneHref}>{SITE_CONFIG.phone}</a>
               </p>
               <p>
                 <a href={`mailto:${SITE_CONFIG.email}`}>{SITE_CONFIG.email}</a>

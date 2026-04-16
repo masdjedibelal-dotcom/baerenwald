@@ -684,10 +684,7 @@ export default function BaerenwaldLandingClient({
             </p>
             <div style={{ marginTop: "20px", display: "flex", flexWrap: "wrap", gap: "10px", alignItems: "center" }}>
               <a href={SITE_CONFIG.phoneHref} className="btn-cta">
-                Mobil: {SITE_CONFIG.phone}
-              </a>
-              <a href={SITE_CONFIG.phoneFestnetHref} className="btn-cta" style={{ background: "transparent", border: "1.5px solid currentColor" }}>
-                Büro: {SITE_CONFIG.phoneFestnetz}
+                {SITE_CONFIG.phone}
               </a>
             </div>
           </div>

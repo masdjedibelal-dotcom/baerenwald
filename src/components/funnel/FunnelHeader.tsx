@@ -9,6 +9,8 @@ import { cn } from "@/lib/utils";
 
 export interface FunnelHeaderProps {
   className?: string;
+  /** Im Rechner neu starten (leert Eingaben, bleibt auf /rechner). */
+  onFunnelReset?: () => void;
 }
 
 function PhoneIcon({ className }: { className?: string }) {
@@ -32,7 +34,10 @@ function PhoneIcon({ className }: { className?: string }) {
   );
 }
 
-export function FunnelHeader({ className }: FunnelHeaderProps) {
+export function FunnelHeader({
+  className,
+  onFunnelReset,
+}: FunnelHeaderProps) {
   const router = useRouter();
   const dialogTitleId = useId();
   const dialogDescId = useId();
@@ -43,6 +48,11 @@ export function FunnelHeader({ className }: FunnelHeaderProps) {
     setExitOpen(false);
     router.push("/");
   }, [router]);
+
+  const handleRestartInFunnel = useCallback(() => {
+    setExitOpen(false);
+    onFunnelReset?.();
+  }, [onFunnelReset]);
 
   useEffect(() => {
     if (!exitOpen) return;
@@ -130,23 +140,33 @@ export function FunnelHeader({ className }: FunnelHeaderProps) {
               id={dialogDescId}
               className="mt-2 text-sm leading-relaxed text-text-secondary"
             >
-              Wenn du jetzt gehst, sind deine Eingaben in diesem Durchlauf
-              weg. Möchtest du wirklich zur Startseite zurück?
+              Du kannst den Rechner neu starten und von vorn beginnen — oder zur
+              Startseite wechseln. Was möchtest du tun?
             </p>
             <div className="mt-5 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-              <button
-                type="button"
-                onClick={closeExit}
-                className="rounded-full border border-border-default px-4 py-2.5 text-sm font-medium text-text-primary transition hover:bg-secondary"
-              >
-                Nein, weiter
-              </button>
+              {onFunnelReset ? (
+                <button
+                  type="button"
+                  onClick={handleRestartInFunnel}
+                  className="rounded-full border border-border-default px-4 py-2.5 text-sm font-medium text-text-primary transition hover:bg-secondary"
+                >
+                  Abbrechen
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={closeExit}
+                  className="rounded-full border border-border-default px-4 py-2.5 text-sm font-medium text-text-primary transition hover:bg-secondary"
+                >
+                  Nein, weiter
+                </button>
+              )}
               <button
                 type="button"
                 onClick={confirmExit}
                 className="rounded-full bg-funnel-accent px-4 py-2.5 text-sm font-medium text-white transition hover:opacity-90"
               >
-                Ja, zur Startseite
+                Zur Startseite
               </button>
             </div>
           </div>
