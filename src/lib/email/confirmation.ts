@@ -2,12 +2,17 @@
  * HTML-Bestätigungsmail an Kundinnen (inline CSS für gängige Clients).
  */
 
+import { lineLeistungsLabel } from "@/lib/funnel/breakdown-labels";
+import type { PriceLineItem } from "@/lib/funnel/types";
+
 export type ConfirmationEmailInput = {
   vorname: string;
   situation: string;
   bereiche: string[];
   priceMin?: number;
   priceMax?: number;
+  /** Nur in der E-Mail: detaillierte Aufschlüsselung (ab 2 Zeilen). */
+  breakdown?: PriceLineItem[];
   wunschtermin?: { date: string; time: string } | null;
   plz: string;
 };
@@ -37,6 +42,50 @@ function formatSlotDe(
   } catch {
     return `${slot.date} · ${slot.time}`;
   }
+}
+
+function buildBreakdownTableHtml(
+  breakdown: PriceLineItem[],
+  priceMin: number,
+  priceMax: number
+): string {
+  const rows = breakdown
+    .map((item) => {
+      const label = escHtml(lineLeistungsLabel(item));
+      const min = item.min.toLocaleString("de-DE");
+      const max = item.max.toLocaleString("de-DE");
+      return `<tr style="border-bottom:1px solid #f0f0f0;">
+<td style="padding:10px 0;font-size:14px;">${label}</td>
+<td style="padding:10px 0;font-size:14px;text-align:right;font-weight:600;">${min} – ${max} €</td>
+</tr>`;
+    })
+    .join("");
+
+  const totalMin = priceMin.toLocaleString("de-DE");
+  const totalMax = priceMax.toLocaleString("de-DE");
+
+  return `<hr style="border:none;border-top:1px solid #d5d8d3;margin:18px 0;"/>
+<p style="margin:0 0 8px;font-family:Arial,Helvetica,sans-serif;font-size:12px;font-weight:bold;letter-spacing:0.04em;color:#6b6560;text-transform:uppercase;">
+  Aufschlüsselung nach Gewerk
+</p>
+<table style="width:100%;border-collapse:collapse;margin:16px 0;">
+  <thead>
+    <tr style="border-bottom:2px solid #eee;">
+      <th style="text-align:left;padding:8px 0;font-size:12px;color:#999;">Gewerk</th>
+      <th style="text-align:right;padding:8px 0;font-size:12px;color:#999;">Richtwert</th>
+    </tr>
+  </thead>
+  <tbody>
+    ${rows}
+    <tr>
+      <td style="padding:12px 0 0;font-weight:700;font-size:15px;">Gesamt</td>
+      <td style="padding:12px 0 0;font-weight:700;font-size:15px;text-align:right;color:#2E7D52;">${totalMin} – ${totalMax} €</td>
+    </tr>
+  </tbody>
+</table>
+<p style="font-size:11px;color:#999;margin-top:8px;line-height:1.45;">
+  Diese Aufschlüsselung ist vertraulich und nur für Sie bestimmt. Alle Angaben sind unverbindliche Richtwerte.
+</p>`;
 }
 
 export function generateConfirmationEmail(
@@ -72,6 +121,19 @@ export function generateConfirmationEmail(
     ? `<p style="margin:0 0 6px;"><strong>Preisrahmen:</strong> ${escHtml(preisZeile)}<br/><span style="font-size:12px;color:#5c5a57;">(unverbindlicher Richtwert)</span></p>`
     : "";
 
+  const breakdownBlock =
+    hasPreis &&
+    input.breakdown &&
+    input.breakdown.length > 1 &&
+    typeof input.priceMin === "number" &&
+    typeof input.priceMax === "number"
+      ? buildBreakdownTableHtml(
+          input.breakdown,
+          input.priceMin,
+          input.priceMax
+        )
+      : "";
+
   const terminBlock =
     slotText.length > 0
       ? `<p style="margin:8px 0 0;"><strong>Wunschtermin:</strong> ${escHtml(slotText)}</p>`
@@ -99,6 +161,7 @@ export function generateConfirmationEmail(
       ${terminBlock}
       <p style="margin:${slotText || hasPreis ? "8px" : "0"} 0 0;"><strong>PLZ:</strong> ${escHtml(plz)}</p>
     </div>
+    ${breakdownBlock}
     <hr style="${hRule}"/>
     <p style="margin:0 0 10px;font-family:Arial,Helvetica,sans-serif;font-size:13px;font-weight:bold;color:#1e1c1a;">
       Was als Nächstes passiert:
