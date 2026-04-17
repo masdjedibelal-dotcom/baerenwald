@@ -1,7 +1,8 @@
 import type { Situation } from "@/lib/funnel/types";
 import { LEISTUNGEN } from "@/lib/routes";
 
-const SEARCH_MAP: Record<string, Situation> = {
+/** Suchbegriffe → gültige `Situation` (keine Legacy-Werte wie „renovieren“). */
+const SEARCH_MAP = {
   /** Legacy-/Umgangssprache → gleicher Rechner-Flow wie „Zuhause erneuern“ */
   renovieren: "erneuern",
   sanieren: "erneuern",
@@ -26,8 +27,8 @@ const SEARCH_MAP: Record<string, Situation> = {
   daemmung: "erneuern",
   elektrik: "erneuern",
   leitungen: "erneuern",
-  kaputt: "notfall",
-  defekt: "notfall",
+  kaputt: "kaputt",
+  defekt: "kaputt",
   notfall: "notfall",
   dringend: "notfall",
   rohr: "notfall",
@@ -55,7 +56,7 @@ const SEARCH_MAP: Record<string, Situation> = {
   gastro: "gastro",
   cafe: "gastro",
   hotel: "gastro",
-};
+} satisfies Record<string, Situation>;
 
 function normalize(s: string): string {
   return s
