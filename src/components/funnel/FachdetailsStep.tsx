@@ -1,15 +1,23 @@
 "use client";
 
 import {
+  forwardRef,
   useCallback,
   useEffect,
+  useImperativeHandle,
   useMemo,
   useRef,
   useState,
 } from "react";
 
 import { SelectionTile } from "@/components/funnel/SelectionTile";
-import { isFachdetailGewerkChainComplete } from "@/lib/funnel/fachdetails-chain-complete";
+import {
+  getClearFachdetailPatchFromSubStep,
+  getFachdetailSubStepIds,
+  isFachdetailInternalNextDisabled,
+  isFachdetailSubStepComplete,
+  sanitaerShortDone,
+} from "@/lib/funnel/fachdetails-internal-order";
 import type { FachdetailsState, FunnelState } from "@/lib/funnel/types";
 import {
   FACHDETAILS_NOTFALL,
@@ -41,6 +49,61 @@ import {
 import type { StepOption as LibStepOption } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
+function freitextValue(
+  fd: FachdetailsState,
+  g: FachdetailGewerkKey
+): string {
+  switch (g) {
+    case "elektro":
+      return fd.elektro?.freitext ?? "";
+    case "sanitaer":
+      return fd.sanitaer?.freitext ?? "";
+    case "heizung":
+      return fd.heizung?.freitext ?? "";
+    case "maler":
+      return fd.maler?.freitext ?? "";
+    case "boden":
+      return fd.boden?.freitext ?? "";
+    case "dach":
+      return fd.dach?.freitext ?? "";
+    case "garten":
+      return fd.garten?.freitext ?? "";
+    case "fenster":
+      return fd.fenster?.freitext ?? "";
+    default:
+      return "";
+  }
+}
+
+function freitextPatch(
+  fd: FachdetailsState,
+  g: FachdetailGewerkKey,
+  raw: string
+): Partial<FachdetailsState> {
+  const t = raw.trim();
+  const v = t === "" ? null : t.slice(0, 150);
+  switch (g) {
+    case "elektro":
+      return { elektro: { ...fd.elektro, freitext: v } };
+    case "sanitaer":
+      return { sanitaer: { ...fd.sanitaer, freitext: v } };
+    case "heizung":
+      return { heizung: { ...fd.heizung, freitext: v } };
+    case "maler":
+      return { maler: { ...fd.maler, freitext: v } };
+    case "boden":
+      return { boden: { ...fd.boden, freitext: v } };
+    case "dach":
+      return { dach: { ...fd.dach, freitext: v } };
+    case "garten":
+      return { garten: { ...fd.garten, freitext: v } };
+    case "fenster":
+      return { fenster: { ...fd.fenster, freitext: v } };
+    default:
+      return {};
+  }
+}
+
 function asLibOptFromFach(o: FachdetailOptionDef): LibStepOption {
   return {
     value: o.value,
@@ -48,11 +111,7 @@ function asLibOptFromFach(o: FachdetailOptionDef): LibStepOption {
     hint: o.hint,
     emoji: o.emoji,
     warnText: o.warnText,
-    infoExpand:
-      o.education ??
-      (o.value === "weiss_nicht"
-        ? "Kein Problem — wir rechnen mit einem Durchschnittswert"
-        : undefined),
+    infoExpand: o.education,
   };
 }
 
@@ -283,6 +342,12 @@ function SingleQuestionBlock({
   );
 }
 
+export type FachdetailsStepHandle = {
+  tryConsumeBack: () => boolean;
+  tryConsumeNext: () => boolean;
+  getNextDisabled: () => boolean;
+};
+
 export interface FachdetailsStepProps {
   gewerk: FachdetailGewerkKey;
   totalGewerke: number;
@@ -291,19 +356,29 @@ export interface FachdetailsStepProps {
   showOmitHint?: boolean;
   state: FunnelState;
   onChange: (patch: Partial<FachdetailsState>) => void;
+  onResetFachdetailsForGewerk: (gewerk: FachdetailGewerkKey) => void;
+  onFachInternalNavTick?: () => void;
   className?: string;
 }
 
-export function FachdetailsStep({
-  gewerk,
-  totalGewerke,
-  gewerkIndex,
-  isLastFachdetailScreen,
-  showOmitHint,
-  state,
-  onChange,
-  className,
-}: FachdetailsStepProps) {
+export const FachdetailsStep = forwardRef<
+  FachdetailsStepHandle,
+  FachdetailsStepProps
+>(function FachdetailsStep(
+  {
+    gewerk,
+    totalGewerke,
+    gewerkIndex,
+    isLastFachdetailScreen,
+    showOmitHint,
+    state,
+    onChange,
+    onResetFachdetailsForGewerk,
+    onFachInternalNavTick,
+    className,
+  },
+  ref
+) {
   const b = state.bereiche;
   const fd = state.fachdetails;
   const isNotfall = state.situation === "notfall";
@@ -445,6 +520,98 @@ export function FachdetailsStep({
     return GARTEN_FOLLOWUPS[id] ?? null;
   }, [fd.garten?.was]);
 
+  const internalStepIds = useMemo(
+    () => getFachdetailSubStepIds(state, gewerk),
+    [state, gewerk]
+  );
+
+  const [currentInternalIndex, setCurrentInternalIndex] = useState(0);
+
+  useEffect(() => {
+    setCurrentInternalIndex(0);
+  }, [gewerk]);
+
+  useEffect(() => {
+    if (internalStepIds.length === 0) return;
+    setCurrentInternalIndex((i) =>
+      Math.min(i, Math.max(0, internalStepIds.length - 1))
+    );
+  }, [internalStepIds]);
+
+  const activeSubStepId =
+    internalStepIds[currentInternalIndex] ?? internalStepIds[0];
+
+  const shouldShowSub = useCallback(
+    (id: string) => activeSubStepId === id,
+    [activeSubStepId]
+  );
+
+  useEffect(() => {
+    if (internalStepIds.length === 0) return;
+    const hasGap = internalStepIds
+      .slice(0, currentInternalIndex)
+      .some((step) => !isFachdetailSubStepComplete(state, gewerk, step));
+    if (hasGap) {
+      onResetFachdetailsForGewerk(gewerk);
+      setCurrentInternalIndex(0);
+    }
+  }, [
+    currentInternalIndex,
+    internalStepIds,
+    gewerk,
+    state,
+    onResetFachdetailsForGewerk,
+  ]);
+
+  useImperativeHandle(
+    ref,
+    () => ({
+      tryConsumeBack() {
+        if (currentInternalIndex > 0) {
+          const stepId = internalStepIds[currentInternalIndex]!;
+          onChange(
+            getClearFachdetailPatchFromSubStep(gewerk, stepId, state)
+          );
+          setCurrentInternalIndex((i) => i - 1);
+          onFachInternalNavTick?.();
+          return true;
+        }
+        onResetFachdetailsForGewerk(gewerk);
+        return false;
+      },
+      tryConsumeNext() {
+        if (
+          currentInternalIndex < internalStepIds.length - 1 &&
+          activeSubStepId &&
+          isFachdetailSubStepComplete(state, gewerk, activeSubStepId)
+        ) {
+          setCurrentInternalIndex((i) => i + 1);
+          onFachInternalNavTick?.();
+          return true;
+        }
+        return false;
+      },
+      getNextDisabled() {
+        return isFachdetailInternalNextDisabled(
+          state,
+          gewerk,
+          internalStepIds,
+          currentInternalIndex
+        );
+      },
+    }),
+    [
+      currentInternalIndex,
+      internalStepIds,
+      activeSubStepId,
+      gewerk,
+      state,
+      onChange,
+      onResetFachdetailsForGewerk,
+      onFachInternalNavTick,
+    ]
+  );
+
   return (
     <div className={cn("space-y-6", className)}>
       <div className="fachdetail-header">
@@ -483,7 +650,7 @@ export function FachdetailsStep({
 
       {gewerk === "elektro" && needElektro ? (
         <section className="space-y-3">
-          {isNotfall ? (
+          {isNotfall && shouldShowSub(FACHDETAILS_NOTFALL.elektro.id) ? (
             <SingleQuestionBlock
               q={FACHDETAILS_NOTFALL.elektro}
               selected={fd.elektro?.problem}
@@ -500,7 +667,7 @@ export function FachdetailsStep({
                 });
               }}
             />
-          ) : !fd.elektro?.problem ? (
+          ) : !isNotfall && shouldShowSub(elektroQ1.id) ? (
             <SingleQuestionBlock
               q={elektroQ1}
               selected={fd.elektro?.problem}
@@ -517,7 +684,9 @@ export function FachdetailsStep({
                 });
               }}
             />
-          ) : elektroFollowQ && fd.elektro?.folge === undefined ? (
+          ) : !isNotfall &&
+            elektroFollowQ &&
+            shouldShowSub(elektroFollowQ.id) ? (
             <FollowUpPanel show scrollDep={elektroFollowQ.id}>
               <SingleQuestionBlock
                 q={elektroFollowQ}
@@ -543,7 +712,7 @@ export function FachdetailsStep({
 
       {gewerk === "sanitaer" && needSan ? (
         <section className="space-y-3">
-          {isNotfall ? (
+          {isNotfall && shouldShowSub(FACHDETAILS_NOTFALL.sanitaer.id) ? (
             <SingleQuestionBlock
               q={FACHDETAILS_NOTFALL.sanitaer}
               selected={fd.sanitaer?.notfallSchwere}
@@ -563,15 +732,11 @@ export function FachdetailsStep({
                 });
               }}
             />
-          ) : !isFachdetailGewerkChainComplete(
-              b,
-              isNotfall,
-              fd,
-              "sanitaer",
-              state.situation
-            ) ? (
+          ) : !isNotfall ? (
             <>
-              {erneuernBad && !fd.sanitaer?.badWas ? (
+              {erneuernBad &&
+              !fd.sanitaer?.badWas &&
+              shouldShowSub(SANITAER_BAD_Q.id) ? (
                 <SingleQuestionBlock
                   q={SANITAER_BAD_Q}
                   selected={fd.sanitaer?.badWas}
@@ -598,77 +763,10 @@ export function FachdetailsStep({
                   }}
                 />
               ) : erneuernBad &&
-                fd.sanitaer?.badWas === "wanne_dusche" ? null : !fd.sanitaer
-                  ?.lage ? (
-                <SingleQuestionBlock
-                  q={SANITAER_Q1}
-                  selected={fd.sanitaer?.lage}
-                  educationOpen={Boolean(eduKeys.san_q1)}
-                  onToggleEdu={() => toggleEdu("san_q1")}
-                  optionEduOpen={eduKeys}
-                  onToggleOptionEdu={toggleEdu}
-                  onSelect={(value) => {
-                    onChange({
-                      sanitaer: {
-                        ...fd.sanitaer,
-                        lage: value,
-                        rohre:
-                          value === "wand" ? fd.sanitaer?.rohre : undefined,
-                      },
-                    });
-                  }}
-                />
-              ) : fd.sanitaer.lage === "wand" &&
-                fd.sanitaer.rohre === undefined &&
-                sanFollowQ ? (
-                <FollowUpPanel show scrollDep={sanFollowQ.id}>
-                  <SingleQuestionBlock
-                    q={sanFollowQ}
-                    selected={fd.sanitaer?.rohre}
-                    educationOpen={Boolean(eduKeys[sanFollowQ.id])}
-                    onToggleEdu={() => toggleEdu(sanFollowQ.id)}
-                    optionEduOpen={eduKeys}
-                    onToggleOptionEdu={toggleEdu}
-                    onSelect={(value) => {
-                      onChange({
-                        sanitaer: {
-                          ...fd.sanitaer,
-                          lage: fd.sanitaer?.lage,
-                          rohre: value,
-                        },
-                      });
-                    }}
-                  />
-                </FollowUpPanel>
-              ) : needBadExtra &&
-                !erneuernBad &&
-                !fd.sanitaer?.badWas ? (
-                <SingleQuestionBlock
-                  q={SANITAER_BAD_Q}
-                  selected={fd.sanitaer?.badWas}
-                  educationOpen={Boolean(eduKeys.san_bad)}
-                  onToggleEdu={() => toggleEdu("san_bad")}
-                  optionEduOpen={eduKeys}
-                  onToggleOptionEdu={toggleEdu}
-                  onSelect={(value) => {
-                    onChange({
-                      sanitaer: {
-                        ...fd.sanitaer,
-                        lage: fd.sanitaer?.lage,
-                        rohre: fd.sanitaer?.rohre,
-                        badWas: value,
-                        badObjekte:
-                          value === "objekte"
-                            ? fd.sanitaer?.badObjekte
-                            : undefined,
-                      },
-                    });
-                  }}
-                />
-              ) : needBadExtra &&
                 fd.sanitaer?.badWas === "objekte" &&
                 badFollowMulti &&
-                (fd.sanitaer.badObjekte?.length ?? 0) === 0 ? (
+                (fd.sanitaer.badObjekte?.length ?? 0) === 0 &&
+                shouldShowSub(SANITAER_BAD_OBJEKTE_MULTI.id) ? (
                 <FollowUpPanel show scrollDep={badFollowMulti.id}>
                   <div className="space-y-3">
                     <h3 className="text-[15px] font-semibold text-text-primary">
@@ -712,6 +810,127 @@ export function FachdetailsStep({
                     </div>
                   </div>
                 </FollowUpPanel>
+              ) : erneuernBad ? null : needBadExtra &&
+                !fd.sanitaer?.badWas &&
+                shouldShowSub(SANITAER_BAD_Q.id) ? (
+                <SingleQuestionBlock
+                  q={SANITAER_BAD_Q}
+                  selected={fd.sanitaer?.badWas}
+                  educationOpen={Boolean(eduKeys.san_bad)}
+                  onToggleEdu={() => toggleEdu("san_bad")}
+                  optionEduOpen={eduKeys}
+                  onToggleOptionEdu={toggleEdu}
+                  onSelect={(value) => {
+                    onChange({
+                      sanitaer: {
+                        ...fd.sanitaer,
+                        lage: fd.sanitaer?.lage,
+                        rohre: fd.sanitaer?.rohre,
+                        badWas: value,
+                        badObjekte:
+                          value === "objekte"
+                            ? fd.sanitaer?.badObjekte
+                            : undefined,
+                      },
+                    });
+                  }}
+                />
+              ) : needBadExtra &&
+                fd.sanitaer?.badWas === "objekte" &&
+                badFollowMulti &&
+                (fd.sanitaer.badObjekte?.length ?? 0) === 0 &&
+                shouldShowSub(SANITAER_BAD_OBJEKTE_MULTI.id) ? (
+                <FollowUpPanel show scrollDep={badFollowMulti.id}>
+                  <div className="space-y-3">
+                    <h3 className="text-[15px] font-semibold text-text-primary">
+                      {badFollowMulti.title}
+                    </h3>
+                    <div className="flex flex-wrap gap-2">
+                      {badFollowMulti.options.map((opt) => {
+                        const set = new Set(fd.sanitaer?.badObjekte ?? []);
+                        const active = set.has(opt.value);
+                        return (
+                          <button
+                            key={opt.value}
+                            type="button"
+                            onClick={() => {
+                              const next = new Set(
+                                fd.sanitaer?.badObjekte ?? []
+                              );
+                              if (next.has(opt.value)) next.delete(opt.value);
+                              else next.add(opt.value);
+                              onChange({
+                                sanitaer: {
+                                  ...fd.sanitaer,
+                                  lage: fd.sanitaer?.lage,
+                                  rohre: fd.sanitaer?.rohre,
+                                  badWas: fd.sanitaer?.badWas,
+                                  badObjekte: Array.from(next),
+                                },
+                              });
+                            }}
+                            className={cn(
+                              "rounded-full border border-border-default bg-surface-card px-3 py-1.5 text-[12px] font-medium text-text-secondary transition-colors",
+                              active
+                                ? "funnel-tile-selected text-text-primary"
+                                : "funnel-tile-hover"
+                            )}
+                          >
+                            {opt.label}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </FollowUpPanel>
+              ) : !sanitaerShortDone(
+                  b,
+                  state.situation,
+                  fd.sanitaer ?? {}
+                ) &&
+                !fd.sanitaer?.lage &&
+                shouldShowSub(SANITAER_Q1.id) ? (
+                <SingleQuestionBlock
+                  q={SANITAER_Q1}
+                  selected={fd.sanitaer?.lage}
+                  educationOpen={Boolean(eduKeys.san_q1)}
+                  onToggleEdu={() => toggleEdu("san_q1")}
+                  optionEduOpen={eduKeys}
+                  onToggleOptionEdu={toggleEdu}
+                  onSelect={(value) => {
+                    onChange({
+                      sanitaer: {
+                        ...fd.sanitaer,
+                        lage: value,
+                        rohre:
+                          value === "wand" ? fd.sanitaer?.rohre : undefined,
+                      },
+                    });
+                  }}
+                />
+              ) : fd.sanitaer?.lage === "wand" &&
+                fd.sanitaer?.rohre === undefined &&
+                sanFollowQ &&
+                shouldShowSub(SANITAER_FOLLOWUPS.sanitaer_folge_rohre.id) ? (
+                <FollowUpPanel show scrollDep={sanFollowQ.id}>
+                  <SingleQuestionBlock
+                    q={sanFollowQ}
+                    selected={fd.sanitaer?.rohre}
+                    educationOpen={Boolean(eduKeys[sanFollowQ.id])}
+                    onToggleEdu={() => toggleEdu(sanFollowQ.id)}
+                    optionEduOpen={eduKeys}
+                    onToggleOptionEdu={toggleEdu}
+                    onSelect={(value) => {
+                      onChange({
+                        sanitaer: {
+                          ...fd.sanitaer,
+                          lage: fd.sanitaer?.lage,
+                          rohre: value,
+                        },
+                      });
+                    }}
+                  />
+                </FollowUpPanel>
               ) : null}
             </>
           ) : null}
@@ -720,7 +939,7 @@ export function FachdetailsStep({
 
       {gewerk === "heizung" && needHeizung ? (
         <section className="space-y-3">
-          {isNotfall ? (
+          {isNotfall && shouldShowSub(FACHDETAILS_NOTFALL.heizung.id) ? (
             <SingleQuestionBlock
               q={FACHDETAILS_NOTFALL.heizung}
               selected={fd.heizung?.typ}
@@ -738,27 +957,27 @@ export function FachdetailsStep({
                 });
               }}
             />
-          ) : state.situation === "kaputt" ? (
-            !fd.heizung?.typ ? (
-              <SingleQuestionBlock
-                q={HEIZUNG_KAPUTT_Q1}
-                selected={fd.heizung?.typ}
-                educationOpen={Boolean(eduKeys.heiz_kaputt)}
-                onToggleEdu={() => toggleEdu("heiz_kaputt")}
-                optionEduOpen={eduKeys}
-                onToggleOptionEdu={toggleEdu}
-                onSelect={(value) => {
-                  onChange({
-                    heizung: {
-                      typ: value,
-                      alter: undefined,
-                      vorhaben: undefined,
-                    },
-                  });
-                }}
-              />
-            ) : null
-          ) : !fd.heizung?.typ ? (
+          ) : state.situation === "kaputt" &&
+            shouldShowSub(HEIZUNG_KAPUTT_Q1.id) ? (
+            <SingleQuestionBlock
+              q={HEIZUNG_KAPUTT_Q1}
+              selected={fd.heizung?.typ}
+              educationOpen={Boolean(eduKeys.heiz_kaputt)}
+              onToggleEdu={() => toggleEdu("heiz_kaputt")}
+              optionEduOpen={eduKeys}
+              onToggleOptionEdu={toggleEdu}
+              onSelect={(value) => {
+                onChange({
+                  heizung: {
+                    typ: value,
+                    alter: undefined,
+                    vorhaben: undefined,
+                  },
+                });
+              }}
+            />
+          ) : state.situation !== "kaputt" &&
+            shouldShowSub(HEIZUNG_Q1.id) ? (
             <SingleQuestionBlock
               q={HEIZUNG_Q1}
               selected={fd.heizung?.typ}
@@ -776,10 +995,7 @@ export function FachdetailsStep({
                 });
               }}
             />
-          ) : heizFollowQ &&
-            (heizFollowQ.id === "heizung_folge_oel_alter"
-              ? fd.heizung?.alter === undefined
-              : fd.heizung?.vorhaben === undefined) ? (
+          ) : heizFollowQ && shouldShowSub(heizFollowQ.id) ? (
             <FollowUpPanel show scrollDep={heizFollowQ.id}>
               <SingleQuestionBlock
                 q={heizFollowQ}
@@ -819,7 +1035,7 @@ export function FachdetailsStep({
 
       {gewerk === "maler" && needMaler ? (
         <section className="space-y-3">
-          {!fd.maler?.was ? (
+          {shouldShowSub(MALER_Q1.id) ? (
             <SingleQuestionBlock
               q={MALER_Q1}
               selected={fd.maler?.was}
@@ -840,10 +1056,7 @@ export function FachdetailsStep({
                 });
               }}
             />
-          ) : malerFollowQ &&
-            (malerFollowQ.id === "maler_folge_fassade"
-              ? fd.maler?.fassade === undefined
-              : fd.maler?.zustand === undefined) ? (
+          ) : malerFollowQ && shouldShowSub(malerFollowQ.id) ? (
             <FollowUpPanel show scrollDep={malerFollowQ.id}>
               <SingleQuestionBlock
                 q={malerFollowQ}
@@ -883,7 +1096,7 @@ export function FachdetailsStep({
 
       {gewerk === "boden" && needBoden ? (
         <section className="space-y-3">
-          {!fd.boden?.aktuell ? (
+          {shouldShowSub(BODEN_Q1.id) ? (
             <SingleQuestionBlock
               q={BODEN_Q1}
               selected={fd.boden?.aktuell}
@@ -905,7 +1118,7 @@ export function FachdetailsStep({
                 });
               }}
             />
-          ) : bodenFollowQ && fd.boden?.verlegung === undefined ? (
+          ) : bodenFollowQ && shouldShowSub(bodenFollowQ.id) ? (
             <FollowUpPanel show scrollDep={bodenFollowQ.id}>
               <SingleQuestionBlock
                 q={bodenFollowQ}
@@ -930,7 +1143,7 @@ export function FachdetailsStep({
 
       {gewerk === "dach" && needDach ? (
         <section className="space-y-3">
-          {!fd.dach?.vorhaben ? (
+          {shouldShowSub(DACH_Q1.id) ? (
             <SingleQuestionBlock
               q={DACH_Q1}
               selected={fd.dach?.vorhaben}
@@ -953,7 +1166,7 @@ export function FachdetailsStep({
                 });
               }}
             />
-          ) : dachFollowQ && fd.dach?.alter === undefined ? (
+          ) : dachFollowQ && shouldShowSub(dachFollowQ.id) ? (
             <FollowUpPanel show scrollDep={dachFollowQ.id}>
               <SingleQuestionBlock
                 q={dachFollowQ}
@@ -978,7 +1191,10 @@ export function FachdetailsStep({
 
       {gewerk === "fenster" && needFenster ? (
         <section className="space-y-3">
-          <SingleQuestionBlock
+          {shouldShowSub(
+            fensterDefektKaputt ? "fenster_defekt_was" : "fenster_ausstattung"
+          ) ? (
+            <SingleQuestionBlock
             q={fensterDefektKaputt ? FENSTER_DEFEKT_Q1 : FENSTER_Q1}
             selected={
               fensterDefektKaputt
@@ -1007,12 +1223,13 @@ export function FachdetailsStep({
               }
             }}
           />
+          ) : null}
         </section>
       ) : null}
 
       {gewerk === "garten" && needGarten ? (
         <section className="space-y-3">
-          {!fd.garten?.was ? (
+          {shouldShowSub(GARTEN_Q1.id) ? (
             <SingleQuestionBlock
               q={GARTEN_Q1}
               selected={fd.garten?.was}
@@ -1036,12 +1253,7 @@ export function FachdetailsStep({
                 });
               }}
             />
-          ) : gartenFollowQ &&
-            (gartenFollowQ.id === "garten_folge_gestaltung"
-              ? (fd.garten?.gestaltung?.length ?? 0) === 0
-              : gartenFollowQ.id === "garten_folge_haeufigkeit"
-                ? fd.garten?.haeufigkeit === undefined
-                : fd.garten?.baumgroesse === undefined) ? (
+          ) : gartenFollowQ && shouldShowSub(gartenFollowQ.id) ? (
             <FollowUpPanel show scrollDep={gartenFollowQ.id}>
               {gartenFollowQ.inputType === "multi" ? (
                 <div className="space-y-3">
@@ -1158,6 +1370,26 @@ export function FachdetailsStep({
           </p>
         </div>
       ) : null}
+      <section className="fachdetail-freitext mt-6 space-y-2 border-t border-border-default pt-5">
+        <label
+          className="block text-sm font-semibold text-text-primary"
+          htmlFor={`fachdetail-freitext-${gewerk}`}
+        >
+          Noch etwas hinzufügen?
+        </label>
+        <p className="text-xs text-text-tertiary">Optional — max. 150 Zeichen</p>
+        <textarea
+          id={`fachdetail-freitext-${gewerk}`}
+          className="focus:border-fl-accent min-h-[4.5rem] w-full resize-y rounded-xl border border-border-default bg-surface-card px-3 py-2 text-sm text-text-primary outline-none transition-colors placeholder:text-text-tertiary"
+          rows={3}
+          maxLength={150}
+          placeholder="Beschreibe kurz was du planst oder was das Problem ist…"
+          value={freitextValue(fd, gewerk)}
+          onChange={(e) => onChange(freitextPatch(fd, gewerk, e.target.value))}
+        />
+      </section>
     </div>
   );
-}
+});
+
+FachdetailsStep.displayName = "FachdetailsStep";

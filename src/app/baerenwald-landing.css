@@ -153,28 +153,41 @@
   }
 }
 
-.neue-anfrage-btn {
-  display: block;
+/* „Neue Anfrage“: Textlink in Grün, kein zweiter Voll-Button neben Weiter */
+.neue-anfrage-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
   width: 100%;
-  max-width: 100%;
-  background: var(--fl-bg);
-  border: 1.5px solid var(--fl-border);
-  border-radius: 999px;
-  padding: 14px 24px;
+  margin-top: 24px;
+  padding: 10px 8px;
+  border: none;
+  background: transparent;
   font-size: 14px;
   font-weight: 600;
   font-family: var(--fl-font-sans);
-  color: var(--fl-text-2);
+  color: #15803d;
   cursor: pointer;
-  margin-top: 24px;
-  transition: all 0.15s;
   text-align: center;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  transition: color 0.15s, opacity 0.15s;
 }
 
-.neue-anfrage-btn:hover {
-  border-color: var(--fl-accent);
-  color: var(--fl-accent);
-  background: var(--fl-accent-light);
+.neue-anfrage-link:hover {
+  color: #166534;
+}
+
+.neue-anfrage-link:focus-visible {
+  outline: 2px solid #15803d;
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+.neue-anfrage-link__icon {
+  flex-shrink: 0;
+  color: inherit;
 }
 
 .funnel-step-tiles-card {
@@ -5153,6 +5166,10 @@
 }
 
 .funnel-footer-next {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
   background: var(--fl-accent);
   color: white;
   border: none;
@@ -5164,6 +5181,13 @@
   cursor: pointer;
   transition: opacity 0.15s;
   white-space: nowrap;
+}
+
+.funnel-footer-next__icon {
+  display: inline-flex;
+  align-items: center;
+  line-height: 0;
+  color: inherit;
 }
 
 .funnel-footer-next:hover {

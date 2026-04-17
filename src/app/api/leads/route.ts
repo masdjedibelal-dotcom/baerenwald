@@ -26,6 +26,7 @@ export type BwLeadBody = {
   kundentyp?: string | null;
   leadType?: "beratung" | "system" | "ausserhalb" | "komplex_rueckruf";
   beschreibung?: string;
+  freitext?: string;
 };
 
 function budgetLine(body: BwLeadBody): string {
@@ -102,13 +103,12 @@ export async function POST(request: Request) {
         ? "komplex_rueckruf"
         : body.leadType === "ausserhalb"
           ? "ausserhalb"
-          : body.leadType === "beratung" ||
-              situationNorm === "gewerbe" ||
-              situationNorm === "gastro"
+          : body.leadType === "beratung" || situationNorm === "gewerbe"
             ? "beratung"
             : "system";
 
     const beschreibung = (body.beschreibung ?? "").trim();
+    const freitext = (body.freitext ?? "").trim();
 
     const text =
       leadType === "ausserhalb"
@@ -169,6 +169,7 @@ export async function POST(request: Request) {
               `Fotos: ${fotos}`,
               body.dringlichkeit ? `Dringlichkeit: ${body.dringlichkeit}` : "",
               body.umfang ? `Umfang: ${body.umfang}` : "",
+              freitext ? `Zusatz (Freitext): ${freitext}` : "",
             ]
               .filter(Boolean)
               .join("\n");

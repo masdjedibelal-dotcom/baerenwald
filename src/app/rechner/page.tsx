@@ -15,11 +15,19 @@ import "@/app/baerenwald-landing.css";
 
 import { BwBeratungLead } from "@/components/funnel/BwBeratungLead";
 import { BwResultScreen } from "@/components/funnel/BwResultScreen";
-import { FachdetailsStep } from "@/components/funnel/FachdetailsStep";
+import {
+  FachdetailsStep,
+  type FachdetailsStepHandle,
+} from "@/components/funnel/FachdetailsStep";
+import {
+  NeubauenFollowUpBlock,
+  neubauenFollowUpBlocksPlanung,
+} from "@/components/funnel/NeubauenFollowUp";
 import { FunnelErrorBoundary } from "@/components/funnel/FunnelErrorBoundary";
 import { HWLeadForm } from "@/components/funnel/HWLeadForm";
 import { LeadAvailabilityHint } from "@/components/funnel/ResultScreen";
 import { FunnelFooter } from "@/components/funnel/FunnelFooter";
+import { RefreshIcon18 } from "@/components/funnel/NeueAnfrageResetLink";
 import { FunnelHeader } from "@/components/funnel/FunnelHeader";
 import { FunnelProgressBar } from "@/components/funnel/FunnelProgressBar";
 import { TrustScreen } from "@/components/funnel/TrustScreen";
@@ -64,8 +72,10 @@ import {
 import type { BwResultModus } from "@/lib/funnel/price-calc";
 import { getPlzStatus } from "@/lib/funnel/plz";
 import type {
+  FunnelState,
   FunnelStep,
   Kundentyp,
+  NotfallDringlichkeit,
   ObjektZustand,
   Situation,
   StepOption as FunnelStepOption,
@@ -104,6 +114,25 @@ type Screen =
 
 function isSituation(x: string): x is Situation {
   return (BW_FUNNEL_STEP1_ORDER as readonly string[]).includes(x);
+}
+
+function collectBwFreitextAnhang(state: FunnelState): string {
+  const parts: string[] = [];
+  const fd = state.fachdetails;
+  const push = (label: string, v: string | null | undefined) => {
+    const t = (v ?? "").trim();
+    if (t) parts.push(`${label}: ${t}`);
+  };
+  push("Elektro", fd.elektro?.freitext ?? null);
+  push("Sanitär", fd.sanitaer?.freitext ?? null);
+  push("Heizung", fd.heizung?.freitext ?? null);
+  push("Maler", fd.maler?.freitext ?? null);
+  push("Boden", fd.boden?.freitext ?? null);
+  push("Dach", fd.dach?.freitext ?? null);
+  push("Garten", fd.garten?.freitext ?? null);
+  push("Fenster", fd.fenster?.freitext ?? null);
+  push("Allgemein", state.freitext ?? null);
+  return parts.join("\n");
 }
 
 function asLibOpt(o: FunnelStepOption): LibStepOption {
@@ -147,6 +176,10 @@ function FunnelRechnerInner() {
     id: string;
     wasComplete: boolean;
   } | null>(null);
+  /** Einmal Auto-Weiter unterdrücken, wenn per „Zurück“ auf einen Fachdetail-Screen gewechselt wird (sonst sofort wieder vor bei schon vollständiger Kette). */
+  const skipFachAutoadvanceRef = useRef(false);
+  const fachdetailsStepRef = useRef<FachdetailsStepHandle | null>(null);
+  const [fachInternalNavTick, setFachInternalNavTick] = useState(0);
 
   const {
     state,
@@ -167,6 +200,7 @@ function FunnelRechnerInner() {
     setZugaenglichkeit,
     setZustand,
     setFachdetails,
+    resetFachdetailsForGewerk,
     setBadAusstattung,
     reset,
   } = useFunnelState();
@@ -186,6 +220,7 @@ function FunnelRechnerInner() {
       state.fachdetails?.garten?.baumgroesse,
       state.fachdetails?.maler?.was,
       state.fachdetails?.maler?.fassade,
+      state.fachdetails?.neubauen,
     ]
   );
 
@@ -236,16 +271,14 @@ function FunnelRechnerInner() {
   );
   const stepZugaenglichkeit = useMemo(() => {
     if (state.situation === "notfall") return null;
-    if (state.situation === "gewerbe" || state.situation === "gastro")
-      return null;
+    if (state.situation === "gewerbe") return null;
     if (zuKomplexForSteps) return null;
     return resolvedSteps.find((s) => s.id === "zugaenglichkeit") ?? null;
   }, [resolvedSteps, state.situation, zuKomplexForSteps]);
 
   const stepZustand = useMemo(() => {
     if (state.situation === "notfall") return null;
-    if (state.situation === "gewerbe" || state.situation === "gastro")
-      return null;
+    if (state.situation === "gewerbe") return null;
     if (zuKomplexForSteps) return null;
     return resolvedSteps.find((s) => s.id === "zustand") ?? null;
   }, [resolvedSteps, state.situation, zuKomplexForSteps]);
@@ -271,10 +304,19 @@ function FunnelRechnerInner() {
     [stepKundentyp]
   );
 
+  const neubauenDetailOffen =
+    state.situation === "neubauen" &&
+    neubauenFollowUpBlocksPlanung(
+      state.bereiche,
+      state.fachdetails.neubauen
+    );
+
   const umfangOk =
     state.situation === "notfall"
       ? Boolean(state.dringlichkeit)
-      : Boolean(state.umfang);
+      : state.situation === "neubauen" && neubauenDetailOffen
+        ? false
+        : Boolean(state.umfang);
 
   /** Screen-Reihenfolge (ohne loading/result/lead) — stabil, damit handleBack & Fachdetail „X von Y“ konsistent bleiben. */
   const stepSequence = useMemo(
@@ -299,7 +341,7 @@ function FunnelRechnerInner() {
     if (raw && isSituation(raw)) {
       setSituation(raw);
       setPriceConfirmed(false);
-      if (raw === "gewerbe" || raw === "gastro") {
+      if (raw === "gewerbe") {
         setScreen("beratung-lead");
       } else {
         setScreen("bereiche");
@@ -350,10 +392,18 @@ function FunnelRechnerInner() {
       return;
     }
     const firstFd = firstFachdetailsScreenId(state.bereiche);
-    if (firstFd) setScreen(firstFd);
-    else if (hasKundentypStep) setScreen("kundentyp");
+    if (firstFd) {
+      const g = getBwFachdetailGewerkFromScreen(firstFd);
+      if (g) resetFachdetailsForGewerk(g);
+      setScreen(firstFd);
+    } else if (hasKundentypStep) setScreen("kundentyp");
     else setScreen("ort");
-  }, [hasBadAusstattungStep, hasKundentypStep, state.bereiche]);
+  }, [
+    hasBadAusstattungStep,
+    hasKundentypStep,
+    state.bereiche,
+    resetFachdetailsForGewerk,
+  ]);
 
   const goGroesseOrPostGroesse = useCallback(() => {
     if (hasGroesseStep) setScreen("groesse");
@@ -369,6 +419,8 @@ function FunnelRechnerInner() {
     if (fachdetailsBeforeGroesse && hasFachdetailsStep) {
       const firstFd = firstFachdetailsScreenId(state.bereiche);
       if (firstFd) {
+        const g = getBwFachdetailGewerkFromScreen(firstFd);
+        if (g) resetFachdetailsForGewerk(g);
         setScreen(firstFd);
         return;
       }
@@ -379,6 +431,7 @@ function FunnelRechnerInner() {
     hasFachdetailsStep,
     goGroesseOrPostGroesse,
     state.bereiche,
+    resetFachdetailsForGewerk,
   ]);
 
   const goNextFromCompletedFachdetailScreen = useCallback(
@@ -398,6 +451,10 @@ function FunnelRechnerInner() {
       }
       const next = getNextBwRechnerScreen(state, fromScreen);
       if (!next) return;
+      const nextGewerk = getBwFachdetailGewerkFromScreen(next as Screen);
+      if (nextGewerk && isBwFachdetailScreenId(next as Screen)) {
+        resetFachdetailsForGewerk(nextGewerk);
+      }
       if (next === "groesse" && fachdetailsBeforeGroesse && hasGroesseStep) {
         setMicroNote({
           target: "groesse",
@@ -412,6 +469,7 @@ function FunnelRechnerInner() {
       state.fachdetails,
       fachdetailsBeforeGroesse,
       hasGroesseStep,
+      resetFachdetailsForGewerk,
     ]
   );
 
@@ -435,9 +493,7 @@ function FunnelRechnerInner() {
     setSchimmelBeratung(false);
 
     const first: Screen =
-      prevSit === "notfall" ||
-      prevSit === "gewerbe" ||
-      prevSit === "gastro"
+      prevSit === "notfall" || prevSit === "gewerbe"
         ? "situation"
         : "trust_intro";
     setScreen(first);
@@ -452,12 +508,23 @@ function FunnelRechnerInner() {
   const handleNext = useCallback(() => {
     const fachGewerk = getBwFachdetailGewerkFromScreen(screen);
     if (fachGewerk) {
+      const consumed = fachdetailsStepRef.current?.tryConsumeNext();
+      if (consumed) {
+        setFachInternalNavTick((t) => t + 1);
+        window.scrollTo({
+          top: 0,
+          left: 0,
+          behavior: "instant" as ScrollBehavior,
+        });
+        return;
+      }
       if (
         !isFachdetailGewerkChainComplete(
           state.bereiche,
           state.situation === "notfall",
           state.fachdetails,
-          fachGewerk
+          fachGewerk,
+          state.situation
         )
       ) {
         return;
@@ -519,8 +586,11 @@ function FunnelRechnerInner() {
             else setScreen("ort");
           } else if (hasFachdetailsStep) {
             const firstFd = firstFachdetailsScreenId(state.bereiche);
-            if (firstFd) setScreen(firstFd);
-            else if (hasKundentypStep) setScreen("kundentyp");
+            if (firstFd) {
+              const g = getBwFachdetailGewerkFromScreen(firstFd);
+              if (g) resetFachdetailsForGewerk(g);
+              setScreen(firstFd);
+            } else if (hasKundentypStep) setScreen("kundentyp");
             else setScreen("ort");
           } else if (hasKundentypStep) {
             setScreen("kundentyp");
@@ -536,8 +606,11 @@ function FunnelRechnerInner() {
             else setScreen("ort");
           } else if (hasFachdetailsStep) {
             const firstFd = firstFachdetailsScreenId(state.bereiche);
-            if (firstFd) setScreen(firstFd);
-            else if (hasKundentypStep) setScreen("kundentyp");
+            if (firstFd) {
+              const g = getBwFachdetailGewerkFromScreen(firstFd);
+              if (g) resetFachdetailsForGewerk(g);
+              setScreen(firstFd);
+            } else if (hasKundentypStep) setScreen("kundentyp");
             else setScreen("ort");
           } else if (hasKundentypStep) {
             setScreen("kundentyp");
@@ -602,6 +675,7 @@ function FunnelRechnerInner() {
     hasKundentypStep,
     setPrice,
     goNextFromCompletedFachdetailScreen,
+    resetFachdetailsForGewerk,
   ]);
 
   useEffect(() => {
@@ -618,6 +692,11 @@ function FunnelRechnerInner() {
       g,
       state.situation
     );
+    if (skipFachAutoadvanceRef.current) {
+      skipFachAutoadvanceRef.current = false;
+      fachdetailVisitRef.current = { id: screen, wasComplete: complete };
+      return;
+    }
     const visit = fachdetailVisitRef.current;
     if (!visit || visit.id !== screen) {
       fachdetailVisitRef.current = { id: screen, wasComplete: complete };
@@ -638,10 +717,26 @@ function FunnelRechnerInner() {
   ]);
 
   const handleBack = useCallback(() => {
+    if (isBwFachdetailScreenId(screen)) {
+      const consumed = fachdetailsStepRef.current?.tryConsumeBack();
+      if (consumed) {
+        skipFachAutoadvanceRef.current = true;
+        setFachInternalNavTick((t) => t + 1);
+        window.scrollTo({
+          top: 0,
+          left: 0,
+          behavior: "instant" as ScrollBehavior,
+        });
+        return;
+      }
+    }
     const steps = stepSequence;
-    const currentIndex = steps.indexOf(screen);
+    const currentIndex = steps.lastIndexOf(screen);
     if (currentIndex > 0) {
       const prevStep = steps[currentIndex - 1]!;
+      if (isBwFachdetailScreenId(prevStep)) {
+        skipFachAutoadvanceRef.current = true;
+      }
       setScreen(prevStep as Screen);
       window.scrollTo({
         top: 0,
@@ -657,15 +752,14 @@ function FunnelRechnerInner() {
         const gi = order.indexOf(g);
         if (gi > 0) {
           const prevId = `fachdetails_${order[gi - 1]!}` as Screen;
-          if (steps.includes(prevId)) {
-            setScreen(prevId);
-            window.scrollTo({
-              top: 0,
-              left: 0,
-              behavior: "instant" as ScrollBehavior,
-            });
-            return;
-          }
+          skipFachAutoadvanceRef.current = true;
+          setScreen(prevId);
+          window.scrollTo({
+            top: 0,
+            left: 0,
+            behavior: "instant" as ScrollBehavior,
+          });
+          return;
         }
         const firstFdIdx = steps.findIndex((s) => isBwFachdetailScreenId(s));
         if (firstFdIdx > 0) {
@@ -735,6 +829,10 @@ function FunnelRechnerInner() {
     if (isBwFachdetailScreenId(screen)) {
       const g = getBwFachdetailGewerkFromScreen(screen);
       if (!g) return true;
+      const api = fachdetailsStepRef.current;
+      if (api) {
+        return api.getNextDisabled();
+      }
       return !isFachdetailGewerkChainComplete(
         state.bereiche,
         state.situation === "notfall",
@@ -792,7 +890,13 @@ function FunnelRechnerInner() {
       default:
         return true;
     }
-  }, [screen, state, umfangOk, schimmelBeratung]);
+  }, [
+    screen,
+    state,
+    umfangOk,
+    schimmelBeratung,
+    fachInternalNavTick,
+  ]);
 
   const nextLabel = useMemo(() => {
     if (screen === "trust_intro") return "Los geht's →";
@@ -802,9 +906,13 @@ function FunnelRechnerInner() {
     if (screen === "lead") return "Absenden →";
     if (screen === "beratung-lead") return "Rückruf anfordern →";
     if (screen === "result" && resultModus === "preisrahmen_warnung")
-      return "Vor-Ort-Termin anfragen →";
+      return "Vor-Ort-Termin anfragen";
+    if (screen === "result") return "Weiter";
     return "Weiter →";
   }, [screen, resultModus, priceConfirmed]);
+
+  const footerNextLeadingIcon =
+    screen === "result" ? <RefreshIcon18 /> : undefined;
 
   const showFooterNav = screen !== "danke" && screen !== "ausserhalb";
 
@@ -812,6 +920,7 @@ function FunnelRechnerInner() {
     e.preventDefault();
     if (nextDisabled && screen === "lead") return;
     const nameTrim = state.name.trim();
+    const zx = collectBwFreitextAnhang(state);
     const body = {
       name: nameTrim,
       vorname: nameTrim.split(/\s+/)[0] ?? "",
@@ -832,6 +941,7 @@ function FunnelRechnerInner() {
       umfang: state.umfang,
       kundentyp: state.kundentyp ?? "nicht angegeben",
       leadType: "system" as const,
+      freitext: zx || undefined,
     };
     const res = await fetch("/api/leads", {
       method: "POST",
@@ -852,6 +962,7 @@ function FunnelRechnerInner() {
     }
     if (nextDisabled && screen === "beratung-lead") return;
     const name = `${state.vorname} ${state.nachname}`.trim();
+    const zxB = collectBwFreitextAnhang(state);
     const body = {
       name,
       vorname: state.vorname.trim(),
@@ -859,7 +970,7 @@ function FunnelRechnerInner() {
       telefon: state.telefon.trim(),
       situation: state.situation,
       bereiche: state.bereiche,
-      beschreibung: state.leadBeschreibung.trim(),
+      beschreibung: [state.leadBeschreibung.trim(), zxB].filter(Boolean).join("\n\n"),
       photoCount: state.photos.length,
       kundentyp: isB2B(state.situation)
         ? (state.situation ?? "b2b")
@@ -962,6 +1073,10 @@ function FunnelRechnerInner() {
                       setSchimmelBeratung(false);
                       return;
                     }
+                    if (state.situation === "neubauen" && value === "anbau") {
+                      setSchimmelBeratung(false);
+                      return;
+                    }
                     setSchimmelBeratung(true);
                     setScreen("beratung-lead");
                     return;
@@ -1003,41 +1118,76 @@ function FunnelRechnerInner() {
                     setUmfang(null, 1);
                     return;
                   }
-                  setDringlichkeit(
-                    value as "akut" | "stabil" | "nutzbar" | "keine_eile"
-                  );
+                  setDringlichkeit(value as NotfallDringlichkeit);
                   setUmfang(value, opt.faktor ?? 1);
                 }}
               />
             );
           })}
+          <div className="notfall-hint rounded-xl border border-border-default bg-surface-muted px-4 py-3 text-sm text-text-secondary">
+            <span className="text-text-primary">Kein echter Notfall?</span>{" "}
+            <button
+              type="button"
+              className="font-semibold text-funnel-accent underline-offset-2 hover:underline"
+              onClick={() => {
+                setDringlichkeit(null);
+                setUmfang(null, 1);
+                setSituation("kaputt");
+                setBereiche([]);
+                setScreen("bereiche");
+              }}
+            >
+              → Zu Reparatur / Defekt
+            </button>
+          </div>
         </div>
       );
     }
+    const neubauenPlan =
+      state.situation === "neubauen" &&
+      stepUmfang.id === "neubauen_planung" &&
+      neubauenFollowUpBlocksPlanung(
+        state.bereiche,
+        state.fachdetails.neubauen
+      );
     return (
       <div className="space-y-3">
-        {stepUmfang.options.map((opt) => {
-          const libOpt = asLibOpt(opt);
-          const selected = state.umfang === opt.value;
-          return (
-            <SelectionTile
-              key={opt.value}
-              option={libOpt}
-              icon={
-                libOpt.emoji ? undefined : tileIconForStepValue(opt.value)
-              }
-              selected={selected}
-              multi={false}
-              onChange={(value, sel) => {
-                if (!sel) {
-                  setUmfang(null, 1);
-                  return;
-                }
-                setUmfang(value, opt.faktor ?? 1);
-              }}
-            />
-          );
-        })}
+        {state.situation === "neubauen" &&
+        stepUmfang.id === "neubauen_planung" ? (
+          <NeubauenFollowUpBlock
+            bereiche={state.bereiche}
+            neubauen={state.fachdetails.neubauen}
+            onPatch={(p) =>
+              setFachdetails({
+                neubauen: { ...state.fachdetails.neubauen, ...p },
+              })
+            }
+          />
+        ) : null}
+        {neubauenPlan
+          ? null
+          : stepUmfang.options.map((opt) => {
+              const libOpt = asLibOpt(opt);
+              const selected = state.umfang === opt.value;
+              return (
+                <SelectionTile
+                  key={opt.value}
+                  option={libOpt}
+                  icon={
+                    libOpt.emoji ? undefined : tileIconForStepValue(opt.value)
+                  }
+                  selected={selected}
+                  multi={false}
+                  onChange={(value, sel) => {
+                    if (!sel) {
+                      setUmfang(null, 1);
+                      return;
+                    }
+                    setUmfang(value, opt.faktor ?? 1);
+                  }}
+                />
+              );
+            })}
       </div>
     );
   };
@@ -1075,6 +1225,7 @@ function FunnelRechnerInner() {
           banner={microBannerFor(screen)}
         >
           <FachdetailsStep
+            ref={fachdetailsStepRef}
             gewerk={g}
             totalGewerke={totalGewerke}
             gewerkIndex={gewerkIndex}
@@ -1084,6 +1235,10 @@ function FunnelRechnerInner() {
             showOmitHint={state.showOmitHint ?? false}
             state={state}
             onChange={setFachdetails}
+            onResetFachdetailsForGewerk={resetFachdetailsForGewerk}
+            onFachInternalNavTick={() =>
+              setFachInternalNavTick((t) => t + 1)
+            }
           />
         </StepWrapper>
       );
@@ -1561,16 +1716,11 @@ function FunnelRechnerInner() {
           );
         }
         if (isB2B(state.situation)) {
-          const gastro = state.situation === "gastro";
           return (
             <ThankYou
               variant="beratung"
               beratungHeadline="Anfrage eingegangen."
-              beratungSubline={
-                gastro
-                  ? "Gastro-Projekte planen wir persönlich. Wir melden uns innerhalb von 24h."
-                  : "Wir melden uns innerhalb von 24h persönlich bei dir — ohne Verpflichtung."
-              }
+              beratungSubline="Wir melden uns innerhalb von 24h persönlich bei dir — ohne Verpflichtung."
               showTimeline={false}
               showCalendar={false}
               onReset={handleReset}
@@ -1610,6 +1760,7 @@ function FunnelRechnerInner() {
       {showFooterNav ? (
         <FunnelFooter
           onNext={handleNext}
+          nextLeadingIcon={footerNextLeadingIcon}
           onBack={() => {
             if (screen === "situation") {
               const prevSit = getPreviousBwRechnerScreen(state, "situation");

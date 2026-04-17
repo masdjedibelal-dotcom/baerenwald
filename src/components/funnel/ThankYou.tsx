@@ -1,5 +1,6 @@
 "use client";
 
+import { NeueAnfrageResetLink } from "@/components/funnel/NeueAnfrageResetLink";
 import { cn } from "@/lib/utils";
 
 const TIMELINE_STEPS = [
@@ -164,11 +165,7 @@ export function ThankYou({
         </div>
       ) : null}
 
-      {onReset ? (
-        <button type="button" className="neue-anfrage-btn" onClick={onReset}>
-          Neue Anfrage starten →
-        </button>
-      ) : null}
+      {onReset ? <NeueAnfrageResetLink onClick={onReset} /> : null}
     </div>
   );
 }

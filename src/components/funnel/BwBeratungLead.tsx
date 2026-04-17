@@ -40,21 +40,15 @@ export function BwBeratungLead({
   const eyebrow =
     kind === "schimmel"
       ? "Schimmel / Feuchtigkeit"
-      : situation === "gastro"
-        ? "Gastronomie"
-        : "Gewerbe & Büro";
+      : "Gewerbe / Gastro";
   const headline =
     kind === "schimmel"
       ? "Schimmel braucht eine Vor-Ort-Analyse."
-      : situation === "gastro"
-        ? "Gastro-Projekte besprechen wir persönlich."
-        : "Wir planen das persönlich mit dir.";
+      : "Gewerbliches Projekt?";
   const sub =
     kind === "schimmel"
       ? "Eine automatische Preisberechnung wäre hier nicht seriös — zu viel hängt von der Ursache ab. Wir schauen es uns an und melden uns persönlich."
-      : situation === "gastro"
-        ? "Beschreib kurz dein Vorhaben — wir melden uns innerhalb von 24h."
-        : "Kein Online-Preis — zu viele Details zählen. Kurze Anfrage genügt, wir melden uns in 24h.";
+      : "Ob Büro, Praxis, Laden oder Gastronomie — wir planen individuell mit dir. Melde dich kurz und wir melden uns innerhalb von 24h.";
 
   return (
     <StepWrapper

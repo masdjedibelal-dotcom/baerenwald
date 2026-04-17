@@ -9,6 +9,8 @@ export interface FunnelFooterProps {
   onBack?: () => void;
   nextDisabled?: boolean;
   nextLabel?: string;
+  /** Optional vor dem Label (z. B. Aktualisieren-Icon auf dem Ergebnis-Screen). */
+  nextLeadingIcon?: ReactNode;
   /** Zusatzzeile unter der Button-Zeile (z. B. Hinweis bei Beratungs-Flow) */
   belowActions?: ReactNode;
   className?: string;
@@ -19,6 +21,7 @@ export function FunnelFooter({
   onBack,
   nextDisabled = false,
   nextLabel = "Weiter →",
+  nextLeadingIcon,
   belowActions,
   className,
 }: FunnelFooterProps) {
@@ -49,7 +52,12 @@ export function FunnelFooter({
                 onClick={onNext}
                 className="funnel-footer-next"
               >
-                {nextLabel}
+                {nextLeadingIcon ? (
+                  <span className="funnel-footer-next__icon" aria-hidden>
+                    {nextLeadingIcon}
+                  </span>
+                ) : null}
+                <span>{nextLabel}</span>
               </button>
             ) : null}
           </div>

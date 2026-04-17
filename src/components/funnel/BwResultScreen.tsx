@@ -16,6 +16,7 @@ import {
 import { SITE_CONFIG } from "@/lib/config";
 import { cn } from "@/lib/utils";
 import { DatenschutzCheckbox } from "./DatenschutzCheckbox";
+import { NeueAnfrageResetLink } from "./NeueAnfrageResetLink";
 
 const RESULT_TESTIMONIALS = [
   {
@@ -389,7 +390,7 @@ function ZuKomplexScreen({
             </>
           ) : (
             <>
-              Für einen seriösen Preis kommen wir um einen Vor-Ort-Termin nicht
+              Für einen finalen Preis kommen wir um einen Vor-Ort-Termin nicht
               herum.
             </>
           )}
@@ -494,11 +495,7 @@ function ZuKomplexScreen({
         </div>
       </div>
 
-      {onReset ? (
-        <button type="button" className="neue-anfrage-btn" onClick={onReset}>
-          Neue Anfrage starten →
-        </button>
-      ) : null}
+      {onReset ? <NeueAnfrageResetLink onClick={onReset} /> : null}
     </div>
   );
 }
@@ -518,7 +515,7 @@ export function BwResultScreen({
   const [saveEmailError, setSaveEmailError] = useState("");
 
   const notfallAkut =
-    state.situation === "notfall" && state.dringlichkeit === "akut";
+    state.situation === "notfall" && state.dringlichkeit === "sofort";
 
   if (notfallAkut) {
     return (
@@ -759,11 +756,7 @@ export function BwResultScreen({
         />
       ) : null}
 
-      {onReset ? (
-        <button type="button" className="neue-anfrage-btn" onClick={onReset}>
-          Neue Anfrage starten →
-        </button>
-      ) : null}
+      {onReset ? <NeueAnfrageResetLink onClick={onReset} /> : null}
     </div>
   );
 }
