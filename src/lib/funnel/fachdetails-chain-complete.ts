@@ -102,6 +102,17 @@ export function isFachdetailGewerkChainComplete(
       if (
         needBadExtra &&
         situation === "erneuern" &&
+        fd.sanitaer?.badWas &&
+        fd.sanitaer.badWas !== "wanne_dusche"
+      ) {
+        if (fd.sanitaer.badWas === "objekte") {
+          return (fd.sanitaer.badObjekte?.length ?? 0) > 0;
+        }
+        return true;
+      }
+      if (
+        needBadExtra &&
+        situation === "erneuern" &&
         !fd.sanitaer?.badWas
       ) {
         return false;

@@ -4,12 +4,14 @@ export type Situation =
   | "notfall"
   | "neubauen"
   | "betreuung"
-  | "gewerbe"
-  | "gastro";
+  | "gewerbe";
 
 export function isB2B(s: Situation | null | undefined): boolean {
-  return s === "gewerbe" || s === "gastro";
+  return s === "gewerbe";
 }
+
+/** Notfall Schritt 2 — Pauschale siehe {@link getNotdienstGebuehr} */
+export type NotfallDringlichkeit = "sofort" | "heute" | "diese_woche";
 
 export function isReparatur(s: Situation | null | undefined): boolean {
   return s === "kaputt" || s === "notfall";
@@ -42,9 +44,17 @@ export type BudgetCheck = "ok" | "zu_hoch" | null;
 
 /** Detailantworten Schritt „fachdetails“ (Elektro / Sanitär / Heizung / weitere Gewerke) */
 export type FachdetailsState = {
+  /** Zusatzinfos zu Neubau/Ausbau (Keller, Terrasse, Innenumbau) */
+  neubauen?: {
+    rohbau?: "ja" | "nein";
+    deckenhoehe?: "niedrig" | "mittel" | "hoch";
+    terrasse?: "holz" | "stein" | "beton";
+    innen?: "durchbruch" | "grundriss" | "trennwand";
+  };
   elektro?: {
     problem?: string;
     folge?: string;
+    freitext?: string | null;
   };
   sanitaer?: {
     lage?: string;
@@ -53,35 +63,42 @@ export type FachdetailsState = {
     rohre?: string;
     /** Notfall-Flow: nur Schwere, ohne Lage/Rohre */
     notfallSchwere?: string;
+    freitext?: string | null;
   };
   heizung?: {
     typ?: string;
     alter?: string;
     vorhaben?: string;
+    freitext?: string | null;
   };
   maler?: {
     was?: string;
     zustand?: string;
     fassade?: string;
+    freitext?: string | null;
   };
   boden?: {
     aktuell?: string;
     verlegung?: string;
+    freitext?: string | null;
   };
   dach?: {
     vorhaben?: string;
     alter?: string;
+    freitext?: string | null;
   };
   garten?: {
     was?: string;
     haeufigkeit?: string;
     baumgroesse?: string;
     gestaltung?: string[];
+    freitext?: string | null;
   };
   fenster?: {
     ausstattung?: "standard" | "premium";
     /** Kaputt: „Was ist defekt?“ */
     defekt?: string;
+    freitext?: string | null;
   };
 };
 
@@ -111,10 +128,12 @@ export interface FunnelState {
   /** Preis aus Fallback-Mapping (450–1800 €), kein Accordion */
   istFallback: boolean;
   budgetCheck: BudgetCheck;
-  dringlichkeit: "akut" | "stabil" | "nutzbar" | "keine_eile" | null;
+  dringlichkeit: NotfallDringlichkeit | null;
   zugaenglichkeit: Zugaenglichkeit | null;
   zustand: ObjektZustand | null;
   fachdetails: FachdetailsState;
+  /** Optionale Gesamtnotiz (z. B. Lead); Fachdetails haben eigene `freitext`-Felder. */
+  freitext?: string | null;
   /** Mehr als zwei Fachdetail-Gewerke möglich — es werden nur zwei abgefragt */
   showOmitHint?: boolean;
   photos: File[];

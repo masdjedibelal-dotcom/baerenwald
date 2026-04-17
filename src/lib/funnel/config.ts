@@ -1,3 +1,7 @@
+import {
+  buildBetreuungHaeufigkeitStep,
+  shouldSkipBetreuungHaeufigkeit,
+} from "./betreuung-haeufigkeit";
 import { isFachdetailGewerkChainComplete } from "./fachdetails-chain-complete";
 import { getAktiveFachdetailGewerke } from "./fachdetails-notfall";
 import {
@@ -33,7 +37,6 @@ export type ZeitraumOption = {
 export const ZEITRAUM_OPTIONS: Record<Situation, ZeitraumOption[]> = {
   notfall: [],
   gewerbe: [],
-  gastro: [],
   erneuern: [
     {
       value: "vier_wochen",
@@ -163,7 +166,6 @@ export const ZEITRAUM_FRAGEN: Record<
   },
   notfall: { question: "", hint: "" },
   gewerbe: { question: "", hint: "" },
-  gastro: { question: "", hint: "" },
 };
 
 export function getZeitraumOptions(
@@ -274,7 +276,6 @@ export function getKundentypOptions(situation: Situation): StepOption[] {
         ),
       ];
     case "gewerbe":
-    case "gastro":
       return [];
     default:
       return [];
@@ -548,37 +549,29 @@ export const SITUATIONEN_CONFIG: Record<
         inputType: "tiles-single",
         options: [
           {
-            value: "akut",
-            label: "Akuter Notfall",
-            hint: "Wird schlimmer oder akut gefährlich",
-            emoji: "🚨",
+            value: "sofort",
+            label: "Jetzt sofort",
+            hint: "Es wird schlimmer — sofort handeln",
+            emoji: "🔴",
             faktor: 1.8,
             warnText:
               "Bitte ruf uns direkt an — beim Notfall ist der Rechner zu langsam.",
           },
           {
-            value: "stabil",
-            label: "Ausgefallen aber stabil",
-            hint: "Geht nicht, aber nichts wird schlimmer",
-            emoji: "⚠️",
+            value: "heute",
+            label: "Heute noch",
+            hint: "Ausgefallen aber stabil — heute lösen",
+            emoji: "🟠",
             faktor: 1.5,
             infoText: "Termin innerhalb 24–48h.",
           },
           {
-            value: "nutzbar",
-            label: "Eingeschränkt nutzbar",
-            hint: "Noch nutzbar, sollte bald weg",
-            emoji: "⏱️",
+            value: "diese_woche",
+            label: "Diese Woche",
+            hint: "Eingeschränkt nutzbar — bald reparieren",
+            emoji: "🟡",
             faktor: 1.2,
-            infoText: "Termin innerhalb 3–5 Tage.",
-          },
-          {
-            value: "keine_eile",
-            label: "Kein akuter Notfall",
-            hint: "Kann mit normalem Termin laufen",
-            emoji: "📅",
-            faktor: 1.0,
-            infoText: "Wir planen einen regulären Termin.",
+            infoText: "Termin innerhalb weniger Tage.",
           },
         ],
       },
@@ -608,6 +601,9 @@ export const SITUATIONEN_CONFIG: Record<
             hint: "Erweiterung des Hauses",
             emoji: "🔨",
             triggerGewerke: ["bau", "elektro"],
+            direktKomplex: true,
+            infoText:
+              "Anbauten planen wir persönlich mit dir — zu viele individuelle Faktoren für eine automatische Kalkulation.",
           },
           {
             value: "terrasse",
@@ -634,17 +630,17 @@ export const SITUATIONEN_CONFIG: Record<
         options: [
           {
             value: "idee",
-            label: "Nur eine Idee",
-            hint: "Noch nichts geplant",
+            label: "Erst eine Idee",
+            hint: "Wir beraten dich gerne unverbindlich",
             emoji: "💡",
-            faktor: 1.2,
+            faktor: 1.0,
             infoText:
-              "Kein Problem — wir beraten kostenlos und entwickeln gemeinsam eine Lösung.",
+              "Super dass du planst — komm in 3–6 Monaten wieder oder lass dich jetzt beraten.",
           },
           {
             value: "vorstellung",
-            label: "Ich habe eine Vorstellung",
-            hint: "Grobe Idee, kein Plan",
+            label: "Ich weiß was ich will",
+            hint: "Grobe Vorstellung vorhanden",
             emoji: "📋",
             faktor: 1.0,
             infoText: "Beim Vor-Ort-Termin konkretisieren wir gemeinsam.",
@@ -652,18 +648,10 @@ export const SITUATIONEN_CONFIG: Record<
           {
             value: "plaene",
             label: "Pläne liegen vor",
-            hint: "Skizzen oder Zeichnungen",
+            hint: "Bereit zum Start",
             emoji: "📐",
             faktor: 0.9,
             infoText: "Perfekt — das beschleunigt die Kalkulation erheblich.",
-          },
-          {
-            value: "bereit",
-            label: "Kann sofort losgehen",
-            hint: "Alles geklärt, suche Ausführung",
-            emoji: "🚀",
-            faktor: 0.85,
-            infoText: "Sehr gut — wir können direkt ein konkretes Angebot erstellen.",
           },
         ],
       },
@@ -743,53 +731,6 @@ export const SITUATIONEN_CONFIG: Record<
           },
         ],
       },
-      {
-        id: "betreuung_haeufigkeit",
-        question: "Wie oft soll jemand kommen?",
-        inputType: "tiles-single",
-        options: [
-          {
-            value: "woechentlich",
-            label: "Wöchentlich",
-            hint: "Reinigung, intensiver Hausmeister",
-            emoji: "📆",
-            faktor: 0.85,
-            infoText: "Günstigster Stückpreis durch hohe Frequenz.",
-          },
-          {
-            value: "zweiwochentlich",
-            label: "Alle 2 Wochen",
-            hint: "Standard Gartenpflege",
-            emoji: "📅",
-            faktor: 0.9,
-            infoText: "Empfehlung für die meisten Gärten April–Oktober.",
-          },
-          {
-            value: "monatlich",
-            label: "Monatlich",
-            hint: "Kontrollgänge, leichte Pflege",
-            emoji: "🗓️",
-            faktor: 1.0,
-            infoText: "Gut für pflegeleichte Objekte.",
-          },
-          {
-            value: "saisonal",
-            label: "Saisonal",
-            hint: "Frühjahr und Herbst",
-            emoji: "🍂",
-            faktor: 1.1,
-            infoText: "Zwei Haupteinsätze pro Jahr.",
-          },
-          {
-            value: "einmalig",
-            label: "Einmalig",
-            hint: "Nur jetzt dieses eine Mal",
-            emoji: "📌",
-            faktor: 1.3,
-            infoText: "Kein Vertrag, kein Abo. Einmaliger Einsatz.",
-          },
-        ],
-      },
     ],
   },
   gewerbe: {
@@ -831,45 +772,6 @@ export const SITUATIONEN_CONFIG: Record<
       },
     ],
   },
-  gastro: {
-    skipGroesse: true,
-    skipUmfang: true,
-    steps: [
-      {
-        id: "gas_beschreibung",
-        question: "Was planst du?",
-        subtext:
-          "Gastro-Projekte sind komplex — wir besprechen alles persönlich.",
-        inputType: "tiles-single",
-        options: [
-          {
-            value: "umbau",
-            label: "Umbau oder Renovierung",
-            hint: "Gastraum, Küche, Bar",
-            emoji: "🍽️",
-          },
-          {
-            value: "neueroeffnung",
-            label: "Neueröffnung",
-            hint: "Kompletter Ausbau",
-            emoji: "🎉",
-          },
-          {
-            value: "wartung",
-            label: "Wartung & Reparatur",
-            hint: "Laufende Instandhaltung",
-            emoji: "🔧",
-          },
-          {
-            value: "terrasse",
-            label: "Terrasse oder Außenbereich",
-            hint: "Außengastronomie ausbauen",
-            emoji: "🪵",
-          },
-        ],
-      },
-    ],
-  },
 };
 
 /** Relevante Bereiche für den Schritt „Fachdetails“ (nach Bereiche, vor Kundentyp) */
@@ -904,7 +806,7 @@ export const BW_FUNNEL_STEP_FACHDETAILS: FunnelStep = {
   id: "fachdetails",
   question: "Fachdetails",
   subtext:
-    "Pro sichtbarem Gewerk nacheinander beantworten — Folgefragen erscheinen erst nach der jeweiligen Antwort; „Weiß ich nicht“ ist möglich.",
+    "Pro sichtbarem Gewerk nacheinander beantworten — Folgefragen erscheinen erst nach der jeweiligen Antwort.",
   inputType: "fachdetails",
 };
 
@@ -1189,7 +1091,7 @@ export function shouldIncludeZugaenglichkeitStep(
 ): boolean {
   if (zuKomplex) return false;
   if (situation === "notfall") return false;
-  if (situation === "gewerbe" || situation === "gastro") return false;
+  if (situation === "gewerbe") return false;
   if (situation === "betreuung") return false;
 
   return (
@@ -1210,7 +1112,7 @@ export function shouldIncludeZustandStep(
   if (situation === "notfall") return false;
   if (situation === "neubauen") return false;
   if (situation === "betreuung") return false;
-  if (situation === "gewerbe" || situation === "gastro") return false;
+  if (situation === "gewerbe") return false;
   if (situation === "kaputt") return false;
   if (situation !== "erneuern") return false;
   const b = bereiche;
@@ -1242,7 +1144,10 @@ export function getResolvedStepsForSituation(
   const cfg = SITUATIONEN_CONFIG[situation];
 
   if (situation === "betreuung") {
-    const stepsBetreuung: FunnelStep[] = [cfg.steps[0]!, cfg.steps[1]!];
+    const stepsBetreuung: FunnelStep[] = [cfg.steps[0]!];
+    if (!shouldSkipBetreuungHaeufigkeit(bereiche)) {
+      stepsBetreuung.push(buildBetreuungHaeufigkeitStep(bereiche));
+    }
     if (!isHausmeisterOnlyBereiche(bereiche)) {
       stepsBetreuung.push(getBetreuungGroesseStep(bereiche));
     }
@@ -1287,8 +1192,7 @@ export function getResolvedStepsForSituation(
       if (
         bereiche.includes("bad") &&
         situation !== "notfall" &&
-        situation !== "gewerbe" &&
-        situation !== "gastro"
+        situation !== "gewerbe"
       ) {
         steps.splice(insertAt, 0, BW_FUNNEL_STEP_BAD_AUSSTATTUNG);
         insertAt += 1;

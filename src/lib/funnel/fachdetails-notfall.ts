@@ -11,11 +11,6 @@ export const FACHDETAILS_NOTFALL = {
       { value: "raum", label: "Strom weg in einem Raum", hint: "" },
       { value: "komplett", label: "Strom komplett weg", hint: "" },
       { value: "steckdose", label: "Steckdose defekt", hint: "" },
-      {
-        value: "weiss_nicht",
-        label: "Weiß ich nicht genau",
-        hint: "Wir klären das beim Anruf",
-      },
     ],
   } satisfies FachdetailQuestionDef,
 
@@ -32,11 +27,6 @@ export const FACHDETAILS_NOTFALL = {
         hint: "",
         warnText:
           "Dreh sofort den Haupthahn zu — dann ruf uns an.",
-      },
-      {
-        value: "weiss_nicht",
-        label: "Weiß ich nicht genau",
-        hint: "",
       },
     ],
   } satisfies FachdetailQuestionDef,
@@ -56,11 +46,6 @@ export const FACHDETAILS_NOTFALL = {
       {
         value: "fehlermeldung",
         label: "Fehlermeldung am Display",
-        hint: "",
-      },
-      {
-        value: "weiss_nicht",
-        label: "Weiß ich nicht genau",
         hint: "",
       },
     ],

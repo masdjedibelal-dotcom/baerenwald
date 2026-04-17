@@ -5,6 +5,8 @@ export type BwFunnelStep1Option = {
   label: string;
   hint: string;
   emoji: string;
+  /** Optional UI-Badge */
+  tag?: string;
 };
 
 /** Bärenwald-Rechner Schritt 1 — Reihenfolge exakt */
@@ -42,14 +44,9 @@ export const BW_FUNNEL_STEP1_OPTIONS: BwFunnelStep1Option[] = [
   {
     id: "gewerbe",
     label: "Gewerbe / Gastro",
-    hint: "Büro, Praxis, Laden, Gastronomie",
+    hint: "Büro, Praxis, Laden, Restaurant — wir planen individuell",
     emoji: "🏢",
-  },
-  {
-    id: "gastro",
-    label: "Gastronomie",
-    hint: "Restaurant, Café, Bar — wir planen persönlich mit dir",
-    emoji: "🍽️",
+    tag: "B2B",
   },
 ];
 

@@ -2,12 +2,16 @@
 
 import { useCallback, useMemo, useReducer } from "react";
 
-import { countFachdetailGewerke } from "@/lib/funnel/fachdetails-notfall";
+import {
+  countFachdetailGewerke,
+  type FachdetailGewerkKey,
+} from "@/lib/funnel/fachdetails-notfall";
 import type {
   BudgetCheck,
   FachdetailsState,
   FunnelState,
   Kundentyp,
+  NotfallDringlichkeit,
   ObjektZustand,
   PriceLineItem,
   Situation,
@@ -26,6 +30,7 @@ export type BwFunnelAction =
   | { type: "SET_ZUGAENGLICHKEIT"; value: Zugaenglichkeit | null }
   | { type: "SET_ZUSTAND"; value: ObjektZustand | null }
   | { type: "SET_FACHDETAILS"; patch: Partial<FachdetailsState> }
+  | { type: "RESET_FACHDETAIL"; gewerk: FachdetailGewerkKey }
   | {
       type: "SET_BAD_AUSSTATTUNG";
       value: "standard" | "komfort" | "gehoben" | null;
@@ -39,7 +44,8 @@ export type BwFunnelAction =
         | "telefon"
         | "vorname"
         | "nachname"
-        | "leadBeschreibung";
+        | "leadBeschreibung"
+        | "freitext";
       value: string;
     }
   | { type: "SET_SLOT"; date: string; time: string }
@@ -55,7 +61,7 @@ export type BwFunnelAction =
   /** Notfall: zweiter Schritt (Dringlichkeit) */
   | {
       type: "SET_DRINGLICHKEIT";
-      value: "akut" | "stabil" | "nutzbar" | "keine_eile" | null;
+      value: NotfallDringlichkeit | null;
     }
   | { type: "SET_SUBMITTED"; value: boolean }
   | { type: "SET_KUNDENTYP"; value: Kundentyp | null }
@@ -88,6 +94,7 @@ export const BW_FUNNEL_INITIAL_STATE: FunnelState = {
   zugaenglichkeit: null,
   zustand: null,
   fachdetails: {},
+  freitext: null,
   photos: [],
   name: "",
   vorname: "",
@@ -197,6 +204,12 @@ function bwFunnelReducer(
     case "SET_BAD_AUSSTATTUNG":
       return { ...state, badAusstattung: action.value };
 
+    case "RESET_FACHDETAIL": {
+      const nextFd = { ...state.fachdetails } as FachdetailsState;
+      delete (nextFd as Record<string, unknown>)[action.gewerk];
+      return { ...state, fachdetails: nextFd };
+    }
+
     case "SET_FACHDETAILS": {
       const p = action.patch;
       return {
@@ -234,6 +247,10 @@ function bwFunnelReducer(
             p.fenster !== undefined
               ? { ...state.fachdetails.fenster, ...p.fenster }
               : state.fachdetails.fenster,
+          neubauen:
+            p.neubauen !== undefined
+              ? { ...state.fachdetails.neubauen, ...p.neubauen }
+              : state.fachdetails.neubauen,
         },
       };
     }
@@ -242,7 +259,13 @@ function bwFunnelReducer(
       return { ...state, photos: [...action.files] };
 
     case "UPDATE_LEAD_FIELD": {
-      const next = { ...state, [action.field]: action.value };
+      const v =
+        action.field === "freitext"
+          ? action.value.trim() === ""
+            ? null
+            : action.value.trim().slice(0, 150)
+          : action.value;
+      const next = { ...state, [action.field]: v } as FunnelState;
       if (action.field === "vorname" || action.field === "nachname") {
         next.name = `${next.vorname} ${next.nachname}`.trim();
       }
@@ -337,6 +360,10 @@ export function useBwFunnelState() {
     dispatch({ type: "SET_FACHDETAILS", patch });
   }, []);
 
+  const resetFachdetailsForGewerk = useCallback((gewerk: FachdetailGewerkKey) => {
+    dispatch({ type: "RESET_FACHDETAIL", gewerk });
+  }, []);
+
   const setBadAusstattung = useCallback(
     (value: "standard" | "komfort" | "gehoben" | null) => {
       dispatch({ type: "SET_BAD_AUSSTATTUNG", value });
@@ -377,7 +404,8 @@ export function useBwFunnelState() {
       field !== "telefon" &&
       field !== "vorname" &&
       field !== "nachname" &&
-      field !== "leadBeschreibung"
+      field !== "leadBeschreibung" &&
+      field !== "freitext"
     ) {
       return;
     }
@@ -397,7 +425,7 @@ export function useBwFunnelState() {
   }, []);
 
   const setDringlichkeit = useCallback(
-    (value: "akut" | "stabil" | "nutzbar" | "keine_eile" | null) => {
+    (value: NotfallDringlichkeit | null) => {
       dispatch({ type: "SET_DRINGLICHKEIT", value });
     },
     []
@@ -426,6 +454,7 @@ export function useBwFunnelState() {
       setZugaenglichkeit,
       setZustand,
       setFachdetails,
+      resetFachdetailsForGewerk,
       setBadAusstattung,
       setPrice,
       setBudgetCheck,
@@ -449,6 +478,7 @@ export function useBwFunnelState() {
       setZugaenglichkeit,
       setZustand,
       setFachdetails,
+      resetFachdetailsForGewerk,
       setBadAusstattung,
       setPrice,
       setBudgetCheck,

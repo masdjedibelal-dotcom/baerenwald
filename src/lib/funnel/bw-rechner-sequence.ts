@@ -37,7 +37,7 @@ export function showTrustScreen(
   if (situation === "notfall") {
     return false;
   }
-  if (situation === "gewerbe" || situation === "gastro") {
+  if (situation === "gewerbe") {
     return false;
   }
   if (
@@ -64,7 +64,7 @@ export function getBwRechnerScreenSequence(state: FunnelState): string[] {
   }
 
   /** Gewerbe/Gastro: keine Bereiche — direkt zur B2B-Anfrage */
-  if (sit === "gewerbe" || sit === "gastro") {
+  if (sit === "gewerbe") {
     return ["situation", "beratung-lead"];
   }
 

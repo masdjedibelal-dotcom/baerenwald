@@ -51,11 +51,11 @@ const SEARCH_MAP = {
   praxis: "gewerbe",
   laden: "gewerbe",
   gewerbe: "gewerbe",
-  restaurant: "gastro",
-  gastronomie: "gastro",
-  gastro: "gastro",
-  cafe: "gastro",
-  hotel: "gastro",
+  restaurant: "gewerbe",
+  gastronomie: "gewerbe",
+  gastro: "gewerbe",
+  cafe: "gewerbe",
+  hotel: "gewerbe",
 } satisfies Record<string, Situation>;
 
 function normalize(s: string): string {

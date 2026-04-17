@@ -47,11 +47,6 @@ export const ELEKTRO_ERNEUERN_Q1: FachdetailQuestionDef = {
       label: "E-Check / Sicherheitsprüfung",
       hint: "Prüfung der gesamten Anlage — wichtig bei Mieterwechsel",
     },
-    {
-      value: "weiss_nicht",
-      label: "Weiß ich nicht",
-      hint: "Wir schauen es uns beim Termin an",
-    },
   ],
 };
 
@@ -85,11 +80,6 @@ export const ELEKTRO_KAPUTT_Q1: FachdetailQuestionDef = {
       label: "Fehlersuche",
       hint: "Problem unbekannt — wir finden es",
     },
-    {
-      value: "weiss_nicht",
-      label: "Weiß ich nicht",
-      hint: "Wir klären das beim Termin",
-    },
   ],
 };
 
@@ -117,7 +107,6 @@ export const ELEKTRO_FOLLOWUPS: Record<string, FachdetailQuestionDef> = {
         label: "LS-Schalter (kleiner Schalter)",
         hint: "Leitungsschutz — ein schmaler Schalter pro Kreis",
       },
-      { value: "weiss_nicht", label: "Weiß ich nicht", hint: "" },
     ],
   },
   elektro_folge_steckdose: {
@@ -159,7 +148,6 @@ export const ELEKTRO_FOLLOWUPS: Record<string, FachdetailQuestionDef> = {
         label: "Aufputz",
         hint: "Auf der Wand / in Kanal — weniger Eingriff in den Putz",
       },
-      { value: "weiss_nicht", label: "Weiß ich nicht genau", hint: "" },
     ],
   },
 };
@@ -187,11 +175,6 @@ export const SANITAER_Q1: FachdetailQuestionDef = {
       label: "Am Haupthahn / im Keller",
       hint: "Hauptabsperrung oder Zuleitung",
     },
-    {
-      value: "weiss_nicht",
-      label: "Weiß ich nicht genau",
-      hint: "Kein Problem — wir schauen uns das an",
-    },
   ],
 };
 
@@ -211,7 +194,6 @@ export const SANITAER_FOLLOWUPS: Record<string, FachdetailQuestionDef> = {
         label: "Kunststoffrohre",
         hint: "Weiß oder grau, neuere Häuser",
       },
-      { value: "weiss_nicht", label: "Weiß ich nicht genau", hint: "" },
     ],
   },
 };
@@ -223,11 +205,6 @@ export const SANITAER_BAD_Q: FachdetailQuestionDef = {
     "Ein komplettes Bad braucht Fliesen, Sanitär und Elektro — wir koordinieren alle drei Gewerke für dich.",
   inputType: "single",
   options: [
-    {
-      value: "reparatur",
-      label: "Einzelne Reparatur",
-      hint: "Kleines Problem beheben",
-    },
     {
       value: "fliesen",
       label: "Nur Fliesen erneuern",
@@ -248,11 +225,6 @@ export const SANITAER_BAD_Q: FachdetailQuestionDef = {
       value: "komplett",
       label: "Komplett neu",
       hint: "Fliesen + Objekte + Elektro",
-    },
-    {
-      value: "weiss_nicht",
-      label: "Weiß ich nicht genau",
-      hint: "",
     },
   ],
 };
@@ -314,11 +286,6 @@ export const HEIZUNG_Q1: FachdetailQuestionDef = {
       label: "Heizkörper tauschen",
       hint: "Einzelne oder alle Heizkörper erneuern — inkl. Ventil und Thermostat",
     },
-    {
-      value: "weiss_nicht",
-      label: "Weiß ich nicht genau",
-      hint: "Kein Problem — wir schauen uns das an",
-    },
   ],
 };
 
@@ -340,7 +307,6 @@ export const HEIZUNG_FOLLOWUPS: Record<string, FachdetailQuestionDef> = {
         label: "Über 20 Jahre",
         hint: "Älteres System",
       },
-      { value: "weiss_nicht", label: "Weiß ich nicht genau", hint: "" },
     ],
   },
   heizung_folge_wp_vorhaben: {
@@ -395,11 +361,6 @@ export const HEIZUNG_KAPUTT_Q1: FachdetailQuestionDef = {
       label: "Fehlermeldung",
       hint: "Display oder Störungscode",
     },
-    {
-      value: "weiss_nicht",
-      label: "Weiß ich nicht",
-      hint: "Wir schauen es uns an",
-    },
   ],
 };
 
@@ -440,12 +401,6 @@ export const MALER_Q1: FachdetailQuestionDef = {
       hint: "Außenfarbe erneuern oder ausbessern",
       followUpId: "maler_folge_fassade",
     },
-    {
-      value: "weiss_nicht",
-      label: "Weiß ich nicht genau",
-      hint: "",
-      followUpId: null,
-    },
   ],
 };
 
@@ -472,11 +427,6 @@ export const MALER_FOLLOWUPS: Record<string, FachdetailQuestionDef> = {
         label: "Größere Ausbesserungen nötig",
         hint: "Löcher, starke Flecken, loser Putz",
       },
-      {
-        value: "weiss_nicht",
-        label: "Weiß ich nicht genau",
-        hint: "",
-      },
     ],
   },
   maler_folge_fassade: {
@@ -495,11 +445,6 @@ export const MALER_FOLLOWUPS: Record<string, FachdetailQuestionDef> = {
         hint: "Reinigung und Imprägnierung",
         education:
           "Klinker bleibt sichtbar — wir reinigen, imprägnieren oder fassen Fugen gezielt an, statt „über alles zu streichen“.",
-      },
-      {
-        value: "weiss_nicht",
-        label: "Weiß ich nicht",
-        hint: "Wir schauen es uns beim Termin an",
       },
     ],
   },
@@ -553,12 +498,6 @@ export const BODEN_Q1: FachdetailQuestionDef = {
       hint: "Noch kein fertiger Bodenbelag",
       followUpId: null,
     },
-    {
-      value: "weiss_nicht",
-      label: "Weiß ich nicht genau",
-      hint: "",
-      followUpId: null,
-    },
   ],
 };
 
@@ -580,11 +519,6 @@ export const BODEN_FOLLOWUPS: Record<string, FachdetailQuestionDef> = {
         education:
           "Dickbett-Verlegung braucht beim Rückbau mehr Zeit und Werkzeug — wir planen das im Termin mit ein.",
       },
-      {
-        value: "weiss_nicht",
-        label: "Weiß ich nicht genau",
-        hint: "",
-      },
     ],
   },
   boden_folge_laminat: {
@@ -603,11 +537,6 @@ export const BODEN_FOLLOWUPS: Record<string, FachdetailQuestionDef> = {
         hint: "Vollflächig verklebt — Rückbau oft aufwendiger",
         education:
           "Geklebtes Parkett ist aufwendig zu entfernen — oft muss der Untergrund danach geschliffen werden.",
-      },
-      {
-        value: "weiss_nicht",
-        label: "Weiß ich nicht genau",
-        hint: "",
       },
     ],
   },
@@ -656,12 +585,6 @@ export const DACH_Q1: FachdetailQuestionDef = {
       hint: "Dachrinne, Fallrohr, Laubfang oder Anschluss",
       followUpId: null,
     },
-    {
-      value: "weiss_nicht",
-      label: "Weiß ich nicht genau",
-      hint: "",
-      followUpId: null,
-    },
   ],
 };
 
@@ -687,11 +610,6 @@ export const DACH_FOLLOWUPS: Record<string, FachdetailQuestionDef> = {
         hint: "Älteres Dach",
         education:
           "Ab ca. 40 Jahren sind Unterspannbahn, Latten und Dämmung oft mit zu planen — genauer Aufwand sieht man erst nach dem Aufdecken, deshalb kalkulieren wir einen Planungs-Puffer ein.",
-      },
-      {
-        value: "weiss_nicht",
-        label: "Weiß ich nicht genau",
-        hint: "",
       },
     ],
   },
@@ -741,11 +659,6 @@ export const FENSTER_DEFEKT_Q1: FachdetailQuestionDef = {
       label: "Glas gebrochen",
       hint: "Einfach- oder Isolierverglasung",
     },
-    {
-      value: "weiss_nicht",
-      label: "Weiß ich nicht",
-      hint: "Wir prüfen vor Ort",
-    },
   ],
 };
 
@@ -780,12 +693,6 @@ export const GARTEN_Q1: FachdetailQuestionDef = {
       hint: "Garten umgestalten",
       followUpId: "garten_folge_gestaltung",
     },
-    {
-      value: "weiss_nicht",
-      label: "Weiß ich nicht genau",
-      hint: "",
-      followUpId: null,
-    },
   ],
 };
 
@@ -801,7 +708,7 @@ export const GARTEN_FOLLOWUPS: Record<string, FachdetailQuestionDef> = {
         hint: "Intensivpflege",
       },
       {
-        value: "zweiwochentlich",
+        value: "zweimal_monat",
         label: "Alle 2 Wochen",
         hint: "Standard",
       },
@@ -811,9 +718,9 @@ export const GARTEN_FOLLOWUPS: Record<string, FachdetailQuestionDef> = {
         hint: "Grundpflege",
       },
       {
-        value: "einmalig",
-        label: "Einmalig",
-        hint: "Ein Termin — z. B. Frühjahrsputz oder Urlaubsvertretung",
+        value: "saisonal",
+        label: "Saisonal",
+        hint: "Frühjahr & Herbst",
       },
     ],
   },
@@ -838,11 +745,6 @@ export const GARTEN_FOLLOWUPS: Record<string, FachdetailQuestionDef> = {
         hint: "Große Bäume",
         education:
           "Große Bäume brauchen Spezialausrüstung und oft eine Genehmigung der Stadt München — Bearbeitungszeit 2–4 Wochen.",
-      },
-      {
-        value: "weiss_nicht",
-        label: "Weiß ich nicht genau",
-        hint: "",
       },
     ],
   },

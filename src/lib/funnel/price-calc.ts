@@ -239,6 +239,13 @@ const PREISE = {
   },
   hausmeister: {
     monatlich: { min: 320, max: 520, einheit: "pro Monat" },
+    nach_bedarf: { min: 280, max: 480, einheit: "pro Monat" },
+    jahresvertrag: { min: 3500, max: 6200, einheit: "pro Jahr" },
+  },
+  terrasse: {
+    holz: { min: 180, max: 320, einheit: "pro m²" },
+    stein: { min: 120, max: 220, einheit: "pro m²" },
+    beton: { min: 80, max: 140, einheit: "pro m²" },
   },
   abriss: {
     innen: { min: 25, max: 45, einheit: "pro m²" },
@@ -334,6 +341,18 @@ function mapSanitaerFromFachdetails(
   if (state.situation === "notfall" && fd?.sanitaer?.notfallSchwere) {
     return { service: "sanitaer", type: "leck" };
   }
+  if (
+    state.situation === "erneuern" &&
+    b.includes("bad") &&
+    fd?.sanitaer?.badWas &&
+    fd.sanitaer.badWas !== "wanne_dusche"
+  ) {
+    const w = fd.sanitaer.badWas;
+    if (w === "fliesen") return { service: "sanitaer", type: "armatur" };
+    if (w === "objekte") return { service: "sanitaer", type: "armatur" };
+    if (w === "komplett") return { service: "sanitaer", type: "leck" };
+    return { service: "sanitaer", type: "armatur" };
+  }
   const lage = fd?.sanitaer?.lage;
   if (lage === "wand" || lage === "keller") return { service: "sanitaer", type: "leck" };
   if (lage === "sichtbar") return { service: "sanitaer", type: "armatur" };
@@ -367,8 +386,6 @@ function mapElektroFromFachdetails(
         return { service: "elektro", type: "leitungen" };
       case "echeck":
         return { service: "elektro", type: "echeck" };
-      case "weiss_nicht":
-        return { service: "elektro", type: "fehlersuche" };
       default:
         return { service: "elektro", type: "fehlersuche" };
     }
@@ -380,7 +397,6 @@ function mapElektroFromFachdetails(
         return { service: "elektro", type: "fi_schalter" };
       case "strom_weg":
       case "fehlersuche":
-      case "weiss_nicht":
         return { service: "elektro", type: "fehlersuche" };
       case "steckdose":
         return { service: "elektro", type: "steckdose" };
@@ -403,7 +419,6 @@ function mapElektroFromFachdetails(
       return { service: "elektro", type: "fi_schalter" };
     case "strom_weg":
     case "fehlersuche":
-    case "weiss_nicht":
       return { service: "elektro", type: "fehlersuche" };
     default:
       return { service: "elektro", type: "fehlersuche" };
@@ -418,7 +433,7 @@ export function mapToPrice(state: FunnelState): {
   const fd = state.fachdetails;
   const b = (k: string) => bereiche.includes(k);
 
-  if (situation === "gewerbe" || situation === "gastro") {
+  if (situation === "gewerbe") {
     return { service: "", type: "" };
   }
 
@@ -565,13 +580,24 @@ export function mapToPrice(state: FunnelState): {
     return { service: "garten", type: getPflegeByGroesse(state.groesse) };
   }
 
-  if (situation === "neubauen" && b("terrasse")) {
-    return { service: "garten", type: "pflaster" };
+  if (situation === "neubauen" && b("terrasse") && fd?.neubauen?.terrasse) {
+    const mat = fd.neubauen.terrasse;
+    if (mat === "holz" || mat === "stein" || mat === "beton") {
+      return { service: "terrasse", type: mat };
+    }
   }
 
   if (
     situation === "neubauen" &&
-    (b("keller_dg") || b("umbau"))
+    b("umbau") &&
+    fd?.neubauen?.innen === "trennwand"
+  ) {
+    return { service: "trockenbau", type: "wand" };
+  }
+
+  if (
+    situation === "neubauen" &&
+    (b("keller_dg") || (b("umbau") && fd?.neubauen?.innen !== "trennwand"))
   ) {
     return { service: "trockenbau", type: "wand" };
   }
@@ -584,11 +610,17 @@ export function mapToPrice(state: FunnelState): {
     if (b("winter")) {
       return {
         service: "winterdienst",
-        type: state.umfang === "einmalig" ? "einmalig" : "saison",
+        type: "saison",
       };
     }
     if (b("reinigung")) return { service: "reinigung", type: "regelmaessig" };
-    if (b("hausmeister")) return { service: "hausmeister", type: "monatlich" };
+    if (b("hausmeister")) {
+      const u = state.umfang;
+      if (u === "nach_bedarf" || u === "jahresvertrag") {
+        return { service: "hausmeister", type: u };
+      }
+      return { service: "hausmeister", type: "monatlich" };
+    }
   }
 
   if (b("fassade")) return { service: "fassade", type: "anstrich" };
@@ -619,6 +651,7 @@ const GEWERK_LABEL: Record<string, string> = {
   reinigung: "Reinigung",
   winterdienst: "Winterdienst",
   hausmeister: "Hausmeister",
+  terrasse: "Terrasse / Außenfläche",
   abriss: "Abriss",
 };
 
@@ -696,7 +729,16 @@ const TYP_LABEL: Record<string, Record<string, string>> = {
     saison: "Winterdienst Saison",
     einmalig: "Winterdienst einmalig",
   },
-  hausmeister: { monatlich: "Hausmeister monatlich" },
+  hausmeister: {
+    monatlich: "Hausmeister monatlich",
+    nach_bedarf: "Hausmeister nach Bedarf",
+    jahresvertrag: "Hausmeister Jahresvertrag",
+  },
+  terrasse: {
+    holz: "Terrasse Holz / WPC",
+    stein: "Terrasse Naturstein / Fliesen",
+    beton: "Terrasse Betonplatten",
+  },
   heizung_notfall: { ausfall: "Notfall Heizung / Wasser" },
   abriss: {
     innen: "Abriss innen",
@@ -728,10 +770,11 @@ const FALLBACK_MAX = 1800;
 export function getNotdienstGebuehr(state: FunnelState): number {
   if (state.situation !== "notfall") return 0;
   switch (state.dringlichkeit) {
-    case "akut":
+    case "sofort":
       return 150;
-    case "stabil":
+    case "heute":
       return 100;
+    case "diese_woche":
     default:
       return 0;
   }
@@ -783,10 +826,26 @@ export function getBwResultModus(state: FunnelState): "normal" | "zu_komplex" {
   ) {
     return "zu_komplex";
   }
-  if (state.situation === "gewerbe" || state.situation === "gastro") {
+  if (state.situation === "gewerbe") {
     return "zu_komplex";
   }
-  if (state.situation === "neubauen" && state.umfang === "idee") {
+  if (
+    state.situation === "neubauen" &&
+    state.bereiche.includes("anbau")
+  ) {
+    return "zu_komplex";
+  }
+  const nb = state.fachdetails?.neubauen;
+  if (state.situation === "neubauen" && state.bereiche.includes("keller_dg")) {
+    if (nb?.rohbau === "nein" || nb?.deckenhoehe === "niedrig") {
+      return "zu_komplex";
+    }
+  }
+  if (
+    state.situation === "neubauen" &&
+    state.bereiche.includes("umbau") &&
+    (nb?.innen === "durchbruch" || nb?.innen === "grundriss")
+  ) {
     return "zu_komplex";
   }
   if (state.fachdetails?.heizung?.vorhaben === "neu") {
@@ -825,7 +884,7 @@ function getBwAnzeigeModus(
   state: FunnelState,
   result: { mitte: number; min: number; max: number }
 ): BwResultModus {
-  if (state.situation === "notfall" && state.dringlichkeit === "akut") {
+  if (state.situation === "notfall" && state.dringlichkeit === "sofort") {
     return "notfall_akut";
   }
   if (state.bereiche.includes("fassade_daemmung")) {
@@ -837,10 +896,26 @@ function getBwAnzeigeModus(
   ) {
     return "zu_komplex";
   }
-  if (state.situation === "gewerbe" || state.situation === "gastro") {
+  if (state.situation === "gewerbe") {
     return "zu_komplex";
   }
-  if (state.situation === "neubauen" && state.umfang === "idee") {
+  if (
+    state.situation === "neubauen" &&
+    state.bereiche.includes("anbau")
+  ) {
+    return "zu_komplex";
+  }
+  const nb2 = state.fachdetails?.neubauen;
+  if (state.situation === "neubauen" && state.bereiche.includes("keller_dg")) {
+    if (nb2?.rohbau === "nein" || nb2?.deckenhoehe === "niedrig") {
+      return "zu_komplex";
+    }
+  }
+  if (
+    state.situation === "neubauen" &&
+    state.bereiche.includes("umbau") &&
+    (nb2?.innen === "durchbruch" || nb2?.innen === "grundriss")
+  ) {
     return "zu_komplex";
   }
   if (state.fachdetails?.heizung?.vorhaben === "neu") {
@@ -981,7 +1056,7 @@ function withMaybeZeroFallback(
   if (base.istFallback) return base;
   if (!state.situation) return { ...base, istFallback: false };
   if (!options?.preview) {
-    if (state.situation === "notfall" && state.dringlichkeit === "akut") {
+    if (state.situation === "notfall" && state.dringlichkeit === "sofort") {
       return { ...base, istFallback: false };
     }
     if (getBwResultModus(state) === "zu_komplex") {
@@ -1032,7 +1107,7 @@ export function calculatePrice(
     plzFaktor: 1,
     koordinationsRabatt: 1,
     resultModus:
-      state.situation === "notfall" && state.dringlichkeit === "akut"
+      state.situation === "notfall" && state.dringlichkeit === "sofort"
         ? "notfall_akut"
         : "zu_komplex",
     schwellenwertAusgeloest: false,
@@ -1043,7 +1118,7 @@ export function calculatePrice(
     return noResult;
   }
 
-  if (!preview && state.situation === "notfall" && state.dringlichkeit === "akut") {
+  if (!preview && state.situation === "notfall" && state.dringlichkeit === "sofort") {
     return noResult;
   }
 
@@ -1099,7 +1174,7 @@ export function calculatePrice(
   if (
     preview &&
     state.situation === "notfall" &&
-    state.dringlichkeit === "akut" &&
+    state.dringlichkeit === "sofort" &&
     breakdown.length === 0
   ) {
     return {
