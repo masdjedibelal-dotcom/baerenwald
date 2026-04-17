@@ -20,7 +20,7 @@ export const LEISTUNGEN: LeistungRoute[] = [
     slug: "badezimmer-sanierung",
     label: "Neues Bad",
     icon: "🚿",
-    kurz: "Bad renovieren oder komplett neu",
+    kurz: "Bad modernisieren oder komplett neu",
     hint: "Altes Bad raus, neues rein — oder nur einzelne Teile erneuern",
   },
   {
@@ -135,7 +135,7 @@ export const RATGEBER: RatgeberRoute[] = [
   },
   {
     slug: "bad-renovieren-ablauf",
-    label: "Bad renovieren — Schritt für Schritt",
+    label: "Bad modernisieren — Schritt für Schritt",
   },
   {
     slug: "fenster-tauschen-kosten",

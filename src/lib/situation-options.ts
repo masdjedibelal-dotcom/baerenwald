@@ -11,7 +11,7 @@ export const SITUATION_OPTIONS: {
 }[] = [
   {
     id: "renovierung",
-    label: "Ich möchte renovieren",
+    label: "Ich möchte Zuhause erneuern",
     hint: "Wände streichen, neuer Boden, Bad, Küche auffrischen",
     tag: "Mehrere Leistungen",
     tagType: "multi",

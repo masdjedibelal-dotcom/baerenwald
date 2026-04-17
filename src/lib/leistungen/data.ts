@@ -76,7 +76,7 @@ export const LEISTUNGEN_DATA: Record<string, LeistungsData> = {
     label: "Neues Bad",
     headline: "Neues Bad in München —\naus einer Hand geplant",
     subline:
-      "Bad renovieren oder komplett neu. Wir kümmern uns um Planung, Termine und alle Handwerker — du hast nur einen Ansprechpartner.",
+      "Bad modernisieren oder komplett neu. Wir kümmern uns um Planung, Termine und alle Handwerker — du hast nur einen Ansprechpartner.",
     beschreibung:
       "Ein neues Bad braucht mehrere Handwerker — jemand für die Fliesen, jemand für die Leitungen, jemand für den Strom. Das kostet normalerweise viel Nerven beim Koordinieren. Bei uns gibt es nur einen Ansprechpartner. Wir kümmern uns um alles.",
     wasWirMachen: [
@@ -509,7 +509,7 @@ export const LEISTUNGEN_DATA: Record<string, LeistungsData> = {
       "Sturmschäden reparieren",
       "Dachfenster einbauen",
       "Regenrinnen reparieren oder ersetzen",
-      "Dach komplett sanieren und neu decken",
+      "Dach komplett erneuern und neu decken",
     ],
     preisVon: 80,
     preisBis: 180,

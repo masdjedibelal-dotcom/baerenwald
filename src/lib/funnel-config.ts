@@ -44,7 +44,7 @@ export const SHARED_PLZ_STEP: FunnelStep = {
 const STEPS_RENOVIERUNG: FunnelStep[] = [
   {
     id: "renov_bereiche",
-    question: "Welche Bereiche willst du renovieren?",
+    question: "Welche Bereiche willst du erneuern?",
     inputType: "tiles-multi",
     options: [
       {

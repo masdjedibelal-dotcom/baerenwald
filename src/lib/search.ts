@@ -2,6 +2,9 @@ import type { Situation } from "@/lib/funnel/types";
 import { LEISTUNGEN } from "@/lib/routes";
 
 const SEARCH_MAP: Record<string, Situation> = {
+  /** Legacy-/Umgangssprache → gleicher Rechner-Flow wie „Zuhause erneuern“ */
+  renovieren: "erneuern",
+  sanieren: "erneuern",
   streichen: "erneuern",
   tapezieren: "erneuern",
   farbe: "erneuern",
