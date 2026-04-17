@@ -106,12 +106,6 @@ function isSituation(x: string): x is Situation {
   return (BW_FUNNEL_STEP1_ORDER as readonly string[]).includes(x);
 }
 
-const BW_TAG_CLASS: Record<"multi" | "abo" | "notfall", string> = {
-  multi: "bg-blue-50 text-blue-800",
-  abo: "bg-green-50 text-green-800",
-  notfall: "bg-amber-50 text-amber-900",
-};
-
 function asLibOpt(o: FunnelStepOption): LibStepOption {
   return {
     value: o.value,
@@ -190,6 +184,8 @@ function FunnelRechnerInner() {
       state.bereiche,
       state.fachdetails?.heizung?.vorhaben,
       state.fachdetails?.garten?.baumgroesse,
+      state.fachdetails?.maler?.was,
+      state.fachdetails?.maler?.fassade,
     ]
   );
 
@@ -962,6 +958,10 @@ function FunnelRechnerInner() {
                 onChange={(value, sel) => {
                   if (multi && sel && funnelOpt.direktKomplex) {
                     setBereiche([value]);
+                    if (value === "fassade_daemmung") {
+                      setSchimmelBeratung(false);
+                      return;
+                    }
                     setSchimmelBeratung(true);
                     setScreen("beratung-lead");
                     return;
@@ -1107,34 +1107,18 @@ function FunnelRechnerInner() {
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               {BW_FUNNEL_STEP1_OPTIONS.map((opt) => {
                 const active = state.situation === opt.id;
-                const tagType = opt.tagType;
-                const tagClass = tagType ? BW_TAG_CLASS[tagType] : "";
                 return (
                   <button
                     key={opt.id}
                     type="button"
                     onClick={() => setSituation(opt.id)}
-                    className={cn(
-                      "funnel-tile",
-                      active && "selected",
-                      opt.highlight && "funnel-tile--notfall-highlight"
-                    )}
+                    className={cn("funnel-tile", active && "selected")}
                   >
                     <span className="funnel-tile-emoji" aria-hidden>
                       {opt.emoji}
                     </span>
                     <span className="funnel-tile-label">{opt.label}</span>
                     <span className="funnel-tile-hint">{opt.hint}</span>
-                    {opt.tag && tagType ? (
-                      <span
-                        className={cn(
-                          "mt-1.5 inline-block rounded-lg px-2 py-0.5 text-[10px] font-medium",
-                          tagClass
-                        )}
-                      >
-                        {opt.tag}
-                      </span>
-                    ) : null}
                   </button>
                 );
               })}

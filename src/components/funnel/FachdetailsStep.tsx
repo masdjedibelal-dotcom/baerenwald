@@ -21,7 +21,7 @@ import {
   DACH_FOLLOWUPS,
   DACH_Q1,
   ELEKTRO_FOLLOWUPS,
-  ELEKTRO_Q1,
+  getElektroQ1ForSituation,
   FENSTER_Q1,
   GARTEN_FOLLOWUPS,
   GARTEN_Q1,
@@ -29,7 +29,6 @@ import {
   HEIZUNG_KAPUTT_Q1,
   HEIZUNG_Q1,
   FENSTER_DEFEKT_Q1,
-  KUECHE_Q1,
   MALER_FOLLOWUPS,
   MALER_Q1,
   type FachdetailOptionDef,
@@ -59,7 +58,6 @@ function asLibOptFromFach(o: FachdetailOptionDef): LibStepOption {
 
 const GEWERK_EMOJI: Record<FachdetailGewerkKey, string> = {
   sanitaer: "🚿",
-  kueche: "🍳",
   heizung: "🔥",
   elektro: "⚡",
   fenster: "🪟",
@@ -71,7 +69,6 @@ const GEWERK_EMOJI: Record<FachdetailGewerkKey, string> = {
 
 const GEWERK_LABEL: Record<FachdetailGewerkKey, string> = {
   sanitaer: "Sanitär & Bad",
-  kueche: "Küche",
   heizung: "Heizung",
   elektro: "Elektro",
   fenster: "Fenster",
@@ -117,13 +114,11 @@ function getFachdetailIntroQuestionTitle(
   }
   switch (gewerk) {
     case "elektro":
-      return ELEKTRO_Q1.title;
+      return getElektroQ1ForSituation(state.situation).title;
     case "sanitaer":
       return SANITAER_Q1.title;
     case "heizung":
       return HEIZUNG_Q1.title;
-    case "kueche":
-      return KUECHE_Q1.title;
     case "maler":
       return MALER_Q1.title;
     case "boden":
@@ -335,15 +330,20 @@ export function FachdetailsStep({
     setEduKeys((m) => ({ ...m, [key]: !m[key] }));
   }, []);
 
+  const elektroQ1 = useMemo(
+    () => getElektroQ1ForSituation(state.situation),
+    [state.situation]
+  );
+
   const elektroFollowQ = useMemo(() => {
     if (isNotfall) return null;
     const p = fd.elektro?.problem;
     if (!p) return null;
-    const opt = ELEKTRO_Q1.options.find((o) => o.value === p);
+    const opt = elektroQ1.options.find((o) => o.value === p);
     const id = opt?.followUpId;
     if (!id) return null;
     return ELEKTRO_FOLLOWUPS[id] ?? null;
-  }, [fd.elektro?.problem, isNotfall]);
+  }, [fd.elektro?.problem, isNotfall, elektroQ1]);
 
   const sanFollowQ = useMemo(() => {
     if (isNotfall) return null;
@@ -406,8 +406,6 @@ export function FachdetailsStep({
     state.situation === "kaputt" &&
     b.includes("fenster_tuer") &&
     !b.includes("fenster");
-
-  const needKueche = b.includes("kueche");
 
   const erneuernBad = state.situation === "erneuern" && b.includes("bad");
 
@@ -504,7 +502,7 @@ export function FachdetailsStep({
             />
           ) : !fd.elektro?.problem ? (
             <SingleQuestionBlock
-              q={ELEKTRO_Q1}
+              q={elektroQ1}
               selected={fd.elektro?.problem}
               educationOpen={Boolean(eduKeys.elektro_q1)}
               onToggleEdu={() => toggleEdu("elektro_q1")}
@@ -1007,24 +1005,6 @@ export function FachdetailsStep({
                   },
                 });
               }
-            }}
-          />
-        </section>
-      ) : null}
-
-      {gewerk === "kueche" && needKueche ? (
-        <section className="space-y-3">
-          <SingleQuestionBlock
-            q={KUECHE_Q1}
-            selected={fd.kueche?.vorhaben}
-            educationOpen={Boolean(eduKeys.kueche_q1)}
-            onToggleEdu={() => toggleEdu("kueche_q1")}
-            optionEduOpen={eduKeys}
-            onToggleOptionEdu={toggleEdu}
-            onSelect={(value) => {
-              onChange({
-                kueche: { vorhaben: value },
-              });
             }}
           />
         </section>

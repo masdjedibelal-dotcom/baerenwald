@@ -370,6 +370,8 @@ function ZuKomplexScreen({
   const submitDisabled =
     !telTrim || !datenschutz || submitStatus === "loading";
 
+  const fassadeDaemmungKomplex = state.bereiche.includes("fassade_daemmung");
+
   return (
     <div className={cn("komplex-screen", className)}>
       <div className="komplex-header">
@@ -380,8 +382,17 @@ function ZuKomplexScreen({
           Dein Projekt startet ab ca. {formatCurrencyEUR(abMin)}.
         </h2>
         <p className="komplex-sub">
-          Für einen seriösen Preis kommen wir um einen Vor-Ort-Termin nicht
-          herum.
+          {fassadeDaemmungKomplex ? (
+            <>
+              Fassadendämmung planen wir persönlich mit dir — ein kurzes
+              Gespräch hilft uns, den nächsten Schritt festzulegen.
+            </>
+          ) : (
+            <>
+              Für einen seriösen Preis kommen wir um einen Vor-Ort-Termin nicht
+              herum.
+            </>
+          )}
         </p>
       </div>
 
@@ -649,12 +660,6 @@ export function BwResultScreen({
           Basiert auf Münchner Marktpreisen 2026 — verbindliches
           Festpreisangebot nach Vor-Ort-Termin.
         </p>
-      ) : null}
-
-      {onReset ? (
-        <button type="button" className="angaben-aendern-btn" onClick={onReset}>
-          ← Angaben ändern
-        </button>
       ) : null}
 
       {showVergleichHint ? (
