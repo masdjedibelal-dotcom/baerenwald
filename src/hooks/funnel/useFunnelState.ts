@@ -61,7 +61,12 @@ export type BwFunnelAction =
   | { type: "SET_KUNDENTYP"; value: Kundentyp | null }
   | { type: "RESET" };
 
-/** Vollständiger Default — muss alle `FunnelState`-Felder setzen (inkl. `showOmitHint`). */
+/**
+ * Vollständiger Default für den Bärenwald-Rechner.
+ * Regel: Neue Keys in `FunnelState` entweder hier mit Default belegen **oder** in
+ * `types.ts` als optional (`?`) markieren und an Lesestellen mit `??` absichern —
+ * sonst riskieren Hydration/Partials und Netlify-Builds fehlende Felder.
+ */
 export const BW_FUNNEL_INITIAL_STATE: FunnelState = {
   situation: null,
   bereiche: [],
@@ -101,6 +106,8 @@ export function createInitialBwFunnelState(): FunnelState {
     breakdown: [],
     fachdetails: {},
     photos: [],
+    badAusstattung: null,
+    showOmitHint: false,
   };
 }
 

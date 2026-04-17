@@ -104,8 +104,8 @@ export interface FunnelState {
   umfangFaktor: number;
   groesse: number | null;
   groesseEinheit: "qm" | "stueck" | "meter" | null;
-  /** Bad-Sanierung: Material-/Ausstattungsstufe (nach m², vor Fachdetails) */
-  badAusstattung: "standard" | "komfort" | "gehoben" | null;
+  /** Bad-Sanierung: Material-/Ausstattungsstufe (nach m², vor Fachdetails). Optional: fehlender Key = wie `null`. */
+  badAusstattung?: "standard" | "komfort" | "gehoben" | null;
   plz: string;
   zeitraum: Zeitraum | null;
   priceMin: number;
