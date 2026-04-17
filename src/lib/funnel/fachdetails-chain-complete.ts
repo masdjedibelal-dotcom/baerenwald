@@ -4,12 +4,12 @@ import {
   DACH_FOLLOWUPS,
   DACH_Q1,
   ELEKTRO_FOLLOWUPS,
-  ELEKTRO_Q1,
   GARTEN_FOLLOWUPS,
   GARTEN_Q1,
   HEIZUNG_FOLLOWUPS,
   MALER_FOLLOWUPS,
   MALER_Q1,
+  getElektroQ1ForSituation,
 } from "@/lib/funnel/fachdetails-questions";
 import type { FachdetailGewerkKey } from "@/lib/funnel/fachdetails-notfall";
 import type { FachdetailsState, Situation } from "@/lib/funnel/types";
@@ -33,7 +33,9 @@ export function isFachdetailGewerkChainComplete(
     if (situationNotfall) return null;
     const p = fd.elektro?.problem;
     if (!p) return null;
-    const opt = ELEKTRO_Q1.options.find((o) => o.value === p);
+    const opt = getElektroQ1ForSituation(situation).options.find(
+      (o) => o.value === p
+    );
     const id = opt?.followUpId;
     if (!id) return null;
     return ELEKTRO_FOLLOWUPS[id] ?? null;
@@ -153,9 +155,6 @@ export function isFachdetailGewerkChainComplete(
         return Boolean(fd.fenster?.defekt);
       }
       return Boolean(fd.fenster?.ausstattung);
-    }
-    case "kueche": {
-      return Boolean(fd.kueche?.vorhaben);
     }
     case "garten": {
       if (!fd.garten?.was) return false;

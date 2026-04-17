@@ -361,13 +361,6 @@ export const SITUATIONEN_CONFIG: Record<
             triggerGewerke: ["bad", "fliesen", "sanitaer"],
           },
           {
-            value: "kueche",
-            label: "Küche",
-            hint: "Fronten, Einbauküche, Modernisierung",
-            emoji: "🍳",
-            triggerGewerke: ["kueche", "boden", "maler"],
-          },
-          {
             value: "boden",
             label: "Boden",
             hint: "Laminat, Parkett, Vinyl, Fliesen",
@@ -420,9 +413,17 @@ export const SITUATIONEN_CONFIG: Record<
           {
             value: "fassade",
             label: "Fassade",
-            hint: "Anstrich, Dämmung, WDVS",
+            hint: "Fassade streichen oder reinigen",
             emoji: "🧱",
-            triggerGewerke: ["fassade", "daemmung"],
+            triggerGewerke: ["fassade"],
+          },
+          {
+            value: "fassade_daemmung",
+            label: "Fassadendämmung / WDVS",
+            hint: "Planen wir persönlich mit dir — kurz absprechen",
+            emoji: "🏠",
+            direktKomplex: true,
+            triggerGewerke: [],
           },
         ],
       },
@@ -1025,13 +1026,12 @@ export const BW_FUNNEL_STEP_ZUSTAND: FunnelStep = {
 };
 
 /** Welche Zustands-Variante (Frage + Kacheln) passt zu den Bereichen? */
-export type ZustandStepVariant = "bad" | "waende" | "boden" | "dach";
+export type ZustandStepVariant = "waende" | "boden" | "dach";
 
 export function getZustandStepVariantFromBereiche(
   bereiche: string[]
 ): ZustandStepVariant | null {
   const b = new Set(bereiche);
-  if (b.has("bad")) return "bad";
   if (b.has("waende") || b.has("maler") || b.has("streichen") || b.has("waende_boeden")) {
     return "waende";
   }
@@ -1042,8 +1042,6 @@ export function getZustandStepVariantFromBereiche(
 
 function zustandVariantQuestion(variant: ZustandStepVariant): string {
   switch (variant) {
-    case "bad":
-      return "Wie ist der aktuelle Zustand des Bades?";
     case "waende":
       return "Wie sind die Wände aktuell?";
     case "boden":
@@ -1057,33 +1055,6 @@ function zustandVariantQuestion(variant: ZustandStepVariant): string {
 
 function zustandVariantOptions(variant: ZustandStepVariant): StepOption[] {
   switch (variant) {
-    case "bad":
-      return [
-        {
-          value: "gut",
-          label: "Gepflegt",
-          hint: "glatt und sauber, alles funktioniert",
-          faktor: 1.0,
-        },
-        {
-          value: "mittel",
-          label: "Normale Abnutzung",
-          hint: "kleinere Risse oder Flecken",
-          faktor: 1.4,
-        },
-        {
-          value: "schlecht",
-          label: "Sanierungsbedürftig",
-          hint: "größere Schäden oder stark veraltet",
-          faktor: 2.0,
-        },
-        {
-          value: "unknown",
-          label: "Weiß ich nicht",
-          hint: "Kein Problem — wir rechnen mit einem Durchschnittswert",
-          faktor: 1.1,
-        },
-      ];
     case "waende":
       return [
         {
@@ -1229,7 +1200,7 @@ export function shouldIncludeZugaenglichkeitStep(
   );
 }
 
-/** Zustand: nur „erneuern“ bei Bad, Wänden oder Boden. */
+/** Zustand: nur „erneuern“ bei Wänden oder Boden (ohne Bad). */
 export function shouldIncludeZustandStep(
   situation: Situation,
   bereiche: string[],
@@ -1243,7 +1214,7 @@ export function shouldIncludeZustandStep(
   if (situation === "kaputt") return false;
   if (situation !== "erneuern") return false;
   const b = bereiche;
-  return b.includes("bad") || b.includes("waende") || b.includes("boden");
+  return b.includes("waende") || b.includes("boden");
 }
 
 function insertBeforeGroesse(
@@ -1352,7 +1323,7 @@ export function getResolvedStepsForSituation(
 
   steps = steps
     .filter((s) => !shouldFilterGroesseStep(situation!, bereiche, s))
-    .map((s) => applyGroesseStepCopy(s, situation!, bereiche));
+    .map((s) => applyGroesseStepCopy(s, situation!, bereiche, fachdetails));
 
   return steps;
 }

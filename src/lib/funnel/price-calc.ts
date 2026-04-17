@@ -176,6 +176,7 @@ const PREISE = {
     parkett_schleifen: { min: 22, max: 42, einheit: "pro m²" },
     vinyl: { min: 35, max: 52, einheit: "pro m²" },
     fliesen: { min: 72, max: 102, einheit: "pro m²" },
+    balkon_belag: { min: 72, max: 102, einheit: "pro m²" },
     teppich: { min: 22, max: 35, einheit: "pro m²" },
   },
   dach: {
@@ -188,7 +189,6 @@ const PREISE = {
   },
   fassade: {
     anstrich: { min: 38, max: 58, einheit: "pro m²" },
-    daemmung: { min: 130, max: 200, einheit: "pro m²" },
     klinker: { min: 45, max: 70, einheit: "pro m²" },
   },
   fenster: {
@@ -243,9 +243,6 @@ const PREISE = {
   abriss: {
     innen: { min: 25, max: 45, einheit: "pro m²" },
     komplett: { min: 8000, max: 18000, einheit: "pauschal" },
-  },
-  kueche: {
-    montage: { min: 400, max: 900, einheit: "pauschal" },
   },
 } as const;
 
@@ -358,22 +355,58 @@ function mapElektroFromFachdetails(
   ) {
     return null;
   }
+
+  const situation = state.situation;
+
+  if (situation === "erneuern") {
+    switch (ep) {
+      case "sicherungskasten":
+        return { service: "elektro", type: "sicherungskasten" };
+      case "leitungen":
+      case "neue_leitungen":
+        return { service: "elektro", type: "leitungen" };
+      case "echeck":
+        return { service: "elektro", type: "echeck" };
+      case "weiss_nicht":
+        return { service: "elektro", type: "fehlersuche" };
+      default:
+        return { service: "elektro", type: "fehlersuche" };
+    }
+  }
+
+  if (situation === "kaputt") {
+    switch (ep) {
+      case "sicherung":
+        return { service: "elektro", type: "fi_schalter" };
+      case "strom_weg":
+      case "fehlersuche":
+      case "weiss_nicht":
+        return { service: "elektro", type: "fehlersuche" };
+      case "steckdose":
+        return { service: "elektro", type: "steckdose" };
+      default:
+        return { service: "elektro", type: "fehlersuche" };
+    }
+  }
+
   switch (ep) {
     case "sicherungskasten":
       return { service: "elektro", type: "sicherungskasten" };
     case "echeck":
       return { service: "elektro", type: "echeck" };
+    case "leitungen":
     case "neue_leitungen":
       return { service: "elektro", type: "leitungen" };
     case "steckdose":
       return { service: "elektro", type: "steckdose" };
     case "sicherung":
-      return {
-        service: "elektro",
-        type: fd.elektro?.folge === "ls" ? "steckdose" : "fi_schalter",
-      };
+      return { service: "elektro", type: "fi_schalter" };
+    case "strom_weg":
+    case "fehlersuche":
+    case "weiss_nicht":
+      return { service: "elektro", type: "fehlersuche" };
     default:
-      return { service: "elektro", type: "steckdose" };
+      return { service: "elektro", type: "fehlersuche" };
   }
 }
 
@@ -401,9 +434,14 @@ export function mapToPrice(state: FunnelState): {
     }
   }
 
+  if (b("fassade_daemmung")) {
+    return { service: "", type: "" };
+  }
+
   if (b("boden")) {
     const aktuell = fd?.boden?.aktuell;
     if (!aktuell) return { service: "boden", type: "laminat" };
+    if (aktuell === "balkon_belag") return { service: "boden", type: "balkon_belag" };
     if (aktuell === "fliesen") return { service: "boden", type: "fliesen" };
     if (aktuell === "parkett_schleifen") {
       return { service: "boden", type: "parkett_schleifen" };
@@ -422,7 +460,12 @@ export function mapToPrice(state: FunnelState): {
     (b("feuchtigkeit_schimmel") && fd?.maler?.was)
   ) {
     const was = fd?.maler?.was;
-    if (was === "fassade") return { service: "fassade", type: "anstrich" };
+    if (was === "fassade") {
+      const sub = fd?.maler?.fassade;
+      if (sub === "daemmung") return { service: "", type: "" };
+      if (sub === "klinker") return { service: "fassade", type: "klinker" };
+      return { service: "fassade", type: "anstrich" };
+    }
     if (was === "komplett") return { service: "maler", type: "komplett" };
     if (was === "waende_decke") return { service: "maler", type: "waende_decke" };
     if (was === "tapezieren") return { service: "maler", type: "tapezieren" };
@@ -548,10 +591,6 @@ export function mapToPrice(state: FunnelState): {
     if (b("hausmeister")) return { service: "hausmeister", type: "monatlich" };
   }
 
-  if (b("kueche") && fd?.kueche?.vorhaben) {
-    return { service: "kueche", type: "montage" };
-  }
-
   if (b("fassade")) return { service: "fassade", type: "anstrich" };
 
   if (b("fenster") || b("fenster_tueren") || b("fenster_tuer")) {
@@ -581,7 +620,6 @@ const GEWERK_LABEL: Record<string, string> = {
   winterdienst: "Winterdienst",
   hausmeister: "Hausmeister",
   abriss: "Abriss",
-  kueche: "Küche",
 };
 
 const TYP_LABEL: Record<string, Record<string, string>> = {
@@ -593,7 +631,7 @@ const TYP_LABEL: Record<string, Record<string, string>> = {
   },
   elektro: {
     steckdose: "Steckdose / Punkt",
-    fi_schalter: "FI / Sicherungskasten",
+    fi_schalter: "Sicherung / FI (Einsatz)",
     fehlersuche: "Fehlersuche",
     leitungen: "Leitungen",
     sicherungskasten: "Sicherungskasten modernisieren",
@@ -623,6 +661,7 @@ const TYP_LABEL: Record<string, Record<string, string>> = {
     parkett_schleifen: "Parkett abschleifen & versiegeln",
     vinyl: "Vinyl",
     fliesen: "Fliesen",
+    balkon_belag: "Balkon / Terrasse Belag",
     teppich: "Teppich",
   },
   heizung: {
@@ -642,7 +681,6 @@ const TYP_LABEL: Record<string, Record<string, string>> = {
   },
   fassade: {
     anstrich: "Fassade Anstrich",
-    daemmung: "Fassade Dämmung",
     klinker: "Klinker / Verblendung",
   },
   fenster: {
@@ -664,7 +702,6 @@ const TYP_LABEL: Record<string, Record<string, string>> = {
     innen: "Abriss innen",
     komplett: "Abriss komplett",
   },
-  kueche: { montage: "Küchenmontage" },
   trockenbau: { wand: "Trockenbau Wand", decke: "Trockenbau Decke" },
 };
 
@@ -737,6 +774,15 @@ function getFallback(state: FunnelState): {
 
 /** Frühe Szenarien ohne Preis — blendet z. B. Zustand/Zugänglichkeit aus. */
 export function getBwResultModus(state: FunnelState): "normal" | "zu_komplex" {
+  if (state.bereiche.includes("fassade_daemmung")) {
+    return "zu_komplex";
+  }
+  if (
+    state.fachdetails?.maler?.was === "fassade" &&
+    state.fachdetails?.maler?.fassade === "daemmung"
+  ) {
+    return "zu_komplex";
+  }
   if (state.situation === "gewerbe" || state.situation === "gastro") {
     return "zu_komplex";
   }
@@ -781,6 +827,15 @@ function getBwAnzeigeModus(
 ): BwResultModus {
   if (state.situation === "notfall" && state.dringlichkeit === "akut") {
     return "notfall_akut";
+  }
+  if (state.bereiche.includes("fassade_daemmung")) {
+    return "zu_komplex";
+  }
+  if (
+    state.fachdetails?.maler?.was === "fassade" &&
+    state.fachdetails?.maler?.fassade === "daemmung"
+  ) {
+    return "zu_komplex";
   }
   if (state.situation === "gewerbe" || state.situation === "gastro") {
     return "zu_komplex";
@@ -849,6 +904,15 @@ function computePriceCore(state: FunnelState): {
     multiplier = groesse;
   } else if (einheit.includes("Stück") && state.groesseEinheit === "stueck") {
     multiplier = Math.max(1, groesse);
+  } else if (
+    service === "elektro" &&
+    type === "steckdose" &&
+    einheit.includes("Punkt")
+  ) {
+    const f = state.fachdetails?.elektro?.folge;
+    if (f === "einzeln") multiplier = 1.5;
+    else if (f === "mehrere") multiplier = 4;
+    else if (f === "viele") multiplier = 6;
   }
 
   const rawMin = basis.min * multiplier;

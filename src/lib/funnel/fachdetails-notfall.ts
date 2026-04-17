@@ -70,7 +70,6 @@ export const FACHDETAILS_NOTFALL = {
 /** Reihenfolge für max. 2 Fachdetail-Blöcke (höchster Einfluss zuerst). */
 export const FACHDETAILS_PRIORITAET = [
   "sanitaer",
-  "kueche",
   "heizung",
   "elektro",
   "fenster",
@@ -95,8 +94,6 @@ export function bereichMatchesFachdetailGewerk(
         s.has("sanitaer") ||
         s.has("feuchtigkeit_schimmel")
       );
-    case "kueche":
-      return s.has("kueche");
     case "heizung":
       return s.has("heizung");
     case "elektro":

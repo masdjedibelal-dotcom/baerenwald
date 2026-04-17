@@ -31,6 +31,7 @@ export const LEISTUNGS_LABELS: Record<string, string> = {
   "boden.parkett_schleifen": "Parkett abschleifen & versiegeln",
   "boden.vinyl": "Vinyl / Designboden",
   "boden.fliesen": "Fliesen verlegen",
+  "boden.balkon_belag": "Balkon / Terrasse Belag",
   "boden.teppich": "Teppich verlegen",
   "bad.fliesen": "Bad fliesen",
   "bad.komplett": "Bad komplett",
@@ -50,12 +51,9 @@ export const LEISTUNGS_LABELS: Record<string, string> = {
   "dach.komplett": "Dach sanieren",
   "dach.regenrinne": "Regenrinne",
   "fassade.anstrich": "Fassade streichen",
-  "fassade.daemmung": "Fassade / Dämmung",
   "fenster.standard": "Fenster Standard",
   "fenster.premium": "Fenster Premium",
   "elektro.leitungen": "Elektro — Leitungen",
-  "kueche.aufbau": "Küche Montage",
-  "kueche.montage": "Küche Montage",
   "ausbau.umbau": "Ausbau / Umbau",
   "terrasse.aussen": "Terrasse / Außen",
   "gartenpflege.saison": "Gartenpflege",
@@ -76,8 +74,6 @@ const GEWERK_SERVICE_SLUG: Record<string, string> = {
   Bad: "bad",
   Heizung: "heizung",
   Dach: "dach",
-  Küche: "kueche",
-  Kueche: "kueche",
   Fassade: "fassade",
   Fenster: "fenster",
   Reinigung: "reinigung",
@@ -173,9 +169,6 @@ function beschreibungToTypeSlug(beschreibung: string, gewerk: string): string {
     if (b.includes("pflaster") || b.includes("terrasse")) return "pflaster";
     return "pflege_mittel";
   }
-  if (gewerk === "Küche" || gewerk === "Kueche") {
-    return "aufbau";
-  }
   if (gewerk === "Fenster") {
     if (b.includes("premium")) return "premium";
     return "standard";
@@ -206,6 +199,7 @@ function beschreibungToTypeSlug(beschreibung: string, gewerk: string): string {
   if (b.includes("laminat")) return "laminat";
   if (b.includes("parkett")) return "parkett";
   if (b.includes("vinyl")) return "vinyl";
+  if (b.includes("balkon") || b.includes("terrasse belag")) return "balkon_belag";
   if (b.includes("fliesen boden")) return "fliesen";
   if (b.includes("fliesen")) return "fliesen";
   if (b.includes("teppich")) return "teppich";

@@ -51,7 +51,4 @@ export {
   BW_FUNNEL_STEP1_ORDER,
 } from "@/lib/funnel/situation-options";
 
-export type {
-  BwFunnelStep1Option,
-  BwFunnelStep1TagType,
-} from "@/lib/funnel/situation-options";
+export type { BwFunnelStep1Option } from "@/lib/funnel/situation-options";

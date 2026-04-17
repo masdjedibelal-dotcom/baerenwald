@@ -43,7 +43,7 @@ export function defaultTileIcon(): ReactNode {
 }
 
 export function tileIconForStepValue(value: string): ReactNode {
-  if (value.includes("bad") || value.includes("kueche"))
+  if (value.includes("bad"))
     return (
       <I className="size-4">
         <path

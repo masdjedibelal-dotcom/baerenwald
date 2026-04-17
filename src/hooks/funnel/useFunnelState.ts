@@ -234,10 +234,6 @@ function bwFunnelReducer(
             p.fenster !== undefined
               ? { ...state.fachdetails.fenster, ...p.fenster }
               : state.fachdetails.fenster,
-          kueche:
-            p.kueche !== undefined
-              ? { ...state.fachdetails.kueche, ...p.kueche }
-              : state.fachdetails.kueche,
         },
       };
     }

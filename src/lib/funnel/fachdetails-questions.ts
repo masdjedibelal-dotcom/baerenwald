@@ -3,6 +3,8 @@
  * UI-Logik in {@link FachdetailsStep}.
  */
 
+import type { Situation } from "@/lib/funnel/types";
+
 export type FachdetailOptionDef = {
   value: string;
   label: string;
@@ -23,27 +25,48 @@ export type FachdetailQuestionDef = {
   options: FachdetailOptionDef[];
 };
 
-export const ELEKTRO_Q1: FachdetailQuestionDef = {
-  id: "elektro_problem",
-  title: "Was ist das Problem?",
-  education:
-    "Ein FI-Schalter der auslöst kann auf einen Erdschluss hinweisen — das sollte schnell geprüft werden.",
+/** Elektro bei Situation „erneuern“ — Modernisierung / Ausbau */
+export const ELEKTRO_ERNEUERN_Q1: FachdetailQuestionDef = {
+  id: "elektro_erneuern",
+  title: "Was soll erneuert werden?",
   inputType: "single",
   options: [
     {
       value: "sicherungskasten",
       label: "Sicherungskasten modernisieren",
-      hint: "Komplette Erneuerung auf aktuellen FI-Schalter-Standard — Pflicht bei älteren Anlagen",
+      hint: "Komplette Erneuerung auf aktuellen FI-Standard — Pflicht bei älteren Anlagen",
+    },
+    {
+      value: "leitungen",
+      label: "Neue Leitungen / Steckdosen",
+      hint: "Erweiterung oder Erneuerung der Elektrik",
+      followUpId: "elektro_folge_leitungen",
     },
     {
       value: "echeck",
       label: "E-Check / Sicherheitsprüfung",
-      hint: "Prüfung der gesamten Elektroanlage — wichtig bei Mieterwechsel und für die Versicherung",
+      hint: "Prüfung der gesamten Anlage — wichtig bei Mieterwechsel",
     },
+    {
+      value: "weiss_nicht",
+      label: "Weiß ich nicht",
+      hint: "Wir schauen es uns beim Termin an",
+    },
+  ],
+};
+
+/** Elektro bei Situation „kaputt“ — Störungen / Defekte */
+export const ELEKTRO_KAPUTT_Q1: FachdetailQuestionDef = {
+  id: "elektro_kaputt",
+  title: "Was ist das Problem?",
+  education:
+    "Ein FI-Schalter, der auslöst, kann auf einen Erdschluss hinweisen — das sollte schnell geprüft werden.",
+  inputType: "single",
+  options: [
     {
       value: "sicherung",
       label: "Sicherung fliegt raus",
-      hint: "Schutzschalter löst wiederholt aus",
+      hint: "FI oder LS-Schalter löst aus",
       followUpId: "elektro_folge_sicherung",
     },
     {
@@ -58,41 +81,48 @@ export const ELEKTRO_Q1: FachdetailQuestionDef = {
       followUpId: "elektro_folge_steckdose",
     },
     {
-      value: "neue_leitungen",
-      label: "Neue Leitungen / Nachrüsten",
-      hint: "Erweiterung oder neue Installation",
-      followUpId: "elektro_folge_leitungen",
+      value: "fehlersuche",
+      label: "Fehlersuche",
+      hint: "Problem unbekannt — wir finden es",
     },
     {
       value: "weiss_nicht",
-      label: "Weiß ich nicht genau",
-      hint: "Kein Problem — wir schauen uns das beim Termin an",
+      label: "Weiß ich nicht",
+      hint: "Wir klären das beim Termin",
     },
   ],
 };
 
+/** Frageblock Elektro je Situation (Notfall nutzt FACHDETAILS_NOTFALL im Step). */
+export function getElektroQ1ForSituation(
+  situation: Situation | null
+): FachdetailQuestionDef {
+  if (situation === "kaputt") return ELEKTRO_KAPUTT_Q1;
+  return ELEKTRO_ERNEUERN_Q1;
+}
+
 export const ELEKTRO_FOLLOWUPS: Record<string, FachdetailQuestionDef> = {
   elektro_folge_sicherung: {
     id: "elektro_folge_sicherung",
-    title: "Welche Sicherung ist es?",
+    title: "Welche Sicherung?",
     inputType: "single",
     options: [
       {
         value: "fi",
-        label: "Großer Schalter (FI)",
+        label: "FI-Schalter (großer Schalter)",
         hint: "Fehlerstrom-Schutz — typisch breiter Schalter",
       },
       {
         value: "ls",
-        label: "Kleiner Schalter (LS)",
+        label: "LS-Schalter (kleiner Schalter)",
         hint: "Leitungsschutz — ein schmaler Schalter pro Kreis",
       },
-      { value: "weiss_nicht", label: "Weiß ich nicht genau", hint: "" },
+      { value: "weiss_nicht", label: "Weiß ich nicht", hint: "" },
     ],
   },
   elektro_folge_steckdose: {
     id: "elektro_folge_steckdose",
-    title: "Wie viele Punkte sind betroffen?",
+    title: "Wie viele Punkte?",
     inputType: "single",
     options: [
       {
@@ -455,26 +485,21 @@ export const MALER_FOLLOWUPS: Record<string, FachdetailQuestionDef> = {
     inputType: "single",
     options: [
       {
-        value: "putz",
-        label: "Verputzte Fassade",
-        hint: "Glatter oder rauer Putz",
+        value: "anstrich",
+        label: "Fassade streichen",
+        hint: "Frischer Anstrich außen",
       },
       {
         value: "klinker",
         label: "Klinker / Backstein",
-        hint: "Sichtmauerwerk",
+        hint: "Reinigung und Imprägnierung",
         education:
           "Klinker bleibt sichtbar — wir reinigen, imprägnieren oder fassen Fugen gezielt an, statt „über alles zu streichen“.",
       },
       {
-        value: "holz",
-        label: "Holzfassade",
-        hint: "Holzverkleidung außen",
-      },
-      {
         value: "weiss_nicht",
-        label: "Weiß ich nicht genau",
-        hint: "",
+        label: "Weiß ich nicht",
+        hint: "Wir schauen es uns beim Termin an",
       },
     ],
   },
@@ -482,11 +507,17 @@ export const MALER_FOLLOWUPS: Record<string, FachdetailQuestionDef> = {
 
 export const BODEN_Q1: FachdetailQuestionDef = {
   id: "boden_aktuell",
-  title: "Was liegt aktuell?",
+  title: "Was soll verlegt werden?",
   education:
     "Fliesenrückbau kann Staub und Lärm bedeuten — Dauer hängt von Fläche und Verlegung ab. Wir planen Staubschutz und Entsorgung mit ein.",
   inputType: "single",
   options: [
+    {
+      value: "balkon_belag",
+      label: "Balkon / Terrasse",
+      hint: "Fliesen, WPC-Dielen oder Beschichtung auf Balkon oder Terrasse",
+      followUpId: null,
+    },
     {
       value: "teppich",
       label: "Teppich",
@@ -714,39 +745,6 @@ export const FENSTER_DEFEKT_Q1: FachdetailQuestionDef = {
       value: "weiss_nicht",
       label: "Weiß ich nicht",
       hint: "Wir prüfen vor Ort",
-    },
-  ],
-};
-
-export const KUECHE_Q1: FachdetailQuestionDef = {
-  id: "kueche_vorhaben",
-  title: "Was soll gemacht werden?",
-  inputType: "single",
-  options: [
-    {
-      value: "fronten",
-      label: "Fronten tauschen",
-      hint: "Optik erneuern, Korpus bleibt",
-    },
-    {
-      value: "arbeitsplatte",
-      label: "Arbeitsplatte tauschen",
-      hint: "Neue Platte, ggf. Anschlüsse",
-    },
-    {
-      value: "teil",
-      label: "Teilmodernisierung",
-      hint: "Mehrere Elemente, kein kompletter Ausbau",
-    },
-    {
-      value: "komplett",
-      label: "Komplett neue Küche",
-      hint: "Alles neu planen und einbauen",
-    },
-    {
-      value: "weiss_nicht",
-      label: "Weiß ich nicht genau",
-      hint: "",
     },
   ],
 };

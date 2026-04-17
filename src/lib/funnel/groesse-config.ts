@@ -1,4 +1,9 @@
-import type { FunnelState, FunnelStep, Situation } from "./types";
+import type {
+  FachdetailsState,
+  FunnelState,
+  FunnelStep,
+  Situation,
+} from "./types";
 
 /** Slider + Chips + Direkteingabe (Rechner „Größe“) */
 export type GroesseChip = {
@@ -69,7 +74,8 @@ export function shouldFilterGroesseStep(
 export function applyGroesseStepCopy(
   step: FunnelStep,
   situation: Situation,
-  bereiche: string[]
+  bereiche: string[],
+  fachdetails?: FachdetailsState
 ): FunnelStep {
   if (!step.id.toLowerCase().includes("groesse")) return step;
   const b = new Set(bereiche);
@@ -99,17 +105,17 @@ export function applyGroesseStepCopy(
     };
   }
   if (situation === "erneuern" && b.has("boden") && !b.has("bad")) {
+    if (fachdetails?.boden?.aktuell === "balkon_belag") {
+      return {
+        ...step,
+        question: "Wie groß ist die Balkon- bzw. Terrassenfläche?",
+        subtext: "Ungefähre m² reichen",
+      };
+    }
     return {
       ...step,
       question: "Wie groß ist die Bodenfläche ungefähr?",
       subtext: undefined,
-    };
-  }
-  if (situation === "erneuern" && b.has("kueche") && bereiche.length === 1) {
-    return {
-      ...step,
-      question: "Wie lang ist die Küchenzeile ungefähr?",
-      subtext: "Frontlänge in Metern — grobe Schätzung reicht",
     };
   }
   if (
@@ -156,7 +162,7 @@ export const GROESSE_CONFIG: {
   laufmeter: GroesseSliderConfig;
   fassade: GroesseSliderConfig;
   trockenbau: GroesseSliderConfig;
-  kueche: GroesseSliderConfig;
+  bodenBalkon: GroesseSliderConfig;
   reinigung: GroesseSliderConfig;
   pauschal: null;
 } = {
@@ -327,17 +333,18 @@ export const GROESSE_CONFIG: {
       { label: "über 70 m²", value: 85 },
     ],
   },
-  kueche: {
-    min: 1,
-    max: 8,
-    step: 0.5,
-    default: 3.5,
-    einheit: "Küchenzeile in m",
-    einheitKurz: "m",
+  bodenBalkon: {
+    min: 3,
+    max: 30,
+    step: 1,
+    default: 12,
+    einheit: "Balkon- bzw. Terrassenfläche in m²",
+    einheitKurz: "m²",
     chips: [
-      { label: "Klein bis 3 m", value: 2.5 },
-      { label: "Mittel 3–5 m", value: 4 },
-      { label: "Groß über 5 m", value: 6 },
+      { label: "bis 8 m²", value: 6 },
+      { label: "8–15 m²", value: 12 },
+      { label: "15–25 m²", value: 20 },
+      { label: "über 25 m²", value: 28 },
     ],
   },
   reinigung: {
@@ -366,9 +373,9 @@ export function groesseEinheitFromConfig(
 }
 
 export function getGroesseConfig(
-  state: Pick<FunnelState, "situation" | "bereiche">
+  state: Pick<FunnelState, "situation" | "bereiche" | "fachdetails">
 ): GroesseSliderConfig | null {
-  const { situation, bereiche } = state;
+  const { situation, bereiche, fachdetails } = state;
   const b = bereiche;
 
   if (!situation) {
@@ -434,10 +441,6 @@ export function getGroesseConfig(
     return GROESSE_CONFIG.trockenbau;
   }
 
-  if (situation === "erneuern" && b.includes("kueche") && b.length === 1) {
-    return GROESSE_CONFIG.kueche;
-  }
-
   if (b.includes("bad")) {
     return GROESSE_CONFIG.bad;
   }
@@ -453,6 +456,9 @@ export function getGroesseConfig(
     return GROESSE_CONFIG.malerWand;
   }
   if (b.includes("boden")) {
+    if (fachdetails?.boden?.aktuell === "balkon_belag") {
+      return GROESSE_CONFIG.bodenBalkon;
+    }
     return {
       ...GROESSE_CONFIG.flaeche,
       min: 10,

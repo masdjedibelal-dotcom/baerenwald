@@ -54,12 +54,6 @@ const STEPS_RENOVIERUNG: FunnelStep[] = [
         triggerGewerke: ["maler", "boden"],
       },
       {
-        value: "kueche",
-        label: "Küche",
-        hint: "Fliesen, Boden, Anschlüsse",
-        triggerGewerke: ["fliesen", "boden", "sanitaer"],
-      },
-      {
         value: "bad",
         label: "Bad / WC",
         hint: "Wasser & Heizung, Fliesen, Lüftung",
@@ -185,12 +179,6 @@ const STEPS_NEUBAU: FunnelStep[] = [
         label: "Badezimmer",
         priceTag: "ab 8.000 €",
         triggerGewerke: ["sanitaer", "fliesen"],
-      },
-      {
-        value: "kueche",
-        label: "Küche anschließen",
-        priceTag: "ab 650 €",
-        triggerGewerke: ["sanitaer", "elektro"],
       },
       {
         value: "elektro",

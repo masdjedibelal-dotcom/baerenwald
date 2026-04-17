@@ -83,9 +83,6 @@ export type FachdetailsState = {
     /** Kaputt: „Was ist defekt?“ */
     defekt?: string;
   };
-  kueche?: {
-    vorhaben?: string;
-  };
 };
 
 export interface PriceLineItem {

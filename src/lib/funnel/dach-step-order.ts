@@ -5,11 +5,19 @@ export function shouldSwapFachdetailsBeforeGroesse(
   situation: Situation | null,
   bereiche: string[]
 ): boolean {
-  return (
+  if (bereiche.length !== 1) return false;
+  const only = bereiche[0];
+  if (
     (situation === "erneuern" || situation === "kaputt") &&
-    bereiche.length === 1 &&
-    bereiche[0] === "dach"
-  );
+    only === "dach"
+  ) {
+    return true;
+  }
+  /** Nur Boden: Fachdetails vor Größe (z. B. Balkon m² 3–30 erst nach Auswahl „Balkon / Terrasse“). */
+  if ((situation === "erneuern" || situation === "kaputt") && only === "boden") {
+    return true;
+  }
+  return false;
 }
 
 export function skipGroesseForSanierenDachKleinjob(
