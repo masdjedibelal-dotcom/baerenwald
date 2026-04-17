@@ -4,8 +4,11 @@ import { DatenschutzCheckbox } from "@/components/funnel/DatenschutzCheckbox";
 import { StepWrapper } from "@/components/funnel/StepWrapper";
 import type { Situation } from "@/lib/funnel/types";
 
+export type BwBeratungLeadKind = "b2b" | "schimmel";
+
 export interface BwBeratungLeadProps {
-  situation: Extract<Situation, "gewerbe" | "gastro">;
+  kind: BwBeratungLeadKind;
+  situation?: Situation | null;
   vorname: string;
   nachname: string;
   telefon: string;
@@ -20,6 +23,7 @@ export interface BwBeratungLeadProps {
 }
 
 export function BwBeratungLead({
+  kind,
   situation,
   vorname,
   nachname,
@@ -34,19 +38,27 @@ export function BwBeratungLead({
   onSubmit,
 }: BwBeratungLeadProps) {
   const eyebrow =
-    situation === "gastro" ? "Gastronomie" : "Gewerbe & Büro";
+    kind === "schimmel"
+      ? "Schimmel / Feuchtigkeit"
+      : situation === "gastro"
+        ? "Gastronomie"
+        : "Gewerbe & Büro";
   const headline =
-    situation === "gastro"
-      ? "Gastro-Projekte besprechen wir persönlich."
-      : "Wir planen das persönlich mit dir.";
+    kind === "schimmel"
+      ? "Schimmel braucht eine Vor-Ort-Analyse."
+      : situation === "gastro"
+        ? "Gastro-Projekte besprechen wir persönlich."
+        : "Wir planen das persönlich mit dir.";
   const sub =
-    situation === "gastro"
-      ? "Beschreib kurz dein Vorhaben — wir melden uns innerhalb von 24h."
-      : "Kein Online-Preis — zu viele Details zählen. Kurze Anfrage genügt, wir melden uns in 24h.";
+    kind === "schimmel"
+      ? "Eine automatische Preisberechnung wäre hier nicht seriös — zu viel hängt von der Ursache ab. Wir schauen es uns an und melden uns persönlich."
+      : situation === "gastro"
+        ? "Beschreib kurz dein Vorhaben — wir melden uns innerhalb von 24h."
+        : "Kein Online-Preis — zu viele Details zählen. Kurze Anfrage genügt, wir melden uns in 24h.";
 
   return (
     <StepWrapper
-      animateKey={`beratung-lead-${situation}`}
+      animateKey={`beratung-lead-${kind}-${situation ?? ""}`}
       className="bw-beratung-lead"
     >
       <div className="step-wrapper">

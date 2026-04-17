@@ -22,10 +22,14 @@ import {
   DACH_Q1,
   ELEKTRO_FOLLOWUPS,
   ELEKTRO_Q1,
+  FENSTER_Q1,
   GARTEN_FOLLOWUPS,
   GARTEN_Q1,
   HEIZUNG_FOLLOWUPS,
+  HEIZUNG_KAPUTT_Q1,
   HEIZUNG_Q1,
+  FENSTER_DEFEKT_Q1,
+  KUECHE_Q1,
   MALER_FOLLOWUPS,
   MALER_Q1,
   type FachdetailOptionDef,
@@ -55,8 +59,10 @@ function asLibOptFromFach(o: FachdetailOptionDef): LibStepOption {
 
 const GEWERK_EMOJI: Record<FachdetailGewerkKey, string> = {
   sanitaer: "🚿",
+  kueche: "🍳",
   heizung: "🔥",
   elektro: "⚡",
+  fenster: "🪟",
   boden: "🪵",
   maler: "🖌️",
   dach: "🏠",
@@ -65,8 +71,10 @@ const GEWERK_EMOJI: Record<FachdetailGewerkKey, string> = {
 
 const GEWERK_LABEL: Record<FachdetailGewerkKey, string> = {
   sanitaer: "Sanitär & Bad",
+  kueche: "Küche",
   heizung: "Heizung",
   elektro: "Elektro",
+  fenster: "Fenster",
   boden: "Bodenbelag",
   maler: "Malerarbeiten",
   dach: "Dach",
@@ -75,12 +83,37 @@ const GEWERK_LABEL: Record<FachdetailGewerkKey, string> = {
 
 function getFachdetailIntroQuestionTitle(
   gewerk: FachdetailGewerkKey,
-  isNotfall: boolean
+  isNotfall: boolean,
+  state: Pick<FunnelState, "situation" | "bereiche" | "fachdetails">
 ): string {
+  const { situation, bereiche, fachdetails: fd } = state;
   if (isNotfall) {
     if (gewerk === "elektro") return FACHDETAILS_NOTFALL.elektro.title;
     if (gewerk === "sanitaer") return FACHDETAILS_NOTFALL.sanitaer.title;
     if (gewerk === "heizung") return FACHDETAILS_NOTFALL.heizung.title;
+  }
+  if (
+    gewerk === "sanitaer" &&
+    situation === "erneuern" &&
+    bereiche.includes("bad") &&
+    !fd?.sanitaer?.badWas
+  ) {
+    return SANITAER_BAD_Q.title;
+  }
+  if (
+    gewerk === "heizung" &&
+    situation === "kaputt" &&
+    bereiche.includes("heizung")
+  ) {
+    return HEIZUNG_KAPUTT_Q1.title;
+  }
+  if (
+    gewerk === "fenster" &&
+    situation === "kaputt" &&
+    bereiche.includes("fenster_tuer") &&
+    !bereiche.includes("fenster")
+  ) {
+    return FENSTER_DEFEKT_Q1.title;
   }
   switch (gewerk) {
     case "elektro":
@@ -89,12 +122,16 @@ function getFachdetailIntroQuestionTitle(
       return SANITAER_Q1.title;
     case "heizung":
       return HEIZUNG_Q1.title;
+    case "kueche":
+      return KUECHE_Q1.title;
     case "maler":
       return MALER_Q1.title;
     case "boden":
       return BODEN_Q1.title;
     case "dach":
       return DACH_Q1.title;
+    case "fenster":
+      return FENSTER_Q1.title;
     case "garten":
       return GARTEN_Q1.title;
     default:
@@ -333,6 +370,7 @@ export function FachdetailsStep({
     return (
       s.has("maler") ||
       s.has("streichen") ||
+      s.has("waende") ||
       s.has("waende_boeden") ||
       s.has("feuchtigkeit_schimmel")
     );
@@ -354,6 +392,24 @@ export function FachdetailsStep({
       s.has("baumarbeiten")
     );
   }, [b]);
+
+  const needFenster = useMemo(() => {
+    const s = new Set(b);
+    return (
+      s.has("fenster") ||
+      s.has("fenster_tueren") ||
+      s.has("fenster_tuer")
+    );
+  }, [b]);
+
+  const fensterDefektKaputt =
+    state.situation === "kaputt" &&
+    b.includes("fenster_tuer") &&
+    !b.includes("fenster");
+
+  const needKueche = b.includes("kueche");
+
+  const erneuernBad = state.situation === "erneuern" && b.includes("bad");
 
   const malerFollowQ = useMemo(() => {
     const w = fd.maler?.was;
@@ -406,7 +462,7 @@ export function FachdetailsStep({
           ) : null}
         </div>
         <h2 className="fachdetail-question">
-          {getFachdetailIntroQuestionTitle(gewerk, isNotfall)}
+          {getFachdetailIntroQuestionTitle(gewerk, isNotfall, state)}
         </h2>
         <p className="fachdetail-why">
           {isNotfall
@@ -509,9 +565,43 @@ export function FachdetailsStep({
                 });
               }}
             />
-          ) : !isFachdetailGewerkChainComplete(b, isNotfall, fd, "sanitaer") ? (
+          ) : !isFachdetailGewerkChainComplete(
+              b,
+              isNotfall,
+              fd,
+              "sanitaer",
+              state.situation
+            ) ? (
             <>
-              {!fd.sanitaer?.lage ? (
+              {erneuernBad && !fd.sanitaer?.badWas ? (
+                <SingleQuestionBlock
+                  q={SANITAER_BAD_Q}
+                  selected={fd.sanitaer?.badWas}
+                  educationOpen={Boolean(eduKeys.san_bad)}
+                  onToggleEdu={() => toggleEdu("san_bad")}
+                  optionEduOpen={eduKeys}
+                  onToggleOptionEdu={toggleEdu}
+                  onSelect={(value) => {
+                    onChange({
+                      sanitaer: {
+                        ...fd.sanitaer,
+                        lage:
+                          value === "wanne_dusche"
+                            ? ("sichtbar" as const)
+                            : undefined,
+                        rohre: undefined,
+                        badWas: value,
+                        badObjekte:
+                          value === "objekte"
+                            ? fd.sanitaer?.badObjekte
+                            : undefined,
+                      },
+                    });
+                  }}
+                />
+              ) : erneuernBad &&
+                fd.sanitaer?.badWas === "wanne_dusche" ? null : !fd.sanitaer
+                  ?.lage ? (
                 <SingleQuestionBlock
                   q={SANITAER_Q1}
                   selected={fd.sanitaer?.lage}
@@ -552,7 +642,9 @@ export function FachdetailsStep({
                     }}
                   />
                 </FollowUpPanel>
-              ) : needBadExtra && !fd.sanitaer?.badWas ? (
+              ) : needBadExtra &&
+                !erneuernBad &&
+                !fd.sanitaer?.badWas ? (
                 <SingleQuestionBlock
                   q={SANITAER_BAD_Q}
                   selected={fd.sanitaer?.badWas}
@@ -648,6 +740,26 @@ export function FachdetailsStep({
                 });
               }}
             />
+          ) : state.situation === "kaputt" ? (
+            !fd.heizung?.typ ? (
+              <SingleQuestionBlock
+                q={HEIZUNG_KAPUTT_Q1}
+                selected={fd.heizung?.typ}
+                educationOpen={Boolean(eduKeys.heiz_kaputt)}
+                onToggleEdu={() => toggleEdu("heiz_kaputt")}
+                optionEduOpen={eduKeys}
+                onToggleOptionEdu={toggleEdu}
+                onSelect={(value) => {
+                  onChange({
+                    heizung: {
+                      typ: value,
+                      alter: undefined,
+                      vorhaben: undefined,
+                    },
+                  });
+                }}
+              />
+            ) : null
           ) : !fd.heizung?.typ ? (
             <SingleQuestionBlock
               q={HEIZUNG_Q1}
@@ -785,7 +897,8 @@ export function FachdetailsStep({
                 const prev = fd.boden?.aktuell;
                 const sameFollow =
                   (value === "fliesen" && prev === "fliesen") ||
-                  (value === "laminat" && prev === "laminat");
+                  ((value === "laminat" || value === "parkett") &&
+                    (prev === "laminat" || prev === "parkett"));
                 onChange({
                   boden: {
                     aktuell: value,
@@ -828,11 +941,11 @@ export function FachdetailsStep({
               optionEduOpen={eduKeys}
               onToggleOptionEdu={toggleEdu}
               onSelect={(value) => {
+                const needsAlter =
+                  value === "daemmung" || value === "komplett";
                 const prevNeeds =
                   fd.dach?.vorhaben === "daemmung" ||
                   fd.dach?.vorhaben === "komplett";
-                const needsAlter =
-                  value === "daemmung" || value === "komplett";
                 onChange({
                   dach: {
                     vorhaben: value,
@@ -862,6 +975,58 @@ export function FachdetailsStep({
               />
             </FollowUpPanel>
           ) : null}
+        </section>
+      ) : null}
+
+      {gewerk === "fenster" && needFenster ? (
+        <section className="space-y-3">
+          <SingleQuestionBlock
+            q={fensterDefektKaputt ? FENSTER_DEFEKT_Q1 : FENSTER_Q1}
+            selected={
+              fensterDefektKaputt
+                ? fd.fenster?.defekt
+                : fd.fenster?.ausstattung
+            }
+            educationOpen={Boolean(eduKeys.fenster_q1)}
+            onToggleEdu={() => toggleEdu("fenster_q1")}
+            optionEduOpen={eduKeys}
+            onToggleOptionEdu={toggleEdu}
+            onSelect={(value) => {
+              if (fensterDefektKaputt) {
+                onChange({
+                  fenster: {
+                    defekt: value,
+                    ausstattung: undefined,
+                  },
+                });
+              } else {
+                onChange({
+                  fenster: {
+                    defekt: undefined,
+                    ausstattung: value as "standard" | "premium",
+                  },
+                });
+              }
+            }}
+          />
+        </section>
+      ) : null}
+
+      {gewerk === "kueche" && needKueche ? (
+        <section className="space-y-3">
+          <SingleQuestionBlock
+            q={KUECHE_Q1}
+            selected={fd.kueche?.vorhaben}
+            educationOpen={Boolean(eduKeys.kueche_q1)}
+            onToggleEdu={() => toggleEdu("kueche_q1")}
+            optionEduOpen={eduKeys}
+            onToggleOptionEdu={toggleEdu}
+            onSelect={(value) => {
+              onChange({
+                kueche: { vorhaben: value },
+              });
+            }}
+          />
         </section>
       ) : null}
 

@@ -3,8 +3,11 @@
 import { useCallback, useMemo, useState } from "react";
 
 import { formatCurrencyEUR } from "@/lib/price-calc";
-import { getResolvedStepsForSituation } from "@/lib/funnel/config";
-import type { FunnelState, ObjektZustand } from "@/lib/funnel/types";
+import {
+  getResolvedStepsForSituation,
+  getZustandDisplayLabel,
+} from "@/lib/funnel/config";
+import type { FunnelState } from "@/lib/funnel/types";
 import {
   calculatePrice,
   getBwResultModus,
@@ -41,61 +44,6 @@ const RESULT_TESTIMONIALS = [
   },
 ] as const;
 
-const KOORDINATION_REIHENFOLGE: Record<
-  string,
-  { emoji: string; label: string; hinweis: string; prioritaet: number }
-> = {
-  elektro: {
-    emoji: "⚡",
-    label: "Elektroarbeiten",
-    hinweis:
-      "Vor Wänden und Boden — Leitungen müssen zuerst verlegt werden",
-    prioritaet: 1,
-  },
-  sanitaer: {
-    emoji: "🚿",
-    label: "Sanitär & Bad",
-    hinweis: "Vor den Fliesen — Rohre und Anschlüsse zuerst",
-    prioritaet: 1,
-  },
-  heizung: {
-    emoji: "🔥",
-    label: "Heizung",
-    hinweis: "Unabhängig planbar — wir stimmen den Termin ab",
-    prioritaet: 2,
-  },
-  maler: {
-    emoji: "🖌️",
-    label: "Malerarbeiten",
-    hinweis: "Nach Elektro und Sanitär — vor dem Bodenbelag",
-    prioritaet: 3,
-  },
-  boden: {
-    emoji: "🪵",
-    label: "Bodenbelag",
-    hinweis: "Immer zuletzt — nach allen anderen Gewerken",
-    prioritaet: 4,
-  },
-  dach: {
-    emoji: "🏠",
-    label: "Dacharbeiten",
-    hinweis: "Vor Innenarbeiten — Dach muss dicht sein",
-    prioritaet: 1,
-  },
-  garten: {
-    emoji: "🌿",
-    label: "Gartenarbeiten",
-    hinweis: "Unabhängig planbar — parallel zu Innenarbeiten",
-    prioritaet: 5,
-  },
-  trockenbau: {
-    emoji: "🧱",
-    label: "Trockenbau",
-    hinweis: "Nach Elektro — vor Maler und Boden",
-    prioritaet: 2,
-  },
-};
-
 function getAktiveGewerke(state: FunnelState): string[] {
   const gewerke: string[] = [];
   const { bereiche } = state;
@@ -107,11 +55,15 @@ function getAktiveGewerke(state: FunnelState): string[] {
   if (
     bereiche.includes("bad") ||
     bereiche.includes("wasser") ||
-    bereiche.includes("sanitaer")
+    bereiche.includes("sanitaer") ||
+    bereiche.includes("feuchtigkeit_schimmel")
   ) {
     push("sanitaer");
   }
   if (bereiche.includes("heizung")) push("heizung");
+  if (bereiche.includes("feuchtigkeit_schimmel")) {
+    push("maler");
+  }
   if (
     bereiche.includes("strom") ||
     bereiche.includes("elektrik") ||
@@ -121,6 +73,7 @@ function getAktiveGewerke(state: FunnelState): string[] {
   }
   if (
     bereiche.includes("maler") ||
+    bereiche.includes("waende") ||
     bereiche.includes("waende_boeden") ||
     bereiche.includes("streichen") ||
     bereiche.includes("fassade")
@@ -171,87 +124,6 @@ function EnvelopeIcon16() {
         strokeLinejoin="round"
       />
     </svg>
-  );
-}
-
-function KoordinationAccordion({ state }: { state: FunnelState }) {
-  const [open, setOpen] = useState(false);
-  const aktiveGewerke = useMemo(() => getAktiveGewerke(state), [state]);
-
-  if (aktiveGewerke.length === 0) return null;
-
-  const sorted = [...aktiveGewerke].sort(
-    (a, b) =>
-      (KOORDINATION_REIHENFOLGE[a]?.prioritaet ?? 99) -
-      (KOORDINATION_REIHENFOLGE[b]?.prioritaet ?? 99)
-  );
-
-  const mehrere = aktiveGewerke.length >= 2;
-
-  return (
-    <div className="preis-accordion">
-      <button
-        type="button"
-        className={`preis-accordion-trigger${open ? " open" : ""}`}
-        onClick={() => setOpen((v) => !v)}
-        aria-expanded={open}
-      >
-        <span>Wie wir dein Projekt koordinieren</span>
-        <svg
-          className="preis-accordion-arrow"
-          width="16"
-          height="16"
-          viewBox="0 0 16 16"
-          fill="none"
-          aria-hidden
-        >
-          <path
-            d="M4 6l4 4 4-4"
-            stroke="currentColor"
-            strokeWidth="1.5"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-        </svg>
-      </button>
-
-      {open ? (
-        <div className="preis-accordion-body">
-          {mehrere ? (
-            <div className="koordination-list">
-              {sorted.map((gewerk, i) => {
-                const info = KOORDINATION_REIHENFOLGE[gewerk];
-                if (!info) return null;
-                return (
-                  <div key={gewerk} className="koordination-item">
-                    <div className="koordination-item-left">
-                      <span className="koordination-step">{i + 1}</span>
-                      <span className="koordination-emoji" aria-hidden>
-                        {info.emoji}
-                      </span>
-                    </div>
-                    <div className="koordination-item-right">
-                      <div className="koordination-label">{info.label}</div>
-                      <div className="koordination-hinweis">{info.hinweis}</div>
-                    </div>
-                  </div>
-                );
-              })}
-              <div className="koordination-footer">
-                <p>
-                  Wir stimmen alle Gewerke intern ab — du hast einen
-                  Ansprechpartner und eine Rechnung am Ende.
-                </p>
-              </div>
-            </div>
-          ) : (
-            <p className="koordination-einzel-hinweis">
-              Wir übernehmen die komplette Abwicklung für dich.
-            </p>
-          )}
-        </div>
-      ) : null}
-    </div>
   );
 }
 
@@ -318,14 +190,6 @@ function bereicheDisplayLabels(state: FunnelState): string[] {
   });
 }
 
-function zustandEinordnungLabel(z: ObjektZustand | null): string | null {
-  if (!z) return null;
-  if (z === "gut") return "Gepflegt";
-  if (z === "mittel") return "Normale Abnutzung";
-  if (z === "unknown") return "Weiß ich nicht";
-  return "Sanierungsbedürftig";
-}
-
 function groesseEinordnungLine(state: FunnelState): string | null {
   if (state.groesse == null) return null;
   if (state.groesseEinheit === "stueck") {
@@ -346,7 +210,7 @@ function ResultEinordnung({ state }: { state: FunnelState }) {
       : top.length === 1
         ? top[0]
         : `${top[0]} + ${top[1]}`;
-  const zLine = zustandEinordnungLabel(state.zustand);
+  const zLine = getZustandDisplayLabel(state.zustand, state.bereiche);
   const gLine = groesseEinordnungLine(state);
   if (!gewerkLine && !zLine && !gLine) return null;
   return (
@@ -406,11 +270,13 @@ function ZuKomplexScreen({
   state,
   schwellenwertAusgeloest,
   onKomplexRueckrufSuccess,
+  onReset,
   className,
 }: {
   state: FunnelState;
   schwellenwertAusgeloest: boolean;
   onKomplexRueckrufSuccess?: () => void;
+  onReset?: () => void;
   className?: string;
 }) {
   const [vorname, setVorname] = useState("");
@@ -616,6 +482,12 @@ function ZuKomplexScreen({
           ) : null}
         </div>
       </div>
+
+      {onReset ? (
+        <button type="button" className="neue-anfrage-btn" onClick={onReset}>
+          Neue Anfrage starten →
+        </button>
+      ) : null}
     </div>
   );
 }
@@ -663,6 +535,13 @@ export function BwResultScreen({
             <PhoneIconKomplex />
             {SITE_CONFIG.phone}
           </a>
+          <div className="notfall-trust mt-5 space-y-2 text-left text-sm text-white/90">
+            <div className="notfall-trust-item">✓ Schnelle Rückmeldung</div>
+            <div className="notfall-trust-item">
+              ✓ Wir sind in München & Umgebung
+            </div>
+            <div className="notfall-trust-item">✓ Transparente Preise</div>
+          </div>
         </div>
       </div>
     );
@@ -677,6 +556,7 @@ export function BwResultScreen({
         state={state}
         schwellenwertAusgeloest={schwellenwertAusgeloest}
         onKomplexRueckrufSuccess={onKomplexRueckrufSuccess}
+        onReset={onReset}
         className={className}
       />
     );
@@ -766,7 +646,8 @@ export function BwResultScreen({
 
       {hasRange ? (
         <p className="preis-disclaimer">
-          Unverbindlicher Richtwert — Festpreis nach Vor-Ort-Termin.
+          Basiert auf Münchner Marktpreisen 2026 — verbindliches
+          Festpreisangebot nach Vor-Ort-Termin.
         </p>
       ) : null}
 
@@ -792,8 +673,11 @@ export function BwResultScreen({
         </p>
       ) : null}
 
-      {hasRange && !state.istFallback ? (
-        <KoordinationAccordion state={state} />
+      {hasRange && !state.istFallback && getAktiveGewerke(state).length > 1 ? (
+        <p className="koordination-hint mt-4 text-center text-sm leading-snug text-text-secondary">
+          Wir koordinieren alle {getAktiveGewerke(state).length} Gewerke — ein
+          Ansprechpartner, eine Rechnung.
+        </p>
       ) : null}
 
       {hasRange ? <ResultTestimonialCard /> : null}
@@ -868,6 +752,12 @@ export function BwResultScreen({
           className="pointer-events-none h-px w-full scroll-mt-24 opacity-0"
           aria-hidden
         />
+      ) : null}
+
+      {onReset ? (
+        <button type="button" className="neue-anfrage-btn" onClick={onReset}>
+          Neue Anfrage starten →
+        </button>
       ) : null}
     </div>
   );

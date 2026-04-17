@@ -133,6 +133,10 @@ export function HWLeadForm({
           Mit Absenden akzeptierst du, dass wir dich zum Termin / Angebot
           kontaktieren. Du kannst der Nutzung jederzeit widersprechen.
         </p>
+        <p className="text-[11px] leading-relaxed text-text-tertiary">
+          Preisrahmen basiert auf Münchner Marktpreisen 2026. Genauer Preis nach
+          Vor-Ort-Termin — verbindliches Angebot nach Besichtigung.
+        </p>
       </form>
     </div>
   );

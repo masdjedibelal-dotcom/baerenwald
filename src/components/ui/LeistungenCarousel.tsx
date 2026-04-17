@@ -42,7 +42,7 @@ const KATEGORIEN: Kategorie[] = [
         hint: "Frische Farbe für Wände und Decken",
         emoji: "🖌️",
         href: "/leistungen/malerarbeiten-muenchen",
-        rechnerHref: "/rechner?situation=renovieren",
+        rechnerHref: "/rechner?situation=erneuern",
       },
       {
         slug: "badezimmer-sanierung",
@@ -50,7 +50,7 @@ const KATEGORIEN: Kategorie[] = [
         hint: "Komplett sanieren oder einzelne Teile",
         emoji: "🚿",
         href: "/leistungen/badezimmer-sanierung-muenchen",
-        rechnerHref: "/rechner?situation=renovieren",
+        rechnerHref: "/rechner?situation=erneuern",
       },
       {
         slug: "bodenbelag",
@@ -58,7 +58,7 @@ const KATEGORIEN: Kategorie[] = [
         hint: "Laminat, Parkett, Fliesen verlegen",
         emoji: "🪵",
         href: "/leistungen/bodenbelag-muenchen",
-        rechnerHref: "/rechner?situation=renovieren",
+        rechnerHref: "/rechner?situation=erneuern",
       },
       {
         slug: "fenster-tueren",
@@ -66,7 +66,7 @@ const KATEGORIEN: Kategorie[] = [
         hint: "Tausch, Reparatur, Abdichten",
         emoji: "🪟",
         href: "/leistungen/fenster-tueren-muenchen",
-        rechnerHref: "/rechner?situation=renovieren",
+        rechnerHref: "/rechner?situation=erneuern",
       },
       {
         slug: "trockenbau",
@@ -74,7 +74,7 @@ const KATEGORIEN: Kategorie[] = [
         hint: "Zimmer teilen, Decke abhängen",
         emoji: "🏗️",
         href: "/leistungen/trockenbau-muenchen",
-        rechnerHref: "/rechner?situation=renovieren",
+        rechnerHref: "/rechner?situation=erneuern",
       },
     ],
   },
@@ -89,7 +89,7 @@ const KATEGORIEN: Kategorie[] = [
         hint: "Heizung tauschen, Rohre reparieren",
         emoji: "🔧",
         href: "/leistungen/heizung-sanitaer-muenchen",
-        rechnerHref: "/rechner?situation=sanieren",
+        rechnerHref: "/rechner?situation=erneuern",
       },
       {
         slug: "elektroarbeiten",
@@ -97,7 +97,7 @@ const KATEGORIEN: Kategorie[] = [
         hint: "Steckdosen, Sicherungskasten, Elektrik",
         emoji: "⚡",
         href: "/leistungen/elektroarbeiten-muenchen",
-        rechnerHref: "/rechner?situation=sanieren",
+        rechnerHref: "/rechner?situation=erneuern",
       },
       {
         slug: "dacharbeiten",
@@ -105,7 +105,7 @@ const KATEGORIEN: Kategorie[] = [
         hint: "Reparatur, Sanierung, Abdichten",
         emoji: "🏠",
         href: "/leistungen/dacharbeiten-muenchen",
-        rechnerHref: "/rechner?situation=sanieren",
+        rechnerHref: "/rechner?situation=erneuern",
       },
     ],
   },

@@ -24,11 +24,11 @@ const tel = SITE_CONFIG.phone.replace(/\s/g, "");
 
 function rechnerSituationParam(id: MarketingSituation): FunnelSituation {
   const m: Record<MarketingSituation, FunnelSituation> = {
-    renovierung: "renovieren",
+    renovierung: "erneuern",
     neubau: "neubauen",
     akut: "notfall",
     pflege: "betreuung",
-    b2b: "sanieren",
+    b2b: "gewerbe",
   };
   return m[id];
 }
@@ -38,11 +38,11 @@ const HERO_CHIPS: {
   situation: FunnelSituation;
   notfall?: boolean;
 }[] = [
-  { label: "Wohnung streichen", situation: "renovieren" },
-  { label: "Neues Bad", situation: "renovieren" },
-  { label: "Heizung tauschen", situation: "sanieren" },
+  { label: "Wohnung streichen", situation: "erneuern" },
+  { label: "Neues Bad", situation: "erneuern" },
+  { label: "Heizung tauschen", situation: "erneuern" },
   { label: "Gartenpflege", situation: "betreuung" },
-  { label: "Neuer Boden", situation: "renovieren" },
+  { label: "Neuer Boden", situation: "erneuern" },
   { label: "Dringend — Notfall", situation: "notfall", notfall: true },
 ];
 

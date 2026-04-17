@@ -3,40 +3,14 @@
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { getPlzStatus } from "@/lib/funnel/plz";
-
-const ZEITRAUM_OPTIONS: {
-  value: string;
-  label: string;
-  hint: string;
-  emoji: string;
-}[] = [
-  {
-    value: "sofort",
-    label: "So schnell wie möglich",
-    hint: "Wir priorisieren dein Projekt",
-    emoji: "⚡",
-  },
-  {
-    value: "heute",
-    label: "Diese Woche",
-    hint: "Kurzfristige Umsetzung",
-    emoji: "📅",
-  },
-  {
-    value: "woche",
-    label: "Innerhalb 4 Wochen",
-    hint: "Normale Planung",
-    emoji: "🗓️",
-  },
-  {
-    value: "flexibel",
-    label: "Ich bin flexibel",
-    hint: "Mehr Spielraum bei der Planung",
-    emoji: "✅",
-  },
-];
+import {
+  getZeitraumFragen,
+  getZeitraumOptions,
+} from "@/lib/funnel/config";
+import type { Situation } from "@/lib/funnel/types";
 
 export interface PlzStepProps {
+  situation: Situation | null;
   plz: string;
   zeitraum: string;
   onPlzChange: (plz: string) => void;
@@ -46,6 +20,7 @@ export interface PlzStepProps {
 }
 
 export function PlzStep({
+  situation,
   plz,
   zeitraum,
   onPlzChange,
@@ -53,6 +28,8 @@ export function PlzStep({
   onAusserhalbAnfrage,
   className,
 }: PlzStepProps) {
+  const zeitraumOptions = getZeitraumOptions(situation);
+  const zeitraumFrage = getZeitraumFragen(situation);
   const [plzStatus, setPlzStatus] = useState<
     "idle" | "erlaubt" | "ausserhalb" | "ungueltig"
   >(() => {
@@ -126,12 +103,19 @@ export function PlzStep({
         )}
       </div>
 
-      {!isAusserhalb && (
+      {!isAusserhalb && zeitraumOptions.length > 0 && (
         <div className="funnel-step-tiles-card flex flex-col gap-2.5">
-          <h3 className="text-base font-semibold leading-snug text-text-primary">
-            Wann soll es losgehen?
-          </h3>
-          {ZEITRAUM_OPTIONS.map((c) => {
+          <div>
+            <h3 className="text-base font-semibold leading-snug text-text-primary">
+              {zeitraumFrage.question}
+            </h3>
+            {zeitraumFrage.hint ? (
+              <p className="mt-1 text-sm leading-snug text-text-secondary">
+                {zeitraumFrage.hint}
+              </p>
+            ) : null}
+          </div>
+          {zeitraumOptions.map((c) => {
             const active = zeitraum === c.value;
             return (
               <button

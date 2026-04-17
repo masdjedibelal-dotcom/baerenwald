@@ -91,8 +91,9 @@ export function GroesseStep({
       <div className="groesse-chips">
         {config.chips.map((chip) => (
           <button
-            key={chip.label}
+            key={`${chip.label}-${chip.value}`}
             type="button"
+            title={chip.hint}
             className={cn(
               "groesse-chip",
               groesse === chip.value ? "active" : ""

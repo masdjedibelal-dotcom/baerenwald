@@ -1,6 +1,14 @@
 "use client";
 
-import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  Fragment,
+  Suspense,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
 import "@/app/baerenwald-landing.css";
@@ -30,6 +38,8 @@ import {
   getResolvedStepsForSituation,
   groesseEinheitFromConfig,
   shouldSwapFachdetailsBeforeGroesse,
+  BW_FUNNEL_STEP_BAD_AUSSTATTUNG,
+  needsZeitraumSelection,
 } from "@/lib/funnel/config";
 import {
   firstFachdetailsScreenId,
@@ -62,6 +72,7 @@ import type {
   Zeitraum,
   Zugaenglichkeit,
 } from "@/lib/funnel/types";
+import { isB2B } from "@/lib/funnel/types";
 import { isBwTrustScreenId } from "@/lib/funnel/types";
 import { tileIconForStepValue } from "@/lib/funnel-tile-icons";
 import type { StepOption as LibStepOption } from "@/lib/types";
@@ -82,6 +93,7 @@ type Screen =
   | "zugaenglichkeit"
   | "zustand"
   | "groesse"
+  | "bad_ausstattung"
   | "ort"
   | "loading"
   | "result"
@@ -89,10 +101,6 @@ type Screen =
   | "beratung-lead"
   | "ausserhalb"
   | "danke";
-
-function isB2bSituation(s: Situation | null): boolean {
-  return s === "gewerbe" || s === "gastro";
-}
 
 function isSituation(x: string): x is Situation {
   return (BW_FUNNEL_STEP1_ORDER as readonly string[]).includes(x);
@@ -132,6 +140,10 @@ function FunnelRechnerInner() {
   const [resultModus, setResultModus] = useState<BwResultModus>("preisrahmen");
   const [schwellenwertAusgeloest, setSchwellenwertAusgeloest] = useState(false);
   const [komplexRueckrufDanke, setKomplexRueckrufDanke] = useState(false);
+  /** Direkt nach Schimmel-Kachel: Beratungs-Lead mit Spezialtext */
+  const [schimmelBeratung, setSchimmelBeratung] = useState(false);
+  /** Nach erstem „Preis berechnen“: auf „ort“ wieder „Weiter →“ (Footer rendert zuverlässig). */
+  const [priceConfirmed, setPriceConfirmed] = useState(false);
   const [microNote, setMicroNote] = useState<{
     target: Screen;
     text: string;
@@ -161,6 +173,7 @@ function FunnelRechnerInner() {
     setZugaenglichkeit,
     setZustand,
     setFachdetails,
+    setBadAusstattung,
     reset,
   } = useFunnelState();
 
@@ -169,20 +182,43 @@ function FunnelRechnerInner() {
     [state.situation, state.bereiche]
   );
 
+  const zuKomplexForSteps = useMemo(
+    () => getBwResultModus(state) === "zu_komplex",
+    [
+      state.situation,
+      state.umfang,
+      state.bereiche,
+      state.fachdetails?.heizung?.vorhaben,
+      state.fachdetails?.garten?.baumgroesse,
+    ]
+  );
+
   const resolvedSteps = useMemo(
     () =>
       getResolvedStepsForSituation(
         state.situation,
         state.bereiche,
         state.fachdetails,
-        state.umfang
+        state.umfang,
+        zuKomplexForSteps
       ),
-    [state.situation, state.bereiche, state.fachdetails, state.umfang]
+    [
+      state.situation,
+      state.bereiche,
+      state.fachdetails,
+      state.umfang,
+      zuKomplexForSteps,
+    ]
   );
 
   const hasGroesseStep = useMemo(
     () =>
       resolvedSteps.some((s) => s.id.toLowerCase().includes("groesse")),
+    [resolvedSteps]
+  );
+
+  const hasBadAusstattungStep = useMemo(
+    () => resolvedSteps.some((s) => s.id === "bad_ausstattung"),
     [resolvedSteps]
   );
 
@@ -206,17 +242,17 @@ function FunnelRechnerInner() {
     if (state.situation === "notfall") return null;
     if (state.situation === "gewerbe" || state.situation === "gastro")
       return null;
-    if (getBwResultModus(state) === "zu_komplex") return null;
+    if (zuKomplexForSteps) return null;
     return resolvedSteps.find((s) => s.id === "zugaenglichkeit") ?? null;
-  }, [resolvedSteps, state]);
+  }, [resolvedSteps, state.situation, zuKomplexForSteps]);
 
   const stepZustand = useMemo(() => {
     if (state.situation === "notfall") return null;
     if (state.situation === "gewerbe" || state.situation === "gastro")
       return null;
-    if (getBwResultModus(state) === "zu_komplex") return null;
+    if (zuKomplexForSteps) return null;
     return resolvedSteps.find((s) => s.id === "zustand") ?? null;
-  }, [resolvedSteps, state]);
+  }, [resolvedSteps, state.situation, zuKomplexForSteps]);
   const stepGroesse = useMemo(
     () =>
       resolvedSteps.find((s) => s.id.toLowerCase().includes("groesse")) ??
@@ -244,11 +280,29 @@ function FunnelRechnerInner() {
       ? Boolean(state.dringlichkeit)
       : Boolean(state.umfang);
 
+  /** Screen-Reihenfolge (ohne loading/result/lead) — stabil, damit handleBack & Fachdetail „X von Y“ konsistent bleiben. */
+  const stepSequence = useMemo(
+    () => getBwRechnerScreenSequence(state),
+    [
+      state.situation,
+      state.bereiche,
+      state.umfang,
+      state.dringlichkeit,
+      state.groesse,
+      state.badAusstattung,
+      state.fachdetails,
+    ]
+  );
+
   useEffect(() => {
     if (urlInit.current) return;
-    const raw = searchParams.get("situation");
+    let raw = searchParams.get("situation");
+    if (raw === "renovieren" || raw === "sanieren") {
+      raw = "erneuern";
+    }
     if (raw && isSituation(raw)) {
       setSituation(raw);
+      setPriceConfirmed(false);
       if (raw === "gewerbe" || raw === "gastro") {
         setScreen("beratung-lead");
       } else {
@@ -259,17 +313,10 @@ function FunnelRechnerInner() {
   }, [searchParams, setSituation]);
 
   useEffect(() => {
-    const seq = getBwRechnerScreenSequence(state);
-    if (isBwTrustScreenId(screen) && !seq.includes(screen)) {
-      setScreen((seq[0] ?? "situation") as Screen);
+    if (isBwTrustScreenId(screen) && !stepSequence.includes(screen)) {
+      setScreen((stepSequence[0] ?? "situation") as Screen);
     }
-  }, [
-    screen,
-    state.situation,
-    state.bereiche,
-    state.fachdetails,
-    state.umfang,
-  ]);
+  }, [screen, stepSequence]);
 
   useEffect(() => {
     const id = requestAnimationFrame(() => {
@@ -302,11 +349,15 @@ function FunnelRechnerInner() {
   );
 
   const goPostGroesseChain = useCallback(() => {
+    if (hasBadAusstattungStep) {
+      setScreen("bad_ausstattung");
+      return;
+    }
     const firstFd = firstFachdetailsScreenId(state.bereiche);
     if (firstFd) setScreen(firstFd);
     else if (hasKundentypStep) setScreen("kundentyp");
     else setScreen("ort");
-  }, [hasKundentypStep, state.bereiche]);
+  }, [hasBadAusstattungStep, hasKundentypStep, state.bereiche]);
 
   const goGroesseOrPostGroesse = useCallback(() => {
     if (hasGroesseStep) setScreen("groesse");
@@ -343,7 +394,8 @@ function FunnelRechnerInner() {
           state.bereiche,
           state.situation === "notfall",
           state.fachdetails,
-          g
+          g,
+          state.situation
         )
       ) {
         return;
@@ -353,7 +405,7 @@ function FunnelRechnerInner() {
       if (next === "groesse" && fachdetailsBeforeGroesse && hasGroesseStep) {
         setMicroNote({
           target: "groesse",
-          text: "Fast geschafft — noch die ungefähre Fläche",
+          text: "Fast geschafft — noch Größe bzw. Fläche angeben",
         });
       }
       setScreen(next as Screen);
@@ -383,6 +435,8 @@ function FunnelRechnerInner() {
     setSchwellenwertAusgeloest(false);
     setKomplexRueckrufDanke(false);
     setMicroNote(null);
+    setPriceConfirmed(false);
+    setSchimmelBeratung(false);
 
     const first: Screen =
       prevSit === "notfall" ||
@@ -425,7 +479,7 @@ function FunnelRechnerInner() {
     switch (screen) {
       case "situation":
         if (state.situation) {
-          if (isB2bSituation(state.situation)) {
+          if (isB2B(state.situation)) {
             setScreen("beratung-lead");
           } else {
             setScreen("bereiche");
@@ -434,7 +488,7 @@ function FunnelRechnerInner() {
         break;
       case "bereiche":
         if (state.bereiche.length > 0) {
-          if (isB2bSituation(state.situation)) setScreen("beratung-lead");
+          if (isB2B(state.situation)) setScreen("beratung-lead");
           else {
             const nextAfterBereiche = getNextBwRechnerScreen(
               state,
@@ -462,6 +516,25 @@ function FunnelRechnerInner() {
         break;
       case "groesse":
         if (state.groesse != null) {
+          if (hasBadAusstattungStep) {
+            setScreen("bad_ausstattung");
+          } else if (fachdetailsBeforeGroesse) {
+            if (hasKundentypStep) setScreen("kundentyp");
+            else setScreen("ort");
+          } else if (hasFachdetailsStep) {
+            const firstFd = firstFachdetailsScreenId(state.bereiche);
+            if (firstFd) setScreen(firstFd);
+            else if (hasKundentypStep) setScreen("kundentyp");
+            else setScreen("ort");
+          } else if (hasKundentypStep) {
+            setScreen("kundentyp");
+          } else {
+            setScreen("ort");
+          }
+        }
+        break;
+      case "bad_ausstattung":
+        if (state.badAusstattung) {
           if (fachdetailsBeforeGroesse) {
             if (hasKundentypStep) setScreen("kundentyp");
             else setScreen("ort");
@@ -478,7 +551,11 @@ function FunnelRechnerInner() {
         }
         break;
       case "ort": {
-        if (state.plz.length < 4 || !state.zeitraum) break;
+        if (
+          state.plz.length < 4 ||
+          (needsZeitraumSelection(state.situation) && !state.zeitraum)
+        )
+          break;
         const {
           min,
           max,
@@ -492,6 +569,7 @@ function FunnelRechnerInner() {
         setMindestauftrag(mindestauftragAktiv);
         setResultModus(rm);
         setSchwellenwertAusgeloest(swa);
+        setPriceConfirmed(true);
         setScreen("loading");
         break;
       }
@@ -523,6 +601,7 @@ function FunnelRechnerInner() {
     goAfterZustandScreen,
     fachdetailsBeforeGroesse,
     hasGroesseStep,
+    hasBadAusstattungStep,
     hasFachdetailsStep,
     hasKundentypStep,
     setPrice,
@@ -540,7 +619,8 @@ function FunnelRechnerInner() {
       state.bereiche,
       state.situation === "notfall",
       state.fachdetails,
-      g
+      g,
+      state.situation
     );
     const visit = fachdetailVisitRef.current;
     if (!visit || visit.id !== screen) {
@@ -562,55 +642,98 @@ function FunnelRechnerInner() {
   ]);
 
   const handleBack = useCallback(() => {
-    const seq = getBwRechnerScreenSequence(state);
-    const idx = seq.indexOf(screen);
-    if (idx > 0) {
-      setScreen(seq[idx - 1] as Screen);
+    const steps = stepSequence;
+    const currentIndex = steps.indexOf(screen);
+    if (currentIndex > 0) {
+      const prevStep = steps[currentIndex - 1]!;
+      setScreen(prevStep as Screen);
+      window.scrollTo({
+        top: 0,
+        left: 0,
+        behavior: "instant" as ScrollBehavior,
+      });
       return;
     }
-    if (idx < 0 && isBwFachdetailScreenId(screen)) {
+    if (currentIndex < 0 && isBwFachdetailScreenId(screen)) {
       const g = getBwFachdetailGewerkFromScreen(screen);
       if (g) {
         const order = getAktiveFachdetailGewerke(state.bereiche, 2);
         const gi = order.indexOf(g);
         if (gi > 0) {
           const prevId = `fachdetails_${order[gi - 1]!}` as Screen;
-          if (seq.includes(prevId)) {
+          if (steps.includes(prevId)) {
             setScreen(prevId);
+            window.scrollTo({
+              top: 0,
+              left: 0,
+              behavior: "instant" as ScrollBehavior,
+            });
             return;
           }
         }
-        const firstFdIdx = seq.findIndex((s) => isBwFachdetailScreenId(s));
+        const firstFdIdx = steps.findIndex((s) => isBwFachdetailScreenId(s));
         if (firstFdIdx > 0) {
-          setScreen(seq[firstFdIdx - 1] as Screen);
+          setScreen(steps[firstFdIdx - 1] as Screen);
+          window.scrollTo({
+            top: 0,
+            left: 0,
+            behavior: "instant" as ScrollBehavior,
+          });
           return;
         }
       }
     }
     switch (screen) {
       case "loading":
+        setPriceConfirmed(true);
         setScreen("ort");
+        window.scrollTo({
+          top: 0,
+          left: 0,
+          behavior: "instant" as ScrollBehavior,
+        });
         break;
       case "result":
+        setPriceConfirmed(true);
         setScreen("ort");
+        window.scrollTo({
+          top: 0,
+          left: 0,
+          behavior: "instant" as ScrollBehavior,
+        });
         break;
       case "lead":
         setScreen("result");
+        window.scrollTo({
+          top: 0,
+          left: 0,
+          behavior: "instant" as ScrollBehavior,
+        });
         break;
       case "beratung-lead":
-        if (isB2bSituation(state.situation)) {
+        if (isB2B(state.situation)) {
           setScreen("situation");
         } else {
           setScreen("bereiche");
         }
+        window.scrollTo({
+          top: 0,
+          left: 0,
+          behavior: "instant" as ScrollBehavior,
+        });
         break;
       case "ausserhalb":
         setScreen("ort");
+        window.scrollTo({
+          top: 0,
+          left: 0,
+          behavior: "instant" as ScrollBehavior,
+        });
         break;
       default:
         break;
     }
-  }, [screen, state]);
+  }, [screen, state, stepSequence]);
 
   const nextDisabled = useMemo(() => {
     if (isBwFachdetailScreenId(screen)) {
@@ -620,7 +743,8 @@ function FunnelRechnerInner() {
         state.bereiche,
         state.situation === "notfall",
         state.fachdetails,
-        g
+        g,
+        state.situation
       );
     }
     switch (screen) {
@@ -642,8 +766,12 @@ function FunnelRechnerInner() {
         return !state.zustand;
       case "groesse":
         return state.groesse == null;
+      case "bad_ausstattung":
+        return !state.badAusstattung;
       case "ort": {
-        if (state.plz.length < 4 || !state.zeitraum) return true;
+        if (state.plz.length < 4) return true;
+        if (needsZeitraumSelection(state.situation) && !state.zeitraum)
+          return true;
         const plzSt = getPlzStatus(state.plz);
         // Ungültige PLZ blockiert, ausserhalb zeigt eigenen Button
         return plzSt === "ungueltig" || plzSt === "ausserhalb";
@@ -668,17 +796,19 @@ function FunnelRechnerInner() {
       default:
         return true;
     }
-  }, [screen, state, umfangOk]);
+  }, [screen, state, umfangOk, schimmelBeratung]);
 
   const nextLabel = useMemo(() => {
     if (screen === "trust_intro") return "Los geht's →";
-    if (screen === "ort") return "Preis berechnen";
+    if (screen === "ort") {
+      return priceConfirmed ? "Weiter →" : "Preis berechnen";
+    }
     if (screen === "lead") return "Absenden →";
     if (screen === "beratung-lead") return "Rückruf anfordern →";
     if (screen === "result" && resultModus === "preisrahmen_warnung")
       return "Vor-Ort-Termin anfragen →";
     return "Weiter →";
-  }, [screen, resultModus]);
+  }, [screen, resultModus, priceConfirmed]);
 
   const showFooterNav = screen !== "danke" && screen !== "ausserhalb";
 
@@ -735,7 +865,7 @@ function FunnelRechnerInner() {
       bereiche: state.bereiche,
       beschreibung: state.leadBeschreibung.trim(),
       photoCount: state.photos.length,
-      kundentyp: isB2bSituation(state.situation)
+      kundentyp: isB2B(state.situation)
         ? (state.situation ?? "b2b")
         : (state.kundentyp ?? "nicht angegeben"),
       leadType: "beratung" as const,
@@ -811,26 +941,39 @@ function FunnelRechnerInner() {
       <div className="space-y-3">
         {step.options.map((opt) => {
           const libOpt = asLibOpt(opt);
+          const funnelOpt = opt as FunnelStepOption;
           const selected = multi
             ? selectedMulti.includes(opt.value)
             : selectedSingle === opt.value;
           return (
-            <SelectionTile
-              key={opt.value}
-              option={libOpt}
-              icon={
-                libOpt.emoji ? undefined : tileIconForStepValue(opt.value)
-              }
-              selected={selected}
-              multi={multi}
-              onChange={(value, sel) => {
-                if (multi) {
-                  toggleBereich(value);
-                } else {
-                  setBereiche(sel ? [value] : []);
+            <Fragment key={opt.value}>
+              {funnelOpt.section ? (
+                <p className="mb-1 mt-4 text-xs font-semibold uppercase tracking-wide text-text-tertiary first:mt-0">
+                  {funnelOpt.section}
+                </p>
+              ) : null}
+              <SelectionTile
+                option={libOpt}
+                icon={
+                  libOpt.emoji ? undefined : tileIconForStepValue(opt.value)
                 }
-              }}
-            />
+                selected={selected}
+                multi={multi}
+                onChange={(value, sel) => {
+                  if (multi && sel && funnelOpt.direktKomplex) {
+                    setBereiche([value]);
+                    setSchimmelBeratung(true);
+                    setScreen("beratung-lead");
+                    return;
+                  }
+                  if (multi) {
+                    toggleBereich(value);
+                  } else {
+                    setBereiche(sel ? [value] : []);
+                  }
+                }}
+              />
+            </Fragment>
           );
         })}
       </div>
@@ -919,8 +1062,12 @@ function FunnelRechnerInner() {
     if (isBwFachdetailScreenId(screen)) {
       const g = getBwFachdetailGewerkFromScreen(screen);
       if (!g) return null;
-      const aktive = getAktiveFachdetailGewerke(state.bereiche, 2);
-      const gewerkIndex = aktive.indexOf(g);
+      const fachdetailSteps = stepSequence.filter((s) =>
+        s.startsWith("fachdetails_")
+      );
+      const fachdetailIndex = fachdetailSteps.indexOf(screen);
+      const gewerkIndex = fachdetailIndex >= 0 ? fachdetailIndex : 0;
+      const totalGewerke = fachdetailSteps.length;
       return (
         <StepWrapper
           stepLabel="Details"
@@ -929,10 +1076,10 @@ function FunnelRechnerInner() {
         >
           <FachdetailsStep
             gewerk={g}
-            totalGewerke={aktive.length}
-            gewerkIndex={gewerkIndex >= 0 ? gewerkIndex : 0}
+            totalGewerke={totalGewerke}
+            gewerkIndex={gewerkIndex}
             isLastFachdetailScreen={
-              gewerkIndex >= 0 && gewerkIndex === aktive.length - 1
+              totalGewerke > 0 && gewerkIndex === totalGewerke - 1
             }
             showOmitHint={state.showOmitHint ?? false}
             state={state}
@@ -969,7 +1116,8 @@ function FunnelRechnerInner() {
                     onClick={() => setSituation(opt.id)}
                     className={cn(
                       "funnel-tile",
-                      active && "selected"
+                      active && "selected",
+                      opt.highlight && "funnel-tile--notfall-highlight"
                     )}
                   >
                     <span className="funnel-tile-emoji" aria-hidden>
@@ -1140,6 +1288,42 @@ function FunnelRechnerInner() {
           </StepWrapper>
         ) : null;
 
+      case "bad_ausstattung":
+        return (
+          <StepWrapper
+            stepLabel="Bad"
+            question={BW_FUNNEL_STEP_BAD_AUSSTATTUNG.question}
+            subtext={BW_FUNNEL_STEP_BAD_AUSSTATTUNG.subtext}
+            animateKey={`${screen}-${state.situation}`}
+            tilesCard
+          >
+            <div className="space-y-3">
+              {BW_FUNNEL_STEP_BAD_AUSSTATTUNG.options?.map((opt) => {
+                const libOpt = asLibOpt(opt);
+                const selected = state.badAusstattung === opt.value;
+                return (
+                  <SelectionTile
+                    key={opt.value}
+                    option={libOpt}
+                    icon={
+                      libOpt.emoji ? undefined : tileIconForStepValue(opt.value)
+                    }
+                    selected={selected}
+                    multi={false}
+                    onChange={(value, sel) => {
+                      setBadAusstattung(
+                        sel
+                          ? (value as "standard" | "komfort" | "gehoben")
+                          : null
+                      );
+                    }}
+                  />
+                );
+              })}
+            </div>
+          </StepWrapper>
+        );
+
       case "ort":
         return (
           <StepWrapper
@@ -1150,6 +1334,7 @@ function FunnelRechnerInner() {
             animateKey={screen}
           >
             <PlzStep
+              situation={state.situation}
               plz={state.plz}
               zeitraum={state.zeitraum ?? ""}
               onPlzChange={setPlz}
@@ -1188,9 +1373,35 @@ function FunnelRechnerInner() {
         );
 
       case "beratung-lead":
-        if (state.situation === "gewerbe" || state.situation === "gastro") {
+        if (state.situation && isB2B(state.situation)) {
           return (
             <BwBeratungLead
+              kind="b2b"
+              situation={state.situation}
+              vorname={state.vorname}
+              nachname={state.nachname}
+              telefon={state.telefon}
+              email={state.email}
+              beschreibung={state.leadBeschreibung}
+              datenschutz={beratungDatenschutz}
+              datenschutzError={beratungDatenschutzError}
+              onDatenschutzChange={(v) => {
+                setBeratungDatenschutz(v);
+                if (v) setBeratungDatenschutzError(false);
+              }}
+              onFieldChange={updateLeadField}
+              formId={BERATUNG_LEAD_FORM_ID}
+              onSubmit={handleBeratungLeadSubmit}
+            />
+          );
+        }
+        if (
+          schimmelBeratung ||
+          state.bereiche.includes("schimmel")
+        ) {
+          return (
+            <BwBeratungLead
+              kind="schimmel"
               situation={state.situation}
               vorname={state.vorname}
               nachname={state.nachname}
@@ -1336,7 +1547,7 @@ function FunnelRechnerInner() {
                 Anfrage senden →
               </button>
               <p className="text-center text-[11px] leading-relaxed text-text-tertiary">
-                Wir melden uns innerhalb von 48h — unverbindlich.
+                Wir melden uns innerhalb von 48h — ohne Verpflichtung.
               </p>
             </form>
             </div>
@@ -1349,7 +1560,7 @@ function FunnelRechnerInner() {
             <ThankYou
               variant="beratung"
               beratungHeadline="Wir melden uns persönlich."
-              beratungSubline="Wir rufen dich innerhalb von 24h zurück — unverbindlich."
+              beratungSubline="Wir rufen dich innerhalb von 24h zurück — ohne Verpflichtung."
               showTimeline={false}
               onReset={handleReset}
             />
@@ -1365,7 +1576,7 @@ function FunnelRechnerInner() {
             />
           );
         }
-        if (isB2bSituation(state.situation)) {
+        if (isB2B(state.situation)) {
           const gastro = state.situation === "gastro";
           return (
             <ThankYou
@@ -1374,7 +1585,7 @@ function FunnelRechnerInner() {
               beratungSubline={
                 gastro
                   ? "Gastro-Projekte planen wir persönlich. Wir melden uns innerhalb von 24h."
-                  : "Wir melden uns innerhalb von 24h persönlich bei dir — unverbindlich."
+                  : "Wir melden uns innerhalb von 24h persönlich bei dir — ohne Verpflichtung."
               }
               showTimeline={false}
               showCalendar={false}

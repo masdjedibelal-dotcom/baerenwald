@@ -117,8 +117,8 @@ const TESTIMONIAL_COLORS: Record<
 };
 
 const HERO_CHIPS: { label: string; situation: FunnelSituation }[] = [
-  { label: "Wohnung renovieren", situation: "renovieren" },
-  { label: "Heizung & Sanitär", situation: "sanieren" },
+  { label: "Zuhause erneuern", situation: "erneuern" },
+  { label: "Reparatur / Defekt", situation: "kaputt" },
   { label: "Notfall — sofort", situation: "notfall" },
 ];
 
