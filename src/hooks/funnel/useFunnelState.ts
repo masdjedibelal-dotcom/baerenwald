@@ -26,6 +26,10 @@ export type BwFunnelAction =
   | { type: "SET_ZUGAENGLICHKEIT"; value: Zugaenglichkeit | null }
   | { type: "SET_ZUSTAND"; value: ObjektZustand | null }
   | { type: "SET_FACHDETAILS"; patch: Partial<FachdetailsState> }
+  | {
+      type: "SET_BAD_AUSSTATTUNG";
+      value: "standard" | "komfort" | "gehoben" | null;
+    }
   | { type: "SET_PHOTOS"; files: File[] }
   | {
       type: "UPDATE_LEAD_FIELD";
@@ -67,6 +71,7 @@ export const BW_FUNNEL_INITIAL_STATE: FunnelState = {
   umfangFaktor: 1,
   groesse: null,
   groesseEinheit: null,
+  badAusstattung: null,
   plz: "",
   zeitraum: null,
   priceMin: 0,
@@ -120,6 +125,7 @@ function bwFunnelReducer(
         bereiche,
         groesse: null,
         groesseEinheit: null,
+        badAusstattung: null,
         zugaenglichkeit: null,
         zustand: null,
         fachdetails: {},
@@ -137,6 +143,7 @@ function bwFunnelReducer(
         bereiche,
         groesse: null,
         groesseEinheit: null,
+        badAusstattung: null,
         zugaenglichkeit: null,
         zustand: null,
         fachdetails: {},
@@ -151,6 +158,7 @@ function bwFunnelReducer(
         umfangFaktor: action.faktor,
         groesse: null,
         groesseEinheit: null,
+        badAusstattung: null,
         zugaenglichkeit: null,
         zustand: null,
         fachdetails: {},
@@ -178,6 +186,9 @@ function bwFunnelReducer(
 
     case "SET_ZUSTAND":
       return { ...state, zustand: action.value };
+
+    case "SET_BAD_AUSSTATTUNG":
+      return { ...state, badAusstattung: action.value };
 
     case "SET_FACHDETAILS": {
       const p = action.patch;
@@ -212,6 +223,14 @@ function bwFunnelReducer(
             p.garten !== undefined
               ? { ...state.fachdetails.garten, ...p.garten }
               : state.fachdetails.garten,
+          fenster:
+            p.fenster !== undefined
+              ? { ...state.fachdetails.fenster, ...p.fenster }
+              : state.fachdetails.fenster,
+          kueche:
+            p.kueche !== undefined
+              ? { ...state.fachdetails.kueche, ...p.kueche }
+              : state.fachdetails.kueche,
         },
       };
     }
@@ -315,6 +334,13 @@ export function useBwFunnelState() {
     dispatch({ type: "SET_FACHDETAILS", patch });
   }, []);
 
+  const setBadAusstattung = useCallback(
+    (value: "standard" | "komfort" | "gehoben" | null) => {
+      dispatch({ type: "SET_BAD_AUSSTATTUNG", value });
+    },
+    []
+  );
+
   const setPrice = useCallback(
     (
       min: number,
@@ -397,6 +423,7 @@ export function useBwFunnelState() {
       setZugaenglichkeit,
       setZustand,
       setFachdetails,
+      setBadAusstattung,
       setPrice,
       setBudgetCheck,
       setSlot,
@@ -419,6 +446,7 @@ export function useBwFunnelState() {
       setZugaenglichkeit,
       setZustand,
       setFachdetails,
+      setBadAusstattung,
       setPrice,
       setBudgetCheck,
       setSlot,

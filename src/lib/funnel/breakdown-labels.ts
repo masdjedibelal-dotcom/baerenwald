@@ -8,17 +8,27 @@ export const LEISTUNGS_LABELS: Record<string, string> = {
   "sanitaer.armatur": "Armatur / Bad",
   "elektro.steckdose": "Elektro (einzelne Punkte)",
   "elektro.fi_schalter": "Elektrik erneuern",
+  "elektro.sicherungskasten": "Sicherungskasten modernisieren",
+  "elektro.echeck": "E-Check / Sicherheitsprüfung",
   "elektro.fehlersuche": "Elektro Fehlersuche",
   "elektro.qm": "Elektrik (nach Fläche)",
   "elektro.punkte": "Elektro (einzelne Punkte)",
   "garten.rasen": "Rasenpflege",
+  "garten.pflege_klein": "Gartenpflege (klein)",
+  "garten.pflege_mittel": "Gartenpflege (mittel)",
+  "garten.pflege_gross": "Gartenpflege (groß)",
+  "garten.gestaltung": "Gartengestaltung",
+  "garten.baum_klein": "Baumpflege",
+  "garten.baum_gross": "Baumpflege (groß)",
   "garten.hecke": "Heckenschnitt",
   "garten.pflaster": "Pflaster / Terrasse",
   "maler.waende": "Wände streichen",
   "maler.waende_decke": "Wände + Decke streichen",
+  "maler.tapezieren": "Tapezieren",
   "maler.fassade": "Fassade streichen",
   "boden.laminat": "Laminat verlegen",
   "boden.parkett": "Parkett verlegen",
+  "boden.parkett_schleifen": "Parkett abschleifen & versiegeln",
   "boden.vinyl": "Vinyl / Designboden",
   "boden.fliesen": "Fliesen verlegen",
   "boden.teppich": "Teppich verlegen",
@@ -26,14 +36,24 @@ export const LEISTUNGS_LABELS: Record<string, string> = {
   "bad.komplett": "Bad komplett",
   "bad.objekte": "Sanitärobjekte",
   "heizung.gas": "Heizung (Gas)",
+  "heizung.klein": "Heizungssanierung",
+  "heizung.mittel": "Heizungssanierung",
+  "heizung.gross": "Heizungssanierung",
   "heizung.wartung": "Heizungswartung",
+  "heizung.heizkoerper": "Heizkörper tauschen",
   "heizung.tausch": "Heizungstausch",
+  "heizung_notfall.ausfall": "Notfall Heizung / Wasser",
+  "dach.ziegel_wenige": "Dach — wenige Ziegel",
+  "dach.ziegel_bereich": "Dach — Ziegelbereich",
   "dach.ziegel": "Dach reparieren",
+  "dach.daemmung": "Dachdämmung",
   "dach.komplett": "Dach sanieren",
   "dach.regenrinne": "Regenrinne",
   "fassade.anstrich": "Fassade streichen",
   "fassade.daemmung": "Fassade / Dämmung",
-  "fenster.standard": "Fenster / Türen",
+  "fenster.standard": "Fenster Standard",
+  "fenster.premium": "Fenster Premium",
+  "elektro.leitungen": "Elektro — Leitungen",
   "kueche.aufbau": "Küche Montage",
   "kueche.montage": "Küche Montage",
   "ausbau.umbau": "Ausbau / Umbau",
@@ -81,6 +101,7 @@ function beschreibungToTypeSlug(beschreibung: string, gewerk: string): string {
   }
   if (gewerk === "Boden") {
     if (b.includes("laminat")) return "laminat";
+    if (b.includes("abschleif") && b.includes("versiegel")) return "parkett_schleifen";
     if (b.includes("parkett")) return "parkett";
     if (b.includes("vinyl") || b.includes("designboden")) return "vinyl";
     if (b.includes("fliesen")) return "fliesen";
@@ -89,6 +110,7 @@ function beschreibungToTypeSlug(beschreibung: string, gewerk: string): string {
   }
   if (gewerk === "Maler") {
     if (b.includes("decke")) return "waende_decke";
+    if (b.includes("tapezier")) return "tapezieren";
     if (b.includes("wände") || b.includes("wand")) return "waende";
     return "waende";
   }
@@ -100,17 +122,30 @@ function beschreibungToTypeSlug(beschreibung: string, gewerk: string): string {
     return "anstrich";
   }
   if (gewerk === "Heizung") {
+    if (b.includes("heizkörper") || b.includes("heizkoerper")) return "heizkoerper";
     if (b.includes("wartung") || b.includes("notfall")) return "wartung";
-    if (b.includes("tausch") || b.includes("sanierung")) return "tausch";
+    if (b.includes("(klein)")) return "klein";
+    if (b.includes("(mittel)")) return "mittel";
+    if (b.includes("(groß)") || b.includes("(gross)")) return "gross";
+    if (b.includes("tausch") || b.includes("sanierung")) return "mittel";
     return "gas";
   }
   if (gewerk === "Dach") {
-    if (b.includes("ziegel")) return "ziegel";
+    if (b.includes("wenige ziegel")) return "ziegel_wenige";
+    if (b.includes("größerer ziegel") || b.includes("groesserer ziegel")) {
+      return "ziegel_bereich";
+    }
+    if (b.includes("ziegel")) return "ziegel_wenige";
+    if (b.includes("dämmung") || b.includes("daemmung")) return "daemmung";
     if (b.includes("regenrinne") || b.includes("ablauf")) return "regenrinne";
     return "komplett";
   }
   if (gewerk === "Elektro") {
     if (b.includes("fehlersuche")) return "fehlersuche";
+    if (b.includes("e-check") || b.includes("echeck") || b.includes("sicherheitsprüf")) {
+      return "echeck";
+    }
+    if (b.includes("sicherungskasten modern")) return "sicherungskasten";
     if (b.includes("fi") || b.includes("sicherungs")) return "fi_schalter";
     if (b.includes("fläche") || b.includes("nach fläche")) return "qm";
     if (b.includes("punkt") || b.includes("arbeitspunkt")) return "punkte";
@@ -125,15 +160,24 @@ function beschreibungToTypeSlug(beschreibung: string, gewerk: string): string {
     return "armatur";
   }
   if (gewerk === "Garten") {
+    if (b.includes("pflege") && b.includes("klein")) return "pflege_klein";
+    if (b.includes("pflege") && b.includes("mittel")) return "pflege_mittel";
+    if (b.includes("pflege") && b.includes("groß")) return "pflege_gross";
+    if (b.includes("pflege") && b.includes("gross")) return "pflege_gross";
+    if (b.includes("gestaltung")) return "gestaltung";
+    if (b.includes("baum") && b.includes("groß")) return "baum_gross";
+    if (b.includes("baum") && b.includes("gross")) return "baum_gross";
+    if (b.includes("baum")) return "baum_klein";
     if (b.includes("rasen")) return "rasen";
     if (b.includes("hecke")) return "hecke";
     if (b.includes("pflaster") || b.includes("terrasse")) return "pflaster";
-    return "rasen";
+    return "pflege_mittel";
   }
   if (gewerk === "Küche" || gewerk === "Kueche") {
     return "aufbau";
   }
   if (gewerk === "Fenster") {
+    if (b.includes("premium")) return "premium";
     return "standard";
   }
   if (gewerk === "Gartenpflege") return "saison";

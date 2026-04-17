@@ -12,14 +12,15 @@ import {
   MALER_Q1,
 } from "@/lib/funnel/fachdetails-questions";
 import type { FachdetailGewerkKey } from "@/lib/funnel/fachdetails-notfall";
-import type { FachdetailsState } from "@/lib/funnel/types";
+import type { FachdetailsState, Situation } from "@/lib/funnel/types";
 
 /** Ob für ein Gewerk alle in der UI gestaffelten Fragen beantwortet sind (inkl. Folgefragen). */
 export function isFachdetailGewerkChainComplete(
   bereiche: string[],
   situationNotfall: boolean,
   fd: FachdetailsState,
-  g: FachdetailGewerkKey
+  g: FachdetailGewerkKey,
+  situation: Situation | null = null
 ): boolean {
   const needBadExtra = bereiche.includes("bad");
 
@@ -89,6 +90,20 @@ export function isFachdetailGewerkChainComplete(
       return fd.elektro?.folge !== undefined;
     }
     case "sanitaer": {
+      if (
+        needBadExtra &&
+        situation === "erneuern" &&
+        fd.sanitaer?.badWas === "wanne_dusche"
+      ) {
+        return true;
+      }
+      if (
+        needBadExtra &&
+        situation === "erneuern" &&
+        !fd.sanitaer?.badWas
+      ) {
+        return false;
+      }
       if (!fd.sanitaer?.lage) return false;
       if (fd.sanitaer.lage === "wand" && fd.sanitaer.rohre === undefined) {
         return false;
@@ -129,6 +144,19 @@ export function isFachdetailGewerkChainComplete(
       if (!dachFollowQ) return true;
       return fd.dach?.alter !== undefined;
     }
+    case "fenster": {
+      if (
+        situation === "kaputt" &&
+        bereiche.includes("fenster_tuer") &&
+        !bereiche.includes("fenster")
+      ) {
+        return Boolean(fd.fenster?.defekt);
+      }
+      return Boolean(fd.fenster?.ausstattung);
+    }
+    case "kueche": {
+      return Boolean(fd.kueche?.vorhaben);
+    }
     case "garten": {
       if (!fd.garten?.was) return false;
       if (!gartenFollowQ) return true;
@@ -144,6 +172,6 @@ export function isFachdetailGewerkChainComplete(
       return true;
     }
     default:
-      return true;
+      return false;
   }
 }

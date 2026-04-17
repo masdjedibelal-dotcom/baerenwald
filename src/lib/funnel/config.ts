@@ -4,6 +4,11 @@ import {
   shouldSwapFachdetailsBeforeGroesse,
   skipGroesseForSanierenDachKleinjob,
 } from "./dach-step-order";
+import {
+  applyGroesseStepCopy,
+  isHausmeisterOnlyBereiche,
+  shouldFilterGroesseStep,
+} from "./groesse-config";
 import type {
   FachdetailsState,
   FunnelState,
@@ -11,153 +16,184 @@ import type {
   Kundentyp,
   Situation,
   StepOption,
+  Zeitraum,
 } from "./types";
 
 export { shouldSwapFachdetailsBeforeGroesse, skipGroesseForSanierenDachKleinjob };
 
-/** Slider + Chips + Direkteingabe (Rechner „Größe“) */
-export type GroesseSliderConfig = {
-  min: number;
-  max: number;
-  step: number;
-  default: number;
-  einheit: string;
-  einheitKurz: string;
-  chips: { label: string; value: number }[];
+/** Eine Zeitraum-Kachel im PLZ-Schritt */
+export type ZeitraumOption = {
+  value: Zeitraum;
+  label: string;
+  hint: string;
+  emoji: string;
 };
 
-export const GROESSE_CONFIG: {
-  flaeche: GroesseSliderConfig;
-  wohnflaeche: GroesseSliderConfig;
-  stueck: GroesseSliderConfig;
-  garten: GroesseSliderConfig;
-  laufmeter: GroesseSliderConfig;
-  pauschal: null;
-} = {
-  flaeche: {
-    min: 10,
-    max: 200,
-    step: 5,
-    default: 50,
-    einheit: "Fläche in m²",
-    einheitKurz: "m²",
-    chips: [
-      { label: "bis 30 m²", value: 25 },
-      { label: "30–60 m²", value: 45 },
-      { label: "60–100 m²", value: 80 },
-      { label: "100–150 m²", value: 125 },
-      { label: "über 150 m²", value: 175 },
-    ],
-  },
-  wohnflaeche: {
-    min: 20,
-    max: 300,
-    step: 10,
-    default: 80,
-    einheit: "Wohnfläche in m²",
-    einheitKurz: "m²",
-    chips: [
-      { label: "bis 50 m²", value: 40 },
-      { label: "50–80 m²", value: 65 },
-      { label: "80–120 m²", value: 100 },
-      { label: "120–200 m²", value: 160 },
-      { label: "über 200 m²", value: 230 },
-    ],
-  },
-  stueck: {
-    min: 1,
-    max: 20,
-    step: 1,
-    default: 3,
-    einheit: "Anzahl Stück",
-    einheitKurz: "Stück",
-    chips: [
-      { label: "1 Stück", value: 1 },
-      { label: "2–3 Stück", value: 2 },
-      { label: "4–6 Stück", value: 5 },
-      { label: "7–10 Stück", value: 8 },
-      { label: "über 10", value: 12 },
-    ],
-  },
-  garten: {
-    min: 20,
-    max: 1000,
-    step: 10,
-    default: 150,
-    einheit: "Gartenfläche in m²",
-    einheitKurz: "m²",
-    chips: [
-      { label: "bis 50 m²", value: 35 },
-      { label: "50–150 m²", value: 100 },
-      { label: "150–300 m²", value: 225 },
-      { label: "300–600 m²", value: 450 },
-      { label: "über 600 m²", value: 700 },
-    ],
-  },
-  laufmeter: {
-    min: 5,
-    max: 80,
-    step: 5,
-    default: 18,
-    einheit: "Gehweglänge in m",
-    einheitKurz: "m",
-    chips: [
-      { label: "Bis 10 m", value: 7 },
-      { label: "10–25 m", value: 18 },
-      { label: "über 25 m", value: 35 },
-    ],
-  },
-  pauschal: null,
+/** Zeitraum-Chips je Situation (Notfall / B2B: leer — kein Zeitraum-Schritt). */
+export const ZEITRAUM_OPTIONS: Record<Situation, ZeitraumOption[]> = {
+  notfall: [],
+  gewerbe: [],
+  gastro: [],
+  erneuern: [
+    {
+      value: "vier_wochen",
+      label: "Innerhalb 4 Wochen",
+      hint: "Wir prüfen die Verfügbarkeit",
+      emoji: "🗓️",
+    },
+    {
+      value: "zwei_monate",
+      label: "In 1–2 Monaten",
+      hint: "Guter Vorlauf für Planung",
+      emoji: "📆",
+    },
+    {
+      value: "sechs_monate",
+      label: "In 3–6 Monaten",
+      hint: "Kein Zeitdruck",
+      emoji: "📋",
+    },
+    {
+      value: "flexibel",
+      label: "Ich bin flexibel",
+      hint: "Wir stimmen uns ab",
+      emoji: "💭",
+    },
+  ],
+  kaputt: [
+    {
+      value: "sofort",
+      label: "So schnell wie möglich",
+      hint: "Wir schauen was kurzfristig möglich ist",
+      emoji: "⚡",
+    },
+    {
+      value: "diese_woche",
+      label: "Diese Woche",
+      hint: "Innerhalb 7 Tage",
+      emoji: "📅",
+    },
+    {
+      value: "vier_wochen",
+      label: "Innerhalb 4 Wochen",
+      hint: "Etwas Puffer",
+      emoji: "🗓️",
+    },
+    {
+      value: "flexibel",
+      label: "Ich bin flexibel",
+      hint: "Kein fixer Zeitplan",
+      emoji: "💭",
+    },
+  ],
+  neubauen: [
+    {
+      value: "zwei_monate",
+      label: "In 1–2 Monaten",
+      hint: "",
+      emoji: "🗓️",
+    },
+    {
+      value: "sechs_monate",
+      label: "In 3–6 Monaten",
+      hint: "",
+      emoji: "📆",
+    },
+    {
+      value: "naechstes_jahr",
+      label: "Nächstes Jahr",
+      hint: "",
+      emoji: "📋",
+    },
+    {
+      value: "flexibel",
+      label: "Ich bin flexibel",
+      hint: "",
+      emoji: "💭",
+    },
+  ],
+  betreuung: [
+    {
+      value: "sofort",
+      label: "Ab sofort",
+      hint: "",
+      emoji: "⚡",
+    },
+    {
+      value: "naechster_monat",
+      label: "Nächsten Monat",
+      hint: "",
+      emoji: "📅",
+    },
+    {
+      value: "naechste_saison",
+      label: "Zur nächsten Saison",
+      hint: "",
+      emoji: "🌿",
+    },
+    {
+      value: "flexibel",
+      label: "Ich bin flexibel",
+      hint: "",
+      emoji: "💭",
+    },
+  ],
 };
 
-export function groesseEinheitFromConfig(
-  c: GroesseSliderConfig
-): "qm" | "stueck" | "meter" {
-  if (c.einheitKurz === "Stück") return "stueck";
-  if (c.einheitKurz === "m" && !c.einheit.includes("m²")) return "meter";
-  return "qm";
+/** Überschrift + Kurztext für den Zeitraum-Block im PLZ-Schritt */
+export const ZEITRAUM_FRAGEN: Record<
+  Situation,
+  { question: string; hint: string }
+> = {
+  erneuern: {
+    question: "Wann planst du den Start?",
+    hint: "Größere Arbeiten brauchen etwas Vorlauf für Planung und Material",
+  },
+  kaputt: {
+    question: "Wann soll es losgehen?",
+    hint: "Hilft uns bei der Terminplanung",
+  },
+  neubauen: {
+    question: "Wann soll das Projekt starten?",
+    hint: "Wir planen gemeinsam den realistischen Zeitplan",
+  },
+  betreuung: {
+    question: "Ab wann soll jemand kommen?",
+    hint: "Für regelmäßige Betreuung planen wir den Start",
+  },
+  notfall: { question: "", hint: "" },
+  gewerbe: { question: "", hint: "" },
+  gastro: { question: "", hint: "" },
+};
+
+export function getZeitraumOptions(
+  situation: Situation | null
+): ZeitraumOption[] {
+  const key = situation ?? "erneuern";
+  return ZEITRAUM_OPTIONS[key] ?? ZEITRAUM_OPTIONS.erneuern;
 }
 
-export function getGroesseConfig(
-  state: Pick<FunnelState, "situation" | "bereiche">
-): GroesseSliderConfig | null {
-  const { situation, bereiche } = state;
-  const b = bereiche;
-
-  if (situation === "notfall") {
-    return GROESSE_CONFIG.pauschal;
-  }
-
-  const fensterLike =
-    b.includes("fenster_tueren") ||
-    b.includes("fenster_daemmung") ||
-    b.includes("fenster") ||
-    b.includes("tueren");
-  if (fensterLike) {
-    return GROESSE_CONFIG.stueck;
-  }
-
-  if (
-    situation === "betreuung" &&
-    (b.includes("garten") || b.includes("gestaltung"))
-  ) {
-    return GROESSE_CONFIG.garten;
-  }
-
-  if (situation === "betreuung" && b.includes("winter")) {
-    return GROESSE_CONFIG.laufmeter;
-  }
-
-  if (situation === "betreuung" && b.includes("baum")) {
-    return GROESSE_CONFIG.stueck;
-  }
-
-  if (b.includes("bad") || b.includes("heizung")) {
-    return GROESSE_CONFIG.wohnflaeche;
-  }
-
-  return GROESSE_CONFIG.flaeche;
+export function getZeitraumFragen(
+  situation: Situation | null
+): { question: string; hint: string } {
+  const key = situation ?? "erneuern";
+  return ZEITRAUM_FRAGEN[key] ?? ZEITRAUM_FRAGEN.erneuern;
 }
+
+/** Ob im Ort-Schritt eine Zeitraum-Auswahl nötig ist */
+export function needsZeitraumSelection(situation: Situation | null): boolean {
+  return getZeitraumOptions(situation).length > 0;
+}
+
+export type { GroesseChip, GroesseSliderConfig } from "./groesse-config";
+export {
+  GROESSE_CONFIG,
+  getGroesseConfig,
+  groesseEinheitFromConfig,
+  isElektroOnlyBereiche,
+  isHausmeisterOnlyBereiche,
+  shouldSkipGroesseForBereiche,
+} from "./groesse-config";
 
 function kundentypOption(
   value: Kundentyp,
@@ -173,8 +209,8 @@ function kundentypOption(
 /** Optionen für den Schritt „Kundentyp“ — abhängig von der Situation */
 export function getKundentypOptions(situation: Situation): StepOption[] {
   switch (situation) {
-    case "renovieren":
-    case "sanieren":
+    case "erneuern":
+    case "kaputt":
       return [
         kundentypOption(
           "eigentuemer",
@@ -307,106 +343,91 @@ export const SITUATIONEN_CONFIG: Record<
   Situation,
   { steps: FunnelStep[]; skipGroesse?: boolean; skipUmfang?: boolean }
 > = {
-  renovieren: {
+  erneuern: {
+    skipUmfang: true,
     steps: [
       {
-        id: "renovieren_bereiche",
-        question: "Was soll gemacht werden?",
-        subtext: "Wähle die Bereiche aus, die betroffen sind.",
+        id: "erneuern_bereiche",
+        question: "Was soll erneuert werden?",
+        subtext: "Mehrfachauswahl möglich",
         inputType: "tiles-multi",
         options: [
           {
+            section: "Innenbereich",
             value: "bad",
-            label: "Das Bad",
-            hint: "Wasser & Heizung, Fliesen, Lüftung",
+            label: "Bad",
+            hint: "Fliesen, Sanitär, komplett neu",
             emoji: "🚿",
-            infoText:
-              "Komplettes Bad: Fliesen, WC, Dusche und Waschtisch, ggf. Lüftung. Größter Eingriff aber auch größter Wertzuwachs.",
             triggerGewerke: ["bad", "fliesen", "sanitaer"],
           },
           {
             value: "kueche",
-            label: "Die Küche",
-            hint: "Anschlüsse, Boden, Wände",
+            label: "Küche",
+            hint: "Fronten, Einbauküche, Modernisierung",
             emoji: "🍳",
-            infoText:
-              "Wasser, Strom, Gas anschließen plus Boden und Wände. Meist 1–3 Tage.",
             triggerGewerke: ["kueche", "boden", "maler"],
           },
           {
-            value: "waende_boeden",
-            label: "Wände & Böden",
-            hint: "Ein oder mehrere Räume",
-            emoji: "🖌️",
-            infoText:
-              "Streichen, tapezieren, neuer Boden. Preis hängt stark von Fläche und Materialwahl ab.",
-            triggerGewerke: ["maler", "boden"],
+            value: "boden",
+            label: "Boden",
+            hint: "Laminat, Parkett, Vinyl, Fliesen",
+            emoji: "🪵",
+            triggerGewerke: ["boden"],
           },
           {
-            value: "fenster_tueren",
-            label: "Fenster oder Türen",
-            hint: "Tausch oder Reparatur",
+            value: "waende",
+            label: "Wände / Anstrich",
+            hint: "Streichen, tapezieren, ausbessern",
+            emoji: "🖌️",
+            triggerGewerke: ["maler"],
+          },
+          {
+            value: "elektrik",
+            label: "Elektrik",
+            hint: "Leitungen, Sicherungskasten, Steckdosen",
+            emoji: "⚡",
+            triggerGewerke: ["elektro"],
+          },
+          {
+            value: "trockenbau",
+            label: "Trennwand / Umbau",
+            hint: "Neues Zimmer, Wanddurchbruch",
+            emoji: "🧱",
+            triggerGewerke: ["bau"],
+          },
+          {
+            section: "Außen & Technik",
+            value: "heizung",
+            label: "Heizung",
+            hint: "Neue Anlage, Wartung, Heizkörper",
+            emoji: "🔥",
+            triggerGewerke: ["heizung"],
+          },
+          {
+            value: "fenster",
+            label: "Fenster / Türen",
+            hint: "Neue Fenster oder Türen einbauen",
             emoji: "🪟",
-            infoText:
-              "Moderne Fenster senken Heizkosten und Lärmbelastung. Preis pro Stück.",
             triggerGewerke: ["fenster"],
           },
           {
-            value: "feuchtigkeit_schimmel",
-            label: "Feuchtigkeit oder Schimmel",
-            hint: "Wasserflecken, muffiger Geruch, sichtbarer Befall",
-            emoji: "🍄",
-            infoText:
-              "Sanierung und Ursachenklärung planen wir mit Maler- und Sanitärgewerk — in Ruhe und ohne Druck.",
-            triggerGewerke: ["maler", "sanitaer"],
+            value: "dach",
+            label: "Dach",
+            hint: "Ziegel, Dämmung, komplett neu",
+            emoji: "🏠",
+            triggerGewerke: ["dach"],
+          },
+          {
+            value: "fassade",
+            label: "Fassade",
+            hint: "Anstrich, Dämmung, WDVS",
+            emoji: "🧱",
+            triggerGewerke: ["fassade", "daemmung"],
           },
         ],
       },
       {
-        id: "renovieren_umfang",
-        question: "In welchem Umfang soll das Projekt umgesetzt werden?",
-        inputType: "tiles-single",
-        options: [
-          {
-            value: "auffrischen",
-            label: "Kleines Auffrischen",
-            hint: "Nur einzelne Bereiche oder optische Verbesserungen",
-            emoji: "✨",
-            faktor: 1.0,
-            infoText:
-              "Kein Abriss, keine neuen Leitungen. Schnellste Variante. Typisch 1–3 Tage.",
-          },
-          {
-            value: "teil",
-            label: "Teilrenovierung",
-            hint: "Mehrere Bereiche werden überarbeitet",
-            emoji: "🔨",
-            faktor: 1.5,
-            infoText:
-              "Ein oder zwei Bereiche werden erneuert. Beispiel: neue Fliesen, WC und Waschtisch bleiben. Typisch 3–7 Tage.",
-          },
-          {
-            value: "komplett",
-            label: "Komplettrenovierung",
-            hint: "Alles wird neu gemacht",
-            emoji: "🏗️",
-            faktor: 2.2,
-            infoText:
-              "Größter Eingriff, größter Wertzuwachs. Typisch 2–4 Wochen. Vor-Ort-Termin zwingend nötig.",
-          },
-          {
-            value: "unsicher",
-            label: "Noch nicht sicher",
-            hint: "Wir beraten dich beim Termin",
-            emoji: "💭",
-            faktor: 1.1,
-            infoText:
-              "Kein Problem — wir rechnen mit einem Durchschnittswert. Beim Vor-Ort-Termin klären wir gemeinsam, was wirklich nötig ist.",
-          },
-        ],
-      },
-      {
-        id: "renovieren_groesse",
+        id: "erneuern_groesse",
         question: "Wie groß ist die Fläche ungefähr?",
         inputType: "tiles-single",
         options: [
@@ -419,112 +440,69 @@ export const SITUATIONEN_CONFIG: Record<
     ],
   },
 
-  sanieren: {
+  kaputt: {
+    skipUmfang: true,
     steps: [
       {
-        id: "sanieren_bereiche",
-        question: "Was soll gemacht werden?",
-        subtext: "Wähle die Bereiche aus, die betroffen sind.",
+        id: "kaputt_bereiche",
+        question: "Was funktioniert nicht richtig?",
+        subtext: "Wähle das betroffene Gewerk",
         inputType: "tiles-multi",
         options: [
           {
             value: "heizung",
-            label: "Die Heizung",
-            hint: "Komplett tauschen oder modernisieren",
+            label: "Heizung defekt",
+            hint: "Geht nicht an, kein warmes Wasser",
             emoji: "🔥",
-            infoText:
-              "Heizungstausch wird mit bis zu 70% durch BAFA und KfW gefördert. Wir helfen beim Förderantrag.",
             triggerGewerke: ["heizung"],
           },
           {
-            value: "dach",
-            label: "Dach oder Fassade",
-            hint: "Sanierung oder Dämmung",
-            emoji: "🏠",
-            infoText:
-              "Gute Dämmung spart bis zu 30% Heizkosten. Oft förderbar.",
-            triggerGewerke: ["dach", "fassade"],
+            value: "sanitaer",
+            label: "Sanitär / Wasser",
+            hint: "Rohr, Leck, WC, Verstopfung",
+            emoji: "💧",
+            triggerGewerke: ["sanitaer"],
           },
           {
-            value: "elektrik",
-            label: "Elektrik oder Leitungen",
-            hint: "Sicherungskasten, Steckdosen",
+            value: "elektro",
+            label: "Elektro-Problem",
+            hint: "Sicherung, Strom weg, Steckdose defekt",
             emoji: "⚡",
-            infoText:
-              "Alte Elektrik ist ein Sicherheitsrisiko. Nur von Fachbetrieb durchführbar.",
             triggerGewerke: ["elektro"],
           },
           {
-            value: "fenster_daemmung",
-            label: "Fenster & Dämmung",
-            hint: "Energetische Verbesserung",
-            emoji: "🧱",
-            infoText:
-              "Neue Fenster + Dämmung verbessern Energieausweis und steigern den Immobilienwert.",
-            triggerGewerke: ["fenster", "daemmung"],
+            value: "fenster_tuer",
+            label: "Fenster / Tür kaputt",
+            hint: "Dichtung, Schloss, Rahmen, Glas",
+            emoji: "🪟",
+            triggerGewerke: ["fenster"],
           },
           {
-            value: "feuchtigkeit_schimmel",
-            label: "Feuchtigkeit oder Schimmel",
-            hint: "Wasserflecken, muffiger Geruch, sichtbarer Befall",
+            value: "dach",
+            label: "Dach-Problem",
+            hint: "Leck, Ziegel defekt, Regenrinne",
+            emoji: "🏠",
+            triggerGewerke: ["dach"],
+          },
+          {
+            value: "schimmel",
+            label: "Schimmel / Feuchtigkeit",
+            hint: "Ursache finden und beheben",
             emoji: "🍄",
-            infoText:
-              "Ursache klären, Schimmel fachgerecht entfernen und Flächen wiederherstellen — wir koordinieren Sanitär und Maler.",
+            direktKomplex: true,
             triggerGewerke: ["sanitaer", "maler"],
           },
         ],
       },
       {
-        id: "sanieren_umfang",
-        question: "Was soll bei der Sanierung passieren?",
+        id: "kaputt_groesse",
+        question: "Wie groß ist die Fläche ungefähr?",
         inputType: "tiles-single",
         options: [
-          {
-            value: "ersetzen",
-            label: "Nur austauschen was defekt ist",
-            hint: "1:1 Ersatz, kein Umbau",
-            emoji: "🔧",
-            faktor: 1.0,
-            infoText: "Schnellste Variante. Typisch wenn die Anlage nicht mehr funktioniert.",
-          },
-          {
-            value: "modernisieren",
-            label: "Modernisieren & effizienter machen",
-            hint: "Neue Technologie, Wärmepumpe",
-            emoji: "✨",
-            faktor: 1.6,
-            infoText:
-              "Höhere Investition, niedrigere Betriebskosten. Oft durch KfW / BAFA förderbar.",
-          },
-          {
-            value: "komplett",
-            label: "Komplettsanierung auf einmal",
-            hint: "Alles zusammen — eine Baustelle",
-            emoji: "🏗️",
-            faktor: 2.5,
-            infoText:
-              "Teuerste Option aber einmalige Baustelle. Oft langfristig die wirtschaftlichste Lösung.",
-          },
-          {
-            value: "beratung",
-            label: "Erstmal beraten lassen",
-            hint: "Was lohnt sich wirklich?",
-            emoji: "💬",
-            faktor: 1.6,
-            infoText:
-              "Wir zeigen was Sinn macht und welche Förderungen verfügbar sind.",
-          },
-        ],
-      },
-      {
-        id: "sanieren_groesse",
-        question: "Wie groß ist die Wohnfläche?",
-        inputType: "tiles-single",
-        options: [
-          { value: "s", label: "Bis 80 m²", groesse: 60, emoji: "📐" },
-          { value: "m", label: "80 bis 150 m²", groesse: 115, emoji: "📐" },
-          { value: "l", label: "150 bis 250 m²", groesse: 200, emoji: "📐" },
-          { value: "xl", label: "Über 250 m²", groesse: 300, emoji: "📐" },
+          { value: "s", label: "Bis 50 m²", groesse: 35, emoji: "📐" },
+          { value: "m", label: "50–100 m²", groesse: 75, emoji: "📐" },
+          { value: "l", label: "100–200 m²", groesse: 150, emoji: "📐" },
+          { value: "xl", label: "Über 200 m²", groesse: 250, emoji: "📐" },
         ],
       },
     ],
@@ -900,12 +878,15 @@ export function bereicheNeedFachdetails(bereiche: string[]): boolean {
     s.has("strom") ||
     s.has("elektrik") ||
     s.has("elektro") ||
+    s.has("fenster") ||
+    s.has("fenster_tueren") ||
     s.has("bad") ||
     s.has("wasser") ||
     s.has("sanitaer") ||
     s.has("heizung") ||
     s.has("maler") ||
     s.has("streichen") ||
+    s.has("waende") ||
     s.has("waende_boeden") ||
     s.has("boden") ||
     s.has("dach") ||
@@ -926,6 +907,34 @@ export const BW_FUNNEL_STEP_FACHDETAILS: FunnelStep = {
   inputType: "fachdetails",
 };
 
+/** Nach Bad-Größe: Ausstattungsstufe für die Preiskalkulation */
+export const BW_FUNNEL_STEP_BAD_AUSSTATTUNG: FunnelStep = {
+  id: "bad_ausstattung",
+  question: "Welchen Standard planst du?",
+  subtext: "Materialien und Ausstattung — wir rechnen danach den Preisrahmen",
+  inputType: "tiles-single",
+  options: [
+    {
+      value: "standard",
+      label: "Standard",
+      hint: "Solide Materialien, funktionales Design",
+      emoji: "✓",
+    },
+    {
+      value: "komfort",
+      label: "Komfort",
+      hint: "Bodengleiche Dusche, gute Markenarmaturen",
+      emoji: "⭐",
+    },
+    {
+      value: "gehoben",
+      label: "Gehoben",
+      hint: "Designfliesen, Markenarmaturen, individuelle Lösungen",
+      emoji: "✨",
+    },
+  ],
+};
+
 /** Weiter nur wenn je sichtbarem Block (max. 2) die gestaffelten Fragen vollständig beantwortet sind */
 export function isFachdetailsStepComplete(state: {
   situation: Situation | null;
@@ -939,7 +948,8 @@ export function isFachdetailsStepComplete(state: {
   const active = getAktiveFachdetailGewerke(b, 2);
 
   for (const g of active) {
-    if (!isFachdetailGewerkChainComplete(b, notfall, fd, g)) return false;
+    if (!isFachdetailGewerkChainComplete(b, notfall, fd, g, state.situation))
+      return false;
   }
   return true;
 }
@@ -948,7 +958,7 @@ export function isFachdetailsStepComplete(state: {
 export const BW_FUNNEL_PREIS_HINWEIS_ZUG_ZUSTAND =
   "Diese Angabe hilft uns, den Preis genauer einzuschätzen.";
 
-/** Nach Umfang/Planung — für Preisfaktor Zugänglichkeit (renovieren / sanieren / neubauen) */
+/** Nach Umfang/Planung — für Preisfaktor Zugänglichkeit (Außen / Neubau) */
 export const BW_FUNNEL_STEP_ZUGAENGLICHKEIT: FunnelStep = {
   id: "zugaenglichkeit",
   question: "Wie einfach kommen wir an die Baustelle?",
@@ -981,7 +991,7 @@ export const BW_FUNNEL_STEP_ZUGAENGLICHKEIT: FunnelStep = {
   ],
 };
 
-/** Nach Zugänglichkeit — nur renovieren / sanieren (Preisfaktor Zustand) */
+/** Nach Zugänglichkeit — Preisfaktor Zustand (Innen) */
 export const BW_FUNNEL_STEP_ZUSTAND: FunnelStep = {
   id: "zustand",
   question: "Wie ist der Zustand der Räume?",
@@ -1014,20 +1024,181 @@ export const BW_FUNNEL_STEP_ZUSTAND: FunnelStep = {
   ],
 };
 
-/** Dynamische Zustands-Frage je nach gewählten Bereichen */
-export function getZustandQuestionForBereiche(bereiche: string[]): string {
+/** Welche Zustands-Variante (Frage + Kacheln) passt zu den Bereichen? */
+export type ZustandStepVariant = "bad" | "waende" | "boden" | "dach";
+
+export function getZustandStepVariantFromBereiche(
+  bereiche: string[]
+): ZustandStepVariant | null {
   const b = new Set(bereiche);
-  if (b.has("bad")) return "Wie ist der Zustand vom Bad?";
-  if (b.has("heizung") || b.has("sanitaer") || b.has("wasser")) {
-    return "Wie ist der Zustand der Anlage?";
+  if (b.has("bad")) return "bad";
+  if (b.has("waende") || b.has("maler") || b.has("streichen") || b.has("waende_boeden")) {
+    return "waende";
   }
-  if (b.has("elektro") || b.has("strom") || b.has("elektrik")) {
-    return "Wie alt wirkt die Elektrik?";
+  if (b.has("boden")) return "boden";
+  if (b.has("dach")) return "dach";
+  return null;
+}
+
+function zustandVariantQuestion(variant: ZustandStepVariant): string {
+  switch (variant) {
+    case "bad":
+      return "Wie ist der aktuelle Zustand des Bades?";
+    case "waende":
+      return "Wie sind die Wände aktuell?";
+    case "boden":
+      return "Wie ist der aktuelle Boden?";
+    case "dach":
+      return "Wie alt ist das Dach ungefähr?";
+    default:
+      return "Wie ist der Zustand der Räume?";
   }
-  if (b.has("boden") || b.has("waende_boeden")) {
-    return "Wie ist der Zustand vom Boden?";
+}
+
+function zustandVariantOptions(variant: ZustandStepVariant): StepOption[] {
+  switch (variant) {
+    case "bad":
+      return [
+        {
+          value: "gut",
+          label: "Gepflegt",
+          hint: "glatt und sauber, alles funktioniert",
+          faktor: 1.0,
+        },
+        {
+          value: "mittel",
+          label: "Normale Abnutzung",
+          hint: "kleinere Risse oder Flecken",
+          faktor: 1.4,
+        },
+        {
+          value: "schlecht",
+          label: "Sanierungsbedürftig",
+          hint: "größere Schäden oder stark veraltet",
+          faktor: 2.0,
+        },
+        {
+          value: "unknown",
+          label: "Weiß ich nicht",
+          hint: "Kein Problem — wir rechnen mit einem Durchschnittswert",
+          faktor: 1.1,
+        },
+      ];
+    case "waende":
+      return [
+        {
+          value: "gut",
+          label: "Gepflegt",
+          hint: "glatt und sauber",
+          faktor: 1.0,
+        },
+        {
+          value: "mittel",
+          label: "Normale Abnutzung",
+          hint: "kleine Risse oder Flecken",
+          faktor: 1.4,
+        },
+        {
+          value: "schlecht",
+          label: "Sanierungsbedürftig",
+          hint: "größere Schäden oder alte Tapete",
+          faktor: 2.0,
+        },
+        {
+          value: "unknown",
+          label: "Weiß ich nicht",
+          hint: "Kein Problem — wir rechnen mit einem Durchschnittswert",
+          faktor: 1.1,
+        },
+      ];
+    case "boden":
+      return [
+        {
+          value: "gut",
+          label: "Gut erhalten",
+          hint: "kaum sichtbare Abnutzung",
+          faktor: 1.0,
+        },
+        {
+          value: "mittel",
+          label: "Normale Abnutzung",
+          hint: "Gebrauchsspuren, noch tragfähig",
+          faktor: 1.4,
+        },
+        {
+          value: "schlecht",
+          label: "Muss komplett raus",
+          hint: "defekt oder stark verschlissen",
+          faktor: 2.0,
+        },
+        {
+          value: "unknown",
+          label: "Weiß ich nicht",
+          hint: "Kein Problem — wir rechnen mit einem Durchschnittswert",
+          faktor: 1.1,
+        },
+      ];
+    case "dach":
+      return [
+        {
+          value: "gut",
+          label: "Unter 20 Jahre",
+          hint: "relativ jung",
+          faktor: 1.0,
+        },
+        {
+          value: "mittel",
+          label: "20–40 Jahre",
+          hint: "mittleres Alter",
+          faktor: 1.35,
+        },
+        {
+          value: "schlecht",
+          label: "Über 40 Jahre",
+          hint: "oft höherer Sanierungsbedarf",
+          faktor: 1.85,
+        },
+        {
+          value: "unknown",
+          label: "Weiß ich nicht",
+          hint: "Kein Problem — wir rechnen mit einem Durchschnittswert",
+          faktor: 1.1,
+        },
+      ];
   }
+}
+
+/** Dynamische Zustands-Frage (Kurzform, z. B. Step-Label). */
+export function getZustandQuestionForBereiche(bereiche: string[]): string {
+  const v = getZustandStepVariantFromBereiche(bereiche);
+  if (v) return zustandVariantQuestion(v);
   return "Wie ist der Zustand der Räume?";
+}
+
+/** Zustand-Schritt mit passender Frage und Kacheln je Gewerk. */
+export function buildZustandStepForBereiche(bereiche: string[]): FunnelStep {
+  const v = getZustandStepVariantFromBereiche(bereiche);
+  if (!v) {
+    return { ...BW_FUNNEL_STEP_ZUSTAND };
+  }
+  return {
+    ...BW_FUNNEL_STEP_ZUSTAND,
+    question: zustandVariantQuestion(v),
+    options: zustandVariantOptions(v),
+  };
+}
+
+/** Anzeige im Ergebnis: gewählte Zustands-Kachel je Variante. */
+export function getZustandDisplayLabel(
+  z: FunnelState["zustand"],
+  bereiche: string[]
+): string | null {
+  if (!z) return null;
+  const v = getZustandStepVariantFromBereiche(bereiche);
+  const opts =
+    (v ? zustandVariantOptions(v) : BW_FUNNEL_STEP_ZUSTAND.options) ?? [];
+  const hit = opts.find((o) => o.value === z);
+  return hit?.label ?? null;
 }
 
 /** @see getZustandQuestionForBereiche — API mit State-Schnittstelle */
@@ -1037,30 +1208,42 @@ export function getZustandLabel(
   return getZustandQuestionForBereiche(state.bereiche);
 }
 
-/** Zugänglichkeit: nur renovieren / sanieren / neubauen; nicht bei Mini-Jobs (ein Bereich ohne großen Umfang). */
+/** Zugänglichkeit: nur bei Außeneinsatz / Außenprojekten; nicht bei reiner Innensanierung ohne Dach, Fassade, Wände (Außen). */
 export function shouldIncludeZugaenglichkeitStep(
   situation: Situation,
-  umfang: string | null,
-  bereiche: string[]
+  _umfang: string | null,
+  bereiche: string[],
+  zuKomplex: boolean = false,
+  _fachdetails?: FachdetailsState
 ): boolean {
-  if (!["renovieren", "sanieren", "neubauen"].includes(situation)) return false;
-  if (!umfang) return false;
-  if (situation === "neubauen") return true;
-  if (bereiche.length === 1 && umfang !== "komplett") return false;
-  return true;
+  if (zuKomplex) return false;
+  if (situation === "notfall") return false;
+  if (situation === "gewerbe" || situation === "gastro") return false;
+  if (situation === "betreuung") return false;
+
+  return (
+    bereiche.includes("fassade") ||
+    bereiche.includes("dach") ||
+    (situation === "neubauen" &&
+      (bereiche.includes("anbau") || bereiche.includes("terrasse")))
+  );
 }
 
-/** Zustand: renovieren & sanieren immer (wenn Schritt eingebunden); neubauen nur bei Bestand (Keller/DG, Umbau, Anbau). */
+/** Zustand: nur „erneuern“ bei Bad, Wänden oder Boden. */
 export function shouldIncludeZustandStep(
   situation: Situation,
-  bereiche: string[]
+  bereiche: string[],
+  zuKomplex: boolean = false
 ): boolean {
-  if (situation === "renovieren" || situation === "sanieren") return true;
-  if (situation === "neubauen") {
-    const b = new Set(bereiche);
-    return b.has("ausbau") || b.has("bau");
-  }
-  return false;
+  if (zuKomplex) return false;
+  if (situation === "notfall") return false;
+  if (situation === "neubauen") return false;
+  if (situation === "betreuung") return false;
+  if (situation === "gewerbe" || situation === "gastro") return false;
+  if (situation === "kaputt") return false;
+  if (situation !== "erneuern") return false;
+  const b = bereiche;
+  return b.includes("bad") || b.includes("waende") || b.includes("boden");
 }
 
 function insertBeforeGroesse(
@@ -1081,17 +1264,17 @@ export function getResolvedStepsForSituation(
   situation: Situation | null,
   bereiche: string[],
   fachdetails?: FachdetailsState,
-  umfang: string | null = null
+  umfang: string | null = null,
+  zuKomplex: boolean = false
 ): FunnelStep[] {
   if (!situation) return [];
   const cfg = SITUATIONEN_CONFIG[situation];
 
   if (situation === "betreuung") {
-    const stepsBetreuung: FunnelStep[] = [
-      cfg.steps[0]!,
-      cfg.steps[1]!,
-      getBetreuungGroesseStep(bereiche),
-    ];
+    const stepsBetreuung: FunnelStep[] = [cfg.steps[0]!, cfg.steps[1]!];
+    if (!isHausmeisterOnlyBereiche(bereiche)) {
+      stepsBetreuung.push(getBetreuungGroesseStep(bereiche));
+    }
     if (bereicheNeedFachdetails(bereiche)) {
       stepsBetreuung.push(BW_FUNNEL_STEP_FACHDETAILS);
     }
@@ -1102,30 +1285,47 @@ export function getResolvedStepsForSituation(
 
   const zugZustandSteps: FunnelStep[] = [];
   if (
-    situation === "renovieren" ||
-    situation === "sanieren" ||
+    situation === "erneuern" ||
+    situation === "kaputt" ||
     situation === "neubauen"
   ) {
-    if (shouldIncludeZugaenglichkeitStep(situation, umfang, bereiche)) {
+    if (
+      shouldIncludeZugaenglichkeitStep(
+        situation,
+        umfang,
+        bereiche,
+        zuKomplex,
+        fachdetails
+      )
+    ) {
       zugZustandSteps.push(BW_FUNNEL_STEP_ZUGAENGLICHKEIT);
     }
-    if (shouldIncludeZustandStep(situation, bereiche)) {
-      zugZustandSteps.push({
-        ...BW_FUNNEL_STEP_ZUSTAND,
-        question: getZustandLabel({ bereiche }),
-      });
+    if (shouldIncludeZustandStep(situation, bereiche, zuKomplex)) {
+      zugZustandSteps.push(buildZustandStepForBereiche(bereiche));
     }
     if (zugZustandSteps.length > 0) {
       steps = insertBeforeGroesse(steps, zugZustandSteps);
     }
   }
 
-  if (bereicheNeedFachdetails(bereiche)) {
+  if (bereicheNeedFachdetails(bereiche) || bereiche.includes("bad")) {
     const gIdx = steps.findIndex((s) => s.id.toLowerCase().includes("groesse"));
     if (gIdx >= 0) {
       steps = [...steps];
-      steps.splice(gIdx + 1, 0, BW_FUNNEL_STEP_FACHDETAILS);
-    } else {
+      let insertAt = gIdx + 1;
+      if (
+        bereiche.includes("bad") &&
+        situation !== "notfall" &&
+        situation !== "gewerbe" &&
+        situation !== "gastro"
+      ) {
+        steps.splice(insertAt, 0, BW_FUNNEL_STEP_BAD_AUSSTATTUNG);
+        insertAt += 1;
+      }
+      if (bereicheNeedFachdetails(bereiche)) {
+        steps.splice(insertAt, 0, BW_FUNNEL_STEP_FACHDETAILS);
+      }
+    } else if (bereicheNeedFachdetails(bereiche)) {
       steps = [...steps, BW_FUNNEL_STEP_FACHDETAILS];
     }
   }
@@ -1142,13 +1342,17 @@ export function getResolvedStepsForSituation(
   }
 
   if (
-    situation === "sanieren" &&
+    (situation === "erneuern" || situation === "kaputt") &&
     bereiche.length === 1 &&
     bereiche[0] === "dach" &&
     skipGroesseForSanierenDachKleinjob(fachdetails)
   ) {
     steps = steps.filter((s) => !s.id.toLowerCase().includes("groesse"));
   }
+
+  steps = steps
+    .filter((s) => !shouldFilterGroesseStep(situation!, bereiche, s))
+    .map((s) => applyGroesseStepCopy(s, situation!, bereiche));
 
   return steps;
 }

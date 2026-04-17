@@ -31,6 +31,16 @@ export const ELEKTRO_Q1: FachdetailQuestionDef = {
   inputType: "single",
   options: [
     {
+      value: "sicherungskasten",
+      label: "Sicherungskasten modernisieren",
+      hint: "Komplette Erneuerung auf aktuellen FI-Schalter-Standard — Pflicht bei älteren Anlagen",
+    },
+    {
+      value: "echeck",
+      label: "E-Check / Sicherheitsprüfung",
+      hint: "Prüfung der gesamten Elektroanlage — wichtig bei Mieterwechsel und für die Versicherung",
+    },
+    {
       value: "sicherung",
       label: "Sicherung fliegt raus",
       hint: "Schutzschalter löst wiederholt aus",
@@ -178,15 +188,20 @@ export const SANITAER_FOLLOWUPS: Record<string, FachdetailQuestionDef> = {
 
 export const SANITAER_BAD_Q: FachdetailQuestionDef = {
   id: "sanitaer_bad_was",
-  title: "Was soll am Bad gemacht werden?",
+  title: "Was soll gemacht werden?",
   education:
     "Ein komplettes Bad braucht Fliesen, Sanitär und Elektro — wir koordinieren alle drei Gewerke für dich.",
   inputType: "single",
   options: [
     {
+      value: "reparatur",
+      label: "Einzelne Reparatur",
+      hint: "Kleines Problem beheben",
+    },
+    {
       value: "fliesen",
-      label: "Nur Fliesen",
-      hint: "Wände oder Boden neu fliesen",
+      label: "Nur Fliesen erneuern",
+      hint: "Alte Fliesen raus, neue rein — ohne Rohre oder Sanitärobjekte zu ändern",
     },
     {
       value: "objekte",
@@ -195,14 +210,14 @@ export const SANITAER_BAD_Q: FachdetailQuestionDef = {
       followUpId: "sanitaer_bad_objekte_multi",
     },
     {
-      value: "komplett",
-      label: "Alles komplett",
-      hint: "Fliesen + Objekte + Elektro",
+      value: "wanne_dusche",
+      label: "Wanne zu Dusche",
+      hint: "Umbau zur ebenerdigen oder bodengleichen Dusche",
     },
     {
-      value: "reparatur",
-      label: "Einzelne Reparatur",
-      hint: "Kleines Problem beheben",
+      value: "komplett",
+      label: "Komplett neu",
+      hint: "Fliesen + Objekte + Elektro",
     },
     {
       value: "weiss_nicht",
@@ -260,6 +275,16 @@ export const HEIZUNG_Q1: FachdetailQuestionDef = {
         "Störungen und Wartung klären wir mit deinem örtlichen Fernwärmeversorger oder einem zertifizierten Betrieb — wir helfen bei der Abstimmung.",
     },
     {
+      value: "wartung",
+      label: "Wartung / Inspektion",
+      hint: "Reinigung, Brennerprüfung, Abgasmessung — Gas, Öl oder Wärmepumpe",
+    },
+    {
+      value: "heizkoerper",
+      label: "Heizkörper tauschen",
+      hint: "Einzelne oder alle Heizkörper erneuern — inkl. Ventil und Thermostat",
+    },
+    {
       value: "weiss_nicht",
       label: "Weiß ich nicht genau",
       hint: "Kein Problem — wir schauen uns das an",
@@ -314,6 +339,40 @@ export const HEIZUNG_FOLLOWUPS: Record<string, FachdetailQuestionDef> = {
   },
 };
 
+/** Heizung bei Situation „kaputt“ */
+export const HEIZUNG_KAPUTT_Q1: FachdetailQuestionDef = {
+  id: "heizung_kaputt_problem",
+  title: "Was ist das Problem?",
+  inputType: "single",
+  options: [
+    {
+      value: "geht_nicht",
+      label: "Geht nicht an",
+      hint: "Heizung startet nicht",
+    },
+    {
+      value: "kein_warmwasser",
+      label: "Kein warmes Wasser",
+      hint: "Warmwasser fehlt oder kalt",
+    },
+    {
+      value: "geraeusch",
+      label: "Geräusche",
+      hint: "Klopfen, Rauschen, Pfeifen",
+    },
+    {
+      value: "fehlermeldung",
+      label: "Fehlermeldung",
+      hint: "Display oder Störungscode",
+    },
+    {
+      value: "weiss_nicht",
+      label: "Weiß ich nicht",
+      hint: "Wir schauen es uns an",
+    },
+  ],
+};
+
 export const MALER_Q1: FachdetailQuestionDef = {
   id: "maler_was",
   title: "Was soll gestrichen werden?",
@@ -323,8 +382,14 @@ export const MALER_Q1: FachdetailQuestionDef = {
   options: [
     {
       value: "waende",
-      label: "Nur Wände",
-      hint: "Innenräume streichen",
+      label: "Wände streichen oder tapezieren",
+      hint: "Frischer Anstrich oder neue Tapete — inkl. Untergrundvorbereitung",
+      followUpId: null,
+    },
+    {
+      value: "tapezieren",
+      label: "Tapezieren",
+      hint: "Raufaser oder Vliestapeten — inkl. Untergrund vorbereiten",
       followUpId: null,
     },
     {
@@ -436,9 +501,20 @@ export const BODEN_Q1: FachdetailQuestionDef = {
     },
     {
       value: "laminat",
-      label: "Laminat oder Parkett",
-      hint: "Klickt zusammen oder ist verklebt",
+      label: "Laminat",
+      hint: "Laminat oder Vinyl — schwimmend verlegt",
       followUpId: "boden_folge_laminat",
+    },
+    {
+      value: "parkett",
+      label: "Parkett",
+      hint: "Echtholz — schwimmend oder verklebt",
+      followUpId: "boden_folge_laminat",
+    },
+    {
+      value: "parkett_schleifen",
+      label: "Parkett abschleifen & versiegeln",
+      hint: "Bestehenden Parkett aufbereiten — günstiger als neu verlegen",
     },
     {
       value: "estrich",
@@ -514,9 +590,15 @@ export const DACH_Q1: FachdetailQuestionDef = {
   inputType: "single",
   options: [
     {
-      value: "ziegel",
-      label: "Einzelne Ziegel defekt",
-      hint: "Wenige Stellen reparieren",
+      value: "ziegel_wenige",
+      label: "Wenige Ziegel defekt",
+      hint: "1–5 Ziegel — schnelle Reparatur",
+      followUpId: null,
+    },
+    {
+      value: "ziegel_bereich",
+      label: "Größerer Bereich beschädigt",
+      hint: "Mehrere Reihen — etwas mehr Aufwand",
       followUpId: null,
     },
     {
@@ -582,6 +664,91 @@ export const DACH_FOLLOWUPS: Record<string, FachdetailQuestionDef> = {
       },
     ],
   },
+};
+
+export const FENSTER_Q1: FachdetailQuestionDef = {
+  id: "fenster_ausstattung",
+  title: "Was für Fenster?",
+  inputType: "single",
+  options: [
+    {
+      value: "standard",
+      label: "Standard",
+      hint: "2-fach Verglasung — solider Standard",
+    },
+    {
+      value: "premium",
+      label: "Premium",
+      hint: "3-fach Verglasung — bessere Dämmung und Schallschutz",
+    },
+  ],
+};
+
+/** Fenster/Tür bei Situation „kaputt“ */
+export const FENSTER_DEFEKT_Q1: FachdetailQuestionDef = {
+  id: "fenster_defekt_was",
+  title: "Was ist defekt?",
+  inputType: "single",
+  options: [
+    {
+      value: "dichtung",
+      label: "Dichtung undicht",
+      hint: "Zugluft oder Wasser an der Dichtung",
+    },
+    {
+      value: "schloss",
+      label: "Schloss defekt",
+      hint: "Schließt nicht oder klemmt",
+    },
+    {
+      value: "rahmen",
+      label: "Rahmen beschädigt",
+      hint: "Holz, Kunststoff oder Metall",
+    },
+    {
+      value: "glas",
+      label: "Glas gebrochen",
+      hint: "Einfach- oder Isolierverglasung",
+    },
+    {
+      value: "weiss_nicht",
+      label: "Weiß ich nicht",
+      hint: "Wir prüfen vor Ort",
+    },
+  ],
+};
+
+export const KUECHE_Q1: FachdetailQuestionDef = {
+  id: "kueche_vorhaben",
+  title: "Was soll gemacht werden?",
+  inputType: "single",
+  options: [
+    {
+      value: "fronten",
+      label: "Fronten tauschen",
+      hint: "Optik erneuern, Korpus bleibt",
+    },
+    {
+      value: "arbeitsplatte",
+      label: "Arbeitsplatte tauschen",
+      hint: "Neue Platte, ggf. Anschlüsse",
+    },
+    {
+      value: "teil",
+      label: "Teilmodernisierung",
+      hint: "Mehrere Elemente, kein kompletter Ausbau",
+    },
+    {
+      value: "komplett",
+      label: "Komplett neue Küche",
+      hint: "Alles neu planen und einbauen",
+    },
+    {
+      value: "weiss_nicht",
+      label: "Weiß ich nicht genau",
+      hint: "",
+    },
+  ],
 };
 
 export const GARTEN_Q1: FachdetailQuestionDef = {

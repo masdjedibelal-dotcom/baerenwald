@@ -6,7 +6,7 @@ export function shouldSwapFachdetailsBeforeGroesse(
   bereiche: string[]
 ): boolean {
   return (
-    situation === "sanieren" &&
+    (situation === "erneuern" || situation === "kaputt") &&
     bereiche.length === 1 &&
     bereiche[0] === "dach"
   );
@@ -16,5 +16,9 @@ export function skipGroesseForSanierenDachKleinjob(
   fachdetails: FachdetailsState | undefined
 ): boolean {
   const v = fachdetails?.dach?.vorhaben;
-  return v === "ziegel" || v === "dachfenster";
+  return (
+    v === "ziegel_wenige" ||
+    v === "ziegel_bereich" ||
+    v === "dachfenster"
+  );
 }

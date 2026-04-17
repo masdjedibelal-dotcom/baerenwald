@@ -1,10 +1,6 @@
-import type { Situation as BwSituation } from "@/lib/funnel/types";
 import type { Situation } from "@/lib/types";
 
 export type SituationTagType = "multi" | "abo" | "notfall";
-
-/** Tags für den Bärenwald-Rechner (Schritt 1) — inkl. B2B */
-export type BwFunnelStep1TagType = "multi" | "abo" | "notfall";
 
 export const SITUATION_OPTIONS: {
   id: Situation;
@@ -16,7 +12,7 @@ export const SITUATION_OPTIONS: {
   {
     id: "renovierung",
     label: "Ich möchte renovieren",
-    hint: "Wände, Böden, Bad, Küche auffrischen",
+    hint: "Wände streichen, neuer Boden, Bad, Küche auffrischen",
     tag: "Mehrere Leistungen",
     tagType: "multi",
   },
@@ -50,63 +46,12 @@ export const SITUATION_OPTIONS: {
   },
 ];
 
-/** Bärenwald-Funnel Schritt 1 — Situationen (lib/funnel/types) */
-export const BW_FUNNEL_STEP1_OPTIONS: {
-  id: BwSituation;
-  label: string;
-  hint: string;
-  emoji: string;
-  tag?: string;
-  tagType?: BwFunnelStep1TagType;
-}[] = [
-  {
-    id: "renovieren",
-    label: "Renovieren",
-    hint: "Bad, Küche, Wände, Fenster",
-    emoji: "🏠",
-    tagType: "multi",
-  },
-  {
-    id: "sanieren",
-    label: "Sanieren",
-    hint: "Heizung, Dach, Elektrik, Leitungen",
-    emoji: "🔧",
-    tagType: "multi",
-  },
-  {
-    id: "notfall",
-    label: "Notfall",
-    hint: "Heizung, Wasser, Strom — wir kommen schnell",
-    emoji: "⚡",
-    tagType: "notfall",
-  },
-  {
-    id: "neubauen",
-    label: "Neubau / Ausbau",
-    hint: "Keller, Dachgeschoss, Terrasse, Umbau",
-    emoji: "🏗️",
-    tagType: "multi",
-  },
-  {
-    id: "betreuung",
-    label: "Betreuung",
-    hint: "Garten, Reinigung, Winterdienst",
-    emoji: "🌿",
-    tagType: "abo",
-  },
-  {
-    id: "gewerbe",
-    label: "Gewerbe oder Büro",
-    hint: "Büro, Laden, Praxis, Lager — wir planen individuell mit dir",
-    emoji: "🏢",
-  },
-  {
-    id: "gastro",
-    label: "Gastronomie",
-    hint: "Restaurant, Café, Bar, Hotel — komplex und individuell",
-    emoji: "🍽️",
-  },
-];
+export {
+  BW_FUNNEL_STEP1_OPTIONS,
+  BW_FUNNEL_STEP1_ORDER,
+} from "@/lib/funnel/situation-options";
 
-export const BW_FUNNEL_STEP1_ORDER: BwSituation[] =
-  BW_FUNNEL_STEP1_OPTIONS.map((o) => o.id);
+export type {
+  BwFunnelStep1Option,
+  BwFunnelStep1TagType,
+} from "@/lib/funnel/situation-options";

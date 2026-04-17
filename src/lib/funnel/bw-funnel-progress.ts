@@ -1,3 +1,4 @@
+import { isB2B } from "@/lib/funnel/types";
 import type { Situation } from "@/lib/funnel/types";
 
 /**
@@ -17,7 +18,8 @@ export function getBwFunnelProgressStep(screen: string): number | null {
     screen === "umfang" ||
     screen === "zugaenglichkeit" ||
     screen === "zustand" ||
-    screen === "groesse"
+    screen === "groesse" ||
+    screen === "bad_ausstattung"
   ) {
     return 2;
   }
@@ -47,5 +49,5 @@ export function getB2BFunnelProgressStep(screen: string): number {
 export function isB2bProgressSituation(
   situation: Situation | null | undefined
 ): boolean {
-  return situation === "gewerbe" || situation === "gastro";
+  return situation != null && isB2B(situation);
 }

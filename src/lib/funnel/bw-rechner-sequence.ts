@@ -1,6 +1,8 @@
 import type { FunnelState, FunnelStep, Situation } from "@/lib/funnel/types";
 import { getKundentypStep, getResolvedStepsForSituation } from "@/lib/funnel/config";
+import { getBwResultModus } from "@/lib/funnel/price-calc";
 import {
+  FACHDETAILS_PRIORITAET,
   getAktiveFachdetailGewerke,
   type FachdetailGewerkKey,
 } from "@/lib/funnel/fachdetails-notfall";
@@ -38,7 +40,11 @@ export function showTrustScreen(
   if (situation === "gewerbe" || situation === "gastro") {
     return false;
   }
-  if (situation === "betreuung" || situation === "neubauen") {
+  if (
+    situation === "kaputt" ||
+    situation === "neubauen" ||
+    situation === "betreuung"
+  ) {
     return variant === "trust_intro" || variant === "trust_preis";
   }
   return true;
@@ -66,7 +72,8 @@ export function getBwRechnerScreenSequence(state: FunnelState): string[] {
     sit,
     state.bereiche,
     state.fachdetails,
-    state.umfang
+    state.umfang,
+    getBwResultModus(state) === "zu_komplex"
   );
 
   const out: string[] = [];
@@ -110,12 +117,16 @@ function funnelConfigStepToScreens(
   bereiche: string[]
 ): string[] {
   if (step.id === "fachdetails") {
-    return getAktiveFachdetailGewerke(bereiche, 2).map(
-      (g) => `fachdetails_${g}` as FachdetailsScreenId
+    const aktive = [...getAktiveFachdetailGewerke(bereiche, 2)].sort(
+      (a, b) =>
+        FACHDETAILS_PRIORITAET.indexOf(a) -
+        FACHDETAILS_PRIORITAET.indexOf(b)
     );
+    return aktive.map((g) => `fachdetails_${g}` as FachdetailsScreenId);
   }
   if (step.id === "zugaenglichkeit") return ["zugaenglichkeit"];
   if (step.id === "zustand") return ["zustand"];
+  if (step.id === "bad_ausstattung") return ["bad_ausstattung"];
   if (step.id.toLowerCase().includes("groesse")) return ["groesse"];
   if (
     step.id.endsWith("_umfang") ||

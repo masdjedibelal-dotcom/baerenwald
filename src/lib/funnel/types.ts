@@ -1,19 +1,38 @@
 export type Situation =
-  | "renovieren"
-  | "sanieren"
+  | "erneuern"
+  | "kaputt"
   | "notfall"
   | "neubauen"
   | "betreuung"
   | "gewerbe"
   | "gastro";
 
+export function isB2B(s: Situation | null | undefined): boolean {
+  return s === "gewerbe" || s === "gastro";
+}
+
+export function isReparatur(s: Situation | null | undefined): boolean {
+  return s === "kaputt" || s === "notfall";
+}
+
 export type Kundentyp =
   | "eigentuemer"
   | "mieter"
   | "hausverwaltung";
 
-/** Gewünschter Start / Dringlichkeit (PLZ-Schritt) */
-export type Zeitraum = "sofort" | "heute" | "woche" | "flexibel";
+/** Gewünschter Start (PLZ-Schritt) — je Situation unterschiedliche Optionen; `heute`/`woche` nur noch Legacy. */
+export type Zeitraum =
+  | "sofort"
+  | "diese_woche"
+  | "vier_wochen"
+  | "zwei_monate"
+  | "sechs_monate"
+  | "naechstes_jahr"
+  | "naechster_monat"
+  | "naechste_saison"
+  | "flexibel"
+  | "heute"
+  | "woche";
 
 export type Zugaenglichkeit = "einfach" | "mittel" | "schwer" | "unknown";
 
@@ -59,6 +78,14 @@ export type FachdetailsState = {
     baumgroesse?: string;
     gestaltung?: string[];
   };
+  fenster?: {
+    ausstattung?: "standard" | "premium";
+    /** Kaputt: „Was ist defekt?“ */
+    defekt?: string;
+  };
+  kueche?: {
+    vorhaben?: string;
+  };
 };
 
 export interface PriceLineItem {
@@ -77,6 +104,8 @@ export interface FunnelState {
   umfangFaktor: number;
   groesse: number | null;
   groesseEinheit: "qm" | "stueck" | "meter" | null;
+  /** Bad-Sanierung: Material-/Ausstattungsstufe (nach m², vor Fachdetails) */
+  badAusstattung: "standard" | "komfort" | "gehoben" | null;
   plz: string;
   zeitraum: Zeitraum | null;
   priceMin: number;
@@ -116,6 +145,10 @@ export interface StepOption {
   triggerGewerke?: string[];
   /** Für Größen-Tiles: repräsentativer Zahlenwert (z. B. m², Stück, Laufmeter) */
   groesse?: number;
+  /** Optional: Abschnittsüberschrift vor dieser Kachel (Bereiche gruppiert) */
+  section?: string;
+  /** Sofort zur Beratung / Komplex — kein normaler Rechner-Flow */
+  direktKomplex?: boolean;
 }
 
 /** Nur für Rechner-Navigation / Progress (nicht der Konfig-Schritt `FunnelStep`). */

@@ -85,7 +85,9 @@ function buildBreakdownTableHtml(
   </tbody>
 </table>
 <p style="font-size:11px;color:#999;margin-top:8px;line-height:1.45;">
-  Diese Aufschlüsselung ist vertraulich und nur für Sie bestimmt. Alle Angaben sind unverbindliche Richtwerte.
+  Diese Aufschlüsselung ist vertraulich und nur für Sie bestimmt. Dieser
+  Preisrahmen basiert auf aktuellen Münchner Marktpreisen. Das verbindliche
+  Festpreisangebot erhalten Sie nach dem Vor-Ort-Termin.
 </p>`;
 }
 
@@ -119,7 +121,7 @@ export function generateConfirmationEmail(
     "font-family:Arial,Helvetica,sans-serif;font-size:14px;line-height:1.65;color:#1e1c1a;margin:0 0 8px;padding-left:4px;";
 
   const preisBlock = hasPreis
-    ? `<p style="margin:0 0 6px;"><strong>Preisrahmen:</strong> ${escHtml(preisZeile)}<br/><span style="font-size:12px;color:#5c5a57;">(unverbindlicher Richtwert)</span></p>`
+    ? `<p style="margin:0 0 6px;"><strong>Preisrahmen:</strong> ${escHtml(preisZeile)}<br/><span style="font-size:12px;color:#5c5a57;">(Basiert auf Münchner Marktpreisen 2026 — verbindliches Festpreisangebot nach Vor-Ort-Termin)</span></p>`
     : "";
 
   const breakdownBlock =
@@ -187,7 +189,8 @@ export function generateConfirmationEmail(
     </p>
     <hr style="${hRule}"/>
     <p style="${small}">
-      Alle Preisangaben sind unverbindliche Richtwerte. Das verbindliche Angebot erhalten Sie nach dem Vor-Ort-Termin.
+      Dieser Preisrahmen basiert auf aktuellen Münchner Marktpreisen. Das
+      verbindliche Festpreisangebot erhalten Sie nach dem Vor-Ort-Termin.
     </p>
   </div>
 </body>
