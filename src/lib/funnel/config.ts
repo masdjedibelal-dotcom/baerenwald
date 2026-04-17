@@ -2,8 +2,7 @@ import {
   buildBetreuungHaeufigkeitStep,
   shouldSkipBetreuungHaeufigkeit,
 } from "./betreuung-haeufigkeit";
-import { isFachdetailGewerkChainComplete } from "./fachdetails-chain-complete";
-import { getAktiveFachdetailGewerke } from "./fachdetails-notfall";
+import { isFlatFachdetailsBlockComplete } from "./fachdetail-questions-flat";
 import {
   shouldSwapFachdetailsBeforeGroesse,
   skipGroesseForSanierenDachKleinjob,
@@ -845,16 +844,7 @@ export function isFachdetailsStepComplete(state: {
   fachdetails: FachdetailsState;
 }): boolean {
   if (!bereicheNeedFachdetails(state.bereiche)) return true;
-  const b = state.bereiche;
-  const fd = state.fachdetails;
-  const notfall = state.situation === "notfall";
-  const active = getAktiveFachdetailGewerke(b, 2);
-
-  for (const g of active) {
-    if (!isFachdetailGewerkChainComplete(b, notfall, fd, g, state.situation))
-      return false;
-  }
-  return true;
+  return isFlatFachdetailsBlockComplete(state);
 }
 
 /** Kurz-Hinweis unter Zugänglichkeit + Zustand (Rechner) */
@@ -1142,6 +1132,14 @@ export function getResolvedStepsForSituation(
 ): FunnelStep[] {
   if (!situation) return [];
   const cfg = SITUATIONEN_CONFIG[situation];
+
+  if (
+    bereiche.includes("schimmel") ||
+    bereiche.includes("feuchtigkeit_schimmel")
+  ) {
+    const first = cfg.steps[0];
+    return first ? [first] : [];
+  }
 
   if (situation === "betreuung") {
     const stepsBetreuung: FunnelStep[] = [cfg.steps[0]!];

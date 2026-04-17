@@ -23,7 +23,13 @@ export function getBwFunnelProgressStep(screen: string): number | null {
   ) {
     return 2;
   }
-  if (screen.startsWith("fachdetails_") || screen === "kundentyp") return 3;
+  if (
+    screen.startsWith("fachdetail_") ||
+    screen.startsWith("fachdetails_") ||
+    screen === "kundentyp"
+  ) {
+    return 3;
+  }
   if (screen === "ort") return 4;
   if (
     screen === "loading" ||

@@ -2,6 +2,8 @@
 
 import { useCallback, useMemo, useReducer } from "react";
 
+import { buildPatchClearFachdetailAnswer } from "@/lib/funnel/fachdetail-answer-sync";
+import { mergeFachdetailsPatch } from "@/lib/funnel/fachdetails-merge";
 import {
   countFachdetailGewerke,
   type FachdetailGewerkKey,
@@ -30,6 +32,7 @@ export type BwFunnelAction =
   | { type: "SET_ZUGAENGLICHKEIT"; value: Zugaenglichkeit | null }
   | { type: "SET_ZUSTAND"; value: ObjektZustand | null }
   | { type: "SET_FACHDETAILS"; patch: Partial<FachdetailsState> }
+  | { type: "CLEAR_FACHDETAIL_ANSWER"; questionId: string }
   | { type: "RESET_FACHDETAIL"; gewerk: FachdetailGewerkKey }
   | {
       type: "SET_BAD_AUSSTATTUNG";
@@ -56,6 +59,7 @@ export type BwFunnelAction =
       max: number;
       breakdown: PriceLineItem[];
       istFallback?: boolean;
+      komplexReason?: string | null;
     }
   | { type: "SET_BUDGET_CHECK"; value: BudgetCheck }
   /** Notfall: zweiter Schritt (Dringlichkeit) */
@@ -89,6 +93,7 @@ export const BW_FUNNEL_INITIAL_STATE: FunnelState = {
   priceMax: 0,
   breakdown: [],
   istFallback: false,
+  komplexReason: null,
   budgetCheck: null,
   dringlichkeit: null,
   zugaenglichkeit: null,
@@ -214,44 +219,18 @@ function bwFunnelReducer(
       const p = action.patch;
       return {
         ...state,
-        fachdetails: {
-          elektro:
-            p.elektro !== undefined
-              ? { ...state.fachdetails.elektro, ...p.elektro }
-              : state.fachdetails.elektro,
-          sanitaer:
-            p.sanitaer !== undefined
-              ? { ...state.fachdetails.sanitaer, ...p.sanitaer }
-              : state.fachdetails.sanitaer,
-          heizung:
-            p.heizung !== undefined
-              ? { ...state.fachdetails.heizung, ...p.heizung }
-              : state.fachdetails.heizung,
-          maler:
-            p.maler !== undefined
-              ? { ...state.fachdetails.maler, ...p.maler }
-              : state.fachdetails.maler,
-          boden:
-            p.boden !== undefined
-              ? { ...state.fachdetails.boden, ...p.boden }
-              : state.fachdetails.boden,
-          dach:
-            p.dach !== undefined
-              ? { ...state.fachdetails.dach, ...p.dach }
-              : state.fachdetails.dach,
-          garten:
-            p.garten !== undefined
-              ? { ...state.fachdetails.garten, ...p.garten }
-              : state.fachdetails.garten,
-          fenster:
-            p.fenster !== undefined
-              ? { ...state.fachdetails.fenster, ...p.fenster }
-              : state.fachdetails.fenster,
-          neubauen:
-            p.neubauen !== undefined
-              ? { ...state.fachdetails.neubauen, ...p.neubauen }
-              : state.fachdetails.neubauen,
-        },
+        fachdetails: mergeFachdetailsPatch(state.fachdetails, p),
+      };
+    }
+
+    case "CLEAR_FACHDETAIL_ANSWER": {
+      const p = buildPatchClearFachdetailAnswer(
+        state.fachdetails,
+        action.questionId
+      );
+      return {
+        ...state,
+        fachdetails: mergeFachdetailsPatch(state.fachdetails, p),
       };
     }
 
@@ -288,6 +267,10 @@ function bwFunnelReducer(
         priceMax: action.max,
         breakdown: [...action.breakdown],
         istFallback: Boolean(action.istFallback),
+        komplexReason:
+          action.komplexReason !== undefined
+            ? action.komplexReason
+            : null,
       };
 
     case "SET_BUDGET_CHECK":
@@ -360,6 +343,10 @@ export function useBwFunnelState() {
     dispatch({ type: "SET_FACHDETAILS", patch });
   }, []);
 
+  const clearFachdetailAnswer = useCallback((questionId: string) => {
+    dispatch({ type: "CLEAR_FACHDETAIL_ANSWER", questionId });
+  }, []);
+
   const resetFachdetailsForGewerk = useCallback((gewerk: FachdetailGewerkKey) => {
     dispatch({ type: "RESET_FACHDETAIL", gewerk });
   }, []);
@@ -376,7 +363,8 @@ export function useBwFunnelState() {
       min: number,
       max: number,
       breakdown: PriceLineItem[],
-      istFallback?: boolean
+      istFallback?: boolean,
+      komplexReason?: string | null
     ) => {
       dispatch({
         type: "SET_PRICE",
@@ -384,6 +372,7 @@ export function useBwFunnelState() {
         max,
         breakdown,
         istFallback,
+        komplexReason,
       });
     },
     []
@@ -454,6 +443,7 @@ export function useBwFunnelState() {
       setZugaenglichkeit,
       setZustand,
       setFachdetails,
+      clearFachdetailAnswer,
       resetFachdetailsForGewerk,
       setBadAusstattung,
       setPrice,
@@ -478,6 +468,7 @@ export function useBwFunnelState() {
       setZugaenglichkeit,
       setZustand,
       setFachdetails,
+      clearFachdetailAnswer,
       resetFachdetailsForGewerk,
       setBadAusstattung,
       setPrice,

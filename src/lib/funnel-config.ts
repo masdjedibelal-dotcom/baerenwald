@@ -429,18 +429,13 @@ const STEPS_B2B: FunnelStep[] = [
       },
       {
         value: "einzelhandel",
-        label: "Einzelhandel / Praxis",
-        hint: "Kundenbereich, Schaufenster",
+        label: "Einzelhandel / Praxis / Gastronomie",
+        hint: "Kundenbereich, Schaufenster, Küche & Gästeraum",
       },
       {
         value: "lager",
         label: "Lagerhalle / Produktion",
         hint: "Industriefläche, Werkstatt",
-      },
-      {
-        value: "gastro",
-        label: "Gastronomie / Hotel",
-        hint: "Hygieneanforderungen",
       },
       {
         value: "weg",

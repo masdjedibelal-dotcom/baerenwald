@@ -264,6 +264,12 @@ export const FAKTOREN = {
 
 type PreisServiceKey = keyof typeof PREISE;
 
+/** Preis-Mapping aus dem Funnel; `null` = kein automatisches Mapping */
+export type BwPriceMapping = {
+  service: PreisServiceKey;
+  type: string;
+};
+
 function isGroesseBasis(b: BasisEintrag): b is BasisEintrag & {
   groesseVon: number;
   groesseBis: number;
@@ -425,16 +431,13 @@ function mapElektroFromFachdetails(
   }
 }
 
-export function mapToPrice(state: FunnelState): {
-  service: PreisServiceKey | "";
-  type: string;
-} {
+export function mapToPrice(state: FunnelState): BwPriceMapping | null {
   const { situation, bereiche } = state;
   const fd = state.fachdetails;
   const b = (k: string) => bereiche.includes(k);
 
   if (situation === "gewerbe") {
-    return { service: "", type: "" };
+    return null;
   }
 
   if (situation === "notfall") {
@@ -450,7 +453,7 @@ export function mapToPrice(state: FunnelState): {
   }
 
   if (b("fassade_daemmung")) {
-    return { service: "", type: "" };
+    return null;
   }
 
   if (b("boden")) {
@@ -477,7 +480,7 @@ export function mapToPrice(state: FunnelState): {
     const was = fd?.maler?.was;
     if (was === "fassade") {
       const sub = fd?.maler?.fassade;
-      if (sub === "daemmung") return { service: "", type: "" };
+      if (sub === "daemmung") return null;
       if (sub === "klinker") return { service: "fassade", type: "klinker" };
       return { service: "fassade", type: "anstrich" };
     }
@@ -491,7 +494,7 @@ export function mapToPrice(state: FunnelState): {
     const typ = fd.heizung.typ;
     if (typ === "wartung") return { service: "heizung", type: "wartung" };
     if (typ === "heizkoerper") return { service: "heizung", type: "heizkoerper" };
-    if (typ === "waermepumpe") return { service: "", type: "" };
+    if (typ === "waermepumpe") return null;
     if (fd?.heizung?.vorhaben === "wartung") {
       return { service: "heizung", type: "wartung" };
     }
@@ -629,7 +632,7 @@ export function mapToPrice(state: FunnelState): {
     return { service: "fenster", type: "standard" };
   }
 
-  return { service: "", type: "" };
+  return null;
 }
 
 /** @deprecated Bevorzugt {@link mapToPrice} */
@@ -764,9 +767,6 @@ export type BwResultModus =
   | "zu_komplex"
   | "notfall_akut";
 
-const FALLBACK_MIN = 450;
-const FALLBACK_MAX = 1800;
-
 export function getNotdienstGebuehr(state: FunnelState): number {
   if (state.situation !== "notfall") return 0;
   switch (state.dringlichkeit) {
@@ -778,41 +778,6 @@ export function getNotdienstGebuehr(state: FunnelState): number {
     default:
       return 0;
   }
-}
-
-function getFallback(state: FunnelState): {
-  min: number;
-  max: number;
-  mitte: number;
-  breakdown: PriceLineItem[];
-  plzFaktor: number;
-} {
-  const plzFaktor = getPlzFaktor(state.plz ?? "");
-  const notdienst = getNotdienstGebuehr(state);
-  const mitte0 = (FALLBACK_MIN + FALLBACK_MAX) / 2;
-  const halbSpanne = (FALLBACK_MAX - FALLBACK_MIN) / 2;
-  const mitteAdj = mitte0 * plzFaktor + notdienst;
-  let finalMin = Math.round((mitteAdj - halbSpanne) / 100) * 100;
-  let finalMax = Math.round((mitteAdj + halbSpanne) / 100) * 100;
-  if (finalMin < 150) {
-    finalMin = 150;
-    finalMax = Math.max(finalMax, 300);
-  }
-  return {
-    min: finalMin,
-    max: finalMax,
-    mitte: mitteAdj,
-    breakdown: [
-      {
-        gewerk: "allgemein",
-        beschreibung: "Handwerksleistung",
-        min: finalMin,
-        max: finalMax,
-        einheit: "pauschal",
-      },
-    ],
-    plzFaktor,
-  };
 }
 
 /** Frühe Szenarien ohne Preis — blendet z. B. Zustand/Zugänglichkeit aus. */
@@ -835,6 +800,9 @@ export function getBwResultModus(state: FunnelState): "normal" | "zu_komplex" {
   ) {
     return "zu_komplex";
   }
+  if (state.situation === "neubauen" && state.bereiche.includes("terrasse")) {
+    return "zu_komplex";
+  }
   const nb = state.fachdetails?.neubauen;
   if (state.situation === "neubauen" && state.bereiche.includes("keller_dg")) {
     if (nb?.rohbau === "nein" || nb?.deckenhoehe === "niedrig") {
@@ -849,6 +817,12 @@ export function getBwResultModus(state: FunnelState): "normal" | "zu_komplex" {
     return "zu_komplex";
   }
   if (state.fachdetails?.heizung?.vorhaben === "neu") {
+    return "zu_komplex";
+  }
+  if (state.fachdetails?.heizung?.typ === "waermepumpe") {
+    return "zu_komplex";
+  }
+  if (state.fachdetails?.heizung?.alter === "ueber20") {
     return "zu_komplex";
   }
   if (state.fachdetails?.garten?.baumgroesse === "gross") {
@@ -905,6 +879,9 @@ function getBwAnzeigeModus(
   ) {
     return "zu_komplex";
   }
+  if (state.situation === "neubauen" && state.bereiche.includes("terrasse")) {
+    return "zu_komplex";
+  }
   const nb2 = state.fachdetails?.neubauen;
   if (state.situation === "neubauen" && state.bereiche.includes("keller_dg")) {
     if (nb2?.rohbau === "nein" || nb2?.deckenhoehe === "niedrig") {
@@ -919,6 +896,12 @@ function getBwAnzeigeModus(
     return "zu_komplex";
   }
   if (state.fachdetails?.heizung?.vorhaben === "neu") {
+    return "zu_komplex";
+  }
+  if (state.fachdetails?.heizung?.typ === "waermepumpe") {
+    return "zu_komplex";
+  }
+  if (state.fachdetails?.heizung?.alter === "ueber20") {
     return "zu_komplex";
   }
   if (state.fachdetails?.garten?.baumgroesse === "gross") {
@@ -937,10 +920,10 @@ export type BwCalculatePriceResult = {
   breakdown: PriceLineItem[];
   mindestauftragAktiv: boolean;
   plzFaktor: number;
-  koordinationsRabatt: number;
   resultModus: BwResultModus;
   schwellenwertAusgeloest: boolean;
   istFallback: boolean;
+  komplexReason: string | null;
 };
 
 export type BwCalculatePriceOptions = {
@@ -958,8 +941,9 @@ function computePriceCore(state: FunnelState): {
   service: string;
   type: string;
 } | null {
-  const { service, type } = mapToPrice(state);
-  if (!service) return null;
+  const mapped = mapToPrice(state);
+  if (!mapped) return null;
+  const { service, type } = mapped;
 
   const basis =
     service === "bad"
@@ -1044,52 +1028,97 @@ function computePriceCore(state: FunnelState): {
   };
 }
 
-function withMaybeZeroFallback(
+function applyEmptyBreakdownAsZuKomplex(
   state: FunnelState,
-  result: Omit<BwCalculatePriceResult, "istFallback"> & { istFallback?: boolean },
+  result: BwCalculatePriceResult,
   options?: BwCalculatePriceOptions
 ): BwCalculatePriceResult {
+  const preview = options?.preview === true;
   const base: BwCalculatePriceResult = {
     ...result,
-    istFallback: Boolean(result.istFallback),
+    istFallback: false,
   };
-  if (base.istFallback) return base;
-  if (!state.situation) return { ...base, istFallback: false };
-  if (!options?.preview) {
+
+  const emptyPrice =
+    (base.breakdown?.length ?? 0) === 0 || base.min <= 0;
+
+  if (emptyPrice && base.komplexReason === "no_mapping_found") {
+    return {
+      min: 0,
+      max: 0,
+      mitte: 0,
+      breakdown: [],
+      mindestauftragAktiv: false,
+      plzFaktor: getPlzFaktor(state.plz ?? ""),
+      resultModus: "zu_komplex",
+      schwellenwertAusgeloest: false,
+      istFallback: false,
+      komplexReason: "no_mapping_found",
+    };
+  }
+
+  if (emptyPrice) {
+    if (!state.situation) {
+      return {
+        ...base,
+        resultModus: "zu_komplex",
+        komplexReason: "no_mapping_found",
+      };
+    }
+    if (!preview) {
+      if (state.situation === "notfall" && state.dringlichkeit === "sofort") {
+        return { ...base, komplexReason: null };
+      }
+      if (getBwResultModus(state) === "zu_komplex") {
+        return { ...base, komplexReason: null };
+      }
+    }
+    if (base.schwellenwertAusgeloest && base.resultModus === "zu_komplex") {
+      return { ...base, komplexReason: null };
+    }
+    if (
+      base.resultModus === "zu_komplex" &&
+      base.schwellenwertAusgeloest &&
+      base.min <= 0
+    ) {
+      return { ...base, komplexReason: null };
+    }
+    return {
+      min: 0,
+      max: 0,
+      mitte: 0,
+      breakdown: [],
+      mindestauftragAktiv: false,
+      plzFaktor: getPlzFaktor(state.plz ?? ""),
+      resultModus: "zu_komplex",
+      schwellenwertAusgeloest: false,
+      istFallback: false,
+      komplexReason: "no_mapping_found",
+    };
+  }
+
+  if (!state.situation) {
+    return { ...base, komplexReason: null };
+  }
+  if (!preview) {
     if (state.situation === "notfall" && state.dringlichkeit === "sofort") {
-      return { ...base, istFallback: false };
+      return { ...base, komplexReason: null };
     }
     if (getBwResultModus(state) === "zu_komplex") {
-      return { ...base, istFallback: false };
+      return { ...base, komplexReason: null };
     }
   }
   if (base.schwellenwertAusgeloest && base.resultModus === "zu_komplex") {
-    return { ...base, istFallback: false };
+    return { ...base, komplexReason: null };
   }
   if (
     base.resultModus === "zu_komplex" &&
     base.schwellenwertAusgeloest &&
     base.min <= 0
   ) {
-    return { ...base, istFallback: false };
+    return { ...base, komplexReason: null };
   }
-  if ((base.breakdown?.length ?? 0) === 0 || base.min <= 0) {
-    const fb = getFallback(state);
-    const modus = getBwAnzeigeModus(state, fb);
-    return {
-      min: fb.min,
-      max: fb.max,
-      mitte: fb.mitte,
-      breakdown: fb.breakdown,
-      mindestauftragAktiv: false,
-      plzFaktor: fb.plzFaktor,
-      koordinationsRabatt: 1,
-      resultModus: modus,
-      schwellenwertAusgeloest: modus === "zu_komplex" && fb.mitte > 15000,
-      istFallback: true,
-    };
-  }
-  return { ...base, istFallback: false };
+  return { ...base, komplexReason: null };
 }
 
 export function calculatePrice(
@@ -1098,51 +1127,50 @@ export function calculatePrice(
 ): BwCalculatePriceResult {
   const preview = options?.preview === true;
 
-  const noResult: BwCalculatePriceResult = {
+  const noResult = (komplexReason: string | null): BwCalculatePriceResult => ({
     min: 0,
     max: 0,
     mitte: 0,
     breakdown: [],
     mindestauftragAktiv: false,
     plzFaktor: 1,
-    koordinationsRabatt: 1,
     resultModus:
       state.situation === "notfall" && state.dringlichkeit === "sofort"
         ? "notfall_akut"
         : "zu_komplex",
     schwellenwertAusgeloest: false,
     istFallback: false,
-  };
+    komplexReason,
+  });
 
   if (!state.situation) {
-    return noResult;
+    return noResult(null);
   }
 
   if (!preview && state.situation === "notfall" && state.dringlichkeit === "sofort") {
-    return noResult;
+    return noResult(null);
   }
 
   if (!preview && getBwResultModus(state) === "zu_komplex") {
-    return noResult;
+    return noResult(null);
   }
 
   const core = computePriceCore(state);
   if (!core) {
-    const fb = getFallback(state);
-    const modus = getBwAnzeigeModus(state, fb);
-    return withMaybeZeroFallback(
+    const plzFaktor = getPlzFaktor(state.plz ?? "");
+    return applyEmptyBreakdownAsZuKomplex(
       state,
       {
-        min: fb.min,
-        max: fb.max,
-        mitte: fb.mitte,
-        breakdown: fb.breakdown,
+        min: 0,
+        max: 0,
+        mitte: 0,
+        breakdown: [],
         mindestauftragAktiv: false,
-        plzFaktor: fb.plzFaktor,
-        koordinationsRabatt: 1,
-        resultModus: modus,
-        schwellenwertAusgeloest: modus === "zu_komplex",
-        istFallback: true,
+        plzFaktor,
+        resultModus: "zu_komplex",
+        schwellenwertAusgeloest: false,
+        istFallback: false,
+        komplexReason: "no_mapping_found",
       },
       options
     );
@@ -1184,14 +1212,14 @@ export function calculatePrice(
       breakdown: [],
       mindestauftragAktiv: false,
       plzFaktor: getPlzFaktor(state.plz ?? ""),
-      koordinationsRabatt: 1,
       resultModus: "preisrahmen",
       schwellenwertAusgeloest: false,
-      istFallback: true,
+      istFallback: false,
+      komplexReason: null,
     };
   }
 
-  return withMaybeZeroFallback(
+  return applyEmptyBreakdownAsZuKomplex(
     state,
     {
       min: finalMin,
@@ -1200,10 +1228,10 @@ export function calculatePrice(
       breakdown,
       mindestauftragAktiv,
       plzFaktor,
-      koordinationsRabatt: 1,
       resultModus,
       schwellenwertAusgeloest,
       istFallback,
+      komplexReason: null,
     },
     options
   );

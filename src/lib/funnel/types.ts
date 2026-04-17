@@ -44,6 +44,8 @@ export type BudgetCheck = "ok" | "zu_hoch" | null;
 
 /** Detailantworten Schritt „fachdetails“ (Elektro / Sanitär / Heizung / weitere Gewerke) */
 export type FachdetailsState = {
+  /** Flache Antworten je Frage-ID (`fachdetail_<id>`); parallel zu den Legacy-Feldern unten. */
+  fachdetailAnswers?: Record<string, string | string[] | undefined>;
   /** Zusatzinfos zu Neubau/Ausbau (Keller, Terrasse, Innenumbau) */
   neubauen?: {
     rohbau?: "ja" | "nein";
@@ -125,8 +127,10 @@ export interface FunnelState {
   priceMin: number;
   priceMax: number;
   breakdown: PriceLineItem[];
-  /** Preis aus Fallback-Mapping (450–1800 €), kein Accordion */
+  /** @deprecated Kein Fallback-Preis mehr — immer false */
   istFallback: boolean;
+  /** z. B. `no_mapping_found` wenn kein Preis-Mapping */
+  komplexReason?: string | null;
   budgetCheck: BudgetCheck;
   dringlichkeit: NotfallDringlichkeit | null;
   zugaenglichkeit: Zugaenglichkeit | null;
@@ -183,11 +187,12 @@ export function isBwTrustScreenId(step: string): step is BwTrustScreenId {
 }
 
 export function isFachdetailStep(step: string): boolean {
-  return step.startsWith("fachdetails_");
+  return step.startsWith("fachdetail_") || step.startsWith("fachdetails_");
 }
 
+/** Frage-ID aus Screen `fachdetail_<id>` (ohne Gewerk — nur für Logging). */
 export function getFachdetailGewerk(step: string): string {
-  return step.replace(/^fachdetails_/, "");
+  return step.replace(/^fachdetail_/, "").replace(/^fachdetails_/, "");
 }
 
 export interface FunnelStep {

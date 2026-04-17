@@ -2,23 +2,23 @@ import type { FunnelState, FunnelStep, Situation } from "@/lib/funnel/types";
 import { getKundentypStep, getResolvedStepsForSituation } from "@/lib/funnel/config";
 import { getBwResultModus } from "@/lib/funnel/price-calc";
 import {
-  FACHDETAILS_PRIORITAET,
-  getAktiveFachdetailGewerke,
-  type FachdetailGewerkKey,
-} from "@/lib/funnel/fachdetails-notfall";
+  fachdetailQuestionScreenId,
+  getActiveFachdetailQuestionIds,
+  isFachdetailQuestionScreen,
+} from "@/lib/funnel/fachdetail-questions-flat";
 
-/** Einzel-Screen pro Gewerk im Rechner */
-export type FachdetailsScreenId = `fachdetails_${FachdetailGewerkKey}`;
+/** Einzel-Screen pro Fachdetail-Frage */
+export type FachdetailQuestionScreenId = `fachdetail_${string}`;
 
-export function isBwFachdetailScreenId(step: string): step is FachdetailsScreenId {
-  return step.startsWith("fachdetails_");
+export function isBwFachdetailQuestionScreenId(
+  step: string
+): step is FachdetailQuestionScreenId {
+  return isFachdetailQuestionScreen(step);
 }
 
-export function getBwFachdetailGewerkFromScreen(
-  step: string
-): FachdetailGewerkKey | null {
-  if (!isBwFachdetailScreenId(step)) return null;
-  return step.slice("fachdetails_".length) as FachdetailGewerkKey;
+/** @deprecated Altes Präfix `fachdetails_<gewerk>` — nur noch für Migrationstests */
+export function isBwFachdetailScreenId(step: string): boolean {
+  return step.startsWith("fachdetails_");
 }
 
 export type BwTrustScreenVariant =
@@ -63,7 +63,7 @@ export function getBwRechnerScreenSequence(state: FunnelState): string[] {
     return head;
   }
 
-  /** Gewerbe/Gastro: keine Bereiche — direkt zur B2B-Anfrage */
+  /** Gewerbe: keine Bereiche — direkt zur B2B-Anfrage */
   if (sit === "gewerbe") {
     return ["situation", "beratung-lead"];
   }
@@ -83,7 +83,7 @@ export function getBwRechnerScreenSequence(state: FunnelState): string[] {
   out.push("situation", "bereiche");
 
   for (let i = 1; i < steps.length; i++) {
-    out.push(...funnelConfigStepToScreens(steps[i]!, state.bereiche));
+    out.push(...funnelConfigStepToScreens(steps[i]!, state));
   }
 
   if (showTrustScreen("trust_preis", sit)) {
@@ -94,7 +94,7 @@ export function getBwRechnerScreenSequence(state: FunnelState): string[] {
   }
 
   if (showTrustScreen("trust_qualitaet", sit)) {
-    const fachIds = out.filter((s) => isBwFachdetailScreenId(s));
+    const fachIds = out.filter((s) => isBwFachdetailQuestionScreenId(s));
     const letztesFachdetail = fachIds[fachIds.length - 1];
     if (letztesFachdetail) {
       const idx = out.lastIndexOf(letztesFachdetail);
@@ -114,15 +114,12 @@ export function getBwRechnerScreenSequence(state: FunnelState): string[] {
 
 function funnelConfigStepToScreens(
   step: FunnelStep,
-  bereiche: string[]
+  state: FunnelState
 ): string[] {
   if (step.id === "fachdetails") {
-    const aktive = [...getAktiveFachdetailGewerke(bereiche, 2)].sort(
-      (a, b) =>
-        FACHDETAILS_PRIORITAET.indexOf(a) -
-        FACHDETAILS_PRIORITAET.indexOf(b)
+    return getActiveFachdetailQuestionIds(state).map((id) =>
+      fachdetailQuestionScreenId(id)
     );
-    return aktive.map((g) => `fachdetails_${g}` as FachdetailsScreenId);
   }
   if (step.id === "zugaenglichkeit") return ["zugaenglichkeit"];
   if (step.id === "zustand") return ["zustand"];
@@ -139,12 +136,12 @@ function funnelConfigStepToScreens(
   return [];
 }
 
-export function firstFachdetailsScreenId(
-  bereiche: string[]
-): FachdetailsScreenId | null {
-  const a = getAktiveFachdetailGewerke(bereiche, 2);
-  if (a.length === 0) return null;
-  return `fachdetails_${a[0]}`;
+export function firstFachdetailQuestionScreenId(
+  state: Pick<FunnelState, "situation" | "bereiche" | "fachdetails">
+): FachdetailQuestionScreenId | null {
+  const ids = getActiveFachdetailQuestionIds(state);
+  if (ids.length === 0) return null;
+  return fachdetailQuestionScreenId(ids[0]!) as FachdetailQuestionScreenId;
 }
 
 export function getPreviousBwRechnerScreen(

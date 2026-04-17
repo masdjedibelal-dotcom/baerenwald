@@ -43,8 +43,8 @@ export const BW_FUNNEL_STEP1_OPTIONS: BwFunnelStep1Option[] = [
   },
   {
     id: "gewerbe",
-    label: "Gewerbe / Gastro",
-    hint: "Büro, Praxis, Laden, Restaurant — wir planen individuell",
+    label: "Gewerbe",
+    hint: "Büro, Praxis, Laden, Gastronomie — wir planen individuell",
     emoji: "🏢",
     tag: "B2B",
   },

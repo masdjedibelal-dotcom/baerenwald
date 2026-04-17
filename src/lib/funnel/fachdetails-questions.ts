@@ -15,6 +15,9 @@ export type FachdetailOptionDef = {
   followUpId?: string | null;
   /** z. B. Warnung bei Auswahl (Notfall) */
   warnText?: string;
+  /** Sofort „zu komplex“ / persönliche Beratung (Rechner) */
+  direktKomplex?: boolean;
+  komplex_text?: string;
 };
 
 export type FachdetailQuestionDef = {
@@ -267,7 +270,9 @@ export const HEIZUNG_Q1: FachdetailQuestionDef = {
       value: "waermepumpe",
       label: "Wärmepumpe",
       hint: "Luft- oder Erdwärmepumpe",
-      followUpId: "heizung_folge_wp_vorhaben",
+      direktKomplex: true,
+      komplex_text:
+        "Wärmepumpen planen wir persönlich mit dir — kurzer Rückruf statt Online-Preis.",
     },
     {
       value: "fernwaerme",
@@ -306,6 +311,9 @@ export const HEIZUNG_FOLLOWUPS: Record<string, FachdetailQuestionDef> = {
         value: "ueber20",
         label: "Über 20 Jahre",
         hint: "Älteres System",
+        direktKomplex: true,
+        komplex_text:
+          "Sehr alte Ölheizungen erfordern eine individuelle Beratung — kurzer Rückruf statt Online-Preis.",
       },
     ],
   },

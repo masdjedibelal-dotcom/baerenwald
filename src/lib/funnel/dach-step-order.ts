@@ -27,6 +27,7 @@ export function skipGroesseForSanierenDachKleinjob(
   return (
     v === "ziegel_wenige" ||
     v === "ziegel_bereich" ||
-    v === "dachfenster"
+    v === "dachfenster" ||
+    v === "regenrinne"
   );
 }

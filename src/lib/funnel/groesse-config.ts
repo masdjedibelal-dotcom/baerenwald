@@ -20,6 +20,8 @@ export type GroesseSliderConfig = {
   einheit: string;
   einheitKurz: string;
   chips: GroesseChip[];
+  /** Nur Raum-Kacheln, kein Slider (Wandfläche intern als m²) */
+  hideSlider?: boolean;
 };
 
 const ELECTRO_BEREICH = new Set(["strom", "elektrik", "elektro"]);
@@ -38,7 +40,13 @@ export function isHausmeisterOnlyBereiche(bereiche: string[]): boolean {
 
 function kaputtSkipGroesse(bereiche: string[]): boolean {
   if (bereiche.length === 0) return false;
-  const skip = new Set(["elektro", "sanitaer", "heizung", "schimmel"]);
+  const skip = new Set([
+    "elektro",
+    "sanitaer",
+    "heizung",
+    "schimmel",
+    "fenster_tuer",
+  ]);
   return bereiche.every((b) => skip.has(b));
 }
 
@@ -99,9 +107,9 @@ export function applyGroesseStepCopy(
   ) {
     return {
       ...step,
-      question: "Wie groß ist die Wandfläche ungefähr?",
+      question: "Wie viele Räume sollen gestrichen werden?",
       subtext:
-        "Tipp: Wandfläche ≈ Raumfläche × 2,5 — ein 20 m² Zimmer hat ca. 50 m² Wandfläche.",
+        "Wähle die passende Größe — wir rechnen intern mit typischer Wandfläche.",
     };
   }
   if (situation === "erneuern" && b.has("boden") && !b.has("bad")) {
@@ -228,14 +236,31 @@ export const GROESSE_CONFIG: {
     min: 10,
     max: 400,
     step: 5,
-    default: 50,
+    default: 40,
     einheit: "m²",
     einheitKurz: "m²",
+    hideSlider: true,
     chips: [
-      { label: "🏠 Ein Zimmer", value: 35, hint: "Ca. 30–50 m² Wandfläche" },
-      { label: "🏡 Mehrere Zimmer", value: 75, hint: "Ca. 50–100 m²" },
-      { label: "🏢 Ganze Wohnung", value: 150, hint: "Ca. 100–200 m²" },
-      { label: "🏗️ Großes Objekt", value: 250, hint: "Über 200 m²" },
+      {
+        label: "Ein Zimmer",
+        value: 40,
+        hint: "z. B. Schlafzimmer oder Kinderzimmer",
+      },
+      {
+        label: "Zwei bis drei Zimmer",
+        value: 90,
+        hint: "z. B. Wohn- und Esszimmer",
+      },
+      {
+        label: "Ganze Wohnung",
+        value: 160,
+        hint: "Alle Räume inkl. Flur",
+      },
+      {
+        label: "Großes Objekt",
+        value: 280,
+        hint: "Büro oder Mehrfamilienhaus",
+      },
     ],
   },
   stueck: {
