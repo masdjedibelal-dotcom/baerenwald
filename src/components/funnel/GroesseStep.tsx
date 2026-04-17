@@ -53,40 +53,51 @@ export function GroesseStep({
 
   const sliderValue = groesse ?? config.default;
   const displayZahl = groesse ?? "–";
+  const hideSlider = Boolean(config.hideSlider);
 
   return (
-    <div className={cn("groesse-step", className)}>
-      <div className="groesse-einheit-label">{config.einheit}</div>
+    <div
+      className={cn(
+        "groesse-step",
+        hideSlider && "groesse-step--tiles-only",
+        className
+      )}
+    >
+      {!hideSlider ? (
+        <>
+          <div className="groesse-einheit-label">{config.einheit}</div>
 
-      <div className="groesse-display">
-        <span className="groesse-zahl">{displayZahl}</span>
-        <span className="groesse-unit">{config.einheitKurz}</span>
-      </div>
+          <div className="groesse-display">
+            <span className="groesse-zahl">{displayZahl}</span>
+            <span className="groesse-unit">{config.einheitKurz}</span>
+          </div>
 
-      <div className="groesse-slider-wrap">
-        <input
-          type="range"
-          min={config.min}
-          max={config.max}
-          step={config.step}
-          value={sliderValue}
-          onChange={(e) => {
-            applyValue(Number(e.target.value));
-          }}
-          className="groesse-slider"
-          aria-valuemin={config.min}
-          aria-valuemax={config.max}
-          aria-valuenow={sliderValue}
-        />
-        <div className="groesse-slider-labels">
-          <span>
-            {config.min} {config.einheitKurz}
-          </span>
-          <span>
-            {config.max}+ {config.einheitKurz}
-          </span>
-        </div>
-      </div>
+          <div className="groesse-slider-wrap">
+            <input
+              type="range"
+              min={config.min}
+              max={config.max}
+              step={config.step}
+              value={sliderValue}
+              onChange={(e) => {
+                applyValue(Number(e.target.value));
+              }}
+              className="groesse-slider"
+              aria-valuemin={config.min}
+              aria-valuemax={config.max}
+              aria-valuenow={sliderValue}
+            />
+            <div className="groesse-slider-labels">
+              <span>
+                {config.min} {config.einheitKurz}
+              </span>
+              <span>
+                {config.max}+ {config.einheitKurz}
+              </span>
+            </div>
+          </div>
+        </>
+      ) : null}
 
       <div className="groesse-chips">
         {config.chips.map((chip) => (
@@ -102,29 +113,34 @@ export function GroesseStep({
               applyValue(chip.value);
             }}
           >
-            {chip.label}
+            <span className="groesse-chip-label">{chip.label}</span>
+            {chip.hint ? (
+              <span className="groesse-chip-hint">{chip.hint}</span>
+            ) : null}
           </button>
         ))}
       </div>
 
-      <div className="groesse-input-wrap">
-        <span className="groesse-input-label">Genaue Angabe:</span>
-        <input
-          type="number"
-          className="groesse-input funnel-input"
-          value={inputValue}
-          placeholder="z.B. 65"
-          onChange={(e) => {
-            const raw = e.target.value;
-            setInputValue(raw);
-            const num = Number(raw);
-            if (raw === "" || Number.isNaN(num)) return;
-            if (num > 0) applyValue(num);
-          }}
-          aria-label="Genaue Größe"
-        />
-        <span className="groesse-input-unit">{config.einheitKurz}</span>
-      </div>
+      {!hideSlider ? (
+        <div className="groesse-input-wrap">
+          <span className="groesse-input-label">Genaue Angabe:</span>
+          <input
+            type="number"
+            className="groesse-input funnel-input"
+            value={inputValue}
+            placeholder="z.B. 65"
+            onChange={(e) => {
+              const raw = e.target.value;
+              setInputValue(raw);
+              const num = Number(raw);
+              if (raw === "" || Number.isNaN(num)) return;
+              if (num > 0) applyValue(num);
+            }}
+            aria-label="Genaue Größe"
+          />
+          <span className="groesse-input-unit">{config.einheitKurz}</span>
+        </div>
+      ) : null}
 
       <p className="groesse-hint">
         Ungefähre Angabe reicht — beim Vor-Ort-Termin messen wir genau.

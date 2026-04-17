@@ -191,8 +191,17 @@ function bereicheDisplayLabels(state: FunnelState): string[] {
   });
 }
 
+const WAENDE_TILE_QM = new Set([40, 90, 160, 280]);
+
 function groesseEinordnungLine(state: FunnelState): string | null {
   if (state.groesse == null) return null;
+  const waendeDiskret =
+    (state.situation === "erneuern" || state.situation === "kaputt") &&
+    (state.bereiche.includes("waende") ||
+      state.bereiche.includes("maler") ||
+      state.bereiche.includes("streichen")) &&
+    WAENDE_TILE_QM.has(state.groesse);
+  if (waendeDiskret) return null;
   if (state.groesseEinheit === "stueck") {
     return `ca. ${state.groesse} Stück`;
   }
@@ -269,7 +278,7 @@ function PhoneIconKomplex() {
 
 function ZuKomplexScreen({
   state,
-  schwellenwertAusgeloest,
+  schwellenwertAusgeloest: _schwellenwertAusgeloest,
   onKomplexRueckrufSuccess,
   onReset,
   className,
@@ -297,6 +306,19 @@ function ZuKomplexScreen({
     [state]
   );
   const abMin = preisPreview.min > 0 ? preisPreview.min : 1200;
+
+  const scrollToRueckruf = useCallback(() => {
+    document.getElementById("komplex-rueckruf-anchor")?.scrollIntoView({
+      behavior: "smooth",
+      block: "start",
+    });
+  }, []);
+
+  const karteNeubauenStil =
+    state.situation === "neubauen" ||
+    (state.situation === "erneuern" &&
+      state.komplexReason === "no_mapping_found");
+  const karteGewerbe = state.situation === "gewerbe";
 
   const handleKomplexSubmit = useCallback(async () => {
     setErrors({});
@@ -375,27 +397,62 @@ function ZuKomplexScreen({
 
   return (
     <div className={cn("komplex-screen", className)}>
-      <div className="komplex-header">
-        <div className="komplex-icon" aria-hidden>
-          💬
+      {karteGewerbe ? (
+        <div className="komplex-card">
+          <h2>Gewerbliches Projekt?</h2>
+          <p>
+            Ob Büro, Praxis, Laden oder Gastronomie — wir planen individuell
+            mit dir. Melde dich kurz und wir melden uns innerhalb von 24h.
+          </p>
+          <button
+            type="button"
+            className="komplex-card-cta"
+            onClick={scrollToRueckruf}
+          >
+            Beratung anfragen
+          </button>
         </div>
-        <h2 className="komplex-headline">
-          Dein Projekt startet ab ca. {formatCurrencyEUR(abMin)}.
-        </h2>
-        <p className="komplex-sub">
-          {fassadeDaemmungKomplex ? (
-            <>
-              Fassadendämmung planen wir persönlich mit dir — ein kurzes
-              Gespräch hilft uns, den nächsten Schritt festzulegen.
-            </>
-          ) : (
-            <>
-              Für einen finalen Preis kommen wir um einen Vor-Ort-Termin nicht
-              herum.
-            </>
-          )}
-        </p>
-      </div>
+      ) : karteNeubauenStil ? (
+        <div className="komplex-card">
+          <h2>Das planen wir persönlich mit dir.</h2>
+          <p>
+            Für dieses Projekt gibt es zu viele individuelle Faktoren für eine
+            automatische Kalkulation. Wir schauen es uns gemeinsam an und
+            erstellen dir ein konkretes Angebot — kostenlos und unverbindlich.
+          </p>
+          <button
+            type="button"
+            className="komplex-card-cta"
+            onClick={scrollToRueckruf}
+          >
+            Jetzt Beratung anfragen
+          </button>
+        </div>
+      ) : (
+        <div className="komplex-header">
+          <div className="komplex-icon" aria-hidden>
+            💬
+          </div>
+          <h2 className="komplex-headline">
+            Dein Projekt startet ab ca. {formatCurrencyEUR(abMin)}.
+          </h2>
+          <p className="komplex-sub">
+            {fassadeDaemmungKomplex ? (
+              <>
+                Fassadendämmung planen wir persönlich mit dir — ein kurzes
+                Gespräch hilft uns, den nächsten Schritt festzulegen.
+              </>
+            ) : (
+              <>
+                Für einen finalen Preis kommen wir um einen Vor-Ort-Termin
+                nicht herum.
+              </>
+            )}
+          </p>
+        </div>
+      )}
+
+      <div id="komplex-rueckruf-anchor" className="h-px w-full scroll-mt-24" />
 
       <div className="komplex-option">
         <div className="komplex-option-label">Sofort sprechen</div>
@@ -643,6 +700,31 @@ export function BwResultScreen({
               Größeres Projekt: der finale Preis kann stärker abweichen — Festpreis
               nach Vor-Ort-Termin.
             </p>
+          ) : null}
+          {state.situation === "notfall" ? (
+            <>
+              <a
+                href={SITE_CONFIG.phoneHref}
+                className="komplex-call-btn komplex-call-btn--hero mt-5 w-full max-w-sm"
+              >
+                <PhoneIconKomplex />
+                {SITE_CONFIG.phone}
+              </a>
+              <div className="notfall-trust mt-4 space-y-2 text-left text-sm text-text-secondary">
+                <div className="trust-item flex gap-2">
+                  <span aria-hidden>✓</span>
+                  <span>Schnelle Rückmeldung</span>
+                </div>
+                <div className="trust-item flex gap-2">
+                  <span aria-hidden>✓</span>
+                  <span>Wir sind in München & Umgebung</span>
+                </div>
+                <div className="trust-item flex gap-2">
+                  <span aria-hidden>✓</span>
+                  <span>Transparente Preise</span>
+                </div>
+              </div>
+            </>
           ) : null}
         </div>
       ) : (

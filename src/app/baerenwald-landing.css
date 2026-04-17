@@ -4303,6 +4303,46 @@
   color: white;
 }
 
+.groesse-step--tiles-only .groesse-chips {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+}
+
+@media (min-width: 480px) {
+  .groesse-step--tiles-only .groesse-chips {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.groesse-step--tiles-only .groesse-chip {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  border-radius: 14px;
+  padding: 12px 14px;
+  text-align: left;
+  white-space: normal;
+  min-height: auto;
+}
+
+.groesse-chip-label {
+  font-weight: 600;
+  line-height: 1.25;
+}
+
+.groesse-chip-hint {
+  font-size: 11px;
+  font-weight: 400;
+  line-height: 1.35;
+  opacity: 0.88;
+}
+
+.groesse-step--tiles-only .groesse-chip.active .groesse-chip-hint {
+  opacity: 0.95;
+}
+
 .groesse-input-wrap {
   display: flex;
   align-items: center;
@@ -5727,6 +5767,51 @@
 }
 
 /* ── Rechner: „Zu komplex“ + Rückruf-Formular ─────────────────────── */
+
+.komplex-card {
+  border-radius: var(--fl-radius-md, 16px);
+  border: 1px solid var(--fl-border-light);
+  background: var(--fl-bg-card);
+  padding: 22px 20px;
+  text-align: center;
+}
+
+.komplex-card h2 {
+  font-size: 1.25rem;
+  font-weight: 700;
+  line-height: 1.35;
+  color: var(--fl-text-1);
+  margin: 0 0 12px;
+}
+
+.komplex-card p {
+  font-size: 0.95rem;
+  line-height: 1.55;
+  color: var(--fl-text-2);
+  margin: 0 0 18px;
+}
+
+.komplex-card-cta {
+  width: 100%;
+  max-width: 320px;
+  margin: 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  padding: 12px 20px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  background: var(--fl-accent);
+  color: #fff;
+  border: none;
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+
+.komplex-card-cta:hover {
+  opacity: 0.92;
+}
 
 .komplex-screen {
   display: flex;

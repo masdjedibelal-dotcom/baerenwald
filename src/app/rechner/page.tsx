@@ -15,10 +15,7 @@ import "@/app/baerenwald-landing.css";
 
 import { BwBeratungLead } from "@/components/funnel/BwBeratungLead";
 import { BwResultScreen } from "@/components/funnel/BwResultScreen";
-import {
-  FachdetailsStep,
-  type FachdetailsStepHandle,
-} from "@/components/funnel/FachdetailsStep";
+import { FachdetailsStep } from "@/components/funnel/FachdetailsStep";
 import {
   NeubauenFollowUpBlock,
   neubauenFollowUpBlocksPlanung,
@@ -50,16 +47,19 @@ import {
   needsZeitraumSelection,
 } from "@/lib/funnel/config";
 import {
-  firstFachdetailsScreenId,
+  firstFachdetailQuestionScreenId,
   getBwRechnerScreenSequence,
   getNextBwRechnerScreen,
   getPreviousBwRechnerScreen,
-  getBwFachdetailGewerkFromScreen,
-  isBwFachdetailScreenId,
-  type FachdetailsScreenId,
+  isBwFachdetailQuestionScreenId,
+  type FachdetailQuestionScreenId,
 } from "@/lib/funnel/bw-rechner-sequence";
-import { isFachdetailGewerkChainComplete } from "@/lib/funnel/fachdetails-chain-complete";
-import { getAktiveFachdetailGewerke } from "@/lib/funnel/fachdetails-notfall";
+import {
+  FACHDETAIL_QUESTIONS,
+  fachdetailAnswer,
+  getFachdetailQuestionIdFromScreen,
+} from "@/lib/funnel/fachdetail-questions-flat";
+import { mergeFachdetailsPatch } from "@/lib/funnel/fachdetails-merge";
 import { getBwFunnelProgressStep } from "@/lib/funnel/bw-funnel-progress";
 import {
   BW_FUNNEL_STEP1_OPTIONS,
@@ -72,6 +72,7 @@ import {
 import type { BwResultModus } from "@/lib/funnel/price-calc";
 import { getPlzStatus } from "@/lib/funnel/plz";
 import type {
+  FachdetailsState,
   FunnelState,
   FunnelStep,
   Kundentyp,
@@ -97,7 +98,7 @@ type Screen =
   | "trust_qualitaet"
   | "situation"
   | "bereiche"
-  | FachdetailsScreenId
+  | FachdetailQuestionScreenId
   | "kundentyp"
   | "umfang"
   | "zugaenglichkeit"
@@ -165,22 +166,14 @@ function FunnelRechnerInner() {
   const [komplexRueckrufDanke, setKomplexRueckrufDanke] = useState(false);
   /** Direkt nach Schimmel-Kachel: Beratungs-Lead mit Spezialtext */
   const [schimmelBeratung, setSchimmelBeratung] = useState(false);
+  /** Neubauen „Erst eine Idee“ → sanfter Beratungs-Lead */
+  const [neubauenIdeeBeratung, setNeubauenIdeeBeratung] = useState(false);
   /** Nach erstem „Preis berechnen“: auf „ort“ wieder „Weiter →“ (Footer rendert zuverlässig). */
   const [priceConfirmed, setPriceConfirmed] = useState(false);
   const [microNote, setMicroNote] = useState<{
     target: Screen;
     text: string;
   } | null>(null);
-  /** Pro Fachdetail-Screen: letzter bekannter Vollständigkeitszustand (für Auto-Weiter ohne Skip beim Zurück). */
-  const fachdetailVisitRef = useRef<{
-    id: string;
-    wasComplete: boolean;
-  } | null>(null);
-  /** Einmal Auto-Weiter unterdrücken, wenn per „Zurück“ auf einen Fachdetail-Screen gewechselt wird (sonst sofort wieder vor bei schon vollständiger Kette). */
-  const skipFachAutoadvanceRef = useRef(false);
-  const fachdetailsStepRef = useRef<FachdetailsStepHandle | null>(null);
-  const [fachInternalNavTick, setFachInternalNavTick] = useState(0);
-
   const {
     state,
     setSituation,
@@ -200,6 +193,7 @@ function FunnelRechnerInner() {
     setZugaenglichkeit,
     setZustand,
     setFachdetails,
+    clearFachdetailAnswer,
     resetFachdetailsForGewerk,
     setBadAusstattung,
     reset,
@@ -216,6 +210,9 @@ function FunnelRechnerInner() {
       state.situation,
       state.umfang,
       state.bereiche,
+      state.fachdetails?.fachdetailAnswers,
+      state.fachdetails?.heizung?.typ,
+      state.fachdetails?.heizung?.alter,
       state.fachdetails?.heizung?.vorhaben,
       state.fachdetails?.garten?.baumgroesse,
       state.fachdetails?.maler?.was,
@@ -291,7 +288,7 @@ function FunnelRechnerInner() {
 
   const groesseSliderConfig = useMemo(
     () => getGroesseConfig(state),
-    [state.situation, state.bereiche]
+    [state.situation, state.bereiche, state.fachdetails]
   );
 
   const stepKundentyp = useMemo(
@@ -314,9 +311,11 @@ function FunnelRechnerInner() {
   const umfangOk =
     state.situation === "notfall"
       ? Boolean(state.dringlichkeit)
-      : state.situation === "neubauen" && neubauenDetailOffen
-        ? false
-        : Boolean(state.umfang);
+      : state.situation === "neubauen" && state.umfang === "idee"
+        ? true
+        : state.situation === "neubauen" && neubauenDetailOffen
+          ? false
+          : Boolean(state.umfang);
 
   /** Screen-Reihenfolge (ohne loading/result/lead) — stabil, damit handleBack & Fachdetail „X von Y“ konsistent bleiben. */
   const stepSequence = useMemo(
@@ -329,6 +328,7 @@ function FunnelRechnerInner() {
       state.groesse,
       state.badAusstattung ?? null,
       state.fachdetails,
+      zuKomplexForSteps,
     ]
   );
 
@@ -337,6 +337,9 @@ function FunnelRechnerInner() {
     let raw = searchParams.get("situation");
     if (raw === "renovieren" || raw === "sanieren") {
       raw = "erneuern";
+    }
+    if (raw === "gastro") {
+      raw = "gewerbe";
     }
     if (raw && isSituation(raw)) {
       setSituation(raw);
@@ -391,18 +394,15 @@ function FunnelRechnerInner() {
       setScreen("bad_ausstattung");
       return;
     }
-    const firstFd = firstFachdetailsScreenId(state.bereiche);
+    const firstFd = firstFachdetailQuestionScreenId(state);
     if (firstFd) {
-      const g = getBwFachdetailGewerkFromScreen(firstFd);
-      if (g) resetFachdetailsForGewerk(g);
       setScreen(firstFd);
     } else if (hasKundentypStep) setScreen("kundentyp");
     else setScreen("ort");
   }, [
     hasBadAusstattungStep,
     hasKundentypStep,
-    state.bereiche,
-    resetFachdetailsForGewerk,
+    state,
   ]);
 
   const goGroesseOrPostGroesse = useCallback(() => {
@@ -417,10 +417,8 @@ function FunnelRechnerInner() {
 
   const goAfterZustandScreen = useCallback(() => {
     if (fachdetailsBeforeGroesse && hasFachdetailsStep) {
-      const firstFd = firstFachdetailsScreenId(state.bereiche);
+      const firstFd = firstFachdetailQuestionScreenId(state);
       if (firstFd) {
-        const g = getBwFachdetailGewerkFromScreen(firstFd);
-        if (g) resetFachdetailsForGewerk(g);
         setScreen(firstFd);
         return;
       }
@@ -430,31 +428,13 @@ function FunnelRechnerInner() {
     fachdetailsBeforeGroesse,
     hasFachdetailsStep,
     goGroesseOrPostGroesse,
-    state.bereiche,
-    resetFachdetailsForGewerk,
+    state,
   ]);
 
   const goNextFromCompletedFachdetailScreen = useCallback(
     (fromScreen: Screen) => {
-      const g = getBwFachdetailGewerkFromScreen(fromScreen);
-      if (!g) return;
-      if (
-        !isFachdetailGewerkChainComplete(
-          state.bereiche,
-          state.situation === "notfall",
-          state.fachdetails,
-          g,
-          state.situation
-        )
-      ) {
-        return;
-      }
       const next = getNextBwRechnerScreen(state, fromScreen);
       if (!next) return;
-      const nextGewerk = getBwFachdetailGewerkFromScreen(next as Screen);
-      if (nextGewerk && isBwFachdetailScreenId(next as Screen)) {
-        resetFachdetailsForGewerk(nextGewerk);
-      }
       if (next === "groesse" && fachdetailsBeforeGroesse && hasGroesseStep) {
         setMicroNote({
           target: "groesse",
@@ -463,19 +443,11 @@ function FunnelRechnerInner() {
       }
       setScreen(next as Screen);
     },
-    [
-      state.bereiche,
-      state.situation,
-      state.fachdetails,
-      fachdetailsBeforeGroesse,
-      hasGroesseStep,
-      resetFachdetailsForGewerk,
-    ]
+    [state, fachdetailsBeforeGroesse, hasGroesseStep]
   );
 
   const handleReset = useCallback(() => {
     const prevSit = state.situation;
-    fachdetailVisitRef.current = null;
     reset();
     setSubmitted(false);
     setMindestauftrag(false);
@@ -491,6 +463,7 @@ function FunnelRechnerInner() {
     setMicroNote(null);
     setPriceConfirmed(false);
     setSchimmelBeratung(false);
+    setNeubauenIdeeBeratung(false);
 
     const first: Screen =
       prevSit === "notfall" || prevSit === "gewerbe"
@@ -506,29 +479,25 @@ function FunnelRechnerInner() {
   }, [reset, setSubmitted, state.situation]);
 
   const handleNext = useCallback(() => {
-    const fachGewerk = getBwFachdetailGewerkFromScreen(screen);
-    if (fachGewerk) {
-      const consumed = fachdetailsStepRef.current?.tryConsumeNext();
-      if (consumed) {
-        setFachInternalNavTick((t) => t + 1);
-        window.scrollTo({
-          top: 0,
-          left: 0,
-          behavior: "instant" as ScrollBehavior,
-        });
-        return;
+    if (isBwFachdetailQuestionScreenId(screen)) {
+      const qid = getFachdetailQuestionIdFromScreen(screen);
+      if (!qid) return;
+      const q = FACHDETAIL_QUESTIONS.find((x) => x.id === qid);
+      if (!q) return;
+      const v = fachdetailAnswer(state, qid);
+      const multi = q.inputType === "multi";
+      let ok = false;
+      if (multi) {
+        const n = Array.isArray(v)
+          ? v.length
+          : typeof v === "string" && v
+            ? v.split(",").filter(Boolean).length
+            : 0;
+        ok = n > 0;
+      } else {
+        ok = v !== undefined && v !== "";
       }
-      if (
-        !isFachdetailGewerkChainComplete(
-          state.bereiche,
-          state.situation === "notfall",
-          state.fachdetails,
-          fachGewerk,
-          state.situation
-        )
-      ) {
-        return;
-      }
+      if (!ok) return;
       goNextFromCompletedFachdetailScreen(screen);
       return;
     }
@@ -567,6 +536,12 @@ function FunnelRechnerInner() {
         break;
       case "umfang":
         if (umfangOk) {
+          if (state.situation === "neubauen" && state.umfang === "idee") {
+            setNeubauenIdeeBeratung(true);
+            setSchimmelBeratung(false);
+            setScreen("beratung-lead");
+            break;
+          }
           const nextAfterUmfang = getNextBwRechnerScreen(state, "umfang");
           if (nextAfterUmfang) setScreen(nextAfterUmfang as Screen);
         }
@@ -585,10 +560,8 @@ function FunnelRechnerInner() {
             if (hasKundentypStep) setScreen("kundentyp");
             else setScreen("ort");
           } else if (hasFachdetailsStep) {
-            const firstFd = firstFachdetailsScreenId(state.bereiche);
+            const firstFd = firstFachdetailQuestionScreenId(state);
             if (firstFd) {
-              const g = getBwFachdetailGewerkFromScreen(firstFd);
-              if (g) resetFachdetailsForGewerk(g);
               setScreen(firstFd);
             } else if (hasKundentypStep) setScreen("kundentyp");
             else setScreen("ort");
@@ -605,10 +578,8 @@ function FunnelRechnerInner() {
             if (hasKundentypStep) setScreen("kundentyp");
             else setScreen("ort");
           } else if (hasFachdetailsStep) {
-            const firstFd = firstFachdetailsScreenId(state.bereiche);
+            const firstFd = firstFachdetailQuestionScreenId(state);
             if (firstFd) {
-              const g = getBwFachdetailGewerkFromScreen(firstFd);
-              if (g) resetFachdetailsForGewerk(g);
               setScreen(firstFd);
             } else if (hasKundentypStep) setScreen("kundentyp");
             else setScreen("ort");
@@ -633,8 +604,9 @@ function FunnelRechnerInner() {
           resultModus: rm,
           schwellenwertAusgeloest: swa,
           istFallback,
+          komplexReason,
         } = calculatePrice(state);
-        setPrice(min, max, breakdown, istFallback);
+        setPrice(min, max, breakdown, istFallback, komplexReason ?? null);
         setMindestauftrag(mindestauftragAktiv);
         setResultModus(rm);
         setSchwellenwertAusgeloest(swa);
@@ -675,68 +647,17 @@ function FunnelRechnerInner() {
     hasKundentypStep,
     setPrice,
     goNextFromCompletedFachdetailScreen,
-    resetFachdetailsForGewerk,
-  ]);
-
-  useEffect(() => {
-    if (!isBwFachdetailScreenId(screen)) {
-      fachdetailVisitRef.current = null;
-      return;
-    }
-    const g = getBwFachdetailGewerkFromScreen(screen);
-    if (!g) return;
-    const complete = isFachdetailGewerkChainComplete(
-      state.bereiche,
-      state.situation === "notfall",
-      state.fachdetails,
-      g,
-      state.situation
-    );
-    if (skipFachAutoadvanceRef.current) {
-      skipFachAutoadvanceRef.current = false;
-      fachdetailVisitRef.current = { id: screen, wasComplete: complete };
-      return;
-    }
-    const visit = fachdetailVisitRef.current;
-    if (!visit || visit.id !== screen) {
-      fachdetailVisitRef.current = { id: screen, wasComplete: complete };
-      return;
-    }
-    if (complete && !visit.wasComplete) {
-      goNextFromCompletedFachdetailScreen(screen);
-      fachdetailVisitRef.current = { id: screen, wasComplete: true };
-      return;
-    }
-    fachdetailVisitRef.current = { id: screen, wasComplete: complete };
-  }, [
-    screen,
-    state.bereiche,
-    state.situation,
-    state.fachdetails,
-    goNextFromCompletedFachdetailScreen,
   ]);
 
   const handleBack = useCallback(() => {
-    if (isBwFachdetailScreenId(screen)) {
-      const consumed = fachdetailsStepRef.current?.tryConsumeBack();
-      if (consumed) {
-        skipFachAutoadvanceRef.current = true;
-        setFachInternalNavTick((t) => t + 1);
-        window.scrollTo({
-          top: 0,
-          left: 0,
-          behavior: "instant" as ScrollBehavior,
-        });
-        return;
-      }
+    if (isBwFachdetailQuestionScreenId(screen)) {
+      const qid = getFachdetailQuestionIdFromScreen(screen);
+      if (qid) clearFachdetailAnswer(qid);
     }
     const steps = stepSequence;
     const currentIndex = steps.lastIndexOf(screen);
     if (currentIndex > 0) {
       const prevStep = steps[currentIndex - 1]!;
-      if (isBwFachdetailScreenId(prevStep)) {
-        skipFachAutoadvanceRef.current = true;
-      }
       setScreen(prevStep as Screen);
       window.scrollTo({
         top: 0,
@@ -745,32 +666,18 @@ function FunnelRechnerInner() {
       });
       return;
     }
-    if (currentIndex < 0 && isBwFachdetailScreenId(screen)) {
-      const g = getBwFachdetailGewerkFromScreen(screen);
-      if (g) {
-        const order = getAktiveFachdetailGewerke(state.bereiche, 2);
-        const gi = order.indexOf(g);
-        if (gi > 0) {
-          const prevId = `fachdetails_${order[gi - 1]!}` as Screen;
-          skipFachAutoadvanceRef.current = true;
-          setScreen(prevId);
-          window.scrollTo({
-            top: 0,
-            left: 0,
-            behavior: "instant" as ScrollBehavior,
-          });
-          return;
-        }
-        const firstFdIdx = steps.findIndex((s) => isBwFachdetailScreenId(s));
-        if (firstFdIdx > 0) {
-          setScreen(steps[firstFdIdx - 1] as Screen);
-          window.scrollTo({
-            top: 0,
-            left: 0,
-            behavior: "instant" as ScrollBehavior,
-          });
-          return;
-        }
+    if (currentIndex < 0 && isBwFachdetailQuestionScreenId(screen)) {
+      const firstFdIdx = steps.findIndex((s) =>
+        isBwFachdetailQuestionScreenId(s)
+      );
+      if (firstFdIdx > 0) {
+        setScreen(steps[firstFdIdx - 1] as Screen);
+        window.scrollTo({
+          top: 0,
+          left: 0,
+          behavior: "instant" as ScrollBehavior,
+        });
+        return;
       }
     }
     switch (screen) {
@@ -801,7 +708,10 @@ function FunnelRechnerInner() {
         });
         break;
       case "beratung-lead":
-        if (isB2B(state.situation)) {
+        if (neubauenIdeeBeratung) {
+          setNeubauenIdeeBeratung(false);
+          setScreen("umfang");
+        } else if (isB2B(state.situation)) {
           setScreen("situation");
         } else {
           setScreen("bereiche");
@@ -823,23 +733,24 @@ function FunnelRechnerInner() {
       default:
         break;
     }
-  }, [screen, state, stepSequence]);
+  }, [screen, state, stepSequence, clearFachdetailAnswer, neubauenIdeeBeratung]);
 
   const nextDisabled = useMemo(() => {
-    if (isBwFachdetailScreenId(screen)) {
-      const g = getBwFachdetailGewerkFromScreen(screen);
-      if (!g) return true;
-      const api = fachdetailsStepRef.current;
-      if (api) {
-        return api.getNextDisabled();
+    if (isBwFachdetailQuestionScreenId(screen)) {
+      const qid = getFachdetailQuestionIdFromScreen(screen);
+      if (!qid) return true;
+      const q = FACHDETAIL_QUESTIONS.find((x) => x.id === qid);
+      if (!q) return true;
+      const v = fachdetailAnswer(state, qid);
+      if (q.inputType === "multi") {
+        const n = Array.isArray(v)
+          ? v.length
+          : typeof v === "string" && v
+            ? v.split(",").filter(Boolean).length
+            : 0;
+        return n === 0;
       }
-      return !isFachdetailGewerkChainComplete(
-        state.bereiche,
-        state.situation === "notfall",
-        state.fachdetails,
-        g,
-        state.situation
-      );
+      return v === undefined || v === "";
     }
     switch (screen) {
       case "trust_intro":
@@ -890,13 +801,7 @@ function FunnelRechnerInner() {
       default:
         return true;
     }
-  }, [
-    screen,
-    state,
-    umfangOk,
-    schimmelBeratung,
-    fachInternalNavTick,
-  ]);
+  }, [screen, state, umfangOk, schimmelBeratung]);
 
   const nextLabel = useMemo(() => {
     if (screen === "trust_intro") return "Los geht's →";
@@ -904,12 +809,25 @@ function FunnelRechnerInner() {
       return priceConfirmed ? "Weiter →" : "Preis berechnen";
     }
     if (screen === "lead") return "Absenden →";
-    if (screen === "beratung-lead") return "Rückruf anfordern →";
+    if (screen === "beratung-lead") {
+      if (schimmelBeratung || state.bereiche.includes("schimmel")) {
+        return "Rückruf anfragen →";
+      }
+      if (neubauenIdeeBeratung) return "Jetzt beraten lassen →";
+      return "Rückruf anfordern →";
+    }
     if (screen === "result" && resultModus === "preisrahmen_warnung")
       return "Vor-Ort-Termin anfragen";
     if (screen === "result") return "Weiter";
     return "Weiter →";
-  }, [screen, resultModus, priceConfirmed]);
+  }, [
+    screen,
+    resultModus,
+    priceConfirmed,
+    schimmelBeratung,
+    state.bereiche,
+    neubauenIdeeBeratung,
+  ]);
 
   const footerNextLeadingIcon =
     screen === "result" ? <RefreshIcon18 /> : undefined;
@@ -984,7 +902,7 @@ function FunnelRechnerInner() {
       budgetGespraech: false,
       selectedSlot: null,
       dringlichkeit: null,
-      umfang: null,
+      umfang: state.umfang,
     };
     const res = await fetch("/api/leads", {
       method: "POST",
@@ -1019,7 +937,7 @@ function FunnelRechnerInner() {
       budgetGespraech: false,
       selectedSlot: null,
       dringlichkeit: null,
-      umfang: null,
+      umfang: state.umfang,
       priceMin: 0,
       priceMax: 0,
       photoCount: 0,
@@ -1145,6 +1063,7 @@ function FunnelRechnerInner() {
     }
     const neubauenPlan =
       state.situation === "neubauen" &&
+      state.umfang !== "idee" &&
       stepUmfang.id === "neubauen_planung" &&
       neubauenFollowUpBlocksPlanung(
         state.bereiche,
@@ -1208,16 +1127,36 @@ function FunnelRechnerInner() {
     };
   }, [state.selectedSlot]);
 
+  const handleFachdetailSingleAnswer = useCallback(
+    (patch: Partial<FachdetailsState>) => {
+      setFachdetails(patch);
+      const merged = mergeFachdetailsPatch(state.fachdetails, patch);
+      const nextState = { ...state, fachdetails: merged };
+      const seq = getBwRechnerScreenSequence(nextState);
+      const idx = seq.indexOf(screen);
+      const next = idx >= 0 ? seq[idx + 1] : null;
+      if (next) {
+        setScreen(next as Screen);
+        window.scrollTo({
+          top: 0,
+          left: 0,
+          behavior: "instant" as ScrollBehavior,
+        });
+      }
+    },
+    [state, screen, setFachdetails]
+  );
+
   const main = () => {
-    if (isBwFachdetailScreenId(screen)) {
-      const g = getBwFachdetailGewerkFromScreen(screen);
-      if (!g) return null;
+    if (isBwFachdetailQuestionScreenId(screen)) {
+      const qid = getFachdetailQuestionIdFromScreen(screen);
+      if (!qid) return null;
       const fachdetailSteps = stepSequence.filter((s) =>
-        s.startsWith("fachdetails_")
+        isBwFachdetailQuestionScreenId(s)
       );
       const fachdetailIndex = fachdetailSteps.indexOf(screen);
-      const gewerkIndex = fachdetailIndex >= 0 ? fachdetailIndex : 0;
-      const totalGewerke = fachdetailSteps.length;
+      const stepIdx = fachdetailIndex >= 0 ? fachdetailIndex : 0;
+      const totalSteps = fachdetailSteps.length;
       return (
         <StepWrapper
           stepLabel="Details"
@@ -1225,20 +1164,13 @@ function FunnelRechnerInner() {
           banner={microBannerFor(screen)}
         >
           <FachdetailsStep
-            ref={fachdetailsStepRef}
-            gewerk={g}
-            totalGewerke={totalGewerke}
-            gewerkIndex={gewerkIndex}
-            isLastFachdetailScreen={
-              totalGewerke > 0 && gewerkIndex === totalGewerke - 1
-            }
-            showOmitHint={state.showOmitHint ?? false}
+            questionId={qid}
             state={state}
-            onChange={setFachdetails}
-            onResetFachdetailsForGewerk={resetFachdetailsForGewerk}
-            onFachInternalNavTick={() =>
-              setFachInternalNavTick((t) => t + 1)
-            }
+            onPatch={setFachdetails}
+            onAfterSingleAnswer={handleFachdetailSingleAnswer}
+            showOmitHint={state.showOmitHint ?? false}
+            detailIndex={stepIdx}
+            detailTotal={totalSteps}
           />
         </StepWrapper>
       );
@@ -1512,6 +1444,28 @@ function FunnelRechnerInner() {
         );
 
       case "beratung-lead":
+        if (neubauenIdeeBeratung) {
+          return (
+            <BwBeratungLead
+              kind="neubauen_idee"
+              situation={state.situation}
+              vorname={state.vorname}
+              nachname={state.nachname}
+              telefon={state.telefon}
+              email={state.email}
+              beschreibung={state.leadBeschreibung}
+              datenschutz={beratungDatenschutz}
+              datenschutzError={beratungDatenschutzError}
+              onDatenschutzChange={(v) => {
+                setBeratungDatenschutz(v);
+                if (v) setBeratungDatenschutzError(false);
+              }}
+              onFieldChange={updateLeadField}
+              formId={BERATUNG_LEAD_FORM_ID}
+              onSubmit={handleBeratungLeadSubmit}
+            />
+          );
+        }
         if (state.situation && isB2B(state.situation)) {
           return (
             <BwBeratungLead
@@ -1711,6 +1665,18 @@ function FunnelRechnerInner() {
               variant="beratung"
               beratungHeadline="Anfrage eingegangen"
               beratungSubline="Wir prüfen ob wir in deiner Region helfen können und melden uns innerhalb von 48h persönlich."
+              onReset={handleReset}
+            />
+          );
+        }
+        if (neubauenIdeeBeratung) {
+          return (
+            <ThankYou
+              variant="beratung"
+              beratungHeadline="Anfrage eingegangen."
+              beratungSubline="Wir melden uns innerhalb von 24h persönlich bei dir — ohne Verpflichtung."
+              showTimeline={false}
+              showCalendar={false}
               onReset={handleReset}
             />
           );
