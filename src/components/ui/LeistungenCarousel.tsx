@@ -32,7 +32,7 @@ type Kategorie = {
 
 const KATEGORIEN: Kategorie[] = [
   {
-    id: "renovieren",
+    id: "wohnraum_erneuern",
     label: "Renovieren",
     icon: "haus",
     leistungen: [
@@ -47,7 +47,7 @@ const KATEGORIEN: Kategorie[] = [
       {
         slug: "badezimmer-sanierung",
         name: "Neues Bad",
-        hint: "Komplett sanieren oder einzelne Teile",
+        hint: "Komplett erneuern oder einzelne Teile",
         emoji: "🚿",
         href: "/leistungen/badezimmer-sanierung-muenchen",
         rechnerHref: "/rechner?situation=erneuern",
@@ -79,7 +79,7 @@ const KATEGORIEN: Kategorie[] = [
     ],
   },
   {
-    id: "sanieren",
+    id: "technik_erneuern",
     label: "Sanieren",
     icon: "werkzeug",
     leistungen: [
