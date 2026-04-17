@@ -212,7 +212,7 @@ function SingleQuestionBlock({
   onToggleOptionEdu: (key: string) => void;
 }) {
   return (
-    <div className="rounded-xl border border-border-default bg-surface-card p-4">
+    <div className="space-y-3">
       <div className="flex items-start justify-between gap-2">
         <h3 className="text-[15px] font-semibold text-text-primary">{q.title}</h3>
         {q.education ? (
@@ -237,7 +237,7 @@ function SingleQuestionBlock({
           {q.education}
         </div>
       ) : null}
-      <div className="mt-3 space-y-2">
+      <div className="space-y-2">
         {q.options.map((opt: FachdetailOptionDef) => {
           const lib = asLibOptFromFach(opt);
           const sel = selected === opt.value;
@@ -476,7 +476,7 @@ export function FachdetailsStep({
         b.includes("strom") ||
         b.includes("elektrik")) &&
       (gewerk === "sanitaer" || gewerk === "elektro") ? (
-        <p className="rounded-xl border border-border-default bg-surface-muted/90 px-3.5 py-2.5 text-[12px] leading-snug text-text-secondary">
+        <p className="rounded-xl bg-transparent px-0 py-0 text-[12px] leading-snug text-text-secondary">
           <span className="font-semibold text-text-primary">Bad + Elektro:</span>{" "}
           Wir koordinieren Wasser, Strom und Termine zwischen Sanitär- und
           Elektroarbeit — ein Ansprechpartner für den Ablauf.
@@ -672,11 +672,11 @@ export function FachdetailsStep({
                 badFollowMulti &&
                 (fd.sanitaer.badObjekte?.length ?? 0) === 0 ? (
                 <FollowUpPanel show scrollDep={badFollowMulti.id}>
-                  <div className="rounded-xl border border-border-default bg-surface-card p-4">
+                  <div className="space-y-3">
                     <h3 className="text-[15px] font-semibold text-text-primary">
                       {badFollowMulti.title}
                     </h3>
-                    <div className="mt-3 flex flex-wrap gap-2">
+                    <div className="flex flex-wrap gap-2">
                       {badFollowMulti.options.map((opt) => {
                         const set = new Set(fd.sanitaer?.badObjekte ?? []);
                         const active = set.has(opt.value);
@@ -1064,11 +1064,11 @@ export function FachdetailsStep({
                 : fd.garten?.baumgroesse === undefined) ? (
             <FollowUpPanel show scrollDep={gartenFollowQ.id}>
               {gartenFollowQ.inputType === "multi" ? (
-                <div className="rounded-xl border border-border-default bg-surface-card p-4">
+                <div className="space-y-3">
                   <h3 className="text-[15px] font-semibold text-text-primary">
                     {gartenFollowQ.title}
                   </h3>
-                  <div className="mt-3 space-y-3">
+                  <div className="space-y-3">
                     {gartenFollowQ.options.map((opt) => {
                       const set = new Set(fd.garten?.gestaltung ?? []);
                       const active = set.has(opt.value);

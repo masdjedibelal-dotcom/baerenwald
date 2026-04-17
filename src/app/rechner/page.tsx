@@ -289,7 +289,7 @@ function FunnelRechnerInner() {
       state.umfang,
       state.dringlichkeit,
       state.groesse,
-      state.badAusstattung,
+      state.badAusstattung ?? null,
       state.fachdetails,
     ]
   );
@@ -534,7 +534,7 @@ function FunnelRechnerInner() {
         }
         break;
       case "bad_ausstattung":
-        if (state.badAusstattung) {
+        if (state.badAusstattung ?? null) {
           if (fachdetailsBeforeGroesse) {
             if (hasKundentypStep) setScreen("kundentyp");
             else setScreen("ort");
@@ -767,7 +767,7 @@ function FunnelRechnerInner() {
       case "groesse":
         return state.groesse == null;
       case "bad_ausstattung":
-        return !state.badAusstattung;
+        return !(state.badAusstattung ?? null);
       case "ort": {
         if (state.plz.length < 4) return true;
         if (needsZeitraumSelection(state.situation) && !state.zeitraum)
@@ -1300,7 +1300,7 @@ function FunnelRechnerInner() {
             <div className="space-y-3">
               {BW_FUNNEL_STEP_BAD_AUSSTATTUNG.options?.map((opt) => {
                 const libOpt = asLibOpt(opt);
-                const selected = state.badAusstattung === opt.value;
+                const selected = (state.badAusstattung ?? null) === opt.value;
                 return (
                   <SelectionTile
                     key={opt.value}
