@@ -112,6 +112,7 @@ export function createInitialBwFunnelState(): FunnelState {
     bereiche: [],
     breakdown: [],
     fachdetails: {},
+    showOmitHint: false,
     photos: [],
     badAusstattung: null,
     showOmitHint: false,
