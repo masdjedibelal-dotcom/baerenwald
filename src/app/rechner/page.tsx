@@ -22,6 +22,10 @@ import {
 } from "@/components/funnel/NeubauenFollowUp";
 import { FunnelErrorBoundary } from "@/components/funnel/FunnelErrorBoundary";
 import { HWLeadForm } from "@/components/funnel/HWLeadForm";
+import {
+  submitBwLead,
+  serializeFunnelStateForLead,
+} from "@/components/funnel/LeadStep";
 import { LeadAvailabilityHint } from "@/components/funnel/ResultScreen";
 import { FunnelFooter } from "@/components/funnel/FunnelFooter";
 import { RefreshIcon18 } from "@/components/funnel/NeueAnfrageResetLink";
@@ -55,12 +59,12 @@ import {
   type FachdetailQuestionScreenId,
 } from "@/lib/funnel/bw-rechner-sequence";
 import {
-  FACHDETAIL_QUESTIONS,
+  resolveFachdetailQuestionForUi,
   fachdetailAnswer,
   getFachdetailQuestionIdFromScreen,
 } from "@/lib/funnel/fachdetail-questions-flat";
-import { mergeFachdetailsPatch } from "@/lib/funnel/fachdetails-merge";
 import { getBwFunnelProgressStep } from "@/lib/funnel/bw-funnel-progress";
+import { getLeistungRechnerPreset } from "@/lib/funnel/leistung-rechner-preset";
 import {
   BW_FUNNEL_STEP1_OPTIONS,
   BW_FUNNEL_STEP1_ORDER,
@@ -92,6 +96,15 @@ import { cn } from "@/lib/utils";
 const LEAD_FORM_ID = "bw-funnel-lead";
 const BERATUNG_LEAD_FORM_ID = "bw-beratung-lead";
 
+/** CRM-Regel: mindestens gültige E-Mail oder Telefon (mind. 3 Zeichen). */
+function bwLeadContactOk(email: string, telefon: string): boolean {
+  const e = email.trim();
+  const t = telefon.trim();
+  const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e);
+  const telOk = t.length >= 3;
+  return emailOk || telOk;
+}
+
 type Screen =
   | "trust_intro"
   | "trust_preis"
@@ -115,6 +128,27 @@ type Screen =
 
 function isSituation(x: string): x is Situation {
   return (BW_FUNNEL_STEP1_ORDER as readonly string[]).includes(x);
+}
+
+/**
+ * Marketing-/Legacy-Query-Werte → Funnel-Situation (wie HomeLanding.rechnerSituationParam).
+ * Ohne diese Abbildung liefern Ratgeber/Leistungen z. B. ?situation=renovierung — wird bisher ignoriert.
+ */
+function normalizeSituationQueryParam(raw: string | null): Situation | null {
+  if (!raw) return null;
+  const lower = raw.trim().toLowerCase();
+  const aliasMap: Record<string, Situation> = {
+    renovieren: "erneuern",
+    sanieren: "erneuern",
+    renovierung: "erneuern",
+    gastro: "gewerbe",
+    neubau: "neubauen",
+    pflege: "betreuung",
+    akut: "notfall",
+    b2b: "gewerbe",
+  };
+  const candidate = aliasMap[lower] ?? lower;
+  return isSituation(candidate) ? candidate : null;
 }
 
 function collectBwFreitextAnhang(state: FunnelState): string {
@@ -168,6 +202,10 @@ function FunnelRechnerInner() {
   const [schimmelBeratung, setSchimmelBeratung] = useState(false);
   /** Neubauen „Erst eine Idee“ → sanfter Beratungs-Lead */
   const [neubauenIdeeBeratung, setNeubauenIdeeBeratung] = useState(false);
+  const [leadSubmitting, setLeadSubmitting] = useState(false);
+  const [leadSubmitError, setLeadSubmitError] = useState<string | null>(null);
+  /** Kurzzeit-Hinweis nach Suche ohne Allowlist-Treffer (`?nf=1`). */
+  const [searchNotFoundBanner, setSearchNotFoundBanner] = useState(false);
   /** Nach erstem „Preis berechnen“: auf „ort“ wieder „Weiter →“ (Footer rendert zuverlässig). */
   const [priceConfirmed, setPriceConfirmed] = useState(false);
   const [microNote, setMicroNote] = useState<{
@@ -333,25 +371,44 @@ function FunnelRechnerInner() {
   );
 
   useEffect(() => {
+    if (searchParams.get("nf") !== "1") return;
+    setSearchNotFoundBanner(true);
+    if (typeof window === "undefined") return;
+    const next = new URL(window.location.href);
+    next.searchParams.delete("nf");
+    const qs = next.searchParams.toString();
+    router.replace(qs ? `${next.pathname}?${qs}` : next.pathname, {
+      scroll: false,
+    });
+  }, [router, searchParams]);
+
+  useEffect(() => {
     if (urlInit.current) return;
-    let raw = searchParams.get("situation");
-    if (raw === "renovieren" || raw === "sanieren") {
-      raw = "erneuern";
-    }
-    if (raw === "gastro") {
-      raw = "gewerbe";
-    }
-    if (raw && isSituation(raw)) {
-      setSituation(raw);
+    const leistungPreset = getLeistungRechnerPreset(searchParams.get("leistung"));
+    if (leistungPreset) {
+      setSituation(leistungPreset.situation);
+      setBereiche(leistungPreset.bereiche);
       setPriceConfirmed(false);
-      if (raw === "gewerbe") {
+      if (leistungPreset.situation === "gewerbe") {
+        setScreen("beratung-lead");
+      } else {
+        setScreen("bereiche");
+      }
+      urlInit.current = true;
+      return;
+    }
+    const normalized = normalizeSituationQueryParam(searchParams.get("situation"));
+    if (normalized) {
+      setSituation(normalized);
+      setPriceConfirmed(false);
+      if (normalized === "gewerbe") {
         setScreen("beratung-lead");
       } else {
         setScreen("bereiche");
       }
     }
     urlInit.current = true;
-  }, [searchParams, setSituation]);
+  }, [searchParams, setSituation, setBereiche]);
 
   useEffect(() => {
     if (isBwTrustScreenId(screen) && !stepSequence.includes(screen)) {
@@ -464,6 +521,8 @@ function FunnelRechnerInner() {
     setPriceConfirmed(false);
     setSchimmelBeratung(false);
     setNeubauenIdeeBeratung(false);
+    setLeadSubmitting(false);
+    setLeadSubmitError(null);
 
     const first: Screen =
       prevSit === "notfall" || prevSit === "gewerbe"
@@ -482,7 +541,7 @@ function FunnelRechnerInner() {
     if (isBwFachdetailQuestionScreenId(screen)) {
       const qid = getFachdetailQuestionIdFromScreen(screen);
       if (!qid) return;
-      const q = FACHDETAIL_QUESTIONS.find((x) => x.id === qid);
+      const q = resolveFachdetailQuestionForUi(state, qid);
       if (!q) return;
       const v = fachdetailAnswer(state, qid);
       const multi = q.inputType === "multi";
@@ -739,7 +798,7 @@ function FunnelRechnerInner() {
     if (isBwFachdetailQuestionScreenId(screen)) {
       const qid = getFachdetailQuestionIdFromScreen(screen);
       if (!qid) return true;
-      const q = FACHDETAIL_QUESTIONS.find((x) => x.id === qid);
+      const q = resolveFachdetailQuestionForUi(state, qid);
       if (!q) return true;
       const v = fachdetailAnswer(state, qid);
       if (q.inputType === "multi") {
@@ -788,8 +847,8 @@ function FunnelRechnerInner() {
       case "lead":
         return (
           !state.name.trim() ||
-          !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(state.email.trim()) ||
-          state.telefon.trim().length < 5
+          !bwLeadContactOk(state.email, state.telefon) ||
+          leadSubmitting
         );
       case "beratung-lead":
         return (
@@ -801,13 +860,14 @@ function FunnelRechnerInner() {
       default:
         return true;
     }
-  }, [screen, state, umfangOk, schimmelBeratung]);
+  }, [screen, state, umfangOk, schimmelBeratung, leadSubmitting]);
 
   const nextLabel = useMemo(() => {
     if (screen === "trust_intro") return "Los geht's →";
     if (screen === "ort") {
       return priceConfirmed ? "Weiter →" : "Preis berechnen";
     }
+    if (screen === "lead" && leadSubmitting) return "Wird gesendet…";
     if (screen === "lead") return "Absenden →";
     if (screen === "beratung-lead") {
       if (schimmelBeratung || state.bereiche.includes("schimmel")) {
@@ -827,7 +887,20 @@ function FunnelRechnerInner() {
     schimmelBeratung,
     state.bereiche,
     neubauenIdeeBeratung,
+    leadSubmitting,
   ]);
+
+  /** Erklärt, warum „Absenden“ ausgegraut ist (Footer nutzt dieselbe Logik wie nextDisabled). */
+  const leadFormBlockHint = useMemo(() => {
+    if (screen !== "lead" || leadSubmitting) return null;
+    if (!state.name.trim()) {
+      return "Bitte trage oben deinen Namen ein — ohne Namen bleibt „Absenden →“ ausgegraut.";
+    }
+    if (!bwLeadContactOk(state.email, state.telefon)) {
+      return "Bitte eine gültige E-Mail oder eine Telefonnummer (mind. 3 Zeichen) angeben — sonst bleibt der Button gesperrt.";
+    }
+    return null;
+  }, [screen, leadSubmitting, state.name, state.email, state.telefon]);
 
   const footerNextLeadingIcon =
     screen === "result" ? <RefreshIcon18 /> : undefined;
@@ -836,40 +909,46 @@ function FunnelRechnerInner() {
 
   const handleLeadSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (nextDisabled && screen === "lead") return;
+    if (leadSubmitting) return;
+    const invalidLead =
+      !state.name.trim() || !bwLeadContactOk(state.email, state.telefon);
+    if (screen === "lead" && invalidLead) return;
+    setLeadSubmitError(null);
+    setLeadSubmitting(true);
     const nameTrim = state.name.trim();
     const zx = collectBwFreitextAnhang(state);
-    const body = {
-      name: nameTrim,
-      vorname: nameTrim.split(/\s+/)[0] ?? "",
-      email: state.email.trim(),
-      telefon: state.telefon.trim(),
-      situation: state.situation,
-      bereiche: state.bereiche,
-      priceMin: state.priceMin,
-      priceMax: state.priceMax,
-      breakdown: state.breakdown,
-      plz: state.plz,
-      zeitraum: state.zeitraum,
-      budgetCheck: state.budgetCheck,
-      budgetGespraech: state.budgetCheck === "zu_hoch",
-      selectedSlot: state.selectedSlot,
-      photoCount: state.photos.length,
-      dringlichkeit: state.dringlichkeit,
-      umfang: state.umfang,
-      kundentyp: state.kundentyp ?? "nicht angegeben",
-      leadType: "system" as const,
-      freitext: zx || undefined,
-    };
-    const res = await fetch("/api/leads", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
-    });
-    const data = (await res.json()) as { success?: boolean };
-    if (!res.ok || !data.success) return;
-    setSubmitted(true);
-    setScreen("danke");
+    try {
+      const emailTrim = state.email.trim();
+      const result = await submitBwLead({
+        name: nameTrim,
+        email: emailTrim || undefined,
+        telefon: state.telefon.trim() || undefined,
+        nachricht: zx || undefined,
+        situation: state.situation,
+        bereiche: state.bereiche,
+        preis_min: state.priceMin,
+        preis_max: state.priceMax,
+        plz: state.plz,
+        zeitraum: state.zeitraum,
+        kundentyp: state.kundentyp,
+        funnel_daten: serializeFunnelStateForLead(state),
+      });
+      if (!result.ok) {
+        setLeadSubmitError(
+          result.error ||
+            "Etwas ist schiefgelaufen. Bitte versuch es nochmal oder ruf uns an."
+        );
+        return;
+      }
+      setSubmitted(true);
+      setScreen("danke");
+    } catch {
+      setLeadSubmitError(
+        "Etwas ist schiefgelaufen. Bitte versuch es nochmal oder ruf uns an."
+      );
+    } finally {
+      setLeadSubmitting(false);
+    }
   };
 
   const handleBeratungLeadSubmit = async (e: React.FormEvent) => {
@@ -881,36 +960,34 @@ function FunnelRechnerInner() {
     if (nextDisabled && screen === "beratung-lead") return;
     const name = `${state.vorname} ${state.nachname}`.trim();
     const zxB = collectBwFreitextAnhang(state);
-    const body = {
+    const nachricht = [state.leadBeschreibung.trim(), zxB]
+      .filter(Boolean)
+      .join("\n\n");
+    const fd = serializeFunnelStateForLead(state) as Record<string, unknown>;
+    const result = await submitBwLead({
       name,
-      vorname: state.vorname.trim(),
-      email: state.email.trim(),
-      telefon: state.telefon.trim(),
+      email: state.email.trim() || undefined,
+      telefon: state.telefon.trim() || undefined,
+      nachricht: nachricht || undefined,
       situation: state.situation,
       bereiche: state.bereiche,
-      beschreibung: [state.leadBeschreibung.trim(), zxB].filter(Boolean).join("\n\n"),
-      photoCount: state.photos.length,
+      preis_min: 0,
+      preis_max: 0,
+      plz: state.plz || "",
+      zeitraum: null,
       kundentyp: isB2B(state.situation)
         ? (state.situation ?? "b2b")
         : (state.kundentyp ?? "nicht angegeben"),
-      leadType: "beratung" as const,
-      priceMin: 0,
-      priceMax: 0,
-      plz: state.plz || "",
-      zeitraum: null,
-      budgetCheck: null,
-      budgetGespraech: false,
-      selectedSlot: null,
-      dringlichkeit: null,
-      umfang: state.umfang,
-    };
-    const res = await fetch("/api/leads", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
+      funnel_daten: {
+        ...fd,
+        vorname: state.vorname.trim(),
+        nachname: state.nachname.trim(),
+        photoCount: state.photos.length,
+        umfang: state.umfang,
+      },
+      funnel_quelle: "beratung",
     });
-    const data = (await res.json()) as { success?: boolean };
-    if (!res.ok || !data.success) return;
+    if (!result.ok) return;
     setSubmitted(true);
     setScreen("danke");
   };
@@ -923,34 +1000,27 @@ function FunnelRechnerInner() {
     }
     const name = `${state.vorname} ${state.nachname}`.trim();
     if (!state.telefon.trim()) return;
-    const body = {
+    const fd = serializeFunnelStateForLead(state) as Record<string, unknown>;
+    const result = await submitBwLead({
       name: name || state.name.trim(),
-      vorname: state.vorname.trim(),
-      email: state.email.trim(),
-      telefon: state.telefon.trim(),
+      email: state.email.trim() || undefined,
+      telefon: state.telefon.trim() || undefined,
+      nachricht: ausserhalbBeschreibung.trim() || undefined,
       situation: state.situation,
       bereiche: state.bereiche,
-      beschreibung: ausserhalbBeschreibung.trim(),
+      preis_min: 0,
+      preis_max: 0,
       plz: state.plz || "",
       zeitraum: null,
-      budgetCheck: null,
-      budgetGespraech: false,
-      selectedSlot: null,
-      dringlichkeit: null,
-      umfang: state.umfang,
-      priceMin: 0,
-      priceMax: 0,
-      photoCount: 0,
       kundentyp: state.kundentyp ?? "nicht angegeben",
-      leadType: "ausserhalb" as const,
-    };
-    const res = await fetch("/api/leads", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
+      funnel_daten: {
+        ...fd,
+        vorname: state.vorname.trim(),
+        nachname: state.nachname.trim(),
+      },
+      funnel_quelle: "ausserhalb",
     });
-    const data = (await res.json()) as { success?: boolean };
-    if (!res.ok || !data.success) return;
+    if (!result.ok) return;
     setIsAusserhalbLead(true);
     setSubmitted(true);
     setScreen("danke");
@@ -985,7 +1055,7 @@ function FunnelRechnerInner() {
                 selected={selected}
                 multi={multi}
                 onChange={(value, sel) => {
-                  if (multi && sel && funnelOpt.direktKomplex) {
+                  if (sel && funnelOpt.direktKomplex) {
                     setBereiche([value]);
                     if (value === "fassade_daemmung") {
                       setSchimmelBeratung(false);
@@ -1127,26 +1197,6 @@ function FunnelRechnerInner() {
     };
   }, [state.selectedSlot]);
 
-  const handleFachdetailSingleAnswer = useCallback(
-    (patch: Partial<FachdetailsState>) => {
-      setFachdetails(patch);
-      const merged = mergeFachdetailsPatch(state.fachdetails, patch);
-      const nextState = { ...state, fachdetails: merged };
-      const seq = getBwRechnerScreenSequence(nextState);
-      const idx = seq.indexOf(screen);
-      const next = idx >= 0 ? seq[idx + 1] : null;
-      if (next) {
-        setScreen(next as Screen);
-        window.scrollTo({
-          top: 0,
-          left: 0,
-          behavior: "instant" as ScrollBehavior,
-        });
-      }
-    },
-    [state, screen, setFachdetails]
-  );
-
   const main = () => {
     if (isBwFachdetailQuestionScreenId(screen)) {
       const qid = getFachdetailQuestionIdFromScreen(screen);
@@ -1158,21 +1208,16 @@ function FunnelRechnerInner() {
       const stepIdx = fachdetailIndex >= 0 ? fachdetailIndex : 0;
       const totalSteps = fachdetailSteps.length;
       return (
-        <StepWrapper
-          stepLabel="Details"
+        <FachdetailsStep
+          questionId={qid}
+          state={state}
+          onPatch={setFachdetails}
+          showOmitHint={state.showOmitHint ?? false}
+          detailIndex={stepIdx}
+          detailTotal={totalSteps}
           animateKey={`${screen}-${state.bereiche.join(",")}`}
           banner={microBannerFor(screen)}
-        >
-          <FachdetailsStep
-            questionId={qid}
-            state={state}
-            onPatch={setFachdetails}
-            onAfterSingleAnswer={handleFachdetailSingleAnswer}
-            showOmitHint={state.showOmitHint ?? false}
-            detailIndex={stepIdx}
-            detailTotal={totalSteps}
-          />
-        </StepWrapper>
+        />
       );
     }
     switch (screen) {
@@ -1234,8 +1279,9 @@ function FunnelRechnerInner() {
             subtext={stepKundentyp?.subtext}
             banner={microBannerFor("kundentyp")}
             animateKey={`${screen}-${state.situation}`}
+            tilesCard
           >
-            <div className="funnel-step-tiles-card space-y-3">
+            <div className="space-y-3">
               {stepKundentyp?.options?.map((opt) => {
                 const libOpt = asLibOpt(opt);
                 const selected = state.kundentyp === opt.value;
@@ -1347,7 +1393,6 @@ function FunnelRechnerInner() {
             question={stepGroesse?.question ?? ""}
             subtext={stepGroesse?.subtext}
             animateKey={`${screen}-${state.situation}-${state.bereiche.join(",")}`}
-            tilesCard
           >
             <GroesseStep
               config={groesseSliderConfig}
@@ -1524,7 +1569,23 @@ function FunnelRechnerInner() {
             animateKey="lead"
           >
             <LeadAvailabilityHint className="mb-4" />
+            {leadFormBlockHint ? (
+              <p
+                className="mb-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-950"
+                role="status"
+              >
+                {leadFormBlockHint}
+              </p>
+            ) : null}
             <div className="funnel-step-tiles-card">
+              {leadSubmitError ? (
+                <p
+                  className="mb-3 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-900"
+                  role="alert"
+                >
+                  {leadSubmitError}
+                </p>
+              ) : null}
               <HWLeadForm
                 photos={state.photos}
                 onPhotosChange={addPhotos}
@@ -1716,6 +1777,24 @@ function FunnelRechnerInner() {
         isBwTrustScreenId(screen) && "trust-screen-active"
       )}
     >
+      {searchNotFoundBanner ? (
+        <div
+          className="border-b border-border-default bg-surface-card px-4 py-3 text-center text-sm text-text-secondary"
+          role="status"
+        >
+          <span>
+            Zu deiner Eingabe gibt es keinen festen Eintrag — du startest hier
+            regulär im Rechner.
+          </span>
+          <button
+            type="button"
+            className="ml-3 font-medium text-funnel-accent underline decoration-funnel-accent/40 underline-offset-2 hover:opacity-90"
+            onClick={() => setSearchNotFoundBanner(false)}
+          >
+            OK
+          </button>
+        </div>
+      ) : null}
       <FunnelHeader onFunnelReset={handleReset} />
       <FunnelProgressBar
         currentStep={progressStep}

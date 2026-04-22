@@ -22,6 +22,26 @@
   --fl-radius-sm: 10px;
   --fl-font-sans: "Plus Jakarta Sans", system-ui, sans-serif;
   --fl-font-display: "Lora", Georgia, serif;
+  --font-size-xl: 1.375rem;
+  --font-size-sm: 0.875rem;
+}
+
+/* ── Funnel: einheitliche Schritt-Typografie (StepWrapper) ── */
+.funnel-step-question {
+  font-size: var(--font-size-xl);
+  font-weight: 700;
+  line-height: 1.25;
+  letter-spacing: -0.02em;
+  color: var(--fl-accent-dark);
+  margin: 0;
+}
+
+.funnel-step-subtext {
+  font-size: var(--font-size-sm);
+  line-height: 1.5;
+  color: var(--fl-text-2);
+  margin: 0.5rem 0 1.5rem;
+  white-space: pre-line;
 }
 
 /* ── Funnel: einheitliche Kachel (Rechner & Auswahl) ── */
@@ -76,12 +96,15 @@
   font-size: 14px;
   font-weight: 600;
   color: var(--fl-text);
+  margin: 0;
 }
 
 .funnel-tile-hint {
   font-size: 12px;
+  font-weight: 400;
   color: var(--fl-text-2);
   line-height: 1.4;
+  margin: 0;
 }
 
 /* Kompakte Chips / Kalender (ohne volle .funnel-tile-Fläche) */
@@ -101,6 +124,15 @@
  */
 .funnel-rechner-main {
   padding-bottom: calc(6.5rem + env(safe-area-inset-bottom, 0px));
+}
+
+/*
+ * Trust-Zwischenscreens (intro / preis / qualität): wenig Inhalt + volle Bildhöhe.
+ * Das große padding-bottom für lange Formulare erzeugt sonst unnötigen Scroll
+ * mit „weißer“ Fläche bis über den Footer-Bereich.
+ */
+.trust-screen-active .funnel-rechner-main {
+  padding-bottom: max(0.75rem, env(safe-area-inset-bottom, 0px));
 }
 
 /* B2B-Anfrage (Gewerbe/Gastro): gleiche Lesart wie StepWrapper */
@@ -4210,6 +4242,44 @@
   font-family: var(--fl-font-sans);
 }
 
+.groesse-display--editable {
+  align-items: center;
+}
+
+.groesse-zahl-input {
+  width: auto;
+  min-width: 2ch;
+  max-width: min(100%, 12ch);
+  font-size: clamp(48px, 8vw, 64px);
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  color: var(--fl-accent);
+  line-height: 1;
+  font-family: var(--fl-font-sans);
+  border: none !important;
+  background: transparent !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  box-shadow: none !important;
+  border-radius: 0 !important;
+}
+
+.groesse-zahl-input:focus {
+  outline: none;
+  box-shadow: 0 2px 0 0 var(--fl-accent) !important;
+}
+
+.groesse-range-hint {
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: 10px;
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--fl-text-2);
+  background: rgba(46, 125, 82, 0.08);
+  border: 1px solid rgba(46, 125, 82, 0.2);
+}
+
 .groesse-unit {
   font-size: 20px;
   color: var(--fl-text-3);
@@ -4271,76 +4341,6 @@
   justify-content: space-between;
   font-size: 11px;
   color: var(--fl-text-3);
-}
-
-.groesse-chips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
-.groesse-chip {
-  border: 1.5px solid var(--fl-border);
-  border-radius: 999px;
-  padding: 7px 16px;
-  font-size: 13px;
-  font-weight: 500;
-  font-family: var(--fl-font-sans);
-  color: var(--fl-text-2);
-  background: var(--fl-bg-card);
-  cursor: pointer;
-  transition: all 0.15s;
-}
-
-.groesse-chip:hover {
-  border-color: var(--fl-accent);
-  color: var(--fl-accent);
-}
-
-.groesse-chip.active {
-  background: var(--fl-accent);
-  border-color: var(--fl-accent);
-  color: white;
-}
-
-.groesse-step--tiles-only .groesse-chips {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 10px;
-}
-
-@media (min-width: 480px) {
-  .groesse-step--tiles-only .groesse-chips {
-    grid-template-columns: 1fr 1fr;
-  }
-}
-
-.groesse-step--tiles-only .groesse-chip {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 4px;
-  border-radius: 14px;
-  padding: 12px 14px;
-  text-align: left;
-  white-space: normal;
-  min-height: auto;
-}
-
-.groesse-chip-label {
-  font-weight: 600;
-  line-height: 1.25;
-}
-
-.groesse-chip-hint {
-  font-size: 11px;
-  font-weight: 400;
-  line-height: 1.35;
-  opacity: 0.88;
-}
-
-.groesse-step--tiles-only .groesse-chip.active .groesse-chip-hint {
-  opacity: 0.95;
 }
 
 .groesse-input-wrap {
@@ -5525,15 +5525,6 @@
   .groesse-zahl {
     font-size: 52px;
   }
-
-  .groesse-chips {
-    gap: 6px;
-  }
-
-  .groesse-chip {
-    padding: 6px 12px;
-    font-size: 12px;
-  }
 }
 
 /* ── Legal Pages ─────────────────────────────────────────────── */
@@ -6070,76 +6061,6 @@
   padding: 0 12px 16px;
   border-top: 1px solid var(--fl-border-light);
   background: var(--fl-bg-card);
-}
-
-.fachdetails-hinweis {
-  font-size: 12px;
-  color: var(--fl-text-3);
-  text-align: center;
-  padding: 8px 0;
-}
-
-.fachdetail-header {
-  margin-bottom: 24px;
-}
-
-.fachdetail-pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  background: var(--fl-accent-light);
-  border-radius: 999px;
-  padding: 6px 14px;
-  margin-bottom: 16px;
-}
-
-.fachdetail-emoji {
-  font-size: 18px;
-  line-height: 1;
-}
-
-.fachdetail-name {
-  font-size: 13px;
-  font-weight: 700;
-  color: var(--fl-accent-dark);
-}
-
-.fachdetail-count {
-  font-size: 12px;
-  color: var(--fl-accent);
-  padding-left: 8px;
-  border-left: 1px solid rgba(46, 125, 82, 0.3);
-  margin-left: 4px;
-}
-
-.fachdetail-question {
-  font-size: 22px;
-  font-weight: 800;
-  letter-spacing: -0.025em;
-  color: var(--fl-text);
-  line-height: 1.2;
-  margin: 0 0 8px;
-}
-
-.fachdetail-why {
-  font-size: 13px;
-  color: var(--fl-text-3);
-  margin: 0;
-}
-
-.fachdetail-omit-hinweis {
-  margin-top: 16px;
-  padding: 12px 14px;
-  border-radius: var(--fl-radius, 14px);
-  border: 1px solid var(--fl-border-light);
-  background: var(--fl-bg, #f4f4f3);
-}
-
-.fachdetail-omit-hinweis p {
-  margin: 0;
-  font-size: 13px;
-  line-height: 1.45;
-  color: var(--fl-text-2);
 }
 
 /* ── Trust-Zwischenscreens (Rechner) ── */

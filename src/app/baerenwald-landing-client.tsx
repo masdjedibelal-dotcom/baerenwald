@@ -431,7 +431,7 @@ export default function BaerenwaldLandingClient({
                         });
                       }}
                       onKeyDown={onSearchKeyDown}
-                      placeholder="Was suchst du?"
+                      placeholder="Leistungsname exakt eingeben oder aus der Liste wählen …"
                       aria-label="Was suchst du?"
                       aria-autocomplete="list"
                       aria-controls="hero-search-listbox"
