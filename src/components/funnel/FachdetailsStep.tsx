@@ -1,13 +1,15 @@
 "use client";
 
+import type { ReactNode } from "react";
 import { useMemo } from "react";
 
 import { SelectionTile } from "@/components/funnel/SelectionTile";
+import { StepWrapper } from "@/components/funnel/StepWrapper";
 import { buildPatchForFachdetailAnswer } from "@/lib/funnel/fachdetail-answer-sync";
 import {
-  FACHDETAIL_QUESTIONS,
   fachdetailAnswer,
   getActiveFachdetailQuestions,
+  resolveFachdetailQuestionForUi,
   type FachdetailOption,
 } from "@/lib/funnel/fachdetail-questions-flat";
 import type { FachdetailsState, FunnelState } from "@/lib/funnel/types";
@@ -38,25 +40,26 @@ export type FachdetailsStepProps = {
   questionId: string;
   state: FunnelState;
   onPatch: (patch: Partial<FachdetailsState>) => void;
-  /** Einzelauswahl: Patch speichern und sofort zum nächsten Screen (mit frischer Sequenz). */
-  onAfterSingleAnswer: (patch: Partial<FachdetailsState>) => void;
   showOmitHint: boolean;
   detailIndex: number;
   detailTotal: number;
+  animateKey?: string | number;
+  banner?: ReactNode;
 };
 
 export function FachdetailsStep({
   questionId,
   state,
   onPatch,
-  onAfterSingleAnswer,
   showOmitHint,
   detailIndex,
   detailTotal,
+  animateKey = 0,
+  banner,
 }: FachdetailsStepProps) {
   const question = useMemo(
-    () => FACHDETAIL_QUESTIONS.find((q) => q.id === questionId),
-    [questionId]
+    () => resolveFachdetailQuestionForUi(state, questionId),
+    [state, questionId]
   );
 
   const active = useMemo(
@@ -99,27 +102,25 @@ export function FachdetailsStep({
   };
 
   return (
-    <div className="space-y-5">
+    <StepWrapper
+      stepLabel="Details"
+      question={question.frage}
+      subtext={question.subtext}
+      banner={banner}
+      animateKey={animateKey}
+      tilesCard
+    >
       {showOmitHint ? (
-        <p className="rounded-lg border border-border-default bg-surface-muted px-3 py-2 text-sm text-text-secondary">
+        <p className="mb-3 rounded-lg border border-border-default bg-surface-muted px-3 py-2 text-sm text-text-secondary">
           Du hast viele Bereiche gewählt — wir gehen die wichtigsten Schritte
           nacheinander durch.
         </p>
       ) : null}
-
-      <div>
-        {detailTotal > 1 ? (
-          <p className="mb-1 text-xs font-medium uppercase tracking-wide text-text-tertiary">
-            Detail {detailIndex + 1} / {detailTotal}
-          </p>
-        ) : null}
-        <h2 className="text-lg font-semibold text-text-primary">
-          {question.frage}
-        </h2>
-        {question.subtext ? (
-          <p className="mt-1 text-sm text-text-secondary">{question.subtext}</p>
-        ) : null}
-      </div>
+      {detailTotal > 1 ? (
+        <p className="mb-3 text-xs font-medium uppercase tracking-wide text-text-tertiary">
+          Frage {detailIndex + 1} von {detailTotal}
+        </p>
+      ) : null}
 
       <div className="space-y-3">
         {question.optionen.map((opt) => {
@@ -143,12 +144,7 @@ export function FachdetailsStep({
                   return;
                 }
                 if (!sel) return;
-                const patch = buildPatchForFachdetailAnswer(
-                  state.fachdetails,
-                  questionId,
-                  value
-                );
-                onAfterSingleAnswer(patch);
+                applyAnswer(value);
               }}
             />
           );
@@ -156,7 +152,7 @@ export function FachdetailsStep({
       </div>
 
       {isLastForGewerk && freitextKey ? (
-        <label className="block space-y-1.5">
+        <label className="mt-5 block space-y-1.5">
           <span className="text-sm font-medium text-text-secondary">
             Noch etwas hinzufügen?{" "}
             <span className="font-normal text-text-tertiary">(optional)</span>
@@ -180,6 +176,6 @@ export function FachdetailsStep({
           />
         </label>
       ) : null}
-    </div>
+    </StepWrapper>
   );
 }

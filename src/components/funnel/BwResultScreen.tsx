@@ -15,6 +15,10 @@ import {
 } from "@/lib/funnel/price-calc";
 import { SITE_CONFIG } from "@/lib/config";
 import { cn } from "@/lib/utils";
+import {
+  serializeFunnelStateForLead,
+  submitBwLead,
+} from "@/components/funnel/LeadStep";
 import { DatenschutzCheckbox } from "./DatenschutzCheckbox";
 import { NeueAnfrageResetLink } from "./NeueAnfrageResetLink";
 
@@ -335,40 +339,33 @@ function ZuKomplexScreen({
     setErrorMessage("");
     const name =
       `${vorname.trim()} ${nachname.trim()}`.trim() || "Ohne Namenangabe";
-    const body = {
-      name,
-      email: "",
-      telefon: telefon.trim(),
-      situation: state.situation,
-      bereiche: state.bereiche,
-      priceMin: state.priceMin,
-      priceMax: state.priceMax,
-      plz: state.plz,
-      zeitraum: state.zeitraum,
-      budgetCheck: state.budgetCheck,
-      budgetGespraech: state.budgetCheck === "zu_hoch",
-      selectedSlot: state.selectedSlot,
-      photoCount: 0,
-      dringlichkeit: state.dringlichkeit,
-      umfang: state.umfang,
-      kundentyp: state.kundentyp ?? "nicht angegeben",
-      beschreibung: beschreibung.trim(),
-      leadType: "komplex_rueckruf" as const,
-    };
     try {
-      const res = await fetch("/api/leads", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
+      const result = await submitBwLead({
+        name,
+        telefon: telefon.trim(),
+        nachricht: beschreibung.trim() || undefined,
+        situation: state.situation,
+        bereiche: state.bereiche,
+        preis_min: state.priceMin,
+        preis_max: state.priceMax,
+        plz: state.plz,
+        zeitraum: state.zeitraum,
+        kundentyp: state.kundentyp ?? "nicht angegeben",
+        funnel_daten: {
+          ...serializeFunnelStateForLead(state),
+          budgetCheck: state.budgetCheck,
+          budgetGespraech: state.budgetCheck === "zu_hoch",
+          selectedSlot: state.selectedSlot,
+          dringlichkeit: state.dringlichkeit,
+          umfang: state.umfang,
+        },
+        funnel_quelle: "komplex_rueckruf",
       });
-      const data = (await res.json()) as {
-        success?: boolean;
-        error?: string;
-      };
-      if (!res.ok || !data.success) {
+      if (!result.ok) {
         setSubmitStatus("error");
         setErrorMessage(
-          data.error ?? "Versuch es bitte erneut oder ruf uns direkt an."
+          result.error ??
+            "Versuch es bitte erneut oder ruf uns direkt an."
         );
         return;
       }

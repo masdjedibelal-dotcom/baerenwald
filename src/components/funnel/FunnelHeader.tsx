@@ -1,9 +1,11 @@
 "use client";
 
 import Image from "next/image";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useId, useState } from "react";
 
+import { RefreshIcon18 } from "@/components/funnel/NeueAnfrageResetLink";
 import { SITE_CONFIG } from "@/lib/config";
 import { cn } from "@/lib/utils";
 
@@ -103,10 +105,21 @@ export function FunnelHeader({
           </span>
         </div>
 
-        <div className="flex min-w-0 justify-end">
+        <div className="flex min-w-0 items-center justify-end gap-1.5 sm:gap-2">
+          <Link
+            href="/"
+            className={cn(
+              "flex size-10 shrink-0 items-center justify-center rounded-full border border-border-default",
+              "text-text-tertiary transition hover:border-text-tertiary hover:text-text-primary"
+            )}
+            aria-label="Zur Startseite — von vorn beginnen"
+            title="Zur Startseite"
+          >
+            <RefreshIcon18 className="size-[18px]" />
+          </Link>
           <a
             href={SITE_CONFIG.phoneHref}
-            className="flex shrink-0 items-center gap-1.5 text-sm text-text-tertiary"
+            className="flex shrink-0 items-center gap-1.5 text-sm text-text-tertiary transition hover:text-text-primary"
           >
             <PhoneIcon className="shrink-0 text-text-tertiary" />
             <span className="hidden sm:inline">{SITE_CONFIG.phone}</span>

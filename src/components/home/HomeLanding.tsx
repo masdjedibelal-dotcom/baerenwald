@@ -33,13 +33,12 @@ function rechnerSituationParam(id: MarketingSituation): FunnelSituation {
   return m[id];
 }
 
-const HERO_CHIPS: {
-  label: string;
-  situation: FunnelSituation;
-  notfall?: boolean;
-}[] = [
+const HERO_CHIPS: (
+  | { label: string; situation: FunnelSituation; notfall?: boolean; leistung?: undefined }
+  | { label: string; leistung: string; situation?: undefined; notfall?: boolean }
+)[] = [
   { label: "Wohnung streichen", situation: "erneuern" },
-  { label: "Neues Bad", situation: "erneuern" },
+  { label: "Neues Bad", leistung: "badezimmer-sanierung" },
   { label: "Heizung tauschen", situation: "erneuern" },
   { label: "Gartenpflege", situation: "betreuung" },
   { label: "Neuer Boden", situation: "erneuern" },
@@ -190,7 +189,7 @@ export function HomeLanding() {
                   name="q"
                   value={searchQ}
                   onChange={(e) => setSearchQ(e.target.value.slice(0, 80))}
-                  placeholder="z.B. Bad renovieren, Heizung kaputt, Garten pflegen..."
+                  placeholder="Leistungsname exakt wie in den Vorschlägen, z. B. Neues Bad …"
                   maxLength={80}
                   inputMode="search"
                   enterKeyHint="search"
@@ -212,7 +211,11 @@ export function HomeLanding() {
               {HERO_CHIPS.map((c) => (
                 <Link
                   key={c.label}
-                  href={`/rechner?situation=${c.situation}`}
+                  href={
+                    "leistung" in c && c.leistung
+                      ? `/rechner?leistung=${encodeURIComponent(c.leistung)}`
+                      : `/rechner?situation=${(c as { situation: FunnelSituation }).situation}`
+                  }
                   className={cn(
                     "cursor-pointer rounded-full border border-white/10 bg-white/[0.03] px-3 py-1.5 text-xs text-white/60 transition hover:border-white/30 hover:text-white/70",
                     c.notfall &&

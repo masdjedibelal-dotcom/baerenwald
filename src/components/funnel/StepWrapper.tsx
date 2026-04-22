@@ -56,14 +56,10 @@ export function StepWrapper({
         </p>
       ) : null}
       {question ? (
-        <h1 className="text-[22px] font-extrabold leading-tight tracking-tight text-text-primary">
-          {question}
-        </h1>
+        <h1 className="funnel-step-question">{question}</h1>
       ) : null}
       {subtext ? (
-        <p className="mb-6 mt-2 whitespace-pre-line text-sm leading-relaxed text-text-secondary">
-          {subtext}
-        </p>
+        <p className="funnel-step-subtext">{subtext}</p>
       ) : question ? (
         <div className="mb-6" />
       ) : null}

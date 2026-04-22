@@ -31,7 +31,7 @@ export interface LeistungsPageProps {
 }
 
 export function LeistungsPage({ slug, data }: LeistungsPageProps) {
-  const rechnerHref = `/rechner?situation=${encodeURIComponent(data.rechnerSituation)}`;
+  const rechnerHref = `/rechner?leistung=${encodeURIComponent(slug)}`;
 
   return (
     <div id={`leistung-${slug}`} className="baerenwald-landing">

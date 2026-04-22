@@ -35,7 +35,7 @@ export function RatgeberPage({ data }: RatgeberPageProps) {
     month: "short",
     year: "numeric",
   });
-  const rechnerHref = `/rechner?situation=${encodeURIComponent(data.rechnerSituation)}`;
+  const rechnerHref = `/rechner?leistung=${encodeURIComponent(data.leistungsSlug)}`;
   const leistungUrl = leistungHref(data.leistungsSlug);
 
   const wbPunkte = data.wannBrauche.punkte;
