@@ -7,13 +7,13 @@ import type { Situation as BwSituation } from "@/lib/funnel/types";
 import { cn } from "@/lib/utils";
 
 export interface LoadingScreenProps {
-  situation: BwSituation | string | null;
+  /** Optional — für künftige Textvarianten; aktuell ungenutzt. */
+  situation?: BwSituation | string | null;
   onComplete: () => void;
   className?: string;
 }
 
 export function LoadingScreen({
-  situation: _situation,
   onComplete,
   className,
 }: LoadingScreenProps) {

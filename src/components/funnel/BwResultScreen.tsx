@@ -282,13 +282,11 @@ function PhoneIconKomplex() {
 
 function ZuKomplexScreen({
   state,
-  schwellenwertAusgeloest: _schwellenwertAusgeloest,
   onKomplexRueckrufSuccess,
   onReset,
   className,
 }: {
   state: FunnelState;
-  schwellenwertAusgeloest: boolean;
   onKomplexRueckrufSuccess?: () => void;
   onReset?: () => void;
   className?: string;
@@ -558,7 +556,6 @@ export function BwResultScreen({
   state,
   mindestauftragAktiv,
   resultModus,
-  schwellenwertAusgeloest = false,
   onKomplexRueckrufSuccess,
   onReset,
   className,
@@ -567,6 +564,42 @@ export function BwResultScreen({
   const [saveEmail, setSaveEmail] = useState("");
   const [saveEmailSent, setSaveEmailSent] = useState(false);
   const [saveEmailError, setSaveEmailError] = useState("");
+
+  const handleSaveEmail = useCallback(async () => {
+    setSaveEmailError("");
+    const email = saveEmail.trim();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      setSaveEmailError("Bitte eine gültige E-Mail-Adresse eingeben.");
+      return;
+    }
+    try {
+      const res = await fetch("/api/save-price", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email,
+          priceMin: state.priceMin,
+          priceMax: state.priceMax,
+          situation: state.situation,
+          bereiche: state.bereiche,
+          plz: state.plz,
+        }),
+      });
+      if (!res.ok) throw new Error("save failed");
+      setSaveEmailSent(true);
+    } catch {
+      setSaveEmailError(
+        "Senden fehlgeschlagen — bitte versuche es erneut."
+      );
+    }
+  }, [
+    saveEmail,
+    state.priceMin,
+    state.priceMax,
+    state.situation,
+    state.bereiche,
+    state.plz,
+  ]);
 
   const notfallAkut =
     state.situation === "notfall" && state.dringlichkeit === "sofort";
@@ -616,7 +649,6 @@ export function BwResultScreen({
     return (
       <ZuKomplexScreen
         state={state}
-        schwellenwertAusgeloest={schwellenwertAusgeloest}
         onKomplexRueckrufSuccess={onKomplexRueckrufSuccess}
         onReset={onReset}
         className={className}
@@ -633,42 +665,6 @@ export function BwResultScreen({
     (resultModus === "preisrahmen" ||
       resultModus === "preisrahmen_warnung" ||
       resultModus === undefined);
-
-  const handleSaveEmail = useCallback(async () => {
-    setSaveEmailError("");
-    const email = saveEmail.trim();
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      setSaveEmailError("Bitte eine gültige E-Mail-Adresse eingeben.");
-      return;
-    }
-    try {
-      const res = await fetch("/api/save-price", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          email,
-          priceMin: state.priceMin,
-          priceMax: state.priceMax,
-          situation: state.situation,
-          bereiche: state.bereiche,
-          plz: state.plz,
-        }),
-      });
-      if (!res.ok) throw new Error("save failed");
-      setSaveEmailSent(true);
-    } catch {
-      setSaveEmailError(
-        "Senden fehlgeschlagen — bitte versuche es erneut."
-      );
-    }
-  }, [
-    saveEmail,
-    state.priceMin,
-    state.priceMax,
-    state.situation,
-    state.bereiche,
-    state.plz,
-  ]);
 
   return (
     <div className={cn("bw-result-screen", className)}>
