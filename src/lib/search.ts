@@ -9,11 +9,9 @@ function normalize(s: string): string {
 }
 
 /**
- * Suche (Hero / Landing): Es gibt nur Treffer, wenn die Eingabe **exakt** einem
- * freigegebenen Text entspricht — dieselben Namen wie in den Vorschlägen (Leistungs-
- * Label bzw. Slug-Variante) plus wenige feste Chip-Phrasen ohne eigene Leistungsseite.
- *
- * Kein Treffer → `/rechner?nf=1` (neutraler Start + Hinweis auf dem Rechner).
+ * Suche: zuerst **exakter** Treffer (Label/Slug wie in den Vorschlägen), danach
+ * **Legacy-Stichwörter** (z. B. „Bad“ → Leistung Badsanierung, „Heizung“ → Situation erneuern).
+ * Kein Treffer → neutraler Rechner mit optionalem `?q=` für Analyse.
  */
 export type HeroSearchResolution =
   | { kind: "leistung"; slug: string }
@@ -48,11 +46,130 @@ export function resolveHeroSearchQuery(raw: string): HeroSearchResolution | null
   return null;
 }
 
+/** Kurz-Stichworte → Leistungs-Slug (längere Treffer zuerst). */
+const LEGACY_LEISTUNG_SHORTCUTS = (
+  [
+    ["neues bad", "badezimmer-sanierung"],
+    ["bad sanierung", "badezimmer-sanierung"],
+    ["badsanierung", "badezimmer-sanierung"],
+    ["badezimmer", "badezimmer-sanierung"],
+    ["bad", "badezimmer-sanierung"],
+  ] as [string, string][]
+).sort((a, b) => b[0].length - a[0].length);
+
+/** Umgangssprache / Marketing → Funnel-Situation (Subset, längere Keys zuerst). */
+const LEGACY_SITUATION_KEYWORDS: Record<string, Situation> = {
+  "strom weg": "notfall",
+  wand: "erneuern",
+  renovieren: "erneuern",
+  sanieren: "erneuern",
+  streichen: "erneuern",
+  tapezieren: "erneuern",
+  farbe: "erneuern",
+  boden: "erneuern",
+  parkett: "erneuern",
+  laminat: "erneuern",
+  küche: "erneuern",
+  kuche: "erneuern",
+  fenster: "erneuern",
+  renovier: "erneuern",
+  heizung: "erneuern",
+  wärmepumpe: "erneuern",
+  waermepumpe: "erneuern",
+  dach: "erneuern",
+  dämmung: "erneuern",
+  daemmung: "erneuern",
+  elektrik: "erneuern",
+  leitungen: "erneuern",
+  kaputt: "kaputt",
+  defekt: "kaputt",
+  notfall: "notfall",
+  dringend: "notfall",
+  rohr: "notfall",
+  wasser: "notfall",
+  garten: "betreuung",
+  mähen: "betreuung",
+  maehen: "betreuung",
+  schneiden: "betreuung",
+  winterdienst: "betreuung",
+  hausmeister: "betreuung",
+  reinigung: "betreuung",
+  anbau: "neubauen",
+  umbau: "neubauen",
+  terrasse: "neubauen",
+  ausbauen: "neubauen",
+  "wand einziehen": "neubauen",
+  büro: "gewerbe",
+  buero: "gewerbe",
+  praxis: "gewerbe",
+  laden: "gewerbe",
+  gewerbe: "gewerbe",
+  restaurant: "gewerbe",
+  gastronomie: "gewerbe",
+  gastro: "gewerbe",
+  cafe: "gewerbe",
+  hotel: "gewerbe",
+};
+
+/**
+ * Freitext-Fallback wie früher: Teilstrings in Kurzbeschreibungen / Slugs.
+ */
+function resolveLegacySearchIntent(raw: string): HeroSearchResolution | null {
+  const n = normalize(raw.trim().slice(0, 80));
+  if (!n || n.length < 2) return null;
+
+  for (const [keyword, slug] of LEGACY_LEISTUNG_SHORTCUTS) {
+    if (n.includes(normalize(keyword))) return { kind: "leistung", slug };
+  }
+
+  const sitEntries = Object.entries(LEGACY_SITUATION_KEYWORDS).sort(
+    (a, b) => b[0].length - a[0].length
+  );
+  for (const [keyword, situation] of sitEntries) {
+    if (n.includes(normalize(keyword))) return { kind: "situation", situation };
+  }
+
+  const sorted = [...LEISTUNGEN].sort(
+    (a, b) => b.label.length + b.kurz.length - (a.label.length + a.kurz.length)
+  );
+  for (const l of sorted) {
+    const slugNorm = normalize(l.slug.replace(/-/g, " "));
+    if (slugNorm.length >= 3 && n.includes(slugNorm))
+      return { kind: "leistung", slug: l.slug };
+    const labelN = normalize(l.label);
+    if (labelN.length >= 3 && n.includes(labelN))
+      return { kind: "leistung", slug: l.slug };
+    const kurzN = normalize(l.kurz);
+    if (kurzN.length >= 4 && n.includes(kurzN))
+      return { kind: "leistung", slug: l.slug };
+    if (
+      n.length >= 3 &&
+      n.length <= 24 &&
+      kurzN.length >= 4 &&
+      kurzN.includes(n)
+    ) {
+      return { kind: "leistung", slug: l.slug };
+    }
+  }
+
+  return null;
+}
+
+export function resolveHeroSearchQueryOrLegacy(
+  raw: string
+): HeroSearchResolution | null {
+  return resolveHeroSearchQuery(raw) ?? resolveLegacySearchIntent(raw);
+}
+
 export function buildSearchUrl(query: string): string {
   const raw = query.trim().slice(0, 80);
   if (!raw) return "/rechner";
-  const res = resolveHeroSearchQuery(raw);
-  if (!res) return "/rechner?nf=1";
+  const res = resolveHeroSearchQueryOrLegacy(raw);
+  if (!res) {
+    const p = new URLSearchParams();
+    p.set("q", raw);
+    return `/rechner?${p.toString()}`;
+  }
 
   const params = new URLSearchParams();
   params.set("q", raw);

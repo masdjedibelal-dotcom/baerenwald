@@ -1077,8 +1077,7 @@ export function shouldIncludeZugaenglichkeitStep(
   situation: Situation,
   _umfang: string | null,
   bereiche: string[],
-  zuKomplex: boolean = false,
-  _fachdetails?: FachdetailsState
+  zuKomplex: boolean = false
 ): boolean {
   if (zuKomplex) return false;
   if (situation === "notfall") return false;
@@ -1169,8 +1168,7 @@ export function getResolvedStepsForSituation(
         situation,
         umfang,
         bereiche,
-        zuKomplex,
-        fachdetails
+        zuKomplex
       )
     ) {
       zugZustandSteps.push(BW_FUNNEL_STEP_ZUGAENGLICHKEIT);

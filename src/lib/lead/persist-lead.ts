@@ -56,8 +56,6 @@ function syntheticEmailFromPhone(t: string): string {
 
 function buildKundeBestaetigung({
   name,
-  situation,
-  bereiche,
   preis_min,
   preis_max,
 }: {

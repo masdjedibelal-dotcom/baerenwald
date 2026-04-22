@@ -1176,22 +1176,17 @@ export function calculatePrice(
     );
   }
 
-  let {
-    min: finalMin,
-    max: finalMax,
-    mitte,
-    breakdown,
-    plzFaktor,
-    istFallback,
-    mindestauftragAktiv,
-  } = core;
+  let { min: finalMin, max: finalMax, breakdown } = core;
+  const { plzFaktor, istFallback, mindestauftragAktiv } = core;
+  const mitte = core.mitte;
 
-  let resultModus = getBwAnzeigeModus(state, {
+  const resultModus = getBwAnzeigeModus(state, {
     mitte,
     min: finalMin,
     max: finalMax,
   });
-  let schwellenwertAusgeloest = resultModus === "zu_komplex" && mitte > 15000;
+  const schwellenwertAusgeloest =
+    resultModus === "zu_komplex" && mitte > 15000;
 
   if (resultModus === "zu_komplex" && mitte > 15000 && !preview) {
     finalMin = 0;
