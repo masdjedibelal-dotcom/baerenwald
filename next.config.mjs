@@ -7,7 +7,13 @@ const nextConfig = {
         ...config.watchOptions,
         poll: 1500,
         aggregateTimeout: 300,
-        ignored: ["**/node_modules/**"],
+        ignored: [
+          "**/node_modules/**",
+          "**/.git/**",
+          "**/.next/**",
+          "**/dist/**",
+          "**/.turbo/**",
+        ],
       };
     }
     return config;

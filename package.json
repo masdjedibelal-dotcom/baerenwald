@@ -3,7 +3,10 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "clean": "rm -rf .next",
+    "dev": "bash -lc 'ulimit -n 65536 2>/dev/null || true; exec next dev'",
+    "dev:clean": "npm run clean && npm run dev",
+    "preview": "npm run build && next start -p 3100",
     "build": "next build",
     "start": "next start",
     "lint": "next lint"
