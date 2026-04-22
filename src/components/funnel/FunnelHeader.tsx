@@ -106,17 +106,32 @@ export function FunnelHeader({
         </div>
 
         <div className="flex min-w-0 items-center justify-end gap-1.5 sm:gap-2">
-          <Link
-            href="/"
-            className={cn(
-              "flex size-10 shrink-0 items-center justify-center rounded-full border border-border-default",
-              "text-text-tertiary transition hover:border-text-tertiary hover:text-text-primary"
-            )}
-            aria-label="Zur Startseite — von vorn beginnen"
-            title="Zur Startseite"
-          >
-            <RefreshIcon18 className="size-[18px]" />
-          </Link>
+          {onFunnelReset ? (
+            <button
+              type="button"
+              onClick={() => onFunnelReset()}
+              className={cn(
+                "flex size-10 shrink-0 items-center justify-center rounded-full border border-border-default",
+                "text-text-tertiary transition hover:border-text-tertiary hover:text-text-primary"
+              )}
+              aria-label="Neu starten — Preisrechner von vorn"
+              title="Neu starten"
+            >
+              <RefreshIcon18 className="size-[18px]" />
+            </button>
+          ) : (
+            <Link
+              href="/"
+              className={cn(
+                "flex size-10 shrink-0 items-center justify-center rounded-full border border-border-default",
+                "text-text-tertiary transition hover:border-text-tertiary hover:text-text-primary"
+              )}
+              aria-label="Zur Startseite"
+              title="Zur Startseite"
+            >
+              <RefreshIcon18 className="size-[18px]" />
+            </Link>
+          )}
           <a
             href={SITE_CONFIG.phoneHref}
             className="flex shrink-0 items-center gap-1.5 text-sm text-text-tertiary transition hover:text-text-primary"

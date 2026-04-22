@@ -9,6 +9,11 @@ import {
 } from "@/lib/funnel/config";
 import type { FunnelState } from "@/lib/funnel/types";
 import {
+  BW_GU_KOORDINATION_HINT,
+  buildBwBadActiveFeatures,
+  shouldShowBwBadGuHint,
+} from "@/lib/funnel/bw-active-features";
+import {
   calculatePrice,
   getBwResultModus,
   type BwResultModus,
@@ -197,6 +202,39 @@ function bereicheDisplayLabels(state: FunnelState): string[] {
 
 const WAENDE_TILE_QM = new Set([40, 90, 160, 280]);
 
+function BadErgebnisMerkmale({ state }: { state: FunnelState }) {
+  const activeFeatures = useMemo(
+    () => buildBwBadActiveFeatures(state),
+    [state]
+  );
+  const gu = shouldShowBwBadGuHint(state);
+
+  if (activeFeatures.length === 0 && !gu) return null;
+
+  return (
+    <div className="bw-active-features">
+      {activeFeatures.length > 0 ? (
+        <>
+          <p className="bw-active-features-title">Im Preis berücksichtigt</p>
+          <ul className="bw-active-features-list">
+            {activeFeatures.map((label, idx) => (
+              <li
+                key={`${label}-${String(idx)}`}
+                className="bw-active-feature-pill"
+              >
+                {label}
+              </li>
+            ))}
+          </ul>
+        </>
+      ) : null}
+      {gu ? (
+        <p className="bw-gu-hint">{BW_GU_KOORDINATION_HINT}</p>
+      ) : null}
+    </div>
+  );
+}
+
 function groesseEinordnungLine(state: FunnelState): string | null {
   if (state.groesse == null) return null;
   const waendeDiskret =
@@ -309,6 +347,11 @@ function ZuKomplexScreen({
   );
   const abMin = preisPreview.min > 0 ? preisPreview.min : 1200;
 
+  const komplexActiveFeatures = useMemo(
+    () => buildBwBadActiveFeatures(state),
+    [state]
+  );
+
   const scrollToRueckruf = useCallback(() => {
     document.getElementById("komplex-rueckruf-anchor")?.scrollIntoView({
       behavior: "smooth",
@@ -348,7 +391,7 @@ function ZuKomplexScreen({
         preis_max: state.priceMax,
         plz: state.plz,
         zeitraum: state.zeitraum,
-        kundentyp: state.kundentyp ?? "nicht angegeben",
+        kundentyp: state.kundentyp ?? undefined,
         funnel_daten: {
           ...serializeFunnelStateForLead(state),
           budgetCheck: state.budgetCheck,
@@ -444,6 +487,26 @@ function ZuKomplexScreen({
               </>
             )}
           </p>
+          {komplexActiveFeatures.length > 0 ? (
+            <div className="bw-active-features bw-active-features--komplex">
+              <p className="bw-active-features-title">
+                Deine Auswahl im Überblick
+              </p>
+              <ul className="bw-active-features-list">
+                {komplexActiveFeatures.map((label, idx) => (
+                  <li
+                    key={`${label}-${String(idx)}`}
+                    className="bw-active-feature-pill"
+                  >
+                    {label}
+                  </li>
+                ))}
+              </ul>
+              {state.bereiche.includes("bad") ? (
+                <p className="bw-gu-hint">{BW_GU_KOORDINATION_HINT}</p>
+              ) : null}
+            </div>
+          ) : null}
         </div>
       )}
 
@@ -681,6 +744,7 @@ export function BwResultScreen({
             </span>
           </div>
           <ResultEinordnung state={state} />
+          <BadErgebnisMerkmale state={state} />
 
           {state.istFallback ? (
             <p className="preis-karte-fallback">

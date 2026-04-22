@@ -4707,6 +4707,77 @@
   color: #c8ebd4;
 }
 
+/* Bad: aktive Merkmale + GU-Hinweis (Ergebnis / zu komplex) */
+.bw-active-features {
+  margin-top: 14px;
+  text-align: center;
+}
+
+.bw-active-features-title {
+  margin: 0 0 8px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.55);
+}
+
+.preis-karte .bw-active-features-title {
+  color: rgba(255, 255, 255, 0.55);
+}
+
+.bw-active-features-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 8px;
+  justify-content: center;
+}
+
+.bw-active-feature-pill {
+  margin: 0;
+  padding: 5px 11px;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.35;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.11);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  color: rgba(255, 255, 255, 0.94);
+}
+
+.bw-gu-hint {
+  margin: 10px 0 0;
+  font-size: 11px;
+  line-height: 1.45;
+  color: rgba(255, 255, 255, 0.72);
+}
+
+.bw-active-features--komplex {
+  margin-top: 18px;
+  padding: 14px 14px 12px;
+  text-align: center;
+  background: var(--fl-bg);
+  border: 1px solid var(--fl-border-light);
+  border-radius: var(--fl-radius-sm);
+}
+
+.bw-active-features--komplex .bw-active-features-title {
+  color: var(--fl-text-2);
+}
+
+.bw-active-features--komplex .bw-active-feature-pill {
+  background: rgba(46, 125, 82, 0.09);
+  border-color: rgba(46, 125, 82, 0.22);
+  color: var(--fl-text);
+}
+
+.bw-active-features--komplex .bw-gu-hint {
+  color: var(--fl-text-3);
+}
+
 .preis-karte-fallback,
 .preis-karte-warn-einzeiler {
   margin: 12px 0 0;

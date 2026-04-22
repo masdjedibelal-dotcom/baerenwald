@@ -337,8 +337,11 @@ function FunnelRechnerInner() {
     [stepKundentyp]
   );
 
+  /** Nur nach gewählter Planung (nicht „Erst eine Idee“): offene Keller/Terrasse/Umbau-Rückfragen blockieren „Weiter“. */
   const neubauenDetailOffen =
     state.situation === "neubauen" &&
+    Boolean(state.umfang) &&
+    state.umfang !== "idee" &&
     neubauenFollowUpBlocksPlanung(
       state.bereiche,
       state.fachdetails.neubauen
@@ -502,7 +505,6 @@ function FunnelRechnerInner() {
   );
 
   const handleReset = useCallback(() => {
-    const prevSit = state.situation;
     reset();
     setSubmitted(false);
     setMindestauftrag(false);
@@ -522,18 +524,16 @@ function FunnelRechnerInner() {
     setLeadSubmitting(false);
     setLeadSubmitError(null);
 
-    const first: Screen =
-      prevSit === "notfall" || prevSit === "gewerbe"
-        ? "situation"
-        : "trust_intro";
-    setScreen(first);
+    /** Erster Story-/Trust-Screen überspringen — direkt Situation wählen. */
+    setScreen("situation");
+    router.replace("/rechner", { scroll: false });
 
     window.scrollTo({
       top: 0,
       left: 0,
       behavior: "instant" as ScrollBehavior,
     });
-  }, [reset, setSubmitted, state.situation]);
+  }, [reset, setSubmitted, router]);
 
   const handleNext = useCallback(() => {
     if (isBwFachdetailQuestionScreenId(screen)) {
@@ -973,9 +973,7 @@ function FunnelRechnerInner() {
       preis_max: 0,
       plz: state.plz || "",
       zeitraum: null,
-      kundentyp: isB2B(state.situation)
-        ? (state.situation ?? "b2b")
-        : (state.kundentyp ?? "nicht angegeben"),
+      kundentyp: isB2B(state.situation) ? undefined : state.kundentyp ?? undefined,
       funnel_daten: {
         ...fd,
         vorname: state.vorname.trim(),
@@ -1010,7 +1008,7 @@ function FunnelRechnerInner() {
       preis_max: 0,
       plz: state.plz || "",
       zeitraum: null,
-      kundentyp: state.kundentyp ?? "nicht angegeben",
+      kundentyp: state.kundentyp ?? undefined,
       funnel_daten: {
         ...fd,
         vorname: state.vorname.trim(),
@@ -1129,18 +1127,37 @@ function FunnelRechnerInner() {
         </div>
       );
     }
-    const neubauenPlan =
+    const showNeubauenFollowUpNachPlan =
       state.situation === "neubauen" &&
-      state.umfang !== "idee" &&
       stepUmfang.id === "neubauen_planung" &&
-      neubauenFollowUpBlocksPlanung(
-        state.bereiche,
-        state.fachdetails.neubauen
-      );
+      Boolean(state.umfang) &&
+      state.umfang !== "idee";
+
     return (
       <div className="space-y-3">
-        {state.situation === "neubauen" &&
-        stepUmfang.id === "neubauen_planung" ? (
+        {stepUmfang.options.map((opt) => {
+          const libOpt = asLibOpt(opt);
+          const selected = state.umfang === opt.value;
+          return (
+            <SelectionTile
+              key={opt.value}
+              option={libOpt}
+              icon={
+                libOpt.emoji ? undefined : tileIconForStepValue(opt.value)
+              }
+              selected={selected}
+              multi={false}
+              onChange={(value, sel) => {
+                if (!sel) {
+                  setUmfang(null, 1);
+                  return;
+                }
+                setUmfang(value, opt.faktor ?? 1);
+              }}
+            />
+          );
+        })}
+        {showNeubauenFollowUpNachPlan ? (
           <NeubauenFollowUpBlock
             bereiche={state.bereiche}
             neubauen={state.fachdetails.neubauen}
@@ -1151,30 +1168,6 @@ function FunnelRechnerInner() {
             }
           />
         ) : null}
-        {neubauenPlan
-          ? null
-          : stepUmfang.options.map((opt) => {
-              const libOpt = asLibOpt(opt);
-              const selected = state.umfang === opt.value;
-              return (
-                <SelectionTile
-                  key={opt.value}
-                  option={libOpt}
-                  icon={
-                    libOpt.emoji ? undefined : tileIconForStepValue(opt.value)
-                  }
-                  selected={selected}
-                  multi={false}
-                  onChange={(value, sel) => {
-                    if (!sel) {
-                      setUmfang(null, 1);
-                      return;
-                    }
-                    setUmfang(value, opt.faktor ?? 1);
-                  }}
-                />
-              );
-            })}
       </div>
     );
   };
