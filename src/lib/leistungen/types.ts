@@ -1,4 +1,4 @@
-import type { Situation } from "@/lib/types";
+import type { Situation } from "@/lib/funnel/types";
 
 export interface LeistungsFaqItem {
   q: string;

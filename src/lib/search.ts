@@ -1,63 +1,6 @@
 import type { Situation } from "@/lib/funnel/types";
 import { LEISTUNGEN } from "@/lib/routes";
 
-/** Suchbegriffe → gültige `Situation` (keine Legacy-Werte wie „renovieren“). */
-const SEARCH_MAP = {
-  /** Legacy-/Umgangssprache → gleicher Rechner-Flow wie „Zuhause erneuern“ */
-  renovieren: "erneuern",
-  sanieren: "erneuern",
-  streichen: "erneuern",
-  tapezieren: "erneuern",
-  farbe: "erneuern",
-  wand: "erneuern",
-  bad: "erneuern",
-  badezimmer: "erneuern",
-  boden: "erneuern",
-  parkett: "erneuern",
-  laminat: "erneuern",
-  küche: "erneuern",
-  kuche: "erneuern",
-  fenster: "erneuern",
-  renovier: "erneuern",
-  heizung: "erneuern",
-  wärmepumpe: "erneuern",
-  waermepumpe: "erneuern",
-  dach: "erneuern",
-  dämmung: "erneuern",
-  daemmung: "erneuern",
-  elektrik: "erneuern",
-  leitungen: "erneuern",
-  kaputt: "kaputt",
-  defekt: "kaputt",
-  notfall: "notfall",
-  dringend: "notfall",
-  rohr: "notfall",
-  wasser: "notfall",
-  "strom weg": "notfall",
-  garten: "betreuung",
-  mähen: "betreuung",
-  maehen: "betreuung",
-  schneiden: "betreuung",
-  winterdienst: "betreuung",
-  hausmeister: "betreuung",
-  reinigung: "betreuung",
-  anbau: "neubauen",
-  umbau: "neubauen",
-  terrasse: "neubauen",
-  ausbauen: "neubauen",
-  "wand einziehen": "neubauen",
-  büro: "gewerbe",
-  buero: "gewerbe",
-  praxis: "gewerbe",
-  laden: "gewerbe",
-  gewerbe: "gewerbe",
-  restaurant: "gewerbe",
-  gastronomie: "gewerbe",
-  gastro: "gewerbe",
-  cafe: "gewerbe",
-  hotel: "gewerbe",
-} satisfies Record<string, Situation>;
-
 function normalize(s: string): string {
   return s
     .toLowerCase()
@@ -65,47 +8,60 @@ function normalize(s: string): string {
     .replace(/[\u0300-\u036f]/g, "");
 }
 
-export function findSituation(query: string): Situation | null {
-  const q = normalize(query.trim());
-  if (!q) return null;
-  const entries = Object.entries(SEARCH_MAP).sort(
-    (a, b) => b[0].length - a[0].length
-  );
-  for (const [keyword, situation] of entries) {
-    if (q.includes(normalize(keyword))) return situation;
-  }
-  return null;
-}
+/**
+ * Suche (Hero / Landing): Es gibt nur Treffer, wenn die Eingabe **exakt** einem
+ * freigegebenen Text entspricht — dieselben Namen wie in den Vorschlägen (Leistungs-
+ * Label bzw. Slug-Variante) plus wenige feste Chip-Phrasen ohne eigene Leistungsseite.
+ *
+ * Kein Treffer → `/rechner?nf=1` (neutraler Start + Hinweis auf dem Rechner).
+ */
+export type HeroSearchResolution =
+  | { kind: "leistung"; slug: string }
+  | { kind: "situation"; situation: Situation };
 
-export function findLeistungSlug(query: string): string | null {
-  const q = normalize(query.trim());
-  if (q.length < 2) return null;
-  const sorted = [...LEISTUNGEN].sort(
-    (a, b) => b.label.length + b.kurz.length - (a.label.length + a.kurz.length)
-  );
-  for (const l of sorted) {
-    const slugNorm = normalize(l.slug.replace(/-/g, " "));
-    if (slugNorm.length >= 3 && q.includes(slugNorm)) return l.slug;
-    const labelN = normalize(l.label);
-    if (labelN.length >= 3 && q.includes(labelN)) return l.slug;
-    const kurzN = normalize(l.kurz);
-    if (kurzN.length >= 4 && q.includes(kurzN)) return l.slug;
+/** Chip-Texte aus HomeLanding ohne dedizierten Leistungs-Slug */
+const EXTRA_SITUATION_PHRASES: [string, Situation][] = [
+  ["wohnung streichen", "erneuern"],
+  ["heizung tauschen", "erneuern"],
+  ["dringend notfall", "notfall"],
+  ["dringend — notfall", "notfall"],
+  ["dringend - notfall", "notfall"],
+];
+
+export function resolveHeroSearchQuery(raw: string): HeroSearchResolution | null {
+  const n = normalize(raw.trim().slice(0, 80));
+  if (!n) return null;
+
+  for (const l of LEISTUNGEN) {
+    if (n === normalize(l.label)) return { kind: "leistung", slug: l.slug };
+    const slugSpaced = normalize(l.slug.replace(/-/g, " "));
+    const slugCompact = normalize(l.slug.replace(/-/g, ""));
+    if (n === slugSpaced || n === slugCompact) {
+      return { kind: "leistung", slug: l.slug };
+    }
   }
+
+  for (const [phrase, situation] of EXTRA_SITUATION_PHRASES) {
+    if (n === normalize(phrase)) return { kind: "situation", situation };
+  }
+
   return null;
 }
 
 export function buildSearchUrl(query: string): string {
   const raw = query.trim().slice(0, 80);
   if (!raw) return "/rechner";
-  const situation = findSituation(raw);
-  if (situation) {
-    return `/rechner?situation=${situation}&q=${encodeURIComponent(raw)}`;
+  const res = resolveHeroSearchQuery(raw);
+  if (!res) return "/rechner?nf=1";
+
+  const params = new URLSearchParams();
+  params.set("q", raw);
+  if (res.kind === "leistung") {
+    params.set("leistung", res.slug);
+    return `/rechner?${params.toString()}`;
   }
-  const leistung = findLeistungSlug(raw);
-  if (leistung) {
-    return `/rechner?leistung=${encodeURIComponent(leistung)}&q=${encodeURIComponent(raw)}`;
-  }
-  return `/rechner?q=${encodeURIComponent(raw)}`;
+  params.set("situation", res.situation);
+  return `/rechner?${params.toString()}`;
 }
 
 /** Ein Eintrag für die Hero-Suchvorschläge (Leistungen). */
@@ -124,8 +80,9 @@ const DEFAULT_HERO_SUGGESTION_SLUGS: string[] = [
 ];
 
 /**
- * Bis zu `max` Vorschläge für die Landing-Suche: bei leerem Feld beliebte Leistungen,
- * sonst Filter nach Label, Slug, Kurztext und Hint.
+ * Bis zu `max` Vorschläge: gleiche Leistungen wie in der Navigation,
+ * gefiltert nach getippter Zeichenfolge (Vervollständigung — **Eingabe muss am Ende
+ * exakt einem Label oder Slug entsprechen**, sonst nur Start über `?nf=1`).
  */
 export function getHeroSearchSuggestions(
   query: string,

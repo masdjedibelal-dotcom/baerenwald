@@ -46,7 +46,7 @@ export const LEISTUNGEN_DATA: Record<string, LeistungsData> = {
     ),
     ratgeberSlug: "malerarbeiten-kosten-muenchen",
     ratgeberLabel: "Was kosten Malerarbeiten in München?",
-    rechnerSituation: "renovierung",
+    rechnerSituation: "erneuern",
     faq: [
       {
         q: "Muss ich die Wohnung räumen?",
@@ -100,7 +100,7 @@ export const LEISTUNGEN_DATA: Record<string, LeistungsData> = {
     ),
     ratgeberSlug: "bad-sanierung-kosten-muenchen",
     ratgeberLabel: "Was kostet eine Badsanierung in München?",
-    rechnerSituation: "renovierung",
+    rechnerSituation: "erneuern",
     faq: [
       {
         q: "Wie lange dauert eine Badsanierung?",
@@ -150,7 +150,7 @@ export const LEISTUNGEN_DATA: Record<string, LeistungsData> = {
     ),
     ratgeberSlug: "bodenbelag-kosten-muenchen",
     ratgeberLabel: "Was kostet neuer Boden in München?",
-    rechnerSituation: "renovierung",
+    rechnerSituation: "erneuern",
     faq: [
       {
         q: "Welcher Boden ist der richtige für mich?",
@@ -196,7 +196,7 @@ export const LEISTUNGEN_DATA: Record<string, LeistungsData> = {
     ),
     ratgeberSlug: "elektroarbeiten-kosten-muenchen",
     ratgeberLabel: "Was kosten Elektroarbeiten in München?",
-    rechnerSituation: "renovierung",
+    rechnerSituation: "erneuern",
     faq: [
       {
         q: "Kann ich Elektroarbeiten selbst durchführen?",
@@ -238,7 +238,7 @@ export const LEISTUNGEN_DATA: Record<string, LeistungsData> = {
     ),
     ratgeberSlug: "heizung-tauschen-kosten",
     ratgeberLabel: "Heizung tauschen — Kosten & Förderung 2025",
-    rechnerSituation: "renovierung",
+    rechnerSituation: "erneuern",
     faq: [
       {
         q: "Wann lohnt sich ein Heizungstausch?",
@@ -280,7 +280,7 @@ export const LEISTUNGEN_DATA: Record<string, LeistungsData> = {
     ),
     ratgeberSlug: "gartenpflege-kosten-muenchen",
     ratgeberLabel: "Was kostet Gartenpflege in München?",
-    rechnerSituation: "pflege",
+    rechnerSituation: "betreuung",
     faq: [
       {
         q: "Wann ist die beste Zeit für den ersten Schnitt?",
@@ -322,7 +322,7 @@ export const LEISTUNGEN_DATA: Record<string, LeistungsData> = {
     ),
     ratgeberSlug: "gartengestaltung-kosten-muenchen",
     ratgeberLabel: "Was kostet Gartengestaltung in München?",
-    rechnerSituation: "renovierung",
+    rechnerSituation: "erneuern",
     faq: [
       {
         q: "Brauche ich eine Genehmigung?",
@@ -360,7 +360,7 @@ export const LEISTUNGEN_DATA: Record<string, LeistungsData> = {
     ),
     ratgeberSlug: "winterdienst-kosten-muenchen",
     ratgeberLabel: "Winterdienst München — Kosten und Streupflicht",
-    rechnerSituation: "pflege",
+    rechnerSituation: "betreuung",
     faq: [
       {
         q: "Was passiert wenn es morgens schneit und ihr nicht da wart?",
@@ -402,7 +402,7 @@ export const LEISTUNGEN_DATA: Record<string, LeistungsData> = {
     ),
     ratgeberSlug: "hausmeisterservice-kosten-muenchen",
     ratgeberLabel: "Was kostet Hausmeisterservice in München?",
-    rechnerSituation: "b2b",
+    rechnerSituation: "gewerbe",
     faq: [
       {
         q: "Für welche Objekte ist das geeignet?",
@@ -444,7 +444,7 @@ export const LEISTUNGEN_DATA: Record<string, LeistungsData> = {
     ),
     ratgeberSlug: "fenster-tauschen-kosten",
     ratgeberLabel: "Fenster tauschen — Kosten & Ablauf",
-    rechnerSituation: "renovierung",
+    rechnerSituation: "erneuern",
     faq: [
       {
         q: "Wie lange dauert ein Fenstertausch?",
@@ -486,7 +486,7 @@ export const LEISTUNGEN_DATA: Record<string, LeistungsData> = {
     ),
     ratgeberSlug: "trockenbau-kosten-muenchen",
     ratgeberLabel: "Neue Wände — was kostet das?",
-    rechnerSituation: "renovierung",
+    rechnerSituation: "erneuern",
     faq: [
       {
         q: "Wie schalldicht sind Trockenwände?",
@@ -524,7 +524,7 @@ export const LEISTUNGEN_DATA: Record<string, LeistungsData> = {
     ),
     ratgeberSlug: "dacharbeiten-kosten-muenchen",
     ratgeberLabel: "Dacharbeiten Kosten München",
-    rechnerSituation: "akut",
+    rechnerSituation: "notfall",
     faq: [
       {
         q: "Was tun bei akutem Sturmschaden?",

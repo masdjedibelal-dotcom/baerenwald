@@ -411,6 +411,30 @@ export function materializeBodenVerlegung(
   return fromDef("boden_verlegung", "boden", def, () => true);
 }
 
+/** UI + Footer: echte Frage mit Optionen — nicht den Platzhalter in {@link FACHDETAIL_QUESTIONS}. */
+export function resolveFachdetailQuestionForUi(
+  state: FachdetailFilterState,
+  questionId: string
+): FachdetailQuestion | null {
+  if (questionId === "boden_verlegung") {
+    return materializeBodenVerlegung(state);
+  }
+  if (questionId === "garten_followup") {
+    const g = resolveGartenFollowupDef(state);
+    if (!g) return null;
+    const b =
+      B(state).has("garten") ||
+      B(state).has("gestaltung") ||
+      B(state).has("baum") ||
+      B(state).has("baumarbeiten");
+    if (!b || !ansStr(state, "garten_was")) return null;
+    return fromDef("garten_followup", "garten", g, () => true, {
+      id: "garten_followup",
+    });
+  }
+  return FACHDETAIL_QUESTIONS.find((q) => q.id === questionId) ?? null;
+}
+
 /** Aktive Fragen in fester Reihenfolge (inkl. dynamischer Garten-Followup). */
 export function getActiveFachdetailQuestions(
   state: FachdetailFilterState

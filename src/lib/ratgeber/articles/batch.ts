@@ -100,7 +100,7 @@ export const badSanierungKostenMuenchen: RatgeberData = {
   ],
   leistungsSlug: "badezimmer-sanierung",
   leistungsLabel: "Badezimmer sanieren in München",
-  rechnerSituation: "renovierung",
+  rechnerSituation: "erneuern",
   ...DATES_STD,
 };
 
@@ -201,7 +201,7 @@ export const bodenbelagKostenMuenchen: RatgeberData = {
   ],
   leistungsSlug: "bodenbelag",
   leistungsLabel: "Bodenbelag verlegen in München",
-  rechnerSituation: "renovierung",
+  rechnerSituation: "erneuern",
   ...DATES_STD,
 };
 
@@ -302,7 +302,7 @@ export const heizungTauschenKosten: RatgeberData = {
   ],
   leistungsSlug: "heizung-sanitaer",
   leistungsLabel: "Heizung & Wasser in München",
-  rechnerSituation: "renovierung",
+  rechnerSituation: "erneuern",
   ...DATES_STD,
 };
 
@@ -403,7 +403,7 @@ export const wohnungRenovierenKostenMuenchen: RatgeberData = {
   ],
   leistungsSlug: "malerarbeiten",
   leistungsLabel: "Malerarbeiten in München",
-  rechnerSituation: "renovierung",
+  rechnerSituation: "erneuern",
   ...DATES_STD,
 };
 
@@ -504,7 +504,7 @@ export const gartenpflegeKostenMuenchen: RatgeberData = {
   ],
   leistungsSlug: "gartenpflege",
   leistungsLabel: "Gartenpflege in München",
-  rechnerSituation: "pflege",
+  rechnerSituation: "betreuung",
   ...DATES_STD,
 };
 
@@ -605,7 +605,7 @@ export const winterdienstKostenMuenchen: RatgeberData = {
   ],
   leistungsSlug: "winterdienst",
   leistungsLabel: "Winterdienst München",
-  rechnerSituation: "pflege",
+  rechnerSituation: "betreuung",
   ...DATES_STD,
 };
 
@@ -706,7 +706,7 @@ export const waermepumpeFoerderung2025: RatgeberData = {
   ],
   leistungsSlug: "heizung-sanitaer",
   leistungsLabel: "Heizung & Wasser in München",
-  rechnerSituation: "renovierung",
+  rechnerSituation: "erneuern",
   datePublished: "2024-11-01",
   dateModified: "2025-01-15",
 };
@@ -808,7 +808,7 @@ export const badRenovierenAblauf: RatgeberData = {
   ],
   leistungsSlug: "badezimmer-sanierung",
   leistungsLabel: "Badezimmer sanieren in München",
-  rechnerSituation: "renovierung",
+  rechnerSituation: "erneuern",
   ...DATES_STD,
 };
 
@@ -909,7 +909,7 @@ export const fensterTauschenKosten: RatgeberData = {
   ],
   leistungsSlug: "fenster-tueren",
   leistungsLabel: "Fenster & Türen München",
-  rechnerSituation: "renovierung",
+  rechnerSituation: "erneuern",
   ...DATES_STD,
 };
 
@@ -1010,7 +1010,7 @@ export const trockenbauKostenMuenchen: RatgeberData = {
   ],
   leistungsSlug: "trockenbau",
   leistungsLabel: "Neue Wände & Decken in München",
-  rechnerSituation: "renovierung",
+  rechnerSituation: "erneuern",
   ...DATES_STD,
 };
 
@@ -1111,6 +1111,6 @@ export const dacharbeitenKostenMuenchen: RatgeberData = {
   ],
   leistungsSlug: "dacharbeiten",
   leistungsLabel: "Dacharbeiten München",
-  rechnerSituation: "akut",
+  rechnerSituation: "notfall",
   ...DATES_STD,
 };

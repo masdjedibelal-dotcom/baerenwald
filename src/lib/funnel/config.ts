@@ -349,8 +349,9 @@ export const SITUATIONEN_CONFIG: Record<
       {
         id: "erneuern_bereiche",
         question: "Was soll erneuert werden?",
-        subtext: "Mehrfachauswahl möglich",
-        inputType: "tiles-multi",
+        subtext:
+          "Ein Gewerk pro Durchlauf. Für mehrere Bereiche bitte je eine eigene Anfrage starten oder die Gewerke nacheinander mit uns klären — so bleibt die Preis-Einschätzung nachvollziehbar.",
+        inputType: "tiles-single",
         options: [
           {
             section: "Innenbereich",

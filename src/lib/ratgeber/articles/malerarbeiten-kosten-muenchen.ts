@@ -158,7 +158,7 @@ export const malerarbeitenKostenMuenchen: RatgeberData = {
   ],
   leistungsSlug: "malerarbeiten",
   leistungsLabel: "Malerarbeiten in München",
-  rechnerSituation: "renovierung",
+  rechnerSituation: "erneuern",
   datePublished: "2024-06-01",
   dateModified: "2025-01-15",
 };
