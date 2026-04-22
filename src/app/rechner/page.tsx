@@ -76,7 +76,6 @@ import {
 import type { BwResultModus } from "@/lib/funnel/price-calc";
 import { getPlzStatus } from "@/lib/funnel/plz";
 import type {
-  FachdetailsState,
   FunnelState,
   FunnelStep,
   Kundentyp,
@@ -232,7 +231,6 @@ function FunnelRechnerInner() {
     setZustand,
     setFachdetails,
     clearFachdetailAnswer,
-    resetFachdetailsForGewerk,
     setBadAusstattung,
     reset,
   } = useFunnelState();

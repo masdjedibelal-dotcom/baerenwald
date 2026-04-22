@@ -2,7 +2,6 @@ import { notFound } from "next/navigation";
 
 import { LeistungsPage } from "@/components/leistungen/LeistungsPage";
 import { PageLayout } from "@/components/layout/PageLayout";
-import { SITE_CONFIG } from "@/lib/config";
 import {
   LEISTUNGEN_DATA,
   leistungBaseSlugFromParam,

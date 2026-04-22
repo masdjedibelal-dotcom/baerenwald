@@ -213,8 +213,6 @@ function EinsatzIcon({ index }: { index: number }) {
   );
 }
 
-const tel = SITE_CONFIG.phone.replace(/\s/g, "");
-
 export default function BaerenwaldLandingClient({
   leistungenSection,
 }: {

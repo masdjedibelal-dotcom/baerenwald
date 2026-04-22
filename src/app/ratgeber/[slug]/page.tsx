@@ -2,7 +2,6 @@ import { notFound } from "next/navigation";
 
 import { PageLayout } from "@/components/layout/PageLayout";
 import { RatgeberPage } from "@/components/ratgeber/RatgeberPage";
-import { SITE_CONFIG } from "@/lib/config";
 import { ratgeberDataForSlug } from "@/lib/ratgeber/data";
 import { RATGEBER } from "@/lib/routes";
 import {

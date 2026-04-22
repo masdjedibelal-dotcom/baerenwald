@@ -43,9 +43,9 @@ export default function AgbPage() {
                 Beran Cakmak (Einzelunternehmen)<br />
                 Bärenwaldstraße 20<br />
                 81737 München<br />
-                (nachfolgend „Auftragnehmer")
+                (nachfolgend „Auftragnehmer“)
               </p>
-              <p>gegenüber Verbrauchern und Unternehmern (nachfolgend „Auftraggeber").</p>
+              <p>gegenüber Verbrauchern und Unternehmern (nachfolgend „Auftraggeber“).</p>
 
               <strong>§ 2 Leistungsumfang</strong>
               <p>
