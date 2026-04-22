@@ -197,6 +197,11 @@ export const SANITAER_FOLLOWUPS: Record<string, FachdetailQuestionDef> = {
         label: "Kunststoffrohre",
         hint: "Weiß oder grau, neuere Häuser",
       },
+      {
+        value: "neu",
+        label: "Neuverrohrung / komplett ersetzen",
+        hint: "Gestemmt, neue Hauptleitungen — deutlich mehr Aufwand",
+      },
     ],
   },
 };
@@ -244,6 +249,53 @@ export const SANITAER_BAD_OBJEKTE_MULTI: FachdetailQuestionDef = {
       value: "armatur",
       label: "Wasserhähne / Armaturen",
       hint: "Waschtisch, Küche, Badewanne …",
+    },
+  ],
+};
+
+/** Nach „Was soll gemacht werden?“ — steuert Handtuchwärmer-Zuschlag im Preis. */
+export const SANITAER_BAD_HEIZKOERPER: FachdetailQuestionDef = {
+  id: "sanitaer_bad_heizkoerper",
+  title: "Sollen Heizkörper im Bad neu?",
+  education:
+    "Ein Handtuchwärmer braucht oft Anschlussarbeiten — das kann den Rahmen erhöhen.",
+  inputType: "single",
+  options: [
+    {
+      value: "keine",
+      label: "Nein / keine Änderung",
+      hint: "Bleibt wie jetzt oder kein Bad-Heizkörper geplant",
+    },
+    {
+      value: "handtuchwaermer_1",
+      label: "Ja — ein Handtuchwärmer",
+      hint: "Inkl. Montage und Anschluss",
+    },
+    {
+      value: "handtuchwaermer_2",
+      label: "Ja — zwei Handtuchwärmer",
+      hint: "Zwei Handtuchwärmer geplant",
+    },
+  ],
+};
+
+/** Nur wenn nicht schon „Wanne zu Dusche“ als Haupt-Leistung gewählt — Zuschlag wie in price-calc. */
+export const SANITAER_BAD_ZUSATZ_WANNE_DUSCHE: FachdetailQuestionDef = {
+  id: "sanitaer_bad_zusatz_wanne_dusche",
+  title: "Zusätzlich Wanne durch ebenerdige Dusche ersetzen?",
+  education:
+    "Entsorgung der Wanne und Abfluss-Anpassung sind aufwändig — nur buchen, wenn das wirklich zusätzlich zum geplanten Umfang kommt.",
+  inputType: "single",
+  options: [
+    {
+      value: "nein",
+      label: "Nein",
+      hint: "Badewanne bleibt oder Umbau bereits eingeplant",
+    },
+    {
+      value: "ja",
+      label: "Ja, zusätzlich entfernen und Dusche",
+      hint: "Mit Entsorgung und Bodenablauf-Anpassung",
     },
   ],
 };

@@ -162,6 +162,59 @@ function mergeFunnelDaten(
   return { ...base, funnel_quelle: funnel_quelle ?? "rechner_haupt" };
 }
 
+/** JSON-taugliche Kopie — vermeidet Postgres/JSONB-Fehler durch nicht-serialisierbare Werte. */
+function sanitizeFunnelDatenJson(input: unknown): unknown {
+  try {
+    return JSON.parse(JSON.stringify(input ?? null));
+  } catch {
+    return {
+      funnel_quelle: "rechner_haupt",
+      _sanitize_error: true as const,
+    };
+  }
+}
+
+/** Nur Werte, die zur Supabase-Spalte / zum Funnel-Typ passen — verhindert Check-Constraint-Fehler. */
+function normalizeKundentypForDb(
+  raw: string | null | undefined
+): "eigentuemer" | "mieter" | "hausverwaltung" | null {
+  if (raw == null || raw === "") return null;
+  const t = String(raw).trim().toLowerCase();
+  if (t === "eigentuemer" || t === "mieter" || t === "hausverwaltung") {
+    return t;
+  }
+  return null;
+}
+
+function persistExceptionMessage(e: unknown): string {
+  if (
+    e &&
+    typeof e === "object" &&
+    "message" in e &&
+    typeof (e as { message: unknown }).message === "string"
+  ) {
+    return (e as { message: string }).message;
+  }
+  if (e instanceof Error) return e.message;
+  return String(e);
+}
+
+/** In Netlify/Dev-Logs siehst du die volle Meldung; optional UI-Detail mit LEAD_ERROR_DETAIL=1 */
+function persistFailureFromException(e: unknown): PersistLeadResult {
+  const detail = persistExceptionMessage(e);
+  console.error("[persistLead]", detail, e);
+  const exposeDetail =
+    process.env.NODE_ENV === "development" ||
+    process.env.LEAD_ERROR_DETAIL === "1";
+  return {
+    ok: false,
+    status: 500,
+    error: exposeDetail
+      ? `Speichern fehlgeschlagen: ${detail}`
+      : "Speichern fehlgeschlagen. Bitte später erneut oder kurz anrufen — wir prüfen den Vorgang.",
+  };
+}
+
 /**
  * Ein Lead in Supabase anlegen (Kunde, Lead, Status-Historie) + optional Resend.
  * Validierung: `name` Pflicht; mindestens eine Kontaktmöglichkeit (E-Mail oder Telefon, Telefon mind. 3 Zeichen).
@@ -172,8 +225,7 @@ export async function persistLead(
   try {
     return await persistLeadInner(raw);
   } catch (e) {
-    console.error("[persistLead]", e);
-    return { ok: false, error: "Interner Fehler", status: 500 };
+    return persistFailureFromException(e);
   }
 }
 
@@ -201,10 +253,12 @@ async function persistLeadInner(
   const preis_max = raw.preis_max ?? raw.priceMax ?? 0;
   const plz = (raw.plz ?? "").trim();
   const zeitraum = raw.zeitraum ?? null;
-  const kundentyp = raw.kundentyp ?? null;
+  const kundentyp = normalizeKundentypForDb(raw.kundentyp ?? null);
   const kanal = (raw.kanal ?? "website").trim() || "website";
   const funnel_quelle = raw.funnel_quelle ?? "rechner_haupt";
-  const funnel_daten = mergeFunnelDaten(raw.funnel_daten, funnel_quelle);
+  const funnel_daten = sanitizeFunnelDatenJson(
+    mergeFunnelDaten(raw.funnel_daten, funnel_quelle)
+  );
 
   if (!name) {
     return { ok: false, error: "Name ist ein Pflichtfeld.", status: 400 };
@@ -221,19 +275,20 @@ async function persistLeadInner(
     };
   }
 
-  const typ =
-    situation === "gewerbe" || kundentyp === "gewerbe" ? "gewerbe" : "privat";
+  const typ = situation === "gewerbe" ? "gewerbe" : "privat";
 
   const emailForKunde =
     hasEmail ? emailRaw.toLowerCase() : syntheticEmailFromPhone(telefon);
 
   let kunde_id: string | undefined;
 
+  /** Ohne Limit liefert `.maybeSingle()` einen Fehler, wenn die DB mehrere Treffer hat (Duplikat-E-Mail/-Telefon). */
   if (hasEmail) {
     const { data: byMail, error: errMail } = await supabaseAdmin
       .from("kunden")
       .select("id")
       .eq("email", emailRaw.toLowerCase())
+      .limit(1)
       .maybeSingle();
     if (errMail) throw errMail;
     kunde_id = byMail?.id as string | undefined;
@@ -244,6 +299,7 @@ async function persistLeadInner(
       .from("kunden")
       .select("id")
       .eq("telefon", telefon)
+      .limit(1)
       .maybeSingle();
     if (errTel) throw errTel;
     kunde_id = byTel?.id as string | undefined;

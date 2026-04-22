@@ -22,12 +22,15 @@ import {
   HEIZUNG_Q1,
   MALER_FOLLOWUPS,
   MALER_Q1,
+  SANITAER_BAD_HEIZKOERPER,
   SANITAER_BAD_OBJEKTE_MULTI,
   SANITAER_BAD_Q,
+  SANITAER_BAD_ZUSATZ_WANNE_DUSCHE,
   SANITAER_FOLLOWUPS,
   SANITAER_Q1,
   type FachdetailQuestionDef,
 } from "@/lib/funnel/fachdetails-questions";
+import { sanitaerShortDone } from "@/lib/funnel/fachdetails-internal-order";
 import type { FunnelState } from "@/lib/funnel/types";
 
 /** Minimale State-Sicht für Fachdetail-Filter (kein vollständiges `FunnelState` nötig). */
@@ -156,6 +159,27 @@ export const FACHDETAIL_QUESTIONS: FachdetailQuestion[] = [
     { inputType: "multi" }
   ),
   fromDef(
+    "bad_heizkoerper",
+    "sanitaer",
+    SANITAER_BAD_HEIZKOERPER,
+    (s) =>
+      s.situation === "erneuern" &&
+      s.bereiche.includes("bad") &&
+      needSan(s) &&
+      Boolean(ansStr(s, "bad_was"))
+  ),
+  fromDef(
+    "bad_zusatz_wanne_dusche",
+    "sanitaer",
+    SANITAER_BAD_ZUSATZ_WANNE_DUSCHE,
+    (s) =>
+      s.situation === "erneuern" &&
+      s.bereiche.includes("bad") &&
+      needSan(s) &&
+      Boolean(ansStr(s, "bad_was")) &&
+      ansStr(s, "bad_was") !== "wanne_dusche"
+  ),
+  fromDef(
     "sanitaer_lage",
     "sanitaer",
     SANITAER_Q1,
@@ -163,8 +187,14 @@ export const FACHDETAIL_QUESTIONS: FachdetailQuestion[] = [
       if (!needSan(s) || s.situation === "notfall") return false;
       const hasBad = s.bereiche.includes("bad");
       const bw = ansStr(s, "bad_was");
+      const san = s.fachdetails?.sanitaer;
       if (hasBad && s.situation === "erneuern") {
         if (!bw) return false;
+        if (!ansStr(s, "bad_heizkoerper")) return false;
+        if (bw !== "wanne_dusche" && !ansStr(s, "bad_zusatz_wanne_dusche"))
+          return false;
+        if (san && sanitaerShortDone(s.bereiche, s.situation, san))
+          return false;
         if (bw === "wanne_dusche") return false;
         if (bw === "objekte") {
           const raw = fachdetailAnswer(s, "bad_objekte");

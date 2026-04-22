@@ -63,6 +63,17 @@ export type FachdetailsState = {
     badWas?: string;
     badObjekte?: string[];
     rohre?: string;
+    /** Explizite komplette Rohrernneuerung (falls nicht über `rohre === "neu"` abgebildet). */
+    badRohreNeu?: boolean;
+    /** Zusätzlich zur Teilsanierung: Wanne → Dusche (Entsorgung / Abfluss). */
+    badBadewanne?: "dusche";
+    /** z. B. Handtuchwärmer — Pro-Stück-Zuschlag siehe Preislogik */
+    badHeizkoerper?: "handtuchwaermer" | string;
+    badHeizkoerperAnzahl?: number;
+    /** Beantwortung der Kachel „Heizkörper/Handtuchwärmer“ (für Rechner-Abbruch-Logik). */
+    badHeizkoerperAuswahl?: "keine" | "handtuchwaermer_1" | "handtuchwaermer_2";
+    /** Zusatzfrage: Wanne → Dusche (nur wenn `badWas` nicht schon `wanne_dusche` ist). */
+    badZusatzWanneAntwort?: "ja" | "nein";
     /** Notfall-Flow: nur Schwere, ohne Lage/Rohre */
     notfallSchwere?: string;
     freitext?: string | null;

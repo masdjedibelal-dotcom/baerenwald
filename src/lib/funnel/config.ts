@@ -448,8 +448,8 @@ export const SITUATIONEN_CONFIG: Record<
       {
         id: "kaputt_bereiche",
         question: "Was funktioniert nicht richtig?",
-        subtext: "Wähle das betroffene Gewerk",
-        inputType: "tiles-multi",
+        subtext: "Bitte ein Thema wählen — so bleibt die Einschätzung klar",
+        inputType: "tiles-single",
         options: [
           {
             value: "heizung",
@@ -583,8 +583,8 @@ export const SITUATIONEN_CONFIG: Record<
       {
         id: "neubauen_was",
         question: "Was planst du?",
-        subtext: "Mehrfachauswahl möglich.",
-        inputType: "tiles-multi",
+        subtext: "Bitte ein Vorhaben wählen",
+        inputType: "tiles-single",
         options: [
           {
             value: "keller_dg",
@@ -674,8 +674,8 @@ export const SITUATIONEN_CONFIG: Record<
       {
         id: "betreuung_was",
         question: "Worum soll sich jemand kümmern?",
-        subtext: "Mehrfachauswahl möglich.",
-        inputType: "tiles-multi",
+        subtext: "Bitte ein Thema wählen",
+        inputType: "tiles-single",
         options: [
           {
             value: "garten",

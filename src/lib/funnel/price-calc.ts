@@ -253,6 +253,136 @@ const PREISE = {
   },
 } as const;
 
+/** Generalunternehmer-/Koordinationsmarge vor PLZ-Faktor (auf Min/Max-Rahmen). */
+export const GU_MARGE = 1.15;
+
+const BAD_OVERFLOW_PRO_QM: Record<"standard" | "komfort" | "gehoben", number> = {
+  standard: 800,
+  komfort: 1200,
+  gehoben: 1800,
+};
+
+function roundTo50(n: number): number {
+  return Math.round(n / 50) * 50;
+}
+
+function getBadAusstattungStufe(
+  state: FunnelState
+): "standard" | "komfort" | "gehoben" {
+  const a = state.badAusstattung ?? "standard";
+  if (a === "komfort" || a === "gehoben" || a === "standard") return a;
+  return "standard";
+}
+
+function addBadSanitaerZuschlaege(
+  min: number,
+  max: number,
+  state: FunnelState
+): [number, number] {
+  const fd = state.fachdetails?.sanitaer;
+  let a = min;
+  let b = max;
+
+  const rohreNeu = fd?.rohre === "neu" || fd?.badRohreNeu === true;
+  if (rohreNeu) {
+    a += 2500;
+    b += 4000;
+  }
+
+  /** Bei `badWas === "wanne_dusche"` steckt der Umbau im Basis-Band — kein zweiter Posten über `badBadewanne`. */
+  const duscheZuschlag =
+    fd?.badBadewanne === "dusche" && fd?.badWas !== "wanne_dusche";
+  if (duscheZuschlag) {
+    a += 1200;
+    b += 1800;
+  }
+
+  if (fd?.badHeizkoerper === "handtuchwaermer") {
+    const n = Math.max(1, fd.badHeizkoerperAnzahl ?? 1);
+    a += 450 * n;
+    b += 750 * n;
+  }
+
+  return [a, b];
+}
+
+/** Komplettbad: Pauschale + optional m²-Zuschlag ab 8 m² + Zuschläge + GU-Marge (vor PLZ). */
+export function computeKomplettBadPrice(state: FunnelState): {
+  min: number;
+  max: number;
+} {
+  const aus = getBadAusstattungStufe(state);
+  const g = state.groesse ?? 6;
+  const typeKey = getBadPriceTypeKey(state);
+  const basis = PREISE.bad[typeKey as keyof typeof PREISE.bad];
+  let min: number = basis.min;
+  let max: number = basis.max;
+
+  if (g > 8) {
+    const extra = (g - 8) * BAD_OVERFLOW_PRO_QM[aus];
+    min += extra;
+    max += extra;
+  }
+
+  const zz = addBadSanitaerZuschlaege(min, max, state);
+  min = zz[0];
+  max = zz[1];
+
+  return {
+    min: min * GU_MARGE,
+    max: max * GU_MARGE,
+  };
+}
+
+/**
+ * Teilsanierung Bad (fliesen / objekte / leitungen / wanne_dusche): ohne große Komplettpauschale.
+ * Ergebnis inkl. GU-Marge, vor PLZ-Faktor — siehe {@link calculatePrice}.
+ */
+export function calculatePartialBadPrice(state: FunnelState): {
+  min: number;
+  max: number;
+} {
+  const fd = state.fachdetails?.sanitaer;
+  const bw = fd?.badWas ?? "";
+  const g = Math.max(state.groesse ?? 1, 1);
+  const fliesen = PREISE.boden.fliesen;
+  const leit = PREISE.elektro.leitungen;
+
+  let min = 1500;
+  let max = 3500;
+
+  switch (bw) {
+    case "fliesen":
+      min = g * fliesen.min;
+      max = g * fliesen.max;
+      break;
+    case "objekte":
+    case "sanitaer":
+      min = 1500;
+      max = 3500;
+      break;
+    case "leitungen":
+      min = g * leit.min;
+      max = g * leit.max;
+      break;
+    case "wanne_dusche":
+      min = 2700;
+      max = 5300;
+      break;
+    default:
+      min = 1500;
+      max = 3500;
+  }
+
+  /* Doppelkalkulation verhindert zentral `addBadSanitaerZuschlaege` (badWas !== wanne_dusche). */
+  const [a, b] = addBadSanitaerZuschlaege(min, max, state);
+
+  return {
+    min: a * GU_MARGE,
+    max: b * GU_MARGE,
+  };
+}
+
 /** Legacy-Konstante (nur noch für UI-Hinweise); Preis nutzt {@link getPlzFaktor}. */
 export const FAKTOREN = {
   plz: {
@@ -268,6 +398,8 @@ type PreisServiceKey = keyof typeof PREISE;
 export type BwPriceMapping = {
   service: PreisServiceKey;
   type: string;
+  /** Kalkulierter Min/Max-Rahmen (z. B. Bad) inkl. GU — danach PLZ/Notdienst in {@link computePriceCore} */
+  customPriceRange?: { min: number; max: number };
 };
 
 function isGroesseBasis(b: BasisEintrag): b is BasisEintrag & {
@@ -539,7 +671,34 @@ export function mapToPrice(state: FunnelState): BwPriceMapping | null {
   }
 
   if (b("bad") && state.groesse != null) {
-    return { service: "bad", type: getBadPriceTypeKey(state) };
+    const bw = fd?.sanitaer?.badWas;
+
+    if (
+      bw === "fliesen" ||
+      bw === "objekte" ||
+      bw === "leitungen" ||
+      bw === "sanitaer"
+    ) {
+      return {
+        service: "bad",
+        type: `teil_${bw}`,
+        customPriceRange: calculatePartialBadPrice(state),
+      };
+    }
+
+    if (bw === "wanne_dusche") {
+      return {
+        service: "bad",
+        type: "teil_wanne_dusche",
+        customPriceRange: calculatePartialBadPrice(state),
+      };
+    }
+
+    return {
+      service: "bad",
+      type: getBadPriceTypeKey(state),
+      customPriceRange: computeKomplettBadPrice(state),
+    };
   }
 
   const elektroMapped = mapElektroFromFachdetails(state);
@@ -748,6 +907,13 @@ const TYP_LABEL: Record<string, Record<string, string>> = {
     komplett: "Abriss komplett",
   },
   trockenbau: { wand: "Trockenbau Wand", decke: "Trockenbau Decke" },
+  bad: {
+    teil_fliesen: "Bad — Fliesen erneuern",
+    teil_objekte: "Bad — Sanitärobjekte tauschen",
+    teil_leitungen: "Bad — Leitungen / Anschlüsse",
+    teil_sanitaer: "Bad — Sanitärobjekte (Teilsanierung)",
+    teil_wanne_dusche: "Bad — Wanne zu Dusche",
+  },
 };
 
 function beschreibungFor(service: string, type: string): string {
@@ -943,13 +1109,23 @@ function computePriceCore(state: FunnelState): {
 } | null {
   const mapped = mapToPrice(state);
   if (!mapped) return null;
-  const { service, type } = mapped;
+  const { service, type, customPriceRange } = mapped;
 
-  const basis =
-    service === "bad"
-      ? (PREISE.bad[type as keyof typeof PREISE.bad] as BasisEintrag | undefined) ??
-        null
-      : getBasis(service, type, state.groesse);
+  let basis: BasisEintrag | null = null;
+
+  if (service === "bad" && customPriceRange) {
+    basis = {
+      min: customPriceRange.min,
+      max: customPriceRange.max,
+      einheit: "pauschal",
+    };
+  } else {
+    basis =
+      service === "bad"
+        ? (PREISE.bad[type as keyof typeof PREISE.bad] as BasisEintrag | undefined) ??
+          null
+        : getBasis(service, type, state.groesse);
+  }
   if (!basis) return null;
 
   const groesse = state.groesse ?? 1;
@@ -984,9 +1160,14 @@ function computePriceCore(state: FunnelState): {
   const mitteAdjustiert = mitte0 * plzFaktor + notdienst;
   const spanPlz = halbSpanne * plzFaktor;
 
+  const roundEuro =
+    service === "bad"
+      ? roundTo50
+      : (n: number) => Math.round(n / 100) * 100;
+
   let mindestauftragAktiv = false;
-  let finalMin = Math.round((mitteAdjustiert - spanPlz) / 100) * 100;
-  let finalMax = Math.round((mitteAdjustiert + spanPlz) / 100) * 100;
+  let finalMin = roundEuro(mitteAdjustiert - spanPlz);
+  let finalMax = roundEuro(mitteAdjustiert + spanPlz);
 
   if (finalMin < 150) {
     mindestauftragAktiv = true;

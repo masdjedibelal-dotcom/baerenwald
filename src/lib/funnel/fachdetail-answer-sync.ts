@@ -44,6 +44,11 @@ export function buildPatchForFachdetailAnswer(
         badObjekte: undefined,
         lage: str(value as string) === "wanne_dusche" ? "sichtbar" : undefined,
         rohre: undefined,
+        badHeizkoerper: undefined,
+        badHeizkoerperAnzahl: undefined,
+        badHeizkoerperAuswahl: undefined,
+        badBadewanne: undefined,
+        badZusatzWanneAntwort: undefined,
       };
       break;
     case "bad_objekte":
@@ -69,6 +74,39 @@ export function buildPatchForFachdetailAnswer(
         rohre: str(value as string),
       };
       break;
+    case "bad_heizkoerper": {
+      const hv = str(value as string);
+      const base = { ...fd.sanitaer };
+      base.badHeizkoerperAuswahl =
+        hv === "keine"
+          ? "keine"
+          : hv === "handtuchwaermer_1"
+            ? "handtuchwaermer_1"
+            : hv === "handtuchwaermer_2"
+              ? "handtuchwaermer_2"
+              : undefined;
+      if (hv === "keine" || !hv) {
+        base.badHeizkoerper = undefined;
+        base.badHeizkoerperAnzahl = undefined;
+      } else if (hv === "handtuchwaermer_1") {
+        base.badHeizkoerper = "handtuchwaermer";
+        base.badHeizkoerperAnzahl = 1;
+      } else if (hv === "handtuchwaermer_2") {
+        base.badHeizkoerper = "handtuchwaermer";
+        base.badHeizkoerperAnzahl = 2;
+      }
+      patch.sanitaer = base;
+      break;
+    }
+    case "bad_zusatz_wanne_dusche": {
+      const zv = str(value as string);
+      patch.sanitaer = {
+        ...fd.sanitaer,
+        badZusatzWanneAntwort: zv === "ja" ? "ja" : "nein",
+        badBadewanne: zv === "ja" ? "dusche" : undefined,
+      };
+      break;
+    }
     case "sanitaer_notfall":
       patch.sanitaer = {
         ...fd.sanitaer,
@@ -304,10 +342,30 @@ export function buildPatchClearFachdetailAnswer(
         badObjekte: undefined,
         lage: undefined,
         rohre: undefined,
+        badHeizkoerper: undefined,
+        badHeizkoerperAnzahl: undefined,
+        badHeizkoerperAuswahl: undefined,
+        badBadewanne: undefined,
+        badZusatzWanneAntwort: undefined,
       };
       break;
     case "bad_objekte":
       patch.sanitaer = { ...fd.sanitaer, badObjekte: undefined };
+      break;
+    case "bad_heizkoerper":
+      patch.sanitaer = {
+        ...fd.sanitaer,
+        badHeizkoerper: undefined,
+        badHeizkoerperAnzahl: undefined,
+        badHeizkoerperAuswahl: undefined,
+      };
+      break;
+    case "bad_zusatz_wanne_dusche":
+      patch.sanitaer = {
+        ...fd.sanitaer,
+        badBadewanne: undefined,
+        badZusatzWanneAntwort: undefined,
+      };
       break;
     case "sanitaer_lage":
       patch.sanitaer = {

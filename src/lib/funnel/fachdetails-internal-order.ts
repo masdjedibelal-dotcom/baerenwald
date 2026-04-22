@@ -18,8 +18,10 @@ import {
   HEIZUNG_Q1,
   MALER_FOLLOWUPS,
   MALER_Q1,
+  SANITAER_BAD_HEIZKOERPER,
   SANITAER_BAD_OBJEKTE_MULTI,
   SANITAER_BAD_Q,
+  SANITAER_BAD_ZUSATZ_WANNE_DUSCHE,
   SANITAER_FOLLOWUPS,
   SANITAER_Q1,
 } from "@/lib/funnel/fachdetails-questions";
@@ -79,6 +81,7 @@ function needFenster(bereiche: string[]): boolean {
   );
 }
 
+/** Kurzschluss ohne „Wo sitzt das Problem?“ — z. B. nur Fliesen oder Komplett ohne Rohr-Follow-up. */
 export function sanitaerShortDone(
   bereiche: string[],
   situation: Situation | null,
@@ -136,6 +139,20 @@ function collectSanitaerSubStepIds(state: FunnelState): string[] {
     (s.badObjekte?.length ?? 0) === 0
   ) {
     return ids;
+  }
+
+  if (needBadExtra && s.badWas) {
+    ids.push(SANITAER_BAD_HEIZKOERPER.id);
+    if (!s.badHeizkoerperAuswahl) {
+      return ids;
+    }
+  }
+
+  if (needBadExtra && s.badWas && s.badWas !== "wanne_dusche") {
+    ids.push(SANITAER_BAD_ZUSATZ_WANNE_DUSCHE.id);
+    if (!s.badZusatzWanneAntwort) {
+      return ids;
+    }
   }
 
   if (sanitaerShortDone(b, situation, s)) {
@@ -311,6 +328,10 @@ export function isFachdetailSubStepComplete(
       return Boolean(fd.sanitaer?.badWas);
     case "sanitaer_bad_objekte_multi":
       return (fd.sanitaer?.badObjekte?.length ?? 0) > 0;
+    case "sanitaer_bad_heizkoerper":
+      return Boolean(fd.sanitaer?.badHeizkoerperAuswahl);
+    case "sanitaer_bad_zusatz_wanne_dusche":
+      return Boolean(fd.sanitaer?.badZusatzWanneAntwort);
     case SANITAER_Q1.id:
       return Boolean(fd.sanitaer?.lage);
     case SANITAER_FOLLOWUPS.sanitaer_folge_rohre.id:
@@ -426,6 +447,11 @@ export function getClearFachdetailPatchFromSubStep(
             badObjekte: undefined,
             lage: undefined,
             rohre: undefined,
+            badHeizkoerper: undefined,
+            badHeizkoerperAnzahl: undefined,
+            badHeizkoerperAuswahl: undefined,
+            badBadewanne: undefined,
+            badZusatzWanneAntwort: undefined,
           },
         };
       }
@@ -437,6 +463,32 @@ export function getClearFachdetailPatchFromSubStep(
             lage: fd.sanitaer?.lage,
             rohre: fd.sanitaer?.rohre,
             badWas: fd.sanitaer?.badWas,
+            badHeizkoerper: fd.sanitaer?.badHeizkoerper,
+            badHeizkoerperAnzahl: fd.sanitaer?.badHeizkoerperAnzahl,
+            badHeizkoerperAuswahl: fd.sanitaer?.badHeizkoerperAuswahl,
+            badBadewanne: fd.sanitaer?.badBadewanne,
+            badZusatzWanneAntwort: fd.sanitaer?.badZusatzWanneAntwort,
+          },
+        };
+      }
+      if (stepId === "sanitaer_bad_heizkoerper") {
+        return {
+          sanitaer: {
+            ...fd.sanitaer,
+            badHeizkoerper: undefined,
+            badHeizkoerperAnzahl: undefined,
+            badHeizkoerperAuswahl: undefined,
+            badBadewanne: fd.sanitaer?.badBadewanne,
+            badZusatzWanneAntwort: fd.sanitaer?.badZusatzWanneAntwort,
+          },
+        };
+      }
+      if (stepId === "sanitaer_bad_zusatz_wanne_dusche") {
+        return {
+          sanitaer: {
+            ...fd.sanitaer,
+            badBadewanne: undefined,
+            badZusatzWanneAntwort: undefined,
           },
         };
       }
