@@ -413,7 +413,8 @@ function ZuKomplexScreen({
     });
   }, []);
 
-  const karteNeubauenStil =
+  /** Erneuern ohne autom. Preismapping → persönliche Beratung */
+  const karteOhneAutomatpreis =
     state.situation === "erneuern" &&
     state.komplexReason === "no_mapping_found";
   const karteGewerbe = state.situation === "gewerbe";
@@ -501,7 +502,7 @@ function ZuKomplexScreen({
             Beratung anfragen
           </button>
         </div>
-      ) : karteNeubauenStil ? (
+      ) : karteOhneAutomatpreis ? (
         <div className="komplex-card">
           <h2>Das planen wir persönlich mit dir.</h2>
           <p>
