@@ -54,6 +54,7 @@ import {
   getNextBwRechnerScreen,
   getPreviousBwRechnerScreen,
   isBwFachdetailQuestionScreenId,
+  resolveNextBwRechnerScreenFromFachdetail,
   type FachdetailQuestionScreenId,
 } from "@/lib/funnel/bw-rechner-sequence";
 import {
@@ -119,6 +120,7 @@ type Screen =
   | "projekt_terrasse_unterbau"
   | "projekt_durchbruch_anzahl"
   | "projekt_durchbruch_statik"
+  | "projekt_garten_leistung"
   | "projekt_garten_zaun"
   | "projekt_garten_zugang"
   | "projekt_ausbau_rohbau"
@@ -255,6 +257,7 @@ function FunnelRechnerInner() {
       state.bereiche,
       state.fachdetails?.fachdetailAnswers,
       state.fachdetails?.heizung?.typ,
+      state.fachdetails?.heizung?.ziel,
       state.fachdetails?.heizung?.alter,
       state.fachdetails?.heizung?.vorhaben,
       state.fachdetails?.garten?.baumgroesse,
@@ -411,6 +414,14 @@ function FunnelRechnerInner() {
     }
   }, [screen, stepSequence]);
 
+  /** Fachdetail-Screen nicht mehr in Sequenz (z. B. Kurzschluss nach Sanitär „wand“) — ohne leeren Screen weiter. */
+  useEffect(() => {
+    if (!isBwFachdetailQuestionScreenId(screen)) return;
+    if (stepSequence.includes(screen)) return;
+    const next = resolveNextBwRechnerScreenFromFachdetail(state, screen);
+    if (next) setScreen(next as Screen);
+  }, [screen, stepSequence, state]);
+
   /** Reparatur/Notfall: kein m² — leerer Größen-Screen vermeiden, falls Sequenz fehlerhaft `groesse` enthält. */
   useEffect(() => {
     if (screen !== "groesse") return;
@@ -512,7 +523,10 @@ function FunnelRechnerInner() {
 
   const goNextFromCompletedFachdetailScreen = useCallback(
     (fromScreen: Screen) => {
-      const next = getNextBwRechnerScreen(state, fromScreen);
+      const next = resolveNextBwRechnerScreenFromFachdetail(
+        state,
+        fromScreen
+      );
       if (!next) return;
       if (next === "groesse" && fachdetailsBeforeGroesse && hasGroesseStep) {
         setMicroNote({
@@ -590,6 +604,7 @@ function FunnelRechnerInner() {
       screen === "projekt_terrasse_unterbau" ||
       screen === "projekt_durchbruch_anzahl" ||
       screen === "projekt_durchbruch_statik" ||
+      screen === "projekt_garten_leistung" ||
       screen === "projekt_garten_zaun" ||
       screen === "projekt_garten_zugang" ||
       screen === "projekt_ausbau_rohbau" ||
@@ -880,6 +895,8 @@ function FunnelRechnerInner() {
         return state.fachdetails?.projekt?.durchbruchAnzahl == null;
       case "projekt_durchbruch_statik":
         return state.fachdetails?.projekt?.durchbruchTragend === undefined;
+      case "projekt_garten_leistung":
+        return state.fachdetails?.projekt?.gartenLeistung === undefined;
       case "projekt_garten_zaun":
         return state.fachdetails?.projekt?.gartenZaun === undefined;
       case "projekt_garten_zugang":
@@ -1109,18 +1126,6 @@ function FunnelRechnerInner() {
                 selected={selected}
                 multi={multi}
                 onChange={(value, sel) => {
-                  if (sel && value === "fassade_daemmung") {
-                    setBereiche(["fassade"]);
-                    setFachdetails({
-                      fassade: { art: "daemmung" },
-                      fachdetailAnswers: {
-                        ...(state.fachdetails?.fachdetailAnswers ?? {}),
-                        fassade_art: "daemmung",
-                      },
-                    });
-                    setSchimmelBeratung(false);
-                    return;
-                  }
                   if (sel && funnelOpt.direktKomplex) {
                     setBereiche([value]);
                     if (state.situation === "erneuern" && value === "anbau") {
@@ -1432,6 +1437,7 @@ function FunnelRechnerInner() {
       case "projekt_terrasse_unterbau":
       case "projekt_durchbruch_anzahl":
       case "projekt_durchbruch_statik":
+      case "projekt_garten_leistung":
       case "projekt_garten_zaun":
       case "projekt_garten_zugang":
       case "projekt_ausbau_rohbau":
@@ -1455,6 +1461,8 @@ function FunnelRechnerInner() {
                   selected = pj?.terrasseMaterial === opt.value;
                 } else if (screen === "projekt_terrasse_unterbau") {
                   selected = pj?.terrasseUnterbau === opt.value;
+                } else if (screen === "projekt_garten_leistung") {
+                  selected = pj?.gartenLeistung === opt.value;
                 } else if (screen === "projekt_garten_zaun") {
                   selected = pj?.gartenZaun === opt.value;
                 } else if (screen === "projekt_garten_zugang") {
@@ -1499,6 +1507,15 @@ function FunnelRechnerInner() {
                             ...state.fachdetails.projekt,
                             terrasseUnterbau: sel
                               ? (value as "ja" | "nein")
+                              : undefined,
+                          },
+                        });
+                      } else if (screen === "projekt_garten_leistung") {
+                        setFachdetails({
+                          projekt: {
+                            ...state.fachdetails.projekt,
+                            gartenLeistung: sel
+                              ? (value as "auffrischung" | "neuanlage")
                               : undefined,
                           },
                         });

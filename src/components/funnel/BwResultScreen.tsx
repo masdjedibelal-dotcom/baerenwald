@@ -417,6 +417,9 @@ function ZuKomplexScreen({
   const karteOhneAutomatpreis =
     state.situation === "erneuern" &&
     state.komplexReason === "no_mapping_found";
+  const karteAnbauGarage =
+    state.situation === "erneuern" &&
+    state.bereiche.includes("anbau");
   const karteGewerbe = state.situation === "gewerbe";
 
   const handleKomplexSubmit = useCallback(async () => {
@@ -500,6 +503,23 @@ function ZuKomplexScreen({
             onClick={scrollToRueckruf}
           >
             Beratung anfragen
+          </button>
+        </div>
+      ) : karteAnbauGarage ? (
+        <div className="komplex-card">
+          <h2>Anbau oder Garage</h2>
+          <p>
+            Großprojekte wie Anbau oder Garage erfordern eine individuelle
+            statische Prüfung und Architektenplanung. Unser GU-Team kontaktiert
+            dich für ein persönliches Beratungsgespräch und eine
+            Vor-Ort-Analyse.
+          </p>
+          <button
+            type="button"
+            className="komplex-card-cta"
+            onClick={scrollToRueckruf}
+          >
+            Jetzt Beratung anfragen
           </button>
         </div>
       ) : karteOhneAutomatpreis ? (
