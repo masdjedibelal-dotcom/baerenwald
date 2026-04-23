@@ -56,31 +56,49 @@ export function buildPatchForFachdetailAnswer(
               .filter(Boolean),
       };
       break;
-    case "sanitaer_lage":
+    case "sanitaer_lage": {
+      const sl = str(value as string);
+      if (sl !== "leitung_leck") {
+        delete nextAnswers.sanitaer_leck_zugang;
+      }
       patch.sanitaer = {
         ...fd.sanitaer,
-        lage: str(value as string),
+        lage: sl,
         rohre: undefined,
       };
+      patch.fachdetailAnswers = nextAnswers;
       break;
-    case "sanitaer_rohre":
-      patch.sanitaer = {
-        ...fd.sanitaer,
-        rohre: str(value as string),
-      };
+    }
+    case "sanitaer_leck_zugang": {
+      const z = str(value as string);
+      if (z === "sichtbar" || z === "wand") {
+        patch.sanitaer = {
+          ...fd.sanitaer,
+          lage: z,
+          rohre: undefined,
+        };
+      }
       break;
+    }
     case "sanitaer_notfall":
       patch.sanitaer = {
         ...fd.sanitaer,
         notfallSchwere: str(value as string),
       };
       break;
-    case "sanitaer_problem":
+    case "sanitaer_problem": {
+      const sp = str(value as string);
+      if (sp !== "leitung_leck") {
+        delete nextAnswers.sanitaer_leck_zugang;
+      }
       patch.sanitaer = {
         ...fd.sanitaer,
-        lage: str(value as string),
+        lage: sp,
+        rohre: undefined,
       };
+      patch.fachdetailAnswers = nextAnswers;
       break;
+    }
     case "elektro_notfall":
       patch.elektro = {
         ...fd.elektro,
@@ -117,6 +135,7 @@ export function buildPatchForFachdetailAnswer(
         typ: str(value as string),
         alter: undefined,
         vorhaben: undefined,
+        ziel: undefined,
       };
       break;
     case "heizung_erneuern":
@@ -126,8 +145,23 @@ export function buildPatchForFachdetailAnswer(
         alter: undefined,
         vorhaben: undefined,
         anzahl: undefined,
+        ziel: undefined,
       };
       break;
+    case "heizung_ziel": {
+      const z = str(value as string);
+      const zielOk =
+        z === "waermepumpe" ||
+        z === "hybrid" ||
+        z === "gas_brennwert" ||
+        z === "beratung";
+      patch.heizung = {
+        ...fd.heizung,
+        typ: fd.heizung?.typ,
+        ziel: zielOk ? (z as NonNullable<FachdetailsState["heizung"]>["ziel"]) : undefined,
+      };
+      break;
+    }
     case "heizung_heizkoerper_anzahl": {
       const raw = str(value as string);
       const n = raw ? Number.parseInt(raw, 10) : 1;
@@ -154,6 +188,7 @@ export function buildPatchForFachdetailAnswer(
         typ: str(value as string),
         alter: undefined,
         vorhaben: undefined,
+        ziel: undefined,
       };
       break;
     case "maler_was": {
@@ -164,15 +199,13 @@ export function buildPatchForFachdetailAnswer(
         zustand: undefined,
         fassade: undefined,
       };
-      if (was !== "fassade") {
-        patch.fassade = {
-          ...fd.fassade,
-          art: undefined,
-        };
-        const ans = { ...nextAnswers };
-        delete ans.fassade_art;
-        patch.fachdetailAnswers = ans;
-      }
+      patch.fassade = {
+        ...fd.fassade,
+        art: undefined,
+      };
+      const ans = { ...nextAnswers };
+      delete ans.fassade_art;
+      patch.fachdetailAnswers = ans;
       break;
     }
     case "maler_zustand":
@@ -184,23 +217,15 @@ export function buildPatchForFachdetailAnswer(
       };
       break;
     case "fassade_art": {
-      const art = str(value as string) as "anstrich" | "daemmung" | "klinker";
+      const raw = str(value as string);
+      const art =
+        raw === "klinker"
+          ? "bekleidung"
+          : (raw as NonNullable<FachdetailsState["fassade"]>["art"]);
       patch.fassade = {
         ...fd.fassade,
         art,
       };
-      if (fd.maler?.was === "fassade") {
-        patch.maler = {
-          ...fd.maler,
-          was: "fassade",
-          fassade:
-            art === "klinker"
-              ? "klinker"
-              : art === "daemmung"
-                ? "daemmung"
-                : "anstrich",
-        };
-      }
       break;
     }
     case "boden_material":
@@ -349,14 +374,20 @@ export function buildPatchClearFachdetailAnswer(
       patch.sanitaer = { ...fd.sanitaer, objektListe: undefined };
       break;
     case "sanitaer_lage":
+      delete next.sanitaer_leck_zugang;
+      patch.fachdetailAnswers = next;
       patch.sanitaer = {
         ...fd.sanitaer,
         lage: undefined,
         rohre: undefined,
       };
       break;
-    case "sanitaer_rohre":
-      patch.sanitaer = { ...fd.sanitaer, rohre: undefined };
+    case "sanitaer_leck_zugang":
+      patch.sanitaer = {
+        ...fd.sanitaer,
+        lage: "leitung_leck",
+        rohre: undefined,
+      };
       break;
     case "sanitaer_notfall":
       patch.sanitaer = {
@@ -365,7 +396,13 @@ export function buildPatchClearFachdetailAnswer(
       };
       break;
     case "sanitaer_problem":
-      patch.sanitaer = { ...fd.sanitaer, lage: undefined };
+      delete next.sanitaer_leck_zugang;
+      patch.fachdetailAnswers = next;
+      patch.sanitaer = {
+        ...fd.sanitaer,
+        lage: undefined,
+        rohre: undefined,
+      };
       break;
     case "elektro_notfall":
     case "elektro_erneuern":
@@ -390,6 +427,17 @@ export function buildPatchClearFachdetailAnswer(
         alter: undefined,
         vorhaben: undefined,
         anzahl: undefined,
+        ziel: undefined,
+      };
+      break;
+    case "heizung_ziel":
+      patch.heizung = {
+        ...fd.heizung,
+        typ: fd.heizung?.typ,
+        alter: fd.heizung?.alter,
+        vorhaben: fd.heizung?.vorhaben,
+        anzahl: fd.heizung?.anzahl,
+        ziel: undefined,
       };
       break;
     case "heizung_heizkoerper_anzahl":
@@ -419,13 +467,6 @@ export function buildPatchClearFachdetailAnswer(
       break;
     case "fassade_art":
       patch.fassade = { ...fd.fassade, art: undefined };
-      if (fd.maler?.was === "fassade") {
-        patch.maler = {
-          ...fd.maler,
-          was: "fassade",
-          fassade: undefined,
-        };
-      }
       break;
     case "boden_material":
     case "boden_verlegung":

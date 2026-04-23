@@ -172,6 +172,29 @@ export const STEP_ERNEUERN_PROJEKT_GROESSE: FunnelStep = {
   ],
 };
 
+/** Gartengestaltung: Leistungsumfang → bestimmt Preisband pro m² */
+export const STEP_PROJEKT_GARTEN_LEISTUNG: FunnelStep = {
+  id: "projekt_garten_leistung",
+  question: "Welchen Leistungsumfang planst du?",
+  subtext:
+    "Auffrischung vs. Neuanlage — der Rahmen unterscheidet sich deutlich im Aufwand",
+  inputType: "tiles-single",
+  options: [
+    {
+      value: "auffrischung",
+      label: "Rollrasen & Pflanzung",
+      hint: "Bestehende Fläche auffrischen — ohne große Erdarbeiten",
+      emoji: "🌿",
+    },
+    {
+      value: "neuanlage",
+      label: "Komplette Neuanlage inkl. Erdarbeiten",
+      hint: "GU-Paket München — inkl. Erdarbeiten und Neuaufbau",
+      emoji: "🏗️",
+    },
+  ],
+};
+
 /** Gartengestaltung: Fläche — gleiche Kacheln wie andere Projekt-Ausbauten. */
 export const STEP_ERNEUERN_PROJEKT_GROESSE_GARTEN: FunnelStep = {
   ...STEP_ERNEUERN_PROJEKT_GROESSE,
@@ -181,8 +204,8 @@ export const STEP_ERNEUERN_PROJEKT_GROESSE_GARTEN: FunnelStep = {
 
 export const STEP_PROJEKT_GARTEN_ZAUN: FunnelStep = {
   id: "projekt_garten_zaun",
-  question: "Soll ein Zaun oder Sichtschutz eingeplant werden?",
-  subtext: "Als grobe Pauschale im GU-Rahmen",
+  question: "Zaunbau erwünscht?",
+  subtext: "Optional — grobe Pauschale im GU-Rahmen",
   inputType: "tiles-single",
   options: [
     {
@@ -264,6 +287,7 @@ export function buildErneuernProjektSteps(
       ];
     case "gartengestaltung":
       return [
+        STEP_PROJEKT_GARTEN_LEISTUNG,
         STEP_ERNEUERN_PROJEKT_GROESSE_GARTEN,
         STEP_PROJEKT_GARTEN_ZAUN,
         STEP_PROJEKT_GARTEN_ZUGANG,

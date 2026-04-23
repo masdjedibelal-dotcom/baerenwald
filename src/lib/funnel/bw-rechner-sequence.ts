@@ -113,6 +113,7 @@ function funnelConfigStepToScreens(
   state: FunnelState
 ): string[] {
   if (step.id === "fachdetails") {
+    /** Leer z. B. bei Sanitär Kaputt + Lage `wand` (Leck hinter Wand) — dann folgt direkt `zeitpunkt`, s. {@link getActiveFachdetailQuestionIds}. */
     return getActiveFachdetailQuestionIds(state).map((id) =>
       fachdetailQuestionScreenId(id)
     );
@@ -131,6 +132,9 @@ function funnelConfigStepToScreens(
   }
   if (step.id === "projekt_durchbruch_statik") {
     return ["projekt_durchbruch_statik"];
+  }
+  if (step.id === "projekt_garten_leistung") {
+    return ["projekt_garten_leistung"];
   }
   if (step.id === "projekt_garten_zaun") return ["projekt_garten_zaun"];
   if (step.id === "projekt_garten_zugang") return ["projekt_garten_zugang"];
@@ -179,4 +183,21 @@ export function getNextBwRechnerScreen(
   const idx = seq.lastIndexOf(current);
   if (idx < 0 || idx >= seq.length - 1) return null;
   return seq[idx + 1] ?? null;
+}
+
+/**
+ * Wenn der aktuelle Screen kein Nachfolger in der Sequenz hat (z. B. Fachdetail-Screens
+ * fallen nach State-Update weg), nächster sichtbarer Schritt nach „bereiche“ ohne `fachdetail_*`.
+ */
+export function resolveNextBwRechnerScreenFromFachdetail(
+  state: FunnelState,
+  current: string
+): string | null {
+  const direct = getNextBwRechnerScreen(state, current);
+  if (direct) return direct;
+  if (!isBwFachdetailQuestionScreenId(current)) return null;
+  const seq = getBwRechnerScreenSequence(state);
+  const bi = seq.lastIndexOf("bereiche");
+  const tail = bi >= 0 ? seq.slice(bi + 1) : seq;
+  return tail.find((s) => !isBwFachdetailQuestionScreenId(s)) ?? null;
 }

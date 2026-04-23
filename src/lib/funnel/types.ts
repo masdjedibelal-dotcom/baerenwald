@@ -53,6 +53,8 @@ export type FachdetailsState = {
     terrasseMaterial?: "holz" | "stein";
     /** UI-Wert `ja` | `nein` — „Unterbau erforderlich?“ */
     terrasseUnterbau?: "ja" | "nein";
+    /** Gartengestaltung: Auffrischung vs. komplette Neuanlage — bestimmt €/m²-Band */
+    gartenLeistung?: "auffrischung" | "neuanlage";
     /** „Zuhause erneuern“ → Gartengestaltung (GU-Paket) */
     gartenZaun?: "ja" | "nein";
     gartenZugaenglichkeit?: "einfach" | "schwer";
@@ -69,7 +71,7 @@ export type FachdetailsState = {
   sanitaer?: {
     lage?: string;
     badWas?: string;
-    /** Checkboxen Waschbecken / WC / Armaturen (`badWas` objekte | sanitaer). */
+    /** Checkboxen Waschbecken / WC / Armaturen bei `badWas` „objekte“ (Legacy: „sanitaer“). */
     objektListe?: string[];
     rohre?: string;
     /** Explizite komplette Rohrernneuerung (falls nicht über `rohre === "neu"` abgebildet). */
@@ -80,26 +82,30 @@ export type FachdetailsState = {
   };
   heizung?: {
     typ?: string;
+    /** Nur „Zuhause erneuern“ + Heizung: Ziel nach aktueller Anlage (Fachdetail `heizung_ziel`). */
+    ziel?: "waermepumpe" | "hybrid" | "gas_brennwert" | "beratung";
     alter?: string;
     vorhaben?: string;
     /** Nur Heizkörper tauschen: Anzahl Stück (multipliziert den Stückpreis). */
     anzahl?: number;
     freitext?: string | null;
   };
-  /** Fassade: Anstrich, WDVS, Klinker (s. `fassade_art` + fachdetailAnswers). */
+  /** Gewerk „fassade“ — Weiche über `fassade_art`. */
   fassade?: {
-    art?: "anstrich" | "daemmung" | "klinker";
+    art?: "anstrich" | "daemmung" | "bekleidung" | "klinker";
   };
   maler?: {
     was?: string;
     zustand?: string;
+    /** @deprecated Früher Maler→Fassade; nur noch in alten Saves */
     fassade?: string;
     freitext?: string | null;
   };
   boden?: {
     aktuell?: string;
-    /** Abriss/Rückbau: nur bei Fliesen/Laminat/Parkett relevant. */
+    /** @deprecated Nur alte Saves — UI-Frage „Belag zu behandeln“ entfernt. */
     zustand?: string;
+    /** Verlegeart/Rückbau (Follow-up Fliesen/Laminat/Parkett) — Basis für Abriss-Zuschlag. */
     verlegung?: string;
     freitext?: string | null;
   };

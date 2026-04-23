@@ -30,7 +30,7 @@ import { isReparaturNotfallSituation } from "./reparatur-flow";
 export { shouldSwapFachdetailsBeforeGroesse, skipGroesseForSanierenDachKleinjob };
 
 /** Eine Zeitraum-Kachel im PLZ-Schritt */
-export type ZeitraumOption = {
+type ZeitraumOption = {
   value: Zeitraum;
   label: string;
   hint: string;
@@ -447,10 +447,12 @@ export const SITUATIONEN_CONFIG: Record<
           {
             value: "anbau",
             label: "Anbau oder Garage",
-            hint: "Erweiterung des Hauses — zu individuell für den Automatpreis",
+            hint: "Erweiterung des Hauses — GU-Beratung mit Statik & Planung",
             emoji: "🔨",
             direktKomplex: true,
             triggerGewerke: ["bau", "elektro"],
+            infoText:
+              "Großprojekte wie Anbau oder Garage erfordern eine individuelle statische Prüfung und Architektenplanung. Unser GU-Team kontaktiert dich für ein persönliches Beratungsgespräch und eine Vor-Ort-Analyse.",
           },
           {
             section: "Außen & Technik",
@@ -470,22 +472,15 @@ export const SITUATIONEN_CONFIG: Record<
           {
             value: "dach",
             label: "Dach",
-            hint: "Ziegel, Dämmung, komplett neu",
+            hint: "Dachneueindeckung, Dämmung verbessern, Dachfenster-Austausch",
             emoji: "🏠",
             triggerGewerke: ["dach"],
           },
           {
             value: "fassade",
             label: "Fassade",
-            hint: "Anstrich, WDVS oder neue Bekleidung — Typ gleich in der nächsten Frage",
+            hint: "Anstrich, Dämmung (WDVS) oder Bekleidung — Weiche in den Fachdetails",
             emoji: "🧱",
-            triggerGewerke: ["fassade"],
-          },
-          {
-            value: "fassade_daemmung",
-            label: "Fassadendämmung / WDVS",
-            hint: "Startet den Fassaden-Flow mit WDVS — Typ ist schon gewählt",
-            emoji: "🏠",
             triggerGewerke: ["fassade"],
           },
         ],
@@ -545,7 +540,7 @@ export const SITUATIONEN_CONFIG: Record<
           {
             value: "dach",
             label: "Dach-Problem",
-            hint: "Leck, Ziegel defekt, Regenrinne",
+            hint: "Ziegel locker, Undichtigkeit, Sturmschaden, Dachrinne defekt",
             emoji: "🏠",
             triggerGewerke: ["dach"],
           },
@@ -835,9 +830,9 @@ export const BW_FUNNEL_STEP_ZUSTAND: FunnelStep = {
 };
 
 /** Welche Zustands-Variante (Frage + Kacheln) passt zu den Bereichen? */
-export type ZustandStepVariant = "waende" | "boden" | "dach";
+type ZustandStepVariant = "waende" | "boden" | "dach";
 
-export function getZustandStepVariantFromBereiche(
+function getZustandStepVariantFromBereiche(
   bereiche: string[]
 ): ZustandStepVariant | null {
   const b = new Set(bereiche);

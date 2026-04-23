@@ -6,9 +6,9 @@
 import {
   BODEN_FOLLOWUPS,
   BODEN_Q1,
-  BODEN_ZUSTAND_Q,
+  DACH_Q1_ERNEUERN,
+  DACH_Q1_KAPUTT,
   DACH_FOLLOWUPS,
-  DACH_Q1,
   ELEKTRO_FOLLOWUPS,
   ELEKTRO_ERNEUERN_Q1,
   ELEKTRO_KAPUTT_Q1,
@@ -22,11 +22,13 @@ import {
   HEIZUNG_KAPUTT_Q1,
   FASSADE_ART_Q1,
   HEIZUNG_Q1_ERNEUERN,
+  HEIZUNG_ZIEL,
   MALER_FOLLOWUPS,
   MALER_Q1,
   SANITAER_BAD_OBJEKT_LISTE,
   SANITAER_BAD_Q,
   SANITAER_FOLLOWUPS,
+  SANITAER_KAPUTT_WASSER_Q1,
   SANITAER_Q1,
   type FachdetailQuestionDef,
 } from "@/lib/funnel/fachdetails-questions";
@@ -189,43 +191,22 @@ export const FACHDETAIL_QUESTIONS: FachdetailQuestion[] = [
     }
   ),
   fromDef(
-    "sanitaer_rohre",
-    "sanitaer",
-    SANITAER_FOLLOWUPS.sanitaer_folge_rohre,
-    (s) =>
-      needSan(s) &&
-      (ansStr(s, "sanitaer_lage") === "wand" ||
-        ansStr(s, "sanitaer_problem") === "wand")
-  ),
-  fromDef(
     "sanitaer_problem",
     "sanitaer",
-    {
-      id: "sanitaer_problem",
-      title: "Wo sitzt das Problem?",
-      inputType: "single",
-      options: [
-        {
-          value: "sichtbar",
-          label: "Sichtbar zugänglich",
-          hint: "Unter Waschbecken, Spüle oder Dusche",
-        },
-        {
-          value: "wand",
-          label: "Hinter der Wand",
-          hint: "Unterputz-Leitung",
-        },
-        {
-          value: "keller",
-          label: "Am Haupthahn / im Keller",
-          hint: "Hauptabsperrung",
-        },
-      ],
-    },
+    SANITAER_KAPUTT_WASSER_Q1,
     (s) =>
       s.situation === "kaputt" &&
       needSan(s) &&
       !s.bereiche.includes("bad")
+  ),
+  fromDef(
+    "sanitaer_leck_zugang",
+    "sanitaer",
+    SANITAER_FOLLOWUPS.sanitaer_folge_leck_zugang,
+    (s) =>
+      needSan(s) &&
+      (ansStr(s, "sanitaer_lage") === "leitung_leck" ||
+        ansStr(s, "sanitaer_problem") === "leitung_leck")
   ),
 
   fromDef(
@@ -266,13 +247,23 @@ export const FACHDETAIL_QUESTIONS: FachdetailQuestion[] = [
     (s) => s.situation === "erneuern" && B(s).has("heizung")
   ),
   fromDef(
+    "heizung_ziel",
+    "heizung",
+    HEIZUNG_ZIEL,
+    (s) =>
+      s.situation === "erneuern" &&
+      B(s).has("heizung") &&
+      Boolean(ansStr(s, "heizung_erneuern"))
+  ),
+  fromDef(
     "heizung_heizkoerper_anzahl",
     "heizung",
     HEIZUNG_HEIZKOERPER_ANZAHL,
     (s) =>
       s.situation === "erneuern" &&
       B(s).has("heizung") &&
-      ansStr(s, "heizung_erneuern") === "heizkoerper"
+      ansStr(s, "heizung_erneuern") === "heizkoerper" &&
+      Boolean(ansStr(s, "heizung_ziel"))
   ),
   fromDef(
     "heizung_oel_alter",
@@ -281,7 +272,8 @@ export const FACHDETAIL_QUESTIONS: FachdetailQuestion[] = [
     (s) =>
       s.situation === "erneuern" &&
       B(s).has("heizung") &&
-      ansStr(s, "heizung_erneuern") === "oel"
+      ansStr(s, "heizung_erneuern") === "oel" &&
+      Boolean(ansStr(s, "heizung_ziel"))
   ),
   fromDef(
     "heizung_kaputt",
@@ -294,12 +286,7 @@ export const FACHDETAIL_QUESTIONS: FachdetailQuestion[] = [
     "fassade_art",
     "fassade",
     FASSADE_ART_Q1,
-    (s) => {
-      const b = B(s);
-      return (
-        b.has("fassade") || ansStr(s, "maler_was") === "fassade"
-      );
-    }
+    (s) => B(s).has("fassade")
   ),
 
   fromDef(
@@ -333,19 +320,6 @@ export const FACHDETAIL_QUESTIONS: FachdetailQuestion[] = [
     BODEN_Q1,
     (s) => B(s).has("boden") || B(s).has("waende_boeden")
   ),
-  fromDef(
-    "boden_zustand",
-    "boden",
-    BODEN_ZUSTAND_Q,
-    (s) => {
-      const m = ansStr(s, "boden_material");
-      const bodenish = B(s).has("boden") || B(s).has("waende_boeden");
-      return Boolean(
-        bodenish &&
-          (m === "fliesen" || m === "laminat" || m === "parkett")
-      );
-    }
-  ),
   {
     id: "boden_verlegung",
     gewerk: "boden",
@@ -353,11 +327,9 @@ export const FACHDETAIL_QUESTIONS: FachdetailQuestion[] = [
     optionen: [],
     showWenn: (s) => {
       const m = ansStr(s, "boden_material");
-      const z = ansStr(s, "boden_zustand");
       return Boolean(
         (B(s).has("boden") || B(s).has("waende_boeden")) &&
-          bodenFollowDef(m) &&
-          z === "muss_komplett_raus"
+          bodenFollowDef(m)
       );
     },
     required: true,
@@ -366,8 +338,14 @@ export const FACHDETAIL_QUESTIONS: FachdetailQuestion[] = [
   fromDef(
     "dach_vorhaben",
     "dach",
-    DACH_Q1,
-    (s) => B(s).has("dach")
+    DACH_Q1_ERNEUERN,
+    (s) => B(s).has("dach") && s.situation !== "kaputt"
+  ),
+  fromDef(
+    "dach_vorhaben",
+    "dach",
+    DACH_Q1_KAPUTT,
+    (s) => B(s).has("dach") && s.situation === "kaputt"
   ),
   fromDef(
     "dach_alter",
@@ -457,6 +435,10 @@ export function resolveFachdetailQuestionForUi(
       id: "garten_followup",
     });
   }
+  const activeById = FACHDETAIL_QUESTIONS.find(
+    (q) => q.id === questionId && q.showWenn(state)
+  );
+  if (activeById) return activeById;
   return FACHDETAIL_QUESTIONS.find((q) => q.id === questionId) ?? null;
 }
 
@@ -487,6 +469,16 @@ export function getActiveFachdetailQuestions(
       );
     }
   }
+
+  /** Kaputt: Leck → Zugänglichkeit „hinter Wand/im Boden“ = Diagnosepfad — keine weiteren Fachdetail-Screens, nächster globaler Schritt ist {@link getBwRechnerScreenSequence} → `zeitpunkt`. */
+  if (
+    state.situation &&
+    isReparaturNotfallSituation(state.situation) &&
+    state.fachdetails?.sanitaer?.lage === "wand"
+  ) {
+    return [];
+  }
+
   return out;
 }
 

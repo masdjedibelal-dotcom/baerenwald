@@ -155,52 +155,67 @@ export const ELEKTRO_FOLLOWUPS: Record<string, FachdetailQuestionDef> = {
   },
 };
 
-export const SANITAER_Q1: FachdetailQuestionDef = {
-  id: "sanitaer_lage",
-  title: "Wo sitzt das Problem?",
+/** Gemeinsame Optionen: Wasser / Sanitär (Reparatur & Erneuern mit Sanitär-Pfad). */
+const SANITAER_WASSER_Q1_BODY = {
+  title: "Was ist das Problem?",
   education:
-    "Lecks hinter der Wand bedeuten oft Stemmarbeiten — das erhöht den Aufwand und den Preis deutlich.",
-  inputType: "single",
+    "Eine Auswahl reicht zuerst. Bei Leitungswasserschäden fragen wir danach nur, ob der Schaden sichtbar ist oder vermutlich verborgen — das Material der Rohre klärt der Handwerker vor Ort.",
+  inputType: "single" as const,
   options: [
     {
-      value: "sichtbar",
-      label: "Sichtbar zugänglich",
-      hint: "Unter Waschbecken, Spüle oder Dusche",
+      value: "leitung_leck",
+      label: "Leitungswasserschaden / Rohr undicht",
+      hint: "Tropft, feucht, Wasser austritt — nicht nur langsamer Abfluss",
+      followUpId: "sanitaer_folge_leck_zugang",
     },
     {
-      value: "wand",
-      label: "Hinter der Wand",
-      hint: "Unterputz-Leitung oder -Anschluss",
-      followUpId: "sanitaer_folge_rohre",
+      value: "verstopfung",
+      label: "Verstopfung",
+      hint: "WC, Waschbecken, Dusche, Küche — Wasser läuft schlecht ab oder steht",
     },
     {
       value: "keller",
       label: "Am Haupthahn / im Keller",
       hint: "Hauptabsperrung oder Zuleitung",
     },
+    {
+      value: "armatur",
+      label: "Tropfende Armatur / sichtbarer Anschluss",
+      hint: "Tropfen sichtbar am Objekt, kein vermuteter Rohrbruch hinter der Wand",
+    },
   ],
 };
 
+export const SANITAER_Q1: FachdetailQuestionDef = {
+  id: "sanitaer_lage",
+  ...SANITAER_WASSER_Q1_BODY,
+};
+
+/** Kaputt ohne Bad: gleiche Inhalte wie {@link SANITAER_Q1}, eigene Screen-ID `sanitaer_problem`. */
+export const SANITAER_KAPUTT_WASSER_Q1: FachdetailQuestionDef = {
+  id: "sanitaer_problem",
+  ...SANITAER_WASSER_Q1_BODY,
+};
+
 export const SANITAER_FOLLOWUPS: Record<string, FachdetailQuestionDef> = {
-  sanitaer_folge_rohre: {
-    id: "sanitaer_folge_rohre",
-    title: "Was für Rohre sind verbaut?",
+  /** Nur bei „Leitungswasserschaden / Rohr undicht“ — Zugänglichkeit für Diagnose/Einsatz (kein Rohrmaterial). */
+  sanitaer_folge_leck_zugang: {
+    id: "sanitaer_leck_zugang",
+    title:
+      "Ist der Schaden sichtbar (z.B. unter dem Waschbecken) oder vermutest du ihn hinter der Wand/im Boden?",
+    education:
+      "Damit der erste Rahmen zur Einschätzung passt — Details zum Bestand klärt der Meister vor Ort.",
     inputType: "single",
     options: [
       {
-        value: "kupfer",
-        label: "Kupferrohre",
-        hint: "Rötlich, ältere Häuser",
+        value: "sichtbar",
+        label: "Sichtbar zugänglich",
+        hint: "z.B. unter dem Waschbecken, sichtbare Leitung oder Anschluss",
       },
       {
-        value: "kunststoff",
-        label: "Kunststoffrohre",
-        hint: "Weiß oder grau, neuere Häuser",
-      },
-      {
-        value: "neu",
-        label: "Neuverrohrung / komplett ersetzen",
-        hint: "Gestemmt, neue Hauptleitungen — deutlich mehr Aufwand",
+        value: "wand",
+        label: "Hinter der Wand / im Boden vermutet",
+        hint: "Eingriff in Putz, Fliese oder Estrich wahrscheinlicher",
       },
     ],
   },
@@ -225,12 +240,6 @@ export const SANITAER_BAD_Q: FachdetailQuestionDef = {
       followUpId: "sanitaer_bad_objekt_liste",
     },
     {
-      value: "sanitaer",
-      label: "Sanitär gezielt erneuern",
-      hint: "Waschbecken, WC, Armaturen — gleiche Auswahl wie bei Objekten",
-      followUpId: "sanitaer_bad_objekt_liste",
-    },
-    {
       value: "wanne_dusche",
       label: "Wanne zu Dusche",
       hint: "Umbau zur ebenerdigen oder bodengleichen Dusche",
@@ -243,7 +252,7 @@ export const SANITAER_BAD_Q: FachdetailQuestionDef = {
   ],
 };
 
-/** Checkboxen für Teilsanierung Sanitär (badWas objekte | sanitaer) — Preislogik in price-calc. */
+/** Checkboxen für Teilsanierung Sanitär (badWas `objekte`; Legacy-Wert `sanitaer` = gleiche Logik) — Preislogik in price-calc. */
 export const SANITAER_BAD_OBJEKT_LISTE: FachdetailQuestionDef = {
   id: "sanitaer_bad_objekt_liste",
   title: "Welche Bereiche sollen erneuert werden?",
@@ -314,7 +323,39 @@ export const HEIZUNG_Q1: FachdetailQuestionDef = {
 /** „Erneuern“: ohne Wartung — die gibt es nur bei Kaputt/anderen Situationen. */
 export const HEIZUNG_Q1_ERNEUERN: FachdetailQuestionDef = {
   ...HEIZUNG_Q1,
+  title: "Was hast du aktuell?",
   options: HEIZUNG_Q1.options.filter((o) => o.value !== "wartung"),
+};
+
+/** Nach aktueller Anlage: gewünschter Ziel-Zustand (nur Erneuern). */
+export const HEIZUNG_ZIEL: FachdetailQuestionDef = {
+  id: "heizung_ziel",
+  title: "Was ist dein Ziel?",
+  education:
+    "Damit der Preisrahmen und die Gewerke passen — du kannst die Auswahl später bei der Besichtigung noch präzisieren.",
+  inputType: "single",
+  options: [
+    {
+      value: "waermepumpe",
+      label: "Wärmepumpe",
+      hint: "Luft-, Sole- oder Erdwärmepumpe",
+    },
+    {
+      value: "hybrid",
+      label: "Hybrid-Lösung",
+      hint: "z. B. Wärmepumpe mit Gas- oder Öl-Peaklast",
+    },
+    {
+      value: "gas_brennwert",
+      label: "Gas-Brennwert (Austausch)",
+      hint: "Neue Gas-Therme / Brennwertgerät",
+    },
+    {
+      value: "beratung",
+      label: "Beratung erwünscht",
+      hint: "Noch unsicher — wir stimmen das Vorhaben mit dir ab",
+    },
+  ],
 };
 
 /** Anzahl Heizkörper (Stückpreis × n). */
@@ -380,59 +421,66 @@ export const HEIZUNG_FOLLOWUPS: Record<string, FachdetailQuestionDef> = {
   },
 };
 
-/** Heizung bei Situation „kaputt“ */
+/** Heizung bei Situation „kaputt“ / Reparatur-Notfall */
 export const HEIZUNG_KAPUTT_Q1: FachdetailQuestionDef = {
   id: "heizung_kaputt_problem",
-  title: "Was ist das Problem?",
+  title: "Was trifft am ehesten zu?",
+  education:
+    "Eine Option reicht — du kannst Details später am Telefon oder vor Ort ergänzen.",
   inputType: "single",
   options: [
     {
-      value: "geht_nicht",
-      label: "Geht nicht an",
-      hint: "Heizung startet nicht",
+      value: "heizung_kalt",
+      label: "Heizung wird nicht warm (Heizkörper kalt)",
+      hint: "Anlage läuft, aber Räume bleiben kühl",
     },
     {
       value: "kein_warmwasser",
-      label: "Kein warmes Wasser",
-      hint: "Warmwasser fehlt oder kalt",
+      label: "Kein Warmwasser (Dusche bleibt kalt)",
+      hint: "Warmwasser an Zapfstellen fehlt oder nur lauwarm",
     },
     {
-      value: "geraeusch",
-      label: "Geräusche",
-      hint: "Klopfen, Rauschen, Pfeifen",
+      value: "druckverlust_wasser",
+      label: "Heizung verliert Wasser / Druckverlust",
+      hint: "Nachfüllen nötig, tropft sichtbar, Manometer fällt",
     },
     {
-      value: "fehlermeldung",
-      label: "Fehlermeldung",
-      hint: "Display oder Störungscode",
+      value: "brenner_fehlermeldung",
+      label: "Brennerstörung / Fehlermeldung am Display",
+      hint: "Heizung springt ab, Störungscode oder Symbol",
+    },
+    {
+      value: "geraeusche",
+      label: "Seltsame Geräusche (Klopfen/Pfeifen)",
+      hint: "Neue oder ungewohnte Geräusche von der Anlage oder Leitungen",
     },
   ],
 };
 
-/** Gemeinsame Fassaden-Art für Bereich „fassade“ und Maler-Pfad „Fassade außen“. */
+/** Weiche im Gewerk „Fassade“ (nur Bereich „fassade“ — nicht mehr über Maler). */
 export const FASSADE_ART_Q1: FachdetailQuestionDef = {
   id: "fassade_art",
   title: "Welche Arbeit ist bei der Fassade geplant?",
   education:
-    "WDVS umfasst oft Gerüst, Dämmplatten und Oberflächen — der Rahmen ist eine erste Orientierung.",
+    "WDVS umfasst oft Gerüst, Dämmplatten und Oberflächen — Bekleidungen variieren stark nach Material — der Rahmen ist eine erste Orientierung.",
   inputType: "single",
   options: [
     {
       value: "anstrich",
-      label: "Anstrich & Reinigung",
-      hint: "Auffrischung der Optik",
+      label: "Anstrich (Reinigung & Farbe)",
+      hint: "Auffrischung der Optik, Oberfläche vorbereiten",
     },
     {
       value: "daemmung",
-      label: "Fassadendämmung (WDVS)",
-      hint: "Energetische Sanierung",
+      label: "Dämmung (WDVS / energetisch)",
+      hint: "Wärmedämmverbundsystem",
       education:
         "Dieser Richtpreis umfasst das gesamte Wärmedämmverbundsystem inklusive Gerüst und Endputz. Staatliche Förderungen können die Kosten signifikant senken.",
     },
     {
-      value: "klinker",
-      label: "Klinker / Riemchen",
-      hint: "Neue Fassadenbekleidung",
+      value: "bekleidung",
+      label: "Bekleidung (Holz / Schiefer / Paneele)",
+      hint: "Neue oder erneuerte Fassadenhaut",
     },
   ],
 };
@@ -468,12 +516,6 @@ export const MALER_Q1: FachdetailQuestionDef = {
       hint: "Wände, Decke und Türen/Fenster im Raum",
       followUpId: "maler_folge_zustand",
     },
-    {
-      value: "fassade",
-      label: "Fassade außen",
-      hint: "Außenarbeiten — Art der Maßnahme gleich darunter",
-      followUpId: null,
-    },
   ],
 };
 
@@ -506,9 +548,9 @@ export const MALER_FOLLOWUPS: Record<string, FachdetailQuestionDef> = {
 
 export const BODEN_Q1: FachdetailQuestionDef = {
   id: "boden_material",
-  title: "Was soll verlegt werden?",
+  title: "Was ist aktuell verlegt?",
   education:
-    "Fliesenrückbau kann Staub und Lärm bedeuten — Dauer hängt von Fläche und Verlegung ab. Wir planen Staubschutz und Entsorgung mit ein.",
+    "Der bestehende Belag bestimmt Rückbau und Aufwand — z. B. Fliesen stemmen vs. Teppich entfernen. Wir planen Staubschutz und Entsorgung mit ein.",
   inputType: "single",
   options: [
     {
@@ -540,27 +582,6 @@ export const BODEN_Q1: FachdetailQuestionDef = {
       label: "Rohboden / Estrich",
       hint: "Noch kein fertiger Bodenbelag",
       followUpId: null,
-    },
-  ],
-};
-
-/** Rückbau vor Neubelag — Verlegeart nur bei „komplett raus“ für Abriss-Zuschlag. */
-export const BODEN_ZUSTAND_Q: FachdetailQuestionDef = {
-  id: "boden_zustand",
-  title: "Wie ist der bestehende Belag zu behandeln?",
-  education:
-    "Die Verlegeart des alten Bodens fragen wir nur, wenn er komplett raus muss — sie beeinflusst den Aufwand beim Rückbau und die Preiskalkulation.",
-  inputType: "single",
-  options: [
-    {
-      value: "muss_komplett_raus",
-      label: "Muss komplett raus",
-      hint: "Rückbau, Entsorgung und Untergrund für neuen Belag",
-    },
-    {
-      value: "ohne_vollabzug",
-      label: "Kein kompletter Rückbau nötig",
-      hint: "z. B. Verlegung über Bestand oder ohne Abriss der Fläche",
     },
   ],
 };
@@ -625,29 +646,17 @@ export const BODEN_FOLLOWUPS: Record<string, FachdetailQuestionDef> = {
   },
 };
 
-export const DACH_Q1: FachdetailQuestionDef = {
+export const DACH_Q1_ERNEUERN: FachdetailQuestionDef = {
   id: "dach_vorhaben",
-  title: "Was ist das Problem oder Vorhaben?",
+  title: "Was soll am Dach erneuert werden?",
   education:
-    "Einzelziegel oder Rinne: oft kurzer Einsatz. Dämmung oder Komplett-Eindeckung: mehrere Tage bis Wochen, abhängig von Wetter und Fläche.",
+    "Projektarbeiten wie Eindeckung, Dämmung oder Dachfenster sind planbar und hängen stark von Fläche, Aufbau und Wetterfenster ab.",
   inputType: "single",
   options: [
     {
-      value: "ziegel_wenige",
-      label: "Wenige Ziegel defekt",
-      hint: "1–5 Ziegel — schnelle Reparatur",
-      followUpId: null,
-    },
-    {
-      value: "ziegel_bereich",
-      label: "Größerer Bereich beschädigt",
-      hint: "Mehrere Reihen — etwas mehr Aufwand",
-      followUpId: null,
-    },
-    {
       value: "daemmung",
-      label: "Dachdämmung erneuern",
-      hint: "Wärmedämmung verbessern",
+      label: "Dämmung verbessern",
+      hint: "Energetische Verbesserung der Dachfläche",
       followUpId: "dach_folge_alter",
       education:
         "Ohne neue Eindeckung gerechnet — wenn zusätzlich Deckung/Dachhaut erneuert werden soll, das als eigene Auswahl „Komplett neu eindecken“ durchspielen oder beim Aufmaß kombinieren.",
@@ -662,18 +671,56 @@ export const DACH_Q1: FachdetailQuestionDef = {
     },
     {
       value: "dachfenster",
-      label: "Dachfenster einbauen",
-      hint: "Neues Fenster im Dach",
-      followUpId: null,
-    },
-    {
-      value: "regenrinne",
-      label: "Regenrinne / Ablauf",
-      hint: "Dachrinne, Fallrohr, Laubfang oder Anschluss",
+      label: "Dachfenster-Austausch",
+      hint: "Vorhandenes Dachfenster erneuern oder tauschen",
       followUpId: null,
     },
   ],
 };
+
+export const DACH_Q1_KAPUTT: FachdetailQuestionDef = {
+  id: "dach_vorhaben",
+  title: "Was ist akut am Dach beschädigt?",
+  education:
+    "Wähle den dringendsten Schaden — Details zur genauen Ursache klären wir beim Einsatz vor Ort.",
+  inputType: "single",
+  options: [
+    {
+      value: "ziegel_wenige",
+      label: "Ziegel locker / heruntergefallen",
+      hint: "Einzelne Ziegel lose, gerutscht oder bereits gefallen",
+      followUpId: null,
+    },
+    {
+      value: "undichtigkeit",
+      label: "Undichtigkeit / Wasser dringt ein",
+      hint: "Feuchte Stellen, Tropfen oder Wassereintritt",
+      followUpId: null,
+    },
+    {
+      value: "sturmschaden",
+      label: "Sturmschaden",
+      hint: "Schaden nach Wind/Sturm an Dachfläche oder Anbauteilen",
+      followUpId: null,
+    },
+    {
+      value: "regenrinne",
+      label: "Dachrinne verstopft / defekt",
+      hint: "Rinne, Fallrohr, Laubfang oder Anschluss",
+      followUpId: null,
+    },
+  ],
+};
+
+/** Legacy-Default: Projektvariante (Erneuern). */
+export const DACH_Q1: FachdetailQuestionDef = DACH_Q1_ERNEUERN;
+
+export function getDachQ1ForSituation(
+  situation: Situation | null
+): FachdetailQuestionDef {
+  if (situation === "kaputt") return DACH_Q1_KAPUTT;
+  return DACH_Q1_ERNEUERN;
+}
 
 export const DACH_FOLLOWUPS: Record<string, FachdetailQuestionDef> = {
   dach_folge_alter: {

@@ -8,7 +8,7 @@ import {
   BODEN_FOLLOWUPS,
   BODEN_Q1,
   DACH_FOLLOWUPS,
-  DACH_Q1,
+  getDachQ1ForSituation,
   ELEKTRO_FOLLOWUPS,
   GARTEN_FOLLOWUPS,
   GARTEN_Q1,
@@ -17,6 +17,7 @@ import {
   FASSADE_ART_Q1,
   HEIZUNG_KAPUTT_Q1,
   HEIZUNG_Q1,
+  HEIZUNG_ZIEL,
   MALER_FOLLOWUPS,
   MALER_Q1,
   SANITAER_BAD_OBJEKT_LISTE,
@@ -77,7 +78,7 @@ function needFenster(bereiche: string[]): boolean {
   );
 }
 
-/** Kurzschluss ohne „Wo sitzt das Problem?“ — z. B. nur Fliesen oder Komplett ohne Rohr-Follow-up. */
+/** Kurzschluss ohne Sanitär-Wasser-Frage — z. B. nur Fliesen oder Komplett ohne Leck-Follow-up. */
 export function sanitaerShortDone(
   bereiche: string[],
   situation: Situation | null,
@@ -145,16 +146,16 @@ function collectSanitaerSubStepIds(state: FunnelState): string[] {
     if (!s.lage) {
       return ids;
     }
-    if (s.lage === "wand") {
-      ids.push(SANITAER_FOLLOWUPS.sanitaer_folge_rohre.id);
+    if (s.lage === "leitung_leck") {
+      ids.push(SANITAER_FOLLOWUPS.sanitaer_folge_leck_zugang.id);
     }
     return ids;
   }
 
   ids.push(SANITAER_Q1.id);
 
-  if (s.lage === "wand") {
-    ids.push(SANITAER_FOLLOWUPS.sanitaer_folge_rohre.id);
+  if (s.lage === "leitung_leck") {
+    ids.push(SANITAER_FOLLOWUPS.sanitaer_folge_leck_zugang.id);
   }
 
   return ids;
@@ -191,6 +192,10 @@ function collectHeizungSubStepIds(state: FunnelState): string[] {
   ids.push(HEIZUNG_Q1.id);
   const t = fd.heizung?.typ;
   if (!t) return ids;
+  if (situation === "erneuern" && b.includes("heizung")) {
+    ids.push(HEIZUNG_ZIEL.id);
+    if (!fd.heizung?.ziel) return ids;
+  }
   if (t === "heizkoerper") {
     ids.push("heizung_heizkoerper_anzahl");
     return ids;
@@ -219,20 +224,12 @@ function collectBodenSubStepIds(state: FunnelState): string[] {
   const ids = [BODEN_Q1.id];
   const a = fd.boden?.aktuell;
   if (!a) return ids;
-  const noAbrissFragen =
+  const noFollowUpMaterial =
     a === "parkett_schleifen" ||
     a === "balkon_belag" ||
     a === "teppich" ||
     a === "estrich";
-  if (noAbrissFragen) return ids;
-  const needsZustand =
-    a === "fliesen" || a === "laminat" || a === "parkett";
-  if (needsZustand) {
-    ids.push("boden_zustand");
-    if (fd.boden?.zustand !== "muss_komplett_raus") {
-      return ids;
-    }
-  }
+  if (noFollowUpMaterial) return ids;
   const opt = BODEN_Q1.options.find((o) => o.value === a);
   const fid = opt?.followUpId;
   if (fid && BODEN_FOLLOWUPS[fid]) {
@@ -243,13 +240,14 @@ function collectBodenSubStepIds(state: FunnelState): string[] {
 
 function collectDachSubStepIds(state: FunnelState): string[] {
   const fd = state.fachdetails;
+  const q1 = getDachQ1ForSituation(state.situation);
   if (isReparaturNotfallSituation(state.situation)) {
-    return [DACH_Q1.id];
+    return [q1.id];
   }
-  const ids = [DACH_Q1.id];
+  const ids = [q1.id];
   const v = fd.dach?.vorhaben;
   if (!v) return ids;
-  const opt = DACH_Q1.options.find((o) => o.value === v);
+  const opt = q1.options.find((o) => o.value === v);
   const fid = opt?.followUpId;
   if (fid && DACH_FOLLOWUPS[fid]) {
     ids.push(DACH_FOLLOWUPS[fid]!.id);
@@ -335,11 +333,14 @@ export function isFachdetailSubStepComplete(
     case "sanitaer_bad_objekt_liste":
       return fd.sanitaer?.objektListe !== undefined;
     case "sanitaer_problem":
-      return Boolean(fd.sanitaer?.lage);
-    case SANITAER_Q1.id:
-      return Boolean(fd.sanitaer?.lage);
-    case SANITAER_FOLLOWUPS.sanitaer_folge_rohre.id:
-      return fd.sanitaer?.rohre !== undefined;
+    case SANITAER_Q1.id: {
+      const l = fd.sanitaer?.lage;
+      return Boolean(l) && l !== "leitung_leck";
+    }
+    case SANITAER_FOLLOWUPS.sanitaer_folge_leck_zugang.id:
+      return (
+        fd.sanitaer?.lage === "sichtbar" || fd.sanitaer?.lage === "wand"
+      );
     default:
       break;
   }
@@ -354,6 +355,7 @@ export function isFachdetailSubStepComplete(
   if (gewerk === "heizung") {
     if (stepId === HEIZUNG_KAPUTT_Q1.id) return Boolean(fd.heizung?.typ);
     if (stepId === HEIZUNG_Q1.id) return Boolean(fd.heizung?.typ);
+    if (stepId === HEIZUNG_ZIEL.id) return Boolean(fd.heizung?.ziel);
     if (stepId === "heizung_heizkoerper_anzahl") {
       return (
         fd.heizung?.anzahl !== undefined &&
@@ -383,14 +385,14 @@ export function isFachdetailSubStepComplete(
 
   if (gewerk === "boden") {
     if (stepId === BODEN_Q1.id) return Boolean(fd.boden?.aktuell);
-    if (stepId === "boden_zustand") return fd.boden?.zustand !== undefined;
     if (BODEN_FOLLOWUPS[stepId]) {
       return fd.boden?.verlegung !== undefined;
     }
   }
 
   if (gewerk === "dach") {
-    if (stepId === DACH_Q1.id) return Boolean(fd.dach?.vorhaben);
+    const q1 = getDachQ1ForSituation(situation);
+    if (stepId === q1.id) return Boolean(fd.dach?.vorhaben);
     if (DACH_FOLLOWUPS[stepId]) {
       return fd.dach?.alter !== undefined;
     }
@@ -466,20 +468,22 @@ export function getClearFachdetailPatchFromSubStep(
           },
         };
       }
-      if (stepId === SANITAER_Q1.id) {
+      if (stepId === SANITAER_Q1.id || stepId === "sanitaer_problem") {
         return {
           sanitaer: {
             ...fd.sanitaer,
             lage: undefined,
             rohre: undefined,
+            badWas: fd.sanitaer?.badWas,
+            objektListe: fd.sanitaer?.objektListe,
           },
         };
       }
-      if (stepId === SANITAER_FOLLOWUPS.sanitaer_folge_rohre.id) {
+      if (stepId === SANITAER_FOLLOWUPS.sanitaer_folge_leck_zugang.id) {
         return {
           sanitaer: {
             ...fd.sanitaer,
-            lage: fd.sanitaer?.lage,
+            lage: "leitung_leck",
             rohre: undefined,
             badWas: fd.sanitaer?.badWas,
             objektListe: fd.sanitaer?.objektListe,
@@ -496,6 +500,19 @@ export function getClearFachdetailPatchFromSubStep(
             alter: undefined,
             vorhaben: undefined,
             anzahl: undefined,
+            ziel: undefined,
+          },
+        };
+      }
+      if (stepId === HEIZUNG_ZIEL.id) {
+        return {
+          heizung: {
+            ...fd.heizung,
+            typ: fd.heizung?.typ,
+            alter: fd.heizung?.alter,
+            vorhaben: fd.heizung?.vorhaben,
+            anzahl: fd.heizung?.anzahl,
+            ziel: undefined,
           },
         };
       }
@@ -506,6 +523,7 @@ export function getClearFachdetailPatchFromSubStep(
             typ: fd.heizung?.typ,
             alter: fd.heizung?.alter,
             vorhaben: fd.heizung?.vorhaben,
+            ziel: fd.heizung?.ziel,
             anzahl: undefined,
           },
         };
@@ -517,6 +535,7 @@ export function getClearFachdetailPatchFromSubStep(
             typ: fd.heizung?.typ,
             alter: undefined,
             vorhaben: undefined,
+            ziel: fd.heizung?.ziel,
           },
         };
       }
@@ -559,16 +578,6 @@ export function getClearFachdetailPatchFromSubStep(
           },
         };
       }
-      if (stepId === "boden_zustand") {
-        return {
-          boden: {
-            aktuell: fd.boden?.aktuell,
-            zustand: undefined,
-            verlegung: undefined,
-            freitext: fd.boden?.freitext,
-          },
-        };
-      }
       return {
         boden: {
           aktuell: fd.boden?.aktuell,
@@ -579,7 +588,8 @@ export function getClearFachdetailPatchFromSubStep(
       };
     }
     case "dach": {
-      if (stepId === DACH_Q1.id) {
+      const q1 = getDachQ1ForSituation(situation);
+      if (stepId === q1.id) {
         return { dach: { vorhaben: undefined, alter: undefined } };
       }
       return {
