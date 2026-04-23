@@ -86,6 +86,7 @@ import type {
   Zeitraum,
   Zugaenglichkeit,
 } from "@/lib/funnel/types";
+import { isReparaturNotfallSituation } from "@/lib/funnel/reparatur-flow";
 import { isB2B } from "@/lib/funnel/types";
 import { isBwTrustScreenId } from "@/lib/funnel/types";
 import { tileIconForStepValue } from "@/lib/funnel-tile-icons";
@@ -116,6 +117,12 @@ type Screen =
   | "zugaenglichkeit"
   | "zustand"
   | "groesse"
+  | "projekt_terrasse_material"
+  | "projekt_terrasse_unterbau"
+  | "projekt_durchbruch_anzahl"
+  | "projekt_durchbruch_statik"
+  | "projekt_garten_zaun"
+  | "projekt_garten_zugang"
   | "bad_ausstattung"
   | "ort"
   | "loading"
@@ -254,6 +261,7 @@ function FunnelRechnerInner() {
       state.fachdetails?.maler?.was,
       state.fachdetails?.maler?.fassade,
       state.fachdetails?.neubauen,
+      state.fachdetails?.projekt,
     ]
   );
 
@@ -297,20 +305,21 @@ function FunnelRechnerInner() {
         (s) =>
           s.id.endsWith("_umfang") ||
           s.id === "notfall_dringlichkeit" ||
+          s.id === "kaputt_dringlichkeit" ||
           s.id === "betreuung_haeufigkeit" ||
           s.id === "neubauen_planung"
       ) ?? null,
     [resolvedSteps]
   );
   const stepZugaenglichkeit = useMemo(() => {
-    if (state.situation === "notfall") return null;
+    if (isReparaturNotfallSituation(state.situation)) return null;
     if (state.situation === "gewerbe") return null;
     if (zuKomplexForSteps) return null;
     return resolvedSteps.find((s) => s.id === "zugaenglichkeit") ?? null;
   }, [resolvedSteps, state.situation, zuKomplexForSteps]);
 
   const stepZustand = useMemo(() => {
-    if (state.situation === "notfall") return null;
+    if (isReparaturNotfallSituation(state.situation)) return null;
     if (state.situation === "gewerbe") return null;
     if (zuKomplexForSteps) return null;
     return resolvedSteps.find((s) => s.id === "zustand") ?? null;
@@ -348,7 +357,7 @@ function FunnelRechnerInner() {
     );
 
   const umfangOk =
-    state.situation === "notfall"
+    isReparaturNotfallSituation(state.situation)
       ? Boolean(state.dringlichkeit)
       : state.situation === "neubauen" && state.umfang === "idee"
         ? true
@@ -469,9 +478,27 @@ function FunnelRechnerInner() {
   }, [hasGroesseStep, goPostGroesseChain]);
 
   const goAfterZugaenglichkeit = useCallback(() => {
-    if (stepZustand) setScreen("zustand");
-    else goGroesseOrPostGroesse();
-  }, [stepZustand, goGroesseOrPostGroesse]);
+    if (stepZustand) {
+      setScreen("zustand");
+      return;
+    }
+    /** Ohne Zustand-Schritt (z. B. nur Dach/Fenster): nicht direkt zur Größe —
+     * sonst werden Fachdetails (z. B. `dach_vorhaben`) nur beim Zurück sichtbar. */
+    if (fachdetailsBeforeGroesse && hasFachdetailsStep) {
+      const firstFd = firstFachdetailQuestionScreenId(state);
+      if (firstFd) {
+        setScreen(firstFd);
+        return;
+      }
+    }
+    goGroesseOrPostGroesse();
+  }, [
+    stepZustand,
+    goGroesseOrPostGroesse,
+    fachdetailsBeforeGroesse,
+    hasFachdetailsStep,
+    state,
+  ]);
 
   const goAfterZustandScreen = useCallback(() => {
     if (fachdetailsBeforeGroesse && hasFachdetailsStep) {
@@ -562,6 +589,19 @@ function FunnelRechnerInner() {
     if (isBwTrustScreenId(screen)) {
       const nextTrust = getNextBwRechnerScreen(state, screen);
       if (nextTrust) setScreen(nextTrust as Screen);
+      return;
+    }
+
+    if (
+      screen === "projekt_terrasse_material" ||
+      screen === "projekt_terrasse_unterbau" ||
+      screen === "projekt_durchbruch_anzahl" ||
+      screen === "projekt_durchbruch_statik" ||
+      screen === "projekt_garten_zaun" ||
+      screen === "projekt_garten_zugang"
+    ) {
+      const nextProj = getNextBwRechnerScreen(state, screen);
+      if (nextProj) setScreen(nextProj as Screen);
       return;
     }
 
@@ -828,6 +868,18 @@ function FunnelRechnerInner() {
         return !state.zustand;
       case "groesse":
         return state.groesse == null;
+      case "projekt_terrasse_material":
+        return !state.fachdetails?.projekt?.terrasseMaterial;
+      case "projekt_terrasse_unterbau":
+        return !state.fachdetails?.projekt?.terrasseUnterbau;
+      case "projekt_durchbruch_anzahl":
+        return state.fachdetails?.projekt?.durchbruchAnzahl == null;
+      case "projekt_durchbruch_statik":
+        return state.fachdetails?.projekt?.durchbruchTragend === undefined;
+      case "projekt_garten_zaun":
+        return state.fachdetails?.projekt?.gartenZaun === undefined;
+      case "projekt_garten_zugang":
+        return state.fachdetails?.projekt?.gartenZugaenglichkeit === undefined;
       case "bad_ausstattung":
         return !(state.badAusstattung ?? null);
       case "ort": {
@@ -1051,12 +1103,20 @@ function FunnelRechnerInner() {
                 selected={selected}
                 multi={multi}
                 onChange={(value, sel) => {
+                  if (sel && value === "fassade_daemmung") {
+                    setBereiche(["fassade"]);
+                    setFachdetails({
+                      fassade: { art: "daemmung" },
+                      fachdetailAnswers: {
+                        ...(state.fachdetails?.fachdetailAnswers ?? {}),
+                        fassade_art: "daemmung",
+                      },
+                    });
+                    setSchimmelBeratung(false);
+                    return;
+                  }
                   if (sel && funnelOpt.direktKomplex) {
                     setBereiche([value]);
-                    if (value === "fassade_daemmung") {
-                      setSchimmelBeratung(false);
-                      return;
-                    }
                     if (state.situation === "neubauen" && value === "anbau") {
                       setSchimmelBeratung(false);
                       return;
@@ -1081,7 +1141,7 @@ function FunnelRechnerInner() {
 
   const renderUmfangTiles = () => {
     if (!stepUmfang?.options?.length) return null;
-    if (state.situation === "notfall") {
+    if (isReparaturNotfallSituation(state.situation)) {
       return (
         <div className="space-y-3">
           {stepUmfang.options.map((opt) => {
@@ -1108,22 +1168,24 @@ function FunnelRechnerInner() {
               />
             );
           })}
-          <div className="notfall-hint rounded-xl border border-border-default bg-surface-muted px-4 py-3 text-sm text-text-secondary">
-            <span className="text-text-primary">Kein echter Notfall?</span>{" "}
-            <button
-              type="button"
-              className="font-semibold text-funnel-accent underline-offset-2 hover:underline"
-              onClick={() => {
-                setDringlichkeit(null);
-                setUmfang(null, 1);
-                setSituation("kaputt");
-                setBereiche([]);
-                setScreen("bereiche");
-              }}
-            >
-              → Zu Reparatur / Defekt
-            </button>
-          </div>
+          {state.situation === "notfall" ? (
+            <div className="notfall-hint rounded-xl border border-border-default bg-surface-muted px-4 py-3 text-sm text-text-secondary">
+              <span className="text-text-primary">Kein echter Notfall?</span>{" "}
+              <button
+                type="button"
+                className="font-semibold text-funnel-accent underline-offset-2 hover:underline"
+                onClick={() => {
+                  setDringlichkeit(null);
+                  setUmfang(null, 1);
+                  setSituation("kaputt");
+                  setBereiche([]);
+                  setScreen("bereiche");
+                }}
+              >
+                → Zu Reparatur / Defekt
+              </button>
+            </div>
+          ) : null}
         </div>
       );
     }
@@ -1376,6 +1438,121 @@ function FunnelRechnerInner() {
             </p>
           </StepWrapper>
         );
+
+      case "projekt_terrasse_material":
+      case "projekt_terrasse_unterbau":
+      case "projekt_durchbruch_anzahl":
+      case "projekt_durchbruch_statik":
+      case "projekt_garten_zaun":
+      case "projekt_garten_zugang": {
+        const def = resolvedSteps.find((s) => s.id === screen);
+        if (!def?.options?.length) return null;
+        const pj = state.fachdetails?.projekt;
+        return (
+          <StepWrapper
+            stepLabel="Ausbau & Umbau"
+            question={def.question}
+            subtext={def.subtext}
+            animateKey={`${screen}-${state.bereiche.join(",")}`}
+            tilesCard
+          >
+            <div className="space-y-3">
+              {def.options.map((opt) => {
+                const libOpt = asLibOpt(opt);
+                let selected = false;
+                if (screen === "projekt_terrasse_material") {
+                  selected = pj?.terrasseMaterial === opt.value;
+                } else if (screen === "projekt_terrasse_unterbau") {
+                  selected = pj?.terrasseUnterbau === opt.value;
+                } else if (screen === "projekt_garten_zaun") {
+                  selected = pj?.gartenZaun === opt.value;
+                } else if (screen === "projekt_garten_zugang") {
+                  selected = pj?.gartenZugaenglichkeit === opt.value;
+                } else if (screen === "projekt_durchbruch_anzahl") {
+                  const n = pj?.durchbruchAnzahl;
+                  if (opt.value === "1") selected = n === 1;
+                  else if (opt.value === "2") selected = n === 2;
+                  else if (opt.value === "3_plus") selected = n === 3;
+                } else {
+                  selected =
+                    opt.value === "tragend"
+                      ? pj?.durchbruchTragend === true
+                      : pj?.durchbruchTragend === false;
+                }
+                return (
+                  <SelectionTile
+                    key={opt.value}
+                    option={libOpt}
+                    icon={
+                      libOpt.emoji ? undefined : tileIconForStepValue(opt.value)
+                    }
+                    selected={selected}
+                    multi={false}
+                    onChange={(value, sel) => {
+                      if (screen === "projekt_terrasse_material") {
+                        setFachdetails({
+                          projekt: {
+                            ...state.fachdetails.projekt,
+                            terrasseMaterial: sel
+                              ? (value as "holz" | "stein")
+                              : undefined,
+                          },
+                        });
+                      } else if (screen === "projekt_terrasse_unterbau") {
+                        setFachdetails({
+                          projekt: {
+                            ...state.fachdetails.projekt,
+                            terrasseUnterbau: sel
+                              ? (value as "ja" | "nein")
+                              : undefined,
+                          },
+                        });
+                      } else if (screen === "projekt_garten_zaun") {
+                        setFachdetails({
+                          projekt: {
+                            ...state.fachdetails.projekt,
+                            gartenZaun: sel
+                              ? (value as "ja" | "nein")
+                              : undefined,
+                          },
+                        });
+                      } else if (screen === "projekt_garten_zugang") {
+                        setFachdetails({
+                          projekt: {
+                            ...state.fachdetails.projekt,
+                            gartenZugaenglichkeit: sel
+                              ? (value as "einfach" | "schwer")
+                              : undefined,
+                          },
+                        });
+                      } else if (screen === "projekt_durchbruch_anzahl") {
+                        const raw = def.options?.find((o) => o.value === value);
+                        const g =
+                          typeof raw?.groesse === "number" ? raw.groesse : 1;
+                        setFachdetails({
+                          projekt: {
+                            ...state.fachdetails.projekt,
+                            durchbruchAnzahl: sel ? g : undefined,
+                          },
+                        });
+                      } else {
+                        setFachdetails({
+                          projekt: {
+                            ...state.fachdetails.projekt,
+                            durchbruchTragend: sel
+                              ? value === "tragend"
+                              : undefined,
+                          },
+                        });
+                      }
+                    }}
+                  />
+                );
+              })}
+            </div>
+          </StepWrapper>
+        );
+      }
 
       case "groesse":
         return groesseSliderConfig ? (

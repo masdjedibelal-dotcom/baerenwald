@@ -65,6 +65,7 @@ export function NeubauenFollowUpBlock({
                     ...n,
                     rohbau: sel ? (value as "ja" | "nein") : undefined,
                     deckenhoehe: undefined,
+                    kellerOderDg: undefined,
                   });
                 }}
               />
@@ -112,6 +113,51 @@ export function NeubauenFollowUpBlock({
                     deckenhoehe: sel
                       ? (value as "niedrig" | "mittel" | "hoch")
                       : undefined,
+                    kellerOderDg: undefined,
+                  });
+                }}
+              />
+            ))}
+          </div>
+        </div>
+      );
+    }
+    if (
+      n.rohbau === "ja" &&
+      n.deckenhoehe &&
+      n.deckenhoehe !== "niedrig" &&
+      !n.kellerOderDg
+    ) {
+      const opts = [
+        {
+          value: "keller" as const,
+          label: "Keller",
+          hint: "Kellerausbau — gleiche GU-Paket-Logik wie „Zuhause erneuern“",
+          emoji: "🪜",
+        },
+        {
+          value: "dach" as const,
+          label: "Dachgeschoss",
+          hint: "DG-Ausbau — gleiche GU-Paket-Logik wie „Zuhause erneuern“",
+          emoji: "🏠",
+        },
+      ];
+      return (
+        <div className="space-y-3">
+          <h3 className="text-[15px] font-semibold text-text-primary">
+            Wo soll ausgebaut werden?
+          </h3>
+          <div className="space-y-2">
+            {opts.map((o) => (
+              <SelectionTile
+                key={o.value}
+                option={asLib(o)}
+                selected={n.kellerOderDg === o.value}
+                multi={false}
+                onChange={(value, sel) => {
+                  onPatch({
+                    ...n,
+                    kellerOderDg: sel ? (value as "keller" | "dach") : undefined,
                   });
                 }}
               />
@@ -170,52 +216,147 @@ export function NeubauenFollowUpBlock({
     );
   }
 
-  if (b.has("umbau") && !n.innen) {
-    const opts = [
-      {
-        value: "durchbruch" as const,
-        label: "Wanddurchbruch",
-        hint: "Öffnung in bestehender Wand",
-        emoji: "🚪",
-      },
-      {
-        value: "grundriss" as const,
-        label: "Grundriss ändern",
-        hint: "Wände versetzen oder entfernen",
-        emoji: "📐",
-      },
-      {
-        value: "trennwand" as const,
-        label: "Neue Trennwand",
-        hint: "Raum aufteilen — typisch Trockenbau",
-        emoji: "🧱",
-      },
-    ];
-    return (
-      <div className="space-y-3">
-        <h3 className="text-[15px] font-semibold text-text-primary">
-          Was soll umgebaut werden?
-        </h3>
-        <div className="space-y-2">
-          {opts.map((o) => (
-            <SelectionTile
-              key={o.value}
-              option={asLib(o)}
-              selected={n.innen === o.value}
-              multi={false}
-              onChange={(value, sel) => {
-                onPatch({
-                  ...n,
-                  innen: sel
-                    ? (value as "durchbruch" | "grundriss" | "trennwand")
-                    : undefined,
-                });
-              }}
-            />
-          ))}
+  if (b.has("umbau")) {
+    if (!n.innen) {
+      const opts = [
+        {
+          value: "durchbruch" as const,
+          label: "Wanddurchbruch",
+          hint: "Öffnung in bestehender Wand — GU-Paketpreis",
+          emoji: "🚪",
+        },
+        {
+          value: "grundriss" as const,
+          label: "Grundriss ändern",
+          hint: "Wände versetzen oder entfernen",
+          emoji: "📐",
+        },
+        {
+          value: "trennwand" as const,
+          label: "Neue Trennwand",
+          hint: "Raum aufteilen — typisch Trockenbau",
+          emoji: "🧱",
+        },
+      ];
+      return (
+        <div className="space-y-3">
+          <h3 className="text-[15px] font-semibold text-text-primary">
+            Was soll umgebaut werden?
+          </h3>
+          <div className="space-y-2">
+            {opts.map((o) => (
+              <SelectionTile
+                key={o.value}
+                option={asLib(o)}
+                selected={n.innen === o.value}
+                multi={false}
+                onChange={(value, sel) => {
+                  onPatch({
+                    ...n,
+                    innen: sel
+                      ? (value as "durchbruch" | "grundriss" | "trennwand")
+                      : undefined,
+                    durchbruchAnzahl: undefined,
+                    durchbruchTragend: undefined,
+                  });
+                }}
+              />
+            ))}
+          </div>
         </div>
-      </div>
-    );
+      );
+    }
+
+    if (n.innen === "durchbruch") {
+      if (n.durchbruchAnzahl == null) {
+        const anzahlOpts = [
+          { value: "1", label: "Einer", groesse: 1, emoji: "1️⃣" },
+          { value: "2", label: "Zwei", groesse: 2, emoji: "2️⃣" },
+          {
+            value: "3_plus",
+            label: "Drei oder mehr",
+            groesse: 3,
+            emoji: "➕",
+          },
+        ];
+        return (
+          <div className="space-y-3">
+            <h3 className="text-[15px] font-semibold text-text-primary">
+              Wie viele Durchbrüche sind geplant?
+            </h3>
+            <div className="space-y-2">
+              {anzahlOpts.map((o) => (
+                <SelectionTile
+                  key={o.value}
+                  option={asLib(o)}
+                  selected={
+                    (o.value === "1" && n.durchbruchAnzahl === 1) ||
+                    (o.value === "2" && n.durchbruchAnzahl === 2) ||
+                    (o.value === "3_plus" && n.durchbruchAnzahl === 3)
+                  }
+                  multi={false}
+                  onChange={(value, sel) => {
+                    const hit = anzahlOpts.find((x) => x.value === value);
+                    const g =
+                      typeof hit?.groesse === "number" ? hit.groesse : 1;
+                    onPatch({
+                      ...n,
+                      durchbruchAnzahl: sel ? g : undefined,
+                      durchbruchTragend: sel ? n.durchbruchTragend : undefined,
+                    });
+                  }}
+                />
+              ))}
+            </div>
+          </div>
+        );
+      }
+      if (n.durchbruchTragend === undefined) {
+        const statikOpts = [
+          {
+            value: "tragend" as const,
+            label: "Ja, tragend",
+            hint: "Statik, Stahlträger, Abfangung",
+            emoji: "🏛️",
+          },
+          {
+            value: "nicht_tragend" as const,
+            label: "Nein, nicht tragend",
+            hint: "Leichtbau oder nicht tragende Trennwand",
+            emoji: "🧱",
+          },
+        ];
+        return (
+          <div className="space-y-3">
+            <h3 className="text-[15px] font-semibold text-text-primary">
+              Sind tragende Wände betroffen?
+            </h3>
+            <div className="space-y-2">
+              {statikOpts.map((o) => (
+                <SelectionTile
+                  key={o.value}
+                  option={asLib(o)}
+                  selected={
+                    o.value === "tragend"
+                      ? n.durchbruchTragend === true
+                      : n.durchbruchTragend === false
+                  }
+                  multi={false}
+                  onChange={(value, sel) => {
+                    onPatch({
+                      ...n,
+                      durchbruchTragend: sel
+                        ? value === "tragend"
+                        : undefined,
+                    });
+                  }}
+                />
+              ))}
+            </div>
+          </div>
+        );
+      }
+    }
   }
 
   return null;
@@ -231,8 +372,16 @@ export function neubauenFollowUpBlocksPlanung(
     if (!n.rohbau) return true;
     if (n.rohbau === "nein") return false;
     if (n.rohbau === "ja" && !n.deckenhoehe) return true;
+    if (n.deckenhoehe === "niedrig") return false;
+    if (!n.kellerOderDg) return true;
   }
   if (b.has("terrasse") && !n.terrasse) return true;
-  if (b.has("umbau") && !n.innen) return true;
+  if (b.has("umbau")) {
+    if (!n.innen) return true;
+    if (n.innen === "durchbruch") {
+      if (n.durchbruchAnzahl == null) return true;
+      if (n.durchbruchTragend === undefined) return true;
+    }
+  }
   return false;
 }

@@ -128,7 +128,7 @@ const KATEGORIEN: Kategorie[] = [
         hint: "Terrasse, Wege, Bepflanzung",
         emoji: "🌳",
         href: "/leistungen/gartengestaltung-muenchen",
-        rechnerHref: "/rechner?situation=neubauen",
+        rechnerHref: "/rechner?leistung=gartengestaltung",
       },
     ],
   },

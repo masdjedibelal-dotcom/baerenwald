@@ -8,6 +8,8 @@ import {
   getZustandDisplayLabel,
 } from "@/lib/funnel/config";
 import type { FunnelState } from "@/lib/funnel/types";
+import { isReparaturNotfallSituation } from "@/lib/funnel/reparatur-flow";
+import { zeigtGuProjektPaketBanner } from "@/lib/funnel/projekt-erneuern";
 import {
   BW_GU_KOORDINATION_HINT,
   buildBwBadActiveFeatures,
@@ -16,6 +18,7 @@ import {
 import {
   calculatePrice,
   getBwResultModus,
+  shouldShowHeizungWpFoerderHint,
   type BwResultModus,
 } from "@/lib/funnel/price-calc";
 import { SITE_CONFIG } from "@/lib/config";
@@ -96,7 +99,7 @@ function getAktiveGewerke(state: FunnelState): string[] {
   if (bereiche.includes("dach")) push("dach");
   if (
     bereiche.includes("garten") ||
-    bereiche.includes("gestaltung") ||
+    bereiche.includes("gartengestaltung") ||
     bereiche.includes("baum")
   ) {
     push("garten");
@@ -431,8 +434,6 @@ function ZuKomplexScreen({
   const submitDisabled =
     !telTrim || !datenschutz || submitStatus === "loading";
 
-  const fassadeDaemmungKomplex = state.bereiche.includes("fassade_daemmung");
-
   return (
     <div className={cn("komplex-screen", className)}>
       {karteGewerbe ? (
@@ -475,17 +476,8 @@ function ZuKomplexScreen({
             Dein Projekt startet ab ca. {formatCurrencyEUR(abMin)}.
           </h2>
           <p className="komplex-sub">
-            {fassadeDaemmungKomplex ? (
-              <>
-                Fassadendämmung planen wir persönlich mit dir — ein kurzes
-                Gespräch hilft uns, den nächsten Schritt festzulegen.
-              </>
-            ) : (
-              <>
-                Für einen finalen Preis kommen wir um einen Vor-Ort-Termin
-                nicht herum.
-              </>
-            )}
+            Für einen finalen Preis kommen wir um einen Vor-Ort-Termin nicht
+            herum.
           </p>
           {komplexActiveFeatures.length > 0 ? (
             <div className="bw-active-features bw-active-features--komplex">
@@ -664,47 +656,6 @@ export function BwResultScreen({
     state.plz,
   ]);
 
-  const notfallAkut =
-    state.situation === "notfall" && state.dringlichkeit === "sofort";
-
-  if (notfallAkut) {
-    return (
-      <div className={cn("space-y-6", className)}>
-        <div className="relative overflow-hidden rounded-[18px] bg-surface-dark p-6 text-center text-white">
-          <div className="flex justify-center">
-            <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2.5 py-1 text-[11px] font-semibold text-amber-950">
-              <span aria-hidden>⚡</span> Dringend
-            </span>
-          </div>
-          <p className="mt-3 text-[11px] font-medium uppercase tracking-widest text-white/70">
-            Notfall
-          </p>
-          <p className="mt-3 text-base leading-snug text-white/90">
-            Typischer Einsatz:{" "}
-            <strong className="text-white">150–600 €</strong>
-          </p>
-          <p className="mt-2 text-sm text-white/80">
-            Für akute Fälle ruf uns direkt an.
-          </p>
-          <a
-            href={SITE_CONFIG.phoneHref}
-            className="bw-akut-tel-btn mt-5 inline-flex w-full max-w-sm items-center justify-center gap-2 rounded-2xl bg-funnel-accent px-5 py-4 text-lg font-bold text-white shadow-lg transition-opacity hover:opacity-95"
-          >
-            <PhoneIconKomplex />
-            {SITE_CONFIG.phone}
-          </a>
-          <div className="notfall-trust mt-5 space-y-2 text-left text-sm text-white/90">
-            <div className="notfall-trust-item">✓ Schnelle Rückmeldung</div>
-            <div className="notfall-trust-item">
-              ✓ Wir sind in München & Umgebung
-            </div>
-            <div className="notfall-trust-item">✓ Transparente Preise</div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   const isZuKomplex =
     resultModus === "zu_komplex" || getBwResultModus(state) === "zu_komplex";
 
@@ -723,7 +674,7 @@ export function BwResultScreen({
 
   const showVergleichHint =
     hasRange &&
-    state.situation !== "notfall" &&
+    !isReparaturNotfallSituation(state.situation) &&
     resultModus !== "notfall_akut" &&
     (resultModus === "preisrahmen" ||
       resultModus === "preisrahmen_warnung" ||
@@ -731,6 +682,33 @@ export function BwResultScreen({
 
   return (
     <div className={cn("bw-result-screen", className)}>
+      {hasRange && zeigtGuProjektPaketBanner(state) ? (
+        <div className="mb-5 rounded-xl border border-emerald-200 bg-emerald-50/95 px-4 py-3 text-sm leading-snug text-emerald-950 shadow-sm">
+          <p className="font-semibold text-emerald-950">
+            GU-SERVICE: Dieser Preis ist ein schlüsselfertiges Gesamtangebot inkl.
+            Koordination aller beteiligten Gewerke.
+          </p>
+        </div>
+      ) : null}
+      {resultModus === "notfall_akut" ? (
+        <div className="mb-5 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm leading-snug text-red-950 shadow-sm">
+          <p className="font-semibold text-red-950">
+            <span aria-hidden>⚡</span> Akuter Notfall — wir priorisieren deine
+            Anfrage.
+          </p>
+          <p className="mt-2 text-red-900/90">
+            Für akute Gefahren oder Lebensgefahr zusätzlich{" "}
+            <strong>112</strong> wählen.
+          </p>
+          <a
+            href={SITE_CONFIG.phoneHref}
+            className="bw-akut-tel-btn mt-3 inline-flex w-full max-w-sm items-center justify-center gap-2 rounded-xl bg-funnel-accent px-4 py-3 text-base font-bold text-white"
+          >
+            <PhoneIconKomplex />
+            {SITE_CONFIG.phone}
+          </a>
+        </div>
+      ) : null}
       {hasRange ? (
         <div className="preis-karte">
           <p className="preis-karte-kicker">Dein Preisrahmen</p>
@@ -746,6 +724,13 @@ export function BwResultScreen({
           <ResultEinordnung state={state} />
           <BadErgebnisMerkmale state={state} />
 
+          {shouldShowHeizungWpFoerderHint(state) ? (
+            <p className="mt-4 rounded-xl border border-emerald-200/80 bg-emerald-50/90 px-4 py-3 text-sm leading-snug text-emerald-950">
+              Staatliche Förderung von bis zu 70&nbsp;% möglich. Der angezeigte
+              Preis ist der Bruttobetrag vor Abzug der Fördergelder.
+            </p>
+          ) : null}
+
           {state.istFallback ? (
             <p className="preis-karte-fallback">
               Für deine Auswahl nutzen wir allgemeine Münchner Marktpreise — beim
@@ -758,7 +743,13 @@ export function BwResultScreen({
               nach Vor-Ort-Termin.
             </p>
           ) : null}
-          {state.situation === "notfall" ? (
+          {isReparaturNotfallSituation(state.situation) ? (
+            <p className="mt-4 rounded-xl border border-border-default bg-surface-muted px-4 py-3 text-sm leading-snug text-text-secondary">
+              Der Preis beinhaltet die fachmännische Diagnose und Anfahrt.
+              Materialkosten werden nach tatsächlichem Aufwand berechnet.
+            </p>
+          ) : null}
+          {isReparaturNotfallSituation(state.situation) ? (
             <>
               <a
                 href={SITE_CONFIG.phoneHref}
