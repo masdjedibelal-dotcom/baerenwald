@@ -25,24 +25,36 @@ const tel = SITE_CONFIG.phone.replace(/\s/g, "");
 function rechnerSituationParam(id: MarketingSituation): FunnelSituation {
   const m: Record<MarketingSituation, FunnelSituation> = {
     renovierung: "erneuern",
-    neubau: "neubauen",
-    akut: "notfall",
+    neubau: "erneuern",
+    akut: "kaputt",
     pflege: "betreuung",
     b2b: "gewerbe",
   };
   return m[id];
 }
 
-const HERO_CHIPS: (
-  | { label: string; situation: FunnelSituation; notfall?: boolean; leistung?: undefined }
-  | { label: string; leistung: string; situation?: undefined; notfall?: boolean }
-)[] = [
-  { label: "Wohnung streichen", situation: "erneuern" },
-  { label: "Neues Bad", leistung: "badezimmer-sanierung" },
-  { label: "Heizung tauschen", situation: "erneuern" },
-  { label: "Gartenpflege", situation: "betreuung" },
-  { label: "Neuer Boden", situation: "erneuern" },
-  { label: "Dringend — Notfall", situation: "notfall", notfall: true },
+const HERO_FOCUS_TILES: {
+  title: string;
+  hint: string;
+  situation: FunnelSituation;
+  accent?: "notfall";
+}[] = [
+  {
+    title: "Modernisieren & Ausbauen",
+    hint: "Geplant modernisieren — mehr Wert und Komfort.",
+    situation: "erneuern",
+  },
+  {
+    title: "Reparieren & Notdienst",
+    hint: "Schnelle Hilfe bei Schaden, Ausfall oder Akutfall.",
+    situation: "kaputt",
+    accent: "notfall",
+  },
+  {
+    title: "Pflegen & Betreuen",
+    hint: "Regelmäßige Pflege — weniger Aufwand für dich.",
+    situation: "betreuung",
+  },
 ];
 
 function IconCalendar({ className }: { className?: string }) {
@@ -206,25 +218,36 @@ export function HomeLanding() {
               </div>
             </form>
 
-            <div className="mt-4 flex flex-wrap items-center gap-2">
-              <span className="mr-1 text-xs text-white/40">Oft gesucht:</span>
-              {HERO_CHIPS.map((c) => (
-                <Link
-                  key={c.label}
-                  href={
-                    "leistung" in c && c.leistung
-                      ? `/rechner?leistung=${encodeURIComponent(c.leistung)}`
-                      : `/rechner?situation=${(c as { situation: FunnelSituation }).situation}`
-                  }
-                  className={cn(
-                    "cursor-pointer rounded-full border border-white/10 bg-white/[0.03] px-3 py-1.5 text-xs text-white/60 transition hover:border-white/30 hover:text-white/70",
-                    c.notfall &&
-                      "border-red-500/30 text-red-400/60 hover:border-red-500/50 hover:text-red-400"
-                  )}
-                >
-                  {c.label}
-                </Link>
-              ))}
+            <div className="mt-6">
+              <p className="mb-3 text-xs font-medium uppercase tracking-wide text-white/45">
+                Direkt einsteigen
+              </p>
+              <div className="grid gap-3 sm:grid-cols-3">
+                {HERO_FOCUS_TILES.map((tile) => (
+                  <Link
+                    key={tile.title}
+                    href={`/rechner?situation=${tile.situation}`}
+                    className={cn(
+                      "group rounded-2xl border border-white/[0.12] bg-white/[0.04] px-4 py-4 transition hover:border-white/25 hover:bg-white/[0.07]",
+                      tile.accent === "notfall" &&
+                        "border-red-500/25 hover:border-red-400/40"
+                    )}
+                  >
+                    <span
+                      className={cn(
+                        "block font-display text-base font-semibold leading-snug text-white",
+                        tile.accent === "notfall" &&
+                          "group-hover:text-red-100/95"
+                      )}
+                    >
+                      {tile.title}
+                    </span>
+                    <span className="mt-2 block text-xs leading-relaxed text-white/55">
+                      {tile.hint}
+                    </span>
+                  </Link>
+                ))}
+              </div>
             </div>
 
             <div className="mt-8 flex flex-wrap gap-x-6 gap-y-2 text-[11px] text-white/35">

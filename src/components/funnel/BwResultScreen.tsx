@@ -30,6 +30,57 @@ import {
 import { DatenschutzCheckbox } from "./DatenschutzCheckbox";
 import { NeueAnfrageResetLink } from "./NeueAnfrageResetLink";
 
+function ResultSituationBanner({ state }: { state: FunnelState }) {
+  const hasRange = state.priceMin > 0 && state.priceMax > 0;
+  if (!hasRange) return null;
+
+  if (zeigtGuProjektPaketBanner(state)) {
+    return (
+      <div className="mb-5 rounded-xl border border-emerald-200 bg-emerald-50/95 px-4 py-3 text-sm leading-snug text-emerald-950 shadow-sm">
+        <p className="font-semibold text-emerald-950">
+          Dein schlüsselfertiges Projekt-Angebot
+        </p>
+        <p className="mt-2 text-emerald-900/95">
+          Dieser Preis umfasst die komplette Ausführung inkl. Bauleitung,
+          Materiallogistik und Handwerker-Koordination. Wir übernehmen die
+          Gewährleistung für das gesamte Gewerk.
+        </p>
+      </div>
+    );
+  }
+
+  if (state.situation === "betreuung") {
+    return (
+      <div className="mb-5 rounded-xl border border-teal-200 bg-teal-50/95 px-4 py-3 text-sm leading-snug text-teal-950 shadow-sm">
+        <p className="font-semibold text-teal-950">
+          Sorgenfreie Immobilien-Pflege
+        </p>
+        <p className="mt-2 text-teal-900/95">
+          Dein Pauschalpreis für regelmäßige Qualität und Werterhalt deiner
+          Immobilie.
+        </p>
+      </div>
+    );
+  }
+
+  if (isReparaturNotfallSituation(state.situation)) {
+    return (
+      <div className="mb-5 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm leading-snug text-slate-900 shadow-sm">
+        <p className="font-semibold text-slate-900">
+          Professionelle Schadensbehebung
+        </p>
+        <p className="mt-2 text-slate-800">
+          Inklusive Anfahrt und Diagnose durch qualifizierte Fachkräfte. Bei Wahl
+          von „Sofort“ ist unsere 24/7-Notfall-Bereitschaft bereits
+          eingerechnet.
+        </p>
+      </div>
+    );
+  }
+
+  return null;
+}
+
 const RESULT_TESTIMONIALS = [
   {
     quote: "Transparenter Preis, pünktlicher Handwerker.",
@@ -363,9 +414,8 @@ function ZuKomplexScreen({
   }, []);
 
   const karteNeubauenStil =
-    state.situation === "neubauen" ||
-    (state.situation === "erneuern" &&
-      state.komplexReason === "no_mapping_found");
+    state.situation === "erneuern" &&
+    state.komplexReason === "no_mapping_found";
   const karteGewerbe = state.situation === "gewerbe";
 
   const handleKomplexSubmit = useCallback(async () => {
@@ -672,6 +722,10 @@ export function BwResultScreen({
 
   const hasRange = state.priceMin > 0 && state.priceMax > 0;
 
+  const sofortReparaturPrioritaet =
+    state.zeitraum === "sofort" &&
+    isReparaturNotfallSituation(state.situation);
+
   const showVergleichHint =
     hasRange &&
     !isReparaturNotfallSituation(state.situation) &&
@@ -682,14 +736,7 @@ export function BwResultScreen({
 
   return (
     <div className={cn("bw-result-screen", className)}>
-      {hasRange && zeigtGuProjektPaketBanner(state) ? (
-        <div className="mb-5 rounded-xl border border-emerald-200 bg-emerald-50/95 px-4 py-3 text-sm leading-snug text-emerald-950 shadow-sm">
-          <p className="font-semibold text-emerald-950">
-            GU-SERVICE: Dieser Preis ist ein schlüsselfertiges Gesamtangebot inkl.
-            Koordination aller beteiligten Gewerke.
-          </p>
-        </div>
-      ) : null}
+      <ResultSituationBanner state={state} />
       {resultModus === "notfall_akut" ? (
         <div className="mb-5 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm leading-snug text-red-950 shadow-sm">
           <p className="font-semibold text-red-950">
@@ -710,7 +757,12 @@ export function BwResultScreen({
         </div>
       ) : null}
       {hasRange ? (
-        <div className="preis-karte">
+        <div
+          className={cn(
+            "preis-karte",
+            sofortReparaturPrioritaet && "rounded-[18px] ring-2 ring-emerald-600/40"
+          )}
+        >
           <p className="preis-karte-kicker">Dein Preisrahmen</p>
           <div className="preis-karte-range">
             <span className="preis-karte-zahl">
@@ -745,8 +797,8 @@ export function BwResultScreen({
           ) : null}
           {isReparaturNotfallSituation(state.situation) ? (
             <p className="mt-4 rounded-xl border border-border-default bg-surface-muted px-4 py-3 text-sm leading-snug text-text-secondary">
-              Der Preis beinhaltet die fachmännische Diagnose und Anfahrt.
-              Materialkosten werden nach tatsächlichem Aufwand berechnet.
+              Endgültige Abrechnung erfolgt nach tatsächlichem Materialaufwand vor
+              Ort.
             </p>
           ) : null}
           {isReparaturNotfallSituation(state.situation) ? (

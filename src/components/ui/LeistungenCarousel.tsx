@@ -182,7 +182,7 @@ const KATEGORIEN: Kategorie[] = [
         hint: "Schnell vor Ort — auch kurzfristig",
         emoji: "🔥",
         href: "/leistungen/heizung-sanitaer-muenchen",
-        rechnerHref: "/rechner?situation=notfall",
+        rechnerHref: "/rechner?situation=kaputt",
       },
       {
         slug: "wasser-notfall",
@@ -190,7 +190,7 @@ const KATEGORIEN: Kategorie[] = [
         hint: "Soforteinsatz — Haupthahn schließen",
         emoji: "💧",
         href: "/leistungen/heizung-sanitaer-muenchen",
-        rechnerHref: "/rechner?situation=notfall",
+        rechnerHref: "/rechner?situation=kaputt",
       },
       {
         slug: "elektro-notfall",
@@ -198,7 +198,7 @@ const KATEGORIEN: Kategorie[] = [
         hint: "Zertifizierter Elektrobetrieb",
         emoji: "⚡",
         href: "/leistungen/elektroarbeiten-muenchen",
-        rechnerHref: "/rechner?situation=notfall",
+        rechnerHref: "/rechner?situation=kaputt",
       },
     ],
   },

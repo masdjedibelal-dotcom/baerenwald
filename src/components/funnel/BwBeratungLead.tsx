@@ -4,7 +4,7 @@ import { DatenschutzCheckbox } from "@/components/funnel/DatenschutzCheckbox";
 import { StepWrapper } from "@/components/funnel/StepWrapper";
 import type { Situation } from "@/lib/funnel/types";
 
-export type BwBeratungLeadKind = "b2b" | "schimmel" | "neubauen_idee";
+export type BwBeratungLeadKind = "b2b" | "schimmel";
 
 export interface BwBeratungLeadProps {
   kind: BwBeratungLeadKind;
@@ -38,23 +38,15 @@ export function BwBeratungLead({
   onSubmit,
 }: BwBeratungLeadProps) {
   const eyebrow =
-    kind === "schimmel"
-      ? "Schimmel / Feuchtigkeit"
-      : kind === "neubauen_idee"
-        ? "Neu bauen / Ausbau"
-        : "Gewerbe";
+    kind === "schimmel" ? "Schimmel / Feuchtigkeit" : "Gewerbe";
   const headline =
     kind === "schimmel"
       ? "Schimmel braucht eine Vor-Ort-Analyse."
-      : kind === "neubauen_idee"
-        ? "Super dass du planst!"
-        : "Gewerbliches Projekt?";
+      : "Gewerbliches Projekt?";
   const sub =
     kind === "schimmel"
       ? "Eine automatische Preisberechnung wäre hier nicht seriös — zu viel hängt von der Ursache ab. Wir schauen es uns an und melden uns persönlich."
-      : kind === "neubauen_idee"
-        ? "Komm in 3–6 Monaten wieder wenn du weiter geplant hast — oder lass dich jetzt unverbindlich beraten. Wir freuen uns auf dein Projekt."
-        : "Ob Büro, Praxis, Laden oder Gastronomie — wir planen individuell mit dir. Melde dich kurz und wir melden uns innerhalb von 24h.";
+      : "Ob Büro, Praxis, Laden oder Gastronomie — wir planen individuell mit dir. Melde dich kurz und wir melden uns innerhalb von 24h.";
 
   return (
     <StepWrapper

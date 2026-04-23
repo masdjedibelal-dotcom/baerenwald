@@ -16,10 +16,6 @@ import "@/app/baerenwald-landing.css";
 import { BwBeratungLead } from "@/components/funnel/BwBeratungLead";
 import { BwResultScreen } from "@/components/funnel/BwResultScreen";
 import { FachdetailsStep } from "@/components/funnel/FachdetailsStep";
-import {
-  NeubauenFollowUpBlock,
-  neubauenFollowUpBlocksPlanung,
-} from "@/components/funnel/NeubauenFollowUp";
 import { FunnelErrorBoundary } from "@/components/funnel/FunnelErrorBoundary";
 import { HWLeadForm } from "@/components/funnel/HWLeadForm";
 import {
@@ -49,6 +45,8 @@ import {
   shouldSwapFachdetailsBeforeGroesse,
   BW_FUNNEL_STEP_BAD_AUSSTATTUNG,
   needsZeitraumSelection,
+  getZeitraumOptions,
+  getZeitraumFragen,
 } from "@/lib/funnel/config";
 import {
   firstFachdetailQuestionScreenId,
@@ -79,7 +77,6 @@ import type {
   FunnelState,
   FunnelStep,
   Kundentyp,
-  NotfallDringlichkeit,
   ObjektZustand,
   Situation,
   StepOption as FunnelStepOption,
@@ -114,6 +111,7 @@ type Screen =
   | FachdetailQuestionScreenId
   | "kundentyp"
   | "umfang"
+  | "zeitpunkt"
   | "zugaenglichkeit"
   | "zustand"
   | "groesse"
@@ -123,6 +121,8 @@ type Screen =
   | "projekt_durchbruch_statik"
   | "projekt_garten_zaun"
   | "projekt_garten_zugang"
+  | "projekt_ausbau_rohbau"
+  | "projekt_ausbau_deckenhoehe"
   | "bad_ausstattung"
   | "ort"
   | "loading"
@@ -148,9 +148,11 @@ function normalizeSituationQueryParam(raw: string | null): Situation | null {
     sanieren: "erneuern",
     renovierung: "erneuern",
     gastro: "gewerbe",
-    neubau: "neubauen",
+    neubau: "erneuern",
+    neubauen: "erneuern",
     pflege: "betreuung",
-    akut: "notfall",
+    akut: "kaputt",
+    notfall: "kaputt",
     b2b: "gewerbe",
   };
   const candidate = aliasMap[lower] ?? lower;
@@ -206,8 +208,6 @@ function FunnelRechnerInner() {
   const [komplexRueckrufDanke, setKomplexRueckrufDanke] = useState(false);
   /** Direkt nach Schimmel-Kachel: Beratungs-Lead mit Spezialtext */
   const [schimmelBeratung, setSchimmelBeratung] = useState(false);
-  /** Neubauen „Erst eine Idee“ → sanfter Beratungs-Lead */
-  const [neubauenIdeeBeratung, setNeubauenIdeeBeratung] = useState(false);
   const [leadSubmitting, setLeadSubmitting] = useState(false);
   const [leadSubmitError, setLeadSubmitError] = useState<string | null>(null);
   /** Kurzzeit-Hinweis nach Suche ohne Allowlist-Treffer (`?nf=1`). */
@@ -260,7 +260,6 @@ function FunnelRechnerInner() {
       state.fachdetails?.garten?.baumgroesse,
       state.fachdetails?.maler?.was,
       state.fachdetails?.maler?.fassade,
-      state.fachdetails?.neubauen,
       state.fachdetails?.projekt,
     ]
   );
@@ -304,10 +303,7 @@ function FunnelRechnerInner() {
       resolvedSteps.find(
         (s) =>
           s.id.endsWith("_umfang") ||
-          s.id === "notfall_dringlichkeit" ||
-          s.id === "kaputt_dringlichkeit" ||
-          s.id === "betreuung_haeufigkeit" ||
-          s.id === "neubauen_planung"
+          s.id === "betreuung_haeufigkeit"
       ) ?? null,
     [resolvedSteps]
   );
@@ -346,24 +342,12 @@ function FunnelRechnerInner() {
     [stepKundentyp]
   );
 
-  /** Nur nach gewählter Planung (nicht „Erst eine Idee“): offene Keller/Terrasse/Umbau-Rückfragen blockieren „Weiter“. */
-  const neubauenDetailOffen =
-    state.situation === "neubauen" &&
-    Boolean(state.umfang) &&
-    state.umfang !== "idee" &&
-    neubauenFollowUpBlocksPlanung(
-      state.bereiche,
-      state.fachdetails.neubauen
-    );
-
   const umfangOk =
     isReparaturNotfallSituation(state.situation)
-      ? Boolean(state.dringlichkeit)
-      : state.situation === "neubauen" && state.umfang === "idee"
-        ? true
-        : state.situation === "neubauen" && neubauenDetailOffen
-          ? false
-          : Boolean(state.umfang);
+      ? Boolean(state.zeitraum)
+      : stepUmfang
+        ? Boolean(state.umfang)
+        : true;
 
   /** Screen-Reihenfolge (ohne loading/result/lead) — stabil, damit handleBack & Fachdetail „X von Y“ konsistent bleiben. */
   const stepSequence = useMemo(
@@ -373,6 +357,7 @@ function FunnelRechnerInner() {
       state.bereiche,
       state.umfang,
       state.dringlichkeit,
+      state.zeitraum,
       state.groesse,
       state.badAusstattung ?? null,
       state.fachdetails,
@@ -425,6 +410,15 @@ function FunnelRechnerInner() {
       setScreen((stepSequence[0] ?? "situation") as Screen);
     }
   }, [screen, stepSequence]);
+
+  /** Reparatur/Notfall: kein m² — leerer Größen-Screen vermeiden, falls Sequenz fehlerhaft `groesse` enthält. */
+  useEffect(() => {
+    if (screen !== "groesse") return;
+    if (!isReparaturNotfallSituation(state.situation)) return;
+    if (groesseSliderConfig) return;
+    const next = getNextBwRechnerScreen(state, "groesse");
+    if (next) setScreen(next as Screen);
+  }, [screen, state, groesseSliderConfig]);
 
   useEffect(() => {
     const id = requestAnimationFrame(() => {
@@ -547,7 +541,6 @@ function FunnelRechnerInner() {
     setMicroNote(null);
     setPriceConfirmed(false);
     setSchimmelBeratung(false);
-    setNeubauenIdeeBeratung(false);
     setLeadSubmitting(false);
     setLeadSubmitError(null);
 
@@ -598,7 +591,9 @@ function FunnelRechnerInner() {
       screen === "projekt_durchbruch_anzahl" ||
       screen === "projekt_durchbruch_statik" ||
       screen === "projekt_garten_zaun" ||
-      screen === "projekt_garten_zugang"
+      screen === "projekt_garten_zugang" ||
+      screen === "projekt_ausbau_rohbau" ||
+      screen === "projekt_ausbau_deckenhoehe"
     ) {
       const nextProj = getNextBwRechnerScreen(state, screen);
       if (nextProj) setScreen(nextProj as Screen);
@@ -631,14 +626,14 @@ function FunnelRechnerInner() {
       case "kundentyp":
         if (state.kundentyp) setScreen("ort");
         break;
+      case "zeitpunkt":
+        if (state.zeitraum) {
+          const nextZ = getNextBwRechnerScreen(state, "zeitpunkt");
+          if (nextZ) setScreen(nextZ as Screen);
+        }
+        break;
       case "umfang":
         if (umfangOk) {
-          if (state.situation === "neubauen" && state.umfang === "idee") {
-            setNeubauenIdeeBeratung(true);
-            setSchimmelBeratung(false);
-            setScreen("beratung-lead");
-            break;
-          }
           const nextAfterUmfang = getNextBwRechnerScreen(state, "umfang");
           if (nextAfterUmfang) setScreen(nextAfterUmfang as Screen);
         }
@@ -651,6 +646,11 @@ function FunnelRechnerInner() {
         break;
       case "groesse":
         if (state.groesse != null) {
+          const nextFromSeq = getNextBwRechnerScreen(state, "groesse");
+          if (nextFromSeq) {
+            setScreen(nextFromSeq as Screen);
+            break;
+          }
           if (hasBadAusstattungStep) {
             setScreen("bad_ausstattung");
           } else if (fachdetailsBeforeGroesse) {
@@ -671,6 +671,11 @@ function FunnelRechnerInner() {
         break;
       case "bad_ausstattung":
         if (state.badAusstattung ?? null) {
+          const nextBad = getNextBwRechnerScreen(state, "bad_ausstattung");
+          if (nextBad) {
+            setScreen(nextBad as Screen);
+            break;
+          }
           if (fachdetailsBeforeGroesse) {
             if (hasKundentypStep) setScreen("kundentyp");
             else setScreen("ort");
@@ -751,11 +756,9 @@ function FunnelRechnerInner() {
       const qid = getFachdetailQuestionIdFromScreen(screen);
       if (qid) clearFachdetailAnswer(qid);
     }
-    const steps = stepSequence;
-    const currentIndex = steps.lastIndexOf(screen);
-    if (currentIndex > 0) {
-      const prevStep = steps[currentIndex - 1]!;
-      setScreen(prevStep as Screen);
+    const prevSeq = getPreviousBwRechnerScreen(state, screen);
+    if (prevSeq) {
+      setScreen(prevSeq as Screen);
       window.scrollTo({
         top: 0,
         left: 0,
@@ -763,6 +766,8 @@ function FunnelRechnerInner() {
       });
       return;
     }
+    const steps = stepSequence;
+    const currentIndex = steps.lastIndexOf(screen);
     if (currentIndex < 0 && isBwFachdetailQuestionScreenId(screen)) {
       const firstFdIdx = steps.findIndex((s) =>
         isBwFachdetailQuestionScreenId(s)
@@ -805,10 +810,7 @@ function FunnelRechnerInner() {
         });
         break;
       case "beratung-lead":
-        if (neubauenIdeeBeratung) {
-          setNeubauenIdeeBeratung(false);
-          setScreen("umfang");
-        } else if (isB2B(state.situation)) {
+        if (isB2B(state.situation)) {
           setScreen("situation");
         } else {
           setScreen("bereiche");
@@ -830,7 +832,7 @@ function FunnelRechnerInner() {
       default:
         break;
     }
-  }, [screen, state, stepSequence, clearFachdetailAnswer, neubauenIdeeBeratung]);
+  }, [screen, state, stepSequence, clearFachdetailAnswer]);
 
   const nextDisabled = useMemo(() => {
     if (isBwFachdetailQuestionScreenId(screen)) {
@@ -860,6 +862,8 @@ function FunnelRechnerInner() {
         return state.bereiche.length === 0;
       case "kundentyp":
         return !state.kundentyp;
+      case "zeitpunkt":
+        return !state.zeitraum;
       case "umfang":
         return !umfangOk;
       case "zugaenglichkeit":
@@ -880,6 +884,10 @@ function FunnelRechnerInner() {
         return state.fachdetails?.projekt?.gartenZaun === undefined;
       case "projekt_garten_zugang":
         return state.fachdetails?.projekt?.gartenZugaenglichkeit === undefined;
+      case "projekt_ausbau_rohbau":
+        return !state.fachdetails?.projekt?.ausbauRohbau;
+      case "projekt_ausbau_deckenhoehe":
+        return !state.fachdetails?.projekt?.ausbauDeckenhoehe;
       case "bad_ausstattung":
         return !(state.badAusstattung ?? null);
       case "ort": {
@@ -923,7 +931,6 @@ function FunnelRechnerInner() {
       if (schimmelBeratung || state.bereiche.includes("schimmel")) {
         return "Rückruf anfragen →";
       }
-      if (neubauenIdeeBeratung) return "Jetzt beraten lassen →";
       return "Rückruf anfordern →";
     }
     if (screen === "result" && resultModus === "preisrahmen_warnung")
@@ -936,7 +943,6 @@ function FunnelRechnerInner() {
     priceConfirmed,
     schimmelBeratung,
     state.bereiche,
-    neubauenIdeeBeratung,
     leadSubmitting,
   ]);
 
@@ -1117,7 +1123,7 @@ function FunnelRechnerInner() {
                   }
                   if (sel && funnelOpt.direktKomplex) {
                     setBereiche([value]);
-                    if (state.situation === "neubauen" && value === "anbau") {
+                    if (state.situation === "erneuern" && value === "anbau") {
                       setSchimmelBeratung(false);
                       return;
                     }
@@ -1141,59 +1147,6 @@ function FunnelRechnerInner() {
 
   const renderUmfangTiles = () => {
     if (!stepUmfang?.options?.length) return null;
-    if (isReparaturNotfallSituation(state.situation)) {
-      return (
-        <div className="space-y-3">
-          {stepUmfang.options.map((opt) => {
-            const libOpt = asLibOpt(opt);
-            const selected = state.dringlichkeit === opt.value;
-            return (
-              <SelectionTile
-                key={opt.value}
-                option={libOpt}
-                icon={
-                  libOpt.emoji ? undefined : tileIconForStepValue(opt.value)
-                }
-                selected={selected}
-                multi={false}
-                onChange={(value, sel) => {
-                  if (!sel) {
-                    setDringlichkeit(null);
-                    setUmfang(null, 1);
-                    return;
-                  }
-                  setDringlichkeit(value as NotfallDringlichkeit);
-                  setUmfang(value, opt.faktor ?? 1);
-                }}
-              />
-            );
-          })}
-          {state.situation === "notfall" ? (
-            <div className="notfall-hint rounded-xl border border-border-default bg-surface-muted px-4 py-3 text-sm text-text-secondary">
-              <span className="text-text-primary">Kein echter Notfall?</span>{" "}
-              <button
-                type="button"
-                className="font-semibold text-funnel-accent underline-offset-2 hover:underline"
-                onClick={() => {
-                  setDringlichkeit(null);
-                  setUmfang(null, 1);
-                  setSituation("kaputt");
-                  setBereiche([]);
-                  setScreen("bereiche");
-                }}
-              >
-                → Zu Reparatur / Defekt
-              </button>
-            </div>
-          ) : null}
-        </div>
-      );
-    }
-    const showNeubauenFollowUpNachPlan =
-      state.situation === "neubauen" &&
-      stepUmfang.id === "neubauen_planung" &&
-      Boolean(state.umfang) &&
-      state.umfang !== "idee";
 
     return (
       <div className="space-y-3">
@@ -1219,17 +1172,6 @@ function FunnelRechnerInner() {
             />
           );
         })}
-        {showNeubauenFollowUpNachPlan ? (
-          <NeubauenFollowUpBlock
-            bereiche={state.bereiche}
-            neubauen={state.fachdetails.neubauen}
-            onPatch={(p) =>
-              setFachdetails({
-                neubauen: { ...state.fachdetails.neubauen, ...p },
-              })
-            }
-          />
-        ) : null}
       </div>
     );
   };
@@ -1323,6 +1265,53 @@ function FunnelRechnerInner() {
             {renderTiles(stepBereiche)}
           </StepWrapper>
         );
+
+      case "zeitpunkt": {
+        const zOpts = getZeitraumOptions(state.situation);
+        const zFragen = getZeitraumFragen(state.situation);
+        return (
+          <StepWrapper
+            stepLabel="Termin"
+            question={zFragen.question || "Wann passt es?"}
+            subtext={zFragen.hint}
+            banner={microBannerFor("zeitpunkt")}
+            animateKey={`${screen}-${state.situation}`}
+            tilesCard
+          >
+            <div className="space-y-3">
+              {zOpts.map((opt) => {
+                const selected = state.zeitraum === opt.value;
+                return (
+                  <SelectionTile
+                    key={opt.value}
+                    option={{
+                      value: opt.value,
+                      label: opt.label,
+                      hint: opt.hint,
+                      emoji: opt.emoji,
+                    }}
+                    selected={selected}
+                    multi={false}
+                    onChange={(value, sel) => {
+                      if (!sel) {
+                        setZeitraum(null);
+                        setDringlichkeit(null);
+                        setUmfang(null, 1);
+                        return;
+                      }
+                      const z = value as Zeitraum;
+                      setZeitraum(z);
+                      setUmfang(z, 1);
+                      if (z === "sofort") setDringlichkeit("sofort");
+                      else setDringlichkeit("diese_woche");
+                    }}
+                  />
+                );
+              })}
+            </div>
+          </StepWrapper>
+        );
+      }
 
       case "kundentyp":
         return (
@@ -1444,7 +1433,9 @@ function FunnelRechnerInner() {
       case "projekt_durchbruch_anzahl":
       case "projekt_durchbruch_statik":
       case "projekt_garten_zaun":
-      case "projekt_garten_zugang": {
+      case "projekt_garten_zugang":
+      case "projekt_ausbau_rohbau":
+      case "projekt_ausbau_deckenhoehe": {
         const def = resolvedSteps.find((s) => s.id === screen);
         if (!def?.options?.length) return null;
         const pj = state.fachdetails?.projekt;
@@ -1468,6 +1459,10 @@ function FunnelRechnerInner() {
                   selected = pj?.gartenZaun === opt.value;
                 } else if (screen === "projekt_garten_zugang") {
                   selected = pj?.gartenZugaenglichkeit === opt.value;
+                } else if (screen === "projekt_ausbau_rohbau") {
+                  selected = pj?.ausbauRohbau === opt.value;
+                } else if (screen === "projekt_ausbau_deckenhoehe") {
+                  selected = pj?.ausbauDeckenhoehe === opt.value;
                 } else if (screen === "projekt_durchbruch_anzahl") {
                   const n = pj?.durchbruchAnzahl;
                   if (opt.value === "1") selected = n === 1;
@@ -1522,6 +1517,25 @@ function FunnelRechnerInner() {
                             ...state.fachdetails.projekt,
                             gartenZugaenglichkeit: sel
                               ? (value as "einfach" | "schwer")
+                              : undefined,
+                          },
+                        });
+                      } else if (screen === "projekt_ausbau_rohbau") {
+                        setFachdetails({
+                          projekt: {
+                            ...state.fachdetails.projekt,
+                            ausbauRohbau: sel
+                              ? (value as "ja" | "nein")
+                              : undefined,
+                            ausbauDeckenhoehe: undefined,
+                          },
+                        });
+                      } else if (screen === "projekt_ausbau_deckenhoehe") {
+                        setFachdetails({
+                          projekt: {
+                            ...state.fachdetails.projekt,
+                            ausbauDeckenhoehe: sel
+                              ? (value as "niedrig" | "mittel" | "hoch")
                               : undefined,
                           },
                         });
@@ -1657,28 +1671,6 @@ function FunnelRechnerInner() {
         );
 
       case "beratung-lead":
-        if (neubauenIdeeBeratung) {
-          return (
-            <BwBeratungLead
-              kind="neubauen_idee"
-              situation={state.situation}
-              vorname={state.vorname}
-              nachname={state.nachname}
-              telefon={state.telefon}
-              email={state.email}
-              beschreibung={state.leadBeschreibung}
-              datenschutz={beratungDatenschutz}
-              datenschutzError={beratungDatenschutzError}
-              onDatenschutzChange={(v) => {
-                setBeratungDatenschutz(v);
-                if (v) setBeratungDatenschutzError(false);
-              }}
-              onFieldChange={updateLeadField}
-              formId={BERATUNG_LEAD_FORM_ID}
-              onSubmit={handleBeratungLeadSubmit}
-            />
-          );
-        }
         if (state.situation && isB2B(state.situation)) {
           return (
             <BwBeratungLead
@@ -1894,18 +1886,6 @@ function FunnelRechnerInner() {
               variant="beratung"
               beratungHeadline="Anfrage eingegangen"
               beratungSubline="Wir prüfen ob wir in deiner Region helfen können und melden uns innerhalb von 48h persönlich."
-              onReset={handleReset}
-            />
-          );
-        }
-        if (neubauenIdeeBeratung) {
-          return (
-            <ThankYou
-              variant="beratung"
-              beratungHeadline="Anfrage eingegangen."
-              beratungSubline="Wir melden uns innerhalb von 24h persönlich bei dir — ohne Verpflichtung."
-              showTimeline={false}
-              showCalendar={false}
               onReset={handleReset}
             />
           );

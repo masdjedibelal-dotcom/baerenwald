@@ -119,7 +119,7 @@ const TESTIMONIAL_COLORS: Record<
 const HERO_CHIPS: { label: string; situation: FunnelSituation }[] = [
   { label: "Zuhause erneuern", situation: "erneuern" },
   { label: "Reparatur / Defekt", situation: "kaputt" },
-  { label: "Notfall — sofort", situation: "notfall" },
+  { label: "Notfall — sofort", situation: "kaputt" },
 ];
 
 /** Echte Bärenwald-Referenzprojekte (Bildpfade Platzhalter bis finale Assets). */
