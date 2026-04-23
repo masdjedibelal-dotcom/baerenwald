@@ -20,9 +20,9 @@ export type HeroSearchResolution =
 const EXTRA_SITUATION_PHRASES: [string, Situation][] = [
   ["wohnung streichen", "erneuern"],
   ["heizung tauschen", "erneuern"],
-  ["dringend notfall", "notfall"],
-  ["dringend — notfall", "notfall"],
-  ["dringend - notfall", "notfall"],
+  ["dringend notfall", "kaputt"],
+  ["dringend — notfall", "kaputt"],
+  ["dringend - notfall", "kaputt"],
 ];
 
 export function resolveHeroSearchQuery(raw: string): HeroSearchResolution | null {

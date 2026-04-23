@@ -3,7 +3,6 @@
  * showWenn(state) inkl. Folgefragen (liest fachdetailAnswers).
  */
 
-import { FACHDETAILS_NOTFALL } from "@/lib/funnel/fachdetails-notfall";
 import {
   BODEN_FOLLOWUPS,
   BODEN_Q1,
@@ -32,6 +31,7 @@ import {
   type FachdetailQuestionDef,
 } from "@/lib/funnel/fachdetails-questions";
 import { sanitaerShortDone } from "@/lib/funnel/fachdetails-internal-order";
+import { isReparaturNotfallSituation } from "@/lib/funnel/reparatur-flow";
 import type { FunnelState } from "@/lib/funnel/types";
 
 /** Minimale State-Sicht für Fachdetail-Filter (kein vollständiges `FunnelState` nötig). */
@@ -165,7 +165,10 @@ export const FACHDETAIL_QUESTIONS: FachdetailQuestion[] = [
     "sanitaer",
     SANITAER_Q1,
     (s) => {
-      if (!needSan(s) || s.situation === "notfall") return false;
+      if (!needSan(s)) return false;
+      if (s.situation === "kaputt" && !s.bereiche.includes("bad")) {
+        return false;
+      }
       const hasBad = s.bereiche.includes("bad");
       const bw = ansStr(s, "bad_was");
       const san = s.fachdetails?.sanitaer;
@@ -191,14 +194,8 @@ export const FACHDETAIL_QUESTIONS: FachdetailQuestion[] = [
     SANITAER_FOLLOWUPS.sanitaer_folge_rohre,
     (s) =>
       needSan(s) &&
-      s.situation !== "notfall" &&
-      ansStr(s, "sanitaer_lage") === "wand"
-  ),
-  fromDef(
-    "sanitaer_notfall",
-    "sanitaer",
-    FACHDETAILS_NOTFALL.sanitaer,
-    (s) => s.situation === "notfall" && needSan(s)
+      (ansStr(s, "sanitaer_lage") === "wand" ||
+        ansStr(s, "sanitaer_problem") === "wand")
   ),
   fromDef(
     "sanitaer_problem",
@@ -232,12 +229,6 @@ export const FACHDETAIL_QUESTIONS: FachdetailQuestion[] = [
   ),
 
   fromDef(
-    "elektro_notfall",
-    "elektro",
-    FACHDETAILS_NOTFALL.elektro,
-    (s) => s.situation === "notfall" && needEl(s)
-  ),
-  fromDef(
     "elektro_erneuern",
     "elektro",
     ELEKTRO_ERNEUERN_Q1,
@@ -268,12 +259,6 @@ export const FACHDETAIL_QUESTIONS: FachdetailQuestion[] = [
     (s) => elektroFollowShow(s, "elektro_folge_leitungen")
   ),
 
-  fromDef(
-    "heizung_notfall",
-    "heizung",
-    FACHDETAILS_NOTFALL.heizung,
-    (s) => s.situation === "notfall" && B(s).has("heizung")
-  ),
   fromDef(
     "heizung_erneuern",
     "heizung",
@@ -391,7 +376,9 @@ export const FACHDETAIL_QUESTIONS: FachdetailQuestion[] = [
     (s) => {
       const v = ansStr(s, "dach_vorhaben");
       return (
-        B(s).has("dach") && (v === "daemmung" || v === "komplett")
+        B(s).has("dach") &&
+        !isReparaturNotfallSituation(s.situation) &&
+        (v === "daemmung" || v === "komplett")
       );
     }
   ),
@@ -432,6 +419,9 @@ export function resolveGartenFollowupDef(
 ): FachdetailQuestionDef | null {
   const w = ansStr(state, "garten_was");
   if (!w) return null;
+  if (state.situation === "betreuung" && w === "baum") {
+    return null;
+  }
   const opt = GARTEN_Q1.options.find((o) => o.value === w);
   const fid = opt?.followUpId;
   if (!fid) return null;

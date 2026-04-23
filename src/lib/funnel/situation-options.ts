@@ -14,26 +14,14 @@ export const BW_FUNNEL_STEP1_OPTIONS: BwFunnelStep1Option[] = [
   {
     id: "erneuern",
     label: "Zuhause erneuern",
-    hint: "Bad, Boden, Heizung, Wände, Fenster und mehr",
+    hint: "Inkl. Ausbau, Umbau, Terrasse, Keller, DG",
     emoji: "🏠",
   },
   {
     id: "kaputt",
-    label: "Reparatur / Defekt",
-    hint: "Für planbare Defekte und kleinere Schäden",
+    label: "Reparatur & Notfall",
+    hint: "Defekt — am Ende wählst du, wie schnell wir kommen sollen",
     emoji: "🔧",
-  },
-  {
-    id: "notfall",
-    label: "Notfall",
-    hint: "Wasser, Strom, Heizung — schnelle Hilfe",
-    emoji: "⚡",
-  },
-  {
-    id: "neubauen",
-    label: "Neu bauen / Ausbau",
-    hint: "Keller, Dachgeschoss, Terrasse, Anbau",
-    emoji: "🏗️",
   },
   {
     id: "betreuung",

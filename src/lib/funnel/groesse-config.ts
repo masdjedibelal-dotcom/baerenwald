@@ -46,13 +46,10 @@ export function shouldSkipGroesseForBereiche(
   situation: Situation,
   bereiche: string[]
 ): boolean {
-  if (situation === "notfall" || situation === "kaputt") {
+  if (situation === "kaputt") {
     return true;
   }
-  if (
-    (situation === "erneuern" || situation === "neubauen") &&
-    isElektroOnlyBereiche(bereiche)
-  ) {
+  if (situation === "erneuern" && isElektroOnlyBereiche(bereiche)) {
     return true;
   }
   return false;
@@ -521,12 +518,28 @@ export function getGroesseConfig(
     return null;
   }
 
-  if (situation === "notfall") {
-    return GROESSE_CONFIG.pauschal;
-  }
-
   if (situation === "betreuung" && isHausmeisterOnlyBereiche(b)) {
-    return null;
+    return {
+      min: 55,
+      max: 180,
+      step: 1,
+      default: 55,
+      einheit: "Objekttyp",
+      einheitKurz: "Typ",
+      hideSlider: true,
+      chips: [
+        {
+          label: "Kleine Wohnung / ETW",
+          value: 55,
+          hint: "bis ca. 80 m² — Pauschalpreis",
+        },
+        {
+          label: "Haus / größeres Objekt",
+          value: 180,
+          hint: "ab Reihenhaus — Pauschalpreis",
+        },
+      ],
+    };
   }
 
   if (situation === "erneuern" && isErneuernProjektBereich(b)) {

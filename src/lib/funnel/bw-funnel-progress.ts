@@ -16,6 +16,7 @@ export function getBwFunnelProgressStep(screen: string): number | null {
   if (screen === "situation" || screen === "bereiche") return 1;
   if (
     screen === "umfang" ||
+    screen === "zeitpunkt" ||
     screen === "zugaenglichkeit" ||
     screen === "zustand" ||
     screen === "groesse" ||

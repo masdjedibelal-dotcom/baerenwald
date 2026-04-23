@@ -1,4 +1,4 @@
-import type { FunnelState, FunnelStep } from "./types";
+import type { FachdetailsState, FunnelState, FunnelStep } from "./types";
 
 /** Top-Level „Ausbau & Umbau“ unter Situation „Zuhause erneuern“. */
 export const ERNEUERN_PROJEKT_BEREICHE = [
@@ -25,17 +25,9 @@ export function erneuernProjektTyp(
   return (hit as ErneuernProjektBereich) ?? null;
 }
 
-/** GU-Banner im Ergebnis: gleiche Paket-Preise unter „erneuern“ oder „neubauen“ (projekt-*). */
+/** GU-Banner im Ergebnis: Paket-Preise für alle „Ausbau & Umbau“-Projekt-Kacheln. */
 export function zeigtGuProjektPaketBanner(state: FunnelState): boolean {
-  if (isErneuernProjektBereich(state.bereiche)) return true;
-  if (state.situation !== "neubauen") return false;
-  const b = state.bereiche;
-  if (b.includes("keller_dg")) return true;
-  if (b.includes("terrasse")) return true;
-  if (b.includes("umbau") && state.fachdetails?.neubauen?.innen === "durchbruch") {
-    return true;
-  }
-  return false;
+  return isErneuernProjektBereich(state.bereiche);
 }
 
 export const STEP_PROJEKT_TERRASSE_MATERIAL: FunnelStep = {
@@ -119,6 +111,53 @@ export const STEP_PROJEKT_DURCHBRUCH_STATIK: FunnelStep = {
   ],
 };
 
+export const STEP_PROJEKT_AUSBAU_ROHBAU: FunnelStep = {
+  id: "projekt_ausbau_rohbau",
+  question: "Ist der Rohbau für den Ausbau schon vorhanden?",
+  subtext: "Wände und Decke als grober Rohzustand",
+  inputType: "tiles-single",
+  options: [
+    {
+      value: "ja",
+      label: "Ja — Rohbau vorhanden",
+      hint: "Wände und Decke stehen bereits",
+      emoji: "✅",
+    },
+    {
+      value: "nein",
+      label: "Nein — muss erst erstellt werden",
+      hint: "→ ausführliche Planung nötig, automatische Kalkulation nicht möglich",
+      emoji: "🏗️",
+    },
+  ],
+};
+
+export const STEP_PROJEKT_AUSBAU_DECKENHOEHE: FunnelStep = {
+  id: "projekt_ausbau_deckenhoehe",
+  question: "Wie hoch ist die Geschossdecke im Ausbaugebiet?",
+  inputType: "tiles-single",
+  options: [
+    {
+      value: "niedrig",
+      label: "Unter 2,00 m",
+      hint: "Sehr niedrig — eingeschränkte Nutzung",
+      emoji: "📏",
+    },
+    {
+      value: "mittel",
+      label: "2,00–2,40 m",
+      hint: "Normaler Ausbau möglich",
+      emoji: "📐",
+    },
+    {
+      value: "hoch",
+      label: "Über 2,40 m",
+      hint: "Optimale Raumhöhe",
+      emoji: "⬆️",
+    },
+  ],
+};
+
 /** Ersetzt `erneuern_groesse` — Screen „groesse“ (Slider m²). */
 export const STEP_ERNEUERN_PROJEKT_GROESSE: FunnelStep = {
   id: "erneuern_projekt_groesse",
@@ -183,14 +222,38 @@ export const STEP_PROJEKT_GARTEN_ZUGANG: FunnelStep = {
   ],
 };
 
-export function buildErneuernProjektSteps(bereiche: string[]): FunnelStep[] {
+export function buildErneuernProjektSteps(
+  bereiche: string[],
+  fd?: FachdetailsState
+): FunnelStep[] {
   const typ = erneuernProjektTyp(bereiche);
   if (!typ) return [];
 
   switch (typ) {
     case "ausbau_dg":
-    case "ausbau_keller":
-      return [STEP_ERNEUERN_PROJEKT_GROESSE];
+    case "ausbau_keller": {
+      const p = fd?.projekt;
+      const steps: FunnelStep[] = [STEP_PROJEKT_AUSBAU_ROHBAU];
+      if (p?.ausbauRohbau === "ja") {
+        steps.push(STEP_PROJEKT_AUSBAU_DECKENHOEHE);
+      }
+      if (p?.ausbauRohbau === "nein") {
+        return steps;
+      }
+      if (!p?.ausbauRohbau) {
+        return steps;
+      }
+      if (p.ausbauRohbau === "ja") {
+        if (!p.ausbauDeckenhoehe) {
+          return steps;
+        }
+        if (p.ausbauDeckenhoehe === "niedrig") {
+          return steps;
+        }
+      }
+      steps.push(STEP_ERNEUERN_PROJEKT_GROESSE);
+      return steps;
+    }
     case "grundriss_umbau":
       return [STEP_PROJEKT_DURCHBRUCH_ANZAHL, STEP_PROJEKT_DURCHBRUCH_STATIK];
     case "terrasse_neu":

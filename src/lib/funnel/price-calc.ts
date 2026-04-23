@@ -261,6 +261,8 @@ const PREISE = {
   },
   /** GU-Schichtung „Zuhause erneuern → Ausbau & Umbau“ (München-Basis, vor PLZ). */
   projekt: {
+    /** Betreuung Baumarbeiten: €/Baum (vor GU_MARGE), Anzahl aus Größen-Schritt */
+    baum: { min: 450, max: 450, einheit: "pro Baum" },
     ausbau_dg: { min: 850, max: 1200, einheit: "pro m²" },
     ausbau_keller: { min: 950, max: 1400, einheit: "pro m²" },
     durchbruch_tragend: { min: 4500, max: 4500, einheit: "pauschal" },
@@ -277,6 +279,9 @@ const PREISE = {
 
 /** Generalunternehmer-/Koordinationsmarge vor PLZ-Faktor (auf Min/Max-Rahmen). */
 export const GU_MARGE = 1.15;
+
+/** Notdienst-Zuschlag „Sofort / Notfall“ (vor GU_MARGE), nur Reparatur-/Notfall-Pfad. */
+export const NOTDIENST_AUFSCHLAG_EUR = 150;
 
 /** „Zuhause erneuern“ → Gartengestaltung (GU-Paket, inkl. Marge). */
 export function computeGartenNeuPrice(state: FunnelState): {
@@ -617,9 +622,6 @@ function mapSanitaerFromFachdetails(
   const b = state.bereiche;
   if (!b.includes("wasser") && !b.includes("sanitaer") && !b.includes("bad"))
     return null;
-  if (state.situation === "notfall" && fd?.sanitaer?.notfallSchwere) {
-    return { service: "sanitaer", type: "leck" };
-  }
   if (
     state.situation === "erneuern" &&
     b.includes("bad") &&
@@ -748,23 +750,17 @@ function mapReparaturNotfallFlow(
   return null;
 }
 
-/** Münchner Diagnose-Pauschalen vor GU-Marge (nur Reparatur-/Notfall-Pfad). */
-function applyMunichReparaturDiagnoseBands(
-  service: string,
-  type: string,
-  min: number,
-  max: number
-): [number, number] {
-  if (service === "sanitaer" && type === "leck") return [350, 700];
+/**
+ * Feste München-Basis-Pauschalen für Reparatur / Notfall (vor Notdienst + GU_MARGE).
+ * Keine m²-Logik.
+ */
+function getReparaturBasisBand(service: string, type: string): [number, number] {
+  if (service === "sanitaer") return [280, 480];
+  if (service === "elektro") return [280, 450];
+  if (service === "heizung_notfall") return [320, 550];
+  if (service === "dach") return [350, 750];
   if (service === "fenster" && type === "reparatur") return [150, 350];
-  if (
-    service === "heizung_notfall" ||
-    service === "elektro" ||
-    service === "sanitaer"
-  ) {
-    return [280, 450];
-  }
-  return [min, max];
+  return [0, 0];
 }
 
 function resolveFassadePriceType(
@@ -820,46 +816,6 @@ export function mapToPrice(state: FunnelState): BwPriceMapping | null {
       return null;
     }
     if (b("terrasse_neu")) return { service: "projekt", type: "terrasse" };
-  }
-
-  /** Neubauen: Keller/DG, Terrasse, Durchbruch → dieselben `PREISE.projekt` wie unter „Zuhause erneuern“. */
-  if (situation === "neubauen") {
-    const nb = fd?.neubauen;
-    if (b("keller_dg") && nb) {
-      if (nb.rohbau === "nein") return null;
-      if (!nb.rohbau || !nb.deckenhoehe) return null;
-      if (nb.deckenhoehe === "niedrig") return null;
-      if (!nb.kellerOderDg) return null;
-      return nb.kellerOderDg === "keller"
-        ? { service: "projekt", type: "ausbau_keller" }
-        : { service: "projekt", type: "ausbau_dg" };
-    }
-    if (b("terrasse") && nb?.terrasse) {
-      const mat = nb.terrasse;
-      if (mat === "holz" || mat === "stein" || mat === "beton") {
-        return { service: "projekt", type: "terrasse" };
-      }
-    }
-    if (b("umbau") && nb?.innen === "trennwand") {
-      return { service: "trockenbau", type: "wand" };
-    }
-    if (b("umbau") && nb?.innen === "durchbruch") {
-      if (
-        nb.durchbruchAnzahl == null ||
-        nb.durchbruchTragend === undefined
-      ) {
-        return null;
-      }
-      return {
-        service: "projekt",
-        type: nb.durchbruchTragend
-          ? "durchbruch_tragend"
-          : "durchbruch_nicht_tragend",
-      };
-    }
-    if (b("umbau") && nb?.innen === "grundriss") {
-      return null;
-    }
   }
 
   if (b("boden")) {
@@ -1022,13 +978,35 @@ export function mapToPrice(state: FunnelState): BwPriceMapping | null {
   }
 
   if (situation === "betreuung") {
+    if (
+      (b("baum") || b("baumarbeiten")) &&
+      state.fachdetails?.garten?.was === "baum"
+    ) {
+      const n = Math.max(1, state.groesse ?? 1);
+      const px = PREISE.projekt.baum.min * n * GU_MARGE;
+      return {
+        service: "projekt",
+        type: "baum",
+        customPriceRange: { min: px, max: px },
+      };
+    }
     if (b("garten")) {
       return { service: "garten", type: getPflegeByGroesse(state.groesse) };
     }
     if (b("winter")) {
+      if (state.umfang === "einmalig") {
+        return {
+          service: "winterdienst",
+          type: "einmalig",
+        };
+      }
+      const m = Math.max(0, state.groesse ?? 0);
+      const raw = m * 35 + 450;
+      const px = raw * GU_MARGE;
       return {
         service: "winterdienst",
-        type: state.umfang === "einmalig" ? "einmalig" : "saison",
+        type: "saison",
+        customPriceRange: { min: px, max: px },
       };
     }
     if (b("hausmeister")) {
@@ -1036,7 +1014,14 @@ export function mapToPrice(state: FunnelState): BwPriceMapping | null {
       if (u === "nach_bedarf" || u === "jahresvertrag") {
         return { service: "hausmeister", type: u };
       }
-      return { service: "hausmeister", type: "monatlich" };
+      const g = state.groesse ?? 55;
+      const monat = g <= 80 ? 150 : 450;
+      const px = monat * GU_MARGE;
+      return {
+        service: "hausmeister",
+        type: "monatlich",
+        customPriceRange: { min: px, max: px },
+      };
     }
   }
 
@@ -1161,6 +1146,7 @@ const TYP_LABEL: Record<string, Record<string, string>> = {
     beton: "Terrasse Betonplatten",
   },
   projekt: {
+    baum: "Baumarbeiten (Betreuung)",
     ausbau_dg: "Dachausbau / DG (GU-Paket)",
     ausbau_keller: "Kellerausbau (GU-Paket)",
     durchbruch_tragend: "Wanddurchbruch tragend (GU-Paket)",
@@ -1202,15 +1188,7 @@ export type BwResultModus =
 
 export function getNotdienstGebuehr(state: FunnelState): number {
   if (!isReparaturNotfallSituation(state.situation)) return 0;
-  switch (state.dringlichkeit) {
-    case "sofort":
-      return 150;
-    case "heute":
-      return 100;
-    case "diese_woche":
-    default:
-      return 0;
-  }
+  return state.zeitraum === "sofort" ? NOTDIENST_AUFSCHLAG_EUR : 0;
 }
 
 /** Frühe Szenarien ohne Preis — blendet z. B. Zustand/Zugänglichkeit aus. */
@@ -1219,29 +1197,15 @@ export function getBwResultModus(state: FunnelState): "normal" | "zu_komplex" {
     return "zu_komplex";
   }
   if (state.situation === "erneuern" && isErneuernProjektBereich(state.bereiche)) {
-    return "normal";
-  }
-  if (
-    state.situation === "neubauen" &&
-    state.bereiche.includes("anbau")
-  ) {
-    return "zu_komplex";
-  }
-  const nb = state.fachdetails?.neubauen;
-  if (state.situation === "neubauen" && state.bereiche.includes("keller_dg")) {
-    if (nb?.rohbau === "nein" || nb?.deckenhoehe === "niedrig") {
+    const pr = state.fachdetails?.projekt;
+    if (
+      (state.bereiche.includes("ausbau_keller") ||
+        state.bereiche.includes("ausbau_dg")) &&
+      (pr?.ausbauRohbau === "nein" || pr?.ausbauDeckenhoehe === "niedrig")
+    ) {
       return "zu_komplex";
     }
-  }
-  if (
-    state.situation === "neubauen" &&
-    state.bereiche.includes("umbau") &&
-    nb?.innen === "grundriss"
-  ) {
-    return "zu_komplex";
-  }
-  if (state.fachdetails?.garten?.baumgroesse === "gross") {
-    return "zu_komplex";
+    return "normal";
   }
   return "normal";
 }
@@ -1272,68 +1236,21 @@ export function getBwPreisFaktorHint(state: FunnelState): string {
   return parts.length > 0 ? parts.join(" · ") : "Standardrahmen München";
 }
 
-/** Neubauen-Pfade, die PREISE.projekt nutzen (wie erneuern → Ausbau & Umbau). */
-function neubauenNutztProjektPaketPreis(state: FunnelState): boolean {
-  if (state.situation !== "neubauen") return false;
-  const b = state.bereiche;
-  const nb = state.fachdetails?.neubauen;
-  if (b.includes("keller_dg")) {
-    return (
-      nb?.rohbau === "ja" &&
-      nb?.deckenhoehe != null &&
-      nb.deckenhoehe !== "niedrig" &&
-      nb?.kellerOderDg != null
-    );
-  }
-  if (b.includes("terrasse")) return Boolean(nb?.terrasse);
-  if (b.includes("umbau") && nb?.innen === "durchbruch") {
-    return (
-      nb.durchbruchAnzahl != null && nb.durchbruchTragend !== undefined
-    );
-  }
-  return false;
-}
-
 function getBwAnzeigeModus(
   state: FunnelState,
   result: { mitte: number; min: number; max: number }
 ): BwResultModus {
   if (
     isReparaturNotfallSituation(state.situation) &&
-    state.dringlichkeit === "sofort"
+    state.zeitraum === "sofort"
   ) {
     return "notfall_akut";
   }
   if (state.situation === "gewerbe") {
     return "zu_komplex";
   }
-  if (
-    state.situation === "neubauen" &&
-    state.bereiche.includes("anbau")
-  ) {
-    return "zu_komplex";
-  }
-  const nb2 = state.fachdetails?.neubauen;
-  if (state.situation === "neubauen" && state.bereiche.includes("keller_dg")) {
-    if (nb2?.rohbau === "nein" || nb2?.deckenhoehe === "niedrig") {
-      return "zu_komplex";
-    }
-  }
-  if (
-    state.situation === "neubauen" &&
-    state.bereiche.includes("umbau") &&
-    nb2?.innen === "grundriss"
-  ) {
-    return "zu_komplex";
-  }
-  if (state.fachdetails?.garten?.baumgroesse === "gross") {
-    return "zu_komplex";
-  }
   if (result.mitte > 15000) {
     if (state.situation === "erneuern" && isErneuernProjektBereich(state.bereiche)) {
-      return result.mitte > 8000 ? "preisrahmen_warnung" : "preisrahmen";
-    }
-    if (neubauenNutztProjektPaketPreis(state)) {
       return result.mitte > 8000 ? "preisrahmen_warnung" : "preisrahmen";
     }
     const heizungMitPreisrahmen =
@@ -1402,6 +1319,37 @@ function computePriceCore(state: FunnelState): {
       einheit: "pauschal",
     };
   } else if (
+    service === "projekt" &&
+    type === "baum" &&
+    customPriceRange &&
+    typeof customPriceRange.min === "number"
+  ) {
+    basis = {
+      min: customPriceRange.min,
+      max: customPriceRange.max,
+      einheit: "pauschal",
+    };
+  } else if (
+    service === "winterdienst" &&
+    customPriceRange &&
+    state.situation === "betreuung"
+  ) {
+    basis = {
+      min: customPriceRange.min,
+      max: customPriceRange.max,
+      einheit: "pauschal",
+    };
+  } else if (
+    service === "hausmeister" &&
+    customPriceRange &&
+    state.situation === "betreuung"
+  ) {
+    basis = {
+      min: customPriceRange.min,
+      max: customPriceRange.max,
+      einheit: "pro Monat",
+    };
+  } else if (
     service === "reinigung" &&
     state.situation === "betreuung" &&
     state.umfang === "einmalig" &&
@@ -1428,9 +1376,14 @@ function computePriceCore(state: FunnelState): {
   let basisMax = basis.max;
 
   if (reparaturPauschal) {
-    const zz = applyMunichReparaturDiagnoseBands(service, type, basisMin, basisMax);
-    basisMin = zz[0];
-    basisMax = zz[1];
+    const band = getReparaturBasisBand(service, type);
+    if (band[0] > 0) {
+      basisMin = band[0];
+      basisMax = band[1];
+    }
+    const nd = getNotdienstGebuehr(state);
+    basisMin = (basisMin + nd) * GU_MARGE;
+    basisMax = (basisMax + nd) * GU_MARGE;
   }
 
   if (service === "projekt" && type !== "garten_neu") {
@@ -1457,7 +1410,14 @@ function computePriceCore(state: FunnelState): {
       service === "projekt" &&
       type === "garten_neu" &&
       customPriceRange
-    );
+    ) &&
+    !(
+      service === "projekt" &&
+      type === "baum" &&
+      customPriceRange
+    ) &&
+    !(service === "winterdienst" && customPriceRange) &&
+    !(service === "hausmeister" && customPriceRange);
 
   if (betreuungMitGu) {
     const bt = ["garten", "reinigung", "winterdienst", "hausmeister"];
@@ -1492,18 +1452,6 @@ function computePriceCore(state: FunnelState): {
     const zz = applyDachDaemmungKomplettPricing(basisMin, basisMax, state);
     basisMin = zz[0];
     basisMax = zz[1];
-  } else if (
-    reparaturPauschal &&
-    service === "dach" &&
-    state.fachdetails?.dach?.alter === "ueber40"
-  ) {
-    basisMin *= 1.2;
-    basisMax *= 1.2;
-  }
-
-  if (reparaturPauschal) {
-    basisMin *= GU_MARGE;
-    basisMax *= GU_MARGE;
   }
 
   const groesse = state.groesse ?? 1;
@@ -1511,7 +1459,7 @@ function computePriceCore(state: FunnelState): {
   let multiplier = 1;
   if (!reparaturPauschal) {
     if (service === "projekt") {
-      if (type === "garten_neu") {
+      if (type === "garten_neu" || type === "baum") {
         multiplier = 1;
       } else if (
         type === "durchbruch_tragend" ||
@@ -1519,9 +1467,7 @@ function computePriceCore(state: FunnelState): {
       ) {
         multiplier = Math.max(
           1,
-          state.fachdetails?.projekt?.durchbruchAnzahl ??
-            state.fachdetails?.neubauen?.durchbruchAnzahl ??
-            1
+          state.fachdetails?.projekt?.durchbruchAnzahl ?? 1
         );
       } else {
         multiplier = groesse;
@@ -1564,7 +1510,7 @@ function computePriceCore(state: FunnelState): {
   const halbSpanne = (rawMax - rawMin) / 2;
 
   const plzFaktor = getPlzFaktor(state.plz ?? "");
-  const notdienst = getNotdienstGebuehr(state);
+  const notdienst = reparaturPauschal ? 0 : getNotdienstGebuehr(state);
   const mitteAdjustiert = mitte0 * plzFaktor + notdienst;
   const spanPlz = halbSpanne * plzFaktor;
 
@@ -1678,7 +1624,7 @@ function applyEmptyBreakdownAsZuKomplex(
     if (!preview) {
       if (
         isReparaturNotfallSituation(state.situation) &&
-        state.dringlichkeit === "sofort"
+        state.zeitraum === "sofort"
       ) {
         return { ...base, komplexReason: null };
       }
@@ -1716,7 +1662,7 @@ function applyEmptyBreakdownAsZuKomplex(
   if (!preview) {
     if (
       isReparaturNotfallSituation(state.situation) &&
-      state.dringlichkeit === "sofort"
+      state.zeitraum === "sofort"
     ) {
       return { ...base, komplexReason: null };
     }
@@ -1752,7 +1698,7 @@ export function calculatePrice(
     plzFaktor: 1,
     resultModus:
       isReparaturNotfallSituation(state.situation) &&
-      state.dringlichkeit === "sofort"
+      state.zeitraum === "sofort"
         ? "notfall_akut"
         : "zu_komplex",
     schwellenwertAusgeloest: false,
@@ -1810,7 +1756,7 @@ export function calculatePrice(
   if (
     preview &&
     isReparaturNotfallSituation(state.situation) &&
-    state.dringlichkeit === "sofort" &&
+    state.zeitraum === "sofort" &&
     breakdown.length === 0
   ) {
     return {

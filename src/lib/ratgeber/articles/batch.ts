@@ -1111,6 +1111,6 @@ export const dacharbeitenKostenMuenchen: RatgeberData = {
   ],
   leistungsSlug: "dacharbeiten",
   leistungsLabel: "Dacharbeiten München",
-  rechnerSituation: "notfall",
+  rechnerSituation: "kaputt",
   ...DATES_STD,
 };

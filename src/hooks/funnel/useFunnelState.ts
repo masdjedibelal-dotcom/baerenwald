@@ -131,11 +131,13 @@ function bwFunnelReducer(
     case "RESET":
       return createInitialBwFunnelState();
 
-    case "SET_SITUATION":
-      return {
+    case "SET_SITUATION": {
+      const next: FunnelState = {
         ...createInitialBwFunnelState(),
         situation: action.situation,
       };
+      return next;
+    }
 
     case "SET_BEREICHE": {
       const bereiche = [...action.values];

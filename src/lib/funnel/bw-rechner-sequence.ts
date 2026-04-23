@@ -34,17 +34,10 @@ export function showTrustScreen(
   if (!situation) {
     return variant === "trust_intro";
   }
-  if (situation === "notfall") {
-    return false;
-  }
   if (situation === "gewerbe") {
     return false;
   }
-  if (
-    situation === "kaputt" ||
-    situation === "neubauen" ||
-    situation === "betreuung"
-  ) {
+  if (situation === "kaputt" || situation === "betreuung") {
     return variant === "trust_intro" || variant === "trust_preis";
   }
   return true;
@@ -87,9 +80,12 @@ export function getBwRechnerScreenSequence(state: FunnelState): string[] {
   }
 
   if (showTrustScreen("trust_preis", sit)) {
-    const umfangIdx = out.lastIndexOf("umfang");
-    if (umfangIdx >= 0) {
-      out.splice(umfangIdx + 1, 0, "trust_preis");
+    const anchorIdx = Math.max(
+      out.lastIndexOf("umfang"),
+      out.lastIndexOf("zeitpunkt")
+    );
+    if (anchorIdx >= 0) {
+      out.splice(anchorIdx + 1, 0, "trust_preis");
     }
   }
 
@@ -138,13 +134,17 @@ function funnelConfigStepToScreens(
   }
   if (step.id === "projekt_garten_zaun") return ["projekt_garten_zaun"];
   if (step.id === "projekt_garten_zugang") return ["projekt_garten_zugang"];
+  if (step.id === "projekt_ausbau_rohbau") return ["projekt_ausbau_rohbau"];
+  if (step.id === "projekt_ausbau_deckenhoehe") {
+    return ["projekt_ausbau_deckenhoehe"];
+  }
   if (step.id.toLowerCase().includes("groesse")) return ["groesse"];
+  if (step.id === "kaputt_dringlichkeit") {
+    return ["zeitpunkt"];
+  }
   if (
     step.id.endsWith("_umfang") ||
-    step.id === "notfall_dringlichkeit" ||
-    step.id === "kaputt_dringlichkeit" ||
-    step.id === "betreuung_haeufigkeit" ||
-    step.id === "neubauen_planung"
+    step.id === "betreuung_haeufigkeit"
   ) {
     return ["umfang"];
   }
@@ -164,7 +164,8 @@ export function getPreviousBwRechnerScreen(
   current: string
 ): string | null {
   const seq = getBwRechnerScreenSequence(state);
-  const idx = seq.indexOf(current);
+  /** `lastIndexOf` wie im Rechner-Back: gleicher Screen-Id kann theoretisch doppelt vorkommen. */
+  const idx = seq.lastIndexOf(current);
   if (idx <= 0) return null;
   return seq[idx - 1] ?? null;
 }
@@ -174,7 +175,8 @@ export function getNextBwRechnerScreen(
   current: string
 ): string | null {
   const seq = getBwRechnerScreenSequence(state);
-  const idx = seq.indexOf(current);
+  /** Zu „Weiter“ nach dem aktuell sichtbaren Schritt (letzte Position bei Duplikaten). */
+  const idx = seq.lastIndexOf(current);
   if (idx < 0 || idx >= seq.length - 1) return null;
   return seq[idx + 1] ?? null;
 }

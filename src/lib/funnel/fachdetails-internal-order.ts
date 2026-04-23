@@ -24,10 +24,8 @@ import {
   SANITAER_FOLLOWUPS,
   SANITAER_Q1,
 } from "@/lib/funnel/fachdetails-questions";
-import {
-  FACHDETAILS_NOTFALL,
-  type FachdetailGewerkKey,
-} from "@/lib/funnel/fachdetails-notfall";
+import type { FachdetailGewerkKey } from "@/lib/funnel/fachdetails-notfall";
+import { isReparaturNotfallSituation } from "@/lib/funnel/reparatur-flow";
 import type { FachdetailsState, FunnelState, Situation } from "@/lib/funnel/types";
 
 function needElektro(bereiche: string[]): boolean {
@@ -113,11 +111,6 @@ function collectSanitaerSubStepIds(state: FunnelState): string[] {
   const s = fd.sanitaer ?? {};
   const ids: string[] = [];
 
-  if (situation === "notfall") {
-    ids.push(FACHDETAILS_NOTFALL.sanitaer.id);
-    return ids;
-  }
-
   const needBadExtra = b.includes("bad");
 
   if (needBadExtra) {
@@ -147,6 +140,17 @@ function collectSanitaerSubStepIds(state: FunnelState): string[] {
     return ids;
   }
 
+  if (situation === "kaputt" && !b.includes("bad")) {
+    ids.push("sanitaer_problem");
+    if (!s.lage) {
+      return ids;
+    }
+    if (s.lage === "wand") {
+      ids.push(SANITAER_FOLLOWUPS.sanitaer_folge_rohre.id);
+    }
+    return ids;
+  }
+
   ids.push(SANITAER_Q1.id);
 
   if (s.lage === "wand") {
@@ -160,11 +164,6 @@ function collectElektroSubStepIds(state: FunnelState): string[] {
   const fd = state.fachdetails;
   const situation = state.situation;
   const ids: string[] = [];
-
-  if (situation === "notfall") {
-    ids.push(FACHDETAILS_NOTFALL.elektro.id);
-    return ids;
-  }
 
   const q1 = getElektroQ1ForSituation(situation);
   ids.push(q1.id);
@@ -183,11 +182,6 @@ function collectHeizungSubStepIds(state: FunnelState): string[] {
   const b = state.bereiche;
   const situation = state.situation;
   const ids: string[] = [];
-
-  if (situation === "notfall") {
-    ids.push(FACHDETAILS_NOTFALL.heizung.id);
-    return ids;
-  }
 
   if (situation === "kaputt" && b.includes("heizung")) {
     ids.push(HEIZUNG_KAPUTT_Q1.id);
@@ -249,6 +243,9 @@ function collectBodenSubStepIds(state: FunnelState): string[] {
 
 function collectDachSubStepIds(state: FunnelState): string[] {
   const fd = state.fachdetails;
+  if (isReparaturNotfallSituation(state.situation)) {
+    return [DACH_Q1.id];
+  }
   const ids = [DACH_Q1.id];
   const v = fd.dach?.vorhaben;
   if (!v) return ids;
@@ -265,6 +262,9 @@ function collectGartenSubStepIds(state: FunnelState): string[] {
   const ids = [GARTEN_Q1.id];
   const w = fd.garten?.was;
   if (!w) return ids;
+  if (state.situation === "betreuung" && w === "baum") {
+    return ids;
+  }
   const opt = GARTEN_Q1.options.find((o) => o.value === w);
   const fid = opt?.followUpId;
   if (fid && GARTEN_FOLLOWUPS[fid]) {
@@ -329,19 +329,13 @@ export function isFachdetailSubStepComplete(
   const fd = state.fachdetails;
   const situation = state.situation;
   const b = state.bereiche;
-  const isNotfall = situation === "notfall";
-
   switch (stepId) {
-    case FACHDETAILS_NOTFALL.elektro.id:
-      return Boolean(fd.elektro?.problem);
-    case FACHDETAILS_NOTFALL.sanitaer.id:
-      return Boolean(fd.sanitaer?.notfallSchwere);
-    case FACHDETAILS_NOTFALL.heizung.id:
-      return Boolean(fd.heizung?.typ);
     case "sanitaer_bad_was":
       return Boolean(fd.sanitaer?.badWas);
     case "sanitaer_bad_objekt_liste":
       return fd.sanitaer?.objektListe !== undefined;
+    case "sanitaer_problem":
+      return Boolean(fd.sanitaer?.lage);
     case SANITAER_Q1.id:
       return Boolean(fd.sanitaer?.lage);
     case SANITAER_FOLLOWUPS.sanitaer_folge_rohre.id:
@@ -350,14 +344,14 @@ export function isFachdetailSubStepComplete(
       break;
   }
 
-  if (gewerk === "elektro" && !isNotfall) {
+  if (gewerk === "elektro") {
     const q1 = getElektroQ1ForSituation(situation);
     if (stepId === q1.id) return Boolean(fd.elektro?.problem);
     const fu = ELEKTRO_FOLLOWUPS[stepId];
     if (fu) return fd.elektro?.folge !== undefined;
   }
 
-  if (gewerk === "heizung" && !isNotfall) {
+  if (gewerk === "heizung") {
     if (stepId === HEIZUNG_KAPUTT_Q1.id) return Boolean(fd.heizung?.typ);
     if (stepId === HEIZUNG_Q1.id) return Boolean(fd.heizung?.typ);
     if (stepId === "heizung_heizkoerper_anzahl") {
@@ -437,9 +431,6 @@ export function getClearFachdetailPatchFromSubStep(
   const { situation, fachdetails: fd } = state;
   switch (gewerk) {
     case "elektro": {
-      if (stepId === FACHDETAILS_NOTFALL.elektro.id) {
-        return { elektro: undefined };
-      }
       const q1 = getElektroQ1ForSituation(situation);
       if (stepId === q1.id) {
         return { elektro: { problem: undefined, folge: undefined } };
@@ -453,9 +444,6 @@ export function getClearFachdetailPatchFromSubStep(
       };
     }
     case "sanitaer": {
-      if (stepId === FACHDETAILS_NOTFALL.sanitaer.id) {
-        return { sanitaer: undefined };
-      }
       if (stepId === "sanitaer_bad_was") {
         return {
           sanitaer: {
@@ -501,9 +489,6 @@ export function getClearFachdetailPatchFromSubStep(
       return {};
     }
     case "heizung": {
-      if (stepId === FACHDETAILS_NOTFALL.heizung.id) {
-        return { heizung: undefined };
-      }
       if (stepId === HEIZUNG_Q1.id || stepId === HEIZUNG_KAPUTT_Q1.id) {
         return {
           heizung: {
@@ -657,7 +642,6 @@ export function isFachdetailInternalNextDisabled(
   if (last) {
     return !isFachdetailGewerkChainComplete(
       state.bereiche,
-      state.situation === "notfall",
       state.fachdetails,
       gewerk,
       state.situation

@@ -10,10 +10,10 @@ export function mergeFachdetailsPatch(
       p.fachdetailAnswers !== undefined
         ? p.fachdetailAnswers
         : prev.fachdetailAnswers,
-    neubauen:
-      p.neubauen !== undefined
-        ? { ...prev.neubauen, ...p.neubauen }
-        : prev.neubauen,
+    projekt:
+      p.projekt !== undefined
+        ? { ...prev.projekt, ...p.projekt }
+        : prev.projekt,
     elektro:
       p.elektro !== undefined
         ? { ...prev.elektro, ...p.elektro }

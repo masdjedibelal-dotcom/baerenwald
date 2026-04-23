@@ -1,6 +1,10 @@
 import { Resend } from "resend";
 
 import { SITE_CONFIG } from "@/lib/config";
+import {
+  erneuernProjektTyp,
+  isErneuernProjektBereich,
+} from "@/lib/funnel/projekt-erneuern";
 import { isSupabaseConfigured, supabaseAdmin } from "@/lib/supabase";
 
 /** CRM-Eingabe — kompatibel mit externem POST /api/lead und internem Funnel. */
@@ -52,6 +56,110 @@ function syntheticEmailFromPhone(t: string): string {
   const digits = t.replace(/\D/g, "");
   const tail = digits.slice(-15) || "x";
   return `lead-${tail}@telefon.invalid`;
+}
+
+const GU_PROJEKT_NAME: Record<string, string> = {
+  ausbau_dg: "Dachausbau / DG",
+  ausbau_keller: "Kellerausbau",
+  grundriss_umbau: "Wanddurchbruch",
+  terrasse_neu: "Terrasse neu",
+  gartengestaltung: "Gartengestaltung",
+};
+
+/** Anzeige im Betreff der Kunden-Mail — erste Kachel / Schadensbereich */
+const KAPUTT_GEWERK_LABEL: Record<string, string> = {
+  bad: "Bad / Sanitär",
+  wasser: "Wasser",
+  sanitaer: "Sanitär",
+  feuchtigkeit_schimmel: "Feuchte / Schimmel",
+  heizung: "Heizung",
+  strom: "Elektrik",
+  elektrik: "Elektrik",
+  elektro: "Elektrik",
+  maler: "Maler",
+  waende: "Wände",
+  waende_boeden: "Wände / Böden",
+  streichen: "Maler",
+  fassade: "Fassade",
+  boden: "Boden",
+  terrasse: "Terrasse / Außen",
+  dach: "Dach",
+  garten: "Garten",
+  baum: "Baum",
+  trockenbau: "Umbau / Trockenbau",
+  keller_dg: "Keller / DG",
+  umbau: "Umbau",
+  anbau: "Anbau",
+  fenster: "Fenster / Türen",
+};
+
+function kaputtGewerkLabel(bereiche: string[] | undefined): string {
+  const b = bereiche?.[0]?.trim();
+  if (!b) return "—";
+  return KAPUTT_GEWERK_LABEL[b] ?? b.replace(/_/g, " ");
+}
+
+function zeitraumDringlichkeitLabel(
+  zeitraum: string | null | undefined
+): string {
+  switch (zeitraum) {
+    case "sofort":
+      return "Sofort";
+    case "heute":
+      return "Heute";
+    case "diese_woche":
+      return "Diese Woche";
+    case "woche":
+      return "Diese Woche";
+    case "vier_wochen":
+      return "Bis zu 4 Wochen";
+    case "zwei_monate":
+      return "2 Monate";
+    case "sechs_monate":
+      return "6 Monate";
+    case "naechster_monat":
+      return "Nächster Monat";
+    case "naechste_saison":
+      return "Nächste Saison";
+    case "naechstes_jahr":
+      return "Nächstes Jahr";
+    case "flexibel":
+      return "Flexibel";
+    default:
+      return zeitraum?.trim() || "—";
+  }
+}
+
+function guProjektDisplayName(bereiche: string[]): string {
+  const typ = erneuernProjektTyp(bereiche);
+  if (typ && GU_PROJEKT_NAME[typ]) return GU_PROJEKT_NAME[typ];
+  return bereiche[0]
+    ? (GU_PROJEKT_NAME[bereiche[0]] ?? bereiche[0].replace(/_/g, " "))
+    : "Projekt";
+}
+
+function buildKundenBestaetigungSubject(raw: {
+  situation: string | null;
+  bereiche: string[];
+  zeitraum: string | null;
+  plz: string;
+}): string {
+  const { situation, bereiche, zeitraum, plz } = raw;
+  if (situation === "kaputt") {
+    const gewerk = kaputtGewerkLabel(bereiche);
+    const dring = zeitraumDringlichkeitLabel(zeitraum);
+    return `[Reparatur-Anfrage] - ${gewerk} - ${dring}`;
+  }
+  if (
+    situation === "erneuern" &&
+    bereiche.length > 0 &&
+    isErneuernProjektBereich(bereiche)
+  ) {
+    const projekt = guProjektDisplayName(bereiche);
+    const plzPart = plz.trim() || "—";
+    return `[GU-PROJEKT] - ${projekt} - ${plzPart}`;
+  }
+  return "Deine Anfrage ist bei uns eingegangen";
 }
 
 function buildKundeBestaetigung({
@@ -151,7 +259,8 @@ function buildInternNotification({
 
 function mergeFunnelDaten(
   funnel_daten: unknown,
-  funnel_quelle: string | undefined
+  funnel_quelle: string | undefined,
+  ctx: { situation?: string | null; bereiche?: string[] | null }
 ): unknown {
   const base =
     funnel_daten &&
@@ -159,7 +268,19 @@ function mergeFunnelDaten(
     !Array.isArray(funnel_daten)
       ? (funnel_daten as Record<string, unknown>)
       : {};
-  return { ...base, funnel_quelle: funnel_quelle ?? "rechner_haupt" };
+  const out: Record<string, unknown> = {
+    ...base,
+    funnel_quelle: funnel_quelle ?? "rechner_haupt",
+  };
+  const bereiche = Array.isArray(ctx.bereiche) ? ctx.bereiche : [];
+  if (
+    ctx.situation === "erneuern" &&
+    bereiche.length > 0 &&
+    isErneuernProjektBereich(bereiche)
+  ) {
+    out.GU_Service = true;
+  }
+  return out;
 }
 
 /** JSON-taugliche Kopie — vermeidet Postgres/JSONB-Fehler durch nicht-serialisierbare Werte. */
@@ -257,7 +378,10 @@ async function persistLeadInner(
   const kanal = (raw.kanal ?? "website").trim() || "website";
   const funnel_quelle = raw.funnel_quelle ?? "rechner_haupt";
   const funnel_daten = sanitizeFunnelDatenJson(
-    mergeFunnelDaten(raw.funnel_daten, funnel_quelle)
+    mergeFunnelDaten(raw.funnel_daten, funnel_quelle, {
+      situation,
+      bereiche,
+    })
   );
 
   if (!name) {
@@ -379,7 +503,12 @@ async function persistLeadInner(
         await resend.emails.send({
           from: resendFromCustomer,
           to: emailRaw.toLowerCase(),
-          subject: "Deine Anfrage ist bei uns eingegangen",
+          subject: buildKundenBestaetigungSubject({
+            situation,
+            bereiche,
+            zeitraum,
+            plz,
+          }),
           html: buildKundeBestaetigung({
             name,
             situation,

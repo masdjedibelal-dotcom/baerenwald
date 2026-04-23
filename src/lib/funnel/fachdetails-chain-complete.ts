@@ -9,14 +9,13 @@ import type { FachdetailsState, Situation } from "@/lib/funnel/types";
 /** Ob für ein Gewerk alle aktiven Fachdetail-Screens beantwortet sind. */
 export function isFachdetailGewerkChainComplete(
   bereiche: string[],
-  situationNotfall: boolean,
   fd: FachdetailsState,
   g: FachdetailGewerkKey,
   situation: Situation | null = null
 ): boolean {
   const st: FachdetailFilterState = {
     bereiche,
-    situation: situationNotfall ? "notfall" : situation,
+    situation,
     fachdetails: fd,
   };
   const qs = getActiveFachdetailQuestions(st).filter((q) => q.gewerk === g);

@@ -524,7 +524,7 @@ export const LEISTUNGEN_DATA: Record<string, LeistungsData> = {
     ),
     ratgeberSlug: "dacharbeiten-kosten-muenchen",
     ratgeberLabel: "Dacharbeiten Kosten München",
-    rechnerSituation: "notfall",
+    rechnerSituation: "kaputt",
     faq: [
       {
         q: "Was tun bei akutem Sturmschaden?",

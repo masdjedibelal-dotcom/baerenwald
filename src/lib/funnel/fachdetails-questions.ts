@@ -512,12 +512,6 @@ export const BODEN_Q1: FachdetailQuestionDef = {
   inputType: "single",
   options: [
     {
-      value: "balkon_belag",
-      label: "Balkon / Terrasse",
-      hint: "Fliesen, WPC-Dielen oder Beschichtung auf Balkon oder Terrasse",
-      followUpId: null,
-    },
-    {
       value: "teppich",
       label: "Teppich",
       hint: "Teppichboden vorhanden",
@@ -540,11 +534,6 @@ export const BODEN_Q1: FachdetailQuestionDef = {
       label: "Parkett",
       hint: "Echtholz — schwimmend oder verklebt",
       followUpId: "boden_folge_parkett",
-    },
-    {
-      value: "parkett_schleifen",
-      label: "Parkett abschleifen & versiegeln",
-      hint: "Bestehenden Parkett aufbereiten — günstiger als neu verlegen",
     },
     {
       value: "estrich",

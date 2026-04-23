@@ -1,8 +1,6 @@
 export type Situation =
   | "erneuern"
   | "kaputt"
-  | "notfall"
-  | "neubauen"
   | "betreuung"
   | "gewerbe";
 
@@ -14,7 +12,7 @@ export function isB2B(s: Situation | null | undefined): boolean {
 export type NotfallDringlichkeit = "sofort" | "heute" | "diese_woche";
 
 export function isReparatur(s: Situation | null | undefined): boolean {
-  return s === "kaputt" || s === "notfall";
+  return s === "kaputt";
 }
 
 export type Kundentyp =
@@ -58,18 +56,10 @@ export type FachdetailsState = {
     /** „Zuhause erneuern“ → Gartengestaltung (GU-Paket) */
     gartenZaun?: "ja" | "nein";
     gartenZugaenglichkeit?: "einfach" | "schwer";
-  };
-  /** Zusatzinfos zu Neubau/Ausbau (Keller, Terrasse, Innenumbau) */
-  neubauen?: {
-    rohbau?: "ja" | "nein";
-    deckenhoehe?: "niedrig" | "mittel" | "hoch";
-    /** Keller-DG-Kachel: welcher Ausbau — für einheitliche `projekt`-Preise */
-    kellerOderDg?: "keller" | "dach";
-    terrasse?: "holz" | "stein" | "beton";
-    innen?: "durchbruch" | "grundriss" | "trennwand";
-    /** Neubauen „Innen umbauen“ → Wanddurchbruch — gleiche Logik wie `projekt`-Durchbruch */
-    durchbruchAnzahl?: number;
-    durchbruchTragend?: boolean;
+    /** Kellerausbau / DG: Rohbau vorhanden — Preis nur bei „ja“ + ausreichender Höhe */
+    ausbauRohbau?: "ja" | "nein";
+    /** Geschosshöhe nach Rohbau (DG/Keller) */
+    ausbauDeckenhoehe?: "niedrig" | "mittel" | "hoch";
   };
   elektro?: {
     problem?: string;

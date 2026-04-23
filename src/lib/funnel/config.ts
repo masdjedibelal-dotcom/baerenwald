@@ -12,7 +12,6 @@ import {
   isHausmeisterOnlyBereiche,
   shouldFilterGroesseStep,
 } from "./groesse-config";
-import { isReparaturNotfallSituation } from "./reparatur-flow";
 import {
   buildErneuernProjektSteps,
   isErneuernProjektBereich,
@@ -26,6 +25,7 @@ import type {
   StepOption,
   Zeitraum,
 } from "./types";
+import { isReparaturNotfallSituation } from "./reparatur-flow";
 
 export { shouldSwapFachdetailsBeforeGroesse, skipGroesseForSanierenDachKleinjob };
 
@@ -38,9 +38,30 @@ export type ZeitraumOption = {
 };
 
 /** Zeitraum-Chips je Situation (Notfall / B2B: leer — kein Zeitraum-Schritt). */
+const ZEITRAUM_REPARATUR: ZeitraumOption[] = [
+  {
+    value: "sofort",
+    label: "Sofort / Notfall",
+    hint: "Priorisierter Termin — Notdienst-Zuschlag kann anfallen",
+    emoji: "⚡",
+  },
+  {
+    value: "diese_woche",
+    label: "Diese Woche / Bald",
+    hint: "Zeitnah, ohne akute Priorität",
+    emoji: "🗓️",
+  },
+  {
+    value: "flexibel",
+    label: "Nächster Monat / Flexibel",
+    hint: "Planbarer Zeitpunkt",
+    emoji: "💭",
+  },
+];
+
 export const ZEITRAUM_OPTIONS: Record<Situation, ZeitraumOption[]> = {
-  notfall: [],
   gewerbe: [],
+  kaputt: ZEITRAUM_REPARATUR,
   erneuern: [
     {
       value: "vier_wochen",
@@ -64,33 +85,6 @@ export const ZEITRAUM_OPTIONS: Record<Situation, ZeitraumOption[]> = {
       value: "flexibel",
       label: "Ich bin flexibel",
       hint: "Wir stimmen uns ab",
-      emoji: "💭",
-    },
-  ],
-  kaputt: [],
-  neubauen: [
-    {
-      value: "zwei_monate",
-      label: "In 1–2 Monaten",
-      hint: "",
-      emoji: "🗓️",
-    },
-    {
-      value: "sechs_monate",
-      label: "In 3–6 Monaten",
-      hint: "",
-      emoji: "📆",
-    },
-    {
-      value: "naechstes_jahr",
-      label: "Nächstes Jahr",
-      hint: "",
-      emoji: "📋",
-    },
-    {
-      value: "flexibel",
-      label: "Ich bin flexibel",
-      hint: "",
       emoji: "💭",
     },
   ],
@@ -135,15 +129,10 @@ export const ZEITRAUM_FRAGEN: Record<
     question: "Wann soll es losgehen?",
     hint: "Hilft uns bei der Terminplanung",
   },
-  neubauen: {
-    question: "Wann soll das Projekt starten?",
-    hint: "Wir planen gemeinsam den realistischen Zeitplan",
-  },
   betreuung: {
     question: "Ab wann soll jemand kommen?",
     hint: "Für regelmäßige Betreuung planen wir den Start",
   },
-  notfall: { question: "", hint: "" },
   gewerbe: { question: "", hint: "" },
 };
 
@@ -163,6 +152,9 @@ export function getZeitraumFragen(
 
 /** Ob im Ort-Schritt eine Zeitraum-Auswahl nötig ist */
 export function needsZeitraumSelection(situation: Situation | null): boolean {
+  if (situation === "kaputt") {
+    return false;
+  }
   return getZeitraumOptions(situation).length > 0;
 }
 
@@ -191,7 +183,6 @@ function kundentypOption(
 export function getKundentypOptions(situation: Situation): StepOption[] {
   switch (situation) {
     case "erneuern":
-    case "kaputt":
       return [
         kundentypOption(
           "eigentuemer",
@@ -207,7 +198,7 @@ export function getKundentypOptions(situation: Situation): StepOption[] {
           "Bei Mietwohnungen brauchen wir in manchen Fällen die Zustimmung des Vermieters. Wir klären das gemeinsam beim Termin."
         ),
       ];
-    case "notfall":
+    case "kaputt":
       return [
         kundentypOption(
           "eigentuemer",
@@ -220,22 +211,13 @@ export function getKundentypOptions(situation: Situation): StepOption[] {
           "Ich bin Mieter",
           "Mietwohnung oder gemietetes Haus",
           "🔑",
-          "Bei Notfällen in Mietwohnungen gilt: Haupthahn schließen, dann Vermieter informieren. Wir kommen sofort."
+          "Bei akuten Schäden in Mietwohnungen: Haupthahn schließen, Vermieter informieren — wir koordinieren den Rest."
         ),
         kundentypOption(
           "hausverwaltung",
           "Hausverwaltung",
           "Ich verwalte das Objekt",
           "🏢"
-        ),
-      ];
-    case "neubauen":
-      return [
-        kundentypOption(
-          "eigentuemer",
-          "Ich bin Eigentümer",
-          "Eigentumswohnung oder Haus",
-          "🏠"
         ),
       ];
     case "betreuung":
@@ -275,10 +257,10 @@ export function getKundentypStep(situation: Situation): FunnelStep {
 export function getBetreuungGroesseOptions(bereiche: string[]): StepOption[] {
   if (bereiche.includes("garten")) {
     return [
-      { value: "s", label: "Bis 100 m²", groesse: 70, emoji: "📐" },
-      { value: "m", label: "100–300 m²", groesse: 200, emoji: "📐" },
-      { value: "l", label: "300–600 m²", groesse: 450, emoji: "📐" },
-      { value: "xl", label: "Über 600 m²", groesse: 800, emoji: "📐" },
+      { value: "s", label: "Kleiner Garten", groesse: 70, emoji: "🌿" },
+      { value: "m", label: "Mittlerer Garten", groesse: 200, emoji: "🌿" },
+      { value: "l", label: "Großer Garten", groesse: 450, emoji: "🌿" },
+      { value: "xl", label: "Sehr großer Garten", groesse: 800, emoji: "🌿" },
     ];
   }
   if (bereiche.includes("baum")) {
@@ -291,30 +273,86 @@ export function getBetreuungGroesseOptions(bereiche: string[]): StepOption[] {
   }
   if (bereiche.includes("reinigung")) {
     return [
-      { value: "s", label: "Bis 60 m²", groesse: 45, emoji: "📐" },
-      { value: "m", label: "60–120 m²", groesse: 90, emoji: "📐" },
-      { value: "l", label: "Über 120 m²", groesse: 160, emoji: "📐" },
+      {
+        value: "s",
+        label: "Klein (wenige Parteien)",
+        groesse: 45,
+        emoji: "🧹",
+      },
+      {
+        value: "m",
+        label: "Mittel (typ. Treppenhaus)",
+        groesse: 90,
+        emoji: "🧹",
+      },
+      {
+        value: "l",
+        label: "Groß / mehrere Zugänge",
+        groesse: 160,
+        emoji: "🧹",
+      },
     ];
   }
   if (bereiche.includes("winter")) {
     return [
-      { value: "kurz", label: "Bis 10 m Gehweg", groesse: 7, emoji: "❄️" },
-      { value: "mittel", label: "10–25 m", groesse: 18, emoji: "❄️" },
-      { value: "lang", label: "Über 25 m", groesse: 35, emoji: "❄️" },
+      {
+        value: "kurz",
+        label: "Kurze Streckenführung",
+        groesse: 7,
+        emoji: "❄️",
+      },
+      {
+        value: "mittel",
+        label: "Mittlere Streckenführung",
+        groesse: 18,
+        emoji: "❄️",
+      },
+      {
+        value: "lang",
+        label: "Lange Streckenführung",
+        groesse: 35,
+        emoji: "❄️",
+      },
     ];
   }
   return [
-    { value: "s", label: "Kleine Wohnung / ETW", groesse: 55, emoji: "📐" },
-    { value: "m", label: "Reihenhaus / DHH", groesse: 120, emoji: "📐" },
-    { value: "l", label: "Einfamilienhaus", groesse: 180, emoji: "📐" },
-    { value: "xl", label: "Mehrfamilienhaus", groesse: 400, emoji: "📐" },
+    {
+      value: "s",
+      label: "Objekt klein / kompakt",
+      groesse: 55,
+      emoji: "🏢",
+    },
+    {
+      value: "m",
+      label: "Objekt mittelgroß",
+      groesse: 120,
+      emoji: "🏢",
+    },
+    {
+      value: "l",
+      label: "Objekt groß",
+      groesse: 180,
+      emoji: "🏢",
+    },
+    {
+      value: "xl",
+      label: "Objekt sehr groß",
+      groesse: 400,
+      emoji: "🏢",
+    },
   ];
 }
 
 export function getBetreuungGroesseStep(bereiche: string[]): FunnelStep {
+  const b = new Set(bereiche);
+  let question = "Welchen Umfang hat das Objekt ungefähr?";
+  if (b.has("baum")) question = "Wie viele Bäume betrifft das?";
+  if (b.has("garten")) question = "Wie umfangreich ist der Außenbereich für die Pflege?";
+  if (b.has("winter")) question = "Wie lang ist die zu räumende Streckenführung ca.?";
+  if (b.has("reinigung")) question = "Welche Gebäudegröße passt am ehesten?";
   return {
     id: "betreuung_groesse",
-    question: "Wie groß ist das Objekt?",
+    question,
     inputType: "tiles-single",
     options: getBetreuungGroesseOptions(bereiche),
   };
@@ -345,7 +383,7 @@ export const SITUATIONEN_CONFIG: Record<
           {
             value: "boden",
             label: "Boden",
-            hint: "Innen: Laminat, Parkett, Vinyl, Fliesen — Terrasse nur unter „Ausbau & Umbau“",
+            hint: "Innen: Laminat, Parkett, Vinyl, Fliesen",
             emoji: "🪵",
             triggerGewerke: ["boden"],
           },
@@ -405,6 +443,14 @@ export const SITUATIONEN_CONFIG: Record<
             hint: "Neuanlage, Teiche, Wege — GU-Paket nach Fläche",
             emoji: "🌳",
             triggerGewerke: ["projekt"],
+          },
+          {
+            value: "anbau",
+            label: "Anbau oder Garage",
+            hint: "Erweiterung des Hauses — zu individuell für den Automatpreis",
+            emoji: "🔨",
+            direktKomplex: true,
+            triggerGewerke: ["bau", "elektro"],
           },
           {
             section: "Außen & Technik",
@@ -543,165 +589,6 @@ export const SITUATIONEN_CONFIG: Record<
             faktor: 1.2,
             infoText: "Termin innerhalb weniger Tage.",
           },
-        ],
-      },
-    ],
-  },
-
-  notfall: {
-    skipGroesse: true,
-    steps: [
-      {
-        id: "notfall_problem",
-        question: "Was ist das Problem?",
-        inputType: "tiles-single",
-        options: [
-          {
-            value: "heizung",
-            label: "Heizung oder kein warmes Wasser",
-            hint: "Heizung ausgefallen",
-            emoji: "🔥",
-            triggerGewerke: ["heizung", "sanitaer"],
-          },
-          {
-            value: "wasser",
-            label: "Wasser läuft — Rohr oder Leck",
-            hint: "Rohrbruch, Verstopfung, Leck",
-            emoji: "💧",
-            warnText:
-              "Bei aktivem Wasseraustritt sofort den Haupthahn schließen.",
-            triggerGewerke: ["sanitaer"],
-          },
-          {
-            value: "strom",
-            label: "Strom weg oder Elektro defekt",
-            hint: "Ausfall, Kurzschluss, defekt",
-            emoji: "⚡",
-            triggerGewerke: ["elektro"],
-          },
-        ],
-      },
-      {
-        id: "notfall_dringlichkeit",
-        question: "Wie schlimm ist die Situation gerade?",
-        inputType: "tiles-single",
-        options: [
-          {
-            value: "sofort",
-            label: "Jetzt sofort",
-            hint: "Es wird schlimmer — sofort handeln",
-            emoji: "🔴",
-            faktor: 1.8,
-            warnText:
-              "Bitte ruf uns direkt an — beim Notfall ist der Rechner zu langsam.",
-          },
-          {
-            value: "heute",
-            label: "Heute noch",
-            hint: "Ausgefallen aber stabil — heute lösen",
-            emoji: "🟠",
-            faktor: 1.5,
-            infoText: "Termin innerhalb 24–48h.",
-          },
-          {
-            value: "diese_woche",
-            label: "Diese Woche",
-            hint: "Eingeschränkt nutzbar — bald reparieren",
-            emoji: "🟡",
-            faktor: 1.2,
-            infoText: "Termin innerhalb weniger Tage.",
-          },
-        ],
-      },
-    ],
-  },
-
-  neubauen: {
-    steps: [
-      {
-        id: "neubauen_was",
-        question: "Was planst du?",
-        subtext: "Bitte ein Vorhaben wählen",
-        inputType: "tiles-single",
-        options: [
-          {
-            value: "keller_dg",
-            label: "Keller oder Dachgeschoss ausbauen",
-            hint: "Wohnraum gewinnen",
-            emoji: "🏗️",
-            infoText:
-              "Dachgeschoss-Ausbau ist oft die günstigste Art Wohnfläche zu gewinnen.",
-            triggerGewerke: ["ausbau", "elektro", "sanitaer"],
-          },
-          {
-            value: "anbau",
-            label: "Anbau oder Garage",
-            hint: "Erweiterung des Hauses",
-            emoji: "🔨",
-            triggerGewerke: ["bau", "elektro"],
-            direktKomplex: true,
-            infoText:
-              "Anbauten planen wir persönlich mit dir — zu viele individuelle Faktoren für eine automatische Kalkulation.",
-          },
-          {
-            value: "terrasse",
-            label: "Terrasse oder Carport",
-            hint: "Außenbereich gestalten",
-            emoji: "🪵",
-            triggerGewerke: ["terrasse", "metall"],
-          },
-          {
-            value: "umbau",
-            label: "Innen umbauen",
-            hint: "Wände raus oder neu",
-            emoji: "📐",
-            infoText:
-              "Tragende Wände nur nach statischer Prüfung entfernen. Wir koordinieren das.",
-            triggerGewerke: ["bau", "elektro", "sanitaer"],
-          },
-        ],
-      },
-      {
-        id: "neubauen_planung",
-        question: "Wie weit ist die Planung?",
-        inputType: "tiles-single",
-        options: [
-          {
-            value: "idee",
-            label: "Erst eine Idee",
-            hint: "Wir beraten dich gerne unverbindlich",
-            emoji: "💡",
-            faktor: 1.0,
-            infoText:
-              "Super dass du planst — komm in 3–6 Monaten wieder oder lass dich jetzt beraten.",
-          },
-          {
-            value: "vorstellung",
-            label: "Ich weiß was ich will",
-            hint: "Grobe Vorstellung vorhanden",
-            emoji: "📋",
-            faktor: 1.0,
-            infoText: "Beim Vor-Ort-Termin konkretisieren wir gemeinsam.",
-          },
-          {
-            value: "plaene",
-            label: "Pläne liegen vor",
-            hint: "Bereit zum Start",
-            emoji: "📐",
-            faktor: 0.9,
-            infoText: "Perfekt — das beschleunigt die Kalkulation erheblich.",
-          },
-        ],
-      },
-      {
-        id: "neubauen_groesse",
-        question: "Wie groß wird die neue Fläche?",
-        inputType: "tiles-single",
-        options: [
-          { value: "s", label: "Bis 20 m²", groesse: 15, emoji: "📐" },
-          { value: "m", label: "20 bis 50 m²", groesse: 35, emoji: "📐" },
-          { value: "l", label: "50 bis 100 m²", groesse: 75, emoji: "📐" },
-          { value: "xl", label: "Über 100 m²", groesse: 120, emoji: "📐" },
         ],
       },
     ],
@@ -1109,7 +996,7 @@ export function shouldIncludeZugaenglichkeitStep(
   zuKomplex: boolean = false
 ): boolean {
   if (zuKomplex) return false;
-  if (situation === "notfall") return false;
+  if (isReparaturNotfallSituation(situation)) return false;
   if (situation === "gewerbe") return false;
   if (situation === "betreuung") return false;
   if (situation === "erneuern" && isErneuernProjektBereich(bereiche)) {
@@ -1119,8 +1006,8 @@ export function shouldIncludeZugaenglichkeitStep(
   return (
     bereiche.includes("fassade") ||
     bereiche.includes("dach") ||
-    (situation === "neubauen" &&
-      (bereiche.includes("anbau") || bereiche.includes("terrasse")))
+    (situation === "erneuern" &&
+      (bereiche.includes("anbau") || bereiche.includes("terrasse_neu")))
   );
 }
 
@@ -1131,8 +1018,6 @@ export function shouldIncludeZustandStep(
   zuKomplex: boolean = false
 ): boolean {
   if (zuKomplex) return false;
-  if (situation === "notfall") return false;
-  if (situation === "neubauen") return false;
   if (situation === "betreuung") return false;
   if (situation === "gewerbe") return false;
   if (situation === "kaputt") return false;
@@ -1156,10 +1041,7 @@ function insertBeforeGroesse(
     return next;
   }
   /** Kaputt/Notfall ohne Flächen-Schritt: vor Dringlichkeit einfügen */
-  const urgIdx = steps.findIndex(
-    (s) =>
-      s.id === "notfall_dringlichkeit" || s.id === "kaputt_dringlichkeit"
-  );
+  const urgIdx = steps.findIndex((s) => s.id === "kaputt_dringlichkeit");
   if (urgIdx >= 0) {
     const next = [...steps];
     next.splice(urgIdx, 0, ...toInsert);
@@ -1206,7 +1088,7 @@ export function getResolvedStepsForSituation(
   if (situation === "erneuern" && isErneuernProjektBereich(bereiche)) {
     steps = steps.filter((s) => s.id !== "erneuern_groesse");
     const bi = steps.findIndex((s) => s.id === "erneuern_bereiche");
-    const extra = buildErneuernProjektSteps(bereiche);
+    const extra = buildErneuernProjektSteps(bereiche, fachdetails);
     if (bi >= 0 && extra.length > 0) {
       const next = [...steps];
       next.splice(bi + 1, 0, ...extra);
@@ -1224,11 +1106,7 @@ export function getResolvedStepsForSituation(
   }
 
   const zugZustandSteps: FunnelStep[] = [];
-  if (
-    situation === "erneuern" ||
-    situation === "kaputt" ||
-    situation === "neubauen"
-  ) {
+  if (situation === "erneuern" || situation === "kaputt") {
     if (
       shouldIncludeZugaenglichkeitStep(
         situation,
@@ -1255,11 +1133,7 @@ export function getResolvedStepsForSituation(
     if (gIdx >= 0) {
       steps = [...steps];
       let insertAt = gIdx + 1;
-      if (
-        bereiche.includes("bad") &&
-        situation !== "notfall" &&
-        situation !== "gewerbe"
-      ) {
+      if (bereiche.includes("bad") && situation !== "gewerbe") {
         steps.splice(insertAt, 0, BW_FUNNEL_STEP_BAD_AUSSTATTUNG);
         insertAt += 1;
       }
@@ -1295,6 +1169,13 @@ export function getResolvedStepsForSituation(
   steps = steps
     .filter((s) => !shouldFilterGroesseStep(situation!, bereiche, s))
     .map((s) => applyGroesseStepCopy(s, situation!, bereiche, fachdetails));
+
+  if (isReparaturNotfallSituation(situation)) {
+    steps = steps.filter(
+      (s) =>
+        !s.id.toLowerCase().includes("groesse") && !s.id.endsWith("_umfang")
+    );
+  }
 
   return steps;
 }

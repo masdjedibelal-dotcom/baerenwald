@@ -1,58 +1,4 @@
-import type { FachdetailQuestionDef } from "@/lib/funnel/fachdetails-questions";
-
-/** Notfall: nur eine Hauptfrage pro Gewerk, keine technischen Folgefragen. */
-export const FACHDETAILS_NOTFALL = {
-  elektro: {
-    id: "elektro_notfall_problem",
-    title: "Was passiert genau?",
-    inputType: "single",
-    options: [
-      { value: "sicherung", label: "Sicherung fliegt raus", hint: "" },
-      { value: "raum", label: "Strom weg in einem Raum", hint: "" },
-      { value: "komplett", label: "Strom komplett weg", hint: "" },
-      { value: "steckdose", label: "Steckdose defekt", hint: "" },
-    ],
-  } satisfies FachdetailQuestionDef,
-
-  sanitaer: {
-    id: "sanitaer_notfall_schwere",
-    title: "Wie schlimm ist es?",
-    inputType: "single",
-    options: [
-      { value: "tropft", label: "Tropft nur", hint: "" },
-      { value: "laeuft", label: "Läuft konstant", hint: "" },
-      {
-        value: "spritzt",
-        label: "Spritzt stark",
-        hint: "",
-        warnText:
-          "Dreh sofort den Haupthahn zu — dann ruf uns an.",
-      },
-    ],
-  } satisfies FachdetailQuestionDef,
-
-  heizung: {
-    id: "heizung_notfall_problem",
-    title: "Was ist das Problem?",
-    inputType: "single",
-    options: [
-      { value: "geht_nicht", label: "Heizung geht nicht an", hint: "" },
-      { value: "kein_warmwasser", label: "Kein warmes Wasser", hint: "" },
-      {
-        value: "geraeusch",
-        label: "Ungewöhnliche Geräusche",
-        hint: "Klopfen, Rauschen, Pfeifen",
-      },
-      {
-        value: "fehlermeldung",
-        label: "Fehlermeldung am Display",
-        hint: "",
-      },
-    ],
-  } satisfies FachdetailQuestionDef,
-} as const;
-
-/** Reihenfolge für max. 2 Fachdetail-Blöcke (höchster Einfluss zuerst). */
+/** Reihenfolge für max. 2 Fachdetail-Gewerke (höchster Einfluss zuerst). */
 export const FACHDETAILS_PRIORITAET = [
   "sanitaer",
   "heizung",
@@ -105,11 +51,7 @@ export function bereichMatchesFachdetailGewerk(
         s.has("fenster_tuer")
       );
     case "garten":
-      return (
-        s.has("garten") ||
-        s.has("baum") ||
-        s.has("baumarbeiten")
-      );
+      return s.has("garten") || s.has("baum") || s.has("baumarbeiten");
     default:
       return false;
   }
