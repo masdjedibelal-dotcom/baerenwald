@@ -122,6 +122,12 @@ export type FachdetailsState = {
     defekt?: string;
     freitext?: string | null;
   };
+  /**
+   * Historisch: „Neubauen“-Pfad wurde entfernt und auf „erneuern“ umgestellt.
+   * Optional, damit alte gespeicherte Funnel-Daten und optional übrige
+   * Typkompatibilität bei alten Saves / noch vorhandenen Hilfsmodulen im Repo.
+   */
+  neubauen?: Record<string, unknown>;
 };
 
 export interface PriceLineItem {
