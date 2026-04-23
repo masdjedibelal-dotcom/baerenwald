@@ -12,6 +12,11 @@ import {
   isHausmeisterOnlyBereiche,
   shouldFilterGroesseStep,
 } from "./groesse-config";
+import { isReparaturNotfallSituation } from "./reparatur-flow";
+import {
+  buildErneuernProjektSteps,
+  isErneuernProjektBereich,
+} from "./projekt-erneuern";
 import type {
   FachdetailsState,
   FunnelState,
@@ -62,32 +67,7 @@ export const ZEITRAUM_OPTIONS: Record<Situation, ZeitraumOption[]> = {
       emoji: "💭",
     },
   ],
-  kaputt: [
-    {
-      value: "sofort",
-      label: "So schnell wie möglich",
-      hint: "Wir schauen was kurzfristig möglich ist",
-      emoji: "⚡",
-    },
-    {
-      value: "diese_woche",
-      label: "Diese Woche",
-      hint: "Innerhalb 7 Tage",
-      emoji: "📅",
-    },
-    {
-      value: "vier_wochen",
-      label: "Innerhalb 4 Wochen",
-      hint: "Etwas Puffer",
-      emoji: "🗓️",
-    },
-    {
-      value: "flexibel",
-      label: "Ich bin flexibel",
-      hint: "Kein fixer Zeitplan",
-      emoji: "💭",
-    },
-  ],
+  kaputt: [],
   neubauen: [
     {
       value: "zwei_monate",
@@ -303,9 +283,10 @@ export function getBetreuungGroesseOptions(bereiche: string[]): StepOption[] {
   }
   if (bereiche.includes("baum")) {
     return [
-      { value: "ein", label: "1 Baum", groesse: 1, emoji: "🌲" },
-      { value: "wenige", label: "2–4 Bäume", groesse: 3, emoji: "🌲" },
-      { value: "viele", label: "5 oder mehr", groesse: 6, emoji: "🌲" },
+      { value: "1", label: "1 Baum", groesse: 1, emoji: "🌲" },
+      { value: "2", label: "2 Bäume", groesse: 2, emoji: "🌲" },
+      { value: "3_4", label: "3–4 Bäume", groesse: 3, emoji: "🌲" },
+      { value: "5_plus", label: "5 oder mehr", groesse: 6, emoji: "🌲" },
     ];
   }
   if (bereiche.includes("reinigung")) {
@@ -364,7 +345,7 @@ export const SITUATIONEN_CONFIG: Record<
           {
             value: "boden",
             label: "Boden",
-            hint: "Laminat, Parkett, Vinyl, Fliesen",
+            hint: "Innen: Laminat, Parkett, Vinyl, Fliesen — Terrasse nur unter „Ausbau & Umbau“",
             emoji: "🪵",
             triggerGewerke: ["boden"],
           },
@@ -385,9 +366,45 @@ export const SITUATIONEN_CONFIG: Record<
           {
             value: "trockenbau",
             label: "Trennwand / Umbau",
-            hint: "Neues Zimmer, Wanddurchbruch",
+            hint: "Neues Zimmer, leichte Trennwände",
             emoji: "🧱",
             triggerGewerke: ["bau"],
+          },
+          {
+            section: "Ausbau & Umbau",
+            value: "ausbau_dg",
+            label: "Dachausbau / DG",
+            hint: "Neuer Wohnraum unter dem Dach — GU-Paket",
+            emoji: "🏠",
+            triggerGewerke: ["projekt"],
+          },
+          {
+            value: "ausbau_keller",
+            label: "Kellerausbau",
+            hint: "Trockenlegung, Ausbau, Feuchteschutz — GU-Paket",
+            emoji: "🪜",
+            triggerGewerke: ["projekt"],
+          },
+          {
+            value: "grundriss_umbau",
+            label: "Wanddurchbruch",
+            hint: "Raum öffnen — tragend oder nicht tragend",
+            emoji: "🚪",
+            triggerGewerke: ["projekt"],
+          },
+          {
+            value: "terrasse_neu",
+            label: "Terrasse neu",
+            hint: "Holz oder Stein — inkl. Erdarbeiten / Unterbau",
+            emoji: "🪵",
+            triggerGewerke: ["projekt"],
+          },
+          {
+            value: "gartengestaltung",
+            label: "Gartengestaltung",
+            hint: "Neuanlage, Teiche, Wege — GU-Paket nach Fläche",
+            emoji: "🌳",
+            triggerGewerke: ["projekt"],
           },
           {
             section: "Außen & Technik",
@@ -400,7 +417,7 @@ export const SITUATIONEN_CONFIG: Record<
           {
             value: "fenster",
             label: "Fenster / Türen",
-            hint: "Neue Fenster oder Türen einbauen",
+            hint: "Neue Fenster, Balkon- oder Außentüren — inkl. Aufmaß & Montage",
             emoji: "🪟",
             triggerGewerke: ["fenster"],
           },
@@ -414,17 +431,16 @@ export const SITUATIONEN_CONFIG: Record<
           {
             value: "fassade",
             label: "Fassade",
-            hint: "Fassade streichen oder reinigen",
+            hint: "Anstrich, WDVS oder neue Bekleidung — Typ gleich in der nächsten Frage",
             emoji: "🧱",
             triggerGewerke: ["fassade"],
           },
           {
             value: "fassade_daemmung",
             label: "Fassadendämmung / WDVS",
-            hint: "Planen wir persönlich mit dir — kurz absprechen",
+            hint: "Startet den Fassaden-Flow mit WDVS — Typ ist schon gewählt",
             emoji: "🏠",
-            direktKomplex: true,
-            triggerGewerke: [],
+            triggerGewerke: ["fassade"],
           },
         ],
       },
@@ -443,6 +459,7 @@ export const SITUATIONEN_CONFIG: Record<
   },
 
   kaputt: {
+    skipGroesse: true,
     skipUmfang: true,
     steps: [
       {
@@ -497,14 +514,35 @@ export const SITUATIONEN_CONFIG: Record<
         ],
       },
       {
-        id: "kaputt_groesse",
-        question: "Wie groß ist die Fläche ungefähr?",
+        id: "kaputt_dringlichkeit",
+        question: "Wie dringend ist die Reparatur?",
         inputType: "tiles-single",
         options: [
-          { value: "s", label: "Bis 50 m²", groesse: 35, emoji: "📐" },
-          { value: "m", label: "50–100 m²", groesse: 75, emoji: "📐" },
-          { value: "l", label: "100–200 m²", groesse: 150, emoji: "📐" },
-          { value: "xl", label: "Über 200 m²", groesse: 250, emoji: "📐" },
+          {
+            value: "sofort",
+            label: "Jetzt sofort",
+            hint: "Es wird schlimmer — sofort handeln",
+            emoji: "🔴",
+            faktor: 1.8,
+            warnText:
+              "Bitte ruf uns direkt an — bei akuten Schäden ist der Rechner zu langsam.",
+          },
+          {
+            value: "heute",
+            label: "Heute noch",
+            hint: "Ausgefallen aber stabil — heute lösen",
+            emoji: "🟠",
+            faktor: 1.5,
+            infoText: "Termin innerhalb 24–48h.",
+          },
+          {
+            value: "diese_woche",
+            label: "Diese Woche",
+            hint: "Eingeschränkt nutzbar — bald reparieren",
+            emoji: "🟡",
+            faktor: 1.2,
+            infoText: "Termin innerhalb weniger Tage.",
+          },
         ],
       },
     ],
@@ -687,15 +725,6 @@ export const SITUATIONEN_CONFIG: Record<
             triggerGewerke: ["gartenpflege"],
           },
           {
-            value: "gestaltung",
-            label: "Gartengestaltung",
-            hint: "Neuanlage, Terrasse, Bepflanzung",
-            emoji: "🌳",
-            infoText:
-              "Professionelle Gestaltung steigert den Immobilienwert nachweislich.",
-            triggerGewerke: ["gartengestaltung"],
-          },
-          {
             value: "baum",
             label: "Baumarbeiten",
             hint: "Fällen oder zurückschneiden",
@@ -776,6 +805,7 @@ export const SITUATIONEN_CONFIG: Record<
 
 /** Relevante Bereiche für den Schritt „Fachdetails“ (nach Bereiche, vor Kundentyp) */
 export function bereicheNeedFachdetails(bereiche: string[]): boolean {
+  if (isErneuernProjektBereich(bereiche)) return false;
   const s = new Set(bereiche);
   return (
     s.has("strom") ||
@@ -794,7 +824,6 @@ export function bereicheNeedFachdetails(bereiche: string[]): boolean {
     s.has("boden") ||
     s.has("dach") ||
     s.has("garten") ||
-    s.has("gestaltung") ||
     s.has("baum") ||
     s.has("baumarbeiten") ||
     s.has("feuchtigkeit_schimmel")
@@ -1083,6 +1112,9 @@ export function shouldIncludeZugaenglichkeitStep(
   if (situation === "notfall") return false;
   if (situation === "gewerbe") return false;
   if (situation === "betreuung") return false;
+  if (situation === "erneuern" && isErneuernProjektBereich(bereiche)) {
+    return false;
+  }
 
   return (
     bereiche.includes("fassade") ||
@@ -1105,6 +1137,7 @@ export function shouldIncludeZustandStep(
   if (situation === "gewerbe") return false;
   if (situation === "kaputt") return false;
   if (situation !== "erneuern") return false;
+  if (isErneuernProjektBereich(bereiche)) return false;
   const b = bereiche;
   return b.includes("waende") || b.includes("boden");
 }
@@ -1113,13 +1146,26 @@ function insertBeforeGroesse(
   steps: FunnelStep[],
   toInsert: FunnelStep[]
 ): FunnelStep[] {
+  if (toInsert.length === 0) return steps;
   const gIdx = steps.findIndex((s) =>
     s.id.toLowerCase().includes("groesse")
   );
-  if (gIdx < 0) return steps;
-  const next = [...steps];
-  next.splice(gIdx, 0, ...toInsert);
-  return next;
+  if (gIdx >= 0) {
+    const next = [...steps];
+    next.splice(gIdx, 0, ...toInsert);
+    return next;
+  }
+  /** Kaputt/Notfall ohne Flächen-Schritt: vor Dringlichkeit einfügen */
+  const urgIdx = steps.findIndex(
+    (s) =>
+      s.id === "notfall_dringlichkeit" || s.id === "kaputt_dringlichkeit"
+  );
+  if (urgIdx >= 0) {
+    const next = [...steps];
+    next.splice(urgIdx, 0, ...toInsert);
+    return next;
+  }
+  return steps;
 }
 
 /** Aufgelöste Schritte inkl. dynamischem Betreuung-Größen-Schritt */
@@ -1157,6 +1203,26 @@ export function getResolvedStepsForSituation(
 
   let steps = [...cfg.steps];
 
+  if (situation === "erneuern" && isErneuernProjektBereich(bereiche)) {
+    steps = steps.filter((s) => s.id !== "erneuern_groesse");
+    const bi = steps.findIndex((s) => s.id === "erneuern_bereiche");
+    const extra = buildErneuernProjektSteps(bereiche);
+    if (bi >= 0 && extra.length > 0) {
+      const next = [...steps];
+      next.splice(bi + 1, 0, ...extra);
+      steps = next;
+    }
+  }
+
+  if (
+    isReparaturNotfallSituation(situation) &&
+    (bereicheNeedFachdetails(bereiche) || bereiche.includes("bad")) &&
+    !steps.some((s) => s.id === "fachdetails")
+  ) {
+    steps = [...steps];
+    steps.splice(1, 0, BW_FUNNEL_STEP_FACHDETAILS);
+  }
+
   const zugZustandSteps: FunnelStep[] = [];
   if (
     situation === "erneuern" ||
@@ -1181,7 +1247,10 @@ export function getResolvedStepsForSituation(
     }
   }
 
-  if (bereicheNeedFachdetails(bereiche) || bereiche.includes("bad")) {
+  if (
+    (bereicheNeedFachdetails(bereiche) || bereiche.includes("bad")) &&
+    !steps.some((s) => s.id === "fachdetails")
+  ) {
     const gIdx = steps.findIndex((s) => s.id.toLowerCase().includes("groesse"));
     if (gIdx >= 0) {
       steps = [...steps];
@@ -1213,6 +1282,7 @@ export function getResolvedStepsForSituation(
     }
   }
 
+  /** Nur „wenige Ziegel“ / Ziegelbereich ohne Flächenbezug — Regenrinne (lfm) und Dachfenster (Stück) behalten den Größen-Schritt (s. {@link skipGroesseForSanierenDachKleinjob}). */
   if (
     (situation === "erneuern" || situation === "kaputt") &&
     bereiche.length === 1 &&

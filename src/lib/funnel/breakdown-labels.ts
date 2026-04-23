@@ -40,6 +40,9 @@ export const LEISTUNGS_LABELS: Record<string, string> = {
   "heizung.klein": "Heizungssanierung",
   "heizung.mittel": "Heizungssanierung",
   "heizung.gross": "Heizungssanierung",
+  "heizung.wp_klein": "Wärmepumpe neu",
+  "heizung.wp_mittel": "Wärmepumpe neu",
+  "heizung.wp_gross": "Wärmepumpe neu",
   "heizung.wartung": "Heizungswartung",
   "heizung.heizkoerper": "Heizkörper tauschen",
   "heizung.tausch": "Heizungstausch",
@@ -50,9 +53,18 @@ export const LEISTUNGS_LABELS: Record<string, string> = {
   "dach.daemmung": "Dachdämmung",
   "dach.komplett": "Dach sanieren",
   "dach.regenrinne": "Regenrinne",
-  "fassade.anstrich": "Fassade streichen",
-  "fenster.standard": "Fenster Standard",
-  "fenster.premium": "Fenster Premium",
+  "fassade.anstrich": "Fassade — Anstrich & Reinigung",
+  "fassade.daemmung": "Fassade — WDVS (Dämmung)",
+  "fassade.klinker": "Fassade — Klinker / Riemchen",
+  "fenster.standard": "Fenster Standard (2-fach)",
+  "fenster.premium": "Fenster Premium / Balkon-Tür",
+  "fenster.reparatur": "Fenster / Tür — Reparatur vor Ort",
+  "projekt.ausbau_dg": "Dachausbau / DG (GU)",
+  "projekt.ausbau_keller": "Kellerausbau (GU)",
+  "projekt.durchbruch_tragend": "Wanddurchbruch tragend (GU)",
+  "projekt.durchbruch_nicht_tragend": "Wanddurchbruch nicht tragend (GU)",
+  "projekt.terrasse": "Terrasse neu (GU)",
+  "fenster.tuer": "Haus- / Nebeneingangstür",
   "elektro.leitungen": "Elektro — Leitungen",
   "ausbau.umbau": "Ausbau / Umbau",
   "terrasse.aussen": "Terrasse / Außen",
@@ -160,7 +172,7 @@ function beschreibungToTypeSlug(beschreibung: string, gewerk: string): string {
     if (b.includes("pflege") && b.includes("mittel")) return "pflege_mittel";
     if (b.includes("pflege") && b.includes("groß")) return "pflege_gross";
     if (b.includes("pflege") && b.includes("gross")) return "pflege_gross";
-    if (b.includes("gestaltung")) return "gestaltung";
+    if (b.includes("gartengestaltung")) return "gartengestaltung";
     if (b.includes("baum") && b.includes("groß")) return "baum_gross";
     if (b.includes("baum") && b.includes("gross")) return "baum_gross";
     if (b.includes("baum")) return "baum_klein";

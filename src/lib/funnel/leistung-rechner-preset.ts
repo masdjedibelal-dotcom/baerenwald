@@ -17,7 +17,7 @@ export const LEISTUNG_RECHNER_PRESET: Record<string, LeistungRechnerPreset> = {
   elektroarbeiten: { situation: "erneuern", bereiche: ["elektrik"] },
   "heizung-sanitaer": { situation: "erneuern", bereiche: ["heizung"] },
   gartenpflege: { situation: "betreuung", bereiche: ["garten"] },
-  gartengestaltung: { situation: "betreuung", bereiche: ["gestaltung"] },
+  gartengestaltung: { situation: "erneuern", bereiche: ["gartengestaltung"] },
   winterdienst: { situation: "betreuung", bereiche: ["winter"] },
   hausmeisterservice: { situation: "gewerbe", bereiche: [] },
   "fenster-tueren": { situation: "erneuern", bereiche: ["fenster"] },

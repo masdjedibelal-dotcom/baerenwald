@@ -4,6 +4,10 @@ import type {
   FunnelStep,
   Situation,
 } from "./types";
+import {
+  erneuernProjektTyp,
+  isErneuernProjektBereich,
+} from "./projekt-erneuern";
 
 /** Slider + Chips + Direkteingabe (Rechner „Größe“) */
 export type GroesseChip = {
@@ -38,32 +42,17 @@ export function isHausmeisterOnlyBereiche(bereiche: string[]): boolean {
   return bereiche.every((b) => b === "hausmeister");
 }
 
-function kaputtSkipGroesse(bereiche: string[]): boolean {
-  if (bereiche.length === 0) return false;
-  const skip = new Set([
-    "elektro",
-    "sanitaer",
-    "heizung",
-    "schimmel",
-    "fenster_tuer",
-  ]);
-  return bereiche.every((b) => skip.has(b));
-}
-
 export function shouldSkipGroesseForBereiche(
   situation: Situation,
   bereiche: string[]
 ): boolean {
-  if (situation === "notfall") {
+  if (situation === "notfall" || situation === "kaputt") {
     return true;
   }
   if (
     (situation === "erneuern" || situation === "neubauen") &&
     isElektroOnlyBereiche(bereiche)
   ) {
-    return true;
-  }
-  if (situation === "kaputt" && kaputtSkipGroesse(bereiche)) {
     return true;
   }
   return false;
@@ -86,6 +75,49 @@ export function applyGroesseStepCopy(
   fachdetails?: FachdetailsState
 ): FunnelStep {
   if (!step.id.toLowerCase().includes("groesse")) return step;
+  if (step.id === "erneuern_projekt_groesse") {
+    const typ = erneuernProjektTyp(bereiche);
+    if (typ === "ausbau_dg") {
+      return {
+        ...step,
+        question: "Wie groß ist die Dachgeschoss-Projektfläche ca.?",
+        subtext: "Angabe in m² — für das GU-Gesamtpaket",
+      };
+    }
+    if (typ === "ausbau_keller") {
+      return {
+        ...step,
+        question: "Wie groß ist die Kellerausbau-Fläche ca.?",
+        subtext: "Angabe in m² — inkl. Feuchteschutz-Anteil im Paket",
+      };
+    }
+    if (typ === "terrasse_neu") {
+      return {
+        ...step,
+        question: "Wie groß soll die Terrasse werden?",
+        subtext:
+          "Fläche in m² — Erdarbeiten und Unterbau sind im Rahmen berücksichtigt",
+      };
+    }
+    if (typ === "gartengestaltung") {
+      return {
+        ...step,
+        question: "Wie groß ist die Gartenfläche ungefähr?",
+        subtext: "m² — für Material- und Lohnkosten im GU-Paket",
+      };
+    }
+  }
+  if (
+    situation === "betreuung" &&
+    bereiche.includes("baum") &&
+    step.id === "betreuung_groesse"
+  ) {
+    return {
+      ...step,
+      question: "Wie viele Bäume betrifft das?",
+      subtext: "Ungefähre Anzahl — für den Aufwand",
+    };
+  }
   const b = new Set(bereiche);
   if ((situation === "erneuern" || situation === "kaputt") && b.has("bad")) {
     return {
@@ -116,7 +148,7 @@ export function applyGroesseStepCopy(
     if (fachdetails?.boden?.aktuell === "balkon_belag") {
       return {
         ...step,
-        question: "Wie groß ist die Balkon- bzw. Terrassenfläche?",
+        question: "Wie groß ist die Balkonfläche?",
         subtext: "Ungefähre m² reichen",
       };
     }
@@ -126,17 +158,17 @@ export function applyGroesseStepCopy(
       subtext: undefined,
     };
   }
-  if (
-    situation === "betreuung" &&
-    (b.has("garten") || b.has("gestaltung"))
-  ) {
+  if (situation === "betreuung" && b.has("garten")) {
     return {
       ...step,
       question: "Wie groß ist die Gartenfläche?",
       subtext: "Hilft uns den Aufwand pro Besuch einzuschätzen",
     };
   }
-  if (situation === "erneuern" && b.has("fassade") && bereiche.length === 1) {
+  if (
+    situation === "erneuern" &&
+    (b.has("fassade") || fachdetails?.maler?.was === "fassade")
+  ) {
     return {
       ...step,
       question: "Wie groß ist die Fassadenfläche ungefähr?",
@@ -154,6 +186,42 @@ export function applyGroesseStepCopy(
       subtext: "In m² — ungefähre Angabe reicht",
     };
   }
+  if (
+    (situation === "erneuern" || situation === "kaputt") &&
+    b.has("dach") &&
+    (fachdetails?.dach?.vorhaben === "daemmung" ||
+      fachdetails?.dach?.vorhaben === "komplett")
+  ) {
+    return {
+      ...step,
+      question: "Wie groß ist die einzudeckende Dachfläche ungefähr?",
+      subtext:
+        "Angabe in m². Dämmung und Komplett-Eindeckung sind im Rechner zwei getrennte Positionen — eine Kombination aus beiden klären wir beim Aufmaß.",
+    };
+  }
+  if (
+    (situation === "erneuern" || situation === "kaputt") &&
+    b.has("dach") &&
+    fachdetails?.dach?.vorhaben === "regenrinne"
+  ) {
+    return {
+      ...step,
+      question: "Wie viele Laufmeter Regenrinne / Ablauf ungefähr?",
+      subtext:
+        "Gesamtlänge Rinne, Fallrohr und Anschluss — grobe Angabe reicht für den Rahmen.",
+    };
+  }
+  if (
+    (situation === "erneuern" || situation === "kaputt") &&
+    b.has("dach") &&
+    fachdetails?.dach?.vorhaben === "dachfenster"
+  ) {
+    return {
+      ...step,
+      question: "Wie viele Dachfenster sollen eingebaut werden?",
+      subtext: undefined,
+    };
+  }
   return step;
 }
 
@@ -168,9 +236,13 @@ export const GROESSE_CONFIG: {
   stueckFensterErneuern: GroesseSliderConfig;
   garten: GroesseSliderConfig;
   laufmeter: GroesseSliderConfig;
+  dachRegenrinne: GroesseSliderConfig;
+  dachDachfenster: GroesseSliderConfig;
   fassade: GroesseSliderConfig;
   trockenbau: GroesseSliderConfig;
   bodenBalkon: GroesseSliderConfig;
+  /** DG-, Keller-, Terrassen-Projekt unter „Ausbau & Umbau“. */
+  projektAusbau: GroesseSliderConfig;
   reinigung: GroesseSliderConfig;
   pauschal: null;
 } = {
@@ -330,6 +402,34 @@ export const GROESSE_CONFIG: {
       { label: "über 80 m", value: 120 },
     ],
   },
+  dachRegenrinne: {
+    min: 5,
+    max: 120,
+    step: 1,
+    default: 18,
+    einheit: "Laufmeter Regenrinne / Ablauf (ca.)",
+    einheitKurz: "m",
+    chips: [
+      { label: "Bis 15 m", value: 12 },
+      { label: "15–30 m", value: 24 },
+      { label: "30–50 m", value: 40 },
+      { label: "über 50 m", value: 65 },
+    ],
+  },
+  dachDachfenster: {
+    min: 1,
+    max: 12,
+    step: 1,
+    default: 1,
+    einheit: "Anzahl Dachfenster",
+    einheitKurz: "Stück",
+    chips: [
+      { label: "1", value: 1 },
+      { label: "2", value: 2 },
+      { label: "3–4", value: 3 },
+      { label: "5+", value: 6 },
+    ],
+  },
   fassade: {
     min: 20,
     max: 500,
@@ -363,13 +463,27 @@ export const GROESSE_CONFIG: {
     max: 30,
     step: 1,
     default: 12,
-    einheit: "Balkon- bzw. Terrassenfläche in m²",
+    einheit: "Balkonfläche in m²",
     einheitKurz: "m²",
     chips: [
       { label: "bis 8 m²", value: 6 },
       { label: "8–15 m²", value: 12 },
       { label: "15–25 m²", value: 20 },
       { label: "über 25 m²", value: 28 },
+    ],
+  },
+  projektAusbau: {
+    min: 8,
+    max: 180,
+    step: 2,
+    default: 45,
+    einheit: "Projektfläche in m²",
+    einheitKurz: "m²",
+    chips: [
+      { label: "bis 25 m²", value: 20 },
+      { label: "25–60 m²", value: 42 },
+      { label: "60–120 m²", value: 85 },
+      { label: "über 120 m²", value: 140 },
     ],
   },
   reinigung: {
@@ -415,6 +529,12 @@ export function getGroesseConfig(
     return null;
   }
 
+  if (situation === "erneuern" && isErneuernProjektBereich(b)) {
+    const typ = erneuernProjektTyp(b);
+    if (typ === "grundriss_umbau") return null;
+    return GROESSE_CONFIG.projektAusbau;
+  }
+
   if (shouldSkipGroesseForBereiche(situation, b)) {
     return null;
   }
@@ -435,6 +555,21 @@ export function getGroesseConfig(
     return GROESSE_CONFIG.stueckKaputt;
   }
 
+  if (
+    (situation === "erneuern" || situation === "kaputt") &&
+    b.includes("dach") &&
+    fachdetails?.dach?.vorhaben === "regenrinne"
+  ) {
+    return GROESSE_CONFIG.dachRegenrinne;
+  }
+  if (
+    (situation === "erneuern" || situation === "kaputt") &&
+    b.includes("dach") &&
+    fachdetails?.dach?.vorhaben === "dachfenster"
+  ) {
+    return GROESSE_CONFIG.dachDachfenster;
+  }
+
   const fensterErneuern =
     situation === "erneuern" &&
     b.includes("fenster") &&
@@ -443,18 +578,19 @@ export function getGroesseConfig(
     return GROESSE_CONFIG.stueckFensterErneuern;
   }
 
-  if (
-    situation === "betreuung" &&
-    (b.includes("garten") || b.includes("gestaltung"))
-  ) {
+  if (situation === "betreuung" && b.includes("garten")) {
     return GROESSE_CONFIG.garten;
   }
 
+  /** Baum: nur Stückzahl, kein Objekt-/Grundstücksformat */
   if (situation === "betreuung" && b.includes("baum")) {
     return GROESSE_CONFIG.stueck;
   }
 
-  if (situation === "erneuern" && b.includes("fassade") && b.length === 1) {
+  if (
+    situation === "erneuern" &&
+    (b.includes("fassade") || fachdetails?.maler?.was === "fassade")
+  ) {
     return GROESSE_CONFIG.fassade;
   }
 

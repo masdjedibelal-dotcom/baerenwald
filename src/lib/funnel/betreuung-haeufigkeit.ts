@@ -1,8 +1,9 @@
 import type { FunnelStep, StepOption } from "@/lib/funnel/types";
 
-const SKIP_FREQ = new Set(["winter", "baum"]);
+/** Nur noch Baumarbeit ohne globale Frequenz-Kachel — direkt zur Baum-Anzahl / Fachdetails. */
+const SKIP_FREQ = new Set(["baum"]);
 
-/** Winterdienst / Baumarbeiten: keine globale Häufigkeits-Kachel — direkt zur Größe. */
+/** Baumarbeiten: keine globale Häufigkeits-Kachel — direkt zur Baum-Anzahl. */
 export function shouldSkipBetreuungHaeufigkeit(bereiche: string[]): boolean {
   if (bereiche.length === 0) return false;
   return bereiche.every((x) => SKIP_FREQ.has(x));
@@ -12,16 +13,45 @@ function onlyHausmeister(bereiche: string[]): boolean {
   return bereiche.length > 0 && bereiche.every((x) => x === "hausmeister");
 }
 
+function onlyWinter(bereiche: string[]): boolean {
+  return bereiche.length > 0 && bereiche.every((x) => x === "winter");
+}
+
 function hasReinigung(bereiche: string[]): boolean {
   return bereiche.includes("reinigung");
 }
 
 function hasGartenPflege(bereiche: string[]): boolean {
-  return bereiche.includes("garten") || bereiche.includes("gestaltung");
+  return bereiche.includes("garten");
 }
 
 /** Dynamische Häufigkeits-/Service-Kachel für Betreuung (je nach gewählten Bereichen). */
 export function buildBetreuungHaeufigkeitStep(bereiche: string[]): FunnelStep {
+  if (onlyWinter(bereiche)) {
+    return {
+      id: "betreuung_haeufigkeit",
+      question: "Wie soll der Winterdienst gebucht werden?",
+      subtext: undefined,
+      inputType: "tiles-single",
+      options: [
+        {
+          value: "saison",
+          label: "Saison-Pauschale",
+          hint: "Absicherung über die Wintersaison",
+          emoji: "❄️",
+          faktor: 1.0,
+        },
+        {
+          value: "einmalig",
+          label: "Einmalig / Express",
+          hint: "Akuter Schnee — Mindest-Pauschale",
+          emoji: "⚡",
+          faktor: 1.0,
+        },
+      ],
+    };
+  }
+
   if (onlyHausmeister(bereiche)) {
     return {
       id: "betreuung_haeufigkeit",

@@ -59,6 +59,7 @@ export const FACHDETAILS_PRIORITAET = [
   "elektro",
   "fenster",
   "boden",
+  "fassade",
   "maler",
   "dach",
   "garten",
@@ -93,6 +94,8 @@ export function bereichMatchesFachdetailGewerk(
       );
     case "boden":
       return s.has("boden") || s.has("waende_boeden");
+    case "fassade":
+      return s.has("fassade");
     case "dach":
       return s.has("dach");
     case "fenster":
@@ -104,7 +107,6 @@ export function bereichMatchesFachdetailGewerk(
     case "garten":
       return (
         s.has("garten") ||
-        s.has("gestaltung") ||
         s.has("baum") ||
         s.has("baumarbeiten")
       );

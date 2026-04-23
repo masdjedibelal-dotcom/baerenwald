@@ -221,8 +221,14 @@ export const SANITAER_BAD_Q: FachdetailQuestionDef = {
     {
       value: "objekte",
       label: "Sanitärobjekte tauschen",
-      hint: "WC, Dusche, Wanne, Waschbecken",
-      followUpId: "sanitaer_bad_objekte_multi",
+      hint: "Waschbecken, WC, Armaturen — Auswahl im nächsten Schritt",
+      followUpId: "sanitaer_bad_objekt_liste",
+    },
+    {
+      value: "sanitaer",
+      label: "Sanitär gezielt erneuern",
+      hint: "Waschbecken, WC, Armaturen — gleiche Auswahl wie bei Objekten",
+      followUpId: "sanitaer_bad_objekt_liste",
     },
     {
       value: "wanne_dusche",
@@ -237,65 +243,27 @@ export const SANITAER_BAD_Q: FachdetailQuestionDef = {
   ],
 };
 
-export const SANITAER_BAD_OBJEKTE_MULTI: FachdetailQuestionDef = {
-  id: "sanitaer_bad_objekte_multi",
-  title: "Was genau wird getauscht?",
+/** Checkboxen für Teilsanierung Sanitär (badWas objekte | sanitaer) — Preislogik in price-calc. */
+export const SANITAER_BAD_OBJEKT_LISTE: FachdetailQuestionDef = {
+  id: "sanitaer_bad_objekt_liste",
+  title: "Welche Bereiche sollen erneuert werden?",
+  education: "Du kannst mehrere Optionen wählen — der Preisrahmen addiert sich aus den gewählten Positionen.",
   inputType: "multi",
   options: [
-    { value: "wc", label: "WC", hint: "" },
-    { value: "dusche", label: "Dusche / Wanne", hint: "" },
-    { value: "waschbecken", label: "Waschbecken", hint: "" },
+    {
+      value: "waschbecken",
+      label: "Waschbecken erneuern",
+      hint: "",
+    },
+    {
+      value: "wc",
+      label: "WC-Anlage erneuern",
+      hint: "",
+    },
     {
       value: "armatur",
-      label: "Wasserhähne / Armaturen",
-      hint: "Waschtisch, Küche, Badewanne …",
-    },
-  ],
-};
-
-/** Nach „Was soll gemacht werden?“ — steuert Handtuchwärmer-Zuschlag im Preis. */
-export const SANITAER_BAD_HEIZKOERPER: FachdetailQuestionDef = {
-  id: "sanitaer_bad_heizkoerper",
-  title: "Sollen Heizkörper im Bad neu?",
-  education:
-    "Ein Handtuchwärmer braucht oft Anschlussarbeiten — das kann den Rahmen erhöhen.",
-  inputType: "single",
-  options: [
-    {
-      value: "keine",
-      label: "Nein / keine Änderung",
-      hint: "Bleibt wie jetzt oder kein Bad-Heizkörper geplant",
-    },
-    {
-      value: "handtuchwaermer_1",
-      label: "Ja — ein Handtuchwärmer",
-      hint: "Inkl. Montage und Anschluss",
-    },
-    {
-      value: "handtuchwaermer_2",
-      label: "Ja — zwei Handtuchwärmer",
-      hint: "Zwei Handtuchwärmer geplant",
-    },
-  ],
-};
-
-/** Nur wenn nicht schon „Wanne zu Dusche“ als Haupt-Leistung gewählt — Zuschlag wie in price-calc. */
-export const SANITAER_BAD_ZUSATZ_WANNE_DUSCHE: FachdetailQuestionDef = {
-  id: "sanitaer_bad_zusatz_wanne_dusche",
-  title: "Zusätzlich Wanne durch ebenerdige Dusche ersetzen?",
-  education:
-    "Entsorgung der Wanne und Abfluss-Anpassung sind aufwändig — nur buchen, wenn das wirklich zusätzlich zum geplanten Umfang kommt.",
-  inputType: "single",
-  options: [
-    {
-      value: "nein",
-      label: "Nein",
-      hint: "Badewanne bleibt oder Umbau bereits eingeplant",
-    },
-    {
-      value: "ja",
-      label: "Ja, zusätzlich entfernen und Dusche",
-      hint: "Mit Entsorgung und Bodenablauf-Anpassung",
+      label: "Armaturen (Dusche/Wanne) tauschen",
+      hint: "",
     },
   ],
 };
@@ -322,9 +290,6 @@ export const HEIZUNG_Q1: FachdetailQuestionDef = {
       value: "waermepumpe",
       label: "Wärmepumpe",
       hint: "Luft- oder Erdwärmepumpe",
-      direktKomplex: true,
-      komplex_text:
-        "Wärmepumpen planen wir persönlich mit dir — kurzer Rückruf statt Online-Preis.",
     },
     {
       value: "fernwaerme",
@@ -346,6 +311,29 @@ export const HEIZUNG_Q1: FachdetailQuestionDef = {
   ],
 };
 
+/** „Erneuern“: ohne Wartung — die gibt es nur bei Kaputt/anderen Situationen. */
+export const HEIZUNG_Q1_ERNEUERN: FachdetailQuestionDef = {
+  ...HEIZUNG_Q1,
+  options: HEIZUNG_Q1.options.filter((o) => o.value !== "wartung"),
+};
+
+/** Anzahl Heizkörper (Stückpreis × n). */
+export const HEIZUNG_HEIZKOERPER_ANZAHL: FachdetailQuestionDef = {
+  id: "heizung_heizkoerper_anzahl",
+  title: "Wie viele Heizkörper sollen getauscht werden?",
+  education:
+    "Der Preisrahmen gilt pro Heizkörper inklusive typischem Zubehör — mehr Stückzahl, mehr Aufwand vor Ort.",
+  inputType: "single",
+  options: [
+    { value: "1", label: "1", hint: "" },
+    { value: "2", label: "2", hint: "" },
+    { value: "3", label: "3", hint: "" },
+    { value: "4", label: "4", hint: "" },
+    { value: "5", label: "5", hint: "" },
+    { value: "6", label: "6 und mehr", hint: "Ungefähre Angabe reicht" },
+  ],
+};
+
 export const HEIZUNG_FOLLOWUPS: Record<string, FachdetailQuestionDef> = {
   heizung_folge_oel_alter: {
     id: "heizung_folge_oel_alter",
@@ -363,9 +351,6 @@ export const HEIZUNG_FOLLOWUPS: Record<string, FachdetailQuestionDef> = {
         value: "ueber20",
         label: "Über 20 Jahre",
         hint: "Älteres System",
-        direktKomplex: true,
-        komplex_text:
-          "Sehr alte Ölheizungen erfordern eine individuelle Beratung — kurzer Rückruf statt Online-Preis.",
       },
     ],
   },
@@ -424,6 +409,34 @@ export const HEIZUNG_KAPUTT_Q1: FachdetailQuestionDef = {
   ],
 };
 
+/** Gemeinsame Fassaden-Art für Bereich „fassade“ und Maler-Pfad „Fassade außen“. */
+export const FASSADE_ART_Q1: FachdetailQuestionDef = {
+  id: "fassade_art",
+  title: "Welche Arbeit ist bei der Fassade geplant?",
+  education:
+    "WDVS umfasst oft Gerüst, Dämmplatten und Oberflächen — der Rahmen ist eine erste Orientierung.",
+  inputType: "single",
+  options: [
+    {
+      value: "anstrich",
+      label: "Anstrich & Reinigung",
+      hint: "Auffrischung der Optik",
+    },
+    {
+      value: "daemmung",
+      label: "Fassadendämmung (WDVS)",
+      hint: "Energetische Sanierung",
+      education:
+        "Dieser Richtpreis umfasst das gesamte Wärmedämmverbundsystem inklusive Gerüst und Endputz. Staatliche Förderungen können die Kosten signifikant senken.",
+    },
+    {
+      value: "klinker",
+      label: "Klinker / Riemchen",
+      hint: "Neue Fassadenbekleidung",
+    },
+  ],
+};
+
 export const MALER_Q1: FachdetailQuestionDef = {
   id: "maler_was",
   title: "Was soll gestrichen werden?",
@@ -458,8 +471,8 @@ export const MALER_Q1: FachdetailQuestionDef = {
     {
       value: "fassade",
       label: "Fassade außen",
-      hint: "Außenfarbe erneuern oder ausbessern",
-      followUpId: "maler_folge_fassade",
+      hint: "Außenarbeiten — Art der Maßnahme gleich darunter",
+      followUpId: null,
     },
   ],
 };
@@ -489,29 +502,10 @@ export const MALER_FOLLOWUPS: Record<string, FachdetailQuestionDef> = {
       },
     ],
   },
-  maler_folge_fassade: {
-    id: "maler_folge_fassade",
-    title: "Was für eine Fassade ist es?",
-    inputType: "single",
-    options: [
-      {
-        value: "anstrich",
-        label: "Fassade streichen",
-        hint: "Frischer Anstrich außen",
-      },
-      {
-        value: "klinker",
-        label: "Klinker / Backstein",
-        hint: "Reinigung und Imprägnierung",
-        education:
-          "Klinker bleibt sichtbar — wir reinigen, imprägnieren oder fassen Fugen gezielt an, statt „über alles zu streichen“.",
-      },
-    ],
-  },
 };
 
 export const BODEN_Q1: FachdetailQuestionDef = {
-  id: "boden_aktuell",
+  id: "boden_material",
   title: "Was soll verlegt werden?",
   education:
     "Fliesenrückbau kann Staub und Lärm bedeuten — Dauer hängt von Fläche und Verlegung ab. Wir planen Staubschutz und Entsorgung mit ein.",
@@ -545,7 +539,7 @@ export const BODEN_Q1: FachdetailQuestionDef = {
       value: "parkett",
       label: "Parkett",
       hint: "Echtholz — schwimmend oder verklebt",
-      followUpId: "boden_folge_laminat",
+      followUpId: "boden_folge_parkett",
     },
     {
       value: "parkett_schleifen",
@@ -557,6 +551,27 @@ export const BODEN_Q1: FachdetailQuestionDef = {
       label: "Rohboden / Estrich",
       hint: "Noch kein fertiger Bodenbelag",
       followUpId: null,
+    },
+  ],
+};
+
+/** Rückbau vor Neubelag — Verlegeart nur bei „komplett raus“ für Abriss-Zuschlag. */
+export const BODEN_ZUSTAND_Q: FachdetailQuestionDef = {
+  id: "boden_zustand",
+  title: "Wie ist der bestehende Belag zu behandeln?",
+  education:
+    "Die Verlegeart des alten Bodens fragen wir nur, wenn er komplett raus muss — sie beeinflusst den Aufwand beim Rückbau und die Preiskalkulation.",
+  inputType: "single",
+  options: [
+    {
+      value: "muss_komplett_raus",
+      label: "Muss komplett raus",
+      hint: "Rückbau, Entsorgung und Untergrund für neuen Belag",
+    },
+    {
+      value: "ohne_vollabzug",
+      label: "Kein kompletter Rückbau nötig",
+      hint: "z. B. Verlegung über Bestand oder ohne Abriss der Fläche",
     },
   ],
 };
@@ -600,6 +615,25 @@ export const BODEN_FOLLOWUPS: Record<string, FachdetailQuestionDef> = {
       },
     ],
   },
+  boden_folge_parkett: {
+    id: "boden_folge_parkett",
+    title: "Ist es geklebt oder schwimmend?",
+    inputType: "single",
+    options: [
+      {
+        value: "schwimmend",
+        label: "Schwimmend verlegt",
+        hint: "Klickt oder liegt auf Dämmung — meist schneller Rückbau",
+      },
+      {
+        value: "geklebt",
+        label: "Geklebt",
+        hint: "Vollflächig verklebt — Rückbau oft aufwendiger",
+        education:
+          "Geklebtes Parkett ist aufwendig zu entfernen — oft muss der Untergrund danach geschliffen werden.",
+      },
+    ],
+  },
 };
 
 export const DACH_Q1: FachdetailQuestionDef = {
@@ -626,12 +660,16 @@ export const DACH_Q1: FachdetailQuestionDef = {
       label: "Dachdämmung erneuern",
       hint: "Wärmedämmung verbessern",
       followUpId: "dach_folge_alter",
+      education:
+        "Ohne neue Eindeckung gerechnet — wenn zusätzlich Deckung/Dachhaut erneuert werden soll, das als eigene Auswahl „Komplett neu eindecken“ durchspielen oder beim Aufmaß kombinieren.",
     },
     {
       value: "komplett",
       label: "Komplett neu eindecken",
       hint: "Gesamtes Dach sanieren",
       followUpId: "dach_folge_alter",
+      education:
+        "Rahmen für neue Eindeckung inkl. üblicher Entsorgung — zusätzliche Aufdämmung ist eine zweite Position und kann beim Termin mit eingeplant werden.",
     },
     {
       value: "dachfenster",
@@ -677,18 +715,30 @@ export const DACH_FOLLOWUPS: Record<string, FachdetailQuestionDef> = {
 
 export const FENSTER_Q1: FachdetailQuestionDef = {
   id: "fenster_ausstattung",
-  title: "Was für Fenster?",
+  title: "Was soll erneuert werden?",
+  education:
+    "Bei einer Mischung aus Fenstern und Türen oder mehreren Güteklassen: für den Online-Rahmen den Schwerpunkt oder den höherwertigen Typ wählen — beim Aufmaß klären wir Details und ein genaues Angebot.",
   inputType: "single",
   options: [
     {
       value: "standard",
-      label: "Standard",
+      label: "Standard-Fenster",
       hint: "2-fach Verglasung — solider Standard",
     },
     {
       value: "premium",
-      label: "Premium",
+      label: "Premium-Fenster",
       hint: "3-fach Verglasung — bessere Dämmung und Schallschutz",
+    },
+    {
+      value: "tuer",
+      label: "Haus- oder Nebeneingangstür",
+      hint: "Außentür inkl. Zarge und fachgerechter Montage — realistischer Rahmen",
+    },
+    {
+      value: "balkon_tuer",
+      label: "Balkon- / Terrassentür",
+      hint: "Wird preislich wie Premium-Fenster kalkuliert — genauer Aufmaß vor Ort",
     },
   ],
 };
@@ -747,12 +797,6 @@ export const GARTEN_Q1: FachdetailQuestionDef = {
       hint: "Baumarbeiten",
       followUpId: "garten_folge_baum",
     },
-    {
-      value: "gestaltung",
-      label: "Neu gestalten oder bepflanzen",
-      hint: "Garten umgestalten",
-      followUpId: "garten_folge_gestaltung",
-    },
   ],
 };
 
@@ -805,23 +849,6 @@ export const GARTEN_FOLLOWUPS: Record<string, FachdetailQuestionDef> = {
         hint: "Große Bäume",
         education:
           "Große Bäume brauchen Spezialausrüstung und oft eine Genehmigung der Stadt München — Bearbeitungszeit 2–4 Wochen.",
-      },
-    ],
-  },
-  garten_folge_gestaltung: {
-    id: "garten_folge_gestaltung",
-    title: "Was soll neu entstehen?",
-    inputType: "multi",
-    options: [
-      { value: "rasen", label: "Neuer Rasen" },
-      { value: "bepflanzung", label: "Bepflanzung / Beete" },
-      { value: "wege", label: "Wege, Terrasse oder Pflaster" },
-      { value: "zaun", label: "Zaun oder Sichtschutz" },
-      {
-        value: "bewaesserung",
-        label: "Bewässerungsanlage",
-        education:
-          "Automatische Bewässerung braucht Wasseranschluss und Steuereinheit — planen wir separat.",
       },
     ],
   },

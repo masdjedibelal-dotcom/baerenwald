@@ -7,6 +7,7 @@ import { FACHDETAILS_NOTFALL } from "@/lib/funnel/fachdetails-notfall";
 import {
   BODEN_FOLLOWUPS,
   BODEN_Q1,
+  BODEN_ZUSTAND_Q,
   DACH_FOLLOWUPS,
   DACH_Q1,
   ELEKTRO_FOLLOWUPS,
@@ -18,14 +19,14 @@ import {
   GARTEN_Q1,
   getElektroQ1ForSituation,
   HEIZUNG_FOLLOWUPS,
+  HEIZUNG_HEIZKOERPER_ANZAHL,
   HEIZUNG_KAPUTT_Q1,
-  HEIZUNG_Q1,
+  FASSADE_ART_Q1,
+  HEIZUNG_Q1_ERNEUERN,
   MALER_FOLLOWUPS,
   MALER_Q1,
-  SANITAER_BAD_HEIZKOERPER,
-  SANITAER_BAD_OBJEKTE_MULTI,
+  SANITAER_BAD_OBJEKT_LISTE,
   SANITAER_BAD_Q,
-  SANITAER_BAD_ZUSATZ_WANNE_DUSCHE,
   SANITAER_FOLLOWUPS,
   SANITAER_Q1,
   type FachdetailQuestionDef,
@@ -148,36 +149,16 @@ export const FACHDETAIL_QUESTIONS: FachdetailQuestion[] = [
       needSan(s)
   ),
   fromDef(
-    "bad_objekte",
+    "bad_objekt_liste",
     "sanitaer",
-    SANITAER_BAD_OBJEKTE_MULTI,
+    SANITAER_BAD_OBJEKT_LISTE,
     (s) =>
       s.situation === "erneuern" &&
       s.bereiche.includes("bad") &&
       needSan(s) &&
-      ansStr(s, "bad_was") === "objekte",
+      (ansStr(s, "bad_was") === "objekte" ||
+        ansStr(s, "bad_was") === "sanitaer"),
     { inputType: "multi" }
-  ),
-  fromDef(
-    "bad_heizkoerper",
-    "sanitaer",
-    SANITAER_BAD_HEIZKOERPER,
-    (s) =>
-      s.situation === "erneuern" &&
-      s.bereiche.includes("bad") &&
-      needSan(s) &&
-      Boolean(ansStr(s, "bad_was"))
-  ),
-  fromDef(
-    "bad_zusatz_wanne_dusche",
-    "sanitaer",
-    SANITAER_BAD_ZUSATZ_WANNE_DUSCHE,
-    (s) =>
-      s.situation === "erneuern" &&
-      s.bereiche.includes("bad") &&
-      needSan(s) &&
-      Boolean(ansStr(s, "bad_was")) &&
-      ansStr(s, "bad_was") !== "wanne_dusche"
   ),
   fromDef(
     "sanitaer_lage",
@@ -190,21 +171,16 @@ export const FACHDETAIL_QUESTIONS: FachdetailQuestion[] = [
       const san = s.fachdetails?.sanitaer;
       if (hasBad && s.situation === "erneuern") {
         if (!bw) return false;
-        if (!ansStr(s, "bad_heizkoerper")) return false;
-        if (bw !== "wanne_dusche" && !ansStr(s, "bad_zusatz_wanne_dusche"))
+        if (
+          (bw === "objekte" || bw === "sanitaer") &&
+          fachdetailAnswer(s, "bad_objekt_liste") === undefined &&
+          san?.objektListe === undefined
+        ) {
           return false;
+        }
         if (san && sanitaerShortDone(s.bereiche, s.situation, san))
           return false;
         if (bw === "wanne_dusche") return false;
-        if (bw === "objekte") {
-          const raw = fachdetailAnswer(s, "bad_objekte");
-          const n = Array.isArray(raw)
-            ? raw.length
-            : typeof raw === "string" && raw
-              ? raw.split(",").filter(Boolean).length
-              : 0;
-          if (n === 0) return false;
-        }
       }
       return true;
     }
@@ -301,8 +277,17 @@ export const FACHDETAIL_QUESTIONS: FachdetailQuestion[] = [
   fromDef(
     "heizung_erneuern",
     "heizung",
-    HEIZUNG_Q1,
+    HEIZUNG_Q1_ERNEUERN,
     (s) => s.situation === "erneuern" && B(s).has("heizung")
+  ),
+  fromDef(
+    "heizung_heizkoerper_anzahl",
+    "heizung",
+    HEIZUNG_HEIZKOERPER_ANZAHL,
+    (s) =>
+      s.situation === "erneuern" &&
+      B(s).has("heizung") &&
+      ansStr(s, "heizung_erneuern") === "heizkoerper"
   ),
   fromDef(
     "heizung_oel_alter",
@@ -318,6 +303,18 @@ export const FACHDETAIL_QUESTIONS: FachdetailQuestion[] = [
     "heizung",
     HEIZUNG_KAPUTT_Q1,
     (s) => s.situation === "kaputt" && B(s).has("heizung")
+  ),
+
+  fromDef(
+    "fassade_art",
+    "fassade",
+    FASSADE_ART_Q1,
+    (s) => {
+      const b = B(s);
+      return (
+        b.has("fassade") || ansStr(s, "maler_was") === "fassade"
+      );
+    }
   ),
 
   fromDef(
@@ -344,18 +341,25 @@ export const FACHDETAIL_QUESTIONS: FachdetailQuestion[] = [
       return w === "waende_decke" || w === "komplett";
     }
   ),
-  fromDef(
-    "maler_fassade_art",
-    "maler",
-    MALER_FOLLOWUPS.maler_folge_fassade,
-    (s) => ansStr(s, "maler_was") === "fassade"
-  ),
 
   fromDef(
     "boden_material",
     "boden",
     BODEN_Q1,
     (s) => B(s).has("boden") || B(s).has("waende_boeden")
+  ),
+  fromDef(
+    "boden_zustand",
+    "boden",
+    BODEN_ZUSTAND_Q,
+    (s) => {
+      const m = ansStr(s, "boden_material");
+      const bodenish = B(s).has("boden") || B(s).has("waende_boeden");
+      return Boolean(
+        bodenish &&
+          (m === "fliesen" || m === "laminat" || m === "parkett")
+      );
+    }
   ),
   {
     id: "boden_verlegung",
@@ -364,8 +368,11 @@ export const FACHDETAIL_QUESTIONS: FachdetailQuestion[] = [
     optionen: [],
     showWenn: (s) => {
       const m = ansStr(s, "boden_material");
+      const z = ansStr(s, "boden_zustand");
       return Boolean(
-        (B(s).has("boden") || B(s).has("waende_boeden")) && bodenFollowDef(m)
+        (B(s).has("boden") || B(s).has("waende_boeden")) &&
+          bodenFollowDef(m) &&
+          z === "muss_komplett_raus"
       );
     },
     required: true,
@@ -415,7 +422,6 @@ export const FACHDETAIL_QUESTIONS: FachdetailQuestion[] = [
     GARTEN_Q1,
     (s) =>
       B(s).has("garten") ||
-      B(s).has("gestaltung") ||
       B(s).has("baum") ||
       B(s).has("baumarbeiten")
   ),
@@ -454,7 +460,6 @@ export function resolveFachdetailQuestionForUi(
     if (!g) return null;
     const b =
       B(state).has("garten") ||
-      B(state).has("gestaltung") ||
       B(state).has("baum") ||
       B(state).has("baumarbeiten");
     if (!b || !ansStr(state, "garten_was")) return null;
@@ -482,7 +487,6 @@ export function getActiveFachdetailQuestions(
   if (g) {
     const b =
       B(state).has("garten") ||
-      B(state).has("gestaltung") ||
       B(state).has("baum") ||
       B(state).has("baumarbeiten");
     if (b && ansStr(state, "garten_was")) {

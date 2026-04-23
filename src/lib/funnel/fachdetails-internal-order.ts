@@ -14,14 +14,13 @@ import {
   GARTEN_Q1,
   getElektroQ1ForSituation,
   HEIZUNG_FOLLOWUPS,
+  FASSADE_ART_Q1,
   HEIZUNG_KAPUTT_Q1,
   HEIZUNG_Q1,
   MALER_FOLLOWUPS,
   MALER_Q1,
-  SANITAER_BAD_HEIZKOERPER,
-  SANITAER_BAD_OBJEKTE_MULTI,
+  SANITAER_BAD_OBJEKT_LISTE,
   SANITAER_BAD_Q,
-  SANITAER_BAD_ZUSATZ_WANNE_DUSCHE,
   SANITAER_FOLLOWUPS,
   SANITAER_Q1,
 } from "@/lib/funnel/fachdetails-questions";
@@ -66,7 +65,6 @@ function needGarten(bereiche: string[]): boolean {
   const s = new Set(bereiche);
   return (
     s.has("garten") ||
-    s.has("gestaltung") ||
     s.has("baum") ||
     s.has("baumarbeiten")
   );
@@ -100,7 +98,8 @@ export function sanitaerShortDone(
     situation === "erneuern" &&
     s.badWas &&
     s.badWas !== "wanne_dusche" &&
-    s.badWas !== "objekte"
+    s.badWas !== "objekte" &&
+    s.badWas !== "sanitaer"
   ) {
     return true;
   }
@@ -129,30 +128,19 @@ function collectSanitaerSubStepIds(state: FunnelState): string[] {
     return ids;
   }
 
-  if (needBadExtra && s.badWas === "objekte") {
-    ids.push(SANITAER_BAD_OBJEKTE_MULTI.id);
+  if (
+    needBadExtra &&
+    (s.badWas === "objekte" || s.badWas === "sanitaer")
+  ) {
+    ids.push(SANITAER_BAD_OBJEKT_LISTE.id);
   }
 
   if (
     needBadExtra &&
-    s.badWas === "objekte" &&
-    (s.badObjekte?.length ?? 0) === 0
+    (s.badWas === "objekte" || s.badWas === "sanitaer") &&
+    s.objektListe === undefined
   ) {
     return ids;
-  }
-
-  if (needBadExtra && s.badWas) {
-    ids.push(SANITAER_BAD_HEIZKOERPER.id);
-    if (!s.badHeizkoerperAuswahl) {
-      return ids;
-    }
-  }
-
-  if (needBadExtra && s.badWas && s.badWas !== "wanne_dusche") {
-    ids.push(SANITAER_BAD_ZUSATZ_WANNE_DUSCHE.id);
-    if (!s.badZusatzWanneAntwort) {
-      return ids;
-    }
   }
 
   if (sanitaerShortDone(b, situation, s)) {
@@ -209,10 +197,12 @@ function collectHeizungSubStepIds(state: FunnelState): string[] {
   ids.push(HEIZUNG_Q1.id);
   const t = fd.heizung?.typ;
   if (!t) return ids;
+  if (t === "heizkoerper") {
+    ids.push("heizung_heizkoerper_anzahl");
+    return ids;
+  }
   if (t === "oel") {
     ids.push(HEIZUNG_FOLLOWUPS.heizung_folge_oel_alter.id);
-  } else if (t === "waermepumpe") {
-    ids.push(HEIZUNG_FOLLOWUPS.heizung_folge_wp_vorhaben.id);
   }
   return ids;
 }
@@ -235,6 +225,20 @@ function collectBodenSubStepIds(state: FunnelState): string[] {
   const ids = [BODEN_Q1.id];
   const a = fd.boden?.aktuell;
   if (!a) return ids;
+  const noAbrissFragen =
+    a === "parkett_schleifen" ||
+    a === "balkon_belag" ||
+    a === "teppich" ||
+    a === "estrich";
+  if (noAbrissFragen) return ids;
+  const needsZustand =
+    a === "fliesen" || a === "laminat" || a === "parkett";
+  if (needsZustand) {
+    ids.push("boden_zustand");
+    if (fd.boden?.zustand !== "muss_komplett_raus") {
+      return ids;
+    }
+  }
   const opt = BODEN_Q1.options.find((o) => o.value === a);
   const fid = opt?.followUpId;
   if (fid && BODEN_FOLLOWUPS[fid]) {
@@ -279,6 +283,14 @@ function collectFensterSubStepIds(state: FunnelState): string[] {
   return [fensterDefektKaputt ? "fenster_defekt_was" : "fenster_ausstattung"];
 }
 
+function needFassadeFromBereich(bereiche: string[]): boolean {
+  return bereiche.includes("fassade");
+}
+
+function collectFassadeSubStepIds(): string[] {
+  return [FASSADE_ART_Q1.id];
+}
+
 /** Geordnete Sub-Step-IDs für das Gewerk (vollständiger Pfad der aktuellen Verzweigung). */
 export function getFachdetailSubStepIds(
   state: FunnelState,
@@ -294,6 +306,8 @@ export function getFachdetailSubStepIds(
       return b.includes("heizung") ? collectHeizungSubStepIds(state) : [];
     case "maler":
       return needMaler(b) ? collectMalerSubStepIds(state) : [];
+    case "fassade":
+      return needFassadeFromBereich(b) ? collectFassadeSubStepIds() : [];
     case "boden":
       return needBoden(b) ? collectBodenSubStepIds(state) : [];
     case "dach":
@@ -326,12 +340,8 @@ export function isFachdetailSubStepComplete(
       return Boolean(fd.heizung?.typ);
     case "sanitaer_bad_was":
       return Boolean(fd.sanitaer?.badWas);
-    case "sanitaer_bad_objekte_multi":
-      return (fd.sanitaer?.badObjekte?.length ?? 0) > 0;
-    case "sanitaer_bad_heizkoerper":
-      return Boolean(fd.sanitaer?.badHeizkoerperAuswahl);
-    case "sanitaer_bad_zusatz_wanne_dusche":
-      return Boolean(fd.sanitaer?.badZusatzWanneAntwort);
+    case "sanitaer_bad_objekt_liste":
+      return fd.sanitaer?.objektListe !== undefined;
     case SANITAER_Q1.id:
       return Boolean(fd.sanitaer?.lage);
     case SANITAER_FOLLOWUPS.sanitaer_folge_rohre.id:
@@ -350,19 +360,28 @@ export function isFachdetailSubStepComplete(
   if (gewerk === "heizung" && !isNotfall) {
     if (stepId === HEIZUNG_KAPUTT_Q1.id) return Boolean(fd.heizung?.typ);
     if (stepId === HEIZUNG_Q1.id) return Boolean(fd.heizung?.typ);
+    if (stepId === "heizung_heizkoerper_anzahl") {
+      return (
+        fd.heizung?.anzahl !== undefined &&
+        fd.heizung.anzahl >= 1
+      );
+    }
     if (stepId === HEIZUNG_FOLLOWUPS.heizung_folge_oel_alter.id) {
       return fd.heizung?.alter !== undefined;
     }
-    if (stepId === HEIZUNG_FOLLOWUPS.heizung_folge_wp_vorhaben.id) {
-      return fd.heizung?.vorhaben !== undefined;
+  }
+
+  if (gewerk === "fassade") {
+    if (stepId === FASSADE_ART_Q1.id) {
+      const a =
+        fd.fassade?.art ??
+        fd.fachdetailAnswers?.["fassade_art"];
+      return typeof a === "string" && a !== "";
     }
   }
 
   if (gewerk === "maler") {
     if (stepId === MALER_Q1.id) return Boolean(fd.maler?.was);
-    if (stepId === "maler_folge_fassade") {
-      return fd.maler?.fassade !== undefined;
-    }
     if (stepId === "maler_folge_zustand") {
       return fd.maler?.zustand !== undefined;
     }
@@ -370,6 +389,7 @@ export function isFachdetailSubStepComplete(
 
   if (gewerk === "boden") {
     if (stepId === BODEN_Q1.id) return Boolean(fd.boden?.aktuell);
+    if (stepId === "boden_zustand") return fd.boden?.zustand !== undefined;
     if (BODEN_FOLLOWUPS[stepId]) {
       return fd.boden?.verlegung !== undefined;
     }
@@ -384,9 +404,6 @@ export function isFachdetailSubStepComplete(
 
   if (gewerk === "garten") {
     if (stepId === GARTEN_Q1.id) return Boolean(fd.garten?.was);
-    if (stepId === "garten_folge_gestaltung") {
-      return (fd.garten?.gestaltung?.length ?? 0) > 0;
-    }
     if (stepId === "garten_folge_haeufigkeit") {
       return fd.garten?.haeufigkeit !== undefined;
     }
@@ -444,51 +461,20 @@ export function getClearFachdetailPatchFromSubStep(
           sanitaer: {
             ...fd.sanitaer,
             badWas: undefined,
-            badObjekte: undefined,
+            objektListe: undefined,
             lage: undefined,
             rohre: undefined,
-            badHeizkoerper: undefined,
-            badHeizkoerperAnzahl: undefined,
-            badHeizkoerperAuswahl: undefined,
-            badBadewanne: undefined,
-            badZusatzWanneAntwort: undefined,
           },
         };
       }
-      if (stepId === "sanitaer_bad_objekte_multi") {
+      if (stepId === "sanitaer_bad_objekt_liste") {
         return {
           sanitaer: {
             ...fd.sanitaer,
-            badObjekte: undefined,
+            objektListe: undefined,
             lage: fd.sanitaer?.lage,
             rohre: fd.sanitaer?.rohre,
             badWas: fd.sanitaer?.badWas,
-            badHeizkoerper: fd.sanitaer?.badHeizkoerper,
-            badHeizkoerperAnzahl: fd.sanitaer?.badHeizkoerperAnzahl,
-            badHeizkoerperAuswahl: fd.sanitaer?.badHeizkoerperAuswahl,
-            badBadewanne: fd.sanitaer?.badBadewanne,
-            badZusatzWanneAntwort: fd.sanitaer?.badZusatzWanneAntwort,
-          },
-        };
-      }
-      if (stepId === "sanitaer_bad_heizkoerper") {
-        return {
-          sanitaer: {
-            ...fd.sanitaer,
-            badHeizkoerper: undefined,
-            badHeizkoerperAnzahl: undefined,
-            badHeizkoerperAuswahl: undefined,
-            badBadewanne: fd.sanitaer?.badBadewanne,
-            badZusatzWanneAntwort: fd.sanitaer?.badZusatzWanneAntwort,
-          },
-        };
-      }
-      if (stepId === "sanitaer_bad_zusatz_wanne_dusche") {
-        return {
-          sanitaer: {
-            ...fd.sanitaer,
-            badBadewanne: undefined,
-            badZusatzWanneAntwort: undefined,
           },
         };
       }
@@ -508,7 +494,7 @@ export function getClearFachdetailPatchFromSubStep(
             lage: fd.sanitaer?.lage,
             rohre: undefined,
             badWas: fd.sanitaer?.badWas,
-            badObjekte: fd.sanitaer?.badObjekte,
+            objektListe: fd.sanitaer?.objektListe,
           },
         };
       }
@@ -520,7 +506,23 @@ export function getClearFachdetailPatchFromSubStep(
       }
       if (stepId === HEIZUNG_Q1.id || stepId === HEIZUNG_KAPUTT_Q1.id) {
         return {
-          heizung: { typ: undefined, alter: undefined, vorhaben: undefined },
+          heizung: {
+            typ: undefined,
+            alter: undefined,
+            vorhaben: undefined,
+            anzahl: undefined,
+          },
+        };
+      }
+      if (stepId === "heizung_heizkoerper_anzahl") {
+        return {
+          heizung: {
+            ...fd.heizung,
+            typ: fd.heizung?.typ,
+            alter: fd.heizung?.alter,
+            vorhaben: fd.heizung?.vorhaben,
+            anzahl: undefined,
+          },
         };
       }
       if (stepId === HEIZUNG_FOLLOWUPS.heizung_folge_oel_alter.id) {
@@ -533,14 +535,12 @@ export function getClearFachdetailPatchFromSubStep(
           },
         };
       }
-      if (stepId === HEIZUNG_FOLLOWUPS.heizung_folge_wp_vorhaben.id) {
+      return {};
+    }
+    case "fassade": {
+      if (stepId === FASSADE_ART_Q1.id) {
         return {
-          heizung: {
-            ...fd.heizung,
-            typ: fd.heizung?.typ,
-            alter: fd.heizung?.alter,
-            vorhaben: undefined,
-          },
+          fassade: { art: undefined },
         };
       }
       return {};
@@ -549,15 +549,7 @@ export function getClearFachdetailPatchFromSubStep(
       if (stepId === MALER_Q1.id) {
         return {
           maler: { was: undefined, zustand: undefined, fassade: undefined },
-        };
-      }
-      if (stepId === "maler_folge_fassade") {
-        return {
-          maler: {
-            ...fd.maler,
-            was: fd.maler?.was,
-            fassade: undefined,
-          },
+          fassade: { ...fd.fassade, art: undefined },
         };
       }
       if (stepId === "maler_folge_zustand") {
@@ -573,12 +565,31 @@ export function getClearFachdetailPatchFromSubStep(
     }
     case "boden": {
       if (stepId === BODEN_Q1.id) {
-        return { boden: { aktuell: undefined, verlegung: undefined } };
+        return {
+          boden: {
+            aktuell: undefined,
+            zustand: undefined,
+            verlegung: undefined,
+            freitext: fd.boden?.freitext,
+          },
+        };
+      }
+      if (stepId === "boden_zustand") {
+        return {
+          boden: {
+            aktuell: fd.boden?.aktuell,
+            zustand: undefined,
+            verlegung: undefined,
+            freitext: fd.boden?.freitext,
+          },
+        };
       }
       return {
         boden: {
           aktuell: fd.boden?.aktuell,
+          zustand: fd.boden?.zustand,
           verlegung: undefined,
+          freitext: fd.boden?.freitext,
         },
       };
     }
@@ -600,15 +611,6 @@ export function getClearFachdetailPatchFromSubStep(
             was: undefined,
             haeufigkeit: undefined,
             baumgroesse: undefined,
-            gestaltung: undefined,
-          },
-        };
-      }
-      if (stepId === "garten_folge_gestaltung") {
-        return {
-          garten: {
-            ...fd.garten,
-            was: fd.garten?.was,
             gestaltung: undefined,
           },
         };

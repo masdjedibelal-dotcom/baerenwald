@@ -1,4 +1,10 @@
-import type { FunnelState, PriceLineItem } from "./types";
+import type {
+  FachdetailsState,
+  FunnelState,
+  PriceLineItem,
+} from "./types";
+import { isErneuernProjektBereich } from "./projekt-erneuern";
+import { isReparaturNotfallSituation } from "./reparatur-flow";
 
 /** PLZ → Faktor nach Entfernung zum Münchner Zentrum (80/81 = Stadt, nahes Umland, weiteres Umland). */
 export function getPlzFaktor(plz: string): number {
@@ -123,26 +129,29 @@ const PREISE = {
   },
   heizung: {
     klein: {
-      min: 6000,
-      max: 9500,
+      min: 8500,
+      max: 12500,
       einheit: "pauschal",
       groesseVon: 0,
       groesseBis: 100,
     },
     mittel: {
-      min: 9500,
-      max: 14000,
+      min: 12500,
+      max: 18000,
       einheit: "pauschal",
       groesseVon: 100,
       groesseBis: 200,
     },
     gross: {
-      min: 14000,
-      max: 20000,
+      min: 18000,
+      max: 26000,
       einheit: "pauschal",
       groesseVon: 200,
       groesseBis: 999,
     },
+    wp_klein: { min: 28500, max: 38500, einheit: "pauschal" },
+    wp_mittel: { min: 38500, max: 52000, einheit: "pauschal" },
+    wp_gross: { min: 52000, max: 68000, einheit: "pauschal" },
     wartung: { min: 180, max: 400, einheit: "pauschal" },
     heizkoerper: { min: 280, max: 580, einheit: "pro Stück" },
   },
@@ -168,7 +177,6 @@ const PREISE = {
     waende_decke: { min: 28, max: 40, einheit: "pro m² Wandfläche" },
     komplett: { min: 32, max: 46, einheit: "pro m² Wandfläche" },
     tapezieren: { min: 18, max: 32, einheit: "pro m²" },
-    fassade: { min: 38, max: 58, einheit: "pro m²" },
   },
   boden: {
     laminat: { min: 32, max: 48, einheit: "pro m²" },
@@ -183,18 +191,21 @@ const PREISE = {
     ziegel_wenige: { min: 300, max: 800, einheit: "pauschal" },
     ziegel_bereich: { min: 800, max: 2500, einheit: "pauschal" },
     daemmung: { min: 120, max: 180, einheit: "pro m²" },
-    komplett: { min: 165, max: 235, einheit: "pro m²" },
+    komplett: { min: 180, max: 260, einheit: "pro m²" },
     dachfenster: { min: 900, max: 1800, einheit: "pro Stück" },
     regenrinne: { min: 38, max: 62, einheit: "pro lfd. m" },
   },
   fassade: {
-    anstrich: { min: 38, max: 58, einheit: "pro m²" },
-    klinker: { min: 45, max: 70, einheit: "pro m²" },
+    anstrich: { min: 45, max: 65, einheit: "pro m²" },
+    daemmung: { min: 160, max: 240, einheit: "pro m²" },
+    klinker: { min: 120, max: 180, einheit: "pro m²" },
   },
   fenster: {
-    standard: { min: 600, max: 950, einheit: "pro Stück" },
-    premium: { min: 900, max: 1400, einheit: "pro Stück" },
-    tuer: { min: 800, max: 1400, einheit: "pro Stück" },
+    standard: { min: 650, max: 950, einheit: "pro Stück" },
+    premium: { min: 950, max: 1450, einheit: "pro Stück" },
+    tuer: { min: 1800, max: 3200, einheit: "pro Stück" },
+    /** Kaputt / Reparatur vor Ort — Diagnose & kleinere Instandsetzung (kein Fenster-Neukauf). */
+    reparatur: { min: 150, max: 350, einheit: "pauschal" },
   },
   garten: {
     pflege_klein: {
@@ -235,17 +246,28 @@ const PREISE = {
   },
   winterdienst: {
     saison: { min: 620, max: 920, einheit: "pro Saison" },
-    einmalig: { min: 80, max: 160, einheit: "pauschal" },
+    /** Express bei akutem Schneefall — Mindestpauschale siehe Kalkulation */
+    einmalig: { min: 180, max: 320, einheit: "pauschal" },
   },
   hausmeister: {
-    monatlich: { min: 320, max: 520, einheit: "pro Monat" },
-    nach_bedarf: { min: 280, max: 480, einheit: "pro Monat" },
-    jahresvertrag: { min: 3500, max: 6200, einheit: "pro Jahr" },
+    monatlich: { min: 350, max: 650, einheit: "pro Monat" },
+    nach_bedarf: { min: 330, max: 630, einheit: "pro Monat" },
+    jahresvertrag: { min: 4200, max: 7200, einheit: "pro Jahr" },
   },
   terrasse: {
     holz: { min: 180, max: 320, einheit: "pro m²" },
     stein: { min: 120, max: 220, einheit: "pro m²" },
     beton: { min: 80, max: 140, einheit: "pro m²" },
+  },
+  /** GU-Schichtung „Zuhause erneuern → Ausbau & Umbau“ (München-Basis, vor PLZ). */
+  projekt: {
+    ausbau_dg: { min: 850, max: 1200, einheit: "pro m²" },
+    ausbau_keller: { min: 950, max: 1400, einheit: "pro m²" },
+    durchbruch_tragend: { min: 4500, max: 4500, einheit: "pauschal" },
+    durchbruch_nicht_tragend: { min: 1800, max: 1800, einheit: "pauschal" },
+    terrasse: { min: 280, max: 450, einheit: "pro m²" },
+    /** Gartengestaltung — zzgl. Zaun-Pauschale & ggf. Zugangs-Aufschlag in {@link computeGartenNeuPrice}. */
+    garten_neu: { min: 180, max: 350, einheit: "pro m²" },
   },
   abriss: {
     innen: { min: 25, max: 45, einheit: "pro m²" },
@@ -255,6 +277,79 @@ const PREISE = {
 
 /** Generalunternehmer-/Koordinationsmarge vor PLZ-Faktor (auf Min/Max-Rahmen). */
 export const GU_MARGE = 1.15;
+
+/** „Zuhause erneuern“ → Gartengestaltung (GU-Paket, inkl. Marge). */
+export function computeGartenNeuPrice(state: FunnelState): {
+  min: number;
+  max: number;
+} | null {
+  const fd = state.fachdetails?.projekt;
+  const g = state.groesse;
+  if (!state.bereiche.includes("gartengestaltung")) return null;
+  if (
+    g == null ||
+    fd?.gartenZaun === undefined ||
+    fd?.gartenZugaenglichkeit === undefined
+  ) {
+    return null;
+  }
+  const p = PREISE.projekt.garten_neu;
+  let basisMin = p.min * g;
+  let basisMax = p.max * g;
+  if (fd.gartenZugaenglichkeit === "schwer") {
+    basisMin *= 1.15;
+    basisMax *= 1.15;
+  }
+  if (fd.gartenZaun === "ja") {
+    basisMin += 3500;
+    basisMax += 3500;
+  }
+  return {
+    min: basisMin * GU_MARGE,
+    max: basisMax * GU_MARGE,
+  };
+}
+
+/** Betreuung Reinigung einmalig: Pauschale nach Wohnungs-/Objektgröße S/M/L, nie unter 250 € vor Marge. */
+function computeBetreuungReinigungEinmalig(state: FunnelState): {
+  min: number;
+  max: number;
+} | null {
+  if (state.situation !== "betreuung") return null;
+  if (!state.bereiche.includes("reinigung")) return null;
+  if (state.umfang !== "einmalig") return null;
+  const g = state.groesse ?? 45;
+  let min: number;
+  let max: number;
+  if (g <= 55) {
+    min = 250;
+    max = 420;
+  } else if (g <= 100) {
+    min = 320;
+    max = 520;
+  } else {
+    min = 400;
+    max = 680;
+  }
+  min = Math.max(250, min);
+  max = Math.max(min + 80, max);
+  return {
+    min: min * GU_MARGE,
+    max: max * GU_MARGE,
+  };
+}
+
+/** Abriss-/Klebezuschläge €/m² auf Basis PREISE.boden (vor GU_MARGE). */
+function getBodenAbrissZuschlagProQm(state: FunnelState): number {
+  const b = state.fachdetails?.boden;
+  if (!b?.aktuell) return 0;
+  if (b.aktuell === "parkett_schleifen") return 0;
+  if (b.zustand !== "muss_komplett_raus") return 0;
+  let sur = 15;
+  const v = b.verlegung;
+  if (v === "geklebt" || v === "dick") sur += 12;
+  return sur;
+}
 
 const BAD_OVERFLOW_PRO_QM: Record<"standard" | "komfort" | "gehoben", number> = {
   standard: 800,
@@ -287,20 +382,6 @@ function addBadSanitaerZuschlaege(
   if (rohreNeu) {
     a += 2500;
     b += 4000;
-  }
-
-  /** Bei `badWas === "wanne_dusche"` steckt der Umbau im Basis-Band — kein zweiter Posten über `badBadewanne`. */
-  const duscheZuschlag =
-    fd?.badBadewanne === "dusche" && fd?.badWas !== "wanne_dusche";
-  if (duscheZuschlag) {
-    a += 1200;
-    b += 1800;
-  }
-
-  if (fd?.badHeizkoerper === "handtuchwaermer") {
-    const n = Math.max(1, fd.badHeizkoerperAnzahl ?? 1);
-    a += 450 * n;
-    b += 750 * n;
   }
 
   return [a, b];
@@ -357,10 +438,31 @@ export function calculatePartialBadPrice(state: FunnelState): {
       max = g * fliesen.max;
       break;
     case "objekte":
-    case "sanitaer":
-      min = 1500;
-      max = 3500;
+    case "sanitaer": {
+      const liste = fd?.objektListe ?? [];
+      const ranges: Record<string, [number, number]> = {
+        waschbecken: [450, 750],
+        wc: [650, 950],
+        armatur: [250, 450],
+      };
+      let accMin = 0;
+      let accMax = 0;
+      for (const k of liste) {
+        const pr = ranges[k];
+        if (pr) {
+          accMin += pr[0];
+          accMax += pr[1];
+        }
+      }
+      if (liste.length === 0) {
+        min = 500;
+        max = 1000;
+      } else {
+        min = accMin;
+        max = accMax;
+      }
       break;
+    }
     case "leitungen":
       min = g * leit.min;
       max = g * leit.max;
@@ -452,6 +554,45 @@ function getHeizungGroesseTyp(
   return "gross";
 }
 
+/** Auswahl FENSTER_Q1 → PREISE-Schlüssel (Balkon-/Terrassentür = Premium-Proxy). */
+function mapFensterAusstattungToPriceType(
+  aus: string
+): "standard" | "premium" | "tuer" {
+  if (aus === "tuer") return "tuer";
+  if (aus === "balkon_tuer") return "premium";
+  if (aus === "premium") return "premium";
+  return "standard";
+}
+
+/** Auf Dach-Dämmung/Komplettsanierung vor PLZ (Gerüst, Gewerkekette). */
+function applyDachDaemmungKomplettPricing(
+  basisMin: number,
+  basisMax: number,
+  state: FunnelState
+): [number, number] {
+  let a = basisMin * GU_MARGE;
+  let b = basisMax * GU_MARGE;
+  if (state.fachdetails?.dach?.alter === "ueber40") {
+    a *= 1.2;
+    b *= 1.2;
+  }
+  return [a, b];
+}
+
+function getHeizungWpPriceType(
+  groesse: number | null
+): "wp_klein" | "wp_mittel" | "wp_gross" {
+  const g = groesse ?? 80;
+  if (g < 100) return "wp_klein";
+  if (g < 200) return "wp_mittel";
+  return "wp_gross";
+}
+
+/** Hinweistext Ergebnis-Screen bei Wärmepumpe (Brutto vor Förderung). */
+export function shouldShowHeizungWpFoerderHint(state: FunnelState): boolean {
+  return state.fachdetails?.heizung?.typ === "waermepumpe";
+}
+
 function getPflegeByGroesse(
   groesse: number | null
 ): "pflege_klein" | "pflege_mittel" | "pflege_gross" {
@@ -487,7 +628,7 @@ function mapSanitaerFromFachdetails(
   ) {
     const w = fd.sanitaer.badWas;
     if (w === "fliesen") return { service: "sanitaer", type: "armatur" };
-    if (w === "objekte") return { service: "sanitaer", type: "armatur" };
+    if (w === "objekte" || w === "sanitaer") return { service: "sanitaer", type: "armatur" };
     if (w === "komplett") return { service: "sanitaer", type: "leck" };
     return { service: "sanitaer", type: "armatur" };
   }
@@ -563,6 +704,93 @@ function mapElektroFromFachdetails(
   }
 }
 
+/** Gemeinsamer Reparatur-/Notfall-Pfad (Heizung, Strom, Wasser, Fenster-Kaputt, Dach-Reparatur). */
+function mapReparaturNotfallFlow(
+  state: FunnelState
+): BwPriceMapping | null {
+  if (!isReparaturNotfallSituation(state.situation)) return null;
+
+  const { bereiche } = state;
+  const fd = state.fachdetails;
+  const b = (k: string) => bereiche.includes(k);
+
+  if (b("heizung")) {
+    return { service: "heizung_notfall", type: "ausfall" };
+  }
+
+  if (b("strom") || b("elektro") || b("elektrik")) {
+    const em = mapElektroFromFachdetails(state);
+    if (em) return em;
+    return { service: "elektro", type: "fehlersuche" };
+  }
+
+  if (b("wasser") || b("sanitaer") || b("bad")) {
+    const sm = mapSanitaerFromFachdetails(state);
+    if (sm) return sm;
+    return { service: "sanitaer", type: "leck" };
+  }
+
+  if (b("fenster_tuer") && fd?.fenster?.defekt) {
+    return { service: "fenster", type: "reparatur" };
+  }
+
+  if (b("dach") && fd?.dach?.vorhaben) {
+    const v = fd.dach.vorhaben;
+    if (v === "ziegel_wenige" || v === "ziegel_bereich") {
+      return { service: "dach", type: v };
+    }
+    if (v === "dachfenster") return { service: "dach", type: "dachfenster" };
+    if (v === "regenrinne") return { service: "dach", type: "regenrinne" };
+    if (v === "daemmung") return { service: "dach", type: "daemmung" };
+    return { service: "dach", type: "komplett" };
+  }
+
+  return null;
+}
+
+/** Münchner Diagnose-Pauschalen vor GU-Marge (nur Reparatur-/Notfall-Pfad). */
+function applyMunichReparaturDiagnoseBands(
+  service: string,
+  type: string,
+  min: number,
+  max: number
+): [number, number] {
+  if (service === "sanitaer" && type === "leck") return [350, 700];
+  if (service === "fenster" && type === "reparatur") return [150, 350];
+  if (
+    service === "heizung_notfall" ||
+    service === "elektro" ||
+    service === "sanitaer"
+  ) {
+    return [280, 450];
+  }
+  return [min, max];
+}
+
+function resolveFassadePriceType(
+  fd: FachdetailsState | undefined
+): "anstrich" | "daemmung" | "klinker" | null {
+  const fromArt = fd?.fassade?.art;
+  if (
+    fromArt === "anstrich" ||
+    fromArt === "daemmung" ||
+    fromArt === "klinker"
+  ) {
+    return fromArt;
+  }
+  const a = fd?.fachdetailAnswers?.["fassade_art"];
+  if (a === "anstrich" || a === "daemmung" || a === "klinker") {
+    return a;
+  }
+  if (fd?.maler?.was === "fassade") {
+    const sub = fd.maler.fassade;
+    if (sub === "klinker") return "klinker";
+    if (sub === "daemmung") return "daemmung";
+    if (sub === "anstrich") return "anstrich";
+  }
+  return null;
+}
+
 export function mapToPrice(state: FunnelState): BwPriceMapping | null {
   const { situation, bereiche } = state;
   const fd = state.fachdetails;
@@ -572,20 +800,66 @@ export function mapToPrice(state: FunnelState): BwPriceMapping | null {
     return null;
   }
 
-  if (situation === "notfall") {
-    if (bereiche.includes("heizung")) {
-      return { service: "heizung_notfall", type: "ausfall" };
+  const reparaturPath = mapReparaturNotfallFlow(state);
+  if (reparaturPath) return reparaturPath;
+
+  if (situation === "erneuern") {
+    if (b("gartengestaltung")) {
+      const r = computeGartenNeuPrice(state);
+      if (!r) return null;
+      return { service: "projekt", type: "garten_neu", customPriceRange: r };
     }
-    if (bereiche.includes("strom")) {
-      return { service: "elektro", type: "fehlersuche" };
+    if (b("ausbau_dg")) return { service: "projekt", type: "ausbau_dg" };
+    if (b("ausbau_keller")) return { service: "projekt", type: "ausbau_keller" };
+    if (b("grundriss_umbau")) {
+      const tr = fd?.projekt?.durchbruchTragend;
+      if (tr === true) return { service: "projekt", type: "durchbruch_tragend" };
+      if (tr === false) {
+        return { service: "projekt", type: "durchbruch_nicht_tragend" };
+      }
+      return null;
     }
-    if (bereiche.includes("wasser")) {
-      return { service: "sanitaer", type: "leck" };
-    }
+    if (b("terrasse_neu")) return { service: "projekt", type: "terrasse" };
   }
 
-  if (b("fassade_daemmung")) {
-    return null;
+  /** Neubauen: Keller/DG, Terrasse, Durchbruch → dieselben `PREISE.projekt` wie unter „Zuhause erneuern“. */
+  if (situation === "neubauen") {
+    const nb = fd?.neubauen;
+    if (b("keller_dg") && nb) {
+      if (nb.rohbau === "nein") return null;
+      if (!nb.rohbau || !nb.deckenhoehe) return null;
+      if (nb.deckenhoehe === "niedrig") return null;
+      if (!nb.kellerOderDg) return null;
+      return nb.kellerOderDg === "keller"
+        ? { service: "projekt", type: "ausbau_keller" }
+        : { service: "projekt", type: "ausbau_dg" };
+    }
+    if (b("terrasse") && nb?.terrasse) {
+      const mat = nb.terrasse;
+      if (mat === "holz" || mat === "stein" || mat === "beton") {
+        return { service: "projekt", type: "terrasse" };
+      }
+    }
+    if (b("umbau") && nb?.innen === "trennwand") {
+      return { service: "trockenbau", type: "wand" };
+    }
+    if (b("umbau") && nb?.innen === "durchbruch") {
+      if (
+        nb.durchbruchAnzahl == null ||
+        nb.durchbruchTragend === undefined
+      ) {
+        return null;
+      }
+      return {
+        service: "projekt",
+        type: nb.durchbruchTragend
+          ? "durchbruch_tragend"
+          : "durchbruch_nicht_tragend",
+      };
+    }
+    if (b("umbau") && nb?.innen === "grundriss") {
+      return null;
+    }
   }
 
   if (b("boden")) {
@@ -602,6 +876,11 @@ export function mapToPrice(state: FunnelState): BwPriceMapping | null {
     return { service: "boden", type: "vinyl" };
   }
 
+  if (b("fassade")) {
+    const t = resolveFassadePriceType(fd) ?? "anstrich";
+    return { service: "fassade", type: t };
+  }
+
   if (
     b("maler") ||
     b("streichen") ||
@@ -611,10 +890,8 @@ export function mapToPrice(state: FunnelState): BwPriceMapping | null {
   ) {
     const was = fd?.maler?.was;
     if (was === "fassade") {
-      const sub = fd?.maler?.fassade;
-      if (sub === "daemmung") return null;
-      if (sub === "klinker") return { service: "fassade", type: "klinker" };
-      return { service: "fassade", type: "anstrich" };
+      const t = resolveFassadePriceType(fd) ?? "anstrich";
+      return { service: "fassade", type: t };
     }
     if (was === "komplett") return { service: "maler", type: "komplett" };
     if (was === "waende_decke") return { service: "maler", type: "waende_decke" };
@@ -626,7 +903,12 @@ export function mapToPrice(state: FunnelState): BwPriceMapping | null {
     const typ = fd.heizung.typ;
     if (typ === "wartung") return { service: "heizung", type: "wartung" };
     if (typ === "heizkoerper") return { service: "heizung", type: "heizkoerper" };
-    if (typ === "waermepumpe") return null;
+    if (typ === "waermepumpe") {
+      return {
+        service: "heizung",
+        type: getHeizungWpPriceType(state.groesse),
+      };
+    }
     if (fd?.heizung?.vorhaben === "wartung") {
       return { service: "heizung", type: "wartung" };
     }
@@ -648,10 +930,7 @@ export function mapToPrice(state: FunnelState): BwPriceMapping | null {
   }
 
   if (
-    (b("garten") ||
-      b("gestaltung") ||
-      b("baum") ||
-      b("baumarbeiten")) &&
+    (b("garten") || b("baum") || b("baumarbeiten")) &&
     fd?.garten?.was
   ) {
     const w = fd.garten.was;
@@ -660,7 +939,6 @@ export function mapToPrice(state: FunnelState): BwPriceMapping | null {
     }
     if (w === "hecke") return { service: "garten", type: "hecke" };
     if (w === "pflaster") return { service: "garten", type: "pflaster" };
-    if (w === "gestaltung") return { service: "garten", type: "gestaltung" };
     if (w === "baum") {
       return {
         service: "garten",
@@ -709,23 +987,24 @@ export function mapToPrice(state: FunnelState): BwPriceMapping | null {
   const sanMap = mapSanitaerFromFachdetails(state);
   if (sanMap) return sanMap;
 
-  if (
-    b("fenster_tuer") &&
-    situation === "kaputt" &&
-    fd?.fenster?.defekt
-  ) {
-    return { service: "fenster", type: "standard" };
-  }
-
   if ((b("fenster") || b("fenster_tueren")) && fd?.fenster?.ausstattung) {
     const a = fd.fenster.ausstattung;
     return {
       service: "fenster",
-      type: a === "premium" ? "premium" : "standard",
+      type: mapFensterAusstattungToPriceType(a),
     };
   }
 
   if (b("reinigung")) {
+    if (situation === "betreuung" && state.umfang === "einmalig") {
+      const r = computeBetreuungReinigungEinmalig(state);
+      if (!r) return null;
+      return {
+        service: "reinigung",
+        type: "einmalig",
+        customPriceRange: r,
+      };
+    }
     if (state.umfang === "einmalig") {
       return { service: "reinigung", type: "einmalig" };
     }
@@ -742,40 +1021,16 @@ export function mapToPrice(state: FunnelState): BwPriceMapping | null {
     return { service: "garten", type: getPflegeByGroesse(state.groesse) };
   }
 
-  if (situation === "neubauen" && b("terrasse") && fd?.neubauen?.terrasse) {
-    const mat = fd.neubauen.terrasse;
-    if (mat === "holz" || mat === "stein" || mat === "beton") {
-      return { service: "terrasse", type: mat };
-    }
-  }
-
-  if (
-    situation === "neubauen" &&
-    b("umbau") &&
-    fd?.neubauen?.innen === "trennwand"
-  ) {
-    return { service: "trockenbau", type: "wand" };
-  }
-
-  if (
-    situation === "neubauen" &&
-    (b("keller_dg") || (b("umbau") && fd?.neubauen?.innen !== "trennwand"))
-  ) {
-    return { service: "trockenbau", type: "wand" };
-  }
-
   if (situation === "betreuung") {
-    if (b("gestaltung")) return { service: "garten", type: "pflaster" };
     if (b("garten")) {
       return { service: "garten", type: getPflegeByGroesse(state.groesse) };
     }
     if (b("winter")) {
       return {
         service: "winterdienst",
-        type: "saison",
+        type: state.umfang === "einmalig" ? "einmalig" : "saison",
       };
     }
-    if (b("reinigung")) return { service: "reinigung", type: "regelmaessig" };
     if (b("hausmeister")) {
       const u = state.umfang;
       if (u === "nach_bedarf" || u === "jahresvertrag") {
@@ -784,8 +1039,6 @@ export function mapToPrice(state: FunnelState): BwPriceMapping | null {
       return { service: "hausmeister", type: "monatlich" };
     }
   }
-
-  if (b("fassade")) return { service: "fassade", type: "anstrich" };
 
   if (b("fenster") || b("fenster_tueren") || b("fenster_tuer")) {
     return { service: "fenster", type: "standard" };
@@ -814,6 +1067,7 @@ const GEWERK_LABEL: Record<string, string> = {
   winterdienst: "Winterdienst",
   hausmeister: "Hausmeister",
   terrasse: "Terrasse / Außenfläche",
+  projekt: "GU-Ausbau & Umbau",
   abriss: "Abriss",
 };
 
@@ -863,6 +1117,9 @@ const TYP_LABEL: Record<string, Record<string, string>> = {
     klein: "Heizungssanierung (klein)",
     mittel: "Heizungssanierung (mittel)",
     gross: "Heizungssanierung (groß)",
+    wp_klein: "Wärmepumpe — Neu (bis 100 m²)",
+    wp_mittel: "Wärmepumpe — Neu (bis 200 m²)",
+    wp_gross: "Wärmepumpe — Neu (ab 200 m²)",
     wartung: "Heizung Wartung",
     heizkoerper: "Heizkörper tauschen",
   },
@@ -875,13 +1132,15 @@ const TYP_LABEL: Record<string, Record<string, string>> = {
     regenrinne: "Regenrinne",
   },
   fassade: {
-    anstrich: "Fassade Anstrich",
-    klinker: "Klinker / Verblendung",
+    anstrich: "Fassade — Anstrich & Reinigung",
+    daemmung: "Fassade — WDVS (Dämmung)",
+    klinker: "Fassade — Klinker / Riemchen",
   },
   fenster: {
-    standard: "Fenster Standard",
-    premium: "Fenster Premium",
-    tuer: "Haustür / Zimmertür",
+    standard: "Fenster Standard (2-fach)",
+    premium: "Fenster Premium (3-fach / Balkon-Tür)",
+    tuer: "Haus- / Nebeneingangstür (Außentür)",
+    reparatur: "Fenster / Tür — Reparatur vor Ort",
   },
   reinigung: {
     regelmaessig: "Reinigung regelmäßig",
@@ -900,6 +1159,14 @@ const TYP_LABEL: Record<string, Record<string, string>> = {
     holz: "Terrasse Holz / WPC",
     stein: "Terrasse Naturstein / Fliesen",
     beton: "Terrasse Betonplatten",
+  },
+  projekt: {
+    ausbau_dg: "Dachausbau / DG (GU-Paket)",
+    ausbau_keller: "Kellerausbau (GU-Paket)",
+    durchbruch_tragend: "Wanddurchbruch tragend (GU-Paket)",
+    durchbruch_nicht_tragend: "Wanddurchbruch nicht tragend (GU-Paket)",
+    terrasse: "Terrasse neu (GU-Paket)",
+    garten_neu: "Gartengestaltung (GU-Paket)",
   },
   heizung_notfall: { ausfall: "Notfall Heizung / Wasser" },
   abriss: {
@@ -934,7 +1201,7 @@ export type BwResultModus =
   | "notfall_akut";
 
 export function getNotdienstGebuehr(state: FunnelState): number {
-  if (state.situation !== "notfall") return 0;
+  if (!isReparaturNotfallSituation(state.situation)) return 0;
   switch (state.dringlichkeit) {
     case "sofort":
       return 150;
@@ -948,25 +1215,16 @@ export function getNotdienstGebuehr(state: FunnelState): number {
 
 /** Frühe Szenarien ohne Preis — blendet z. B. Zustand/Zugänglichkeit aus. */
 export function getBwResultModus(state: FunnelState): "normal" | "zu_komplex" {
-  if (state.bereiche.includes("fassade_daemmung")) {
-    return "zu_komplex";
-  }
-  if (
-    state.fachdetails?.maler?.was === "fassade" &&
-    state.fachdetails?.maler?.fassade === "daemmung"
-  ) {
-    return "zu_komplex";
-  }
   if (state.situation === "gewerbe") {
     return "zu_komplex";
+  }
+  if (state.situation === "erneuern" && isErneuernProjektBereich(state.bereiche)) {
+    return "normal";
   }
   if (
     state.situation === "neubauen" &&
     state.bereiche.includes("anbau")
   ) {
-    return "zu_komplex";
-  }
-  if (state.situation === "neubauen" && state.bereiche.includes("terrasse")) {
     return "zu_komplex";
   }
   const nb = state.fachdetails?.neubauen;
@@ -978,17 +1236,8 @@ export function getBwResultModus(state: FunnelState): "normal" | "zu_komplex" {
   if (
     state.situation === "neubauen" &&
     state.bereiche.includes("umbau") &&
-    (nb?.innen === "durchbruch" || nb?.innen === "grundriss")
+    nb?.innen === "grundriss"
   ) {
-    return "zu_komplex";
-  }
-  if (state.fachdetails?.heizung?.vorhaben === "neu") {
-    return "zu_komplex";
-  }
-  if (state.fachdetails?.heizung?.typ === "waermepumpe") {
-    return "zu_komplex";
-  }
-  if (state.fachdetails?.heizung?.alter === "ueber20") {
     return "zu_komplex";
   }
   if (state.fachdetails?.garten?.baumgroesse === "gross") {
@@ -1003,7 +1252,10 @@ export function getBwPreisFaktorHint(state: FunnelState): string {
   if (plzF <= 1.001) parts.push("München Stadt (80/81)");
   else if (plzF <= 1.035) parts.push("Umland nah");
   else parts.push("Umland weiter");
-  if (state.situation === "notfall" && getNotdienstGebuehr(state) > 0) {
+  if (
+    isReparaturNotfallSituation(state.situation) &&
+    getNotdienstGebuehr(state) > 0
+  ) {
     parts.push("Notdienst-Pauschale");
   }
   const z = state.zeitraum;
@@ -1020,21 +1272,37 @@ export function getBwPreisFaktorHint(state: FunnelState): string {
   return parts.length > 0 ? parts.join(" · ") : "Standardrahmen München";
 }
 
+/** Neubauen-Pfade, die PREISE.projekt nutzen (wie erneuern → Ausbau & Umbau). */
+function neubauenNutztProjektPaketPreis(state: FunnelState): boolean {
+  if (state.situation !== "neubauen") return false;
+  const b = state.bereiche;
+  const nb = state.fachdetails?.neubauen;
+  if (b.includes("keller_dg")) {
+    return (
+      nb?.rohbau === "ja" &&
+      nb?.deckenhoehe != null &&
+      nb.deckenhoehe !== "niedrig" &&
+      nb?.kellerOderDg != null
+    );
+  }
+  if (b.includes("terrasse")) return Boolean(nb?.terrasse);
+  if (b.includes("umbau") && nb?.innen === "durchbruch") {
+    return (
+      nb.durchbruchAnzahl != null && nb.durchbruchTragend !== undefined
+    );
+  }
+  return false;
+}
+
 function getBwAnzeigeModus(
   state: FunnelState,
   result: { mitte: number; min: number; max: number }
 ): BwResultModus {
-  if (state.situation === "notfall" && state.dringlichkeit === "sofort") {
-    return "notfall_akut";
-  }
-  if (state.bereiche.includes("fassade_daemmung")) {
-    return "zu_komplex";
-  }
   if (
-    state.fachdetails?.maler?.was === "fassade" &&
-    state.fachdetails?.maler?.fassade === "daemmung"
+    isReparaturNotfallSituation(state.situation) &&
+    state.dringlichkeit === "sofort"
   ) {
-    return "zu_komplex";
+    return "notfall_akut";
   }
   if (state.situation === "gewerbe") {
     return "zu_komplex";
@@ -1043,9 +1311,6 @@ function getBwAnzeigeModus(
     state.situation === "neubauen" &&
     state.bereiche.includes("anbau")
   ) {
-    return "zu_komplex";
-  }
-  if (state.situation === "neubauen" && state.bereiche.includes("terrasse")) {
     return "zu_komplex";
   }
   const nb2 = state.fachdetails?.neubauen;
@@ -1057,23 +1322,25 @@ function getBwAnzeigeModus(
   if (
     state.situation === "neubauen" &&
     state.bereiche.includes("umbau") &&
-    (nb2?.innen === "durchbruch" || nb2?.innen === "grundriss")
+    nb2?.innen === "grundriss"
   ) {
-    return "zu_komplex";
-  }
-  if (state.fachdetails?.heizung?.vorhaben === "neu") {
-    return "zu_komplex";
-  }
-  if (state.fachdetails?.heizung?.typ === "waermepumpe") {
-    return "zu_komplex";
-  }
-  if (state.fachdetails?.heizung?.alter === "ueber20") {
     return "zu_komplex";
   }
   if (state.fachdetails?.garten?.baumgroesse === "gross") {
     return "zu_komplex";
   }
-  if (result.mitte > 15000) return "zu_komplex";
+  if (result.mitte > 15000) {
+    if (state.situation === "erneuern" && isErneuernProjektBereich(state.bereiche)) {
+      return result.mitte > 8000 ? "preisrahmen_warnung" : "preisrahmen";
+    }
+    if (neubauenNutztProjektPaketPreis(state)) {
+      return result.mitte > 8000 ? "preisrahmen_warnung" : "preisrahmen";
+    }
+    const heizungMitPreisrahmen =
+      state.bereiche.includes("heizung") &&
+      Boolean(state.fachdetails?.heizung?.typ);
+    if (!heizungMitPreisrahmen) return "zu_komplex";
+  }
   if (result.mitte > 8000) return "preisrahmen_warnung";
   return "preisrahmen";
 }
@@ -1113,7 +1380,34 @@ function computePriceCore(state: FunnelState): {
 
   let basis: BasisEintrag | null = null;
 
-  if (service === "bad" && customPriceRange) {
+  if (
+    service === "bad" &&
+    customPriceRange &&
+    typeof customPriceRange.min === "number"
+  ) {
+    basis = {
+      min: customPriceRange.min,
+      max: customPriceRange.max,
+      einheit: "pauschal",
+    };
+  } else if (
+    service === "projekt" &&
+    type === "garten_neu" &&
+    customPriceRange &&
+    typeof customPriceRange.min === "number"
+  ) {
+    basis = {
+      min: customPriceRange.min,
+      max: customPriceRange.max,
+      einheit: "pauschal",
+    };
+  } else if (
+    service === "reinigung" &&
+    state.situation === "betreuung" &&
+    state.umfang === "einmalig" &&
+    customPriceRange &&
+    typeof customPriceRange.min === "number"
+  ) {
     basis = {
       min: customPriceRange.min,
       max: customPriceRange.max,
@@ -1128,30 +1422,144 @@ function computePriceCore(state: FunnelState): {
   }
   if (!basis) return null;
 
+  const reparaturPauschal = mapReparaturNotfallFlow(state) !== null;
+
+  let basisMin = basis.min;
+  let basisMax = basis.max;
+
+  if (reparaturPauschal) {
+    const zz = applyMunichReparaturDiagnoseBands(service, type, basisMin, basisMax);
+    basisMin = zz[0];
+    basisMax = zz[1];
+  }
+
+  if (service === "projekt" && type !== "garten_neu") {
+    if (
+      type === "terrasse" &&
+      state.fachdetails?.projekt?.terrasseUnterbau === "ja"
+    ) {
+      basisMin *= 1.08;
+      basisMax *= 1.08;
+    }
+    basisMin *= GU_MARGE;
+    basisMax *= GU_MARGE;
+  }
+
+  const betreuungMitGu =
+    state.situation === "betreuung" &&
+    !reparaturPauschal &&
+    !(
+      service === "reinigung" &&
+      state.umfang === "einmalig" &&
+      customPriceRange
+    ) &&
+    !(
+      service === "projekt" &&
+      type === "garten_neu" &&
+      customPriceRange
+    );
+
+  if (betreuungMitGu) {
+    const bt = ["garten", "reinigung", "winterdienst", "hausmeister"];
+    if (bt.includes(service)) {
+      basisMin *= GU_MARGE;
+      basisMax *= GU_MARGE;
+    }
+  }
+
+  if (service === "boden") {
+    const sur = getBodenAbrissZuschlagProQm(state);
+    basisMin = (basisMin + sur) * GU_MARGE;
+    basisMax = (basisMax + sur) * GU_MARGE;
+  }
+  if (service === "heizung" && type !== "wartung" && !reparaturPauschal) {
+    basisMin *= GU_MARGE;
+    basisMax *= GU_MARGE;
+  }
+  if (service === "fenster" && !reparaturPauschal) {
+    basisMin *= GU_MARGE;
+    basisMax *= GU_MARGE;
+  }
+  if (service === "fassade" && !reparaturPauschal) {
+    basisMin *= GU_MARGE;
+    basisMax *= GU_MARGE;
+  }
+  if (
+    service === "dach" &&
+    (type === "daemmung" || type === "komplett") &&
+    !reparaturPauschal
+  ) {
+    const zz = applyDachDaemmungKomplettPricing(basisMin, basisMax, state);
+    basisMin = zz[0];
+    basisMax = zz[1];
+  } else if (
+    reparaturPauschal &&
+    service === "dach" &&
+    state.fachdetails?.dach?.alter === "ueber40"
+  ) {
+    basisMin *= 1.2;
+    basisMax *= 1.2;
+  }
+
+  if (reparaturPauschal) {
+    basisMin *= GU_MARGE;
+    basisMax *= GU_MARGE;
+  }
+
   const groesse = state.groesse ?? 1;
   const einheit = basis.einheit;
   let multiplier = 1;
-  if (
-    einheit.includes("m²") &&
-    !einheit.includes("Monat") &&
-    !einheit.includes("Besuch")
-  ) {
-    multiplier = groesse;
-  } else if (einheit.includes("Stück") && state.groesseEinheit === "stueck") {
-    multiplier = Math.max(1, groesse);
-  } else if (
-    service === "elektro" &&
-    type === "steckdose" &&
-    einheit.includes("Punkt")
-  ) {
-    const f = state.fachdetails?.elektro?.folge;
-    if (f === "einzeln") multiplier = 1.5;
-    else if (f === "mehrere") multiplier = 4;
-    else if (f === "viele") multiplier = 6;
+  if (!reparaturPauschal) {
+    if (service === "projekt") {
+      if (type === "garten_neu") {
+        multiplier = 1;
+      } else if (
+        type === "durchbruch_tragend" ||
+        type === "durchbruch_nicht_tragend"
+      ) {
+        multiplier = Math.max(
+          1,
+          state.fachdetails?.projekt?.durchbruchAnzahl ??
+            state.fachdetails?.neubauen?.durchbruchAnzahl ??
+            1
+        );
+      } else {
+        multiplier = groesse;
+      }
+    } else if (
+      einheit.includes("m²") &&
+      !einheit.includes("Monat") &&
+      !einheit.includes("Besuch")
+    ) {
+      multiplier = groesse;
+    } else if (einheit.includes("Stück") && state.groesseEinheit === "stueck") {
+      multiplier = Math.max(1, groesse);
+    } else if (
+      service === "elektro" &&
+      type === "steckdose" &&
+      einheit.includes("Punkt")
+    ) {
+      const f = state.fachdetails?.elektro?.folge;
+      if (f === "einzeln") multiplier = 1.5;
+      else if (f === "mehrere") multiplier = 4;
+      else if (f === "viele") multiplier = 6;
+    } else if (
+      service === "heizung" &&
+      type === "heizkoerper" &&
+      einheit.includes("Stück")
+    ) {
+      multiplier = Math.max(1, state.fachdetails?.heizung?.anzahl ?? 1);
+    } else if (
+      service === "dach" &&
+      type === "regenrinne" &&
+      state.groesseEinheit === "meter"
+    ) {
+      multiplier = Math.max(1, groesse);
+    }
   }
 
-  const rawMin = basis.min * multiplier;
-  const rawMax = basis.max * multiplier;
+  const rawMin = basisMin * multiplier;
+  const rawMax = basisMax * multiplier;
   const mitte0 = (rawMin + rawMax) / 2;
   const halbSpanne = (rawMax - rawMin) / 2;
 
@@ -1161,7 +1569,7 @@ function computePriceCore(state: FunnelState): {
   const spanPlz = halbSpanne * plzFaktor;
 
   const roundEuro =
-    service === "bad"
+    service === "bad" || service === "boden"
       ? roundTo50
       : (n: number) => Math.round(n / 100) * 100;
 
@@ -1173,6 +1581,27 @@ function computePriceCore(state: FunnelState): {
     mindestauftragAktiv = true;
     finalMin = 150;
     finalMax = Math.max(finalMax, 300);
+  }
+
+  if (
+    state.situation === "betreuung" &&
+    service === "reinigung" &&
+    finalMin < 250
+  ) {
+    const lift = 250 - finalMin;
+    finalMin += lift;
+    finalMax += lift;
+  }
+
+  if (
+    state.situation === "betreuung" &&
+    service === "winterdienst" &&
+    type === "einmalig" &&
+    finalMin < 180
+  ) {
+    const lift = 180 - finalMin;
+    finalMin += lift;
+    finalMax += lift;
   }
 
   if (finalMin > 0) {
@@ -1247,7 +1676,10 @@ function applyEmptyBreakdownAsZuKomplex(
       };
     }
     if (!preview) {
-      if (state.situation === "notfall" && state.dringlichkeit === "sofort") {
+      if (
+        isReparaturNotfallSituation(state.situation) &&
+        state.dringlichkeit === "sofort"
+      ) {
         return { ...base, komplexReason: null };
       }
       if (getBwResultModus(state) === "zu_komplex") {
@@ -1282,7 +1714,10 @@ function applyEmptyBreakdownAsZuKomplex(
     return { ...base, komplexReason: null };
   }
   if (!preview) {
-    if (state.situation === "notfall" && state.dringlichkeit === "sofort") {
+    if (
+      isReparaturNotfallSituation(state.situation) &&
+      state.dringlichkeit === "sofort"
+    ) {
       return { ...base, komplexReason: null };
     }
     if (getBwResultModus(state) === "zu_komplex") {
@@ -1316,7 +1751,8 @@ export function calculatePrice(
     mindestauftragAktiv: false,
     plzFaktor: 1,
     resultModus:
-      state.situation === "notfall" && state.dringlichkeit === "sofort"
+      isReparaturNotfallSituation(state.situation) &&
+      state.dringlichkeit === "sofort"
         ? "notfall_akut"
         : "zu_komplex",
     schwellenwertAusgeloest: false,
@@ -1325,10 +1761,6 @@ export function calculatePrice(
   });
 
   if (!state.situation) {
-    return noResult(null);
-  }
-
-  if (!preview && state.situation === "notfall" && state.dringlichkeit === "sofort") {
     return noResult(null);
   }
 
@@ -1377,7 +1809,7 @@ export function calculatePrice(
 
   if (
     preview &&
-    state.situation === "notfall" &&
+    isReparaturNotfallSituation(state.situation) &&
     state.dringlichkeit === "sofort" &&
     breakdown.length === 0
   ) {

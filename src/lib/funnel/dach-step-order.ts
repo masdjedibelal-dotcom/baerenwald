@@ -24,10 +24,6 @@ export function skipGroesseForSanierenDachKleinjob(
   fachdetails: FachdetailsState | undefined
 ): boolean {
   const v = fachdetails?.dach?.vorhaben;
-  return (
-    v === "ziegel_wenige" ||
-    v === "ziegel_bereich" ||
-    v === "dachfenster" ||
-    v === "regenrinne"
-  );
+  /** Nur echte Kleinaufträge ohne Flächen-/Längenbezug — Regenrinne (lfm) und Dachfenster (Stück) behalten den Größen-Schritt. */
+  return v === "ziegel_wenige" || v === "ziegel_bereich";
 }

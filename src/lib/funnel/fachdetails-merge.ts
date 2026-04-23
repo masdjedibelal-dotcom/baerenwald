@@ -26,6 +26,10 @@ export function mergeFachdetailsPatch(
       p.heizung !== undefined
         ? { ...prev.heizung, ...p.heizung }
         : prev.heizung,
+    fassade:
+      p.fassade !== undefined
+        ? { ...prev.fassade, ...p.fassade }
+        : prev.fassade,
     maler:
       p.maler !== undefined
         ? { ...prev.maler, ...p.maler }

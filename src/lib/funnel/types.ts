@@ -46,12 +46,30 @@ export type BudgetCheck = "ok" | "zu_hoch" | null;
 export type FachdetailsState = {
   /** Flache Antworten je Frage-ID (`fachdetail_<id>`); parallel zu den Legacy-Feldern unten. */
   fachdetailAnswers?: Record<string, string | string[] | undefined>;
+  /** Ausbau & Umbau (Situation „Zuhause erneuern“) — Durchbruch, Terrasse, Projektdetails. */
+  projekt?: {
+    /** Anzahl Durchbrüche (1, 2, 3+ abgebildet als 3) */
+    durchbruchAnzahl?: number;
+    /** `true` = tragende Wand, `false` = nicht tragend */
+    durchbruchTragend?: boolean;
+    terrasseMaterial?: "holz" | "stein";
+    /** UI-Wert `ja` | `nein` — „Unterbau erforderlich?“ */
+    terrasseUnterbau?: "ja" | "nein";
+    /** „Zuhause erneuern“ → Gartengestaltung (GU-Paket) */
+    gartenZaun?: "ja" | "nein";
+    gartenZugaenglichkeit?: "einfach" | "schwer";
+  };
   /** Zusatzinfos zu Neubau/Ausbau (Keller, Terrasse, Innenumbau) */
   neubauen?: {
     rohbau?: "ja" | "nein";
     deckenhoehe?: "niedrig" | "mittel" | "hoch";
+    /** Keller-DG-Kachel: welcher Ausbau — für einheitliche `projekt`-Preise */
+    kellerOderDg?: "keller" | "dach";
     terrasse?: "holz" | "stein" | "beton";
     innen?: "durchbruch" | "grundriss" | "trennwand";
+    /** Neubauen „Innen umbauen“ → Wanddurchbruch — gleiche Logik wie `projekt`-Durchbruch */
+    durchbruchAnzahl?: number;
+    durchbruchTragend?: boolean;
   };
   elektro?: {
     problem?: string;
@@ -61,19 +79,11 @@ export type FachdetailsState = {
   sanitaer?: {
     lage?: string;
     badWas?: string;
-    badObjekte?: string[];
+    /** Checkboxen Waschbecken / WC / Armaturen (`badWas` objekte | sanitaer). */
+    objektListe?: string[];
     rohre?: string;
     /** Explizite komplette Rohrernneuerung (falls nicht über `rohre === "neu"` abgebildet). */
     badRohreNeu?: boolean;
-    /** Zusätzlich zur Teilsanierung: Wanne → Dusche (Entsorgung / Abfluss). */
-    badBadewanne?: "dusche";
-    /** z. B. Handtuchwärmer — Pro-Stück-Zuschlag siehe Preislogik */
-    badHeizkoerper?: "handtuchwaermer" | string;
-    badHeizkoerperAnzahl?: number;
-    /** Beantwortung der Kachel „Heizkörper/Handtuchwärmer“ (für Rechner-Abbruch-Logik). */
-    badHeizkoerperAuswahl?: "keine" | "handtuchwaermer_1" | "handtuchwaermer_2";
-    /** Zusatzfrage: Wanne → Dusche (nur wenn `badWas` nicht schon `wanne_dusche` ist). */
-    badZusatzWanneAntwort?: "ja" | "nein";
     /** Notfall-Flow: nur Schwere, ohne Lage/Rohre */
     notfallSchwere?: string;
     freitext?: string | null;
@@ -82,7 +92,13 @@ export type FachdetailsState = {
     typ?: string;
     alter?: string;
     vorhaben?: string;
+    /** Nur Heizkörper tauschen: Anzahl Stück (multipliziert den Stückpreis). */
+    anzahl?: number;
     freitext?: string | null;
+  };
+  /** Fassade: Anstrich, WDVS, Klinker (s. `fassade_art` + fachdetailAnswers). */
+  fassade?: {
+    art?: "anstrich" | "daemmung" | "klinker";
   };
   maler?: {
     was?: string;
@@ -92,6 +108,8 @@ export type FachdetailsState = {
   };
   boden?: {
     aktuell?: string;
+    /** Abriss/Rückbau: nur bei Fliesen/Laminat/Parkett relevant. */
+    zustand?: string;
     verlegung?: string;
     freitext?: string | null;
   };
@@ -108,7 +126,8 @@ export type FachdetailsState = {
     freitext?: string | null;
   };
   fenster?: {
-    ausstattung?: "standard" | "premium";
+    /** Erneuern: auch tuer / balkon_tuer (balkon → Preis wie premium). */
+    ausstattung?: "standard" | "premium" | "tuer" | "balkon_tuer";
     /** Kaputt: „Was ist defekt?“ */
     defekt?: string;
     freitext?: string | null;

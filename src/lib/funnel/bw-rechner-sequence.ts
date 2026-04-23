@@ -124,10 +124,25 @@ function funnelConfigStepToScreens(
   if (step.id === "zugaenglichkeit") return ["zugaenglichkeit"];
   if (step.id === "zustand") return ["zustand"];
   if (step.id === "bad_ausstattung") return ["bad_ausstattung"];
+  if (step.id === "projekt_terrasse_material") {
+    return ["projekt_terrasse_material"];
+  }
+  if (step.id === "projekt_terrasse_unterbau") {
+    return ["projekt_terrasse_unterbau"];
+  }
+  if (step.id === "projekt_durchbruch_anzahl") {
+    return ["projekt_durchbruch_anzahl"];
+  }
+  if (step.id === "projekt_durchbruch_statik") {
+    return ["projekt_durchbruch_statik"];
+  }
+  if (step.id === "projekt_garten_zaun") return ["projekt_garten_zaun"];
+  if (step.id === "projekt_garten_zugang") return ["projekt_garten_zugang"];
   if (step.id.toLowerCase().includes("groesse")) return ["groesse"];
   if (
     step.id.endsWith("_umfang") ||
     step.id === "notfall_dringlichkeit" ||
+    step.id === "kaputt_dringlichkeit" ||
     step.id === "betreuung_haeufigkeit" ||
     step.id === "neubauen_planung"
   ) {

@@ -27,11 +27,6 @@ export function buildBwBadActiveFeatures(state: FunnelState): string[] {
     out.push("Inkl. Neuverrohrung");
   }
 
-  if (san?.badHeizkoerper === "handtuchwaermer") {
-    const n = Math.max(1, san.badHeizkoerperAnzahl ?? 1);
-    out.push(`Inkl. ${n}× Handtuchwärmer`);
-  }
-
   if (state.badAusstattung === "gehoben") {
     out.push("Premium-Ausstattungslinie");
   }
