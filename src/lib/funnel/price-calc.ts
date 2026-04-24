@@ -1270,9 +1270,11 @@ export function getBwResultModus(state: FunnelState): "normal" | "zu_komplex" {
 /** Wie im Ergebnis-Screen: Komplex-Pfad (Rückruf), kein klassischer Preis-/Lead-Folgeschritt. */
 export function isBwZuKomplexErgebnis(
   state: FunnelState,
-  resultModus: BwResultModus
+  resultModus: BwResultModus | undefined
 ): boolean {
-  return resultModus === "zu_komplex" || getBwResultModus(state) === "zu_komplex";
+  return (
+    resultModus === "zu_komplex" || getBwResultModus(state) === "zu_komplex"
+  );
 }
 
 export function getBwPreisFaktorHint(state: FunnelState): string {
