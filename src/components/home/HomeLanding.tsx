@@ -254,7 +254,7 @@ export function HomeLanding() {
               <span>✓ Kostenlos &amp; unverbindlich</span>
               <span>✓ Festpreisangebot</span>
               <span>✓ Meisterbetriebe</span>
-              <span>✓ Antwort innerhalb 24h</span>
+              <span>✓ Antwort innerhalb 48h</span>
             </div>
 
             <a
@@ -593,7 +593,7 @@ export function HomeLanding() {
             {CTA.final}
           </Link>
           <p className="mt-4 text-xs text-white/60">
-            Kein Auftragszwang · Kostenlos · Antwort innerhalb 24h
+            Kein Auftragszwang · Kostenlos · Antwort innerhalb 48h
           </p>
         </div>
       </section>

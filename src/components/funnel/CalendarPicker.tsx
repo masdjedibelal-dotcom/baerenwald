@@ -105,7 +105,7 @@ export function CalendarPicker({
         </p>
         <p className="mb-3.5 mt-1 text-xs leading-relaxed text-text-tertiary">
           Wähle einen Wunschtermin — wir bestätigen die Verfügbarkeit innerhalb
-          von 24h.
+          von 48h.
         </p>
       </div>
 

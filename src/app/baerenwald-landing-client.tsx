@@ -22,8 +22,10 @@ import { SITE_CONFIG } from "@/lib/config";
 import type { Situation as FunnelSituation } from "@/lib/funnel/types";
 import { HOME_FAQ_ITEMS } from "@/lib/home-content";
 import {
+  buildHeroRechnerLandingUrl,
   buildSearchUrl,
   getHeroSearchSuggestions,
+  heroKategorieLabel,
   type HeroSearchSuggestion,
 } from "@/lib/search";
 const HOW_STEPS = [
@@ -93,7 +95,7 @@ const TESTIMONIALS = [
     initials: "SB",
     color: "blue" as const,
     quote:
-      "Heizung im Januar ausgefallen — innerhalb von 24h war jemand da. Sehr zuverlässig und freundlich.",
+      "Heizung im Januar ausgefallen — innerhalb von 48h war jemand da. Sehr zuverlässig und freundlich.",
   },
   {
     name: "Markus H.",
@@ -320,9 +322,7 @@ export default function BaerenwaldLandingClient({
   }, [searchQ]);
 
   const goToSuggestion = (s: HeroSearchSuggestion) => {
-    router.push(
-      `/rechner?leistung=${encodeURIComponent(s.slug)}&q=${encodeURIComponent(s.label)}`
-    );
+    router.push(buildHeroRechnerLandingUrl(s.slug, s.label));
     setSearchFocused(false);
     setSuggestActive(-1);
   };
@@ -429,7 +429,7 @@ export default function BaerenwaldLandingClient({
                         });
                       }}
                       onKeyDown={onSearchKeyDown}
-                      placeholder="Leistungsname exakt eingeben oder aus der Liste wählen …"
+                      placeholder="Was möchtest du kalkulieren? (z. B. Bad, Heizung, Dach)"
                       aria-label="Was suchst du?"
                       aria-autocomplete="list"
                       aria-controls="hero-search-listbox"
@@ -441,64 +441,48 @@ export default function BaerenwaldLandingClient({
                       }
                       autoComplete="off"
                     />
-                    <button
-                      type="submit"
-                      className="hero-search-btn"
-                      aria-label="Suchen"
-                    >
-                      <svg
-                        className="hero-search-btn-icon"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2.25"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        aria-hidden
-                      >
-                        <circle cx="11" cy="11" r="7.5" />
-                        <path d="m20 20-4.2-4.2" />
-                      </svg>
+                    <button type="submit" className="hero-search-btn">
+                      Preis ermitteln
                     </button>
                   </div>
-                </div>
-                {showSearchSuggestions ? (
-                  <div
-                    ref={portalDropdownRef}
-                    className="search-dropdown-portal"
-                  >
-                    <ul
-                      id="hero-search-listbox"
-                      className="search-dropdown-portal-list"
-                      role="listbox"
-                      aria-label="Vorschläge"
+                  {showSearchSuggestions ? (
+                    <div
+                      ref={portalDropdownRef}
+                      className="search-dropdown-portal"
                     >
-                      {searchSuggestions.map((s, idx) => (
-                        <li
-                          key={s.slug}
-                          id={`hero-search-opt-${idx}`}
-                          role="option"
-                          aria-selected={idx === suggestActive}
-                          className={
-                            idx === suggestActive
-                              ? "search-suggestion search-suggestion--active"
-                              : "search-suggestion"
-                          }
-                          onMouseDown={(e) => {
-                            e.preventDefault();
-                            goToSuggestion(s);
-                          }}
-                          onMouseEnter={() => setSuggestActive(idx)}
-                        >
-                          <span className="suggestion-emoji" aria-hidden>
-                            {s.emoji}
-                          </span>
-                          <span className="suggestion-title">{s.label}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                ) : null}
+                      <ul
+                        id="hero-search-listbox"
+                        className="search-dropdown-portal-list"
+                        role="listbox"
+                        aria-label="Vorschläge"
+                      >
+                        {searchSuggestions.map((s, idx) => (
+                          <li
+                            key={s.slug}
+                            id={`hero-search-opt-${idx}`}
+                            role="option"
+                            aria-selected={idx === suggestActive}
+                            className={
+                              idx === suggestActive
+                                ? "search-suggestion search-suggestion--active"
+                                : "search-suggestion"
+                            }
+                            onMouseDown={(e) => {
+                              e.preventDefault();
+                              goToSuggestion(s);
+                            }}
+                            onMouseEnter={() => setSuggestActive(idx)}
+                          >
+                            <span className="suggestion-title">{s.label}</span>
+                            <span className="suggestion-kategorie-badge">
+                              {heroKategorieLabel(s.category)}
+                            </span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  ) : null}
+                </div>
               </form>
               <div className="hero-chips fade-up d2">
                 {HERO_CHIPS.map((c) => (

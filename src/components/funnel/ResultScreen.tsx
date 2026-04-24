@@ -27,7 +27,7 @@ export function LeadAvailabilityHint({
       role="note"
     >
       Wir prüfen nach deiner Anfrage die Verfügbarkeit unserer Handwerker und
-      melden uns innerhalb von 24h zur Terminbestätigung.
+      melden uns innerhalb von 48h zur Terminbestätigung.
     </div>
   );
 }

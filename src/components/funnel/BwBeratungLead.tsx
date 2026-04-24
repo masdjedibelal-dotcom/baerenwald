@@ -46,7 +46,7 @@ export function BwBeratungLead({
   const sub =
     kind === "schimmel"
       ? "Eine automatische Preisberechnung wäre hier nicht seriös — zu viel hängt von der Ursache ab. Wir schauen es uns an und melden uns persönlich."
-      : "Ob Büro, Praxis, Laden oder Gastronomie — wir planen individuell mit dir. Melde dich kurz und wir melden uns innerhalb von 24h.";
+      : "Ob Büro, Praxis, Laden oder Gastronomie — wir planen individuell mit dir. Melde dich kurz und wir melden uns innerhalb von 48h.";
 
   return (
     <StepWrapper

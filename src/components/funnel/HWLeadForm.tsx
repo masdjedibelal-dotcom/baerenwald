@@ -63,7 +63,7 @@ export function HWLeadForm({
               Wunschtermin angeben (optional)
             </div>
             <div className="calendar-opt-sub">
-              Wir prüfen die Verfügbarkeit und bestätigen in 24h
+              Wir prüfen die Verfügbarkeit und bestätigen in 48h
             </div>
           </div>
           <svg

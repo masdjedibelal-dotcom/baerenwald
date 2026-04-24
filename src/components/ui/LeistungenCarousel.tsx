@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import {
   useCallback,
@@ -21,6 +22,11 @@ type CarouselLeistung = {
   emoji: string;
   href: string;
   rechnerHref: string;
+  /** Optional Foto oben in der Karte (sonst Emoji-Visual). */
+  imageSrc?: string;
+  imageAlt?: string;
+  /** CSS `object-position` für den Ausschnitt im Kartenstreifen. */
+  imageObjectPosition?: string;
 };
 
 type Kategorie = {
@@ -43,6 +49,10 @@ const KATEGORIEN: Kategorie[] = [
         emoji: "🖌️",
         href: "/leistungen/malerarbeiten-muenchen",
         rechnerHref: "/rechner?situation=erneuern",
+        imageSrc: "/images/leistung-streichen-tapezieren.png",
+        imageAlt:
+          "Maler in weißem Overall trägt mit der Farbrolle weiße Farbe auf eine Wand auf",
+        imageObjectPosition: "55% 28%",
       },
       {
         slug: "badezimmer-sanierung",
@@ -51,6 +61,10 @@ const KATEGORIEN: Kategorie[] = [
         emoji: "🚿",
         href: "/leistungen/badezimmer-sanierung-muenchen",
         rechnerHref: "/rechner?situation=erneuern",
+        imageSrc: "/images/leistung-neues-bad.png",
+        imageAlt:
+          "Bad-Sanierung: Fliesenleger setzt große beige Fliesen; Installateur montiert Anschlüsse unter einem Waschtisch",
+        imageObjectPosition: "50% 38%",
       },
       {
         slug: "bodenbelag",
@@ -59,6 +73,10 @@ const KATEGORIEN: Kategorie[] = [
         emoji: "🪵",
         href: "/leistungen/bodenbelag-muenchen",
         rechnerHref: "/rechner?situation=erneuern",
+        imageSrc: "/images/leistung-neuer-boden.png",
+        imageAlt:
+          "Handwerker verlegt hellen Holzboden, Maßband und Werkzeug liegen auf den Dielen",
+        imageObjectPosition: "52% 55%",
       },
       {
         slug: "fenster-tueren",
@@ -379,11 +397,33 @@ export function LeistungenCarousel() {
           >
             {kat.leistungen.map((l) => (
               <div key={l.slug} className="leistung-card">
-                <div className="leistung-card-visual">
-                  <span className="leistung-card-visual-icon">{l.emoji}</span>
-                  <span className="leistung-card-visual-bg" aria-hidden>
-                    {l.emoji}
-                  </span>
+                <div
+                  className={`leistung-card-visual${l.imageSrc ? " leistung-card-visual--photo" : ""}`}
+                >
+                  {l.imageSrc ? (
+                    <Image
+                      src={l.imageSrc}
+                      alt={l.imageAlt ?? l.name}
+                      fill
+                      sizes="280px"
+                      className="leistung-card-photo-img"
+                      style={
+                        l.imageObjectPosition
+                          ? { objectPosition: l.imageObjectPosition }
+                          : undefined
+                      }
+                      priority={l.slug === "malerarbeiten"}
+                    />
+                  ) : (
+                    <>
+                      <span className="leistung-card-visual-icon">
+                        {l.emoji}
+                      </span>
+                      <span className="leistung-card-visual-bg" aria-hidden>
+                        {l.emoji}
+                      </span>
+                    </>
+                  )}
                 </div>
                 <div className="leistung-card-body">
                   <div className="leistung-card-cat">{kat.label}</div>

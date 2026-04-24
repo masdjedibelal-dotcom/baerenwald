@@ -19,12 +19,12 @@ import { FachdetailsStep } from "@/components/funnel/FachdetailsStep";
 import { FunnelErrorBoundary } from "@/components/funnel/FunnelErrorBoundary";
 import { HWLeadForm } from "@/components/funnel/HWLeadForm";
 import {
+  buildFullLeadNotizen,
   submitBwLead,
   serializeFunnelStateForLead,
 } from "@/components/funnel/LeadStep";
 import { LeadAvailabilityHint } from "@/components/funnel/ResultScreen";
 import { FunnelFooter } from "@/components/funnel/FunnelFooter";
-import { RefreshIcon18 } from "@/components/funnel/NeueAnfrageResetLink";
 import { FunnelHeader } from "@/components/funnel/FunnelHeader";
 import { FunnelProgressBar } from "@/components/funnel/FunnelProgressBar";
 import { TrustScreen } from "@/components/funnel/TrustScreen";
@@ -63,7 +63,10 @@ import {
   getFachdetailQuestionIdFromScreen,
 } from "@/lib/funnel/fachdetail-questions-flat";
 import { getBwFunnelProgressStep } from "@/lib/funnel/bw-funnel-progress";
-import { getLeistungRechnerPreset } from "@/lib/funnel/leistung-rechner-preset";
+import {
+  getLeistungRechnerPreset,
+  isRechnerDeepLinkPair,
+} from "@/lib/funnel/leistung-rechner-preset";
 import {
   BW_FUNNEL_STEP1_OPTIONS,
   BW_FUNNEL_STEP1_ORDER,
@@ -71,6 +74,7 @@ import {
 import {
   calculatePrice,
   getBwResultModus,
+  isBwZuKomplexErgebnis,
 } from "@/lib/funnel/price-calc";
 import type { BwResultModus } from "@/lib/funnel/price-calc";
 import { getPlzStatus } from "@/lib/funnel/plz";
@@ -159,25 +163,6 @@ function normalizeSituationQueryParam(raw: string | null): Situation | null {
   };
   const candidate = aliasMap[lower] ?? lower;
   return isSituation(candidate) ? candidate : null;
-}
-
-function collectBwFreitextAnhang(state: FunnelState): string {
-  const parts: string[] = [];
-  const fd = state.fachdetails;
-  const push = (label: string, v: string | null | undefined) => {
-    const t = (v ?? "").trim();
-    if (t) parts.push(`${label}: ${t}`);
-  };
-  push("Elektro", fd.elektro?.freitext ?? null);
-  push("Sanitär", fd.sanitaer?.freitext ?? null);
-  push("Heizung", fd.heizung?.freitext ?? null);
-  push("Maler", fd.maler?.freitext ?? null);
-  push("Boden", fd.boden?.freitext ?? null);
-  push("Dach", fd.dach?.freitext ?? null);
-  push("Garten", fd.garten?.freitext ?? null);
-  push("Fenster", fd.fenster?.freitext ?? null);
-  push("Allgemein", state.freitext ?? null);
-  return parts.join("\n");
 }
 
 function asLibOpt(o: FunnelStepOption): LibStepOption {
@@ -388,6 +373,22 @@ function FunnelRechnerInner() {
       setBereiche(leistungPreset.bereiche);
       setPriceConfirmed(false);
       if (leistungPreset.situation === "gewerbe") {
+        setScreen("beratung-lead");
+      } else {
+        setScreen("bereiche");
+      }
+      urlInit.current = true;
+      return;
+    }
+    const gewerkRaw = searchParams.get("gewerk")?.trim();
+    const normalizedSit = normalizeSituationQueryParam(
+      searchParams.get("situation")
+    );
+    if (normalizedSit && gewerkRaw && isRechnerDeepLinkPair(normalizedSit, gewerkRaw)) {
+      setSituation(normalizedSit);
+      setBereiche([gewerkRaw]);
+      setPriceConfirmed(false);
+      if (normalizedSit === "gewerbe") {
         setScreen("beratung-lead");
       } else {
         setScreen("bereiche");
@@ -732,6 +733,7 @@ function FunnelRechnerInner() {
         break;
       }
       case "result":
+        if (isBwZuKomplexErgebnis(state, resultModus)) break;
         setScreen("lead");
         break;
       case "lead": {
@@ -764,6 +766,7 @@ function FunnelRechnerInner() {
     hasKundentypStep,
     setPrice,
     goNextFromCompletedFachdetailScreen,
+    resultModus,
   ]);
 
   const handleBack = useCallback(() => {
@@ -918,7 +921,7 @@ function FunnelRechnerInner() {
       case "loading":
         return true;
       case "result":
-        return false;
+        return isBwZuKomplexErgebnis(state, resultModus);
       case "lead":
         return (
           !state.name.trim() ||
@@ -935,7 +938,7 @@ function FunnelRechnerInner() {
       default:
         return true;
     }
-  }, [screen, state, umfangOk, schimmelBeratung, leadSubmitting]);
+  }, [screen, state, umfangOk, schimmelBeratung, leadSubmitting, resultModus]);
 
   const nextLabel = useMemo(() => {
     if (screen === "trust_intro") return "Los geht's →";
@@ -975,9 +978,6 @@ function FunnelRechnerInner() {
     return null;
   }, [screen, leadSubmitting, state.name, state.email, state.telefon]);
 
-  const footerNextLeadingIcon =
-    screen === "result" ? <RefreshIcon18 /> : undefined;
-
   const showFooterNav = screen !== "danke" && screen !== "ausserhalb";
 
   const handleLeadSubmit = async (e: React.FormEvent) => {
@@ -989,14 +989,14 @@ function FunnelRechnerInner() {
     setLeadSubmitError(null);
     setLeadSubmitting(true);
     const nameTrim = state.name.trim();
-    const zx = collectBwFreitextAnhang(state);
+    const notizen = buildFullLeadNotizen(state);
     try {
       const emailTrim = state.email.trim();
       const result = await submitBwLead({
         name: nameTrim,
         email: emailTrim || undefined,
         telefon: state.telefon.trim() || undefined,
-        nachricht: zx || undefined,
+        nachricht: notizen || undefined,
         situation: state.situation,
         bereiche: state.bereiche,
         preis_min: state.priceMin,
@@ -1032,10 +1032,10 @@ function FunnelRechnerInner() {
     }
     if (nextDisabled && screen === "beratung-lead") return;
     const name = `${state.vorname} ${state.nachname}`.trim();
-    const zxB = collectBwFreitextAnhang(state);
-    const nachricht = [state.leadBeschreibung.trim(), zxB]
-      .filter(Boolean)
-      .join("\n\n");
+    const nachricht = buildFullLeadNotizen(
+      state,
+      state.leadBeschreibung.trim() || undefined
+    );
     const fd = serializeFunnelStateForLead(state) as Record<string, unknown>;
     const result = await submitBwLead({
       name,
@@ -1076,7 +1076,11 @@ function FunnelRechnerInner() {
       name: name || state.name.trim(),
       email: state.email.trim() || undefined,
       telefon: state.telefon.trim() || undefined,
-      nachricht: ausserhalbBeschreibung.trim() || undefined,
+      nachricht:
+        buildFullLeadNotizen(
+          state,
+          ausserhalbBeschreibung.trim() || undefined
+        ) || undefined,
       situation: state.situation,
       bereiche: state.bereiche,
       preis_min: 0,
@@ -1891,7 +1895,7 @@ function FunnelRechnerInner() {
             <ThankYou
               variant="beratung"
               beratungHeadline="Wir melden uns persönlich."
-              beratungSubline="Wir rufen dich innerhalb von 24h zurück — ohne Verpflichtung."
+              beratungSubline="Wir rufen dich innerhalb von 48h zurück — ohne Verpflichtung."
               showTimeline={false}
               onReset={handleReset}
             />
@@ -1912,7 +1916,7 @@ function FunnelRechnerInner() {
             <ThankYou
               variant="beratung"
               beratungHeadline="Anfrage eingegangen."
-              beratungSubline="Wir melden uns innerhalb von 24h persönlich bei dir — ohne Verpflichtung."
+              beratungSubline="Wir melden uns innerhalb von 48h persönlich bei dir — ohne Verpflichtung."
               showTimeline={false}
               showCalendar={false}
               onReset={handleReset}
@@ -1969,8 +1973,11 @@ function FunnelRechnerInner() {
       <main className="funnel-rechner-main w-full">{main()}</main>
       {showFooterNav ? (
         <FunnelFooter
-          onNext={handleNext}
-          nextLeadingIcon={footerNextLeadingIcon}
+          onNext={
+            screen === "result" && isBwZuKomplexErgebnis(state, resultModus)
+              ? undefined
+              : handleNext
+          }
           onBack={() => {
             if (screen === "situation") {
               const prevSit = getPreviousBwRechnerScreen(state, "situation");
@@ -1988,7 +1995,7 @@ function FunnelRechnerInner() {
           belowActions={
             screen === "beratung-lead" ? (
               <p className="text-center text-xs text-text-tertiary">
-                Wir melden uns innerhalb von 24h
+                Wir melden uns innerhalb von 48h
               </p>
             ) : screen === "result" && resultModus === "preisrahmen_warnung" ? (
               <p

@@ -10,7 +10,7 @@ const TIMELINE_STEPS = [
   },
   {
     title: "Verfügbarkeit wird geprüft",
-    sub: "Wir melden uns innerhalb von 24h zur Terminbestätigung per Telefon oder E-Mail.",
+    sub: "Wir melden uns innerhalb von 48h zur Terminbestätigung per Telefon oder E-Mail.",
   },
   {
     title: "Vor-Ort-Termin",
@@ -74,7 +74,7 @@ export function ThankYou({
     isTermin && Boolean(dateLabel?.trim()) && Boolean(timeLabel?.trim());
 
   const followUpSubline =
-    "Wir prüfen die Verfügbarkeit und melden uns innerhalb von 24h per Telefon oder E-Mail zur Terminbestätigung.";
+    "Wir prüfen die Verfügbarkeit und melden uns innerhalb von 48h per Telefon oder E-Mail zur Terminbestätigung.";
 
   return (
     <div
@@ -105,7 +105,7 @@ export function ThankYou({
       <p className="mt-2 max-w-sm text-sm text-text-secondary">
         {isBeratung
           ? beratungSubline ??
-            "Deine Anfrage ist bei uns eingegangen. Ein Kollege meldet sich bei dir — in der Regel innerhalb von 24 Stunden."
+            "Deine Anfrage ist bei uns eingegangen. Ein Kollege meldet sich bei dir — in der Regel innerhalb von 48 Stunden."
           : followUpSubline}
       </p>
 

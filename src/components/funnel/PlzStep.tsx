@@ -6,6 +6,7 @@ import { getPlzStatus } from "@/lib/funnel/plz";
 import {
   getZeitraumFragen,
   getZeitraumOptions,
+  needsZeitraumSelection,
 } from "@/lib/funnel/config";
 import type { Situation } from "@/lib/funnel/types";
 
@@ -103,7 +104,9 @@ export function PlzStep({
         )}
       </div>
 
-      {!isAusserhalb && zeitraumOptions.length > 0 && (
+      {!isAusserhalb &&
+        needsZeitraumSelection(situation) &&
+        zeitraumOptions.length > 0 && (
         <div className="funnel-step-tiles-card flex flex-col gap-2.5">
           <div>
             <h3 className="text-base font-semibold leading-snug text-text-primary">

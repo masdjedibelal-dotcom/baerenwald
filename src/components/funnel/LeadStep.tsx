@@ -2,17 +2,30 @@
 
 import { submitFunnelLeadAction } from "@/app/actions/submit-funnel-lead";
 
+import {
+  buildTechnicalDetailsForLead,
+  derivePreisModus,
+  generateFunnelHumanSummary,
+} from "@/lib/lead/funnel-notizen-summary";
 import type { FunnelState } from "@/lib/funnel/types";
 
-/** Serialisiert den Funnel-State für die API (keine `File`-Objekte). */
+export { buildFullLeadNotizen } from "@/lib/lead/funnel-notizen-summary";
+
+/** Serialisiert den Funnel-State für die API (keine `File`-Objekte) + CRM-Anreicherung. */
 export function serializeFunnelStateForLead(
   state: FunnelState
 ): Record<string, unknown> {
   const { photos, ...rest } = state;
+  const technicalDetails = buildTechnicalDetailsForLead(state);
+  const formattedSummary = generateFunnelHumanSummary(state);
+  const preis_modus = derivePreisModus(state);
   return {
     ...rest,
     photoCount: photos.length,
     photos: [],
+    formattedSummary,
+    technicalDetails,
+    preis_modus,
   };
 }
 

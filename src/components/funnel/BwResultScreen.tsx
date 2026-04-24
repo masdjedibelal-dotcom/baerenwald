@@ -17,13 +17,14 @@ import {
 } from "@/lib/funnel/bw-active-features";
 import {
   calculatePrice,
-  getBwResultModus,
+  isBwZuKomplexErgebnis,
   shouldShowHeizungWpFoerderHint,
   type BwResultModus,
 } from "@/lib/funnel/price-calc";
 import { SITE_CONFIG } from "@/lib/config";
 import { cn } from "@/lib/utils";
 import {
+  buildFullLeadNotizen,
   serializeFunnelStateForLead,
   submitBwLead,
 } from "@/components/funnel/LeadStep";
@@ -70,9 +71,7 @@ function ResultSituationBanner({ state }: { state: FunnelState }) {
           Professionelle Schadensbehebung
         </p>
         <p className="mt-2 text-slate-800">
-          Inklusive Anfahrt und Diagnose durch qualifizierte Fachkräfte. Bei Wahl
-          von „Sofort“ ist unsere 24/7-Notfall-Bereitschaft bereits
-          eingerechnet.
+          Inklusive Anfahrt und Diagnose durch qualifizierte Fachkräfte.
         </p>
       </div>
     );
@@ -99,7 +98,7 @@ const RESULT_TESTIMONIALS = [
     color: "#00695c",
   },
   {
-    quote: "Innerhalb 24h war jemand da.",
+    quote: "Innerhalb 48h war jemand da.",
     name: "Sandra B.",
     ort: "Bogenhausen",
     initials: "SB",
@@ -399,7 +398,8 @@ function ZuKomplexScreen({
     () => calculatePrice(state, { preview: true }),
     [state]
   );
-  const abMin = preisPreview.min > 0 ? preisPreview.min : 1200;
+  /** Kein Platzhalter-Betrag (z. B. früher ~1.000 € bei DG ohne m² trotz „zu komplex“). */
+  const showPreisAb = preisPreview.min > 0;
 
   const komplexActiveFeatures = useMemo(
     () => buildBwBadActiveFeatures(state),
@@ -441,7 +441,11 @@ function ZuKomplexScreen({
       const result = await submitBwLead({
         name,
         telefon: telefon.trim(),
-        nachricht: beschreibung.trim() || undefined,
+        nachricht:
+          buildFullLeadNotizen(
+            state,
+            beschreibung.trim() || undefined
+          ) || undefined,
         situation: state.situation,
         bereiche: state.bereiche,
         preis_min: state.priceMin,
@@ -495,7 +499,7 @@ function ZuKomplexScreen({
           <h2>Gewerbliches Projekt?</h2>
           <p>
             Ob Büro, Praxis, Laden oder Gastronomie — wir planen individuell
-            mit dir. Melde dich kurz und wir melden uns innerhalb von 24h.
+            mit dir. Melde dich kurz und wir melden uns innerhalb von 48h.
           </p>
           <button
             type="button"
@@ -544,7 +548,18 @@ function ZuKomplexScreen({
             💬
           </div>
           <h2 className="komplex-headline">
-            Dein Projekt startet ab ca. {formatCurrencyEUR(abMin)}.
+            {showPreisAb ? (
+              <>
+                Dein Projekt startet ab ca.{" "}
+                {formatCurrencyEUR(preisPreview.min)}.
+              </>
+            ) : (
+              <>
+                Für diese Auswahl gibt es keinen verlässlichen
+                Online-Preisrahmen — Aufwand und Budget klären wir persönlich
+                mit dir.
+              </>
+            )}
           </h2>
           <p className="komplex-sub">
             Für einen finalen Preis kommen wir um einen Vor-Ort-Termin nicht
@@ -727,8 +742,7 @@ export function BwResultScreen({
     state.plz,
   ]);
 
-  const isZuKomplex =
-    resultModus === "zu_komplex" || getBwResultModus(state) === "zu_komplex";
+  const isZuKomplex = isBwZuKomplexErgebnis(state, resultModus);
 
   if (isZuKomplex) {
     return (
@@ -763,10 +777,6 @@ export function BwResultScreen({
           <p className="font-semibold text-red-950">
             <span aria-hidden>⚡</span> Akuter Notfall — wir priorisieren deine
             Anfrage.
-          </p>
-          <p className="mt-2 text-red-900/90">
-            Für akute Gefahren oder Lebensgefahr zusätzlich{" "}
-            <strong>112</strong> wählen.
           </p>
           <a
             href={SITE_CONFIG.phoneHref}
@@ -831,17 +841,23 @@ export function BwResultScreen({
                 <PhoneIconKomplex />
                 {SITE_CONFIG.phone}
               </a>
-              <div className="notfall-trust mt-4 space-y-2 text-left text-sm text-text-secondary">
+              <div className="notfall-trust mt-4 space-y-2 text-left text-sm text-white/85">
                 <div className="trust-item flex gap-2">
-                  <span aria-hidden>✓</span>
+                  <span aria-hidden className="shrink-0 text-white">
+                    ✓
+                  </span>
                   <span>Schnelle Rückmeldung</span>
                 </div>
                 <div className="trust-item flex gap-2">
-                  <span aria-hidden>✓</span>
+                  <span aria-hidden className="shrink-0 text-white">
+                    ✓
+                  </span>
                   <span>Wir sind in München & Umgebung</span>
                 </div>
                 <div className="trust-item flex gap-2">
-                  <span aria-hidden>✓</span>
+                  <span aria-hidden className="shrink-0 text-white">
+                    ✓
+                  </span>
                   <span>Transparente Preise</span>
                 </div>
               </div>
