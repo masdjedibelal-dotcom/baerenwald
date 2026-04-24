@@ -574,7 +574,7 @@ export const SITUATIONEN_CONFIG: Record<
             hint: "Ausgefallen aber stabil — heute lösen",
             emoji: "🟠",
             faktor: 1.5,
-            infoText: "Termin innerhalb 24–48h.",
+            infoText: "Termin innerhalb 48–72h.",
           },
           {
             value: "diese_woche",

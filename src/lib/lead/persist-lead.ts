@@ -187,7 +187,7 @@ function buildKundeBestaetigung({
 <body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; color: #1E1E1E;">
   <img src="https://baerenwaldmuenchen.de/logo.png" height="40" alt="Bärenwald" style="margin-bottom: 24px"/>
   <h2 style="color: #2E7D52;">Hallo ${safeName},</h2>
-  <p>vielen Dank für deine Anfrage. Wir haben alles erhalten und melden uns innerhalb von <strong>24 Stunden</strong> bei dir.</p>
+  <p>vielen Dank für deine Anfrage. Wir haben alles erhalten und melden uns innerhalb von <strong>48 Stunden</strong> bei dir.</p>
   ${preisText}
   <p style="margin-top: 24px; padding: 16px; background: #EAF3DE; border-radius: 8px;">
     <strong>Dein nächster Schritt:</strong><br>

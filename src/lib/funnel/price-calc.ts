@@ -61,7 +61,8 @@ type BasisEintrag = {
   groesseBis?: number;
 };
 
-const PREISE = {
+/** München-Basispreise (Rohwerte; Endpreis nach GU_MARGE, m², PLZ, Notdienst …). */
+export const PREISE = {
   bad: {
     klein_standard: {
       min: 9000,
@@ -1266,6 +1267,14 @@ export function getBwResultModus(state: FunnelState): "normal" | "zu_komplex" {
   return "normal";
 }
 
+/** Wie im Ergebnis-Screen: Komplex-Pfad (Rückruf), kein klassischer Preis-/Lead-Folgeschritt. */
+export function isBwZuKomplexErgebnis(
+  state: FunnelState,
+  resultModus: BwResultModus
+): boolean {
+  return resultModus === "zu_komplex" || getBwResultModus(state) === "zu_komplex";
+}
+
 export function getBwPreisFaktorHint(state: FunnelState): string {
   const parts: string[] = [];
   const plzF = getPlzFaktor(state.plz ?? "");
@@ -1782,7 +1791,8 @@ export function calculatePrice(
     return noResult(null);
   }
 
-  if (!preview && getBwResultModus(state) === "zu_komplex") {
+  /** Immer (auch `preview: true`): kein synthetischer Rahmen bei bewusst ausgeschlossenen Projektfällen / Gewerbe. */
+  if (getBwResultModus(state) === "zu_komplex") {
     return noResult(null);
   }
 

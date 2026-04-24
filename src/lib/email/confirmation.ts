@@ -151,7 +151,7 @@ export function generateConfirmationEmail(
       Hallo ${escHtml(vorname)},
     </p>
     <p style="margin:0 0 16px;font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:1.6;color:#1e1c1a;">
-      vielen Dank für deine Anfrage. Wir haben alles erhalten und melden uns innerhalb von <strong>24h</strong> zur Terminbestätigung.
+      vielen Dank für deine Anfrage. Wir haben alles erhalten und melden uns innerhalb von <strong>48h</strong> zur Terminbestätigung.
     </p>
     <hr style="${hRule}"/>
     <p style="margin:0 0 10px;font-family:Arial,Helvetica,sans-serif;font-size:13px;font-weight:bold;letter-spacing:0.02em;color:#2e7d52;text-transform:uppercase;">

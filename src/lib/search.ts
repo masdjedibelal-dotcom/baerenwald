@@ -1,5 +1,9 @@
 import type { Situation } from "@/lib/funnel/types";
-import { LEISTUNGEN } from "@/lib/routes";
+import {
+  getLeistungRechnerPreset,
+  heroPresetIsProjektGu,
+} from "@/lib/funnel/leistung-rechner-preset";
+import { LEISTUNGEN, type LeistungKategorie } from "@/lib/routes";
 
 function normalize(s: string): string {
   return s
@@ -9,14 +13,13 @@ function normalize(s: string): string {
 }
 
 /**
- * Suche: **nur exakte** Treffer (Label/Slug wie in den Chip-Vorschlägen) plus wenige feste Phrasen.
- * Kein Treffer → neutraler Start mit `?nf=1` und `q` (kurzer Hinweis auf dem Rechner).
+ * Suche: **exakte** Treffer (Label/Slug) plus feste Phrasen.
+ * Kein Treffer → `/rechner?q=…` (Auffang im Flow).
  */
 export type HeroSearchResolution =
   | { kind: "leistung"; slug: string }
   | { kind: "situation"; situation: Situation };
 
-/** Chip-Texte aus HomeLanding ohne dedizierten Leistungs-Slug */
 const EXTRA_SITUATION_PHRASES: [string, Situation][] = [
   ["wohnung streichen", "erneuern"],
   ["heizung tauschen", "erneuern"],
@@ -45,6 +48,24 @@ export function resolveHeroSearchQuery(raw: string): HeroSearchResolution | null
   return null;
 }
 
+/** Rechner-URL inkl. `situation`, `gewerk`, optional `projekt=1`, `q`. */
+export function buildHeroRechnerLandingUrl(slug: string, label: string): string {
+  const preset = getLeistungRechnerPreset(slug);
+  const rawQ = label.trim().slice(0, 80);
+  if (!preset) {
+    const p = new URLSearchParams();
+    if (rawQ) p.set("q", rawQ);
+    return p.toString() ? `/rechner?${p.toString()}` : "/rechner";
+  }
+  const params = new URLSearchParams();
+  params.set("situation", preset.situation);
+  const g = preset.bereiche[0];
+  if (g) params.set("gewerk", g);
+  if (heroPresetIsProjektGu(slug)) params.set("projekt", "1");
+  if (rawQ) params.set("q", rawQ);
+  return `/rechner?${params.toString()}`;
+}
+
 export function buildSearchUrl(query: string): string {
   const raw = query.trim().slice(0, 80);
   if (!raw) return "/rechner";
@@ -52,40 +73,36 @@ export function buildSearchUrl(query: string): string {
   const res = resolveHeroSearchQuery(raw);
   if (!res) {
     const p = new URLSearchParams();
-    p.set("nf", "1");
     p.set("q", raw);
     return `/rechner?${p.toString()}`;
   }
 
+  if (res.kind === "leistung") {
+    const l = LEISTUNGEN.find((x) => x.slug === res.slug);
+    return buildHeroRechnerLandingUrl(res.slug, l?.label ?? raw);
+  }
+
   const params = new URLSearchParams();
   params.set("q", raw);
-  if (res.kind === "leistung") {
-    params.set("leistung", res.slug);
-    return `/rechner?${params.toString()}`;
-  }
   params.set("situation", res.situation);
   return `/rechner?${params.toString()}`;
 }
 
-/** Ein Eintrag für die Hero-Suchvorschläge (Leistungen). */
 export interface HeroSearchSuggestion {
   slug: string;
   label: string;
-  emoji: string;
+  category: LeistungKategorie;
 }
 
-const DEFAULT_HERO_SUGGESTION_SLUGS: string[] = [
-  "badezimmer-sanierung",
-  "malerarbeiten",
-  "heizung-sanitaer",
-  "elektroarbeiten",
-  "bodenbelag",
+/** Quick-Start bei leerem Feld: Bad, Dachausbau, Heizung, Wanddurchbruch, Garten */
+export const HERO_QUICK_START_SLUGS: string[] = [
+  "bad-sanieren",
+  "dachbodenausbau",
+  "heizung-defekt",
+  "wanddurchbruch",
+  "gartengestaltung",
 ];
 
-/**
- * Bis zu `max` Vorschläge: gleiche Leistungen wie in der Navigation,
- * gefiltert nach getippter Zeichenfolge (Vervollständigung).
- */
 export function getHeroSearchSuggestions(
   query: string,
   max = 5
@@ -93,9 +110,14 @@ export function getHeroSearchSuggestions(
   const q = normalize(query.trim());
   if (!q) {
     const out: HeroSearchSuggestion[] = [];
-    for (const slug of DEFAULT_HERO_SUGGESTION_SLUGS) {
+    for (const slug of HERO_QUICK_START_SLUGS) {
       const l = LEISTUNGEN.find((x) => x.slug === slug);
-      if (l) out.push({ slug: l.slug, label: l.label, emoji: l.icon });
+      if (l)
+        out.push({
+          slug: l.slug,
+          label: l.label,
+          category: l.category,
+        });
       if (out.length >= max) break;
     }
     return out;
@@ -133,6 +155,17 @@ export function getHeroSearchSuggestions(
   return scored.slice(0, max).map(({ l }) => ({
     slug: l.slug,
     label: l.label,
-    emoji: l.icon,
+    category: l.category,
   }));
+}
+
+export function heroKategorieLabel(c: LeistungKategorie): string {
+  switch (c) {
+    case "projekt":
+      return "Projekt";
+    case "reparatur":
+      return "Reparatur";
+    case "service":
+      return "Service";
+  }
 }

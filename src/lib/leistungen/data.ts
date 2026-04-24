@@ -375,7 +375,7 @@ export const LEISTUNGEN_DATA: Record<string, LeistungsData> = {
 
   hausmeisterservice: {
     slug: "hausmeisterservice",
-    label: "Jemand der sich um alles kümmert",
+    label: "Hausmeisterservice",
     headline: "Rund ums Haus —\nein fester Ansprechpartner",
     subline:
       "Garten, Reinigung, Winterdienst, kleine Reparaturen — wir kümmern uns regelmäßig um dein Objekt.",
@@ -402,7 +402,7 @@ export const LEISTUNGEN_DATA: Record<string, LeistungsData> = {
     ),
     ratgeberSlug: "hausmeisterservice-kosten-muenchen",
     ratgeberLabel: "Was kostet Hausmeisterservice in München?",
-    rechnerSituation: "gewerbe",
+    rechnerSituation: "betreuung",
     faq: [
       {
         q: "Für welche Objekte ist das geeignet?",
@@ -533,6 +533,415 @@ export const LEISTUNGEN_DATA: Record<string, LeistungsData> = {
       {
         q: "Übernimmt die Versicherung Sturmschäden?",
         a: "Wohngebäudeversicherungen decken Sturmschäden ab Windstärke 8. Wir helfen bei der Schadensdokumentation.",
+      },
+    ],
+  },
+
+  dachbodenausbau: {
+    slug: "dachbodenausbau",
+    label: "Dachbodenausbau",
+    headline: "Dachbodenausbau in München",
+    subline: "Neuer Wohnraum unter dem Dach — geplant und umgesetzt als GU-Paket.",
+    beschreibung:
+      "Vom Rohbau bis zur fertigen Fläche: wir koordinieren Statik, Dämmung, Trockenbau und Anschlüsse. Ein Ansprechpartner, ein Kostenrahmen.",
+    wasWirMachen: [
+      "Bestandsaufnahme und Planung",
+      "Statik und Genehmigungen abstimmen",
+      "Ausbau und Trockenbau",
+      "Heizung, Sanitär, Elektro anschließen",
+    ],
+    preisVon: 1200,
+    preisBis: 2200,
+    preisEinheit: "pro m² Wohnfläche (Richtwert)",
+    preisHinweis:
+      "Der endgültige Preis hängt von Rohbau, Höhe und Ausstattung ab — Festpreis nach Vor-Ort-Termin.",
+    vorteile: vorteil(
+      ["✓", "GU-Koordination"],
+      ["✓", "Meisterbetriebe"],
+      ["📐", "Transparente Planung"],
+      ["💶", "Klarer Kostenrahmen"]
+    ),
+    ratgeberSlug: "wohnung-renovieren-kosten-muenchen",
+    ratgeberLabel: "Wohnung renovieren — Gesamtkosten",
+    rechnerSituation: "erneuern",
+    faq: [
+      {
+        q: "Brauche ich eine Genehmigung?",
+        a: "Oft ja — wir prüfen mit dir die Voraussetzungen in München und empfehlen Planer.",
+      },
+    ],
+  },
+
+  kellerausbau: {
+    slug: "kellerausbau",
+    label: "Kellerausbau",
+    headline: "Kellerausbau in München",
+    subline: "Trockenlegen, Feuchteschutz und nutzbarer Keller — aus einer Hand.",
+    beschreibung:
+      "Keller ausbauen braucht Erfahrung mit Feuchteschutz und Entwässerung. Wir planen und setzen um — mit klarem Festpreis nach Besichtigung.",
+    wasWirMachen: [
+      "Feuchteanalyse und Konzept",
+      "Trockenlegung / Abdichtung",
+      "Dämmung und Trockenbau",
+      "Elektro und Heizung nach Bedarf",
+    ],
+    preisVon: 800,
+    preisBis: 1600,
+    preisEinheit: "pro m² Kellerfläche (Richtwert)",
+    preisHinweis: "Umfang und Zustand entscheiden — verbindliches Angebot nach Termin vor Ort.",
+    vorteile: vorteil(
+      ["✓", "Fachbetriebe"],
+      ["🛡", "Feuchteschutz im Fokus"],
+      ["📋", "Dokumentation"],
+      ["💶", "Festpreis nach Termin"]
+    ),
+    ratgeberSlug: "wohnung-renovieren-kosten-muenchen",
+    ratgeberLabel: "Wohnung renovieren — Gesamtkosten",
+    rechnerSituation: "erneuern",
+    faq: [
+      {
+        q: "Ist mein Keller überhaupt ausbaufähig?",
+        a: "Das klären wir bei der Besichtigung — Höhe, Feuchte und Statik sind entscheidend.",
+      },
+    ],
+  },
+
+  wanddurchbruch: {
+    slug: "wanddurchbruch",
+    label: "Wanddurchbruch",
+    headline: "Wanddurchbruch in München",
+    subline: "Raum öffnen — tragend oder nicht tragend, inkl. Statik.",
+    beschreibung:
+      "Ein Durchbruch verändert den Grundriss. Wir koordinieren Statik, Stahlträger und den sauberen Übergang an benachbarte Gewerke.",
+    wasWirMachen: [
+      "Abklärung tragend / nicht tragend",
+      "Statik und Ausführung",
+      "Stahlträger und Abfangung",
+      "Oberflächen und Übergänge",
+    ],
+    preisVon: 1800,
+    preisBis: 8500,
+    preisEinheit: "pro Öffnung (Richtwert)",
+    preisHinweis: "Tragende Wände sind deutlich aufwendiger — Angebot nach Vor-Ort-Termin.",
+    vorteile: vorteil(
+      ["✓", "Statik koordiniert"],
+      ["✓", "Saubere Ausführung"],
+      ["⏱", "Realistische Zeitplanung"],
+      ["💶", "Transparenz"]
+    ),
+    ratgeberSlug: "trockenbau-kosten-muenchen",
+    ratgeberLabel: "Neue Wände — was kostet das?",
+    rechnerSituation: "erneuern",
+    faq: [
+      {
+        q: "Wie lange dauert ein Durchbruch?",
+        a: "Ohne tragende Wand oft wenige Tage — mit Statik und Träger eher 1–2 Wochen.",
+      },
+    ],
+  },
+
+  terrassenbau: {
+    slug: "terrassenbau",
+    label: "Terrassenbau",
+    headline: "Terrassenbau in München",
+    subline: "Neue Terrasse — Holz, WPC oder Stein, inkl. Unterbau.",
+    beschreibung:
+      "Von der Planung bis zur Abnahme: Material, Unterbau und Entwässerung stimmen wir auf dein Grundstück ab — als GU-Paket.",
+    wasWirMachen: [
+      "Planung und Materialwahl",
+      "Unterbau und Entwässerung",
+      "Aufbau und Abdichtung",
+      "Übergabe mit Festpreis nach Termin",
+    ],
+    preisVon: 220,
+    preisBis: 520,
+    preisEinheit: "pro m² Terrasse (Richtwert)",
+    preisHinweis: "Unterbau und Zugang beeinflussen den Preis stark — Festpreis nach Aufmaß.",
+    vorteile: vorteil(
+      ["✓", "GU-Paket"],
+      ["🪵", "Holz & Stein"],
+      ["📐", "Aufmaß vor Ort"],
+      ["💶", "Klarer Rahmen"]
+    ),
+    ratgeberSlug: "gartenpflege-kosten-muenchen",
+    ratgeberLabel: "Was kostet Gartenpflege?",
+    rechnerSituation: "erneuern",
+    faq: [
+      {
+        q: "Brauche ich eine Baugenehmigung?",
+        a: "Kommt auf Höhe und Lage an — wir geben dir eine klare Empfehlung.",
+      },
+    ],
+  },
+
+  "bad-sanieren": {
+    slug: "bad-sanieren",
+    label: "Bad sanieren",
+    headline: "Bad sanieren in München",
+    subline: "Modernisierung oder Neubad — ein Ansprechpartner für alle Gewerke.",
+    beschreibung:
+      "Sanitär, Fliesen, Elektro und Lüftung greifen ineinander. Wir koordinieren alles und nennen dir einen verbindlichen Festpreis nach dem Termin.",
+    wasWirMachen: [
+      "Planung und Auswahl",
+      "Abriss und Entsorgung",
+      "Installation und Fliesen",
+      "Abnahme",
+    ],
+    preisVon: 6500,
+    preisBis: 20000,
+    preisEinheit: "pauschal je nach Umfang",
+    preisHinweis: "Kleines Bad vs. Masterbad — wir rechnen realistisch nach m² und Ausstattung.",
+    vorteile: vorteil(
+      ["🔧", "Alles aus einer Hand"],
+      ["🛡", "Festpreis nach Termin"],
+      ["⏱", "Termintreue"],
+      ["✓", "Meisterbetriebe"]
+    ),
+    ratgeberSlug: "bad-sanierung-kosten-muenchen",
+    ratgeberLabel: "Was kostet eine Badsanierung?",
+    rechnerSituation: "erneuern",
+    faq: [
+      {
+        q: "Kann ich währenddessen im Objekt wohnen?",
+        a: "Bei kleinen Bädern oft eingeschränkt — wir besprechen das vorab.",
+      },
+    ],
+  },
+
+  "boden-verlegen": {
+    slug: "boden-verlegen",
+    label: "Boden verlegen",
+    headline: "Boden verlegen in München",
+    subline: "Laminat, Parkett, Vinyl oder Fliesen — fachgerecht und sauber.",
+    beschreibung:
+      "Wir verlegen neuen Boden inkl. Vorbereitung der Unterlage und sauberem Übergang zu Türen und Sockeln.",
+    wasWirMachen: [
+      "Beratung zu Material",
+      "Untergrund vorbereiten",
+      "Verlegung und Abschluss",
+      "Entsorgung Altbelag auf Wunsch",
+    ],
+    preisVon: 35,
+    preisBis: 95,
+    preisEinheit: "pro m²",
+    preisHinweis: "Altabtrag und Untergrund können Zusatzkosten bedeuten — Angebot nach Sichtung.",
+    vorteile: vorteil(
+      ["✓", "Saubere Baustelle"],
+      ["🪵", "Viele Materialien"],
+      ["📏", "Aufmaß"],
+      ["💶", "Festpreis nach Termin"]
+    ),
+    ratgeberSlug: "bodenbelag-kosten-muenchen",
+    ratgeberLabel: "Was kostet neuer Boden?",
+    rechnerSituation: "erneuern",
+    faq: [
+      {
+        q: "Wie lange dauert die Verlegung?",
+        a: "Typisch 1–3 Tage pro Raum — je nach Größe und Material.",
+      },
+    ],
+  },
+
+  fassadendaemmung: {
+    slug: "fassadendaemmung",
+    label: "Fassadendämmung",
+    headline: "Fassadendämmung in München",
+    subline: "WDVS, Dämmung und Oberfläche — energetisch sinnvoll.",
+    beschreibung:
+      "Wir dämmen die Fassade fachgerecht und koordinieren Anstrich oder Bekleidung — inklusive Beratung zu Förderungen.",
+    wasWirMachen: [
+      "Energetische Bestandsaufnahme",
+      "Dämmung und Details",
+      "Oberfläche / Putz",
+      "Dokumentation für Förderung",
+    ],
+    preisVon: 120,
+    preisBis: 220,
+    preisEinheit: "pro m² Fassade (Richtwert)",
+    preisHinweis: "Gebäudehöhe und Gerüst beeinflussen den Preis — Festpreis nach Begehung.",
+    vorteile: vorteil(
+      ["🧱", "WDVS-Qualität"],
+      ["📋", "Förder-Hinweise"],
+      ["✓", "Meisterbetriebe"],
+      ["💶", "Transparenz"]
+    ),
+    ratgeberSlug: "wohnung-renovieren-kosten-muenchen",
+    ratgeberLabel: "Wohnung renovieren — Gesamtkosten",
+    rechnerSituation: "erneuern",
+    faq: [
+      {
+        q: "Gibt es Förderung?",
+        a: "Oft ja für energetische Maßnahmen — wir weisen dich auf aktuelle Programme hin.",
+      },
+    ],
+  },
+
+  "heizung-defekt": {
+    slug: "heizung-defekt",
+    label: "Heizung defekt",
+    headline: "Heizung defekt in München",
+    subline: "Schnelle Hilfe bei Ausfall — Diagnose und Reparatur.",
+    beschreibung:
+      "Heizung oder Warmwasser ausgefallen? Wir priorisieren und schicken qualifizierte Fachkräfte — mit klarem Kostenrahmen nach Diagnose.",
+    wasWirMachen: [
+      "Fehleranalyse vor Ort",
+      "Reparatur oder Teiletausch",
+      "Dokumentation",
+      "Optional: Ersatzplanung",
+    ],
+    preisVon: 120,
+    preisBis: 450,
+    preisEinheit: "pauschal Einsatz (Richtwert)",
+    preisHinweis: "Material und Umfang ergeben den Endpreis — Festpreisangebot nach Diagnose.",
+    vorteile: vorteil(
+      ["🔥", "Heizungsfachbetriebe"],
+      ["⏱", "Zeitnahe Termine"],
+      ["📋", "Nachvollziehbar"],
+      ["💶", "Ehrliche Einschätzung"]
+    ),
+    ratgeberSlug: "heizung-tauschen-kosten",
+    ratgeberLabel: "Heizung tauschen — was kostet das?",
+    rechnerSituation: "kaputt",
+    faq: [
+      {
+        q: "Was tun bei akutem Wasserschaden an der Heizung?",
+        a: "Haupthahn zu, Strom an der Heizung sicher trennen und uns anrufen.",
+      },
+    ],
+  },
+
+  rohrbruch: {
+    slug: "rohrbruch",
+    label: "Rohrbruch",
+    headline: "Rohrbruch & Leck in München",
+    subline: "Sanitär-Notfälle — schnell abdichten und reparieren.",
+    beschreibung:
+      "Leckage oder Rohrbruch: wir helfen zügig mit Ortung, Abdichtung und fachgerechter Instandsetzung.",
+    wasWirMachen: [
+      "Schaden begrenzen",
+      "Leckortung",
+      "Reparatur oder Austausch",
+      "Dokumentation für Versicherung",
+    ],
+    preisVon: 150,
+    preisBis: 600,
+    preisEinheit: "Einsatz pauschal (Richtwert)",
+    preisHinweis: "Umfang und Material variieren — Angebot nach Sichtung.",
+    vorteile: vorteil(
+      ["💧", "Sanitär-Spezialisten"],
+      ["⏱", "Kurzfristige Termine"],
+      ["📋", "Schadensdoku"],
+      ["💶", "Klarer Rahmen"]
+    ),
+    ratgeberSlug: "bad-sanierung-kosten-muenchen",
+    ratgeberLabel: "Was kostet eine Badsanierung?",
+    rechnerSituation: "kaputt",
+    faq: [
+      {
+        q: "Was ist der erste Schritt?",
+        a: "Wasser abstellen und uns kontaktieren — je schneller, desto geringer der Folgeschaden.",
+      },
+    ],
+  },
+
+  stromausfall: {
+    slug: "stromausfall",
+    label: "Stromausfall",
+    headline: "Stromausfall & Elektro in München",
+    subline: "Sicherung, Verteilung, Steckdosen — zertifizierte Elektriker.",
+    beschreibung:
+      "Teilweiser oder kompletter Stromausfall: wir finden die Ursache und beheben sie normkonform.",
+    wasWirMachen: [
+      "Fehlersuche",
+      "Sicherungskasten / Leitungen",
+      "Reparatur oder Nachrüstung",
+      "Prüfprotokoll auf Wunsch",
+    ],
+    preisVon: 95,
+    preisBis: 320,
+    preisEinheit: "Einsatz (Richtwert)",
+    preisHinweis: "Umfang erst nach Prüfung am Objekt abschätzbar.",
+    vorteile: vorteil(
+      ["⚡", "Zertifizierte Elektriker"],
+      ["🛡", "Normgerecht"],
+      ["⏱", "Schnelle Hilfe"],
+      ["💶", "Transparent"]
+    ),
+    ratgeberSlug: "wohnung-renovieren-kosten-muenchen",
+    ratgeberLabel: "Wohnung renovieren — Gesamtkosten",
+    rechnerSituation: "kaputt",
+    faq: [
+      {
+        q: "Ist das gefährlich?",
+        a: "Bei Brandgeruch oder Funken sofort Strom aus und 112 bei Gefahr — sonst Fachbetrieb.",
+      },
+    ],
+  },
+
+  dachschaden: {
+    slug: "dachschaden",
+    label: "Dachschaden",
+    headline: "Dachschaden in München",
+    subline: "Undichtigkeit, Sturm, Rinne — schnell und fachgerecht.",
+    beschreibung:
+      "Wir sichern die Eindeckung, dokumentieren Schäden für die Versicherung und reparieren dauerhaft.",
+    wasWirMachen: [
+      "Notabdichtung bei Bedarf",
+      "Schadensaufnahme",
+      "Reparatur / Teilerneuerung",
+      "Regenrinnen prüfen und reparieren",
+    ],
+    preisVon: 180,
+    preisBis: 420,
+    preisEinheit: "pro m² Dach (Richtwert)",
+    preisHinweis: "Kleine Reparaturen pauschalierbar — größere Schäden nach Aufmaß.",
+    vorteile: vorteil(
+      ["🏡", "Dachdecker"],
+      ["📋", "Versicherungsdoku"],
+      ["⏱", "Zeitnah"],
+      ["💶", "Ehrliche Spanne"]
+    ),
+    ratgeberSlug: "dacharbeiten-kosten-muenchen",
+    ratgeberLabel: "Dacharbeiten Kosten München",
+    rechnerSituation: "kaputt",
+    faq: [
+      {
+        q: "Droht Wasserschaden?",
+        a: "Ja — bei aktiver Undichtigkeit sofort absichern lassen.",
+      },
+    ],
+  },
+
+  baumarbeiten: {
+    slug: "baumarbeiten",
+    label: "Baumarbeiten",
+    headline: "Baumarbeiten in München",
+    subline: "Kronenschnitt, Fällung, Pflege — fachgerecht und genehmigungsbewusst.",
+    beschreibung:
+      "Wir koordinieren Baumpflege und größere Eingriffe — inklusive Hinweisen zu Meldepflichten in München.",
+    wasWirMachen: [
+      "Sichtung und Maßnahmenplan",
+      "Kronenschnitt oder Fällung",
+      "Entsorgung des Schnittguts",
+      "Dokumentation",
+    ],
+    preisVon: 180,
+    preisBis: 1200,
+    preisEinheit: "pro Einsatz (Richtwert)",
+    preisHinweis: "Stammumfang und Zugänglichkeit bestimmen den Preis — Angebot nach Besichtigung.",
+    vorteile: vorteil(
+      ["🌲", "Fachgerecht"],
+      ["📋", "Genehmigungshinweise"],
+      ["✓", "Versichert & sauber"],
+      ["💶", "Festpreis nach Termin"]
+    ),
+    ratgeberSlug: "gartenpflege-kosten-muenchen",
+    ratgeberLabel: "Was kostet Gartenpflege?",
+    rechnerSituation: "betreuung",
+    faq: [
+      {
+        q: "Brauche ich eine Genehmigung?",
+        a: "Bei größeren Bäumen in München oft — wir beraten dich vorab.",
       },
     ],
   },
