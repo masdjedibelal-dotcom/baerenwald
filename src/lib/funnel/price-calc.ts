@@ -851,6 +851,13 @@ export function mapToPrice(state: FunnelState): BwPriceMapping | null {
   }
 
   if (b("boden")) {
+    const ziel = fd?.boden?.ziel;
+    if (ziel === "parkett") return { service: "boden", type: "parkett" };
+    if (ziel === "laminat") return { service: "boden", type: "laminat" };
+    if (ziel === "vinyl") return { service: "boden", type: "vinyl" };
+    if (ziel === "fliesen") return { service: "boden", type: "fliesen" };
+    if (ziel === "teppich") return { service: "boden", type: "teppich" };
+
     const aktuell = fd?.boden?.aktuell;
     if (!aktuell) return { service: "boden", type: "laminat" };
     if (aktuell === "balkon_belag") return { service: "boden", type: "balkon_belag" };

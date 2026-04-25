@@ -586,6 +586,44 @@ export const BODEN_Q1: FachdetailQuestionDef = {
   ],
 };
 
+export const BODEN_ZIEL_Q: FachdetailQuestionDef = {
+  id: "boden_ziel",
+  title: "Welchen Bodenbelag möchtest du verlegen lassen?",
+  inputType: "single",
+  options: [
+    {
+      value: "parkett",
+      label: "Parkett",
+      hint: "Echtholz mit hochwertiger Optik",
+      followUpId: null,
+    },
+    {
+      value: "laminat",
+      label: "Laminat",
+      hint: "Preisbewusst und robust",
+      followUpId: null,
+    },
+    {
+      value: "vinyl",
+      label: "Vinyl",
+      hint: "Pflegeleicht und wasserunempfindlich",
+      followUpId: null,
+    },
+    {
+      value: "fliesen",
+      label: "Fliesen",
+      hint: "Sehr langlebig und belastbar",
+      followUpId: null,
+    },
+    {
+      value: "teppich",
+      label: "Teppich",
+      hint: "Weich, warm und schalldämpfend",
+      followUpId: null,
+    },
+  ],
+};
+
 export const BODEN_FOLLOWUPS: Record<string, FachdetailQuestionDef> = {
   boden_folge_fliesen: {
     id: "boden_folge_fliesen",

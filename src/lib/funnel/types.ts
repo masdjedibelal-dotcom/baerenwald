@@ -103,6 +103,8 @@ export type FachdetailsState = {
   };
   boden?: {
     aktuell?: string;
+    /** Gewünschter neuer Bodenbelag (z. B. Parkett/Laminat/Vinyl/Fliesen/Teppich). */
+    ziel?: string;
     /** @deprecated Nur alte Saves — UI-Frage „Belag zu behandeln“ entfernt. */
     zustand?: string;
     /** Verlegeart/Rückbau (Follow-up Fliesen/Laminat/Parkett) — Basis für Abriss-Zuschlag. */

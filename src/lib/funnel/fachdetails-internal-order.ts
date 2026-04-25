@@ -7,6 +7,7 @@ import { isFachdetailGewerkChainComplete } from "@/lib/funnel/fachdetails-chain-
 import {
   BODEN_FOLLOWUPS,
   BODEN_Q1,
+  BODEN_ZIEL_Q,
   DACH_FOLLOWUPS,
   getDachQ1ForSituation,
   ELEKTRO_FOLLOWUPS,
@@ -224,6 +225,7 @@ function collectBodenSubStepIds(state: FunnelState): string[] {
   const ids = [BODEN_Q1.id];
   const a = fd.boden?.aktuell;
   if (!a) return ids;
+  ids.push(BODEN_ZIEL_Q.id);
   const noFollowUpMaterial =
     a === "parkett_schleifen" ||
     a === "balkon_belag" ||
@@ -260,7 +262,10 @@ function collectGartenSubStepIds(state: FunnelState): string[] {
   const ids = [GARTEN_Q1.id];
   const w = fd.garten?.was;
   if (!w) return ids;
-  if (state.situation === "betreuung" && w === "baum") {
+  if (
+    state.situation === "betreuung" &&
+    (w === "baum" || w === "pflege")
+  ) {
     return ids;
   }
   const opt = GARTEN_Q1.options.find((o) => o.value === w);
@@ -385,6 +390,7 @@ export function isFachdetailSubStepComplete(
 
   if (gewerk === "boden") {
     if (stepId === BODEN_Q1.id) return Boolean(fd.boden?.aktuell);
+    if (stepId === BODEN_ZIEL_Q.id) return Boolean(fd.boden?.ziel);
     if (BODEN_FOLLOWUPS[stepId]) {
       return fd.boden?.verlegung !== undefined;
     }
@@ -572,7 +578,19 @@ export function getClearFachdetailPatchFromSubStep(
         return {
           boden: {
             aktuell: undefined,
+            ziel: undefined,
             zustand: undefined,
+            verlegung: undefined,
+            freitext: fd.boden?.freitext,
+          },
+        };
+      }
+      if (stepId === BODEN_ZIEL_Q.id) {
+        return {
+          boden: {
+            aktuell: fd.boden?.aktuell,
+            ziel: undefined,
+            zustand: fd.boden?.zustand,
             verlegung: undefined,
             freitext: fd.boden?.freitext,
           },
@@ -581,6 +599,7 @@ export function getClearFachdetailPatchFromSubStep(
       return {
         boden: {
           aktuell: fd.boden?.aktuell,
+          ziel: fd.boden?.ziel,
           zustand: fd.boden?.zustand,
           verlegung: undefined,
           freitext: fd.boden?.freitext,

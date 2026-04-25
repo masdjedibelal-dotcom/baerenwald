@@ -104,7 +104,10 @@ export function getBwRechnerScreenSequence(state: FunnelState): string[] {
   if (kt.options && kt.options.length > 0) {
     out.push("kundentyp");
   }
-  out.push("ort");
+  /** Betreuung: kein Ort-/PLZ-Schritt — Start-Zeitraum wird ohne PLZ-Eingabe gesetzt (s. Rechner-Client). */
+  if (sit !== "betreuung") {
+    out.push("ort");
+  }
   return out;
 }
 

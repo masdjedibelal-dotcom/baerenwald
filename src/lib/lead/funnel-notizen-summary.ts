@@ -100,6 +100,26 @@ function formatGroesse(state: FunnelState): string | null {
   return `ca. ${state.groesse}`;
 }
 
+/** Labels der zentralen Betreuungs-Kachel (`umfang`), analog zu {@link buildBetreuungHaeufigkeitStep}. */
+const BETREUUNG_UMFANG_KURZ: Record<string, string> = {
+  woechentlich: "Wöchentlich",
+  zweimal_monat: "Alle 2 Wochen",
+  monatlich: "Monatlich",
+  saisonal: "Saisonal",
+  einmalig: "Einmalig",
+  saison: "Saison-Pauschale",
+  nach_bedarf: "Nach Bedarf",
+  jahresvertrag: "Jahresvertrag",
+};
+
+function gartenRhythmusFuerNotizen(state: FunnelState): string | undefined {
+  if (state.situation === "betreuung" && state.umfang) {
+    return BETREUUNG_UMFANG_KURZ[state.umfang] ?? state.umfang;
+  }
+  const h = state.fachdetails.garten?.haeufigkeit;
+  return h && String(h).trim() ? String(h).trim() : undefined;
+}
+
 function gartenUmfangZeile(state: FunnelState): string | null {
   const fd = state.fachdetails;
   const pj = fd.projekt;
@@ -107,7 +127,8 @@ function gartenUmfangZeile(state: FunnelState): string | null {
   const flaeche = formatGroesse(state);
   if (flaeche) parts.push(`Fläche/Umfang: ${flaeche}`);
   if (fd.garten?.was) parts.push(`Thema: ${fd.garten.was}`);
-  if (fd.garten?.haeufigkeit) parts.push(`Rhythmus: ${fd.garten.haeufigkeit}`);
+  const rhythm = gartenRhythmusFuerNotizen(state);
+  if (rhythm) parts.push(`Rhythmus: ${rhythm}`);
   if (pj?.gartenLeistung)
     parts.push(
       pj.gartenLeistung === "neuanlage" ? "Neuanlage" : "Auffrischung"
@@ -204,17 +225,20 @@ function strukturierteFachdetailZeilen(state: FunnelState): string {
     rows.push(`Maler: ${m.was ?? "—"}, Zustand ${m.zustand ?? "—"}`);
   }
   const b = fd.boden;
-  if (b?.aktuell || b?.verlegung) {
-    rows.push(`Boden: aktuell ${b.aktuell ?? "—"}, Verlegung ${b.verlegung ?? "—"}`);
+  if (b?.aktuell || b?.ziel || b?.verlegung) {
+    rows.push(
+      `Boden: aktuell ${b.aktuell ?? "—"}, Ziel ${b.ziel ?? "—"}, Verlegung ${b.verlegung ?? "—"}`
+    );
   }
   const d = fd.dach;
   if (d?.vorhaben || d?.alter) {
     rows.push(`Dach: ${d.vorhaben ?? "—"}, Alter ${d.alter ?? "—"}`);
   }
   const g = fd.garten;
-  if (g?.was || g?.haeufigkeit || g?.baumgroesse) {
+  const gartenRhythmus = gartenRhythmusFuerNotizen(state);
+  if (g?.was || gartenRhythmus || g?.baumgroesse) {
     rows.push(
-      `Garten (Betreuung): ${[g.was, g.haeufigkeit, g.baumgroesse].filter(Boolean).join(" · ") || "—"}`
+      `Garten (Betreuung): ${[g?.was, gartenRhythmus, g?.baumgroesse].filter(Boolean).join(" · ") || "—"}`
     );
   }
   const f = fd.fenster;

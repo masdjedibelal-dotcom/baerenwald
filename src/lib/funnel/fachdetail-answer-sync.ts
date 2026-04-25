@@ -232,8 +232,18 @@ export function buildPatchForFachdetailAnswer(
       patch.boden = {
         ...fd.boden,
         aktuell: str(value as string),
+        ziel: undefined,
         zustand: undefined,
         verlegung: undefined,
+      };
+      break;
+    case "boden_ziel":
+      patch.boden = {
+        ...fd.boden,
+        aktuell: fd.boden?.aktuell,
+        ziel: str(value as string),
+        zustand: fd.boden?.zustand,
+        verlegung: fd.boden?.verlegung,
       };
       break;
     case "boden_zustand":
@@ -285,10 +295,12 @@ export function buildPatchForFachdetailAnswer(
       break;
     case "garten_was": {
       const w = str(value as string);
+      delete nextAnswers.garten_followup;
       patch.garten = {
         ...fd.garten,
         was: w,
-        haeufigkeit: w === "pflege" ? fd.garten?.haeufigkeit : undefined,
+        /** Rhythmus kommt aus zentralem `umfang` (Betreuung) bzw. erneut aus `garten_followup` (z. B. Erneuern). */
+        haeufigkeit: undefined,
         baumgroesse: w === "baum" ? fd.garten?.baumgroesse : undefined,
       };
       break;
@@ -472,8 +484,18 @@ export function buildPatchClearFachdetailAnswer(
     case "boden_verlegung":
       patch.boden = {
         aktuell: undefined,
+        ziel: undefined,
         zustand: undefined,
         verlegung: undefined,
+        freitext: fd.boden?.freitext,
+      };
+      break;
+    case "boden_ziel":
+      patch.boden = {
+        aktuell: fd.boden?.aktuell,
+        ziel: undefined,
+        zustand: fd.boden?.zustand,
+        verlegung: fd.boden?.verlegung,
         freitext: fd.boden?.freitext,
       };
       break;
@@ -502,7 +524,8 @@ export function buildPatchClearFachdetailAnswer(
       };
       break;
     case "garten_was":
-    case "garten_followup":
+      delete next.garten_followup;
+      patch.fachdetailAnswers = next;
       patch.garten = {
         was: undefined,
         haeufigkeit: undefined,
@@ -511,6 +534,18 @@ export function buildPatchClearFachdetailAnswer(
         freitext: fd.garten?.freitext,
       };
       break;
+    case "garten_followup": {
+      const w = fd.garten?.was;
+      patch.garten = {
+        ...fd.garten,
+        was: w,
+        haeufigkeit: w === "pflege" ? undefined : fd.garten?.haeufigkeit,
+        baumgroesse: w === "baum" ? undefined : fd.garten?.baumgroesse,
+        gestaltung: fd.garten?.gestaltung,
+        freitext: fd.garten?.freitext,
+      };
+      break;
+    }
     default:
       if (questionId.endsWith("_freitext")) {
         const g = questionId.replace(/_freitext$/, "");

@@ -6,6 +6,7 @@
 import {
   BODEN_FOLLOWUPS,
   BODEN_Q1,
+  BODEN_ZIEL_Q,
   DACH_Q1_ERNEUERN,
   DACH_Q1_KAPUTT,
   DACH_FOLLOWUPS,
@@ -320,6 +321,14 @@ export const FACHDETAIL_QUESTIONS: FachdetailQuestion[] = [
     BODEN_Q1,
     (s) => B(s).has("boden") || B(s).has("waende_boeden")
   ),
+  fromDef(
+    "boden_ziel",
+    "boden",
+    BODEN_ZIEL_Q,
+    (s) =>
+      (B(s).has("boden") || B(s).has("waende_boeden")) &&
+      Boolean(ansStr(s, "boden_material"))
+  ),
   {
     id: "boden_verlegung",
     gewerk: "boden",
@@ -397,7 +406,8 @@ export function resolveGartenFollowupDef(
 ): FachdetailQuestionDef | null {
   const w = ansStr(state, "garten_was");
   if (!w) return null;
-  if (state.situation === "betreuung" && w === "baum") {
+  /** Rhythmus/Häufigkeit läuft zentral über {@link buildBetreuungHaeufigkeitStep} (`umfang`). */
+  if (state.situation === "betreuung" && (w === "baum" || w === "pflege")) {
     return null;
   }
   const opt = GARTEN_Q1.options.find((o) => o.value === w);
