@@ -58,7 +58,7 @@ export function BwBeratungLead({
         <h1 className="step-question">{headline}</h1>
         <p className="step-sub">{sub}</p>
 
-        <form id={formId} onSubmit={onSubmit} className="b2b-form">
+        <form id={formId} onSubmit={onSubmit} className="b2b-form space-y-3">
           <div className="form-row">
             <input
               type="text"
@@ -81,16 +81,6 @@ export function BwBeratungLead({
           </div>
 
           <input
-            type="tel"
-            inputMode="tel"
-            placeholder="+49 151 23456789"
-            autoComplete="tel"
-            className="funnel-input"
-            value={telefon}
-            onChange={(e) => onFieldChange("telefon", e.target.value)}
-          />
-
-          <input
             type="email"
             inputMode="email"
             placeholder="E-Mail Adresse"
@@ -100,6 +90,16 @@ export function BwBeratungLead({
             className="funnel-input"
             value={email}
             onChange={(e) => onFieldChange("email", e.target.value)}
+          />
+
+          <input
+            type="tel"
+            inputMode="tel"
+            placeholder="+49 151 23456789"
+            autoComplete="tel"
+            className="funnel-input"
+            value={telefon}
+            onChange={(e) => onFieldChange("telefon", e.target.value)}
           />
 
           <textarea

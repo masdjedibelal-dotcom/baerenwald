@@ -45,6 +45,63 @@ export type PostBwLeadPayload = {
   funnel_quelle?: string;
 };
 
+type BuildBwLeadPayloadInput = {
+  vorname?: string;
+  nachname?: string;
+  name?: string;
+  email?: string;
+  telefon?: string;
+  nachricht?: string;
+  situation?: string | null;
+  bereiche?: string[];
+  preis_min?: number;
+  preis_max?: number;
+  plz?: string;
+  zeitraum?: string | null;
+  kundentyp?: string | null;
+  funnel_daten?: unknown;
+  extra_funnel_daten?: Record<string, unknown>;
+  funnel_quelle?: string;
+};
+
+function buildLeadName(input: BuildBwLeadPayloadInput): string {
+  const split = `${input.vorname ?? ""} ${input.nachname ?? ""}`.trim();
+  if (split) return split;
+  const fallback = (input.name ?? "").trim();
+  return fallback || "Ohne Namenangabe";
+}
+
+/** Einheitliches Submit-Schema für alle BW-Lead-Formulare. */
+export function buildBwLeadPayload(
+  input: BuildBwLeadPayloadInput
+): PostBwLeadPayload {
+  const mergedFunnelDaten =
+    input.extra_funnel_daten && typeof input.funnel_daten === "object"
+      ? {
+          ...(input.funnel_daten as Record<string, unknown>),
+          ...input.extra_funnel_daten,
+        }
+      : input.extra_funnel_daten
+        ? input.extra_funnel_daten
+        : input.funnel_daten;
+
+  return {
+    name: buildLeadName(input),
+    email: input.email?.trim() || undefined,
+    telefon: input.telefon?.trim() || undefined,
+    nachricht: input.nachricht || undefined,
+    situation: input.situation,
+    bereiche: input.bereiche,
+    preis_min: input.preis_min,
+    preis_max: input.preis_max,
+    plz: input.plz,
+    zeitraum: input.zeitraum,
+    kundentyp: input.kundentyp,
+    funnel_daten: mergedFunnelDaten,
+    funnel_quelle: input.funnel_quelle,
+  };
+}
+
 export type PostBwLeadResult =
   | { ok: true; id: string }
   | { ok: false; error: string };

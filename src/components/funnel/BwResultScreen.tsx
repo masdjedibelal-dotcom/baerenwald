@@ -24,6 +24,7 @@ import {
 import { SITE_CONFIG } from "@/lib/config";
 import { cn } from "@/lib/utils";
 import {
+  buildBwLeadPayload,
   buildFullLeadNotizen,
   serializeFunnelStateForLead,
   submitBwLead,
@@ -238,6 +239,16 @@ function gewerkLabel(key: string): string {
   return key.charAt(0).toUpperCase() + key.slice(1).replace(/_/g, " ");
 }
 
+function betreuungFestpreisZusatz(state: FunnelState): string | null {
+  if (state.situation !== "betreuung") return null;
+  if (state.bereiche.includes("winter")) return "Saison-Pauschale";
+  if (state.bereiche.includes("hausmeister")) return "monatlich";
+  if (state.bereiche.includes("garten") || state.bereiche.includes("reinigung")) {
+    return "monatlich";
+  }
+  return null;
+}
+
 function bereicheDisplayLabels(state: FunnelState): string[] {
   if (!state.situation) return state.bereiche.map(gewerkLabel);
   const step0 = getResolvedStepsForSituation(
@@ -351,6 +362,15 @@ function validateKomplexTelefon(raw: string): string | undefined {
   return undefined;
 }
 
+function validateKomplexEmail(raw: string): string | undefined {
+  const e = raw.trim();
+  if (!e) return undefined;
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e)) {
+    return "Bitte gib eine gültige E-Mail-Adresse ein.";
+  }
+  return undefined;
+}
+
 function PhoneIconKomplex() {
   return (
     <svg
@@ -384,11 +404,12 @@ function ZuKomplexScreen({
 }) {
   const [vorname, setVorname] = useState("");
   const [nachname, setNachname] = useState("");
+  const [email, setEmail] = useState("");
   const [telefon, setTelefon] = useState("");
   const [beschreibung, setBeschreibung] = useState("");
   const [datenschutz, setDatenschutz] = useState(false);
   const [showDatenschutzError, setShowDatenschutzError] = useState(false);
-  const [errors, setErrors] = useState<{ telefon?: string }>({});
+  const [errors, setErrors] = useState<{ telefon?: string; email?: string }>({});
   const [submitStatus, setSubmitStatus] = useState<
     "idle" | "loading" | "error"
   >("idle");
@@ -424,9 +445,13 @@ function ZuKomplexScreen({
 
   const handleKomplexSubmit = useCallback(async () => {
     setErrors({});
+    const emailErr = validateKomplexEmail(email);
     const telErr = validateKomplexTelefon(telefon);
-    if (telErr) {
-      setErrors({ telefon: telErr });
+    if (emailErr || telErr) {
+      setErrors({
+        email: emailErr,
+        telefon: telErr,
+      });
       return;
     }
     if (!datenschutz) {
@@ -435,34 +460,36 @@ function ZuKomplexScreen({
     }
     setSubmitStatus("loading");
     setErrorMessage("");
-    const name =
-      `${vorname.trim()} ${nachname.trim()}`.trim() || "Ohne Namenangabe";
     try {
-      const result = await submitBwLead({
-        name,
-        telefon: telefon.trim(),
-        nachricht:
-          buildFullLeadNotizen(
-            state,
-            beschreibung.trim() || undefined
-          ) || undefined,
-        situation: state.situation,
-        bereiche: state.bereiche,
-        preis_min: state.priceMin,
-        preis_max: state.priceMax,
-        plz: state.plz,
-        zeitraum: state.zeitraum,
-        kundentyp: state.kundentyp ?? undefined,
-        funnel_daten: {
-          ...serializeFunnelStateForLead(state),
-          budgetCheck: state.budgetCheck,
-          budgetGespraech: state.budgetCheck === "zu_hoch",
-          selectedSlot: state.selectedSlot,
-          dringlichkeit: state.dringlichkeit,
-          umfang: state.umfang,
-        },
-        funnel_quelle: "komplex_rueckruf",
-      });
+      const result = await submitBwLead(
+        buildBwLeadPayload({
+          vorname,
+          nachname,
+          email,
+          telefon,
+          nachricht:
+            buildFullLeadNotizen(
+              state,
+              beschreibung.trim() || undefined
+            ) || undefined,
+          situation: state.situation,
+          bereiche: state.bereiche,
+          preis_min: state.priceMin,
+          preis_max: state.priceMax,
+          plz: state.plz,
+          zeitraum: state.zeitraum,
+          kundentyp: state.kundentyp ?? undefined,
+          funnel_daten: serializeFunnelStateForLead(state),
+          extra_funnel_daten: {
+            budgetCheck: state.budgetCheck,
+            budgetGespraech: state.budgetCheck === "zu_hoch",
+            selectedSlot: state.selectedSlot,
+            dringlichkeit: state.dringlichkeit,
+            umfang: state.umfang,
+          },
+          funnel_quelle: "komplex_rueckruf",
+        })
+      );
       if (!result.ok) {
         setSubmitStatus("error");
         setErrorMessage(
@@ -481,6 +508,7 @@ function ZuKomplexScreen({
   }, [
     beschreibung,
     datenschutz,
+    email,
     nachname,
     onKomplexRueckrufSuccess,
     state,
@@ -611,7 +639,7 @@ function ZuKomplexScreen({
       <div className="komplex-option">
         <div className="komplex-option-label">Rückruf anfordern</div>
 
-        <div className="komplex-form">
+        <div className="komplex-form space-y-3">
           <div className="komplex-form-row">
             <input
               type="text"
@@ -632,6 +660,24 @@ function ZuKomplexScreen({
           </div>
 
           <input
+            type="email"
+            placeholder="E-Mail Adresse"
+            autoComplete="email"
+            inputMode="email"
+            autoCapitalize="none"
+            autoCorrect="off"
+            className="funnel-input"
+            value={email}
+            onChange={(e) => {
+              setEmail(e.target.value);
+              if (errors.email) setErrors((prev) => ({ ...prev, email: undefined }));
+            }}
+          />
+          {errors.email ? (
+            <p className="field-error">{errors.email}</p>
+          ) : null}
+
+          <input
             type="tel"
             placeholder="+49 151 23456789"
             autoComplete="tel"
@@ -640,7 +686,9 @@ function ZuKomplexScreen({
             value={telefon}
             onChange={(e) => {
               setTelefon(e.target.value);
-              if (errors.telefon) setErrors({});
+              if (errors.telefon) {
+                setErrors((prev) => ({ ...prev, telefon: undefined }));
+              }
             }}
           />
           {errors.telefon ? (
@@ -756,6 +804,8 @@ export function BwResultScreen({
   }
 
   const hasRange = state.priceMin > 0 && state.priceMax > 0;
+  const hasFixedPreis = Math.abs(state.priceMin - state.priceMax) < 0.01;
+  const fixedBetreuungZusatz = betreuungFestpreisZusatz(state);
 
   const sofortReparaturPrioritaet =
     state.zeitraum === "sofort" &&
@@ -794,16 +844,27 @@ export function BwResultScreen({
             sofortReparaturPrioritaet && "rounded-[18px] ring-2 ring-emerald-600/40"
           )}
         >
-          <p className="preis-karte-kicker">Dein Preisrahmen</p>
+          <p className="preis-karte-kicker">
+            {hasFixedPreis ? "Dein Preis" : "Dein Preisrahmen"}
+          </p>
           <div className="preis-karte-range">
             <span className="preis-karte-zahl">
               {formatCurrencyEUR(state.priceMin)}
             </span>
-            <span className="preis-karte-trenner">–</span>
-            <span className="preis-karte-zahl">
-              {formatCurrencyEUR(state.priceMax)}
-            </span>
+            {!hasFixedPreis ? (
+              <>
+                <span className="preis-karte-trenner">–</span>
+                <span className="preis-karte-zahl">
+                  {formatCurrencyEUR(state.priceMax)}
+                </span>
+              </>
+            ) : null}
           </div>
+          {hasFixedPreis && fixedBetreuungZusatz ? (
+            <p className="mt-2 text-sm text-text-secondary">
+              Festpreis als {fixedBetreuungZusatz}
+            </p>
+          ) : null}
           <ResultEinordnung state={state} />
           <BadErgebnisMerkmale state={state} />
 
