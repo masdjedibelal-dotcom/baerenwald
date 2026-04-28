@@ -129,6 +129,10 @@ const PROJEKTE: readonly BaerenwaldProjekt[] = [
   {
     id: 1,
     bild: "/images/projekt-notdienst-kein-warmwasser.jpg",
+    bilder: [
+      "/images/projekt-notdienst-kein-warmwasser.jpg",
+      "/images/projekt-notdienst-kein-warmwasser-2.jpg",
+    ],
     bildAlt:
       "Detailaufnahme einer Heizungsanlage beim Notdienst-Einsatz wegen Warmwasserausfall",
     gewerk: "Notdienst / Kein Warmwasser",
@@ -147,6 +151,7 @@ const PROJEKTE: readonly BaerenwaldProjekt[] = [
   {
     id: 2,
     bild: "/images/projekt-burgermeister-abriss.jpg",
+    bilder: ["/images/projekt-burgermeister-abriss.jpg"],
     bildAlt:
       "Baustellenfoto vom Burgermeister-Projekt in der Türkenstraße während Abriss und Rückbau",
     gewerk: "Abriss & Notdienst",
@@ -165,6 +170,10 @@ const PROJEKTE: readonly BaerenwaldProjekt[] = [
   {
     id: 3,
     bild: "/images/projekt-gefahrenabwehr-baum-notfall.jpg",
+    bilder: [
+      "/images/projekt-gefahrenabwehr-baum-notfall.jpg",
+      "/images/projekt-gefahrenabwehr-baum-notfall-2.jpg",
+    ],
     bildAlt:
       "Gebrochener Baumast im Innenhof einer Wohnanlage als akutes Sicherheitsrisiko",
     gewerk: "Gefahrenabwehr Baum / Notfall",
@@ -183,6 +192,10 @@ const PROJEKTE: readonly BaerenwaldProjekt[] = [
   {
     id: 4,
     bild: "/images/projekt-dachterrasse-sonderloesung.jpg",
+    bilder: [
+      "/images/projekt-dachterrasse-sonderloesung.jpg",
+      "/images/projekt-dachterrasse-sonderloesung-2.jpg",
+    ],
     bildAlt:
       "Baustelle Dachterrasse in München mit Sonderlösung für Naturstein im 5. Stock",
     gewerk: "Dachterrasse Sonderlösung",
@@ -201,6 +214,7 @@ const PROJEKTE: readonly BaerenwaldProjekt[] = [
   {
     id: 5,
     bild: "/images/projekt-schwimmbad-feuchtigkeit-villa.jpg",
+    bilder: ["/images/projekt-schwimmbad-feuchtigkeit-villa.jpg"],
     bildAlt:
       "Technikbereich einer Schwimmbadanlage in einer Villa in Grünwald während Feuchtigkeitsanalyse",
     gewerk: "Schwimmbad / Feuchtigkeitsanalyse",
@@ -219,6 +233,10 @@ const PROJEKTE: readonly BaerenwaldProjekt[] = [
   {
     id: 6,
     bild: "/images/projekt-gruenwald-schaedlingsbefall-premium.jpg",
+    bilder: [
+      "/images/projekt-gruenwald-schaedlingsbefall-premium.jpg",
+      "/images/projekt-gruenwald-schaedlingsbefall-premium-2.jpg",
+    ],
     bildAlt:
       "Beschädigte Außenanlage in Grünwald vor Neupflanzung nach Schädlingsbefall",
     gewerk: "Schädlingsbefall & Premium-Lösung",

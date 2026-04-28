@@ -20,6 +20,7 @@ export type BaerenwaldProjektTag =
 export type BaerenwaldProjekt = {
   id: number;
   bild: string;
+  bilder?: string[];
   bildAlt: string;
   gewerk: string;
   stadtteil: string;
@@ -44,20 +45,39 @@ const SCROLL_STEP = 376;
 
 function ProjektBild({
   bild,
+  bilder,
   bildAlt,
   placeholderGradient,
   placeholderEmoji,
 }: Pick<
   BaerenwaldProjekt,
   | "bild"
+  | "bilder"
   | "bildAlt"
   | "placeholderGradient"
   | "placeholderEmoji"
 >) {
+  const imageList = (bilder?.length ? bilder : [bild]).filter(Boolean);
+  const [activeImageIndex, setActiveImageIndex] = useState(0);
   const [loaded, setLoaded] = useState(false);
-  const [failed, setFailed] = useState(false);
+  const [failedByIndex, setFailedByIndex] = useState<Record<number, boolean>>({});
 
-  const showPlaceholder = !loaded || failed;
+  const currentSrc = imageList[activeImageIndex] ?? bild;
+  const currentFailed = failedByIndex[activeImageIndex] === true;
+  const hasMultipleImages = imageList.length > 1;
+
+  const showPlaceholder = !loaded || currentFailed;
+
+  useEffect(() => {
+    setLoaded(false);
+  }, [activeImageIndex, currentSrc]);
+
+  const goToImage = (nextIndex: number) => {
+    const count = imageList.length;
+    if (count <= 1) return;
+    const normalized = (nextIndex + count) % count;
+    setActiveImageIndex(normalized);
+  };
 
   return (
     <div
@@ -75,22 +95,65 @@ function ProjektBild({
           {placeholderEmoji}
         </span>
       </div>
-      {!failed ? (
+      {!currentFailed ? (
         <Image
-          src={bild}
-          alt={bildAlt}
+          src={currentSrc}
+          alt={
+            hasMultipleImages
+              ? `${bildAlt} (${activeImageIndex + 1}/${imageList.length})`
+              : bildAlt
+          }
           fill
           className={cn("projekt-bild", loaded && "projekt-bild--loaded")}
           sizes="(max-width: 680px) 85vw, 380px"
           onLoadingComplete={() => setLoaded(true)}
           onError={() => {
-            setFailed(true);
+            setFailedByIndex((prev) => ({ ...prev, [activeImageIndex]: true }));
             setLoaded(false);
           }}
         />
       ) : null}
-      {loaded && !failed ? (
+      {loaded && !currentFailed ? (
         <div className="projekt-bild-gradient" aria-hidden />
+      ) : null}
+      {hasMultipleImages ? (
+        <>
+          <button
+            type="button"
+            className="projekt-bild-nav projekt-bild-nav--left"
+            onClick={() => goToImage(activeImageIndex - 1)}
+            onMouseDown={(e) => e.stopPropagation()}
+            aria-label="Vorheriges Bild"
+          >
+            ‹
+          </button>
+          <button
+            type="button"
+            className="projekt-bild-nav projekt-bild-nav--right"
+            onClick={() => goToImage(activeImageIndex + 1)}
+            onMouseDown={(e) => e.stopPropagation()}
+            aria-label="Nächstes Bild"
+          >
+            ›
+          </button>
+          <div className="projekt-bild-dots" role="tablist" aria-label="Projektbilder">
+            {imageList.map((_, i) => (
+              <button
+                key={i}
+                type="button"
+                role="tab"
+                aria-selected={activeImageIndex === i}
+                className={cn(
+                  "projekt-bild-dot",
+                  activeImageIndex === i && "projekt-bild-dot--active"
+                )}
+                onClick={() => goToImage(i)}
+                onMouseDown={(e) => e.stopPropagation()}
+                aria-label={`Bild ${i + 1} anzeigen`}
+              />
+            ))}
+          </div>
+        </>
       ) : null}
     </div>
   );
@@ -240,6 +303,7 @@ export function ProjektGalerie({
               >
                 <ProjektBild
                   bild={projekt.bild}
+                  bilder={projekt.bilder}
                   bildAlt={projekt.bildAlt}
                   placeholderGradient={projekt.placeholderGradient}
                   placeholderEmoji={projekt.placeholderEmoji}
