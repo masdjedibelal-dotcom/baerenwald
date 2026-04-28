@@ -85,6 +85,10 @@ const KATEGORIEN: Kategorie[] = [
         emoji: "🪟",
         href: "/leistungen/fenster-tueren-muenchen",
         rechnerHref: "/rechner?situation=erneuern",
+        imageSrc: "/images/leistung-fenster-tueren.png",
+        imageAlt:
+          "Zwei Handwerker tauschen ein altes Fenster in einer Wohnung aus",
+        imageObjectPosition: "50% 42%",
       },
       {
         slug: "trockenbau",
@@ -93,6 +97,10 @@ const KATEGORIEN: Kategorie[] = [
         emoji: "🏗️",
         href: "/leistungen/trockenbau-muenchen",
         rechnerHref: "/rechner?situation=erneuern",
+        imageSrc: "/images/leistung-neue-waende-decken.png",
+        imageAlt:
+          "Trockenbauer stellt Metallständerwände und montiert Gipskartonplatten für neue Räume",
+        imageObjectPosition: "50% 44%",
       },
     ],
   },
@@ -108,6 +116,10 @@ const KATEGORIEN: Kategorie[] = [
         emoji: "🔧",
         href: "/leistungen/heizung-sanitaer-muenchen",
         rechnerHref: "/rechner?situation=erneuern",
+        imageSrc: "/images/leistung-heizung-wasser.png",
+        imageAlt:
+          "Heizungsmonteur wartet eine Anlage und verlötet Wasserleitungen",
+        imageObjectPosition: "50% 42%",
       },
       {
         slug: "elektroarbeiten",
@@ -116,6 +128,10 @@ const KATEGORIEN: Kategorie[] = [
         emoji: "⚡",
         href: "/leistungen/elektroarbeiten-muenchen",
         rechnerHref: "/rechner?situation=erneuern",
+        imageSrc: "/images/leistung-strom-elektrik.png",
+        imageAlt:
+          "Zertifizierter Elektriker arbeitet an Stromleitungen und montiert eine Deckenleuchte",
+        imageObjectPosition: "50% 38%",
       },
       {
         slug: "dacharbeiten",
@@ -139,6 +155,10 @@ const KATEGORIEN: Kategorie[] = [
         emoji: "🌿",
         href: "/leistungen/gartenpflege-muenchen",
         rechnerHref: "/rechner?situation=betreuung",
+        imageSrc: "/images/leistung-gartenpflege.png",
+        imageAlt:
+          "Gärtner mäht den Rasen und schneidet eine Hecke vor einem Wohnhaus",
+        imageObjectPosition: "50% 44%",
       },
       {
         slug: "gartengestaltung",
@@ -147,6 +167,10 @@ const KATEGORIEN: Kategorie[] = [
         emoji: "🌳",
         href: "/leistungen/gartengestaltung-muenchen",
         rechnerHref: "/rechner?leistung=gartengestaltung",
+        imageSrc: "/images/leistung-garten-neu-gestalten.png",
+        imageAlt:
+          "Handwerker gestalten einen Garten neu mit Steinplatten, Wegen und sauberem Unterbau",
+        imageObjectPosition: "50% 46%",
       },
     ],
   },
@@ -162,6 +186,10 @@ const KATEGORIEN: Kategorie[] = [
         emoji: "🏡",
         href: "/leistungen/hausmeisterservice-muenchen",
         rechnerHref: "/rechner?situation=betreuung",
+        imageSrc: "/images/leistung-hausmeisterservice.png",
+        imageAlt:
+          "Hausmeister kontrolliert Treppenhaus, schneidet Hecken und kümmert sich um die Außenanlage",
+        imageObjectPosition: "50% 44%",
       },
       {
         slug: "gebauedereinigung",
@@ -170,6 +198,10 @@ const KATEGORIEN: Kategorie[] = [
         emoji: "🧹",
         href: "/leistungen/hausmeisterservice-muenchen",
         rechnerHref: "/rechner?situation=betreuung",
+        imageSrc: "/images/leistung-gebaeudereinigung.png",
+        imageAlt:
+          "Reinigungskraft säubert Treppenhaus und Glasflächen im Eingangsbereich eines Wohngebäudes",
+        imageObjectPosition: "50% 44%",
       },
       {
         slug: "wartung",
@@ -178,6 +210,10 @@ const KATEGORIEN: Kategorie[] = [
         emoji: "🔩",
         href: "/leistungen/heizung-sanitaer-muenchen",
         rechnerHref: "/rechner?situation=betreuung",
+        imageSrc: "/images/leistung-wartung-pflege.png",
+        imageAlt:
+          "Techniker wartet Heizungs- und Lüftungsanlage und prüft die Komponenten im Keller",
+        imageObjectPosition: "50% 44%",
       },
       {
         slug: "winterdienst-service",
@@ -201,6 +237,10 @@ const KATEGORIEN: Kategorie[] = [
         emoji: "🔥",
         href: "/leistungen/heizung-sanitaer-muenchen",
         rechnerHref: "/rechner?situation=kaputt",
+        imageSrc: "/images/leistung-heizung-wasser.png",
+        imageAlt:
+          "Heizungsmonteur wartet eine Anlage und verlötet Wasserleitungen",
+        imageObjectPosition: "50% 42%",
       },
       {
         slug: "wasser-notfall",
@@ -209,6 +249,10 @@ const KATEGORIEN: Kategorie[] = [
         emoji: "💧",
         href: "/leistungen/heizung-sanitaer-muenchen",
         rechnerHref: "/rechner?situation=kaputt",
+        imageSrc: "/images/leistung-heizung-wasser.png",
+        imageAlt:
+          "Heizungsmonteur wartet eine Anlage und verlötet Wasserleitungen",
+        imageObjectPosition: "50% 42%",
       },
       {
         slug: "elektro-notfall",
@@ -217,6 +261,10 @@ const KATEGORIEN: Kategorie[] = [
         emoji: "⚡",
         href: "/leistungen/elektroarbeiten-muenchen",
         rechnerHref: "/rechner?situation=kaputt",
+        imageSrc: "/images/leistung-strom-weg.png",
+        imageAlt:
+          "Elektriker prüft bei Stromausfall den Sicherungskasten im dunklen Flur",
+        imageObjectPosition: "50% 42%",
       },
     ],
   },

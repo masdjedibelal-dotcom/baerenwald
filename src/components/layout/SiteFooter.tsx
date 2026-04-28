@@ -65,9 +65,6 @@ function BrandBlock() {
   return (
     <>
       <p className="font-sans text-[22px] font-extrabold text-white">Bärenwald</p>
-      <p className="font-display mt-2 max-w-[180px] text-[15px] italic leading-relaxed text-white/50">
-        Stark wie ein Bär. Verlässlich wie der Wald.
-      </p>
       <div className="mt-5 flex gap-2">
         <SocialPlaceholder href="#" label="Instagram">
           <svg className="size-4" viewBox="0 0 24 24" fill="currentColor" aria-hidden>

@@ -154,7 +154,7 @@ export function PageLayout({ children }: PageLayoutProps) {
         <div className="site-header-inner">
           <Link href="/" className="site-header-logo" onClick={closeAll}>
             <Image
-              src="/logo.png"
+              src="/logo-mark-green.png"
               alt="Bärenwald München"
               width={36}
               height={36}
@@ -294,7 +294,7 @@ export function PageLayout({ children }: PageLayoutProps) {
           <div className="site-mobile-menu-head">
             <Link href="/" className="site-header-logo" onClick={closeAll}>
               <Image
-                src="/logo.png"
+                src="/logo-mark-green.png"
                 alt="Bärenwald München"
                 width={36}
                 height={36}

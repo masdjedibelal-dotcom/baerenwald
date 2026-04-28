@@ -128,64 +128,111 @@ const HERO_CHIPS: { label: string; situation: FunnelSituation }[] = [
 const PROJEKTE: readonly BaerenwaldProjekt[] = [
   {
     id: 1,
-    bild: "/images/projekt-heizung-notfall.jpg",
-    bildAlt: "Heizungsanlage nach Notfalleinsatz in München",
-    gewerk: "Notfalleinsatz",
+    bild: "/images/projekt-notdienst-kein-warmwasser.jpg",
+    bildAlt:
+      "Detailaufnahme einer Heizungsanlage beim Notdienst-Einsatz wegen Warmwasserausfall",
+    gewerk: "Notdienst / Kein Warmwasser",
     stadtteil: "München",
-    jahr: "2024",
+    jahr: "2026",
     tag: "notfall",
-    problem: "Heizungsausfall im Winter — mehrere Wohnungen betroffen.",
+    problem:
+      "Kein Warmwasser im ganzen Haus: komplette Versorgung ausgefallen, hoher Zeitdruck und sofortige Reaktion erforderlich.",
     loesung:
-      "Team kurzfristig organisiert, Fehler gefunden, Anlage wieder in Betrieb gebracht.",
-    ergebnis: "Alle Wohnungen wieder warm — Problem vollständig gelöst.",
+      "Vor-Ort-Analyse sofort gestartet, Problem dokumentiert, Partnerbetrieb Mauro Heizung & Sanitär vorbereitet und Umsetzung koordiniert: Pumpe/Steuerung erneuert, System entlüftet und neu eingestellt.",
+    ergebnis:
+      "Warmwasserversorgung vollständig wiederhergestellt — Umsetzung in 2 Tagen mit minimaler Ausfallzeit und einem zentralen Ansprechpartner.",
     placeholderGradient: "linear-gradient(135deg, #1A3D2B, #2E7D52)",
     placeholderEmoji: "⚡",
   },
   {
     id: 2,
     bild: "/images/projekt-burgermeister-abriss.jpg",
-    bildAlt: "Abrissarbeiten Burgermeister Projekt München",
-    gewerk: "Abriss & Entsorgung",
-    stadtteil: "München",
+    bildAlt:
+      "Baustellenfoto vom Burgermeister-Projekt in der Türkenstraße während Abriss und Rückbau",
+    gewerk: "Abriss & Notdienst",
+    stadtteil: "Türkenstraße, München",
     jahr: "2024",
     tag: "gewerbe",
     problem:
-      "Kurzfristige Abrissarbeiten an Feiertagen — viele Firmen haben abgelehnt.",
+      "Kurz vor Weihnachten: keine Verfügbarkeit bei Betrieben, Entsorgung und Containerlogistik blockiert, Straßengenehmigung erst nach Neujahr.",
     loesung:
-      "Über unser Netzwerk kurzfristig Personal und Entsorgung organisiert.",
-    ergebnis: "Projekt fristgerecht abgeschlossen.",
+      "Notdiensteinsatz sofort gestartet, Partnernetzwerk aktiviert und Abriss, Entsorgung sowie Koordination komplett übernommen.",
+    ergebnis:
+      "Abriss vollständig umgesetzt, Entsorgung trotz Engpass organisiert und Folgegewerke konnten direkt ohne Verzögerung starten.",
     placeholderGradient: "linear-gradient(135deg, #2D2520, #5C4033)",
     placeholderEmoji: "🔨",
   },
   {
     id: 3,
-    bild: "/images/projekt-hausverwaltung.jpg",
+    bild: "/images/projekt-gefahrenabwehr-baum-notfall.jpg",
     bildAlt:
-      "Koordinierte Handwerksleistungen für Hausverwaltung München",
-    gewerk: "Hausverwaltung",
-    stadtteil: "München",
-    jahr: "2024",
-    tag: "verwaltung",
-    problem: "Sanitär, Elektro, Wartung — viele einzelne Firmen, viel Chaos.",
+      "Gebrochener Baumast im Innenhof einer Wohnanlage als akutes Sicherheitsrisiko",
+    gewerk: "Gefahrenabwehr Baum / Notfall",
+    stadtteil: "WEG Westendstr. 146 a+b, München",
+    jahr: "2026",
+    tag: "notfall",
+    problem:
+      "Großer Ast gebrochen, akute Gefahr für Bewohner und Passanten im Innenhof — sofortiger Handlungsbedarf.",
     loesung:
-      "Alle Gewerke über eine Struktur koordiniert — ein Ansprechpartner.",
-    ergebnis: "Saubere Abläufe, weniger Stress für die Verwaltung.",
+      "Eigene GaLaBau-Mannschaft in unter 2 Stunden disponiert, Vor-Ort-Gefährdungsanalyse durchgeführt und beschädigten Ast fachgerecht mit Sicherungstechnik zurückgeschnitten.",
+    ergebnis:
+      "Gefahrenquelle am selben Tag beseitigt, Sicherheit sofort wiederhergestellt und Schnittgut vollständig entsorgt inkl. Einsatzdokumentation und Rechnung am Einsatztag.",
     placeholderGradient: "linear-gradient(135deg, #1A2D3D, #2E5C7D)",
-    placeholderEmoji: "🏢",
+    placeholderEmoji: "🌳",
   },
   {
     id: 4,
-    bild: "/images/projekt-garten-privat.jpg",
-    bildAlt: "Fertig gestaltete Außenanlage München",
-    gewerk: "Gartengestaltung",
-    stadtteil: "München",
+    bild: "/images/projekt-dachterrasse-sonderloesung.jpg",
+    bildAlt:
+      "Baustelle Dachterrasse in München mit Sonderlösung für Naturstein im 5. Stock",
+    gewerk: "Dachterrasse Sonderlösung",
+    stadtteil: "Sommerstraße 47, München",
     jahr: "2024",
     tag: "privat",
-    problem: "Außenanlage komplett neu gestalten.",
-    loesung: "Planung, Material und Umsetzung komplett koordiniert.",
-    ergebnis: "Fertige Anlage aus einer Hand.",
+    problem:
+      "Naturstein bereits gekauft (ca. 25.000 €), aber Standardverlegung auf Terrasse/Stellplatz technisch und wirtschaftlich nicht umsetzbar.",
+    loesung:
+      "Mit Partner Chiemsee Estrich Sonderlösung umgesetzt: Material per Estrichpumpe in den 5. Stock, tragfähigen Unterbau hergestellt und Naturstein direkt verlegt.",
+    ergebnis:
+      "Naturstein vollständig genutzt, massive Zusatzkosten vermieden und Projekt in enger Innenstadtlage technisch sicher abgeschlossen.",
     placeholderGradient: "linear-gradient(135deg, #1A3D2B, #4A7D2E)",
     placeholderEmoji: "🌿",
+  },
+  {
+    id: 5,
+    bild: "/images/projekt-schwimmbad-feuchtigkeit-villa.jpg",
+    bildAlt:
+      "Technikbereich einer Schwimmbadanlage in einer Villa in Grünwald während Feuchtigkeitsanalyse",
+    gewerk: "Schwimmbad / Feuchtigkeitsanalyse",
+    stadtteil: "Privatvilla, Grünwald",
+    jahr: "2026",
+    tag: "privat",
+    problem:
+      "Hallenbad seit Jahren mit hoher Feuchtigkeit, mehrere Fachfirmen ohne nachhaltige Lösung — Problem bestand über 4 Jahre.",
+    loesung:
+      "Vor-Ort-Analyse von Lüftung und Luftströmen inkl. Fotodokumentation, wöchentlicher Auswertung und strukturierter Übergabe an spezialisierten Fachbetrieb mit zentraler Koordination.",
+    ergebnis:
+      "Ursache klar identifiziert, Lüftung technisch angepasst und feinjustiert — Feuchtigkeitsentwicklung gestoppt und Anlage wieder stabil in Betrieb.",
+    placeholderGradient: "linear-gradient(135deg, #1A2D3D, #2E5C7D)",
+    placeholderEmoji: "💧",
+  },
+  {
+    id: 6,
+    bild: "/images/projekt-gruenwald-schaedlingsbefall-premium.jpg",
+    bildAlt:
+      "Beschädigte Außenanlage in Grünwald vor Neupflanzung nach Schädlingsbefall",
+    gewerk: "Schädlingsbefall & Premium-Lösung",
+    stadtteil: "Villa, Grünwald",
+    jahr: "2026",
+    tag: "privat",
+    problem:
+      "Buchshecke massiv durch Schädlinge beschädigt, keine funktionierende Bewässerung und akuter Handlungsbedarf in hochwertiger Außenanlage.",
+    loesung:
+      "Kompletter Neuaufbau statt Reparatur: Partner Blumenhof Ensinger für Pflanzen/Fachberatung eingebunden, Bärenwald-Team übernahm Rückbau, Bodenvorbereitung, Neupflanzung und Erstpflege.",
+    ergebnis:
+      "Außenanlage hochwertig und nachhaltig wiederhergestellt — pflegeleichte Lösung mit sauberer Linienführung, umgesetzt aus einer Hand.",
+    placeholderGradient: "linear-gradient(135deg, #1A3D2B, #4A7D2E)",
+    placeholderEmoji: "🌱",
   },
 ];
 
@@ -364,7 +411,7 @@ export default function BaerenwaldLandingClient({
       <header className="landing-nav">
         <Link href="/" className="logo">
           <Image
-            src="/logo-white.png"
+            src="/logo-mark-white.png"
             alt="Bärenwald München Logo"
             width={36}
             height={36}
@@ -429,7 +476,7 @@ export default function BaerenwaldLandingClient({
                         });
                       }}
                       onKeyDown={onSearchKeyDown}
-                      placeholder="Was möchtest du kalkulieren? (z. B. Bad, Heizung, Dach)"
+                      placeholder="Preis berechnen – z. B. Bad, Boden, Heizung"
                       aria-label="Was suchst du?"
                       aria-autocomplete="list"
                       aria-controls="hero-search-listbox"
@@ -484,17 +531,19 @@ export default function BaerenwaldLandingClient({
                   ) : null}
                 </div>
               </form>
-              <div className="hero-chips fade-up d2">
-                {HERO_CHIPS.map((c) => (
-                  <Link
-                    key={c.label}
-                    className="hero-chip-link"
-                    href={`/rechner?situation=${c.situation}`}
-                  >
-                    {c.label}
-                  </Link>
-                ))}
-              </div>
+              {!showSearchSuggestions ? (
+                <div className="hero-chips fade-up d2">
+                  {HERO_CHIPS.map((c) => (
+                    <Link
+                      key={c.label}
+                      className="hero-chip-link"
+                      href={`/rechner?situation=${c.situation}`}
+                    >
+                      {c.label}
+                    </Link>
+                  ))}
+                </div>
+              ) : null}
             </div>
             <div className="hero-visual fade-up d2">
               <div className="hero-float-wrap">

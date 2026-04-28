@@ -7,7 +7,7 @@ import { SITE_CONFIG } from "@/lib/config";
 export const metadata: Metadata = {
   title: "Kontakt — Bärenwald München",
   description:
-    "Telefon, E-Mail und Preisrechner — Bärenwald München, Handwerker aus einer Hand.",
+    "Einfach anfragen: Anrufen, E-Mail schreiben oder Preisrechner nutzen — wir melden uns innerhalb von 24 Stunden.",
 };
 
 export default function KontaktPage() {
@@ -23,10 +23,13 @@ export default function KontaktPage() {
               </span>
               <span className="breadcrumb-current">Kontakt</span>
             </nav>
-            <h1 className="page-hero-h1">Kontakt</h1>
+            <h1 className="page-hero-h1">Einfach anfragen.</h1>
             <p className="page-hero-sub">
-              Wir melden uns schnell — oder du startest direkt den
-              unverbindlichen Preisrahmen.
+              Ihr beschreibt was ihr braucht —
+              <br />
+              wir melden uns innerhalb
+              <br />
+              von 24 Stunden.
             </p>
           </div>
         </div>
@@ -34,23 +37,89 @@ export default function KontaktPage() {
         <section className="article-section article-section--lg content-section--white">
           <div className="article-section-inner">
             <div className="article-body legal-body">
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+                <div className="rounded-xl border border-border-default bg-surface-muted px-4 py-4">
+                  <p className="font-semibold text-text-primary">📞 Anrufen</p>
+                  <p className="mt-2 text-sm text-text-secondary">
+                    {SITE_CONFIG.phone}
+                    <br />
+                    Mo–Fr 8–18 Uhr
+                    <br />
+                    Bei Notfall auch
+                    <br />
+                    außerhalb der
+                    <br />
+                    Geschäftszeiten.
+                  </p>
+                  <p className="mt-3">
+                    <a href={SITE_CONFIG.phoneHref}>Jetzt anrufen →</a>
+                  </p>
+                </div>
+
+                <div className="rounded-xl border border-border-default bg-surface-muted px-4 py-4">
+                  <p className="font-semibold text-text-primary">✉️ E-Mail schreiben</p>
+                  <p className="mt-2 text-sm text-text-secondary">
+                    {SITE_CONFIG.email}
+                    <br />
+                    Antwort innerhalb von
+                    <br />
+                    24–48 Stunden.
+                  </p>
+                  <p className="mt-3">
+                    <a href={`mailto:${SITE_CONFIG.email}`}>E-Mail schreiben →</a>
+                  </p>
+                </div>
+
+                <div className="rounded-xl border border-border-default bg-surface-muted px-4 py-4">
+                  <p className="font-semibold text-text-primary">🧮 Preisrechner nutzen</p>
+                  <p className="mt-2 text-sm text-text-secondary">
+                    Sofort Preisrahmen online —
+                    <br />
+                    dauert 2 Minuten.
+                    <br />
+                    Kein Anruf nötig.
+                  </p>
+                  <p className="mt-3">
+                    <Link href="/rechner">Zum Preisrechner →</Link>
+                  </p>
+                </div>
+              </div>
+
+              <h2 className="mt-8">Wo wir tätig sind</h2>
               <p>
-                <strong>Telefon</strong>
+                München &amp; Umgebung —
                 <br />
-                <a href={SITE_CONFIG.phoneHref}>{SITE_CONFIG.phone}</a>
-              </p>
-              <p>
-                <strong>E-Mail</strong>
+                alle Stadtteile,
                 <br />
-                <a href={`mailto:${SITE_CONFIG.email}`}>{SITE_CONFIG.email}</a>
+                Umkreis ca. 30 km.
               </p>
-              <p>
-                <strong>Einsatzgebiet</strong>
-                <br />
-                {SITE_CONFIG.region}
-              </p>
-              <p className="mt-8">
-                <Link href="/rechner" className="btn-pill-primary inline-flex py-2.5 px-5 text-[13px]">
+
+              <div className="mt-6 grid grid-cols-1 gap-3 md:grid-cols-3">
+                <div className="rounded-xl border border-border-default bg-surface-card px-4 py-3 text-sm text-text-secondary">
+                  ✓ Geprüfte Meisterbetriebe
+                  <br />
+                  in München
+                </div>
+                <div className="rounded-xl border border-border-default bg-surface-card px-4 py-3 text-sm text-text-secondary">
+                  ✓ Preisrahmen sofort online —
+                  <br />
+                  transparent von Anfang an
+                </div>
+                <div className="rounded-xl border border-border-default bg-surface-card px-4 py-3 text-sm text-text-secondary">
+                  ✓ Ein Ansprechpartner für alles —
+                  <br />
+                  Einzelleistung oder Projekt
+                </div>
+              </div>
+
+              <p className="mt-8 flex flex-wrap gap-3">
+                <a href={SITE_CONFIG.phoneHref} className="btn-pill-primary inline-flex py-2.5 px-5 text-[13px]">
+                  Jetzt anrufen →
+                </a>
+                <Link
+                  href="/rechner"
+                  className="inline-flex items-center rounded-full border border-border-default px-5 py-2.5 text-[13px] font-semibold text-text-primary hover:bg-muted"
+                >
                   Zum Preisrechner →
                 </Link>
               </p>

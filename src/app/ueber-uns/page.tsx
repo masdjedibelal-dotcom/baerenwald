@@ -6,7 +6,7 @@ import { PageLayout } from "@/components/layout/PageLayout";
 export const metadata: Metadata = {
   title: "Über uns — Bärenwald München",
   description:
-    "Bärenwald München — ein Ansprechpartner für Maler, Elektro, Bad, Garten und mehr. Koordination statt Einzelkämpfen.",
+    "Handwerk in München — einfach, transparent, digital. Eine Anfrage, ein Ansprechpartner.",
 };
 
 export default function UeberUnsPage() {
@@ -22,9 +22,16 @@ export default function UeberUnsPage() {
               </span>
               <span className="breadcrumb-current">Über uns</span>
             </nav>
-            <h1 className="page-hero-h1">Über uns</h1>
+            <h1 className="page-hero-h1">
+              Handwerk in München —<br />
+              einfach, transparent, digital.
+            </h1>
             <p className="page-hero-sub">
-              Stark wie ein Bär. Verlässlich wie der Wald.
+              Eine Anfrage. Ein Ansprechpartner.
+              <br />
+              Egal ob eine Leistung oder
+              <br />
+              ein komplettes Projekt.
             </p>
           </div>
         </div>
@@ -32,25 +39,86 @@ export default function UeberUnsPage() {
         <section className="article-section article-section--lg content-section--white">
           <div className="article-section-inner">
             <div className="article-body legal-body">
+              <h2>Aus München. Für München.</h2>
               <p>
-                <strong>Bärenwald München</strong> bündelt Handwerksleistungen
-                in München und der Umgebung: Du hast einen Ansprechpartner, wir
-                koordinieren die passenden Gewerke — von der ersten Idee bis
-                zur Ausführung.
+                Wir haben Bärenwald 2020 gegründet — aus eigener Erfahrung. Als
+                Münchner wissen wir wie es sich anfühlt wenn Handwerker nicht
+                erscheinen, Preise unklar bleiben und niemand den Überblick
+                behält.
               </p>
               <p>
-                Transparente Preisrahmen helfen dir bei der Planung; verbindliche
-                Festpreise besprechen wir nach dem Vor-Ort-Termin mit dir.
+                Seitdem haben wir in München und Umgebung Schritt für Schritt
+                mehr Projekte übernommen — vom einzelnen Malerauftrag bis zur
+                kompletten Renovierung. Jedes Projekt sauber abgeschlossen.
+                Jeder Kunde mit einem Ansprechpartner.
               </p>
+
+              <h2>Eine Anfrage. Alles geregelt.</h2>
+              <p>
+                Ob ihr nur streichen lassen wollt oder Bad, Boden und Elektrik
+                auf einmal — wir koordinieren alle Gewerke und halten euch
+                digital auf dem Stand.
+              </p>
+              <p>
+                Kein Suchen nach einzelnen Betrieben. Kein Koordinieren wer wann
+                kommt. Kein Rätseln was es kostet.
+              </p>
+              <p>
+                Ihr seht den Preisrahmen sofort — noch bevor ihr anruft. Nach
+                dem Vor-Ort-Termin ein verbindliches Angebot. Am Ende ein
+                digitales Protokoll.
+              </p>
+
+              <h2>Was wir machen</h2>
+              <div className="grid grid-cols-1 gap-x-8 gap-y-2 sm:grid-cols-2">
+                <a href="/leistungen/malerarbeiten-muenchen">Streichen &amp; Tapezieren</a>
+                <a href="/leistungen/badezimmer-sanierung-muenchen">Neues Bad</a>
+                <a href="/leistungen/bodenbelag-muenchen">Neuer Boden</a>
+                <a href="/leistungen/fenster-tueren-muenchen">Fenster &amp; Türen</a>
+                <a href="/leistungen/trockenbau-muenchen">Neue Wände &amp; Decken</a>
+                <a href="/leistungen/heizung-sanitaer-muenchen">Heizung &amp; Wasser</a>
+                <a href="/leistungen/elektroarbeiten-muenchen">Strom &amp; Licht</a>
+                <a href="/leistungen/dacharbeiten-muenchen">Dach &amp; Regenrinnen</a>
+                <a href="/leistungen/gartenpflege-muenchen">Gartenpflege &amp; Gestaltung</a>
+                <a href="/leistungen/hausmeisterservice-muenchen">Hausmeisterservice</a>
+                <a href="/leistungen/gebaeudereinigung-muenchen">Gebäudereinigung</a>
+                <a href="/leistungen/winterdienst-muenchen">Winterdienst</a>
+                <a href="/rechner?situation=kaputt">Notfalleinsätze</a>
+              </div>
+
+              <h2>Drei Werte</h2>
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+                <div className="rounded-xl border border-border-default bg-surface-muted px-4 py-3">
+                  <p className="font-semibold text-text-primary">🔍 Transparent</p>
+                  <p className="mt-1 text-sm text-text-secondary">
+                    Preisrahmen online sichtbar — kein Anruf nötig um zu wissen
+                    was es ungefähr kostet.
+                  </p>
+                </div>
+                <div className="rounded-xl border border-border-default bg-surface-muted px-4 py-3">
+                  <p className="font-semibold text-text-primary">📱 Digital</p>
+                  <p className="mt-1 text-sm text-text-secondary">
+                    Status-Updates während des Projekts. Digitales
+                    Abnahmeprotokoll am Ende.
+                  </p>
+                </div>
+                <div className="rounded-xl border border-border-default bg-surface-muted px-4 py-3">
+                  <p className="font-semibold text-text-primary">🤝 Einfach</p>
+                  <p className="mt-1 text-sm text-text-secondary">
+                    Eine Anfrage — wir kümmern uns um den Rest. Einzelleistung
+                    oder komplettes Projekt.
+                  </p>
+                </div>
+              </div>
               <p className="mt-8 flex flex-wrap gap-3">
-                <Link href="/rechner" className="btn-pill-primary inline-flex py-2.5 px-5 text-[13px]">
-                  Preisrechner →
+                <Link href="/kontakt" className="btn-pill-primary inline-flex py-2.5 px-5 text-[13px]">
+                  Angebot anfordern →
                 </Link>
                 <Link
-                  href="/kontakt"
+                  href="/leistungen"
                   className="inline-flex items-center rounded-full border border-border-default px-5 py-2.5 text-[13px] font-semibold text-text-primary hover:bg-muted"
                 >
-                  Kontakt
+                  Alle Leistungen
                 </Link>
               </p>
             </div>

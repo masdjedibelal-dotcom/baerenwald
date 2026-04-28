@@ -5658,8 +5658,18 @@
   text-underline-offset: 2px;
 }
 
+/* CTA-Buttons in Kontakt/Über-uns nicht wie normale Textlinks einfärben */
+.legal-body a.btn-pill-primary {
+  color: #fff;
+  text-decoration: none;
+}
+
 .legal-body a:hover {
   opacity: 0.8;
+}
+
+.legal-body a.btn-pill-primary:hover {
+  opacity: 1;
 }
 
 .legal-body ul {

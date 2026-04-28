@@ -19,7 +19,7 @@ export function MarketingFooter() {
             <p className="site-footer-col-title">Marke</p>
             <div className="site-footer-logo-wrap">
               <Image
-                src="/logo-white.png"
+                src="/logo-mark-white.png"
                 alt="Bärenwald München"
                 width={40}
                 height={40}
@@ -27,9 +27,6 @@ export function MarketingFooter() {
               />
               <p className="site-footer-brand-name">Bärenwald</p>
             </div>
-            <p className="site-footer-brand-tag">
-              Stark wie ein Bär. Verlässlich wie der Wald.
-            </p>
             <p className="site-footer-subtitle">Schnellzugriff</p>
             <ul className="site-footer-links">
               <li>

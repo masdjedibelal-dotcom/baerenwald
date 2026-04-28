@@ -90,7 +90,7 @@ export function FunnelHeader({
 
         <div className="flex min-w-0 flex-col items-center justify-center gap-0.5 text-center">
           <Image
-            src="/logo.png"
+            src="/logo-mark-green.png"
             alt="Bärenwald"
             width={40}
             height={40}
