@@ -37,53 +37,37 @@ export default function KontaktPage() {
         <section className="article-section article-section--lg content-section--white">
           <div className="article-section-inner">
             <div className="article-body legal-body">
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-                <div className="rounded-xl border border-border-default bg-surface-muted px-4 py-4">
-                  <p className="font-semibold text-text-primary">📞 Anrufen</p>
-                  <p className="mt-2 text-sm text-text-secondary">
-                    {SITE_CONFIG.phone}
-                    <br />
-                    Mo–Fr 8–18 Uhr
-                    <br />
-                    Bei Notfall auch
-                    <br />
-                    außerhalb der
-                    <br />
-                    Geschäftszeiten.
-                  </p>
-                  <p className="mt-3">
-                    <a href={SITE_CONFIG.phoneHref}>Jetzt anrufen →</a>
-                  </p>
-                </div>
+              <p>
+                <strong>📞 Anrufen</strong>
+                <br />
+                {SITE_CONFIG.phone}
+                <br />
+                Mo–Fr 8–18 Uhr
+                <br />
+                Bei Notfall auch außerhalb der Geschäftszeiten.
+                <br />
+                <a href={SITE_CONFIG.phoneHref}>Jetzt anrufen →</a>
+              </p>
 
-                <div className="rounded-xl border border-border-default bg-surface-muted px-4 py-4">
-                  <p className="font-semibold text-text-primary">✉️ E-Mail schreiben</p>
-                  <p className="mt-2 text-sm text-text-secondary">
-                    {SITE_CONFIG.email}
-                    <br />
-                    Antwort innerhalb von
-                    <br />
-                    24–48 Stunden.
-                  </p>
-                  <p className="mt-3">
-                    <a href={`mailto:${SITE_CONFIG.email}`}>E-Mail schreiben →</a>
-                  </p>
-                </div>
+              <p>
+                <strong>✉️ E-Mail schreiben</strong>
+                <br />
+                {SITE_CONFIG.email}
+                <br />
+                Antwort innerhalb von 24–48 Stunden.
+                <br />
+                <a href={`mailto:${SITE_CONFIG.email}`}>E-Mail schreiben →</a>
+              </p>
 
-                <div className="rounded-xl border border-border-default bg-surface-muted px-4 py-4">
-                  <p className="font-semibold text-text-primary">🧮 Preisrechner nutzen</p>
-                  <p className="mt-2 text-sm text-text-secondary">
-                    Sofort Preisrahmen online —
-                    <br />
-                    dauert 2 Minuten.
-                    <br />
-                    Kein Anruf nötig.
-                  </p>
-                  <p className="mt-3">
-                    <Link href="/rechner">Zum Preisrechner →</Link>
-                  </p>
-                </div>
-              </div>
+              <p>
+                <strong>🧮 Preisrechner nutzen</strong>
+                <br />
+                Sofort Preisrahmen online — dauert 2 Minuten.
+                <br />
+                Kein Anruf nötig.
+                <br />
+                <Link href="/rechner">Zum Preisrechner →</Link>
+              </p>
 
               <h2 className="mt-8">Wo wir tätig sind</h2>
               <p>
@@ -94,23 +78,13 @@ export default function KontaktPage() {
                 Umkreis ca. 30 km.
               </p>
 
-              <div className="mt-6 grid grid-cols-1 gap-3 md:grid-cols-3">
-                <div className="rounded-xl border border-border-default bg-surface-card px-4 py-3 text-sm text-text-secondary">
-                  ✓ Geprüfte Meisterbetriebe
-                  <br />
-                  in München
-                </div>
-                <div className="rounded-xl border border-border-default bg-surface-card px-4 py-3 text-sm text-text-secondary">
-                  ✓ Preisrahmen sofort online —
-                  <br />
-                  transparent von Anfang an
-                </div>
-                <div className="rounded-xl border border-border-default bg-surface-card px-4 py-3 text-sm text-text-secondary">
-                  ✓ Ein Ansprechpartner für alles —
-                  <br />
-                  Einzelleistung oder Projekt
-                </div>
-              </div>
+              <p>
+                ✓ Geprüfte Meisterbetriebe in München
+                <br />
+                ✓ Preisrahmen sofort online — transparent von Anfang an
+                <br />
+                ✓ Ein Ansprechpartner für alles — Einzelleistung oder Projekt
+              </p>
 
               <p className="mt-8 flex flex-wrap gap-3">
                 <a href={SITE_CONFIG.phoneHref} className="btn-pill-primary inline-flex py-2.5 px-5 text-[13px]">

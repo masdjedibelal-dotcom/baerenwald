@@ -82,9 +82,9 @@ export const metadata: Metadata = {
   },
 
   icons: {
-    icon: "/favicon-dreieck.png",
-    shortcut: "/favicon-dreieck.png",
-    apple: "/favicon-dreieck.png",
+    icon: "/favicon.png?v=20260428",
+    shortcut: "/favicon.png?v=20260428",
+    apple: "/favicon.png?v=20260428",
   },
 
   alternates: {

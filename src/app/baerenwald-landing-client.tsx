@@ -411,7 +411,7 @@ export default function BaerenwaldLandingClient({
       <header className="landing-nav">
         <Link href="/" className="logo">
           <Image
-            src="/logo-mark-white.png"
+            src="/logo-mark-green.png"
             alt="Bärenwald München Logo"
             width={36}
             height={36}

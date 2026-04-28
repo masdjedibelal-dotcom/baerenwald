@@ -86,30 +86,6 @@ export default function UeberUnsPage() {
                 <a href="/rechner?situation=kaputt">Notfalleinsätze</a>
               </div>
 
-              <h2>Drei Werte</h2>
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-                <div className="rounded-xl border border-border-default bg-surface-muted px-4 py-3">
-                  <p className="font-semibold text-text-primary">🔍 Transparent</p>
-                  <p className="mt-1 text-sm text-text-secondary">
-                    Preisrahmen online sichtbar — kein Anruf nötig um zu wissen
-                    was es ungefähr kostet.
-                  </p>
-                </div>
-                <div className="rounded-xl border border-border-default bg-surface-muted px-4 py-3">
-                  <p className="font-semibold text-text-primary">📱 Digital</p>
-                  <p className="mt-1 text-sm text-text-secondary">
-                    Status-Updates während des Projekts. Digitales
-                    Abnahmeprotokoll am Ende.
-                  </p>
-                </div>
-                <div className="rounded-xl border border-border-default bg-surface-muted px-4 py-3">
-                  <p className="font-semibold text-text-primary">🤝 Einfach</p>
-                  <p className="mt-1 text-sm text-text-secondary">
-                    Eine Anfrage — wir kümmern uns um den Rest. Einzelleistung
-                    oder komplettes Projekt.
-                  </p>
-                </div>
-              </div>
               <p className="mt-8 flex flex-wrap gap-3">
                 <Link href="/kontakt" className="btn-pill-primary inline-flex py-2.5 px-5 text-[13px]">
                   Angebot anfordern →
