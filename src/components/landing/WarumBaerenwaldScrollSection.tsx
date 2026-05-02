@@ -128,6 +128,54 @@ export function WarumBaerenwaldScrollSection() {
   const x3 = useTransform(scrollYProgress, [0.5, 0.75], [200, 0]);
   const opacity3 = useTransform(scrollYProgress, [0.5, 0.75], [0, 1]);
 
+  const headline = (
+    <>
+      <h2 id="warum-heading" className="warum-h2">
+        Warum Bärenwald?
+      </h2>
+      <p className="warum-sub">
+        Wir glauben dass Handwerk
+        <br />
+        anders geht.
+      </p>
+    </>
+  );
+
+  const cardsDesktop = (
+    <>
+      <WarumDesktopCard
+        x={x1}
+        opacity={opacity1}
+        block={WARUM_EINSATZ_BLOCKS[0]!}
+        index={0}
+      />
+      <WarumDesktopCard
+        x={x2}
+        opacity={opacity2}
+        block={WARUM_EINSATZ_BLOCKS[1]!}
+        index={1}
+      />
+      <WarumDesktopCard
+        x={x3}
+        opacity={opacity3}
+        block={WARUM_EINSATZ_BLOCKS[2]!}
+        index={2}
+      />
+    </>
+  );
+
+  const cardsMobile = WARUM_EINSATZ_BLOCKS.map((b, i) => (
+    <div key={b.titel} className="warum-card-slot warum-card-slot--mobile">
+      <WarumMobileCard delay={i * 0.08}>
+        <span className="warum-card-icon" aria-hidden>
+          <WarumEinsatzIcon index={i} />
+        </span>
+        <h3>{b.titel}</h3>
+        <p>{b.text}</p>
+      </WarumMobileCard>
+    </div>
+  ));
+
   return (
     <section
       ref={sectionRef}
@@ -135,58 +183,19 @@ export function WarumBaerenwaldScrollSection() {
       style={narrow ? undefined : { minHeight: "400vh" }}
       aria-labelledby="warum-heading"
     >
-      <div
-        className="warum-inner"
-        style={narrow ? undefined : { minHeight: "400vh" }}
-      >
-        <div className="warum-sticky">
-          <h2 id="warum-heading" className="warum-h2">
-            Warum Bärenwald?
-          </h2>
-          <p className="warum-sub">
-            Wir glauben dass Handwerk
-            <br />
-            anders geht.
-          </p>
+      {narrow ? (
+        <div className="warum-inner">
+          <div className="warum-sticky">{headline}</div>
+          <div className="warum-cards">{cardsMobile}</div>
         </div>
-
-        <div className="warum-cards">
-          {narrow ? (
-            WARUM_EINSATZ_BLOCKS.map((b, i) => (
-              <div key={b.titel} className="warum-card-slot warum-card-slot--mobile">
-                <WarumMobileCard delay={i * 0.08}>
-                  <span className="warum-card-icon" aria-hidden>
-                    <WarumEinsatzIcon index={i} />
-                  </span>
-                  <h3>{b.titel}</h3>
-                  <p>{b.text}</p>
-                </WarumMobileCard>
-              </div>
-            ))
-          ) : (
-            <>
-              <WarumDesktopCard
-                x={x1}
-                opacity={opacity1}
-                block={WARUM_EINSATZ_BLOCKS[0]!}
-                index={0}
-              />
-              <WarumDesktopCard
-                x={x2}
-                opacity={opacity2}
-                block={WARUM_EINSATZ_BLOCKS[1]!}
-                index={1}
-              />
-              <WarumDesktopCard
-                x={x3}
-                opacity={opacity3}
-                block={WARUM_EINSATZ_BLOCKS[2]!}
-                index={2}
-              />
-            </>
-          )}
+      ) : (
+        <div className="warum-pin-stage">
+          <div className="warum-inner warum-inner--pinned">
+            <div className="warum-sticky">{headline}</div>
+            <div className="warum-cards">{cardsDesktop}</div>
+          </div>
         </div>
-      </div>
+      )}
     </section>
   );
 }

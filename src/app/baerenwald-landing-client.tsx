@@ -426,7 +426,7 @@ export default function BaerenwaldLandingClient({
                         });
                       }}
                       onKeyDown={onSearchKeyDown}
-                      placeholder="Preis berechnen – z. B. Bad, Boden, Heizung"
+                      placeholder="Leistung finden – z. B. Bad, Boden, Heizung"
                       aria-label="Was suchst du?"
                       aria-autocomplete="list"
                       aria-controls="hero-search-listbox"
@@ -522,15 +522,11 @@ export default function BaerenwaldLandingClient({
 
       <HowTimelineMotion />
 
-      <SectionDivider variant="baum" from="#2E7D52" to="#f7f6f3" flip />
-
       {leistungenSection}
 
       <SectionDivider variant="hugel" from="#f7f6f3" to="#1A3D2B" />
 
       <WarumBaerenwaldScrollSection />
-
-      <SectionDivider variant="hugel" from="#1A3D2B" to="#f7f6f3" flip />
 
       <section
         className="vision-section fade-up"
@@ -605,8 +601,6 @@ export default function BaerenwaldLandingClient({
           </div>
         </div>
       </section>
-
-      <SectionDivider variant="baum" from="#2E7D52" to="#f7f6f3" flip />
 
       <section className="faq-section" id="faq">
         <div className="faq-inner">
