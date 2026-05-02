@@ -262,6 +262,25 @@ function EinsatzIcon({ index }: { index: number }) {
   );
 }
 
+/** Wellen-Trenner nur zwischen zwei aufeinanderfolgenden hellen Sektionen (#f7f6f3). */
+function SectionDividerWave() {
+  return (
+    <div className="section-divider" aria-hidden="true">
+      <svg
+        viewBox="0 0 1440 32"
+        xmlns="http://www.w3.org/2000/svg"
+        preserveAspectRatio="none"
+      >
+        <path
+          d="M0,16 C360,32 1080,0 1440,16 L1440,32 L0,32 Z"
+          fill="#e8e6e0"
+          opacity="0.5"
+        />
+      </svg>
+    </div>
+  );
+}
+
 export default function BaerenwaldLandingClient({
   leistungenSection,
 }: {
@@ -618,6 +637,8 @@ export default function BaerenwaldLandingClient({
         </div>
       </section>
 
+      <SectionDividerWave />
+
       <section className="testimonials-section">
         <div className="inner testimonials-band">
           <h2 className="checks-section-headline fade-up">Kundenstimmen</h2>
@@ -631,15 +652,14 @@ export default function BaerenwaldLandingClient({
         </div>
       </section>
 
+      <SectionDividerWave />
+
       <ProjektGalerie projekte={PROJEKTE} />
 
       <section
         className="final-cta-section landing-final-cta"
         aria-labelledby="landing-final-cta-h2"
       >
-        <div className="final-cta-bg" aria-hidden>
-          BW
-        </div>
         <div className="final-cta-inner">
           <h2 id="landing-final-cta-h2" className="final-cta-h2">
             Bereit für dein Projekt?

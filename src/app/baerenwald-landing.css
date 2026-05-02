@@ -552,9 +552,11 @@
 .hero-section {
   position: relative;
   z-index: 2;
+  box-sizing: border-box;
+  overflow-x: hidden;
   /* Gleicher Abstand links und rechts, Block zentriert via margin + max-width */
   padding: 128px 2rem 72px;
-  max-width: 1100px;
+  max-width: min(1100px, 100%);
   margin: 0 auto;
 }
 
@@ -562,12 +564,9 @@
   .hero-section {
     padding-top: 108px;
     padding-bottom: 56px;
-    /* Symmetrisch: gleicher Abstand links und rechts, zentriert */
-    padding-inline: max(
-      1.5rem,
-      env(safe-area-inset-left, 0px),
-      env(safe-area-inset-right, 0px)
-    );
+    padding-left: max(20px, env(safe-area-inset-left, 0px));
+    padding-right: max(20px, env(safe-area-inset-right, 0px));
+    max-width: 100%;
   }
 }
 
@@ -610,9 +609,23 @@
 .hero-h1-split {
   font-size: clamp(36px, 5vw, 56px);
   font-weight: 800;
-  line-height: 1.08;
+  line-height: 1.05;
   letter-spacing: -0.03em;
   margin: 0 0 24px;
+}
+
+@media (max-width: 768px) {
+  .hero h1.hero-h1-split {
+    font-size: clamp(28px, 8vw, 56px);
+    word-break: break-word;
+    overflow-wrap: break-word;
+  }
+}
+
+.hero h1 br {
+  display: block;
+  margin: 0;
+  line-height: 0;
 }
 
 .hero-h1-line--1 {
@@ -643,7 +656,7 @@
 
 .hero-h1-wave.wave-wrap {
   display: inline-block;
-  margin: 0.04em 0 0.12em;
+  margin: 0 0 0.08em;
 }
 
 .hero-h1-wave em {
@@ -815,18 +828,24 @@
 
 .hero-chips {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
+  overflow-x: auto;
   gap: 8px;
   margin-bottom: 24px;
+  padding-bottom: 4px;
+  max-width: 100%;
+  box-sizing: border-box;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
 }
 
-@media (max-width: 768px) {
-  .hero-chips {
-    flex-wrap: nowrap;
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-    scrollbar-width: thin;
-  }
+.hero-chips::-webkit-scrollbar {
+  display: none;
+}
+
+.hero-chips a {
+  flex-shrink: 0;
+  white-space: nowrap;
 }
 
 .hero-chip-link {
@@ -843,12 +862,6 @@
     background 0.15s,
     border-color 0.15s,
     color 0.15s;
-}
-
-@media (max-width: 768px) {
-  .hero-chip-link {
-    flex-shrink: 0;
-  }
 }
 
 .hero-chip-link:hover {
@@ -1215,17 +1228,21 @@
 .how-tl-step-marker {
   position: absolute;
   left: 0;
-  margin-left: -56px;
-  width: 40px;
-  height: 40px;
-  background: rgba(255, 255, 255, 0.12);
-  border: 1px solid rgba(255, 255, 255, 0.28);
-  border-radius: 50%;
+  margin-left: -64px;
+  z-index: 2;
   display: flex;
   align-items: center;
   justify-content: center;
+  width: 56px;
+  height: 56px;
+  padding: 12px;
+  box-sizing: border-box;
+  background: #ffffff;
+  border: none;
+  border-radius: 50%;
   font-size: 18px;
-  box-shadow: none;
+  line-height: 1;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
 
 .how-tl-step-content {
@@ -1644,6 +1661,21 @@
   height: 1px;
   background: var(--fl-border);
   margin: 24px auto;
+}
+
+/* Trenner: zwei helle Sektionen (#f7f6f3) hintereinander */
+.section-divider {
+  width: 100%;
+  height: 32px;
+  overflow: hidden;
+  margin: 0;
+  background: #f7f6f3;
+}
+
+.section-divider svg {
+  width: 100%;
+  height: 100%;
+  display: block;
 }
 
 /* ── Projekte-Galerie (Referenzprojekte) ── */
@@ -3519,10 +3551,6 @@
 
 .final-cta-section.landing-final-cta {
   background: #2e7d52;
-}
-
-.final-cta-section.landing-final-cta .final-cta-bg {
-  color: rgba(255, 255, 255, 0.04);
 }
 
 .final-cta-section.landing-final-cta .final-cta-btn-primary,
