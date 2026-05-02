@@ -553,7 +553,7 @@
   position: relative;
   z-index: 2;
   box-sizing: border-box;
-  overflow-x: hidden;
+  /* Kein overflow-x: hidden — schneidet Focus-Rings und Chip-Scroll (Touch) ab */
   /* Gleicher Abstand links und rechts, Block zentriert via margin + max-width */
   padding: 128px 2rem 72px;
   max-width: min(1100px, 100%);
@@ -575,6 +575,8 @@
   grid-template-columns: 1fr 1fr;
   gap: 64px;
   align-items: center;
+  min-width: 0;
+  max-width: 100%;
 }
 
 @media (max-width: 768px) {
@@ -588,6 +590,7 @@
 .hero > div:first-child {
   position: relative;
   z-index: 6;
+  min-width: 0;
 }
 
 /* Sofort sichtbar: Hero liegt oben — fade-up darf nicht auf IO warten */
@@ -607,6 +610,10 @@
 }
 
 .hero-h1-split {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0;
   font-size: clamp(36px, 5vw, 56px);
   font-weight: 800;
   line-height: 1.05;
@@ -622,10 +629,11 @@
   }
 }
 
-.hero h1 br {
-  display: block;
+/* Wellen-Zeile: kein display:block (würde volle Breite erzwingen + Abstand zur Zeile 1) */
+.hero-h1-split .hero-h1-wave.wave-wrap {
+  display: inline-block;
   margin: 0;
-  line-height: 0;
+  max-width: 100%;
 }
 
 .hero-h1-line--1 {
@@ -634,7 +642,6 @@
 }
 
 .hero-h1-line--2 {
-  display: block;
   font-family: var(--fl-font-display);
   font-style: italic;
   color: var(--fl-accent);
@@ -647,16 +654,18 @@
 
 .wave-svg {
   position: absolute;
-  bottom: -6px;
+  bottom: -8px;
   left: 0;
   width: 100%;
-  height: 8px;
+  height: 10px;
   overflow: visible;
+  pointer-events: none;
 }
 
 .hero-h1-wave.wave-wrap {
   display: inline-block;
-  margin: 0 0 0.08em;
+  margin: 0 0 0.12em;
+  padding-bottom: 0.14em;
 }
 
 .hero-h1-wave em {
@@ -687,6 +696,8 @@
   position: relative;
   z-index: 2;
   max-width: 500px;
+  min-width: 0;
+  width: 100%;
   margin-bottom: 12px;
 }
 
@@ -706,7 +717,7 @@
   border-radius: 999px;
   background: #ffffff;
   border: 1px solid rgba(30, 30, 31, 0.1);
-  overflow: hidden;
+  overflow: visible;
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
 }
 
@@ -793,6 +804,7 @@
   background: #ffffff;
   outline: none;
   min-width: 0;
+  border-radius: 999px 0 0 999px;
 }
 
 .hero-search-input::placeholder {
@@ -801,7 +813,7 @@
 
 .hero-search-btn {
   border: none;
-  border-radius: 0;
+  border-radius: 0 999px 999px 0;
   background: var(--fl-accent);
   color: white;
   padding: 16px 20px;
@@ -822,8 +834,18 @@
 }
 
 .hero-search-btn:focus-visible {
-  outline: 2px solid var(--fl-accent-dark);
-  outline-offset: -2px;
+  outline: 2px solid #ffffff;
+  outline-offset: -4px;
+  box-shadow: 0 0 0 2px var(--fl-accent-dark);
+  z-index: 1;
+  position: relative;
+}
+
+.hero-search-input:focus-visible {
+  outline: 2px solid var(--fl-accent);
+  outline-offset: 2px;
+  z-index: 1;
+  position: relative;
 }
 
 .hero-chips {
@@ -834,7 +856,10 @@
   margin-bottom: 24px;
   padding-bottom: 4px;
   max-width: 100%;
+  min-width: 0;
+  width: 100%;
   box-sizing: border-box;
+  touch-action: pan-x;
   -webkit-overflow-scrolling: touch;
   scrollbar-width: none;
 }
@@ -868,6 +893,11 @@
   background: #fff;
   border-color: var(--fl-accent);
   color: var(--fl-accent);
+}
+
+.hero-chip-link:focus-visible {
+  outline: 2px solid var(--fl-accent-dark);
+  outline-offset: 3px;
 }
 
 .hero-disclaimer {
@@ -1243,6 +1273,8 @@
   font-size: 18px;
   line-height: 1;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  /* Sektion hat color:#fff — reines Text-Zeichen ✓ wäre sonst weiß auf weiß */
+  color: var(--fl-accent-dark);
 }
 
 .how-tl-step-content {
@@ -1500,6 +1532,121 @@
   color: rgba(255, 255, 255, 0.88);
 }
 
+/* ── Warum Bärenwald: Sticky-Scroll (Desktop) / In-View (Mobil) ── */
+.warum-section {
+  position: relative;
+  background: #1a3d2b;
+  color: #fff;
+}
+
+.warum-inner {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2rem;
+  align-items: stretch;
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 0 max(24px, 2rem);
+  box-sizing: border-box;
+}
+
+.warum-sticky {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding-right: clamp(1rem, 4vw, 60px);
+  box-sizing: border-box;
+}
+
+.warum-h2 {
+  font-size: clamp(24px, 3vw, 32px);
+  font-weight: 800;
+  letter-spacing: -0.025em;
+  margin: 0 0 10px;
+  color: #fff;
+}
+
+.warum-sub {
+  font-size: 15px;
+  line-height: 1.6;
+  margin: 0;
+  color: rgba(255, 255, 255, 0.88);
+}
+
+.warum-cards {
+  display: flex;
+  flex-direction: column;
+}
+
+.warum-card-slot {
+  height: 100vh;
+  display: flex;
+  align-items: center;
+  box-sizing: border-box;
+}
+
+.warum-card {
+  width: 100%;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 0 0 24px 24px;
+  padding: 32px;
+  box-sizing: border-box;
+}
+
+.warum-card h3 {
+  font-size: 20px;
+  font-weight: 700;
+  margin: 0 0 12px;
+  color: #fff;
+}
+
+.warum-card p {
+  font-size: 15px;
+  line-height: 1.6;
+  margin: 0;
+  color: rgba(255, 255, 255, 0.75);
+}
+
+.warum-card-icon {
+  display: block;
+  margin-bottom: 16px;
+  color: #a8c5a0;
+}
+
+.warum-card-icon-svg {
+  width: 40px;
+  height: 40px;
+  display: block;
+}
+
+@media (max-width: 768px) {
+  .warum-inner {
+    grid-template-columns: 1fr;
+    padding: 0 1.25rem;
+  }
+
+  .warum-sticky {
+    position: relative;
+    height: auto;
+    padding: 48px 0 24px;
+    padding-right: 0;
+  }
+
+  .warum-section {
+    min-height: auto !important;
+  }
+
+  .warum-card-slot,
+  .warum-card-slot--mobile {
+    height: auto;
+    padding: 12px 0;
+  }
+}
+
 .vertrieb-ec-inner {
   max-width: 1100px;
   margin: 0 auto;
@@ -1663,18 +1810,15 @@
   margin: 24px auto;
 }
 
-/* Trenner: zwei helle Sektionen (#f7f6f3) hintereinander */
+/* Sektions-Trenner (Höhe/Farben via SectionDivider inline) */
 .section-divider {
   width: 100%;
-  height: 32px;
   overflow: hidden;
   margin: 0;
-  background: #f7f6f3;
 }
 
 .section-divider svg {
   width: 100%;
-  height: 100%;
   display: block;
 }
 

@@ -22,6 +22,8 @@ import {
   TestimonialsMarquee,
   type MarqueeTestimonial,
 } from "@/components/home/TestimonialsMarquee";
+import { SectionDivider } from "@/components/landing/SectionDividers";
+import { WarumBaerenwaldScrollSection } from "@/components/landing/WarumBaerenwaldScrollSection";
 import { MarketingFooter } from "@/components/layout/MarketingFooter";
 import { WaveUnderline } from "@/components/ui/WaveUnderline";
 import { SITE_CONFIG } from "@/lib/config";
@@ -33,24 +35,6 @@ import {
   heroKategorieLabel,
   type HeroSearchSuggestion,
 } from "@/lib/search";
-
-const EINSATZ_BLOCKS = [
-  {
-    titel: "Ein Ansprechpartner",
-    text: "Nicht drei Nummern die du anrufst. Nicht du als Projektmanager zwischen den Gewerken. Einer der alles kennt — und alles koordiniert.",
-    variant: "dark" as const,
-  },
-  {
-    titel: "Preistransparenz",
-    text: "Du siehst was dein Projekt kostet bevor du überhaupt anrufst. Nach dem Termin ein verbindlicher Festpreis. Kein Nachtrag ohne deine Zustimmung.",
-    variant: "mist" as const,
-  },
-  {
-    titel: "Immer auf dem Stand",
-    text: "Statusupdates während des Projekts. Digitales Abnahmeprotokoll am Ende. Du weißt immer was läuft — ohne einmal nachfragen zu müssen.",
-    variant: "soft" as const,
-  },
-];
 
 const TESTIMONIALS = [
   {
@@ -236,51 +220,6 @@ const PROJEKTE: readonly BaerenwaldProjekt[] = [
   },
 ];
 
-function EinsatzIcon({ index }: { index: number }) {
-  const cls = "vertrieb-ec-card-icon";
-  const i = index % 3;
-  if (i === 0) {
-    return (
-      <svg className={cls} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden>
-        <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" strokeLinejoin="round" />
-      </svg>
-    );
-  }
-  if (i === 1) {
-    return (
-      <svg className={cls} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden>
-        <circle cx="12" cy="12" r="10" />
-        <path d="M12 16v-4M12 8h.01" strokeLinecap="round" />
-      </svg>
-    );
-  }
-  return (
-    <svg className={cls} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden>
-      <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
-      <path d="M22 4 12 14.01l-3-3" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  );
-}
-
-/** Wellen-Trenner nur zwischen zwei aufeinanderfolgenden hellen Sektionen (#f7f6f3). */
-function SectionDividerWave() {
-  return (
-    <div className="section-divider" aria-hidden="true">
-      <svg
-        viewBox="0 0 1440 32"
-        xmlns="http://www.w3.org/2000/svg"
-        preserveAspectRatio="none"
-      >
-        <path
-          d="M0,16 C360,32 1080,0 1440,16 L1440,32 L0,32 Z"
-          fill="#e8e6e0"
-          opacity="0.5"
-        />
-      </svg>
-    </div>
-  );
-}
-
 export default function BaerenwaldLandingClient({
   leistungenSection,
 }: {
@@ -448,16 +387,14 @@ export default function BaerenwaldLandingClient({
               <p className="hero-eyebrow">Handwerker München</p>
               <h1 className="hero-h1-split">
                 <span className="hero-h1-line--1 au">
-                  Kein Vergleichsportal.{" "}
+                  Kein Vergleichsportal.
                 </span>
-                <br />
                 <WaveUnderline
                   className="hero-h1-line--2 hero-h1-wave au d2"
                   tone="on-light"
                 >
                   <em>Ein Ansprechpartner.</em>
                 </WaveUnderline>
-                <br />
                 <span className="hero-h1-line--3 au d3">Für alles.</span>
               </h1>
               <p className="hero-lead au d4">
@@ -581,34 +518,19 @@ export default function BaerenwaldLandingClient({
         <div className="hero-bottom-round" aria-hidden />
       </section>
 
+      <SectionDivider variant="baum" from="#f7f6f3" to="#2E7D52" />
+
       <HowTimelineMotion />
+
+      <SectionDivider variant="baum" from="#2E7D52" to="#f7f6f3" flip />
 
       {leistungenSection}
 
-      <section className="vertrieb-ec vertrieb-ec--polish">
-        <div className="vertrieb-ec-inner">
-          <div className="vertrieb-ec-head fade-up">
-            <h2 className="vertrieb-ec-h2">Warum Bärenwald?</h2>
-            <p className="vertrieb-ec-sub">
-              Wir glauben dass Handwerk
-              <br />
-              anders geht.
-            </p>
-          </div>
-          <div className="vertrieb-ec-grid">
-            {EINSATZ_BLOCKS.map((b, i) => (
-              <div
-                key={b.titel}
-                className={`vertrieb-ec-card vertrieb-ec-card--${b.variant} fade-up d${i + 1}`}
-              >
-                <EinsatzIcon index={i} />
-                <p className="vertrieb-ec-card-title">{b.titel}</p>
-                <p className="vertrieb-ec-card-text">{b.text}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
+      <SectionDivider variant="hugel" from="#f7f6f3" to="#1A3D2B" />
+
+      <WarumBaerenwaldScrollSection />
+
+      <SectionDivider variant="hugel" from="#1A3D2B" to="#f7f6f3" flip />
 
       <section
         className="vision-section fade-up"
@@ -637,7 +559,7 @@ export default function BaerenwaldLandingClient({
         </div>
       </section>
 
-      <SectionDividerWave />
+      <SectionDivider variant="welle" from="#f7f6f3" to="#f7f6f3" />
 
       <section className="testimonials-section">
         <div className="inner testimonials-band">
@@ -652,9 +574,11 @@ export default function BaerenwaldLandingClient({
         </div>
       </section>
 
-      <SectionDividerWave />
+      <SectionDivider variant="welle" from="#f7f6f3" to="#f7f6f3" />
 
       <ProjektGalerie projekte={PROJEKTE} />
+
+      <SectionDivider variant="baum" from="#f7f6f3" to="#2E7D52" />
 
       <section
         className="final-cta-section landing-final-cta"
@@ -681,6 +605,8 @@ export default function BaerenwaldLandingClient({
           </div>
         </div>
       </section>
+
+      <SectionDivider variant="baum" from="#2E7D52" to="#f7f6f3" flip />
 
       <section className="faq-section" id="faq">
         <div className="faq-inner">
