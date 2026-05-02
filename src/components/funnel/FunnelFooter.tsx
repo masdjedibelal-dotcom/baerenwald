@@ -67,8 +67,8 @@ export function FunnelFooter({
         ) : null}
         <div className="funnel-footer-legal">
           <span>
-            * Preisrahmen: Münchner Marktpreise 2026 — Festpreis nach
-            Vor-Ort-Termin
+            * Unverbindlicher Preisrahmen (Preisindikation): Münchner
+            Marktpreise 2026 — Festpreis nach Vor-Ort-Termin
           </span>
           <span className="funnel-footer-dot" aria-hidden>·</span>
           <a href="/impressum" target="_blank" rel="noopener noreferrer">

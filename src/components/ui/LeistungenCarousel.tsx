@@ -140,6 +140,10 @@ const KATEGORIEN: Kategorie[] = [
         emoji: "🏠",
         href: "/leistungen/dacharbeiten-muenchen",
         rechnerHref: "/rechner?situation=erneuern",
+        imageSrc: "/images/leistung-dach-regenrinnen.png",
+        imageAlt:
+          "Dachdecker repariert Dachziegel auf einem Steildach in München",
+        imageObjectPosition: "50% 42%",
       },
     ],
   },
@@ -222,6 +226,10 @@ const KATEGORIEN: Kategorie[] = [
         emoji: "❄️",
         href: "/leistungen/winterdienst-muenchen",
         rechnerHref: "/rechner?situation=betreuung",
+        imageSrc: "/images/leistung-winterdienst.png",
+        imageAlt:
+          "Winterdienst räumt Gehweg und Straße mit einer Schneefräse in einem Wohngebiet",
+        imageObjectPosition: "50% 44%",
       },
     ],
   },
@@ -237,9 +245,9 @@ const KATEGORIEN: Kategorie[] = [
         emoji: "🔥",
         href: "/leistungen/heizung-sanitaer-muenchen",
         rechnerHref: "/rechner?situation=kaputt",
-        imageSrc: "/images/leistung-heizung-wasser.png",
+        imageSrc: "/images/leistung-heizung-ausgefallen.png",
         imageAlt:
-          "Heizungsmonteur wartet eine Anlage und verlötet Wasserleitungen",
+          "Moderne Heizkörperanlage in Wohnraum als Visual für Heizungsausfall-Notdienst",
         imageObjectPosition: "50% 42%",
       },
       {

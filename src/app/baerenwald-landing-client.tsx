@@ -13,13 +13,18 @@ import {
   type ReactNode,
 } from "react";
 
+import { HowTimelineMotion } from "@/components/home/HowTimelineMotion";
 import {
   ProjektGalerie,
   type BaerenwaldProjekt,
 } from "@/components/home/ProjektGalerie";
+import {
+  TestimonialsMarquee,
+  type MarqueeTestimonial,
+} from "@/components/home/TestimonialsMarquee";
 import { MarketingFooter } from "@/components/layout/MarketingFooter";
+import { WaveUnderline } from "@/components/ui/WaveUnderline";
 import { SITE_CONFIG } from "@/lib/config";
-import type { Situation as FunnelSituation } from "@/lib/funnel/types";
 import { HOME_FAQ_ITEMS } from "@/lib/home-content";
 import {
   buildHeroRechnerLandingUrl,
@@ -28,23 +33,6 @@ import {
   heroKategorieLabel,
   type HeroSearchSuggestion,
 } from "@/lib/search";
-const HOW_STEPS = [
-  {
-    emoji: "📞",
-    title: "Du rufst einmal an.",
-    desc: "Kein stundenlanges Erklären, kein Vergleichen von Angeboten. Du beschreibst was du dir vorstellst — wir machen daraus einen Plan.",
-  },
-  {
-    emoji: "🛠️",
-    title: "Wir übernehmen alles.",
-    desc: "Maler, Elektriker, Fliesenleger — wir wissen wer wann kommen muss und in welcher Reihenfolge. Du bekommst Updates. Keine Überraschungen.",
-  },
-  {
-    emoji: "✓",
-    title: "Du nimmst ab.",
-    desc: "Gemeinsame Abnahme, digitales Protokoll — und du weißt dass alles erledigt ist. So wie es sein sollte.",
-  },
-];
 
 const EINSATZ_BLOCKS = [
   {
@@ -105,24 +93,18 @@ const TESTIMONIALS = [
     quote:
       "Gartenpflege seit zwei Jahren. Kommt immer pünktlich, macht saubere Arbeit. Kann ich nur empfehlen.",
   },
-];
+] satisfies readonly MarqueeTestimonial[];
 
-const TESTIMONIAL_COLORS: Record<
-  (typeof TESTIMONIALS)[number]["color"],
-  { bg: string; color: string }
-> = {
-  amber: { bg: "#FAEEDA", color: "#854F0B" },
-  gray: { bg: "#F1EFE8", color: "#444441" },
-  green: { bg: "#EAF3DE", color: "#3B6D11" },
-  teal: { bg: "#E1F5EE", color: "#0F6E56" },
-  blue: { bg: "#E6F1FB", color: "#185FA5" },
-};
-
-const HERO_CHIPS: { label: string; situation: FunnelSituation }[] = [
-  { label: "Zuhause erneuern", situation: "erneuern" },
-  { label: "Reparatur / Defekt", situation: "kaputt" },
-  { label: "Notfall — sofort", situation: "kaputt" },
-];
+const HERO_LEISTUNG_CHIPS = [
+  { label: "🚿 Bad", leistung: "badezimmer-sanierung", situation: "erneuern" },
+  { label: "🪵 Boden", leistung: "bodenbelag", situation: "erneuern" },
+  { label: "🖌️ Streichen", leistung: "malerarbeiten", situation: "erneuern" },
+  { label: "🔥 Heizung", leistung: "heizung-sanitaer", situation: "erneuern" },
+  { label: "⚡ Strom", leistung: "elektroarbeiten", situation: "erneuern" },
+  { label: "🌿 Garten", leistung: "gartenpflege", situation: "betreuung" },
+  { label: "🪟 Fenster", leistung: "fenster-tueren", situation: "erneuern" },
+  { label: "🚨 Notfall", leistung: "dacharbeiten", situation: "notfall" },
+] as const;
 
 /** Echte Bärenwald-Referenzprojekte (Bildpfade Platzhalter bis finale Assets). */
 const PROJEKTE: readonly BaerenwaldProjekt[] = [
@@ -153,9 +135,9 @@ const PROJEKTE: readonly BaerenwaldProjekt[] = [
     bild: "/images/projekt-burgermeister-abriss.jpg",
     bilder: ["/images/projekt-burgermeister-abriss.jpg"],
     bildAlt:
-      "Baustellenfoto vom Burgermeister-Projekt in der Türkenstraße während Abriss und Rückbau",
+      "Baustellenfoto vom Gewerbe-Projekt (Ladenabriss) in München während Abriss und Rückbau",
     gewerk: "Abriss & Notdienst",
-    stadtteil: "Türkenstraße, München",
+    stadtteil: "München",
     jahr: "2024",
     tag: "gewerbe",
     problem:
@@ -177,7 +159,7 @@ const PROJEKTE: readonly BaerenwaldProjekt[] = [
     bildAlt:
       "Gebrochener Baumast im Innenhof einer Wohnanlage als akutes Sicherheitsrisiko",
     gewerk: "Gefahrenabwehr Baum / Notfall",
-    stadtteil: "WEG Westendstr. 146 a+b, München",
+    stadtteil: "Hausverwaltung · München",
     jahr: "2026",
     tag: "notfall",
     problem:
@@ -199,7 +181,7 @@ const PROJEKTE: readonly BaerenwaldProjekt[] = [
     bildAlt:
       "Baustelle Dachterrasse in München mit Sonderlösung für Naturstein im 5. Stock",
     gewerk: "Dachterrasse Sonderlösung",
-    stadtteil: "Sommerstraße 47, München",
+    stadtteil: "München",
     jahr: "2024",
     tag: "privat",
     problem:
@@ -343,21 +325,6 @@ export default function BaerenwaldLandingClient({
   }, []);
 
   useEffect(() => {
-    const el = document.querySelector(".how-timeline-block");
-    if (!el) return;
-    const io = new IntersectionObserver(
-      (entries) => {
-        if (entries[0]?.isIntersecting) {
-          el.classList.add("how-timeline-block--visible");
-        }
-      },
-      { threshold: 0.2 }
-    );
-    io.observe(el);
-    return () => io.disconnect();
-  }, []);
-
-  useEffect(() => {
     const nav = document.querySelector(".landing-nav");
     if (!nav) return;
     const onScroll = () => {
@@ -461,8 +428,17 @@ export default function BaerenwaldLandingClient({
             <div>
               <p className="hero-eyebrow">Handwerker München</p>
               <h1 className="hero-h1-split">
-                <span className="hero-h1-line--1 au">Kein Vergleichsportal.</span>
-                <span className="hero-h1-line--2 au d2">Ein Ansprechpartner.</span>
+                <span className="hero-h1-line--1 au">
+                  Kein Vergleichsportal.{" "}
+                </span>
+                <br />
+                <WaveUnderline
+                  className="hero-h1-line--2 hero-h1-wave au d2"
+                  tone="on-light"
+                >
+                  <em>Ein Ansprechpartner.</em>
+                </WaveUnderline>
+                <br />
                 <span className="hero-h1-line--3 au d3">Für alles.</span>
               </h1>
               <p className="hero-lead au d4">
@@ -510,6 +486,9 @@ export default function BaerenwaldLandingClient({
                       Preis ermitteln
                     </button>
                   </div>
+                  <p className="hero-disclaimer">
+                    Unverbindliche Schätzung — kein Kostenvoranschlag
+                  </p>
                   {showSearchSuggestions ? (
                     <div
                       ref={portalDropdownRef}
@@ -551,11 +530,11 @@ export default function BaerenwaldLandingClient({
               </form>
               {!showSearchSuggestions ? (
                 <div className="hero-chips fade-up d2">
-                  {HERO_CHIPS.map((c) => (
+                  {HERO_LEISTUNG_CHIPS.map((c) => (
                     <Link
-                      key={c.label}
+                      key={c.leistung}
                       className="hero-chip-link"
-                      href={`/rechner?situation=${c.situation}`}
+                      href={`/rechner?leistung=${c.leistung}&situation=${c.situation}&nf=1`}
                     >
                       {c.label}
                     </Link>
@@ -565,9 +544,6 @@ export default function BaerenwaldLandingClient({
             </div>
             <div className="hero-visual fade-up d2">
               <div className="hero-float-wrap">
-                <div className="hero-floating-card hero-floating-card--top">
-                  Meisterbetriebe München
-                </div>
                 <div className="hero-phones-clip">
                   <Image
                     src="/images/hero-handwerk-muenchen.png"
@@ -578,9 +554,6 @@ export default function BaerenwaldLandingClient({
                     priority
                   />
                 </div>
-                <div className="hero-floating-card hero-floating-card--bottom">
-                  Einer für alles
-                </div>
               </div>
             </div>
           </div>
@@ -589,49 +562,11 @@ export default function BaerenwaldLandingClient({
         <div className="hero-bottom-round" aria-hidden />
       </section>
 
-      <section className="how-section" id="how">
-        <div className="how-section-inner">
-          <div className="how-tl-header fade-up">
-            <h2 className="how-h2">So läuft es bei uns.</h2>
-            <p className="how-tl-sub">
-              Kein Abstimmen. Kein Nachfragen.
-              <br />
-              Kein Stress.
-            </p>
-          </div>
-          <div className="how-timeline-block">
-            <div className="how-timeline-wrap">
-              <div className="how-timeline-line" aria-hidden>
-                <div className="how-timeline-line-fill" />
-              </div>
-              <div className="how-timeline-steps">
-                {HOW_STEPS.map((step, i) => (
-                  <div
-                    key={step.title}
-                    className="how-tl-step"
-                    style={{ ["--how-step-delay" as string]: `${0.08 + i * 0.12}s` }}
-                  >
-                    <div className="how-tl-step-marker">{step.emoji}</div>
-                    <div className="how-tl-step-content">
-                      <p className="how-tl-content-title">{step.title}</p>
-                      <p className="how-tl-content-desc">{step.desc}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-            <div className="how-tl-cta-wrap fade-up">
-              <Link href="/rechner" className="how-tl-cta">
-                Zum Preisrechner →
-              </Link>
-            </div>
-          </div>
-        </div>
-      </section>
+      <HowTimelineMotion />
 
       {leistungenSection}
 
-      <section className="vertrieb-ec">
+      <section className="vertrieb-ec vertrieb-ec--polish">
         <div className="vertrieb-ec-inner">
           <div className="vertrieb-ec-head fade-up">
             <h2 className="vertrieb-ec-h2">Warum Bärenwald?</h2>
@@ -686,43 +621,46 @@ export default function BaerenwaldLandingClient({
       <section className="testimonials-section">
         <div className="inner testimonials-band">
           <h2 className="checks-section-headline fade-up">Kundenstimmen</h2>
-          <p className="checks-section-tagline fade-up d1" style={{ marginBottom: "32px" }}>
+          <p
+            className="checks-section-tagline fade-up d1"
+            style={{ marginBottom: "32px" }}
+          >
             Echte Rückmeldungen aus München und Umgebung.
           </p>
-          <div className="testimonials-grid">
-            {TESTIMONIALS.map((t, i) => {
-              const col = TESTIMONIAL_COLORS[t.color];
-              return (
-                <div
-                  key={t.initials}
-                  className={`testimonial-card fade-up d${Math.min((i % 4) + 1, 4)}`}
-                >
-                  <div className="testimonial-stars" aria-hidden>
-                    ★★★★★
-                  </div>
-                  <p className="testimonial-quote">{t.quote}</p>
-                  <div className="testimonial-divider" />
-                  <div className="testimonial-author">
-                    <div
-                      className="testimonial-avatar"
-                      style={{ background: col.bg, color: col.color }}
-                      aria-hidden
-                    >
-                      {t.initials}
-                    </div>
-                    <div>
-                      <p className="testimonial-name">{t.name}</p>
-                      <p className="testimonial-rolle">{t.rolle}</p>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
+          <TestimonialsMarquee testimonials={TESTIMONIALS} />
         </div>
       </section>
 
       <ProjektGalerie projekte={PROJEKTE} />
+
+      <section
+        className="final-cta-section landing-final-cta"
+        aria-labelledby="landing-final-cta-h2"
+      >
+        <div className="final-cta-bg" aria-hidden>
+          BW
+        </div>
+        <div className="final-cta-inner">
+          <h2 id="landing-final-cta-h2" className="final-cta-h2">
+            Bereit für dein Projekt?
+          </h2>
+          <p className="final-cta-sub">
+            Preisrahmen in wenigen Minuten — ein Ansprechpartner für die
+            Umsetzung.
+          </p>
+          <div className="final-cta-btns">
+            <Link
+              href="/rechner"
+              className="final-cta-btn-primary btn-primary"
+            >
+              Zum Preisrechner
+            </Link>
+            <a href={SITE_CONFIG.phoneHref} className="final-cta-btn-ghost">
+              {SITE_CONFIG.phone} anrufen
+            </a>
+          </div>
+        </div>
+      </section>
 
       <section className="faq-section" id="faq">
         <div className="faq-inner">

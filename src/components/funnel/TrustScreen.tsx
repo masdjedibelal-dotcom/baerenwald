@@ -21,7 +21,7 @@ const TRUST_CONTENT = {
     imageAlt: "Handwerker zeigt Kunden transparentes Angebot auf Tablet",
     eyebrow: "Keine Überraschungen",
     headline: "Der Preis steht\nbevor wir anfangen.",
-    text: "Unser Rechner gibt dir eine ehrliche Preisindikation — bevor du überhaupt anrufst. Nach dem Vor-Ort-Termin bekommst du ein verbindliches Festpreisangebot. Kein Nachtrag ohne deine Zustimmung.",
+    text: "Unser Rechner zeigt dir einen unverbindlichen Preisrahmen — eine ehrliche Preisindikation auf Basis aktueller Münchner Marktpreise, noch bevor du anrufst. Nach dem Vor-Ort-Termin bekommst du ein verbindliches Festpreisangebot. Kein Nachtrag ohne deine Zustimmung.",
   },
   qualitaet: {
     image: "/images/trust-qualitaet.jpg",

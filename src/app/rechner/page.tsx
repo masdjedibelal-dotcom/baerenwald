@@ -80,7 +80,6 @@ import {
 import type { BwResultModus } from "@/lib/funnel/price-calc";
 import { getPlzStatus } from "@/lib/funnel/plz";
 import type {
-  FunnelState,
   FunnelStep,
   Kundentyp,
   ObjektZustand,
@@ -1857,7 +1856,7 @@ function FunnelRechnerInner() {
           <StepWrapper
             stepLabel="Anfrage"
             question="Wir melden uns bei dir."
-            subtext={`Unser Einsatzgebiet ist aktuell München und Umgebung bis ca. 50 km. Hinterlasse deine Kontaktdaten — wir schauen was wir für dich tun können.`}
+            subtext={`Unser Einsatzgebiet ist aktuell München und Umgebung bis ca. 70 km. Hinterlasse deine Kontaktdaten — wir schauen was wir für dich tun können.`}
             animateKey="ausserhalb"
           >
             <div className="funnel-step-tiles-card">

@@ -86,7 +86,7 @@ export function PlzStep({
             <div className="plz-ausserhalb-text">
               <p className="plz-ausserhalb-head">
                 Aktuell sind wir hauptsächlich in München und einem Umkreis
-                von ca. 50 km tätig.
+                von ca. 70 km tätig.
               </p>
               <p className="plz-ausserhalb-sub">
                 Deine Anfrage nehmen wir trotzdem gerne entgegen — wir schauen

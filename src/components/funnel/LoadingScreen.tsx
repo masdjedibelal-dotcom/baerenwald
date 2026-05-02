@@ -35,7 +35,7 @@ export function LoadingScreen({
   const steps: { text: string }[] = [
     { text: "Münchner Marktpreise werden berechnet…" },
     { text: "Dein Projekt wird eingeordnet…" },
-    { text: "Dein Preisrahmen wird erstellt…" },
+    { text: "Dein unverbindlicher Preisrahmen wird erstellt…" },
   ];
 
   return (
@@ -45,10 +45,12 @@ export function LoadingScreen({
         role="status"
         aria-busy="true"
         aria-live="polite"
-        aria-label="Preis wird berechnet"
+        aria-label="Unverbindlicher Preisrahmen wird berechnet"
       >
         <p className="loading-screen-kicker">Einen Moment</p>
-        <h2 className="loading-screen-title">Dein Preisrahmen entsteht</h2>
+        <h2 className="loading-screen-title">
+          Dein unverbindlicher Preisrahmen entsteht
+        </h2>
 
         <div className="loading-screen-icon-wrap" aria-hidden>
           <div className="loading-screen-ring" />

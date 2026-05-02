@@ -583,7 +583,7 @@ function ZuKomplexScreen({
               </>
             ) : (
               <>
-                Für diese Auswahl gibt es keinen verlässlichen
+                Für diese Auswahl gibt es keinen verlässlichen unverbindlichen
                 Online-Preisrahmen — Aufwand und Budget klären wir persönlich
                 mit dir.
               </>
@@ -845,7 +845,7 @@ export function BwResultScreen({
           )}
         >
           <p className="preis-karte-kicker">
-            {hasFixedPreis ? "Dein Preis" : "Dein Preisrahmen"}
+            {hasFixedPreis ? "Dein Preis" : "Dein unverbindlicher Preisrahmen"}
           </p>
           <div className="preis-karte-range">
             <span className="preis-karte-zahl">
@@ -877,8 +877,9 @@ export function BwResultScreen({
 
           {state.istFallback ? (
             <p className="preis-karte-fallback">
-              Für deine Auswahl nutzen wir allgemeine Münchner Marktpreise — beim
-              Vor-Ort-Termin nennen wir dir einen genauen Preis.
+              Für deine Auswahl nutzen wir allgemeine Münchner Marktpreise als
+              unverbindliche Preisindikation — beim Vor-Ort-Termin nennen wir dir
+              einen genauen Preis.
             </p>
           ) : null}
           {resultModus === "preisrahmen_warnung" ? (
@@ -934,8 +935,8 @@ export function BwResultScreen({
 
       {hasRange ? (
         <p className="preis-disclaimer">
-          Basiert auf Münchner Marktpreisen 2026 — verbindliches
-          Festpreisangebot nach Vor-Ort-Termin.
+          Unverbindlicher Preisrahmen (Preisindikation) auf Basis Münchner
+          Marktpreise 2026 — verbindliches Festpreisangebot nach Vor-Ort-Termin.
         </p>
       ) : null}
 
@@ -985,7 +986,7 @@ export function BwResultScreen({
           ) : (
             <div className="preis-save-form">
               <p className="preis-save-label">
-                Wir schicken dir den Preisrahmen zu — kein Spam.
+                Wir schicken dir den unverbindlichen Preisrahmen zu — kein Spam.
               </p>
               <div className="preis-save-row">
                 <input

@@ -75,7 +75,7 @@ export default function KontaktPage() {
                 <br />
                 alle Stadtteile,
                 <br />
-                Umkreis ca. 30 km.
+                Umkreis ca. 70 km.
               </p>
 
               <p>
