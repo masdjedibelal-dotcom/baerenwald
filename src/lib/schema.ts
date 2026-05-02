@@ -32,7 +32,7 @@ export function localBusinessSchema(): Record<string, unknown> {
         latitude: 48.1351,
         longitude: 11.582,
       },
-      geoRadius: "50000",
+      geoRadius: "70000",
     },
     openingHoursSpecification: [
       {

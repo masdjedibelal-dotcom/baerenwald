@@ -25,7 +25,7 @@ export const SITE_CONFIG = {
   phoneMobilHref: "tel:+491637316161",
   email: "info@baerenwald-muenchen.de",
   region: "München & Umgebung",
-  plzRadius: ["80", "81", "82", "83", "85"],
+  plzRadius: ["80", "81", "82", "83", "84", "85", "86"],
   calendlyUrl: "",
   supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL ?? "",
   supabaseAnonKey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? "",

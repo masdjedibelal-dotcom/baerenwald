@@ -1,6 +1,6 @@
 /**
  * PLZ-Validierung für den Bärenwald-Funnel.
- * Erlaubter Radius: München + ca. 50 km Umland.
+ * Erlaubter Radius: München + ca. 70 km Umland.
  */
 
 export const PLZ_ERLAUBT_PREFIXE: string[] = [
@@ -23,13 +23,19 @@ export const PLZ_ERLAUBT_PREFIXE: string[] = [
   "830", "831", "832",
   // Landkreis Miesbach
   "833", "834",
+  // Landkreis Rosenheim
+  "835", "836", "837", "838", "839",
+  // Landkreis Landshut
+  "840", "841", "842",
   // Landkreis Landsberg am Lech
   "860", "861",
+  // Augsburg Umland (innerhalb erweitertem Radius)
+  "862",
 ];
 
 /** Explizit ausgeschlossen — zu weit oder anderer Markt */
 export const PLZ_AUSGESCHLOSSEN_PREFIXE: string[] = [
-  "86", // Augsburg (außer 860/861)
+  "86", // Augsburg / Schwaben (außer freigegebene 86x)
   "87", // Allgäu
   "88", // Allgäu / Ulm
   "89", // Ulm
