@@ -9,7 +9,7 @@ const accentFromEnv =
 const siteUrl =
   typeof process !== "undefined" && process.env.NEXT_PUBLIC_SITE_URL
     ? process.env.NEXT_PUBLIC_SITE_URL.replace(/\/$/, "")
-    : "https://www.baerenwald.de";
+    : "https://baerenwaldmuenchen.de";
 
 export const SITE_CONFIG = {
   companyName: "Bärenwald",
