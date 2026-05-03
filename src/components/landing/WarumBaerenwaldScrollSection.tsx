@@ -1,8 +1,8 @@
 "use client";
 
-import { motion, useInView, useScroll, useTransform } from "framer-motion";
+import { motion, useScroll, useTransform } from "framer-motion";
 import type { MotionValue } from "framer-motion";
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { WARUM_EINSATZ_BLOCKS } from "@/lib/warum-blocks";
 
@@ -57,30 +57,42 @@ function WarumEinsatzIcon({ index }: { index: number }) {
   );
 }
 
-function WarumMobileCard({
-  children,
-  delay = 0,
-}: {
-  children: ReactNode;
-  delay?: number;
-}) {
-  const ref = useRef(null);
-  const inView = useInView(ref, { once: true, margin: "-40px" });
-
+function WarumHeadline() {
   return (
-    <motion.div
-      ref={ref}
-      className="warum-card"
-      initial={{ opacity: 0, y: 40 }}
-      animate={inView ? { opacity: 1, y: 0 } : { opacity: 0, y: 40 }}
-      transition={{ duration: 0.5, delay }}
-    >
-      {children}
-    </motion.div>
+    <>
+      <h2 id="warum-heading" className="warum-h2">
+        Warum Bärenwald?
+      </h2>
+      <p className="warum-sub">
+        Wir glauben dass Handwerk
+        <br />
+        anders geht.
+      </p>
+    </>
   );
 }
 
-function WarumDesktopCard({
+function WarumStaticCard({
+  block,
+  index,
+}: {
+  block: (typeof WARUM_EINSATZ_BLOCKS)[number];
+  index: number;
+}) {
+  return (
+    <div className="warum-card-slot">
+      <div className="warum-card">
+        <span className="warum-card-icon" aria-hidden>
+          <WarumEinsatzIcon index={index} />
+        </span>
+        <h3>{block.titel}</h3>
+        <p>{block.text}</p>
+      </div>
+    </div>
+  );
+}
+
+function WarumScrollCard({
   x,
   opacity,
   block,
@@ -104,20 +116,30 @@ function WarumDesktopCard({
   );
 }
 
-export function WarumBaerenwaldScrollSection() {
-  const sectionRef = useRef<HTMLElement>(null);
-  const [narrow, setNarrow] = useState(false);
+/** Desktop: normale Sektion ohne Scroll-Story */
+function WarumDesktopStatic() {
+  return (
+    <section className="warum-section" aria-labelledby="warum-heading">
+      <div className="warum-inner warum-inner--static">
+        <div className="warum-sticky">
+          <WarumHeadline />
+        </div>
+        <div className="warum-cards warum-cards--static">
+          {WARUM_EINSATZ_BLOCKS.map((block, index) => (
+            <WarumStaticCard key={block.titel} block={block} index={index} />
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
 
-  useEffect(() => {
-    const mq = window.matchMedia("(max-width: 768px)");
-    const apply = () => setNarrow(mq.matches);
-    apply();
-    mq.addEventListener("change", apply);
-    return () => mq.removeEventListener("change", apply);
-  }, []);
+/** Mobil: Sticky-Bühne + Karten per Scroll-Progress */
+function WarumMobileScrollStory() {
+  const trackRef = useRef<HTMLDivElement>(null);
 
   const { scrollYProgress } = useScroll({
-    target: sectionRef,
+    target: trackRef,
     offset: ["start start", "end end"],
   });
 
@@ -128,74 +150,51 @@ export function WarumBaerenwaldScrollSection() {
   const x3 = useTransform(scrollYProgress, [0.5, 0.75], [200, 0]);
   const opacity3 = useTransform(scrollYProgress, [0.5, 0.75], [0, 1]);
 
-  const headline = (
-    <>
-      <h2 id="warum-heading" className="warum-h2">
-        Warum Bärenwald?
-      </h2>
-      <p className="warum-sub">
-        Wir glauben dass Handwerk
-        <br />
-        anders geht.
-      </p>
-    </>
-  );
-
-  const cardsDesktop = (
-    <>
-      <WarumDesktopCard
-        x={x1}
-        opacity={opacity1}
-        block={WARUM_EINSATZ_BLOCKS[0]!}
-        index={0}
-      />
-      <WarumDesktopCard
-        x={x2}
-        opacity={opacity2}
-        block={WARUM_EINSATZ_BLOCKS[1]!}
-        index={1}
-      />
-      <WarumDesktopCard
-        x={x3}
-        opacity={opacity3}
-        block={WARUM_EINSATZ_BLOCKS[2]!}
-        index={2}
-      />
-    </>
-  );
-
-  const cardsMobile = WARUM_EINSATZ_BLOCKS.map((b, i) => (
-    <div key={b.titel} className="warum-card-slot warum-card-slot--mobile">
-      <WarumMobileCard delay={i * 0.08}>
-        <span className="warum-card-icon" aria-hidden>
-          <WarumEinsatzIcon index={i} />
-        </span>
-        <h3>{b.titel}</h3>
-        <p>{b.text}</p>
-      </WarumMobileCard>
-    </div>
-  ));
-
   return (
-    <section
-      ref={sectionRef}
-      className="warum-section"
-      style={narrow ? undefined : { minHeight: "400vh" }}
-      aria-labelledby="warum-heading"
-    >
-      {narrow ? (
-        <div className="warum-inner">
-          <div className="warum-sticky">{headline}</div>
-          <div className="warum-cards">{cardsMobile}</div>
-        </div>
-      ) : (
+    <section className="warum-section" aria-labelledby="warum-heading">
+      <div ref={trackRef} className="warum-scroll-track">
         <div className="warum-pin-stage">
           <div className="warum-inner warum-inner--pinned">
-            <div className="warum-sticky">{headline}</div>
-            <div className="warum-cards">{cardsDesktop}</div>
+            <div className="warum-sticky">
+              <WarumHeadline />
+            </div>
+            <div className="warum-cards">
+              <WarumScrollCard
+                x={x1}
+                opacity={opacity1}
+                block={WARUM_EINSATZ_BLOCKS[0]!}
+                index={0}
+              />
+              <WarumScrollCard
+                x={x2}
+                opacity={opacity2}
+                block={WARUM_EINSATZ_BLOCKS[1]!}
+                index={1}
+              />
+              <WarumScrollCard
+                x={x3}
+                opacity={opacity3}
+                block={WARUM_EINSATZ_BLOCKS[2]!}
+                index={2}
+              />
+            </div>
           </div>
         </div>
-      )}
+      </div>
     </section>
   );
+}
+
+export function WarumBaerenwaldScrollSection() {
+  const [mobile, setMobile] = useState(false);
+
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 768px)");
+    const apply = () => setMobile(mq.matches);
+    apply();
+    mq.addEventListener("change", apply);
+    return () => mq.removeEventListener("change", apply);
+  }, []);
+
+  return mobile ? <WarumMobileScrollStory /> : <WarumDesktopStatic />;
 }

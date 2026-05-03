@@ -1528,14 +1528,22 @@
   color: rgba(255, 255, 255, 0.88);
 }
 
-/* ── Warum Bärenwald: Sticky-Scroll (Desktop) / In-View (Mobil) ── */
+/* ── Warum Bärenwald: Scroll-Track + sticky Bühne (Desktop & Mobil) ── */
 .warum-section {
   position: relative;
   background: #1a3d2b;
   color: #fff;
 }
 
-/* Desktop: ganze Szene (Hintergrund + Grid) klebt 100vh — Scroll steuert nur die Karten */
+/* Explizite Höhe = Scroll-Maß für useScroll (nicht nur min-height auf der Section) */
+.warum-scroll-track {
+  position: relative;
+  width: 100%;
+  height: 400vh;
+  box-sizing: border-box;
+}
+
+/* Sticky: ganze Szene (Hintergrund + Grid) klebt 100vh — Karten per Scroll-Progress */
 .warum-pin-stage {
   position: sticky;
   top: 0;
@@ -1568,6 +1576,23 @@
   max-height: 100vh;
   min-height: 0;
   align-items: center;
+}
+
+/* Desktop: statisches Layout ohne Scroll-Story */
+.warum-inner--static {
+  align-items: start;
+  padding-top: 72px;
+  padding-bottom: 80px;
+}
+
+.warum-cards--static {
+  gap: 16px;
+  height: auto;
+  max-height: none;
+  overflow: visible;
+  padding-right: 0;
+  margin-right: 0;
+  justify-content: flex-start;
 }
 
 .warum-sticky {
@@ -1610,7 +1635,10 @@
 .warum-inner--pinned .warum-cards {
   height: 100%;
   max-height: min(88vh, 820px);
-  overflow: hidden;
+  /* translateX darf nicht weg-clippen — sonst bleiben Karten „unsichtbar“ */
+  overflow: visible;
+  padding-right: 12px;
+  margin-right: -12px;
 }
 
 .warum-card-slot {
@@ -1655,26 +1683,38 @@
 }
 
 @media (max-width: 768px) {
+  .warum-scroll-track {
+    height: 320vh;
+  }
+
   .warum-inner {
     grid-template-columns: 1fr;
     padding: 0 1.25rem;
   }
 
-  .warum-sticky {
-    position: relative;
-    height: auto;
-    padding: 48px 0 24px;
+  .warum-inner--pinned .warum-sticky {
+    padding: 0 0 10px;
     padding-right: 0;
   }
 
-  .warum-section {
-    min-height: auto !important;
+  .warum-sticky {
+    position: relative;
+    height: auto;
   }
 
-  .warum-card-slot,
-  .warum-card-slot--mobile {
+  .warum-inner--pinned .warum-cards {
+    max-height: none;
+    padding-right: 8px;
+    margin-right: -8px;
+  }
+
+  .warum-card-slot {
     height: auto;
-    padding: 12px 0;
+    padding: 6px 0;
+  }
+
+  .warum-card {
+    padding: 20px;
   }
 }
 
