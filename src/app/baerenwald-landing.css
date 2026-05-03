@@ -280,14 +280,9 @@
   color: var(--fl-text);
   background: var(--fl-bg);
   -webkit-font-smoothing: antialiased;
-  /* Hero u. a.: .hero-bottom-round (140% Breite) ragt seitlich — ohne Clip horizontaler Overscroll auf Mobil */
-  overflow-x: hidden;
-}
-
-@supports (overflow-x: clip) {
-  .baerenwald-landing {
-    overflow-x: clip;
-  }
+  /* Kein overflow-x auf dem Root: sonst klebt `position:sticky` (z. B. Warum) nicht an der Viewport-Achse. */
+  overflow-x: visible;
+  max-width: 100%;
 }
 
 .fade-up {
@@ -454,9 +449,9 @@
 .hero-shell {
   position: relative;
   z-index: 1;
-  /* Kein overflow-x:hidden: erzeugt auf iOS oft einen Scroll-Port im Hero
-     und „hängenden“ Touch-Scroll beim Verlassen des Bereichs. */
-  overflow: visible;
+  /* Nur hier quer clippen (runde Kante / Blobs) — nicht am ganzen Landing-Root */
+  overflow-x: clip;
+  overflow-y: visible;
   padding-bottom: 16px;
   background: linear-gradient(180deg, #f7f6f3 0%, #f3f1eb 100%);
   isolation: isolate;
@@ -1533,6 +1528,7 @@
   position: relative;
   background: #1a3d2b;
   color: #fff;
+  overflow: visible;
 }
 
 /* Explizite Höhe = Scroll-Maß für useScroll (nicht nur min-height auf der Section) */
@@ -1692,22 +1688,39 @@
     height: 440vh;
   }
 
+  /* Sticky-Bühne: volle Viewport-Höhe, Inhalt oben→unten (iOS: dvh / fill-available) */
+  .warum-scroll-track--mobile-story > .warum-pin-stage {
+    align-items: stretch;
+    justify-content: flex-start;
+    height: 100vh;
+    height: 100dvh;
+    max-height: 100dvh;
+    min-height: 100vh;
+    min-height: 100dvh;
+    min-height: -webkit-fill-available;
+    padding-top: max(8px, env(safe-area-inset-top, 0px));
+    padding-bottom: max(8px, env(safe-area-inset-bottom, 0px));
+  }
+
   .warum-inner {
     grid-template-columns: 1fr;
     padding: 0 1.25rem;
   }
 
-  /* Mobil: Spalte, Karten-Bereich wächst — Stack hat fixe Höhe */
+  /* Mobil: eine Spalte — Überschrift + Karten-Stack bleiben in der klebenden Bühne */
   .warum-inner--pinned.warum-inner--mobile-stack {
     display: flex;
     flex-direction: column;
-    justify-content: center;
+    justify-content: flex-start;
     align-items: stretch;
-    gap: 10px;
+    gap: 8px;
+    flex: 1 1 auto;
+    width: 100%;
     height: 100%;
-    max-height: 100vh;
-    padding-top: max(12px, env(safe-area-inset-top, 0px));
-    padding-bottom: max(12px, env(safe-area-inset-bottom, 0px));
+    max-height: none;
+    min-height: 0;
+    padding-top: 0;
+    padding-bottom: 0;
     box-sizing: border-box;
   }
 
@@ -1740,10 +1753,8 @@
     display: block;
     flex: 1 1 auto;
     width: 100%;
-    min-height: min(46vh, 340px);
-    max-height: min(52vh, 400px);
-    height: min(52vh, 400px);
-    margin-top: 4px;
+    min-height: min(38dvh, 300px);
+    margin-top: 2px;
     overflow: visible;
     padding-right: 0;
     margin-right: 0;
