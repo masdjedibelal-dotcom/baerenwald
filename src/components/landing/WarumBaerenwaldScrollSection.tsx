@@ -1,8 +1,7 @@
 "use client";
 
-import { motion, useScroll, useTransform } from "framer-motion";
-import type { MotionValue } from "framer-motion";
-import { useEffect, useRef, useState } from "react";
+import { motion, useInView } from "framer-motion";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 
 import { WARUM_EINSATZ_BLOCKS } from "@/lib/warum-blocks";
 
@@ -92,37 +91,59 @@ function WarumStaticCard({
   );
 }
 
-function WarumScrollCard({
-  x,
-  opacity,
-  block,
-  index,
-  stackZIndex,
+/** Mobil: normales Scrollen, Karten blenden nacheinander ein (useInView) */
+function WarumRevealCard({
+  children,
+  delay = 0,
 }: {
-  x: MotionValue<number>;
-  opacity: MotionValue<number>;
-  block: (typeof WARUM_EINSATZ_BLOCKS)[number];
-  index: number;
-  /** Stacking: höhere Karte liegt oben (Apple-artig übereinander) */
-  stackZIndex: number;
+  children: ReactNode;
+  delay?: number;
 }) {
+  const ref = useRef(null);
+  const inView = useInView(ref, { once: true, margin: "-10% 0px -8% 0px" });
+
   return (
-    <div
-      className="warum-card-slot warum-card-slot--stack"
-      style={{ zIndex: stackZIndex }}
+    <motion.div
+      ref={ref}
+      className="warum-card"
+      initial={{ opacity: 0, y: 28 }}
+      animate={inView ? { opacity: 1, y: 0 } : { opacity: 0, y: 28 }}
+      transition={{ duration: 0.45, delay }}
     >
-      <motion.div className="warum-card" style={{ x, opacity }}>
-        <span className="warum-card-icon" aria-hidden>
-          <WarumEinsatzIcon index={index} />
-        </span>
-        <h3>{block.titel}</h3>
-        <p>{block.text}</p>
-      </motion.div>
-    </div>
+      {children}
+    </motion.div>
   );
 }
 
-/** Desktop: normale Sektion ohne Scroll-Story */
+function WarumMobileSimple() {
+  return (
+    <section className="warum-section" aria-labelledby="warum-heading">
+      <div className="warum-inner warum-inner--static">
+        <div className="warum-sticky">
+          <WarumHeadline />
+        </div>
+        <div className="warum-cards warum-cards--static">
+          {WARUM_EINSATZ_BLOCKS.map((block, index) => (
+            <div
+              key={block.titel}
+              className="warum-card-slot warum-card-slot--reveal"
+            >
+              <WarumRevealCard delay={index * 0.08}>
+                <span className="warum-card-icon" aria-hidden>
+                  <WarumEinsatzIcon index={index} />
+                </span>
+                <h3>{block.titel}</h3>
+                <p>{block.text}</p>
+              </WarumRevealCard>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/** Desktop: statische Karten */
 function WarumDesktopStatic() {
   return (
     <section className="warum-section" aria-labelledby="warum-heading">
@@ -140,65 +161,6 @@ function WarumDesktopStatic() {
   );
 }
 
-/** Mobil: Sticky-Bühne + Karten als Stack (übereinander, nacheinander von rechts/links) */
-function WarumMobileScrollStory() {
-  const trackRef = useRef<HTMLDivElement>(null);
-
-  const { scrollYProgress } = useScroll({
-    target: trackRef,
-    offset: ["start start", "end end"],
-  });
-
-  /* Karte 1: von rechts einfliegen, dann sichtbar */
-  const x1 = useTransform(scrollYProgress, [0, 0.14], [200, 0]);
-  const opacity1 = useTransform(scrollYProgress, [0, 0.08, 0.2], [0, 1, 1]);
-
-  /* Karte 2: von rechts über Karte 1 */
-  const x2 = useTransform(scrollYProgress, [0.22, 0.38], [200, 0]);
-  const opacity2 = useTransform(scrollYProgress, [0.2, 0.26, 0.45], [0, 1, 1]);
-
-  /* Karte 3: von links über Karte 2 */
-  const x3 = useTransform(scrollYProgress, [0.44, 0.6], [-200, 0]);
-  const opacity3 = useTransform(scrollYProgress, [0.42, 0.5, 0.68], [0, 1, 1]);
-
-  return (
-    <section className="warum-section" aria-labelledby="warum-heading">
-      <div ref={trackRef} className="warum-scroll-track warum-scroll-track--mobile-story">
-        <div className="warum-pin-stage">
-          <div className="warum-inner warum-inner--pinned warum-inner--mobile-stack">
-            <div className="warum-sticky">
-              <WarumHeadline />
-            </div>
-            <div className="warum-cards warum-cards--stack">
-              <WarumScrollCard
-                x={x1}
-                opacity={opacity1}
-                block={WARUM_EINSATZ_BLOCKS[0]!}
-                index={0}
-                stackZIndex={1}
-              />
-              <WarumScrollCard
-                x={x2}
-                opacity={opacity2}
-                block={WARUM_EINSATZ_BLOCKS[1]!}
-                index={1}
-                stackZIndex={2}
-              />
-              <WarumScrollCard
-                x={x3}
-                opacity={opacity3}
-                block={WARUM_EINSATZ_BLOCKS[2]!}
-                index={2}
-                stackZIndex={3}
-              />
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
-  );
-}
-
 export function WarumBaerenwaldScrollSection() {
   const [mobile, setMobile] = useState(false);
 
@@ -210,5 +172,5 @@ export function WarumBaerenwaldScrollSection() {
     return () => mq.removeEventListener("change", apply);
   }, []);
 
-  return mobile ? <WarumMobileScrollStory /> : <WarumDesktopStatic />;
+  return mobile ? <WarumMobileSimple /> : <WarumDesktopStatic />;
 }

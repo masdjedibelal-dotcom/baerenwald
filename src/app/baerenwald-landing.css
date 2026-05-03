@@ -280,9 +280,9 @@
   color: var(--fl-text);
   background: var(--fl-bg);
   -webkit-font-smoothing: antialiased;
-  /* Kein overflow-x auf dem Root: sonst klebt `position:sticky` (z. B. Warum) nicht an der Viewport-Achse. */
-  overflow-x: visible;
+  overflow-x: clip;
   max-width: 100%;
+  width: 100%;
 }
 
 .fade-up {
@@ -1523,36 +1523,12 @@
   color: rgba(255, 255, 255, 0.88);
 }
 
-/* ── Warum Bärenwald: Scroll-Track + sticky Bühne (Desktop & Mobil) ── */
+/* ── Warum Bärenwald: statische Sektion; Mobil: Karten per useInView ── */
 .warum-section {
   position: relative;
   background: #1a3d2b;
   color: #fff;
   overflow: visible;
-}
-
-/* Explizite Höhe = Scroll-Maß für useScroll (nicht nur min-height auf der Section) */
-.warum-scroll-track {
-  position: relative;
-  width: 100%;
-  height: 400vh;
-  box-sizing: border-box;
-}
-
-/* Sticky: ganze Szene (Hintergrund + Grid) klebt 100vh — Karten per Scroll-Progress */
-.warum-pin-stage {
-  position: sticky;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 100vh;
-  min-height: 100vh;
-  width: 100%;
-  box-sizing: border-box;
-  background: #1a3d2b;
-  display: flex;
-  align-items: center;
-  justify-content: center;
 }
 
 .warum-inner {
@@ -1566,15 +1542,7 @@
   box-sizing: border-box;
 }
 
-.warum-inner--pinned {
-  width: 100%;
-  height: 100%;
-  max-height: 100vh;
-  min-height: 0;
-  align-items: center;
-}
-
-/* Desktop: statisches Layout ohne Scroll-Story */
+/* Statisches Layout (Desktop & Mobil) */
 .warum-inner--static {
   align-items: start;
   padding-top: 72px;
@@ -1600,10 +1568,6 @@
   box-sizing: border-box;
 }
 
-.warum-inner--pinned .warum-sticky {
-  align-self: center;
-}
-
 .warum-h2 {
   font-size: clamp(24px, 3vw, 32px);
   font-weight: 800;
@@ -1626,15 +1590,6 @@
   gap: clamp(10px, 1.8vh, 18px);
   min-height: 0;
   box-sizing: border-box;
-}
-
-.warum-inner--pinned .warum-cards {
-  height: 100%;
-  max-height: min(88vh, 820px);
-  /* translateX darf nicht weg-clippen — sonst bleiben Karten „unsichtbar“ */
-  overflow: visible;
-  padding-right: 12px;
-  margin-right: -12px;
 }
 
 .warum-card-slot {
@@ -1679,115 +1634,23 @@
 }
 
 @media (max-width: 768px) {
-  /* Mehr Scrollweg pro Karte (Stack-Animation) */
-  .warum-scroll-track {
-    height: 320vh;
-  }
-
-  .warum-scroll-track.warum-scroll-track--mobile-story {
-    height: 440vh;
-  }
-
-  /* Sticky-Bühne: volle Viewport-Höhe, Inhalt oben→unten (iOS: dvh / fill-available) */
-  .warum-scroll-track--mobile-story > .warum-pin-stage {
-    align-items: stretch;
-    justify-content: flex-start;
-    height: 100vh;
-    height: 100dvh;
-    max-height: 100dvh;
-    min-height: 100vh;
-    min-height: 100dvh;
-    min-height: -webkit-fill-available;
-    padding-top: max(8px, env(safe-area-inset-top, 0px));
-    padding-bottom: max(8px, env(safe-area-inset-bottom, 0px));
-  }
-
   .warum-inner {
     grid-template-columns: 1fr;
     padding: 0 1.25rem;
   }
 
-  /* Mobil: eine Spalte — Überschrift + Karten-Stack bleiben in der klebenden Bühne */
-  .warum-inner--pinned.warum-inner--mobile-stack {
-    display: flex;
-    flex-direction: column;
-    justify-content: flex-start;
-    align-items: stretch;
-    gap: 8px;
-    flex: 1 1 auto;
-    width: 100%;
-    height: 100%;
-    max-height: none;
-    min-height: 0;
-    padding-top: 0;
-    padding-bottom: 0;
-    box-sizing: border-box;
-  }
-
-  .warum-inner--pinned.warum-inner--mobile-stack .warum-sticky {
-    flex: 0 0 auto;
-    padding: 0 0 4px;
-    padding-right: 0;
-  }
-
-  .warum-inner--pinned .warum-sticky {
-    padding: 0 0 10px;
-    padding-right: 0;
+  .warum-inner--static {
+    padding-top: 48px;
+    padding-bottom: 56px;
   }
 
   .warum-sticky {
-    position: relative;
-    height: auto;
-  }
-
-  /* Nicht-Stack: alter Abstand (falls je wieder genutzt) */
-  .warum-inner--pinned .warum-cards:not(.warum-cards--stack) {
-    max-height: none;
-    padding-right: 8px;
-    margin-right: -8px;
-  }
-
-  /* Karten übereinander: eine Bühne, absolute Slots, steigendes z-index */
-  .warum-cards.warum-cards--stack {
-    position: relative;
-    display: block;
-    flex: 1 1 auto;
-    width: 100%;
-    min-height: min(38dvh, 300px);
-    margin-top: 2px;
-    overflow: visible;
     padding-right: 0;
-    margin-right: 0;
-    isolation: isolate;
+    padding-bottom: 8px;
   }
 
-  .warum-cards--stack .warum-card-slot--stack {
-    position: absolute;
-    left: 0;
-    right: 0;
-    top: 0;
-    bottom: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 0;
-    height: auto;
-    pointer-events: none;
-  }
-
-  .warum-cards--stack .warum-card {
-    width: 100%;
-    max-width: 100%;
-    pointer-events: auto;
-    /* Deckt die darunterliegende Karte zuverlässig ab */
-    background: #243d31;
-    border: 1px solid rgba(255, 255, 255, 0.14);
-    box-shadow: 0 18px 40px rgba(0, 0, 0, 0.28);
-  }
-
-  .warum-card-slot:not(.warum-card-slot--stack) {
-    height: auto;
-    padding: 6px 0;
+  .warum-card-slot--reveal {
+    padding: 8px 0;
   }
 
   .warum-card {
