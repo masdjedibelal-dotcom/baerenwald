@@ -1683,13 +1683,38 @@
 }
 
 @media (max-width: 768px) {
+  /* Mehr Scrollweg pro Karte (Stack-Animation) */
   .warum-scroll-track {
     height: 320vh;
+  }
+
+  .warum-scroll-track.warum-scroll-track--mobile-story {
+    height: 440vh;
   }
 
   .warum-inner {
     grid-template-columns: 1fr;
     padding: 0 1.25rem;
+  }
+
+  /* Mobil: Spalte, Karten-Bereich wächst — Stack hat fixe Höhe */
+  .warum-inner--pinned.warum-inner--mobile-stack {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: stretch;
+    gap: 10px;
+    height: 100%;
+    max-height: 100vh;
+    padding-top: max(12px, env(safe-area-inset-top, 0px));
+    padding-bottom: max(12px, env(safe-area-inset-bottom, 0px));
+    box-sizing: border-box;
+  }
+
+  .warum-inner--pinned.warum-inner--mobile-stack .warum-sticky {
+    flex: 0 0 auto;
+    padding: 0 0 4px;
+    padding-right: 0;
   }
 
   .warum-inner--pinned .warum-sticky {
@@ -1702,13 +1727,54 @@
     height: auto;
   }
 
-  .warum-inner--pinned .warum-cards {
+  /* Nicht-Stack: alter Abstand (falls je wieder genutzt) */
+  .warum-inner--pinned .warum-cards:not(.warum-cards--stack) {
     max-height: none;
     padding-right: 8px;
     margin-right: -8px;
   }
 
-  .warum-card-slot {
+  /* Karten übereinander: eine Bühne, absolute Slots, steigendes z-index */
+  .warum-cards.warum-cards--stack {
+    position: relative;
+    display: block;
+    flex: 1 1 auto;
+    width: 100%;
+    min-height: min(46vh, 340px);
+    max-height: min(52vh, 400px);
+    height: min(52vh, 400px);
+    margin-top: 4px;
+    overflow: visible;
+    padding-right: 0;
+    margin-right: 0;
+    isolation: isolate;
+  }
+
+  .warum-cards--stack .warum-card-slot--stack {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    height: auto;
+    pointer-events: none;
+  }
+
+  .warum-cards--stack .warum-card {
+    width: 100%;
+    max-width: 100%;
+    pointer-events: auto;
+    /* Deckt die darunterliegende Karte zuverlässig ab */
+    background: #243d31;
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    box-shadow: 0 18px 40px rgba(0, 0, 0, 0.28);
+  }
+
+  .warum-card-slot:not(.warum-card-slot--stack) {
     height: auto;
     padding: 6px 0;
   }

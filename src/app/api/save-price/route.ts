@@ -2,6 +2,10 @@ import { NextResponse } from "next/server";
 import { Resend } from "resend";
 
 import { SITE_CONFIG } from "@/lib/config";
+import {
+  buildSavePriceCustomerHtml,
+  buildSavePriceInternalHtml,
+} from "@/lib/email/lead-mail-templates";
 
 export type SavePriceBody = {
   email?: string;
@@ -54,60 +58,40 @@ export async function POST(request: Request) {
     const resend = new Resend(apiKey);
     const from =
       process.env.RESEND_FROM ?? "Bärenwald <onboarding@resend.dev>";
-    const rechnerUrl = `${SITE_CONFIG.url}/rechner`;
 
-    const customerText = [
-      "Hallo,",
-      "",
-      "hier ist dein Preisrahmen:",
-      "",
-      `${situation} — ${bereiche}`,
-      `${priceMin.toLocaleString("de-DE")} – ${priceMax.toLocaleString("de-DE")} €`,
-      "Richtwert für München & Umgebung",
-      "",
-      "Dieser Preisrahmen basiert auf aktuellen Münchner Marktpreisen.",
-      "Das verbindliche Festpreisangebot erhalten Sie nach dem Vor-Ort-Termin.",
-      "",
-      "Bereit für den nächsten Schritt?",
-      `→ ${rechnerUrl}`,
-      "",
-      "Bärenwald München",
-      SITE_CONFIG.phone.replace(/\s/g, " "),
-      SITE_CONFIG.email,
-    ].join("\n");
+    const customerHtml = buildSavePriceCustomerHtml({
+      situation,
+      bereiche,
+      plz,
+      priceMin,
+      priceMax,
+    });
 
-    const internalText = [
-      "Lead-Typ: email_save (Preisrahmen per E-Mail)",
-      `E-Mail: ${email}`,
-      `Situation: ${situation}`,
-      `Bereiche: ${bereiche}`,
-      `PLZ: ${plz}`,
-      `Preisrange: ${priceMin} – ${priceMax} €`,
-    ].join("\n");
-
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 8000);
+    const internalHtml = buildSavePriceInternalHtml({
+      email,
+      situation,
+      bereiche,
+      plz,
+      priceMin,
+      priceMax,
+    });
 
     let sendError: string | undefined;
-    try {
-      const { error: err1 } = await resend.emails.send({
+    const { error: err1 } = await resend.emails.send({
+      from,
+      to: email,
+      subject: "Dein Preisrahmen von Bärenwald München",
+      html: customerHtml,
+    });
+    if (err1) sendError = err1.message;
+    if (!sendError) {
+      const { error: err2 } = await resend.emails.send({
         from,
-        to: email,
-        subject: "Dein Preisrahmen von Bärenwald München",
-        text: customerText,
+        to: SITE_CONFIG.email,
+        subject: `Rechner: Preis gespeichert — ${email}`,
+        html: internalHtml,
       });
-      if (err1) sendError = err1.message;
-      if (!sendError) {
-        const { error: err2 } = await resend.emails.send({
-          from,
-          to: SITE_CONFIG.email,
-          subject: `Rechner: Preis gespeichert — ${email}`,
-          text: internalText,
-        });
-        if (err2) sendError = err2.message;
-      }
-    } finally {
-      clearTimeout(timeoutId);
+      if (err2) sendError = err2.message;
     }
 
     if (sendError) {
