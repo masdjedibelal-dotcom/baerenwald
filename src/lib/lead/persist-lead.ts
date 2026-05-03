@@ -2,6 +2,10 @@ import { Resend } from "resend";
 
 import { SITE_CONFIG } from "@/lib/config";
 import {
+  buildInternNotification,
+  buildKundeBestaetigung,
+} from "@/lib/email/lead-mail-templates";
+import {
   erneuernProjektTyp,
   isErneuernProjektBereich,
 } from "@/lib/funnel/projekt-erneuern";
@@ -39,14 +43,6 @@ export type PersistLeadInput = {
 export type PersistLeadResult =
   | { ok: true; id: string }
   | { ok: false; error: string; status: number };
-
-function escapeHtml(s: string): string {
-  return s
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;");
-}
 
 function isValidEmail(s: string): boolean {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s.trim());
@@ -138,6 +134,62 @@ function guProjektDisplayName(bereiche: string[]): string {
     : "Projekt";
 }
 
+function situationDisplay(s: string | null): string | undefined {
+  if (s == null || String(s).trim() === "") return undefined;
+  const key = String(s).trim();
+  const map: Record<string, string> = {
+    kaputt: "Reparatur / Schaden",
+    erneuern: "Erneuern / Umbau",
+    gewerbe: "Gewerbe",
+  };
+  return map[key] ?? key;
+}
+
+function leistungSummary(
+  situation: string | null,
+  bereiche: string[]
+): string | undefined {
+  const s = situationDisplay(situation);
+  const b = bereiche
+    .filter(Boolean)
+    .map((x) => x.replace(/_/g, " "))
+    .join(", ");
+  if (s && b) return `${s} · ${b}`;
+  if (s) return s;
+  if (b) return b;
+  return undefined;
+}
+
+function formatPreisrahmen(
+  preis_min?: number,
+  preis_max?: number
+): string | undefined {
+  if (
+    typeof preis_min === "number" &&
+    typeof preis_max === "number" &&
+    preis_min > 0 &&
+    preis_max > 0
+  ) {
+    return `${preis_min.toLocaleString("de-DE")} – ${preis_max.toLocaleString("de-DE")} €`;
+  }
+  return undefined;
+}
+
+function funnelQuelleDisplay(q: string): string {
+  switch (q) {
+    case "rechner_haupt":
+      return "Rechner (Website)";
+    case "beratung":
+      return "Beratung";
+    case "ausserhalb":
+      return "Außerhalb";
+    case "komplex_rueckruf":
+      return "Komplex / Rückruf";
+    default:
+      return q || "—";
+  }
+}
+
 function buildKundenBestaetigungSubject(raw: {
   situation: string | null;
   bereiche: string[];
@@ -160,101 +212,6 @@ function buildKundenBestaetigungSubject(raw: {
     return `[GU-PROJEKT] - ${projekt} - ${plzPart}`;
   }
   return "Deine Anfrage ist bei uns eingegangen";
-}
-
-function buildKundeBestaetigung({
-  name,
-  preis_min,
-  preis_max,
-}: {
-  name: string;
-  situation?: string | null;
-  bereiche?: string[];
-  preis_min?: number;
-  preis_max?: number;
-}): string {
-  const safeName = escapeHtml(name);
-  const preisText =
-    typeof preis_min === "number" &&
-    typeof preis_max === "number" &&
-    preis_min > 0 &&
-    preis_max > 0
-      ? `<p>Deine Preisindikation: <strong>${preis_min.toLocaleString("de-DE")} – ${preis_max.toLocaleString("de-DE")} €</strong></p>`
-      : "";
-
-  return `<!DOCTYPE html>
-<html>
-<body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; color: #1E1E1E;">
-  <img src="https://baerenwaldmuenchen.de/logo-mark-green.png" height="40" alt="Bärenwald" style="margin-bottom: 24px"/>
-  <h2 style="color: #2E7D52;">Hallo ${safeName},</h2>
-  <p>vielen Dank für deine Anfrage. Wir haben alles erhalten und melden uns innerhalb von <strong>48 Stunden</strong> bei dir.</p>
-  ${preisText}
-  <p style="margin-top: 24px; padding: 16px; background: #EAF3DE; border-radius: 8px;">
-    <strong>Dein nächster Schritt:</strong><br>
-    Wir schauen uns deine Anfrage an und rufen dich zur Terminabsprache an.
-  </p>
-  <p style="margin-top: 32px; color: #888; font-size: 13px;">
-    Bärenwald Handwerksgruppe München<br>
-    baerenwaldmuenchen.de
-  </p>
-</body>
-</html>`;
-}
-
-function buildInternNotification({
-  lead_id,
-  name,
-  email,
-  telefon,
-  situation,
-  bereiche,
-  preis_min,
-  preis_max,
-  plz,
-  nachricht,
-}: {
-  lead_id: string;
-  name: string;
-  email: string;
-  telefon?: string;
-  situation?: string | null;
-  bereiche?: string[];
-  preis_min?: number;
-  preis_max?: number;
-  plz?: string;
-  nachricht?: string;
-}): string {
-  const dashboardBase =
-    process.env.NEXT_PUBLIC_DASHBOARD_URL?.replace(/\/$/, "") ?? "";
-  const link =
-    dashboardBase && lead_id
-      ? `${dashboardBase}/anfragen/${encodeURIComponent(lead_id)}`
-      : "#";
-  const preisCell =
-    typeof preis_min === "number" &&
-    typeof preis_max === "number" &&
-    preis_min > 0 &&
-    preis_max > 0
-      ? `${preis_min.toLocaleString("de-DE")} – ${preis_max.toLocaleString("de-DE")} €`
-      : "—";
-
-  return `<!DOCTYPE html>
-<html>
-<body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; color: #1E1E1E;">
-  <h2 style="color: #2E7D52;">Neue Anfrage eingegangen</h2>
-  <table style="width: 100%; border-collapse: collapse;">
-    <tr><td style="padding: 8px; font-weight: bold; border-bottom: 1px solid #eee;">Name</td><td style="padding: 8px; border-bottom: 1px solid #eee;">${escapeHtml(name)}</td></tr>
-    <tr><td style="padding: 8px; font-weight: bold; border-bottom: 1px solid #eee;">E-Mail</td><td style="padding: 8px; border-bottom: 1px solid #eee;">${escapeHtml(email)}</td></tr>
-    <tr><td style="padding: 8px; font-weight: bold; border-bottom: 1px solid #eee;">Telefon</td><td style="padding: 8px; border-bottom: 1px solid #eee;">${escapeHtml(telefon || "—")}</td></tr>
-    <tr><td style="padding: 8px; font-weight: bold; border-bottom: 1px solid #eee;">PLZ</td><td style="padding: 8px; border-bottom: 1px solid #eee;">${escapeHtml(plz || "—")}</td></tr>
-    <tr><td style="padding: 8px; font-weight: bold; border-bottom: 1px solid #eee;">Situation</td><td style="padding: 8px; border-bottom: 1px solid #eee;">${escapeHtml(situation || "—")}</td></tr>
-    <tr><td style="padding: 8px; font-weight: bold; border-bottom: 1px solid #eee;">Bereiche</td><td style="padding: 8px; border-bottom: 1px solid #eee;">${escapeHtml(bereiche?.join(", ") || "—")}</td></tr>
-    <tr><td style="padding: 8px; font-weight: bold; border-bottom: 1px solid #eee;">Preisindikation</td><td style="padding: 8px; border-bottom: 1px solid #eee;">${escapeHtml(preisCell)}</td></tr>
-    <tr><td style="padding: 8px; font-weight: bold;">Notizen</td><td style="padding: 8px;">${escapeHtml(nachricht || "—")}</td></tr>
-  </table>
-  <a href="${escapeHtml(link)}" style="display: inline-block; margin-top: 24px; padding: 12px 24px; background: #2E7D52; color: white; text-decoration: none; border-radius: 8px; font-weight: bold;">Im Dashboard öffnen →</a>
-</body>
-</html>`;
 }
 
 function mergeFunnelDaten(
@@ -498,6 +455,13 @@ async function persistLeadInner(
 
   if (resendKey) {
     const resend = new Resend(resendKey);
+    const dashboardBase =
+      process.env.NEXT_PUBLIC_DASHBOARD_URL?.replace(/\/$/, "") ?? "";
+    const dashboardUrl =
+      dashboardBase && leadId
+        ? `${dashboardBase}/anfragen/${encodeURIComponent(leadId)}`
+        : undefined;
+
     if (kanal === "website" && hasEmail) {
       try {
         await resend.emails.send({
@@ -511,10 +475,9 @@ async function persistLeadInner(
           }),
           html: buildKundeBestaetigung({
             name,
-            situation,
-            bereiche,
-            preis_min,
-            preis_max,
+            leistung: leistungSummary(situation, bereiche),
+            preis: formatPreisrahmen(preis_min, preis_max),
+            rechnerLink: `${SITE_CONFIG.url}/rechner`,
           }),
         });
       } catch (e) {
@@ -529,16 +492,21 @@ async function persistLeadInner(
           to: internTo,
           subject: `Neue Anfrage: ${name} — ${bereiche.join(", ") || "—"}`,
           html: buildInternNotification({
-            lead_id: leadId,
             name,
             email: kontakt_email_row,
-            telefon,
-            situation,
-            bereiche,
-            preis_min,
-            preis_max,
-            plz,
-            nachricht: notizen,
+            telefon: telefon || undefined,
+            plz: plz || undefined,
+            situation: situationDisplay(situation) ?? situation ?? undefined,
+            bereiche: bereiche.length > 0 ? bereiche : undefined,
+            preis: formatPreisrahmen(preis_min, preis_max),
+            notizen: notizen ?? undefined,
+            dashboardUrl,
+            quelle: funnelQuelleDisplay(String(funnel_quelle)),
+            createdAt: new Date().toLocaleString("de-DE", {
+              dateStyle: "medium",
+              timeStyle: "short",
+            }),
+            leadId,
           }),
         });
       } catch (e) {
