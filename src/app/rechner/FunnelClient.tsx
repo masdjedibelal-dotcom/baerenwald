@@ -40,6 +40,7 @@ import { tileIconForStepValue } from "@/lib/funnel-tile-icons";
 import { calculatePrice } from "@/lib/price-calc";
 import type { FunnelStep, PlzZeitraumAnswer, Situation } from "@/lib/types";
 import { Input } from "@/components/ui/input";
+import { track } from "@/lib/analytics";
 
 const LEAD_FORM_ID = "funnel-lead-form";
 const ACC = SITE_CONFIG.accentColor;
@@ -129,6 +130,31 @@ export function FunnelClient() {
     if (screen === 0) setPriceStepConfirmed(false);
   }, [screen]);
 
+  useEffect(() => {
+    track.rechnerStart(searchParams.get("situation") ?? undefined);
+  }, [searchParams]);
+
+  useEffect(() => {
+    const name =
+      screen === 0
+        ? "Situation"
+        : screen <= E
+          ? `Zusatzfrage ${screen}`
+          : screen <= plzScreen
+            ? visibleSteps[screen - E - 1]?.id ?? `Konfig ${screen}`
+            : screen === loadScreen
+              ? "Berechnung"
+              : screen === resultScreen
+                ? "Ergebnis"
+                : screen === contactScreen
+                  ? "Kontakt"
+                  : screen >= thanksScreen
+                    ? "Danke"
+                    : `Screen ${screen}`;
+    track.rechnerSchritt(screen + 1, name);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- nur bei Screen-Wechsel; Labels nutzen aktuelles E/visibleSteps
+  }, [screen]);
+
   const patchLead = useCallback(
     (
       patch: Partial<
@@ -178,6 +204,10 @@ export function FunnelClient() {
   const handleNext = useCallback(() => {
     if (screen === 0) {
       if (!funnel.situation) return;
+      track.leistungGewaehlt(
+        funnel.situation ?? "—",
+        funnel.situation ?? "—"
+      );
       setPriceStepConfirmed(false);
       setScreen(1);
       return;
@@ -550,7 +580,14 @@ export function FunnelClient() {
           <LoadingScreen
             key={loadKey}
             situation={funnel.situation}
-            onComplete={() => setScreen(resultScreen)}
+            onComplete={() => {
+              track.preisAngezeigt(
+                funnel.situation ?? "—",
+                funnel.priceMin,
+                funnel.priceMax
+              );
+              setScreen(resultScreen);
+            }}
           />
         </StepWrapper>
       );
@@ -636,7 +673,10 @@ export function FunnelClient() {
               anmerkungen: funnel.anmerkungen,
             }}
             onChange={patchLead}
-            onSuccess={() => setScreen(thanksScreen)}
+            onSuccess={() => {
+              track.leadAbgeschickt(funnel.situation ?? "—");
+              setScreen(thanksScreen);
+            }}
             formId={LEAD_FORM_ID}
           />
         </StepWrapper>

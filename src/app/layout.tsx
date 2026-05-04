@@ -4,6 +4,7 @@ import { Lora, Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
 import { JsonLdOrganization } from "@/components/JsonLdOrganization";
 import { SITE_CONFIG } from "@/lib/config";
+import { PHProvider } from "./providers";
 
 const plusJakarta = Plus_Jakarta_Sans({
   subsets: ["latin"],
@@ -116,8 +117,10 @@ export default function RootLayout({
       }
     >
       <body className="min-h-screen bg-background font-sans antialiased">
-        <JsonLdOrganization />
-        {children}
+        <PHProvider>
+          <JsonLdOrganization />
+          {children}
+        </PHProvider>
       </body>
     </html>
   );

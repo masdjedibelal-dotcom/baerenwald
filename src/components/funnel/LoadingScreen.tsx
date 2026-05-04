@@ -33,7 +33,7 @@ export function LoadingScreen({
   }, [onComplete]);
 
   const steps: { text: string }[] = [
-    { text: "Münchner Marktpreise werden berechnet…" },
+    { text: "Anhand unserer Projekterfahrung in München wird gerechnet …" },
     { text: "Dein Projekt wird eingeordnet…" },
     { text: "Dein unverbindlicher Preisrahmen wird erstellt…" },
   ];

@@ -93,6 +93,11 @@ import { isB2B } from "@/lib/funnel/types";
 import { isBwTrustScreenId } from "@/lib/funnel/types";
 import { tileIconForStepValue } from "@/lib/funnel-tile-icons";
 import type { StepOption as LibStepOption } from "@/lib/types";
+import {
+  bwRechnerSchrittForPosthog,
+  formatTrackLeistung,
+  track,
+} from "@/lib/analytics";
 import { cn } from "@/lib/utils";
 
 const LEAD_FORM_ID = "bw-funnel-lead";
@@ -210,6 +215,8 @@ function FunnelRechnerInner() {
     target: Screen;
     text: string;
   } | null>(null);
+  const lastLeistungGewaehltKey = useRef("");
+  const preisAngezeigtTracked = useRef(false);
   const {
     state,
     setSituation,
@@ -468,6 +475,47 @@ function FunnelRechnerInner() {
     return () => window.clearTimeout(id);
   }, [screen, microNote]);
 
+  useEffect(() => {
+    const leistungParam =
+      searchParams.get("leistung")?.trim() ||
+      searchParams.get("gewerk")?.trim() ||
+      undefined;
+    track.rechnerStart(leistungParam);
+  }, [searchParams]);
+
+  useEffect(() => {
+    if (!state.situation || state.bereiche.length === 0) return;
+    const leistung = state.bereiche.join(", ");
+    const key = `${state.situation}|${leistung}`;
+    if (lastLeistungGewaehltKey.current === key) return;
+    lastLeistungGewaehltKey.current = key;
+    track.leistungGewaehlt(leistung, state.situation);
+  }, [state.situation, state.bereiche]);
+
+  useEffect(() => {
+    const { schritt, schrittName } = bwRechnerSchrittForPosthog(
+      screen,
+      stepSequence
+    );
+    track.rechnerSchritt(schritt, schrittName);
+  }, [screen, stepSequence]);
+
+  useEffect(() => {
+    if (screen !== "result") {
+      preisAngezeigtTracked.current = false;
+      return;
+    }
+    if (preisAngezeigtTracked.current) return;
+    if (state.priceMin <= 0 || state.priceMax <= 0) return;
+    if (isBwZuKomplexErgebnis(state, resultModus)) return;
+    preisAngezeigtTracked.current = true;
+    track.preisAngezeigt(
+      formatTrackLeistung(state.situation, state.bereiche),
+      state.priceMin,
+      state.priceMax
+    );
+  }, [screen, state, resultModus]);
+
   const microBannerFor = useCallback(
     (target: Screen) =>
       microNote?.target === target ? (
@@ -555,6 +603,10 @@ function FunnelRechnerInner() {
   );
 
   const handleReset = useCallback(() => {
+    track.abbruch(
+      screen,
+      formatTrackLeistung(state.situation, state.bereiche)
+    );
     reset();
     setSubmitted(false);
     setMindestauftrag(false);
@@ -582,7 +634,7 @@ function FunnelRechnerInner() {
       left: 0,
       behavior: "instant" as ScrollBehavior,
     });
-  }, [reset, setSubmitted, router]);
+  }, [reset, setSubmitted, router, screen, state.situation, state.bereiche]);
 
   const handleNext = useCallback(() => {
     if (isBwFachdetailQuestionScreenId(screen)) {
@@ -1067,6 +1119,9 @@ function FunnelRechnerInner() {
         );
         return;
       }
+      track.leadAbgeschickt(
+        formatTrackLeistung(state.situation, state.bereiche)
+      );
       setSubmitted(true);
       setScreen("danke");
     } catch {
@@ -1155,6 +1210,9 @@ function FunnelRechnerInner() {
       })
     );
     if (!result.ok) return;
+    track.leadAbgeschickt(
+      formatTrackLeistung(state.situation, state.bereiche)
+    );
     setIsAusserhalbLead(true);
     setSubmitted(true);
     setScreen("danke");
@@ -1741,6 +1799,9 @@ function FunnelRechnerInner() {
               resultModus={resultModus}
               schwellenwertAusgeloest={schwellenwertAusgeloest}
               onKomplexRueckrufSuccess={() => {
+                track.leadAbgeschickt(
+                  formatTrackLeistung(state.situation, state.bereiche)
+                );
                 setKomplexRueckrufDanke(true);
                 setSubmitted(true);
                 setScreen("danke");

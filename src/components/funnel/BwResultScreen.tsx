@@ -22,6 +22,7 @@ import {
   type BwResultModus,
 } from "@/lib/funnel/price-calc";
 import { SITE_CONFIG } from "@/lib/config";
+import { formatTrackLeistung, track } from "@/lib/analytics";
 import { cn } from "@/lib/utils";
 import {
   buildBwLeadPayload,
@@ -775,6 +776,9 @@ export function BwResultScreen({
         }),
       });
       if (!res.ok) throw new Error("save failed");
+      track.preisPerMail(
+        formatTrackLeistung(state.situation, state.bereiche)
+      );
       setSaveEmailSent(true);
     } catch {
       setSaveEmailError(
@@ -877,7 +881,7 @@ export function BwResultScreen({
 
           {state.istFallback ? (
             <p className="preis-karte-fallback">
-              Für deine Auswahl nutzen wir allgemeine Münchner Marktpreise als
+              Für deine Auswahl nutzen wir unsere Projekterfahrung in München als
               unverbindliche Preisindikation — beim Vor-Ort-Termin nennen wir dir
               einen genauen Preis.
             </p>
@@ -935,8 +939,9 @@ export function BwResultScreen({
 
       {hasRange ? (
         <p className="preis-disclaimer">
-          Unverbindlicher Preisrahmen (Preisindikation) auf Basis Münchner
-          Marktpreise 2026 — verbindliches Festpreisangebot nach Vor-Ort-Termin.
+          Unverbindlicher Preisrahmen (Preisindikation) auf Basis unserer
+          Projekterfahrung in München — verbindliches Festpreisangebot nach
+          Vor-Ort-Termin.
         </p>
       ) : null}
 

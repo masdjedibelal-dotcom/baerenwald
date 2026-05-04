@@ -35,6 +35,8 @@ import {
   heroKategorieLabel,
   type HeroSearchSuggestion,
 } from "@/lib/search";
+import posthog from "posthog-js";
+import { track } from "@/lib/analytics";
 
 const TESTIMONIALS = [
   {
@@ -319,6 +321,7 @@ export default function BaerenwaldLandingClient({
 
   const onSearch = (e: FormEvent) => {
     e.preventDefault();
+    posthog.capture("hero_search_submitted", { query: searchQ });
     if (
       showSearchSuggestions &&
       suggestActive >= 0 &&
@@ -491,6 +494,7 @@ export default function BaerenwaldLandingClient({
                       key={c.leistung}
                       className="hero-chip-link"
                       href={`/rechner?leistung=${c.leistung}&situation=${c.situation}&nf=1`}
+                      onClick={() => track.heroChipKlick(c.label)}
                     >
                       {c.label}
                     </Link>
@@ -595,7 +599,11 @@ export default function BaerenwaldLandingClient({
             >
               Zum Preisrechner
             </Link>
-            <a href={SITE_CONFIG.phoneHref} className="final-cta-btn-ghost">
+            <a
+              href={SITE_CONFIG.phoneHref}
+              className="final-cta-btn-ghost"
+              onClick={() => posthog.capture("cta_phone_clicked", { location: "final_cta" })}
+            >
               {SITE_CONFIG.phone} anrufen
             </a>
           </div>
@@ -610,7 +618,11 @@ export default function BaerenwaldLandingClient({
               Nicht dabei? Ruf uns an — wir helfen persönlich weiter.
             </p>
             <div style={{ marginTop: "20px", display: "flex", flexWrap: "wrap", gap: "10px", alignItems: "center" }}>
-              <a href={SITE_CONFIG.phoneHref} className="btn-cta">
+              <a
+                href={SITE_CONFIG.phoneHref}
+                className="btn-cta"
+                onClick={() => posthog.capture("cta_phone_clicked", { location: "faq" })}
+              >
                 {SITE_CONFIG.phone}
               </a>
             </div>

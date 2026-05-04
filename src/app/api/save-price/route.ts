@@ -5,7 +5,9 @@ import { SITE_CONFIG } from "@/lib/config";
 import {
   buildSavePriceCustomerHtml,
   buildSavePriceInternalHtml,
+  SAVE_PRICE_CUSTOMER_EMAIL_SUBJECT,
 } from "@/lib/email/lead-mail-templates";
+import { getPostHogClient } from "@/lib/posthog-server";
 
 export type SavePriceBody = {
   email?: string;
@@ -80,7 +82,7 @@ export async function POST(request: Request) {
     const { error: err1 } = await resend.emails.send({
       from,
       to: email,
-      subject: "Dein Preisrahmen von Bärenwald München",
+      subject: SAVE_PRICE_CUSTOMER_EMAIL_SUBJECT,
       html: customerHtml,
     });
     if (err1) sendError = err1.message;
@@ -101,6 +103,18 @@ export async function POST(request: Request) {
         { status: 500 }
       );
     }
+
+    const posthog = getPostHogClient();
+    posthog?.capture({
+      distinctId: email,
+      event: "server_price_email_sent",
+      properties: {
+        situation,
+        plz,
+        price_min: priceMin,
+        price_max: priceMax,
+      },
+    });
 
     return NextResponse.json({ success: true });
   } catch (e) {

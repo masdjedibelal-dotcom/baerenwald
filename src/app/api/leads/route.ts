@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import type { PersistLeadInput } from "@/lib/lead/persist-lead";
 import { persistLead } from "@/lib/lead/persist-lead";
 import type { PriceLineItem } from "@/lib/funnel/types";
+import { getPostHogClient } from "@/lib/posthog-server";
 
 /** Legacy Payload vom Funnel (`BwLeadBody`) — wird auf {@link PersistLeadInput} gemappt. */
 export type BwLeadBody = {
@@ -110,6 +111,23 @@ export async function POST(request: Request) {
         { status: result.status }
       );
     }
+
+    const posthog = getPostHogClient();
+    posthog?.capture({
+      distinctId: result.id ?? "anonymous",
+      event: "server_lead_created",
+      properties: {
+        lead_id: result.id,
+        situation: body.situation ?? null,
+        funnel_quelle: input.funnel_quelle,
+        lead_type: body.leadType ?? null,
+        plz: body.plz ?? null,
+        price_min: body.priceMin ?? null,
+        price_max: body.priceMax ?? null,
+        has_slot: Boolean(body.selectedSlot),
+        photo_count: body.photoCount ?? 0,
+      },
+    });
 
     return NextResponse.json({
       success: true,

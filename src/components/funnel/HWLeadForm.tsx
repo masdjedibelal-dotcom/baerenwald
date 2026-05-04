@@ -134,8 +134,9 @@ export function HWLeadForm({
           kontaktieren. Du kannst der Nutzung jederzeit widersprechen.
         </p>
         <p className="text-[11px] leading-relaxed text-text-tertiary">
-          Unverbindlicher Preisrahmen / Preisindikation auf Basis Münchner
-          Marktpreise 2026. Verbindliches Festpreisangebot nach Vor-Ort-Termin.
+          Unverbindlicher Preisrahmen / Preisindikation auf Basis unserer
+          Projekterfahrung in München. Verbindliches Festpreisangebot nach
+          Vor-Ort-Termin.
         </p>
       </form>
     </div>
