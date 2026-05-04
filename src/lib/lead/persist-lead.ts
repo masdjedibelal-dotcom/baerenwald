@@ -477,7 +477,6 @@ async function persistLeadInner(
             name,
             leistung: leistungSummary(situation, bereiche),
             preis: formatPreisrahmen(preis_min, preis_max),
-            rechnerLink: `${SITE_CONFIG.url}/rechner`,
           }),
         });
       } catch (e) {
