@@ -19,21 +19,13 @@ export default function AgbPage() {
               <span className="breadcrumb-current">AGB</span>
             </nav>
             <h1 className="page-hero-h1">Allgemeine Geschäftsbedingungen</h1>
-            <p className="page-hero-sub">Stand: April 2026</p>
+            <p className="page-hero-sub">Stand: Mai 2026</p>
           </div>
         </div>
 
         {/* Inhalt */}
         <section className="article-section article-section--lg content-section--white">
           <div className="article-section-inner">
-            {/* Warnhinweis */}
-            <div className="hinweis hinweis--warn" style={{ marginBottom: "32px" }}>
-              <p>
-                Diese AGB befinden sich noch in Überarbeitung und werden in Kürze durch eine
-                anwaltlich geprüfte Fassung ersetzt.
-              </p>
-            </div>
-
             <div className="article-body legal-body">
               <strong>§ 1 Geltungsbereich</strong>
               <p>

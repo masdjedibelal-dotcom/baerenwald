@@ -11,56 +11,56 @@ export default function ImpressumPage() {
   return (
     <PageLayout>
       <div className="baerenwald-landing">
-        {/* Hero */}
         <div className="page-hero">
           <div className="page-hero-inner">
             <nav className="breadcrumb" aria-label="Breadcrumb">
               <a href="/">Startseite</a>
-              <span className="breadcrumb-sep" aria-hidden>›</span>
+              <span className="breadcrumb-sep" aria-hidden>
+                ›
+              </span>
               <span className="breadcrumb-current">Impressum</span>
             </nav>
             <h1 className="page-hero-h1">Impressum</h1>
-            <p className="page-hero-sub">Stand: April 2026</p>
+            <p className="page-hero-sub">Stand: Mai 2026</p>
           </div>
         </div>
 
-        {/* Inhalt */}
         <section className="article-section article-section--lg content-section--white">
           <div className="article-section-inner">
             <div className="article-body legal-body">
-              <strong>Angaben gemäß § 5 TMG</strong>
+              <strong>Angaben gemäß § 5 DDG</strong>
               <p>
-                Beran Cakmak<br />
-                Einzelunternehmen<br />
-                Bärenwaldstraße 20<br />
+                Beran Cakmak
+                <br />
+                Einzelunternehmen
+                <br />
+                Bärenwaldstraße 20
+                <br />
                 81737 München
               </p>
 
               <strong>Kontakt</strong>
               <p>
-                Telefon (Festnetz):{" "}
-                <a href={SITE_CONFIG.phoneHref}>{SITE_CONFIG.phone}</a>
+                Telefon: <a href={SITE_CONFIG.phoneHref}>{SITE_CONFIG.phone}</a>
                 <br />
-                Mobil:{" "}
-                <a href={SITE_CONFIG.phoneMobilHref}>{SITE_CONFIG.phoneMobil}</a>
+                Mobil: <a href={SITE_CONFIG.phoneMobilHref}>{SITE_CONFIG.phoneMobil}</a>
                 <br />
-                E-Mail:{" "}
-                <a href="mailto:info@baerenwald-muenchen.de">
-                  info@baerenwald-muenchen.de
-                </a>
+                E-Mail: <a href="mailto:info@baerenwald-muenchen.de">info@baerenwald-muenchen.de</a>
               </p>
 
-              <strong>Verantwortlich für den Inhalt nach § 55 Abs. 2 RStV</strong>
+              <strong>Verantwortlich für den Inhalt gemäß § 18 Abs. 2 MStV</strong>
               <p>
-                Beran Cakmak<br />
-                Bärenwaldstraße 20<br />
+                Beran Cakmak
+                <br />
+                Bärenwaldstraße 20
+                <br />
                 81737 München
               </p>
 
               <strong>Haftung für Inhalte</strong>
               <p>
-                Als Diensteanbieter sind wir gemäß § 7 Abs. 1 TMG für eigene Inhalte auf diesen
-                Seiten nach den allgemeinen Gesetzen verantwortlich. Nach §§ 8 bis 10 TMG sind wir
+                Als Diensteanbieter sind wir gemäß § 7 Abs. 1 DDG für eigene Inhalte auf diesen
+                Seiten nach den allgemeinen Gesetzen verantwortlich. Nach §§ 8 bis 10 DDG sind wir
                 als Diensteanbieter jedoch nicht verpflichtet, übermittelte oder gespeicherte fremde
                 Informationen zu überwachen oder nach Umständen zu forschen, die auf eine
                 rechtswidrige Tätigkeit hinweisen.
@@ -69,9 +69,8 @@ export default function ImpressumPage() {
               <strong>Haftung für Links</strong>
               <p>
                 Unser Angebot enthält Links zu externen Websites Dritter, auf deren Inhalte wir
-                keinen Einfluss haben. Deshalb können wir für diese fremden Inhalte auch keine
-                Gewähr übernehmen. Für die Inhalte der verlinkten Seiten ist stets der jeweilige
-                Anbieter oder Betreiber der Seiten verantwortlich.
+                keinen Einfluss haben. Für die Inhalte der verlinkten Seiten ist stets der jeweilige
+                Anbieter oder Betreiber verantwortlich.
               </p>
 
               <strong>Urheberrecht</strong>
@@ -79,7 +78,7 @@ export default function ImpressumPage() {
                 Die durch die Seitenbetreiber erstellten Inhalte und Werke auf diesen Seiten
                 unterliegen dem deutschen Urheberrecht. Die Vervielfältigung, Bearbeitung,
                 Verbreitung und jede Art der Verwertung außerhalb der Grenzen des Urheberrechtes
-                bedürfen der schriftlichen Zustimmung des jeweiligen Autors bzw. Erstellers.
+                bedürfen der schriftlichen Zustimmung des jeweiligen Autors.
               </p>
             </div>
           </div>
