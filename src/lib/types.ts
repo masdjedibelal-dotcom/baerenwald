@@ -81,6 +81,8 @@ export interface StepOption {
   value: string;
   label: string;
   hint?: string;
+  /** SVG unter `/public/icons/{name}.svg` */
+  icon?: string;
   emoji?: string;
   priceTag?: string;
   infoExpand?: string;

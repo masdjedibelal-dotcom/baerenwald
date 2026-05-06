@@ -30,11 +30,12 @@ import { isReparaturNotfallSituation } from "./reparatur-flow";
 export { shouldSwapFachdetailsBeforeGroesse, skipGroesseForSanierenDachKleinjob };
 
 /** Eine Zeitraum-Kachel im PLZ-Schritt */
-type ZeitraumOption = {
+export type ZeitraumOption = {
   value: Zeitraum;
   label: string;
   hint: string;
-  emoji: string;
+  icon?: string;
+  emoji?: string;
 };
 
 /** Zeitraum-Chips je Situation (Notfall / B2B: leer — kein Zeitraum-Schritt). */
@@ -43,7 +44,7 @@ const ZEITRAUM_REPARATUR: ZeitraumOption[] = [
     value: "sofort",
     label: "Sofort / Notfall",
     hint: "Priorisierter Termin — Notdienst-Zuschlag kann anfallen",
-    emoji: "⚡",
+    icon: "19-notfall",
   },
   {
     value: "diese_woche",
@@ -93,7 +94,7 @@ export const ZEITRAUM_OPTIONS: Record<Situation, ZeitraumOption[]> = {
       value: "sofort",
       label: "Ab sofort",
       hint: "",
-      emoji: "⚡",
+      icon: "19-notfall",
     },
     {
       value: "naechster_monat",
@@ -105,7 +106,7 @@ export const ZEITRAUM_OPTIONS: Record<Situation, ZeitraumOption[]> = {
       value: "naechste_saison",
       label: "Zur nächsten Saison",
       hint: "",
-      emoji: "🌿",
+      icon: "15-gartenpflege",
     },
     {
       value: "flexibel",
@@ -172,11 +173,11 @@ function kundentypOption(
   value: Kundentyp,
   label: string,
   hint: string,
-  emoji: string,
+  visual: { icon?: string; emoji?: string },
   infoText?: string,
   warnText?: string
 ): StepOption {
-  return { value, label, hint, emoji, infoText, warnText };
+  return { value, label, hint, ...visual, infoText, warnText };
 }
 
 /** Optionen für den Schritt „Kundentyp“ — abhängig von der Situation */
@@ -188,13 +189,13 @@ export function getKundentypOptions(situation: Situation): StepOption[] {
           "eigentuemer",
           "Ich bin Eigentümer",
           "Eigentumswohnung oder Haus",
-          "🏠"
+          { icon: "01-haus-erneuern" }
         ),
         kundentypOption(
           "mieter",
           "Ich bin Mieter",
           "Mietwohnung oder gemietetes Haus",
-          "🔑",
+          { emoji: "🔑" },
           "Bei Mietwohnungen brauchen wir in manchen Fällen die Zustimmung des Vermieters. Wir klären das gemeinsam beim Termin."
         ),
       ];
@@ -204,20 +205,20 @@ export function getKundentypOptions(situation: Situation): StepOption[] {
           "eigentuemer",
           "Ich bin Eigentümer",
           "Eigentumswohnung oder Haus",
-          "🏠"
+          { icon: "01-haus-erneuern" }
         ),
         kundentypOption(
           "mieter",
           "Ich bin Mieter",
           "Mietwohnung oder gemietetes Haus",
-          "🔑",
+          { emoji: "🔑" },
           "Bei akuten Schäden in Mietwohnungen: Haupthahn schließen, Vermieter informieren — wir koordinieren den Rest."
         ),
         kundentypOption(
           "hausverwaltung",
           "Hausverwaltung",
           "Ich verwalte das Objekt",
-          "🏢"
+          { icon: "04-gewerbe" }
         ),
       ];
     case "betreuung":
@@ -226,13 +227,13 @@ export function getKundentypOptions(situation: Situation): StepOption[] {
           "eigentuemer",
           "Ich bin Eigentümer",
           "Eigentumswohnung oder Haus",
-          "🏠"
+          { icon: "01-haus-erneuern" }
         ),
         kundentypOption(
           "hausverwaltung",
           "Hausverwaltung",
           "Mehrfamilienhaus oder Wohnanlage",
-          "🏢",
+          { icon: "04-gewerbe" },
           "Für Hausverwaltungen bieten wir individuelle Servicepakete an. Wir besprechen das gerne persönlich."
         ),
       ];
@@ -257,18 +258,18 @@ export function getKundentypStep(situation: Situation): FunnelStep {
 export function getBetreuungGroesseOptions(bereiche: string[]): StepOption[] {
   if (bereiche.includes("garten")) {
     return [
-      { value: "s", label: "Kleiner Garten", groesse: 70, emoji: "🌿" },
-      { value: "m", label: "Mittlerer Garten", groesse: 200, emoji: "🌿" },
-      { value: "l", label: "Großer Garten", groesse: 450, emoji: "🌿" },
-      { value: "xl", label: "Sehr großer Garten", groesse: 800, emoji: "🌿" },
+      { value: "s", label: "Kleiner Garten", groesse: 70, icon: "15-gartenpflege" },
+      { value: "m", label: "Mittlerer Garten", groesse: 200, icon: "15-gartenpflege" },
+      { value: "l", label: "Großer Garten", groesse: 450, icon: "15-gartenpflege" },
+      { value: "xl", label: "Sehr großer Garten", groesse: 800, icon: "15-gartenpflege" },
     ];
   }
   if (bereiche.includes("baum")) {
     return [
-      { value: "1", label: "1 Baum", groesse: 1, emoji: "🌲" },
-      { value: "2", label: "2 Bäume", groesse: 2, emoji: "🌲" },
-      { value: "3_4", label: "3–4 Bäume", groesse: 3, emoji: "🌲" },
-      { value: "5_plus", label: "5 oder mehr", groesse: 6, emoji: "🌲" },
+      { value: "1", label: "1 Baum", groesse: 1, icon: "14-gartengestaltung" },
+      { value: "2", label: "2 Bäume", groesse: 2, icon: "14-gartengestaltung" },
+      { value: "3_4", label: "3–4 Bäume", groesse: 3, icon: "14-gartengestaltung" },
+      { value: "5_plus", label: "5 oder mehr", groesse: 6, icon: "14-gartengestaltung" },
     ];
   }
   if (bereiche.includes("reinigung")) {
@@ -277,19 +278,19 @@ export function getBetreuungGroesseOptions(bereiche: string[]): StepOption[] {
         value: "s",
         label: "Klein (wenige Parteien)",
         groesse: 45,
-        emoji: "🧹",
+        icon: "17-gebauedereinigung",
       },
       {
         value: "m",
         label: "Mittel (typ. Treppenhaus)",
         groesse: 90,
-        emoji: "🧹",
+        icon: "17-gebauedereinigung",
       },
       {
         value: "l",
         label: "Groß / mehrere Zugänge",
         groesse: 160,
-        emoji: "🧹",
+        icon: "17-gebauedereinigung",
       },
     ];
   }
@@ -299,19 +300,19 @@ export function getBetreuungGroesseOptions(bereiche: string[]): StepOption[] {
         value: "kurz",
         label: "Kurze Streckenführung",
         groesse: 7,
-        emoji: "❄️",
+        icon: "16-winterdienst",
       },
       {
         value: "mittel",
         label: "Mittlere Streckenführung",
         groesse: 18,
-        emoji: "❄️",
+        icon: "16-winterdienst",
       },
       {
         value: "lang",
         label: "Lange Streckenführung",
         groesse: 35,
-        emoji: "❄️",
+        icon: "16-winterdienst",
       },
     ];
   }
@@ -320,25 +321,25 @@ export function getBetreuungGroesseOptions(bereiche: string[]): StepOption[] {
       value: "s",
       label: "Objekt klein / kompakt",
       groesse: 55,
-      emoji: "🏢",
+      icon: "04-gewerbe",
     },
     {
       value: "m",
       label: "Objekt mittelgroß",
       groesse: 120,
-      emoji: "🏢",
+      icon: "04-gewerbe",
     },
     {
       value: "l",
       label: "Objekt groß",
       groesse: 180,
-      emoji: "🏢",
+      icon: "04-gewerbe",
     },
     {
       value: "xl",
       label: "Objekt sehr groß",
       groesse: 400,
-      emoji: "🏢",
+      icon: "04-gewerbe",
     },
   ];
 }
@@ -374,74 +375,103 @@ export const SITUATIONEN_CONFIG: Record<
         options: [
           {
             section: "Innenbereich",
+            value: "heizung",
+            label: "Heizung",
+            hint: "Neue Anlage, Wartung, Heizkörper",
+            icon: "05-heizung",
+            triggerGewerke: ["heizung"],
+          },
+          {
+            value: "elektrik",
+            label: "Elektrik",
+            hint: "Leitungen, Sicherungskasten, Steckdosen",
+            icon: "06-elektrik",
+            triggerGewerke: ["elektro"],
+          },
+          {
+            value: "waende",
+            label: "Wände / Anstrich",
+            hint: "Streichen, tapezieren, ausbessern",
+            icon: "07-streichen",
+            triggerGewerke: ["maler"],
+          },
+          {
             value: "bad",
             label: "Bad",
             hint: "Fliesen, Sanitär, komplett neu",
-            emoji: "🚿",
+            icon: "08-bad",
             triggerGewerke: ["bad", "fliesen", "sanitaer"],
           },
           {
             value: "boden",
             label: "Boden",
             hint: "Innen: Laminat, Parkett, Vinyl, Fliesen",
-            emoji: "🪵",
+            icon: "09-boden",
             triggerGewerke: ["boden"],
-          },
-          {
-            value: "waende",
-            label: "Wände / Anstrich",
-            hint: "Streichen, tapezieren, ausbessern",
-            emoji: "🖌️",
-            triggerGewerke: ["maler"],
-          },
-          {
-            value: "elektrik",
-            label: "Elektrik",
-            hint: "Leitungen, Sicherungskasten, Steckdosen",
-            emoji: "⚡",
-            triggerGewerke: ["elektro"],
           },
           {
             value: "trockenbau",
             label: "Trennwand / Umbau",
             hint: "Neues Zimmer, leichte Trennwände",
-            emoji: "🧱",
+            icon: "10-trennwand",
             triggerGewerke: ["bau"],
           },
           {
+            section: "Außen & Technik",
+            value: "fenster",
+            label: "Fenster / Türen",
+            hint: "Neue Fenster, Balkon- oder Außentüren — inkl. Aufmaß & Montage",
+            icon: "11-fenster",
+            triggerGewerke: ["fenster"],
+          },
+          {
+            value: "dach",
+            label: "Dach",
+            hint: "Dachneueindeckung, Dämmung verbessern, Dachfenster-Austausch",
+            icon: "12-dach",
+            triggerGewerke: ["dach"],
+          },
+          {
+            value: "fassade",
+            label: "Fassade",
+            hint: "Anstrich, Dämmung (WDVS) oder Bekleidung — Weiche in den Fachdetails",
+            icon: "13-fassade",
+            triggerGewerke: ["fassade"],
+          },
+          {
             section: "Ausbau & Umbau",
-            value: "ausbau_dg",
-            label: "Dachausbau / DG",
-            hint: "Neuer Wohnraum unter dem Dach — GU-Paket",
-            emoji: "🏠",
-            triggerGewerke: ["projekt"],
-          },
-          {
-            value: "ausbau_keller",
-            label: "Kellerausbau",
-            hint: "Trockenlegung, Ausbau, Feuchteschutz — GU-Paket",
-            emoji: "🪜",
-            triggerGewerke: ["projekt"],
-          },
-          {
-            value: "grundriss_umbau",
-            label: "Wanddurchbruch",
-            hint: "Raum öffnen — tragend oder nicht tragend",
-            emoji: "🚪",
+            value: "gartengestaltung",
+            label: "Gartengestaltung",
+            hint: "Neuanlage, Teiche, Wege — GU-Paket nach Fläche",
+            icon: "14-gartengestaltung",
             triggerGewerke: ["projekt"],
           },
           {
             value: "terrasse_neu",
             label: "Terrasse neu",
             hint: "Holz oder Stein — inkl. Erdarbeiten / Unterbau",
-            emoji: "🪵",
+            icon: "09-boden",
             triggerGewerke: ["projekt"],
           },
           {
-            value: "gartengestaltung",
-            label: "Gartengestaltung",
-            hint: "Neuanlage, Teiche, Wege — GU-Paket nach Fläche",
-            emoji: "🌳",
+            value: "ausbau_dg",
+            label: "Dachausbau / DG",
+            hint: "Neuer Wohnraum unter dem Dach — GU-Paket",
+            icon: "21-dachausbau",
+            triggerGewerke: ["projekt"],
+          },
+          {
+            value: "ausbau_keller",
+            label: "Kellerausbau",
+            hint: "Trockenlegung, Ausbau, Feuchteschutz — GU-Paket",
+            icon: "20-kellerausbau",
+            triggerGewerke: ["projekt"],
+          },
+          {
+            value: "grundriss_umbau",
+            label: "Wanddurchbruch",
+            hint: "Raum öffnen — tragend oder nicht tragend",
+            icon: "10-trennwand",
             triggerGewerke: ["projekt"],
           },
           {
@@ -453,35 +483,6 @@ export const SITUATIONEN_CONFIG: Record<
             triggerGewerke: ["bau", "elektro"],
             infoText:
               "Großprojekte wie Anbau oder Garage erfordern eine individuelle statische Prüfung und Architektenplanung. Unser GU-Team kontaktiert dich für ein persönliches Beratungsgespräch und eine Vor-Ort-Analyse.",
-          },
-          {
-            section: "Außen & Technik",
-            value: "heizung",
-            label: "Heizung",
-            hint: "Neue Anlage, Wartung, Heizkörper",
-            emoji: "🔥",
-            triggerGewerke: ["heizung"],
-          },
-          {
-            value: "fenster",
-            label: "Fenster / Türen",
-            hint: "Neue Fenster, Balkon- oder Außentüren — inkl. Aufmaß & Montage",
-            emoji: "🪟",
-            triggerGewerke: ["fenster"],
-          },
-          {
-            value: "dach",
-            label: "Dach",
-            hint: "Dachneueindeckung, Dämmung verbessern, Dachfenster-Austausch",
-            emoji: "🏠",
-            triggerGewerke: ["dach"],
-          },
-          {
-            value: "fassade",
-            label: "Fassade",
-            hint: "Anstrich, Dämmung (WDVS) oder Bekleidung — Weiche in den Fachdetails",
-            emoji: "🧱",
-            triggerGewerke: ["fassade"],
           },
         ],
       },
@@ -513,7 +514,7 @@ export const SITUATIONEN_CONFIG: Record<
             value: "heizung",
             label: "Heizung defekt",
             hint: "Geht nicht an, kein warmes Wasser",
-            emoji: "🔥",
+            icon: "05-heizung",
             triggerGewerke: ["heizung"],
           },
           {
@@ -527,21 +528,21 @@ export const SITUATIONEN_CONFIG: Record<
             value: "elektro",
             label: "Elektro-Problem",
             hint: "Sicherung, Strom weg, Steckdose defekt",
-            emoji: "⚡",
+            icon: "06-elektrik",
             triggerGewerke: ["elektro"],
           },
           {
             value: "fenster_tuer",
             label: "Fenster / Tür kaputt",
             hint: "Dichtung, Schloss, Rahmen, Glas",
-            emoji: "🪟",
+            icon: "11-fenster",
             triggerGewerke: ["fenster"],
           },
           {
             value: "dach",
             label: "Dach-Problem",
             hint: "Ziegel locker, Undichtigkeit, Sturmschaden, Dachrinne defekt",
-            emoji: "🏠",
+            icon: "12-dach",
             triggerGewerke: ["dach"],
           },
           {
@@ -563,7 +564,7 @@ export const SITUATIONEN_CONFIG: Record<
             value: "sofort",
             label: "Jetzt sofort",
             hint: "Es wird schlimmer — sofort handeln",
-            emoji: "🔴",
+            icon: "19-notfall",
             faktor: 1.8,
             warnText:
               "Bitte ruf uns direkt an — bei akuten Schäden ist der Rechner zu langsam.",
@@ -572,7 +573,7 @@ export const SITUATIONEN_CONFIG: Record<
             value: "heute",
             label: "Heute noch",
             hint: "Ausgefallen aber stabil — heute lösen",
-            emoji: "🟠",
+            icon: "02-reparatur",
             faktor: 1.5,
             infoText: "Termin innerhalb 48–72h.",
           },
@@ -601,7 +602,7 @@ export const SITUATIONEN_CONFIG: Record<
             value: "garten",
             label: "Gartenpflege",
             hint: "Mähen, Schneiden, Aufräumen",
-            emoji: "🌿",
+            icon: "15-gartenpflege",
             infoText:
               "Regelmäßige Pflege ist günstiger als einmalige Großaktionen.",
             triggerGewerke: ["gartenpflege"],
@@ -610,7 +611,7 @@ export const SITUATIONEN_CONFIG: Record<
             value: "baum",
             label: "Baumarbeiten",
             hint: "Fällen oder zurückschneiden",
-            emoji: "🌲",
+            icon: "14-gartengestaltung",
             infoText:
               "Bäume über 80 cm Stammumfang sind in München genehmigungspflichtig.",
             triggerGewerke: ["baum"],
@@ -619,7 +620,7 @@ export const SITUATIONEN_CONFIG: Record<
             value: "winter",
             label: "Winterdienst",
             hint: "Räumen und Streuen",
-            emoji: "❄️",
+            icon: "16-winterdienst",
             warnText:
               "In München streupflichtig ab 7 Uhr werktags. Bei Nichterfüllung persönliche Haftung.",
             triggerGewerke: ["winterdienst"],
@@ -628,14 +629,14 @@ export const SITUATIONEN_CONFIG: Record<
             value: "reinigung",
             label: "Gebäudereinigung",
             hint: "Treppenhaus, Gemeinschaftsflächen",
-            emoji: "🧹",
+            icon: "17-gebauedereinigung",
             triggerGewerke: ["reinigung"],
           },
           {
             value: "hausmeister",
             label: "Hausmeisterservice",
             hint: "Alles zusammen — ein Ansprechpartner",
-            emoji: "🔑",
+            icon: "18-hausmeister",
             infoText:
               "Ein Ansprechpartner für alles. Wir kümmern uns um alle Handwerker und sind Ihr fester Ansprechpartner.",
             triggerGewerke: ["gartenpflege", "winterdienst", "reinigung"],
@@ -659,19 +660,19 @@ export const SITUATIONEN_CONFIG: Record<
             value: "umbau",
             label: "Umbau oder Renovierung",
             hint: "Büro, Laden, Praxis umbauen",
-            emoji: "🏢",
+            icon: "04-gewerbe",
           },
           {
             value: "neubau",
             label: "Neu einrichten",
             hint: "Komplette Neugestaltung",
-            emoji: "✨",
+            icon: "01-haus-erneuern",
           },
           {
             value: "wartung",
             label: "Wartung & Service",
             hint: "Regelmäßige Betreuung",
-            emoji: "🔧",
+            icon: "02-reparatur",
           },
           {
             value: "sonstiges",

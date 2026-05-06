@@ -145,21 +145,6 @@ function situationDisplay(s: string | null): string | undefined {
   return map[key] ?? key;
 }
 
-function leistungSummary(
-  situation: string | null,
-  bereiche: string[]
-): string | undefined {
-  const s = situationDisplay(situation);
-  const b = bereiche
-    .filter(Boolean)
-    .map((x) => x.replace(/_/g, " "))
-    .join(", ");
-  if (s && b) return `${s} · ${b}`;
-  if (s) return s;
-  if (b) return b;
-  return undefined;
-}
-
 function formatPreisrahmen(
   preis_min?: number,
   preis_max?: number
@@ -475,7 +460,9 @@ async function persistLeadInner(
           }),
           html: buildKundeBestaetigung({
             name,
-            leistung: leistungSummary(situation, bereiche),
+            situation: situation ?? undefined,
+            bereiche,
+            plz: plz || undefined,
             preis: formatPreisrahmen(preis_min, preis_max),
           }),
         });

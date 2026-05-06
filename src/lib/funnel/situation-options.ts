@@ -4,7 +4,8 @@ export type BwFunnelStep1Option = {
   id: Situation;
   label: string;
   hint: string;
-  emoji: string;
+  /** SVG unter `/public/icons/{name}.svg` */
+  icon: string;
   /** Optional UI-Badge */
   tag?: string;
 };
@@ -15,25 +16,25 @@ export const BW_FUNNEL_STEP1_OPTIONS: BwFunnelStep1Option[] = [
     id: "erneuern",
     label: "Zuhause erneuern",
     hint: "Inkl. Ausbau, Umbau, Terrasse, Keller, DG",
-    emoji: "🏠",
+    icon: "01-haus-erneuern",
   },
   {
     id: "kaputt",
     label: "Reparatur & Notfall",
     hint: "Defekt — am Ende wählst du, wie schnell wir kommen sollen",
-    emoji: "🔧",
+    icon: "02-reparatur",
   },
   {
     id: "betreuung",
     label: "Betreuung",
     hint: "Garten, Reinigung, Hausmeister, Winterdienst",
-    emoji: "🌿",
+    icon: "03-betreuung",
   },
   {
     id: "gewerbe",
     label: "Gewerbe",
     hint: "Büro, Praxis, Laden, Gastronomie — wir planen individuell",
-    emoji: "🏢",
+    icon: "04-gewerbe",
     tag: "B2B",
   },
 ];

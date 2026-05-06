@@ -9,6 +9,7 @@ export type FachdetailOptionDef = {
   value: string;
   label: string;
   hint?: string;
+  icon?: string;
   emoji?: string;
   /** Kurzer Hinweis neben der Option (aufklappbar) */
   education?: string;

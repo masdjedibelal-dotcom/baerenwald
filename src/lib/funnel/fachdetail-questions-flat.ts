@@ -47,6 +47,7 @@ export type FachdetailOption = {
   value: string;
   label: string;
   hint?: string;
+  icon?: string;
   emoji?: string;
   direktKomplex?: boolean;
   komplex_text?: string;
@@ -91,6 +92,7 @@ function fromDef(
       value: o.value,
       label: o.label,
       hint: o.hint,
+      icon: o.icon,
       emoji: o.emoji,
       direktKomplex: o.direktKomplex,
       komplex_text: o.komplex_text,

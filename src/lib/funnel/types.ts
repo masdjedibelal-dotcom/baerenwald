@@ -189,7 +189,9 @@ export interface StepOption {
   value: string;
   label: string;
   hint?: string;
-  /** Kachel-Icon (ersetzt SVG wo gesetzt) */
+  /** SVG unter `/public/icons/{name}.svg` */
+  icon?: string;
+  /** Fallback wenn kein `icon` */
   emoji?: string;
   priceTag?: string;
   /** Multiplikator für Preislogik (optional) */

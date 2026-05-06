@@ -40,13 +40,13 @@ export const STEP_PROJEKT_TERRASSE_MATERIAL: FunnelStep = {
       value: "holz",
       label: "Holz / WPC",
       hint: "Natürlich oder pflegeleicht",
-      emoji: "🪵",
+      icon: "09-boden",
     },
     {
       value: "stein",
       label: "Stein / Platten",
       hint: "Keramik, Naturstein",
-      emoji: "🪨",
+      icon: "13-fassade",
     },
   ],
 };
@@ -62,7 +62,7 @@ export const STEP_PROJEKT_TERRASSE_UNTERBAU: FunnelStep = {
       value: "ja",
       label: "Ja, notwendig",
       hint: "Größerer Aufwand vor dem Aufbau",
-      emoji: "🔧",
+      icon: "02-reparatur",
     },
     {
       value: "nein",
@@ -106,7 +106,7 @@ export const STEP_PROJEKT_DURCHBRUCH_STATIK: FunnelStep = {
       value: "nicht_tragend",
       label: "Nein, nicht tragend",
       hint: "Leichtbau oder nicht tragende Trennwand",
-      emoji: "🧱",
+      icon: "10-trennwand",
     },
   ],
 };
@@ -121,7 +121,7 @@ export const STEP_PROJEKT_AUSBAU_ROHBAU: FunnelStep = {
       value: "ja",
       label: "Ja — Rohbau vorhanden",
       hint: "Wände und Decke stehen bereits",
-      emoji: "✅",
+      icon: "21-dachausbau",
     },
     {
       value: "nein",
@@ -184,13 +184,13 @@ export const STEP_PROJEKT_GARTEN_LEISTUNG: FunnelStep = {
       value: "auffrischung",
       label: "Rollrasen & Pflanzung",
       hint: "Bestehende Fläche auffrischen — ohne große Erdarbeiten",
-      emoji: "🌿",
+      icon: "15-gartenpflege",
     },
     {
       value: "neuanlage",
       label: "Komplette Neuanlage inkl. Erdarbeiten",
       hint: "GU-Paket München — inkl. Erdarbeiten und Neuaufbau",
-      emoji: "🏗️",
+      icon: "14-gartengestaltung",
     },
   ],
 };
@@ -212,7 +212,7 @@ export const STEP_PROJEKT_GARTEN_ZAUN: FunnelStep = {
       value: "ja",
       label: "Ja",
       hint: "Standard-Zaun grob im Rahmen (+3.500 €)",
-      emoji: "🪵",
+      icon: "09-boden",
     },
     {
       value: "nein",

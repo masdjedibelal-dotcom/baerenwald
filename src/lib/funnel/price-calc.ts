@@ -10,8 +10,8 @@ import { isReparaturNotfallSituation } from "./reparatur-flow";
 export function getPlzFaktor(plz: string): number {
   if (!plz || plz.length < 5) return 1.0;
   if (plz.startsWith("80") || plz.startsWith("81")) {
-    return 1.0;
-  }
+  return 1.0;
+}
   const umlandNah = [
     "82",
     "85031",
@@ -1435,7 +1435,7 @@ function computePriceCore(state: FunnelState): {
       max: customPriceRange.max,
       einheit: "pauschal",
     };
-  } else {
+    } else {
     basis =
       service === "bad"
         ? (PREISE.bad[type as keyof typeof PREISE.bad] as BasisEintrag | undefined) ??
@@ -1661,7 +1661,7 @@ function computePriceCore(state: FunnelState): {
     },
   ];
 
-  return {
+    return {
     min: finalMin,
     max: finalMax,
     mitte: mitteAdjustiert,
@@ -1682,22 +1682,22 @@ function applyEmptyBreakdownAsZuKomplex(
   const preview = options?.preview === true;
   const base: BwCalculatePriceResult = {
     ...result,
-    istFallback: false,
-  };
+      istFallback: false,
+    };
 
   const emptyPrice =
     (base.breakdown?.length ?? 0) === 0 || base.min <= 0;
 
   if (emptyPrice && base.komplexReason === "no_mapping_found") {
-    return {
+  return {
       min: 0,
       max: 0,
       mitte: 0,
       breakdown: [],
-      mindestauftragAktiv: false,
-      plzFaktor: getPlzFaktor(state.plz ?? ""),
+    mindestauftragAktiv: false,
+    plzFaktor: getPlzFaktor(state.plz ?? ""),
       resultModus: "zu_komplex",
-      schwellenwertAusgeloest: false,
+    schwellenwertAusgeloest: false,
       istFallback: false,
       komplexReason: "no_mapping_found",
     };
@@ -1717,33 +1717,33 @@ function applyEmptyBreakdownAsZuKomplex(
         state.zeitraum === "sofort"
       ) {
         return { ...base, komplexReason: null };
-      }
-      if (getBwResultModus(state) === "zu_komplex") {
+  }
+  if (getBwResultModus(state) === "zu_komplex") {
         return { ...base, komplexReason: null };
       }
-    }
-    if (base.schwellenwertAusgeloest && base.resultModus === "zu_komplex") {
+  }
+  if (base.schwellenwertAusgeloest && base.resultModus === "zu_komplex") {
       return { ...base, komplexReason: null };
-    }
-    if (
+  }
+  if (
       base.resultModus === "zu_komplex" &&
       base.schwellenwertAusgeloest &&
-      base.min <= 0
-    ) {
+    base.min <= 0
+  ) {
       return { ...base, komplexReason: null };
     }
     return {
-      min: 0,
-      max: 0,
+    min: 0,
+    max: 0,
       mitte: 0,
       breakdown: [],
-      mindestauftragAktiv: false,
+    mindestauftragAktiv: false,
       plzFaktor: getPlzFaktor(state.plz ?? ""),
       resultModus: "zu_komplex",
-      schwellenwertAusgeloest: false,
-      istFallback: false,
+    schwellenwertAusgeloest: false,
+    istFallback: false,
       komplexReason: "no_mapping_found",
-    };
+  };
   }
 
   if (!state.situation) {
@@ -1756,7 +1756,7 @@ function applyEmptyBreakdownAsZuKomplex(
     ) {
       return { ...base, komplexReason: null };
     }
-    if (getBwResultModus(state) === "zu_komplex") {
+  if (getBwResultModus(state) === "zu_komplex") {
       return { ...base, komplexReason: null };
     }
   }
@@ -1841,7 +1841,7 @@ export function calculatePrice(
   if (resultModus === "zu_komplex" && mitte > 15000 && !preview) {
     finalMin = 0;
     finalMax = 0;
-    breakdown = [];
+      breakdown = [];
   }
 
   if (
