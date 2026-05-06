@@ -40,13 +40,11 @@ export const STEP_PROJEKT_TERRASSE_MATERIAL: FunnelStep = {
       value: "holz",
       label: "Holz / WPC",
       hint: "Natürlich oder pflegeleicht",
-      icon: "09-boden",
     },
     {
       value: "stein",
       label: "Stein / Platten",
       hint: "Keramik, Naturstein",
-      icon: "13-fassade",
     },
   ],
 };
@@ -62,13 +60,11 @@ export const STEP_PROJEKT_TERRASSE_UNTERBAU: FunnelStep = {
       value: "ja",
       label: "Ja, notwendig",
       hint: "Größerer Aufwand vor dem Aufbau",
-      icon: "02-reparatur",
     },
     {
       value: "nein",
       label: "Nein / kaum",
       hint: "Bestehende Fläche ist tragfähig",
-      emoji: "✓",
     },
   ],
 };
@@ -78,13 +74,12 @@ export const STEP_PROJEKT_DURCHBRUCH_ANZAHL: FunnelStep = {
   question: "Wie viele Durchbrüche sind geplant?",
   inputType: "tiles-single",
   options: [
-    { value: "1", label: "Einer", groesse: 1, emoji: "1️⃣" },
-    { value: "2", label: "Zwei", groesse: 2, emoji: "2️⃣" },
+    { value: "1", label: "Einer", groesse: 1 },
+    { value: "2", label: "Zwei", groesse: 2 },
     {
       value: "3_plus",
       label: "Drei oder mehr",
       groesse: 3,
-      emoji: "➕",
     },
   ],
 };
@@ -100,13 +95,11 @@ export const STEP_PROJEKT_DURCHBRUCH_STATIK: FunnelStep = {
       value: "tragend",
       label: "Ja, tragend",
       hint: "Statik, Stahlträger, Abfangung",
-      emoji: "🏛️",
     },
     {
       value: "nicht_tragend",
       label: "Nein, nicht tragend",
       hint: "Leichtbau oder nicht tragende Trennwand",
-      icon: "10-trennwand",
     },
   ],
 };
@@ -121,13 +114,11 @@ export const STEP_PROJEKT_AUSBAU_ROHBAU: FunnelStep = {
       value: "ja",
       label: "Ja — Rohbau vorhanden",
       hint: "Wände und Decke stehen bereits",
-      icon: "21-dachausbau",
     },
     {
       value: "nein",
       label: "Nein — muss erst erstellt werden",
       hint: "→ ausführliche Planung nötig, automatische Kalkulation nicht möglich",
-      emoji: "🏗️",
     },
   ],
 };
@@ -141,19 +132,16 @@ export const STEP_PROJEKT_AUSBAU_DECKENHOEHE: FunnelStep = {
       value: "niedrig",
       label: "Unter 2,00 m",
       hint: "Sehr niedrig — eingeschränkte Nutzung",
-      emoji: "📏",
     },
     {
       value: "mittel",
       label: "2,00–2,40 m",
       hint: "Normaler Ausbau möglich",
-      emoji: "📐",
     },
     {
       value: "hoch",
       label: "Über 2,40 m",
       hint: "Optimale Raumhöhe",
-      emoji: "⬆️",
     },
   ],
 };
@@ -165,10 +153,10 @@ export const STEP_ERNEUERN_PROJEKT_GROESSE: FunnelStep = {
   subtext: "m² — eine grobe Angabe reicht für den ersten Rahmen",
   inputType: "tiles-single",
   options: [
-    { value: "s", label: "Bis 25 m²", groesse: 20, emoji: "📐" },
-    { value: "m", label: "25–60 m²", groesse: 42, emoji: "📐" },
-    { value: "l", label: "60–120 m²", groesse: 90, emoji: "📐" },
-    { value: "xl", label: "Über 120 m²", groesse: 140, emoji: "📐" },
+    { value: "s", label: "Bis 25 m²", groesse: 20 },
+    { value: "m", label: "25–60 m²", groesse: 42 },
+    { value: "l", label: "60–120 m²", groesse: 90 },
+    { value: "xl", label: "Über 120 m²", groesse: 140 },
   ],
 };
 
@@ -184,13 +172,11 @@ export const STEP_PROJEKT_GARTEN_LEISTUNG: FunnelStep = {
       value: "auffrischung",
       label: "Rollrasen & Pflanzung",
       hint: "Bestehende Fläche auffrischen — ohne große Erdarbeiten",
-      icon: "15-gartenpflege",
     },
     {
       value: "neuanlage",
       label: "Komplette Neuanlage inkl. Erdarbeiten",
       hint: "GU-Paket München — inkl. Erdarbeiten und Neuaufbau",
-      icon: "14-gartengestaltung",
     },
   ],
 };
@@ -212,13 +198,11 @@ export const STEP_PROJEKT_GARTEN_ZAUN: FunnelStep = {
       value: "ja",
       label: "Ja",
       hint: "Standard-Zaun grob im Rahmen (+3.500 €)",
-      icon: "09-boden",
     },
     {
       value: "nein",
       label: "Nein",
       hint: "Ohne Zaunposition",
-      emoji: "✓",
     },
   ],
 };
@@ -234,13 +218,11 @@ export const STEP_PROJEKT_GARTEN_ZUGANG: FunnelStep = {
       value: "einfach",
       label: "Einfach",
       hint: "Gute Zufahrt, wenig Hindernisse",
-      emoji: "🚗",
     },
     {
       value: "schwer",
       label: "Schwer",
       hint: "Eng, Hang, eingeschränkt — ca. +15 % auf den Lohnanteil",
-      emoji: "⚠️",
     },
   ],
 };

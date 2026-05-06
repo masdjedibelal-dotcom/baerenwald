@@ -44,19 +44,16 @@ const ZEITRAUM_REPARATUR: ZeitraumOption[] = [
     value: "sofort",
     label: "Sofort / Notfall",
     hint: "Priorisierter Termin — Notdienst-Zuschlag kann anfallen",
-    icon: "19-notfall",
   },
   {
     value: "diese_woche",
     label: "Diese Woche / Bald",
     hint: "Zeitnah, ohne akute Priorität",
-    emoji: "🗓️",
   },
   {
     value: "flexibel",
     label: "Nächster Monat / Flexibel",
     hint: "Planbarer Zeitpunkt",
-    emoji: "💭",
   },
 ];
 
@@ -68,25 +65,21 @@ export const ZEITRAUM_OPTIONS: Record<Situation, ZeitraumOption[]> = {
       value: "vier_wochen",
       label: "Innerhalb 4 Wochen",
       hint: "Wir prüfen die Verfügbarkeit",
-      emoji: "🗓️",
     },
     {
       value: "zwei_monate",
       label: "In 1–2 Monaten",
       hint: "Guter Vorlauf für Planung",
-      emoji: "📆",
     },
     {
       value: "sechs_monate",
       label: "In 3–6 Monaten",
       hint: "Kein Zeitdruck",
-      emoji: "📋",
     },
     {
       value: "flexibel",
       label: "Ich bin flexibel",
       hint: "Wir stimmen uns ab",
-      emoji: "💭",
     },
   ],
   betreuung: [
@@ -94,25 +87,21 @@ export const ZEITRAUM_OPTIONS: Record<Situation, ZeitraumOption[]> = {
       value: "sofort",
       label: "Ab sofort",
       hint: "",
-      icon: "19-notfall",
     },
     {
       value: "naechster_monat",
       label: "Nächsten Monat",
       hint: "",
-      emoji: "📅",
     },
     {
       value: "naechste_saison",
       label: "Zur nächsten Saison",
       hint: "",
-      icon: "15-gartenpflege",
     },
     {
       value: "flexibel",
       label: "Ich bin flexibel",
       hint: "",
-      emoji: "💭",
     },
   ],
 };
@@ -173,11 +162,10 @@ function kundentypOption(
   value: Kundentyp,
   label: string,
   hint: string,
-  visual: { icon?: string; emoji?: string },
   infoText?: string,
   warnText?: string
 ): StepOption {
-  return { value, label, hint, ...visual, infoText, warnText };
+  return { value, label, hint, infoText, warnText };
 }
 
 /** Optionen für den Schritt „Kundentyp“ — abhängig von der Situation */
@@ -188,14 +176,12 @@ export function getKundentypOptions(situation: Situation): StepOption[] {
         kundentypOption(
           "eigentuemer",
           "Ich bin Eigentümer",
-          "Eigentumswohnung oder Haus",
-          { icon: "01-haus-erneuern" }
+          "Eigentumswohnung oder Haus"
         ),
         kundentypOption(
           "mieter",
           "Ich bin Mieter",
           "Mietwohnung oder gemietetes Haus",
-          { emoji: "🔑" },
           "Bei Mietwohnungen brauchen wir in manchen Fällen die Zustimmung des Vermieters. Wir klären das gemeinsam beim Termin."
         ),
       ];
@@ -204,21 +190,18 @@ export function getKundentypOptions(situation: Situation): StepOption[] {
         kundentypOption(
           "eigentuemer",
           "Ich bin Eigentümer",
-          "Eigentumswohnung oder Haus",
-          { icon: "01-haus-erneuern" }
+          "Eigentumswohnung oder Haus"
         ),
         kundentypOption(
           "mieter",
           "Ich bin Mieter",
           "Mietwohnung oder gemietetes Haus",
-          { emoji: "🔑" },
           "Bei akuten Schäden in Mietwohnungen: Haupthahn schließen, Vermieter informieren — wir koordinieren den Rest."
         ),
         kundentypOption(
           "hausverwaltung",
           "Hausverwaltung",
-          "Ich verwalte das Objekt",
-          { icon: "04-gewerbe" }
+          "Ich verwalte das Objekt"
         ),
       ];
     case "betreuung":
@@ -226,14 +209,18 @@ export function getKundentypOptions(situation: Situation): StepOption[] {
         kundentypOption(
           "eigentuemer",
           "Ich bin Eigentümer",
-          "Eigentumswohnung oder Haus",
-          { icon: "01-haus-erneuern" }
+          "Eigentumswohnung oder Haus"
+        ),
+        kundentypOption(
+          "mieter",
+          "Ich bin Mieter",
+          "Mietwohnung oder gemieteter Außenbereich",
+          "Bei gemieteten Flächen klären wir ggf. die Zustimmung des Vermieters — wir helfen beim Termin."
         ),
         kundentypOption(
           "hausverwaltung",
           "Hausverwaltung",
           "Mehrfamilienhaus oder Wohnanlage",
-          { icon: "04-gewerbe" },
           "Für Hausverwaltungen bieten wir individuelle Servicepakete an. Wir besprechen das gerne persönlich."
         ),
       ];
@@ -258,18 +245,18 @@ export function getKundentypStep(situation: Situation): FunnelStep {
 export function getBetreuungGroesseOptions(bereiche: string[]): StepOption[] {
   if (bereiche.includes("garten")) {
     return [
-      { value: "s", label: "Kleiner Garten", groesse: 70, icon: "15-gartenpflege" },
-      { value: "m", label: "Mittlerer Garten", groesse: 200, icon: "15-gartenpflege" },
-      { value: "l", label: "Großer Garten", groesse: 450, icon: "15-gartenpflege" },
-      { value: "xl", label: "Sehr großer Garten", groesse: 800, icon: "15-gartenpflege" },
+      { value: "s", label: "Kleiner Garten", groesse: 70 },
+      { value: "m", label: "Mittlerer Garten", groesse: 200 },
+      { value: "l", label: "Großer Garten", groesse: 450 },
+      { value: "xl", label: "Sehr großer Garten", groesse: 800 },
     ];
   }
   if (bereiche.includes("baum")) {
     return [
-      { value: "1", label: "1 Baum", groesse: 1, icon: "14-gartengestaltung" },
-      { value: "2", label: "2 Bäume", groesse: 2, icon: "14-gartengestaltung" },
-      { value: "3_4", label: "3–4 Bäume", groesse: 3, icon: "14-gartengestaltung" },
-      { value: "5_plus", label: "5 oder mehr", groesse: 6, icon: "14-gartengestaltung" },
+      { value: "1", label: "1 Baum", groesse: 1 },
+      { value: "2", label: "2 Bäume", groesse: 2 },
+      { value: "3_4", label: "3–4 Bäume", groesse: 3 },
+      { value: "5_plus", label: "5 oder mehr", groesse: 6 },
     ];
   }
   if (bereiche.includes("reinigung")) {
@@ -278,19 +265,16 @@ export function getBetreuungGroesseOptions(bereiche: string[]): StepOption[] {
         value: "s",
         label: "Klein (wenige Parteien)",
         groesse: 45,
-        icon: "17-gebauedereinigung",
       },
       {
         value: "m",
         label: "Mittel (typ. Treppenhaus)",
         groesse: 90,
-        icon: "17-gebauedereinigung",
       },
       {
         value: "l",
         label: "Groß / mehrere Zugänge",
         groesse: 160,
-        icon: "17-gebauedereinigung",
       },
     ];
   }
@@ -300,19 +284,16 @@ export function getBetreuungGroesseOptions(bereiche: string[]): StepOption[] {
         value: "kurz",
         label: "Kurze Streckenführung",
         groesse: 7,
-        icon: "16-winterdienst",
       },
       {
         value: "mittel",
         label: "Mittlere Streckenführung",
         groesse: 18,
-        icon: "16-winterdienst",
       },
       {
         value: "lang",
         label: "Lange Streckenführung",
         groesse: 35,
-        icon: "16-winterdienst",
       },
     ];
   }
@@ -321,25 +302,21 @@ export function getBetreuungGroesseOptions(bereiche: string[]): StepOption[] {
       value: "s",
       label: "Objekt klein / kompakt",
       groesse: 55,
-      icon: "04-gewerbe",
     },
     {
       value: "m",
       label: "Objekt mittelgroß",
       groesse: 120,
-      icon: "04-gewerbe",
     },
     {
       value: "l",
       label: "Objekt groß",
       groesse: 180,
-      icon: "04-gewerbe",
     },
     {
       value: "xl",
       label: "Objekt sehr groß",
       groesse: 400,
-      icon: "04-gewerbe",
     },
   ];
 }
@@ -478,7 +455,7 @@ export const SITUATIONEN_CONFIG: Record<
             value: "anbau",
             label: "Anbau oder Garage",
             hint: "Erweiterung des Hauses — GU-Beratung mit Statik & Planung",
-            emoji: "🔨",
+            icon: "21-dachausbau",
             direktKomplex: true,
             triggerGewerke: ["bau", "elektro"],
             infoText:
@@ -491,10 +468,10 @@ export const SITUATIONEN_CONFIG: Record<
         question: "Wie groß ist die Fläche ungefähr?",
         inputType: "tiles-single",
         options: [
-          { value: "s", label: "Bis 50 m²", groesse: 35, emoji: "📐" },
-          { value: "m", label: "50–100 m²", groesse: 75, emoji: "📐" },
-          { value: "l", label: "100–200 m²", groesse: 150, emoji: "📐" },
-          { value: "xl", label: "Über 200 m²", groesse: 250, emoji: "📐" },
+          { value: "s", label: "Bis 50 m²", groesse: 35 },
+          { value: "m", label: "50–100 m²", groesse: 75 },
+          { value: "l", label: "100–200 m²", groesse: 150 },
+          { value: "xl", label: "Über 200 m²", groesse: 250 },
         ],
       },
     ],
@@ -521,7 +498,7 @@ export const SITUATIONEN_CONFIG: Record<
             value: "sanitaer",
             label: "Sanitär / Wasser",
             hint: "Rohr, Leck, WC, Verstopfung",
-            emoji: "💧",
+            icon: "08-bad",
             triggerGewerke: ["sanitaer"],
           },
           {
@@ -549,7 +526,7 @@ export const SITUATIONEN_CONFIG: Record<
             value: "schimmel",
             label: "Schimmel / Feuchtigkeit",
             hint: "Ursache finden und beheben",
-            emoji: "🍄",
+            icon: "02-reparatur",
             direktKomplex: true,
             triggerGewerke: ["sanitaer", "maler"],
           },
@@ -564,7 +541,6 @@ export const SITUATIONEN_CONFIG: Record<
             value: "sofort",
             label: "Jetzt sofort",
             hint: "Es wird schlimmer — sofort handeln",
-            icon: "19-notfall",
             faktor: 1.8,
             warnText:
               "Bitte ruf uns direkt an — bei akuten Schäden ist der Rechner zu langsam.",
@@ -573,7 +549,6 @@ export const SITUATIONEN_CONFIG: Record<
             value: "heute",
             label: "Heute noch",
             hint: "Ausgefallen aber stabil — heute lösen",
-            icon: "02-reparatur",
             faktor: 1.5,
             infoText: "Termin innerhalb 48–72h.",
           },
@@ -581,7 +556,6 @@ export const SITUATIONEN_CONFIG: Record<
             value: "diese_woche",
             label: "Diese Woche",
             hint: "Eingeschränkt nutzbar — bald reparieren",
-            emoji: "🟡",
             faktor: 1.2,
             infoText: "Termin innerhalb weniger Tage.",
           },
@@ -678,7 +652,6 @@ export const SITUATIONEN_CONFIG: Record<
             value: "sonstiges",
             label: "Sonstiges",
             hint: "Anderes Vorhaben",
-            emoji: "💬",
           },
         ],
       },
@@ -733,19 +706,16 @@ export const BW_FUNNEL_STEP_BAD_AUSSTATTUNG: FunnelStep = {
       value: "standard",
       label: "Standard",
       hint: "Solide Materialien, funktionales Design",
-      emoji: "✓",
     },
     {
       value: "komfort",
       label: "Komfort",
       hint: "Bodengleiche Dusche, gute Markenarmaturen",
-      emoji: "⭐",
     },
     {
       value: "gehoben",
       label: "Gehoben",
       hint: "Designfliesen, Markenarmaturen, individuelle Lösungen",
-      emoji: "✨",
     },
   ],
 };

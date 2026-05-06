@@ -18,8 +18,8 @@ export const SITE_CONFIG = {
   /** Kanonische Site-URL für Schema & Open Graph */
   url: siteUrl,
   /** Öffentliche Erreichbarkeit (UI, Header, Funnel, CTAs) — Festnetz */
-  phone: "08980929405",
-  phoneHref: "tel:+498980929405",
+  phone: "08980955726",
+  phoneHref: "tel:+498980955726",
   /** Nur intern / Impressum & Pflichtangaben — nicht im allgemeinen UI */
   phoneMobil: "+49 163 7316161",
   phoneMobilHref: "tel:+491637316161",

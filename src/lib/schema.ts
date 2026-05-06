@@ -11,7 +11,7 @@ export function localBusinessSchema(): Record<string, unknown> {
     description:
       "Bärenwald München — ein Ansprechpartner für alle Gewerke. Renovierung, Sanierung, Garten und mehr.",
     url: BASE_URL,
-    telephone: "+498980929405",
+    telephone: SITE_CONFIG.phoneHref.replace(/^tel:/, ""),
     email: "info@baerenwald-muenchen.de",
     address: {
       "@type": "PostalAddress",
