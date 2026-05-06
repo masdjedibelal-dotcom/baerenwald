@@ -2406,13 +2406,13 @@
 .site-footer-logo-wrap {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 14px;
   margin-bottom: 4px;
 }
 
 .site-footer-logo-img {
-  width: 40px;
-  height: 40px;
+  width: 54px;
+  height: 54px;
   object-fit: contain;
   display: block;
   flex-shrink: 0;
@@ -2730,11 +2730,12 @@
 }
 
 .site-footer-brand-name {
-  margin: 0 0 8px;
-  font-size: 22px;
+  margin: 0;
+  font-size: 28px;
   font-weight: 800;
   letter-spacing: -0.02em;
   color: white;
+  line-height: 1.05;
 }
 
 .footer-social {
@@ -2757,24 +2758,6 @@
 
 .footer-social a:hover {
   color: #ffffff;
-}
-
-.footer-social a.footer-social-google {
-  color: inherit;
-}
-
-.footer-social a.footer-social-google:hover {
-  opacity: 1;
-  transform: scale(1.06);
-}
-
-.footer-social a.footer-social-google .footer-social-google-svg {
-  opacity: 0.88;
-  transition: opacity 0.2s ease, transform 0.2s ease;
-}
-
-.footer-social a.footer-social-google:hover .footer-social-google-svg {
-  opacity: 1;
 }
 
 .faq-whatsapp-cta-wrap {

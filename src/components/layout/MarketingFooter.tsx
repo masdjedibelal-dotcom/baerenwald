@@ -21,8 +21,8 @@ export function MarketingFooter() {
               <Image
                 src="/logo-mark-white.png"
                 alt="Bärenwald München"
-                width={40}
-                height={40}
+                width={54}
+                height={54}
                 className="site-footer-logo-img"
               />
               <p className="site-footer-brand-name">Bärenwald</p>
