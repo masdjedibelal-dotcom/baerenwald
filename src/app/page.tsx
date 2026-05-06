@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 
 import BaerenwaldLandingClient from "./baerenwald-landing-client";
 import { LeistungenCarousel } from "@/components/ui/LeistungenCarousel";
+import { WhatsAppFloat } from "@/components/ui/WhatsAppFloat";
 import { CTA } from "@/lib/cta-config";
 import { HOME_FAQ_ITEMS } from "@/lib/home-content";
 import { faqSchema } from "@/lib/schema";
@@ -53,6 +54,7 @@ export default function HomePage() {
       <BaerenwaldLandingClient
         leistungenSection={<LeistungenCarousel />}
       />
+      <WhatsAppFloat />
     </>
   );
 }

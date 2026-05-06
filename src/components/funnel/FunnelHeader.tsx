@@ -7,6 +7,7 @@ import { useCallback, useEffect, useId, useState } from "react";
 
 import { RefreshIcon18 } from "@/components/funnel/NeueAnfrageResetLink";
 import { SITE_CONFIG } from "@/lib/config";
+import { WHATSAPP_ICON_PATH, WHATSAPP_URL_ANFRAGE } from "@/lib/whatsapp";
 import { cn } from "@/lib/utils";
 
 export interface FunnelHeaderProps {
@@ -132,6 +133,26 @@ export function FunnelHeader({
               <RefreshIcon18 className="size-[18px]" />
             </Link>
           )}
+          <a
+            href={WHATSAPP_URL_ANFRAGE}
+            target="_blank"
+            rel="noopener noreferrer"
+            className={cn(
+              "flex size-10 shrink-0 items-center justify-center rounded-full border border-border-default",
+              "text-text-tertiary transition hover:border-text-tertiary hover:text-text-primary"
+            )}
+            aria-label="WhatsApp schreiben"
+            title="WhatsApp"
+          >
+            <svg
+              className="size-[18px] shrink-0"
+              viewBox="0 0 24 24"
+              fill="currentColor"
+              aria-hidden
+            >
+              <path d={WHATSAPP_ICON_PATH} />
+            </svg>
+          </a>
           <a
             href={SITE_CONFIG.phoneHref}
             className="flex shrink-0 items-center gap-1.5 text-sm text-text-tertiary transition hover:text-text-primary"
