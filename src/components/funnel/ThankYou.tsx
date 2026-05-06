@@ -2,6 +2,7 @@
 
 import { NeueAnfrageResetLink } from "@/components/funnel/NeueAnfrageResetLink";
 import { cn } from "@/lib/utils";
+import { WHATSAPP_ICON_PATH, WHATSAPP_URL_ANFRAGE } from "@/lib/whatsapp";
 
 const TIMELINE_STEPS = [
   {
@@ -108,6 +109,29 @@ export function ThankYou({
             "Deine Anfrage ist bei uns eingegangen. Ein Kollege meldet sich bei dir — in der Regel innerhalb von 48 Stunden."
           : followUpSubline}
       </p>
+
+      <div className="mt-6 w-full max-w-sm text-center">
+        <p className="mb-3 text-sm text-text-secondary">
+          Oder schreib uns direkt auf WhatsApp — wir antworten schnell.
+        </p>
+        <a
+          href={WHATSAPP_URL_ANFRAGE}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-2 text-[15px] font-semibold text-[#25D366] no-underline transition-opacity hover:opacity-90"
+        >
+          <svg
+            viewBox="0 0 24 24"
+            fill="#25D366"
+            width={18}
+            height={18}
+            aria-hidden
+          >
+            <path d={WHATSAPP_ICON_PATH} />
+          </svg>
+          WhatsApp öffnen →
+        </a>
+      </div>
 
       {showWunschterminSummary ? (
         <div className="mt-6 w-full text-left">

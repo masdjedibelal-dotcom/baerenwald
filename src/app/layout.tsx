@@ -3,6 +3,7 @@ import type { CSSProperties } from "react";
 import { Lora, Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
 import { JsonLdOrganization } from "@/components/JsonLdOrganization";
+import { WhatsAppFloat } from "@/components/ui/WhatsAppFloat";
 import { SITE_CONFIG } from "@/lib/config";
 import { PHProvider } from "./providers";
 
@@ -120,6 +121,7 @@ export default function RootLayout({
         <PHProvider>
           <JsonLdOrganization />
           {children}
+          <WhatsAppFloat />
         </PHProvider>
       </body>
     </html>

@@ -28,6 +28,7 @@ import { MarketingFooter } from "@/components/layout/MarketingFooter";
 import { BwIcon } from "@/components/ui/BwIcon";
 import { WaveUnderline } from "@/components/ui/WaveUnderline";
 import { SITE_CONFIG } from "@/lib/config";
+import { WHATSAPP_URL_FRAGE } from "@/lib/whatsapp";
 import { HOME_FAQ_ITEMS } from "@/lib/home-content";
 import {
   buildHeroRechnerLandingUrl,
@@ -688,6 +689,17 @@ export default function BaerenwaldLandingClient({
                 </div>
               );
             })}
+          </div>
+          <div className="faq-whatsapp-cta-wrap fade-up d3">
+            <p>Noch Fragen? Wir antworten schnell auf WhatsApp.</p>
+            <a
+              href={WHATSAPP_URL_FRAGE}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="btn-cta"
+            >
+              WhatsApp schreiben →
+            </a>
           </div>
         </div>
       </section>

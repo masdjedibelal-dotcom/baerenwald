@@ -8,6 +8,7 @@ import {
   leistungHref,
   ratgeberHref,
 } from "@/lib/routes";
+import { FooterSocialLinks } from "@/components/layout/FooterSocialLinks";
 
 export function MarketingFooter() {
   const year = new Date().getFullYear();
@@ -16,7 +17,6 @@ export function MarketingFooter() {
       <div className="site-footer-main">
         <div className="site-footer-grid">
           <div>
-            <p className="site-footer-col-title">Marke</p>
             <div className="site-footer-logo-wrap">
               <Image
                 src="/logo-mark-white.png"
@@ -27,6 +27,7 @@ export function MarketingFooter() {
               />
               <p className="site-footer-brand-name">Bärenwald</p>
             </div>
+            <FooterSocialLinks />
             <p className="site-footer-subtitle">Schnellzugriff</p>
             <ul className="site-footer-links">
               <li>

@@ -2683,7 +2683,7 @@
 
 .site-footer {
   position: relative;
-  z-index: 50;
+  z-index: 160;
   isolation: isolate;
 }
 
@@ -2735,6 +2735,39 @@
   font-weight: 800;
   letter-spacing: -0.02em;
   color: white;
+}
+
+.footer-social {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  margin-top: 16px;
+}
+
+.footer-social a {
+  color: rgba(255, 255, 255, 0.5);
+  transition: color 0.2s ease;
+  display: flex;
+  align-items: center;
+}
+
+.footer-social a:hover {
+  color: #ffffff;
+}
+
+.faq-whatsapp-cta-wrap {
+  margin-top: 32px;
+  padding: 24px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+  text-align: center;
+}
+
+.faq-whatsapp-cta-wrap p {
+  margin: 0 0 12px;
+  font-size: 15px;
+  color: inherit;
+  opacity: 0.85;
 }
 
 .site-footer-brand-tag {
