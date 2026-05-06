@@ -14,8 +14,8 @@ export type BwFunnelStep1Option = {
 export const BW_FUNNEL_STEP1_OPTIONS: BwFunnelStep1Option[] = [
   {
     id: "erneuern",
-    label: "Zuhause erneuern",
-    hint: "Inkl. Ausbau, Umbau, Terrasse, Keller, DG",
+    label: "Umbau & Modernisierung",
+    hint: "Inkl. Innenausbau, Außenbereich, Terrasse, Keller, DG",
     icon: "01-haus-erneuern",
   },
   {
