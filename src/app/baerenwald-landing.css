@@ -2739,20 +2739,42 @@
 
 .footer-social {
   display: flex;
-  gap: 16px;
+  gap: 22px;
   align-items: center;
-  margin-top: 16px;
+  margin-top: 14px;
+}
+
+.footer-social + .site-footer-subtitle {
+  margin-top: 28px;
 }
 
 .footer-social a {
-  color: rgba(255, 255, 255, 0.5);
-  transition: color 0.2s ease;
+  color: rgba(255, 255, 255, 0.55);
+  transition: color 0.2s ease, opacity 0.2s ease, transform 0.2s ease;
   display: flex;
   align-items: center;
 }
 
 .footer-social a:hover {
   color: #ffffff;
+}
+
+.footer-social a.footer-social-google {
+  color: inherit;
+}
+
+.footer-social a.footer-social-google:hover {
+  opacity: 1;
+  transform: scale(1.06);
+}
+
+.footer-social a.footer-social-google .footer-social-google-svg {
+  opacity: 0.88;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.footer-social a.footer-social-google:hover .footer-social-google-svg {
+  opacity: 1;
 }
 
 .faq-whatsapp-cta-wrap {
@@ -2813,10 +2835,6 @@
   text-transform: uppercase;
   letter-spacing: 0.12em;
   color: rgba(255, 255, 255, 0.35);
-}
-
-.site-footer-subtitle:first-of-type {
-  margin-top: 0;
 }
 
 .site-footer-contact {
