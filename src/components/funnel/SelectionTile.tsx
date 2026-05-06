@@ -41,6 +41,7 @@ export function SelectionTile({
   const showExpand = selected && Boolean(expandText);
   const emoji = option.emoji;
   const optIconName = option.icon;
+  const hasVisual = Boolean(optIconName || emoji || icon);
 
   return (
     <button
@@ -48,6 +49,7 @@ export function SelectionTile({
       onClick={() => onChange(option.value, !selected)}
       className={cn(
         "funnel-tile relative text-left",
+        !hasVisual && "funnel-tile--text-only",
         selected && "selected",
         className
       )}
@@ -85,7 +87,13 @@ export function SelectionTile({
         )}
       </div>
 
-      <div className="pr-8">
+      <div
+        className={cn(
+          "pr-8",
+          !hasVisual &&
+            "flex min-h-[5.25rem] flex-col justify-center gap-0.5 py-4"
+        )}
+      >
         {optIconName ? (
           <span className="funnel-tile-icon-wrap" aria-hidden>
             <BwIcon name={optIconName} />

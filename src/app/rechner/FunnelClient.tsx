@@ -36,7 +36,6 @@ import {
   isLeadStepValid,
   isPlzZeitraumValid,
 } from "@/lib/funnel-validation";
-import { tileIconForStepValue } from "@/lib/funnel-tile-icons";
 import { calculatePrice } from "@/lib/price-calc";
 import type { FunnelStep, PlzZeitraumAnswer, Situation } from "@/lib/types";
 import { Input } from "@/components/ui/input";
@@ -423,11 +422,6 @@ export function FunnelClient() {
               <SelectionTile
                 key={opt.value}
                 option={opt}
-                icon={
-                  opt.icon || opt.emoji
-                    ? undefined
-                    : tileIconForStepValue(opt.value)
-                }
                 selected={selected}
                 multi={multi}
                 onChange={(value, sel) => {

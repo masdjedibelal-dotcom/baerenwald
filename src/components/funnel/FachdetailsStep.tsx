@@ -14,7 +14,6 @@ import {
 } from "@/lib/funnel/fachdetail-questions-flat";
 import type { FachdetailsState, FunnelState } from "@/lib/funnel/types";
 import type { StepOption as LibStepOption } from "@/lib/types";
-import { tileIconForStepValue } from "@/lib/funnel-tile-icons";
 import { cn } from "@/lib/utils";
 
 function asLibOpt(o: FachdetailOption): LibStepOption {
@@ -134,11 +133,6 @@ export function FachdetailsStep({
             <SelectionTile
               key={opt.value}
               option={libOpt}
-              icon={
-                libOpt.icon || libOpt.emoji
-                  ? undefined
-                  : tileIconForStepValue(opt.value)
-              }
               selected={selected}
               multi={multi}
               onChange={(value, sel) => {

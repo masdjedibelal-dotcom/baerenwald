@@ -86,7 +86,7 @@ export default function KontaktPage() {
                 ✓ Ein Ansprechpartner für alles — Einzelleistung oder Projekt
               </p>
 
-              <p className="mt-8 flex flex-wrap gap-3">
+              <div className="mt-10 flex flex-wrap gap-3" role="group" aria-label="Kontaktaktionen">
                 <a href={SITE_CONFIG.phoneHref} className="btn-pill-primary inline-flex py-2.5 px-5 text-[13px]">
                   Jetzt anrufen →
                 </a>
@@ -96,7 +96,7 @@ export default function KontaktPage() {
                 >
                   Zum Preisrechner →
                 </Link>
-              </p>
+              </div>
             </div>
           </div>
         </section>

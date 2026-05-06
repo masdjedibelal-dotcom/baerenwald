@@ -25,6 +25,7 @@ import {
 import { SectionDivider } from "@/components/landing/SectionDividers";
 import { WarumBaerenwaldScrollSection } from "@/components/landing/WarumBaerenwaldScrollSection";
 import { MarketingFooter } from "@/components/layout/MarketingFooter";
+import { BwIcon } from "@/components/ui/BwIcon";
 import { WaveUnderline } from "@/components/ui/WaveUnderline";
 import { SITE_CONFIG } from "@/lib/config";
 import { HOME_FAQ_ITEMS } from "@/lib/home-content";
@@ -81,15 +82,57 @@ const TESTIMONIALS = [
   },
 ] satisfies readonly MarqueeTestimonial[];
 
+/** Hero-Schnellzugriff: SVG aus /public/icons — `slug` = Rechner-?leistung= Preset-Schlüssel */
 const HERO_LEISTUNG_CHIPS = [
-  { label: "🚿 Bad", leistung: "badezimmer-sanierung", situation: "erneuern" },
-  { label: "🪵 Boden", leistung: "bodenbelag", situation: "erneuern" },
-  { label: "🖌️ Streichen", leistung: "malerarbeiten", situation: "erneuern" },
-  { label: "🔥 Heizung", leistung: "heizung-sanitaer", situation: "erneuern" },
-  { label: "⚡ Strom", leistung: "elektroarbeiten", situation: "erneuern" },
-  { label: "🌿 Garten", leistung: "gartenpflege", situation: "betreuung" },
-  { label: "🪟 Fenster", leistung: "fenster-tueren", situation: "erneuern" },
-  { label: "🚨 Notfall", leistung: "dacharbeiten", situation: "notfall" },
+  {
+    label: "Bad",
+    icon: "08-bad",
+    slug: "badezimmer-sanierung",
+    situation: "erneuern",
+  },
+  {
+    label: "Boden",
+    icon: "09-boden",
+    slug: "bodenbelag",
+    situation: "erneuern",
+  },
+  {
+    label: "Streichen",
+    icon: "07-streichen",
+    slug: "malerarbeiten",
+    situation: "erneuern",
+  },
+  {
+    label: "Heizung",
+    icon: "05-heizung",
+    slug: "heizung-sanitaer",
+    situation: "erneuern",
+  },
+  {
+    label: "Strom",
+    icon: "06-elektrik",
+    slug: "elektroarbeiten",
+    situation: "erneuern",
+  },
+  {
+    label: "Garten",
+    icon: "15-gartenpflege",
+    slug: "gartenpflege",
+    situation: "betreuung",
+  },
+  {
+    label: "Fenster",
+    icon: "11-fenster",
+    slug: "fenster-tueren",
+    situation: "erneuern",
+  },
+  /** Notfall: Preset `heizung-defekt` → Situation kaputt + Gewerk Heizung (nicht `heizung-sanitaer`, das ist Erneuern-Preset) */
+  {
+    label: "Notfall",
+    icon: "19-notfall",
+    slug: "heizung-defekt",
+    situation: "notfall",
+  },
 ] as const;
 
 /** Echte Bärenwald-Referenzprojekte (Bildpfade Platzhalter bis finale Assets). */
@@ -110,7 +153,7 @@ const PROJEKTE: readonly BaerenwaldProjekt[] = [
     problem:
       "Kein Warmwasser im ganzen Haus: komplette Versorgung ausgefallen, hoher Zeitdruck und sofortige Reaktion erforderlich.",
     loesung:
-      "Vor-Ort-Analyse sofort gestartet, Problem dokumentiert, Partnerbetrieb Mauro Heizung & Sanitär vorbereitet und Umsetzung koordiniert: Pumpe/Steuerung erneuert, System entlüftet und neu eingestellt.",
+      "Vor-Ort-Analyse sofort gestartet, Problem dokumentiert, einen zertifizierten Partnerbetrieb aus dem Heizungs- und Sanitärnetzwerk vorbereitet und die Umsetzung koordiniert: Pumpe/Steuerung erneuert, System entlüftet und neu eingestellt.",
     ergebnis:
       "Warmwasserversorgung vollständig wiederhergestellt — Umsetzung in 2 Tagen mit minimaler Ausfallzeit und einem zentralen Ansprechpartner.",
     placeholderGradient: "linear-gradient(135deg, #1A3D2B, #2E7D52)",
@@ -173,7 +216,7 @@ const PROJEKTE: readonly BaerenwaldProjekt[] = [
     problem:
       "Naturstein bereits gekauft (ca. 25.000 €), aber Standardverlegung auf Terrasse/Stellplatz technisch und wirtschaftlich nicht umsetzbar.",
     loesung:
-      "Mit Partner Chiemsee Estrich Sonderlösung umgesetzt: Material per Estrichpumpe in den 5. Stock, tragfähigen Unterbau hergestellt und Naturstein direkt verlegt.",
+      "Gemeinsam mit einem Spezialbetrieb für Estricharbeiten Sonderlösung umgesetzt: Material per Estrichpumpe in den 5. Stock, tragfähigen Unterbau hergestellt und Naturstein direkt verlegt.",
     ergebnis:
       "Naturstein vollständig genutzt, massive Zusatzkosten vermieden und Projekt in enger Innenstadtlage technisch sicher abgeschlossen.",
     placeholderGradient: "linear-gradient(135deg, #1A3D2B, #4A7D2E)",
@@ -214,7 +257,7 @@ const PROJEKTE: readonly BaerenwaldProjekt[] = [
     problem:
       "Buchshecke massiv durch Schädlinge beschädigt, keine funktionierende Bewässerung und akuter Handlungsbedarf in hochwertiger Außenanlage.",
     loesung:
-      "Kompletter Neuaufbau statt Reparatur: Partner Blumenhof Ensinger für Pflanzen/Fachberatung eingebunden, Bärenwald-Team übernahm Rückbau, Bodenvorbereitung, Neupflanzung und Erstpflege.",
+      "Kompletter Neuaufbau statt Reparatur: Fachbetrieb für Pflanzenware und Beratung aus dem Partnernetzwerk eingebunden, Bärenwald-Team übernahm Rückbau, Bodenvorbereitung, Neupflanzung und Erstpflege.",
     ergebnis:
       "Außenanlage hochwertig und nachhaltig wiederhergestellt — pflegeleichte Lösung mit sauberer Linienführung, umgesetzt aus einer Hand.",
     placeholderGradient: "linear-gradient(135deg, #1A3D2B, #4A7D2E)",
@@ -369,7 +412,7 @@ export default function BaerenwaldLandingClient({
           <a href="#how">Wie es funktioniert</a>
           <a href="#leistungen">Leistungen</a>
           <a href="#faq">FAQ</a>
-          <a href="#faq">Kontakt</a>
+          <a href="#kontakt">Kontakt</a>
         </nav>
         <Link href="/rechner" className="nav-cta">
           Angebot anfordern
@@ -491,11 +534,16 @@ export default function BaerenwaldLandingClient({
                 <div className="hero-chips fade-up d2">
                   {HERO_LEISTUNG_CHIPS.map((c) => (
                     <Link
-                      key={c.leistung}
+                      key={c.slug}
                       className="hero-chip-link"
-                      href={`/rechner?leistung=${c.leistung}&situation=${c.situation}&nf=1`}
+                      href={`/rechner?leistung=${c.slug}&situation=${c.situation}&nf=1`}
                       onClick={() => track.heroChipKlick(c.label)}
                     >
+                      <BwIcon
+                        name={c.icon}
+                        size={16}
+                        className="mr-1.5 inline-block shrink-0 align-middle opacity-[0.85]"
+                      />
                       {c.label}
                     </Link>
                   ))}

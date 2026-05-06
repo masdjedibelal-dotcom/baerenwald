@@ -382,6 +382,14 @@
   }
 }
 
+/* Anker-Ziele unter fester .landing-nav (60px) — ohne Abstand schneidet der Header die Überschrift ab */
+.how-section,
+.leistungen-section,
+.faq-section,
+#kontakt {
+  scroll-margin-top: 80px;
+}
+
 .logo {
   display: flex;
   align-items: center;
@@ -886,6 +894,8 @@
 }
 
 .hero-chip-link {
+  display: inline-flex;
+  align-items: center;
   font-size: 13px;
   font-weight: 500;
   color: var(--fl-accent-dark);
@@ -2244,10 +2254,24 @@
   width: 100%;
 }
 
+@keyframes testimonials-marquee {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
 .marquee-track {
   display: flex;
   gap: 24px;
   width: max-content;
+  animation: testimonials-marquee 30s linear infinite;
+}
+
+.marquee-track.paused {
+  animation-play-state: paused;
 }
 
 .marquee-track > .testimonial-card--marquee {

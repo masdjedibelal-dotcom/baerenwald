@@ -256,7 +256,7 @@ export function PageLayout({ children }: PageLayoutProps) {
                     Über uns
                   </Link>
                   <Link
-                    href="/#faq"
+                    href="/#kontakt"
                     role="menuitem"
                     onClick={() => setOpenDropdown(null)}
                   >

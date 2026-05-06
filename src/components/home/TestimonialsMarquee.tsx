@@ -1,7 +1,8 @@
 "use client";
 
-import { motion, useAnimationControls } from "framer-motion";
-import { useEffect, useState } from "react";
+import { useState } from "react";
+
+import { cn } from "@/lib/utils";
 
 export type MarqueeTestimonialColor =
   | "green"
@@ -35,22 +36,6 @@ export function TestimonialsMarquee({
   testimonials: readonly MarqueeTestimonial[];
 }) {
   const [paused, setPaused] = useState(false);
-  const controls = useAnimationControls();
-
-  useEffect(() => {
-    if (paused) {
-      void controls.stop();
-    } else {
-      void controls.start({
-        x: ["0%", "-50%"],
-        transition: {
-          duration: 30,
-          repeat: Infinity,
-          ease: "linear",
-        },
-      });
-    }
-  }, [paused, controls]);
 
   const doubled = [...testimonials, ...testimonials];
 
@@ -62,7 +47,7 @@ export function TestimonialsMarquee({
       onTouchStart={() => setPaused(true)}
       onTouchEnd={() => setPaused(false)}
     >
-      <motion.div className="marquee-track" animate={controls}>
+      <div className={cn("marquee-track", paused && "paused")}>
         {doubled.map((t, i) => {
           const col = AVATAR_COLORS[t.color];
           return (
@@ -91,7 +76,7 @@ export function TestimonialsMarquee({
             </div>
           );
         })}
-      </motion.div>
+      </div>
     </div>
   );
 }

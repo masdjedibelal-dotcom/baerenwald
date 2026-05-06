@@ -36,9 +36,6 @@ export function MarketingFooter() {
                 <a href="/ratgeber">Ratgeber-Übersicht</a>
               </li>
               <li>
-                <a href="/#leistungen">Leistungen (Übersicht)</a>
-              </li>
-              <li>
                 <a href="/rechner">Preisrechner</a>
               </li>
             </ul>
@@ -63,7 +60,7 @@ export function MarketingFooter() {
               ))}
             </ul>
           </div>
-          <div>
+          <div id="kontakt">
             <p className="site-footer-col-title">Kontakt</p>
             <div className="site-footer-contact">
               <p>

@@ -121,24 +121,37 @@ export function PlzStep({
           </div>
           {zeitraumOptions.map((c) => {
             const active = zeitraum === c.value;
+            const hasVisual = Boolean(c.icon || c.emoji);
             return (
               <button
                 key={c.value}
                 type="button"
                 onClick={() => onZeitraumChange(c.value)}
-                className={cn("funnel-tile", active && "selected")}
+                className={cn(
+                  "funnel-tile text-left",
+                  !hasVisual && "funnel-tile--text-only",
+                  active && "selected"
+                )}
               >
-                {c.icon ? (
-                  <span className="funnel-tile-icon-wrap" aria-hidden>
-                    <BwIcon name={c.icon} />
-                  </span>
-                ) : c.emoji ? (
-                  <span className="funnel-tile-emoji" aria-hidden>
-                    {c.emoji}
-                  </span>
-                ) : null}
-                <span className="funnel-tile-label">{c.label}</span>
-                <span className="funnel-tile-hint">{c.hint}</span>
+                <div
+                  className={cn(
+                    "pr-8",
+                    !hasVisual &&
+                      "flex min-h-[5.25rem] flex-col justify-center gap-0.5 py-4"
+                  )}
+                >
+                  {c.icon ? (
+                    <span className="funnel-tile-icon-wrap" aria-hidden>
+                      <BwIcon name={c.icon} />
+                    </span>
+                  ) : c.emoji ? (
+                    <span className="funnel-tile-emoji" aria-hidden>
+                      {c.emoji}
+                    </span>
+                  ) : null}
+                  <span className="funnel-tile-label">{c.label}</span>
+                  <span className="funnel-tile-hint">{c.hint}</span>
+                </div>
               </button>
             );
           })}
