@@ -4,6 +4,14 @@ import type { PersistLeadInput } from "@/lib/lead/persist-lead";
 import { persistLead } from "@/lib/lead/persist-lead";
 import type { PriceLineItem } from "@/lib/funnel/types";
 import { getPostHogClient } from "@/lib/posthog-server";
+import { getClientIp } from "@/lib/request-ip";
+import { checkRateLimit } from "@/lib/rate-limit";
+import {
+  isValidEmail,
+  isValidName,
+  isValidPhone,
+  isValidPlz,
+} from "@/lib/validation";
 
 /** Legacy Payload vom Funnel (`BwLeadBody`) — wird auf {@link PersistLeadInput} gemappt. */
 export type BwLeadBody = {
@@ -29,6 +37,8 @@ export type BwLeadBody = {
   leadType?: "beratung" | "system" | "ausserhalb" | "komplex_rueckruf";
   beschreibung?: string;
   freitext?: string;
+  /** Honeypot — niemals von echten Nutzern ausfüllen */
+  website?: string;
 };
 
 function mapBwLeadToPersist(body: BwLeadBody): PersistLeadInput {
@@ -89,7 +99,26 @@ function mapBwLeadToPersist(body: BwLeadBody): PersistLeadInput {
  */
 export async function POST(request: Request) {
   try {
+    const ip = getClientIp(request);
+    const { allowed } = checkRateLimit(ip, 5);
+    if (!allowed) {
+      return NextResponse.json(
+        {
+          success: false,
+          ok: false,
+          error: "Zu viele Anfragen. Bitte später versuchen.",
+        },
+        { status: 429 }
+      );
+    }
+
     const body = (await request.json()) as BwLeadBody;
+    const honeypot =
+      typeof body.website === "string" ? body.website.trim() : "";
+    if (honeypot) {
+      return NextResponse.json({ success: true, ok: true }, { status: 200 });
+    }
+
     const isKomplexRueckruf = body.leadType === "komplex_rueckruf";
 
     if (isKomplexRueckruf) {
@@ -100,9 +129,43 @@ export async function POST(request: Request) {
           { status: 400 }
         );
       }
+      if (!isValidPhone(tel)) {
+        return NextResponse.json(
+          { success: false, ok: false, error: "Ungültige Telefonnummer" },
+          { status: 400 }
+        );
+      }
     }
 
     const input = mapBwLeadToPersist(body);
+
+    if (!isValidName(input.name ?? "")) {
+      return NextResponse.json(
+        { success: false, ok: false, error: "Ungültiger Name" },
+        { status: 400 }
+      );
+    }
+    const em = input.email?.trim();
+    if (em && !isValidEmail(em)) {
+      return NextResponse.json(
+        { success: false, ok: false, error: "Ungültige E-Mail" },
+        { status: 400 }
+      );
+    }
+    const telRaw = input.telefon?.trim();
+    if (telRaw && !isValidPhone(telRaw)) {
+      return NextResponse.json(
+        { success: false, ok: false, error: "Ungültige Telefonnummer" },
+        { status: 400 }
+      );
+    }
+    const plzStr = (input.plz ?? "").trim();
+    if (plzStr && !isValidPlz(plzStr)) {
+      return NextResponse.json(
+        { success: false, ok: false, error: "Ungültige PLZ" },
+        { status: 400 }
+      );
+    }
     const result = await persistLead(input);
 
     if (!result.ok) {

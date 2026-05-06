@@ -86,7 +86,7 @@ export default function UeberUnsPage() {
                 <a href="/rechner?situation=kaputt">Notfalleinsätze</a>
               </div>
 
-              <p className="mt-8 flex flex-wrap gap-3">
+              <p className="mt-14 flex flex-wrap gap-3 sm:mt-16">
                 <Link href="/kontakt" className="btn-pill-primary inline-flex py-2.5 px-5 text-[13px]">
                   Angebot anfordern →
                 </Link>

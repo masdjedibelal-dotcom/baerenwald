@@ -8,6 +8,9 @@ import {
   SAVE_PRICE_CUSTOMER_EMAIL_SUBJECT,
 } from "@/lib/email/lead-mail-templates";
 import { getPostHogClient } from "@/lib/posthog-server";
+import { getClientIp } from "@/lib/request-ip";
+import { checkRateLimit } from "@/lib/rate-limit";
+import { isValidEmail, isValidPlz } from "@/lib/validation";
 
 export type SavePriceBody = {
   email?: string;
@@ -16,21 +19,41 @@ export type SavePriceBody = {
   situation?: string | null;
   bereiche?: string[];
   plz?: string;
+  /** Honeypot */
+  website?: string;
 };
-
-function isValidEmail(s: string): boolean {
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s.trim());
-}
 
 export async function POST(request: Request) {
   try {
+    const ip = getClientIp(request);
+    const { allowed } = checkRateLimit(ip, 5);
+    if (!allowed) {
+      return NextResponse.json(
+        { success: false, error: "Zu viele Anfragen. Bitte später versuchen." },
+        { status: 429 }
+      );
+    }
+
     const body = (await request.json()) as SavePriceBody;
+    const honeypot =
+      typeof body.website === "string" ? body.website.trim() : "";
+    if (honeypot) {
+      return NextResponse.json({ success: true }, { status: 200 });
+    }
+
     const email = (body.email ?? "").trim();
     const priceMin = Number(body.priceMin ?? 0);
     const priceMax = Number(body.priceMax ?? 0);
-    const situation = (body.situation ?? "—").toString();
-    const bereiche = (body.bereiche ?? []).join(", ") || "—";
-    const plz = (body.plz ?? "").trim() || "—";
+    const situation = (body.situation ?? "—").toString().trim();
+    const bereicheArr = Array.isArray(body.bereiche) ? body.bereiche : [];
+    const plzRaw = (body.plz ?? "").trim();
+
+    if (plzRaw && !isValidPlz(plzRaw)) {
+      return NextResponse.json(
+        { success: false, error: "Ungültige PLZ" },
+        { status: 400 }
+      );
+    }
 
     if (!isValidEmail(email)) {
       return NextResponse.json(
@@ -63,17 +86,17 @@ export async function POST(request: Request) {
 
     const customerHtml = buildSavePriceCustomerHtml({
       situation,
-      bereiche,
-      plz,
-      priceMin,
-      priceMax,
+      bereiche: bereicheArr,
+      plz: plzRaw || undefined,
+      preisMin: priceMin,
+      preisMax: priceMax,
     });
 
     const internalHtml = buildSavePriceInternalHtml({
       email,
       situation,
-      bereiche,
-      plz,
+      bereiche: bereicheArr,
+      plz: plzRaw || "—",
       priceMin,
       priceMax,
     });
@@ -110,7 +133,7 @@ export async function POST(request: Request) {
       event: "server_price_email_sent",
       properties: {
         situation,
-        plz,
+        plz: plzRaw,
         price_min: priceMin,
         price_max: priceMax,
       },

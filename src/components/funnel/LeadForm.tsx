@@ -99,6 +99,7 @@ export function LeadForm({
 
   const [datenschutzAccepted, setDatenschutzAccepted] = useState(false);
   const [showDatenschutzError, setShowDatenschutzError] = useState(false);
+  const [honeypot, setHoneypot] = useState("");
 
   const [submitStatus, setSubmitStatus] = useState<
     "idle" | "loading" | "success" | "error"
@@ -123,11 +124,20 @@ export function LeadForm({
 
     if (hasErrors || !datenschutzAccepted) return;
 
+    if (honeypot) {
+      setSubmitStatus("success");
+      onSuccess?.();
+      return;
+    }
+
     setSubmitStatus("loading");
     setErrorMessage("");
 
     const name = `${data.vorname} ${data.nachname}`.trim();
-    const payload = serializeFunnelStateForApi({ ...funnel, ...data, name });
+    const payload = {
+      ...serializeFunnelStateForApi({ ...funnel, ...data, name }),
+      website: honeypot,
+    };
 
     try {
       const res = await fetch("/api/leads", {
@@ -170,10 +180,27 @@ export function LeadForm({
   return (
     <form
       id={formId}
-      className={cn("space-y-3", className)}
+      className={cn("relative space-y-3", className)}
       onSubmit={handleSubmit}
       noValidate
     >
+      {/* Honeypot — nicht sichtbar */}
+      <input
+        type="text"
+        name="website"
+        autoComplete="off"
+        tabIndex={-1}
+        aria-hidden="true"
+        style={{
+          position: "absolute",
+          left: "-9999px",
+          opacity: 0,
+          height: 0,
+          width: 0,
+        }}
+        value={honeypot}
+        onChange={(e) => setHoneypot(e.target.value)}
+      />
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         {/* Vorname */}
         <div>

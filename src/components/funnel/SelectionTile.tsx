@@ -2,6 +2,7 @@
 
 import type { ReactNode } from "react";
 
+import { BwIcon } from "@/components/ui/BwIcon";
 import type { StepOption } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
@@ -9,7 +10,7 @@ export type SelectionTileOption = StepOption;
 
 export interface SelectionTileProps {
   option: SelectionTileOption;
-  /** Nur wenn `option.emoji` fehlt (z. B. Fachdetails) */
+  /** Nur wenn weder `option.icon` noch `option.emoji` (z. B. Fachdetails) */
   icon?: ReactNode | null;
   selected: boolean;
   multi: boolean;
@@ -39,6 +40,7 @@ export function SelectionTile({
   const { text: expandText, variant } = expandCopy(option);
   const showExpand = selected && Boolean(expandText);
   const emoji = option.emoji;
+  const optIconName = option.icon;
 
   return (
     <button
@@ -84,7 +86,11 @@ export function SelectionTile({
       </div>
 
       <div className="pr-8">
-        {emoji ? (
+        {optIconName ? (
+          <span className="funnel-tile-icon-wrap" aria-hidden>
+            <BwIcon name={optIconName} />
+          </span>
+        ) : emoji ? (
           <span className="funnel-tile-emoji" aria-hidden>
             {emoji}
           </span>

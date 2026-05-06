@@ -8,6 +8,7 @@ import {
   getZeitraumOptions,
   needsZeitraumSelection,
 } from "@/lib/funnel/config";
+import { BwIcon } from "@/components/ui/BwIcon";
 import type { Situation } from "@/lib/funnel/types";
 
 export interface PlzStepProps {
@@ -127,9 +128,15 @@ export function PlzStep({
                 onClick={() => onZeitraumChange(c.value)}
                 className={cn("funnel-tile", active && "selected")}
               >
-                <span className="funnel-tile-emoji" aria-hidden>
-                  {c.emoji}
-                </span>
+                {c.icon ? (
+                  <span className="funnel-tile-icon-wrap" aria-hidden>
+                    <BwIcon name={c.icon} />
+                  </span>
+                ) : c.emoji ? (
+                  <span className="funnel-tile-emoji" aria-hidden>
+                    {c.emoji}
+                  </span>
+                ) : null}
                 <span className="funnel-tile-label">{c.label}</span>
                 <span className="funnel-tile-hint">{c.hint}</span>
               </button>

@@ -29,6 +29,7 @@ import { FunnelFooter } from "@/components/funnel/FunnelFooter";
 import { FunnelHeader } from "@/components/funnel/FunnelHeader";
 import { FunnelProgressBar } from "@/components/funnel/FunnelProgressBar";
 import { TrustScreen } from "@/components/funnel/TrustScreen";
+import { BwIcon } from "@/components/ui/BwIcon";
 import { GroesseStep } from "@/components/funnel/GroesseStep";
 import { LoadingScreen } from "@/components/funnel/LoadingScreen";
 import { PlzStep } from "@/components/funnel/PlzStep";
@@ -180,6 +181,7 @@ function asLibOpt(o: FunnelStepOption): LibStepOption {
     value: o.value,
     label: o.label,
     hint: o.hint,
+    icon: o.icon,
     emoji: o.emoji,
     priceTag: o.priceTag,
     infoExpand: o.infoText,
@@ -1242,7 +1244,9 @@ function FunnelRechnerInner() {
               <SelectionTile
                 option={libOpt}
                 icon={
-                  libOpt.emoji ? undefined : tileIconForStepValue(opt.value)
+                  libOpt.icon || libOpt.emoji
+                  ? undefined
+                  : tileIconForStepValue(opt.value)
                 }
                 selected={selected}
                 multi={multi}
@@ -1284,7 +1288,9 @@ function FunnelRechnerInner() {
               key={opt.value}
               option={libOpt}
               icon={
-                libOpt.emoji ? undefined : tileIconForStepValue(opt.value)
+                libOpt.icon || libOpt.emoji
+                  ? undefined
+                  : tileIconForStepValue(opt.value)
               }
               selected={selected}
               multi={false}
@@ -1367,8 +1373,8 @@ function FunnelRechnerInner() {
                     onClick={() => setSituation(opt.id)}
                     className={cn("funnel-tile", active && "selected")}
                   >
-                    <span className="funnel-tile-emoji" aria-hidden>
-                      {opt.emoji}
+                    <span className="funnel-tile-icon-wrap" aria-hidden>
+                      <BwIcon name={opt.icon} />
                     </span>
                     <span className="funnel-tile-label">{opt.label}</span>
                     <span className="funnel-tile-hint">{opt.hint}</span>
@@ -1408,16 +1414,17 @@ function FunnelRechnerInner() {
               {zOpts.map((opt) => {
                 const selected = state.zeitraum === opt.value;
                 return (
-                  <SelectionTile
-                    key={opt.value}
-                    option={{
-                      value: opt.value,
-                      label: opt.label,
-                      hint: opt.hint,
-                      emoji: opt.emoji,
-                    }}
-                    selected={selected}
-                    multi={false}
+              <SelectionTile
+                key={opt.value}
+                option={{
+                  value: opt.value,
+                  label: opt.label,
+                  hint: opt.hint,
+                  icon: opt.icon,
+                  emoji: opt.emoji,
+                }}
+                selected={selected}
+                multi={false}
                     onChange={(value, sel) => {
                       if (!sel) {
                         setZeitraum(null);
@@ -1458,7 +1465,9 @@ function FunnelRechnerInner() {
                     key={opt.value}
                     option={libOpt}
                     icon={
-                      libOpt.emoji ? undefined : tileIconForStepValue(opt.value)
+                      libOpt.icon || libOpt.emoji
+                  ? undefined
+                  : tileIconForStepValue(opt.value)
                     }
                     selected={selected}
                     multi={false}
@@ -1608,7 +1617,9 @@ function FunnelRechnerInner() {
                     key={opt.value}
                     option={libOpt}
                     icon={
-                      libOpt.emoji ? undefined : tileIconForStepValue(opt.value)
+                      libOpt.icon || libOpt.emoji
+                  ? undefined
+                  : tileIconForStepValue(opt.value)
                     }
                     selected={selected}
                     multi={false}
@@ -1742,7 +1753,9 @@ function FunnelRechnerInner() {
                     key={opt.value}
                     option={libOpt}
                     icon={
-                      libOpt.emoji ? undefined : tileIconForStepValue(opt.value)
+                      libOpt.icon || libOpt.emoji
+                  ? undefined
+                  : tileIconForStepValue(opt.value)
                     }
                     selected={selected}
                     multi={false}

@@ -93,6 +93,18 @@
   height: 22px;
 }
 
+.funnel-tile-icon-wrap img {
+  width: 28px;
+  height: 28px;
+}
+
+@media (min-width: 768px) {
+  .funnel-tile-icon-wrap img {
+    width: 32px;
+    height: 32px;
+  }
+}
+
 .funnel-tile-label {
   font-size: 14px;
   font-weight: 600;
@@ -857,6 +869,15 @@
 
 .hero-chips::-webkit-scrollbar {
   display: none;
+}
+
+@media (min-width: 768px) {
+  .hero-chips {
+    flex-wrap: wrap;
+    overflow-x: visible;
+    gap: 8px;
+    touch-action: auto;
+  }
 }
 
 .hero-chips a {

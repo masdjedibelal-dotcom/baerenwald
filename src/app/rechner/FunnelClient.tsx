@@ -423,7 +423,11 @@ export function FunnelClient() {
               <SelectionTile
                 key={opt.value}
                 option={opt}
-                icon={tileIconForStepValue(opt.value)}
+                icon={
+                  opt.icon || opt.emoji
+                    ? undefined
+                    : tileIconForStepValue(opt.value)
+                }
                 selected={selected}
                 multi={multi}
                 onChange={(value, sel) => {

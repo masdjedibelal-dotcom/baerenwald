@@ -1,6 +1,14 @@
 import { NextResponse } from "next/server";
 
 import { type PersistLeadInput, persistLead } from "@/lib/lead/persist-lead";
+import { getClientIp } from "@/lib/request-ip";
+import { checkRateLimit } from "@/lib/rate-limit";
+import {
+  isValidEmail,
+  isValidName,
+  isValidPhone,
+  isValidPlz,
+} from "@/lib/validation";
 
 function verifyLeadApiAuth(req: Request): NextResponse | null {
   const secret = process.env.LEAD_API_SECRET?.trim();
@@ -18,8 +26,14 @@ function verifyLeadApiAuth(req: Request): NextResponse | null {
  * Antwort: `{ ok: true, id: "<uuid>" }` bzw. `{ ok: false, error: "…" }`
  */
 export async function POST(req: Request) {
-  const unauthorized = verifyLeadApiAuth(req);
-  if (unauthorized) return unauthorized;
+  const ip = getClientIp(req);
+  const { allowed } = checkRateLimit(ip, 5);
+  if (!allowed) {
+    return NextResponse.json(
+      { ok: false, error: "Zu viele Anfragen. Bitte später versuchen." },
+      { status: 429 }
+    );
+  }
 
   let body: Record<string, unknown>;
   try {
@@ -30,6 +44,15 @@ export async function POST(req: Request) {
       { status: 400 }
     );
   }
+
+  const honeypot =
+    typeof body.website === "string" ? body.website.trim() : "";
+  if (honeypot) {
+    return NextResponse.json({ ok: true, success: true }, { status: 200 });
+  }
+
+  const unauthorized = verifyLeadApiAuth(req);
+  if (unauthorized) return unauthorized;
 
   const input: PersistLeadInput = {
     name: typeof body.name === "string" ? body.name : "",
@@ -64,6 +87,37 @@ export async function POST(req: Request) {
         ? body.funnel_quelle
         : undefined,
   };
+
+  const nameTrim = (input.name ?? "").trim();
+  if (!isValidName(nameTrim)) {
+    return NextResponse.json(
+      { ok: false, error: "Ungültiger Name" },
+      { status: 400 }
+    );
+  }
+  const emailTrim =
+    typeof input.email === "string" ? input.email.trim() : "";
+  if (emailTrim && !isValidEmail(emailTrim)) {
+    return NextResponse.json(
+      { ok: false, error: "Ungültige E-Mail" },
+      { status: 400 }
+    );
+  }
+  const telTrim =
+    typeof input.telefon === "string" ? input.telefon.trim() : "";
+  if (telTrim && !isValidPhone(telTrim)) {
+    return NextResponse.json(
+      { ok: false, error: "Ungültige Telefonnummer" },
+      { status: 400 }
+    );
+  }
+  const plzTrim = typeof input.plz === "string" ? input.plz.trim() : "";
+  if (plzTrim && !isValidPlz(plzTrim)) {
+    return NextResponse.json(
+      { ok: false, error: "Ungültige PLZ" },
+      { status: 400 }
+    );
+  }
 
   const result = await persistLead(input);
   if (!result.ok) {
