@@ -108,12 +108,12 @@ const config: Config = {
           to: { height: "0" },
         },
         "fade-in": {
-          from: { opacity: "0", transform: "translateY(6px)" },
-          to: { opacity: "1", transform: "translateY(0)" },
+          from: { opacity: "0" },
+          to: { opacity: "1" },
         },
         fadeIn: {
-          from: { opacity: "0", transform: "translateY(6px)" },
-          to: { opacity: "1", transform: "translateY(0)" },
+          from: { opacity: "0" },
+          to: { opacity: "1" },
         },
         "funnel-spin": {
           to: { transform: "rotate(360deg)" },
