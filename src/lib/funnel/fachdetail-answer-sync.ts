@@ -301,7 +301,8 @@ export function buildPatchForFachdetailAnswer(
         was: w,
         /** Rhythmus kommt aus zentralem `umfang` (Betreuung) bzw. erneut aus `garten_followup` (z. B. Erneuern). */
         haeufigkeit: undefined,
-        baumgroesse: w === "baum" ? fd.garten?.baumgroesse : undefined,
+        baumgroesse:
+          w === "baum" || w === "obstbaum" ? fd.garten?.baumgroesse : undefined,
       };
       break;
     }
@@ -313,7 +314,7 @@ export function buildPatchForFachdetailAnswer(
           was: w,
           haeufigkeit: str(value as string),
         };
-      } else if (w === "baum") {
+      } else if (w === "baum" || w === "obstbaum") {
         patch.garten = {
           ...fd.garten,
           was: w,
@@ -540,7 +541,8 @@ export function buildPatchClearFachdetailAnswer(
         ...fd.garten,
         was: w,
         haeufigkeit: w === "pflege" ? undefined : fd.garten?.haeufigkeit,
-        baumgroesse: w === "baum" ? undefined : fd.garten?.baumgroesse,
+        baumgroesse:
+          w === "baum" || w === "obstbaum" ? undefined : fd.garten?.baumgroesse,
         gestaltung: fd.garten?.gestaltung,
         freitext: fd.garten?.freitext,
       };

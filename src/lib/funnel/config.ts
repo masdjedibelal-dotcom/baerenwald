@@ -251,7 +251,7 @@ export function getBetreuungGroesseOptions(bereiche: string[]): StepOption[] {
       { value: "xl", label: "Sehr großer Garten", groesse: 800 },
     ];
   }
-  if (bereiche.includes("baum")) {
+  if (bereiche.includes("baum") || bereiche.includes("baumarbeiten")) {
     return [
       { value: "1", label: "1 Baum", groesse: 1 },
       { value: "2", label: "2 Bäume", groesse: 2 },
@@ -324,7 +324,7 @@ export function getBetreuungGroesseOptions(bereiche: string[]): StepOption[] {
 export function getBetreuungGroesseStep(bereiche: string[]): FunnelStep {
   const b = new Set(bereiche);
   let question = "Welchen Umfang hat das Objekt ungefähr?";
-  if (b.has("baum")) question = "Wie viele Bäume betrifft das?";
+  if (b.has("baum") || b.has("baumarbeiten")) question = "Wie viele Bäume betrifft das?";
   if (b.has("garten")) question = "Wie umfangreich ist der Außenbereich für die Pflege?";
   if (b.has("winter")) question = "Wie lang ist die zu räumende Streckenführung ca.?";
   if (b.has("reinigung")) question = "Welche Gebäudegröße passt am ehesten?";
@@ -419,15 +419,8 @@ export const SITUATIONEN_CONFIG: Record<
             section: "Ausbau & Umbau",
             value: "gartengestaltung",
             label: "Gartengestaltung",
-            hint: "Neuanlage, Teiche, Wege — GU-Paket nach Fläche",
+            hint: "Planung, Terrasse, Neuanlage — GU-Paket nach Fläche",
             icon: "14-gartengestaltung",
-            triggerGewerke: ["projekt"],
-          },
-          {
-            value: "terrasse_neu",
-            label: "Terrasse neu",
-            hint: "Holz oder Stein — inkl. Erdarbeiten / Unterbau",
-            icon: "09-boden",
             triggerGewerke: ["projekt"],
           },
           {
@@ -521,6 +514,13 @@ export const SITUATIONEN_CONFIG: Record<
             hint: "Ziegel locker, Undichtigkeit, Sturmschaden, Dachrinne defekt",
             icon: "12-dach",
             triggerGewerke: ["dach"],
+          },
+          {
+            value: "baum_notfall",
+            label: "Baum / Sturmschaden",
+            hint: "Astbruch, umgestürzter Baum, Sturmschaden — Sicherung und Beseitigung",
+            icon: "14-gartengestaltung",
+            triggerGewerke: ["baum"],
           },
           {
             value: "schimmel",
@@ -682,6 +682,7 @@ export function bereicheNeedFachdetails(bereiche: string[]): boolean {
     s.has("garten") ||
     s.has("baum") ||
     s.has("baumarbeiten") ||
+    s.has("baum_notfall") ||
     s.has("feuchtigkeit_schimmel")
   );
 }
@@ -972,8 +973,7 @@ export function shouldIncludeZugaenglichkeitStep(
   return (
     bereiche.includes("fassade") ||
     bereiche.includes("dach") ||
-    (situation === "erneuern" &&
-      (bereiche.includes("anbau") || bereiche.includes("terrasse_neu")))
+    (situation === "erneuern" && bereiche.includes("anbau"))
   );
 }
 

@@ -1,4 +1,6 @@
+import { getLeistungRechnerPreset } from "@/lib/funnel/leistung-rechner-preset";
 import type { LeistungsData } from "@/lib/leistungen/types";
+import { LEISTUNGEN, RATGEBER } from "@/lib/routes";
 
 export type { LeistungsData } from "@/lib/leistungen/types";
 
@@ -947,8 +949,100 @@ export const LEISTUNGEN_DATA: Record<string, LeistungsData> = {
   },
 };
 
+const DEFAULT_RATGEBER_FALLBACK_SLUG = "wohnung-renovieren-kosten-muenchen";
+
+function pickRatgeberForFallback(base: string): { slug: string; label: string } {
+  const parts = base.split("-").filter((p) => p.length >= 3);
+  for (const part of parts) {
+    const hit = RATGEBER.find((r) => r.slug.includes(part));
+    if (hit) return { slug: hit.slug, label: hit.label };
+  }
+  const def =
+    RATGEBER.find((r) => r.slug === DEFAULT_RATGEBER_FALLBACK_SLUG) ??
+    RATGEBER[0];
+  return { slug: def.slug, label: def.label };
+}
+
+function leistungPreisRange(
+  category: (typeof LEISTUNGEN)[number]["category"]
+): Pick<LeistungsData, "preisVon" | "preisBis" | "preisEinheit"> {
+  switch (category) {
+    case "reparatur":
+      return {
+        preisVon: 120,
+        preisBis: 900,
+        preisEinheit: "Einsatz (Richtwert)",
+      };
+    case "service":
+      return {
+        preisVon: 80,
+        preisBis: 3500,
+        preisEinheit: "je nach Auftrag (Richtwert)",
+      };
+    case "projekt":
+    default:
+      return {
+        preisVon: 800,
+        preisBis: 85000,
+        preisEinheit: "Projekt (Richtwert)",
+      };
+  }
+}
+
+/**
+ * Kompakte Seitendaten, wenn `LEISTUNGEN` erweitert wurde, aber noch kein
+ * Eintrag in {@link LEISTUNGEN_DATA} existiert (Variante A: getrennte Quellen).
+ */
+export function buildLeistungsDataFallback(base: string): LeistungsData | null {
+  const route = LEISTUNGEN.find((l) => l.slug === base);
+  if (!route) return null;
+  const preset = getLeistungRechnerPreset(base);
+  if (!preset) return null;
+  const rat = pickRatgeberForFallback(base);
+  const preis = leistungPreisRange(route.category);
+
+  return {
+    slug: base,
+    label: route.label,
+    headline: `${route.label} in München`,
+    subline: route.kurz,
+    beschreibung: `${route.label} in München: ${route.kurz}. ${route.hint}. Über unseren Preisrechner bekommst du einen ersten Rahmen — Angebot nach Besichtigung, unverbindlich.`,
+    wasWirMachen: [
+      `Schwerpunkte: ${route.hint}`,
+      "Besichtigung und transparenter Kostenrahmen",
+      "Abgestimmte Fachbetriebe aus einem Netzwerk",
+      "Ein Ansprechpartner für Termine und Ablauf",
+    ],
+    ...preis,
+    preisHinweis:
+      "Der Endpreis ergibt sich nach Aufmaß vor Ort. Festpreisangebot auf Wunsch.",
+    vorteile: vorteil(
+      ["🎯", "Ein Ansprechpartner"],
+      ["✓", "Qualifizierte Betriebe"],
+      ["⏱", "Zuverlässige Terminplanung"],
+      ["💶", "Transparente Kosten"]
+    ),
+    ratgeberSlug: rat.slug,
+    ratgeberLabel: rat.label,
+    rechnerSituation: preset.situation,
+    metaDescription: `${route.label} in München — Preisrahmen online, Meisterbetriebe, ein Ansprechpartner.`,
+    faq: [
+      {
+        q: "Wie schnell gibt es einen Termin?",
+        a: "Wir melden uns werktags zeitnah und koordinieren einen Besichtigungstermin.",
+      },
+      {
+        q: "Muss ich sofort beauftragen?",
+        a: "Nein. Du entscheidest in Ruhe — das Angebot ist unverbindlich.",
+      },
+    ],
+  };
+}
+
 export function leistungBaseSlugFromParam(slug: string): string | null {
   if (!slug.endsWith("-muenchen")) return null;
   const base = slug.slice(0, -"-muenchen".length);
-  return LEISTUNGEN_DATA[base] ? base : null;
+  if (LEISTUNGEN_DATA[base]) return base;
+  if (LEISTUNGEN.some((l) => l.slug === base)) return base;
+  return null;
 }

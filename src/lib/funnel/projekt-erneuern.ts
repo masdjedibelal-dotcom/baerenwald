@@ -5,7 +5,6 @@ export const ERNEUERN_PROJEKT_BEREICHE = [
   "ausbau_dg",
   "ausbau_keller",
   "grundriss_umbau",
-  "terrasse_neu",
   "gartengestaltung",
 ] as const;
 
@@ -160,23 +159,68 @@ export const STEP_ERNEUERN_PROJEKT_GROESSE: FunnelStep = {
   ],
 };
 
-/** Gartengestaltung: Leistungsumfang → bestimmt Preisband pro m² */
+/** Gartengestaltung: Leistungsumfang → Preis oder Beratungsweg */
 export const STEP_PROJEKT_GARTEN_LEISTUNG: FunnelStep = {
   id: "projekt_garten_leistung",
   question: "Welchen Leistungsumfang planst du?",
   subtext:
-    "Auffrischung vs. Neuanlage — der Rahmen unterscheidet sich deutlich im Aufwand",
+    "Von der ersten Idee bis zur Umsetzung — du kannst jederzeit mit einem Beratungstermin starten",
   inputType: "tiles-single",
   options: [
     {
-      value: "auffrischung",
+      value: "planung",
+      label: "Planung & Beratung",
+      hint: "Wir kommen vorbei,\nschauen uns die Fläche\nan und erstellen\ngemeinsam einen Plan.",
+    },
+    {
+      value: "rollrasen",
       label: "Rollrasen & Pflanzung",
-      hint: "Bestehende Fläche auffrischen — ohne große Erdarbeiten",
+      hint: "Schnell grün — Rollrasen und Bepflanzung",
+    },
+    {
+      value: "flaeche_auffrischen",
+      label: "Bestehende Fläche auffrischen",
+      hint: "Rasen, Beete, kleinere Korrekturen — ohne große Erdarbeiten",
+    },
+    {
+      value: "terrasse",
+      label: "Terrasse /\nAußenbereich",
+      hint: "Holz, WPC oder\nNaturstein —\ninkl. Unterbau\nund Montage.",
     },
     {
       value: "neuanlage",
-      label: "Komplette Neuanlage inkl. Erdarbeiten",
-      hint: "GU-Paket München — inkl. Erdarbeiten und Neuaufbau",
+      label: "Komplette Neuanlage",
+      hint: "Inkl. Erdarbeiten und Neuaufbau — GU-Paket München",
+    },
+    {
+      value: "gu_paket",
+      label: "GU-Paket",
+      hint: "Koordiniert aus einer Hand — Feste Abläufe und Dokumentation",
+    },
+  ],
+};
+
+/** Gartengestaltung: Terrasse / Außenbereich — Material → €/m² oder Beratung */
+export const STEP_PROJEKT_GARTEN_TERRASSE_MATERIAL: FunnelStep = {
+  id: "projekt_garten_terrasse_material",
+  question: "Welches Material planst du?",
+  subtext: "Bestimmt den Preisrahmen — oder wir klären es beim Vor-Ort-Termin",
+  inputType: "tiles-single",
+  options: [
+    {
+      value: "holz_wpc",
+      label: "Holz / WPC",
+      hint: "Natürlich und warm —\npflegeleicht mit WPC",
+    },
+    {
+      value: "naturstein",
+      label: "Naturstein /\nPlatten",
+      hint: "Langlebig und robust —\nverschiedene Formate",
+    },
+    {
+      value: "noch_offen",
+      label: "Noch nicht\nentschieden",
+      hint: "Wir beraten beim\nVor-Ort-Termin",
     },
   ],
 };
@@ -261,19 +305,50 @@ export function buildErneuernProjektSteps(
     }
     case "grundriss_umbau":
       return [STEP_PROJEKT_DURCHBRUCH_ANZAHL, STEP_PROJEKT_DURCHBRUCH_STATIK];
-    case "terrasse_neu":
-      return [
-        STEP_PROJEKT_TERRASSE_MATERIAL,
-        STEP_PROJEKT_TERRASSE_UNTERBAU,
-        STEP_ERNEUERN_PROJEKT_GROESSE,
-      ];
-    case "gartengestaltung":
-      return [
-        STEP_PROJEKT_GARTEN_LEISTUNG,
-        STEP_ERNEUERN_PROJEKT_GROESSE_GARTEN,
-        STEP_PROJEKT_GARTEN_ZAUN,
-        STEP_PROJEKT_GARTEN_ZUGANG,
-      ];
+    case "gartengestaltung": {
+      const p = fd?.projekt;
+      const gl = p?.gartenLeistung;
+
+      if (gl === "planung") {
+        return [STEP_PROJEKT_GARTEN_LEISTUNG];
+      }
+
+      const head: FunnelStep[] = [STEP_PROJEKT_GARTEN_LEISTUNG];
+
+      if (!gl) {
+        return head;
+      }
+
+      if (gl === "terrasse") {
+        const withMat = [...head, STEP_PROJEKT_GARTEN_TERRASSE_MATERIAL];
+        const mat = p?.gartenTerrasseMaterial;
+        if (!mat || mat === "noch_offen") {
+          return withMat;
+        }
+        return [
+          ...withMat,
+          STEP_ERNEUERN_PROJEKT_GROESSE_GARTEN,
+          STEP_PROJEKT_GARTEN_ZAUN,
+          STEP_PROJEKT_GARTEN_ZUGANG,
+        ];
+      }
+
+      if (
+        gl === "rollrasen" ||
+        gl === "flaeche_auffrischen" ||
+        gl === "neuanlage" ||
+        gl === "gu_paket"
+      ) {
+        return [
+          ...head,
+          STEP_ERNEUERN_PROJEKT_GROESSE_GARTEN,
+          STEP_PROJEKT_GARTEN_ZAUN,
+          STEP_PROJEKT_GARTEN_ZUGANG,
+        ];
+      }
+
+      return head;
+    }
     default:
       return [];
   }

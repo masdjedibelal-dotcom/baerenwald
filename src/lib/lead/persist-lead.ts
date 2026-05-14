@@ -80,13 +80,17 @@ const KAPUTT_GEWERK_LABEL: Record<string, string> = {
   boden: "Boden",
   terrasse: "Terrasse / Außen",
   dach: "Dach",
+  baum_notfall: "Baum / Sturmschaden",
   garten: "Garten",
   baum: "Baum",
+  baumarbeiten: "Baumarbeiten",
   trockenbau: "Umbau / Trockenbau",
   keller_dg: "Keller / DG",
   umbau: "Umbau",
   anbau: "Anbau",
   fenster: "Fenster / Türen",
+  fenster_tuer: "Fenster / Tür kaputt",
+  schimmel: "Schimmel / Feuchtigkeit",
 };
 
 function kaputtGewerkLabel(bereiche: string[] | undefined): string {

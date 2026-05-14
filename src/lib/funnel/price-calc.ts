@@ -235,6 +235,7 @@ export const PREISE = {
     gestaltung: { min: 45, max: 85, einheit: "pro m²" },
     baum_klein: { min: 150, max: 350, einheit: "pro Stück" },
     baum_gross: { min: 400, max: 900, einheit: "pro Stück" },
+    obstbaum: { min: 150, max: 450, einheit: "pro Stück" },
     rasen: { min: 1.5, max: 2.5, einheit: "pro m²" },
   },
   trockenbau: {
@@ -262,8 +263,9 @@ export const PREISE = {
   },
   /** GU-Schichtung „Zuhause erneuern → Ausbau & Umbau“ (München-Basis, vor PLZ). */
   projekt: {
-    /** Betreuung Baumarbeiten: €/Baum (vor GU_MARGE), Anzahl aus Größen-Schritt */
-    baum: { min: 450, max: 450, einheit: "pro Baum" },
+    /** Betreuung Baumarbeiten: Roh €/Baum (Anzahl im Rechner; GU in mapToPrice/custom) */
+    baum_betreuung: { min: 200, max: 800, einheit: "pro Baum" },
+    obstbaum_betreuung: { min: 150, max: 450, einheit: "pro Baum" },
     ausbau_dg: { min: 850, max: 1200, einheit: "pro m²" },
     ausbau_keller: { min: 950, max: 1400, einheit: "pro m²" },
     durchbruch_tragend: { min: 4500, max: 4500, einheit: "pauschal" },
@@ -273,6 +275,9 @@ export const PREISE = {
     garten_auffrischung: { min: 120, max: 180, einheit: "pro m²" },
     /** Gartengestaltung Neuanlage (GU-Paket München) — €/m² vor Zaun/Zugang/GU */
     garten_neuanlage: { min: 250, max: 450, einheit: "pro m²" },
+    /** Gartengestaltung: Terrasse / Außenbereich — Material bestimmt €/m² */
+    garten_terrasse_holz_wpc: { min: 80, max: 150, einheit: "pro m²" },
+    garten_terrasse_naturstein: { min: 120, max: 200, einheit: "pro m²" },
   },
   abriss: {
     innen: { min: 25, max: 45, einheit: "pro m²" },
@@ -297,16 +302,34 @@ export function computeGartenNeuPrice(state: FunnelState): {
   const leistung = fd?.gartenLeistung;
   if (
     g == null ||
-    (leistung !== "auffrischung" && leistung !== "neuanlage") ||
     fd?.gartenZaun === undefined ||
     fd?.gartenZugaenglichkeit === undefined
   ) {
     return null;
   }
-  const p =
-    leistung === "auffrischung"
-      ? PREISE.projekt.garten_auffrischung
-      : PREISE.projekt.garten_neuanlage;
+
+  let p: { min: number; max: number; einheit: string };
+  if (leistung === "auffrischung" || leistung === "rollrasen") {
+    p = PREISE.projekt.garten_auffrischung;
+  } else if (leistung === "flaeche_auffrischen") {
+    p = PREISE.projekt.garten_auffrischung;
+  } else if (leistung === "neuanlage") {
+    p = PREISE.projekt.garten_neuanlage;
+  } else if (leistung === "gu_paket") {
+    p = PREISE.projekt.garten_neuanlage;
+  } else if (leistung === "terrasse") {
+    const mat = fd.gartenTerrasseMaterial;
+    if (mat === "holz_wpc") {
+      p = PREISE.projekt.garten_terrasse_holz_wpc;
+    } else if (mat === "naturstein") {
+      p = PREISE.projekt.garten_terrasse_naturstein;
+    } else {
+      return null;
+    }
+  } else {
+    return null;
+  }
+
   let basisMin = p.min * g;
   let basisMax = p.max * g;
   if (fd.gartenZugaenglichkeit === "schwer") {
@@ -737,6 +760,7 @@ function mapReparaturNotfallFlow(
   state: FunnelState
 ): BwPriceMapping | null {
   if (!isReparaturNotfallSituation(state.situation)) return null;
+  if (state.bereiche.includes("baum_notfall")) return null;
 
   const { bereiche } = state;
   const fd = state.fachdetails;
@@ -847,7 +871,6 @@ export function mapToPrice(state: FunnelState): BwPriceMapping | null {
       }
       return null;
     }
-    if (b("terrasse_neu")) return { service: "projekt", type: "terrasse" };
   }
 
   if (b("boden")) {
@@ -950,15 +973,46 @@ export function mapToPrice(state: FunnelState): BwPriceMapping | null {
   }
 
   if (
+    situation === "betreuung" &&
+    (b("baum") || b("baumarbeiten")) &&
+    fd?.garten?.was
+  ) {
+    const w = fd.garten.was;
+    if (w === "gefahrenabwehr") return null;
+    const n = Math.max(1, state.groesse ?? 1);
+    const m = GU_MARGE;
+    if (w === "baum") {
+      const p = PREISE.projekt.baum_betreuung;
+      return {
+        service: "projekt",
+        type: "baum_betreuung",
+        customPriceRange: { min: p.min * n * m, max: p.max * n * m },
+      };
+    }
+    if (w === "obstbaum") {
+      const p = PREISE.projekt.obstbaum_betreuung;
+      return {
+        service: "projekt",
+        type: "obstbaum_betreuung",
+        customPriceRange: { min: p.min * n * m, max: p.max * n * m },
+      };
+    }
+  }
+
+  if (
     (b("garten") || b("baum") || b("baumarbeiten")) &&
     fd?.garten?.was
   ) {
     const w = fd.garten.was;
+    if (w === "gefahrenabwehr") return null;
     if (w === "pflege") {
       return { service: "garten", type: getPflegeByGroesse(state.groesse) };
     }
     if (w === "hecke") return { service: "garten", type: "hecke" };
     if (w === "pflaster") return { service: "garten", type: "pflaster" };
+    if (w === "obstbaum") {
+      return { service: "garten", type: "obstbaum" };
+    }
     if (w === "baum") {
       return {
         service: "garten",
@@ -1040,18 +1094,6 @@ export function mapToPrice(state: FunnelState): BwPriceMapping | null {
   }
 
   if (situation === "betreuung") {
-    if (
-      (b("baum") || b("baumarbeiten")) &&
-      state.fachdetails?.garten?.was === "baum"
-    ) {
-      const n = Math.max(1, state.groesse ?? 1);
-      const px = PREISE.projekt.baum.min * n * GU_MARGE;
-      return {
-        service: "projekt",
-        type: "baum",
-        customPriceRange: { min: px, max: px },
-      };
-    }
     if (b("garten")) {
       return { service: "garten", type: getPflegeByGroesse(state.groesse) };
     }
@@ -1143,6 +1185,7 @@ const TYP_LABEL: Record<string, Record<string, string>> = {
     gestaltung: "Gartengestaltung",
     baum_klein: "Baumpflege (klein)",
     baum_gross: "Baumpflege (groß)",
+    obstbaum: "Obstbaumpflege",
   },
   maler: {
     waende: "Wände streichen",
@@ -1210,6 +1253,8 @@ const TYP_LABEL: Record<string, Record<string, string>> = {
   },
   projekt: {
     baum: "Baumarbeiten (Betreuung)",
+    baum_betreuung: "Bäume fällen / beschneiden (Betreuung)",
+    obstbaum_betreuung: "Obstbaumpflege (Betreuung)",
     ausbau_dg: "Dachausbau / DG (GU-Paket)",
     ausbau_keller: "Kellerausbau (GU-Paket)",
     durchbruch_tragend: "Wanddurchbruch tragend (GU-Paket)",
@@ -1394,14 +1439,16 @@ function computePriceCore(state: FunnelState): {
     };
   } else if (
     service === "projekt" &&
-    type === "baum" &&
+    (type === "baum" ||
+      type === "baum_betreuung" ||
+      type === "obstbaum_betreuung") &&
     customPriceRange &&
     typeof customPriceRange.min === "number"
   ) {
     basis = {
       min: customPriceRange.min,
       max: customPriceRange.max,
-      einheit: "pauschal",
+      einheit: "pro Baum",
     };
   } else if (
     service === "winterdienst" &&
@@ -1460,7 +1507,14 @@ function computePriceCore(state: FunnelState): {
     basisMax = (basisMax + nd) * GU_MARGE;
   }
 
-  if (service === "projekt" && type !== "garten_neu") {
+  const projektBaumCustom =
+    service === "projekt" &&
+    customPriceRange &&
+    (type === "baum" ||
+      type === "baum_betreuung" ||
+      type === "obstbaum_betreuung");
+
+  if (service === "projekt" && type !== "garten_neu" && !projektBaumCustom) {
     if (
       type === "terrasse" &&
       state.fachdetails?.projekt?.terrasseUnterbau === "ja"
@@ -1487,7 +1541,9 @@ function computePriceCore(state: FunnelState): {
     ) &&
     !(
       service === "projekt" &&
-      type === "baum" &&
+      (type === "baum" ||
+        type === "baum_betreuung" ||
+        type === "obstbaum_betreuung") &&
       customPriceRange
     ) &&
     !(service === "winterdienst" && customPriceRange) &&
@@ -1549,7 +1605,12 @@ function computePriceCore(state: FunnelState): {
   let multiplier = 1;
   if (!reparaturPauschal) {
     if (service === "projekt") {
-      if (type === "garten_neu" || type === "baum") {
+      if (
+        type === "garten_neu" ||
+        type === "baum" ||
+        type === "baum_betreuung" ||
+        type === "obstbaum_betreuung"
+      ) {
         multiplier = 1;
       } else if (
         type === "durchbruch_tragend" ||

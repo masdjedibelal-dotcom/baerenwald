@@ -19,16 +19,16 @@ export const BW_FUNNEL_STEP1_OPTIONS: BwFunnelStep1Option[] = [
     icon: "01-haus-erneuern",
   },
   {
-    id: "kaputt",
-    label: "Reparatur & Notfall",
-    hint: "Defekt — am Ende wählst du, wie schnell wir kommen sollen",
-    icon: "02-reparatur",
-  },
-  {
     id: "betreuung",
     label: "Betreuung",
     hint: "Garten, Reinigung, Hausmeister, Winterdienst",
     icon: "03-betreuung",
+  },
+  {
+    id: "kaputt",
+    label: "Reparatur & Notfall",
+    hint: "Sanitär, Heizung, Elektro, Dach — am Ende wählst du, wie schnell wir kommen sollen",
+    icon: "02-reparatur",
   },
   {
     id: "gewerbe",

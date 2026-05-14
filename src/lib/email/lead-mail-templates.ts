@@ -230,8 +230,9 @@ export function buildKundeBestaetigung(
       Hallo ${halloName},<br/><br/>
       deine Anfrage ist bei uns
       eingegangen. Wir schauen sie
-      uns an und melden uns innerhalb
-      von 24 Stunden für einen
+      uns an und melden uns
+      ${SITE_CONFIG.responseSlaWithin}
+      für einen
       Vor-Ort-Termin.
     </p>
   </td>

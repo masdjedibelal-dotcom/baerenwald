@@ -20,7 +20,8 @@ export function getBwFunnelProgressStep(screen: string): number | null {
     screen === "zugaenglichkeit" ||
     screen === "zustand" ||
     screen === "groesse" ||
-    screen === "bad_ausstattung"
+    screen === "bad_ausstattung" ||
+    screen.startsWith("projekt_")
   ) {
     return 2;
   }

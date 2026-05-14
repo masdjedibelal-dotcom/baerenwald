@@ -29,4 +29,10 @@ export const SITE_CONFIG = {
   calendlyUrl: "",
   supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL ?? "",
   supabaseAnonKey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? "",
+  /**
+   * Einheitliche Zusage zur Rückmeldung auf Anfragen (Website + Mails).
+   * Mo–Sa 24–48h; Sonntag ausgenommen (Rückmeldung am folgenden Werktag).
+   */
+  responseSlaWithin:
+    "innerhalb von 24–48 Stunden (Mo–Sa; an Sonntagen am folgenden Werktag)",
 } as const;

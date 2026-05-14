@@ -15,8 +15,10 @@ import {
   ELEKTRO_KAPUTT_Q1,
   FENSTER_DEFEKT_Q1,
   FENSTER_Q1,
+  BAUM_NOTFALL_SITUATION_Q,
   GARTEN_FOLLOWUPS,
   GARTEN_Q1,
+  getGartenWasDef,
   getElektroQ1ForSituation,
   HEIZUNG_FOLLOWUPS,
   HEIZUNG_HEIZKOERPER_ANZAHL,
@@ -393,6 +395,13 @@ export const FACHDETAIL_QUESTIONS: FachdetailQuestion[] = [
   ),
 
   fromDef(
+    "baum_notfall_situation",
+    "garten",
+    BAUM_NOTFALL_SITUATION_Q,
+    (s) => s.situation === "kaputt" && B(s).has("baum_notfall")
+  ),
+
+  fromDef(
     "garten_was",
     "garten",
     GARTEN_Q1,
@@ -403,16 +412,30 @@ export const FACHDETAIL_QUESTIONS: FachdetailQuestion[] = [
   ),
 ];
 
+export function materializeGartenWas(
+  state: FachdetailFilterState
+): FachdetailQuestion | null {
+  const def = getGartenWasDef(state.situation, state.bereiche);
+  const showWenn = (s: FachdetailFilterState) =>
+    B(s).has("garten") || B(s).has("baum") || B(s).has("baumarbeiten");
+  if (!showWenn(state)) return null;
+  return fromDef("garten_was", "garten", def, showWenn);
+}
+
 export function resolveGartenFollowupDef(
   state: FachdetailFilterState
 ): FachdetailQuestionDef | null {
   const w = ansStr(state, "garten_was");
   if (!w) return null;
   /** Rhythmus/Häufigkeit läuft zentral über {@link buildBetreuungHaeufigkeitStep} (`umfang`). */
-  if (state.situation === "betreuung" && (w === "baum" || w === "pflege")) {
+  if (
+    state.situation === "betreuung" &&
+    (w === "baum" || w === "obstbaum" || w === "pflege")
+  ) {
     return null;
   }
-  const opt = GARTEN_Q1.options.find((o) => o.value === w);
+  const def = getGartenWasDef(state.situation, state.bereiche);
+  const opt = def.options.find((o) => o.value === w);
   const fid = opt?.followUpId;
   if (!fid) return null;
   return GARTEN_FOLLOWUPS[fid] ?? null;
@@ -434,6 +457,9 @@ export function resolveFachdetailQuestionForUi(
 ): FachdetailQuestion | null {
   if (questionId === "boden_verlegung") {
     return materializeBodenVerlegung(state);
+  }
+  if (questionId === "garten_was") {
+    return materializeGartenWas(state);
   }
   if (questionId === "garten_followup") {
     const g = resolveGartenFollowupDef(state);
@@ -462,6 +488,11 @@ export function getActiveFachdetailQuestions(
   for (const q of FACHDETAIL_QUESTIONS) {
     if (q.id === "boden_verlegung") {
       const mat = materializeBodenVerlegung(state);
+      if (mat && q.showWenn(state)) out.push(mat);
+      continue;
+    }
+    if (q.id === "garten_was") {
+      const mat = materializeGartenWas(state);
       if (mat && q.showWenn(state)) out.push(mat);
       continue;
     }

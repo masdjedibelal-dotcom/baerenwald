@@ -847,11 +847,14 @@ export const FENSTER_DEFEKT_Q1: FachdetailQuestionDef = {
   ],
 };
 
+const GARTEN_WAS_EDUCATION =
+  "Für Baumfällungen und starke Rückschnitte ab ca. 3 m Stammhöhe kann in München eine Genehmigung nötig sein — wir prüfen das gemeinsam mit dir.";
+
+/** Gartenpflege / Erneuern-Garten u. a. — klassische Pflege + Hecke + Baum */
 export const GARTEN_Q1: FachdetailQuestionDef = {
   id: "garten_was",
   title: "Was soll gemacht werden?",
-  education:
-    "In München gilt oft: Fällung oder starke Rückschnitte an Bäumen ab ca. 3 m Stammhöhe (oder geschützte Arten) brauchen eine Genehmigung — wir prüfen das mit dir.",
+  education: GARTEN_WAS_EDUCATION,
   inputType: "single",
   options: [
     {
@@ -874,6 +877,46 @@ export const GARTEN_Q1: FachdetailQuestionDef = {
     },
   ],
 };
+
+/** Betreuung nur Baumarbeiten (ohne parallel „Gartenpflege“) */
+export const GARTEN_Q1_BAUMARBEITEN_BETREUUNG: FachdetailQuestionDef = {
+  id: "garten_was",
+  title: "Was soll gemacht werden?",
+  education: GARTEN_WAS_EDUCATION,
+  inputType: "single",
+  options: [
+    {
+      value: "baum",
+      label: "Bäume fällen oder beschneiden",
+      hint: "Fällung, Kronenpflege, Rückschnitt — nach Anzahl und Größe",
+      followUpId: "garten_folge_baum",
+    },
+    {
+      value: "obstbaum",
+      label: "Obstbaumpflege",
+      hint: "Schnitt, Pflege und Erhalt von Obstbäumen — saisonal oder einmalig",
+      followUpId: "garten_folge_baum",
+    },
+    {
+      value: "gefahrenabwehr",
+      label: "Gefahrenabwehr",
+      hint: "Gefährliche Bäume oder Äste — Sicherung und Beseitigung zur Verkehrssicherheit",
+      followUpId: null,
+    },
+  ],
+};
+
+export function getGartenWasDef(
+  situation: Situation | null | undefined,
+  bereiche: string[]
+): FachdetailQuestionDef {
+  const b = new Set(bereiche);
+  const betreuungNurBaum =
+    situation === "betreuung" &&
+    (b.has("baum") || b.has("baumarbeiten")) &&
+    !b.has("garten");
+  return betreuungNurBaum ? GARTEN_Q1_BAUMARBEITEN_BETREUUNG : GARTEN_Q1;
+}
 
 export const GARTEN_FOLLOWUPS: Record<string, FachdetailQuestionDef> = {
   garten_folge_haeufigkeit: {
@@ -927,4 +970,35 @@ export const GARTEN_FOLLOWUPS: Record<string, FachdetailQuestionDef> = {
       },
     ],
   },
+};
+
+/** Reparatur & Notfall: Baum / Sturmschaden — Art des Schadens */
+export const BAUM_NOTFALL_SITUATION_Q: FachdetailQuestionDef = {
+  id: "baum_notfall_situation",
+  title: "Was ist passiert?",
+  education:
+    "Akute Baumschäden haben Vorrang — wir koordinieren schnell Sicherung und Beseitigung.",
+  inputType: "single",
+  options: [
+    {
+      value: "astbruch",
+      label: "Astbruch /\nhängender Ast",
+      hint: "Gefährlicher Ast\nmuss sofort gesichert\noder entfernt werden",
+    },
+    {
+      value: "umgestuerzt",
+      label: "Baum umgestürzt",
+      hint: "Baum liegt auf\nWeg, Auto oder\nGebäude",
+    },
+    {
+      value: "sturmschaden",
+      label: "Sturmschaden\nallgemein",
+      hint: "Mehrere Schäden\ndurch Sturm —\nBegutachtung nötig",
+    },
+    {
+      value: "verkehrssicherheit",
+      label: "Verkehrssicherheit",
+      hint: "Baum oder Äste\ngefährden Personen\noder Verkehr",
+    },
+  ],
 };

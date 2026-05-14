@@ -410,7 +410,10 @@ export function isFachdetailSubStepComplete(
       return fd.garten?.haeufigkeit !== undefined;
     }
     if (stepId === "garten_folge_baum") {
-      return fd.garten?.baumgroesse !== undefined;
+      return (
+        (fd.garten?.was === "baum" || fd.garten?.was === "obstbaum") &&
+        fd.garten?.baumgroesse !== undefined
+      );
     }
   }
 

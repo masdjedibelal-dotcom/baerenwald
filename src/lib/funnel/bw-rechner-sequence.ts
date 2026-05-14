@@ -139,6 +139,9 @@ function funnelConfigStepToScreens(
   if (step.id === "projekt_garten_leistung") {
     return ["projekt_garten_leistung"];
   }
+  if (step.id === "projekt_garten_terrasse_material") {
+    return ["projekt_garten_terrasse_material"];
+  }
   if (step.id === "projekt_garten_zaun") return ["projekt_garten_zaun"];
   if (step.id === "projekt_garten_zugang") return ["projekt_garten_zugang"];
   if (step.id === "projekt_ausbau_rohbau") return ["projekt_ausbau_rohbau"];

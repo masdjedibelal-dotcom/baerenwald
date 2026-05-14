@@ -53,8 +53,18 @@ export type FachdetailsState = {
     terrasseMaterial?: "holz" | "stein";
     /** UI-Wert `ja` | `nein` — „Unterbau erforderlich?“ */
     terrasseUnterbau?: "ja" | "nein";
-    /** Gartengestaltung: Auffrischung vs. komplette Neuanlage — bestimmt €/m²-Band */
-    gartenLeistung?: "auffrischung" | "neuanlage";
+    /** Gartengestaltung: Auffrischung / Terrasse / Neuanlage — bestimmt €/m²-Band */
+    gartenLeistung?:
+      | "planung"
+      | "rollrasen"
+      | "flaeche_auffrischen"
+      | "terrasse"
+      | "neuanlage"
+      | "gu_paket"
+      /** @deprecated Alte Sessions */
+      | "auffrischung";
+    /** Nur bei `gartenLeistung: "terrasse"` — Preis oder Beratungsweg */
+    gartenTerrasseMaterial?: "holz_wpc" | "naturstein" | "noch_offen";
     /** „Zuhause erneuern“ → Gartengestaltung (GU-Paket) */
     gartenZaun?: "ja" | "nein";
     gartenZugaenglichkeit?: "einfach" | "schwer";

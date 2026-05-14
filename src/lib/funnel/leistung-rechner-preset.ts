@@ -10,12 +10,18 @@ export type LeistungRechnerPreset = {
   bereiche: string[];
 };
 
+/** Slug aus URL (`bad-sanieren-muenchen`) → Preset-Key (`bad-sanieren`). */
+export function normalizeLeistungPresetKey(slug: string): string {
+  const t = slug.trim();
+  return t.endsWith("-muenchen") ? t.slice(0, -"-muenchen".length) : t;
+}
+
 export const LEISTUNG_RECHNER_PRESET: Record<string, LeistungRechnerPreset> = {
   /* ── Master-Liste (Hero / Marketing) ── */
   dachbodenausbau: { situation: "erneuern", bereiche: ["ausbau_dg"] },
   kellerausbau: { situation: "erneuern", bereiche: ["ausbau_keller"] },
   wanddurchbruch: { situation: "erneuern", bereiche: ["grundriss_umbau"] },
-  terrassenbau: { situation: "erneuern", bereiche: ["terrasse_neu"] },
+  terrassenbau: { situation: "erneuern", bereiche: ["gartengestaltung"] },
   gartengestaltung: { situation: "erneuern", bereiche: ["gartengestaltung"] },
   "bad-sanieren": { situation: "erneuern", bereiche: ["bad"] },
   "boden-verlegen": { situation: "erneuern", bereiche: ["boden"] },
@@ -24,6 +30,7 @@ export const LEISTUNG_RECHNER_PRESET: Record<string, LeistungRechnerPreset> = {
   rohrbruch: { situation: "kaputt", bereiche: ["sanitaer"] },
   stromausfall: { situation: "kaputt", bereiche: ["elektro"] },
   dachschaden: { situation: "kaputt", bereiche: ["dach"] },
+  "baum-sturmschaden": { situation: "kaputt", bereiche: ["baum_notfall"] },
   winterdienst: { situation: "betreuung", bereiche: ["winter"] },
   gartenpflege: { situation: "betreuung", bereiche: ["garten"] },
   baumarbeiten: { situation: "betreuung", bereiche: ["baum"] },
@@ -44,13 +51,14 @@ export function getLeistungRechnerPreset(
   slug: string | null | undefined
 ): LeistungRechnerPreset | null {
   if (!slug) return null;
-  const s = slug.trim();
-  return LEISTUNG_RECHNER_PRESET[s] ?? null;
+  const key = normalizeLeistungPresetKey(slug);
+  return LEISTUNG_RECHNER_PRESET[key] ?? null;
 }
 
 /** Für Deep-Links: Projekt-GU-Kacheln unter „Zuhause erneuern“. */
 export function heroPresetIsProjektGu(slug: string): boolean {
-  const p = LEISTUNG_RECHNER_PRESET[slug];
+  const key = normalizeLeistungPresetKey(slug);
+  const p = LEISTUNG_RECHNER_PRESET[key];
   return p ? isErneuernProjektBereich(p.bereiche) : false;
 }
 

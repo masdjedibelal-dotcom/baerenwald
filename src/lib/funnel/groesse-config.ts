@@ -88,21 +88,21 @@ export function applyGroesseStepCopy(
         subtext: "Angabe in m² — inkl. Feuchteschutz-Anteil im Paket",
       };
     }
-    if (typ === "terrasse_neu") {
-      return {
-        ...step,
-        question: "Wie groß soll die Terrasse werden?",
-        subtext:
-          "Fläche in m² — Erdarbeiten und Unterbau sind im Rahmen berücksichtigt",
-      };
-    }
     if (typ === "gartengestaltung") {
+    const gl = fachdetails?.projekt?.gartenLeistung;
+    if (gl === "terrasse") {
       return {
         ...step,
-        question: "Wie groß ist die Gartenfläche ungefähr?",
-        subtext: "m² — für Material- und Lohnkosten im GU-Paket",
+        question: "Wie groß ist die Terrassen- bzw. Außenfläche ungefähr?",
+        subtext: "m² — für Belag und Lohnkosten im Rahmen",
       };
     }
+    return {
+      ...step,
+      question: "Wie groß ist die Gartenfläche ungefähr?",
+      subtext: "m² — für Material- und Lohnkosten im GU-Paket",
+    };
+  }
   }
   if (
     situation === "betreuung" &&
@@ -595,8 +595,8 @@ export function getGroesseConfig(
     return GROESSE_CONFIG.garten;
   }
 
-  /** Baum: nur Stückzahl, kein Objekt-/Grundstücksformat */
-  if (situation === "betreuung" && b.includes("baum")) {
+  /** Baum / Baumarbeiten: nur Stückzahl, kein Objekt-/Grundstücksformat */
+  if (situation === "betreuung" && (b.includes("baum") || b.includes("baumarbeiten"))) {
     return GROESSE_CONFIG.stueck;
   }
 

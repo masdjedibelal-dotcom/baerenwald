@@ -20,6 +20,7 @@ export const LEISTUNGS_LABELS: Record<string, string> = {
   "garten.gestaltung": "Gartengestaltung",
   "garten.baum_klein": "Baumpflege",
   "garten.baum_gross": "Baumpflege (groß)",
+  "garten.obstbaum": "Obstbaumpflege",
   "garten.hecke": "Heckenschnitt",
   "garten.pflaster": "Pflaster / Terrasse",
   "maler.waende": "Wände streichen",

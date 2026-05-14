@@ -42,24 +42,12 @@ export const HOME_FAQ_ITEMS: HomeFaqItem[] = [
     a: "Wir behandeln dein Zuhause so wie unser eigenes. Das bedeutet: Staubschutz für alle angrenzenden Bereiche, tägliche Reinigung nach Arbeitsende und vollständige Entsorgung von Bauschutt und Verpackungen. Nach Projektabschluss übergeben wir dir den Raum besenrein — und mit einem digitalen Abnahmeprotokoll damit alles dokumentiert ist.",
   },
   {
-    q: "Was passiert wenn etwas nicht stimmt?",
-    a: "Bärenwald steht als Generalunternehmer gerade. Bei Mängeln kümmern wir uns um die Nachbesserung — du musst nicht selbst mit einzelnen Handwerkern verhandeln.",
-  },
-  {
-    q: "Was wenn ich mit dem Ergebnis nicht zufrieden bin?",
-    a: "Wir nehmen jeden Mangel ernst. Beim Abschlusstermin gehen wir gemeinsam durch was gemacht wurde — das digitale Abnahmeprotokoll hält alles fest. Wenn etwas nicht stimmt kommt unser Team zur Nachbesserung — ohne Diskussion und ohne Extrakosten. Die gesetzliche Gewährleistung von 2 Jahren gilt selbstverständlich.",
-  },
-  {
-    q: "Was passiert wenn ich mit der Arbeit nicht zufrieden bin?",
-    a: "Bärenwald bleibt dein Ansprechpartner — auch nach dem Projekt. Bei Mängeln oder Reklamationen koordinieren wir die Nachbesserung. Du musst nicht selbst mit dem Handwerker verhandeln.",
+    q: "Was passiert bei Mängeln oder wenn ich nicht zufrieden bin?",
+    a: "Bärenwald bleibt dein Ansprechpartner — vor, während und nach dem Projekt. Bei Fragen, Mängeln oder Nachbesserungen meldest du dich direkt bei uns. Wir koordinieren alles mit den ausführenden Betrieben — du musst nicht selbst mit einzelnen Handwerkern verhandeln. Nach Abschluss gibt es ein digitales Abnahmeprotokoll und gesetzliche Gewährleistung.",
   },
   {
     q: "Wie schnell kann es losgehen?",
     a: "Nach dem Vor-Ort-Termin und deiner Auftragsbestätigung planen wir den Start innerhalb von 1–3 Wochen — je nach Umfang und Auslastung.",
-  },
-  {
-    q: "Was passiert wenn ich eine Frage oder ein Problem während oder nach dem Projekt habe?",
-    a: "Bärenwald ist dein Ansprechpartner — nicht nur vor dem Projekt, sondern auch während der Durchführung und danach. Bei Fragen, Änderungen oder Reklamationen meldest du dich direkt bei uns. Wir koordinieren alles weitere mit den ausführenden Betrieben — du musst nicht selbst mit einzelnen Handwerkern verhandeln.",
   },
   {
     q: "Für welche Region seid ihr tätig?",

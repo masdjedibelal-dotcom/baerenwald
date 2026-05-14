@@ -129,10 +129,25 @@ function gartenUmfangZeile(state: FunnelState): string | null {
   if (fd.garten?.was) parts.push(`Thema: ${fd.garten.was}`);
   const rhythm = gartenRhythmusFuerNotizen(state);
   if (rhythm) parts.push(`Rhythmus: ${rhythm}`);
-  if (pj?.gartenLeistung)
-    parts.push(
-      pj.gartenLeistung === "neuanlage" ? "Neuanlage" : "Auffrischung"
-    );
+  if (pj?.gartenLeistung) {
+    const gl = pj.gartenLeistung;
+    const leistLabel: Record<string, string> = {
+      planung: "Planung & Beratung",
+      rollrasen: "Rollrasen & Pflanzung",
+      flaeche_auffrischen: "Bestehende Fläche auffrischen",
+      terrasse: "Terrasse / Außenbereich",
+      neuanlage: "Komplette Neuanlage",
+      gu_paket: "GU-Paket",
+      auffrischung: "Rollrasen & Pflanzung (Legacy)",
+    };
+    parts.push(`Leistung: ${leistLabel[gl] ?? gl}`);
+    if (gl === "terrasse" && pj.gartenTerrasseMaterial) {
+      const mat = pj.gartenTerrasseMaterial;
+      if (mat === "holz_wpc") parts.push("Material: Holz/WPC");
+      else if (mat === "naturstein") parts.push("Material: Naturstein/Platten");
+      else if (mat === "noch_offen") parts.push("Material: noch offen");
+    }
+  }
   if (pj?.gartenZaun === "ja") parts.push("inkl. Zaunbau");
   else if (pj?.gartenZaun === "nein") parts.push("ohne Zaunbau");
   if (parts.length === 0) return null;
