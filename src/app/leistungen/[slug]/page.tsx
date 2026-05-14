@@ -3,13 +3,21 @@ import { notFound } from "next/navigation";
 import { LeistungsPage } from "@/components/leistungen/LeistungsPage";
 import { PageLayout } from "@/components/layout/PageLayout";
 import {
+  buildLeistungsDataFallback,
   LEISTUNGEN_DATA,
   leistungBaseSlugFromParam,
 } from "@/lib/leistungen/data";
+import type { LeistungsData } from "@/lib/leistungen/types";
 import { LEISTUNGEN } from "@/lib/routes";
 import { serviceSchema } from "@/lib/schema";
 
 type PageProps = { params: { slug: string } };
+
+function resolveLeistungsData(base: string): LeistungsData | undefined {
+  return (
+    LEISTUNGEN_DATA[base] ?? buildLeistungsDataFallback(base) ?? undefined
+  );
+}
 
 export function generateStaticParams() {
   return LEISTUNGEN.map((l) => ({ slug: `${l.slug}-muenchen` }));
@@ -17,7 +25,7 @@ export function generateStaticParams() {
 
 export async function generateMetadata({ params }: PageProps) {
   const base = leistungBaseSlugFromParam(params.slug);
-  const data = base ? LEISTUNGEN_DATA[base] : undefined;
+  const data = base ? resolveLeistungsData(base) : undefined;
   if (!data) {
     return { title: "Leistung — Bärenwald" };
   }
@@ -43,7 +51,7 @@ export async function generateMetadata({ params }: PageProps) {
 
 export default function LeistungDetailPage({ params }: PageProps) {
   const base = leistungBaseSlugFromParam(params.slug);
-  const data = base ? LEISTUNGEN_DATA[base] : undefined;
+  const data = base ? resolveLeistungsData(base) : undefined;
   if (!data) notFound();
 
   const serviceLd = serviceSchema(

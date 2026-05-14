@@ -5,6 +5,7 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 
 import { getSlotsForDay, isSlotAlwaysFull } from "@/lib/calendar-seed-rng";
 import type { SelectedSlot } from "@/lib/types";
+import { SITE_CONFIG } from "@/lib/config";
 import { cn } from "@/lib/utils";
 
 const WEEKDAYS = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"] as const;
@@ -104,8 +105,8 @@ export function CalendarPicker({
           Wunschtermin für den Vor-Ort-Termin
         </p>
         <p className="mb-3.5 mt-1 text-xs leading-relaxed text-text-tertiary">
-          Wähle einen Wunschtermin — wir bestätigen die Verfügbarkeit innerhalb
-          von 48h.
+          Wähle einen Wunschtermin — wir bestätigen die Verfügbarkeit{" "}
+          {SITE_CONFIG.responseSlaWithin}.
         </p>
       </div>
 

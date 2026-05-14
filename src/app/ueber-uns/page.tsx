@@ -6,8 +6,33 @@ import { PageLayout } from "@/components/layout/PageLayout";
 export const metadata: Metadata = {
   title: "Über uns — Bärenwald München",
   description:
-    "Handwerk in München — einfach, transparent, digital. Eine Anfrage, ein Ansprechpartner.",
+    "Handwerk in München — Praxis, Prozesse und Koordination. Ein Ansprechpartner, klare Abläufe, dokumentierte Projekte.",
 };
+
+const PROCESS_ITEMS = [
+  "Checklisten",
+  "Foto-Dokumentation",
+  "Klare Prozesse",
+  "Übergaben",
+  "Zeitplanung",
+  "Interne Koordination",
+] as const;
+
+const ENABLES_ITEMS = [
+  "Kunden absichern",
+  "Reklamationen nachvollziehen",
+  "Haftung dokumentieren",
+  "Betriebe entlasten",
+  "Zeit sparen",
+  "Fehler reduzieren",
+] as const;
+
+const CLOSING_BULLETS = [
+  "Ein Ansprechpartner",
+  "Klare Prozesse",
+  "Dokumentierte Projekte",
+  "Verantwortung auf\nbeiden Seiten",
+] as const;
 
 export default function UeberUnsPage() {
   return (
@@ -23,15 +48,16 @@ export default function UeberUnsPage() {
               <span className="breadcrumb-current">Über uns</span>
             </nav>
             <h1 className="page-hero-h1">
-              Handwerk in München —<br />
+              Handwerk in München —
+              <br />
               einfach, transparent, digital.
             </h1>
             <p className="page-hero-sub">
-              Eine Anfrage. Ein Ansprechpartner.
+              Wir verstehen sowohl die
               <br />
-              Egal ob eine Leistung oder
+              Kundenseite als auch die
               <br />
-              ein komplettes Projekt.
+              Baustellenseite.
             </p>
           </div>
         </div>
@@ -39,55 +65,96 @@ export default function UeberUnsPage() {
         <section className="article-section article-section--lg content-section--white">
           <div className="article-section-inner">
             <div className="article-body legal-body">
-              <h2>Aus München. Für München.</h2>
+              <h2>Warum Bärenwald?</h2>
               <p>
-                Wir haben Bärenwald 2020 gegründet — aus eigener Erfahrung. Als
-                Münchner wissen wir wie es sich anfühlt wenn Handwerker nicht
-                erscheinen, Preise unklar bleiben und niemand den Überblick
-                behält.
+                Früher funktionierte vieles über Vertrauen, Erfahrung und Menschen
+                die mitgedacht haben. Heute scheitern viele Projekte nicht am
+                Handwerk selbst — sondern an fehlender Abstimmung, Zeitdruck und
+                unklaren Verantwortlichkeiten.
               </p>
               <p>
-                Seitdem haben wir in München und Umgebung Schritt für Schritt
-                mehr Projekte übernommen — vom einzelnen Malerauftrag bis zur
-                kompletten Renovierung. Jedes Projekt sauber abgeschlossen.
-                Jeder Kunde mit einem Ansprechpartner.
+                Genau deshalb verbindet Bärenwald echte Baustellenpraxis mit
+                modernen Prozessen.
               </p>
 
-              <h2>Eine Anfrage. Alles geregelt.</h2>
+              <h2>Unser Ansatz</h2>
               <p>
-                Ob ihr nur streichen lassen wollt oder Bad, Boden und Elektrik
-                auf einmal — wir koordinieren alle Gewerke und halten euch
-                digital auf dem Stand.
+                Wir wollen nicht einfach Handwerker vermitteln wie ein normales
+                Portal. Wir wollen Handwerk, Koordination und Prozesse in ein
+                nachvollziehbares System bringen.
               </p>
               <p>
-                Kein Suchen nach einzelnen Betrieben. Kein Koordinieren wer wann
-                kommt. Kein Rätseln was es kostet.
+                Der Kunde erklärt sein Anliegen in seiner Sprache. Wir übersetzen
+                dieses Anliegen fachlich richtig für den passenden
+                Handwerksbetrieb.
               </p>
               <p>
-                Ihr seht den Preisrahmen sofort — noch bevor ihr anruft. Nach
-                dem Vor-Ort-Termin ein verbindliches Angebot. Am Ende ein
-                digitales Protokoll.
+                Wir planen Betriebe nicht nach Bewertungen oder Werbung ein —
+                sondern nach echten Fähigkeiten, Erfahrung, Kapazität und
+                Kompetenz.
               </p>
-
-              <h2>Was wir machen</h2>
-              <div className="grid grid-cols-1 gap-x-8 gap-y-2 sm:grid-cols-2">
-                <a href="/leistungen/malerarbeiten-muenchen">Streichen &amp; Tapezieren</a>
-                <a href="/leistungen/badezimmer-sanierung-muenchen">Neues Bad</a>
-                <a href="/leistungen/bodenbelag-muenchen">Neuer Boden</a>
-                <a href="/leistungen/fenster-tueren-muenchen">Fenster &amp; Türen</a>
-                <a href="/leistungen/trockenbau-muenchen">Neue Wände &amp; Decken</a>
-                <a href="/leistungen/heizung-sanitaer-muenchen">Heizung &amp; Wasser</a>
-                <a href="/leistungen/elektroarbeiten-muenchen">Strom &amp; Licht</a>
-                <a href="/leistungen/dacharbeiten-muenchen">Dach &amp; Regenrinnen</a>
-                <a href="/leistungen/gartenpflege-muenchen">Gartenpflege &amp; Gestaltung</a>
-                <a href="/leistungen/hausmeisterservice-muenchen">Hausmeisterservice</a>
-                <a href="/leistungen/gebaeudereinigung-muenchen">Gebäudereinigung</a>
-                <a href="/leistungen/winterdienst-muenchen">Winterdienst</a>
-                <a href="/rechner?situation=kaputt">Notfalleinsätze</a>
+              <div className="ueber-uns-example-box">
+                <div className="ueber-uns-example-box-text whitespace-pre-line">
+                  {`Ein Sanitärbetrieb kann sehr stark in Heizungsanlagen sein, aber schwach in Badsanierung.
+Ein anderer Betrieb baut perfekte Bäder, aber macht keine komplexen Heizungen.
+Genau diese Unterschiede verstehen wir durch unsere eigene Praxis.`}
+                </div>
               </div>
 
-              <div className="mt-12 flex flex-wrap gap-3 sm:mt-16" role="group" aria-label="Kontakt und Leistungen">
-                <Link href="/kontakt" className="btn-pill-primary inline-flex py-2.5 px-5 text-[13px]">
+              <h2>Aus eigener Praxis</h2>
+              <p>
+                Aus eigenen Gewerken — Hausmeisterservice, Gartenbau, Reinigung —
+                entstanden über Jahre feste Abläufe, Checklisten und dokumentierte
+                Prozesse. Daraus entwickelte sich ein Netzwerk aus festen
+                Partnerfirmen, Meisterbetrieben und eigenen Teams.
+              </p>
+              <p>
+                Dadurch kennen wir echte Abläufe auf Baustellen und wissen wo
+                Probleme entstehen.
+              </p>
+
+              <h2>Wie wir arbeiten</h2>
+              <div className="grid grid-cols-1 gap-x-8 gap-y-8 sm:grid-cols-2">
+                <div>
+                  <h3 className="ueber-uns-list-heading">Unser Prozess</h3>
+                  <ul className="ueber-uns-checklist">
+                    {PROCESS_ITEMS.map((item) => (
+                      <li key={item}>{item}</li>
+                    ))}
+                  </ul>
+                </div>
+                <div>
+                  <h3 className="ueber-uns-list-heading">Das ermöglicht</h3>
+                  <ul className="ueber-uns-checklist">
+                    {ENABLES_ITEMS.map((item) => (
+                      <li key={item}>{item}</li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+
+              <div className="ueber-uns-pullquote whitespace-pre-line">
+                {`Nicht Chaos.
+Nicht zehn Ansprechpartner.
+Nicht Suchen.
+
+Sondern ein strukturierter Ablauf zwischen Kunde, Handwerk und Umsetzung.`}
+              </div>
+              <ul className="ueber-uns-checklist ueber-uns-checklist--centered">
+                {CLOSING_BULLETS.map((line) => (
+                  <li key={line}>{line}</li>
+                ))}
+              </ul>
+
+              <div
+                className="mt-12 flex flex-wrap justify-center gap-3 sm:mt-16"
+                role="group"
+                aria-label="Nächste Schritte"
+              >
+                <Link
+                  href="/rechner"
+                  className="btn-pill-primary inline-flex py-2.5 px-5 text-[13px]"
+                >
                   Angebot anfordern →
                 </Link>
                 <Link

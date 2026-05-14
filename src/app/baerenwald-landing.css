@@ -120,6 +120,11 @@
   margin: 0;
 }
 
+.funnel-tile--text-only .funnel-tile-label,
+.funnel-tile--text-only .funnel-tile-hint {
+  white-space: pre-line;
+}
+
 /* Kompakte Chips / Kalender (ohne volle .funnel-tile-Fläche) */
 .funnel-tile-selected {
   border: 1.5px solid var(--fl-accent) !important;
@@ -240,6 +245,8 @@
   border-radius: var(--fl-radius);
   padding: 16px;
   border: 1px solid transparent;
+  /* Weniger Sprung beim Einblenden von Hinweisen / Mehrfachauswahl (Scroll Anchoring) */
+  overflow-anchor: none;
 }
 
 .funnel-main--strip-a {
@@ -1319,6 +1326,7 @@
   color: var(--fl-text-2);
   line-height: 1.6;
   margin: 0;
+  white-space: pre-line;
 }
 
 .how-section .how-tl-content-desc {
@@ -1814,6 +1822,11 @@
   text-align: center;
 }
 
+.vision-section-inner--embedded {
+  margin-bottom: 2.75rem;
+  text-align: center;
+}
+
 .vision-eyebrow {
   font-size: 11px;
   font-weight: 700;
@@ -1850,6 +1863,34 @@
   height: 1px;
   background: var(--fl-border);
   margin: 24px auto;
+}
+
+.vision-points {
+  list-style: none;
+  padding: 0;
+  margin: 0 auto;
+  max-width: 560px;
+  text-align: left;
+}
+
+.vision-points li {
+  font-size: 16px;
+  color: var(--fl-text-2);
+  line-height: 1.75;
+  margin: 0 0 12px;
+  padding-left: 1.35em;
+  text-indent: -1.35em;
+  white-space: pre-line;
+}
+
+.vision-points li::before {
+  content: "✓ ";
+  font-weight: 700;
+  color: var(--fl-accent);
+}
+
+.vision-points li:last-child {
+  margin-bottom: 0;
 }
 
 /* Sektions-Trenner (Höhe/Farben via SectionDivider inline) */
@@ -2164,6 +2205,7 @@
   color: var(--fl-text-2);
   line-height: 1.5;
   margin: 0;
+  white-space: pre-line;
 }
 
 .projekt-ple-row--ergebnis .projekt-ple-icon {
@@ -2761,7 +2803,12 @@
 }
 
 .faq-whatsapp-cta-wrap {
+  grid-column: 1 / -1;
+  width: 100%;
+  max-width: 520px;
   margin-top: 32px;
+  margin-left: auto;
+  margin-right: auto;
   padding: 24px;
   background: rgba(255, 255, 255, 0.05);
   border-radius: 12px;
@@ -6177,6 +6224,60 @@
   .legal-body ul li {
     font-size: 14px;
   }
+}
+
+/* ── Über uns (Seite) ───────────────────────────────────────── */
+
+.ueber-uns-example-box {
+  background: #f8f9fa;
+  border-left: 3px solid #2e7d52;
+  border-radius: 0 8px 8px 0;
+  padding: 20px 24px;
+  margin: 20px 0 28px;
+}
+
+.ueber-uns-example-box-text {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.75;
+  color: var(--fl-text-2);
+}
+
+.ueber-uns-list-heading {
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--fl-text);
+  margin: 0 0 12px;
+}
+
+.legal-body .ueber-uns-pullquote {
+  font-size: clamp(20px, 3vw, 28px);
+  font-weight: 800;
+  text-align: center;
+  color: #1a3d2b;
+  line-height: 1.4;
+  margin: 40px auto 24px;
+  max-width: 640px;
+}
+
+.legal-body ul.ueber-uns-checklist li::before {
+  content: "✓ ";
+  position: absolute;
+  left: 0;
+  color: var(--fl-accent);
+  font-weight: 700;
+}
+
+.legal-body ul.ueber-uns-checklist--centered {
+  max-width: 380px;
+  margin-left: auto;
+  margin-right: auto;
+  margin-bottom: 0;
+}
+
+.legal-body ul.ueber-uns-checklist--centered li {
+  white-space: pre-line;
 }
 
 /* ── Fachdetails: Folgefragen (Scroll + Einblend-Animation) ───────── */

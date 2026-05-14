@@ -1,10 +1,20 @@
 "use client";
 
 import { DatenschutzCheckbox } from "@/components/funnel/DatenschutzCheckbox";
+import { SITE_CONFIG } from "@/lib/config";
 import { StepWrapper } from "@/components/funnel/StepWrapper";
 import type { Situation } from "@/lib/funnel/types";
 
-export type BwBeratungLeadKind = "b2b" | "schimmel";
+/** Notfall-Hotline (Baum / Sturmschaden) — Footer-CTA wählt diese Nummer. */
+export const BW_BAUM_NOTFALL_TEL_HREF = "tel:+498999733904";
+
+export type BwBeratungLeadKind =
+  | "b2b"
+  | "schimmel"
+  | "garten_planung"
+  | "garten_terrasse"
+  | "baum_notfall"
+  | "gefahrenabwehr";
 
 export interface BwBeratungLeadProps {
   kind: BwBeratungLeadKind;
@@ -37,16 +47,85 @@ export function BwBeratungLead({
   formId,
   onSubmit,
 }: BwBeratungLeadProps) {
+  if (kind === "baum_notfall") {
+    return (
+      <StepWrapper
+        animateKey={`beratung-lead-baum_notfall-${situation ?? ""}`}
+        className="bw-beratung-lead"
+      >
+        <div className="step-wrapper">
+          <p className="step-eyebrow">Reparatur & Notfall</p>
+          <h1 className="step-question">Baum / Sturmschaden</h1>
+          <p className="step-sub whitespace-pre-line">
+            Baumnotfälle sind sehr individuell — Größe, Lage und Zugänglichkeit
+            bestimmen den Aufwand. Wir kommen schnell vorbei und nennen dir
+            einen festen Preis vor Ort.
+          </p>
+          <p className="mt-4 text-sm text-text-secondary">
+            Direkt:{" "}
+            <a
+              href={BW_BAUM_NOTFALL_TEL_HREF}
+              className="font-semibold text-funnel-accent underline decoration-funnel-accent/40 underline-offset-2"
+            >
+              089 99733904
+            </a>
+          </p>
+        </div>
+      </StepWrapper>
+    );
+  }
+
+  if (kind === "gefahrenabwehr") {
+    return (
+      <StepWrapper
+        animateKey={`beratung-lead-gefahrenabwehr-${situation ?? ""}`}
+        className="bw-beratung-lead"
+      >
+        <div className="step-wrapper">
+          <p className="step-eyebrow">Baumarbeiten</p>
+          <h1 className="step-question">Gefahrenabwehr</h1>
+          <p className="step-sub whitespace-pre-line">
+            Gefahrenabwehr ist sehr individuell — wir kommen schnell vorbei und
+            beurteilen die Lage.
+          </p>
+          <p className="mt-4 text-sm text-text-secondary">
+            Direkt:{" "}
+            <a
+              href={BW_BAUM_NOTFALL_TEL_HREF}
+              className="font-semibold text-funnel-accent underline decoration-funnel-accent/40 underline-offset-2"
+            >
+              089 99733904
+            </a>
+          </p>
+        </div>
+      </StepWrapper>
+    );
+  }
+
   const eyebrow =
-    kind === "schimmel" ? "Schimmel / Feuchtigkeit" : "Gewerbe";
+    kind === "schimmel"
+      ? "Schimmel / Feuchtigkeit"
+      : kind === "garten_planung" || kind === "garten_terrasse"
+        ? "Gartengestaltung"
+        : "Gewerbe";
+
   const headline =
     kind === "schimmel"
       ? "Schimmel braucht eine Vor-Ort-Analyse."
-      : "Gewerbliches Projekt?";
+      : kind === "garten_planung"
+        ? "Gartenplanung ist individuell"
+        : kind === "garten_terrasse"
+          ? "Terrasse & Material klären wir vor Ort"
+          : "Gewerbliches Projekt?";
+
   const sub =
     kind === "schimmel"
       ? "Eine automatische Preisberechnung wäre hier nicht seriös — zu viel hängt von der Ursache ab. Wir schauen es uns an und melden uns persönlich."
-      : "Ob Büro, Praxis, Laden oder Gastronomie — wir planen individuell mit dir. Melde dich kurz und wir melden uns innerhalb von 48h.";
+      : kind === "garten_planung"
+        ? "Gartenplanung ist individuell — wir kommen vorbei und schauen uns gemeinsam an was möglich ist und was es kostet."
+        : kind === "garten_terrasse"
+          ? "Wir melden uns für einen Beratungstermin — dann stimmen wir Fläche, Unterbau und Belag mit dir ab."
+          : `Ob Büro, Praxis, Laden oder Gastronomie — wir planen individuell mit dir. Melde dich kurz und wir melden uns ${SITE_CONFIG.responseSlaWithin}.`;
 
   return (
     <StepWrapper
@@ -56,7 +135,7 @@ export function BwBeratungLead({
       <div className="step-wrapper">
         <p className="step-eyebrow">{eyebrow}</p>
         <h1 className="step-question">{headline}</h1>
-        <p className="step-sub">{sub}</p>
+        <p className="step-sub whitespace-pre-line">{sub}</p>
 
         <form id={formId} onSubmit={onSubmit} className="b2b-form space-y-3">
           <div className="form-row">

@@ -121,7 +121,7 @@ export function SelectionTile({
       {showExpand && expandText ? (
         <div
           className={cn(
-            "animate-in fade-in slide-in-from-top-1 mt-2 rounded-lg border p-2 text-[11px] duration-200",
+            "animate-in fade-in mt-2 rounded-lg border p-2 text-[11px] duration-200",
             variant === "info" &&
               "border-blue-200/80 bg-[#F6F8FE] text-[#315AA8]",
             variant === "warn" &&

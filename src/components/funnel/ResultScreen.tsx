@@ -6,6 +6,7 @@ import { isAkutNotfall, shouldShowConsultationOnly } from "@/lib/funnel-config";
 import { formatCurrencyEUR } from "@/lib/price-calc";
 import { SituationIconPath } from "@/lib/situation-icons";
 import type { FunnelState, PriceLineItem, Situation } from "@/lib/types";
+import { SITE_CONFIG } from "@/lib/config";
 import { cn } from "@/lib/utils";
 
 /** Hinweis vor Foto-Upload / Lead (export für Rechner & FunnelClient) */
@@ -27,7 +28,7 @@ export function LeadAvailabilityHint({
       role="note"
     >
       Wir prüfen nach deiner Anfrage die Verfügbarkeit unserer Handwerker und
-      melden uns innerhalb von 48h zur Terminbestätigung.
+      melden uns {SITE_CONFIG.responseSlaWithin} zur Terminbestätigung.
     </div>
   );
 }

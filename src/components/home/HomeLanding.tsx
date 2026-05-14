@@ -254,7 +254,7 @@ export function HomeLanding() {
               <span>✓ Kostenlos &amp; unverbindlich</span>
               <span>✓ Festpreisangebot</span>
               <span>✓ Meisterbetriebe</span>
-              <span>✓ Antwort innerhalb 48h</span>
+              <span>✓ Antwort {SITE_CONFIG.responseSlaWithin}</span>
             </div>
 
             <a
@@ -396,7 +396,7 @@ export function HomeLanding() {
             { num: "12+", label: "Leistungen aus einer Hand" },
             { num: "500+", label: "Abgeschlossene Projekte" },
             { num: "4,9", label: "Sterne bei Google" },
-            { num: "48h", label: "Reaktionszeit garantiert" },
+            { num: "24–48h", label: "Rückmeldung Mo–Sa (So ausgen.)" },
           ].map((k) => (
             <div key={k.label} className="text-center">
               <p className="font-display text-4xl font-bold text-white">{k.num}</p>
@@ -593,7 +593,8 @@ export function HomeLanding() {
             {CTA.final}
           </Link>
           <p className="mt-4 text-xs text-white/60">
-            Kein Auftragszwang · Kostenlos · Antwort innerhalb 48h
+            Kein Auftragszwang · Kostenlos · Antwort{" "}
+            {SITE_CONFIG.responseSlaWithin}
           </p>
         </div>
       </section>

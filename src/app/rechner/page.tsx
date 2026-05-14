@@ -13,7 +13,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 
 import "@/app/baerenwald-landing.css";
 
-import { BwBeratungLead } from "@/components/funnel/BwBeratungLead";
+import { BwBeratungLead, BW_BAUM_NOTFALL_TEL_HREF } from "@/components/funnel/BwBeratungLead";
 import { BwResultScreen } from "@/components/funnel/BwResultScreen";
 import { FachdetailsStep } from "@/components/funnel/FachdetailsStep";
 import { FunnelErrorBoundary } from "@/components/funnel/FunnelErrorBoundary";
@@ -81,6 +81,7 @@ import {
 import type { BwResultModus } from "@/lib/funnel/price-calc";
 import { getPlzStatus } from "@/lib/funnel/plz";
 import type {
+  FachdetailsState,
   FunnelStep,
   Kundentyp,
   ObjektZustand,
@@ -98,6 +99,7 @@ import {
   formatTrackLeistung,
   track,
 } from "@/lib/analytics";
+import { SITE_CONFIG } from "@/lib/config";
 import { cn } from "@/lib/utils";
 
 const LEAD_FORM_ID = "bw-funnel-lead";
@@ -135,6 +137,7 @@ type Screen =
   | "projekt_durchbruch_anzahl"
   | "projekt_durchbruch_statik"
   | "projekt_garten_leistung"
+  | "projekt_garten_terrasse_material"
   | "projekt_garten_zaun"
   | "projekt_garten_zugang"
   | "projekt_ausbau_rohbau"
@@ -206,6 +209,14 @@ function FunnelRechnerInner() {
   const [komplexRueckrufDanke, setKomplexRueckrufDanke] = useState(false);
   /** Direkt nach Schimmel-Kachel: Beratungs-Lead mit Spezialtext */
   const [schimmelBeratung, setSchimmelBeratung] = useState(false);
+  /** Gartengestaltung: Planung oder Terrasse „noch offen“ → Beratungs-Lead (Zurück-Navigation) */
+  const [gartenBeratungLeadKind, setGartenBeratungLeadKind] = useState<
+    "garten_planung" | "garten_terrasse" | null
+  >(null);
+  /** Kaputt: Baum/Sturmschaden — nach Fachfrage: Beratungs-Screen mit Telefon-CTA */
+  const [baumNotfallBeratung, setBaumNotfallBeratung] = useState(false);
+  /** Betreuung Baumarbeiten: Gefahrenabwehr → Beratungs-Screen mit Telefon-CTA */
+  const [gefahrenabwehrBeratung, setGefahrenabwehrBeratung] = useState(false);
   const [leadSubmitting, setLeadSubmitting] = useState(false);
   const [leadSubmitError, setLeadSubmitError] = useState<string | null>(null);
   /** Kurzzeit-Hinweis nach Suche ohne Allowlist-Treffer (`?nf=1`). */
@@ -242,6 +253,22 @@ function FunnelRechnerInner() {
     reset,
   } = useFunnelState();
 
+  const onFachdetailsPatch = useCallback(
+    (patch: Partial<FachdetailsState>) => {
+      setFachdetails(patch);
+      if (patch.garten?.was === "gefahrenabwehr") {
+        setGefahrenabwehrBeratung(true);
+        setScreen("beratung-lead");
+      }
+    },
+    [setFachdetails]
+  );
+
+  useEffect(() => {
+    if (state.fachdetails?.garten?.was === "gefahrenabwehr") return;
+    setGefahrenabwehrBeratung(false);
+  }, [state.fachdetails?.garten?.was]);
+
   const fachdetailsBeforeGroesse = useMemo(
     () => shouldSwapFachdetailsBeforeGroesse(state.situation, state.bereiche),
     [state.situation, state.bereiche]
@@ -259,6 +286,7 @@ function FunnelRechnerInner() {
       state.fachdetails?.heizung?.alter,
       state.fachdetails?.heizung?.vorhaben,
       state.fachdetails?.garten?.baumgroesse,
+      state.fachdetails?.garten?.was,
       state.fachdetails?.maler?.was,
       state.fachdetails?.maler?.fassade,
       state.fachdetails?.projekt,
@@ -386,6 +414,9 @@ function FunnelRechnerInner() {
       setBereiche(leistungPreset.bereiche);
       setPriceConfirmed(false);
       if (leistungPreset.situation === "gewerbe") {
+        setGartenBeratungLeadKind(null);
+        setBaumNotfallBeratung(false);
+        setGefahrenabwehrBeratung(false);
         setScreen("beratung-lead");
       } else {
         setScreen("bereiche");
@@ -402,6 +433,9 @@ function FunnelRechnerInner() {
       setBereiche([gewerkRaw]);
       setPriceConfirmed(false);
       if (normalizedSit === "gewerbe") {
+        setGartenBeratungLeadKind(null);
+        setBaumNotfallBeratung(false);
+        setGefahrenabwehrBeratung(false);
         setScreen("beratung-lead");
       } else {
         setScreen("bereiche");
@@ -414,6 +448,9 @@ function FunnelRechnerInner() {
       setSituation(normalized);
       setPriceConfirmed(false);
       if (normalized === "gewerbe") {
+        setGartenBeratungLeadKind(null);
+        setBaumNotfallBeratung(false);
+        setGefahrenabwehrBeratung(false);
         setScreen("beratung-lead");
       } else {
         setScreen("bereiche");
@@ -483,6 +520,26 @@ function FunnelRechnerInner() {
       undefined;
     track.rechnerStart(leistungParam);
   }, [searchParams]);
+
+  useEffect(() => {
+    if (state.situation !== "kaputt") return;
+    if (!state.bereiche.includes("baum_notfall")) return;
+    setZeitraum("sofort");
+    setDringlichkeit("sofort");
+    setUmfang("sofort", 1);
+  }, [state.situation, state.bereiche, setZeitraum, setDringlichkeit, setUmfang]);
+
+  useEffect(() => {
+    if (state.bereiche.includes("baum_notfall")) return;
+    setBaumNotfallBeratung(false);
+    if (state.fachdetails?.fachdetailAnswers?.baum_notfall_situation) {
+      clearFachdetailAnswer("baum_notfall_situation");
+    }
+  }, [
+    state.bereiche,
+    state.fachdetails?.fachdetailAnswers?.baum_notfall_situation,
+    clearFachdetailAnswer,
+  ]);
 
   useEffect(() => {
     if (!state.situation || state.bereiche.length === 0) return;
@@ -587,6 +644,16 @@ function FunnelRechnerInner() {
 
   const goNextFromCompletedFachdetailScreen = useCallback(
     (fromScreen: Screen) => {
+      const qid = getFachdetailQuestionIdFromScreen(fromScreen);
+      if (
+        state.situation === "kaputt" &&
+        state.bereiche.includes("baum_notfall") &&
+        qid === "baum_notfall_situation"
+      ) {
+        setBaumNotfallBeratung(true);
+        setScreen("beratung-lead");
+        return;
+      }
       const next = resolveNextBwRechnerScreenFromFachdetail(
         state,
         fromScreen
@@ -623,6 +690,9 @@ function FunnelRechnerInner() {
     setMicroNote(null);
     setPriceConfirmed(false);
     setSchimmelBeratung(false);
+    setGartenBeratungLeadKind(null);
+    setBaumNotfallBeratung(false);
+    setGefahrenabwehrBeratung(false);
     setLeadSubmitting(false);
     setLeadSubmitError(null);
 
@@ -638,6 +708,15 @@ function FunnelRechnerInner() {
   }, [reset, setSubmitted, router, screen, state.situation, state.bereiche]);
 
   const handleNext = useCallback(() => {
+    if (screen === "beratung-lead" && baumNotfallBeratung) {
+      window.location.href = BW_BAUM_NOTFALL_TEL_HREF;
+      return;
+    }
+    if (screen === "beratung-lead" && gefahrenabwehrBeratung) {
+      window.location.href = BW_BAUM_NOTFALL_TEL_HREF;
+      return;
+    }
+
     if (isBwFachdetailQuestionScreenId(screen)) {
       const qid = getFachdetailQuestionIdFromScreen(screen);
       if (!qid) return;
@@ -673,11 +752,32 @@ function FunnelRechnerInner() {
       screen === "projekt_durchbruch_anzahl" ||
       screen === "projekt_durchbruch_statik" ||
       screen === "projekt_garten_leistung" ||
+      screen === "projekt_garten_terrasse_material" ||
       screen === "projekt_garten_zaun" ||
       screen === "projekt_garten_zugang" ||
       screen === "projekt_ausbau_rohbau" ||
       screen === "projekt_ausbau_deckenhoehe"
     ) {
+      const pj = state.fachdetails?.projekt;
+      if (screen === "projekt_garten_leistung" && pj?.gartenLeistung === "planung") {
+        setSchimmelBeratung(false);
+        setBaumNotfallBeratung(false);
+        setGefahrenabwehrBeratung(false);
+        setGartenBeratungLeadKind("garten_planung");
+        setScreen("beratung-lead");
+        return;
+      }
+      if (
+        screen === "projekt_garten_terrasse_material" &&
+        pj?.gartenTerrasseMaterial === "noch_offen"
+      ) {
+        setSchimmelBeratung(false);
+        setBaumNotfallBeratung(false);
+        setGefahrenabwehrBeratung(false);
+        setGartenBeratungLeadKind("garten_terrasse");
+        setScreen("beratung-lead");
+        return;
+      }
       const nextProj = getNextBwRechnerScreen(state, screen);
       if (nextProj) setScreen(nextProj as Screen);
       return;
@@ -687,6 +787,9 @@ function FunnelRechnerInner() {
       case "situation":
         if (state.situation) {
           if (isB2B(state.situation)) {
+            setGartenBeratungLeadKind(null);
+            setBaumNotfallBeratung(false);
+            setGefahrenabwehrBeratung(false);
             setScreen("beratung-lead");
           } else {
             setScreen("bereiche");
@@ -695,8 +798,12 @@ function FunnelRechnerInner() {
         break;
       case "bereiche":
         if (state.bereiche.length > 0) {
-          if (isB2B(state.situation)) setScreen("beratung-lead");
-          else {
+          if (isB2B(state.situation)) {
+            setGartenBeratungLeadKind(null);
+            setBaumNotfallBeratung(false);
+            setGefahrenabwehrBeratung(false);
+            setScreen("beratung-lead");
+          } else {
             const nextAfterBereiche = getNextBwRechnerScreen(
               state,
               "bereiche"
@@ -839,6 +946,7 @@ function FunnelRechnerInner() {
         break;
       }
       case "beratung-lead":
+        if (baumNotfallBeratung || gefahrenabwehrBeratung) break;
         (
           document.getElementById(
             BERATUNG_LEAD_FORM_ID
@@ -864,12 +972,57 @@ function FunnelRechnerInner() {
     goNextFromCompletedFachdetailScreen,
     resultModus,
     setZeitraum,
+    setUmfang,
+    setDringlichkeit,
+    baumNotfallBeratung,
+    gefahrenabwehrBeratung,
   ]);
 
   const handleBack = useCallback(() => {
     if (isBwFachdetailQuestionScreenId(screen)) {
       const qid = getFachdetailQuestionIdFromScreen(screen);
       if (qid) clearFachdetailAnswer(qid);
+    }
+    if (screen === "beratung-lead" && baumNotfallBeratung) {
+      setBaumNotfallBeratung(false);
+      setScreen("fachdetail_baum_notfall_situation" as Screen);
+      window.scrollTo({
+        top: 0,
+        left: 0,
+        behavior: "instant" as ScrollBehavior,
+      });
+      return;
+    }
+    if (screen === "beratung-lead" && gefahrenabwehrBeratung) {
+      setGefahrenabwehrBeratung(false);
+      clearFachdetailAnswer("garten_was");
+      setScreen("fachdetail_garten_was" as Screen);
+      window.scrollTo({
+        top: 0,
+        left: 0,
+        behavior: "instant" as ScrollBehavior,
+      });
+      return;
+    }
+    if (screen === "beratung-lead" && gartenBeratungLeadKind === "garten_planung") {
+      setGartenBeratungLeadKind(null);
+      setScreen("projekt_garten_leistung");
+      window.scrollTo({
+        top: 0,
+        left: 0,
+        behavior: "instant" as ScrollBehavior,
+      });
+      return;
+    }
+    if (screen === "beratung-lead" && gartenBeratungLeadKind === "garten_terrasse") {
+      setGartenBeratungLeadKind(null);
+      setScreen("projekt_garten_terrasse_material");
+      window.scrollTo({
+        top: 0,
+        left: 0,
+        behavior: "instant" as ScrollBehavior,
+      });
+      return;
     }
     const prevSeq = getPreviousBwRechnerScreen(state, screen);
     if (prevSeq) {
@@ -951,7 +1104,7 @@ function FunnelRechnerInner() {
       default:
         break;
     }
-  }, [screen, state, stepSequence, clearFachdetailAnswer]);
+  }, [screen, state, stepSequence, clearFachdetailAnswer, gartenBeratungLeadKind, baumNotfallBeratung, gefahrenabwehrBeratung]);
 
   const nextDisabled = useMemo(() => {
     if (isBwFachdetailQuestionScreenId(screen)) {
@@ -1001,6 +1154,8 @@ function FunnelRechnerInner() {
         return state.fachdetails?.projekt?.durchbruchTragend === undefined;
       case "projekt_garten_leistung":
         return state.fachdetails?.projekt?.gartenLeistung === undefined;
+      case "projekt_garten_terrasse_material":
+        return !state.fachdetails?.projekt?.gartenTerrasseMaterial;
       case "projekt_garten_zaun":
         return state.fachdetails?.projekt?.gartenZaun === undefined;
       case "projekt_garten_zugang":
@@ -1030,6 +1185,7 @@ function FunnelRechnerInner() {
           leadSubmitting
         );
       case "beratung-lead":
+        if (baumNotfallBeratung || gefahrenabwehrBeratung) return false;
         return (
           !state.vorname.trim() ||
           !state.nachname.trim() ||
@@ -1039,7 +1195,7 @@ function FunnelRechnerInner() {
       default:
         return true;
     }
-  }, [screen, state, umfangOk, schimmelBeratung, leadSubmitting, resultModus]);
+  }, [screen, state, umfangOk, schimmelBeratung, leadSubmitting, resultModus, baumNotfallBeratung, gefahrenabwehrBeratung]);
 
   const nextLabel = useMemo(() => {
     if (screen === "trust_intro") return "Los geht's →";
@@ -1052,6 +1208,10 @@ function FunnelRechnerInner() {
     if (screen === "lead" && leadSubmitting) return "Wird gesendet…";
     if (screen === "lead") return "Absenden →";
     if (screen === "beratung-lead") {
+      if (baumNotfallBeratung || gefahrenabwehrBeratung) return "Jetzt anrufen →";
+      if (gartenBeratungLeadKind === "garten_planung" || gartenBeratungLeadKind === "garten_terrasse") {
+        return "Beratungstermin vereinbaren →";
+      }
       if (schimmelBeratung || state.bereiche.includes("schimmel")) {
         return "Rückruf anfragen →";
       }
@@ -1066,6 +1226,9 @@ function FunnelRechnerInner() {
     resultModus,
     priceConfirmed,
     schimmelBeratung,
+    gartenBeratungLeadKind,
+    baumNotfallBeratung,
+    gefahrenabwehrBeratung,
     state.bereiche,
     state.situation,
     leadSubmitting,
@@ -1136,6 +1299,7 @@ function FunnelRechnerInner() {
 
   const handleBeratungLeadSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (baumNotfallBeratung || gefahrenabwehrBeratung) return;
     if (!beratungDatenschutz) {
       setBeratungDatenschutzError(true);
       return;
@@ -1227,7 +1391,7 @@ function FunnelRechnerInner() {
 
     return (
       <div className="space-y-3">
-        {step.options.map((opt) => {
+        {step.options.map((opt, optIdx) => {
           const libOpt = asLibOpt(opt);
           const funnelOpt = opt as FunnelStepOption;
           const selected = multi
@@ -1236,9 +1400,15 @@ function FunnelRechnerInner() {
           return (
             <Fragment key={opt.value}>
               {funnelOpt.section ? (
-                <p className="mb-1 mt-4 text-xs font-semibold uppercase tracking-wide text-text-tertiary first:mt-0">
-                  {funnelOpt.section}
-                </p>
+                <div
+                  className={cn(
+                    optIdx > 0 && "mt-2 border-t border-border-default pt-5"
+                  )}
+                >
+                  <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-text-secondary">
+                    {funnelOpt.section}
+                  </p>
+                </div>
               ) : null}
               <SelectionTile
                 option={libOpt}
@@ -1252,6 +1422,9 @@ function FunnelRechnerInner() {
                       return;
                     }
                     setSchimmelBeratung(true);
+                    setGartenBeratungLeadKind(null);
+                    setBaumNotfallBeratung(false);
+                    setGefahrenabwehrBeratung(false);
                     setScreen("beratung-lead");
                     return;
                   }
@@ -1327,11 +1500,11 @@ function FunnelRechnerInner() {
         <FachdetailsStep
           questionId={qid}
           state={state}
-          onPatch={setFachdetails}
+          onPatch={onFachdetailsPatch}
           showOmitHint={state.showOmitHint ?? false}
           detailIndex={stepIdx}
           detailTotal={totalSteps}
-          animateKey={`${screen}-${state.bereiche.join(",")}`}
+          animateKey={screen}
           banner={microBannerFor(screen)}
         />
       );
@@ -1552,6 +1725,7 @@ function FunnelRechnerInner() {
       case "projekt_durchbruch_anzahl":
       case "projekt_durchbruch_statik":
       case "projekt_garten_leistung":
+      case "projekt_garten_terrasse_material":
       case "projekt_garten_zaun":
       case "projekt_garten_zugang":
       case "projekt_ausbau_rohbau":
@@ -1564,7 +1738,7 @@ function FunnelRechnerInner() {
             stepLabel="Ausbau & Umbau"
             question={def.question}
             subtext={def.subtext}
-            animateKey={`${screen}-${state.bereiche.join(",")}`}
+            animateKey={screen}
             tilesCard
           >
             <div className="space-y-3">
@@ -1577,6 +1751,8 @@ function FunnelRechnerInner() {
                   selected = pj?.terrasseUnterbau === opt.value;
                 } else if (screen === "projekt_garten_leistung") {
                   selected = pj?.gartenLeistung === opt.value;
+                } else if (screen === "projekt_garten_terrasse_material") {
+                  selected = pj?.gartenTerrasseMaterial === opt.value;
                 } else if (screen === "projekt_garten_zaun") {
                   selected = pj?.gartenZaun === opt.value;
                 } else if (screen === "projekt_garten_zugang") {
@@ -1622,11 +1798,36 @@ function FunnelRechnerInner() {
                           },
                         });
                       } else if (screen === "projekt_garten_leistung") {
+                        const nextLeistung = sel
+                          ? (value as
+                              | "planung"
+                              | "rollrasen"
+                              | "flaeche_auffrischen"
+                              | "terrasse"
+                              | "neuanlage"
+                              | "gu_paket"
+                              | "auffrischung")
+                          : undefined;
                         setFachdetails({
                           projekt: {
                             ...state.fachdetails.projekt,
-                            gartenLeistung: sel
-                              ? (value as "auffrischung" | "neuanlage")
+                            gartenLeistung: nextLeistung,
+                            gartenTerrasseMaterial:
+                              nextLeistung === "terrasse"
+                                ? state.fachdetails.projekt
+                                    ?.gartenTerrasseMaterial
+                                : undefined,
+                          },
+                        });
+                      } else if (screen === "projekt_garten_terrasse_material") {
+                        setFachdetails({
+                          projekt: {
+                            ...state.fachdetails.projekt,
+                            gartenTerrasseMaterial: sel
+                              ? (value as
+                                  | "holz_wpc"
+                                  | "naturstein"
+                                  | "noch_offen")
                               : undefined,
                           },
                         });
@@ -1702,7 +1903,7 @@ function FunnelRechnerInner() {
             stepLabel="Umfang"
             question={stepGroesse?.question ?? ""}
             subtext={stepGroesse?.subtext}
-            animateKey={`${screen}-${state.situation}-${state.bereiche.join(",")}`}
+            animateKey={`${screen}-${state.situation}`}
           >
             <GroesseStep
               config={groesseSliderConfig}
@@ -1821,6 +2022,44 @@ function FunnelRechnerInner() {
             />
           );
         }
+        if (baumNotfallBeratung) {
+          return (
+            <BwBeratungLead
+              kind="baum_notfall"
+              situation={state.situation}
+              vorname=""
+              nachname=""
+              telefon=""
+              email=""
+              beschreibung=""
+              datenschutz={false}
+              datenschutzError={false}
+              onDatenschutzChange={() => {}}
+              onFieldChange={() => {}}
+              formId={BERATUNG_LEAD_FORM_ID}
+              onSubmit={(e) => e.preventDefault()}
+            />
+          );
+        }
+        if (gefahrenabwehrBeratung) {
+          return (
+            <BwBeratungLead
+              kind="gefahrenabwehr"
+              situation={state.situation}
+              vorname=""
+              nachname=""
+              telefon=""
+              email=""
+              beschreibung=""
+              datenschutz={false}
+              datenschutzError={false}
+              onDatenschutzChange={() => {}}
+              onFieldChange={() => {}}
+              formId={BERATUNG_LEAD_FORM_ID}
+              onSubmit={(e) => e.preventDefault()}
+            />
+          );
+        }
         if (
           schimmelBeratung ||
           state.bereiche.includes("schimmel")
@@ -1828,6 +2067,50 @@ function FunnelRechnerInner() {
           return (
             <BwBeratungLead
               kind="schimmel"
+              situation={state.situation}
+              vorname={state.vorname}
+              nachname={state.nachname}
+              telefon={state.telefon}
+              email={state.email}
+              beschreibung={state.leadBeschreibung}
+              datenschutz={beratungDatenschutz}
+              datenschutzError={beratungDatenschutzError}
+              onDatenschutzChange={(v) => {
+                setBeratungDatenschutz(v);
+                if (v) setBeratungDatenschutzError(false);
+              }}
+              onFieldChange={updateLeadField}
+              formId={BERATUNG_LEAD_FORM_ID}
+              onSubmit={handleBeratungLeadSubmit}
+            />
+          );
+        }
+        if (gartenBeratungLeadKind === "garten_planung") {
+          return (
+            <BwBeratungLead
+              kind="garten_planung"
+              situation={state.situation}
+              vorname={state.vorname}
+              nachname={state.nachname}
+              telefon={state.telefon}
+              email={state.email}
+              beschreibung={state.leadBeschreibung}
+              datenschutz={beratungDatenschutz}
+              datenschutzError={beratungDatenschutzError}
+              onDatenschutzChange={(v) => {
+                setBeratungDatenschutz(v);
+                if (v) setBeratungDatenschutzError(false);
+              }}
+              onFieldChange={updateLeadField}
+              formId={BERATUNG_LEAD_FORM_ID}
+              onSubmit={handleBeratungLeadSubmit}
+            />
+          );
+        }
+        if (gartenBeratungLeadKind === "garten_terrasse") {
+          return (
+            <BwBeratungLead
+              kind="garten_terrasse"
               situation={state.situation}
               vorname={state.vorname}
               nachname={state.nachname}
@@ -1989,7 +2272,8 @@ function FunnelRechnerInner() {
                 Anfrage senden →
               </button>
               <p className="text-center text-[11px] leading-relaxed text-text-tertiary">
-                Wir melden uns innerhalb von 48h — ohne Verpflichtung.
+                Wir melden uns {SITE_CONFIG.responseSlaWithin} — ohne
+                Verpflichtung.
               </p>
             </form>
             </div>
@@ -2002,7 +2286,7 @@ function FunnelRechnerInner() {
             <ThankYou
               variant="beratung"
               beratungHeadline="Wir melden uns persönlich."
-              beratungSubline="Wir rufen dich innerhalb von 48h zurück — ohne Verpflichtung."
+              beratungSubline={`Wir rufen dich ${SITE_CONFIG.responseSlaWithin} zurück — ohne Verpflichtung.`}
               showTimeline={false}
               onReset={handleReset}
             />
@@ -2013,7 +2297,7 @@ function FunnelRechnerInner() {
             <ThankYou
               variant="beratung"
               beratungHeadline="Anfrage eingegangen"
-              beratungSubline="Wir prüfen ob wir in deiner Region helfen können und melden uns innerhalb von 48h persönlich."
+              beratungSubline={`Wir prüfen ob wir in deiner Region helfen können und melden uns ${SITE_CONFIG.responseSlaWithin} persönlich.`}
               onReset={handleReset}
             />
           );
@@ -2023,7 +2307,7 @@ function FunnelRechnerInner() {
             <ThankYou
               variant="beratung"
               beratungHeadline="Anfrage eingegangen."
-              beratungSubline="Wir melden uns innerhalb von 48h persönlich bei dir — ohne Verpflichtung."
+              beratungSubline={`Wir melden uns ${SITE_CONFIG.responseSlaWithin} persönlich bei dir — ohne Verpflichtung.`}
               showTimeline={false}
               showCalendar={false}
               onReset={handleReset}
@@ -2100,9 +2384,11 @@ function FunnelRechnerInner() {
           nextDisabled={nextDisabled}
           nextLabel={nextLabel}
           belowActions={
-            screen === "beratung-lead" ? (
+            screen === "beratung-lead" &&
+            !baumNotfallBeratung &&
+            !gefahrenabwehrBeratung ? (
               <p className="text-center text-xs text-text-tertiary">
-                Wir melden uns innerhalb von 48h
+                Wir melden uns {SITE_CONFIG.responseSlaWithin}
               </p>
             ) : screen === "result" && resultModus === "preisrahmen_warnung" ? (
               <p

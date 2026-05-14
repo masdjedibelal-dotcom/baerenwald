@@ -100,7 +100,7 @@ const RESULT_TESTIMONIALS = [
     color: "#00695c",
   },
   {
-    quote: "Innerhalb 48h war jemand da.",
+    quote: "Zügig war jemand vor Ort.",
     name: "Sandra B.",
     ort: "Bogenhausen",
     initials: "SB",
@@ -152,7 +152,8 @@ function getAktiveGewerke(state: FunnelState): string[] {
   if (
     bereiche.includes("garten") ||
     bereiche.includes("gartengestaltung") ||
-    bereiche.includes("baum")
+    bereiche.includes("baum") ||
+    bereiche.includes("baumarbeiten")
   ) {
     push("garten");
   }
@@ -528,7 +529,8 @@ function ZuKomplexScreen({
           <h2>Gewerbliches Projekt?</h2>
           <p>
             Ob Büro, Praxis, Laden oder Gastronomie — wir planen individuell
-            mit dir. Melde dich kurz und wir melden uns innerhalb von 48h.
+            mit dir. Melde dich kurz und wir melden uns{" "}
+            {SITE_CONFIG.responseSlaWithin}.
           </p>
           <button
             type="button"

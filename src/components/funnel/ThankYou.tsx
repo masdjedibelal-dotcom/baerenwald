@@ -1,6 +1,7 @@
 "use client";
 
 import { NeueAnfrageResetLink } from "@/components/funnel/NeueAnfrageResetLink";
+import { SITE_CONFIG } from "@/lib/config";
 import { cn } from "@/lib/utils";
 import { WHATSAPP_ICON_PATH, WHATSAPP_URL_ANFRAGE } from "@/lib/whatsapp";
 
@@ -11,7 +12,7 @@ const TIMELINE_STEPS = [
   },
   {
     title: "Verfügbarkeit wird geprüft",
-    sub: "Wir melden uns innerhalb von 48h zur Terminbestätigung per Telefon oder E-Mail.",
+    sub: `Wir melden uns ${SITE_CONFIG.responseSlaWithin} zur Terminbestätigung per Telefon oder E-Mail.`,
   },
   {
     title: "Vor-Ort-Termin",
@@ -74,8 +75,7 @@ export function ThankYou({
   const showWunschterminSummary =
     isTermin && Boolean(dateLabel?.trim()) && Boolean(timeLabel?.trim());
 
-  const followUpSubline =
-    "Wir prüfen die Verfügbarkeit und melden uns innerhalb von 48h per Telefon oder E-Mail zur Terminbestätigung.";
+  const followUpSubline = `Wir prüfen die Verfügbarkeit und melden uns ${SITE_CONFIG.responseSlaWithin} per Telefon oder E-Mail zur Terminbestätigung.`;
 
   return (
     <div
@@ -106,7 +106,7 @@ export function ThankYou({
       <p className="mt-2 max-w-sm text-sm text-text-secondary">
         {isBeratung
           ? beratungSubline ??
-            "Deine Anfrage ist bei uns eingegangen. Ein Kollege meldet sich bei dir — in der Regel innerhalb von 48 Stunden."
+            `Deine Anfrage ist bei uns eingegangen. Ein Kollege meldet sich bei dir — in der Regel ${SITE_CONFIG.responseSlaWithin}.`
           : followUpSubline}
       </p>
 

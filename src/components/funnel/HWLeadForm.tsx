@@ -5,6 +5,7 @@ import { useState } from "react";
 import { CalendarPicker } from "@/components/funnel/CalendarPicker";
 import { PhotoUpload } from "@/components/funnel/PhotoUpload";
 import type { SelectedSlot } from "@/lib/types";
+import { SITE_CONFIG } from "@/lib/config";
 import { cn } from "@/lib/utils";
 
 export interface HWLeadFormProps {
@@ -63,7 +64,8 @@ export function HWLeadForm({
               Wunschtermin angeben (optional)
             </div>
             <div className="calendar-opt-sub">
-              Wir prüfen die Verfügbarkeit und bestätigen in 48h
+              Wir prüfen die Verfügbarkeit — Rückmeldung{" "}
+              {SITE_CONFIG.responseSlaWithin}
             </div>
           </div>
           <svg
@@ -129,9 +131,26 @@ export function HWLeadForm({
           value={telefon}
           onChange={(e) => onFieldChange("telefon", e.target.value)}
         />
-        <p className="text-[11px] leading-relaxed text-text-tertiary">
-          Mit Absenden akzeptierst du, dass wir dich zum Termin / Angebot
-          kontaktieren. Du kannst der Nutzung jederzeit widersprechen.
+        <p
+          style={{
+            fontSize: "12px",
+            color: "#9CA3AF",
+            marginTop: "12px",
+            lineHeight: 1.5,
+          }}
+        >
+          Mit Absenden stimmst du zu, dass wir dich zur Bearbeitung deiner
+          Anfrage kontaktieren. Weitere Infos in unserer{" "}
+          <a
+            href="/datenschutz"
+            style={{
+              color: "#2E7D52",
+              textDecoration: "underline",
+            }}
+          >
+            Datenschutzerklärung
+          </a>
+          .
         </p>
         <p className="text-[11px] leading-relaxed text-text-tertiary">
           Unverbindlicher Preisrahmen / Preisindikation auf Basis unserer

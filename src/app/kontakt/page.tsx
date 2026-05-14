@@ -6,8 +6,7 @@ import { SITE_CONFIG } from "@/lib/config";
 
 export const metadata: Metadata = {
   title: "Kontakt — Bärenwald München",
-  description:
-    "Einfach anfragen: Anrufen, E-Mail schreiben oder Preisrechner nutzen — wir melden uns innerhalb von 24 Stunden.",
+  description: `Einfach anfragen: Anrufen, E-Mail schreiben oder Preisrechner nutzen — wir melden uns ${SITE_CONFIG.responseSlaWithin}.`,
 };
 
 export default function KontaktPage() {
@@ -27,9 +26,9 @@ export default function KontaktPage() {
             <p className="page-hero-sub">
               Ihr beschreibt was ihr braucht —
               <br />
-              wir melden uns innerhalb
+              wir melden uns in der Regel
               <br />
-              von 24 Stunden.
+              {SITE_CONFIG.responseSlaWithin}.
             </p>
           </div>
         </div>
@@ -54,7 +53,7 @@ export default function KontaktPage() {
                 <br />
                 {SITE_CONFIG.email}
                 <br />
-                Antwort innerhalb von 24–48 Stunden.
+                Antwort {SITE_CONFIG.responseSlaWithin}.
                 <br />
                 <a href={`mailto:${SITE_CONFIG.email}`}>E-Mail schreiben →</a>
               </p>

@@ -13,6 +13,7 @@ import {
   type ReactNode,
 } from "react";
 
+import { BaerenwaldVisionInner } from "@/components/home/BaerenwaldVisionInner";
 import { HowTimelineMotion } from "@/components/home/HowTimelineMotion";
 import {
   ProjektGalerie,
@@ -71,7 +72,7 @@ const TESTIMONIALS = [
     initials: "SB",
     color: "blue" as const,
     quote:
-      "Heizung im Januar ausgefallen — innerhalb von 48h war jemand da. Sehr zuverlässig und freundlich.",
+      "Heizung im Januar ausgefallen — zügig war jemand da. Sehr zuverlässig und freundlich.",
   },
   {
     name: "Markus H.",
@@ -85,23 +86,12 @@ const TESTIMONIALS = [
 
 /** Hero-Schnellzugriff: SVG aus /public/icons — `slug` = Rechner-?leistung= Preset-Schlüssel */
 const HERO_LEISTUNG_CHIPS = [
+  /** Notfall: Preset `heizung-defekt` → Situation kaputt + Gewerk Heizung (nicht `heizung-sanitaer`, das ist Erneuern-Preset) */
   {
-    label: "Bad",
-    icon: "08-bad",
-    slug: "badezimmer-sanierung",
-    situation: "erneuern",
-  },
-  {
-    label: "Boden",
-    icon: "09-boden",
-    slug: "bodenbelag",
-    situation: "erneuern",
-  },
-  {
-    label: "Streichen",
-    icon: "07-streichen",
-    slug: "malerarbeiten",
-    situation: "erneuern",
+    label: "Notfall",
+    icon: "19-notfall",
+    slug: "heizung-defekt",
+    situation: "notfall",
   },
   {
     label: "Heizung",
@@ -122,17 +112,28 @@ const HERO_LEISTUNG_CHIPS = [
     situation: "betreuung",
   },
   {
+    label: "Bad",
+    icon: "08-bad",
+    slug: "badezimmer-sanierung",
+    situation: "erneuern",
+  },
+  {
+    label: "Boden",
+    icon: "09-boden",
+    slug: "bodenbelag",
+    situation: "erneuern",
+  },
+  {
+    label: "Streichen",
+    icon: "07-streichen",
+    slug: "malerarbeiten",
+    situation: "erneuern",
+  },
+  {
     label: "Fenster",
     icon: "11-fenster",
     slug: "fenster-tueren",
     situation: "erneuern",
-  },
-  /** Notfall: Preset `heizung-defekt` → Situation kaputt + Gewerk Heizung (nicht `heizung-sanitaer`, das ist Erneuern-Preset) */
-  {
-    label: "Notfall",
-    icon: "19-notfall",
-    slug: "heizung-defekt",
-    situation: "notfall",
   },
 ] as const;
 
@@ -140,42 +141,49 @@ const HERO_LEISTUNG_CHIPS = [
 const PROJEKTE: readonly BaerenwaldProjekt[] = [
   {
     id: 1,
-    bild: "/images/projekt-notdienst-kein-warmwasser.jpg",
+    bild: "/images/projekt-notdienst-kein-warmwasser.png",
     bilder: [
-      "/images/projekt-notdienst-kein-warmwasser.jpg",
-      "/images/projekt-notdienst-kein-warmwasser-2.jpg",
+      "/images/projekt-notdienst-kein-warmwasser.png",
+      "/images/projekt-notdienst-kein-warmwasser-2.png",
+      "/images/projekt-notdienst-kein-warmwasser-3.png",
     ],
     bildAlt:
-      "Detailaufnahme einer Heizungsanlage beim Notdienst-Einsatz wegen Warmwasserausfall",
+      "Technikraum: Wilo-Umwälzpumpe mit Steuerung, Rohrleitungsführung und eingebaute neue Pumpe nach dem Notdienst-Einsatz in München",
     gewerk: "Notdienst / Kein Warmwasser",
     stadtteil: "München",
     jahr: "2026",
     tag: "notfall",
     problem:
-      "Kein Warmwasser im ganzen Haus: komplette Versorgung ausgefallen, hoher Zeitdruck und sofortige Reaktion erforderlich.",
+      "Kompletter Ausfall der Warmwasserversorgung in einem Mehrfamilienhaus — hoher Zeitdruck und sofortiger Handlungsbedarf, da das gesamte Gebäude betroffen war.",
     loesung:
-      "Vor-Ort-Analyse sofort gestartet, Problem dokumentiert, einen zertifizierten Partnerbetrieb aus dem Heizungs- und Sanitärnetzwerk vorbereitet und die Umsetzung koordiniert: Pumpe/Steuerung erneuert, System entlüftet und neu eingestellt.",
+      "• Sofortige Vor-Ort-Analyse und technische Erstbewertung\n• Dokumentation und strukturierte Fehleraufnahme\n• Koordination eines zertifizierten Meisterbetriebs aus unserem Heizungs- und Sanitärnetzwerk\n• Austausch von Pumpe und Steuerung\n• Entlüftung, Neueinstellung und Wiederinbetriebnahme der Anlage\n• Zentrale Koordination aller beteiligten Gewerke und Abläufe",
     ergebnis:
-      "Warmwasserversorgung vollständig wiederhergestellt — Umsetzung in 2 Tagen mit minimaler Ausfallzeit und einem zentralen Ansprechpartner.",
+      "Die Warmwasserversorgung wurde innerhalb von 2 Tagen vollständig wiederhergestellt — mit minimaler Ausfallzeit und nur einem zentralen Ansprechpartner für den Auftraggeber.",
     placeholderGradient: "linear-gradient(135deg, #1A3D2B, #2E7D52)",
     placeholderEmoji: "⚡",
   },
   {
     id: 2,
-    bild: "/images/projekt-burgermeister-abriss.jpg",
-    bilder: ["/images/projekt-burgermeister-abriss.jpg"],
+    bild: "/images/projekt-abriss-notdienst-2024.png",
+    bilder: [
+      "/images/projekt-abriss-notdienst-2024.png",
+      "/images/projekt-abriss-notdienst-2024-2.png",
+      "/images/projekt-abriss-notdienst-2024-3.png",
+      "/images/projekt-abriss-notdienst-2024-4.png",
+      "/images/projekt-abriss-notdienst-2024-5.png",
+    ],
     bildAlt:
-      "Baustellenfoto vom Gewerbe-Projekt (Ladenabriss) in München während Abriss und Rückbau",
+      "Gewerbeumbau in München: Abriss und Rohbau mit freigelegten Installationen, Baustellenkoordination und Elektriker am Verteiler",
     gewerk: "Abriss & Notdienst",
     stadtteil: "München",
     jahr: "2024",
     tag: "gewerbe",
     problem:
-      "Kurz vor Weihnachten: keine Verfügbarkeit bei Betrieben, Entsorgung und Containerlogistik blockiert, Straßengenehmigung erst nach Neujahr.",
+      "Kurz vor Weihnachten stand ein laufender Gewerbeumbau still: keine verfügbaren Fachbetriebe, blockierte Entsorgungs- und Containerlogistik sowie ausstehende Straßengenehmigungen. Der komplette Zeitplan war gefährdet und Folgegewerke konnten nicht starten.",
     loesung:
-      "Notdiensteinsatz sofort gestartet, Partnernetzwerk aktiviert und Abriss, Entsorgung sowie Koordination komplett übernommen.",
+      "• Sofortiger Notdiensteinsatz und Übernahme der kompletten Baustellenkoordination\n• Aktivierung unseres Partnernetzwerks für kurzfristige Unterstützung\n• Organisation und Durchführung der Abbrucharbeiten\n• Koordination von Entsorgung, Containerlogistik und Baustellenabläufen\n• Sicherstellung der Stromversorgung für Abbruch und Baustellenbetrieb durch unseren Elektropartner-Meisterbetrieb\n• Laufende Abstimmung mit allen beteiligten Gewerken vor Ort",
     ergebnis:
-      "Abriss vollständig umgesetzt, Entsorgung trotz Engpass organisiert und Folgegewerke konnten direkt ohne Verzögerung starten.",
+      "Der komplette Abriss konnte trotz kritischer Ausgangslage fristgerecht umgesetzt werden. Entsorgung und Logistik wurden auch während des Engpasses organisiert, sodass die nachfolgenden Gewerke ohne Verzögerung weiterarbeiten konnten.\n\nUmsetzung durch eigene Teams und spezialisierte Meister- und Partnerbetriebe.",
     placeholderGradient: "linear-gradient(135deg, #2D2520, #5C4033)",
     placeholderEmoji: "🔨",
   },
@@ -203,66 +211,152 @@ const PROJEKTE: readonly BaerenwaldProjekt[] = [
   },
   {
     id: 4,
-    bild: "/images/projekt-dachterrasse-sonderloesung.jpg",
+    bild: "/images/projekt-dachterrasse-naturstein-2024.png",
     bilder: [
-      "/images/projekt-dachterrasse-sonderloesung.jpg",
-      "/images/projekt-dachterrasse-sonderloesung-2.jpg",
+      "/images/projekt-dachterrasse-naturstein-2024.png",
+      "/images/projekt-dachterrasse-naturstein-2024-2.png",
+      "/images/projekt-dachterrasse-naturstein-2024-3.png",
+      "/images/projekt-dachterrasse-naturstein-2024-4.png",
+      "/images/projekt-dachterrasse-naturstein-2024-5.png",
+      "/images/projekt-dachterrasse-naturstein-2024-6.png",
     ],
     bildAlt:
-      "Baustelle Dachterrasse in München mit Sonderlösung für Naturstein im 5. Stock",
-    gewerk: "Dachterrasse Sonderlösung",
+      "Dachterrasse München: fertig verlegter Naturstein, Spezialaufbau, Estrichpumpe und Schlauchführung bis in den 5. Stock, Montage und Statikerabstimmung",
+    gewerk: "Dachterrasse / Sonderlösung Naturstein",
     stadtteil: "München",
     jahr: "2024",
     tag: "privat",
     problem:
-      "Naturstein bereits gekauft (ca. 25.000 €), aber Standardverlegung auf Terrasse/Stellplatz technisch und wirtschaftlich nicht umsetzbar.",
+      "Natursteinmaterial im Wert von ca. 25.000 € war bereits gekauft, die ursprünglich geplante Standardverlegung auf Dachterrasse und Stellplatz jedoch technisch und wirtschaftlich nicht umsetzbar. Zusätzlich handelte es sich um einen sehr schweren und empfindlichen Naturstein, der aufgrund seiner Bruchanfälligkeit nur mit einer speziellen Verlegetechnik verarbeitet werden konnte.",
     loesung:
-      "Gemeinsam mit einem Spezialbetrieb für Estricharbeiten Sonderlösung umgesetzt: Material per Estrichpumpe in den 5. Stock, tragfähigen Unterbau hergestellt und Naturstein direkt verlegt.",
+      "• Technische Analyse der gesamten Dachterrassenkonstruktion inklusive Abstimmung zum zulässigen Aufbaugewicht\n• Entwicklung einer Sonderlösung gemeinsam mit einem spezialisierten Estrich- und Natursteinbetrieb\n• Organisation der Materialförderung per Estrichpumpe bis in den 5. Stock\n• Herstellung eines tragfähigen Spezialaufbaus unter Berücksichtigung der statischen Anforderungen\n• Verarbeitung des Natursteins mit aufwendiger Haftbrücken-Technik: gewaschener Sand wurde in die Haftbrücke eingearbeitet und zusätzlich beidseitig verarbeitet, um Stabilität und dauerhafte Verbindung sicherzustellen\n• Laufende Abstimmung anhand des Statikerberichts zur sicheren Lastverteilung auf der Dachterrasse\n• Koordination aller beteiligten Gewerke bis zur finalen Fertigstellung",
     ergebnis:
-      "Naturstein vollständig genutzt, massive Zusatzkosten vermieden und Projekt in enger Innenstadtlage technisch sicher abgeschlossen.",
+      "Der komplette Naturstein konnte trotz der schwierigen Rahmenbedingungen vollständig verbaut werden — ohne Materialverlust und ohne massive Zusatzkosten. Die technisch anspruchsvolle Dachterrasse wurde statisch sicher umgesetzt und erfolgreich abgeschlossen. Die finale Ausführung und Übergabe erfolgte auf sehr hohem Niveau im Bereich Garten- und Landschaftsbau.",
     placeholderGradient: "linear-gradient(135deg, #1A3D2B, #4A7D2E)",
     placeholderEmoji: "🌿",
   },
   {
     id: 5,
-    bild: "/images/projekt-schwimmbad-feuchtigkeit-villa.jpg",
-    bilder: ["/images/projekt-schwimmbad-feuchtigkeit-villa.jpg"],
+    bild: "/images/projekt-terrasse-steg-bogenhausen.png",
+    bilder: [
+      "/images/projekt-terrasse-steg-bogenhausen.png",
+      "/images/projekt-terrasse-steg-bogenhausen-2.png",
+      "/images/projekt-terrasse-steg-bogenhausen-3.png",
+      "/images/projekt-terrasse-steg-bogenhausen-4.png",
+    ],
     bildAlt:
-      "Technikbereich einer Schwimmbadanlage in einer Villa in Grünwald während Feuchtigkeitsanalyse",
-    gewerk: "Schwimmbad / Feuchtigkeitsanalyse",
-    stadtteil: "Privatvilla, Grünwald",
+      "Terrassen- und Steganlage in Bogenhausen: Außendielen mit Bio-Osmoholz-Öl, Granit-Trittsteine, Naturpool und präzise Übergänge zwischen Holz, Wasser und Garten",
+    gewerk: "Terrassen- und Steganlage in München Bogenhausen",
+    stadtteil: "Privat",
     jahr: "2026",
     tag: "privat",
     problem:
-      "Hallenbad seit Jahren mit hoher Feuchtigkeit, mehrere Fachfirmen ohne nachhaltige Lösung — Problem bestand über 4 Jahre.",
+      "Planung und Umsetzung einer hochwertigen Terrassen- und Steganlage im harmonischen Zusammenspiel mit Naturpool und Gartenlandschaft. Verarbeitet wurden langlebige Terrassendielen mit natürlicher Behandlung durch biologisches Osmoholz-Öl – komplett ohne chemische Beschichtungen und passend zum nachhaltigen Gesamtkonzept der Anlage.",
     loesung:
-      "Vor-Ort-Analyse von Lüftung und Luftströmen inkl. Fotodokumentation, wöchentlicher Auswertung und strukturierter Übergabe an spezialisierten Fachbetrieb mit zentraler Koordination.",
+      "• Aufbau von Terrassen- und Stegflächen\n• Verlegung hochwertiger Außendielen\n• Natürliche Holzbehandlung mit Bio-Osmoholz-Öl\n• Integration in Naturpool- und Gartenlandschaft\n• Anpassung an bestehende Architektur und Gelände\n• Präzise Detailausführung an Wasser- und Übergangsbereichen\n• Nachhaltige und wetterbeständige Ausführung",
     ergebnis:
-      "Ursache klar identifiziert, Lüftung technisch angepasst und feinjustiert — Feuchtigkeitsentwicklung gestoppt und Anlage wieder stabil in Betrieb.",
-    placeholderGradient: "linear-gradient(135deg, #1A2D3D, #2E5C7D)",
-    placeholderEmoji: "💧",
+      "Die Umsetzung erfolgte durch das Team von Bärenwald Garten- und Landschaftsbau mit Fokus auf natürliche Materialien, hochwertige Verarbeitung und langlebige Qualität im Außenbereich.",
+    placeholderGradient: "linear-gradient(135deg, #1B2E1F, #3D6B45)",
+    placeholderEmoji: "🪵",
   },
   {
     id: 6,
-    bild: "/images/projekt-gruenwald-schaedlingsbefall-premium.jpg",
+    bild: "/images/projekt-gruenwald-villa-sanitaer-heizung.png",
     bilder: [
-      "/images/projekt-gruenwald-schaedlingsbefall-premium.jpg",
-      "/images/projekt-gruenwald-schaedlingsbefall-premium-2.jpg",
+      "/images/projekt-gruenwald-villa-sanitaer-heizung.png",
+      "/images/projekt-gruenwald-villa-sanitaer-heizung-2.png",
+      "/images/projekt-gruenwald-villa-sanitaer-heizung-3.png",
+      "/images/projekt-gruenwald-villa-sanitaer-heizung-4.png",
+      "/images/projekt-gruenwald-villa-sanitaer-heizung-5.png",
     ],
     bildAlt:
-      "Beschädigte Außenanlage in Grünwald vor Neupflanzung nach Schädlingsbefall",
-    gewerk: "Schädlingsbefall & Premium-Lösung",
-    stadtteil: "Villa, Grünwald",
+      "Grünwald Villa: Wartung Heizung und Sanitär — Viessmann-Anlage, Smart-Home-Fußbodenheizung, BWT-Wasserenthärtung und Steuerungsprüfung im Technikraum",
+    gewerk: "Grünwald Villa · Sanitärwartung & Heizungsservice",
+    stadtteil: "Privat",
     jahr: "2026",
     tag: "privat",
     problem:
-      "Buchshecke massiv durch Schädlinge beschädigt, keine funktionierende Bewässerung und akuter Handlungsbedarf in hochwertiger Außenanlage.",
+      "Koordination und Betreuung durch Bärenwald München gemeinsam mit einer Meister Sanitär Partnerfirma.\n\nDurchgeführt wurden umfangreiche Wartungs- und Kontrollarbeiten an der Sanitär- und Heizungsanlage:",
     loesung:
-      "Kompletter Neuaufbau statt Reparatur: Fachbetrieb für Pflanzenware und Beratung aus dem Partnernetzwerk eingebunden, Bärenwald-Team übernahm Rückbau, Bodenvorbereitung, Neupflanzung und Erstpflege.",
+      "• Wartung der Fußbodenheizung und Heizkreisverteiler\n• Kontrolle der Heizkreispumpen und Temperaturregelung\n• Prüfung von Druck, Ventilen und Sicherheitsbauteilen\n• Überprüfung der Smart-Home-Heizungssteuerung\n• Wartung der Wasserenthärtungsanlage\n• Kontrolle und Instandsetzung von Sanitärarmaturen\n• Funktionsprüfung der gesamten Heizungs- und Sanitärtechnik\n• Fachgerechter Austausch einzelner Sanitärkomponenten",
     ergebnis:
-      "Außenanlage hochwertig und nachhaltig wiederhergestellt — pflegeleichte Lösung mit sauberer Linienführung, umgesetzt aus einer Hand.",
-    placeholderGradient: "linear-gradient(135deg, #1A3D2B, #4A7D2E)",
-    placeholderEmoji: "🌱",
+      "Alle Arbeiten wurden professionell, sauber und zuverlässig durch die Meister Sanitär Partnerfirma umgesetzt. Die gesamte Anlage funktioniert wieder einwandfrei und wurde technisch geprüft übergeben.",
+    placeholderGradient: "linear-gradient(135deg, #1A2838, #2E4A66)",
+    placeholderEmoji: "🔧",
+  },
+  {
+    id: 7,
+    bild: "/images/projekt-kindergarten-sanitaer-notdienst.png",
+    bilder: [
+      "/images/projekt-kindergarten-sanitaer-notdienst.png",
+      "/images/projekt-kindergarten-sanitaer-notdienst-2.png",
+      "/images/projekt-kindergarten-sanitaer-notdienst-3.png",
+    ],
+    bildAlt:
+      "Kindergarten: Sanitär-Notdienst an Unterputz-Duscharmatur mit Thermostat — Demontage, Kartuschenwechsel, Funktions- und Dichtheitsprüfung in der Dusche",
+    gewerk: "Kindergarten Notdienst · Koordination durch Bärenwald",
+    stadtteil: "München",
+    jahr: "2026",
+    tag: "notfall",
+    problem:
+      "Im Rahmen eines dringenden Sanitär-Notdienstes in einem Kindergarten wurde durch Bärenwald die komplette Koordination und Umsetzung organisiert.\n\nNach der Schadensaufnahme vor Ort haben wir umgehend einen spezialisierten Meisterbetrieb aus unserem Partnernetzwerk beauftragt und den gesamten Ablauf begleitet — von der Terminabstimmung bis zur erfolgreichen Fertigstellung.\n\nBei der Reparatur handelte es sich um eine spezielle Unterputz-Duscharmatur mit Thermostatregelung. Für den Ausbau der defekten Kartuschen war spezielles Werkzeug sowie ein besonderer Steckschlüssel notwendig, da das Innenventil nur mit Fachwerkzeug geöffnet werden konnte.",
+    loesung:
+      "Durchgeführt wurden unter anderem:\n\n• Absperren der Wasserzufuhr\n• Ausbau der defekten Thermostat-Kartuschen\n• Demontage und Zerlegung der Unterputz-Armatur\n• Einbau und Justierung neuer Kartuschen\n• Funktions- und Dichtheitsprüfung\n• Wiederinbetriebnahme der Duschanlage",
+    ergebnis:
+      "Dank der schnellen Koordination durch Bärenwald und der fachgerechten Umsetzung durch den Partner-Meisterbetrieb konnte der Sanitärbereich kurzfristig wieder sicher genutzt werden.\n\nDer Kindergartenbetrieb war dadurch schnell wieder abgesichert und einsatzbereit.\n\nKoordiniert durch Bärenwald München · Umsetzung durch spezialisierten Partner-Meisterbetrieb.",
+    placeholderGradient: "linear-gradient(135deg, #1A3D2B, #2E6B8F)",
+    placeholderEmoji: "🚿",
+  },
+  {
+    id: 8,
+    bild: "/images/projekt-badsanierung-ramersdorf-perlach.png",
+    bilder: [
+      "/images/projekt-badsanierung-ramersdorf-perlach.png",
+      "/images/projekt-badsanierung-ramersdorf-perlach-2.png",
+      "/images/projekt-badsanierung-ramersdorf-perlach-3.png",
+      "/images/projekt-badsanierung-ramersdorf-perlach-4.png",
+      "/images/projekt-badsanierung-ramersdorf-perlach-5.png",
+      "/images/projekt-badsanierung-ramersdorf-perlach-6.png",
+      "/images/projekt-badsanierung-ramersdorf-perlach-7.png",
+      "/images/projekt-badsanierung-ramersdorf-perlach-8.png",
+    ],
+    bildAlt:
+      "Komplette Badsanierung Ramersdorf-Perlach: Entkernung, Elektro-Unterverteilung, Feuchtraum, Fliesen, Geberit-Unterputz, Dusche und fertiges modernes Bad mit LED-Spots",
+    gewerk: "Komplette Badsanierung in München Ramersdorf-Perlach",
+    stadtteil: "Privat",
+    jahr: "2026",
+    tag: "privat",
+    problem:
+      "Die Umsetzung erfolgte durch eigene Teams sowie koordinierte Meisterbetriebe aus den Bereichen Sanitär, Heizung, Elektro, Trockenbau und Fliesenbau.\n\nDurch die enge Zusammenarbeit mit erfahrenen Partner-Meisterbetrieben konnte das Projekt fachgerecht, termingerecht und nach aktuellem technischen Standard umgesetzt werden.",
+    loesung:
+      "Leistungsumfang:\n\n• Komplette Entkernung und Rückbau\n• Neuinstallation Sanitär- und Abwasserleitungen\n• Elektro-Neuinstallation inklusive Unterverteilung\n• LED-Beleuchtung und Deckenspots\n• Geberit-Unterputzsysteme\n• Feuchtraum-Trockenbau und Abdichtung\n• Estrich- und Fliesenarbeiten\n• Montage von Dusche, WC, Waschtisch und Badmöbeln\n• Installation elektrischer Fußbodenheizung\n• Endmontage, Funktionsprüfung und Übergabe",
+    ergebnis:
+      "Alle Arbeiten wurden professionell koordiniert und durch eigene Fachkräfte sowie Partner-Meisterbetriebe umgesetzt. Das Ergebnis ist ein modernes, hochwertiges Badezimmer mit aktueller Sanitär- und Elektrotechnik.",
+    placeholderGradient: "linear-gradient(135deg, #1A2D36, #2D5A6E)",
+    placeholderEmoji: "🛁",
+  },
+  {
+    id: 9,
+    bild: "/images/projekt-hebeanlage-notdienst-ottobrunn.png",
+    bilder: [
+      "/images/projekt-hebeanlage-notdienst-ottobrunn.png",
+      "/images/projekt-hebeanlage-notdienst-ottobrunn-2.png",
+      "/images/projekt-hebeanlage-notdienst-ottobrunn-3.png",
+    ],
+    bildAlt:
+      "Wohnanlage Ottobrunn: Zugang Technikraum, Hebeanlage mit Steigleitungen und Schaltschrank mit Pumpen-Handeinschaltung nach Notdienst-Koordination",
+    gewerk: "Notdienst / Ausfall Hebeanlage",
+    stadtteil: "Ottobrunn",
+    jahr: "2026",
+    tag: "verwaltung",
+    problem:
+      "Ausfall der Hebeanlage in einer Wohnanlage — akuter Handlungsbedarf zur Sicherstellung des laufenden Betriebs und zur Vermeidung weiterer Schäden.",
+    loesung:
+      "• Sofortige technische Aufnahme und Dokumentation vor Ort\n• Koordination mit der zuständigen Hausverwaltung\n• Organisation und Beauftragung eines spezialisierten Meisterpartnerbetriebs\n• Planung und Begleitung des Austauschs der Hebeanlage\n• Koordination der Umsetzung bis zur vollständigen Wiederinbetriebnahme",
+    ergebnis:
+      "Die neue Hebeanlage wurde kurzfristig umgesetzt, fachgerecht installiert und direkt wieder in Betrieb genommen — zentral koordiniert durch Bärenwald mit minimaler Ausfallzeit und nur einem Ansprechpartner für die Hausverwaltung.",
+    placeholderGradient: "linear-gradient(135deg, #1A2D3D, #3D4D5C)",
+    placeholderEmoji: "⚡",
   },
 ];
 
@@ -445,9 +539,9 @@ export default function BaerenwaldLandingClient({
                 <span className="hero-h1-line--3 au d3">Für alles.</span>
               </h1>
               <p className="hero-lead au d4">
-                Du willst renovieren — aber nicht drei Handwerker koordinieren,
-                auf Rückrufe warten und am Ende selbst nachfragen ob alles
-                stimmt. Bärenwald übernimmt das.
+                Von Reparatur bis Komplettprojekt.
+                <br />
+                Bärenwald übernimmt Koordination, Handwerk und Umsetzung.
               </p>
               <form className="fade-up d1 hero-search-form" onSubmit={onSearch}>
                 <div ref={searchComboRef} className="hero-search-combo">
@@ -586,25 +680,7 @@ export default function BaerenwaldLandingClient({
         aria-labelledby="vision-heading"
       >
         <div className="vision-section-inner">
-          <p className="vision-eyebrow">Wer hinter Bärenwald steht</p>
-          <h2 id="vision-heading" className="vision-headline">
-            Gegründet weil Handwerk
-            <br />
-            besser geht.
-          </h2>
-          <p className="vision-text">
-            Wir haben Bärenwald 2020 gegründet weil wir selbst erlebt haben wie
-            frustrierend eine Renovierung sein kann. Drei verschiedene
-            Handwerker, drei verschiedene Meinungen — und niemand der das
-            Gesamtbild sieht.
-          </p>
-          <div className="vision-divider" aria-hidden />
-          <p className="vision-text">
-            Unsere Vision ist ein Handwerk das koordiniert, kommuniziert und
-            dokumentiert. Transparent von Anfang an — mit einem festen Preis,
-            einem festen Ansprechpartner und einem digitalen Protokoll am Ende.
-            So wie es sein sollte.
-          </p>
+          <BaerenwaldVisionInner />
         </div>
       </section>
 
