@@ -5,8 +5,6 @@ import { useState } from "react";
 
 import { cn } from "@/lib/utils";
 
-const PLACEHOLDER_EMOJI = "🏗️";
-
 const TRUST_CONTENT = {
   intro: {
     image: "/images/trust-koordination.jpg",
@@ -58,9 +56,7 @@ export function TrustScreen({ variant }: TrustScreenProps) {
               onError={() => setImgFailed(true)}
             />
           ) : (
-            <div className="trust-image-placeholder" aria-hidden>
-              {PLACEHOLDER_EMOJI}
-            </div>
+            <div className="trust-image-placeholder" aria-hidden />
           )}
           <div className="trust-image-gradient" aria-hidden />
         </div>

@@ -57,7 +57,30 @@ export function HWLeadForm({
           aria-expanded={showCalendar}
         >
           <span className="calendar-opt-icon" aria-hidden>
-            📅
+            <svg
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              className="calendar-opt-icon-svg"
+            >
+              <rect
+                x="3"
+                y="5"
+                width="18"
+                height="16"
+                rx="2"
+                stroke="currentColor"
+                strokeWidth="1.75"
+              />
+              <path d="M3 10h18" stroke="currentColor" strokeWidth="1.75" />
+              <path
+                d="M8 3v4M16 3v4"
+                stroke="currentColor"
+                strokeWidth="1.75"
+                strokeLinecap="round"
+              />
+            </svg>
           </span>
           <div className="min-w-0 flex-1">
             <div className="calendar-opt-title">

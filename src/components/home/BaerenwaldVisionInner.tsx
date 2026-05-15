@@ -1,5 +1,4 @@
 import {
-  BAERENWALD_VISION_BULLETS,
   BAERENWALD_VISION_EYEBROW,
   BAERENWALD_VISION_PARAGRAPH_3A,
   BAERENWALD_VISION_PARAGRAPHS,
@@ -31,12 +30,6 @@ export function BaerenwaldVisionInner({
         </p>
       ))}
       <p className="vision-text">{BAERENWALD_VISION_PARAGRAPH_3A}</p>
-      <div className="vision-divider" aria-hidden />
-      <ul className="vision-points">
-        {BAERENWALD_VISION_BULLETS.map((line) => (
-          <li key={line}>{line}</li>
-        ))}
-      </ul>
     </>
   );
 }

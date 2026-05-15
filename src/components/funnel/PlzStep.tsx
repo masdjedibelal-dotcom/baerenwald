@@ -77,13 +77,36 @@ export function PlzStep({
 
         {plzStatus === "erlaubt" && (
           <p className="plz-hint plz-hint--ok">
-            ✓ Perfekt — wir sind in deiner Nähe
+            Perfekt — wir sind in deiner Nähe
           </p>
         )}
 
         {isAusserhalb && (
           <div className="plz-ausserhalb-box">
-            <div className="plz-ausserhalb-icon">📍</div>
+            <div className="plz-ausserhalb-icon" aria-hidden>
+              <svg
+                width="28"
+                height="28"
+                viewBox="0 0 24 24"
+                fill="none"
+                className="plz-ausserhalb-pin"
+              >
+                <path
+                  d="M12 21s7-4.35 7-10a7 7 0 10-14 0c0 5.65 7 10 7 10z"
+                  stroke="currentColor"
+                  strokeWidth="1.75"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+                <circle
+                  cx="12"
+                  cy="11"
+                  r="2.25"
+                  stroke="currentColor"
+                  strokeWidth="1.75"
+                />
+              </svg>
+            </div>
             <div className="plz-ausserhalb-text">
               <p className="plz-ausserhalb-head">
                 Aktuell sind wir hauptsächlich in München und einem Umkreis

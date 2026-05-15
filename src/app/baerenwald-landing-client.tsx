@@ -24,6 +24,7 @@ import {
   type MarqueeTestimonial,
 } from "@/components/home/TestimonialsMarquee";
 import { SectionDivider } from "@/components/landing/SectionDividers";
+import { VermittlungSection } from "@/components/home/VermittlungSection";
 import { WarumBaerenwaldScrollSection } from "@/components/landing/WarumBaerenwaldScrollSection";
 import { MarketingFooter } from "@/components/layout/MarketingFooter";
 import { BwIcon } from "@/components/ui/BwIcon";
@@ -779,6 +780,10 @@ export default function BaerenwaldLandingClient({
           </div>
         </div>
       </section>
+
+      <SectionDivider variant="welle" from="#f7f6f3" to="#ffffff" />
+
+      <VermittlungSection />
 
       <MarketingFooter />
     </div>

@@ -7,9 +7,62 @@ import {
   useRef,
   useState,
   type MouseEvent as ReactMouseEvent,
+  type ReactNode,
 } from "react";
 
 import { cn } from "@/lib/utils";
+
+/** Zeilen, die mit Aufzählungszeichen beginnen (Daten aus `loesung`). */
+function isBulletLine(s: string): boolean {
+  return /^\s*[•*-]\s/.test(s) || /^\s*•/.test(s);
+}
+
+/** Fließtext und Bullet-Blöcke aus `loesung` trennen → echte `<ul>`/`<li>`. */
+function renderLoesungBlocks(text: string): ReactNode {
+  const raw = text.split("\n");
+  const nodes: ReactNode[] = [];
+  let idx = 0;
+  let k = 0;
+
+  while (idx < raw.length) {
+    while (idx < raw.length && raw[idx].trim() === "") idx++;
+    if (idx >= raw.length) break;
+
+    if (isBulletLine(raw[idx])) {
+      const items: string[] = [];
+      while (idx < raw.length && isBulletLine(raw[idx])) {
+        items.push(raw[idx].replace(/^\s*[•*-]\s*/, "").trim());
+        idx++;
+      }
+      nodes.push(
+        <ul className="projekt-ple-bulletlist" key={`ul-${k++}`}>
+          {items.map((t, j) => (
+            <li key={j}>{t}</li>
+          ))}
+        </ul>
+      );
+    } else {
+      const chunk: string[] = [];
+      while (idx < raw.length && !isBulletLine(raw[idx])) {
+        chunk.push(raw[idx]);
+        idx++;
+      }
+      const body = chunk.join("\n").trim();
+      if (body) {
+        nodes.push(
+          <p key={`p-${k++}`} className="projekt-ple-text projekt-ple-text--in-loesung">
+            {body}
+          </p>
+        );
+      }
+    }
+  }
+
+  if (nodes.length === 0) {
+    return <p className="projekt-ple-text">{text.trim()}</p>;
+  }
+  return <div className="projekt-ple-loesung-stack">{nodes}</div>;
+}
 
 export type BaerenwaldProjektTag =
   | "notfall"
@@ -333,21 +386,15 @@ export function ProjektGalerie({
 
                   <div className="projekt-ple">
                     <div className="projekt-ple-row">
-                      <span className="projekt-ple-icon" aria-hidden>
-                        ⚡
-                      </span>
+                      <span className="projekt-ple-kicker">Problem</span>
                       <p className="projekt-ple-text">{projekt.problem}</p>
                     </div>
-                    <div className="projekt-ple-row">
-                      <span className="projekt-ple-icon" aria-hidden>
-                        🔧
-                      </span>
-                      <p className="projekt-ple-text">{projekt.loesung}</p>
+                    <div className="projekt-ple-row projekt-ple-row--loesung">
+                      <span className="projekt-ple-kicker">Lösung</span>
+                      {renderLoesungBlocks(projekt.loesung)}
                     </div>
                     <div className="projekt-ple-row projekt-ple-row--ergebnis">
-                      <span className="projekt-ple-icon" aria-hidden>
-                        ✓
-                      </span>
+                      <span className="projekt-ple-kicker">Ergebnis</span>
                       <p className="projekt-ple-text">{projekt.ergebnis}</p>
                     </div>
                   </div>

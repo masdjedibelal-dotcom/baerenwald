@@ -15,33 +15,57 @@ export function MarketingFooter() {
   return (
     <footer className="site-footer">
       <div className="site-footer-main">
+        <div className="footer-mobile-head">
+          <div className="footer-mobile-logo-wrap">
+            <Image
+              src="/logo-mark-white.png"
+              alt="Bärenwald München"
+              width={54}
+              height={54}
+              className="site-footer-logo-img"
+            />
+            <p className="footer-mobile-brand-name">Bärenwald München</p>
+          </div>
+          <p className="footer-mobile-tagline">
+            Handwerk. Koordination.
+            <br />
+            Verantwortung.
+          </p>
+          <FooterSocialLinks className="footer-mobile-social" />
+          <p className="footer-mobile-copy">© {year} Bärenwald</p>
+        </div>
+
         <div className="site-footer-grid">
           <div>
-            <div className="site-footer-logo-wrap">
-              <Image
-                src="/logo-mark-white.png"
-                alt="Bärenwald München"
-                width={54}
-                height={54}
-                className="site-footer-logo-img"
-              />
-              <p className="site-footer-brand-name">Bärenwald</p>
+            <div className="footer-desktop-brand">
+              <div className="site-footer-logo-wrap">
+                <Image
+                  src="/logo-mark-white.png"
+                  alt="Bärenwald München"
+                  width={54}
+                  height={54}
+                  className="site-footer-logo-img"
+                />
+                <p className="site-footer-brand-name">Bärenwald</p>
+              </div>
+              <FooterSocialLinks />
             </div>
-            <FooterSocialLinks />
-            <p className="site-footer-subtitle">Schnellzugriff</p>
-            <ul className="site-footer-links">
-              <li>
-                <a href="/">Startseite</a>
-              </li>
-              <li>
-                <a href="/ratgeber">Ratgeber-Übersicht</a>
-              </li>
-              <li>
-                <a href="/rechner">Preisrechner</a>
-              </li>
-            </ul>
+            <div className="footer-links-col">
+              <p className="site-footer-subtitle">Schnellzugriff</p>
+              <ul className="site-footer-links">
+                <li>
+                  <a href="/">Startseite</a>
+                </li>
+                <li>
+                  <a href="/ratgeber">Ratgeber-Übersicht</a>
+                </li>
+                <li>
+                  <a href="/rechner">Preisrechner</a>
+                </li>
+              </ul>
+            </div>
           </div>
-          <div>
+          <div className="footer-links-col">
             <p className="site-footer-col-title">Leistungen</p>
             <ul className="site-footer-links">
               {LEISTUNGEN.map((l) => (
@@ -51,7 +75,7 @@ export function MarketingFooter() {
               ))}
             </ul>
           </div>
-          <div>
+          <div className="footer-links-col">
             <p className="site-footer-col-title">Ratgeber & Kosten</p>
             <ul className="site-footer-links">
               {RATGEBER.map((r) => (
@@ -61,7 +85,7 @@ export function MarketingFooter() {
               ))}
             </ul>
           </div>
-          <div id="kontakt">
+          <div id="kontakt" className="footer-links-col">
             <p className="site-footer-col-title">Kontakt</p>
             <div className="site-footer-contact">
               <p>
@@ -88,7 +112,7 @@ export function MarketingFooter() {
         </div>
       </div>
 
-      <div className="footer-slim">
+      <div className="footer-slim footer-desktop-slim">
         <div className="footer-slim-inner">
           <p className="footer-slim-brand">
             <span className="footer-slim-name">Bärenwald</span>

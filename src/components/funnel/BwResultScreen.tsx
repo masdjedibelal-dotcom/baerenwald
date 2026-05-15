@@ -203,7 +203,15 @@ function ResultTestimonialCard() {
   );
   return (
     <div className="result-testimonial-card">
-      <div className="result-stars">{"★".repeat(5)}</div>
+      <div
+        className="result-stars"
+        role="img"
+        aria-label="5 von 5 Sternen"
+      >
+        {Array.from({ length: 5 }, (_, i) => (
+          <span key={i} className="result-star" aria-hidden />
+        ))}
+      </div>
       <p className="result-quote">„{testimonial.quote}“</p>
       <div className="result-author">
         <div
@@ -337,17 +345,20 @@ function ResultEinordnung({ state }: { state: FunnelState }) {
       <ul className="result-einordnung-list">
         {gewerkLine ? (
           <li>
-            <span aria-hidden>✓</span> {gewerkLine}
+            <span className="result-einordnung-bullet" aria-hidden />
+            {gewerkLine}
           </li>
         ) : null}
         {zLine ? (
           <li>
-            <span aria-hidden>✓</span> {zLine}
+            <span className="result-einordnung-bullet" aria-hidden />
+            {zLine}
           </li>
         ) : null}
         {gLine ? (
           <li>
-            <span aria-hidden>✓</span> {gLine}
+            <span className="result-einordnung-bullet" aria-hidden />
+            {gLine}
           </li>
         ) : null}
       </ul>
@@ -576,7 +587,21 @@ function ZuKomplexScreen({
       ) : (
         <div className="komplex-header">
           <div className="komplex-icon" aria-hidden>
-            💬
+            <svg
+              width="40"
+              height="40"
+              viewBox="0 0 24 24"
+              fill="none"
+              className="komplex-icon-svg"
+            >
+              <path
+                d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
+                stroke="currentColor"
+                strokeWidth="1.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
           </div>
           <h2 className="komplex-headline">
             {showPreisAb ? (
@@ -831,8 +856,7 @@ export function BwResultScreen({
       {resultModus === "notfall_akut" ? (
         <div className="mb-5 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm leading-snug text-red-950 shadow-sm">
           <p className="font-semibold text-red-950">
-            <span aria-hidden>⚡</span> Akuter Notfall — wir priorisieren deine
-            Anfrage.
+            Akuter Notfall — wir priorisieren deine Anfrage.
           </p>
           <a
             href={SITE_CONFIG.phoneHref}
@@ -910,22 +934,25 @@ export function BwResultScreen({
                 {SITE_CONFIG.phone}
               </a>
               <div className="notfall-trust mt-4 space-y-2 text-left text-sm text-white/85">
-                <div className="trust-item flex gap-2">
-                  <span aria-hidden className="shrink-0 text-white">
-                    ✓
-                  </span>
+                <div className="trust-item flex items-center gap-2">
+                  <span
+                    aria-hidden
+                    className="result-einordnung-bullet result-einordnung-bullet--on-dark shrink-0"
+                  />
                   <span>Schnelle Rückmeldung</span>
                 </div>
-                <div className="trust-item flex gap-2">
-                  <span aria-hidden className="shrink-0 text-white">
-                    ✓
-                  </span>
+                <div className="trust-item flex items-center gap-2">
+                  <span
+                    aria-hidden
+                    className="result-einordnung-bullet result-einordnung-bullet--on-dark shrink-0"
+                  />
                   <span>Wir sind in München & Umgebung</span>
                 </div>
-                <div className="trust-item flex gap-2">
-                  <span aria-hidden className="shrink-0 text-white">
-                    ✓
-                  </span>
+                <div className="trust-item flex items-center gap-2">
+                  <span
+                    aria-hidden
+                    className="result-einordnung-bullet result-einordnung-bullet--on-dark shrink-0"
+                  />
                   <span>Transparente Preise</span>
                 </div>
               </div>
@@ -974,8 +1001,8 @@ export function BwResultScreen({
 
       {hasRange ? (
         <p className="result-trust-inline">
-          ✓ Meisterbetriebe München · ✓ Ein Ansprechpartner · ✓ Anfahrt bei
-          Auftrag angerechnet
+          Meisterbetriebe München · Ein Ansprechpartner · Anfahrt bei Auftrag
+          angerechnet
         </p>
       ) : null}
 
@@ -1031,7 +1058,7 @@ export function BwResultScreen({
 
       {hasRange && saveEmailSent ? (
         <div className="preis-save-success">
-          <span aria-hidden>✓</span>
+          <span className="preis-save-success-dot" aria-hidden />
           Gesendet — bitte Postfach prüfen.
         </div>
       ) : null}
