@@ -30,7 +30,6 @@ import { MarketingFooter } from "@/components/layout/MarketingFooter";
 import { BwIcon } from "@/components/ui/BwIcon";
 import { WaveUnderline } from "@/components/ui/WaveUnderline";
 import { SITE_CONFIG } from "@/lib/config";
-import { WHATSAPP_URL_FRAGE } from "@/lib/whatsapp";
 import { HOME_FAQ_ITEMS } from "@/lib/home-content";
 import {
   buildHeroRechnerLandingUrl,
@@ -649,14 +648,25 @@ export default function BaerenwaldLandingClient({
             <div className="hero-visual fade-up d2">
               <div className="hero-float-wrap">
                 <div className="hero-phones-clip">
-                  <Image
-                    src="/images/hero-handwerk-muenchen.png"
-                    alt="Handwerker-Team bei der Koordination einer Renovierung in München — Bärenwald"
-                    fill
-                    className="hero-phones-img"
-                    sizes="(max-width: 768px) min(92vw, 380px) 380px"
-                    priority
-                  />
+                  <video
+                    className="hero-phones-video"
+                    autoPlay
+                    loop
+                    muted
+                    playsInline
+                    preload="auto"
+                    poster="/images/hero-handwerk-muenchen.png"
+                    controls={false}
+                    disablePictureInPicture
+                    disableRemotePlayback
+                    controlsList="nodownload nofullscreen noremoteplayback"
+                    aria-hidden="true"
+                  >
+                    <source
+                      src="/videos/hero-handwerk-muenchen.mp4"
+                      type="video/mp4"
+                    />
+                  </video>
                 </div>
               </div>
             </div>
@@ -740,18 +750,6 @@ export default function BaerenwaldLandingClient({
         <div className="faq-inner">
           <div className="fade-up">
             <h2 className="how-h2">Häufige Fragen</h2>
-            <p className="how-tl-sub" style={{ marginTop: "12px" }}>
-              Nicht dabei? Ruf uns an — wir helfen persönlich weiter.
-            </p>
-            <div style={{ marginTop: "20px", display: "flex", flexWrap: "wrap", gap: "10px", alignItems: "center" }}>
-              <a
-                href={SITE_CONFIG.phoneHref}
-                className="btn-cta"
-                onClick={() => posthog.capture("cta_phone_clicked", { location: "faq" })}
-              >
-                {SITE_CONFIG.phone}
-              </a>
-            </div>
           </div>
           <div className="faq fade-up d2">
             {HOME_FAQ_ITEMS.map((item, i) => {
@@ -767,16 +765,19 @@ export default function BaerenwaldLandingClient({
               );
             })}
           </div>
-          <div className="faq-whatsapp-cta-wrap fade-up d3">
-            <p>Noch Fragen? Wir antworten schnell auf WhatsApp.</p>
-            <a
-              href={WHATSAPP_URL_FRAGE}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="btn-cta"
-            >
-              WhatsApp schreiben →
-            </a>
+          <div className="fade-up d3 faq-inner-follow-up">
+            <p className="how-tl-sub" style={{ marginTop: "28px" }}>
+              Nicht dabei? Ruf uns an — wir helfen persönlich weiter.
+            </p>
+            <div style={{ marginTop: "20px", display: "flex", flexWrap: "wrap", gap: "10px", alignItems: "center" }}>
+              <a
+                href={SITE_CONFIG.phoneHref}
+                className="btn-cta"
+                onClick={() => posthog.capture("cta_phone_clicked", { location: "faq" })}
+              >
+                {SITE_CONFIG.phone}
+              </a>
+            </div>
           </div>
         </div>
       </section>

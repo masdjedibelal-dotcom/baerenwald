@@ -54,62 +54,67 @@ function vermittlungMailtoHref(subject: string): string {
 
 const PARTNER_MAILTO = `mailto:${VERMITTLUNG_EMAIL}?${new URLSearchParams({
   subject: "Partneranfrage",
-  body: "Ich bin Handwerksbetrieb in München und möchte Partner bei Bärenwald werden.",
+  body: "Ich möchte als Handwerks- oder Partnerbetrieb in der Region München mit Bärenwald zusammenarbeiten.",
 }).toString()}`;
 
 function VermittlungCarousel() {
   const trackRef = useRef<HTMLDivElement>(null);
   const [activeIndex, setActiveIndex] = useState(0);
 
+  const updateActiveFromScroll = useCallback(() => {
+    const el = trackRef.current;
+    if (!el) return;
+    const x = el.scrollLeft;
+    let bestI = 0;
+    let bestDist = Infinity;
+    const cards = el.querySelectorAll<HTMLElement>("[data-vermittlung-index]");
+    cards.forEach((card) => {
+      const idx = Number(card.dataset.vermittlungIndex);
+      if (Number.isNaN(idx)) return;
+      const d = Math.abs(card.offsetLeft - x);
+      if (d < bestDist) {
+        bestDist = d;
+        bestI = idx;
+      }
+    });
+    setActiveIndex(bestI);
+  }, []);
+
+  useEffect(() => {
+    const el = trackRef.current;
+    if (!el) return;
+
+    const onScroll = () => {
+      requestAnimationFrame(updateActiveFromScroll);
+    };
+
+    el.addEventListener("scroll", onScroll, { passive: true });
+    updateActiveFromScroll();
+
+    const ro = new ResizeObserver(() => {
+      requestAnimationFrame(updateActiveFromScroll);
+    });
+    ro.observe(el);
+
+    return () => {
+      el.removeEventListener("scroll", onScroll);
+      ro.disconnect();
+    };
+  }, [updateActiveFromScroll]);
+
   const scrollToIndex = useCallback((index: number) => {
     const root = trackRef.current;
     const card = root?.querySelector(
       `[data-vermittlung-index="${index}"]`
     ) as HTMLElement | null;
-    card?.scrollIntoView({
+    if (!root || !card) return;
+    const targetLeft = card.offsetLeft;
+    const maxScroll = Math.max(0, root.scrollWidth - root.clientWidth);
+    root.scrollTo({
+      left: Math.min(maxScroll, Math.max(0, targetLeft)),
       behavior: "smooth",
-      inline: "center",
-      block: "nearest",
     });
     setActiveIndex(index);
-  }, []);
-
-  useEffect(() => {
-    const root = trackRef.current;
-    if (!root) return;
-
-    const cards = root.querySelectorAll<HTMLElement>(
-      "[data-vermittlung-index]"
-    );
-    if (cards.length === 0) return;
-
-    const io = new IntersectionObserver(
-      (entries) => {
-        let bestIndex: number | null = null;
-        let bestRatio = 0;
-        for (const entry of entries) {
-          if (!entry.isIntersecting) continue;
-          const idx = Number(
-            (entry.target as HTMLElement).dataset.vermittlungIndex
-          );
-          if (Number.isNaN(idx)) continue;
-          if (entry.intersectionRatio >= bestRatio) {
-            bestRatio = entry.intersectionRatio;
-            bestIndex = idx;
-          }
-        }
-        if (bestIndex !== null) {
-          setActiveIndex(bestIndex);
-        }
-      },
-      {
-        root,
-        threshold: [0.35, 0.5, 0.65, 0.85, 1],
-      }
-    );
-
-    cards.forEach((card) => io.observe(card));
-    return () => io.disconnect();
   }, []);
 
   return (
@@ -174,28 +179,28 @@ export function VermittlungSection() {
             Berater — einfach anfragen.
           </p>
           <VermittlungCarousel />
-        </div>
-      </section>
 
-      <section
-        className="vermittlung-partner"
-        aria-labelledby="vermittlung-partner-heading"
-      >
-        <p className="vermittlung-partner-eyebrow">Für Handwerksbetriebe</p>
-        <h2 id="vermittlung-partner-heading" className="vermittlung-partner-title">
-          Sie sind Handwerker
-          <br />
-          und wollen mit uns
-          <br />
-          zusammenarbeiten?
-        </h2>
-        <p className="vermittlung-partner-text">
-          Wir suchen zuverlässige Meisterbetriebe in München für unser Netzwerk
-          — meld dich einfach bei uns.
-        </p>
-        <a href={PARTNER_MAILTO} className="vermittlung-partner-btn">
-          Jetzt Kontakt aufnehmen →
-        </a>
+          <div
+            className="vermittlung-partner-cta"
+            aria-labelledby="vermittlung-partner-heading"
+          >
+            <p className="vermittlung-partner-cta-eyebrow">Partner-Netzwerk</p>
+            <h3
+              id="vermittlung-partner-heading"
+              className="vermittlung-partner-cta-question"
+            >
+              Passen Sie als Handwerks- oder Partnerbetrieb zu unserem Netzwerk?
+            </h3>
+            <p className="vermittlung-partner-cta-text">
+              Wir arbeiten mit zuverlässigen Meisterbetrieben und weiteren
+              Partnern in München zusammen — etwa Handwerk, Planung, Service
+              oder verwandte Gewerke. Melden Sie sich gern unverbindlich.
+            </p>
+            <a href={PARTNER_MAILTO} className="vermittlung-partner-cta-btn">
+              Kontakt aufnehmen →
+            </a>
+          </div>
+        </div>
       </section>
     </>
   );

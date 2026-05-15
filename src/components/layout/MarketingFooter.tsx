@@ -9,6 +9,29 @@ import {
   ratgeberHref,
 } from "@/lib/routes";
 import { FooterSocialLinks } from "@/components/layout/FooterSocialLinks";
+import { WHATSAPP_URL_FRAGE } from "@/lib/whatsapp";
+
+function FooterWhatsAppCta({ variant }: { variant: "mobile" | "desktop" }) {
+  return (
+    <div
+      className={
+        variant === "mobile"
+          ? "footer-whatsapp-cta footer-whatsapp-cta--mobile"
+          : "footer-whatsapp-cta footer-whatsapp-cta--desktop"
+      }
+    >
+      <p>Noch Fragen? Wir antworten schnell auf WhatsApp.</p>
+      <a
+        href={WHATSAPP_URL_FRAGE}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="btn-cta"
+      >
+        WhatsApp schreiben →
+      </a>
+    </div>
+  );
+}
 
 export function MarketingFooter() {
   const year = new Date().getFullYear();
@@ -32,6 +55,7 @@ export function MarketingFooter() {
             Verantwortung.
           </p>
           <FooterSocialLinks className="footer-mobile-social" />
+          <FooterWhatsAppCta variant="mobile" />
           <p className="footer-mobile-copy">© {year} Bärenwald</p>
         </div>
 
@@ -96,9 +120,7 @@ export function MarketingFooter() {
               </p>
               <p>München &amp; Umgebung</p>
             </div>
-            <a href="/kontakt" className="site-footer-contact-cta">
-              Jetzt Angebot anfordern →
-            </a>
+            <FooterWhatsAppCta variant="desktop" />
             <p className="site-footer-subtitle">Information</p>
             <ul className="site-footer-links">
               <li>
@@ -112,7 +134,7 @@ export function MarketingFooter() {
         </div>
       </div>
 
-      <div className="footer-slim footer-desktop-slim">
+      <div className="footer-slim">
         <div className="footer-slim-inner">
           <p className="footer-slim-brand">
             <span className="footer-slim-name">Bärenwald</span>

@@ -96,6 +96,13 @@ const PROJEKT_TAG_LABEL: Record<BaerenwaldProjektTag, string> = {
 
 const SCROLL_STEP = 376;
 
+function projektTeaserText(projekt: BaerenwaldProjekt): string {
+  const loesungPlain = projekt.loesung.replace(/\s*\n\s*/g, " ").trim();
+  return [projekt.problem, loesungPlain, projekt.ergebnis]
+    .filter((s) => s.length > 0)
+    .join(" ");
+}
+
 function ProjektBild({
   bild,
   bilder,
@@ -218,6 +225,7 @@ export function ProjektGalerie({
   projekte: readonly BaerenwaldProjekt[];
 }) {
   const [activeIndex, setActiveIndex] = useState(0);
+  const [expandedId, setExpandedId] = useState<number | null>(null);
   const [isDragging, setIsDragging] = useState(false);
 
   const carouselRef = useRef<HTMLDivElement>(null);
@@ -384,20 +392,46 @@ export function ProjektGalerie({
                     <span className="projekt-jahr">{projekt.jahr}</span>
                   </div>
 
-                  <div className="projekt-ple">
-                    <div className="projekt-ple-row">
-                      <span className="projekt-ple-kicker">Problem</span>
-                      <p className="projekt-ple-text">{projekt.problem}</p>
-                    </div>
-                    <div className="projekt-ple-row projekt-ple-row--loesung">
-                      <span className="projekt-ple-kicker">Lösung</span>
-                      {renderLoesungBlocks(projekt.loesung)}
-                    </div>
-                    <div className="projekt-ple-row projekt-ple-row--ergebnis">
-                      <span className="projekt-ple-kicker">Ergebnis</span>
-                      <p className="projekt-ple-text">{projekt.ergebnis}</p>
-                    </div>
+                  <div
+                    className={cn(
+                      "projekt-text",
+                      expandedId === projekt.id ? "expanded" : "collapsed"
+                    )}
+                  >
+                    {expandedId === projekt.id ? (
+                      <div className="projekt-ple">
+                        <div className="projekt-ple-row">
+                          <span className="projekt-ple-kicker">Problem</span>
+                          <p className="projekt-ple-text">{projekt.problem}</p>
+                        </div>
+                        <div className="projekt-ple-row projekt-ple-row--loesung">
+                          <span className="projekt-ple-kicker">Lösung</span>
+                          {renderLoesungBlocks(projekt.loesung)}
+                        </div>
+                        <div className="projekt-ple-row projekt-ple-row--ergebnis">
+                          <span className="projekt-ple-kicker">Ergebnis</span>
+                          <p className="projekt-ple-text">{projekt.ergebnis}</p>
+                        </div>
+                      </div>
+                    ) : (
+                      projektTeaserText(projekt)
+                    )}
                   </div>
+                  <button
+                    type="button"
+                    className="projekt-read-more-btn"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setExpandedId(
+                        expandedId === projekt.id ? null : projekt.id
+                      );
+                    }}
+                    onMouseDown={(e) => e.stopPropagation()}
+                  >
+                    {expandedId === projekt.id
+                      ? "Weniger anzeigen ↑"
+                      : "Mehr lesen ↓"}
+                  </button>
                 </div>
               </div>
             ))}

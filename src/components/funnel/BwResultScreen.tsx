@@ -924,40 +924,6 @@ export function BwResultScreen({
               Ort.
             </p>
           ) : null}
-          {isReparaturNotfallSituation(state.situation) ? (
-            <>
-              <a
-                href={SITE_CONFIG.phoneHref}
-                className="komplex-call-btn komplex-call-btn--hero mt-5 w-full max-w-sm"
-              >
-                <PhoneIconKomplex />
-                {SITE_CONFIG.phone}
-              </a>
-              <div className="notfall-trust mt-4 space-y-2 text-left text-sm text-white/85">
-                <div className="trust-item flex items-center gap-2">
-                  <span
-                    aria-hidden
-                    className="result-einordnung-bullet result-einordnung-bullet--on-dark shrink-0"
-                  />
-                  <span>Schnelle Rückmeldung</span>
-                </div>
-                <div className="trust-item flex items-center gap-2">
-                  <span
-                    aria-hidden
-                    className="result-einordnung-bullet result-einordnung-bullet--on-dark shrink-0"
-                  />
-                  <span>Wir sind in München & Umgebung</span>
-                </div>
-                <div className="trust-item flex items-center gap-2">
-                  <span
-                    aria-hidden
-                    className="result-einordnung-bullet result-einordnung-bullet--on-dark shrink-0"
-                  />
-                  <span>Transparente Preise</span>
-                </div>
-              </div>
-            </>
-          ) : null}
         </div>
       ) : (
         <div className="rounded-[18px] border border-border-default bg-muted p-5 text-center text-sm text-text-secondary">
