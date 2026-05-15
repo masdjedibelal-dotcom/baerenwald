@@ -16,25 +16,9 @@ const GOOGLE_PATHS = [
 
 const ICON = 26;
 
-export function FooterWhatsAppIconLink({ className }: { className?: string }) {
-  return (
-    <a
-      href={WHATSAPP_URL_ANFRAGE}
-      target="_blank"
-      rel="noopener noreferrer"
-      aria-label="WhatsApp"
-      className={cn("footer-social-lead-wa", className)}
-    >
-      <svg viewBox="0 0 24 24" fill="currentColor" width={ICON} height={ICON} aria-hidden>
-        <path d={WHATSAPP_ICON_PATH} />
-      </svg>
-    </a>
-  );
-}
-
 export function FooterSocialLinks({
   className,
-  /** WhatsApp steht vor dem Logo — hier nur Instagram & Google. */
+  /** Marketing-Footer: WhatsApp nur mobil als Karte — hier nur Instagram & Google. */
   secondaryIconsOnly,
 }: {
   className?: string;

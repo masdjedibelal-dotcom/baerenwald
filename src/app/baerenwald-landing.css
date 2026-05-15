@@ -2904,7 +2904,7 @@
   }
 
   .site-footer .footer-slim-brand {
-    justify-content: center;
+    display: none;
   }
 
   .site-footer .footer-slim-nav {
@@ -2961,22 +2961,13 @@
   align-items: center;
 }
 
-.footer-social a:hover,
-.footer-social-lead-wa:hover {
+.footer-social a:hover {
   color: #ffffff;
-}
-
-.footer-social-lead-wa {
-  color: rgba(255, 255, 255, 0.55);
-  transition: color 0.2s ease, opacity 0.2s ease, transform 0.2s ease;
-  display: flex;
-  align-items: center;
-  flex-shrink: 0;
 }
 
 .footer-desktop-brand-head {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 18px;
   flex-wrap: wrap;
 }
@@ -3004,11 +2995,6 @@
   opacity: 0.85;
 }
 
-.footer-whatsapp-cta--desktop {
-  margin-top: 16px;
-  text-align: left;
-}
-
 .footer-whatsapp-cta--mobile {
   margin-top: 4px;
   text-align: center;
@@ -3017,12 +3003,6 @@
 
 @media (min-width: 769px) {
   .footer-whatsapp-cta--mobile {
-    display: none;
-  }
-}
-
-@media (max-width: 768px) {
-  .footer-whatsapp-cta--desktop {
     display: none;
   }
 }

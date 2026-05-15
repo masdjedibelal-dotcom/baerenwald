@@ -8,21 +8,13 @@ import {
   leistungHref,
   ratgeberHref,
 } from "@/lib/routes";
-import {
-  FooterSocialLinks,
-  FooterWhatsAppIconLink,
-} from "@/components/layout/FooterSocialLinks";
+import { FooterSocialLinks } from "@/components/layout/FooterSocialLinks";
 import { WHATSAPP_URL_FRAGE } from "@/lib/whatsapp";
 
-function FooterWhatsAppCta({ variant }: { variant: "mobile" | "desktop" }) {
+/** Nur unter 769px sichtbar (s. CSS) — auf Desktop kein WhatsApp im Footer. */
+function FooterWhatsAppCta() {
   return (
-    <div
-      className={
-        variant === "mobile"
-          ? "footer-whatsapp-cta footer-whatsapp-cta--mobile"
-          : "footer-whatsapp-cta footer-whatsapp-cta--desktop"
-      }
-    >
+    <div className="footer-whatsapp-cta footer-whatsapp-cta--mobile">
       <p>Noch Fragen? Wir antworten schnell auf WhatsApp.</p>
       <a
         href={WHATSAPP_URL_FRAGE}
@@ -42,7 +34,7 @@ export function MarketingFooter() {
     <footer className="site-footer">
       <div className="site-footer-main">
         <div className="footer-mobile-head">
-          <FooterWhatsAppIconLink />
+          <FooterWhatsAppCta />
           <div className="footer-mobile-logo-wrap">
             <Image
               src="/logo-mark-white.png"
@@ -59,14 +51,12 @@ export function MarketingFooter() {
             Verantwortung.
           </p>
           <FooterSocialLinks className="footer-mobile-social" secondaryIconsOnly />
-          <FooterWhatsAppCta variant="mobile" />
         </div>
 
         <div className="site-footer-grid">
           <div>
             <div className="footer-desktop-brand">
               <div className="footer-desktop-brand-head">
-                <FooterWhatsAppIconLink />
                 <div className="site-footer-logo-wrap">
                   <Image
                     src="/logo-mark-white.png"
@@ -126,7 +116,6 @@ export function MarketingFooter() {
               </p>
               <p>München &amp; Umgebung</p>
             </div>
-            <FooterWhatsAppCta variant="desktop" />
             <p className="site-footer-subtitle">Information</p>
             <ul className="site-footer-links">
               <li>
