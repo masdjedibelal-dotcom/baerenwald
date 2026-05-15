@@ -281,10 +281,10 @@ export const GROESSE_CONFIG: {
     einheit: "m²",
     einheitKurz: "m²",
     chips: [
-      { label: "🚿 Klein", value: 4, hint: "3–5 m²" },
-      { label: "🛁 Mittel", value: 6, hint: "5–8 m²" },
-      { label: "✨ Groß", value: 10, hint: "8–12 m²" },
-      { label: "🏊 Sehr groß", value: 14, hint: "12 m²+" },
+      { label: "Klein", value: 4, hint: "3–5 m²" },
+      { label: "Mittel", value: 6, hint: "5–8 m²" },
+      { label: "Groß", value: 10, hint: "8–12 m²" },
+      { label: "Sehr groß", value: 14, hint: "12 m²+" },
     ],
   },
   heizung: {
@@ -295,10 +295,10 @@ export const GROESSE_CONFIG: {
     einheit: "m²",
     einheitKurz: "m²",
     chips: [
-      { label: "🏠 Kleine Wohnung", value: 70, hint: "Bis 80 m²" },
-      { label: "🏡 Mittlere Wohnung", value: 115, hint: "80–150 m²" },
-      { label: "🏢 Großes Objekt", value: 200, hint: "150–250 m²" },
-      { label: "🏗️ Sehr großes Objekt", value: 300, hint: "Über 250 m²" },
+      { label: "Kleine Wohnung", value: 70, hint: "Bis 80 m²" },
+      { label: "Mittlere Wohnung", value: 115, hint: "80–150 m²" },
+      { label: "Großes Objekt", value: 200, hint: "150–250 m²" },
+      { label: "Sehr großes Objekt", value: 300, hint: "Über 250 m²" },
     ],
   },
   malerWand: {

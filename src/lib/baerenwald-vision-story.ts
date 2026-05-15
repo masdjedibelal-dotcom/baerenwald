@@ -9,10 +9,3 @@ export const BAERENWALD_VISION_PARAGRAPHS = [
 
 export const BAERENWALD_VISION_PARAGRAPH_3A =
   "Heute koordinieren wir Projekte strukturiert, dokumentiert und mit klarer Verantwortung — vom ersten Kontakt bis zur Abnahme.";
-
-export const BAERENWALD_VISION_BULLETS = [
-  "Ein Ansprechpartner",
-  "Klare Prozesse",
-  "Dokumentierte Projekte",
-  "Verantwortung auf\nbeiden Seiten",
-] as const;
