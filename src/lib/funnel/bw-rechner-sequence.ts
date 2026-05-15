@@ -37,7 +37,11 @@ export function showTrustScreen(
   if (situation === "gewerbe") {
     return false;
   }
-  if (situation === "kaputt" || situation === "betreuung") {
+  /** Akuter Notfall / Kaputt: keine Story- bzw. Trust-Screens — direkter Ablauf. */
+  if (situation === "kaputt") {
+    return false;
+  }
+  if (situation === "betreuung") {
     return variant === "trust_intro" || variant === "trust_preis";
   }
   return true;
