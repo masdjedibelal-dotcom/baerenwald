@@ -648,25 +648,14 @@ export default function BaerenwaldLandingClient({
             <div className="hero-visual fade-up d2">
               <div className="hero-float-wrap">
                 <div className="hero-phones-clip">
-                  <video
-                    className="hero-phones-video"
-                    autoPlay
-                    loop
-                    muted
-                    playsInline
-                    preload="auto"
-                    poster="/images/hero-handwerk-muenchen.png"
-                    controls={false}
-                    disablePictureInPicture
-                    disableRemotePlayback
-                    controlsList="nodownload nofullscreen noremoteplayback"
-                    aria-hidden="true"
-                  >
-                    <source
-                      src="/videos/hero-handwerk-muenchen.mp4"
-                      type="video/mp4"
-                    />
-                  </video>
+                  <Image
+                    src="/images/hero-handwerk-muenchen.png"
+                    alt="Handwerker-Team bei der Koordination einer Renovierung in München — Bärenwald"
+                    fill
+                    className="hero-phones-img"
+                    sizes="(max-width: 768px) min(92vw, 380px) 380px"
+                    priority
+                  />
                 </div>
               </div>
             </div>

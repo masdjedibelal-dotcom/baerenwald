@@ -8,7 +8,10 @@ import {
   leistungHref,
   ratgeberHref,
 } from "@/lib/routes";
-import { FooterSocialLinks } from "@/components/layout/FooterSocialLinks";
+import {
+  FooterSocialLinks,
+  FooterWhatsAppIconLink,
+} from "@/components/layout/FooterSocialLinks";
 import { WHATSAPP_URL_FRAGE } from "@/lib/whatsapp";
 
 function FooterWhatsAppCta({ variant }: { variant: "mobile" | "desktop" }) {
@@ -39,6 +42,7 @@ export function MarketingFooter() {
     <footer className="site-footer">
       <div className="site-footer-main">
         <div className="footer-mobile-head">
+          <FooterWhatsAppIconLink />
           <div className="footer-mobile-logo-wrap">
             <Image
               src="/logo-mark-white.png"
@@ -54,25 +58,27 @@ export function MarketingFooter() {
             <br />
             Verantwortung.
           </p>
-          <FooterSocialLinks className="footer-mobile-social" />
+          <FooterSocialLinks className="footer-mobile-social" secondaryIconsOnly />
           <FooterWhatsAppCta variant="mobile" />
-          <p className="footer-mobile-copy">© {year} Bärenwald</p>
         </div>
 
         <div className="site-footer-grid">
           <div>
             <div className="footer-desktop-brand">
-              <div className="site-footer-logo-wrap">
-                <Image
-                  src="/logo-mark-white.png"
-                  alt="Bärenwald München"
-                  width={54}
-                  height={54}
-                  className="site-footer-logo-img"
-                />
-                <p className="site-footer-brand-name">Bärenwald</p>
+              <div className="footer-desktop-brand-head">
+                <FooterWhatsAppIconLink />
+                <div className="site-footer-logo-wrap">
+                  <Image
+                    src="/logo-mark-white.png"
+                    alt="Bärenwald München"
+                    width={54}
+                    height={54}
+                    className="site-footer-logo-img"
+                  />
+                  <p className="site-footer-brand-name">Bärenwald</p>
+                </div>
+                <FooterSocialLinks secondaryIconsOnly />
               </div>
-              <FooterSocialLinks />
             </div>
             <div className="footer-links-col">
               <p className="site-footer-subtitle">Schnellzugriff</p>
