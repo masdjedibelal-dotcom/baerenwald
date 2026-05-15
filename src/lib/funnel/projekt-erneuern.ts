@@ -170,7 +170,7 @@ export const STEP_PROJEKT_GARTEN_LEISTUNG: FunnelStep = {
     {
       value: "planung",
       label: "Planung & Beratung",
-      hint: "Wir kommen vorbei,\nschauen uns die Fläche\nan und erstellen\ngemeinsam einen Plan.",
+      hint: "Wir kommen vorbei, schauen uns die Fläche an und erstellen gemeinsam einen Plan.",
     },
     {
       value: "rollrasen",
@@ -184,8 +184,8 @@ export const STEP_PROJEKT_GARTEN_LEISTUNG: FunnelStep = {
     },
     {
       value: "terrasse",
-      label: "Terrasse /\nAußenbereich",
-      hint: "Holz, WPC oder\nNaturstein —\ninkl. Unterbau\nund Montage.",
+      label: "Terrasse / Außenbereich",
+      hint: "Holz, WPC oder Naturstein — inkl. Unterbau und Montage.",
     },
     {
       value: "neuanlage",
@@ -210,17 +210,17 @@ export const STEP_PROJEKT_GARTEN_TERRASSE_MATERIAL: FunnelStep = {
     {
       value: "holz_wpc",
       label: "Holz / WPC",
-      hint: "Natürlich und warm —\npflegeleicht mit WPC",
+      hint: "Natürlich und warm — pflegeleicht mit WPC",
     },
     {
       value: "naturstein",
-      label: "Naturstein /\nPlatten",
-      hint: "Langlebig und robust —\nverschiedene Formate",
+      label: "Naturstein / Platten",
+      hint: "Langlebig und robust — verschiedene Formate",
     },
     {
       value: "noch_offen",
-      label: "Noch nicht\nentschieden",
-      hint: "Wir beraten beim\nVor-Ort-Termin",
+      label: "Noch nicht entschieden",
+      hint: "Wir beraten beim Vor-Ort-Termin",
     },
   ],
 };
