@@ -9,21 +9,21 @@ export function localBusinessSchema(): Record<string, unknown> {
     "@type": "HomeAndConstructionBusiness",
     name: "Bärenwald München",
     description:
-      "Bärenwald München — ein Ansprechpartner für alle Gewerke. Renovierung, Sanierung, Garten und mehr.",
+      "Generalunternehmer für Handwerk in München — ein Ansprechpartner für alle Gewerke von der Einzelreparatur bis zur Komplettrenovierung.",
     url: BASE_URL,
-    telephone: SITE_CONFIG.phoneHref.replace(/^tel:/, ""),
-    email: "info@baerenwald-muenchen.de",
+    telephone: "+4989999733904",
+    email: "info@baerenwaldmuenchen.de",
     address: {
       "@type": "PostalAddress",
-      streetAddress: "Bärenwaldstraße 20",
       addressLocality: "München",
+      addressRegion: "Bayern",
       postalCode: "81737",
       addressCountry: "DE",
     },
     geo: {
       "@type": "GeoCoordinates",
-      latitude: 48.102,
-      longitude: 11.605,
+      latitude: 48.1351,
+      longitude: 11.582,
     },
     areaServed: {
       "@type": "GeoCircle",
@@ -32,56 +32,86 @@ export function localBusinessSchema(): Record<string, unknown> {
         latitude: 48.1351,
         longitude: 11.582,
       },
-      geoRadius: "70000",
+      geoRadius: "60000",
     },
     openingHoursSpecification: [
       {
         "@type": "OpeningHoursSpecification",
-        dayOfWeek: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"],
-        opens: "07:00",
-        closes: "18:00",
-      },
-      {
-        "@type": "OpeningHoursSpecification",
-        dayOfWeek: "Saturday",
+        dayOfWeek: [
+          "Monday",
+          "Tuesday",
+          "Wednesday",
+          "Thursday",
+          "Friday",
+        ],
         opens: "08:00",
-        closes: "14:00",
+        closes: "18:00",
       },
     ],
     priceRange: "€€",
-    currenciesAccepted: "EUR",
-    paymentAccepted: "Cash, Invoice",
-    founder: {
-      "@type": "Person",
-      name: "Beran Cakmak",
+    aggregateRating: {
+      "@type": "AggregateRating",
+      ratingValue: "4.9",
+      reviewCount: "27",
     },
-    foundingDate: "2020",
-    serviceArea: {
-      "@type": "City",
-      name: "München",
-    },
+    sameAs: [
+      "https://www.instagram.com/baerenwald_muenchen/",
+      "https://share.google/LzY5wwX8Su2DJYITP",
+    ],
     hasOfferCatalog: {
       "@type": "OfferCatalog",
-      name: "Handwerksleistungen München",
+      name: "Handwerksleistungen",
       itemListElement: [
-        "Malerarbeiten",
-        "Badezimmer Sanierung",
-        "Bodenbelag",
-        "Elektroarbeiten",
-        "Heizung & Sanitär",
-        "Gartenpflege",
-        "Hausmeisterservice",
-        "Winterdienst",
-        "Trockenbau",
-        "Dacharbeiten",
-      ].map((service) => ({
-        "@type": "Offer",
-        itemOffered: {
-          "@type": "Service",
-          name: service,
-          areaServed: "München",
+        {
+          "@type": "Offer",
+          itemOffered: {
+            "@type": "Service",
+            name: "Malerarbeiten München",
+          },
         },
-      })),
+        {
+          "@type": "Offer",
+          itemOffered: {
+            "@type": "Service",
+            name: "Badsanierung München",
+          },
+        },
+        {
+          "@type": "Offer",
+          itemOffered: {
+            "@type": "Service",
+            name: "Elektriker München",
+          },
+        },
+        {
+          "@type": "Offer",
+          itemOffered: {
+            "@type": "Service",
+            name: "Heizung München",
+          },
+        },
+        {
+          "@type": "Offer",
+          itemOffered: {
+            "@type": "Service",
+            name: "Bodenleger München",
+          },
+        },
+        {
+          "@type": "Offer",
+          itemOffered: {
+            "@type": "Service",
+            name: "Sanitär München",
+          },
+        },
+        {
+          "@type": "Offer",
+          itemOffered: {
+            "@type": "Service",
+            name: "Dachdecker München",
+          },
+        },
+      ],
     },
   };
 }
@@ -134,6 +164,39 @@ export function breadcrumbSchema(
       name: item.name,
       item: item.url.startsWith("http") ? item.url : `${SITE_CONFIG.url}${item.url}`,
     })),
+  };
+}
+
+/** Leistungs- & Handwerker-Detailseiten: Startseite → Leistungen (#) → aktuelle Seite */
+export function hubDetailBreadcrumbSchema(
+  pageTitle: string,
+  pagePath: string
+): Record<string, unknown> {
+  const path = pagePath.startsWith("/") ? pagePath : `/${pagePath}`;
+  const pageUrl = `${BASE_URL}${path}`;
+  return {
+    "@context": JSON_LD_CONTEXT,
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      {
+        "@type": "ListItem",
+        position: 1,
+        name: "Startseite",
+        item: BASE_URL,
+      },
+      {
+        "@type": "ListItem",
+        position: 2,
+        name: "Leistungen",
+        item: `${BASE_URL}/#leistungen`,
+      },
+      {
+        "@type": "ListItem",
+        position: 3,
+        name: pageTitle,
+        item: pageUrl,
+      },
+    ],
   };
 }
 
