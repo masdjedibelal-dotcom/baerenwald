@@ -390,25 +390,54 @@ function buildFixtures(): Fixture[] {
   );
 
   // ── GU Gartengestaltung
-  for (const leistung of ["auffrischung", "neuanlage"] as const) {
+  for (const leistung of [
+    "auffrischung",
+    "rollrasen",
+    "flaeche_auffrischen",
+    "neuanlage",
+    "gu_paket",
+    "terrasse",
+  ] as const) {
     for (const zaun of ["ja", "nein"] as const) {
       for (const zu of ["einfach", "schwer"] as const) {
-        push(
-          `projekt_garten_${leistung}_zaun${zaun}_zug${zu}_80qm`,
-          `Gartengestaltung ${leistung}, Zaun ${zaun}, Zugang ${zu}, 80 m²`,
-          {
-            ...baseErneuern(),
-            bereiche: ["gartengestaltung"],
-            groesse: 80,
-            fachdetails: {
-              projekt: {
-                gartenLeistung: leistung,
-                gartenZaun: zaun,
-                gartenZugaenglichkeit: zu,
-              },
-            },
+        if (leistung === "terrasse") {
+          for (const mat of ["holz_wpc", "naturstein"] as const) {
+            push(
+              `projekt_garten_${leistung}_${mat}_zaun${zaun}_zug${zu}_80qm`,
+              `Gartengestaltung ${leistung} ${mat}, Zaun ${zaun}, Zugang ${zu}, 80 m²`,
+              {
+                ...baseErneuern(),
+                bereiche: ["gartengestaltung"],
+                groesse: 80,
+                fachdetails: {
+                  projekt: {
+                    gartenLeistung: leistung,
+                    gartenTerrasseMaterial: mat,
+                    gartenZaun: zaun,
+                    gartenZugaenglichkeit: zu,
+                  },
+                },
+              }
+            );
           }
-        );
+        } else {
+          push(
+            `projekt_garten_${leistung}_zaun${zaun}_zug${zu}_80qm`,
+            `Gartengestaltung ${leistung}, Zaun ${zaun}, Zugang ${zu}, 80 m²`,
+            {
+              ...baseErneuern(),
+              bereiche: ["gartengestaltung"],
+              groesse: 80,
+              fachdetails: {
+                projekt: {
+                  gartenLeistung: leistung,
+                  gartenZaun: zaun,
+                  gartenZugaenglichkeit: zu,
+                },
+              },
+            }
+          );
+        }
       }
     }
   }
@@ -461,23 +490,37 @@ function buildFixtures(): Fixture[] {
     }
   );
   push(
-    "projekt_terrasse_neu_25qm_holz",
-    "Terrasse neu GU 25 m² Holz",
+    "projekt_garten_terrasse_holz_wpc_25qm",
+    "Gartengestaltung Terrasse Holz/WPC 25 m²",
     {
       ...baseErneuern(),
-      bereiche: ["terrasse_neu"],
+      bereiche: ["gartengestaltung"],
       groesse: 25,
-      fachdetails: { projekt: { terrasseMaterial: "holz", terrasseUnterbau: "nein" } },
+      fachdetails: {
+        projekt: {
+          gartenLeistung: "terrasse",
+          gartenTerrasseMaterial: "holz_wpc",
+          gartenZaun: "nein",
+          gartenZugaenglichkeit: "einfach",
+        },
+      },
     }
   );
   push(
-    "projekt_terrasse_neu_unterbau_ja",
-    "Terrasse neu mit Unterbau-Zuschlag",
+    "projekt_garten_terrasse_naturstein_unterbau_zug",
+    "Gartengestaltung Terrasse Naturstein, schwerer Zugang",
     {
       ...baseErneuern(),
-      bereiche: ["terrasse_neu"],
+      bereiche: ["gartengestaltung"],
       groesse: 20,
-      fachdetails: { projekt: { terrasseMaterial: "stein", terrasseUnterbau: "ja" } },
+      fachdetails: {
+        projekt: {
+          gartenLeistung: "terrasse",
+          gartenTerrasseMaterial: "naturstein",
+          gartenZaun: "ja",
+          gartenZugaenglichkeit: "schwer",
+        },
+      },
     }
   );
 
