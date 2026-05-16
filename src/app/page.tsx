@@ -3,7 +3,6 @@ import type { Metadata } from "next";
 import BaerenwaldLandingClient from "./baerenwald-landing-client";
 import { LeistungenCarousel } from "@/components/ui/LeistungenCarousel";
 import { WhatsAppFloat } from "@/components/ui/WhatsAppFloat";
-import { CTA } from "@/lib/cta-config";
 import { HOME_FAQ_ITEMS } from "@/lib/home-content";
 import { faqSchema } from "@/lib/schema";
 
@@ -13,20 +12,12 @@ const title =
   "Bärenwald München — Maler, Elektriker, Bodenleger — alles aus einer Hand";
 
 const description =
-  `Kostenloser Preisrechner für Handwerksleistungen in München. Malerarbeiten, Bad, Elektro, Garten und mehr. Ein Ansprechpartner, wir kümmern uns um alle Handwerker — unverbindliche Beratung, Anfahrt wird bei Beauftragung angerechnet. ${CTA.heroSub}.`;
-
-const keywords = [
-  "Handwerker München",
-  "Renovierung München",
-  "Malerarbeiten München",
-  "Badsanierung München",
-];
+  "Handwerker München — ein Ansprechpartner für alle Gewerke. Preisrahmen online berechnen. Malerarbeiten, Bad, Elektro, Heizung. Unverbindlich.";
 
 export async function generateMetadata(): Promise<Metadata> {
   return {
     title: { absolute: title },
     description,
-    keywords,
     openGraph: {
       title: { absolute: title },
       description,

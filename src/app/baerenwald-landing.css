@@ -4867,6 +4867,22 @@
   line-height: 1.5;
 }
 
+.handwerker-warum-list {
+  list-style: none;
+  margin: 20px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  font-size: 16px;
+  line-height: 1.45;
+  color: var(--fl-text-2);
+}
+
+.handwerker-warum-list li {
+  margin: 0;
+}
+
 .hinweis {
   border-left: 3px solid var(--fl-accent);
   padding: 14px 18px;

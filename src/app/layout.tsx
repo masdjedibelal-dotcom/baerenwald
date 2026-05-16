@@ -2,7 +2,7 @@ import type { Metadata, Viewport } from "next";
 import type { CSSProperties } from "react";
 import { Lora, Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
-import { JsonLdOrganization } from "@/components/JsonLdOrganization";
+import { JsonLdLocalBusiness } from "@/components/JsonLd";
 import { SITE_CONFIG } from "@/lib/config";
 import { PHProvider } from "./providers";
 
@@ -30,18 +30,7 @@ export const metadata: Metadata = {
   },
 
   description:
-    "Handwerker in München — ein Ansprechpartner für alle Gewerke. Malerarbeiten, Bad, Elektro, Garten und mehr. Preisrahmen online berechnen.",
-
-  keywords: [
-    "Handwerker München",
-    "Renovierung München",
-    "Malerarbeiten München",
-    "Badezimmer sanieren München",
-    "Elektriker München",
-    "Gartenpflege München",
-    "Hausmeisterservice München",
-    "Handwerk München",
-  ],
+    "Handwerker München — ein Ansprechpartner für alle Gewerke. Preisrahmen online berechnen. Malerarbeiten, Bad, Elektro, Heizung. Unverbindlich.",
 
   authors: [{ name: "Beran Cakmak" }],
   creator: "Bärenwald München",
@@ -63,7 +52,7 @@ export const metadata: Metadata = {
     siteName: "Bärenwald München",
     title: "Bärenwald München — Handwerker aus einer Hand",
     description:
-      "Ein Ansprechpartner für alle Handwerksleistungen in München. Preisrahmen online berechnen — unverbindlich.",
+      "Handwerker München — ein Ansprechpartner für alle Gewerke. Preisrahmen online berechnen. Malerarbeiten, Bad, Elektro, Heizung. Unverbindlich.",
     images: [
       {
         url: "/og-image.png",
@@ -78,7 +67,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "Bärenwald München — Handwerker aus einer Hand",
     description:
-      "Ein Ansprechpartner für alle Handwerksleistungen in München.",
+      "Handwerker München — ein Ansprechpartner für alle Gewerke. Preisrahmen online berechnen. Malerarbeiten, Bad, Elektro, Heizung.",
     images: ["/og-image.png"],
   },
 
@@ -118,7 +107,7 @@ export default function RootLayout({
     >
       <body className="min-h-screen bg-background font-sans antialiased">
         <PHProvider>
-          <JsonLdOrganization />
+          <JsonLdLocalBusiness />
           {children}
         </PHProvider>
       </body>

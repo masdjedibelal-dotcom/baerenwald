@@ -1,5 +1,7 @@
 import type { MetadataRoute } from "next";
+import handwerkerContent from "@/data/handwerker-content.json";
 import { LEISTUNGEN, RATGEBER, leistungHref, ratgeberHref } from "@/lib/routes";
+import type { HandwerkerContentItem } from "@/lib/handwerker-types";
 
 const BASE = "https://baerenwaldmuenchen.de";
 
@@ -35,6 +37,14 @@ export default function sitemap(): MetadataRoute.Sitemap {
       lastModified: new Date(),
       changeFrequency: "monthly" as const,
       priority: 0.7,
+    })),
+
+    // SEO-Handwerker-Stadtteilseiten (nur Sitemap, keine Nav)
+    ...(handwerkerContent as HandwerkerContentItem[]).map((c) => ({
+      url: `${BASE}/${c.slug}`,
+      lastModified: new Date(),
+      changeFrequency: "monthly" as const,
+      priority: 0.6,
     })),
 
     // Legal — niedrige Priorität

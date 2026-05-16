@@ -9,7 +9,7 @@ import {
 } from "@/lib/leistungen/data";
 import type { LeistungsData } from "@/lib/leistungen/types";
 import { LEISTUNGEN } from "@/lib/routes";
-import { serviceSchema } from "@/lib/schema";
+import { hubDetailBreadcrumbSchema, serviceSchema } from "@/lib/schema";
 
 type PageProps = { params: { slug: string } };
 
@@ -58,6 +58,10 @@ export default function LeistungDetailPage({ params }: PageProps) {
     `${data.label} in München`,
     data.beschreibung.replace(/\s+/g, " ").trim().slice(0, 500)
   );
+  const breadcrumbLd = hubDetailBreadcrumbSchema(
+    data.label,
+    `/leistungen/${params.slug}`
+  );
 
   return (
     <>
@@ -65,6 +69,12 @@ export default function LeistungDetailPage({ params }: PageProps) {
         type="application/ld+json"
         dangerouslySetInnerHTML={{
           __html: JSON.stringify(serviceLd),
+        }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(breadcrumbLd),
         }}
       />
       <PageLayout>
