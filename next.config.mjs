@@ -27,6 +27,20 @@ const nextConfig = {
       },
     ];
   },
+  async redirects() {
+    return [
+      {
+        source: "/galerie",
+        destination: "/leistungen",
+        permanent: true,
+      },
+      {
+        source: "/galerie/",
+        destination: "/leistungen",
+        permanent: true,
+      },
+    ];
+  },
   async rewrites() {
     return [
       {
