@@ -1,7 +1,13 @@
 import Link from "next/link";
 
 import { SemanticFaq } from "@/components/common/SemanticFaq";
+import { StadtteilLinksSection } from "@/components/handwerker/StadtteilLinksSection";
 import { SITE_CONFIG } from "@/lib/config";
+import {
+  getStadtteilLinks,
+  handwerkerLeistungKeysFromRechnerSlug,
+  stadtteilSectionLabel,
+} from "@/lib/handwerker-stadtteil";
 import type { RatgeberData } from "@/lib/ratgeber/types";
 import { ratgeberReadingMinutes } from "@/lib/ratgeber/reading-time";
 import { leistungHref } from "@/lib/routes";
@@ -52,6 +58,10 @@ export function RatgeberPage({ data }: RatgeberPageProps) {
     data.zeitaufwand.faktoren.length > 0
       ? data.zeitaufwand.faktoren.join(", ")
       : "Koordination und Umfang";
+
+  const handwerkerKeys = handwerkerLeistungKeysFromRechnerSlug(data.leistungsSlug);
+  const stadtteilLinks = getStadtteilLinks(handwerkerKeys);
+  const stadtteilLabel = stadtteilSectionLabel(handwerkerKeys);
 
   return (
     <div className="baerenwald-landing">
@@ -363,6 +373,11 @@ export function RatgeberPage({ data }: RatgeberPageProps) {
           </div>
         </div>
       </section>
+
+      <StadtteilLinksSection
+        links={stadtteilLinks}
+        leistungLabel={stadtteilLabel}
+      />
 
       <div className="final-cta-section">
         <div className="final-cta-bg">BW</div>

@@ -1,7 +1,14 @@
 import Link from "next/link";
 
 import { SemanticFaq } from "@/components/common/SemanticFaq";
+import { StadtteilLinksSection } from "@/components/handwerker/StadtteilLinksSection";
 import { SITE_CONFIG } from "@/lib/config";
+import {
+  getStadtteilLinks,
+  handwerkerLeistungKeysFromLeistungSlug,
+  stadtteilSectionLabel,
+} from "@/lib/handwerker-stadtteil";
+import { leistungBaseSlugFromParam } from "@/lib/leistungen/data";
 import type { LeistungsData } from "@/lib/leistungen/types";
 import { ratgeberHref } from "@/lib/routes";
 
@@ -32,6 +39,12 @@ export interface LeistungsPageProps {
 
 export function LeistungsPage({ slug, data }: LeistungsPageProps) {
   const rechnerHref = `/rechner?leistung=${encodeURIComponent(slug)}`;
+  const baseSlug = leistungBaseSlugFromParam(slug);
+  const handwerkerKeys = baseSlug
+    ? handwerkerLeistungKeysFromLeistungSlug(baseSlug)
+    : [];
+  const stadtteilLinks = getStadtteilLinks(handwerkerKeys);
+  const stadtteilLabel = stadtteilSectionLabel(handwerkerKeys, data.label);
 
   return (
     <div id={`leistung-${slug}`} className="baerenwald-landing">
@@ -199,6 +212,11 @@ export function LeistungsPage({ slug, data }: LeistungsPageProps) {
           </div>
         </div>
       </section>
+
+      <StadtteilLinksSection
+        links={stadtteilLinks}
+        leistungLabel={stadtteilLabel}
+      />
 
       <div className="final-cta-section">
         <div className="final-cta-bg">BW</div>

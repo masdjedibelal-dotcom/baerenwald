@@ -23,6 +23,14 @@ export default function sitemap(): MetadataRoute.Sitemap {
       priority: 0.6,
     },
 
+    // Handwerker-Übersicht (alle Stadtteile)
+    {
+      url: `${BASE}/handwerker-muenchen`,
+      lastModified: new Date(),
+      changeFrequency: "monthly",
+      priority: 0.8,
+    },
+
     // Leistungsseiten
     ...LEISTUNGEN.map((l) => ({
       url: `${BASE}${leistungHref(l.slug)}`,
