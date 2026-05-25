@@ -9,6 +9,7 @@ import {
 } from "@/lib/leistungen/data";
 import type { LeistungsData } from "@/lib/leistungen/types";
 import { LEISTUNGEN } from "@/lib/routes";
+import { leistungPriceRangeForSlug } from "@/lib/leistungen/leistungen-seo";
 import { hubDetailBreadcrumbSchema, serviceSchema } from "@/lib/schema";
 
 type PageProps = { params: { slug: string } };
@@ -56,7 +57,8 @@ export default function LeistungDetailPage({ params }: PageProps) {
 
   const serviceLd = serviceSchema(
     `${data.label} in München`,
-    data.beschreibung.replace(/\s+/g, " ").trim().slice(0, 500)
+    data.beschreibung.replace(/\s+/g, " ").trim().slice(0, 500),
+    leistungPriceRangeForSlug(base)
   );
   const breadcrumbLd = hubDetailBreadcrumbSchema(
     data.label,

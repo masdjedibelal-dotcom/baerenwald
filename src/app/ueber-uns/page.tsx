@@ -65,6 +65,17 @@ export default function UeberUnsPage() {
         <section className="article-section article-section--lg content-section--white">
           <div className="article-section-inner">
             <div className="article-body legal-body">
+              <p className="text-base text-gray-700 mb-8">
+                Bärenwald München koordiniert Handwerksprojekte in München und
+                Umgebung — von der kleinen Reparatur bis zur Komplettsanierung.
+                Als Generalunternehmer übernimmt Bärenwald die Planung,
+                Koordination und Kontrolle aller Gewerke mit einem einzigen
+                Ansprechpartner für den Kunden. Eigene Teams für Gartenbau,
+                Hausmeisterservice und Reinigung, festes Netzwerk aus geprüften
+                Meisterbetrieben für Sanitär, Elektro, Heizung, Dach und
+                Innenausbau. Preisrahmen online berechenbar auf
+                baerenwaldmuenchen.de/rechner.
+              </p>
               <h2>Warum Bärenwald?</h2>
               <p>
                 Früher funktionierte vieles über Vertrauen, Erfahrung und Menschen

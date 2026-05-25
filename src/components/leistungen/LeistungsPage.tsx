@@ -9,6 +9,7 @@ import {
   stadtteilSectionLabel,
 } from "@/lib/handwerker-stadtteil";
 import { leistungBaseSlugFromParam } from "@/lib/leistungen/data";
+import { leistungSeoForSlug } from "@/lib/leistungen/leistungen-seo";
 import type { LeistungsData } from "@/lib/leistungen/types";
 import { ratgeberHref } from "@/lib/routes";
 
@@ -45,6 +46,7 @@ export function LeistungsPage({ slug, data }: LeistungsPageProps) {
     : [];
   const stadtteilLinks = getStadtteilLinks(handwerkerKeys);
   const stadtteilLabel = stadtteilSectionLabel(handwerkerKeys, data.label);
+  const seo = leistungSeoForSlug(baseSlug, data.label);
 
   return (
     <div id={`leistung-${slug}`} className="baerenwald-landing">
@@ -62,6 +64,13 @@ export function LeistungsPage({ slug, data }: LeistungsPageProps) {
 
           <h1 className="page-hero-h1">{data.headline}</h1>
           <p className="page-hero-sub">{data.subline}</p>
+
+          <div className="mt-5 max-w-2xl text-left">
+            <p className="mb-1 text-xs text-gray-500">Kurze Antwort</p>
+            <p className="border-l-4 border-green-700 pl-4 text-sm text-gray-700">
+              {seo.kurzeAntwort}
+            </p>
+          </div>
 
           <div className="page-hero-btns">
             <Link href={rechnerHref} className="page-hero-btn-primary">
@@ -109,8 +118,8 @@ export function LeistungsPage({ slug, data }: LeistungsPageProps) {
         className="article-section content-section content-section--muted fade-up d2"
       >
         <div className="article-section-inner">
-          <span className="chapter-label">Preise München 2024/25</span>
-          <h2 className="section-h2">Was kostet das?</h2>
+          <span className="chapter-label">Preise München 2026</span>
+          <h2 className="section-h2">{seo.kostenH2}</h2>
 
           <div className="preis-inline">
             <span className="preis-inline-value">
@@ -166,7 +175,7 @@ export function LeistungsPage({ slug, data }: LeistungsPageProps) {
         <div className="article-section-inner">
           <span className="chapter-label">Häufige Fragen</span>
           <h2 className="section-h2" style={{ marginBottom: "28px" }}>
-            Was Kunden uns fragen
+            {seo.faqH2}
           </h2>
 
           <div className="article-faq">
@@ -206,9 +215,19 @@ export function LeistungsPage({ slug, data }: LeistungsPageProps) {
                 solltest — Kosten, Ablauf und Zeitaufwand.
               </p>
             </div>
-            <Link href={ratgeberHref(data.ratgeberSlug)} className="koordination-box-link">
-              {data.ratgeberLabel} →
-            </Link>
+            <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+              <Link href={ratgeberHref(data.ratgeberSlug)} className="koordination-box-link">
+                {data.ratgeberLabel} →
+              </Link>
+              {data.relatedRatgeber ? (
+                <Link
+                  href={ratgeberHref(data.relatedRatgeber.slug)}
+                  className="koordination-box-link"
+                >
+                  {data.relatedRatgeber.label} →
+                </Link>
+              ) : null}
+            </div>
           </div>
         </div>
       </section>

@@ -145,10 +145,9 @@ const PROJEKTE: readonly BaerenwaldProjekt[] = [
     bilder: [
       "/images/projekt-notdienst-kein-warmwasser.png",
       "/images/projekt-notdienst-kein-warmwasser-2.png",
-      "/images/projekt-notdienst-kein-warmwasser-3.png",
     ],
     bildAlt:
-      "Technikraum: Wilo-Umwälzpumpe mit Steuerung, Rohrleitungsführung und eingebaute neue Pumpe nach dem Notdienst-Einsatz in München",
+      "Technikraum München: Wilo Star Umwälzpumpe und isolierte Heizungsrohrleitungen nach Notdienst-Einsatz bei Warmwasserausfall",
     gewerk: "Notdienst / Kein Warmwasser",
     stadtteil: "München",
     jahr: "2026",
@@ -665,6 +664,16 @@ export default function BaerenwaldLandingClient({
         <div className="hero-bottom-round" aria-hidden />
       </section>
 
+      <p className="text-sm text-gray-600 max-w-2xl mx-auto text-center px-4">
+        Bärenwald München ist ein Generalunternehmer für Sanierung und Renovierung
+        in München und den Landkreisen München, Dachau, Ebersberg, Erding,
+        Freising, Fürstenfeldbruck und Starnberg. Das Unternehmen koordiniert
+        Sanitär, Elektro, Fliesen, Malerarbeiten, Garten- und Landschaftsbau
+        sowie Hausmeisterservice unter einem festen Ansprechpartner — mit
+        digitalem Projektverlauf, Festpreisen und Abnahmeprotokoll. Preisrahmen
+        können unverbindlich online berechnet werden.
+      </p>
+
       <SectionDivider variant="baum" from="#f7f6f3" to="#2E7D52" />
 
       <HowTimelineMotion />
@@ -755,6 +764,11 @@ export default function BaerenwaldLandingClient({
             })}
           </div>
           <div className="fade-up d3 faq-inner-follow-up">
+            <p className="how-tl-sub" style={{ marginTop: "20px" }}>
+              <a href="/ratgeber/generalunternehmer-vs-einzelhandwerker-muenchen">
+                Generalunternehmer vs. Einzelhandwerker — Ratgeber lesen →
+              </a>
+            </p>
             <p className="how-tl-sub" style={{ marginTop: "28px" }}>
               Nicht dabei? Ruf uns an — wir helfen persönlich weiter.
             </p>

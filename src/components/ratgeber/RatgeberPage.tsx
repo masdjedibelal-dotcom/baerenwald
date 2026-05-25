@@ -22,6 +22,24 @@ function formatEuro(n: number): string {
 
 const telHref = `tel:${SITE_CONFIG.phone.replace(/\s/g, "")}`;
 
+const DEFAULT_SECTION_H2 = {
+  ablauf: "So läuft das ab",
+  voraussetzungen: "Was du vorher wissen solltest",
+  optionen: "Welche Optionen gibt es?",
+  kosten: "Was kostet das wirklich?",
+  zeit: "Wie lange dauert das?",
+  faq: "Was Kunden fragen",
+  qualitaet: "Woran erkennst du gute Arbeit?",
+  muenchen: "Besonderheiten in München",
+} as const;
+
+function sectionH2(
+  data: RatgeberData,
+  key: keyof typeof DEFAULT_SECTION_H2
+): string {
+  return data.sectionH2?.[key] ?? DEFAULT_SECTION_H2[key];
+}
+
 function splitIconText(line: string): { icon: string; text: string } {
   const sp = line.indexOf(" ");
   if (sp > 0) {
@@ -30,11 +48,20 @@ function splitIconText(line: string): { icon: string; text: string } {
   return { icon: "", text: line };
 }
 
+function phoneDisplay(): string {
+  const raw = SITE_CONFIG.phone.replace(/\s/g, "");
+  if (raw.length === 11 && raw.startsWith("089")) {
+    return `${raw.slice(0, 3)} ${raw.slice(3, 6)} ${raw.slice(6)}`;
+  }
+  return SITE_CONFIG.phone;
+}
+
 export interface RatgeberPageProps {
   data: RatgeberData;
 }
 
 export function RatgeberPage({ data }: RatgeberPageProps) {
+  const isGuide = data.layout === "guide";
   const lesezeit = ratgeberReadingMinutes(data);
   const updated = new Date(data.dateModified).toLocaleDateString("de-DE", {
     day: "numeric",
@@ -43,8 +70,12 @@ export function RatgeberPage({ data }: RatgeberPageProps) {
   });
   const rechnerHref = `/rechner?leistung=${encodeURIComponent(data.leistungsSlug)}`;
   const leistungUrl = leistungHref(data.leistungsSlug);
+  const rechnerCtaLabel =
+    data.ctaRechnerLabel ?? "Preis für mein Projekt berechnen →";
+  const phoneLabel = `Jetzt anrufen — ${phoneDisplay()}`;
 
   const wbPunkte = data.wannBrauche.punkte;
+  const showIntro = !isGuide && wbPunkte.length > 0;
   const introLead =
     wbPunkte.length > 0 ? wbPunkte[0]! : data.wannBrauche.title;
   const introRest = wbPunkte.length > 1 ? wbPunkte.slice(1) : [];
@@ -81,185 +112,247 @@ export function RatgeberPage({ data }: RatgeberPageProps) {
           <p className="page-hero-sub">{data.hero.subline}</p>
 
           <div className="ratgeber-meta">
-            <span>München 2024/25</span>
+            <span>München 2026</span>
             <span>Lesezeit: ca. {lesezeit} Min.</span>
             <span>Update: {updated}</span>
           </div>
         </div>
       </div>
 
-      <div className="ratgeber-intro content-section content-section--white fade-up d1">
-        <p className="ratgeber-intro-lead">{introLead}</p>
-        {introRest.length > 0 ? (
-          <ol className="simple-list">
-            {introRest.map((p) => (
-              <li key={p}>
-                <span className="simple-list-num">—</span>
-                {p}
-              </li>
-            ))}
-          </ol>
-        ) : null}
+      <div className="content-section content-section--white fade-up d1 ratgeber-kurze-antwort-wrap">
+        <div className="article-section-inner">
+          <p className="ratgeber-kurze-antwort-label">Kurze Antwort</p>
+          <div className="hinweis ratgeber-kurze-antwort">
+            <p>{data.kurzeAntwort}</p>
+          </div>
+        </div>
       </div>
 
-      <div className="article-divider" aria-hidden />
+      {isGuide ? (
+        <div className="content-section content-section--white fade-up d1 ratgeber-guide-cta-wrap">
+          <div
+            className="article-section-inner"
+            style={{
+              display: "flex",
+              flexWrap: "wrap",
+              gap: "12px",
+              paddingTop: 0,
+            }}
+          >
+            {data.finalCtaPhoneFirst ? (
+              <Link href={telHref} className="page-hero-btn-primary">
+                {phoneLabel}
+              </Link>
+            ) : null}
+            <Link
+              href={rechnerHref}
+              className={
+                data.finalCtaPhoneFirst
+                  ? "page-hero-btn-secondary"
+                  : "page-hero-btn-primary"
+              }
+            >
+              {rechnerCtaLabel}
+            </Link>
+          </div>
+        </div>
+      ) : null}
+
+      {showIntro ? (
+        <>
+          <div className="ratgeber-intro content-section content-section--white fade-up d1">
+            <p className="ratgeber-intro-lead">{introLead}</p>
+            {introRest.length > 0 ? (
+              <ol className="simple-list">
+                {introRest.map((p) => (
+                  <li key={p}>
+                    <span className="simple-list-num">—</span>
+                    {p}
+                  </li>
+                ))}
+              </ol>
+            ) : null}
+          </div>
+          <div className="article-divider" aria-hidden />
+        </>
+      ) : null}
 
       <section
         className="article-section content-section content-section--muted fade-up d2"
       >
         <div className="article-section-inner">
-          <span className="chapter-label">Schritt für Schritt</span>
-          <h2 className="section-h2">So läuft das ab</h2>
+          {!isGuide ? (
+            <>
+              <span className="chapter-label">Schritt für Schritt</span>
+              <h2 className="section-h2">{sectionH2(data, "ablauf")}</h2>
+            </>
+          ) : null}
 
-          <div className="ablauf-timeline">
-            <div className="ablauf-timeline-line" aria-hidden />
+          <div className={isGuide ? "guide-qa-list" : "ablauf-timeline"}>
+            {!isGuide ? (
+              <div className="ablauf-timeline-line" aria-hidden />
+            ) : null}
             {data.ablauf.map((s, i) => (
               <div
                 key={s.schritt}
-                className="ablauf-step fade-up"
+                className={isGuide ? "guide-qa-item fade-up" : "ablauf-step fade-up"}
                 style={{ transitionDelay: `${i * 0.06}s` }}
               >
-                <div className="ablauf-step-num">{i + 1}</div>
-                <h3 className="ablauf-step-title">{s.schritt}</h3>
-                <p className="ablauf-step-text">{s.text}</p>
+                {!isGuide ? <div className="ablauf-step-num">{i + 1}</div> : null}
+                {isGuide ? (
+                  <h2 className="section-h2 guide-qa-question">{s.schritt}</h2>
+                ) : (
+                  <h3 className="ablauf-step-title">{s.schritt}</h3>
+                )}
+                <p
+                  className={
+                    isGuide ? "article-body guide-qa-answer" : "ablauf-step-text"
+                  }
+                  style={isGuide ? { whiteSpace: "pre-line" } : undefined}
+                >
+                  {s.text}
+                </p>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      <div className="article-divider" aria-hidden />
+      {!isGuide ? <div className="article-divider" aria-hidden /> : null}
 
-      <section
-        className="article-section content-section content-section--white fade-up d3"
-      >
-        <div className="article-section-inner">
-          <span className="chapter-label">Was du vorher wissen solltest</span>
-          <div className="article-body">
-            {data.voraussetzungen.map((v) => (
-              <p key={v}>{v}</p>
-            ))}
-          </div>
-        </div>
-      </section>
+      {!isGuide && data.voraussetzungen.length > 0 ? (
+        <>
+          <section className="article-section content-section content-section--white fade-up d3">
+            <div className="article-section-inner">
+              <span className="chapter-label">
+                {sectionH2(data, "voraussetzungen")}
+              </span>
+              <div className="article-body">
+                {data.voraussetzungen.map((v) => (
+                  <p key={v}>{v}</p>
+                ))}
+              </div>
+            </div>
+          </section>
+          <div className="article-divider" aria-hidden />
+        </>
+      ) : null}
 
-      <div className="article-divider" aria-hidden />
+      {!isGuide && data.materialien.length > 0 ? (
+        <>
+          <section className="article-section content-section content-section--muted fade-up d4">
+            <div className="article-section-inner">
+              <span className="chapter-label">Materialien &amp; Varianten</span>
+              <h2 className="section-h2">Welche Optionen gibt es?</h2>
+              <table className="preis-table">
+                <thead>
+                  <tr>
+                    <th>Material</th>
+                    <th>Preis</th>
+                    <th>Geeignet für</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {data.materialien.map((m) => (
+                    <tr key={m.name}>
+                      <td>
+                        <div>{m.name}</div>
+                        <div
+                          style={{
+                            fontSize: "12px",
+                            fontWeight: 400,
+                            color: "var(--fl-text-3)",
+                            marginTop: "2px",
+                          }}
+                        >
+                          {m.beschreibung}
+                        </div>
+                      </td>
+                      <td style={{ whiteSpace: "nowrap" }}>{m.vonBis}</td>
+                      <td>{m.fuer}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </section>
+          <div className="article-divider" aria-hidden />
+        </>
+      ) : null}
 
-      <section
-        className="article-section content-section content-section--muted fade-up d4"
-      >
-        <div className="article-section-inner">
-          <span className="chapter-label">Materialien &amp; Varianten</span>
-          <h2 className="section-h2">Welche Optionen gibt es?</h2>
+      {!isGuide && data.kosten.von > 0 && data.kosten.bis > 0 ? (
+        <>
+          <section className="article-section content-section content-section--white fade-up d1">
+            <div className="article-section-inner">
+              <span className="chapter-label">Preise München 2026</span>
+              <h2 className="section-h2">{sectionH2(data, "kosten")}</h2>
+              <div className="preis-inline">
+                <span className="preis-inline-value">
+                  {formatEuro(data.kosten.von)} – {formatEuro(data.kosten.bis)} €
+                </span>
+                <span className="preis-inline-unit">{data.kosten.einheit}</span>
+              </div>
+              <div className="article-body">
+                <p>
+                  <strong>Was den Preis beeinflusst:</strong> {faktorenText}.
+                </p>
+                <p>{data.kosten.beispiel}</p>
+              </div>
+              <div className="hinweis">
+                <p>
+                  Alle Preise sind Richtwerte für München 2026. Der genaue Preis
+                  hängt von Zustand, Zugänglichkeit und Materialwahl ab — beim
+                  Vor-Ort-Termin nennen wir einen festen Preis.
+                </p>
+              </div>
+              <Link
+                href={rechnerHref}
+                className="page-hero-btn-primary"
+                style={{ display: "inline-block", marginTop: "20px" }}
+              >
+                {rechnerCtaLabel}
+              </Link>
+            </div>
+          </section>
+          <div className="article-divider" aria-hidden />
+        </>
+      ) : null}
 
-          <table className="preis-table">
-            <thead>
-              <tr>
-                <th>Material</th>
-                <th>Preis</th>
-                <th>Geeignet für</th>
-              </tr>
-            </thead>
-            <tbody>
-              {data.materialien.map((m) => (
-                <tr key={m.name}>
-                  <td>
-                    <div>{m.name}</div>
-                    <div
-                      style={{
-                        fontSize: "12px",
-                        fontWeight: 400,
-                        color: "var(--fl-text-3)",
-                        marginTop: "2px",
-                      }}
-                    >
-                      {m.beschreibung}
-                    </div>
-                  </td>
-                  <td style={{ whiteSpace: "nowrap" }}>{m.vonBis}</td>
-                  <td>{m.fuer}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </section>
-
-      <div className="article-divider" aria-hidden />
-
-      <section
-        className="article-section content-section content-section--white fade-up d1"
-      >
-        <div className="article-section-inner">
-          <span className="chapter-label">Preise München 2024/25</span>
-          <h2 className="section-h2">Was kostet das wirklich?</h2>
-
-          <div className="preis-inline">
-            <span className="preis-inline-value">
-              {formatEuro(data.kosten.von)} – {formatEuro(data.kosten.bis)} €
-            </span>
-            <span className="preis-inline-unit">{data.kosten.einheit}</span>
-          </div>
-
-          <div className="article-body">
-            <p>
-              <strong>Was den Preis beeinflusst:</strong> {faktorenText}.
-            </p>
-            <p>{data.kosten.beispiel}</p>
-          </div>
-
-          <div className="hinweis">
-            <p>
-              Alle Preise sind Richtwerte für München 2024/25. Der genaue Preis
-              hängt von Zustand, Zugänglichkeit und Materialwahl ab — beim
-              Vor-Ort-Termin nennen wir einen festen Preis.
-            </p>
-          </div>
-
-          <Link
-            href={rechnerHref}
-            className="page-hero-btn-primary"
-            style={{ display: "inline-block", marginTop: "20px" }}
+      {!isGuide && data.zeitaufwand.klein ? (
+        <>
+          <section
+            className="article-section--sm content-section content-section--muted fade-up d2"
+            style={{ padding: "48px 2rem" }}
           >
-            Preis für mein Projekt berechnen →
-          </Link>
-        </div>
-      </section>
-
-      <div className="article-divider" aria-hidden />
-
-      <section
-        className="article-section--sm content-section content-section--muted fade-up d2"
-        style={{ padding: "48px 2rem" }}
-      >
-        <div className="article-section-inner">
-          <span className="chapter-label">Zeitaufwand</span>
-          <h2 className="section-h2">Wie lange dauert das?</h2>
-
-          <div className="zeit-inline">
-            <div className="zeit-inline-item">
-              <div className="zeit-inline-label">Klein</div>
-              <div className="zeit-inline-value">{data.zeitaufwand.klein}</div>
+            <div className="article-section-inner">
+              <span className="chapter-label">Zeitaufwand</span>
+              <h2 className="section-h2">{sectionH2(data, "zeit")}</h2>
+              <div className="zeit-inline">
+                <div className="zeit-inline-item">
+                  <div className="zeit-inline-label">Klein</div>
+                  <div className="zeit-inline-value">{data.zeitaufwand.klein}</div>
+                </div>
+                <div className="zeit-inline-item">
+                  <div className="zeit-inline-label">Mittel</div>
+                  <div className="zeit-inline-value">{data.zeitaufwand.mittel}</div>
+                </div>
+                <div className="zeit-inline-item">
+                  <div className="zeit-inline-label">Groß</div>
+                  <div className="zeit-inline-value">{data.zeitaufwand.gross}</div>
+                </div>
+              </div>
+              <div className="article-body">
+                <p>
+                  <strong>Was die Dauer beeinflusst:</strong> {zeitFaktorenText}.
+                </p>
+              </div>
             </div>
-            <div className="zeit-inline-item">
-              <div className="zeit-inline-label">Mittel</div>
-              <div className="zeit-inline-value">{data.zeitaufwand.mittel}</div>
-            </div>
-            <div className="zeit-inline-item">
-              <div className="zeit-inline-label">Groß</div>
-              <div className="zeit-inline-value">{data.zeitaufwand.gross}</div>
-            </div>
-          </div>
+          </section>
+          <div className="article-divider" aria-hidden />
+        </>
+      ) : null}
 
-          <div className="article-body">
-            <p>
-              <strong>Was die Dauer beeinflusst:</strong> {zeitFaktorenText}.
-            </p>
-          </div>
-        </div>
-      </section>
-
-      <div className="article-divider" aria-hidden />
+      {isGuide ? <div className="article-divider" aria-hidden /> : null}
 
       <section
         className="article-section content-section content-section--white fade-up d3"
@@ -323,7 +416,7 @@ export function RatgeberPage({ data }: RatgeberPageProps) {
         <div className="article-section-inner">
           <span className="chapter-label">Häufige Fragen</span>
           <h2 className="section-h2" style={{ marginBottom: "28px" }}>
-            Was Kunden fragen
+            {sectionH2(data, "faq")}
           </h2>
 
           <div className="article-faq">
@@ -332,47 +425,75 @@ export function RatgeberPage({ data }: RatgeberPageProps) {
         </div>
       </section>
 
-      <div className="article-divider" aria-hidden />
+      {!isGuide && data.qualitaet.length > 0 ? (
+        <>
+          <div className="article-divider" aria-hidden />
+          <section className="article-section content-section content-section--white fade-up d1">
+            <div className="article-section-inner">
+              <span className="chapter-label">Qualität erkennen</span>
+              <h2 className="section-h2">{sectionH2(data, "qualitaet")}</h2>
+              <div className="article-body">
+                {data.qualitaet.map((q) => (
+                  <p key={q}>{q}</p>
+                ))}
+              </div>
+            </div>
+          </section>
+        </>
+      ) : null}
 
-      <section
-        className="article-section content-section content-section--white fade-up d1"
-      >
-        <div className="article-section-inner">
-          <span className="chapter-label">Qualität erkennen</span>
-          <h2 className="section-h2">Woran erkennst du gute Arbeit?</h2>
-          <div className="article-body">
-            {data.qualitaet.map((q) => (
-              <p key={q}>{q}</p>
-            ))}
-          </div>
-        </div>
-      </section>
+      {!isGuide && data.muenchen.length > 0 ? (
+        <>
+          <div className="article-divider" aria-hidden />
+          <section className="article-section content-section content-section--muted fade-up d2">
+            <div className="article-section-inner">
+              <span className="chapter-label">München spezifisch</span>
+              <h2 className="section-h2">{sectionH2(data, "muenchen")}</h2>
+              <div className="article-body">
+                {data.muenchen.map((m) => {
+                  const { icon, text } = splitIconText(m);
+                  return (
+                    <p key={m}>
+                      {icon ? (
+                        <span style={{ marginRight: "8px" }} aria-hidden>
+                          {icon}
+                        </span>
+                      ) : null}
+                      {text}
+                    </p>
+                  );
+                })}
+              </div>
+            </div>
+          </section>
+        </>
+      ) : null}
 
-      <div className="article-divider" aria-hidden />
-
-      <section
-        className="article-section content-section content-section--muted fade-up d2"
-      >
-        <div className="article-section-inner">
-          <span className="chapter-label">München spezifisch</span>
-          <h2 className="section-h2">Besonderheiten in München</h2>
-          <div className="article-body">
-            {data.muenchen.map((m) => {
-              const { icon, text } = splitIconText(m);
-              return (
-                <p key={m}>
-                  {icon ? (
-                    <span style={{ marginRight: "8px" }} aria-hidden>
-                      {icon}
-                    </span>
-                  ) : null}
-                  {text}
-                </p>
-              );
-            })}
-          </div>
-        </div>
-      </section>
+      {data.relatedLinks && data.relatedLinks.length > 0 ? (
+        <>
+          <div className="article-divider" aria-hidden />
+          <section className="article-section content-section content-section--white fade-up d2">
+            <div className="article-section-inner">
+              <span className="chapter-label">Weiterlesen</span>
+              <h2 className="section-h2">Passende Ratgeber</h2>
+              <div
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "10px",
+                  marginTop: "16px",
+                }}
+              >
+                {data.relatedLinks.map((link) => (
+                  <Link key={link.href} href={link.href} className="koordination-box-link">
+                    {link.label} →
+                  </Link>
+                ))}
+              </div>
+            </div>
+          </section>
+        </>
+      ) : null}
 
       <StadtteilLinksSection
         links={stadtteilLinks}
@@ -387,12 +508,25 @@ export function RatgeberPage({ data }: RatgeberPageProps) {
             Preisrahmen berechnen — Anfahrt wird bei Beauftragung angerechnet.
           </p>
           <div className="final-cta-btns">
-            <Link href={rechnerHref} className="final-cta-btn-primary">
-              Jetzt loslegen →
-            </Link>
-            <Link href={telHref} className="final-cta-btn-ghost">
-              Direkt anrufen
-            </Link>
+            {data.finalCtaPhoneFirst ? (
+              <>
+                <Link href={telHref} className="final-cta-btn-primary">
+                  {phoneLabel}
+                </Link>
+                <Link href={rechnerHref} className="final-cta-btn-ghost">
+                  {rechnerCtaLabel}
+                </Link>
+              </>
+            ) : (
+              <>
+                <Link href={rechnerHref} className="final-cta-btn-primary">
+                  {rechnerCtaLabel}
+                </Link>
+                <Link href={telHref} className="final-cta-btn-ghost">
+                  Direkt anrufen
+                </Link>
+              </>
+            )}
           </div>
           <Link href={leistungUrl} className="final-cta-link">
             Zur Leistungsseite →

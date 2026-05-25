@@ -22,9 +22,10 @@ export async function generateMetadata({ params }: PageProps) {
     return { title: "Ratgeber — Bärenwald" };
   }
 
-  const title = `${data.metaTitle} — Kosten & Ablauf München 2026`;
-  const description = `${data.metaDescription} Aktuelle Preise für München 2026, Ablauf und Tipps.`;
-  const canonical = `https://baerenwaldmuenchen.de/ratgeber/${params.slug}`;
+  const title = data.metaTitle;
+  const description = data.metaDescription;
+  const canonicalSlug = data.canonicalSlug ?? params.slug;
+  const canonical = `https://baerenwaldmuenchen.de/ratgeber/${canonicalSlug}`;
 
   return {
     title,
