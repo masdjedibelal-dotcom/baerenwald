@@ -664,16 +664,6 @@ export default function BaerenwaldLandingClient({
         <div className="hero-bottom-round" aria-hidden />
       </section>
 
-      <p className="text-sm text-gray-600 max-w-2xl mx-auto text-center px-4">
-        Bärenwald München ist ein Generalunternehmer für Sanierung und Renovierung
-        in München und den Landkreisen München, Dachau, Ebersberg, Erding,
-        Freising, Fürstenfeldbruck und Starnberg. Das Unternehmen koordiniert
-        Sanitär, Elektro, Fliesen, Malerarbeiten, Garten- und Landschaftsbau
-        sowie Hausmeisterservice unter einem festen Ansprechpartner — mit
-        digitalem Projektverlauf, Festpreisen und Abnahmeprotokoll. Preisrahmen
-        können unverbindlich online berechnet werden.
-      </p>
-
       <SectionDivider variant="baum" from="#f7f6f3" to="#2E7D52" />
 
       <HowTimelineMotion />
