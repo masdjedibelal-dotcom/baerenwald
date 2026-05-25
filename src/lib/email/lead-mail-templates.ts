@@ -1,4 +1,20 @@
 import { SITE_CONFIG } from "@/lib/config";
+import {
+  buildBreakdownRows,
+  buildGroessenRows,
+  buildInternNotificationSubject,
+  buildLeistungenRows,
+  effectivePreisRange,
+  extractKundenFreitext,
+  formatPreisrahmenDe,
+  labelBereich,
+  labelDringlichkeit,
+  labelKundentyp,
+  labelSituation,
+  labelZeitraum,
+  labelZugaenglichkeit,
+  normalizeFunnelDaten,
+} from "@/lib/lead-funnel-daten";
 
 function esc(s: string): string {
   return s
@@ -298,56 +314,148 @@ export type InternLeadMailData = {
   email?: string;
   telefon?: string;
   plz?: string;
-  situation?: string;
   bereiche?: string[];
-  preis?: string;
-  notizen?: string;
+  preis_min?: number;
+  preis_max?: number;
+  nachricht?: string;
+  funnel_daten?: unknown;
+  kanal?: string;
   dashboardUrl?: string;
   quelle?: string;
   createdAt?: string;
   leadId?: string;
 };
 
+export { buildInternNotificationSubject };
+
+function sectionHeader(title: string): string {
+  return `<tr>
+  <td colspan="2" style="padding:12px 16px 4px;font-size:10px;font-weight:600;color:#9CA3AF;text-transform:uppercase;letter-spacing:0.1em;background:white;border-top:1px solid #F3F4F6;">
+    ${esc(title)}
+  </td>
+</tr>`;
+}
+
+function dataRow(label: string, value: string): string {
+  return `<tr>
+  <td style="padding:8px 16px;font-size:13px;color:#6B7280;width:120px;vertical-align:top;white-space:nowrap;">
+    ${esc(label)}
+  </td>
+  <td style="padding:8px 16px;font-size:13px;color:#111;font-weight:500;vertical-align:top;">
+    ${cellHtml(value)}
+  </td>
+</tr>`;
+}
+
+function optionalRow(label: string, value: string | undefined): string {
+  const v = value?.trim();
+  return v ? dataRow(label, v) : "";
+}
+
+function priceBox(min: number, max: number): string {
+  const text = formatPreisrahmenDe(min, max);
+  if (!text) return "";
+  return `<tr>
+  <td colspan="2" style="padding:8px 16px 12px;">
+    <div style="background:#EAF3DE;border-radius:6px;padding:10px 14px;font-size:14px;font-weight:600;color:#1A3D2B;">
+      💶 Preisrahmen: ${esc(text)}
+    </div>
+  </td>
+</tr>`;
+}
+
+function freitextBox(text: string): string {
+  return `<tr>
+  <td colspan="2" style="padding:4px 0 12px;">
+    <p style="margin:0 16px 6px;font-size:10px;font-weight:600;color:#9CA3AF;text-transform:uppercase;letter-spacing:0.1em;">
+      Nachricht vom Kunden
+    </p>
+    <div style="background:#F9FAFB;border-radius:6px;padding:12px 14px;font-size:13px;color:#374151;line-height:1.6;border-left:3px solid #E5E7EB;margin:0 16px;">
+      ${cellHtml(text)}
+    </div>
+  </td>
+</tr>`;
+}
+
 /**
- * Interne Lead-Benachrichtigung — kompakte Tabelle + CRM-Link.
+ * Interne Lead-Benachrichtigung — strukturierte Sektionen + CRM-Link.
  */
 export function buildInternNotification(data: InternLeadMailData): string {
-  const rows: { label: string; value: string }[] = [];
-  const push = (label: string, value: string | undefined) => {
-    const v = value?.trim();
-    if (v) rows.push({ label, value: v });
-  };
+  const norm = normalizeFunnelDaten(data.funnel_daten, data.bereiche);
+  const bereiche = norm.bereiche.length > 0 ? norm.bereiche : data.bereiche ?? [];
+  const bereicheLabels =
+    bereiche.map((b) => labelBereich(b)).join(" · ") || "—";
 
-  push("Name", data.name);
-  push("E-Mail", data.email);
-  push("Telefon", data.telefon);
-  push("PLZ", data.plz);
-  push("Quelle", data.quelle);
-  push("Situation", data.situation);
-  if (data.bereiche && data.bereiche.length > 0) {
-    push("Bereiche", data.bereiche.join(", "));
+  const dring =
+    labelDringlichkeit(norm.dringlichkeit) ||
+    labelZeitraum(norm.zeitraum);
+  const zugang = labelZugaenglichkeit(norm.zugaenglichkeit);
+
+  const leistungen = buildLeistungenRows(norm);
+  const breakdownRows = buildBreakdownRows(norm);
+  const groessen = buildGroessenRows(norm);
+  const hasLeistungen =
+    leistungen.length > 0 ||
+    breakdownRows.length > 0 ||
+    groessen.length > 0;
+
+  const { min: effMin, max: effMax } = effectivePreisRange(
+    data.preis_min,
+    data.preis_max,
+    norm
+  );
+
+  const freitext = extractKundenFreitext(norm, data.nachricht);
+
+  const kontaktRows = [
+    optionalRow("Name", data.name),
+    optionalRow("Telefon", data.telefon),
+    optionalRow("E-Mail", data.email),
+    optionalRow("PLZ", data.plz),
+    optionalRow("Kanal", data.kanal ?? "Website"),
+    optionalRow("Eingeg.", data.createdAt),
+  ].join("");
+
+  const projektRows = [
+    sectionHeader("Projektdetails"),
+    dataRow("Vorhaben", labelSituation(norm.situation)),
+    dataRow("Bereiche", bereicheLabels),
+    optionalRow("Kundentyp", labelKundentyp(norm.kundentyp)),
+    optionalRow(
+      "Zeitraum",
+      labelZeitraum(norm.zeitraum) || undefined
+    ),
+    optionalRow("Dringlich.", dring || undefined),
+    optionalRow("Zugang", zugang || undefined),
+  ].join("");
+
+  let leistungenHtml = "";
+  if (hasLeistungen) {
+    leistungenHtml = sectionHeader("Was soll gemacht werden");
+    for (const row of leistungen) {
+      leistungenHtml += dataRow(row.label, row.value);
+    }
+    for (const row of breakdownRows) {
+      leistungenHtml += dataRow(row.label, row.value);
+    }
+    for (const row of groessen) {
+      leistungenHtml += dataRow(row.label, row.value);
+    }
   }
-  push("Preisrahmen", data.preis);
-  push("Notizen", data.notizen);
-  push("Zeitpunkt", data.createdAt);
-  push("Lead-ID", data.leadId);
 
-  const rowsHtml = rows
-    .map(
-      ({ label, value }) => `
-      <tr>
-        <td style="padding:8px 0;border-bottom:1px solid #F3F4F6;color:#6B7280;width:35%;vertical-align:top;">${esc(label)}</td>
-        <td style="padding:8px 0 8px 16px;border-bottom:1px solid #F3F4F6;font-weight:500;vertical-align:top;">${cellHtml(value)}</td>
-      </tr>`
-    )
-    .join("");
+  const preisHtml = priceBox(effMin, effMax);
+  const freitextHtml = freitext ? freitextBox(freitext) : "";
 
-  const title = data.name?.trim() ? esc(data.name.trim()) : "Neue Anfrage";
+  const quelleRows = [
+    sectionHeader("Quelle"),
+    optionalRow("Quelle", data.quelle),
+    optionalRow("Lead-ID", data.leadId),
+  ].join("");
 
   const buttonBlock =
     data.dashboardUrl && data.dashboardUrl.trim().length > 0
       ? `
-    <table cellpadding="0" cellspacing="0" style="margin-top:24px;">
+    <table cellpadding="0" cellspacing="0" style="margin:16px 16px 0;">
     <tr>
       <td style="background:#2E7D52;border-radius:6px;">
         <a href="${escAttr(data.dashboardUrl.trim())}" style="display:inline-block;padding:12px 24px;color:#ffffff;font-size:14px;font-weight:700;text-decoration:none;">
@@ -362,6 +470,7 @@ export function buildInternNotification(data: InternLeadMailData): string {
 <html lang="de">
 <head>
 <meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
 </head>
 <body style="margin:0;padding:0;font-family:Arial,Helvetica,sans-serif;background:#f7f6f3;">
 
@@ -379,10 +488,14 @@ export function buildInternNotification(data: InternLeadMailData): string {
 </tr>
 
 <tr>
-  <td style="padding:24px;">
-    <p style="margin:0 0 20px;font-size:20px;font-weight:800;color:#1E1E1E;">${title}</p>
+  <td style="padding:8px 0 0;">
     <table width="100%" cellpadding="0" cellspacing="0" style="font-size:14px;color:#1E1E1E;">
-      ${rowsHtml}
+      ${kontaktRows}
+      ${projektRows}
+      ${leistungenHtml}
+      ${preisHtml}
+      ${freitextHtml}
+      ${quelleRows}
     </table>
     ${buttonBlock}
   </td>

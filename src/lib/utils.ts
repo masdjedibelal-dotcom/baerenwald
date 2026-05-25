@@ -6,6 +6,12 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 /** z. B. für Hintergrund mit geringer Deckkraft aus Hex-Akzent */
+export {
+  BEREICH_LABELS,
+  FACHDETAIL_TO_LEISTUNG,
+  SITUATION_LABELS,
+} from "@/lib/lead-funnel-labels";
+
 export function hexToRgba(hex: string, alpha: number): string {
   const h = hex.replace("#", "");
   const full =

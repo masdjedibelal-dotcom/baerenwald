@@ -7,7 +7,7 @@ export type HomeFaqItem = FaqAccordionItem;
 export const HOME_FAQ_ITEMS: HomeFaqItem[] = [
   {
     q: "Was ist der Unterschied zu MyHammer oder Blauarbeit?",
-    a: "Bei Vergleichsportalen stellst du eine Anfrage und verschiedene Handwerker schicken Angebote. Du vergleichst, entscheidest und koordinierst selbst wer wann kommt. Bei Bärenwald gibt es keinen Wettbewerb zwischen Handwerkern. Wir koordinieren alles intern — ein Ansprechpartner, eine Rechnung, kein Abstimmen.",
+    a: "Bei Vergleichsportalen stellst du eine Anfrage und verschiedene Handwerker schicken Angebote. Du vergleichst, entscheidest und koordinierst selbst wer wann kommt. Bei Bärenwald gibt es keinen Wettbewerb zwischen Handwerkern. Wir koordinieren alles intern — ein Ansprechpartner, eine Rechnung, kein Abstimmen. Mehr dazu: /ratgeber/generalunternehmer-vs-einzelhandwerker-muenchen",
   },
   {
     q: "Was bedeutet 'ein Ansprechpartner' konkret für mich?",

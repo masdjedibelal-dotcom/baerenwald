@@ -803,6 +803,10 @@ export const LEISTUNGEN_DATA: Record<string, LeistungsData> = {
     ),
     ratgeberSlug: "heizung-tauschen-kosten",
     ratgeberLabel: "Heizung tauschen — was kostet das?",
+    relatedRatgeber: {
+      slug: "notfall-handwerker-muenchen",
+      label: "Notfall-Handwerker — wer kommt schnell?",
+    },
     rechnerSituation: "kaputt",
     faq: [
       {
@@ -837,6 +841,10 @@ export const LEISTUNGEN_DATA: Record<string, LeistungsData> = {
     ),
     ratgeberSlug: "bad-sanierung-kosten-muenchen",
     ratgeberLabel: "Was kostet eine Badsanierung?",
+    relatedRatgeber: {
+      slug: "notfall-handwerker-muenchen",
+      label: "Notfall-Handwerker — wer kommt schnell?",
+    },
     rechnerSituation: "kaputt",
     faq: [
       {

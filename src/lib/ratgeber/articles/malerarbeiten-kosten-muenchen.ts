@@ -1,11 +1,10 @@
 import type { RatgeberData } from "@/lib/ratgeber/types";
+import { MALERARBEITEN_KOSTEN_SEO } from "@/lib/ratgeber/articles/seo-content";
 
 export const malerarbeitenKostenMuenchen: RatgeberData = {
   slug: "malerarbeiten-kosten-muenchen",
   titel: "Malerarbeiten Kosten München",
-  metaTitle: "Malerarbeiten Kosten München 2025 — Preise pro m² & Faktoren",
-  metaDescription:
-    "Was kosten Malerarbeiten in München? Richtpreise 2024/25, Materialwahl, Ablauf, Zeit und lokale Besonderheiten — kompakt erklärt.",
+  ...MALERARBEITEN_KOSTEN_SEO,
   hero: {
     headline:
       "Was kostet es die Wohnung streichen zu lassen? München 2025",

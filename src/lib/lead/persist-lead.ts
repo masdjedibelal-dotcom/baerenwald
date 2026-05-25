@@ -3,6 +3,7 @@ import { Resend } from "resend";
 import { SITE_CONFIG } from "@/lib/config";
 import {
   buildInternNotification,
+  buildInternNotificationSubject,
   buildKundeBestaetigung,
 } from "@/lib/email/lead-mail-templates";
 import {
@@ -136,17 +137,6 @@ function guProjektDisplayName(bereiche: string[]): string {
   return bereiche[0]
     ? (GU_PROJEKT_NAME[bereiche[0]] ?? bereiche[0].replace(/_/g, " "))
     : "Projekt";
-}
-
-function situationDisplay(s: string | null): string | undefined {
-  if (s == null || String(s).trim() === "") return undefined;
-  const key = String(s).trim();
-  const map: Record<string, string> = {
-    kaputt: "Reparatur / Schaden",
-    erneuern: "Erneuern / Umbau",
-    gewerbe: "Gewerbe",
-  };
-  return map[key] ?? key;
 }
 
 function formatPreisrahmen(
@@ -480,16 +470,22 @@ async function persistLeadInner(
         await resend.emails.send({
           from: resendFromSystem,
           to: internTo,
-          subject: `Neue Anfrage: ${name} — ${bereiche.join(", ") || "—"}`,
+          subject: buildInternNotificationSubject({
+            name,
+            bereiche: bereiche.length > 0 ? bereiche : undefined,
+            plz: plz || undefined,
+          }),
           html: buildInternNotification({
             name,
             email: kontakt_email_row,
             telefon: telefon || undefined,
             plz: plz || undefined,
-            situation: situationDisplay(situation) ?? situation ?? undefined,
             bereiche: bereiche.length > 0 ? bereiche : undefined,
-            preis: formatPreisrahmen(preis_min, preis_max),
-            notizen: notizen ?? undefined,
+            preis_min,
+            preis_max,
+            nachricht: notizen,
+            funnel_daten,
+            kanal: "Website",
             dashboardUrl,
             quelle: funnelQuelleDisplay(String(funnel_quelle)),
             createdAt: new Date().toLocaleString("de-DE", {

@@ -118,7 +118,8 @@ export function localBusinessSchema(): Record<string, unknown> {
 
 export function serviceSchema(
   service: string,
-  description: string
+  description: string,
+  priceRange?: string
 ): Record<string, unknown> {
   return {
     "@context": JSON_LD_CONTEXT,
@@ -132,6 +133,7 @@ export function serviceSchema(
       telephone: SITE_CONFIG.phone,
     },
     areaServed: SITE_CONFIG.region,
+    ...(priceRange ? { priceRange } : {}),
   };
 }
 

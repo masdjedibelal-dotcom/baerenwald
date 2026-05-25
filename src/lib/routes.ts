@@ -198,6 +198,30 @@ export const RATGEBER: RatgeberRoute[] = [
     slug: "dacharbeiten-kosten-muenchen",
     label: "Dacharbeiten Kosten München",
   },
+  {
+    slug: "generalunternehmer-vs-einzelhandwerker-muenchen",
+    label: "Generalunternehmer vs. Einzelhandwerker",
+  },
+  {
+    slug: "beste-generalunternehmer-muenchen",
+    label: "Beste Generalunternehmer München",
+  },
+  {
+    slug: "zuverlaessigen-handwerker-finden-muenchen",
+    label: "Zuverlässigen Handwerker finden",
+  },
+  {
+    slug: "notfall-handwerker-muenchen",
+    label: "Notfall Handwerker München",
+  },
+  {
+    slug: "renovierung-muenchen-checkliste",
+    label: "Renovierung München — Checkliste",
+  },
+  {
+    slug: "komplettsanierung-ablauf-muenchen",
+    label: "Komplettsanierung — Ablauf & Kosten",
+  },
 ];
 
 export function leistungHref(slug: string): string {

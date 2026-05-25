@@ -1,13 +1,24 @@
 import type { RatgeberData } from "@/lib/ratgeber/types";
+import {
+  BAD_RENOVIEREN_ABLAUF_SEO,
+  BAD_SANIERUNG_KOSTEN_SEO,
+  BODENBELAG_KOSTEN_SEO,
+  DACHARBEITEN_KOSTEN_SEO,
+  FENSTER_TAUSCHEN_SEO,
+  GARTENPFLEGE_KOSTEN_SEO,
+  HEIZUNG_TAUSCHEN_SEO,
+  TROCKENBAU_KOSTEN_SEO,
+  WAERMEPUMPE_FOERDERUNG_SEO,
+  WINTERDIENST_KOSTEN_SEO,
+  WOHNUNG_RENOVIEREN_SEO,
+} from "@/lib/ratgeber/articles/seo-content";
 
 const DATES_STD = { datePublished: "2024-06-01", dateModified: "2025-01-15" } as const;
 
 export const badSanierungKostenMuenchen: RatgeberData = {
   slug: "bad-sanierung-kosten-muenchen",
   titel: "Badsanierung Kosten München",
-  metaTitle: "Badsanierung München Kosten 2025 — Komplett & Teilsanierung",
-  metaDescription:
-    "Was kostet eine Badsanierung in München? Richtpreise 2024/25 für Komplett- und Teilsanierung, Faktoren, Ablauf und typische Münchner Altbausituationen.",
+  ...BAD_SANIERUNG_KOSTEN_SEO,
   hero: {
     headline: "Was kostet ein neues Bad? Preise für München 2025",
     subline:
@@ -101,15 +112,19 @@ export const badSanierungKostenMuenchen: RatgeberData = {
   leistungsSlug: "badezimmer-sanierung",
   leistungsLabel: "Badezimmer sanieren in München",
   rechnerSituation: "erneuern",
+  relatedLinks: [
+    {
+      href: "/ratgeber/komplettsanierung-ablauf-muenchen",
+      label: "Komplettsanierung — Ablauf, Kosten & Zeitplan",
+    },
+  ],
   ...DATES_STD,
 };
 
 export const bodenbelagKostenMuenchen: RatgeberData = {
   slug: "bodenbelag-kosten-muenchen",
   titel: "Bodenbelag Kosten München",
-  metaTitle: "Neuer Boden München — Kosten Laminat, Parkett, Fliesen 2025",
-  metaDescription:
-    "Was kostet neuer Boden in München? Preise pro m² für Laminat, Parkett, Vinyl und Fliesen inkl. Verlegung, Untergrund und typische Altbauprobleme.",
+  ...BODENBELAG_KOSTEN_SEO,
   hero: {
     headline: "Was kostet neuer Boden? Laminat, Parkett, Fliesen in München",
     subline:
@@ -208,9 +223,7 @@ export const bodenbelagKostenMuenchen: RatgeberData = {
 export const heizungTauschenKosten: RatgeberData = {
   slug: "heizung-tauschen-kosten",
   titel: "Heizung tauschen Kosten",
-  metaTitle: "Heizung tauschen München — Kosten, Wärmepumpe & Förderung 2025",
-  metaDescription:
-    "Was kostet ein Heizungstausch in München? Kosten für Gas, Wärmepumpe, Hydraulik, Förderung BAFA/KfW und typische Bestandsfälle im Altbau.",
+  ...HEIZUNG_TAUSCHEN_SEO,
   hero: {
     headline: "Wann lohnt sich eine neue Heizung — und was kostet das?",
     subline:
@@ -309,9 +322,7 @@ export const heizungTauschenKosten: RatgeberData = {
 export const wohnungRenovierenKostenMuenchen: RatgeberData = {
   slug: "wohnung-renovieren-kosten-muenchen",
   titel: "Wohnung renovieren Kosten",
-  metaTitle: "Wohnung renovieren München — Gesamtkosten & Budget 2025",
-  metaDescription:
-    "Was kostet eine Wohnungsrenovierung in München? Kosten je m², Mix aus Handwerksleistungen, Altbaueffekte und wie du Budget & Reihenfolge sinnvoll planst.",
+  ...WOHNUNG_RENOVIEREN_SEO,
   hero: {
     headline: "Was kostet es eine Wohnung renovieren zu lassen? München 2025",
     subline:
@@ -404,15 +415,23 @@ export const wohnungRenovierenKostenMuenchen: RatgeberData = {
   leistungsSlug: "malerarbeiten",
   leistungsLabel: "Malerarbeiten in München",
   rechnerSituation: "erneuern",
+  relatedLinks: [
+    {
+      href: "/ratgeber/renovierung-muenchen-checkliste",
+      label: "Renovierung München — Checkliste vor dem Start",
+    },
+    {
+      href: "/ratgeber/generalunternehmer-vs-einzelhandwerker-muenchen",
+      label: "Generalunternehmer vs. Einzelhandwerker",
+    },
+  ],
   ...DATES_STD,
 };
 
 export const gartenpflegeKostenMuenchen: RatgeberData = {
   slug: "gartenpflege-kosten-muenchen",
   titel: "Gartenpflege Kosten München",
-  metaTitle: "Gartenpflege München — Preise pro m², Rhythmus & Saison 2025",
-  metaDescription:
-    "Was kostet Gartenpflege in München? Richtpreise 2024/25, Rasen, Hecken, Laub, Abo vs. Einzeltermin und lokale Regeln (Brut- und Vegetationsschutz).",
+  ...GARTENPFLEGE_KOSTEN_SEO,
   hero: {
     headline: "Was kostet Gartenpflege in München?",
     subline:
@@ -511,9 +530,7 @@ export const gartenpflegeKostenMuenchen: RatgeberData = {
 export const winterdienstKostenMuenchen: RatgeberData = {
   slug: "winterdienst-kosten-muenchen",
   titel: "Winterdienst München Kosten",
-  metaTitle: "Winterdienst München — Kosten, Streupflicht & Saison 2025",
-  metaDescription:
-    "Was kostet Winterdienst in München? Saisonpreise, Streupflicht, Dokumentation, umweltfreundliches Streugut und typische Objekte in Wohnanlagen.",
+  ...WINTERDIENST_KOSTEN_SEO,
   hero: {
     headline: "Winterdienst in München — was kostet das und was muss ich?",
     subline:
@@ -612,9 +629,7 @@ export const winterdienstKostenMuenchen: RatgeberData = {
 export const waermepumpeFoerderung2025: RatgeberData = {
   slug: "waermepumpe-foerderung-2025",
   titel: "Wärmepumpe Förderung 2025",
-  metaTitle: "Wärmepumpe Förderung 2025 — BAFA, KfW & München Praxis",
-  metaDescription:
-    "Wärmepumpe fördern lassen 2025: BAFA-Bonus, Einkommensabhängigkeit, Effizienzhaus-Stufen und was Eigentümer in München konkret einreichen müssen.",
+  ...WAERMEPUMPE_FOERDERUNG_SEO,
   hero: {
     headline: "Wärmepumpe 2025 — wie viel Förderung bekomme ich wirklich?",
     subline:
@@ -714,9 +729,7 @@ export const waermepumpeFoerderung2025: RatgeberData = {
 export const badRenovierenAblauf: RatgeberData = {
   slug: "bad-renovieren-ablauf",
   titel: "Bad renovieren Ablauf",
-  metaTitle: "Bad renovieren Ablauf — Schritte, Handwerker & Zeitplan München",
-  metaDescription:
-    "Bad renovieren Schritt für Schritt: typischer Ablauf in München, Reihenfolge der Handwerker, Stillstandszeiten und worauf du bei Altbau & WEG achten musst.",
+  ...BAD_RENOVIEREN_ABLAUF_SEO,
   hero: {
     headline: "Bad renovieren — wie läuft das ab und wie lange dauert es?",
     subline:
@@ -815,9 +828,7 @@ export const badRenovierenAblauf: RatgeberData = {
 export const fensterTauschenKosten: RatgeberData = {
   slug: "fenster-tauschen-kosten",
   titel: "Fenster tauschen Kosten",
-  metaTitle: "Fenster tauschen München — Kosten, Förderung & Ablauf 2025",
-  metaDescription:
-    "Was kostet Fenstertausch in München? Preise pro Fenster, U-Wert, Förderung, Altbau-Anschlüsse und typische Zusatzkosten Außenputz.",
+  ...FENSTER_TAUSCHEN_SEO,
   hero: {
     headline: "Neue Fenster — was kostet das und lohnt es sich wirklich?",
     subline:
@@ -916,9 +927,7 @@ export const fensterTauschenKosten: RatgeberData = {
 export const trockenbauKostenMuenchen: RatgeberData = {
   slug: "trockenbau-kosten-muenchen",
   titel: "Neue Wände & Decken — Kosten München",
-  metaTitle: "Neue Wände & Decken München — Kosten pro m², Schall & Ablauf 2025",
-  metaDescription:
-    "Neue Wände und Decken in München: Preise pro m² für Trennwände, abgehängte Decken, Dämmung, Schallschutz und typische Altbausituationen mit hohen Decken.",
+  ...TROCKENBAU_KOSTEN_SEO,
   hero: {
     headline: "Neue Wand einziehen — was kostet das in München?",
     subline:
@@ -1017,9 +1026,7 @@ export const trockenbauKostenMuenchen: RatgeberData = {
 export const dacharbeitenKostenMuenchen: RatgeberData = {
   slug: "dacharbeiten-kosten-muenchen",
   titel: "Dacharbeiten Kosten München",
-  metaTitle: "Dacharbeiten München — Kosten, Sanierung & Notfall 2025",
-  metaDescription:
-    "Was kosten Dacharbeiten in München? Preise pro m², Reparatur vs. Sanierung, Sturm & Versicherung und typische Zusatzkosten bei Satteldächern.",
+  ...DACHARBEITEN_KOSTEN_SEO,
   hero: {
     headline: "Dach reparieren oder sanieren — was kostet das in München?",
     subline:

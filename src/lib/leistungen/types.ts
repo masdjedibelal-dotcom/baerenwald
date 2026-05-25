@@ -19,6 +19,8 @@ export interface LeistungsData {
   vorteile: { icon: string; text: string }[];
   ratgeberSlug: string;
   ratgeberLabel: string;
+  /** Zusätzliche Ratgeber-Verlinkung (z. B. Notfall-Guide). */
+  relatedRatgeber?: { slug: string; label: string };
   faq: LeistungsFaqItem[];
   /** Query-Wert für `/rechner?situation=` (Funnel) */
   rechnerSituation: Situation;

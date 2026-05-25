@@ -8,6 +8,7 @@ import {
   countFachdetailGewerke,
   type FachdetailGewerkKey,
 } from "@/lib/funnel/fachdetails-notfall";
+import { isReparaturNotfallSituation } from "@/lib/funnel/reparatur-flow";
 import type {
   BudgetCheck,
   FachdetailsState,
@@ -173,6 +174,14 @@ function bwFunnelReducer(
     }
 
     case "SET_UMFANG":
+      /** Kaputt: `zeitpunkt` spiegelt nur Dringlichkeit in `umfang` — Fachdetails dürfen nicht gelöscht werden. */
+      if (isReparaturNotfallSituation(state.situation)) {
+        return {
+          ...state,
+          umfang: action.value,
+          umfangFaktor: action.faktor,
+        };
+      }
       return {
         ...state,
         umfang: action.value,
