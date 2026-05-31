@@ -1,9 +1,10 @@
-import Anthropic from "@anthropic-ai/sdk";
-
 import {
+  createAnthropicClient,
   getClaudeApiKey,
+  getClaudeApiKeyDiagnostics,
   getClaudeApiKeySource,
   getClaudeModel,
+  isNetlifyAiGatewayBaseUrl,
   isPlausibleClaudeApiKey,
   KI_CLAUDE_MODEL_FALLBACKS,
 } from "@/lib/ki-rechner/claude-config";
@@ -43,7 +44,7 @@ function getSystemPrompt(): string {
 }
 
 async function createClaudeMessage(
-  client: Anthropic,
+  client: ReturnType<typeof createAnthropicClient>,
   model: string,
   messages: { role: "user" | "assistant"; content: string }[]
 ) {
@@ -59,18 +60,25 @@ async function createClaudeMessage(
 export async function GET() {
   const key = getClaudeApiKey();
   const source = getClaudeApiKeySource();
+  const diag = getClaudeApiKeyDiagnostics(key);
   return Response.json({
     configured: Boolean(key),
-    keyFormatOk: key ? isPlausibleClaudeApiKey(key) : false,
+    keyFormatOk: diag.keyFormatOk,
+    keyLength: diag.keyLength,
+    likelyTruncated: diag.likelyTruncated,
     envVarUsed: source,
     envVarRecommended: "CLAUDE_API_KEY",
     model: getClaudeModel(),
-    hint:
-      source && source !== "CLAUDE_API_KEY"
-        ? `Key wird aus „${source}“ gelesen — umbenennen auf CLAUDE_API_KEY ist empfohlen.`
-        : !key
-          ? "Kein Key gefunden. In Netlify exakt CLAUDE_API_KEY (Großbuchstaben) setzen, Scopes: All, dann Deploy."
-          : undefined,
+    anthropicBaseUrlEnv: process.env.ANTHROPIC_BASE_URL ? "set" : "unset",
+    netlifyAiGatewayEnv: isNetlifyAiGatewayBaseUrl(),
+    usesDirectAnthropicApi: true,
+    hint: !key
+      ? "Kein Key gefunden. In Netlify CLAUDE_API_KEY setzen, Scopes: All, dann Deploy."
+      : diag.likelyTruncated
+        ? `Key wirkt abgeschnitten (${diag.keyLength} Zeichen, erwartet oft ~100+). In Netlify komplett neu einfügen.`
+        : diag.keyFormatOk
+          ? "Key ist gesetzt. Bei 401 in Logs: Key in Anthropic neu erzeugen und in Netlify ersetzen (muss identisch mit lokalem .env.local sein)."
+          : "Key-Format ungültig (muss mit sk-ant- beginnen).",
   });
 }
 
@@ -192,7 +200,7 @@ export async function POST(req: Request) {
     });
   }
 
-  const client = new Anthropic({ apiKey });
+  const client = createAnthropicClient(apiKey);
   const modelsToTry = [
     getClaudeModel(),
     ...KI_CLAUDE_MODEL_FALLBACKS,
@@ -210,7 +218,7 @@ export async function POST(req: Request) {
         lastErr = err;
         const status = (err as { status?: number }).status;
         const type = (err as { error?: { type?: string } }).error?.type;
-        logKiClaudeError(err, `model=${model}`);
+        logKiClaudeError(err, `model=${model}`, { keyLength: apiKey.length });
         if (status === 404 || type === "not_found_error") {
           continue;
         }
@@ -271,7 +279,7 @@ export async function POST(req: Request) {
       displayText,
     });
   } catch (err) {
-    logKiClaudeError(err, "POST");
+    logKiClaudeError(err, "POST", { keyLength: apiKey.length });
     const mapped = mapKiClaudeErrorToResponse(err);
     return Response.json(
       { error: mapped.error, code: mapped.code },
