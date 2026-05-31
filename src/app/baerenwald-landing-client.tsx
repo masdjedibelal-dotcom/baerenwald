@@ -15,6 +15,7 @@ import {
 
 import { BaerenwaldVisionInner } from "@/components/home/BaerenwaldVisionInner";
 import { HowTimelineMotion } from "@/components/home/HowTimelineMotion";
+import { KiBeratungLandingSection } from "@/components/home/KiBeratungLandingSection";
 import {
   ProjektGalerie,
   type BaerenwaldProjekt,
@@ -244,17 +245,17 @@ const PROJEKTE: readonly BaerenwaldProjekt[] = [
       "/images/projekt-terrasse-steg-bogenhausen-4.png",
     ],
     bildAlt:
-      "Terrassen- und Steganlage in Bogenhausen: Außendielen mit Bio-Osmoholz-Öl, Granit-Trittsteine, Naturpool und präzise Übergänge zwischen Holz, Wasser und Garten",
+      "Terrassen- und Steganlage Bogenhausen: Holzoberflächen mit biologischem Osmoholz-Öl behandelt, abgestimmt auf Naturpool und Gartenlandschaft",
     gewerk: "Terrassen- und Steganlage in München Bogenhausen",
     stadtteil: "Privat",
     jahr: "2026",
     tag: "privat",
     problem:
-      "Planung und Umsetzung einer hochwertigen Terrassen- und Steganlage im harmonischen Zusammenspiel mit Naturpool und Gartenlandschaft. Verarbeitet wurden langlebige Terrassendielen mit natürlicher Behandlung durch biologisches Osmoholz-Öl – komplett ohne chemische Beschichtungen und passend zum nachhaltigen Gesamtkonzept der Anlage.",
+      "Die hochwertigen Holzflächen der bestehenden Terrassen- und Steganlage sollten dauerhaft geschützt und optisch aufgewertet werden. Gewünscht war eine natürliche und nachhaltige Oberflächenbehandlung ohne chemische Beschichtungen, passend zur hochwertigen Garten- und Naturpoolanlage.",
     loesung:
-      "• Aufbau von Terrassen- und Stegflächen\n• Verlegung hochwertiger Außendielen\n• Natürliche Holzbehandlung mit Bio-Osmoholz-Öl\n• Integration in Naturpool- und Gartenlandschaft\n• Anpassung an bestehende Architektur und Gelände\n• Präzise Detailausführung an Wasser- und Übergangsbereichen\n• Nachhaltige und wetterbeständige Ausführung",
+      "• Vorbereitung und Kontrolle der Holzoberflächen\n• Fachgerechte Reinigung der Terrassen- und Stegbereiche\n• Natürliche Behandlung mit biologischem Osmoholz-Öl\n• Gleichmäßige und sorgfältige Einarbeitung des Öls\n• Schutz und Pflege der Holzoberflächen für langfristige Werterhaltung\n• Abstimmung auf die bestehende Garten- und Poollandschaft",
     ergebnis:
-      "Die Umsetzung erfolgte durch das Team von Bärenwald Garten- und Landschaftsbau mit Fokus auf natürliche Materialien, hochwertige Verarbeitung und langlebige Qualität im Außenbereich.",
+      "Die Behandlung wurde vollständig durch das eigene Team von Bärenwald Garten- und Landschaftsbau ausgeführt. Durch die natürliche Ölbehandlung konnten die Holzoberflächen nachhaltig geschützt, optisch aufgewertet und optimal auf die Anforderungen im Außenbereich abgestimmt werden. Das Ergebnis fügt sich harmonisch in die hochwertige Garten- und Naturpoollandschaft ein und unterstützt den langfristigen Werterhalt der Anlage.\n\n✓ Ausgeführt durch eigenes Gewerk – Bärenwald Garten- und Landschaftsbau 🌿",
     placeholderGradient: "linear-gradient(135deg, #1B2E1F, #3D6B45)",
     placeholderEmoji: "🪵",
   },
@@ -578,9 +579,17 @@ export default function BaerenwaldLandingClient({
                       }
                       autoComplete="off"
                     />
-                    <button type="submit" className="hero-search-btn">
-                      Preis ermitteln
-                    </button>
+                    <div className="hero-search-btn-wrap">
+                      <button type="submit" className="hero-search-btn">
+                        Preis ermitteln
+                      </button>
+                      <span
+                        className="hero-search-ki-stoerer ki-rechner-mode-label ki-rechner-starter-stoerer"
+                        aria-hidden
+                      >
+                        Neu: BärenwaldGPT
+                      </span>
+                    </div>
                   </div>
                   <p className="hero-disclaimer">
                     Unverbindliche Schätzung — kein Kostenvoranschlag
@@ -663,6 +672,8 @@ export default function BaerenwaldLandingClient({
 
         <div className="hero-bottom-round" aria-hidden />
       </section>
+
+      <KiBeratungLandingSection />
 
       <SectionDivider variant="baum" from="#f7f6f3" to="#2E7D52" />
 

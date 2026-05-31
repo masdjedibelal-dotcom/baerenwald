@@ -14,7 +14,8 @@ export type BwBeratungLeadKind =
   | "garten_planung"
   | "garten_terrasse"
   | "baum_notfall"
-  | "gefahrenabwehr";
+  | "gefahrenabwehr"
+  | "allgemein";
 
 export interface BwBeratungLeadProps {
   kind: BwBeratungLeadKind;
@@ -107,7 +108,9 @@ export function BwBeratungLead({
       ? "Schimmel / Feuchtigkeit"
       : kind === "garten_planung" || kind === "garten_terrasse"
         ? "Gartengestaltung"
-        : "Gewerbe";
+        : kind === "allgemein"
+          ? "Persönliche Beratung"
+          : "Gewerbe";
 
   const headline =
     kind === "schimmel"
@@ -116,7 +119,9 @@ export function BwBeratungLead({
         ? "Gartenplanung ist individuell"
         : kind === "garten_terrasse"
           ? "Terrasse & Material klären wir vor Ort"
-          : "Gewerbliches Projekt?";
+          : kind === "allgemein"
+            ? "Das besprechen wir am besten persönlich."
+            : "Gewerbliches Projekt?";
 
   const sub =
     kind === "schimmel"
@@ -125,7 +130,9 @@ export function BwBeratungLead({
         ? "Gartenplanung ist individuell — wir kommen vorbei und schauen uns gemeinsam an was möglich ist und was es kostet."
         : kind === "garten_terrasse"
           ? "Wir melden uns für einen Beratungstermin — dann stimmen wir Fläche, Unterbau und Belag mit dir ab."
-          : `Ob Büro, Praxis, Laden oder Gastronomie — wir planen individuell mit dir. Melde dich kurz und wir melden uns ${SITE_CONFIG.responseSlaWithin}.`;
+          : kind === "allgemein"
+            ? `Für dein Vorhaben gibt es zu viele individuelle Faktoren für einen festen Online-Preis. Hinterlasse kurz deine Kontaktdaten — wir melden uns ${SITE_CONFIG.responseSlaWithin}.`
+            : `Ob Büro, Praxis, Laden oder Gastronomie — wir planen individuell mit dir. Melde dich kurz und wir melden uns ${SITE_CONFIG.responseSlaWithin}.`;
 
   return (
     <StepWrapper

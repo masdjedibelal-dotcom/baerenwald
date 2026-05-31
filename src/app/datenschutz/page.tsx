@@ -21,7 +21,7 @@ export default function DatenschutzPage() {
               <span className="breadcrumb-current">Datenschutz</span>
             </nav>
             <h1 className="page-hero-h1">Datenschutzerklärung</h1>
-            <p className="page-hero-sub">Stand: Mai 2026</p>
+            <p className="page-hero-sub">Stand: 31. Mai 2026</p>
           </div>
         </div>
 
@@ -46,8 +46,8 @@ export default function DatenschutzPage() {
               <p>
                 <strong>Automatisch:</strong>
                 <br />
-                Browser, Betriebssystem, IP-Adresse, Zugriffszeit (nur zur Verbesserung des
-                Angebots, keine Weitergabe)
+                Browser, Betriebssystem, IP-Adresse, Zugriffszeit (z. B. zur Sicherheit und
+                Stabilität der Website)
               </p>
               <p>
                 <strong>Über den Preisrechner und Kontaktformular:</strong>
@@ -59,12 +59,36 @@ export default function DatenschutzPage() {
                 <li>PLZ und Standort</li>
                 <li>Projektdetails</li>
               </ul>
-              <p>Rechtsgrundlage: Art. 6 Abs. 1 lit. b DSGVO (Vertragsanbahnung)</p>
+              <p>
+                <strong>Über BärenwaldGPT (KI-Beratung im Rechner):</strong>
+              </p>
+              <ul>
+                <li>Inhalte deiner Chat-Nachrichten (z. B. Vorhaben, PLZ, Fragen)</li>
+                <li>Antworten des KI-Dienstes</li>
+                <li>Eine technische Session-Kennung (Session-ID)</li>
+                <li>
+                  IP-Adresse (kurzzeitig, zum Schutz vor Missbrauch — Rate-Limit, max. 30
+                  Anfragen pro Stunde)
+                </li>
+              </ul>
+              <p>
+                Rechtsgrundlage Preisrechner/Kontakt: Art. 6 Abs. 1 lit. b DSGVO
+                (Vertragsanbahnung). Rechtsgrundlage BärenwaldGPT: Art. 6 Abs. 1 lit. b DSGVO
+                (Vertragsanbahnung) und Art. 6 Abs. 1 lit. f DSGVO (berechtigtes Interesse an
+                einer funktionsfähigen, missbrauchssicheren Beratung).
+              </p>
 
               <strong>3. Weitergabe von Daten</strong>
-              <p>Deine Daten werden nicht an Dritte verkauft. Eine Weitergabe erfolgt nur:</p>
+              <p>
+                Deine Daten werden nicht verkauft. Eine Weitergabe an Dritte erfolgt nur, soweit
+                dies für den Betrieb der Website und deine Anfrage erforderlich ist:
+              </p>
               <ul>
                 <li>An beteiligte Handwerksbetriebe zur Auftragsdurchführung</li>
+                <li>
+                  An Auftragsverarbeiter (Hosting, Datenbank, E-Mail, Analyse, KI-Dienst) —
+                  siehe die Abschnitte 4 bis 8
+                </li>
                 <li>Bei gesetzlicher Verpflichtung</li>
               </ul>
 
@@ -97,6 +121,9 @@ export default function DatenschutzPage() {
               </p>
               <p>
                 Supabase verarbeitet Daten auf Servern in der EU (Frankfurt, AWS eu-central-1).
+                Darüber speichern wir u. a. Leads aus dem Rechner und Protokolle der
+                BärenwaldGPT-Chat-Nutzung (Tabelle <em>ki_anfragen_log</em>: Anfrage, Antwort,
+                Session, Zeitstempel).
                 <br />
                 Datenschutzerklärung Supabase:{" "}
                 <a href="https://supabase.com/privacy" target="_blank" rel="noopener noreferrer">
@@ -124,7 +151,60 @@ export default function DatenschutzPage() {
                 </a>
               </p>
 
-              <strong>7. Analyse &amp; Tracking</strong>
+              <strong id="ki-beratung">7. BärenwaldGPT (KI-Beratung im Rechner)</strong>
+              <p>
+                Auf unserer Website kannst du im Rechner den Chat-Dienst{" "}
+                <strong>BärenwaldGPT</strong> nutzen. Er dient der unverbindlichen Orientierung zu
+                Handwerks- und Renovierungsthemen in München und Umgebung (z. B. Gewerke, Ablauf,
+                Vorbereitung eines Preisrahmens). Es handelt sich nicht um verbindliche
+                Beratung, kein Angebot und keine Rechts-, Steuer- oder Medizinberatung.
+              </p>
+              <p>
+                <strong>Ablauf der Verarbeitung:</strong> Deine Nachrichten werden über unsere
+                Server an den KI-Dienst <strong>Anthropic, PBC</strong> (Modell Claude) übermittelt,
+                damit eine Antwort erzeugt werden kann. Antworten und Anfragen können in unserer
+                Datenbank (Supabase, EU) protokolliert werden.
+              </p>
+              <p>
+                <strong>Anbieter KI-Dienst:</strong>
+                <br />
+                Anthropic, PBC
+                <br />
+                San Francisco, USA
+              </p>
+              <p>
+                Die Übermittlung kann in die USA erfolgen. Anthropic stellt hierfür geeignete
+                Garantien bereit (z. B. Standardvertragsklauseln der EU-Kommission). Wir haben mit
+                Anthropic bzw. über die Nutzung der API die jeweils geltenden Vertrags- und
+                Datenschutzbedingungen als Auftragsverarbeitung berücksichtigt.
+                <br />
+                Datenschutz Anthropic:{" "}
+                <a
+                  href="https://www.anthropic.com/legal/privacy"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  https://www.anthropic.com/legal/privacy
+                </a>
+              </p>
+              <p>
+                <strong>Freiwilligkeit und Hinweise zur Eingabe:</strong> Die Nutzung ist
+                freiwillig. Bitte gib keine besonderen Kategorien personenbezogener Daten an (z.
+                B. Gesundheitsdaten, vollständige Adressen, Ausweisdaten, Daten Dritter). Nenne
+                nur Informationen, die für dein Handwerksvorhaben nötig sind.
+              </p>
+              <p>
+                <strong>Automatisierte Entscheidungen:</strong> Es findet keine automatisierte
+                Entscheidung im Sinne von Art. 22 DSGVO statt. Ein angezeigter Preisrahmen basiert
+                auf unserem Rechner, nicht allein auf der KI-Antwort.
+              </p>
+              <p>
+                Rechtsgrundlage: Art. 6 Abs. 1 lit. b DSGVO (Anbahnung eines Vertrags) und Art. 6
+                Abs. 1 lit. f DSGVO (berechtigtes Interesse an Betrieb, Sicherheit und
+                Weiterentwicklung des Dienstes).
+              </p>
+
+              <strong>8. Analyse &amp; Tracking</strong>
               <p>
                 PostHog Inc.
                 <br />
@@ -133,9 +213,13 @@ export default function DatenschutzPage() {
                 San Francisco, CA 94114, USA
               </p>
               <p>
-                Wir nutzen PostHog zur Analyse der Websitenutzung. PostHog verarbeitet Daten auf
-                EU-Servern (Frankfurt). Es werden keine personenbezogenen Daten gespeichert. PostHog
-                setzt keine Cookies.
+                Wir nutzen PostHog zur Analyse der Websitenutzung (z. B. welche Bereiche geklickt
+                werden). PostHog verarbeitet Daten auf EU-Servern (Frankfurt). PostHog setzt keine
+                Cookies für dieses Tracking. Es können pseudonyme Nutzungsdaten (z. B.
+                Geräte-/Browserinformationen, Ereignisse) verarbeitet werden.
+                <br />
+                Rechtsgrundlage: Art. 6 Abs. 1 lit. f DSGVO (berechtigtes Interesse an
+                Reichweitenmessung).
                 <br />
                 Datenschutzerklärung PostHog:{" "}
                 <a href="https://posthog.com/privacy" target="_blank" rel="noopener noreferrer">
@@ -143,13 +227,27 @@ export default function DatenschutzPage() {
                 </a>
               </p>
 
-              <strong>8. Speicherdauer</strong>
+              <strong>9. Speicherdauer</strong>
               <p>
-                Daten werden gelöscht sobald der Zweck entfällt. Bei beauftragten Projekten gelten
-                gesetzliche Aufbewahrungsfristen (i. d. R. 10 Jahre).
+                Daten werden gelöscht, sobald der Zweck entfällt, sofern keine gesetzlichen
+                Aufbewahrungspflichten entgegenstehen.
               </p>
+              <ul>
+                <li>
+                  <strong>BärenwaldGPT-Chat-Protokolle:</strong> in der Regel 90 Tage nach der
+                  letzten Nachricht in der jeweiligen Session, spätestens nach 12 Monaten
+                </li>
+                <li>
+                  <strong>Leads und Anfragen aus dem Rechner:</strong> bis zur Erledigung der
+                  Anfrage, danach gemäß gesetzlichen Fristen
+                </li>
+                <li>
+                  <strong>Beauftragte Projekte:</strong> gesetzliche Aufbewahrungsfristen (i. d.
+                  R. 10 Jahre)
+                </li>
+              </ul>
 
-              <strong>9. Deine Rechte</strong>
+              <strong>10. Deine Rechte</strong>
               <p>Du hast das Recht auf:</p>
               <ul>
                 <li>Auskunft (Art. 15 DSGVO)</li>
@@ -161,9 +259,12 @@ export default function DatenschutzPage() {
               <p>
                 Anfragen an:{" "}
                 <a href="mailto:info@baerenwald-muenchen.de">info@baerenwald-muenchen.de</a>
+                <br />
+                Bitte gib bei Auskunft oder Löschung zum BärenwaldGPT-Chat möglichst Datum und
+                Inhalt deiner Nachricht an, damit wir den Eintrag zuordnen können.
               </p>
 
-              <strong>10. Beschwerderecht</strong>
+              <strong>11. Beschwerderecht</strong>
               <p>Du hast das Recht, dich bei der zuständigen Aufsichtsbehörde zu beschweren:</p>
               <p>
                 Bayerisches Landesamt für Datenschutzaufsicht (BayLDA)
@@ -177,7 +278,7 @@ export default function DatenschutzPage() {
                 </a>
               </p>
 
-              <strong>11. Änderungen</strong>
+              <strong>12. Änderungen</strong>
               <p>
                 Wir behalten uns vor, diese Datenschutzerklärung bei rechtlichen oder technischen
                 Änderungen anzupassen.

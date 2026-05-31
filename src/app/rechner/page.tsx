@@ -37,7 +37,22 @@ import { SelectionTile } from "@/components/funnel/SelectionTile";
 import { StepWrapper } from "@/components/funnel/StepWrapper";
 import { ThankYou } from "@/components/funnel/ThankYou";
 import { DatenschutzCheckbox } from "@/components/funnel/DatenschutzCheckbox";
-import { useFunnelState } from "@/hooks/funnel/useFunnelState";
+import { KiRechnerChat } from "@/components/funnel/KiRechnerChat";
+import type { KiRechnerFunnelData } from "@/components/funnel/KiRechnerChat";
+import {
+  KiRechnerStarter,
+  type EinstiegWahl,
+} from "@/components/funnel/KiRechnerStarter";
+import {
+  BW_FUNNEL_INITIAL_STATE,
+  useFunnelState,
+} from "@/hooks/funnel/useFunnelState";
+import { kiPayloadToFunnelHandoff } from "@/lib/ki-rechner/apply-payload";
+import {
+  getKiModusFromSearch,
+  isKiBeratungModusParam,
+} from "@/lib/rechner-links";
+import type { KiParsedBekannt } from "@/lib/ki-rechner/types";
 import {
   getGroesseConfig,
   getKundentypStep,
@@ -192,10 +207,27 @@ function asLibOpt(o: FunnelStepOption): LibStepOption {
   };
 }
 
+type EinstiegModus = "trust" | "wahl" | "ki" | "funnel";
+
 function FunnelRechnerInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const urlInit = useRef(false);
+  /** Funnel nach „Schritt für Schritt“ — Zurück von Situation → Auswahl-Screen. */
+  const funnelFromWahlRef = useRef(false);
+  const kiHandoffRef = useRef<KiRechnerFunnelData | null>(null);
+  const [einstiegModus, setEinstiegModus] = useState<EinstiegModus>(() =>
+    isKiBeratungModusParam(searchParams.get("modus")) ? "ki" : "trust"
+  );
+  const [wahlAuswahl, setWahlAuswahl] = useState<EinstiegWahl | null>(() =>
+    isKiBeratungModusParam(searchParams.get("modus")) ? "ki" : null
+  );
+  /** KI-Chat gesperrt, sobald Preis berechnet werden kann. */
+  const [kiChatLocked, setKiChatLocked] = useState(false);
+  const [kiPreisBereit, setKiPreisBereit] = useState(false);
+  const [kiBeratungBereit, setKiBeratungBereit] = useState(false);
+  /** Funnel-Screen (Preis, Komplex, Beratung) aus KI → Zurück zur Auswahl-Weiche. */
+  const [preisVonKiModus, setPreisVonKiModus] = useState(false);
   const [screen, setScreen] = useState<Screen>("trust_intro");
   const [mindestauftragAktiv, setMindestauftrag] = useState(false);
   const [isAusserhalbLead, setIsAusserhalbLead] = useState(false);
@@ -406,10 +438,246 @@ function FunnelRechnerInner() {
     });
   }, [router, searchParams]);
 
+  type KiHandoffStatus = "preis" | "ort" | "beratung" | "invalid";
+
+  const resetKiFlowState = useCallback(() => {
+    kiHandoffRef.current = null;
+    setKiChatLocked(false);
+    setKiPreisBereit(false);
+    setKiBeratungBereit(false);
+    setPreisVonKiModus(false);
+  }, []);
+
+  const goBackFromKiPreisErgebnis = useCallback(() => {
+    resetKiFlowState();
+    setEinstiegModus("wahl");
+    setWahlAuswahl(null);
+    setScreen("trust_intro");
+    window.scrollTo({
+      top: 0,
+      left: 0,
+      behavior: "instant" as ScrollBehavior,
+    });
+  }, [resetKiFlowState]);
+
+  /** Zurück aus KI-Funnel-Screens — gleiche Logik für Preisrahmen, Komplex & Beratung. */
+  const tryBackFromKiFunnel = useCallback(
+    (currentScreen: Screen): boolean => {
+      if (!preisVonKiModus) return false;
+      if (currentScreen === "lead") {
+        setScreen("result");
+        window.scrollTo({
+          top: 0,
+          left: 0,
+          behavior: "instant" as ScrollBehavior,
+        });
+        return true;
+      }
+      if (
+        currentScreen === "loading" ||
+        currentScreen === "result" ||
+        currentScreen === "beratung-lead"
+      ) {
+        goBackFromKiPreisErgebnis();
+        return true;
+      }
+      return false;
+    },
+    [preisVonKiModus, goBackFromKiPreisErgebnis]
+  );
+
+  const runKiHandoff = useCallback(
+    (
+      data: KiRechnerFunnelData,
+      opts: { navigate: boolean }
+    ): KiHandoffStatus => {
+      const handoff = kiPayloadToFunnelHandoff({
+        typ: "bekannt",
+        situation: data.situation as KiParsedBekannt["situation"],
+        bereiche: data.bereiche,
+        groesse: data.groesse,
+        plz: data.plz,
+        zeitraum: data.zeitraum as KiParsedBekannt["zeitraum"],
+        kundentyp: data.kundentyp as KiParsedBekannt["kundentyp"],
+        fachdetails: data.fachdetails,
+      });
+      if (!handoff) {
+        if (opts.navigate) {
+          setEinstiegModus("funnel");
+          setScreen("beratung-lead");
+        }
+        return "beratung";
+      }
+
+      setSituation(handoff.situation);
+      setBereiche(handoff.bereiche);
+      if (handoff.groesse != null) {
+        setGroesse(handoff.groesse, handoff.groesseEinheit ?? "qm");
+      }
+      if (handoff.plz) setPlz(handoff.plz);
+      if (handoff.zeitraum) setZeitraum(handoff.zeitraum);
+      if (handoff.kundentyp) setKundentyp(handoff.kundentyp);
+      if (handoff.badAusstattung) {
+        setBadAusstattung(handoff.badAusstattung);
+      }
+      setZugaenglichkeit(handoff.zugaenglichkeit);
+      setZustand(handoff.zustand);
+      if (Object.keys(handoff.fachdetails).length > 0) {
+        setFachdetails(handoff.fachdetails);
+      }
+
+      const zeitraum =
+        handoff.zeitraum ??
+        (needsZeitraumSelection(handoff.situation) ? "flexibel" : null);
+
+      if (handoff.zeitraum) setZeitraum(handoff.zeitraum);
+      else if (zeitraum) setZeitraum(zeitraum);
+
+      const calcState = {
+        ...BW_FUNNEL_INITIAL_STATE,
+        situation: handoff.situation,
+        bereiche: handoff.bereiche,
+        groesse: handoff.groesse,
+        groesseEinheit: handoff.groesseEinheit,
+        plz: handoff.plz,
+        zeitraum,
+        kundentyp: handoff.kundentyp,
+        badAusstattung: handoff.badAusstattung,
+        zugaenglichkeit: handoff.zugaenglichkeit,
+        zustand: handoff.zustand,
+        fachdetails: handoff.fachdetails,
+      };
+
+      if (
+        !bwSkipsOrtPlzScreen(handoff.situation) &&
+        handoff.plz.length < 5
+      ) {
+        if (opts.navigate) {
+          setEinstiegModus("funnel");
+          setScreen("ort");
+        }
+        return "ort";
+      }
+
+      if (needsZeitraumSelection(handoff.situation) && !zeitraum) {
+        if (opts.navigate) {
+          setEinstiegModus("funnel");
+          setScreen("ort");
+        }
+        return "ort";
+      }
+
+      const priceResult = calculatePrice(calcState);
+
+      setPrice(
+        priceResult.min,
+        priceResult.max,
+        priceResult.breakdown,
+        priceResult.istFallback,
+        priceResult.komplexReason ?? null
+      );
+      setMindestauftrag(priceResult.mindestauftragAktiv);
+      setResultModus(priceResult.resultModus);
+      setSchwellenwertAusgeloest(priceResult.schwellenwertAusgeloest);
+      setPriceConfirmed(true);
+
+      if (opts.navigate) {
+        setEinstiegModus("funnel");
+        setScreen("loading");
+      }
+      return "preis";
+    },
+    [
+      setSituation,
+      setBereiche,
+      setGroesse,
+      setPlz,
+      setZeitraum,
+      setKundentyp,
+      setBadAusstattung,
+      setZugaenglichkeit,
+      setZustand,
+      setFachdetails,
+      setPrice,
+    ]
+  );
+
+  const handleKiBeratungBereit = useCallback(() => {
+    setKiBeratungBereit(true);
+    setKiPreisBereit(false);
+    setKiChatLocked(true);
+  }, []);
+
+  const handleKiPreisBereit = useCallback(
+    (data: KiRechnerFunnelData) => {
+      kiHandoffRef.current = data;
+      const status = runKiHandoff(data, { navigate: false });
+      if (status === "preis") {
+        setKiBeratungBereit(false);
+        setKiChatLocked(true);
+        setKiPreisBereit(true);
+        return;
+      }
+      setKiPreisBereit(false);
+      if (status === "beratung") {
+        setKiBeratungBereit(true);
+        setKiChatLocked(true);
+        return;
+      }
+      setKiBeratungBereit(false);
+      setKiChatLocked(false);
+    },
+    [runKiHandoff]
+  );
+
+  const commitKiZumPreis = useCallback(() => {
+    if (!kiPreisBereit || !kiHandoffRef.current) return;
+    setPreisVonKiModus(true);
+    runKiHandoff(kiHandoffRef.current, { navigate: true });
+  }, [kiPreisBereit, runKiHandoff]);
+
+  const handleKiRueckruf = useCallback(() => {
+    setPreisVonKiModus(true);
+    if (kiHandoffRef.current) {
+      runKiHandoff(kiHandoffRef.current, { navigate: false });
+    }
+    setEinstiegModus("funnel");
+    setGartenBeratungLeadKind(null);
+    setBaumNotfallBeratung(false);
+    setGefahrenabwehrBeratung(false);
+    setSchimmelBeratung(false);
+    setScreen("beratung-lead");
+  }, [runKiHandoff]);
+
+  /** Deep-Link ?modus=ki — eigener Effect, unabhängig von urlInit (SearchParams können einen Tick verzögert sein). */
+  useEffect(() => {
+    if (!isKiBeratungModusParam(getKiModusFromSearch(searchParams))) return;
+
+    kiHandoffRef.current = null;
+    setKiChatLocked(false);
+    setKiPreisBereit(false);
+    setKiBeratungBereit(false);
+    setPreisVonKiModus(false);
+    setWahlAuswahl("ki");
+    setEinstiegModus("ki");
+
+    if (typeof window === "undefined") return;
+    const next = new URL(window.location.href);
+    if (!next.searchParams.has("modus")) return;
+    next.searchParams.delete("modus");
+    const qs = next.searchParams.toString();
+    router.replace(qs ? `${next.pathname}?${qs}` : next.pathname, {
+      scroll: false,
+    });
+  }, [searchParams, router]);
+
   useEffect(() => {
     if (urlInit.current) return;
+    if (isKiBeratungModusParam(getKiModusFromSearch(searchParams))) return;
+
     const leistungPreset = getLeistungRechnerPreset(searchParams.get("leistung"));
     if (leistungPreset) {
+      setEinstiegModus("funnel");
       setSituation(leistungPreset.situation);
       setBereiche(leistungPreset.bereiche);
       setPriceConfirmed(false);
@@ -429,6 +697,7 @@ function FunnelRechnerInner() {
       searchParams.get("situation")
     );
     if (normalizedSit && gewerkRaw && isRechnerDeepLinkPair(normalizedSit, gewerkRaw)) {
+      setEinstiegModus("funnel");
       setSituation(normalizedSit);
       setBereiche([gewerkRaw]);
       setPriceConfirmed(false);
@@ -445,6 +714,7 @@ function FunnelRechnerInner() {
     }
     const normalized = normalizeSituationQueryParam(searchParams.get("situation"));
     if (normalized) {
+      setEinstiegModus("funnel");
       setSituation(normalized);
       setPriceConfirmed(false);
       if (normalized === "gewerbe") {
@@ -456,7 +726,9 @@ function FunnelRechnerInner() {
         setScreen("bereiche");
       }
     }
-    urlInit.current = true;
+    if (!isKiBeratungModusParam(getKiModusFromSearch(searchParams))) {
+      urlInit.current = true;
+    }
   }, [searchParams, setSituation, setBereiche]);
 
   useEffect(() => {
@@ -695,9 +967,11 @@ function FunnelRechnerInner() {
     setGefahrenabwehrBeratung(false);
     setLeadSubmitting(false);
     setLeadSubmitError(null);
-
-    /** Erster Story-/Trust-Screen überspringen — direkt Situation wählen. */
-    setScreen("situation");
+    funnelFromWahlRef.current = false;
+    resetKiFlowState();
+    setWahlAuswahl(null);
+    setEinstiegModus("trust");
+    setScreen("trust_intro");
     router.replace("/rechner", { scroll: false });
 
     window.scrollTo({
@@ -705,9 +979,33 @@ function FunnelRechnerInner() {
       left: 0,
       behavior: "instant" as ScrollBehavior,
     });
-  }, [reset, setSubmitted, router, screen, state.situation, state.bereiche]);
+  }, [reset, setSubmitted, router, screen, state.situation, state.bereiche, resetKiFlowState]);
 
   const handleNext = useCallback(() => {
+    if (einstiegModus === "ki") {
+      if (kiBeratungBereit) {
+        handleKiRueckruf();
+        return;
+      }
+      if (kiPreisBereit) {
+        commitKiZumPreis();
+      }
+      return;
+    }
+
+    if (einstiegModus === "wahl") {
+      if (!wahlAuswahl) return;
+      if (wahlAuswahl === "ki") {
+        resetKiFlowState();
+        setEinstiegModus("ki");
+        return;
+      }
+      funnelFromWahlRef.current = true;
+      setEinstiegModus("funnel");
+      setScreen("situation");
+      return;
+    }
+
     if (screen === "beratung-lead" && baumNotfallBeratung) {
       window.location.href = BW_BAUM_NOTFALL_TEL_HREF;
       return;
@@ -741,6 +1039,11 @@ function FunnelRechnerInner() {
     }
 
     if (isBwTrustScreenId(screen)) {
+      if (einstiegModus === "trust" && screen === "trust_intro") {
+        setWahlAuswahl(null);
+        setEinstiegModus("wahl");
+        return;
+      }
       const nextTrust = getNextBwRechnerScreen(state, screen);
       if (nextTrust) setScreen(nextTrust as Screen);
       return;
@@ -958,6 +1261,8 @@ function FunnelRechnerInner() {
     }
   }, [
     screen,
+    einstiegModus,
+    wahlAuswahl,
     state,
     umfangOk,
     goGroesseOrPostGroesse,
@@ -976,6 +1281,11 @@ function FunnelRechnerInner() {
     setDringlichkeit,
     baumNotfallBeratung,
     gefahrenabwehrBeratung,
+    kiPreisBereit,
+    kiBeratungBereit,
+    commitKiZumPreis,
+    handleKiRueckruf,
+    resetKiFlowState,
   ]);
 
   const handleBack = useCallback(() => {
@@ -1052,21 +1362,38 @@ function FunnelRechnerInner() {
     }
     switch (screen) {
       case "loading":
-        setPriceConfirmed(true);
-        setScreen(
-          bwSkipsOrtPlzScreen(state.situation) ? "kundentyp" : "ort"
-        );
-        window.scrollTo({
-          top: 0,
-          left: 0,
-          behavior: "instant" as ScrollBehavior,
-        });
-        break;
       case "result":
-        setPriceConfirmed(true);
-        setScreen(
-          bwSkipsOrtPlzScreen(state.situation) ? "kundentyp" : "ort"
-        );
+      case "beratung-lead":
+        if (tryBackFromKiFunnel(screen)) break;
+        if (screen === "loading") {
+          setPriceConfirmed(true);
+          setScreen(
+            bwSkipsOrtPlzScreen(state.situation) ? "kundentyp" : "ort"
+          );
+          window.scrollTo({
+            top: 0,
+            left: 0,
+            behavior: "instant" as ScrollBehavior,
+          });
+          break;
+        }
+        if (screen === "result") {
+          setPriceConfirmed(true);
+          setScreen(
+            bwSkipsOrtPlzScreen(state.situation) ? "kundentyp" : "ort"
+          );
+          window.scrollTo({
+            top: 0,
+            left: 0,
+            behavior: "instant" as ScrollBehavior,
+          });
+          break;
+        }
+        if (isB2B(state.situation)) {
+          setScreen("situation");
+        } else {
+          setScreen("bereiche");
+        }
         window.scrollTo({
           top: 0,
           left: 0,
@@ -1074,19 +1401,8 @@ function FunnelRechnerInner() {
         });
         break;
       case "lead":
+        if (tryBackFromKiFunnel("lead")) break;
         setScreen("result");
-        window.scrollTo({
-          top: 0,
-          left: 0,
-          behavior: "instant" as ScrollBehavior,
-        });
-        break;
-      case "beratung-lead":
-        if (isB2B(state.situation)) {
-          setScreen("situation");
-        } else {
-          setScreen("bereiche");
-        }
         window.scrollTo({
           top: 0,
           left: 0,
@@ -1104,9 +1420,22 @@ function FunnelRechnerInner() {
       default:
         break;
     }
-  }, [screen, state, stepSequence, clearFachdetailAnswer, gartenBeratungLeadKind, baumNotfallBeratung, gefahrenabwehrBeratung]);
+  }, [
+    screen,
+    state,
+    stepSequence,
+    clearFachdetailAnswer,
+    gartenBeratungLeadKind,
+    baumNotfallBeratung,
+    gefahrenabwehrBeratung,
+    preisVonKiModus,
+    tryBackFromKiFunnel,
+  ]);
 
   const nextDisabled = useMemo(() => {
+    if (einstiegModus === "wahl") return !wahlAuswahl;
+    if (einstiegModus === "ki") return !kiPreisBereit && !kiBeratungBereit;
+
     if (isBwFachdetailQuestionScreenId(screen)) {
       const qid = getFachdetailQuestionIdFromScreen(screen);
       if (!qid) return true;
@@ -1195,9 +1524,26 @@ function FunnelRechnerInner() {
       default:
         return true;
     }
-  }, [screen, state, umfangOk, schimmelBeratung, leadSubmitting, resultModus, baumNotfallBeratung, gefahrenabwehrBeratung]);
+  }, [
+    screen,
+    state,
+    umfangOk,
+    schimmelBeratung,
+    leadSubmitting,
+    resultModus,
+    baumNotfallBeratung,
+    gefahrenabwehrBeratung,
+    einstiegModus,
+    wahlAuswahl,
+    kiPreisBereit,
+    kiBeratungBereit,
+  ]);
 
   const nextLabel = useMemo(() => {
+    if (einstiegModus === "ki") {
+      return kiBeratungBereit ? "Zur Beratung →" : "Zum Preis →";
+    }
+    if (einstiegModus === "wahl") return "Weiter →";
     if (screen === "trust_intro") return "Los geht's →";
     if (screen === "kundentyp" && bwSkipsOrtPlzScreen(state.situation)) {
       return priceConfirmed ? "Weiter →" : "Preis berechnen";
@@ -1232,6 +1578,8 @@ function FunnelRechnerInner() {
     state.bereiche,
     state.situation,
     leadSubmitting,
+    einstiegModus,
+    kiBeratungBereit,
   ]);
 
   /** Erklärt, warum „Absenden“ ausgegraut ist (Footer nutzt dieselbe Logik wie nextDisabled). */
@@ -1246,7 +1594,13 @@ function FunnelRechnerInner() {
     return null;
   }, [screen, leadSubmitting, state.name, state.email, state.telefon]);
 
-  const showFooterNav = screen !== "danke" && screen !== "ausserhalb";
+  const showFooterNav =
+    einstiegModus === "wahl" ||
+    einstiegModus === "ki" ||
+    einstiegModus === "trust" ||
+    (einstiegModus === "funnel" &&
+      screen !== "danke" &&
+      screen !== "ausserhalb");
 
   const handleLeadSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -1487,6 +1841,29 @@ function FunnelRechnerInner() {
   }, [state.selectedSlot]);
 
   const main = () => {
+    if (einstiegModus === "wahl") {
+      return (
+        <KiRechnerStarter
+          selected={wahlAuswahl}
+          onSelect={setWahlAuswahl}
+        />
+      );
+    }
+
+    if (einstiegModus === "ki") {
+      return (
+        <KiRechnerChat
+          locked={kiChatLocked}
+          onPreisBereit={handleKiPreisBereit}
+          onBeratungBereit={handleKiBeratungBereit}
+        />
+      );
+    }
+
+    if (einstiegModus === "trust") {
+      return <TrustScreen variant="intro" />;
+    }
+
     if (isBwFachdetailQuestionScreenId(screen)) {
       const qid = getFachdetailQuestionIdFromScreen(screen);
       if (!qid) return null;
@@ -1817,6 +2194,11 @@ function FunnelRechnerInner() {
                                 ? state.fachdetails.projekt
                                     ?.gartenTerrasseMaterial
                                 : undefined,
+                            gartenZaun:
+                              nextLeistung === "rollrasen" ||
+                              nextLeistung === "auffrischung"
+                                ? undefined
+                                : state.fachdetails.projekt?.gartenZaun,
                           },
                         });
                       } else if (screen === "projekt_garten_terrasse_material") {
@@ -2129,7 +2511,26 @@ function FunnelRechnerInner() {
             />
           );
         }
-        return null;
+        return (
+          <BwBeratungLead
+            kind="allgemein"
+            situation={state.situation}
+            vorname={state.vorname}
+            nachname={state.nachname}
+            telefon={state.telefon}
+            email={state.email}
+            beschreibung={state.leadBeschreibung}
+            datenschutz={beratungDatenschutz}
+            datenschutzError={beratungDatenschutzError}
+            onDatenschutzChange={(v) => {
+              setBeratungDatenschutz(v);
+              if (v) setBeratungDatenschutzError(false);
+            }}
+            onFieldChange={updateLeadField}
+            formId={BERATUNG_LEAD_FORM_ID}
+            onSubmit={handleBeratungLeadSubmit}
+          />
+        );
 
       case "lead":
         return (
@@ -2328,13 +2729,19 @@ function FunnelRechnerInner() {
     }
   };
 
-  const progressStep = getBwFunnelProgressStep(screen);
+  const progressStep =
+    einstiegModus === "funnel" ? getBwFunnelProgressStep(screen) : null;
 
   return (
     <div
       className={cn(
         "min-h-dvh funnel-main--strip-a",
-        isBwTrustScreenId(screen) && "trust-screen-active"
+        (einstiegModus === "trust" ||
+          (einstiegModus === "funnel" && isBwTrustScreenId(screen))) &&
+          "trust-screen-active",
+        (einstiegModus === "wahl" || einstiegModus === "ki") &&
+          "ki-rechner-einstieg-active",
+        einstiegModus === "ki" && "ki-rechner-chat-active"
       )}
     >
       {searchNotFoundBanner ? (
@@ -2356,11 +2763,13 @@ function FunnelRechnerInner() {
         </div>
       ) : null}
       <FunnelHeader onFunnelReset={handleReset} />
-      <FunnelProgressBar
-        currentStep={progressStep}
-        situation={state.situation}
-        activeScreen={screen}
-      />
+      {einstiegModus === "funnel" ? (
+        <FunnelProgressBar
+          currentStep={progressStep}
+          situation={state.situation}
+          activeScreen={screen}
+        />
+      ) : null}
       <main className="funnel-rechner-main w-full">{main()}</main>
       {showFooterNav ? (
         <FunnelFooter
@@ -2369,18 +2778,58 @@ function FunnelRechnerInner() {
               ? undefined
               : handleNext
           }
-          onBack={() => {
-            if (screen === "situation") {
-              const prevSit = getPreviousBwRechnerScreen(state, "situation");
-              if (prevSit) {
-                setScreen(prevSit as Screen);
-                return;
-              }
-              router.push("/");
-              return;
-            }
-            handleBack();
-          }}
+          onBack={
+            einstiegModus === "trust" && screen === "trust_intro"
+              ? undefined
+              : () => {
+                  if (tryBackFromKiFunnel(screen)) {
+                    return;
+                  }
+                  if (einstiegModus === "ki") {
+                    resetKiFlowState();
+                    setEinstiegModus("wahl");
+                    window.scrollTo({
+                      top: 0,
+                      left: 0,
+                      behavior: "instant" as ScrollBehavior,
+                    });
+                    return;
+                  }
+                  if (einstiegModus === "wahl") {
+                    setWahlAuswahl(null);
+                    setEinstiegModus("trust");
+                    setScreen("trust_intro");
+                    window.scrollTo({
+                      top: 0,
+                      left: 0,
+                      behavior: "instant" as ScrollBehavior,
+                    });
+                    return;
+                  }
+                  if (screen === "situation" && funnelFromWahlRef.current) {
+                    setEinstiegModus("wahl");
+                    window.scrollTo({
+                      top: 0,
+                      left: 0,
+                      behavior: "instant" as ScrollBehavior,
+                    });
+                    return;
+                  }
+                  if (screen === "situation") {
+                    const prevSit = getPreviousBwRechnerScreen(
+                      state,
+                      "situation"
+                    );
+                    if (prevSit) {
+                      setScreen(prevSit as Screen);
+                      return;
+                    }
+                    router.push("/");
+                    return;
+                  }
+                  handleBack();
+                }
+          }
           nextDisabled={nextDisabled}
           nextLabel={nextLabel}
           belowActions={

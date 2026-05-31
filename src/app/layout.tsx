@@ -86,6 +86,8 @@ export const viewport: Viewport = {
   themeColor: SITE_CONFIG.accentColor,
   width: "device-width",
   initialScale: 1,
+  /** Tastatur verkleinert Layout — Eingabezeile bleibt sichtbar (KI-Chat). */
+  interactiveWidget: "resizes-content",
 };
 
 export default function RootLayout({

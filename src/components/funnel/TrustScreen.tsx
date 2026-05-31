@@ -49,7 +49,8 @@ export function TrustScreen({ variant }: TrustScreenProps) {
             <Image
               src={content.image}
               alt={content.imageAlt}
-              fill
+              width={764}
+              height={1024}
               className="trust-image"
               priority
               sizes="(max-width: 640px) 100vw, 36rem"
