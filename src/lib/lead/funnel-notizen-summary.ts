@@ -1,4 +1,7 @@
-import { erneuernProjektTyp } from "@/lib/funnel/projekt-erneuern";
+import {
+  erneuernProjektTyp,
+  gartenLeistungOhneZaun,
+} from "@/lib/funnel/projekt-erneuern";
 import type { FunnelState, Situation } from "@/lib/funnel/types";
 
 function str(v: unknown): string {
@@ -148,8 +151,10 @@ function gartenUmfangZeile(state: FunnelState): string | null {
       else if (mat === "noch_offen") parts.push("Material: noch offen");
     }
   }
-  if (pj?.gartenZaun === "ja") parts.push("inkl. Zaunbau");
-  else if (pj?.gartenZaun === "nein") parts.push("ohne Zaunbau");
+  if (pj?.gartenLeistung && !gartenLeistungOhneZaun(pj.gartenLeistung)) {
+    if (pj.gartenZaun === "ja") parts.push("inkl. Zaunbau");
+    else if (pj.gartenZaun === "nein") parts.push("ohne Zaunbau");
+  }
   if (parts.length === 0) return null;
   return `Garten: ${parts.join(" · ")}`;
 }

@@ -6,10 +6,11 @@ const requests = new Map<
 export function checkRateLimit(
   ip: string,
   limit = 5,
-  windowMs = 60 * 60 * 1000
+  windowMs = 60 * 60 * 1000,
+  namespace = "default"
 ): { allowed: boolean; remaining: number } {
   const now = Date.now();
-  const key = `rl_${ip}`;
+  const key = `rl_${namespace}_${ip}`;
   const entry = requests.get(key);
 
   if (!entry || now > entry.reset) {

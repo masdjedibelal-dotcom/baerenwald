@@ -17,6 +17,17 @@ export function isErneuernProjektBereich(bereiche: string[]): boolean {
   return bereiche.some((b) => PROJEKT_SET.has(b));
 }
 
+type GartenLeistung = NonNullable<
+  FachdetailsState["projekt"]
+>["gartenLeistung"];
+
+/** Rollrasen (inkl. Legacy `auffrischung`) — ohne Zaun-Frage und ohne Zaun-Pauschale. */
+export function gartenLeistungOhneZaun(
+  leistung: GartenLeistung | undefined
+): boolean {
+  return leistung === "rollrasen" || leistung === "auffrischung";
+}
+
 export function erneuernProjektTyp(
   bereiche: string[]
 ): ErneuernProjektBereich | null {
@@ -333,8 +344,15 @@ export function buildErneuernProjektSteps(
         ];
       }
 
+      if (gartenLeistungOhneZaun(gl)) {
+        return [
+          ...head,
+          STEP_ERNEUERN_PROJEKT_GROESSE_GARTEN,
+          STEP_PROJEKT_GARTEN_ZUGANG,
+        ];
+      }
+
       if (
-        gl === "rollrasen" ||
         gl === "flaeche_auffrischen" ||
         gl === "neuanlage" ||
         gl === "gu_paket"

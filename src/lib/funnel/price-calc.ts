@@ -3,7 +3,10 @@ import type {
   FunnelState,
   PriceLineItem,
 } from "./types";
-import { isErneuernProjektBereich } from "./projekt-erneuern";
+import {
+  gartenLeistungOhneZaun,
+  isErneuernProjektBereich,
+} from "./projekt-erneuern";
 import { isReparaturNotfallSituation } from "./reparatur-flow";
 
 /** PLZ → Faktor nach Entfernung zum Münchner Zentrum (80/81 = Stadt, nahes Umland, weiteres Umland). */
@@ -271,8 +274,8 @@ export const PREISE = {
     durchbruch_tragend: { min: 4500, max: 4500, einheit: "pauschal" },
     durchbruch_nicht_tragend: { min: 1800, max: 1800, einheit: "pauschal" },
     terrasse: { min: 280, max: 450, einheit: "pro m²" },
-    /** Gartengestaltung Auffrischung — €/m² vor Zaun/Zugang/GU in {@link computeGartenNeuPrice} */
-    garten_auffrischung: { min: 120, max: 180, einheit: "pro m²" },
+    /** Gartengestaltung Auffrischung/Rollrasen — €/m² vor Zugang/GU (Zaun nur bei Neuanlage etc.) */
+    garten_auffrischung: { min: 40, max: 60, einheit: "pro m²" },
     /** Gartengestaltung Neuanlage (GU-Paket München) — €/m² vor Zaun/Zugang/GU */
     garten_neuanlage: { min: 250, max: 450, einheit: "pro m²" },
     /** Gartengestaltung: Terrasse / Außenbereich — Material bestimmt €/m² */
@@ -300,10 +303,11 @@ export function computeGartenNeuPrice(state: FunnelState): {
   const g = state.groesse;
   if (!state.bereiche.includes("gartengestaltung")) return null;
   const leistung = fd?.gartenLeistung;
+  const ohneZaun = gartenLeistungOhneZaun(leistung);
   if (
     g == null ||
-    fd?.gartenZaun === undefined ||
-    fd?.gartenZugaenglichkeit === undefined
+    fd?.gartenZugaenglichkeit === undefined ||
+    (!ohneZaun && fd?.gartenZaun === undefined)
   ) {
     return null;
   }
@@ -336,7 +340,7 @@ export function computeGartenNeuPrice(state: FunnelState): {
     basisMin *= GU_MARGE;
     basisMax *= GU_MARGE;
   }
-  if (fd.gartenZaun === "ja") {
+  if (!ohneZaun && fd.gartenZaun === "ja") {
     basisMin += 3500;
     basisMax += 3500;
   }
