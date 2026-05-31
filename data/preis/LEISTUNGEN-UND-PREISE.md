@@ -118,7 +118,7 @@ Alle Beträge sind **Orientierungswerte** für München; im Rechner gelten zusä
 | `projekt.durchbruch_tragend` | 4500 | 4500 | pauschal |  |  |  |
 | `projekt.durchbruch_nicht_tragend` | 1800 | 1800 | pauschal |  |  |  |
 | `projekt.terrasse` | 280 | 450 | pro m² |  |  |  |
-| `projekt.garten_auffrischung` | 120 | 180 | pro m² |  |  |  |
+| `projekt.garten_auffrischung` | 40 | 60 | pro m² |  |  |  |
 | `projekt.garten_neuanlage` | 250 | 450 | pro m² |  |  |  |
 | `abriss.innen` | 25 | 45 | pro m² |  |  |  |
 | `abriss.komplett` | 8000 | 18000 | pauschal |  |  |  |
@@ -190,10 +190,8 @@ Erwartete Ausgaben (Beispiel PLZ 80331, sofern in der Zeile nicht anders). Spalt
 | `garten_pflaster_60qm` | Garten pflaster 60 m² | 5400 | 7800 | 6600 | preisrahmen |
 | `garten_baum_klein` | Baum klein | 200 | 400 | 250 | preisrahmen |
 | `garten_baum_gross` | Baum groß | 400 | 900 | 650 | preisrahmen |
-| `projekt_garten_auffrischung_zaunja_zugeinfach_80qm` | Gartengestaltung auffrischung, Zaun ja, Zugang einfach, 80 m² | 15100 | 20600 | 17825 | preisrahmen_warnung |
-| `projekt_garten_auffrischung_zaunja_zugschwer_80qm` | Gartengestaltung auffrischung, Zaun ja, Zugang schwer, 80 m² | 16700 | 23100 | 19895 | preisrahmen_warnung |
-| `projekt_garten_auffrischung_zaunnein_zugeinfach_80qm` | Gartengestaltung auffrischung, Zaun nein, Zugang einfach, 80 m² | 11000 | 16600 | 13800 | preisrahmen_warnung |
-| `projekt_garten_auffrischung_zaunnein_zugschwer_80qm` | Gartengestaltung auffrischung, Zaun nein, Zugang schwer, 80 m² | 12700 | 19000 | 15870 | preisrahmen_warnung |
+| `projekt_garten_auffrischung_zugeinfach_80qm` | Gartengestaltung Rollrasen/Auffrischung, Zugang einfach, 80 m² (ohne Zaun) | 3700 | 5500 | 4600 | preisrahmen |
+| `projekt_garten_auffrischung_zugschwer_80qm` | Gartengestaltung Rollrasen/Auffrischung, Zugang schwer, 80 m² (ohne Zaun) | 4200 | 6300 | 5300 | preisrahmen |
 | `projekt_garten_neuanlage_zaunja_zugeinfach_80qm` | Gartengestaltung neuanlage, Zaun ja, Zugang einfach, 80 m² | 27000 | 45400 | 36225 | preisrahmen_warnung |
 | `projekt_garten_neuanlage_zaunja_zugschwer_80qm` | Gartengestaltung neuanlage, Zaun ja, Zugang schwer, 80 m² | 30500 | 51600 | 41055 | preisrahmen_warnung |
 | `projekt_garten_neuanlage_zaunnein_zugeinfach_80qm` | Gartengestaltung neuanlage, Zaun nein, Zugang einfach, 80 m² | 23000 | 41400 | 32200 | preisrahmen_warnung |

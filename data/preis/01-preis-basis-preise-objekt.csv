@@ -81,7 +81,7 @@
 "projekt.durchbruch_tragend","4500","4500","pauschal","","",""
 "projekt.durchbruch_nicht_tragend","1800","1800","pauschal","","",""
 "projekt.terrasse","280","450","pro m²","","",""
-"projekt.garten_auffrischung","120","180","pro m²","","",""
+"projekt.garten_auffrischung","40","60","pro m²","","",""
 "projekt.garten_neuanlage","250","450","pro m²","","",""
 "abriss.innen","25","45","pro m²","","",""
 "abriss.komplett","8000","18000","pauschal","","",""
