@@ -4,12 +4,26 @@ type AnthropicLikeError = {
   error?: { type?: string; message?: string };
 };
 
-export function logKiClaudeError(err: unknown, context: string): void {
+export function logKiClaudeError(
+  err: unknown,
+  context: string,
+  extra?: { keyLength?: number }
+): void {
   const e = err as AnthropicLikeError;
   const type = e.error?.type ?? "unknown";
   const status = e.status ?? "?";
   const msg = e.error?.message ?? e.message ?? String(err);
-  console.error(`[ki-rechner] ${context}`, { status, type, msg });
+  console.error(`[ki-rechner] ${context}`, {
+    status,
+    type,
+    msg,
+    ...(extra?.keyLength != null ? { keyLength: extra.keyLength } : {}),
+    ...(status === 401
+      ? {
+          hint: "Anthropic 401: Key auf dem Server ungültig, widerrufen oder abgeschnitten — neuen Key in Netlify CLAUDE_API_KEY setzen.",
+        }
+      : {}),
+  });
 }
 
 /** Nutzerfreundliche Meldung + HTTP-Status für die API-Route. */
