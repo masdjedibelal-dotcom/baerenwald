@@ -5211,7 +5211,7 @@
   }
 }
 
-/* KI-Chat mobil: volle Höhe, Composer über Footer/Tastatur (GPT-ähnlich) */
+/* KI-Chat mobil: Flex-Column (Nachrichten + Composer), kein fixed Gap */
 @media (max-width: 768px) {
   .ki-rechner-chat-active {
     display: flex;
@@ -5222,6 +5222,11 @@
     overflow: hidden;
   }
 
+  .ki-rechner-chat-active.ki-keyboard-open {
+    height: var(--ki-vv-height, 100svh);
+    max-height: var(--ki-vv-height, 100svh);
+  }
+
   .ki-rechner-chat-active > header.funnel-header {
     flex-shrink: 0;
   }
@@ -5230,6 +5235,13 @@
     flex-shrink: 0;
     padding-left: max(20px, env(safe-area-inset-left, 0px));
     padding-right: max(20px, env(safe-area-inset-right, 0px));
+    transition: opacity 0.15s ease, transform 0.15s ease;
+  }
+
+  /* Tastatur offen: Footer weg, damit Composer + letzte Nachricht sichtbar bleiben */
+  .ki-rechner-chat-active.ki-keyboard-open > footer.funnel-footer,
+  .ki-rechner-chat-active.ki-input-focused > footer.funnel-footer {
+    display: none;
   }
 
   .ki-rechner-chat-active .funnel-footer-inner {
@@ -5251,9 +5263,11 @@
 
   .ki-rechner-chat-active .ki-rechner-chat {
     flex: 1;
+    display: flex;
+    flex-direction: column;
     width: 100%;
     max-width: none;
-    height: auto;
+    height: 100%;
     max-height: none;
     min-height: 0;
     margin: 0;
@@ -5262,36 +5276,30 @@
   }
 
   .ki-rechner-chat-active .ki-rechner-chat-messages {
-    flex: 1;
+    flex: 1 1 auto;
     min-height: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
     -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
     padding-top: 4px;
-    padding-bottom: calc(
-      var(--ki-composer-height, 4.5rem) + var(--ki-vv-offset, 0px) +
-        var(--ki-footer-offset, 5.75rem) + 0.75rem
-    );
+    padding-bottom: 10px;
+    justify-content: flex-start;
   }
 
   .ki-rechner-chat-active .ki-rechner-chat-composer {
-    position: fixed;
-    left: 0;
-    right: 0;
-    z-index: 55;
-    bottom: calc(
-      var(--ki-vv-offset, 0px) + var(--ki-footer-offset, 5.75rem) +
-        env(safe-area-inset-bottom, 0px)
-    );
-    max-width: 480px;
-    margin-left: auto;
-    margin-right: auto;
-    padding-left: max(16px, env(safe-area-inset-left, 0px));
-    padding-right: max(16px, env(safe-area-inset-right, 0px));
-    box-shadow: 0 -4px 20px rgba(26, 61, 43, 0.1);
+    position: relative;
+    flex-shrink: 0;
+    z-index: 2;
+    margin-top: 0;
+    box-shadow: 0 -4px 16px rgba(26, 61, 43, 0.08);
   }
 
-  .ki-rechner-chat-active .ki-rechner-chat-inputbar {
-    padding-left: 0;
-    padding-right: 0;
+  .ki-rechner-chat-active .ki-rechner-chat > .ki-rechner-chat-error {
+    flex-shrink: 0;
+    margin: 0;
+    padding: 8px 16px 0;
+    background: rgba(255, 255, 255, 0.96);
   }
 
   .ki-rechner-chat-active .ki-rechner-chat-input {
@@ -5787,6 +5795,14 @@
   border-top: 1px solid rgba(229, 231, 235, 0.85);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
+}
+
+.ki-rechner-chat > .ki-rechner-chat-error {
+  flex-shrink: 0;
+  margin: 0;
+  padding: 8px 16px 0;
+  background: rgba(255, 255, 255, 0.96);
+  border-top: 1px solid rgba(229, 231, 235, 0.5);
 }
 
 .ki-rechner-chat-inputbar {

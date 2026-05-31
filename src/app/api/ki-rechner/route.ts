@@ -1,6 +1,17 @@
 import Anthropic from "@anthropic-ai/sdk";
 
 import {
+  getClaudeApiKey,
+  getClaudeApiKeySource,
+  getClaudeModel,
+  isPlausibleClaudeApiKey,
+  KI_CLAUDE_MODEL_FALLBACKS,
+} from "@/lib/ki-rechner/claude-config";
+import {
+  logKiClaudeError,
+  mapKiClaudeErrorToResponse,
+} from "@/lib/ki-rechner/claude-errors";
+import {
   countUserMessages,
   isObviousOffTopic,
   KI_MAX_MESSAGES_PER_REQUEST,
@@ -19,14 +30,73 @@ import { getClientIp } from "@/lib/request-ip";
 import { isSupabaseConfigured, supabaseAdmin } from "@/lib/supabase";
 
 export const runtime = "nodejs";
+/** Netlify/Serverless: Claude-Antwort braucht oft 5–15 s. */
+export const maxDuration = 60;
+
+let cachedSystemPrompt: string | null = null;
+
+function getSystemPrompt(): string {
+  if (!cachedSystemPrompt) {
+    cachedSystemPrompt = getKiRechnerSystemPrompt();
+  }
+  return cachedSystemPrompt;
+}
+
+async function createClaudeMessage(
+  client: Anthropic,
+  model: string,
+  messages: { role: "user" | "assistant"; content: string }[]
+) {
+  return client.messages.create({
+    model,
+    max_tokens: 1024,
+    system: getSystemPrompt(),
+    messages,
+  });
+}
+
+/** GET: Nur Konfigurations-Check (kein API-Aufruf, kein Key-Leak). */
+export async function GET() {
+  const key = getClaudeApiKey();
+  const source = getClaudeApiKeySource();
+  return Response.json({
+    configured: Boolean(key),
+    keyFormatOk: key ? isPlausibleClaudeApiKey(key) : false,
+    envVarUsed: source,
+    envVarRecommended: "CLAUDE_API_KEY",
+    model: getClaudeModel(),
+    hint:
+      source && source !== "CLAUDE_API_KEY"
+        ? `Key wird aus „${source}“ gelesen — umbenennen auf CLAUDE_API_KEY ist empfohlen.`
+        : !key
+          ? "Kein Key gefunden. In Netlify exakt CLAUDE_API_KEY (Großbuchstaben) setzen, Scopes: All, dann Deploy."
+          : undefined,
+  });
+}
 
 type ChatMessage = { role: "user" | "assistant"; content: string };
 
 export async function POST(req: Request) {
-  const apiKey = process.env.CLAUDE_API_KEY?.trim();
+  const apiKey = getClaudeApiKey();
   if (!apiKey) {
     return Response.json(
-      { error: "KI-Rechner ist nicht konfiguriert (CLAUDE_API_KEY fehlt)." },
+      {
+        error:
+          "KI-Rechner ist nicht konfiguriert (CLAUDE_API_KEY fehlt auf dem Server).",
+        code: "missing_key",
+      },
+      { status: 503 }
+    );
+  }
+
+  if (!isPlausibleClaudeApiKey(apiKey)) {
+    console.error("[ki-rechner] CLAUDE_API_KEY hat unerwartetes Format");
+    return Response.json(
+      {
+        error:
+          "KI-Rechner: API-Schlüssel auf dem Server ist ungültig formatiert.",
+        code: "invalid_key_format",
+      },
       { status: 503 }
     );
   }
@@ -123,15 +193,34 @@ export async function POST(req: Request) {
   }
 
   const client = new Anthropic({ apiKey });
+  const modelsToTry = [
+    getClaudeModel(),
+    ...KI_CLAUDE_MODEL_FALLBACKS,
+  ].filter((m, i, arr) => arr.indexOf(m) === i);
 
   try {
-    const response = await client.messages.create({
-      model:
-        process.env.CLAUDE_MODEL?.trim() || "claude-sonnet-4-6",
-      max_tokens: 1024,
-      system: getKiRechnerSystemPrompt(),
-      messages: sanitized,
-    });
+    let response: Awaited<ReturnType<typeof createClaudeMessage>> | null = null;
+    let lastErr: unknown;
+
+    for (const model of modelsToTry) {
+      try {
+        response = await createClaudeMessage(client, model, sanitized);
+        break;
+      } catch (err) {
+        lastErr = err;
+        const status = (err as { status?: number }).status;
+        const type = (err as { error?: { type?: string } }).error?.type;
+        logKiClaudeError(err, `model=${model}`);
+        if (status === 404 || type === "not_found_error") {
+          continue;
+        }
+        throw err;
+      }
+    }
+
+    if (!response) {
+      throw lastErr ?? new Error("Kein Claude-Modell verfügbar");
+    }
 
     const block = response.content[0];
     const content =
@@ -182,10 +271,11 @@ export async function POST(req: Request) {
       displayText,
     });
   } catch (err) {
-    console.error("[ki-rechner] Claude API error:", err);
+    logKiClaudeError(err, "POST");
+    const mapped = mapKiClaudeErrorToResponse(err);
     return Response.json(
-      { error: "Die KI-Antwort konnte gerade nicht geladen werden." },
-      { status: 502 }
+      { error: mapped.error, code: mapped.code },
+      { status: mapped.status }
     );
   }
 }

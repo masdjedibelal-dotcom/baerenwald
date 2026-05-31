@@ -169,6 +169,7 @@ export function KiRechnerChat({
   const [error, setError] = useState<string | null>(null);
   const [sessionId] = useState(() => crypto.randomUUID());
   const chatRootRef = useRef<HTMLDivElement>(null);
+  const messagesScrollRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -191,26 +192,56 @@ export function KiRechnerChat({
     ta.style.overflowY = ta.scrollHeight > maxHeight ? "auto" : "hidden";
   }, []);
 
-  const scrollChatToEnd = useCallback(() => {
-    requestAnimationFrame(() => {
-      messagesEndRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
-    });
+  const scrollChatToEnd = useCallback((smooth = true) => {
+    const run = () => {
+      const scroller = messagesScrollRef.current;
+      if (scroller) {
+        scroller.scrollTo({
+          top: scroller.scrollHeight,
+          behavior: smooth ? "smooth" : "auto",
+        });
+        return;
+      }
+      messagesEndRef.current?.scrollIntoView({
+        behavior: smooth ? "smooth" : "auto",
+        block: "end",
+      });
+    };
+    requestAnimationFrame(run);
+    requestAnimationFrame(() => requestAnimationFrame(run));
   }, []);
 
   useEffect(() => {
-    scrollChatToEnd();
-  }, [messages, loading, scrollChatToEnd]);
+    scrollChatToEnd(false);
+  }, [messages, loading, error, scrollChatToEnd]);
 
   useEffect(() => {
     syncTextareaHeight();
   }, [input, syncTextareaHeight]);
 
   const handleInputFocus = useCallback(() => {
-    requestAnimationFrame(() => {
-      textareaRef.current?.scrollIntoView({ block: "nearest", behavior: "smooth" });
-      scrollChatToEnd();
-    });
+    chatRootRef.current
+      ?.closest(".ki-rechner-chat-active")
+      ?.classList.add("ki-input-focused");
+
+    scrollChatToEnd(false);
+    window.setTimeout(() => scrollChatToEnd(false), 120);
+    window.setTimeout(() => scrollChatToEnd(false), 320);
   }, [scrollChatToEnd]);
+
+  const handleInputBlur = useCallback(() => {
+    window.setTimeout(() => {
+      const vv = window.visualViewport;
+      const vvOffset = vv
+        ? Math.max(0, window.innerHeight - vv.height - vv.offsetTop)
+        : 0;
+      if (vvOffset < 48) {
+        chatRootRef.current
+          ?.closest(".ki-rechner-chat-active")
+          ?.classList.remove("ki-input-focused");
+      }
+    }, 80);
+  }, []);
 
   const appendAssistant = useCallback((content: string) => {
     setMessages((prev) => [...prev, { role: "assistant", content }]);
@@ -384,7 +415,7 @@ export function KiRechnerChat({
         </div>
       </div>
 
-      <div className="ki-rechner-chat-messages">
+      <div ref={messagesScrollRef} className="ki-rechner-chat-messages">
         {messages.map((msg, i) => (
           <div
             key={`${msg.role}-${i}`}
@@ -416,12 +447,6 @@ export function KiRechnerChat({
           </div>
         ) : null}
 
-        {error ? (
-          <p className="ki-rechner-chat-error" role="alert">
-            {error}
-          </p>
-        ) : null}
-
         {limitReached ? (
           <p className="ki-rechner-chat-limit" role="status">
             Limit erreicht ({KI_MAX_USER_MESSAGES} Nachrichten). Bitte unten auf{" "}
@@ -431,6 +456,12 @@ export function KiRechnerChat({
 
         <div ref={messagesEndRef} />
       </div>
+
+      {error ? (
+        <p className="ki-rechner-chat-error" role="alert">
+          {error}
+        </p>
+      ) : null}
 
       <div className="ki-rechner-chat-composer">
         <div
@@ -445,8 +476,9 @@ export function KiRechnerChat({
             enterKeyHint="send"
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            onFocus={handleInputFocus}
-            onKeyDown={(e) => {
+          onFocus={handleInputFocus}
+          onBlur={handleInputBlur}
+          onKeyDown={(e) => {
               if (e.key === "Enter" && !e.shiftKey) {
                 e.preventDefault();
                 void handleSend();
