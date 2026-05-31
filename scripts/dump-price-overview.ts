@@ -398,7 +398,12 @@ function buildFixtures(): Fixture[] {
     "gu_paket",
     "terrasse",
   ] as const) {
-    for (const zaun of ["ja", "nein"] as const) {
+    const ohneZaun =
+      leistung === "rollrasen" || leistung === "auffrischung";
+    const zaunVariants = ohneZaun
+      ? (["nein"] as const)
+      : (["ja", "nein"] as const);
+    for (const zaun of zaunVariants) {
       for (const zu of ["einfach", "schwer"] as const) {
         if (leistung === "terrasse") {
           for (const mat of ["holz_wpc", "naturstein"] as const) {
@@ -420,6 +425,22 @@ function buildFixtures(): Fixture[] {
               }
             );
           }
+        } else if (ohneZaun) {
+          push(
+            `projekt_garten_${leistung}_zug${zu}_80qm`,
+            `Gartengestaltung ${leistung}, Zugang ${zu}, 80 m²`,
+            {
+              ...baseErneuern(),
+              bereiche: ["gartengestaltung"],
+              groesse: 80,
+              fachdetails: {
+                projekt: {
+                  gartenLeistung: leistung,
+                  gartenZugaenglichkeit: zu,
+                },
+              },
+            }
+          );
         } else {
           push(
             `projekt_garten_${leistung}_zaun${zaun}_zug${zu}_80qm`,
