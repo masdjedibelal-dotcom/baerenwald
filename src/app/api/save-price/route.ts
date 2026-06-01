@@ -7,6 +7,7 @@ import {
   buildSavePriceInternalHtml,
   SAVE_PRICE_CUSTOMER_EMAIL_SUBJECT,
 } from "@/lib/email/lead-mail-templates";
+import { AUTOMATED_CUSTOMER_EMAIL_BCC } from "@/lib/email/resend-bcc";
 import { getPostHogClient } from "@/lib/posthog-server";
 import { getClientIp } from "@/lib/request-ip";
 import { checkRateLimit } from "@/lib/rate-limit";
@@ -105,6 +106,7 @@ export async function POST(request: Request) {
     const { error: err1 } = await resend.emails.send({
       from,
       to: email,
+      bcc: AUTOMATED_CUSTOMER_EMAIL_BCC,
       subject: SAVE_PRICE_CUSTOMER_EMAIL_SUBJECT,
       html: customerHtml,
     });

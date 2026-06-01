@@ -22,6 +22,11 @@ export type KiRechnerChatMessage = {
   content: string;
 };
 
+export type KiRechnerChatVerlaufEntry = {
+  role: string;
+  content: string;
+};
+
 export type KiRechnerFunnelData = {
   situation: string;
   bereiche: string[];
@@ -30,6 +35,8 @@ export type KiRechnerFunnelData = {
   zeitraum?: string;
   kundentyp?: string;
   fachdetails?: Record<string, string>;
+  ki_session_id?: string;
+  ki_chat_verlauf?: KiRechnerChatVerlaufEntry[];
 };
 
 export interface KiRechnerChatProps {
@@ -346,6 +353,11 @@ export function KiRechnerChat({
           zeitraum: p.zeitraum,
           kundentyp: p.kundentyp,
           fachdetails: p.fachdetails,
+          ki_session_id: sessionId,
+          ki_chat_verlauf: messages.map((m) => ({
+            role: m.role,
+            content: m.content,
+          })),
         });
         return;
       }

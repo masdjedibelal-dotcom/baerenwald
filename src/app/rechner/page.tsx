@@ -282,6 +282,7 @@ function FunnelRechnerInner() {
     setFachdetails,
     clearFachdetailAnswer,
     setBadAusstattung,
+    setKiHandoff,
     reset,
   } = useFunnelState();
 
@@ -526,6 +527,10 @@ function FunnelRechnerInner() {
         setFachdetails(handoff.fachdetails);
       }
 
+      if (data.ki_session_id && data.ki_chat_verlauf?.length) {
+        setKiHandoff(data.ki_session_id, data.ki_chat_verlauf);
+      }
+
       const zeitraum =
         handoff.zeitraum ??
         (needsZeitraumSelection(handoff.situation) ? "flexibel" : null);
@@ -598,6 +603,7 @@ function FunnelRechnerInner() {
       setZugaenglichkeit,
       setZustand,
       setFachdetails,
+      setKiHandoff,
       setPrice,
     ]
   );
