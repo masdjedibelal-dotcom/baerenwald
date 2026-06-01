@@ -6,10 +6,12 @@ import {
   buildInternNotificationSubject,
   buildKundeBestaetigung,
 } from "@/lib/email/lead-mail-templates";
+import { AUTOMATED_CUSTOMER_EMAIL_BCC } from "@/lib/email/resend-bcc";
 import {
   erneuernProjektTyp,
   isErneuernProjektBereich,
 } from "@/lib/funnel/projekt-erneuern";
+import { generateKiZusammenfassung } from "@/lib/lead/generate-ki-zusammenfassung";
 import { isSupabaseConfigured, supabaseAdmin } from "@/lib/supabase";
 
 /** CRM-Eingabe — kompatibel mit externem POST /api/lead und internem Funnel. */
@@ -422,6 +424,16 @@ async function persistLeadInner(
     console.error("[persistLead] leads_status_history:", histError);
   }
 
+  const funnel = funnel_daten as Record<string, unknown> | undefined;
+  const kiChat = funnel?.ki_chat_verlauf as
+    | { role: string; content: string }[]
+    | undefined;
+  const kiSessionId = funnel?.ki_session_id as string | undefined;
+
+  if (kiChat?.length && kiSessionId) {
+    generateKiZusammenfassung(leadId, kiChat, kiSessionId).catch(console.error);
+  }
+
   const resendKey = process.env.RESEND_API_KEY;
   const internTo =
     process.env.INTERN_EMAIL?.trim() || SITE_CONFIG.email?.trim();
@@ -446,6 +458,7 @@ async function persistLeadInner(
         await resend.emails.send({
           from: resendFromCustomer,
           to: emailRaw.toLowerCase(),
+          bcc: AUTOMATED_CUSTOMER_EMAIL_BCC,
           subject: buildKundenBestaetigungSubject({
             situation,
             bereiche,

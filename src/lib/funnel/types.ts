@@ -193,6 +193,9 @@ export interface FunnelState {
   telefon: string;
   selectedSlot: { date: string; time: string } | null;
   submitted: boolean;
+  /** BärenwaldGPT-Session (Lead-Handoff) */
+  ki_session_id?: string | null;
+  ki_chat_verlauf?: { role: string; content: string }[] | null;
 }
 
 export interface StepOption {

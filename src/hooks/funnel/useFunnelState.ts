@@ -70,6 +70,11 @@ export type BwFunnelAction =
     }
   | { type: "SET_SUBMITTED"; value: boolean }
   | { type: "SET_KUNDENTYP"; value: Kundentyp | null }
+  | {
+      type: "SET_KI_HANDOFF";
+      ki_session_id: string;
+      ki_chat_verlauf: { role: string; content: string }[];
+    }
   | { type: "RESET" };
 
 /**
@@ -296,6 +301,13 @@ function bwFunnelReducer(
     case "SET_KUNDENTYP":
       return { ...state, kundentyp: action.value };
 
+    case "SET_KI_HANDOFF":
+      return {
+        ...state,
+        ki_session_id: action.ki_session_id,
+        ki_chat_verlauf: action.ki_chat_verlauf,
+      };
+
     default:
       return state;
   }
@@ -439,6 +451,20 @@ export function useBwFunnelState() {
     dispatch({ type: "SET_KUNDENTYP", value });
   }, []);
 
+  const setKiHandoff = useCallback(
+    (
+      ki_session_id: string,
+      ki_chat_verlauf: { role: string; content: string }[]
+    ) => {
+      dispatch({
+        type: "SET_KI_HANDOFF",
+        ki_session_id,
+        ki_chat_verlauf,
+      });
+    },
+    []
+  );
+
   return useMemo(
     () => ({
       state,
@@ -465,6 +491,7 @@ export function useBwFunnelState() {
       reset,
       setDringlichkeit,
       setSubmitted,
+      setKiHandoff,
     }),
     [
       state,
@@ -490,6 +517,7 @@ export function useBwFunnelState() {
       reset,
       setDringlichkeit,
       setSubmitted,
+      setKiHandoff,
     ]
   );
 }
