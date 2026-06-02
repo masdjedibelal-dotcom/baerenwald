@@ -3,7 +3,6 @@ import {
   dokumenteFromAngebot,
   dokumenteFromAuftrag,
   dokumenteFromUrls,
-  mergeDokumente,
 } from "@/lib/portal/portal-dokumente";
 import { isSupabaseConfigured, supabaseAdmin } from "@/lib/supabase";
 
@@ -264,10 +263,7 @@ export async function getPortalDataForKunde(kundeId: string) {
       };
     }),
     angebote: (angebote ?? []).map((a) => {
-      const lead = a.lead_id
-        ? (leads ?? []).find((l) => String(l.id) === String(a.lead_id))
-        : undefined;
-      const display = buildAngebotPortalDisplay(a, lead ?? null);
+      const display = buildAngebotPortalDisplay(a);
       return {
         ...a,
         titel: display.titel,

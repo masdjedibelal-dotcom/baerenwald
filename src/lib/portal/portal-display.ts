@@ -167,14 +167,11 @@ export function resolveAngebotTitel(opts: {
   return nr ? `Angebot ${nr}` : "Angebot";
 }
 
-export function buildAngebotPortalDisplay(
-  angebot: {
-    angebotsnr?: string | null;
-    leistungsumfang?: string | null;
-    notizen?: string | null;
-  },
-  lead?: { situation?: string | null } | null
-): AngebotPortalDisplay {
+export function buildAngebotPortalDisplay(angebot: {
+  angebotsnr?: string | null;
+  leistungsumfang?: string | null;
+  notizen?: string | null;
+}): AngebotPortalDisplay {
   const wm = parseWizardMetaFromNotizen(angebot.notizen);
 
   const leistungen = dedupeStrings([
