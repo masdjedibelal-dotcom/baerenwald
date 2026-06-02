@@ -7,6 +7,20 @@ const PUBLIC_PORTAL_PATHS = [
   "/portal/passwort-vergessen",
 ];
 
+const PUBLIC_PARTNER_PATHS = [
+  "/partner/login",
+  "/partner/registrieren",
+  "/partner/passwort-vergessen",
+];
+
+type AuthArea = "portal" | "partner";
+
+function getAuthArea(path: string): AuthArea | null {
+  if (path.startsWith("/portal")) return "portal";
+  if (path.startsWith("/partner")) return "partner";
+  return null;
+}
+
 export async function updateSession(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request });
 
@@ -42,20 +56,26 @@ export async function updateSession(request: NextRequest) {
   } = await supabase.auth.getUser();
 
   const path = request.nextUrl.pathname;
-  const isPortal = path.startsWith("/portal");
-  const isAuthCallback = path.startsWith("/portal/auth/");
-  const isPublic =
-    PUBLIC_PORTAL_PATHS.some((p) => path === p || path.startsWith(`${p}/`)) ||
-    isAuthCallback;
+  const area = getAuthArea(path);
 
-  if (!isPortal) {
+  if (!area) {
     return supabaseResponse;
   }
 
-  // Alte Token-URLs /portal/{uuid} → Login
-  const portalSegments = path.split("/").filter(Boolean);
-  if (portalSegments[0] === "portal" && portalSegments.length === 2) {
-    const sub = portalSegments[1];
+  const publicPaths =
+    area === "portal" ? PUBLIC_PORTAL_PATHS : PUBLIC_PARTNER_PATHS;
+  const loginPath = area === "portal" ? "/portal/login" : "/partner/login";
+  const homePath = area === "portal" ? "/portal" : "/partner";
+  const authPrefix = area === "portal" ? "/portal/auth/" : "/partner/auth/";
+
+  const isAuthCallback = path.startsWith(authPrefix);
+  const isPublic =
+    publicPaths.some((p) => path === p || path.startsWith(`${p}/`)) ||
+    isAuthCallback;
+
+  const segments = path.split("/").filter(Boolean);
+  if (segments.length === 2 && segments[0] === area) {
+    const sub = segments[1];
     const knownRoutes = new Set([
       "login",
       "registrieren",
@@ -64,14 +84,14 @@ export async function updateSession(request: NextRequest) {
     ]);
     if (!knownRoutes.has(sub)) {
       const url = request.nextUrl.clone();
-      url.pathname = "/portal/login";
+      url.pathname = loginPath;
       return NextResponse.redirect(url);
     }
   }
 
-  if (!user && !isPublic && path !== "/portal/login") {
+  if (!user && !isPublic && path !== loginPath) {
     const url = request.nextUrl.clone();
-    url.pathname = "/portal/login";
+    url.pathname = loginPath;
     url.searchParams.set("next", path);
     return NextResponse.redirect(url);
   }
@@ -80,21 +100,23 @@ export async function updateSession(request: NextRequest) {
     user?.email_confirmed_at ?? user?.confirmed_at
   );
 
-  if (
-    user &&
-    !emailConfirmed &&
-    !isPublic &&
-    path !== "/portal/login"
-  ) {
+  if (user && !emailConfirmed && !isPublic && path !== loginPath) {
     const url = request.nextUrl.clone();
-    url.pathname = "/portal/login";
+    url.pathname = loginPath;
     url.searchParams.set("hint", "confirm");
     return NextResponse.redirect(url);
   }
 
-  if (user && emailConfirmed && (path === "/portal/login" || path === "/portal/registrieren")) {
+  const registerPath =
+    area === "portal" ? "/portal/registrieren" : "/partner/registrieren";
+
+  if (
+    user &&
+    emailConfirmed &&
+    (path === loginPath || path === registerPath)
+  ) {
     const url = request.nextUrl.clone();
-    url.pathname = "/portal";
+    url.pathname = homePath;
     return NextResponse.redirect(url);
   }
 
