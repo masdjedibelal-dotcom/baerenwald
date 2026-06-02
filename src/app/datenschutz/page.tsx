@@ -21,7 +21,7 @@ export default function DatenschutzPage() {
               <span className="breadcrumb-current">Datenschutz</span>
             </nav>
             <h1 className="page-hero-h1">Datenschutzerklärung</h1>
-            <p className="page-hero-sub">Stand: 31. Mai 2026</p>
+            <p className="page-hero-sub">Stand: 2. Juni 2026</p>
           </div>
         </div>
 
@@ -78,7 +78,43 @@ export default function DatenschutzPage() {
                 einer funktionsfähigen, missbrauchssicheren Beratung).
               </p>
 
-              <strong>3. Weitergabe von Daten</strong>
+              <strong id="meinbaerenwald">3. MeinBärenwald (Kundenportal)</strong>
+              <p>
+                Unter{" "}
+                <a href="/portal/login">MeinBärenwald</a> kannst du dich mit E-Mail und Passwort
+                registrieren bzw. anmelden, um deine Anfragen, Angebote, Aufträge und freigegebene
+                Dokumente einzusehen (kein öffentlicher Link mehr mit Einmal-Token).
+              </p>
+              <p>
+                <strong>Bei Registrierung und Login:</strong>
+              </p>
+              <ul>
+                <li>E-Mail-Adresse</li>
+                <li>Passwort (gespeichert verschlüsselt beim Anbieter Supabase Auth — wir sehen es nicht im Klartext)</li>
+                <li>Name und optional Telefonnummer (bei der Registrierung)</li>
+                <li>Technische Session-Daten (Cookies bzw. vergleichbare Speicher im Browser für die Anmeldung)</li>
+              </ul>
+              <p>
+                <strong>Im Portal sichtbar:</strong> Daten zu deinen bei uns geführten Anfragen,
+                Angeboten und Aufträgen (z. B. Status, Termine, freigegebene PDFs und Fotos), soweit
+                sie dir zur Verfügung gestellt wurden.
+              </p>
+              <p>
+                <strong>Verknüpfung mit deinem Kundenstamm:</strong> Wenn du dieselbe E-Mail wie in
+                unserer Kundenverwaltung nutzt, wird dein Konto mit dem bestehenden Kundenprofil
+                verknüpft (<em>auth_user_id</em> in unserer Datenbank).
+              </p>
+              <p>
+                <strong>E-Mail-Bestätigung:</strong> Nach der Registrierung sendet Supabase eine
+                Bestätigungs-E-Mail mit Link. Ohne Bestätigung ist kein Login möglich.
+              </p>
+              <p>
+                Rechtsgrundlage: Art. 6 Abs. 1 lit. b DSGVO (Durchführung bzw. Anbahnung des
+                Vertrags, Bereitstellung des Kundenportals) und Art. 6 Abs. 1 lit. f DSGVO
+                (berechtigtes Interesse an sicherer, nachvollziehbarer Kundenkommunikation).
+              </p>
+
+              <strong>4. Weitergabe von Daten</strong>
               <p>
                 Deine Daten werden nicht verkauft. Eine Weitergabe an Dritte erfolgt nur, soweit
                 dies für den Betrieb der Website und deine Anfrage erforderlich ist:
@@ -87,12 +123,12 @@ export default function DatenschutzPage() {
                 <li>An beteiligte Handwerksbetriebe zur Auftragsdurchführung</li>
                 <li>
                   An Auftragsverarbeiter (Hosting, Datenbank, E-Mail, Analyse, KI-Dienst) —
-                  siehe die Abschnitte 4 bis 8
+                  siehe die Abschnitte 5 bis 9
                 </li>
                 <li>Bei gesetzlicher Verpflichtung</li>
               </ul>
 
-              <strong>4. Hosting</strong>
+              <strong>5. Hosting</strong>
               <p>
                 Netlify Inc.
                 <br />
@@ -111,7 +147,7 @@ export default function DatenschutzPage() {
                 </a>
               </p>
 
-              <strong>5. Datenbank &amp; Backend</strong>
+              <strong>6. Datenbank &amp; Backend</strong>
               <p>
                 Supabase Inc.
                 <br />
@@ -121,9 +157,10 @@ export default function DatenschutzPage() {
               </p>
               <p>
                 Supabase verarbeitet Daten auf Servern in der EU (Frankfurt, AWS eu-central-1).
-                Darüber speichern wir u. a. Leads aus dem Rechner und Protokolle der
-                BärenwaldGPT-Chat-Nutzung (Tabelle <em>ki_anfragen_log</em>: Anfrage, Antwort,
-                Session, Zeitstempel).
+                Darüber speichern wir u. a. Leads aus dem Rechner, Protokolle der
+                BärenwaldGPT-Chat-Nutzung (Tabelle <em>ki_anfragen_log</em>) sowie — für
+                MeinBärenwald — Authentifizierungsdaten (Supabase Auth) und die Verknüpfung zum
+                Kundenstamm.
                 <br />
                 Datenschutzerklärung Supabase:{" "}
                 <a href="https://supabase.com/privacy" target="_blank" rel="noopener noreferrer">
@@ -131,15 +168,15 @@ export default function DatenschutzPage() {
                 </a>
               </p>
 
-              <strong>6. E-Mail Versand</strong>
+              <strong>7. E-Mail-Versand</strong>
               <p>
                 Resend Inc.
                 <br />
                 San Francisco, USA
               </p>
               <p>
-                Resend wird für den Versand automatischer Bestätigungsmails genutzt. Resend ist
-                zertifiziert gemäß EU-US Data Privacy Framework.
+                <strong>Resend</strong> wird für Bestätigungsmails nach Anfragen über den Rechner
+                genutzt. Resend ist zertifiziert gemäß EU-US Data Privacy Framework.
                 <br />
                 Datenschutzerklärung Resend:{" "}
                 <a
@@ -150,8 +187,13 @@ export default function DatenschutzPage() {
                   https://resend.com/legal/privacy-policy
                 </a>
               </p>
+              <p>
+                <strong>Supabase Auth</strong> versendet System-E-Mails für MeinBärenwald (z. B.
+                Registrierung bestätigen, Passwort zurücksetzen). Anbieter ebenfalls Supabase
+                (siehe Abschnitt 6).
+              </p>
 
-              <strong id="ki-beratung">7. BärenwaldGPT (KI-Beratung im Rechner)</strong>
+              <strong id="ki-beratung">8. BärenwaldGPT (KI-Beratung im Rechner)</strong>
               <p>
                 Auf unserer Website kannst du im Rechner den Chat-Dienst{" "}
                 <strong>BärenwaldGPT</strong> nutzen. Er dient der unverbindlichen Orientierung zu
@@ -204,7 +246,7 @@ export default function DatenschutzPage() {
                 Weiterentwicklung des Dienstes).
               </p>
 
-              <strong>8. Analyse &amp; Tracking</strong>
+              <strong>9. Analyse &amp; Tracking</strong>
               <p>
                 PostHog Inc.
                 <br />
@@ -227,7 +269,7 @@ export default function DatenschutzPage() {
                 </a>
               </p>
 
-              <strong>9. Speicherdauer</strong>
+              <strong>10. Speicherdauer</strong>
               <p>
                 Daten werden gelöscht, sobald der Zweck entfällt, sofern keine gesetzlichen
                 Aufbewahrungspflichten entgegenstehen.
@@ -245,9 +287,14 @@ export default function DatenschutzPage() {
                   <strong>Beauftragte Projekte:</strong> gesetzliche Aufbewahrungsfristen (i. d.
                   R. 10 Jahre)
                 </li>
+                <li>
+                  <strong>MeinBärenwald-Konto:</strong> bis zur Löschung deines Kontos bzw. auf
+                  Anfrage; die Verknüpfung zum Kundenstamm entfällt dann. Gesetzliche
+                  Aufbewahrung von Rechnungs- und Vertragsdaten bleibt unberührt.
+                </li>
               </ul>
 
-              <strong>10. Deine Rechte</strong>
+              <strong>11. Deine Rechte</strong>
               <p>Du hast das Recht auf:</p>
               <ul>
                 <li>Auskunft (Art. 15 DSGVO)</li>
@@ -261,10 +308,11 @@ export default function DatenschutzPage() {
                 <a href="mailto:info@baerenwald-muenchen.de">info@baerenwald-muenchen.de</a>
                 <br />
                 Bitte gib bei Auskunft oder Löschung zum BärenwaldGPT-Chat möglichst Datum und
-                Inhalt deiner Nachricht an, damit wir den Eintrag zuordnen können.
+                Inhalt deiner Nachricht an, damit wir den Eintrag zuordnen können. Für MeinBärenwald
+                nenne bitte die E-Mail-Adresse deines Kontos.
               </p>
 
-              <strong>11. Beschwerderecht</strong>
+              <strong>12. Beschwerderecht</strong>
               <p>Du hast das Recht, dich bei der zuständigen Aufsichtsbehörde zu beschweren:</p>
               <p>
                 Bayerisches Landesamt für Datenschutzaufsicht (BayLDA)
@@ -278,7 +326,7 @@ export default function DatenschutzPage() {
                 </a>
               </p>
 
-              <strong>12. Änderungen</strong>
+              <strong>13. Änderungen</strong>
               <p>
                 Wir behalten uns vor, diese Datenschutzerklärung bei rechtlichen oder technischen
                 Änderungen anzupassen.
