@@ -11,6 +11,7 @@ import {
   Mail,
   MessageCircle,
   Phone,
+  Sparkles,
 } from "lucide-react";
 
 import { SITE_CONFIG } from "@/lib/config";
@@ -95,7 +96,7 @@ type PortalClientProps = {
   leads: PortalLead[];
 };
 
-type SectionId = "uebersicht" | "anfragen" | "angebote" | "auftraege";
+type SectionId = "uebersicht" | "anfragen" | "angebote" | "auftraege" | "gpt";
 type OverviewTabId = "anfragen" | "angebote" | "auftraege";
 type SortKey = "date" | "title" | "status";
 type SortDir = "asc" | "desc";
@@ -104,13 +105,115 @@ type DetailItem = {
   date?: string;
   title: string;
   status?: string;
-  statusAtBottom?: boolean;
   summary?: string;
+  anfrageGewerk?: string;
+  anfrageGewerkBullets?: string[];
+  anfrageVorhaben?: string;
   sections: PortalDetailSection[];
   tags?: string[];
   updates?: Array<{ id?: string; date?: string; title: string; note?: string }>;
   dokumente?: PortalDokument[];
+  angebotDetail?: boolean;
 };
+
+function formatAnfrageGewerk(bereiche?: string[]): string | undefined {
+  const parts = (bereiche ?? [])
+    .map((b) => b.trim())
+    .filter(Boolean);
+  if (parts.length === 0) return undefined;
+  return parts.join(", ");
+}
+
+function formatAnfrageTitle(gewerk?: string, vorhaben?: string): string {
+  const g = gewerk?.trim();
+  const v = vorhaben?.trim();
+  if (g && v) return `${g} · ${v}`;
+  if (g) return g;
+  if (v) return v;
+  return "Anfrage";
+}
+
+function AnfrageTitleBlock({
+  gewerk,
+  gewerkBullets,
+  vorhaben,
+  compact = false,
+}: {
+  gewerk?: string;
+  gewerkBullets?: string[];
+  vorhaben?: string;
+  compact?: boolean;
+}) {
+  const bullets =
+    gewerkBullets && gewerkBullets.length > 0
+      ? gewerkBullets
+      : gewerk
+        ? [gewerk]
+        : [];
+  const hasGewerk = bullets.length > 0;
+  const hasVorhaben = Boolean(vorhaben?.trim());
+
+  if (!hasGewerk && !hasVorhaben) {
+    return <span className="text-text-secondary">Anfrage</span>;
+  }
+
+  return (
+    <div className={cn("space-y-1", !compact && "space-y-2")}>
+      {hasGewerk ? (
+        <div>
+          <p
+            className={cn(
+              "font-semibold uppercase tracking-wider text-text-tertiary",
+              compact ? "text-[10px]" : "text-[11px]"
+            )}
+          >
+            Gewerk
+          </p>
+          {bullets.length > 1 ? (
+            <ul className={cn("space-y-0.5", compact ? "text-[13px]" : "text-sm")}>
+              {bullets.map((line) => (
+                <li key={line} className="font-semibold leading-snug text-text-primary">
+                  {line}
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p
+              className={cn(
+                "font-semibold leading-snug text-text-primary",
+                compact ? "text-[13px]" : "text-base sm:text-lg"
+              )}
+            >
+              {bullets[0]}
+            </p>
+          )}
+        </div>
+      ) : null}
+      {hasVorhaben ? (
+        <div>
+          <p
+            className={cn(
+              "font-semibold uppercase tracking-wider text-text-tertiary",
+              compact ? "text-[10px]" : "text-[11px]"
+            )}
+          >
+            Vorhaben
+          </p>
+          <p
+            className={cn(
+              "font-semibold leading-snug text-text-primary",
+              compact
+                ? "text-[13px] line-clamp-2"
+                : "font-display text-xl sm:text-2xl"
+            )}
+          >
+            {vorhaben}
+          </p>
+        </div>
+      ) : null}
+    </div>
+  );
+}
 
 const MENU_ITEMS: Array<{
   id: SectionId;
@@ -121,6 +224,7 @@ const MENU_ITEMS: Array<{
   { id: "anfragen", label: "Anfragen", icon: ClipboardList },
   { id: "angebote", label: "Angebote", icon: FileText },
   { id: "auftraege", label: "Aufträge", icon: Briefcase },
+  { id: "gpt", label: "BärenwaldGPT", icon: Sparkles },
 ];
 
 function fmtDate(v?: string): string {
@@ -210,19 +314,24 @@ function PortalDetailPanel({
   item: DetailItem;
   showStatusAtBottom: boolean;
 }) {
+  const isAnfrageDetail = Boolean(item.anfrageGewerk || item.anfrageVorhaben);
+  const detailTitle = isAnfrageDetail
+    ? item.anfrageGewerk || "Anfrage"
+    : item.title;
+
   return (
     <div className="space-y-4">
       <header className="space-y-2 border-b border-border-light pb-4">
         <p className="text-xs text-text-tertiary">{fmtDate(item.date)}</p>
         <h3 className="font-display text-xl font-semibold leading-snug text-text-primary sm:text-2xl">
-          {item.title}
+          {detailTitle}
         </h3>
         {!showStatusAtBottom && item.status ? (
           <span className={statusPillClass(item.status)}>
             {fmtPortalStatus(item.status)}
           </span>
         ) : null}
-        {item.summary ? (
+        {!isAnfrageDetail && item.summary ? (
           <p className="text-sm leading-relaxed text-text-secondary">{item.summary}</p>
         ) : null}
       </header>
@@ -234,6 +343,17 @@ function PortalDetailPanel({
             (section.bullets && section.bullets.length > 0) ||
             Boolean(section.text)
         )
+        .filter((section) => {
+          const isAnfrageDetail = Boolean(item.anfrageGewerk || item.anfrageVorhaben);
+          if (!isAnfrageDetail) return true;
+          const duplicateHeadings = new Set([
+            "Gewerke",
+            "Ihr Vorhaben",
+            "Gewerk",
+            "Vorhaben",
+          ]);
+          return !duplicateHeadings.has(section.heading);
+        })
         .map((section) => (
         <section key={section.heading} className="space-y-2">
           <h4 className="text-xs font-semibold uppercase tracking-wider text-text-tertiary">
@@ -272,7 +392,7 @@ function PortalDetailPanel({
         </section>
       ))}
 
-      {item.tags && item.tags.length > 0 ? (
+      {!isAnfrageDetail && item.tags && item.tags.length > 0 ? (
         <section className="space-y-2">
           <h4 className="text-xs font-semibold uppercase tracking-wider text-text-tertiary">
             Gewerke & Phasen
@@ -310,7 +430,11 @@ function PortalDetailPanel({
       ) : null}
 
       {item.dokumente && item.dokumente.length > 0 ? (
-        <PortalDokumenteList dokumente={item.dokumente} />
+        <PortalDokumenteList
+          dokumente={item.dokumente}
+          heading={item.angebotDetail ? "Dokumente" : undefined}
+          pdfInlinePreview={item.angebotDetail}
+        />
       ) : null}
 
       {showStatusAtBottom && item.status ? (
@@ -324,38 +448,83 @@ function PortalDetailPanel({
   );
 }
 
-function PortalDokumenteList({ dokumente }: { dokumente: PortalDokument[] }) {
+function PortalDokumenteList({
+  dokumente,
+  heading = "Dokumente & Anhänge",
+  pdfInlinePreview = false,
+}: {
+  dokumente: PortalDokument[];
+  heading?: string;
+  pdfInlinePreview?: boolean;
+}) {
+  const [previewHref, setPreviewHref] = useState<string | null>(null);
+
+  useEffect(() => {
+    setPreviewHref(null);
+  }, [dokumente]);
+
   if (dokumente.length === 0) return null;
+
+  const openDoc = (doc: PortalDokument) => {
+    const url = normalizeAttachmentUrl(doc.href);
+    if (pdfInlinePreview && doc.art === "angebot") {
+      setPreviewHref((cur) => (cur === url ? null : url));
+      return;
+    }
+    window.open(url, "_blank", "noopener,noreferrer");
+  };
+
   return (
     <div className="space-y-2 border-t border-border-light pt-3">
       <p className="text-xs font-semibold uppercase tracking-wider text-text-tertiary">
-        Dokumente & Anhänge
+        {heading}
       </p>
       <ul className="space-y-2">
-        {dokumente.map((doc) => (
-          <li key={doc.id}>
-            <a
-              href={normalizeAttachmentUrl(doc.href)}
-              target="_blank"
-              rel="noreferrer"
-              className="flex items-start justify-between gap-3 rounded-lg border border-border-light bg-muted/30 px-3 py-2 transition-colors hover:bg-muted/50"
-            >
-              <span className="min-w-0">
-                <span className="block text-sm font-semibold text-text-primary">
-                  {doc.name}
-                </span>
-                {(doc.subtitle || doc.datum) && (
-                  <span className="mt-0.5 block text-xs text-text-tertiary">
-                    {[doc.subtitle || dokumentArtLabel(doc.art), doc.datum ? fmtDate(doc.datum) : null]
-                      .filter(Boolean)
-                      .join(" · ")}
-                  </span>
+        {dokumente.map((doc) => {
+          const url = normalizeAttachmentUrl(doc.href);
+          const isPreviewOpen = pdfInlinePreview && previewHref === url;
+          return (
+            <li key={doc.id}>
+              <button
+                type="button"
+                onClick={() => openDoc(doc)}
+                className={cn(
+                  "flex w-full items-start justify-between gap-3 rounded-lg border border-border-light bg-muted/30 px-3 py-2 text-left transition-colors hover:bg-muted/50",
+                  isPreviewOpen && "border-accent/40 bg-accent-light/40"
                 )}
-              </span>
-              <span className="shrink-0 text-xs font-medium text-accent">Öffnen</span>
-            </a>
-          </li>
-        ))}
+              >
+                <span className="min-w-0">
+                  <span className="block text-sm font-semibold text-text-primary">
+                    {doc.name}
+                  </span>
+                  {(doc.subtitle || doc.datum) && (
+                    <span className="mt-0.5 block text-xs text-text-tertiary">
+                      {[doc.subtitle, doc.datum ? fmtDate(doc.datum) : null]
+                        .filter(Boolean)
+                        .join(" · ")}
+                    </span>
+                  )}
+                </span>
+                <span className="shrink-0 text-xs font-medium text-accent">
+                  {pdfInlinePreview && doc.art === "angebot"
+                    ? isPreviewOpen
+                      ? "Schließen"
+                      : "Vorschau"
+                    : "Öffnen"}
+                </span>
+              </button>
+              {isPreviewOpen ? (
+                <div className="mt-2 overflow-hidden rounded-xl border border-border-light bg-muted/20">
+                  <iframe
+                    src={url}
+                    title={doc.name}
+                    className="h-[min(70vh,560px)] w-full bg-white"
+                  />
+                </div>
+              ) : null}
+            </li>
+          );
+        })}
       </ul>
     </div>
   );
@@ -436,10 +605,12 @@ export function PortalClient({
                   typeof lead.preis_max === "number"
                 ? `${fmtMoney(lead.preis_min)} – ${fmtMoney(lead.preis_max)}`
                 : undefined;
-          const bereichLabel =
-            lead.bereiche && lead.bereiche.length > 0
-              ? lead.bereiche.join(", ")
-              : undefined;
+          const gewerkBullets = (lead.bereiche ?? [])
+            .map((b) => b.trim())
+            .filter(Boolean);
+          const gewerk = formatAnfrageGewerk(gewerkBullets);
+          const vorhaben = sanitizeCustomerText(lead.situation, 500);
+          const vorhabenList = sanitizeCustomerText(lead.situation, 120);
           const sections: PortalDetailSection[] = [
             {
               heading: "Überblick",
@@ -451,26 +622,15 @@ export function PortalClient({
               ]),
             },
           ];
-          if (bereichLabel) {
-            sections.push({
-              heading: "Gewerke",
-              bullets: lead.bereiche,
-            });
-          }
-          const vorhaben = sanitizeCustomerText(lead.situation, 500);
-          if (vorhaben) {
-            sections.push({ heading: "Ihr Vorhaben", text: vorhaben });
-          }
           return {
             id: lead.id,
             date: lead.created_at,
-            title: vorhaben
-              ? `Vorhaben: ${vorhaben.length > 72 ? `${vorhaben.slice(0, 71)}…` : vorhaben}`
-              : "Ihre Anfrage",
+            title: formatAnfrageTitle(gewerk, vorhabenList),
+            anfrageGewerk: gewerk,
+            anfrageGewerkBullets: gewerkBullets.length > 0 ? gewerkBullets : undefined,
+            anfrageVorhaben: vorhaben,
             status: lead.status || "neu",
-            summary:
-              bereichLabel ??
-              (lead.plz ? `PLZ ${lead.plz}` : "Bereiche werden abgestimmt"),
+            summary: lead.plz ? `PLZ ${lead.plz}` : undefined,
             sections,
             dokumente: lead.dokumente ?? [],
           };
@@ -487,55 +647,35 @@ export function PortalClient({
             new Date(a.created_at || 0).getTime()
         )
         .map((a) => {
-          const lead = a.lead_id ? leadById.get(a.lead_id) : undefined;
           const sections: PortalDetailSection[] = [
             {
               heading: "Überblick",
               rows: detailRows([
-                { label: "Angebotsnummer", value: a.angebotsnr ?? undefined },
-                { label: "PLZ / Ort", value: lead?.plz },
-                {
-                  label: "Angebotssumme",
-                  value: fmtMoney(a.betrag) !== "—" ? fmtMoney(a.betrag) : undefined,
-                },
                 { label: "Gültig bis", value: fmtDate(a.gueltig_bis) },
                 {
                   label: "Versendet am",
                   value: fmtDate(a.gesendet_am || a.created_at),
                 },
+                {
+                  label: "Preis (Brutto)",
+                  value: fmtMoney(a.betrag) !== "—" ? fmtMoney(a.betrag) : undefined,
+                },
               ]),
             },
           ];
-          if (a.leistungen && a.leistungen.length > 0) {
-            sections.push({ heading: "Leistungen", bullets: a.leistungen });
-          }
-          if (a.hinweise) {
-            sections.push({ heading: "Hinweise", text: a.hinweise });
-          }
-          const vorhaben = sanitizeCustomerText(lead?.situation, 400);
-          if (vorhaben) {
-            sections.push({ heading: "Bezug zu Ihrer Anfrage", text: vorhaben });
-          }
-          if (lead?.bereiche && lead.bereiche.length > 0) {
-            sections.push({ heading: "Gewerke", bullets: lead.bereiche });
-          }
           return {
             id: a.id,
             date: a.created_at,
-            title: a.titel || (a.angebotsnr ? `Angebot ${a.angebotsnr}` : "Angebot"),
+            title:
+              sanitizeCustomerText(a.titel, 200) ||
+              (a.angebotsnr ? `Angebot ${a.angebotsnr}` : "Angebot"),
             status: a.status_einfach || a.status || "offen",
-            statusAtBottom: true,
-            summary: [
-              lead?.plz ? `PLZ ${lead.plz}` : null,
-              fmtMoney(a.betrag) !== "—" ? fmtMoney(a.betrag) : null,
-            ]
-              .filter(Boolean)
-              .join(" · "),
+            angebotDetail: true,
             sections,
             dokumente: a.dokumente ?? [],
           };
         }),
-    [angebote, leadById]
+    [angebote]
   );
 
   const auftraegeItems = useMemo<DetailItem[]>(
@@ -730,7 +870,10 @@ export function PortalClient({
               {MENU_ITEMS.map(({ id, label, icon: Icon }) => (
                 <button
                   key={id}
-                  onClick={() => setSection(id)}
+                  onClick={() => {
+                    setSection(id);
+                    if (id !== "gpt") setGptOpen(false);
+                  }}
                   className={cn(
                     "mb-1 flex w-full items-center justify-between rounded-xl px-3 py-2 text-left text-sm font-semibold",
                     section === id
@@ -754,32 +897,29 @@ export function PortalClient({
                 </button>
               ))}
             </nav>
-            <button
-              type="button"
-              onClick={() => setGptOpen(true)}
-              className="card-bordered w-full overflow-hidden p-0 text-left"
-            >
-              <div className="bg-gradient-to-r from-[#1A3D2B] via-[#2E7D52] to-[#5AA7A7] px-3 py-2 text-white">
-                <div className="flex items-center gap-2">
-                  <Image src="/logo-mark-green.png" alt="" width={16} height={16} />
-                  <span className="text-sm font-semibold">BärenwaldGPT</span>
-                </div>
-              </div>
-              <div className="px-3 py-3 text-sm text-text-secondary">
-                Beratung starten, Details klären und dann zum Preisrahmen wechseln.
-              </div>
-            </button>
           </div>
         </aside>
 
         <section className="space-y-4">
-          <header className="card-bordered sticky top-[76px] z-40 flex items-center justify-between gap-3 bg-surface-page/95 p-4 backdrop-blur-sm">
-            <div>
-              <p className="text-lg font-semibold text-text-primary">
-                Hallo {vorname}
-              </p>
-            </div>
-          </header>
+          {section === "uebersicht" ? (
+            <header className="card-bordered sticky top-[76px] z-40 flex items-center justify-between gap-3 bg-surface-page/95 p-4 backdrop-blur-sm">
+              <div>
+                <p className="text-lg font-semibold text-text-primary">
+                  Hallo {vorname}
+                </p>
+              </div>
+            </header>
+          ) : null}
+
+          {section === "gpt" ? (
+            <article className="card-bordered hidden overflow-hidden p-0 lg:block">
+              <PortalBaerenwaldGpt
+                variant="embedded"
+                open
+                onClose={() => setSection("uebersicht")}
+              />
+            </article>
+          ) : null}
 
           {section === "uebersicht" && (
             <div className="space-y-4">
@@ -899,10 +1039,21 @@ export function PortalClient({
                             <td className="px-3 py-2 text-sm text-text-secondary">
                               {fmtDate(item.date)}
                             </td>
-                            <td className="px-3 py-2 text-sm font-semibold text-text-primary">
-                              <span className="block max-w-[160px] truncate sm:max-w-none">
-                                {item.title}
-                              </span>
+                            <td className="px-3 py-2 text-sm text-text-primary">
+                              <div className="max-w-[200px] sm:max-w-none">
+                                {overviewTab === "anfragen" ? (
+                                  <AnfrageTitleBlock
+                                    gewerk={item.anfrageGewerk}
+                                    gewerkBullets={item.anfrageGewerkBullets}
+                                    vorhaben={item.anfrageVorhaben}
+                                    compact
+                                  />
+                                ) : (
+                                  <span className="block truncate font-semibold">
+                                    {item.title}
+                                  </span>
+                                )}
+                              </div>
                             </td>
                             <td className="px-3 py-2 text-sm text-text-secondary">
                               <span className={statusPillClass(item.status)}>
@@ -957,7 +1108,7 @@ export function PortalClient({
             </div>
           )}
 
-          {section !== "uebersicht" && (
+          {section !== "uebersicht" && section !== "gpt" && (
             <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
               <article className="card-bordered overflow-hidden p-0">
                 <table className="w-full table-fixed bg-surface-card text-left">
@@ -1030,8 +1181,19 @@ export function PortalClient({
                           <td className="px-2 py-2 text-[12px] text-text-secondary sm:px-4 sm:py-3 sm:text-sm">
                             {fmtDate(item.date)}
                           </td>
-                          <td className="px-2 py-2 text-[13px] font-semibold text-text-primary sm:max-w-[420px] sm:px-4 sm:py-3 sm:text-sm">
-                            <span className="block leading-tight">{shortLabel(item.title, 40)}</span>
+                          <td className="px-2 py-2 text-text-primary sm:max-w-[420px] sm:px-4 sm:py-3 sm:text-sm">
+                            {section === "anfragen" ? (
+                              <AnfrageTitleBlock
+                                gewerk={item.anfrageGewerk}
+                                gewerkBullets={item.anfrageGewerkBullets}
+                                vorhaben={item.anfrageVorhaben}
+                                compact
+                              />
+                            ) : (
+                              <span className="block text-[13px] font-semibold leading-tight">
+                                {shortLabel(item.title, 40)}
+                              </span>
+                            )}
                             <button
                               type="button"
                               className="mt-1 text-[11px] font-medium text-accent sm:hidden"
@@ -1041,9 +1203,7 @@ export function PortalClient({
                           </td>
                           <td className="hidden px-4 py-3 text-sm text-text-secondary md:table-cell">
                             <span className="block truncate">
-                              {section === "anfragen"
-                                ? (item.summary || "Bereich wird abgestimmt")
-                                : (item.summary || "—")}
+                              {item.summary || "—"}
                             </span>
                           </td>
                           <td className="px-2 py-2 text-[12px] text-text-secondary sm:px-4 sm:py-3 sm:text-sm">
@@ -1089,7 +1249,7 @@ export function PortalClient({
                   {selectedDetail ? (
                     <PortalDetailPanel
                       item={selectedDetail}
-                      showStatusAtBottom={section === "angebote"}
+                      showStatusAtBottom={false}
                     />
                   ) : (
                     <p className="text-sm text-text-secondary">Kein Eintrag ausgewählt.</p>
@@ -1132,23 +1292,16 @@ export function PortalClient({
             <button
               type="button"
               onClick={() => setGptOpen(true)}
-              aria-label="GPT öffnen"
+              aria-label="BärenwaldGPT öffnen"
               aria-pressed={gptOpen}
               className={cn(
-                "-mt-8 flex h-[64px] w-[64px] flex-col items-center justify-center gap-0.5 rounded-full border-[3px] border-white/30 bg-gradient-to-br from-[#143D28] via-[#2E7D52] to-[#4BA3A3] text-white shadow-[0_10px_28px_rgba(30,90,60,0.45)] ring-[5px] ring-surface-card transition-transform active:scale-95",
+                "-mt-8 flex min-h-[64px] w-[72px] flex-col items-center justify-center gap-1 rounded-full border-[3px] border-white/30 bg-gradient-to-br from-[#143D28] via-[#2E7D52] to-[#4BA3A3] px-1 py-2 text-white shadow-[0_10px_28px_rgba(30,90,60,0.45)] ring-[5px] ring-surface-card transition-transform active:scale-95",
                 gptOpen && "ring-[#2E7D52] shadow-[0_12px_32px_rgba(46,125,82,0.55)]"
               )}
             >
-              <span className="grid h-10 w-10 place-items-center rounded-full bg-white shadow-inner">
-                <Image
-                  src="/logo-mark-green.png"
-                  alt=""
-                  width={24}
-                  height={24}
-                />
-              </span>
-              <span className="text-[11px] font-extrabold uppercase tracking-wide text-white">
-                GPT
+              <Sparkles className="h-7 w-7 shrink-0 stroke-[1.75]" aria-hidden />
+              <span className="max-w-[68px] text-center text-[9px] font-extrabold leading-tight tracking-tight text-white">
+                BärenwaldGPT
               </span>
             </button>
           </div>
@@ -1177,7 +1330,7 @@ export function PortalClient({
         </div>
       </nav>
 
-      {mobileDetailOpen && section !== "uebersicht" && selectedDetail ? (
+      {mobileDetailOpen && section !== "uebersicht" && section !== "gpt" && selectedDetail ? (
         <div className="fixed inset-0 z-[120] bg-black/40 lg:hidden">
           <button
             className="absolute inset-0"
@@ -1191,7 +1344,7 @@ export function PortalClient({
             <div className="min-h-0 flex-1 overflow-y-auto px-4 pb-2">
               <PortalDetailPanel
                 item={selectedDetail}
-                showStatusAtBottom={section === "angebote"}
+                showStatusAtBottom={false}
               />
             </div>
             <div className="shrink-0 border-t border-border-light p-4">
@@ -1207,7 +1360,11 @@ export function PortalClient({
         </div>
       ) : null}
 
-      <PortalBaerenwaldGpt open={gptOpen} onClose={() => setGptOpen(false)} />
+      <PortalBaerenwaldGpt
+        variant="overlay"
+        open={gptOpen}
+        onClose={() => setGptOpen(false)}
+      />
     </div>
   );
 }

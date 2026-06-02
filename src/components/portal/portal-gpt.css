@@ -39,18 +39,6 @@
   }
 }
 
-.portal-gpt-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  flex-shrink: 0;
-  padding: 12px 16px;
-  border-bottom: 1px solid rgba(229, 231, 235, 0.9);
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(10px);
-}
-
 .portal-gpt-body {
   flex: 1;
   min-height: 0;
@@ -70,15 +58,67 @@
   box-shadow: none;
 }
 
+.portal-gpt-overlay .portal-gpt-body.portal-gpt-chat-active .ki-rechner-chat-header {
+  display: none;
+}
+
+.portal-gpt-embedded {
+  display: flex;
+  flex-direction: column;
+  min-height: min(640px, calc(100dvh - 220px));
+  height: min(720px, calc(100dvh - 200px));
+}
+
+.portal-gpt-embedded .portal-gpt-shell {
+  flex: 1;
+  min-height: 0;
+  height: 100%;
+  max-height: none;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.portal-gpt-embedded .portal-gpt-body--embedded .ki-rechner-chat {
+  border-radius: 0;
+}
+
 .portal-gpt-footer {
   flex-shrink: 0;
   display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 12px calc(10px + env(safe-area-inset-bottom, 0px)) 16px;
+  border-top: 1px solid rgba(229, 231, 235, 0.9);
+  background: rgba(255, 255, 255, 0.96);
+}
+
+.portal-gpt-footer-actions {
+  display: flex;
+  flex: 1;
   flex-wrap: wrap;
   gap: 8px;
   justify-content: center;
-  padding: 10px 16px calc(10px + env(safe-area-inset-bottom, 0px));
-  border-top: 1px solid rgba(229, 231, 235, 0.9);
-  background: rgba(255, 255, 255, 0.96);
+  min-width: 0;
+}
+
+.portal-gpt-close {
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 9999px;
+  border: 1px solid rgba(229, 231, 235, 0.95);
+  background: #fff;
+  color: #4b5563;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.portal-gpt-close:hover {
+  background: #f3f4f6;
+  color: #1a3d2b;
 }
 
 /* —— KiRechnerChat (aus Rechner, portal-tauglich) —— */

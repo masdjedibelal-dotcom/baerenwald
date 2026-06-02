@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 
+import { PortalResendConfirmation } from "@/components/portal/PortalResendConfirmation";
 import { portalAuthCallbackUrl } from "@/lib/portal/portal-auth-url";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 
@@ -14,14 +15,17 @@ export function PortalRegisterForm() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+  const [registeredEmail, setRegisteredEmail] = useState("");
+  const [alreadyRegistered, setAlreadyRegistered] = useState(false);
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
     setError(null);
     const supabase = getSupabaseBrowserClient();
-    const { error: signUpError } = await supabase.auth.signUp({
-      email: email.trim(),
+    const trimmedEmail = email.trim();
+    const { data, error: signUpError } = await supabase.auth.signUp({
+      email: trimmedEmail,
       password,
       options: {
         emailRedirectTo: portalAuthCallbackUrl(),
@@ -40,19 +44,47 @@ export function PortalRegisterForm() {
       }
       return;
     }
+
+    // Supabase gibt bei bestehender E-Mail oft trotzdem „Erfolg“ (Enumeration-Schutz),
+    // sendet aber keine neue Mail — identities ist dann leer.
+    const identities = data.user?.identities ?? [];
+    if (identities.length === 0) {
+      setAlreadyRegistered(true);
+      setRegisteredEmail(trimmedEmail);
+      setSuccess(true);
+      return;
+    }
+
+    setAlreadyRegistered(false);
+    setRegisteredEmail(trimmedEmail);
     setSuccess(true);
   }
 
   if (success) {
     return (
-      <div className="space-y-3 text-center">
+      <div className="space-y-4 text-center">
         <p className="text-sm font-semibold text-text-primary">
-          Fast geschafft — bitte E-Mail bestätigen
+          {alreadyRegistered
+            ? "E-Mail prüfen oder anmelden"
+            : "Fast geschafft — bitte E-Mail bestätigen"}
         </p>
         <p className="text-sm leading-relaxed text-text-secondary">
-          Wir haben dir eine Nachricht an <strong>{email.trim()}</strong> geschickt.
-          Klicke auf den Bestätigungslink, danach kannst du dich anmelden.
+          {alreadyRegistered ? (
+            <>
+              Unter <strong>{registeredEmail}</strong> existiert vermutlich schon ein Konto.
+              Prüfe dein Postfach (auch Spam) oder sende die Bestätigung erneut.
+            </>
+          ) : (
+            <>
+              Wir haben dir eine Nachricht an <strong>{registeredEmail}</strong> geschickt.
+              Klicke auf den Bestätigungslink, danach kannst du dich anmelden.
+            </>
+          )}
         </p>
+        <PortalResendConfirmation
+          defaultEmail={registeredEmail}
+          className="rounded-xl border border-border-light bg-surface-muted/40 p-3 text-left"
+        />
         <Link
           href="/portal/login"
           className="btn-pill-primary inline-flex !px-4 !py-2 !text-[13px]"

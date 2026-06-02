@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
 
+import { PortalResendConfirmation } from "@/components/portal/PortalResendConfirmation";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 
 export function PortalLoginForm() {
@@ -17,6 +18,7 @@ export function PortalLoginForm() {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showResend, setShowResend] = useState(hint === "confirm");
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -31,6 +33,7 @@ export function PortalLoginForm() {
     if (signInError) {
       const msg = signInError.message.toLowerCase();
       if (msg.includes("email not confirmed")) {
+        setShowResend(true);
         setError(
           "Bitte bestätige zuerst deine E-Mail — wir haben dir einen Link geschickt."
         );
@@ -46,10 +49,13 @@ export function PortalLoginForm() {
   return (
     <form onSubmit={onSubmit} className="space-y-4">
       {hint === "confirm" ? (
-        <p className="rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-900">
-          Bitte bestätige deine E-Mail-Adresse über den Link in unserer Nachricht,
-          danach kannst du dich anmelden.
-        </p>
+        <div className="space-y-3 rounded-lg bg-amber-50 px-3 py-3 text-sm text-amber-900">
+          <p>
+            Bitte bestätige deine E-Mail-Adresse über den Link in unserer Nachricht,
+            danach kannst du dich anmelden. Keine Mail? Spam prüfen oder erneut anfordern.
+          </p>
+          <PortalResendConfirmation defaultEmail={email} className="text-left" />
+        </div>
       ) : null}
       {authError ? (
         <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-800">
@@ -58,6 +64,12 @@ export function PortalLoginForm() {
       ) : null}
       {error ? (
         <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-800">{error}</p>
+      ) : null}
+      {showResend && hint !== "confirm" ? (
+        <PortalResendConfirmation
+          defaultEmail={email}
+          className="rounded-lg border border-border-light bg-surface-muted/40 p-3"
+        />
       ) : null}
 
       <label className="block space-y-1.5">
