@@ -14,7 +14,14 @@ import {
 } from "lucide-react";
 
 import { SITE_CONFIG } from "@/lib/config";
+import {
+  fmtPortalStatus,
+  sanitizeCustomerText,
+  type PortalDetailSection,
+} from "@/lib/portal/portal-display";
+import type { PortalDokument } from "@/lib/portal/portal-dokumente";
 import { cn } from "@/lib/utils";
+import { PortalBaerenwaldGpt } from "@/components/portal/PortalBaerenwaldGpt";
 
 type PortalKunde = { name?: string };
 type PortalPhase = { id: string; name: string; status?: string };
@@ -44,12 +51,13 @@ type PortalAuftrag = {
   budget?: number;
   start_datum?: string;
   end_datum?: string;
+  abnahme_datum?: string;
   created_at?: string;
   naechster_schritt?: string;
   phasen?: PortalPhase[];
   positionen?: PortalPosition[];
   bautagebuch?: PortalBautagebuchEntry[];
-  anhaenge?: string[];
+  dokumente?: PortalDokument[];
 };
 type PortalAngebot = {
   id: string;
@@ -57,14 +65,15 @@ type PortalAngebot = {
   status_einfach?: string;
   status?: string;
   lead_id?: string;
-  leistungsumfang?: string;
-  notizen?: string;
+  leistungen?: string[];
+  hinweise?: string;
+  angebotsnr?: string | null;
   betrag?: number;
   gueltig_bis?: string;
   gesendet_am?: string;
   created_at?: string;
   auftrag_titel?: string;
-  anhaenge?: string[];
+  dokumente?: PortalDokument[];
 };
 type PortalLead = {
   id: string;
@@ -76,7 +85,7 @@ type PortalLead = {
   preis_min?: number;
   preis_max?: number;
   budget_ca?: number;
-  anhaenge?: string[];
+  dokumente?: PortalDokument[];
 };
 
 type PortalClientProps = {
@@ -95,13 +104,12 @@ type DetailItem = {
   date?: string;
   title: string;
   status?: string;
-  subtitle?: string;
-  description?: string;
-  facts?: Array<{ label: string; value: string }>;
-  chips?: string[];
-  bullets?: string[];
+  statusAtBottom?: boolean;
+  summary?: string;
+  sections: PortalDetailSection[];
+  tags?: string[];
   updates?: Array<{ id?: string; date?: string; title: string; note?: string }>;
-  attachments?: string[];
+  dokumente?: PortalDokument[];
 };
 
 const MENU_ITEMS: Array<{
@@ -131,13 +139,6 @@ function fmtMoney(v?: number): string {
   }).format(v);
 }
 
-function compactText(v?: string, max = 140): string | undefined {
-  if (!v) return undefined;
-  const oneLine = v.replace(/\s+/g, " ").trim();
-  if (!oneLine) return undefined;
-  return oneLine.length > max ? `${oneLine.slice(0, max - 1)}…` : oneLine;
-}
-
 function emptyLabelForSection(section: OverviewTabId | SectionId): string {
   if (section === "anfragen") return "Noch keine Anfragen";
   if (section === "angebote") return "Noch keine Angebote";
@@ -162,6 +163,7 @@ function statusPillClass(status?: string): string {
 function isCompletedStatus(status?: string): boolean {
   const normalized = (status || "").toLowerCase().replace(/[\s-]+/g, "_");
   return (
+    normalized === "abgeschlossen" ||
     normalized.includes("abgeschlossen") ||
     normalized.includes("fertig") ||
     normalized.includes("completed") ||
@@ -169,17 +171,212 @@ function isCompletedStatus(status?: string): boolean {
   );
 }
 
+function isStorniertStatus(status?: string): boolean {
+  return (status || "").toLowerCase().includes("storniert");
+}
+
+function isAuftragAbgeschlossen(auftrag: PortalAuftrag): boolean {
+  if (isStorniertStatus(auftrag.status)) return false;
+  if (isCompletedStatus(auftrag.status)) return true;
+  if (typeof auftrag.fortschritt === "number" && auftrag.fortschritt >= 100) {
+    return true;
+  }
+  return false;
+}
+
 function dedupe(values: Array<string | undefined | null>): string[] {
   return Array.from(new Set(values.filter((v): v is string => Boolean(v && v.trim()))));
+}
+
+function dokumentArtLabel(art: PortalDokument["art"]): string {
+  switch (art) {
+    case "rechnung":
+      return "Rechnung";
+    case "angebot":
+      return "Angebot";
+    case "protokoll":
+      return "Abnahme";
+    case "foto":
+      return "Foto";
+    default:
+      return "Dokument";
+  }
+}
+
+function PortalDetailPanel({
+  item,
+  showStatusAtBottom,
+}: {
+  item: DetailItem;
+  showStatusAtBottom: boolean;
+}) {
+  return (
+    <div className="space-y-4">
+      <header className="space-y-2 border-b border-border-light pb-4">
+        <p className="text-xs text-text-tertiary">{fmtDate(item.date)}</p>
+        <h3 className="font-display text-xl font-semibold leading-snug text-text-primary sm:text-2xl">
+          {item.title}
+        </h3>
+        {!showStatusAtBottom && item.status ? (
+          <span className={statusPillClass(item.status)}>
+            {fmtPortalStatus(item.status)}
+          </span>
+        ) : null}
+        {item.summary ? (
+          <p className="text-sm leading-relaxed text-text-secondary">{item.summary}</p>
+        ) : null}
+      </header>
+
+      {item.sections
+        .filter(
+          (section) =>
+            (section.rows && section.rows.length > 0) ||
+            (section.bullets && section.bullets.length > 0) ||
+            Boolean(section.text)
+        )
+        .map((section) => (
+        <section key={section.heading} className="space-y-2">
+          <h4 className="text-xs font-semibold uppercase tracking-wider text-text-tertiary">
+            {section.heading}
+          </h4>
+          {section.rows && section.rows.length > 0 ? (
+            <dl className="overflow-hidden rounded-xl border border-border-light bg-muted/25">
+              {section.rows.map((row) => (
+                <div
+                  key={`${section.heading}-${row.label}`}
+                  className="grid grid-cols-1 gap-0.5 border-b border-border-light px-3 py-2.5 last:border-b-0 sm:grid-cols-[38%_1fr] sm:gap-3"
+                >
+                  <dt className="text-xs font-medium text-text-tertiary">{row.label}</dt>
+                  <dd className="text-sm font-semibold text-text-primary">{row.value}</dd>
+                </div>
+              ))}
+            </dl>
+          ) : null}
+          {section.bullets && section.bullets.length > 0 ? (
+            <ul className="space-y-1.5 rounded-xl border border-border-light bg-muted/25 px-3 py-2.5">
+              {section.bullets.map((line) => (
+                <li key={line} className="flex gap-2 text-sm text-text-primary">
+                  <span className="text-accent" aria-hidden>
+                    •
+                  </span>
+                  <span>{line}</span>
+                </li>
+              ))}
+            </ul>
+          ) : null}
+          {section.text ? (
+            <p className="rounded-xl border border-border-light bg-muted/25 px-3 py-2.5 text-sm leading-relaxed text-text-primary">
+              {section.text}
+            </p>
+          ) : null}
+        </section>
+      ))}
+
+      {item.tags && item.tags.length > 0 ? (
+        <section className="space-y-2">
+          <h4 className="text-xs font-semibold uppercase tracking-wider text-text-tertiary">
+            Gewerke & Phasen
+          </h4>
+          <div className="flex flex-wrap gap-1.5">
+            {item.tags.map((tag) => (
+              <span key={tag} className="tag tag-neutral">
+                {tag}
+              </span>
+            ))}
+          </div>
+        </section>
+      ) : null}
+
+      {item.updates && item.updates.length > 0 ? (
+        <section className="space-y-2 border-t border-border-light pt-4">
+          <h4 className="text-xs font-semibold uppercase tracking-wider text-text-tertiary">
+            Bautagebuch
+          </h4>
+          <ul className="space-y-2">
+            {item.updates.map((u) => (
+              <li
+                key={u.id || `${u.title}-${u.date}`}
+                className="rounded-xl border border-border-light bg-muted/30 p-3"
+              >
+                <p className="text-xs text-text-tertiary">{fmtDate(u.date)}</p>
+                <p className="text-sm font-semibold text-text-primary">{u.title}</p>
+                {u.note ? (
+                  <p className="mt-1 text-sm leading-relaxed text-text-secondary">{u.note}</p>
+                ) : null}
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
+
+      {item.dokumente && item.dokumente.length > 0 ? (
+        <PortalDokumenteList dokumente={item.dokumente} />
+      ) : null}
+
+      {showStatusAtBottom && item.status ? (
+        <footer className="border-t border-border-light pt-4">
+          <span className={statusPillClass(item.status)}>
+            {fmtPortalStatus(item.status)}
+          </span>
+        </footer>
+      ) : null}
+    </div>
+  );
+}
+
+function PortalDokumenteList({ dokumente }: { dokumente: PortalDokument[] }) {
+  if (dokumente.length === 0) return null;
+  return (
+    <div className="space-y-2 border-t border-border-light pt-3">
+      <p className="text-xs font-semibold uppercase tracking-wider text-text-tertiary">
+        Dokumente & Anhänge
+      </p>
+      <ul className="space-y-2">
+        {dokumente.map((doc) => (
+          <li key={doc.id}>
+            <a
+              href={normalizeAttachmentUrl(doc.href)}
+              target="_blank"
+              rel="noreferrer"
+              className="flex items-start justify-between gap-3 rounded-lg border border-border-light bg-muted/30 px-3 py-2 transition-colors hover:bg-muted/50"
+            >
+              <span className="min-w-0">
+                <span className="block text-sm font-semibold text-text-primary">
+                  {doc.name}
+                </span>
+                {(doc.subtitle || doc.datum) && (
+                  <span className="mt-0.5 block text-xs text-text-tertiary">
+                    {[doc.subtitle || dokumentArtLabel(doc.art), doc.datum ? fmtDate(doc.datum) : null]
+                      .filter(Boolean)
+                      .join(" · ")}
+                  </span>
+                )}
+              </span>
+              <span className="shrink-0 text-xs font-medium text-accent">Öffnen</span>
+            </a>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
 }
 
 function normalizeAttachmentUrl(url: string): string {
   return /^https?:\/\//i.test(url) ? url : `https://${url}`;
 }
 
-function detailFact(label: string, value?: string): { label: string; value: string } | null {
-  if (!value || value === "—") return null;
-  return { label, value };
+function detailRows(
+  rows: Array<{ label: string; value?: string | null }>
+): Array<{ label: string; value: string }> {
+  return rows
+    .map((r) => ({
+      label: r.label,
+      value: r.value?.trim(),
+    }))
+    .filter(
+      (r): r is { label: string; value: string } =>
+        Boolean(r.value && r.value !== "—")
+    );
 }
 
 function shortLabel(value?: string, max = 52): string {
@@ -212,10 +409,10 @@ export function PortalClient({
 
   const vorname = (kunde?.name || "Kunde").split(" ")[0] || "Kunde";
   const offeneAuftraegeCount = auftraege.filter(
-    (a) => !isCompletedStatus(a.status)
+    (a) => !isStorniertStatus(a.status) && !isAuftragAbgeschlossen(a)
   ).length;
-  const abgeschlosseneAuftraegeCount = auftraege.filter(
-    (a) => isCompletedStatus(a.status)
+  const abgeschlosseneAuftraegeCount = auftraege.filter((a) =>
+    isAuftragAbgeschlossen(a)
   ).length;
   const offeneAnfragenCount = leads.filter((lead) => !isCompletedStatus(lead.status)).length;
   const leadById = useMemo(
@@ -231,51 +428,53 @@ export function PortalClient({
             new Date(b.created_at || 0).getTime() -
             new Date(a.created_at || 0).getTime()
         )
-        .map((lead) => ({
-          id: lead.id,
-          date: lead.created_at,
-          title: [
-            lead.situation ? `Vorhaben: ${lead.situation}` : "Vorhaben: Anfrage",
-            lead.bereiche && lead.bereiche.length > 0
-              ? `Bereich: ${lead.bereiche[0]}`
-              : "Bereich: wird abgestimmt",
-          ].join(" · "),
-          status: lead.status || "neu",
-          subtitle:
+        .map((lead) => {
+          const preisrahmen =
+            typeof lead.budget_ca === "number"
+              ? fmtMoney(lead.budget_ca)
+              : typeof lead.preis_min === "number" ||
+                  typeof lead.preis_max === "number"
+                ? `${fmtMoney(lead.preis_min)} – ${fmtMoney(lead.preis_max)}`
+                : undefined;
+          const bereichLabel =
             lead.bereiche && lead.bereiche.length > 0
               ? lead.bereiche.join(", ")
-              : "Bereiche werden abgestimmt",
-          description: [
-            lead.plz ? `Ort: ${lead.plz}` : null,
-            typeof lead.budget_ca === "number"
-              ? `Preisrahmen: ${fmtMoney(lead.budget_ca)}`
-              : typeof lead.preis_min === "number" || typeof lead.preis_max === "number"
-                ? `Preisrahmen: ${fmtMoney(lead.preis_min)} - ${fmtMoney(lead.preis_max)}`
-                : "Preisrahmen wird im Gespräch abgestimmt",
-          ]
-            .filter(Boolean)
-            .join(" · "),
-          facts: [
-            detailFact("Anfragedatum", fmtDate(lead.created_at)),
-            detailFact("Objektbereich", lead.plz),
-            detailFact(
-              "Preisrahmen",
-              typeof lead.budget_ca === "number"
-                ? fmtMoney(lead.budget_ca)
-                : typeof lead.preis_min === "number" || typeof lead.preis_max === "number"
-                  ? `${fmtMoney(lead.preis_min)} - ${fmtMoney(lead.preis_max)}`
-                  : undefined
-            ),
-            detailFact("Gewerke", lead.bereiche?.join(", ")),
-          ].filter((v): v is { label: string; value: string } => Boolean(v)),
-          bullets: [
-            lead.bereiche?.length
-              ? `Leistungsumfang: ${lead.bereiche.join(", ")}`
-              : "Leistungsumfang wird gemeinsam definiert",
-            "Unsere Einsatzplanung meldet sich mit den nächsten Schritten.",
-          ],
-          attachments: dedupe(lead.anhaenge ?? []),
-        })),
+              : undefined;
+          const sections: PortalDetailSection[] = [
+            {
+              heading: "Überblick",
+              rows: detailRows([
+                { label: "Anfragedatum", value: fmtDate(lead.created_at) },
+                { label: "PLZ / Ort", value: lead.plz },
+                { label: "Preisrahmen", value: preisrahmen },
+                { label: "Status", value: fmtPortalStatus(lead.status || "neu") },
+              ]),
+            },
+          ];
+          if (bereichLabel) {
+            sections.push({
+              heading: "Gewerke",
+              bullets: lead.bereiche,
+            });
+          }
+          const vorhaben = sanitizeCustomerText(lead.situation, 500);
+          if (vorhaben) {
+            sections.push({ heading: "Ihr Vorhaben", text: vorhaben });
+          }
+          return {
+            id: lead.id,
+            date: lead.created_at,
+            title: vorhaben
+              ? `Vorhaben: ${vorhaben.length > 72 ? `${vorhaben.slice(0, 71)}…` : vorhaben}`
+              : "Ihre Anfrage",
+            status: lead.status || "neu",
+            summary:
+              bereichLabel ??
+              (lead.plz ? `PLZ ${lead.plz}` : "Bereiche werden abgestimmt"),
+            sections,
+            dokumente: lead.dokumente ?? [],
+          };
+        }),
     [leads]
   );
 
@@ -287,114 +486,131 @@ export function PortalClient({
             new Date(b.created_at || 0).getTime() -
             new Date(a.created_at || 0).getTime()
         )
-        .map((a) => ({
-          id: a.id,
-          date: a.created_at,
-          title: a.titel || a.leistungsumfang || "Angebot",
-          status: a.status_einfach || a.status || "offen",
-          subtitle: (() => {
-            const lead = a.lead_id ? leadById.get(a.lead_id) : undefined;
-            return [
-              lead?.plz ? `Objekt: ${lead.plz}` : null,
-              fmtMoney(a.betrag) !== "—" ? `Preis: ${fmtMoney(a.betrag)}` : null,
-              lead?.bereiche?.length ? `Gewerke: ${lead.bereiche.join(", ")}` : null,
+        .map((a) => {
+          const lead = a.lead_id ? leadById.get(a.lead_id) : undefined;
+          const sections: PortalDetailSection[] = [
+            {
+              heading: "Überblick",
+              rows: detailRows([
+                { label: "Angebotsnummer", value: a.angebotsnr ?? undefined },
+                { label: "PLZ / Ort", value: lead?.plz },
+                {
+                  label: "Angebotssumme",
+                  value: fmtMoney(a.betrag) !== "—" ? fmtMoney(a.betrag) : undefined,
+                },
+                { label: "Gültig bis", value: fmtDate(a.gueltig_bis) },
+                {
+                  label: "Versendet am",
+                  value: fmtDate(a.gesendet_am || a.created_at),
+                },
+              ]),
+            },
+          ];
+          if (a.leistungen && a.leistungen.length > 0) {
+            sections.push({ heading: "Leistungen", bullets: a.leistungen });
+          }
+          if (a.hinweise) {
+            sections.push({ heading: "Hinweise", text: a.hinweise });
+          }
+          const vorhaben = sanitizeCustomerText(lead?.situation, 400);
+          if (vorhaben) {
+            sections.push({ heading: "Bezug zu Ihrer Anfrage", text: vorhaben });
+          }
+          if (lead?.bereiche && lead.bereiche.length > 0) {
+            sections.push({ heading: "Gewerke", bullets: lead.bereiche });
+          }
+          return {
+            id: a.id,
+            date: a.created_at,
+            title: a.titel || (a.angebotsnr ? `Angebot ${a.angebotsnr}` : "Angebot"),
+            status: a.status_einfach || a.status || "offen",
+            statusAtBottom: true,
+            summary: [
+              lead?.plz ? `PLZ ${lead.plz}` : null,
+              fmtMoney(a.betrag) !== "—" ? fmtMoney(a.betrag) : null,
             ]
               .filter(Boolean)
-              .join(" · ");
-          })(),
-          description: (() => {
-            const lead = a.lead_id ? leadById.get(a.lead_id) : undefined;
-            return [
-              a.leistungsumfang
-                ? `Leistungen: ${compactText(a.leistungsumfang, 180)}`
-                : null,
-              a.notizen ? `Kurzüberblick: ${compactText(a.notizen, 180)}` : null,
-              lead?.situation ? `Bezug: ${lead.situation}` : null,
-              a.gueltig_bis ? `Gültig bis: ${fmtDate(a.gueltig_bis)}` : null,
-              a.gesendet_am ? `Versendet am: ${fmtDate(a.gesendet_am)}` : null,
-            ]
-              .filter(Boolean)
-              .join(" · ") || "Details folgen nach Abstimmung";
-          })(),
-          facts: (() => {
-            const lead = a.lead_id ? leadById.get(a.lead_id) : undefined;
-            return [
-              detailFact("Objektbereich", lead?.plz),
-              detailFact("Preis", fmtMoney(a.betrag)),
-              detailFact("Gültig bis", fmtDate(a.gueltig_bis)),
-              detailFact("Versendet am", fmtDate(a.gesendet_am || a.created_at)),
-            ].filter((v): v is { label: string; value: string } => Boolean(v));
-          })(),
-          bullets: [
-            a.leistungsumfang
-              ? `Leistungen: ${compactText(a.leistungsumfang, 180)}`
-              : "Leistungsumfang wird final abgestimmt",
-            a.notizen ? `Hinweise: ${compactText(a.notizen, 180)}` : null,
-          ].filter((v): v is string => Boolean(v)),
-          attachments: dedupe(a.anhaenge ?? []),
-        })),
+              .join(" · "),
+            sections,
+            dokumente: a.dokumente ?? [],
+          };
+        }),
     [angebote, leadById]
   );
 
   const auftraegeItems = useMemo<DetailItem[]>(
     () =>
       [...auftraege]
-        .sort((a, b) => (b.fortschritt ?? 0) - (a.fortschritt ?? 0))
-        .map((a) => ({
-          id: a.id,
-          date: a.start_datum || a.created_at,
-          title: a.titel,
-          status: a.status || "planung",
-          subtitle: [
-            `${a.fortschritt ?? 0}% abgeschlossen`,
-            a.start_datum ? `Start: ${fmtDate(a.start_datum)}` : null,
-            a.end_datum ? `vsl. Ende: ${fmtDate(a.end_datum)}` : null,
-          ]
-            .filter(Boolean)
-            .join(" · "),
-          description: compactText(
-            [
-              a.naechster_schritt ? `Nächster Schritt: ${a.naechster_schritt}` : null,
-              a.bautagebuch?.[0]?.titel
-                ? `Letztes Update: ${a.bautagebuch[0].titel}`
-                : null,
+        .sort((a, b) => {
+          const aDone = isAuftragAbgeschlossen(a) ? 1 : 0;
+          const bDone = isAuftragAbgeschlossen(b) ? 1 : 0;
+          if (aDone !== bDone) return aDone - bDone;
+          return (
+            new Date(b.start_datum || b.created_at || 0).getTime() -
+            new Date(a.start_datum || a.created_at || 0).getTime()
+          );
+        })
+        .map((a) => {
+          const sections: PortalDetailSection[] = [
+            {
+              heading: "Projekt",
+              rows: detailRows([
+                {
+                  label: "Status",
+                  value: fmtPortalStatus(
+                    isAuftragAbgeschlossen(a)
+                      ? "abgeschlossen"
+                      : a.status || "offen"
+                  ),
+                },
+                { label: "Fortschritt", value: `${a.fortschritt ?? 0} %` },
+                { label: "Start", value: fmtDate(a.start_datum || a.created_at) },
+                { label: "Vorauss. Ende", value: fmtDate(a.end_datum) },
+                {
+                  label: "Budget",
+                  value:
+                    typeof a.budget === "number" ? fmtMoney(a.budget) : undefined,
+                },
+              ]),
+            },
+          ];
+          const naechster = sanitizeCustomerText(a.naechster_schritt, 300);
+          if (naechster) {
+            sections.push({ heading: "Nächster Schritt", text: naechster });
+          }
+          const leistungen = dedupe(
+            (a.positionen ?? []).map((p) => p.titel || p.gewerk_name || "")
+          ).filter(Boolean);
+          if (leistungen.length > 0) {
+            sections.push({ heading: "Leistungen", bullets: leistungen });
+          }
+          const tags = dedupe(a.phasen?.map((p) => p.name) ?? []).slice(0, 6);
+          return {
+            id: a.id,
+            date: a.start_datum || a.created_at,
+            title: a.titel,
+            status: isAuftragAbgeschlossen(a)
+              ? "abgeschlossen"
+              : a.status || "offen",
+            summary: [
+              `${a.fortschritt ?? 0} %`,
+              a.start_datum ? `Start ${fmtDate(a.start_datum)}` : null,
             ]
               .filter(Boolean)
-              .join(" · ") || "Projektplanung läuft",
-            220
-          ),
-          chips: dedupe([
-            ...(a.positionen?.map((p) => p.gewerk_name || p.titel) ?? []),
-            ...(a.phasen?.map((p) => p.name) ?? []),
-          ]).slice(0, 8),
-          bullets: [
-            typeof a.budget === "number" ? `Budget: ${fmtMoney(a.budget)}` : null,
-            a.positionen?.length ? `${a.positionen.length} Leistungen geplant` : null,
-            a.naechster_schritt ? `Nächster Schritt: ${a.naechster_schritt}` : null,
-            a.start_datum || a.end_datum
-              ? `Zeitraum: ${fmtDate(a.start_datum)} - ${fmtDate(a.end_datum)}`
-              : null,
-          ]
-            .filter((v): v is string => Boolean(v)),
-          facts: [
-            detailFact("Projektstatus", a.status || "planung"),
-            detailFact("Fortschritt", `${a.fortschritt ?? 0}%`),
-            detailFact("Start", fmtDate(a.start_datum || a.created_at)),
-            detailFact("Vsl. Ende", fmtDate(a.end_datum)),
-          ].filter((v): v is { label: string; value: string } => Boolean(v)),
-          updates: (a.bautagebuch ?? [])
-            .slice(0, 6)
-            .map((u) => ({
-              id: u.id,
-              date: u.datum || u.created_at,
-              title: u.titel || "Update",
-              note: compactText(u.notiz, 160),
-            })),
-          attachments: dedupe([
-            ...(a.anhaenge ?? []),
-            ...(a.bautagebuch?.flatMap((u) => u.fotos_urls ?? []) ?? []),
-          ]),
-        })),
+              .join(" · "),
+            sections,
+            tags: tags.length > 0 ? tags : undefined,
+            updates: (a.bautagebuch ?? [])
+              .slice(0, 6)
+              .map((u) => ({
+                id: u.id,
+                date: u.datum || u.created_at,
+                title: u.titel || "Update",
+                note: sanitizeCustomerText(u.notiz, 200),
+              })),
+            dokumente: a.dokumente ?? [],
+          };
+        }),
     [auftraege]
   );
 
@@ -487,28 +703,27 @@ export function PortalClient({
               </p>
             </div>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex shrink-0 items-center gap-2">
             <Link
               href="/rechner"
-              className="btn-pill-primary hidden !px-4 !py-2 !text-[12px] sm:inline-flex"
+              className="btn-pill-primary inline-flex !px-3 !py-2 !text-[11px] sm:!px-4 sm:!text-[12px]"
             >
-              Neue Anfrage
+              <span className="sm:hidden">Anfrage</span>
+              <span className="hidden sm:inline">Neue Anfrage</span>
             </Link>
-            <Link
-              href="/rechner"
-              className="btn-pill-primary inline-flex !px-3 !py-2 !text-[11px] sm:hidden"
-            >
-              Anfrage
-            </Link>
-            <div className="text-right">
-              <p className="text-sm font-semibold text-text-primary">{kunde?.name || "Kunde"}</p>
-              <p className="text-xs text-text-tertiary">Kundenbereich</p>
-            </div>
+            <form action="/portal/auth/signout" method="post">
+              <button
+                type="submit"
+                className="btn-pill-outline !px-2.5 !py-2 !text-[11px] sm:!px-3 sm:!text-[12px]"
+              >
+                Abmelden
+              </button>
+            </form>
           </div>
         </div>
       </header>
 
-      <main className="mx-auto grid max-w-[1200px] grid-cols-1 gap-4 px-4 pb-28 pt-5 lg:grid-cols-[240px_minmax(0,1fr)] lg:px-6 lg:pb-10">
+      <main className="mx-auto grid max-w-[1200px] grid-cols-1 gap-4 px-4 pb-36 pt-5 lg:grid-cols-[240px_minmax(0,1fr)] lg:px-6 lg:pb-10">
         <aside className="hidden lg:block">
           <div className="sticky top-[92px] space-y-3">
             <nav className="card-bordered p-2">
@@ -570,16 +785,28 @@ export function PortalClient({
             <div className="space-y-4">
               <div className="grid grid-cols-3 gap-2">
                 <article className="card-bordered p-4">
-                  <p className="text-[10px] uppercase tracking-wider text-text-tertiary sm:text-xs">Offen</p>
-                  <p className="mt-1 font-display text-2xl font-semibold sm:mt-2 sm:text-4xl">{offeneAuftraegeCount}</p>
+                  <p className="text-[10px] uppercase tracking-wider text-text-tertiary sm:text-xs">
+                    Offene Anfragen
+                  </p>
+                  <p className="mt-1 font-display text-2xl font-semibold sm:mt-2 sm:text-4xl">
+                    {offeneAnfragenCount}
+                  </p>
                 </article>
                 <article className="card-bordered p-4">
-                  <p className="text-[10px] uppercase tracking-wider text-text-tertiary sm:text-xs">Erledigt</p>
-                  <p className="mt-1 font-display text-2xl font-semibold sm:mt-2 sm:text-4xl">{abgeschlosseneAuftraegeCount}</p>
+                  <p className="text-[10px] uppercase tracking-wider text-text-tertiary sm:text-xs">
+                    Offene Aufträge
+                  </p>
+                  <p className="mt-1 font-display text-2xl font-semibold sm:mt-2 sm:text-4xl">
+                    {offeneAuftraegeCount}
+                  </p>
                 </article>
                 <article className="card-bordered p-4">
-                  <p className="text-[10px] uppercase tracking-wider text-text-tertiary sm:text-xs">Anfragen</p>
-                  <p className="mt-1 font-display text-2xl font-semibold sm:mt-2 sm:text-4xl">{offeneAnfragenCount}</p>
+                  <p className="text-[10px] uppercase tracking-wider text-text-tertiary sm:text-xs">
+                    Abgeschlossen
+                  </p>
+                  <p className="mt-1 font-display text-2xl font-semibold sm:mt-2 sm:text-4xl">
+                    {abgeschlosseneAuftraegeCount}
+                  </p>
                 </article>
               </div>
 
@@ -815,8 +1042,8 @@ export function PortalClient({
                           <td className="hidden px-4 py-3 text-sm text-text-secondary md:table-cell">
                             <span className="block truncate">
                               {section === "anfragen"
-                                ? (item.subtitle || "Bereich wird abgestimmt")
-                                : (item.subtitle || "—")}
+                                ? (item.summary || "Bereich wird abgestimmt")
+                                : (item.summary || "—")}
                             </span>
                           </td>
                           <td className="px-2 py-2 text-[12px] text-text-secondary sm:px-4 sm:py-3 sm:text-sm">
@@ -858,82 +1085,12 @@ export function PortalClient({
               </article>
 
               <aside className="hidden lg:block">
-                <article className="card-bordered sticky top-[92px] p-4">
+                <article className="card-bordered sticky top-[92px] max-h-[calc(100vh-110px)] overflow-y-auto p-4">
                   {selectedDetail ? (
-                    <div className="space-y-2">
-                      <p className="text-xs text-text-tertiary">{fmtDate(selectedDetail.date)}</p>
-                      <h3 className="font-display text-2xl font-semibold">{selectedDetail.title}</h3>
-                      {section !== "angebote" ? (
-                        <p className="tag tag-accent inline-block">{selectedDetail.status || "offen"}</p>
-                      ) : null}
-                      <p className="text-sm text-text-secondary">{selectedDetail.subtitle}</p>
-                      <p className="text-sm text-text-primary">{selectedDetail.description}</p>
-                      {selectedDetail.facts && selectedDetail.facts.length > 0 ? (
-                        <div className="grid grid-cols-2 gap-2 pt-1">
-                          {selectedDetail.facts.map((fact) => (
-                            <div key={`${fact.label}-${fact.value}`} className="rounded-lg border border-border-light bg-muted/30 p-2">
-                              <p className="text-[11px] uppercase tracking-wider text-text-tertiary">{fact.label}</p>
-                              <p className="text-sm font-semibold text-text-primary">{fact.value}</p>
-                            </div>
-                          ))}
-                        </div>
-                      ) : null}
-                      {selectedDetail.chips && selectedDetail.chips.length > 0 ? (
-                        <div className="flex flex-wrap gap-1.5 pt-1">
-                          {selectedDetail.chips.map((chip) => (
-                            <span key={chip} className="tag tag-neutral">
-                              {chip}
-                            </span>
-                          ))}
-                        </div>
-                      ) : null}
-                      {selectedDetail.bullets && selectedDetail.bullets.length > 0 ? (
-                        <div className="pt-2">
-                          {selectedDetail.bullets.map((line) => (
-                            <p key={line} className="text-sm text-text-primary">
-                              • {line}
-                            </p>
-                          ))}
-                        </div>
-                      ) : null}
-                      {selectedDetail.updates && selectedDetail.updates.length > 0 ? (
-                        <div className="space-y-2 border-t border-border-light pt-3">
-                          <p className="text-xs font-semibold uppercase tracking-wider text-text-tertiary">
-                            Letzte Bautagebuch-Updates
-                          </p>
-                          {selectedDetail.updates.map((u) => (
-                            <div key={u.id || `${u.title}-${u.date}`} className="rounded-lg bg-muted/40 p-2">
-                              <p className="text-xs text-text-tertiary">{fmtDate(u.date)}</p>
-                              <p className="text-sm font-semibold text-text-primary">{u.title}</p>
-                              {u.note ? <p className="text-sm text-text-secondary">{u.note}</p> : null}
-                            </div>
-                          ))}
-                        </div>
-                      ) : null}
-                      {selectedDetail.attachments && selectedDetail.attachments.length > 0 ? (
-                        <div className="space-y-2 border-t border-border-light pt-3">
-                          <p className="text-xs font-semibold uppercase tracking-wider text-text-tertiary">
-                            Anhänge
-                          </p>
-                          <div className="flex flex-wrap gap-2">
-                            {selectedDetail.attachments.slice(0, 8).map((url, idx) => (
-                              <a
-                                key={`${url}-${idx}`}
-                                href={normalizeAttachmentUrl(url)}
-                                target="_blank"
-                                rel="noreferrer"
-                                className="btn-pill-outline !px-3 !py-1.5 !text-[12px]"
-                              >
-                                Anhang {idx + 1}
-                              </a>
-                            ))}
-                          </div>
-                        </div>
-                      ) : null}
-                      {section === "angebote" ? (
-                        <p className="tag tag-accent inline-block">{selectedDetail.status || "offen"}</p>
-                      ) : null}
-                    </div>
+                    <PortalDetailPanel
+                      item={selectedDetail}
+                      showStatusAtBottom={section === "angebote"}
+                    />
                   ) : (
                     <p className="text-sm text-text-secondary">Kein Eintrag ausgewählt.</p>
                   )}
@@ -944,36 +1101,81 @@ export function PortalClient({
         </section>
       </main>
 
-      <nav className="fixed inset-x-0 bottom-0 z-[90] border-t border-border-default bg-surface-card/95 px-2 py-2 backdrop-blur-sm lg:hidden">
-        <div className="grid grid-cols-4 gap-1">
-          {MENU_ITEMS.map(({ id, label, icon: Icon }) => (
+      <nav
+        className="fixed inset-x-0 bottom-0 z-[90] border-t border-border-default bg-surface-card/95 backdrop-blur-sm lg:hidden"
+        aria-label="Portal Navigation"
+      >
+        <div className="grid grid-cols-5 items-end px-0.5 pb-2 pt-1">
+          {(["uebersicht", "anfragen"] as const).map((id) => {
+            const { label, icon: Icon } = MENU_ITEMS.find((m) => m.id === id)!;
+            return (
+              <button
+                key={id}
+                type="button"
+                onClick={() => setSection(id)}
+                className={cn(
+                  "rounded-lg px-0.5 py-2 text-[10px] font-medium",
+                  section === id
+                    ? "text-accent"
+                    : "text-text-tertiary"
+                )}
+              >
+                <span className="flex flex-col items-center gap-0.5">
+                  <Icon className="h-[18px] w-[18px] stroke-[1.75]" />
+                  <span className="max-w-[58px] truncate">{label}</span>
+                </span>
+              </button>
+            );
+          })}
+
+          <div className="flex flex-col items-center justify-end">
             <button
-              key={id}
-              onClick={() => setSection(id)}
+              type="button"
+              onClick={() => setGptOpen(true)}
+              aria-label="GPT öffnen"
+              aria-pressed={gptOpen}
               className={cn(
-                "rounded-lg px-2 py-2 text-[12px] font-semibold",
-                section === id
-                  ? "bg-accent-light text-accent"
-                  : "text-text-secondary"
+                "-mt-8 flex h-[64px] w-[64px] flex-col items-center justify-center gap-0.5 rounded-full border-[3px] border-white/30 bg-gradient-to-br from-[#143D28] via-[#2E7D52] to-[#4BA3A3] text-white shadow-[0_10px_28px_rgba(30,90,60,0.45)] ring-[5px] ring-surface-card transition-transform active:scale-95",
+                gptOpen && "ring-[#2E7D52] shadow-[0_12px_32px_rgba(46,125,82,0.55)]"
               )}
             >
-              <span className="flex flex-col items-center gap-1">
-                <Icon className="h-4 w-4" />
-                <span>{label}</span>
+              <span className="grid h-10 w-10 place-items-center rounded-full bg-white shadow-inner">
+                <Image
+                  src="/logo-mark-green.png"
+                  alt=""
+                  width={24}
+                  height={24}
+                />
+              </span>
+              <span className="text-[11px] font-extrabold uppercase tracking-wide text-white">
+                GPT
               </span>
             </button>
-          ))}
+          </div>
+
+          {(["angebote", "auftraege"] as const).map((id) => {
+            const { label, icon: Icon } = MENU_ITEMS.find((m) => m.id === id)!;
+            return (
+              <button
+                key={id}
+                type="button"
+                onClick={() => setSection(id)}
+                className={cn(
+                  "rounded-lg px-0.5 py-2 text-[10px] font-medium",
+                  section === id
+                    ? "text-accent"
+                    : "text-text-tertiary"
+                )}
+              >
+                <span className="flex flex-col items-center gap-0.5">
+                  <Icon className="h-[18px] w-[18px] stroke-[1.75]" />
+                  <span className="max-w-[58px] truncate">{label}</span>
+                </span>
+              </button>
+            );
+          })}
         </div>
       </nav>
-
-      <button
-        type="button"
-        onClick={() => setGptOpen(true)}
-        className="fixed bottom-[78px] left-1/2 z-[95] inline-flex -translate-x-1/2 items-center gap-2 rounded-full bg-gradient-to-r from-[#1A3D2B] via-[#2E7D52] to-[#5AA7A7] px-4 py-2 text-xs font-semibold text-white shadow-lg lg:hidden"
-      >
-        <Image src="/logo-mark-green.png" alt="" width={14} height={14} />
-        BärenwaldGPT
-      </button>
 
       {mobileDetailOpen && section !== "uebersicht" && selectedDetail ? (
         <div className="fixed inset-0 z-[120] bg-black/40 lg:hidden">
@@ -982,126 +1184,30 @@ export function PortalClient({
             onClick={() => setMobileDetailOpen(false)}
             aria-label="Sheet schließen"
           />
-          <article className="absolute inset-x-0 bottom-0 rounded-t-2xl border border-border-default bg-surface-card p-4 shadow-xl">
-            <div className="mb-3 h-1.5 w-12 rounded-full bg-border-default" />
-            <p className="text-xs text-text-tertiary">{fmtDate(selectedDetail.date)}</p>
-            <h3 className="mt-1 font-display text-2xl font-semibold">{selectedDetail.title}</h3>
-            {section !== "angebote" ? (
-              <p className="tag tag-accent mt-2 inline-block">{selectedDetail.status || "offen"}</p>
-            ) : null}
-            <p className="mt-3 text-sm text-text-secondary">{selectedDetail.subtitle}</p>
-            <p className="mt-1 text-sm text-text-primary">{selectedDetail.description}</p>
-            {selectedDetail.facts && selectedDetail.facts.length > 0 ? (
-              <div className="mt-2 grid grid-cols-2 gap-2">
-                {selectedDetail.facts.map((fact) => (
-                  <div key={`${fact.label}-${fact.value}`} className="rounded-lg border border-border-light bg-muted/30 p-2">
-                    <p className="text-[11px] uppercase tracking-wider text-text-tertiary">{fact.label}</p>
-                    <p className="text-sm font-semibold text-text-primary">{fact.value}</p>
-                  </div>
-                ))}
-              </div>
-            ) : null}
-            {selectedDetail.chips && selectedDetail.chips.length > 0 ? (
-              <div className="mt-2 flex flex-wrap gap-1.5">
-                {selectedDetail.chips.map((chip) => (
-                  <span key={chip} className="tag tag-neutral">
-                    {chip}
-                  </span>
-                ))}
-              </div>
-            ) : null}
-            {selectedDetail.bullets && selectedDetail.bullets.length > 0 ? (
-              <div className="mt-2 space-y-1">
-                {selectedDetail.bullets.map((line) => (
-                  <p key={line} className="text-sm text-text-primary">
-                    • {line}
-                  </p>
-                ))}
-              </div>
-            ) : null}
-            {selectedDetail.updates && selectedDetail.updates.length > 0 ? (
-              <div className="mt-3 space-y-2 border-t border-border-light pt-3">
-                <p className="text-xs font-semibold uppercase tracking-wider text-text-tertiary">
-                  Letzte Bautagebuch-Updates
-                </p>
-                {selectedDetail.updates.map((u) => (
-                  <div key={u.id || `${u.title}-${u.date}`} className="rounded-lg bg-muted/40 p-2">
-                    <p className="text-xs text-text-tertiary">{fmtDate(u.date)}</p>
-                    <p className="text-sm font-semibold text-text-primary">{u.title}</p>
-                    {u.note ? <p className="text-sm text-text-secondary">{u.note}</p> : null}
-                  </div>
-                ))}
-              </div>
-            ) : null}
-            {selectedDetail.attachments && selectedDetail.attachments.length > 0 ? (
-              <div className="mt-3 space-y-2 border-t border-border-light pt-3">
-                <p className="text-xs font-semibold uppercase tracking-wider text-text-tertiary">
-                  Anhänge
-                </p>
-                <div className="flex flex-wrap gap-2">
-                  {selectedDetail.attachments.slice(0, 8).map((url, idx) => (
-                    <a
-                      key={`${url}-${idx}`}
-                      href={normalizeAttachmentUrl(url)}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="btn-pill-outline !px-3 !py-1.5 !text-[12px]"
-                    >
-                      Anhang {idx + 1}
-                    </a>
-                  ))}
-                </div>
-              </div>
-            ) : null}
-            {section === "angebote" ? (
-              <p className="tag tag-accent mt-2 inline-block">{selectedDetail.status || "offen"}</p>
-            ) : null}
-            <button
-              className="btn-pill-primary mt-4 !px-4 !py-2 !text-[13px]"
-              onClick={() => setMobileDetailOpen(false)}
-            >
-              Schließen
-            </button>
+          <article className="absolute inset-x-0 bottom-0 flex max-h-[min(88vh,720px)] flex-col rounded-t-2xl border border-border-default bg-surface-card shadow-xl">
+            <div className="shrink-0 px-4 pb-2 pt-3">
+              <div className="mx-auto mb-3 h-1.5 w-12 rounded-full bg-border-default" />
+            </div>
+            <div className="min-h-0 flex-1 overflow-y-auto px-4 pb-2">
+              <PortalDetailPanel
+                item={selectedDetail}
+                showStatusAtBottom={section === "angebote"}
+              />
+            </div>
+            <div className="shrink-0 border-t border-border-light p-4">
+              <button
+                type="button"
+                className="btn-pill-primary w-full !py-2.5 !text-[13px]"
+                onClick={() => setMobileDetailOpen(false)}
+              >
+                Schließen
+              </button>
+            </div>
           </article>
         </div>
       ) : null}
 
-      {gptOpen ? (
-        <div className="fixed inset-0 z-[140] bg-black/55 p-3 sm:p-6">
-          <div className="mx-auto flex h-full w-full max-w-5xl flex-col overflow-hidden rounded-2xl border border-border-default bg-surface-card shadow-2xl">
-            <div className="flex items-center justify-between border-b border-border-light px-4 py-3">
-              <div className="flex items-center gap-2">
-                <Image src="/logo-mark-green.png" alt="" width={18} height={18} />
-                <p className="text-sm font-semibold text-text-primary">BärenwaldGPT</p>
-              </div>
-              <div className="flex items-center gap-2">
-                <a
-                  href="/rechner?modus=ki"
-                  target="_blank"
-                  rel="noreferrer"
-                  className="btn-pill-outline !px-3 !py-1.5 !text-[12px]"
-                >
-                  Preisrahmen im neuen Tab
-                </a>
-                <button
-                  type="button"
-                  onClick={() => setGptOpen(false)}
-                  className="btn-pill-primary !px-3 !py-1.5 !text-[12px]"
-                >
-                  Schließen
-                </button>
-              </div>
-            </div>
-            <div className="min-h-0 flex-1">
-              <iframe
-                src="/rechner?modus=ki"
-                title="BärenwaldGPT"
-                className="h-full w-full border-0"
-              />
-            </div>
-          </div>
-        </div>
-      ) : null}
+      <PortalBaerenwaldGpt open={gptOpen} onClose={() => setGptOpen(false)} />
     </div>
   );
 }
