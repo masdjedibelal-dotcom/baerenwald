@@ -114,6 +114,30 @@ export default function DatenschutzPage() {
                 (berechtigtes Interesse an sicherer, nachvollziehbarer Kundenkommunikation).
               </p>
 
+              <strong id="partner-portal">3a. Bärenwald Partner (Handwerkerportal)</strong>
+              <p>
+                Unter{" "}
+                <a href="/partner/login">Bärenwald Partner</a> können registrierte
+                Handwerksbetriebe mit E-Mail und Passwort Anfragen beantworten, Angebote
+                (Preis und PDF) einreichen und Bautagebuch-Einträge zu zugewiesenen Aufträgen
+                pflegen.
+              </p>
+              <p>
+                <strong>Bei Login:</strong> E-Mail, Passwort (Supabase Auth), Session-Cookies.
+                Die Registrierung ist nur mit einer bei uns hinterlegten Handwerker-E-Mail
+                möglich (<em>auth_user_id</em> am Handwerkerstamm).
+              </p>
+              <p>
+                <strong>Im Portal verarbeitet:</strong> Zuweisungen zu Angeboten/Gewerken (PLZ,
+                Ort, Leistungspositionen ohne Kundennamen), eingereichte Preise und PDF-Angebote,
+                Bautagebuch-Texte und Fotos zu Aufträgen (Speicherung im privaten Storage-Bucket{" "}
+                <em>handwerker-uploads</em>).
+              </p>
+              <p>
+                Rechtsgrundlage: Art. 6 Abs. 1 lit. b DSGVO (Vertrag mit Partnerbetrieb bzw.
+                Auftragsabwicklung) und Art. 6 Abs. 1 lit. f DSGVO (effiziente Projektkoordination).
+              </p>
+
               <strong>4. Weitergabe von Daten</strong>
               <p>
                 Deine Daten werden nicht verkauft. Eine Weitergabe an Dritte erfolgt nur, soweit
