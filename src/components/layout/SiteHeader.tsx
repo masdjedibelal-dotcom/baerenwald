@@ -229,7 +229,7 @@ export function SiteHeader() {
             )}
             onClick={closeAll}
           >
-            Angebot anfordern
+            Neue Anfrage
           </Link>
 
           <button
@@ -321,7 +321,7 @@ export function SiteHeader() {
                 className="btn-pill-primary mt-4 inline-flex justify-center py-2.5 px-5 text-[13px]"
                 onClick={closeAll}
               >
-                Angebot anfordern
+                Neue Anfrage
               </Link>
             </nav>
           </div>
