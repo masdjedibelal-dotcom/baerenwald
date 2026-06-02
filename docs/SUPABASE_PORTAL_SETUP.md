@@ -16,7 +16,37 @@ where table_name = 'kunden' and column_name in ('auth_user_id', 'portal_token');
 -- Erwartung: auth_user_id ja, portal_token nein
 ```
 
-## 2. Authentication → Providers
+## 2. Custom SMTP (Pflicht für echte Kunden-Mails)
+
+**Wichtig:** CRM-Mails laufen über **Resend** (`RESEND_API_KEY`).  
+**Bestätigungs-Mails beim Portal-Login** kommen von **Supabase Auth** — das ist ein **separater** Kanal.
+
+Ohne Custom SMTP nutzt Supabase den eingebauten Versand:
+
+- oft **nur an Team-Mitglieder** des Supabase-Projekts (externe Kunden bekommen nichts)
+- sehr niedriges Limit (z. B. ~2 Mails/Stunde)
+- schlechte Zustellbarkeit / Spam
+
+### Resend als SMTP für Supabase Auth
+
+Supabase Dashboard → **Authentication** → **SMTP Settings** → Custom SMTP **ON**:
+
+| Feld | Wert |
+|------|------|
+| Host | `smtp.resend.com` |
+| Port | `465` |
+| Username | `resend` |
+| Password | dein Resend-API-Key (`re_…`) |
+| Sender email | verifizierte Adresse, z. B. `info@baerenwaldmuenchen.de` |
+| Sender name | `MeinBärenwald` |
+
+Domain bei Resend verifizieren (SPF/DKIM). Danach **Send test email** in den Auth-Templates.
+
+**Rate Limits:** Authentication → **Rate Limits** — nach SMTP-Umstellung ggf. von 30/h erhöhen.
+
+**Logs prüfen:** Authentication → **Logs** — Fehler wie „Email address not authorized“ = noch Default-SMTP.
+
+## 3. Authentication → Providers
 
 | Einstellung | Wert |
 |-------------|------|
@@ -25,7 +55,7 @@ where table_name = 'kunden' and column_name in ('auth_user_id', 'portal_token');
 | **Secure email change** | ON (empfohlen) |
 | **Double confirm email changes** | optional |
 
-## 3. Authentication → URL Configuration
+## 4. Authentication → URL Configuration
 
 **Site URL** (Produktion):
 
@@ -42,7 +72,7 @@ http://localhost:3000/portal/auth/callback
 http://localhost:3000/portal/login
 ```
 
-## 4. Authentication → Email Templates
+## 5. Authentication → Email Templates
 
 Fertige HTML-Vorlagen im **Bärenwald-Design** (wie Anfrage-/Angebots-Mails):
 
@@ -59,7 +89,7 @@ Kurz:
 
 `{{ .ConfirmationURL }}` und `{{ .Email }}` in den Dateien **nicht** entfernen — Supabase setzt die Links ein.
 
-## 5. Umgebungsvariablen (Vercel / `.env.local`)
+## 6. Umgebungsvariablen (Vercel / `.env.local`)
 
 **handwerks-plattform** (Website):
 
@@ -70,7 +100,7 @@ SUPABASE_SERVICE_ROLE_KEY=eyJ...   # nur Server, nie NEXT_PUBLIC_
 NEXT_PUBLIC_SITE_URL=https://baerenwaldmuenchen.de
 ```
 
-## 6. Bestehende Kunden verknüpfen
+## 7. Bestehende Kunden verknüpfen
 
 Nach der Migration:
 
@@ -85,7 +115,7 @@ set auth_user_id = 'UUID-AUS-AUTH-USERS'
 where id = 'KUNDEN-UUID';
 ```
 
-## 7. CRM-Sicherheit (wichtig)
+## 8. CRM-Sicherheit (wichtig)
 
 Die Migration aktiviert RLS auf `kunden`, `leads`, `auftraege`, `angebote` mit **Portal-Select-Policies**.
 
@@ -93,7 +123,7 @@ CRM-Mitarbeiter nutzen `user_profiles`. Policies mit nur `authenticated` ohne `i
 
 Bis dahin: Portal lädt Daten **serverseitig** mit Service Role, aber nur nach Session-Check — kein direkter Datenbankzugriff aus dem Browser.
 
-## 8. Token-Links
+## 9. Token-Links
 
 `portal_token` und `/portal/{token}` entfallen. E-Mails verlinken auf:
 
@@ -101,7 +131,11 @@ Bis dahin: Portal lädt Daten **serverseitig** mit Service Role, aber nur nach S
 https://baerenwaldmuenchen.de/portal/login
 ```
 
-## 9. Test-Checkliste
+## 10. Mitarbeiter mit Kunden-E-Mail
+
+CRM und Portal nutzen dieselbe Supabase-Auth. **Mitarbeiter dürfen das Portal nutzen**, wenn im CRM ein `kunden`-Datensatz mit **derselben E-Mail** existiert — dann wird `auth_user_id` beim Login verknüpft.
+
+## 11. Test-Checkliste
 
 - [ ] Registrierung → Bestätigungs-Mail → Link → eingeloggt → Dashboard
 - [ ] Login ohne Bestätigung → Fehlermeldung
