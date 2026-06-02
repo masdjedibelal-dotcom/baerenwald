@@ -159,6 +159,16 @@ function statusPillClass(status?: string): string {
   return "tag tag-neutral";
 }
 
+function isCompletedStatus(status?: string): boolean {
+  const normalized = (status || "").toLowerCase().replace(/[\s-]+/g, "_");
+  return (
+    normalized.includes("abgeschlossen") ||
+    normalized.includes("fertig") ||
+    normalized.includes("completed") ||
+    normalized.includes("done")
+  );
+}
+
 function dedupe(values: Array<string | undefined | null>): string[] {
   return Array.from(new Set(values.filter((v): v is string => Boolean(v && v.trim()))));
 }
@@ -170,6 +180,11 @@ function normalizeAttachmentUrl(url: string): string {
 function detailFact(label: string, value?: string): { label: string; value: string } | null {
   if (!value || value === "—") return null;
   return { label, value };
+}
+
+function shortLabel(value?: string, max = 52): string {
+  if (!value) return "—";
+  return value.length > max ? `${value.slice(0, max - 1)}…` : value;
 }
 
 export function PortalClient({
@@ -190,18 +205,19 @@ export function PortalClient({
     auftraege[0]?.id ?? null
   );
   const [mobileDetailOpen, setMobileDetailOpen] = useState(false);
+  const [gptOpen, setGptOpen] = useState(false);
   const [sortKey, setSortKey] = useState<SortKey>("date");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
   const [currentPage, setCurrentPage] = useState(1);
 
   const vorname = (kunde?.name || "Kunde").split(" ")[0] || "Kunde";
   const offeneAuftraegeCount = auftraege.filter(
-    (a) => a.status !== "abgeschlossen"
+    (a) => !isCompletedStatus(a.status)
   ).length;
   const abgeschlosseneAuftraegeCount = auftraege.filter(
-    (a) => a.status === "abgeschlossen"
+    (a) => isCompletedStatus(a.status)
   ).length;
-  const offeneAnfragenCount = leads.filter((lead) => lead.status !== "abgeschlossen").length;
+  const offeneAnfragenCount = leads.filter((lead) => !isCompletedStatus(lead.status)).length;
   const leadById = useMemo(
     () => new Map(leads.map((lead) => [lead.id, lead])),
     [leads]
@@ -218,7 +234,12 @@ export function PortalClient({
         .map((lead) => ({
           id: lead.id,
           date: lead.created_at,
-          title: lead.situation || "Unbekannte Anfrage",
+          title: [
+            lead.situation ? `Vorhaben: ${lead.situation}` : "Vorhaben: Anfrage",
+            lead.bereiche && lead.bereiche.length > 0
+              ? `Bereich: ${lead.bereiche[0]}`
+              : "Bereich: wird abgestimmt",
+          ].join(" · "),
           status: lead.status || "neu",
           subtitle:
             lead.bereiche && lead.bereiche.length > 0
@@ -464,17 +485,20 @@ export function PortalClient({
                 </span>
                 <span className="ml-0.5">Bärenwald</span>
               </p>
-              <p className="text-[11px] uppercase tracking-wider text-text-tertiary">
-                Kundenportal
-              </p>
             </div>
           </div>
           <div className="flex items-center gap-2">
             <Link
               href="/rechner"
-              className="btn-pill-primary !px-4 !py-2 !text-[12px]"
+              className="btn-pill-primary hidden !px-4 !py-2 !text-[12px] sm:inline-flex"
             >
               Neue Anfrage
+            </Link>
+            <Link
+              href="/rechner"
+              className="btn-pill-primary inline-flex !px-3 !py-2 !text-[11px] sm:hidden"
+            >
+              Anfrage
             </Link>
             <div className="text-right">
               <p className="text-sm font-semibold text-text-primary">{kunde?.name || "Kunde"}</p>
@@ -486,40 +510,56 @@ export function PortalClient({
 
       <main className="mx-auto grid max-w-[1200px] grid-cols-1 gap-4 px-4 pb-28 pt-5 lg:grid-cols-[240px_minmax(0,1fr)] lg:px-6 lg:pb-10">
         <aside className="hidden lg:block">
-          <nav className="card-bordered sticky top-[92px] p-2">
-            {MENU_ITEMS.map(({ id, label, icon: Icon }) => (
-              <button
-                key={id}
-                onClick={() => setSection(id)}
-                className={cn(
-                  "mb-1 flex w-full items-center justify-between rounded-xl px-3 py-2 text-left text-sm font-semibold",
-                  section === id
-                    ? "bg-accent-light text-accent"
-                    : "text-text-secondary hover:bg-muted"
-                )}
-              >
-                <span className="inline-flex items-center gap-2">
-                  <Icon className="h-4 w-4" />
-                  <span>{label}</span>
-                </span>
-                <span className="text-xs text-text-tertiary">
-                  {id === "anfragen"
-                    ? anfragenItems.length
-                    : id === "angebote"
-                      ? angeboteItems.length
-                      : id === "auftraege"
-                        ? auftraegeItems.length
-                        : ""}
-                </span>
-              </button>
-            ))}
-          </nav>
+          <div className="sticky top-[92px] space-y-3">
+            <nav className="card-bordered p-2">
+              {MENU_ITEMS.map(({ id, label, icon: Icon }) => (
+                <button
+                  key={id}
+                  onClick={() => setSection(id)}
+                  className={cn(
+                    "mb-1 flex w-full items-center justify-between rounded-xl px-3 py-2 text-left text-sm font-semibold",
+                    section === id
+                      ? "bg-accent-light text-accent"
+                      : "text-text-secondary hover:bg-muted"
+                  )}
+                >
+                  <span className="inline-flex items-center gap-2">
+                    <Icon className="h-4 w-4" />
+                    <span>{label}</span>
+                  </span>
+                  <span className="text-xs text-text-tertiary">
+                    {id === "anfragen"
+                      ? anfragenItems.length
+                      : id === "angebote"
+                        ? angeboteItems.length
+                        : id === "auftraege"
+                          ? auftraegeItems.length
+                          : ""}
+                  </span>
+                </button>
+              ))}
+            </nav>
+            <button
+              type="button"
+              onClick={() => setGptOpen(true)}
+              className="card-bordered w-full overflow-hidden p-0 text-left"
+            >
+              <div className="bg-gradient-to-r from-[#1A3D2B] via-[#2E7D52] to-[#5AA7A7] px-3 py-2 text-white">
+                <div className="flex items-center gap-2">
+                  <Image src="/logo-mark-green.png" alt="" width={16} height={16} />
+                  <span className="text-sm font-semibold">BärenwaldGPT</span>
+                </div>
+              </div>
+              <div className="px-3 py-3 text-sm text-text-secondary">
+                Beratung starten, Details klären und dann zum Preisrahmen wechseln.
+              </div>
+            </button>
+          </div>
         </aside>
 
         <section className="space-y-4">
-          <header className="card-bordered flex items-center justify-between gap-3 p-4">
+          <header className="card-bordered sticky top-[76px] z-40 flex items-center justify-between gap-3 bg-surface-page/95 p-4 backdrop-blur-sm">
             <div>
-              <p className="text-sm text-text-secondary">Kundenportal</p>
               <p className="text-lg font-semibold text-text-primary">
                 Hallo {vorname}
               </p>
@@ -528,18 +568,18 @@ export function PortalClient({
 
           {section === "uebersicht" && (
             <div className="space-y-4">
-              <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+              <div className="grid grid-cols-3 gap-2">
                 <article className="card-bordered p-4">
-                  <p className="text-xs uppercase tracking-wider text-text-tertiary">Offene Aufträge</p>
-                  <p className="mt-2 font-display text-4xl font-semibold">{offeneAuftraegeCount}</p>
+                  <p className="text-[10px] uppercase tracking-wider text-text-tertiary sm:text-xs">Offen</p>
+                  <p className="mt-1 font-display text-2xl font-semibold sm:mt-2 sm:text-4xl">{offeneAuftraegeCount}</p>
                 </article>
                 <article className="card-bordered p-4">
-                  <p className="text-xs uppercase tracking-wider text-text-tertiary">Abgeschlossene Aufträge</p>
-                  <p className="mt-2 font-display text-4xl font-semibold">{abgeschlosseneAuftraegeCount}</p>
+                  <p className="text-[10px] uppercase tracking-wider text-text-tertiary sm:text-xs">Erledigt</p>
+                  <p className="mt-1 font-display text-2xl font-semibold sm:mt-2 sm:text-4xl">{abgeschlosseneAuftraegeCount}</p>
                 </article>
                 <article className="card-bordered p-4">
-                  <p className="text-xs uppercase tracking-wider text-text-tertiary">Offene Anfragen</p>
-                  <p className="mt-2 font-display text-4xl font-semibold">{offeneAnfragenCount}</p>
+                  <p className="text-[10px] uppercase tracking-wider text-text-tertiary sm:text-xs">Anfragen</p>
+                  <p className="mt-1 font-display text-2xl font-semibold sm:mt-2 sm:text-4xl">{offeneAnfragenCount}</p>
                 </article>
               </div>
 
@@ -612,12 +652,30 @@ export function PortalClient({
                         }
 
                         return rows.map((item) => (
-                          <tr key={item.id} className="border-t border-border-light">
+                          <tr
+                            key={item.id}
+                            className="cursor-pointer border-t border-border-light hover:bg-muted/70"
+                            onClick={() => {
+                              if (overviewTab === "anfragen") {
+                                setSelectedAnfrageId(item.id);
+                                setSection("anfragen");
+                              } else if (overviewTab === "angebote") {
+                                setSelectedAngebotId(item.id);
+                                setSection("angebote");
+                              } else {
+                                setSelectedAuftragId(item.id);
+                                setSection("auftraege");
+                              }
+                              setMobileDetailOpen(true);
+                            }}
+                          >
                             <td className="px-3 py-2 text-sm text-text-secondary">
                               {fmtDate(item.date)}
                             </td>
                             <td className="px-3 py-2 text-sm font-semibold text-text-primary">
-                              {item.title}
+                              <span className="block max-w-[160px] truncate sm:max-w-none">
+                                {item.title}
+                              </span>
                             </td>
                             <td className="px-3 py-2 text-sm text-text-secondary">
                               <span className={statusPillClass(item.status)}>
@@ -674,11 +732,11 @@ export function PortalClient({
 
           {section !== "uebersicht" && (
             <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
-              <article className="card-bordered overflow-x-auto p-0">
-                <table className="min-w-full bg-surface-card text-left">
+              <article className="card-bordered overflow-hidden p-0">
+                <table className="w-full table-fixed bg-surface-card text-left">
                   <thead className="bg-muted/70">
                     <tr>
-                      <th className="w-[130px] px-4 py-3 text-xs font-semibold uppercase tracking-wider text-text-tertiary">
+                      <th className="w-[84px] px-2 py-2 text-[11px] font-semibold uppercase tracking-wider text-text-tertiary sm:w-[130px] sm:px-4 sm:py-3 sm:text-xs">
                         <button
                           onClick={() => handleSort("date")}
                           className="inline-flex items-center gap-1 hover:text-text-primary"
@@ -687,7 +745,7 @@ export function PortalClient({
                           <span>{sortKey === "date" ? (sortDir === "asc" ? "↑" : "↓") : "↕"}</span>
                         </button>
                       </th>
-                      <th className="max-w-[420px] px-4 py-3 text-xs font-semibold uppercase tracking-wider text-text-tertiary">
+                      <th className="px-2 py-2 text-[11px] font-semibold uppercase tracking-wider text-text-tertiary sm:max-w-[420px] sm:px-4 sm:py-3 sm:text-xs">
                         <button
                           onClick={() => handleSort("title")}
                           className="inline-flex items-center gap-1 hover:text-text-primary"
@@ -696,7 +754,10 @@ export function PortalClient({
                           <span>{sortKey === "title" ? (sortDir === "asc" ? "↑" : "↓") : "↕"}</span>
                         </button>
                       </th>
-                      <th className="w-[140px] px-4 py-3 text-xs font-semibold uppercase tracking-wider text-text-tertiary">
+                      <th className="hidden min-w-[220px] px-4 py-3 text-xs font-semibold uppercase tracking-wider text-text-tertiary md:table-cell">
+                        Info
+                      </th>
+                      <th className="w-[92px] px-2 py-2 text-[11px] font-semibold uppercase tracking-wider text-text-tertiary sm:w-[140px] sm:px-4 sm:py-3 sm:text-xs">
                         <button
                           onClick={() => handleSort("status")}
                           className="inline-flex items-center gap-1 hover:text-text-primary"
@@ -704,9 +765,6 @@ export function PortalClient({
                           Status
                           <span>{sortKey === "status" ? (sortDir === "asc" ? "↑" : "↓") : "↕"}</span>
                         </button>
-                      </th>
-                      <th className="min-w-[220px] px-4 py-3 text-xs font-semibold uppercase tracking-wider text-text-tertiary">
-                        Info
                       </th>
                     </tr>
                   </thead>
@@ -742,19 +800,29 @@ export function PortalClient({
                             active ? "bg-accent-light" : "hover:bg-muted/70"
                           )}
                         >
-                          <td className="px-4 py-3 text-sm text-text-secondary">
+                          <td className="px-2 py-2 text-[12px] text-text-secondary sm:px-4 sm:py-3 sm:text-sm">
                             {fmtDate(item.date)}
                           </td>
-                          <td className="max-w-[420px] truncate px-4 py-3 text-sm font-semibold text-text-primary">
-                            <span className="block truncate">{item.title}</span>
+                          <td className="px-2 py-2 text-[13px] font-semibold text-text-primary sm:max-w-[420px] sm:px-4 sm:py-3 sm:text-sm">
+                            <span className="block leading-tight">{shortLabel(item.title, 40)}</span>
+                            <button
+                              type="button"
+                              className="mt-1 text-[11px] font-medium text-accent sm:hidden"
+                            >
+                              Mehr
+                            </button>
                           </td>
-                          <td className="px-4 py-3 text-sm text-text-secondary">
-                            <span className={statusPillClass(item.status)}>
-                              {item.status || "offen"}
+                          <td className="hidden px-4 py-3 text-sm text-text-secondary md:table-cell">
+                            <span className="block truncate">
+                              {section === "anfragen"
+                                ? (item.subtitle || "Bereich wird abgestimmt")
+                                : (item.subtitle || "—")}
                             </span>
                           </td>
-                          <td className="px-4 py-3 text-sm text-text-secondary">
-                            <span className="block truncate">{item.subtitle || "—"}</span>
+                          <td className="px-2 py-2 text-[12px] text-text-secondary sm:px-4 sm:py-3 sm:text-sm">
+                            <span className={statusPillClass(item.status)}>
+                              {shortLabel(item.status || "offen", 14)}
+                            </span>
                           </td>
                         </tr>
                       );
@@ -795,7 +863,9 @@ export function PortalClient({
                     <div className="space-y-2">
                       <p className="text-xs text-text-tertiary">{fmtDate(selectedDetail.date)}</p>
                       <h3 className="font-display text-2xl font-semibold">{selectedDetail.title}</h3>
-                      <p className="tag tag-accent inline-block">{selectedDetail.status || "offen"}</p>
+                      {section !== "angebote" ? (
+                        <p className="tag tag-accent inline-block">{selectedDetail.status || "offen"}</p>
+                      ) : null}
                       <p className="text-sm text-text-secondary">{selectedDetail.subtitle}</p>
                       <p className="text-sm text-text-primary">{selectedDetail.description}</p>
                       {selectedDetail.facts && selectedDetail.facts.length > 0 ? (
@@ -860,6 +930,9 @@ export function PortalClient({
                           </div>
                         </div>
                       ) : null}
+                      {section === "angebote" ? (
+                        <p className="tag tag-accent inline-block">{selectedDetail.status || "offen"}</p>
+                      ) : null}
                     </div>
                   ) : (
                     <p className="text-sm text-text-secondary">Kein Eintrag ausgewählt.</p>
@@ -893,6 +966,15 @@ export function PortalClient({
         </div>
       </nav>
 
+      <button
+        type="button"
+        onClick={() => setGptOpen(true)}
+        className="fixed bottom-[78px] left-1/2 z-[95] inline-flex -translate-x-1/2 items-center gap-2 rounded-full bg-gradient-to-r from-[#1A3D2B] via-[#2E7D52] to-[#5AA7A7] px-4 py-2 text-xs font-semibold text-white shadow-lg lg:hidden"
+      >
+        <Image src="/logo-mark-green.png" alt="" width={14} height={14} />
+        BärenwaldGPT
+      </button>
+
       {mobileDetailOpen && section !== "uebersicht" && selectedDetail ? (
         <div className="fixed inset-0 z-[120] bg-black/40 lg:hidden">
           <button
@@ -904,7 +986,9 @@ export function PortalClient({
             <div className="mb-3 h-1.5 w-12 rounded-full bg-border-default" />
             <p className="text-xs text-text-tertiary">{fmtDate(selectedDetail.date)}</p>
             <h3 className="mt-1 font-display text-2xl font-semibold">{selectedDetail.title}</h3>
-            <p className="tag tag-accent mt-2 inline-block">{selectedDetail.status || "offen"}</p>
+            {section !== "angebote" ? (
+              <p className="tag tag-accent mt-2 inline-block">{selectedDetail.status || "offen"}</p>
+            ) : null}
             <p className="mt-3 text-sm text-text-secondary">{selectedDetail.subtitle}</p>
             <p className="mt-1 text-sm text-text-primary">{selectedDetail.description}</p>
             {selectedDetail.facts && selectedDetail.facts.length > 0 ? (
@@ -969,6 +1053,9 @@ export function PortalClient({
                 </div>
               </div>
             ) : null}
+            {section === "angebote" ? (
+              <p className="tag tag-accent mt-2 inline-block">{selectedDetail.status || "offen"}</p>
+            ) : null}
             <button
               className="btn-pill-primary mt-4 !px-4 !py-2 !text-[13px]"
               onClick={() => setMobileDetailOpen(false)}
@@ -976,6 +1063,43 @@ export function PortalClient({
               Schließen
             </button>
           </article>
+        </div>
+      ) : null}
+
+      {gptOpen ? (
+        <div className="fixed inset-0 z-[140] bg-black/55 p-3 sm:p-6">
+          <div className="mx-auto flex h-full w-full max-w-5xl flex-col overflow-hidden rounded-2xl border border-border-default bg-surface-card shadow-2xl">
+            <div className="flex items-center justify-between border-b border-border-light px-4 py-3">
+              <div className="flex items-center gap-2">
+                <Image src="/logo-mark-green.png" alt="" width={18} height={18} />
+                <p className="text-sm font-semibold text-text-primary">BärenwaldGPT</p>
+              </div>
+              <div className="flex items-center gap-2">
+                <a
+                  href="/rechner?modus=ki"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="btn-pill-outline !px-3 !py-1.5 !text-[12px]"
+                >
+                  Preisrahmen im neuen Tab
+                </a>
+                <button
+                  type="button"
+                  onClick={() => setGptOpen(false)}
+                  className="btn-pill-primary !px-3 !py-1.5 !text-[12px]"
+                >
+                  Schließen
+                </button>
+              </div>
+            </div>
+            <div className="min-h-0 flex-1">
+              <iframe
+                src="/rechner?modus=ki"
+                title="BärenwaldGPT"
+                className="h-full w-full border-0"
+              />
+            </div>
+          </div>
         </div>
       ) : null}
     </div>
