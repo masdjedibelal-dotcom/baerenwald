@@ -11,8 +11,43 @@ import {
   Mail,
   MessageCircle,
   Phone,
-  Sparkles,
+  MessagesSquare,
 } from "lucide-react";
+
+function PdfFileIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      aria-hidden
+      className={className}
+    >
+      <path
+        d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6Z"
+        stroke="currentColor"
+        strokeWidth="1.75"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M14 2v6h6M8 13h8M8 17h5"
+        stroke="currentColor"
+        strokeWidth="1.75"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M7 10h3.5v3H7V10Z"
+        fill="currentColor"
+        stroke="none"
+      />
+    </svg>
+  );
+}
+
+function pdfIframeSrc(url: string): string {
+  const base = normalizeAttachmentUrl(url);
+  return base.includes("#") ? base : `${base}#toolbar=0&navpanes=0`;
+}
 
 import { SITE_CONFIG } from "@/lib/config";
 import {
@@ -107,7 +142,6 @@ type DetailItem = {
   status?: string;
   summary?: string;
   anfrageGewerk?: string;
-  anfrageGewerkBullets?: string[];
   anfrageVorhaben?: string;
   sections: PortalDetailSection[];
   tags?: string[];
@@ -124,95 +158,9 @@ function formatAnfrageGewerk(bereiche?: string[]): string | undefined {
   return parts.join(", ");
 }
 
-function formatAnfrageTitle(gewerk?: string, vorhaben?: string): string {
-  const g = gewerk?.trim();
-  const v = vorhaben?.trim();
-  if (g && v) return `${g} · ${v}`;
-  if (g) return g;
-  if (v) return v;
-  return "Anfrage";
-}
-
-function AnfrageTitleBlock({
-  gewerk,
-  gewerkBullets,
-  vorhaben,
-  compact = false,
-}: {
-  gewerk?: string;
-  gewerkBullets?: string[];
-  vorhaben?: string;
-  compact?: boolean;
-}) {
-  const bullets =
-    gewerkBullets && gewerkBullets.length > 0
-      ? gewerkBullets
-      : gewerk
-        ? [gewerk]
-        : [];
-  const hasGewerk = bullets.length > 0;
-  const hasVorhaben = Boolean(vorhaben?.trim());
-
-  if (!hasGewerk && !hasVorhaben) {
-    return <span className="text-text-secondary">Anfrage</span>;
-  }
-
-  return (
-    <div className={cn("space-y-1", !compact && "space-y-2")}>
-      {hasGewerk ? (
-        <div>
-          <p
-            className={cn(
-              "font-semibold uppercase tracking-wider text-text-tertiary",
-              compact ? "text-[10px]" : "text-[11px]"
-            )}
-          >
-            Gewerk
-          </p>
-          {bullets.length > 1 ? (
-            <ul className={cn("space-y-0.5", compact ? "text-[13px]" : "text-sm")}>
-              {bullets.map((line) => (
-                <li key={line} className="font-semibold leading-snug text-text-primary">
-                  {line}
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <p
-              className={cn(
-                "font-semibold leading-snug text-text-primary",
-                compact ? "text-[13px]" : "text-base sm:text-lg"
-              )}
-            >
-              {bullets[0]}
-            </p>
-          )}
-        </div>
-      ) : null}
-      {hasVorhaben ? (
-        <div>
-          <p
-            className={cn(
-              "font-semibold uppercase tracking-wider text-text-tertiary",
-              compact ? "text-[10px]" : "text-[11px]"
-            )}
-          >
-            Vorhaben
-          </p>
-          <p
-            className={cn(
-              "font-semibold leading-snug text-text-primary",
-              compact
-                ? "text-[13px] line-clamp-2"
-                : "font-display text-xl sm:text-2xl"
-            )}
-          >
-            {vorhaben}
-          </p>
-        </div>
-      ) : null}
-    </div>
-  );
+/** Listen- und Detail-Titel: nur die Angabe (z. B. „Bad Sanierung“), kein Gewerk-Label. */
+function anfrageDisplayTitle(vorhaben?: string, gewerk?: string): string {
+  return vorhaben?.trim() || gewerk?.trim() || "Anfrage";
 }
 
 const MENU_ITEMS: Array<{
@@ -224,7 +172,7 @@ const MENU_ITEMS: Array<{
   { id: "anfragen", label: "Anfragen", icon: ClipboardList },
   { id: "angebote", label: "Angebote", icon: FileText },
   { id: "auftraege", label: "Aufträge", icon: Briefcase },
-  { id: "gpt", label: "BärenwaldGPT", icon: Sparkles },
+  { id: "gpt", label: "BärenwaldGPT", icon: MessagesSquare },
 ];
 
 function fmtDate(v?: string): string {
@@ -292,21 +240,6 @@ function dedupe(values: Array<string | undefined | null>): string[] {
   return Array.from(new Set(values.filter((v): v is string => Boolean(v && v.trim()))));
 }
 
-function dokumentArtLabel(art: PortalDokument["art"]): string {
-  switch (art) {
-    case "rechnung":
-      return "Rechnung";
-    case "angebot":
-      return "Angebot";
-    case "protokoll":
-      return "Abnahme";
-    case "foto":
-      return "Foto";
-    default:
-      return "Dokument";
-  }
-}
-
 function PortalDetailPanel({
   item,
   showStatusAtBottom,
@@ -316,7 +249,7 @@ function PortalDetailPanel({
 }) {
   const isAnfrageDetail = Boolean(item.anfrageGewerk || item.anfrageVorhaben);
   const detailTitle = isAnfrageDetail
-    ? item.anfrageGewerk || "Anfrage"
+    ? anfrageDisplayTitle(item.anfrageVorhaben, item.anfrageGewerk)
     : item.title;
 
   return (
@@ -457,22 +390,51 @@ function PortalDokumenteList({
   heading?: string;
   pdfInlinePreview?: boolean;
 }) {
-  const [previewHref, setPreviewHref] = useState<string | null>(null);
-
-  useEffect(() => {
-    setPreviewHref(null);
-  }, [dokumente]);
-
   if (dokumente.length === 0) return null;
 
-  const openDoc = (doc: PortalDokument) => {
-    const url = normalizeAttachmentUrl(doc.href);
-    if (pdfInlinePreview && doc.art === "angebot") {
-      setPreviewHref((cur) => (cur === url ? null : url));
-      return;
-    }
-    window.open(url, "_blank", "noopener,noreferrer");
-  };
+  const pdfDoc =
+    dokumente.find((d) => d.art === "angebot") ?? dokumente[0];
+  const pdfUrl = pdfDoc ? normalizeAttachmentUrl(pdfDoc.href) : null;
+
+  if (pdfInlinePreview && pdfDoc && pdfUrl) {
+    return (
+      <div className="space-y-3 border-t border-border-light pt-3">
+        <p className="text-xs font-semibold uppercase tracking-wider text-text-tertiary">
+          {heading}
+        </p>
+        <div className="flex items-center gap-3 rounded-lg border border-border-light bg-muted/30 px-3 py-2.5">
+          <span className="min-w-0 flex-1">
+            <span className="block text-sm font-semibold text-text-primary">
+              {pdfDoc.name}
+            </span>
+            {(pdfDoc.subtitle || pdfDoc.datum) && (
+              <span className="mt-0.5 block text-xs text-text-tertiary">
+                {[pdfDoc.subtitle, pdfDoc.datum ? fmtDate(pdfDoc.datum) : null]
+                  .filter(Boolean)
+                  .join(" · ")}
+              </span>
+            )}
+          </span>
+          <a
+            href={pdfUrl}
+            target="_blank"
+            rel="noreferrer"
+            className="grid h-10 w-10 shrink-0 place-items-center rounded-lg border border-border-light bg-white text-[#c62828] transition-colors hover:bg-red-50"
+            aria-label="PDF in neuem Tab öffnen"
+          >
+            <PdfFileIcon className="h-5 w-5" />
+          </a>
+        </div>
+        <div className="overflow-hidden rounded-xl border border-border-light bg-muted/20">
+          <iframe
+            src={pdfIframeSrc(pdfUrl)}
+            title={`${pdfDoc.name} (PDF)`}
+            className="h-[min(70vh,560px)] w-full bg-white"
+          />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-2 border-t border-border-light pt-3">
@@ -482,16 +444,13 @@ function PortalDokumenteList({
       <ul className="space-y-2">
         {dokumente.map((doc) => {
           const url = normalizeAttachmentUrl(doc.href);
-          const isPreviewOpen = pdfInlinePreview && previewHref === url;
           return (
             <li key={doc.id}>
-              <button
-                type="button"
-                onClick={() => openDoc(doc)}
-                className={cn(
-                  "flex w-full items-start justify-between gap-3 rounded-lg border border-border-light bg-muted/30 px-3 py-2 text-left transition-colors hover:bg-muted/50",
-                  isPreviewOpen && "border-accent/40 bg-accent-light/40"
-                )}
+              <a
+                href={url}
+                target="_blank"
+                rel="noreferrer"
+                className="flex w-full items-start justify-between gap-3 rounded-lg border border-border-light bg-muted/30 px-3 py-2 transition-colors hover:bg-muted/50"
               >
                 <span className="min-w-0">
                   <span className="block text-sm font-semibold text-text-primary">
@@ -506,22 +465,9 @@ function PortalDokumenteList({
                   )}
                 </span>
                 <span className="shrink-0 text-xs font-medium text-accent">
-                  {pdfInlinePreview && doc.art === "angebot"
-                    ? isPreviewOpen
-                      ? "Schließen"
-                      : "Vorschau"
-                    : "Öffnen"}
+                  Öffnen
                 </span>
-              </button>
-              {isPreviewOpen ? (
-                <div className="mt-2 overflow-hidden rounded-xl border border-border-light bg-muted/20">
-                  <iframe
-                    src={url}
-                    title={doc.name}
-                    className="h-[min(70vh,560px)] w-full bg-white"
-                  />
-                </div>
-              ) : null}
+              </a>
             </li>
           );
         })}
@@ -584,11 +530,6 @@ export function PortalClient({
     isAuftragAbgeschlossen(a)
   ).length;
   const offeneAnfragenCount = leads.filter((lead) => !isCompletedStatus(lead.status)).length;
-  const leadById = useMemo(
-    () => new Map(leads.map((lead) => [lead.id, lead])),
-    [leads]
-  );
-
   const anfragenItems = useMemo<DetailItem[]>(
     () =>
       [...leads]
@@ -610,7 +551,6 @@ export function PortalClient({
             .filter(Boolean);
           const gewerk = formatAnfrageGewerk(gewerkBullets);
           const vorhaben = sanitizeCustomerText(lead.situation, 500);
-          const vorhabenList = sanitizeCustomerText(lead.situation, 120);
           const sections: PortalDetailSection[] = [
             {
               heading: "Überblick",
@@ -618,16 +558,14 @@ export function PortalClient({
                 { label: "Anfragedatum", value: fmtDate(lead.created_at) },
                 { label: "PLZ / Ort", value: lead.plz },
                 { label: "Preisrahmen", value: preisrahmen },
-                { label: "Status", value: fmtPortalStatus(lead.status || "neu") },
               ]),
             },
           ];
           return {
             id: lead.id,
             date: lead.created_at,
-            title: formatAnfrageTitle(gewerk, vorhabenList),
+            title: anfrageDisplayTitle(vorhaben, gewerk),
             anfrageGewerk: gewerk,
-            anfrageGewerkBullets: gewerkBullets.length > 0 ? gewerkBullets : undefined,
             anfrageVorhaben: vorhaben,
             status: lead.status || "neu",
             summary: lead.plz ? `PLZ ${lead.plz}` : undefined,
@@ -1039,21 +977,10 @@ export function PortalClient({
                             <td className="px-3 py-2 text-sm text-text-secondary">
                               {fmtDate(item.date)}
                             </td>
-                            <td className="px-3 py-2 text-sm text-text-primary">
-                              <div className="max-w-[200px] sm:max-w-none">
-                                {overviewTab === "anfragen" ? (
-                                  <AnfrageTitleBlock
-                                    gewerk={item.anfrageGewerk}
-                                    gewerkBullets={item.anfrageGewerkBullets}
-                                    vorhaben={item.anfrageVorhaben}
-                                    compact
-                                  />
-                                ) : (
-                                  <span className="block truncate font-semibold">
-                                    {item.title}
-                                  </span>
-                                )}
-                              </div>
+                            <td className="px-3 py-2 text-sm font-semibold text-text-primary">
+                              <span className="block max-w-[200px] truncate sm:max-w-none">
+                                {item.title}
+                              </span>
                             </td>
                             <td className="px-3 py-2 text-sm text-text-secondary">
                               <span className={statusPillClass(item.status)}>
@@ -1182,18 +1109,9 @@ export function PortalClient({
                             {fmtDate(item.date)}
                           </td>
                           <td className="px-2 py-2 text-text-primary sm:max-w-[420px] sm:px-4 sm:py-3 sm:text-sm">
-                            {section === "anfragen" ? (
-                              <AnfrageTitleBlock
-                                gewerk={item.anfrageGewerk}
-                                gewerkBullets={item.anfrageGewerkBullets}
-                                vorhaben={item.anfrageVorhaben}
-                                compact
-                              />
-                            ) : (
-                              <span className="block text-[13px] font-semibold leading-tight">
-                                {shortLabel(item.title, 40)}
-                              </span>
-                            )}
+                            <span className="block text-[13px] font-semibold leading-tight">
+                              {shortLabel(item.title, 40)}
+                            </span>
                             <button
                               type="button"
                               className="mt-1 text-[11px] font-medium text-accent sm:hidden"
@@ -1299,7 +1217,7 @@ export function PortalClient({
                 gptOpen && "ring-[#2E7D52] shadow-[0_12px_32px_rgba(46,125,82,0.55)]"
               )}
             >
-              <Sparkles className="h-7 w-7 shrink-0 stroke-[1.75]" aria-hidden />
+              <MessagesSquare className="h-7 w-7 shrink-0 stroke-[1.75]" aria-hidden />
               <span className="max-w-[68px] text-center text-[9px] font-extrabold leading-tight tracking-tight text-white">
                 BärenwaldGPT
               </span>

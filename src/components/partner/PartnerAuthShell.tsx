@@ -1,0 +1,42 @@
+import Image from "next/image";
+import Link from "next/link";
+import type { ReactNode } from "react";
+
+export function PartnerAuthShell({
+  title,
+  subtitle,
+  children,
+}: {
+  title: string;
+  subtitle?: string;
+  children: ReactNode;
+}) {
+  return (
+    <div className="flex min-h-screen flex-col items-center justify-center bg-surface-page px-4 py-10">
+      <div className="w-full max-w-[400px]">
+        <div className="mb-8 flex flex-col items-center text-center">
+          <Image
+            src="/logo-mark-green.png"
+            alt="Bärenwald"
+            width={56}
+            height={56}
+            priority
+          />
+          <p className="mt-4 font-display text-xl font-semibold text-text-primary">
+            Bärenwald <span className="text-accent">Partner</span>
+          </p>
+          <h1 className="mt-3 text-lg font-semibold text-text-primary">{title}</h1>
+          {subtitle ? (
+            <p className="mt-1 text-sm text-text-secondary">{subtitle}</p>
+          ) : null}
+        </div>
+        <div className="card-bordered p-5 sm:p-6">{children}</div>
+        <p className="mt-8 text-center text-xs text-text-tertiary">
+          <Link href="/" className="underline-offset-2 hover:underline">
+            Zurück zur Website
+          </Link>
+        </p>
+      </div>
+    </div>
+  );
+}
