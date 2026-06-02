@@ -10,6 +10,7 @@ export type PortalDokument = {
 type AngebotDokumentInput = {
   id: string;
   angebotsnr?: string | null;
+  angebotstitel?: string | null;
   pdf_url?: string | null;
   gesendet_am?: string | null;
   status_einfach?: string | null;
@@ -57,13 +58,12 @@ function isKundenAngebotSichtbar(a: AngebotDokumentInput): boolean {
 export function dokumenteFromAngebot(a: AngebotDokumentInput): PortalDokument[] {
   const href = a.pdf_url?.trim();
   if (!href || !isKundenAngebotSichtbar(a)) return [];
+  const titel = a.angebotstitel?.trim();
   return [
     {
       id: `angebot-pdf-${a.id}`,
-      name: a.angebotsnr?.trim()
-        ? `Angebot ${a.angebotsnr.trim()}`
-        : "Angebot (PDF)",
-      subtitle: "Angebot",
+      name: "Angebot",
+      subtitle: titel || undefined,
       datum: a.gesendet_am ?? a.created_at ?? undefined,
       href,
       art: "angebot",

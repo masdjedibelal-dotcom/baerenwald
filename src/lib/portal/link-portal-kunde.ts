@@ -1,28 +1,22 @@
 import { supabaseAdmin } from "@/lib/supabase";
 
+export type LinkPortalKundeResult =
+  | { ok: true; kundeId: string }
+  | { ok: false; error: string };
+
+/**
+ * Verknüpft Auth-User mit kunden.auth_user_id.
+ * Mitarbeiter mit CRM-Profil sind willkommen, wenn dieselbe E-Mail im Kundenstamm steht.
+ */
 export async function linkPortalKundeToAuthUser(opts: {
   userId: string;
   email: string;
   name?: string | null;
   telefon?: string | null;
-}): Promise<{ ok: true; kundeId: string } | { ok: false; error: string }> {
+}): Promise<LinkPortalKundeResult> {
   const email = opts.email.trim().toLowerCase();
   if (!email) {
     return { ok: false, error: "Keine E-Mail-Adresse im Konto." };
-  }
-
-  const { data: staff } = await supabaseAdmin
-    .from("user_profiles")
-    .select("id")
-    .eq("id", opts.userId)
-    .maybeSingle();
-
-  if (staff?.id) {
-    return {
-      ok: false,
-      error:
-        "Dieser Zugang ist ein Mitarbeiter-Account. Bitte das interne CRM nutzen.",
-    };
   }
 
   const { data: byAuth } = await supabaseAdmin

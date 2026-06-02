@@ -158,20 +158,11 @@ export function parseLeistungenList(raw?: string | null): string[] {
 
 export function resolveAngebotTitel(opts: {
   angebotsnr?: string | null;
-  leistungsumfang?: string | null;
   notizen?: string | null;
-  leadSituation?: string | null;
 }): string {
   const wm = parseWizardMetaFromNotizen(opts.notizen);
-  const fromCol = sanitizeCustomerText(opts.leistungsumfang, 120);
-  if (fromCol) return fromCol;
-  if (wm?.titel) return wm.titel;
-  if (wm?.leistungsumfang) {
-    const first = parseLeistungenList(wm.leistungsumfang)[0];
-    if (first) return first.length > 100 ? `${first.slice(0, 99)}…` : first;
-  }
-  const situation = sanitizeCustomerText(opts.leadSituation, 120);
-  if (situation) return situation;
+  const fromWizard = sanitizeCustomerText(wm?.titel, 200);
+  if (fromWizard) return fromWizard;
   const nr = opts.angebotsnr?.trim();
   return nr ? `Angebot ${nr}` : "Angebot";
 }
@@ -191,23 +182,13 @@ export function buildAngebotPortalDisplay(
     ...parseLeistungenList(wm?.leistungsumfang),
   ]);
 
-  const hinweise =
-    wm?.hinweise ||
-    wm?.einleitung ||
-    sanitizeCustomerText(
-      !looksLikeJsonBlob(angebot.notizen ?? "") ? angebot.notizen : undefined,
-      500
-    );
-
   return {
     titel: resolveAngebotTitel({
       angebotsnr: angebot.angebotsnr,
-      leistungsumfang: angebot.leistungsumfang,
       notizen: angebot.notizen,
-      leadSituation: lead?.situation,
     }),
     leistungen,
-    hinweise: hinweise || undefined,
+    hinweise: undefined,
     einleitung: wm?.einleitung,
   };
 }

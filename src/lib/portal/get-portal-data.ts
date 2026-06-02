@@ -281,13 +281,15 @@ export async function getPortalDataForKunde(kundeId: string) {
               : typeof a.gesamt_min === "number"
                 ? a.gesamt_min
                 : undefined,
-        dokumente: mergeDokumente(
-          dokumenteFromAngebot(a),
-          dokumenteFromUrls([
-            ...extractUrlsFromUnknown(a.leistungsumfang),
-            ...extractUrlsFromUnknown(a.notizen),
-          ])
-        ),
+        dokumente: dokumenteFromAngebot({
+          id: String(a.id),
+          angebotsnr: a.angebotsnr,
+          angebotstitel: display.titel,
+          pdf_url: a.pdf_url,
+          gesendet_am: a.gesendet_am,
+          status_einfach: a.status_einfach,
+          created_at: a.created_at,
+        }),
       };
     }),
     leads: (leads ?? []).map((lead) => ({
