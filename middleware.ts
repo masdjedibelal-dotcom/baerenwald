@@ -10,5 +10,7 @@ export const config = {
   matcher: [
     "/portal",
     "/portal/:path*",
+    "/partner",
+    "/partner/:path*",
   ],
 };
