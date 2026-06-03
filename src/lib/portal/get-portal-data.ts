@@ -1,4 +1,5 @@
 import { buildAngebotPortalDisplay } from "@/lib/portal/portal-display";
+import { splitKundePortalPipeline } from "@/lib/portal/portal-pipeline";
 import {
   dokumenteFromAngebot,
   dokumenteFromAuftrag,
@@ -8,6 +9,7 @@ import {
   resolvePortalObjekt,
   type PortalObjekt,
 } from "@/lib/portal/portal-objekt";
+import { resolvePartnerFileUrls } from "@/lib/partner/partner-storage";
 import { isSupabaseConfigured, supabaseAdmin } from "@/lib/supabase";
 
 type PortalPositionRow = {
@@ -16,7 +18,7 @@ type PortalPositionRow = {
   gewerk_name: string | null;
   leistung_name: string | null;
   beschreibung: string | null;
-  status: string | null;
+  leistung_status: string | null;
 };
 
 type PortalBautagebuchRow = {
@@ -24,8 +26,8 @@ type PortalBautagebuchRow = {
   auftrag_id: string;
   datum: string | null;
   titel: string | null;
-  notizen: string | null;
-  fotos_urls: string[] | null;
+  beschreibung: string | null;
+  foto_urls: unknown;
 };
 
 type PortalKundenObjektRow = {
@@ -167,28 +169,79 @@ export async function getPortalDataForKunde(kundeId: string) {
     leadPlzByLeadId.set(lid, raw.plz ?? null);
   }
 
+  /** Nur Spalten, die in Supabase existieren (kein budget/phasen — sonst leere Auftragsliste). */
   const auftragSelect =
-    "id, titel, status, fortschritt, budget, start_datum, end_datum, abnahme_datum, abnahme_protokoll_url, naechster_schritt, phasen, created_at, lead_id, kunde_id, angebot_id, updated_at";
+    "id, titel, status, fortschritt, start_datum, end_datum, abnahme_datum, abnahme_protokoll_url, naechster_schritt, created_at, lead_id, kunde_id, angebot_id, updated_at";
 
-  const { data: auftraegeByKunde } = await supabaseAdmin
+  const mergeAuftraege = (
+    rows: Array<Record<string, unknown>> | null | undefined
+  ) => {
+    for (const row of rows ?? []) {
+      auftraegeById.set(String(row.id), row);
+    }
+  };
+
+  const auftraegeById = new Map<string, Record<string, unknown>>();
+
+  const { data: auftraegeByKunde, error: aufKundeErr } = await supabaseAdmin
     .from("auftraege")
     .select(auftragSelect)
     .eq("kunde_id", kunde.id)
     .order("created_at", { ascending: false });
+  if (aufKundeErr) console.warn("[portal] auftraege kunde_id:", aufKundeErr.message);
+  mergeAuftraege(auftraegeByKunde as Record<string, unknown>[] | null);
 
-  const { data: auftraegeByLead } =
-    leadIds.length > 0
-      ? await supabaseAdmin
-          .from("auftraege")
-          .select(auftragSelect)
-          .in("lead_id", leadIds)
-          .order("created_at", { ascending: false })
-      : { data: [] };
-
-  const auftraegeById = new Map<string, Record<string, unknown>>();
-  for (const row of [...(auftraegeByKunde ?? []), ...(auftraegeByLead ?? [])]) {
-    auftraegeById.set(String(row.id), row as Record<string, unknown>);
+  if (leadIds.length > 0) {
+    const { data: auftraegeByLead, error: aufLeadErr } = await supabaseAdmin
+      .from("auftraege")
+      .select(auftragSelect)
+      .in("lead_id", leadIds)
+      .order("created_at", { ascending: false });
+    if (aufLeadErr) console.warn("[portal] auftraege lead_id:", aufLeadErr.message);
+    mergeAuftraege(auftraegeByLead as Record<string, unknown>[] | null);
   }
+
+  const angeboteByIdEarly = new Map<string, PortalAngebotRow>();
+
+  const angebotSelect =
+    "id, angebotsnr, lead_id, kunde_id, kunde_objekt_id, status_einfach, gesamt_fix, gesamt_min, gesamt_max, gueltig_bis, leistungsumfang, notizen, created_at, gesendet_am, pdf_url";
+
+  if (leadIds.length > 0) {
+    const { data: angeboteByLead, error: angLeadErr } = await supabaseAdmin
+      .from("angebote")
+      .select(angebotSelect)
+      .in("lead_id", leadIds)
+      .order("created_at", { ascending: false });
+    if (angLeadErr) console.warn("[portal] angebote lead:", angLeadErr.message);
+    for (const a of angeboteByLead ?? []) {
+      angeboteByIdEarly.set(String((a as { id: string }).id), a as PortalAngebotRow);
+    }
+  }
+
+  const { data: angeboteByKunde, error: angKundeErr } = await supabaseAdmin
+    .from("angebote")
+    .select(angebotSelect)
+    .eq("kunde_id", kunde.id)
+    .order("created_at", { ascending: false });
+  if (angKundeErr) {
+    console.warn("[portal] angebote kunde_id:", angKundeErr.message);
+  } else {
+    for (const a of angeboteByKunde ?? []) {
+      angeboteByIdEarly.set(String((a as { id: string }).id), a as PortalAngebotRow);
+    }
+  }
+
+  const angebotIds = Array.from(angeboteByIdEarly.keys());
+  if (angebotIds.length > 0) {
+    const { data: auftraegeByAngebot, error: aufAngErr } = await supabaseAdmin
+      .from("auftraege")
+      .select(auftragSelect)
+      .in("angebot_id", angebotIds)
+      .order("created_at", { ascending: false });
+    if (aufAngErr) console.warn("[portal] auftraege angebot_id:", aufAngErr.message);
+    mergeAuftraege(auftraegeByAngebot as Record<string, unknown>[] | null);
+  }
+
   const auftraege = Array.from(auftraegeById.values()).sort((a, b) => {
     const ta = new Date(String(a.created_at ?? 0)).getTime();
     const tb = new Date(String(b.created_at ?? 0)).getTime();
@@ -197,39 +250,41 @@ export async function getPortalDataForKunde(kundeId: string) {
 
   const auftragIds = auftraege.map((a) => String(a.id));
 
-  const { data: positionen } =
+  const { data: positionen, error: posErr } =
     auftragIds.length > 0
       ? await supabaseAdmin
           .from("auftrag_positionen")
           .select(
-            "id, auftrag_id, gewerk_name, leistung_name, beschreibung, status, menge, einheit, fuer_kunde_sichtbar"
+            "id, auftrag_id, gewerk_name, leistung_name, beschreibung, leistung_status, menge, einheit"
           )
           .in("auftrag_id", auftragIds)
-          .eq("fuer_kunde_sichtbar", true)
-      : { data: [] as PortalPositionRow[] };
+      : { data: [] as PortalPositionRow[], error: null };
+  if (posErr) console.warn("[portal] positionen:", posErr.message);
 
-  const { data: bautagebuch } =
+  const { data: bautagebuch, error: btErr } =
     auftragIds.length > 0
       ? await supabaseAdmin
-          .from("bautagebuch")
+          .from("auftrag_bautagebuch_eintraege")
           .select(
-            "id, auftrag_id, datum, titel, notizen, fotos_urls, fuer_kunde_sichtbar"
+            "id, auftrag_id, datum, titel, beschreibung, foto_urls, fuer_kunde_freigegeben"
           )
           .in("auftrag_id", auftragIds)
-          .eq("fuer_kunde_sichtbar", true)
+          .eq("fuer_kunde_freigegeben", true)
           .order("datum", { ascending: false })
-      : { data: [] as PortalBautagebuchRow[] };
+      : { data: [] as PortalBautagebuchRow[], error: null };
+  if (btErr) console.warn("[portal] bautagebuch:", btErr.message);
 
-  const { data: angebote } =
-    leadIds.length > 0
+  const { data: milestones } =
+    auftragIds.length > 0
       ? await supabaseAdmin
-          .from("angebote")
-          .select(
-            "id, angebotsnr, lead_id, kunde_objekt_id, status_einfach, gesamt_fix, gesamt_min, gesamt_max, gueltig_bis, leistungsumfang, notizen, created_at, gesendet_am, pdf_url"
-          )
-          .in("lead_id", leadIds)
-          .order("created_at", { ascending: false })
-      : { data: [] as PortalAngebotRow[] };
+          .from("auftrag_milestones")
+          .select("auftrag_id, titel, erledigt, fuer_kunden_sichtbar")
+          .in("auftrag_id", auftragIds)
+          .eq("fuer_kunden_sichtbar", true)
+          .order("sort_order", { ascending: true })
+      : { data: [] };
+
+  const angebote = Array.from(angeboteByIdEarly.values());
 
   const { data: rechnungen } =
     auftragIds.length > 0
@@ -252,13 +307,54 @@ export async function getPortalDataForKunde(kundeId: string) {
           .eq("fuer_kunde_freigegeben", true)
       : { data: [] as PortalTimelineRow[] };
 
-  const angeboteById = new Map(
-    (angebote ?? []).map((a) => [String(a.id), a])
-  );
+  const angeboteById = new Map(angebote.map((a) => [String(a.id), a]));
 
-  return {
-    kunde,
-    auftraege: auftraege.map((a) => {
+  const milestonesByAuftrag = new Map<
+    string,
+    Array<{ id: string; name: string; status?: string }>
+  >();
+  for (const m of milestones ?? []) {
+    const aid = String((m as { auftrag_id: string }).auftrag_id);
+    const list = milestonesByAuftrag.get(aid) ?? [];
+    list.push({
+      id: String((m as { titel: string }).titel),
+      name: String((m as { titel: string }).titel),
+      status: (m as { erledigt: boolean }).erledigt ? "erledigt" : "offen",
+    });
+    milestonesByAuftrag.set(aid, list);
+  }
+
+  const bautagebuchByAuftrag = new Map<
+    string,
+    Array<{
+      id: string;
+      datum?: string;
+      titel: string;
+      notiz?: string;
+      fotos_urls: string[];
+    }>
+  >();
+
+  for (const b of bautagebuch ?? []) {
+    const aid = String(b.auftrag_id);
+    const fotoRaw = b.foto_urls;
+    const paths = Array.isArray(fotoRaw)
+      ? (fotoRaw as string[]).map((s) => String(s).trim()).filter(Boolean)
+      : [];
+    const signed = await resolvePartnerFileUrls(paths);
+    const entry = {
+      id: String(b.id),
+      datum: typeof b.datum === "string" ? b.datum : undefined,
+      titel: typeof b.titel === "string" ? b.titel : "Update",
+      notiz: typeof b.beschreibung === "string" ? b.beschreibung : undefined,
+      fotos_urls: signed,
+    };
+    const list = bautagebuchByAuftrag.get(aid) ?? [];
+    list.push(entry);
+    bautagebuchByAuftrag.set(aid, list);
+  }
+
+  const mappedAuftraege = auftraege.map((a) => {
       const auftragId = String(a.id);
       const angebotId =
         typeof a.angebot_id === "string" ? a.angebot_id : undefined;
@@ -310,25 +406,20 @@ export async function getPortalDataForKunde(kundeId: string) {
             titel: String(p.leistung_name ?? p.gewerk_name ?? "Leistung"),
             beschreibung:
               typeof p.beschreibung === "string" ? p.beschreibung : undefined,
-            status: typeof p.status === "string" ? p.status : undefined,
+            status:
+              typeof p.leistung_status === "string" ? p.leistung_status : undefined,
             gewerk_name:
               typeof p.gewerk_name === "string" ? p.gewerk_name : undefined,
             datum: undefined,
             fotos_urls: [],
             bautagebuch: [],
           })),
-        bautagebuch: (bautagebuch ?? [])
-          .filter((b) => String(b.auftrag_id) === String(a.id))
-          .map((b) => ({
-            id: String(b.id),
-            datum: typeof b.datum === "string" ? b.datum : undefined,
-            titel: typeof b.titel === "string" ? b.titel : "Update",
-            notiz: typeof b.notizen === "string" ? b.notizen : undefined,
-            fotos_urls: Array.isArray(b.fotos_urls) ? b.fotos_urls : [],
-          })),
+        bautagebuch: bautagebuchByAuftrag.get(auftragId) ?? [],
+        phasen: milestonesByAuftrag.get(auftragId) ?? [],
       };
-    }),
-    angebote: (angebote ?? []).map((a) => {
+    });
+
+  const mappedAngebote = angebote.map((a) => {
       const display = buildAngebotPortalDisplay(a);
       const leadId = a.lead_id != null ? String(a.lead_id) : null;
       const objektId =
@@ -359,8 +450,9 @@ export async function getPortalDataForKunde(kundeId: string) {
           created_at: a.created_at,
         }),
       };
-    }),
-    leads: (leads ?? []).map((lead) => {
+    });
+
+  const mappedLeads = (leads ?? []).map((lead) => {
       const raw = lead as {
         kunde_objekt_id?: string | null;
         plz?: string | null;
@@ -377,6 +469,33 @@ export async function getPortalDataForKunde(kundeId: string) {
         ),
       ]),
       };
-    }),
+    });
+
+  const split = splitKundePortalPipeline({
+    leads: mappedLeads.map((l) => ({
+      id: String(l.id),
+      status: (l as { status?: string }).status,
+    })),
+    angebote: mappedAngebote.map((a) => ({
+      id: String(a.id),
+      lead_id: a.lead_id != null ? String(a.lead_id) : null,
+    })),
+    auftraege: mappedAuftraege.map((a) => ({
+      id: String(a.id),
+      lead_id: a.lead_id,
+      angebot_id: a.angebot_id,
+      status: a.status,
+    })),
+  });
+
+  const anfragenLeadIds = new Set(split.anfragenLeads.map((l) => l.id));
+  const angebotIdsTab = new Set(split.angebote.map((a) => a.id));
+  const auftragIdsTab = new Set(split.auftraege.map((a) => a.id));
+
+  return {
+    kunde,
+    leads: mappedLeads.filter((l) => anfragenLeadIds.has(String(l.id))),
+    angebote: mappedAngebote.filter((a) => angebotIdsTab.has(String(a.id))),
+    auftraege: mappedAuftraege.filter((a) => auftragIdsTab.has(String(a.id))),
   };
 }

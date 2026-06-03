@@ -12,7 +12,16 @@ export function partnerRegisterUrl(): string {
   return `${SITE_CONFIG.url}/partner/registrieren`;
 }
 
-/** Direktlink ins Portal (Aufträge-Tab, ein Auftrag). */
+/**
+ * Auftrags-Zuweisung (CRM: Auftrag noch „offen“) — Annehmen/Ablehnen unter Anfragen.
+ * Listen-ID im Portal: `auftrag:{auftragId}`.
+ */
+export function partnerAuftragAnfragePortalUrl(auftragId: string): string {
+  const id = auftragId.trim();
+  return `${SITE_CONFIG.url}/partner?section=anfragen&id=${encodeURIComponent(`auftrag:${id}`)}`;
+}
+
+/** Laufender Auftrag — Tab Aufträge. */
 export function partnerAuftragPortalUrl(auftragId: string): string {
   const id = auftragId.trim();
   return `${SITE_CONFIG.url}/partner?section=auftraege&auftrag=${encodeURIComponent(id)}`;
@@ -40,7 +49,13 @@ export function partnerLoginForAngebotUrl(anfrageId: string): string {
   return `${partnerLoginUrl()}?next=${encodeURIComponent(next)}`;
 }
 
-/** Login mit Weiterleitung zum Auftrag (für E-Mails). */
+/** Login → Auftrags-Anfrage (Zuweisung, HW soll annehmen/ablehnen). */
+export function partnerLoginForAuftragAnfrageUrl(auftragId: string): string {
+  const next = partnerAuftragAnfragePortalUrl(auftragId);
+  return `${partnerLoginUrl()}?next=${encodeURIComponent(next)}`;
+}
+
+/** Login → laufender Auftrag (Tab Aufträge). */
 export function partnerLoginForAuftragUrl(auftragId: string): string {
   const next = partnerAuftragPortalUrl(auftragId);
   return `${partnerLoginUrl()}?next=${encodeURIComponent(next)}`;

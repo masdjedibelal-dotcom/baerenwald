@@ -1,4 +1,9 @@
-import { isPartnerAnfrageOffen } from "@/lib/partner/partner-anfrage-status";
+import {
+  aggregateAuftragHandwerkerStatus,
+  resolveAngebotHandwerkerPhase,
+  resolveAuftragPortalPhase,
+  type PartnerPortalPhase,
+} from "@/lib/partner/partner-portal-phase";
 import { parseAngebotPositionen } from "@/lib/partner/parse-angebot-positionen";
 import {
   resolvePartnerFileUrl,
@@ -67,6 +72,10 @@ export type PartnerAuftragItem = {
   ort: string;
   positionen: PartnerAuftragPosition[];
   bautagebuch: PartnerBautagebuchItem[];
+  /** Server-seitige Menü-Zuordnung (anfrage | auftrag). */
+  portalPhase: PartnerPortalPhase;
+  /** Aggregierter Zuweisungs-Status dieses Handwerkers am Auftrag. */
+  hwStatus: string;
 };
 
 function one<T>(x: T | T[] | null | undefined): T | null {
@@ -187,24 +196,38 @@ export async function getPartnerDataForHandwerker(handwerkerId: string) {
 
   const { data: hwAuftraege } = await supabaseAdmin
     .from("auftrag_handwerker")
-    .select("auftrag_id")
+    .select("auftrag_id, status")
     .eq("handwerker_id", id);
 
   const { data: posAuftraege } = await supabaseAdmin
     .from("auftrag_positionen")
-    .select("auftrag_id")
+    .select("auftrag_id, handwerker_status")
     .eq("handwerker_id", id);
 
-  const offeneAnfrageAngebotIds = new Set(
-    anfragen.filter((a) => isPartnerAnfrageOffen(a)).map((a) => a.angebot_id)
-  );
+  const hwStatusByAuftrag = new Map<string, string[]>();
+  const posStatusByAuftrag = new Map<string, string[]>();
+
+  for (const r of hwAuftraege ?? []) {
+    const aid = String((r as { auftrag_id: string }).auftrag_id);
+    const list = hwStatusByAuftrag.get(aid) ?? [];
+    list.push(String((r as { status?: string }).status ?? "ausstehend"));
+    hwStatusByAuftrag.set(aid, list);
+  }
+  for (const r of posAuftraege ?? []) {
+    const aid = String((r as { auftrag_id: string }).auftrag_id);
+    const st = (r as { handwerker_status?: string | null }).handwerker_status;
+    if (!st?.trim()) continue;
+    const list = posStatusByAuftrag.get(aid) ?? [];
+    list.push(st);
+    posStatusByAuftrag.set(aid, list);
+  }
 
   const auftragIds = uniqueIds([
     ...(hwAuftraege ?? []).map((r) => String((r as { auftrag_id: string }).auftrag_id)),
     ...(posAuftraege ?? []).map((r) => String((r as { auftrag_id: string }).auftrag_id)),
   ]);
 
-  let auftraege: PartnerAuftragItem[] = [];
+  let alleAuftraege: PartnerAuftragItem[] = [];
 
   if (auftragIds.length) {
     const { data: aufRows } = await supabaseAdmin
@@ -225,7 +248,8 @@ export async function getPartnerDataForHandwerker(handwerkerId: string) {
           beschreibung,
           menge,
           einheit,
-          handwerker_id
+          handwerker_id,
+          handwerker_status
         )
       `
       )
@@ -265,41 +289,32 @@ export async function getPartnerDataForHandwerker(handwerkerId: string) {
       btByAuftrag.set(aid, list);
     }
 
-    auftraege = (aufRows ?? [])
-      .filter((row) => {
-        const raw = row as Record<string, unknown>;
-        const angebotId = raw.angebot_id != null ? String(raw.angebot_id) : "";
-        const status = String(raw.status ?? "").toLowerCase();
-        if (
-          status === "offen" &&
-          angebotId &&
-          offeneAnfrageAngebotIds.has(angebotId)
-        ) {
-          return false;
-        }
-        return true;
-      })
-      .map((row) => {
+    alleAuftraege = (aufRows ?? []).map((row) => {
       const raw = row as Record<string, unknown>;
       const kunde = one(raw.kunden) as { plz: string | null; ort: string | null } | null;
       const allPos = (raw.auftrag_positionen ?? []) as Array<Record<string, unknown>>;
-      const positionen = allPos
-        .filter((p) => String(p.handwerker_id ?? "") === id)
-        .map((p) => ({
-          id: String(p.id),
-          gewerk_name: String(p.gewerk_name ?? "Gewerk"),
-          leistung_name: String(p.leistung_name ?? ""),
-          beschreibung: (p.beschreibung as string | null) ?? null,
-          menge: p.menge != null ? Number(p.menge) : null,
-          einheit: (p.einheit as string | null) ?? null,
-        }));
+      const ownPos = allPos.filter((p) => String(p.handwerker_id ?? "") === id);
+      const positionen = ownPos.map((p) => ({
+        id: String(p.id),
+        gewerk_name: String(p.gewerk_name ?? "Gewerk"),
+        leistung_name: String(p.leistung_name ?? ""),
+        beschreibung: (p.beschreibung as string | null) ?? null,
+        menge: p.menge != null ? Number(p.menge) : null,
+        einheit: (p.einheit as string | null) ?? null,
+      }));
 
       const aid = String(raw.id);
+      const auftragStatus = String(raw.status ?? "—");
+      const hwStatus = aggregateAuftragHandwerkerStatus(
+        hwStatusByAuftrag.get(aid) ?? [],
+        ownPos.map((p) => p.handwerker_status as string | null | undefined)
+      );
+      const portalPhase = resolveAuftragPortalPhase(auftragStatus, hwStatus);
 
       return {
         id: aid,
         titel: String(raw.titel ?? "Auftrag").trim() || "Auftrag",
-        status: String(raw.status ?? "—"),
+        status: auftragStatus,
         fortschritt:
           raw.fortschritt != null && Number.isFinite(Number(raw.fortschritt))
             ? Number(raw.fortschritt)
@@ -309,11 +324,20 @@ export async function getPartnerDataForHandwerker(handwerkerId: string) {
         ort: kunde?.ort?.trim() || "—",
         positionen,
         bautagebuch: btByAuftrag.get(aid) ?? [],
+        portalPhase,
+        hwStatus,
       };
     });
   }
 
-  const anfragenOffen = anfragen.filter((a) => isPartnerAnfrageOffen(a));
+  const anfragenAngebot = anfragen.filter(
+    (a) => resolveAngebotHandwerkerPhase(a) === "anfrage"
+  );
+  const angebote = anfragen.filter(
+    (a) => resolveAngebotHandwerkerPhase(a) === "angebot"
+  );
+  const auftragAnfragen = alleAuftraege.filter((a) => a.portalPhase === "anfrage");
+  const auftraege = alleAuftraege.filter((a) => a.portalPhase === "auftrag");
 
   return {
     handwerker: {
@@ -321,8 +345,9 @@ export async function getPartnerDataForHandwerker(handwerkerId: string) {
       firma: handwerker.firma as string | null,
       email: handwerker.email as string | null,
     },
-    anfragen,
-    anfragenOffen,
+    anfragen: anfragenAngebot,
+    angebote,
+    auftragAnfragen,
     auftraege,
   };
 }

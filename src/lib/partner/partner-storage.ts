@@ -2,11 +2,13 @@ import { randomUUID } from "crypto";
 
 import { isSupabaseConfigured, supabaseAdmin } from "@/lib/supabase";
 
-export const PARTNER_UPLOAD_BUCKET = "handwerker-uploads";
+import {
+  PARTNER_MAX_BAUTAGEBUCH_ANHAENGE,
+  validatePartnerBautagebuchFile,
+  validatePartnerPdfFile,
+} from "@/lib/partner/partner-upload-limits";
 
-const MAX_PDF_BYTES = 12 * 1024 * 1024;
-const MAX_PHOTO_BYTES = 8 * 1024 * 1024;
-const MAX_PHOTOS = 8;
+export const PARTNER_UPLOAD_BUCKET = "handwerker-uploads";
 
 function extFromMime(mime: string): string {
   if (mime === "application/pdf") return "pdf";
@@ -54,13 +56,11 @@ export async function uploadPartnerPdf(opts: {
     return { ok: false, error: "Storage nicht konfiguriert." };
   }
 
+  const pdfErr = validatePartnerPdfFile(opts.file);
+  if (pdfErr) {
+    return { ok: false, error: pdfErr };
+  }
   const mime = opts.file.type || "application/pdf";
-  if (mime !== "application/pdf") {
-    return { ok: false, error: "Bitte eine PDF-Datei hochladen." };
-  }
-  if (opts.file.size > MAX_PDF_BYTES) {
-    return { ok: false, error: "PDF ist zu groß (max. 12 MB)." };
-  }
 
   const prefix =
     opts.kind === "rechnung"
@@ -77,29 +77,40 @@ export async function uploadPartnerPdf(opts: {
   return { ok: true, path };
 }
 
-export async function uploadPartnerPhotos(opts: {
+export async function uploadPartnerBautagebuchAnhaenge(opts: {
   handwerkerId: string;
   auftragId: string;
   files: File[];
+  /** Bereits gespeicherte Anzahl (bei Bearbeitung). */
+  existingCount?: number;
 }): Promise<{ ok: true; paths: string[] } | { ok: false; error: string }> {
   if (!isSupabaseConfigured()) {
     return { ok: false, error: "Storage nicht konfiguriert." };
   }
 
-  const allowed = new Set(["image/jpeg", "image/jpg", "image/png", "image/webp"]);
-  const list = opts.files.slice(0, MAX_PHOTOS);
-  if (!list.length) return { ok: true, paths: [] };
+  const existing = opts.existingCount ?? 0;
+  const maxNew = Math.max(0, PARTNER_MAX_BAUTAGEBUCH_ANHAENGE - existing);
+  const list = opts.files.slice(0, maxNew);
+  if (!list.length) {
+    if (opts.files.length > 0 && maxNew === 0) {
+      return {
+        ok: false,
+        error: `Maximal ${PARTNER_MAX_BAUTAGEBUCH_ANHAENGE} Anhänge pro Eintrag.`,
+      };
+    }
+    return { ok: true, paths: [] };
+  }
 
   const paths: string[] = [];
 
   for (const file of list) {
-    const mime = file.type || "image/jpeg";
-    if (!allowed.has(mime)) {
-      return { ok: false, error: "Nur JPG, PNG oder WebP erlaubt." };
+    const err = validatePartnerBautagebuchFile(file);
+    if (err) {
+      return { ok: false, error: err };
     }
-    if (file.size > MAX_PHOTO_BYTES) {
-      return { ok: false, error: "Ein Foto ist zu groß (max. 8 MB)." };
-    }
+    const mime =
+      file.type ||
+      (file.name.toLowerCase().endsWith(".pdf") ? "application/pdf" : "image/jpeg");
 
     const ext = extFromMime(mime);
     const path = `${opts.handwerkerId}/bautagebuch/${opts.auftragId}/${randomUUID()}.${ext}`;
@@ -114,6 +125,9 @@ export async function uploadPartnerPhotos(opts: {
 
   return { ok: true, paths };
 }
+
+/** @deprecated — nutze uploadPartnerBautagebuchAnhaenge */
+export const uploadPartnerPhotos = uploadPartnerBautagebuchAnhaenge;
 
 export async function resolvePartnerFileUrls(
   stored: string[] | null | undefined

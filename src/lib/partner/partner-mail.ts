@@ -2,7 +2,7 @@ import { Resend } from "resend";
 
 import { SITE_CONFIG } from "@/lib/config";
 import {
-  partnerLoginForAuftragUrl,
+  partnerLoginForAuftragAnfrageUrl,
   partnerLoginUrl,
   partnerRegisterUrl,
 } from "@/lib/partner/partner-site-url";
@@ -182,7 +182,7 @@ export async function sendHandwerkerLeistungZuweisungMail(opts: {
     return { ok: false, error: "E-Mail nicht konfiguriert." };
   }
 
-  const portalLink = partnerLoginForAuftragUrl(opts.auftragId);
+  const portalLink = partnerLoginForAuftragAnfrageUrl(opts.auftragId);
   const register = partnerRegisterUrl();
   const zeitraum = opts.zeitraum?.trim() || "Nach Absprache";
   const gewerkSet = new Set(opts.leistungen.map((l) => l.gewerk_name).filter(Boolean));
@@ -354,7 +354,7 @@ export async function sendPartnerInternalBautagebuchMail(opts: {
   const crm = crmAuftragUrl(opts.auftragId);
 
   const html = mailShell(
-    "Neuer Bautagebuch-Eintrag (Partner)",
+    `Neuer Bautagebuch-Eintrag von ${hw}`,
     `<p><strong>${escapeHtml(hw)}</strong> hat einen Bautagebuch-Eintrag erstellt.</p>
 <p>Auftrag: ${escapeHtml(opts.auftragTitel)}<br>Eintrag: ${escapeHtml(opts.eintragTitel)} (${escapeHtml(opts.datum)})</p>
 ${mailActionButtons({
