@@ -45,7 +45,9 @@ Listen-IDs in **Anfragen**:
 
 Wenn im CRM nur am **Auftrag** zugewiesen wird (ohne `angebot_handwerker`), erscheint der Eintrag unter **Anfragen** (nicht Aufträge), solange der Auftrag `offen` ist.
 
-Nach Annahme durch den HW (`respondPartnerAuftragZuweisung`) bleibt er in **Anfragen**, bis der Auftrag im CRM auf z. B. `in_arbeit` gesetzt wird.
+Nach Annahme (`respondPartnerAuftragZuweisung`) wird die verknüpfte `angebot_handwerker`-Zeile auf **akzeptiert** gesetzt — der Eintrag erscheint unter **Angebote** (Preis/PDF). Er verschwindet aus **Anfragen**, solange der Auftrag im CRM noch `offen` ist.
+
+Ohne `angebot_handwerker`-Zeile am Angebot kann im Portal kein HW-Angebot eingereicht werden (Hinweis im Detail).
 
 ## E-Mail-Links (`partner-site-url.ts`)
 

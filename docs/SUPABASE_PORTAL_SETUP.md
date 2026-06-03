@@ -131,9 +131,32 @@ Bis dahin: Portal lädt Daten **serverseitig** mit Service Role, aber nur nach S
 https://baerenwaldmuenchen.de/portal/login
 ```
 
-## 10. Mitarbeiter mit Kunden-E-Mail
+## 10. Mitarbeiter mit derselben E-Mail (CRM + Portale)
 
-CRM und Portal nutzen dieselbe Supabase-Auth. **Mitarbeiter dürfen das Portal nutzen**, wenn im CRM ein `kunden`-Datensatz mit **derselben E-Mail** existiert — dann wird `auth_user_id` beim Login verknüpft.
+CRM, Kundenportal und Partnerportal nutzen **dieselbe Supabase-Auth**. Ein Mitarbeiter (`user_profiles`) darf alle Bereiche nutzen, wenn die E-Mail im jeweiligen Stamm steht:
+
+| Portal | Voraussetzung |
+|--------|----------------|
+| **MeinBärenwald** | `kunden.email` = Login-E-Mail (wird beim ersten Login verknüpft) |
+| **Partner** | `handwerker.email` = Login-E-Mail, `aktiv = true` (CRM legt Partner an) |
+
+**Wichtig:** Es gibt **keine** Sperre mehr für CRM-Mitarbeiter im App-Code. Migration `20260605120000_unified_crm_portal_access.sql` (und ggf. `20260604170000_allow_crm_staff_partner_portal.sql`) im SQL Editor ausführen.
+
+### Test-Account info@baerenwald-muenchen.de
+
+Im CRM einmal prüfen/anlegen:
+
+```sql
+-- Partner-Zugang (Handwerker-Stamm)
+select id, email, aktiv, auth_user_id from public.handwerker
+where lower(email) = lower('info@baerenwald-muenchen.de');
+
+-- Kundenportal (optional, gleiche Auth-ID möglich)
+select id, email, auth_user_id from public.kunden
+where lower(email) = lower('info@baerenwald-muenchen.de');
+```
+
+Fehlt der Handwerker-Eintrag, im CRM unter Handwerker anlegen mit dieser E-Mail — sonst erscheint: *„noch nicht als Partner hinterlegt“*.
 
 ## 11. Test-Checkliste
 
