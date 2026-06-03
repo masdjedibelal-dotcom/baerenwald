@@ -8,6 +8,10 @@ import {
   generateFunnelHumanSummary,
 } from "@/lib/lead/funnel-notizen-summary";
 import type { FunnelState } from "@/lib/funnel/types";
+import {
+  clearMarketingJourney,
+  getMarketingJourneySnapshot,
+} from "@/lib/marketing/journey-storage";
 
 export { buildFullLeadNotizen } from "@/lib/lead/funnel-notizen-summary";
 
@@ -19,6 +23,7 @@ export function serializeFunnelStateForLead(
   const technicalDetails = buildTechnicalDetailsForLead(state);
   const formattedSummary = generateFunnelHumanSummary(state);
   const preis_modus = derivePreisModus(state);
+  const marketing_journey = getMarketingJourneySnapshot();
   return {
     ...rest,
     photoCount: photos.length,
@@ -26,6 +31,7 @@ export function serializeFunnelStateForLead(
     formattedSummary,
     technicalDetails,
     preis_modus,
+    ...(marketing_journey ? { marketing_journey } : {}),
   };
 }
 
@@ -133,5 +139,6 @@ export async function submitBwLead(
     return { ok: false, error: result.error };
   }
 
+  clearMarketingJourney();
   return { ok: true, id: result.id };
 }

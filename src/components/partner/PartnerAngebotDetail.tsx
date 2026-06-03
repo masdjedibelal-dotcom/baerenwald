@@ -1,13 +1,81 @@
 "use client";
 
+import { useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
-import { submitPartnerAngebot } from "@/app/actions/partner-angebote";
+import {
+  submitPartnerAngebot,
+  submitPartnerRechnung,
+} from "@/app/actions/partner-angebote";
+import {
+  DokumenteTabelle,
+  type DokumentZeile,
+} from "@/components/shared/DokumenteTabelle";
+import { FileUploadField } from "@/components/shared/FileUploadField";
 import type { PartnerAnfrageItem } from "@/lib/partner/get-partner-data";
 import { cn } from "@/lib/utils";
 
-function fmtDate(v?: string): string {
+function ConfirmDialog({
+  open,
+  title,
+  description,
+  confirmLabel,
+  loading,
+  onConfirm,
+  onCancel,
+}: {
+  open: boolean;
+  title: string;
+  description: string;
+  confirmLabel: string;
+  loading: boolean;
+  onConfirm: () => void;
+  onCancel: () => void;
+}) {
+  if (!open) return null;
+  return (
+    <div
+      className="fixed inset-0 z-[130] flex items-center justify-center bg-black/45 p-4"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="partner-angebot-confirm-title"
+    >
+      <div className="w-full max-w-md rounded-2xl border border-border-default bg-surface-card p-5 shadow-xl">
+        <h4
+          id="partner-angebot-confirm-title"
+          className="font-display text-lg font-semibold text-text-primary"
+        >
+          {title}
+        </h4>
+        <p className="mt-2 text-sm leading-relaxed text-text-secondary">{description}</p>
+        <div className="mt-5 flex flex-wrap justify-end gap-2">
+          <button
+            type="button"
+            onClick={onCancel}
+            disabled={loading}
+            className="btn-pill-outline !px-4 !py-2 !text-[13px]"
+          >
+            Abbrechen
+          </button>
+          <button
+            type="button"
+            disabled={loading}
+            onClick={onConfirm}
+            className={cn(
+              "btn-pill-primary !px-4 !py-2 !text-[13px]",
+              loading && "opacity-60"
+            )}
+          >
+            {loading ? "Wird gesendet…" : confirmLabel}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function fmtDate(v?: string | null): string {
   if (!v) return "—";
   const d = new Date(v);
   if (Number.isNaN(d.getTime())) return "—";
@@ -41,34 +109,111 @@ function hwStatusClass(s?: string): string {
 
 export function PartnerAngebotDetail({ item }: { item: PartnerAnfrageItem }) {
   const router = useRouter();
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [angebotLoading, setAngebotLoading] = useState(false);
+  const [rechnungLoading, setRechnungLoading] = useState(false);
+  const [angebotError, setAngebotError] = useState<string | null>(null);
+  const [rechnungError, setRechnungError] = useState<string | null>(null);
   const [preisNetto, setPreisNetto] = useState("");
   const [preisBrutto, setPreisBrutto] = useState("");
   const [notiz, setNotiz] = useState("");
-  const [pdf, setPdf] = useState<File | null>(null);
+  const [angebotPdf, setAngebotPdf] = useState<File | null>(null);
+  const [rechnungPdf, setRechnungPdf] = useState<File | null>(null);
+  const [confirmAngebot, setConfirmAngebot] = useState(false);
 
   const eingereicht = Boolean(item.hw_eingereicht_at);
-  const kannEinreichen = !eingereicht && item.status.toLowerCase() === "akzeptiert";
+  const rechnungEingereicht = Boolean(item.hw_rechnung_eingereicht_at);
+  const kannAngebotEinreichen =
+    !eingereicht && item.status.toLowerCase() === "akzeptiert";
+  const kannRechnungHochladen = eingereicht && !rechnungEingereicht;
 
-  async function onSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    if (!pdf) {
-      setError("Bitte ein PDF auswählen.");
+  const dokumentZeilen = useMemo((): DokumentZeile[] => {
+    const rows: DokumentZeile[] = [];
+    if (item.hw_angebot_pdf_signed_url) {
+      rows.push({
+        id: "hw-angebot-pdf",
+        datum: item.hw_eingereicht_at,
+        name: "Angebot (eingereicht)",
+        href: item.hw_angebot_pdf_signed_url,
+      });
+    }
+    if (item.hw_rechnung_pdf_signed_url) {
+      rows.push({
+        id: "hw-rechnung-pdf",
+        datum: item.hw_rechnung_eingereicht_at,
+        name: "Rechnung (eingereicht)",
+        href: item.hw_rechnung_pdf_signed_url,
+      });
+    }
+    return rows;
+  }, [
+    item.hw_angebot_pdf_signed_url,
+    item.hw_eingereicht_at,
+    item.hw_rechnung_pdf_signed_url,
+    item.hw_rechnung_eingereicht_at,
+  ]);
+
+  function parseNettoInput(raw: string): number | null {
+    const n = Number(raw.replace(",", ".").trim());
+    if (!Number.isFinite(n) || n < 0) return null;
+    return Math.round(n * 100) / 100;
+  }
+
+  async function sendAngebot() {
+    if (!angebotPdf) {
+      setAngebotError("Bitte ein Angebots-PDF auswählen.");
       return;
     }
-    setLoading(true);
-    setError(null);
+    if (parseNettoInput(preisNetto) == null) {
+      setAngebotError("Bitte einen gültigen Netto-Preis in Euro angeben.");
+      return;
+    }
+    setAngebotLoading(true);
+    setAngebotError(null);
     const fd = new FormData();
     fd.set("anfrageId", item.id);
     fd.set("preisNetto", preisNetto);
     fd.set("preisBrutto", preisBrutto);
     fd.set("notiz", notiz);
-    fd.set("pdf", pdf);
+    fd.set("pdf", angebotPdf);
     const res = await submitPartnerAngebot(fd);
-    setLoading(false);
+    setAngebotLoading(false);
+    setConfirmAngebot(false);
     if (!res.ok) {
-      setError(res.error);
+      setAngebotError(res.error);
+      return;
+    }
+    router.refresh();
+  }
+
+  function onAngebotSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setAngebotError(null);
+    if (parseNettoInput(preisNetto) == null) {
+      setAngebotError("Bitte einen gültigen Netto-Preis in Euro angeben.");
+      return;
+    }
+    if (!angebotPdf) {
+      setAngebotError("Bitte ein Angebots-PDF auswählen.");
+      return;
+    }
+    setConfirmAngebot(true);
+  }
+
+  async function onRechnungSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!rechnungPdf) {
+      setRechnungError("Bitte ein Rechnungs-PDF auswählen.");
+      return;
+    }
+    setRechnungLoading(true);
+    setRechnungError(null);
+    const fd = new FormData();
+    fd.set("anfrageId", item.id);
+    fd.set("pdf", rechnungPdf);
+    const res = await submitPartnerRechnung(fd);
+    setRechnungLoading(false);
+    if (!res.ok) {
+      setRechnungError(res.error);
       return;
     }
     router.refresh();
@@ -125,11 +270,18 @@ export function PartnerAngebotDetail({ item }: { item: PartnerAnfrageItem }) {
         </div>
       ) : null}
 
+      <DokumenteTabelle
+        dokumente={dokumentZeilen}
+        heading="Dokumente"
+        emptyText="Noch keine Dokumente."
+        className="!border-t-0 !pt-0"
+      />
+
       {eingereicht ? (
-        <div className="space-y-3 rounded-xl border border-border-light bg-muted/20 p-4 text-sm">
-          <p className="font-semibold text-text-primary">Dein eingereichtes Angebot</p>
+        <div className="space-y-2 rounded-xl border border-border-light bg-muted/20 p-4 text-sm">
+          <p className="font-semibold text-text-primary">Eingereichte Preise</p>
           <p>
-            <span className="text-text-tertiary">Eingereicht am:</span>{" "}
+            <span className="text-text-tertiary">Angebot eingereicht am:</span>{" "}
             {fmtDate(item.hw_eingereicht_at)}
           </p>
           <p>
@@ -143,40 +295,43 @@ export function PartnerAngebotDetail({ item }: { item: PartnerAnfrageItem }) {
               <span className="text-text-tertiary">Notiz:</span> {item.hw_notiz}
             </p>
           ) : null}
-          {item.hw_angebot_pdf_signed_url ? (
-            <a
-              href={item.hw_angebot_pdf_signed_url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="btn-pill-outline inline-flex !text-[13px]"
-            >
-              PDF ansehen
-            </a>
+          {rechnungEingereicht ? (
+            <p>
+              <span className="text-text-tertiary">Rechnung hochgeladen am:</span>{" "}
+              {fmtDate(item.hw_rechnung_eingereicht_at)}
+            </p>
           ) : null}
         </div>
       ) : null}
 
-      {kannEinreichen ? (
-        <form onSubmit={onSubmit} className="space-y-3 rounded-xl border border-border-light p-4">
+      {kannAngebotEinreichen ? (
+        <form
+          onSubmit={onAngebotSubmit}
+          className="space-y-3 rounded-xl border border-border-light p-4"
+        >
           <p className="text-sm font-semibold text-text-primary">Angebot einreichen</p>
           <p className="text-xs text-text-secondary">
-            Preis und PDF-Angebot für Bärenwald. Nach der Einreichung kannst du nichts mehr
-            ändern.
+            Netto-Preis und Angebots-PDF werden an Bärenwald gesendet — du erhältst eine
+            Bestätigung per E-Mail bei uns. Nach der Einreichung kannst du das Angebot nicht
+            mehr ändern.
           </p>
           <div className="grid gap-3 sm:grid-cols-2">
-            <label className="block text-sm">
-              <span className="text-text-tertiary">Preis netto (€)</span>
+            <label className="block text-sm sm:col-span-1">
+              <span className="text-text-tertiary">
+                Preis netto (€) <span className="text-red-600">*</span>
+              </span>
               <input
                 type="text"
                 inputMode="decimal"
+                required
                 value={preisNetto}
                 onChange={(e) => setPreisNetto(e.target.value)}
                 className="mt-1 w-full rounded-xl border border-border-default bg-surface-card px-3 py-2"
                 placeholder="z. B. 4500"
               />
             </label>
-            <label className="block text-sm">
-              <span className="text-text-tertiary">Preis brutto (€)</span>
+            <label className="block text-sm sm:col-span-1">
+              <span className="text-text-tertiary">Preis brutto (€, optional)</span>
               <input
                 type="text"
                 inputMode="decimal"
@@ -187,15 +342,11 @@ export function PartnerAngebotDetail({ item }: { item: PartnerAnfrageItem }) {
               />
             </label>
           </div>
-          <label className="block text-sm">
-            <span className="text-text-tertiary">Angebots-PDF</span>
-            <input
-              type="file"
-              accept="application/pdf"
-              className="mt-1 w-full text-sm"
-              onChange={(e) => setPdf(e.target.files?.[0] ?? null)}
-            />
-          </label>
+          <FileUploadField
+            label="Angebots-PDF"
+            accept="application/pdf,.pdf"
+            onChange={(files) => setAngebotPdf(files[0] ?? null)}
+          />
           <label className="block text-sm">
             <span className="text-text-tertiary">Notiz (optional)</span>
             <textarea
@@ -205,22 +356,68 @@ export function PartnerAngebotDetail({ item }: { item: PartnerAnfrageItem }) {
               className="mt-1 w-full rounded-xl border border-border-default bg-surface-card px-3 py-2"
             />
           </label>
-          {error ? (
+          {angebotError ? (
             <p className="text-sm text-red-700" role="alert">
-              {error}
+              {angebotError}
             </p>
           ) : null}
           <button
             type="submit"
-            disabled={loading}
-            className={cn("btn-pill-primary w-full !py-2.5", loading && "opacity-60")}
+            disabled={angebotLoading}
+            className={cn(
+              "btn-pill-primary w-full !py-2.5",
+              angebotLoading && "opacity-60"
+            )}
           >
-            {loading ? "Wird gesendet…" : "Angebot absenden"}
+            {angebotLoading ? "Wird gesendet…" : "Angebot absenden"}
           </button>
         </form>
       ) : null}
 
-      {!kannEinreichen && !eingereicht ? (
+      {kannRechnungHochladen ? (
+        <form
+          onSubmit={onRechnungSubmit}
+          className="space-y-3 rounded-xl border border-border-light p-4"
+        >
+          <p className="text-sm font-semibold text-text-primary">Rechnung hochladen</p>
+          <p className="text-xs text-text-secondary">
+            Nach Abschluss der Leistung kannst du hier deine Rechnung als PDF einreichen.
+            Eine erneute Änderung ist danach nicht möglich.
+          </p>
+          <FileUploadField
+            label="Rechnungs-PDF"
+            accept="application/pdf,.pdf"
+            onChange={(files) => setRechnungPdf(files[0] ?? null)}
+          />
+          {rechnungError ? (
+            <p className="text-sm text-red-700" role="alert">
+              {rechnungError}
+            </p>
+          ) : null}
+          <button
+            type="submit"
+            disabled={rechnungLoading}
+            className={cn(
+              "btn-pill-primary w-full !py-2.5",
+              rechnungLoading && "opacity-60"
+            )}
+          >
+            {rechnungLoading ? "Wird hochgeladen…" : "Rechnung absenden"}
+          </button>
+        </form>
+      ) : null}
+
+      <ConfirmDialog
+        open={confirmAngebot}
+        title="Angebot an Bärenwald senden?"
+        description="Netto-Preis und PDF werden übermittelt. Bärenwald erhält eine E-Mail mit deinen Angaben und dem Angebots-PDF."
+        confirmLabel="Ja, absenden"
+        loading={angebotLoading}
+        onConfirm={sendAngebot}
+        onCancel={() => setConfirmAngebot(false)}
+      />
+
+      {!kannAngebotEinreichen && !eingereicht ? (
         <p className="text-sm text-text-secondary">
           Diese Anfrage ist noch nicht angenommen. Bitte zuerst unter „Anfragen“ antworten.
         </p>

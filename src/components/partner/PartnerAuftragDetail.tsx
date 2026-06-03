@@ -1,13 +1,16 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 
 import {
   createPartnerBautagebuchEintrag,
   deletePartnerBautagebuchEintrag,
   updatePartnerBautagebuchEintrag,
 } from "@/app/actions/partner-bautagebuch";
+import { BautagebuchAccordionList } from "@/components/shared/BautagebuchAccordionList";
+import { DokumenteTabelle } from "@/components/shared/DokumenteTabelle";
+import { FileUploadField } from "@/components/shared/FileUploadField";
 import type {
   PartnerAuftragItem,
   PartnerBautagebuchItem,
@@ -112,18 +115,13 @@ function BautagebuchForm({
           className="mt-1 w-full rounded-xl border border-border-default bg-surface-card px-3 py-2"
         />
       </label>
-      <label className="block">
-        <span className="text-xs text-text-tertiary">
-          Fotos {eintrag ? "(neue werden ergänzt)" : ""}
-        </span>
-        <input
-          type="file"
-          accept="image/jpeg,image/png,image/webp"
-          multiple
-          className="mt-1 w-full text-sm"
-          onChange={(e) => setPhotos(Array.from(e.target.files ?? []))}
-        />
-      </label>
+      <FileUploadField
+        label="Fotos"
+        hint={eintrag ? "Neue Fotos werden ergänzt." : "Mehrere Fotos möglich."}
+        accept="image/*"
+        multiple
+        onChange={setPhotos}
+      />
       {error ? (
         <p className="text-sm text-red-700" role="alert">
           {error}
@@ -149,15 +147,16 @@ function BautagebuchForm({
   );
 }
 
-function BautagebuchEintragCard({
+function BautagebuchEintragActions({
   auftragId,
   eintrag,
+  onEdit,
 }: {
   auftragId: string;
   eintrag: PartnerBautagebuchItem;
+  onEdit: () => void;
 }) {
   const router = useRouter();
-  const [editing, setEditing] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -177,79 +176,67 @@ function BautagebuchEintragCard({
     router.refresh();
   }
 
-  if (editing && eintrag.own) {
-    return (
-      <BautagebuchForm
-        auftragId={auftragId}
-        eintrag={eintrag}
-        onDone={() => setEditing(false)}
-      />
-    );
-  }
+  if (!eintrag.own || eintrag.fuer_kunde_freigegeben) return null;
 
   return (
-    <li className="rounded-xl border border-border-light bg-surface-card p-3 text-sm">
-      <div className="flex flex-wrap items-start justify-between gap-2">
-        <div>
-          <p className="font-semibold text-text-primary">{eintrag.titel}</p>
-          <p className="text-xs text-text-tertiary">{fmtDate(eintrag.datum)}</p>
-        </div>
-        <div className="flex flex-wrap gap-1">
-          {eintrag.own ? (
-            <span className="tag bg-accent-light text-accent">Dein Eintrag</span>
-          ) : null}
-          {eintrag.fuer_kunde_freigegeben ? (
-            <span className="tag bg-emerald-100 text-emerald-700">Freigegeben</span>
-          ) : null}
-        </div>
-      </div>
-      {eintrag.beschreibung ? (
-        <p className="mt-2 whitespace-pre-wrap text-text-secondary">
-          {eintrag.beschreibung}
-        </p>
-      ) : null}
-      {eintrag.foto_signed_urls.length > 0 ? (
-        <div className="mt-3 flex flex-wrap gap-2">
-          {eintrag.foto_signed_urls.map((url, i) => (
-            <a
-              key={i}
-              href={url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="block h-16 w-16 overflow-hidden rounded-lg border border-border-light"
-            >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={url} alt="" className="h-full w-full object-cover" />
-            </a>
-          ))}
-        </div>
-      ) : null}
-      {eintrag.own && !eintrag.fuer_kunde_freigegeben ? (
-        <div className="mt-3 flex flex-wrap gap-3">
-          <button
-            type="button"
-            onClick={() => setEditing(true)}
-            className="text-xs font-medium text-accent underline-offset-2 hover:underline"
-          >
-            Bearbeiten
-          </button>
-          <button
-            type="button"
-            disabled={deleting}
-            onClick={onDelete}
-            className="text-xs font-medium text-red-700 underline-offset-2 hover:underline"
-          >
-            Löschen
-          </button>
-        </div>
-      ) : null}
-      {error ? <p className="mt-2 text-xs text-red-700">{error}</p> : null}
-    </li>
+    <>
+      <button
+        type="button"
+        onClick={onEdit}
+        className="text-xs font-medium text-accent underline-offset-2 hover:underline"
+      >
+        Bearbeiten
+      </button>
+      <button
+        type="button"
+        disabled={deleting}
+        onClick={onDelete}
+        className="text-xs font-medium text-red-700 underline-offset-2 hover:underline"
+      >
+        Löschen
+      </button>
+      {error ? <p className="w-full text-xs text-red-700">{error}</p> : null}
+    </>
   );
 }
 
 export function PartnerAuftragDetail({ item }: { item: PartnerAuftragItem }) {
   const [showNew, setShowNew] = useState(false);
+  const [editId, setEditId] = useState<string | null>(null);
+
+  const accordionEintraege = useMemo(
+    () =>
+      item.bautagebuch.map((e) => ({
+        id: e.id,
+        datum: e.datum,
+        titel: e.titel,
+        beschreibung: e.beschreibung,
+        fotos: e.foto_signed_urls,
+        badges: (
+          <>
+            {e.own ? (
+              <span className="tag bg-accent-light text-accent">Dein Eintrag</span>
+            ) : null}
+            {e.fuer_kunde_freigegeben ? (
+              <span className="tag bg-emerald-100 text-emerald-700">Freigegeben</span>
+            ) : null}
+          </>
+        ),
+        actions:
+          e.own && !e.fuer_kunde_freigegeben ? (
+            <BautagebuchEintragActions
+              auftragId={item.id}
+              eintrag={e}
+              onEdit={() => setEditId(e.id)}
+            />
+          ) : undefined,
+      })),
+    [item.bautagebuch, item.id]
+  );
+
+  const editingEintrag = editId
+    ? item.bautagebuch.find((e) => e.id === editId)
+    : undefined;
 
   return (
     <div className="space-y-4">
@@ -304,10 +291,17 @@ export function PartnerAuftragDetail({ item }: { item: PartnerAuftragItem }) {
         </div>
       ) : null}
 
+      <DokumenteTabelle
+        dokumente={[]}
+        heading="Dokumente"
+        emptyText="Noch keine Dokumente."
+        className="!border-t-0 !pt-0"
+      />
+
       <div className="space-y-3">
         <div className="flex items-center justify-between gap-2">
           <p className="text-sm font-semibold text-text-primary">Bautagebuch</p>
-          {!showNew ? (
+          {!showNew && !editingEintrag ? (
             <button
               type="button"
               onClick={() => setShowNew(true)}
@@ -325,15 +319,19 @@ export function PartnerAuftragDetail({ item }: { item: PartnerAuftragItem }) {
           <BautagebuchForm auftragId={item.id} onDone={() => setShowNew(false)} />
         ) : null}
 
-        {item.bautagebuch.length === 0 ? (
-          <p className="text-sm text-text-secondary">Noch keine Einträge.</p>
-        ) : (
-          <ul className="space-y-3">
-            {item.bautagebuch.map((e) => (
-              <BautagebuchEintragCard key={e.id} auftragId={item.id} eintrag={e} />
-            ))}
-          </ul>
-        )}
+        {editingEintrag ? (
+          <BautagebuchForm
+            auftragId={item.id}
+            eintrag={editingEintrag}
+            onDone={() => setEditId(null)}
+          />
+        ) : null}
+
+        <BautagebuchAccordionList
+          eintraege={accordionEintraege}
+          className="!border-t-0 !pt-0"
+          emptyText="Noch keine Einträge im Bautagebuch."
+        />
       </div>
     </div>
   );

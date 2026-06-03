@@ -11,6 +11,7 @@ import {
   type MouseEvent as ReactMouseEvent,
 } from "react";
 
+import { track } from "@/lib/analytics";
 import { SITE_CONFIG } from "@/lib/config";
 
 type KatIconName = "haus" | "werkzeug" | "garten" | "shield" | "blitz";
@@ -486,13 +487,20 @@ export function LeistungenCarousel() {
                   <div className="leistung-card-name">{l.name}</div>
                   <p className="leistung-card-hint">{l.hint}</p>
                   <div className="leistung-card-cta">
-                    <Link href={l.href} className="leistung-card-cta-link">
+                    <Link
+                      href={l.href}
+                      className="leistung-card-cta-link"
+                      onClick={() => track.leistungLink(`${l.name} — Infos`, l.href)}
+                    >
                       Mehr Infos
                     </Link>
                     <Link
                       href={l.rechnerHref}
                       className="leistung-card-cta-arrow"
                       title="Preisrahmen berechnen →"
+                      onClick={() =>
+                        track.leistungLink(`${l.name} — Rechner`, l.rechnerHref)
+                      }
                     >
                       <svg viewBox="0 0 12 12" fill="none" aria-hidden>
                         <path

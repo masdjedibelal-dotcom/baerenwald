@@ -14,48 +14,29 @@ import {
   MessagesSquare,
 } from "lucide-react";
 
-function PdfFileIcon({ className }: { className?: string }) {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      aria-hidden
-      className={className}
-    >
-      <path
-        d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6Z"
-        stroke="currentColor"
-        strokeWidth="1.75"
-        strokeLinejoin="round"
-      />
-      <path
-        d="M14 2v6h6M8 13h8M8 17h5"
-        stroke="currentColor"
-        strokeWidth="1.75"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-      <path
-        d="M7 10h3.5v3H7V10Z"
-        fill="currentColor"
-        stroke="none"
-      />
-    </svg>
-  );
-}
-
-function pdfIframeSrc(url: string): string {
-  const base = normalizeAttachmentUrl(url);
-  return base.includes("#") ? base : `${base}#toolbar=0&navpanes=0`;
-}
-
+import { BautagebuchAccordionList } from "@/components/shared/BautagebuchAccordionList";
+import {
+  DokumenteTabelle,
+  portalDokumenteToZeilen,
+} from "@/components/shared/DokumenteTabelle";
 import { SITE_CONFIG } from "@/lib/config";
+import { labelBereich, labelSituation } from "@/lib/lead-funnel-labels";
 import {
   fmtPortalStatus,
   sanitizeCustomerText,
   type PortalDetailSection,
 } from "@/lib/portal/portal-display";
+import {
+  isPortalAnfragePhaseStatus,
+  isPortalAngebotPhaseStatus,
+  isPortalAuftragPhaseStatus,
+} from "@/lib/portal/portal-pipeline";
 import type { PortalDokument } from "@/lib/portal/portal-dokumente";
+import {
+  portalObjektKurzlabel,
+  prependObjektSection,
+  type PortalObjekt,
+} from "@/lib/portal/portal-objekt";
 import { cn } from "@/lib/utils";
 import { PortalBaerenwaldGpt } from "@/components/portal/PortalBaerenwaldGpt";
 
@@ -82,6 +63,9 @@ type PortalPosition = {
 type PortalAuftrag = {
   id: string;
   titel: string;
+  lead_id?: string;
+  angebot_id?: string;
+  objekt?: PortalObjekt | null;
   status?: string;
   fortschritt?: number;
   budget?: number;
@@ -98,6 +82,7 @@ type PortalAuftrag = {
 type PortalAngebot = {
   id: string;
   titel?: string;
+  objekt?: PortalObjekt | null;
   status_einfach?: string;
   status?: string;
   lead_id?: string;
@@ -117,6 +102,7 @@ type PortalLead = {
   bereiche?: string[];
   created_at?: string;
   status?: string;
+  objekt?: PortalObjekt | null;
   plz?: string;
   preis_min?: number;
   preis_max?: number;
@@ -145,22 +131,40 @@ type DetailItem = {
   anfrageVorhaben?: string;
   sections: PortalDetailSection[];
   tags?: string[];
-  updates?: Array<{ id?: string; date?: string; title: string; note?: string }>;
+  bautagebuch?: PortalBautagebuchEntry[];
   dokumente?: PortalDokument[];
-  angebotDetail?: boolean;
 };
 
 function formatAnfrageGewerk(bereiche?: string[]): string | undefined {
   const parts = (bereiche ?? [])
-    .map((b) => b.trim())
-    .filter(Boolean);
+    .map((b) => labelBereich(b.trim()))
+    .filter((l) => l && l !== "—");
   if (parts.length === 0) return undefined;
   return parts.join(", ");
 }
 
-/** Listen- und Detail-Titel: nur die Angabe (z. B. „Bad Sanierung“), kein Gewerk-Label. */
+/** Listen- und Detail-Titel: Vorhaben + Gewerk, z. B. „Erneuern · Bad“. */
 function anfrageDisplayTitle(vorhaben?: string, gewerk?: string): string {
-  return vorhaben?.trim() || gewerk?.trim() || "Anfrage";
+  const v = vorhaben?.trim();
+  const g = gewerk?.trim();
+  if (v && g) return `${v} · ${g}`;
+  return v || g || "Anfrage";
+}
+
+function anfrageTitleFromLead(lead: Pick<PortalLead, "situation" | "bereiche">): {
+  title: string;
+  anfrageVorhaben?: string;
+  anfrageGewerk?: string;
+} {
+  const vorhabenLabel = labelSituation(lead.situation);
+  const gewerk = formatAnfrageGewerk(lead.bereiche);
+  const vorhaben =
+    vorhabenLabel !== "—" ? vorhabenLabel : undefined;
+  return {
+    title: anfrageDisplayTitle(vorhaben, gewerk),
+    anfrageVorhaben: vorhaben,
+    anfrageGewerk: gewerk,
+  };
 }
 
 const MENU_ITEMS: Array<{
@@ -340,33 +344,22 @@ function PortalDetailPanel({
         </section>
       ) : null}
 
-      {item.updates && item.updates.length > 0 ? (
-        <section className="space-y-2 border-t border-border-light pt-4">
-          <h4 className="text-xs font-semibold uppercase tracking-wider text-text-tertiary">
-            Bautagebuch
-          </h4>
-          <ul className="space-y-2">
-            {item.updates.map((u) => (
-              <li
-                key={u.id || `${u.title}-${u.date}`}
-                className="rounded-xl border border-border-light bg-muted/30 p-3"
-              >
-                <p className="text-xs text-text-tertiary">{fmtDate(u.date)}</p>
-                <p className="text-sm font-semibold text-text-primary">{u.title}</p>
-                {u.note ? (
-                  <p className="mt-1 text-sm leading-relaxed text-text-secondary">{u.note}</p>
-                ) : null}
-              </li>
-            ))}
-          </ul>
-        </section>
-      ) : null}
+      <DokumenteTabelle
+        dokumente={portalDokumenteToZeilen(item.dokumente ?? [])}
+        heading="Dokumente"
+        emptyText="Noch keine Dokumente."
+      />
 
-      {item.dokumente && item.dokumente.length > 0 ? (
-        <PortalDokumenteList
-          dokumente={item.dokumente}
-          heading={item.angebotDetail ? "Dokumente" : undefined}
-          pdfInlinePreview={item.angebotDetail}
+      {item.bautagebuch !== undefined ? (
+        <BautagebuchAccordionList
+          eintraege={(item.bautagebuch ?? []).map((e) => ({
+            id: e.id ?? `${e.titel}-${e.datum}`,
+            datum: e.datum ?? e.created_at,
+            titel: e.titel ?? "Update",
+            beschreibung: e.notiz,
+            fotos: e.fotos_urls,
+          }))}
+          emptyText="Noch keine Einträge im Bautagebuch."
         />
       ) : null}
 
@@ -379,105 +372,6 @@ function PortalDetailPanel({
       ) : null}
     </div>
   );
-}
-
-function PortalDokumenteList({
-  dokumente,
-  heading = "Dokumente & Anhänge",
-  pdfInlinePreview = false,
-}: {
-  dokumente: PortalDokument[];
-  heading?: string;
-  pdfInlinePreview?: boolean;
-}) {
-  if (dokumente.length === 0) return null;
-
-  const pdfDoc =
-    dokumente.find((d) => d.art === "angebot") ?? dokumente[0];
-  const pdfUrl = pdfDoc ? normalizeAttachmentUrl(pdfDoc.href) : null;
-
-  if (pdfInlinePreview && pdfDoc && pdfUrl) {
-    return (
-      <div className="space-y-3 border-t border-border-light pt-3">
-        <p className="text-xs font-semibold uppercase tracking-wider text-text-tertiary">
-          {heading}
-        </p>
-        <div className="flex items-center gap-3 rounded-lg border border-border-light bg-muted/30 px-3 py-2.5">
-          <span className="min-w-0 flex-1">
-            <span className="block text-sm font-semibold text-text-primary">
-              {pdfDoc.name}
-            </span>
-            {(pdfDoc.subtitle || pdfDoc.datum) && (
-              <span className="mt-0.5 block text-xs text-text-tertiary">
-                {[pdfDoc.subtitle, pdfDoc.datum ? fmtDate(pdfDoc.datum) : null]
-                  .filter(Boolean)
-                  .join(" · ")}
-              </span>
-            )}
-          </span>
-          <a
-            href={pdfUrl}
-            target="_blank"
-            rel="noreferrer"
-            className="grid h-10 w-10 shrink-0 place-items-center rounded-lg border border-border-light bg-white text-[#c62828] transition-colors hover:bg-red-50"
-            aria-label="PDF in neuem Tab öffnen"
-          >
-            <PdfFileIcon className="h-5 w-5" />
-          </a>
-        </div>
-        <div className="overflow-hidden rounded-xl border border-border-light bg-muted/20">
-          <iframe
-            src={pdfIframeSrc(pdfUrl)}
-            title={`${pdfDoc.name} (PDF)`}
-            className="h-[min(70vh,560px)] w-full bg-white"
-          />
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="space-y-2 border-t border-border-light pt-3">
-      <p className="text-xs font-semibold uppercase tracking-wider text-text-tertiary">
-        {heading}
-      </p>
-      <ul className="space-y-2">
-        {dokumente.map((doc) => {
-          const url = normalizeAttachmentUrl(doc.href);
-          return (
-            <li key={doc.id}>
-              <a
-                href={url}
-                target="_blank"
-                rel="noreferrer"
-                className="flex w-full items-start justify-between gap-3 rounded-lg border border-border-light bg-muted/30 px-3 py-2 transition-colors hover:bg-muted/50"
-              >
-                <span className="min-w-0">
-                  <span className="block text-sm font-semibold text-text-primary">
-                    {doc.name}
-                  </span>
-                  {(doc.subtitle || doc.datum) && (
-                    <span className="mt-0.5 block text-xs text-text-tertiary">
-                      {[doc.subtitle, doc.datum ? fmtDate(doc.datum) : null]
-                        .filter(Boolean)
-                        .join(" · ")}
-                    </span>
-                  )}
-                </span>
-                <span className="shrink-0 text-xs font-medium text-accent">
-                  Öffnen
-                </span>
-              </a>
-            </li>
-          );
-        })}
-      </ul>
-    </div>
-  );
-}
-
-function normalizeAttachmentUrl(url: string): string {
-  return /^https?:\/\//i.test(url) ? url : `https://${url}`;
 }
 
 function detailRows(
@@ -507,11 +401,48 @@ export function PortalClient({
 }: PortalClientProps) {
   const [section, setSection] = useState<SectionId>("uebersicht");
   const [overviewTab, setOverviewTab] = useState<OverviewTabId>("anfragen");
+  const leadsAnfragePhase = useMemo(
+    () => leads.filter((l) => isPortalAnfragePhaseStatus(l.status)),
+    [leads]
+  );
+
+  const leadById = useMemo(
+    () => new Map(leads.map((l) => [l.id, l])),
+    [leads]
+  );
+
+  const angeboteTab = useMemo(() => {
+    const leadIdsMitAuftrag = new Set(
+      auftraege.map((a) => a.lead_id).filter((id): id is string => Boolean(id))
+    );
+    const angebotIdsMitAuftrag = new Set(
+      auftraege.map((a) => a.angebot_id).filter((id): id is string => Boolean(id))
+    );
+    return angebote.filter((a) => {
+      if (a.lead_id && leadIdsMitAuftrag.has(a.lead_id)) return false;
+      if (angebotIdsMitAuftrag.has(a.id)) return false;
+      const lead = a.lead_id ? leadById.get(a.lead_id) : undefined;
+      if (lead && isPortalAuftragPhaseStatus(lead.status)) return false;
+      if (isPortalAuftragPhaseStatus(a.status_einfach || a.status)) return false;
+      return true;
+    });
+  }, [angebote, auftraege, leadById]);
+
+  const leadsNurAngebotPhase = useMemo(
+    () =>
+      leads.filter(
+        (l) =>
+          isPortalAngebotPhaseStatus(l.status) &&
+          !angeboteTab.some((a) => a.lead_id === l.id)
+      ),
+    [leads, angeboteTab]
+  );
+
   const [selectedAnfrageId, setSelectedAnfrageId] = useState<string | null>(
-    leads[0]?.id ?? null
+    () => leadsAnfragePhase[0]?.id ?? null
   );
   const [selectedAngebotId, setSelectedAngebotId] = useState<string | null>(
-    angebote[0]?.id ?? null
+    () => angeboteTab[0]?.id ?? leadsNurAngebotPhase[0]?.id ?? null
   );
   const [selectedAuftragId, setSelectedAuftragId] = useState<string | null>(
     auftraege[0]?.id ?? null
@@ -529,10 +460,11 @@ export function PortalClient({
   const abgeschlosseneAuftraegeCount = auftraege.filter((a) =>
     isAuftragAbgeschlossen(a)
   ).length;
-  const offeneAnfragenCount = leads.filter((lead) => !isCompletedStatus(lead.status)).length;
+  const offeneAnfragenCount = leadsAnfragePhase.length;
+
   const anfragenItems = useMemo<DetailItem[]>(
     () =>
-      [...leads]
+      [...leadsAnfragePhase]
         .sort(
           (a, b) =>
             new Date(b.created_at || 0).getTime() -
@@ -546,46 +478,48 @@ export function PortalClient({
                   typeof lead.preis_max === "number"
                 ? `${fmtMoney(lead.preis_min)} – ${fmtMoney(lead.preis_max)}`
                 : undefined;
-          const gewerkBullets = (lead.bereiche ?? [])
-            .map((b) => b.trim())
-            .filter(Boolean);
-          const gewerk = formatAnfrageGewerk(gewerkBullets);
-          const vorhaben = sanitizeCustomerText(lead.situation, 500);
-          const sections: PortalDetailSection[] = [
-            {
-              heading: "Überblick",
-              rows: detailRows([
-                { label: "Anfragedatum", value: fmtDate(lead.created_at) },
-                { label: "PLZ / Ort", value: lead.plz },
-                { label: "Preisrahmen", value: preisrahmen },
-              ]),
-            },
-          ];
+          const { title, anfrageVorhaben, anfrageGewerk } = anfrageTitleFromLead(lead);
+          const sections = prependObjektSection(
+            [
+              {
+                heading: "Überblick",
+                rows: detailRows([
+                  { label: "Anfragedatum", value: fmtDate(lead.created_at) },
+                  { label: "Preisrahmen", value: preisrahmen },
+                ]),
+              },
+            ],
+            lead.objekt
+          );
           return {
             id: lead.id,
             date: lead.created_at,
-            title: anfrageDisplayTitle(vorhaben, gewerk),
-            anfrageGewerk: gewerk,
-            anfrageVorhaben: vorhaben,
-            status: lead.status || "neu",
-            summary: lead.plz ? `PLZ ${lead.plz}` : undefined,
+            title,
+            anfrageGewerk,
+            anfrageVorhaben,
+            status: fmtPortalStatus(lead.status || "neu"),
+            summary: lead.objekt
+              ? portalObjektKurzlabel(lead.objekt)
+              : lead.plz
+                ? `PLZ ${lead.plz}`
+                : undefined,
             sections,
             dokumente: lead.dokumente ?? [],
           };
         }),
-    [leads]
+    [leadsAnfragePhase]
   );
 
-  const angeboteItems = useMemo<DetailItem[]>(
-    () =>
-      [...angebote]
-        .sort(
-          (a, b) =>
-            new Date(b.created_at || 0).getTime() -
-            new Date(a.created_at || 0).getTime()
-        )
-        .map((a) => {
-          const sections: PortalDetailSection[] = [
+  const angeboteItems = useMemo<DetailItem[]>(() => {
+    const fromAngebote = [...angeboteTab]
+      .sort(
+        (a, b) =>
+          new Date(b.created_at || 0).getTime() -
+          new Date(a.created_at || 0).getTime()
+      )
+      .map((a) => {
+        const sections = prependObjektSection(
+          [
             {
               heading: "Überblick",
               rows: detailRows([
@@ -596,62 +530,114 @@ export function PortalClient({
                 },
                 {
                   label: "Preis (Brutto)",
-                  value: fmtMoney(a.betrag) !== "—" ? fmtMoney(a.betrag) : undefined,
+                  value:
+                    fmtMoney(a.betrag) !== "—" ? fmtMoney(a.betrag) : undefined,
                 },
               ]),
             },
-          ];
-          return {
-            id: a.id,
-            date: a.created_at,
-            title:
-              sanitizeCustomerText(a.titel, 200) ||
-              (a.angebotsnr ? `Angebot ${a.angebotsnr}` : "Angebot"),
-            status: a.status_einfach || a.status || "offen",
-            angebotDetail: true,
-            sections,
-            dokumente: a.dokumente ?? [],
-          };
-        }),
-    [angebote]
+          ],
+          a.objekt
+        );
+        const st = a.status_einfach || a.status || "angebot";
+        return {
+          id: a.id,
+          date: a.created_at,
+          title:
+            sanitizeCustomerText(a.titel, 200) ||
+            (a.angebotsnr ? `Angebot ${a.angebotsnr}` : "Angebot"),
+          status: fmtPortalStatus(st),
+          summary: a.objekt ? portalObjektKurzlabel(a.objekt) : undefined,
+          sections,
+          dokumente: a.dokumente ?? [],
+        };
+      });
+
+    const fromLeads = [...leadsNurAngebotPhase]
+      .sort(
+        (a, b) =>
+          new Date(b.created_at || 0).getTime() -
+          new Date(a.created_at || 0).getTime()
+      )
+      .map((lead) => {
+        const { title, anfrageVorhaben, anfrageGewerk } = anfrageTitleFromLead(lead);
+        return {
+          id: `lead-${lead.id}`,
+          date: lead.created_at,
+          title,
+          anfrageVorhaben,
+          anfrageGewerk,
+          status: fmtPortalStatus(lead.status || "angebot"),
+          summary: lead.objekt
+            ? portalObjektKurzlabel(lead.objekt)
+            : lead.plz
+              ? `PLZ ${lead.plz}`
+              : undefined,
+          sections: prependObjektSection(
+            [
+              {
+                heading: "Überblick",
+                rows: detailRows([
+                  { label: "Anfragedatum", value: fmtDate(lead.created_at) },
+                ]),
+              },
+            ],
+            lead.objekt
+          ),
+          dokumente: lead.dokumente ?? [],
+        };
+      });
+
+    return [...fromAngebote, ...fromLeads];
+  }, [angeboteTab, leadsNurAngebotPhase]);
+
+  const leadsNurAuftragPhase = useMemo(
+    () =>
+      leads.filter(
+        (l) =>
+          isPortalAuftragPhaseStatus(l.status) &&
+          !auftraege.some((a) => a.lead_id === l.id)
+      ),
+    [leads, auftraege]
   );
 
-  const auftraegeItems = useMemo<DetailItem[]>(
-    () =>
-      [...auftraege]
-        .sort((a, b) => {
-          const aDone = isAuftragAbgeschlossen(a) ? 1 : 0;
-          const bDone = isAuftragAbgeschlossen(b) ? 1 : 0;
-          if (aDone !== bDone) return aDone - bDone;
-          return (
-            new Date(b.start_datum || b.created_at || 0).getTime() -
-            new Date(a.start_datum || a.created_at || 0).getTime()
+  const auftraegeItems = useMemo<DetailItem[]>(() => {
+    const fromAuftraege = [...auftraege]
+      .sort((a, b) => {
+        const aDone = isAuftragAbgeschlossen(a) ? 1 : 0;
+        const bDone = isAuftragAbgeschlossen(b) ? 1 : 0;
+        if (aDone !== bDone) return aDone - bDone;
+        return (
+          new Date(b.start_datum || b.created_at || 0).getTime() -
+          new Date(a.start_datum || a.created_at || 0).getTime()
+        );
+      })
+      .map((a) => {
+          const sections = prependObjektSection(
+            [
+              {
+                heading: "Projekt",
+                rows: detailRows([
+                  {
+                    label: "Status",
+                    value: fmtPortalStatus(
+                      isAuftragAbgeschlossen(a)
+                        ? "abgeschlossen"
+                        : a.status || "offen"
+                    ),
+                  },
+                  { label: "Fortschritt", value: `${a.fortschritt ?? 0} %` },
+                  { label: "Start", value: fmtDate(a.start_datum || a.created_at) },
+                  { label: "Vorauss. Ende", value: fmtDate(a.end_datum) },
+                  {
+                    label: "Budget",
+                    value:
+                      typeof a.budget === "number" ? fmtMoney(a.budget) : undefined,
+                  },
+                ]),
+              },
+            ],
+            a.objekt
           );
-        })
-        .map((a) => {
-          const sections: PortalDetailSection[] = [
-            {
-              heading: "Projekt",
-              rows: detailRows([
-                {
-                  label: "Status",
-                  value: fmtPortalStatus(
-                    isAuftragAbgeschlossen(a)
-                      ? "abgeschlossen"
-                      : a.status || "offen"
-                  ),
-                },
-                { label: "Fortschritt", value: `${a.fortschritt ?? 0} %` },
-                { label: "Start", value: fmtDate(a.start_datum || a.created_at) },
-                { label: "Vorauss. Ende", value: fmtDate(a.end_datum) },
-                {
-                  label: "Budget",
-                  value:
-                    typeof a.budget === "number" ? fmtMoney(a.budget) : undefined,
-                },
-              ]),
-            },
-          ];
           const naechster = sanitizeCustomerText(a.naechster_schritt, 300);
           if (naechster) {
             sections.push({ heading: "Nächster Schritt", text: naechster });
@@ -667,10 +653,13 @@ export function PortalClient({
             id: a.id,
             date: a.start_datum || a.created_at,
             title: a.titel,
-            status: isAuftragAbgeschlossen(a)
-              ? "abgeschlossen"
-              : a.status || "offen",
+            status: fmtPortalStatus(
+              isAuftragAbgeschlossen(a)
+                ? "abgeschlossen"
+                : a.status || "auftrag"
+            ),
             summary: [
+              a.objekt ? portalObjektKurzlabel(a.objekt) : null,
               `${a.fortschritt ?? 0} %`,
               a.start_datum ? `Start ${fmtDate(a.start_datum)}` : null,
             ]
@@ -678,19 +667,56 @@ export function PortalClient({
               .join(" · "),
             sections,
             tags: tags.length > 0 ? tags : undefined,
-            updates: (a.bautagebuch ?? [])
-              .slice(0, 6)
-              .map((u) => ({
-                id: u.id,
-                date: u.datum || u.created_at,
-                title: u.titel || "Update",
-                note: sanitizeCustomerText(u.notiz, 200),
-              })),
+            bautagebuch: a.bautagebuch ?? [],
             dokumente: a.dokumente ?? [],
           };
-        }),
-    [auftraege]
-  );
+        });
+
+    const fromLeads = [...leadsNurAuftragPhase]
+      .sort(
+        (a, b) =>
+          new Date(b.created_at || 0).getTime() -
+          new Date(a.created_at || 0).getTime()
+      )
+      .map((lead) => {
+        const { title, anfrageVorhaben, anfrageGewerk } = anfrageTitleFromLead(lead);
+        const abgeschlossen = isCompletedStatus(lead.status);
+        return {
+          id: `lead-${lead.id}`,
+          date: lead.created_at,
+          title,
+          anfrageVorhaben,
+          anfrageGewerk,
+          status: fmtPortalStatus(
+            abgeschlossen ? "abgeschlossen" : lead.status || "auftrag"
+          ),
+          summary: lead.objekt
+            ? portalObjektKurzlabel(lead.objekt)
+            : lead.plz
+              ? `PLZ ${lead.plz}`
+              : undefined,
+          sections: prependObjektSection(
+            [
+              {
+                heading: "Projekt",
+                rows: detailRows([
+                  {
+                    label: "Status",
+                    value: fmtPortalStatus(
+                      abgeschlossen ? "abgeschlossen" : lead.status || "auftrag"
+                    ),
+                  },
+                ]),
+              },
+            ],
+            lead.objekt
+          ),
+          dokumente: lead.dokumente ?? [],
+        };
+      });
+
+    return [...fromAuftraege, ...fromLeads];
+  }, [auftraege, leadsNurAuftragPhase]);
 
   const selectedAnfrage =
     anfragenItems.find((i) => i.id === selectedAnfrageId) ?? anfragenItems[0];
