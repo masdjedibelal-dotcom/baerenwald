@@ -7,3 +7,41 @@ export function partnerLoginUrl(): string {
 export function partnerDashboardUrl(): string {
   return `${SITE_CONFIG.url}/partner`;
 }
+
+export function partnerRegisterUrl(): string {
+  return `${SITE_CONFIG.url}/partner/registrieren`;
+}
+
+/** Direktlink ins Portal (Aufträge-Tab, ein Auftrag). */
+export function partnerAuftragPortalUrl(auftragId: string): string {
+  const id = auftragId.trim();
+  return `${SITE_CONFIG.url}/partner?section=auftraege&auftrag=${encodeURIComponent(id)}`;
+}
+
+/** Direktlink: Anfragen-Tab, eine HW-Anfrage. */
+export function partnerAnfragePortalUrl(anfrageId: string): string {
+  const id = anfrageId.trim();
+  return `${SITE_CONFIG.url}/partner?section=anfragen&id=${encodeURIComponent(id)}`;
+}
+
+export function partnerLoginForAnfrageUrl(anfrageId: string): string {
+  const next = partnerAnfragePortalUrl(anfrageId);
+  return `${partnerLoginUrl()}?next=${encodeURIComponent(next)}`;
+}
+
+/** Direktlink: Angebote-Tab (nach Annahme Preis + PDF einreichen). */
+export function partnerAngebotPortalUrl(anfrageId: string): string {
+  const id = anfrageId.trim();
+  return `${SITE_CONFIG.url}/partner?section=angebote&id=${encodeURIComponent(id)}`;
+}
+
+export function partnerLoginForAngebotUrl(anfrageId: string): string {
+  const next = partnerAngebotPortalUrl(anfrageId);
+  return `${partnerLoginUrl()}?next=${encodeURIComponent(next)}`;
+}
+
+/** Login mit Weiterleitung zum Auftrag (für E-Mails). */
+export function partnerLoginForAuftragUrl(auftragId: string): string {
+  const next = partnerAuftragPortalUrl(auftragId);
+  return `${partnerLoginUrl()}?next=${encodeURIComponent(next)}`;
+}

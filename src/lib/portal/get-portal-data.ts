@@ -4,6 +4,10 @@ import {
   dokumenteFromAuftrag,
   dokumenteFromUrls,
 } from "@/lib/portal/portal-dokumente";
+import {
+  resolvePortalObjekt,
+  type PortalObjekt,
+} from "@/lib/portal/portal-objekt";
 import { isSupabaseConfigured, supabaseAdmin } from "@/lib/supabase";
 
 type PortalPositionRow = {
@@ -24,10 +28,20 @@ type PortalBautagebuchRow = {
   fotos_urls: string[] | null;
 };
 
+type PortalKundenObjektRow = {
+  id: string;
+  titel: string | null;
+  strasse: string | null;
+  hausnummer: string | null;
+  plz: string | null;
+  ort: string | null;
+};
+
 type PortalAngebotRow = {
   id: string;
   angebotsnr: string | null;
   lead_id: string | null;
+  kunde_objekt_id: string | null;
   status_einfach: string | null;
   gesamt_fix: number | null;
   gesamt_min: number | null;
@@ -91,21 +105,67 @@ export async function getPortalDataForKunde(kundeId: string) {
 
   const { data: kunde } = await supabaseAdmin
     .from("kunden")
-    .select("id, name, email, plz, auth_user_id")
+    .select("id, name, email, plz, ort, adresse, auth_user_id")
     .eq("id", id)
     .maybeSingle();
 
   if (!kunde) return null;
 
+  const kundeRow = kunde as {
+    id: string;
+    name: string | null;
+    adresse: string | null;
+    plz: string | null;
+    ort: string | null;
+  };
+
+  const { data: objekteRows } = await supabaseAdmin
+    .from("kunden_objekte")
+    .select("id, titel, strasse, hausnummer, plz, ort")
+    .eq("kunde_id", kundeRow.id)
+    .order("titel", { ascending: true });
+
+  const objektById = new Map<string, PortalKundenObjektRow>();
+  for (const o of objekteRows ?? []) {
+    objektById.set(String((o as { id: string }).id), o as PortalKundenObjektRow);
+  }
+
+  const resolveObj = (
+    objektId: string | null | undefined,
+    leadPlz?: string | null
+  ): PortalObjekt | null =>
+    resolvePortalObjekt({
+      objektId,
+      objektById,
+      kunde: kundeRow,
+      leadPlz,
+    });
+
   const { data: leads } = await supabaseAdmin
     .from("leads")
     .select(
-      "id, situation, bereiche, status, created_at, plz, preis_min, preis_max, budget_ca, kontakt_nachricht, funnel_daten"
+      "id, situation, bereiche, status, created_at, plz, preis_min, preis_max, budget_ca, kontakt_nachricht, funnel_daten, kunde_objekt_id"
     )
     .eq("kunde_id", kunde.id)
     .order("created_at", { ascending: false });
 
   const leadIds = (leads ?? []).map((l) => l.id);
+
+  const leadObjektIdByLeadId = new Map<string, string | null>();
+  const leadPlzByLeadId = new Map<string, string | null>();
+  for (const l of leads ?? []) {
+    const raw = l as {
+      id: string;
+      kunde_objekt_id?: string | null;
+      plz?: string | null;
+    };
+    const lid = String(raw.id);
+    leadObjektIdByLeadId.set(
+      lid,
+      raw.kunde_objekt_id != null ? String(raw.kunde_objekt_id) : null
+    );
+    leadPlzByLeadId.set(lid, raw.plz ?? null);
+  }
 
   const auftragSelect =
     "id, titel, status, fortschritt, budget, start_datum, end_datum, abnahme_datum, abnahme_protokoll_url, naechster_schritt, phasen, created_at, lead_id, kunde_id, angebot_id, updated_at";
@@ -165,7 +225,7 @@ export async function getPortalDataForKunde(kundeId: string) {
       ? await supabaseAdmin
           .from("angebote")
           .select(
-            "id, angebotsnr, lead_id, status_einfach, gesamt_fix, gesamt_min, gesamt_max, gueltig_bis, leistungsumfang, notizen, created_at, gesendet_am, pdf_url"
+            "id, angebotsnr, lead_id, kunde_objekt_id, status_einfach, gesamt_fix, gesamt_min, gesamt_max, gueltig_bis, leistungsumfang, notizen, created_at, gesendet_am, pdf_url"
           )
           .in("lead_id", leadIds)
           .order("created_at", { ascending: false })
@@ -200,18 +260,25 @@ export async function getPortalDataForKunde(kundeId: string) {
     kunde,
     auftraege: auftraege.map((a) => {
       const auftragId = String(a.id);
-      const bautagebuchFotos = (bautagebuch ?? [])
-        .filter((b) => String(b.auftrag_id) === auftragId)
-        .flatMap((b) => (Array.isArray(b.fotos_urls) ? b.fotos_urls : []));
       const angebotId =
         typeof a.angebot_id === "string" ? a.angebot_id : undefined;
       const angebot = angebotId ? angeboteById.get(angebotId) : undefined;
+      const leadId =
+        typeof a.lead_id === "string" ? a.lead_id : undefined;
+      const objektId =
+        (angebot as { kunde_objekt_id?: string | null } | undefined)
+          ?.kunde_objekt_id ??
+        (leadId ? leadObjektIdByLeadId.get(leadId) : null);
+      const leadPlz = leadId ? leadPlzByLeadId.get(leadId) : null;
 
       return {
         ...a,
         id: auftragId,
+        lead_id: leadId,
+        angebot_id: angebotId,
         titel: typeof a.titel === "string" ? a.titel : "Auftrag",
         status: typeof a.status === "string" ? a.status : undefined,
+        objekt: resolveObj(objektId, leadPlz),
         dokumente: dokumenteFromAuftrag(
           {
             id: auftragId,
@@ -234,7 +301,6 @@ export async function getPortalDataForKunde(kundeId: string) {
             timeline: (timeline ?? []).filter(
               (t) => String(t.auftrag_id) === auftragId
             ),
-            bautagebuchFotoUrls: bautagebuchFotos,
           }
         ),
         positionen: (positionen ?? [])
@@ -264,11 +330,17 @@ export async function getPortalDataForKunde(kundeId: string) {
     }),
     angebote: (angebote ?? []).map((a) => {
       const display = buildAngebotPortalDisplay(a);
+      const leadId = a.lead_id != null ? String(a.lead_id) : null;
+      const objektId =
+        a.kunde_objekt_id ??
+        (leadId ? leadObjektIdByLeadId.get(leadId) : null);
+      const leadPlz = leadId ? leadPlzByLeadId.get(leadId) : null;
       return {
         ...a,
         titel: display.titel,
         leistungen: display.leistungen,
         hinweise: display.hinweise,
+        objekt: resolveObj(objektId, leadPlz),
         betrag:
           typeof a.gesamt_fix === "number"
             ? a.gesamt_fix
@@ -288,9 +360,15 @@ export async function getPortalDataForKunde(kundeId: string) {
         }),
       };
     }),
-    leads: (leads ?? []).map((lead) => ({
-      ...lead,
-      dokumente: dokumenteFromUrls([
+    leads: (leads ?? []).map((lead) => {
+      const raw = lead as {
+        kunde_objekt_id?: string | null;
+        plz?: string | null;
+      };
+      return {
+        ...lead,
+        objekt: resolveObj(raw.kunde_objekt_id, raw.plz),
+        dokumente: dokumenteFromUrls([
         ...extractUrlsFromUnknown(
           (lead as { funnel_daten?: unknown }).funnel_daten
         ),
@@ -298,6 +376,7 @@ export async function getPortalDataForKunde(kundeId: string) {
           (lead as { kontakt_nachricht?: unknown }).kontakt_nachricht
         ),
       ]),
-    })),
+      };
+    }),
   };
 }

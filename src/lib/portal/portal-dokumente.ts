@@ -125,7 +125,6 @@ export function dokumenteFromAuftrag(
     angebot?: AngebotDokumentInput | null;
     rechnungen?: RechnungDokumentInput[];
     timeline?: TimelineDokumentInput[];
-    bautagebuchFotoUrls?: string[];
   }
 ): PortalDokument[] {
   const rows: PortalDokument[] = [];
@@ -152,20 +151,6 @@ export function dokumenteFromAuftrag(
 
   rows.push(...dokumenteFromRechnungen(opts.rechnungen ?? []));
   rows.push(...dokumenteFromTimeline(opts.timeline ?? []));
-
-  (opts.bautagebuchFotoUrls ?? []).forEach((href, index) => {
-    if (!href?.trim()) return;
-    rows.push({
-      id: `bautagebuch-foto-${auftrag.id}-${index}`,
-      name:
-        (opts.bautagebuchFotoUrls?.length ?? 0) > 1
-          ? `Baustellenfoto (${index + 1})`
-          : "Baustellenfoto",
-      subtitle: "Bautagebuch",
-      href: href.trim(),
-      art: "foto",
-    });
-  });
 
   return rows.sort((a, b) => {
     const ta = new Date(a.datum || 0).getTime();

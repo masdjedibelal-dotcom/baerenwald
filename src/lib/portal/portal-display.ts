@@ -207,6 +207,8 @@ export function fmtPortalStatus(status?: string | null): string {
     planung: "Planung",
     abgeschlossen: "Abgeschlossen",
     fertig: "Abgeschlossen",
+    angebot: "Angebot",
+    auftrag: "Auftrag",
     storniert: "Storniert",
   };
   return labels[s] || status.replace(/_/g, " ");

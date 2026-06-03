@@ -1,3 +1,4 @@
+import { isPartnerAnfrageOffen } from "@/lib/partner/partner-anfrage-status";
 import { parseAngebotPositionen } from "@/lib/partner/parse-angebot-positionen";
 import {
   resolvePartnerFileUrl,
@@ -10,8 +11,8 @@ export type PartnerAnfrageItem = {
   angebot_id: string;
   status: string;
   gewerk_name: string;
-  gesendet_at?: string;
-  antwort_at?: string;
+  gesendet_at?: string | null;
+  antwort_at?: string | null;
   antwort_notiz?: string;
   ablehnung_grund?: string;
   aufgabe_notiz?: string;
@@ -29,6 +30,9 @@ export type PartnerAnfrageItem = {
   hw_preis_brutto?: number | null;
   hw_angebot_pdf_url?: string | null;
   hw_angebot_pdf_signed_url?: string | null;
+  hw_rechnung_pdf_url?: string | null;
+  hw_rechnung_pdf_signed_url?: string | null;
+  hw_rechnung_eingereicht_at?: string;
   hw_notiz?: string | null;
 };
 
@@ -106,6 +110,8 @@ export async function getPartnerDataForHandwerker(handwerkerId: string) {
       hw_preis_netto,
       hw_preis_brutto,
       hw_angebot_pdf_url,
+      hw_rechnung_pdf_url,
+      hw_rechnung_eingereicht_at,
       hw_notiz,
       gewerke(name),
       angebote(
@@ -140,6 +146,7 @@ export async function getPartnerDataForHandwerker(handwerkerId: string) {
       );
 
       const pdfPath = (raw.hw_angebot_pdf_url as string | null) ?? null;
+      const rechnungPath = (raw.hw_rechnung_pdf_url as string | null) ?? null;
 
       return {
         id: String(raw.id),
@@ -167,6 +174,12 @@ export async function getPartnerDataForHandwerker(handwerkerId: string) {
         hw_angebot_pdf_signed_url: pdfPath
           ? await resolvePartnerFileUrl(pdfPath)
           : null,
+        hw_rechnung_pdf_url: rechnungPath,
+        hw_rechnung_pdf_signed_url: rechnungPath
+          ? await resolvePartnerFileUrl(rechnungPath)
+          : null,
+        hw_rechnung_eingereicht_at:
+          (raw.hw_rechnung_eingereicht_at as string | null) ?? undefined,
         hw_notiz: (raw.hw_notiz as string | null) ?? null,
       };
     })
@@ -182,6 +195,10 @@ export async function getPartnerDataForHandwerker(handwerkerId: string) {
     .select("auftrag_id")
     .eq("handwerker_id", id);
 
+  const offeneAnfrageAngebotIds = new Set(
+    anfragen.filter((a) => isPartnerAnfrageOffen(a)).map((a) => a.angebot_id)
+  );
+
   const auftragIds = uniqueIds([
     ...(hwAuftraege ?? []).map((r) => String((r as { auftrag_id: string }).auftrag_id)),
     ...(posAuftraege ?? []).map((r) => String((r as { auftrag_id: string }).auftrag_id)),
@@ -195,6 +212,7 @@ export async function getPartnerDataForHandwerker(handwerkerId: string) {
       .select(
         `
         id,
+        angebot_id,
         titel,
         status,
         fortschritt,
@@ -247,7 +265,21 @@ export async function getPartnerDataForHandwerker(handwerkerId: string) {
       btByAuftrag.set(aid, list);
     }
 
-    auftraege = (aufRows ?? []).map((row) => {
+    auftraege = (aufRows ?? [])
+      .filter((row) => {
+        const raw = row as Record<string, unknown>;
+        const angebotId = raw.angebot_id != null ? String(raw.angebot_id) : "";
+        const status = String(raw.status ?? "").toLowerCase();
+        if (
+          status === "offen" &&
+          angebotId &&
+          offeneAnfrageAngebotIds.has(angebotId)
+        ) {
+          return false;
+        }
+        return true;
+      })
+      .map((row) => {
       const raw = row as Record<string, unknown>;
       const kunde = one(raw.kunden) as { plz: string | null; ort: string | null } | null;
       const allPos = (raw.auftrag_positionen ?? []) as Array<Record<string, unknown>>;
@@ -281,6 +313,8 @@ export async function getPartnerDataForHandwerker(handwerkerId: string) {
     });
   }
 
+  const anfragenOffen = anfragen.filter((a) => isPartnerAnfrageOffen(a));
+
   return {
     handwerker: {
       name: String(handwerker.name ?? "Partner"),
@@ -288,6 +322,7 @@ export async function getPartnerDataForHandwerker(handwerkerId: string) {
       email: handwerker.email as string | null,
     },
     anfragen,
+    anfragenOffen,
     auftraege,
   };
 }

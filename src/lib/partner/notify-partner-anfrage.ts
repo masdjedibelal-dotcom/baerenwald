@@ -1,5 +1,5 @@
 import { sendHandwerkerNewAnfrageMail } from "@/lib/partner/partner-mail";
-import { partnerLoginUrl } from "@/lib/partner/partner-site-url";
+import { partnerLoginForAnfrageUrl } from "@/lib/partner/partner-site-url";
 import { isSupabaseConfigured, supabaseAdmin } from "@/lib/supabase";
 
 function one<T>(x: T | T[] | null | undefined): T | null {
@@ -73,6 +73,8 @@ export async function notifyHandwerkerNewAnfrage(anfrageId: string): Promise<{
       ? `${crmBase}/handwerker/anfrage/${encodeURIComponent(token)}`
       : undefined;
 
+  const portalLink = partnerLoginForAnfrageUrl(id);
+
   return sendHandwerkerNewAnfrageMail({
     to,
     handwerkerName: hw?.name?.trim() || "Partner",
@@ -80,8 +82,6 @@ export async function notifyHandwerkerNewAnfrage(anfrageId: string): Promise<{
     plz,
     zeitraum,
     tokenLink,
+    portalLink,
   });
 }
-
-/** Für Tests/Doku: Partner-Login-URL. */
-export { partnerLoginUrl };

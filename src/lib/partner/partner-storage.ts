@@ -22,8 +22,10 @@ export function isStoragePath(value: string): boolean {
 }
 
 /** Signierte URL für private Storage-Pfade (1 h). */
+/** Standard 1 h; für E-Mails z. B. 7 Tage (604800). */
 export async function resolvePartnerFileUrl(
-  stored: string | null | undefined
+  stored: string | null | undefined,
+  expiresIn = 3600
 ): Promise<string | null> {
   if (!stored?.trim() || !isSupabaseConfigured()) return null;
   const raw = stored.trim();
@@ -35,7 +37,7 @@ export async function resolvePartnerFileUrl(
 
   const { data, error } = await supabaseAdmin.storage
     .from(PARTNER_UPLOAD_BUCKET)
-    .createSignedUrl(path, 3600);
+    .createSignedUrl(path, expiresIn);
 
   if (error || !data?.signedUrl) return null;
   return data.signedUrl;
@@ -45,6 +47,8 @@ export async function uploadPartnerPdf(opts: {
   handwerkerId: string;
   anfrageId: string;
   file: File;
+  /** Standard: Angebots-PDF. `rechnung` → separater Storage-Pfad. */
+  kind?: "angebot" | "rechnung";
 }): Promise<{ ok: true; path: string } | { ok: false; error: string }> {
   if (!isSupabaseConfigured()) {
     return { ok: false, error: "Storage nicht konfiguriert." };
@@ -58,7 +62,11 @@ export async function uploadPartnerPdf(opts: {
     return { ok: false, error: "PDF ist zu groß (max. 12 MB)." };
   }
 
-  const path = `${opts.handwerkerId}/angebote/${opts.anfrageId}/angebot-${randomUUID()}.pdf`;
+  const prefix =
+    opts.kind === "rechnung"
+      ? `${opts.handwerkerId}/angebote/${opts.anfrageId}/rechnung`
+      : `${opts.handwerkerId}/angebote/${opts.anfrageId}/angebot`;
+  const path = `${prefix}-${randomUUID()}.pdf`;
   const buf = Buffer.from(await opts.file.arrayBuffer());
 
   const { error } = await supabaseAdmin.storage
