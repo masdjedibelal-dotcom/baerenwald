@@ -39,6 +39,14 @@ SQL-Dateien nacheinander in Supabase: siehe [SUPABASE_PARTNER_PORTAL_SQL.md](./S
 
 ---
 
+## Portal-UI (wie Kunden)
+
+- [x] Startseite „Übersicht“ mit KPI-Karten, Tabellen-Vorschau, Kontakt
+- [x] BärenwaldGPT (Desktop eingebettet, Mobil Overlay + Mittel-Button)
+- [x] Navigation: Übersicht · Anfragen · Angebote · Aufträge · GPT
+
+---
+
 ## Phase 3 — Anfragen
 
 - [x] Liste `angebot_handwerker` (eigene Zuweisungen)
@@ -53,9 +61,10 @@ SQL-Dateien nacheinander in Supabase: siehe [SUPABASE_PARTNER_PORTAL_SQL.md](./S
 
 - [x] Portal-UI: Preis (netto/brutto) + PDF-Upload + Notiz
 - [x] Storage-Upload + `angebot_handwerker` Update (`hw_*` Felder)
+- [x] Rechnungs-PDF (`hw_rechnung_pdf_url`, nach Angebotseinreichung)
 - [x] Nur Status `akzeptiert` / nach Annahme
-- [ ] CRM: Anzeige „Handwerker-Angebot eingegangen“ + Download
-- [x] Optional: Mail an intern bei Einreichung
+- [x] CRM: Partner-Einreichung im Angebot-Detail (Angebot- + Rechnung-PDF)
+- [x] Optional: Mail an intern bei Einreichung (Angebot + Rechnung)
 
 ---
 

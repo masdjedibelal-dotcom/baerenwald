@@ -48,6 +48,29 @@ await fetch(`${process.env.NEXT_PUBLIC_SITE_URL}/api/internal/partner-notify-anf
 
 Optional: Handwerker-Mail im CRM nur noch mit Partner-Link (Template anpassen) und diesen API-Call weglassen, wenn ihr eine einzige Mail wollt.
 
+---
+
+## Leistung zugewiesen (Auftrag)
+
+`POST https://baerenwaldmuenchen.de/api/internal/partner-notify-zuweisung`
+
+Gleicher Bearer `PARTNER_INTERNAL_API_SECRET`.
+
+Body:
+
+```json
+{
+  "auftragId": "<uuid auftraege>",
+  "handwerkerId": "<uuid handwerker>",
+  "positionId": "<uuid auftrag_positionen — optional, eine Leistung>",
+  "positionIds": ["<uuid>", "..."]
+}
+```
+
+Die Mail enthält Kunde, Ort, Zeitraum, Leistungsliste und einen Button **Zum Partner-Portal** (`/partner/login?next=/partner?section=auftraege&auftrag=…`). Registrierungs-Hinweis für neue Partner.
+
+**CRM:** wird automatisch nach `assignAuftragHandwerkerPosition` / `assignAuftragHandwerkerGewerk` ausgelöst (`notifyPartnerHandwerkerZuweisung`).
+
 ## Bereits in der Website (ohne CRM)
 
 - **Interne Mail** bei Angebotseinreichung (`submitPartnerAngebot`)
