@@ -2,12 +2,14 @@
 
 import { revalidatePath } from "next/cache";
 
+import { isPartnerAnfrageOffen } from "@/lib/partner/partner-anfrage-status";
 import {
   HANDWERKER_ABLEHNUNG_GRUND_LABELS,
   isHandwerkerAblehnungGrund,
 } from "@/lib/partner/handwerker-ablehnung";
 import { linkPortalHandwerkerToAuthUser } from "@/lib/partner/link-portal-handwerker";
 import { sendPartnerInternalAnfrageAntwortMail } from "@/lib/partner/partner-mail";
+import { partnerAngebotPortalUrl } from "@/lib/partner/partner-site-url";
 import { createClient } from "@/lib/supabase/server";
 import { isSupabaseConfigured, supabaseAdmin } from "@/lib/supabase";
 
@@ -63,6 +65,7 @@ export async function respondPartnerAnfrage(opts: {
       angebot_id,
       handwerker_id,
       antwort_at,
+      gesendet_at,
       status,
       handwerker(name),
       gewerke(name)
@@ -81,6 +84,15 @@ export async function respondPartnerAnfrage(opts: {
 
   if (row.antwort_at) {
     return { ok: false, error: "Du hast bereits geantwortet." };
+  }
+
+  const pending = isPartnerAnfrageOffen({
+    status: String(row.status ?? ""),
+    antwort_at: row.antwort_at as string | null | undefined,
+    gesendet_at: (row as { gesendet_at?: string | null }).gesendet_at,
+  });
+  if (!pending) {
+    return { ok: false, error: "Diese Anfrage kann nicht mehr beantwortet werden." };
   }
 
   const newStatus = opts.antwort === "akzeptiert" ? "akzeptiert" : "abgelehnt";
@@ -122,6 +134,10 @@ export async function respondPartnerAnfrage(opts: {
     ablehnungGrundLabel: grundLabel,
     notiz,
     angebotId: String(raw.angebot_id),
+    partnerAngebotPortalUrl:
+      opts.antwort === "akzeptiert"
+        ? partnerAngebotPortalUrl(opts.anfrageId)
+        : null,
   });
 
   revalidatePath("/partner");

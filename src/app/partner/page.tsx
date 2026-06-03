@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { redirect } from "next/navigation";
 
 import { PartnerClient } from "@/components/partner/PartnerClient";
@@ -67,10 +68,16 @@ export default async function PartnerDashboardPage() {
   }
 
   return (
-    <PartnerClient
-      handwerker={data.handwerker}
-      anfragen={data.anfragen}
-      auftraege={data.auftraege}
-    />
+    <Suspense
+      fallback={
+        <p className="px-4 py-8 text-center text-sm text-text-secondary">Portal wird geladen…</p>
+      }
+    >
+      <PartnerClient
+        handwerker={data.handwerker}
+        anfragen={data.anfragen}
+        auftraege={data.auftraege}
+      />
+    </Suspense>
   );
 }

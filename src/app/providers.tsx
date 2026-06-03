@@ -4,6 +4,7 @@ import posthog from "posthog-js";
 import { PostHogProvider } from "posthog-js/react";
 import { useEffect, useMemo } from "react";
 
+import { MarketingJourneyTracker } from "@/components/marketing/MarketingJourneyTracker";
 import { getPostHogHost, getPostHogProjectToken } from "@/lib/posthog-env";
 
 /**
@@ -29,8 +30,18 @@ export function PHProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   if (!hasToken) {
-    return <>{children}</>;
+    return (
+      <>
+        <MarketingJourneyTracker />
+        {children}
+      </>
+    );
   }
 
-  return <PostHogProvider client={posthog}>{children}</PostHogProvider>;
+  return (
+    <PostHogProvider client={posthog}>
+      <MarketingJourneyTracker />
+      {children}
+    </PostHogProvider>
+  );
 }
