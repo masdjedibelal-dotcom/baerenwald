@@ -10,7 +10,8 @@
 -- SELECT: gleiche Bedingung
 --
 -- Dateistruktur-Vorschlag:
---   {handwerker_id}/angebote/{angebot_handwerker_id}/angebot.pdf
+--   {handwerker_id}/angebote/{angebot_handwerker_id}/angebot-{uuid}.pdf
+--   {handwerker_id}/angebote/{angebot_handwerker_id}/rechnung-{uuid}.pdf
 --   {handwerker_id}/bautagebuch/{auftrag_id}/{uuid}.jpg
 --
 -- Bis Policies stehen: Uploads über service_role (Website Server Actions mit supabaseAdmin).
