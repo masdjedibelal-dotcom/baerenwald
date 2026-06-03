@@ -130,7 +130,7 @@ export default function DatenschutzPage() {
               <p>
                 <strong>Im Portal verarbeitet:</strong> Zuweisungen zu Angeboten/Gewerken (PLZ,
                 Ort, Leistungspositionen ohne Kundennamen), eingereichte Preise und PDF-Angebote,
-                Bautagebuch-Texte und Fotos zu Aufträgen (Speicherung im privaten Storage-Bucket{" "}
+                Bautagebuch-Texte, Fotos und Dokumente (PDF) zu Aufträgen (Speicherung im privaten Storage-Bucket{" "}
                 <em>handwerker-uploads</em>).
               </p>
               <p>

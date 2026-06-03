@@ -76,6 +76,8 @@ export default async function PartnerDashboardPage() {
       <PartnerClient
         handwerker={data.handwerker}
         anfragen={data.anfragen}
+        angebote={data.angebote}
+        auftragAnfragen={data.auftragAnfragen}
         auftraege={data.auftraege}
       />
     </Suspense>

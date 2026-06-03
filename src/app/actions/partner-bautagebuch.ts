@@ -5,8 +5,12 @@ import { revalidatePath } from "next/cache";
 import { linkPortalHandwerkerToAuthUser } from "@/lib/partner/link-portal-handwerker";
 import { sendPartnerInternalBautagebuchMail } from "@/lib/partner/partner-mail";
 import {
+  PARTNER_MAX_BAUTAGEBUCH_ANHAENGE,
+  validatePartnerBautagebuchFiles,
+} from "@/lib/partner/partner-upload-limits";
+import {
   resolvePartnerFileUrls,
-  uploadPartnerPhotos,
+  uploadPartnerBautagebuchAnhaenge,
 } from "@/lib/partner/partner-storage";
 import { createClient } from "@/lib/supabase/server";
 import { isSupabaseConfigured, supabaseAdmin } from "@/lib/supabase";
@@ -93,9 +97,12 @@ export async function createPartnerBautagebuchEintrag(
     .getAll("photos")
     .filter((f): f is File => f instanceof File && f.size > 0);
 
+  const batchErr = validatePartnerBautagebuchFiles(photos, 0);
+  if (batchErr) return { ok: false, error: batchErr };
+
   let fotoPaths: string[] = [];
   if (photos.length) {
-    const up = await uploadPartnerPhotos({
+    const up = await uploadPartnerBautagebuchAnhaenge({
       handwerkerId: auth.handwerkerId,
       auftragId,
       files: photos,
@@ -181,11 +188,22 @@ export async function updatePartnerBautagebuchEintrag(
 
   let fotoPaths = keepPaths ?? normalizeUrlList(existing.foto_urls);
 
+  const batchErr = validatePartnerBautagebuchFiles(newPhotos, fotoPaths.length);
+  if (batchErr) return { ok: false, error: batchErr };
+
+  if (fotoPaths.length > PARTNER_MAX_BAUTAGEBUCH_ANHAENGE) {
+    return {
+      ok: false,
+      error: `Maximal ${PARTNER_MAX_BAUTAGEBUCH_ANHAENGE} Anhänge pro Eintrag.`,
+    };
+  }
+
   if (newPhotos.length) {
-    const up = await uploadPartnerPhotos({
+    const up = await uploadPartnerBautagebuchAnhaenge({
       handwerkerId: auth.handwerkerId,
       auftragId,
       files: newPhotos,
+      existingCount: fotoPaths.length,
     });
     if (!up.ok) return { ok: false, error: up.error };
     fotoPaths = [...fotoPaths, ...up.paths];

@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { redirect } from "next/navigation";
 
 import { PortalClient } from "@/components/portal/PortalClient";
@@ -73,11 +74,19 @@ export default async function PortalDashboardPage() {
   const { kunde, auftraege, angebote, leads } = data;
 
   return (
-    <PortalClient
-      kunde={kunde}
-      auftraege={auftraege}
-      angebote={angebote}
-      leads={leads}
-    />
+    <Suspense
+      fallback={
+        <p className="px-4 py-8 text-center text-sm text-text-secondary">
+          Portal wird geladen…
+        </p>
+      }
+    >
+      <PortalClient
+        kunde={kunde}
+        auftraege={auftraege}
+        angebote={angebote}
+        leads={leads}
+      />
+    </Suspense>
   );
 }
