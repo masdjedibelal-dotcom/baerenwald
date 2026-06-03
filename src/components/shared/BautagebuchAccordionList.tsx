@@ -3,6 +3,10 @@
 import { useState } from "react";
 import { ChevronDown } from "lucide-react";
 
+import {
+  bautagebuchAnhangLabel,
+  isBautagebuchPdfUrl,
+} from "@/lib/partner/bautagebuch-anhang";
 import { cn } from "@/lib/utils";
 
 export type BautagebuchEintrag = {
@@ -87,22 +91,34 @@ export function BautagebuchAccordionList({
                     ) : null}
                     {e.fotos && e.fotos.length > 0 ? (
                       <div className="flex flex-wrap gap-2">
-                        {e.fotos.map((url, i) => (
-                          <a
-                            key={`${e.id}-foto-${i}`}
-                            href={url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="block h-20 w-20 overflow-hidden rounded-lg border border-border-light"
-                          >
-                            {/* eslint-disable-next-line @next/next/no-img-element */}
-                            <img
-                              src={url}
-                              alt=""
-                              className="h-full w-full object-cover"
-                            />
-                          </a>
-                        ))}
+                        {e.fotos.map((url, i) =>
+                          isBautagebuchPdfUrl(url) ? (
+                            <a
+                              key={`${e.id}-doc-${i}`}
+                              href={url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-1.5 rounded-lg border border-border-light bg-surface-card px-3 py-2 text-sm font-medium text-brand-primary hover:bg-muted/30"
+                            >
+                              {bautagebuchAnhangLabel(url, i)}
+                            </a>
+                          ) : (
+                            <a
+                              key={`${e.id}-foto-${i}`}
+                              href={url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="block h-20 w-20 overflow-hidden rounded-lg border border-border-light"
+                            >
+                              {/* eslint-disable-next-line @next/next/no-img-element */}
+                              <img
+                                src={url}
+                                alt={bautagebuchAnhangLabel(url, i)}
+                                className="h-full w-full object-cover"
+                              />
+                            </a>
+                          )
+                        )}
                       </div>
                     ) : null}
                     {e.actions ? <div className="flex flex-wrap gap-2">{e.actions}</div> : null}

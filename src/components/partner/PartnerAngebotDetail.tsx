@@ -14,6 +14,10 @@ import {
 } from "@/components/shared/DokumenteTabelle";
 import { FileUploadField } from "@/components/shared/FileUploadField";
 import type { PartnerAnfrageItem } from "@/lib/partner/get-partner-data";
+import {
+  PARTNER_MAX_PDF_MB,
+  validatePartnerPdfFile,
+} from "@/lib/partner/partner-upload-limits";
 import { cn } from "@/lib/utils";
 
 function ConfirmDialog({
@@ -158,9 +162,43 @@ export function PartnerAngebotDetail({ item }: { item: PartnerAnfrageItem }) {
     return Math.round(n * 100) / 100;
   }
 
+  function handleAngebotPdfChange(files: File[]) {
+    const file = files[0] ?? null;
+    if (!file) {
+      setAngebotPdf(null);
+      return;
+    }
+    const err = validatePartnerPdfFile(file);
+    if (err) {
+      setAngebotError(err);
+      setAngebotPdf(null);
+      return;
+    }
+    setAngebotError(null);
+    setAngebotPdf(file);
+  }
+
+  function handleRechnungPdfChange(files: File[]) {
+    const file = files[0] ?? null;
+    if (!file) {
+      setRechnungPdf(null);
+      return;
+    }
+    const err = validatePartnerPdfFile(file);
+    if (err) {
+      setRechnungError(err);
+      setRechnungPdf(null);
+      return;
+    }
+    setRechnungError(null);
+    setRechnungPdf(file);
+  }
+
   async function sendAngebot() {
-    if (!angebotPdf) {
-      setAngebotError("Bitte ein Angebots-PDF auswählen.");
+    const pdf = angebotPdf;
+    const pdfErr = validatePartnerPdfFile(pdf);
+    if (pdfErr || !pdf) {
+      setAngebotError(pdfErr ?? "Bitte ein Angebots-PDF auswählen.");
       return;
     }
     if (parseNettoInput(preisNetto) == null) {
@@ -174,7 +212,7 @@ export function PartnerAngebotDetail({ item }: { item: PartnerAnfrageItem }) {
     fd.set("preisNetto", preisNetto);
     fd.set("preisBrutto", preisBrutto);
     fd.set("notiz", notiz);
-    fd.set("pdf", angebotPdf);
+    fd.set("pdf", pdf);
     const res = await submitPartnerAngebot(fd);
     setAngebotLoading(false);
     setConfirmAngebot(false);
@@ -192,8 +230,9 @@ export function PartnerAngebotDetail({ item }: { item: PartnerAnfrageItem }) {
       setAngebotError("Bitte einen gültigen Netto-Preis in Euro angeben.");
       return;
     }
-    if (!angebotPdf) {
-      setAngebotError("Bitte ein Angebots-PDF auswählen.");
+    const pdfErr = validatePartnerPdfFile(angebotPdf);
+    if (pdfErr) {
+      setAngebotError(pdfErr);
       return;
     }
     setConfirmAngebot(true);
@@ -201,15 +240,17 @@ export function PartnerAngebotDetail({ item }: { item: PartnerAnfrageItem }) {
 
   async function onRechnungSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!rechnungPdf) {
-      setRechnungError("Bitte ein Rechnungs-PDF auswählen.");
+    const pdf = rechnungPdf;
+    const pdfErr = validatePartnerPdfFile(pdf);
+    if (pdfErr || !pdf) {
+      setRechnungError(pdfErr ?? "Bitte ein Rechnungs-PDF auswählen.");
       return;
     }
     setRechnungLoading(true);
     setRechnungError(null);
     const fd = new FormData();
     fd.set("anfrageId", item.id);
-    fd.set("pdf", rechnungPdf);
+    fd.set("pdf", pdf);
     const res = await submitPartnerRechnung(fd);
     setRechnungLoading(false);
     if (!res.ok) {
@@ -345,7 +386,9 @@ export function PartnerAngebotDetail({ item }: { item: PartnerAnfrageItem }) {
           <FileUploadField
             label="Angebots-PDF"
             accept="application/pdf,.pdf"
-            onChange={(files) => setAngebotPdf(files[0] ?? null)}
+            hint={`PDF, max. ${PARTNER_MAX_PDF_MB} MB`}
+            selectedName={angebotPdf?.name}
+            onChange={handleAngebotPdfChange}
           />
           <label className="block text-sm">
             <span className="text-text-tertiary">Notiz (optional)</span>
@@ -387,7 +430,9 @@ export function PartnerAngebotDetail({ item }: { item: PartnerAnfrageItem }) {
           <FileUploadField
             label="Rechnungs-PDF"
             accept="application/pdf,.pdf"
-            onChange={(files) => setRechnungPdf(files[0] ?? null)}
+            hint={`PDF, max. ${PARTNER_MAX_PDF_MB} MB`}
+            selectedName={rechnungPdf?.name}
+            onChange={handleRechnungPdfChange}
           />
           {rechnungError ? (
             <p className="text-sm text-red-700" role="alert">

@@ -8,6 +8,8 @@ type FileUploadFieldProps = {
   accept: string;
   multiple?: boolean;
   disabled?: boolean;
+  /** Optional: Dateiname der gewählten Datei anzeigen */
+  selectedName?: string | null;
   onChange: (files: File[]) => void;
   className?: string;
 };
@@ -19,6 +21,7 @@ export function FileUploadField({
   accept,
   multiple,
   disabled,
+  selectedName,
   onChange,
   className,
 }: FileUploadFieldProps) {
@@ -26,6 +29,11 @@ export function FileUploadField({
     <label className={cn("block text-sm", className)}>
       <span className="text-text-tertiary">{label}</span>
       {hint ? <span className="mt-0.5 block text-xs text-text-secondary">{hint}</span> : null}
+      {selectedName ? (
+        <span className="mt-0.5 block text-xs font-medium text-text-primary">
+          Ausgewählt: {selectedName}
+        </span>
+      ) : null}
       <input
         type="file"
         accept={accept}

@@ -16,6 +16,7 @@ import {
 
 import { PartnerAnfrageDetail } from "@/components/partner/PartnerAnfrageDetail";
 import { PartnerAngebotDetail } from "@/components/partner/PartnerAngebotDetail";
+import { PartnerAuftragAnfrageDetail } from "@/components/partner/PartnerAuftragAnfrageDetail";
 import { PartnerAuftragDetail } from "@/components/partner/PartnerAuftragDetail";
 import { PortalBaerenwaldGpt } from "@/components/portal/PortalBaerenwaldGpt";
 import { SITE_CONFIG } from "@/lib/config";
@@ -27,6 +28,7 @@ import {
   isPartnerAnfrageOffen,
   partnerAnfrageStatusLabel,
 } from "@/lib/partner/partner-anfrage-status";
+import { auftragHwStatusLabel } from "@/lib/partner/partner-portal-phase";
 import { cn } from "@/lib/utils";
 
 type PartnerSection = "uebersicht" | "anfragen" | "angebote" | "auftraege" | "gpt";
@@ -84,9 +86,24 @@ function sortAnfragen(items: PartnerAnfrageItem[]): PartnerAnfrageItem[] {
   });
 }
 
-function firstAnfrageId(items: PartnerAnfrageItem[]): string | null {
-  const sorted = sortAnfragen(items);
-  return sorted[0]?.id ?? null;
+function firstAnfrageId(
+  angeboteHw: PartnerAnfrageItem[],
+  auftragHw: PartnerAuftragItem[]
+): string | null {
+  const sorted = sortAnfragen(angeboteHw);
+  if (sorted[0]) return sorted[0].id;
+  if (auftragHw[0]) return `auftrag:${auftragHw[0].id}`;
+  return null;
+}
+
+function parseAnfragenSelectedId(
+  selectedId: string | null
+): { kind: "angebot"; id: string } | { kind: "auftrag"; id: string } | null {
+  if (!selectedId) return null;
+  if (selectedId.startsWith("auftrag:")) {
+    return { kind: "auftrag", id: selectedId.slice("auftrag:".length) };
+  }
+  return { kind: "angebot", id: selectedId };
 }
 
 function emptyLabelForTab(tab: OverviewTabId): string {
@@ -98,17 +115,25 @@ function emptyLabelForTab(tab: OverviewTabId): string {
 export function PartnerClient({
   handwerker,
   anfragen,
+  angebote,
+  auftragAnfragen,
   auftraege,
 }: {
   handwerker: { name: string; firma?: string | null };
+  /** Offene angebot_handwerker-Anfragen (Server-Filter). */
   anfragen: PartnerAnfrageItem[];
+  /** Akzeptiert, HW-Angebot noch offen (Server-Filter). */
+  angebote: PartnerAnfrageItem[];
+  /** Auftrag mit status offen / HW noch ausstehend (Server-Filter). */
+  auftragAnfragen: PartnerAuftragItem[];
+  /** Laufende Aufträge (Server-Filter). */
   auftraege: PartnerAuftragItem[];
 }) {
   const searchParams = useSearchParams();
   const [section, setSection] = useState<PartnerSection>("uebersicht");
   const [overviewTab, setOverviewTab] = useState<OverviewTabId>("anfragen");
   const [selectedId, setSelectedId] = useState<string | null>(() =>
-    firstAnfrageId(anfragen.filter((a) => isPartnerAnfrageOffen(a)))
+    firstAnfrageId(anfragen, auftragAnfragen)
   );
   const [mobileDetailOpen, setMobileDetailOpen] = useState(false);
   const [gptOpen, setGptOpen] = useState(false);
@@ -116,19 +141,9 @@ export function PartnerClient({
   const displayName = handwerker.firma?.trim() || handwerker.name;
   const vorname = (handwerker.name || "Partner").split(" ")[0] || "Partner";
 
-  const angebote = useMemo(
-    () => anfragen.filter((a) => a.status.toLowerCase() === "akzeptiert"),
-    [anfragen]
-  );
-
-  const offeneAnfragenCount = anfragen.filter((a) => isPartnerAnfrageOffen(a)).length;
+  const offeneAnfragenCount = anfragen.length + auftragAnfragen.length;
 
   const anfragenSorted = useMemo(() => sortAnfragen(anfragen), [anfragen]);
-
-  const anfragenOffenListe = useMemo(
-    () => anfragenSorted.filter((a) => isPartnerAnfrageOffen(a)),
-    [anfragenSorted]
-  );
 
   const angeboteSorted = useMemo(() => {
     return [...angebote].sort((a, b) => {
@@ -147,13 +162,20 @@ export function PartnerClient({
   const aktiveAuftraegeCount = auftraege.filter(isAuftragAktiv).length;
 
   const overviewAnfragenRows = useMemo((): OverviewRow[] => {
-    return anfragenOffenListe.map((a) => ({
+    const ausAngebot = anfragenSorted.map((a) => ({
       id: a.id,
       date: a.gesendet_at ?? undefined,
       title: a.gewerk_name,
       status: partnerAnfrageStatusLabel(a),
     }));
-  }, [anfragenOffenListe]);
+    const ausAuftrag = auftragAnfragen.map((a) => ({
+      id: `auftrag:${a.id}`,
+      date: a.start_datum ?? undefined,
+      title: a.titel,
+      status: auftragHwStatusLabel(a.hwStatus),
+    }));
+    return [...ausAngebot, ...ausAuftrag];
+  }, [anfragenSorted, auftragAnfragen]);
 
   const overviewAngeboteRows = useMemo((): OverviewRow[] => {
     return angeboteSorted.map((a) => ({
@@ -182,14 +204,32 @@ export function PartnerClient({
   const listItems = useMemo(() => {
     if (section === "angebote") return angeboteSorted;
     if (section === "auftraege") return auftraege;
-    if (section === "anfragen") return anfragenOffenListe;
+    if (section === "anfragen") return null;
     return [];
-  }, [section, anfragenOffenListe, angeboteSorted, auftraege]);
+  }, [section, angeboteSorted, auftraege]);
 
-  const selectedAnfrage = useMemo(
+  const selectedAnfrageParsed = parseAnfragenSelectedId(selectedId);
+
+  const selectedAnfrageAngebot = useMemo(
     () =>
-      anfragenOffenListe.find((a) => a.id === selectedId) ?? anfragenOffenListe[0],
-    [anfragenOffenListe, selectedId]
+      selectedAnfrageParsed?.kind === "angebot"
+        ? (anfragenSorted.find((a) => a.id === selectedAnfrageParsed.id) ??
+          anfragenSorted[0])
+        : selectedAnfrageParsed?.kind !== "auftrag"
+          ? anfragenSorted[0]
+          : undefined,
+    [anfragenSorted, selectedAnfrageParsed]
+  );
+
+  const selectedAnfrageAuftrag = useMemo(
+    () =>
+      selectedAnfrageParsed?.kind === "auftrag"
+        ? (auftragAnfragen.find((a) => a.id === selectedAnfrageParsed.id) ??
+          auftragAnfragen[0])
+        : !selectedAnfrageAngebot && auftragAnfragen[0]
+          ? auftragAnfragen[0]
+          : undefined,
+    [auftragAnfragen, selectedAnfrageParsed, selectedAnfrageAngebot]
   );
 
   const selectedAngebot = useMemo(
@@ -220,19 +260,31 @@ export function PartnerClient({
       }
     } else if (s === "anfragen" && itemId) {
       setSection("anfragen");
-      if (anfragen.some((a) => a.id === itemId)) {
+      const auftragIdFromParam = itemId.startsWith("auftrag:")
+        ? itemId.slice("auftrag:".length)
+        : itemId;
+      if (
+        itemId.startsWith("auftrag:") &&
+        auftragAnfragen.some((a) => a.id === auftragIdFromParam)
+      ) {
         setSelectedId(itemId);
+        setMobileDetailOpen(true);
+      } else if (anfragen.some((a) => a.id === itemId)) {
+        setSelectedId(itemId);
+        setMobileDetailOpen(true);
+      } else if (auftragAnfragen.some((a) => a.id === auftragIdFromParam)) {
+        setSelectedId(`auftrag:${auftragIdFromParam}`);
         setMobileDetailOpen(true);
       }
     }
-  }, [searchParams, auftraege, anfragen, angebote]);
+  }, [searchParams, auftraege, anfragen, angebote, auftragAnfragen]);
 
   function switchSection(id: PartnerSection) {
     setSection(id);
     setMobileDetailOpen(false);
     if (id !== "gpt") setGptOpen(false);
     if (id === "uebersicht" || id === "gpt") return;
-    if (id === "anfragen") setSelectedId(firstAnfrageId(anfragenOffenListe));
+    if (id === "anfragen") setSelectedId(firstAnfrageId(anfragen, auftragAnfragen));
     else if (id === "angebote") setSelectedId(angeboteSorted[0]?.id ?? null);
     else if (id === "auftraege") setSelectedId(auftraege[0]?.id ?? null);
   }
@@ -262,9 +314,15 @@ export function PartnerClient({
           ? "Keine Aufträge — sie erscheinen, sobald ein Projekt für dich angelegt ist."
           : "";
 
+  const anfragenListEmpty =
+    anfragen.length === 0 && auftragAnfragen.length === 0;
+
   const detailPanel = (() => {
-    if (section === "anfragen" && selectedAnfrage) {
-      return <PartnerAnfrageDetail item={selectedAnfrage} />;
+    if (section === "anfragen" && selectedAnfrageAuftrag && !selectedAnfrageAngebot) {
+      return <PartnerAuftragAnfrageDetail item={selectedAnfrageAuftrag} />;
+    }
+    if (section === "anfragen" && selectedAnfrageAngebot) {
+      return <PartnerAnfrageDetail item={selectedAnfrageAngebot} />;
     }
     if (section === "angebote" && selectedAngebot) {
       return <PartnerAngebotDetail item={selectedAngebot} />;
@@ -328,7 +386,7 @@ export function PartnerClient({
                   </span>
                   <span className="text-xs text-text-tertiary">
                     {id === "anfragen"
-                      ? offeneAnfragenCount || anfragen.length
+                      ? offeneAnfragenCount
                       : id === "angebote"
                         ? angebote.length
                         : id === "auftraege"
@@ -546,7 +604,7 @@ export function PartnerClient({
                     </tr>
                   </thead>
                   <tbody>
-                    {listItems.length === 0 ? (
+                    {(section === "anfragen" ? anfragenListEmpty : (listItems?.length ?? 0) === 0) ? (
                       <tr>
                         <td
                           colSpan={3}
@@ -580,6 +638,60 @@ export function PartnerClient({
                           </td>
                         </tr>
                       ))
+                    ) : section === "anfragen" ? (
+                      <>
+                        {anfragenSorted.map((item) => (
+                          <tr
+                            key={item.id}
+                            onClick={() => selectRow(item.id)}
+                            className={cn(
+                              "cursor-pointer border-t border-border-light",
+                              selectedId === item.id
+                                ? "bg-accent-light"
+                                : "hover:bg-muted/70"
+                            )}
+                          >
+                            <td className="px-3 py-2 text-sm text-text-secondary">
+                              {fmtDate(item.gesendet_at)}
+                            </td>
+                            <td className="px-3 py-2 text-sm font-semibold text-text-primary">
+                              {item.gewerk_name}
+                            </td>
+                            <td className="px-3 py-2 text-sm">
+                              <span className={statusPillClass("antwort ausstehend")}>
+                                {partnerAnfrageStatusLabel(item)}
+                              </span>
+                            </td>
+                          </tr>
+                        ))}
+                        {auftragAnfragen.map((item) => {
+                          const rowId = `auftrag:${item.id}`;
+                          return (
+                            <tr
+                              key={rowId}
+                              onClick={() => selectRow(rowId)}
+                              className={cn(
+                                "cursor-pointer border-t border-border-light",
+                                selectedId === rowId
+                                  ? "bg-accent-light"
+                                  : "hover:bg-muted/70"
+                              )}
+                            >
+                              <td className="px-3 py-2 text-sm text-text-secondary">
+                                {fmtDate(item.start_datum ?? undefined)}
+                              </td>
+                              <td className="px-3 py-2 text-sm font-semibold text-text-primary">
+                                {item.titel}
+                              </td>
+                              <td className="px-3 py-2 text-sm">
+                                <span className={statusPillClass(item.hwStatus)}>
+                                  {auftragHwStatusLabel(item.hwStatus)}
+                                </span>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </>
                     ) : (
                       (listItems as PartnerAnfrageItem[]).map((item) => (
                         <tr
@@ -593,11 +705,7 @@ export function PartnerClient({
                           )}
                         >
                           <td className="px-3 py-2 text-sm text-text-secondary">
-                            {fmtDate(
-                              section === "angebote"
-                                ? item.antwort_at ?? item.gesendet_at
-                                : item.gesendet_at
-                            )}
+                            {fmtDate(item.antwort_at ?? item.gesendet_at)}
                           </td>
                           <td className="px-3 py-2 text-sm font-semibold text-text-primary">
                             {item.gewerk_name}
@@ -605,24 +713,10 @@ export function PartnerClient({
                           <td className="px-3 py-2 text-sm">
                             <span
                               className={statusPillClass(
-                                section === "angebote"
-                                  ? item.hw_eingereicht_at
-                                    ? "eingereicht"
-                                    : "offen"
-                                  : section === "anfragen"
-                                    ? isPartnerAnfrageOffen(item)
-                                      ? "antwort ausstehend"
-                                      : item.status
-                                    : item.status
+                                item.hw_eingereicht_at ? "eingereicht" : "offen"
                               )}
                             >
-                              {section === "angebote"
-                                ? item.hw_eingereicht_at
-                                  ? "Eingereicht"
-                                  : "Offen"
-                                : section === "anfragen"
-                                  ? partnerAnfrageStatusLabel(item)
-                                  : item.status}
+                              {item.hw_eingereicht_at ? "Eingereicht" : "Offen"}
                             </span>
                           </td>
                         </tr>
@@ -714,7 +808,7 @@ export function PartnerClient({
       {mobileDetailOpen &&
       section !== "uebersicht" &&
       section !== "gpt" &&
-      listItems.length > 0 ? (
+      (section === "anfragen" ? !anfragenListEmpty : (listItems?.length ?? 0) > 0) ? (
         <div className="fixed inset-0 z-[120] bg-black/40 lg:hidden">
           <button
             type="button"

@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import {
   Briefcase,
@@ -27,7 +28,6 @@ import {
   type PortalDetailSection,
 } from "@/lib/portal/portal-display";
 import {
-  isPortalAnfragePhaseStatus,
   isPortalAngebotPhaseStatus,
   isPortalAuftragPhaseStatus,
 } from "@/lib/portal/portal-pipeline";
@@ -83,16 +83,16 @@ type PortalAngebot = {
   id: string;
   titel?: string;
   objekt?: PortalObjekt | null;
-  status_einfach?: string;
+  status_einfach?: string | null;
   status?: string;
-  lead_id?: string;
+  lead_id?: string | null;
   leistungen?: string[];
   hinweise?: string;
   angebotsnr?: string | null;
   betrag?: number;
-  gueltig_bis?: string;
-  gesendet_am?: string;
-  created_at?: string;
+  gueltig_bis?: string | null;
+  gesendet_am?: string | null;
+  created_at?: string | null;
   auftrag_titel?: string;
   dokumente?: PortalDokument[];
 };
@@ -399,34 +399,13 @@ export function PortalClient({
   angebote = [],
   leads = [],
 }: PortalClientProps) {
+  const searchParams = useSearchParams();
   const [section, setSection] = useState<SectionId>("uebersicht");
   const [overviewTab, setOverviewTab] = useState<OverviewTabId>("anfragen");
-  const leadsAnfragePhase = useMemo(
-    () => leads.filter((l) => isPortalAnfragePhaseStatus(l.status)),
-    [leads]
-  );
+  /** Vom Server bereits nach splitKundePortalPipeline gefiltert. */
+  const leadsAnfragePhase = leads;
 
-  const leadById = useMemo(
-    () => new Map(leads.map((l) => [l.id, l])),
-    [leads]
-  );
-
-  const angeboteTab = useMemo(() => {
-    const leadIdsMitAuftrag = new Set(
-      auftraege.map((a) => a.lead_id).filter((id): id is string => Boolean(id))
-    );
-    const angebotIdsMitAuftrag = new Set(
-      auftraege.map((a) => a.angebot_id).filter((id): id is string => Boolean(id))
-    );
-    return angebote.filter((a) => {
-      if (a.lead_id && leadIdsMitAuftrag.has(a.lead_id)) return false;
-      if (angebotIdsMitAuftrag.has(a.id)) return false;
-      const lead = a.lead_id ? leadById.get(a.lead_id) : undefined;
-      if (lead && isPortalAuftragPhaseStatus(lead.status)) return false;
-      if (isPortalAuftragPhaseStatus(a.status_einfach || a.status)) return false;
-      return true;
-    });
-  }, [angebote, auftraege, leadById]);
+  const angeboteTab = angebote;
 
   const leadsNurAngebotPhase = useMemo(
     () =>
@@ -523,10 +502,10 @@ export function PortalClient({
             {
               heading: "Überblick",
               rows: detailRows([
-                { label: "Gültig bis", value: fmtDate(a.gueltig_bis) },
+                { label: "Gültig bis", value: fmtDate(a.gueltig_bis ?? undefined) },
                 {
                   label: "Versendet am",
-                  value: fmtDate(a.gesendet_am || a.created_at),
+                  value: fmtDate(a.gesendet_am ?? a.created_at ?? undefined),
                 },
                 {
                   label: "Preis (Brutto)",
@@ -541,7 +520,7 @@ export function PortalClient({
         const st = a.status_einfach || a.status || "angebot";
         return {
           id: a.id,
-          date: a.created_at,
+          date: a.created_at ?? undefined,
           title:
             sanitizeCustomerText(a.titel, 200) ||
             (a.angebotsnr ? `Angebot ${a.angebotsnr}` : "Angebot"),
@@ -717,6 +696,57 @@ export function PortalClient({
 
     return [...fromAuftraege, ...fromLeads];
   }, [auftraege, leadsNurAuftragPhase]);
+
+  useEffect(() => {
+    const s = searchParams.get("section");
+    const itemId = searchParams.get("id")?.trim();
+    if (!s || !itemId) return;
+
+    if (s === "auftraege") {
+      if (auftraege.some((a) => a.id === itemId)) {
+        setSection("auftraege");
+        setSelectedAuftragId(itemId);
+        setMobileDetailOpen(true);
+        return;
+      }
+      const leadId = itemId.startsWith("lead-") ? itemId.slice("lead-".length) : null;
+      if (leadId && leadsNurAuftragPhase.some((l) => l.id === leadId)) {
+        setSection("auftraege");
+        setSelectedAuftragId(itemId);
+        setMobileDetailOpen(true);
+      }
+      return;
+    }
+
+    if (s === "angebote") {
+      if (angebote.some((a) => a.id === itemId)) {
+        setSection("angebote");
+        setSelectedAngebotId(itemId);
+        setMobileDetailOpen(true);
+        return;
+      }
+      const leadId = itemId.startsWith("lead-") ? itemId.slice("lead-".length) : null;
+      if (leadId && leadsNurAngebotPhase.some((l) => l.id === leadId)) {
+        setSection("angebote");
+        setSelectedAngebotId(itemId);
+        setMobileDetailOpen(true);
+      }
+      return;
+    }
+
+    if (s === "anfragen" && leads.some((l) => l.id === itemId)) {
+      setSection("anfragen");
+      setSelectedAnfrageId(itemId);
+      setMobileDetailOpen(true);
+    }
+  }, [
+    searchParams,
+    auftraege,
+    angebote,
+    leads,
+    leadsNurAngebotPhase,
+    leadsNurAuftragPhase,
+  ]);
 
   const selectedAnfrage =
     anfragenItems.find((i) => i.id === selectedAnfrageId) ?? anfragenItems[0];

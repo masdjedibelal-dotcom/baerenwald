@@ -11,6 +11,12 @@ import {
 import { BautagebuchAccordionList } from "@/components/shared/BautagebuchAccordionList";
 import { DokumenteTabelle } from "@/components/shared/DokumenteTabelle";
 import { FileUploadField } from "@/components/shared/FileUploadField";
+import {
+  PARTNER_MAX_BAUTAGEBUCH_ANHAENGE,
+  PARTNER_MAX_PDF_MB,
+  PARTNER_MAX_PHOTO_MB,
+  validatePartnerBautagebuchFiles,
+} from "@/lib/partner/partner-upload-limits";
 import type {
   PartnerAuftragItem,
   PartnerBautagebuchItem,
@@ -49,7 +55,21 @@ function BautagebuchForm({
   const [datum, setDatum] = useState(
     eintrag?.datum ?? new Date().toISOString().slice(0, 10)
   );
-  const [photos, setPhotos] = useState<File[]>([]);
+  const [anhaenge, setAnhaenge] = useState<File[]>([]);
+
+  const bestehendeAnzahl = eintrag?.foto_urls.length ?? 0;
+
+  function handleAnhaengeChange(files: File[]) {
+    const list = files.slice(0, PARTNER_MAX_BAUTAGEBUCH_ANHAENGE);
+    const err = validatePartnerBautagebuchFiles(list, bestehendeAnzahl);
+    if (err) {
+      setError(err);
+      setAnhaenge([]);
+      return;
+    }
+    setError(null);
+    setAnhaenge(list);
+  }
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -64,7 +84,7 @@ function BautagebuchForm({
     fd.set("titel", titel);
     fd.set("beschreibung", beschreibung);
     fd.set("datum", datum);
-    for (const f of photos) fd.append("photos", f);
+    for (const f of anhaenge) fd.append("photos", f);
 
     const res = eintrag
       ? await updatePartnerBautagebuchEintrag(fd)
@@ -116,11 +136,22 @@ function BautagebuchForm({
         />
       </label>
       <FileUploadField
-        label="Fotos"
-        hint={eintrag ? "Neue Fotos werden ergänzt." : "Mehrere Fotos möglich."}
-        accept="image/*"
+        label="Fotos & Dokumente"
+        hint={
+          eintrag
+            ? `Neue Dateien werden ergänzt (max. ${PARTNER_MAX_BAUTAGEBUCH_ANHAENGE} gesamt, davon ${bestehendeAnzahl} bereits). Fotos max. ${PARTNER_MAX_PHOTO_MB} MB, PDF max. ${PARTNER_MAX_PDF_MB} MB.`
+            : `Fotos (JPG/PNG/WebP, max. ${PARTNER_MAX_PHOTO_MB} MB) oder PDF (max. ${PARTNER_MAX_PDF_MB} MB), bis ${PARTNER_MAX_BAUTAGEBUCH_ANHAENGE} Dateien.`
+        }
+        accept="image/jpeg,image/png,image/webp,application/pdf,.pdf"
         multiple
-        onChange={setPhotos}
+        selectedName={
+          anhaenge.length > 0
+            ? anhaenge.length === 1
+              ? anhaenge[0].name
+              : `${anhaenge.length} Dateien ausgewählt`
+            : null
+        }
+        onChange={handleAnhaengeChange}
       />
       {error ? (
         <p className="text-sm text-red-700" role="alert">
