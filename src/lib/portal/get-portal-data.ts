@@ -278,11 +278,68 @@ export async function getPortalDataForKunde(kundeId: string) {
     auftragIds.length > 0
       ? await supabaseAdmin
           .from("auftrag_milestones")
-          .select("auftrag_id, titel, erledigt, fuer_kunden_sichtbar")
+          .select("id, auftrag_id, titel, erledigt, fuer_kunden_sichtbar, sort_order")
           .in("auftrag_id", auftragIds)
           .eq("fuer_kunden_sichtbar", true)
           .order("sort_order", { ascending: true })
       : { data: [] };
+
+  const betreuerByAuftragId = new Map<
+    string,
+    { name: string; email?: string; phone?: string }
+  >();
+  if (auftragIds.length > 0) {
+    const { data: betreuerRows, error: betreuerErr } = await supabaseAdmin
+      .from("auftraege")
+      .select("id, betreuer_id")
+      .in("id", auftragIds);
+    if (betreuerErr) {
+      console.warn("[portal] betreuer_id:", betreuerErr.message);
+    } else {
+      const profileIds = Array.from(
+        new Set(
+          (betreuerRows ?? [])
+            .map((r) => (r as { betreuer_id?: string | null }).betreuer_id)
+            .filter((id): id is string => Boolean(id?.trim()))
+        )
+      );
+      const profileById = new Map<string, { name: string; email?: string; phone?: string }>();
+      if (profileIds.length > 0) {
+        const { data: profiles, error: profileErr } = await supabaseAdmin
+          .from("user_profiles")
+          .select("id, full_name, name, email, phone, telefon")
+          .in("id", profileIds);
+        if (profileErr) {
+          console.warn("[portal] user_profiles betreuer:", profileErr.message);
+        } else {
+          for (const p of profiles ?? []) {
+            const row = p as {
+              id: string;
+              full_name?: string | null;
+              name?: string | null;
+              email?: string | null;
+              phone?: string | null;
+              telefon?: string | null;
+            };
+            const name = row.full_name?.trim() || row.name?.trim() || "Bärenwald Team";
+            const phone = row.phone?.trim() || row.telefon?.trim() || undefined;
+            profileById.set(String(row.id), {
+              name,
+              email: row.email?.trim() || undefined,
+              phone,
+            });
+          }
+        }
+      }
+      for (const r of betreuerRows ?? []) {
+        const raw = r as { id: string; betreuer_id?: string | null };
+        const pid = raw.betreuer_id?.trim();
+        if (!pid) continue;
+        const profile = profileById.get(pid);
+        if (profile) betreuerByAuftragId.set(String(raw.id), profile);
+      }
+    }
+  }
 
   const angebote = Array.from(angeboteByIdEarly.values());
 
@@ -311,15 +368,15 @@ export async function getPortalDataForKunde(kundeId: string) {
 
   const milestonesByAuftrag = new Map<
     string,
-    Array<{ id: string; name: string; status?: string }>
+    Array<{ id: string; titel: string; erledigt: boolean }>
   >();
   for (const m of milestones ?? []) {
     const aid = String((m as { auftrag_id: string }).auftrag_id);
     const list = milestonesByAuftrag.get(aid) ?? [];
     list.push({
-      id: String((m as { titel: string }).titel),
-      name: String((m as { titel: string }).titel),
-      status: (m as { erledigt: boolean }).erledigt ? "erledigt" : "offen",
+      id: String((m as { id: string }).id),
+      titel: String((m as { titel: string }).titel),
+      erledigt: Boolean((m as { erledigt: boolean }).erledigt),
     });
     milestonesByAuftrag.set(aid, list);
   }
@@ -415,7 +472,8 @@ export async function getPortalDataForKunde(kundeId: string) {
             bautagebuch: [],
           })),
         bautagebuch: bautagebuchByAuftrag.get(auftragId) ?? [],
-        phasen: milestonesByAuftrag.get(auftragId) ?? [],
+        milestones: milestonesByAuftrag.get(auftragId) ?? [],
+        betreuer: betreuerByAuftragId.get(auftragId),
       };
     });
 

@@ -21,6 +21,7 @@ export type PartnerPortalPhase = "anfrage" | "angebot" | "auftrag";
  */
 
 const HW_PENDING = new Set(["angefragt", "ausstehend", "warten", "offen"]);
+const HW_BEANTWORTET = new Set(["akzeptiert", "abgelehnt"]);
 
 export function resolveAngebotHandwerkerPhase(
   item: Pick<PartnerAnfrageItem, "status" | "antwort_at" | "gesendet_at" | "hw_eingereicht_at">
@@ -68,12 +69,24 @@ export function resolveAuftragPortalPhase(
 
   if (a === "storniert") return "auftrag";
 
-  /** CRM-Projekt noch nicht gestartet → für HW eine Anfrage/Zusage, kein laufender Auftrag. */
+  /** HW hat geantwortet, Projekt noch „offen“ → kein Tab „Anfragen“, Angebot unter „Angebote“. */
+  if (a === "offen" && HW_BEANTWORTET.has(h)) return "auftrag";
+
+  /** CRM-Projekt noch nicht gestartet → HW soll zu-/absagen. */
   if (a === "offen") return "anfrage";
 
   if (HW_PENDING.has(h)) return "anfrage";
 
   return "auftrag";
+}
+
+/** Auftrag in „Anfragen“, solange HW noch antworten soll. */
+export function isAuftragAnfrageListItem(item: {
+  portalPhase: PartnerPortalPhase;
+  hwStatus: string;
+}): boolean {
+  if (item.portalPhase !== "anfrage") return false;
+  return !HW_BEANTWORTET.has(item.hwStatus.toLowerCase());
 }
 
 export function auftragHwStatusLabel(status: string | null | undefined): string {

@@ -6,7 +6,8 @@ export type LinkPortalKundeResult =
 
 /**
  * Verknüpft Auth-User mit kunden.auth_user_id.
- * Mitarbeiter mit CRM-Profil sind willkommen, wenn dieselbe E-Mail im Kundenstamm steht.
+ * CRM-Mitarbeiter sind willkommen (gleiche Supabase-Auth wie das CRM).
+ * Ein Konto kann parallel Kunden- und Partner-Portal nutzen.
  */
 export async function linkPortalKundeToAuthUser(opts: {
   userId: string;

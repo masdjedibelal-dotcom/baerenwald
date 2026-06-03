@@ -7,6 +7,10 @@ export type LinkPortalHandwerkerResult =
 /**
  * Verknüpft Auth-User mit handwerker.auth_user_id.
  * Nur bestehende Partner (vom CRM angelegt) — kein Auto-Anlegen.
+ *
+ * CRM-Mitarbeiter (user_profiles) sind ausdrücklich erlaubt, wenn dieselbe
+ * E-Mail im Handwerker-Stamm steht. Ein Konto kann parallel Kunden- und
+ * Partner-Portal nutzen (gleiche auth.users-ID).
  */
 export async function linkPortalHandwerkerToAuthUser(opts: {
   userId: string;
@@ -15,33 +19,6 @@ export async function linkPortalHandwerkerToAuthUser(opts: {
   const email = opts.email.trim().toLowerCase();
   if (!email) {
     return { ok: false, error: "Keine E-Mail-Adresse im Konto." };
-  }
-
-  const { data: crmProfile } = await supabaseAdmin
-    .from("user_profiles")
-    .select("id")
-    .eq("id", opts.userId)
-    .maybeSingle();
-
-  if (crmProfile?.id) {
-    return {
-      ok: false,
-      error: "Bitte nutze das interne CRM — dieses Konto ist ein Mitarbeiter-Login.",
-    };
-  }
-
-  const { data: kundeConflict } = await supabaseAdmin
-    .from("kunden")
-    .select("id")
-    .eq("auth_user_id", opts.userId)
-    .maybeSingle();
-
-  if (kundeConflict?.id) {
-    return {
-      ok: false,
-      error:
-        "Dieses Konto ist bereits als Kundenportal verknüpft. Bitte eine andere E-Mail nutzen oder uns kontaktieren.",
-    };
   }
 
   const { data: byAuth } = await supabaseAdmin
