@@ -8,6 +8,8 @@ import {
 } from "@/lib/partner/handwerker-ablehnung";
 import { linkPortalHandwerkerToAuthUser } from "@/lib/partner/link-portal-handwerker";
 import { sendPartnerInternalAnfrageAntwortMail } from "@/lib/partner/partner-mail";
+import { partnerAngebotPortalUrl } from "@/lib/partner/partner-site-url";
+import { syncAngebotHandwerkerAfterAuftragAccept } from "@/lib/partner/sync-angebot-handwerker";
 import { createClient } from "@/lib/supabase/server";
 import { isSupabaseConfigured, supabaseAdmin } from "@/lib/supabase";
 
@@ -143,6 +145,18 @@ export async function respondPartnerAuftragZuweisung(opts: {
       : null;
 
   const angebotId = auftrag.angebot_id != null ? String(auftrag.angebot_id) : "";
+  let partnerAngebotUrl: string | null = null;
+
+  if (angebotId && opts.antwort === "akzeptiert") {
+    const synced = await syncAngebotHandwerkerAfterAuftragAccept({
+      handwerkerId: link.handwerkerId,
+      angebotId,
+    });
+    if (synced.anfrageId) {
+      partnerAngebotUrl = partnerAngebotPortalUrl(synced.anfrageId);
+    }
+  }
+
   if (angebotId) {
     await sendPartnerInternalAnfrageAntwortMail({
       handwerkerName: (hw?.name as string)?.trim() || "Partner",
@@ -151,7 +165,7 @@ export async function respondPartnerAuftragZuweisung(opts: {
       ablehnungGrundLabel: grundLabel,
       notiz,
       angebotId,
-      partnerAngebotPortalUrl: null,
+      partnerAngebotPortalUrl: partnerAngebotUrl,
     });
   }
 
