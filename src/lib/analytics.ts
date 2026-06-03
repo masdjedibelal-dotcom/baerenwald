@@ -1,5 +1,7 @@
 import posthog from "posthog-js";
 
+import { recordMarketingClick } from "@/lib/marketing/journey-storage";
+
 /** Kurzlabel für Lead-/Preis-Events (Situation + Gewerke). */
 export function formatTrackLeistung(
   situation: string | null | undefined,
@@ -11,37 +13,64 @@ export function formatTrackLeistung(
   return s || b || "—";
 }
 
+function ph(
+  event: string,
+  props?: Record<string, string | number | undefined>
+): void {
+  posthog.capture(event, props);
+}
+
 export const track = {
-  rechnerStart: (leistung?: string) =>
-    posthog.capture("rechner_start", { leistung }),
+  rechnerStart: (leistung?: string) => {
+    if (leistung) recordMarketingClick("rechner_start", leistung, "/rechner");
+    ph("rechner_start", { leistung });
+  },
 
-  leistungGewaehlt: (leistung: string, situation: string) =>
-    posthog.capture("leistung_gewaehlt", { leistung, situation }),
+  leistungGewaehlt: (leistung: string, situation: string) => {
+    recordMarketingClick("leistung_gewaehlt", `${situation}: ${leistung}`);
+    ph("leistung_gewaehlt", { leistung, situation });
+  },
 
-  rechnerSchritt: (schritt: number, name: string) =>
-    posthog.capture("rechner_schritt", {
-      schritt_nummer: schritt,
-      schritt_name: name,
-    }),
+  rechnerSchritt: (schritt: number, name: string) => {
+    ph("rechner_schritt", { schritt_nummer: schritt, schritt_name: name });
+  },
 
   preisAngezeigt: (
     leistung: string,
     preis_min?: number,
     preis_max?: number
-  ) =>
-    posthog.capture("preis_angezeigt", { leistung, preis_min, preis_max }),
+  ) => {
+    recordMarketingClick(
+      "preis_angezeigt",
+      `${leistung} (${preis_min ?? "?"}–${preis_max ?? "?"} €)`
+    );
+    ph("preis_angezeigt", { leistung, preis_min, preis_max });
+  },
 
-  leadAbgeschickt: (leistung: string) =>
-    posthog.capture("lead_abgeschickt", { leistung }),
+  leadAbgeschickt: (leistung: string) => {
+    recordMarketingClick("lead_abgeschickt", leistung);
+    ph("lead_abgeschickt", { leistung });
+  },
 
-  preisPerMail: (leistung: string) =>
-    posthog.capture("preis_per_mail", { leistung }),
+  preisPerMail: (leistung: string) => {
+    recordMarketingClick("preis_per_mail", leistung);
+    ph("preis_per_mail", { leistung });
+  },
 
-  heroChipKlick: (leistung: string) =>
-    posthog.capture("hero_chip_klick", { leistung }),
+  heroChipKlick: (leistung: string) => {
+    recordMarketingClick("hero_chip", leistung, `/rechner?leistung=${leistung}`);
+    ph("hero_chip_klick", { leistung });
+  },
 
-  abbruch: (schritt: string, leistung?: string) =>
-    posthog.capture("funnel_abbruch", { schritt, leistung }),
+  abbruch: (schritt: string, leistung?: string) => {
+    ph("funnel_abbruch", { schritt, leistung });
+  },
+
+  /** Leistungskarte / Link auf der Website */
+  leistungLink: (label: string, href: string) => {
+    recordMarketingClick("leistung_link", label, href);
+    ph("leistung_link_click", { label, href });
+  },
 };
 
 const TRUST_ORDER = [

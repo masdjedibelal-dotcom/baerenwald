@@ -11,7 +11,9 @@ import {
   erneuernProjektTyp,
   isErneuernProjektBereich,
 } from "@/lib/funnel/projekt-erneuern";
-import { generateKiZusammenfassung } from "@/lib/lead/generate-ki-zusammenfassung";
+import { generateLeadVertriebsAnalyse } from "@/lib/lead/generate-ki-zusammenfassung";
+import { loadKundenVertriebsKontext } from "@/lib/lead/kunden-vertrieb-status";
+import type { MarketingJourney } from "@/lib/marketing/journey-types";
 import { isSupabaseConfigured, supabaseAdmin } from "@/lib/supabase";
 
 /** CRM-Eingabe — kompatibel mit externem POST /api/lead und internem Funnel. */
@@ -343,6 +345,7 @@ async function persistLeadInner(
     hasEmail ? emailRaw.toLowerCase() : syntheticEmailFromPhone(telefon);
 
   let kunde_id: string | undefined;
+  let kundeWarNeuAngelegt = false;
 
   /** Ohne Limit liefert `.maybeSingle()` einen Fehler, wenn die DB mehrere Treffer hat (Duplikat-E-Mail/-Telefon). */
   if (hasEmail) {
@@ -382,6 +385,7 @@ async function persistLeadInner(
 
     if (kundeError) throw kundeError;
     kunde_id = neuerKunde.id as string;
+    kundeWarNeuAngelegt = true;
   }
 
   const kontakt_email_row = hasEmail ? emailRaw.toLowerCase() : emailForKunde;
@@ -429,10 +433,44 @@ async function persistLeadInner(
     | { role: string; content: string }[]
     | undefined;
   const kiSessionId = funnel?.ki_session_id as string | undefined;
+  const marketingJourney = funnel?.marketing_journey as
+    | MarketingJourney
+    | undefined;
 
-  if (kiChat?.length && kiSessionId) {
-    generateKiZusammenfassung(leadId, kiChat, kiSessionId).catch(console.error);
+  const kundenKontext = kunde_id
+    ? await loadKundenVertriebsKontext(kunde_id, kundeWarNeuAngelegt)
+    : null;
+
+  if (kundenKontext && funnel) {
+    funnel.vertriebs_kontext = {
+      kundenart: kundenKontext.kundenart,
+      portal_registriert: kundenKontext.portal_registriert,
+      anzahl_leads_gesamt: kundenKontext.anzahl_leads_gesamt,
+    };
+    await supabaseAdmin
+      .from("leads")
+      .update({ funnel_daten: funnel })
+      .eq("id", leadId);
   }
+
+  generateLeadVertriebsAnalyse({
+    leadId,
+    sessionId: kiSessionId,
+    chatVerlauf: kiChat,
+    funnelDaten: funnel,
+    marketingJourney: marketingJourney ?? null,
+    kundenKontext,
+    leadMeta: {
+      situation,
+      bereiche,
+      plz: plz || null,
+      zeitraum,
+      preis_min,
+      preis_max,
+      kanal,
+      funnel_quelle: String(funnel_quelle),
+    },
+  }).catch(console.error);
 
   const resendKey = process.env.RESEND_API_KEY;
   const internTo =
