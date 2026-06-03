@@ -15,17 +15,17 @@ import {
   MessagesSquare,
 } from "lucide-react";
 
-import { BautagebuchAccordionList } from "@/components/shared/BautagebuchAccordionList";
+import { PortalDetailPanel } from "@/components/portal/PortalDetailPanel";
+import { PortalListCard } from "@/components/shared/PortalListCard";
 import {
-  DokumenteTabelle,
-  portalDokumenteToZeilen,
-} from "@/components/shared/DokumenteTabelle";
+  PORTAL_LIST_PAGE_SIZE,
+  PortalListPagination,
+} from "@/components/shared/PortalListPagination";
 import { SITE_CONFIG } from "@/lib/config";
 import { labelBereich, labelSituation } from "@/lib/lead-funnel-labels";
 import {
   fmtPortalStatus,
   sanitizeCustomerText,
-  type PortalDetailSection,
 } from "@/lib/portal/portal-display";
 import {
   isPortalAngebotPhaseStatus,
@@ -33,23 +33,21 @@ import {
 } from "@/lib/portal/portal-pipeline";
 import type { PortalDokument } from "@/lib/portal/portal-dokumente";
 import {
+  type KundePortalDetailItem,
+  type PortalBautagebuchEntry,
+  objektPlzOrt,
+} from "@/lib/portal/portal-detail-item";
+import { buildKundeCardRows, type PortalCardRow } from "@/lib/portal/portal-list-mappers";
+import {
   portalObjektKurzlabel,
   prependObjektSection,
   type PortalObjekt,
 } from "@/lib/portal/portal-objekt";
+import { portalDetailStatusPillClass } from "@/lib/shared/portal-detail-format";
 import { cn } from "@/lib/utils";
 import { PortalBaerenwaldGpt } from "@/components/portal/PortalBaerenwaldGpt";
 
 type PortalKunde = { name?: string };
-type PortalPhase = { id: string; name: string; status?: string };
-type PortalBautagebuchEntry = {
-  id?: string;
-  datum?: string;
-  created_at?: string;
-  titel?: string;
-  notiz?: string;
-  fotos_urls?: string[];
-};
 type PortalPosition = {
   id: string;
   titel: string;
@@ -74,7 +72,8 @@ type PortalAuftrag = {
   abnahme_datum?: string;
   created_at?: string;
   naechster_schritt?: string;
-  phasen?: PortalPhase[];
+  milestones?: Array<{ id: string; titel: string; erledigt: boolean }>;
+  betreuer?: { name: string; email?: string; phone?: string };
   positionen?: PortalPosition[];
   bautagebuch?: PortalBautagebuchEntry[];
   dokumente?: PortalDokument[];
@@ -119,21 +118,6 @@ type PortalClientProps = {
 
 type SectionId = "uebersicht" | "anfragen" | "angebote" | "auftraege" | "gpt";
 type OverviewTabId = "anfragen" | "angebote" | "auftraege";
-type SortKey = "date" | "title" | "status";
-type SortDir = "asc" | "desc";
-type DetailItem = {
-  id: string;
-  date?: string;
-  title: string;
-  status?: string;
-  summary?: string;
-  anfrageGewerk?: string;
-  anfrageVorhaben?: string;
-  sections: PortalDetailSection[];
-  tags?: string[];
-  bautagebuch?: PortalBautagebuchEntry[];
-  dokumente?: PortalDokument[];
-};
 
 function formatAnfrageGewerk(bereiche?: string[]): string | undefined {
   const parts = (bereiche ?? [])
@@ -202,20 +186,6 @@ function emptyLabelForSection(section: OverviewTabId | SectionId): string {
   return "Noch keine Einträge";
 }
 
-function statusPillClass(status?: string): string {
-  const s = (status || "").toLowerCase();
-  if (s.includes("abgeschlossen") || s.includes("fertig")) {
-    return "tag bg-emerald-100 text-emerald-700";
-  }
-  if (s.includes("in_arbeit") || s.includes("arbeit") || s.includes("aktiv")) {
-    return "tag bg-blue-100 text-blue-700";
-  }
-  if (s.includes("angebot") || s.includes("gesendet") || s.includes("entwurf")) {
-    return "tag bg-amber-100 text-amber-700";
-  }
-  return "tag tag-neutral";
-}
-
 function isCompletedStatus(status?: string): boolean {
   const normalized = (status || "").toLowerCase().replace(/[\s-]+/g, "_");
   return (
@@ -244,136 +214,6 @@ function dedupe(values: Array<string | undefined | null>): string[] {
   return Array.from(new Set(values.filter((v): v is string => Boolean(v && v.trim()))));
 }
 
-function PortalDetailPanel({
-  item,
-  showStatusAtBottom,
-}: {
-  item: DetailItem;
-  showStatusAtBottom: boolean;
-}) {
-  const isAnfrageDetail = Boolean(item.anfrageGewerk || item.anfrageVorhaben);
-  const detailTitle = isAnfrageDetail
-    ? anfrageDisplayTitle(item.anfrageVorhaben, item.anfrageGewerk)
-    : item.title;
-
-  return (
-    <div className="space-y-4">
-      <header className="space-y-2 border-b border-border-light pb-4">
-        <p className="text-xs text-text-tertiary">{fmtDate(item.date)}</p>
-        <h3 className="font-display text-xl font-semibold leading-snug text-text-primary sm:text-2xl">
-          {detailTitle}
-        </h3>
-        {!showStatusAtBottom && item.status ? (
-          <span className={statusPillClass(item.status)}>
-            {fmtPortalStatus(item.status)}
-          </span>
-        ) : null}
-        {!isAnfrageDetail && item.summary ? (
-          <p className="text-sm leading-relaxed text-text-secondary">{item.summary}</p>
-        ) : null}
-      </header>
-
-      {item.sections
-        .filter(
-          (section) =>
-            (section.rows && section.rows.length > 0) ||
-            (section.bullets && section.bullets.length > 0) ||
-            Boolean(section.text)
-        )
-        .filter((section) => {
-          const isAnfrageDetail = Boolean(item.anfrageGewerk || item.anfrageVorhaben);
-          if (!isAnfrageDetail) return true;
-          const duplicateHeadings = new Set([
-            "Gewerke",
-            "Ihr Vorhaben",
-            "Gewerk",
-            "Vorhaben",
-          ]);
-          return !duplicateHeadings.has(section.heading);
-        })
-        .map((section) => (
-        <section key={section.heading} className="space-y-2">
-          <h4 className="text-xs font-semibold uppercase tracking-wider text-text-tertiary">
-            {section.heading}
-          </h4>
-          {section.rows && section.rows.length > 0 ? (
-            <dl className="overflow-hidden rounded-xl border border-border-light bg-muted/25">
-              {section.rows.map((row) => (
-                <div
-                  key={`${section.heading}-${row.label}`}
-                  className="grid grid-cols-1 gap-0.5 border-b border-border-light px-3 py-2.5 last:border-b-0 sm:grid-cols-[38%_1fr] sm:gap-3"
-                >
-                  <dt className="text-xs font-medium text-text-tertiary">{row.label}</dt>
-                  <dd className="text-sm font-semibold text-text-primary">{row.value}</dd>
-                </div>
-              ))}
-            </dl>
-          ) : null}
-          {section.bullets && section.bullets.length > 0 ? (
-            <ul className="space-y-1.5 rounded-xl border border-border-light bg-muted/25 px-3 py-2.5">
-              {section.bullets.map((line) => (
-                <li key={line} className="flex gap-2 text-sm text-text-primary">
-                  <span className="text-accent" aria-hidden>
-                    •
-                  </span>
-                  <span>{line}</span>
-                </li>
-              ))}
-            </ul>
-          ) : null}
-          {section.text ? (
-            <p className="rounded-xl border border-border-light bg-muted/25 px-3 py-2.5 text-sm leading-relaxed text-text-primary">
-              {section.text}
-            </p>
-          ) : null}
-        </section>
-      ))}
-
-      {!isAnfrageDetail && item.tags && item.tags.length > 0 ? (
-        <section className="space-y-2">
-          <h4 className="text-xs font-semibold uppercase tracking-wider text-text-tertiary">
-            Gewerke & Phasen
-          </h4>
-          <div className="flex flex-wrap gap-1.5">
-            {item.tags.map((tag) => (
-              <span key={tag} className="tag tag-neutral">
-                {tag}
-              </span>
-            ))}
-          </div>
-        </section>
-      ) : null}
-
-      <DokumenteTabelle
-        dokumente={portalDokumenteToZeilen(item.dokumente ?? [])}
-        heading="Dokumente"
-        emptyText="Noch keine Dokumente."
-      />
-
-      {item.bautagebuch !== undefined ? (
-        <BautagebuchAccordionList
-          eintraege={(item.bautagebuch ?? []).map((e) => ({
-            id: e.id ?? `${e.titel}-${e.datum}`,
-            datum: e.datum ?? e.created_at,
-            titel: e.titel ?? "Update",
-            beschreibung: e.notiz,
-            fotos: e.fotos_urls,
-          }))}
-          emptyText="Noch keine Einträge im Bautagebuch."
-        />
-      ) : null}
-
-      {showStatusAtBottom && item.status ? (
-        <footer className="border-t border-border-light pt-4">
-          <span className={statusPillClass(item.status)}>
-            {fmtPortalStatus(item.status)}
-          </span>
-        </footer>
-      ) : null}
-    </div>
-  );
-}
-
 function detailRows(
   rows: Array<{ label: string; value?: string | null }>
 ): Array<{ label: string; value: string }> {
@@ -388,9 +228,11 @@ function detailRows(
     );
 }
 
-function shortLabel(value?: string, max = 52): string {
-  if (!value) return "—";
-  return value.length > max ? `${value.slice(0, max - 1)}…` : value;
+function listItemLabel(section: SectionId): string {
+  if (section === "anfragen") return "Anfragen";
+  if (section === "angebote") return "Angebote";
+  if (section === "auftraege") return "Aufträge";
+  return "Einträge";
 }
 
 export function PortalClient({
@@ -428,8 +270,6 @@ export function PortalClient({
   );
   const [mobileDetailOpen, setMobileDetailOpen] = useState(false);
   const [gptOpen, setGptOpen] = useState(false);
-  const [sortKey, setSortKey] = useState<SortKey>("date");
-  const [sortDir, setSortDir] = useState<SortDir>("desc");
   const [currentPage, setCurrentPage] = useState(1);
 
   const vorname = (kunde?.name || "Kunde").split(" ")[0] || "Kunde";
@@ -441,7 +281,7 @@ export function PortalClient({
   ).length;
   const offeneAnfragenCount = leadsAnfragePhase.length;
 
-  const anfragenItems = useMemo<DetailItem[]>(
+  const anfragenItems = useMemo<KundePortalDetailItem[]>(
     () =>
       [...leadsAnfragePhase]
         .sort(
@@ -470,12 +310,18 @@ export function PortalClient({
             ],
             lead.objekt
           );
+          const { plz, ort } = objektPlzOrt(lead.objekt, lead.plz);
           return {
             id: lead.id,
             date: lead.created_at,
             title,
             anfrageGewerk,
             anfrageVorhaben,
+            plz,
+            ort,
+            cardSubtitle: anfrageGewerk,
+            infoHint:
+              "Deine Anfrage ist bei uns eingegangen. Wir prüfen die Details und melden uns bei dir.",
             status: fmtPortalStatus(lead.status || "neu"),
             summary: lead.objekt
               ? portalObjektKurzlabel(lead.objekt)
@@ -489,7 +335,7 @@ export function PortalClient({
     [leadsAnfragePhase]
   );
 
-  const angeboteItems = useMemo<DetailItem[]>(() => {
+  const angeboteItems = useMemo<KundePortalDetailItem[]>(() => {
     const fromAngebote = [...angeboteTab]
       .sort(
         (a, b) =>
@@ -497,33 +343,39 @@ export function PortalClient({
           new Date(a.created_at || 0).getTime()
       )
       .map((a) => {
+        const overviewRows = detailRows([
+          {
+            label: "Angebotsnummer",
+            value: a.angebotsnr?.trim() ? a.angebotsnr.trim() : undefined,
+          },
+          { label: "Gültig bis", value: fmtDate(a.gueltig_bis ?? undefined) },
+          {
+            label: "Versendet am",
+            value: fmtDate(a.gesendet_am ?? a.created_at ?? undefined),
+          },
+          {
+            label: "Preis (Brutto)",
+            value: fmtMoney(a.betrag) !== "—" ? fmtMoney(a.betrag) : undefined,
+          },
+        ]);
         const sections = prependObjektSection(
-          [
-            {
-              heading: "Überblick",
-              rows: detailRows([
-                { label: "Gültig bis", value: fmtDate(a.gueltig_bis ?? undefined) },
-                {
-                  label: "Versendet am",
-                  value: fmtDate(a.gesendet_am ?? a.created_at ?? undefined),
-                },
-                {
-                  label: "Preis (Brutto)",
-                  value:
-                    fmtMoney(a.betrag) !== "—" ? fmtMoney(a.betrag) : undefined,
-                },
-              ]),
-            },
-          ],
+          [{ heading: "Überblick", rows: overviewRows }],
           a.objekt
         );
+        if (a.leistungen && a.leistungen.length > 0) {
+          sections.push({ heading: "Leistungen", bullets: a.leistungen });
+        }
         const st = a.status_einfach || a.status || "angebot";
+        const { plz, ort } = objektPlzOrt(a.objekt);
         return {
           id: a.id,
           date: a.created_at ?? undefined,
           title:
             sanitizeCustomerText(a.titel, 200) ||
             (a.angebotsnr ? `Angebot ${a.angebotsnr}` : "Angebot"),
+          plz,
+          ort,
+          cardSubtitle: a.objekt ? portalObjektKurzlabel(a.objekt) : undefined,
           status: fmtPortalStatus(st),
           summary: a.objekt ? portalObjektKurzlabel(a.objekt) : undefined,
           sections,
@@ -539,12 +391,17 @@ export function PortalClient({
       )
       .map((lead) => {
         const { title, anfrageVorhaben, anfrageGewerk } = anfrageTitleFromLead(lead);
+        const { plz, ort } = objektPlzOrt(lead.objekt, lead.plz);
         return {
           id: `lead-${lead.id}`,
           date: lead.created_at,
           title,
           anfrageVorhaben,
           anfrageGewerk,
+          plz,
+          ort,
+          cardSubtitle: anfrageGewerk,
+          infoHint: "Wir bereiten dein Angebot vor und melden uns, sobald es bereitsteht.",
           status: fmtPortalStatus(lead.status || "angebot"),
           summary: lead.objekt
             ? portalObjektKurzlabel(lead.objekt)
@@ -579,7 +436,7 @@ export function PortalClient({
     [leads, auftraege]
   );
 
-  const auftraegeItems = useMemo<DetailItem[]>(() => {
+  const auftraegeItems = useMemo<KundePortalDetailItem[]>(() => {
     const fromAuftraege = [...auftraege]
       .sort((a, b) => {
         const aDone = isAuftragAbgeschlossen(a) ? 1 : 0;
@@ -618,6 +475,7 @@ export function PortalClient({
             a.objekt
           );
           const naechster = sanitizeCustomerText(a.naechster_schritt, 300);
+          const { plz, ort } = objektPlzOrt(a.objekt);
           if (naechster) {
             sections.push({ heading: "Nächster Schritt", text: naechster });
           }
@@ -627,11 +485,14 @@ export function PortalClient({
           if (leistungen.length > 0) {
             sections.push({ heading: "Leistungen", bullets: leistungen });
           }
-          const tags = dedupe(a.phasen?.map((p) => p.name) ?? []).slice(0, 6);
           return {
             id: a.id,
             date: a.start_datum || a.created_at,
             title: a.titel,
+            plz,
+            ort,
+            cardSubtitle: `${a.fortschritt ?? 0} % Fortschritt`,
+            infoHint: naechster || undefined,
             status: fmtPortalStatus(
               isAuftragAbgeschlossen(a)
                 ? "abgeschlossen"
@@ -645,7 +506,8 @@ export function PortalClient({
               .filter(Boolean)
               .join(" · "),
             sections,
-            tags: tags.length > 0 ? tags : undefined,
+            milestones: a.milestones ?? [],
+            betreuer: a.betreuer,
             bautagebuch: a.bautagebuch ?? [],
             dokumente: a.dokumente ?? [],
           };
@@ -660,12 +522,16 @@ export function PortalClient({
       .map((lead) => {
         const { title, anfrageVorhaben, anfrageGewerk } = anfrageTitleFromLead(lead);
         const abgeschlossen = isCompletedStatus(lead.status);
+        const { plz, ort } = objektPlzOrt(lead.objekt, lead.plz);
         return {
           id: `lead-${lead.id}`,
           date: lead.created_at,
           title,
           anfrageVorhaben,
           anfrageGewerk,
+          plz,
+          ort,
+          cardSubtitle: anfrageGewerk,
           status: fmtPortalStatus(
             abgeschlossen ? "abgeschlossen" : lead.status || "auftrag"
           ),
@@ -764,62 +630,102 @@ export function PortalClient({
           ? selectedAuftrag
           : null;
 
-  const currentList = useMemo(
-    () =>
-      section === "anfragen"
-        ? anfragenItems
-        : section === "angebote"
-          ? angeboteItems
-          : section === "auftraege"
-            ? auftraegeItems
-            : [],
-    [section, anfragenItems, angeboteItems, auftraegeItems]
-  );
+  const sectionCardRows = useMemo(() => {
+    if (section === "anfragen") return buildKundeCardRows(anfragenItems, "anfrage");
+    if (section === "angebote") return buildKundeCardRows(angeboteItems, "angebot");
+    if (section === "auftraege") return buildKundeCardRows(auftraegeItems, "auftrag");
+    return [];
+  }, [section, anfragenItems, angeboteItems, auftraegeItems]);
 
   useEffect(() => {
     setCurrentPage(1);
-    setSortKey("date");
-    setSortDir("desc");
   }, [section]);
 
-  const sortedList = useMemo(() => {
-    const list = [...currentList];
-    const direction = sortDir === "asc" ? 1 : -1;
-    list.sort((a, b) => {
-      if (sortKey === "date") {
-        const ta = new Date(a.date || 0).getTime();
-        const tb = new Date(b.date || 0).getTime();
-        return (ta - tb) * direction;
-      }
-      if (sortKey === "status") {
-        return (a.status || "").localeCompare(b.status || "", "de") * direction;
-      }
-      return a.title.localeCompare(b.title, "de") * direction;
-    });
-    return list;
-  }, [currentList, sortDir, sortKey]);
+  const overviewCardRows = useMemo(() => {
+    if (overviewTab === "anfragen") return buildKundeCardRows(anfragenItems, "anfrage");
+    if (overviewTab === "angebote") return buildKundeCardRows(angeboteItems, "angebot");
+    return buildKundeCardRows(auftraegeItems, "auftrag");
+  }, [overviewTab, anfragenItems, angeboteItems, auftraegeItems]);
 
-  const PAGE_SIZE = 10;
-  const totalPages = Math.max(1, Math.ceil(sortedList.length / PAGE_SIZE));
+  const PAGE_SIZE = PORTAL_LIST_PAGE_SIZE;
+  const totalPages = Math.max(1, Math.ceil(sectionCardRows.length / PAGE_SIZE));
   const safePage = Math.min(currentPage, totalPages);
-  const paginatedList = sortedList.slice(
+  const paginatedCardRows = sectionCardRows.slice(
     (safePage - 1) * PAGE_SIZE,
     safePage * PAGE_SIZE
   );
+
+  const selectedId =
+    section === "anfragen"
+      ? selectedAnfrageId
+      : section === "angebote"
+        ? selectedAngebotId
+        : section === "auftraege"
+          ? selectedAuftragId
+          : null;
+
+  function selectRow(id: string) {
+    if (section === "anfragen") setSelectedAnfrageId(id);
+    if (section === "angebote") setSelectedAngebotId(id);
+    if (section === "auftraege") setSelectedAuftragId(id);
+    setMobileDetailOpen(true);
+  }
+
+  function renderCard(row: PortalCardRow) {
+    return (
+      <PortalListCard
+        key={row.id}
+        accent={row.accent}
+        title={row.title}
+        subtitle={row.subtitle}
+        statusLabel={row.statusLabel}
+        statusPillClass={portalDetailStatusPillClass(row.statusPillKey)}
+        meta={row.meta}
+        selected={selectedId === row.id}
+        onClick={() => selectRow(row.id)}
+      />
+    );
+  }
+
+  function renderOverviewCard(row: PortalCardRow, tab: OverviewTabId) {
+    return (
+      <PortalListCard
+        key={row.id}
+        accent={row.accent}
+        title={row.title}
+        subtitle={row.subtitle}
+        statusLabel={row.statusLabel}
+        statusPillClass={portalDetailStatusPillClass(row.statusPillKey)}
+        meta={row.meta}
+        onClick={() => {
+          if (tab === "anfragen") setSelectedAnfrageId(row.id);
+          else if (tab === "angebote") setSelectedAngebotId(row.id);
+          else setSelectedAuftragId(row.id);
+          setSection(tab);
+          setMobileDetailOpen(true);
+        }}
+      />
+    );
+  }
+
+  const sectionListEmpty =
+    section !== "uebersicht" &&
+    section !== "gpt" &&
+    (section === "anfragen"
+      ? anfragenItems.length === 0
+      : section === "angebote"
+        ? angeboteItems.length === 0
+        : auftraegeItems.length === 0);
 
   const waNumber = SITE_CONFIG.phoneMobil.replace(/\D/g, "");
   const waHref = `https://wa.me/${waNumber}?text=${encodeURIComponent(
     "Hallo Bärenwald, ich habe eine Frage"
   )}`;
 
-  function handleSort(nextKey: SortKey) {
-    if (sortKey === nextKey) {
-      setSortDir((prev) => (prev === "asc" ? "desc" : "asc"));
-    } else {
-      setSortKey(nextKey);
-      setSortDir(nextKey === "date" ? "desc" : "asc");
-    }
-    setCurrentPage(1);
+  function switchSection(id: SectionId) {
+    setSection(id);
+    setMobileDetailOpen(false);
+    if (id !== "gpt") setGptOpen(false);
   }
 
   return (
@@ -864,10 +770,7 @@ export function PortalClient({
               {MENU_ITEMS.map(({ id, label, icon: Icon }) => (
                 <button
                   key={id}
-                  onClick={() => {
-                    setSection(id);
-                    if (id !== "gpt") setGptOpen(false);
-                  }}
+                  onClick={() => switchSection(id)}
                   className={cn(
                     "mb-1 flex w-full items-center justify-between rounded-xl px-3 py-2 text-left text-sm font-semibold",
                     section === id
@@ -974,80 +877,14 @@ export function PortalClient({
                   </button>
                 </div>
 
-                <div className="overflow-x-auto rounded-xl border border-border-default">
-                  <table className="min-w-full bg-surface-card text-left">
-                    <thead className="bg-muted/70">
-                      <tr>
-                        <th className="px-3 py-2 text-xs font-semibold uppercase tracking-wider text-text-tertiary">
-                          Datum
-                        </th>
-                        <th className="px-3 py-2 text-xs font-semibold uppercase tracking-wider text-text-tertiary">
-                          Titel
-                        </th>
-                        <th className="px-3 py-2 text-xs font-semibold uppercase tracking-wider text-text-tertiary">
-                          Status
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {(() => {
-                        const rows = (
-                          overviewTab === "anfragen"
-                            ? anfragenItems
-                            : overviewTab === "angebote"
-                              ? angeboteItems
-                              : auftraegeItems
-                        ).slice(0, 5);
-
-                        if (rows.length === 0) {
-                          return (
-                            <tr className="border-t border-border-light">
-                              <td
-                                colSpan={3}
-                                className="px-3 py-6 text-center text-sm text-text-secondary"
-                              >
-                                {emptyLabelForSection(overviewTab)}
-                              </td>
-                            </tr>
-                          );
-                        }
-
-                        return rows.map((item) => (
-                          <tr
-                            key={item.id}
-                            className="cursor-pointer border-t border-border-light hover:bg-muted/70"
-                            onClick={() => {
-                              if (overviewTab === "anfragen") {
-                                setSelectedAnfrageId(item.id);
-                                setSection("anfragen");
-                              } else if (overviewTab === "angebote") {
-                                setSelectedAngebotId(item.id);
-                                setSection("angebote");
-                              } else {
-                                setSelectedAuftragId(item.id);
-                                setSection("auftraege");
-                              }
-                              setMobileDetailOpen(true);
-                            }}
-                          >
-                            <td className="px-3 py-2 text-sm text-text-secondary">
-                              {fmtDate(item.date)}
-                            </td>
-                            <td className="px-3 py-2 text-sm font-semibold text-text-primary">
-                              <span className="block max-w-[200px] truncate sm:max-w-none">
-                                {item.title}
-                              </span>
-                            </td>
-                            <td className="px-3 py-2 text-sm text-text-secondary">
-                              <span className={statusPillClass(item.status)}>
-                                {item.status || "offen"}
-                              </span>
-                            </td>
-                          </tr>
-                        ));
-                      })()}
-                    </tbody>
-                  </table>
+                <div className="space-y-2">
+                  {overviewCardRows.length === 0 ? (
+                    <p className="rounded-xl border border-dashed border-border-light bg-muted/20 px-3 py-6 text-center text-sm text-text-secondary">
+                      {emptyLabelForSection(overviewTab)}
+                    </p>
+                  ) : (
+                    overviewCardRows.slice(0, 5).map((row) => renderOverviewCard(row, overviewTab))
+                  )}
                 </div>
               </article>
 
@@ -1094,137 +931,30 @@ export function PortalClient({
           {section !== "uebersicht" && section !== "gpt" && (
             <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
               <article className="card-bordered overflow-hidden p-0">
-                <table className="w-full table-fixed bg-surface-card text-left">
-                  <thead className="bg-muted/70">
-                    <tr>
-                      <th className="w-[84px] px-2 py-2 text-[11px] font-semibold uppercase tracking-wider text-text-tertiary sm:w-[130px] sm:px-4 sm:py-3 sm:text-xs">
-                        <button
-                          onClick={() => handleSort("date")}
-                          className="inline-flex items-center gap-1 hover:text-text-primary"
-                        >
-                          Datum
-                          <span>{sortKey === "date" ? (sortDir === "asc" ? "↑" : "↓") : "↕"}</span>
-                        </button>
-                      </th>
-                      <th className="px-2 py-2 text-[11px] font-semibold uppercase tracking-wider text-text-tertiary sm:max-w-[420px] sm:px-4 sm:py-3 sm:text-xs">
-                        <button
-                          onClick={() => handleSort("title")}
-                          className="inline-flex items-center gap-1 hover:text-text-primary"
-                        >
-                          Titel
-                          <span>{sortKey === "title" ? (sortDir === "asc" ? "↑" : "↓") : "↕"}</span>
-                        </button>
-                      </th>
-                      <th className="hidden min-w-[220px] px-4 py-3 text-xs font-semibold uppercase tracking-wider text-text-tertiary md:table-cell">
-                        Info
-                      </th>
-                      <th className="w-[92px] px-2 py-2 text-[11px] font-semibold uppercase tracking-wider text-text-tertiary sm:w-[140px] sm:px-4 sm:py-3 sm:text-xs">
-                        <button
-                          onClick={() => handleSort("status")}
-                          className="inline-flex items-center gap-1 hover:text-text-primary"
-                        >
-                          Status
-                          <span>{sortKey === "status" ? (sortDir === "asc" ? "↑" : "↓") : "↕"}</span>
-                        </button>
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {paginatedList.length === 0 ? (
-                      <tr className="border-t border-border-light">
-                        <td
-                          colSpan={4}
-                          className="px-4 py-8 text-center text-sm text-text-secondary"
-                        >
-                          {emptyLabelForSection(section)}
-                        </td>
-                      </tr>
-                    ) : (
-                      paginatedList.map((item) => {
-                      const active =
-                        section === "anfragen"
-                          ? selectedAnfrageId === item.id
-                          : section === "angebote"
-                            ? selectedAngebotId === item.id
-                            : selectedAuftragId === item.id;
-                      return (
-                        <tr
-                          key={item.id}
-                          onClick={() => {
-                            if (section === "anfragen") setSelectedAnfrageId(item.id);
-                            if (section === "angebote") setSelectedAngebotId(item.id);
-                            if (section === "auftraege") setSelectedAuftragId(item.id);
-                            setMobileDetailOpen(true);
-                          }}
-                          className={cn(
-                            "cursor-pointer border-t border-border-light",
-                            active ? "bg-accent-light" : "hover:bg-muted/70"
-                          )}
-                        >
-                          <td className="px-2 py-2 text-[12px] text-text-secondary sm:px-4 sm:py-3 sm:text-sm">
-                            {fmtDate(item.date)}
-                          </td>
-                          <td className="px-2 py-2 text-text-primary sm:max-w-[420px] sm:px-4 sm:py-3 sm:text-sm">
-                            <span className="block text-[13px] font-semibold leading-tight">
-                              {shortLabel(item.title, 40)}
-                            </span>
-                            <button
-                              type="button"
-                              className="mt-1 text-[11px] font-medium text-accent sm:hidden"
-                            >
-                              Mehr
-                            </button>
-                          </td>
-                          <td className="hidden px-4 py-3 text-sm text-text-secondary md:table-cell">
-                            <span className="block truncate">
-                              {item.summary || "—"}
-                            </span>
-                          </td>
-                          <td className="px-2 py-2 text-[12px] text-text-secondary sm:px-4 sm:py-3 sm:text-sm">
-                            <span className={statusPillClass(item.status)}>
-                              {shortLabel(item.status || "offen", 14)}
-                            </span>
-                          </td>
-                        </tr>
-                      );
-                      })
-                    )}
-                  </tbody>
-                </table>
-                <div className="flex items-center justify-center border-t border-border-light px-4 py-2">
-                  <div className="inline-flex items-center gap-2 rounded-full border border-border-default bg-surface-card px-2 py-1 text-xs">
-                    <button
-                      onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-                      disabled={safePage <= 1}
-                      className="grid h-6 w-6 place-items-center rounded-full text-text-secondary transition hover:bg-muted hover:text-text-primary disabled:cursor-not-allowed disabled:opacity-40"
-                      aria-label="Vorherige Seite"
-                    >
-                      <span aria-hidden>←</span>
-                    </button>
-                    <span className="min-w-[84px] text-center text-[11px] font-medium text-text-secondary">
-                      {safePage} / {totalPages}
-                    </span>
-                    <button
-                      onClick={() =>
-                        setCurrentPage((p) => Math.min(totalPages, p + 1))
-                      }
-                      disabled={safePage >= totalPages}
-                      className="grid h-6 w-6 place-items-center rounded-full text-text-secondary transition hover:bg-muted hover:text-text-primary disabled:cursor-not-allowed disabled:opacity-40"
-                      aria-label="Nächste Seite"
-                    >
-                      <span aria-hidden>→</span>
-                    </button>
-                  </div>
+                <div className="space-y-2 p-3 sm:p-4">
+                  {sectionListEmpty ? (
+                    <p className="rounded-xl border border-dashed border-border-light bg-muted/20 px-3 py-8 text-center text-sm text-text-secondary">
+                      {emptyLabelForSection(section)}
+                    </p>
+                  ) : (
+                    paginatedCardRows.map(renderCard)
+                  )}
                 </div>
+                {!sectionListEmpty ? (
+                  <PortalListPagination
+                    totalItems={sectionCardRows.length}
+                    itemLabel={listItemLabel(section)}
+                    currentPage={safePage}
+                    totalPages={totalPages}
+                    onPageChange={setCurrentPage}
+                  />
+                ) : null}
               </article>
 
               <aside className="hidden lg:block">
                 <article className="card-bordered sticky top-[92px] max-h-[calc(100vh-110px)] overflow-y-auto p-4">
                   {selectedDetail ? (
-                    <PortalDetailPanel
-                      item={selectedDetail}
-                      showStatusAtBottom={false}
-                    />
+                    <PortalDetailPanel item={selectedDetail} />
                   ) : (
                     <p className="text-sm text-text-secondary">Kein Eintrag ausgewählt.</p>
                   )}
@@ -1246,7 +976,7 @@ export function PortalClient({
               <button
                 key={id}
                 type="button"
-                onClick={() => setSection(id)}
+                onClick={() => switchSection(id)}
                 className={cn(
                   "rounded-lg px-0.5 py-2 text-[10px] font-medium",
                   section === id
@@ -1286,7 +1016,7 @@ export function PortalClient({
               <button
                 key={id}
                 type="button"
-                onClick={() => setSection(id)}
+                onClick={() => switchSection(id)}
                 className={cn(
                   "rounded-lg px-0.5 py-2 text-[10px] font-medium",
                   section === id
@@ -1304,9 +1034,14 @@ export function PortalClient({
         </div>
       </nav>
 
-      {mobileDetailOpen && section !== "uebersicht" && section !== "gpt" && selectedDetail ? (
+      {mobileDetailOpen &&
+      section !== "uebersicht" &&
+      section !== "gpt" &&
+      !sectionListEmpty &&
+      selectedDetail ? (
         <div className="fixed inset-0 z-[120] bg-black/40 lg:hidden">
           <button
+            type="button"
             className="absolute inset-0"
             onClick={() => setMobileDetailOpen(false)}
             aria-label="Sheet schließen"
@@ -1315,20 +1050,8 @@ export function PortalClient({
             <div className="shrink-0 px-4 pb-2 pt-3">
               <div className="mx-auto mb-3 h-1.5 w-12 rounded-full bg-border-default" />
             </div>
-            <div className="min-h-0 flex-1 overflow-y-auto px-4 pb-2">
-              <PortalDetailPanel
-                item={selectedDetail}
-                showStatusAtBottom={false}
-              />
-            </div>
-            <div className="shrink-0 border-t border-border-light p-4">
-              <button
-                type="button"
-                className="btn-pill-primary w-full !py-2.5 !text-[13px]"
-                onClick={() => setMobileDetailOpen(false)}
-              >
-                Schließen
-              </button>
+            <div className="min-h-0 flex-1 overflow-y-auto px-4 pb-4">
+              <PortalDetailPanel item={selectedDetail} />
             </div>
           </article>
         </div>

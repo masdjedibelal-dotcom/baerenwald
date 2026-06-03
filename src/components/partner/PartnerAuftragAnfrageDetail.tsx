@@ -5,78 +5,29 @@ import { useState } from "react";
 
 import { respondPartnerAuftragZuweisung } from "@/app/actions/partner-auftrag-anfragen";
 import {
+  PartnerConfirmDialog,
+  PartnerDetailError,
+  PartnerDetailHero,
+  PartnerDetailInfoBox,
+  PartnerDetailKeyValues,
+  PartnerDetailLayout,
+  PartnerDetailLeistungenList,
+  PartnerDetailSection,
+  PartnerDetailStickyActions,
+} from "@/components/partner/PartnerDetailUi";
+import {
   HANDWERKER_ABLEHNUNG_GRUND_LABELS,
   HANDWERKER_ABLEHNUNG_GRUND_VALUES,
 } from "@/lib/partner/handwerker-ablehnung";
 import type { PartnerAuftragItem } from "@/lib/partner/get-partner-data";
+import {
+  fmtPartnerMetaLine,
+  partnerDetailStatusPillClass,
+} from "@/lib/partner/partner-detail-format";
 import { auftragHwStatusLabel } from "@/lib/partner/partner-portal-phase";
-import { cn } from "@/lib/utils";
-
-function fmtDate(v?: string | null): string {
-  if (!v) return "—";
-  const d = new Date(v);
-  if (Number.isNaN(d.getTime())) return "—";
-  return d.toLocaleDateString("de-DE");
-}
+import { partnerAngebotPortalUrl } from "@/lib/partner/partner-site-url";
 
 const PENDING_HW = new Set(["angefragt", "ausstehend", "warten", "offen", "zugewiesen"]);
-
-function ConfirmDialog({
-  open,
-  title,
-  description,
-  confirmLabel,
-  confirmVariant = "primary",
-  loading,
-  onConfirm,
-  onCancel,
-}: {
-  open: boolean;
-  title: string;
-  description: string;
-  confirmLabel: string;
-  confirmVariant?: "primary" | "danger";
-  loading: boolean;
-  onConfirm: () => void;
-  onCancel: () => void;
-}) {
-  if (!open) return null;
-  return (
-    <div
-      className="fixed inset-0 z-[130] flex items-center justify-center bg-black/45 p-4"
-      role="dialog"
-      aria-modal="true"
-    >
-      <div className="w-full max-w-md rounded-2xl border border-border-default bg-surface-card p-5 shadow-xl">
-        <h4 className="font-display text-lg font-semibold text-text-primary">{title}</h4>
-        <p className="mt-2 text-sm leading-relaxed text-text-secondary">{description}</p>
-        <div className="mt-5 flex flex-wrap justify-end gap-2">
-          <button
-            type="button"
-            onClick={onCancel}
-            disabled={loading}
-            className="btn-pill-outline !px-4 !py-2 !text-[13px]"
-          >
-            Abbrechen
-          </button>
-          <button
-            type="button"
-            disabled={loading}
-            onClick={onConfirm}
-            className={cn(
-              confirmVariant === "danger"
-                ? "btn-pill-outline !border-red-200 !text-red-800 !px-4 !py-2 !text-[13px]"
-                : "btn-pill-primary !px-4 !py-2 !text-[13px]",
-              loading && "opacity-60"
-            )}
-          >
-            {loading ? "Wird gesendet…" : confirmLabel}
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
 
 export function PartnerAuftragAnfrageDetail({ item }: { item: PartnerAuftragItem }) {
   const router = useRouter();
@@ -89,9 +40,10 @@ export function PartnerAuftragAnfrageDetail({ item }: { item: PartnerAuftragItem
   const [notiz, setNotiz] = useState("");
 
   const hwSt = item.hwStatus.toLowerCase();
-  const auftragOffen = item.status.toLowerCase() === "offen";
+  const hwBeantwortet = hwSt === "akzeptiert" || hwSt === "abgelehnt";
   const kannAntworten =
-    auftragOffen || PENDING_HW.has(hwSt) || item.hwStatus === "zugewiesen";
+    !hwBeantwortet &&
+    (PENDING_HW.has(hwSt) || hwSt === "zugewiesen" || item.status.toLowerCase() === "offen");
 
   async function sendAntwort(antwort: "akzeptiert" | "abgelehnt") {
     setLoading(true);
@@ -115,94 +67,99 @@ export function PartnerAuftragAnfrageDetail({ item }: { item: PartnerAuftragItem
 
   const statusLabel = auftragHwStatusLabel(item.hwStatus);
 
+  const infoText = hwBeantwortet
+    ? hwSt === "akzeptiert"
+      ? "Du hast zugesagt. Als Nächstes reichst du dein Angebot (Preis und PDF) unter „Angebote“ ein."
+      : "Du hast diese Zuweisung abgelehnt."
+    : "Bärenwald hat dir Leistungen an diesem Projekt zugewiesen. Bitte bestätige oder lehne die Anfrage ab.";
+
+  const leistungen = item.positionen.map((p) => ({
+    id: p.id,
+    title: [p.gewerk_name, p.leistung_name].filter(Boolean).join(" — "),
+    beschreibung: p.beschreibung,
+  }));
+
+  const footer =
+    kannAntworten && !showReject ? (
+      <PartnerDetailStickyActions
+        primaryLabel="Annehmen"
+        onPrimary={() => setConfirmAccept(true)}
+        primaryLoading={loading}
+        secondaryLabel="Ablehnen"
+        onSecondary={() => setShowReject(true)}
+        secondaryDisabled={loading}
+      />
+    ) : kannAntworten && showReject ? (
+      <PartnerDetailStickyActions
+        primaryLabel="Ablehnung senden"
+        onPrimary={() => setConfirmReject(true)}
+        primaryLoading={loading}
+        secondaryLabel="Zurück"
+        onSecondary={() => setShowReject(false)}
+        secondaryDisabled={loading}
+      />
+    ) : undefined;
+
   return (
-    <div className="space-y-4">
-      <header className="space-y-2 border-b border-border-light pb-4">
-        <p className="text-xs text-text-tertiary">
-          Leistungsanfrage · {fmtDate(item.start_datum)}
-        </p>
-        <h3 className="font-display text-xl font-semibold text-text-primary">
-          {item.titel}
-        </h3>
-        <span className="tag bg-amber-100 text-amber-700">{statusLabel}</span>
-        <p className="text-xs text-text-secondary">
-          Bärenwald hat dir Leistungen an diesem Projekt zugewiesen. Bitte bestätige
-          oder lehne die Anfrage ab.
-        </p>
-      </header>
+    <PartnerDetailLayout footer={footer}>
+      <PartnerDetailHero
+        title={item.titel}
+        metaLine={fmtPartnerMetaLine({
+          plz: item.plz,
+          ort: item.ort,
+          date: item.start_datum,
+        })}
+        statusLabel={statusLabel}
+        statusPillClass={partnerDetailStatusPillClass(item.hwStatus)}
+        subtitle="Leistungsanfrage"
+      />
 
-      <dl className="overflow-hidden rounded-xl border border-border-light bg-muted/25 text-sm">
-        <div className="grid grid-cols-1 gap-0.5 border-b border-border-light px-3 py-2.5 sm:grid-cols-[38%_1fr]">
-          <dt className="text-xs text-text-tertiary">PLZ / Ort</dt>
-          <dd className="font-semibold text-text-primary">
-            {item.plz} {item.ort !== "—" ? `· ${item.ort}` : ""}
-          </dd>
-        </div>
-      </dl>
+      <PartnerDetailInfoBox>{infoText}</PartnerDetailInfoBox>
 
-      {item.positionen.length > 0 ? (
-        <div>
-          <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-text-tertiary">
-            Angefragte Leistungen
-          </p>
-          <ul className="space-y-2 text-sm">
-            {item.positionen.map((p) => (
-              <li
-                key={p.id}
-                className="rounded-lg border border-border-light bg-surface-card px-3 py-2"
-              >
-                <p className="font-medium text-text-primary">
-                  {p.gewerk_name}
-                  {p.leistung_name ? ` — ${p.leistung_name}` : ""}
-                </p>
-                {p.beschreibung ? (
-                  <p className="text-text-secondary">{p.beschreibung}</p>
-                ) : null}
-              </li>
-            ))}
-          </ul>
-        </div>
+      <PartnerDetailSection title="Beschreibung">
+        <PartnerDetailKeyValues
+          rows={[{ label: "Projekt", value: item.titel }]}
+        />
+      </PartnerDetailSection>
+
+      {leistungen.length > 0 ? (
+        <PartnerDetailSection title="Leistungen">
+          <PartnerDetailLeistungenList items={leistungen} />
+        </PartnerDetailSection>
       ) : null}
 
-      {error ? <p className="text-sm text-red-700">{error}</p> : null}
+      {error ? <PartnerDetailError message={error} /> : null}
 
-      {kannAntworten ? (
-        <div className="flex flex-wrap gap-2 border-t border-border-light pt-4">
-          <button
-            type="button"
-            disabled={loading}
-            onClick={() => setConfirmAccept(true)}
-            className="btn-pill-primary !px-4 !py-2 !text-[13px]"
-          >
-            Annehmen
-          </button>
-          <button
-            type="button"
-            disabled={loading}
-            onClick={() => setShowReject((v) => !v)}
-            className="btn-pill-outline !px-4 !py-2 !text-[13px]"
-          >
-            Ablehnen
-          </button>
-        </div>
+      {hwSt === "akzeptiert" && item.angebotHandwerkerId ? (
+        <a
+          href={partnerAngebotPortalUrl(item.angebotHandwerkerId)}
+          className="btn-pill-primary inline-flex !px-4 !py-2 !text-[13px]"
+        >
+          Zum Angebot einreichen
+        </a>
+      ) : hwSt === "akzeptiert" ? (
+        <p className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+          Dein Angebot kann hier noch nicht eingereicht werden — Bärenwald muss dich zuerst am
+          Angebot anbinden. Bei Fragen melde dich bei uns.
+        </p>
       ) : null}
 
       {showReject && kannAntworten ? (
         <div className="space-y-3 rounded-xl border border-border-light bg-muted/30 p-4">
-          <label className="block text-xs font-semibold text-text-tertiary">
-            Ablehnungsgrund
+          <label className="block space-y-1">
+            <span className="text-xs font-medium text-text-secondary">Ablehnungsgrund</span>
+            <select
+              value={grund}
+              onChange={(e) => setGrund(e.target.value)}
+              className="w-full rounded-lg border border-border-default bg-surface-card px-3 py-2 text-sm"
+            >
+              {HANDWERKER_ABLEHNUNG_GRUND_VALUES.map((v) => (
+                <option key={v} value={v}>
+                  {HANDWERKER_ABLEHNUNG_GRUND_LABELS[v]}
+                </option>
+              ))}
+            </select>
           </label>
-          <select
-            value={grund}
-            onChange={(e) => setGrund(e.target.value)}
-            className="w-full rounded-lg border border-border-default bg-surface-card px-3 py-2 text-sm"
-          >
-            {HANDWERKER_ABLEHNUNG_GRUND_VALUES.map((v) => (
-              <option key={v} value={v}>
-                {HANDWERKER_ABLEHNUNG_GRUND_LABELS[v]}
-              </option>
-            ))}
-          </select>
           <textarea
             value={notiz}
             onChange={(e) => setNotiz(e.target.value)}
@@ -210,18 +167,10 @@ export function PartnerAuftragAnfrageDetail({ item }: { item: PartnerAuftragItem
             rows={3}
             className="w-full rounded-lg border border-border-default bg-surface-card px-3 py-2 text-sm"
           />
-          <button
-            type="button"
-            disabled={loading}
-            onClick={() => setConfirmReject(true)}
-            className="btn-pill-outline !border-red-200 !text-red-800 !px-4 !py-2 !text-[13px]"
-          >
-            Ablehnung senden
-          </button>
         </div>
       ) : null}
 
-      <ConfirmDialog
+      <PartnerConfirmDialog
         open={confirmAccept}
         title="Leistung annehmen?"
         description="Du bestätigst die Zuweisung. Sobald Bärenwald das Projekt startet, erscheint es unter Aufträge."
@@ -230,7 +179,7 @@ export function PartnerAuftragAnfrageDetail({ item }: { item: PartnerAuftragItem
         onConfirm={() => sendAntwort("akzeptiert")}
         onCancel={() => setConfirmAccept(false)}
       />
-      <ConfirmDialog
+      <PartnerConfirmDialog
         open={confirmReject}
         title="Leistung ablehnen?"
         description="Bärenwald wird informiert. Bitte wähle einen Grund."
@@ -240,6 +189,6 @@ export function PartnerAuftragAnfrageDetail({ item }: { item: PartnerAuftragItem
         onConfirm={() => sendAntwort("abgelehnt")}
         onCancel={() => setConfirmReject(false)}
       />
-    </div>
+    </PartnerDetailLayout>
   );
 }

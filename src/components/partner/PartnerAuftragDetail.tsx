@@ -8,35 +8,32 @@ import {
   deletePartnerBautagebuchEintrag,
   updatePartnerBautagebuchEintrag,
 } from "@/app/actions/partner-bautagebuch";
+import {
+  PartnerDetailHero,
+  PartnerDetailKeyValues,
+  PartnerDetailLayout,
+  PartnerDetailLeistungenList,
+  PartnerDetailSection,
+} from "@/components/partner/PartnerDetailUi";
 import { BautagebuchAccordionList } from "@/components/shared/BautagebuchAccordionList";
 import { DokumenteTabelle } from "@/components/shared/DokumenteTabelle";
 import { FileUploadField } from "@/components/shared/FileUploadField";
+import type {
+  PartnerAuftragItem,
+  PartnerBautagebuchItem,
+} from "@/lib/partner/get-partner-data";
+import {
+  fmtPartnerDate,
+  fmtPartnerMetaLine,
+  partnerDetailStatusPillClass,
+} from "@/lib/partner/partner-detail-format";
 import {
   PARTNER_MAX_BAUTAGEBUCH_ANHAENGE,
   PARTNER_MAX_PDF_MB,
   PARTNER_MAX_PHOTO_MB,
   validatePartnerBautagebuchFiles,
 } from "@/lib/partner/partner-upload-limits";
-import type {
-  PartnerAuftragItem,
-  PartnerBautagebuchItem,
-} from "@/lib/partner/get-partner-data";
 import { cn } from "@/lib/utils";
-
-function fmtDate(v?: string | null): string {
-  if (!v) return "—";
-  const d = new Date(v);
-  if (Number.isNaN(d.getTime())) return "—";
-  return d.toLocaleDateString("de-DE");
-}
-
-function statusPillClass(status: string): string {
-  const s = status.toLowerCase();
-  if (s === "abgeschlossen") return "tag bg-emerald-100 text-emerald-700";
-  if (s === "storniert") return "tag bg-red-100 text-red-700";
-  if (s === "in_arbeit") return "tag bg-blue-100 text-blue-800";
-  return "tag bg-amber-100 text-amber-700";
-}
 
 function BautagebuchForm({
   auftragId,
@@ -231,6 +228,14 @@ function BautagebuchEintragActions({
   );
 }
 
+function formatAuftragStatus(status: string): string {
+  const s = status.toLowerCase();
+  if (s === "in_arbeit") return "In Arbeit";
+  if (s === "abgeschlossen") return "Abgeschlossen";
+  if (s === "storniert") return "Storniert";
+  return status;
+}
+
 export function PartnerAuftragDetail({ item }: { item: PartnerAuftragItem }) {
   const [showNew, setShowNew] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
@@ -269,57 +274,41 @@ export function PartnerAuftragDetail({ item }: { item: PartnerAuftragItem }) {
     ? item.bautagebuch.find((e) => e.id === editId)
     : undefined;
 
+  const leistungen = item.positionen.map((p) => ({
+    id: p.id,
+    title: [p.gewerk_name, p.leistung_name].filter(Boolean).join(" — "),
+    beschreibung: p.beschreibung,
+  }));
+
+  const fortschrittSubtitle =
+    item.fortschritt != null ? `Fortschritt: ${item.fortschritt} %` : undefined;
+
   return (
-    <div className="space-y-4">
-      <header className="space-y-2 border-b border-border-light pb-4">
-        <h3 className="font-display text-xl font-semibold text-text-primary">
-          {item.titel}
-        </h3>
-        <span className={statusPillClass(item.status)}>{item.status}</span>
-        {item.fortschritt != null ? (
-          <p className="text-sm text-text-secondary">
-            Fortschritt: {item.fortschritt}%
-          </p>
-        ) : null}
-      </header>
+    <PartnerDetailLayout>
+      <PartnerDetailHero
+        title={item.titel}
+        metaLine={fmtPartnerMetaLine({
+          plz: item.plz,
+          ort: item.ort,
+          date: item.start_datum,
+        })}
+        statusLabel={formatAuftragStatus(item.status)}
+        statusPillClass={partnerDetailStatusPillClass(item.status)}
+        subtitle={fortschrittSubtitle}
+      />
 
-      <dl className="overflow-hidden rounded-xl border border-border-light bg-muted/25 text-sm">
-        <div className="grid grid-cols-1 gap-0.5 border-b border-border-light px-3 py-2.5 sm:grid-cols-[38%_1fr]">
-          <dt className="text-xs text-text-tertiary">PLZ / Ort</dt>
-          <dd>
-            {item.plz} {item.ort !== "—" ? item.ort : ""}
-          </dd>
-        </div>
-        {item.start_datum ? (
-          <div className="grid grid-cols-1 gap-0.5 px-3 py-2.5 sm:grid-cols-[38%_1fr]">
-            <dt className="text-xs text-text-tertiary">Start</dt>
-            <dd>{fmtDate(item.start_datum)}</dd>
-          </div>
-        ) : null}
-      </dl>
+      <PartnerDetailSection title="Beschreibung">
+        <PartnerDetailKeyValues
+          rows={[
+            { label: "Start", value: item.start_datum ? fmtPartnerDate(item.start_datum) : null },
+          ]}
+        />
+      </PartnerDetailSection>
 
-      {item.positionen.length > 0 ? (
-        <div>
-          <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-text-tertiary">
-            Deine Positionen
-          </p>
-          <ul className="space-y-2 text-sm">
-            {item.positionen.map((p) => (
-              <li
-                key={p.id}
-                className="rounded-lg border border-border-light bg-surface-card px-3 py-2"
-              >
-                <p className="font-medium text-text-primary">
-                  {p.gewerk_name}
-                  {p.leistung_name ? ` — ${p.leistung_name}` : ""}
-                </p>
-                {p.beschreibung ? (
-                  <p className="text-text-secondary">{p.beschreibung}</p>
-                ) : null}
-              </li>
-            ))}
-          </ul>
-        </div>
+      {leistungen.length > 0 ? (
+        <PartnerDetailSection title="Leistungen">
+          <PartnerDetailLeistungenList items={leistungen} />
+        </PartnerDetailSection>
       ) : null}
 
       <DokumenteTabelle
@@ -364,6 +353,6 @@ export function PartnerAuftragDetail({ item }: { item: PartnerAuftragItem }) {
           emptyText="Noch keine Einträge im Bautagebuch."
         />
       </div>
-    </div>
+    </PartnerDetailLayout>
   );
 }

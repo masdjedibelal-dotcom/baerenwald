@@ -5,6 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import {
   Briefcase,
+  Calendar,
   ClipboardList,
   FileText,
   LayoutDashboard,
@@ -18,12 +19,23 @@ import { PartnerAnfrageDetail } from "@/components/partner/PartnerAnfrageDetail"
 import { PartnerAngebotDetail } from "@/components/partner/PartnerAngebotDetail";
 import { PartnerAuftragAnfrageDetail } from "@/components/partner/PartnerAuftragAnfrageDetail";
 import { PartnerAuftragDetail } from "@/components/partner/PartnerAuftragDetail";
+import { PartnerListCard } from "@/components/partner/PartnerListCard";
+import {
+  PARTNER_LIST_PAGE_SIZE,
+  PartnerListPagination,
+} from "@/components/partner/PartnerListPagination";
 import { PortalBaerenwaldGpt } from "@/components/portal/PortalBaerenwaldGpt";
 import { SITE_CONFIG } from "@/lib/config";
 import type {
   PartnerAnfrageItem,
   PartnerAuftragItem,
 } from "@/lib/partner/get-partner-data";
+import {
+  buildAnfragenCardRows,
+  mapAngebotToCard,
+  mapAuftragToCard,
+  type PartnerCardRow,
+} from "@/lib/partner/partner-list-mappers";
 import {
   isPartnerAnfrageOffen,
   partnerAnfrageStatusLabel,
@@ -137,6 +149,7 @@ export function PartnerClient({
   );
   const [mobileDetailOpen, setMobileDetailOpen] = useState(false);
   const [gptOpen, setGptOpen] = useState(false);
+  const [listPage, setListPage] = useState(1);
 
   const displayName = handwerker.firma?.trim() || handwerker.name;
   const vorname = (handwerker.name || "Partner").split(" ")[0] || "Partner";
@@ -165,7 +178,7 @@ export function PartnerClient({
     const ausAngebot = anfragenSorted.map((a) => ({
       id: a.id,
       date: a.gesendet_at ?? undefined,
-      title: a.gewerk_name,
+      title: a.angebot_titel,
       status: partnerAnfrageStatusLabel(a),
     }));
     const ausAuftrag = auftragAnfragen.map((a) => ({
@@ -179,12 +192,60 @@ export function PartnerClient({
 
   const overviewAngeboteRows = useMemo((): OverviewRow[] => {
     return angeboteSorted.map((a) => ({
-        id: a.id,
-        date: (a.antwort_at ?? a.gesendet_at) ?? undefined,
-        title: a.gewerk_name,
+      id: a.id,
+      date: (a.antwort_at ?? a.gesendet_at) ?? undefined,
+      title: a.angebot_titel,
       status: a.hw_eingereicht_at ? "eingereicht" : "offen",
     }));
   }, [angeboteSorted]);
+
+  const anfragenCardRows = useMemo(
+    () => buildAnfragenCardRows(anfragenSorted, auftragAnfragen),
+    [anfragenSorted, auftragAnfragen]
+  );
+
+  const angeboteCardRows = useMemo(
+    () => angeboteSorted.map(mapAngebotToCard),
+    [angeboteSorted]
+  );
+
+  const auftraegeCardRows = useMemo(() => {
+    return [...auftraege]
+      .sort(
+        (a, b) =>
+          new Date(b.start_datum || 0).getTime() -
+          new Date(a.start_datum || 0).getTime()
+      )
+      .map(mapAuftragToCard);
+  }, [auftraege]);
+
+  const sectionCardRows = useMemo((): PartnerCardRow[] => {
+    if (section === "anfragen") return anfragenCardRows;
+    if (section === "angebote") return angeboteCardRows;
+    if (section === "auftraege") return auftraegeCardRows;
+    return [];
+  }, [section, anfragenCardRows, angeboteCardRows, auftraegeCardRows]);
+
+  const listTotalPages = Math.max(
+    1,
+    Math.ceil(sectionCardRows.length / PARTNER_LIST_PAGE_SIZE)
+  );
+  const safeListPage = Math.min(listPage, listTotalPages);
+  const paginatedCardRows = sectionCardRows.slice(
+    (safeListPage - 1) * PARTNER_LIST_PAGE_SIZE,
+    safeListPage * PARTNER_LIST_PAGE_SIZE
+  );
+
+  const listItemLabel =
+    section === "anfragen"
+      ? "Anfragen"
+      : section === "angebote"
+        ? "Angebote"
+        : "Aufträge";
+
+  useEffect(() => {
+    setListPage(1);
+  }, [section]);
 
   const overviewAuftraegeRows = useMemo((): OverviewRow[] => {
     return [...auftraege]
@@ -200,13 +261,6 @@ export function PartnerClient({
         status: a.status,
       }));
   }, [auftraege]);
-
-  const listItems = useMemo(() => {
-    if (section === "angebote") return angeboteSorted;
-    if (section === "auftraege") return auftraege;
-    if (section === "anfragen") return null;
-    return [];
-  }, [section, angeboteSorted, auftraege]);
 
   const selectedAnfrageParsed = parseAnfragenSelectedId(selectedId);
 
@@ -281,6 +335,7 @@ export function PartnerClient({
 
   function switchSection(id: PartnerSection) {
     setSection(id);
+    setListPage(1);
     setMobileDetailOpen(false);
     if (id !== "gpt") setGptOpen(false);
     if (id === "uebersicht" || id === "gpt") return;
@@ -314,8 +369,50 @@ export function PartnerClient({
           ? "Keine Aufträge — sie erscheinen, sobald ein Projekt für dich angelegt ist."
           : "";
 
-  const anfragenListEmpty =
-    anfragen.length === 0 && auftragAnfragen.length === 0;
+  const anfragenListEmpty = anfragenCardRows.length === 0;
+  const sectionListEmpty =
+    section === "anfragen"
+      ? anfragenListEmpty
+      : sectionCardRows.length === 0;
+
+  function renderOverviewCard(row: OverviewRow, tab: OverviewTabId) {
+    const accent: "anfrage" | "angebot" | "auftrag" =
+      tab === "angebote" ? "angebot" : tab === "auftraege" ? "auftrag" : "anfrage";
+    return (
+      <PartnerListCard
+        key={row.id}
+        accent={accent}
+        title={row.title}
+        statusLabel={
+          tab === "angebote" && row.status === "offen"
+            ? "Offen"
+            : tab === "angebote" && row.status === "eingereicht"
+              ? "Eingereicht"
+              : row.status
+        }
+        statusPillClass={statusPillClass(row.status)}
+        meta={[{ icon: Calendar, text: fmtDate(row.date) }]}
+        onClick={() => openFromOverview(tab, row.id)}
+      />
+    );
+  }
+
+  function renderSectionCard(row: PartnerCardRow) {
+    return (
+      <PartnerListCard
+        key={row.id}
+        accent={row.accent}
+        title={row.title}
+        subtitle={row.subtitle}
+        statusLabel={row.statusLabel}
+        statusPillClass={statusPillClass(row.statusPillKey)}
+        meta={row.meta}
+        hint={row.hint}
+        selected={selectedId === row.id}
+        onClick={() => selectRow(row.id)}
+      />
+    );
+  }
 
   const detailPanel = (() => {
     if (section === "anfragen" && selectedAnfrageAuftrag && !selectedAnfrageAngebot) {
@@ -486,60 +583,14 @@ export function PartnerClient({
                   </button>
                 </div>
 
-                <div className="overflow-x-auto rounded-xl border border-border-default">
-                  <table className="min-w-full bg-surface-card text-left">
-                    <thead className="bg-muted/70">
-                      <tr>
-                        <th className="px-3 py-2 text-xs font-semibold uppercase tracking-wider text-text-tertiary">
-                          Datum
-                        </th>
-                        <th className="px-3 py-2 text-xs font-semibold uppercase tracking-wider text-text-tertiary">
-                          {overviewTab === "auftraege" ? "Projekt" : "Gewerk"}
-                        </th>
-                        <th className="px-3 py-2 text-xs font-semibold uppercase tracking-wider text-text-tertiary">
-                          Status
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {overviewRows.length === 0 ? (
-                        <tr className="border-t border-border-light">
-                          <td
-                            colSpan={3}
-                            className="px-3 py-6 text-center text-sm text-text-secondary"
-                          >
-                            {emptyLabelForTab(overviewTab)}
-                          </td>
-                        </tr>
-                      ) : (
-                        overviewRows.slice(0, 5).map((row) => (
-                          <tr
-                            key={row.id}
-                            className="cursor-pointer border-t border-border-light hover:bg-muted/70"
-                            onClick={() => openFromOverview(overviewTab, row.id)}
-                          >
-                            <td className="px-3 py-2 text-sm text-text-secondary">
-                              {fmtDate(row.date)}
-                            </td>
-                            <td className="px-3 py-2 text-sm font-semibold text-text-primary">
-                              <span className="block max-w-[200px] truncate sm:max-w-none">
-                                {row.title}
-                              </span>
-                            </td>
-                            <td className="px-3 py-2 text-sm">
-                              <span className={statusPillClass(row.status)}>
-                                {overviewTab === "angebote" && row.status === "offen"
-                                  ? "Offen"
-                                  : overviewTab === "angebote" && row.status === "eingereicht"
-                                    ? "Eingereicht"
-                                    : row.status}
-                              </span>
-                            </td>
-                          </tr>
-                        ))
-                      )}
-                    </tbody>
-                  </table>
+                <div className="space-y-2">
+                  {overviewRows.length === 0 ? (
+                    <p className="rounded-xl border border-dashed border-border-light bg-muted/20 px-3 py-6 text-center text-sm text-text-secondary">
+                      {emptyLabelForTab(overviewTab)}
+                    </p>
+                  ) : (
+                    overviewRows.slice(0, 5).map((row) => renderOverviewCard(row, overviewTab))
+                  )}
                 </div>
               </article>
 
@@ -589,141 +640,24 @@ export function PartnerClient({
           {section !== "uebersicht" && section !== "gpt" ? (
             <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
               <article className="card-bordered overflow-hidden p-0">
-                <table className="w-full bg-surface-card text-left">
-                  <thead className="bg-muted/70">
-                    <tr>
-                      <th className="px-3 py-2 text-xs font-semibold uppercase text-text-tertiary">
-                        {section === "auftraege" ? "Start" : "Datum"}
-                      </th>
-                      <th className="px-3 py-2 text-xs font-semibold uppercase text-text-tertiary">
-                        {section === "auftraege" ? "Projekt" : "Gewerk"}
-                      </th>
-                      <th className="px-3 py-2 text-xs font-semibold uppercase text-text-tertiary">
-                        Status
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {(section === "anfragen" ? anfragenListEmpty : (listItems?.length ?? 0) === 0) ? (
-                      <tr>
-                        <td
-                          colSpan={3}
-                          className="px-4 py-8 text-center text-sm text-text-secondary"
-                        >
-                          {emptyMessage}
-                        </td>
-                      </tr>
-                    ) : section === "auftraege" ? (
-                      auftraege.map((item) => (
-                        <tr
-                          key={item.id}
-                          onClick={() => selectRow(item.id)}
-                          className={cn(
-                            "cursor-pointer border-t border-border-light",
-                            selectedAuftrag?.id === item.id
-                              ? "bg-accent-light"
-                              : "hover:bg-muted/70"
-                          )}
-                        >
-                          <td className="px-3 py-2 text-sm text-text-secondary">
-                            {fmtDate(item.start_datum ?? undefined)}
-                          </td>
-                          <td className="px-3 py-2 text-sm font-semibold text-text-primary">
-                            {item.titel}
-                          </td>
-                          <td className="px-3 py-2 text-sm">
-                            <span className={statusPillClass(item.status)}>
-                              {item.status}
-                            </span>
-                          </td>
-                        </tr>
-                      ))
-                    ) : section === "anfragen" ? (
-                      <>
-                        {anfragenSorted.map((item) => (
-                          <tr
-                            key={item.id}
-                            onClick={() => selectRow(item.id)}
-                            className={cn(
-                              "cursor-pointer border-t border-border-light",
-                              selectedId === item.id
-                                ? "bg-accent-light"
-                                : "hover:bg-muted/70"
-                            )}
-                          >
-                            <td className="px-3 py-2 text-sm text-text-secondary">
-                              {fmtDate(item.gesendet_at)}
-                            </td>
-                            <td className="px-3 py-2 text-sm font-semibold text-text-primary">
-                              {item.gewerk_name}
-                            </td>
-                            <td className="px-3 py-2 text-sm">
-                              <span className={statusPillClass("antwort ausstehend")}>
-                                {partnerAnfrageStatusLabel(item)}
-                              </span>
-                            </td>
-                          </tr>
-                        ))}
-                        {auftragAnfragen.map((item) => {
-                          const rowId = `auftrag:${item.id}`;
-                          return (
-                            <tr
-                              key={rowId}
-                              onClick={() => selectRow(rowId)}
-                              className={cn(
-                                "cursor-pointer border-t border-border-light",
-                                selectedId === rowId
-                                  ? "bg-accent-light"
-                                  : "hover:bg-muted/70"
-                              )}
-                            >
-                              <td className="px-3 py-2 text-sm text-text-secondary">
-                                {fmtDate(item.start_datum ?? undefined)}
-                              </td>
-                              <td className="px-3 py-2 text-sm font-semibold text-text-primary">
-                                {item.titel}
-                              </td>
-                              <td className="px-3 py-2 text-sm">
-                                <span className={statusPillClass(item.hwStatus)}>
-                                  {auftragHwStatusLabel(item.hwStatus)}
-                                </span>
-                              </td>
-                            </tr>
-                          );
-                        })}
-                      </>
-                    ) : (
-                      (listItems as PartnerAnfrageItem[]).map((item) => (
-                        <tr
-                          key={item.id}
-                          onClick={() => selectRow(item.id)}
-                          className={cn(
-                            "cursor-pointer border-t border-border-light",
-                            selectedId === item.id
-                              ? "bg-accent-light"
-                              : "hover:bg-muted/70"
-                          )}
-                        >
-                          <td className="px-3 py-2 text-sm text-text-secondary">
-                            {fmtDate(item.antwort_at ?? item.gesendet_at)}
-                          </td>
-                          <td className="px-3 py-2 text-sm font-semibold text-text-primary">
-                            {item.gewerk_name}
-                          </td>
-                          <td className="px-3 py-2 text-sm">
-                            <span
-                              className={statusPillClass(
-                                item.hw_eingereicht_at ? "eingereicht" : "offen"
-                              )}
-                            >
-                              {item.hw_eingereicht_at ? "Eingereicht" : "Offen"}
-                            </span>
-                          </td>
-                        </tr>
-                      ))
-                    )}
-                  </tbody>
-                </table>
+                <div className="space-y-2 p-3 sm:p-4">
+                  {sectionListEmpty ? (
+                    <p className="rounded-xl border border-dashed border-border-light bg-muted/20 px-3 py-8 text-center text-sm text-text-secondary">
+                      {emptyMessage}
+                    </p>
+                  ) : (
+                    paginatedCardRows.map(renderSectionCard)
+                  )}
+                </div>
+                {!sectionListEmpty ? (
+                  <PartnerListPagination
+                    totalItems={sectionCardRows.length}
+                    itemLabel={listItemLabel}
+                    currentPage={safeListPage}
+                    totalPages={listTotalPages}
+                    onPageChange={setListPage}
+                  />
+                ) : null}
               </article>
 
               <aside className="hidden lg:block">
@@ -808,7 +742,7 @@ export function PartnerClient({
       {mobileDetailOpen &&
       section !== "uebersicht" &&
       section !== "gpt" &&
-      (section === "anfragen" ? !anfragenListEmpty : (listItems?.length ?? 0) > 0) ? (
+      !sectionListEmpty ? (
         <div className="fixed inset-0 z-[120] bg-black/40 lg:hidden">
           <button
             type="button"
@@ -820,16 +754,7 @@ export function PartnerClient({
             <div className="shrink-0 px-4 pb-2 pt-3">
               <div className="mx-auto mb-3 h-1.5 w-12 rounded-full bg-border-default" />
             </div>
-            <div className="min-h-0 flex-1 overflow-y-auto px-4 pb-2">{detailPanel}</div>
-            <div className="shrink-0 border-t border-border-light p-4">
-              <button
-                type="button"
-                className="btn-pill-primary w-full !py-2.5 !text-[13px]"
-                onClick={() => setMobileDetailOpen(false)}
-              >
-                Schließen
-              </button>
-            </div>
+            <div className="min-h-0 flex-1 overflow-y-auto px-4 pb-4">{detailPanel}</div>
           </article>
         </div>
       ) : null}
