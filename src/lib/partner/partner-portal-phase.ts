@@ -24,10 +24,14 @@ const HW_PENDING = new Set(["angefragt", "ausstehend", "warten", "offen"]);
 const HW_BEANTWORTET = new Set(["akzeptiert", "abgelehnt"]);
 
 export function resolveAngebotHandwerkerPhase(
-  item: Pick<PartnerAnfrageItem, "status" | "antwort_at" | "gesendet_at" | "hw_eingereicht_at">
+  item: Pick<
+    PartnerAnfrageItem,
+    "status" | "antwort_at" | "gesendet_at" | "hw_eingereicht_at" | "hw_status"
+  >
 ): PartnerPortalPhase {
   if (isPartnerAnfrageOffen(item)) return "anfrage";
-  if (item.status.toLowerCase() === "akzeptiert" && !item.hw_eingereicht_at) {
+  const hwSt = (item.hw_status ?? "").toLowerCase();
+  if (item.status.toLowerCase() === "akzeptiert" && hwSt !== "uebernommen") {
     return "angebot";
   }
   return "auftrag";

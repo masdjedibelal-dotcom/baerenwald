@@ -88,21 +88,74 @@ export function mapAnfrageAuftragToCard(item: PartnerAuftragItem): PartnerCardRo
   };
 }
 
+/** Sortierung: Offen → In Prüfung → Übernommen. */
+export function angebotPhaseSortKey(item: PartnerAnfrageItem): number {
+  const hwSt = (item.hw_status ?? "").toLowerCase();
+  if (hwSt === "uebernommen") return 2;
+  if (item.hw_eingereicht_at) return 1;
+  return 0;
+}
+
+export function partnerAngebotStatusPillClass(statusKey: string): string {
+  const s = statusKey.toLowerCase();
+  if (s === "uebernommen") return "tag bg-emerald-100 text-emerald-700";
+  if (s === "eingereicht") return "tag bg-blue-100 text-blue-800";
+  if (s === "offen") return "tag bg-amber-100 text-amber-700";
+  return "tag bg-amber-100 text-amber-700";
+}
+
+export function partnerAngebotOverviewStatusLabel(statusKey: string): string {
+  if (statusKey === "uebernommen") return "Übernommen";
+  if (statusKey === "eingereicht") return "In Prüfung";
+  if (statusKey === "offen") return "Offen";
+  return statusKey;
+}
+
+export function angebotOverviewStatusKey(item: PartnerAnfrageItem): string {
+  const hwSt = (item.hw_status ?? "").toLowerCase();
+  if (hwSt === "uebernommen") return "uebernommen";
+  if (item.hw_eingereicht_at) return "eingereicht";
+  return "offen";
+}
+
+function angebotListenStatus(item: PartnerAnfrageItem): {
+  label: string;
+  pillKey: string;
+  hint?: string;
+} {
+  const hwSt = (item.hw_status ?? "").toLowerCase();
+  if (hwSt === "uebernommen") {
+    return { label: "Übernommen", pillKey: "uebernommen", hint: "→ Von Bärenwald bestätigt" };
+  }
+  if (item.hw_eingereicht_at) {
+    return {
+      label: "In Prüfung",
+      pillKey: "eingereicht",
+      hint: "→ Warte auf Freigabe durch Bärenwald",
+    };
+  }
+  return {
+    label: "Offen",
+    pillKey: "offen",
+    hint: "→ Angebot einreichen (Preis + PDF)",
+  };
+}
+
 export function mapAngebotToCard(item: PartnerAnfrageItem): PartnerCardRow {
-  const offen = !item.hw_eingereicht_at;
+  const st = angebotListenStatus(item);
   return {
     id: item.id,
     title: item.angebot_titel,
     subtitle: item.gewerk_name,
-    statusLabel: offen ? "Offen" : "Eingereicht",
-    statusPillKey: offen ? "offen" : "eingereicht",
+    statusLabel: st.label,
+    statusPillKey: st.pillKey,
     accent: "angebot",
     meta: [
       { icon: Hammer, text: item.gewerk_name },
       { icon: MapPin, text: fmtOrt(item.plz, item.ort) },
       { icon: Calendar, text: fmtDateDe(item.antwort_at ?? item.gesendet_at) },
     ],
-    hint: offen ? "→ Angebot einreichen (Preis + PDF)" : undefined,
+    hint: st.hint,
     sortDate: ts(item.antwort_at ?? item.gesendet_at),
   };
 }

@@ -7,6 +7,11 @@ import {
   partnerRegisterUrl,
 } from "@/lib/partner/partner-site-url";
 
+function fmtEuro(n: number | null | undefined): string {
+  if (n == null || !Number.isFinite(n)) return "—";
+  return `${n.toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €`;
+}
+
 /** Gültigkeit direkter PDF-Links in internen Mails (7 Tage). */
 const MAIL_PDF_LINK_TTL_SEC = 60 * 60 * 24 * 7;
 
@@ -239,6 +244,53 @@ ${mailBtn("Zum Partner-Portal →", portalLink)}
       from: systemFrom(),
       to: opts.to.trim(),
       subject: `Leistung zugewiesen: ${subjectLeistung} — Bärenwald Partner`,
+      html,
+    });
+    if (error) return { ok: false, error: error.message };
+    return { ok: true };
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : "Versand fehlgeschlagen";
+    return { ok: false, error: msg };
+  }
+}
+
+/** Handwerker: CRM hat das eingereichte Angebot übernommen. */
+export async function sendHandwerkerAngebotBestaetigtMail(opts: {
+  to: string;
+  handwerkerName: string;
+  gewerkName: string;
+  angebotTitel: string;
+  preisNetto?: number | null;
+  preisBrutto?: number | null;
+  portalLink: string;
+}): Promise<{ ok: boolean; error?: string }> {
+  const resend = resendClient();
+  if (!resend) {
+    console.warn("[partner-mail] RESEND_API_KEY fehlt");
+    return { ok: false, error: "E-Mail nicht konfiguriert." };
+  }
+
+  const portalHref = opts.portalLink.trim() || partnerLoginUrl();
+  const preisBlock = mailGreenBox(`
+    <p style="margin:0 0 6px;font-size:14px;"><strong>${escapeHtml(opts.angebotTitel)}</strong> · ${escapeHtml(opts.gewerkName)}</p>
+    <p style="margin:0;font-size:14px;">Netto: ${escapeHtml(fmtEuro(opts.preisNetto))} · Brutto: ${escapeHtml(fmtEuro(opts.preisBrutto))}</p>
+  `);
+
+  const html = mailShell(
+    "Dein Angebot wurde übernommen",
+    `<p style="margin:0 0 12px;font-size:15px;line-height:1.6;">Hallo ${escapeHtml(opts.handwerkerName)},</p>
+<p style="margin:0 0 12px;font-size:15px;line-height:1.6;">vielen Dank — Bärenwald hat dein Angebot geprüft und <strong>übernommen</strong>. Du findest den Status im Partner-Portal unter <strong>Angebote</strong>.</p>
+${preisBlock}
+${mailBtn("Zum Partner-Portal", portalHref)}
+<p style="font-size:13px;color:#6B7280;line-height:1.6;margin:12px 0 0;">Bei Rückfragen melde dich bei uns.</p>`,
+    `Angebot übernommen: ${opts.gewerkName}`
+  );
+
+  try {
+    const { error } = await resend.emails.send({
+      from: systemFrom(),
+      to: opts.to.trim(),
+      subject: `Angebot übernommen: ${opts.gewerkName} — Bärenwald Partner`,
       html,
     });
     if (error) return { ok: false, error: error.message };

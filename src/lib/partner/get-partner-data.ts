@@ -12,6 +12,8 @@ import {
   resolvePartnerFileUrl,
   resolvePartnerFileUrls,
 } from "@/lib/partner/partner-storage";
+import type { PartnerAuftragBewertung } from "@/lib/partner/handwerker-bewertung-display";
+import type { PartnerHandwerkerBewertungProfil } from "@/lib/partner/handwerker-bewertung-display";
 import { isSupabaseConfigured, supabaseAdmin } from "@/lib/supabase";
 
 export type PartnerAnfrageItem = {
@@ -82,6 +84,15 @@ export type PartnerAuftragItem = {
   hwStatus: string;
   /** Verknüpftes angebot_handwerker für Preis/PDF (nach Auftrags-Annahme). */
   angebotHandwerkerId?: string | null;
+  /** CRM-Bewertung nach Abschluss (read-only). */
+  bewertung?: PartnerAuftragBewertung | null;
+};
+
+export type PartnerHandwerkerProfil = {
+  name: string;
+  firma: string | null;
+  email: string | null;
+  bewertung: PartnerHandwerkerBewertungProfil;
 };
 
 function one<T>(x: T | T[] | null | undefined): T | null {
@@ -93,6 +104,12 @@ function uniqueIds(ids: string[]): string[] {
   return Array.from(new Set(ids.filter(Boolean)));
 }
 
+function numOrNull(v: unknown): number | null {
+  if (v == null) return null;
+  const n = Number(v);
+  return Number.isFinite(n) ? n : null;
+}
+
 export async function getPartnerDataForHandwerker(handwerkerId: string) {
   if (!isSupabaseConfigured()) return null;
 
@@ -101,7 +118,22 @@ export async function getPartnerDataForHandwerker(handwerkerId: string) {
 
   const { data: handwerker } = await supabaseAdmin
     .from("handwerker")
-    .select("id, name, firma, email, telefon")
+    .select(
+      `
+      id,
+      name,
+      firma,
+      email,
+      telefon,
+      bewertung_gesamt,
+      bewertung_qualitaet,
+      bewertung_termintreue,
+      bewertung_sauberkeit,
+      bewertung_kommunikation,
+      bewertung_preis_leistung,
+      bewertung_anzahl
+    `
+    )
     .eq("id", id)
     .maybeSingle();
 
@@ -280,6 +312,28 @@ export async function getPartnerDataForHandwerker(handwerkerId: string) {
       .order("datum", { ascending: false });
 
     const btByAuftrag = new Map<string, PartnerBautagebuchItem[]>();
+    const bewertungByAuftragId = new Map<string, PartnerAuftragBewertung>();
+
+    const { data: bewertungen } = await supabaseAdmin
+      .from("handwerker_bewertungen")
+      .select(
+        "auftrag_id, qualitaet, termintreue, sauberkeit, kommunikation, preis_leistung, updated_at"
+      )
+      .eq("handwerker_id", id)
+      .in("auftrag_id", auftragIds);
+
+    for (const b of bewertungen ?? []) {
+      const raw = b as Record<string, unknown>;
+      const aid = String(raw.auftrag_id);
+      bewertungByAuftragId.set(aid, {
+        qualitaet: Number(raw.qualitaet),
+        termintreue: Number(raw.termintreue),
+        sauberkeit: Number(raw.sauberkeit),
+        kommunikation: Number(raw.kommunikation),
+        preis_leistung: Number(raw.preis_leistung),
+        updated_at: (raw.updated_at as string | null) ?? null,
+      });
+    }
 
     for (const bt of btRows ?? []) {
       const r = bt as Record<string, unknown>;
@@ -346,6 +400,7 @@ export async function getPartnerDataForHandwerker(handwerkerId: string) {
         bautagebuch: btByAuftrag.get(aid) ?? [],
         portalPhase,
         hwStatus,
+        bewertung: bewertungByAuftragId.get(aid) ?? null,
       };
     });
   }
@@ -505,6 +560,10 @@ export async function getPartnerDataForHandwerker(handwerkerId: string) {
   const angebote = anfragenFinal.filter(
     (a) => resolveAngebotHandwerkerPhase(a) === "angebot"
   );
+  /** Akzeptierte HW-Angebote (inkl. übernommen) — Deep-Link & Detail nach CRM-Bestätigung. */
+  const angeboteAlleAkzeptiert = anfragenFinal.filter(
+    (a) => a.status.toLowerCase() === "akzeptiert"
+  );
   const auftragAnfragen = alleAuftraege.filter(isAuftragAnfrageListItem);
   const auftraege = alleAuftraege.filter((a) => a.portalPhase === "auftrag");
 
@@ -513,9 +572,19 @@ export async function getPartnerDataForHandwerker(handwerkerId: string) {
       name: String(handwerker.name ?? "Partner"),
       firma: handwerker.firma as string | null,
       email: handwerker.email as string | null,
+      bewertung: {
+        bewertung_gesamt: numOrNull(handwerker.bewertung_gesamt),
+        bewertung_qualitaet: numOrNull(handwerker.bewertung_qualitaet),
+        bewertung_termintreue: numOrNull(handwerker.bewertung_termintreue),
+        bewertung_sauberkeit: numOrNull(handwerker.bewertung_sauberkeit),
+        bewertung_kommunikation: numOrNull(handwerker.bewertung_kommunikation),
+        bewertung_preis_leistung: numOrNull(handwerker.bewertung_preis_leistung),
+        bewertung_anzahl: Math.max(0, Number(handwerker.bewertung_anzahl ?? 0) || 0),
+      },
     },
     anfragen: anfragenAngebot,
     angebote,
+    angeboteAlleAkzeptiert,
     auftragAnfragen,
     auftraege,
   };
