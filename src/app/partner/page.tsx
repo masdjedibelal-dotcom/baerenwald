@@ -77,6 +77,7 @@ export default async function PartnerDashboardPage() {
         handwerker={data.handwerker}
         anfragen={data.anfragen}
         angebote={data.angebote}
+        angeboteAlleAkzeptiert={data.angeboteAlleAkzeptiert}
         auftragAnfragen={data.auftragAnfragen}
         auftraege={data.auftraege}
       />
