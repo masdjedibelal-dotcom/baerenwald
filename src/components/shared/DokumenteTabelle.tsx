@@ -33,22 +33,20 @@ export function DokumenteTabelle({
   className?: string;
 }) {
   return (
-    <section className={cn("space-y-2 border-t border-border-light pt-4", className)}>
-      <h4 className="text-xs font-semibold uppercase tracking-wider text-text-tertiary">
-        {heading}
-      </h4>
+    <section className={cn("space-y-2.5 border-t border-border-light pt-5", className)}>
+      <h4 className="portal-text-label text-text-tertiary">{heading}</h4>
       {dokumente.length === 0 ? (
-        <p className="rounded-xl border border-dashed border-border-light bg-muted/20 px-3 py-4 text-center text-sm text-text-secondary">
+        <p className="portal-text-body rounded-xl border border-dashed border-border-light bg-muted/20 px-3 py-5 text-center text-text-secondary">
           {emptyText}
         </p>
       ) : (
         <div className="overflow-hidden rounded-xl border border-border-light">
-          <table className="w-full text-sm">
+          <table className="portal-text-body w-full">
             <thead>
-              <tr className="border-b border-border-light bg-muted/30 text-left text-xs text-text-tertiary">
-                <th className="px-3 py-2 font-semibold">Datum</th>
-                <th className="px-3 py-2 font-semibold">Dateiname</th>
-                <th className="w-12 px-2 py-2" aria-label="PDF öffnen" />
+              <tr className="portal-text-meta border-b border-border-light bg-muted/30 text-left text-text-tertiary">
+                <th className="px-3 py-2.5 font-semibold">Datum</th>
+                <th className="px-3 py-2.5 font-semibold">Dateiname</th>
+                <th className="w-14 px-2 py-2.5" aria-label="PDF öffnen" />
               </tr>
             </thead>
             <tbody>
@@ -57,10 +55,10 @@ export function DokumenteTabelle({
                   key={doc.id}
                   className="border-b border-border-light last:border-b-0"
                 >
-                  <td className="whitespace-nowrap px-3 py-2.5 text-text-secondary tabular-nums">
+                  <td className="whitespace-nowrap px-3 py-3 text-text-secondary tabular-nums">
                     {fmtDatum(doc.datum)}
                   </td>
-                  <td className="min-w-0 px-3 py-2.5 font-medium text-text-primary">
+                  <td className="min-w-0 px-3 py-3 font-medium text-text-primary">
                     <span className="line-clamp-2">{doc.name}</span>
                   </td>
                   <td className="px-2 py-2 text-right">
@@ -68,7 +66,7 @@ export function DokumenteTabelle({
                       href={normalizeHref(doc.href)}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="inline-grid h-9 w-9 place-items-center rounded-lg border border-border-light bg-white text-[#c62828] transition-colors hover:bg-red-50"
+                      className="portal-touch-target inline-grid place-items-center rounded-lg border border-border-light bg-white text-[#c62828] transition-colors hover:bg-red-50"
                       aria-label={`${doc.name} als PDF öffnen`}
                     >
                       <PdfFileIcon className="h-5 w-5" />

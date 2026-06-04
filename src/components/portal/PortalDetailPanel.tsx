@@ -14,8 +14,7 @@ import {
   PortalDetailMilestoneList,
   PortalDetailSection,
 } from "@/components/shared/PortalDetailUi";
-import { SITE_CONFIG } from "@/lib/config";
-import { fmtPortalMetaLine, portalDetailStatusPillClass } from "@/lib/shared/portal-detail-format";
+import { fmtPortalMetaLine, fmtPortalRelativeTime, portalDetailStatusPillClass } from "@/lib/shared/portal-detail-format";
 import { fmtPortalStatus } from "@/lib/portal/portal-display";
 import type { KundePortalDetailItem } from "@/lib/portal/portal-detail-item";
 
@@ -37,19 +36,24 @@ const SKIP_IN_DETAIL = new Set(["Nächster Schritt"]);
 
 export function PortalDetailPanel({ item }: { item: KundePortalDetailItem }) {
   const isAnfrageDetail = Boolean(item.anfrageGewerk || item.anfrageVorhaben);
+  const isAuftragDetail = item.bautagebuch !== undefined;
   const detailTitle = isAnfrageDetail
     ? anfrageDisplayTitle(item.anfrageVorhaben, item.anfrageGewerk)
     : item.title;
 
   const statusLabel = fmtPortalStatus(item.status || "offen");
-  const metaLine = fmtPortalMetaLine({
-    plz: item.plz ?? "—",
-    ort: item.ort ?? "—",
-    date: item.date,
-  });
+  const metaLine = item.suppressLocationInHero
+    ? fmtPortalRelativeTime(item.date) ?? undefined
+    : (() => {
+        const line = fmtPortalMetaLine({
+          plz: item.plz ?? "—",
+          ort: item.ort ?? "—",
+          date: item.date,
+        });
+        return line !== "—" ? line : undefined;
+      })();
 
-  const naechsterSchritt = item.sections.find((s) => s.heading === "Nächster Schritt")?.text;
-  const infoHint = item.infoHint || naechsterSchritt;
+  const infoHint = isAuftragDetail ? undefined : item.infoHint;
 
   const visibleSections = item.sections
     .filter(
@@ -67,7 +71,10 @@ export function PortalDetailPanel({ item }: { item: KundePortalDetailItem }) {
   const heroSubtitle =
     isAnfrageDetail && item.anfrageGewerk && detailTitle !== item.anfrageGewerk
       ? item.anfrageGewerk
-      : !isAnfrageDetail && item.cardSubtitle
+      : !isAnfrageDetail &&
+          !isAuftragDetail &&
+          item.cardSubtitle &&
+          !item.suppressLocationInHero
         ? item.cardSubtitle
         : undefined;
 
@@ -75,7 +82,7 @@ export function PortalDetailPanel({ item }: { item: KundePortalDetailItem }) {
     <PortalDetailLayout>
       <PortalDetailHero
         title={detailTitle}
-        metaLine={metaLine !== "—" ? metaLine : undefined}
+        metaLine={metaLine}
         statusLabel={statusLabel}
         statusPillClass={portalDetailStatusPillClass(item.status || "offen")}
         subtitle={heroSubtitle}
@@ -83,8 +90,8 @@ export function PortalDetailPanel({ item }: { item: KundePortalDetailItem }) {
 
       {infoHint ? <PortalDetailInfoBox>{infoHint}</PortalDetailInfoBox> : null}
 
-      {!isAnfrageDetail && item.summary ? (
-        <p className="text-sm leading-relaxed text-text-secondary">{item.summary}</p>
+      {!isAnfrageDetail && !isAuftragDetail && item.summary && !item.suppressLocationInHero ? (
+        <p className="portal-text-body text-text-secondary">{item.summary}</p>
       ) : null}
 
       {visibleSections.map((section) => (
@@ -106,7 +113,7 @@ export function PortalDetailPanel({ item }: { item: KundePortalDetailItem }) {
             />
           ) : null}
           {section.text ? (
-            <p className="rounded-xl border border-border-light bg-muted/20 px-3 py-2.5 text-sm leading-relaxed text-text-primary">
+            <p className="portal-text-body rounded-xl border border-border-light bg-muted/20 px-3 py-3 text-text-primary">
               {section.text}
             </p>
           ) : null}
@@ -118,74 +125,6 @@ export function PortalDetailPanel({ item }: { item: KundePortalDetailItem }) {
           <PortalDetailMilestoneList items={item.milestones} />
         </PortalDetailSection>
       ) : null}
-
-      {item.betreuer ? (
-        <PortalDetailSection title="Ansprechpartner">
-          <PortalDetailKeyValues
-            rows={[
-              { label: "Name", value: item.betreuer.name },
-              {
-                label: "E-Mail",
-                value: item.betreuer.email ? (
-                  <a
-                    href={`mailto:${item.betreuer.email}`}
-                    className="text-accent underline-offset-2 hover:underline"
-                  >
-                    {item.betreuer.email}
-                  </a>
-                ) : null,
-              },
-              {
-                label: "Telefon",
-                value: item.betreuer.phone ? (
-                  <a
-                    href={`tel:${item.betreuer.phone.replace(/\s/g, "")}`}
-                    className="text-accent underline-offset-2 hover:underline"
-                  >
-                    {item.betreuer.phone}
-                  </a>
-                ) : null,
-              },
-            ]}
-          />
-        </PortalDetailSection>
-      ) : item.milestones !== undefined ? (
-        <PortalDetailSection title="Ansprechpartner">
-          <p className="text-sm text-text-secondary">
-            Bei Fragen zu Ihrem Projekt erreichen Sie uns unter{" "}
-            <a href={SITE_CONFIG.phoneHref} className="font-medium text-accent hover:underline">
-              {SITE_CONFIG.phone}
-            </a>{" "}
-            oder{" "}
-            <a
-              href={`mailto:${SITE_CONFIG.email}`}
-              className="font-medium text-accent hover:underline"
-            >
-              {SITE_CONFIG.email}
-            </a>
-            .
-          </p>
-        </PortalDetailSection>
-      ) : null}
-
-      {!isAnfrageDetail && item.tags && item.tags.length > 0 ? (
-        <PortalDetailSection title="Gewerke & Phasen">
-          <div className="flex flex-wrap gap-1.5">
-            {item.tags.map((tag) => (
-              <span key={tag} className="tag tag-neutral">
-                {tag}
-              </span>
-            ))}
-          </div>
-        </PortalDetailSection>
-      ) : null}
-
-      <DokumenteTabelle
-        dokumente={portalDokumenteToZeilen(item.dokumente ?? [])}
-        heading="Dokumente"
-        emptyText="Noch keine Dokumente."
-        className="!border-t-0 !pt-0"
-      />
 
       {item.bautagebuch !== undefined ? (
         <BautagebuchAccordionList
@@ -200,6 +139,13 @@ export function PortalDetailPanel({ item }: { item: KundePortalDetailItem }) {
           emptyText="Noch keine Einträge im Bautagebuch."
         />
       ) : null}
+
+      <DokumenteTabelle
+        dokumente={portalDokumenteToZeilen(item.dokumente ?? [])}
+        heading="Dokumente"
+        emptyText="Noch keine Dokumente."
+        className="!border-t-0 !pt-0"
+      />
     </PortalDetailLayout>
   );
 }

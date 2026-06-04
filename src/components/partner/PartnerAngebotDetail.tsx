@@ -304,9 +304,9 @@ export function PartnerAngebotDetail({ item }: { item: PartnerAnfrageItem }) {
           onSubmit={onAngebotSubmit}
           className="space-y-3 rounded-xl border border-border-light p-4"
         >
-          <p className="text-sm font-semibold text-text-primary">Angebot einreichen</p>
+          <p className="portal-text-section">Angebot einreichen</p>
           <div className="grid gap-3 sm:grid-cols-2">
-            <label className="block text-sm sm:col-span-1">
+            <label className="block portal-text-body sm:col-span-1">
               <span className="text-text-tertiary">
                 Preis netto (€) <span className="text-red-600">*</span>
               </span>
@@ -320,7 +320,7 @@ export function PartnerAngebotDetail({ item }: { item: PartnerAnfrageItem }) {
                 placeholder="z. B. 4500"
               />
             </label>
-            <label className="block text-sm sm:col-span-1">
+            <label className="block portal-text-body sm:col-span-1">
               <span className="text-text-tertiary">Preis brutto (€, optional)</span>
               <input
                 type="text"
@@ -339,7 +339,7 @@ export function PartnerAngebotDetail({ item }: { item: PartnerAnfrageItem }) {
             selectedName={angebotPdf?.name}
             onChange={handleAngebotPdfChange}
           />
-          <label className="block text-sm">
+          <label className="block portal-text-body">
             <span className="text-text-tertiary">Notiz (optional)</span>
             <textarea
               value={notiz}
@@ -358,7 +358,7 @@ export function PartnerAngebotDetail({ item }: { item: PartnerAnfrageItem }) {
           onSubmit={onRechnungSubmit}
           className="space-y-3 rounded-xl border border-border-light p-4"
         >
-          <p className="text-sm font-semibold text-text-primary">Rechnung hochladen</p>
+          <p className="portal-text-section">Rechnung hochladen</p>
           <FileUploadField
             label="Rechnungs-PDF"
             accept="application/pdf,.pdf"
@@ -381,7 +381,7 @@ export function PartnerAngebotDetail({ item }: { item: PartnerAnfrageItem }) {
       />
 
       {!kannAngebotEinreichen && !eingereicht ? (
-        <p className="text-sm text-text-secondary">
+        <p className="portal-text-body text-text-secondary">
           Diese Anfrage ist noch nicht angenommen. Bitte zuerst unter „Anfragen“ antworten.
         </p>
       ) : null}

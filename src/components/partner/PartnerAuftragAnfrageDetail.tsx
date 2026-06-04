@@ -133,12 +133,12 @@ export function PartnerAuftragAnfrageDetail({ item }: { item: PartnerAuftragItem
       {hwSt === "akzeptiert" && item.angebotHandwerkerId ? (
         <a
           href={partnerAngebotPortalUrl(item.angebotHandwerkerId)}
-          className="btn-pill-primary inline-flex !px-4 !py-2 !text-[13px]"
+          className="btn-pill-primary portal-btn inline-flex !px-4 !py-2.5"
         >
           Zum Angebot einreichen
         </a>
       ) : hwSt === "akzeptiert" ? (
-        <p className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+        <p className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 portal-text-body text-amber-900">
           Dein Angebot kann hier noch nicht eingereicht werden — Bärenwald muss dich zuerst am
           Angebot anbinden. Bei Fragen melde dich bei uns.
         </p>
@@ -147,11 +147,11 @@ export function PartnerAuftragAnfrageDetail({ item }: { item: PartnerAuftragItem
       {showReject && kannAntworten ? (
         <div className="space-y-3 rounded-xl border border-border-light bg-muted/30 p-4">
           <label className="block space-y-1">
-            <span className="text-xs font-medium text-text-secondary">Ablehnungsgrund</span>
+            <span className="portal-form-label">Ablehnungsgrund</span>
             <select
               value={grund}
               onChange={(e) => setGrund(e.target.value)}
-              className="w-full rounded-lg border border-border-default bg-surface-card px-3 py-2 text-sm"
+              className="portal-input w-full rounded-xl border border-border-default bg-surface-card px-3 py-3"
             >
               {HANDWERKER_ABLEHNUNG_GRUND_VALUES.map((v) => (
                 <option key={v} value={v}>
@@ -165,7 +165,7 @@ export function PartnerAuftragAnfrageDetail({ item }: { item: PartnerAuftragItem
             onChange={(e) => setNotiz(e.target.value)}
             placeholder="Optionale Notiz"
             rows={3}
-            className="w-full rounded-lg border border-border-default bg-surface-card px-3 py-2 text-sm"
+            className="portal-input w-full rounded-xl border border-border-default bg-surface-card px-3 py-3"
           />
         </div>
       ) : null}

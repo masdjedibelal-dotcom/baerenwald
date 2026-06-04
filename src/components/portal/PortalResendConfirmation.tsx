@@ -54,7 +54,7 @@ export function PortalResendConfirmation({ defaultEmail = "", className }: Props
 
   return (
     <form onSubmit={onResend} className={className ?? "space-y-2"}>
-      <p className="text-xs font-medium text-text-secondary">
+      <p className="portal-form-label">
         Bestätigungsmail erneut senden
       </p>
       <div className="flex flex-col gap-2 sm:flex-row">
@@ -64,21 +64,21 @@ export function PortalResendConfirmation({ defaultEmail = "", className }: Props
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           placeholder="deine@email.de"
-          className="min-w-0 flex-1 rounded-xl border border-border-default bg-surface-card px-3 py-2 text-sm outline-none focus:border-accent"
+          className="min-w-0 flex-1 portal-input rounded-xl border border-border-default bg-surface-card px-3 py-3 focus:border-accent"
         />
         <button
           type="submit"
           disabled={loading}
-          className="shrink-0 rounded-xl border border-border-default bg-surface-card px-3 py-2 text-sm font-medium text-text-primary hover:bg-surface-muted disabled:opacity-60"
+          className="shrink-0 rounded-xl border border-border-default bg-surface-card portal-text-body px-3 py-2.5 font-medium text-text-primary hover:bg-surface-muted disabled:opacity-60"
         >
           {loading ? "Sende…" : "Erneut senden"}
         </button>
       </div>
       {message ? (
-        <p className="rounded-lg bg-green-50 px-3 py-2 text-xs text-green-900">{message}</p>
+        <p className="rounded-lg bg-green-50 px-3 py-2 portal-text-meta text-green-900">{message}</p>
       ) : null}
       {error ? (
-        <p className="rounded-lg bg-red-50 px-3 py-2 text-xs text-red-800">{error}</p>
+        <p className="rounded-lg bg-red-50 px-3 py-2 portal-text-meta text-red-800">{error}</p>
       ) : null}
     </form>
   );

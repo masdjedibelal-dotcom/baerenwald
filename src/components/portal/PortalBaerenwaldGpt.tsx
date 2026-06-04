@@ -77,7 +77,7 @@ export function PortalBaerenwaldGpt({
               href={RECHNER_KI_BERATUNG_HREF}
               target="_blank"
               rel="noreferrer"
-              className="btn-pill-primary !px-4 !py-2.5 !text-[13px]"
+              className="btn-pill-primary portal-btn !px-4 !py-3"
             >
               Zum Preisrahmen
             </a>
@@ -87,7 +87,7 @@ export function PortalBaerenwaldGpt({
               href="/rechner"
               target="_blank"
               rel="noreferrer"
-              className="btn-pill-outline !px-4 !py-2.5 !text-[13px]"
+              className="btn-pill-outline portal-btn !px-4 !py-3"
             >
               Zur Beratung
             </a>

@@ -63,12 +63,12 @@ export function PortalRegisterForm() {
   if (success) {
     return (
       <div className="space-y-4 text-center">
-        <p className="text-sm font-semibold text-text-primary">
+        <p className="portal-text-section">
           {alreadyRegistered
             ? "E-Mail prüfen oder anmelden"
             : "Fast geschafft — bitte E-Mail bestätigen"}
         </p>
-        <p className="text-sm leading-relaxed text-text-secondary">
+        <p className="portal-text-body leading-relaxed text-text-secondary">
           {alreadyRegistered ? (
             <>
               Unter <strong>{registeredEmail}</strong> existiert vermutlich schon ein Konto.
@@ -87,7 +87,7 @@ export function PortalRegisterForm() {
         />
         <Link
           href="/portal/login"
-          className="btn-pill-primary inline-flex !px-4 !py-2 !text-[13px]"
+          className="btn-pill-primary portal-btn inline-flex !px-4 !py-2.5"
         >
           Zum Login
         </Link>
@@ -98,35 +98,35 @@ export function PortalRegisterForm() {
   return (
     <form onSubmit={onSubmit} className="space-y-4">
       {error ? (
-        <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-800">{error}</p>
+        <p className="rounded-lg bg-red-50 px-3 py-2 portal-text-body text-red-800">{error}</p>
       ) : null}
 
       <label className="block space-y-1.5">
-        <span className="text-xs font-medium text-text-secondary">Name</span>
+        <span className="portal-form-label">Name</span>
         <input
           type="text"
           autoComplete="name"
           required
           value={name}
           onChange={(e) => setName(e.target.value)}
-          className="w-full rounded-xl border border-border-default bg-surface-card px-3 py-2.5 text-sm outline-none focus:border-accent"
+          className="portal-input w-full rounded-xl border border-border-default bg-surface-card px-3 py-3 focus:border-accent"
         />
       </label>
 
       <label className="block space-y-1.5">
-        <span className="text-xs font-medium text-text-secondary">E-Mail</span>
+        <span className="portal-form-label">E-Mail</span>
         <input
           type="email"
           autoComplete="email"
           required
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          className="w-full rounded-xl border border-border-default bg-surface-card px-3 py-2.5 text-sm outline-none focus:border-accent"
+          className="portal-input w-full rounded-xl border border-border-default bg-surface-card px-3 py-3 focus:border-accent"
         />
       </label>
 
       <label className="block space-y-1.5">
-        <span className="text-xs font-medium text-text-secondary">
+        <span className="portal-form-label">
           Telefon <span className="text-text-tertiary">(optional)</span>
         </span>
         <input
@@ -135,12 +135,12 @@ export function PortalRegisterForm() {
           value={telefon}
           onChange={(e) => setTelefon(e.target.value)}
           placeholder="Für die Verknüpfung mit bestehenden Anfragen"
-          className="w-full rounded-xl border border-border-default bg-surface-card px-3 py-2.5 text-sm outline-none focus:border-accent"
+          className="portal-input w-full rounded-xl border border-border-default bg-surface-card px-3 py-3 focus:border-accent"
         />
       </label>
 
       <label className="block space-y-1.5">
-        <span className="text-xs font-medium text-text-secondary">
+        <span className="portal-form-label">
           Passwort <span className="text-text-tertiary">(mind. 8 Zeichen)</span>
         </span>
         <input
@@ -150,19 +150,19 @@ export function PortalRegisterForm() {
           minLength={8}
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          className="w-full rounded-xl border border-border-default bg-surface-card px-3 py-2.5 text-sm outline-none focus:border-accent"
+          className="portal-input w-full rounded-xl border border-border-default bg-surface-card px-3 py-3 focus:border-accent"
         />
       </label>
 
       <button
         type="submit"
         disabled={loading}
-        className="btn-pill-primary w-full !py-2.5 !text-[14px] disabled:opacity-60"
+        className="btn-pill-primary portal-btn w-full !py-3 disabled:opacity-60"
       >
         {loading ? "Wird registriert…" : "Konto anlegen"}
       </button>
 
-      <p className="border-t border-border-light pt-4 text-center text-sm text-text-secondary">
+      <p className="border-t border-border-light pt-4 text-center portal-text-body text-text-secondary">
         Bereits registriert?{" "}
         <Link
           href="/portal/login"

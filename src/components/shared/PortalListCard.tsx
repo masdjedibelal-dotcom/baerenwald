@@ -22,6 +22,8 @@ export type PortalListCardProps = {
   accent: PortalListCardAccent;
   meta: PortalListCardMeta[];
   hint?: string;
+  /** Farbiger Rand links (Standard: an). Im Partnerportal aus. */
+  showLeftAccent?: boolean;
 };
 
 const ACCENT_CLASS: Record<PortalListCardAccent, string> = {
@@ -40,6 +42,7 @@ export function PortalListCard({
   accent,
   meta,
   hint,
+  showLeftAccent = true,
 }: PortalListCardProps) {
   return (
     <button
@@ -47,35 +50,36 @@ export function PortalListCard({
       onClick={onClick}
       className={cn(
         "relative w-full rounded-xl border border-border-light bg-surface-card text-left transition-colors",
-        "border-l-4 pl-3 pr-3 py-3 sm:pl-4 sm:pr-4",
-        ACCENT_CLASS[accent],
+        showLeftAccent ? "border-l-4 pl-3 sm:pl-4" : "px-3 sm:px-4",
+        "pr-3 py-3.5 sm:pr-4 sm:py-4",
+        showLeftAccent && ACCENT_CLASS[accent],
         selected
-          ? "border-accent/40 bg-accent-light/60 ring-1 ring-accent/25"
+          ? "lg:border-border-default lg:bg-muted/55 lg:ring-1 lg:ring-border-default/80"
           : "hover:bg-muted/40"
       )}
     >
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0 flex-1">
-          <p className="line-clamp-2 text-sm font-semibold leading-snug text-text-primary">
-            {title}
-          </p>
+          <p className="portal-text-card-title line-clamp-2">{title}</p>
           {subtitle ? (
-            <p className="mt-0.5 line-clamp-1 text-xs text-text-secondary">{subtitle}</p>
+            <p className="portal-text-meta mt-1 line-clamp-1 text-text-secondary">
+              {subtitle}
+            </p>
           ) : null}
         </div>
         <span className={cn("shrink-0", statusPillClass)}>{statusLabel}</span>
       </div>
 
       {meta.length > 0 ? (
-        <ul className="mt-2.5 space-y-1">
+        <ul className="mt-3 space-y-1.5">
           {meta.map((m, i) => {
             const Icon = m.icon ?? Hammer;
             return (
               <li
                 key={`${m.text}-${i}`}
-                className="flex items-center gap-1.5 text-xs text-text-secondary"
+                className="portal-text-meta flex items-center gap-2 text-text-secondary"
               >
-                <Icon className="h-3.5 w-3.5 shrink-0 text-text-tertiary" aria-hidden />
+                <Icon className="h-4 w-4 shrink-0 text-text-tertiary" aria-hidden />
                 <span className="truncate">{m.text}</span>
               </li>
             );
@@ -83,7 +87,9 @@ export function PortalListCard({
         </ul>
       ) : null}
 
-      {hint ? <p className="mt-2 text-xs font-medium text-accent">{hint}</p> : null}
+      {hint ? (
+        <p className="portal-text-meta mt-2.5 font-medium text-accent">{hint}</p>
+      ) : null}
     </button>
   );
 }

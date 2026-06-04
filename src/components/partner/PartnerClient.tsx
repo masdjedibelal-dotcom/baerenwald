@@ -382,6 +382,7 @@ export function PartnerClient({
       <PartnerListCard
         key={row.id}
         accent={accent}
+        showLeftAccent={false}
         title={row.title}
         statusLabel={
           tab === "angebote" && row.status === "offen"
@@ -402,6 +403,7 @@ export function PartnerClient({
       <PartnerListCard
         key={row.id}
         accent={row.accent}
+        showLeftAccent={false}
         title={row.title}
         subtitle={row.subtitle}
         statusLabel={row.statusLabel}
@@ -427,7 +429,7 @@ export function PartnerClient({
     if (section === "auftraege" && selectedAuftrag) {
       return <PartnerAuftragDetail item={selectedAuftrag} />;
     }
-    return <p className="text-sm text-text-secondary">Nichts ausgewählt.</p>;
+    return <p className="portal-text-body text-text-secondary">Nichts ausgewählt.</p>;
   })();
 
   const overviewRows =
@@ -438,22 +440,22 @@ export function PartnerClient({
         : overviewAuftraegeRows;
 
   return (
-    <div className="min-h-screen bg-surface-page">
+    <div className="portal-ui min-h-screen bg-surface-page">
       <header className="sticky top-0 z-50 border-b border-border-default bg-surface-card/95 backdrop-blur-sm">
         <div className="mx-auto flex h-[68px] max-w-[1200px] items-center justify-between px-4 sm:px-6">
           <div className="flex items-center gap-2.5">
             <Image src="/logo-mark-green.png" alt="Bärenwald" width={28} height={28} />
             <div>
-              <p className="text-sm font-semibold leading-none text-text-primary">
+              <p className="portal-text-body font-semibold leading-none text-text-primary">
                 Bärenwald <span className="text-accent">Partner</span>
               </p>
-              <p className="mt-0.5 text-xs text-text-tertiary">{displayName}</p>
+              <p className="portal-text-meta mt-0.5 text-text-tertiary">{displayName}</p>
             </div>
           </div>
           <form action="/partner/auth/signout" method="post">
             <button
               type="submit"
-              className="btn-pill-outline !px-2.5 !py-2 !text-[11px] sm:!px-3 sm:!text-[12px]"
+              className="btn-pill-outline portal-btn-compact !px-2.5 sm:!px-3"
             >
               Abmelden
             </button>
@@ -471,7 +473,7 @@ export function PartnerClient({
                   type="button"
                   onClick={() => switchSection(id)}
                   className={cn(
-                    "flex w-full items-center justify-between rounded-xl px-3 py-2 text-left text-sm font-semibold",
+                    "flex w-full items-center justify-between rounded-xl px-3 py-2.5 text-left portal-text-body font-semibold",
                     section === id
                       ? "bg-accent-light text-accent"
                       : "text-text-secondary hover:bg-muted"
@@ -481,7 +483,7 @@ export function PartnerClient({
                     <Icon className="h-4 w-4" />
                     {label}
                   </span>
-                  <span className="text-xs text-text-tertiary">
+                  <span className="portal-text-meta text-text-tertiary">
                     {id === "anfragen"
                       ? offeneAnfragenCount
                       : id === "angebote"
@@ -500,10 +502,10 @@ export function PartnerClient({
           {section === "uebersicht" ? (
             <header className="card-bordered sticky top-[76px] z-40 flex items-center justify-between gap-3 bg-surface-page/95 p-4 backdrop-blur-sm">
               <div>
-                <p className="text-lg font-semibold text-text-primary">
+                <p className="text-xl font-semibold text-text-primary">
                   Hallo {vorname}
                 </p>
-                <p className="text-sm text-text-secondary">
+                <p className="portal-text-body text-text-secondary">
                   Willkommen im Partner-Portal
                 </p>
               </div>
@@ -524,7 +526,7 @@ export function PartnerClient({
             <div className="space-y-4">
               <div className="grid grid-cols-3 gap-2">
                 <article className="card-bordered p-4">
-                  <p className="text-[10px] uppercase tracking-wider text-text-tertiary sm:text-xs">
+                  <p className="portal-text-label text-text-tertiary">
                     Offene Anfragen
                   </p>
                   <p className="mt-1 font-display text-2xl font-semibold sm:mt-2 sm:text-4xl">
@@ -532,7 +534,7 @@ export function PartnerClient({
                   </p>
                 </article>
                 <article className="card-bordered p-4">
-                  <p className="text-[10px] uppercase tracking-wider text-text-tertiary sm:text-xs">
+                  <p className="portal-text-label text-text-tertiary">
                     Angebote offen
                   </p>
                   <p className="mt-1 font-display text-2xl font-semibold sm:mt-2 sm:text-4xl">
@@ -540,7 +542,7 @@ export function PartnerClient({
                   </p>
                 </article>
                 <article className="card-bordered p-4">
-                  <p className="text-[10px] uppercase tracking-wider text-text-tertiary sm:text-xs">
+                  <p className="portal-text-label text-text-tertiary">
                     Aktive Aufträge
                   </p>
                   <p className="mt-1 font-display text-2xl font-semibold sm:mt-2 sm:text-4xl">
@@ -564,7 +566,7 @@ export function PartnerClient({
                         type="button"
                         onClick={() => setOverviewTab(id)}
                         className={cn(
-                          "rounded-full px-3 py-1.5 text-xs font-semibold",
+                          "rounded-full px-3 py-1.5 portal-text-meta font-semibold",
                           overviewTab === id
                             ? "bg-accent-light text-accent"
                             : "bg-muted text-text-secondary"
@@ -576,7 +578,7 @@ export function PartnerClient({
                   </div>
                   <button
                     type="button"
-                    className="text-sm font-semibold text-accent"
+                    className="portal-text-body font-semibold text-accent"
                     onClick={() => switchSection(overviewTab)}
                   >
                     Alle anzeigen →
@@ -585,7 +587,7 @@ export function PartnerClient({
 
                 <div className="space-y-2">
                   {overviewRows.length === 0 ? (
-                    <p className="rounded-xl border border-dashed border-border-light bg-muted/20 px-3 py-6 text-center text-sm text-text-secondary">
+                    <p className="portal-text-body rounded-xl border border-dashed border-border-light bg-muted/20 px-3 py-6 text-center text-text-secondary">
                       {emptyLabelForTab(overviewTab)}
                     </p>
                   ) : (
@@ -597,10 +599,10 @@ export function PartnerClient({
               <section className="border-t border-border-default pt-4">
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <div>
-                    <p className="text-xs uppercase tracking-wider text-text-tertiary">
+                    <p className="portal-text-label text-text-tertiary">
                       Kontakt
                     </p>
-                    <p className="text-sm text-text-secondary">
+                    <p className="portal-text-body text-text-secondary">
                       Fragen zu Anfragen, Aufträgen oder dem Portal? Bärenwald ist für dich
                       erreichbar.
                     </p>
@@ -608,7 +610,7 @@ export function PartnerClient({
                   <div className="flex flex-wrap gap-2">
                     <a
                       href={SITE_CONFIG.phoneHref}
-                      className="btn-pill-primary !justify-center !px-4 !py-2.5 !text-[13px]"
+                      className="btn-pill-primary portal-btn !justify-center !px-4 !py-3"
                     >
                       <Phone className="h-3.5 w-3.5" />
                       Jetzt anrufen
@@ -617,7 +619,7 @@ export function PartnerClient({
                       href={waHref}
                       target="_blank"
                       rel="noreferrer"
-                      className="btn-pill-outline !justify-center !px-4 !py-2.5 !text-[13px]"
+                      className="btn-pill-outline portal-btn !justify-center !px-4 !py-3"
                     >
                       <MessageCircle className="h-3.5 w-3.5" />
                       WhatsApp
@@ -626,7 +628,7 @@ export function PartnerClient({
                       href={`mailto:${SITE_CONFIG.email}?subject=${encodeURIComponent(
                         "Frage Partner-Portal"
                       )}`}
-                      className="btn-pill-outline !justify-center !px-4 !py-2.5 !text-[13px]"
+                      className="btn-pill-outline portal-btn !justify-center !px-4 !py-3"
                     >
                       <Mail className="h-3.5 w-3.5" />
                       E-Mail
@@ -642,7 +644,7 @@ export function PartnerClient({
               <article className="card-bordered overflow-hidden p-0">
                 <div className="space-y-2 p-3 sm:p-4">
                   {sectionListEmpty ? (
-                    <p className="rounded-xl border border-dashed border-border-light bg-muted/20 px-3 py-8 text-center text-sm text-text-secondary">
+                    <p className="portal-text-body rounded-xl border border-dashed border-border-light bg-muted/20 px-3 py-8 text-center text-text-secondary">
                       {emptyMessage}
                     </p>
                   ) : (
@@ -683,7 +685,7 @@ export function PartnerClient({
                 type="button"
                 onClick={() => switchSection(id)}
                 className={cn(
-                  "rounded-lg px-0.5 py-2 text-[10px] font-medium",
+                  "portal-text-nav rounded-lg px-0.5 py-2.5",
                   section === id ? "text-accent" : "text-text-tertiary"
                 )}
               >
@@ -711,7 +713,7 @@ export function PartnerClient({
               )}
             >
               <MessagesSquare className="h-7 w-7 shrink-0 stroke-[1.75]" aria-hidden />
-              <span className="max-w-[68px] text-center text-[9px] font-extrabold leading-tight tracking-tight text-white">
+              <span className="portal-text-fab max-w-[72px] text-center text-white">
                 BärenwaldGPT
               </span>
             </button>
@@ -725,7 +727,7 @@ export function PartnerClient({
                 type="button"
                 onClick={() => switchSection(id)}
                 className={cn(
-                  "rounded-lg px-0.5 py-2 text-[10px] font-medium",
+                  "portal-text-nav rounded-lg px-0.5 py-2.5",
                   section === id ? "text-accent" : "text-text-tertiary"
                 )}
               >

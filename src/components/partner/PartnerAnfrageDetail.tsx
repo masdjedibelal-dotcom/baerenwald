@@ -159,7 +159,7 @@ export function PartnerAnfrageDetail({ item }: { item: PartnerAnfrageItem }) {
       />
 
       {beantwortet ? (
-        <p className="text-sm text-text-secondary">
+        <p className="portal-text-body text-text-secondary">
           Beantwortet am {fmtPartnerDate(item.antwort_at)}
           {item.antwort_notiz ? ` — ${item.antwort_notiz}` : ""}
         </p>
@@ -170,11 +170,11 @@ export function PartnerAnfrageDetail({ item }: { item: PartnerAnfrageItem }) {
       {showReject && kannAntworten ? (
         <div className="space-y-3 rounded-xl border border-border-light bg-muted/30 p-4">
           <label className="block space-y-1">
-            <span className="text-xs font-medium text-text-secondary">Ablehnungsgrund</span>
+            <span className="portal-form-label">Ablehnungsgrund</span>
             <select
               value={grund}
               onChange={(e) => setGrund(e.target.value)}
-              className="w-full rounded-xl border border-border-default bg-surface-card px-3 py-2 text-sm"
+              className="portal-input w-full rounded-xl border border-border-default bg-surface-card px-3 py-3"
             >
               {HANDWERKER_ABLEHNUNG_GRUND_VALUES.map((v) => (
                 <option key={v} value={v}>
@@ -184,19 +184,19 @@ export function PartnerAnfrageDetail({ item }: { item: PartnerAnfrageItem }) {
             </select>
           </label>
           <label className="block space-y-1">
-            <span className="text-xs font-medium text-text-secondary">Notiz (optional)</span>
+            <span className="portal-form-label">Notiz (optional)</span>
             <textarea
               value={notiz}
               onChange={(e) => setNotiz(e.target.value)}
               rows={2}
-              className="w-full rounded-xl border border-border-default bg-surface-card px-3 py-2 text-sm"
+              className="portal-input w-full rounded-xl border border-border-default bg-surface-card px-3 py-3"
             />
           </label>
         </div>
       ) : null}
 
       {item.status === "akzeptiert" && !item.hw_eingereicht_at ? (
-        <p className={cn("rounded-lg bg-accent-light/50 px-3 py-2 text-sm text-accent")}>
+        <p className={cn("rounded-lg bg-accent-light/50 px-3 py-2 portal-text-body text-accent")}>
           Bitte reiche dein Angebot (Preis + PDF) unter dem Menüpunkt „Angebote“ ein.
         </p>
       ) : null}

@@ -71,9 +71,7 @@ type PortalAuftrag = {
   end_datum?: string;
   abnahme_datum?: string;
   created_at?: string;
-  naechster_schritt?: string;
   milestones?: Array<{ id: string; titel: string; erledigt: boolean }>;
-  betreuer?: { name: string; email?: string; phone?: string };
   positionen?: PortalPosition[];
   bautagebuch?: PortalBautagebuchEntry[];
   dokumente?: PortalDokument[];
@@ -367,6 +365,7 @@ export function PortalClient({
         }
         const st = a.status_einfach || a.status || "angebot";
         const { plz, ort } = objektPlzOrt(a.objekt);
+        const hasObjekt = Boolean(a.objekt);
         return {
           id: a.id,
           date: a.created_at ?? undefined,
@@ -375,9 +374,10 @@ export function PortalClient({
             (a.angebotsnr ? `Angebot ${a.angebotsnr}` : "Angebot"),
           plz,
           ort,
-          cardSubtitle: a.objekt ? portalObjektKurzlabel(a.objekt) : undefined,
+          cardSubtitle: hasObjekt ? portalObjektKurzlabel(a.objekt!) : undefined,
+          suppressLocationInHero: hasObjekt,
           status: fmtPortalStatus(st),
-          summary: a.objekt ? portalObjektKurzlabel(a.objekt) : undefined,
+          summary: undefined,
           sections,
           dokumente: a.dokumente ?? [],
         };
@@ -392,6 +392,7 @@ export function PortalClient({
       .map((lead) => {
         const { title, anfrageVorhaben, anfrageGewerk } = anfrageTitleFromLead(lead);
         const { plz, ort } = objektPlzOrt(lead.objekt, lead.plz);
+        const hasObjekt = Boolean(lead.objekt);
         return {
           id: `lead-${lead.id}`,
           date: lead.created_at,
@@ -401,13 +402,10 @@ export function PortalClient({
           plz,
           ort,
           cardSubtitle: anfrageGewerk,
+          suppressLocationInHero: hasObjekt,
           infoHint: "Wir bereiten dein Angebot vor und melden uns, sobald es bereitsteht.",
           status: fmtPortalStatus(lead.status || "angebot"),
-          summary: lead.objekt
-            ? portalObjektKurzlabel(lead.objekt)
-            : lead.plz
-              ? `PLZ ${lead.plz}`
-              : undefined,
+          summary: undefined,
           sections: prependObjektSection(
             [
               {
@@ -474,17 +472,14 @@ export function PortalClient({
             ],
             a.objekt
           );
-          const naechster = sanitizeCustomerText(a.naechster_schritt, 300);
           const { plz, ort } = objektPlzOrt(a.objekt);
-          if (naechster) {
-            sections.push({ heading: "Nächster Schritt", text: naechster });
-          }
           const leistungen = dedupe(
             (a.positionen ?? []).map((p) => p.titel || p.gewerk_name || "")
           ).filter(Boolean);
           if (leistungen.length > 0) {
             sections.push({ heading: "Leistungen", bullets: leistungen });
           }
+          const hasObjekt = Boolean(a.objekt);
           return {
             id: a.id,
             date: a.start_datum || a.created_at,
@@ -492,22 +487,15 @@ export function PortalClient({
             plz,
             ort,
             cardSubtitle: `${a.fortschritt ?? 0} % Fortschritt`,
-            infoHint: naechster || undefined,
+            suppressLocationInHero: hasObjekt,
             status: fmtPortalStatus(
               isAuftragAbgeschlossen(a)
                 ? "abgeschlossen"
                 : a.status || "auftrag"
             ),
-            summary: [
-              a.objekt ? portalObjektKurzlabel(a.objekt) : null,
-              `${a.fortschritt ?? 0} %`,
-              a.start_datum ? `Start ${fmtDate(a.start_datum)}` : null,
-            ]
-              .filter(Boolean)
-              .join(" · "),
+            summary: undefined,
             sections,
             milestones: a.milestones ?? [],
-            betreuer: a.betreuer,
             bautagebuch: a.bautagebuch ?? [],
             dokumente: a.dokumente ?? [],
           };
@@ -523,6 +511,7 @@ export function PortalClient({
         const { title, anfrageVorhaben, anfrageGewerk } = anfrageTitleFromLead(lead);
         const abgeschlossen = isCompletedStatus(lead.status);
         const { plz, ort } = objektPlzOrt(lead.objekt, lead.plz);
+        const hasObjekt = Boolean(lead.objekt);
         return {
           id: `lead-${lead.id}`,
           date: lead.created_at,
@@ -532,14 +521,11 @@ export function PortalClient({
           plz,
           ort,
           cardSubtitle: anfrageGewerk,
+          suppressLocationInHero: hasObjekt,
           status: fmtPortalStatus(
             abgeschlossen ? "abgeschlossen" : lead.status || "auftrag"
           ),
-          summary: lead.objekt
-            ? portalObjektKurzlabel(lead.objekt)
-            : lead.plz
-              ? `PLZ ${lead.plz}`
-              : undefined,
+          summary: undefined,
           sections: prependObjektSection(
             [
               {
@@ -676,6 +662,7 @@ export function PortalClient({
       <PortalListCard
         key={row.id}
         accent={row.accent}
+        showLeftAccent={false}
         title={row.title}
         subtitle={row.subtitle}
         statusLabel={row.statusLabel}
@@ -692,6 +679,7 @@ export function PortalClient({
       <PortalListCard
         key={row.id}
         accent={row.accent}
+        showLeftAccent={false}
         title={row.title}
         subtitle={row.subtitle}
         statusLabel={row.statusLabel}
@@ -729,14 +717,14 @@ export function PortalClient({
   }
 
   return (
-    <div className="min-h-screen bg-surface-page">
+    <div className="portal-ui min-h-screen bg-surface-page">
       <header className="sticky top-0 z-50 border-b border-border-default bg-surface-card/95 backdrop-blur-sm">
         <div className="mx-auto flex h-[68px] max-w-[1200px] items-center justify-between px-4 sm:px-6">
           <div className="flex items-center gap-2.5">
             <Image src="/logo-mark-green.png" alt="Bärenwald" width={28} height={28} />
             <div>
-              <p className="text-sm font-semibold leading-none text-text-primary">
-                <span className="font-display text-[15px] italic bg-gradient-to-r from-[#1A3D2B] via-[#2E7D52] to-[#5AA7A7] bg-clip-text text-transparent">
+              <p className="portal-text-body font-semibold leading-none text-text-primary">
+                <span className="font-display text-base italic bg-gradient-to-r from-[#1A3D2B] via-[#2E7D52] to-[#5AA7A7] bg-clip-text text-transparent sm:text-[17px]">
                   Mein
                 </span>
                 <span className="ml-0.5">Bärenwald</span>
@@ -746,7 +734,7 @@ export function PortalClient({
           <div className="flex shrink-0 items-center gap-2">
             <Link
               href="/rechner"
-              className="btn-pill-primary inline-flex !px-3 !py-2 !text-[11px] sm:!px-4 sm:!text-[12px]"
+              className="btn-pill-primary portal-btn-compact inline-flex"
             >
               <span className="sm:hidden">Anfrage</span>
               <span className="hidden sm:inline">Neue Anfrage</span>
@@ -754,7 +742,7 @@ export function PortalClient({
             <form action="/portal/auth/signout" method="post">
               <button
                 type="submit"
-                className="btn-pill-outline !px-2.5 !py-2 !text-[11px] sm:!px-3 sm:!text-[12px]"
+                className="btn-pill-outline portal-btn-compact !px-2.5 sm:!px-3"
               >
                 Abmelden
               </button>
@@ -772,7 +760,7 @@ export function PortalClient({
                   key={id}
                   onClick={() => switchSection(id)}
                   className={cn(
-                    "mb-1 flex w-full items-center justify-between rounded-xl px-3 py-2 text-left text-sm font-semibold",
+                    "mb-1 flex w-full items-center justify-between rounded-xl px-3 py-2.5 text-left portal-text-body font-semibold",
                     section === id
                       ? "bg-accent-light text-accent"
                       : "text-text-secondary hover:bg-muted"
@@ -782,7 +770,7 @@ export function PortalClient({
                     <Icon className="h-4 w-4" />
                     <span>{label}</span>
                   </span>
-                  <span className="text-xs text-text-tertiary">
+                  <span className="portal-text-meta text-text-tertiary">
                     {id === "anfragen"
                       ? anfragenItems.length
                       : id === "angebote"
@@ -801,7 +789,7 @@ export function PortalClient({
           {section === "uebersicht" ? (
             <header className="card-bordered sticky top-[76px] z-40 flex items-center justify-between gap-3 bg-surface-page/95 p-4 backdrop-blur-sm">
               <div>
-                <p className="text-lg font-semibold text-text-primary">
+                <p className="text-xl font-semibold text-text-primary">
                   Hallo {vorname}
                 </p>
               </div>
@@ -822,7 +810,7 @@ export function PortalClient({
             <div className="space-y-4">
               <div className="grid grid-cols-3 gap-2">
                 <article className="card-bordered p-4">
-                  <p className="text-[10px] uppercase tracking-wider text-text-tertiary sm:text-xs">
+                  <p className="portal-text-label text-text-tertiary">
                     Offene Anfragen
                   </p>
                   <p className="mt-1 font-display text-2xl font-semibold sm:mt-2 sm:text-4xl">
@@ -830,7 +818,7 @@ export function PortalClient({
                   </p>
                 </article>
                 <article className="card-bordered p-4">
-                  <p className="text-[10px] uppercase tracking-wider text-text-tertiary sm:text-xs">
+                  <p className="portal-text-label text-text-tertiary">
                     Offene Aufträge
                   </p>
                   <p className="mt-1 font-display text-2xl font-semibold sm:mt-2 sm:text-4xl">
@@ -838,7 +826,7 @@ export function PortalClient({
                   </p>
                 </article>
                 <article className="card-bordered p-4">
-                  <p className="text-[10px] uppercase tracking-wider text-text-tertiary sm:text-xs">
+                  <p className="portal-text-label text-text-tertiary">
                     Abgeschlossen
                   </p>
                   <p className="mt-1 font-display text-2xl font-semibold sm:mt-2 sm:text-4xl">
@@ -859,7 +847,7 @@ export function PortalClient({
                         key={id}
                         onClick={() => setOverviewTab(id as OverviewTabId)}
                         className={cn(
-                          "rounded-full px-3 py-1.5 text-xs font-semibold",
+                          "rounded-full px-3 py-1.5 portal-text-meta font-semibold",
                           overviewTab === id
                             ? "bg-accent-light text-accent"
                             : "bg-muted text-text-secondary"
@@ -870,7 +858,7 @@ export function PortalClient({
                     ))}
                   </div>
                   <button
-                    className="text-sm font-semibold text-accent"
+                    className="portal-text-body font-semibold text-accent"
                     onClick={() => setSection(overviewTab)}
                   >
                     Alle anzeigen →
@@ -879,7 +867,7 @@ export function PortalClient({
 
                 <div className="space-y-2">
                   {overviewCardRows.length === 0 ? (
-                    <p className="rounded-xl border border-dashed border-border-light bg-muted/20 px-3 py-6 text-center text-sm text-text-secondary">
+                    <p className="portal-text-body rounded-xl border border-dashed border-border-light bg-muted/20 px-3 py-6 text-center text-text-secondary">
                       {emptyLabelForSection(overviewTab)}
                     </p>
                   ) : (
@@ -891,15 +879,15 @@ export function PortalClient({
               <section className="border-t border-border-default pt-4">
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <div>
-                    <p className="text-xs uppercase tracking-wider text-text-tertiary">Kontakt</p>
-                    <p className="text-sm text-text-secondary">
+                    <p className="portal-text-label text-text-tertiary">Kontakt</p>
+                    <p className="portal-text-body text-text-secondary">
                       Fragen zu deinem Projekt? Wir sind direkt erreichbar.
                     </p>
                   </div>
                   <div className="flex flex-wrap gap-2">
                     <a
                       href={SITE_CONFIG.phoneHref}
-                      className="btn-pill-primary !justify-center !px-4 !py-2.5 !text-[13px]"
+                      className="btn-pill-primary portal-btn !justify-center !px-4 !py-3"
                     >
                       <Phone className="h-3.5 w-3.5" />
                       Jetzt anrufen
@@ -908,7 +896,7 @@ export function PortalClient({
                       href={waHref}
                       target="_blank"
                       rel="noreferrer"
-                      className="btn-pill-outline !justify-center !px-4 !py-2.5 !text-[13px]"
+                      className="btn-pill-outline portal-btn !justify-center !px-4 !py-3"
                     >
                       <MessageCircle className="h-3.5 w-3.5" />
                       WhatsApp
@@ -917,7 +905,7 @@ export function PortalClient({
                       href={`mailto:${SITE_CONFIG.email}?subject=${encodeURIComponent(
                         "Frage an Bärenwald"
                       )}`}
-                      className="btn-pill-outline !justify-center !px-4 !py-2.5 !text-[13px]"
+                      className="btn-pill-outline portal-btn !justify-center !px-4 !py-3"
                     >
                       <Mail className="h-3.5 w-3.5" />
                       E-Mail
@@ -933,7 +921,7 @@ export function PortalClient({
               <article className="card-bordered overflow-hidden p-0">
                 <div className="space-y-2 p-3 sm:p-4">
                   {sectionListEmpty ? (
-                    <p className="rounded-xl border border-dashed border-border-light bg-muted/20 px-3 py-8 text-center text-sm text-text-secondary">
+                    <p className="portal-text-body rounded-xl border border-dashed border-border-light bg-muted/20 px-3 py-8 text-center text-text-secondary">
                       {emptyLabelForSection(section)}
                     </p>
                   ) : (
@@ -956,7 +944,7 @@ export function PortalClient({
                   {selectedDetail ? (
                     <PortalDetailPanel item={selectedDetail} />
                   ) : (
-                    <p className="text-sm text-text-secondary">Kein Eintrag ausgewählt.</p>
+                    <p className="portal-text-body text-text-secondary">Kein Eintrag ausgewählt.</p>
                   )}
                 </article>
               </aside>
@@ -978,7 +966,7 @@ export function PortalClient({
                 type="button"
                 onClick={() => switchSection(id)}
                 className={cn(
-                  "rounded-lg px-0.5 py-2 text-[10px] font-medium",
+                  "portal-text-nav rounded-lg px-0.5 py-2.5",
                   section === id
                     ? "text-accent"
                     : "text-text-tertiary"
@@ -1004,7 +992,7 @@ export function PortalClient({
               )}
             >
               <MessagesSquare className="h-7 w-7 shrink-0 stroke-[1.75]" aria-hidden />
-              <span className="max-w-[68px] text-center text-[9px] font-extrabold leading-tight tracking-tight text-white">
+              <span className="portal-text-fab max-w-[72px] text-center text-white">
                 BärenwaldGPT
               </span>
             </button>
@@ -1018,7 +1006,7 @@ export function PortalClient({
                 type="button"
                 onClick={() => switchSection(id)}
                 className={cn(
-                  "rounded-lg px-0.5 py-2 text-[10px] font-medium",
+                  "portal-text-nav rounded-lg px-0.5 py-2.5",
                   section === id
                     ? "text-accent"
                     : "text-text-tertiary"

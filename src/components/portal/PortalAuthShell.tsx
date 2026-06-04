@@ -14,7 +14,7 @@ export function PortalAuthShell({
   footer?: ReactNode;
 }) {
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-surface-page px-4 py-10">
+    <div className="portal-ui flex min-h-screen flex-col items-center justify-center bg-surface-page px-4 py-10">
       <div className="w-full max-w-[400px]">
         <div className="mb-8 flex flex-col items-center text-center">
           <Image
@@ -24,25 +24,25 @@ export function PortalAuthShell({
             height={56}
             priority
           />
-          <p className="mt-4 font-display text-xl font-semibold text-text-primary">
+          <p className="mt-4 font-display text-xl font-semibold text-text-primary sm:text-2xl">
             <span className="italic bg-gradient-to-r from-[#1A3D2B] via-[#2E7D52] to-[#5AA7A7] bg-clip-text text-transparent">
               Mein
             </span>
             <span className="ml-1">Bärenwald</span>
           </p>
-          <h1 className="mt-3 text-lg font-semibold text-text-primary">{title}</h1>
+          <h1 className="mt-3 text-xl font-semibold text-text-primary">{title}</h1>
           {subtitle ? (
-            <p className="mt-1 text-sm text-text-secondary">{subtitle}</p>
+            <p className="portal-text-body mt-1 text-text-secondary">{subtitle}</p>
           ) : null}
         </div>
 
         <div className="card-bordered p-5 sm:p-6">{children}</div>
 
         {footer ? (
-          <div className="mt-4 text-center text-sm text-text-secondary">{footer}</div>
+          <div className="portal-text-body mt-4 text-center text-text-secondary">{footer}</div>
         ) : null}
 
-        <p className="mt-8 text-center text-xs text-text-tertiary">
+        <p className="portal-text-meta mt-8 text-center text-text-tertiary">
           <Link href="/" className="underline-offset-2 hover:underline">
             Zurück zur Website
           </Link>

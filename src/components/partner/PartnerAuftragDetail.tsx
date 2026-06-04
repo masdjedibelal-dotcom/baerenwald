@@ -99,37 +99,37 @@ function BautagebuchForm({
   return (
     <form
       onSubmit={onSubmit}
-      className="space-y-3 rounded-xl border border-border-light bg-muted/15 p-4 text-sm"
+      className="portal-text-body space-y-3 rounded-xl border border-border-light bg-muted/15 p-4"
     >
       <p className="font-semibold text-text-primary">
         {eintrag ? "Eintrag bearbeiten" : "Neuer Bautagebuch-Eintrag"}
       </p>
       <label className="block">
-        <span className="text-xs text-text-tertiary">Titel</span>
+        <span className="portal-text-meta text-text-tertiary">Titel</span>
         <input
           required
           value={titel}
           onChange={(e) => setTitel(e.target.value)}
-          className="mt-1 w-full rounded-xl border border-border-default bg-surface-card px-3 py-2"
+          className="mt-1 portal-input w-full rounded-xl border border-border-default bg-surface-card px-3 py-3"
         />
       </label>
       <label className="block">
-        <span className="text-xs text-text-tertiary">Datum</span>
+        <span className="portal-text-meta text-text-tertiary">Datum</span>
         <input
           type="date"
           required
           value={datum}
           onChange={(e) => setDatum(e.target.value)}
-          className="mt-1 w-full rounded-xl border border-border-default bg-surface-card px-3 py-2"
+          className="mt-1 portal-input w-full rounded-xl border border-border-default bg-surface-card px-3 py-3"
         />
       </label>
       <label className="block">
-        <span className="text-xs text-text-tertiary">Beschreibung</span>
+        <span className="portal-text-meta text-text-tertiary">Beschreibung</span>
         <textarea
           value={beschreibung}
           onChange={(e) => setBeschreibung(e.target.value)}
           rows={3}
-          className="mt-1 w-full rounded-xl border border-border-default bg-surface-card px-3 py-2"
+          className="mt-1 portal-input w-full rounded-xl border border-border-default bg-surface-card px-3 py-3"
         />
       </label>
       <FileUploadField
@@ -151,7 +151,7 @@ function BautagebuchForm({
         onChange={handleAnhaengeChange}
       />
       {error ? (
-        <p className="text-sm text-red-700" role="alert">
+        <p className="portal-text-body text-red-700" role="alert">
           {error}
         </p>
       ) : null}
@@ -159,14 +159,14 @@ function BautagebuchForm({
         <button
           type="submit"
           disabled={loading}
-          className={cn("btn-pill-primary !px-4 !py-2 !text-[13px]", loading && "opacity-60")}
+          className={cn("btn-pill-primary portal-btn !px-4 !py-2.5", loading && "opacity-60")}
         >
           {loading ? "Speichern…" : "Speichern"}
         </button>
         <button
           type="button"
           onClick={onDone}
-          className="text-sm text-text-secondary underline-offset-2 hover:underline"
+          className="portal-text-body text-text-secondary underline-offset-2 hover:underline"
         >
           Abbrechen
         </button>
@@ -211,7 +211,7 @@ function BautagebuchEintragActions({
       <button
         type="button"
         onClick={onEdit}
-        className="text-xs font-medium text-accent underline-offset-2 hover:underline"
+        className="portal-text-meta font-medium text-accent underline-offset-2 hover:underline"
       >
         Bearbeiten
       </button>
@@ -219,11 +219,11 @@ function BautagebuchEintragActions({
         type="button"
         disabled={deleting}
         onClick={onDelete}
-        className="text-xs font-medium text-red-700 underline-offset-2 hover:underline"
+        className="portal-text-meta font-medium text-red-700 underline-offset-2 hover:underline"
       >
         Löschen
       </button>
-      {error ? <p className="w-full text-xs text-red-700">{error}</p> : null}
+      {error ? <p className="w-full portal-text-meta text-red-700">{error}</p> : null}
     </>
   );
 }
@@ -320,18 +320,18 @@ export function PartnerAuftragDetail({ item }: { item: PartnerAuftragItem }) {
 
       <div className="space-y-3">
         <div className="flex items-center justify-between gap-2">
-          <p className="text-sm font-semibold text-text-primary">Bautagebuch</p>
+          <p className="portal-text-section">Bautagebuch</p>
           {!showNew && !editingEintrag ? (
             <button
               type="button"
               onClick={() => setShowNew(true)}
-              className="btn-pill-outline !px-3 !py-1.5 !text-[12px]"
+              className="btn-pill-outline portal-btn-compact !px-3"
             >
               + Eintrag
             </button>
           ) : null}
         </div>
-        <p className="text-xs text-text-secondary">
+        <p className="portal-text-meta text-text-secondary">
           Einträge werden von Bärenwald geprüft, bevor sie für Kunden sichtbar werden.
         </p>
 

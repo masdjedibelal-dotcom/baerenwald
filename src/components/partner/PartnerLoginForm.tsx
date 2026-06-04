@@ -46,14 +46,14 @@ export function PartnerLoginForm() {
 
   return (
     <form onSubmit={onSubmit} className="space-y-4">
-      <p className="rounded-lg bg-muted/60 px-3 py-2 text-xs text-text-secondary">
+      <p className="rounded-lg bg-muted/60 px-3 py-2 portal-text-meta text-text-secondary">
         Zugang nur mit der bei Bärenwald hinterlegten Partner-E-Mail. Noch kein Konto?{" "}
         <Link href="/partner/registrieren" className="font-semibold text-accent hover:underline">
           Registrieren
         </Link>
       </p>
       {hint === "confirm" ? (
-        <div className="space-y-3 rounded-lg bg-amber-50 px-3 py-3 text-sm text-amber-900">
+        <div className="space-y-3 rounded-lg bg-amber-50 px-3 py-3 portal-text-body text-amber-900">
           <p>
             Bitte bestätige deine E-Mail über den Link in unserer Nachricht, danach
             kannst du dich anmelden.
@@ -62,28 +62,28 @@ export function PartnerLoginForm() {
         </div>
       ) : null}
       {authError ? (
-        <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-800">
+        <p className="rounded-lg bg-red-50 px-3 py-2 portal-text-body text-red-800">
           Anmeldung fehlgeschlagen. Bitte versuche es erneut.
         </p>
       ) : null}
       {error ? (
-        <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-800">{error}</p>
+        <p className="rounded-lg bg-red-50 px-3 py-2 portal-text-body text-red-800">{error}</p>
       ) : null}
 
       <label className="block space-y-1.5">
-        <span className="text-xs font-medium text-text-secondary">E-Mail</span>
+        <span className="portal-form-label">E-Mail</span>
         <input
           type="email"
           autoComplete="email"
           required
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          className="w-full rounded-xl border border-border-default bg-surface-card px-3 py-2.5 text-sm outline-none focus:border-accent"
+          className="portal-input w-full rounded-xl border border-border-default bg-surface-card px-3 py-3 focus:border-accent"
         />
       </label>
 
       <label className="block space-y-1.5">
-        <span className="text-xs font-medium text-text-secondary">Passwort</span>
+        <span className="portal-form-label">Passwort</span>
         <input
           type="password"
           autoComplete="current-password"
@@ -91,19 +91,19 @@ export function PartnerLoginForm() {
           minLength={8}
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          className="w-full rounded-xl border border-border-default bg-surface-card px-3 py-2.5 text-sm outline-none focus:border-accent"
+          className="portal-input w-full rounded-xl border border-border-default bg-surface-card px-3 py-3 focus:border-accent"
         />
       </label>
 
       <button
         type="submit"
         disabled={loading}
-        className="btn-pill-primary w-full !py-2.5 !text-[14px] disabled:opacity-60"
+        className="btn-pill-primary portal-btn w-full !py-3 disabled:opacity-60"
       >
         {loading ? "Wird angemeldet…" : "Anmelden"}
       </button>
 
-      <p className="text-center text-xs text-text-tertiary">
+      <p className="portal-text-meta text-center text-text-tertiary">
         <Link
           href="/partner/passwort-vergessen"
           className="text-accent underline-offset-2 hover:underline"
@@ -112,7 +112,7 @@ export function PartnerLoginForm() {
         </Link>
       </p>
 
-      <p className="border-t border-border-light pt-4 text-center text-sm text-text-secondary">
+      <p className="border-t border-border-light pt-4 text-center portal-text-body text-text-secondary">
         Zugang anfragen?{" "}
         <Link
           href="/partner/registrieren"
