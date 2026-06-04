@@ -22,11 +22,18 @@ import type {
   PartnerAuftragItem,
   PartnerBautagebuchItem,
 } from "@/lib/partner/get-partner-data";
+import { PartnerStarRatingDisplay } from "@/components/partner/PartnerStarRatingDisplay";
 import {
   fmtPartnerDate,
   fmtPartnerMetaLine,
   partnerDetailStatusPillClass,
 } from "@/lib/partner/partner-detail-format";
+import {
+  durchschnittAusBewertung,
+  formatHandwerkerBewertung,
+  HANDWERKER_BEWERTUNG_KATEGORIEN,
+  isAuftragAbgeschlossen,
+} from "@/lib/partner/handwerker-bewertung-display";
 import {
   PARTNER_MAX_BAUTAGEBUCH_ANHAENGE,
   PARTNER_MAX_PDF_MB,
@@ -308,6 +315,43 @@ export function PartnerAuftragDetail({ item }: { item: PartnerAuftragItem }) {
       {leistungen.length > 0 ? (
         <PartnerDetailSection title="Leistungen">
           <PartnerDetailLeistungenList items={leistungen} />
+        </PartnerDetailSection>
+      ) : null}
+
+      {isAuftragAbgeschlossen(item.status) ? (
+        <PartnerDetailSection title="Deine Bewertung">
+          {item.bewertung ? (
+            <div className="space-y-4">
+              <ul className="space-y-3">
+                {HANDWERKER_BEWERTUNG_KATEGORIEN.map((kat) => (
+                  <li
+                    key={kat.key}
+                    className="flex flex-wrap items-center justify-between gap-2"
+                  >
+                    <span className="portal-text-body text-text-primary">
+                      {kat.label}
+                    </span>
+                    <PartnerStarRatingDisplay
+                      value={item.bewertung![kat.key]}
+                      size="sm"
+                    />
+                  </li>
+                ))}
+              </ul>
+              <p className="portal-text-body font-semibold text-text-primary">
+                Ø {formatHandwerkerBewertung(durchschnittAusBewertung(item.bewertung))}
+              </p>
+              {item.bewertung.updated_at ? (
+                <p className="portal-text-meta text-text-secondary">
+                  Bewertet am {fmtPartnerDate(item.bewertung.updated_at)}
+                </p>
+              ) : null}
+            </div>
+          ) : (
+            <p className="portal-text-body text-text-secondary">
+              Noch keine Bewertung für diesen Auftrag.
+            </p>
+          )}
         </PartnerDetailSection>
       ) : null}
 

@@ -29,13 +29,22 @@ import { SITE_CONFIG } from "@/lib/config";
 import type {
   PartnerAnfrageItem,
   PartnerAuftragItem,
+  PartnerHandwerkerProfil,
 } from "@/lib/partner/get-partner-data";
 import {
+  angebotOverviewStatusKey,
+  angebotPhaseSortKey,
   buildAnfragenCardRows,
   mapAngebotToCard,
   mapAuftragToCard,
+  partnerAngebotOverviewStatusLabel,
+  partnerAngebotStatusPillClass,
   type PartnerCardRow,
 } from "@/lib/partner/partner-list-mappers";
+import {
+  formatHandwerkerBewertung,
+  HANDWERKER_BEWERTUNG_KATEGORIEN,
+} from "@/lib/partner/handwerker-bewertung-display";
 import {
   isPartnerAnfrageOffen,
   partnerAnfrageStatusLabel,
@@ -128,14 +137,17 @@ export function PartnerClient({
   handwerker,
   anfragen,
   angebote,
+  angeboteAlleAkzeptiert,
   auftragAnfragen,
   auftraege,
 }: {
-  handwerker: { name: string; firma?: string | null };
+  handwerker: PartnerHandwerkerProfil;
   /** Offene angebot_handwerker-Anfragen (Server-Filter). */
   anfragen: PartnerAnfrageItem[];
-  /** Akzeptiert, HW-Angebot noch offen (Server-Filter). */
+  /** Akzeptiert, hw_status !== uebernommen (Server-Filter). */
   angebote: PartnerAnfrageItem[];
+  /** Alle akzeptierten HW-Angebote inkl. übernommen (Deep-Link). */
+  angeboteAlleAkzeptiert: PartnerAnfrageItem[];
   /** Auftrag mit status offen / HW noch ausstehend (Server-Filter). */
   auftragAnfragen: PartnerAuftragItem[];
   /** Laufende Aufträge (Server-Filter). */
@@ -149,6 +161,7 @@ export function PartnerClient({
   );
   const [mobileDetailOpen, setMobileDetailOpen] = useState(false);
   const [gptOpen, setGptOpen] = useState(false);
+  const [bewertungExpanded, setBewertungExpanded] = useState(false);
   const [listPage, setListPage] = useState(1);
 
   const displayName = handwerker.firma?.trim() || handwerker.name;
@@ -160,9 +173,8 @@ export function PartnerClient({
 
   const angeboteSorted = useMemo(() => {
     return [...angebote].sort((a, b) => {
-      const aOffen = !a.hw_eingereicht_at ? 1 : 0;
-      const bOffen = !b.hw_eingereicht_at ? 1 : 0;
-      if (aOffen !== bOffen) return bOffen - aOffen;
+      const phaseDiff = angebotPhaseSortKey(a) - angebotPhaseSortKey(b);
+      if (phaseDiff !== 0) return phaseDiff;
       return (
         new Date(b.antwort_at || b.gesendet_at || 0).getTime() -
         new Date(a.antwort_at || a.gesendet_at || 0).getTime()
@@ -170,7 +182,10 @@ export function PartnerClient({
     });
   }, [angebote]);
 
-  const offeneAngeboteCount = angebote.filter((a) => !a.hw_eingereicht_at).length;
+  const offeneAngeboteCount = angebote.filter((a) => {
+    const hwSt = (a.hw_status ?? "").toLowerCase();
+    return hwSt !== "uebernommen" && !a.hw_eingereicht_at;
+  }).length;
 
   const aktiveAuftraegeCount = auftraege.filter(isAuftragAktiv).length;
 
@@ -195,7 +210,7 @@ export function PartnerClient({
       id: a.id,
       date: (a.antwort_at ?? a.gesendet_at) ?? undefined,
       title: a.angebot_titel,
-      status: a.hw_eingereicht_at ? "eingereicht" : "offen",
+      status: angebotOverviewStatusKey(a),
     }));
   }, [angeboteSorted]);
 
@@ -286,10 +301,13 @@ export function PartnerClient({
     [auftragAnfragen, selectedAnfrageParsed, selectedAnfrageAngebot]
   );
 
-  const selectedAngebot = useMemo(
-    () => angeboteSorted.find((a) => a.id === selectedId) ?? angeboteSorted[0],
-    [angeboteSorted, selectedId]
-  );
+  const selectedAngebot = useMemo(() => {
+    if (selectedId) {
+      const fromAll = angeboteAlleAkzeptiert.find((a) => a.id === selectedId);
+      if (fromAll) return fromAll;
+    }
+    return angeboteSorted.find((a) => a.id === selectedId) ?? angeboteSorted[0];
+  }, [angeboteAlleAkzeptiert, angeboteSorted, selectedId]);
 
   const selectedAuftrag = useMemo(
     () => auftraege.find((a) => a.id === selectedId) ?? auftraege[0],
@@ -307,7 +325,7 @@ export function PartnerClient({
       }
     } else if (s === "angebote" && itemId) {
       setSection("angebote");
-      const match = angebote.find((a) => a.id === itemId);
+      const match = angeboteAlleAkzeptiert.find((a) => a.id === itemId);
       if (match) {
         setSelectedId(match.id);
         setMobileDetailOpen(true);
@@ -331,7 +349,7 @@ export function PartnerClient({
         setMobileDetailOpen(true);
       }
     }
-  }, [searchParams, auftraege, anfragen, angebote, auftragAnfragen]);
+  }, [searchParams, auftraege, anfragen, angeboteAlleAkzeptiert, auftragAnfragen]);
 
   function switchSection(id: PartnerSection) {
     setSection(id);
@@ -385,13 +403,15 @@ export function PartnerClient({
         showLeftAccent={false}
         title={row.title}
         statusLabel={
-          tab === "angebote" && row.status === "offen"
-            ? "Offen"
-            : tab === "angebote" && row.status === "eingereicht"
-              ? "Eingereicht"
-              : row.status
+          tab === "angebote"
+            ? partnerAngebotOverviewStatusLabel(row.status)
+            : row.status
         }
-        statusPillClass={statusPillClass(row.status)}
+        statusPillClass={
+          tab === "angebote"
+            ? partnerAngebotStatusPillClass(row.status)
+            : statusPillClass(row.status)
+        }
         meta={[{ icon: Calendar, text: fmtDate(row.date) }]}
         onClick={() => openFromOverview(tab, row.id)}
       />
@@ -407,7 +427,11 @@ export function PartnerClient({
         title={row.title}
         subtitle={row.subtitle}
         statusLabel={row.statusLabel}
-        statusPillClass={statusPillClass(row.statusPillKey)}
+        statusPillClass={
+          section === "angebote"
+            ? partnerAngebotStatusPillClass(row.statusPillKey)
+            : statusPillClass(row.statusPillKey)
+        }
         meta={row.meta}
         hint={row.hint}
         selected={selectedId === row.id}
@@ -550,6 +574,59 @@ export function PartnerClient({
                   </p>
                 </article>
               </div>
+
+              {handwerker.bewertung.bewertung_anzahl >= 1 &&
+              handwerker.bewertung.bewertung_gesamt != null ? (
+                <article className="card-bordered p-4">
+                  <div className="flex flex-wrap items-start justify-between gap-3">
+                    <div>
+                      <p className="portal-text-label text-text-tertiary">
+                        Dein Durchschnitt
+                      </p>
+                      <p className="mt-1 flex flex-wrap items-center gap-2 font-display text-2xl font-semibold text-text-primary">
+                        <span>
+                          {formatHandwerkerBewertung(handwerker.bewertung.bewertung_gesamt)} ★
+                        </span>
+                        <span className="portal-text-body font-normal text-text-secondary">
+                          · {handwerker.bewertung.bewertung_anzahl}{" "}
+                          {handwerker.bewertung.bewertung_anzahl === 1
+                            ? "Bewertung"
+                            : "Bewertungen"}
+                        </span>
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setBewertungExpanded((v) => !v)}
+                      className="portal-text-body font-semibold text-accent"
+                    >
+                      {bewertungExpanded ? "Weniger" : "Kategorien"}
+                    </button>
+                  </div>
+                  {bewertungExpanded ? (
+                    <ul className="mt-4 space-y-2 border-t border-border-light pt-4">
+                      {HANDWERKER_BEWERTUNG_KATEGORIEN.map((kat) => {
+                        const profilKey = `bewertung_${kat.key}` as keyof typeof handwerker.bewertung;
+                        const val = handwerker.bewertung[profilKey];
+                        if (typeof val !== "number" || val == null) return null;
+                        return (
+                          <li
+                            key={kat.key}
+                            className="flex items-center justify-between gap-2"
+                          >
+                            <span className="portal-text-body text-text-secondary">
+                              {kat.label}
+                            </span>
+                            <span className="portal-text-body font-semibold text-text-primary">
+                              {formatHandwerkerBewertung(val)} ★
+                            </span>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  ) : null}
+                </article>
+              ) : null}
 
               <article className="card-bordered p-4">
                 <div className="mb-3 flex flex-wrap items-center justify-between gap-2">

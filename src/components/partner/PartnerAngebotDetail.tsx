@@ -62,10 +62,12 @@ export function PartnerAngebotDetail({ item }: { item: PartnerAnfrageItem }) {
   const [confirmAngebot, setConfirmAngebot] = useState(false);
 
   const eingereicht = Boolean(item.hw_eingereicht_at);
+  const uebernommen = (item.hw_status ?? "").toLowerCase() === "uebernommen";
   const rechnungEingereicht = Boolean(item.hw_rechnung_eingereicht_at);
   const kannAngebotEinreichen =
     !eingereicht && item.status.toLowerCase() === "akzeptiert";
-  const kannRechnungHochladen = eingereicht && !rechnungEingereicht;
+  const wartetAufFreigabe = eingereicht && !uebernommen;
+  const kannRechnungHochladen = eingereicht && uebernommen && !rechnungEingereicht;
 
   const dokumentZeilen = useMemo((): DokumentZeile[] => {
     const rows: DokumentZeile[] = [];
@@ -238,6 +240,19 @@ export function PartnerAngebotDetail({ item }: { item: PartnerAnfrageItem }) {
           Trage Netto-Preis und Angebots-PDF ein. Nach dem Absenden kann das Angebot nicht mehr
           geändert werden — Bärenwald erhält eine E-Mail mit deinen Angaben.
         </PartnerDetailInfoBox>
+      ) : wartetAufFreigabe ? (
+        <PartnerDetailInfoBox>
+          Dein Angebot wurde eingereicht und wird von Bärenwald geprüft. Du erhältst eine E-Mail,
+          sobald wir es übernommen haben.
+        </PartnerDetailInfoBox>
+      ) : uebernommen ? (
+        <PartnerDetailSuccessBox>
+          <p className="font-semibold">Angebot übernommen</p>
+          <p className="text-sm">
+            Bärenwald hat dein Angebot bestätigt. Vielen Dank — bei laufenden Projekten findest du
+            Details unter Aufträge.
+          </p>
+        </PartnerDetailSuccessBox>
       ) : eingereicht && kannRechnungHochladen ? (
         <PartnerDetailInfoBox>
           Nach Abschluss der Leistung kannst du hier deine Rechnung als PDF einreichen.
