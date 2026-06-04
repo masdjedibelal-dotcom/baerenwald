@@ -171,7 +171,7 @@ export async function getPortalDataForKunde(kundeId: string) {
 
   /** Nur Spalten, die in Supabase existieren (kein budget/phasen — sonst leere Auftragsliste). */
   const auftragSelect =
-    "id, titel, status, fortschritt, start_datum, end_datum, abnahme_datum, abnahme_protokoll_url, naechster_schritt, created_at, lead_id, kunde_id, angebot_id, updated_at";
+    "id, titel, status, fortschritt, start_datum, end_datum, abnahme_datum, abnahme_protokoll_url, created_at, lead_id, kunde_id, angebot_id, updated_at";
 
   const mergeAuftraege = (
     rows: Array<Record<string, unknown>> | null | undefined
@@ -283,63 +283,6 @@ export async function getPortalDataForKunde(kundeId: string) {
           .eq("fuer_kunden_sichtbar", true)
           .order("sort_order", { ascending: true })
       : { data: [] };
-
-  const betreuerByAuftragId = new Map<
-    string,
-    { name: string; email?: string; phone?: string }
-  >();
-  if (auftragIds.length > 0) {
-    const { data: betreuerRows, error: betreuerErr } = await supabaseAdmin
-      .from("auftraege")
-      .select("id, betreuer_id")
-      .in("id", auftragIds);
-    if (betreuerErr) {
-      console.warn("[portal] betreuer_id:", betreuerErr.message);
-    } else {
-      const profileIds = Array.from(
-        new Set(
-          (betreuerRows ?? [])
-            .map((r) => (r as { betreuer_id?: string | null }).betreuer_id)
-            .filter((id): id is string => Boolean(id?.trim()))
-        )
-      );
-      const profileById = new Map<string, { name: string; email?: string; phone?: string }>();
-      if (profileIds.length > 0) {
-        const { data: profiles, error: profileErr } = await supabaseAdmin
-          .from("user_profiles")
-          .select("id, full_name, name, email, phone, telefon")
-          .in("id", profileIds);
-        if (profileErr) {
-          console.warn("[portal] user_profiles betreuer:", profileErr.message);
-        } else {
-          for (const p of profiles ?? []) {
-            const row = p as {
-              id: string;
-              full_name?: string | null;
-              name?: string | null;
-              email?: string | null;
-              phone?: string | null;
-              telefon?: string | null;
-            };
-            const name = row.full_name?.trim() || row.name?.trim() || "Bärenwald Team";
-            const phone = row.phone?.trim() || row.telefon?.trim() || undefined;
-            profileById.set(String(row.id), {
-              name,
-              email: row.email?.trim() || undefined,
-              phone,
-            });
-          }
-        }
-      }
-      for (const r of betreuerRows ?? []) {
-        const raw = r as { id: string; betreuer_id?: string | null };
-        const pid = raw.betreuer_id?.trim();
-        if (!pid) continue;
-        const profile = profileById.get(pid);
-        if (profile) betreuerByAuftragId.set(String(raw.id), profile);
-      }
-    }
-  }
 
   const angebote = Array.from(angeboteByIdEarly.values());
 
@@ -473,7 +416,6 @@ export async function getPortalDataForKunde(kundeId: string) {
           })),
         bautagebuch: bautagebuchByAuftrag.get(auftragId) ?? [],
         milestones: milestonesByAuftrag.get(auftragId) ?? [],
-        betreuer: betreuerByAuftragId.get(auftragId),
       };
     });
 

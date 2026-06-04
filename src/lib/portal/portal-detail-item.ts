@@ -16,12 +16,6 @@ export type PortalMilestoneItem = {
   erledigt: boolean;
 };
 
-export type PortalBetreuer = {
-  name: string;
-  email?: string;
-  phone?: string;
-};
-
 export type KundePortalDetailItem = {
   id: string;
   date?: string;
@@ -34,11 +28,12 @@ export type KundePortalDetailItem = {
   ort?: string;
   cardSubtitle?: string;
   infoHint?: string;
+  /** Kein Ort/Name im Hero — steht bereits unter „Objekt“. */
+  suppressLocationInHero?: boolean;
   sections: PortalDetailSection[];
   /** @deprecated Meilensteine — nutze milestones */
   tags?: string[];
   milestones?: PortalMilestoneItem[];
-  betreuer?: PortalBetreuer;
   bautagebuch?: PortalBautagebuchEntry[];
   dokumente?: PortalDokument[];
 };
