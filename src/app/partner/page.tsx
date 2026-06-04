@@ -17,7 +17,7 @@ export default async function PartnerDashboardPage() {
   if (!isSupabaseConfigured()) {
     return (
       <PartnerAuthShell title="Portal nicht verfügbar">
-        <p className="text-sm text-text-secondary">
+        <p className="portal-text-body text-text-secondary">
           Die Verbindung zur Datenbank ist nicht konfiguriert.
         </p>
       </PartnerAuthShell>
@@ -46,7 +46,7 @@ export default async function PartnerDashboardPage() {
   if (!link.ok) {
     return (
       <PartnerAuthShell title="Zugang nicht möglich">
-        <p className="text-sm text-text-secondary">{link.error}</p>
+        <p className="portal-text-body text-text-secondary">{link.error}</p>
         <form action="/partner/auth/signout" method="post" className="mt-4">
           <button type="submit" className="btn-pill-outline w-full !py-2.5">
             Abmelden
@@ -60,7 +60,7 @@ export default async function PartnerDashboardPage() {
   if (!data) {
     return (
       <PartnerAuthShell title="Keine Partnerdaten">
-        <p className="text-sm text-text-secondary">
+        <p className="portal-text-body text-text-secondary">
           Dein Konto ist aktiv, aber es wurden keine Daten gefunden.
         </p>
       </PartnerAuthShell>
@@ -70,7 +70,7 @@ export default async function PartnerDashboardPage() {
   return (
     <Suspense
       fallback={
-        <p className="px-4 py-8 text-center text-sm text-text-secondary">Portal wird geladen…</p>
+        <p className="px-4 py-8 text-center portal-text-body text-text-secondary">Portal wird geladen…</p>
       }
     >
       <PartnerClient

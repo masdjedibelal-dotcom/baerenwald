@@ -17,7 +17,7 @@ export default async function PortalDashboardPage() {
   if (!isSupabaseConfigured()) {
     return (
       <PortalAuthShell title="Portal nicht verfügbar">
-        <p className="text-sm text-text-secondary">
+        <p className="portal-text-body text-text-secondary">
           Die Verbindung zur Datenbank ist nicht konfiguriert.
         </p>
       </PortalAuthShell>
@@ -49,7 +49,7 @@ export default async function PortalDashboardPage() {
   if (!link.ok) {
     return (
       <PortalAuthShell title="Konto konnte nicht verknüpft werden">
-        <p className="text-sm text-text-secondary">{link.error}</p>
+        <p className="portal-text-body text-text-secondary">{link.error}</p>
         <form action="/portal/auth/signout" method="post" className="mt-4">
           <button type="submit" className="btn-pill-outline w-full !py-2.5">
             Abmelden
@@ -63,7 +63,7 @@ export default async function PortalDashboardPage() {
   if (!data) {
     return (
       <PortalAuthShell title="Keine Kundendaten">
-        <p className="text-sm text-text-secondary">
+        <p className="portal-text-body text-text-secondary">
           Dein Konto ist aktiv, aber es wurden keine Daten gefunden. Bitte wende
           dich an uns.
         </p>
@@ -76,7 +76,7 @@ export default async function PortalDashboardPage() {
   return (
     <Suspense
       fallback={
-        <p className="px-4 py-8 text-center text-sm text-text-secondary">
+        <p className="px-4 py-8 text-center portal-text-body text-text-secondary">
           Portal wird geladen…
         </p>
       }

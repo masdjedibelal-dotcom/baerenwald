@@ -134,6 +134,65 @@ h3 {
   }
 }
 
+@layer components {
+  .portal-text-body {
+    @apply text-base leading-relaxed sm:text-[15px];
+  }
+
+  .portal-text-meta {
+    @apply text-sm leading-relaxed;
+  }
+
+  .portal-text-label {
+    @apply text-xs font-semibold uppercase tracking-wider;
+  }
+
+  .portal-text-section {
+    @apply text-base font-semibold leading-snug text-text-primary;
+  }
+
+  .portal-text-card-title {
+    @apply text-base font-semibold leading-snug text-text-primary;
+  }
+
+  .portal-text-nav {
+    @apply text-xs font-medium leading-tight;
+  }
+
+  .portal-text-fab {
+    @apply text-xs font-extrabold leading-tight tracking-tight;
+  }
+
+  .portal-form-label {
+    @apply text-sm font-medium text-text-secondary;
+  }
+
+  .portal-input {
+    @apply text-base leading-normal outline-none sm:text-[15px];
+  }
+
+  .portal-btn {
+    @apply !text-sm !font-semibold;
+  }
+
+  .portal-btn-compact {
+    @apply !text-sm !font-semibold !py-2 !px-3 sm:!px-4;
+  }
+
+  .portal-ui .tag {
+    font-size: 12px;
+    padding: 5px 11px;
+  }
+
+  .portal-ui .portal-detail-layout {
+    @apply space-y-5;
+  }
+
+  .portal-touch-target {
+    @apply min-h-[44px] min-w-[44px];
+  }
+}
+
 @keyframes fadeIn {
   from {
     opacity: 0;

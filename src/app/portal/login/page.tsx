@@ -16,7 +16,7 @@ export default function PortalLoginPage() {
     >
       <Suspense
         fallback={
-          <p className="text-center text-sm text-text-secondary">Laden…</p>
+          <p className="text-center portal-text-body text-text-secondary">Laden…</p>
         }
       >
         <PortalLoginForm />

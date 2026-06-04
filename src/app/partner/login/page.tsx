@@ -14,7 +14,7 @@ export default function PartnerLoginPage() {
       title="Anmelden"
       subtitle="Anfragen, Angebote und Aufträge von Bärenwald."
     >
-      <Suspense fallback={<p className="text-center text-sm">Laden…</p>}>
+      <Suspense fallback={<p className="portal-text-body text-center">Laden…</p>}>
         <PartnerLoginForm />
       </Suspense>
     </PartnerAuthShell>
