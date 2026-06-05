@@ -13,7 +13,28 @@ export const metadata = {
   robots: { index: false, follow: false },
 };
 
-export default async function PartnerDashboardPage() {
+function partnerLoginRedirect(
+  searchParams?: Record<string, string | string[] | undefined>,
+  hint?: string
+): string {
+  const qs = new URLSearchParams();
+  if (searchParams) {
+    for (const [key, value] of Object.entries(searchParams)) {
+      if (typeof value === "string") qs.set(key, value);
+      else if (Array.isArray(value) && value[0]) qs.set(key, value[0]);
+    }
+  }
+  const next = qs.toString() ? `/partner?${qs}` : "/partner";
+  const loginQs = new URLSearchParams({ next });
+  if (hint) loginQs.set("hint", hint);
+  return `/partner/login?${loginQs}`;
+}
+
+export default async function PartnerDashboardPage({
+  searchParams,
+}: {
+  searchParams?: Record<string, string | string[] | undefined>;
+}) {
   if (!isSupabaseConfigured()) {
     return (
       <PartnerAuthShell title="Portal nicht verfügbar">
@@ -30,12 +51,12 @@ export default async function PartnerDashboardPage() {
   } = await supabase.auth.getUser();
 
   if (!user?.email) {
-    redirect("/partner/login");
+    redirect(partnerLoginRedirect(searchParams));
   }
 
   const emailConfirmed = Boolean(user.email_confirmed_at ?? user.confirmed_at);
   if (!emailConfirmed) {
-    redirect("/partner/login?hint=confirm");
+    redirect(partnerLoginRedirect(searchParams, "confirm"));
   }
 
   const link = await linkPortalHandwerkerToAuthUser({

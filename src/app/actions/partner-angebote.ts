@@ -8,8 +8,10 @@ import {
   sendPartnerInternalAngebotMail,
   sendPartnerInternalRechnungMail,
 } from "@/lib/partner/partner-mail";
+import { validatePartnerAngebotFiles } from "@/lib/partner/partner-upload-limits";
 import {
   resolvePartnerFileUrl,
+  uploadPartnerAngebotPdfs,
   uploadPartnerPdf,
 } from "@/lib/partner/partner-storage";
 import { createClient } from "@/lib/supabase/server";
@@ -55,7 +57,9 @@ export async function submitPartnerAngebot(
   const preisNetto = parsePrice(formData.get("preisNetto") as string | null);
   const preisBrutto = parsePrice(formData.get("preisBrutto") as string | null);
   const notiz = String(formData.get("notiz") ?? "").trim() || null;
-  const file = formData.get("pdf");
+  const pdfs = formData
+    .getAll("pdfs")
+    .filter((f): f is File => f instanceof File && f.size > 0);
 
   if (!anfrageId) {
     return { ok: false, error: "Anfrage fehlt." };
@@ -63,8 +67,9 @@ export async function submitPartnerAngebot(
   if (preisNetto == null) {
     return { ok: false, error: "Bitte den Netto-Preis in Euro angeben." };
   }
-  if (!(file instanceof File) || file.size === 0) {
-    return { ok: false, error: "Bitte ein Angebots-PDF hochladen." };
+  const pdfErr = validatePartnerAngebotFiles(pdfs);
+  if (pdfErr) {
+    return { ok: false, error: pdfErr };
   }
 
   const { data: row, error } = await supabaseAdmin
@@ -89,15 +94,17 @@ export async function submitPartnerAngebot(
     return { ok: false, error: "Du hast bereits ein Angebot eingereicht." };
   }
 
-  const upload = await uploadPartnerPdf({
+  const upload = await uploadPartnerAngebotPdfs({
     handwerkerId: link.handwerkerId,
     anfrageId,
-    file,
+    files: pdfs,
   });
 
   if (!upload.ok) {
     return { ok: false, error: upload.error };
   }
+
+  const primaryPath = upload.paths[0]!;
 
   const now = new Date().toISOString();
   const { error: upErr } = await supabaseAdmin
@@ -105,7 +112,8 @@ export async function submitPartnerAngebot(
     .update({
       hw_preis_netto: preisNetto,
       hw_preis_brutto: preisBrutto,
-      hw_angebot_pdf_url: upload.path,
+      hw_angebot_pdf_url: primaryPath,
+      hw_angebot_anhang_urls: upload.paths,
       hw_eingereicht_at: now,
       hw_status: "eingereicht",
       hw_notiz: notiz,
@@ -147,7 +155,7 @@ export async function submitPartnerAngebot(
         : (ang as { leads: { plz: string | null } | null }).leads
       : null;
     const angebotPdfUrl = await resolvePartnerFileUrl(
-      upload.path,
+      primaryPath,
       MAIL_PDF_LINK_TTL_SEC
     );
     void sendPartnerInternalAngebotMail({

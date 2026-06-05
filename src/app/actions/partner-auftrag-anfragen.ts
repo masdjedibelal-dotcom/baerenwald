@@ -14,7 +14,7 @@ import { createClient } from "@/lib/supabase/server";
 import { isSupabaseConfigured, supabaseAdmin } from "@/lib/supabase";
 
 export type PartnerAuftragAntwortResult =
-  | { ok: true }
+  | { ok: true; angebotAnfrageId?: string | null }
   | { ok: false; error: string };
 
 function one<T>(x: T | T[] | null | undefined): T | null {
@@ -146,12 +146,14 @@ export async function respondPartnerAuftragZuweisung(opts: {
 
   const angebotId = auftrag.angebot_id != null ? String(auftrag.angebot_id) : "";
   let partnerAngebotUrl: string | null = null;
+  let angebotAnfrageId: string | null = null;
 
   if (angebotId && opts.antwort === "akzeptiert") {
     const synced = await syncAngebotHandwerkerAfterAuftragAccept({
       handwerkerId: link.handwerkerId,
       angebotId,
     });
+    angebotAnfrageId = synced.anfrageId;
     if (synced.anfrageId) {
       partnerAngebotUrl = partnerAngebotPortalUrl(synced.anfrageId);
     }
@@ -170,5 +172,8 @@ export async function respondPartnerAuftragZuweisung(opts: {
   }
 
   revalidatePath("/partner");
-  return { ok: true };
+  return {
+    ok: true,
+    angebotAnfrageId: opts.antwort === "akzeptiert" ? angebotAnfrageId : null,
+  };
 }

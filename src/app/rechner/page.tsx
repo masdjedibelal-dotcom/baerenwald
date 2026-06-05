@@ -129,6 +129,10 @@ function bwLeadContactOk(email: string, telefon: string): boolean {
   return emailOk || telOk;
 }
 
+function bwLeadAddressOk(strasse: string, hausnummer: string): boolean {
+  return strasse.trim().length >= 2 && hausnummer.trim().length >= 1;
+}
+
 /** Betreuung: kein Ort-/PLZ-Schritt in {@link getBwRechnerScreenSequence}. */
 function bwSkipsOrtPlzScreen(situation: Situation | null): boolean {
   return situation === "betreuung";
@@ -271,7 +275,6 @@ function FunnelRechnerInner() {
     setPlz,
     setZeitraum,
     setPrice,
-    setSlot,
     updateLeadField,
     addPhotos,
     setDringlichkeit,
@@ -1517,6 +1520,7 @@ function FunnelRechnerInner() {
         return (
           !state.name.trim() ||
           !bwLeadContactOk(state.email, state.telefon) ||
+          !bwLeadAddressOk(state.strasse, state.hausnummer) ||
           leadSubmitting
         );
       case "beratung-lead":
@@ -1597,8 +1601,19 @@ function FunnelRechnerInner() {
     if (!bwLeadContactOk(state.email, state.telefon)) {
       return "Bitte eine gültige E-Mail oder eine Telefonnummer (mind. 3 Zeichen) angeben — sonst bleibt der Button gesperrt.";
     }
+    if (!bwLeadAddressOk(state.strasse, state.hausnummer)) {
+      return "Bitte Straße und Hausnummer angeben — für den Vor-Ort-Termin.";
+    }
     return null;
-  }, [screen, leadSubmitting, state.name, state.email, state.telefon]);
+  }, [
+    screen,
+    leadSubmitting,
+    state.name,
+    state.email,
+    state.telefon,
+    state.strasse,
+    state.hausnummer,
+  ]);
 
   const showFooterNav =
     einstiegModus === "wahl" ||
@@ -1612,7 +1627,9 @@ function FunnelRechnerInner() {
     e.preventDefault();
     if (leadSubmitting) return;
     const invalidLead =
-      !state.name.trim() || !bwLeadContactOk(state.email, state.telefon);
+      !state.name.trim() ||
+      !bwLeadContactOk(state.email, state.telefon) ||
+      !bwLeadAddressOk(state.strasse, state.hausnummer);
     if (screen === "lead" && invalidLead) return;
     setLeadSubmitError(null);
     setLeadSubmitting(true);
@@ -1631,6 +1648,8 @@ function FunnelRechnerInner() {
           preis_min: state.priceMin,
           preis_max: state.priceMax,
           plz: state.plz,
+          strasse: state.strasse,
+          hausnummer: state.hausnummer,
           zeitraum: state.zeitraum,
           kundentyp: state.kundentyp,
           funnel_daten: serializeFunnelStateForLead(state),
@@ -1829,22 +1848,6 @@ function FunnelRechnerInner() {
       </div>
     );
   };
-
-  const bookingSummary = useMemo(() => {
-    const s = state.selectedSlot;
-    if (!s?.date || !s.time) return null;
-    const d = new Date(s.date);
-    if (Number.isNaN(d.getTime())) return null;
-    return {
-      dateLabel: d.toLocaleDateString("de-DE", {
-        weekday: "long",
-        day: "numeric",
-        month: "long",
-        year: "numeric",
-      }),
-      timeLabel: s.time,
-    };
-  }, [state.selectedSlot]);
 
   const main = () => {
     if (einstiegModus === "wahl") {
@@ -2567,20 +2570,11 @@ function FunnelRechnerInner() {
               <HWLeadForm
                 photos={state.photos}
                 onPhotosChange={addPhotos}
-                selectedSlot={
-                  state.selectedSlot
-                    ? {
-                        dateISO: state.selectedSlot.date,
-                        time: state.selectedSlot.time,
-                      }
-                    : null
-                }
-                onSlotSelect={(date, time) => {
-                  setSlot(date.toISOString(), time);
-                }}
                 name={state.name}
                 email={state.email}
                 telefon={state.telefon}
+                strasse={state.strasse}
+                hausnummer={state.hausnummer}
                 onFieldChange={(field, value) => updateLeadField(field, value)}
                 formId={LEAD_FORM_ID}
                 onSubmit={handleLeadSubmit}
@@ -2722,12 +2716,7 @@ function FunnelRechnerInner() {
           );
         }
         return (
-          <ThankYou
-            variant={bookingSummary ? "termin" : "anfrage"}
-            dateLabel={bookingSummary?.dateLabel}
-            timeLabel={bookingSummary?.timeLabel}
-            onReset={handleReset}
-          />
+          <ThankYou variant="anfrage" onReset={handleReset} />
         );
 
       default:

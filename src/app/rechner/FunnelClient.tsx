@@ -6,7 +6,6 @@ import { useSearchParams } from "next/navigation";
 import { Footer } from "@/components/layout/Footer";
 import { Header } from "@/components/layout/Header";
 import { ProgressBar } from "@/components/layout/ProgressBar";
-import { CalendarPicker } from "@/components/funnel/CalendarPicker";
 import { ChipSelector } from "@/components/funnel/ChipSelector";
 import { ExtraQuestion } from "@/components/funnel/ExtraQuestion";
 import { LeadForm } from "@/components/funnel/LeadForm";
@@ -29,7 +28,6 @@ import {
   getVisibleSteps,
   getWarnTextForSelection,
   isAkutNotfall,
-  shouldShowConsultationOnly,
 } from "@/lib/funnel-config";
 import {
   isConfigStepAnswerValid,
@@ -94,9 +92,6 @@ export function FunnelClient() {
   const resultScreen = plzScreen + 2;
   const contactScreen = plzScreen + 3;
   const thanksScreen = plzScreen + 4;
-
-  const skipCal =
-    isAkutNotfall(funnel) || shouldShowConsultationOnly(funnel);
 
   const { currentStep, completedSteps } = segmentProgress(screen, E, n);
 
@@ -283,12 +278,6 @@ export function FunnelClient() {
     setScreen((s) => s - 1);
   }, [contactScreen, E, loadScreen, plzScreen, resultScreen, screen]);
 
-  const slotOk =
-    skipCal ||
-    funnel.skipCalendar ||
-    (funnel.selectedSlot !== null &&
-      Boolean(funnel.selectedSlot.dateISO && funnel.selectedSlot.time));
-
   const nextDisabled = useMemo(() => {
     if (screen === 0) return !funnel.situation;
     if (screen >= 1 && screen <= E) {
@@ -303,7 +292,7 @@ export function FunnelClient() {
     if (screen === loadScreen) return true;
     if (screen === resultScreen) return false;
     if (screen === contactScreen) {
-      return !isLeadStepValid(funnel) || !slotOk;
+      return !isLeadStepValid(funnel);
     }
     if (screen === thanksScreen) return true;
     return false;
@@ -318,7 +307,6 @@ export function FunnelClient() {
     screen,
     thanksScreen,
     visibleSteps,
-    slotOk,
   ]);
 
   const nextLabel = useMemo(() => {
@@ -502,20 +490,6 @@ export function FunnelClient() {
     return null;
   };
 
-  const bookingSummary = useMemo(() => {
-    const s = funnel.selectedSlot;
-    if (!s?.dateISO || !s.time) return null;
-    const d = new Date(s.dateISO);
-    if (Number.isNaN(d.getTime())) return null;
-    const dateLabel = d.toLocaleDateString("de-DE", {
-      weekday: "long",
-      day: "numeric",
-      month: "long",
-      year: "numeric",
-    });
-    return { dateLabel, timeLabel: s.time };
-  }, [funnel.selectedSlot]);
-
   const mainContent = () => {
     if (screen === 0) {
       return (
@@ -603,9 +577,9 @@ export function FunnelClient() {
       const tel = SITE_CONFIG.phone.replace(/\s/g, "");
       return (
         <StepWrapper
-          stepLabel="Termin"
+          stepLabel="Kontakt"
           question="Fast geschafft"
-          subtext="Optional Fotos, Terminwunsch und Kontakt — wir melden uns."
+          subtext="Optional Fotos und Kontakt — wir melden uns."
           animateKey="contact"
         >
           <LeadAvailabilityHint className="mb-4" />
@@ -633,33 +607,6 @@ export function FunnelClient() {
             </div>
           ) : null}
 
-          {!skipCal ? (
-            <>
-              <CalendarPicker
-                key={`cal-${funnel.selectedSlot?.dateISO ?? "x"}-${funnel.selectedSlot?.time ?? ""}`}
-                selectedSlot={funnel.selectedSlot}
-                onSlotSelect={(date, time) => {
-                  dispatch({ type: "SET_SKIP_CALENDAR", value: false });
-                  dispatch({
-                    type: "SET_SELECTED_SLOT",
-                    slot: {
-                      dateISO: date.toISOString(),
-                      time,
-                    },
-                  });
-                }}
-                className="mb-3"
-              />
-              <button
-                type="button"
-                className="mb-6 text-[12px] font-medium text-text-secondary underline underline-offset-2"
-                onClick={() => dispatch({ type: "SET_SKIP_CALENDAR", value: true })}
-              >
-                Termin später festlegen →
-              </button>
-            </>
-          ) : null}
-
           <LeadForm
             funnel={funnel}
             value={{
@@ -683,11 +630,7 @@ export function FunnelClient() {
 
     if (screen === thanksScreen) {
       return (
-        <ThankYou
-          variant={bookingSummary ? "termin" : "anfrage"}
-          dateLabel={bookingSummary?.dateLabel}
-          timeLabel={bookingSummary?.timeLabel}
-        />
+        <ThankYou variant="anfrage" />
       );
     }
 

@@ -67,6 +67,9 @@ export async function POST(req: Request) {
     nachricht:
       typeof body.nachricht === "string" ? body.nachricht : undefined,
     plz: typeof body.plz === "string" ? body.plz : undefined,
+    strasse: typeof body.strasse === "string" ? body.strasse : undefined,
+    hausnummer:
+      typeof body.hausnummer === "string" ? body.hausnummer : undefined,
     situation:
       typeof body.situation === "string" ? body.situation : undefined,
     bereiche: Array.isArray(body.bereiche)

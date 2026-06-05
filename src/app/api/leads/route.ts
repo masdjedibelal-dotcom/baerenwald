@@ -26,6 +26,8 @@ export type BwLeadBody = {
   priceMax?: number;
   breakdown?: PriceLineItem[];
   plz?: string;
+  strasse?: string;
+  hausnummer?: string;
   zeitraum?: string | null;
   budgetCheck?: string | null;
   budgetGespraech?: boolean;
@@ -81,6 +83,8 @@ function mapBwLeadToPersist(body: BwLeadBody): PersistLeadInput {
     telefon: (body.telefon ?? "").trim() || undefined,
     notizen: notizen || undefined,
     plz: body.plz ?? "",
+    strasse: (body.strasse ?? "").trim() || undefined,
+    hausnummer: (body.hausnummer ?? "").trim() || undefined,
     situation: body.situation ?? null,
     bereiche: body.bereiche ?? [],
     preis_min: body.priceMin,
