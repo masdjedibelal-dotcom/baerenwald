@@ -184,6 +184,12 @@ export function generateFunnelHumanSummary(state: FunnelState): string {
   if (state.bereiche.length)
     lines.push(`Bereiche: ${state.bereiche.join(", ")}`);
   if (state.plz.trim()) lines.push(`PLZ: ${state.plz.trim()}`);
+  if (state.strasse?.trim()) {
+    const nr = state.hausnummer?.trim();
+    lines.push(
+      `Anschrift: ${state.strasse.trim()}${nr ? ` ${nr}` : ""}`
+    );
+  }
   if (state.zeitraum) lines.push(`Zeitraum: ${state.zeitraum}`);
   if (state.dringlichkeit) lines.push(`Dringlichkeit: ${state.dringlichkeit}`);
   if (state.kundentyp) lines.push(`Kundentyp: ${state.kundentyp}`);

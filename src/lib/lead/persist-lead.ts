@@ -11,6 +11,10 @@ import {
   erneuernProjektTyp,
   isErneuernProjektBereich,
 } from "@/lib/funnel/projekt-erneuern";
+import {
+  findKundeIdByEmail,
+  isKundenEmailUniqueViolation,
+} from "@/lib/kunden/kunde-email";
 import { generateLeadVertriebsAnalyse } from "@/lib/lead/generate-ki-zusammenfassung";
 import { loadKundenVertriebsKontext } from "@/lib/lead/kunden-vertrieb-status";
 import type { MarketingJourney } from "@/lib/marketing/journey-types";
@@ -25,6 +29,8 @@ export type PersistLeadInput = {
   notizen?: string | null;
   nachricht?: string | null;
   plz?: string | null;
+  strasse?: string | null;
+  hausnummer?: string | null;
   situation?: string | null;
   bereiche?: string[] | null;
   preis_min?: number | null;
@@ -236,6 +242,14 @@ function sanitizeFunnelDatenJson(input: unknown): unknown {
 }
 
 /** Nur Werte, die zur Supabase-Spalte / zum Funnel-Typ passen — verhindert Check-Constraint-Fehler. */
+function formatKundeAdresse(
+  strasse?: string | null,
+  hausnummer?: string | null
+): string | null {
+  const parts = [strasse?.trim(), hausnummer?.trim()].filter(Boolean);
+  return parts.length ? parts.join(" ") : null;
+}
+
 function normalizeKundentypForDb(
   raw: string | null | undefined
 ): "eigentuemer" | "mieter" | "hausverwaltung" | null {
@@ -313,6 +327,9 @@ async function persistLeadInner(
   const preis_min = raw.preis_min ?? raw.priceMin ?? 0;
   const preis_max = raw.preis_max ?? raw.priceMax ?? 0;
   const plz = (raw.plz ?? "").trim();
+  const strasse = (raw.strasse ?? "").trim() || null;
+  const hausnummer = (raw.hausnummer ?? "").trim() || null;
+  const kundeAdresse = formatKundeAdresse(strasse, hausnummer);
   const zeitraum = raw.zeitraum ?? null;
   const kundentyp = normalizeKundentypForDb(raw.kundentyp ?? null);
   const kanal = (raw.kanal ?? "website").trim() || "website";
@@ -341,22 +358,15 @@ async function persistLeadInner(
 
   const typ = situation === "gewerbe" ? "gewerbe" : "privat";
 
-  const emailForKunde =
-    hasEmail ? emailRaw.toLowerCase() : syntheticEmailFromPhone(telefon);
+  const emailForKunde = hasEmail
+    ? emailRaw.trim().toLowerCase()
+    : syntheticEmailFromPhone(telefon);
 
   let kunde_id: string | undefined;
   let kundeWarNeuAngelegt = false;
 
-  /** Ohne Limit liefert `.maybeSingle()` einen Fehler, wenn die DB mehrere Treffer hat (Duplikat-E-Mail/-Telefon). */
   if (hasEmail) {
-    const { data: byMail, error: errMail } = await supabaseAdmin
-      .from("kunden")
-      .select("id")
-      .eq("email", emailRaw.toLowerCase())
-      .limit(1)
-      .maybeSingle();
-    if (errMail) throw errMail;
-    kunde_id = byMail?.id as string | undefined;
+    kunde_id = (await findKundeIdByEmail(emailRaw)) ?? undefined;
   }
 
   if (!kunde_id && hasTel) {
@@ -378,14 +388,33 @@ async function persistLeadInner(
         email: emailForKunde,
         telefon: telefon || null,
         plz: plz || null,
+        adresse: kundeAdresse,
         typ,
       })
       .select("id")
       .single();
 
-    if (kundeError) throw kundeError;
-    kunde_id = neuerKunde.id as string;
-    kundeWarNeuAngelegt = true;
+    if (kundeError) {
+      if (hasEmail && isKundenEmailUniqueViolation(kundeError)) {
+        kunde_id = (await findKundeIdByEmail(emailRaw)) ?? undefined;
+      }
+      if (!kunde_id) throw kundeError;
+    } else {
+      kunde_id = neuerKunde.id as string;
+      kundeWarNeuAngelegt = true;
+    }
+  } else if (kundeAdresse && kunde_id) {
+    const { data: kundeRow } = await supabaseAdmin
+      .from("kunden")
+      .select("adresse")
+      .eq("id", kunde_id)
+      .maybeSingle();
+    if (!kundeRow?.adresse?.trim()) {
+      await supabaseAdmin
+        .from("kunden")
+        .update({ adresse: kundeAdresse })
+        .eq("id", kunde_id);
+    }
   }
 
   const kontakt_email_row = hasEmail ? emailRaw.toLowerCase() : emailForKunde;
@@ -401,6 +430,8 @@ async function persistLeadInner(
       preis_min,
       preis_max,
       plz: plz || null,
+      strasse,
+      hausnummer,
       zeitraum,
       kundentyp,
       funnel_daten,
@@ -531,6 +562,8 @@ async function persistLeadInner(
             email: kontakt_email_row,
             telefon: telefon || undefined,
             plz: plz || undefined,
+            strasse: strasse ?? undefined,
+            hausnummer: hausnummer ?? undefined,
             bereiche: bereiche.length > 0 ? bereiche : undefined,
             preis_min,
             preis_max,
