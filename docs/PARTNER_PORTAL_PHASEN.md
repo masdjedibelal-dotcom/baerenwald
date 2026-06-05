@@ -15,7 +15,7 @@ Das Frontend soll **nicht** selbst nach `auftraege.status === "offen"` filtern.
 ### `angebot_handwerker`
 
 1. **anfrage** — `isPartnerAnfrageOffen()` (noch keine Antwort / Pending)
-2. **angebot** — Status `akzeptiert`, `hw_eingereicht_at` leer (Preis/PDF fehlt)
+2. **angebot** — Status `akzeptiert`, `hw_status` ≠ `uebernommen` (Einreichung offen, in Prüfung oder übernommen-Anzeige)
 3. Sonst nicht in den drei Menü-Listen
 
 ### Auftrag (Leistungs-Zuweisung)
@@ -45,7 +45,7 @@ Listen-IDs in **Anfragen**:
 
 Wenn im CRM nur am **Auftrag** zugewiesen wird (ohne `angebot_handwerker`), erscheint der Eintrag unter **Anfragen** (nicht Aufträge), solange der Auftrag `offen` ist.
 
-Nach Annahme (`respondPartnerAuftragZuweisung`) wird die verknüpfte `angebot_handwerker`-Zeile auf **akzeptiert** gesetzt — der Eintrag erscheint unter **Angebote** (Preis/PDF). Er verschwindet aus **Anfragen**, solange der Auftrag im CRM noch `offen` ist.
+Nach Annahme (`respondPartnerAuftragZuweisung`) wird die verknüpfte `angebot_handwerker`-Zeile auf **akzeptiert** gesetzt — der Eintrag erscheint unter **Angebote** (Preis/PDF). Er verschwindet aus **Anfragen**. Unter **Aufträge** erscheint er erst nach Angebotseinreichung und CRM-Bestätigung (`hw_status = uebernommen`).
 
 Ohne `angebot_handwerker`-Zeile am Angebot kann im Portal kein HW-Angebot eingereicht werden (Hinweis im Detail).
 

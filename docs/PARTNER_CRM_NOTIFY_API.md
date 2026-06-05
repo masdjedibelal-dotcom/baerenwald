@@ -67,9 +67,33 @@ Body:
 }
 ```
 
-Die Mail enthält Kunde, Ort, Zeitraum, Leistungsliste und einen Button **Zum Partner-Portal** (`/partner/login?next=/partner?section=auftraege&auftrag=…`). Registrierungs-Hinweis für neue Partner.
+Die Mail enthält Kunde, Ort, Zeitraum, Leistungsliste und einen Button **Zum Partner-Portal** mit phasenabhängigem Link:
+
+- offene Zuweisung → `?section=anfragen&id=auftrag:{auftragId}`
+- nach Annahme (Angebot einreichen) → `?section=angebote&id={angebot_handwerker.id}`
+- sonst → Übersicht `/partner`
+
+Registrierungs-Hinweis für neue Partner.
 
 **CRM:** wird automatisch nach `assignAuftragHandwerkerPosition` / `assignAuftragHandwerkerGewerk` ausgelöst (`notifyPartnerHandwerkerZuweisung`).
+
+---
+
+## Angebot übernommen (nach CRM-Bestätigung)
+
+`POST https://baerenwaldmuenchen.de/api/internal/partner-notify-angebot-bestaetigt`
+
+Gleicher Bearer `PARTNER_INTERNAL_API_SECRET`.
+
+Body:
+
+```json
+{ "anfrageId": "<uuid aus angebot_handwerker.id>" }
+```
+
+Mail an den Handwerker mit Link `?section=angebote&id={anfrageId}` und Status-Hinweis „übernommen“.
+
+**CRM:** wird aus `bestaetigeHandwerkerEinreichung` ausgelöst (`notifyPartnerHandwerkerAngebotBestaetigt`).
 
 ## Bereits in der Website (ohne CRM)
 
