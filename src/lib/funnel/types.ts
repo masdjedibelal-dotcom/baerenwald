@@ -191,6 +191,8 @@ export interface FunnelState {
   leadBeschreibung: string;
   email: string;
   telefon: string;
+  strasse: string;
+  hausnummer: string;
   selectedSlot: { date: string; time: string } | null;
   submitted: boolean;
   /** BärenwaldGPT-Session (Lead-Handoff) */

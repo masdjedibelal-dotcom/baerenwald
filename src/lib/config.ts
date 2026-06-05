@@ -24,6 +24,12 @@ export const SITE_CONFIG = {
   phoneMobil: "+49 163 7316161",
   phoneMobilHref: "tel:+491637316161",
   email: "info@baerenwald-muenchen.de",
+  /** Geschäftsanschrift (Impressum, Schema, Kontakt). */
+  addressStreet: "Bärenwaldstraße",
+  addressHouseNumber: "20",
+  addressPostalCode: "81737",
+  addressCity: "München",
+  addressLine: "Bärenwaldstraße 20, 81737 München",
   region: "München & Umgebung",
   plzRadius: ["80", "81", "82", "83", "84", "85", "86"],
   calendlyUrl: "",

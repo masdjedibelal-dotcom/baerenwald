@@ -314,6 +314,8 @@ export type InternLeadMailData = {
   email?: string;
   telefon?: string;
   plz?: string;
+  strasse?: string;
+  hausnummer?: string;
   bereiche?: string[];
   preis_min?: number;
   preis_max?: number;
@@ -412,6 +414,11 @@ export function buildInternNotification(data: InternLeadMailData): string {
     optionalRow("Telefon", data.telefon),
     optionalRow("E-Mail", data.email),
     optionalRow("PLZ", data.plz),
+    optionalRow(
+      "Anschrift",
+      [data.strasse?.trim(), data.hausnummer?.trim()].filter(Boolean).join(" ") ||
+        undefined
+    ),
     optionalRow("Kanal", data.kanal ?? "Website"),
     optionalRow("Eingeg.", data.createdAt),
   ].join("");
