@@ -60,3 +60,9 @@ export function partnerLoginForAuftragUrl(auftragId: string): string {
   const next = partnerAuftragPortalUrl(auftragId);
   return `${partnerLoginUrl()}?next=${encodeURIComponent(next)}`;
 }
+
+/** Login → Partner-Übersicht (Startscreen). */
+export function partnerLoginForDashboardUrl(): string {
+  const next = partnerDashboardUrl();
+  return `${partnerLoginUrl()}?next=${encodeURIComponent(next)}`;
+}

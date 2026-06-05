@@ -1,9 +1,11 @@
 /** Grenzen für Partner-Uploads (Client + Server). */
 
-export const PARTNER_MAX_PDF_BYTES = 12 * 1024 * 1024;
-export const PARTNER_MAX_PHOTO_BYTES = 8 * 1024 * 1024;
+export const PARTNER_MAX_PDF_BYTES = 10 * 1024 * 1024;
+export const PARTNER_MAX_PHOTO_BYTES = 6 * 1024 * 1024;
 /** Max. Anhänge (Fotos + PDF) pro Bautagebuch-Eintrag. */
-export const PARTNER_MAX_BAUTAGEBUCH_ANHAENGE = 8;
+export const PARTNER_MAX_BAUTAGEBUCH_ANHAENGE = 5;
+/** Max. PDFs bei Angebotseinreichung (ohne Rechnung). */
+export const PARTNER_MAX_ANGEBOT_DATEIEN = 3;
 /** @deprecated Alias — gleiche Grenze wie Anhänge gesamt. */
 export const PARTNER_MAX_BAUTAGEBUCH_PHOTOS = PARTNER_MAX_BAUTAGEBUCH_ANHAENGE;
 
@@ -51,7 +53,7 @@ function isPdfFile(file: File): boolean {
   return mime === "application/pdf" || file.name.toLowerCase().endsWith(".pdf");
 }
 
-/** Foto (max. 8 MB) oder PDF (max. 12 MB) für Bautagebuch. */
+/** Foto oder PDF für Bautagebuch. */
 export function validatePartnerBautagebuchFile(file: File): string | null {
   if (isPdfFile(file)) {
     return validatePartnerPdfFile(file);
@@ -72,6 +74,21 @@ export function validatePartnerBautagebuchFiles(
   }
   for (const file of files) {
     const err = validatePartnerBautagebuchFile(file);
+    if (err) return err;
+  }
+  return null;
+}
+
+export function validatePartnerAngebotFiles(files: File[]): string | null {
+  const list = files.filter((f) => f.size > 0);
+  if (!list.length) {
+    return "Bitte mindestens ein Angebots-PDF hochladen.";
+  }
+  if (list.length > PARTNER_MAX_ANGEBOT_DATEIEN) {
+    return `Maximal ${PARTNER_MAX_ANGEBOT_DATEIEN} PDF-Dateien pro Angebot.`;
+  }
+  for (const file of list) {
+    const err = validatePartnerPdfFile(file);
     if (err) return err;
   }
   return null;

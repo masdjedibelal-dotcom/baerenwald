@@ -3,7 +3,9 @@ import { randomUUID } from "crypto";
 import { isSupabaseConfigured, supabaseAdmin } from "@/lib/supabase";
 
 import {
+  PARTNER_MAX_ANGEBOT_DATEIEN,
   PARTNER_MAX_BAUTAGEBUCH_ANHAENGE,
+  validatePartnerAngebotFiles,
   validatePartnerBautagebuchFile,
   validatePartnerPdfFile,
 } from "@/lib/partner/partner-upload-limits";
@@ -75,6 +77,35 @@ export async function uploadPartnerPdf(opts: {
 
   if (error) return { ok: false, error: error.message };
   return { ok: true, path };
+}
+
+export async function uploadPartnerAngebotPdfs(opts: {
+  handwerkerId: string;
+  anfrageId: string;
+  files: File[];
+}): Promise<{ ok: true; paths: string[] } | { ok: false; error: string }> {
+  if (!isSupabaseConfigured()) {
+    return { ok: false, error: "Storage nicht konfiguriert." };
+  }
+
+  const list = opts.files.slice(0, PARTNER_MAX_ANGEBOT_DATEIEN);
+  const batchErr = validatePartnerAngebotFiles(list);
+  if (batchErr) {
+    return { ok: false, error: batchErr };
+  }
+
+  const paths: string[] = [];
+  for (const file of list) {
+    const up = await uploadPartnerPdf({
+      handwerkerId: opts.handwerkerId,
+      anfrageId: opts.anfrageId,
+      file,
+    });
+    if (!up.ok) return up;
+    paths.push(up.path);
+  }
+
+  return { ok: true, paths };
 }
 
 export async function uploadPartnerBautagebuchAnhaenge(opts: {

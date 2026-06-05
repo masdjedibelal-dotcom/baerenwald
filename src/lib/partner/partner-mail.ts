@@ -180,6 +180,8 @@ export async function sendHandwerkerLeistungZuweisungMail(opts: {
   adresseZeile: string;
   zeitraum?: string | null;
   leistungen: LeistungZuweisungMailLeistung[];
+  /** Phasenabhängiger Portal-Link (Anfragen / Angebote / Übersicht). */
+  portalLink?: string;
 }): Promise<{ ok: boolean; error?: string }> {
   const resend = resendClient();
   if (!resend) {
@@ -187,7 +189,8 @@ export async function sendHandwerkerLeistungZuweisungMail(opts: {
     return { ok: false, error: "E-Mail nicht konfiguriert." };
   }
 
-  const portalLink = partnerLoginForAuftragAnfrageUrl(opts.auftragId);
+  const portalLink =
+    opts.portalLink?.trim() || partnerLoginForAuftragAnfrageUrl(opts.auftragId);
   const register = partnerRegisterUrl();
   const zeitraum = opts.zeitraum?.trim() || "Nach Absprache";
   const gewerkSet = new Set(opts.leistungen.map((l) => l.gewerk_name).filter(Boolean));

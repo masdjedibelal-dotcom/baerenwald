@@ -1,13 +1,94 @@
+import {
+  findKundeIdByEmail,
+  isKundenEmailUniqueViolation,
+  normalizeKundenEmail,
+} from "@/lib/kunden/kunde-email";
 import { supabaseAdmin } from "@/lib/supabase";
 
 export type LinkPortalKundeResult =
   | { ok: true; kundeId: string }
   | { ok: false; error: string };
 
+type KundeCandidate = {
+  id: string;
+  auth_user_id: string | null;
+  email: string | null;
+  created_at: string | null;
+};
+
+async function countKundePortalDaten(kundeId: string): Promise<number> {
+  const [leads, angebote, auftraege] = await Promise.all([
+    supabaseAdmin
+      .from("leads")
+      .select("id", { count: "exact", head: true })
+      .eq("kunde_id", kundeId),
+    supabaseAdmin
+      .from("angebote")
+      .select("id", { count: "exact", head: true })
+      .eq("kunde_id", kundeId),
+    supabaseAdmin
+      .from("auftraege")
+      .select("id", { count: "exact", head: true })
+      .eq("kunde_id", kundeId),
+  ]);
+
+  return (leads.count ?? 0) + (angebote.count ?? 0) + (auftraege.count ?? 0);
+}
+
+/** Alle Kundenstämme zur Login-E-Mail (nicht Name, nicht Telefon). */
+async function findKundenByLoginEmail(
+  email: string
+): Promise<KundeCandidate[]> {
+  const { data, error } = await supabaseAdmin
+    .from("kunden")
+    .select("id, auth_user_id, email, created_at")
+    .ilike("email", email);
+
+  if (error) throw new Error(error.message);
+  return (data ?? []) as KundeCandidate[];
+}
+
+/**
+ * Führender Kundenstamm für die Login-E-Mail:
+ * der mit den meisten Portal-Daten; bei Gleichstand der ältere CRM-Stamm.
+ */
+async function pickCanonicalKundeForLoginEmail(
+  email: string
+): Promise<(KundeCandidate & { datenAnzahl: number }) | null> {
+  const rows = await findKundenByLoginEmail(email);
+  if (!rows.length) return null;
+
+  const scored = await Promise.all(
+    rows.map(async (k) => ({
+      ...k,
+      datenAnzahl: await countKundePortalDaten(String(k.id)),
+    }))
+  );
+
+  scored.sort((a, b) => {
+    if (b.datenAnzahl !== a.datenAnzahl) return b.datenAnzahl - a.datenAnzahl;
+    const ta = new Date(a.created_at ?? 0).getTime();
+    const tb = new Date(b.created_at ?? 0).getTime();
+    return ta - tb;
+  });
+
+  return scored[0] ?? null;
+}
+
+async function detachAuthFromKunde(
+  kundeId: string,
+  userId: string
+): Promise<void> {
+  await supabaseAdmin
+    .from("kunden")
+    .update({ auth_user_id: null })
+    .eq("id", kundeId)
+    .eq("auth_user_id", userId);
+}
+
 /**
  * Verknüpft Auth-User mit kunden.auth_user_id.
- * CRM-Mitarbeiter sind willkommen (gleiche Supabase-Auth wie das CRM).
- * Ein Konto kann parallel Kunden- und Partner-Portal nutzen.
+ * Die Login-E-Mail ist führend — Name dient nur zur Anzeige, nie zur Zuordnung.
  */
 export async function linkPortalKundeToAuthUser(opts: {
   userId: string;
@@ -15,47 +96,57 @@ export async function linkPortalKundeToAuthUser(opts: {
   name?: string | null;
   telefon?: string | null;
 }): Promise<LinkPortalKundeResult> {
-  const email = opts.email.trim().toLowerCase();
+  const email = normalizeKundenEmail(opts.email);
   if (!email) {
     return { ok: false, error: "Keine E-Mail-Adresse im Konto." };
   }
 
-  const { data: byAuth } = await supabaseAdmin
+  const { data: linkedByAuth } = await supabaseAdmin
     .from("kunden")
-    .select("id")
+    .select("id, auth_user_id, email")
     .eq("auth_user_id", opts.userId)
     .maybeSingle();
 
-  if (byAuth?.id) {
-    return { ok: true, kundeId: String(byAuth.id) };
+  let canonical: (KundeCandidate & { datenAnzahl: number }) | null = null;
+  try {
+    canonical = await pickCanonicalKundeForLoginEmail(email);
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : "Kundenabgleich fehlgeschlagen.";
+    return { ok: false, error: msg };
   }
 
-  const { data: byEmail, error: emailErr } = await supabaseAdmin
-    .from("kunden")
-    .select("id, auth_user_id, email")
-    .ilike("email", email)
-    .limit(1)
-    .maybeSingle();
-
-  if (emailErr) {
-    return { ok: false, error: emailErr.message };
-  }
-
-  if (byEmail?.id) {
-    const existingAuth = byEmail.auth_user_id as string | null | undefined;
-    if (existingAuth && existingAuth !== opts.userId) {
+  if (canonical) {
+    const foreignAuth = canonical.auth_user_id;
+    if (foreignAuth && foreignAuth !== opts.userId) {
       return {
         ok: false,
         error:
           "Diese E-Mail ist bereits mit einem anderen Portal-Konto verknüpft. Bitte wende dich an uns.",
       };
     }
+
+    if (linkedByAuth?.id && linkedByAuth.id !== canonical.id) {
+      await detachAuthFromKunde(String(linkedByAuth.id), opts.userId);
+    }
+
     const { error: upErr } = await supabaseAdmin
       .from("kunden")
-      .update({ auth_user_id: opts.userId })
-      .eq("id", byEmail.id);
+      .update({
+        auth_user_id: opts.userId,
+        email,
+      })
+      .eq("id", canonical.id);
+
     if (upErr) return { ok: false, error: upErr.message };
-    return { ok: true, kundeId: String(byEmail.id) };
+    return { ok: true, kundeId: String(canonical.id) };
+  }
+
+  if (linkedByAuth?.id) {
+    const linkedEmail = (linkedByAuth.email ?? "").trim().toLowerCase();
+    if (linkedEmail === email) {
+      return { ok: true, kundeId: String(linkedByAuth.id) };
+    }
+    await detachAuthFromKunde(String(linkedByAuth.id), opts.userId);
   }
 
   const name =
@@ -75,11 +166,39 @@ export async function linkPortalKundeToAuthUser(opts: {
     .select("id")
     .single();
 
-  if (insErr || !neu) {
-    return {
-      ok: false,
-      error: insErr?.message ?? "Kundenstamm konnte nicht angelegt werden.",
-    };
+  if (insErr) {
+    if (isKundenEmailUniqueViolation(insErr)) {
+      const existingId = await findKundeIdByEmail(email);
+      if (existingId) {
+        const { data: existing } = await supabaseAdmin
+          .from("kunden")
+          .select("auth_user_id")
+          .eq("id", existingId)
+          .maybeSingle();
+        const foreignAuth = existing?.auth_user_id as string | null | undefined;
+        if (foreignAuth && foreignAuth !== opts.userId) {
+          return {
+            ok: false,
+            error:
+              "Diese E-Mail ist bereits mit einem anderen Portal-Konto verknüpft. Bitte wende dich an uns.",
+          };
+        }
+        if (linkedByAuth?.id && linkedByAuth.id !== existingId) {
+          await detachAuthFromKunde(String(linkedByAuth.id), opts.userId);
+        }
+        const { error: upErr } = await supabaseAdmin
+          .from("kunden")
+          .update({ auth_user_id: opts.userId, email })
+          .eq("id", existingId);
+        if (upErr) return { ok: false, error: upErr.message };
+        return { ok: true, kundeId: existingId };
+      }
+    }
+    return { ok: false, error: insErr.message };
+  }
+
+  if (!neu) {
+    return { ok: false, error: "Kundenstamm konnte nicht angelegt werden." };
   }
 
   return { ok: true, kundeId: String(neu.id) };

@@ -2,6 +2,7 @@ import {
   aggregateAuftragHandwerkerStatus,
   resolveAngebotHandwerkerPhase,
   isAuftragAnfrageListItem,
+  isAuftragAuftraegeListItem,
   resolveAuftragPortalPhase,
   type PartnerPortalPhase,
 } from "@/lib/partner/partner-portal-phase";
@@ -41,6 +42,8 @@ export type PartnerAnfrageItem = {
   hw_preis_brutto?: number | null;
   hw_angebot_pdf_url?: string | null;
   hw_angebot_pdf_signed_url?: string | null;
+  hw_angebot_anhang_urls?: string[];
+  hw_angebot_anhang_signed_urls?: string[];
   hw_rechnung_pdf_url?: string | null;
   hw_rechnung_pdf_signed_url?: string | null;
   hw_rechnung_eingereicht_at?: string;
@@ -100,6 +103,29 @@ function one<T>(x: T | T[] | null | undefined): T | null {
   return Array.isArray(x) ? (x[0] as T) ?? null : x;
 }
 
+function parseHwAnhangUrls(raw: unknown, fallbackPath: string | null): string[] {
+  if (Array.isArray(raw)) {
+    const paths = raw.map((x) => String(x).trim()).filter(Boolean);
+    if (paths.length) return paths;
+  }
+  const fb = fallbackPath?.trim();
+  return fb ? [fb] : [];
+}
+
+async function mapHwAngebotAnhaenge(raw: Record<string, unknown>) {
+  const pdfPath = (raw.hw_angebot_pdf_url as string | null) ?? null;
+  const anhangPaths = parseHwAnhangUrls(raw.hw_angebot_anhang_urls, pdfPath);
+  const signed = (
+    await Promise.all(anhangPaths.map((p) => resolvePartnerFileUrl(p)))
+  ).filter((u): u is string => Boolean(u));
+  return {
+    hw_angebot_pdf_url: pdfPath,
+    hw_angebot_pdf_signed_url: signed[0] ?? null,
+    hw_angebot_anhang_urls: anhangPaths,
+    hw_angebot_anhang_signed_urls: signed,
+  };
+}
+
 function uniqueIds(ids: string[]): string[] {
   return Array.from(new Set(ids.filter(Boolean)));
 }
@@ -157,6 +183,7 @@ export async function getPartnerDataForHandwerker(handwerkerId: string) {
       hw_preis_netto,
       hw_preis_brutto,
       hw_angebot_pdf_url,
+      hw_angebot_anhang_urls,
       hw_rechnung_pdf_url,
       hw_rechnung_eingereicht_at,
       hw_notiz,
@@ -196,7 +223,7 @@ export async function getPartnerDataForHandwerker(handwerkerId: string) {
         (p) => !gewerkId || p.gewerk_id === gewerkId
       );
 
-      const pdfPath = (raw.hw_angebot_pdf_url as string | null) ?? null;
+      const anhaenge = await mapHwAngebotAnhaenge(raw);
       const rechnungPath = (raw.hw_rechnung_pdf_url as string | null) ?? null;
 
       return {
@@ -225,10 +252,7 @@ export async function getPartnerDataForHandwerker(handwerkerId: string) {
         hw_eingereicht_at: (raw.hw_eingereicht_at as string | null) ?? undefined,
         hw_preis_netto: raw.hw_preis_netto != null ? Number(raw.hw_preis_netto) : null,
         hw_preis_brutto: raw.hw_preis_brutto != null ? Number(raw.hw_preis_brutto) : null,
-        hw_angebot_pdf_url: pdfPath,
-        hw_angebot_pdf_signed_url: pdfPath
-          ? await resolvePartnerFileUrl(pdfPath)
-          : null,
+        ...anhaenge,
         hw_rechnung_pdf_url: rechnungPath,
         hw_rechnung_pdf_signed_url: rechnungPath
           ? await resolvePartnerFileUrl(rechnungPath)
@@ -445,6 +469,7 @@ export async function getPartnerDataForHandwerker(handwerkerId: string) {
         hw_preis_netto,
         hw_preis_brutto,
         hw_angebot_pdf_url,
+        hw_angebot_anhang_urls,
         hw_rechnung_pdf_url,
         hw_rechnung_eingereicht_at,
         hw_notiz,
@@ -489,7 +514,7 @@ export async function getPartnerDataForHandwerker(handwerkerId: string) {
           const pos = parseAngebotPositionen(angeboteRow?.positionen).filter(
             (p) => !gewerkId || p.gewerk_id === gewerkId
           );
-          const pdfPath = (raw.hw_angebot_pdf_url as string | null) ?? null;
+          const anhaenge = await mapHwAngebotAnhaenge(raw);
           const rechnungPath = (raw.hw_rechnung_pdf_url as string | null) ?? null;
           return {
             id: String(raw.id),
@@ -520,10 +545,7 @@ export async function getPartnerDataForHandwerker(handwerkerId: string) {
               raw.hw_preis_netto != null ? Number(raw.hw_preis_netto) : null,
             hw_preis_brutto:
               raw.hw_preis_brutto != null ? Number(raw.hw_preis_brutto) : null,
-            hw_angebot_pdf_url: pdfPath,
-            hw_angebot_pdf_signed_url: pdfPath
-              ? await resolvePartnerFileUrl(pdfPath)
-              : null,
+            ...anhaenge,
             hw_rechnung_pdf_url: rechnungPath,
             hw_rechnung_pdf_signed_url: rechnungPath
               ? await resolvePartnerFileUrl(rechnungPath)
@@ -565,7 +587,7 @@ export async function getPartnerDataForHandwerker(handwerkerId: string) {
     (a) => a.status.toLowerCase() === "akzeptiert"
   );
   const auftragAnfragen = alleAuftraege.filter(isAuftragAnfrageListItem);
-  const auftraege = alleAuftraege.filter((a) => a.portalPhase === "auftrag");
+  const auftraege = alleAuftraege.filter(isAuftragAuftraegeListItem);
 
   return {
     handwerker: {

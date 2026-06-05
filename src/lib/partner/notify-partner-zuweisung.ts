@@ -2,6 +2,7 @@ import {
   sendHandwerkerLeistungZuweisungMail,
   type LeistungZuweisungMailLeistung,
 } from "@/lib/partner/partner-mail";
+import { resolveZuweisungPortalUrl } from "@/lib/partner/resolve-partner-portal-link";
 import { isSupabaseConfigured, supabaseAdmin } from "@/lib/supabase";
 
 function one<T>(x: T | T[] | null | undefined): T | null {
@@ -76,7 +77,9 @@ export async function notifyHandwerkerLeistungZuweisung(input: {
 
   const { data: auftrag, error: aErr } = await supabaseAdmin
     .from("auftraege")
-    .select("id, titel, start_datum, end_datum, kunden(name, adresse, plz, ort)")
+    .select(
+      "id, titel, status, angebot_id, start_datum, end_datum, kunden(name, adresse, plz, ort)"
+    )
     .eq("id", auftragId)
     .maybeSingle();
 
@@ -127,6 +130,58 @@ export async function notifyHandwerkerLeistungZuweisung(input: {
     (auftrag.titel as string | null)?.trim() ||
     (kunde?.name ? `Auftrag — ${kunde.name}` : "Baustelle");
 
+  const [{ data: zuweisungen }, { data: allePos }] = await Promise.all([
+    supabaseAdmin
+      .from("auftrag_handwerker")
+      .select("status")
+      .eq("auftrag_id", auftragId)
+      .eq("handwerker_id", handwerkerId),
+    supabaseAdmin
+      .from("auftrag_positionen")
+      .select("handwerker_status")
+      .eq("auftrag_id", auftragId)
+      .eq("handwerker_id", handwerkerId),
+  ]);
+
+  const angebotId = (auftrag.angebot_id as string | null)?.trim() || "";
+  let angebotHandwerker: {
+    id: string;
+    status: string;
+    antwort_at?: string | null;
+    gesendet_at?: string | null;
+    hw_eingereicht_at?: string | null;
+    hw_status?: string | null;
+  } | null = null;
+
+  if (angebotId) {
+    const { data: ahRow } = await supabaseAdmin
+      .from("angebot_handwerker")
+      .select(
+        "id, status, antwort_at, gesendet_at, hw_eingereicht_at, hw_status"
+      )
+      .eq("angebot_id", angebotId)
+      .eq("handwerker_id", handwerkerId)
+      .maybeSingle();
+    if (ahRow) {
+      angebotHandwerker = {
+        id: String(ahRow.id),
+        status: String(ahRow.status ?? "ausstehend"),
+        antwort_at: (ahRow.antwort_at as string | null) ?? null,
+        gesendet_at: (ahRow.gesendet_at as string | null) ?? null,
+        hw_eingereicht_at: (ahRow.hw_eingereicht_at as string | null) ?? null,
+        hw_status: (ahRow.hw_status as string | null) ?? null,
+      };
+    }
+  }
+
+  const portalLink = resolveZuweisungPortalUrl({
+    auftragId,
+    auftragStatus: String(auftrag.status ?? "offen"),
+    zuweisungStatuses: (zuweisungen ?? []).map((z) => String(z.status ?? "")),
+    positionStatuses: (allePos ?? []).map((p) => p.handwerker_status as string | null),
+    angebotHandwerker,
+  });
+
   return sendHandwerkerLeistungZuweisungMail({
     to,
     handwerkerName: (hw.name as string)?.trim() || "Partner",
@@ -139,5 +194,6 @@ export async function notifyHandwerkerLeistungZuweisung(input: {
       auftrag.end_datum as string | null
     ),
     leistungen,
+    portalLink,
   });
 }

@@ -73,7 +73,10 @@ export function resolveAuftragPortalPhase(
 
   if (a === "storniert") return "auftrag";
 
-  /** HW hat geantwortet, Projekt noch „offen“ → kein Tab „Anfragen“, Angebot unter „Angebote“. */
+  /**
+   * HW hat geantwortet, Projekt noch „offen“ → nicht mehr unter Anfragen.
+   * Tab Aufträge erst nach CRM-Bestätigung (hw_status „uebernommen“) — bis dahin nur Angebote.
+   */
   if (a === "offen" && HW_BEANTWORTET.has(h)) return "auftrag";
 
   /** CRM-Projekt noch nicht gestartet → HW soll zu-/absagen. */
@@ -91,6 +94,17 @@ export function isAuftragAnfrageListItem(item: {
 }): boolean {
   if (item.portalPhase !== "anfrage") return false;
   return !HW_BEANTWORTET.has(item.hwStatus.toLowerCase());
+}
+
+/** Auftrag in „Aufträge“ — erst nach Angebotseinreichung und CRM-Bestätigung. */
+export function isAuftragAuftraegeListItem(item: {
+  portalPhase: PartnerPortalPhase;
+  angebotHandwerkerId?: string | null;
+}): boolean {
+  if (item.portalPhase !== "auftrag") return false;
+  /** Noch Preis/PDF offen oder in Prüfung → nur Tab Angebote. */
+  if (item.angebotHandwerkerId) return false;
+  return true;
 }
 
 export function auftragHwStatusLabel(status: string | null | undefined): string {

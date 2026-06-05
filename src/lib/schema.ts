@@ -15,9 +15,10 @@ export function localBusinessSchema(): Record<string, unknown> {
     email: "info@baerenwaldmuenchen.de",
     address: {
       "@type": "PostalAddress",
-      addressLocality: "München",
+      streetAddress: `${SITE_CONFIG.addressStreet} ${SITE_CONFIG.addressHouseNumber}`,
+      addressLocality: SITE_CONFIG.addressCity,
       addressRegion: "Bayern",
-      postalCode: "81737",
+      postalCode: SITE_CONFIG.addressPostalCode,
       addressCountry: "DE",
     },
     geo: {
