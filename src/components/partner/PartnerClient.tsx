@@ -20,6 +20,7 @@ import { PartnerAngebotDetail } from "@/components/partner/PartnerAngebotDetail"
 import { PartnerAuftragAnfrageDetail } from "@/components/partner/PartnerAuftragAnfrageDetail";
 import { PartnerAuftragDetail } from "@/components/partner/PartnerAuftragDetail";
 import { PartnerListCard } from "@/components/partner/PartnerListCard";
+import { PortalMobileBottomSheet } from "@/components/shared/PortalMobileBottomSheet";
 import {
   PARTNER_LIST_PAGE_SIZE,
   PartnerListPagination,
@@ -71,7 +72,7 @@ const MENU_ITEMS: Array<{
   { id: "anfragen", label: "Anfragen", icon: ClipboardList },
   { id: "angebote", label: "Angebote", icon: FileText },
   { id: "auftraege", label: "Aufträge", icon: Briefcase },
-  { id: "gpt", label: "BärenwaldGPT", icon: MessagesSquare },
+  { id: "gpt", label: "GPT", icon: MessagesSquare },
 ];
 
 function fmtDate(v?: string | null): string {
@@ -315,39 +316,85 @@ export function PartnerClient({
   );
 
   useEffect(() => {
-    const s = searchParams.get("section");
-    const itemId = searchParams.get("auftrag")?.trim() || searchParams.get("id")?.trim();
-    if (s === "auftraege" && itemId) {
+    const s = searchParams.get("section")?.trim();
+    if (!s) return;
+
+    if (s === "auftraege") {
+      const auftragId =
+        searchParams.get("auftrag")?.trim() || searchParams.get("id")?.trim();
+      if (!auftragId || auftragId.startsWith("auftrag:")) return;
       setSection("auftraege");
-      if (auftraege.some((a) => a.id === itemId)) {
-        setSelectedId(itemId);
+      if (auftraege.some((a) => a.id === auftragId)) {
+        setSelectedId(auftragId);
         setMobileDetailOpen(true);
       }
-    } else if (s === "angebote" && itemId) {
-      setSection("angebote");
-      const match = angeboteAlleAkzeptiert.find((a) => a.id === itemId);
+      return;
+    }
+
+    if (s === "angebote") {
+      const id = searchParams.get("id")?.trim();
+      if (!id) {
+        setSection("angebote");
+        return;
+      }
+      const match = angeboteAlleAkzeptiert.find((a) => a.id === id);
       if (match) {
+        setSection("angebote");
         setSelectedId(match.id);
         setMobileDetailOpen(true);
+      } else {
+        setSection("uebersicht");
+        setSelectedId(null);
+        setMobileDetailOpen(false);
       }
-    } else if (s === "anfragen" && itemId) {
+      return;
+    }
+
+    if (s === "anfragen") {
+      const rawId = searchParams.get("id")?.trim();
       setSection("anfragen");
-      const auftragIdFromParam = itemId.startsWith("auftrag:")
-        ? itemId.slice("auftrag:".length)
-        : itemId;
+      if (!rawId) return;
+
+      const auftragIdFromParam = rawId.startsWith("auftrag:")
+        ? rawId.slice("auftrag:".length)
+        : rawId;
+
+      if (anfragen.some((a) => a.id === rawId)) {
+        setSelectedId(rawId);
+        setMobileDetailOpen(true);
+        return;
+      }
       if (
-        itemId.startsWith("auftrag:") &&
+        rawId.startsWith("auftrag:") &&
         auftragAnfragen.some((a) => a.id === auftragIdFromParam)
       ) {
-        setSelectedId(itemId);
+        setSelectedId(rawId);
         setMobileDetailOpen(true);
-      } else if (anfragen.some((a) => a.id === itemId)) {
-        setSelectedId(itemId);
-        setMobileDetailOpen(true);
-      } else if (auftragAnfragen.some((a) => a.id === auftragIdFromParam)) {
+        return;
+      }
+      if (auftragAnfragen.some((a) => a.id === auftragIdFromParam)) {
         setSelectedId(`auftrag:${auftragIdFromParam}`);
         setMobileDetailOpen(true);
+        return;
       }
+
+      const auftragItem =
+        auftraege.find((a) => a.id === auftragIdFromParam) ??
+        auftragAnfragen.find((a) => a.id === auftragIdFromParam);
+      const angebotHwId = auftragItem?.angebotHandwerkerId;
+      if (
+        angebotHwId &&
+        angeboteAlleAkzeptiert.some((a) => a.id === angebotHwId)
+      ) {
+        setSection("angebote");
+        setSelectedId(angebotHwId);
+        setMobileDetailOpen(true);
+        return;
+      }
+
+      setSection("uebersicht");
+      setSelectedId(null);
+      setMobileDetailOpen(false);
     }
   }, [searchParams, auftraege, anfragen, angeboteAlleAkzeptiert, auftragAnfragen]);
 
@@ -499,8 +546,12 @@ export function PartnerClient({
                   className={cn(
                     "flex w-full items-center justify-between rounded-xl px-3 py-2.5 text-left portal-text-body font-semibold",
                     section === id
-                      ? "bg-accent-light text-accent"
-                      : "text-text-secondary hover:bg-muted"
+                      ? id === "gpt"
+                        ? "bg-[#EAF3DE] text-[#2E7D52]"
+                        : "bg-accent-light text-accent"
+                      : id === "gpt"
+                        ? "text-[#2E7D52] hover:bg-[#EAF3DE]/60"
+                        : "text-text-secondary hover:bg-muted"
                   )}
                 >
                   <span className="inline-flex items-center gap-2">
@@ -523,19 +574,6 @@ export function PartnerClient({
         </aside>
 
         <section className="space-y-4">
-          {section === "uebersicht" ? (
-            <header className="card-bordered sticky top-[76px] z-40 flex items-center justify-between gap-3 bg-surface-page/95 p-4 backdrop-blur-sm">
-              <div>
-                <p className="text-xl font-semibold text-text-primary">
-                  Hallo {vorname}
-                </p>
-                <p className="portal-text-body text-text-secondary">
-                  Willkommen im Partner-Portal
-                </p>
-              </div>
-            </header>
-          ) : null}
-
           {section === "gpt" ? (
             <article className="card-bordered hidden overflow-hidden p-0 lg:block">
               <PortalBaerenwaldGpt
@@ -548,30 +586,27 @@ export function PartnerClient({
 
           {section === "uebersicht" ? (
             <div className="space-y-4">
-              <div className="grid grid-cols-3 gap-2">
-                <article className="card-bordered p-4">
-                  <p className="portal-text-label text-text-tertiary">
-                    Offene Anfragen
-                  </p>
-                  <p className="mt-1 font-display text-2xl font-semibold sm:mt-2 sm:text-4xl">
-                    {offeneAnfragenCount}
-                  </p>
+              <div className="space-y-0.5">
+                <p className="portal-text-section text-text-primary">
+                  Hallo {vorname}
+                </p>
+                <p className="portal-text-body text-text-secondary">
+                  Willkommen im Partner-Portal
+                </p>
+              </div>
+
+              <div className="grid min-w-0 grid-cols-3 gap-2">
+                <article className="portal-kpi-card">
+                  <p className="portal-kpi-label">Offene Anfragen</p>
+                  <p className="portal-kpi-value">{offeneAnfragenCount}</p>
                 </article>
-                <article className="card-bordered p-4">
-                  <p className="portal-text-label text-text-tertiary">
-                    Angebote offen
-                  </p>
-                  <p className="mt-1 font-display text-2xl font-semibold sm:mt-2 sm:text-4xl">
-                    {offeneAngeboteCount}
-                  </p>
+                <article className="portal-kpi-card">
+                  <p className="portal-kpi-label">Angebote offen</p>
+                  <p className="portal-kpi-value">{offeneAngeboteCount}</p>
                 </article>
-                <article className="card-bordered p-4">
-                  <p className="portal-text-label text-text-tertiary">
-                    Aktive Aufträge
-                  </p>
-                  <p className="mt-1 font-display text-2xl font-semibold sm:mt-2 sm:text-4xl">
-                    {aktiveAuftraegeCount}
-                  </p>
+                <article className="portal-kpi-card">
+                  <p className="portal-kpi-label">Aktive Aufträge</p>
+                  <p className="portal-kpi-value">{aktiveAuftraegeCount}</p>
                 </article>
               </div>
 
@@ -781,17 +816,17 @@ export function PartnerClient({
                 setGptOpen(true);
                 setSection("gpt");
               }}
-              aria-label="BärenwaldGPT öffnen"
+              aria-label="GPT öffnen"
               aria-pressed={gptOpen || section === "gpt"}
               className={cn(
-                "-mt-8 flex min-h-[64px] w-[72px] flex-col items-center justify-center gap-1 rounded-full border-[3px] border-white/30 bg-gradient-to-br from-[#143D28] via-[#2E7D52] to-[#4BA3A3] px-1 py-2 text-white shadow-[0_10px_28px_rgba(30,90,60,0.45)] ring-[5px] ring-surface-card transition-transform active:scale-95",
+                "-mt-8 flex min-h-[64px] w-[72px] flex-col items-center justify-center gap-1 rounded-full border-[3px] border-white/30 bg-[#2E7D52] px-1 py-2 text-white shadow-[0_8px_24px_rgba(46,125,82,0.35)] ring-[5px] ring-surface-card transition-transform active:scale-95",
                 (gptOpen || section === "gpt") &&
-                  "ring-[#2E7D52] shadow-[0_12px_32px_rgba(46,125,82,0.55)]"
+                  "ring-[#2E7D52] shadow-[0_10px_28px_rgba(46,125,82,0.45)]"
               )}
             >
               <MessagesSquare className="h-7 w-7 shrink-0 stroke-[1.75]" aria-hidden />
               <span className="portal-text-fab max-w-[72px] text-center text-white">
-                BärenwaldGPT
+                GPT
               </span>
             </button>
           </div>
@@ -818,25 +853,18 @@ export function PartnerClient({
         </div>
       </nav>
 
-      {mobileDetailOpen &&
-      section !== "uebersicht" &&
-      section !== "gpt" &&
-      !sectionListEmpty ? (
-        <div className="fixed inset-0 z-[120] bg-black/40 lg:hidden">
-          <button
-            type="button"
-            className="absolute inset-0"
-            onClick={() => setMobileDetailOpen(false)}
-            aria-label="Schließen"
-          />
-          <article className="absolute inset-x-0 bottom-0 flex max-h-[min(88vh,720px)] flex-col rounded-t-2xl border border-border-default bg-surface-card shadow-xl">
-            <div className="shrink-0 px-4 pb-2 pt-3">
-              <div className="mx-auto mb-3 h-1.5 w-12 rounded-full bg-border-default" />
-            </div>
-            <div className="min-h-0 flex-1 overflow-y-auto px-4 pb-4">{detailPanel}</div>
-          </article>
-        </div>
-      ) : null}
+      <PortalMobileBottomSheet
+        open={
+          mobileDetailOpen &&
+          section !== "uebersicht" &&
+          section !== "gpt" &&
+          !sectionListEmpty
+        }
+        onClose={() => setMobileDetailOpen(false)}
+        ariaLabel="Details"
+      >
+        {detailPanel}
+      </PortalMobileBottomSheet>
 
       <PortalBaerenwaldGpt
         variant="overlay"

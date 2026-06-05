@@ -33,7 +33,9 @@ import {
   partnerDetailStatusPillClass,
 } from "@/lib/partner/partner-detail-format";
 import {
+  PARTNER_MAX_ANGEBOT_DATEIEN,
   PARTNER_MAX_PDF_MB,
+  validatePartnerAngebotFiles,
   validatePartnerPdfFile,
 } from "@/lib/partner/partner-upload-limits";
 
@@ -57,7 +59,7 @@ export function PartnerAngebotDetail({ item }: { item: PartnerAnfrageItem }) {
   const [preisNetto, setPreisNetto] = useState("");
   const [preisBrutto, setPreisBrutto] = useState("");
   const [notiz, setNotiz] = useState("");
-  const [angebotPdf, setAngebotPdf] = useState<File | null>(null);
+  const [angebotPdfs, setAngebotPdfs] = useState<File[]>([]);
   const [rechnungPdf, setRechnungPdf] = useState<File | null>(null);
   const [confirmAngebot, setConfirmAngebot] = useState(false);
 
@@ -71,14 +73,23 @@ export function PartnerAngebotDetail({ item }: { item: PartnerAnfrageItem }) {
 
   const dokumentZeilen = useMemo((): DokumentZeile[] => {
     const rows: DokumentZeile[] = [];
-    if (item.hw_angebot_pdf_signed_url) {
+    const anhangSigned =
+      item.hw_angebot_anhang_signed_urls?.length
+        ? item.hw_angebot_anhang_signed_urls
+        : item.hw_angebot_pdf_signed_url
+          ? [item.hw_angebot_pdf_signed_url]
+          : [];
+    anhangSigned.forEach((href, i) => {
       rows.push({
-        id: "hw-angebot-pdf",
+        id: `hw-angebot-pdf-${i}`,
         datum: item.hw_eingereicht_at,
-        name: "Angebot (eingereicht)",
-        href: item.hw_angebot_pdf_signed_url,
+        name:
+          anhangSigned.length > 1
+            ? `Angebot PDF ${i + 1}`
+            : "Angebot (eingereicht)",
+        href,
       });
-    }
+    });
     if (item.hw_rechnung_pdf_signed_url) {
       rows.push({
         id: "hw-rechnung-pdf",
@@ -89,6 +100,7 @@ export function PartnerAngebotDetail({ item }: { item: PartnerAnfrageItem }) {
     }
     return rows;
   }, [
+    item.hw_angebot_anhang_signed_urls,
     item.hw_angebot_pdf_signed_url,
     item.hw_eingereicht_at,
     item.hw_rechnung_pdf_signed_url,
@@ -102,19 +114,15 @@ export function PartnerAngebotDetail({ item }: { item: PartnerAnfrageItem }) {
   }
 
   function handleAngebotPdfChange(files: File[]) {
-    const file = files[0] ?? null;
-    if (!file) {
-      setAngebotPdf(null);
-      return;
-    }
-    const err = validatePartnerPdfFile(file);
+    const list = files.slice(0, PARTNER_MAX_ANGEBOT_DATEIEN);
+    const err = validatePartnerAngebotFiles(list);
     if (err) {
       setAngebotError(err);
-      setAngebotPdf(null);
+      setAngebotPdfs([]);
       return;
     }
     setAngebotError(null);
-    setAngebotPdf(file);
+    setAngebotPdfs(list);
   }
 
   function handleRechnungPdfChange(files: File[]) {
@@ -134,10 +142,9 @@ export function PartnerAngebotDetail({ item }: { item: PartnerAnfrageItem }) {
   }
 
   async function sendAngebot() {
-    const pdf = angebotPdf;
-    const pdfErr = validatePartnerPdfFile(pdf);
-    if (pdfErr || !pdf) {
-      setAngebotError(pdfErr ?? "Bitte ein Angebots-PDF auswählen.");
+    const pdfErr = validatePartnerAngebotFiles(angebotPdfs);
+    if (pdfErr) {
+      setAngebotError(pdfErr);
       return;
     }
     if (parseNettoInput(preisNetto) == null) {
@@ -151,7 +158,7 @@ export function PartnerAngebotDetail({ item }: { item: PartnerAnfrageItem }) {
     fd.set("preisNetto", preisNetto);
     fd.set("preisBrutto", preisBrutto);
     fd.set("notiz", notiz);
-    fd.set("pdf", pdf);
+    for (const pdf of angebotPdfs) fd.append("pdfs", pdf);
     const res = await submitPartnerAngebot(fd);
     setAngebotLoading(false);
     setConfirmAngebot(false);
@@ -169,7 +176,7 @@ export function PartnerAngebotDetail({ item }: { item: PartnerAnfrageItem }) {
       setAngebotError("Bitte einen gültigen Netto-Preis in Euro angeben.");
       return;
     }
-    const pdfErr = validatePartnerPdfFile(angebotPdf);
+    const pdfErr = validatePartnerAngebotFiles(angebotPdfs);
     if (pdfErr) {
       setAngebotError(pdfErr);
       return;
@@ -348,10 +355,17 @@ export function PartnerAngebotDetail({ item }: { item: PartnerAnfrageItem }) {
             </label>
           </div>
           <FileUploadField
-            label="Angebots-PDF"
+            label="Angebots-PDFs"
             accept="application/pdf,.pdf"
-            hint={`PDF, max. ${PARTNER_MAX_PDF_MB} MB`}
-            selectedName={angebotPdf?.name}
+            multiple
+            hint={`1–${PARTNER_MAX_ANGEBOT_DATEIEN} PDFs, je max. ${PARTNER_MAX_PDF_MB} MB`}
+            selectedName={
+              angebotPdfs.length > 0
+                ? angebotPdfs.length === 1
+                  ? angebotPdfs[0].name
+                  : `${angebotPdfs.length} PDFs ausgewählt`
+                : null
+            }
             onChange={handleAngebotPdfChange}
           />
           <label className="block portal-text-body">
@@ -388,7 +402,7 @@ export function PartnerAngebotDetail({ item }: { item: PartnerAnfrageItem }) {
       <PartnerConfirmDialog
         open={confirmAngebot}
         title="Angebot an Bärenwald senden?"
-        description="Netto-Preis und PDF werden übermittelt. Bärenwald erhält eine E-Mail mit deinen Angaben und dem Angebots-PDF."
+        description={`Netto-Preis und ${angebotPdfs.length > 1 ? `${angebotPdfs.length} PDFs` : "PDF"} werden übermittelt. Bärenwald erhält eine E-Mail mit deinen Angaben.`}
         confirmLabel="Ja, absenden"
         loading={angebotLoading}
         onConfirm={sendAngebot}

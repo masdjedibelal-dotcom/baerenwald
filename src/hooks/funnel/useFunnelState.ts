@@ -49,7 +49,9 @@ export type BwFunnelAction =
         | "vorname"
         | "nachname"
         | "leadBeschreibung"
-        | "freitext";
+        | "freitext"
+        | "strasse"
+        | "hausnummer";
       value: string;
     }
   | { type: "SET_SLOT"; date: string; time: string }
@@ -113,6 +115,8 @@ export const BW_FUNNEL_INITIAL_STATE: FunnelState = {
   leadBeschreibung: "",
   email: "",
   telefon: "",
+  strasse: "",
+  hausnummer: "",
   selectedSlot: null,
   submitted: false,
 };
@@ -417,7 +421,9 @@ export function useBwFunnelState() {
       field !== "vorname" &&
       field !== "nachname" &&
       field !== "leadBeschreibung" &&
-      field !== "freitext"
+      field !== "freitext" &&
+      field !== "strasse" &&
+      field !== "hausnummer"
     ) {
       return;
     }

@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { X } from "lucide-react";
 
 import { KiRechnerChat } from "@/components/funnel/KiRechnerChat";
+import { PortalMobileSheetHeader } from "@/components/shared/PortalMobileBottomSheet";
 import { RECHNER_KI_BERATUNG_HREF } from "@/lib/rechner-links";
 import { cn } from "@/lib/utils";
 
@@ -116,9 +117,20 @@ export function PortalBaerenwaldGpt({
       className="portal-gpt-overlay"
       role="dialog"
       aria-modal="true"
-      aria-label="BärenwaldGPT"
+      aria-label="GPT"
     >
-      {shell}
+      <button
+        type="button"
+        className="portal-gpt-overlay-backdrop lg:hidden"
+        onClick={handleClose}
+        aria-label="Schließen"
+      />
+      <div className="portal-gpt-sheet">
+        <div className="shrink-0 bg-surface-card lg:hidden">
+          <PortalMobileSheetHeader onClose={handleClose} />
+        </div>
+        {shell}
+      </div>
     </div>
   );
 }

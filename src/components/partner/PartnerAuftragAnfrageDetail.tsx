@@ -62,6 +62,10 @@ export function PartnerAuftragAnfrageDetail({ item }: { item: PartnerAuftragItem
       setError(res.error);
       return;
     }
+    if (antwort === "akzeptiert" && res.angebotAnfrageId) {
+      router.push(partnerAngebotPortalUrl(res.angebotAnfrageId));
+      return;
+    }
     router.refresh();
   }
 
@@ -173,7 +177,7 @@ export function PartnerAuftragAnfrageDetail({ item }: { item: PartnerAuftragItem
       <PartnerConfirmDialog
         open={confirmAccept}
         title="Leistung annehmen?"
-        description="Du bestätigst die Zuweisung. Sobald Bärenwald das Projekt startet, erscheint es unter Aufträge."
+        description="Du bestätigst die Zuweisung. Als Nächstes gibst du unter „Angebote“ deinen Preis ein und lädst dein Angebot (PDF) hoch."
         confirmLabel="Ja, annehmen"
         loading={loading}
         onConfirm={() => sendAntwort("akzeptiert")}

@@ -1,23 +1,18 @@
 "use client";
 
-import { useState } from "react";
-
-import { CalendarPicker } from "@/components/funnel/CalendarPicker";
 import { PhotoUpload } from "@/components/funnel/PhotoUpload";
-import type { SelectedSlot } from "@/lib/types";
-import { SITE_CONFIG } from "@/lib/config";
 import { cn } from "@/lib/utils";
 
 export interface HWLeadFormProps {
   photos: File[];
   onPhotosChange: (files: File[]) => void;
-  selectedSlot: SelectedSlot | null;
-  onSlotSelect: (date: Date, time: string) => void;
   name: string;
   email: string;
   telefon: string;
+  strasse: string;
+  hausnummer: string;
   onFieldChange: (
-    field: "name" | "email" | "telefon",
+    field: "name" | "email" | "telefon" | "strasse" | "hausnummer",
     value: string
   ) => void;
   formId: string;
@@ -28,18 +23,16 @@ export interface HWLeadFormProps {
 export function HWLeadForm({
   photos,
   onPhotosChange,
-  selectedSlot,
-  onSlotSelect,
   name,
   email,
   telefon,
+  strasse,
+  hausnummer,
   onFieldChange,
   formId,
   onSubmit,
   className,
 }: HWLeadFormProps) {
-  const [showCalendar, setShowCalendar] = useState(false);
-
   return (
     <div id="lead-form" className={cn(className)}>
       <PhotoUpload
@@ -48,78 +41,6 @@ export function HWLeadForm({
         className="mb-4"
         showCompareOfferHint={true}
       />
-
-      <div className="calendar-opt-wrap mb-6">
-        <button
-          type="button"
-          className="calendar-opt-trigger"
-          onClick={() => setShowCalendar((v) => !v)}
-          aria-expanded={showCalendar}
-        >
-          <span className="calendar-opt-icon" aria-hidden>
-            <svg
-              width="20"
-              height="20"
-              viewBox="0 0 24 24"
-              fill="none"
-              className="calendar-opt-icon-svg"
-            >
-              <rect
-                x="3"
-                y="5"
-                width="18"
-                height="16"
-                rx="2"
-                stroke="currentColor"
-                strokeWidth="1.75"
-              />
-              <path d="M3 10h18" stroke="currentColor" strokeWidth="1.75" />
-              <path
-                d="M8 3v4M16 3v4"
-                stroke="currentColor"
-                strokeWidth="1.75"
-                strokeLinecap="round"
-              />
-            </svg>
-          </span>
-          <div className="min-w-0 flex-1">
-            <div className="calendar-opt-title">
-              Wunschtermin angeben (optional)
-            </div>
-            <div className="calendar-opt-sub">
-              Wir prüfen die Verfügbarkeit — Rückmeldung{" "}
-              {SITE_CONFIG.responseSlaWithin}
-            </div>
-          </div>
-          <svg
-            className={cn(
-              "calendar-opt-chevron shrink-0 text-text-tertiary transition-transform duration-200",
-              showCalendar && "rotate-180"
-            )}
-            width="20"
-            height="20"
-            viewBox="0 0 20 20"
-            fill="none"
-            aria-hidden
-          >
-            <path
-              d="M5 7.5L10 12.5L15 7.5"
-              stroke="currentColor"
-              strokeWidth="1.6"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </svg>
-        </button>
-        {showCalendar ? (
-          <div className="calendar-opt-body">
-            <CalendarPicker
-              selectedSlot={selectedSlot}
-              onSlotSelect={onSlotSelect}
-            />
-          </div>
-        ) : null}
-      </div>
 
       <form id={formId} onSubmit={onSubmit} className="space-y-3">
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
@@ -154,6 +75,27 @@ export function HWLeadForm({
           value={telefon}
           onChange={(e) => onFieldChange("telefon", e.target.value)}
         />
+        <div className="grid grid-cols-[1fr_88px] gap-3">
+          <input
+            type="text"
+            inputMode="text"
+            autoComplete="street-address"
+            autoCapitalize="words"
+            className="funnel-input"
+            placeholder="Straße"
+            value={strasse}
+            onChange={(e) => onFieldChange("strasse", e.target.value)}
+          />
+          <input
+            type="text"
+            inputMode="text"
+            autoComplete="address-line2"
+            className="funnel-input"
+            placeholder="Nr."
+            value={hausnummer}
+            onChange={(e) => onFieldChange("hausnummer", e.target.value)}
+          />
+        </div>
         <p
           style={{
             fontSize: "12px",

@@ -64,7 +64,8 @@ function BautagebuchForm({
   const bestehendeAnzahl = eintrag?.foto_urls.length ?? 0;
 
   function handleAnhaengeChange(files: File[]) {
-    const list = files.slice(0, PARTNER_MAX_BAUTAGEBUCH_ANHAENGE);
+    const maxNeu = Math.max(0, PARTNER_MAX_BAUTAGEBUCH_ANHAENGE - bestehendeAnzahl);
+    const list = files.slice(0, maxNeu);
     const err = validatePartnerBautagebuchFiles(list, bestehendeAnzahl);
     if (err) {
       setError(err);

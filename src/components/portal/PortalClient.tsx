@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 
 import { PortalDetailPanel } from "@/components/portal/PortalDetailPanel";
+import { PortalMobileBottomSheet } from "@/components/shared/PortalMobileBottomSheet";
 import { PortalListCard } from "@/components/shared/PortalListCard";
 import {
   PORTAL_LIST_PAGE_SIZE,
@@ -158,7 +159,7 @@ const MENU_ITEMS: Array<{
   { id: "anfragen", label: "Anfragen", icon: ClipboardList },
   { id: "angebote", label: "Angebote", icon: FileText },
   { id: "auftraege", label: "Aufträge", icon: Briefcase },
-  { id: "gpt", label: "BärenwaldGPT", icon: MessagesSquare },
+  { id: "gpt", label: "GPT", icon: MessagesSquare },
 ];
 
 function fmtDate(v?: string): string {
@@ -762,8 +763,12 @@ export function PortalClient({
                   className={cn(
                     "mb-1 flex w-full items-center justify-between rounded-xl px-3 py-2.5 text-left portal-text-body font-semibold",
                     section === id
-                      ? "bg-accent-light text-accent"
-                      : "text-text-secondary hover:bg-muted"
+                      ? id === "gpt"
+                        ? "bg-[#EAF3DE] text-[#2E7D52]"
+                        : "bg-accent-light text-accent"
+                      : id === "gpt"
+                        ? "text-[#2E7D52] hover:bg-[#EAF3DE]/60"
+                        : "text-text-secondary hover:bg-muted"
                   )}
                 >
                   <span className="inline-flex items-center gap-2">
@@ -786,16 +791,6 @@ export function PortalClient({
         </aside>
 
         <section className="space-y-4">
-          {section === "uebersicht" ? (
-            <header className="card-bordered sticky top-[76px] z-40 flex items-center justify-between gap-3 bg-surface-page/95 p-4 backdrop-blur-sm">
-              <div>
-                <p className="text-xl font-semibold text-text-primary">
-                  Hallo {vorname}
-                </p>
-              </div>
-            </header>
-          ) : null}
-
           {section === "gpt" ? (
             <article className="card-bordered hidden overflow-hidden p-0 lg:block">
               <PortalBaerenwaldGpt
@@ -808,30 +803,24 @@ export function PortalClient({
 
           {section === "uebersicht" && (
             <div className="space-y-4">
-              <div className="grid grid-cols-3 gap-2">
-                <article className="card-bordered p-4">
-                  <p className="portal-text-label text-text-tertiary">
-                    Offene Anfragen
-                  </p>
-                  <p className="mt-1 font-display text-2xl font-semibold sm:mt-2 sm:text-4xl">
-                    {offeneAnfragenCount}
-                  </p>
+              <div className="space-y-0.5">
+                <p className="portal-text-section text-text-primary">
+                  Hallo {vorname}
+                </p>
+              </div>
+
+              <div className="grid min-w-0 grid-cols-3 gap-2">
+                <article className="portal-kpi-card">
+                  <p className="portal-kpi-label">Offene Anfragen</p>
+                  <p className="portal-kpi-value">{offeneAnfragenCount}</p>
                 </article>
-                <article className="card-bordered p-4">
-                  <p className="portal-text-label text-text-tertiary">
-                    Offene Aufträge
-                  </p>
-                  <p className="mt-1 font-display text-2xl font-semibold sm:mt-2 sm:text-4xl">
-                    {offeneAuftraegeCount}
-                  </p>
+                <article className="portal-kpi-card">
+                  <p className="portal-kpi-label">Offene Aufträge</p>
+                  <p className="portal-kpi-value">{offeneAuftraegeCount}</p>
                 </article>
-                <article className="card-bordered p-4">
-                  <p className="portal-text-label text-text-tertiary">
-                    Abgeschlossen
-                  </p>
-                  <p className="mt-1 font-display text-2xl font-semibold sm:mt-2 sm:text-4xl">
-                    {abgeschlosseneAuftraegeCount}
-                  </p>
+                <article className="portal-kpi-card">
+                  <p className="portal-kpi-label">Abgeschlossen</p>
+                  <p className="portal-kpi-value">{abgeschlosseneAuftraegeCount}</p>
                 </article>
               </div>
 
@@ -984,16 +973,16 @@ export function PortalClient({
             <button
               type="button"
               onClick={() => setGptOpen(true)}
-              aria-label="BärenwaldGPT öffnen"
+              aria-label="GPT öffnen"
               aria-pressed={gptOpen}
               className={cn(
-                "-mt-8 flex min-h-[64px] w-[72px] flex-col items-center justify-center gap-1 rounded-full border-[3px] border-white/30 bg-gradient-to-br from-[#143D28] via-[#2E7D52] to-[#4BA3A3] px-1 py-2 text-white shadow-[0_10px_28px_rgba(30,90,60,0.45)] ring-[5px] ring-surface-card transition-transform active:scale-95",
-                gptOpen && "ring-[#2E7D52] shadow-[0_12px_32px_rgba(46,125,82,0.55)]"
+                "-mt-8 flex min-h-[64px] w-[72px] flex-col items-center justify-center gap-1 rounded-full border-[3px] border-white/30 bg-[#2E7D52] px-1 py-2 text-white shadow-[0_8px_24px_rgba(46,125,82,0.35)] ring-[5px] ring-surface-card transition-transform active:scale-95",
+                gptOpen && "ring-[#2E7D52] shadow-[0_10px_28px_rgba(46,125,82,0.45)]"
               )}
             >
               <MessagesSquare className="h-7 w-7 shrink-0 stroke-[1.75]" aria-hidden />
               <span className="portal-text-fab max-w-[72px] text-center text-white">
-                BärenwaldGPT
+                GPT
               </span>
             </button>
           </div>
@@ -1022,28 +1011,19 @@ export function PortalClient({
         </div>
       </nav>
 
-      {mobileDetailOpen &&
-      section !== "uebersicht" &&
-      section !== "gpt" &&
-      !sectionListEmpty &&
-      selectedDetail ? (
-        <div className="fixed inset-0 z-[120] bg-black/40 lg:hidden">
-          <button
-            type="button"
-            className="absolute inset-0"
-            onClick={() => setMobileDetailOpen(false)}
-            aria-label="Sheet schließen"
-          />
-          <article className="absolute inset-x-0 bottom-0 flex max-h-[min(88vh,720px)] flex-col rounded-t-2xl border border-border-default bg-surface-card shadow-xl">
-            <div className="shrink-0 px-4 pb-2 pt-3">
-              <div className="mx-auto mb-3 h-1.5 w-12 rounded-full bg-border-default" />
-            </div>
-            <div className="min-h-0 flex-1 overflow-y-auto px-4 pb-4">
-              <PortalDetailPanel item={selectedDetail} />
-            </div>
-          </article>
-        </div>
-      ) : null}
+      <PortalMobileBottomSheet
+        open={
+          mobileDetailOpen &&
+          section !== "uebersicht" &&
+          section !== "gpt" &&
+          !sectionListEmpty &&
+          Boolean(selectedDetail)
+        }
+        onClose={() => setMobileDetailOpen(false)}
+        ariaLabel="Details"
+      >
+        {selectedDetail ? <PortalDetailPanel item={selectedDetail} /> : null}
+      </PortalMobileBottomSheet>
 
       <PortalBaerenwaldGpt
         variant="overlay"
