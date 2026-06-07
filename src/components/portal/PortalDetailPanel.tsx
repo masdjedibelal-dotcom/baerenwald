@@ -6,15 +6,23 @@ import {
   portalDokumenteToZeilen,
 } from "@/components/shared/DokumenteTabelle";
 import {
+  PortalAnsprechpartnerCard,
   PortalDetailHero,
   PortalDetailInfoBox,
   PortalDetailKeyValues,
   PortalDetailLayout,
   PortalDetailLeistungenList,
+  PortalDetailLeistungenPreisListe,
   PortalDetailMilestoneList,
   PortalDetailSection,
 } from "@/components/shared/PortalDetailUi";
-import { fmtPortalMetaLine, fmtPortalRelativeTime, portalDetailStatusPillClass } from "@/lib/shared/portal-detail-format";
+import {
+  fmtPortalDate,
+  fmtPortalMetaLine,
+  fmtPortalRelativeTime,
+  portalDetailStatusPillClass,
+} from "@/lib/shared/portal-detail-format";
+import { formatAuftragDatumSpan } from "@/lib/portal/portal-auftrag-display";
 import { fmtPortalStatus } from "@/lib/portal/portal-display";
 import type { KundePortalDetailItem } from "@/lib/portal/portal-detail-item";
 
@@ -36,24 +44,37 @@ const SKIP_IN_DETAIL = new Set(["Nächster Schritt"]);
 
 export function PortalDetailPanel({ item }: { item: KundePortalDetailItem }) {
   const isAnfrageDetail = Boolean(item.anfrageGewerk || item.anfrageVorhaben);
-  const isAuftragDetail = item.bautagebuch !== undefined;
+  const isAngebotDetail = Boolean(item.isAngebotDetail);
+  const isAuftragDetail = Boolean(item.isAuftragDetail);
   const detailTitle = isAnfrageDetail
     ? anfrageDisplayTitle(item.anfrageVorhaben, item.anfrageGewerk)
     : item.title;
 
-  const statusLabel = fmtPortalStatus(item.status || "offen");
-  const metaLine = item.suppressLocationInHero
-    ? fmtPortalRelativeTime(item.date) ?? undefined
-    : (() => {
-        const line = fmtPortalMetaLine({
-          plz: item.plz ?? "—",
-          ort: item.ort ?? "—",
-          date: item.date,
-        });
-        return line !== "—" ? line : undefined;
-      })();
+  const statusLabel =
+    isAnfrageDetail ? undefined : fmtPortalStatus(item.status || "offen");
+  const metaLine =
+    isAnfrageDetail || isAngebotDetail
+      ? (() => {
+          const date = fmtPortalDate(item.date);
+          const rel = fmtPortalRelativeTime(item.date);
+          const parts = [date !== "—" ? date : null, rel].filter(Boolean);
+          return parts.length ? parts.join(" · ") : undefined;
+        })()
+      : isAuftragDetail
+        ? formatAuftragDatumSpan(item.date, item.auftragEndDatum)
+        : item.suppressLocationInHero
+      ? fmtPortalRelativeTime(item.date) ?? undefined
+      : (() => {
+          const line = fmtPortalMetaLine({
+            plz: item.plz ?? "—",
+            ort: item.ort ?? "—",
+            date: item.date,
+          });
+          return line !== "—" ? line : undefined;
+        })();
 
-  const infoHint = isAuftragDetail ? undefined : item.infoHint;
+  const infoHint =
+    isAuftragDetail || isAnfrageDetail || isAngebotDetail ? undefined : item.infoHint;
 
   const visibleSections = item.sections
     .filter(
@@ -69,10 +90,9 @@ export function PortalDetailPanel({ item }: { item: KundePortalDetailItem }) {
     });
 
   const heroSubtitle =
-    isAnfrageDetail && item.anfrageGewerk && detailTitle !== item.anfrageGewerk
-      ? item.anfrageGewerk
-      : !isAnfrageDetail &&
-          !isAuftragDetail &&
+    isAnfrageDetail
+      ? undefined
+      : !isAuftragDetail &&
           item.cardSubtitle &&
           !item.suppressLocationInHero
         ? item.cardSubtitle
@@ -84,7 +104,11 @@ export function PortalDetailPanel({ item }: { item: KundePortalDetailItem }) {
         title={detailTitle}
         metaLine={metaLine}
         statusLabel={statusLabel}
-        statusPillClass={portalDetailStatusPillClass(item.status || "offen")}
+        statusPillClass={
+          statusLabel
+            ? portalDetailStatusPillClass(item.status || "offen")
+            : undefined
+        }
         subtitle={heroSubtitle}
       />
 
@@ -120,13 +144,22 @@ export function PortalDetailPanel({ item }: { item: KundePortalDetailItem }) {
         </PortalDetailSection>
       ))}
 
-      {item.milestones && item.milestones.length > 0 ? (
+      {isAngebotDetail && item.angebotPositionen && item.angebotPositionen.length > 0 ? (
+        <PortalDetailSection title="Leistungen">
+          <PortalDetailLeistungenPreisListe
+            items={item.angebotPositionen}
+            gesamtBrutto={item.gesamtBrutto}
+          />
+        </PortalDetailSection>
+      ) : null}
+
+      {!isAuftragDetail && item.milestones && item.milestones.length > 0 ? (
         <PortalDetailSection title="Meilensteine">
           <PortalDetailMilestoneList items={item.milestones} />
         </PortalDetailSection>
       ) : null}
 
-      {item.bautagebuch !== undefined ? (
+      {!isAuftragDetail && item.bautagebuch !== undefined ? (
         <BautagebuchAccordionList
           eintraege={(item.bautagebuch ?? []).map((e) => ({
             id: e.id ?? `${e.titel}-${e.datum}`,
@@ -142,10 +175,24 @@ export function PortalDetailPanel({ item }: { item: KundePortalDetailItem }) {
 
       <DokumenteTabelle
         dokumente={portalDokumenteToZeilen(item.dokumente ?? [])}
-        heading="Dokumente"
-        emptyText="Noch keine Dokumente."
+        heading={isAuftragDetail ? "Dokumentation" : "Dokumente"}
+        emptyText={
+          isAuftragDetail
+            ? "Noch keine Dokumentation."
+            : "Noch keine Dokumente."
+        }
         className="!border-t-0 !pt-0"
       />
+
+      {isAuftragDetail && item.ansprechpartner ? (
+        <PortalAnsprechpartnerCard
+          rolleLabel={item.ansprechpartner.rolleLabel}
+          name={item.ansprechpartner.name}
+          telefon={item.ansprechpartner.telefon}
+          telefonHref={item.ansprechpartner.telefonHref}
+          intro={item.ansprechpartner.intro}
+        />
+      ) : null}
     </PortalDetailLayout>
   );
 }

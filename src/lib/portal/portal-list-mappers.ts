@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { Calendar, Hammer, MapPin } from "lucide-react";
 
 import type {
@@ -15,6 +16,7 @@ export type PortalCardRow = {
   statusPillKey: string;
   accent: PortalListCardAccent;
   meta: PortalListCardMeta[];
+  footer?: ReactNode;
   sortDate: number;
 };
 
@@ -28,25 +30,30 @@ export function mapKundeDetailToCard(
   item: KundePortalDetailItem,
   accent: PortalListCardAccent
 ): PortalCardRow {
-  const ortLine = fmtPortalOrt(item.plz ?? "—", item.ort ?? "—");
-  const meta: PortalListCardMeta[] = [];
-
-  if (item.cardSubtitle) {
-    meta.push({ icon: Hammer, text: item.cardSubtitle });
-  }
-  if (ortLine !== "—") {
-    meta.push({ icon: MapPin, text: ortLine });
-  }
-  meta.push({ icon: Calendar, text: fmtPortalDate(item.date) });
+  const meta: PortalListCardMeta[] = item.cardMeta?.length
+    ? item.cardMeta
+    : (() => {
+        const ortLine = fmtPortalOrt(item.plz ?? "—", item.ort ?? "—");
+        const lines: PortalListCardMeta[] = [];
+        if (item.cardSubtitle) {
+          lines.push({ icon: Hammer, text: item.cardSubtitle });
+        }
+        if (ortLine !== "—") {
+          lines.push({ icon: MapPin, text: ortLine });
+        }
+        lines.push({ icon: Calendar, text: fmtPortalDate(item.date) });
+        return lines;
+      })();
 
   return {
     id: item.id,
     title: item.title,
-    subtitle: item.cardSubtitle,
+    subtitle: item.cardMeta?.length ? undefined : item.cardSubtitle,
     statusLabel: item.status || "offen",
     statusPillKey: item.status || "offen",
     accent,
     meta,
+    footer: item.listFooter,
     sortDate: ts(item.date),
   };
 }

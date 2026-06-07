@@ -152,6 +152,7 @@ export async function respondPartnerAuftragZuweisung(opts: {
     const synced = await syncAngebotHandwerkerAfterAuftragAccept({
       handwerkerId: link.handwerkerId,
       angebotId,
+      auftragId,
     });
     angebotAnfrageId = synced.anfrageId;
     if (synced.anfrageId) {

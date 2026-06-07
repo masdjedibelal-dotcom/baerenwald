@@ -1,13 +1,16 @@
+import { randomBytes } from "node:crypto";
+
 import { isPartnerAnfrageOffen } from "@/lib/partner/partner-anfrage-status";
 import { supabaseAdmin } from "@/lib/supabase";
 
 /**
  * Nach Annahme einer Auftrags-Zuweisung: zugehörige angebot_handwerker-Zeile(n)
- * auf „akzeptiert“ setzen, damit der Eintrag unter „Angebote“ erscheint (Preis/PDF).
+ * auf „akzeptiert“ setzen (oder anlegen), damit der Eintrag unter „Angebote“ erscheint.
  */
 export async function syncAngebotHandwerkerAfterAuftragAccept(opts: {
   handwerkerId: string;
   angebotId: string;
+  auftragId?: string;
 }): Promise<{ anfrageId: string | null }> {
   const angebotId = opts.angebotId.trim();
   const handwerkerId = opts.handwerkerId.trim();
@@ -19,7 +22,30 @@ export async function syncAngebotHandwerkerAfterAuftragAccept(opts: {
     .eq("angebot_id", angebotId)
     .eq("handwerker_id", handwerkerId);
 
-  if (!rows?.length) return { anfrageId: null };
+  if (!rows?.length) {
+    const gewerkId = await resolveGewerkIdForAuftragAccept(
+      opts.auftragId?.trim() ?? "",
+      handwerkerId
+    );
+    const now = new Date().toISOString();
+    const { data: created, error } = await supabaseAdmin
+      .from("angebot_handwerker")
+      .insert({
+        angebot_id: angebotId,
+        handwerker_id: handwerkerId,
+        ...(gewerkId ? { gewerk_id: gewerkId } : {}),
+        status: "akzeptiert",
+        antwort_at: now,
+        gesendet_at: now,
+        hw_status: "offen",
+        token: randomBytes(32).toString("hex"),
+      })
+      .select("id")
+      .single();
+
+    if (error || !created?.id) return { anfrageId: null };
+    return { anfrageId: String(created.id) };
+  }
 
   const now = new Date().toISOString();
   let primaryId: string | null = null;
@@ -73,4 +99,33 @@ export async function syncAngebotHandwerkerAfterAuftragAccept(opts: {
 
   const best = offen?.[0]?.id;
   return { anfrageId: best ? String(best) : primaryId };
+}
+
+async function resolveGewerkIdForAuftragAccept(
+  auftragId: string,
+  handwerkerId: string
+): Promise<string | null> {
+  if (!auftragId) return null;
+
+  const { data: pos } = await supabaseAdmin
+    .from("auftrag_positionen")
+    .select("gewerk_id")
+    .eq("auftrag_id", auftragId)
+    .eq("handwerker_id", handwerkerId)
+    .not("gewerk_id", "is", null)
+    .limit(1)
+    .maybeSingle();
+
+  if (pos?.gewerk_id) return String(pos.gewerk_id);
+
+  const { data: zuw } = await supabaseAdmin
+    .from("auftrag_handwerker")
+    .select("gewerk_id")
+    .eq("auftrag_id", auftragId)
+    .eq("handwerker_id", handwerkerId)
+    .not("gewerk_id", "is", null)
+    .limit(1)
+    .maybeSingle();
+
+  return zuw?.gewerk_id ? String(zuw.gewerk_id) : null;
 }

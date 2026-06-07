@@ -1,13 +1,17 @@
-import { Calendar, Hammer, MapPin } from "lucide-react";
-
 import type { PartnerListCardAccent, PartnerListCardMeta } from "@/components/partner/PartnerListCard";
 import type {
   PartnerAnfrageItem,
   PartnerAuftragItem,
 } from "@/lib/partner/get-partner-data";
 import { isPartnerAnfrageOffen, partnerAnfrageStatusLabel } from "@/lib/partner/partner-anfrage-status";
+import {
+  buildPartnerAnfrageCardMeta,
+  buildPartnerAngebotCardMeta,
+  buildPartnerAuftragCardMeta,
+  partnerAuftragListFooter,
+  type PartnerAuftragPhasenCardData,
+} from "@/lib/partner/partner-portal-display";
 import { auftragHwStatusLabel } from "@/lib/partner/partner-portal-phase";
-
 export type PartnerCardRow = {
   id: string;
   title: string;
@@ -17,14 +21,9 @@ export type PartnerCardRow = {
   accent: PartnerListCardAccent;
   meta: PartnerListCardMeta[];
   hint?: string;
+  auftragPhasen?: PartnerAuftragPhasenCardData;
   sortDate: number;
 };
-
-function fmtOrt(plz: string, ort: string): string {
-  if (plz === "—" && ort === "—") return "—";
-  if (ort === "—") return plz;
-  return `${plz} · ${ort}`;
-}
 
 function ts(v?: string | null): number {
   if (!v) return 0;
@@ -32,29 +31,22 @@ function ts(v?: string | null): number {
   return Number.isNaN(d.getTime()) ? 0 : d.getTime();
 }
 
-function fmtDateDe(v?: string | null): string {
-  if (!v) return "—";
-  const d = new Date(v);
-  if (Number.isNaN(d.getTime())) return "—";
-  return d.toLocaleDateString("de-DE");
-}
-
 const PENDING_HW = new Set(["angefragt", "ausstehend", "warten", "offen", "zugewiesen"]);
 
 export function mapAnfrageAngebotToCard(item: PartnerAnfrageItem): PartnerCardRow {
   const offen = isPartnerAnfrageOffen(item);
+  const meta = buildPartnerAnfrageCardMeta(item.lead, {
+    gewerk_name: item.gewerk_name,
+    positionen: item.positionen,
+  });
+
   return {
     id: item.id,
     title: item.angebot_titel,
-    subtitle: item.gewerk_name,
     statusLabel: partnerAnfrageStatusLabel(item),
     statusPillKey: offen ? "antwort ausstehend" : item.status,
     accent: "anfrage",
-    meta: [
-      { icon: Hammer, text: item.gewerk_name },
-      { icon: MapPin, text: fmtOrt(item.plz, item.ort) },
-      { icon: Calendar, text: fmtDateDe(item.gesendet_at) },
-    ],
+    meta,
     hint: offen ? "→ Bitte annehmen oder ablehnen" : undefined,
     sortDate: ts(item.gesendet_at),
   };
@@ -66,23 +58,21 @@ export function mapAnfrageAuftragToCard(item: PartnerAuftragItem): PartnerCardRo
     item.status.toLowerCase() === "offen" ||
     PENDING_HW.has(hw) ||
     hw === "zugewiesen";
-  const pos = item.positionen[0];
-  const leistung = pos
-    ? `${pos.gewerk_name}${pos.leistung_name ? ` — ${pos.leistung_name}` : ""}`
-    : undefined;
+
+  const meta = buildPartnerAuftragCardMeta(
+    item.lead?.objekt,
+    item.lead,
+    item.start_datum,
+    item.end_datum
+  );
 
   return {
     id: `auftrag:${item.id}`,
     title: item.titel,
-    subtitle: leistung,
     statusLabel: auftragHwStatusLabel(item.hwStatus),
     statusPillKey: item.hwStatus,
     accent: "anfrage",
-    meta: [
-      ...(leistung ? [{ icon: Hammer, text: leistung }] : []),
-      { icon: MapPin, text: fmtOrt(item.plz, item.ort) },
-      { icon: Calendar, text: fmtDateDe(item.start_datum) },
-    ],
+    meta,
     hint: pending ? "→ Bitte annehmen oder ablehnen" : undefined,
     sortDate: ts(item.start_datum),
   };
@@ -143,28 +133,30 @@ function angebotListenStatus(item: PartnerAnfrageItem): {
 
 export function mapAngebotToCard(item: PartnerAnfrageItem): PartnerCardRow {
   const st = angebotListenStatus(item);
+  const meta = buildPartnerAngebotCardMeta(
+    item.lead,
+    item.antwort_at ?? item.gesendet_at
+  );
+
   return {
     id: item.id,
     title: item.angebot_titel,
-    subtitle: item.gewerk_name,
     statusLabel: st.label,
     statusPillKey: st.pillKey,
     accent: "angebot",
-    meta: [
-      { icon: Hammer, text: item.gewerk_name },
-      { icon: MapPin, text: fmtOrt(item.plz, item.ort) },
-      { icon: Calendar, text: fmtDateDe(item.antwort_at ?? item.gesendet_at) },
-    ],
+    meta,
     hint: st.hint,
     sortDate: ts(item.antwort_at ?? item.gesendet_at),
   };
 }
 
 export function mapAuftragToCard(item: PartnerAuftragItem): PartnerCardRow {
-  const fortschritt =
-    item.fortschritt != null && Number.isFinite(item.fortschritt)
-      ? `${Math.round(item.fortschritt)} %`
-      : null;
+  const phasen = partnerAuftragListFooter({
+    status: item.status,
+    fortschritt: item.fortschritt,
+    hatAngebot: Boolean(item.angebot_id),
+    abgeschlossen: item.status.toLowerCase() === "abgeschlossen",
+  });
 
   return {
     id: item.id,
@@ -172,11 +164,13 @@ export function mapAuftragToCard(item: PartnerAuftragItem): PartnerCardRow {
     statusLabel: item.status.replace(/_/g, " "),
     statusPillKey: item.status,
     accent: "auftrag",
-    meta: [
-      { icon: MapPin, text: fmtOrt(item.plz, item.ort) },
-      { icon: Calendar, text: fmtDateDe(item.start_datum) },
-      ...(fortschritt ? [{ icon: Hammer, text: `Fortschritt ${fortschritt}` }] : []),
-    ],
+    meta: buildPartnerAuftragCardMeta(
+      item.lead?.objekt,
+      item.lead,
+      item.start_datum,
+      item.end_datum
+    ),
+    auftragPhasen: phasen,
     sortDate: ts(item.start_datum),
   };
 }

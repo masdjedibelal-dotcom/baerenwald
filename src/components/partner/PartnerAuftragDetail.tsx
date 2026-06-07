@@ -10,11 +10,11 @@ import {
 } from "@/app/actions/partner-bautagebuch";
 import {
   PartnerDetailHero,
-  PartnerDetailKeyValues,
   PartnerDetailLayout,
   PartnerDetailLeistungenList,
   PartnerDetailSection,
 } from "@/components/partner/PartnerDetailUi";
+import { PartnerPortalDetailSections } from "@/components/partner/PartnerPortalDetailSections";
 import { BautagebuchAccordionList } from "@/components/shared/BautagebuchAccordionList";
 import { DokumenteTabelle } from "@/components/shared/DokumenteTabelle";
 import { FileUploadField } from "@/components/shared/FileUploadField";
@@ -25,9 +25,12 @@ import type {
 import { PartnerStarRatingDisplay } from "@/components/partner/PartnerStarRatingDisplay";
 import {
   fmtPartnerDate,
-  fmtPartnerMetaLine,
   partnerDetailStatusPillClass,
 } from "@/lib/partner/partner-detail-format";
+import {
+  buildPartnerAuftragPortalSections,
+  partnerAuftragDetailMetaLine,
+} from "@/lib/partner/partner-portal-display";
 import {
   durchschnittAusBewertung,
   formatHandwerkerBewertung,
@@ -288,30 +291,18 @@ export function PartnerAuftragDetail({ item }: { item: PartnerAuftragItem }) {
     beschreibung: p.beschreibung,
   }));
 
-  const fortschrittSubtitle =
-    item.fortschritt != null ? `Fortschritt: ${item.fortschritt} %` : undefined;
+  const sections = buildPartnerAuftragPortalSections(item.lead);
 
   return (
     <PartnerDetailLayout>
       <PartnerDetailHero
         title={item.titel}
-        metaLine={fmtPartnerMetaLine({
-          plz: item.plz,
-          ort: item.ort,
-          date: item.start_datum,
-        })}
+        metaLine={partnerAuftragDetailMetaLine(item.start_datum, item.end_datum)}
         statusLabel={formatAuftragStatus(item.status)}
         statusPillClass={partnerDetailStatusPillClass(item.status)}
-        subtitle={fortschrittSubtitle}
       />
 
-      <PartnerDetailSection title="Beschreibung">
-        <PartnerDetailKeyValues
-          rows={[
-            { label: "Start", value: item.start_datum ? fmtPartnerDate(item.start_datum) : null },
-          ]}
-        />
-      </PartnerDetailSection>
+      <PartnerPortalDetailSections sections={sections} />
 
       {leistungen.length > 0 ? (
         <PartnerDetailSection title="Leistungen">

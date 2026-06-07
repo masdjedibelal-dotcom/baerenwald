@@ -30,10 +30,12 @@ export function resolveAngebotHandwerkerPhase(
   >
 ): PartnerPortalPhase {
   if (isPartnerAnfrageOffen(item)) return "anfrage";
+  const st = item.status.toLowerCase();
   const hwSt = (item.hw_status ?? "").toLowerCase();
-  if (item.status.toLowerCase() === "akzeptiert" && hwSt !== "uebernommen") {
-    return "angebot";
-  }
+  if (st === "abgelehnt" || hwSt === "uebernommen") return "auftrag";
+  if (st === "akzeptiert") return "angebot";
+  /** Zusage mit antwort_at, Status in DB noch nicht „akzeptiert“. */
+  if (item.antwort_at) return "angebot";
   return "auftrag";
 }
 
@@ -72,12 +74,12 @@ export function resolveAuftragPortalPhase(
   const h = (hwStatus ?? "ausstehend").toLowerCase();
 
   if (a === "storniert") return "auftrag";
+  if (h === "abgelehnt") return "auftrag";
 
   /**
-   * HW hat geantwortet, Projekt noch „offen“ → nicht mehr unter Anfragen.
-   * Tab Aufträge erst nach CRM-Bestätigung (hw_status „uebernommen“) — bis dahin nur Angebote.
+   * Nach Zusage am offenen Projekt: Preis/PDF unter „Angebote“ — nicht unter Aufträge.
    */
-  if (a === "offen" && HW_BEANTWORTET.has(h)) return "auftrag";
+  if (a === "offen" && h === "akzeptiert") return "angebot";
 
   /** CRM-Projekt noch nicht gestartet → HW soll zu-/absagen. */
   if (a === "offen") return "anfrage";
@@ -100,8 +102,12 @@ export function isAuftragAnfrageListItem(item: {
 export function isAuftragAuftraegeListItem(item: {
   portalPhase: PartnerPortalPhase;
   angebotHandwerkerId?: string | null;
+  hwStatus: string;
 }): boolean {
   if (item.portalPhase !== "auftrag") return false;
+  const h = item.hwStatus.toLowerCase();
+  /** Nach Zusage, vor CRM-Start → nur Tab Angebote. */
+  if (h === "akzeptiert") return false;
   /** Noch Preis/PDF offen oder in Prüfung → nur Tab Angebote. */
   if (item.angebotHandwerkerId) return false;
   return true;

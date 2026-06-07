@@ -39,6 +39,12 @@ export function resolveZuweisungPortalUrl(input: ZuweisungPortalLinkInput): stri
     return partnerAuftragAnfragePortalUrl(input.auftragId);
   }
 
+  if (portalPhase === "angebot") {
+    const ah = input.angebotHandwerker;
+    if (ah?.id) return partnerAngebotPortalUrl(ah.id);
+    return `${partnerDashboardUrl()}?section=angebote`;
+  }
+
   const ah = input.angebotHandwerker;
   if (ah) {
     const angebotPhase = resolveAngebotHandwerkerPhase({

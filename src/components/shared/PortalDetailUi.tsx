@@ -70,22 +70,27 @@ export function PortalDetailHero({
 }: {
   title: string;
   metaLine?: string;
-  statusLabel: string;
-  statusPillClass: string;
+  statusLabel?: string;
+  statusPillClass?: string;
   subtitle?: string;
 }) {
+  const showStatusRow = Boolean(statusLabel?.trim());
   return (
     <header className="space-y-2">
       <h3 className="font-display text-xl font-semibold leading-snug text-text-primary sm:text-2xl">
         {title}
       </h3>
       {metaLine ? <p className="portal-text-body text-accent">{metaLine}</p> : null}
-      <div className="flex flex-wrap items-center gap-2">
-        <span className={statusPillClass}>{statusLabel}</span>
-        {subtitle ? (
-          <span className="portal-text-meta text-text-secondary">{subtitle}</span>
-        ) : null}
-      </div>
+      {showStatusRow || subtitle ? (
+        <div className="flex flex-wrap items-center gap-2">
+          {showStatusRow && statusPillClass ? (
+            <span className={statusPillClass}>{statusLabel}</span>
+          ) : null}
+          {subtitle ? (
+            <span className="portal-text-meta text-text-secondary">{subtitle}</span>
+          ) : null}
+        </div>
+      ) : null}
     </header>
   );
 }
@@ -172,6 +177,59 @@ export function PortalDetailLeistungenList({
   );
 }
 
+export function PortalDetailLeistungenPreisListe({
+  items,
+  gesamtBrutto,
+  gesamtLabel = "Gesamtpreis Brutto inkl. MwSt.",
+}: {
+  items: Array<{
+    id: string;
+    title: string;
+    beschreibung?: string;
+    preisBrutto: number;
+  }>;
+  gesamtBrutto?: number;
+  gesamtLabel?: string;
+}) {
+  if (!items.length) return null;
+  return (
+    <div className="space-y-3">
+      <ul className="space-y-2">
+        {items.map((p) => (
+          <li
+            key={p.id}
+            className="portal-text-body flex items-start justify-between gap-3 rounded-lg border border-border-light bg-surface-card px-3 py-3"
+          >
+            <div className="min-w-0 flex-1">
+              <p className="font-medium text-text-primary">{p.title}</p>
+              {p.beschreibung ? (
+                <p className="portal-text-meta mt-1 text-text-secondary">{p.beschreibung}</p>
+              ) : null}
+            </div>
+            <p className="shrink-0 font-semibold tabular-nums text-text-primary">
+              {new Intl.NumberFormat("de-DE", {
+                style: "currency",
+                currency: "EUR",
+              }).format(p.preisBrutto)}
+            </p>
+          </li>
+        ))}
+      </ul>
+      {typeof gesamtBrutto === "number" && gesamtBrutto > 0 ? (
+        <div className="flex items-center justify-between gap-3 rounded-xl border border-border-default bg-muted/30 px-3 py-3">
+          <p className="portal-text-body font-semibold text-text-primary">{gesamtLabel}</p>
+          <p className="portal-text-body font-bold tabular-nums text-text-primary">
+            {new Intl.NumberFormat("de-DE", {
+              style: "currency",
+              currency: "EUR",
+            }).format(gesamtBrutto)}
+          </p>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
 export function PortalDetailLayout({
   children,
   footer,
@@ -253,6 +311,39 @@ export function PortalDetailSuccessBox({ children }: { children: React.ReactNode
     <div className="portal-text-body space-y-1 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-3.5 text-emerald-900">
       {children}
     </div>
+  );
+}
+
+export function PortalAnsprechpartnerCard({
+  rolleLabel,
+  name,
+  telefon,
+  telefonHref,
+  intro,
+}: {
+  rolleLabel: string;
+  name: string;
+  telefon: string;
+  telefonHref: string;
+  intro: string;
+}) {
+  return (
+    <section className="space-y-2.5 border-t border-border-light pt-5">
+      <h4 className="portal-text-section">Ansprechpartner</h4>
+      <div className="portal-text-body rounded-xl border border-border-light bg-gradient-to-br from-emerald-50/80 to-surface-card px-4 py-4">
+        <p className="portal-text-meta font-semibold uppercase tracking-wide text-accent">
+          {rolleLabel}
+        </p>
+        <p className="mt-2 font-display text-lg font-semibold text-text-primary">{name}</p>
+        <p className="mt-3 text-text-secondary">{intro}</p>
+        <a
+          href={telefonHref}
+          className="mt-3 inline-flex font-semibold text-accent underline-offset-2 hover:underline"
+        >
+          {telefon}
+        </a>
+      </div>
+    </section>
   );
 }
 

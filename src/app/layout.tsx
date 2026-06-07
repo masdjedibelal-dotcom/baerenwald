@@ -3,7 +3,7 @@ import type { CSSProperties } from "react";
 import { Lora, Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
 import { JsonLdLocalBusiness } from "@/components/JsonLd";
-import { SITE_CONFIG } from "@/lib/config";
+import { OG_IMAGE, SITE_CONFIG } from "@/lib/config";
 import { PHProvider } from "./providers";
 
 const plusJakarta = Plus_Jakarta_Sans({
@@ -55,10 +55,10 @@ export const metadata: Metadata = {
       "Handwerker München — ein Ansprechpartner für alle Gewerke. Preisrahmen online berechnen. Malerarbeiten, Bad, Elektro, Heizung. Unverbindlich.",
     images: [
       {
-        url: "/og-image.png",
-        width: 1200,
-        height: 630,
-        alt: "Bärenwald München — Handwerker aus einer Hand",
+        url: OG_IMAGE.url,
+        width: OG_IMAGE.width,
+        height: OG_IMAGE.height,
+        alt: OG_IMAGE.alt,
       },
     ],
   },
@@ -68,7 +68,7 @@ export const metadata: Metadata = {
     title: "Bärenwald München — Handwerker aus einer Hand",
     description:
       "Handwerker München — ein Ansprechpartner für alle Gewerke. Preisrahmen online berechnen. Malerarbeiten, Bad, Elektro, Heizung.",
-    images: ["/og-image.png"],
+    images: [OG_IMAGE.url],
   },
 
   icons: {

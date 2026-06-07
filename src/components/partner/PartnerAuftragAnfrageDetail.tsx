@@ -9,23 +9,27 @@ import {
   PartnerDetailError,
   PartnerDetailHero,
   PartnerDetailInfoBox,
-  PartnerDetailKeyValues,
   PartnerDetailLayout,
   PartnerDetailLeistungenList,
   PartnerDetailSection,
   PartnerDetailStickyActions,
 } from "@/components/partner/PartnerDetailUi";
+import { PartnerPortalDetailSections } from "@/components/partner/PartnerPortalDetailSections";
 import {
   HANDWERKER_ABLEHNUNG_GRUND_LABELS,
   HANDWERKER_ABLEHNUNG_GRUND_VALUES,
 } from "@/lib/partner/handwerker-ablehnung";
 import type { PartnerAuftragItem } from "@/lib/partner/get-partner-data";
+import { partnerDetailStatusPillClass } from "@/lib/partner/partner-detail-format";
 import {
-  fmtPartnerMetaLine,
-  partnerDetailStatusPillClass,
-} from "@/lib/partner/partner-detail-format";
+  buildPartnerAuftragPortalSections,
+  partnerAuftragDetailMetaLine,
+} from "@/lib/partner/partner-portal-display";
 import { auftragHwStatusLabel } from "@/lib/partner/partner-portal-phase";
-import { partnerAngebotPortalUrl } from "@/lib/partner/partner-site-url";
+import {
+  partnerAngebotPortalUrl,
+  partnerDashboardUrl,
+} from "@/lib/partner/partner-site-url";
 
 const PENDING_HW = new Set(["angefragt", "ausstehend", "warten", "offen", "zugewiesen"]);
 
@@ -62,8 +66,13 @@ export function PartnerAuftragAnfrageDetail({ item }: { item: PartnerAuftragItem
       setError(res.error);
       return;
     }
-    if (antwort === "akzeptiert" && res.angebotAnfrageId) {
-      router.push(partnerAngebotPortalUrl(res.angebotAnfrageId));
+    if (antwort === "akzeptiert") {
+      router.refresh();
+      if (res.angebotAnfrageId) {
+        router.push(partnerAngebotPortalUrl(res.angebotAnfrageId));
+      } else {
+        router.push(`${partnerDashboardUrl()}?section=angebote`);
+      }
       return;
     }
     router.refresh();
@@ -108,23 +117,16 @@ export function PartnerAuftragAnfrageDetail({ item }: { item: PartnerAuftragItem
     <PartnerDetailLayout footer={footer}>
       <PartnerDetailHero
         title={item.titel}
-        metaLine={fmtPartnerMetaLine({
-          plz: item.plz,
-          ort: item.ort,
-          date: item.start_datum,
-        })}
+        metaLine={partnerAuftragDetailMetaLine(item.start_datum, item.end_datum)}
         statusLabel={statusLabel}
         statusPillClass={partnerDetailStatusPillClass(item.hwStatus)}
-        subtitle="Leistungsanfrage"
       />
 
       <PartnerDetailInfoBox>{infoText}</PartnerDetailInfoBox>
 
-      <PartnerDetailSection title="Beschreibung">
-        <PartnerDetailKeyValues
-          rows={[{ label: "Projekt", value: item.titel }]}
-        />
-      </PartnerDetailSection>
+      <PartnerPortalDetailSections
+        sections={buildPartnerAuftragPortalSections(item.lead)}
+      />
 
       {leistungen.length > 0 ? (
         <PartnerDetailSection title="Leistungen">

@@ -1,11 +1,10 @@
 "use client";
 
 import Image from "next/image";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import {
   Briefcase,
-  Calendar,
   ClipboardList,
   FileText,
   LayoutDashboard,
@@ -20,11 +19,13 @@ import { PartnerAngebotDetail } from "@/components/partner/PartnerAngebotDetail"
 import { PartnerAuftragAnfrageDetail } from "@/components/partner/PartnerAuftragAnfrageDetail";
 import { PartnerAuftragDetail } from "@/components/partner/PartnerAuftragDetail";
 import { PartnerListCard } from "@/components/partner/PartnerListCard";
+import { PortalAuftragPhasenStrip } from "@/components/shared/PortalAuftragPhasenStrip";
 import { PortalMobileBottomSheet } from "@/components/shared/PortalMobileBottomSheet";
 import {
   PARTNER_LIST_PAGE_SIZE,
   PartnerListPagination,
 } from "@/components/partner/PartnerListPagination";
+import { PORTAL_OVERVIEW_PAGE_SIZE } from "@/components/shared/PortalListPagination";
 import { PortalBaerenwaldGpt } from "@/components/portal/PortalBaerenwaldGpt";
 import { SITE_CONFIG } from "@/lib/config";
 import type {
@@ -33,12 +34,10 @@ import type {
   PartnerHandwerkerProfil,
 } from "@/lib/partner/get-partner-data";
 import {
-  angebotOverviewStatusKey,
   angebotPhaseSortKey,
   buildAnfragenCardRows,
   mapAngebotToCard,
   mapAuftragToCard,
-  partnerAngebotOverviewStatusLabel,
   partnerAngebotStatusPillClass,
   type PartnerCardRow,
 } from "@/lib/partner/partner-list-mappers";
@@ -46,22 +45,11 @@ import {
   formatHandwerkerBewertung,
   HANDWERKER_BEWERTUNG_KATEGORIEN,
 } from "@/lib/partner/handwerker-bewertung-display";
-import {
-  isPartnerAnfrageOffen,
-  partnerAnfrageStatusLabel,
-} from "@/lib/partner/partner-anfrage-status";
-import { auftragHwStatusLabel } from "@/lib/partner/partner-portal-phase";
+import { isPartnerAnfrageOffen } from "@/lib/partner/partner-anfrage-status";
 import { cn } from "@/lib/utils";
 
 type PartnerSection = "uebersicht" | "anfragen" | "angebote" | "auftraege" | "gpt";
 type OverviewTabId = "anfragen" | "angebote" | "auftraege";
-
-type OverviewRow = {
-  id: string;
-  date?: string;
-  title: string;
-  status: string;
-};
 
 const MENU_ITEMS: Array<{
   id: PartnerSection;
@@ -74,13 +62,6 @@ const MENU_ITEMS: Array<{
   { id: "auftraege", label: "Aufträge", icon: Briefcase },
   { id: "gpt", label: "GPT", icon: MessagesSquare },
 ];
-
-function fmtDate(v?: string | null): string {
-  if (!v) return "—";
-  const d = new Date(v);
-  if (Number.isNaN(d.getTime())) return "—";
-  return d.toLocaleDateString("de-DE");
-}
 
 function statusPillClass(status: string): string {
   const s = status.toLowerCase();
@@ -154,9 +135,11 @@ export function PartnerClient({
   /** Laufende Aufträge (Server-Filter). */
   auftraege: PartnerAuftragItem[];
 }) {
+  const router = useRouter();
   const searchParams = useSearchParams();
   const [section, setSection] = useState<PartnerSection>("uebersicht");
   const [overviewTab, setOverviewTab] = useState<OverviewTabId>("anfragen");
+  const [overviewPage, setOverviewPage] = useState(1);
   const [selectedId, setSelectedId] = useState<string | null>(() =>
     firstAnfrageId(anfragen, auftragAnfragen)
   );
@@ -189,31 +172,6 @@ export function PartnerClient({
   }).length;
 
   const aktiveAuftraegeCount = auftraege.filter(isAuftragAktiv).length;
-
-  const overviewAnfragenRows = useMemo((): OverviewRow[] => {
-    const ausAngebot = anfragenSorted.map((a) => ({
-      id: a.id,
-      date: a.gesendet_at ?? undefined,
-      title: a.angebot_titel,
-      status: partnerAnfrageStatusLabel(a),
-    }));
-    const ausAuftrag = auftragAnfragen.map((a) => ({
-      id: `auftrag:${a.id}`,
-      date: a.start_datum ?? undefined,
-      title: a.titel,
-      status: auftragHwStatusLabel(a.hwStatus),
-    }));
-    return [...ausAngebot, ...ausAuftrag];
-  }, [anfragenSorted, auftragAnfragen]);
-
-  const overviewAngeboteRows = useMemo((): OverviewRow[] => {
-    return angeboteSorted.map((a) => ({
-      id: a.id,
-      date: (a.antwort_at ?? a.gesendet_at) ?? undefined,
-      title: a.angebot_titel,
-      status: angebotOverviewStatusKey(a),
-    }));
-  }, [angeboteSorted]);
 
   const anfragenCardRows = useMemo(
     () => buildAnfragenCardRows(anfragenSorted, auftragAnfragen),
@@ -263,20 +221,25 @@ export function PartnerClient({
     setListPage(1);
   }, [section]);
 
-  const overviewAuftraegeRows = useMemo((): OverviewRow[] => {
-    return [...auftraege]
-      .sort(
-        (a, b) =>
-          new Date(b.start_datum || 0).getTime() -
-          new Date(a.start_datum || 0).getTime()
-      )
-      .map((a) => ({
-        id: a.id,
-        date: a.start_datum ?? undefined,
-        title: a.titel,
-        status: a.status,
-      }));
-  }, [auftraege]);
+  const overviewCardRows = useMemo((): PartnerCardRow[] => {
+    if (overviewTab === "anfragen") return anfragenCardRows;
+    if (overviewTab === "angebote") return angeboteCardRows;
+    return auftraegeCardRows;
+  }, [overviewTab, anfragenCardRows, angeboteCardRows, auftraegeCardRows]);
+
+  const overviewTotalPages = Math.max(
+    1,
+    Math.ceil(overviewCardRows.length / PORTAL_OVERVIEW_PAGE_SIZE)
+  );
+  const overviewSafePage = Math.min(overviewPage, overviewTotalPages);
+  const paginatedOverviewCardRows = overviewCardRows.slice(
+    (overviewSafePage - 1) * PORTAL_OVERVIEW_PAGE_SIZE,
+    overviewSafePage * PORTAL_OVERVIEW_PAGE_SIZE
+  );
+
+  useEffect(() => {
+    setOverviewPage(1);
+  }, [overviewTab]);
 
   const selectedAnfrageParsed = parseAnfragenSelectedId(selectedId);
 
@@ -306,9 +269,20 @@ export function PartnerClient({
     if (selectedId) {
       const fromAll = angeboteAlleAkzeptiert.find((a) => a.id === selectedId);
       if (fromAll) return fromAll;
+      const fromOpen = angeboteSorted.find((a) => a.id === selectedId);
+      if (fromOpen) return fromOpen;
+      return undefined;
     }
-    return angeboteSorted.find((a) => a.id === selectedId) ?? angeboteSorted[0];
+    return angeboteSorted[0];
   }, [angeboteAlleAkzeptiert, angeboteSorted, selectedId]);
+
+  useEffect(() => {
+    if (section !== "angebote" || !selectedId) return;
+    const found =
+      angeboteAlleAkzeptiert.some((a) => a.id === selectedId) ||
+      angeboteSorted.some((a) => a.id === selectedId);
+    if (!found) router.refresh();
+  }, [section, selectedId, angeboteAlleAkzeptiert, angeboteSorted, router]);
 
   const selectedAuftrag = useMemo(
     () => auftraege.find((a) => a.id === selectedId) ?? auftraege[0],
@@ -333,19 +307,10 @@ export function PartnerClient({
 
     if (s === "angebote") {
       const id = searchParams.get("id")?.trim();
-      if (!id) {
-        setSection("angebote");
-        return;
-      }
-      const match = angeboteAlleAkzeptiert.find((a) => a.id === id);
-      if (match) {
-        setSection("angebote");
-        setSelectedId(match.id);
+      setSection("angebote");
+      if (id) {
+        setSelectedId(id);
         setMobileDetailOpen(true);
-      } else {
-        setSection("uebersicht");
-        setSelectedId(null);
-        setMobileDetailOpen(false);
       }
       return;
     }
@@ -440,26 +405,30 @@ export function PartnerClient({
       ? anfragenListEmpty
       : sectionCardRows.length === 0;
 
-  function renderOverviewCard(row: OverviewRow, tab: OverviewTabId) {
-    const accent: "anfrage" | "angebot" | "auftrag" =
-      tab === "angebote" ? "angebot" : tab === "auftraege" ? "auftrag" : "anfrage";
+  function renderOverviewCard(row: PartnerCardRow, tab: OverviewTabId) {
     return (
       <PartnerListCard
         key={row.id}
-        accent={accent}
+        accent={row.accent}
         showLeftAccent={false}
         title={row.title}
-        statusLabel={
-          tab === "angebote"
-            ? partnerAngebotOverviewStatusLabel(row.status)
-            : row.status
-        }
+        statusLabel={row.statusLabel}
         statusPillClass={
           tab === "angebote"
-            ? partnerAngebotStatusPillClass(row.status)
-            : statusPillClass(row.status)
+            ? partnerAngebotStatusPillClass(row.statusPillKey)
+            : statusPillClass(row.statusPillKey)
         }
-        meta={[{ icon: Calendar, text: fmtDate(row.date) }]}
+        meta={row.meta}
+        hint={row.hint}
+        footer={
+          row.auftragPhasen ? (
+            <PortalAuftragPhasenStrip
+              states={row.auftragPhasen.states}
+              aktuellePhase={row.auftragPhasen.aktuellePhase}
+              fortschritt={row.auftragPhasen.fortschritt}
+            />
+          ) : undefined
+        }
         onClick={() => openFromOverview(tab, row.id)}
       />
     );
@@ -481,6 +450,15 @@ export function PartnerClient({
         }
         meta={row.meta}
         hint={row.hint}
+        footer={
+          row.auftragPhasen ? (
+            <PortalAuftragPhasenStrip
+              states={row.auftragPhasen.states}
+              aktuellePhase={row.auftragPhasen.aktuellePhase}
+              fortschritt={row.auftragPhasen.fortschritt}
+            />
+          ) : undefined
+        }
         selected={selectedId === row.id}
         onClick={() => selectRow(row.id)}
       />
@@ -497,18 +475,18 @@ export function PartnerClient({
     if (section === "angebote" && selectedAngebot) {
       return <PartnerAngebotDetail item={selectedAngebot} />;
     }
+    if (section === "angebote" && selectedId) {
+      return (
+        <p className="portal-text-body text-text-secondary">
+          Angebot wird geladen …
+        </p>
+      );
+    }
     if (section === "auftraege" && selectedAuftrag) {
       return <PartnerAuftragDetail item={selectedAuftrag} />;
     }
     return <p className="portal-text-body text-text-secondary">Nichts ausgewählt.</p>;
   })();
-
-  const overviewRows =
-    overviewTab === "anfragen"
-      ? overviewAnfragenRows
-      : overviewTab === "angebote"
-        ? overviewAngeboteRows
-        : overviewAuftraegeRows;
 
   return (
     <div className="portal-ui min-h-screen bg-surface-page">
@@ -676,7 +654,10 @@ export function PartnerClient({
                       <button
                         key={id}
                         type="button"
-                        onClick={() => setOverviewTab(id)}
+                        onClick={() => {
+                          setOverviewTab(id);
+                          setOverviewPage(1);
+                        }}
                         className={cn(
                           "rounded-full px-3 py-1.5 portal-text-meta font-semibold",
                           overviewTab === id
@@ -698,14 +679,31 @@ export function PartnerClient({
                 </div>
 
                 <div className="space-y-2">
-                  {overviewRows.length === 0 ? (
+                  {overviewCardRows.length === 0 ? (
                     <p className="portal-text-body rounded-xl border border-dashed border-border-light bg-muted/20 px-3 py-6 text-center text-text-secondary">
                       {emptyLabelForTab(overviewTab)}
                     </p>
                   ) : (
-                    overviewRows.slice(0, 5).map((row) => renderOverviewCard(row, overviewTab))
+                    paginatedOverviewCardRows.map((row) =>
+                      renderOverviewCard(row, overviewTab)
+                    )
                   )}
                 </div>
+                {overviewCardRows.length > PORTAL_OVERVIEW_PAGE_SIZE ? (
+                  <PartnerListPagination
+                    totalItems={overviewCardRows.length}
+                    itemLabel={
+                      overviewTab === "anfragen"
+                        ? "Anfragen"
+                        : overviewTab === "angebote"
+                          ? "Angebote"
+                          : "Aufträge"
+                    }
+                    currentPage={overviewSafePage}
+                    totalPages={overviewTotalPages}
+                    onPageChange={setOverviewPage}
+                  />
+                ) : null}
               </article>
 
               <section className="border-t border-border-default pt-4">

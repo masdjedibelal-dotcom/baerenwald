@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 
 import { PageLayout } from "@/components/layout/PageLayout";
 import { RatgeberPage } from "@/components/ratgeber/RatgeberPage";
+import { OG_IMAGE } from "@/lib/config";
 import { ratgeberDataForSlug } from "@/lib/ratgeber/data";
 import { RATGEBER } from "@/lib/routes";
 import {
@@ -36,7 +37,14 @@ export async function generateMetadata({ params }: PageProps) {
       title,
       description,
       url: canonical,
-      images: [{ url: "/og-image.png" }],
+      images: [
+        {
+          url: OG_IMAGE.url,
+          width: OG_IMAGE.width,
+          height: OG_IMAGE.height,
+          alt: OG_IMAGE.alt,
+        },
+      ],
     },
   };
 }

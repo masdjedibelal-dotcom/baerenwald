@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 
 import { respondPartnerAnfrage } from "@/app/actions/partner-anfragen";
 import { DokumenteTabelle } from "@/components/shared/DokumenteTabelle";
@@ -10,12 +10,12 @@ import {
   PartnerDetailError,
   PartnerDetailHero,
   PartnerDetailInfoBox,
-  PartnerDetailKeyValues,
   PartnerDetailLayout,
   PartnerDetailLeistungenList,
   PartnerDetailSection,
   PartnerDetailStickyActions,
 } from "@/components/partner/PartnerDetailUi";
+import { PartnerPortalDetailSections } from "@/components/partner/PartnerPortalDetailSections";
 import {
   HANDWERKER_ABLEHNUNG_GRUND_LABELS,
   HANDWERKER_ABLEHNUNG_GRUND_VALUES,
@@ -26,8 +26,11 @@ import {
   partnerAnfrageStatusLabel,
 } from "@/lib/partner/partner-anfrage-status";
 import {
+  buildPartnerAnfragePortalSections,
+  partnerDetailDateMetaLine,
+} from "@/lib/partner/partner-portal-display";
+import {
   fmtPartnerDate,
-  fmtPartnerMetaLine,
   partnerDetailStatusPillClass,
 } from "@/lib/partner/partner-detail-format";
 import { partnerAngebotPortalUrl } from "@/lib/partner/partner-site-url";
@@ -51,8 +54,16 @@ export function PartnerAnfrageDetail({ item }: { item: PartnerAnfrageItem }) {
   const offen = isPartnerAnfrageOffen(item);
   const beantwortet = Boolean(item.antwort_at);
   const kannAntworten = offen;
-  const heroTitle = item.angebot_titel || item.gewerk_name;
   const statusLabel = partnerAnfrageStatusLabel(item);
+
+  const sections = useMemo(
+    () =>
+      buildPartnerAnfragePortalSections(item.lead, {
+        aufgabe_notiz: item.aufgabe_notiz,
+        gewerk_name: item.gewerk_name,
+      }),
+    [item.lead, item.aufgabe_notiz, item.gewerk_name]
+  );
 
   async function sendAntwort(antwort: "akzeptiert" | "abgelehnt") {
     setLoading(true);
@@ -72,6 +83,7 @@ export function PartnerAnfrageDetail({ item }: { item: PartnerAnfrageItem }) {
       return;
     }
     if (antwort === "akzeptiert") {
+      router.refresh();
       router.push(partnerAngebotPortalUrl(item.id));
       return;
     }
@@ -113,19 +125,10 @@ export function PartnerAnfrageDetail({ item }: { item: PartnerAnfrageItem }) {
   return (
     <PartnerDetailLayout footer={footer}>
       <PartnerDetailHero
-        title={heroTitle}
-        metaLine={fmtPartnerMetaLine({
-          plz: item.plz,
-          ort: item.ort,
-          date: item.gesendet_at,
-        })}
+        title={item.angebot_titel}
+        metaLine={partnerDetailDateMetaLine(item.gesendet_at)}
         statusLabel={statusLabel}
         statusPillClass={anfrageStatusPillClass(item, offen)}
-        subtitle={
-          item.angebot_titel && item.gewerk_name !== item.angebot_titel
-            ? item.gewerk_name
-            : undefined
-        }
       />
 
       {kannAntworten ? (
@@ -135,18 +138,10 @@ export function PartnerAnfrageDetail({ item }: { item: PartnerAnfrageItem }) {
         </PartnerDetailInfoBox>
       ) : null}
 
-      <PartnerDetailSection title="Beschreibung">
-        <PartnerDetailKeyValues
-          rows={[
-            { label: "Gewerk", value: item.gewerk_name },
-            { label: "Zeitraum", value: item.zeitraum },
-            { label: "Hinweis von Bärenwald", value: item.aufgabe_notiz },
-          ]}
-        />
-      </PartnerDetailSection>
+      <PartnerPortalDetailSections sections={sections} />
 
       {leistungen.length > 0 ? (
-        <PartnerDetailSection title="Leistungen">
+        <PartnerDetailSection title="Dein Gewerk">
           <PartnerDetailLeistungenList items={leistungen} />
         </PartnerDetailSection>
       ) : null}

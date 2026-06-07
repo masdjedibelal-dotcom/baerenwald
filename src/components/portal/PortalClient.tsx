@@ -20,6 +20,7 @@ import { PortalMobileBottomSheet } from "@/components/shared/PortalMobileBottomS
 import { PortalListCard } from "@/components/shared/PortalListCard";
 import {
   PORTAL_LIST_PAGE_SIZE,
+  PORTAL_OVERVIEW_PAGE_SIZE,
   PortalListPagination,
 } from "@/components/shared/PortalListPagination";
 import { SITE_CONFIG } from "@/lib/config";
@@ -40,10 +41,26 @@ import {
 } from "@/lib/portal/portal-detail-item";
 import { buildKundeCardRows, type PortalCardRow } from "@/lib/portal/portal-list-mappers";
 import {
-  portalObjektKurzlabel,
-  prependObjektSection,
-  type PortalObjekt,
-} from "@/lib/portal/portal-objekt";
+  buildAnfrageCardMeta,
+  buildAnfragePortalSections,
+  type PortalAnfrageLeadSource,
+} from "@/lib/portal/portal-anfrage-display";
+import {
+  buildAngebotCardMeta,
+  buildAngebotPortalSections,
+  type PortalAngebotPositionDisplay,
+} from "@/lib/portal/portal-angebot-display";
+import {
+  buildAuftragCardMeta,
+  buildAuftragPortalSections,
+  resolveAuftragPhasenInput,
+} from "@/lib/portal/portal-auftrag-display";
+import {
+  portalAnsprechpartnerFallback,
+  type PortalAnsprechpartner,
+} from "@/lib/portal/portal-ansprechpartner";
+import type { PortalObjekt } from "@/lib/portal/portal-objekt";
+import { PortalAuftragPhasenStrip } from "@/components/shared/PortalAuftragPhasenStrip";
 import { portalDetailStatusPillClass } from "@/lib/shared/portal-detail-format";
 import { cn } from "@/lib/utils";
 import { PortalBaerenwaldGpt } from "@/components/portal/PortalBaerenwaldGpt";
@@ -64,6 +81,8 @@ type PortalAuftrag = {
   titel: string;
   lead_id?: string;
   angebot_id?: string;
+  linkedLead?: PortalAnfrageLeadSource | null;
+  ansprechpartner?: PortalAnsprechpartner;
   objekt?: PortalObjekt | null;
   status?: string;
   fortschritt?: number;
@@ -81,6 +100,7 @@ type PortalAngebot = {
   id: string;
   titel?: string;
   objekt?: PortalObjekt | null;
+  linkedLead?: PortalAnfrageLeadSource | null;
   status_einfach?: string | null;
   status?: string;
   lead_id?: string | null;
@@ -88,6 +108,8 @@ type PortalAngebot = {
   hinweise?: string;
   angebotsnr?: string | null;
   betrag?: number;
+  gesamtBrutto?: number;
+  positionenDisplay?: PortalAngebotPositionDisplay[];
   gueltig_bis?: string | null;
   gesendet_am?: string | null;
   created_at?: string | null;
@@ -102,6 +124,12 @@ type PortalLead = {
   status?: string;
   objekt?: PortalObjekt | null;
   plz?: string;
+  strasse?: string | null;
+  hausnummer?: string | null;
+  zeitraum?: string | null;
+  kontakt_name?: string | null;
+  kontakt_nachricht?: string | null;
+  funnel_daten?: unknown;
   preis_min?: number;
   preis_max?: number;
   budget_ca?: number;
@@ -162,22 +190,6 @@ const MENU_ITEMS: Array<{
   { id: "gpt", label: "GPT", icon: MessagesSquare },
 ];
 
-function fmtDate(v?: string): string {
-  if (!v) return "—";
-  const d = new Date(v);
-  if (Number.isNaN(d.getTime())) return "—";
-  return d.toLocaleDateString("de-DE");
-}
-
-function fmtMoney(v?: number): string {
-  if (typeof v !== "number") return "—";
-  return new Intl.NumberFormat("de-DE", {
-    style: "currency",
-    currency: "EUR",
-    maximumFractionDigits: 0,
-  }).format(v);
-}
-
 function emptyLabelForSection(section: OverviewTabId | SectionId): string {
   if (section === "anfragen") return "Noch keine Anfragen";
   if (section === "angebote") return "Noch keine Angebote";
@@ -207,24 +219,6 @@ function isAuftragAbgeschlossen(auftrag: PortalAuftrag): boolean {
     return true;
   }
   return false;
-}
-
-function dedupe(values: Array<string | undefined | null>): string[] {
-  return Array.from(new Set(values.filter((v): v is string => Boolean(v && v.trim()))));
-}
-
-function detailRows(
-  rows: Array<{ label: string; value?: string | null }>
-): Array<{ label: string; value: string }> {
-  return rows
-    .map((r) => ({
-      label: r.label,
-      value: r.value?.trim(),
-    }))
-    .filter(
-      (r): r is { label: string; value: string } =>
-        Boolean(r.value && r.value !== "—")
-    );
 }
 
 function listItemLabel(section: SectionId): string {
@@ -270,6 +264,7 @@ export function PortalClient({
   const [mobileDetailOpen, setMobileDetailOpen] = useState(false);
   const [gptOpen, setGptOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
+  const [overviewPage, setOverviewPage] = useState(1);
 
   const vorname = (kunde?.name || "Kunde").split(" ")[0] || "Kunde";
   const offeneAuftraegeCount = auftraege.filter(
@@ -289,26 +284,7 @@ export function PortalClient({
             new Date(a.created_at || 0).getTime()
         )
         .map((lead) => {
-          const preisrahmen =
-            typeof lead.budget_ca === "number"
-              ? fmtMoney(lead.budget_ca)
-              : typeof lead.preis_min === "number" ||
-                  typeof lead.preis_max === "number"
-                ? `${fmtMoney(lead.preis_min)} – ${fmtMoney(lead.preis_max)}`
-                : undefined;
           const { title, anfrageVorhaben, anfrageGewerk } = anfrageTitleFromLead(lead);
-          const sections = prependObjektSection(
-            [
-              {
-                heading: "Überblick",
-                rows: detailRows([
-                  { label: "Anfragedatum", value: fmtDate(lead.created_at) },
-                  { label: "Preisrahmen", value: preisrahmen },
-                ]),
-              },
-            ],
-            lead.objekt
-          );
           const { plz, ort } = objektPlzOrt(lead.objekt, lead.plz);
           return {
             id: lead.id,
@@ -318,16 +294,9 @@ export function PortalClient({
             anfrageVorhaben,
             plz,
             ort,
-            cardSubtitle: anfrageGewerk,
-            infoHint:
-              "Deine Anfrage ist bei uns eingegangen. Wir prüfen die Details und melden uns bei dir.",
+            cardMeta: buildAnfrageCardMeta(lead),
             status: fmtPortalStatus(lead.status || "neu"),
-            summary: lead.objekt
-              ? portalObjektKurzlabel(lead.objekt)
-              : lead.plz
-                ? `PLZ ${lead.plz}`
-                : undefined,
-            sections,
+            sections: buildAnfragePortalSections(lead),
             dokumente: lead.dokumente ?? [],
           };
         }),
@@ -342,44 +311,26 @@ export function PortalClient({
           new Date(a.created_at || 0).getTime()
       )
       .map((a) => {
-        const overviewRows = detailRows([
-          {
-            label: "Angebotsnummer",
-            value: a.angebotsnr?.trim() ? a.angebotsnr.trim() : undefined,
-          },
-          { label: "Gültig bis", value: fmtDate(a.gueltig_bis ?? undefined) },
-          {
-            label: "Versendet am",
-            value: fmtDate(a.gesendet_am ?? a.created_at ?? undefined),
-          },
-          {
-            label: "Preis (Brutto)",
-            value: fmtMoney(a.betrag) !== "—" ? fmtMoney(a.betrag) : undefined,
-          },
-        ]);
-        const sections = prependObjektSection(
-          [{ heading: "Überblick", rows: overviewRows }],
-          a.objekt
-        );
-        if (a.leistungen && a.leistungen.length > 0) {
-          sections.push({ heading: "Leistungen", bullets: a.leistungen });
-        }
         const st = a.status_einfach || a.status || "angebot";
-        const { plz, ort } = objektPlzOrt(a.objekt);
-        const hasObjekt = Boolean(a.objekt);
+        const leadSource: PortalAnfrageLeadSource | null = a.linkedLead
+          ? { ...a.linkedLead, objekt: a.linkedLead.objekt ?? a.objekt ?? null }
+          : null;
         return {
           id: a.id,
           date: a.created_at ?? undefined,
           title:
             sanitizeCustomerText(a.titel, 200) ||
             (a.angebotsnr ? `Angebot ${a.angebotsnr}` : "Angebot"),
-          plz,
-          ort,
-          cardSubtitle: hasObjekt ? portalObjektKurzlabel(a.objekt!) : undefined,
-          suppressLocationInHero: hasObjekt,
+          cardMeta: buildAngebotCardMeta(leadSource, a.created_at),
+          isAngebotDetail: true,
+          angebotPositionen: a.positionenDisplay,
+          gesamtBrutto: a.gesamtBrutto,
+          suppressLocationInHero: true,
           status: fmtPortalStatus(st),
-          summary: undefined,
-          sections,
+          sections: buildAngebotPortalSections({
+            lead: leadSource,
+            objekt: a.objekt,
+          }),
           dokumente: a.dokumente ?? [],
         };
       });
@@ -392,32 +343,16 @@ export function PortalClient({
       )
       .map((lead) => {
         const { title, anfrageVorhaben, anfrageGewerk } = anfrageTitleFromLead(lead);
-        const { plz, ort } = objektPlzOrt(lead.objekt, lead.plz);
-        const hasObjekt = Boolean(lead.objekt);
         return {
           id: `lead-${lead.id}`,
           date: lead.created_at,
           title,
           anfrageVorhaben,
           anfrageGewerk,
-          plz,
-          ort,
-          cardSubtitle: anfrageGewerk,
-          suppressLocationInHero: hasObjekt,
+          cardMeta: buildAngebotCardMeta(lead, lead.created_at),
           infoHint: "Wir bereiten dein Angebot vor und melden uns, sobald es bereitsteht.",
           status: fmtPortalStatus(lead.status || "angebot"),
-          summary: undefined,
-          sections: prependObjektSection(
-            [
-              {
-                heading: "Überblick",
-                rows: detailRows([
-                  { label: "Anfragedatum", value: fmtDate(lead.created_at) },
-                ]),
-              },
-            ],
-            lead.objekt
-          ),
+          sections: buildAngebotPortalSections({ lead, objekt: lead.objekt }),
           dokumente: lead.dokumente ?? [],
         };
       });
@@ -447,57 +382,55 @@ export function PortalClient({
         );
       })
       .map((a) => {
-          const sections = prependObjektSection(
-            [
-              {
-                heading: "Projekt",
-                rows: detailRows([
-                  {
-                    label: "Status",
-                    value: fmtPortalStatus(
-                      isAuftragAbgeschlossen(a)
-                        ? "abgeschlossen"
-                        : a.status || "offen"
-                    ),
-                  },
-                  { label: "Fortschritt", value: `${a.fortschritt ?? 0} %` },
-                  { label: "Start", value: fmtDate(a.start_datum || a.created_at) },
-                  { label: "Vorauss. Ende", value: fmtDate(a.end_datum) },
-                  {
-                    label: "Budget",
-                    value:
-                      typeof a.budget === "number" ? fmtMoney(a.budget) : undefined,
-                  },
-                ]),
-              },
-            ],
-            a.objekt
-          );
-          const { plz, ort } = objektPlzOrt(a.objekt);
-          const leistungen = dedupe(
-            (a.positionen ?? []).map((p) => p.titel || p.gewerk_name || "")
-          ).filter(Boolean);
-          if (leistungen.length > 0) {
-            sections.push({ heading: "Leistungen", bullets: leistungen });
-          }
-          const hasObjekt = Boolean(a.objekt);
+          const abgeschlossen = isAuftragAbgeschlossen(a);
+          const leadSource: PortalAnfrageLeadSource | null = a.linkedLead
+            ? {
+                ...a.linkedLead,
+                objekt: a.linkedLead.objekt ?? a.objekt ?? null,
+              }
+            : null;
+          const phasen = resolveAuftragPhasenInput({
+            status: abgeschlossen ? "abgeschlossen" : a.status,
+            abgeschlossen,
+            hatAngebot: Boolean(a.angebot_id),
+            fortschritt: a.fortschritt,
+          });
           return {
             id: a.id,
             date: a.start_datum || a.created_at,
+            auftragEndDatum: a.end_datum,
             title: a.titel,
-            plz,
-            ort,
-            cardSubtitle: `${a.fortschritt ?? 0} % Fortschritt`,
-            suppressLocationInHero: hasObjekt,
-            status: fmtPortalStatus(
-              isAuftragAbgeschlossen(a)
-                ? "abgeschlossen"
-                : a.status || "auftrag"
+            cardMeta: buildAuftragCardMeta(
+              a.objekt,
+              leadSource,
+              a.start_datum || a.created_at,
+              a.end_datum
             ),
-            summary: undefined,
-            sections,
-            milestones: a.milestones ?? [],
-            bautagebuch: a.bautagebuch ?? [],
+            listFooter: (
+              <PortalAuftragPhasenStrip
+                states={phasen.states}
+                aktuellePhase={phasen.aktuellePhase}
+                fortschritt={phasen.fortschritt}
+              />
+            ),
+            isAuftragDetail: true,
+            auftragPhasen: {
+              status: a.status,
+              abgeschlossen,
+              hatAngebot: Boolean(a.angebot_id),
+              fortschritt: a.fortschritt,
+              states: phasen.states,
+              aktuellePhase: phasen.aktuellePhase,
+            },
+            suppressLocationInHero: true,
+            status: fmtPortalStatus(
+              abgeschlossen ? "abgeschlossen" : a.status || "auftrag"
+            ),
+            sections: buildAuftragPortalSections({
+              lead: leadSource,
+              objekt: a.objekt,
+            }),
+            ansprechpartner: a.ansprechpartner ?? portalAnsprechpartnerFallback(),
             dokumente: a.dokumente ?? [],
           };
         });
@@ -509,40 +442,31 @@ export function PortalClient({
           new Date(a.created_at || 0).getTime()
       )
       .map((lead) => {
-        const { title, anfrageVorhaben, anfrageGewerk } = anfrageTitleFromLead(lead);
+        const { title } = anfrageTitleFromLead(lead);
         const abgeschlossen = isCompletedStatus(lead.status);
-        const { plz, ort } = objektPlzOrt(lead.objekt, lead.plz);
-        const hasObjekt = Boolean(lead.objekt);
+        const phasen = resolveAuftragPhasenInput({
+          status: lead.status,
+          abgeschlossen,
+          hatAngebot: false,
+        });
         return {
           id: `lead-${lead.id}`,
           date: lead.created_at,
           title,
-          anfrageVorhaben,
-          anfrageGewerk,
-          plz,
-          ort,
-          cardSubtitle: anfrageGewerk,
-          suppressLocationInHero: hasObjekt,
+          cardMeta: buildAuftragCardMeta(lead.objekt, lead, lead.created_at),
+          listFooter: (
+            <PortalAuftragPhasenStrip
+              states={phasen.states}
+              aktuellePhase={phasen.aktuellePhase}
+            />
+          ),
+          isAuftragDetail: true,
+          suppressLocationInHero: true,
           status: fmtPortalStatus(
             abgeschlossen ? "abgeschlossen" : lead.status || "auftrag"
           ),
-          summary: undefined,
-          sections: prependObjektSection(
-            [
-              {
-                heading: "Projekt",
-                rows: detailRows([
-                  {
-                    label: "Status",
-                    value: fmtPortalStatus(
-                      abgeschlossen ? "abgeschlossen" : lead.status || "auftrag"
-                    ),
-                  },
-                ]),
-              },
-            ],
-            lead.objekt
-          ),
+          sections: buildAuftragPortalSections({ lead, objekt: lead.objekt }),
+          ansprechpartner: portalAnsprechpartnerFallback(),
           dokumente: lead.dokumente ?? [],
         };
       });
@@ -628,6 +552,10 @@ export function PortalClient({
     setCurrentPage(1);
   }, [section]);
 
+  useEffect(() => {
+    setOverviewPage(1);
+  }, [overviewTab]);
+
   const overviewCardRows = useMemo(() => {
     if (overviewTab === "anfragen") return buildKundeCardRows(anfragenItems, "anfrage");
     if (overviewTab === "angebote") return buildKundeCardRows(angeboteItems, "angebot");
@@ -640,6 +568,16 @@ export function PortalClient({
   const paginatedCardRows = sectionCardRows.slice(
     (safePage - 1) * PAGE_SIZE,
     safePage * PAGE_SIZE
+  );
+
+  const overviewTotalPages = Math.max(
+    1,
+    Math.ceil(overviewCardRows.length / PORTAL_OVERVIEW_PAGE_SIZE)
+  );
+  const overviewSafePage = Math.min(overviewPage, overviewTotalPages);
+  const paginatedOverviewCardRows = overviewCardRows.slice(
+    (overviewSafePage - 1) * PORTAL_OVERVIEW_PAGE_SIZE,
+    overviewSafePage * PORTAL_OVERVIEW_PAGE_SIZE
   );
 
   const selectedId =
@@ -669,6 +607,7 @@ export function PortalClient({
         statusLabel={row.statusLabel}
         statusPillClass={portalDetailStatusPillClass(row.statusPillKey)}
         meta={row.meta}
+        footer={row.footer}
         selected={selectedId === row.id}
         onClick={() => selectRow(row.id)}
       />
@@ -686,6 +625,7 @@ export function PortalClient({
         statusLabel={row.statusLabel}
         statusPillClass={portalDetailStatusPillClass(row.statusPillKey)}
         meta={row.meta}
+        footer={row.footer}
         onClick={() => {
           if (tab === "anfragen") setSelectedAnfrageId(row.id);
           else if (tab === "angebote") setSelectedAngebotId(row.id);
@@ -860,9 +800,20 @@ export function PortalClient({
                       {emptyLabelForSection(overviewTab)}
                     </p>
                   ) : (
-                    overviewCardRows.slice(0, 5).map((row) => renderOverviewCard(row, overviewTab))
+                    paginatedOverviewCardRows.map((row) =>
+                      renderOverviewCard(row, overviewTab)
+                    )
                   )}
                 </div>
+                {overviewCardRows.length > 0 ? (
+                  <PortalListPagination
+                    totalItems={overviewCardRows.length}
+                    itemLabel={listItemLabel(overviewTab)}
+                    currentPage={overviewSafePage}
+                    totalPages={overviewTotalPages}
+                    onPageChange={setOverviewPage}
+                  />
+                ) : null}
               </article>
 
               <section className="border-t border-border-default pt-4">

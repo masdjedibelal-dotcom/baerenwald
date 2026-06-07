@@ -94,7 +94,7 @@ export function portalObjektDetailRows(
 ): Array<{ label: string; value: string }> {
   const rows: Array<{ label: string; value?: string | null }> = [
     { label: "Name", value: obj.name },
-    { label: "Straße", value: obj.strasse },
+    { label: "Straße Hausnummer", value: obj.strasse },
     { label: "PLZ", value: obj.plz },
     { label: "Ort", value: obj.ort },
   ];
@@ -111,6 +111,16 @@ export function portalObjektSection(obj: PortalObjekt): PortalDetailSection {
   return {
     heading: "Objekt / Leistungsort",
     rows: rows.length > 0 ? rows : [{ label: "Name", value: obj.name }],
+  };
+}
+
+export function portalObjektLeistungsortSection(
+  obj: PortalObjekt
+): PortalDetailSection {
+  const rows = portalObjektDetailRows(obj).filter((r) => r.label !== "Name");
+  return {
+    heading: "Objekt / Leistungsort",
+    rows,
   };
 }
 

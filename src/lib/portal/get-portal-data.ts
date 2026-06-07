@@ -1,3 +1,8 @@
+import {
+  parseAngebotPositionenMitPreis,
+  resolveAngebotGesamtBrutto,
+} from "@/lib/portal/portal-angebot-display";
+import { resolvePortalAnsprechpartner } from "@/lib/portal/portal-ansprechpartner";
 import { buildAngebotPortalDisplay } from "@/lib/portal/portal-display";
 import { splitKundePortalPipeline } from "@/lib/portal/portal-pipeline";
 import {
@@ -51,6 +56,7 @@ type PortalAngebotRow = {
   gueltig_bis: string | null;
   leistungsumfang: string | null;
   notizen: string | null;
+  positionen: unknown;
   created_at: string | null;
   gesendet_am: string | null;
   pdf_url: string | null;
@@ -146,7 +152,7 @@ export async function getPortalDataForKunde(kundeId: string) {
   const { data: leads } = await supabaseAdmin
     .from("leads")
     .select(
-      "id, situation, bereiche, status, created_at, plz, preis_min, preis_max, budget_ca, kontakt_nachricht, funnel_daten, kunde_objekt_id"
+      "id, situation, bereiche, status, created_at, plz, strasse, hausnummer, zeitraum, kontakt_name, preis_min, preis_max, budget_ca, kontakt_nachricht, funnel_daten, kunde_objekt_id"
     )
     .eq("kunde_id", kunde.id)
     .order("created_at", { ascending: false });
@@ -171,7 +177,7 @@ export async function getPortalDataForKunde(kundeId: string) {
 
   /** Nur Spalten, die in Supabase existieren (kein budget/phasen — sonst leere Auftragsliste). */
   const auftragSelect =
-    "id, titel, status, fortschritt, start_datum, end_datum, abnahme_datum, abnahme_protokoll_url, created_at, lead_id, kunde_id, angebot_id, updated_at";
+    "id, titel, status, fortschritt, start_datum, end_datum, abnahme_datum, abnahme_protokoll_url, created_at, lead_id, kunde_id, angebot_id, betreuer_id, updated_at";
 
   const mergeAuftraege = (
     rows: Array<Record<string, unknown>> | null | undefined
@@ -204,7 +210,7 @@ export async function getPortalDataForKunde(kundeId: string) {
   const angeboteByIdEarly = new Map<string, PortalAngebotRow>();
 
   const angebotSelect =
-    "id, angebotsnr, lead_id, kunde_id, kunde_objekt_id, status_einfach, gesamt_fix, gesamt_min, gesamt_max, gueltig_bis, leistungsumfang, notizen, created_at, gesendet_am, pdf_url";
+    "id, angebotsnr, lead_id, kunde_id, kunde_objekt_id, status_einfach, gesamt_fix, gesamt_min, gesamt_max, gueltig_bis, leistungsumfang, notizen, positionen, created_at, gesendet_am, pdf_url";
 
   if (leadIds.length > 0) {
     const { data: angeboteByLead, error: angLeadErr } = await supabaseAdmin
@@ -354,6 +360,55 @@ export async function getPortalDataForKunde(kundeId: string) {
     bautagebuchByAuftrag.set(aid, list);
   }
 
+  const betreuerIds = Array.from(
+    new Set(
+      auftraege
+        .map((a) =>
+          typeof a.betreuer_id === "string" ? a.betreuer_id.trim() : ""
+        )
+        .filter(Boolean)
+    )
+  );
+
+  const betreuerById = new Map<string, { name: string; telefon: string | null }>();
+  if (betreuerIds.length > 0) {
+    const { data: betreuerRows, error: betreuerErr } = await supabaseAdmin
+      .from("user_profiles")
+      .select("id, name, telefon")
+      .in("id", betreuerIds);
+    if (betreuerErr) {
+      console.warn("[portal] betreuer user_profiles:", betreuerErr.message);
+    } else {
+      for (const row of betreuerRows ?? []) {
+        const id = String((row as { id: string }).id);
+        betreuerById.set(id, {
+          name: String((row as { name?: string | null }).name ?? "").trim(),
+          telefon:
+            typeof (row as { telefon?: string | null }).telefon === "string"
+              ? (row as { telefon: string }).telefon.trim()
+              : null,
+        });
+      }
+    }
+  }
+
+  const leadPortalById = new Map(
+    (leads ?? []).map((lead) => {
+      const raw = lead as {
+        id: string;
+        kunde_objekt_id?: string | null;
+        plz?: string | null;
+      };
+      return [
+        String(raw.id),
+        {
+          ...lead,
+          objekt: resolveObj(raw.kunde_objekt_id, raw.plz),
+        },
+      ];
+    })
+  );
+
   const mappedAuftraege = auftraege.map((a) => {
       const auftragId = String(a.id);
       const angebotId =
@@ -367,11 +422,19 @@ export async function getPortalDataForKunde(kundeId: string) {
         (leadId ? leadObjektIdByLeadId.get(leadId) : null);
       const leadPlz = leadId ? leadPlzByLeadId.get(leadId) : null;
 
+      const bautagebuchEntries = bautagebuchByAuftrag.get(auftragId) ?? [];
+      const linkedLead = leadId ? leadPortalById.get(leadId) ?? null : null;
+      const betreuerId =
+        typeof a.betreuer_id === "string" ? a.betreuer_id.trim() : "";
+      const betreuer = betreuerId ? betreuerById.get(betreuerId) : null;
+
       return {
         ...a,
         id: auftragId,
         lead_id: leadId,
         angebot_id: angebotId,
+        linkedLead,
+        ansprechpartner: resolvePortalAnsprechpartner(betreuer),
         titel: typeof a.titel === "string" ? a.titel : "Auftrag",
         status: typeof a.status === "string" ? a.status : undefined,
         objekt: resolveObj(objektId, leadPlz),
@@ -397,6 +460,12 @@ export async function getPortalDataForKunde(kundeId: string) {
             timeline: (timeline ?? []).filter(
               (t) => String(t.auftrag_id) === auftragId
             ),
+            bautagebuch: bautagebuchEntries.map((entry) => ({
+              id: entry.id,
+              datum: entry.datum ?? null,
+              titel: entry.titel,
+              fotos_urls: entry.fotos_urls,
+            })),
           }
         ),
         positionen: (positionen ?? [])
@@ -422,24 +491,28 @@ export async function getPortalDataForKunde(kundeId: string) {
   const mappedAngebote = angebote.map((a) => {
       const display = buildAngebotPortalDisplay(a);
       const leadId = a.lead_id != null ? String(a.lead_id) : null;
+      const linkedLead = leadId ? leadPortalById.get(leadId) ?? null : null;
       const objektId =
         a.kunde_objekt_id ??
         (leadId ? leadObjektIdByLeadId.get(leadId) : null);
       const leadPlz = leadId ? leadPlzByLeadId.get(leadId) : null;
+      const positionenDisplay = parseAngebotPositionenMitPreis(a.positionen);
+      const gesamtBrutto = resolveAngebotGesamtBrutto({
+        positionen: a.positionen,
+        gesamt_fix: a.gesamt_fix,
+        gesamt_min: a.gesamt_min,
+        gesamt_max: a.gesamt_max,
+      });
       return {
         ...a,
         titel: display.titel,
         leistungen: display.leistungen,
         hinweise: display.hinweise,
+        positionenDisplay,
+        gesamtBrutto,
+        linkedLead,
         objekt: resolveObj(objektId, leadPlz),
-        betrag:
-          typeof a.gesamt_fix === "number"
-            ? a.gesamt_fix
-            : typeof a.gesamt_max === "number"
-              ? a.gesamt_max
-              : typeof a.gesamt_min === "number"
-                ? a.gesamt_min
-                : undefined,
+        betrag: gesamtBrutto,
         dokumente: dokumenteFromAngebot({
           id: String(a.id),
           angebotsnr: a.angebotsnr,

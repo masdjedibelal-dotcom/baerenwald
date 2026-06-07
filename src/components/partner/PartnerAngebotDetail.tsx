@@ -13,13 +13,13 @@ import {
   PartnerDetailError,
   PartnerDetailHero,
   PartnerDetailInfoBox,
-  PartnerDetailKeyValues,
   PartnerDetailLayout,
   PartnerDetailLeistungenList,
   PartnerDetailSection,
   PartnerDetailStickyActions,
   PartnerDetailSuccessBox,
 } from "@/components/partner/PartnerDetailUi";
+import { PartnerPortalDetailSections } from "@/components/partner/PartnerPortalDetailSections";
 import {
   DokumenteTabelle,
   type DokumentZeile,
@@ -29,9 +29,13 @@ import type { PartnerAnfrageItem } from "@/lib/partner/get-partner-data";
 import {
   fmtPartnerDate,
   fmtPartnerEuro,
-  fmtPartnerMetaLine,
   partnerDetailStatusPillClass,
 } from "@/lib/partner/partner-detail-format";
+import {
+  buildPartnerAngebotPortalSections,
+  partnerDetailDateMetaLine,
+  resolvePartnerAngebotPositionen,
+} from "@/lib/partner/partner-portal-display";
 import {
   PARTNER_MAX_ANGEBOT_DATEIEN,
   PARTNER_MAX_PDF_MB,
@@ -70,6 +74,30 @@ export function PartnerAngebotDetail({ item }: { item: PartnerAnfrageItem }) {
     !eingereicht && item.status.toLowerCase() === "akzeptiert";
   const wartetAufFreigabe = eingereicht && !uebernommen;
   const kannRechnungHochladen = eingereicht && uebernommen && !rechnungEingereicht;
+
+  const { positionen: crmPositionen, gesamtBrutto } = useMemo(
+    () =>
+      resolvePartnerAngebotPositionen(item.crm_positionen_raw, {
+        gesamt_fix: item.crm_gesamt_fix,
+        gesamt_min: item.crm_gesamt_min,
+        gesamt_max: item.crm_gesamt_max,
+      }),
+    [
+      item.crm_positionen_raw,
+      item.crm_gesamt_fix,
+      item.crm_gesamt_min,
+      item.crm_gesamt_max,
+    ]
+  );
+
+  const sections = useMemo(
+    () =>
+      buildPartnerAngebotPortalSections(item.lead, {
+        gewerk_name: item.gewerk_name,
+        zeitraum: item.zeitraum,
+      }),
+    [item.lead, item.gewerk_name, item.zeitraum]
+  );
 
   const dokumentZeilen = useMemo((): DokumentZeile[] => {
     const rows: DokumentZeile[] = [];
@@ -206,7 +234,7 @@ export function PartnerAngebotDetail({ item }: { item: PartnerAnfrageItem }) {
     router.refresh();
   }
 
-  const leistungen = item.positionen.map((p, i) => ({
+  const hwLeistungen = item.positionen.map((p, i) => ({
     id: String(i),
     title: p.beschreibung,
     meta: [p.menge, p.einheit].filter(Boolean).join(" "),
@@ -231,15 +259,10 @@ export function PartnerAngebotDetail({ item }: { item: PartnerAnfrageItem }) {
   return (
     <PartnerDetailLayout footer={footer}>
       <PartnerDetailHero
-        title={item.angebot_titel || item.gewerk_name}
-        metaLine={fmtPartnerMetaLine({
-          plz: item.plz,
-          ort: item.ort,
-          date: item.antwort_at ?? item.gesendet_at,
-        })}
+        title={item.angebot_titel}
+        metaLine={partnerDetailDateMetaLine(item.antwort_at ?? item.gesendet_at)}
         statusLabel={hwStatusLabel(item.hw_status)}
         statusPillClass={partnerDetailStatusPillClass(item.hw_status ?? "offen")}
-        subtitle={item.gewerk_name}
       />
 
       {kannAngebotEinreichen ? (
@@ -266,22 +289,15 @@ export function PartnerAngebotDetail({ item }: { item: PartnerAnfrageItem }) {
         </PartnerDetailInfoBox>
       ) : null}
 
-      <PartnerDetailSection title="Beschreibung">
-        <PartnerDetailKeyValues
-          rows={[
-            { label: "Gewerk", value: item.gewerk_name },
-            { label: "Zeitraum", value: item.zeitraum },
-            {
-              label: "Angenommen am",
-              value: item.antwort_at ? fmtPartnerDate(item.antwort_at) : null,
-            },
-          ]}
-        />
-      </PartnerDetailSection>
+      <PartnerPortalDetailSections
+        sections={sections}
+        angebotPositionen={crmPositionen}
+        gesamtBrutto={gesamtBrutto}
+      />
 
-      {leistungen.length > 0 ? (
-        <PartnerDetailSection title="Leistungen">
-          <PartnerDetailLeistungenList items={leistungen} />
+      {hwLeistungen.length > 0 ? (
+        <PartnerDetailSection title="Dein Gewerk">
+          <PartnerDetailLeistungenList items={hwLeistungen} />
         </PartnerDetailSection>
       ) : null}
 

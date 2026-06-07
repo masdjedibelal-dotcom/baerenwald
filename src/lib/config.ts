@@ -17,6 +17,9 @@ export const SITE_CONFIG = {
   accentColor: accentFromEnv,
   /** Kanonische Site-URL für Schema & Open Graph */
   url: siteUrl,
+  /** Social Preview — grüner Hintergrund (#2E7D52), weißes Logo-Mark */
+  ogImagePath: "/og-image.png",
+  ogImageVersion: "20260602",
   /** Öffentliche Erreichbarkeit (UI, Header, Funnel, CTAs) — Festnetz */
   phone: "08980955726",
   phoneHref: "tel:+498980955726",
@@ -41,4 +44,14 @@ export const SITE_CONFIG = {
    */
   responseSlaWithin:
     "innerhalb von 24–48 Stunden (Mo–Sa; an Sonntagen am folgenden Werktag)",
+} as const;
+
+const ogImageAlt = "Bärenwald München — Handwerker aus einer Hand";
+
+/** Open Graph / Twitter — einheitlich für alle Seiten */
+export const OG_IMAGE = {
+  url: `${SITE_CONFIG.ogImagePath}?v=${SITE_CONFIG.ogImageVersion}`,
+  width: 1200,
+  height: 630,
+  alt: ogImageAlt,
 } as const;

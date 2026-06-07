@@ -119,12 +119,53 @@ export function dokumenteFromTimeline(
   return rows;
 }
 
+type BautagebuchDokumentInput = {
+  id: string;
+  datum?: string | null;
+  titel?: string | null;
+  fotos_urls?: string[];
+};
+
+export function dokumenteFromBautagebuch(
+  entries: BautagebuchDokumentInput[]
+): PortalDokument[] {
+  const rows: PortalDokument[] = [];
+  for (const entry of entries) {
+    const titel = entry.titel?.trim() || "Eintrag";
+    const fotos = (entry.fotos_urls ?? []).map((u) => u?.trim()).filter(Boolean);
+    if (fotos.length === 0) {
+      rows.push({
+        id: `bautagebuch-${entry.id}`,
+        name: `Bautagebuch — ${titel}`,
+        datum: entry.datum ?? undefined,
+        href: "",
+        art: "dokument",
+      });
+      continue;
+    }
+    fotos.forEach((href, index) => {
+      rows.push({
+        id: `bautagebuch-${entry.id}-${index}`,
+        name:
+          fotos.length > 1
+            ? `Bautagebuch — ${titel} (${index + 1})`
+            : `Bautagebuch — ${titel}`,
+        datum: entry.datum ?? undefined,
+        href,
+        art: "foto",
+      });
+    });
+  }
+  return rows;
+}
+
 export function dokumenteFromAuftrag(
   auftrag: AuftragDokumentInput,
   opts: {
     angebot?: AngebotDokumentInput | null;
     rechnungen?: RechnungDokumentInput[];
     timeline?: TimelineDokumentInput[];
+    bautagebuch?: BautagebuchDokumentInput[];
   }
 ): PortalDokument[] {
   const rows: PortalDokument[] = [];
@@ -150,6 +191,7 @@ export function dokumenteFromAuftrag(
   }
 
   rows.push(...dokumenteFromRechnungen(opts.rechnungen ?? []));
+  rows.push(...dokumenteFromBautagebuch(opts.bautagebuch ?? []));
   rows.push(...dokumenteFromTimeline(opts.timeline ?? []));
 
   return rows.sort((a, b) => {

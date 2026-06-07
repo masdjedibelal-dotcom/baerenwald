@@ -6,8 +6,18 @@ import {
   resolveAuftragPortalPhase,
   type PartnerPortalPhase,
 } from "@/lib/partner/partner-portal-phase";
-import { parseAngebotPositionen } from "@/lib/partner/parse-angebot-positionen";
-import { resolveAngebotTitel } from "@/lib/portal/portal-display";
+import {
+  mapAngebotHandwerkerRow,
+  PARTNER_ANGEBOT_EMBED,
+  PARTNER_LEAD_EMBED,
+} from "@/lib/partner/map-partner-anfrage-handwerker";
+import {
+  buildPartnerLeadSource,
+  collectPartnerObjektIds,
+  type PartnerKundenObjektRow,
+  type PartnerLeadDbRow,
+} from "@/lib/partner/partner-lead-source";
+import type { PortalAnfrageLeadSource } from "@/lib/portal/portal-anfrage-display";
 import { syncAngebotHandwerkerAfterAuftragAccept } from "@/lib/partner/sync-angebot-handwerker";
 import {
   resolvePartnerFileUrl,
@@ -48,6 +58,12 @@ export type PartnerAnfrageItem = {
   hw_rechnung_pdf_signed_url?: string | null;
   hw_rechnung_eingereicht_at?: string;
   hw_notiz?: string | null;
+  /** Projekt-/Lead-Kontext ohne Kundendaten. */
+  lead?: PortalAnfrageLeadSource | null;
+  crm_positionen_raw?: unknown;
+  crm_gesamt_fix?: number | null;
+  crm_gesamt_min?: number | null;
+  crm_gesamt_max?: number | null;
 };
 
 export type PartnerAuftragPosition = {
@@ -77,8 +93,11 @@ export type PartnerAuftragItem = {
   status: string;
   fortschritt: number | null;
   start_datum: string | null;
+  end_datum: string | null;
+  angebot_id: string | null;
   plz: string;
   ort: string;
+  lead?: PortalAnfrageLeadSource | null;
   positionen: PartnerAuftragPosition[];
   bautagebuch: PartnerBautagebuchItem[];
   /** Server-seitige Menü-Zuordnung (anfrage | auftrag). */
@@ -136,6 +155,83 @@ function numOrNull(v: unknown): number | null {
   return Number.isFinite(n) ? n : null;
 }
 
+const ANGEBOT_HANDWERKER_BASE_SELECT = `
+  id,
+  angebot_id,
+  gewerk_id,
+  status,
+  gesendet_at,
+  antwort_at,
+  antwort_notiz,
+  ablehnung_grund,
+  aufgabe_notiz,
+  hw_status,
+  hw_eingereicht_at,
+  hw_preis_netto,
+  hw_preis_brutto,
+  hw_angebot_pdf_url,
+  hw_angebot_anhang_urls,
+  hw_rechnung_pdf_url,
+  hw_rechnung_eingereicht_at,
+  hw_notiz,
+  gewerke(name),
+  angebote(${PARTNER_ANGEBOT_EMBED})
+`;
+
+async function loadPartnerObjektById(
+  objektIds: string[]
+): Promise<Map<string, PartnerKundenObjektRow>> {
+  const objektById = new Map<string, PartnerKundenObjektRow>();
+  if (!objektIds.length) return objektById;
+
+  const { data: objekteRows } = await supabaseAdmin
+    .from("kunden_objekte")
+    .select("id, titel, strasse, hausnummer, plz, ort")
+    .in("id", objektIds);
+
+  for (const o of objekteRows ?? []) {
+    const raw = o as { id: string };
+    objektById.set(String(raw.id), o as PartnerKundenObjektRow);
+  }
+  return objektById;
+}
+
+function collectObjektIdsFromAngebotHandwerkerRows(
+  rows: Array<Record<string, unknown>>
+): string[] {
+  const ids: string[] = [];
+  for (const row of rows) {
+    const angebote = one(row.angebote) as {
+      kunde_objekt_id?: string | null;
+      leads?: PartnerLeadDbRow | PartnerLeadDbRow[] | null;
+    } | null;
+    const lead = angebote ? one(angebote.leads) : null;
+    ids.push(
+      ...collectPartnerObjektIds(
+        angebote?.kunde_objekt_id,
+        lead?.kunde_objekt_id
+      )
+    );
+  }
+  return uniqueIds(ids);
+}
+
+async function mapAngebotHandwerkerRows(
+  rows: Array<Record<string, unknown>>,
+  objektById: Map<string, PartnerKundenObjektRow>
+): Promise<PartnerAnfrageItem[]> {
+  return Promise.all(
+    rows.map((row) =>
+      mapAngebotHandwerkerRow(
+        row,
+        objektById,
+        mapHwAngebotAnhaenge,
+        resolvePartnerFileUrl
+      )
+    )
+  );
+}
+
 export async function getPartnerDataForHandwerker(handwerkerId: string) {
   if (!isSupabaseConfigured()) return null;
 
@@ -167,101 +263,17 @@ export async function getPartnerDataForHandwerker(handwerkerId: string) {
 
   const { data: rows } = await supabaseAdmin
     .from("angebot_handwerker")
-    .select(
-      `
-      id,
-      angebot_id,
-      gewerk_id,
-      status,
-      gesendet_at,
-      antwort_at,
-      antwort_notiz,
-      ablehnung_grund,
-      aufgabe_notiz,
-      hw_status,
-      hw_eingereicht_at,
-      hw_preis_netto,
-      hw_preis_brutto,
-      hw_angebot_pdf_url,
-      hw_angebot_anhang_urls,
-      hw_rechnung_pdf_url,
-      hw_rechnung_eingereicht_at,
-      hw_notiz,
-      gewerke(name),
-      angebote(
-        id,
-        angebotsnr,
-        notizen,
-        positionen,
-        kunden(plz, ort),
-        leads(zeitraum, plz)
-      )
-    `
-    )
+    .select(ANGEBOT_HANDWERKER_BASE_SELECT)
     .eq("handwerker_id", id)
     .order("gesendet_at", { ascending: false });
 
-  const anfragen: PartnerAnfrageItem[] = await Promise.all(
-    (rows ?? []).map(async (row) => {
-      const raw = row as Record<string, unknown>;
-      const angebote = one(raw.angebote) as {
-        angebotsnr?: string | null;
-        notizen?: string | null;
-        positionen: unknown;
-        kunden: unknown;
-        leads: unknown;
-      } | null;
-      const gewerkId = String(raw.gewerk_id ?? "");
-      const gw = one(raw.gewerke) as { name: string } | null;
-      const kunde = angebote
-        ? (one(angebote.kunden) as { plz: string | null; ort: string | null } | null)
-        : null;
-      const lead = angebote
-        ? (one(angebote.leads) as { zeitraum: string | null; plz: string | null } | null)
-        : null;
-      const pos = parseAngebotPositionen(angebote?.positionen).filter(
-        (p) => !gewerkId || p.gewerk_id === gewerkId
-      );
-
-      const anhaenge = await mapHwAngebotAnhaenge(raw);
-      const rechnungPath = (raw.hw_rechnung_pdf_url as string | null) ?? null;
-
-      return {
-        id: String(raw.id),
-        angebot_id: String(raw.angebot_id),
-        status: String(raw.status ?? "ausstehend"),
-        gewerk_name: gw?.name?.trim() || "Gewerk",
-        angebot_titel: resolveAngebotTitel({
-          angebotsnr: angebote?.angebotsnr,
-          notizen: angebote?.notizen,
-        }),
-        gesendet_at: (raw.gesendet_at as string | null) ?? undefined,
-        antwort_at: (raw.antwort_at as string | null) ?? undefined,
-        antwort_notiz: (raw.antwort_notiz as string | null) ?? undefined,
-        ablehnung_grund: (raw.ablehnung_grund as string | null) ?? undefined,
-        aufgabe_notiz: (raw.aufgabe_notiz as string | null) ?? undefined,
-        plz: kunde?.plz?.trim() || lead?.plz?.trim() || "—",
-        ort: kunde?.ort?.trim() || "—",
-        zeitraum: lead?.zeitraum?.trim() || "",
-        positionen: pos.map((p) => ({
-          beschreibung: (p.beschreibung || p.leistung).trim(),
-          menge: p.menge,
-          einheit: p.einheit,
-        })),
-        hw_status: (raw.hw_status as string | null) ?? undefined,
-        hw_eingereicht_at: (raw.hw_eingereicht_at as string | null) ?? undefined,
-        hw_preis_netto: raw.hw_preis_netto != null ? Number(raw.hw_preis_netto) : null,
-        hw_preis_brutto: raw.hw_preis_brutto != null ? Number(raw.hw_preis_brutto) : null,
-        ...anhaenge,
-        hw_rechnung_pdf_url: rechnungPath,
-        hw_rechnung_pdf_signed_url: rechnungPath
-          ? await resolvePartnerFileUrl(rechnungPath)
-          : null,
-        hw_rechnung_eingereicht_at:
-          (raw.hw_rechnung_eingereicht_at as string | null) ?? undefined,
-        hw_notiz: (raw.hw_notiz as string | null) ?? null,
-      };
-    })
+  const rawRows = (rows ?? []) as Array<Record<string, unknown>>;
+  const objektById = await loadPartnerObjektById(
+    collectObjektIdsFromAngebotHandwerkerRows(rawRows)
+  );
+  const anfragen: PartnerAnfrageItem[] = await mapAngebotHandwerkerRows(
+    rawRows,
+    objektById
   );
 
   const { data: hwAuftraege } = await supabaseAdmin
@@ -307,11 +319,15 @@ export async function getPartnerDataForHandwerker(handwerkerId: string) {
         `
         id,
         angebot_id,
+        lead_id,
         titel,
         status,
         fortschritt,
         start_datum,
+        end_datum,
         kunden(plz, ort),
+        leads(${PARTNER_LEAD_EMBED}),
+        angebote(kunde_objekt_id),
         auftrag_positionen(
           id,
           gewerk_name,
@@ -382,9 +398,31 @@ export async function getPartnerDataForHandwerker(handwerkerId: string) {
       btByAuftrag.set(aid, list);
     }
 
+    const auftragObjektIds = uniqueIds(
+      (aufRows ?? []).flatMap((row) => {
+        const raw = row as Record<string, unknown>;
+        const leadRow = one(raw.leads) as PartnerLeadDbRow | null;
+        const angebot = one(raw.angebote) as { kunde_objekt_id?: string | null } | null;
+        return collectPartnerObjektIds(
+          leadRow?.kunde_objekt_id,
+          angebot?.kunde_objekt_id
+        );
+      })
+    );
+    const auftragObjektById = await loadPartnerObjektById(auftragObjektIds);
+
     alleAuftraege = (aufRows ?? []).map((row) => {
       const raw = row as Record<string, unknown>;
       const kunde = one(raw.kunden) as { plz: string | null; ort: string | null } | null;
+      const leadRow = one(raw.leads) as PartnerLeadDbRow | null;
+      const angebot = one(raw.angebote) as { kunde_objekt_id?: string | null } | null;
+      const lead = buildPartnerLeadSource({
+        lead: leadRow,
+        angebotObjektId: angebot?.kunde_objekt_id,
+        kundePlz: kunde?.plz,
+        kundeOrt: kunde?.ort,
+        objektById: auftragObjektById,
+      });
       const allPos = (raw.auftrag_positionen ?? []) as Array<Record<string, unknown>>;
       const ownPos = allPos.filter((p) => String(p.handwerker_id ?? "") === id);
       const positionen = ownPos.map((p) => ({
@@ -418,8 +456,11 @@ export async function getPartnerDataForHandwerker(handwerkerId: string) {
             ? Number(raw.fortschritt)
             : null,
         start_datum: (raw.start_datum as string | null) ?? null,
-        plz: kunde?.plz?.trim() || "—",
-        ort: kunde?.ort?.trim() || "—",
+        end_datum: (raw.end_datum as string | null) ?? null,
+        angebot_id: linkedAngebotId || null,
+        plz: lead?.objekt?.plz?.trim() || kunde?.plz?.trim() || "—",
+        ort: lead?.objekt?.ort?.trim() || kunde?.ort?.trim() || "—",
+        lead,
         positionen,
         bautagebuch: btByAuftrag.get(aid) ?? [],
         portalPhase,
@@ -441,11 +482,10 @@ export async function getPartnerDataForHandwerker(handwerkerId: string) {
         resolveAngebotHandwerkerPhase(x) === "angebot"
     );
     if (hasAngebotPhase) continue;
-    const hasRow = anfragenFinal.some((x) => x.angebot_id === angebotId);
-    if (!hasRow) continue;
     await syncAngebotHandwerkerAfterAuftragAccept({
       handwerkerId: id,
       angebotId,
+      auftragId: a.id,
     });
     repaired = true;
   }
@@ -453,109 +493,15 @@ export async function getPartnerDataForHandwerker(handwerkerId: string) {
   if (repaired) {
     const { data: rowsReload } = await supabaseAdmin
       .from("angebot_handwerker")
-      .select(
-        `
-        id,
-        angebot_id,
-        gewerk_id,
-        status,
-        gesendet_at,
-        antwort_at,
-        antwort_notiz,
-        ablehnung_grund,
-        aufgabe_notiz,
-        hw_status,
-        hw_eingereicht_at,
-        hw_preis_netto,
-        hw_preis_brutto,
-        hw_angebot_pdf_url,
-        hw_angebot_anhang_urls,
-        hw_rechnung_pdf_url,
-        hw_rechnung_eingereicht_at,
-        hw_notiz,
-        gewerke(name),
-        angebote(
-          id,
-          angebotsnr,
-          notizen,
-          positionen,
-          kunden(plz, ort),
-          leads(zeitraum, plz)
-        )
-      `
-      )
+      .select(ANGEBOT_HANDWERKER_BASE_SELECT)
       .eq("handwerker_id", id)
       .order("gesendet_at", { ascending: false });
     if (rowsReload?.length) {
-      anfragenFinal = await Promise.all(
-        (rowsReload ?? []).map(async (row) => {
-          const raw = row as Record<string, unknown>;
-          const angeboteRow = one(raw.angebote) as {
-            angebotsnr?: string | null;
-            notizen?: string | null;
-            positionen: unknown;
-            kunden: unknown;
-            leads: unknown;
-          } | null;
-          const gewerkId = String(raw.gewerk_id ?? "");
-          const gw = one(raw.gewerke) as { name: string } | null;
-          const kunde = angeboteRow
-            ? (one(angeboteRow.kunden) as {
-                plz: string | null;
-                ort: string | null;
-              } | null)
-            : null;
-          const lead = angeboteRow
-            ? (one(angeboteRow.leads) as {
-                zeitraum: string | null;
-                plz: string | null;
-              } | null)
-            : null;
-          const pos = parseAngebotPositionen(angeboteRow?.positionen).filter(
-            (p) => !gewerkId || p.gewerk_id === gewerkId
-          );
-          const anhaenge = await mapHwAngebotAnhaenge(raw);
-          const rechnungPath = (raw.hw_rechnung_pdf_url as string | null) ?? null;
-          return {
-            id: String(raw.id),
-            angebot_id: String(raw.angebot_id),
-            status: String(raw.status ?? "ausstehend"),
-            gewerk_name: gw?.name?.trim() || "Gewerk",
-            angebot_titel: resolveAngebotTitel({
-              angebotsnr: angeboteRow?.angebotsnr,
-              notizen: angeboteRow?.notizen,
-            }),
-            gesendet_at: (raw.gesendet_at as string | null) ?? undefined,
-            antwort_at: (raw.antwort_at as string | null) ?? undefined,
-            antwort_notiz: (raw.antwort_notiz as string | null) ?? undefined,
-            ablehnung_grund: (raw.ablehnung_grund as string | null) ?? undefined,
-            aufgabe_notiz: (raw.aufgabe_notiz as string | null) ?? undefined,
-            plz: kunde?.plz?.trim() || lead?.plz?.trim() || "—",
-            ort: kunde?.ort?.trim() || "—",
-            zeitraum: lead?.zeitraum?.trim() || "",
-            positionen: pos.map((p) => ({
-              beschreibung: (p.beschreibung || p.leistung).trim(),
-              menge: p.menge,
-              einheit: p.einheit,
-            })),
-            hw_status: (raw.hw_status as string | null) ?? undefined,
-            hw_eingereicht_at:
-              (raw.hw_eingereicht_at as string | null) ?? undefined,
-            hw_preis_netto:
-              raw.hw_preis_netto != null ? Number(raw.hw_preis_netto) : null,
-            hw_preis_brutto:
-              raw.hw_preis_brutto != null ? Number(raw.hw_preis_brutto) : null,
-            ...anhaenge,
-            hw_rechnung_pdf_url: rechnungPath,
-            hw_rechnung_pdf_signed_url: rechnungPath
-              ? await resolvePartnerFileUrl(rechnungPath)
-              : null,
-            hw_rechnung_eingereicht_at:
-              (raw.hw_rechnung_eingereicht_at as string | null) ?? undefined,
-            hw_notiz: (raw.hw_notiz as string | null) ?? null,
-          };
-        })
+      const reloadRaw = rowsReload as Array<Record<string, unknown>>;
+      const reloadObjektById = await loadPartnerObjektById(
+        collectObjektIdsFromAngebotHandwerkerRows(reloadRaw)
       );
+      anfragenFinal = await mapAngebotHandwerkerRows(reloadRaw, reloadObjektById);
     }
   }
 

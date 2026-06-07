@@ -4,7 +4,7 @@ import type { Metadata } from "next";
 import { HandwerkerSeoPage } from "@/components/handwerker/HandwerkerSeoPage";
 import { PageLayout } from "@/components/layout/PageLayout";
 import handwerkerContent from "@/data/handwerker-content.json";
-import { SITE_CONFIG } from "@/lib/config";
+import { OG_IMAGE, SITE_CONFIG } from "@/lib/config";
 import type { HandwerkerContentItem } from "@/lib/handwerker-types";
 import { hubDetailBreadcrumbSchema } from "@/lib/schema";
 
@@ -32,7 +32,14 @@ export async function generateMetadata({
       title: data.title,
       description: data.metaDescription,
       url: canonical,
-      images: [{ url: "/og-image.png" }],
+      images: [
+        {
+          url: OG_IMAGE.url,
+          width: OG_IMAGE.width,
+          height: OG_IMAGE.height,
+          alt: OG_IMAGE.alt,
+        },
+      ],
     },
   };
 }

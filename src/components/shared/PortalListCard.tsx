@@ -1,5 +1,6 @@
 "use client";
 
+import type { ReactNode } from "react";
 import type { LucideIcon } from "lucide-react";
 import { Calendar, Hammer, MapPin } from "lucide-react";
 
@@ -22,6 +23,7 @@ export type PortalListCardProps = {
   accent: PortalListCardAccent;
   meta: PortalListCardMeta[];
   hint?: string;
+  footer?: ReactNode;
   /** Farbiger Rand links (Standard: an). Im Partnerportal aus. */
   showLeftAccent?: boolean;
 };
@@ -42,6 +44,7 @@ export function PortalListCard({
   accent,
   meta,
   hint,
+  footer,
   showLeftAccent = true,
 }: PortalListCardProps) {
   return (
@@ -86,6 +89,8 @@ export function PortalListCard({
           })}
         </ul>
       ) : null}
+
+      {footer ? <div className="mt-3">{footer}</div> : null}
 
       {hint ? (
         <p className="portal-text-meta mt-2.5 font-medium text-accent">{hint}</p>

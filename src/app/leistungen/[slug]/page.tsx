@@ -8,6 +8,7 @@ import {
   leistungBaseSlugFromParam,
 } from "@/lib/leistungen/data";
 import type { LeistungsData } from "@/lib/leistungen/types";
+import { OG_IMAGE } from "@/lib/config";
 import { LEISTUNGEN } from "@/lib/routes";
 import { leistungPriceRangeForSlug } from "@/lib/leistungen/leistungen-seo";
 import { hubDetailBreadcrumbSchema, serviceSchema } from "@/lib/schema";
@@ -45,7 +46,7 @@ export async function generateMetadata({ params }: PageProps) {
       title,
       description,
       url: canonical,
-      images: [{ url: "/og-image.png" }],
+      images: [{ url: OG_IMAGE.url, width: OG_IMAGE.width, height: OG_IMAGE.height, alt: OG_IMAGE.alt }],
     },
   };
 }

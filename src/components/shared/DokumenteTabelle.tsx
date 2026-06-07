@@ -7,7 +7,7 @@ export type DokumentZeile = {
   id: string;
   datum?: string | null;
   name: string;
-  href: string;
+  href?: string;
 };
 
 function fmtDatum(v?: string | null): string {
@@ -62,15 +62,19 @@ export function DokumenteTabelle({
                     <span className="line-clamp-2">{doc.name}</span>
                   </td>
                   <td className="px-2 py-2 text-right">
-                    <a
-                      href={normalizeHref(doc.href)}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="portal-touch-target inline-grid place-items-center rounded-lg border border-border-light bg-white text-[#c62828] transition-colors hover:bg-red-50"
-                      aria-label={`${doc.name} als PDF öffnen`}
-                    >
-                      <PdfFileIcon className="h-5 w-5" />
-                    </a>
+                    {doc.href?.trim() ? (
+                      <a
+                        href={normalizeHref(doc.href)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="portal-touch-target inline-grid place-items-center rounded-lg border border-border-light bg-white text-[#c62828] transition-colors hover:bg-red-50"
+                        aria-label={`${doc.name} als PDF öffnen`}
+                      >
+                        <PdfFileIcon className="h-5 w-5" />
+                      </a>
+                    ) : (
+                      <span className="portal-text-meta text-text-tertiary">—</span>
+                    )}
                   </td>
                 </tr>
               ))}
@@ -88,13 +92,13 @@ export function portalDokumenteToZeilen(
     name: string;
     subtitle?: string;
     datum?: string;
-    href: string;
+    href?: string;
   }>
 ): DokumentZeile[] {
   return docs.map((d) => ({
     id: d.id,
     datum: d.datum,
     name: d.subtitle ? `${d.name} — ${d.subtitle}` : d.name,
-    href: d.href,
+    href: d.href?.trim() || undefined,
   }));
 }

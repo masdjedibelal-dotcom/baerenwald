@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 
 import BaerenwaldLandingClient from "./baerenwald-landing-client";
+import { OG_IMAGE } from "@/lib/config";
 import { LeistungenCarousel } from "@/components/ui/LeistungenCarousel";
 import { WhatsAppFloat } from "@/components/ui/WhatsAppFloat";
 import { HOME_FAQ_ITEMS } from "@/lib/home-content";
@@ -22,13 +23,20 @@ export async function generateMetadata(): Promise<Metadata> {
       title: { absolute: title },
       description,
       type: "website",
-      images: [{ url: "/og-image.png", width: 1200, height: 630, alt: title }],
+      images: [
+        {
+          url: OG_IMAGE.url,
+          width: OG_IMAGE.width,
+          height: OG_IMAGE.height,
+          alt: OG_IMAGE.alt,
+        },
+      ],
     },
     twitter: {
       card: "summary_large_image",
       title: { absolute: title },
       description,
-      images: ["/og-image.png"],
+      images: [OG_IMAGE.url],
     },
   };
 }

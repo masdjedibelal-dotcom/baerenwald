@@ -3,7 +3,7 @@ import Link from "next/link";
 
 import { PageLayout } from "@/components/layout/PageLayout";
 import handwerkerContent from "@/data/handwerker-content.json";
-import { SITE_CONFIG } from "@/lib/config";
+import { OG_IMAGE, SITE_CONFIG } from "@/lib/config";
 import type { HandwerkerContentItem } from "@/lib/handwerker-types";
 
 const content = handwerkerContent as HandwerkerContentItem[];
@@ -46,7 +46,14 @@ export const metadata: Metadata = {
     title,
     description,
     url: `${SITE_CONFIG.url}/handwerker-muenchen`,
-    images: [{ url: "/og-image.png" }],
+    images: [
+      {
+        url: OG_IMAGE.url,
+        width: OG_IMAGE.width,
+        height: OG_IMAGE.height,
+        alt: OG_IMAGE.alt,
+      },
+    ],
   },
 };
 

@@ -8,6 +8,7 @@ import { mkdirSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
+import { BW_FUNNEL_INITIAL_STATE } from "../src/hooks/funnel/useFunnelState";
 import type { FunnelState } from "../src/lib/funnel/types";
 import {
   GU_MARGE,
@@ -54,39 +55,22 @@ function flattenPreise(
   return out;
 }
 
+/** Platzhalter — jedes Fixture überschreibt `bereiche` explizit. */
+const BASE_BEREICHE = ["fassade"] as FunnelState["bereiche"];
+
 function baseErneuern(): FunnelState {
   return {
+    ...BW_FUNNEL_INITIAL_STATE,
     situation: "erneuern",
-    bereiche: [],
+    bereiche: BASE_BEREICHE,
     kundentyp: "eigentuemer",
-    showOmitHint: false,
-    umfang: null,
-    umfangFaktor: 1,
     groesse: 40,
     groesseEinheit: "qm",
     badAusstattung: "standard",
     plz: "80331",
     zeitraum: "flexibel",
-    priceMin: 0,
-    priceMax: 0,
-    breakdown: [],
-    istFallback: false,
-    komplexReason: null,
-    budgetCheck: null,
-    dringlichkeit: null,
     zugaenglichkeit: "einfach",
     zustand: "mittel",
-    fachdetails: {},
-    freitext: null,
-    photos: [],
-    name: "",
-    vorname: "",
-    nachname: "",
-    leadBeschreibung: "",
-    email: "",
-    telefon: "",
-    selectedSlot: null,
-    submitted: false,
   };
 }
 
