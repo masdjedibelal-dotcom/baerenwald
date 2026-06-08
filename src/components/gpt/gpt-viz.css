@@ -381,3 +381,123 @@
   cursor: pointer;
   white-space: nowrap;
 }
+
+/* —— Chat-native GPT Studio —— */
+
+.gpt-chat-bubble-rich {
+  max-width: 100%;
+}
+
+.gpt-chat-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-top: 0.65rem;
+}
+
+.gpt-chat-action-btn {
+  font-size: 0.78rem !important;
+  padding: 0.45rem 0.75rem !important;
+}
+
+.gpt-chat-upload {
+  margin-top: 0.65rem;
+}
+
+.gpt-chat-image {
+  margin-top: 0.5rem;
+  border-radius: 10px;
+  overflow: hidden;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  background: #fff;
+}
+
+.gpt-chat-image--compact .gpt-chat-image-img {
+  max-height: 140px;
+}
+
+.gpt-chat-image-label {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: #5c6b62;
+  padding: 0.35rem 0.5rem 0;
+  margin: 0;
+}
+
+.gpt-chat-image-img {
+  display: block;
+  width: 100%;
+  max-height: 200px;
+  object-fit: cover;
+}
+
+.gpt-chat-download-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin: 0.4rem 0.5rem 0.5rem;
+  padding: 0.3rem 0.55rem;
+  border: 1px solid rgba(46, 125, 82, 0.35);
+  border-radius: 999px;
+  background: #f5faf7;
+  color: #1a3d2b;
+  font-size: 0.72rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.gpt-chat-compare {
+  display: grid;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.gpt-chat-lead-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  margin-top: 0.5rem;
+}
+
+.gpt-chat-lead-form input,
+.gpt-chat-lead-form textarea {
+  border-radius: 8px;
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  padding: 0.5rem 0.65rem;
+  font-size: 0.85rem;
+  background: #fff;
+}
+
+.gpt-chat-brief-bar {
+  flex-shrink: 0;
+  margin: 0 0.75rem;
+  border: 1px solid rgba(46, 125, 82, 0.15);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.9);
+}
+
+.gpt-chat-brief-toggle {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.5rem 0.65rem;
+  border: none;
+  background: transparent;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #1a3d2b;
+  cursor: pointer;
+}
+
+.gpt-chat-brief-body {
+  padding: 0 0.65rem 0.65rem;
+  font-size: 0.82rem;
+  color: #3d5247;
+}
+
+.gpt-chat-brief-images {
+  display: grid;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}

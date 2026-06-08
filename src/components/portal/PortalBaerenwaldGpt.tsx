@@ -3,13 +3,10 @@
 import { useCallback, useEffect, useState } from "react";
 import { X } from "lucide-react";
 
-import { GptProjektBriefPanel } from "@/components/gpt/GptProjektBrief";
-import { GptProjektProvider, useGptProjekt } from "@/components/gpt/gpt-projekt-context";
-import { GptRaumVisualisierung } from "@/components/gpt/GptRaumVisualisierung";
-import { KiRechnerChat, type KiRechnerChatMessage } from "@/components/funnel/KiRechnerChat";
+import { GptProjektProvider } from "@/components/gpt/gpt-projekt-context";
+import { GptStudioChat } from "@/components/gpt/GptStudioChat";
 import { PortalMobileSheetHeader } from "@/components/shared/PortalMobileBottomSheet";
 import { RECHNER_KI_BERATUNG_HREF } from "@/lib/rechner-links";
-import { cn } from "@/lib/utils";
 
 import "./portal-gpt.css";
 import "@/components/gpt/gpt-viz.css";
@@ -20,19 +17,14 @@ type PortalBaerenwaldGptProps = {
   variant?: "overlay" | "embedded";
 };
 
-type GptTab = "beratung" | "visualisieren" | "projekt";
-
 function PortalBaerenwaldGptInner({
   open,
   onClose,
   variant = "overlay",
 }: PortalBaerenwaldGptProps) {
-  const [activeTab, setActiveTab] = useState<GptTab>("beratung");
   const [kiChatLocked, setKiChatLocked] = useState(false);
   const [preisCtaVisible, setPreisCtaVisible] = useState(false);
   const [beratungCtaVisible, setBeratungCtaVisible] = useState(false);
-  const [showVizCta, setShowVizCta] = useState(false);
-  const { mergeChatVerlauf, ensureSession } = useGptProjekt();
   const isEmbedded = variant === "embedded";
 
   useEffect(() => {
@@ -63,99 +55,21 @@ function PortalBaerenwaldGptInner({
     onClose();
   }, [onClose]);
 
-  const handleChatVerlaufChange = useCallback(
-    (messages: KiRechnerChatMessage[]) => {
-      const userCount = messages.filter((m) => m.role === "user").length;
-      setShowVizCta(userCount >= 2);
-      void mergeChatVerlauf(messages);
-    },
-    [mergeChatVerlauf]
-  );
-
-  const handleRaumVisualisieren = useCallback(async () => {
-    await ensureSession();
-    setActiveTab("visualisieren");
-  }, [ensureSession]);
-
   if (!open) return null;
 
   const shell = (
     <div className="portal-gpt-shell">
-      <nav className="portal-gpt-tabs" aria-label="Bärenwald GPT Bereiche">
-        <button
-          type="button"
-          className={cn(
-            "portal-gpt-tab",
-            activeTab === "beratung" && "portal-gpt-tab--active"
-          )}
-          onClick={() => setActiveTab("beratung")}
-        >
-          Beratung
-        </button>
-        <button
-          type="button"
-          className={cn(
-            "portal-gpt-tab",
-            activeTab === "visualisieren" && "portal-gpt-tab--active"
-          )}
-          onClick={() => void handleRaumVisualisieren()}
-        >
-          Raum visualisieren
-        </button>
-        <button
-          type="button"
-          className={cn(
-            "portal-gpt-tab",
-            activeTab === "projekt" && "portal-gpt-tab--active"
-          )}
-          onClick={() => setActiveTab("projekt")}
-        >
-          Mein Projekt
-        </button>
-      </nav>
-
-      {activeTab === "beratung" && showVizCta ? (
-        <div className="portal-gpt-viz-cta">
-          <span>Raum zeigen? Visualisiere dein Projekt mit Foto.</span>
-          <button type="button" onClick={() => void handleRaumVisualisieren()}>
-            Foto hinzufügen
-          </button>
-        </div>
-      ) : null}
-
-      <div
-        className={cn(
-          "portal-gpt-body",
-          activeTab === "beratung" && "portal-gpt-chat-active",
-          isEmbedded && "portal-gpt-body--embedded"
-        )}
-      >
-        {activeTab === "beratung" ? (
-          <KiRechnerChat
-            locked={kiChatLocked}
-            onPreisBereit={handlePreisBereit}
-            onBeratungBereit={handleBeratungBereit}
-            onChatVerlaufChange={handleChatVerlaufChange}
-            onRaumVisualisieren={() => void handleRaumVisualisieren()}
-          />
-        ) : null}
-        {activeTab === "visualisieren" ? (
-          <GptRaumVisualisierung
-            onBeratung={() => setActiveTab("beratung")}
-            initialStep="einstieg"
-          />
-        ) : null}
-        {activeTab === "projekt" ? (
-          <GptProjektBriefPanel
-            onAnfrage={() => setActiveTab("visualisieren")}
-            onVisualisieren={() => void handleRaumVisualisieren()}
-          />
-        ) : null}
+      <div className="portal-gpt-body portal-gpt-chat-active">
+        <GptStudioChat
+          locked={kiChatLocked}
+          onPreisBereit={handlePreisBereit}
+          onBeratungBereit={handleBeratungBereit}
+        />
       </div>
 
       <footer className="portal-gpt-footer">
         <div className="portal-gpt-footer-actions">
-          {activeTab === "beratung" && preisCtaVisible ? (
+          {preisCtaVisible ? (
             <a
               href={RECHNER_KI_BERATUNG_HREF}
               target="_blank"
@@ -165,7 +79,7 @@ function PortalBaerenwaldGptInner({
               Zum Preisrahmen
             </a>
           ) : null}
-          {activeTab === "beratung" && beratungCtaVisible ? (
+          {beratungCtaVisible ? (
             <a
               href="/rechner"
               target="_blank"
@@ -195,12 +109,7 @@ function PortalBaerenwaldGptInner({
   }
 
   return (
-    <div
-      className="portal-gpt-overlay"
-      role="dialog"
-      aria-modal="true"
-      aria-label="GPT"
-    >
+    <div className="portal-gpt-overlay" role="dialog" aria-modal="true" aria-label="GPT">
       <button
         type="button"
         className="portal-gpt-overlay-backdrop lg:hidden"

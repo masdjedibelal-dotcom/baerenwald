@@ -2,8 +2,36 @@ import { REPLICATE_INTERIOR_MODEL } from "@/lib/gpt-viz/constants";
 
 const REPLICATE_API = "https://api.replicate.com/v1";
 
-function getReplicateToken(): string | undefined {
-  return process.env.REPLICATE_API_TOKEN?.trim();
+/** Copy-Paste aus Netlify/UI: Anführungszeichen, Zeilenumbrüche entfernen. */
+export function normalizeReplicateApiToken(raw: string): string {
+  return raw.replace(/^["']|["']$/g, "").replace(/\s/g, "");
+}
+
+export function getReplicateToken(): string | undefined {
+  const raw = process.env.REPLICATE_API_TOKEN?.trim();
+  if (!raw) return undefined;
+  const token = normalizeReplicateApiToken(raw);
+  return token.length > 0 ? token : undefined;
+}
+
+export function isPlausibleReplicateApiToken(token: string): boolean {
+  return /^r8_[A-Za-z0-9]+$/.test(token) && token.length >= 20;
+}
+
+export function getReplicateTokenDiagnostics(): {
+  configured: boolean;
+  keyLength: number;
+  keyFormatOk: boolean;
+} {
+  const token = getReplicateToken();
+  if (!token) {
+    return { configured: false, keyLength: 0, keyFormatOk: false };
+  }
+  return {
+    configured: true,
+    keyLength: token.length,
+    keyFormatOk: isPlausibleReplicateApiToken(token),
+  };
 }
 
 type Prediction = {
