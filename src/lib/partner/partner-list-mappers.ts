@@ -89,23 +89,24 @@ export function angebotPhaseSortKey(item: PartnerAnfrageItem): number {
 export function partnerAngebotStatusPillClass(statusKey: string): string {
   const s = statusKey.toLowerCase();
   if (s === "uebernommen") return "tag bg-emerald-100 text-emerald-700";
+  if (s === "vertrag_offen") return "tag bg-violet-100 text-violet-800";
+  if (s === "warte_vertrag") return "tag bg-slate-100 text-slate-700";
   if (s === "eingereicht") return "tag bg-blue-100 text-blue-800";
   if (s === "offen") return "tag bg-amber-100 text-amber-700";
   return "tag bg-amber-100 text-amber-700";
 }
 
 export function partnerAngebotOverviewStatusLabel(statusKey: string): string {
-  if (statusKey === "uebernommen") return "Übernommen";
+  if (statusKey === "uebernommen") return "Bestätigt";
+  if (statusKey === "vertrag_offen") return "Vertrag offen";
+  if (statusKey === "warte_vertrag") return "Warte auf Vertrag";
   if (statusKey === "eingereicht") return "In Prüfung";
   if (statusKey === "offen") return "Offen";
   return statusKey;
 }
 
 export function angebotOverviewStatusKey(item: PartnerAnfrageItem): string {
-  const hwSt = (item.hw_status ?? "").toLowerCase();
-  if (hwSt === "uebernommen") return "uebernommen";
-  if (item.hw_eingereicht_at) return "eingereicht";
-  return "offen";
+  return angebotListenStatus(item).pillKey;
 }
 
 function angebotListenStatus(item: PartnerAnfrageItem): {
@@ -114,8 +115,22 @@ function angebotListenStatus(item: PartnerAnfrageItem): {
   hint?: string;
 } {
   const hwSt = (item.hw_status ?? "").toLowerCase();
+  if (hwSt === "uebernommen" && !item.projektvertrag_bestaetigt_am) {
+    if (item.projektvertrag_bereit) {
+      return {
+        label: "Vertrag offen",
+        pillKey: "vertrag_offen",
+        hint: "→ Projektvertrag bestätigen",
+      };
+    }
+    return {
+      label: "Warte auf Vertrag",
+      pillKey: "warte_vertrag",
+      hint: "→ Bärenwald bereitet Vertrag vor",
+    };
+  }
   if (hwSt === "uebernommen") {
-    return { label: "Übernommen", pillKey: "uebernommen", hint: "→ Von Bärenwald bestätigt" };
+    return { label: "Bestätigt", pillKey: "uebernommen", hint: "→ Unter Aufträge" };
   }
   if (item.hw_eingereicht_at) {
     return {

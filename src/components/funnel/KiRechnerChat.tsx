@@ -45,6 +45,10 @@ export interface KiRechnerChatProps {
   onBeratungBereit: () => void;
   /** Eingabe sperren, sobald ein Preisrahmen berechnet werden kann. */
   locked?: boolean;
+  /** Projekt-Studio: Chat-Verlauf an Session hängen. */
+  onChatVerlaufChange?: (messages: KiRechnerChatMessage[]) => void;
+  /** CTA: Tab Raum visualisieren. */
+  onRaumVisualisieren?: () => void;
 }
 
 const INITIAL_MESSAGE = `Hi! Ich bin dein Handwerks-Assistent von Bärenwald — für Renovierung, Reparatur und Umbau in München.
@@ -167,6 +171,8 @@ export function KiRechnerChat({
   onPreisBereit,
   onBeratungBereit,
   locked = false,
+  onChatVerlaufChange,
+  onRaumVisualisieren,
 }: KiRechnerChatProps) {
   const [messages, setMessages] = useState<KiRechnerChatMessage[]>([
     { role: "assistant", content: INITIAL_MESSAGE },
@@ -221,6 +227,10 @@ export function KiRechnerChat({
   useEffect(() => {
     scrollChatToEnd(false);
   }, [messages, loading, error, scrollChatToEnd]);
+
+  useEffect(() => {
+    onChatVerlaufChange?.(messages);
+  }, [messages, onChatVerlaufChange]);
 
   useEffect(() => {
     syncTextareaHeight();
@@ -473,6 +483,15 @@ export function KiRechnerChat({
         <p className="ki-rechner-chat-error" role="alert">
           {error}
         </p>
+      ) : null}
+
+      {onRaumVisualisieren && countUserMessages(messages) >= 1 ? (
+        <div className="portal-gpt-viz-cta" style={{ margin: "0 0.75rem" }}>
+          <span>Zeig uns deinen Raum — für eine Visualisierung.</span>
+          <button type="button" onClick={onRaumVisualisieren}>
+            Raum zeigen
+          </button>
+        </div>
       ) : null}
 
       <div className="ki-rechner-chat-composer">

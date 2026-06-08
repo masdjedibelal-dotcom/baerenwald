@@ -10,6 +10,7 @@ Im **SQL Editor** nacheinander ausführen (jede Datei komplett, bei Fehler stopp
 | 4 | `supabase/migrations/20260603120200_portal_handwerker_bautagebuch.sql` | `handwerker_id` + RLS Bautagebuch |
 | 5 | `supabase/migrations/20260603120300_portal_handwerker_storage_notes.sql` | Hinweise Storage-Bucket (manuell im Dashboard) |
 | 6 | `supabase/migrations/20260603120400_portal_handwerker_storage_policies.sql` | RLS auf `storage.objects` für Partner + CRM |
+| 7 | `supabase/migrations/20260611120000_portal_partner_vertrag_compliance.sql` | Projektvertrag + Compliance + `partner_dokumente` |
 
 **Voraussetzung:** Kunden-Portal-Migration `20260602120000_portal_auth_kunden.sql` (Funktion `is_crm_staff()`).
 

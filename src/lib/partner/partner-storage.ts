@@ -160,6 +160,39 @@ export async function uploadPartnerBautagebuchAnhaenge(opts: {
 /** @deprecated — nutze uploadPartnerBautagebuchAnhaenge */
 export const uploadPartnerPhotos = uploadPartnerBautagebuchAnhaenge;
 
+export async function uploadPartnerComplianceDoc(opts: {
+  handwerkerId: string;
+  auftragId?: string | null;
+  typ: string;
+  file: File;
+}): Promise<{ ok: true; path: string } | { ok: false; error: string }> {
+  if (!isSupabaseConfigured()) {
+    return { ok: false, error: "Storage nicht konfiguriert." };
+  }
+
+  const mime = opts.file.type || "application/pdf";
+  const isPdf = mime === "application/pdf" || opts.file.name.toLowerCase().endsWith(".pdf");
+  const err = isPdf
+    ? validatePartnerPdfFile(opts.file)
+    : validatePartnerBautagebuchFile(opts.file);
+  if (err) return { ok: false, error: err };
+
+  const ext = extFromMime(isPdf ? "application/pdf" : mime);
+  const scope = opts.auftragId?.trim() ? `auftrag/${opts.auftragId}` : "stamm";
+  const path = `${opts.handwerkerId}/compliance/${scope}/${opts.typ}-${randomUUID()}.${ext}`;
+  const buf = Buffer.from(await opts.file.arrayBuffer());
+
+  const { error } = await supabaseAdmin.storage
+    .from(PARTNER_UPLOAD_BUCKET)
+    .upload(path, buf, {
+      contentType: isPdf ? "application/pdf" : mime,
+      upsert: false,
+    });
+
+  if (error) return { ok: false, error: error.message };
+  return { ok: true, path };
+}
+
 export async function resolvePartnerFileUrls(
   stored: string[] | null | undefined
 ): Promise<string[]> {

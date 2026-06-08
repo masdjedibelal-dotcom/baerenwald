@@ -25,6 +25,13 @@ import {
 } from "@/lib/partner/partner-storage";
 import type { PartnerAuftragBewertung } from "@/lib/partner/handwerker-bewertung-display";
 import type { PartnerHandwerkerBewertungProfil } from "@/lib/partner/handwerker-bewertung-display";
+import type { PartnerComplianceItem } from "@/lib/partner/partner-compliance";
+import {
+  loadHandwerkerComplianceBundle,
+  vertragKontextForAngebot,
+  type PartnerVertragKontext,
+} from "@/lib/partner/load-partner-compliance-data";
+import type { PartnerProjektvertrag } from "@/lib/partner/partner-compliance";
 import { isSupabaseConfigured, supabaseAdmin } from "@/lib/supabase";
 
 export type PartnerAnfrageItem = {
@@ -64,6 +71,13 @@ export type PartnerAnfrageItem = {
   crm_gesamt_fix?: number | null;
   crm_gesamt_min?: number | null;
   crm_gesamt_max?: number | null;
+  auftrag_id?: string | null;
+  projektvertrag_bestaetigt_am?: string | null;
+  projektvertrag_bereit?: boolean;
+  projektvertrag?: PartnerProjektvertrag | null;
+  compliance_stamm?: PartnerComplianceItem[];
+  compliance_projekt?: PartnerComplianceItem[];
+  dokumente?: PartnerVertragKontext["dokumente_zeilen"];
 };
 
 export type PartnerAuftragPosition = {
@@ -108,6 +122,8 @@ export type PartnerAuftragItem = {
   angebotHandwerkerId?: string | null;
   /** CRM-Bewertung nach Abschluss (read-only). */
   bewertung?: PartnerAuftragBewertung | null;
+  projektvertrag_bestaetigt_am?: string | null;
+  vertrag?: PartnerVertragKontext | null;
 };
 
 export type PartnerHandwerkerProfil = {
@@ -505,6 +521,22 @@ export async function getPartnerDataForHandwerker(handwerkerId: string) {
     }
   }
 
+  const complianceBundle = await loadHandwerkerComplianceBundle(id);
+
+  anfragenFinal = anfragenFinal.map((a) => {
+    const vertragCtx = vertragKontextForAngebot(a.angebot_id, complianceBundle);
+    return {
+      ...a,
+      auftrag_id: complianceBundle.auftragIdByAngebotId.get(a.angebot_id) ?? null,
+      projektvertrag_bestaetigt_am: vertragCtx?.projektvertrag_bestaetigt_am ?? null,
+      projektvertrag_bereit: vertragCtx?.projektvertrag_bereit ?? false,
+      projektvertrag: vertragCtx?.projektvertrag ?? null,
+      compliance_stamm: vertragCtx?.compliance_stamm ?? [],
+      compliance_projekt: vertragCtx?.compliance_projekt ?? [],
+      dokumente: vertragCtx?.dokumente_zeilen ?? [],
+    };
+  });
+
   const angeboteOffenByAngebotId = new Map<string, string>();
   for (const a of anfragenFinal) {
     if (resolveAngebotHandwerkerPhase(a) === "angebot") {
@@ -514,11 +546,14 @@ export async function getPartnerDataForHandwerker(handwerkerId: string) {
 
   alleAuftraege = alleAuftraege.map((a) => {
     const angebotId = auftragAngebotIdByAuftragId.get(a.id);
+    const vertragCtx = complianceBundle.vertragByAuftragId.get(a.id) ?? null;
     return {
       ...a,
       angebotHandwerkerId: angebotId
         ? (angeboteOffenByAngebotId.get(angebotId) ?? null)
         : null,
+      projektvertrag_bestaetigt_am: vertragCtx?.projektvertrag_bestaetigt_am ?? null,
+      vertrag: vertragCtx,
     };
   });
 

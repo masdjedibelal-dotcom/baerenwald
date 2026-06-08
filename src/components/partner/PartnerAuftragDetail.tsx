@@ -16,6 +16,7 @@ import {
 } from "@/components/partner/PartnerDetailUi";
 import { PartnerPortalDetailSections } from "@/components/partner/PartnerPortalDetailSections";
 import { BautagebuchAccordionList } from "@/components/shared/BautagebuchAccordionList";
+import { PartnerComplianceCheckliste } from "@/components/partner/PartnerComplianceCheckliste";
 import { DokumenteTabelle } from "@/components/shared/DokumenteTabelle";
 import { FileUploadField } from "@/components/shared/FileUploadField";
 import type {
@@ -347,8 +348,19 @@ export function PartnerAuftragDetail({ item }: { item: PartnerAuftragItem }) {
         </PartnerDetailSection>
       ) : null}
 
+      {item.vertrag ? (
+        <PartnerComplianceCheckliste
+          title="Unterlagen"
+          items={[
+            ...(item.vertrag.compliance_stamm ?? []),
+            ...(item.vertrag.compliance_projekt ?? []),
+          ]}
+          auftragId={item.id}
+        />
+      ) : null}
+
       <DokumenteTabelle
-        dokumente={[]}
+        dokumente={item.vertrag?.dokumente_zeilen ?? []}
         heading="Dokumente"
         emptyText="Noch keine Dokumente."
         className="!border-t-0 !pt-0"

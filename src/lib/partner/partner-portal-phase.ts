@@ -26,15 +26,28 @@ const HW_BEANTWORTET = new Set(["akzeptiert", "abgelehnt"]);
 export function resolveAngebotHandwerkerPhase(
   item: Pick<
     PartnerAnfrageItem,
-    "status" | "antwort_at" | "gesendet_at" | "hw_eingereicht_at" | "hw_status"
+    | "status"
+    | "antwort_at"
+    | "gesendet_at"
+    | "hw_eingereicht_at"
+    | "hw_status"
+    | "projektvertrag_bestaetigt_am"
+    | "projektvertrag_bereit"
   >
 ): PartnerPortalPhase {
   if (isPartnerAnfrageOffen(item)) return "anfrage";
   const st = item.status.toLowerCase();
   const hwSt = (item.hw_status ?? "").toLowerCase();
-  if (st === "abgelehnt" || hwSt === "uebernommen") return "auftrag";
+
+  if (st === "abgelehnt") return "auftrag";
+
+  /** CRM hat Angebot übernommen — Vertragspaket unter Angebote bis HW bestätigt. */
+  if (hwSt === "uebernommen") {
+    if (item.projektvertrag_bestaetigt_am) return "auftrag";
+    return "angebot";
+  }
+
   if (st === "akzeptiert") return "angebot";
-  /** Zusage mit antwort_at, Status in DB noch nicht „akzeptiert“. */
   if (item.antwort_at) return "angebot";
   return "auftrag";
 }
@@ -98,18 +111,19 @@ export function isAuftragAnfrageListItem(item: {
   return !HW_BEANTWORTET.has(item.hwStatus.toLowerCase());
 }
 
-/** Auftrag in „Aufträge“ — erst nach Angebotseinreichung und CRM-Bestätigung. */
+/** Auftrag in „Aufträge“ — nach CRM-Bestätigung + verbindlicher Vertragsannahme. */
 export function isAuftragAuftraegeListItem(item: {
   portalPhase: PartnerPortalPhase;
   angebotHandwerkerId?: string | null;
   hwStatus: string;
+  projektvertrag_bestaetigt_am?: string | null;
 }): boolean {
   if (item.portalPhase !== "auftrag") return false;
   const h = item.hwStatus.toLowerCase();
-  /** Nach Zusage, vor CRM-Start → nur Tab Angebote. */
   if (h === "akzeptiert") return false;
-  /** Noch Preis/PDF offen oder in Prüfung → nur Tab Angebote. */
+  /** Noch Angebot/Vertragspaket offen → Tab Angebote. */
   if (item.angebotHandwerkerId) return false;
+  if (!item.projektvertrag_bestaetigt_am) return false;
   return true;
 }
 

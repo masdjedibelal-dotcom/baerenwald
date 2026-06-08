@@ -1,0 +1,361 @@
+.gpt-viz-root {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 0.75rem 1rem 1rem;
+  min-height: 0;
+  flex: 1;
+  overflow-y: auto;
+}
+
+.gpt-viz-step-title {
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: #1a3d2b;
+  margin: 0;
+}
+
+.gpt-viz-muted {
+  font-size: 0.85rem;
+  color: #5c6b62;
+  margin: 0;
+  line-height: 1.45;
+}
+
+.gpt-viz-cards {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.gpt-viz-card {
+  border: 1px solid rgba(46, 125, 82, 0.2);
+  border-radius: 12px;
+  padding: 1rem;
+  background: #fff;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.gpt-viz-card:hover {
+  border-color: rgba(46, 125, 82, 0.45);
+  box-shadow: 0 4px 12px rgba(26, 61, 43, 0.08);
+}
+
+.gpt-viz-card h3 {
+  margin: 0 0 0.35rem;
+  font-size: 0.95rem;
+  color: #1a3d2b;
+}
+
+.gpt-viz-card p {
+  margin: 0;
+  font-size: 0.82rem;
+  color: #5c6b62;
+}
+
+.gpt-viz-upload {
+  border: 2px dashed rgba(46, 125, 82, 0.35);
+  border-radius: 12px;
+  padding: 1.25rem;
+  text-align: center;
+  background: rgba(255, 255, 255, 0.7);
+}
+
+.gpt-viz-upload input[type="file"] {
+  display: none;
+}
+
+.gpt-viz-upload-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: #2e7d52;
+}
+
+.gpt-viz-preview {
+  border-radius: 10px;
+  overflow: hidden;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.gpt-viz-preview img {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-height: 220px;
+  object-fit: cover;
+}
+
+.gpt-viz-field label {
+  display: block;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #3d5247;
+  margin-bottom: 0.35rem;
+}
+
+.gpt-viz-field textarea {
+  width: 100%;
+  min-height: 88px;
+  border-radius: 10px;
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  padding: 0.65rem 0.75rem;
+  font-size: 0.88rem;
+  resize: vertical;
+  background: #fff;
+}
+
+.gpt-viz-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
+.gpt-viz-chip {
+  border: 1px solid rgba(46, 125, 82, 0.3);
+  background: #f5faf7;
+  color: #1a3d2b;
+  border-radius: 999px;
+  padding: 0.35rem 0.75rem;
+  font-size: 0.78rem;
+  cursor: pointer;
+}
+
+.gpt-viz-chip--active {
+  background: #2e7d52;
+  color: #fff;
+  border-color: #2e7d52;
+}
+
+.gpt-viz-stil-grid {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.gpt-viz-stil {
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-radius: 10px;
+  padding: 0.65rem 0.75rem;
+  background: #fff;
+  text-align: left;
+  cursor: pointer;
+}
+
+.gpt-viz-stil strong {
+  display: block;
+  font-size: 0.85rem;
+  color: #1a3d2b;
+}
+
+.gpt-viz-stil span {
+  font-size: 0.78rem;
+  color: #5c6b62;
+}
+
+.gpt-viz-before-after {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.gpt-viz-before-after figure {
+  margin: 0;
+}
+
+.gpt-viz-before-after figcaption {
+  font-size: 0.75rem;
+  color: #5c6b62;
+  margin-bottom: 0.25rem;
+}
+
+.gpt-viz-before-after img {
+  width: 100%;
+  border-radius: 10px;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  object-fit: cover;
+  max-height: 200px;
+}
+
+.gpt-viz-versions {
+  display: flex;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+
+.gpt-viz-version-btn {
+  border: 1px solid rgba(46, 125, 82, 0.35);
+  background: #fff;
+  border-radius: 8px;
+  padding: 0.3rem 0.55rem;
+  font-size: 0.75rem;
+  cursor: pointer;
+}
+
+.gpt-viz-version-btn--active {
+  background: #2e7d52;
+  color: #fff;
+}
+
+.gpt-viz-erklaerung {
+  background: #fff;
+  border: 1px solid rgba(46, 125, 82, 0.15);
+  border-radius: 12px;
+  padding: 0.85rem;
+}
+
+.gpt-viz-erklaerung h4 {
+  margin: 0 0 0.5rem;
+  font-size: 0.95rem;
+  color: #1a3d2b;
+}
+
+.gpt-viz-erklaerung ul {
+  margin: 0.5rem 0 0;
+  padding-left: 1.1rem;
+  font-size: 0.82rem;
+  color: #3d5247;
+}
+
+.gpt-viz-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.gpt-viz-form input {
+  border-radius: 10px;
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  padding: 0.6rem 0.75rem;
+  font-size: 0.88rem;
+}
+
+.gpt-viz-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.25rem;
+}
+
+.gpt-viz-btn {
+  border-radius: 999px;
+  padding: 0.55rem 1rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+}
+
+.gpt-viz-btn--primary {
+  background: #2e7d52;
+  color: #fff;
+}
+
+.gpt-viz-btn--outline {
+  background: transparent;
+  border: 1px solid rgba(46, 125, 82, 0.45);
+  color: #1a3d2b;
+}
+
+.gpt-viz-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.gpt-viz-error {
+  color: #b42318;
+  font-size: 0.82rem;
+  margin: 0;
+}
+
+.gpt-viz-success {
+  color: #1a3d2b;
+  font-size: 0.88rem;
+  background: #e8f5ec;
+  border-radius: 10px;
+  padding: 0.75rem;
+}
+
+.gpt-projekt-brief {
+  padding: 0.75rem 1rem 1rem;
+  overflow-y: auto;
+  flex: 1;
+  min-height: 0;
+}
+
+.gpt-projekt-section {
+  background: #fff;
+  border: 1px solid rgba(46, 125, 82, 0.12);
+  border-radius: 12px;
+  padding: 0.75rem;
+  margin-bottom: 0.65rem;
+}
+
+.gpt-projekt-section h4 {
+  margin: 0 0 0.35rem;
+  font-size: 0.82rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #5c6b62;
+}
+
+.gpt-projekt-section p {
+  margin: 0;
+  font-size: 0.88rem;
+  color: #1a3d2b;
+  line-height: 1.45;
+}
+
+.portal-gpt-tabs {
+  display: flex;
+  gap: 0.25rem;
+  padding: 0.5rem 0.75rem 0;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+  background: #f5f8f4;
+  flex-shrink: 0;
+}
+
+.portal-gpt-tab {
+  flex: 1;
+  border: none;
+  background: transparent;
+  padding: 0.55rem 0.35rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #5c6b62;
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+}
+
+.portal-gpt-tab--active {
+  color: #1a3d2b;
+  border-bottom-color: #2e7d52;
+}
+
+.portal-gpt-viz-cta {
+  margin: 0.5rem 1rem 0;
+  padding: 0.55rem 0.75rem;
+  border-radius: 10px;
+  background: #e8f5ec;
+  border: 1px solid rgba(46, 125, 82, 0.2);
+  font-size: 0.82rem;
+  color: #1a3d2b;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.portal-gpt-viz-cta button {
+  border: none;
+  background: #2e7d52;
+  color: #fff;
+  border-radius: 999px;
+  padding: 0.35rem 0.65rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}

@@ -20,6 +20,9 @@ import {
   PartnerDetailSuccessBox,
 } from "@/components/partner/PartnerDetailUi";
 import { PartnerPortalDetailSections } from "@/components/partner/PartnerPortalDetailSections";
+import { PartnerProjektvertragPaket } from "@/components/partner/PartnerProjektvertragPaket";
+import { PartnerComplianceCheckliste } from "@/components/partner/PartnerComplianceCheckliste";
+import { compliancePflichtOffen } from "@/lib/partner/partner-compliance";
 import {
   DokumenteTabelle,
   type DokumentZeile,
@@ -69,11 +72,15 @@ export function PartnerAngebotDetail({ item }: { item: PartnerAnfrageItem }) {
 
   const eingereicht = Boolean(item.hw_eingereicht_at);
   const uebernommen = (item.hw_status ?? "").toLowerCase() === "uebernommen";
+  const vertragBestaetigt = Boolean(item.projektvertrag_bestaetigt_am);
+  const vertragspaketAktiv = uebernommen && !vertragBestaetigt;
   const rechnungEingereicht = Boolean(item.hw_rechnung_eingereicht_at);
+  const stammPflichtOffen = compliancePflichtOffen(item.compliance_stamm ?? []);
   const kannAngebotEinreichen =
-    !eingereicht && item.status.toLowerCase() === "akzeptiert";
+    !eingereicht && item.status.toLowerCase() === "akzeptiert" && !stammPflichtOffen;
   const wartetAufFreigabe = eingereicht && !uebernommen;
-  const kannRechnungHochladen = eingereicht && uebernommen && !rechnungEingereicht;
+  const kannRechnungHochladen =
+    eingereicht && uebernommen && vertragBestaetigt && !rechnungEingereicht;
 
   const { positionen: crmPositionen, gesamtBrutto } = useMemo(
     () =>
@@ -275,12 +282,16 @@ export function PartnerAngebotDetail({ item }: { item: PartnerAnfrageItem }) {
           Dein Angebot wurde eingereicht und wird von Bärenwald geprüft. Du erhältst eine E-Mail,
           sobald wir es übernommen haben.
         </PartnerDetailInfoBox>
-      ) : uebernommen ? (
+      ) : vertragspaketAktiv ? (
+        <PartnerDetailInfoBox>
+          Bärenwald hat dein Angebot übernommen. Bitte bestätige den Projektvertrag und reiche
+          fehlende Unterlagen ein — erst danach wird der Auftrag freigeschaltet.
+        </PartnerDetailInfoBox>
+      ) : uebernommen && vertragBestaetigt ? (
         <PartnerDetailSuccessBox>
-          <p className="font-semibold">Angebot übernommen</p>
+          <p className="font-semibold">Auftrag bestätigt</p>
           <p className="text-sm">
-            Bärenwald hat dein Angebot bestätigt. Vielen Dank — bei laufenden Projekten findest du
-            Details unter Aufträge.
+            Du findest das laufende Projekt unter „Aufträge“.
           </p>
         </PartnerDetailSuccessBox>
       ) : eingereicht && kannRechnungHochladen ? (
@@ -295,6 +306,25 @@ export function PartnerAngebotDetail({ item }: { item: PartnerAnfrageItem }) {
         gesamtBrutto={gesamtBrutto}
       />
 
+      {stammPflichtOffen && !eingereicht ? (
+        <PartnerComplianceCheckliste
+          title="Stamm-Unterlagen (vor Angebotseinreichung)"
+          items={item.compliance_stamm ?? []}
+        />
+      ) : null}
+
+      {vertragspaketAktiv && item.auftrag_id ? (
+        <PartnerProjektvertragPaket
+          auftragId={item.auftrag_id}
+          gewerkName={item.gewerk_name}
+          vertrag={item.projektvertrag ?? null}
+          complianceStamm={item.compliance_stamm ?? []}
+          complianceProjekt={item.compliance_projekt ?? []}
+          projektvertrag_bestaetigt_am={item.projektvertrag_bestaetigt_am}
+          variant="angebot"
+        />
+      ) : null}
+
       {hwLeistungen.length > 0 ? (
         <PartnerDetailSection title="Dein Gewerk">
           <PartnerDetailLeistungenList items={hwLeistungen} />
@@ -302,7 +332,12 @@ export function PartnerAngebotDetail({ item }: { item: PartnerAnfrageItem }) {
       ) : null}
 
       <DokumenteTabelle
-        dokumente={dokumentZeilen}
+        dokumente={[
+          ...dokumentZeilen,
+          ...(item.dokumente ?? []).filter(
+            (d) => !dokumentZeilen.some((z) => z.id === d.id)
+          ),
+        ]}
         heading="Dokumente"
         emptyText="Noch keine Dokumente."
         className="!border-t-0 !pt-0"
@@ -334,6 +369,12 @@ export function PartnerAngebotDetail({ item }: { item: PartnerAnfrageItem }) {
             </p>
           ) : null}
         </PartnerDetailSuccessBox>
+      ) : null}
+
+      {stammPflichtOffen && !eingereicht && item.status.toLowerCase() === "akzeptiert" ? (
+        <PartnerDetailInfoBox>
+          Bitte lade zuerst alle Pflicht-Stammunterlagen hoch, bevor du dein Angebot einreichst.
+        </PartnerDetailInfoBox>
       ) : null}
 
       {kannAngebotEinreichen ? (

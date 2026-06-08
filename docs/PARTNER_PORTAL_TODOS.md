@@ -82,7 +82,7 @@ SQL-Dateien nacheinander in Supabase: siehe [SUPABASE_PARTNER_PORTAL_SQL.md](./S
 ## Phase 6 — Feinschliff
 
 - [x] E-Mail bei neuer HW-Anfrage (API + Resend; CRM-Aufruf: [PARTNER_CRM_NOTIFY_API.md](./PARTNER_CRM_NOTIFY_API.md))
-- [ ] Compliance-Dokumente (falls `partner_dokumente` relevant)
+- [x] Compliance-Dokumente + Projektvertrag (`partner_dokumente`, `handwerker_vertraege`)
 - [ ] Bewertungen / Statistik (später)
 - [ ] E2E-Tests: Login → Anfrage → Annahme → Preis-Upload → Bautagebuch
 

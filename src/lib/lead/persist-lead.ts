@@ -18,6 +18,7 @@ import {
 import { generateLeadVertriebsAnalyse } from "@/lib/lead/generate-ki-zusammenfassung";
 import { loadKundenVertriebsKontext } from "@/lib/lead/kunden-vertrieb-status";
 import type { MarketingJourney } from "@/lib/marketing/journey-types";
+import { GPT_VIZ_SKIP_INTERN_MAIL_QUELLEN } from "@/lib/gpt-viz/constants";
 import { isSupabaseConfigured, supabaseAdmin } from "@/lib/supabase";
 
 /** CRM-Eingabe — kompatibel mit externem POST /api/lead und internem Funnel. */
@@ -174,6 +175,12 @@ function funnelQuelleDisplay(q: string): string {
       return "Außerhalb";
     case "komplex_rueckruf":
       return "Komplex / Rückruf";
+    case "gpt_raumvisualisierung":
+      return "GPT Raumvisualisierung";
+    case "gpt_kombiniert":
+      return "GPT Projekt-Studio (kombiniert)";
+    case "gpt_beratung":
+      return "GPT Beratung";
     default:
       return q || "—";
   }
@@ -547,7 +554,8 @@ async function persistLeadInner(
       }
     }
 
-    if (internTo) {
+    const skipInternMail = GPT_VIZ_SKIP_INTERN_MAIL_QUELLEN.has(String(funnel_quelle));
+    if (internTo && !skipInternMail) {
       try {
         await resend.emails.send({
           from: resendFromSystem,
