@@ -392,6 +392,7 @@ export function GptRaumVisualisierung({
             ergebnisUrl={ergebnisUrl}
             historie={historie}
             onVersionSelect={setErgebnisUrl}
+            beschreibung={wunschText.trim() || istBeschreibung.trim()}
           />
           {rendersLeft > 0 ? (
             <div className="gpt-viz-actions">

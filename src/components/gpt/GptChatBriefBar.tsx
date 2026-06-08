@@ -4,6 +4,7 @@ import { useState } from "react";
 import { ChevronDown, ChevronUp } from "lucide-react";
 
 import { GptChatImageCard } from "@/components/gpt/GptChatImageCard";
+import { GptZielbildCard } from "@/components/gpt/GptZielbildCard";
 import type { GptProjektBrief } from "@/lib/gpt-viz/types";
 
 type GptChatBriefBarProps = {
@@ -35,6 +36,14 @@ export function GptChatBriefBar({ brief }: GptChatBriefBarProps) {
             <p>
               <strong>Wunsch:</strong> {brief.wunsch_text}
             </p>
+          ) : null}
+          {brief.ist_bilder_urls[0] && brief.ergebnis_bild_url ? (
+            <GptZielbildCard
+              vorherUrl={brief.ist_bilder_urls[0]}
+              nachherUrl={brief.ergebnis_bild_url}
+              beschreibung={brief.wunsch_text ?? ""}
+              className="gpt-chat-zielbild"
+            />
           ) : null}
           <div className="gpt-chat-brief-images">
             {brief.ziel_bild_url ? (

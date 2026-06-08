@@ -2,45 +2,41 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { ImagePlus } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import { GptChatBriefBar } from "@/components/gpt/GptChatBriefBar";
 import { GptChatBubble } from "@/components/gpt/GptChatBubble";
 import {
+  messagesForClaude,
   newChatId,
   textMessagesForSync,
   type GptChatAction,
   type GptChatMessage,
   type GptVizPhase,
+  type PendingUpload,
 } from "@/components/gpt/gpt-chat-types";
 import { useGptProjekt } from "@/components/gpt/gpt-projekt-context";
 import type { KiRechnerFunnelData } from "@/components/funnel/KiRechnerChat";
 import { useMobileComposerInset } from "@/hooks/use-mobile-composer-inset";
 import { GPT_VIZ_MAX_RENDERS, VIZ_NACHPROMPT_TAGS } from "@/lib/gpt-viz/constants";
-import type { GptVizBauErklaerung, GptVizRaumAnalyse } from "@/lib/gpt-viz/types";
+import type { GptVizRaumAnalyse } from "@/lib/gpt-viz/types";
 import {
   countUserMessages,
-  isObviousOffTopic,
   KI_MAX_USER_MESSAGES,
-  KI_OFF_TOPIC_REPLY,
   KI_TEXTAREA_MAX_LINES,
 } from "@/lib/ki-rechner/guards";
-import type { KiParsedBekannt } from "@/lib/ki-rechner/types";
 import { cn } from "@/lib/utils";
 
 import "./gpt-viz.css";
 
 const TEXTAREA_MIN_HEIGHT_PX = 40;
 
-const INITIAL_MESSAGE = `Hi! Ich bin dein Handwerks-Assistent von Bärenwald — für Renovierung, Reparatur und Umbau in München.
+const INITIAL_TEXT = `Hi! Ich bin dein Handwerks-Assistent von Bärenwald — für Renovierung, Reparatur und Umbau in München.
 
-Du kannst **beraten** lassen oder deinen Raum **visualisieren** — alles hier im Chat.
+Du kannst mir alles erzählen: Gewerke, Ablauf, Ideen — oder wir **visualisieren deinen Raum** mit Foto und Wunsch. Am Ende kannst du das Projekt direkt an uns senden.
 
-• Fragen zu Gewerken, Ablauf und Preisrahmen
-• **Raumfoto + Wunsch** → KI-Vorschau, wie es aussehen könnte
-• Am Ende: **Projekt an Bärenwald senden**
-
-Womit starten wir?`;
+Womit sollen wir starten?`;
 
 type GptStudioChatProps = {
   onPreisBereit: (data: KiRechnerFunnelData) => void;
@@ -58,21 +54,18 @@ function SendMessageIcon() {
 }
 
 export function GptStudioChat({ onPreisBereit, onBeratungBereit, locked = false }: GptStudioChatProps) {
+  void onPreisBereit;
+  void onBeratungBereit;
+
   const { sessionId, brief, ensureSession, refreshBrief, mergeChatVerlauf } = useGptProjekt();
   const [messages, setMessages] = useState<GptChatMessage[]>(() => [
     {
       id: newChatId(),
       role: "assistant",
-      kind: "text",
-      text: INITIAL_MESSAGE,
-    },
-    {
-      id: newChatId(),
-      role: "assistant",
-      kind: "actions",
+      text: INITIAL_TEXT,
       actions: [
-        { id: "start_viz", label: "Raum visualisieren", variant: "primary" },
-        { id: "start_beratung", label: "Erst beraten", variant: "outline" },
+        { id: "start_viz", label: "Raum visualisieren" },
+        { id: "start_beratung", label: "Erst beraten" },
       ],
     },
   ]);
@@ -80,21 +73,21 @@ export function GptStudioChat({ onPreisBereit, onBeratungBereit, locked = false 
   const [wunschText, setWunschText] = useState("");
   const [istUrl, setIstUrl] = useState<string | null>(null);
   const [renderCount, setRenderCount] = useState(0);
+  const [pendingUpload, setPendingUpload] = useState<PendingUpload>(null);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [kiSessionId] = useState(() => crypto.randomUUID());
   const chatRootRef = useRef<HTMLDivElement>(null);
   const messagesScrollRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const hydratedRef = useRef(false);
 
   const userMessageCount = countUserMessages(
-    messages.filter((m) => m.kind === "text").map((m) => ({ role: m.role, content: m.text ?? "" }))
+    messagesForClaude(messages).map((m) => ({ role: m.role, content: m.content }))
   );
   const limitReached = userMessageCount >= KI_MAX_USER_MESSAGES;
-  const inVizFlow = vizPhase !== "idle" && vizPhase !== "done";
 
   useMobileComposerInset(chatRootRef);
 
@@ -102,17 +95,24 @@ export function GptStudioChat({ onPreisBereit, onBeratungBereit, locked = false 
     setMessages((prev) => [...prev, { ...msg, id: msg.id ?? newChatId() }]);
   }, []);
 
-  const scrollChatToEnd = useCallback((smooth = true) => {
+  const appendAssistant = useCallback(
+    (text: string, extras?: Partial<Omit<GptChatMessage, "id" | "role">>) => {
+      append({ role: "assistant", text, ...extras });
+    },
+    [append]
+  );
+
+  const scrollChatToEnd = useCallback(() => {
     requestAnimationFrame(() => {
       messagesScrollRef.current?.scrollTo({
         top: messagesScrollRef.current.scrollHeight,
-        behavior: smooth ? "smooth" : "auto",
+        behavior: "smooth",
       });
     });
   }, []);
 
   useEffect(() => {
-    scrollChatToEnd(false);
+    scrollChatToEnd();
   }, [messages, loading, scrollChatToEnd]);
 
   useEffect(() => {
@@ -140,109 +140,120 @@ export function GptStudioChat({ onPreisBereit, onBeratungBereit, locked = false 
     const lineHeight = parseFloat(styles.lineHeight) || 22;
     const padY = parseFloat(styles.paddingTop) + parseFloat(styles.paddingBottom);
     const maxHeight = lineHeight * KI_TEXTAREA_MAX_LINES + padY;
-    const next = Math.max(TEXTAREA_MIN_HEIGHT_PX, Math.min(ta.scrollHeight, maxHeight));
-    ta.style.height = `${next}px`;
+    ta.style.height = `${Math.max(TEXTAREA_MIN_HEIGHT_PX, Math.min(ta.scrollHeight, maxHeight))}px`;
   }, []);
 
   useEffect(() => {
     syncTextareaHeight();
   }, [input, syncTextareaHeight]);
 
-  const startVizFlow = useCallback(async () => {
-    await ensureSession();
-    setIstUrl(null);
-    setWunschText("");
-    setRenderCount(0);
-    setVizPhase("raum_upload");
-    append({
-      role: "assistant",
-      kind: "text",
-      text: "Super — **Schritt 1:** Lade ein Foto deines **aktuellen Raums** hoch. Davon startet die Visualisierung (Pflicht für das Ergebnis).",
-    });
-    append({ role: "assistant", kind: "upload", uploadKind: "raum" });
-  }, [append, ensureSession]);
-
-  const afterRaumUpload = useCallback(
-    async (url: string, sid: string) => {
-      setIstUrl(url);
-      append({
-        role: "user",
-        kind: "image",
-        image: { url, label: "Dein Raum (Ist)", downloadName: "baerenwald-raum-ist.jpg" },
+  const askClaude = useCallback(
+    async (history: GptChatMessage[], sid: string | null, wunschOverride?: string) => {
+      const res = await fetch("/api/gpt-studio/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          messages: messagesForClaude(history),
+          gpt_session_id: sid,
+          wunsch_text: wunschOverride?.trim() || undefined,
+        }),
       });
+      const data = (await res.json()) as {
+        error?: string;
+        displayText?: string;
+        intent?: "render" | null;
+      };
+      if (!res.ok) throw new Error(data.error ?? "Antwort fehlgeschlagen.");
+      return data;
+    },
+    []
+  );
 
-      let beschreibung = "";
-      try {
-        const res = await fetch("/api/gpt-viz/analyze-room", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ session_id: sid, image_url: url, mode: "raum" }),
-        });
-        const data = (await res.json()) as { raum_analyse?: GptVizRaumAnalyse };
-        if (res.ok && data.raum_analyse) {
-          beschreibung = data.raum_analyse.ist_beschreibung;
-        }
-      } catch {
-        /* optional */
+  const runRender = useCallback(async (wunschOverride?: string) => {
+    const effectiveWunsch = (wunschOverride ?? wunschText).trim();
+    if (!effectiveWunsch || !istUrl) return;
+    const sid = sessionId ?? (await ensureSession());
+    if (!sid) return;
+
+    setLoading(true);
+    setVizPhase("rendering");
+    setError(null);
+
+    try {
+      const res = await fetch("/api/gpt-viz/render", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ session_id: sid, wunsch_text: effectiveWunsch }),
+      });
+      const data = (await res.json()) as {
+        error?: string;
+        ergebnis_bild_url?: string;
+        render_count?: number;
+      };
+      if (!res.ok) {
+        setError(data.error ?? "Render fehlgeschlagen.");
+        setVizPhase("wunsch_confirm");
+        return;
       }
 
-      await refreshBrief();
-      setVizPhase("wunsch_quelle");
-      append({
-        role: "assistant",
-        kind: "text",
-        text: beschreibung
-          ? `Danke! **So sehe ich deinen Raum:** ${beschreibung}\n\n**Schritt 2:** Wie möchtest du deinen Wunsch festlegen?`
-          : "Danke für das Raumfoto!\n\n**Schritt 2:** Wie möchtest du deinen Wunsch festlegen?",
-      });
-      append({
-        role: "assistant",
-        kind: "actions",
-        actions: [
-          { id: "wunsch_inspiration", label: "Inspirationsbild", variant: "outline" },
-          { id: "wunsch_text", label: "In Worten beschreiben", variant: "outline" },
-          { id: "wunsch_skip", label: "Direkt weiter", variant: "primary" },
-        ],
-      });
-    },
-    [append, refreshBrief]
-  );
+      const resultUrl = data.ergebnis_bild_url!;
+      setWunschText(effectiveWunsch);
+      setRenderCount(data.render_count ?? renderCount + 1);
+      setVizPhase("result");
 
-  const showWunschConfirm = useCallback(
-    (text: string) => {
-      setWunschText(text);
+      appendAssistant(
+        "So könnte dein Raum aussehen — Vorher und Nachher. Dein **Zielbild** kannst du direkt darunter herunterladen.",
+        {
+          compare: {
+            before: { url: istUrl, label: "Vorher", downloadName: "baerenwald-vorher.jpg" },
+            after: { url: resultUrl, label: "Nachher", downloadName: "baerenwald-nachher.jpg" },
+            beschreibung: effectiveWunsch,
+          },
+        }
+      );
+
+      await fetch("/api/gpt-viz/erklaerung", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ session_id: sid }),
+      });
+      await refreshBrief();
+
+      const history = [...messages];
+      const claude = await askClaude(history, sid);
+      const actions: GptChatAction[] = [{ id: "lead_start", label: "Projekt senden" }];
+      const left = GPT_VIZ_MAX_RENDERS - (data.render_count ?? 0);
+      if (left > 0) actions.unshift({ id: "render_again", label: "Noch anpassen" });
+      appendAssistant(claude.displayText ?? "Frag mich gern, was das für dein Projekt bedeutet.", { actions });
+      setVizPhase("lead");
+    } catch {
+      setError("Render fehlgeschlagen.");
       setVizPhase("wunsch_confirm");
-      append({
-        role: "assistant",
-        kind: "text",
-        text: `**Dein Visualisierungs-Wunsch:**\n${text}\n\nPasst das so — oder schreib mir, was du ändern möchtest. Wenn alles stimmt: **So visualisieren**.`,
-      });
-      append({
-        role: "assistant",
-        kind: "actions",
-        actions: [
-          { id: "render", label: "So visualisieren", variant: "primary" },
-          { id: "wunsch_anpassen", label: "Noch anpassen", variant: "outline" },
-        ],
-      });
-    },
-    [append]
-  );
+    } finally {
+      setLoading(false);
+    }
+  }, [wunschText, istUrl, sessionId, ensureSession, appendAssistant, messages, askClaude, renderCount, refreshBrief]);
 
   const handleUpload = useCallback(
     async (kind: "raum" | "inspiration", file: File) => {
       setLoading(true);
       setError(null);
+      setPendingUpload(null);
       const sid = sessionId ?? (await ensureSession());
       if (!sid) {
         setError("Session konnte nicht gestartet werden.");
         setLoading(false);
         return;
       }
+
       const form = new FormData();
       form.set("session_id", sid);
       form.set("kind", kind);
       form.set("file", file);
+
+      const userLabel =
+        kind === "raum" ? "Hier ist ein Foto von meinem Raum." : "Hier ist mein Inspirationsbild.";
+
       try {
         const res = await fetch("/api/gpt-viz/upload", { method: "POST", body: form });
         const data = (await res.json()) as {
@@ -258,315 +269,188 @@ export function GptStudioChat({ onPreisBereit, onBeratungBereit, locked = false 
 
         if (kind === "raum") {
           const url = data.ist_bilder_urls?.[data.ist_bilder_urls.length - 1] ?? data.url!;
-          await afterRaumUpload(url, sid);
+          setIstUrl(url);
+          await fetch("/api/gpt-viz/analyze-room", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ session_id: sid, image_url: url, mode: "raum" }),
+          });
+          setVizPhase("wunsch_quelle");
         } else {
           const url = data.ziel_bild_url ?? data.url!;
-          append({
-            role: "user",
-            kind: "image",
-            image: { url, label: "Inspirationsbild", downloadName: "baerenwald-inspiration.jpg" },
-          });
           const analyzeRes = await fetch("/api/gpt-viz/analyze-room", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ session_id: sid, image_url: url, mode: "inspiration" }),
           });
           const analyzeData = (await analyzeRes.json()) as {
-            error?: string;
-            raum_analyse?: GptVizRaumAnalyse;
             wunsch_text?: string;
+            raum_analyse?: GptVizRaumAnalyse;
           };
-          await refreshBrief();
-          if (analyzeRes.ok && analyzeData.raum_analyse) {
-            const wunsch =
-              analyzeData.wunsch_text ?? analyzeData.raum_analyse.wunsch_entwurf;
-            append({
-              role: "assistant",
-              kind: "text",
-              text: `**Stil aus deinem Inspirationsbild:**\n${analyzeData.raum_analyse.ist_beschreibung}\n\n**So würde ich es auf deinen Raum übertragen:**`,
-            });
-            showWunschConfirm(wunsch);
-          } else {
-            setError(analyzeData.error ?? "Stil-Analyse fehlgeschlagen.");
+          if (analyzeRes.ok && analyzeData.wunsch_text) {
+            setWunschText(analyzeData.wunsch_text);
           }
+          setVizPhase("wunsch_confirm");
         }
+
+        await refreshBrief();
+
+        const userMsg: GptChatMessage = {
+          id: newChatId(),
+          role: "user",
+          text: userLabel,
+          userImage: {
+            url: kind === "raum" ? (data.ist_bilder_urls?.at(-1) ?? data.url!) : (data.ziel_bild_url ?? data.url!),
+            label: kind === "raum" ? "Raumfoto" : "Inspiration",
+            downloadName: "upload.jpg",
+          },
+        };
+        const nextHistory = [...messages, userMsg];
+        setMessages(nextHistory);
+
+        const claude = await askClaude(nextHistory, sid);
+        appendAssistant(claude.displayText ?? "Danke für das Foto!", {
+          actions:
+            kind === "raum"
+              ? [
+                  { id: "wunsch_inspiration", label: "Inspirationsbild" },
+                  { id: "wunsch_text_mode", label: "Wunsch beschreiben" },
+                ]
+              : [{ id: "render", label: "So visualisieren" }],
+        });
       } catch {
         setError("Upload fehlgeschlagen.");
       } finally {
         setLoading(false);
       }
     },
-    [sessionId, ensureSession, afterRaumUpload, append, showWunschConfirm, refreshBrief]
+    [sessionId, ensureSession, messages, askClaude, appendAssistant, refreshBrief]
   );
-
-  const runRender = useCallback(async () => {
-    if (!wunschText.trim() || !istUrl) return;
-    const sid = sessionId ?? (await ensureSession());
-    if (!sid) return;
-
-    setLoading(true);
-    setVizPhase("rendering");
-    setError(null);
-    append({ role: "assistant", kind: "text", text: "Einen Moment — ich erstelle deine Visualisierung …" });
-
-    try {
-      const res = await fetch("/api/gpt-viz/render", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ session_id: sid, wunsch_text: wunschText }),
-      });
-      const data = (await res.json()) as {
-        error?: string;
-        ergebnis_bild_url?: string;
-        render_count?: number;
-      };
-      if (!res.ok) {
-        setError(data.error ?? "Render fehlgeschlagen.");
-        setVizPhase("wunsch_confirm");
-        return;
-      }
-
-      const resultUrl = data.ergebnis_bild_url!;
-      setRenderCount(data.render_count ?? renderCount + 1);
-      setVizPhase("result");
-
-      append({
-        role: "assistant",
-        kind: "compare",
-        text: "**Vorher / Nachher** — Bilder kannst du herunterladen.",
-        compare: {
-          before: { url: istUrl, label: "Vorher (Ist)", downloadName: "baerenwald-vorher.jpg" },
-          after: { url: resultUrl, label: "Nachher (Visualisierung)", downloadName: "baerenwald-nachher.jpg" },
-        },
-      });
-
-      const erkRes = await fetch("/api/gpt-viz/erklaerung", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ session_id: sid }),
-      });
-      const erkData = (await erkRes.json()) as { gpt_erklaerung?: GptVizBauErklaerung };
-      if (erkRes.ok && erkData.gpt_erklaerung) {
-        const e = erkData.gpt_erklaerung;
-        const gewerke = e.gewerke.map((g) => `• **${g.name}:** ${g.beschreibung}`).join("\n");
-        append({
-          role: "assistant",
-          kind: "text",
-          text: `**${e.titel}**\n\n${e.zusammenfassung}${gewerke ? `\n\n${gewerke}` : ""}${e.hinweis_gu ? `\n\n${e.hinweis_gu}` : ""}`,
-        });
-      }
-
-      const rendersLeft = GPT_VIZ_MAX_RENDERS - (data.render_count ?? renderCount + 1);
-      const actions: GptChatAction[] = [
-        { id: "lead_start", label: "Projekt an Bärenwald senden", variant: "primary" },
-      ];
-      if (rendersLeft > 0) {
-        actions.unshift({ id: "render_again", label: `Anpassen (${rendersLeft} übrig)`, variant: "outline" });
-      }
-      append({ role: "assistant", kind: "actions", actions });
-      setVizPhase("lead");
-      await refreshBrief();
-    } catch {
-      setError("Render fehlgeschlagen.");
-      setVizPhase("wunsch_confirm");
-    } finally {
-      setLoading(false);
-    }
-  }, [wunschText, istUrl, sessionId, ensureSession, append, renderCount, refreshBrief]);
 
   const handleAction = useCallback(
     async (actionId: string) => {
       if (loading) return;
 
       if (actionId === "start_viz") {
-        await startVizFlow();
+        await ensureSession();
+        setVizPhase("raum_upload");
+        setPendingUpload("raum");
+        append({ role: "user", text: "Ich möchte meinen Raum visualisieren." });
+        appendAssistant(
+          "Gerne — schick mir zuerst ein **Foto deines aktuellen Raums** (📎 unten links). Davon starten wir die Visualisierung."
+        );
         return;
       }
+
       if (actionId === "start_beratung") {
-        append({
-          role: "assistant",
-          kind: "text",
-          text: "Alles klar — erzähl mir von deinem Vorhaben. Ich helfe dir bei Gewerken, Ablauf und Preisrahmen.",
-        });
+        const userMsg: GptChatMessage = {
+          id: newChatId(),
+          role: "user",
+          text: "Ich möchte mich erst beraten lassen.",
+        };
+        const next = [...messages, userMsg];
+        setMessages(next);
+        setLoading(true);
+        try {
+          const claude = await askClaude(next, sessionId);
+          appendAssistant(claude.displayText ?? "Erzähl mir von deinem Vorhaben — ich bin da.");
+        } finally {
+          setLoading(false);
+        }
         return;
       }
+
       if (actionId === "wunsch_inspiration") {
-        setVizPhase("inspiration_upload");
-        append({
-          role: "assistant",
-          kind: "text",
-          text: "Lade ein **Inspirationsbild** hoch (z. B. Pinterest, Magazin) — ich leite daraus deinen Wunsch ab.",
-        });
-        append({ role: "assistant", kind: "upload", uploadKind: "inspiration" });
+        setPendingUpload("inspiration");
+        appendAssistant("Optional: Schick mir ein **Inspirationsbild** (📎) — oder beschreib deinen Wunsch einfach hier im Chat.");
         return;
       }
-      if (actionId === "wunsch_text") {
+
+      if (actionId === "wunsch_text_mode") {
         setVizPhase("wunsch_confirm");
-        append({
-          role: "assistant",
-          kind: "text",
-          text: "Beschreib kurz, wie dein Raum **aussehen soll** — Materialien, Farben, Stil. Ich fasse es dann zusammen.",
-        });
+        appendAssistant("Beschreib mir, wie der Raum **aussehen soll** — Stil, Materialien, Farben. Ich fasse es zusammen.");
         return;
       }
-      if (actionId === "wunsch_skip") {
-        showWunschConfirm(wunschText || "Modern, hell, hochwertige Materialien — passend zum Raum.");
-        return;
-      }
+
       if (actionId === "render") {
         await runRender();
         return;
       }
-      if (actionId === "wunsch_anpassen") {
-        append({
-          role: "assistant",
-          kind: "text",
-          text: "Schreib mir einfach, was du ändern möchtest — ich aktualisiere deinen Wunsch.",
-        });
-        return;
-      }
+
       if (actionId === "render_again") {
-        const chipActions = VIZ_NACHPROMPT_TAGS.map((tag) => ({
-          id: `nachprompt:${tag}`,
-          label: tag,
-          variant: "outline" as const,
-        }));
-        append({
-          role: "assistant",
-          kind: "text",
-          text: "Was soll anders sein? Schreib es oder wähle einen Vorschlag:",
+        appendAssistant("Was soll anders sein? Schreib es mir — oder wähle:", {
+          actions: VIZ_NACHPROMPT_TAGS.map((tag) => ({
+            id: `nachprompt:${tag}`,
+            label: tag,
+          })),
         });
-        append({ role: "assistant", kind: "actions", actions: chipActions });
         return;
       }
+
       if (actionId.startsWith("nachprompt:")) {
         const tag = actionId.replace("nachprompt:", "");
-        const next = `${wunschText.trim()}\n${tag}`.trim();
-        setWunschText(next);
+        setWunschText((prev) => `${prev.trim()}\n${tag}`.trim());
         await runRender();
         return;
       }
+
       if (actionId === "lead_start") {
-        append({
-          role: "assistant",
-          kind: "text",
-          text: "**Letzter Schritt:** Dein Projekt-Brief geht mit — Visualisierung, Wunsch und Erklärung.",
+        appendAssistant("Trag hier deine Kontaktdaten ein — dein Projekt-Brief geht mit:", {
+          showLeadForm: true,
         });
-        append({ role: "assistant", kind: "lead_form" });
         return;
       }
     },
-    [loading, append, startVizFlow, showWunschConfirm, wunschText, runRender]
+    [loading, ensureSession, append, appendAssistant, messages, sessionId, askClaude, runRender]
   );
 
   const handleSend = useCallback(async () => {
     const text = input.trim();
     if (!text || loading || locked || limitReached) return;
 
-    append({ role: "user", kind: "text", text });
+    const userMsg: GptChatMessage = { id: newChatId(), role: "user", text };
+    const nextHistory = [...messages, userMsg];
+    setMessages(nextHistory);
     setInput("");
     requestAnimationFrame(syncTextareaHeight);
 
-    if (inVizFlow && (vizPhase === "wunsch_confirm" || vizPhase === "result" || vizPhase === "lead")) {
-      const updated = wunschText ? `${wunschText}\n${text}`.trim() : text;
-      setWunschText(updated);
-      append({
-        role: "assistant",
-        kind: "text",
-        text: `Notiert — **aktualisierter Wunsch:**\n${updated}`,
-      });
-      append({
-        role: "assistant",
-        kind: "actions",
-        actions: [
-          { id: "render", label: "So visualisieren", variant: "primary" },
-          { id: "lead_start", label: "Projekt senden", variant: "outline" },
-        ],
-      });
-      return;
-    }
+    const sid = sessionId ?? (await ensureSession());
 
-    if (inVizFlow && vizPhase === "wunsch_quelle") {
-      showWunschConfirm(text);
-      return;
-    }
+    const nextWunsch =
+      vizPhase === "wunsch_quelle" || vizPhase === "wunsch_confirm" || vizPhase === "lead" || vizPhase === "result"
+        ? (wunschText ? `${wunschText}\n${text}`.trim() : text)
+        : wunschText;
+    if (nextWunsch !== wunschText) setWunschText(nextWunsch);
 
-    if (isObviousOffTopic(text)) {
-      append({ role: "assistant", kind: "text", text: KI_OFF_TOPIC_REPLY });
+    const wantsRender =
+      /\b(visualisier|so umsetzen|render|mach das bild|zeig mir das ergebnis)\b/i.test(text) &&
+      istUrl &&
+      nextWunsch.trim();
+
+    if (wantsRender) {
+      await runRender(nextWunsch);
       return;
     }
 
     setLoading(true);
     setError(null);
-    const textOnly = textMessagesForSync(messages);
-    textOnly.push({ role: "user", content: text });
-
     try {
-      const res = await fetch("/api/ki-rechner", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ messages: textOnly, session_id: kiSessionId }),
+      const data = await askClaude(nextHistory, sid, nextWunsch);
+      const actions: GptChatAction[] = [];
+      if (istUrl && nextWunsch.trim() && vizPhase !== "result" && vizPhase !== "lead") {
+        actions.push({ id: "render", label: "So visualisieren" });
+      }
+      if (vizPhase === "result" || vizPhase === "lead") {
+        actions.push({ id: "lead_start", label: "Projekt senden" });
+      }
+      if (vizPhase === "idle" && istUrl) {
+        actions.push({ id: "start_viz", label: "Raum visualisieren" });
+      }
+      appendAssistant(data.displayText ?? "Wie kann ich dir helfen?", {
+        actions: actions.length ? actions : undefined,
       });
-      const data = (await res.json()) as {
-        parsed?: KiParsedBekannt;
-        typ?: string;
-        error?: string;
-        displayText?: string;
-      };
-
-      if (!res.ok) {
-        append({
-          role: "assistant",
-          kind: "text",
-          text: data.error ?? "Antwort konnte nicht geladen werden.",
-        });
-        return;
-      }
-
-      const displayText = data.displayText?.trim() || "Antwort konnte nicht geladen werden.";
-
-      if (data.typ === "bekannt" && data.parsed?.typ === "bekannt") {
-        const p = data.parsed;
-        append({
-          role: "assistant",
-          kind: "text",
-          text: "Super — ich habe ein klares Bild von deinem Vorhaben.\n\nTippe unten auf **Zum Preis** für deinen unverbindlichen Preisrahmen.",
-        });
-        onPreisBereit({
-          situation: p.situation,
-          bereiche: p.bereiche,
-          groesse: p.groesse,
-          plz: p.plz,
-          zeitraum: p.zeitraum,
-          kundentyp: p.kundentyp,
-          fachdetails: p.fachdetails,
-          ki_session_id: kiSessionId,
-          ki_chat_verlauf: textOnly,
-        });
-        return;
-      }
-
-      if (data.typ === "unbekannt" || data.typ === "zu_komplex") {
-        append({
-          role: "assistant",
-          kind: "text",
-          text: `${displayText}\n\nTippe unten auf **Zur Beratung** für Kontaktdaten.`,
-        });
-        onBeratungBereit();
-        return;
-      }
-
-      append({
-        role: "assistant",
-        kind: "text",
-        text: displayText,
-      });
-      if (!inVizFlow) {
-        append({
-          role: "assistant",
-          kind: "actions",
-          actions: [{ id: "start_viz", label: "Raum visualisieren", variant: "outline" }],
-        });
+      if (data.intent === "render" && istUrl && nextWunsch.trim()) {
+        await runRender(nextWunsch);
       }
     } catch {
       setError("Verbindungsfehler — bitte erneut versuchen.");
@@ -578,27 +462,19 @@ export function GptStudioChat({ onPreisBereit, onBeratungBereit, locked = false 
     loading,
     locked,
     limitReached,
-    inVizFlow,
-    vizPhase,
     messages,
-    append,
-    showWunschConfirm,
+    sessionId,
+    ensureSession,
+    vizPhase,
+    istUrl,
     wunschText,
-    kiSessionId,
-    onPreisBereit,
-    onBeratungBereit,
+    askClaude,
+    appendAssistant,
+    runRender,
     syncTextareaHeight,
   ]);
 
   const inputDisabled = loading || locked || limitReached || vizPhase === "rendering";
-  const placeholder =
-    vizPhase === "wunsch_confirm" || vizPhase === "lead"
-      ? "Wunsch anpassen …"
-      : vizPhase === "wunsch_quelle"
-        ? "Wunsch beschreiben …"
-        : limitReached
-          ? "Nachrichtenlimit erreicht"
-          : "Nachricht eingeben …";
 
   return (
     <div ref={chatRootRef} className={cn("ki-rechner-chat", locked && "ki-rechner-chat--locked")}>
@@ -620,20 +496,12 @@ export function GptStudioChat({ onPreisBereit, onBeratungBereit, locked = false 
             key={msg.id}
             message={msg}
             onAction={(id) => void handleAction(id)}
-            onUpload={(kind, file) => void handleUpload(kind, file)}
             sessionId={sessionId}
             onLeadSuccess={() => {
               setVizPhase("done");
-              append({
-                role: "assistant",
-                kind: "text",
-                text: "Dein Projekt ist bei uns eingegangen — wir melden uns zeitnah. Du kannst weiter beraten oder eine neue Visualisierung starten.",
-              });
-              append({
-                role: "assistant",
-                kind: "actions",
-                actions: [{ id: "start_viz", label: "Neue Visualisierung", variant: "outline" }],
-              });
+              appendAssistant(
+                "Danke — dein Projekt ist bei uns eingegangen. Melde dich gern, wenn du noch Fragen hast."
+              );
             }}
             disabled={loading}
           />
@@ -657,7 +525,28 @@ export function GptStudioChat({ onPreisBereit, onBeratungBereit, locked = false 
       <GptChatBriefBar brief={brief} />
 
       <div className="ki-rechner-chat-composer">
-        <div className={cn("ki-rechner-chat-inputbar", limitReached && "ki-rechner-chat-inputbar--disabled")}>
+        <div className={cn("ki-rechner-chat-inputbar gpt-chat-inputbar", limitReached && "ki-rechner-chat-inputbar--disabled")}>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/jpeg,image/png,image/webp,image/*"
+            className="sr-only"
+            onChange={(e) => {
+              const f = e.target.files?.[0];
+              const kind = pendingUpload ?? "raum";
+              if (f) void handleUpload(kind, f);
+              e.target.value = "";
+            }}
+          />
+          <button
+            type="button"
+            className="gpt-chat-attach"
+            disabled={inputDisabled}
+            aria-label={pendingUpload === "inspiration" ? "Inspirationsbild" : "Raumfoto hochladen"}
+            onClick={() => fileInputRef.current?.click()}
+          >
+            <ImagePlus className="h-5 w-5" aria-hidden />
+          </button>
           <textarea
             ref={textareaRef}
             rows={1}
@@ -670,7 +559,7 @@ export function GptStudioChat({ onPreisBereit, onBeratungBereit, locked = false 
                 void handleSend();
               }
             }}
-            placeholder={placeholder}
+            placeholder={limitReached ? "Nachrichtenlimit erreicht" : "Nachricht eingeben …"}
             className="ki-rechner-chat-input ki-rechner-chat-textarea"
             disabled={inputDisabled}
             aria-label="Nachricht"
