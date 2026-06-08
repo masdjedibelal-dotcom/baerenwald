@@ -26,6 +26,8 @@ type Step =
   | "erklaerung"
   | "lead";
 
+type UploadKind = "raum" | "inspiration";
+
 type GptRaumVisualisierungProps = {
   onBeratung?: () => void;
   initialStep?: Step;
@@ -37,8 +39,9 @@ export function GptRaumVisualisierung({
 }: GptRaumVisualisierungProps) {
   const { sessionId, brief, ensureSession, refreshBrief } = useGptProjekt();
   const [step, setStep] = useState<Step>(initialStep);
-  const [einstieg, setEinstieg] = useState<"foto" | "idee" | null>(null);
+  const [einstieg, setEinstieg] = useState<"prompt" | "inspiration" | null>(null);
   const [istUrls, setIstUrls] = useState<string[]>([]);
+  const [zielBildUrl, setZielBildUrl] = useState<string | null>(null);
   const [analyse, setAnalyse] = useState<GptVizRaumAnalyse | null>(null);
   const [istBeschreibung, setIstBeschreibung] = useState("");
   const [wunschText, setWunschText] = useState("");
@@ -55,6 +58,7 @@ export function GptRaumVisualisierung({
   useEffect(() => {
     if (!brief) return;
     if (brief.ist_bilder_urls.length > 0) setIstUrls(brief.ist_bilder_urls);
+    if (brief.ziel_bild_url) setZielBildUrl(brief.ziel_bild_url);
     if (brief.raum_analyse) {
       setAnalyse(brief.raum_analyse);
       setIstBeschreibung(brief.raum_analyse.ist_beschreibung);
@@ -70,7 +74,8 @@ export function GptRaumVisualisierung({
       } else {
         setStep("render");
       }
-    } else if (brief.raum_analyse) {
+    } else if (brief.raum_analyse && brief.ziel_bild_url) {
+      setEinstieg("inspiration");
       setStep("analyse");
     } else if (brief.wunsch_text || brief.ist_bilder_urls.length > 0) {
       setStep("wunsch");
@@ -78,7 +83,7 @@ export function GptRaumVisualisierung({
   }, [brief]);
 
   const handleUpload = useCallback(
-    async (file: File) => {
+    async (file: File, kind: UploadKind) => {
       setError(null);
       setLoading(true);
       const id = sid ?? (await ensureSession());
@@ -89,6 +94,7 @@ export function GptRaumVisualisierung({
       }
       const form = new FormData();
       form.set("session_id", id);
+      form.set("kind", kind);
       form.set("file", file);
       try {
         const res = await fetch("/api/gpt-viz/upload", { method: "POST", body: form });
@@ -96,18 +102,24 @@ export function GptRaumVisualisierung({
           error?: string;
           url?: string;
           ist_bilder_urls?: string[];
+          ziel_bild_url?: string;
         };
         if (!res.ok) {
           setError(data.error ?? "Upload fehlgeschlagen.");
           return;
         }
-        const urls = data.ist_bilder_urls ?? (data.url ? [data.url] : []);
-        setIstUrls(urls);
-        if (einstieg === "foto" || step === "upload") {
+
+        if (kind === "inspiration") {
+          const inspirationUrl = data.ziel_bild_url ?? data.url ?? null;
+          setZielBildUrl(inspirationUrl);
           const analyzeRes = await fetch("/api/gpt-viz/analyze-room", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ session_id: id, image_url: urls[0] }),
+            body: JSON.stringify({
+              session_id: id,
+              image_url: inspirationUrl,
+              mode: "inspiration",
+            }),
           });
           const analyzeData = (await analyzeRes.json()) as {
             error?: string;
@@ -124,6 +136,8 @@ export function GptRaumVisualisierung({
             if (analyzeData.error) setError(analyzeData.error);
           }
         } else {
+          const urls = data.ist_bilder_urls ?? (data.url ? [data.url] : istUrls);
+          setIstUrls(urls);
           setStep("wunsch");
         }
         await refreshBrief();
@@ -133,7 +147,7 @@ export function GptRaumVisualisierung({
         setLoading(false);
       }
     },
-    [sid, ensureSession, einstieg, step, refreshBrief]
+    [sid, ensureSession, istUrls, refreshBrief]
   );
 
   const handleRender = useCallback(async () => {
@@ -142,7 +156,7 @@ export function GptRaumVisualisierung({
       return;
     }
     if (istUrls.length === 0) {
-      setError("Für die Visualisierung wird ein Foto benötigt.");
+      setError("Für die Visualisierung wird ein Foto deines Raums benötigt.");
       return;
     }
     const id = sid ?? (await ensureSession());
@@ -206,44 +220,69 @@ export function GptRaumVisualisierung({
   };
 
   const rendersLeft = GPT_VIZ_MAX_RENDERS - renderCount;
+  const uploadTitle =
+    einstieg === "inspiration" && !zielBildUrl
+      ? "Inspirationsbild hochladen"
+      : istUrls.length === 0
+        ? "Foto deines Raums hochladen"
+        : "Raumfoto ersetzen";
+
+  const showUpload =
+    step === "upload" ||
+    (step === "wunsch" && einstieg === "inspiration" && !zielBildUrl) ||
+    (step === "wunsch" && istUrls.length === 0);
 
   return (
     <div className="gpt-viz-root">
       {step === "einstieg" ? (
         <GptVizEinstieg
-          onMitFoto={() => {
-            setEinstieg("foto");
-            setStep("upload");
-          }}
-          onMitIdee={() => {
-            setEinstieg("idee");
+          onMitPrompt={() => {
+            setEinstieg("prompt");
             setStep("wunsch");
+          }}
+          onMitInspiration={() => {
+            setEinstieg("inspiration");
+            setStep("upload");
           }}
         />
       ) : null}
 
-      {(step === "upload" || (step === "wunsch" && istUrls.length === 0)) ? (
+      {showUpload ? (
         <div>
-          <h2 className="gpt-viz-step-title">
-            {einstieg === "idee" ? "Optional: Foto hinzufügen" : "Foto hochladen"}
-          </h2>
+          <h2 className="gpt-viz-step-title">{uploadTitle}</h2>
           <div className="gpt-viz-upload">
             <label className="gpt-viz-upload-label">
               <input
                 type="file"
-                accept="image/*"
+                accept="image/jpeg,image/png,image/webp,image/*"
                 onChange={(e) => {
                   const f = e.target.files?.[0];
-                  if (f) void handleUpload(f);
+                  if (!f) return;
+                  const kind: UploadKind =
+                    einstieg === "inspiration" && !zielBildUrl ? "inspiration" : "raum";
+                  void handleUpload(f, kind);
+                  e.target.value = "";
                 }}
               />
               {loading ? "Wird verarbeitet …" : "Bild auswählen"}
             </label>
           </div>
+          {zielBildUrl ? (
+            <div className="gpt-viz-dual-preview" style={{ marginTop: "0.75rem" }}>
+              <div>
+                <p className="gpt-viz-preview-label">Inspirationsbild</p>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={zielBildUrl} alt="Inspirationsbild" className="gpt-viz-preview-img" />
+              </div>
+            </div>
+          ) : null}
           {istUrls[0] ? (
-            <div className="gpt-viz-preview" style={{ marginTop: "0.75rem" }}>
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={istUrls[0]} alt="Hochgeladenes Raumfoto" />
+            <div className="gpt-viz-dual-preview" style={{ marginTop: "0.75rem" }}>
+              <div>
+                <p className="gpt-viz-preview-label">Dein Raum (Ist)</p>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={istUrls[0]} alt="Raumfoto" className="gpt-viz-preview-img" />
+              </div>
             </div>
           ) : null}
         </div>
@@ -251,7 +290,18 @@ export function GptRaumVisualisierung({
 
       {step === "analyse" && analyse ? (
         <div>
-          <h2 className="gpt-viz-step-title">Raum erkannt</h2>
+          <h2 className="gpt-viz-step-title">
+            {einstieg === "inspiration" ? "Stil erkannt" : "Raum erkannt"}
+          </h2>
+          {zielBildUrl ? (
+            <div className="gpt-viz-dual-preview" style={{ marginBottom: "0.75rem" }}>
+              <div>
+                <p className="gpt-viz-preview-label">Inspirationsbild</p>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={zielBildUrl} alt="Inspirationsbild" className="gpt-viz-preview-img" />
+              </div>
+            </div>
+          ) : null}
           <GptVizRaumAnalysePanel
             analyse={analyse}
             istBeschreibung={istBeschreibung}
@@ -261,14 +311,24 @@ export function GptRaumVisualisierung({
             onStilWaehlen={handleStilWaehlen}
           />
           <div className="gpt-viz-actions">
-            <button
-              type="button"
-              className="gpt-viz-btn gpt-viz-btn--primary"
-              disabled={loading || !wunschText.trim()}
-              onClick={() => void handleRender()}
-            >
-              So visualisieren
-            </button>
+            {istUrls.length === 0 ? (
+              <button
+                type="button"
+                className="gpt-viz-btn gpt-viz-btn--outline"
+                onClick={() => setStep("upload")}
+              >
+                Raumfoto hinzufügen
+              </button>
+            ) : (
+              <button
+                type="button"
+                className="gpt-viz-btn gpt-viz-btn--primary"
+                disabled={loading || !wunschText.trim()}
+                onClick={() => void handleRender()}
+              >
+                So visualisieren
+              </button>
+            )}
           </div>
         </div>
       ) : null}
@@ -283,12 +343,24 @@ export function GptRaumVisualisierung({
             showNachprompt={renderCount > 0}
             onNachprompt={handleNachprompt}
           />
-          {istUrls[0] ? (
-            <div className="gpt-viz-preview" style={{ marginTop: "0.5rem" }}>
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={istUrls[0]} alt="Raumfoto" />
+          {(zielBildUrl || istUrls[0]) && (
+            <div className="gpt-viz-dual-preview" style={{ marginTop: "0.75rem" }}>
+              {zielBildUrl ? (
+                <div>
+                  <p className="gpt-viz-preview-label">Inspirationsbild</p>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={zielBildUrl} alt="Inspirationsbild" className="gpt-viz-preview-img" />
+                </div>
+              ) : null}
+              {istUrls[0] ? (
+                <div>
+                  <p className="gpt-viz-preview-label">Dein Raum (Ist)</p>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={istUrls[0]} alt="Raumfoto" className="gpt-viz-preview-img" />
+                </div>
+              ) : null}
             </div>
-          ) : null}
+          )}
           <div className="gpt-viz-actions">
             {istUrls.length === 0 ? (
               <button
@@ -296,7 +368,7 @@ export function GptRaumVisualisierung({
                 className="gpt-viz-btn gpt-viz-btn--outline"
                 onClick={() => setStep("upload")}
               >
-                Foto hinzufügen
+                Raumfoto hinzufügen
               </button>
             ) : (
               <button
@@ -387,6 +459,7 @@ export function GptRaumVisualisierung({
           style={{ alignSelf: "flex-start", marginTop: "0.25rem" }}
           onClick={() => {
             setStep("einstieg");
+            setEinstieg(null);
             setError(null);
           }}
         >

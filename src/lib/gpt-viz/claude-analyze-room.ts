@@ -4,9 +4,10 @@ import {
   getClaudeModel,
 } from "@/lib/ki-rechner/claude-config";
 import { extractJsonObject } from "@/lib/gpt-viz/claude-json";
+import { loadImageBase64ForClaude } from "@/lib/gpt-viz/storage";
 import type { GptVizRaumAnalyse } from "@/lib/gpt-viz/types";
 
-const SYSTEM = `Du analysierst ein Raumfoto für Bärenwald München (Handwerk/Renovierung als GU).
+const ROOM_SYSTEM = `Du analysierst ein Raumfoto für Bärenwald München (Handwerk/Renovierung als GU).
 Erkenne Raumtyp, beschreibe den Ist-Zustand sachlich auf Deutsch (Du-Form).
 Schlage 3 unterschiedliche Stil-Richtungen vor, passend zum erkannten Raum.
 Formuliere einen ersten Visualisierungs-Wunsch als Entwurf — der Nutzer bearbeitet ihn.
@@ -17,6 +18,21 @@ Antwort NUR als JSON mit exakt diesen Feldern:
   "ist_beschreibung": "…",
   "erkannte_elemente": ["…"],
   "einschaetzung": "…",
+  "stil_vorschlaege": [
+    { "titel": "…", "kurz": "…", "prompt_de": "deutscher Visualisierungswunsch" }
+  ],
+  "wunsch_entwurf": "…"
+}
+Keine Preise erfinden. Keine Kontaktdaten erfragen.`;
+
+const INSPIRATION_SYSTEM = `Du analysierst ein Inspirations-/Mood-Bild für eine Renovierung (Bärenwald München).
+Beschreibe Stil, Materialien, Farben und Atmosphäre auf Deutsch (Du-Form).
+Formuliere daraus einen Visualisierungs-Wunsch, den der Nutzer auf seinen eigenen Raum anwenden kann.
+Antwort NUR als JSON mit exakt diesen Feldern:
+{
+  "raum_typ": "inspiration",
+  "raum_label": "Inspirationsbild",
+  "ist_beschreibung": "Stil-Beschreibung des Inspirationsbildes …",
   "stil_vorschlaege": [
     { "titel": "…", "kurz": "…", "prompt_de": "deutscher Visualisierungswunsch" }
   ],
@@ -48,27 +64,29 @@ function validateAnalyse(raw: unknown): GptVizRaumAnalyse {
   };
 }
 
-export async function analyzeRoomImage(imageUrl: string): Promise<GptVizRaumAnalyse> {
+async function analyzeImageWithClaude(
+  storedUrl: string,
+  system: string,
+  userText: string
+): Promise<GptVizRaumAnalyse> {
   const apiKey = getClaudeApiKey();
   if (!apiKey) throw new Error("Claude API nicht konfiguriert.");
 
+  const { mediaType, data } = await loadImageBase64ForClaude(storedUrl);
   const client = createAnthropicClient(apiKey);
   const response = await client.messages.create({
     model: getClaudeModel(),
     max_tokens: 1200,
-    system: SYSTEM,
+    system,
     messages: [
       {
         role: "user",
         content: [
           {
             type: "image",
-            source: { type: "url", url: imageUrl },
+            source: { type: "base64", media_type: mediaType, data },
           },
-          {
-            type: "text",
-            text: "Analysiere dieses Raumfoto für eine Renovierungs-Visualisierung.",
-          },
+          { type: "text", text: userText },
         ],
       },
     ],
@@ -80,4 +98,20 @@ export async function analyzeRoomImage(imageUrl: string): Promise<GptVizRaumAnal
     .join("\n");
 
   return validateAnalyse(extractJsonObject(text));
+}
+
+export async function analyzeRoomImage(storedUrl: string): Promise<GptVizRaumAnalyse> {
+  return analyzeImageWithClaude(
+    storedUrl,
+    ROOM_SYSTEM,
+    "Analysiere dieses Raumfoto für eine Renovierungs-Visualisierung."
+  );
+}
+
+export async function analyzeInspirationImage(storedUrl: string): Promise<GptVizRaumAnalyse> {
+  return analyzeImageWithClaude(
+    storedUrl,
+    INSPIRATION_SYSTEM,
+    "Leite daraus einen Renovierungs-Wunsch ab, den man auf den eigenen Raum übertragen kann."
+  );
 }

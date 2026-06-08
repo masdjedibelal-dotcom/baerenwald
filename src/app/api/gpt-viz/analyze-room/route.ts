@@ -1,7 +1,6 @@
-import { analyzeRoomImage } from "@/lib/gpt-viz/claude-analyze-room";
+import { analyzeInspirationImage, analyzeRoomImage } from "@/lib/gpt-viz/claude-analyze-room";
 import { GPT_VIZ_RATE } from "@/lib/gpt-viz/constants";
 import { getGptVizSession, updateGptVizSession } from "@/lib/gpt-viz/session";
-import { resolvePublicImageUrl } from "@/lib/gpt-viz/storage";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { getClientIp } from "@/lib/request-ip";
 import { getClaudeApiKey } from "@/lib/ki-rechner/claude-config";
@@ -20,15 +19,16 @@ export async function POST(req: Request) {
     return Response.json({ error: "Zu viele Analysen — bitte später erneut." }, { status: 429 });
   }
 
-  let body: { session_id?: string; image_url?: string };
+  let body: { session_id?: string; image_url?: string; mode?: string };
   try {
-    body = (await req.json()) as { session_id?: string; image_url?: string };
+    body = (await req.json()) as { session_id?: string; image_url?: string; mode?: string };
   } catch {
     return Response.json({ error: "Ungültiger JSON-Body." }, { status: 400 });
   }
 
   const sessionId = String(body.session_id ?? "").trim();
   const imageUrlInput = String(body.image_url ?? "").trim();
+  const mode = String(body.mode ?? "raum").trim();
   if (!sessionId) {
     return Response.json({ error: "session_id fehlt." }, { status: 400 });
   }
@@ -38,18 +38,24 @@ export async function POST(req: Request) {
     return Response.json({ error: "Session ungültig oder abgelaufen." }, { status: 404 });
   }
 
-  const imageUrl = imageUrlInput || session.ist_bilder_urls[0];
+  const imageUrl = imageUrlInput || (mode === "inspiration" ? session.ziel_bild_url : session.ist_bilder_urls[0]);
   if (!imageUrl) {
     return Response.json({ error: "Kein Bild vorhanden." }, { status: 400 });
   }
 
   try {
-    const publicUrl = resolvePublicImageUrl(imageUrl);
-    const analyse = await analyzeRoomImage(publicUrl);
-    const updated = await updateGptVizSession(sessionId, {
+    const analyse =
+      mode === "inspiration"
+        ? await analyzeInspirationImage(imageUrl)
+        : await analyzeRoomImage(imageUrl);
+    const patch: Record<string, unknown> = {
       raum_analyse: analyse,
       wunsch_text: session.wunsch_text ?? analyse.wunsch_entwurf,
-    });
+    };
+    if (mode === "inspiration" && imageUrlInput) {
+      patch.ziel_bild_url = imageUrlInput;
+    }
+    const updated = await updateGptVizSession(sessionId, patch);
     if (!updated) {
       return Response.json({ error: "Session-Update fehlgeschlagen." }, { status: 500 });
     }

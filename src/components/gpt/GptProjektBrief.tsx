@@ -74,14 +74,38 @@ export function GptProjektBriefPanel({
         </div>
       ) : null}
 
+      {brief.ziel_bild_url ? (
+        <div className="gpt-projekt-section">
+          <h4>Inspirationsbild</h4>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={brief.ziel_bild_url}
+            alt="Inspirationsbild"
+            className="gpt-viz-preview-img"
+          />
+        </div>
+      ) : null}
+
+      {brief.ist_bilder_urls[0] ? (
+        <div className="gpt-projekt-section">
+          <h4>Dein Raum (Ist)</h4>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={brief.ist_bilder_urls[0]}
+            alt="Raumfoto"
+            className="gpt-viz-preview-img"
+          />
+        </div>
+      ) : null}
+
       {brief.ergebnis_bild_url ? (
         <div className="gpt-projekt-section">
-          <h4>Visualisierung</h4>
+          <h4>Visualisierung (Ziel)</h4>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={brief.ergebnis_bild_url}
             alt="Visualisierung"
-            style={{ width: "100%", borderRadius: 10, marginTop: "0.35rem" }}
+            className="gpt-viz-preview-img"
           />
         </div>
       ) : null}

@@ -44,6 +44,11 @@ async function createPrediction(input: {
 
   if (!res.ok) {
     const text = await res.text();
+    if (res.status === 401) {
+      throw new Error(
+        "Replicate API-Token fehlt oder ist ungültig — REPLICATE_API_TOKEN in Netlify setzen."
+      );
+    }
     throw new Error(`Replicate Fehler: ${text.slice(0, 200)}`);
   }
   return (await res.json()) as Prediction;

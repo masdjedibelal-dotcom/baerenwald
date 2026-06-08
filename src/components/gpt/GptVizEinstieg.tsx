@@ -1,23 +1,23 @@
 "use client";
 
 type GptVizEinstiegProps = {
-  onMitFoto: () => void;
-  onMitIdee: () => void;
+  onMitPrompt: () => void;
+  onMitInspiration: () => void;
 };
 
-export function GptVizEinstieg({ onMitFoto, onMitIdee }: GptVizEinstiegProps) {
+export function GptVizEinstieg({ onMitPrompt, onMitInspiration }: GptVizEinstiegProps) {
   return (
     <div className="gpt-viz-cards">
       <p className="gpt-viz-muted">
         So könnte dein Raum aussehen — und so bauen wir ihn. Wähle deinen Einstieg:
       </p>
-      <button type="button" className="gpt-viz-card" onClick={onMitFoto}>
-        <h3>Mit Foto starten</h3>
-        <p>Foto hochladen → Raum erkennen → Stil wählen → visualisieren</p>
+      <button type="button" className="gpt-viz-card" onClick={onMitPrompt}>
+        <h3>Mit Prompt starten</h3>
+        <p>Wunsch beschreiben → Raumfoto hochladen → visualisieren</p>
       </button>
-      <button type="button" className="gpt-viz-card" onClick={onMitIdee}>
-        <h3>Mit Idee starten</h3>
-        <p>Wunsch beschreiben → optional Foto nachreichen → visualisieren</p>
+      <button type="button" className="gpt-viz-card" onClick={onMitInspiration}>
+        <h3>Mit Inspirationsbild starten</h3>
+        <p>Stil-Foto hochladen → Wunsch wird erstellt → dein Raumfoto → visualisieren</p>
       </button>
     </div>
   );

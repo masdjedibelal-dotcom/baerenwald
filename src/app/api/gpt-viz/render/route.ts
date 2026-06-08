@@ -13,7 +13,10 @@ export const maxDuration = 120;
 
 export async function POST(req: Request) {
   if (!isReplicateConfigured() || !getClaudeApiKey()) {
-    return Response.json({ error: "Visualisierung nicht verfügbar." }, { status: 503 });
+    const missing = !isReplicateConfigured()
+      ? "REPLICATE_API_TOKEN fehlt in den Server-Umgebungsvariablen."
+      : "Claude API nicht konfiguriert.";
+    return Response.json({ error: `Visualisierung nicht verfügbar: ${missing}` }, { status: 503 });
   }
 
   const ip = getClientIp(req);

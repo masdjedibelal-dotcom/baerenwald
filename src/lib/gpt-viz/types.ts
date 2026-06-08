@@ -42,6 +42,7 @@ export type GptVizFunnelQuelle =
 export type GptVizSessionRow = {
   id: string;
   ist_bilder_urls: string[];
+  ziel_bild_url: string | null;
   raum_analyse: GptVizRaumAnalyse | null;
   wunsch_text: string | null;
   render_prompt: string | null;
@@ -61,6 +62,7 @@ export type GptProjektBrief = {
   raum_analyse?: GptVizRaumAnalyse | null;
   wunsch_text?: string | null;
   ist_bilder_urls: string[];
+  ziel_bild_url?: string | null;
   ergebnis_bild_url?: string | null;
   ergebnis_historie: GptVizRenderVersion[];
   gpt_erklaerung?: GptVizBauErklaerung | null;

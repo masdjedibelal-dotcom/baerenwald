@@ -15,6 +15,7 @@ function mapRow(raw: Record<string, unknown>): GptVizSessionRow {
     ist_bilder_urls: Array.isArray(raw.ist_bilder_urls)
       ? (raw.ist_bilder_urls as string[])
       : [],
+    ziel_bild_url: (raw.ziel_bild_url as string | null) ?? null,
     raum_analyse: (raw.raum_analyse as GptVizRaumAnalyse | null) ?? null,
     wunsch_text: (raw.wunsch_text as string | null) ?? null,
     render_prompt: (raw.render_prompt as string | null) ?? null,
@@ -81,6 +82,7 @@ export function sessionToBrief(session: GptVizSessionRow): GptProjektBrief {
     raum_analyse: session.raum_analyse,
     wunsch_text: session.wunsch_text,
     ist_bilder_urls: session.ist_bilder_urls,
+    ziel_bild_url: session.ziel_bild_url,
     ergebnis_bild_url: session.ergebnis_bild_url,
     ergebnis_historie: session.ergebnis_historie,
     gpt_erklaerung: session.gpt_erklaerung,

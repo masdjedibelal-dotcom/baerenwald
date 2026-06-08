@@ -57,6 +57,7 @@ export async function POST(req: Request) {
       raum_analyse: session.raum_analyse,
       wunsch_text: session.wunsch_text,
       ist_bilder_urls: session.ist_bilder_urls,
+      ziel_bild_url: session.ziel_bild_url,
       ergebnis_bild_url: session.ergebnis_bild_url,
       ergebnis_historie: session.ergebnis_historie,
       gpt_erklaerung: session.gpt_erklaerung,

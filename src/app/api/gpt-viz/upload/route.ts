@@ -11,6 +11,7 @@ export async function POST(req: Request) {
 
   const form = await req.formData();
   const sessionId = String(form.get("session_id") ?? "").trim();
+  const kind = String(form.get("kind") ?? "raum").trim();
   const file = form.get("file");
 
   if (!sessionId) {
@@ -25,9 +26,23 @@ export async function POST(req: Request) {
     return Response.json({ error: "Session ungültig oder abgelaufen." }, { status: 404 });
   }
 
-  const uploaded = await uploadGptVizImage(sessionId, file);
+  const subfolder = kind === "inspiration" ? "inspiration" : "raum";
+  const uploaded = await uploadGptVizImage(sessionId, file, subfolder);
   if (!uploaded.ok) {
     return Response.json({ error: uploaded.error }, { status: 400 });
+  }
+
+  if (kind === "inspiration") {
+    const updated = await updateGptVizSession(sessionId, {
+      ziel_bild_url: uploaded.publicUrl,
+    });
+    if (!updated) {
+      return Response.json({ error: "Session-Update fehlgeschlagen." }, { status: 500 });
+    }
+    return Response.json({
+      url: uploaded.publicUrl,
+      ziel_bild_url: updated.ziel_bild_url,
+    });
   }
 
   const urls = [...session.ist_bilder_urls, uploaded.publicUrl];
