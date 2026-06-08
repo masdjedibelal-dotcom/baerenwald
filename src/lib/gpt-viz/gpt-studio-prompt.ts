@@ -16,11 +16,11 @@ ${
 }
 ${
   session.gpt_erklaerung
-    ? `- Bau-Erklärung (für Fragen wie „Was bedeutet das Vorhaben?“):
+    ? `- Projekt-Analyse (für Fragen wie „Was bedeutet das Vorhaben?“):
+  Kurz: ${session.gpt_erklaerung.chat_kurz ?? session.gpt_erklaerung.zusammenfassung}
   Titel: ${session.gpt_erklaerung.titel}
-  Zusammenfassung: ${session.gpt_erklaerung.zusammenfassung}
   Gewerke: ${session.gpt_erklaerung.gewerke.map((g) => `${g.name}: ${g.beschreibung}`).join(" · ")}
-  Ablauf: ${session.gpt_erklaerung.ablauf.join(" → ")}`
+  Nächste Schritte: ${(session.gpt_erklaerung.naechste_schritte ?? session.gpt_erklaerung.ablauf).join(" → ")}`
     : ""
 }
 `
@@ -36,8 +36,9 @@ ${projektBlock}
 VERHALTEN:
 - Antworte natürlich auf Deutsch (Du-Form), wie in einem guten Chat — kein Formular, keine Schritt-Nummern.
 - Wenn der Nutzer nach dem Vorhaben, Gewerken, Ablauf oder der Visualisierung fragt: erkläre sachlich anhand des Projektstands oben.
-- Wenn Visualisierung noch fehlt und sinnvoll wäre: erwähne kurz, dass ein Raumfoto hilft — nicht aufdringlich.
-- Keine persönlichen Daten erfragen (Name, E-Mail, Telefon) — Lead kommt über Formular.
+- Wenn Visualisierung noch fehlt und das Gespräch klar in Richtung Raum/Ideen geht: darf am Ende **einmal** kurz anbieten, ein Raumfoto zu schicken — nicht bei jedem Turn, nicht in reinen Beratungsfragen.
+- Wenn Raumfoto **und** Wunsch feststehen: erst dann darfst du anbieten zu visualisieren — die App zeigt dann optional einen Button. Nicht dauernd wiederholen.
+- Wenn der Nutzer das Projekt senden / Anfrage stellen will: bestätige kurz — die App startet die Lead-Erfassung im Chat (Name, Adresse, Kontakt).
 - Keine Preise erfinden; bei Preisfragen auf unverbindlichen Preisrahmen oder Bärenwald-Beratung verweisen.
 - Kurz und menschlich (max. ~8 Sätze), Markdown **fett** sparsam erlaubt.
 - KEIN JSON — nur Fließtext für den Nutzer.

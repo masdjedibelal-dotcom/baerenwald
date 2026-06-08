@@ -1,27 +1,30 @@
 "use client";
 
 import { Download, Loader2 } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 import {
   composeGptZielbildBlob,
   composeGptZielbildDataUrl,
   downloadZielbildBlob,
+  erklaerungFromBrief,
 } from "@/lib/gpt-viz/compose-zielbild";
+import type { GptVizBauErklaerung } from "@/lib/gpt-viz/types";
 
 type GptZielbildCardProps = {
   vorherUrl: string;
   nachherUrl: string;
-  beschreibung: string;
+  erklaerung?: GptVizBauErklaerung | null;
   className?: string;
 };
 
 export function GptZielbildCard({
   vorherUrl,
   nachherUrl,
-  beschreibung,
+  erklaerung,
   className,
 }: GptZielbildCardProps) {
+  const resolved = useMemo(() => erklaerungFromBrief(erklaerung), [erklaerung]);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -33,7 +36,7 @@ export function GptZielbildCard({
     setError(null);
     setPreviewUrl(null);
 
-    void composeGptZielbildDataUrl({ vorherUrl, nachherUrl, beschreibung })
+    void composeGptZielbildDataUrl({ vorherUrl, nachherUrl, erklaerung: resolved })
       .then((url) => {
         if (!cancelled) setPreviewUrl(url);
       })
@@ -49,27 +52,27 @@ export function GptZielbildCard({
     return () => {
       cancelled = true;
     };
-  }, [vorherUrl, nachherUrl, beschreibung]);
+  }, [vorherUrl, nachherUrl, resolved]);
 
   const handleDownload = useCallback(async () => {
     setDownloading(true);
     setError(null);
     try {
-      const blob = await composeGptZielbildBlob({ vorherUrl, nachherUrl, beschreibung });
+      const blob = await composeGptZielbildBlob({ vorherUrl, nachherUrl, erklaerung: resolved });
       downloadZielbildBlob(blob);
     } catch {
       setError("Download fehlgeschlagen.");
     } finally {
       setDownloading(false);
     }
-  }, [vorherUrl, nachherUrl, beschreibung]);
+  }, [vorherUrl, nachherUrl, resolved]);
 
   return (
     <div className={className ? `gpt-zielbild-card ${className}` : "gpt-zielbild-card"}>
       <div className="gpt-zielbild-card-head">
         <p className="gpt-zielbild-card-title">Dein Zielbild</p>
         <p className="gpt-zielbild-card-hint">
-          Bärenwald GPT · Vorher &amp; Nachher · dein Wunsch — eine PNG zum Teilen oder Speichern.
+          Bärenwald GPT · Vorher &amp; Nachher · Projekt-Analyse — PNG zum Teilen oder Speichern.
         </p>
       </div>
 

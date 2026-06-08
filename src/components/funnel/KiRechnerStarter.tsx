@@ -36,9 +36,8 @@ export function KiRechnerStarter({ selected, onSelect }: KiRechnerStarterProps) 
         </span>
         <span className="ki-rechner-starter-card-title">Frag einfach los</span>
         <span className="ki-rechner-starter-card-hint">
-          Ob erste Idee oder konkretes Projekt: BärenwaldGPT erklärt dir
-          Handwerks-Themen, sortiert dein Vorhaben — und berechnet danach einen
-          Preisrahmen für München.
+          Beraten, Räume visualisieren und dein Projekt direkt im Chat anfragen —
+          mit dem gleichen BärenwaldGPT wie im Kundenportal.
         </span>
       </button>
 

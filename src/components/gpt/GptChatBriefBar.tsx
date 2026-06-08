@@ -41,7 +41,7 @@ export function GptChatBriefBar({ brief }: GptChatBriefBarProps) {
             <GptZielbildCard
               vorherUrl={brief.ist_bilder_urls[0]}
               nachherUrl={brief.ergebnis_bild_url}
-              beschreibung={brief.wunsch_text ?? ""}
+              erklaerung={brief.gpt_erklaerung}
               className="gpt-chat-zielbild"
             />
           ) : null}

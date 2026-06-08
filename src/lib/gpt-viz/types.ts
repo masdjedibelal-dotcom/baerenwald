@@ -22,10 +22,18 @@ export type GptVizRenderVersion = {
 
 export type GptVizBauErklaerung = {
   titel: string;
+  /** 2–3 Sätze für die Chat-Bubble direkt nach dem Render. */
+  chat_kurz: string;
+  /** Headline im Zielbild-PNG (z. B. „Dein Weg zum Traumbad“). */
+  zielbild_headline: string;
   zusammenfassung: string;
   gewerke: Array<{ name: string; beschreibung: string }>;
   ablauf: string[];
+  /** 3 kurze Schritte für Zielbild & Verkauf (ohne Zeitangaben). */
+  naechste_schritte: string[];
   hinweis_gu?: string;
+  /** CTA-Text auf dem Zielbild (z. B. „Projekt kostenlos anfragen“). */
+  cta_text: string;
   preis_hinweis_optional?: string;
 };
 

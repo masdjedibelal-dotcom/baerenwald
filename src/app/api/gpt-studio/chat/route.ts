@@ -14,6 +14,11 @@ import {
   KI_RATE_LIMIT_PER_HOUR,
 } from "@/lib/ki-rechner/guards";
 import { buildGptStudioSystemPrompt } from "@/lib/gpt-viz/gpt-studio-prompt";
+import { buildGptStudioLeadPrompt } from "@/lib/gpt-viz/gpt-studio-lead-prompt";
+import { detectGptStudioIntent } from "@/lib/gpt-viz/gpt-studio-intents";
+import { classifyKiConversation } from "@/lib/ki-rechner/classify-conversation";
+import type { KiParsedBekannt } from "@/lib/ki-rechner/types";
+import type { GptLeadDraft, GptLeadField } from "@/lib/gpt-viz/lead-collect";
 import { getGptVizSession } from "@/lib/gpt-viz/session";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { getClientIp } from "@/lib/request-ip";
@@ -22,6 +27,39 @@ export const runtime = "nodejs";
 export const maxDuration = 60;
 
 type ChatMessage = { role: "user" | "assistant"; content: string };
+
+async function buildPriceHandoffFields(
+  body: {
+    price_handoff_check?: boolean;
+    lead_active?: boolean;
+    viz_flow_active?: boolean;
+  },
+  sanitized: ChatMessage[]
+) {
+  if (!body.price_handoff_check || body.lead_active || body.viz_flow_active) {
+    return {};
+  }
+
+  try {
+    const classified = await classifyKiConversation(sanitized);
+    if (!classified) return {};
+
+    const { typ, parsed } = classified;
+    if (typ === "bekannt" && parsed?.typ === "bekannt") {
+      return {
+        priceHandoffTyp: typ,
+        priceHandoffParsed: parsed as KiParsedBekannt,
+      };
+    }
+    if (typ === "unbekannt" || typ === "zu_komplex") {
+      return { priceHandoffTyp: typ, priceHandoffParsed: parsed };
+    }
+  } catch (err) {
+    console.error("[gpt-studio] price handoff classify failed:", err);
+  }
+
+  return {};
+}
 
 export async function POST(req: Request) {
   const apiKey = getClaudeApiKey();
@@ -35,7 +73,16 @@ export async function POST(req: Request) {
     return Response.json({ error: "Zu viele Anfragen — bitte später erneut." }, { status: 429 });
   }
 
-  let body: { messages?: ChatMessage[]; gpt_session_id?: string; wunsch_text?: string };
+  let body: {
+    messages?: ChatMessage[];
+    gpt_session_id?: string;
+    wunsch_text?: string;
+    lead_active?: boolean;
+    lead_draft?: GptLeadDraft;
+    lead_next_field?: GptLeadField;
+    viz_flow_active?: boolean;
+    price_handoff_check?: boolean;
+  };
   try {
     body = await req.json();
   } catch {
@@ -82,7 +129,14 @@ export async function POST(req: Request) {
   if (session && clientWunsch && clientWunsch !== session.wunsch_text?.trim()) {
     session = { ...session, wunsch_text: clientWunsch };
   }
-  const system = buildGptStudioSystemPrompt(session);
+
+  const leadActive = Boolean(body.lead_active);
+  const leadDraft = (body.lead_draft ?? {}) as GptLeadDraft;
+  const leadNextField = body.lead_next_field as GptLeadField | undefined;
+
+  const system = leadActive
+    ? `${buildGptStudioSystemPrompt(session)}\n\n${buildGptStudioLeadPrompt(leadDraft, leadNextField ?? null)}`
+    : buildGptStudioSystemPrompt(session);
 
   const client = createAnthropicClient(apiKey);
   const models = [getClaudeModel(), ...KI_CLAUDE_MODEL_FALLBACKS].filter(
@@ -119,14 +173,19 @@ export async function POST(req: Request) {
       .trim();
 
     const lower = lastUser.toLowerCase();
-    const wantsRender =
-      /\b(visualisier|render|so umsetzen|zeig mir|mach das bild)\b/i.test(lower) &&
-      Boolean(session?.ist_bilder_urls.length) &&
-      Boolean(clientWunsch || session?.wunsch_text?.trim());
+    const intent = detectGptStudioIntent({
+      lastUser: lower,
+      leadActive,
+      vizFlowActive: Boolean(body.viz_flow_active),
+      hasPhoto: Boolean(session?.ist_bilder_urls.length),
+      hasWunsch: Boolean(clientWunsch || session?.wunsch_text?.trim()),
+      hasRenderResult: Boolean(session?.ergebnis_bild_url),
+    });
 
     return Response.json({
       displayText: text || "Wie kann ich dir weiterhelfen?",
-      intent: wantsRender ? "render" : null,
+      intent,
+      ...(await buildPriceHandoffFields(body, sanitized)),
     });
   } catch (err) {
     const mapped = mapKiClaudeErrorToResponse(err);

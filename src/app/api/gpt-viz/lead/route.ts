@@ -18,6 +18,8 @@ export async function POST(req: Request) {
     name?: string;
     email?: string;
     telefon?: string;
+    strasse?: string;
+    hausnummer?: string;
     plz?: string;
     notizen?: string;
   };
@@ -46,6 +48,8 @@ export async function POST(req: Request) {
     email: body.email,
     telefon: body.telefon,
     plz: body.plz,
+    strasse: body.strasse,
+    hausnummer: body.hausnummer,
     notizen: body.notizen,
     situation: "erneuern",
     bereiche,

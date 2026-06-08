@@ -13,13 +13,13 @@ const STEPS = [
   },
   {
     n: "2",
-    title: "Beratung im Chat",
-    desc: "Gewerke, Ablauf und typische Fragen klären.",
+    title: "Beraten & visualisieren",
+    desc: "Gewerke klären — optional deinen Raum mit Foto visualisieren.",
   },
   {
     n: "3",
-    title: "Optional Preisrahmen",
-    desc: "Unverbindliche Orientierung, wenn du soweit bist.",
+    title: "Projekt anfragen",
+    desc: "Kontaktdaten im Chat — Bärenwald meldet sich bei dir.",
   },
 ] as const;
 
@@ -43,8 +43,8 @@ export function KiBeratungLandingSection() {
           </div>
         </div>
         <p className="ki-beratung-landing-sub">
-          Handwerkliches klären, bevor du den Preis siehst — Renovierung und Umbau
-          in München, mit einem Ansprechpartner.
+          Beraten, visualisieren, anfragen — Renovierung und Umbau in München,
+          mit einem Ansprechpartner.
         </p>
 
         <ol className="ki-beratung-landing-steps">

@@ -1,6 +1,5 @@
 "use client";
 
-import { GptChatLeadInline } from "@/components/gpt/GptChatLeadInline";
 import { GptZielbildCard } from "@/components/gpt/GptZielbildCard";
 import { renderChatMarkdown } from "@/components/gpt/gpt-chat-markdown";
 import type { GptChatMessage } from "@/components/gpt/gpt-chat-types";
@@ -8,18 +7,10 @@ import type { GptChatMessage } from "@/components/gpt/gpt-chat-types";
 type GptChatBubbleProps = {
   message: GptChatMessage;
   onAction?: (actionId: string) => void;
-  sessionId?: string | null;
-  onLeadSuccess?: () => void;
   disabled?: boolean;
 };
 
-export function GptChatBubble({
-  message,
-  onAction,
-  sessionId,
-  onLeadSuccess,
-  disabled,
-}: GptChatBubbleProps) {
+export function GptChatBubble({ message, onAction, disabled }: GptChatBubbleProps) {
   const isUser = message.role === "user";
 
   return (
@@ -53,24 +44,20 @@ export function GptChatBubble({
             <GptZielbildCard
               vorherUrl={message.compare.before.url}
               nachherUrl={message.compare.after.url}
-              beschreibung={message.compare.beschreibung ?? ""}
+              erklaerung={message.compare.erklaerung}
               className="gpt-chat-zielbild"
             />
           </div>
         ) : null}
 
-        {message.showLeadForm && sessionId && onLeadSuccess ? (
-          <GptChatLeadInline sessionId={sessionId} onSuccess={onLeadSuccess} />
-        ) : null}
-
         {message.actions && message.actions.length > 0 && onAction ? (
-          <div className="gpt-chat-inline-actions">
+          <div className="gpt-chat-cta-row">
             {message.actions.map((a) => (
               <button
                 key={a.id}
                 type="button"
                 disabled={disabled}
-                className="gpt-chat-inline-action"
+                className="gpt-chat-cta-btn"
                 onClick={() => onAction(a.id)}
               >
                 {a.label}

@@ -1,14 +1,14 @@
 "use client";
 
 import { GptZielbildCard } from "@/components/gpt/GptZielbildCard";
-import type { GptVizRenderVersion } from "@/lib/gpt-viz/types";
+import type { GptVizBauErklaerung, GptVizRenderVersion } from "@/lib/gpt-viz/types";
 
 type GptVizBeforeAfterProps = {
   istUrl: string;
   ergebnisUrl: string;
   historie: GptVizRenderVersion[];
   onVersionSelect: (url: string) => void;
-  beschreibung?: string;
+  erklaerung?: GptVizBauErklaerung | null;
 };
 
 export function GptVizBeforeAfter({
@@ -16,7 +16,7 @@ export function GptVizBeforeAfter({
   ergebnisUrl,
   historie,
   onVersionSelect,
-  beschreibung = "",
+  erklaerung,
 }: GptVizBeforeAfterProps) {
   return (
     <div className="gpt-viz-result-layout">
@@ -56,7 +56,7 @@ export function GptVizBeforeAfter({
       <GptZielbildCard
         vorherUrl={istUrl}
         nachherUrl={ergebnisUrl}
-        beschreibung={beschreibung}
+        erklaerung={erklaerung}
         className="gpt-viz-result-zielbild"
       />
     </div>

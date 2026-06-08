@@ -61,6 +61,7 @@ function PortalBaerenwaldGptInner({
     <div className="portal-gpt-shell">
       <div className="portal-gpt-body portal-gpt-chat-active">
         <GptStudioChat
+          priceHandoff
           locked={kiChatLocked}
           onPreisBereit={handlePreisBereit}
           onBeratungBereit={handleBeratungBereit}

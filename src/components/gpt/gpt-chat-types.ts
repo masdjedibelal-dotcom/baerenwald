@@ -1,3 +1,5 @@
+import type { GptVizBauErklaerung } from "@/lib/gpt-viz/types";
+
 export type GptChatAction = {
   id: string;
   label: string;
@@ -15,9 +17,12 @@ export type GptChatMessage = {
   role: "user" | "assistant";
   text?: string;
   userImage?: GptChatImageRef;
-  compare?: { before: GptChatImageRef; after: GptChatImageRef; beschreibung?: string };
+  compare?: {
+    before: GptChatImageRef;
+    after: GptChatImageRef;
+    erklaerung?: GptVizBauErklaerung | null;
+  };
   actions?: GptChatAction[];
-  showLeadForm?: boolean;
 };
 
 export type GptVizPhase =
@@ -49,11 +54,12 @@ export function messagesForClaude(
       const parts: string[] = [];
       if (m.text?.trim()) parts.push(m.text.trim());
       if (m.compare) {
-        parts.push(
-          `[Visualisierung erstellt — Vorher/Nachher. Wunsch: ${m.compare.beschreibung ?? ""}]`
-        );
+        const summary =
+          m.compare.erklaerung?.chat_kurz ??
+          m.compare.erklaerung?.zusammenfassung ??
+          "Visualisierung erstellt — Vorher/Nachher.";
+        parts.push(`[Visualisierung erstellt — ${summary}]`);
       }
-      if (m.showLeadForm) parts.push("[Formular: Projekt an Bärenwald senden]");
       if (parts.length) out.push({ role: "assistant", content: parts.join("\n\n") });
     }
   }

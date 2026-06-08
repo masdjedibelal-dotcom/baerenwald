@@ -37,7 +37,7 @@ import { SelectionTile } from "@/components/funnel/SelectionTile";
 import { StepWrapper } from "@/components/funnel/StepWrapper";
 import { ThankYou } from "@/components/funnel/ThankYou";
 import { DatenschutzCheckbox } from "@/components/funnel/DatenschutzCheckbox";
-import { KiRechnerChat } from "@/components/funnel/KiRechnerChat";
+import { RechnerGptChat } from "@/components/gpt/RechnerGptChat";
 import type { KiRechnerFunnelData } from "@/components/funnel/KiRechnerChat";
 import {
   KiRechnerStarter,
@@ -48,11 +48,11 @@ import {
   useFunnelState,
 } from "@/hooks/funnel/useFunnelState";
 import { kiPayloadToFunnelHandoff } from "@/lib/ki-rechner/apply-payload";
+import type { KiParsedBekannt } from "@/lib/ki-rechner/types";
 import {
   getKiModusFromSearch,
   isKiBeratungModusParam,
 } from "@/lib/rechner-links";
-import type { KiParsedBekannt } from "@/lib/ki-rechner/types";
 import {
   getGroesseConfig,
   getKundentypStep,
@@ -226,12 +226,12 @@ function FunnelRechnerInner() {
   const [wahlAuswahl, setWahlAuswahl] = useState<EinstiegWahl | null>(() =>
     isKiBeratungModusParam(searchParams.get("modus")) ? "ki" : null
   );
+  /** Funnel-Screen (Preis, Komplex, Beratung) aus KI → Zurück zur Auswahl-Weiche. */
+  const [preisVonKiModus, setPreisVonKiModus] = useState(false);
   /** KI-Chat gesperrt, sobald Preis berechnet werden kann. */
   const [kiChatLocked, setKiChatLocked] = useState(false);
   const [kiPreisBereit, setKiPreisBereit] = useState(false);
   const [kiBeratungBereit, setKiBeratungBereit] = useState(false);
-  /** Funnel-Screen (Preis, Komplex, Beratung) aus KI → Zurück zur Auswahl-Weiche. */
-  const [preisVonKiModus, setPreisVonKiModus] = useState(false);
   const [screen, setScreen] = useState<Screen>("trust_intro");
   const [mindestauftragAktiv, setMindestauftrag] = useState(false);
   const [isAusserhalbLead, setIsAusserhalbLead] = useState(false);
@@ -442,8 +442,6 @@ function FunnelRechnerInner() {
     });
   }, [router, searchParams]);
 
-  type KiHandoffStatus = "preis" | "ort" | "beratung" | "invalid";
-
   const resetKiFlowState = useCallback(() => {
     kiHandoffRef.current = null;
     setKiChatLocked(false);
@@ -489,6 +487,8 @@ function FunnelRechnerInner() {
     },
     [preisVonKiModus, goBackFromKiPreisErgebnis]
   );
+
+  type KiHandoffStatus = "preis" | "ort" | "beratung" | "invalid";
 
   const runKiHandoff = useCallback(
     (
@@ -662,11 +662,7 @@ function FunnelRechnerInner() {
   useEffect(() => {
     if (!isKiBeratungModusParam(getKiModusFromSearch(searchParams))) return;
 
-    kiHandoffRef.current = null;
-    setKiChatLocked(false);
-    setKiPreisBereit(false);
-    setKiBeratungBereit(false);
-    setPreisVonKiModus(false);
+    resetKiFlowState();
     setWahlAuswahl("ki");
     setEinstiegModus("ki");
 
@@ -678,7 +674,7 @@ function FunnelRechnerInner() {
     router.replace(qs ? `${next.pathname}?${qs}` : next.pathname, {
       scroll: false,
     });
-  }, [searchParams, router]);
+  }, [searchParams, router, resetKiFlowState]);
 
   useEffect(() => {
     if (urlInit.current) return;
@@ -1861,7 +1857,7 @@ function FunnelRechnerInner() {
 
     if (einstiegModus === "ki") {
       return (
-        <KiRechnerChat
+        <RechnerGptChat
           locked={kiChatLocked}
           onPreisBereit={handleKiPreisBereit}
           onBeratungBereit={handleKiBeratungBereit}
@@ -2769,9 +2765,11 @@ function FunnelRechnerInner() {
       {showFooterNav ? (
         <FunnelFooter
           onNext={
-            screen === "result" && isBwZuKomplexErgebnis(state, resultModus)
-              ? undefined
-              : handleNext
+            einstiegModus === "ki"
+              ? handleNext
+              : screen === "result" && isBwZuKomplexErgebnis(state, resultModus)
+                ? undefined
+                : handleNext
           }
           onBack={
             einstiegModus === "trust" && screen === "trust_intro"
