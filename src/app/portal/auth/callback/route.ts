@@ -27,9 +27,15 @@ export async function GET(request: Request) {
           telefon: meta?.telefon,
         });
       }
-      return NextResponse.redirect(`${origin}${next}`);
+      const safeNext = next.startsWith("/portal") ? next : "/portal";
+      return NextResponse.redirect(`${origin}${safeNext}`);
     }
+    console.error("[portal/auth/callback]", error.message);
   }
 
-  return NextResponse.redirect(`${origin}/portal/login?error=auth`);
+  const authError = searchParams.get("error_description") ?? searchParams.get("error");
+  const query = authError
+    ? `?error=auth&msg=${encodeURIComponent(authError.slice(0, 120))}`
+    : "?error=auth";
+  return NextResponse.redirect(`${origin}/portal/login${query}`);
 }

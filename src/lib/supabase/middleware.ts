@@ -5,12 +5,14 @@ const PUBLIC_PORTAL_PATHS = [
   "/portal/login",
   "/portal/registrieren",
   "/portal/passwort-vergessen",
+  "/portal/passwort-neu",
 ];
 
 const PUBLIC_PARTNER_PATHS = [
   "/partner/login",
   "/partner/registrieren",
   "/partner/passwort-vergessen",
+  "/partner/passwort-neu",
 ];
 
 type AuthArea = "portal" | "partner";
@@ -80,6 +82,7 @@ export async function updateSession(request: NextRequest) {
       "login",
       "registrieren",
       "passwort-vergessen",
+      "passwort-neu",
       "auth",
     ]);
     if (!knownRoutes.has(sub)) {
@@ -100,7 +103,13 @@ export async function updateSession(request: NextRequest) {
     user?.email_confirmed_at ?? user?.confirmed_at
   );
 
+  const passwordUpdatePath =
+    area === "portal" ? "/portal/passwort-neu" : "/partner/passwort-neu";
+
   if (user && !emailConfirmed && !isPublic && path !== loginPath) {
+    if (path === passwordUpdatePath) {
+      return supabaseResponse;
+    }
     const url = request.nextUrl.clone();
     url.pathname = loginPath;
     url.searchParams.set("hint", "confirm");

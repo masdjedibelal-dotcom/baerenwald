@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 
-import { partnerAuthCallbackUrl } from "@/lib/partner/partner-auth-url";
+import { partnerPasswordResetCallbackUrl } from "@/lib/partner/partner-auth-url";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 
 export function PartnerPasswordResetForm() {
@@ -19,7 +19,7 @@ export function PartnerPasswordResetForm() {
     const supabase = getSupabaseBrowserClient();
     const { error: resetError } = await supabase.auth.resetPasswordForEmail(
       email.trim(),
-      { redirectTo: partnerAuthCallbackUrl() }
+      { redirectTo: partnerPasswordResetCallbackUrl() }
     );
     setLoading(false);
     if (resetError) {

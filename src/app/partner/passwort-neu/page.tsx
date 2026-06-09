@@ -1,0 +1,19 @@
+import { PortalAuthShell } from "@/components/portal/PortalAuthShell";
+import { PortalSetPasswordForm } from "@/components/portal/PortalSetPasswordForm";
+
+export const metadata = {
+  title: "Neues Passwort — Partner-Portal",
+  robots: { index: false, follow: false },
+};
+
+export default function PartnerPasswordNewPage() {
+  return (
+    <PortalAuthShell title="Neues Passwort festlegen">
+      <PortalSetPasswordForm
+        homeHref="/partner"
+        loginHref="/partner/login"
+        forgotHref="/partner/passwort-vergessen"
+      />
+    </PortalAuthShell>
+  );
+}

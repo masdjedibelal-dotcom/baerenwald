@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 
-import { portalAuthCallbackUrl } from "@/lib/portal/portal-auth-url";
+import { portalPasswordResetCallbackUrl } from "@/lib/portal/portal-auth-url";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 
 export function PortalPasswordResetForm() {
@@ -19,7 +19,7 @@ export function PortalPasswordResetForm() {
     const supabase = getSupabaseBrowserClient();
     const { error: resetError } = await supabase.auth.resetPasswordForEmail(
       email.trim(),
-      { redirectTo: portalAuthCallbackUrl() }
+      { redirectTo: portalPasswordResetCallbackUrl() }
     );
     setLoading(false);
     if (resetError) {

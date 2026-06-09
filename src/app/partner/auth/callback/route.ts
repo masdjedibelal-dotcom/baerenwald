@@ -21,9 +21,15 @@ export async function GET(request: Request) {
           email: user.email,
         });
       }
-      return NextResponse.redirect(`${origin}${next}`);
+      const safeNext = next.startsWith("/partner") ? next : "/partner";
+      return NextResponse.redirect(`${origin}${safeNext}`);
     }
+    console.error("[partner/auth/callback]", error.message);
   }
 
-  return NextResponse.redirect(`${origin}/partner/login?error=auth`);
+  const authError = searchParams.get("error_description") ?? searchParams.get("error");
+  const query = authError
+    ? `?error=auth&msg=${encodeURIComponent(authError.slice(0, 120))}`
+    : "?error=auth";
+  return NextResponse.redirect(`${origin}/partner/login${query}`);
 }

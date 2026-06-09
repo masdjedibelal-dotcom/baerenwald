@@ -12,6 +12,7 @@ export function PortalLoginForm() {
   const searchParams = useSearchParams();
   const hint = searchParams.get("hint");
   const authError = searchParams.get("error");
+  const authMsg = searchParams.get("msg");
   const next = searchParams.get("next") || "/portal";
 
   const [email, setEmail] = useState("");
@@ -59,7 +60,7 @@ export function PortalLoginForm() {
       ) : null}
       {authError ? (
         <p className="rounded-lg bg-red-50 px-3 py-2 portal-text-body text-red-800">
-          Anmeldung fehlgeschlagen. Bitte versuche es erneut.
+          {authMsg ?? "Anmeldung fehlgeschlagen. Bitte versuche es erneut."}
         </p>
       ) : null}
       {error ? (

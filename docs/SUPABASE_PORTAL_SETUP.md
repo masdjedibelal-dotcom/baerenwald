@@ -67,10 +67,22 @@ https://baerenwaldmuenchen.de
 
 ```
 https://baerenwaldmuenchen.de/portal/auth/callback
+https://baerenwaldmuenchen.de/portal/auth/callback?next=%2Fportal%2Fpasswort-neu
 https://baerenwaldmuenchen.de/portal/login
+https://baerenwaldmuenchen.de/portal/passwort-neu
+https://baerenwaldmuenchen.de/partner/auth/callback
+https://baerenwaldmuenchen.de/partner/auth/callback?next=%2Fpartner%2Fpasswort-neu
+https://baerenwaldmuenchen.de/partner/passwort-neu
 http://localhost:3000/portal/auth/callback
+http://localhost:3000/portal/auth/callback?next=%2Fportal%2Fpasswort-neu
 http://localhost:3000/portal/login
+http://localhost:3000/portal/passwort-neu
+http://localhost:3000/partner/auth/callback
+http://localhost:3000/partner/auth/callback?next=%2Fpartner%2Fpasswort-neu
+http://localhost:3000/partner/passwort-neu
 ```
+
+> **Passwort-Reset:** Der Link aus der Mail landet auf `/portal/auth/callback`, tauscht den Code ein und leitet weiter zu **`/portal/passwort-neu`**, wo das neue Passwort gesetzt wird. Ohne diese Seite „funktioniert“ Reset nicht (nur eingeloggt, Passwort unverändert).
 
 ## 5. Authentication → Email Templates
 
@@ -160,8 +172,21 @@ Fehlt der Handwerker-Eintrag, im CRM unter Handwerker anlegen mit dieser E-Mail 
 
 ## 11. Test-Checkliste
 
+- [ ] **Supabase → Authentication → Logs** — nach Registrierung/Reset Eintrag sichtbar?
+- [ ] **Custom SMTP aktiv** — sonst kommen Mails extern oft gar nicht an
 - [ ] Registrierung → Bestätigungs-Mail → Link → eingeloggt → Dashboard
-- [ ] Login ohne Bestätigung → Fehlermeldung
+- [ ] Passwort vergessen → Mail → Link → **`/portal/passwort-neu`** → neues Passwort → Login
+- [ ] Login ohne Bestätigung → Fehlermeldung + „Erneut senden“
 - [ ] Bestehender Kunde (gleiche E-Mail) → sieht Anfragen/Aufträge
 - [ ] CRM: Angebot-Mail enthält Login-Link, kein Token-URL
 - [ ] Logout funktioniert
+
+## 12. Häufige Probleme
+
+| Symptom | Ursache | Fix |
+|---------|---------|-----|
+| Keine Bestätigungs-Mail | Default-SMTP (nur Team-E-Mails) | Custom SMTP mit Resend (Abschnitt 2) |
+| „Email address not authorized“ in Auth-Logs | Absender nicht verifiziert | Domain in Resend + gleiche Adresse in SMTP Sender |
+| Reset-Link öffnet Portal, Passwort ändert sich nicht | Fehlende `/passwort-neu`-Seite | Code-Deploy + Redirect-URLs (Abschnitt 4) |
+| Link „invalid“ / sofort abgelaufen | Redirect-URL nicht in Allow-List | Alle URLs aus Abschnitt 4 eintragen |
+| Lokal testen, Link zeigt auf Prod | `NEXT_PUBLIC_SITE_URL` falsch | Lokal `http://localhost:3000` setzen |
