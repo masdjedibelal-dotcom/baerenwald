@@ -5187,6 +5187,19 @@
   max-height: calc(100dvh - 60px - 7.25rem - 28px);
 }
 
+/* Beim Tippen: Rechner-Footer ausblenden — Composer braucht den Platz (Web + Mobil) */
+.ki-rechner-chat-active.ki-input-focused > footer.funnel-footer {
+  display: none;
+}
+
+.ki-rechner-chat-scroll-anchor {
+  flex-shrink: 0;
+  width: 100%;
+  height: 2px;
+  scroll-margin-bottom: 12px;
+  pointer-events: none;
+}
+
 /* KI-Chat Desktop: Chat füllt Bereich bis Footer, Composer unten */
 @media (min-width: 769px) {
   .ki-rechner-chat-active {
@@ -5238,7 +5251,7 @@
     transition: opacity 0.15s ease, transform 0.15s ease;
   }
 
-  /* Tastatur offen: Footer weg, damit Composer + letzte Nachricht sichtbar bleiben */
+  /* Tastatur / Fokus: Footer weg, damit Composer + letzte Nachricht sichtbar bleiben */
   .ki-rechner-chat-active.ki-keyboard-open > footer.funnel-footer,
   .ki-rechner-chat-active.ki-input-focused > footer.funnel-footer {
     display: none;
@@ -5866,6 +5879,13 @@
   max-height: calc(1.45em * 6 + 20px);
   resize: none;
   overflow-y: hidden;
+  field-sizing: content;
+}
+
+@supports not (field-sizing: content) {
+  .ki-rechner-chat-textarea {
+    overflow-y: auto;
+  }
 }
 
 .ki-rechner-chat-input:focus {

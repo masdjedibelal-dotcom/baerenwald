@@ -18,6 +18,7 @@ import {
 import { useGptProjekt } from "@/components/gpt/gpt-projekt-context";
 import type { KiRechnerFunnelData } from "@/components/funnel/KiRechnerChat";
 import type { KiParsedBekannt } from "@/lib/ki-rechner/types";
+import { useGptChatScroll } from "@/hooks/use-gpt-chat-scroll";
 import { useMobileComposerInset } from "@/hooks/use-mobile-composer-inset";
 import { GPT_VIZ_MAX_RENDERS, VIZ_NACHPROMPT_TAGS } from "@/lib/gpt-viz/constants";
 import {
@@ -34,13 +35,10 @@ import type { GptVizBauErklaerung, GptVizRaumAnalyse } from "@/lib/gpt-viz/types
 import {
   countUserMessages,
   KI_MAX_USER_MESSAGES,
-  KI_TEXTAREA_MAX_LINES,
 } from "@/lib/ki-rechner/guards";
 import { cn } from "@/lib/utils";
 
 import "./gpt-viz.css";
-
-const TEXTAREA_MIN_HEIGHT_PX = 40;
 
 const INITIAL_TEXT = `Hi! Ich bin dein Handwerks-Assistent von Bärenwald — für Renovierung, Reparatur und Umbau in München.
 
@@ -108,6 +106,7 @@ export function GptStudioChat({
   const [error, setError] = useState<string | null>(null);
   const chatRootRef = useRef<HTMLDivElement>(null);
   const messagesScrollRef = useRef<HTMLDivElement>(null);
+  const composerRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -121,6 +120,15 @@ export function GptStudioChat({
 
   useMobileComposerInset(chatRootRef);
 
+  const { syncTextareaHeight, handleInputFocus, handleInputBlur } = useGptChatScroll({
+    chatRootRef,
+    messagesScrollRef,
+    composerRef,
+    messagesEndRef,
+    textareaRef,
+    scrollTriggers: [messages, loading, error, brief?.ergebnis_bild_url, brief?.gpt_erklaerung],
+  });
+
   const append = useCallback((msg: Omit<GptChatMessage, "id"> & { id?: string }) => {
     setMessages((prev) => [...prev, { ...msg, id: msg.id ?? newChatId() }]);
   }, []);
@@ -131,19 +139,6 @@ export function GptStudioChat({
     },
     [append]
   );
-
-  const scrollChatToEnd = useCallback(() => {
-    requestAnimationFrame(() => {
-      messagesScrollRef.current?.scrollTo({
-        top: messagesScrollRef.current.scrollHeight,
-        behavior: "smooth",
-      });
-    });
-  }, []);
-
-  useEffect(() => {
-    scrollChatToEnd();
-  }, [messages, loading, scrollChatToEnd]);
 
   useEffect(() => {
     void mergeChatVerlauf(textMessagesForSync(messages));
@@ -161,17 +156,6 @@ export function GptStudioChat({
       setVizPhase("wunsch_confirm");
     }
   }, [brief]);
-
-  const syncTextareaHeight = useCallback(() => {
-    const ta = textareaRef.current;
-    if (!ta) return;
-    ta.style.height = "auto";
-    const styles = getComputedStyle(ta);
-    const lineHeight = parseFloat(styles.lineHeight) || 22;
-    const padY = parseFloat(styles.paddingTop) + parseFloat(styles.paddingBottom);
-    const maxHeight = lineHeight * KI_TEXTAREA_MAX_LINES + padY;
-    ta.style.height = `${Math.max(TEXTAREA_MIN_HEIGHT_PX, Math.min(ta.scrollHeight, maxHeight))}px`;
-  }, []);
 
   useEffect(() => {
     syncTextareaHeight();
@@ -735,14 +719,14 @@ export function GptStudioChat({
           </div>
         ) : null}
 
-        <div ref={messagesEndRef} />
+        <div ref={messagesEndRef} className="ki-rechner-chat-scroll-anchor" aria-hidden />
       </div>
 
       {error ? <p className="ki-rechner-chat-error" role="alert">{error}</p> : null}
 
       <GptChatBriefBar brief={brief} />
 
-      <div className="ki-rechner-chat-composer">
+      <div ref={composerRef} className="ki-rechner-chat-composer">
         <div className={cn("ki-rechner-chat-inputbar gpt-chat-inputbar", limitReached && "ki-rechner-chat-inputbar--disabled")}>
           <input
             ref={fileInputRef}
@@ -770,7 +754,12 @@ export function GptStudioChat({
             rows={1}
             enterKeyHint="send"
             value={input}
-            onChange={(e) => setInput(e.target.value)}
+            onChange={(e) => {
+              setInput(e.target.value);
+              requestAnimationFrame(syncTextareaHeight);
+            }}
+            onFocus={handleInputFocus}
+            onBlur={handleInputBlur}
             onKeyDown={(e) => {
               if (e.key === "Enter" && !e.shiftKey) {
                 e.preventDefault();

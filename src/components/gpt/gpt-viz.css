@@ -225,6 +225,43 @@
   line-height: 1.4;
 }
 
+.gpt-zielbild-format-toggle {
+  display: inline-flex;
+  gap: 0.35rem;
+  margin-top: 0.35rem;
+  padding: 0.2rem;
+  border-radius: 999px;
+  background: rgba(26, 61, 43, 0.08);
+}
+
+.gpt-zielbild-format-toggle button {
+  border: none;
+  background: transparent;
+  color: #4a5e54;
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 0.35rem 0.65rem;
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+.gpt-zielbild-format-toggle button.is-active {
+  background: #fff;
+  color: #1a3d2b;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.gpt-zielbild-card-preview--story {
+  max-height: min(72vh, 640px);
+}
+
+.gpt-zielbild-card-preview--story .gpt-zielbild-card-img {
+  width: auto;
+  max-width: 100%;
+  max-height: min(72vh, 640px);
+  margin: 0 auto;
+}
+
 .gpt-zielbild-card-preview {
   border-radius: 10px;
   overflow: hidden;

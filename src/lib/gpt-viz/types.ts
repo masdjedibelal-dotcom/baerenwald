@@ -26,6 +26,10 @@ export type GptVizBauErklaerung = {
   chat_kurz: string;
   /** Headline im Zielbild-PNG (z. B. „Dein Weg zum Traumbad“). */
   zielbild_headline: string;
+  /** Ein editorialer Satz fürs Zielbild — kurz, share-tauglich. */
+  zielbild_teaser?: string;
+  /** Kleine Kicker-Zeile über der Headline, z. B. „BADNEU · MÜNCHEN“. */
+  zielbild_kicker?: string;
   zusammenfassung: string;
   gewerke: Array<{ name: string; beschreibung: string }>;
   ablauf: string[];

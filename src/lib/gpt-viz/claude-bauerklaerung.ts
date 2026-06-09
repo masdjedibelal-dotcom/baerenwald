@@ -6,29 +6,40 @@ import {
 import { extractJsonObject } from "@/lib/gpt-viz/claude-json";
 import type { GptVizBauErklaerung, GptVizRaumAnalyse } from "@/lib/gpt-viz/types";
 
-const SYSTEM = `Du bist Verkaufs- und Fachberater für Bärenwald — digitaler GU in München.
-Nach einer Raum-Visualisierung erklärst du dem Endkunden verkaufsorientiert, aber ehrlich, was für die Umsetzung nötig ist.
+const SYSTEM = `Du bist Creative Copywriter und Fachberater für Bärenwald — digitaler GU in München.
+Nach einer Raum-Visualisierung schreibst du Texte für ein share-taugliches Zielbild (Instagram Story / Pinterest Pin).
 
 Antwort NUR als JSON:
 {
-  "titel": "Projekttitel, z. B. Traumbad visualisiert",
-  "chat_kurz": "2–3 Sätze Du-Form für den Chat direkt nach dem Bild — begeistert, konkret, welche Gewerke nötig sind. Kein Rohtext des Kundenwunsches.",
-  "zielbild_headline": "Kurze Headline fürs Zielbild, z. B. Dein Weg zum Traumbad",
-  "zusammenfassung": "3–4 Sätze Du-Form — Gesamtüberblick fürs Projekt",
-  "gewerke": [{ "name": "Gewerk", "beschreibung": "1 kurzer Satz was gemacht wird" }],
-  "ablauf": ["Schritt …", "Schritt …"],
-  "naechste_schritte": ["1. …", "2. …", "3. …"],
-  "hinweis_gu": "1 Satz warum Bärenwald als GU sinnvoll ist",
-  "cta_text": "Projekt kostenlos anfragen",
-  "preis_hinweis_optional": "optional, vorsichtig, keine Euro-Beträge"
+  "titel": "Interner Projekttitel",
+  "chat_kurz": "2–3 Sätze Du-Form für den Chat nach dem Bild — warm, konkret, welche Gewerke nötig sind.",
+  "zielbild_kicker": "2–4 Wörter, editorial, z. B. BADNEU · MÜNCHEN oder RAUMVISION · WALNUSS",
+  "zielbild_headline": "Magazin-Headline, emotional, max. 7 Wörter",
+  "zielbild_teaser": "Ein aspirativer Satz, max. 75 Zeichen — Pinterest-Hook",
+  "zusammenfassung": "3–4 Sätze Du-Form — fachlicher Kontext (primär Chat/intern)",
+  "gewerke": [{ "name": "Gewerk", "beschreibung": "max. 4 Wörter" }],
+  "ablauf": ["Schritt …"],
+  "naechste_schritte": ["Anfrage", "Beratung", "Angebot annehmen", "Umsetzung"],
+  "hinweis_gu": "Eleganter Micro-Satz unter dem CTA, max. 55 Zeichen",
+  "cta_text": "Anfragen",
+  "preis_hinweis_optional": "optional, keine Euro-Beträge"
 }
 
+ZIELBILD-COPY — SO SCHreiben (Instagram/Pinterest):
+- zielbild_kicker: Raum + Stil oder Ort, mit · getrennt. Klingt wie ein Magazin-Rubrik. Kein „Visualisierung“.
+- zielbild_headline: Wie Pin-Titel oder Interior-Editorial — bildhaft, nicht technisch.
+  GUT: „Wohnen wie im Spa“, „Walnuss trifft Naturstein“, „Hell, klar, endlich deins“
+  SCHLECHT: „Dein Weg zum modernen Bad“, „Badrenovierung geplant“, „Visualisierung fertig“
+- zielbild_teaser: Ein Satz, der Lust aufs Projekt macht — leicht poetisch, kein Fachchinesisch.
+- cta_text: Max. 2–3 Wörter, aktiv: „Anfragen“, „Projekt starten“, „Loslegen“
+- naechste_schritte: 4 kurze Labels (2–3 Wörter) für Flow: Anfrage → Beratung → Angebot annehmen → Umsetzung
+- hinweis_gu: dezent, z. B. „Ein Ansprechpartner · alle Gewerke“
+- Gewerke: 3–4 Namen, kurz (Fliesen, Sanitär, Elektro …)
+
 REGELN:
-- Verkäuferisch, professionell, Du-Form — kein Copy-Paste des Kundenwunsches.
-- Gewerke: 3–5 realistische Positionen (Fliesen, Sanitär, Elektro …).
-- naechste_schritte: genau 3 Schritte (Beratung → Angebot → Umsetzung o.ä.).
-- KEINE Zeitangaben, keine Wochen/Dauer, keine erfundenen Preise.
-- Keine Kontaktdaten im Text.`;
+- Du-Form, verkaufsorientiert aber ehrlich — nie Kundenwunsch copy-pasten.
+- KEINE Zeitangaben, keine Preise, keine URLs, keine Kontaktdaten.
+- Kein JSON außerhalb des Blocks.`;
 
 function validate(raw: unknown): GptVizBauErklaerung {
   const o = raw as Record<string, unknown>;
@@ -41,9 +52,17 @@ function validate(raw: unknown): GptVizBauErklaerung {
   return {
     titel,
     chat_kurz: String(
-      o.chat_kurz ?? (zusammenfassung.slice(0, 280) || "So könnte dein Raum aussehen — wir begleiten dich von der Idee bis zur Umsetzung.")
+      o.chat_kurz ??
+        (zusammenfassung.slice(0, 280) ||
+          "So könnte dein Raum aussehen — wir begleiten dich von der Idee bis zur Umsetzung.")
     ),
-    zielbild_headline: String(o.zielbild_headline ?? titel),
+    zielbild_kicker: o.zielbild_kicker ? String(o.zielbild_kicker).slice(0, 48) : undefined,
+    zielbild_headline: String(o.zielbild_headline ?? titel).slice(0, 80),
+    zielbild_teaser: String(
+      o.zielbild_teaser ??
+        (zusammenfassung.split(/[.!?]/)[0]?.trim().slice(0, 90) ||
+          "Dein Wunschraum — umgesetzt aus einer Hand.")
+    ).slice(0, 100),
     zusammenfassung,
     gewerke: gewerke.slice(0, 6).map((g) => {
       const item = g as Record<string, unknown>;
@@ -53,9 +72,11 @@ function validate(raw: unknown): GptVizBauErklaerung {
       };
     }),
     ablauf: ablauf.map(String),
-    naechste_schritte: schritte.slice(0, 3).map(String),
-    hinweis_gu: o.hinweis_gu ? String(o.hinweis_gu) : undefined,
-    cta_text: String(o.cta_text ?? "Projekt kostenlos anfragen"),
+    naechste_schritte: schritte
+      .slice(0, 4)
+      .map((s) => String(s).replace(/^\d+[.)]\s*/, "").trim()),
+    hinweis_gu: o.hinweis_gu ? String(o.hinweis_gu).slice(0, 70) : undefined,
+    cta_text: String(o.cta_text ?? "Anfragen").slice(0, 28),
     preis_hinweis_optional: o.preis_hinweis_optional
       ? String(o.preis_hinweis_optional)
       : undefined,
@@ -81,7 +102,7 @@ export async function generateBauErklaerung(input: {
     messages: [
       {
         role: "user",
-        content: `Raum: ${raum}\nVisualisierungswunsch (intern, nicht zitieren): ${input.wunschText}`,
+        content: `Raum: ${raum}\nVisualisierungswunsch (intern, nicht wörtlich zitieren): ${input.wunschText}\n\nSchreibe editorial-starke Zielbild-Texte passend zum Raum und Stil.`,
       },
     ],
   });
