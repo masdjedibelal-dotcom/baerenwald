@@ -1,16 +1,24 @@
 "use client";
 
+import { ChatGuidedBlocks } from "@/components/gpt/chat/ChatGuidedBlocks";
 import { GptZielbildCard } from "@/components/gpt/GptZielbildCard";
 import { renderChatMarkdown } from "@/components/gpt/gpt-chat-markdown";
 import type { GptChatMessage } from "@/components/gpt/gpt-chat-types";
+import type { GptLeadDraft } from "@/lib/gpt-viz/lead-collect";
 
 type GptChatBubbleProps = {
   message: GptChatMessage;
   onAction?: (actionId: string) => void;
+  onLeadSubmit?: (draft: GptLeadDraft) => void;
   disabled?: boolean;
 };
 
-export function GptChatBubble({ message, onAction, disabled }: GptChatBubbleProps) {
+export function GptChatBubble({
+  message,
+  onAction,
+  onLeadSubmit,
+  disabled,
+}: GptChatBubbleProps) {
   const isUser = message.role === "user";
 
   return (
@@ -45,9 +53,19 @@ export function GptChatBubble({ message, onAction, disabled }: GptChatBubbleProp
               vorherUrl={message.compare.before.url}
               nachherUrl={message.compare.after.url}
               erklaerung={message.compare.erklaerung}
+              zielbildUrl={message.compare.zielbild_url}
               className="gpt-chat-zielbild"
             />
           </div>
+        ) : null}
+
+        {message.blocks && message.blocks.length > 0 && onAction ? (
+          <ChatGuidedBlocks
+            blocks={message.blocks}
+            onAction={onAction}
+            onLeadSubmit={onLeadSubmit}
+            disabled={disabled}
+          />
         ) : null}
 
         {message.actions && message.actions.length > 0 && onAction ? (

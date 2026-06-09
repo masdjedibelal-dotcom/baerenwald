@@ -20,7 +20,9 @@ import type { KiRechnerFunnelData } from "@/components/funnel/KiRechnerChat";
 import type { KiParsedBekannt } from "@/lib/ki-rechner/types";
 import { useGptChatScroll } from "@/hooks/use-gpt-chat-scroll";
 import { useMobileComposerInset } from "@/hooks/use-mobile-composer-inset";
-import { GPT_VIZ_MAX_RENDERS, VIZ_NACHPROMPT_TAGS } from "@/lib/gpt-viz/constants";
+import { GPT_VIZ_LIMITS, VIZ_NACHPROMPT_TAGS } from "@/lib/gpt-viz/constants";
+import { limitCodeToVizBlock } from "@/lib/gpt-viz/limits";
+import type { GptVizLimitCode } from "@/lib/gpt-viz/limits";
 import {
   buildLeadQuestion,
   extractLeadForField,
@@ -31,20 +33,36 @@ import {
 } from "@/lib/gpt-viz/lead-collect";
 import { actionsForIntent, postRenderActions } from "@/lib/gpt-viz/gpt-studio-actions";
 import type { GptStudioIntent } from "@/lib/gpt-viz/gpt-studio-intents";
-import type { GptVizBauErklaerung, GptVizRaumAnalyse } from "@/lib/gpt-viz/types";
+import type {
+  GptVizBauErklaerung,
+  GptVizPrepareQuestion,
+  GptVizRaumAnalyse,
+} from "@/lib/gpt-viz/types";
 import {
   countUserMessages,
   KI_MAX_USER_MESSAGES,
 } from "@/lib/ki-rechner/guards";
+import {
+  applyGuidedFieldValue,
+  buildDraftSummaryItems,
+  buildLeadFormBlock,
+  emptyGuidedDraft,
+} from "@/lib/guided-chat/draft";
+import {
+  buildGuidedAssistantFromDraft,
+  mergeClassificationIntoGuided,
+  type GuidedAssistantPayload,
+} from "@/lib/guided-chat/respond";
+import type { GptChatBlock, GuidedField, GuidedFunnelDraft } from "@/lib/guided-chat/types";
+import { draftToKiParsed } from "@/lib/guided-chat/types";
 import { cn } from "@/lib/utils";
 
+import "./guided-chat.css";
 import "./gpt-viz.css";
 
 const INITIAL_TEXT = `Hi! Ich bin dein Handwerks-Assistent von Bärenwald — für Renovierung, Reparatur und Umbau in München.
 
-Du kannst mir alles erzählen: Gewerke, Ablauf, Ideen — oder wir **visualisieren deinen Raum** mit Foto und Wunsch. Am Ende kannst du das Projekt direkt an uns senden.
-
-Womit sollen wir starten?`;
+Schreib einfach los — oder wähle unten, womit wir starten sollen. Beraten, visualisieren, Preisrahmen oder direkt anfragen: alles hier im Chat.`;
 
 type GptStudioChatProps = {
   onPreisBereit: (data: KiRechnerFunnelData) => void;
@@ -60,6 +78,7 @@ function isActiveVizFlow(phase: GptVizPhase, flowActive: boolean): boolean {
     phase === "raum_upload" ||
     phase === "wunsch_quelle" ||
     phase === "wunsch_confirm" ||
+    phase === "viz_questions" ||
     phase === "rendering"
   );
 }
@@ -80,16 +99,31 @@ export function GptStudioChat({
   priceHandoff = false,
 }: GptStudioChatProps) {
 
-  const { sessionId, brief, ensureSession, refreshBrief, mergeChatVerlauf } = useGptProjekt();
+  const {
+    sessionId,
+    brief,
+    sessionError,
+    clearSessionError,
+    ensureSession,
+    refreshBrief,
+    mergeChatVerlauf,
+  } = useGptProjekt();
+  const guidedHybrid = priceHandoff;
+  const [guidedDraft, setGuidedDraft] = useState<GuidedFunnelDraft>(() =>
+    emptyGuidedDraft()
+  );
   const [messages, setMessages] = useState<GptChatMessage[]>(() => [
     {
       id: newChatId(),
       role: "assistant",
       text: INITIAL_TEXT,
-      actions: [
-        { id: "start_viz", label: "Raum visualisieren" },
-        { id: "start_beratung", label: "Erst beraten" },
-      ],
+      blocks: guidedHybrid ? [{ type: "journey_entry" }] : undefined,
+      actions: guidedHybrid
+        ? undefined
+        : [
+            { id: "start_viz", label: "Raum visualisieren" },
+            { id: "start_beratung", label: "Erst beraten" },
+          ],
     },
   ]);
   const [vizPhase, setVizPhase] = useState<GptVizPhase>("idle");
@@ -106,7 +140,6 @@ export function GptStudioChat({
   const [error, setError] = useState<string | null>(null);
   const chatRootRef = useRef<HTMLDivElement>(null);
   const messagesScrollRef = useRef<HTMLDivElement>(null);
-  const composerRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -123,8 +156,6 @@ export function GptStudioChat({
   const { syncTextareaHeight, handleInputFocus, handleInputBlur } = useGptChatScroll({
     chatRootRef,
     messagesScrollRef,
-    composerRef,
-    messagesEndRef,
     textareaRef,
     scrollTriggers: [messages, loading, error, brief?.ergebnis_bild_url, brief?.gpt_erklaerung],
   });
@@ -140,9 +171,72 @@ export function GptStudioChat({
     [append]
   );
 
+  const appendGuidedPayload = useCallback(
+    (payload: GuidedAssistantPayload) => {
+      setGuidedDraft(payload.draft);
+      appendAssistant(payload.text, { blocks: payload.blocks });
+    },
+    [appendAssistant]
+  );
+
+  const appendVizLimitMessage = useCallback(
+    (message: string, limitCode: GptVizLimitCode, portalRegisterUrl?: string) => {
+      const blocks: GptChatBlock[] = [
+        {
+          type: "viz_limit",
+          reason: limitCodeToVizBlock(limitCode),
+          portalRegisterUrl:
+            portalRegisterUrl ?? brief?.limits?.portal_register_url ?? "/portal/registrieren",
+        },
+      ];
+      appendAssistant(message, { blocks });
+    },
+    [appendAssistant, brief?.limits?.portal_register_url]
+  );
+
+  const syncPreisHandoff = useCallback(
+    (draft: GuidedFunnelDraft, history: GptChatMessage[]) => {
+      const parsed = draftToKiParsed(draft);
+      if (!parsed || priceHandoffStateRef.current === "preis") return;
+      priceHandoffStateRef.current = "preis";
+      const verlauf = messagesForClaude(history).map((m) => ({
+        role: m.role,
+        content: m.content,
+      }));
+      onPreisBereit({
+        situation: parsed.situation,
+        bereiche: parsed.bereiche,
+        groesse: parsed.groesse,
+        plz: parsed.plz,
+        zeitraum: parsed.zeitraum,
+        kundentyp: parsed.kundentyp,
+        fachdetails: parsed.fachdetails,
+        ki_session_id: sessionId ?? undefined,
+        ki_chat_verlauf: verlauf,
+      });
+    },
+    [onPreisBereit, sessionId]
+  );
+
   useEffect(() => {
     void mergeChatVerlauf(textMessagesForSync(messages));
   }, [messages, mergeChatVerlauf]);
+
+  useEffect(() => {
+    if (!sessionError) return;
+    setError(sessionError);
+    appendVizLimitMessage(
+      sessionError,
+      "visitor_sessions",
+      brief?.limits?.portal_register_url
+    );
+    clearSessionError();
+  }, [
+    sessionError,
+    appendVizLimitMessage,
+    brief?.limits?.portal_register_url,
+    clearSessionError,
+  ]);
 
   useEffect(() => {
     if (!brief || hydratedRef.current) return;
@@ -157,10 +251,6 @@ export function GptStudioChat({
     }
   }, [brief]);
 
-  useEffect(() => {
-    syncTextareaHeight();
-  }, [input, syncTextareaHeight]);
-
   const shouldCheckPriceHandoff = useCallback(
     (lead?: boolean) =>
       priceHandoff &&
@@ -174,11 +264,35 @@ export function GptStudioChat({
     (
       history: GptChatMessage[],
       data: {
+        displayText?: string;
         priceHandoffTyp?: string;
         priceHandoffParsed?: KiParsedBekannt | { typ: string; antwort?: string };
       }
     ) => {
       if (!priceHandoff || !data.priceHandoffTyp) return;
+
+      if (guidedHybrid) {
+        const payload = mergeClassificationIntoGuided(
+          guidedDraft,
+          data.priceHandoffTyp,
+          data.priceHandoffParsed,
+          data.displayText
+        );
+        appendGuidedPayload(payload);
+        if (payload.blocks.some((b) => b.type === "price_card")) {
+          syncPreisHandoff(payload.draft, history);
+        }
+        if (
+          data.priceHandoffTyp === "unbekannt" ||
+          data.priceHandoffTyp === "zu_komplex"
+        ) {
+          if (priceHandoffStateRef.current === "none") {
+            priceHandoffStateRef.current = "beratung";
+            onBeratungBereit();
+          }
+        }
+        return;
+      }
 
       const verlauf = messagesForClaude(history).map((m) => ({
         role: m.role,
@@ -221,7 +335,36 @@ export function GptStudioChat({
         );
       }
     },
-    [priceHandoff, sessionId, onPreisBereit, onBeratungBereit, appendAssistant]
+    [
+      priceHandoff,
+      guidedHybrid,
+      guidedDraft,
+      appendGuidedPayload,
+      syncPreisHandoff,
+      sessionId,
+      onPreisBereit,
+      onBeratungBereit,
+      appendAssistant,
+    ]
+  );
+
+  const applyGuidedSelection = useCallback(
+    (field: GuidedField, value: string, userLabel: string) => {
+      const updated = applyGuidedFieldValue(guidedDraft, field, value);
+      const userMsg: GptChatMessage = {
+        id: newChatId(),
+        role: "user",
+        text: userLabel,
+      };
+      setMessages((prev) => [...prev, userMsg]);
+      const payload = buildGuidedAssistantFromDraft(updated);
+      setGuidedDraft(payload.draft);
+      appendAssistant(payload.text, { blocks: payload.blocks });
+      if (payload.blocks.some((b) => b.type === "price_card")) {
+        syncPreisHandoff(payload.draft, [...messages, userMsg]);
+      }
+    },
+    [guidedDraft, messages, appendAssistant, syncPreisHandoff]
   );
 
   const askClaude = useCallback(
@@ -285,6 +428,52 @@ export function GptStudioChat({
     [sessionId, ensureSession]
   );
 
+  const showLeadForm = useCallback(
+    (userText?: string) => {
+      if (userText) {
+        append({ role: "user", text: userText });
+      }
+      setLeadActive(true);
+      setLeadDraft({});
+      setAwaitingLeadField(null);
+      if (guidedHybrid) {
+        appendAssistant(
+          "Perfekt — fülle kurz die Felder aus, dann geht deine Anfrage direkt an **Bärenwald**.",
+          { blocks: [buildLeadFormBlock(guidedDraft)] }
+        );
+      } else {
+        setAwaitingLeadField("name");
+        appendAssistant(buildLeadQuestion("name"));
+      }
+    },
+    [append, appendAssistant, guidedDraft, guidedHybrid]
+  );
+
+  const submitLeadForm = useCallback(
+    async (draft: GptLeadDraft) => {
+      setLoading(true);
+      setError(null);
+      try {
+        await postLeadToApi(draft);
+        await refreshBrief();
+        setLeadActive(false);
+        setAwaitingLeadField(null);
+        setVizPhase("done");
+        appendAssistant(
+          "Perfekt — deine Anfrage ist bei uns eingegangen. Wir melden uns bei dir. Du kannst jetzt noch **zweimal** an deiner Visualisierung feilen — oder einfach weiterfragen.",
+          {
+            actions: [{ id: "render_again", label: "Noch anpassen" }],
+          }
+        );
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Anfrage fehlgeschlagen.");
+      } finally {
+        setLoading(false);
+      }
+    },
+    [postLeadToApi, appendAssistant, refreshBrief]
+  );
+
   const continueLeadAfterAnswer = useCallback(
     async (history: GptChatMessage[], draft: GptLeadDraft, sid: string | null) => {
       const next = nextLeadField(draft);
@@ -293,11 +482,15 @@ export function GptStudioChat({
         setError(null);
         try {
           await postLeadToApi(draft);
+          await refreshBrief();
           setLeadActive(false);
           setAwaitingLeadField(null);
           setVizPhase("done");
           appendAssistant(
-            "Perfekt — ich habe deine Anfrage an **Bärenwald** gesendet. Wir melden uns bei dir. Hast du noch Fragen?"
+            "Perfekt — ich habe deine Anfrage an **Bärenwald** gesendet. Wir melden uns bei dir. Du kannst jetzt noch **zweimal** an deiner Visualisierung feilen.",
+            {
+              actions: [{ id: "render_again", label: "Noch anpassen" }],
+            }
           );
         } catch (err) {
           setError(err instanceof Error ? err.message : "Anfrage fehlgeschlagen.");
@@ -319,10 +512,19 @@ export function GptStudioChat({
         setLoading(false);
       }
     },
-    [askClaude, appendAssistant, postLeadToApi]
+    [askClaude, appendAssistant, postLeadToApi, refreshBrief]
   );
 
-  const runRender = useCallback(async (wunschOverride?: string) => {
+  const showVizQuestion = useCallback(
+    (question: GptVizPrepareQuestion) => {
+      appendAssistant(question.question, {
+        blocks: [{ type: "viz_decision", question }],
+      });
+    },
+    [appendAssistant]
+  );
+
+  const executeRender = useCallback(async (wunschOverride?: string) => {
     const effectiveWunsch = (wunschOverride ?? wunschText).trim();
     if (!effectiveWunsch || !istUrl) return;
     const sid = sessionId ?? (await ensureSession());
@@ -340,11 +542,20 @@ export function GptStudioChat({
       });
       const data = (await res.json()) as {
         error?: string;
+        limit_code?: GptVizLimitCode;
+        portal_register_url?: string;
         ergebnis_bild_url?: string;
         render_count?: number;
+        max_renders?: number;
+        renders_remaining?: number;
+        limits?: NonNullable<typeof brief>["limits"];
       };
       if (!res.ok) {
-        setError(data.error ?? "Render fehlgeschlagen.");
+        const msg = data.error ?? "Render fehlgeschlagen.";
+        setError(msg);
+        if (data.limit_code) {
+          appendVizLimitMessage(msg, data.limit_code, data.portal_register_url);
+        }
         setVizPhase("wunsch_confirm");
         return;
       }
@@ -355,16 +566,21 @@ export function GptStudioChat({
       setVizPhase("result");
 
       let erklaerung: GptVizBauErklaerung | null = null;
+      let zielbildUrl: string | null | undefined;
       try {
         const erkRes = await fetch("/api/gpt-viz/erklaerung", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ session_id: sid }),
         });
-        const erkData = (await erkRes.json()) as { gpt_erklaerung?: GptVizBauErklaerung };
+        const erkData = (await erkRes.json()) as {
+          gpt_erklaerung?: GptVizBauErklaerung;
+          zielbild_url?: string | null;
+        };
         if (erkRes.ok && erkData.gpt_erklaerung) {
           erklaerung = erkData.gpt_erklaerung;
         }
+        zielbildUrl = erkRes.ok ? erkData.zielbild_url : null;
       } catch {
         /* Fallback im Zielbild-Composer */
       }
@@ -378,14 +594,60 @@ export function GptStudioChat({
             before: { url: istUrl, label: "Vorher", downloadName: "baerenwald-vorher.jpg" },
             after: { url: resultUrl, label: "Nachher", downloadName: "baerenwald-nachher.jpg" },
             erklaerung,
+            zielbild_url: zielbildUrl ?? undefined,
           },
         }
       );
 
       const history = [...messages];
       const claude = await askClaude(history, sid);
+      const limits = data.limits ?? brief?.limits;
+      const maxRenders =
+        data.max_renders ?? limits?.max_renders ?? GPT_VIZ_LIMITS.guest.maxRenders;
+      const leadUnlocked = limits?.lead_unlocked ?? false;
+      const postActions = postRenderActions(
+        data.render_count ?? renderCount + 1,
+        maxRenders,
+        leadUnlocked
+      );
+      const canRenderAgain = postActions.some((a) => a.id === "render_again");
       appendAssistant(claude.displayText ?? "Frag mich gern, was das für dein Projekt bedeutet.", {
-        actions: postRenderActions(data.render_count ?? renderCount + 1, GPT_VIZ_MAX_RENDERS),
+        blocks: guidedHybrid
+          ? [
+              ...(!leadUnlocked
+                ? [
+                    {
+                      type: "primary_cta" as const,
+                      actionId: "lead_start",
+                      label: canRenderAgain
+                        ? "Projekt anfragen"
+                        : "Projekt senden — 2× anpassen",
+                    },
+                  ]
+                : []),
+              ...(canRenderAgain
+                ? [
+                    {
+                      type: "primary_cta" as const,
+                      actionId: "render_again",
+                      label: "Noch anpassen",
+                      variant: leadUnlocked ? ("primary" as const) : ("outline" as const),
+                    },
+                  ]
+                : []),
+              ...(!canRenderAgain && leadUnlocked
+                ? [
+                    {
+                      type: "viz_limit" as const,
+                      reason: "needs_portal" as const,
+                      portalRegisterUrl:
+                        limits?.portal_register_url ?? "/portal/registrieren",
+                    },
+                  ]
+                : []),
+            ]
+          : undefined,
+        actions: guidedHybrid ? undefined : postActions,
       });
       setVizPhase("lead");
     } catch {
@@ -394,7 +656,104 @@ export function GptStudioChat({
     } finally {
       setLoading(false);
     }
-  }, [wunschText, istUrl, sessionId, ensureSession, appendAssistant, messages, askClaude, renderCount, refreshBrief]);
+  }, [
+    wunschText,
+    istUrl,
+    sessionId,
+    ensureSession,
+    appendAssistant,
+    appendVizLimitMessage,
+    messages,
+    askClaude,
+    renderCount,
+    refreshBrief,
+    guidedHybrid,
+    brief?.limits,
+  ]);
+
+  const requestRender = useCallback(
+    async (wunschOverride?: string) => {
+      const effectiveWunsch = (wunschOverride ?? wunschText).trim();
+      if (!effectiveWunsch || !istUrl) return;
+      const sid = sessionId ?? (await ensureSession());
+      if (!sid) return;
+
+      setLoading(true);
+      setError(null);
+      try {
+        const prepRes = await fetch("/api/gpt-viz/prepare-render", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ session_id: sid, wunsch_text: effectiveWunsch }),
+        });
+        const prepData = (await prepRes.json()) as {
+          error?: string;
+          ready?: boolean;
+          questions?: GptVizPrepareQuestion[];
+        };
+        if (!prepRes.ok) {
+          setError(prepData.error ?? "Vorbereitung fehlgeschlagen.");
+          return;
+        }
+        setWunschText(effectiveWunsch);
+        if (!prepData.ready && prepData.questions?.length) {
+          setVizPhase("viz_questions");
+          showVizQuestion(prepData.questions[0]);
+          return;
+        }
+        await executeRender(effectiveWunsch);
+      } catch {
+        setError("Vorbereitung fehlgeschlagen.");
+      } finally {
+        setLoading(false);
+      }
+    },
+    [wunschText, istUrl, sessionId, ensureSession, showVizQuestion, executeRender]
+  );
+
+  const answerVizQuestion = useCallback(
+    async (questionId: string, optionId: string, optionLabel: string) => {
+      const effectiveWunsch = wunschText.trim();
+      if (!effectiveWunsch || !istUrl) return;
+      const sid = sessionId ?? (await ensureSession());
+      if (!sid) return;
+
+      setLoading(true);
+      setError(null);
+      try {
+        const prepRes = await fetch("/api/gpt-viz/prepare-render", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            session_id: sid,
+            wunsch_text: effectiveWunsch,
+            answer: { question_id: questionId, option_id: optionId, option_label: optionLabel },
+          }),
+        });
+        const prepData = (await prepRes.json()) as {
+          error?: string;
+          ready?: boolean;
+          questions?: GptVizPrepareQuestion[];
+        };
+        if (!prepRes.ok) {
+          setError(prepData.error ?? "Antwort konnte nicht verarbeitet werden.");
+          return;
+        }
+        if (!prepData.ready && prepData.questions?.length) {
+          setVizPhase("viz_questions");
+          showVizQuestion(prepData.questions[0]);
+          return;
+        }
+        setVizPhase("wunsch_confirm");
+        await executeRender(effectiveWunsch);
+      } catch {
+        setError("Antwort konnte nicht verarbeitet werden.");
+      } finally {
+        setLoading(false);
+      }
+    },
+    [wunschText, istUrl, sessionId, ensureSession, showVizQuestion, executeRender]
+  );
 
   const handleUpload = useCallback(
     async (kind: "raum" | "inspiration", file: File) => {
@@ -473,8 +832,32 @@ export function GptStudioChat({
 
         const claude = await askClaude(nextHistory, sid, undefined, undefined, true);
         appendAssistant(claude.displayText ?? "Danke für das Foto!", {
-          actions:
-            kind === "raum"
+          blocks: guidedHybrid
+            ? kind === "raum"
+              ? [
+                  {
+                    type: "primary_cta" as const,
+                    actionId: "wunsch_text_mode",
+                    label: "Wunsch beschreiben",
+                  },
+                  {
+                    type: "primary_cta" as const,
+                    actionId: "wunsch_inspiration",
+                    label: "Inspirationsbild",
+                    variant: "outline" as const,
+                  },
+                ]
+              : [
+                  {
+                    type: "primary_cta" as const,
+                    actionId: "render",
+                    label: "So visualisieren",
+                  },
+                ]
+            : undefined,
+          actions: guidedHybrid
+            ? undefined
+            : kind === "raum"
               ? [
                   { id: "wunsch_inspiration", label: "Inspirationsbild" },
                   { id: "wunsch_text_mode", label: "Wunsch beschreiben" },
@@ -494,7 +877,53 @@ export function GptStudioChat({
     async (actionId: string) => {
       if (loading) return;
 
-      if (actionId === "start_viz") {
+      if (actionId === "guided_anpassen") {
+        const payload = buildGuidedAssistantFromDraft(guidedDraft);
+        appendGuidedPayload(payload);
+        return;
+      }
+
+      if (actionId.startsWith("guided:")) {
+        const [, field, ...rest] = actionId.split(":");
+        const value = rest.join(":");
+        const labels: Record<string, string> = {
+          situation: "Situation gewählt",
+          bereich: "Bereich gewählt",
+          groesse: `${value} ${guidedDraft.groesseEinheit ?? "m²"}`,
+          plz: `PLZ ${value}`,
+          zeitraum: "Zeitrahmen gewählt",
+        };
+        applyGuidedSelection(
+          field as GuidedField,
+          value,
+          labels[field] ?? value
+        );
+        return;
+      }
+
+      if (actionId === "journey_beraten") {
+        append({ role: "user", text: "Ich möchte mich beraten lassen." });
+        appendAssistant(
+          "Gerne — erzähl mir einfach von deinem Vorhaben. Ich stelle dir die passenden Fragen und wir finden gemeinsam den nächsten Schritt."
+        );
+        return;
+      }
+
+      if (actionId === "journey_preis") {
+        append({ role: "user", text: "Ich möchte einen Preisrahmen berechnen." });
+        const payload = buildGuidedAssistantFromDraft(guidedDraft, {
+          prefixText: "Alles klar — ein paar kurze Angaben, dann rechnen wir deinen Rahmen aus.",
+        });
+        appendGuidedPayload(payload);
+        return;
+      }
+
+      if (actionId === "journey_anfrage") {
+        showLeadForm("Ich möchte eine Anfrage senden.");
+        return;
+      }
+
+      if (actionId === "start_viz" || actionId === "journey_viz") {
         await ensureSession();
         setVizFlowActive(true);
         setVizPhase("raum_upload");
@@ -544,7 +973,16 @@ export function GptStudioChat({
       }
 
       if (actionId === "render") {
-        await runRender();
+        await requestRender();
+        return;
+      }
+
+      if (actionId.startsWith("viz_answer|")) {
+        const [, questionId, optionId, encodedLabel] = actionId.split("|");
+        const optionLabel = encodedLabel ? decodeURIComponent(encodedLabel) : optionId;
+        if (questionId && optionId) {
+          await answerVizQuestion(questionId, optionId, optionLabel);
+        }
         return;
       }
 
@@ -561,20 +999,33 @@ export function GptStudioChat({
       if (actionId.startsWith("nachprompt:")) {
         const tag = actionId.replace("nachprompt:", "");
         setWunschText((prev) => `${prev.trim()}\n${tag}`.trim());
-        await runRender();
+        await requestRender();
         return;
       }
 
       if (actionId === "lead_start") {
-        append({ role: "user", text: "Ich möchte das Projekt senden." });
-        setLeadActive(true);
-        setLeadDraft({});
-        setAwaitingLeadField("name");
-        appendAssistant(buildLeadQuestion("name"));
+        showLeadForm("Ich möchte das Projekt senden.");
         return;
       }
     },
-    [loading, ensureSession, append, appendAssistant, messages, sessionId, askClaude, runRender, shouldCheckPriceHandoff, applyPriceHandoff]
+    [
+      loading,
+      guidedDraft,
+      guidedHybrid,
+      ensureSession,
+      append,
+      appendAssistant,
+      appendGuidedPayload,
+      applyGuidedSelection,
+      showLeadForm,
+      messages,
+      sessionId,
+      askClaude,
+      requestRender,
+      answerVizQuestion,
+      shouldCheckPriceHandoff,
+      applyPriceHandoff,
+    ]
   );
 
   const handleSend = useCallback(async () => {
@@ -613,7 +1064,7 @@ export function GptStudioChat({
 
     if (wantsExplicitRender) {
       setVizFlowActive(true);
-      await runRender(nextWunsch);
+      await requestRender(nextWunsch);
       return;
     }
 
@@ -629,29 +1080,47 @@ export function GptStudioChat({
       }
 
       if (data.intent === "lead_start") {
-        setLeadActive(true);
-        setLeadDraft({});
-        setAwaitingLeadField("name");
-        appendAssistant(buildLeadQuestion("name"));
+        showLeadForm();
       } else {
         const reply = data.displayText ?? "Wie kann ich dir helfen?";
-        appendAssistant(reply, {
-          actions: actionsForIntent({
-            intent: data.intent ?? null,
-            istUrl: Boolean(istUrl),
-            wunschText: nextWunsch,
-            hasRenderResult,
-          }),
+        const vizActions = actionsForIntent({
+          intent: data.intent ?? null,
+          istUrl: Boolean(istUrl),
+          wunschText: nextWunsch,
+          hasRenderResult,
         });
-        applyPriceHandoff(
-          [...nextHistory, { id: newChatId(), role: "assistant", text: reply }],
-          data
-        );
+
+        if (guidedHybrid && data.priceHandoffTyp) {
+          applyPriceHandoff(
+            [...nextHistory, { id: newChatId(), role: "assistant", text: reply }],
+            { ...data, displayText: reply }
+          );
+        } else if (guidedHybrid && data.intent === "suggest_viz") {
+          appendAssistant(reply, {
+            blocks: [
+              {
+                type: "primary_cta",
+                actionId: "journey_viz",
+                label: "Raum visualisieren",
+              },
+            ],
+          });
+        } else {
+          appendAssistant(reply, {
+            actions: vizActions,
+          });
+          if (!guidedHybrid) {
+            applyPriceHandoff(
+              [...nextHistory, { id: newChatId(), role: "assistant", text: reply }],
+              { ...data, displayText: reply }
+            );
+          }
+        }
       }
 
       if (data.intent === "render" && istUrl && nextWunsch.trim()) {
         setVizFlowActive(true);
-        await runRender(nextWunsch);
+        await requestRender(nextWunsch);
       }
     } catch {
       setError("Verbindungsfehler — bitte erneut versuchen.");
@@ -677,16 +1146,24 @@ export function GptStudioChat({
     wunschText,
     askClaude,
     appendAssistant,
-    runRender,
+    requestRender,
     syncTextareaHeight,
     shouldCheckPriceHandoff,
     applyPriceHandoff,
+    showLeadForm,
   ]);
 
   const inputDisabled = loading || locked || limitReached || vizPhase === "rendering";
 
   return (
-    <div ref={chatRootRef} className={cn("ki-rechner-chat", locked && "ki-rechner-chat--locked")}>
+    <div
+      ref={chatRootRef}
+      className={cn(
+        "ki-rechner-chat",
+        guidedHybrid && "gpt-guided-root",
+        locked && "ki-rechner-chat--locked"
+      )}
+    >
       <div className="ki-rechner-chat-header">
         <div className="ki-rechner-chat-avatar">
           <Image src="/logo-mark-green.png" alt="" width={32} height={32} className="ki-rechner-chat-logo" />
@@ -695,9 +1172,19 @@ export function GptStudioChat({
           <div className="ki-rechner-chat-title">
             Bärenwald <span className="ki-rechner-mode-label ki-rechner-mode-label--chat">BärenwaldGPT</span>
           </div>
-          <div className="ki-rechner-chat-sub">Beraten · Visualisieren · Anfragen</div>
+          <div className="ki-rechner-chat-sub">Beraten · Visualisieren · Preis · Anfrage</div>
         </div>
       </div>
+
+      {guidedHybrid && buildDraftSummaryItems(guidedDraft).length > 0 ? (
+        <div className="gpt-chat-journey-bar" aria-label="Projekt-Kurzüberblick">
+          {buildDraftSummaryItems(guidedDraft).map((item) => (
+            <span key={item.label} className="gpt-guided-summary-chip">
+              <strong>{item.label}:</strong> {item.value}
+            </span>
+          ))}
+        </div>
+      ) : null}
 
       <div ref={messagesScrollRef} className="ki-rechner-chat-messages">
         {messages.map((msg) => (
@@ -705,6 +1192,7 @@ export function GptStudioChat({
             key={msg.id}
             message={msg}
             onAction={(id) => void handleAction(id)}
+            onLeadSubmit={(draft) => void submitLeadForm(draft)}
             disabled={loading}
           />
         ))}
@@ -726,7 +1214,7 @@ export function GptStudioChat({
 
       <GptChatBriefBar brief={brief} />
 
-      <div ref={composerRef} className="ki-rechner-chat-composer">
+      <div className="ki-rechner-chat-composer">
         <div className={cn("ki-rechner-chat-inputbar gpt-chat-inputbar", limitReached && "ki-rechner-chat-inputbar--disabled")}>
           <input
             ref={fileInputRef}

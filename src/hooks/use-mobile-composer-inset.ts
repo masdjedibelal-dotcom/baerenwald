@@ -30,12 +30,22 @@ export function useMobileComposerInset(
 
       const mq = window.matchMedia(MOBILE_MQ);
       const pageEl = el.closest(".ki-rechner-chat-active") as HTMLElement | null;
+      const portalShell = el.closest(".portal-gpt-shell") as HTMLElement | null;
       const vv = window.visualViewport;
+      let bodyOverflowPrev: string | undefined;
 
       const clearState = () => {
         pageEl?.classList.remove("ki-keyboard-open");
+        portalShell?.classList.remove("ki-keyboard-open");
         if (pageEl) {
           pageEl.style.removeProperty("--ki-vv-height");
+        }
+        if (portalShell) {
+          portalShell.style.removeProperty("--ki-vv-height");
+        }
+        if (bodyOverflowPrev !== undefined) {
+          document.body.style.overflow = bodyOverflowPrev;
+          bodyOverflowPrev = undefined;
         }
       };
 
@@ -45,14 +55,22 @@ export function useMobileComposerInset(
           return;
         }
 
+        if ((pageEl || portalShell) && bodyOverflowPrev === undefined) {
+          bodyOverflowPrev = document.body.style.overflow;
+          document.body.style.overflow = "hidden";
+        }
+
         let vvOffset = 0;
         if (vv) {
           vvOffset = Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
-          pageEl?.style.setProperty("--ki-vv-height", `${Math.ceil(vv.height)}px`);
+          const vvHeight = `${Math.ceil(vv.height)}px`;
+          pageEl?.style.setProperty("--ki-vv-height", vvHeight);
+          portalShell?.style.setProperty("--ki-vv-height", vvHeight);
         }
 
         const keyboardOpen = vvOffset > KEYBOARD_OPEN_THRESHOLD_PX;
         pageEl?.classList.toggle("ki-keyboard-open", keyboardOpen);
+        portalShell?.classList.toggle("ki-keyboard-open", keyboardOpen);
       };
 
       update();

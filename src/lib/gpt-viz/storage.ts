@@ -116,6 +116,23 @@ export async function uploadGptVizImage(
   return { ok: true, path, publicUrl: data.publicUrl };
 }
 
+export async function uploadGptVizPngBuffer(
+  sessionId: string,
+  buffer: Buffer,
+  subfolder: "zielbild" | "render" = "zielbild"
+): Promise<{ ok: true; path: string; publicUrl: string } | { ok: false; error: string }> {
+  if (!isSupabaseConfigured()) {
+    return { ok: false, error: "Storage nicht konfiguriert." };
+  }
+  const pathKey = `sessions/${sessionId}/${subfolder}/${randomUUID()}.png`;
+  const { error } = await supabaseAdmin.storage
+    .from(GPT_VIZ_STORAGE_BUCKET)
+    .upload(pathKey, buffer, { contentType: "image/png", upsert: false });
+  if (error) return { ok: false, error: error.message };
+  const { data } = supabaseAdmin.storage.from(GPT_VIZ_STORAGE_BUCKET).getPublicUrl(pathKey);
+  return { ok: true, path: pathKey, publicUrl: data.publicUrl };
+}
+
 export async function uploadGptVizFromUrl(
   sessionId: string,
   imageUrl: string

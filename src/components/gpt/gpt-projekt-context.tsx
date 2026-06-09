@@ -11,12 +11,15 @@ import {
 } from "react";
 
 import { GPT_VIZ_SESSION_STORAGE_KEY } from "@/lib/gpt-viz/constants";
+import { getOrCreateGptVisitorToken } from "@/lib/gpt-viz/visitor-token";
 import type { GptProjektBrief } from "@/lib/gpt-viz/types";
 
 type GptProjektContextValue = {
   sessionId: string | null;
   brief: GptProjektBrief | null;
   loadingBrief: boolean;
+  sessionError: string | null;
+  clearSessionError: () => void;
   ensureSession: () => Promise<string | null>;
   refreshBrief: () => Promise<void>;
   mergeChatVerlauf: (
@@ -30,6 +33,7 @@ export function GptProjektProvider({ children }: { children: ReactNode }) {
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [brief, setBrief] = useState<GptProjektBrief | null>(null);
   const [loadingBrief, setLoadingBrief] = useState(false);
+  const [sessionError, setSessionError] = useState<string | null>(null);
 
   useEffect(() => {
     const stored = localStorage.getItem(GPT_VIZ_SESSION_STORAGE_KEY);
@@ -66,9 +70,18 @@ export function GptProjektProvider({ children }: { children: ReactNode }) {
   const ensureSession = useCallback(async () => {
     if (sessionId) return sessionId;
     try {
-      const res = await fetch("/api/gpt-viz/session", { method: "POST" });
-      if (!res.ok) return null;
+      const res = await fetch("/api/gpt-viz/session", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ visitor_token: getOrCreateGptVisitorToken() }),
+      });
+      if (!res.ok) {
+        const err = (await res.json().catch(() => ({}))) as { error?: string };
+        setSessionError(err.error ?? "Session konnte nicht gestartet werden.");
+        return null;
+      }
       const data = (await res.json()) as { session_id: string };
+      setSessionError(null);
       localStorage.setItem(GPT_VIZ_SESSION_STORAGE_KEY, data.session_id);
       setSessionId(data.session_id);
       return data.session_id;
@@ -98,16 +111,29 @@ export function GptProjektProvider({ children }: { children: ReactNode }) {
     [sessionId, ensureSession, refreshBrief]
   );
 
+  const clearSessionError = useCallback(() => setSessionError(null), []);
+
   const value = useMemo(
     () => ({
       sessionId,
       brief,
       loadingBrief,
+      sessionError,
+      clearSessionError,
       ensureSession,
       refreshBrief,
       mergeChatVerlauf,
     }),
-    [sessionId, brief, loadingBrief, ensureSession, refreshBrief, mergeChatVerlauf]
+    [
+      sessionId,
+      brief,
+      loadingBrief,
+      sessionError,
+      clearSessionError,
+      ensureSession,
+      refreshBrief,
+      mergeChatVerlauf,
+    ]
   );
 
   return (

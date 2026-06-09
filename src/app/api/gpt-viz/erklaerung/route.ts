@@ -1,5 +1,11 @@
 import { generateBauErklaerung } from "@/lib/gpt-viz/claude-bauerklaerung";
-import { getGptVizSession, updateGptVizSession } from "@/lib/gpt-viz/session";
+import { isGptVizInternalRequest } from "@/lib/gpt-viz/internal-auth";
+import {
+  getGptVizSession,
+  getGptVizSessionForStaff,
+  updateGptVizSession,
+} from "@/lib/gpt-viz/session";
+import { ensureZielbildForSession } from "@/lib/gpt-viz/zielbild-export";
 import { getClaudeApiKey } from "@/lib/ki-rechner/claude-config";
 
 export const runtime = "nodejs";
@@ -22,7 +28,10 @@ export async function POST(req: Request) {
     return Response.json({ error: "session_id fehlt." }, { status: 400 });
   }
 
-  const session = await getGptVizSession(sessionId);
+  const internal = isGptVizInternalRequest(req);
+  const session = internal
+    ? await getGptVizSessionForStaff(sessionId)
+    : await getGptVizSession(sessionId);
   if (!session) {
     return Response.json({ error: "Session ungültig oder abgelaufen." }, { status: 404 });
   }
@@ -33,20 +42,33 @@ export async function POST(req: Request) {
     return Response.json({ error: "Wunschtext fehlt." }, { status: 400 });
   }
 
-  if (session.gpt_erklaerung) {
-    return Response.json({ gpt_erklaerung: session.gpt_erklaerung });
+  if (session.gpt_erklaerung && session.zielbild_url) {
+    return Response.json({
+      gpt_erklaerung: session.gpt_erklaerung,
+      zielbild_url: session.zielbild_url,
+    });
   }
 
   try {
-    const erklaerung = await generateBauErklaerung({
-      wunschText: session.wunsch_text,
-      raumAnalyse: session.raum_analyse,
-    });
-    const updated = await updateGptVizSession(sessionId, { gpt_erklaerung: erklaerung });
-    if (!updated) {
-      return Response.json({ error: "Session-Update fehlgeschlagen." }, { status: 500 });
+    let erklaerung = session.gpt_erklaerung;
+    if (!erklaerung) {
+      erklaerung = await generateBauErklaerung({
+        wunschText: session.wunsch_text,
+        raumAnalyse: session.raum_analyse,
+      });
+      const updated = await updateGptVizSession(sessionId, { gpt_erklaerung: erklaerung });
+      if (!updated) {
+        return Response.json({ error: "Session-Update fehlgeschlagen." }, { status: 500 });
+      }
     }
-    return Response.json({ gpt_erklaerung: erklaerung });
+
+    const withErk = { ...session, gpt_erklaerung: erklaerung };
+    const zielbild = await ensureZielbildForSession(withErk);
+    return Response.json({
+      gpt_erklaerung: erklaerung,
+      zielbild_url: zielbild.zielbild_url,
+      zielbild_warning: zielbild.error,
+    });
   } catch (e) {
     console.error("[gpt-viz/erklaerung]", e);
     return Response.json(

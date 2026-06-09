@@ -19,6 +19,9 @@ const securityHeaders = [
 ];
 
 const nextConfig = {
+  experimental: {
+    serverComponentsExternalPackages: ["@napi-rs/canvas"],
+  },
   async headers() {
     return [
       {
@@ -60,7 +63,10 @@ const nextConfig = {
   // Required to support PostHog trailing slash API requests
   skipTrailingSlashRedirect: true,
   /** Weniger native File-Watcher — hilft auf macOS bei „EMFILE: too many open files”. */
-  webpack: (config, { dev }) => {
+  webpack: (config, { dev, isServer }) => {
+    if (isServer) {
+      config.externals = [...(config.externals ?? []), "@napi-rs/canvas"];
+    }
     if (dev) {
       config.watchOptions = {
         ...config.watchOptions,

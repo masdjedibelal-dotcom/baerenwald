@@ -837,16 +837,6 @@
   align-items: stretch;
 }
 
-/* Störer rechts oben am Button — gleicher Look wie BärenwaldGPT-Badges, nur Deko */
-.hero-search-btn-wrap .hero-search-ki-stoerer {
-  right: 12px;
-  top: -11px;
-  z-index: 3;
-  font-size: 7px;
-  padding: 4px 8px;
-  letter-spacing: 0.06em;
-}
-
 .hero-search-btn {
   border: none;
   border-radius: 0 999px 999px 0;
@@ -882,6 +872,91 @@
   outline-offset: 2px;
   z-index: 1;
   position: relative;
+}
+
+.hero-ki-path {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 10px;
+  width: 100%;
+  max-width: 500px;
+  margin-top: 4px;
+}
+
+.hero-path-or {
+  align-self: center;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--fl-text-3);
+}
+
+.hero-ki-cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 52px;
+  width: 100%;
+  padding: 14px 20px;
+  border-radius: 999px;
+  border: 2px solid var(--fl-accent);
+  background: linear-gradient(180deg, rgba(46, 125, 82, 0.1) 0%, rgba(46, 125, 82, 0.04) 100%);
+  color: var(--fl-accent-dark);
+  font-size: 15px;
+  font-weight: 700;
+  font-family: var(--fl-font-sans);
+  letter-spacing: -0.01em;
+  text-decoration: none;
+  text-align: center;
+  box-shadow: 0 4px 18px rgba(46, 125, 82, 0.14);
+  transition:
+    background 0.15s,
+    color 0.15s,
+    border-color 0.15s,
+    transform 0.15s,
+    box-shadow 0.15s;
+}
+
+.hero-ki-cta:hover {
+  background: var(--fl-accent);
+  border-color: var(--fl-accent);
+  color: #fff;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 22px rgba(46, 125, 82, 0.28);
+}
+
+.hero-ki-cta:focus-visible {
+  outline: 2px solid var(--fl-accent-dark);
+  outline-offset: 3px;
+}
+
+@media (max-width: 480px) {
+  .hero-search-row {
+    flex-direction: column;
+    border-radius: 20px;
+    overflow: hidden;
+  }
+
+  .hero-search-input {
+    border-radius: 0;
+    padding: 14px 16px;
+    font-size: 16px;
+  }
+
+  .hero-search-btn {
+    width: 100%;
+    min-width: 0;
+    border-radius: 0;
+    padding: 14px 16px;
+  }
+
+  .hero-ki-cta {
+    min-height: 48px;
+    font-size: 14px;
+    padding: 12px 16px;
+  }
 }
 
 .hero-chips {
@@ -1416,44 +1491,18 @@
   text-align: center;
 }
 
-.ki-beratung-landing-title-wrap {
-  display: block;
-  width: 100%;
-  margin: 0 0 16px;
-  text-align: center;
+.ki-beratung-landing-eyebrow {
+  margin: 0 0 10px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--fl-accent);
 }
 
-/* Titel-Karte wie KI-Karte im Rechner (Gradient-Rand + Störer „Neu“) */
-.ki-beratung-landing-title-card {
-  position: relative;
-  display: inline-block;
-  margin: 10px auto 0;
-  padding: 20px 40px 18px;
-  border-radius: 14px;
-  color: #1a3d2b;
-  background:
-    linear-gradient(#fff, #fff) padding-box,
-    linear-gradient(
-        135deg,
-        #1a3d2b 0%,
-        #2e7d52 35%,
-        #7cb87a 65%,
-        #2e7d52 100%
-      )
-      border-box;
-  border: 3px solid transparent;
-  box-shadow:
-    0 8px 28px rgba(46, 125, 82, 0.18),
-    0 2px 8px rgba(26, 61, 43, 0.08);
-}
-
-.ki-beratung-landing-title-card .ki-rechner-starter-stoerer {
-  top: -12px;
-  right: 16px;
-}
-
-.ki-beratung-landing-title-card h2 {
-  margin: 0;
+.ki-beratung-landing-h2 {
+  margin: 0 auto 14px;
+  max-width: 640px;
   font-size: clamp(24px, 4vw, 34px);
   font-weight: 800;
   letter-spacing: -0.03em;
@@ -5218,9 +5267,17 @@
 
   .ki-rechner-chat-active .ki-rechner-chat {
     flex: 1;
-    height: auto;
     min-height: 0;
+    height: 100%;
     max-height: none;
+  }
+
+  .ki-rechner-chat-active .rechner-gpt-chat {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    width: 100%;
   }
 }
 
@@ -5231,8 +5288,14 @@
     flex-direction: column;
     height: 100dvh;
     height: 100svh;
+    max-height: 100svh;
     min-height: 0;
     overflow: hidden;
+  }
+
+  /* Chat-Phase: Footer weg — Composer hat Priorität; Handoff-CTA nur bei .ki-rechner-handoff-ready */
+  .ki-rechner-chat-active:not(.ki-rechner-handoff-ready) > footer.funnel-footer {
+    display: none;
   }
 
   .ki-rechner-chat-active.ki-keyboard-open {
@@ -5274,6 +5337,14 @@
     overflow: hidden;
   }
 
+  .ki-rechner-chat-active .rechner-gpt-chat {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+  }
+
   .ki-rechner-chat-active .ki-rechner-chat {
     flex: 1;
     display: flex;
@@ -5288,6 +5359,7 @@
     box-shadow: none;
   }
 
+  /* Nur Nachrichten scrollen — Composer bleibt sichtbar */
   .ki-rechner-chat-active .ki-rechner-chat-messages {
     flex: 1 1 auto;
     min-height: 0;
@@ -5306,6 +5378,12 @@
     z-index: 2;
     margin-top: 0;
     box-shadow: 0 -4px 16px rgba(26, 61, 43, 0.08);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  .ki-rechner-chat-active .rechner-gpt-chat,
+  .ki-rechner-chat-active .rechner-gpt-chat .ki-rechner-chat {
+    overflow: hidden;
   }
 
   .ki-rechner-chat-active .ki-rechner-chat > .ki-rechner-chat-error {
@@ -5667,6 +5745,9 @@
   flex: 1;
   min-height: 0;
   overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
   padding: 16px 20px;
   display: flex;
   flex-direction: column;

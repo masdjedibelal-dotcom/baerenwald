@@ -8,7 +8,7 @@ import { GptVizEinstieg } from "@/components/gpt/GptVizEinstieg";
 import { GptVizLeadForm } from "@/components/gpt/GptVizLeadForm";
 import { GptVizRaumAnalysePanel } from "@/components/gpt/GptVizRaumAnalyse";
 import { GptVizWunschEditor } from "@/components/gpt/GptVizWunschEditor";
-import { GPT_VIZ_MAX_RENDERS } from "@/lib/gpt-viz/constants";
+import { GPT_VIZ_LIMITS } from "@/lib/gpt-viz/constants";
 import type {
   GptVizBauErklaerung,
   GptVizRaumAnalyse,
@@ -165,6 +165,12 @@ export function GptRaumVisualisierung({
     setLoading(true);
     setError(null);
     try {
+      await fetch("/api/gpt-viz/prepare-render", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ session_id: id, wunsch_text: wunschText }),
+      });
+
       const res = await fetch("/api/gpt-viz/render", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -219,7 +225,9 @@ export function GptRaumVisualisierung({
     setWunschText((prev) => `${prev.trim()}\n${tag}`.trim());
   };
 
-  const rendersLeft = GPT_VIZ_MAX_RENDERS - renderCount;
+  const maxRenders = brief?.limits?.max_renders ?? GPT_VIZ_LIMITS.guest.maxRendersAfterLead;
+  const rendersLeft =
+    brief?.limits?.renders_remaining ?? Math.max(0, maxRenders - renderCount);
   const uploadTitle =
     einstieg === "inspiration" && !zielBildUrl
       ? "Inspirationsbild hochladen"

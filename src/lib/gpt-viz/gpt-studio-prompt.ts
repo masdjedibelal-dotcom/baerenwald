@@ -1,6 +1,12 @@
+import { maxRendersForTier, resolveGptVizTier } from "@/lib/gpt-viz/limits";
 import type { GptVizSessionRow } from "@/lib/gpt-viz/types";
 
-export function buildGptStudioSystemPrompt(session: GptVizSessionRow | null): string {
+export function buildGptStudioSystemPrompt(
+  session: GptVizSessionRow | null,
+  portalKundeId?: string | null
+): string {
+  const tier = session ? resolveGptVizTier(session, portalKundeId ?? null) : "guest";
+  const maxRenders = maxRendersForTier(tier);
   const projektBlock = session
     ? `
 AKTUELLES PROJEKT (Raumvisualisierung — gleicher Chat, kein separates Tool):
@@ -8,7 +14,7 @@ AKTUELLES PROJEKT (Raumvisualisierung — gleicher Chat, kein separates Tool):
 - Inspirationsbild: ${session.ziel_bild_url ? "ja" : "nein"}
 - Wunsch: ${session.wunsch_text?.trim() || "noch nicht festgelegt"}
 - Visualisierung: ${session.ergebnis_bild_url ? "erstellt" : "noch nicht"}
-- Renders verbraucht: ${session.render_count}/3
+- Renders verbraucht: ${session.render_count}/${maxRenders}${session.lead_submitted_at ? " (Anfrage gesendet)" : ""}
 ${
   session.raum_analyse
     ? `- Raum: ${session.raum_analyse.raum_label} — ${session.raum_analyse.ist_beschreibung}`

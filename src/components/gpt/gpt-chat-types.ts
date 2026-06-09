@@ -1,4 +1,5 @@
 import type { GptVizBauErklaerung } from "@/lib/gpt-viz/types";
+import type { GptChatBlock } from "@/lib/guided-chat/types";
 
 export type GptChatAction = {
   id: string;
@@ -21,8 +22,11 @@ export type GptChatMessage = {
     before: GptChatImageRef;
     after: GptChatImageRef;
     erklaerung?: GptVizBauErklaerung | null;
+    zielbild_url?: string | null;
   };
   actions?: GptChatAction[];
+  /** Guided Hybrid: Entscheidungskarten, Preis, PLZ … */
+  blocks?: GptChatBlock[];
 };
 
 export type GptVizPhase =
@@ -31,6 +35,7 @@ export type GptVizPhase =
   | "wunsch_quelle"
   | "inspiration_upload"
   | "wunsch_confirm"
+  | "viz_questions"
   | "rendering"
   | "result"
   | "lead"

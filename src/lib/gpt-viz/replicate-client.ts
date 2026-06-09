@@ -44,6 +44,9 @@ type Prediction = {
 async function createPrediction(input: {
   image: string;
   prompt: string;
+  prompt_strength?: number;
+  guidance_scale?: number;
+  negative_prompt?: string;
 }): Promise<Prediction> {
   const token = getReplicateToken();
   if (!token) throw new Error("REPLICATE_API_TOKEN fehlt.");
@@ -64,8 +67,9 @@ async function createPrediction(input: {
         image: input.image,
         prompt: input.prompt,
         num_inference_steps: 40,
-        guidance_scale: 12,
-        prompt_strength: 0.75,
+        guidance_scale: input.guidance_scale ?? 10,
+        prompt_strength: input.prompt_strength ?? 0.45,
+        ...(input.negative_prompt ? { negative_prompt: input.negative_prompt } : {}),
       },
     }),
   });
@@ -102,10 +106,16 @@ function extractOutputUrl(output: Prediction["output"]): string | null {
 export async function runInteriorDesignRender(input: {
   imageUrl: string;
   prompt: string;
+  prompt_strength?: number;
+  guidance_scale?: number;
+  negative_prompt?: string;
 }): Promise<string> {
   let prediction = await createPrediction({
     image: input.imageUrl,
     prompt: input.prompt,
+    prompt_strength: input.prompt_strength,
+    guidance_scale: input.guidance_scale,
+    negative_prompt: input.negative_prompt,
   });
 
   const deadline = Date.now() + 120_000;

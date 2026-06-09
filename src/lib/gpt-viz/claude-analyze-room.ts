@@ -9,6 +9,7 @@ import type { GptVizRaumAnalyse } from "@/lib/gpt-viz/types";
 
 const ROOM_SYSTEM = `Du analysierst ein Raumfoto für Bärenwald München (Handwerk/Renovierung als GU).
 Erkenne Raumtyp, beschreibe den Ist-Zustand sachlich auf Deutsch (Du-Form).
+Liste sichtbare bauliche Elemente, die beim Render erhalten bleiben sollten (Fenster, Türen, Grundriss).
 Schlage 3 unterschiedliche Stil-Richtungen vor, passend zum erkannten Raum.
 Formuliere einen ersten Visualisierungs-Wunsch als Entwurf — der Nutzer bearbeitet ihn.
 Antwort NUR als JSON mit exakt diesen Feldern:
@@ -16,7 +17,11 @@ Antwort NUR als JSON mit exakt diesen Feldern:
   "raum_typ": "bad|kueche|wohnzimmer|schlafzimmer|flur|sonstiges",
   "raum_label": "Anzeigename",
   "ist_beschreibung": "…",
-  "erkannte_elemente": ["…"],
+  "erkannte_elemente": ["Fenster hinten", "…"],
+  "fixierte_elemente": [
+    { "id": "fenster_hinten", "label": "Fenster hinten", "preserve_default": true }
+  ],
+  "veraenderbare_flaechen": ["Wandfliesen", "Boden", "…"],
   "einschaetzung": "…",
   "stil_vorschlaege": [
     { "titel": "…", "kurz": "…", "prompt_de": "deutscher Visualisierungswunsch" }
@@ -44,12 +49,24 @@ function validateAnalyse(raw: unknown): GptVizRaumAnalyse {
   const o = raw as Record<string, unknown>;
   if (!o || typeof o !== "object") throw new Error("Ungültige Analyse.");
   const stil = Array.isArray(o.stil_vorschlaege) ? o.stil_vorschlaege : [];
+  const fixierte = Array.isArray(o.fixierte_elemente) ? o.fixierte_elemente : [];
   return {
     raum_typ: String(o.raum_typ ?? "sonstiges"),
     raum_label: String(o.raum_label ?? "Raum"),
     ist_beschreibung: String(o.ist_beschreibung ?? ""),
     erkannte_elemente: Array.isArray(o.erkannte_elemente)
       ? o.erkannte_elemente.map(String)
+      : undefined,
+    fixierte_elemente: fixierte.slice(0, 8).map((item, i) => {
+      const el = item as Record<string, unknown>;
+      return {
+        id: String(el.id ?? `element_${i}`),
+        label: String(el.label ?? ""),
+        preserve_default: el.preserve_default !== false,
+      };
+    }),
+    veraenderbare_flaechen: Array.isArray(o.veraenderbare_flaechen)
+      ? o.veraenderbare_flaechen.map(String)
       : undefined,
     einschaetzung: o.einschaetzung ? String(o.einschaetzung) : undefined,
     stil_vorschlaege: stil.slice(0, 3).map((s) => {

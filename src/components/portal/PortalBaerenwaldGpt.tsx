@@ -37,9 +37,9 @@ function PortalBaerenwaldGptInner({
   }, [open, isEmbedded]);
 
   const handlePreisBereit = useCallback(() => {
-    setPreisCtaVisible(true);
+    setPreisCtaVisible(false);
     setBeratungCtaVisible(false);
-    setKiChatLocked(true);
+    setKiChatLocked(false);
   }, []);
 
   const handleBeratungBereit = useCallback(() => {

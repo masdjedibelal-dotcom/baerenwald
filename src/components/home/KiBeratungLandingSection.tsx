@@ -8,18 +8,18 @@ import { RECHNER_KI_BERATUNG_HREF } from "@/lib/rechner-links";
 const STEPS = [
   {
     n: "1",
-    title: "Vorhaben beschreiben",
-    desc: "Idee oder konkretes Projekt — einfach lostippen.",
+    title: "Vorhaben schildern",
+    desc: "Bad, Heizung, Umbau — erzähl einfach, was ansteht.",
   },
   {
     n: "2",
-    title: "Beraten & visualisieren",
-    desc: "Gewerke klären — optional deinen Raum mit Foto visualisieren.",
+    title: "Idee sehen & einordnen",
+    desc: "Optional Raum visualisieren, Gewerke klären und Preisrahmen — im selben Gespräch.",
   },
   {
     n: "3",
-    title: "Projekt anfragen",
-    desc: "Kontaktdaten im Chat — Bärenwald meldet sich bei dir.",
+    title: "Anfrage senden",
+    desc: "Bärenwald meldet sich — ein Ansprechpartner für alles.",
   },
 ] as const;
 
@@ -31,20 +31,14 @@ export function KiBeratungLandingSection() {
       aria-labelledby="ki-beratung-landing-h2"
     >
       <div className="inner ki-beratung-landing-inner">
-        <div className="ki-beratung-landing-title-wrap">
-          <div className="ki-beratung-landing-title-card">
-            <span
-              className="ki-rechner-mode-label ki-rechner-starter-stoerer"
-              aria-hidden
-            >
-              Neu
-            </span>
-            <h2 id="ki-beratung-landing-h2">BärenwaldGPT</h2>
-          </div>
-        </div>
+        <p className="ki-beratung-landing-eyebrow">Beratung & Visualisierung</p>
+        <h2 id="ki-beratung-landing-h2" className="ki-beratung-landing-h2">
+          Von der Idee bis zur Anfrage — in einem Durchgang
+        </h2>
         <p className="ki-beratung-landing-sub">
-          Beraten, visualisieren, anfragen — Renovierung und Umbau in München,
-          mit einem Ansprechpartner.
+          Beschreib dein Projekt, lass dir optional deinen Raum zeigen und hol dir
+          einen Preisrahmen — ohne zwischen Masken zu springen. Mit einem
+          Ansprechpartner in München.
         </p>
 
         <ol className="ki-beratung-landing-steps">
@@ -66,11 +60,11 @@ export function KiBeratungLandingSection() {
           className="ki-beratung-landing-cta"
           onClick={() =>
             posthog.capture("landing_ki_beratung_cta_clicked", {
-              location: "hero_follow",
+              location: "section",
             })
           }
         >
-          KI-Beratung starten
+          Mein Projekt mit KI besprechen
         </Link>
       </div>
     </section>

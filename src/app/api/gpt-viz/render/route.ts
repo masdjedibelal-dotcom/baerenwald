@@ -1,7 +1,21 @@
 import { buildRenderPrompt } from "@/lib/gpt-viz/claude-render-prompt";
-import { GPT_VIZ_MAX_RENDERS, GPT_VIZ_RATE } from "@/lib/gpt-viz/constants";
+import { GPT_VIZ_RATE } from "@/lib/gpt-viz/constants";
+import { buildGptVizLimitsInfo, checkRenderLimit } from "@/lib/gpt-viz/limits";
+import { getGptVizPortalKundeId } from "@/lib/gpt-viz/portal-auth";
+import { portalRegisterForGptUrl } from "@/lib/portal/portal-site-url";
+import {
+  guidanceScaleForModus,
+  negativePromptForBrief,
+  promptStrengthForModus,
+} from "@/lib/gpt-viz/render-strength";
 import { runInteriorDesignRender, isReplicateConfigured } from "@/lib/gpt-viz/replicate-client";
-import { getGptVizSession, updateGptVizSession } from "@/lib/gpt-viz/session";
+import { fallbackVizBrief } from "@/lib/gpt-viz/claude-viz-prepare";
+import { isGptVizInternalRequest } from "@/lib/gpt-viz/internal-auth";
+import {
+  getGptVizSession,
+  getGptVizSessionForStaff,
+  updateGptVizSession,
+} from "@/lib/gpt-viz/session";
 import { resolvePublicImageUrl, uploadGptVizFromUrl } from "@/lib/gpt-viz/storage";
 import type { GptVizRenderVersion } from "@/lib/gpt-viz/types";
 import { checkRateLimit } from "@/lib/rate-limit";
@@ -19,10 +33,15 @@ export async function POST(req: Request) {
     return Response.json({ error: `Visualisierung nicht verfügbar: ${missing}` }, { status: 503 });
   }
 
-  const ip = getClientIp(req);
-  const rl = checkRateLimit(ip, GPT_VIZ_RATE.renderPerHour, 60 * 60 * 1000, "gpt-viz-render");
-  if (!rl.allowed) {
-    return Response.json({ error: "Render-Limit erreicht — bitte später erneut." }, { status: 429 });
+  const internal = isGptVizInternalRequest(req);
+  const portalKundeId = internal ? null : await getGptVizPortalKundeId();
+
+  if (!internal) {
+    const ip = getClientIp(req);
+    const rl = checkRateLimit(ip, GPT_VIZ_RATE.renderPerHour, 60 * 60 * 1000, "gpt-viz-render-ddos");
+    if (!rl.allowed) {
+      return Response.json({ error: "Zu viele Anfragen — bitte kurz warten." }, { status: 429 });
+    }
   }
 
   let body: { session_id?: string; wunsch_text?: string; nachprompt?: string };
@@ -40,15 +59,26 @@ export async function POST(req: Request) {
     return Response.json({ error: "session_id und wunsch_text erforderlich." }, { status: 400 });
   }
 
-  const session = await getGptVizSession(sessionId);
+  const session = internal
+    ? await getGptVizSessionForStaff(sessionId)
+    : await getGptVizSession(sessionId);
   if (!session) {
     return Response.json({ error: "Session ungültig oder abgelaufen." }, { status: 404 });
   }
-  if (session.render_count >= GPT_VIZ_MAX_RENDERS) {
-    return Response.json(
-      { error: `Maximal ${GPT_VIZ_MAX_RENDERS} Visualisierungen pro Projekt.` },
-      { status: 400 }
-    );
+  if (!internal) {
+    const limit = await checkRenderLimit(session, portalKundeId);
+    if (!limit.allowed) {
+      return Response.json(
+        {
+          error: limit.message ?? "Visualisierungs-Limit erreicht.",
+          limit_code: limit.code,
+          max_renders: limit.max_renders,
+          renders_remaining: limit.renders_remaining,
+          portal_register_url: portalKundeId ? undefined : portalRegisterForGptUrl(),
+        },
+        { status: 403 }
+      );
+    }
   }
   if (session.ist_bilder_urls.length === 0) {
     return Response.json(
@@ -59,15 +89,20 @@ export async function POST(req: Request) {
 
   try {
     const istUrl = resolvePublicImageUrl(session.ist_bilder_urls[0]);
+    const vizBrief = session.viz_brief ?? fallbackVizBrief(session.raum_analyse);
     const renderPrompt = await buildRenderPrompt({
       wunschText,
       raumAnalyse: session.raum_analyse,
+      vizBrief,
       nachprompt,
     });
 
     const replicateUrl = await runInteriorDesignRender({
       imageUrl: istUrl,
       prompt: renderPrompt,
+      prompt_strength: promptStrengthForModus(vizBrief.modus, vizBrief.struktur_lock),
+      guidance_scale: guidanceScaleForModus(vizBrief.modus),
+      negative_prompt: negativePromptForBrief(vizBrief),
     });
 
     const stored = await uploadGptVizFromUrl(sessionId, replicateUrl);
@@ -93,11 +128,21 @@ export async function POST(req: Request) {
       return Response.json({ error: "Session-Update fehlgeschlagen." }, { status: 500 });
     }
 
+    const limitAfter = internal
+      ? { max_renders: 999, renders_remaining: 999 }
+      : await checkRenderLimit(updated, portalKundeId);
+
+    const limits = internal
+      ? null
+      : await buildGptVizLimitsInfo(updated, portalKundeId);
+
     return Response.json({
       ergebnis_bild_url: ergebnisUrl,
       ergebnis_historie: historie,
       render_count: updated.render_count,
-      renders_remaining: GPT_VIZ_MAX_RENDERS - updated.render_count,
+      max_renders: limitAfter.max_renders,
+      renders_remaining: limitAfter.renders_remaining,
+      limits,
     });
   } catch (e) {
     console.error("[gpt-viz/render]", e);

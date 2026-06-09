@@ -1,3 +1,5 @@
+import { enrichBriefWithLimits } from "@/lib/gpt-viz/limits";
+import { getGptVizPortalKundeId } from "@/lib/gpt-viz/portal-auth";
 import { getGptVizSession, sessionToBrief } from "@/lib/gpt-viz/session";
 
 export const runtime = "nodejs";
@@ -13,5 +15,12 @@ export async function GET(req: Request) {
     return Response.json({ error: "Session ungültig oder abgelaufen." }, { status: 404 });
   }
 
-  return Response.json({ brief: sessionToBrief(session) });
+  const portalKundeId = await getGptVizPortalKundeId();
+  const brief = await enrichBriefWithLimits(
+    session,
+    sessionToBrief(session),
+    portalKundeId
+  );
+
+  return Response.json({ brief });
 }

@@ -29,9 +29,21 @@ export function actionsForIntent(ctx: ActionContext): GptChatAction[] | undefine
   return actions.length ? actions : undefined;
 }
 
-export function postRenderActions(renderCount: number, maxRenders: number): GptChatAction[] {
-  const actions: GptChatAction[] = [{ id: "lead_start", label: "Projekt senden" }];
-  const left = maxRenders - renderCount;
-  if (left > 0) actions.unshift({ id: "render_again", label: "Noch anpassen" });
+export function postRenderActions(
+  renderCount: number,
+  maxRenders: number,
+  leadUnlocked: boolean
+): GptChatAction[] {
+  const actions: GptChatAction[] = [];
+  const left = Math.max(0, maxRenders - renderCount);
+  if (left > 0) {
+    actions.push({ id: "render_again", label: "Noch anpassen" });
+  }
+  if (!leadUnlocked) {
+    actions.push({
+      id: "lead_start",
+      label: left <= 0 ? "Projekt senden — 2× anpassen" : "Projekt senden",
+    });
+  }
   return actions;
 }

@@ -219,6 +219,14 @@ function FunnelRechnerInner() {
   const urlInit = useRef(false);
   /** Funnel nach „Schritt für Schritt“ — Zurück von Situation → Auswahl-Screen. */
   const funnelFromWahlRef = useRef(false);
+  /** KI direkt über ?modus=ki (Landing) — Zurück nicht zur Auswahl-Weiche. */
+  const kiDirectEntryRef = useRef(
+    isKiBeratungModusParam(
+      typeof window !== "undefined"
+        ? new URLSearchParams(window.location.search).get("modus")
+        : null
+    )
+  );
   const kiHandoffRef = useRef<KiRechnerFunnelData | null>(null);
   const [einstiegModus, setEinstiegModus] = useState<EinstiegModus>(() =>
     isKiBeratungModusParam(searchParams.get("modus")) ? "ki" : "trust"
@@ -620,20 +628,9 @@ function FunnelRechnerInner() {
   const handleKiPreisBereit = useCallback(
     (data: KiRechnerFunnelData) => {
       kiHandoffRef.current = data;
-      const status = runKiHandoff(data, { navigate: false });
-      if (status === "preis") {
-        setKiBeratungBereit(false);
-        setKiChatLocked(true);
-        setKiPreisBereit(true);
-        return;
-      }
-      setKiPreisBereit(false);
-      if (status === "beratung") {
-        setKiBeratungBereit(true);
-        setKiChatLocked(true);
-        return;
-      }
+      runKiHandoff(data, { navigate: false });
       setKiBeratungBereit(false);
+      setKiPreisBereit(false);
       setKiChatLocked(false);
     },
     [runKiHandoff]
@@ -665,6 +662,7 @@ function FunnelRechnerInner() {
     resetKiFlowState();
     setWahlAuswahl("ki");
     setEinstiegModus("ki");
+    kiDirectEntryRef.current = true;
 
     if (typeof window === "undefined") return;
     const next = new URL(window.location.href);
@@ -973,6 +971,7 @@ function FunnelRechnerInner() {
     setLeadSubmitting(false);
     setLeadSubmitError(null);
     funnelFromWahlRef.current = false;
+    kiDirectEntryRef.current = false;
     resetKiFlowState();
     setWahlAuswahl(null);
     setEinstiegModus("trust");
@@ -1002,6 +1001,7 @@ function FunnelRechnerInner() {
       if (!wahlAuswahl) return;
       if (wahlAuswahl === "ki") {
         resetKiFlowState();
+        kiDirectEntryRef.current = false;
         setEinstiegModus("ki");
         return;
       }
@@ -1439,7 +1439,7 @@ function FunnelRechnerInner() {
 
   const nextDisabled = useMemo(() => {
     if (einstiegModus === "wahl") return !wahlAuswahl;
-    if (einstiegModus === "ki") return !kiPreisBereit && !kiBeratungBereit;
+    if (einstiegModus === "ki") return true;
 
     if (isBwFachdetailQuestionScreenId(screen)) {
       const qid = getFachdetailQuestionIdFromScreen(screen);
@@ -2726,7 +2726,9 @@ function FunnelRechnerInner() {
   return (
     <div
       className={cn(
-        "min-h-dvh funnel-main--strip-a",
+        einstiegModus === "ki"
+          ? "h-dvh max-h-dvh overflow-hidden funnel-main--strip-a"
+          : "min-h-dvh funnel-main--strip-a",
         (einstiegModus === "trust" ||
           (einstiegModus === "funnel" && isBwTrustScreenId(screen))) &&
           "trust-screen-active",
@@ -2780,6 +2782,11 @@ function FunnelRechnerInner() {
                   }
                   if (einstiegModus === "ki") {
                     resetKiFlowState();
+                    if (kiDirectEntryRef.current) {
+                      kiDirectEntryRef.current = false;
+                      router.replace("/", { scroll: false });
+                      return;
+                    }
                     setEinstiegModus("wahl");
                     window.scrollTo({
                       top: 0,

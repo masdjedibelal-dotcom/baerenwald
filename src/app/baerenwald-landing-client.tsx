@@ -31,6 +31,7 @@ import { MarketingFooter } from "@/components/layout/MarketingFooter";
 import { BwIcon } from "@/components/ui/BwIcon";
 import { WaveUnderline } from "@/components/ui/WaveUnderline";
 import { SITE_CONFIG } from "@/lib/config";
+import { RECHNER_KI_BERATUNG_HREF } from "@/lib/rechner-links";
 import { HOME_FAQ_ITEMS } from "@/lib/home-content";
 import {
   buildHeroRechnerLandingUrl,
@@ -583,17 +584,27 @@ export default function BaerenwaldLandingClient({
                       <button type="submit" className="hero-search-btn">
                         Preis ermitteln
                       </button>
-                      <span
-                        className="hero-search-ki-stoerer ki-rechner-mode-label ki-rechner-starter-stoerer"
-                        aria-hidden
-                      >
-                        Neu: BärenwaldGPT
-                      </span>
                     </div>
                   </div>
                   <p className="hero-disclaimer">
                     Unverbindliche Schätzung — kein Kostenvoranschlag
                   </p>
+                  <div className="hero-ki-path">
+                    <span className="hero-path-or" aria-hidden>
+                      oder
+                    </span>
+                    <Link
+                      href={RECHNER_KI_BERATUNG_HREF}
+                      className="hero-ki-cta"
+                      onClick={() =>
+                        posthog.capture("landing_ki_beratung_cta_clicked", {
+                          location: "hero",
+                        })
+                      }
+                    >
+                      Mein Projekt mit KI besprechen
+                    </Link>
+                  </div>
                   {showSearchSuggestions ? (
                     <div
                       ref={portalDropdownRef}

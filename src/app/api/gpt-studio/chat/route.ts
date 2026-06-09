@@ -13,6 +13,7 @@ import {
   KI_OFF_TOPIC_REPLY,
   KI_RATE_LIMIT_PER_HOUR,
 } from "@/lib/ki-rechner/guards";
+import { getGptVizPortalKundeId } from "@/lib/gpt-viz/portal-auth";
 import { buildGptStudioSystemPrompt } from "@/lib/gpt-viz/gpt-studio-prompt";
 import { buildGptStudioLeadPrompt } from "@/lib/gpt-viz/gpt-studio-lead-prompt";
 import { detectGptStudioIntent } from "@/lib/gpt-viz/gpt-studio-intents";
@@ -133,10 +134,11 @@ export async function POST(req: Request) {
   const leadActive = Boolean(body.lead_active);
   const leadDraft = (body.lead_draft ?? {}) as GptLeadDraft;
   const leadNextField = body.lead_next_field as GptLeadField | undefined;
+  const portalKundeId = await getGptVizPortalKundeId();
 
   const system = leadActive
-    ? `${buildGptStudioSystemPrompt(session)}\n\n${buildGptStudioLeadPrompt(leadDraft, leadNextField ?? null)}`
-    : buildGptStudioSystemPrompt(session);
+    ? `${buildGptStudioSystemPrompt(session, portalKundeId)}\n\n${buildGptStudioLeadPrompt(leadDraft, leadNextField ?? null)}`
+    : buildGptStudioSystemPrompt(session, portalKundeId);
 
   const client = createAnthropicClient(apiKey);
   const models = [getClaudeModel(), ...KI_CLAUDE_MODEL_FALLBACKS].filter(

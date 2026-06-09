@@ -1,17 +1,17 @@
 "use client";
 
-import { useCallback, useEffect, type RefObject } from "react";
+import { useCallback, useEffect, useRef, type RefObject } from "react";
 
 import { KI_TEXTAREA_MAX_LINES } from "@/lib/ki-rechner/guards";
 
 const TEXTAREA_MIN_HEIGHT_PX = 40;
 const KEYBOARD_OPEN_THRESHOLD_PX = 48;
+/** Nur auto-scrollen wenn Nutzer schon unten war (wie WhatsApp/ChatGPT). */
+const NEAR_BOTTOM_PX = 120;
 
 type UseGptChatScrollOptions = {
   chatRootRef: RefObject<HTMLElement | null>;
   messagesScrollRef: RefObject<HTMLElement | null>;
-  composerRef: RefObject<HTMLElement | null>;
-  messagesEndRef: RefObject<HTMLElement | null>;
   textareaRef: RefObject<HTMLTextAreaElement | null>;
   /** Nachrichten, Loading, Fehler, Brief-Leiste … */
   scrollTriggers: unknown[];
@@ -20,28 +20,31 @@ type UseGptChatScrollOptions = {
 export function useGptChatScroll({
   chatRootRef,
   messagesScrollRef,
-  composerRef,
-  messagesEndRef,
   textareaRef,
   scrollTriggers,
 }: UseGptChatScrollOptions) {
-  const scrollChatToEnd = useCallback((smooth = false) => {
-    const run = () => {
-      const scroller = messagesScrollRef.current;
-      if (scroller) {
-        scroller.scrollTo({
-          top: scroller.scrollHeight,
-          behavior: smooth ? "smooth" : "auto",
-        });
-      }
-      messagesEndRef.current?.scrollIntoView({
-        behavior: smooth ? "smooth" : "auto",
-        block: "end",
-      });
+  const isTypingRef = useRef(false);
+
+  const isNearBottom = useCallback(() => {
+    const scroller = messagesScrollRef.current;
+    if (!scroller) return true;
+    const distance = scroller.scrollHeight - scroller.scrollTop - scroller.clientHeight;
+    return distance <= NEAR_BOTTOM_PX;
+  }, [messagesScrollRef]);
+
+  const scrollChatToEnd = useCallback((force = false) => {
+    const scroller = messagesScrollRef.current;
+    if (!scroller) return;
+    if (!force && isTypingRef.current) return;
+    if (!force && !isNearBottom()) return;
+
+    const jump = () => {
+      scroller.scrollTop = scroller.scrollHeight;
     };
-    requestAnimationFrame(run);
-    requestAnimationFrame(() => requestAnimationFrame(run));
-  }, [messagesScrollRef, messagesEndRef]);
+
+    jump();
+    requestAnimationFrame(jump);
+  }, [messagesScrollRef, isNearBottom]);
 
   const syncTextareaHeight = useCallback(() => {
     const ta = textareaRef.current;
@@ -54,48 +57,59 @@ export function useGptChatScroll({
     const next = Math.max(TEXTAREA_MIN_HEIGHT_PX, Math.min(ta.scrollHeight, maxHeight));
     ta.style.height = `${next}px`;
     ta.style.overflowY = ta.scrollHeight > maxHeight ? "auto" : "hidden";
+    /* Nur innerhalb der Textarea scrollen — Nachrichtenliste nicht anfassen. */
     ta.scrollTop = ta.scrollHeight;
-    scrollChatToEnd(false);
-  }, [textareaRef, scrollChatToEnd]);
+  }, [textareaRef]);
+
+  const chatPageRoot = useCallback(() => {
+    return chatRootRef.current?.closest(
+      ".ki-rechner-chat-active, .portal-gpt-shell"
+    ) as HTMLElement | null;
+  }, [chatRootRef]);
 
   const handleInputFocus = useCallback(() => {
-    chatRootRef.current?.closest(".ki-rechner-chat-active")?.classList.add("ki-input-focused");
-    scrollChatToEnd(false);
-    window.setTimeout(() => scrollChatToEnd(false), 120);
-    window.setTimeout(() => scrollChatToEnd(false), 320);
-  }, [chatRootRef, scrollChatToEnd]);
+    isTypingRef.current = true;
+    chatPageRoot()?.classList.add("ki-input-focused");
+    scrollChatToEnd(true);
+  }, [chatPageRoot, scrollChatToEnd]);
 
   const handleInputBlur = useCallback(() => {
     window.setTimeout(() => {
+      isTypingRef.current = false;
       const vv = window.visualViewport;
       const vvOffset = vv
         ? Math.max(0, window.innerHeight - vv.height - vv.offsetTop)
         : 0;
       if (vvOffset < KEYBOARD_OPEN_THRESHOLD_PX) {
-        chatRootRef.current
-          ?.closest(".ki-rechner-chat-active")
-          ?.classList.remove("ki-input-focused");
+        chatPageRoot()?.classList.remove("ki-input-focused");
       }
     }, 80);
-  }, [chatRootRef]);
+  }, [chatPageRoot]);
 
+  /** Neue Nachricht / Loading / Fehler → immer ans Ende. */
   useEffect(() => {
-    scrollChatToEnd(false);
+    scrollChatToEnd(true);
+    const t1 = window.setTimeout(() => scrollChatToEnd(true), 80);
+    const t2 = window.setTimeout(() => scrollChatToEnd(true), 250);
+    return () => {
+      window.clearTimeout(t1);
+      window.clearTimeout(t2);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps -- scrollTriggers bewusst als Blob
   }, scrollTriggers);
 
+  /** Inhalt wächst (lange GPT-Antwort) — nur scrollen wenn Nutzer nicht tippt und unten war. */
   useEffect(() => {
-    const composer = composerRef.current;
     const scroller = messagesScrollRef.current;
-    if (!composer && !scroller) return;
+    if (!scroller) return;
 
     const ro = new ResizeObserver(() => {
       scrollChatToEnd(false);
     });
-    if (composer) ro.observe(composer);
-    if (scroller) ro.observe(scroller);
+    ro.observe(scroller);
+
     return () => ro.disconnect();
-  }, [composerRef, messagesScrollRef, scrollChatToEnd]);
+  }, [messagesScrollRef, scrollChatToEnd]);
 
   return {
     scrollChatToEnd,
