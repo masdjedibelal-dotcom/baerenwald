@@ -92,7 +92,7 @@ export function GptZielbildCard({
       <div className="gpt-zielbild-card-head">
         <p className="gpt-zielbild-card-title">Dein Zielbild</p>
         <p className="gpt-zielbild-card-hint">
-          Feed 4:5 für Instagram &amp; Pinterest — editorial mit Vorher/Nachher.
+          Editorial 4:5 — Vorher-Inset, Hero-Nachher, Magazin-Typo.
         </p>
       </div>
 

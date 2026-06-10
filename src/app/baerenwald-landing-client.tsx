@@ -26,10 +26,10 @@ import { WarumBaerenwaldScrollSection } from "@/components/landing/WarumBaerenwa
 import { MarketingFooter } from "@/components/layout/MarketingFooter";
 import { BwIcon } from "@/components/ui/BwIcon";
 import { WaveUnderline } from "@/components/ui/WaveUnderline";
-
-/** Hero-Einstieg: Icons aus /public/icons */
-const HERO_ENTRY_PREIS_ICON = "01-haus-erneuern";
-const HERO_ENTRY_KI_ICON = "14-gartengestaltung";
+import {
+  LANDING_ICON_HERO_KI,
+  LANDING_ICON_HERO_PREIS,
+} from "@/lib/landing-icons";
 import { SITE_CONFIG } from "@/lib/config";
 import { RECHNER_KI_BERATUNG_HREF } from "@/lib/rechner-links";
 import { HOME_FAQ_ITEMS } from "@/lib/home-content";
@@ -476,7 +476,7 @@ export default function BaerenwaldLandingClient({
               <p className="hero-eyebrow">Handwerker München</p>
               <h1 className="hero-h1-split">
                 <span className="hero-h1-line--1 au">
-                  Kein Vergleichsportal.
+                  Kein Vermittler.
                 </span>
                 <WaveUnderline
                   className="hero-h1-line--2 hero-h1-wave au d2"
@@ -489,7 +489,8 @@ export default function BaerenwaldLandingClient({
               <p className="hero-lead au d4">
                 Von Reparatur bis Komplettprojekt.
                 <br />
-                Bärenwald übernimmt Koordination, Handwerk und Umsetzung.
+                Bärenwald bleibt von Anfang bis Ende dabei — Koordination,
+                Handwerk und Umsetzung.
               </p>
               <div className="hero-entry fade-up d1">
                 <div className="hero-entry-grid">
@@ -503,7 +504,7 @@ export default function BaerenwaldLandingClient({
                     }
                   >
                     <span className="hero-entry-icon" aria-hidden>
-                      <BwIcon name={HERO_ENTRY_PREIS_ICON} size={28} />
+                      <BwIcon name={LANDING_ICON_HERO_PREIS} size={28} />
                     </span>
                     <span className="hero-entry-card-copy">
                       <span className="hero-entry-card-title">Preisrahmen ermitteln</span>
@@ -534,7 +535,7 @@ export default function BaerenwaldLandingClient({
                       BärenwaldGPT
                     </span>
                     <span className="hero-entry-icon hero-entry-icon--ki" aria-hidden>
-                      <BwIcon name={HERO_ENTRY_KI_ICON} size={28} />
+                      <BwIcon name={LANDING_ICON_HERO_KI} size={28} />
                     </span>
                     <span className="hero-entry-card-copy">
                       <span className="hero-entry-card-title">Frag einfach los</span>

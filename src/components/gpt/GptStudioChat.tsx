@@ -7,6 +7,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 import { GptChatBriefBar } from "@/components/gpt/GptChatBriefBar";
 import { GptChatBubble } from "@/components/gpt/GptChatBubble";
+import { GptRegistrationGate } from "@/components/gpt/GptRegistrationGate";
 import {
   messagesForClaude,
   newChatId,
@@ -23,6 +24,11 @@ import { useMobileComposerInset } from "@/hooks/use-mobile-composer-inset";
 import { GPT_VIZ_LIMITS, VIZ_NACHPROMPT_TAGS } from "@/lib/gpt-viz/constants";
 import { limitCodeToVizBlock } from "@/lib/gpt-viz/limits";
 import type { GptVizLimitCode } from "@/lib/gpt-viz/limits";
+import {
+  gateFromLimitPayload,
+  gateFromVizLimitBlock,
+  type GptRegistrationGateState,
+} from "@/lib/gpt-viz/registration-gate";
 import {
   buildLeadQuestion,
   extractLeadForField,
@@ -104,6 +110,8 @@ export function GptStudioChat({
     brief,
     sessionError,
     clearSessionError,
+    sessionRegistrationGate,
+    clearSessionRegistrationGate,
     ensureSession,
     refreshBrief,
     mergeChatVerlauf,
@@ -138,6 +146,8 @@ export function GptStudioChat({
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [registrationGate, setRegistrationGate] =
+    useState<GptRegistrationGateState | null>(null);
   const chatRootRef = useRef<HTMLDivElement>(null);
   const messagesScrollRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -180,13 +190,25 @@ export function GptStudioChat({
   );
 
   const appendVizLimitMessage = useCallback(
-    (message: string, limitCode: GptVizLimitCode, portalRegisterUrl?: string) => {
+    (
+      message: string,
+      limitCode: GptVizLimitCode,
+      portalRegisterUrl?: string,
+      retryAfter?: string | null
+    ) => {
+      const url =
+        portalRegisterUrl ?? brief?.limits?.portal_register_url ?? "/portal/registrieren";
+      const gate = gateFromLimitPayload(message, limitCode, url, retryAfter);
+      if (gate) {
+        setRegistrationGate(gate);
+        appendAssistant(message);
+        return;
+      }
       const blocks: GptChatBlock[] = [
         {
           type: "viz_limit",
           reason: limitCodeToVizBlock(limitCode),
-          portalRegisterUrl:
-            portalRegisterUrl ?? brief?.limits?.portal_register_url ?? "/portal/registrieren",
+          portalRegisterUrl: url,
         },
       ];
       appendAssistant(message, { blocks });
@@ -225,18 +247,41 @@ export function GptStudioChat({
   useEffect(() => {
     if (!sessionError) return;
     setError(sessionError);
-    appendVizLimitMessage(
-      sessionError,
-      "visitor_sessions",
-      brief?.limits?.portal_register_url
-    );
     clearSessionError();
+  }, [sessionError, clearSessionError]);
+
+  useEffect(() => {
+    if (!sessionRegistrationGate) return;
+    setRegistrationGate(sessionRegistrationGate);
+    const alreadyAnnounced = messages.some(
+      (m) => m.role === "assistant" && m.text === sessionRegistrationGate.message
+    );
+    if (!alreadyAnnounced) {
+      appendAssistant(sessionRegistrationGate.message);
+    }
+    clearSessionRegistrationGate();
   }, [
-    sessionError,
-    appendVizLimitMessage,
-    brief?.limits?.portal_register_url,
-    clearSessionError,
+    sessionRegistrationGate,
+    messages,
+    appendAssistant,
+    clearSessionRegistrationGate,
   ]);
+
+  useEffect(() => {
+    if (registrationGate) return;
+    for (let i = messages.length - 1; i >= 0; i--) {
+      const msg = messages[i];
+      if (msg.role !== "assistant" || !msg.blocks?.length) continue;
+      for (const block of msg.blocks) {
+        if (block.type !== "viz_limit") continue;
+        const gate = gateFromVizLimitBlock(msg.text ?? "", block);
+        if (gate) {
+          setRegistrationGate(gate);
+          return;
+        }
+      }
+    }
+  }, [messages, registrationGate]);
 
   useEffect(() => {
     if (!brief || hydratedRef.current) return;
@@ -635,20 +680,17 @@ export function GptStudioChat({
                     },
                   ]
                 : []),
-              ...(!canRenderAgain && leadUnlocked
-                ? [
-                    {
-                      type: "viz_limit" as const,
-                      reason: "needs_portal" as const,
-                      portalRegisterUrl:
-                        limits?.portal_register_url ?? "/portal/registrieren",
-                    },
-                  ]
-                : []),
             ]
           : undefined,
         actions: guidedHybrid ? undefined : postActions,
       });
+      if (!canRenderAgain && leadUnlocked) {
+        const portalUrl = limits?.portal_register_url ?? "/portal/registrieren";
+        const gateMsg =
+          "Du hast alle Visualisierungen für dieses Projekt genutzt. Registriere dich kostenlos im Portal für weitere Projekte.";
+        const gate = gateFromLimitPayload(gateMsg, "guest_exhausted", portalUrl);
+        if (gate) setRegistrationGate(gate);
+      }
       setVizPhase("lead");
     } catch {
       setError("Render fehlgeschlagen.");
@@ -678,37 +720,16 @@ export function GptStudioChat({
       const sid = sessionId ?? (await ensureSession());
       if (!sid) return;
 
-      setLoading(true);
-      setError(null);
-      try {
-        const prepRes = await fetch("/api/gpt-viz/prepare-render", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ session_id: sid, wunsch_text: effectiveWunsch }),
-        });
-        const prepData = (await prepRes.json()) as {
-          error?: string;
-          ready?: boolean;
-          questions?: GptVizPrepareQuestion[];
-        };
-        if (!prepRes.ok) {
-          setError(prepData.error ?? "Vorbereitung fehlgeschlagen.");
-          return;
-        }
-        setWunschText(effectiveWunsch);
-        if (!prepData.ready && prepData.questions?.length) {
-          setVizPhase("viz_questions");
-          showVizQuestion(prepData.questions[0]);
-          return;
-        }
-        await executeRender(effectiveWunsch);
-      } catch {
-        setError("Vorbereitung fehlgeschlagen.");
-      } finally {
-        setLoading(false);
-      }
+      setWunschText(effectiveWunsch);
+      void fetch("/api/gpt-viz/prepare-render", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ session_id: sid, wunsch_text: effectiveWunsch }),
+      }).catch(() => {});
+
+      await executeRender(effectiveWunsch);
     },
-    [wunschText, istUrl, sessionId, ensureSession, showVizQuestion, executeRender]
+    [wunschText, istUrl, sessionId, ensureSession, executeRender]
   );
 
   const answerVizQuestion = useCallback(
@@ -757,6 +778,7 @@ export function GptStudioChat({
 
   const handleUpload = useCallback(
     async (kind: "raum" | "inspiration", file: File) => {
+      if (registrationGate) return;
       setLoading(true);
       setError(null);
       setPendingUpload(null);
@@ -870,12 +892,21 @@ export function GptStudioChat({
         setLoading(false);
       }
     },
-    [sessionId, ensureSession, messages, askClaude, appendAssistant, refreshBrief]
+    [
+      registrationGate,
+      sessionId,
+      ensureSession,
+      messages,
+      askClaude,
+      appendAssistant,
+      refreshBrief,
+      guidedHybrid,
+    ]
   );
 
   const handleAction = useCallback(
     async (actionId: string) => {
-      if (loading) return;
+      if (loading || registrationGate) return;
 
       if (actionId === "guided_anpassen") {
         const payload = buildGuidedAssistantFromDraft(guidedDraft);
@@ -1010,6 +1041,7 @@ export function GptStudioChat({
     },
     [
       loading,
+      registrationGate,
       guidedDraft,
       guidedHybrid,
       ensureSession,
@@ -1030,7 +1062,7 @@ export function GptStudioChat({
 
   const handleSend = useCallback(async () => {
     const text = input.trim();
-    if (!text || loading || locked || limitReached) return;
+    if (!text || loading || locked || limitReached || registrationGate) return;
 
     const userMsg: GptChatMessage = { id: newChatId(), role: "user", text };
     const nextHistory = [...messages, userMsg];
@@ -1039,6 +1071,7 @@ export function GptStudioChat({
     requestAnimationFrame(syncTextareaHeight);
 
     const sid = sessionId ?? (await ensureSession());
+    if (!sid) return;
 
     if (leadActive && awaitingLeadField) {
       const updated = mergeLeadDraft(leadDraft, extractLeadForField(text, awaitingLeadField));
@@ -1132,6 +1165,7 @@ export function GptStudioChat({
     loading,
     locked,
     limitReached,
+    registrationGate,
     messages,
     sessionId,
     ensureSession,
@@ -1153,7 +1187,8 @@ export function GptStudioChat({
     showLeadForm,
   ]);
 
-  const inputDisabled = loading || locked || limitReached || vizPhase === "rendering";
+  const inputDisabled =
+    loading || locked || limitReached || vizPhase === "rendering" || Boolean(registrationGate);
 
   return (
     <div
@@ -1161,7 +1196,8 @@ export function GptStudioChat({
       className={cn(
         "ki-rechner-chat",
         guidedHybrid && "gpt-guided-root",
-        locked && "ki-rechner-chat--locked"
+        locked && "ki-rechner-chat--locked",
+        registrationGate && "ki-rechner-chat--registration-gated"
       )}
     >
       <div className="gpt-chat-sticky-top">
@@ -1198,7 +1234,7 @@ export function GptStudioChat({
             message={msg}
             onAction={(id) => void handleAction(id)}
             onLeadSubmit={(draft) => void submitLeadForm(draft)}
-            disabled={loading}
+            disabled={loading || Boolean(registrationGate)}
             suppressSummaryBlocks={guidedHybrid}
           />
         ))}
@@ -1260,7 +1296,13 @@ export function GptStudioChat({
                 void handleSend();
               }
             }}
-            placeholder={limitReached ? "Nachrichtenlimit erreicht" : "Nachricht eingeben …"}
+            placeholder={
+              registrationGate
+                ? "Registrierung erforderlich"
+                : limitReached
+                  ? "Nachrichtenlimit erreicht"
+                  : "Nachricht eingeben …"
+            }
             className="ki-rechner-chat-input ki-rechner-chat-textarea"
             disabled={inputDisabled}
             aria-label="Nachricht"
@@ -1279,6 +1321,13 @@ export function GptStudioChat({
           KI-Dienst Anthropic · <Link href="/datenschutz#ki-beratung">Datenschutz</Link>
         </p>
       </div>
+
+      {registrationGate ? (
+        <GptRegistrationGate
+          gate={registrationGate}
+          onExpired={() => setRegistrationGate(null)}
+        />
+      ) : null}
     </div>
   );
 }

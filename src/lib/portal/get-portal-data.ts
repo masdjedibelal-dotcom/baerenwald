@@ -437,6 +437,8 @@ export async function getPortalDataForKunde(kundeId: string) {
         ansprechpartner: resolvePortalAnsprechpartner(betreuer),
         titel: typeof a.titel === "string" ? a.titel : "Auftrag",
         status: typeof a.status === "string" ? a.status : undefined,
+        fortschritt:
+          typeof a.fortschritt === "number" ? a.fortschritt : undefined,
         objekt: resolveObj(objektId, leadPlz),
         dokumente: dokumenteFromAuftrag(
           {
@@ -558,6 +560,8 @@ export async function getPortalDataForKunde(kundeId: string) {
       lead_id: a.lead_id,
       angebot_id: a.angebot_id,
       status: a.status,
+      fortschritt:
+        typeof a.fortschritt === "number" ? a.fortschritt : null,
     })),
   });
 

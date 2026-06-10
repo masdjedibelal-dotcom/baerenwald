@@ -4,7 +4,7 @@ export const BAERENWALD_VISION_HEADLINE =
   "Handwerk besser — für dich und für die, die es umsetzen.";
 
 export const BAERENWALD_VISION_LEAD =
-  "Bärenwald ist kein Vergleichsportal. Wir sind der eine Ansprechpartner — und dahinter ein Ablauf, den wir über Jahre auf der Baustelle ausprobiert und Schritt für Schritt digital nachgezogen haben. Vom ersten Gespräch bis zur Abnahme. Operativ und technisch aus einer Hand.";
+  "Viele denken, wir vermitteln nur Handwerker und sind dann raus. Tun wir nicht. Wir bleiben dein Ansprechpartner — und führen den Ablauf, den wir über Jahre auf der Baustelle ausprobiert und Schritt für Schritt digital nachgezogen haben. Vom ersten Gespräch bis zur Abnahme. Operativ und technisch aus einer Hand.";
 
 export const BAERENWALD_VISION_PILLARS = [
   {
@@ -23,7 +23,3 @@ export const BAERENWALD_VISION_PILLARS = [
 
 export const BAERENWALD_VISION_CLOSING =
   "Unsere Vision: weniger Reibung auf beiden Seiten. Nicht perfekt von Tag eins — aber jeden Monat ein Stück schlanker und transparenter.";
-
-export const BAERENWALD_VISION_IMAGE = "/images/hero-handwerk-muenchen.png";
-export const BAERENWALD_VISION_IMAGE_ALT =
-  "Bärenwald-Team bei der Koordination eines Handwerksprojekts in München";

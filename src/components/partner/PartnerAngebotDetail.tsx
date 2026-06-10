@@ -23,8 +23,6 @@ import {
 import { partnerMapsHref } from "@/lib/partner/partner-maps-href";
 import { PartnerPortalDetailSections } from "@/components/partner/PartnerPortalDetailSections";
 import { PartnerProjektvertragPaket } from "@/components/partner/PartnerProjektvertragPaket";
-import { PartnerComplianceCheckliste } from "@/components/partner/PartnerComplianceCheckliste";
-import { compliancePflichtOffen } from "@/lib/partner/partner-compliance";
 import {
   DokumenteTabelle,
   type DokumentZeile,
@@ -50,12 +48,46 @@ import {
 
 const ANGEBOT_FORM_ID = "partner-angebot-form";
 const RECHNUNG_FORM_ID = "partner-rechnung-form";
+const PARTNER_ANGEBOT_MWST = 19;
+
+type PartnerPreisArt = "netto" | "brutto";
+
+function parsePreisInput(raw: string): number | null {
+  const n = Number(raw.replace(",", ".").trim());
+  if (!Number.isFinite(n) || n < 0) return null;
+  return Math.round(n * 100) / 100;
+}
+
+function roundEuro(value: number): number {
+  return Math.round(value * 100) / 100;
+}
+
+function bruttoFromNetto(netto: number, mwst = PARTNER_ANGEBOT_MWST): number {
+  return roundEuro(netto * (1 + mwst / 100));
+}
+
+function nettoFromBrutto(brutto: number, mwst = PARTNER_ANGEBOT_MWST): number {
+  return roundEuro(brutto / (1 + mwst / 100));
+}
+
+function resolvePartnerAngebotPreise(
+  raw: string,
+  art: PartnerPreisArt
+): { netto: number; brutto: number } | null {
+  const parsed = parsePreisInput(raw);
+  if (parsed == null) return null;
+  if (art === "netto") {
+    return { netto: parsed, brutto: bruttoFromNetto(parsed) };
+  }
+  return { netto: nettoFromBrutto(parsed), brutto: parsed };
+}
 
 function hwStatusLabel(s?: string): string {
   const v = (s ?? "offen").toLowerCase();
-  if (v === "eingereicht") return "Eingereicht";
+  if (v === "eingereicht") return "In Prüfung";
   if (v === "uebernommen") return "Übernommen";
   if (v === "abgelehnt") return "Abgelehnt";
+  if (v === "rueckfrage") return "Rückfrage";
   return "Offen";
 }
 
@@ -65,24 +97,30 @@ export function PartnerAngebotDetail({ item }: { item: PartnerAnfrageItem }) {
   const [rechnungLoading, setRechnungLoading] = useState(false);
   const [angebotError, setAngebotError] = useState<string | null>(null);
   const [rechnungError, setRechnungError] = useState<string | null>(null);
-  const [preisNetto, setPreisNetto] = useState("");
-  const [preisBrutto, setPreisBrutto] = useState("");
+  const [preisEingabe, setPreisEingabe] = useState("");
+  const [preisArt, setPreisArt] = useState<PartnerPreisArt>("netto");
   const [notiz, setNotiz] = useState("");
   const [angebotPdfs, setAngebotPdfs] = useState<File[]>([]);
   const [rechnungPdf, setRechnungPdf] = useState<File | null>(null);
   const [confirmAngebot, setConfirmAngebot] = useState(false);
 
-  const eingereicht = Boolean(item.hw_eingereicht_at);
-  const uebernommen = (item.hw_status ?? "").toLowerCase() === "uebernommen";
+  const hwSt = (item.hw_status ?? "offen").toLowerCase();
+  const eingereicht = hwSt === "eingereicht";
+  const uebernommen = hwSt === "uebernommen";
+  const crmRueckfrage = hwSt === "rueckfrage";
+  const crmAbgelehnt = hwSt === "abgelehnt";
   const vertragBestaetigt = Boolean(item.projektvertrag_bestaetigt_am);
   const vertragspaketAktiv = uebernommen && !vertragBestaetigt;
   const rechnungEingereicht = Boolean(item.hw_rechnung_eingereicht_at);
-  const stammPflichtOffen = compliancePflichtOffen(item.compliance_stamm ?? []);
   const kannAngebotEinreichen =
-    !eingereicht && item.status.toLowerCase() === "akzeptiert" && !stammPflichtOffen;
-  const wartetAufFreigabe = eingereicht && !uebernommen;
+    item.status.toLowerCase() === "akzeptiert" &&
+    (hwSt === "offen" || crmRueckfrage || crmAbgelehnt);
+  const wartetAufFreigabe = eingereicht;
+  const hatEinreichung =
+    Boolean(item.hw_eingereicht_at) &&
+    (eingereicht || uebernommen || crmRueckfrage || crmAbgelehnt);
   const kannRechnungHochladen =
-    eingereicht && uebernommen && vertragBestaetigt && !rechnungEingereicht;
+    uebernommen && vertragBestaetigt && !rechnungEingereicht;
 
   const { positionen: crmPositionen, gesamtBrutto } = useMemo(
     () =>
@@ -144,10 +182,13 @@ export function PartnerAngebotDetail({ item }: { item: PartnerAnfrageItem }) {
     item.hw_rechnung_eingereicht_at,
   ]);
 
+  const preisVorschau = useMemo(
+    () => resolvePartnerAngebotPreise(preisEingabe, preisArt),
+    [preisEingabe, preisArt]
+  );
+
   function parseNettoInput(raw: string): number | null {
-    const n = Number(raw.replace(",", ".").trim());
-    if (!Number.isFinite(n) || n < 0) return null;
-    return Math.round(n * 100) / 100;
+    return resolvePartnerAngebotPreise(raw, preisArt)?.netto ?? null;
   }
 
   function handleAngebotPdfChange(files: File[]) {
@@ -184,16 +225,17 @@ export function PartnerAngebotDetail({ item }: { item: PartnerAnfrageItem }) {
       setAngebotError(pdfErr);
       return;
     }
-    if (parseNettoInput(preisNetto) == null) {
-      setAngebotError("Bitte einen gültigen Netto-Preis in Euro angeben.");
+    if (parseNettoInput(preisEingabe) == null) {
+      setAngebotError("Bitte einen gültigen Preis in Euro angeben.");
       return;
     }
     setAngebotLoading(true);
     setAngebotError(null);
+    const preise = resolvePartnerAngebotPreise(preisEingabe, preisArt)!;
     const fd = new FormData();
     fd.set("anfrageId", item.id);
-    fd.set("preisNetto", preisNetto);
-    fd.set("preisBrutto", preisBrutto);
+    fd.set("preisNetto", String(preise.netto));
+    fd.set("preisBrutto", String(preise.brutto));
     fd.set("notiz", notiz);
     for (const pdf of angebotPdfs) fd.append("pdfs", pdf);
     const res = await submitPartnerAngebot(fd);
@@ -209,8 +251,8 @@ export function PartnerAngebotDetail({ item }: { item: PartnerAnfrageItem }) {
   function onAngebotSubmit(e: React.FormEvent) {
     e.preventDefault();
     setAngebotError(null);
-    if (parseNettoInput(preisNetto) == null) {
-      setAngebotError("Bitte einen gültigen Netto-Preis in Euro angeben.");
+    if (parseNettoInput(preisEingabe) == null) {
+      setAngebotError("Bitte einen gültigen Preis in Euro angeben.");
       return;
     }
     const pdfErr = validatePartnerAngebotFiles(angebotPdfs);
@@ -288,8 +330,18 @@ export function PartnerAngebotDetail({ item }: { item: PartnerAnfrageItem }) {
 
       {kannAngebotEinreichen ? (
         <PartnerDetailInfoBox>
-          Trage Netto-Preis und Angebots-PDF ein. Nach dem Absenden kann das Angebot nicht mehr
-          geändert werden — Bärenwald erhält eine E-Mail mit deinen Angaben.
+          {crmRueckfrage || crmAbgelehnt
+            ? "Bitte reiche ein aktualisiertes Angebot mit Preis und PDF ein."
+            : "Trage Preis und Angebots-PDF ein. Nach dem Absenden kann das Angebot nicht mehr geändert werden — Bärenwald erhält eine E-Mail mit deinen Angaben."}
+        </PartnerDetailInfoBox>
+      ) : null}
+
+      {(crmRueckfrage || crmAbgelehnt) && item.hw_crm_notiz?.trim() ? (
+        <PartnerDetailInfoBox>
+          <p className="font-semibold">
+            {crmRueckfrage ? "Rückfrage von Bärenwald" : "Angebot nicht übernommen"}
+          </p>
+          <p className="mt-2 whitespace-pre-wrap text-sm">{item.hw_crm_notiz.trim()}</p>
         </PartnerDetailInfoBox>
       ) : wartetAufFreigabe ? (
         <PartnerDetailInfoBox>
@@ -298,8 +350,8 @@ export function PartnerAngebotDetail({ item }: { item: PartnerAnfrageItem }) {
         </PartnerDetailInfoBox>
       ) : vertragspaketAktiv ? (
         <PartnerDetailInfoBox>
-          Bärenwald hat dein Angebot übernommen. Bitte bestätige den Projektvertrag und reiche
-          fehlende Unterlagen ein — erst danach wird der Auftrag freigeschaltet.
+          Bärenwald hat dein Angebot übernommen. Bitte bestätige den Projektvertrag — erst danach
+          wird der Auftrag freigeschaltet.
         </PartnerDetailInfoBox>
       ) : uebernommen && vertragBestaetigt ? (
         <PartnerDetailSuccessBox>
@@ -308,7 +360,7 @@ export function PartnerAngebotDetail({ item }: { item: PartnerAnfrageItem }) {
             Du findest das laufende Projekt unter „Aufträge“.
           </p>
         </PartnerDetailSuccessBox>
-      ) : eingereicht && kannRechnungHochladen ? (
+      ) : uebernommen && kannRechnungHochladen ? (
         <PartnerDetailInfoBox>
           Nach Abschluss der Leistung kannst du hier deine Rechnung als PDF einreichen.
         </PartnerDetailInfoBox>
@@ -320,31 +372,13 @@ export function PartnerAngebotDetail({ item }: { item: PartnerAnfrageItem }) {
         gesamtBrutto={gesamtBrutto}
       />
 
-      {stammPflichtOffen && !eingereicht ? (
-        <>
-          <PartnerComplianceCheckliste
-            title="Allgemeine Partnerunterlagen (vor Angebotseinreichung)"
-            items={(item.compliance_stamm ?? []).filter((i) => i.ebene === "allgemein")}
-          />
-          {(item.compliance_stamm ?? []).some((i) => i.ebene === "meister") ? (
-            <PartnerComplianceCheckliste
-              title="Meister & Fachbetrieb"
-              items={(item.compliance_stamm ?? []).filter((i) => i.ebene === "meister")}
-            />
-          ) : null}
-        </>
-      ) : null}
-
       {vertragspaketAktiv && item.auftrag_id ? (
         <PartnerProjektvertragPaket
           auftragId={item.auftrag_id}
           gewerkName={item.gewerk_name}
           vertrag={item.projektvertrag ?? null}
-          complianceAllgemein={(item.compliance_stamm ?? []).filter((i) => i.ebene === "allgemein")}
-          complianceMeister={(item.compliance_stamm ?? []).filter((i) => i.ebene === "meister")}
-          complianceLeistung={item.compliance_projekt ?? []}
-          complianceStamm={item.compliance_stamm ?? []}
-          complianceProjekt={item.compliance_projekt ?? []}
+          complianceStamm={[]}
+          complianceProjekt={[]}
           projektvertrag_bestaetigt_am={item.projektvertrag_bestaetigt_am}
           variant="angebot"
         />
@@ -357,20 +391,21 @@ export function PartnerAngebotDetail({ item }: { item: PartnerAnfrageItem }) {
       ) : null}
 
       <DokumenteTabelle
-        dokumente={[
-          ...dokumentZeilen,
-          ...(item.dokumente ?? []).filter(
-            (d) => !dokumentZeilen.some((z) => z.id === d.id)
-          ),
-        ]}
+        dokumente={dokumentZeilen}
         heading="Dokumente"
         emptyText="Noch keine Dokumente."
         className="!border-t-0 !pt-0"
       />
 
-      {eingereicht ? (
+      {hatEinreichung && !kannAngebotEinreichen ? (
         <PartnerDetailSuccessBox>
-          <p className="font-semibold">Eingereichte Preise</p>
+          <p className="font-semibold">
+            {wartetAufFreigabe
+              ? "Eingereichte Preise"
+              : crmRueckfrage || crmAbgelehnt
+                ? "Letzte Einreichung"
+                : "Eingereichte Preise"}
+          </p>
           <p>
             <span className="text-emerald-800/70">Angebot eingereicht am:</span>{" "}
             {fmtPartnerDate(item.hw_eingereicht_at)}
@@ -396,12 +431,6 @@ export function PartnerAngebotDetail({ item }: { item: PartnerAnfrageItem }) {
         </PartnerDetailSuccessBox>
       ) : null}
 
-      {stammPflichtOffen && !eingereicht && item.status.toLowerCase() === "akzeptiert" ? (
-        <PartnerDetailInfoBox>
-          Bitte lade zuerst alle Pflicht-Stammunterlagen hoch, bevor du dein Angebot einreichst.
-        </PartnerDetailInfoBox>
-      ) : null}
-
       {kannAngebotEinreichen ? (
         <form
           id={ANGEBOT_FORM_ID}
@@ -409,33 +438,54 @@ export function PartnerAngebotDetail({ item }: { item: PartnerAnfrageItem }) {
           className="space-y-3 rounded-xl border border-border-light p-4"
         >
           <p className="portal-text-section">Angebot einreichen</p>
-          <div className="grid gap-3 sm:grid-cols-2">
-            <label className="block portal-text-body sm:col-span-1">
-              <span className="text-text-tertiary">
-                Preis netto (€) <span className="text-red-600">*</span>
-              </span>
+          <label className="block portal-text-body">
+            <span className="text-text-tertiary">
+              Preis (€) <span className="text-red-600">*</span>
+            </span>
+            <div className="relative mt-1">
               <input
                 type="text"
                 inputMode="decimal"
                 required
-                value={preisNetto}
-                onChange={(e) => setPreisNetto(e.target.value)}
-                className="mt-1 w-full rounded-xl border border-border-default bg-surface-card px-3 py-2"
+                value={preisEingabe}
+                onChange={(e) => setPreisEingabe(e.target.value)}
+                className="w-full rounded-xl border border-border-default bg-surface-card py-2 pl-3 pr-[8.75rem] text-base"
                 placeholder="z. B. 4500"
               />
-            </label>
-            <label className="block portal-text-body sm:col-span-1">
-              <span className="text-text-tertiary">Preis brutto (€, optional)</span>
-              <input
-                type="text"
-                inputMode="decimal"
-                value={preisBrutto}
-                onChange={(e) => setPreisBrutto(e.target.value)}
-                className="mt-1 w-full rounded-xl border border-border-default bg-surface-card px-3 py-2"
-                placeholder="z. B. 5355"
-              />
-            </label>
-          </div>
+              <div
+                className="absolute inset-y-1 right-1 flex overflow-hidden rounded-lg border border-border-default bg-surface-muted p-0.5"
+                role="group"
+                aria-label="Preisart"
+              >
+                {(["netto", "brutto"] as const).map((art) => {
+                  const aktiv = preisArt === art;
+                  return (
+                    <button
+                      key={art}
+                      type="button"
+                      onClick={() => setPreisArt(art)}
+                      className={`min-w-[3.75rem] rounded-md px-2 py-1 text-xs font-semibold uppercase tracking-wide transition-colors ${
+                        aktiv
+                          ? "bg-surface-card text-text-primary shadow-sm"
+                          : "text-text-tertiary hover:text-text-secondary"
+                      }`}
+                      aria-pressed={aktiv}
+                    >
+                      {art}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+            {preisVorschau ? (
+              <span className="mt-1 block text-xs text-text-tertiary">
+                {preisArt === "netto" ? "Brutto" : "Netto"} ({PARTNER_ANGEBOT_MWST} % MwSt.):{" "}
+                {fmtPartnerEuro(
+                  preisArt === "netto" ? preisVorschau.brutto : preisVorschau.netto
+                )}
+              </span>
+            ) : null}
+          </label>
           <FileUploadField
             label="Angebots-PDFs"
             accept="application/pdf,.pdf"
@@ -484,14 +534,18 @@ export function PartnerAngebotDetail({ item }: { item: PartnerAnfrageItem }) {
       <PartnerConfirmDialog
         open={confirmAngebot}
         title="Angebot an Bärenwald senden?"
-        description={`Netto-Preis und ${angebotPdfs.length > 1 ? `${angebotPdfs.length} PDFs` : "PDF"} werden übermittelt. Bärenwald erhält eine E-Mail mit deinen Angaben.`}
+        description={
+          preisVorschau
+            ? `${preisArt === "netto" ? "Netto" : "Brutto"} ${fmtPartnerEuro(preisArt === "netto" ? preisVorschau.netto : preisVorschau.brutto)} und ${angebotPdfs.length > 1 ? `${angebotPdfs.length} PDFs` : "PDF"} werden übermittelt. Bärenwald erhält eine E-Mail mit deinen Angaben.`
+            : `Preis und ${angebotPdfs.length > 1 ? `${angebotPdfs.length} PDFs` : "PDF"} werden übermittelt. Bärenwald erhält eine E-Mail mit deinen Angaben.`
+        }
         confirmLabel="Ja, absenden"
         loading={angebotLoading}
         onConfirm={sendAngebot}
         onCancel={() => setConfirmAngebot(false)}
       />
 
-      {!kannAngebotEinreichen && !eingereicht ? (
+      {!kannAngebotEinreichen && !hatEinreichung ? (
         <p className="portal-text-body text-text-secondary">
           Diese Anfrage ist noch nicht angenommen. Bitte zuerst unter „Anfragen“ antworten.
         </p>

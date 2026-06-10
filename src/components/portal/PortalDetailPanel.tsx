@@ -23,7 +23,7 @@ import {
   portalDetailStatusPillClass,
 } from "@/lib/shared/portal-detail-format";
 import { formatAuftragDatumSpan } from "@/lib/portal/portal-auftrag-display";
-import { fmtPortalStatus } from "@/lib/portal/portal-display";
+import { fmtPortalAuftragStatus, fmtPortalStatus } from "@/lib/portal/portal-display";
 import type { KundePortalDetailItem } from "@/lib/portal/portal-detail-item";
 
 function anfrageDisplayTitle(vorhaben?: string, gewerk?: string): string {
@@ -50,8 +50,11 @@ export function PortalDetailPanel({ item }: { item: KundePortalDetailItem }) {
     ? anfrageDisplayTitle(item.anfrageVorhaben, item.anfrageGewerk)
     : item.title;
 
-  const statusLabel =
-    isAnfrageDetail ? undefined : fmtPortalStatus(item.status || "offen");
+  const statusLabel = isAnfrageDetail
+    ? undefined
+    : isAuftragDetail
+      ? fmtPortalAuftragStatus(item.status || "offen")
+      : fmtPortalStatus(item.status || "offen");
   const metaLine =
     isAnfrageDetail || isAngebotDetail
       ? (() => {
@@ -159,7 +162,7 @@ export function PortalDetailPanel({ item }: { item: KundePortalDetailItem }) {
         </PortalDetailSection>
       ) : null}
 
-      {!isAuftragDetail && item.bautagebuch !== undefined ? (
+      {isAuftragDetail && item.bautagebuch !== undefined ? (
         <BautagebuchAccordionList
           eintraege={(item.bautagebuch ?? []).map((e) => ({
             id: e.id ?? `${e.titel}-${e.datum}`,

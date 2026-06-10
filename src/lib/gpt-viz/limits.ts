@@ -72,6 +72,28 @@ export async function countVisitorSessionsRecent(visitorToken: string): Promise<
   return count ?? 0;
 }
 
+/** Wann das älteste Gast-Projekt aus dem Fenster fällt (ISO) — für Countdown im Registrierungs-Gate. */
+export async function getVisitorSessionRetryAfter(
+  visitorToken: string
+): Promise<string | null> {
+  const since = new Date();
+  since.setDate(since.getDate() - GPT_VIZ_LIMITS.anonymous.sessionWindowDays);
+
+  const { data, error } = await supabaseAdmin
+    .from("gpt_raum_sessions")
+    .select("created_at")
+    .eq("visitor_token", visitorToken)
+    .gte("created_at", since.toISOString())
+    .order("created_at", { ascending: true })
+    .limit(1);
+
+  if (error || !data?.[0]?.created_at) return null;
+
+  const retry = new Date(data[0].created_at);
+  retry.setDate(retry.getDate() + GPT_VIZ_LIMITS.anonymous.sessionWindowDays);
+  return retry.toISOString();
+}
+
 export type RenderLimitCheck = {
   allowed: boolean;
   code?: GptVizLimitCode;

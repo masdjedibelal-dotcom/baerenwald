@@ -10,6 +10,7 @@ import {
 } from "@/app/actions/partner-bautagebuch";
 import {
   PartnerDetailHero,
+  PartnerDetailInfoBox,
   PartnerDetailLayout,
   PartnerDetailLeistungenList,
   PartnerDetailSection,
@@ -314,6 +315,13 @@ export function PartnerAuftragDetail({ item }: { item: PartnerAuftragItem }) {
         statusLabel={formatAuftragStatus(item.status)}
         statusPillClass={partnerDetailStatusPillClass(item.status)}
       />
+
+      {item.bautagebuchAnfrageOffen ? (
+        <PartnerDetailInfoBox>
+          Bärenwald hat einen <strong>Tagebucheintrag</strong> angefordert. Bitte unten im
+          Bautagebuch dokumentieren.
+        </PartnerDetailInfoBox>
+      ) : null}
 
       <PartnerPortalDetailSections sections={sections} />
 

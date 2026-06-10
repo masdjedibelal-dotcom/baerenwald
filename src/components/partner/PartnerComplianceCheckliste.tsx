@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { AlertTriangle, CheckCircle2, Clock, Upload, XCircle } from "lucide-react";
+import { AlertTriangle, CheckCircle2, ChevronDown, Clock, Upload, XCircle } from "lucide-react";
 
 import { uploadPartnerComplianceDokument } from "@/app/actions/partner-compliance";
 import { FileUploadField } from "@/components/shared/FileUploadField";
@@ -80,11 +80,6 @@ function ComplianceRow({
         <div className="min-w-0 flex-1">
           <p className="portal-text-body font-semibold text-text-primary">
             {item.bezeichnung}
-            {item.pflicht ? (
-              <span className="ml-1 text-red-600" aria-hidden>
-                *
-              </span>
-            ) : null}
           </p>
           {item.beschreibung ? (
             <p className="portal-text-meta mt-0.5 text-text-secondary">{item.beschreibung}</p>
@@ -186,6 +181,35 @@ function ItemList({
   );
 }
 
+function ChecklistContent({
+  items,
+  auftragId,
+  disabled,
+  gruppiert,
+}: {
+  items: PartnerComplianceItem[];
+  auftragId?: string | null;
+  disabled?: boolean;
+  gruppiert: boolean;
+}) {
+  if (gruppiert) {
+    return (
+      <div className="space-y-4">
+        {gruppeComplianceItems(items).map((gruppe) => (
+          <div key={gruppe.kategorie} className="space-y-2">
+            <h5 className="portal-text-meta font-semibold uppercase tracking-wide text-text-tertiary">
+              {gruppe.kategorie}
+            </h5>
+            <ItemList items={gruppe.items} auftragId={auftragId} disabled={disabled} />
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  return <ItemList items={items} auftragId={auftragId} disabled={disabled} />;
+}
+
 export function PartnerComplianceCheckliste({
   title,
   items,
@@ -193,6 +217,8 @@ export function PartnerComplianceCheckliste({
   disabled,
   gruppiert = false,
   emptyText = "Keine Unterlagen erforderlich.",
+  accordion = true,
+  defaultOpen = false,
 }: {
   title: string;
   items: PartnerComplianceItem[];
@@ -200,50 +226,61 @@ export function PartnerComplianceCheckliste({
   disabled?: boolean;
   gruppiert?: boolean;
   emptyText?: string;
+  accordion?: boolean;
+  defaultOpen?: boolean;
 }) {
-  if (!items.length) {
+  const [open, setOpen] = useState(defaultOpen);
+
+  const content =
+    items.length > 0 ? (
+      <ChecklistContent
+        items={items}
+        auftragId={auftragId}
+        disabled={disabled}
+        gruppiert={gruppiert}
+      />
+    ) : (
+      <p className="portal-text-body text-text-secondary">{emptyText}</p>
+    );
+
+  if (!accordion) {
     return (
-      <section className="space-y-2">
+      <section className="space-y-3">
         <h4 className="portal-text-section">{title}</h4>
-        <p className="portal-text-body text-text-secondary">{emptyText}</p>
+        {content}
       </section>
     );
   }
 
-  const offen = items.filter(
-    (i) =>
-      i.pflicht &&
-      i.status !== "erledigt" &&
-      i.status !== "in_pruefung" &&
-      i.status !== "ablauf_warnung"
-  ).length;
-
   return (
-    <section className="space-y-3">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <h4 className="portal-text-section">{title}</h4>
-        {offen > 0 ? (
-          <span className="tag bg-amber-100 text-amber-800">
-            {offen} Pflicht {offen === 1 ? "offen" : "offen"}
-          </span>
-        ) : (
-          <span className="tag bg-emerald-100 text-emerald-700">Vollständig</span>
-        )}
-      </div>
-      {gruppiert ? (
-        <div className="space-y-4">
-          {gruppeComplianceItems(items).map((gruppe) => (
-            <div key={gruppe.kategorie} className="space-y-2">
-              <h5 className="portal-text-meta font-semibold uppercase tracking-wide text-text-tertiary">
-                {gruppe.kategorie}
-              </h5>
-              <ItemList items={gruppe.items} auftragId={auftragId} disabled={disabled} />
-            </div>
-          ))}
+    <section className="overflow-hidden rounded-xl border border-border-light">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className="flex min-h-[52px] w-full items-center gap-3 px-3 py-3.5 text-left transition-colors hover:bg-muted/30"
+        aria-expanded={open}
+      >
+        <span className="min-w-0 flex-1">
+          <span className="portal-text-section block text-text-primary">{title}</span>
+          {items.length > 0 ? (
+            <span className="portal-text-meta mt-0.5 block text-text-secondary">
+              {items.length} {items.length === 1 ? "Dokument" : "Dokumente"}
+            </span>
+          ) : null}
+        </span>
+        <ChevronDown
+          className={cn(
+            "h-5 w-5 shrink-0 text-text-tertiary transition-transform",
+            open && "rotate-180"
+          )}
+          aria-hidden
+        />
+      </button>
+      {open ? (
+        <div className="space-y-3 border-t border-border-light bg-muted/15 px-3 py-4">
+          {content}
         </div>
-      ) : (
-        <ItemList items={items} auftragId={auftragId} disabled={disabled} />
-      )}
+      ) : null}
     </section>
   );
 }

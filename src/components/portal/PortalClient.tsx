@@ -26,11 +26,13 @@ import {
 import { SITE_CONFIG } from "@/lib/config";
 import { labelBereich, labelSituation } from "@/lib/lead-funnel-labels";
 import {
+  fmtPortalAuftragStatus,
   fmtPortalStatus,
   sanitizeCustomerText,
 } from "@/lib/portal/portal-display";
 import {
   isPortalAngebotPhaseStatus,
+  isPortalAuftragAbgeschlossenRecord,
   isPortalAuftragPhaseStatus,
 } from "@/lib/portal/portal-pipeline";
 import type { PortalDokument } from "@/lib/portal/portal-dokumente";
@@ -53,14 +55,12 @@ import {
 import {
   buildAuftragCardMeta,
   buildAuftragPortalSections,
-  resolveAuftragPhasenInput,
 } from "@/lib/portal/portal-auftrag-display";
 import {
   portalAnsprechpartnerFallback,
   type PortalAnsprechpartner,
 } from "@/lib/portal/portal-ansprechpartner";
 import type { PortalObjekt } from "@/lib/portal/portal-objekt";
-import { PortalAuftragPhasenStrip } from "@/components/shared/PortalAuftragPhasenStrip";
 import { portalDetailStatusPillClass } from "@/lib/shared/portal-detail-format";
 import { cn } from "@/lib/utils";
 import { PortalBaerenwaldGpt } from "@/components/portal/PortalBaerenwaldGpt";
@@ -146,6 +146,7 @@ type PortalClientProps = {
 
 type SectionId = "uebersicht" | "anfragen" | "angebote" | "auftraege" | "gpt";
 type OverviewTabId = "anfragen" | "angebote" | "auftraege";
+type AuftraegeListFilterId = "alle" | "aktiv" | "abgeschlossen";
 
 function formatAnfrageGewerk(bereiche?: string[]): string | undefined {
   const parts = (bereiche ?? [])
@@ -248,12 +249,24 @@ function isStorniertStatus(status?: string): boolean {
 }
 
 function isAuftragAbgeschlossen(auftrag: PortalAuftrag): boolean {
-  if (isStorniertStatus(auftrag.status)) return false;
-  if (isCompletedStatus(auftrag.status)) return true;
-  if (typeof auftrag.fortschritt === "number" && auftrag.fortschritt >= 100) {
-    return true;
+  return isPortalAuftragAbgeschlossenRecord({
+    status: auftrag.status,
+    fortschritt: auftrag.fortschritt,
+  });
+}
+
+function isAuftragDetailItemAbgeschlossen(
+  item: KundePortalDetailItem,
+  allAuftraege: PortalAuftrag[],
+  allLeads: PortalLead[]
+): boolean {
+  if (item.id.startsWith("lead-")) {
+    const leadId = item.id.slice("lead-".length);
+    const lead = allLeads.find((l) => l.id === leadId);
+    return lead ? isCompletedStatus(lead.status) : false;
   }
-  return false;
+  const auftrag = allAuftraege.find((a) => a.id === item.id);
+  return auftrag ? isAuftragAbgeschlossen(auftrag) : false;
 }
 
 function listItemLabel(section: SectionId): string {
@@ -300,6 +313,8 @@ export function PortalClient({
   const [gptOpen, setGptOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [overviewPage, setOverviewPage] = useState(1);
+  const [auftraegeListFilter, setAuftraegeListFilter] =
+    useState<AuftraegeListFilterId>("alle");
 
   const vorname = (kunde?.name || "Kunde").split(" ")[0] || "Kunde";
   const offeneAuftraegeCount = auftraege.filter(
@@ -424,12 +439,6 @@ export function PortalClient({
                 objekt: a.linkedLead.objekt ?? a.objekt ?? null,
               }
             : null;
-          const phasen = resolveAuftragPhasenInput({
-            status: abgeschlossen ? "abgeschlossen" : a.status,
-            abgeschlossen,
-            hatAngebot: Boolean(a.angebot_id),
-            fortschritt: a.fortschritt,
-          });
           return {
             id: a.id,
             date: a.start_datum || a.created_at,
@@ -441,24 +450,9 @@ export function PortalClient({
               a.start_datum || a.created_at,
               a.end_datum
             ),
-            listFooter: (
-              <PortalAuftragPhasenStrip
-                states={phasen.states}
-                aktuellePhase={phasen.aktuellePhase}
-                fortschritt={phasen.fortschritt}
-              />
-            ),
             isAuftragDetail: true,
-            auftragPhasen: {
-              status: a.status,
-              abgeschlossen,
-              hatAngebot: Boolean(a.angebot_id),
-              fortschritt: a.fortschritt,
-              states: phasen.states,
-              aktuellePhase: phasen.aktuellePhase,
-            },
             suppressLocationInHero: true,
-            status: fmtPortalStatus(
+            status: fmtPortalAuftragStatus(
               abgeschlossen ? "abgeschlossen" : a.status || "auftrag"
             ),
             sections: buildAuftragPortalSections({
@@ -467,6 +461,7 @@ export function PortalClient({
             }),
             ansprechpartner: a.ansprechpartner ?? portalAnsprechpartnerFallback(),
             dokumente: a.dokumente ?? [],
+            bautagebuch: a.bautagebuch ?? [],
           };
         });
 
@@ -479,25 +474,14 @@ export function PortalClient({
       .map((lead) => {
         const { title } = anfrageTitleFromLead(lead);
         const abgeschlossen = isCompletedStatus(lead.status);
-        const phasen = resolveAuftragPhasenInput({
-          status: lead.status,
-          abgeschlossen,
-          hatAngebot: false,
-        });
         return {
           id: `lead-${lead.id}`,
           date: lead.created_at,
           title,
           cardMeta: buildAuftragCardMeta(lead.objekt, lead, lead.created_at),
-          listFooter: (
-            <PortalAuftragPhasenStrip
-              states={phasen.states}
-              aktuellePhase={phasen.aktuellePhase}
-            />
-          ),
           isAuftragDetail: true,
           suppressLocationInHero: true,
-          status: fmtPortalStatus(
+          status: fmtPortalAuftragStatus(
             abgeschlossen ? "abgeschlossen" : lead.status || "auftrag"
           ),
           sections: buildAuftragPortalSections({ lead, objekt: lead.objekt }),
@@ -508,6 +492,20 @@ export function PortalClient({
 
     return [...fromAuftraege, ...fromLeads];
   }, [auftraege, leadsNurAuftragPhase]);
+
+  const filteredAuftraegeItems = useMemo(() => {
+    if (auftraegeListFilter === "alle") return auftraegeItems;
+    return auftraegeItems.filter((item) => {
+      const abgeschlossen = isAuftragDetailItemAbgeschlossen(
+        item,
+        auftraege,
+        leads
+      );
+      return auftraegeListFilter === "abgeschlossen"
+        ? abgeschlossen
+        : !abgeschlossen;
+    });
+  }, [auftraegeItems, auftraegeListFilter, auftraege, leads]);
 
   useEffect(() => {
     const s = searchParams.get("section");
@@ -565,7 +563,8 @@ export function PortalClient({
   const selectedAngebot =
     angeboteItems.find((i) => i.id === selectedAngebotId) ?? angeboteItems[0];
   const selectedAuftrag =
-    auftraegeItems.find((i) => i.id === selectedAuftragId) ?? auftraegeItems[0];
+    filteredAuftraegeItems.find((i) => i.id === selectedAuftragId) ??
+    filteredAuftraegeItems[0];
 
   const selectedDetail =
     section === "anfragen"
@@ -579,13 +578,26 @@ export function PortalClient({
   const sectionCardRows = useMemo(() => {
     if (section === "anfragen") return buildKundeCardRows(anfragenItems, "anfrage");
     if (section === "angebote") return buildKundeCardRows(angeboteItems, "angebot");
-    if (section === "auftraege") return buildKundeCardRows(auftraegeItems, "auftrag");
+    if (section === "auftraege") {
+      return buildKundeCardRows(filteredAuftraegeItems, "auftrag");
+    }
     return [];
-  }, [section, anfragenItems, angeboteItems, auftraegeItems]);
+  }, [section, anfragenItems, angeboteItems, filteredAuftraegeItems]);
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [section]);
+  }, [section, auftraegeListFilter]);
+
+  useEffect(() => {
+    if (section !== "auftraege") return;
+    if (
+      selectedAuftragId &&
+      filteredAuftraegeItems.some((item) => item.id === selectedAuftragId)
+    ) {
+      return;
+    }
+    setSelectedAuftragId(filteredAuftraegeItems[0]?.id ?? null);
+  }, [section, auftraegeListFilter, filteredAuftraegeItems, selectedAuftragId]);
 
   useEffect(() => {
     setOverviewPage(1);
@@ -679,7 +691,7 @@ export function PortalClient({
       ? anfragenItems.length === 0
       : section === "angebote"
         ? angeboteItems.length === 0
-        : auftraegeItems.length === 0);
+        : filteredAuftraegeItems.length === 0);
 
   const waNumber = SITE_CONFIG.phoneMobil.replace(/\D/g, "");
   const waHref = `https://wa.me/${waNumber}?text=${encodeURIComponent(
@@ -939,9 +951,50 @@ export function PortalClient({
           {section !== "uebersicht" && section !== "gpt" && (
             <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
               <article className="card-bordered overflow-hidden p-0">
+                {section === "auftraege" ? (
+                  <div className="flex flex-wrap gap-2 border-b border-border-default px-3 py-3 sm:px-4">
+                    {(
+                      [
+                        ["alle", "Alle"],
+                        ["aktiv", "Aktiv"],
+                        ["abgeschlossen", "Abgeschlossen"],
+                      ] as const
+                    ).map(([id, label]) => (
+                      <button
+                        key={id}
+                        type="button"
+                        onClick={() => setAuftraegeListFilter(id)}
+                        className={cn(
+                          "rounded-full px-3 py-1.5 portal-text-meta font-semibold",
+                          auftraegeListFilter === id
+                            ? "bg-accent-light text-accent"
+                            : "bg-muted text-text-secondary"
+                        )}
+                      >
+                        {label}
+                        <span className="ml-1.5 text-text-tertiary">
+                          (
+                          {id === "alle"
+                            ? auftraegeItems.length
+                            : id === "aktiv"
+                              ? offeneAuftraegeCount
+                              : abgeschlosseneAuftraegeCount}
+                          )
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                ) : null}
                 <div className="space-y-2 p-3 sm:p-4">
                   {sectionListEmpty ? (
-                    <PortalEmptyState section={section} />
+                    section === "auftraege" &&
+                    auftraegeListFilter !== "alle" ? (
+                      <p className="portal-text-body rounded-xl border border-dashed border-border-light bg-muted/20 px-3 py-6 text-center text-text-secondary">
+                        Keine Aufträge für diesen Filter.
+                      </p>
+                    ) : (
+                      <PortalEmptyState section={section} />
+                    )
                   ) : (
                     paginatedCardRows.map(renderCard)
                   )}

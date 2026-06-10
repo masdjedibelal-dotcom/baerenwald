@@ -92,6 +92,8 @@ export function partnerAngebotStatusPillClass(statusKey: string): string {
   if (s === "vertrag_offen") return "tag bg-violet-100 text-violet-800";
   if (s === "warte_vertrag") return "tag bg-slate-100 text-slate-700";
   if (s === "eingereicht") return "tag bg-blue-100 text-blue-800";
+  if (s === "rueckfrage") return "tag bg-amber-100 text-amber-800";
+  if (s === "abgelehnt") return "tag bg-red-100 text-red-800";
   if (s === "offen") return "tag bg-amber-100 text-amber-700";
   return "tag bg-amber-100 text-amber-700";
 }
@@ -101,6 +103,8 @@ export function partnerAngebotOverviewStatusLabel(statusKey: string): string {
   if (statusKey === "vertrag_offen") return "Vertrag offen";
   if (statusKey === "warte_vertrag") return "Warte auf Vertrag";
   if (statusKey === "eingereicht") return "In Prüfung";
+  if (statusKey === "rueckfrage") return "Rückfrage";
+  if (statusKey === "abgelehnt") return "Abgelehnt";
   if (statusKey === "offen") return "Offen";
   return statusKey;
 }
@@ -132,11 +136,25 @@ function angebotListenStatus(item: PartnerAnfrageItem): {
   if (hwSt === "uebernommen") {
     return { label: "Bestätigt", pillKey: "uebernommen", hint: "→ Unter Aufträge" };
   }
-  if (item.hw_eingereicht_at) {
+  if (hwSt === "eingereicht") {
     return {
       label: "In Prüfung",
       pillKey: "eingereicht",
       hint: "→ Warte auf Freigabe durch Bärenwald",
+    };
+  }
+  if (hwSt === "rueckfrage") {
+    return {
+      label: "Rückfrage",
+      pillKey: "rueckfrage",
+      hint: "→ Bitte erneut einreichen",
+    };
+  }
+  if (hwSt === "abgelehnt") {
+    return {
+      label: "Abgelehnt",
+      pillKey: "abgelehnt",
+      hint: "→ Neues Angebot einreichen",
     };
   }
   return {

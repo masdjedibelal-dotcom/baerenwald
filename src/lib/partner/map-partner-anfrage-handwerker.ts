@@ -130,5 +130,7 @@ export async function mapAngebotHandwerkerRow(
     hw_rechnung_eingereicht_at:
       (row.hw_rechnung_eingereicht_at as string | null) ?? undefined,
     hw_notiz: (row.hw_notiz as string | null) ?? null,
+    hw_crm_notiz: (row.hw_crm_notiz as string | null) ?? null,
+    hw_crm_antwort_at: (row.hw_crm_antwort_at as string | null) ?? undefined,
   };
 }

@@ -90,8 +90,16 @@ export async function submitPartnerAngebot(
     return { ok: false, error: "Nur angenommene Anfragen können eingereicht werden." };
   }
 
-  if (row.hw_eingereicht_at) {
-    return { ok: false, error: "Du hast bereits ein Angebot eingereicht." };
+  const hwSt = String(row.hw_status ?? "offen").toLowerCase();
+  const darfEinreichen = ["offen", "abgelehnt", "rueckfrage"].includes(hwSt);
+  if (!darfEinreichen) {
+    if (hwSt === "eingereicht") {
+      return { ok: false, error: "Dein Angebot wird gerade geprüft." };
+    }
+    if (hwSt === "uebernommen") {
+      return { ok: false, error: "Dein Angebot wurde bereits übernommen." };
+    }
+    return { ok: false, error: "Einreichung derzeit nicht möglich." };
   }
 
   const upload = await uploadPartnerAngebotPdfs({
@@ -117,10 +125,12 @@ export async function submitPartnerAngebot(
       hw_eingereicht_at: now,
       hw_status: "eingereicht",
       hw_notiz: notiz,
+      hw_crm_notiz: null,
+      hw_crm_antwort_at: null,
     })
     .eq("id", anfrageId)
     .eq("handwerker_id", link.handwerkerId)
-    .is("hw_eingereicht_at", null);
+    .in("hw_status", ["offen", "abgelehnt", "rueckfrage"]);
 
   if (upErr) {
     return { ok: false, error: upErr.message };

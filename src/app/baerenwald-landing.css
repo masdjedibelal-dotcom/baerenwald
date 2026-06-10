@@ -2196,7 +2196,7 @@
 }
 
 .vision-section-inner {
-  max-width: var(--bw-max-site);
+  max-width: 800px;
   margin: 0 auto;
 }
 
@@ -2204,22 +2204,7 @@
   margin-bottom: 2.75rem;
 }
 
-.vision-split {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 40px;
-  align-items: center;
-}
-
-@media (min-width: 900px) {
-  .vision-split {
-    grid-template-columns: 1fr 1fr;
-    gap: 56px;
-    align-items: start;
-  }
-}
-
-.vision-split-copy {
+.vision-copy {
   text-align: left;
 }
 
@@ -2236,16 +2221,30 @@
   font-size: 16px;
   color: var(--fl-text-2);
   line-height: 1.7;
-  margin: 0 0 28px;
+  margin: 0 0 32px;
 }
 
 .vision-pillars {
   list-style: none;
-  margin: 0 0 24px;
+  margin: 0 0 28px;
   padding: 0;
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: 1fr;
   gap: 20px;
+}
+
+@media (min-width: 768px) {
+  .vision-pillars {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 24px;
+  }
+
+  .vision-pillar {
+    border-left: none;
+    padding-left: 0;
+    padding-top: 16px;
+    border-top: 3px solid var(--fl-accent);
+  }
 }
 
 .vision-pillar {
@@ -2273,34 +2272,6 @@
   line-height: 1.6;
   margin: 0;
   font-style: italic;
-}
-
-.vision-split-visual {
-  width: 100%;
-}
-
-.vision-visual-frame {
-  position: relative;
-  width: 100%;
-  aspect-ratio: 4 / 3;
-  border-radius: 24px;
-  overflow: hidden;
-  box-shadow: 0 16px 48px rgba(26, 61, 43, 0.12);
-}
-
-.vision-visual-img {
-  object-fit: cover;
-  object-position: center top;
-}
-
-@media (max-width: 899px) {
-  .vision-split-copy {
-    order: 2;
-  }
-
-  .vision-split-visual {
-    order: 1;
-  }
 }
 
 /* Sektions-Trenner (Höhe/Farben via SectionDivider inline) */
@@ -5493,10 +5464,6 @@
   box-sizing: border-box;
 }
 
-.ki-rechner-chat-active .ki-rechner-chat {
-  max-height: calc(100dvh - 60px - 7.25rem - 28px);
-}
-
 /* Beim Tippen: Rechner-Footer ausblenden — Composer braucht den Platz (Web + Mobil) */
 .ki-rechner-chat-active.ki-input-focused > footer.funnel-footer {
   display: none;
@@ -5533,6 +5500,10 @@
     max-height: none;
   }
 
+  .ki-rechner-chat-active:not(.ki-keyboard-open) .ki-rechner-chat {
+    max-height: calc(100dvh - 60px - 7.25rem - 28px);
+  }
+
   .ki-rechner-chat-active .rechner-gpt-chat {
     flex: 1;
     min-height: 0;
@@ -5547,7 +5518,6 @@
   .ki-rechner-chat-active {
     display: flex;
     flex-direction: column;
-    height: 100dvh;
     height: 100svh;
     max-height: 100svh;
     min-height: 0;
@@ -5559,9 +5529,26 @@
     display: none;
   }
 
-  .ki-rechner-chat-active.ki-keyboard-open {
+  .ki-rechner-chat-active.ki-keyboard-open,
+  .ki-rechner-chat-active.ki-guided-input-focused.ki-keyboard-open {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    width: 100%;
     height: var(--ki-vv-height, 100svh);
     max-height: var(--ki-vv-height, 100svh);
+    transform: translateY(var(--ki-vv-offset-top, 0px));
+    z-index: 40;
+  }
+
+  /* Guided-Eingabe (PLZ, Lead): Chat-Composer aus — nur das Formular zählt */
+  .ki-rechner-chat-active.ki-guided-input-focused .ki-rechner-chat-composer {
+    display: none;
+  }
+
+  .ki-rechner-chat-active.ki-guided-input-focused .ki-rechner-chat-messages {
+    padding-bottom: 16px;
   }
 
   .ki-rechner-chat-active > header.funnel-header {

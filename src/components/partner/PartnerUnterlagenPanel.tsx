@@ -16,10 +16,8 @@ export function PartnerUnterlagenPanel({
   return (
     <div className="space-y-6">
       <PartnerDetailInfoBox>
-        Hier pflegst du deine Partnerunterlagen zentral: allgemeine Dokumente für alle
-        Betriebe, bei Meister-Gewerken zusätzlich Fachbetriebsnachweise, und pro Auftrag die
-        Leistungsunterlagen im jeweiligen Projektvertrag. Bei Ablauf siehst du einen Hinweis zum
-        Neu-Upload.
+        Hier pflegst du deine Unterlagen zentral. Pro Auftrag findest du zusätzliche
+        Leistungsunterlagen im jeweiligen Projektvertrag.
       </PartnerDetailInfoBox>
 
       {profil ? (
@@ -32,18 +30,10 @@ export function PartnerUnterlagenPanel({
       ) : null}
 
       <PartnerComplianceCheckliste
-        title="Allgemeine Partnerunterlagen"
-        items={allgemein}
-        emptyText="Keine allgemeinen Unterlagen für dein Profil."
+        title="Unterlagen"
+        items={[...allgemein, ...meister]}
+        emptyText="Keine Unterlagen für dein Profil."
       />
-
-      {meister.length > 0 ? (
-        <PartnerComplianceCheckliste
-          title="Meister & Fachbetrieb"
-          items={meister}
-          emptyText="Keine Meister-Unterlagen für dein Profil."
-        />
-      ) : null}
 
       <p className="portal-text-meta text-text-secondary">
         Unterlagen je Leistungsvertrag findest du beim jeweiligen Angebot/Auftrag unter

@@ -11,7 +11,11 @@ import {
 } from "lucide-react";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 
-import { scrollGuidedBlockIntoView } from "@/lib/gpt-viz/scroll-guided-into-view";
+import {
+  handleGuidedInputBlur,
+  handleGuidedInputFocus,
+  scrollGuidedBlockIntoView,
+} from "@/lib/gpt-viz/scroll-guided-into-view";
 
 import { SituationCard } from "@/components/funnel/SituationCard";
 import { SelectionTile } from "@/components/funnel/SelectionTile";
@@ -455,7 +459,8 @@ function PlzBlock({
           placeholder="80331"
           className="gpt-guided-plz-input"
           onChange={(e) => setPlz(e.target.value.replace(/\D/g, "").slice(0, 5))}
-          onFocus={() => scrollGuidedBlockIntoView(rootRef.current)}
+          onFocus={() => handleGuidedInputFocus(rootRef.current)}
+          onBlur={() => handleGuidedInputBlur(rootRef.current)}
           onKeyDown={(e) => {
             if (e.key === "Enter" && plz.length === 5) {
               onAction(`guided:plz:${plz}`);

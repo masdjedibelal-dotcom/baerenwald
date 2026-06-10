@@ -39,9 +39,11 @@ export function useMobileComposerInset(
         portalShell?.classList.remove("ki-keyboard-open");
         if (pageEl) {
           pageEl.style.removeProperty("--ki-vv-height");
+          pageEl.style.removeProperty("--ki-vv-offset-top");
         }
         if (portalShell) {
           portalShell.style.removeProperty("--ki-vv-height");
+          portalShell.style.removeProperty("--ki-vv-offset-top");
         }
         if (bodyOverflowPrev !== undefined) {
           document.body.style.overflow = bodyOverflowPrev;
@@ -64,8 +66,11 @@ export function useMobileComposerInset(
         if (vv) {
           vvOffset = Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
           const vvHeight = `${Math.ceil(vv.height)}px`;
+          const vvOffsetTop = `${Math.ceil(vv.offsetTop)}px`;
           pageEl?.style.setProperty("--ki-vv-height", vvHeight);
+          pageEl?.style.setProperty("--ki-vv-offset-top", vvOffsetTop);
           portalShell?.style.setProperty("--ki-vv-height", vvHeight);
+          portalShell?.style.setProperty("--ki-vv-offset-top", vvOffsetTop);
         }
 
         const keyboardOpen = vvOffset > KEYBOARD_OPEN_THRESHOLD_PX;

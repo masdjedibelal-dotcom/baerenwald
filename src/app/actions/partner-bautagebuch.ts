@@ -123,6 +123,13 @@ export async function createPartnerBautagebuchEintrag(
 
   if (error) return { ok: false, error: error.message };
 
+  await supabaseAdmin
+    .from("partner_bautagebuch_anfragen")
+    .update({ erledigt_at: new Date().toISOString() })
+    .eq("auftrag_id", auftragId)
+    .eq("handwerker_id", auth.handwerkerId)
+    .is("erledigt_at", null);
+
   const [{ data: hw }, { data: auf }] = await Promise.all([
     supabaseAdmin
       .from("handwerker")

@@ -2727,7 +2727,7 @@ function FunnelRechnerInner() {
     <div
       className={cn(
         einstiegModus === "ki"
-          ? "h-dvh max-h-dvh overflow-hidden funnel-main--strip-a"
+          ? "overflow-hidden funnel-main--strip-a"
           : "min-h-dvh funnel-main--strip-a",
         (einstiegModus === "trust" ||
           (einstiegModus === "funnel" && isBwTrustScreenId(screen))) &&
@@ -2763,7 +2763,14 @@ function FunnelRechnerInner() {
           activeScreen={screen}
         />
       ) : null}
-      <main className="funnel-rechner-main w-full">{main()}</main>
+      <main
+        className={cn(
+          "funnel-rechner-main w-full",
+          einstiegModus === "ki" && "min-h-0 flex-1 flex flex-col overflow-hidden"
+        )}
+      >
+        {main()}
+      </main>
       {showFooterNav ? (
         <FunnelFooter
           onNext={

@@ -98,7 +98,7 @@ export default async function PartnerDashboardPage({
         handwerker={data.handwerker}
         profil={data.profil}
         termine={data.termine}
-        todos={data.todos}
+        aufgaben={data.aufgaben}
         anfragen={data.anfragen}
         angebote={data.angebote}
         angeboteAlleAkzeptiert={data.angeboteAlleAkzeptiert}

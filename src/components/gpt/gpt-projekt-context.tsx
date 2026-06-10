@@ -11,6 +11,10 @@ import {
 } from "react";
 
 import { GPT_VIZ_SESSION_STORAGE_KEY } from "@/lib/gpt-viz/constants";
+import { gateFromLimitPayload } from "@/lib/gpt-viz/registration-gate";
+import type { GptRegistrationGateState } from "@/lib/gpt-viz/registration-gate";
+import type { GptVizLimitCode } from "@/lib/gpt-viz/limits";
+import { portalRegisterForGptUrl } from "@/lib/portal/portal-site-url";
 import { getOrCreateGptVisitorToken } from "@/lib/gpt-viz/visitor-token";
 import type { GptProjektBrief } from "@/lib/gpt-viz/types";
 
@@ -20,6 +24,8 @@ type GptProjektContextValue = {
   loadingBrief: boolean;
   sessionError: string | null;
   clearSessionError: () => void;
+  sessionRegistrationGate: GptRegistrationGateState | null;
+  clearSessionRegistrationGate: () => void;
   ensureSession: () => Promise<string | null>;
   refreshBrief: () => Promise<void>;
   mergeChatVerlauf: (
@@ -34,6 +40,8 @@ export function GptProjektProvider({ children }: { children: ReactNode }) {
   const [brief, setBrief] = useState<GptProjektBrief | null>(null);
   const [loadingBrief, setLoadingBrief] = useState(false);
   const [sessionError, setSessionError] = useState<string | null>(null);
+  const [sessionRegistrationGate, setSessionRegistrationGate] =
+    useState<GptRegistrationGateState | null>(null);
 
   useEffect(() => {
     const stored = localStorage.getItem(GPT_VIZ_SESSION_STORAGE_KEY);
@@ -76,8 +84,24 @@ export function GptProjektProvider({ children }: { children: ReactNode }) {
         body: JSON.stringify({ visitor_token: getOrCreateGptVisitorToken() }),
       });
       if (!res.ok) {
-        const err = (await res.json().catch(() => ({}))) as { error?: string };
-        setSessionError(err.error ?? "Session konnte nicht gestartet werden.");
+        const err = (await res.json().catch(() => ({}))) as {
+          error?: string;
+          limit_code?: GptVizLimitCode;
+          portal_register_url?: string;
+          retry_after?: string | null;
+        };
+        const gate = gateFromLimitPayload(
+          err.error ?? "Session konnte nicht gestartet werden.",
+          err.limit_code,
+          err.portal_register_url ?? portalRegisterForGptUrl(),
+          err.retry_after
+        );
+        if (gate) {
+          setSessionRegistrationGate(gate);
+          setSessionError(null);
+        } else {
+          setSessionError(err.error ?? "Session konnte nicht gestartet werden.");
+        }
         return null;
       }
       const data = (await res.json()) as { session_id: string };
@@ -112,6 +136,10 @@ export function GptProjektProvider({ children }: { children: ReactNode }) {
   );
 
   const clearSessionError = useCallback(() => setSessionError(null), []);
+  const clearSessionRegistrationGate = useCallback(
+    () => setSessionRegistrationGate(null),
+    []
+  );
 
   const value = useMemo(
     () => ({
@@ -120,6 +148,8 @@ export function GptProjektProvider({ children }: { children: ReactNode }) {
       loadingBrief,
       sessionError,
       clearSessionError,
+      sessionRegistrationGate,
+      clearSessionRegistrationGate,
       ensureSession,
       refreshBrief,
       mergeChatVerlauf,
@@ -130,6 +160,8 @@ export function GptProjektProvider({ children }: { children: ReactNode }) {
       loadingBrief,
       sessionError,
       clearSessionError,
+      sessionRegistrationGate,
+      clearSessionRegistrationGate,
       ensureSession,
       refreshBrief,
       mergeChatVerlauf,

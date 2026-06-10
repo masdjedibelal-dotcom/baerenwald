@@ -14,12 +14,10 @@ import {
 } from "@/components/partner/PartnerDetailUi";
 import { PartnerComplianceCheckliste } from "@/components/partner/PartnerComplianceCheckliste";
 import {
-  compliancePflichtOffen,
   type PartnerComplianceItem,
   type PartnerProjektvertrag,
 } from "@/lib/partner/partner-compliance";
 import { fmtPartnerDate } from "@/lib/partner/partner-detail-format";
-import { cn } from "@/lib/utils";
 
 export function PartnerProjektvertragPaket({
   auftragId,
@@ -55,15 +53,9 @@ export function PartnerProjektvertragPaket({
   const allgemein = complianceAllgemein ?? complianceStamm.filter((i) => i.ebene === "allgemein");
   const meister = complianceMeister ?? complianceStamm.filter((i) => i.ebene === "meister");
   const leistung = complianceLeistung ?? complianceProjekt;
+  const stammUnterlagen = [...allgemein, ...meister];
 
-  const allePflicht = [
-    ...allgemein.filter((i) => i.pflicht),
-    ...meister.filter((i) => i.pflicht),
-    ...leistung.filter((i) => i.pflicht),
-  ];
-  const pflichtOffen = compliancePflichtOffen(allePflicht);
-  const kannBestaetigen =
-    !bestaetigt && vertrag && !pflichtOffen && gelesen && verbindlich;
+  const kannBestaetigen = !bestaetigt && vertrag && gelesen && verbindlich;
 
   async function onConfirm() {
     setLoading(true);
@@ -127,8 +119,10 @@ export function PartnerProjektvertragPaket({
   return (
     <div className="space-y-5">
       <PartnerDetailInfoBox>
-        Bitte lies den Projekt-Nachunternehmervertrag, lade fehlende Unterlagen hoch und bestätige
-        den Auftrag verbindlich. Erst danach wird das Projekt unter „Aufträge“ freigeschaltet.
+        Bitte lies den Projekt-Nachunternehmervertrag und bestätige den Auftrag verbindlich.
+        {variant === "angebot"
+          ? " Erst danach wird das Projekt unter „Aufträge“ freigeschaltet."
+          : ""}
       </PartnerDetailInfoBox>
 
       <PartnerDetailSection title="Projektvertrag">
@@ -145,26 +139,22 @@ export function PartnerProjektvertragPaket({
         ) : null}
       </PartnerDetailSection>
 
-      <PartnerComplianceCheckliste
-        title="Allgemeine Partnerunterlagen"
-        items={allgemein}
-        disabled={bestaetigt}
-      />
+      {variant !== "angebot" ? (
+        <>
+          <PartnerComplianceCheckliste
+            title="Unterlagen"
+            items={stammUnterlagen}
+            disabled={bestaetigt}
+          />
 
-      {meister.length > 0 ? (
-        <PartnerComplianceCheckliste
-          title="Meister & Fachbetrieb"
-          items={meister}
-          disabled={bestaetigt}
-        />
+          <PartnerComplianceCheckliste
+            title="Leistungsvertrag & Auftrag"
+            items={leistung}
+            auftragId={auftragId}
+            disabled={bestaetigt}
+          />
+        </>
       ) : null}
-
-      <PartnerComplianceCheckliste
-        title="Leistungsvertrag & Auftrag"
-        items={leistung}
-        auftragId={auftragId}
-        disabled={bestaetigt}
-      />
 
       {!bestaetigt ? (
         <div className="space-y-3 rounded-xl border border-border-light bg-muted/20 p-4">
@@ -191,16 +181,11 @@ export function PartnerProjektvertragPaket({
               Ich nehme diesen Auftrag verbindlich an (Projekt-Nachunternehmervertrag).
             </span>
           </label>
-          {pflichtOffen ? (
-            <p className={cn("portal-text-meta text-amber-800")}>
-              Bitte zuerst alle Pflicht-Unterlagen hochladen und auf Freigabe warten bzw. erledigen.
-            </p>
-          ) : null}
           {error ? <PartnerDetailError message={error} /> : null}
         </div>
       ) : null}
 
-      {variant === "angebot" && !bestaetigt && !pflichtOffen && (!gelesen || !verbindlich) ? (
+      {variant === "angebot" && !bestaetigt && (!gelesen || !verbindlich) ? (
         <p className="portal-text-meta text-text-secondary">
           Bitte beide Bestätigungen ankreuzen, um den Auftrag verbindlich anzunehmen.
         </p>

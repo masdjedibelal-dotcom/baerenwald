@@ -13,8 +13,7 @@ import type {
 
 const SYSTEM = `Du bereitest eine Renovierungs-Visualisierung für Bärenwald München vor.
 Vergleiche Ist-Raumbild, optional Inspirationsbild und Nutzerwunsch.
-Stelle nur Fragen, die für ein realistisches Render wirklich nötig sind (max. 3 insgesamt).
-Wenn Ist und Inspiration stark abweichen (z. B. Fenster nur im Inspiration, anderer Grundriss), MUSS eine Rückfrage kommen.
+Stelle KEINE Rückfragen an den Nutzer — entscheide selbst anhand der Daten.
 
 Antwort NUR als JSON:
 {
@@ -22,25 +21,18 @@ Antwort NUR als JSON:
   "struktur_lock": true,
   "preserve": ["Fenster hinten", "…"],
   "aenderungen": ["Wandfliesen", "…"],
-  "questions": [
-    {
-      "id": "einzigartige_id",
-      "question": "Frage an den Nutzer auf Deutsch (Du)",
-      "hint": "optional, kurz",
-      "options": [
-        { "id": "opt_a", "label": "Kurze Antwort", "hint": "optional" }
-      ]
-    }
-  ]
+  "questions": []
 }
 
 modus:
-- auffrischen = nur Material/Farbe/Oberflächen
+- auffrischen = nur Material/Farbe/Oberflächen (Standard wenn unklar)
 - teilsanierung = + Sanitär, Armaturen, Licht
 - stil_update = stärkerer Look, aber ohne Grundrissänderung wenn struktur_lock
 
-questions: leeres Array wenn keine Unklarheiten. Jede Frage 2–4 Optionen.
-Keine Preise. Keine Kontaktdaten.`;
+struktur_lock: fast immer true — gleiche Fenster, Türen, Grundriss, Kamerawinkel.
+preserve: alles was im Ist-Bild sichtbar ist und bleiben soll.
+aenderungen: nur Oberflächen/Material/Stil laut Wunsch.
+questions: IMMER leeres Array [].`;
 
 export type VizPrepareResult = {
   ready: boolean;
@@ -66,27 +58,6 @@ function validateModus(raw: unknown): GptVizModus {
   const v = String(raw ?? "auffrischen");
   if (v === "teilsanierung" || v === "stil_update") return v;
   return "auffrischen";
-}
-
-function validateQuestions(raw: unknown): GptVizPrepareQuestion[] {
-  if (!Array.isArray(raw)) return [];
-  return raw.slice(0, 3).map((q) => {
-    const item = q as Record<string, unknown>;
-    const options = Array.isArray(item.options) ? item.options : [];
-    return {
-      id: String(item.id ?? `q_${Math.random().toString(36).slice(2, 8)}`),
-      question: String(item.question ?? ""),
-      hint: item.hint ? String(item.hint) : undefined,
-      options: options.slice(0, 4).map((o) => {
-        const opt = o as Record<string, unknown>;
-        return {
-          id: String(opt.id ?? "opt"),
-          label: String(opt.label ?? ""),
-          hint: opt.hint ? String(opt.hint) : undefined,
-        };
-      }),
-    };
-  }).filter((q) => q.question && q.options.length >= 2);
 }
 
 export function mergeVizBriefAnswer(
@@ -179,7 +150,7 @@ export async function prepareVizRender(input: {
     messages: [
       {
         role: "user",
-        content: `${istCtx}\n${zielCtx}\nWunsch: ${input.wunschText}\n${beantwortet}\n\nErzeuge Brief und nur noch offene Fragen (keine bereits beantworteten IDs wiederholen).`,
+        content: `${istCtx}\n${zielCtx}\nWunsch: ${input.wunschText}\n${beantwortet}\n\nErzeuge nur den Brief — questions bleibt [].`,
       },
     ],
   });
@@ -191,9 +162,6 @@ export async function prepareVizRender(input: {
 
   try {
     const raw = extractJsonObject(text) as Record<string, unknown>;
-    const allQuestions = validateQuestions(raw.questions).filter(
-      (q) => !existing.beantwortete_fragen.includes(q.id)
-    );
 
     const viz_brief: GptVizBrief = {
       modus: validateModus(raw.modus) ?? existing.modus,
@@ -214,9 +182,9 @@ export async function prepareVizRender(input: {
       nutzer_antworten: existing.nutzer_antworten,
     };
 
-    const questions = allQuestions.slice(0, 3 - existing.beantwortete_fragen.length);
+    const questions: GptVizPrepareQuestion[] = [];
     return {
-      ready: questions.length === 0,
+      ready: true,
       viz_brief,
       questions,
     };

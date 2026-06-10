@@ -39,6 +39,7 @@ import type {
   PartnerHandwerkerProfil,
   PartnerProfilKontext,
   PartnerTerminItem,
+  PartnerAufgabeItem,
   PartnerTodoItem,
 } from "@/lib/partner/get-partner-data";
 import {
@@ -72,12 +73,12 @@ const MENU_ITEMS: Array<{
   icon: typeof LayoutDashboard;
 }> = [
   { id: "uebersicht", label: "Übersicht", icon: LayoutDashboard },
-  { id: "profil", label: "Profil", icon: User },
-  { id: "planer", label: "Planer", icon: CalendarDays },
   { id: "anfragen", label: "Anfragen", icon: ClipboardList },
   { id: "angebote", label: "Angebote", icon: FileText },
   { id: "auftraege", label: "Aufträge", icon: Briefcase },
   { id: "gpt", label: "GPT", icon: MessagesSquare },
+  { id: "planer", label: "Planer", icon: CalendarDays },
+  { id: "profil", label: "Profil", icon: User },
 ];
 
 function statusPillClass(status: string): string {
@@ -136,7 +137,7 @@ export function PartnerClient({
   handwerker,
   profil,
   termine,
-  todos,
+  aufgaben,
   anfragen,
   angebote,
   angeboteAlleAkzeptiert,
@@ -146,7 +147,9 @@ export function PartnerClient({
   handwerker: PartnerHandwerkerProfil;
   profil: PartnerProfilKontext;
   termine: PartnerTerminItem[];
-  todos: PartnerTodoItem[];
+  aufgaben: PartnerAufgabeItem[];
+  /** @deprecated Eigene Todos entfallen zugunsten systemischer Aufgaben */
+  todos?: PartnerTodoItem[];
   /** Offene angebot_handwerker-Anfragen (Server-Filter). */
   anfragen: PartnerAnfrageItem[];
   /** Akzeptiert, hw_status !== uebernommen (Server-Filter). */
@@ -431,13 +434,6 @@ export function PartnerClient({
     }
   }, [searchParams, auftraege, anfragen, angeboteAlleAkzeptiert, auftragAnfragen]);
 
-  function geheZuAuftrag(auftragId: string) {
-    setSection("auftraege");
-    setSelectedId(auftragId);
-    setListPage(1);
-    setMobileDetailOpen(true);
-  }
-
   function navigateFromPlaner(
     target: PartnerTerminItem["section"],
     selectedId?: string
@@ -625,7 +621,7 @@ export function PartnerClient({
                   </span>
                   <span className="portal-text-meta text-text-tertiary">
                     {id === "planer"
-                      ? termine.length + todos.filter((t) => !t.erledigt).length
+                      ? termine.length + aufgaben.length
                       : id === "anfragen"
                         ? offeneAnfragenCount
                         : id === "angebote"
@@ -656,7 +652,6 @@ export function PartnerClient({
               <PartnerProfilPanel
                 handwerker={handwerker}
                 profil={profil}
-                onGeheZuAuftrag={geheZuAuftrag}
               />
             </article>
           ) : null}
@@ -665,7 +660,7 @@ export function PartnerClient({
             <article className="card-bordered p-4 sm:p-5">
               <PartnerPlanerPanel
                 termine={termine}
-                todos={todos}
+                aufgaben={aufgaben}
                 onNavigate={navigateFromPlaner}
               />
             </article>
@@ -697,15 +692,15 @@ export function PartnerClient({
                 </article>
               </div>
 
-              {(heuteTermineCount > 0 || todos.some((t) => !t.erledigt)) && (
+              {(heuteTermineCount > 0 || aufgaben.length > 0) && (
                 <article className="card-bordered border-accent/20 bg-accent-light/30 p-4 lg:hidden">
                   <p className="portal-text-label text-accent">Heute</p>
                   <p className="portal-text-body mt-1 text-text-primary">
                     {heuteTermineCount > 0
                       ? `${heuteTermineCount} Termin${heuteTermineCount === 1 ? "" : "e"}`
                       : "Keine Termine"}
-                    {todos.some((t) => !t.erledigt)
-                      ? ` · ${todos.filter((t) => !t.erledigt).length} Aufgaben`
+                    {aufgaben.length > 0
+                      ? ` · ${aufgaben.length} Aufgabe${aufgaben.length === 1 ? "" : "n"}`
                       : ""}
                   </p>
                   <button
@@ -718,7 +713,7 @@ export function PartnerClient({
                 </article>
               )}
 
-              {(termine.length > 0 || todos.some((t) => !t.erledigt)) && (
+              {(termine.length > 0 || aufgaben.length > 0) && (
                 <button
                   type="button"
                   onClick={() => switchSection("planer")}
@@ -732,8 +727,8 @@ export function PartnerClient({
                       <p className="portal-text-body font-semibold text-text-primary">Planer</p>
                       <p className="portal-text-meta text-text-secondary">
                         {termine.length} Termine
-                        {todos.some((t) => !t.erledigt)
-                          ? ` · ${todos.filter((t) => !t.erledigt).length} Aufgaben`
+                        {aufgaben.length > 0
+                          ? ` · ${aufgaben.length} Aufgaben`
                           : ""}
                       </p>
                     </div>

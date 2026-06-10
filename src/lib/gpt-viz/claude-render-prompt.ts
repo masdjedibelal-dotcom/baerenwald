@@ -10,10 +10,10 @@ für ein Interior-Design-Modell (bestehender Raum, gleiche Kameraposition).
 Antwort NUR mit dem englischen Prompt als Plain Text, ohne Anführungszeichen, max. 140 Wörter.
 
 Pflicht-Struktur im Prompt:
-1. MUST PRESERVE: Liste der Elemente die unverändert bleiben
-2. CHANGE ONLY: was sich ändern darf
-3. DO NOT: keine neuen Fenster/Türen/Grundrissänderung (wenn struktur_lock)
-4. Stil, Materialien, Licht — fotorealistisch, keine Menschen, kein Text`;
+1. MUST PRESERVE: exakt gleiche Raumgeometrie, Fenster, Türen, Kamerawinkel, Perspektive
+2. CHANGE ONLY: Materialien, Farben, Oberflächen, Armaturen laut Wunsch
+3. DO NOT: neue Fenster/Türen, Grundrissänderung, andere Perspektive, Menschen, Text
+4. Stil: editorial interior photography, Architectural Digest, soft natural daylight, photorealistic, high-end Munich renovation`;
 
 export async function buildRenderPrompt(input: {
   wunschText: string;

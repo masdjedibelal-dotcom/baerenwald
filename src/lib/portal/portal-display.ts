@@ -190,6 +190,13 @@ export function buildAngebotPortalDisplay(angebot: {
   };
 }
 
+/** Status-Anzeige für Aufträge im Kundenportal (z. B. CRM „offen“ → „Vorbereitung“). */
+export function fmtPortalAuftragStatus(status?: string | null): string {
+  const s = (status ?? "offen").toLowerCase().replace(/[\s-]+/g, "_");
+  if (s === "offen" || s === "vorbereitung") return "Vorbereitung";
+  return fmtPortalStatus(status);
+}
+
 export function fmtPortalStatus(status?: string | null): string {
   if (!status) return "Offen";
   const s = status.toLowerCase().replace(/[\s-]+/g, "_");

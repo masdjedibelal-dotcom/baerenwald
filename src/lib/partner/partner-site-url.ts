@@ -33,9 +33,9 @@ export function partnerAnfragePortalUrl(anfrageId: string): string {
   return `${SITE_CONFIG.url}/partner?section=anfragen&id=${encodeURIComponent(id)}`;
 }
 
+/** E-Mail-Deep-Link — direkt ins Portal (Middleware → Login mit next inkl. Query). */
 export function partnerLoginForAnfrageUrl(anfrageId: string): string {
-  const next = partnerAnfragePortalUrl(anfrageId);
-  return `${partnerLoginUrl()}?next=${encodeURIComponent(next)}`;
+  return partnerAnfragePortalUrl(anfrageId);
 }
 
 /** Direktlink: Angebote-Tab (nach Annahme Preis + PDF einreichen). */
@@ -45,24 +45,20 @@ export function partnerAngebotPortalUrl(anfrageId: string): string {
 }
 
 export function partnerLoginForAngebotUrl(anfrageId: string): string {
-  const next = partnerAngebotPortalUrl(anfrageId);
-  return `${partnerLoginUrl()}?next=${encodeURIComponent(next)}`;
+  return partnerAngebotPortalUrl(anfrageId);
 }
 
-/** Login → Auftrags-Anfrage (Zuweisung, HW soll annehmen/ablehnen). */
+/** Auftrags-Zuweisung — Annehmen/Ablehnen unter Anfragen. */
 export function partnerLoginForAuftragAnfrageUrl(auftragId: string): string {
-  const next = partnerAuftragAnfragePortalUrl(auftragId);
-  return `${partnerLoginUrl()}?next=${encodeURIComponent(next)}`;
+  return partnerAuftragAnfragePortalUrl(auftragId);
 }
 
-/** Login → laufender Auftrag (Tab Aufträge). */
+/** Laufender Auftrag — Tab Aufträge. */
 export function partnerLoginForAuftragUrl(auftragId: string): string {
-  const next = partnerAuftragPortalUrl(auftragId);
-  return `${partnerLoginUrl()}?next=${encodeURIComponent(next)}`;
+  return partnerAuftragPortalUrl(auftragId);
 }
 
-/** Login → Partner-Übersicht (Startscreen). */
+/** Partner-Portal-Startseite. */
 export function partnerLoginForDashboardUrl(): string {
-  const next = partnerDashboardUrl();
-  return `${partnerLoginUrl()}?next=${encodeURIComponent(next)}`;
+  return partnerDashboardUrl();
 }

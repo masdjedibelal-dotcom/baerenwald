@@ -143,9 +143,15 @@
   }
 
   .portal-gpt-shell.ki-keyboard-open,
-  .portal-gpt-shell.ki-input-focused {
+  .portal-gpt-shell.ki-input-focused,
+  .portal-gpt-shell.ki-guided-input-focused.ki-keyboard-open {
     height: var(--ki-vv-height, 100svh);
     max-height: var(--ki-vv-height, 100svh);
+    transform: translateY(var(--ki-vv-offset-top, 0px));
+  }
+
+  .portal-gpt-shell.ki-guided-input-focused .ki-rechner-chat-composer {
+    display: none;
   }
 
   .portal-gpt-shell.ki-keyboard-open .portal-gpt-footer,

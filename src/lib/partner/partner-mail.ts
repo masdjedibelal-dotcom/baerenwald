@@ -2,9 +2,8 @@ import { Resend } from "resend";
 
 import { SITE_CONFIG } from "@/lib/config";
 import {
+  partnerDashboardUrl,
   partnerLoginForAuftragAnfrageUrl,
-  partnerLoginUrl,
-  partnerRegisterUrl,
 } from "@/lib/partner/partner-site-url";
 
 function fmtEuro(n: number | null | undefined): string {
@@ -128,7 +127,7 @@ export async function sendHandwerkerNewAnfrageMail(opts: {
     return { ok: false, error: "E-Mail nicht konfiguriert." };
   }
 
-  const portalHref = opts.portalLink?.trim() || partnerLoginUrl();
+  const portalHref = opts.portalLink?.trim() || partnerDashboardUrl();
   const zeitraumBlock = opts.zeitraum?.trim()
     ? `<p><strong>Zeitraum:</strong> ${escapeHtml(opts.zeitraum.trim())}</p>`
     : "";
@@ -191,7 +190,6 @@ export async function sendHandwerkerLeistungZuweisungMail(opts: {
 
   const portalLink =
     opts.portalLink?.trim() || partnerLoginForAuftragAnfrageUrl(opts.auftragId);
-  const register = partnerRegisterUrl();
   const zeitraum = opts.zeitraum?.trim() || "Nach Absprache";
   const gewerkSet = new Set(opts.leistungen.map((l) => l.gewerk_name).filter(Boolean));
   const gewerkLabel =
@@ -230,8 +228,7 @@ ${detailsBox}
 <ul style="font-size:14px;line-height:1.7;padding-left:20px;margin:12px 0 16px;color:#1A3D2B;">${lis}</ul>
 ${mailBtn("Zum Partner-Portal →", portalLink)}
 <p style="font-size:13px;color:#6B7280;line-height:1.6;margin:0 0 8px;">
-  Melde dich mit deiner bei uns hinterlegten E-Mail an. Noch kein Konto?
-  <a href="${escapeHtml(register)}" style="color:#2E7D52;font-weight:600;">Jetzt registrieren</a>
+  Melde dich mit deiner bei Bärenwald hinterlegten Partner-E-Mail an.
 </p>
 <p style="font-size:12px;color:#9CA3AF;word-break:break-all;margin:0;">Link: <a href="${escapeHtml(portalLink)}" style="color:#2E7D52;">${escapeHtml(portalLink)}</a></p>`,
     `Leistung zugewiesen: ${opts.leistungen[0]?.leistung_name ?? gewerkLabel}`
@@ -273,7 +270,7 @@ export async function sendHandwerkerAngebotBestaetigtMail(opts: {
     return { ok: false, error: "E-Mail nicht konfiguriert." };
   }
 
-  const portalHref = opts.portalLink.trim() || partnerLoginUrl();
+  const portalHref = opts.portalLink.trim() || partnerDashboardUrl();
   const preisBlock = mailGreenBox(`
     <p style="margin:0 0 6px;font-size:14px;"><strong>${escapeHtml(opts.angebotTitel)}</strong> · ${escapeHtml(opts.gewerkName)}</p>
     <p style="margin:0;font-size:14px;">Netto: ${escapeHtml(fmtEuro(opts.preisNetto))} · Brutto: ${escapeHtml(fmtEuro(opts.preisBrutto))}</p>
@@ -294,6 +291,66 @@ ${mailBtn("Zum Partner-Portal", portalHref)}
       from: systemFrom(),
       to: opts.to.trim(),
       subject: `Angebot übernommen: ${opts.gewerkName} — Bärenwald Partner`,
+      html,
+    });
+    if (error) return { ok: false, error: error.message };
+    return { ok: true };
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : "Versand fehlgeschlagen";
+    return { ok: false, error: msg };
+  }
+}
+
+/** Handwerker: CRM-Rückfrage oder Ablehnung zur Einreichung. */
+export async function sendHandwerkerAngebotAntwortMail(opts: {
+  to: string;
+  handwerkerName: string;
+  gewerkName: string;
+  angebotTitel: string;
+  crmNotiz: string;
+  portalLink: string;
+  typ: "rueckfrage" | "abgelehnt";
+  betreff?: string;
+  cc?: string[];
+}): Promise<{ ok: boolean; error?: string }> {
+  const resend = resendClient();
+  if (!resend) {
+    console.warn("[partner-mail] RESEND_API_KEY fehlt");
+    return { ok: false, error: "E-Mail nicht konfiguriert." };
+  }
+
+  const portalHref = opts.portalLink.trim() || partnerDashboardUrl();
+  const istRueckfrage = opts.typ === "rueckfrage";
+  const titel = istRueckfrage ? "Rückfrage zu deinem Angebot" : "Angebot nicht übernommen";
+  const intro = istRueckfrage
+    ? "zu deinem eingereichten Angebot haben wir noch eine <strong>Rückfrage</strong>. Bitte prüfe unsere Nachricht und reiche bei Bedarf ein aktualisiertes Angebot im Partner-Portal ein."
+    : "vielen Dank für dein Angebot. Leider können wir es in der vorliegenden Form <strong>nicht übernehmen</strong>. Du kannst im Partner-Portal ein neues Angebot mit Preis und PDF einreichen.";
+  const defaultBetreff = istRueckfrage
+    ? `Rückfrage zu deinem Angebot: ${opts.gewerkName} — Bärenwald Partner`
+    : `Angebot nicht übernommen: ${opts.gewerkName} — Bärenwald Partner`;
+
+  const notizBlock = mailGreenBox(`
+    <p style="margin:0 0 6px;font-size:13px;color:#374151;font-weight:600;">Nachricht von Bärenwald</p>
+    <p style="margin:0;font-size:14px;line-height:1.6;white-space:pre-wrap;">${escapeHtml(opts.crmNotiz.trim())}</p>
+  `);
+
+  const html = mailShell(
+    titel,
+    `<p style="margin:0 0 12px;font-size:15px;line-height:1.6;">Hallo ${escapeHtml(opts.handwerkerName)},</p>
+<p style="margin:0 0 12px;font-size:15px;line-height:1.6;">${intro}</p>
+<p style="margin:0 0 12px;font-size:14px;line-height:1.6;"><strong>${escapeHtml(opts.angebotTitel)}</strong> · ${escapeHtml(opts.gewerkName)}</p>
+${notizBlock}
+${mailBtn("Zum Partner-Portal", portalHref)}
+<p style="font-size:13px;color:#6B7280;line-height:1.6;margin:12px 0 0;">Bei Rückfragen melde dich bei uns.</p>`,
+    `${opts.gewerkName} — ${opts.angebotTitel}`
+  );
+
+  try {
+    const { error } = await resend.emails.send({
+      from: systemFrom(),
+      to: opts.to.trim(),
+      ...(opts.cc?.length ? { cc: opts.cc } : {}),
+      subject: opts.betreff?.trim() || defaultBetreff,
       html,
     });
     if (error) return { ok: false, error: error.message };

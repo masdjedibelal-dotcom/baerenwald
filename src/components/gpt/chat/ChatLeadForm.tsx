@@ -3,7 +3,11 @@
 import { useEffect, useRef, useState } from "react";
 
 import type { GptLeadDraft } from "@/lib/gpt-viz/lead-collect";
-import { scrollGuidedBlockIntoView } from "@/lib/gpt-viz/scroll-guided-into-view";
+import {
+  handleGuidedInputBlur,
+  handleGuidedInputFocus,
+  scrollGuidedBlockIntoView,
+} from "@/lib/gpt-viz/scroll-guided-into-view";
 import { cn } from "@/lib/utils";
 
 type ChatLeadFormProps = {
@@ -32,6 +36,9 @@ export function ChatLeadForm({
   useEffect(() => {
     scrollGuidedBlockIntoView(rootRef.current);
   }, []);
+
+  const onGuidedFocus = () => handleGuidedInputFocus(rootRef.current);
+  const onGuidedBlur = () => handleGuidedInputBlur(rootRef.current);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -98,7 +105,8 @@ export function ChatLeadForm({
             disabled={disabled}
             placeholder="Max Mustermann"
             onChange={(e) => setName(e.target.value)}
-            onFocus={() => scrollGuidedBlockIntoView(rootRef.current)}
+            onFocus={onGuidedFocus}
+            onBlur={onGuidedBlur}
           />
         </label>
 
@@ -111,6 +119,8 @@ export function ChatLeadForm({
             disabled={disabled}
             placeholder="Musterstraße 12"
             onChange={(e) => setStrasse(e.target.value)}
+            onFocus={onGuidedFocus}
+            onBlur={onGuidedBlur}
           />
         </label>
 
@@ -126,6 +136,8 @@ export function ChatLeadForm({
               disabled={disabled}
               placeholder="80331"
               onChange={(e) => setPlz(e.target.value.replace(/\D/g, "").slice(0, 5))}
+              onFocus={onGuidedFocus}
+              onBlur={onGuidedBlur}
             />
           </label>
 
@@ -138,6 +150,8 @@ export function ChatLeadForm({
               disabled={disabled}
               placeholder="kontakt@beispiel.de"
               onChange={(e) => setKontakt(e.target.value)}
+              onFocus={onGuidedFocus}
+              onBlur={onGuidedBlur}
             />
           </label>
         </div>
@@ -150,6 +164,8 @@ export function ChatLeadForm({
             disabled={disabled}
             placeholder="Kurz zum Projekt …"
             onChange={(e) => setNotizen(e.target.value)}
+            onFocus={onGuidedFocus}
+            onBlur={onGuidedBlur}
           />
         </label>
       </div>

@@ -21,7 +21,7 @@ export type PartnerComplianceTypEbene = {
 };
 
 export const COMPLIANCE_EBENE_LABELS: Record<ComplianceEbene, string> = {
-  allgemein: "Allgemeine Partnerunterlagen",
+  allgemein: "Unterlagen",
   meister: "Meister & Fachbetrieb",
   leistung: "Leistungsvertrag & Auftrag",
 };
@@ -163,14 +163,14 @@ export function complianceAblaufHinweis(
   status: "fehlend" | "ok" | "warnung" | "abgelaufen",
   gueltigBis: string | null | undefined
 ): string | null {
-  if (status === "fehlend") return "Bitte hochladen";
-  if (status === "abgelaufen") return "Abgelaufen — bitte neu hochladen";
+  if (status === "fehlend") return null;
+  if (status === "abgelaufen") return "Abgelaufen";
   if (status === "warnung" && gueltigBis) {
     try {
       const d = new Date(gueltigBis);
-      return `Läuft ab am ${d.toLocaleDateString("de-DE")} — bitte rechtzeitig neu hochladen`;
+      return `Läuft ab am ${d.toLocaleDateString("de-DE")}`;
     } catch {
-      return "Läuft bald ab — bitte neu hochladen";
+      return "Läuft bald ab";
     }
   }
   if (status === "warnung") return "In Prüfung oder läuft bald ab";

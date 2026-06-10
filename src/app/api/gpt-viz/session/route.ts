@@ -1,5 +1,8 @@
 import { GPT_VIZ_LIMITS } from "@/lib/gpt-viz/constants";
-import { countVisitorSessionsRecent } from "@/lib/gpt-viz/limits";
+import {
+  countVisitorSessionsRecent,
+  getVisitorSessionRetryAfter,
+} from "@/lib/gpt-viz/limits";
 import { portalRegisterForGptUrl } from "@/lib/portal/portal-site-url";
 import { getGptVizPortalKundeId } from "@/lib/gpt-viz/portal-auth";
 import { createGptVizSession } from "@/lib/gpt-viz/session";
@@ -26,12 +29,14 @@ export async function POST(req: Request) {
   if (!portalKundeId && visitorToken) {
     const recent = await countVisitorSessionsRecent(visitorToken);
     if (recent >= GPT_VIZ_LIMITS.anonymous.maxSessionsPerWindow) {
+      const retryAfter = await getVisitorSessionRetryAfter(visitorToken);
       return Response.json(
         {
           error:
             "Du hast bereits mehrere KI-Projekte gestartet. Registriere dich kostenlos im Portal — dort kannst du weiter visualisieren und Projekte speichern.",
           limit_code: "visitor_sessions",
           portal_register_url: portalRegisterForGptUrl(),
+          retry_after: retryAfter,
         },
         { status: 429 }
       );

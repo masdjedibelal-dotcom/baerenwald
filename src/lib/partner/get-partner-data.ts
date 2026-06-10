@@ -30,6 +30,7 @@ import {
   partnerHatMeisterGewerke,
   partnerLeistetBauleistung,
 } from "@/lib/partner/compliance-partner-profile";
+import { buildPartnerAufgaben, type PartnerAufgabeItem } from "@/lib/partner/build-partner-aufgaben";
 import { buildPartnerTermine, type PartnerTerminItem } from "@/lib/partner/build-partner-termine";
 import {
   buildOffeneLeistungsUnterlagen,
@@ -76,6 +77,8 @@ export type PartnerAnfrageItem = {
   hw_rechnung_pdf_signed_url?: string | null;
   hw_rechnung_eingereicht_at?: string;
   hw_notiz?: string | null;
+  hw_crm_notiz?: string | null;
+  hw_crm_antwort_at?: string | null;
   /** Projekt-/Lead-Kontext ohne Kundendaten. */
   lead?: PortalAnfrageLeadSource | null;
   crm_positionen_raw?: unknown;
@@ -98,6 +101,8 @@ export type PartnerAuftragPosition = {
   beschreibung: string | null;
   menge: number | null;
   einheit: string | null;
+  start_datum: string | null;
+  end_datum: string | null;
 };
 
 export type PartnerBautagebuchItem = {
@@ -135,6 +140,8 @@ export type PartnerAuftragItem = {
   bewertung?: PartnerAuftragBewertung | null;
   projektvertrag_bestaetigt_am?: string | null;
   vertrag?: PartnerVertragKontext | null;
+  /** Offene CRM-Anforderung für Bautagebuch-Eintrag. */
+  bautagebuchAnfrageOffen?: boolean;
 };
 
 export type PartnerHandwerkerProfil = {
@@ -170,7 +177,14 @@ export type PartnerTodoItem = {
   created_at: string;
 };
 
-export type { PartnerTerminItem };
+export type PartnerBautagebuchAnfrageItem = {
+  id: string;
+  auftrag_id: string;
+  notiz: string | null;
+  created_at: string;
+};
+
+export type { PartnerAufgabeItem, PartnerTerminItem };
 
 function one<T>(x: T | T[] | null | undefined): T | null {
   if (x == null) return null;
@@ -229,6 +243,8 @@ const ANGEBOT_HANDWERKER_BASE_SELECT = `
   hw_rechnung_pdf_url,
   hw_rechnung_eingereicht_at,
   hw_notiz,
+  hw_crm_notiz,
+  hw_crm_antwort_at,
   gewerke(name),
   angebote(${PARTNER_ANGEBOT_EMBED})
 `;
@@ -398,7 +414,9 @@ export async function getPartnerDataForHandwerker(handwerkerId: string) {
           menge,
           einheit,
           handwerker_id,
-          handwerker_status
+          handwerker_status,
+          start_datum,
+          end_datum
         )
       `
       )
@@ -494,6 +512,8 @@ export async function getPartnerDataForHandwerker(handwerkerId: string) {
         beschreibung: (p.beschreibung as string | null) ?? null,
         menge: p.menge != null ? Number(p.menge) : null,
         einheit: (p.einheit as string | null) ?? null,
+        start_datum: (p.start_datum as string | null)?.slice(0, 10) ?? null,
+        end_datum: (p.end_datum as string | null)?.slice(0, 10) ?? null,
       }));
 
       const aid = String(raw.id);
@@ -613,8 +633,8 @@ export async function getPartnerDataForHandwerker(handwerkerId: string) {
   const angeboteAlleAkzeptiert = anfragenFinal.filter(
     (a) => a.status.toLowerCase() === "akzeptiert"
   );
-  const auftragAnfragen = alleAuftraege.filter(isAuftragAnfrageListItem);
-  const auftraege = alleAuftraege.filter(isAuftragAuftraegeListItem);
+  const auftragAnfragenListe = alleAuftraege.filter(isAuftragAnfrageListItem);
+  const auftraegeListe = alleAuftraege.filter(isAuftragAuftraegeListItem);
 
   const rahmenvertrag = await loadRahmenvertrag(id);
   const gewerkSlugs = Array.isArray(handwerker.gewerke)
@@ -630,7 +650,7 @@ export async function getPartnerDataForHandwerker(handwerkerId: string) {
       ([auftragId, ctx]) => {
         const auftrag =
           alleAuftraege.find((a) => a.id === auftragId) ??
-          auftragAnfragen.find((a) => a.id === auftragId);
+          auftragAnfragenListe.find((a) => a.id === auftragId);
         return {
           auftrag_id: auftragId,
           auftrag_titel: auftrag?.titel ?? "Auftrag",
@@ -658,34 +678,55 @@ export async function getPartnerDataForHandwerker(handwerkerId: string) {
     offeneLeistungsunterlagen,
   };
 
-  const { data: todoRows } = await supabaseAdmin
-    .from("partner_todos")
-    .select("id, titel, erledigt, sort_order, created_at")
+  const { data: bautagebuchAnfrageRows } = await supabaseAdmin
+    .from("partner_bautagebuch_anfragen")
+    .select("id, auftrag_id, notiz, created_at")
     .eq("handwerker_id", id)
-    .order("erledigt", { ascending: true })
-    .order("sort_order", { ascending: true })
+    .is("erledigt_at", null)
     .order("created_at", { ascending: false });
 
-  const todos: PartnerTodoItem[] = (todoRows ?? []).map((row) => ({
-    id: String(row.id),
-    titel: String(row.titel),
-    erledigt: Boolean(row.erledigt),
-    sort_order: Number(row.sort_order ?? 0),
-    created_at: String(row.created_at),
-  }));
+  const bautagebuchAnfragen: PartnerBautagebuchAnfrageItem[] = (bautagebuchAnfrageRows ?? []).map(
+    (row) => ({
+      id: String(row.id),
+      auftrag_id: String(row.auftrag_id),
+      notiz: (row.notiz as string | null) ?? null,
+      created_at: String(row.created_at),
+    })
+  );
+
+  const bautagebuchAnfrageAuftragIds = new Set(bautagebuchAnfragen.map((r) => r.auftrag_id));
+
+  const markBautagebuchAnfrage = (item: PartnerAuftragItem): PartnerAuftragItem => ({
+    ...item,
+    bautagebuchAnfrageOffen: bautagebuchAnfrageAuftragIds.has(item.id),
+  });
+
+  const auftragAnfragen = auftragAnfragenListe.map(markBautagebuchAnfrage);
+  const auftraege = auftraegeListe.map(markBautagebuchAnfrage);
+
+  const auftragTitelById = new Map<string, string>();
+  for (const a of [...auftragAnfragen, ...auftraege]) {
+    auftragTitelById.set(a.id, a.titel);
+  }
 
   const termine = buildPartnerTermine({
+    auftragAnfragen,
+    auftraege,
+  });
+
+  const aufgaben = buildPartnerAufgaben({
     anfragen: anfragenAngebot,
     angebote,
     auftragAnfragen,
     auftraege,
-    profil: profilKontext,
+    bautagebuchAnfragen,
+    auftragTitelById,
   });
 
   return {
     profil: profilKontext,
     termine,
-    todos,
+    aufgaben,
     handwerker: {
       name: String(handwerker.name ?? "Partner"),
       firma: handwerker.firma as string | null,

@@ -12,8 +12,38 @@ export function normalizePortalStatus(status?: string | null): string {
 /** Status eines Auftrags (Tabelle auftraege) — gehört immer unter „Aufträge“. */
 export function isAuftragRecordPortalPhase(status?: string | null): boolean {
   const s = normalizePortalStatus(status);
-  if (!s || s.includes("storniert")) return false;
+  if (s.includes("storniert")) return false;
   return true;
+}
+
+/** Abgeschlossener Auftrag (Status oder Fortschritt 100 %). */
+export function isPortalAuftragAbgeschlossenRecord(input: {
+  status?: string | null;
+  fortschritt?: number | null;
+}): boolean {
+  const s = normalizePortalStatus(input.status);
+  if (s.includes("storniert")) return false;
+  if (
+    s.includes("abgeschlossen") ||
+    s.includes("fertig") ||
+    s.includes("completed") ||
+    s.includes("done")
+  ) {
+    return true;
+  }
+  if (typeof input.fortschritt === "number" && input.fortschritt >= 100) {
+    return true;
+  }
+  return false;
+}
+
+export function isPortalAuftragAktivRecord(input: {
+  status?: string | null;
+  fortschritt?: number | null;
+}): boolean {
+  const s = normalizePortalStatus(input.status);
+  if (s.includes("storniert")) return false;
+  return !isPortalAuftragAbgeschlossenRecord(input);
 }
 
 /** Auftrags-Phase für Lead-Status (nicht für auftraege.status „offen“). */
@@ -62,6 +92,7 @@ type PortalSplitAuftrag = {
   lead_id?: string | null;
   angebot_id?: string | null;
   status?: string | null;
+  fortschritt?: number | null;
 };
 
 /**

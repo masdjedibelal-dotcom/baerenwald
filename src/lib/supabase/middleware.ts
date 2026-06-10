@@ -95,7 +95,9 @@ export async function updateSession(request: NextRequest) {
   if (!user && !isPublic && path !== loginPath) {
     const url = request.nextUrl.clone();
     url.pathname = loginPath;
-    url.searchParams.set("next", path);
+    url.search = "";
+    const nextTarget = path + request.nextUrl.search;
+    url.searchParams.set("next", nextTarget);
     return NextResponse.redirect(url);
   }
 
