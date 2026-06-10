@@ -1,3 +1,4 @@
+export { PartnerJobFieldActions } from "@/components/partner/PartnerJobFieldActions";
 export {
   PortalConfirmDialog as PartnerConfirmDialog,
   PortalDetailHero as PartnerDetailHero,

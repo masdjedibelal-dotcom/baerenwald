@@ -49,15 +49,21 @@
   display: flex;
   flex-wrap: nowrap;
   gap: 8px;
-  padding: 10px 16px 12px;
+  padding: 8px 20px 10px;
   overflow-x: auto;
   overflow-y: hidden;
   -webkit-overflow-scrolling: touch;
+  scroll-padding-inline: 20px;
   scrollbar-width: none;
   border-bottom: 1px solid var(--gd-border);
-  background: rgba(255, 255, 255, 0.65);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
+  background: transparent;
+  mask-image: linear-gradient(
+    to right,
+    transparent 0,
+    #000 12px,
+    #000 calc(100% - 12px),
+    transparent 100%
+  );
 }
 
 .gpt-chat-journey-bar::-webkit-scrollbar {
@@ -254,7 +260,7 @@
   width: 100%;
 }
 
-@media (min-width: 400px) {
+@media (min-width: 520px) {
   .gpt-guided-tile-grid {
     grid-template-columns: 1fr 1fr;
   }
@@ -560,9 +566,10 @@
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  padding: 6px 12px;
+  min-height: 36px;
+  padding: 8px 14px;
   border-radius: var(--gd-radius-pill);
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 500;
   letter-spacing: -0.01em;
   background: rgba(0, 0, 0, 0.04);
@@ -579,6 +586,35 @@
   flex-shrink: 0;
   background: var(--gd-bg-solid);
   box-shadow: var(--gd-shadow-sm);
+}
+
+/* Mobile: volle Breite für Guided-Bubbles, größere Journey-Chips */
+@media (max-width: 768px) {
+  .ki-rechner-chat-bubble--assistant:has(.gpt-guided-blocks) {
+    max-width: 100%;
+    width: 100%;
+    padding: 12px 12px 14px;
+  }
+
+  .gpt-guided-summary-chip {
+    min-height: 44px;
+    padding: 10px 16px;
+    font-size: 14px;
+  }
+
+  .gpt-chat-journey-bar {
+    gap: 10px;
+    padding: 8px 20px 12px;
+  }
+
+  .gpt-guided-blocks {
+    scroll-margin-bottom: 96px;
+  }
+
+  .gpt-guided-plz,
+  .gpt-guided-lead-form {
+    scroll-margin-bottom: 96px;
+  }
 }
 
 /* Desktop: etwas mehr Luft */
@@ -643,19 +679,23 @@
 
 @media (max-width: 519px) {
   .gpt-guided-chip-scroll {
+    flex-direction: column;
     flex-wrap: nowrap;
-    overflow-x: auto;
-    overflow-y: hidden;
-    -webkit-overflow-scrolling: touch;
-    scrollbar-width: none;
-    padding-bottom: 2px;
-    margin: 0 -2px;
-    padding-left: 2px;
-    padding-right: 2px;
+    overflow: visible;
+    gap: 10px;
   }
 
-  .gpt-guided-chip-scroll::-webkit-scrollbar {
-    display: none;
+  .gpt-guided-chip-scroll .gpt-guided-chip {
+    width: 100%;
+    justify-content: flex-start;
+    min-height: 48px;
+    padding: 0 16px;
+    font-size: 15px;
+    white-space: normal;
+  }
+
+  .gpt-guided-chip-scroll .gpt-guided-chip-label {
+    white-space: normal;
   }
 }
 
@@ -664,13 +704,13 @@
   align-items: center;
   gap: 6px;
   flex-shrink: 0;
-  min-height: 40px;
-  padding: 0 14px;
+  min-height: 44px;
+  padding: 0 16px;
   border-radius: var(--gd-radius-pill);
   border: 1px solid var(--gd-border-strong);
   background: var(--gd-bg-solid);
   font-family: var(--gd-font);
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 600;
   letter-spacing: -0.02em;
   color: var(--gd-text);

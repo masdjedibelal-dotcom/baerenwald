@@ -34,7 +34,9 @@ export async function uploadPartnerComplianceDokument(
   const bezeichnung = String(formData.get("bezeichnung") ?? "").trim();
   const auftragIdRaw = String(formData.get("auftragId") ?? "").trim();
   const auftragId = auftragIdRaw || null;
-  const gueltigBis = String(formData.get("gueltigBis") ?? "").trim() || null;
+  const gueltigBisRaw = String(formData.get("gueltigBis") ?? "").trim();
+  const erneuerungMonateRaw = String(formData.get("erneuerungMonate") ?? "").trim();
+  let gueltigBis = gueltigBisRaw || null;
   const file = formData.get("file");
 
   if (!typ) return { ok: false, error: "Dokumenttyp fehlt." };
@@ -70,9 +72,21 @@ export async function uploadPartnerComplianceDokument(
 
   const { data: typRow } = await supabaseAdmin
     .from("compliance_dokument_typen")
-    .select("bezeichnung")
+    .select("bezeichnung, erneuerung_monate")
     .eq("slug", typ)
     .maybeSingle();
+
+  if (!gueltigBis) {
+    const monate =
+      (erneuerungMonateRaw ? parseInt(erneuerungMonateRaw, 10) : null) ??
+      (typRow as { erneuerung_monate?: number | null } | null)?.erneuerung_monate ??
+      null;
+    if (monate != null && Number.isFinite(monate) && monate > 0) {
+      const d = new Date();
+      d.setMonth(d.getMonth() + monate);
+      gueltigBis = d.toISOString().slice(0, 10);
+    }
+  }
 
   const { error } = await supabaseAdmin.from("partner_dokumente").insert({
     handwerker_id: link.handwerkerId,

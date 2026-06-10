@@ -518,7 +518,7 @@ export function KiRechnerChat({
             placeholder={
               limitReached
                 ? "Nachrichtenlimit erreicht"
-                : "Vorhaben eingeben …"
+                : "Beschreib kurz, was gemacht werden soll …"
             }
             className="ki-rechner-chat-input ki-rechner-chat-textarea"
             disabled={inputDisabled}

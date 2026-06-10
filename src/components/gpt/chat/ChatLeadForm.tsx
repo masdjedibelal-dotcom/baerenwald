@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import type { GptLeadDraft } from "@/lib/gpt-viz/lead-collect";
+import { scrollGuidedBlockIntoView } from "@/lib/gpt-viz/scroll-guided-into-view";
 import { cn } from "@/lib/utils";
 
 type ChatLeadFormProps = {
@@ -26,6 +27,11 @@ export function ChatLeadForm({
   const [kontakt, setKontakt] = useState("");
   const [notizen, setNotizen] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const rootRef = useRef<HTMLFormElement>(null);
+
+  useEffect(() => {
+    scrollGuidedBlockIntoView(rootRef.current);
+  }, []);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -67,7 +73,11 @@ export function ChatLeadForm({
   };
 
   return (
-    <form className={cn("gpt-guided-lead-form", className)} onSubmit={handleSubmit}>
+    <form
+      ref={rootRef}
+      className={cn("gpt-guided-lead-form", className)}
+      onSubmit={handleSubmit}
+    >
       {projectSummary && projectSummary.length > 0 ? (
         <div className="gpt-guided-lead-summary">
           {projectSummary.map((item) => (
@@ -88,6 +98,7 @@ export function ChatLeadForm({
             disabled={disabled}
             placeholder="Max Mustermann"
             onChange={(e) => setName(e.target.value)}
+            onFocus={() => scrollGuidedBlockIntoView(rootRef.current)}
           />
         </label>
 

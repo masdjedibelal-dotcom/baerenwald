@@ -10,7 +10,9 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "dump-prices": "npx tsx scripts/dump-price-overview.ts"
+    "dump-prices": "npx tsx scripts/dump-price-overview.ts",
+    "audit:screenshots": "node scripts/design-audit-screenshots.mjs",
+    "audit:pdf": "node scripts/design-audit-pdf.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.100.1",
@@ -38,6 +40,8 @@
     "@types/react-dom": "^18",
     "eslint": "^8",
     "eslint-config-next": "14.2.35",
+    "pdf-lib": "^1.17.1",
+    "playwright": "^1.60.0",
     "postcss": "^8",
     "tailwindcss": "^3.4.1",
     "tsx": "^4.19.4",

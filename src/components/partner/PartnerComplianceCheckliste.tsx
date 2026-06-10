@@ -2,20 +2,23 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { CheckCircle2, Clock, Upload, XCircle } from "lucide-react";
+import { AlertTriangle, CheckCircle2, Clock, Upload, XCircle } from "lucide-react";
 
 import { uploadPartnerComplianceDokument } from "@/app/actions/partner-compliance";
 import { FileUploadField } from "@/components/shared/FileUploadField";
+import { gruppeComplianceItems } from "@/lib/partner/compliance-summary";
 import {
   complianceStatusLabel,
   type PartnerComplianceItem,
 } from "@/lib/partner/partner-compliance";
+import { fmtPartnerDate } from "@/lib/partner/partner-detail-format";
 import { cn } from "@/lib/utils";
 
 function statusIcon(status: PartnerComplianceItem["status"]) {
   if (status === "erledigt") return CheckCircle2;
   if (status === "in_pruefung") return Clock;
   if (status === "abgelehnt") return XCircle;
+  if (status === "ablauf_warnung" || status === "abgelaufen") return AlertTriangle;
   return Upload;
 }
 
@@ -23,6 +26,8 @@ function statusClass(status: PartnerComplianceItem["status"]): string {
   if (status === "erledigt") return "text-emerald-700 bg-emerald-50";
   if (status === "in_pruefung") return "text-blue-800 bg-blue-50";
   if (status === "abgelehnt") return "text-red-700 bg-red-50";
+  if (status === "abgelaufen") return "text-red-800 bg-red-50";
+  if (status === "ablauf_warnung") return "text-amber-800 bg-amber-50";
   return "text-amber-800 bg-amber-50";
 }
 
@@ -38,19 +43,26 @@ function ComplianceRow({
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [uploadOk, setUploadOk] = useState(false);
   const Icon = statusIcon(item.status);
   const kannHochladen =
-    !disabled && item.status !== "erledigt" && item.status !== "in_pruefung";
+    !disabled &&
+    (item.status === "offen" ||
+      item.status === "abgelehnt" ||
+      item.status === "abgelaufen" ||
+      item.status === "ablauf_warnung");
 
   async function onUpload(files: File[]) {
     const file = files[0];
     if (!file) return;
     setLoading(true);
     setError(null);
+    setUploadOk(false);
     const fd = new FormData();
     fd.set("typ", item.slug);
     fd.set("bezeichnung", item.bezeichnung);
     if (auftragId) fd.set("auftragId", auftragId);
+    if (item.erneuerung_monate) fd.set("erneuerungMonate", String(item.erneuerung_monate));
     fd.set("file", file);
     const res = await uploadPartnerComplianceDokument(fd);
     setLoading(false);
@@ -58,6 +70,7 @@ function ComplianceRow({
       setError(res.error);
       return;
     }
+    setUploadOk(true);
     router.refresh();
   }
 
@@ -75,6 +88,23 @@ function ComplianceRow({
           </p>
           {item.beschreibung ? (
             <p className="portal-text-meta mt-0.5 text-text-secondary">{item.beschreibung}</p>
+          ) : null}
+          {item.dokument?.gueltig_bis ? (
+            <p className="portal-text-meta mt-1 text-text-secondary">
+              Gültig bis: {fmtPartnerDate(item.dokument.gueltig_bis)}
+            </p>
+          ) : null}
+          {item.ablauf_hinweis ? (
+            <p
+              className={cn(
+                "portal-text-meta mt-1 font-medium",
+                item.status === "abgelaufen" || item.status === "offen"
+                  ? "text-red-700"
+                  : "text-amber-800"
+              )}
+            >
+              {item.ablauf_hinweis}
+            </p>
           ) : null}
           {item.status === "abgelehnt" && item.dokument?.ablehnung_grund ? (
             <p className="portal-text-meta mt-1 text-red-700">
@@ -107,12 +137,21 @@ function ComplianceRow({
       {kannHochladen ? (
         <div className="mt-3">
           <FileUploadField
-            label="Datei hochladen"
+            label={
+              item.status === "abgelaufen" || item.status === "ablauf_warnung"
+                ? "Neu hochladen"
+                : "Datei hochladen"
+            }
             accept="application/pdf,.pdf,image/jpeg,image/png,image/webp"
             hint="PDF oder Foto (JPG/PNG)"
             selectedName={loading ? "Wird hochgeladen…" : null}
             onChange={onUpload}
           />
+          {uploadOk ? (
+            <p className="portal-text-meta mt-1 font-medium text-emerald-700" role="status">
+              Hochgeladen — wird von Bärenwald geprüft.
+            </p>
+          ) : null}
           {error ? (
             <p className="portal-text-meta mt-1 text-red-700" role="alert">
               {error}
@@ -124,17 +163,42 @@ function ComplianceRow({
   );
 }
 
+function ItemList({
+  items,
+  auftragId,
+  disabled,
+}: {
+  items: PartnerComplianceItem[];
+  auftragId?: string | null;
+  disabled?: boolean;
+}) {
+  return (
+    <ul className="space-y-2">
+      {items.map((item) => (
+        <ComplianceRow
+          key={`${item.ebene}-${item.slug}`}
+          item={item}
+          auftragId={auftragId}
+          disabled={disabled}
+        />
+      ))}
+    </ul>
+  );
+}
+
 export function PartnerComplianceCheckliste({
   title,
   items,
   auftragId,
   disabled,
+  gruppiert = false,
   emptyText = "Keine Unterlagen erforderlich.",
 }: {
   title: string;
   items: PartnerComplianceItem[];
   auftragId?: string | null;
   disabled?: boolean;
+  gruppiert?: boolean;
   emptyText?: string;
 }) {
   if (!items.length) {
@@ -146,7 +210,13 @@ export function PartnerComplianceCheckliste({
     );
   }
 
-  const offen = items.filter((i) => i.pflicht && i.status !== "erledigt").length;
+  const offen = items.filter(
+    (i) =>
+      i.pflicht &&
+      i.status !== "erledigt" &&
+      i.status !== "in_pruefung" &&
+      i.status !== "ablauf_warnung"
+  ).length;
 
   return (
     <section className="space-y-3">
@@ -160,16 +230,20 @@ export function PartnerComplianceCheckliste({
           <span className="tag bg-emerald-100 text-emerald-700">Vollständig</span>
         )}
       </div>
-      <ul className="space-y-2">
-        {items.map((item) => (
-          <ComplianceRow
-            key={`${item.scope}-${item.slug}`}
-            item={item}
-            auftragId={auftragId}
-            disabled={disabled}
-          />
-        ))}
-      </ul>
+      {gruppiert ? (
+        <div className="space-y-4">
+          {gruppeComplianceItems(items).map((gruppe) => (
+            <div key={gruppe.kategorie} className="space-y-2">
+              <h5 className="portal-text-meta font-semibold uppercase tracking-wide text-text-tertiary">
+                {gruppe.kategorie}
+              </h5>
+              <ItemList items={gruppe.items} auftragId={auftragId} disabled={disabled} />
+            </div>
+          ))}
+        </div>
+      ) : (
+        <ItemList items={items} auftragId={auftragId} disabled={disabled} />
+      )}
     </section>
   );
 }

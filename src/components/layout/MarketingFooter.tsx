@@ -8,6 +8,7 @@ import {
   leistungHref,
   ratgeberHref,
 } from "@/lib/routes";
+import { CookieSettingsLink } from "@/components/consent/CookieSettingsLink";
 import { FooterSocialLinks } from "@/components/layout/FooterSocialLinks";
 import { WHATSAPP_URL_FRAGE } from "@/lib/whatsapp";
 
@@ -140,8 +141,9 @@ export function MarketingFooter() {
           </p>
           <nav className="footer-slim-nav" aria-label="Rechtliches">
             <a href="/impressum">Impressum</a>
-            <a href="/datenschutz">Datenschutz</a>
+            <a href="/datenschutz#cookies-tracking">Datenschutz</a>
             <a href="/agb">AGB</a>
+            <CookieSettingsLink className="footer-slim-nav-link" />
           </nav>
           <p className="footer-slim-copy">© {year} Bärenwald</p>
         </div>

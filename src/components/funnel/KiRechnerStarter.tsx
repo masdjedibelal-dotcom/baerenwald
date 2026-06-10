@@ -15,9 +15,15 @@ export function KiRechnerStarter({ selected, onSelect }: KiRechnerStarterProps) 
       <p className="ki-rechner-starter-eyebrow">Dein Vorhaben</p>
       <h2 className="ki-rechner-starter-h2">Wie willst du starten?</h2>
       <p className="ki-rechner-starter-sub">
-        Neu: Im Chat beraten lassen — was du brauchst, welches Gewerk, und am Ende
-        ein unverbindlicher Preisrahmen. Oder bewährt Schritt für Schritt.
+        Was möchtest du machen? Im Chat beraten lassen — oder bewährt Schritt für
+        Schritt bis zum unverbindlichen Preisrahmen.
       </p>
+
+      <ul className="ki-rechner-starter-trust" aria-label="Vorteile">
+        <li>Kostenlos</li>
+        <li>Unverbindlich</li>
+        <li>München &amp; Umgebung</li>
+      </ul>
 
       <button
         type="button"

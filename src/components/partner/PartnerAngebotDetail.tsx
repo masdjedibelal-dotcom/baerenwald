@@ -18,7 +18,9 @@ import {
   PartnerDetailSection,
   PartnerDetailStickyActions,
   PartnerDetailSuccessBox,
+  PartnerJobFieldActions,
 } from "@/components/partner/PartnerDetailUi";
+import { partnerMapsHref } from "@/lib/partner/partner-maps-href";
 import { PartnerPortalDetailSections } from "@/components/partner/PartnerPortalDetailSections";
 import { PartnerProjektvertragPaket } from "@/components/partner/PartnerProjektvertragPaket";
 import { PartnerComplianceCheckliste } from "@/components/partner/PartnerComplianceCheckliste";
@@ -247,7 +249,7 @@ export function PartnerAngebotDetail({ item }: { item: PartnerAnfrageItem }) {
     meta: [p.menge, p.einheit].filter(Boolean).join(" "),
   }));
 
-  const footer = kannAngebotEinreichen ? (
+  const actionFooter = kannAngebotEinreichen ? (
     <PartnerDetailStickyActions
       primaryLabel="Angebot absenden"
       primaryType="submit"
@@ -262,6 +264,18 @@ export function PartnerAngebotDetail({ item }: { item: PartnerAnfrageItem }) {
       primaryLoading={rechnungLoading}
     />
   ) : undefined;
+  const hasMaps = Boolean(
+    partnerMapsHref({ lead: item.lead, plz: item.plz, ort: item.ort })
+  );
+  const footer =
+    actionFooter || hasMaps ? (
+      <div className="space-y-2">
+        {hasMaps ? (
+          <PartnerJobFieldActions lead={item.lead} plz={item.plz} ort={item.ort} />
+        ) : null}
+        {actionFooter}
+      </div>
+    ) : undefined;
 
   return (
     <PartnerDetailLayout footer={footer}>
@@ -307,10 +321,18 @@ export function PartnerAngebotDetail({ item }: { item: PartnerAnfrageItem }) {
       />
 
       {stammPflichtOffen && !eingereicht ? (
-        <PartnerComplianceCheckliste
-          title="Stamm-Unterlagen (vor Angebotseinreichung)"
-          items={item.compliance_stamm ?? []}
-        />
+        <>
+          <PartnerComplianceCheckliste
+            title="Allgemeine Partnerunterlagen (vor Angebotseinreichung)"
+            items={(item.compliance_stamm ?? []).filter((i) => i.ebene === "allgemein")}
+          />
+          {(item.compliance_stamm ?? []).some((i) => i.ebene === "meister") ? (
+            <PartnerComplianceCheckliste
+              title="Meister & Fachbetrieb"
+              items={(item.compliance_stamm ?? []).filter((i) => i.ebene === "meister")}
+            />
+          ) : null}
+        </>
       ) : null}
 
       {vertragspaketAktiv && item.auftrag_id ? (
@@ -318,6 +340,9 @@ export function PartnerAngebotDetail({ item }: { item: PartnerAnfrageItem }) {
           auftragId={item.auftrag_id}
           gewerkName={item.gewerk_name}
           vertrag={item.projektvertrag ?? null}
+          complianceAllgemein={(item.compliance_stamm ?? []).filter((i) => i.ebene === "allgemein")}
+          complianceMeister={(item.compliance_stamm ?? []).filter((i) => i.ebene === "meister")}
+          complianceLeistung={item.compliance_projekt ?? []}
           complianceStamm={item.compliance_stamm ?? []}
           complianceProjekt={item.compliance_projekt ?? []}
           projektvertrag_bestaetigt_am={item.projektvertrag_bestaetigt_am}

@@ -1,9 +1,19 @@
 import {
   findKundeIdByEmail,
   isKundenEmailUniqueViolation,
+  isKundenRowUniqueViolation,
   normalizeKundenEmail,
 } from "@/lib/kunden/kunde-email";
+import { mapKundenPortalError } from "@/lib/kunden/kunde-portal-errors";
 import { supabaseAdmin } from "@/lib/supabase";
+
+function fail(error: string | { code?: string; message?: string }): LinkPortalKundeResult {
+  const raw = typeof error === "string" ? error : error.message ?? "";
+  if (raw && raw !== mapKundenPortalError(error)) {
+    console.error("[linkPortalKunde]", raw);
+  }
+  return { ok: false, error: mapKundenPortalError(error) };
+}
 
 export type LinkPortalKundeResult =
   | { ok: true; kundeId: string }
@@ -111,8 +121,7 @@ export async function linkPortalKundeToAuthUser(opts: {
   try {
     canonical = await pickCanonicalKundeForLoginEmail(email);
   } catch (e) {
-    const msg = e instanceof Error ? e.message : "Kundenabgleich fehlgeschlagen.";
-    return { ok: false, error: msg };
+    return fail(e instanceof Error ? e.message : "Kundenabgleich fehlgeschlagen.");
   }
 
   if (canonical) {
@@ -137,7 +146,7 @@ export async function linkPortalKundeToAuthUser(opts: {
       })
       .eq("id", canonical.id);
 
-    if (upErr) return { ok: false, error: upErr.message };
+    if (upErr) return fail(upErr);
     return { ok: true, kundeId: String(canonical.id) };
   }
 
@@ -167,7 +176,7 @@ export async function linkPortalKundeToAuthUser(opts: {
     .single();
 
   if (insErr) {
-    if (isKundenEmailUniqueViolation(insErr)) {
+    if (isKundenRowUniqueViolation(insErr)) {
       const existingId = await findKundeIdByEmail(email);
       if (existingId) {
         const { data: existing } = await supabaseAdmin
@@ -190,15 +199,18 @@ export async function linkPortalKundeToAuthUser(opts: {
           .from("kunden")
           .update({ auth_user_id: opts.userId, email })
           .eq("id", existingId);
-        if (upErr) return { ok: false, error: upErr.message };
+        if (upErr) return fail(upErr);
         return { ok: true, kundeId: existingId };
       }
+      if (isKundenEmailUniqueViolation(insErr)) {
+        return fail(insErr);
+      }
     }
-    return { ok: false, error: insErr.message };
+    return fail(insErr);
   }
 
   if (!neu) {
-    return { ok: false, error: "Kundenstamm konnte nicht angelegt werden." };
+    return fail("Kundenstamm konnte nicht angelegt werden.");
   }
 
   return { ok: true, kundeId: String(neu.id) };

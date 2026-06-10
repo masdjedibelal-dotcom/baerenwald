@@ -1,5 +1,4 @@
-import posthog from "posthog-js";
-
+import { capturePostHogEvent } from "@/lib/consent/posthog-client";
 import { recordMarketingClick } from "@/lib/marketing/journey-storage";
 
 /** Kurzlabel für Lead-/Preis-Events (Situation + Gewerke). */
@@ -17,7 +16,7 @@ function ph(
   event: string,
   props?: Record<string, string | number | undefined>
 ): void {
-  posthog.capture(event, props);
+  capturePostHogEvent(event, props);
 }
 
 export const track = {

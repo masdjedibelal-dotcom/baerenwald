@@ -25,6 +25,9 @@ export function PartnerProjektvertragPaket({
   auftragId,
   gewerkName,
   vertrag,
+  complianceAllgemein,
+  complianceMeister,
+  complianceLeistung,
   complianceStamm,
   complianceProjekt,
   projektvertrag_bestaetigt_am,
@@ -33,6 +36,9 @@ export function PartnerProjektvertragPaket({
   auftragId: string;
   gewerkName?: string;
   vertrag: PartnerProjektvertrag | null;
+  complianceAllgemein?: PartnerComplianceItem[];
+  complianceMeister?: PartnerComplianceItem[];
+  complianceLeistung?: PartnerComplianceItem[];
   complianceStamm: PartnerComplianceItem[];
   complianceProjekt: PartnerComplianceItem[];
   projektvertrag_bestaetigt_am?: string | null;
@@ -46,9 +52,14 @@ export function PartnerProjektvertragPaket({
   const [confirmOpen, setConfirmOpen] = useState(false);
 
   const bestaetigt = Boolean(projektvertrag_bestaetigt_am);
+  const allgemein = complianceAllgemein ?? complianceStamm.filter((i) => i.ebene === "allgemein");
+  const meister = complianceMeister ?? complianceStamm.filter((i) => i.ebene === "meister");
+  const leistung = complianceLeistung ?? complianceProjekt;
+
   const allePflicht = [
-    ...complianceStamm.filter((i) => i.pflicht),
-    ...complianceProjekt.filter((i) => i.pflicht),
+    ...allgemein.filter((i) => i.pflicht),
+    ...meister.filter((i) => i.pflicht),
+    ...leistung.filter((i) => i.pflicht),
   ];
   const pflichtOffen = compliancePflichtOffen(allePflicht);
   const kannBestaetigen =
@@ -135,14 +146,22 @@ export function PartnerProjektvertragPaket({
       </PartnerDetailSection>
 
       <PartnerComplianceCheckliste
-        title="Stamm-Unterlagen"
-        items={complianceStamm}
+        title="Allgemeine Partnerunterlagen"
+        items={allgemein}
         disabled={bestaetigt}
       />
 
+      {meister.length > 0 ? (
+        <PartnerComplianceCheckliste
+          title="Meister & Fachbetrieb"
+          items={meister}
+          disabled={bestaetigt}
+        />
+      ) : null}
+
       <PartnerComplianceCheckliste
-        title="Projekt-Unterlagen"
-        items={complianceProjekt}
+        title="Leistungsvertrag & Auftrag"
+        items={leistung}
         auftragId={auftragId}
         disabled={bestaetigt}
       />

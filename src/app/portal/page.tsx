@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 
 import { PortalClient } from "@/components/portal/PortalClient";
 import { PortalAuthShell } from "@/components/portal/PortalAuthShell";
+import { SITE_CONFIG } from "@/lib/config";
 import { getPortalDataForKunde } from "@/lib/portal/get-portal-data";
 import { linkPortalKundeToAuthUser } from "@/lib/portal/link-portal-kunde";
 import { createClient } from "@/lib/supabase/server";
@@ -50,11 +51,19 @@ export default async function PortalDashboardPage() {
     return (
       <PortalAuthShell title="Konto konnte nicht verknüpft werden">
         <p className="portal-text-body text-text-secondary">{link.error}</p>
-        <form action="/portal/auth/signout" method="post" className="mt-4">
-          <button type="submit" className="btn-pill-outline w-full !py-2.5">
-            Abmelden
-          </button>
-        </form>
+        <div className="mt-4 flex flex-col gap-2">
+          <a
+            href={`mailto:${SITE_CONFIG.email}?subject=${encodeURIComponent("MeinBärenwald – Konto verknüpfen")}`}
+            className="btn-pill-primary w-full text-center !py-2.5"
+          >
+            Support kontaktieren
+          </a>
+          <form action="/portal/auth/signout" method="post">
+            <button type="submit" className="btn-pill-outline w-full !py-2.5">
+              Abmelden
+            </button>
+          </form>
+        </div>
       </PortalAuthShell>
     );
   }

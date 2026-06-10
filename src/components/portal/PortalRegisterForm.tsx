@@ -12,6 +12,10 @@ export function PortalRegisterForm() {
   const [email, setEmail] = useState("");
   const [telefon, setTelefon] = useState("");
   const [password, setPassword] = useState("");
+  const [datenschutz, setDatenschutz] = useState(false);
+  const [agb, setAgb] = useState(false);
+  const [datenschutzError, setDatenschutzError] = useState(false);
+  const [agbError, setAgbError] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
@@ -20,10 +24,26 @@ export function PortalRegisterForm() {
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
+    let hasError = false;
+    if (!datenschutz) {
+      setDatenschutzError(true);
+      hasError = true;
+    } else {
+      setDatenschutzError(false);
+    }
+    if (!agb) {
+      setAgbError(true);
+      hasError = true;
+    } else {
+      setAgbError(false);
+    }
+    if (hasError) return;
+
     setLoading(true);
     setError(null);
     const supabase = getSupabaseBrowserClient();
     const trimmedEmail = email.trim();
+    const now = new Date().toISOString();
     const { data, error: signUpError } = await supabase.auth.signUp({
       email: trimmedEmail,
       password,
@@ -32,6 +52,8 @@ export function PortalRegisterForm() {
         data: {
           name: name.trim(),
           telefon: telefon.trim() || null,
+          datenschutz_akzeptiert_at: now,
+          agb_akzeptiert_at: now,
         },
       },
     });
@@ -153,6 +175,65 @@ export function PortalRegisterForm() {
           className="portal-input w-full rounded-xl border border-border-default bg-surface-card px-3 py-3 focus:border-accent"
         />
       </label>
+
+      <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-border-light bg-muted/20 p-3">
+        <input
+          type="checkbox"
+          checked={datenschutz}
+          onChange={(e) => {
+            setDatenschutz(e.target.checked);
+            if (e.target.checked) setDatenschutzError(false);
+          }}
+          className="mt-0.5 h-4 w-4 shrink-0 accent-[#2E7D52]"
+        />
+        <span className="portal-text-body text-text-primary">
+          Ich habe die{" "}
+          <a
+            href="/datenschutz#meinbaerenwald"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="font-medium text-accent underline-offset-2 hover:underline"
+          >
+            Datenschutzerklärung
+          </a>{" "}
+          gelesen und stimme der Verarbeitung meiner Daten in MeinBärenwald zu.
+        </span>
+      </label>
+      {datenschutzError ? (
+        <p className="portal-text-body -mt-2 text-red-700">
+          Bitte stimme der Datenschutzerklärung zu.
+        </p>
+      ) : null}
+
+      <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-border-light bg-muted/20 p-3">
+        <input
+          type="checkbox"
+          checked={agb}
+          onChange={(e) => {
+            setAgb(e.target.checked);
+            if (e.target.checked) setAgbError(false);
+          }}
+          className="mt-0.5 h-4 w-4 shrink-0 accent-[#2E7D52]"
+        />
+        <span className="portal-text-body text-text-primary">
+          Ich habe die{" "}
+          <a
+            href="/agb"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="font-medium text-accent underline-offset-2 hover:underline"
+          >
+            Allgemeinen Geschäftsbedingungen
+          </a>{" "}
+          gelesen und akzeptiere sie für die Nutzung des Kundenportals sowie für
+          künftige Beauftragungen über Bärenwald.
+        </span>
+      </label>
+      {agbError ? (
+        <p className="portal-text-body -mt-2 text-red-700">
+          Bitte akzeptiere die AGB.
+        </p>
+      ) : null}
 
       <button
         type="submit"

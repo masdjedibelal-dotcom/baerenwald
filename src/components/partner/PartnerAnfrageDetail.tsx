@@ -14,6 +14,7 @@ import {
   PartnerDetailLeistungenList,
   PartnerDetailSection,
   PartnerDetailStickyActions,
+  PartnerJobFieldActions,
 } from "@/components/partner/PartnerDetailUi";
 import { PartnerPortalDetailSections } from "@/components/partner/PartnerPortalDetailSections";
 import {
@@ -25,6 +26,7 @@ import {
   isPartnerAnfrageOffen,
   partnerAnfrageStatusLabel,
 } from "@/lib/partner/partner-anfrage-status";
+import { partnerMapsHref } from "@/lib/partner/partner-maps-href";
 import {
   buildPartnerAnfragePortalSections,
   partnerDetailDateMetaLine,
@@ -101,7 +103,7 @@ export function PartnerAnfrageDetail({ item }: { item: PartnerAnfrageItem }) {
           : undefined,
   }));
 
-  const footer =
+  const actionFooter =
     kannAntworten && !showReject ? (
       <PartnerDetailStickyActions
         primaryLabel="Anfrage annehmen"
@@ -120,6 +122,19 @@ export function PartnerAnfrageDetail({ item }: { item: PartnerAnfrageItem }) {
         onSecondary={() => setShowReject(false)}
         secondaryDisabled={loading}
       />
+    ) : null;
+
+  const hasMaps = Boolean(
+    partnerMapsHref({ lead: item.lead, plz: item.plz, ort: item.ort })
+  );
+  const footer =
+    actionFooter || hasMaps ? (
+      <div className="space-y-2">
+        {hasMaps ? (
+          <PartnerJobFieldActions lead={item.lead} plz={item.plz} ort={item.ort} />
+        ) : null}
+        {actionFooter}
+      </div>
     ) : undefined;
 
   return (

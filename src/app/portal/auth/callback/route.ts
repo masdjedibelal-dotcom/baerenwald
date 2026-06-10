@@ -20,12 +20,18 @@ export async function GET(request: Request) {
           name?: string;
           telefon?: string;
         };
-        await linkPortalKundeToAuthUser({
+        const link = await linkPortalKundeToAuthUser({
           userId: user.id,
           email: user.email,
           name: meta?.name ?? user.email.split("@")[0],
           telefon: meta?.telefon,
         });
+        if (!link.ok) {
+          console.error("[portal/auth/callback] link failed:", link.error);
+          return NextResponse.redirect(
+            `${origin}/portal/login?error=link&msg=${encodeURIComponent(link.error.slice(0, 160))}`
+          );
+        }
       }
       const safeNext = next.startsWith("/portal") ? next : "/portal";
       return NextResponse.redirect(`${origin}${safeNext}`);

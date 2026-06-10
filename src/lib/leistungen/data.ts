@@ -1048,8 +1048,13 @@ export function buildLeistungsDataFallback(base: string): LeistungsData | null {
 }
 
 export function leistungBaseSlugFromParam(slug: string): string | null {
-  if (!slug.endsWith("-muenchen")) return null;
-  const base = slug.slice(0, -"-muenchen".length);
+  const raw = slug.trim();
+  if (!raw) return null;
+
+  const base = raw.endsWith("-muenchen")
+    ? raw.slice(0, -"-muenchen".length)
+    : raw;
+
   if (LEISTUNGEN_DATA[base]) return base;
   if (LEISTUNGEN.some((l) => l.slug === base)) return base;
   return null;

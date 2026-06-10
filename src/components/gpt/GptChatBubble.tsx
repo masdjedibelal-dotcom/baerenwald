@@ -11,6 +11,8 @@ type GptChatBubbleProps = {
   onAction?: (actionId: string) => void;
   onLeadSubmit?: (draft: GptLeadDraft) => void;
   disabled?: boolean;
+  /** Journey-Bar oben zeigt Summary — Chips in Bubbles ausblenden. */
+  suppressSummaryBlocks?: boolean;
 };
 
 export function GptChatBubble({
@@ -18,8 +20,13 @@ export function GptChatBubble({
   onAction,
   onLeadSubmit,
   disabled,
+  suppressSummaryBlocks = false,
 }: GptChatBubbleProps) {
   const isUser = message.role === "user";
+  const blocks =
+    suppressSummaryBlocks && message.blocks
+      ? message.blocks.filter((b) => b.type !== "summary")
+      : message.blocks;
 
   return (
     <div
@@ -59,9 +66,9 @@ export function GptChatBubble({
           </div>
         ) : null}
 
-        {message.blocks && message.blocks.length > 0 && onAction ? (
+        {blocks && blocks.length > 0 && onAction ? (
           <ChatGuidedBlocks
-            blocks={message.blocks}
+            blocks={blocks}
             onAction={onAction}
             onLeadSubmit={onLeadSubmit}
             disabled={disabled}

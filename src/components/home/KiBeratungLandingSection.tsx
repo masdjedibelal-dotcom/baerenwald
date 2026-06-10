@@ -1,8 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import posthog from "posthog-js";
-
+import { capturePostHogEvent } from "@/lib/consent/posthog-client";
 import { RECHNER_KI_BERATUNG_HREF } from "@/lib/rechner-links";
 
 const STEPS = [
@@ -59,7 +58,7 @@ export function KiBeratungLandingSection() {
           href={RECHNER_KI_BERATUNG_HREF}
           className="ki-beratung-landing-cta"
           onClick={() =>
-            posthog.capture("landing_ki_beratung_cta_clicked", {
+            capturePostHogEvent("landing_ki_beratung_cta_clicked", {
               location: "section",
             })
           }

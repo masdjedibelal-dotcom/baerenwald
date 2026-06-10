@@ -2,46 +2,35 @@
 
 import posthog from "posthog-js";
 import { PostHogProvider } from "posthog-js/react";
-import { useEffect, useMemo } from "react";
+import { useCallback, useMemo, useState } from "react";
 
+import { CookieConsentProvider } from "@/components/consent/CookieConsentContext";
 import { MarketingJourneyTracker } from "@/components/marketing/MarketingJourneyTracker";
-import { getPostHogHost, getPostHogProjectToken } from "@/lib/posthog-env";
+import { isPostHogInitialized } from "@/lib/consent/posthog-client";
+import { getPostHogProjectToken } from "@/lib/posthog-env";
 
-/**
- * PostHog im Browser (Next.js 14 App Router).
- * Ab Next 15.3+ alternativ `instrumentation-client.ts` möglich — Provider bleibt mit Next 14 kompatibel.
- */
 export function PHProvider({ children }: { children: React.ReactNode }) {
   const hasToken = useMemo(() => Boolean(getPostHogProjectToken()), []);
+  const [statisticsEnabled, setStatisticsEnabled] = useState(false);
 
-  useEffect(() => {
-    const token = getPostHogProjectToken();
-    if (!token) return;
-
-    posthog.init(token, {
-      api_host: getPostHogHost(),
-      ui_host:
-        process.env.NEXT_PUBLIC_POSTHOG_UI_HOST?.trim() ||
-        "https://eu.posthog.com",
-      defaults: "2026-01-30",
-      capture_exceptions: true,
-      debug: process.env.NODE_ENV === "development",
-    });
+  const onStatisticsChange = useCallback((enabled: boolean) => {
+    setStatisticsEnabled(enabled);
   }, []);
 
-  if (!hasToken) {
-    return (
-      <>
-        <MarketingJourneyTracker />
-        {children}
-      </>
-    );
-  }
-
-  return (
-    <PostHogProvider client={posthog}>
+  const content = (
+    <CookieConsentProvider onStatisticsChange={onStatisticsChange}>
       <MarketingJourneyTracker />
       {children}
-    </PostHogProvider>
+    </CookieConsentProvider>
   );
+
+  if (!hasToken) {
+    return content;
+  }
+
+  if (statisticsEnabled && isPostHogInitialized()) {
+    return <PostHogProvider client={posthog}>{content}</PostHogProvider>;
+  }
+
+  return content;
 }

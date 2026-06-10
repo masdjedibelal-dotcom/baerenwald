@@ -40,8 +40,8 @@ import {
   heroKategorieLabel,
   type HeroSearchSuggestion,
 } from "@/lib/search";
-import posthog from "posthog-js";
 import { track } from "@/lib/analytics";
+import { capturePostHogEvent } from "@/lib/consent/posthog-client";
 
 const TESTIMONIALS = [
   {
@@ -373,6 +373,9 @@ export default function BaerenwaldLandingClient({
   const [searchFocused, setSearchFocused] = useState(false);
   const [suggestActive, setSuggestActive] = useState(-1);
   const [faqOpen, setFaqOpen] = useState<number | null>(0);
+  const [mobileOpen, setMobileOpen] = useState(false);
+
+  const closeMobile = () => setMobileOpen(false);
 
   const searchSuggestions = useMemo(
     () => getHeroSearchSuggestions(searchQ, 5),
@@ -436,6 +439,17 @@ export default function BaerenwaldLandingClient({
   }, []);
 
   useEffect(() => {
+    if (mobileOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [mobileOpen]);
+
+  useEffect(() => {
     if (!searchFocused) return;
     const onDocDown = (ev: MouseEvent) => {
       const t = ev.target as Node;
@@ -460,7 +474,7 @@ export default function BaerenwaldLandingClient({
 
   const onSearch = (e: FormEvent) => {
     e.preventDefault();
-    posthog.capture("hero_search_submitted", { query: searchQ });
+    capturePostHogEvent("hero_search_submitted", { query: searchQ });
     if (
       showSearchSuggestions &&
       suggestActive >= 0 &&
@@ -513,7 +527,70 @@ export default function BaerenwaldLandingClient({
         <Link href="/rechner" className="nav-cta">
           Angebot anfordern
         </Link>
+        <button
+          type="button"
+          className="landing-nav-mobile-toggle"
+          onClick={() => setMobileOpen(true)}
+          aria-label="Menü öffnen"
+        >
+          <svg width="22" height="22" viewBox="0 0 22 22" fill="none" aria-hidden>
+            <path
+              d="M3 6h16M3 11h16M3 16h16"
+              stroke="currentColor"
+              strokeWidth="1.8"
+              strokeLinecap="round"
+            />
+          </svg>
+        </button>
       </header>
+
+      {mobileOpen ? (
+        <div className="site-mobile-menu" role="dialog" aria-modal="true">
+          <div className="site-mobile-menu-head">
+            <Link href="/" className="logo" onClick={closeMobile}>
+              <Image
+                src="/logo-mark-green.png"
+                alt="Bärenwald München"
+                width={36}
+                height={36}
+                className="logo-img"
+              />
+              <span>Bärenwald</span>
+            </Link>
+            <button
+              type="button"
+              className="site-mobile-close"
+              onClick={closeMobile}
+              aria-label="Menü schließen"
+            >
+              ✕
+            </button>
+          </div>
+          <nav className="site-mobile-links" aria-label="Hauptnavigation">
+            <a href="#how" onClick={closeMobile}>
+              Wie es funktioniert
+            </a>
+            <a href="#leistungen" onClick={closeMobile}>
+              Leistungen
+            </a>
+            <a href="#faq" onClick={closeMobile}>
+              FAQ
+            </a>
+            <a href="#kontakt" onClick={closeMobile}>
+              Kontakt
+            </a>
+            <Link href="/ratgeber" onClick={closeMobile}>
+              Ratgeber
+            </Link>
+            <Link href={RECHNER_KI_BERATUNG_HREF} onClick={closeMobile}>
+              BärenwaldGPT
+            </Link>
+          </nav>
+          <Link href="/rechner" className="site-mobile-cta" onClick={closeMobile}>
+            Preisrahmen berechnen →
+          </Link>
+        </div>
+      ) : null}
 
       <section className="hero-shell">
         <div className="hero-bg" aria-hidden>
@@ -597,7 +674,7 @@ export default function BaerenwaldLandingClient({
                       href={RECHNER_KI_BERATUNG_HREF}
                       className="hero-ki-cta"
                       onClick={() =>
-                        posthog.capture("landing_ki_beratung_cta_clicked", {
+                        capturePostHogEvent("landing_ki_beratung_cta_clicked", {
                           location: "hero",
                         })
                       }
@@ -748,7 +825,9 @@ export default function BaerenwaldLandingClient({
             <a
               href={SITE_CONFIG.phoneHref}
               className="final-cta-btn-ghost"
-              onClick={() => posthog.capture("cta_phone_clicked", { location: "final_cta" })}
+              onClick={() =>
+                capturePostHogEvent("cta_phone_clicked", { location: "final_cta" })
+              }
             >
               {SITE_CONFIG.phone} anrufen
             </a>
@@ -788,7 +867,9 @@ export default function BaerenwaldLandingClient({
               <a
                 href={SITE_CONFIG.phoneHref}
                 className="btn-cta"
-                onClick={() => posthog.capture("cta_phone_clicked", { location: "faq" })}
+                onClick={() =>
+                  capturePostHogEvent("cta_phone_clicked", { location: "faq" })
+                }
               >
                 {SITE_CONFIG.phone}
               </a>

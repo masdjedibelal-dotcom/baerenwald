@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import {
   Briefcase,
+  CalendarDays,
   ClipboardList,
   FileText,
   LayoutDashboard,
@@ -12,9 +13,12 @@ import {
   MessageCircle,
   MessagesSquare,
   Phone,
+  User,
 } from "lucide-react";
 
 import { PartnerAnfrageDetail } from "@/components/partner/PartnerAnfrageDetail";
+import { PartnerPlanerPanel } from "@/components/partner/PartnerPlanerPanel";
+import { PartnerProfilPanel } from "@/components/partner/PartnerProfilPanel";
 import { PartnerAngebotDetail } from "@/components/partner/PartnerAngebotDetail";
 import { PartnerAuftragAnfrageDetail } from "@/components/partner/PartnerAuftragAnfrageDetail";
 import { PartnerAuftragDetail } from "@/components/partner/PartnerAuftragDetail";
@@ -27,11 +31,15 @@ import {
 } from "@/components/partner/PartnerListPagination";
 import { PORTAL_OVERVIEW_PAGE_SIZE } from "@/components/shared/PortalListPagination";
 import { PortalBaerenwaldGpt } from "@/components/portal/PortalBaerenwaldGpt";
+import { PortalLegalFooter } from "@/components/shared/PortalLegalFooter";
 import { SITE_CONFIG } from "@/lib/config";
 import type {
   PartnerAnfrageItem,
   PartnerAuftragItem,
   PartnerHandwerkerProfil,
+  PartnerProfilKontext,
+  PartnerTerminItem,
+  PartnerTodoItem,
 } from "@/lib/partner/get-partner-data";
 import {
   angebotPhaseSortKey,
@@ -48,7 +56,14 @@ import {
 import { isPartnerAnfrageOffen } from "@/lib/partner/partner-anfrage-status";
 import { cn } from "@/lib/utils";
 
-type PartnerSection = "uebersicht" | "anfragen" | "angebote" | "auftraege" | "gpt";
+type PartnerSection =
+  | "uebersicht"
+  | "profil"
+  | "planer"
+  | "anfragen"
+  | "angebote"
+  | "auftraege"
+  | "gpt";
 type OverviewTabId = "anfragen" | "angebote" | "auftraege";
 
 const MENU_ITEMS: Array<{
@@ -57,6 +72,8 @@ const MENU_ITEMS: Array<{
   icon: typeof LayoutDashboard;
 }> = [
   { id: "uebersicht", label: "Übersicht", icon: LayoutDashboard },
+  { id: "profil", label: "Profil", icon: User },
+  { id: "planer", label: "Planer", icon: CalendarDays },
   { id: "anfragen", label: "Anfragen", icon: ClipboardList },
   { id: "angebote", label: "Angebote", icon: FileText },
   { id: "auftraege", label: "Aufträge", icon: Briefcase },
@@ -117,6 +134,9 @@ function emptyLabelForTab(tab: OverviewTabId): string {
 
 export function PartnerClient({
   handwerker,
+  profil,
+  termine,
+  todos,
   anfragen,
   angebote,
   angeboteAlleAkzeptiert,
@@ -124,6 +144,9 @@ export function PartnerClient({
   auftraege,
 }: {
   handwerker: PartnerHandwerkerProfil;
+  profil: PartnerProfilKontext;
+  termine: PartnerTerminItem[];
+  todos: PartnerTodoItem[];
   /** Offene angebot_handwerker-Anfragen (Server-Filter). */
   anfragen: PartnerAnfrageItem[];
   /** Akzeptiert, hw_status !== uebernommen (Server-Filter). */
@@ -147,6 +170,9 @@ export function PartnerClient({
   const [gptOpen, setGptOpen] = useState(false);
   const [bewertungExpanded, setBewertungExpanded] = useState(false);
   const [listPage, setListPage] = useState(1);
+  const [overviewQuickFilter, setOverviewQuickFilter] = useState<
+    "alle" | "heute" | "offen"
+  >("alle");
 
   const displayName = handwerker.firma?.trim() || handwerker.name;
   const vorname = (handwerker.name || "Partner").split(" ")[0] || "Partner";
@@ -227,19 +253,49 @@ export function PartnerClient({
     return auftraegeCardRows;
   }, [overviewTab, anfragenCardRows, angeboteCardRows, auftraegeCardRows]);
 
+  const filteredOverviewCardRows = useMemo(() => {
+    if (overviewQuickFilter === "alle") return overviewCardRows;
+    if (overviewQuickFilter === "heute") {
+      const start = new Date();
+      start.setHours(0, 0, 0, 0);
+      const end = new Date();
+      end.setHours(23, 59, 59, 999);
+      const startMs = start.getTime();
+      const endMs = end.getTime();
+      return overviewCardRows.filter(
+        (r) => r.sortDate >= startMs && r.sortDate <= endMs
+      );
+    }
+    return overviewCardRows.filter((r) =>
+      /offen|neu|ausstehend|angefragt|warten/i.test(r.statusLabel)
+    );
+  }, [overviewCardRows, overviewQuickFilter]);
+
+  const heuteTermineCount = useMemo(() => {
+    const start = new Date();
+    start.setHours(0, 0, 0, 0);
+    const end = new Date();
+    end.setHours(23, 59, 59, 999);
+    return termine.filter((t) => {
+      if (!t.sortDatum) return false;
+      const d = new Date(t.sortDatum).getTime();
+      return d >= start.getTime() && d <= end.getTime();
+    }).length;
+  }, [termine]);
+
   const overviewTotalPages = Math.max(
     1,
-    Math.ceil(overviewCardRows.length / PORTAL_OVERVIEW_PAGE_SIZE)
+    Math.ceil(filteredOverviewCardRows.length / PORTAL_OVERVIEW_PAGE_SIZE)
   );
   const overviewSafePage = Math.min(overviewPage, overviewTotalPages);
-  const paginatedOverviewCardRows = overviewCardRows.slice(
+  const paginatedOverviewCardRows = filteredOverviewCardRows.slice(
     (overviewSafePage - 1) * PORTAL_OVERVIEW_PAGE_SIZE,
     overviewSafePage * PORTAL_OVERVIEW_PAGE_SIZE
   );
 
   useEffect(() => {
     setOverviewPage(1);
-  }, [overviewTab]);
+  }, [overviewTab, overviewQuickFilter]);
 
   const selectedAnfrageParsed = parseAnfragenSelectedId(selectedId);
 
@@ -292,6 +348,18 @@ export function PartnerClient({
   useEffect(() => {
     const s = searchParams.get("section")?.trim();
     if (!s) return;
+
+    if (s === "profil" || s === "unterlagen") {
+      setSection("profil");
+      setMobileDetailOpen(false);
+      return;
+    }
+
+    if (s === "planer") {
+      setSection("planer");
+      setMobileDetailOpen(false);
+      return;
+    }
 
     if (s === "auftraege") {
       const auftragId =
@@ -363,12 +431,31 @@ export function PartnerClient({
     }
   }, [searchParams, auftraege, anfragen, angeboteAlleAkzeptiert, auftragAnfragen]);
 
+  function geheZuAuftrag(auftragId: string) {
+    setSection("auftraege");
+    setSelectedId(auftragId);
+    setListPage(1);
+    setMobileDetailOpen(true);
+  }
+
+  function navigateFromPlaner(
+    target: PartnerTerminItem["section"],
+    selectedId?: string
+  ) {
+    setSection(target);
+    setListPage(1);
+    if (selectedId) {
+      setSelectedId(selectedId);
+      if (target !== "profil") setMobileDetailOpen(true);
+    }
+  }
+
   function switchSection(id: PartnerSection) {
     setSection(id);
     setListPage(1);
     setMobileDetailOpen(false);
     if (id !== "gpt") setGptOpen(false);
-    if (id === "uebersicht" || id === "gpt") return;
+    if (id === "uebersicht" || id === "gpt" || id === "profil" || id === "planer") return;
     if (id === "anfragen") setSelectedId(firstAnfrageId(anfragen, auftragAnfragen));
     else if (id === "angebote") setSelectedId(angeboteSorted[0]?.id ?? null);
     else if (id === "auftraege") setSelectedId(auftraege[0]?.id ?? null);
@@ -537,13 +624,15 @@ export function PartnerClient({
                     {label}
                   </span>
                   <span className="portal-text-meta text-text-tertiary">
-                    {id === "anfragen"
-                      ? offeneAnfragenCount
-                      : id === "angebote"
-                        ? angebote.length
-                        : id === "auftraege"
-                          ? auftraege.length
-                          : ""}
+                    {id === "planer"
+                      ? termine.length + todos.filter((t) => !t.erledigt).length
+                      : id === "anfragen"
+                        ? offeneAnfragenCount
+                        : id === "angebote"
+                          ? angebote.length
+                          : id === "auftraege"
+                            ? auftraege.length
+                            : ""}
                   </span>
                 </button>
               ))}
@@ -558,6 +647,26 @@ export function PartnerClient({
                 variant="embedded"
                 open
                 onClose={() => setSection("uebersicht")}
+              />
+            </article>
+          ) : null}
+
+          {section === "profil" ? (
+            <article className="card-bordered p-4 sm:p-5">
+              <PartnerProfilPanel
+                handwerker={handwerker}
+                profil={profil}
+                onGeheZuAuftrag={geheZuAuftrag}
+              />
+            </article>
+          ) : null}
+
+          {section === "planer" ? (
+            <article className="card-bordered p-4 sm:p-5">
+              <PartnerPlanerPanel
+                termine={termine}
+                todos={todos}
+                onNavigate={navigateFromPlaner}
               />
             </article>
           ) : null}
@@ -587,6 +696,51 @@ export function PartnerClient({
                   <p className="portal-kpi-value">{aktiveAuftraegeCount}</p>
                 </article>
               </div>
+
+              {(heuteTermineCount > 0 || todos.some((t) => !t.erledigt)) && (
+                <article className="card-bordered border-accent/20 bg-accent-light/30 p-4 lg:hidden">
+                  <p className="portal-text-label text-accent">Heute</p>
+                  <p className="portal-text-body mt-1 text-text-primary">
+                    {heuteTermineCount > 0
+                      ? `${heuteTermineCount} Termin${heuteTermineCount === 1 ? "" : "e"}`
+                      : "Keine Termine"}
+                    {todos.some((t) => !t.erledigt)
+                      ? ` · ${todos.filter((t) => !t.erledigt).length} Aufgaben`
+                      : ""}
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => switchSection("planer")}
+                    className="btn-pill-primary portal-btn mt-3 w-full !justify-center !py-2.5"
+                  >
+                    Planer öffnen
+                  </button>
+                </article>
+              )}
+
+              {(termine.length > 0 || todos.some((t) => !t.erledigt)) && (
+                <button
+                  type="button"
+                  onClick={() => switchSection("planer")}
+                  className="card-bordered flex w-full items-center justify-between gap-3 p-4 text-left transition-colors hover:border-accent/30 lg:hidden"
+                >
+                  <div className="flex items-center gap-3">
+                    <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-accent-light text-accent">
+                      <CalendarDays className="h-5 w-5" aria-hidden />
+                    </span>
+                    <div>
+                      <p className="portal-text-body font-semibold text-text-primary">Planer</p>
+                      <p className="portal-text-meta text-text-secondary">
+                        {termine.length} Termine
+                        {todos.some((t) => !t.erledigt)
+                          ? ` · ${todos.filter((t) => !t.erledigt).length} Aufgaben`
+                          : ""}
+                      </p>
+                    </div>
+                  </div>
+                  <span className="portal-text-body font-semibold text-accent">Öffnen →</span>
+                </button>
+              )}
 
               {handwerker.bewertung.bewertung_anzahl >= 1 &&
               handwerker.bewertung.bewertung_gesamt != null ? (
@@ -643,6 +797,29 @@ export function PartnerClient({
 
               <article className="card-bordered p-4">
                 <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+                  <div className="flex flex-wrap gap-2">
+                    {(
+                      [
+                        ["alle", "Alle"],
+                        ["heute", "Heute"],
+                        ["offen", "Offen"],
+                      ] as const
+                    ).map(([id, label]) => (
+                      <button
+                        key={id}
+                        type="button"
+                        onClick={() => setOverviewQuickFilter(id)}
+                        className={cn(
+                          "rounded-full px-3 py-1.5 portal-text-meta font-semibold",
+                          overviewQuickFilter === id
+                            ? "bg-accent text-white"
+                            : "bg-muted text-text-secondary"
+                        )}
+                      >
+                        {label}
+                      </button>
+                    ))}
+                  </div>
                   <div className="flex gap-2">
                     {(
                       [
@@ -679,9 +856,11 @@ export function PartnerClient({
                 </div>
 
                 <div className="space-y-2">
-                  {overviewCardRows.length === 0 ? (
+                  {filteredOverviewCardRows.length === 0 ? (
                     <p className="portal-text-body rounded-xl border border-dashed border-border-light bg-muted/20 px-3 py-6 text-center text-text-secondary">
-                      {emptyLabelForTab(overviewTab)}
+                      {overviewQuickFilter === "alle"
+                        ? emptyLabelForTab(overviewTab)
+                        : "Keine Einträge für diesen Filter."}
                     </p>
                   ) : (
                     paginatedOverviewCardRows.map((row) =>
@@ -689,9 +868,9 @@ export function PartnerClient({
                     )
                   )}
                 </div>
-                {overviewCardRows.length > PORTAL_OVERVIEW_PAGE_SIZE ? (
+                {filteredOverviewCardRows.length > PORTAL_OVERVIEW_PAGE_SIZE ? (
                   <PartnerListPagination
-                    totalItems={overviewCardRows.length}
+                    totalItems={filteredOverviewCardRows.length}
                     itemLabel={
                       overviewTab === "anfragen"
                         ? "Anfragen"
@@ -749,7 +928,10 @@ export function PartnerClient({
             </div>
           ) : null}
 
-          {section !== "uebersicht" && section !== "gpt" ? (
+          {section !== "uebersicht" &&
+          section !== "gpt" &&
+          section !== "profil" &&
+          section !== "planer" ? (
             <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
               <article className="card-bordered overflow-hidden p-0">
                 <div className="space-y-2 p-3 sm:p-4">
@@ -856,6 +1038,8 @@ export function PartnerClient({
           mobileDetailOpen &&
           section !== "uebersicht" &&
           section !== "gpt" &&
+          section !== "profil" &&
+          section !== "planer" &&
           !sectionListEmpty
         }
         onClose={() => setMobileDetailOpen(false)}
@@ -871,6 +1055,11 @@ export function PartnerClient({
           setGptOpen(false);
           if (section === "gpt") setSection("uebersicht");
         }}
+      />
+
+      <PortalLegalFooter
+        variant="partner"
+        className="mx-auto max-w-[1200px] px-4 pb-28 pt-3 lg:px-6 lg:pb-6"
       />
     </div>
   );

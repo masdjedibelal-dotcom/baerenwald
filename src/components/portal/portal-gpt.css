@@ -97,8 +97,12 @@
   box-shadow: none;
 }
 
-.portal-gpt-overlay .portal-gpt-body.portal-gpt-chat-active .ki-rechner-chat-header {
+.portal-gpt-overlay .portal-gpt-body.portal-gpt-chat-active .gpt-chat-sticky-top .ki-rechner-chat-header {
   display: none;
+}
+
+.portal-gpt-overlay .portal-gpt-body.portal-gpt-chat-active .gpt-chat-sticky-top {
+  background: rgba(255, 255, 255, 0.92);
 }
 
 .portal-gpt-embedded {
@@ -154,7 +158,36 @@
   }
 
   .portal-gpt-body.portal-gpt-chat-active .ki-rechner-chat-composer {
-    padding-bottom: env(safe-area-inset-bottom, 0px);
+    padding-bottom: max(12px, env(safe-area-inset-bottom, 0px));
+  }
+
+  .portal-gpt-body.portal-gpt-chat-active .ki-rechner-chat-messages {
+    gap: 16px;
+    padding-bottom: 12px;
+  }
+
+  .portal-gpt-body.portal-gpt-chat-active .ki-rechner-chat-send {
+    width: 44px;
+    height: 44px;
+  }
+
+  .portal-gpt-body.portal-gpt-chat-active .gpt-chat-attach {
+    width: 44px;
+    height: 44px;
+  }
+
+  /* Close-Button nur im Sheet-Header — nicht doppelt im Footer */
+  .portal-gpt-footer .portal-gpt-close {
+    display: none;
+  }
+
+  .portal-gpt-footer--close-only {
+    display: none;
+  }
+
+  .portal-gpt-embedded {
+    min-height: min(520px, calc(100dvh - 180px));
+    height: min(680px, calc(100dvh - 160px));
   }
 }
 

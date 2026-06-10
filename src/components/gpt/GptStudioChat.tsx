@@ -1164,27 +1164,32 @@ export function GptStudioChat({
         locked && "ki-rechner-chat--locked"
       )}
     >
-      <div className="ki-rechner-chat-header">
-        <div className="ki-rechner-chat-avatar">
-          <Image src="/logo-mark-green.png" alt="" width={32} height={32} className="ki-rechner-chat-logo" />
-        </div>
-        <div>
-          <div className="ki-rechner-chat-title">
-            Bärenwald <span className="ki-rechner-mode-label ki-rechner-mode-label--chat">BärenwaldGPT</span>
+      <div className="gpt-chat-sticky-top">
+        <div className="ki-rechner-chat-header">
+          <div className="ki-rechner-chat-avatar">
+            <Image src="/logo-mark-green.png" alt="" width={32} height={32} className="ki-rechner-chat-logo" />
           </div>
-          <div className="ki-rechner-chat-sub">Beraten · Visualisieren · Preis · Anfrage</div>
+          <div className="min-w-0 flex-1">
+            <div className="ki-rechner-chat-title">
+              Bärenwald{" "}
+              <span className="ki-rechner-mode-label ki-rechner-mode-label--chat">BärenwaldGPT</span>
+            </div>
+            {!guidedHybrid || buildDraftSummaryItems(guidedDraft).length === 0 ? (
+              <div className="ki-rechner-chat-sub">Beraten · Visualisieren · Preis · Anfrage</div>
+            ) : null}
+          </div>
         </div>
-      </div>
 
-      {guidedHybrid && buildDraftSummaryItems(guidedDraft).length > 0 ? (
-        <div className="gpt-chat-journey-bar" aria-label="Projekt-Kurzüberblick">
-          {buildDraftSummaryItems(guidedDraft).map((item) => (
-            <span key={item.label} className="gpt-guided-summary-chip">
-              <strong>{item.label}:</strong> {item.value}
-            </span>
-          ))}
-        </div>
-      ) : null}
+        {guidedHybrid && buildDraftSummaryItems(guidedDraft).length > 0 ? (
+          <div className="gpt-chat-journey-bar" aria-label="Projekt-Kurzüberblick">
+            {buildDraftSummaryItems(guidedDraft).map((item) => (
+              <span key={item.label} className="gpt-guided-summary-chip">
+                <strong>{item.label}:</strong> {item.value}
+              </span>
+            ))}
+          </div>
+        ) : null}
+      </div>
 
       <div ref={messagesScrollRef} className="ki-rechner-chat-messages">
         {messages.map((msg) => (
@@ -1194,6 +1199,7 @@ export function GptStudioChat({
             onAction={(id) => void handleAction(id)}
             onLeadSubmit={(draft) => void submitLeadForm(draft)}
             disabled={loading}
+            suppressSummaryBlocks={guidedHybrid}
           />
         ))}
 

@@ -1,4 +1,15 @@
 import { resolvePartnerFileUrl } from "@/lib/partner/partner-storage";
+import {
+  complianceAblaufHinweis,
+  filterLeistungComplianceTypen,
+  filterPartnerComplianceTypen,
+  istPflichtFuerPartner,
+  istPflichtFuerProjekt,
+  normalizeComplianceEbene,
+  type ComplianceEbene,
+  type PartnerComplianceTypEbene,
+  type PartnerGewerkRow,
+} from "@/lib/partner/compliance-partner-profile";
 
 export type PartnerDokumentStatus =
   | "hochgeladen"
@@ -6,8 +17,7 @@ export type PartnerDokumentStatus =
   | "freigegeben"
   | "abgelehnt";
 
-export type PartnerComplianceTypRow = {
-  slug: string;
+export type PartnerComplianceTypRow = PartnerComplianceTypEbene & {
   bezeichnung: string;
   beschreibung: string | null;
   pflicht_bauprojekt: boolean;
@@ -15,6 +25,7 @@ export type PartnerComplianceTypRow = {
   kategorie: string | null;
   sort_order: number;
   scope: string;
+  erneuerung_monate?: number | null;
 };
 
 export type PartnerDokumentRow = {
@@ -33,7 +44,9 @@ export type PartnerComplianceItemStatus =
   | "erledigt"
   | "in_pruefung"
   | "abgelehnt"
-  | "offen";
+  | "offen"
+  | "ablauf_warnung"
+  | "abgelaufen";
 
 export type PartnerComplianceItem = {
   slug: string;
@@ -41,8 +54,11 @@ export type PartnerComplianceItem = {
   beschreibung?: string | null;
   pflicht: boolean;
   kategorie?: string | null;
+  ebene: ComplianceEbene;
   scope: string;
   status: PartnerComplianceItemStatus;
+  ablauf_hinweis?: string | null;
+  erneuerung_monate?: number | null;
   dokument?: {
     id: string;
     gueltig_bis?: string | null;
@@ -70,14 +86,98 @@ const FREIGEGEBEN = new Set(["freigegeben", "genehmigt", "ok"]);
 const IN_PRUEFUNG = new Set(["hochgeladen", "in_pruefung", "eingereicht"]);
 const ABGELEHNT = new Set(["abgelehnt", "rejected"]);
 
-function normalizeDocStatus(raw: string): PartnerComplianceItemStatus {
+function gueltigBisStatus(
+  gueltigBis: string | null | undefined
+): "ok" | "warnung" | "abgelaufen" | "fehlend" {
+  if (!gueltigBis?.trim()) return "ok";
+  const bis = new Date(gueltigBis);
+  if (Number.isNaN(bis.getTime())) return "ok";
+  const heute = new Date();
+  heute.setHours(0, 0, 0, 0);
+  bis.setHours(0, 0, 0, 0);
+  if (bis < heute) return "abgelaufen";
+  const warn = new Date(heute);
+  warn.setDate(warn.getDate() + 30);
+  if (bis <= warn) return "warnung";
+  return "ok";
+}
+
+function normalizeDocStatus(
+  raw: string,
+  gueltigBis: string | null | undefined
+): PartnerComplianceItemStatus {
   const s = raw.toLowerCase();
-  if (FREIGEGEBEN.has(s)) return "erledigt";
   if (ABGELEHNT.has(s)) return "abgelehnt";
   if (IN_PRUEFUNG.has(s)) return "in_pruefung";
+
+  const ablauf = gueltigBisStatus(gueltigBis);
+  if (FREIGEGEBEN.has(s)) {
+    if (ablauf === "abgelaufen") return "abgelaufen";
+    if (ablauf === "warnung") return "ablauf_warnung";
+    return "erledigt";
+  }
   return "offen";
 }
 
+function itemFromTyp(
+  typ: PartnerComplianceTypRow,
+  dokumente: PartnerDokumentRow[],
+  opts: {
+    pflicht: boolean;
+    auftragId?: string | null;
+    ebene: ComplianceEbene;
+  }
+): PartnerComplianceItem {
+  const docs = dokumente.filter((d) => {
+    if (d.typ !== typ.slug) return false;
+    if (opts.ebene === "leistung") {
+      if (opts.auftragId) return d.auftrag_id === opts.auftragId;
+      return Boolean(d.auftrag_id);
+    }
+    return !d.auftrag_id;
+  });
+
+  const latest = [...docs].sort(
+    (a, b) => new Date(b.hochgeladen_am).getTime() - new Date(a.hochgeladen_am).getTime()
+  )[0];
+
+  let status: PartnerComplianceItemStatus = "offen";
+  if (latest) {
+    status = normalizeDocStatus(latest.status, latest.gueltig_bis);
+  }
+
+  const ablaufRaw =
+    status === "offen"
+      ? "fehlend"
+      : status === "abgelaufen"
+        ? "abgelaufen"
+        : status === "ablauf_warnung"
+          ? "warnung"
+          : "ok";
+
+  return {
+    slug: typ.slug,
+    bezeichnung: typ.bezeichnung,
+    beschreibung: typ.beschreibung,
+    pflicht: opts.pflicht,
+    kategorie: typ.kategorie,
+    ebene: opts.ebene,
+    scope: typ.scope,
+    status,
+    ablauf_hinweis: complianceAblaufHinweis(ablaufRaw, latest?.gueltig_bis),
+    erneuerung_monate: typ.erneuerung_monate ?? null,
+    dokument: latest
+      ? {
+          id: latest.id,
+          gueltig_bis: latest.gueltig_bis,
+          hochgeladen_am: latest.hochgeladen_am,
+          ablehnung_grund: latest.ablehnung_grund,
+        }
+      : undefined,
+  };
+}
+
+/** @deprecated Nutze buildPartnerStammCompliance / buildProjektCompliance */
 export function buildComplianceChecklist(opts: {
   typen: PartnerComplianceTypRow[];
   dokumente: PartnerDokumentRow[];
@@ -90,41 +190,73 @@ export function buildComplianceChecklist(opts: {
     .sort((a, b) => a.sort_order - b.sort_order);
 
   return typen.map((typ) => {
-    const docs = opts.dokumente.filter((d) => {
-      if (d.typ !== typ.slug) return false;
-      if (typ.scope === "stamm") return !d.auftrag_id;
-      if (opts.auftragId) return d.auftrag_id === opts.auftragId;
-      return Boolean(d.auftrag_id);
+    const ebene = normalizeComplianceEbene(typ);
+    return itemFromTyp(typ, opts.dokumente, {
+      pflicht: ebene === "leistung" ? typ.pflicht_bauprojekt : typ.pflicht_fuer_fachbetriebe === true,
+      auftragId: opts.auftragId,
+      ebene,
     });
-
-    const latest = [...docs].sort(
-      (a, b) =>
-        new Date(b.hochgeladen_am).getTime() - new Date(a.hochgeladen_am).getTime()
-    )[0];
-
-    let status: PartnerComplianceItemStatus = "offen";
-    if (latest) {
-      status = normalizeDocStatus(latest.status);
-    }
-
-    return {
-      slug: typ.slug,
-      bezeichnung: typ.bezeichnung,
-      beschreibung: typ.beschreibung,
-      pflicht: typ.pflicht_bauprojekt,
-      kategorie: typ.kategorie,
-      scope: typ.scope,
-      status,
-      dokument: latest
-        ? {
-            id: latest.id,
-            gueltig_bis: latest.gueltig_bis,
-            hochgeladen_am: latest.hochgeladen_am,
-            ablehnung_grund: latest.ablehnung_grund,
-          }
-        : undefined,
-    };
   });
+}
+
+export function buildPartnerStammCompliance(opts: {
+  typen: PartnerComplianceTypRow[];
+  dokumente: PartnerDokumentRow[];
+  handwerkerGewerke: string[] | null | undefined;
+  alleGewerke: PartnerGewerkRow[];
+}): { allgemein: PartnerComplianceItem[]; meister: PartnerComplianceItem[] } {
+  const allgemein = filterPartnerComplianceTypen(
+    opts.typen,
+    "allgemein",
+    opts.handwerkerGewerke,
+    opts.alleGewerke
+  ).map((typ) =>
+    itemFromTyp(typ, opts.dokumente, {
+      pflicht: istPflichtFuerPartner(typ, opts.handwerkerGewerke, opts.alleGewerke),
+      ebene: "allgemein",
+    })
+  );
+
+  const meister = filterPartnerComplianceTypen(
+    opts.typen,
+    "meister",
+    opts.handwerkerGewerke,
+    opts.alleGewerke
+  ).map((typ) =>
+    itemFromTyp(typ, opts.dokumente, {
+      pflicht: istPflichtFuerPartner(typ, opts.handwerkerGewerke, opts.alleGewerke),
+      ebene: "meister",
+    })
+  );
+
+  return { allgemein, meister };
+}
+
+export function buildProjektCompliance(opts: {
+  typen: PartnerComplianceTypRow[];
+  dokumente: PartnerDokumentRow[];
+  auftragId: string;
+  projektGewerkSlugs: string[];
+  handwerkerGewerke: string[] | null | undefined;
+  alleGewerke: PartnerGewerkRow[];
+}): PartnerComplianceItem[] {
+  return filterLeistungComplianceTypen(
+    opts.typen,
+    opts.projektGewerkSlugs,
+    opts.handwerkerGewerke,
+    opts.alleGewerke
+  ).map((typ) =>
+    itemFromTyp(typ, opts.dokumente, {
+      pflicht: istPflichtFuerProjekt(
+        typ,
+        opts.projektGewerkSlugs,
+        opts.handwerkerGewerke,
+        opts.alleGewerke
+      ),
+      auftragId: opts.auftragId,
+      ebene: "leistung",
+    })
+  );
 }
 
 export async function enrichComplianceWithSignedUrls(
@@ -181,12 +313,20 @@ export function hasGueltigerProjektvertrag(
 }
 
 export function compliancePflichtOffen(items: PartnerComplianceItem[]): boolean {
-  return items.some((i) => i.pflicht && i.status !== "erledigt");
+  return items.some(
+    (i) =>
+      i.pflicht &&
+      i.status !== "erledigt" &&
+      i.status !== "in_pruefung" &&
+      i.status !== "ablauf_warnung"
+  );
 }
 
 export function complianceStatusLabel(status: PartnerComplianceItemStatus): string {
-  if (status === "erledigt") return "Erledigt";
+  if (status === "erledigt") return "Vorhanden";
   if (status === "in_pruefung") return "In Prüfung";
   if (status === "abgelehnt") return "Abgelehnt";
-  return "Offen";
+  if (status === "ablauf_warnung") return "Läuft bald ab";
+  if (status === "abgelaufen") return "Abgelaufen";
+  return "Fehlt";
 }

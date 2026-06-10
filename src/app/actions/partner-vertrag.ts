@@ -118,3 +118,137 @@ export async function confirmPartnerProjektvertrag(opts: {
   revalidatePath("/partner");
   return crm;
 }
+
+export type PartnerRahmenvertragAcceptResult = { ok: true } | { ok: false; error: string };
+
+/** Registrierung: Annahme per E-Mail (Handwerker muss im Stamm existieren). */
+export async function acceptPartnerRahmenvertragForEmail(opts: {
+  email: string;
+  akzeptiert: boolean;
+}): Promise<PartnerRahmenvertragAcceptResult> {
+  if (!isSupabaseConfigured()) {
+    return { ok: false, error: "Datenbank nicht konfiguriert." };
+  }
+
+  if (!opts.akzeptiert) {
+    return {
+      ok: false,
+      error: "Bitte bestätige den Rahmenvertrag inkl. Anlage 1 und Anlage 2.",
+    };
+  }
+
+  const email = opts.email.trim().toLowerCase();
+  if (!email) return { ok: false, error: "E-Mail fehlt." };
+
+  const { data: hw } = await supabaseAdmin
+    .from("handwerker")
+    .select("id")
+    .ilike("email", email)
+    .limit(1)
+    .maybeSingle();
+
+  if (!hw?.id) {
+    return {
+      ok: false,
+      error: "Diese E-Mail ist bei uns noch nicht als Partner hinterlegt.",
+    };
+  }
+
+  const { data: vertrag } = await supabaseAdmin
+    .from("handwerker_vertraege")
+    .select("id, pdf_url, portal_akzeptiert_am")
+    .eq("handwerker_id", hw.id)
+    .eq("typ", "rahmen")
+    .is("auftrag_id", null)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (vertrag?.portal_akzeptiert_am) {
+    return { ok: true };
+  }
+
+  if (vertrag?.id) {
+    const now = new Date().toISOString();
+    const { error } = await supabaseAdmin
+      .from("handwerker_vertraege")
+      .update({
+        portal_akzeptiert_am: now,
+        updated_at: now,
+      })
+      .eq("id", vertrag.id);
+
+    if (error) return { ok: false, error: error.message };
+  }
+
+  return { ok: true };
+}
+
+export async function acceptPartnerRahmenvertrag(opts: {
+  vertragId: string;
+  akzeptiert: boolean;
+}): Promise<PartnerRahmenvertragAcceptResult> {
+  if (!isSupabaseConfigured()) {
+    return { ok: false, error: "Datenbank nicht konfiguriert." };
+  }
+
+  if (!opts.akzeptiert) {
+    return {
+      ok: false,
+      error: "Bitte bestätige den Rahmenvertrag inkl. Anlage 1 und Anlage 2.",
+    };
+  }
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user?.email) return { ok: false, error: "Nicht angemeldet." };
+
+  const link = await linkPortalHandwerkerToAuthUser({
+    userId: user.id,
+    email: user.email,
+  });
+  if (!link.ok) return { ok: false, error: link.error };
+
+  const vertragId = opts.vertragId.trim();
+  if (!vertragId) return { ok: false, error: "Vertrag fehlt." };
+
+  const { data: vertrag } = await supabaseAdmin
+    .from("handwerker_vertraege")
+    .select("id, typ, pdf_url, status, portal_akzeptiert_am")
+    .eq("id", vertragId)
+    .eq("handwerker_id", link.handwerkerId)
+    .maybeSingle();
+
+  if (!vertrag?.id) {
+    return { ok: false, error: "Rahmenvertrag nicht gefunden." };
+  }
+
+  if (String(vertrag.typ).toLowerCase() !== "rahmen") {
+    return { ok: false, error: "Ungültiger Vertragstyp." };
+  }
+
+  if (!String(vertrag.pdf_url ?? "").trim()) {
+    return { ok: false, error: "Der Rahmenvertrag ist noch nicht als PDF verfügbar." };
+  }
+
+  if (vertrag.portal_akzeptiert_am) {
+    return { ok: false, error: "Rahmenvertrag wurde bereits akzeptiert." };
+  }
+
+  const now = new Date().toISOString();
+  const { error } = await supabaseAdmin
+    .from("handwerker_vertraege")
+    .update({
+      portal_akzeptiert_am: now,
+      portal_akzeptiert_auth_user_id: user.id,
+      updated_at: now,
+    })
+    .eq("id", vertrag.id);
+
+  if (error) return { ok: false, error: error.message };
+
+  revalidatePath("/partner");
+  return { ok: true };
+}

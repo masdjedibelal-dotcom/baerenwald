@@ -13,6 +13,7 @@ import {
   PartnerDetailLayout,
   PartnerDetailLeistungenList,
   PartnerDetailSection,
+  PartnerJobFieldActions,
 } from "@/components/partner/PartnerDetailUi";
 import { PartnerPortalDetailSections } from "@/components/partner/PartnerPortalDetailSections";
 import { BautagebuchAccordionList } from "@/components/shared/BautagebuchAccordionList";
@@ -293,9 +294,20 @@ export function PartnerAuftragDetail({ item }: { item: PartnerAuftragItem }) {
   }));
 
   const sections = buildPartnerAuftragPortalSections(item.lead);
+  const mapsFooter = (
+    <PartnerJobFieldActions
+      lead={item.lead}
+      plz={item.plz}
+      ort={item.ort}
+      onAddPhoto={() => {
+        setEditId(null);
+        setShowNew(true);
+      }}
+    />
+  );
 
   return (
-    <PartnerDetailLayout>
+    <PartnerDetailLayout footer={mapsFooter}>
       <PartnerDetailHero
         title={item.titel}
         metaLine={partnerAuftragDetailMetaLine(item.start_datum, item.end_datum)}

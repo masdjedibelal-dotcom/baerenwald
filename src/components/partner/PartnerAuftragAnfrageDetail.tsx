@@ -13,7 +13,9 @@ import {
   PartnerDetailLeistungenList,
   PartnerDetailSection,
   PartnerDetailStickyActions,
+  PartnerJobFieldActions,
 } from "@/components/partner/PartnerDetailUi";
+import { partnerMapsHref } from "@/lib/partner/partner-maps-href";
 import { PartnerPortalDetailSections } from "@/components/partner/PartnerPortalDetailSections";
 import {
   HANDWERKER_ABLEHNUNG_GRUND_LABELS,
@@ -92,7 +94,7 @@ export function PartnerAuftragAnfrageDetail({ item }: { item: PartnerAuftragItem
     beschreibung: p.beschreibung,
   }));
 
-  const footer =
+  const actionFooter =
     kannAntworten && !showReject ? (
       <PartnerDetailStickyActions
         primaryLabel="Annehmen"
@@ -111,6 +113,18 @@ export function PartnerAuftragAnfrageDetail({ item }: { item: PartnerAuftragItem
         onSecondary={() => setShowReject(false)}
         secondaryDisabled={loading}
       />
+    ) : undefined;
+  const hasMaps = Boolean(
+    partnerMapsHref({ lead: item.lead, plz: item.plz, ort: item.ort })
+  );
+  const footer =
+    actionFooter || hasMaps ? (
+      <div className="space-y-2">
+        {hasMaps ? (
+          <PartnerJobFieldActions lead={item.lead} plz={item.plz} ort={item.ort} />
+        ) : null}
+        {actionFooter}
+      </div>
     ) : undefined;
 
   return (

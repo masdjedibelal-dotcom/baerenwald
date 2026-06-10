@@ -27,7 +27,18 @@ import type { PartnerAuftragBewertung } from "@/lib/partner/handwerker-bewertung
 import type { PartnerHandwerkerBewertungProfil } from "@/lib/partner/handwerker-bewertung-display";
 import type { PartnerComplianceItem } from "@/lib/partner/partner-compliance";
 import {
+  partnerHatMeisterGewerke,
+  partnerLeistetBauleistung,
+} from "@/lib/partner/compliance-partner-profile";
+import { buildPartnerTermine, type PartnerTerminItem } from "@/lib/partner/build-partner-termine";
+import {
+  buildOffeneLeistungsUnterlagen,
+  type PartnerOffeneLeistungsUnterlage,
+  type PartnerRahmenvertrag,
+} from "@/lib/partner/compliance-summary";
+import {
   loadHandwerkerComplianceBundle,
+  loadRahmenvertrag,
   vertragKontextForAngebot,
   type PartnerVertragKontext,
 } from "@/lib/partner/load-partner-compliance-data";
@@ -130,8 +141,36 @@ export type PartnerHandwerkerProfil = {
   name: string;
   firma: string | null;
   email: string | null;
+  telefon: string | null;
+  whatsapp: string | null;
+  webseite: string | null;
+  adresse: string | null;
+  steuernummer: string | null;
+  ustid: string | null;
+  iban: string | null;
+  gewerke: string[];
+  gewerkNamen: string[];
   bewertung: PartnerHandwerkerBewertungProfil;
 };
+
+export type PartnerProfilKontext = {
+  allgemein: PartnerComplianceItem[];
+  meister: PartnerComplianceItem[];
+  stamm: PartnerComplianceItem[];
+  profil: { leistet_bauleistung: boolean; hat_meister_gewerke: boolean };
+  rahmenvertrag: PartnerRahmenvertrag | null;
+  offeneLeistungsunterlagen: PartnerOffeneLeistungsUnterlage[];
+};
+
+export type PartnerTodoItem = {
+  id: string;
+  titel: string;
+  erledigt: boolean;
+  sort_order: number;
+  created_at: string;
+};
+
+export type { PartnerTerminItem };
 
 function one<T>(x: T | T[] | null | undefined): T | null {
   if (x == null) return null;
@@ -263,6 +302,13 @@ export async function getPartnerDataForHandwerker(handwerkerId: string) {
       firma,
       email,
       telefon,
+      whatsapp,
+      webseite,
+      adresse,
+      steuernummer,
+      ustid,
+      iban,
+      gewerke,
       bewertung_gesamt,
       bewertung_qualitaet,
       bewertung_termintreue,
@@ -570,11 +616,89 @@ export async function getPartnerDataForHandwerker(handwerkerId: string) {
   const auftragAnfragen = alleAuftraege.filter(isAuftragAnfrageListItem);
   const auftraege = alleAuftraege.filter(isAuftragAuftraegeListItem);
 
+  const rahmenvertrag = await loadRahmenvertrag(id);
+  const gewerkSlugs = Array.isArray(handwerker.gewerke)
+    ? (handwerker.gewerke as string[]).map((s) => s.trim()).filter(Boolean)
+    : [];
+  const slugToName = new Map(
+    complianceBundle.alleGewerke.map((g) => [g.slug, g.name?.trim() || g.slug])
+  );
+  const gewerkNamen = gewerkSlugs.map((slug) => slugToName.get(slug) ?? slug);
+
+  const offeneLeistungsunterlagen = buildOffeneLeistungsUnterlagen(
+    Array.from(complianceBundle.vertragByAuftragId.entries()).map(
+      ([auftragId, ctx]) => {
+        const auftrag =
+          alleAuftraege.find((a) => a.id === auftragId) ??
+          auftragAnfragen.find((a) => a.id === auftragId);
+        return {
+          auftrag_id: auftragId,
+          auftrag_titel: auftrag?.titel ?? "Auftrag",
+          items: ctx.compliance_projekt ?? [],
+        };
+      }
+    )
+  );
+
+  const profilKontext: PartnerProfilKontext = {
+    allgemein: complianceBundle.stamm.compliance_allgemein,
+    meister: complianceBundle.stamm.compliance_meister,
+    stamm: complianceBundle.stamm.compliance_stamm,
+    profil: {
+      leistet_bauleistung: partnerLeistetBauleistung(
+        complianceBundle.handwerkerGewerke,
+        complianceBundle.alleGewerke
+      ),
+      hat_meister_gewerke: partnerHatMeisterGewerke(
+        complianceBundle.handwerkerGewerke,
+        complianceBundle.alleGewerke
+      ),
+    },
+    rahmenvertrag,
+    offeneLeistungsunterlagen,
+  };
+
+  const { data: todoRows } = await supabaseAdmin
+    .from("partner_todos")
+    .select("id, titel, erledigt, sort_order, created_at")
+    .eq("handwerker_id", id)
+    .order("erledigt", { ascending: true })
+    .order("sort_order", { ascending: true })
+    .order("created_at", { ascending: false });
+
+  const todos: PartnerTodoItem[] = (todoRows ?? []).map((row) => ({
+    id: String(row.id),
+    titel: String(row.titel),
+    erledigt: Boolean(row.erledigt),
+    sort_order: Number(row.sort_order ?? 0),
+    created_at: String(row.created_at),
+  }));
+
+  const termine = buildPartnerTermine({
+    anfragen: anfragenAngebot,
+    angebote,
+    auftragAnfragen,
+    auftraege,
+    profil: profilKontext,
+  });
+
   return {
+    profil: profilKontext,
+    termine,
+    todos,
     handwerker: {
       name: String(handwerker.name ?? "Partner"),
       firma: handwerker.firma as string | null,
       email: handwerker.email as string | null,
+      telefon: (handwerker.telefon as string | null) ?? null,
+      whatsapp: (handwerker.whatsapp as string | null) ?? null,
+      webseite: (handwerker.webseite as string | null) ?? null,
+      adresse: (handwerker.adresse as string | null) ?? null,
+      steuernummer: (handwerker.steuernummer as string | null) ?? null,
+      ustid: (handwerker.ustid as string | null) ?? null,
+      iban: (handwerker.iban as string | null) ?? null,
+      gewerke: gewerkSlugs,
+      gewerkNamen,
       bewertung: {
         bewertung_gesamt: numOrNull(handwerker.bewertung_gesamt),
         bewertung_qualitaet: numOrNull(handwerker.bewertung_qualitaet),

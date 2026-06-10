@@ -57,6 +57,9 @@ function PortalBaerenwaldGptInner({
 
   if (!open) return null;
 
+  const showHandoffFooter = preisCtaVisible || beratungCtaVisible;
+  const showCloseInFooter = !isEmbedded;
+
   const shell = (
     <div className="portal-gpt-shell">
       <div className="portal-gpt-body portal-gpt-chat-active">
@@ -68,40 +71,48 @@ function PortalBaerenwaldGptInner({
         />
       </div>
 
-      <footer className="portal-gpt-footer">
-        <div className="portal-gpt-footer-actions">
-          {preisCtaVisible ? (
-            <a
-              href={RECHNER_KI_BERATUNG_HREF}
-              target="_blank"
-              rel="noreferrer"
-              className="btn-pill-primary portal-btn !px-4 !py-3"
+      {showHandoffFooter || showCloseInFooter ? (
+        <footer
+          className={
+            showHandoffFooter
+              ? "portal-gpt-footer"
+              : "portal-gpt-footer portal-gpt-footer--close-only"
+          }
+        >
+          <div className="portal-gpt-footer-actions">
+            {preisCtaVisible ? (
+              <a
+                href={RECHNER_KI_BERATUNG_HREF}
+                target="_blank"
+                rel="noreferrer"
+                className="btn-pill-primary portal-btn !px-4 !py-3"
+              >
+                Zum Preisrahmen
+              </a>
+            ) : null}
+            {beratungCtaVisible ? (
+              <a
+                href="/rechner"
+                target="_blank"
+                rel="noreferrer"
+                className="btn-pill-outline portal-btn !px-4 !py-3"
+              >
+                Zur Beratung
+              </a>
+            ) : null}
+          </div>
+          {showCloseInFooter ? (
+            <button
+              type="button"
+              onClick={handleClose}
+              className="portal-gpt-close"
+              aria-label="Chat schließen"
             >
-              Zum Preisrahmen
-            </a>
+              <X className="h-5 w-5" aria-hidden />
+            </button>
           ) : null}
-          {beratungCtaVisible ? (
-            <a
-              href="/rechner"
-              target="_blank"
-              rel="noreferrer"
-              className="btn-pill-outline portal-btn !px-4 !py-3"
-            >
-              Zur Beratung
-            </a>
-          ) : null}
-        </div>
-        {!isEmbedded ? (
-          <button
-            type="button"
-            onClick={handleClose}
-            className="portal-gpt-close"
-            aria-label="Chat schließen"
-          >
-            <X className="h-5 w-5" aria-hidden />
-          </button>
-        ) : null}
-      </footer>
+        </footer>
+      ) : null}
     </div>
   );
 

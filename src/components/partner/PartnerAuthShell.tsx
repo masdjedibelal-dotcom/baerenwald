@@ -2,6 +2,8 @@ import Image from "next/image";
 import Link from "next/link";
 import type { ReactNode } from "react";
 
+import { PortalLegalFooter } from "@/components/shared/PortalLegalFooter";
+
 export function PartnerAuthShell({
   title,
   subtitle,
@@ -36,6 +38,7 @@ export function PartnerAuthShell({
             Zurück zur Website
           </Link>
         </p>
+        <PortalLegalFooter variant="partner" className="mt-4" />
       </div>
     </div>
   );

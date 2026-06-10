@@ -3,6 +3,18 @@
 @tailwind utilities;
 
 :root {
+  /* Layout-System (Design-Audit Welle 2) */
+  --bw-max-site: 1200px;
+  --bw-max-text: 800px;
+  --bw-max-card: 520px;
+  --bw-btn-h-sm: 40px;
+  --bw-btn-h: 48px;
+  --bw-btn-h-lg: 56px;
+  --bw-radius-sm: 12px;
+  --bw-radius: 16px;
+  --bw-radius-lg: 20px;
+  --bw-radius-xl: 24px;
+
   --font-sans: "Plus Jakarta Sans", "Helvetica Neue", Arial, sans-serif;
   --font-display: "Lora", Georgia, serif;
   --accent: #2e7d52;
@@ -31,7 +43,7 @@
   --secondary: #edeae4;
   --secondary-foreground: #1e1c1a;
   --muted: #edeae4;
-  --muted-foreground: #6b6560;
+  --muted-foreground: #524e4a;
   --destructive: #dc2626;
   --destructive-foreground: #ffffff;
   --input: #d8d5cf;
@@ -43,8 +55,8 @@
   --popover-foreground: #1e1c1a;
 
   --text-primary: #1e1c1a;
-  --text-secondary: #6b6560;
-  --text-tertiary: #9e9890;
+  --text-secondary: #524e4a;
+  --text-tertiary: #7a746c;
 
   --info-bg: #f0f7ff;
   --info-border: #c8dff7;
@@ -240,8 +252,9 @@ h3 {
 .btn-pill-primary {
   background: var(--accent);
   color: white;
-  border-radius: 9999px;
-  padding: 13px 28px;
+  border-radius: var(--bw-radius-pill, 9999px);
+  min-height: var(--bw-btn-h);
+  padding: 0 28px;
   font-size: 15px;
   font-weight: 700;
   font-family: var(--font-sans);
@@ -271,8 +284,9 @@ h3 {
   background: transparent;
   color: var(--accent);
   border: 2px solid var(--accent);
-  border-radius: 9999px;
-  padding: 11px 28px;
+  border-radius: var(--bw-radius-pill, 9999px);
+  min-height: var(--bw-btn-h);
+  padding: 0 26px;
   font-size: 15px;
   font-weight: 700;
   transition: all 0.15s;

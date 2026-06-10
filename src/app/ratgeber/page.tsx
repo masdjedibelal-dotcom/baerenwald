@@ -38,18 +38,16 @@ export default function RatgeberIndexPage() {
               Von Malerarbeiten bis Winterdienst — mit typischen
               München-Preisen und Ablauf.
             </p>
-            <ul className="ratgeber-link-list">
+            <div className="ratgeber-card-grid">
               {RATGEBER.map((r) => (
-                <li key={r.slug}>
-                  <Link href={ratgeberHref(r.slug)}>
-                    <span>{r.label}</span>
-                    <span className="ratgeber-link-arrow" aria-hidden>
-                      →
-                    </span>
-                  </Link>
-                </li>
+                <Link key={r.slug} href={ratgeberHref(r.slug)} className="ratgeber-card">
+                  <span className="ratgeber-card-label">{r.label}</span>
+                  <span className="ratgeber-card-arrow" aria-hidden>
+                    →
+                  </span>
+                </Link>
               ))}
-            </ul>
+            </div>
           </div>
         </section>
       </div>

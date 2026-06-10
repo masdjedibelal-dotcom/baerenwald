@@ -1,5 +1,6 @@
 import Link from "next/link";
 
+import { CookieSettingsLink } from "@/components/consent/CookieSettingsLink";
 import { SITE_CONFIG } from "@/lib/config";
 import {
   LEISTUNGEN,
@@ -190,13 +191,15 @@ export function SiteFooter() {
               Impressum
             </Link>
             <span aria-hidden>·</span>
-            <Link href="/datenschutz" className="hover:text-white/50">
+            <Link href="/datenschutz#cookies-tracking" className="hover:text-white/50">
               Datenschutz
             </Link>
             <span aria-hidden>·</span>
             <Link href="/agb" className="hover:text-white/50">
               AGB
             </Link>
+            <span aria-hidden>·</span>
+            <CookieSettingsLink className="hover:text-white/50" />
           </div>
         </div>
       </div>

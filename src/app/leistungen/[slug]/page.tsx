@@ -22,7 +22,10 @@ function resolveLeistungsData(base: string): LeistungsData | undefined {
 }
 
 export function generateStaticParams() {
-  return LEISTUNGEN.map((l) => ({ slug: `${l.slug}-muenchen` }));
+  return LEISTUNGEN.flatMap((l) => [
+    { slug: `${l.slug}-muenchen` },
+    { slug: l.slug },
+  ]);
 }
 
 export async function generateMetadata({ params }: PageProps) {

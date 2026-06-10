@@ -270,7 +270,21 @@ export default function DatenschutzPage() {
                 Weiterentwicklung des Dienstes).
               </p>
 
-              <strong>9. Analyse &amp; Tracking</strong>
+              <strong id="cookies-tracking">9. Cookies, Einwilligung &amp; Tracking</strong>
+              <p>
+                Beim ersten Besuch kann ein Hinweis zu Cookies und Statistik erscheinen. Deine
+                Wahl speichern wir lokal im Browser (<em>bw_cookie_consent_v1</em>), damit der
+                Hinweis nicht erneut erscheint.
+              </p>
+              <p>
+                <strong>Technisch notwendig</strong> (ohne separate Einwilligung): z. B.
+                Session-Speicher für Login in MeinBärenwald und im Partner-Portal, sowie
+                sessionbezogene Daten für den Rechner-Ablauf.
+              </p>
+              <p>
+                <strong>Statistik (PostHog)</strong> — nur nach deiner Einwilligung über
+                „Akzeptieren“ im Cookie-Hinweis:
+              </p>
               <p>
                 PostHog Inc.
                 <br />
@@ -280,12 +294,13 @@ export default function DatenschutzPage() {
               </p>
               <p>
                 Wir nutzen PostHog zur Analyse der Websitenutzung (z. B. welche Bereiche geklickt
-                werden). PostHog verarbeitet Daten auf EU-Servern (Frankfurt). PostHog setzt keine
-                Cookies für dieses Tracking. Es können pseudonyme Nutzungsdaten (z. B.
-                Geräte-/Browserinformationen, Ereignisse) verarbeitet werden.
+                werden). PostHog verarbeitet Daten auf EU-Servern (Frankfurt). Es können pseudonyme
+                Nutzungsdaten (z. B. Geräte-/Browserinformationen, Ereignisse) verarbeitet werden;
+                dabei kann auch der lokale Speicher des Browsers genutzt werden.
                 <br />
-                Rechtsgrundlage: Art. 6 Abs. 1 lit. f DSGVO (berechtigtes Interesse an
-                Reichweitenmessung).
+                Rechtsgrundlage bei Einwilligung: Art. 6 Abs. 1 lit. a DSGVO. Du kannst die
+                Einwilligung jederzeit mit Wirkung für die Zukunft widerrufen (z. B. durch Löschen
+                der Website-Daten im Browser).
                 <br />
                 Datenschutzerklärung PostHog:{" "}
                 <a href="https://posthog.com/privacy" target="_blank" rel="noopener noreferrer">

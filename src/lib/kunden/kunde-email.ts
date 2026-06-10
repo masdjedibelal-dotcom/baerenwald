@@ -13,6 +13,21 @@ export function isKundenEmailUniqueViolation(error: {
   return error.code === "23505" || (error.message ?? "").includes("kunden_email_unique");
 }
 
+/** Beliebiger Unique-Constraint auf kunden (z. B. E-Mail, auth_user_id). */
+export function isKundenRowUniqueViolation(error: {
+  code?: string;
+  message?: string;
+} | null): boolean {
+  if (!error) return false;
+  if (error.code === "23505") return true;
+  const msg = error.message ?? "";
+  return (
+    msg.includes("kunden_email_unique") ||
+    msg.includes("kunden_auth_user_id") ||
+    msg.includes("kunden_kundennummer")
+  );
+}
+
 /** Existierenden Kundenstamm zur E-Mail (nach Unique-Index max. einer). */
 export async function findKundeIdByEmail(email: string): Promise<string | null> {
   const norm = normalizeKundenEmail(email);

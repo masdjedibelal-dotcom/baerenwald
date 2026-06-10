@@ -64,6 +64,7 @@ import { PortalAuftragPhasenStrip } from "@/components/shared/PortalAuftragPhase
 import { portalDetailStatusPillClass } from "@/lib/shared/portal-detail-format";
 import { cn } from "@/lib/utils";
 import { PortalBaerenwaldGpt } from "@/components/portal/PortalBaerenwaldGpt";
+import { PortalLegalFooter } from "@/components/shared/PortalLegalFooter";
 
 type PortalKunde = { name?: string };
 type PortalPosition = {
@@ -195,6 +196,40 @@ function emptyLabelForSection(section: OverviewTabId | SectionId): string {
   if (section === "angebote") return "Noch keine Angebote";
   if (section === "auftraege") return "Noch keine Aufträge";
   return "Noch keine Einträge";
+}
+
+function PortalEmptyState({
+  section,
+  onNavigate,
+}: {
+  section: OverviewTabId | SectionId;
+  onNavigate?: () => void;
+}) {
+  const label = emptyLabelForSection(section);
+  return (
+    <div className="rounded-xl border border-dashed border-border-light bg-muted/20 px-4 py-8 text-center">
+      <p className="portal-text-body text-text-secondary">{label}</p>
+      <p className="portal-text-meta mt-1 text-text-tertiary">
+        Starte mit einem Preisrahmen — wir koordinieren den Rest.
+      </p>
+      {onNavigate ? (
+        <button
+          type="button"
+          onClick={onNavigate}
+          className="btn-pill-primary portal-btn mt-4 !px-5 !py-2.5"
+        >
+          Preisrahmen berechnen
+        </button>
+      ) : (
+        <Link
+          href="/rechner"
+          className="btn-pill-primary portal-btn mt-4 inline-flex !px-5 !py-2.5"
+        >
+          Preisrahmen berechnen
+        </Link>
+      )}
+    </div>
+  );
 }
 
 function isCompletedStatus(status?: string): boolean {
@@ -764,6 +799,53 @@ export function PortalClient({
                 </article>
               </div>
 
+              {angeboteItems.length > 0 ? (
+                <article className="card-bordered border-accent/25 bg-accent-light/40 p-4">
+                  <p className="portal-text-label text-accent">Nächster Schritt</p>
+                  <p className="portal-text-body mt-1 font-semibold text-text-primary">
+                    Angebot prüfen
+                  </p>
+                  <p className="portal-text-meta mt-0.5 text-text-secondary">
+                    Du hast {angeboteItems.length}{" "}
+                    {angeboteItems.length === 1 ? "Angebot" : "Angebote"} zur Prüfung.
+                  </p>
+                  <button
+                    type="button"
+                    className="btn-pill-primary portal-btn mt-3 !px-4 !py-2.5"
+                    onClick={() => setSection("angebote")}
+                  >
+                    Angebot ansehen
+                  </button>
+                </article>
+              ) : anfragenItems.length > 0 ? (
+                <article className="card-bordered border-accent/25 bg-accent-light/40 p-4">
+                  <p className="portal-text-label text-accent">Nächster Schritt</p>
+                  <p className="portal-text-body mt-1 font-semibold text-text-primary">
+                    Anfrage in Bearbeitung
+                  </p>
+                  <p className="portal-text-meta mt-0.5 text-text-secondary">
+                    Wir melden uns — du kannst den Status jederzeit hier verfolgen.
+                  </p>
+                  <button
+                    type="button"
+                    className="btn-pill-outline portal-btn mt-3 !px-4 !py-2.5"
+                    onClick={() => setSection("anfragen")}
+                  >
+                    Anfragen öffnen
+                  </button>
+                </article>
+              ) : (
+                <article className="card-bordered p-4">
+                  <p className="portal-text-label text-text-tertiary">Nächster Schritt</p>
+                  <p className="portal-text-body mt-1 font-semibold text-text-primary">
+                    Neues Projekt starten
+                  </p>
+                  <Link href="/rechner" className="btn-pill-primary portal-btn mt-3 inline-flex !px-4 !py-2.5">
+                    Preisrahmen berechnen
+                  </Link>
+                </article>
+              )}
+
               <article className="card-bordered p-4">
                 <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
                   <div className="flex gap-2">
@@ -796,9 +878,7 @@ export function PortalClient({
 
                 <div className="space-y-2">
                   {overviewCardRows.length === 0 ? (
-                    <p className="portal-text-body rounded-xl border border-dashed border-border-light bg-muted/20 px-3 py-6 text-center text-text-secondary">
-                      {emptyLabelForSection(overviewTab)}
-                    </p>
+                    <PortalEmptyState section={overviewTab} />
                   ) : (
                     paginatedOverviewCardRows.map((row) =>
                       renderOverviewCard(row, overviewTab)
@@ -861,9 +941,7 @@ export function PortalClient({
               <article className="card-bordered overflow-hidden p-0">
                 <div className="space-y-2 p-3 sm:p-4">
                   {sectionListEmpty ? (
-                    <p className="portal-text-body rounded-xl border border-dashed border-border-light bg-muted/20 px-3 py-8 text-center text-text-secondary">
-                      {emptyLabelForSection(section)}
-                    </p>
+                    <PortalEmptyState section={section} />
                   ) : (
                     paginatedCardRows.map(renderCard)
                   )}
@@ -980,6 +1058,11 @@ export function PortalClient({
         variant="overlay"
         open={gptOpen}
         onClose={() => setGptOpen(false)}
+      />
+
+      <PortalLegalFooter
+        variant="kunde"
+        className="mx-auto max-w-[1200px] px-4 pb-28 pt-3 lg:px-6 lg:pb-6"
       />
     </div>
   );
