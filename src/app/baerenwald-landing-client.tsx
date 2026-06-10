@@ -2,14 +2,9 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import {
   useEffect,
-  useMemo,
-  useRef,
   useState,
-  type FormEvent,
-  type KeyboardEvent,
   type ReactNode,
 } from "react";
 
@@ -28,19 +23,10 @@ import { SectionDivider } from "@/components/landing/SectionDividers";
 import { VermittlungSection } from "@/components/home/VermittlungSection";
 import { WarumBaerenwaldScrollSection } from "@/components/landing/WarumBaerenwaldScrollSection";
 import { MarketingFooter } from "@/components/layout/MarketingFooter";
-import { BwIcon } from "@/components/ui/BwIcon";
 import { WaveUnderline } from "@/components/ui/WaveUnderline";
 import { SITE_CONFIG } from "@/lib/config";
 import { RECHNER_KI_BERATUNG_HREF } from "@/lib/rechner-links";
 import { HOME_FAQ_ITEMS } from "@/lib/home-content";
-import {
-  buildHeroRechnerLandingUrl,
-  buildSearchUrl,
-  getHeroSearchSuggestions,
-  heroKategorieLabel,
-  type HeroSearchSuggestion,
-} from "@/lib/search";
-import { track } from "@/lib/analytics";
 import { capturePostHogEvent } from "@/lib/consent/posthog-client";
 
 const TESTIMONIALS = [
@@ -85,59 +71,6 @@ const TESTIMONIALS = [
       "Gartenpflege seit zwei Jahren. Kommt immer pünktlich, macht saubere Arbeit. Kann ich nur empfehlen.",
   },
 ] satisfies readonly MarqueeTestimonial[];
-
-/** Hero-Schnellzugriff: SVG aus /public/icons — `slug` = Rechner-?leistung= Preset-Schlüssel */
-const HERO_LEISTUNG_CHIPS = [
-  /** Notfall: Preset `heizung-defekt` → Situation kaputt + Gewerk Heizung (nicht `heizung-sanitaer`, das ist Erneuern-Preset) */
-  {
-    label: "Notfall",
-    icon: "19-notfall",
-    slug: "heizung-defekt",
-    situation: "notfall",
-  },
-  {
-    label: "Heizung",
-    icon: "05-heizung",
-    slug: "heizung-sanitaer",
-    situation: "erneuern",
-  },
-  {
-    label: "Strom",
-    icon: "06-elektrik",
-    slug: "elektroarbeiten",
-    situation: "erneuern",
-  },
-  {
-    label: "Garten",
-    icon: "15-gartenpflege",
-    slug: "gartenpflege",
-    situation: "betreuung",
-  },
-  {
-    label: "Bad",
-    icon: "08-bad",
-    slug: "badezimmer-sanierung",
-    situation: "erneuern",
-  },
-  {
-    label: "Boden",
-    icon: "09-boden",
-    slug: "bodenbelag",
-    situation: "erneuern",
-  },
-  {
-    label: "Streichen",
-    icon: "07-streichen",
-    slug: "malerarbeiten",
-    situation: "erneuern",
-  },
-  {
-    label: "Fenster",
-    icon: "11-fenster",
-    slug: "fenster-tueren",
-    situation: "erneuern",
-  },
-] as const;
 
 /** Echte Bärenwald-Referenzprojekte (Bildpfade Platzhalter bis finale Assets). */
 const PROJEKTE: readonly BaerenwaldProjekt[] = [
@@ -366,23 +299,10 @@ export default function BaerenwaldLandingClient({
 }: {
   leistungenSection?: ReactNode;
 }) {
-  const router = useRouter();
-  const searchComboRef = useRef<HTMLDivElement>(null);
-  const portalDropdownRef = useRef<HTMLDivElement>(null);
-  const [searchQ, setSearchQ] = useState("");
-  const [searchFocused, setSearchFocused] = useState(false);
-  const [suggestActive, setSuggestActive] = useState(-1);
   const [faqOpen, setFaqOpen] = useState<number | null>(0);
   const [mobileOpen, setMobileOpen] = useState(false);
 
   const closeMobile = () => setMobileOpen(false);
-
-  const searchSuggestions = useMemo(
-    () => getHeroSearchSuggestions(searchQ, 5),
-    [searchQ]
-  );
-  const showSearchSuggestions =
-    searchFocused && searchSuggestions.length > 0;
 
   useEffect(() => {
     const root = document.querySelector(".baerenwald-landing");
@@ -448,62 +368,6 @@ export default function BaerenwaldLandingClient({
       document.body.style.overflow = "";
     };
   }, [mobileOpen]);
-
-  useEffect(() => {
-    if (!searchFocused) return;
-    const onDocDown = (ev: MouseEvent) => {
-      const t = ev.target as Node;
-      if (searchComboRef.current?.contains(t)) return;
-      if (portalDropdownRef.current?.contains(t)) return;
-      setSearchFocused(false);
-      setSuggestActive(-1);
-    };
-    document.addEventListener("mousedown", onDocDown);
-    return () => document.removeEventListener("mousedown", onDocDown);
-  }, [searchFocused]);
-
-  useEffect(() => {
-    setSuggestActive(-1);
-  }, [searchQ]);
-
-  const goToSuggestion = (s: HeroSearchSuggestion) => {
-    router.push(buildHeroRechnerLandingUrl(s.slug, s.label));
-    setSearchFocused(false);
-    setSuggestActive(-1);
-  };
-
-  const onSearch = (e: FormEvent) => {
-    e.preventDefault();
-    capturePostHogEvent("hero_search_submitted", { query: searchQ });
-    if (
-      showSearchSuggestions &&
-      suggestActive >= 0 &&
-      suggestActive < searchSuggestions.length
-    ) {
-      goToSuggestion(searchSuggestions[suggestActive]!);
-      return;
-    }
-    router.push(buildSearchUrl(searchQ));
-  };
-
-  const onSearchKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
-    if (!showSearchSuggestions) return;
-    if (e.key === "ArrowDown") {
-      e.preventDefault();
-      setSuggestActive((i) =>
-        i < searchSuggestions.length - 1 ? i + 1 : 0
-      );
-    } else if (e.key === "ArrowUp") {
-      e.preventDefault();
-      setSuggestActive((i) =>
-        i <= 0 ? searchSuggestions.length - 1 : i - 1
-      );
-    } else if (e.key === "Escape") {
-      e.preventDefault();
-      setSearchFocused(false);
-      setSuggestActive(-1);
-    }
-  };
 
   return (
     <div className="baerenwald-landing">
@@ -621,125 +485,40 @@ export default function BaerenwaldLandingClient({
                 <br />
                 Bärenwald übernimmt Koordination, Handwerk und Umsetzung.
               </p>
-              <form className="fade-up d1 hero-search-form" onSubmit={onSearch}>
-                <div ref={searchComboRef} className="hero-search-combo">
-                  <div className="hero-search-row">
-                    <input
-                      className="hero-search-input"
-                      type="search"
-                      value={searchQ}
-                      onChange={(e) =>
-                        setSearchQ(e.target.value.slice(0, 80))
-                      }
-                      onFocus={() => setSearchFocused(true)}
-                      onBlur={() => {
-                        requestAnimationFrame(() => {
-                          const root = searchComboRef.current;
-                          const portal = portalDropdownRef.current;
-                          const ae = document.activeElement;
-                          if (portal && ae && portal.contains(ae)) return;
-                          if (!root || !ae || !root.contains(ae)) {
-                            setSearchFocused(false);
-                            setSuggestActive(-1);
-                          }
-                        });
-                      }}
-                      onKeyDown={onSearchKeyDown}
-                      placeholder="Leistung finden – z. B. Bad, Boden, Heizung"
-                      aria-label="Was suchst du?"
-                      aria-autocomplete="list"
-                      aria-controls="hero-search-listbox"
-                      aria-expanded={showSearchSuggestions}
-                      aria-activedescendant={
-                        showSearchSuggestions && suggestActive >= 0
-                          ? `hero-search-opt-${suggestActive}`
-                          : undefined
-                      }
-                      autoComplete="off"
-                    />
-                    <div className="hero-search-btn-wrap">
-                      <button type="submit" className="hero-search-btn">
-                        Preis ermitteln
-                      </button>
-                    </div>
-                  </div>
-                  <p className="hero-disclaimer">
-                    Unverbindliche Schätzung — kein Kostenvoranschlag
-                  </p>
-                  <div className="hero-ki-path">
-                    <span className="hero-path-or" aria-hidden>
-                      oder
+              <div className="hero-entry fade-up d1">
+                <div className="hero-entry-grid">
+                  <Link
+                    href="/rechner"
+                    className="hero-entry-card hero-entry-card--preis"
+                    onClick={() =>
+                      capturePostHogEvent("hero_entry_preis_clicked", {
+                        location: "hero",
+                      })
+                    }
+                  >
+                    <span className="hero-entry-card-title">Preis ermitteln</span>
+                    <span className="hero-entry-card-hint">
+                      Preisrahmen Schritt für Schritt ermitteln.
                     </span>
-                    <Link
-                      href={RECHNER_KI_BERATUNG_HREF}
-                      className="hero-ki-cta"
-                      onClick={() =>
-                        capturePostHogEvent("landing_ki_beratung_cta_clicked", {
-                          location: "hero",
-                        })
-                      }
-                    >
-                      Mein Projekt mit KI besprechen
-                    </Link>
-                  </div>
-                  {showSearchSuggestions ? (
-                    <div
-                      ref={portalDropdownRef}
-                      className="search-dropdown-portal"
-                    >
-                      <ul
-                        id="hero-search-listbox"
-                        className="search-dropdown-portal-list"
-                        role="listbox"
-                        aria-label="Vorschläge"
-                      >
-                        {searchSuggestions.map((s, idx) => (
-                          <li
-                            key={s.slug}
-                            id={`hero-search-opt-${idx}`}
-                            role="option"
-                            aria-selected={idx === suggestActive}
-                            className={
-                              idx === suggestActive
-                                ? "search-suggestion search-suggestion--active"
-                                : "search-suggestion"
-                            }
-                            onMouseDown={(e) => {
-                              e.preventDefault();
-                              goToSuggestion(s);
-                            }}
-                            onMouseEnter={() => setSuggestActive(idx)}
-                          >
-                            <span className="suggestion-title">{s.label}</span>
-                            <span className="suggestion-kategorie-badge">
-                              {heroKategorieLabel(s.category)}
-                            </span>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  ) : null}
+                  </Link>
+                  <Link
+                    href={RECHNER_KI_BERATUNG_HREF}
+                    className="hero-entry-card hero-entry-card--ki"
+                    onClick={() =>
+                      capturePostHogEvent("landing_ki_beratung_cta_clicked", {
+                        location: "hero",
+                      })
+                    }
+                  >
+                    <span className="hero-entry-badge">BärenwaldGPT</span>
+                    <span className="hero-entry-card-title">Mit KI starten</span>
+                    <span className="hero-entry-card-hint">
+                      Preisrahmen besprechen, Ideen visualisieren oder sich
+                      informieren — hier anfangen.
+                    </span>
+                  </Link>
                 </div>
-              </form>
-              {!showSearchSuggestions ? (
-                <div className="hero-chips fade-up d2">
-                  {HERO_LEISTUNG_CHIPS.map((c) => (
-                    <Link
-                      key={c.slug}
-                      className="hero-chip-link"
-                      href={`/rechner?leistung=${c.slug}&situation=${c.situation}&nf=1`}
-                      onClick={() => track.heroChipKlick(c.label)}
-                    >
-                      <BwIcon
-                        name={c.icon}
-                        size={16}
-                        className="mr-1.5 inline-block shrink-0 align-middle opacity-[0.85]"
-                      />
-                      {c.label}
-                    </Link>
-                  ))}
-                </div>
-              ) : null}
+              </div>
             </div>
             <div className="hero-visual fade-up d2">
               <div className="hero-float-wrap">
