@@ -15,8 +15,8 @@ export function KiRechnerStarter({ selected, onSelect }: KiRechnerStarterProps) 
       <p className="ki-rechner-starter-eyebrow">Dein Vorhaben</p>
       <h2 className="ki-rechner-starter-h2">Wie willst du starten?</h2>
       <p className="ki-rechner-starter-sub">
-        Was möchtest du machen? Im Chat beraten lassen — oder bewährt Schritt für
-        Schritt bis zum unverbindlichen Preisrahmen.
+        Nur den Preisrahmen — oder Beratung, Visualisierung und Anfrage? Wähle,
+        was zu dir passt.
       </p>
 
       <ul className="ki-rechner-starter-trust" aria-label="Vorteile">
@@ -24,6 +24,22 @@ export function KiRechnerStarter({ selected, onSelect }: KiRechnerStarterProps) 
         <li>Unverbindlich</li>
         <li>München &amp; Umgebung</li>
       </ul>
+
+      <button
+        type="button"
+        aria-pressed={selected === "funnel"}
+        className={cn(
+          "ki-rechner-starter-card ki-rechner-starter-card--funnel",
+          selected === "funnel" && "selected"
+        )}
+        onClick={() => onSelect("funnel")}
+      >
+        <span className="ki-rechner-starter-card-title">Preisrahmen ermitteln</span>
+        <span className="ki-rechner-starter-card-hint">
+          Situation, Gewerk, Größe, PLZ — Schritt für Schritt, der schnellste Weg,
+          wenn dir nur der Preis wichtig ist.
+        </span>
+      </button>
 
       <button
         type="button"
@@ -42,23 +58,8 @@ export function KiRechnerStarter({ selected, onSelect }: KiRechnerStarterProps) 
         </span>
         <span className="ki-rechner-starter-card-title">Frag einfach los</span>
         <span className="ki-rechner-starter-card-hint">
-          Beraten, Räume visualisieren und dein Projekt direkt im Chat anfragen —
-          mit dem gleichen BärenwaldGPT wie im Kundenportal.
-        </span>
-      </button>
-
-      <button
-        type="button"
-        aria-pressed={selected === "funnel"}
-        className={cn(
-          "ki-rechner-starter-card ki-rechner-starter-card--funnel",
-          selected === "funnel" && "selected"
-        )}
-        onClick={() => onSelect("funnel")}
-      >
-        <span className="ki-rechner-starter-card-title">Option für Option</span>
-        <span className="ki-rechner-starter-card-hint">
-          Situation, Gewerk, Größe, PLZ — Schritt für Schritt, wie du es kennst.
+          Beraten, Räume visualisieren, Preis besprechen oder Anfrage senden —
+          wenn du mehr willst als nur eine Zahl.
         </span>
       </button>
     </div>

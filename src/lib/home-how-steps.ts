@@ -1,17 +1,20 @@
 export const HOME_HOW_STEPS = [
   {
-    emoji: "📞",
+    icon: "18-hausmeister",
+    step: "01",
     title: "Du rufst einmal an.",
-    desc: "Kein stundenlanges Erklären\nund keine zehn Ansprechpartner.\nDu schilderst dein Anliegen —\nBärenwald übernimmt den Ablauf.",
+    desc: "Du schilderst dein Anliegen — Bärenwald übernimmt den Ablauf. Kein Stunden erklären, kein Zehn-Ansprechpartner-Chaos.",
   },
   {
-    emoji: "🛠️",
+    icon: "01-haus-erneuern",
+    step: "02",
     title: "Wir übernehmen alles.",
-    desc: "Von Reparatur bis Komplettprojekt.\nWir koordinieren Gewerke,\nTermine und Umsetzung —\ndu bleibst immer informiert.",
+    desc: "Gewerke, Termine, Umsetzung — du bleibst informiert, musst aber nichts koordinieren.",
   },
   {
-    emoji: "✓",
+    icon: "03-betreuung",
+    step: "03",
     title: "Du nimmst ab.",
-    desc: "Gemeinsame Abnahme, digitales\nProtokoll und ein sauber\nabgeschlossenes Projekt.\nSo wie es sein sollte.",
+    desc: "Gemeinsame Abnahme, digitales Protokoll, sauber abgeschlossen.",
   },
 ] as const;

@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import { ArrowRight } from "lucide-react";
 import Link from "next/link";
 import {
   useEffect,
@@ -23,7 +24,12 @@ import { SectionDivider } from "@/components/landing/SectionDividers";
 import { VermittlungSection } from "@/components/home/VermittlungSection";
 import { WarumBaerenwaldScrollSection } from "@/components/landing/WarumBaerenwaldScrollSection";
 import { MarketingFooter } from "@/components/layout/MarketingFooter";
+import { BwIcon } from "@/components/ui/BwIcon";
 import { WaveUnderline } from "@/components/ui/WaveUnderline";
+
+/** Hero-Einstieg: Icons aus /public/icons */
+const HERO_ENTRY_PREIS_ICON = "01-haus-erneuern";
+const HERO_ENTRY_KI_ICON = "14-gartengestaltung";
 import { SITE_CONFIG } from "@/lib/config";
 import { RECHNER_KI_BERATUNG_HREF } from "@/lib/rechner-links";
 import { HOME_FAQ_ITEMS } from "@/lib/home-content";
@@ -496,10 +502,21 @@ export default function BaerenwaldLandingClient({
                       })
                     }
                   >
-                    <span className="hero-entry-card-title">Preis ermitteln</span>
-                    <span className="hero-entry-card-hint">
-                      Preisrahmen Schritt für Schritt ermitteln.
+                    <span className="hero-entry-icon" aria-hidden>
+                      <BwIcon name={HERO_ENTRY_PREIS_ICON} size={28} />
                     </span>
+                    <span className="hero-entry-card-copy">
+                      <span className="hero-entry-card-title">Preisrahmen ermitteln</span>
+                      <span className="hero-entry-card-hint">
+                        Schritt für Schritt — der schnelle Weg zum Preisrahmen.
+                      </span>
+                    </span>
+                    <ArrowRight
+                      className="hero-entry-arrow"
+                      size={20}
+                      strokeWidth={2.25}
+                      aria-hidden
+                    />
                   </Link>
                   <Link
                     href={RECHNER_KI_BERATUNG_HREF}
@@ -510,12 +527,28 @@ export default function BaerenwaldLandingClient({
                       })
                     }
                   >
-                    <span className="hero-entry-badge">BärenwaldGPT</span>
-                    <span className="hero-entry-card-title">Mit KI starten</span>
-                    <span className="hero-entry-card-hint">
-                      Preisrahmen besprechen, Ideen visualisieren oder sich
-                      informieren — hier anfangen.
+                    <span
+                      className="hero-entry-stoerer ki-rechner-mode-label"
+                      aria-hidden
+                    >
+                      BärenwaldGPT
                     </span>
+                    <span className="hero-entry-icon hero-entry-icon--ki" aria-hidden>
+                      <BwIcon name={HERO_ENTRY_KI_ICON} size={28} />
+                    </span>
+                    <span className="hero-entry-card-copy">
+                      <span className="hero-entry-card-title">Frag einfach los</span>
+                      <span className="hero-entry-card-hint">
+                        Beraten, visualisieren, besprechen oder anfragen — wenn
+                        du mehr willst als nur den Preis.
+                      </span>
+                    </span>
+                    <ArrowRight
+                      className="hero-entry-arrow hero-entry-arrow--ki"
+                      size={20}
+                      strokeWidth={2.25}
+                      aria-hidden
+                    />
                   </Link>
                 </div>
               </div>

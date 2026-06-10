@@ -66,11 +66,6 @@ export function FunnelFooter({
           <div className="mt-1.5 text-center">{belowActions}</div>
         ) : null}
         <div className="funnel-footer-legal">
-          <span>
-            * Unverbindlicher Preisrahmen (Preisindikation) auf Basis unserer
-            Projekterfahrung in München — Festpreis nach Vor-Ort-Termin
-          </span>
-          <span className="funnel-footer-dot" aria-hidden>·</span>
           <a href="/impressum" target="_blank" rel="noopener noreferrer">
             Impressum
           </a>
