@@ -16,6 +16,9 @@ import {
   User,
 } from "lucide-react";
 
+import { OnboardingHelpButton } from "@/components/onboarding/OnboardingHelpButton";
+import { OnboardingTour } from "@/components/onboarding/OnboardingTour";
+import "@/components/onboarding/onboarding.css";
 import { PartnerAnfrageDetail } from "@/components/partner/PartnerAnfrageDetail";
 import { PartnerPlanerPanel } from "@/components/partner/PartnerPlanerPanel";
 import { PartnerProfilPanel } from "@/components/partner/PartnerProfilPanel";
@@ -33,6 +36,8 @@ import { PORTAL_OVERVIEW_PAGE_SIZE } from "@/components/shared/PortalListPaginat
 import { PortalBaerenwaldGpt } from "@/components/portal/PortalBaerenwaldGpt";
 import { PortalLegalFooter } from "@/components/shared/PortalLegalFooter";
 import { SITE_CONFIG } from "@/lib/config";
+import { isOnboardingCompleted } from "@/lib/onboarding/storage";
+import { PARTNER_ONBOARDING_SLIDES } from "@/lib/onboarding/partner-slides";
 import type {
   PartnerAnfrageItem,
   PartnerAuftragItem,
@@ -171,6 +176,13 @@ export function PartnerClient({
   );
   const [mobileDetailOpen, setMobileDetailOpen] = useState(false);
   const [gptOpen, setGptOpen] = useState(false);
+  const [onboardingOpen, setOnboardingOpen] = useState(false);
+
+  useEffect(() => {
+    if (!isOnboardingCompleted("partner")) {
+      setOnboardingOpen(true);
+    }
+  }, []);
   const [bewertungExpanded, setBewertungExpanded] = useState(false);
   const [listPage, setListPage] = useState(1);
   const [overviewQuickFilter, setOverviewQuickFilter] = useState<
@@ -584,14 +596,17 @@ export function PartnerClient({
               <p className="portal-text-meta mt-0.5 text-text-tertiary">{displayName}</p>
             </div>
           </div>
-          <form action="/partner/auth/signout" method="post">
-            <button
-              type="submit"
-              className="btn-pill-outline portal-btn-compact !px-2.5 sm:!px-3"
-            >
-              Abmelden
-            </button>
-          </form>
+          <div className="flex shrink-0 items-center gap-2">
+            <OnboardingHelpButton onClick={() => setOnboardingOpen(true)} />
+            <form action="/partner/auth/signout" method="post">
+              <button
+                type="submit"
+                className="btn-pill-outline portal-btn-compact !px-2.5 sm:!px-3"
+              >
+                Abmelden
+              </button>
+            </form>
+          </div>
         </div>
       </header>
 
@@ -1050,6 +1065,13 @@ export function PartnerClient({
           setGptOpen(false);
           if (section === "gpt") setSection("uebersicht");
         }}
+      />
+
+      <OnboardingTour
+        open={onboardingOpen}
+        audience="partner"
+        slides={PARTNER_ONBOARDING_SLIDES}
+        onClose={() => setOnboardingOpen(false)}
       />
 
       <PortalLegalFooter

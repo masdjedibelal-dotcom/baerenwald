@@ -15,6 +15,9 @@ import {
   MessagesSquare,
 } from "lucide-react";
 
+import { OnboardingHelpButton } from "@/components/onboarding/OnboardingHelpButton";
+import { OnboardingTour } from "@/components/onboarding/OnboardingTour";
+import "@/components/onboarding/onboarding.css";
 import { PortalDetailPanel } from "@/components/portal/PortalDetailPanel";
 import { PortalMobileBottomSheet } from "@/components/shared/PortalMobileBottomSheet";
 import { PortalListCard } from "@/components/shared/PortalListCard";
@@ -41,6 +44,8 @@ import {
   type PortalBautagebuchEntry,
   objektPlzOrt,
 } from "@/lib/portal/portal-detail-item";
+import { isOnboardingCompleted } from "@/lib/onboarding/storage";
+import { PORTAL_ONBOARDING_SLIDES } from "@/lib/onboarding/portal-slides";
 import { buildKundeCardRows, type PortalCardRow } from "@/lib/portal/portal-list-mappers";
 import {
   buildAnfrageCardMeta,
@@ -311,6 +316,13 @@ export function PortalClient({
   );
   const [mobileDetailOpen, setMobileDetailOpen] = useState(false);
   const [gptOpen, setGptOpen] = useState(false);
+  const [onboardingOpen, setOnboardingOpen] = useState(false);
+
+  useEffect(() => {
+    if (!isOnboardingCompleted("portal")) {
+      setOnboardingOpen(true);
+    }
+  }, []);
   const [currentPage, setCurrentPage] = useState(1);
   const [overviewPage, setOverviewPage] = useState(1);
   const [auftraegeListFilter, setAuftraegeListFilter] =
@@ -720,6 +732,7 @@ export function PortalClient({
             </div>
           </div>
           <div className="flex shrink-0 items-center gap-2">
+            <OnboardingHelpButton onClick={() => setOnboardingOpen(true)} />
             <Link
               href="/rechner"
               className="btn-pill-primary portal-btn-compact inline-flex"
@@ -1111,6 +1124,13 @@ export function PortalClient({
         variant="overlay"
         open={gptOpen}
         onClose={() => setGptOpen(false)}
+      />
+
+      <OnboardingTour
+        open={onboardingOpen}
+        audience="portal"
+        slides={PORTAL_ONBOARDING_SLIDES}
+        onClose={() => setOnboardingOpen(false)}
       />
 
       <PortalLegalFooter

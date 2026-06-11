@@ -22,6 +22,7 @@ import {
 } from "@/components/home/TestimonialsMarquee";
 import { SectionDivider } from "@/components/landing/SectionDividers";
 import { VermittlungSection } from "@/components/home/VermittlungSection";
+import { PortalPartnerLandingSection } from "@/components/home/PortalPartnerLandingSection";
 import { WarumBaerenwaldScrollSection } from "@/components/landing/WarumBaerenwaldScrollSection";
 import { MarketingFooter } from "@/components/layout/MarketingFooter";
 import { BwIcon } from "@/components/ui/BwIcon";
@@ -455,6 +456,15 @@ export default function BaerenwaldLandingClient({
             <Link href={RECHNER_KI_BERATUNG_HREF} onClick={closeMobile}>
               BärenwaldGPT
             </Link>
+            <p className="site-mobile-links-label">Deine Bereiche</p>
+            <div className="site-mobile-links site-mobile-links--portale">
+              <Link href="/portal/login" onClick={closeMobile}>
+                MeinBärenwald anmelden
+              </Link>
+              <Link href="/partner/login" onClick={closeMobile}>
+                Partner anmelden
+              </Link>
+            </div>
           </nav>
           <Link href="/rechner" className="site-mobile-cta" onClick={closeMobile}>
             Preisrahmen berechnen →
@@ -585,6 +595,10 @@ export default function BaerenwaldLandingClient({
       <SectionDivider variant="hugel" from="#f7f6f3" to="#1A3D2B" />
 
       <WarumBaerenwaldScrollSection />
+
+      <SectionDivider variant="welle" from="#f7f6f3" to="#f7f6f3" />
+
+      <PortalPartnerLandingSection />
 
       <section
         className="vision-section fade-up"

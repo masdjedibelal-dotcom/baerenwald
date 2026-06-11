@@ -12,6 +12,7 @@
     "lint": "next lint",
     "dump-prices": "npx tsx scripts/dump-price-overview.ts",
     "audit:screenshots": "node scripts/design-audit-screenshots.mjs",
+    "capture:portal-marketing": "node scripts/capture-marketing-portal-screenshots.mjs",
     "audit:pdf": "node scripts/design-audit-pdf.mjs"
   },
   "dependencies": {
