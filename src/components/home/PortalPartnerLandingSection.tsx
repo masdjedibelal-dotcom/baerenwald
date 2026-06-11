@@ -1,5 +1,6 @@
 "use client";
 
+import { Check } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 
@@ -63,7 +64,6 @@ function PortalCard({
 }) {
   return (
     <article className={`portal-landing-card portal-landing-card--${variant}`}>
-      <div className="portal-landing-card-accent" aria-hidden />
       <header className="portal-landing-card-head">
         <span className="portal-landing-card-icon" aria-hidden>
           <BwIcon name={icon} size={28} />
@@ -77,9 +77,14 @@ function PortalCard({
 
       <PortalScreenshot variant={variant} />
 
-      <ul className="portal-landing-benefits">
+      <ul className="portal-landing-benefits check-list">
         {benefits.map((b) => (
-          <li key={b}>{b}</li>
+          <li key={b}>
+            <span className="check-list-icon" aria-hidden>
+              <Check strokeWidth={3} />
+            </span>
+            {b}
+          </li>
         ))}
       </ul>
 

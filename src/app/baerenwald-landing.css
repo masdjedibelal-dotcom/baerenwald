@@ -5730,6 +5730,21 @@
   max-width: 42ch;
 }
 
+.ki-rechner-starter-card-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 52px;
+  height: 52px;
+  margin-bottom: 12px;
+  border-radius: 14px;
+  background: rgba(46, 125, 82, 0.1);
+}
+
+.ki-rechner-starter-card-icon--ki {
+  background: var(--fl-accent-light, #eaf3de);
+}
+
 .ki-rechner-starter-card {
   position: relative;
   width: 100%;
@@ -8773,20 +8788,10 @@
   overflow: hidden;
 }
 
-.portal-landing-card-accent {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 4px;
-  height: 100%;
-  background: linear-gradient(180deg, #2e7d52, #1a3d2b);
-}
-
 .portal-landing-card-head {
   display: flex;
   gap: 14px;
   align-items: flex-start;
-  padding-left: 8px;
 }
 
 .portal-landing-card-icon {
@@ -8829,7 +8834,6 @@
   overflow: hidden;
   border: 1px solid rgba(0, 0, 0, 0.06);
   background: #eef3ec;
-  margin-left: 8px;
 }
 
 .portal-landing-shot-img {
@@ -8841,14 +8845,13 @@
 
 .portal-landing-benefits {
   margin: 0;
-  padding: 0 0 0 26px;
-  font-size: 14px;
-  line-height: 1.5;
-  color: #1a2420;
 }
 
-.portal-landing-benefits li + li {
-  margin-top: 8px;
+.portal-landing-benefits.check-list li {
+  padding: 10px 0;
+  font-size: 14px;
+  color: #1a2420;
+  border-bottom-color: rgba(0, 0, 0, 0.06);
 }
 
 .portal-landing-login-btn {
@@ -8857,28 +8860,35 @@
   justify-content: center;
   min-height: 48px;
   margin-top: auto;
-  margin-left: 8px;
   border-radius: 999px;
-  background: #2e7d52;
-  color: #fff;
   font-size: 15px;
   font-weight: 600;
   text-decoration: none;
+  border: 2px solid #2e7d52;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.portal-landing-card--portal .portal-landing-login-btn {
+  background: #2e7d52;
+  color: #fff;
   box-shadow: 0 4px 16px rgba(46, 125, 82, 0.22);
 }
 
-.portal-landing-login-btn:hover {
+.portal-landing-card--portal .portal-landing-login-btn:hover {
   background: #256b45;
+  border-color: #256b45;
   color: #fff;
 }
 
 .portal-landing-card--partner .portal-landing-login-btn {
-  background: #1a3d2b;
-  box-shadow: 0 4px 16px rgba(26, 61, 43, 0.2);
+  background: #fff;
+  color: #2e7d52;
+  box-shadow: none;
 }
 
 .portal-landing-card--partner .portal-landing-login-btn:hover {
-  background: #0f2818;
+  background: rgba(46, 125, 82, 0.06);
+  color: #1a3d2b;
 }
 
 .site-mobile-links-label {

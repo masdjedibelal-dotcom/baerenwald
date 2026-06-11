@@ -1,5 +1,10 @@
 "use client";
 
+import { BwIcon } from "@/components/ui/BwIcon";
+import {
+  LANDING_ICON_HERO_KI,
+  LANDING_ICON_HERO_PREIS,
+} from "@/lib/landing-icons";
 import { cn } from "@/lib/utils";
 
 export type EinstiegWahl = "ki" | "funnel";
@@ -34,6 +39,9 @@ export function KiRechnerStarter({ selected, onSelect }: KiRechnerStarterProps) 
         )}
         onClick={() => onSelect("funnel")}
       >
+        <span className="ki-rechner-starter-card-icon" aria-hidden>
+          <BwIcon name={LANDING_ICON_HERO_PREIS} size={32} />
+        </span>
         <span className="ki-rechner-starter-card-title">Preisrahmen ermitteln</span>
         <span className="ki-rechner-starter-card-hint">
           Situation, Gewerk, Größe, PLZ — Schritt für Schritt, der schnellste Weg,
@@ -55,6 +63,9 @@ export function KiRechnerStarter({ selected, onSelect }: KiRechnerStarterProps) 
           aria-hidden
         >
           BärenwaldGPT
+        </span>
+        <span className="ki-rechner-starter-card-icon ki-rechner-starter-card-icon--ki" aria-hidden>
+          <BwIcon name={LANDING_ICON_HERO_KI} size={32} />
         </span>
         <span className="ki-rechner-starter-card-title">Frag einfach los</span>
         <span className="ki-rechner-starter-card-hint">
