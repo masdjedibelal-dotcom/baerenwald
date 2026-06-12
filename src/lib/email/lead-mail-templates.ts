@@ -409,6 +409,21 @@ export function buildInternNotification(data: InternLeadMailData): string {
 
   const freitext = extractKundenFreitext(norm, data.nachricht);
 
+  const fdRaw =
+    data.funnel_daten && typeof data.funnel_daten === "object"
+      ? (data.funnel_daten as Record<string, unknown>)
+      : {};
+  const produktRaw =
+    fdRaw.produkt && typeof fdRaw.produkt === "object"
+      ? (fdRaw.produkt as Record<string, unknown>)
+      : null;
+  const produktTitel =
+    typeof produktRaw?.produkt_titel === "string"
+      ? produktRaw.produkt_titel
+      : undefined;
+  const leistungLabel =
+    typeof fdRaw.leistung_label === "string" ? fdRaw.leistung_label : undefined;
+
   const kontaktRows = [
     optionalRow("Name", data.name),
     optionalRow("Telefon", data.telefon),
@@ -425,6 +440,8 @@ export function buildInternNotification(data: InternLeadMailData): string {
 
   const projektRows = [
     sectionHeader("Projektdetails"),
+    optionalRow("Leistung", leistungLabel),
+    optionalRow("Paket", produktTitel),
     dataRow("Vorhaben", labelSituation(norm.situation)),
     dataRow("Bereiche", bereicheLabels),
     optionalRow("Kundentyp", labelKundentyp(norm.kundentyp)),

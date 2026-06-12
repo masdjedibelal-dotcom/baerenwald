@@ -50,9 +50,7 @@ export default function HomePage() {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: faqJson }}
       />
-      <BaerenwaldLandingClient
-        leistungenSection={<LeistungenCarousel />}
-      />
+      <BaerenwaldLandingClient leistungenSection={<LeistungenCarousel />} />
       <WhatsAppFloat />
     </>
   );

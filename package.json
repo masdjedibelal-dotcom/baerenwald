@@ -10,7 +10,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "dump-prices": "npx tsx scripts/dump-price-overview.ts",
+    "verify:produkte": "npx tsx scripts/verify-produkt-preise.ts",
     "audit:screenshots": "node scripts/design-audit-screenshots.mjs",
     "capture:portal-marketing": "node scripts/capture-marketing-portal-screenshots.mjs",
     "audit:pdf": "node scripts/design-audit-pdf.mjs"

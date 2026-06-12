@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 
 import { OnboardingHelpButton } from "@/components/onboarding/OnboardingHelpButton";
+import { PortalProductPickerLink } from "@/components/portal/PortalProductPickerLink";
 import { OnboardingTour } from "@/components/onboarding/OnboardingTour";
 import "@/components/onboarding/onboarding.css";
 import { PortalDetailPanel } from "@/components/portal/PortalDetailPanel";
@@ -733,13 +734,10 @@ export function PortalClient({
           </div>
           <div className="flex shrink-0 items-center gap-2">
             <OnboardingHelpButton onClick={() => setOnboardingOpen(true)} />
-            <Link
-              href="/rechner"
-              className="btn-pill-primary portal-btn-compact inline-flex"
-            >
+            <PortalProductPickerLink className="btn-pill-primary portal-btn-compact inline-flex">
               <span className="sm:hidden">Anfrage</span>
               <span className="hidden sm:inline">Neue Anfrage</span>
-            </Link>
+            </PortalProductPickerLink>
             <form action="/portal/auth/signout" method="post">
               <button
                 type="submit"

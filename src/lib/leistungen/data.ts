@@ -93,7 +93,7 @@ export const LEISTUNGEN_DATA: Record<string, LeistungsData> = {
     preisBis: 20000,
     preisEinheit: "pauschal je nach Umfang",
     preisHinweis:
-      "Ein kleines Bad auffrischen kostet ab 6.500 €. Ein komplett neues Bad ab 10.000 €. Beim Termin schauen wir was wirklich nötig ist — und was sich lohnt.",
+      "Oben auf dieser Seite wählst du dein Bad-Paket und siehst den Preisrahmen live. Beim Termin schauen wir, was wirklich nötig ist — Festpreis nach Besichtigung.",
     vorteile: vorteil(
       ["🔧", "Alle Schritte aus einer Hand"],
       ["📐", "Durchdachte Planung vor dem Start"],

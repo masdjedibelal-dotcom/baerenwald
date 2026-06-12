@@ -7,6 +7,12 @@ import {
   derivePreisModus,
   generateFunnelHumanSummary,
 } from "@/lib/lead/funnel-notizen-summary";
+import {
+  enrichFunnelDatenForLead,
+  formatProduktSummaryLine,
+  type EnrichLeadContext,
+} from "@/lib/lead/enrich-funnel-for-lead";
+import { buildProduktMeta } from "@/lib/products/produkt-to-funnel";
 import type { FunnelState } from "@/lib/funnel/types";
 import {
   clearMarketingJourney,
@@ -17,14 +23,28 @@ export { buildFullLeadNotizen } from "@/lib/lead/funnel-notizen-summary";
 
 /** Serialisiert den Funnel-State für die API (keine `File`-Objekte) + CRM-Anreicherung. */
 export function serializeFunnelStateForLead(
-  state: FunnelState
+  state: FunnelState,
+  ctx?: EnrichLeadContext
 ): Record<string, unknown> {
   const { photos, ...rest } = state;
   const technicalDetails = buildTechnicalDetailsForLead(state);
-  const formattedSummary = generateFunnelHumanSummary(state);
+  let formattedSummary = generateFunnelHumanSummary(state);
   const preis_modus = derivePreisModus(state);
   const marketing_journey = getMarketingJourneySnapshot();
-  return {
+
+  const produktLine = ctx?.produktSlug
+    ? formatProduktSummaryLine(
+        buildProduktMeta(ctx.produktSlug, {
+          leistungSlug: ctx.leistungSlug,
+          katalogQuelle: ctx.katalogQuelle,
+        }) ?? undefined
+      )
+    : null;
+  if (produktLine) {
+    formattedSummary = `${produktLine}\n\n${formattedSummary}`;
+  }
+
+  const base = {
     ...rest,
     photoCount: photos.length,
     photos: [],
@@ -33,6 +53,9 @@ export function serializeFunnelStateForLead(
     preis_modus,
     ...(marketing_journey ? { marketing_journey } : {}),
   };
+
+  if (!ctx) return base;
+  return enrichFunnelDatenForLead(base, ctx);
 }
 
 export type PostBwLeadPayload = {

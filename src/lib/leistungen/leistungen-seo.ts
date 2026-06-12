@@ -65,7 +65,7 @@ export const LEISTUNG_SEO: Record<string, LeistungSeoBlock> = {
   },
   gartenpflege: {
     kurzeAntwort:
-      "Gartenpflege kostet in München 180–350 Euro pro Monat im Abo. Bärenwald stellt eigene Teams für Rasenmähen, Heckenschnitt und Laubbeseitigung.",
+      "Gartenpflege kostet in München im Saison-Abo etwa 120–500 Euro pro Monat — je nach Gartengröße. Bärenwald stellt eigene Teams für Rasenmähen, Heckenschnitt und Laubbeseitigung.",
     kostenH2: "Was kostet Gartenpflege in München 2026?",
     faqH2: "Häufige Fragen zur Gartenpflege in München",
   },

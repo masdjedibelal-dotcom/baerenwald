@@ -1,7 +1,6 @@
 "use client";
 
 import Image from "next/image";
-import { ArrowRight } from "lucide-react";
 import Link from "next/link";
 import {
   useEffect,
@@ -10,6 +9,11 @@ import {
 } from "react";
 
 import { BaerenwaldVisionInner } from "@/components/home/BaerenwaldVisionInner";
+import {
+  ProductPickerChips,
+  ProductPickerPanel,
+  ProductPickerProvider,
+} from "@/components/home/ProductPickerContext";
 import { HowTimelineMotion } from "@/components/home/HowTimelineMotion";
 import { KiBeratungLandingSection } from "@/components/home/KiBeratungLandingSection";
 import {
@@ -308,6 +312,7 @@ export default function BaerenwaldLandingClient({
 }) {
   const [faqOpen, setFaqOpen] = useState<number | null>(0);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [pickerOpen, setPickerOpen] = useState(false);
 
   const closeMobile = () => setMobileOpen(false);
 
@@ -323,6 +328,10 @@ export default function BaerenwaldLandingClient({
         el.classList.add("visible");
       }
     };
+
+    root.querySelectorAll(".hero-copy .fade-up, .hero-entry").forEach((el) => {
+      el.classList.add("visible");
+    });
 
     const io = new IntersectionObserver(
       (entries) => {
@@ -467,7 +476,7 @@ export default function BaerenwaldLandingClient({
             </div>
           </nav>
           <Link href="/rechner" className="site-mobile-cta" onClick={closeMobile}>
-            Preisrahmen berechnen →
+            Preis berechnen →
           </Link>
         </div>
       ) : null}
@@ -480,10 +489,15 @@ export default function BaerenwaldLandingClient({
           <div className="hero-bg-glow" />
         </div>
 
+        <ProductPickerProvider
+          embedded
+          panelOpen={pickerOpen}
+          onPanelOpenChange={setPickerOpen}
+        >
         <div className="hero-section">
           <div className="hero">
-            <div>
-              <p className="hero-eyebrow">Handwerker München</p>
+            <div className="hero-copy">
+              <p className="hero-eyebrow">Handwerk neu gedacht</p>
               <h1 className="hero-h1-split">
                 <span className="hero-h1-line--1 au">
                   Kein Vermittler.
@@ -494,7 +508,7 @@ export default function BaerenwaldLandingClient({
                 >
                   <em>Ein Ansprechpartner.</em>
                 </WaveUnderline>
-                <span className="hero-h1-line--3 au d3">Für alles.</span>
+                <span className="hero-h1-line--3 au d3">Fürs Handwerk.</span>
               </h1>
               <p className="hero-lead au d4">
                 Von Reparatur bis Komplettprojekt.
@@ -502,7 +516,7 @@ export default function BaerenwaldLandingClient({
                 Bärenwald bleibt von Anfang bis Ende dabei — Koordination,
                 Handwerk und Umsetzung.
               </p>
-              <div className="hero-entry fade-up d1">
+              <div className="hero-entry">
                 <div className="hero-entry-grid">
                   <Link
                     href="/rechner"
@@ -510,24 +524,19 @@ export default function BaerenwaldLandingClient({
                     onClick={() =>
                       capturePostHogEvent("hero_entry_preis_clicked", {
                         location: "hero",
+                        target: "rechner",
                       })
                     }
                   >
                     <span className="hero-entry-icon" aria-hidden>
-                      <BwIcon name={LANDING_ICON_HERO_PREIS} size={28} />
+                      <BwIcon name={LANDING_ICON_HERO_PREIS} size={24} />
                     </span>
                     <span className="hero-entry-card-copy">
-                      <span className="hero-entry-card-title">Preisrahmen ermitteln</span>
+                      <span className="hero-entry-card-title">Preis berechnen</span>
                       <span className="hero-entry-card-hint">
-                        Schritt für Schritt — der schnelle Weg zum Preisrahmen.
+                        Individuell — Schritt für Schritt zum Preis.
                       </span>
                     </span>
-                    <ArrowRight
-                      className="hero-entry-arrow"
-                      size={20}
-                      strokeWidth={2.25}
-                      aria-hidden
-                    />
                   </Link>
                   <Link
                     href={RECHNER_KI_BERATUNG_HREF}
@@ -545,41 +554,50 @@ export default function BaerenwaldLandingClient({
                       BärenwaldGPT
                     </span>
                     <span className="hero-entry-icon hero-entry-icon--ki" aria-hidden>
-                      <BwIcon name={LANDING_ICON_HERO_KI} size={28} />
+                      <BwIcon name={LANDING_ICON_HERO_KI} size={24} />
                     </span>
                     <span className="hero-entry-card-copy">
                       <span className="hero-entry-card-title">Frag einfach los</span>
                       <span className="hero-entry-card-hint">
-                        Beraten, visualisieren, besprechen oder anfragen — wenn
-                        du mehr willst als nur den Preis.
+                        Beraten, visualisieren, besprechen oder anfragen.
                       </span>
                     </span>
-                    <ArrowRight
-                      className="hero-entry-arrow hero-entry-arrow--ki"
-                      size={20}
-                      strokeWidth={2.25}
-                      aria-hidden
-                    />
                   </Link>
                 </div>
               </div>
+
+              <div
+                className="hero-picker-divider"
+                role="separator"
+                aria-label="oder Produkte und Pakete direkt auswählen"
+              >
+                <span>oder Produkte / Pakete direkt auswählen</span>
+              </div>
+
+              <ProductPickerChips />
             </div>
+
             <div className="hero-visual fade-up d2">
               <div className="hero-float-wrap">
                 <div className="hero-phones-clip">
                   <Image
                     src="/images/hero-handwerk-muenchen.png"
-                    alt="Handwerker-Team bei der Koordination einer Renovierung in München — Bärenwald"
+                    alt="Handwerker-Team bei der Koordination einer Renovierung in München"
                     fill
                     className="hero-phones-img"
-                    sizes="(max-width: 768px) min(92vw, 380px) 380px"
+                    sizes="(min-width: 1025px) 320px, 0px"
                     priority
                   />
                 </div>
               </div>
             </div>
+
+            <div className="hero-picker-wide">
+              <ProductPickerPanel />
+            </div>
           </div>
         </div>
+        </ProductPickerProvider>
 
         <div className="hero-bottom-round" aria-hidden />
       </section>

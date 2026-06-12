@@ -65,10 +65,49 @@ export const track = {
     ph("funnel_abbruch", { schritt, leistung });
   },
 
+  /** Produkt-Katalog: Paket gewählt (Landing, Leistung, Portal, Karussell). */
+  produktGewaehlt: (
+    produktSlug: string,
+    leistungSlug: string,
+    quelle: string
+  ) => {
+    recordMarketingClick("produkt_gewaehlt", `${quelle}: ${produktSlug}`, produktSlug);
+    ph("produkt_gewaehlt", {
+      produkt: produktSlug,
+      leistung: leistungSlug,
+      quelle,
+    });
+  },
+
   /** Leistungskarte / Link auf der Website */
   leistungLink: (label: string, href: string) => {
     recordMarketingClick("leistung_link", label, href);
     ph("leistung_link_click", { label, href });
+  },
+
+  checkoutModalOpen: (produktSlug: string, quelle: string) => {
+    recordMarketingClick("checkout_modal_open", `${quelle}: ${produktSlug}`);
+    ph("checkout_modal_open", { produkt: produktSlug, quelle });
+  },
+
+  konverterGroesseChange: (
+    familie: string,
+    groesse: string,
+    quelle: string
+  ) => {
+    ph("konverter_groesse_change", { familie, groesse, quelle });
+  },
+
+  konverterMatrixTier: (
+    familie: string,
+    tier: string,
+    quelle: string
+  ) => {
+    ph("konverter_matrix_tier", { familie, tier, quelle });
+  },
+
+  konverterMatrixView: (familie: string, quelle: string) => {
+    ph("konverter_matrix_view", { familie, quelle });
   },
 };
 

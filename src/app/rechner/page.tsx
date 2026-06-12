@@ -84,6 +84,7 @@ import {
   getLeistungRechnerPreset,
   isRechnerDeepLinkPair,
 } from "@/lib/funnel/leistung-rechner-preset";
+import { produktPreis } from "@/lib/products/produkt-preis";
 import {
   BW_FUNNEL_STEP1_OPTIONS,
   BW_FUNNEL_STEP1_ORDER,
@@ -677,6 +678,37 @@ function FunnelRechnerInner() {
   useEffect(() => {
     if (urlInit.current) return;
     if (isKiBeratungModusParam(getKiModusFromSearch(searchParams))) return;
+
+    const modus = searchParams.get("modus");
+    const produktParam = searchParams.get("produkt")?.trim();
+    if (modus === "katalog" && produktParam) {
+      const preis = produktPreis(produktParam);
+      if (preis?.state.situation) {
+        const s = preis.state;
+        setEinstiegModus("funnel");
+        setSituation(s.situation!);
+        setBereiche(s.bereiche);
+        if (s.groesse != null) {
+          setGroesse(s.groesse, s.groesseEinheit ?? "qm");
+        }
+        if (s.badAusstattung) setBadAusstattung(s.badAusstattung);
+        if (s.umfang) setUmfang(s.umfang, s.umfangFaktor ?? 1);
+        if (Object.keys(s.fachdetails).length > 0) {
+          setFachdetails(s.fachdetails);
+        }
+        setPrice(
+          preis.min,
+          preis.max,
+          preis.breakdown,
+          false,
+          null
+        );
+        setPriceConfirmed(true);
+        setScreen("ort");
+        urlInit.current = true;
+        return;
+      }
+    }
 
     const leistungPreset = getLeistungRechnerPreset(searchParams.get("leistung"));
     if (leistungPreset) {
@@ -2712,7 +2744,11 @@ function FunnelRechnerInner() {
           );
         }
         return (
-          <ThankYou variant="anfrage" onReset={handleReset} />
+          <ThankYou
+            variant="anfrage"
+            onReset={handleReset}
+            returnTo={searchParams.get("next") ?? undefined}
+          />
         );
 
       default:

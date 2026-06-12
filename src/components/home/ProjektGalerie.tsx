@@ -142,7 +142,12 @@ function ProjektBild({
   return (
     <div
       className="projekt-bild-wrap"
-      style={{ background: placeholderGradient }}
+      style={{
+        position: "relative",
+        aspectRatio: "4 / 3",
+        overflow: "hidden",
+        background: placeholderGradient,
+      }}
     >
       <div
         className={cn(

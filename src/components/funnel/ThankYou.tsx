@@ -1,5 +1,7 @@
 "use client";
 
+import { useEffect } from "react";
+
 import { NeueAnfrageResetLink } from "@/components/funnel/NeueAnfrageResetLink";
 import { SITE_CONFIG } from "@/lib/config";
 import { cn } from "@/lib/utils";
@@ -53,6 +55,8 @@ export interface ThankYouProps {
   showCalendar?: boolean;
   /** Funnel komplett neu starten (z. B. nach Danke-Screen). */
   onReset?: () => void;
+  /** Nach Danke z. B. zurück ins Portal (`?next=/portal`). */
+  returnTo?: string;
   className?: string;
 }
 
@@ -67,10 +71,19 @@ export function ThankYou({
   showTimeline = true,
   showCalendar = true,
   onReset,
+  returnTo,
   className,
 }: ThankYouProps) {
   const isTermin = variant === "termin";
   const isBeratung = variant === "beratung";
+
+  useEffect(() => {
+    if (!returnTo?.startsWith("/")) return;
+    const id = window.setTimeout(() => {
+      window.location.href = returnTo;
+    }, 2200);
+    return () => window.clearTimeout(id);
+  }, [returnTo]);
 
   const showWunschterminSummary =
     isTermin && Boolean(dateLabel?.trim()) && Boolean(timeLabel?.trim());

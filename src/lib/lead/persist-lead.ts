@@ -348,6 +348,21 @@ async function persistLeadInner(
     })
   );
 
+  const fdRecord =
+    funnel_daten && typeof funnel_daten === "object"
+      ? (funnel_daten as Record<string, unknown>)
+      : {};
+  const produktMeta =
+    fdRecord.produkt && typeof fdRecord.produkt === "object"
+      ? (fdRecord.produkt as Record<string, unknown>)
+      : null;
+  const produkt_slug =
+    typeof produktMeta?.produkt_slug === "string"
+      ? produktMeta.produkt_slug
+      : null;
+  const leistung_slug =
+    typeof fdRecord.leistung_slug === "string" ? fdRecord.leistung_slug : null;
+
   if (!name) {
     return { ok: false, error: "Name ist ein Pflichtfeld.", status: 400 };
   }
@@ -442,6 +457,8 @@ async function persistLeadInner(
       zeitraum,
       kundentyp,
       funnel_daten,
+      produkt_slug,
+      leistung_slug,
       kontakt_name: name,
       kontakt_email: kontakt_email_row,
       kontakt_telefon: telefon || null,

@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 import { SemanticFaq } from "@/components/common/SemanticFaq";
+import { LeistungsKonverterSection } from "@/components/leistungen/LeistungsKonverterSection";
 import { StadtteilLinksSection } from "@/components/handwerker/StadtteilLinksSection";
 import { SITE_CONFIG } from "@/lib/config";
 import {
@@ -73,8 +74,11 @@ export function LeistungsPage({ slug, data }: LeistungsPageProps) {
           </div>
 
           <div className="page-hero-btns">
-            <Link href={rechnerHref} className="page-hero-btn-primary">
-              Preisrahmen berechnen →
+            <a href="#konverter" className="page-hero-btn-primary">
+              Preis berechnen ↓
+            </a>
+            <Link href={rechnerHref} className="page-hero-btn-secondary">
+              Detailrechner
             </Link>
             <Link href={telHref} className="page-hero-btn-secondary">
               Direkt anrufen
@@ -88,6 +92,8 @@ export function LeistungsPage({ slug, data }: LeistungsPageProps) {
           </div>
         </div>
       </div>
+
+      <LeistungsKonverterSection leistungSlug={slug} />
 
       <section
         className="article-section article-section--lg content-section content-section--white fade-up d1"

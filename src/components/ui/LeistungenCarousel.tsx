@@ -13,6 +13,9 @@ import {
 
 import { track } from "@/lib/analytics";
 import { SITE_CONFIG } from "@/lib/config";
+import { getKarussellDefaultProdukt } from "@/lib/leistungen/leistung-produkt-map";
+import { isNotfallKarussellSlug } from "@/lib/leistungen/conversion-config";
+import { leistungHrefWithKonverter } from "@/lib/products/build-rechner-url";
 
 type KatIconName = "haus" | "werkzeug" | "garten" | "shield" | "blitz";
 
@@ -452,10 +455,21 @@ export function LeistungenCarousel() {
             onMouseLeave={() => setIsDragging(false)}
             onClickCapture={onCardClickCapture}
           >
-            {kat.leistungen.map((l) => (
+            {kat.leistungen.map((l) => {
+              const pageSlug = l.href.replace("/leistungen/", "");
+              const defaultProdukt = getKarussellDefaultProdukt(l.slug);
+              const konverterHref = isNotfallKarussellSlug(l.slug)
+                ? `${l.href}#notfall`
+                : leistungHrefWithKonverter(pageSlug, defaultProdukt ?? undefined);
+              return (
               <div key={l.slug} className="leistung-card">
                 <div
                   className={`leistung-card-visual${l.imageSrc ? " leistung-card-visual--photo" : ""}`}
+                  style={{
+                    position: "relative",
+                    height: 140,
+                    overflow: "hidden",
+                  }}
                 >
                   {l.imageSrc ? (
                     <Image
@@ -495,11 +509,11 @@ export function LeistungenCarousel() {
                       Mehr Infos
                     </Link>
                     <Link
-                      href={l.rechnerHref}
+                      href={konverterHref}
                       className="leistung-card-cta-arrow"
                       title="Preisrahmen berechnen →"
                       onClick={() =>
-                        track.leistungLink(`${l.name} — Rechner`, l.rechnerHref)
+                        track.leistungLink(`${l.name} — Rechner`, konverterHref)
                       }
                     >
                       <svg viewBox="0 0 12 12" fill="none" aria-hidden>
@@ -515,7 +529,8 @@ export function LeistungenCarousel() {
                   </div>
                 </div>
               </div>
-            ))}
+            );
+            })}
 
             <Link
               href="/rechner"

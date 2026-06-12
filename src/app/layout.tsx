@@ -108,6 +108,16 @@ export default function RootLayout({
       }
     >
       <body className="min-h-screen bg-background font-sans antialiased">
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `document.documentElement.classList.add('js');
+requestAnimationFrame(function () {
+  document.querySelectorAll('.hero-entry, .hero-copy .fade-up').forEach(function (el) {
+    el.classList.add('visible');
+  });
+});`,
+          }}
+        />
         <PHProvider>
           <JsonLdLocalBusiness />
           {children}

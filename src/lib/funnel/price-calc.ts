@@ -161,6 +161,11 @@ export const PREISE = {
   },
   heizung_notfall: {
     ausfall: { min: 250, max: 600, einheit: "pauschal" },
+    heizung_kalt: { min: 220, max: 420, einheit: "pauschal" },
+    kein_warmwasser: { min: 260, max: 480, einheit: "pauschal" },
+    druckverlust_wasser: { min: 300, max: 520, einheit: "pauschal" },
+    brenner_fehlermeldung: { min: 340, max: 580, einheit: "pauschal" },
+    geraeusche: { min: 200, max: 380, einheit: "pauschal" },
   },
   sanitaer: {
     verstopfung: { min: 120, max: 250, einheit: "pauschal" },
@@ -350,7 +355,7 @@ export function computeGartenNeuPrice(state: FunnelState): {
   };
 }
 
-/** Betreuung Reinigung einmalig: Pauschale nach Wohnungs-/Objektgröße S/M/L, nie unter 250 € vor Marge. */
+/** Betreuung Reinigung einmalig: Pauschale nach Wohnungs-/Objektgröße S/M/L, nie unter 250 €. */
 function computeBetreuungReinigungEinmalig(state: FunnelState): {
   min: number;
   max: number;
@@ -373,10 +378,7 @@ function computeBetreuungReinigungEinmalig(state: FunnelState): {
   }
   min = Math.max(250, min);
   max = Math.max(min + 80, max);
-  return {
-    min: min * GU_MARGE,
-    max: max * GU_MARGE,
-  };
+  return { min, max };
 }
 
 /** Abriss-/Klebezuschläge €/m² auf Basis PREISE.boden (vor GU_MARGE). */
@@ -401,6 +403,10 @@ const BAD_OVERFLOW_PRO_QM: Record<"standard" | "komfort" | "gehoben", number> = 
   komfort: 1200,
   gehoben: 1800,
 };
+
+function roundTo10(n: number): number {
+  return Math.round(n / 10) * 10;
+}
 
 function roundTo50(n: number): number {
   return Math.round(n / 50) * 50;
@@ -686,6 +692,7 @@ function mapSanitaerFromFachdetails(
   const lage = fd?.sanitaer?.lage;
   /** Zwischenstand: Leck gewählt, Zugänglichkeit noch offen — kein Mapping. */
   if (lage === "leitung_leck") return null;
+  if (lage === "wc") return { service: "sanitaer", type: "wc" };
   if (lage === "wand" || lage === "keller") return { service: "sanitaer", type: "leck" };
   if (lage === "sichtbar") return { service: "sanitaer", type: "armatur" };
   if (lage === "armatur") return { service: "sanitaer", type: "armatur" };
@@ -771,7 +778,8 @@ function mapReparaturNotfallFlow(
   const b = (k: string) => bereiche.includes(k);
 
   if (b("heizung")) {
-    return { service: "heizung_notfall", type: "ausfall" };
+    const typ = fd?.heizung?.typ ?? "ausfall";
+    return { service: "heizung_notfall", type: typ };
   }
 
   if (b("strom") || b("elektro") || b("elektrik")) {
@@ -811,6 +819,10 @@ function mapReparaturNotfallFlow(
  * Keine m²-Logik.
  */
 function getReparaturBasisBand(service: string, type: string): [number, number] {
+  const preise = PREISE as Record<string, Record<string, BasisEintrag> | undefined>;
+  const svc = preise[service];
+  const entry = svc?.[type];
+  if (entry) return [entry.min, entry.max];
   if (service === "sanitaer") return [280, 480];
   if (service === "elektro") return [280, 450];
   if (service === "heizung_notfall") return [320, 550];
@@ -984,13 +996,12 @@ export function mapToPrice(state: FunnelState): BwPriceMapping | null {
     const w = fd.garten.was;
     if (w === "gefahrenabwehr") return null;
     const n = Math.max(1, state.groesse ?? 1);
-    const m = GU_MARGE;
     if (w === "baum") {
       const p = PREISE.projekt.baum_betreuung;
       return {
         service: "projekt",
         type: "baum_betreuung",
-        customPriceRange: { min: p.min * n * m, max: p.max * n * m },
+        customPriceRange: { min: p.min * n, max: p.max * n },
       };
     }
     if (w === "obstbaum") {
@@ -998,7 +1009,7 @@ export function mapToPrice(state: FunnelState): BwPriceMapping | null {
       return {
         service: "projekt",
         type: "obstbaum_betreuung",
-        customPriceRange: { min: p.min * n * m, max: p.max * n * m },
+        customPriceRange: { min: p.min * n, max: p.max * n },
       };
     }
   }
@@ -1110,11 +1121,10 @@ export function mapToPrice(state: FunnelState): BwPriceMapping | null {
       }
       const m = Math.max(0, state.groesse ?? 0);
       const raw = m * 35 + 450;
-      const px = raw * GU_MARGE;
       return {
         service: "winterdienst",
         type: "saison",
-        customPriceRange: { min: px, max: px },
+        customPriceRange: { min: raw, max: raw },
       };
     }
     if (b("hausmeister")) {
@@ -1124,11 +1134,10 @@ export function mapToPrice(state: FunnelState): BwPriceMapping | null {
       }
       const g = state.groesse ?? 55;
       const monat = g <= 80 ? 150 : 450;
-      const px = monat * GU_MARGE;
       return {
         service: "hausmeister",
         type: "monatlich",
-        customPriceRange: { min: px, max: px },
+        customPriceRange: { min: monat, max: monat },
       };
     }
   }
@@ -1266,7 +1275,14 @@ const TYP_LABEL: Record<string, Record<string, string>> = {
     terrasse: "Terrasse neu (GU-Paket)",
     garten_neu: "Gartengestaltung (Auffrischung oder Neuanlage, GU-Paket)",
   },
-  heizung_notfall: { ausfall: "Notfall Heizung / Wasser" },
+  heizung_notfall: {
+    ausfall: "Notfall Heizung / Wasser",
+    heizung_kalt: "Heizung wird nicht warm",
+    kein_warmwasser: "Kein Warmwasser",
+    druckverlust_wasser: "Druckverlust / Wasserverlust Heizung",
+    brenner_fehlermeldung: "Brennerstörung / Fehlermeldung",
+    geraeusche: "Geräusche an der Heizung",
+  },
   abriss: {
     innen: "Abriss innen",
     komplett: "Abriss komplett",
@@ -1530,37 +1546,6 @@ function computePriceCore(state: FunnelState): {
     basisMax *= GU_MARGE;
   }
 
-  const betreuungMitGu =
-    state.situation === "betreuung" &&
-    !reparaturPauschal &&
-    !(
-      service === "reinigung" &&
-      state.umfang === "einmalig" &&
-      customPriceRange
-    ) &&
-    !(
-      service === "projekt" &&
-      type === "garten_neu" &&
-      customPriceRange
-    ) &&
-    !(
-      service === "projekt" &&
-      (type === "baum" ||
-        type === "baum_betreuung" ||
-        type === "obstbaum_betreuung") &&
-      customPriceRange
-    ) &&
-    !(service === "winterdienst" && customPriceRange) &&
-    !(service === "hausmeister" && customPriceRange);
-
-  if (betreuungMitGu) {
-    const bt = ["garten", "reinigung", "winterdienst", "hausmeister"];
-    if (bt.includes(service)) {
-      basisMin *= GU_MARGE;
-      basisMax *= GU_MARGE;
-    }
-  }
-
   if (service === "boden") {
     const sur = getBodenAbrissZuschlagProQm(state);
     basisMin = (basisMin + sur) * GU_MARGE;
@@ -1669,16 +1654,23 @@ function computePriceCore(state: FunnelState): {
   const mitteAdjustiert = mitte0 * plzFaktor + notdienst;
   const spanPlz = halbSpanne * plzFaktor;
 
+  const gartenProBesuch =
+    service === "garten" &&
+    state.situation === "betreuung" &&
+    einheit.includes("Besuch");
+
   const roundEuro =
     service === "bad" || service === "boden"
       ? roundTo50
-      : (n: number) => Math.round(n / 100) * 100;
+      : gartenProBesuch
+        ? roundTo10
+        : (n: number) => Math.round(n / 100) * 100;
 
   let mindestauftragAktiv = false;
   let finalMin = roundEuro(mitteAdjustiert - spanPlz);
   let finalMax = roundEuro(mitteAdjustiert + spanPlz);
 
-  if (finalMin < 150) {
+  if (finalMin < 150 && !gartenProBesuch) {
     mindestauftragAktiv = true;
     finalMin = 150;
     finalMax = Math.max(finalMax, 300);
