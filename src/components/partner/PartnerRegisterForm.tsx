@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useCallback, useState } from "react";
 
 import { acceptPartnerRahmenvertragForEmail } from "@/app/actions/partner-vertrag";
+import { verifyPartnerRegistrationEmail } from "@/app/actions/partner-registration";
 import { getPartnerRahmenvertragPreview } from "@/app/actions/partner-rahmenvertrag-preview";
 import { PartnerRahmenvertragAcceptBlock } from "@/components/partner/PartnerRahmenvertragAcceptBlock";
 import { PortalResendConfirmation } from "@/components/portal/PortalResendConfirmation";
@@ -49,14 +50,22 @@ export function PartnerRegisterForm() {
     }
   }, []);
 
-  function goToStep2() {
+  async function goToStep2() {
     const trimmed = email.trim();
     if (!trimmed.includes("@")) {
       setError("Bitte gib eine gültige E-Mail ein.");
       return;
     }
     setError(null);
-    void loadPreview(trimmed);
+    setPreviewLoading(true);
+    const check = await verifyPartnerRegistrationEmail(trimmed);
+    if (!check.ok) {
+      setPreviewLoading(false);
+      setError(check.error);
+      return;
+    }
+    await loadPreview(trimmed);
+    setPreviewLoading(false);
     setStep(2);
   }
 
@@ -122,8 +131,7 @@ export function PartnerRegisterForm() {
       <div className="space-y-3 text-center portal-text-body text-text-secondary">
         <p>
           Wir haben dir eine Bestätigungs-E-Mail geschickt. Nach der Bestätigung
-          verknüpfen wir dein Konto mit deinem Partner-Profil — nur wenn deine
-          E-Mail bei uns hinterlegt ist.
+          kannst du dich im Partner-Portal anmelden.
         </p>
         <PortalResendConfirmation defaultEmail={email} />
         <Link href="/partner/login" className="font-semibold text-accent hover:underline">
@@ -136,8 +144,8 @@ export function PartnerRegisterForm() {
   return (
     <div className="space-y-5">
       <p className="rounded-lg bg-muted/60 px-3 py-2 portal-text-meta text-text-secondary">
-        Für Handwerksbetriebe &amp; Partner — zugewiesene Anfragen, Angebote und
-        Aufträge an einem Ort.
+        Für Handwerksbetriebe &amp; Partner — mit der E-Mail, die bei Bärenwald für
+        dich hinterlegt ist, legst du dein Konto in wenigen Schritten an.
       </p>
 
       <ol className="flex gap-2" aria-label="Registrierungsschritte">
@@ -174,18 +182,20 @@ export function PartnerRegisterForm() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               className="portal-input w-full rounded-xl border border-border-default bg-surface-card px-3 py-3 focus:border-accent"
-              placeholder="die bei Bärenwald hinterlegte Adresse"
+              placeholder="deine@firma.de"
             />
           </label>
           <p className="portal-text-meta text-text-tertiary">
-            Nur mit der E-Mail, die Bärenwald für dich als Partner hinterlegt hat.
+            Du kannst dich registrieren, sobald deine E-Mail bei uns als Partner oder
+            Handwerker im System hinterlegt ist — eine extra Freischaltung ist nicht nötig.
           </p>
           <button
             type="button"
-            onClick={goToStep2}
-            className="btn-pill-primary w-full !py-2.5"
+            onClick={() => void goToStep2()}
+            disabled={previewLoading}
+            className="btn-pill-primary w-full !py-2.5 disabled:opacity-60"
           >
-            Weiter zum Vertrag
+            {previewLoading ? "Wird geprüft…" : "Weiter zum Vertrag"}
           </button>
         </div>
       ) : null}

@@ -58,6 +58,11 @@ export function PortalLoginForm() {
           <PortalResendConfirmation defaultEmail={email} className="text-left" />
         </div>
       ) : null}
+      {hint === "password-updated" ? (
+        <p className="rounded-lg bg-accent-light/60 px-3 py-3 portal-text-body text-accent">
+          Dein Passwort wurde gespeichert. Du kannst dich jetzt anmelden.
+        </p>
+      ) : null}
       {authError ? (
         <p className="rounded-lg bg-red-50 px-3 py-2 portal-text-body text-red-800">
           {authMsg ?? "Anmeldung fehlgeschlagen. Bitte versuche es erneut."}

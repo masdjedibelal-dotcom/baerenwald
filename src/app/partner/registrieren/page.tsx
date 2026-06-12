@@ -10,7 +10,7 @@ export default function PartnerRegisterPage() {
   return (
     <PartnerAuthShell
       title="Registrieren"
-      subtitle="Nur mit bei uns hinterlegter Partner-E-Mail."
+      subtitle="Mit der im CRM hinterlegten Partner-E-Mail — keine extra Freischaltung nötig."
     >
       <PartnerRegisterForm />
     </PartnerAuthShell>

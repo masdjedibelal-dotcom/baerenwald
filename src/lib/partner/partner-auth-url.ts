@@ -9,5 +9,5 @@ export function partnerAuthCallbackUrl(nextPath = "/partner"): string {
 }
 
 export function partnerPasswordResetCallbackUrl(): string {
-  return `${SITE_CONFIG.url}/auth/callback?next=${encodeURIComponent("/partner/passwort-neu")}`;
+  return `${SITE_CONFIG.url}/partner/passwort-neu`;
 }

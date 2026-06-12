@@ -66,16 +66,9 @@ https://baerenwaldmuenchen.de
 **Redirect URLs** (alle eintragen — oder Wildcard `https://baerenwaldmuenchen.de/**`):
 
 ```
-https://baerenwaldmuenchen.de/auth/callback
-https://baerenwaldmuenchen.de/auth/callback?next=%2Fportal%2Fpasswort-neu
-https://baerenwaldmuenchen.de/auth/callback?next=%2Fpartner%2Fpasswort-neu
-https://baerenwaldmuenchen.de/portal/auth/callback
-https://baerenwaldmuenchen.de/portal/auth/callback?next=%2Fportal%2Fpasswort-neu
-https://baerenwaldmuenchen.de/portal/login
 https://baerenwaldmuenchen.de/portal/passwort-neu
-https://baerenwaldmuenchen.de/partner/auth/callback
-https://baerenwaldmuenchen.de/partner/auth/callback?next=%2Fpartner%2Fpasswort-neu
 https://baerenwaldmuenchen.de/partner/passwort-neu
+https://baerenwaldmuenchen.de/auth/callback
 http://localhost:3000/auth/callback
 http://localhost:3000/auth/callback?next=%2Fportal%2Fpasswort-neu
 http://localhost:3000/portal/auth/callback
@@ -87,7 +80,7 @@ http://localhost:3000/partner/auth/callback?next=%2Fpartner%2Fpasswort-neu
 http://localhost:3000/partner/passwort-neu
 ```
 
-> **Passwort-Reset:** Der Link aus der Mail muss auf `/auth/callback` (oder `/portal/auth/callback`) landen, tauscht den Code ein und leitet weiter zu **`/portal/passwort-neu`**. Fehlt die Redirect-URL in Supabase, landet man nur auf der **Startseite** (`https://baerenwaldmuenchen.de/#`) — dann in Auth → URL Configuration die URLs oben eintragen.
+> **Passwort-Reset:** Der Link aus der Mail landet auf **`/portal/passwort-neu`** (bzw. `/partner/passwort-neu`). Dort wird die Session im Browser aufgebaut, E-Mail angezeigt, neues Passwort gesetzt — danach Weiterleitung zum Login. Fehlt die Redirect-URL in Supabase, landet man auf der Startseite.
 
 ## 5. Authentication → Email Templates
 
@@ -155,7 +148,7 @@ CRM, Kundenportal und Partnerportal nutzen **dieselbe Supabase-Auth**. Ein Mitar
 | Portal | Voraussetzung |
 |--------|----------------|
 | **MeinBärenwald** | `kunden.email` = Login-E-Mail (wird beim ersten Login verknüpft) |
-| **Partner** | `handwerker.email` = Login-E-Mail, `aktiv = true` (CRM legt Partner an) |
+| **Partner** | `handwerker.email` = Login-E-Mail (Partner im CRM anlegen reicht — kein extra Freischalten) |
 
 **Wichtig:** Es gibt **keine** Sperre mehr für CRM-Mitarbeiter im App-Code. Migration `20260605120000_unified_crm_portal_access.sql` (und ggf. `20260604170000_allow_crm_staff_partner_portal.sql`) im SQL Editor ausführen.
 

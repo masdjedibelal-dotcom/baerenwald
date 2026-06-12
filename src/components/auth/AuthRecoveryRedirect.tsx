@@ -3,10 +3,8 @@
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect } from "react";
 
-import { getSupabaseBrowserClient } from "@/lib/supabase/client";
-
 /**
- * Fallback: Supabase leitet manchmal auf die Site-URL statt auf /auth/callback,
+ * Fallback: Supabase leitet manchmal auf die Site-URL statt auf /portal/passwort-neu,
  * wenn die Redirect-URL nicht freigeschaltet ist — oder liefert Tokens im Hash.
  */
 export function AuthRecoveryRedirect() {
@@ -17,23 +15,22 @@ export function AuthRecoveryRedirect() {
   useEffect(() => {
     if (typeof window === "undefined") return;
 
-    const onAuthRoute =
-      pathname?.includes("/auth/callback") || pathname?.includes("/passwort-neu");
-    if (onAuthRoute) return;
+    const onPasswordPage =
+      pathname?.includes("/passwort-neu") || pathname?.includes("/auth/callback");
+    if (onPasswordPage) return;
 
     const code = searchParams.get("code");
     const type = searchParams.get("type");
     if (code) {
-      const next =
-        type === "recovery"
+      const dest =
+        type === "recovery" || searchParams.get("next")?.includes("passwort")
           ? pathname?.startsWith("/partner")
             ? "/partner/passwort-neu"
             : "/portal/passwort-neu"
           : pathname?.startsWith("/partner")
             ? "/partner"
             : "/portal";
-      const qs = new URLSearchParams({ code, next });
-      router.replace(`/auth/callback?${qs.toString()}`);
+      router.replace(`${dest}?code=${encodeURIComponent(code)}`);
       return;
     }
 
@@ -43,29 +40,12 @@ export function AuthRecoveryRedirect() {
     const hashParams = new URLSearchParams(hash);
     if (hashParams.get("type") !== "recovery") return;
 
-    const supabase = getSupabaseBrowserClient();
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event !== "PASSWORD_RECOVERY" && event !== "SIGNED_IN") return;
-      if (!session) return;
+    const dest = pathname?.startsWith("/partner")
+      ? "/partner/passwort-neu"
+      : "/portal/passwort-neu";
 
-      subscription.unsubscribe();
-      const role = session.user.user_metadata?.portal_role;
-      const dest =
-        role === "handwerker" || pathname?.startsWith("/partner")
-          ? "/partner/passwort-neu"
-          : "/portal/passwort-neu";
-
-      window.history.replaceState(
-        null,
-        "",
-        window.location.pathname + window.location.search
-      );
-      router.replace(dest);
-    });
-
-    return () => subscription.unsubscribe();
+    window.history.replaceState(null, "", window.location.pathname + window.location.search);
+    router.replace(dest);
   }, [pathname, router, searchParams]);
 
   return null;

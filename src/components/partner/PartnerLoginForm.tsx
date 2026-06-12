@@ -47,7 +47,7 @@ export function PartnerLoginForm() {
   return (
     <form onSubmit={onSubmit} className="space-y-4">
       <p className="rounded-lg bg-muted/60 px-3 py-2 portal-text-meta text-text-secondary">
-        Zugang nur mit der bei Bärenwald hinterlegten Partner-E-Mail. Noch kein Konto?{" "}
+        Zugang mit der bei Bärenwald hinterlegten Partner-E-Mail. Noch kein Konto?{" "}
         <Link href="/partner/registrieren" className="font-semibold text-accent hover:underline">
           Registrieren
         </Link>
@@ -60,6 +60,11 @@ export function PartnerLoginForm() {
           </p>
           <PortalResendConfirmation defaultEmail={email} className="text-left" />
         </div>
+      ) : null}
+      {hint === "password-updated" ? (
+        <p className="rounded-lg bg-accent-light/60 px-3 py-3 portal-text-body text-accent">
+          Dein Passwort wurde gespeichert. Du kannst dich jetzt anmelden.
+        </p>
       ) : null}
       {authError ? (
         <p className="rounded-lg bg-red-50 px-3 py-2 portal-text-body text-red-800">

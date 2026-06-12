@@ -1,3 +1,5 @@
+import { Suspense } from "react";
+
 import { PortalAuthShell } from "@/components/portal/PortalAuthShell";
 import { PortalSetPasswordForm } from "@/components/portal/PortalSetPasswordForm";
 
@@ -9,11 +11,16 @@ export const metadata = {
 export default function PartnerPasswordNewPage() {
   return (
     <PortalAuthShell title="Neues Passwort festlegen">
-      <PortalSetPasswordForm
-        homeHref="/partner"
-        loginHref="/partner/login"
-        forgotHref="/partner/passwort-vergessen"
-      />
+      <Suspense
+        fallback={
+          <p className="portal-text-body text-center text-text-secondary">Wird geladen…</p>
+        }
+      >
+        <PortalSetPasswordForm
+          loginHref="/partner/login"
+          forgotHref="/partner/passwort-vergessen"
+        />
+      </Suspense>
     </PortalAuthShell>
   );
 }

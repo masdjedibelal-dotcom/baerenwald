@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 
 import { confirmCrmProjektvertrag } from "@/lib/partner/partner-crm-api";
 import { linkPortalHandwerkerToAuthUser } from "@/lib/partner/link-portal-handwerker";
+import { findHandwerkerForRegistration } from "@/lib/partner/partner-registration-eligibility";
 import { createClient } from "@/lib/supabase/server";
 import { isSupabaseConfigured, supabaseAdmin } from "@/lib/supabase";
 
@@ -140,12 +141,7 @@ export async function acceptPartnerRahmenvertragForEmail(opts: {
   const email = opts.email.trim().toLowerCase();
   if (!email) return { ok: false, error: "E-Mail fehlt." };
 
-  const { data: hw } = await supabaseAdmin
-    .from("handwerker")
-    .select("id")
-    .ilike("email", email)
-    .limit(1)
-    .maybeSingle();
+  const hw = await findHandwerkerForRegistration(email);
 
   if (!hw?.id) {
     return {

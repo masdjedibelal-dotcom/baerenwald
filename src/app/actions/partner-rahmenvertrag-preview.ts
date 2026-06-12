@@ -1,7 +1,7 @@
 "use server";
 
+import { findHandwerkerForRegistration } from "@/lib/partner/partner-registration-eligibility";
 import { loadRahmenvertrag } from "@/lib/partner/load-partner-compliance-data";
-import { supabaseAdmin } from "@/lib/supabase";
 import { isSupabaseConfigured } from "@/lib/supabase";
 
 export type PartnerRahmenvertragPreview = {
@@ -26,13 +26,7 @@ export async function getPartnerRahmenvertragPreview(
   const trimmed = email.trim().toLowerCase();
   if (!trimmed) return empty;
 
-  const { data: hw } = await supabaseAdmin
-    .from("handwerker")
-    .select("id")
-    .ilike("email", trimmed)
-    .limit(1)
-    .maybeSingle();
-
+  const hw = await findHandwerkerForRegistration(trimmed);
   if (!hw?.id) return empty;
 
   const rahmen = await loadRahmenvertrag(String(hw.id));

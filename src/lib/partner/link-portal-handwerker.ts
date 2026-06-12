@@ -1,3 +1,4 @@
+import { findHandwerkerForRegistration } from "@/lib/partner/partner-registration-eligibility";
 import { supabaseAdmin } from "@/lib/supabase";
 
 export type LinkPortalHandwerkerResult =
@@ -6,11 +7,7 @@ export type LinkPortalHandwerkerResult =
 
 /**
  * Verknüpft Auth-User mit handwerker.auth_user_id.
- * Nur bestehende Partner (vom CRM angelegt) — kein Auto-Anlegen.
- *
- * CRM-Mitarbeiter (user_profiles) sind ausdrücklich erlaubt, wenn dieselbe
- * E-Mail im Handwerker-Stamm steht. Ein Konto kann parallel Kunden- und
- * Partner-Portal nutzen (gleiche auth.users-ID).
+ * Voraussetzung: Handwerker/Partner im CRM mit dieser E-Mail — kein Extra-Freischalten.
  */
 export async function linkPortalHandwerkerToAuthUser(opts: {
   userId: string;
@@ -31,29 +28,13 @@ export async function linkPortalHandwerkerToAuthUser(opts: {
     return { ok: true, handwerkerId: String(byAuth.id) };
   }
 
-  const { data: byEmail, error: emailErr } = await supabaseAdmin
-    .from("handwerker")
-    .select("id, auth_user_id, email, aktiv")
-    .ilike("email", email)
-    .limit(1)
-    .maybeSingle();
-
-  if (emailErr) {
-    return { ok: false, error: emailErr.message };
-  }
+  const byEmail = await findHandwerkerForRegistration(email);
 
   if (!byEmail?.id) {
     return {
       ok: false,
       error:
-        "Diese E-Mail ist bei uns noch nicht als Partner hinterlegt. Bitte wende dich an Bärenwald, damit wir deinen Zugang freischalten.",
-    };
-  }
-
-  if (byEmail.aktiv === false) {
-    return {
-      ok: false,
-      error: "Dein Partner-Profil ist derzeit nicht aktiv. Bitte kontaktiere uns.",
+        "Diese E-Mail ist bei uns noch nicht als Partner hinterlegt. Bitte wende dich an Bärenwald.",
     };
   }
 
