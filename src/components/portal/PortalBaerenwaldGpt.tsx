@@ -87,7 +87,7 @@ function PortalBaerenwaldGptInner({
                 rel="noreferrer"
                 className="btn-pill-primary portal-btn !px-4 !py-3"
               >
-                Zum Preisrahmen
+                Zum Preis
               </a>
             ) : null}
             {beratungCtaVisible ? (

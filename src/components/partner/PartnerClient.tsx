@@ -16,7 +16,6 @@ import {
   User,
 } from "lucide-react";
 
-import { OnboardingHelpButton } from "@/components/onboarding/OnboardingHelpButton";
 import { OnboardingTour } from "@/components/onboarding/OnboardingTour";
 import "@/components/onboarding/onboarding.css";
 import { PartnerAnfrageDetail } from "@/components/partner/PartnerAnfrageDetail";
@@ -597,7 +596,6 @@ export function PartnerClient({
             </div>
           </div>
           <div className="flex shrink-0 items-center gap-2">
-            <OnboardingHelpButton onClick={() => setOnboardingOpen(true)} />
             <form action="/partner/auth/signout" method="post">
               <button
                 type="submit"

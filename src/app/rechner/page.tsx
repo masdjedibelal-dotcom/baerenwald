@@ -85,6 +85,7 @@ import {
   isRechnerDeepLinkPair,
 } from "@/lib/funnel/leistung-rechner-preset";
 import { produktPreis } from "@/lib/products/produkt-preis";
+import { readPortalPrefillFromSearch } from "@/lib/portal/portal-contact-prefill";
 import {
   BW_FUNNEL_STEP1_OPTIONS,
   BW_FUNNEL_STEP1_ORDER,
@@ -213,6 +214,25 @@ function asLibOpt(o: FunnelStepOption): LibStepOption {
 }
 
 type EinstiegModus = "trust" | "wahl" | "ki" | "funnel";
+
+function applyPortalPrefillFromUrl(
+  params: URLSearchParams,
+  apply: {
+    updateLeadField: (field: string, value: string) => void;
+    setPlz: (plz: string) => void;
+  }
+) {
+  if (params.get("quelle") !== "portal") return;
+  const pf = readPortalPrefillFromSearch(params);
+  if (pf.vorname) apply.updateLeadField("vorname", pf.vorname);
+  if (pf.nachname) apply.updateLeadField("nachname", pf.nachname);
+  if (pf.email) apply.updateLeadField("email", pf.email);
+  if (pf.telefon) apply.updateLeadField("telefon", pf.telefon);
+  if (pf.plz) apply.setPlz(pf.plz);
+  if (pf.ort) apply.updateLeadField("ort", pf.ort);
+  if (pf.strasse) apply.updateLeadField("strasse", pf.strasse);
+  if (pf.hausnummer) apply.updateLeadField("hausnummer", pf.hausnummer);
+}
 
 function FunnelRechnerInner() {
   const router = useRouter();
@@ -704,6 +724,7 @@ function FunnelRechnerInner() {
           null
         );
         setPriceConfirmed(true);
+        applyPortalPrefillFromUrl(searchParams, { updateLeadField, setPlz });
         setScreen("ort");
         urlInit.current = true;
         return;

@@ -7,7 +7,7 @@ export const PARTNER_ONBOARDING_SLIDES: OnboardingSlide[] = [
     eyebrow: "DEIN COCKPIT",
     title: "Tagesgeschäft zentral",
     body: "Offene Anfragen, laufende Angebote und Aufträge — ohne Excel und E-Mail-Chaos.",
-    todos: [
+    highlights: [
       "Übersicht mit KPIs öffnen",
       "Offene Anfragen priorisieren",
       "Planer für Termine nutzen",
@@ -19,7 +19,7 @@ export const PARTNER_ONBOARDING_SLIDES: OnboardingSlide[] = [
     eyebrow: "ZUSAGE",
     title: "Anfragen annehmen",
     body: "Qualifizierte Projekte von Bärenwald — Details prüfen, annehmen und direkt mit dem Angebot starten.",
-    todos: [
+    highlights: [
       "Projektinfos und Unterlagen lesen",
       "„Annehmen“ oder mit Begründung ablehnen",
       "Danach Preis & PDF im nächsten Schritt",
@@ -31,7 +31,7 @@ export const PARTNER_ONBOARDING_SLIDES: OnboardingSlide[] = [
     eyebrow: "ANGEBOT",
     title: "Preis & PDF einreichen",
     body: "Netto oder Brutto plus Angebots-PDF hochladen — Bärenwald leitet an den Kunden weiter.",
-    todos: [
+    highlights: [
       "Preis eintragen (Netto/Brutto)",
       "Angebots-PDF hochladen",
       "Absenden — Änderung danach nicht mehr möglich",
@@ -43,7 +43,7 @@ export const PARTNER_ONBOARDING_SLIDES: OnboardingSlide[] = [
     eyebrow: "BAUTAGEBUCH",
     title: "Fortschritt dokumentieren",
     body: "Tagebuch-Einträge mit Fotos und Notizen — Kunde und Bärenwald sehen den Stand live.",
-    todos: [
+    highlights: [
       "Neuen Bautagebuch-Eintrag anlegen",
       "Fotos vom Fortschritt hochladen",
       "Rechnung nach Abschluss einreichen",

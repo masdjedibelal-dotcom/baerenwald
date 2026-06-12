@@ -15,7 +15,7 @@ import {
   MessagesSquare,
 } from "lucide-react";
 
-import { OnboardingHelpButton } from "@/components/onboarding/OnboardingHelpButton";
+import { PortalProductPicker } from "@/components/portal/PortalProductPicker";
 import { PortalProductPickerLink } from "@/components/portal/PortalProductPickerLink";
 import { OnboardingTour } from "@/components/onboarding/OnboardingTour";
 import "@/components/onboarding/onboarding.css";
@@ -67,12 +67,19 @@ import {
   type PortalAnsprechpartner,
 } from "@/lib/portal/portal-ansprechpartner";
 import type { PortalObjekt } from "@/lib/portal/portal-objekt";
+import { buildPortalContactPrefill } from "@/lib/portal/portal-contact-prefill";
 import { portalDetailStatusPillClass } from "@/lib/shared/portal-detail-format";
 import { cn } from "@/lib/utils";
 import { PortalBaerenwaldGpt } from "@/components/portal/PortalBaerenwaldGpt";
 import { PortalLegalFooter } from "@/components/shared/PortalLegalFooter";
 
-type PortalKunde = { name?: string };
+type PortalKunde = {
+  name?: string | null;
+  email?: string | null;
+  plz?: string | null;
+  ort?: string | null;
+  adresse?: string | null;
+};
 type PortalPosition = {
   id: string;
   titel: string;
@@ -205,36 +212,14 @@ function emptyLabelForSection(section: OverviewTabId | SectionId): string {
   return "Noch keine Einträge";
 }
 
-function PortalEmptyState({
-  section,
-  onNavigate,
-}: {
-  section: OverviewTabId | SectionId;
-  onNavigate?: () => void;
-}) {
+function PortalEmptyState({ section }: { section: OverviewTabId | SectionId }) {
   const label = emptyLabelForSection(section);
   return (
     <div className="rounded-xl border border-dashed border-border-light bg-muted/20 px-4 py-8 text-center">
       <p className="portal-text-body text-text-secondary">{label}</p>
       <p className="portal-text-meta mt-1 text-text-tertiary">
-        Starte mit einem Preisrahmen — wir koordinieren den Rest.
+        Wähle oben ein Projekt — wir koordinieren den Rest.
       </p>
-      {onNavigate ? (
-        <button
-          type="button"
-          onClick={onNavigate}
-          className="btn-pill-primary portal-btn mt-4 !px-5 !py-2.5"
-        >
-          Preisrahmen berechnen
-        </button>
-      ) : (
-        <Link
-          href="/rechner"
-          className="btn-pill-primary portal-btn mt-4 inline-flex !px-5 !py-2.5"
-        >
-          Preisrahmen berechnen
-        </Link>
-      )}
     </div>
   );
 }
@@ -330,6 +315,19 @@ export function PortalClient({
     useState<AuftraegeListFilterId>("alle");
 
   const vorname = (kunde?.name || "Kunde").split(" ")[0] || "Kunde";
+
+  const contactPrefill = useMemo(
+    () =>
+      buildPortalContactPrefill({
+        kunde,
+        leads: [...leads, ...leadsNurAngebotPhase].sort((a, b) => {
+          const ta = a.created_at ? new Date(a.created_at).getTime() : 0;
+          const tb = b.created_at ? new Date(b.created_at).getTime() : 0;
+          return tb - ta;
+        }),
+      }),
+    [kunde, leads, leadsNurAngebotPhase]
+  );
   const offeneAuftraegeCount = auftraege.filter(
     (a) => !isStorniertStatus(a.status) && !isAuftragAbgeschlossen(a)
   ).length;
@@ -733,7 +731,6 @@ export function PortalClient({
             </div>
           </div>
           <div className="flex shrink-0 items-center gap-2">
-            <OnboardingHelpButton onClick={() => setOnboardingOpen(true)} />
             <PortalProductPickerLink className="btn-pill-primary portal-btn-compact inline-flex">
               <span className="sm:hidden">Anfrage</span>
               <span className="hidden sm:inline">Neue Anfrage</span>
@@ -822,10 +819,11 @@ export function PortalClient({
                 </article>
               </div>
 
+              <PortalProductPicker contactPrefill={contactPrefill} />
+
               {angeboteItems.length > 0 ? (
                 <article className="card-bordered border-accent/25 bg-accent-light/40 p-4">
-                  <p className="portal-text-label text-accent">Nächster Schritt</p>
-                  <p className="portal-text-body mt-1 font-semibold text-text-primary">
+                  <p className="portal-text-body font-semibold text-text-primary">
                     Angebot prüfen
                   </p>
                   <p className="portal-text-meta mt-0.5 text-text-secondary">
@@ -842,8 +840,7 @@ export function PortalClient({
                 </article>
               ) : anfragenItems.length > 0 ? (
                 <article className="card-bordered border-accent/25 bg-accent-light/40 p-4">
-                  <p className="portal-text-label text-accent">Nächster Schritt</p>
-                  <p className="portal-text-body mt-1 font-semibold text-text-primary">
+                  <p className="portal-text-body font-semibold text-text-primary">
                     Anfrage in Bearbeitung
                   </p>
                   <p className="portal-text-meta mt-0.5 text-text-secondary">
@@ -857,17 +854,7 @@ export function PortalClient({
                     Anfragen öffnen
                   </button>
                 </article>
-              ) : (
-                <article className="card-bordered p-4">
-                  <p className="portal-text-label text-text-tertiary">Nächster Schritt</p>
-                  <p className="portal-text-body mt-1 font-semibold text-text-primary">
-                    Neues Projekt starten
-                  </p>
-                  <Link href="/rechner" className="btn-pill-primary portal-btn mt-3 inline-flex !px-4 !py-2.5">
-                    Preisrahmen berechnen
-                  </Link>
-                </article>
-              )}
+              ) : null}
 
               <article className="card-bordered p-4">
                 <div className="mb-3 flex flex-wrap items-center justify-between gap-2">

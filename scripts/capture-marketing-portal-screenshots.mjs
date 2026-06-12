@@ -96,8 +96,10 @@ async function ensureAuditPassword(email) {
   return tempPassword;
 }
 
+const GOTO_OPTS = { waitUntil: "domcontentloaded", timeout: 90000 };
+
 async function gotoReady(page, url) {
-  await page.goto(url, { waitUntil: "domcontentloaded", timeout: 90000 });
+  await page.goto(url, GOTO_OPTS);
   await page.waitForLoadState("load").catch(() => {});
   await page.waitForTimeout(2000);
 }
@@ -405,7 +407,62 @@ async function discoverPartnerUrls(email) {
   };
 }
 
+async function anonymizePageForScreenshot(page) {
+  await page.evaluate(() => {
+    const demo = {
+      greeting: "Hallo Max",
+      vorname: "Max",
+      nachname: "Mustermann",
+      name: "Max Mustermann",
+      plz: "80331",
+      ort: "München",
+      strasse: "Musterstraße 1",
+    };
+
+    document.querySelectorAll("h1, h2, h3, p, span, div, td, li, label").forEach((el) => {
+      if (el.children.length > 0) return;
+      const text = el.textContent?.trim() ?? "";
+      if (/^Hallo\s+\S+/i.test(text)) {
+        el.textContent = text.replace(/^Hallo\s+\S+/i, demo.greeting);
+      }
+    });
+
+    document.querySelectorAll("h3, h2").forEach((el) => {
+      const text = el.textContent ?? "";
+      if (/—/.test(text)) {
+        el.textContent = text.replace(/—\s*.+?(?=\s*\(|$)/, `— ${demo.name}`);
+      }
+    });
+
+    document.querySelectorAll("input, textarea").forEach((el) => {
+      const val = el.value?.trim() ?? "";
+      if (!val || val.length < 2) return;
+      const key = el.name?.toLowerCase() ?? el.id?.toLowerCase() ?? "";
+      if (key.includes("vorname") || key.includes("first")) el.value = demo.vorname;
+      else if (key.includes("nachname") || key.includes("last")) el.value = demo.nachname;
+      else if (key.includes("plz") || key.includes("postal")) el.value = demo.plz;
+      else if (key.includes("ort") || key.includes("city")) el.value = demo.ort;
+      else if (key.includes("strasse") || key.includes("street")) el.value = demo.strasse;
+      else if (key.includes("name")) el.value = demo.name;
+    });
+
+    document.querySelectorAll("dl dt").forEach((dt) => {
+      const dd = dt.nextElementSibling;
+      if (!dd || dd.tagName !== "DD") return;
+      const l = dt.textContent?.toLowerCase().trim() ?? "";
+      if (l.includes("vorname")) dd.textContent = demo.vorname;
+      else if (l.includes("nachname")) dd.textContent = demo.nachname;
+      else if (l.includes("plz")) dd.textContent = demo.plz;
+      else if (l.includes("ort")) dd.textContent = demo.ort;
+      else if (l.includes("straße") || l.includes("strasse") || l.includes("hausnummer")) {
+        dd.textContent = demo.strasse;
+      } else if (l === "name") dd.textContent = demo.name;
+    });
+  });
+}
+
 async function captureShot(page, filePath, clip = null) {
+  await anonymizePageForScreenshot(page);
   await mkdir(path.dirname(filePath), { recursive: true });
   if (clip) {
     await page.screenshot({ path: filePath, clip, animations: "disabled" });
@@ -489,7 +546,7 @@ async function capturePortalSet(browser, base, vp, email, password) {
   const urls = await discoverKundeUrls(email);
   const vpLabel = vp.label;
 
-  await page.goto(`${base}/portal?section=uebersicht`, { waitUntil: "domcontentloaded" });
+  await page.goto(`${base}/portal?section=uebersicht`, GOTO_OPTS);
   await page.waitForTimeout(1200);
   await captureShot(page, path.join(LANDING_OUT, `portal-${vpLabel}.png`));
   await captureShot(
@@ -508,7 +565,7 @@ async function capturePortalSet(browser, base, vp, email, password) {
 
   if (vp.isMobile) {
     const gptBtn = page.getByRole("button", { name: /GPT öffnen/i });
-    await page.goto(`${base}/portal?section=uebersicht`, { waitUntil: "domcontentloaded" });
+    await page.goto(`${base}/portal?section=uebersicht`, GOTO_OPTS);
     await page.waitForTimeout(800);
     if (await gptBtn.isVisible().catch(() => false)) {
       await gptBtn.click();
@@ -553,7 +610,7 @@ async function capturePartnerSet(browser, base, vp, email, password) {
   const urls = await discoverPartnerUrls(email);
   const vpLabel = vp.label;
 
-  await page.goto(`${base}/partner?section=uebersicht`, { waitUntil: "domcontentloaded" });
+  await page.goto(`${base}/partner?section=uebersicht`, GOTO_OPTS);
   await page.waitForTimeout(1200);
   await captureShot(page, path.join(LANDING_OUT, `partner-${vpLabel}.png`));
   await captureShot(
@@ -599,9 +656,20 @@ async function main() {
   console.log(`Kunde: ${kundeEmail} · Partner: ${partnerEmail}`);
   const browser = await chromium.launch({ headless: true });
 
-  for (const vp of Object.values(VIEWPORTS)) {
-    await capturePortalSet(browser, base, vp, kundeEmail, kundePassword);
-    await capturePartnerSet(browser, base, vp, partnerEmail, partnerPassword);
+  const only = process.env.CAPTURE_ONLY?.trim();
+  const viewports = only?.endsWith("-mobile")
+    ? [VIEWPORTS.mobile]
+    : only?.endsWith("-desktop")
+      ? [VIEWPORTS.desktop]
+      : Object.values(VIEWPORTS);
+
+  for (const vp of viewports) {
+    if (!only || only.startsWith("portal")) {
+      await capturePortalSet(browser, base, vp, kundeEmail, kundePassword);
+    }
+    if (!only || only.startsWith("partner")) {
+      await capturePartnerSet(browser, base, vp, partnerEmail, partnerPassword);
+    }
   }
 
   await writeFile(

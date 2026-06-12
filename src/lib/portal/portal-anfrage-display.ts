@@ -4,9 +4,7 @@ import type { PortalListCardMeta } from "@/components/shared/PortalListCard";
 import {
   buildGroessenRows,
   buildLeistungenRows,
-  effectivePreisRange,
   extractKundenFreitext,
-  formatPreisrahmenDe,
   labelBereich,
   labelDringlichkeit,
   labelSituation,
@@ -142,16 +140,6 @@ export function formatAnfrageGroesse(lead: PortalAnfrageLeadSource): string | un
   return rows.map((r) => r.value).join(" · ");
 }
 
-export function formatAnfragePreisrahmen(lead: PortalAnfrageLeadSource): string | undefined {
-  if (typeof lead.budget_ca === "number" && lead.budget_ca > 0) {
-    return `${lead.budget_ca.toLocaleString("de-DE")} €`;
-  }
-  const norm = normalizeFunnelDaten(lead.funnel_daten, lead.bereiche);
-  const { min, max } = effectivePreisRange(lead.preis_min, lead.preis_max, norm);
-  const formatted = formatPreisrahmenDe(min, max);
-  return detailValue(formatted);
-}
-
 export function formatAnfrageListOrtLine(lead: PortalAnfrageLeadSource): string {
   const { plz, ort } = objektPlzOrt(lead.objekt, lead.plz);
   const strasse = formatAnfrageStrasseHausnummer(lead);
@@ -203,7 +191,6 @@ export function buildAnfrageProjektSection(
     { label: "Fläche Menge Anzahl", value: formatAnfrageGroesse(lead) },
     { label: "Was soll gemacht werden", value: formatAnfrageWasGemacht(lead) },
     { label: "Zeitraum", value: formatAnfrageZeitraum(lead) },
-    { label: "Preisrahmen", value: formatAnfragePreisrahmen(lead) },
   ]);
 
   if (!projektRows.length) return null;

@@ -30,6 +30,7 @@ export function buildRechnerUrlFromProdukt(
     produkt: produktSlug,
     leistung,
     quelle,
+    next: quelle === "portal" ? "/portal" : undefined,
   });
 }
 

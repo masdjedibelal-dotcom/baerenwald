@@ -65,15 +65,9 @@ export function OnboardingTour({ open, audience, slides, onClose }: OnboardingTo
         aria-modal="true"
         aria-labelledby="onboarding-title"
       >
-        <div className="onboarding-topbar">
-          <button
-            type="button"
-            className="onboarding-skip"
-            onClick={finish}
-          >
-            Überspringen
-          </button>
-          {!mobile ? (
+        {!mobile ? (
+          <div className="onboarding-topbar">
+            <span />
             <button
               type="button"
               className="onboarding-close"
@@ -82,10 +76,31 @@ export function OnboardingTour({ open, audience, slides, onClose }: OnboardingTo
             >
               <X className="h-5 w-5" />
             </button>
-          ) : null}
-        </div>
+          </div>
+        ) : null}
 
         <div className={cn("onboarding-body", !mobile && "onboarding-body--desktop")}>
+          <div className="onboarding-copy">
+            <p className="onboarding-eyebrow">{slide.eyebrow}</p>
+            <h2 id="onboarding-title" className="onboarding-title">
+              {slide.title}
+            </h2>
+            <p className="onboarding-text">{slide.body}</p>
+
+            {slide.highlights.length > 0 ? (
+              <div className="onboarding-todos">
+                <p className="onboarding-todos-label">
+                  {audience === "portal" ? "Deine Vorteile" : "Deine To-dos"}
+                </p>
+                <ul>
+                  {slide.highlights.map((item) => (
+                    <li key={item}>{item}</li>
+                  ))}
+                </ul>
+              </div>
+            ) : null}
+          </div>
+
           <div className="onboarding-shot-wrap">
             <Image
               src={imgSrc}
@@ -95,25 +110,6 @@ export function OnboardingTour({ open, audience, slides, onClose }: OnboardingTo
               className="onboarding-shot"
               priority
             />
-          </div>
-
-          <div className="onboarding-copy">
-            <p className="onboarding-eyebrow">{slide.eyebrow}</p>
-            <h2 id="onboarding-title" className="onboarding-title">
-              {slide.title}
-            </h2>
-            <p className="onboarding-text">{slide.body}</p>
-
-            {slide.todos.length > 0 ? (
-              <div className="onboarding-todos">
-                <p className="onboarding-todos-label">Deine To-dos</p>
-                <ul>
-                  {slide.todos.map((todo) => (
-                    <li key={todo}>{todo}</li>
-                  ))}
-                </ul>
-              </div>
-            ) : null}
           </div>
         </div>
 
@@ -143,16 +139,26 @@ export function OnboardingTour({ open, audience, slides, onClose }: OnboardingTo
                 Zurück
               </button>
             ) : (
-              <span />
+              <span className="onboarding-nav-spacer" />
             )}
-            <button
-              type="button"
-              className="onboarding-nav-btn onboarding-nav-btn--primary"
-              onClick={() => (isLast ? finish() : setIndex((v) => v + 1))}
-            >
-              {isLast ? "Loslegen" : "Weiter"}
-              {!isLast ? <ChevronRight className="h-4 w-4" aria-hidden /> : null}
-            </button>
+
+            <div className="onboarding-nav-actions">
+              <button
+                type="button"
+                className="onboarding-nav-btn onboarding-nav-btn--outline"
+                onClick={finish}
+              >
+                Überspringen
+              </button>
+              <button
+                type="button"
+                className="onboarding-nav-btn onboarding-nav-btn--primary"
+                onClick={() => (isLast ? finish() : setIndex((v) => v + 1))}
+              >
+                {isLast ? "Loslegen" : "Weiter"}
+                {!isLast ? <ChevronRight className="h-4 w-4" aria-hidden /> : null}
+              </button>
+            </div>
           </div>
         </div>
       </div>
