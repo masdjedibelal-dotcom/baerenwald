@@ -39,10 +39,10 @@ const CHIP_LABELS: Record<string, string> = {
 };
 
 export function PortalProductPicker({ contactPrefill }: PortalProductPickerProps) {
-  const defaultChip = HERO_KATALOG_CHIPS[0];
-  const [tab, setTab] = useState<ProduktFamilie>(defaultChip.familie);
+  const [tab, setTab] = useState<ProduktFamilie>("bad");
   const [selectedSlug, setSelectedSlug] = useState(BAD_DEFAULT_PRODUKT_SLUG);
-  const [activeChipId, setActiveChipId] = useState(defaultChip.id);
+  const [panelOpen, setPanelOpen] = useState(false);
+  const [activeChipId, setActiveChipId] = useState<string | null>(null);
   const [checkoutOpen, setCheckoutOpen] = useState(false);
 
   const produktSlugs = useMemo(
@@ -59,12 +59,26 @@ export function PortalProductPicker({ contactPrefill }: PortalProductPickerProps
     [selectedSlug, contactPrefill]
   );
 
-  const onChipClick = useCallback((chip: HeroPickerChip) => {
+  const openPicker = useCallback((chip: HeroPickerChip) => {
     setTab(chip.familie);
     setSelectedSlug(chip.produktSlug);
     setActiveChipId(chip.id);
-    track.heroChipKlick(chip.id);
+    setPanelOpen(true);
+    setCheckoutOpen(false);
   }, []);
+
+  const onChipClick = useCallback(
+    (chip: HeroPickerChip) => {
+      track.heroChipKlick(chip.id);
+      if (activeChipId === chip.id && panelOpen) {
+        setPanelOpen(false);
+        setActiveChipId(null);
+        return;
+      }
+      openPicker(chip);
+    },
+    [activeChipId, panelOpen, openPicker]
+  );
 
   const onProduktSelect = useCallback((slug: string) => {
     setSelectedSlug(slug);
@@ -85,13 +99,14 @@ export function PortalProductPicker({ contactPrefill }: PortalProductPickerProps
             aria-label="Projekt wählen"
           >
             {HERO_KATALOG_CHIPS.map((chip) => {
-              const active = activeChipId === chip.id;
+              const active = activeChipId === chip.id && panelOpen;
               return (
                 <button
                   key={chip.id}
                   type="button"
                   role="tab"
                   aria-selected={active}
+                  aria-expanded={active}
                   className={`portal-produkt-chip${active ? " portal-produkt-chip--active" : ""}`}
                   onClick={() => onChipClick(chip)}
                 >
@@ -104,9 +119,10 @@ export function PortalProductPicker({ contactPrefill }: PortalProductPickerProps
 
         <ConversionWidget variant="hero">
           <div
-            className="conversion-picker-panel conversion-picker-panel--open conversion-picker-panel--inline conversion-picker-panel--hero"
+            className={`conversion-picker-panel${panelOpen ? " conversion-picker-panel--open" : ""} conversion-picker-panel--inline conversion-picker-panel--hero`}
             role="tabpanel"
             aria-label={`${CHIP_LABELS[tab] ?? tab} Pakete`}
+            aria-hidden={!panelOpen}
           >
             <ProduktPickerCore
               produktSlugs={produktSlugs}

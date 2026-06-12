@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronLeft, ChevronRight, X } from "lucide-react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import Image from "next/image";
 import { useCallback, useEffect, useState } from "react";
 
@@ -63,28 +63,40 @@ export function OnboardingTour({ open, audience, slides, onClose }: OnboardingTo
         className={cn("onboarding-shell", mobile && "onboarding-shell--mobile")}
         role="dialog"
         aria-modal="true"
-        aria-labelledby="onboarding-title"
+        aria-labelledby="onboarding-header-title"
       >
-        {!mobile ? (
-          <div className="onboarding-topbar">
-            <span />
-            <button
-              type="button"
-              className="onboarding-close"
-              onClick={finish}
-              aria-label="Schließen"
-            >
-              <X className="h-5 w-5" />
-            </button>
+        <header className="onboarding-header">
+          <h2 id="onboarding-header-title" className="onboarding-header-title">
+            Onboarding
+          </h2>
+
+          <div className="onboarding-dots" role="tablist" aria-label="Tour-Schritte">
+            {slides.map((s, i) => (
+              <button
+                key={s.id}
+                type="button"
+                role="tab"
+                aria-selected={i === index}
+                aria-label={`Schritt ${i + 1} von ${slides.length}`}
+                className={cn("onboarding-dot", i === index && "onboarding-dot--active")}
+                onClick={() => setIndex(i)}
+              />
+            ))}
           </div>
-        ) : null}
+
+          <button
+            type="button"
+            className="onboarding-skip-btn"
+            onClick={finish}
+          >
+            Überspringen
+          </button>
+        </header>
 
         <div className={cn("onboarding-body", !mobile && "onboarding-body--desktop")}>
           <div className="onboarding-copy">
             <p className="onboarding-eyebrow">{slide.eyebrow}</p>
-            <h2 id="onboarding-title" className="onboarding-title">
-              {slide.title}
-            </h2>
+            <h3 className="onboarding-title">{slide.title}</h3>
             <p className="onboarding-text">{slide.body}</p>
 
             {slide.highlights.length > 0 ? (
@@ -114,20 +126,6 @@ export function OnboardingTour({ open, audience, slides, onClose }: OnboardingTo
         </div>
 
         <div className="onboarding-footer">
-          <div className="onboarding-dots" role="tablist" aria-label="Tour-Schritte">
-            {slides.map((s, i) => (
-              <button
-                key={s.id}
-                type="button"
-                role="tab"
-                aria-selected={i === index}
-                aria-label={`Schritt ${i + 1}`}
-                className={cn("onboarding-dot", i === index && "onboarding-dot--active")}
-                onClick={() => setIndex(i)}
-              />
-            ))}
-          </div>
-
           <div className="onboarding-nav">
             {index > 0 ? (
               <button
@@ -142,23 +140,14 @@ export function OnboardingTour({ open, audience, slides, onClose }: OnboardingTo
               <span className="onboarding-nav-spacer" />
             )}
 
-            <div className="onboarding-nav-actions">
-              <button
-                type="button"
-                className="onboarding-nav-btn onboarding-nav-btn--outline"
-                onClick={finish}
-              >
-                Überspringen
-              </button>
-              <button
-                type="button"
-                className="onboarding-nav-btn onboarding-nav-btn--primary"
-                onClick={() => (isLast ? finish() : setIndex((v) => v + 1))}
-              >
-                {isLast ? "Loslegen" : "Weiter"}
-                {!isLast ? <ChevronRight className="h-4 w-4" aria-hidden /> : null}
-              </button>
-            </div>
+            <button
+              type="button"
+              className="onboarding-nav-btn onboarding-nav-btn--primary"
+              onClick={() => (isLast ? finish() : setIndex((v) => v + 1))}
+            >
+              {isLast ? "Loslegen" : "Weiter"}
+              {!isLast ? <ChevronRight className="h-4 w-4" aria-hidden /> : null}
+            </button>
           </div>
         </div>
       </div>

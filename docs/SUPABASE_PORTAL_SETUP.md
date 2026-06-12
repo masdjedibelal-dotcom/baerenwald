@@ -63,9 +63,12 @@ Domain bei Resend verifizieren (SPF/DKIM). Danach **Send test email** in den Aut
 https://baerenwaldmuenchen.de
 ```
 
-**Redirect URLs** (alle eintragen):
+**Redirect URLs** (alle eintragen — oder Wildcard `https://baerenwaldmuenchen.de/**`):
 
 ```
+https://baerenwaldmuenchen.de/auth/callback
+https://baerenwaldmuenchen.de/auth/callback?next=%2Fportal%2Fpasswort-neu
+https://baerenwaldmuenchen.de/auth/callback?next=%2Fpartner%2Fpasswort-neu
 https://baerenwaldmuenchen.de/portal/auth/callback
 https://baerenwaldmuenchen.de/portal/auth/callback?next=%2Fportal%2Fpasswort-neu
 https://baerenwaldmuenchen.de/portal/login
@@ -73,6 +76,8 @@ https://baerenwaldmuenchen.de/portal/passwort-neu
 https://baerenwaldmuenchen.de/partner/auth/callback
 https://baerenwaldmuenchen.de/partner/auth/callback?next=%2Fpartner%2Fpasswort-neu
 https://baerenwaldmuenchen.de/partner/passwort-neu
+http://localhost:3000/auth/callback
+http://localhost:3000/auth/callback?next=%2Fportal%2Fpasswort-neu
 http://localhost:3000/portal/auth/callback
 http://localhost:3000/portal/auth/callback?next=%2Fportal%2Fpasswort-neu
 http://localhost:3000/portal/login
@@ -82,7 +87,7 @@ http://localhost:3000/partner/auth/callback?next=%2Fpartner%2Fpasswort-neu
 http://localhost:3000/partner/passwort-neu
 ```
 
-> **Passwort-Reset:** Der Link aus der Mail landet auf `/portal/auth/callback`, tauscht den Code ein und leitet weiter zu **`/portal/passwort-neu`**, wo das neue Passwort gesetzt wird. Ohne diese Seite „funktioniert“ Reset nicht (nur eingeloggt, Passwort unverändert).
+> **Passwort-Reset:** Der Link aus der Mail muss auf `/auth/callback` (oder `/portal/auth/callback`) landen, tauscht den Code ein und leitet weiter zu **`/portal/passwort-neu`**. Fehlt die Redirect-URL in Supabase, landet man nur auf der **Startseite** (`https://baerenwaldmuenchen.de/#`) — dann in Auth → URL Configuration die URLs oben eintragen.
 
 ## 5. Authentication → Email Templates
 

@@ -417,21 +417,47 @@ async function anonymizePageForScreenshot(page) {
       plz: "80331",
       ort: "München",
       strasse: "Musterstraße 1",
+      email: "max.mustermann@example.com",
+      cardTitles: [
+        "Bad Komplett — Max Mustermann",
+        "Hausservice Komfort — Max Mustermann",
+        "Fliesen & Reparatur — Max Mustermann",
+      ],
     };
 
-    document.querySelectorAll("h1, h2, h3, p, span, div, td, li, label").forEach((el) => {
+    const replaceLeafText = (el, transform) => {
       if (el.children.length > 0) return;
-      const text = el.textContent?.trim() ?? "";
-      if (/^Hallo\s+\S+/i.test(text)) {
-        el.textContent = text.replace(/^Hallo\s+\S+/i, demo.greeting);
-      }
+      const text = el.textContent ?? "";
+      const next = transform(text);
+      if (next !== text) el.textContent = next;
+    };
+
+    document.querySelectorAll(".portal-text-section").forEach((el) => {
+      replaceLeafText(el, (text) =>
+        /^Hallo\s/i.test(text.trim()) ? demo.greeting : text
+      );
     });
 
-    document.querySelectorAll("h3, h2").forEach((el) => {
-      const text = el.textContent ?? "";
-      if (/—/.test(text)) {
-        el.textContent = text.replace(/—\s*.+?(?=\s*\(|$)/, `— ${demo.name}`);
-      }
+    document.querySelectorAll(".portal-text-card-title").forEach((el, i) => {
+      el.textContent = demo.cardTitles[i % demo.cardTitles.length];
+    });
+
+    document.querySelectorAll(
+      "h1, h2, h3, h4, p, span, div, td, li, label, dd, button"
+    ).forEach((el) => {
+      replaceLeafText(el, (text) => {
+        let next = text;
+        if (/^Hallo\s+\S+/i.test(next.trim())) {
+          next = next.replace(/^Hallo\s+\S+/i, demo.greeting);
+        }
+        next = next.replace(/\b\d{5}\s+[A-ZÄÖÜ][\wäöüß-]+(\s+[A-ZÄÖÜ][\wäöüß-]+)?\b/g, `${demo.plz} ${demo.ort}`);
+        next = next.replace(/[\w.+-]+@[\w.-]+\.[a-z]{2,}/gi, demo.email);
+        next = next.replace(/\b(Belal|Vera|Ralf|Mörth|Schmölz)\b[\wäöüß-]*/gi, demo.vorname);
+        if (/—/.test(next) && next.length < 120) {
+          next = next.replace(/—\s*.+?(?=\s*\(|$)/, `— ${demo.name}`);
+        }
+        return next;
+      });
     });
 
     document.querySelectorAll("input, textarea").forEach((el) => {
@@ -443,6 +469,7 @@ async function anonymizePageForScreenshot(page) {
       else if (key.includes("plz") || key.includes("postal")) el.value = demo.plz;
       else if (key.includes("ort") || key.includes("city")) el.value = demo.ort;
       else if (key.includes("strasse") || key.includes("street")) el.value = demo.strasse;
+      else if (key.includes("email")) el.value = demo.email;
       else if (key.includes("name")) el.value = demo.name;
     });
 
@@ -456,7 +483,8 @@ async function anonymizePageForScreenshot(page) {
       else if (l.includes("ort")) dd.textContent = demo.ort;
       else if (l.includes("straße") || l.includes("strasse") || l.includes("hausnummer")) {
         dd.textContent = demo.strasse;
-      } else if (l === "name") dd.textContent = demo.name;
+      } else if (l.includes("e-mail") || l.includes("email")) dd.textContent = demo.email;
+      else if (l === "name") dd.textContent = demo.name;
     });
   });
 }
@@ -523,6 +551,32 @@ async function capturePortalAnfragenSlide(page, base, vp, primaryEmail, primaryP
       throw new Error(`Portal-Re-Login fehlgeschlagen: ${primaryEmail}`);
     }
   }
+}
+
+async function capturePortalLanding(browser, base, vp, email, password) {
+  const ctx = await browser.newContext({
+    viewport: { width: vp.width, height: vp.height },
+    isMobile: vp.isMobile,
+    hasTouch: vp.isMobile,
+    deviceScaleFactor: vp.isMobile ? 2 : 1,
+    locale: "de-DE",
+  });
+  await ctx.addInitScript((c) => localStorage.setItem("bw_cookie_consent_v1", c), CONSENT);
+  await ctx.addInitScript(() => {
+    localStorage.setItem("bw_onboarding_portal_v1_completed", "1");
+  });
+  const page = await ctx.newPage();
+
+  const pwd = password || (await ensureAuditPassword(email));
+  if (!pwd) throw new Error("Portal-Login nicht möglich");
+  await login(page, base, email, pwd, "/portal/login", "/portal");
+
+  await page.goto(`${base}/portal?section=uebersicht`, GOTO_OPTS);
+  await page.waitForTimeout(1200);
+  await captureShot(page, path.join(LANDING_OUT, `portal-${vp.label}.png`));
+
+  await ctx.close();
+  console.log(`✓ Portal Landing ${vp.label}`);
 }
 
 async function capturePortalSet(browser, base, vp, email, password) {
@@ -657,6 +711,7 @@ async function main() {
   const browser = await chromium.launch({ headless: true });
 
   const only = process.env.CAPTURE_ONLY?.trim();
+  const landingOnly = process.env.CAPTURE_LANDING_ONLY?.trim();
   const viewports = only?.endsWith("-mobile")
     ? [VIEWPORTS.mobile]
     : only?.endsWith("-desktop")
@@ -664,6 +719,10 @@ async function main() {
       : Object.values(VIEWPORTS);
 
   for (const vp of viewports) {
+    if (landingOnly === "portal") {
+      await capturePortalLanding(browser, base, vp, kundeEmail, kundePassword);
+      continue;
+    }
     if (!only || only.startsWith("portal")) {
       await capturePortalSet(browser, base, vp, kundeEmail, kundePassword);
     }

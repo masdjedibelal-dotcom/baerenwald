@@ -11,5 +11,5 @@ export function portalAuthCallbackUrl(nextPath = "/portal"): string {
 
 /** Nach Passwort-Reset-Link → Session + neues Passwort setzen */
 export function portalPasswordResetCallbackUrl(): string {
-  return portalAuthCallbackUrl("/portal/passwort-neu");
+  return `${SITE_CONFIG.url}/auth/callback?next=${encodeURIComponent("/portal/passwort-neu")}`;
 }

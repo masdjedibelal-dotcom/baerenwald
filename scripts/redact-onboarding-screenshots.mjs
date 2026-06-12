@@ -38,8 +38,6 @@ const REDACTIONS = {
   "portal/desktop/01-uebersicht.png": [{ left: 328, top: 88, width: 320, height: 64 }],
   "portal/desktop/03-angebote.png": [{ left: 628, top: 168, width: 796, height: 280 }],
   "portal/desktop/04-auftraege.png": [{ left: 628, top: 168, width: 796, height: 280 }],
-  "landing/portal-mobile.png": [{ left: 16, top: 118, width: 360, height: 72 }],
-  "landing/portal-desktop.png": [{ left: 328, top: 88, width: 320, height: 64 }],
 };
 
 async function blurRegion(sourcePath, box, imgW, imgH) {

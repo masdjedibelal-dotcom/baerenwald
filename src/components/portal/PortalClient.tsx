@@ -819,44 +819,42 @@ export function PortalClient({
                 </article>
               </div>
 
-              <PortalProductPicker contactPrefill={contactPrefill} />
-
-              {angeboteItems.length > 0 ? (
-                <article className="card-bordered border-accent/25 bg-accent-light/40 p-4">
-                  <p className="portal-text-body font-semibold text-text-primary">
-                    Angebot prüfen
-                  </p>
-                  <p className="portal-text-meta mt-0.5 text-text-secondary">
-                    Du hast {angeboteItems.length}{" "}
-                    {angeboteItems.length === 1 ? "Angebot" : "Angebote"} zur Prüfung.
-                  </p>
-                  <button
-                    type="button"
-                    className="btn-pill-primary portal-btn mt-3 !px-4 !py-2.5"
-                    onClick={() => setSection("angebote")}
-                  >
-                    Angebot ansehen
-                  </button>
-                </article>
-              ) : anfragenItems.length > 0 ? (
-                <article className="card-bordered border-accent/25 bg-accent-light/40 p-4">
-                  <p className="portal-text-body font-semibold text-text-primary">
-                    Anfrage in Bearbeitung
-                  </p>
-                  <p className="portal-text-meta mt-0.5 text-text-secondary">
-                    Wir melden uns — du kannst den Status jederzeit hier verfolgen.
-                  </p>
-                  <button
-                    type="button"
-                    className="btn-pill-outline portal-btn mt-3 !px-4 !py-2.5"
-                    onClick={() => setSection("anfragen")}
-                  >
-                    Anfragen öffnen
-                  </button>
-                </article>
-              ) : null}
-
               <article className="card-bordered p-4">
+                {angeboteItems.length > 0 ? (
+                  <div className="mb-4 rounded-xl border border-accent/25 bg-accent-light/40 p-4">
+                    <p className="portal-text-body font-semibold text-text-primary">
+                      Angebot prüfen
+                    </p>
+                    <p className="portal-text-meta mt-0.5 text-text-secondary">
+                      Du hast {angeboteItems.length}{" "}
+                      {angeboteItems.length === 1 ? "Angebot" : "Angebote"} zur Prüfung.
+                    </p>
+                    <button
+                      type="button"
+                      className="btn-pill-primary portal-btn mt-3 !px-4 !py-2.5"
+                      onClick={() => setSection("angebote")}
+                    >
+                      Angebot ansehen
+                    </button>
+                  </div>
+                ) : anfragenItems.length > 0 ? (
+                  <div className="mb-4 rounded-xl border border-accent/25 bg-accent-light/40 p-4">
+                    <p className="portal-text-body font-semibold text-text-primary">
+                      Anfrage in Bearbeitung
+                    </p>
+                    <p className="portal-text-meta mt-0.5 text-text-secondary">
+                      Wir melden uns — du kannst den Status jederzeit hier verfolgen.
+                    </p>
+                    <button
+                      type="button"
+                      className="btn-pill-outline portal-btn mt-3 !px-4 !py-2.5"
+                      onClick={() => setSection("anfragen")}
+                    >
+                      Anfragen öffnen
+                    </button>
+                  </div>
+                ) : null}
+
                 <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
                   <div className="flex gap-2">
                     {[
@@ -905,6 +903,8 @@ export function PortalClient({
                   />
                 ) : null}
               </article>
+
+              <PortalProductPicker contactPrefill={contactPrefill} />
 
               <section className="border-t border-border-default pt-4">
                 <div className="flex flex-wrap items-center justify-between gap-3">

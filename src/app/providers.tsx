@@ -2,8 +2,9 @@
 
 import posthog from "posthog-js";
 import { PostHogProvider } from "posthog-js/react";
-import { useCallback, useMemo, useState } from "react";
+import { Suspense, useCallback, useMemo, useState } from "react";
 
+import { AuthRecoveryRedirect } from "@/components/auth/AuthRecoveryRedirect";
 import { CookieConsentProvider } from "@/components/consent/CookieConsentContext";
 import { MarketingJourneyTracker } from "@/components/marketing/MarketingJourneyTracker";
 import { isPostHogInitialized } from "@/lib/consent/posthog-client";
@@ -19,6 +20,9 @@ export function PHProvider({ children }: { children: React.ReactNode }) {
 
   const content = (
     <CookieConsentProvider onStatisticsChange={onStatisticsChange}>
+      <Suspense fallback={null}>
+        <AuthRecoveryRedirect />
+      </Suspense>
       <MarketingJourneyTracker />
       {children}
     </CookieConsentProvider>
