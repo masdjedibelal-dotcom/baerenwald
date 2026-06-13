@@ -37,12 +37,12 @@ export const PORTAL_ONBOARDING_SLIDES: OnboardingSlide[] = [
     id: "angebote",
     imageBase: "03-angebote",
     eyebrow: "ENTSCHEIDUNG",
-    title: "Angebote in Ruhe prüfen",
-    body: "Preise, PDFs und Konditionen an einem Ort — du entscheidest in deinem Tempo, ohne Druck.",
+    title: "Unser Angebot in Ruhe prüfen",
+    body: "Das Angebot von Bärenwald als Generalunternehmer — mit Preisen, PDF und Konditionen an einem Ort.",
     highlights: [
-      "Angebote digital öffnen und PDF durchlesen",
+      "Angebot digital öffnen und PDF durchlesen",
       "Positionen und Preise klar auf einen Blick",
-      "Erst bei Fragen nachfragen — dann in Ruhe zusagen",
+      "In Ruhe entscheiden — wir sind dein Ansprechpartner",
     ],
   },
   {

@@ -16,8 +16,8 @@ import type { PartnerComplianceItem } from "@/lib/partner/partner-compliance";
 import { fmtPartnerDate } from "@/lib/partner/partner-detail-format";
 import { cn } from "@/lib/utils";
 
-function statusLabel(erfüllt: boolean, status: string): string {
-  if (erfüllt) return "Vorhanden";
+function statusLabel(erfüllt: boolean, status: string, portalAkzeptiert: boolean): string {
+  if (portalAkzeptiert || erfüllt) return "Akzeptiert";
   if (status === "entwurf") return "In Vorbereitung";
   return "Ausstehend";
 }
@@ -35,6 +35,7 @@ export function PartnerRahmenvertragCard({
   const [error, setError] = useState<string | null>(null);
 
   const erfüllt = rahmenvertragErfuellt(stammItems, rahmenvertrag);
+  const portalAkzeptiert = Boolean(rahmenvertrag?.portal_akzeptiert_am);
   const status = rahmenvertrag?.status ?? "entwurf";
   const pdfUrl = rahmenvertrag?.pdf_signed_url ?? rahmenvertrag?.pdf_url;
   const brauchtAkzeptanz = rahmenvertragBrauchtPortalAkzeptanz(rahmenvertrag);
@@ -73,8 +74,7 @@ export function PartnerRahmenvertragCard({
                 Partnerschafts-Rahmenvertrag
               </p>
               <p className="portal-text-meta mt-0.5 text-text-secondary">
-                Wird von Bärenwald erstellt. Du kannst das Portal auch ohne erneute
-                Bestätigung nutzen — die Annahme dokumentieren wir hier optional.
+                Bei Registrierung akzeptiert — hier einsehbar und als PDF downloadbar.
               </p>
               {rahmenvertrag?.vertrags_nr ? (
                 <p className="portal-text-meta mt-1 text-text-tertiary">
@@ -97,10 +97,10 @@ export function PartnerRahmenvertragCard({
           <span
             className={cn(
               "tag shrink-0",
-              erfüllt ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-800"
+              erfüllt || portalAkzeptiert ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-800"
             )}
           >
-            {statusLabel(erfüllt, status)}
+            {statusLabel(erfüllt, status, portalAkzeptiert)}
           </span>
         </div>
 

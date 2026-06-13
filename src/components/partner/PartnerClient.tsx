@@ -85,6 +85,15 @@ const MENU_ITEMS: Array<{
   { id: "profil", label: "Profil", icon: User },
 ];
 
+const MOBILE_NAV_ITEMS = [
+  "uebersicht",
+  "anfragen",
+  "angebote",
+  "auftraege",
+  "planer",
+  "profil",
+] as const satisfies readonly PartnerSection[];
+
 function statusPillClass(status: string): string {
   const s = status.toLowerCase();
   if (s === "akzeptiert" || s === "eingereicht" || s === "abgeschlossen") {
@@ -705,6 +714,27 @@ export function PartnerClient({
                 </article>
               </div>
 
+              <button
+                type="button"
+                onClick={() => setGptOpen(true)}
+                className="card-bordered flex w-full items-center justify-between gap-3 p-4 text-left transition-colors hover:border-accent/30 lg:hidden"
+              >
+                <div className="flex items-center gap-3">
+                  <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#EAF3DE] text-[#2E7D52]">
+                    <MessagesSquare className="h-5 w-5" aria-hidden />
+                  </span>
+                  <div>
+                    <p className="portal-text-body font-semibold text-text-primary">
+                      Bärenwald GPT
+                    </p>
+                    <p className="portal-text-meta text-text-secondary">
+                      Fragen zu Projekten, Gewerken & Abläufen
+                    </p>
+                  </div>
+                </div>
+                <span className="portal-text-body font-semibold text-accent">Öffnen →</span>
+              </button>
+
               {(heuteTermineCount > 0 || aufgaben.length > 0) && (
                 <article className="card-bordered border-accent/20 bg-accent-light/30 p-4 lg:hidden">
                   <p className="portal-text-label text-accent">Heute</p>
@@ -976,8 +1006,8 @@ export function PartnerClient({
         className="fixed inset-x-0 bottom-0 z-[90] border-t border-border-default bg-surface-card/95 backdrop-blur-sm lg:hidden"
         aria-label="Partner Navigation"
       >
-        <div className="grid grid-cols-5 items-end px-0.5 pb-2 pt-1">
-          {(["uebersicht", "anfragen"] as const).map((id) => {
+        <div className="grid grid-cols-6 px-0.5 pb-2 pt-1">
+          {MOBILE_NAV_ITEMS.map((id) => {
             const { label, icon: Icon } = MENU_ITEMS.find((m) => m.id === id)!;
             return (
               <button
@@ -991,49 +1021,9 @@ export function PartnerClient({
               >
                 <span className="flex flex-col items-center gap-0.5">
                   <Icon className="h-[18px] w-[18px] stroke-[1.75]" />
-                  <span className="max-w-[58px] truncate">{label}</span>
-                </span>
-              </button>
-            );
-          })}
-
-          <div className="flex flex-col items-center justify-end">
-            <button
-              type="button"
-              onClick={() => {
-                setGptOpen(true);
-                setSection("gpt");
-              }}
-              aria-label="GPT öffnen"
-              aria-pressed={gptOpen || section === "gpt"}
-              className={cn(
-                "-mt-8 flex min-h-[64px] w-[72px] flex-col items-center justify-center gap-1 rounded-full border-[3px] border-white/30 bg-[#2E7D52] px-1 py-2 text-white shadow-[0_8px_24px_rgba(46,125,82,0.35)] ring-[5px] ring-surface-card transition-transform active:scale-95",
-                (gptOpen || section === "gpt") &&
-                  "ring-[#2E7D52] shadow-[0_10px_28px_rgba(46,125,82,0.45)]"
-              )}
-            >
-              <MessagesSquare className="h-7 w-7 shrink-0 stroke-[1.75]" aria-hidden />
-              <span className="portal-text-fab max-w-[72px] text-center text-white">
-                GPT
-              </span>
-            </button>
-          </div>
-
-          {(["angebote", "auftraege"] as const).map((id) => {
-            const { label, icon: Icon } = MENU_ITEMS.find((m) => m.id === id)!;
-            return (
-              <button
-                key={id}
-                type="button"
-                onClick={() => switchSection(id)}
-                className={cn(
-                  "portal-text-nav rounded-lg px-0.5 py-2.5",
-                  section === id ? "text-accent" : "text-text-tertiary"
-                )}
-              >
-                <span className="flex flex-col items-center gap-0.5">
-                  <Icon className="h-[18px] w-[18px] stroke-[1.75]" />
-                  <span className="max-w-[58px] truncate">{label}</span>
+                  <span className="max-w-[52px] truncate text-[10px] leading-tight sm:text-[11px]">
+                    {label}
+                  </span>
                 </span>
               </button>
             );
@@ -1061,7 +1051,6 @@ export function PartnerClient({
         open={gptOpen}
         onClose={() => {
           setGptOpen(false);
-          if (section === "gpt") setSection("uebersicht");
         }}
       />
 

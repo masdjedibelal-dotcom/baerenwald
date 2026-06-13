@@ -5,7 +5,6 @@ import {
   getGptVizSessionForStaff,
   updateGptVizSession,
 } from "@/lib/gpt-viz/session";
-import { ensureZielbildForSession } from "@/lib/gpt-viz/zielbild-export";
 import { getClaudeApiKey } from "@/lib/ki-rechner/claude-config";
 
 export const runtime = "nodejs";
@@ -42,11 +41,8 @@ export async function POST(req: Request) {
     return Response.json({ error: "Wunschtext fehlt." }, { status: 400 });
   }
 
-  if (session.gpt_erklaerung && session.zielbild_url) {
-    return Response.json({
-      gpt_erklaerung: session.gpt_erklaerung,
-      zielbild_url: session.zielbild_url,
-    });
+  if (session.gpt_erklaerung) {
+    return Response.json({ gpt_erklaerung: session.gpt_erklaerung });
   }
 
   try {
@@ -62,13 +58,7 @@ export async function POST(req: Request) {
       }
     }
 
-    const withErk = { ...session, gpt_erklaerung: erklaerung };
-    const zielbild = await ensureZielbildForSession(withErk);
-    return Response.json({
-      gpt_erklaerung: erklaerung,
-      zielbild_url: zielbild.zielbild_url,
-      zielbild_warning: zielbild.error,
-    });
+    return Response.json({ gpt_erklaerung: erklaerung });
   } catch (e) {
     console.error("[gpt-viz/erklaerung]", e);
     return Response.json(

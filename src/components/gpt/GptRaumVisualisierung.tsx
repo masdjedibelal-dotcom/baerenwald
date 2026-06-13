@@ -392,15 +392,13 @@ export function GptRaumVisualisierung({
         </div>
       ) : null}
 
-      {(step === "render" || step === "erklaerung") && ergebnisUrl && istUrls[0] ? (
+      {(step === "render" || step === "erklaerung") && ergebnisUrl ? (
         <div>
-          <h2 className="gpt-viz-step-title">Vorher / Nachher</h2>
+          <h2 className="gpt-viz-step-title">Deine Visualisierung</h2>
           <GptVizBeforeAfter
-            istUrl={istUrls[0]}
             ergebnisUrl={ergebnisUrl}
             historie={historie}
             onVersionSelect={setErgebnisUrl}
-            erklaerung={erklaerung}
           />
           {rendersLeft > 0 ? (
             <div className="gpt-viz-actions">

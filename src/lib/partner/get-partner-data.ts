@@ -33,6 +33,7 @@ import {
 import { buildPartnerAufgaben, type PartnerAufgabeItem } from "@/lib/partner/build-partner-aufgaben";
 import { buildPartnerTermine, type PartnerTerminItem } from "@/lib/partner/build-partner-termine";
 import {
+  applyRahmenvertragPortalAkzeptanz,
   buildOffeneLeistungsUnterlagen,
   type PartnerOffeneLeistungsUnterlage,
   type PartnerRahmenvertrag,
@@ -660,10 +661,19 @@ export async function getPartnerDataForHandwerker(handwerkerId: string) {
     )
   );
 
+  const allgemein = applyRahmenvertragPortalAkzeptanz(
+    complianceBundle.stamm.compliance_allgemein,
+    rahmenvertrag
+  );
+  const meister = applyRahmenvertragPortalAkzeptanz(
+    complianceBundle.stamm.compliance_meister,
+    rahmenvertrag
+  );
+
   const profilKontext: PartnerProfilKontext = {
-    allgemein: complianceBundle.stamm.compliance_allgemein,
-    meister: complianceBundle.stamm.compliance_meister,
-    stamm: complianceBundle.stamm.compliance_stamm,
+    allgemein,
+    meister,
+    stamm: [...allgemein, ...meister],
     profil: {
       leistet_bauleistung: partnerLeistetBauleistung(
         complianceBundle.handwerkerGewerke,

@@ -100,10 +100,24 @@ export function rahmenvertragBrauchtPortalAkzeptanz(
   return !rahmen.portal_akzeptiert_am;
 }
 
+/** Registrierung/Portal-Annahme zählt als erledigt — nicht „In Prüfung“. */
+export function applyRahmenvertragPortalAkzeptanz(
+  items: PartnerComplianceItem[],
+  rahmen: PartnerRahmenvertrag | null | undefined
+): PartnerComplianceItem[] {
+  if (!rahmen?.portal_akzeptiert_am) return items;
+  return items.map((item) =>
+    item.slug === RAHMENVERTRAG_TYP_SLUG
+      ? { ...item, status: "erledigt", ablauf_hinweis: null }
+      : item
+  );
+}
+
 export function rahmenvertragErfuellt(
   stammItems: PartnerComplianceItem[],
   rahmen: PartnerRahmenvertrag | null | undefined
 ): boolean {
+  if (rahmen?.portal_akzeptiert_am) return true;
   const doc = stammItems.find((i) => i.slug === RAHMENVERTRAG_TYP_SLUG);
   if (doc?.status === "erledigt" || doc?.status === "in_pruefung") return true;
   if (!rahmen?.pdf_url?.trim()) return false;

@@ -1,7 +1,7 @@
 "use client";
 
 import { ChatGuidedBlocks } from "@/components/gpt/chat/ChatGuidedBlocks";
-import { GptZielbildCard } from "@/components/gpt/GptZielbildCard";
+import { GptChatImageCard } from "@/components/gpt/GptChatImageCard";
 import { renderChatMarkdown } from "@/components/gpt/gpt-chat-markdown";
 import type { GptChatMessage } from "@/components/gpt/gpt-chat-types";
 import type { GptLeadDraft } from "@/lib/gpt-viz/lead-collect";
@@ -55,14 +55,8 @@ export function GptChatBubble({
         ) : null}
 
         {message.compare ? (
-          <div className="gpt-chat-embed">
-            <GptZielbildCard
-              vorherUrl={message.compare.before.url}
-              nachherUrl={message.compare.after.url}
-              erklaerung={message.compare.erklaerung}
-              zielbildUrl={message.compare.zielbild_url}
-              className="gpt-chat-zielbild"
-            />
+          <div className="gpt-chat-embed gpt-chat-viz-result">
+            <GptChatImageCard image={message.compare.after} />
           </div>
         ) : null}
 

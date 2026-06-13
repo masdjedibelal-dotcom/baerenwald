@@ -5,6 +5,7 @@ import { PartnerDetailInfoBox } from "@/components/partner/PartnerDetailUi";
 import { PartnerRahmenvertragCard } from "@/components/partner/PartnerRahmenvertragCard";
 import { PartnerStammdatenForm } from "@/components/partner/PartnerStammdatenForm";
 import type { PartnerProfilKontext, PartnerHandwerkerProfil } from "@/lib/partner/get-partner-data";
+import { RAHMENVERTRAG_TYP_SLUG } from "@/lib/partner/compliance-summary";
 
 function profilBadgeLabel(profil: PartnerProfilKontext["profil"]): string {
   if (profil.leistet_bauleistung && profil.hat_meister_gewerke) {
@@ -51,7 +52,9 @@ export function PartnerProfilPanel({
 
         <PartnerComplianceCheckliste
           title="Unterlagen"
-          items={[...profil.allgemein, ...profil.meister]}
+          items={[...profil.allgemein, ...profil.meister].filter(
+            (item) => item.slug !== RAHMENVERTRAG_TYP_SLUG
+          )}
           gruppiert
           emptyText="Keine Unterlagen für dein Profil."
         />

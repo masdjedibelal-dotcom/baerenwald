@@ -1,7 +1,6 @@
 import { GPT_VIZ_RATE } from "@/lib/gpt-viz/constants";
 import { gptVizFunnelDatenFromSession } from "@/lib/gpt-viz/funnel-daten";
 import { getGptVizSession, updateGptVizSession } from "@/lib/gpt-viz/session";
-import { ensureZielbildForSession } from "@/lib/gpt-viz/zielbild-export";
 import { persistLead } from "@/lib/lead/persist-lead";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { getClientIp } from "@/lib/request-ip";
@@ -36,14 +35,9 @@ export async function POST(req: Request) {
     return Response.json({ error: "session_id fehlt." }, { status: 400 });
   }
 
-  let session = await getGptVizSession(sessionId);
+  const session = await getGptVizSession(sessionId);
   if (!session) {
     return Response.json({ error: "Session ungültig oder abgelaufen." }, { status: 404 });
-  }
-
-  if (!session.zielbild_url && session.ergebnis_bild_url && session.gpt_erklaerung) {
-    await ensureZielbildForSession(session);
-    session = (await getGptVizSession(sessionId)) ?? session;
   }
 
   const bereiche = session.raum_analyse?.raum_typ

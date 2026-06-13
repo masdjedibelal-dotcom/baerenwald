@@ -4,9 +4,49 @@ import { revalidatePath } from "next/cache";
 
 import { confirmCrmProjektvertrag } from "@/lib/partner/partner-crm-api";
 import { linkPortalHandwerkerToAuthUser } from "@/lib/partner/link-portal-handwerker";
+import { RAHMENVERTRAG_TYP_SLUG } from "@/lib/partner/compliance-summary";
 import { findHandwerkerForRegistration } from "@/lib/partner/partner-registration-eligibility";
 import { createClient } from "@/lib/supabase/server";
 import { isSupabaseConfigured, supabaseAdmin } from "@/lib/supabase";
+
+async function syncRahmenvertragDokumentNachPortalAkzeptanz(
+  handwerkerId: string,
+  pdfUrl: string | null | undefined
+): Promise<void> {
+  const now = new Date().toISOString();
+  const { data: existing } = await supabaseAdmin
+    .from("partner_dokumente")
+    .select("id")
+    .eq("handwerker_id", handwerkerId)
+    .eq("typ", RAHMENVERTRAG_TYP_SLUG)
+    .is("auftrag_id", null)
+    .order("hochgeladen_am", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (existing?.id) {
+    await supabaseAdmin
+      .from("partner_dokumente")
+      .update({
+        status: "freigegeben",
+        freigegeben_am: now,
+      })
+      .eq("id", existing.id);
+    return;
+  }
+
+  const url = pdfUrl?.trim();
+  if (!url) return;
+
+  await supabaseAdmin.from("partner_dokumente").insert({
+    handwerker_id: handwerkerId,
+    typ: RAHMENVERTRAG_TYP_SLUG,
+    bezeichnung: "Partnerschafts-Rahmenvertrag",
+    datei_url: url,
+    status: "freigegeben",
+    freigegeben_am: now,
+  });
+}
 
 export type PartnerVertragConfirmResult =
   | { ok: true; vertrags_nr?: string; pdf_url?: string }
@@ -175,6 +215,11 @@ export async function acceptPartnerRahmenvertragForEmail(opts: {
       .eq("id", vertrag.id);
 
     if (error) return { ok: false, error: error.message };
+
+    await syncRahmenvertragDokumentNachPortalAkzeptanz(
+      String(hw.id),
+      (vertrag as { pdf_url?: string | null }).pdf_url
+    );
   }
 
   return { ok: true };
@@ -244,6 +289,11 @@ export async function acceptPartnerRahmenvertrag(opts: {
     .eq("id", vertrag.id);
 
   if (error) return { ok: false, error: error.message };
+
+  await syncRahmenvertragDokumentNachPortalAkzeptanz(
+    link.handwerkerId,
+    String(vertrag.pdf_url ?? "")
+  );
 
   revalidatePath("/partner");
   return { ok: true };

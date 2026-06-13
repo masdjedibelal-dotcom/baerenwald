@@ -611,7 +611,6 @@ export function GptStudioChat({
       setVizPhase("result");
 
       let erklaerung: GptVizBauErklaerung | null = null;
-      let zielbildUrl: string | null | undefined;
       try {
         const erkRes = await fetch("/api/gpt-viz/erklaerung", {
           method: "POST",
@@ -620,26 +619,27 @@ export function GptStudioChat({
         });
         const erkData = (await erkRes.json()) as {
           gpt_erklaerung?: GptVizBauErklaerung;
-          zielbild_url?: string | null;
         };
         if (erkRes.ok && erkData.gpt_erklaerung) {
           erklaerung = erkData.gpt_erklaerung;
         }
-        zielbildUrl = erkRes.ok ? erkData.zielbild_url : null;
       } catch {
-        /* Fallback im Zielbild-Composer */
+        /* Erklärung optional — Visualisierung steht auch ohne Text */
       }
       await refreshBrief();
 
       appendAssistant(
         erklaerung?.chat_kurz ??
-          "So könnte dein Raum aussehen — unten findest du dein **Zielbild** mit Projekt-Analyse zum Herunterladen.",
+          "So könnte dein Raum aussehen — unten findest du deine **Visualisierung** zum Herunterladen.",
         {
           compare: {
             before: { url: istUrl, label: "Vorher", downloadName: "baerenwald-vorher.jpg" },
-            after: { url: resultUrl, label: "Nachher", downloadName: "baerenwald-nachher.jpg" },
+            after: {
+              url: resultUrl,
+              label: "Visualisierung",
+              downloadName: "baerenwald-visualisierung.jpg",
+            },
             erklaerung,
-            zielbild_url: zielbildUrl ?? undefined,
           },
         }
       );

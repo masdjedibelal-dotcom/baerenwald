@@ -1,63 +1,45 @@
 "use client";
 
-import { GptZielbildCard } from "@/components/gpt/GptZielbildCard";
-import type { GptVizBauErklaerung, GptVizRenderVersion } from "@/lib/gpt-viz/types";
+import { GptChatImageCard } from "@/components/gpt/GptChatImageCard";
+import type { GptVizRenderVersion } from "@/lib/gpt-viz/types";
 
 type GptVizBeforeAfterProps = {
-  istUrl: string;
   ergebnisUrl: string;
   historie: GptVizRenderVersion[];
   onVersionSelect: (url: string) => void;
-  erklaerung?: GptVizBauErklaerung | null;
 };
 
 export function GptVizBeforeAfter({
-  istUrl,
   ergebnisUrl,
   historie,
   onVersionSelect,
-  erklaerung,
 }: GptVizBeforeAfterProps) {
   return (
     <div className="gpt-viz-result-layout">
-      <div className="gpt-viz-result-compare">
-        {historie.length > 1 ? (
-          <div className="gpt-viz-versions" style={{ marginBottom: "0.5rem" }}>
-            {historie.map((v, i) => (
-              <button
-                key={v.created_at}
-                type="button"
-                className={
-                  v.url === ergebnisUrl
-                    ? "gpt-viz-version-btn gpt-viz-version-btn--active"
-                    : "gpt-viz-version-btn"
-                }
-                onClick={() => onVersionSelect(v.url)}
-              >
-                Version {i + 1}
-              </button>
-            ))}
-          </div>
-        ) : null}
-        <div className="gpt-viz-before-after">
-          <figure>
-            <figcaption>Vorher</figcaption>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={istUrl} alt="Ausgangszustand" />
-          </figure>
-          <figure>
-            <figcaption>Nachher (Visualisierung)</figcaption>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={ergebnisUrl} alt="Visualisierung" />
-          </figure>
+      {historie.length > 1 ? (
+        <div className="gpt-viz-versions" style={{ marginBottom: "0.5rem" }}>
+          {historie.map((v, i) => (
+            <button
+              key={v.created_at}
+              type="button"
+              className={
+                v.url === ergebnisUrl
+                  ? "gpt-viz-version-btn gpt-viz-version-btn--active"
+                  : "gpt-viz-version-btn"
+              }
+              onClick={() => onVersionSelect(v.url)}
+            >
+              Version {i + 1}
+            </button>
+          ))}
         </div>
-      </div>
-
-      <GptZielbildCard
-        vorherUrl={istUrl}
-        nachherUrl={ergebnisUrl}
-        erklaerung={erklaerung}
-        className="gpt-viz-result-zielbild"
+      ) : null}
+      <GptChatImageCard
+        image={{
+          url: ergebnisUrl,
+          label: "Deine Visualisierung",
+          downloadName: "baerenwald-visualisierung.jpg",
+        }}
       />
     </div>
   );
