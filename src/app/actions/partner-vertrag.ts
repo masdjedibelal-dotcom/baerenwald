@@ -175,7 +175,7 @@ export async function acceptPartnerRahmenvertragForEmail(opts: {
   if (!opts.akzeptiert) {
     return {
       ok: false,
-      error: "Bitte bestätige den Rahmenvertrag inkl. Anlage 1 und Anlage 2.",
+      error: "Bitte bestätige die Geschäftsbedingungen inkl. der Anlagen.",
     };
   }
 

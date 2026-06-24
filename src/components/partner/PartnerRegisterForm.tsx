@@ -8,17 +8,14 @@ import { verifyPartnerRegistrationEmail } from "@/app/actions/partner-registrati
 import { getPartnerRahmenvertragPreview } from "@/app/actions/partner-rahmenvertrag-preview";
 import { PartnerRahmenvertragAcceptBlock } from "@/components/partner/PartnerRahmenvertragAcceptBlock";
 import { PartnerAuthFlowHint } from "@/components/partner/PartnerAuthFlowHint";
+import { PartnerRegisterStepNav } from "@/components/partner/PartnerRegisterStepNav";
 import { PortalResendConfirmation } from "@/components/portal/PortalResendConfirmation";
 import { PARTNER_AUTH_COPY } from "@/lib/partner/partner-auth-copy";
 import { partnerAuthCallbackUrl } from "@/lib/partner/partner-auth-url";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
-import { cn } from "@/lib/utils";
 
-const STEPS = [
-  { id: 1, label: "E-Mail" },
-  { id: 2, label: "Vertrag" },
-  { id: 3, label: "Konto" },
-] as const;
+const BEDINGUNGEN_ERROR =
+  "Bitte die Geschäftsbedingungen durchlesen und die Annahme bestätigen.";
 
 export function PartnerRegisterForm() {
   const [step, setStep] = useState<1 | 2 | 3>(1);
@@ -147,23 +144,7 @@ export function PartnerRegisterForm() {
         {PARTNER_AUTH_COPY.registerIntro}
       </p>
 
-      <ol className="flex gap-2" aria-label="Registrierungsschritte">
-        {STEPS.map((s) => (
-          <li
-            key={s.id}
-            className={cn(
-              "flex-1 rounded-full px-2 py-1.5 text-center portal-text-meta font-semibold",
-              step === s.id
-                ? "bg-accent text-white"
-                : step > s.id
-                  ? "bg-accent-light text-accent"
-                  : "bg-muted text-text-tertiary"
-            )}
-          >
-            {s.label}
-          </li>
-        ))}
-      </ol>
+      <PartnerRegisterStepNav current={step} />
 
       {error ? (
         <p className="rounded-lg bg-red-50 px-3 py-2 portal-text-body text-red-800">
@@ -193,7 +174,7 @@ export function PartnerRegisterForm() {
             disabled={previewLoading}
             className="btn-pill-primary w-full !py-2.5 disabled:opacity-60"
           >
-            {previewLoading ? "Wird geprüft…" : "Weiter zum Vertrag"}
+            {previewLoading ? "Wird geprüft…" : "Weiter zu den Bedingungen"}
           </button>
         </div>
       ) : null}
@@ -204,6 +185,7 @@ export function PartnerRegisterForm() {
             E-Mail: <strong className="text-text-primary">{email}</strong>
           </p>
           <PartnerRahmenvertragAcceptBlock
+            variant="register"
             pdfUrl={previewPdfUrl}
             vertragsNr={previewVertragsNr}
             akzeptiert={rahmenAkzeptiert}
@@ -211,11 +193,7 @@ export function PartnerRegisterForm() {
               setRahmenAkzeptiert(v);
               if (v) setRahmenError(false);
             }}
-            error={
-              rahmenError
-                ? "Bitte den Vertrag durchlesen und die Annahme bestätigen."
-                : null
-            }
+            error={rahmenError ? BEDINGUNGEN_ERROR : null}
           />
           {previewLoading ? (
             <p className="portal-text-meta text-text-tertiary">PDF-Status wird geprüft…</p>
