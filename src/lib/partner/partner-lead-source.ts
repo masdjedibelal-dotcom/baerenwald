@@ -14,6 +14,8 @@ export type PartnerLeadDbRow = {
   kontakt_nachricht?: string | null;
   funnel_daten?: unknown;
   kunde_objekt_id?: string | null;
+  auftraggeber_kunde_id?: string | null;
+  org_freigabe_status?: string | null;
 };
 
 export type PartnerKundenObjektRow = {

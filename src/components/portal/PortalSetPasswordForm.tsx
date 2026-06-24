@@ -160,6 +160,7 @@ export function PortalSetPasswordForm({
 
   return (
     <form onSubmit={onSubmit} className="space-y-4">
+      <h2 className="portal-text-section text-text-primary">{title}</h2>
       <p className="portal-text-body text-text-secondary">
         Wähle ein neues Passwort für dein Konto (mindestens 8 Zeichen).
       </p>

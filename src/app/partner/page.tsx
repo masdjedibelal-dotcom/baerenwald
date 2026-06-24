@@ -1,10 +1,14 @@
+import Link from "next/link";
 import { Suspense } from "react";
 import { redirect } from "next/navigation";
 
-import { PartnerClient } from "@/components/partner/PartnerClient";
+import { PartnerAuthFlowHint } from "@/components/partner/PartnerAuthFlowHint";
 import { PartnerAuthShell } from "@/components/partner/PartnerAuthShell";
+import { PartnerClient } from "@/components/partner/PartnerClient";
+import { PARTNER_AUTH_COPY } from "@/lib/partner/partner-auth-copy";
 import { getPartnerDataForHandwerker } from "@/lib/partner/get-partner-data";
 import { linkPortalHandwerkerToAuthUser } from "@/lib/partner/link-portal-handwerker";
+import { SITE_CONFIG } from "@/lib/config";
 import { createClient } from "@/lib/supabase/server";
 import { isSupabaseConfigured } from "@/lib/supabase";
 
@@ -66,13 +70,27 @@ export default async function PartnerDashboardPage({
 
   if (!link.ok) {
     return (
-      <PartnerAuthShell title="Zugang nicht möglich">
-        <p className="portal-text-body text-text-secondary">{link.error}</p>
-        <form action="/partner/auth/signout" method="post" className="mt-4">
-          <button type="submit" className="btn-pill-outline w-full !py-2.5">
-            Abmelden
-          </button>
-        </form>
+      <PartnerAuthShell title={PARTNER_AUTH_COPY.blocked.title}>
+        <div className="space-y-4">
+          <p className="portal-text-body text-text-secondary">{link.error}</p>
+          <PartnerAuthFlowHint variant="blocked" />
+          <div className="flex flex-col gap-2">
+            <Link href="/partner/registrieren" className="btn-pill-primary text-center !py-2.5">
+              Zur Registrierung
+            </Link>
+            <a
+              href={`mailto:${SITE_CONFIG.email}`}
+              className="btn-pill-outline text-center !py-2.5"
+            >
+              Bärenwald kontaktieren
+            </a>
+          </div>
+          <form action="/partner/auth/signout" method="post">
+            <button type="submit" className="btn-pill-outline w-full !py-2.5">
+              Abmelden
+            </button>
+          </form>
+        </div>
       </PartnerAuthShell>
     );
   }

@@ -117,15 +117,18 @@ export default function DatenschutzPage() {
               <strong id="partner-portal">3a. Bärenwald Partner (Handwerkerportal)</strong>
               <p>
                 Unter{" "}
-                <a href="/partner/login">Bärenwald Partner</a> können registrierte
-                Handwerksbetriebe mit E-Mail und Passwort Anfragen beantworten, Angebote
-                (Preis und PDF) einreichen und Bautagebuch-Einträge zu zugewiesenen Aufträgen
-                pflegen.
+                <a href="/partner/login">Bärenwald Partner</a> können Handwerksbetriebe
+                mit Partnerschaft Anfragen beantworten, Angebote (Preis und PDF) einreichen
+                und Bautagebuch-Einträge zu zugewiesenen Aufträgen pflegen.
+              </p>
+              <p>
+                <strong>Registrierung:</strong> Bärenwald legt Partnerbetriebe vorab im
+                System an und hinterlegt die Kontakt-E-Mail. Danach können sich Betriebe
+                unter <a href="/partner/registrieren">Registrieren</a> selbst ein Konto
+                anlegen — ohne separate Freischaltung.
               </p>
               <p>
                 <strong>Bei Login:</strong> E-Mail, Passwort (Supabase Auth), Session-Cookies.
-                Die Registrierung ist nur mit einer bei uns hinterlegten Handwerker-E-Mail
-                möglich (<em>auth_user_id</em> am Handwerkerstamm).
               </p>
               <p>
                 <strong>Im Portal verarbeitet:</strong> Zuweisungen zu Angeboten/Gewerken (PLZ,

@@ -1,7 +1,6 @@
 "use client";
 
 import Image from "next/image";
-import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import {
@@ -16,6 +15,7 @@ import {
 } from "lucide-react";
 
 import { PortalProductPicker } from "@/components/portal/PortalProductPicker";
+import { OrgAnlassBadge } from "@/components/org/OrgAnlassBadge";
 import { OnboardingTour } from "@/components/onboarding/OnboardingTour";
 import "@/components/onboarding/onboarding.css";
 import { PortalDetailPanel } from "@/components/portal/PortalDetailPanel";
@@ -147,6 +147,7 @@ type PortalLead = {
   preis_max?: number;
   budget_ca?: number;
   dokumente?: PortalDokument[];
+  anlass?: string | null;
 };
 
 type PortalClientProps = {
@@ -154,6 +155,13 @@ type PortalClientProps = {
   auftraege: PortalAuftrag[];
   angebote: PortalAngebot[];
   leads: PortalLead[];
+  /** Nur Listen+Detail ohne Portal-Shell (Auftraggeber-Portal). */
+  layout?: "default" | "embedded";
+  activeSection?: SectionId;
+  /** Privat-Portal: Produktpicker nur im Privat-Modus */
+  showProductPicker?: boolean;
+  /** Auftraggeber-Portal: Anlass-Badge in Anfragen-Liste */
+  showAnlassBadge?: boolean;
 };
 
 type SectionId = "uebersicht" | "anfragen" | "angebote" | "auftraege" | "gpt";
@@ -271,9 +279,15 @@ export function PortalClient({
   auftraege = [],
   angebote = [],
   leads = [],
+  layout = "default",
+  activeSection,
+  showProductPicker = true,
+  showAnlassBadge = false,
 }: PortalClientProps) {
   const searchParams = useSearchParams();
-  const [section, setSection] = useState<SectionId>("uebersicht");
+  const [section, setSection] = useState<SectionId>(
+    activeSection ?? "uebersicht"
+  );
   const [overviewTab, setOverviewTab] = useState<OverviewTabId>("anfragen");
   /** Vom Server bereits nach splitKundePortalPipeline gefiltert. */
   const leadsAnfragePhase = leads;
@@ -304,10 +318,16 @@ export function PortalClient({
   const [onboardingOpen, setOnboardingOpen] = useState(false);
 
   useEffect(() => {
-    if (!isOnboardingCompleted("portal")) {
+    if (layout === "embedded" && activeSection) {
+      setSection(activeSection);
+    }
+  }, [layout, activeSection]);
+
+  useEffect(() => {
+    if (!isOnboardingCompleted("portal") && layout === "default") {
       setOnboardingOpen(true);
     }
-  }, []);
+  }, [layout]);
   const [currentPage, setCurrentPage] = useState(1);
   const [overviewPage, setOverviewPage] = useState(1);
   const [auftraegeListFilter, setAuftraegeListFilter] =
@@ -358,9 +378,13 @@ export function PortalClient({
             status: fmtPortalStatus(lead.status || "neu"),
             sections: buildAnfragePortalSections(lead),
             dokumente: lead.dokumente ?? [],
+            listFooter:
+              showAnlassBadge && lead.anlass ? (
+                <OrgAnlassBadge anlass={lead.anlass} />
+              ) : undefined,
           };
         }),
-    [leadsAnfragePhase]
+    [leadsAnfragePhase, showAnlassBadge]
   );
 
   const angeboteItems = useMemo<KundePortalDetailItem[]>(() => {
@@ -714,6 +738,96 @@ export function PortalClient({
     if (id !== "gpt") setGptOpen(false);
   }
 
+  const pipelineGrid = (
+    <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
+      <article className="card-bordered overflow-hidden p-0">
+        {section === "auftraege" ? (
+          <div className="flex flex-wrap gap-2 border-b border-border-default px-3 py-3 sm:px-4">
+            {(
+              [
+                ["alle", "Alle"],
+                ["aktiv", "Aktiv"],
+                ["abgeschlossen", "Abgeschlossen"],
+              ] as const
+            ).map(([id, label]) => (
+              <button
+                key={id}
+                type="button"
+                onClick={() => setAuftraegeListFilter(id)}
+                className={cn(
+                  "rounded-full px-3 py-1.5 portal-text-meta font-semibold",
+                  auftraegeListFilter === id
+                    ? "bg-accent-light text-accent"
+                    : "bg-muted text-text-secondary"
+                )}
+              >
+                {label}
+                <span className="ml-1.5 text-text-tertiary">
+                  (
+                  {id === "alle"
+                    ? auftraegeItems.length
+                    : id === "aktiv"
+                      ? offeneAuftraegeCount
+                      : abgeschlosseneAuftraegeCount}
+                  )
+                </span>
+              </button>
+            ))}
+          </div>
+        ) : null}
+        <div className="space-y-2 p-3 sm:p-4">
+          {sectionListEmpty ? (
+            section === "auftraege" && auftraegeListFilter !== "alle" ? (
+              <p className="portal-text-body rounded-xl border border-dashed border-border-light bg-muted/20 px-3 py-6 text-center text-text-secondary">
+                Keine Aufträge für diesen Filter.
+              </p>
+            ) : (
+              <PortalEmptyState section={section} />
+            )
+          ) : (
+            paginatedCardRows.map(renderCard)
+          )}
+        </div>
+        {!sectionListEmpty ? (
+          <PortalListPagination
+            totalItems={sectionCardRows.length}
+            itemLabel={listItemLabel(section)}
+            currentPage={safePage}
+            totalPages={totalPages}
+            onPageChange={setCurrentPage}
+          />
+        ) : null}
+      </article>
+
+      <aside className="hidden lg:block">
+        <article className="card-bordered sticky top-[92px] max-h-[calc(100vh-110px)] overflow-y-auto p-4">
+          {selectedDetail ? (
+            <PortalDetailPanel item={selectedDetail} />
+          ) : (
+            <p className="portal-text-body text-text-secondary">
+              Kein Eintrag ausgewählt.
+            </p>
+          )}
+        </article>
+      </aside>
+    </div>
+  );
+
+  if (layout === "embedded") {
+    return (
+      <div className="portal-ui">
+        {pipelineGrid}
+        <PortalMobileBottomSheet
+          open={mobileDetailOpen}
+          onClose={() => setMobileDetailOpen(false)}
+          ariaLabel="Details"
+        >
+          {selectedDetail ? <PortalDetailPanel item={selectedDetail} /> : null}
+        </PortalMobileBottomSheet>
+      </div>
+    );
+  }
+
   return (
     <div className="portal-ui min-h-screen bg-surface-page">
       <header className="sticky top-0 z-50 border-b border-border-default bg-surface-card/95 backdrop-blur-sm">
@@ -899,7 +1013,9 @@ export function PortalClient({
                 ) : null}
               </article>
 
-              <PortalProductPicker contactPrefill={contactPrefill} />
+              {showProductPicker ? (
+                <PortalProductPicker contactPrefill={contactPrefill} />
+              ) : null}
 
               <section className="border-t border-border-default pt-4">
                 <div className="flex flex-wrap items-center justify-between gap-3">
@@ -941,79 +1057,7 @@ export function PortalClient({
             </div>
           )}
 
-          {section !== "uebersicht" && section !== "gpt" && (
-            <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
-              <article className="card-bordered overflow-hidden p-0">
-                {section === "auftraege" ? (
-                  <div className="flex flex-wrap gap-2 border-b border-border-default px-3 py-3 sm:px-4">
-                    {(
-                      [
-                        ["alle", "Alle"],
-                        ["aktiv", "Aktiv"],
-                        ["abgeschlossen", "Abgeschlossen"],
-                      ] as const
-                    ).map(([id, label]) => (
-                      <button
-                        key={id}
-                        type="button"
-                        onClick={() => setAuftraegeListFilter(id)}
-                        className={cn(
-                          "rounded-full px-3 py-1.5 portal-text-meta font-semibold",
-                          auftraegeListFilter === id
-                            ? "bg-accent-light text-accent"
-                            : "bg-muted text-text-secondary"
-                        )}
-                      >
-                        {label}
-                        <span className="ml-1.5 text-text-tertiary">
-                          (
-                          {id === "alle"
-                            ? auftraegeItems.length
-                            : id === "aktiv"
-                              ? offeneAuftraegeCount
-                              : abgeschlosseneAuftraegeCount}
-                          )
-                        </span>
-                      </button>
-                    ))}
-                  </div>
-                ) : null}
-                <div className="space-y-2 p-3 sm:p-4">
-                  {sectionListEmpty ? (
-                    section === "auftraege" &&
-                    auftraegeListFilter !== "alle" ? (
-                      <p className="portal-text-body rounded-xl border border-dashed border-border-light bg-muted/20 px-3 py-6 text-center text-text-secondary">
-                        Keine Aufträge für diesen Filter.
-                      </p>
-                    ) : (
-                      <PortalEmptyState section={section} />
-                    )
-                  ) : (
-                    paginatedCardRows.map(renderCard)
-                  )}
-                </div>
-                {!sectionListEmpty ? (
-                  <PortalListPagination
-                    totalItems={sectionCardRows.length}
-                    itemLabel={listItemLabel(section)}
-                    currentPage={safePage}
-                    totalPages={totalPages}
-                    onPageChange={setCurrentPage}
-                  />
-                ) : null}
-              </article>
-
-              <aside className="hidden lg:block">
-                <article className="card-bordered sticky top-[92px] max-h-[calc(100vh-110px)] overflow-y-auto p-4">
-                  {selectedDetail ? (
-                    <PortalDetailPanel item={selectedDetail} />
-                  ) : (
-                    <p className="portal-text-body text-text-secondary">Kein Eintrag ausgewählt.</p>
-                  )}
-                </article>
-              </aside>
-            </div>
-          )}
+          {section !== "uebersicht" && section !== "gpt" && pipelineGrid}
         </section>
       </main>
 

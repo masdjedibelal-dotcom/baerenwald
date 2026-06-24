@@ -1,4 +1,5 @@
 import { findHandwerkerForRegistration } from "@/lib/partner/partner-registration-eligibility";
+import { PARTNER_AUTH_COPY } from "@/lib/partner/partner-auth-copy";
 import { supabaseAdmin } from "@/lib/supabase";
 
 export type LinkPortalHandwerkerResult =
@@ -15,7 +16,7 @@ export async function linkPortalHandwerkerToAuthUser(opts: {
 }): Promise<LinkPortalHandwerkerResult> {
   const email = opts.email.trim().toLowerCase();
   if (!email) {
-    return { ok: false, error: "Keine E-Mail-Adresse im Konto." };
+    return { ok: false, error: PARTNER_AUTH_COPY.errors.keineEmailImKonto };
   }
 
   const { data: byAuth } = await supabaseAdmin
@@ -33,8 +34,7 @@ export async function linkPortalHandwerkerToAuthUser(opts: {
   if (!byEmail?.id) {
     return {
       ok: false,
-      error:
-        "Diese E-Mail ist bei uns noch nicht als Partner hinterlegt. Bitte wende dich an Bärenwald.",
+      error: PARTNER_AUTH_COPY.errors.betriebNichtAngelegt,
     };
   }
 
@@ -42,8 +42,7 @@ export async function linkPortalHandwerkerToAuthUser(opts: {
   if (existingAuth && existingAuth !== opts.userId) {
     return {
       ok: false,
-      error:
-        "Diese E-Mail ist bereits mit einem anderen Partner-Konto verknüpft.",
+      error: PARTNER_AUTH_COPY.errors.emailVerknuepft,
     };
   }
 

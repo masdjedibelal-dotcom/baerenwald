@@ -42,6 +42,24 @@ export type PersistLeadInput = {
   kundentyp?: string | null;
   /** Standard `website` → Bestätigungsmail wenn echte E-Mail */
   kanal?: string | null;
+  /** Vorgegebene Kunden-ID (z. B. Organisation oder Melder) */
+  kunde_id?: string | null;
+  kunde_objekt_id?: string | null;
+  auftraggeber_kunde_id?: string | null;
+  anlass?: string | null;
+  erfassung_von?: string | null;
+  melder_name?: string | null;
+  melder_einheit?: string | null;
+  melder_telefon?: string | null;
+  melder_email?: string | null;
+  einladung_token?: string | null;
+  einladung_status?: string | null;
+  org_freigabe_status?: string | null;
+  service_modus?: string | null;
+  /** Keine Standard-Kunden-Mail (Meldung nutzt eigene Templates) */
+  skipKundeMail?: boolean;
+  /** Keine interne Lead-Mail */
+  skipInternMail?: boolean;
   funnel_daten?: unknown;
   /** Unterscheidung Rechner-Haupt / Beratung / Außerhalb / Komplex */
   funnel_quelle?:
@@ -340,6 +358,23 @@ async function persistLeadInner(
   const zeitraum = raw.zeitraum ?? null;
   const kundentyp = normalizeKundentypForDb(raw.kundentyp ?? null);
   const kanal = (raw.kanal ?? "website").trim() || "website";
+  const kundeIdOverride = (raw.kunde_id ?? "").trim() || null;
+  const kunde_objekt_id = (raw.kunde_objekt_id ?? "").trim() || null;
+  const auftraggeber_kunde_id =
+    (raw.auftraggeber_kunde_id ?? "").trim() || null;
+  const anlass = (raw.anlass ?? "").trim() || null;
+  const erfassung_von = (raw.erfassung_von ?? "").trim() || null;
+  const melder_name = (raw.melder_name ?? "").trim() || null;
+  const melder_einheit = (raw.melder_einheit ?? "").trim() || null;
+  const melder_telefon = (raw.melder_telefon ?? "").trim() || null;
+  const melder_email = (raw.melder_email ?? "").trim() || null;
+  const einladung_token = (raw.einladung_token ?? "").trim() || null;
+  const einladung_status = (raw.einladung_status ?? "").trim() || null;
+  const org_freigabe_status =
+    (raw.org_freigabe_status ?? "").trim() || "nicht_noetig";
+  const service_modus = (raw.service_modus ?? "").trim() || null;
+  const skipKundeMail = raw.skipKundeMail === true;
+  const skipInternMail = raw.skipInternMail === true;
   const funnel_quelle = raw.funnel_quelle ?? "rechner_haupt";
   const funnel_daten = sanitizeFunnelDatenJson(
     mergeFunnelDaten(raw.funnel_daten, funnel_quelle, {
@@ -384,10 +419,10 @@ async function persistLeadInner(
     ? emailRaw.trim().toLowerCase()
     : syntheticEmailFromPhone(telefon);
 
-  let kunde_id: string | undefined;
+  let kunde_id: string | undefined = kundeIdOverride ?? undefined;
   let kundeWarNeuAngelegt = false;
 
-  if (hasEmail) {
+  if (!kunde_id && hasEmail) {
     kunde_id = (await findKundeIdByEmail(emailRaw)) ?? undefined;
   }
 
@@ -402,7 +437,7 @@ async function persistLeadInner(
     kunde_id = byTel?.id as string | undefined;
   }
 
-  if (!kunde_id) {
+  if (!kunde_id && !kundeIdOverride) {
     const { data: neuerKunde, error: kundeError } = await supabaseAdmin
       .from("kunden")
       .insert({
@@ -441,29 +476,48 @@ async function persistLeadInner(
 
   const kontakt_email_row = hasEmail ? emailRaw.toLowerCase() : emailForKunde;
 
+  const leadInsert: Record<string, unknown> = {
+    kunde_id,
+    kanal,
+    status: "neu",
+    situation,
+    bereiche,
+    preis_min,
+    preis_max,
+    plz: plz || null,
+    strasse,
+    hausnummer,
+    zeitraum,
+    kundentyp,
+    funnel_daten,
+    produkt_slug,
+    leistung_slug,
+    kontakt_name: name,
+    kontakt_email: kontakt_email_row,
+    kontakt_telefon: telefon || null,
+    kontakt_nachricht: notizen ?? null,
+  };
+
+  if (kunde_objekt_id) leadInsert.kunde_objekt_id = kunde_objekt_id;
+  if (auftraggeber_kunde_id) {
+    leadInsert.auftraggeber_kunde_id = auftraggeber_kunde_id;
+  }
+  if (anlass) leadInsert.anlass = anlass;
+  if (erfassung_von) leadInsert.erfassung_von = erfassung_von;
+  if (melder_name) leadInsert.melder_name = melder_name;
+  if (melder_einheit) leadInsert.melder_einheit = melder_einheit;
+  if (melder_telefon) leadInsert.melder_telefon = melder_telefon;
+  if (melder_email) leadInsert.melder_email = melder_email;
+  if (einladung_token) leadInsert.einladung_token = einladung_token;
+  if (einladung_status) leadInsert.einladung_status = einladung_status;
+  if (org_freigabe_status) {
+    leadInsert.org_freigabe_status = org_freigabe_status;
+  }
+  if (service_modus) leadInsert.service_modus = service_modus;
+
   const { data: lead, error: leadError } = await supabaseAdmin
     .from("leads")
-    .insert({
-      kunde_id,
-      kanal,
-      status: "neu",
-      situation,
-      bereiche,
-      preis_min,
-      preis_max,
-      plz: plz || null,
-      strasse,
-      hausnummer,
-      zeitraum,
-      kundentyp,
-      funnel_daten,
-      produkt_slug,
-      leistung_slug,
-      kontakt_name: name,
-      kontakt_email: kontakt_email_row,
-      kontakt_telefon: telefon || null,
-      kontakt_nachricht: notizen ?? null,
-    })
+    .insert(leadInsert)
     .select("id")
     .single();
 
@@ -546,7 +600,7 @@ async function persistLeadInner(
         ? `${dashboardBase}/anfragen/${encodeURIComponent(leadId)}`
         : undefined;
 
-    if (kanal === "website" && hasEmail) {
+    if (kanal === "website" && hasEmail && !skipKundeMail) {
       try {
         await resend.emails.send({
           from: resendFromCustomer,
@@ -571,8 +625,10 @@ async function persistLeadInner(
       }
     }
 
-    const skipInternMail = GPT_VIZ_SKIP_INTERN_MAIL_QUELLEN.has(String(funnel_quelle));
-    if (internTo && !skipInternMail) {
+    const skipIntern =
+      skipInternMail ||
+      GPT_VIZ_SKIP_INTERN_MAIL_QUELLEN.has(String(funnel_quelle));
+    if (internTo && !skipIntern) {
       try {
         await resend.emails.send({
           from: resendFromSystem,

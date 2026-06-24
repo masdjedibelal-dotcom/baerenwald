@@ -228,7 +228,7 @@ ${detailsBox}
 <ul style="font-size:14px;line-height:1.7;padding-left:20px;margin:12px 0 16px;color:#1A3D2B;">${lis}</ul>
 ${mailBtn("Zum Partner-Portal →", portalLink)}
 <p style="font-size:13px;color:#6B7280;line-height:1.6;margin:0 0 8px;">
-  Melde dich mit deiner bei Bärenwald hinterlegten Partner-E-Mail an.
+  Melde dich mit der E-Mail an, die Bärenwald für deinen Betrieb hinterlegt hat.
 </p>
 <p style="font-size:12px;color:#9CA3AF;word-break:break-all;margin:0;">Link: <a href="${escapeHtml(portalLink)}" style="color:#2E7D52;">${escapeHtml(portalLink)}</a></p>`,
     `Leistung zugewiesen: ${opts.leistungen[0]?.leistung_name ?? gewerkLabel}`

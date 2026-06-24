@@ -17,6 +17,11 @@ import {
   type PartnerKundenObjektRow,
   type PartnerLeadDbRow,
 } from "@/lib/partner/partner-lead-source";
+import {
+  extractPartnerLeadGateFromAngebotHandwerkerRow,
+  extractPartnerLeadGateFromAuftragRow,
+  isPartnerBlockedByOrgFreigabe,
+} from "@/lib/partner/partner-org-freigabe";
 import type { PortalAnfrageLeadSource } from "@/lib/portal/portal-anfrage-display";
 import { syncAngebotHandwerkerAfterAuftragAccept } from "@/lib/partner/sync-angebot-handwerker";
 import {
@@ -350,9 +355,13 @@ export async function getPartnerDataForHandwerker(handwerkerId: string) {
   const objektById = await loadPartnerObjektById(
     collectObjektIdsFromAngebotHandwerkerRows(rawRows)
   );
-  const anfragen: PartnerAnfrageItem[] = await mapAngebotHandwerkerRows(
-    rawRows,
-    objektById
+  const anfragen: PartnerAnfrageItem[] = (
+    await mapAngebotHandwerkerRows(rawRows, objektById)
+  ).filter(
+    (_, i) =>
+      !isPartnerBlockedByOrgFreigabe(
+        extractPartnerLeadGateFromAngebotHandwerkerRow(rawRows[i]!)
+      )
   );
 
   const { data: hwAuftraege } = await supabaseAdmin
@@ -492,7 +501,14 @@ export async function getPartnerDataForHandwerker(handwerkerId: string) {
     );
     const auftragObjektById = await loadPartnerObjektById(auftragObjektIds);
 
-    alleAuftraege = (aufRows ?? []).map((row) => {
+    alleAuftraege = (aufRows ?? [])
+      .filter(
+        (row) =>
+          !isPartnerBlockedByOrgFreigabe(
+            extractPartnerLeadGateFromAuftragRow(row as Record<string, unknown>)
+          )
+      )
+      .map((row) => {
       const raw = row as Record<string, unknown>;
       const kunde = one(raw.kunden) as { plz: string | null; ort: string | null } | null;
       const leadRow = one(raw.leads) as PartnerLeadDbRow | null;
@@ -584,7 +600,14 @@ export async function getPartnerDataForHandwerker(handwerkerId: string) {
       const reloadObjektById = await loadPartnerObjektById(
         collectObjektIdsFromAngebotHandwerkerRows(reloadRaw)
       );
-      anfragenFinal = await mapAngebotHandwerkerRows(reloadRaw, reloadObjektById);
+      anfragenFinal = (
+        await mapAngebotHandwerkerRows(reloadRaw, reloadObjektById)
+      ).filter(
+        (_, i) =>
+          !isPartnerBlockedByOrgFreigabe(
+            extractPartnerLeadGateFromAngebotHandwerkerRow(reloadRaw[i]!)
+          )
+      );
     }
   }
 

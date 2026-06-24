@@ -1,13 +1,15 @@
 import { Suspense } from "react";
 import { redirect } from "next/navigation";
 
+import { OrganisationPortalClient } from "@/components/org/OrganisationPortalClient";
 import { PortalClient } from "@/components/portal/PortalClient";
 import { PortalAuthShell } from "@/components/portal/PortalAuthShell";
 import { SITE_CONFIG } from "@/lib/config";
+import { getOrganisationPortalData } from "@/lib/org/get-organisation-portal-data";
 import { getPortalDataForKunde } from "@/lib/portal/get-portal-data";
 import { linkPortalKundeToAuthUser } from "@/lib/portal/link-portal-kunde";
 import { createClient } from "@/lib/supabase/server";
-import { isSupabaseConfigured } from "@/lib/supabase";
+import { isSupabaseConfigured, supabaseAdmin } from "@/lib/supabase";
 
 export const metadata = {
   title: "MeinBärenwald",
@@ -65,6 +67,40 @@ export default async function PortalDashboardPage() {
           </form>
         </div>
       </PortalAuthShell>
+    );
+  }
+
+  const { data: kundeMeta } = await supabaseAdmin
+    .from("kunden")
+    .select("portal_modus")
+    .eq("id", link.kundeId)
+    .maybeSingle();
+
+  const portalModus = (kundeMeta?.portal_modus as string | undefined) ?? "privat";
+
+  if (portalModus === "organisation") {
+    const orgData = await getOrganisationPortalData(link.kundeId);
+    if (!orgData) {
+      return (
+        <PortalAuthShell title="Keine Kundendaten">
+          <p className="portal-text-body text-text-secondary">
+            Auftraggeber-Daten konnten nicht geladen werden.
+          </p>
+        </PortalAuthShell>
+      );
+    }
+
+    return (
+      <Suspense fallback={<p className="px-4 py-8 text-center">Portal wird geladen…</p>}>
+        <OrganisationPortalClient
+          kunde={orgData.kunde}
+          objekte={orgData.objekte}
+          eingang={orgData.eingang}
+          leads={orgData.leads}
+          angebote={orgData.angebote}
+          auftraege={orgData.auftraege}
+        />
+      </Suspense>
     );
   }
 

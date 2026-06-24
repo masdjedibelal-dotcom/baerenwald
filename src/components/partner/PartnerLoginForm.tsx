@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
 
 import { PortalResendConfirmation } from "@/components/portal/PortalResendConfirmation";
+import { PartnerAuthFlowHint } from "@/components/partner/PartnerAuthFlowHint";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 
 export function PartnerLoginForm() {
@@ -46,12 +47,7 @@ export function PartnerLoginForm() {
 
   return (
     <form onSubmit={onSubmit} className="space-y-4">
-      <p className="rounded-lg bg-muted/60 px-3 py-2 portal-text-meta text-text-secondary">
-        Zugang mit der bei Bärenwald hinterlegten Partner-E-Mail. Noch kein Konto?{" "}
-        <Link href="/partner/registrieren" className="font-semibold text-accent hover:underline">
-          Registrieren
-        </Link>
-      </p>
+      <PartnerAuthFlowHint variant="login" />
       {hint === "confirm" ? (
         <div className="space-y-3 rounded-lg bg-amber-50 px-3 py-3 portal-text-body text-amber-900">
           <p>
@@ -118,13 +114,16 @@ export function PartnerLoginForm() {
       </p>
 
       <p className="border-t border-border-light pt-4 text-center portal-text-body text-text-secondary">
-        Zugang anfragen?{" "}
+        Noch kein Konto?{" "}
         <Link
           href="/partner/registrieren"
           className="font-semibold text-accent underline-offset-2 hover:underline"
         >
-          Registrieren
+          Jetzt registrieren
         </Link>
+        <span className="block mt-1 portal-text-meta text-text-tertiary">
+          Nur möglich, nachdem Bärenwald deinen Betrieb angelegt hat.
+        </span>
       </p>
     </form>
   );

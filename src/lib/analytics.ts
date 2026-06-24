@@ -109,6 +109,26 @@ export const track = {
   konverterMatrixView: (familie: string, quelle: string) => {
     ph("konverter_matrix_view", { familie, quelle });
   },
+
+  meldeLinkGeoeffnet: (orgKennung: string, objektSlug?: string) => {
+    ph("melde_link_geoeffnet", { org: orgKennung, objekt: objektSlug });
+  },
+
+  meldeAbgeschickt: (kategorie: string, orgKennung: string) => {
+    ph("melde_abgeschickt", { kategorie, org: orgKennung });
+  },
+
+  orgPortalTab: (tab: string) => {
+    ph("org_portal_tab", { tab });
+  },
+
+  orgAnfrageGestartet: (anlass: string) => {
+    ph("org_anfrage_gestartet", { anlass });
+  },
+
+  orgFreigabe: (aktion: "freigegeben" | "abgelehnt") => {
+    ph("org_freigabe", { aktion });
+  },
 };
 
 const TRUST_ORDER = [

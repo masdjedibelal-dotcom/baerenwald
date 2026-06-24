@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 
 import { PartnerAuthShell } from "@/components/partner/PartnerAuthShell";
 import { PartnerLoginForm } from "@/components/partner/PartnerLoginForm";
+import { PARTNER_AUTH_COPY } from "@/lib/partner/partner-auth-copy";
 import { createClient } from "@/lib/supabase/server";
 import { isSupabaseConfigured } from "@/lib/supabase";
 
@@ -34,7 +35,7 @@ export default async function PartnerLoginPage({
   return (
     <PartnerAuthShell
       title="Anmelden"
-      subtitle="Anfragen, Angebote und Aufträge von Bärenwald."
+      subtitle={PARTNER_AUTH_COPY.loginSubtitle}
     >
       <Suspense fallback={<p className="portal-text-body text-center">Laden…</p>}>
         <PartnerLoginForm />

@@ -46,16 +46,13 @@ export async function POST(req: Request) {
   }
 
   try {
-    let erklaerung = session.gpt_erklaerung;
-    if (!erklaerung) {
-      erklaerung = await generateBauErklaerung({
-        wunschText: session.wunsch_text,
-        raumAnalyse: session.raum_analyse,
-      });
-      const updated = await updateGptVizSession(sessionId, { gpt_erklaerung: erklaerung });
-      if (!updated) {
-        return Response.json({ error: "Session-Update fehlgeschlagen." }, { status: 500 });
-      }
+    const erklaerung = await generateBauErklaerung({
+      wunschText: session.wunsch_text,
+      raumAnalyse: session.raum_analyse,
+    });
+    const updated = await updateGptVizSession(sessionId, { gpt_erklaerung: erklaerung });
+    if (!updated) {
+      return Response.json({ error: "Session-Update fehlgeschlagen." }, { status: 500 });
     }
 
     return Response.json({ gpt_erklaerung: erklaerung });

@@ -6,6 +6,7 @@ import { confirmCrmProjektvertrag } from "@/lib/partner/partner-crm-api";
 import { linkPortalHandwerkerToAuthUser } from "@/lib/partner/link-portal-handwerker";
 import { RAHMENVERTRAG_TYP_SLUG } from "@/lib/partner/compliance-summary";
 import { findHandwerkerForRegistration } from "@/lib/partner/partner-registration-eligibility";
+import { PARTNER_AUTH_COPY } from "@/lib/partner/partner-auth-copy";
 import { createClient } from "@/lib/supabase/server";
 import { isSupabaseConfigured, supabaseAdmin } from "@/lib/supabase";
 
@@ -186,7 +187,7 @@ export async function acceptPartnerRahmenvertragForEmail(opts: {
   if (!hw?.id) {
     return {
       ok: false,
-      error: "Diese E-Mail ist bei uns noch nicht als Partner hinterlegt.",
+      error: PARTNER_AUTH_COPY.errors.betriebNichtAngelegt,
     };
   }
 

@@ -19,7 +19,9 @@ export const PARTNER_LEAD_EMBED = `
   preis_max,
   budget_ca,
   kontakt_nachricht,
-  kunde_objekt_id
+  kunde_objekt_id,
+  auftraggeber_kunde_id,
+  org_freigabe_status
 `;
 
 export const PARTNER_ANGEBOT_EMBED = `

@@ -618,6 +618,24 @@ export default function BaerenwaldLandingClient({
 
       <PortalPartnerLandingSection />
 
+      <section className="inner py-16 fade-up" aria-labelledby="auftraggeber-heading">
+        <h2 id="auftraggeber-heading" className="checks-section-headline">
+          Für Hausverwaltungen &amp; Auftraggeber
+        </h2>
+        <p className="checks-section-tagline max-w-2xl">
+          Melde-Links pro Objekt, zentrales Eingangs-Dashboard, Servicepakete mit
+          Preisrahmen — ein Ansprechpartner für alle Gewerke.
+        </p>
+        <div className="mt-6 flex flex-wrap gap-3">
+          <a href="mailto:info@baerenwald-muenchen.de?subject=Auftraggeber-Portal" className="btn-pill-primary">
+            Beratung anfragen
+          </a>
+          <a href="/portal/login" className="btn-pill-outline">
+            Zum Auftraggeber-Portal
+          </a>
+        </div>
+      </section>
+
       <section
         className="vision-section fade-up"
         aria-labelledby="vision-heading"

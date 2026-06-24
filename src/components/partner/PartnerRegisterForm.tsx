@@ -7,7 +7,9 @@ import { acceptPartnerRahmenvertragForEmail } from "@/app/actions/partner-vertra
 import { verifyPartnerRegistrationEmail } from "@/app/actions/partner-registration";
 import { getPartnerRahmenvertragPreview } from "@/app/actions/partner-rahmenvertrag-preview";
 import { PartnerRahmenvertragAcceptBlock } from "@/components/partner/PartnerRahmenvertragAcceptBlock";
+import { PartnerAuthFlowHint } from "@/components/partner/PartnerAuthFlowHint";
 import { PortalResendConfirmation } from "@/components/portal/PortalResendConfirmation";
+import { PARTNER_AUTH_COPY } from "@/lib/partner/partner-auth-copy";
 import { partnerAuthCallbackUrl } from "@/lib/partner/partner-auth-url";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
@@ -120,7 +122,7 @@ export function PartnerRegisterForm() {
     }
     const identities = data.user?.identities ?? [];
     if (identities.length === 0) {
-      setError("Diese E-Mail ist bereits registriert. Bitte melde dich an.");
+      setError(PARTNER_AUTH_COPY.errors.bereitsRegistriert);
       return;
     }
     setSuccess(true);
@@ -129,10 +131,7 @@ export function PartnerRegisterForm() {
   if (success) {
     return (
       <div className="space-y-3 text-center portal-text-body text-text-secondary">
-        <p>
-          Wir haben dir eine Bestätigungs-E-Mail geschickt. Nach der Bestätigung
-          kannst du dich im Partner-Portal anmelden.
-        </p>
+        <p>{PARTNER_AUTH_COPY.confirmEmailSuccess}</p>
         <PortalResendConfirmation defaultEmail={email} />
         <Link href="/partner/login" className="font-semibold text-accent hover:underline">
           Zum Login
@@ -143,9 +142,9 @@ export function PartnerRegisterForm() {
 
   return (
     <div className="space-y-5">
-      <p className="rounded-lg bg-muted/60 px-3 py-2 portal-text-meta text-text-secondary">
-        Für Handwerksbetriebe &amp; Partner — mit der E-Mail, die bei Bärenwald für
-        dich hinterlegt ist, legst du dein Konto in wenigen Schritten an.
+      <PartnerAuthFlowHint variant="register" />
+      <p className="portal-text-meta text-text-tertiary">
+        {PARTNER_AUTH_COPY.registerIntro}
       </p>
 
       <ol className="flex gap-2" aria-label="Registrierungsschritte">
@@ -186,8 +185,7 @@ export function PartnerRegisterForm() {
             />
           </label>
           <p className="portal-text-meta text-text-tertiary">
-            Du kannst dich registrieren, sobald deine E-Mail bei uns als Partner oder
-            Handwerker im System hinterlegt ist — eine extra Freischaltung ist nicht nötig.
+            {PARTNER_AUTH_COPY.registerEmailHint}
           </p>
           <button
             type="button"

@@ -5,6 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 
 import { BwIcon } from "@/components/ui/BwIcon";
+import { PARTNER_AUTH_COPY } from "@/lib/partner/partner-auth-copy";
 
 const PORTAL_BENEFITS = [
   "Status jederzeit einsehen — ohne Nachfragen",
@@ -89,8 +90,16 @@ function PortalCard({
       </ul>
 
       <Link href={loginHref} className="portal-landing-login-btn">
-        Anmelden
+        {variant === "partner" ? "Partner-Login" : "Anmelden"}
       </Link>
+      {variant === "partner" ? (
+        <Link
+          href="/partner/registrieren"
+          className="portal-text-meta mt-2 block text-center text-accent underline-offset-2 hover:underline"
+        >
+          Erstes Mal? Registrieren (nach Anlage bei Bärenwald)
+        </Link>
+      ) : null}
     </article>
   );
 }
@@ -109,8 +118,7 @@ export function PortalPartnerLandingSection() {
             MeinBärenwald & Partner-Portal
           </h2>
           <p className="portal-landing-lead">
-            Ob Kunde oder Handwerker — transparent, digital und ohne E-Mail-Chaos.
-            Registrierung erledigst du beim ersten Login.
+            {PARTNER_AUTH_COPY.landingSectionLead}
           </p>
         </header>
 
@@ -127,7 +135,7 @@ export function PortalPartnerLandingSection() {
           <PortalCard
             eyebrow="FÜR HANDWERKER"
             title="Partner-Portal"
-            lead="Anfragen annehmen, Angebote einreichen und Fortschritt dokumentieren — alles zentral."
+            lead={PARTNER_AUTH_COPY.landingPartnerLead}
             benefits={PARTNER_BENEFITS}
             loginHref="/partner/login"
             variant="partner"

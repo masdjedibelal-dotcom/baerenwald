@@ -1,5 +1,6 @@
 import { PartnerAuthShell } from "@/components/partner/PartnerAuthShell";
 import { PartnerRegisterForm } from "@/components/partner/PartnerRegisterForm";
+import { PARTNER_AUTH_COPY } from "@/lib/partner/partner-auth-copy";
 
 export const metadata = {
   title: "Partner-Registrierung — Bärenwald",
@@ -10,7 +11,7 @@ export default function PartnerRegisterPage() {
   return (
     <PartnerAuthShell
       title="Registrieren"
-      subtitle="Mit der im CRM hinterlegten Partner-E-Mail — keine extra Freischaltung nötig."
+      subtitle={PARTNER_AUTH_COPY.registerSubtitle}
     >
       <PartnerRegisterForm />
     </PartnerAuthShell>

@@ -1,5 +1,5 @@
-import { supabaseAdmin } from "@/lib/supabase";
-import { isSupabaseConfigured } from "@/lib/supabase";
+import { PARTNER_AUTH_COPY } from "@/lib/partner/partner-auth-copy";
+import { isSupabaseConfigured, supabaseAdmin } from "@/lib/supabase";
 
 export type PartnerRegistrationCheckResult =
   | { ok: true }
@@ -38,15 +38,14 @@ export async function verifyPartnerRegistrationEmail(
   if (!hw) {
     return {
       ok: false,
-      error:
-        "Diese E-Mail ist bei uns noch nicht als Partner hinterlegt. Bitte wende dich an Bärenwald.",
+      error: PARTNER_AUTH_COPY.errors.betriebNichtAngelegt,
     };
   }
 
   if (hw.auth_user_id) {
     return {
       ok: false,
-      error: "Diese E-Mail ist bereits registriert. Bitte melde dich an.",
+      error: PARTNER_AUTH_COPY.errors.bereitsRegistriert,
     };
   }
 
