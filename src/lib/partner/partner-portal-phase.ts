@@ -40,15 +40,20 @@ export function resolveAngebotHandwerkerPhase(
 
   if (st === "abgelehnt") return "auftrag";
 
-  /** Preiseinigung noch offen → Tab Anfragen. */
-  if (isPartnerAnfrageOffen(item)) return "anfrage";
-  if (st === "akzeptiert" && hwSt !== "uebernommen") return "anfrage";
+  /** HW wartet auf CRM / neue Runde — bleibt unter Anfragen. */
+  if (hwSt === "eingereicht" || hwSt === "rueckfrage" || hwSt === "abgelehnt") {
+    return "anfrage";
+  }
 
-  /** CRM hat Konditionen übernommen — Vertragspaket unter Angebote bis HW bestätigt. */
+  /** CRM hat Konditionen übernommen — vor isPartnerAnfrageOffen (fehlendes antwort_at). */
   if (hwSt === "uebernommen") {
     if (item.projektvertrag_bestaetigt_am) return "auftrag";
     return "angebot";
   }
+
+  /** Preiseinigung noch offen → Tab Anfragen. */
+  if (isPartnerAnfrageOffen(item)) return "anfrage";
+  if (st === "akzeptiert") return "anfrage";
 
   return "auftrag";
 }

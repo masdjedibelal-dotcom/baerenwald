@@ -134,7 +134,7 @@ export function partnerAngebotStatusPillClass(statusKey: string): string {
 }
 
 export function partnerAngebotOverviewStatusLabel(statusKey: string): string {
-  if (statusKey === "uebernommen") return "Bestätigt";
+  if (statusKey === "uebernommen") return "Preise vereinbart";
   if (statusKey === "vertrag_offen") return "Vertrag offen";
   if (statusKey === "warte_vertrag") return "Warte auf Vertrag";
   if (statusKey === "eingereicht") return "Wartet auf Prüfung";
@@ -169,7 +169,11 @@ function angebotListenStatus(item: PartnerAnfrageItem): {
     };
   }
   if (hwSt === "uebernommen") {
-    return { label: "Bestätigt", pillKey: "uebernommen", hint: "→ Unter Aufträge" };
+    const label =
+      item.hw_konditionen?.art === "gegenvorschlag"
+        ? "Gegenangebot akzeptiert"
+        : "Preise vereinbart";
+    return { label, pillKey: "uebernommen", hint: "→ Vergütung & Vertrag" };
   }
   if (hwSt === "eingereicht") {
     return {

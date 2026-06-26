@@ -168,6 +168,7 @@ export type PartnerAuftragItem = {
   angebotHandwerkerId?: string | null;
   angebotHwStatus?: string | null;
   angebotHwEingereichtAt?: string | null;
+  angebotHwKonditionenArt?: "bestaetigt" | "gegenvorschlag" | null;
   /** CRM-Bewertung nach Abschluss (read-only). */
   bewertung?: PartnerAuftragBewertung | null;
   projektvertrag_bestaetigt_am?: string | null;
@@ -704,13 +705,19 @@ export async function getPartnerDataForHandwerker(handwerkerId: string) {
 
   const ahMetaByAngebotId = new Map<
     string,
-    { id: string; hw_status?: string; hw_eingereicht_at?: string }
+    {
+      id: string;
+      hw_status?: string;
+      hw_eingereicht_at?: string;
+      hw_konditionen_art?: "bestaetigt" | "gegenvorschlag" | null;
+    }
   >();
   for (const a of anfragenFinal) {
     ahMetaByAngebotId.set(a.angebot_id, {
       id: a.id,
       hw_status: a.hw_status,
       hw_eingereicht_at: a.hw_eingereicht_at,
+      hw_konditionen_art: a.hw_konditionen?.art ?? null,
     });
   }
 
@@ -723,6 +730,7 @@ export async function getPartnerDataForHandwerker(handwerkerId: string) {
       angebotHandwerkerId: ahMeta?.id ?? null,
       angebotHwStatus: ahMeta?.hw_status ?? null,
       angebotHwEingereichtAt: ahMeta?.hw_eingereicht_at ?? null,
+      angebotHwKonditionenArt: ahMeta?.hw_konditionen_art ?? null,
       projektvertrag_bestaetigt_am: vertragCtx?.projektvertrag_bestaetigt_am ?? null,
       vertrag: vertragCtx,
     };

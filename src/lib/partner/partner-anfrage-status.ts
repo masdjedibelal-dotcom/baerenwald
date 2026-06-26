@@ -110,6 +110,8 @@ export function partnerAnfrageStatusLabel(item: PartnerAnfrageTimingFields): str
   }
   if (item.antwort_at) {
     const s = item.status.toLowerCase();
+    const hwSt = (item.hw_status ?? "").toLowerCase();
+    if (hwSt === "uebernommen") return "Gegenangebot akzeptiert";
     if (s === "akzeptiert" && item.hw_eingereicht_at) return "Zugesagt";
     if (s === "abgelehnt") return "Abgelehnt";
   }
@@ -141,10 +143,16 @@ export function isPartnerAuftragAnfrageAntwortAbgelaufen(
 }
 
 export function isPartnerAuftragAnfrageOffen(
-  item: Pick<PartnerAuftragItem, "status" | "hwStatus" | "start_datum"> & {
+  item: Pick<
+    PartnerAuftragItem,
+    "status" | "hwStatus" | "start_datum" | "angebotHwStatus"
+  > & {
     positionen: Array<{ start_datum?: string | null }>;
   }
 ): boolean {
+  const ahSt = (item.angebotHwStatus ?? "").toLowerCase();
+  if (ahSt === "uebernommen" || ahSt === "eingereicht") return false;
+
   if (isPartnerAuftragAnfrageAntwortAbgelaufen(item)) return false;
   const hw = item.hwStatus.toLowerCase();
   if (HW_BEANTWORTET.has(hw)) return false;
@@ -186,7 +194,7 @@ export function isPartnerAuftragWartetAufPreiseinigung(
 export function partnerAuftragAnfrageStatusLabel(
   item: Pick<
     PartnerAuftragItem,
-    "hwStatus" | "start_datum" | "status" | "angebotHwStatus"
+    "hwStatus" | "start_datum" | "status" | "angebotHwStatus" | "angebotHwKonditionenArt"
   > & {
     positionen: Array<{ start_datum?: string | null }>;
   }
@@ -195,7 +203,11 @@ export function partnerAuftragAnfrageStatusLabel(
   if (isPartnerAuftragWartetAufPreiseinigung(item)) return "Wartet auf Prüfung";
   const ahSt = (item.angebotHwStatus ?? "").toLowerCase();
   if (ahSt === "rueckfrage") return "Neue Konditionen";
-  if (ahSt === "uebernommen") return "Konditionen vereinbart";
+  if (ahSt === "uebernommen") {
+    return item.angebotHwKonditionenArt === "gegenvorschlag"
+      ? "Gegenangebot akzeptiert"
+      : "Konditionen vereinbart";
+  }
   const hw = item.hwStatus.toLowerCase();
   const map: Record<string, string> = {
     angefragt: "Antwort ausstehend",

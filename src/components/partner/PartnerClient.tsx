@@ -439,16 +439,25 @@ export function PartnerClient({
     [auftragAnfragen, selectedAnfrageParsed, selectedAnfrageAngebot]
   );
 
+  const angeboteDetailPool = useMemo(() => {
+    const byId = new Map<string, PartnerAnfrageItem>();
+    for (const a of angeboteSorted) byId.set(a.id, a);
+    for (const a of angeboteAlleAkzeptiert) {
+      if (!byId.has(a.id)) byId.set(a.id, a);
+    }
+    return byId;
+  }, [angeboteSorted, angeboteAlleAkzeptiert]);
+
   const selectedAngebot = useMemo(() => {
     if (selectedId) {
-      return angeboteSorted.find((a) => a.id === selectedId);
+      return angeboteDetailPool.get(selectedId) ?? angeboteSorted[0];
     }
     return angeboteSorted[0];
-  }, [angeboteSorted, selectedId]);
+  }, [angeboteDetailPool, angeboteSorted, selectedId]);
 
   useEffect(() => {
     if (section !== "angebote" || !selectedId) return;
-    if (angeboteSorted.some((a) => a.id === selectedId)) return;
+    if (angeboteDetailPool.has(selectedId)) return;
     if (anfragenSorted.some((a) => a.id === selectedId)) {
       router.replace(partnerAnfragePortalPath(selectedId));
       setSection("anfragen");
@@ -456,7 +465,7 @@ export function PartnerClient({
       return;
     }
     router.refresh();
-  }, [section, selectedId, angeboteSorted, anfragenSorted, router]);
+  }, [section, selectedId, angeboteDetailPool, anfragenSorted, router]);
 
   const selectedAuftrag = useMemo(
     () => auftraege.find((a) => a.id === selectedId) ?? auftraege[0],
@@ -496,6 +505,11 @@ export function PartnerClient({
       setSection("angebote");
       if (id) {
         if (angeboteSorted.some((a) => a.id === id)) {
+          setSelectedId(id);
+          setMobileDetailOpen(true);
+          return;
+        }
+        if (angeboteAlleAkzeptiert.some((a) => a.id === id)) {
           setSelectedId(id);
           setMobileDetailOpen(true);
           return;
@@ -577,6 +591,18 @@ export function PartnerClient({
       setSelectedId(selectedId);
       if (target !== "profil") setMobileDetailOpen(true);
     }
+  }
+
+  function weiterZuAngeboten(angebotHandwerkerId: string) {
+    const id = angebotHandwerkerId.trim();
+    if (!id) return;
+    setSection("angebote");
+    setListPage(1);
+    setListFilter("offen");
+    setSelectedId(id);
+    setMobileDetailOpen(true);
+    router.replace(partnerAngebotPortalPath(id));
+    router.refresh();
   }
 
   function refreshAnfrageAfterRespond(anfrageId: string) {
@@ -701,6 +727,7 @@ export function PartnerClient({
         <PartnerAuftragAnfrageDetail
           item={selectedAnfrageAuftrag}
           onAccepted={refreshAnfrageAfterRespond}
+          onWeiterZuAngeboten={weiterZuAngeboten}
         />
       );
     }

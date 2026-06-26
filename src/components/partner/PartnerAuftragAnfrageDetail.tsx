@@ -49,9 +49,11 @@ import {
 export function PartnerAuftragAnfrageDetail({
   item,
   onAccepted,
+  onWeiterZuAngeboten,
 }: {
   item: PartnerAuftragItem;
   onAccepted?: (anfrageId: string) => void;
+  onWeiterZuAngeboten?: (angebotHandwerkerId: string) => void;
 }) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
@@ -72,8 +74,13 @@ export function PartnerAuftragAnfrageDetail({
     hwSt === "akzeptiert" &&
     !item.angebotHwEingereichtAt &&
     ahSt !== "eingereicht" &&
-    ahSt !== "uebernommen";
-  const bearbeitbar = (kannAntworten || konditionenNachreichen) && !wartetAufPruefung;
+    ahSt !== "uebernommen" &&
+    ahSt !== "rueckfrage";
+  const bearbeitbar =
+    !konditionenUebernommen &&
+    !wartetAufPruefung &&
+    ahSt !== "rueckfrage" &&
+    (kannAntworten || konditionenNachreichen);
 
   const konditionZeilen = useMemo(
     () => resolvePartnerAuftragKonditionZeilen(item.positionen),
@@ -89,10 +96,13 @@ export function PartnerAuftragAnfrageDetail({
   }, [konditionZeilen]);
 
   useEffect(() => {
-    if (konditionenUebernommen && item.angebotHandwerkerId) {
-      router.replace(partnerAngebotPortalPath(item.angebotHandwerkerId));
+    if (!konditionenUebernommen || !item.angebotHandwerkerId) return;
+    if (onWeiterZuAngeboten) {
+      onWeiterZuAngeboten(item.angebotHandwerkerId);
+      return;
     }
-  }, [konditionenUebernommen, item.angebotHandwerkerId, router]);
+    router.replace(partnerAngebotPortalPath(item.angebotHandwerkerId));
+  }, [konditionenUebernommen, item.angebotHandwerkerId, onWeiterZuAngeboten, router]);
 
   const geaendert = useMemo(
     () => sindKonditionPreiseGeaendert(konditionZeilen, hwValues),
@@ -167,7 +177,7 @@ export function PartnerAuftragAnfrageDetail({
     : wartetAufPruefung
       ? "Dein Gegenangebot wurde an Bärenwald übermittelt. Wir prüfen die Preise — du musst vorerst nichts tun."
       : konditionenUebernommen
-        ? "Bärenwald hat deine Konditionen übernommen. Du findest das Angebot unter „Angebote“."
+        ? "Bärenwald hat dein Gegenangebot akzeptiert. Du wirst zu „Angebote“ weitergeleitet — dort siehst du die vereinbarten Preise."
         : konditionenNachreichen
           ? "Du hast zugesagt, die Preise wurden aber noch nicht übermittelt. Bitte unten „Annehmen“ oder „Gegenangebot senden“ erneut ausführen."
           : hwSt === "abgelehnt"
@@ -263,13 +273,6 @@ export function PartnerAuftragAnfrageDetail({
           className="btn-pill-primary portal-btn inline-flex !px-4 !py-2.5"
         >
           Neue Konditionen prüfen
-        </a>
-      ) : item.angebotHandwerkerId && konditionenUebernommen ? (
-        <a
-          href={partnerAngebotPortalPath(item.angebotHandwerkerId)}
-          className="btn-pill-primary portal-btn inline-flex !px-4 !py-2.5"
-        >
-          Zum Angebot
         </a>
       ) : null}
 

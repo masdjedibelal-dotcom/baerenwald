@@ -34,6 +34,10 @@ import {
   resolvePartnerKonditionZeilen,
 } from "@/lib/partner/partner-portal-display";
 import {
+  mapKonditionZeilenVereinbart,
+  type PartnerHwKonditionen,
+} from "@/lib/partner/partner-konditionen";
+import {
   PARTNER_MAX_ANGEBOT_DATEIEN,
   PARTNER_MAX_PDF_MB,
   validatePartnerAngebotFiles,
@@ -43,9 +47,16 @@ import {
 const PDF_FORM_ID = "partner-angebot-pdf-form";
 const RECHNUNG_FORM_ID = "partner-rechnung-form";
 
-function hwStatusLabel(s?: string): string {
+function hwStatusLabel(
+  s?: string,
+  konditionen?: PartnerHwKonditionen | null
+): string {
   const v = (s ?? "offen").toLowerCase();
-  if (v === "uebernommen") return "Preise vereinbart";
+  if (v === "uebernommen") {
+    return konditionen?.art === "gegenvorschlag"
+      ? "Gegenangebot akzeptiert"
+      : "Preise vereinbart";
+  }
   return "Offen";
 }
 
@@ -72,15 +83,24 @@ export function PartnerAngebotDetail({ item }: { item: PartnerAnfrageItem }) {
   const kannRechnungHochladen =
     uebernommen && vertragBestaetigt && !rechnungEingereicht;
 
-  const konditionZeilen = useMemo(
-    () =>
-      resolvePartnerKonditionZeilen(
-        item.crm_positionen_raw,
-        { gewerkId: item.gewerk_id },
-        item.hw_konditionen
-      ),
-    [item.crm_positionen_raw, item.gewerk_id, item.hw_konditionen]
-  );
+  const konditionZeilen = useMemo(() => {
+    const zeilen = resolvePartnerKonditionZeilen(
+      item.crm_positionen_raw,
+      { gewerkId: item.gewerk_id },
+      item.hw_konditionen
+    );
+    if (!uebernommen) return zeilen;
+    const vereinbart = mapKonditionZeilenVereinbart(zeilen);
+    if (item.hw_konditionen?.art !== "gegenvorschlag") return vereinbart;
+    const submitted = new Map(
+      item.hw_konditionen.positionen.map((p) => [p.position_id, p])
+    );
+    return vereinbart.map((z) => {
+      const prev = submitted.get(z.id);
+      if (!prev?.geaendert || prev.ek_netto == null) return z;
+      return { ...z, vorherNetto: prev.ek_netto };
+    });
+  }, [item.crm_positionen_raw, item.gewerk_id, item.hw_konditionen, uebernommen]);
 
   const sections = useMemo(
     () =>
@@ -215,14 +235,15 @@ export function PartnerAngebotDetail({ item }: { item: PartnerAnfrageItem }) {
       <PartnerDetailHero
         title={item.listen_titel}
         metaLine={partnerDetailDateMetaLine(item.antwort_at ?? item.gesendet_at)}
-        statusLabel={hwStatusLabel(item.hw_status)}
+        statusLabel={hwStatusLabel(item.hw_status, item.hw_konditionen)}
         statusPillClass={partnerDetailStatusPillClass(item.hw_status ?? "uebernommen")}
       />
 
       {vertragspaketAktiv ? (
         <PartnerDetailInfoBox>
-          Die Preise sind vereinbart. Bitte bestätige den Projektvertrag — danach wird der Auftrag
-          freigeschaltet. Ein Angebots-PDF kannst du optional hochladen.
+          {item.hw_konditionen?.art === "gegenvorschlag"
+            ? "Bärenwald hat dein Gegenangebot akzeptiert. Unten die vereinbarten Preise — als Nächstes optional Angebots-PDF und Projektvertrag."
+            : "Die Preise sind vereinbart. Bitte bestätige den Projektvertrag — danach wird der Auftrag freigeschaltet. Ein Angebots-PDF kannst du optional hochladen."}
         </PartnerDetailInfoBox>
       ) : uebernommen && vertragBestaetigt ? (
         <PartnerDetailSuccessBox>
