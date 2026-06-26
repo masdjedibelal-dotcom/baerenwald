@@ -361,7 +361,7 @@ ${mailBtn("Zum Partner-Portal", portalHref)}
   }
 }
 
-/** Intern: Handwerker hat Angebot eingereicht. */
+/** Intern: Handwerker hat Konditionen / Gegenvorschlag eingereicht. */
 export async function sendPartnerInternalAngebotMail(opts: {
   handwerkerName: string;
   firma?: string | null;
@@ -371,6 +371,13 @@ export async function sendPartnerInternalAngebotMail(opts: {
   preisBrutto?: number | null;
   angebotId: string;
   angebotPdfUrl?: string | null;
+  konditionenArt?: string | null;
+  positionen?: Array<{
+    leistung: string;
+    ekNetto: number | null;
+    hwNetto: number;
+    geaendert: boolean;
+  }>;
 }): Promise<void> {
   const to = internTo();
   const resend = resendClient();
@@ -385,15 +392,41 @@ export async function sendPartnerInternalAngebotMail(opts: {
         ? `Netto ${opts.preisNetto.toLocaleString("de-DE")} €`
         : "—";
 
+  const posRows =
+    opts.positionen?.length
+      ? `<table style="width:100%;border-collapse:collapse;margin:12px 0;font-size:14px;">
+  <tr style="border-bottom:1px solid #e5e7eb;">
+    <th style="text-align:left;padding:6px 4px;">Leistung</th>
+    <th style="text-align:right;padding:6px 4px;">Vorschlag</th>
+    <th style="text-align:right;padding:6px 4px;">HW</th>
+  </tr>
+  ${opts.positionen
+    .map(
+      (p) => `<tr style="border-bottom:1px solid #f3f4f6;">
+    <td style="padding:6px 4px;">${escapeHtml(p.leistung)}${p.geaendert ? " *" : ""}</td>
+    <td style="text-align:right;padding:6px 4px;">${p.ekNetto != null ? `${p.ekNetto.toLocaleString("de-DE")} €` : "Preis folgt"}</td>
+    <td style="text-align:right;padding:6px 4px;">${p.hwNetto.toLocaleString("de-DE")} €</td>
+  </tr>`
+    )
+    .join("")}
+</table>`
+      : "";
+
+  const art = opts.konditionenArt?.trim()
+    ? `<p><strong>Art:</strong> ${escapeHtml(opts.konditionenArt.trim())}</p>`
+    : "";
+
   const html = mailShell(
-    "Handwerker-Angebot eingegangen",
-    `<p><strong>${escapeHtml(hw)}</strong> hat ein Angebot eingereicht.</p>
-<p>Gewerk: ${escapeHtml(opts.gewerkName)} · PLZ ${escapeHtml(opts.plz)}<br>Preis: ${escapeHtml(preis)}</p>
+    "Handwerker-Konditionen eingegangen",
+    `<p><strong>${escapeHtml(hw)}</strong> hat Konditionen eingereicht.</p>
+<p>Gewerk: ${escapeHtml(opts.gewerkName)} · PLZ ${escapeHtml(opts.plz)}<br>Gesamt: ${escapeHtml(preis)}</p>
+${art}
+${posRows}
 ${mailActionButtons({
   pdfUrl: opts.angebotPdfUrl ?? undefined,
   pdfLabel: "Angebots-PDF öffnen",
   crmUrl: crm,
-  crmLabel: "Partner-Einreichung im CRM",
+  crmLabel: "Konditionen im CRM prüfen",
 })}`
   );
 
@@ -401,7 +434,7 @@ ${mailActionButtons({
     await resend.emails.send({
       from: systemFrom(),
       to,
-      subject: `HW-Angebot: ${opts.gewerkName} — ${hw}`,
+      subject: `HW-Konditionen: ${opts.gewerkName} — ${hw}`,
       html,
     });
   } catch (e) {
@@ -516,7 +549,7 @@ export async function sendPartnerInternalAnfrageAntwortMail(opts: {
         <strong>Handlungsbedarf:</strong> Anderen Handwerker für <strong>${escapeHtml(opts.gewerkName)}</strong> anfragen.
       </p>`
     : `<p style="margin-top:12px;padding:10px 12px;background:#E8F5E9;border-radius:8px;border:1px solid #81C784;">
-        Der Handwerker kann jetzt unter <strong>Angebote</strong> im Partner-Portal Netto-Preis und Angebots-PDF einreichen. Du erhältst eine weitere Mail bei der Einreichung.
+        Der Handwerker kann jetzt unter <strong>Angebote</strong> im Partner-Portal die vorgeschlagenen Konditionen bestätigen oder einen Gegenvorschlag je Leistung senden. Du erhältst eine weitere Mail bei der Einreichung.
       </p>`;
 
   const portalBtn =

@@ -79,9 +79,13 @@ export function validatePartnerBautagebuchFiles(
   return null;
 }
 
-export function validatePartnerAngebotFiles(files: File[]): string | null {
+export function validatePartnerAngebotFiles(
+  files: File[],
+  opts?: { required?: boolean }
+): string | null {
   const list = files.filter((f) => f.size > 0);
   if (!list.length) {
+    if (opts?.required === false) return null;
     return "Bitte mindestens ein Angebots-PDF hochladen.";
   }
   if (list.length > PARTNER_MAX_ANGEBOT_DATEIEN) {

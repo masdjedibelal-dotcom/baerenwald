@@ -16,30 +16,43 @@ type KundenObjektRow = {
   ort?: string | null;
 };
 
-export function resolvePartnerLeistungsort(opts: {
-  objektId?: string | null;
-  objektById: Map<string, KundenObjektRow>;
-  lead?: Pick<
-    PortalAnfrageLeadSource,
-    "plz" | "strasse" | "hausnummer"
-  > | null;
-  kundePlz?: string | null;
-  kundeOrt?: string | null;
-}): PortalObjekt | null {
-  const objektId = opts.objektId?.trim();
-  if (objektId) {
-    const row = opts.objektById.get(objektId);
-    if (row) return portalObjektFromKundenObjekt(row);
+type PartnerLeistungsortLead = Pick<
+  PortalAnfrageLeadSource,
+  "plz" | "strasse" | "hausnummer" | "funnel_daten" | "objekt"
+>;
+
+/** Objekt + Lead (Funnel/Straße) zu einem vollständigen Leistungsort zusammenführen. */
+export function mergePartnerLeistungsort(
+  objekt: PortalObjekt | null | undefined,
+  lead?: PartnerLeistungsortLead | null,
+  fallback?: { kundePlz?: string | null; kundeOrt?: string | null }
+): PortalObjekt | null {
+  const leadStrasse = lead ? formatAnfrageStrasseHausnummer(lead) : undefined;
+  const plz =
+    objekt?.plz?.trim() ||
+    lead?.plz?.trim() ||
+    lead?.objekt?.plz?.trim() ||
+    fallback?.kundePlz?.trim() ||
+    null;
+  const ort =
+    objekt?.ort?.trim() ||
+    lead?.objekt?.ort?.trim() ||
+    fallback?.kundeOrt?.trim() ||
+    null;
+
+  if (objekt) {
+    return {
+      ...objekt,
+      strasse: objekt.strasse?.trim() || leadStrasse || null,
+      plz: objekt.plz || plz,
+      ort: objekt.ort || ort,
+    };
   }
 
-  const strasse = opts.lead ? formatAnfrageStrasseHausnummer(opts.lead) : undefined;
-  const plz = opts.lead?.plz?.trim() || opts.kundePlz?.trim() || null;
-  const ort = opts.kundeOrt?.trim() || null;
-
-  if (strasse || plz || ort) {
+  if (leadStrasse || plz || ort) {
     return {
       name: "Leistungsort",
-      strasse: strasse ?? null,
+      strasse: leadStrasse ?? null,
       plz,
       ort,
     };
@@ -48,11 +61,34 @@ export function resolvePartnerLeistungsort(opts: {
   return portalObjektFromLeadPlz(plz);
 }
 
+export function resolvePartnerLeistungsort(opts: {
+  objektId?: string | null;
+  objektById: Map<string, KundenObjektRow>;
+  lead?: PartnerLeistungsortLead | null;
+  kundePlz?: string | null;
+  kundeOrt?: string | null;
+}): PortalObjekt | null {
+  const objektId = opts.objektId?.trim();
+  let objekt: PortalObjekt | null = null;
+
+  if (objektId) {
+    const row = opts.objektById.get(objektId);
+    if (row) objekt = portalObjektFromKundenObjekt(row);
+  }
+
+  return mergePartnerLeistungsort(objekt, opts.lead, {
+    kundePlz: opts.kundePlz,
+    kundeOrt: opts.kundeOrt,
+  });
+}
+
 export function buildPartnerLeistungsortSection(
-  objekt: PortalObjekt | null | undefined
+  objekt: PortalObjekt | null | undefined,
+  lead?: PartnerLeistungsortLead | null
 ): PortalDetailSection | null {
-  if (!objekt) return null;
-  const section = portalObjektLeistungsortSection(objekt);
+  const merged = mergePartnerLeistungsort(objekt, lead);
+  if (!merged) return null;
+  const section = portalObjektLeistungsortSection(merged);
   if (!section.rows?.length) return null;
   return section;
 }

@@ -10,9 +10,13 @@ import {
   labelSituation,
   labelZeitraum,
   normalizeFunnelDaten,
+  type NormalizedFunnelDaten,
 } from "@/lib/lead-funnel-daten";
+import { labelBadAusstattung } from "@/lib/lead-funnel-labels";
+import { lineLeistungsLabel } from "@/lib/funnel/breakdown-labels";
 import { isB2B, type Situation } from "@/lib/funnel/types";
 import type { PortalDetailSection } from "@/lib/portal/portal-display";
+import { sanitizeCustomerText, stripHtmlToPlainText } from "@/lib/portal/portal-display";
 import { objektPlzOrt } from "@/lib/portal/portal-detail-item";
 import type { PortalObjekt } from "@/lib/portal/portal-objekt";
 import { fmtPortalOrt } from "@/lib/shared/portal-detail-format";
@@ -120,8 +124,17 @@ export function formatAnfrageWasGemacht(
   }
   const freitext = extractKundenFreitext(norm, lead.kontakt_nachricht);
   if (freitext) return freitext;
-  const bereiche = formatAnfrageBereiche(lead);
-  return bereiche;
+  if (norm.breakdown.length > 0) {
+    const parts = norm.breakdown
+      .map((item) => lineLeistungsLabel(item))
+      .filter((p) => p && p !== "—");
+    if (parts.length) return parts.join(" · ");
+  }
+  if (norm.badAusstattung) {
+    const ausstattung = labelBadAusstattung(norm.badAusstattung);
+    if (ausstattung) return ausstattung;
+  }
+  return undefined;
 }
 
 export function formatAnfrageZeitraum(lead: PortalAnfrageLeadSource): string | undefined {
@@ -177,8 +190,91 @@ export function buildAnfragePersonalSection(
   return { heading: "Persönliche Angaben", rows: personalRows };
 }
 
+export type AnfrageProjektSectionOpts = {
+  /** Leistungsumfang aus CRM-Angebot (wizard_meta in Notizen). */
+  crm_leistungsumfang?: string | null;
+  /** Partner: nur Situation + Bereich (kein Gesamtprojekt bei Teilleistungen). */
+  kompakt?: boolean;
+};
+
+function buildKompakteProjektRows(
+  situation?: string,
+  bereich?: string
+): Array<{ label: string; value: string }> {
+  return dedupeProjektRows(
+    detailRows([
+      { label: "Situation", value: situation },
+      {
+        label: "Bereich",
+        value:
+          bereich && !projektTextsEquivalent(bereich, situation) ? bereich : undefined,
+      },
+    ])
+  );
+}
+
+function normalizeProjektCompareText(value?: string | null): string {
+  return (value ?? "")
+    .toLowerCase()
+    .replace(/[·,;|/]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function projektTextsEquivalent(a?: string | null, b?: string | null): boolean {
+  const na = normalizeProjektCompareText(a);
+  const nb = normalizeProjektCompareText(b);
+  if (!na || !nb) return false;
+  if (na === nb) return true;
+  if (na.length >= 8 && nb.length >= 8 && (na.includes(nb) || nb.includes(na))) {
+    return true;
+  }
+  return false;
+}
+
+function dedupeProjektRows(
+  rows: Array<{ label: string; value: string }>
+): Array<{ label: string; value: string }> {
+  const out: Array<{ label: string; value: string }> = [];
+  for (const row of rows) {
+    if (out.some((prev) => projektTextsEquivalent(prev.value, row.value))) continue;
+    out.push(row);
+  }
+  return out;
+}
+
+function hasStructuredFunnelDetails(norm: NormalizedFunnelDaten): boolean {
+  if (buildLeistungenRows(norm).length > 0) return true;
+  const answers = norm.fachdetails.fachdetailAnswers ?? {};
+  if (Object.keys(answers).length > 0) return true;
+  if (norm.breakdown.length > 0) return true;
+  if (norm.groesse != null) return true;
+  if (norm.zugaenglichkeit) return true;
+  if (norm.kundentyp) return true;
+  return false;
+}
+
+function resolveCrmProjektbeschreibung(
+  lead: PortalAnfrageLeadSource,
+  norm: NormalizedFunnelDaten,
+  opts?: AnfrageProjektSectionOpts
+): string | undefined {
+  const candidates = [
+    sanitizeCustomerText(opts?.crm_leistungsumfang, 4000),
+    extractKundenFreitext(norm, lead.kontakt_nachricht),
+    sanitizeCustomerText(lead.kontakt_nachricht, 4000),
+    formatAnfrageWasGemacht(lead),
+  ];
+  for (const c of candidates) {
+    const plain = stripHtmlToPlainText(c ?? undefined) || c || undefined;
+    if (detailValue(plain)) return plain;
+  }
+  return undefined;
+}
+
 export function buildAnfrageProjektSection(
-  lead: PortalAnfrageLeadSource
+  lead: PortalAnfrageLeadSource,
+  opts?: AnfrageProjektSectionOpts
 ): PortalDetailSection | null {
   const norm = normalizeFunnelDaten(lead.funnel_daten, lead.bereiche);
   const situationSlug = norm.situation || lead.situation || undefined;
@@ -186,19 +282,60 @@ export function buildAnfrageProjektSection(
     labelSituation(situationSlug) !== "—"
       ? labelSituation(situationSlug)
       : undefined;
-
+  const bereich = formatAnfrageBereiche(lead);
+  const groesse = formatAnfrageGroesse(lead);
+  const zeitraum = formatAnfrageZeitraum(lead);
   const gewerbe = isB2B(situationSlug as Situation | undefined);
+  const structured = hasStructuredFunnelDetails(norm);
+  const kompakt = opts?.kompakt === true;
 
-  const projektRows = detailRows(
-    gewerbe
-      ? [{ label: "Situation", value: situation }]
-      : [
-          { label: "Situation", value: situation },
-          { label: "Bereich", value: formatAnfrageBereiche(lead) },
-          { label: "Fläche Menge Anzahl", value: formatAnfrageGroesse(lead) },
-          { label: "Was soll gemacht werden", value: formatAnfrageWasGemacht(lead) },
-          { label: "Zeitraum", value: formatAnfrageZeitraum(lead) },
-        ]
+  if (kompakt) {
+    const projektRows = buildKompakteProjektRows(situation, bereich);
+    if (!projektRows.length) return null;
+    return { heading: "Projektübersicht", rows: projektRows };
+  }
+
+  if (gewerbe) {
+    const projektRows = dedupeProjektRows(
+      detailRows([{ label: "Situation", value: situation }])
+    );
+    if (!projektRows.length) return null;
+    return { heading: "Projektübersicht", rows: projektRows };
+  }
+
+  if (structured) {
+    const was = formatAnfrageWasGemacht(lead);
+    const projektRows = dedupeProjektRows(
+      detailRows([
+        { label: "Situation", value: situation },
+        { label: "Bereich", value: bereich },
+        { label: "Fläche Menge Anzahl", value: groesse },
+        { label: "Was soll gemacht werden", value: was },
+        { label: "Zeitraum", value: zeitraum },
+      ])
+    );
+    if (!projektRows.length) return null;
+    return { heading: "Projektübersicht", rows: projektRows };
+  }
+
+  /** CRM / manuell: keine Fachdetails — kompakte Übersicht ohne Wiederholungen. */
+  const beschreibung = resolveCrmProjektbeschreibung(lead, norm, opts);
+  const projektRows = dedupeProjektRows(
+    detailRows([
+      { label: "Situation", value: situation },
+      {
+        label: "Bereich",
+        value:
+          bereich &&
+          !projektTextsEquivalent(bereich, situation) &&
+          !projektTextsEquivalent(bereich, beschreibung)
+            ? bereich
+            : undefined,
+      },
+      { label: "Projektbeschreibung", value: beschreibung },
+      { label: "Fläche Menge Anzahl", value: groesse },
+      { label: "Zeitraum", value: zeitraum },
+    ])
   );
 
   if (!projektRows.length) return null;

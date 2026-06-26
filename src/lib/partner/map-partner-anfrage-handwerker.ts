@@ -9,7 +9,9 @@ import {
   isPrivatPortalKontext,
   resolvePrivatPortalTitel,
 } from "@/lib/portal/portal-titel";
-import { resolveAngebotTitel } from "@/lib/portal/portal-display";
+import { resolvePartnerListenTitel } from "@/lib/partner/partner-listen-titel";
+import { parseWizardMetaFromNotizen, resolveAngebotTitel } from "@/lib/portal/portal-display";
+import { parsePartnerHwKonditionen } from "@/lib/partner/partner-konditionen";
 
 export const PARTNER_LEAD_EMBED = `
   situation,
@@ -73,6 +75,7 @@ export async function mapAngebotHandwerkerRow(
     leads: unknown;
   } | null;
   const gewerkId = String(row.gewerk_id ?? "");
+  const handwerkerId = String(row.handwerker_id ?? "");
   const gw = one(row.gewerke) as { name: string } | null;
   const kunde = angebote
     ? (one(angebote.kunden) as { plz: string | null; ort: string | null; name?: string | null } | null)
@@ -87,9 +90,13 @@ export async function mapAngebotHandwerkerRow(
     kundeOrt: kunde?.ort,
     objektById,
   });
-  const pos = parseAngebotPositionen(angebote?.positionen).filter(
-    (p) => !gewerkId || p.gewerk_id === gewerkId
-  );
+  const pos = parseAngebotPositionen(angebote?.positionen).filter((p) => {
+    if (gewerkId && p.gewerk_id && p.gewerk_id !== gewerkId) return false;
+    if (handwerkerId && p.handwerker_id && p.handwerker_id !== handwerkerId) {
+      return false;
+    }
+    return true;
+  });
 
   const anhaenge = await mapHwAngebotAnhaenge(row);
   const rechnungPath = (row.hw_rechnung_pdf_url as string | null) ?? null;
@@ -105,23 +112,39 @@ export async function mapAngebotHandwerkerRow(
     }),
     nameCandidates: [leadRow?.kontakt_name, kunde?.name],
   });
+  const gewerk_name = gw?.name?.trim() || "Gewerk";
+  const plz = lead?.objekt?.plz?.trim() || kunde?.plz?.trim() || lead?.plz?.trim() || "—";
+  const ort = lead?.objekt?.ort?.trim() || kunde?.ort?.trim() || "—";
+  const listen_titel = resolvePartnerListenTitel({
+    gewerk_name,
+    plz,
+    ort,
+    lead,
+    fallbackTitel: angebot_titel,
+  });
+  const crm_leistungsumfang =
+    parseWizardMetaFromNotizen(angebote?.notizen)?.leistungsumfang ?? null;
 
   return {
     id: String(row.id),
     angebot_id: String(row.angebot_id),
     status: String(row.status ?? "ausstehend"),
-    gewerk_name: gw?.name?.trim() || "Gewerk",
+    gewerk_name,
+    gewerk_id: gewerkId || undefined,
     angebot_titel,
+    listen_titel,
     gesendet_at: (row.gesendet_at as string | null) ?? undefined,
     antwort_at: (row.antwort_at as string | null) ?? undefined,
     antwort_notiz: (row.antwort_notiz as string | null) ?? undefined,
     ablehnung_grund: (row.ablehnung_grund as string | null) ?? undefined,
     aufgabe_notiz: (row.aufgabe_notiz as string | null) ?? undefined,
-    plz: lead?.objekt?.plz?.trim() || kunde?.plz?.trim() || lead?.plz?.trim() || "—",
-    ort: lead?.objekt?.ort?.trim() || kunde?.ort?.trim() || "—",
+    plz,
+    ort,
     zeitraum: lead?.zeitraum?.trim() || leadRow?.zeitraum?.trim() || "",
     positionen: pos.map((p) => ({
-      beschreibung: (p.beschreibung || p.leistung).trim(),
+      leistung: p.leistung,
+      beschreibung:
+        p.beschreibung && p.beschreibung !== p.leistung ? p.beschreibung : undefined,
       menge: p.menge,
       einheit: p.einheit,
     })),
@@ -133,6 +156,7 @@ export async function mapAngebotHandwerkerRow(
       angebote?.gesamt_min != null ? Number(angebote.gesamt_min) : null,
     crm_gesamt_max:
       angebote?.gesamt_max != null ? Number(angebote.gesamt_max) : null,
+    crm_leistungsumfang,
     hw_status: (row.hw_status as string | null) ?? undefined,
     hw_eingereicht_at: (row.hw_eingereicht_at as string | null) ?? undefined,
     hw_preis_netto: row.hw_preis_netto != null ? Number(row.hw_preis_netto) : null,
@@ -148,5 +172,6 @@ export async function mapAngebotHandwerkerRow(
     hw_notiz: (row.hw_notiz as string | null) ?? null,
     hw_crm_notiz: (row.hw_crm_notiz as string | null) ?? null,
     hw_crm_antwort_at: (row.hw_crm_antwort_at as string | null) ?? undefined,
+    hw_konditionen: parsePartnerHwKonditionen(row.hw_konditionen),
   };
 }

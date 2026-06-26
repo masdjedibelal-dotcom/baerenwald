@@ -10,11 +10,15 @@ import {
   type PortalAnfrageLeadSource,
 } from "@/lib/portal/portal-anfrage-display";
 import {
-  buildAngebotCardMeta,
-  parseAngebotPositionenMitPreis,
-  resolveAngebotGesamtBrutto,
-  type PortalAngebotPositionDisplay,
-} from "@/lib/portal/portal-angebot-display";
+  buildPartnerAuftragKonditionZeilen,
+  type PartnerAngebotPositionenFilter,
+} from "@/lib/partner/partner-leistungen-display";
+import type { PartnerAuftragPosition } from "@/lib/partner/get-partner-data";
+import {
+  buildPartnerKonditionZeilen,
+  mergeKonditionZeilenMitHw,
+  type PartnerHwKonditionen,
+} from "@/lib/partner/partner-konditionen";
 import {
   buildAuftragCardMeta,
   formatAuftragDatumSpan,
@@ -27,7 +31,7 @@ import { buildPartnerLeistungsortSection } from "@/lib/partner/partner-portal-ob
 
 export type PartnerAnfrageListExtras = {
   gewerk_name?: string;
-  positionen?: Array<{ beschreibung: string }>;
+  positionen?: Array<{ leistung?: string; beschreibung?: string }>;
 };
 
 export function buildPartnerAnfrageCardMeta(
@@ -43,7 +47,7 @@ export function buildPartnerAnfrageCardMeta(
   const was =
     (lead ? formatAnfrageWasGemacht(lead) : undefined) ||
     extras?.positionen
-      ?.map((p) => p.beschreibung.trim())
+      ?.map((p) => (p.leistung || p.beschreibung || "").trim())
       .filter(Boolean)
       .join(" · ") ||
     extras?.gewerk_name;
@@ -64,12 +68,19 @@ export function buildPartnerAnfrageCardMeta(
 
 export function buildPartnerAngebotCardMeta(
   lead: PortalAnfrageLeadSource | null | undefined,
-  date?: string | null
+  date?: string | null,
+  fallbackOrt?: { plz?: string | null; ort?: string | null }
 ): PortalListCardMeta[] {
-  if (lead) return buildAngebotCardMeta(lead, date);
   const meta: PortalListCardMeta[] = [];
+
+  const ortLine = lead
+    ? formatAnfrageListOrtLine(lead)
+    : [fallbackOrt?.plz?.trim(), fallbackOrt?.ort?.trim()].filter(Boolean).join(" ") || "—";
+  if (ortLine !== "—") meta.push({ icon: MapPin, text: ortLine });
+
   const dateLabel = fmtPortalDate(date);
   if (dateLabel !== "—") meta.push({ icon: Calendar, text: dateLabel });
+
   return meta;
 }
 
@@ -84,58 +95,44 @@ export function buildPartnerAuftragCardMeta(
 
 export function buildPartnerAnfragePortalSections(
   lead: PortalAnfrageLeadSource | null | undefined,
-  opts?: { aufgabe_notiz?: string | null; gewerk_name?: string }
+  opts?: {
+    crm_leistungsumfang?: string | null;
+  }
 ): PortalDetailSection[] {
   const sections: PortalDetailSection[] = [];
 
-  const ort = buildPartnerLeistungsortSection(lead?.objekt);
+  const ort = buildPartnerLeistungsortSection(lead?.objekt, lead);
   if (ort) sections.push(ort);
 
-  const projekt = lead ? buildAnfrageProjektSection(lead) : null;
+  const projekt = lead
+    ? buildAnfrageProjektSection(lead, {
+        crm_leistungsumfang: opts?.crm_leistungsumfang,
+        kompakt: true,
+      })
+    : null;
   if (projekt) sections.push(projekt);
-
-  const hinweisRows: Array<{ label: string; value?: string | null }> = [];
-  if (opts?.gewerk_name?.trim()) {
-    hinweisRows.push({ label: "Gewerk", value: opts.gewerk_name.trim() });
-  }
-  if (opts?.aufgabe_notiz?.trim()) {
-    hinweisRows.push({ label: "Hinweis von Bärenwald", value: opts.aufgabe_notiz.trim() });
-  }
-  const hinweise = hinweisRows
-    .map((r) => ({ label: r.label, value: r.value?.trim() }))
-    .filter((r): r is { label: string; value: string } => Boolean(r.value));
-  if (hinweise.length) {
-    sections.push({ heading: "Aufgabe", rows: hinweise });
-  }
 
   return sections;
 }
 
 export function buildPartnerAngebotPortalSections(
   lead: PortalAnfrageLeadSource | null | undefined,
-  opts?: { gewerk_name?: string; zeitraum?: string }
+  opts?: {
+    crm_leistungsumfang?: string | null;
+  }
 ): PortalDetailSection[] {
   const sections: PortalDetailSection[] = [];
 
-  const ort = buildPartnerLeistungsortSection(lead?.objekt);
+  const ort = buildPartnerLeistungsortSection(lead?.objekt, lead);
   if (ort) sections.push(ort);
 
-  const projekt = lead ? buildAnfrageProjektSection(lead) : null;
+  const projekt = lead
+    ? buildAnfrageProjektSection(lead, {
+        crm_leistungsumfang: opts?.crm_leistungsumfang,
+        kompakt: true,
+      })
+    : null;
   if (projekt) sections.push(projekt);
-
-  const rows: Array<{ label: string; value?: string | null }> = [];
-  if (opts?.gewerk_name?.trim()) {
-    rows.push({ label: "Gewerk", value: opts.gewerk_name });
-  }
-  if (opts?.zeitraum?.trim() && !lead) {
-    rows.push({ label: "Zeitraum", value: opts.zeitraum });
-  }
-  const filtered = rows
-    .map((r) => ({ label: r.label, value: r.value?.trim() }))
-    .filter((r): r is { label: string; value: string } => Boolean(r.value));
-  if (filtered.length) {
-    sections.push({ heading: "Aufgabe", rows: filtered });
-  }
 
   return sections;
 }
@@ -144,35 +141,48 @@ export function buildPartnerAuftragPortalSections(
   lead: PortalAnfrageLeadSource | null | undefined
 ): PortalDetailSection[] {
   const sections: PortalDetailSection[] = [];
-  const ort = buildPartnerLeistungsortSection(lead?.objekt);
+  const ort = buildPartnerLeistungsortSection(lead?.objekt, lead);
   if (ort) sections.push(ort);
 
-  const projekt = lead ? buildAnfrageProjektSection(lead) : null;
+  const projekt = lead
+    ? buildAnfrageProjektSection(lead, { kompakt: true })
+    : null;
   if (projekt) sections.push(projekt);
 
   return sections;
 }
 
+export function resolvePartnerKonditionZeilen(
+  positionenRaw: unknown,
+  filter?: PartnerAngebotPositionenFilter,
+  hwKonditionen?: PartnerHwKonditionen | null
+) {
+  const basis = buildPartnerKonditionZeilen(positionenRaw, filter);
+  if (hwKonditionen?.positionen.length) {
+    return mergeKonditionZeilenMitHw(basis, hwKonditionen);
+  }
+  return basis;
+}
+
+export function resolvePartnerAuftragKonditionZeilen(positionen: PartnerAuftragPosition[]) {
+  return buildPartnerAuftragKonditionZeilen(positionen);
+}
+
+/** @deprecated Nutze resolvePartnerKonditionZeilen für Partner-Portal */
 export function resolvePartnerAngebotPositionen(
   positionenRaw: unknown,
-  gesamt?: {
-    gesamt_fix?: number | null;
-    gesamt_min?: number | null;
-    gesamt_max?: number | null;
-  }
-): {
-  positionen: PortalAngebotPositionDisplay[];
-  gesamtBrutto?: number;
-} {
-  const positionen = parseAngebotPositionenMitPreis(positionenRaw);
-  const gesamtBrutto = resolveAngebotGesamtBrutto({
-    positionen: positionenRaw,
-    gesamt_fix: gesamt?.gesamt_fix,
-    gesamt_min: gesamt?.gesamt_min,
-    gesamt_max: gesamt?.gesamt_max,
-  });
-  return { positionen, gesamtBrutto };
+  filter?: PartnerAngebotPositionenFilter
+) {
+  const zeilen = resolvePartnerKonditionZeilen(positionenRaw, filter);
+  return { zeilen };
 }
+
+export function resolvePartnerAuftragLeistungen(positionen: PartnerAuftragPosition[]) {
+  return { zeilen: resolvePartnerAuftragKonditionZeilen(positionen) };
+}
+
+export const PARTNER_LEISTUNGEN_GESAMT_LABEL =
+  "Vergütung Brutto inkl. MwSt.";
 
 export function partnerDetailDateMetaLine(date?: string | null): string | undefined {
   const formatted = fmtPortalDate(date);

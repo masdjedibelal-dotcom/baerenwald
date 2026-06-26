@@ -33,21 +33,32 @@ function looksLikeJsonBlob(text: string): boolean {
   );
 }
 
-/** CRM/PDF-HTML in lesbaren Fließtext für Portal-UI. */
-export function stripHtmlToPlainText(raw?: string | null): string {
-  if (!isNonEmptyString(raw)) return "";
-
-  let text = raw
-    .replace(/<br\s*\/?>/gi, "\n")
-    .replace(/<\/p>/gi, "\n")
-    .replace(/<\/li>/gi, "\n")
-    .replace(/<[^>]+>/g, "")
+function decodeHtmlEntities(text: string): string {
+  return text
     .replace(/&nbsp;/gi, " ")
     .replace(/&amp;/gi, "&")
     .replace(/&lt;/gi, "<")
     .replace(/&gt;/gi, ">")
     .replace(/&quot;/gi, '"')
     .replace(/&#39;/gi, "'")
+    .replace(/&#(\d+);/g, (_, n) => String.fromCharCode(Number(n)))
+    .replace(/&#x([0-9a-f]+);/gi, (_, h) => String.fromCharCode(parseInt(h, 16)));
+}
+
+/** CRM/PDF-HTML in lesbaren Fließtext für Portal-UI. */
+export function stripHtmlToPlainText(raw?: string | null): string {
+  if (!isNonEmptyString(raw)) return "";
+
+  let text = raw;
+  for (let pass = 0; pass < 2; pass++) {
+    text = decodeHtmlEntities(text);
+    text = text
+      .replace(/<br\s*\/?>/gi, "\n")
+      .replace(/<\/p>/gi, "\n")
+      .replace(/<\/li>/gi, "\n")
+      .replace(/<[^>]+>/g, "");
+  }
+  text = decodeHtmlEntities(text)
     .replace(/[ \t]+\n/g, "\n")
     .replace(/\n{3,}/g, "\n\n")
     .replace(/[ \t]{2,}/g, " ")

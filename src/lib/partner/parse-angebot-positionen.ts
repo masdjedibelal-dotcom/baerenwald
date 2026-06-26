@@ -2,6 +2,7 @@ import { stripHtmlToPlainText } from "@/lib/portal/portal-display";
 
 export type PartnerAngebotPosition = {
   gewerk_id?: string;
+  handwerker_id?: string;
   leistung: string;
   beschreibung?: string;
   menge: number;
@@ -36,6 +37,7 @@ export function parseAngebotPositionen(raw: unknown): PartnerAngebotPosition[] {
           : "";
     out.push({
       gewerk_id: typeof p.gewerk_id === "string" ? p.gewerk_id : undefined,
+      handwerker_id: typeof p.handwerker_id === "string" ? p.handwerker_id : undefined,
       leistung,
       beschreibung: beschreibungRaw || undefined,
       menge,

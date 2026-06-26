@@ -48,7 +48,7 @@ export function buildPartnerAufgaben(input: {
     pushAufgabe(list, {
       id: `anfrage-${a.id}`,
       typ: "anfrage_annehmen",
-      titel: `Anfrage annehmen: ${a.gewerk_name || a.angebot_titel}`,
+      titel: `Anfrage annehmen: ${a.listen_titel}`,
       untertitel: [a.plz, a.ort].filter(Boolean).join(" ") || undefined,
       section: "anfragen",
       selectedId: a.id,
@@ -62,7 +62,7 @@ export function buildPartnerAufgaben(input: {
     pushAufgabe(list, {
       id: `auftrag-anfrage-${a.id}`,
       typ: "auftrag_annehmen",
-      titel: `Auftrag annehmen: ${a.titel}`,
+      titel: `Auftrag annehmen: ${a.listen_titel}`,
       untertitel: [a.plz, a.ort].filter(Boolean).join(" ") || undefined,
       section: "anfragen",
       selectedId: `auftrag:${a.id}`,
@@ -80,7 +80,7 @@ export function buildPartnerAufgaben(input: {
       pushAufgabe(list, {
         id: `angebot-einreichen-${a.id}`,
         typ: "angebot_einreichen",
-        titel: `Preis & Angebot abgeben: ${a.gewerk_name || a.angebot_titel}`,
+        titel: `Preis & Angebot abgeben: ${a.listen_titel}`,
         untertitel: [a.plz, a.ort].filter(Boolean).join(" ") || undefined,
         section: "angebote",
         selectedId: a.id,
@@ -93,7 +93,7 @@ export function buildPartnerAufgaben(input: {
       pushAufgabe(list, {
         id: `vertrag-angebot-${a.id}`,
         typ: "vertrag_bestaetigen",
-        titel: `Projektvertrag bestätigen: ${a.gewerk_name || a.angebot_titel}`,
+        titel: `Projektvertrag bestätigen: ${a.listen_titel}`,
         section: "angebote",
         selectedId: a.id,
         dringend: true,
@@ -110,7 +110,7 @@ export function buildPartnerAufgaben(input: {
       pushAufgabe(list, {
         id: `vertrag-auftrag-${a.id}`,
         typ: "vertrag_bestaetigen",
-        titel: `Projektvertrag bestätigen: ${a.titel}`,
+        titel: `Projektvertrag bestätigen: ${a.listen_titel}`,
         section: "auftraege",
         selectedId: a.id,
         dringend: true,

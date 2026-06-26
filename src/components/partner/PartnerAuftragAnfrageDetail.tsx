@@ -1,16 +1,16 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 
 import { respondPartnerAuftragZuweisung } from "@/app/actions/partner-auftrag-anfragen";
+import { PartnerLeistungenKonditionenCard } from "@/components/partner/PartnerLeistungenKonditionenCard";
 import {
   PartnerConfirmDialog,
   PartnerDetailError,
   PartnerDetailHero,
   PartnerDetailInfoBox,
   PartnerDetailLayout,
-  PartnerDetailLeistungenList,
   PartnerDetailSection,
   PartnerDetailStickyActions,
 } from "@/components/partner/PartnerDetailUi";
@@ -28,7 +28,9 @@ import {
 } from "@/lib/partner/partner-anfrage-status";
 import {
   buildPartnerAuftragPortalSections,
+  PARTNER_LEISTUNGEN_GESAMT_LABEL,
   partnerAuftragDetailMetaLine,
+  resolvePartnerAuftragKonditionZeilen,
 } from "@/lib/partner/partner-portal-display";
 import {
   partnerAngebotPortalPath,
@@ -95,15 +97,18 @@ export function PartnerAuftragAnfrageDetail({
     ? "Die Antwortfrist ist abgelaufen, weil der geplante Projektstart erreicht ist. Eine Annahme oder Ablehnung ist nicht mehr möglich."
     : hwBeantwortet
     ? hwSt === "akzeptiert"
-      ? "Du hast zugesagt. Als Nächstes reichst du dein Angebot (Preis und PDF) unter „Angebote“ ein."
+      ? "Du hast zugesagt. Als Nächstes bestätigst du die Konditionen je Leistung unter „Angebote“."
       : "Du hast diese Zuweisung abgelehnt."
     : "Bärenwald hat dir Leistungen an diesem Projekt zugewiesen. Bitte bestätige oder lehne die Anfrage ab.";
 
-  const leistungen = item.positionen.map((p) => ({
-    id: p.id,
-    title: [p.gewerk_name, p.leistung_name].filter(Boolean).join(" — "),
-    beschreibung: p.beschreibung,
-  }));
+  const sections = useMemo(
+    () => buildPartnerAuftragPortalSections(item.lead),
+    [item.lead]
+  );
+  const konditionZeilen = useMemo(
+    () => resolvePartnerAuftragKonditionZeilen(item.positionen),
+    [item.positionen]
+  );
 
   const actionFooter =
     kannAntworten && !showReject ? (
@@ -130,7 +135,7 @@ export function PartnerAuftragAnfrageDetail({
   return (
     <PartnerDetailLayout footer={footer}>
       <PartnerDetailHero
-        title={item.titel}
+        title={item.listen_titel}
         metaLine={partnerAuftragDetailMetaLine(item.start_datum, item.end_datum)}
         statusLabel={statusLabel}
         statusPillClass={
@@ -142,13 +147,15 @@ export function PartnerAuftragAnfrageDetail({
 
       <PartnerDetailInfoBox>{infoText}</PartnerDetailInfoBox>
 
-      <PartnerPortalDetailSections
-        sections={buildPartnerAuftragPortalSections(item.lead)}
-      />
+      <PartnerPortalDetailSections sections={sections} />
 
-      {leistungen.length > 0 ? (
-        <PartnerDetailSection title="Leistungen">
-          <PartnerDetailLeistungenList items={leistungen} />
+      {konditionZeilen.length > 0 ? (
+        <PartnerDetailSection title="Leistungen & Vergütung">
+          <PartnerLeistungenKonditionenCard
+            zeilen={konditionZeilen}
+            mode="vorschlag"
+            gesamtLabel={PARTNER_LEISTUNGEN_GESAMT_LABEL}
+          />
         </PartnerDetailSection>
       ) : null}
 
@@ -159,7 +166,7 @@ export function PartnerAuftragAnfrageDetail({
           href={partnerAngebotPortalUrl(item.angebotHandwerkerId)}
           className="btn-pill-primary portal-btn inline-flex !px-4 !py-2.5"
         >
-          Zum Angebot einreichen
+          Zum Konditionen-Schritt
         </a>
       ) : hwSt === "akzeptiert" ? (
         <p className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 portal-text-body text-amber-900">

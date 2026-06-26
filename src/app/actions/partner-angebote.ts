@@ -4,6 +4,15 @@ import { revalidatePath } from "next/cache";
 
 import { linkPortalHandwerkerToAuthUser } from "@/lib/partner/link-portal-handwerker";
 import {
+  buildHwKonditionenPayload,
+  buildPartnerKonditionZeilen,
+  parseHwNettoInput,
+  parsePartnerHwKonditionen,
+  summeKonditionBrutto,
+  summeKonditionNetto,
+  type PartnerHwKonditionen,
+} from "@/lib/partner/partner-konditionen";
+import {
   MAIL_PDF_LINK_TTL_SEC,
   sendPartnerInternalAngebotMail,
   sendPartnerInternalRechnungMail,
@@ -21,14 +30,11 @@ export type PartnerAngebotSubmitResult =
   | { ok: true }
   | { ok: false; error: string };
 
-function parsePrice(raw: string | null): number | null {
-  if (!raw?.trim()) return null;
-  const n = Number(raw.replace(",", ".").trim());
-  if (!Number.isFinite(n) || n < 0) return null;
+function round2(n: number): number {
   return Math.round(n * 100) / 100;
 }
 
-export async function submitPartnerAngebot(
+export async function submitPartnerKonditionen(
   formData: FormData
 ): Promise<PartnerAngebotSubmitResult> {
   if (!isSupabaseConfigured()) {
@@ -54,9 +60,8 @@ export async function submitPartnerAngebot(
   }
 
   const anfrageId = String(formData.get("anfrageId") ?? "").trim();
-  const preisNetto = parsePrice(formData.get("preisNetto") as string | null);
-  const preisBrutto = parsePrice(formData.get("preisBrutto") as string | null);
   const notiz = String(formData.get("notiz") ?? "").trim() || null;
+  const konditionenRaw = String(formData.get("konditionenJson") ?? "").trim();
   const pdfs = formData
     .getAll("pdfs")
     .filter((f): f is File => f instanceof File && f.size > 0);
@@ -64,17 +69,42 @@ export async function submitPartnerAngebot(
   if (!anfrageId) {
     return { ok: false, error: "Anfrage fehlt." };
   }
-  if (preisNetto == null) {
-    return { ok: false, error: "Bitte den Netto-Preis in Euro angeben." };
+
+  let eingabe: Array<{ position_id: string; hw_netto: number }> = [];
+  try {
+    const parsed = JSON.parse(konditionenRaw) as unknown;
+    if (!Array.isArray(parsed)) throw new Error("invalid");
+    eingabe = parsed
+      .map((row) => {
+        if (!row || typeof row !== "object") return null;
+        const r = row as Record<string, unknown>;
+        const id = String(r.position_id ?? "").trim();
+        const hw = parseHwNettoInput(String(r.hw_netto ?? ""));
+        if (!id || hw == null) return null;
+        return { position_id: id, hw_netto: hw };
+      })
+      .filter((r): r is { position_id: string; hw_netto: number } => Boolean(r));
+  } catch {
+    return { ok: false, error: "Konditionen konnten nicht gelesen werden." };
   }
-  const pdfErr = validatePartnerAngebotFiles(pdfs);
-  if (pdfErr) {
-    return { ok: false, error: pdfErr };
+
+  if (!eingabe.length) {
+    return { ok: false, error: "Bitte für jede Leistung einen gültigen Netto-Preis angeben." };
   }
 
   const { data: row, error } = await supabaseAdmin
     .from("angebot_handwerker")
-    .select("id, handwerker_id, status, hw_eingereicht_at, hw_status")
+    .select(
+      `
+      id,
+      handwerker_id,
+      gewerk_id,
+      status,
+      hw_eingereicht_at,
+      hw_status,
+      angebote(positionen)
+    `
+    )
     .eq("id", anfrageId)
     .maybeSingle();
 
@@ -94,34 +124,79 @@ export async function submitPartnerAngebot(
   const darfEinreichen = ["offen", "abgelehnt", "rueckfrage"].includes(hwSt);
   if (!darfEinreichen) {
     if (hwSt === "eingereicht") {
-      return { ok: false, error: "Dein Angebot wird gerade geprüft." };
+      return { ok: false, error: "Deine Konditionen werden gerade geprüft." };
     }
     if (hwSt === "uebernommen") {
-      return { ok: false, error: "Dein Angebot wurde bereits übernommen." };
+      return { ok: false, error: "Deine Konditionen wurden bereits übernommen." };
     }
     return { ok: false, error: "Einreichung derzeit nicht möglich." };
   }
 
-  const upload = await uploadPartnerAngebotPdfs({
-    handwerkerId: link.handwerkerId,
-    anfrageId,
-    files: pdfs,
+  const angebote = Array.isArray(row.angebote) ? row.angebote[0] : row.angebote;
+  const positionenRaw = (angebote as { positionen?: unknown } | null)?.positionen;
+  const zeilen = buildPartnerKonditionZeilen(positionenRaw, {
+    gewerkId: String(row.gewerk_id ?? ""),
   });
 
-  if (!upload.ok) {
-    return { ok: false, error: upload.error };
+  if (!zeilen.length) {
+    return { ok: false, error: "Keine Leistungen für dieses Gewerk gefunden." };
   }
 
-  const primaryPath = upload.paths[0]!;
+  const hwById = Object.fromEntries(eingabe.map((e) => [e.position_id, e.hw_netto]));
+  for (const z of zeilen) {
+    if (hwById[z.id] == null) {
+      return {
+        ok: false,
+        error: `Bitte einen Preis für „${z.title}“ angeben.`,
+      };
+    }
+  }
+
+  const konditionen: PartnerHwKonditionen = buildHwKonditionenPayload(zeilen, hwById);
+  const preisNetto = summeKonditionNetto(
+    konditionen.positionen.map((p) => ({
+      hwNetto: p.hw_netto,
+      vorschlagNetto: p.ek_netto,
+    })),
+    true
+  );
+  const preisBrutto = summeKonditionBrutto(
+    konditionen.positionen.map((p) => ({
+      id: p.position_id,
+      title: p.leistung,
+      vorschlagNetto: p.ek_netto,
+      hwNetto: p.hw_netto,
+      mwstSatz: p.mwst_satz,
+    })),
+    true
+  );
+
+  let primaryPath: string | null = null;
+  let anhangPaths: string[] = [];
+  if (pdfs.length) {
+    const pdfErr = validatePartnerAngebotFiles(pdfs, { required: false });
+    if (pdfErr) return { ok: false, error: pdfErr };
+    const upload = await uploadPartnerAngebotPdfs({
+      handwerkerId: link.handwerkerId,
+      anfrageId,
+      files: pdfs,
+    });
+    if (!upload.ok) return { ok: false, error: upload.error };
+    primaryPath = upload.paths[0]!;
+    anhangPaths = upload.paths;
+  }
 
   const now = new Date().toISOString();
+  konditionen.eingereicht_at = now;
+
   const { error: upErr } = await supabaseAdmin
     .from("angebot_handwerker")
     .update({
-      hw_preis_netto: preisNetto,
-      hw_preis_brutto: preisBrutto,
+      hw_konditionen: konditionen,
+      hw_preis_netto: round2(preisNetto),
+      hw_preis_brutto: round2(preisBrutto),
       hw_angebot_pdf_url: primaryPath,
-      hw_angebot_anhang_urls: upload.paths,
+      hw_angebot_anhang_urls: anhangPaths,
       hw_eingereicht_at: now,
       hw_status: "eingereicht",
       hw_notiz: notiz,
@@ -164,10 +239,11 @@ export async function submitPartnerAngebot(
         ? (ang as { leads: { plz: string | null }[] }).leads[0]
         : (ang as { leads: { plz: string | null } | null }).leads
       : null;
-    const angebotPdfUrl = await resolvePartnerFileUrl(
-      primaryPath,
-      MAIL_PDF_LINK_TTL_SEC
-    );
+    const angebotPdfUrl = primaryPath
+      ? await resolvePartnerFileUrl(primaryPath, MAIL_PDF_LINK_TTL_SEC)
+      : null;
+    const artLabel =
+      konditionen.art === "bestaetigt" ? "Konditionen bestätigt" : "Gegenvorschlag";
     void sendPartnerInternalAngebotMail({
       handwerkerName: String((hw as { name?: string })?.name ?? "Partner"),
       firma: (hw as { firma?: string | null })?.firma ?? null,
@@ -180,11 +256,25 @@ export async function submitPartnerAngebot(
       preisBrutto,
       angebotId: String(m.angebot_id),
       angebotPdfUrl,
+      konditionenArt: artLabel,
+      positionen: konditionen.positionen.map((p) => ({
+        leistung: p.leistung,
+        ekNetto: p.ek_netto,
+        hwNetto: p.hw_netto,
+        geaendert: p.geaendert,
+      })),
     });
   }
 
   revalidatePath("/partner");
   return { ok: true };
+}
+
+/** @deprecated Alias — nutzt submitPartnerKonditionen */
+export async function submitPartnerAngebot(
+  formData: FormData
+): Promise<PartnerAngebotSubmitResult> {
+  return submitPartnerKonditionen(formData);
 }
 
 export async function submitPartnerRechnung(
@@ -225,7 +315,7 @@ export async function submitPartnerRechnung(
   const { data: row, error } = await supabaseAdmin
     .from("angebot_handwerker")
     .select(
-      "id, handwerker_id, status, hw_eingereicht_at, hw_rechnung_eingereicht_at"
+      "id, handwerker_id, status, hw_eingereicht_at, hw_rechnung_eingereicht_at, hw_status"
     )
     .eq("id", anfrageId)
     .maybeSingle();
@@ -245,7 +335,14 @@ export async function submitPartnerRechnung(
   if (!row.hw_eingereicht_at) {
     return {
       ok: false,
-      error: "Bitte zuerst dein Angebot (Preis + PDF) einreichen.",
+      error: "Bitte zuerst deine Konditionen bestätigen oder einen Gegenvorschlag senden.",
+    };
+  }
+
+  if (String(row.hw_status ?? "").toLowerCase() !== "uebernommen") {
+    return {
+      ok: false,
+      error: "Rechnung erst nach Übernahme der Konditionen durch Bärenwald möglich.",
     };
   }
 

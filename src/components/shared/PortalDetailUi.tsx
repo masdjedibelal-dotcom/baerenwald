@@ -3,6 +3,7 @@
 import { Info } from "lucide-react";
 
 import { cn } from "@/lib/utils";
+import { stripHtmlToPlainText } from "@/lib/portal/portal-display";
 
 export function PortalConfirmDialog({
   open,
@@ -158,23 +159,37 @@ export function PortalDetailLeistungenList({
 }) {
   if (!items.length) return null;
   return (
-    <ul className="space-y-2">
-      {items.map((p) => (
+    <ul className="portal-text-body overflow-hidden rounded-xl border border-border-light bg-muted/20">
+      {items.map((p, i) => (
         <li
           key={p.id}
-          className="portal-text-body rounded-lg border border-border-light bg-surface-card px-3 py-3"
+          className={cn(
+            "px-3 py-3",
+            i < items.length - 1 && "border-b border-border-light"
+          )}
         >
-          <p className="font-medium text-text-primary">{p.title}</p>
+          <p className="font-medium text-text-primary">
+            {stripHtmlToPlainText(p.title) || p.title}
+          </p>
           {p.beschreibung ? (
-            <p className="portal-text-meta mt-1 text-text-secondary">{p.beschreibung}</p>
+            <p className="portal-text-meta mt-0.5 text-text-secondary">
+              {stripHtmlToPlainText(p.beschreibung)}
+            </p>
           ) : null}
           {p.meta ? (
-            <p className="portal-text-meta mt-1 text-text-tertiary">{p.meta}</p>
+            <p className="portal-text-meta mt-0.5 text-text-tertiary">{p.meta}</p>
           ) : null}
         </li>
       ))}
     </ul>
   );
+}
+
+function formatEuro(value: number): string {
+  return new Intl.NumberFormat("de-DE", {
+    style: "currency",
+    currency: "EUR",
+  }).format(value);
 }
 
 export function PortalDetailLeistungenPreisListe({
@@ -192,37 +207,40 @@ export function PortalDetailLeistungenPreisListe({
   gesamtLabel?: string;
 }) {
   if (!items.length) return null;
+  const showGesamt = typeof gesamtBrutto === "number" && gesamtBrutto > 0;
+
   return (
-    <div className="space-y-3">
-      <ul className="space-y-2">
-        {items.map((p) => (
+    <div className="portal-text-body overflow-hidden rounded-xl border border-border-light bg-muted/20">
+      <ul>
+        {items.map((p, i) => (
           <li
             key={p.id}
-            className="portal-text-body flex items-start justify-between gap-3 rounded-lg border border-border-light bg-surface-card px-3 py-3"
+            className={cn(
+              "flex items-start justify-between gap-4 px-3 py-3 sm:gap-6",
+              i < items.length - 1 && "border-b border-border-light"
+            )}
           >
             <div className="min-w-0 flex-1">
-              <p className="font-medium text-text-primary">{p.title}</p>
+              <p className="font-medium text-text-primary">
+                {stripHtmlToPlainText(p.title) || p.title}
+              </p>
               {p.beschreibung ? (
-                <p className="portal-text-meta mt-1 text-text-secondary">{p.beschreibung}</p>
+                <p className="portal-text-meta mt-0.5 text-text-secondary">
+                  {stripHtmlToPlainText(p.beschreibung)}
+                </p>
               ) : null}
             </div>
-            <p className="shrink-0 font-semibold tabular-nums text-text-primary">
-              {new Intl.NumberFormat("de-DE", {
-                style: "currency",
-                currency: "EUR",
-              }).format(p.preisBrutto)}
+            <p className="shrink-0 pt-0.5 text-right font-semibold tabular-nums text-text-primary">
+              {formatEuro(p.preisBrutto)}
             </p>
           </li>
         ))}
       </ul>
-      {typeof gesamtBrutto === "number" && gesamtBrutto > 0 ? (
-        <div className="flex items-center justify-between gap-3 rounded-xl border border-border-default bg-muted/30 px-3 py-3">
-          <p className="portal-text-body font-semibold text-text-primary">{gesamtLabel}</p>
-          <p className="portal-text-body font-bold tabular-nums text-text-primary">
-            {new Intl.NumberFormat("de-DE", {
-              style: "currency",
-              currency: "EUR",
-            }).format(gesamtBrutto)}
+      {showGesamt ? (
+        <div className="flex items-center justify-between gap-4 border-t border-border-default bg-muted/40 px-3 py-3 sm:gap-6">
+          <p className="font-semibold text-text-primary">{gesamtLabel}</p>
+          <p className="font-bold tabular-nums text-text-primary">
+            {formatEuro(gesamtBrutto)}
           </p>
         </div>
       ) : null}

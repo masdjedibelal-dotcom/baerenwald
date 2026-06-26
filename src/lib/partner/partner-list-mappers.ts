@@ -47,7 +47,7 @@ export function mapAnfrageAngebotToCard(item: PartnerAnfrageItem): PartnerCardRo
 
   return {
     id: item.id,
-    title: item.angebot_titel,
+    title: item.listen_titel,
     statusLabel: partnerAnfrageStatusLabel(item),
     statusPillKey: abgelaufen ? "antwort_abgelaufen" : offen ? "antwort ausstehend" : item.status,
     accent: "anfrage",
@@ -70,7 +70,7 @@ export function mapAnfrageAuftragToCard(item: PartnerAuftragItem): PartnerCardRo
 
   return {
     id: `auftrag:${item.id}`,
-    title: item.titel,
+    title: item.listen_titel,
     statusLabel: partnerAuftragAnfrageStatusLabel(item),
     statusPillKey: abgelaufen ? "antwort_abgelaufen" : item.hwStatus,
     accent: "anfrage",
@@ -170,12 +170,13 @@ export function mapAngebotToCard(item: PartnerAnfrageItem): PartnerCardRow {
   const st = angebotListenStatus(item);
   const meta = buildPartnerAngebotCardMeta(
     item.lead,
-    item.antwort_at ?? item.gesendet_at
+    item.antwort_at ?? item.gesendet_at,
+    { plz: item.plz, ort: item.ort }
   );
 
   return {
     id: item.id,
-    title: item.angebot_titel,
+    title: item.listen_titel,
     statusLabel: st.label,
     statusPillKey: st.pillKey,
     accent: "angebot",
@@ -195,7 +196,7 @@ export function mapAuftragToCard(item: PartnerAuftragItem): PartnerCardRow {
 
   return {
     id: item.id,
-    title: item.titel,
+    title: item.listen_titel,
     statusLabel: item.status.replace(/_/g, " "),
     statusPillKey: item.status,
     accent: "auftrag",

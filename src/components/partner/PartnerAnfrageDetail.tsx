@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 
 import { respondPartnerAnfrage } from "@/app/actions/partner-anfragen";
+import { PartnerLeistungenKonditionenCard } from "@/components/partner/PartnerLeistungenKonditionenCard";
 import { DokumenteTabelle } from "@/components/shared/DokumenteTabelle";
 import {
   PartnerConfirmDialog,
@@ -11,7 +12,6 @@ import {
   PartnerDetailHero,
   PartnerDetailInfoBox,
   PartnerDetailLayout,
-  PartnerDetailLeistungenList,
   PartnerDetailSection,
   PartnerDetailStickyActions,
 } from "@/components/partner/PartnerDetailUi";
@@ -28,7 +28,9 @@ import {
 } from "@/lib/partner/partner-anfrage-status";
 import {
   buildPartnerAnfragePortalSections,
+  PARTNER_LEISTUNGEN_GESAMT_LABEL,
   partnerDetailDateMetaLine,
+  resolvePartnerKonditionZeilen,
 } from "@/lib/partner/partner-portal-display";
 import {
   fmtPartnerDate,
@@ -68,10 +70,17 @@ export function PartnerAnfrageDetail({
   const sections = useMemo(
     () =>
       buildPartnerAnfragePortalSections(item.lead, {
-        aufgabe_notiz: item.aufgabe_notiz,
-        gewerk_name: item.gewerk_name,
+        crm_leistungsumfang: item.crm_leistungsumfang,
       }),
-    [item.lead, item.aufgabe_notiz, item.gewerk_name]
+    [item.lead, item.crm_leistungsumfang]
+  );
+
+  const konditionZeilen = useMemo(
+    () =>
+      resolvePartnerKonditionZeilen(item.crm_positionen_raw, {
+        gewerkId: item.gewerk_id,
+      }),
+    [item.crm_positionen_raw, item.gewerk_id]
   );
 
   async function sendAntwort(antwort: "akzeptiert" | "abgelehnt") {
@@ -103,17 +112,6 @@ export function PartnerAnfrageDetail({
     router.refresh();
   }
 
-  const leistungen = item.positionen.map((p, i) => ({
-    id: String(i),
-    title: p.beschreibung,
-    meta:
-      p.menge > 1
-        ? `${p.menge} ${p.einheit || "Stk."}`
-        : p.einheit
-          ? p.einheit
-          : undefined,
-  }));
-
   const actionFooter =
     kannAntworten && !showReject ? (
       <PartnerDetailStickyActions
@@ -140,7 +138,7 @@ export function PartnerAnfrageDetail({
   return (
     <PartnerDetailLayout footer={footer}>
       <PartnerDetailHero
-        title={item.angebot_titel}
+        title={item.listen_titel}
         metaLine={partnerDetailDateMetaLine(item.gesendet_at)}
         statusLabel={statusLabel}
         statusPillClass={anfrageStatusPillClass(item, offen)}
@@ -148,8 +146,8 @@ export function PartnerAnfrageDetail({
 
       {kannAntworten ? (
         <PartnerDetailInfoBox>
-          Deine Antwort geht an Bärenwald. Bei Zusage wirst du zu „Angebote“ weitergeleitet,
-          um Netto-Preis und Angebots-PDF einzureichen.
+          Deine Antwort geht an Bärenwald. Bei Zusage bestätigst du unter „Angebote“ die
+          vorgeschlagenen Konditionen je Leistung — oder sendest einen Gegenvorschlag.
         </PartnerDetailInfoBox>
       ) : abgelaufen ? (
         <PartnerDetailInfoBox>
@@ -160,9 +158,13 @@ export function PartnerAnfrageDetail({
 
       <PartnerPortalDetailSections sections={sections} />
 
-      {leistungen.length > 0 ? (
-        <PartnerDetailSection title="Dein Gewerk">
-          <PartnerDetailLeistungenList items={leistungen} />
+      {konditionZeilen.length > 0 ? (
+        <PartnerDetailSection title="Leistungen & Vergütung">
+          <PartnerLeistungenKonditionenCard
+            zeilen={konditionZeilen}
+            mode="vorschlag"
+            gesamtLabel={PARTNER_LEISTUNGEN_GESAMT_LABEL}
+          />
         </PartnerDetailSection>
       ) : null}
 
@@ -212,14 +214,14 @@ export function PartnerAnfrageDetail({
 
       {item.status === "akzeptiert" && !item.hw_eingereicht_at ? (
         <p className={cn("rounded-lg bg-accent-light/50 px-3 py-2 portal-text-body text-accent")}>
-          Bitte reiche dein Angebot (Preis + PDF) unter dem Menüpunkt „Angebote“ ein.
+          Bitte bestätige die Konditionen unter dem Menüpunkt „Angebote“.
         </p>
       ) : null}
 
       <PartnerConfirmDialog
         open={confirmAccept}
         title="Anfrage annehmen?"
-        description="Bärenwald erhält eine E-Mail mit deiner Zusage. Du wirst zu „Angebote“ weitergeleitet, um Netto-Preis und Angebots-PDF einzureichen."
+        description="Bärenwald erhält eine E-Mail mit deiner Zusage. Du wirst zu „Angebote“ weitergeleitet, um die Konditionen je Leistung zu bestätigen oder anzupassen."
         confirmLabel="Ja, annehmen und senden"
         loading={loading}
         onConfirm={() => sendAntwort("akzeptiert")}

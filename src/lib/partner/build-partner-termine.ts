@@ -52,7 +52,7 @@ function pushPositionTermine(
         sortDatum: isoOrNull(pos.start_datum),
         datumLabel: fmtPartnerDate(pos.start_datum),
         titel: `${label} — Start`,
-        untertitel: auftrag.titel,
+        untertitel: auftrag.listen_titel,
         section,
         selectedId,
       });
@@ -64,7 +64,7 @@ function pushPositionTermine(
         sortDatum: isoOrNull(pos.end_datum),
         datumLabel: fmtPartnerDate(pos.end_datum),
         titel: `${label} — Ende`,
-        untertitel: auftrag.titel,
+        untertitel: auftrag.listen_titel,
         section,
         selectedId,
       });

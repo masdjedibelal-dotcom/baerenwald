@@ -8,11 +8,11 @@ import {
   deletePartnerBautagebuchEintrag,
   updatePartnerBautagebuchEintrag,
 } from "@/app/actions/partner-bautagebuch";
+import { PartnerLeistungenKonditionenCard } from "@/components/partner/PartnerLeistungenKonditionenCard";
 import {
   PartnerDetailHero,
   PartnerDetailInfoBox,
   PartnerDetailLayout,
-  PartnerDetailLeistungenList,
   PartnerDetailSection,
   PartnerJobFieldActions,
 } from "@/components/partner/PartnerDetailUi";
@@ -33,7 +33,9 @@ import {
 } from "@/lib/partner/partner-detail-format";
 import {
   buildPartnerAuftragPortalSections,
+  PARTNER_LEISTUNGEN_GESAMT_LABEL,
   partnerAuftragDetailMetaLine,
+  resolvePartnerAuftragKonditionZeilen,
 } from "@/lib/partner/partner-portal-display";
 import {
   durchschnittAusBewertung,
@@ -289,13 +291,14 @@ export function PartnerAuftragDetail({ item }: { item: PartnerAuftragItem }) {
     ? item.bautagebuch.find((e) => e.id === editId)
     : undefined;
 
-  const leistungen = item.positionen.map((p) => ({
-    id: p.id,
-    title: [p.gewerk_name, p.leistung_name].filter(Boolean).join(" — "),
-    beschreibung: p.beschreibung,
-  }));
-
-  const sections = buildPartnerAuftragPortalSections(item.lead);
+  const sections = useMemo(
+    () => buildPartnerAuftragPortalSections(item.lead),
+    [item.lead]
+  );
+  const konditionZeilen = useMemo(
+    () => resolvePartnerAuftragKonditionZeilen(item.positionen),
+    [item.positionen]
+  );
   const bauauftragUnterlagen = useMemo(
     () =>
       item.vertrag
@@ -318,7 +321,7 @@ export function PartnerAuftragDetail({ item }: { item: PartnerAuftragItem }) {
   return (
     <PartnerDetailLayout footer={photoFooter}>
       <PartnerDetailHero
-        title={item.titel}
+        title={item.listen_titel}
         metaLine={partnerAuftragDetailMetaLine(item.start_datum, item.end_datum)}
         statusLabel={formatAuftragStatus(item.status)}
         statusPillClass={partnerDetailStatusPillClass(item.status)}
@@ -333,9 +336,14 @@ export function PartnerAuftragDetail({ item }: { item: PartnerAuftragItem }) {
 
       <PartnerPortalDetailSections sections={sections} />
 
-      {leistungen.length > 0 ? (
-        <PartnerDetailSection title="Leistungen">
-          <PartnerDetailLeistungenList items={leistungen} />
+      {konditionZeilen.length > 0 ? (
+        <PartnerDetailSection title="Leistungen & Vergütung">
+          <PartnerLeistungenKonditionenCard
+            zeilen={konditionZeilen}
+            mode="vorschlag"
+            gesamtLabel={PARTNER_LEISTUNGEN_GESAMT_LABEL}
+            vorschlagColumnLabel="Vergütung netto"
+          />
         </PartnerDetailSection>
       ) : null}
 

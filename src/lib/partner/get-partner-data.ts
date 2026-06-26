@@ -59,14 +59,21 @@ import {
   type PartnerVertragKontext,
 } from "@/lib/partner/load-partner-compliance-data";
 import type { PartnerProjektvertrag } from "@/lib/partner/partner-compliance";
+import { resolvePartnerListenTitel } from "@/lib/partner/partner-listen-titel";
 import { isSupabaseConfigured, supabaseAdmin } from "@/lib/supabase";
+import { stripHtmlToPlainText } from "@/lib/portal/portal-display";
+import type { PartnerHwKonditionen } from "@/lib/partner/partner-konditionen";
 
 export type PartnerAnfrageItem = {
   id: string;
   angebot_id: string;
   status: string;
   gewerk_name: string;
+  /** Gewerk-UUID aus angebot_handwerker (Filter für CRM-Positionen). */
+  gewerk_id?: string;
   angebot_titel: string;
+  /** Einheitlich: „Gewerk — PLZ Ort“ (Partner-Listen & Detail). */
+  listen_titel: string;
   gesendet_at?: string | null;
   antwort_at?: string | null;
   antwort_notiz?: string;
@@ -76,7 +83,8 @@ export type PartnerAnfrageItem = {
   ort: string;
   zeitraum: string;
   positionen: Array<{
-    beschreibung: string;
+    leistung: string;
+    beschreibung?: string;
     menge: number;
     einheit?: string;
   }>;
@@ -94,12 +102,15 @@ export type PartnerAnfrageItem = {
   hw_notiz?: string | null;
   hw_crm_notiz?: string | null;
   hw_crm_antwort_at?: string | null;
+  hw_konditionen?: PartnerHwKonditionen | null;
   /** Projekt-/Lead-Kontext ohne Kundendaten. */
   lead?: PortalAnfrageLeadSource | null;
   crm_positionen_raw?: unknown;
   crm_gesamt_fix?: number | null;
   crm_gesamt_min?: number | null;
   crm_gesamt_max?: number | null;
+  /** Leistungsumfang aus CRM-Angebot (wizard_meta in Notizen). */
+  crm_leistungsumfang?: string | null;
   auftrag_id?: string | null;
   projektvertrag_bestaetigt_am?: string | null;
   projektvertrag_bereit?: boolean;
@@ -118,6 +129,9 @@ export type PartnerAuftragPosition = {
   einheit: string | null;
   start_datum: string | null;
   end_datum: string | null;
+  preis_partner?: number | null;
+  lohn_fix?: number | null;
+  material_fix?: number | null;
 };
 
 export type PartnerBautagebuchItem = {
@@ -135,6 +149,7 @@ export type PartnerBautagebuchItem = {
 export type PartnerAuftragItem = {
   id: string;
   titel: string;
+  listen_titel: string;
   status: string;
   fortschritt: number | null;
   start_datum: string | null;
@@ -262,6 +277,7 @@ const ANGEBOT_HANDWERKER_BASE_SELECT = `
   hw_notiz,
   hw_crm_notiz,
   hw_crm_antwort_at,
+  hw_konditionen,
   gewerke(name),
   angebote(${PARTNER_ANGEBOT_EMBED})
 `;
@@ -445,7 +461,10 @@ export async function getPartnerDataForHandwerker(handwerkerId: string) {
           handwerker_id,
           handwerker_status,
           start_datum,
-          end_datum
+          end_datum,
+          preis_partner,
+          lohn_fix,
+          material_fix
         )
       `
       )
@@ -548,12 +567,21 @@ export async function getPartnerDataForHandwerker(handwerkerId: string) {
       const positionen = ownPos.map((p) => ({
         id: String(p.id),
         gewerk_name: String(p.gewerk_name ?? "Gewerk"),
-        leistung_name: String(p.leistung_name ?? ""),
-        beschreibung: (p.beschreibung as string | null) ?? null,
+        leistung_name: stripHtmlToPlainText(String(p.leistung_name ?? "")) || "Leistung",
+        beschreibung: (() => {
+          const raw = (p.beschreibung as string | null) ?? null;
+          if (!raw?.trim()) return null;
+          const plain = stripHtmlToPlainText(raw);
+          return plain || null;
+        })(),
         menge: p.menge != null ? Number(p.menge) : null,
         einheit: (p.einheit as string | null) ?? null,
         start_datum: (p.start_datum as string | null)?.slice(0, 10) ?? null,
         end_datum: (p.end_datum as string | null)?.slice(0, 10) ?? null,
+        preis_partner:
+          p.preis_partner != null ? Number(p.preis_partner) : null,
+        lohn_fix: p.lohn_fix != null ? Number(p.lohn_fix) : null,
+        material_fix: p.material_fix != null ? Number(p.material_fix) : null,
       }));
 
       const aid = String(raw.id);
@@ -576,10 +604,18 @@ export async function getPartnerDataForHandwerker(handwerkerId: string) {
         }),
         nameCandidates: [kunde?.name, leadRow?.kontakt_name],
       });
+      const listen_titel = resolvePartnerListenTitel({
+        gewerk_names: positionen.map((p) => p.gewerk_name),
+        plz: lead?.objekt?.plz?.trim() || kunde?.plz?.trim() || "—",
+        ort: lead?.objekt?.ort?.trim() || kunde?.ort?.trim() || "—",
+        lead,
+        fallbackTitel: titel,
+      });
 
       return {
         id: aid,
         titel,
+        listen_titel,
         status: auftragStatus,
         fortschritt:
           raw.fortschritt != null && Number.isFinite(Number(raw.fortschritt))
@@ -718,7 +754,7 @@ export async function getPartnerDataForHandwerker(handwerkerId: string) {
           auftragAnfragenListe.find((a) => a.id === auftragId);
         return {
           auftrag_id: auftragId,
-          auftrag_titel: auftrag?.titel ?? "Auftrag",
+          auftrag_titel: auftrag?.listen_titel ?? auftrag?.titel ?? "Auftrag",
           items: buildBauauftragComplianceItems(
             ctx.compliance_stamm,
             ctx.compliance_projekt
@@ -783,7 +819,7 @@ export async function getPartnerDataForHandwerker(handwerkerId: string) {
 
   const auftragTitelById = new Map<string, string>();
   for (const a of [...auftragAnfragen, ...auftraege]) {
-    auftragTitelById.set(a.id, a.titel);
+    auftragTitelById.set(a.id, a.listen_titel);
   }
 
   const termine = buildPartnerTermine({
