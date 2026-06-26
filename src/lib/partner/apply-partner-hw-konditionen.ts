@@ -108,6 +108,66 @@ export function buildPartnerHwKonditionenFromEingabe(opts: {
   };
 }
 
+/** Konditionen direkt aus Auftragspositionen (ohne Angebots-ID-Mapping). */
+export function buildPartnerHwKonditionenFromAuftragEingabe(opts: {
+  auftragPositionen: PartnerAuftragPosition[];
+  eingabe: Array<{ position_id: string; hw_netto: number; hw_notiz?: string }>;
+}):
+  | {
+      ok: true;
+      konditionen: PartnerHwKonditionen;
+      preisNetto: number;
+      preisBrutto: number;
+    }
+  | { ok: false; error: string } {
+  const zeilen = buildPartnerAuftragKonditionZeilen(opts.auftragPositionen);
+  if (!zeilen.length) {
+    return { ok: false, error: "Keine Leistungen für diesen Auftrag gefunden." };
+  }
+
+  const hwById = Object.fromEntries(opts.eingabe.map((e) => [e.position_id, e.hw_netto]));
+  const notizById = Object.fromEntries(
+    opts.eingabe
+      .filter((e) => e.hw_notiz?.trim())
+      .map((e) => [e.position_id, e.hw_notiz!.trim()])
+  );
+
+  for (const z of zeilen) {
+    if (hwById[z.id] == null) {
+      return {
+        ok: false,
+        error: `Bitte einen Preis für „${z.title}“ angeben.`,
+      };
+    }
+  }
+
+  const konditionen = buildHwKonditionenPayload(zeilen, hwById, notizById);
+  const preisNetto = summeKonditionNetto(
+    konditionen.positionen.map((p) => ({
+      hwNetto: p.hw_netto,
+      vorschlagNetto: p.ek_netto,
+    })),
+    true
+  );
+  const preisBrutto = summeKonditionBrutto(
+    konditionen.positionen.map((p) => ({
+      id: p.position_id,
+      title: p.leistung,
+      vorschlagNetto: p.ek_netto,
+      hwNetto: p.hw_netto,
+      mwstSatz: p.mwst_satz,
+    })),
+    true
+  );
+
+  return {
+    ok: true,
+    konditionen,
+    preisNetto: round2(preisNetto),
+    preisBrutto: round2(preisBrutto),
+  };
+}
+
 function normalizeLeistungTitle(title: string): string {
   return title.trim().toLowerCase().replace(/\s+/g, " ");
 }

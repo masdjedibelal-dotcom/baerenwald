@@ -165,13 +165,12 @@ function PartnerListFilterBar({
 }: {
   filter: PartnerListFilterId;
   onFilterChange: (filter: PartnerListFilterId) => void;
-  counts: Record<PartnerListFilterId, number>;
+  counts: Pick<Record<PartnerListFilterId, number>, "offen" | "geschlossen">;
 }) {
   return (
     <div className="flex flex-wrap gap-2 border-b border-border-default px-3 py-3 sm:px-4">
       {(
         [
-          ["alle", "Alle"],
           ["offen", "Offen"],
           ["geschlossen", "Geschlossen"],
         ] as const
@@ -242,7 +241,7 @@ export function PartnerClient({
   }, []);
   const [bewertungExpanded, setBewertungExpanded] = useState(false);
   const [listPage, setListPage] = useState(1);
-  const [listFilter, setListFilter] = useState<PartnerListFilterId>("alle");
+  const [listFilter, setListFilter] = useState<PartnerListFilterId>("offen");
 
   const vorname = handwerker.vorname || "Partner";
 
@@ -300,25 +299,25 @@ export function PartnerClient({
       return buildAnfragenCardRows(filtered.anfragen, filtered.auftragAnfragen);
     }
     if (section === "angebote") {
-      let items = angeboteSorted;
-      if (listFilter === "offen") {
-        items = items.filter(isPartnerAngebotListItemOffen);
-      } else if (listFilter === "geschlossen") {
-        items = items.filter((a) => !isPartnerAngebotListItemOffen(a));
-      }
+      const items = angeboteSorted.filter((a) =>
+        listFilter === "offen"
+          ? isPartnerAngebotListItemOffen(a)
+          : !isPartnerAngebotListItemOffen(a)
+      );
       return items.map(mapAngebotToCard);
     }
     if (section === "auftraege") {
-      let items = [...auftraege].sort(
-        (a, b) =>
-          new Date(b.start_datum || 0).getTime() -
-          new Date(a.start_datum || 0).getTime()
-      );
-      if (listFilter === "offen") {
-        items = items.filter(isPartnerAuftragListItemOffen);
-      } else if (listFilter === "geschlossen") {
-        items = items.filter((a) => !isPartnerAuftragListItemOffen(a));
-      }
+      const items = [...auftraege]
+        .sort(
+          (a, b) =>
+            new Date(b.start_datum || 0).getTime() -
+            new Date(a.start_datum || 0).getTime()
+        )
+        .filter((a) =>
+          listFilter === "offen"
+            ? isPartnerAuftragListItemOffen(a)
+            : !isPartnerAuftragListItemOffen(a)
+        );
       return items.map(mapAuftragToCard);
     }
     return [];
@@ -341,7 +340,7 @@ export function PartnerClient({
     if (section === "auftraege") {
       return countPartnerAuftraegeFilter(auftraege);
     }
-    return { alle: 0, offen: 0, geschlossen: 0 };
+    return { offen: 0, geschlossen: 0 };
   }, [section, anfragenSorted, auftragAnfragen, angeboteSorted, auftraege]);
 
   const listTotalPages = Math.max(
@@ -565,7 +564,7 @@ export function PartnerClient({
   ) {
     setSection(target);
     setListPage(1);
-    setListFilter("alle");
+    setListFilter("offen");
     if (selectedId) {
       setSelectedId(selectedId);
       if (target !== "profil") setMobileDetailOpen(true);
@@ -577,7 +576,7 @@ export function PartnerClient({
     if (!id) return;
     setSection("anfragen");
     setListPage(1);
-    setListFilter("alle");
+    setListFilter("offen");
     setSelectedId(id);
     setMobileDetailOpen(true);
     router.replace(partnerAnfragePortalPath(id));
@@ -587,7 +586,7 @@ export function PartnerClient({
   function switchSection(id: PartnerSection) {
     setSection(id);
     setListPage(1);
-    setListFilter("alle");
+    setListFilter("offen");
     setMobileDetailOpen(false);
     if (id !== "gpt") setGptOpen(false);
     if (id === "uebersicht" || id === "gpt" || id === "profil" || id === "planer") return;
@@ -612,16 +611,19 @@ export function PartnerClient({
     "Hallo Bärenwald, ich habe eine Frage zum Partner-Portal."
   )}`;
 
+  const listTotalCount = listFilterCounts.offen + listFilterCounts.geschlossen;
   const emptyMessage =
-    listFilter !== "alle"
-      ? `Keine ${listFilter === "offen" ? "offenen" : "geschlossenen"} ${listItemLabel}.`
-      : section === "anfragen"
+    listTotalCount === 0
+      ? section === "anfragen"
         ? "Keine Anfragen — du wirst per E-Mail benachrichtigt, sobald Bärenwald dich einbindet."
         : section === "angebote"
           ? "Keine angenommenen Anfragen — nach Annahme erscheinen sie hier zur Angebotseinreichung."
           : section === "auftraege"
             ? "Keine Aufträge — sie erscheinen, sobald ein Projekt für dich angelegt ist."
-            : "";
+            : ""
+      : listFilter === "offen"
+        ? `Keine offenen ${listItemLabel}.`
+        : `Keine geschlossenen ${listItemLabel}.`;
 
   const sectionListEmpty = sectionCardRows.length === 0;
 

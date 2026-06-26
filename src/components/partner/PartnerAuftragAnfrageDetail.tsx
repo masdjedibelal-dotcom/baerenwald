@@ -64,6 +64,8 @@ export function PartnerAuftragAnfrageDetail({
   const hwBeantwortet = hwSt === "akzeptiert" || hwSt === "abgelehnt";
   const abgelaufen = isPartnerAuftragAnfrageAntwortAbgelaufen(item);
   const kannAntworten = isPartnerAuftragAnfrageOffen(item);
+  const konditionenNachreichen = hwSt === "akzeptiert" && Boolean(item.angebotHandwerkerId);
+  const bearbeitbar = kannAntworten || konditionenNachreichen;
 
   const konditionZeilen = useMemo(
     () => resolvePartnerAuftragKonditionZeilen(item.positionen),
@@ -150,7 +152,7 @@ export function PartnerAuftragAnfrageDetail({
     ? "Die Antwortfrist ist abgelaufen, weil der geplante Projektstart erreicht ist. Eine Annahme oder Ablehnung ist nicht mehr möglich."
     : hwBeantwortet
       ? hwSt === "akzeptiert"
-        ? "Du hast zugesagt. Bärenwald prüft deine Preise."
+        ? "Du hast zugesagt, die Preise wurden aber noch nicht übermittelt. Bitte unten „Annehmen“ oder „Gegenangebot senden“ erneut ausführen."
         : "Du hast diese Zuweisung abgelehnt."
       : "Prüfe die Leistungen und passe bei Bedarf den Angebotspreis an. Mit „Annehmen“ oder „Gegenangebot senden“ schickst du deine Antwort an Bärenwald.";
 
@@ -162,7 +164,7 @@ export function PartnerAuftragAnfrageDetail({
   const primaryLabel = geaendert ? "Gegenangebot senden" : "Annehmen";
 
   const actionFooter =
-    kannAntworten && !showReject ? (
+    bearbeitbar && !showReject ? (
       <PartnerDetailStickyActions
         primaryLabel={primaryLabel}
         onPrimary={() => setConfirmAccept(true)}
@@ -171,7 +173,7 @@ export function PartnerAuftragAnfrageDetail({
         onSecondary={() => setShowReject(true)}
         secondaryDisabled={loading}
       />
-    ) : kannAntworten && showReject ? (
+    ) : bearbeitbar && showReject ? (
       <PartnerDetailStickyActions
         primaryLabel="Ablehnung senden"
         onPrimary={() => setConfirmReject(true)}
@@ -203,16 +205,16 @@ export function PartnerAuftragAnfrageDetail({
         <PartnerDetailSection title={PARTNER_LEISTUNGEN_SECTION_TITLE}>
           <PartnerLeistungenKonditionenCard
             zeilen={konditionZeilen}
-            mode={kannAntworten ? "edit" : "readonly"}
-            hwValues={kannAntworten ? hwValues : undefined}
-            hwNotizen={kannAntworten ? hwNotizen : undefined}
+            mode={bearbeitbar ? "edit" : "readonly"}
+            hwValues={bearbeitbar ? hwValues : undefined}
+            hwNotizen={bearbeitbar ? hwNotizen : undefined}
             onHwChange={
-              kannAntworten
+              bearbeitbar
                 ? (id, value) => setHwValues((prev) => ({ ...prev, [id]: value }))
                 : undefined
             }
             onHwNotizChange={
-              kannAntworten
+              bearbeitbar
                 ? (id, value) => setHwNotizen((prev) => ({ ...prev, [id]: value }))
                 : undefined
             }
@@ -221,7 +223,7 @@ export function PartnerAuftragAnfrageDetail({
         </PartnerDetailSection>
       ) : null}
 
-      {kannAntworten && !showReject ? (
+      {bearbeitbar && !showReject ? (
         <label className="block portal-text-body">
           <span className="text-text-tertiary">Notiz (optional)</span>
           <textarea
@@ -244,7 +246,7 @@ export function PartnerAuftragAnfrageDetail({
         </a>
       ) : null}
 
-      {showReject && kannAntworten ? (
+      {showReject && bearbeitbar ? (
         <div className="space-y-3 rounded-xl border border-border-light bg-muted/30 p-4">
           <label className="block space-y-1">
             <span className="portal-form-label">Ablehnungsgrund</span>

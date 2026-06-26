@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 
 import {
+  buildPartnerHwKonditionenFromAuftragEingabe,
   buildPartnerHwKonditionenFromEingabe,
   parsePartnerKonditionenEingabe,
   remapAuftragKonditionenEingabe,
@@ -22,6 +23,7 @@ import { aggregateAuftragHandwerkerStatus } from "@/lib/partner/partner-portal-p
 import { syncAngebotHandwerkerAfterAuftragAccept } from "@/lib/partner/sync-angebot-handwerker";
 import { createClient } from "@/lib/supabase/server";
 import { isSupabaseConfigured, supabaseAdmin } from "@/lib/supabase";
+import type { PartnerHwKonditionen } from "@/lib/partner/partner-konditionen";
 
 export type PartnerAuftragAntwortResult =
   | { ok: true; angebotAnfrageId?: string | null }
@@ -33,6 +35,24 @@ function one<T>(x: T | T[] | null | undefined): T | null {
 }
 
 const PENDING_HW = new Set(["angefragt", "ausstehend", "warten", "offen", "zugewiesen"]);
+
+function mapAuftragPositionen(
+  posRows: Array<Record<string, unknown>>
+): PartnerAuftragPosition[] {
+  return posRows.map((p) => ({
+    id: String(p.id),
+    gewerk_name: String(p.gewerk_name ?? "Gewerk"),
+    leistung_name: String(p.leistung_name ?? "Leistung"),
+    beschreibung: (p.beschreibung as string | null) ?? null,
+    menge: p.menge != null ? Number(p.menge) : null,
+    einheit: (p.einheit as string | null) ?? null,
+    start_datum: (p.start_datum as string | null)?.slice(0, 10) ?? null,
+    end_datum: (p.end_datum as string | null)?.slice(0, 10) ?? null,
+    preis_partner: p.preis_partner != null ? Number(p.preis_partner) : null,
+    lohn_fix: p.lohn_fix != null ? Number(p.lohn_fix) : null,
+    material_fix: p.material_fix != null ? Number(p.material_fix) : null,
+  }));
+}
 
 /** Annahme/Ablehnung einer Leistungs-Zuweisung am Auftrag (CRM-Flow, nicht angebot_handwerker). */
 export async function respondPartnerAuftragZuweisung(opts: {
@@ -109,6 +129,29 @@ export async function respondPartnerAuftragZuweisung(opts: {
     posRows.map((p) => p.handwerker_status)
   );
 
+  const angebotId = auftrag.angebot_id != null ? String(auftrag.angebot_id) : "";
+
+  let angebotAnfrageId: string | null = null;
+  let konditionenAusstehend = false;
+
+  if (angebotId && opts.antwort === "akzeptiert") {
+    const { data: ahRows } = await supabaseAdmin
+      .from("angebot_handwerker")
+      .select("id, hw_eingereicht_at, hw_status")
+      .eq("angebot_id", angebotId)
+      .eq("handwerker_id", link.handwerkerId)
+      .order("antwort_at", { ascending: false });
+
+    const pendingAh = (ahRows ?? []).find(
+      (r) =>
+        String(r.hw_status ?? "").toLowerCase() !== "uebernommen" &&
+        !r.hw_eingereicht_at
+    );
+    angebotAnfrageId = pendingAh?.id ? String(pendingAh.id) : null;
+    konditionenAusstehend =
+      hwStatus === "akzeptiert" && Boolean(angebotAnfrageId) && !pendingAh?.hw_eingereicht_at;
+  }
+
   const kannAntworten = isPartnerAuftragAnfrageOffen({
     status: String(auftrag.status ?? ""),
     hwStatus,
@@ -118,33 +161,103 @@ export async function respondPartnerAuftragZuweisung(opts: {
     })),
   });
 
-  if (!kannAntworten) {
+  if (!kannAntworten && !(opts.antwort === "akzeptiert" && konditionenAusstehend)) {
     return { ok: false, error: "Diese Zuweisung kann nicht mehr beantwortet werden." };
   }
 
-  const newStatus = opts.antwort === "akzeptiert" ? "akzeptiert" : "abgelehnt";
   const now = new Date().toISOString();
   const notiz = opts.notiz?.trim() || null;
+  const auftragPositionen = mapAuftragPositionen(posRows as Array<Record<string, unknown>>);
 
-  for (const z of rows) {
-    const st = String(z.status ?? "").toLowerCase();
-    if (!PENDING_HW.has(st) && st !== "zugewiesen") continue;
-    await supabaseAdmin
-      .from("auftrag_handwerker")
-      .update({ status: newStatus })
-      .eq("id", z.id);
+  let builtKonditionen:
+    | {
+        konditionen: PartnerHwKonditionen;
+        preisNetto: number;
+        preisBrutto: number;
+      }
+    | null = null;
+
+  if (opts.antwort === "akzeptiert") {
+    const konditionenRaw = opts.konditionenJson?.trim() ?? "";
+    if (!konditionenRaw) {
+      return { ok: false, error: "Bitte die Angebotspreise je Leistung angeben." };
+    }
+
+    const parsed = parsePartnerKonditionenEingabe(konditionenRaw);
+    if (!parsed.ok) return { ok: false, error: parsed.error };
+
+    const auftragBuilt = buildPartnerHwKonditionenFromAuftragEingabe({
+      auftragPositionen,
+      eingabe: parsed.rows,
+    });
+    if (!auftragBuilt.ok) return { ok: false, error: auftragBuilt.error };
+    builtKonditionen = auftragBuilt;
+
+    if (angebotId) {
+      const { data: angebotRow } = await supabaseAdmin
+        .from("angebote")
+        .select("positionen")
+        .eq("id", angebotId)
+        .maybeSingle();
+
+      if (!angebotAnfrageId) {
+        const synced = await syncAngebotHandwerkerAfterAuftragAccept({
+          handwerkerId: link.handwerkerId,
+          angebotId,
+          auftragId,
+        });
+        angebotAnfrageId = synced.anfrageId;
+      }
+
+      if (angebotAnfrageId) {
+        const { data: ahRow } = await supabaseAdmin
+          .from("angebot_handwerker")
+          .select("gewerk_id")
+          .eq("id", angebotAnfrageId)
+          .maybeSingle();
+
+        const remapped = remapAuftragKonditionenEingabe({
+          auftragPositionen,
+          angebotPositionenRaw: (angebotRow as { positionen?: unknown } | null)?.positionen,
+          gewerkId: String((ahRow as { gewerk_id?: string } | null)?.gewerk_id ?? ""),
+          eingabe: parsed.rows,
+        });
+
+        if (remapped.ok) {
+          const angebotBuilt = buildPartnerHwKonditionenFromEingabe({
+            positionenRaw: (angebotRow as { positionen?: unknown } | null)?.positionen,
+            gewerkId: String((ahRow as { gewerk_id?: string } | null)?.gewerk_id ?? ""),
+            eingabe: remapped.rows,
+          });
+          if (angebotBuilt.ok) builtKonditionen = angebotBuilt;
+        }
+      }
+    }
   }
 
-  for (const p of posRows) {
-    const st = String(p.handwerker_status ?? "").toLowerCase();
-    if (!PENDING_HW.has(st) && st !== "zugewiesen") continue;
-    await supabaseAdmin
-      .from("auftrag_positionen")
-      .update({
-        handwerker_status: newStatus,
-        ...(newStatus === "akzeptiert" ? { handwerker_angefragt_at: now } : {}),
-      })
-      .eq("id", p.id);
+  const newStatus = opts.antwort === "akzeptiert" ? "akzeptiert" : "abgelehnt";
+
+  if (kannAntworten) {
+    for (const z of rows) {
+      const st = String(z.status ?? "").toLowerCase();
+      if (!PENDING_HW.has(st) && st !== "zugewiesen") continue;
+      await supabaseAdmin
+        .from("auftrag_handwerker")
+        .update({ status: newStatus })
+        .eq("id", z.id);
+    }
+
+    for (const p of posRows) {
+      const st = String(p.handwerker_status ?? "").toLowerCase();
+      if (!PENDING_HW.has(st) && st !== "zugewiesen") continue;
+      await supabaseAdmin
+        .from("auftrag_positionen")
+        .update({
+          handwerker_status: newStatus,
+          ...(newStatus === "akzeptiert" ? { handwerker_angefragt_at: now } : {}),
+        })
+        .eq("id", p.id);
+    }
   }
 
   const { data: hw } = await supabaseAdmin
@@ -163,83 +276,18 @@ export async function respondPartnerAuftragZuweisung(opts: {
       ? HANDWERKER_ABLEHNUNG_GRUND_LABELS[grundRaw]
       : null;
 
-  const angebotId = auftrag.angebot_id != null ? String(auftrag.angebot_id) : "";
-
-  let partnerAngebotUrl: string | null = null;
-  let angebotAnfrageId: string | null = null;
-
-  if (angebotId && opts.antwort === "akzeptiert") {
-    const synced = await syncAngebotHandwerkerAfterAuftragAccept({
-      handwerkerId: link.handwerkerId,
-      angebotId,
-      auftragId,
-    });
-    angebotAnfrageId = synced.anfrageId;
-
-    const konditionenRaw = opts.konditionenJson?.trim() ?? "";
-    if (!konditionenRaw) {
-      return { ok: false, error: "Bitte die Angebotspreise je Leistung angeben." };
-    }
-    if (!angebotAnfrageId) {
-      return {
-        ok: false,
-        error: "Konditionen konnten nicht gespeichert werden — Angebots-Verknüpfung fehlt.",
-      };
-    }
-
-    const parsed = parsePartnerKonditionenEingabe(konditionenRaw);
-    if (!parsed.ok) return { ok: false, error: parsed.error };
-
-    const auftragPositionen: PartnerAuftragPosition[] = posRows.map((p) => ({
-      id: String(p.id),
-      gewerk_name: String(p.gewerk_name ?? "Gewerk"),
-      leistung_name: String(p.leistung_name ?? "Leistung"),
-      beschreibung: (p.beschreibung as string | null) ?? null,
-      menge: p.menge != null ? Number(p.menge) : null,
-      einheit: (p.einheit as string | null) ?? null,
-      start_datum: (p.start_datum as string | null)?.slice(0, 10) ?? null,
-      end_datum: (p.end_datum as string | null)?.slice(0, 10) ?? null,
-      preis_partner: p.preis_partner != null ? Number(p.preis_partner) : null,
-      lohn_fix: p.lohn_fix != null ? Number(p.lohn_fix) : null,
-      material_fix: p.material_fix != null ? Number(p.material_fix) : null,
-    }));
-
-    const { data: angebotRow } = await supabaseAdmin
-      .from("angebote")
-      .select("positionen, kunden(plz, ort), leads(plz)")
-      .eq("id", angebotId)
-      .maybeSingle();
-
-    const { data: ahRow } = await supabaseAdmin
-      .from("angebot_handwerker")
-      .select("gewerk_id")
-      .eq("id", angebotAnfrageId)
-      .maybeSingle();
-
-    const remapped = remapAuftragKonditionenEingabe({
-      auftragPositionen,
-      angebotPositionenRaw: (angebotRow as { positionen?: unknown } | null)?.positionen,
-      gewerkId: String((ahRow as { gewerk_id?: string } | null)?.gewerk_id ?? ""),
-      eingabe: parsed.rows,
-    });
-    if (!remapped.ok) return { ok: false, error: remapped.error };
-
-    const built = buildPartnerHwKonditionenFromEingabe({
-      positionenRaw: (angebotRow as { positionen?: unknown } | null)?.positionen,
-      gewerkId: String((ahRow as { gewerk_id?: string } | null)?.gewerk_id ?? ""),
-      eingabe: remapped.rows,
-    });
-    if (!built.ok) return { ok: false, error: built.error };
-
-    const konditionen = built.konditionen;
+  if (opts.antwort === "akzeptiert" && builtKonditionen && angebotId && angebotAnfrageId) {
+    const konditionen = builtKonditionen.konditionen;
     konditionen.eingereicht_at = now;
 
     const { error: kondErr } = await supabaseAdmin
       .from("angebot_handwerker")
       .update({
+        status: "akzeptiert",
+        antwort_at: now,
         hw_konditionen: konditionen,
-        hw_preis_netto: built.preisNetto,
-        hw_preis_brutto: built.preisBrutto,
+        hw_preis_netto: builtKonditionen.preisNetto,
+        hw_preis_brutto: builtKonditionen.preisBrutto,
         hw_eingereicht_at: now,
         hw_status: "eingereicht",
         hw_notiz: notiz,
@@ -251,6 +299,12 @@ export async function respondPartnerAuftragZuweisung(opts: {
       .eq("handwerker_id", link.handwerkerId);
 
     if (kondErr) return { ok: false, error: kondErr.message };
+
+    const { data: angebotRow } = await supabaseAdmin
+      .from("angebote")
+      .select("kunden(plz, ort), leads(plz)")
+      .eq("id", angebotId)
+      .maybeSingle();
 
     const artLabel =
       konditionen.art === "bestaetigt" ? "Konditionen bestätigt" : "Gegenvorschlag";
@@ -272,8 +326,8 @@ export async function respondPartnerAuftragZuweisung(opts: {
       firma: null,
       gewerkName,
       plz: (kunde as { plz?: string | null } | null)?.plz?.trim() || leadPlz?.plz?.trim() || "—",
-      preisNetto: built.preisNetto,
-      preisBrutto: built.preisBrutto,
+      preisNetto: builtKonditionen.preisNetto,
+      preisBrutto: builtKonditionen.preisBrutto,
       angebotId,
       angebotPdfUrl: null,
       konditionenArt: artLabel,
@@ -287,7 +341,7 @@ export async function respondPartnerAuftragZuweisung(opts: {
     });
   }
 
-  if (angebotId) {
+  if (angebotId && kannAntworten) {
     await sendPartnerInternalAnfrageAntwortMail({
       handwerkerName: (hw?.name as string)?.trim() || "Partner",
       gewerkName,
@@ -295,7 +349,7 @@ export async function respondPartnerAuftragZuweisung(opts: {
       ablehnungGrundLabel: grundLabel,
       notiz,
       angebotId,
-      partnerAngebotPortalUrl: partnerAngebotUrl,
+      partnerAngebotPortalUrl: null,
     });
   }
 
