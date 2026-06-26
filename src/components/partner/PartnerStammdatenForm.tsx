@@ -55,16 +55,28 @@ export function PartnerStammdatenForm({ handwerker }: { handwerker: PartnerHandw
 
       <form id="partner-stammdaten" onSubmit={onSubmit} className="space-y-3">
         <div className="grid gap-3 sm:grid-cols-2">
-          <label className="block space-y-1 sm:col-span-2">
+          <label className="block space-y-1">
             <span className="portal-text-meta font-medium text-text-secondary">
-              Ansprechpartner *
+              Vorname *
             </span>
             <input
-              name="name"
+              name="vorname"
               required
-              defaultValue={handwerker.name}
+              defaultValue={handwerker.vorname}
               className={inputClass}
-              autoComplete="name"
+              autoComplete="given-name"
+            />
+          </label>
+          <label className="block space-y-1">
+            <span className="portal-text-meta font-medium text-text-secondary">
+              Nachname *
+            </span>
+            <input
+              name="nachname"
+              required
+              defaultValue={handwerker.nachname}
+              className={inputClass}
+              autoComplete="family-name"
             />
           </label>
           <label className="block space-y-1 sm:col-span-2">
@@ -76,7 +88,7 @@ export function PartnerStammdatenForm({ handwerker }: { handwerker: PartnerHandw
               autoComplete="organization"
             />
           </label>
-          <label className="block space-y-1">
+          <label className="block space-y-1 sm:col-span-2">
             <span className="portal-text-meta font-medium text-text-secondary">Telefon *</span>
             <input
               name="telefon"
@@ -85,15 +97,6 @@ export function PartnerStammdatenForm({ handwerker }: { handwerker: PartnerHandw
               defaultValue={handwerker.telefon ?? ""}
               className={inputClass}
               autoComplete="tel"
-            />
-          </label>
-          <label className="block space-y-1">
-            <span className="portal-text-meta font-medium text-text-secondary">WhatsApp</span>
-            <input
-              name="whatsapp"
-              type="tel"
-              defaultValue={handwerker.whatsapp ?? ""}
-              className={inputClass}
             />
           </label>
           <label className="block space-y-1 sm:col-span-2">

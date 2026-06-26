@@ -68,7 +68,12 @@ export async function respondPartnerAnfrage(opts: {
       gesendet_at,
       status,
       handwerker(name),
-      gewerke(name)
+      gewerke(name),
+      angebote(
+        kunde_objekt_id,
+        kunden(plz, ort),
+        leads(plz, zeitraum, bereiche, funnel_daten, kunde_objekt_id)
+      )
     `
     )
     .eq("id", opts.anfrageId)
@@ -86,10 +91,28 @@ export async function respondPartnerAnfrage(opts: {
     return { ok: false, error: "Du hast bereits geantwortet." };
   }
 
+  const raw = row as Record<string, unknown>;
+  const angebote = one(raw.angebote) as {
+    leads?: { zeitraum?: string | null; bereiche?: unknown; funnel_daten?: unknown } | Array<{
+      zeitraum?: string | null;
+      bereiche?: unknown;
+      funnel_daten?: unknown;
+    }> | null;
+  } | null;
+  const leadRow = angebote ? one(angebote.leads) : null;
+
   const pending = isPartnerAnfrageOffen({
     status: String(row.status ?? ""),
     antwort_at: row.antwort_at as string | null | undefined,
     gesendet_at: (row as { gesendet_at?: string | null }).gesendet_at,
+    zeitraum: leadRow?.zeitraum?.trim() || "",
+    lead: leadRow
+      ? {
+          zeitraum: leadRow.zeitraum,
+          bereiche: leadRow.bereiche as string[] | undefined,
+          funnel_daten: leadRow.funnel_daten,
+        }
+      : null,
   });
   if (!pending) {
     return { ok: false, error: "Diese Anfrage kann nicht mehr beantwortet werden." };
@@ -119,7 +142,6 @@ export async function respondPartnerAnfrage(opts: {
     return { ok: false, error: upErr.message };
   }
 
-  const raw = row as Record<string, unknown>;
   const hw = one(raw.handwerker) as { name: string } | null;
   const gw = one(raw.gewerke) as { name: string } | null;
   const grundLabel =

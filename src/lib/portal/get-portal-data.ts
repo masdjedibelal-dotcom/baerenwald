@@ -4,6 +4,7 @@ import {
 } from "@/lib/portal/portal-angebot-display";
 import { resolvePortalAnsprechpartner } from "@/lib/portal/portal-ansprechpartner";
 import { buildAngebotPortalDisplay } from "@/lib/portal/portal-display";
+import { resolvePrivatPortalTitel } from "@/lib/portal/portal-titel";
 import { splitKundePortalPipeline } from "@/lib/portal/portal-pipeline";
 import {
   dokumenteFromAngebot,
@@ -427,6 +428,14 @@ export async function getPortalDataForKunde(kundeId: string) {
       const betreuerId =
         typeof a.betreuer_id === "string" ? a.betreuer_id.trim() : "";
       const betreuer = betreuerId ? betreuerById.get(betreuerId) : null;
+      const roherTitel = typeof a.titel === "string" ? a.titel : "Auftrag";
+      const titel = resolvePrivatPortalTitel(roherTitel, {
+        privat: true,
+        nameCandidates: [
+          kunde.name as string | null | undefined,
+          linkedLead?.kontakt_name,
+        ],
+      });
 
       return {
         ...a,
@@ -435,7 +444,7 @@ export async function getPortalDataForKunde(kundeId: string) {
         angebot_id: angebotId,
         linkedLead,
         ansprechpartner: resolvePortalAnsprechpartner(betreuer),
-        titel: typeof a.titel === "string" ? a.titel : "Auftrag",
+        titel,
         status: typeof a.status === "string" ? a.status : undefined,
         fortschritt:
           typeof a.fortschritt === "number" ? a.fortschritt : undefined,
@@ -505,9 +514,16 @@ export async function getPortalDataForKunde(kundeId: string) {
         gesamt_min: a.gesamt_min,
         gesamt_max: a.gesamt_max,
       });
+      const titel = resolvePrivatPortalTitel(display.titel, {
+        privat: true,
+        nameCandidates: [
+          kunde.name as string | null | undefined,
+          linkedLead?.kontakt_name,
+        ],
+      });
       return {
         ...a,
-        titel: display.titel,
+        titel,
         leistungen: display.leistungen,
         hinweise: display.hinweise,
         positionenDisplay,

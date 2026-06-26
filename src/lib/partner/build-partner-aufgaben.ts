@@ -4,7 +4,7 @@ import type {
   PartnerAuftragItem,
   PartnerBautagebuchAnfrageItem,
 } from "@/lib/partner/get-partner-data";
-import { isPartnerAnfrageOffen } from "@/lib/partner/partner-anfrage-status";
+import { isPartnerAnfrageOffen, isPartnerAuftragAnfrageOffen } from "@/lib/partner/partner-anfrage-status";
 
 export type PartnerAufgabeTyp =
   | "anfrage_annehmen"
@@ -58,6 +58,7 @@ export function buildPartnerAufgaben(input: {
   }
 
   for (const a of auftragAnfragen) {
+    if (!isPartnerAuftragAnfrageOffen(a)) continue;
     pushAufgabe(list, {
       id: `auftrag-anfrage-${a.id}`,
       typ: "auftrag_annehmen",

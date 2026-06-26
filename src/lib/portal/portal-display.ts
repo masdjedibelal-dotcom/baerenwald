@@ -33,12 +33,36 @@ function looksLikeJsonBlob(text: string): boolean {
   );
 }
 
+/** CRM/PDF-HTML in lesbaren Fließtext für Portal-UI. */
+export function stripHtmlToPlainText(raw?: string | null): string {
+  if (!isNonEmptyString(raw)) return "";
+
+  let text = raw
+    .replace(/<br\s*\/?>/gi, "\n")
+    .replace(/<\/p>/gi, "\n")
+    .replace(/<\/li>/gi, "\n")
+    .replace(/<[^>]+>/g, "")
+    .replace(/&nbsp;/gi, " ")
+    .replace(/&amp;/gi, "&")
+    .replace(/&lt;/gi, "<")
+    .replace(/&gt;/gi, ">")
+    .replace(/&quot;/gi, '"')
+    .replace(/&#39;/gi, "'")
+    .replace(/[ \t]+\n/g, "\n")
+    .replace(/\n{3,}/g, "\n\n")
+    .replace(/[ \t]{2,}/g, " ")
+    .trim();
+
+  return text;
+}
+
 export function sanitizeCustomerText(
   raw?: string | null,
   maxLen = 2000
 ): string | undefined {
   if (!isNonEmptyString(raw)) return undefined;
-  let text = raw.trim();
+  let text = stripHtmlToPlainText(raw);
+  if (!text) return undefined;
   if (looksLikeJsonBlob(text)) return undefined;
 
   text = text

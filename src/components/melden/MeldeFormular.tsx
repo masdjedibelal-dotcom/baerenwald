@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
+import { MeldeDatenschutzHinweis } from "@/components/melden/MeldeDatenschutzHinweis";
 import { MELDE_KATEGORIEN } from "@/lib/org/melde-kategorien";
 import type { MeldeKategorie } from "@/lib/org/types";
 import { track } from "@/lib/analytics";
@@ -235,6 +236,10 @@ export function MeldeFormular({
 
             <div className="melden-field">
               <label htmlFor="melder-fotos">Fotos (optional)</label>
+              <p className="text-xs text-text-tertiary mb-1.5">
+                Bitte nur schadensrelevante Aufnahmen — keine Familienfotos oder
+                sonstige unnötige personenbezogene Inhalte.
+              </p>
               <input
                 id="melder-fotos"
                 type="file"
@@ -268,6 +273,8 @@ export function MeldeFormular({
                 {error}
               </p>
             ) : null}
+
+            <MeldeDatenschutzHinweis orgName={orgName} mode={mode} />
 
             <button type="submit" className="melden-submit" disabled={busy}>
               {busy ? "Wird gesendet…" : "Meldung absenden"}

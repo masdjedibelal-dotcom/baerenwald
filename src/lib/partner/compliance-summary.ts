@@ -5,6 +5,33 @@ import {
 import type { PartnerComplianceItem } from "@/lib/partner/partner-compliance";
 
 export const RAHMENVERTRAG_TYP_SLUG = "rahmenvertrag";
+export const HANDWERKSKARTE_TYP_SLUG = "handwerkskarte";
+
+/** Nur Handwerkskarte — bleibt unter Rahmenvertrag im Profil. */
+export function filterProfilStammCompliance(
+  items: PartnerComplianceItem[]
+): PartnerComplianceItem[] {
+  return items.filter((i) => i.slug === HANDWERKSKARTE_TYP_SLUG);
+}
+
+/** Stamm-Unterlagen je Bauauftrag (ohne Handwerkskarte & Rahmenvertrag). */
+export function filterBauauftragStammCompliance(
+  items: PartnerComplianceItem[]
+): PartnerComplianceItem[] {
+  return items.filter(
+    (i) => i.slug !== HANDWERKSKARTE_TYP_SLUG && i.slug !== RAHMENVERTRAG_TYP_SLUG
+  );
+}
+
+export function buildBauauftragComplianceItems(
+  stamm: PartnerComplianceItem[] | undefined,
+  projekt: PartnerComplianceItem[] | undefined
+): PartnerComplianceItem[] {
+  return [
+    ...filterBauauftragStammCompliance(stamm ?? []),
+    ...(projekt ?? []),
+  ];
+}
 
 export type ComplianceStammSummary = {
   gesamt: number;

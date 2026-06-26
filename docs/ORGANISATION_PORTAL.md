@@ -36,3 +36,6 @@ Route: `/portal` mit `kunden.portal_modus = 'organisation'`
 Kunde als Organisation anlegen: `portal_modus = organisation`, `org_kennung` setzen, mindestens ein Objekt mit `melde_slug`.
 
 **Backend-Handoff (CRM-Implementierung):** [ORGANISATION_PORTAL_BACKEND.md](./ORGANISATION_PORTAL_BACKEND.md)
+
+**Datenschutz-Checkliste Melde-Flow:** [DATENSCHUTZ_MELDEFLOW_TODOS.md](./DATENSCHUTZ_MELDEFLOW_TODOS.md)  
+**CRM-Handoff (offene Punkte):** [DATENSCHUTZ_CRM_HANDOFF.md](./DATENSCHUTZ_CRM_HANDOFF.md)

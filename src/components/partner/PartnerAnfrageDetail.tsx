@@ -14,7 +14,6 @@ import {
   PartnerDetailLeistungenList,
   PartnerDetailSection,
   PartnerDetailStickyActions,
-  PartnerJobFieldActions,
 } from "@/components/partner/PartnerDetailUi";
 import { PartnerPortalDetailSections } from "@/components/partner/PartnerPortalDetailSections";
 import {
@@ -23,10 +22,10 @@ import {
 } from "@/lib/partner/handwerker-ablehnung";
 import type { PartnerAnfrageItem } from "@/lib/partner/get-partner-data";
 import {
+  isPartnerAnfrageAntwortAbgelaufen,
   isPartnerAnfrageOffen,
   partnerAnfrageStatusLabel,
 } from "@/lib/partner/partner-anfrage-status";
-import { partnerMapsHref } from "@/lib/partner/partner-maps-href";
 import {
   buildPartnerAnfragePortalSections,
   partnerDetailDateMetaLine,
@@ -35,15 +34,22 @@ import {
   fmtPartnerDate,
   partnerDetailStatusPillClass,
 } from "@/lib/partner/partner-detail-format";
-import { partnerAngebotPortalUrl } from "@/lib/partner/partner-site-url";
+import { partnerAngebotPortalPath } from "@/lib/partner/partner-site-url";
 import { cn } from "@/lib/utils";
 
 function anfrageStatusPillClass(item: PartnerAnfrageItem, offen: boolean): string {
+  if (isPartnerAnfrageAntwortAbgelaufen(item)) return "tag bg-red-100 text-red-700";
   if (offen) return "tag bg-amber-100 text-amber-700";
   return partnerDetailStatusPillClass(item.status);
 }
 
-export function PartnerAnfrageDetail({ item }: { item: PartnerAnfrageItem }) {
+export function PartnerAnfrageDetail({
+  item,
+  onAccepted,
+}: {
+  item: PartnerAnfrageItem;
+  onAccepted?: (anfrageId: string) => void;
+}) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -54,6 +60,7 @@ export function PartnerAnfrageDetail({ item }: { item: PartnerAnfrageItem }) {
   const [notiz, setNotiz] = useState("");
 
   const offen = isPartnerAnfrageOffen(item);
+  const abgelaufen = isPartnerAnfrageAntwortAbgelaufen(item);
   const beantwortet = Boolean(item.antwort_at);
   const kannAntworten = offen;
   const statusLabel = partnerAnfrageStatusLabel(item);
@@ -85,8 +92,12 @@ export function PartnerAnfrageDetail({ item }: { item: PartnerAnfrageItem }) {
       return;
     }
     if (antwort === "akzeptiert") {
-      router.refresh();
-      router.push(partnerAngebotPortalUrl(item.id));
+      if (onAccepted) {
+        onAccepted(item.id);
+      } else {
+        router.replace(partnerAngebotPortalPath(item.id));
+        router.refresh();
+      }
       return;
     }
     router.refresh();
@@ -124,18 +135,7 @@ export function PartnerAnfrageDetail({ item }: { item: PartnerAnfrageItem }) {
       />
     ) : null;
 
-  const hasMaps = Boolean(
-    partnerMapsHref({ lead: item.lead, plz: item.plz, ort: item.ort })
-  );
-  const footer =
-    actionFooter || hasMaps ? (
-      <div className="space-y-2">
-        {hasMaps ? (
-          <PartnerJobFieldActions lead={item.lead} plz={item.plz} ort={item.ort} />
-        ) : null}
-        {actionFooter}
-      </div>
-    ) : undefined;
+  const footer = actionFooter ?? undefined;
 
   return (
     <PartnerDetailLayout footer={footer}>
@@ -150,6 +150,11 @@ export function PartnerAnfrageDetail({ item }: { item: PartnerAnfrageItem }) {
         <PartnerDetailInfoBox>
           Deine Antwort geht an Bärenwald. Bei Zusage wirst du zu „Angebote“ weitergeleitet,
           um Netto-Preis und Angebots-PDF einzureichen.
+        </PartnerDetailInfoBox>
+      ) : abgelaufen ? (
+        <PartnerDetailInfoBox>
+          Die Antwortfrist ist abgelaufen, weil der geplante Projektstart erreicht ist. Eine
+          Annahme oder Ablehnung ist nicht mehr möglich.
         </PartnerDetailInfoBox>
       ) : null}
 

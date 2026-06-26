@@ -78,7 +78,7 @@ async function loadPartnerDokumente(
   let query = supabaseAdmin
     .from("partner_dokumente")
     .select(
-      "id, typ, bezeichnung, gueltig_bis, datei_url, status, ablehnung_grund, hochgeladen_am, auftrag_id"
+      "id, typ, bezeichnung, gueltig_bis, datei_url, status, ablehnung_grund, hochgeladen_am, freigegeben_am, auftrag_id"
     )
     .eq("handwerker_id", handwerkerId)
     .order("hochgeladen_am", { ascending: false });

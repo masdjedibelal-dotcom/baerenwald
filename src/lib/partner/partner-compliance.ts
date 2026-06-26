@@ -37,6 +37,7 @@ export type PartnerDokumentRow = {
   status: string;
   ablehnung_grund: string | null;
   hochgeladen_am: string;
+  freigegeben_am?: string | null;
   auftrag_id: string | null;
 };
 
@@ -63,6 +64,7 @@ export type PartnerComplianceItem = {
     id: string;
     gueltig_bis?: string | null;
     hochgeladen_am?: string;
+    freigegeben_am?: string | null;
     signed_url?: string | null;
     ablehnung_grund?: string | null;
   };
@@ -171,6 +173,7 @@ function itemFromTyp(
           id: latest.id,
           gueltig_bis: latest.gueltig_bis,
           hochgeladen_am: latest.hochgeladen_am,
+          freigegeben_am: latest.freigegeben_am ?? null,
           ablehnung_grund: latest.ablehnung_grund,
         }
       : undefined,
@@ -323,7 +326,7 @@ export function compliancePflichtOffen(items: PartnerComplianceItem[]): boolean 
 }
 
 export function complianceStatusLabel(status: PartnerComplianceItemStatus): string {
-  if (status === "erledigt") return "Vorhanden";
+  if (status === "erledigt") return "Bestätigt";
   if (status === "in_pruefung") return "In Prüfung";
   if (status === "abgelehnt") return "Abgelehnt";
   if (status === "ablauf_warnung") return "Läuft bald ab";

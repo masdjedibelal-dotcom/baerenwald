@@ -19,6 +19,7 @@ import {
 import { PartnerPortalDetailSections } from "@/components/partner/PartnerPortalDetailSections";
 import { BautagebuchAccordionList } from "@/components/shared/BautagebuchAccordionList";
 import { PartnerComplianceCheckliste } from "@/components/partner/PartnerComplianceCheckliste";
+import { buildBauauftragComplianceItems } from "@/lib/partner/compliance-summary";
 import { DokumenteTabelle } from "@/components/shared/DokumenteTabelle";
 import { FileUploadField } from "@/components/shared/FileUploadField";
 import type {
@@ -295,11 +296,18 @@ export function PartnerAuftragDetail({ item }: { item: PartnerAuftragItem }) {
   }));
 
   const sections = buildPartnerAuftragPortalSections(item.lead);
-  const mapsFooter = (
+  const bauauftragUnterlagen = useMemo(
+    () =>
+      item.vertrag
+        ? buildBauauftragComplianceItems(
+            item.vertrag.compliance_stamm,
+            item.vertrag.compliance_projekt
+          )
+        : [],
+    [item.vertrag]
+  );
+  const photoFooter = (
     <PartnerJobFieldActions
-      lead={item.lead}
-      plz={item.plz}
-      ort={item.ort}
       onAddPhoto={() => {
         setEditId(null);
         setShowNew(true);
@@ -308,7 +316,7 @@ export function PartnerAuftragDetail({ item }: { item: PartnerAuftragItem }) {
   );
 
   return (
-    <PartnerDetailLayout footer={mapsFooter}>
+    <PartnerDetailLayout footer={photoFooter}>
       <PartnerDetailHero
         title={item.titel}
         metaLine={partnerAuftragDetailMetaLine(item.start_datum, item.end_datum)}
@@ -368,17 +376,6 @@ export function PartnerAuftragDetail({ item }: { item: PartnerAuftragItem }) {
         </PartnerDetailSection>
       ) : null}
 
-      {item.vertrag ? (
-        <PartnerComplianceCheckliste
-          title="Unterlagen"
-          items={[
-            ...(item.vertrag.compliance_stamm ?? []),
-            ...(item.vertrag.compliance_projekt ?? []),
-          ]}
-          auftragId={item.id}
-        />
-      ) : null}
-
       <DokumenteTabelle
         dokumente={item.vertrag?.dokumente_zeilen ?? []}
         heading="Dokumente"
@@ -421,6 +418,16 @@ export function PartnerAuftragDetail({ item }: { item: PartnerAuftragItem }) {
           emptyText="Noch keine Einträge im Bautagebuch."
         />
       </div>
+
+      {bauauftragUnterlagen.length > 0 ? (
+        <PartnerComplianceCheckliste
+          title="Unterlagen Bauprojekt"
+          items={bauauftragUnterlagen}
+          auftragId={item.id}
+          defaultOpen
+          emptyText="Keine Unterlagen für diesen Bauauftrag."
+        />
+      ) : null}
     </PartnerDetailLayout>
   );
 }

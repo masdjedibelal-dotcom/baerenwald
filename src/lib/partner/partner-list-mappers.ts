@@ -5,13 +5,19 @@ import type {
 } from "@/lib/partner/get-partner-data";
 import { isPartnerAnfrageOffen, partnerAnfrageStatusLabel } from "@/lib/partner/partner-anfrage-status";
 import {
+  isPartnerAnfrageAntwortAbgelaufen,
+  isPartnerAuftragAnfrageAntwortAbgelaufen,
+  isPartnerAuftragAnfrageOffen,
+  partnerAuftragAnfrageStatusLabel,
+} from "@/lib/partner/partner-anfrage-status";
+import {
   buildPartnerAnfrageCardMeta,
   buildPartnerAngebotCardMeta,
   buildPartnerAuftragCardMeta,
   partnerAuftragListFooter,
   type PartnerAuftragPhasenCardData,
 } from "@/lib/partner/partner-portal-display";
-import { auftragHwStatusLabel } from "@/lib/partner/partner-portal-phase";
+
 export type PartnerCardRow = {
   id: string;
   title: string;
@@ -31,10 +37,9 @@ function ts(v?: string | null): number {
   return Number.isNaN(d.getTime()) ? 0 : d.getTime();
 }
 
-const PENDING_HW = new Set(["angefragt", "ausstehend", "warten", "offen", "zugewiesen"]);
-
 export function mapAnfrageAngebotToCard(item: PartnerAnfrageItem): PartnerCardRow {
   const offen = isPartnerAnfrageOffen(item);
+  const abgelaufen = isPartnerAnfrageAntwortAbgelaufen(item);
   const meta = buildPartnerAnfrageCardMeta(item.lead, {
     gewerk_name: item.gewerk_name,
     positionen: item.positionen,
@@ -44,7 +49,7 @@ export function mapAnfrageAngebotToCard(item: PartnerAnfrageItem): PartnerCardRo
     id: item.id,
     title: item.angebot_titel,
     statusLabel: partnerAnfrageStatusLabel(item),
-    statusPillKey: offen ? "antwort ausstehend" : item.status,
+    statusPillKey: abgelaufen ? "antwort_abgelaufen" : offen ? "antwort ausstehend" : item.status,
     accent: "anfrage",
     meta,
     hint: offen ? "→ Bitte annehmen oder ablehnen" : undefined,
@@ -53,11 +58,8 @@ export function mapAnfrageAngebotToCard(item: PartnerAnfrageItem): PartnerCardRo
 }
 
 export function mapAnfrageAuftragToCard(item: PartnerAuftragItem): PartnerCardRow {
-  const hw = item.hwStatus.toLowerCase();
-  const pending =
-    item.status.toLowerCase() === "offen" ||
-    PENDING_HW.has(hw) ||
-    hw === "zugewiesen";
+  const offen = isPartnerAuftragAnfrageOffen(item);
+  const abgelaufen = isPartnerAuftragAnfrageAntwortAbgelaufen(item);
 
   const meta = buildPartnerAuftragCardMeta(
     item.lead?.objekt,
@@ -69,11 +71,11 @@ export function mapAnfrageAuftragToCard(item: PartnerAuftragItem): PartnerCardRo
   return {
     id: `auftrag:${item.id}`,
     title: item.titel,
-    statusLabel: auftragHwStatusLabel(item.hwStatus),
-    statusPillKey: item.hwStatus,
+    statusLabel: partnerAuftragAnfrageStatusLabel(item),
+    statusPillKey: abgelaufen ? "antwort_abgelaufen" : item.hwStatus,
     accent: "anfrage",
     meta,
-    hint: pending ? "→ Bitte annehmen oder ablehnen" : undefined,
+    hint: offen ? "→ Bitte annehmen oder ablehnen" : undefined,
     sortDate: ts(item.start_datum),
   };
 }

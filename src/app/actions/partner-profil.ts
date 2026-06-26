@@ -32,10 +32,10 @@ export async function updatePartnerProfil(
   });
   if (!link.ok) return { ok: false, error: link.error };
 
-  const name = String(formData.get("name") ?? "").trim();
+  const vorname = String(formData.get("vorname") ?? "").trim();
+  const nachname = String(formData.get("nachname") ?? "").trim();
   const firma = cleanOptional(formData.get("firma"));
   const telefon = String(formData.get("telefon") ?? "").trim();
-  const whatsapp = cleanOptional(formData.get("whatsapp"));
   const webseite = cleanOptional(formData.get("webseite"));
   const adresse = cleanOptional(formData.get("adresse"));
   const steuernummer = cleanOptional(formData.get("steuernummer"));
@@ -43,16 +43,20 @@ export async function updatePartnerProfil(
   const ibanRaw = cleanOptional(formData.get("iban"));
   const iban = ibanRaw ? ibanRaw.replace(/\s+/g, "") : null;
 
-  if (!name) return { ok: false, error: "Bitte einen Ansprechpartner-Namen angeben." };
+  if (!vorname) return { ok: false, error: "Bitte den Vornamen angeben." };
+  if (!nachname) return { ok: false, error: "Bitte den Nachnamen angeben." };
   if (!telefon) return { ok: false, error: "Bitte eine Telefonnummer angeben." };
+
+  const name = `${vorname} ${nachname}`.trim();
 
   const { error } = await supabase
     .from("handwerker")
     .update({
+      vorname,
+      nachname,
       name,
       firma,
       telefon,
-      whatsapp,
       webseite,
       adresse,
       steuernummer,

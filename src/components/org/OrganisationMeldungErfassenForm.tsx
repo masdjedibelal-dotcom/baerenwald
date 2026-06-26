@@ -116,6 +116,11 @@ export function OrganisationMeldungErfassenForm({ objekte, onDone }: Props) {
         value={beschreibung}
         onChange={(e) => setBeschreibung(e.target.value)}
       />
+      <p className="text-xs text-text-tertiary rounded-lg bg-muted/30 p-2">
+        Hinweis: Bitte Melderdaten nur übermitteln, wenn eine rechtliche Grundlage
+        vorliegt (z. B. Mietverhältnis/Verwaltung). Die betroffene Person muss über
+        die Datenverarbeitung informiert werden.
+      </p>
       {message ? <p className="text-sm text-text-secondary">{message}</p> : null}
       {link ? (
         <p className="text-xs break-all text-text-tertiary">

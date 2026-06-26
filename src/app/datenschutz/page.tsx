@@ -141,6 +141,54 @@ export default function DatenschutzPage() {
                 Auftragsabwicklung) und Art. 6 Abs. 1 lit. f DSGVO (effiziente Projektkoordination).
               </p>
 
+              <strong id="melden-hv">3b. Schadenmeldung über Hausverwaltung (/melden)</strong>
+              <p>
+                Über einen Melde-Link einer Hausverwaltung (z. B.{" "}
+                <em>/melden/{"{org}"}/{"{objekt}"}</em>) können Mieterinnen und Mieter
+                Schadenmeldungen ohne Konto einreichen.
+              </p>
+              <p>
+                <strong>Verarbeitete Daten:</strong> Name, Kontaktdaten, Einheit, Kategorie,
+                Beschreibung, hochgeladene Fotos, Objektbezug sowie technische Schutzdaten
+                (z. B. IP-Adresse zur Missbrauchsabwehr/Rate-Limit).
+              </p>
+              <p>
+                <strong>Zwecke:</strong> Erfassung der Meldung, Abstimmung mit der zuständigen
+                Hausverwaltung, Koordination der Bearbeitung und ggf. Weitergabe an beauftragte
+                Handwerksbetriebe zur Auftragsdurchführung.
+              </p>
+              <p>
+                <strong>Rollenmodell:</strong> Die zuständige Hausverwaltung ist gegenüber den
+                betroffenen Personen in der Regel verantwortlich. Bärenwald verarbeitet Daten
+                je nach Vertragskonstellation als technischer Dienstleister (Auftragsverarbeitung)
+                oder im abgestimmten Verantwortungsrahmen.
+              </p>
+              <p>
+                <strong>Rechtsgrundlagen:</strong> Art. 6 Abs. 1 lit. b DSGVO und/oder Art. 6
+                Abs. 1 lit. f DSGVO.
+              </p>
+              <p>
+                <strong>Empfänger:</strong> zuständige Hausverwaltung, Bärenwald-interne
+                zuständige Stellen, ggf. beauftragte Handwerksbetriebe.
+              </p>
+              <p>
+                <strong>Speicherdauer:</strong> bis Abschluss des Vorgangs und darüber hinaus
+                nur im Rahmen gesetzlicher Aufbewahrungsfristen oder zur Geltendmachung,
+                Ausübung oder Verteidigung von Rechtsansprüchen.
+              </p>
+
+              <strong id="auftraggeber-portal">3c. Auftraggeber-Portal (Organisationen)</strong>
+              <p>
+                Im Auftraggeber-Portal verwalten Hausverwaltungen und gewerbliche Auftraggeber
+                Meldungen, Projekte, Objekte und Freigaben. Dabei werden Organisations-,
+                Objekt- und Vorgangsdaten verarbeitet, soweit dies für die Bearbeitung,
+                Steuerung und Dokumentation erforderlich ist.
+              </p>
+              <p>
+                Rechtsgrundlage: Art. 6 Abs. 1 lit. b DSGVO (Vertrag/Leistungserbringung) und
+                Art. 6 Abs. 1 lit. f DSGVO (ordnungsgemäße Betriebs- und Prozessorganisation).
+              </p>
+
               <strong>4. Weitergabe von Daten</strong>
               <p>
                 Deine Daten werden nicht verkauft. Eine Weitergabe an Dritte erfolgt nur, soweit
@@ -324,6 +372,14 @@ export default function DatenschutzPage() {
                 <li>
                   <strong>Leads und Anfragen aus dem Rechner:</strong> bis zur Erledigung der
                   Anfrage, danach gemäß gesetzlichen Fristen
+                </li>
+                <li>
+                  <strong>Mieter-Schadenmeldungen (/melden):</strong> bis Abschluss des
+                  Vorgangs, danach gemäß gesetzlichen Fristen oder Löschkonzept im CRM
+                </li>
+                <li>
+                  <strong>Fotos in Melder-Meldungen:</strong> bis Abschluss des Vorgangs,
+                  danach Löschung sofern keine Aufbewahrungspflicht besteht
                 </li>
                 <li>
                   <strong>Beauftragte Projekte:</strong> gesetzliche Aufbewahrungsfristen (i. d.

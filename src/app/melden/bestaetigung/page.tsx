@@ -16,6 +16,10 @@ export default function MeldenBestaetigungPage() {
           Wir koordinieren den nächsten Schritt. Mit derselben E-Mail kannst du
           den Status in MeinBärenwald verfolgen.
         </p>
+        <p className="text-text-tertiary mt-2 text-xs">
+          Die Registrierung bei MeinBärenwald ist optional und keine Voraussetzung
+          für die Bearbeitung deiner Meldung.
+        </p>
         <div className="mt-5 flex flex-col gap-2">
           <Link href="/portal/registrieren" className="btn-pill-primary text-center">
             MeinBärenwald registrieren

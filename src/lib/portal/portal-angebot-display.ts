@@ -8,6 +8,7 @@ import {
   type PortalAnfrageLeadSource,
 } from "@/lib/portal/portal-anfrage-display";
 import type { PortalDetailSection } from "@/lib/portal/portal-display";
+import { stripHtmlToPlainText } from "@/lib/portal/portal-display";
 import type { PortalObjekt } from "@/lib/portal/portal-objekt";
 import { portalObjektSection } from "@/lib/portal/portal-objekt";
 import { fmtPortalDate } from "@/lib/shared/portal-detail-format";
@@ -64,16 +65,16 @@ function positionBruttoZeile(raw: Record<string, unknown>, defaultMwst = 19): nu
 }
 
 function positionTitle(raw: Record<string, unknown>): string {
-  const leistung = String(raw.leistung ?? raw.leistung_name ?? "").trim();
+  const leistung = stripHtmlToPlainText(String(raw.leistung ?? raw.leistung_name ?? ""));
   if (leistung) return leistung;
-  return String(raw.gewerk_name ?? "Leistung").trim() || "Leistung";
+  return stripHtmlToPlainText(String(raw.gewerk_name ?? "Leistung")) || "Leistung";
 }
 
 function positionBeschreibung(
   raw: Record<string, unknown>,
   title: string
 ): string | undefined {
-  const besch = String(raw.beschreibung ?? raw.notiz_extern ?? "").trim();
+  const besch = stripHtmlToPlainText(String(raw.beschreibung ?? raw.notiz_extern ?? ""));
   if (!besch || besch === title) return undefined;
   return besch;
 }

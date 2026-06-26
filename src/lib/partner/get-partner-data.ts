@@ -1,4 +1,7 @@
 import {
+  isPartnerAnfrageAntwortAbgelaufen,
+} from "@/lib/partner/partner-anfrage-status";
+import {
   aggregateAuftragHandwerkerStatus,
   resolveAngebotHandwerkerPhase,
   isAuftragAnfrageListItem,
@@ -23,7 +26,12 @@ import {
   isPartnerBlockedByOrgFreigabe,
 } from "@/lib/partner/partner-org-freigabe";
 import type { PortalAnfrageLeadSource } from "@/lib/portal/portal-anfrage-display";
+import {
+  isPrivatPortalKontext,
+  resolvePrivatPortalTitel,
+} from "@/lib/portal/portal-titel";
 import { syncAngebotHandwerkerAfterAuftragAccept } from "@/lib/partner/sync-angebot-handwerker";
+import { resolveHandwerkerAnsprechpartner } from "@/lib/partner/handwerker-ansprechpartner";
 import {
   resolvePartnerFileUrl,
   resolvePartnerFileUrls,
@@ -39,6 +47,7 @@ import { buildPartnerAufgaben, type PartnerAufgabeItem } from "@/lib/partner/bui
 import { buildPartnerTermine, type PartnerTerminItem } from "@/lib/partner/build-partner-termine";
 import {
   applyRahmenvertragPortalAkzeptanz,
+  buildBauauftragComplianceItems,
   buildOffeneLeistungsUnterlagen,
   type PartnerOffeneLeistungsUnterlage,
   type PartnerRahmenvertrag,
@@ -151,11 +160,13 @@ export type PartnerAuftragItem = {
 };
 
 export type PartnerHandwerkerProfil = {
+  /** Vollständiger Name (Vorname + Nachname) — z. B. für E-Mails. */
   name: string;
+  vorname: string;
+  nachname: string;
   firma: string | null;
   email: string | null;
   telefon: string | null;
-  whatsapp: string | null;
   webseite: string | null;
   adresse: string | null;
   steuernummer: string | null;
@@ -321,10 +332,11 @@ export async function getPartnerDataForHandwerker(handwerkerId: string) {
       `
       id,
       name,
+      vorname,
+      nachname,
       firma,
       email,
       telefon,
-      whatsapp,
       webseite,
       adresse,
       steuernummer,
@@ -345,11 +357,18 @@ export async function getPartnerDataForHandwerker(handwerkerId: string) {
 
   if (!handwerker) return null;
 
-  const { data: rows } = await supabaseAdmin
+  const { data: rows, error: anfragenRowsError } = await supabaseAdmin
     .from("angebot_handwerker")
     .select(ANGEBOT_HANDWERKER_BASE_SELECT)
     .eq("handwerker_id", id)
     .order("gesendet_at", { ascending: false });
+
+  if (anfragenRowsError) {
+    console.error(
+      "[partner] angebot_handwerker laden fehlgeschlagen:",
+      anfragenRowsError.message
+    );
+  }
 
   const rawRows = (rows ?? []) as Array<Record<string, unknown>>;
   const objektById = await loadPartnerObjektById(
@@ -413,7 +432,7 @@ export async function getPartnerDataForHandwerker(handwerkerId: string) {
         fortschritt,
         start_datum,
         end_datum,
-        kunden(plz, ort),
+        kunden(plz, ort, name),
         leads(${PARTNER_LEAD_EMBED}),
         angebote(kunde_objekt_id),
         auftrag_positionen(
@@ -510,7 +529,11 @@ export async function getPartnerDataForHandwerker(handwerkerId: string) {
       )
       .map((row) => {
       const raw = row as Record<string, unknown>;
-      const kunde = one(raw.kunden) as { plz: string | null; ort: string | null } | null;
+      const kunde = one(raw.kunden) as {
+        plz: string | null;
+        ort: string | null;
+        name?: string | null;
+      } | null;
       const leadRow = one(raw.leads) as PartnerLeadDbRow | null;
       const angebot = one(raw.angebote) as { kunde_objekt_id?: string | null } | null;
       const lead = buildPartnerLeadSource({
@@ -545,10 +568,18 @@ export async function getPartnerDataForHandwerker(handwerkerId: string) {
         ownPos.map((p) => p.handwerker_status as string | null | undefined)
       );
       const portalPhase = resolveAuftragPortalPhase(auftragStatus, hwStatus);
+      const roherTitel = String(raw.titel ?? "Auftrag").trim() || "Auftrag";
+      const titel = resolvePrivatPortalTitel(roherTitel, {
+        privat: isPrivatPortalKontext({
+          auftraggeber_kunde_id: leadRow?.auftraggeber_kunde_id,
+          situation: leadRow?.situation,
+        }),
+        nameCandidates: [kunde?.name, leadRow?.kontakt_name],
+      });
 
       return {
         id: aid,
-        titel: String(raw.titel ?? "Auftrag").trim() || "Auftrag",
+        titel,
         status: auftragStatus,
         fortschritt:
           raw.fortschritt != null && Number.isFinite(Number(raw.fortschritt))
@@ -590,11 +621,17 @@ export async function getPartnerDataForHandwerker(handwerkerId: string) {
   }
 
   if (repaired) {
-    const { data: rowsReload } = await supabaseAdmin
+    const { data: rowsReload, error: reloadError } = await supabaseAdmin
       .from("angebot_handwerker")
       .select(ANGEBOT_HANDWERKER_BASE_SELECT)
       .eq("handwerker_id", id)
       .order("gesendet_at", { ascending: false });
+    if (reloadError) {
+      console.error(
+        "[partner] angebot_handwerker reload fehlgeschlagen:",
+        reloadError.message
+      );
+    }
     if (rowsReload?.length) {
       const reloadRaw = rowsReload as Array<Record<string, unknown>>;
       const reloadObjektById = await loadPartnerObjektById(
@@ -647,9 +684,13 @@ export async function getPartnerDataForHandwerker(handwerkerId: string) {
     };
   });
 
-  const anfragenAngebot = anfragenFinal.filter(
-    (a) => resolveAngebotHandwerkerPhase(a) === "anfrage"
-  );
+  const anfragenAngebot = anfragenFinal.filter((a) => {
+    if (resolveAngebotHandwerkerPhase(a) === "anfrage") return true;
+    if (isPartnerAnfrageAntwortAbgelaufen(a)) return true;
+    const st = a.status.toLowerCase();
+    if (st === "abgelehnt" && a.gesendet_at) return true;
+    return false;
+  });
   const angebote = anfragenFinal.filter(
     (a) => resolveAngebotHandwerkerPhase(a) === "angebot"
   );
@@ -678,7 +719,10 @@ export async function getPartnerDataForHandwerker(handwerkerId: string) {
         return {
           auftrag_id: auftragId,
           auftrag_titel: auftrag?.titel ?? "Auftrag",
-          items: ctx.compliance_projekt ?? [],
+          items: buildBauauftragComplianceItems(
+            ctx.compliance_stamm,
+            ctx.compliance_projekt
+          ),
         };
       }
     )
@@ -760,12 +804,19 @@ export async function getPartnerDataForHandwerker(handwerkerId: string) {
     profil: profilKontext,
     termine,
     aufgaben,
-    handwerker: {
-      name: String(handwerker.name ?? "Partner"),
+    handwerker: (() => {
+      const ansprechpartner = resolveHandwerkerAnsprechpartner({
+        vorname: handwerker.vorname as string | null | undefined,
+        nachname: handwerker.nachname as string | null | undefined,
+        name: handwerker.name as string | null | undefined,
+      });
+      return {
+      name: ansprechpartner.vollname || "Partner",
+      vorname: ansprechpartner.vorname,
+      nachname: ansprechpartner.nachname,
       firma: handwerker.firma as string | null,
       email: handwerker.email as string | null,
       telefon: (handwerker.telefon as string | null) ?? null,
-      whatsapp: (handwerker.whatsapp as string | null) ?? null,
       webseite: (handwerker.webseite as string | null) ?? null,
       adresse: (handwerker.adresse as string | null) ?? null,
       steuernummer: (handwerker.steuernummer as string | null) ?? null,
@@ -782,7 +833,8 @@ export async function getPartnerDataForHandwerker(handwerkerId: string) {
         bewertung_preis_leistung: numOrNull(handwerker.bewertung_preis_leistung),
         bewertung_anzahl: Math.max(0, Number(handwerker.bewertung_anzahl ?? 0) || 0),
       },
-    },
+    };
+    })(),
     anfragen: anfragenAngebot,
     angebote,
     angeboteAlleAkzeptiert,

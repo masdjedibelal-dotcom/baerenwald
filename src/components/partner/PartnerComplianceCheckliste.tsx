@@ -24,7 +24,7 @@ function statusIcon(status: PartnerComplianceItem["status"]) {
 
 function statusClass(status: PartnerComplianceItem["status"]): string {
   if (status === "erledigt") return "text-emerald-700 bg-emerald-50";
-  if (status === "in_pruefung") return "text-blue-800 bg-blue-50";
+  if (status === "in_pruefung") return "text-amber-800 bg-amber-50";
   if (status === "abgelehnt") return "text-red-700 bg-red-50";
   if (status === "abgelaufen") return "text-red-800 bg-red-50";
   if (status === "ablauf_warnung") return "text-amber-800 bg-amber-50";
@@ -104,6 +104,19 @@ function ComplianceRow({
           {item.status === "abgelehnt" && item.dokument?.ablehnung_grund ? (
             <p className="portal-text-meta mt-1 text-red-700">
               Grund: {item.dokument.ablehnung_grund}
+            </p>
+          ) : null}
+          {item.status === "erledigt" ? (
+            <p className="portal-text-meta mt-1 font-medium text-emerald-700">
+              Von Bärenwald bestätigt
+              {item.dokument?.freigegeben_am
+                ? ` · ${fmtPartnerDate(item.dokument.freigegeben_am)}`
+                : ""}
+            </p>
+          ) : null}
+          {item.status === "in_pruefung" ? (
+            <p className="portal-text-meta mt-1 text-amber-800">
+              Wird von Bärenwald geprüft — Sie erhalten hier den Status.
             </p>
           ) : null}
         </div>

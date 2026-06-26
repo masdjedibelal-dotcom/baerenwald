@@ -48,6 +48,15 @@ export function OrganisationEinstellungenPanel({ kunde, onSaved }: Props) {
 
   return (
     <form onSubmit={save} className="max-w-lg space-y-4">
+      <div className="rounded-xl border border-border-light bg-muted/20 p-3 text-xs text-text-secondary">
+        <p className="font-medium text-text-primary mb-1">Datenschutz-Hinweis</p>
+        <p>
+          Als Auftraggeber sind Sie gegenüber Ihren Mietern in der Regel für die
+          Rechtmäßigkeit der Datenübermittlung verantwortlich. Bitte informieren Sie
+          Mieter über den Melde-Link und übermitteln Sie Melderdaten nur mit
+          Rechtsgrundlage (z. B. Mietverhältnis).
+        </p>
+      </div>
       <div>
         <p className="text-sm font-medium">Freigabe-Modus</p>
         <p className="text-xs text-text-tertiary mb-2">

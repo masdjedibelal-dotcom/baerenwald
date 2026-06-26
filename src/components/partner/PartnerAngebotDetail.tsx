@@ -18,9 +18,7 @@ import {
   PartnerDetailSection,
   PartnerDetailStickyActions,
   PartnerDetailSuccessBox,
-  PartnerJobFieldActions,
 } from "@/components/partner/PartnerDetailUi";
-import { partnerMapsHref } from "@/lib/partner/partner-maps-href";
 import { PartnerPortalDetailSections } from "@/components/partner/PartnerPortalDetailSections";
 import { PartnerProjektvertragPaket } from "@/components/partner/PartnerProjektvertragPaket";
 import {
@@ -306,18 +304,7 @@ export function PartnerAngebotDetail({ item }: { item: PartnerAnfrageItem }) {
       primaryLoading={rechnungLoading}
     />
   ) : undefined;
-  const hasMaps = Boolean(
-    partnerMapsHref({ lead: item.lead, plz: item.plz, ort: item.ort })
-  );
-  const footer =
-    actionFooter || hasMaps ? (
-      <div className="space-y-2">
-        {hasMaps ? (
-          <PartnerJobFieldActions lead={item.lead} plz={item.plz} ort={item.ort} />
-        ) : null}
-        {actionFooter}
-      </div>
-    ) : undefined;
+  const footer = actionFooter;
 
   return (
     <PartnerDetailLayout footer={footer}>
@@ -372,15 +359,42 @@ export function PartnerAngebotDetail({ item }: { item: PartnerAnfrageItem }) {
         gesamtBrutto={gesamtBrutto}
       />
 
+      {hatEinreichung && !kannAngebotEinreichen ? (
+        <div className="space-y-3 rounded-xl border border-border-light p-4">
+          <p className="portal-text-section">Angebot einreichen</p>
+          <div className="space-y-2 portal-text-body text-text-primary">
+            <p>
+              <span className="text-text-tertiary">Eingereicht am:</span>{" "}
+              {fmtPartnerDate(item.hw_eingereicht_at)}
+            </p>
+            <p>
+              <span className="text-text-tertiary">Netto:</span> {fmtPartnerEuro(item.hw_preis_netto)}
+            </p>
+            <p>
+              <span className="text-text-tertiary">Brutto:</span>{" "}
+              {fmtPartnerEuro(item.hw_preis_brutto)}
+            </p>
+            {item.hw_notiz ? (
+              <p>
+                <span className="text-text-tertiary">Notiz:</span> {item.hw_notiz}
+              </p>
+            ) : null}
+            {wartetAufFreigabe ? (
+              <p className="portal-text-meta text-text-secondary">
+                Bärenwald prüft dein Angebot — du erhältst eine E-Mail, sobald wir es übernommen
+                haben.
+              </p>
+            ) : null}
+          </div>
+        </div>
+      ) : null}
+
       {vertragspaketAktiv && item.auftrag_id ? (
         <PartnerProjektvertragPaket
           auftragId={item.auftrag_id}
           gewerkName={item.gewerk_name}
           vertrag={item.projektvertrag ?? null}
-          complianceStamm={[]}
-          complianceProjekt={[]}
           projektvertrag_bestaetigt_am={item.projektvertrag_bestaetigt_am}
-          variant="angebot"
         />
       ) : null}
 
@@ -396,40 +410,6 @@ export function PartnerAngebotDetail({ item }: { item: PartnerAnfrageItem }) {
         emptyText="Noch keine Dokumente."
         className="!border-t-0 !pt-0"
       />
-
-      {hatEinreichung && !kannAngebotEinreichen ? (
-        <PartnerDetailSuccessBox>
-          <p className="font-semibold">
-            {wartetAufFreigabe
-              ? "Eingereichte Preise"
-              : crmRueckfrage || crmAbgelehnt
-                ? "Letzte Einreichung"
-                : "Eingereichte Preise"}
-          </p>
-          <p>
-            <span className="text-emerald-800/70">Angebot eingereicht am:</span>{" "}
-            {fmtPartnerDate(item.hw_eingereicht_at)}
-          </p>
-          <p>
-            <span className="text-emerald-800/70">Netto:</span> {fmtPartnerEuro(item.hw_preis_netto)}
-          </p>
-          <p>
-            <span className="text-emerald-800/70">Brutto:</span>{" "}
-            {fmtPartnerEuro(item.hw_preis_brutto)}
-          </p>
-          {item.hw_notiz ? (
-            <p>
-              <span className="text-emerald-800/70">Notiz:</span> {item.hw_notiz}
-            </p>
-          ) : null}
-          {rechnungEingereicht ? (
-            <p>
-              <span className="text-emerald-800/70">Rechnung hochgeladen am:</span>{" "}
-              {fmtPartnerDate(item.hw_rechnung_eingereicht_at)}
-            </p>
-          ) : null}
-        </PartnerDetailSuccessBox>
-      ) : null}
 
       {kannAngebotEinreichen ? (
         <form
@@ -529,6 +509,15 @@ export function PartnerAngebotDetail({ item }: { item: PartnerAnfrageItem }) {
           />
           {rechnungError ? <PartnerDetailError message={rechnungError} /> : null}
         </form>
+      ) : null}
+
+      {rechnungEingereicht ? (
+        <PartnerDetailSuccessBox>
+          <p className="font-semibold">Rechnung eingereicht</p>
+          <p className="text-sm">
+            Hochgeladen am {fmtPartnerDate(item.hw_rechnung_eingereicht_at)}
+          </p>
+        </PartnerDetailSuccessBox>
       ) : null}
 
       <PartnerConfirmDialog

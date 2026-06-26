@@ -13,9 +13,7 @@ import {
   PartnerDetailLeistungenList,
   PartnerDetailSection,
   PartnerDetailStickyActions,
-  PartnerJobFieldActions,
 } from "@/components/partner/PartnerDetailUi";
-import { partnerMapsHref } from "@/lib/partner/partner-maps-href";
 import { PartnerPortalDetailSections } from "@/components/partner/PartnerPortalDetailSections";
 import {
   HANDWERKER_ABLEHNUNG_GRUND_LABELS,
@@ -24,18 +22,26 @@ import {
 import type { PartnerAuftragItem } from "@/lib/partner/get-partner-data";
 import { partnerDetailStatusPillClass } from "@/lib/partner/partner-detail-format";
 import {
+  isPartnerAuftragAnfrageAntwortAbgelaufen,
+  isPartnerAuftragAnfrageOffen,
+  partnerAuftragAnfrageStatusLabel,
+} from "@/lib/partner/partner-anfrage-status";
+import {
   buildPartnerAuftragPortalSections,
   partnerAuftragDetailMetaLine,
 } from "@/lib/partner/partner-portal-display";
-import { auftragHwStatusLabel } from "@/lib/partner/partner-portal-phase";
 import {
+  partnerAngebotPortalPath,
   partnerAngebotPortalUrl,
-  partnerDashboardUrl,
 } from "@/lib/partner/partner-site-url";
 
-const PENDING_HW = new Set(["angefragt", "ausstehend", "warten", "offen", "zugewiesen"]);
-
-export function PartnerAuftragAnfrageDetail({ item }: { item: PartnerAuftragItem }) {
+export function PartnerAuftragAnfrageDetail({
+  item,
+  onAccepted,
+}: {
+  item: PartnerAuftragItem;
+  onAccepted?: (anfrageId: string) => void;
+}) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -47,9 +53,8 @@ export function PartnerAuftragAnfrageDetail({ item }: { item: PartnerAuftragItem
 
   const hwSt = item.hwStatus.toLowerCase();
   const hwBeantwortet = hwSt === "akzeptiert" || hwSt === "abgelehnt";
-  const kannAntworten =
-    !hwBeantwortet &&
-    (PENDING_HW.has(hwSt) || hwSt === "zugewiesen" || item.status.toLowerCase() === "offen");
+  const abgelaufen = isPartnerAuftragAnfrageAntwortAbgelaufen(item);
+  const kannAntworten = isPartnerAuftragAnfrageOffen(item);
 
   async function sendAntwort(antwort: "akzeptiert" | "abgelehnt") {
     setLoading(true);
@@ -69,20 +74,26 @@ export function PartnerAuftragAnfrageDetail({ item }: { item: PartnerAuftragItem
       return;
     }
     if (antwort === "akzeptiert") {
-      router.refresh();
       if (res.angebotAnfrageId) {
-        router.push(partnerAngebotPortalUrl(res.angebotAnfrageId));
+        if (onAccepted) {
+          onAccepted(res.angebotAnfrageId);
+        } else {
+          router.replace(partnerAngebotPortalPath(res.angebotAnfrageId));
+          router.refresh();
+        }
       } else {
-        router.push(`${partnerDashboardUrl()}?section=angebote`);
+        router.refresh();
       }
       return;
     }
     router.refresh();
   }
 
-  const statusLabel = auftragHwStatusLabel(item.hwStatus);
+  const statusLabel = partnerAuftragAnfrageStatusLabel(item);
 
-  const infoText = hwBeantwortet
+  const infoText = abgelaufen
+    ? "Die Antwortfrist ist abgelaufen, weil der geplante Projektstart erreicht ist. Eine Annahme oder Ablehnung ist nicht mehr möglich."
+    : hwBeantwortet
     ? hwSt === "akzeptiert"
       ? "Du hast zugesagt. Als Nächstes reichst du dein Angebot (Preis und PDF) unter „Angebote“ ein."
       : "Du hast diese Zuweisung abgelehnt."
@@ -114,18 +125,7 @@ export function PartnerAuftragAnfrageDetail({ item }: { item: PartnerAuftragItem
         secondaryDisabled={loading}
       />
     ) : undefined;
-  const hasMaps = Boolean(
-    partnerMapsHref({ lead: item.lead, plz: item.plz, ort: item.ort })
-  );
-  const footer =
-    actionFooter || hasMaps ? (
-      <div className="space-y-2">
-        {hasMaps ? (
-          <PartnerJobFieldActions lead={item.lead} plz={item.plz} ort={item.ort} />
-        ) : null}
-        {actionFooter}
-      </div>
-    ) : undefined;
+  const footer = actionFooter;
 
   return (
     <PartnerDetailLayout footer={footer}>
@@ -133,7 +133,11 @@ export function PartnerAuftragAnfrageDetail({ item }: { item: PartnerAuftragItem
         title={item.titel}
         metaLine={partnerAuftragDetailMetaLine(item.start_datum, item.end_datum)}
         statusLabel={statusLabel}
-        statusPillClass={partnerDetailStatusPillClass(item.hwStatus)}
+        statusPillClass={
+          abgelaufen
+            ? "tag bg-red-100 text-red-700"
+            : partnerDetailStatusPillClass(item.hwStatus)
+        }
       />
 
       <PartnerDetailInfoBox>{infoText}</PartnerDetailInfoBox>

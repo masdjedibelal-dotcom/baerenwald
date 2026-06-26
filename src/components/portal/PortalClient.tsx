@@ -71,6 +71,10 @@ import { portalDetailStatusPillClass } from "@/lib/shared/portal-detail-format";
 import { cn } from "@/lib/utils";
 import { PortalBaerenwaldGpt } from "@/components/portal/PortalBaerenwaldGpt";
 import { PortalLegalFooter } from "@/components/shared/PortalLegalFooter";
+import {
+  PortalNavCountBadge,
+  portalNavBadgeCount,
+} from "@/components/shared/PortalNavCountBadge";
 
 type PortalKunde = {
   name?: string | null;
@@ -444,6 +448,15 @@ export function PortalClient({
     return [...fromAngebote, ...fromLeads];
   }, [angeboteTab, leadsNurAngebotPhase]);
 
+  const portalNavBadgeCounts = useMemo(
+    () => ({
+      anfragen: offeneAnfragenCount,
+      angebote: angeboteItems.length,
+      auftraege: offeneAuftraegeCount,
+    }),
+    [offeneAnfragenCount, angeboteItems.length, offeneAuftraegeCount]
+  );
+
   const leadsNurAuftragPhase = useMemo(
     () =>
       leads.filter(
@@ -736,6 +749,31 @@ export function PortalClient({
     setSection(id);
     setMobileDetailOpen(false);
     if (id !== "gpt") setGptOpen(false);
+  }
+
+  function renderMobileNavButton(id: SectionId) {
+    const { label, icon: Icon } = MENU_ITEMS.find((m) => m.id === id)!;
+    const badgeCount = portalNavBadgeCount(id, portalNavBadgeCounts);
+    return (
+      <button
+        key={id}
+        type="button"
+        onClick={() => switchSection(id)}
+        className={cn(
+          "portal-text-nav rounded-lg px-0.5 py-2.5",
+          section === id ? "text-accent" : "text-text-tertiary"
+        )}
+        aria-label={badgeCount > 0 ? `${label}, ${badgeCount} offen` : label}
+      >
+        <span className="flex flex-col items-center gap-0.5">
+          <span className="relative inline-flex">
+            <Icon className="h-[18px] w-[18px] stroke-[1.75]" />
+            <PortalNavCountBadge count={badgeCount} />
+          </span>
+          <span className="max-w-[58px] truncate">{label}</span>
+        </span>
+      </button>
+    );
   }
 
   const pipelineGrid = (
@@ -1066,27 +1104,7 @@ export function PortalClient({
         aria-label="Portal Navigation"
       >
         <div className="grid grid-cols-5 items-end px-0.5 pb-2 pt-1">
-          {(["uebersicht", "anfragen"] as const).map((id) => {
-            const { label, icon: Icon } = MENU_ITEMS.find((m) => m.id === id)!;
-            return (
-              <button
-                key={id}
-                type="button"
-                onClick={() => switchSection(id)}
-                className={cn(
-                  "portal-text-nav rounded-lg px-0.5 py-2.5",
-                  section === id
-                    ? "text-accent"
-                    : "text-text-tertiary"
-                )}
-              >
-                <span className="flex flex-col items-center gap-0.5">
-                  <Icon className="h-[18px] w-[18px] stroke-[1.75]" />
-                  <span className="max-w-[58px] truncate">{label}</span>
-                </span>
-              </button>
-            );
-          })}
+          {(["uebersicht", "anfragen"] as const).map((id) => renderMobileNavButton(id))}
 
           <div className="flex flex-col items-center justify-end">
             <button
@@ -1106,27 +1124,7 @@ export function PortalClient({
             </button>
           </div>
 
-          {(["angebote", "auftraege"] as const).map((id) => {
-            const { label, icon: Icon } = MENU_ITEMS.find((m) => m.id === id)!;
-            return (
-              <button
-                key={id}
-                type="button"
-                onClick={() => switchSection(id)}
-                className={cn(
-                  "portal-text-nav rounded-lg px-0.5 py-2.5",
-                  section === id
-                    ? "text-accent"
-                    : "text-text-tertiary"
-                )}
-              >
-                <span className="flex flex-col items-center gap-0.5">
-                  <Icon className="h-[18px] w-[18px] stroke-[1.75]" />
-                  <span className="max-w-[58px] truncate">{label}</span>
-                </span>
-              </button>
-            );
-          })}
+          {(["angebote", "auftraege"] as const).map((id) => renderMobileNavButton(id))}
         </div>
       </nav>
 

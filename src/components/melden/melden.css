@@ -127,3 +127,29 @@
 .melden-objekt-link:hover {
   border-color: #2e7d52;
 }
+
+.melden-privacy-notice {
+  margin-top: 1rem;
+  padding: 0.85rem 1rem;
+  border-radius: 0.75rem;
+  border: 1px solid #dce5df;
+  background: #f6f9f7;
+}
+
+.melden-privacy-title {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #1a2420;
+  margin-bottom: 0.5rem;
+}
+
+.melden-privacy-text {
+  font-size: 0.75rem;
+  line-height: 1.45;
+  color: #4a5c52;
+  margin-bottom: 0.35rem;
+}
+
+.melden-privacy-text:last-child {
+  margin-bottom: 0;
+}

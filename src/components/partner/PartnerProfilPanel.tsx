@@ -1,20 +1,10 @@
 "use client";
 
-import { PartnerComplianceCheckliste } from "@/components/partner/PartnerComplianceCheckliste";
 import { PartnerDetailInfoBox } from "@/components/partner/PartnerDetailUi";
 import { PartnerRahmenvertragCard } from "@/components/partner/PartnerRahmenvertragCard";
 import { PartnerStammdatenForm } from "@/components/partner/PartnerStammdatenForm";
 import type { PartnerProfilKontext, PartnerHandwerkerProfil } from "@/lib/partner/get-partner-data";
-import { RAHMENVERTRAG_TYP_SLUG } from "@/lib/partner/compliance-summary";
-
-function profilBadgeLabel(profil: PartnerProfilKontext["profil"]): string {
-  if (profil.leistet_bauleistung && profil.hat_meister_gewerke) {
-    return "Bau · Meisterbetrieb";
-  }
-  if (profil.leistet_bauleistung) return "Bauleistungen";
-  if (profil.hat_meister_gewerke) return "Meister / Fachbetrieb";
-  return "Facility / Dienstleistung";
-}
+import { filterProfilStammCompliance } from "@/lib/partner/compliance-summary";
 
 export function PartnerProfilPanel({
   handwerker,
@@ -23,17 +13,20 @@ export function PartnerProfilPanel({
   handwerker: PartnerHandwerkerProfil;
   profil: PartnerProfilKontext;
 }) {
+  const handwerkskarte = filterProfilStammCompliance([
+    ...profil.allgemein,
+    ...profil.meister,
+  ]);
+
   return (
     <div className="space-y-8">
       <div className="space-y-3">
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <div>
-            <h2 className="portal-text-section text-text-primary">Profil & Unterlagen</h2>
-            <p className="portal-text-body mt-0.5 text-text-secondary">
-              Stammdaten, Partnerunterlagen und Rahmenvertrag an einem Ort.
-            </p>
-          </div>
-          <span className="tag bg-accent-light text-accent">{profilBadgeLabel(profil.profil)}</span>
+        <div>
+          <h2 className="portal-text-section text-text-primary">Profil & Unterlagen</h2>
+          <p className="portal-text-body mt-0.5 text-text-secondary">
+            Stammdaten, Rahmenvertrag und Handwerkskarte — Unterlagen je Bauauftrag findest du
+            unter Angebote und Aufträge.
+          </p>
         </div>
       </div>
 
@@ -42,23 +35,16 @@ export function PartnerProfilPanel({
       <PartnerRahmenvertragCard
         rahmenvertrag={profil.rahmenvertrag}
         stammItems={profil.stamm}
+        handwerkskarte={handwerkskarte}
       />
 
-      <section className="space-y-4">
+      {handwerkskarte.length === 0 ? (
         <PartnerDetailInfoBox>
-          Hier pflegst du deine Unterlagen und bei Meister-Gewerken zusätzlich Fachbetriebsnachweise.
-          Leistungsunterlagen je Auftrag findest du unter dem jeweiligen Projektvertrag.
+          Weitere Unterlagen zum Bauauftrag (z. B. Freistellungsbescheinigung, Personalliste)
+          erscheinen, sobald Bärenwald dein Angebot übernommen hat — unter „Angebote“ und
+          „Aufträge“.
         </PartnerDetailInfoBox>
-
-        <PartnerComplianceCheckliste
-          title="Unterlagen"
-          items={[...profil.allgemein, ...profil.meister].filter(
-            (item) => item.slug !== RAHMENVERTRAG_TYP_SLUG
-          )}
-          gruppiert
-          emptyText="Keine Unterlagen für dein Profil."
-        />
-      </section>
+      ) : null}
     </div>
   );
 }

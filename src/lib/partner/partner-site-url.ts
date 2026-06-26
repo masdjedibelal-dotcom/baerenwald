@@ -38,10 +38,15 @@ export function partnerLoginForAnfrageUrl(anfrageId: string): string {
   return partnerAnfragePortalUrl(anfrageId);
 }
 
+/** Relativer Pfad — Client-Navigation im Partner-Portal (gleiche Origin). */
+export function partnerAngebotPortalPath(anfrageId: string): string {
+  const id = anfrageId.trim();
+  return `/partner?section=angebote&id=${encodeURIComponent(id)}`;
+}
+
 /** Direktlink: Angebote-Tab (nach Annahme Preis + PDF einreichen). */
 export function partnerAngebotPortalUrl(anfrageId: string): string {
-  const id = anfrageId.trim();
-  return `${SITE_CONFIG.url}/partner?section=angebote&id=${encodeURIComponent(id)}`;
+  return `${SITE_CONFIG.url}${partnerAngebotPortalPath(anfrageId)}`;
 }
 
 export function partnerLoginForAngebotUrl(anfrageId: string): string {

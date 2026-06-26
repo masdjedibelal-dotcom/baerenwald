@@ -11,6 +11,7 @@ import {
   labelZeitraum,
   normalizeFunnelDaten,
 } from "@/lib/lead-funnel-daten";
+import { isB2B, type Situation } from "@/lib/funnel/types";
 import type { PortalDetailSection } from "@/lib/portal/portal-display";
 import { objektPlzOrt } from "@/lib/portal/portal-detail-item";
 import type { PortalObjekt } from "@/lib/portal/portal-objekt";
@@ -180,18 +181,25 @@ export function buildAnfrageProjektSection(
   lead: PortalAnfrageLeadSource
 ): PortalDetailSection | null {
   const norm = normalizeFunnelDaten(lead.funnel_daten, lead.bereiche);
+  const situationSlug = norm.situation || lead.situation || undefined;
   const situation =
-    labelSituation(norm.situation || lead.situation) !== "—"
-      ? labelSituation(norm.situation || lead.situation)
+    labelSituation(situationSlug) !== "—"
+      ? labelSituation(situationSlug)
       : undefined;
 
-  const projektRows = detailRows([
-    { label: "Situation", value: situation },
-    { label: "Bereich", value: formatAnfrageBereiche(lead) },
-    { label: "Fläche Menge Anzahl", value: formatAnfrageGroesse(lead) },
-    { label: "Was soll gemacht werden", value: formatAnfrageWasGemacht(lead) },
-    { label: "Zeitraum", value: formatAnfrageZeitraum(lead) },
-  ]);
+  const gewerbe = isB2B(situationSlug as Situation | undefined);
+
+  const projektRows = detailRows(
+    gewerbe
+      ? [{ label: "Situation", value: situation }]
+      : [
+          { label: "Situation", value: situation },
+          { label: "Bereich", value: formatAnfrageBereiche(lead) },
+          { label: "Fläche Menge Anzahl", value: formatAnfrageGroesse(lead) },
+          { label: "Was soll gemacht werden", value: formatAnfrageWasGemacht(lead) },
+          { label: "Zeitraum", value: formatAnfrageZeitraum(lead) },
+        ]
+  );
 
   if (!projektRows.length) return null;
   return { heading: "Projektübersicht", rows: projektRows };

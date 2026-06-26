@@ -5,6 +5,10 @@ import {
   type PartnerLeadDbRow,
 } from "@/lib/partner/partner-lead-source";
 import { parseAngebotPositionen } from "@/lib/partner/parse-angebot-positionen";
+import {
+  isPrivatPortalKontext,
+  resolvePrivatPortalTitel,
+} from "@/lib/portal/portal-titel";
 import { resolveAngebotTitel } from "@/lib/portal/portal-display";
 
 export const PARTNER_LEAD_EMBED = `
@@ -21,7 +25,8 @@ export const PARTNER_LEAD_EMBED = `
   kontakt_nachricht,
   kunde_objekt_id,
   auftraggeber_kunde_id,
-  org_freigabe_status
+  org_freigabe_status,
+  kontakt_name
 `;
 
 export const PARTNER_ANGEBOT_EMBED = `
@@ -33,7 +38,7 @@ export const PARTNER_ANGEBOT_EMBED = `
   gesamt_min,
   gesamt_max,
   kunde_objekt_id,
-  kunden(plz, ort),
+  kunden(plz, ort, name),
   leads(${PARTNER_LEAD_EMBED})
 `;
 
@@ -70,7 +75,7 @@ export async function mapAngebotHandwerkerRow(
   const gewerkId = String(row.gewerk_id ?? "");
   const gw = one(row.gewerke) as { name: string } | null;
   const kunde = angebote
-    ? (one(angebote.kunden) as { plz: string | null; ort: string | null } | null)
+    ? (one(angebote.kunden) as { plz: string | null; ort: string | null; name?: string | null } | null)
     : null;
   const leadRow = angebote
     ? (one(angebote.leads) as PartnerLeadDbRow | null)
@@ -89,15 +94,24 @@ export async function mapAngebotHandwerkerRow(
   const anhaenge = await mapHwAngebotAnhaenge(row);
   const rechnungPath = (row.hw_rechnung_pdf_url as string | null) ?? null;
 
+  const roherTitel = resolveAngebotTitel({
+    angebotsnr: angebote?.angebotsnr,
+    notizen: angebote?.notizen,
+  });
+  const angebot_titel = resolvePrivatPortalTitel(roherTitel, {
+    privat: isPrivatPortalKontext({
+      auftraggeber_kunde_id: leadRow?.auftraggeber_kunde_id,
+      situation: leadRow?.situation ?? lead?.situation,
+    }),
+    nameCandidates: [leadRow?.kontakt_name, kunde?.name],
+  });
+
   return {
     id: String(row.id),
     angebot_id: String(row.angebot_id),
     status: String(row.status ?? "ausstehend"),
     gewerk_name: gw?.name?.trim() || "Gewerk",
-    angebot_titel: resolveAngebotTitel({
-      angebotsnr: angebote?.angebotsnr,
-      notizen: angebote?.notizen,
-    }),
+    angebot_titel,
     gesendet_at: (row.gesendet_at as string | null) ?? undefined,
     antwort_at: (row.antwort_at as string | null) ?? undefined,
     antwort_notiz: (row.antwort_notiz as string | null) ?? undefined,

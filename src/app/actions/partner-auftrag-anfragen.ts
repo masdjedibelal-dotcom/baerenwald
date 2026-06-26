@@ -7,7 +7,9 @@ import {
   isHandwerkerAblehnungGrund,
 } from "@/lib/partner/handwerker-ablehnung";
 import { linkPortalHandwerkerToAuthUser } from "@/lib/partner/link-portal-handwerker";
+import { isPartnerAuftragAnfrageOffen } from "@/lib/partner/partner-anfrage-status";
 import { sendPartnerInternalAnfrageAntwortMail } from "@/lib/partner/partner-mail";
+import { aggregateAuftragHandwerkerStatus } from "@/lib/partner/partner-portal-phase";
 import { partnerAngebotPortalUrl } from "@/lib/partner/partner-site-url";
 import { syncAngebotHandwerkerAfterAuftragAccept } from "@/lib/partner/sync-angebot-handwerker";
 import { createClient } from "@/lib/supabase/server";
@@ -65,7 +67,7 @@ export async function respondPartnerAuftragZuweisung(opts: {
 
   const { data: auftrag, error: aErr } = await supabaseAdmin
     .from("auftraege")
-    .select("id, titel, status, angebot_id")
+    .select("id, titel, status, angebot_id, start_datum")
     .eq("id", auftragId)
     .maybeSingle();
 
@@ -81,7 +83,7 @@ export async function respondPartnerAuftragZuweisung(opts: {
 
   const { data: positionen } = await supabaseAdmin
     .from("auftrag_positionen")
-    .select("id, handwerker_status, gewerk_name")
+    .select("id, handwerker_status, gewerk_name, start_datum")
     .eq("auftrag_id", auftragId)
     .eq("handwerker_id", link.handwerkerId);
 
@@ -91,15 +93,21 @@ export async function respondPartnerAuftragZuweisung(opts: {
     return { ok: false, error: "Keine Zuweisung für diesen Auftrag." };
   }
 
-  const pendingZuweisung = rows.some((z) =>
-    PENDING_HW.has(String(z.status ?? "").toLowerCase())
+  const hwStatus = aggregateAuftragHandwerkerStatus(
+    rows.map((z) => String(z.status ?? "")),
+    posRows.map((p) => p.handwerker_status)
   );
-  const pendingPos = posRows.some((p) =>
-    PENDING_HW.has(String(p.handwerker_status ?? "").toLowerCase())
-  );
-  const auftragOffen = String(auftrag.status ?? "").toLowerCase() === "offen";
 
-  if (!auftragOffen && !pendingZuweisung && !pendingPos) {
+  const kannAntworten = isPartnerAuftragAnfrageOffen({
+    status: String(auftrag.status ?? ""),
+    hwStatus,
+    start_datum: (auftrag as { start_datum?: string | null }).start_datum ?? null,
+    positionen: posRows.map((p) => ({
+      start_datum: (p as { start_datum?: string | null }).start_datum ?? null,
+    })),
+  });
+
+  if (!kannAntworten) {
     return { ok: false, error: "Diese Zuweisung kann nicht mehr beantwortet werden." };
   }
 

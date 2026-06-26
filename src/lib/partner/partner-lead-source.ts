@@ -16,6 +16,7 @@ export type PartnerLeadDbRow = {
   kunde_objekt_id?: string | null;
   auftraggeber_kunde_id?: string | null;
   org_freigabe_status?: string | null;
+  kontakt_name?: string | null;
 };
 
 export type PartnerKundenObjektRow = {

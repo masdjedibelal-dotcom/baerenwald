@@ -7,6 +7,7 @@ import { useState } from "react";
 import { acceptPartnerRahmenvertrag } from "@/app/actions/partner-vertrag";
 import { PartnerRahmenvertragAcceptBlock } from "@/components/partner/PartnerRahmenvertragAcceptBlock";
 import { PartnerDetailSection } from "@/components/partner/PartnerDetailUi";
+import { PartnerComplianceCheckliste } from "@/components/partner/PartnerComplianceCheckliste";
 import {
   rahmenvertragBrauchtPortalAkzeptanz,
   rahmenvertragErfuellt,
@@ -25,9 +26,11 @@ function statusLabel(erfüllt: boolean, status: string, portalAkzeptiert: boolea
 export function PartnerRahmenvertragCard({
   rahmenvertrag,
   stammItems,
+  handwerkskarte = [],
 }: {
   rahmenvertrag: PartnerRahmenvertrag | null;
   stammItems: PartnerComplianceItem[];
+  handwerkskarte?: PartnerComplianceItem[];
 }) {
   const router = useRouter();
   const [akzeptiert, setAkzeptiert] = useState(false);
@@ -137,6 +140,15 @@ export function PartnerRahmenvertragCard({
           </p>
         )}
       </div>
+
+      {handwerkskarte.length > 0 ? (
+        <PartnerComplianceCheckliste
+          title="Handwerkskarte"
+          items={handwerkskarte}
+          accordion={false}
+          emptyText="Keine Handwerkskarte hinterlegt."
+        />
+      ) : null}
     </PartnerDetailSection>
   );
 }
