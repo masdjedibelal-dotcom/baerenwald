@@ -275,6 +275,7 @@ export async function respondPartnerAnfrage(opts: {
       ekNetto: p.ek_netto,
       hwNetto: p.hw_netto,
       geaendert: p.geaendert,
+      hwNotiz: p.hw_notiz,
     })),
   });
 

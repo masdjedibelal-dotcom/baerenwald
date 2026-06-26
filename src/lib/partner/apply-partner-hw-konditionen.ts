@@ -14,7 +14,7 @@ function round2(n: number): number {
 export function parsePartnerKonditionenEingabe(
   raw: string
 ):
-  | { ok: true; rows: Array<{ position_id: string; hw_netto: number }> }
+  | { ok: true; rows: Array<{ position_id: string; hw_netto: number; hw_notiz?: string }> }
   | { ok: false; error: string } {
   try {
     const parsed = JSON.parse(raw) as unknown;
@@ -26,9 +26,15 @@ export function parsePartnerKonditionenEingabe(
         const id = String(r.position_id ?? "").trim();
         const hw = parseHwNettoInput(String(r.hw_netto ?? ""));
         if (!id || hw == null) return null;
-        return { position_id: id, hw_netto: hw };
+        const notiz =
+          typeof r.hw_notiz === "string" ? r.hw_notiz.trim() || undefined : undefined;
+        return notiz
+          ? { position_id: id, hw_netto: hw, hw_notiz: notiz }
+          : { position_id: id, hw_netto: hw };
       })
-      .filter((r): r is { position_id: string; hw_netto: number } => Boolean(r));
+      .filter((r): r is { position_id: string; hw_netto: number; hw_notiz?: string } =>
+        Boolean(r)
+      );
     if (!rows.length) {
       return { ok: false, error: "Bitte für jede Leistung einen gültigen Netto-Preis angeben." };
     }
@@ -41,7 +47,7 @@ export function parsePartnerKonditionenEingabe(
 export function buildPartnerHwKonditionenFromEingabe(opts: {
   positionenRaw: unknown;
   gewerkId: string;
-  eingabe: Array<{ position_id: string; hw_netto: number }>;
+  eingabe: Array<{ position_id: string; hw_netto: number; hw_notiz?: string }>;
 }):
   | {
       ok: true;
@@ -59,6 +65,11 @@ export function buildPartnerHwKonditionenFromEingabe(opts: {
   }
 
   const hwById = Object.fromEntries(opts.eingabe.map((e) => [e.position_id, e.hw_netto]));
+  const notizById = Object.fromEntries(
+    opts.eingabe
+      .filter((e) => e.hw_notiz?.trim())
+      .map((e) => [e.position_id, e.hw_notiz!.trim()])
+  );
   for (const z of zeilen) {
     if (hwById[z.id] == null) {
       return {
@@ -68,7 +79,7 @@ export function buildPartnerHwKonditionenFromEingabe(opts: {
     }
   }
 
-  const konditionen = buildHwKonditionenPayload(zeilen, hwById);
+  const konditionen = buildHwKonditionenPayload(zeilen, hwById, notizById);
   const preisNetto = summeKonditionNetto(
     konditionen.positionen.map((p) => ({
       hwNetto: p.hw_netto,

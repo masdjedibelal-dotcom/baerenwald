@@ -377,6 +377,7 @@ export async function sendPartnerInternalAngebotMail(opts: {
     ekNetto: number | null;
     hwNetto: number;
     geaendert: boolean;
+    hwNotiz?: string;
   }>;
 }): Promise<void> {
   const to = internTo();
@@ -403,7 +404,11 @@ export async function sendPartnerInternalAngebotMail(opts: {
   ${opts.positionen
     .map(
       (p) => `<tr style="border-bottom:1px solid #f3f4f6;">
-    <td style="padding:6px 4px;">${escapeHtml(p.leistung)}${p.geaendert ? " *" : ""}</td>
+    <td style="padding:6px 4px;">${escapeHtml(p.leistung)}${p.geaendert ? " *" : ""}${
+      p.hwNotiz?.trim()
+        ? `<br><span style="font-size:12px;color:#6b7280;">${escapeHtml(p.hwNotiz.trim())}</span>`
+        : ""
+    }</td>
     <td style="text-align:right;padding:6px 4px;">${p.ekNetto != null ? `${p.ekNetto.toLocaleString("de-DE")} €` : "Preis folgt"}</td>
     <td style="text-align:right;padding:6px 4px;">${p.hwNetto.toLocaleString("de-DE")} €</td>
   </tr>`

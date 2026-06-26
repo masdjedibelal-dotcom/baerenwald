@@ -23,6 +23,7 @@ import {
 import type { PartnerAnfrageItem } from "@/lib/partner/get-partner-data";
 import {
   initialHwNettoInputs,
+  initialHwNotizInputs,
   parseHwNettoInput,
 } from "@/lib/partner/partner-konditionen";
 import {
@@ -95,9 +96,11 @@ export function PartnerAnfrageDetail({
   );
 
   const [hwValues, setHwValues] = useState<Record<string, string>>({});
+  const [hwNotizen, setHwNotizen] = useState<Record<string, string>>({});
 
   useEffect(() => {
     setHwValues(initialHwNettoInputs(konditionZeilen, item.hw_konditionen));
+    setHwNotizen(initialHwNotizInputs(konditionZeilen, item.hw_konditionen));
   }, [konditionZeilen, item.hw_konditionen]);
 
   const geaendert = useMemo(
@@ -114,11 +117,16 @@ export function PartnerAnfrageDetail({
   );
 
   function buildKonditionenJson(): string | null {
-    const rows: Array<{ position_id: string; hw_netto: number }> = [];
+    const rows: Array<{ position_id: string; hw_netto: number; hw_notiz?: string }> = [];
     for (const z of konditionZeilen) {
       const hw = parseHwNettoInput(hwValues[z.id] ?? "");
       if (hw == null) return null;
-      rows.push({ position_id: z.id, hw_netto: hw });
+      const notiz = hwNotizen[z.id]?.trim();
+      rows.push({
+        position_id: z.id,
+        hw_netto: hw,
+        ...(notiz ? { hw_notiz: notiz } : {}),
+      });
     }
     return JSON.stringify(rows);
   }
@@ -200,9 +208,10 @@ export function PartnerAnfrageDetail({
 
       {bearbeitbar ? (
         <PartnerDetailInfoBox>
-          Prüfe die vorgeschlagenen Konditionen je Leistung. Du kannst die Preise direkt
-          anpassen und einen Gegenvorschlag senden — oder unverändert bestätigen. Erst nach
-          Preiseinigung mit Bärenwald erscheint das Projekt unter „Angebote“.
+          Prüfe die vorgeschlagenen Konditionen je Leistung. Über „Preis bearbeiten“ kannst du
+          deinen Angebotspreis anpassen und optional eine Notiz hinterlegen — oder unverändert
+          bestätigen. Erst nach Preiseinigung mit Bärenwald erscheint das Projekt unter
+          „Angebote“.
         </PartnerDetailInfoBox>
       ) : wartetAufPreis ? (
         <PartnerDetailInfoBox>
@@ -230,9 +239,15 @@ export function PartnerAnfrageDetail({
             zeilen={konditionZeilen}
             mode={bearbeitbar ? "edit" : "readonly"}
             hwValues={bearbeitbar ? hwValues : undefined}
+            hwNotizen={bearbeitbar ? hwNotizen : undefined}
             onHwChange={
               bearbeitbar
                 ? (id, value) => setHwValues((prev) => ({ ...prev, [id]: value }))
+                : undefined
+            }
+            onHwNotizChange={
+              bearbeitbar
+                ? (id, value) => setHwNotizen((prev) => ({ ...prev, [id]: value }))
                 : undefined
             }
             gesamtLabel={PARTNER_LEISTUNGEN_GESAMT_LABEL}

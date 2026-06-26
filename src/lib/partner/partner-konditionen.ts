@@ -12,6 +12,8 @@ export type PartnerKonditionZeile = {
   vorschlagNetto: number | null;
   /** Vom Handwerker eingereicht / vereinbart (netto Zeile). */
   hwNetto?: number | null;
+  /** Optionale Notiz des Handwerkers zu dieser Leistung. */
+  hwNotiz?: string;
   mwstSatz: number;
   geaendert?: boolean;
 };
@@ -24,6 +26,7 @@ export type PartnerHwKonditionPosition = {
   hw_netto: number;
   mwst_satz: number;
   geaendert: boolean;
+  hw_notiz?: string;
 };
 
 export type PartnerHwKonditionen = {
@@ -92,6 +95,8 @@ export function parsePartnerHwKonditionen(raw: unknown): PartnerHwKonditionen | 
       hw_netto: round2(hw),
       mwst_satz: resolveMwstSatz(p),
       geaendert: Boolean(p.geaendert),
+      hw_notiz:
+        typeof p.hw_notiz === "string" ? p.hw_notiz.trim() || undefined : undefined,
     });
   }
   if (!positionen.length) return null;
@@ -174,6 +179,7 @@ export function mergeKonditionZeilenMitHw(
     return {
       ...z,
       hwNetto: submitted.hw_netto,
+      hwNotiz: submitted.hw_notiz,
       geaendert: submitted.geaendert,
       vorschlagNetto: submitted.ek_netto ?? z.vorschlagNetto,
     };
@@ -190,6 +196,7 @@ export function konditionZeilenNurAusHw(
     beschreibung: p.beschreibung,
     vorschlagNetto: p.ek_netto,
     hwNetto: p.hw_netto,
+    hwNotiz: p.hw_notiz,
     mwstSatz: p.mwst_satz,
     geaendert: p.geaendert,
   }));
@@ -249,13 +256,15 @@ export function mapKonditionZeilenVereinbart(
 
 export function buildHwKonditionenPayload(
   zeilen: PartnerKonditionZeile[],
-  hwNettoById: Record<string, number>
+  hwNettoById: Record<string, number>,
+  hwNotizById?: Record<string, string>
 ): PartnerHwKonditionen {
   const positionen: PartnerHwKonditionPosition[] = zeilen.map((z) => {
     const hw_netto = round2(hwNettoById[z.id] ?? 0);
     const ek = z.vorschlagNetto;
     const geaendert =
       ek != null && ek > 0 ? Math.abs(hw_netto - ek) > 0.009 : hw_netto > 0;
+    const notiz = hwNotizById?.[z.id]?.trim();
     return {
       position_id: z.id,
       leistung: z.title,
@@ -264,6 +273,7 @@ export function buildHwKonditionenPayload(
       hw_netto,
       mwst_satz: z.mwstSatz,
       geaendert,
+      ...(notiz ? { hw_notiz: notiz } : {}),
     };
   });
   const art = positionen.every((p) => !p.geaendert) ? "bestaetigt" : "gegenvorschlag";
@@ -291,6 +301,20 @@ export function initialHwNettoInputs(
     } else {
       out[z.id] = "";
     }
+  }
+  return out;
+}
+
+export function initialHwNotizInputs(
+  zeilen: PartnerKonditionZeile[],
+  hw?: PartnerHwKonditionen | null
+): Record<string, string> {
+  const out: Record<string, string> = {};
+  const submitted = new Map(
+    hw?.positionen.map((p) => [p.position_id, p.hw_notiz ?? ""]) ?? []
+  );
+  for (const z of zeilen) {
+    out[z.id] = submitted.get(z.id) ?? z.hwNotiz ?? "";
   }
   return out;
 }

@@ -16,6 +16,8 @@ type Props = {
   vorschlagNetto: number | null;
   value: string;
   onChange: (value: string) => void;
+  notiz: string;
+  onNotizChange: (value: string) => void;
   onConfirm: () => void;
   onCancel: () => void;
 };
@@ -26,6 +28,8 @@ export function PartnerPreisBearbeitenDialog({
   vorschlagNetto,
   value,
   onChange,
+  notiz,
+  onNotizChange,
   onConfirm,
   onCancel,
 }: Props) {
@@ -53,6 +57,9 @@ export function PartnerPreisBearbeitenDialog({
       role="dialog"
       aria-modal="true"
       aria-labelledby="preis-dialog-title"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onCancel();
+      }}
     >
       <div className="w-full max-w-md rounded-2xl border border-border-default bg-surface-card p-5 shadow-xl">
         <h4 id="preis-dialog-title" className="font-display text-lg font-semibold text-text-primary">
@@ -72,7 +79,7 @@ export function PartnerPreisBearbeitenDialog({
         )}
 
         <label className="mt-5 block">
-          <span className="portal-form-label">Dein Preis netto</span>
+          <span className="portal-form-label">Dein Angebotspreis netto</span>
           <div
             className={cn(
               "mt-2 flex items-center overflow-hidden rounded-xl border bg-surface-card",
@@ -100,6 +107,17 @@ export function PartnerPreisBearbeitenDialog({
           {invalid ? (
             <p className="mt-1.5 text-sm text-red-600">Bitte einen gültigen Betrag eingeben.</p>
           ) : null}
+        </label>
+
+        <label className="mt-4 block">
+          <span className="portal-form-label">Notiz (optional)</span>
+          <textarea
+            value={notiz}
+            onChange={(e) => onNotizChange(e.target.value)}
+            rows={3}
+            placeholder="z. B. Begründung für den angepassten Preis …"
+            className="portal-input mt-2 w-full resize-y rounded-xl border border-border-default bg-surface-card px-3 py-2.5 text-sm"
+          />
         </label>
 
         <div className="mt-6 flex flex-wrap justify-end gap-2">

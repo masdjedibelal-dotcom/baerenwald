@@ -188,6 +188,8 @@ export const PARTNER_LEISTUNGEN_SECTION_TITLE = "Leistungen & Vergütung";
 
 export const PARTNER_LEISTUNGEN_VORSCHLAG_LABEL = "Vorschlag netto";
 
+export const PARTNER_LEISTUNGEN_ANGEBOTSPREIS_LABEL = "Angebotspreis netto";
+
 export const PARTNER_LEISTUNGEN_DEIN_PREIS_LABEL = "Dein Preis netto";
 
 export function partnerDetailDateMetaLine(date?: string | null): string | undefined {
