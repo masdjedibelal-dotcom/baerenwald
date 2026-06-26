@@ -74,7 +74,7 @@ export function PortalMobileBottomSheet({
         )}
       >
         <PortalMobileSheetHeader onClose={onClose} />
-        <div className="min-h-0 flex-1 overflow-y-auto px-4 pb-[calc(1rem+env(safe-area-inset-bottom,0px))]">
+        <div className="min-h-0 flex-1 overflow-y-auto px-4 pb-[calc(5.5rem+env(safe-area-inset-bottom,0px))]">
           {children}
         </div>
       </article>

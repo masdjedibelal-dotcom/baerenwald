@@ -25,6 +25,7 @@ import {
   initialHwNettoInputs,
   initialHwNotizInputs,
   parseHwNettoInput,
+  sindKonditionPreiseGeaendert,
 } from "@/lib/partner/partner-konditionen";
 import {
   isPartnerAnfrageAntwortAbgelaufen,
@@ -55,12 +56,7 @@ function zeilenGeaendert(
   zeilen: ReturnType<typeof resolvePartnerKonditionZeilen>,
   hwValues: Record<string, string>
 ): boolean {
-  return zeilen.some((z) => {
-    const hw = parseHwNettoInput(hwValues[z.id] ?? "");
-    if (hw == null) return false;
-    if (z.vorschlagNetto == null || z.vorschlagNetto <= 0) return hw > 0;
-    return Math.abs(hw - z.vorschlagNetto) > 0.009;
-  });
+  return sindKonditionPreiseGeaendert(zeilen, hwValues);
 }
 
 export function PartnerAnfrageDetail({
@@ -174,7 +170,7 @@ export function PartnerAnfrageDetail({
     router.refresh();
   }
 
-  const primaryLabel = geaendert ? "Gegenvorschlag senden" : "Konditionen bestätigen";
+  const primaryLabel = geaendert ? "Gegenangebot senden" : "Annehmen";
 
   const actionFooter =
     bearbeitbar && !showReject ? (
@@ -208,10 +204,9 @@ export function PartnerAnfrageDetail({
 
       {bearbeitbar ? (
         <PartnerDetailInfoBox>
-          Prüfe die vorgeschlagenen Konditionen je Leistung. Über „Preis bearbeiten“ kannst du
-          deinen Angebotspreis anpassen und optional eine Notiz hinterlegen — oder unverändert
-          bestätigen. Erst nach Preiseinigung mit Bärenwald erscheint das Projekt unter
-          „Angebote“.
+          Prüfe die Leistungen und passe bei Bedarf den Angebotspreis per „Preis bearbeiten“ an.
+          Unverändert bestätigst du mit „Annehmen“, bei geänderten Preisen mit „Gegenangebot
+          senden“.
         </PartnerDetailInfoBox>
       ) : wartetAufPreis ? (
         <PartnerDetailInfoBox>
@@ -305,11 +300,11 @@ export function PartnerAnfrageDetail({
 
       <PartnerConfirmDialog
         open={confirmSend}
-        title={geaendert ? "Gegenvorschlag senden?" : "Anfrage annehmen?"}
+        title={geaendert ? "Gegenangebot senden?" : "Anfrage annehmen?"}
         description={
           geaendert
-            ? "Dein Gegenvorschlag je Leistung geht an Bärenwald zur Prüfung. Das Projekt bleibt unter „Anfragen“, bis die Preiseinigung steht."
-            : "Du nimmst die vorgeschlagenen Konditionen an. Bärenwald prüft sie — danach erscheint das Angebot unter „Angebote“."
+            ? "Dein Gegenangebot mit den angepassten Preisen geht an Bärenwald zur Prüfung."
+            : "Du nimmst die Anfrage mit den vorgeschlagenen Preisen an. Bärenwald prüft deine Zusage."
         }
         confirmLabel="Ja, absenden"
         loading={loading}

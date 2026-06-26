@@ -3,14 +3,22 @@
 import { revalidatePath } from "next/cache";
 
 import {
+  buildPartnerHwKonditionenFromEingabe,
+  parsePartnerKonditionenEingabe,
+  remapAuftragKonditionenEingabe,
+} from "@/lib/partner/apply-partner-hw-konditionen";
+import type { PartnerAuftragPosition } from "@/lib/partner/get-partner-data";
+import {
   HANDWERKER_ABLEHNUNG_GRUND_LABELS,
   isHandwerkerAblehnungGrund,
 } from "@/lib/partner/handwerker-ablehnung";
 import { linkPortalHandwerkerToAuthUser } from "@/lib/partner/link-portal-handwerker";
 import { isPartnerAuftragAnfrageOffen } from "@/lib/partner/partner-anfrage-status";
-import { sendPartnerInternalAnfrageAntwortMail } from "@/lib/partner/partner-mail";
+import {
+  sendPartnerInternalAnfrageAntwortMail,
+  sendPartnerInternalAngebotMail,
+} from "@/lib/partner/partner-mail";
 import { aggregateAuftragHandwerkerStatus } from "@/lib/partner/partner-portal-phase";
-import { partnerAngebotPortalUrl } from "@/lib/partner/partner-site-url";
 import { syncAngebotHandwerkerAfterAuftragAccept } from "@/lib/partner/sync-angebot-handwerker";
 import { createClient } from "@/lib/supabase/server";
 import { isSupabaseConfigured, supabaseAdmin } from "@/lib/supabase";
@@ -32,6 +40,7 @@ export async function respondPartnerAuftragZuweisung(opts: {
   antwort: "akzeptiert" | "abgelehnt";
   grund?: string;
   notiz?: string;
+  konditionenJson?: string;
 }): Promise<PartnerAuftragAntwortResult> {
   if (!isSupabaseConfigured()) {
     return { ok: false, error: "Datenbank nicht konfiguriert." };
@@ -83,7 +92,9 @@ export async function respondPartnerAuftragZuweisung(opts: {
 
   const { data: positionen } = await supabaseAdmin
     .from("auftrag_positionen")
-    .select("id, handwerker_status, gewerk_name, start_datum")
+    .select(
+      "id, handwerker_status, gewerk_name, gewerk_id, leistung_name, beschreibung, preis_partner, lohn_fix, material_fix, menge, einheit, start_datum, end_datum"
+    )
     .eq("auftrag_id", auftragId)
     .eq("handwerker_id", link.handwerkerId);
 
@@ -153,6 +164,7 @@ export async function respondPartnerAuftragZuweisung(opts: {
       : null;
 
   const angebotId = auftrag.angebot_id != null ? String(auftrag.angebot_id) : "";
+
   let partnerAngebotUrl: string | null = null;
   let angebotAnfrageId: string | null = null;
 
@@ -163,9 +175,116 @@ export async function respondPartnerAuftragZuweisung(opts: {
       auftragId,
     });
     angebotAnfrageId = synced.anfrageId;
-    if (synced.anfrageId) {
-      partnerAngebotUrl = partnerAngebotPortalUrl(synced.anfrageId);
+
+    const konditionenRaw = opts.konditionenJson?.trim() ?? "";
+    if (!konditionenRaw) {
+      return { ok: false, error: "Bitte die Angebotspreise je Leistung angeben." };
     }
+    if (!angebotAnfrageId) {
+      return {
+        ok: false,
+        error: "Konditionen konnten nicht gespeichert werden — Angebots-Verknüpfung fehlt.",
+      };
+    }
+
+    const parsed = parsePartnerKonditionenEingabe(konditionenRaw);
+    if (!parsed.ok) return { ok: false, error: parsed.error };
+
+    const auftragPositionen: PartnerAuftragPosition[] = posRows.map((p) => ({
+      id: String(p.id),
+      gewerk_name: String(p.gewerk_name ?? "Gewerk"),
+      leistung_name: String(p.leistung_name ?? "Leistung"),
+      beschreibung: (p.beschreibung as string | null) ?? null,
+      menge: p.menge != null ? Number(p.menge) : null,
+      einheit: (p.einheit as string | null) ?? null,
+      start_datum: (p.start_datum as string | null)?.slice(0, 10) ?? null,
+      end_datum: (p.end_datum as string | null)?.slice(0, 10) ?? null,
+      preis_partner: p.preis_partner != null ? Number(p.preis_partner) : null,
+      lohn_fix: p.lohn_fix != null ? Number(p.lohn_fix) : null,
+      material_fix: p.material_fix != null ? Number(p.material_fix) : null,
+    }));
+
+    const { data: angebotRow } = await supabaseAdmin
+      .from("angebote")
+      .select("positionen, kunden(plz, ort), leads(plz)")
+      .eq("id", angebotId)
+      .maybeSingle();
+
+    const { data: ahRow } = await supabaseAdmin
+      .from("angebot_handwerker")
+      .select("gewerk_id")
+      .eq("id", angebotAnfrageId)
+      .maybeSingle();
+
+    const remapped = remapAuftragKonditionenEingabe({
+      auftragPositionen,
+      angebotPositionenRaw: (angebotRow as { positionen?: unknown } | null)?.positionen,
+      gewerkId: String((ahRow as { gewerk_id?: string } | null)?.gewerk_id ?? ""),
+      eingabe: parsed.rows,
+    });
+    if (!remapped.ok) return { ok: false, error: remapped.error };
+
+    const built = buildPartnerHwKonditionenFromEingabe({
+      positionenRaw: (angebotRow as { positionen?: unknown } | null)?.positionen,
+      gewerkId: String((ahRow as { gewerk_id?: string } | null)?.gewerk_id ?? ""),
+      eingabe: remapped.rows,
+    });
+    if (!built.ok) return { ok: false, error: built.error };
+
+    const konditionen = built.konditionen;
+    konditionen.eingereicht_at = now;
+
+    const { error: kondErr } = await supabaseAdmin
+      .from("angebot_handwerker")
+      .update({
+        hw_konditionen: konditionen,
+        hw_preis_netto: built.preisNetto,
+        hw_preis_brutto: built.preisBrutto,
+        hw_eingereicht_at: now,
+        hw_status: "eingereicht",
+        hw_notiz: notiz,
+        hw_crm_notiz: null,
+        hw_crm_antwort_at: null,
+        antwort_notiz: notiz,
+      })
+      .eq("id", angebotAnfrageId)
+      .eq("handwerker_id", link.handwerkerId);
+
+    if (kondErr) return { ok: false, error: kondErr.message };
+
+    const artLabel =
+      konditionen.art === "bestaetigt" ? "Konditionen bestätigt" : "Gegenvorschlag";
+    const kunde = one(
+      (angebotRow as { kunden?: unknown } | null)?.kunden as
+        | { plz?: string | null }
+        | { plz?: string | null }[]
+        | null
+    );
+    const leadPlz = one(
+      (angebotRow as { leads?: unknown } | null)?.leads as
+        | { plz?: string | null }
+        | { plz?: string | null }[]
+        | null
+    );
+
+    void sendPartnerInternalAngebotMail({
+      handwerkerName: (hw?.name as string)?.trim() || "Partner",
+      firma: null,
+      gewerkName,
+      plz: (kunde as { plz?: string | null } | null)?.plz?.trim() || leadPlz?.plz?.trim() || "—",
+      preisNetto: built.preisNetto,
+      preisBrutto: built.preisBrutto,
+      angebotId,
+      angebotPdfUrl: null,
+      konditionenArt: artLabel,
+      positionen: konditionen.positionen.map((p) => ({
+        leistung: p.leistung,
+        ekNetto: p.ek_netto,
+        hwNetto: p.hw_netto,
+        geaendert: p.geaendert,
+        hwNotiz: p.hw_notiz,
+      })),
+    });
   }
 
   if (angebotId) {

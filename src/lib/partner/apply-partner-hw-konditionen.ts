@@ -1,3 +1,5 @@
+import type { PartnerAuftragPosition } from "@/lib/partner/get-partner-data";
+import { buildPartnerAuftragKonditionZeilen } from "@/lib/partner/partner-leistungen-display";
 import {
   buildHwKonditionenPayload,
   buildPartnerKonditionZeilen,
@@ -104,4 +106,59 @@ export function buildPartnerHwKonditionenFromEingabe(opts: {
     preisNetto: round2(preisNetto),
     preisBrutto: round2(preisBrutto),
   };
+}
+
+function normalizeLeistungTitle(title: string): string {
+  return title.trim().toLowerCase().replace(/\s+/g, " ");
+}
+
+/** Auftrags-Positions-IDs → Angebots-Positions-IDs (gleiche Leistung / Reihenfolge). */
+export function remapAuftragKonditionenEingabe(opts: {
+  auftragPositionen: PartnerAuftragPosition[];
+  angebotPositionenRaw: unknown;
+  gewerkId?: string;
+  eingabe: Array<{ position_id: string; hw_netto: number; hw_notiz?: string }>;
+}):
+  | { ok: true; rows: Array<{ position_id: string; hw_netto: number; hw_notiz?: string }> }
+  | { ok: false; error: string } {
+  const auftragZeilen = buildPartnerAuftragKonditionZeilen(opts.auftragPositionen);
+  const angebotZeilen = buildPartnerKonditionZeilen(opts.angebotPositionenRaw, {
+    gewerkId: opts.gewerkId,
+  });
+  const preisByAuftragId = new Map(opts.eingabe.map((e) => [e.position_id, e]));
+
+  const rows: Array<{ position_id: string; hw_netto: number; hw_notiz?: string }> = [];
+
+  for (let i = 0; i < auftragZeilen.length; i++) {
+    const az = auftragZeilen[i]!;
+    const eing = preisByAuftragId.get(az.id);
+    if (!eing) {
+      return {
+        ok: false,
+        error: `Bitte einen Preis für „${az.title}“ angeben.`,
+      };
+    }
+    const angebotZ =
+      angebotZeilen[i] ??
+      angebotZeilen.find(
+        (oz) => normalizeLeistungTitle(oz.title) === normalizeLeistungTitle(az.title)
+      );
+    if (!angebotZ) {
+      return {
+        ok: false,
+        error: `Leistung „${az.title}“ konnte im Angebot nicht zugeordnet werden.`,
+      };
+    }
+    rows.push({
+      position_id: angebotZ.id,
+      hw_netto: eing.hw_netto,
+      ...(eing.hw_notiz ? { hw_notiz: eing.hw_notiz } : {}),
+    });
+  }
+
+  if (!rows.length) {
+    return { ok: false, error: "Keine Leistungen für die Preisübernahme gefunden." };
+  }
+
+  return { ok: true, rows };
 }

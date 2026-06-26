@@ -19,7 +19,7 @@ const HW_BEANTWORTET = new Set(["akzeptiert", "abgelehnt"]);
 
 type PartnerAnfrageTimingFields = Pick<
   PartnerAnfrageItem,
-  "status" | "antwort_at" | "gesendet_at" | "hw_status"
+  "status" | "antwort_at" | "gesendet_at" | "hw_status" | "hw_eingereicht_at"
 > & {
   zeitraum?: string;
   lead?: PartnerAnfrageItem["lead"] | null;
@@ -51,15 +51,25 @@ export function isPartnerAnfrageOffen(item: PartnerAnfrageTimingFields): boolean
   return PENDING_STATUS.has(st);
 }
 
-/** HW kann Preise per Popup anpassen (Erstantwort oder CRM-Rückfrage). */
+/** HW kann im ersten Schritt Preise anpassen (Erstantwort, ausstehende Konditionen oder CRM-Rückfrage). */
 export function isPartnerAnfrageKonditionenBearbeitbar(
   item: PartnerAnfrageTimingFields
 ): boolean {
   if (isPartnerAnfrageAntwortAbgelaufen(item)) return false;
-  if (isPartnerAnfrageOffen(item)) return true;
+  if (isPartnerAnfrageWartetAufPreiseinigung(item)) return false;
+
   const st = item.status.toLowerCase();
   const hwSt = (item.hw_status ?? "").toLowerCase();
-  return st === "akzeptiert" && (hwSt === "rueckfrage" || hwSt === "abgelehnt");
+
+  if (st === "abgelehnt") return false;
+  if (hwSt === "eingereicht" || hwSt === "uebernommen") return false;
+  if (hwSt === "rueckfrage" || hwSt === "abgelehnt") return true;
+  if (isPartnerAnfrageOffen(item)) return true;
+
+  /** Zusage liegt vor, Konditionen/Preise noch nicht eingereicht. */
+  if (st === "akzeptiert" && !item.hw_eingereicht_at) return true;
+
+  return false;
 }
 
 /** HW hat geantwortet — Bärenwald prüft die Konditionen. */
@@ -74,14 +84,16 @@ export function isPartnerAnfrageWartetAufPreiseinigung(
 export function partnerAnfrageStatusLabel(item: PartnerAnfrageTimingFields): string {
   if (isPartnerAnfrageAntwortAbgelaufen(item)) return "Antwort abgelaufen";
   if (isPartnerAnfrageWartetAufPreiseinigung(item)) return "In Prüfung";
-  if (isPartnerAnfrageKonditionenBearbeitbar(item) && item.antwort_at) {
+  if (isPartnerAnfrageKonditionenBearbeitbar(item)) {
     const hwSt = (item.hw_status ?? "").toLowerCase();
     if (hwSt === "rueckfrage") return "Rückfrage";
     if (hwSt === "abgelehnt") return "Konditionen abgelehnt";
+    if (item.antwort_at && !item.hw_eingereicht_at) return "Angebotspreis festlegen";
+    return "Antwort ausstehend";
   }
   if (item.antwort_at) {
     const s = item.status.toLowerCase();
-    if (s === "akzeptiert") return "Zugesagt";
+    if (s === "akzeptiert" && item.hw_eingereicht_at) return "Zugesagt";
     if (s === "abgelehnt") return "Abgelehnt";
   }
   if (isPartnerAnfrageOffen(item)) return "Antwort ausstehend";

@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { respondPartnerAuftragZuweisung } from "@/app/actions/partner-auftrag-anfragen";
 import { PartnerLeistungenKonditionenCard } from "@/components/partner/PartnerLeistungenKonditionenCard";
@@ -21,6 +21,12 @@ import {
 } from "@/lib/partner/handwerker-ablehnung";
 import type { PartnerAuftragItem } from "@/lib/partner/get-partner-data";
 import { partnerDetailStatusPillClass } from "@/lib/partner/partner-detail-format";
+import {
+  initialHwNettoInputs,
+  initialHwNotizInputs,
+  parseHwNettoInput,
+  sindKonditionPreiseGeaendert,
+} from "@/lib/partner/partner-konditionen";
 import {
   isPartnerAuftragAnfrageAntwortAbgelaufen,
   isPartnerAuftragAnfrageOffen,
@@ -59,14 +65,60 @@ export function PartnerAuftragAnfrageDetail({
   const abgelaufen = isPartnerAuftragAnfrageAntwortAbgelaufen(item);
   const kannAntworten = isPartnerAuftragAnfrageOffen(item);
 
+  const konditionZeilen = useMemo(
+    () => resolvePartnerAuftragKonditionZeilen(item.positionen),
+    [item.positionen]
+  );
+
+  const [hwValues, setHwValues] = useState<Record<string, string>>({});
+  const [hwNotizen, setHwNotizen] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    setHwValues(initialHwNettoInputs(konditionZeilen));
+    setHwNotizen(initialHwNotizInputs(konditionZeilen));
+  }, [konditionZeilen]);
+
+  const geaendert = useMemo(
+    () => sindKonditionPreiseGeaendert(konditionZeilen, hwValues),
+    [konditionZeilen, hwValues]
+  );
+
+  function buildKonditionenJson(): string | null {
+    const rows: Array<{ position_id: string; hw_netto: number; hw_notiz?: string }> = [];
+    for (const z of konditionZeilen) {
+      const hw = parseHwNettoInput(hwValues[z.id] ?? "");
+      if (hw == null) return null;
+      const zeilenNotiz = hwNotizen[z.id]?.trim();
+      rows.push({
+        position_id: z.id,
+        hw_netto: hw,
+        ...(zeilenNotiz ? { hw_notiz: zeilenNotiz } : {}),
+      });
+    }
+    return JSON.stringify(rows);
+  }
+
   async function sendAntwort(antwort: "akzeptiert" | "abgelehnt") {
     setLoading(true);
     setError(null);
+
+    let konditionenJson: string | undefined;
+    if (antwort === "akzeptiert") {
+      const json = buildKonditionenJson();
+      if (!json) {
+        setLoading(false);
+        setError("Bitte für jede Leistung einen gültigen Angebotspreis angeben.");
+        return;
+      }
+      konditionenJson = json;
+    }
+
     const res = await respondPartnerAuftragZuweisung({
       auftragId: item.id,
       antwort,
       grund: antwort === "abgelehnt" ? grund : undefined,
       notiz: notiz.trim() || undefined,
+      konditionenJson,
     });
     setLoading(false);
     setConfirmAccept(false);
@@ -97,24 +149,22 @@ export function PartnerAuftragAnfrageDetail({
   const infoText = abgelaufen
     ? "Die Antwortfrist ist abgelaufen, weil der geplante Projektstart erreicht ist. Eine Annahme oder Ablehnung ist nicht mehr möglich."
     : hwBeantwortet
-    ? hwSt === "akzeptiert"
-      ? "Du hast zugesagt. Als Nächstes bestätigst du die Konditionen je Leistung unter „Anfragen“."
-      : "Du hast diese Zuweisung abgelehnt."
-    : "Bärenwald hat dir Leistungen an diesem Projekt zugewiesen. Bitte bestätige oder lehne die Anfrage ab.";
+      ? hwSt === "akzeptiert"
+        ? "Du hast zugesagt. Bärenwald prüft deine Preise."
+        : "Du hast diese Zuweisung abgelehnt."
+      : "Prüfe die Leistungen und passe bei Bedarf den Angebotspreis an. Mit „Annehmen“ oder „Gegenangebot senden“ schickst du deine Antwort an Bärenwald.";
 
   const sections = useMemo(
     () => buildPartnerAuftragPortalSections(item.lead),
     [item.lead]
   );
-  const konditionZeilen = useMemo(
-    () => resolvePartnerAuftragKonditionZeilen(item.positionen),
-    [item.positionen]
-  );
+
+  const primaryLabel = geaendert ? "Gegenangebot senden" : "Annehmen";
 
   const actionFooter =
     kannAntworten && !showReject ? (
       <PartnerDetailStickyActions
-        primaryLabel="Annehmen"
+        primaryLabel={primaryLabel}
         onPrimary={() => setConfirmAccept(true)}
         primaryLoading={loading}
         secondaryLabel="Ablehnen"
@@ -131,10 +181,9 @@ export function PartnerAuftragAnfrageDetail({
         secondaryDisabled={loading}
       />
     ) : undefined;
-  const footer = actionFooter;
 
   return (
-    <PartnerDetailLayout footer={footer}>
+    <PartnerDetailLayout footer={actionFooter}>
       <PartnerDetailHero
         title={item.listen_titel}
         metaLine={partnerAuftragDetailMetaLine(item.start_datum, item.end_datum)}
@@ -154,10 +203,34 @@ export function PartnerAuftragAnfrageDetail({
         <PartnerDetailSection title={PARTNER_LEISTUNGEN_SECTION_TITLE}>
           <PartnerLeistungenKonditionenCard
             zeilen={konditionZeilen}
-            mode="readonly"
+            mode={kannAntworten ? "edit" : "readonly"}
+            hwValues={kannAntworten ? hwValues : undefined}
+            hwNotizen={kannAntworten ? hwNotizen : undefined}
+            onHwChange={
+              kannAntworten
+                ? (id, value) => setHwValues((prev) => ({ ...prev, [id]: value }))
+                : undefined
+            }
+            onHwNotizChange={
+              kannAntworten
+                ? (id, value) => setHwNotizen((prev) => ({ ...prev, [id]: value }))
+                : undefined
+            }
             gesamtLabel={PARTNER_LEISTUNGEN_GESAMT_LABEL}
           />
         </PartnerDetailSection>
+      ) : null}
+
+      {kannAntworten && !showReject ? (
+        <label className="block portal-text-body">
+          <span className="text-text-tertiary">Notiz (optional)</span>
+          <textarea
+            value={notiz}
+            onChange={(e) => setNotiz(e.target.value)}
+            rows={2}
+            className="mt-1 w-full rounded-xl border border-border-default bg-surface-card px-3 py-2"
+          />
+        </label>
       ) : null}
 
       {error ? <PartnerDetailError message={error} /> : null}
@@ -167,13 +240,8 @@ export function PartnerAuftragAnfrageDetail({
           href={partnerAnfragePortalUrl(item.angebotHandwerkerId)}
           className="btn-pill-primary portal-btn inline-flex !px-4 !py-2.5"
         >
-          Konditionen bestätigen
+          Zur Anfrage
         </a>
-      ) : hwSt === "akzeptiert" ? (
-        <p className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 portal-text-body text-amber-900">
-          Dein Angebot kann hier noch nicht eingereicht werden — Bärenwald muss dich zuerst am
-          Angebot anbinden. Bei Fragen melde dich bei uns.
-        </p>
       ) : null}
 
       {showReject && kannAntworten ? (
@@ -204,16 +272,20 @@ export function PartnerAuftragAnfrageDetail({
 
       <PartnerConfirmDialog
         open={confirmAccept}
-        title="Leistung annehmen?"
-        description="Du bestätigst die Zuweisung. Als Nächstes bestätigst du die Konditionen unter „Anfragen“."
-        confirmLabel="Ja, annehmen"
+        title={geaendert ? "Gegenangebot senden?" : "Anfrage annehmen?"}
+        description={
+          geaendert
+            ? "Dein Gegenangebot mit den angepassten Preisen geht an Bärenwald zur Prüfung."
+            : "Du nimmst die Anfrage mit den vorgeschlagenen Preisen an."
+        }
+        confirmLabel="Ja, absenden"
         loading={loading}
         onConfirm={() => sendAntwort("akzeptiert")}
         onCancel={() => setConfirmAccept(false)}
       />
       <PartnerConfirmDialog
         open={confirmReject}
-        title="Leistung ablehnen?"
+        title="Anfrage ablehnen?"
         description="Bärenwald wird informiert. Bitte wähle einen Grund."
         confirmLabel="Ablehnen"
         confirmVariant="danger"

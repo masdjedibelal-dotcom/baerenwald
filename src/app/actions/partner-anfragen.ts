@@ -113,9 +113,12 @@ export async function respondPartnerAnfrage(opts: {
   } | null;
   const leadRow = angebote ? one(angebote.leads) : null;
   const hwSt = String((row as { hw_status?: string }).hw_status ?? "").toLowerCase();
+  const hwEingereichtAt = (row as { hw_eingereicht_at?: string | null }).hw_eingereicht_at;
   const isRueckfrage = Boolean(row.antwort_at) && (hwSt === "rueckfrage" || hwSt === "abgelehnt");
+  const konditionenAusstehend =
+    Boolean(row.antwort_at) && !hwEingereichtAt && !isRueckfrage;
 
-  if (row.antwort_at && !isRueckfrage) {
+  if (row.antwort_at && !isRueckfrage && !konditionenAusstehend) {
     return { ok: false, error: "Du hast bereits geantwortet." };
   }
 
@@ -124,6 +127,7 @@ export async function respondPartnerAnfrage(opts: {
     antwort_at: row.antwort_at as string | null | undefined,
     gesendet_at: (row as { gesendet_at?: string | null }).gesendet_at,
     hw_status: (row as { hw_status?: string | null }).hw_status ?? undefined,
+    hw_eingereicht_at: hwEingereichtAt ?? undefined,
     zeitraum: leadRow?.zeitraum?.trim() || "",
     lead: leadRow
       ? {
@@ -221,12 +225,19 @@ export async function respondPartnerAnfrage(opts: {
         .eq("id", opts.anfrageId)
         .eq("handwerker_id", link.handwerkerId)
         .in("hw_status", ["rueckfrage", "abgelehnt"])
-    : await supabaseAdmin
-        .from("angebot_handwerker")
-        .update(updatePayload)
-        .eq("id", opts.anfrageId)
-        .eq("handwerker_id", link.handwerkerId)
-        .is("antwort_at", null);
+    : konditionenAusstehend
+      ? await supabaseAdmin
+          .from("angebot_handwerker")
+          .update(updatePayload)
+          .eq("id", opts.anfrageId)
+          .eq("handwerker_id", link.handwerkerId)
+          .is("hw_eingereicht_at", null)
+      : await supabaseAdmin
+          .from("angebot_handwerker")
+          .update(updatePayload)
+          .eq("id", opts.anfrageId)
+          .eq("handwerker_id", link.handwerkerId)
+          .is("antwort_at", null);
 
   if (upErr) return { ok: false, error: upErr.message };
 

@@ -257,9 +257,16 @@ export function PortalDetailLayout({
 }) {
   return (
     <div className="flex min-h-0 flex-col">
-      <div className="portal-detail-layout space-y-5 pb-2">{children}</div>
+      <div
+        className={cn(
+          "portal-detail-layout space-y-5",
+          footer ? "pb-4 lg:pb-2" : "pb-2"
+        )}
+      >
+        {children}
+      </div>
       {footer ? (
-        <div className="sticky bottom-0 z-10 -mx-4 mt-3 border-t border-border-light bg-surface-card/95 px-4 py-3.5 shadow-[0_-4px_12px_rgba(0,0,0,0.06)] backdrop-blur-sm lg:static lg:mx-0 lg:mt-5 lg:shadow-none lg:backdrop-blur-none">
+        <div className="z-10 -mx-4 mt-3 border-t border-border-light bg-surface-card/95 px-4 py-3.5 shadow-[0_-4px_12px_rgba(0,0,0,0.06)] backdrop-blur-sm max-lg:static max-lg:shadow-none lg:sticky lg:bottom-0 lg:mx-0 lg:mt-5 lg:shadow-none lg:backdrop-blur-none">
           {footer}
         </div>
       ) : null}

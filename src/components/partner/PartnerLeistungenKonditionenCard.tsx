@@ -166,46 +166,42 @@ export function PartnerLeistungenKonditionenCard({
                   </div>
 
                   <div className="sm:text-right">
-                    <div className="flex items-start justify-between gap-3 sm:flex-col sm:items-end">
-                      <div className="min-w-0 flex-1 sm:flex-none sm:text-right">
-                        <p className="text-sm text-text-tertiary sm:hidden">
-                          {PARTNER_LEISTUNGEN_ANGEBOTSPREIS_LABEL}
-                        </p>
-                        <p
-                          className={cn(
-                            "mt-0.5 text-lg font-bold tabular-nums",
-                            preisFolgt
-                              ? "text-sm font-normal italic text-text-tertiary"
-                              : geaendert
-                                ? "text-amber-800"
-                                : "text-text-primary"
-                          )}
-                        >
-                          {preis}
-                        </p>
-                        {geaendert ? (
-                          <span className="mt-0.5 block text-xs font-medium text-amber-700">
-                            Geändert
-                          </span>
-                        ) : null}
-                        {notiz ? (
-                          <p className="portal-text-meta mt-1.5 text-left text-text-secondary sm:text-right">
-                            „{notiz}"
-                          </p>
-                        ) : null}
-                      </div>
+                    <p className="text-sm text-text-tertiary sm:hidden">
+                      {PARTNER_LEISTUNGEN_ANGEBOTSPREIS_LABEL}
+                    </p>
+                    <p
+                      className={cn(
+                        "mt-0.5 text-lg font-bold tabular-nums sm:text-right",
+                        preisFolgt
+                          ? "text-sm font-normal italic text-text-tertiary"
+                          : geaendert
+                            ? "text-amber-800"
+                            : "text-text-primary"
+                      )}
+                    >
+                      {preis}
+                    </p>
+                    {geaendert ? (
+                      <span className="mt-0.5 block text-xs font-medium text-amber-700 sm:text-right">
+                        Geändert
+                      </span>
+                    ) : null}
+                    {notiz ? (
+                      <p className="portal-text-meta mt-1.5 text-text-secondary sm:text-right">
+                        „{notiz}"
+                      </p>
+                    ) : null}
 
-                      {mode === "edit" ? (
-                        <button
-                          type="button"
-                          onClick={() => openEdit(z)}
-                          className="inline-flex shrink-0 items-center gap-1 rounded-lg border border-border-default bg-surface-card px-2.5 py-1.5 text-sm font-medium text-accent hover:bg-accent-light/30"
-                        >
-                          <Pencil className="h-3.5 w-3.5" aria-hidden />
-                          Preis bearbeiten
-                        </button>
-                      ) : null}
-                    </div>
+                    {mode === "edit" ? (
+                      <button
+                        type="button"
+                        onClick={() => openEdit(z)}
+                        className="portal-touch-target mt-3 inline-flex w-full items-center justify-center gap-2 rounded-xl border border-accent/30 bg-accent-light/20 px-3 py-2.5 text-sm font-semibold text-accent hover:bg-accent-light/40 sm:mt-2 sm:w-auto sm:justify-end"
+                      >
+                        <Pencil className="h-4 w-4 shrink-0" aria-hidden />
+                        Preis bearbeiten
+                      </button>
+                    ) : null}
                   </div>
                 </div>
               </li>

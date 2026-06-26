@@ -326,3 +326,15 @@ export function parseHwNettoInput(raw: string): number | null {
   if (!Number.isFinite(n) || n < 0) return null;
   return round2(n);
 }
+
+export function sindKonditionPreiseGeaendert(
+  zeilen: PartnerKonditionZeile[],
+  hwValues: Record<string, string>
+): boolean {
+  return zeilen.some((z) => {
+    const hw = parseHwNettoInput(hwValues[z.id] ?? "");
+    if (hw == null) return false;
+    if (z.vorschlagNetto == null || z.vorschlagNetto <= 0) return hw > 0;
+    return Math.abs(hw - z.vorschlagNetto) > 0.009;
+  });
+}
