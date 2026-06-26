@@ -79,21 +79,23 @@ Registrierungs-Hinweis für neue Partner.
 
 ---
 
-## Angebot übernommen (nach CRM-Bestätigung)
+## Gegenangebot akzeptiert / Konditionen übernommen
 
 `POST https://baerenwaldmuenchen.de/api/internal/partner-notify-angebot-bestaetigt`
 
 Gleicher Bearer `PARTNER_INTERNAL_API_SECRET`.
 
-Body:
+Body (nach CRM setzt `hw_status = bestaetigt`):
 
 ```json
-{ "anfrageId": "<uuid aus angebot_handwerker.id>" }
+{ "anfrageId": "<uuid aus angebot_handwerker.id>", "bitteBestaetigen": true }
 ```
 
-Mail an den Handwerker mit Link `?section=angebote&id={anfrageId}` und Status-Hinweis „übernommen“.
+Mail an den Handwerker mit Link zu **Anfragen** — Bitte vereinbarte Konditionen bestätigen.
 
-**CRM:** wird aus `bestaetigeHandwerkerEinreichung` ausgelöst (`notifyPartnerHandwerkerAngebotBestaetigt`).
+Ohne `bitteBestaetigen` (Legacy / direkt `uebernommen`): Link zu **Angebote**.
+
+**CRM:** nach Gegenvorschlag-Akzeptanz mit `hw_status = bestaetigt` aufrufen.
 
 ## Bereits in der Website (ohne CRM)
 

@@ -51,12 +51,20 @@ export function isPartnerAnfrageOffen(item: PartnerAnfrageTimingFields): boolean
   return PENDING_STATUS.has(st);
 }
 
+/** CRM hat eingewilligt — HW muss vereinbarte Konditionen noch bestätigen (Tab Anfragen). */
+export function isPartnerAnfrageBestaetigungAusstehend(
+  item: Pick<PartnerAnfrageItem, "hw_status">
+): boolean {
+  return (item.hw_status ?? "").toLowerCase() === "bestaetigt";
+}
+
 /** HW kann im ersten Schritt Preise anpassen (Erstantwort, ausstehende Konditionen oder CRM-Rückfrage). */
 export function isPartnerAnfrageKonditionenBearbeitbar(
   item: PartnerAnfrageTimingFields
 ): boolean {
   if (isPartnerAnfrageAntwortAbgelaufen(item)) return false;
   if (isPartnerAnfrageWartetAufPreiseinigung(item)) return false;
+  if (isPartnerAnfrageBestaetigungAusstehend(item)) return false;
 
   const st = item.status.toLowerCase();
   const hwSt = (item.hw_status ?? "").toLowerCase();
@@ -85,13 +93,17 @@ export function isPartnerAnfrageWartetAufPreiseinigung(
 export function isPartnerAnfrageAktionErforderlich(
   item: PartnerAnfrageTimingFields
 ): boolean {
-  return isPartnerAnfrageKonditionenBearbeitbar(item);
+  return (
+    isPartnerAnfrageBestaetigungAusstehend(item) ||
+    isPartnerAnfrageKonditionenBearbeitbar(item)
+  );
 }
 
 export function partnerAnfrageStatusPillKey(item: PartnerAnfrageTimingFields): string {
   if (isPartnerAnfrageAntwortAbgelaufen(item)) return "antwort_abgelaufen";
   if (isPartnerAnfrageWartetAufPreiseinigung(item)) return "eingereicht";
   const hwSt = (item.hw_status ?? "").toLowerCase();
+  if (hwSt === "bestaetigt") return "bestaetigt";
   if (hwSt === "rueckfrage") return "rueckfrage";
   if (hwSt === "abgelehnt") return "abgelehnt";
   if (isPartnerAnfrageAktionErforderlich(item)) return "antwort ausstehend";
@@ -101,6 +113,7 @@ export function partnerAnfrageStatusPillKey(item: PartnerAnfrageTimingFields): s
 export function partnerAnfrageStatusLabel(item: PartnerAnfrageTimingFields): string {
   if (isPartnerAnfrageAntwortAbgelaufen(item)) return "Antwort abgelaufen";
   if (isPartnerAnfrageWartetAufPreiseinigung(item)) return "Wartet auf Prüfung";
+  if (isPartnerAnfrageBestaetigungAusstehend(item)) return "Gegenangebot akzeptiert";
   if (isPartnerAnfrageKonditionenBearbeitbar(item)) {
     const hwSt = (item.hw_status ?? "").toLowerCase();
     if (hwSt === "rueckfrage") return "Neue Konditionen";
@@ -110,8 +123,6 @@ export function partnerAnfrageStatusLabel(item: PartnerAnfrageTimingFields): str
   }
   if (item.antwort_at) {
     const s = item.status.toLowerCase();
-    const hwSt = (item.hw_status ?? "").toLowerCase();
-    if (hwSt === "uebernommen") return "Gegenangebot akzeptiert";
     if (s === "akzeptiert" && item.hw_eingereicht_at) return "Zugesagt";
     if (s === "abgelehnt") return "Abgelehnt";
   }
@@ -151,7 +162,7 @@ export function isPartnerAuftragAnfrageOffen(
   }
 ): boolean {
   const ahSt = (item.angebotHwStatus ?? "").toLowerCase();
-  if (ahSt === "uebernommen" || ahSt === "eingereicht") return false;
+  if (ahSt === "uebernommen" || ahSt === "eingereicht" || ahSt === "bestaetigt") return false;
 
   if (isPartnerAuftragAnfrageAntwortAbgelaufen(item)) return false;
   const hw = item.hwStatus.toLowerCase();
@@ -178,7 +189,7 @@ export function isPartnerAuftragAnfrageAktionErforderlich(
   const hw = item.hwStatus.toLowerCase();
   const ahSt = (item.angebotHwStatus ?? "").toLowerCase();
   if (hw !== "akzeptiert") return false;
-  if (ahSt === "eingereicht" || ahSt === "uebernommen") return false;
+  if (ahSt === "eingereicht" || ahSt === "uebernommen" || ahSt === "bestaetigt") return false;
   return !item.angebotHwEingereichtAt;
 }
 
@@ -203,6 +214,7 @@ export function partnerAuftragAnfrageStatusLabel(
   if (isPartnerAuftragWartetAufPreiseinigung(item)) return "Wartet auf Prüfung";
   const ahSt = (item.angebotHwStatus ?? "").toLowerCase();
   if (ahSt === "rueckfrage") return "Neue Konditionen";
+  if (ahSt === "bestaetigt") return "Gegenangebot akzeptiert";
   if (ahSt === "uebernommen") {
     return item.angebotHwKonditionenArt === "gegenvorschlag"
       ? "Gegenangebot akzeptiert"

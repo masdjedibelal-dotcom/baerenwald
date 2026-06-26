@@ -24,11 +24,13 @@ import type { PartnerAnfrageItem } from "@/lib/partner/get-partner-data";
 import {
   initialHwNettoInputs,
   initialHwNotizInputs,
+  mapKonditionZeilenVereinbart,
   parseHwNettoInput,
   sindKonditionPreiseGeaendert,
 } from "@/lib/partner/partner-konditionen";
 import {
   isPartnerAnfrageAntwortAbgelaufen,
+  isPartnerAnfrageBestaetigungAusstehend,
   isPartnerAnfrageKonditionenBearbeitbar,
   isPartnerAnfrageWartetAufPreiseinigung,
   partnerAnfrageStatusLabel,
@@ -48,6 +50,7 @@ import {
 function anfrageStatusPillClass(item: PartnerAnfrageItem, bearbeitbar: boolean): string {
   if (isPartnerAnfrageAntwortAbgelaufen(item)) return "tag bg-red-100 text-red-700";
   if (isPartnerAnfrageWartetAufPreiseinigung(item)) return "tag bg-blue-100 text-blue-800";
+  if (isPartnerAnfrageBestaetigungAusstehend(item)) return "tag bg-emerald-100 text-emerald-700";
   if (bearbeitbar) return "tag bg-amber-100 text-amber-700";
   return partnerDetailStatusPillClass(item.status);
 }
@@ -62,35 +65,63 @@ function zeilenGeaendert(
 export function PartnerAnfrageDetail({
   item,
   onAccepted,
+  onKonditionenBestaetigt,
 }: {
   item: PartnerAnfrageItem;
   onAccepted?: (anfrageId: string) => void;
+  onKonditionenBestaetigt?: (anfrageId: string) => void;
 }) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showReject, setShowReject] = useState(false);
   const [confirmSend, setConfirmSend] = useState(false);
+  const [confirmBestaetigt, setConfirmBestaetigt] = useState(false);
   const [confirmReject, setConfirmReject] = useState(false);
   const [grund, setGrund] = useState<string>(HANDWERKER_ABLEHNUNG_GRUND_VALUES[0]);
   const [notiz, setNotiz] = useState("");
 
   const bearbeitbar = isPartnerAnfrageKonditionenBearbeitbar(item);
+  const bestaetigungAusstehend = isPartnerAnfrageBestaetigungAusstehend(item);
   const wartetAufPreis = isPartnerAnfrageWartetAufPreiseinigung(item);
   const abgelaufen = isPartnerAnfrageAntwortAbgelaufen(item);
   const statusLabel = partnerAnfrageStatusLabel(item);
   const hwSt = (item.hw_status ?? "").toLowerCase();
 
-  const konditionZeilen = useMemo(
-    () =>
-      resolvePartnerKonditionZeilen(
+  const konditionZeilen = useMemo(() => {
+    if (bestaetigungAusstehend) {
+      const zeilen = resolvePartnerKonditionZeilen(
         item.crm_positionen_raw,
         { gewerkId: item.gewerk_id },
-        item.hw_konditionen,
-        hwSt === "rueckfrage" ? { neueVerhandlungsrunde: true } : undefined
-      ),
-    [item.crm_positionen_raw, item.gewerk_id, item.hw_konditionen, hwSt]
-  );
+        item.hw_konditionen
+      );
+      const vereinbart = mapKonditionZeilenVereinbart(zeilen);
+      if (item.hw_konditionen?.art !== "gegenvorschlag") return vereinbart;
+      const submitted = new Map(
+        item.hw_konditionen.positionen.map((p) => [p.position_id, p])
+      );
+      return vereinbart.map((z) => {
+        const prev = submitted.get(z.id);
+        if (prev?.geaendert && prev.ek_netto != null) {
+          return { ...z, vorherNetto: prev.ek_netto };
+        }
+        if (prev?.geaendert) return { ...z, vorherNetto: prev.hw_netto };
+        return z;
+      });
+    }
+    return resolvePartnerKonditionZeilen(
+      item.crm_positionen_raw,
+      { gewerkId: item.gewerk_id },
+      item.hw_konditionen,
+      hwSt === "rueckfrage" ? { neueVerhandlungsrunde: true } : undefined
+    );
+  }, [
+    item.crm_positionen_raw,
+    item.gewerk_id,
+    item.hw_konditionen,
+    hwSt,
+    bestaetigungAusstehend,
+  ]);
 
   const [hwValues, setHwValues] = useState<Record<string, string>>({});
   const [hwNotizen, setHwNotizen] = useState<Record<string, string>>({});
@@ -138,6 +169,26 @@ export function PartnerAnfrageDetail({
     return JSON.stringify(rows);
   }
 
+  async function confirmVereinbart() {
+    setLoading(true);
+    setError(null);
+    const res = await respondPartnerAnfrage({
+      anfrageId: item.id,
+      antwort: "akzeptiert",
+    });
+    setLoading(false);
+    setConfirmBestaetigt(false);
+    if (!res.ok) {
+      setError(res.error);
+      return;
+    }
+    if (onKonditionenBestaetigt) {
+      onKonditionenBestaetigt(item.id);
+      return;
+    }
+    router.refresh();
+  }
+
   async function sendZusage() {
     const json = buildKonditionenJson();
     if (!json) {
@@ -183,8 +234,13 @@ export function PartnerAnfrageDetail({
 
   const primaryLabel = geaendert ? "Gegenangebot senden" : "Annehmen";
 
-  const actionFooter =
-    bearbeitbar && !showReject ? (
+  const actionFooter = bestaetigungAusstehend ? (
+    <PartnerDetailStickyActions
+      primaryLabel="Vereinbarte Konditionen bestätigen"
+      onPrimary={() => setConfirmBestaetigt(true)}
+      primaryLoading={loading}
+    />
+  ) : bearbeitbar && !showReject ? (
       <PartnerDetailStickyActions
         primaryLabel={primaryLabel}
         onPrimary={() => setConfirmSend(true)}
@@ -218,6 +274,12 @@ export function PartnerAnfrageDetail({
           Prüfe die Leistungen und passe bei Bedarf den Angebotspreis per „Preis bearbeiten“ an.
           Unverändert bestätigst du mit „Annehmen“, bei geänderten Preisen mit „Gegenangebot
           senden“.
+        </PartnerDetailInfoBox>
+      ) : bestaetigungAusstehend ? (
+        <PartnerDetailInfoBox>
+          Bärenwald hat dein Gegenangebot akzeptiert. Bitte prüfe die vereinbarten Preise unten
+          und bestätige — danach findest du den Vorgang unter „Angebote“ (dort kannst du optional
+          dein Angebots-PDF hochladen).
         </PartnerDetailInfoBox>
       ) : wartetAufPreis ? (
         <PartnerDetailInfoBox>
@@ -321,6 +383,16 @@ export function PartnerAnfrageDetail({
           </label>
         </div>
       ) : null}
+
+      <PartnerConfirmDialog
+        open={confirmBestaetigt}
+        title="Vereinbarte Konditionen bestätigen?"
+        description="Du bestätigst die von Bärenwald akzeptierten Preise. Danach wechselt der Vorgang zu „Angebote“."
+        confirmLabel="Ja, bestätigen"
+        loading={loading}
+        onConfirm={confirmVereinbart}
+        onCancel={() => setConfirmBestaetigt(false)}
+      />
 
       <PartnerConfirmDialog
         open={confirmSend}

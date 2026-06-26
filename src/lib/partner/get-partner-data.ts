@@ -112,6 +112,8 @@ export type PartnerAnfrageItem = {
   /** Leistungsumfang aus CRM-Angebot (wizard_meta in Notizen). */
   crm_leistungsumfang?: string | null;
   auftrag_id?: string | null;
+  /** Status des verknüpften Auftrags (z. B. offen = noch in Angebote, in_arbeit = Aufträge). */
+  auftrag_status?: string | null;
   projektvertrag_bestaetigt_am?: string | null;
   projektvertrag_bereit?: boolean;
   projektvertrag?: PartnerProjektvertrag | null;
@@ -689,11 +691,15 @@ export async function getPartnerDataForHandwerker(handwerkerId: string) {
 
   const complianceBundle = await loadHandwerkerComplianceBundle(id);
 
+  const auftragStatusById = new Map(alleAuftraege.map((a) => [a.id, a.status]));
+
   anfragenFinal = anfragenFinal.map((a) => {
     const vertragCtx = vertragKontextForAngebot(a.angebot_id, complianceBundle);
+    const auftragId = complianceBundle.auftragIdByAngebotId.get(a.angebot_id) ?? null;
     return {
       ...a,
-      auftrag_id: complianceBundle.auftragIdByAngebotId.get(a.angebot_id) ?? null,
+      auftrag_id: auftragId,
+      auftrag_status: auftragId ? auftragStatusById.get(auftragId) ?? null : null,
       projektvertrag_bestaetigt_am: vertragCtx?.projektvertrag_bestaetigt_am ?? null,
       projektvertrag_bereit: vertragCtx?.projektvertrag_bereit ?? false,
       projektvertrag: vertragCtx?.projektvertrag ?? null,

@@ -8,8 +8,11 @@ function one<T>(x: T | T[] | null | undefined): T | null {
   return Array.isArray(x) ? (x[0] as T) ?? null : x;
 }
 
-/** Nach CRM-Bestätigung: Mail an Handwerker („Angebot übernommen“). */
-export async function notifyHandwerkerAngebotBestaetigt(anfrageId: string): Promise<{
+/** Nach CRM-Einigung: Mail an Handwerker (bitte bestätigen oder Angebote). */
+export async function notifyHandwerkerAngebotBestaetigt(
+  anfrageId: string,
+  opts?: { bitteBestaetigen?: boolean }
+): Promise<{
   ok: boolean;
   error?: string;
 }> {
@@ -68,5 +71,6 @@ export async function notifyHandwerkerAngebotBestaetigt(anfrageId: string): Prom
     preisNetto: raw.hw_preis_netto as number | null,
     preisBrutto: raw.hw_preis_brutto as number | null,
     portalLink: partnerLoginForAngebotUrl(id),
+    bitteBestaetigen: opts?.bitteBestaetigen,
   });
 }

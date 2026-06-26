@@ -12,7 +12,7 @@ Zielgruppe: **baerenwald-crm-dashboard** + Supabase-Betrieb
 | EK-Vorschlag je Leistung (readonly in Anfrage) | ✅ | `partner-konditionen.ts`, `partner-leistungen-display.ts` |
 | Konditionen-Card (eine Tabelle) | ✅ | `PartnerLeistungenKonditionenCard.tsx` |
 | Anfrage: annehmen / Gegenvorschlag (Preis-Popup) | ✅ | `PartnerAnfrageDetail.tsx`, `respondPartnerAnfrage()` |
-| Anfrage bleibt bis Preiseinigung (`hw_status ≠ uebernommen`) | ✅ | `partner-portal-phase.ts` |
+| Anfrage bleibt bis HW-Bestätigung (`hw_status` bestaetigt → uebernommen) | ✅ | `partner-portal-phase.ts` |
 | Angebot: eine Spalte „Vergütung netto“ + optionales PDF | ✅ | `PartnerAngebotDetail.tsx`, `submitPartnerAngebotPdf()` |
 | Auftrag: vereinbarter Partnerpreis | ✅ | `PartnerAuftragDetail.tsx` |
 | E-Mail mit Positions-Tabelle | ✅ | `partner-mail.ts` |
@@ -88,9 +88,16 @@ comment on column public.angebot_handwerker.hw_konditionen is
 |------|-----------|-------------|
 | `offen` | HW hat noch nicht geantwortet | Anfragen |
 | `eingereicht` | HW hat zugesagt / Gegenvorschlag — CRM prüft | Anfragen |
+| `bestaetigt` | **CRM hat eingewilligt** — HW muss vereinbarte Preise noch bestätigen | Anfragen (offen) |
+| `uebernommen` | **HW hat bestätigt** — Angebots-PDF, Vertrag | Angebote (offen bis CRM Auftrag freigibt) |
 | `rueckfrage` | CRM lehnt ab / neuer Vorschlag — HW kann erneut antworten | Anfragen |
-| `uebernommen` | **Preiseinigung** — EK = Partnerpreis geschrieben | Angebote |
 | `abgelehnt` | CRM lehnt endgültig ab (optional → Rückfrage-Runde) | Anfragen |
+
+**Drei Schritte nach Gegenvorschlag:**
+
+1. CRM akzeptiert → `hw_status = bestaetigt` (+ Preise in DB schreiben) → Partner **Anfragen / offen**
+2. HW bestätigt → `hw_status = uebernommen` → Partner **Angebote / offen** (PDF-Upload möglich)
+3. CRM nimmt Auftrag an (`auftraege.status` ≠ `offen`) → **Angebote geschlossen** → Partner **Aufträge**
 
 ---
 
@@ -118,7 +125,8 @@ comment on column public.angebot_handwerker.hw_konditionen is
 
 | Aktion | Wann | Ergebnis |
 |--------|------|----------|
-| **Übernehmen** | Einigung mit HW-Preisen (auch bei Gegenvorschlag) | `hw_status = uebernommen`, **ein** Preis je Zeile in DB |
+| **Übernehmen (Gegenvorschlag)** | Einigung mit HW-Preisen | `hw_status = bestaetigt`, **ein** Preis je Zeile in DB, Mail „bitte bestätigen“ |
+| **Übernehmen (unverändert)** | HW hat Vorschlag bestätigt | optional direkt `uebernommen` oder ebenfalls `bestaetigt` |
 | **Rückfrage** | Neuer Bärenwald-Vorschlag, Verhandlung geht weiter | `einkaufspreis` in Positionen anpassen, `hw_status = rueckfrage` |
 | **Ablehnen** | Keine Einigung | `hw_status = abgelehnt` oder `rueckfrage` + Notiz |
 
@@ -150,10 +158,13 @@ for (const pos of hw_konditionen.positionen) {
 }
 
 updateAngebotHandwerker(anfrageId, {
-  hw_status: 'uebernommen',
+  hw_status: 'bestaetigt', // NICHT uebernommen — HW bestätigt erst im Portal
   hw_crm_antwort_at: now(),
   hw_crm_notiz: optional,
 });
+
+// Mail: POST /api/internal/partner-notify-angebot-bestaetigt
+// Body: { anfrageId, bitteBestaetigen: true }
 ```
 
 ### 5.2 SQL-Beispiel (Angebotspositionen im JSON `angebote.positionen`)
@@ -175,12 +186,18 @@ where id = :position_id;
 -- preis_partner = Zeilen-Netto (wie Portal buildPartnerAuftragKonditionZeilen erwartet)
 ```
 
-### 5.4 Nach Übernahme
+### 5.4 Nach CRM-Übernahme (`bestaetigt`)
 
-- [ ] Partner-Portal: Eintrag wechselt von **Anfragen** → **Angebote** (`resolveAngebotHandwerkerPhase`)
-- [ ] HW sieht **eine Spalte** „Vergütung netto“ (kein EK vs. Partner)
-- [ ] Optional: Mail „Konditionen übernommen“ / Vertrag vorbereiten
+- [ ] Partner-Portal: Eintrag bleibt unter **Anfragen** (Filter „offen“, Badge „Gegenangebot akzeptiert“)
+- [ ] HW sieht vereinbarte Preise (readonly) und Button **„Vereinbarte Konditionen bestätigen“**
+- [ ] Mail mit `bitteBestaetigen: true` (Link zu Anfragen)
 - [ ] `hw_konditionen` als Historie **nicht löschen**
+
+### 5.5 Nach HW-Bestätigung (`uebernommen`)
+
+- [ ] Partner-Portal: Eintrag wechselt zu **Angebote** (offen, solange `auftraege.status = offen`)
+- [ ] HW kann optional Angebots-PDF hochladen
+- [ ] Nach CRM-Auftragsfreigabe: Angebote **geschlossen**, Vorgang unter **Aufträge**
 
 ---
 

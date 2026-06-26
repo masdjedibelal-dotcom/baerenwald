@@ -24,13 +24,11 @@ export function filterPartnerAnfragenListen(
   };
 }
 
-/** HW muss noch handeln (Angebot einreichen, Vertrag bestätigen, …). */
+/** Offen in Angebote: HW hat bestätigt, CRM hat Auftrag noch nicht freigegeben (PDF/Vertrag möglich). */
 export function isPartnerAngebotListItemOffen(item: PartnerAnfrageItem): boolean {
   const hwSt = (item.hw_status ?? "offen").toLowerCase();
-  if (hwSt === "uebernommen") {
-    return Boolean(item.projektvertrag_bereit && !item.projektvertrag_bestaetigt_am);
-  }
-  if (hwSt === "eingereicht") return false;
+  if (hwSt !== "uebernommen") return false;
+  if (item.auftrag_status && item.auftrag_status.toLowerCase() !== "offen") return false;
   return true;
 }
 

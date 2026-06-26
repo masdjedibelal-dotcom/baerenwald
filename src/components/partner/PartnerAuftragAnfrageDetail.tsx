@@ -70,10 +70,13 @@ export function PartnerAuftragAnfrageDetail({
   const kannAntworten = isPartnerAuftragAnfrageOffen(item);
   const wartetAufPruefung = isPartnerAuftragWartetAufPreiseinigung(item);
   const konditionenUebernommen = ahSt === "uebernommen";
+  const konditionenBestaetigen =
+    ahSt === "bestaetigt" && Boolean(item.angebotHandwerkerId);
   const konditionenNachreichen =
     hwSt === "akzeptiert" &&
     !item.angebotHwEingereichtAt &&
     ahSt !== "eingereicht" &&
+    ahSt !== "bestaetigt" &&
     ahSt !== "uebernommen" &&
     ahSt !== "rueckfrage";
   const bearbeitbar =
@@ -176,8 +179,10 @@ export function PartnerAuftragAnfrageDetail({
     ? "Die Antwortfrist ist abgelaufen, weil der geplante Projektstart erreicht ist. Eine Annahme oder Ablehnung ist nicht mehr möglich."
     : wartetAufPruefung
       ? "Dein Gegenangebot wurde an Bärenwald übermittelt. Wir prüfen die Preise — du musst vorerst nichts tun."
-      : konditionenUebernommen
-        ? "Bärenwald hat dein Gegenangebot akzeptiert. Du wirst zu „Angebote“ weitergeleitet — dort siehst du die vereinbarten Preise."
+      : konditionenBestaetigen
+        ? "Bärenwald hat dein Gegenangebot akzeptiert. Bitte bestätige die vereinbarten Konditionen in der verknüpften Anfrage — danach findest du den Vorgang unter „Angebote“."
+        : konditionenUebernommen
+          ? "Die Konditionen sind bestätigt. Unter „Angebote“ kannst du optional dein Angebots-PDF hochladen."
         : konditionenNachreichen
           ? "Du hast zugesagt, die Preise wurden aber noch nicht übermittelt. Bitte unten „Annehmen“ oder „Gegenangebot senden“ erneut ausführen."
           : hwSt === "abgelehnt"
@@ -266,6 +271,15 @@ export function PartnerAuftragAnfrageDetail({
       ) : null}
 
       {error ? <PartnerDetailError message={error} /> : null}
+
+      {item.angebotHandwerkerId && ahSt === "bestaetigt" ? (
+        <a
+          href={partnerAnfragePortalUrl(item.angebotHandwerkerId)}
+          className="btn-pill-primary portal-btn inline-flex !px-4 !py-2.5"
+        >
+          Vereinbarte Konditionen bestätigen
+        </a>
+      ) : null}
 
       {item.angebotHandwerkerId && ahSt === "rueckfrage" ? (
         <a

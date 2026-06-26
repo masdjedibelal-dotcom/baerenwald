@@ -54,9 +54,11 @@ export function mapAnfrageAngebotToCard(item: PartnerAnfrageItem): PartnerCardRo
   let hint: string | undefined;
   if (aktion) {
     hint =
-      hwSt === "rueckfrage"
-        ? "→ Neue Konditionen prüfen"
-        : "→ Bitte annehmen oder ablehnen";
+      hwSt === "bestaetigt"
+        ? "→ Vereinbarte Konditionen bestätigen"
+        : hwSt === "rueckfrage"
+          ? "→ Neue Konditionen prüfen"
+          : "→ Bitte annehmen oder ablehnen";
   } else if (wartet) {
     hint = "→ Warte auf Freigabe durch Bärenwald";
   }
@@ -91,6 +93,8 @@ export function mapAnfrageAuftragToCard(item: PartnerAuftragItem): PartnerCardRo
     hint = "→ Bitte annehmen oder ablehnen";
   } else if (wartet) {
     hint = "→ Warte auf Freigabe durch Bärenwald";
+  } else if (ahSt === "bestaetigt" && item.angebotHandwerkerId) {
+    hint = "→ Konditionen in Anfrage bestätigen";
   } else if (ahSt === "uebernommen" && item.angebotHandwerkerId) {
     hint = "→ Unter Angebote";
   }
@@ -124,9 +128,11 @@ export function angebotPhaseSortKey(item: PartnerAnfrageItem): number {
 export function partnerAngebotStatusPillClass(statusKey: string): string {
   const s = statusKey.toLowerCase();
   if (s === "uebernommen") return "tag bg-emerald-100 text-emerald-700";
+  if (s === "geschlossen") return "tag bg-slate-100 text-slate-700";
   if (s === "vertrag_offen") return "tag bg-violet-100 text-violet-800";
   if (s === "warte_vertrag") return "tag bg-slate-100 text-slate-700";
   if (s === "eingereicht") return "tag bg-blue-100 text-blue-800";
+  if (s === "bestaetigt") return "tag bg-emerald-100 text-emerald-700";
   if (s === "rueckfrage") return "tag bg-amber-100 text-amber-800";
   if (s === "abgelehnt") return "tag bg-red-100 text-red-800";
   if (s === "offen") return "tag bg-amber-100 text-amber-700";
@@ -154,6 +160,18 @@ function angebotListenStatus(item: PartnerAnfrageItem): {
   hint?: string;
 } {
   const hwSt = (item.hw_status ?? "").toLowerCase();
+  const auftragSt = (item.auftrag_status ?? "").toLowerCase();
+  if (
+    hwSt === "uebernommen" &&
+    item.auftrag_status &&
+    auftragSt !== "offen"
+  ) {
+    return {
+      label: "In Auftrag übernommen",
+      pillKey: "geschlossen",
+      hint: "→ Unter Aufträge",
+    };
+  }
   if (hwSt === "uebernommen" && !item.projektvertrag_bestaetigt_am) {
     if (item.projektvertrag_bereit) {
       return {

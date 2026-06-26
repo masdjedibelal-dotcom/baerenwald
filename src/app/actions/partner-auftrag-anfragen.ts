@@ -150,7 +150,15 @@ export async function respondPartnerAuftragZuweisung(opts: {
       return {
         ok: false,
         error:
-          "Die Konditionen wurden bereits übernommen. Bitte unter „Angebote“ fortfahren.",
+          "Die Konditionen wurden bereits bestätigt. Bitte unter „Angebote“ fortfahren.",
+      };
+    }
+
+    if (ahSt === "bestaetigt") {
+      return {
+        ok: false,
+        error:
+          "Bärenwald hat dein Gegenangebot akzeptiert. Bitte bestätige die vereinbarten Konditionen unter „Anfragen“.",
       };
     }
 

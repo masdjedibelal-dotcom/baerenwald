@@ -263,6 +263,8 @@ export async function sendHandwerkerAngebotBestaetigtMail(opts: {
   preisNetto?: number | null;
   preisBrutto?: number | null;
   portalLink: string;
+  /** true = CRM hat eingewilligt, HW muss noch unter Anfragen bestätigen */
+  bitteBestaetigen?: boolean;
 }): Promise<{ ok: boolean; error?: string }> {
   const resend = resendClient();
   if (!resend) {
@@ -276,21 +278,30 @@ export async function sendHandwerkerAngebotBestaetigtMail(opts: {
     <p style="margin:0;font-size:14px;">Netto: ${escapeHtml(fmtEuro(opts.preisNetto))} · Brutto: ${escapeHtml(fmtEuro(opts.preisBrutto))}</p>
   `);
 
-  const html = mailShell(
-    "Dein Angebot wurde übernommen",
-    `<p style="margin:0 0 12px;font-size:15px;line-height:1.6;">Hallo ${escapeHtml(opts.handwerkerName)},</p>
+  const bitteBestaetigen = Boolean(opts.bitteBestaetigen);
+  const subject = bitteBestaetigen
+    ? `Gegenangebot akzeptiert: ${opts.gewerkName} — bitte bestätigen`
+    : `Angebot übernommen: ${opts.gewerkName} — Bärenwald Partner`;
+  const headline = bitteBestaetigen ? "Gegenangebot akzeptiert" : "Dein Angebot wurde übernommen";
+  const body = bitteBestaetigen
+    ? `<p style="margin:0 0 12px;font-size:15px;line-height:1.6;">Hallo ${escapeHtml(opts.handwerkerName)},</p>
+<p style="margin:0 0 12px;font-size:15px;line-height:1.6;">Bärenwald hat dein Gegenangebot <strong>akzeptiert</strong>. Bitte prüfe die vereinbarten Preise und bestätige sie im Partner-Portal unter <strong>Anfragen</strong>.</p>
+${preisBlock}
+${mailBtn("Zum Partner-Portal", portalHref)}
+<p style="font-size:13px;color:#6B7280;line-height:1.6;margin:12px 0 0;">Nach deiner Bestätigung findest du den Vorgang unter Angebote (dort kannst du optional dein Angebots-PDF hochladen).</p>`
+    : `<p style="margin:0 0 12px;font-size:15px;line-height:1.6;">Hallo ${escapeHtml(opts.handwerkerName)},</p>
 <p style="margin:0 0 12px;font-size:15px;line-height:1.6;">vielen Dank — Bärenwald hat dein Angebot geprüft und <strong>übernommen</strong>. Du findest den Status im Partner-Portal unter <strong>Angebote</strong>.</p>
 ${preisBlock}
 ${mailBtn("Zum Partner-Portal", portalHref)}
-<p style="font-size:13px;color:#6B7280;line-height:1.6;margin:12px 0 0;">Bei Rückfragen melde dich bei uns.</p>`,
-    `Angebot übernommen: ${opts.gewerkName}`
-  );
+<p style="font-size:13px;color:#6B7280;line-height:1.6;margin:12px 0 0;">Bei Rückfragen melde dich bei uns.</p>`;
+
+  const html = mailShell(headline, body, headline);
 
   try {
     const { error } = await resend.emails.send({
       from: systemFrom(),
       to: opts.to.trim(),
-      subject: `Angebot übernommen: ${opts.gewerkName} — Bärenwald Partner`,
+      subject,
       html,
     });
     if (error) return { ok: false, error: error.message };

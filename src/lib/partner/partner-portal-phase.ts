@@ -8,8 +8,8 @@ export type PartnerPortalPhase = "anfrage" | "angebot" | "auftrag";
  * Phasen-Regeln (Single Source of Truth für Portal-Daten):
  *
  * 1) angebot_handwerker (klassischer Angebots-Funnel)
- *    - anfrage: HW antwortet / Preiseinigung (bis hw_status = uebernommen)
- *    - angebot: Preise vereinbart — optional Angebots-PDF, Vertragspaket
+ *    - anfrage: HW antwortet / Preiseinigung / CRM-Einigung bestätigen (bis hw_status = uebernommen)
+ *    - angebot: HW hat bestätigt — Angebots-PDF, Vertragspaket (bis CRM Auftrag freigibt)
  *    - auftrag: (nicht im Portal-Listen-Funnel)
  *
  * 2) auftrag_handwerker / auftrag_positionen (CRM weist Leistung am Auftrag zu)
@@ -40,12 +40,17 @@ export function resolveAngebotHandwerkerPhase(
 
   if (st === "abgelehnt") return "auftrag";
 
-  /** HW wartet auf CRM / neue Runde — bleibt unter Anfragen. */
-  if (hwSt === "eingereicht" || hwSt === "rueckfrage" || hwSt === "abgelehnt") {
+  /** HW wartet auf CRM / neue Runde / CRM-Einigung bestätigen — bleibt unter Anfragen. */
+  if (
+    hwSt === "eingereicht" ||
+    hwSt === "bestaetigt" ||
+    hwSt === "rueckfrage" ||
+    hwSt === "abgelehnt"
+  ) {
     return "anfrage";
   }
 
-  /** CRM hat Konditionen übernommen — vor isPartnerAnfrageOffen (fehlendes antwort_at). */
+  /** HW hat CRM-Einigung bestätigt — Tab Angebote (PDF, Vertrag). */
   if (hwSt === "uebernommen") {
     if (item.projektvertrag_bestaetigt_am) return "auftrag";
     return "angebot";
@@ -118,8 +123,9 @@ export function isAuftragAnfrageListItem(item: {
   const h = item.hwStatus.toLowerCase();
   const ahSt = (item.angebotHwStatus ?? "").toLowerCase();
 
-  /** Nach Zusage: in Anfragen bis CRM die Konditionen übernommen hat. */
-  if (h === "akzeptiert" && item.angebotHandwerkerId && ahSt !== "uebernommen") {
+  /** Nach Zusage: in Anfragen bis HW bestätigt hat (bestaetigt → uebernommen). */
+  if (h === "akzeptiert" && item.angebotHandwerkerId) {
+    if (ahSt === "bestaetigt" || ahSt === "uebernommen") return false;
     return true;
   }
 

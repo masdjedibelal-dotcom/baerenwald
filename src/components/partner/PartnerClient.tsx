@@ -71,7 +71,6 @@ import {
 } from "@/lib/partner/partner-list-filters";
 import { cn } from "@/lib/utils";
 import { partnerAnfragePortalPath, partnerAngebotPortalPath } from "@/lib/partner/partner-site-url";
-import { resolveAngebotHandwerkerPhase } from "@/lib/partner/partner-portal-phase";
 
 type PartnerSection =
   | "uebersicht"
@@ -154,9 +153,9 @@ function parseAnfragenSelectedId(
 }
 
 function emptyLabelForTab(tab: OverviewTabId): string {
-  if (tab === "anfragen") return "Noch keine Anfragen";
-  if (tab === "angebote") return "Noch keine Angebote";
-  return "Noch keine Aufträge";
+  if (tab === "anfragen") return "Keine offenen Anfragen";
+  if (tab === "angebote") return "Keine offenen Angebote";
+  return "Keine aktiven Aufträge";
 }
 
 function PartnerListFilterBar({
@@ -267,26 +266,6 @@ export function PartnerClient({
 
   const aktiveAuftraegeCount = auftraege.filter(isAuftragAktiv).length;
 
-  const anfragenCardRows = useMemo(
-    () => buildAnfragenCardRows(anfragenSorted, auftragAnfragen),
-    [anfragenSorted, auftragAnfragen]
-  );
-
-  const angeboteCardRows = useMemo(
-    () => angeboteSorted.map(mapAngebotToCard),
-    [angeboteSorted]
-  );
-
-  const auftraegeCardRows = useMemo(() => {
-    return [...auftraege]
-      .sort(
-        (a, b) =>
-          new Date(b.start_datum || 0).getTime() -
-          new Date(a.start_datum || 0).getTime()
-      )
-      .map(mapAuftragToCard);
-  }, [auftraege]);
-
   const sectionCardRows = useMemo((): PartnerCardRow[] => {
     if (section === "anfragen") {
       const filtered = filterPartnerAnfragenListen(
@@ -377,19 +356,52 @@ export function PartnerClient({
     ) {
       return;
     }
+    if (
+      section === "anfragen" &&
+      !selectedId.startsWith("auftrag:") &&
+      (angeboteSorted.some((a) => a.id === selectedId) ||
+        angeboteAlleAkzeptiert.some((a) => a.id === selectedId))
+    ) {
+      setSection("angebote");
+      setListFilter("offen");
+      setMobileDetailOpen(true);
+      router.replace(partnerAngebotPortalPath(selectedId));
+      return;
+    }
     setSelectedId(sectionCardRows[0]?.id ?? null);
   }, [
     section,
     sectionCardRows,
     selectedId,
     anfragenSorted,
+    angeboteSorted,
+    angeboteAlleAkzeptiert,
+    router,
   ]);
 
   const overviewCardRows = useMemo((): PartnerCardRow[] => {
-    if (overviewTab === "anfragen") return anfragenCardRows;
-    if (overviewTab === "angebote") return angeboteCardRows;
-    return auftraegeCardRows;
-  }, [overviewTab, anfragenCardRows, angeboteCardRows, auftraegeCardRows]);
+    if (overviewTab === "anfragen") {
+      const filtered = filterPartnerAnfragenListen(
+        anfragenSorted,
+        auftragAnfragen,
+        "offen"
+      );
+      return buildAnfragenCardRows(filtered.anfragen, filtered.auftragAnfragen);
+    }
+    if (overviewTab === "angebote") {
+      return angeboteSorted
+        .filter(isPartnerAngebotListItemOffen)
+        .map(mapAngebotToCard);
+    }
+    return [...auftraege]
+      .sort(
+        (a, b) =>
+          new Date(b.start_datum || 0).getTime() -
+          new Date(a.start_datum || 0).getTime()
+      )
+      .filter(isPartnerAuftragListItemOffen)
+      .map(mapAuftragToCard);
+  }, [overviewTab, anfragenSorted, auftragAnfragen, angeboteSorted, auftraege]);
 
   const overviewTotalPages = Math.max(
     1,
@@ -407,26 +419,22 @@ export function PartnerClient({
 
   const selectedAnfrageParsed = parseAnfragenSelectedId(selectedId);
 
-  const selectedAnfrageAngebot = useMemo(
-    () =>
-      selectedAnfrageParsed?.kind === "angebot"
-        ? (anfragenSorted.find((a) => a.id === selectedAnfrageParsed.id) ??
-          anfragenSorted[0])
-        : selectedAnfrageParsed?.kind !== "auftrag"
-          ? anfragenSorted[0]
-          : undefined,
-    [anfragenSorted, selectedAnfrageParsed]
-  );
+  const selectedAnfrageAngebot = useMemo(() => {
+    if (selectedAnfrageParsed?.kind === "auftrag") return undefined;
 
-  useEffect(() => {
-    if (section !== "anfragen" || !selectedAnfrageAngebot) return;
-    if (resolveAngebotHandwerkerPhase(selectedAnfrageAngebot) === "angebot") {
-      setSection("angebote");
-      setListFilter("offen");
-      setSelectedId(selectedAnfrageAngebot.id);
-      router.replace(partnerAngebotPortalPath(selectedAnfrageAngebot.id));
+    const explicitId =
+      selectedAnfrageParsed?.kind === "angebot"
+        ? selectedAnfrageParsed.id
+        : selectedId && !selectedId.startsWith("auftrag:")
+          ? selectedId
+          : null;
+
+    if (explicitId) {
+      return anfragenSorted.find((a) => a.id === explicitId);
     }
-  }, [section, selectedAnfrageAngebot, router]);
+
+    return anfragenSorted[0];
+  }, [anfragenSorted, selectedAnfrageParsed, selectedId]);
 
   const selectedAnfrageAuftrag = useMemo(
     () =>
@@ -454,6 +462,31 @@ export function PartnerClient({
     }
     return angeboteSorted[0];
   }, [angeboteDetailPool, angeboteSorted, selectedId]);
+
+  useEffect(() => {
+    if (section !== "anfragen" || !selectedId || selectedId.startsWith("auftrag:")) return;
+
+    const inAnfragen = anfragenSorted.some((a) => a.id === selectedId);
+    if (inAnfragen) return;
+
+    const inAngebote =
+      angeboteSorted.some((a) => a.id === selectedId) ||
+      angeboteAlleAkzeptiert.some((a) => a.id === selectedId);
+    if (!inAngebote) return;
+
+    setSection("angebote");
+    setListFilter("offen");
+    setListPage(1);
+    setMobileDetailOpen(true);
+    router.replace(partnerAngebotPortalPath(selectedId));
+  }, [
+    section,
+    selectedId,
+    anfragenSorted,
+    angeboteSorted,
+    angeboteAlleAkzeptiert,
+    router,
+  ]);
 
   useEffect(() => {
     if (section !== "angebote" || !selectedId) return;
@@ -536,6 +569,20 @@ export function PartnerClient({
         ? rawId.slice("auftrag:".length)
         : rawId;
 
+      if (
+        !rawId.startsWith("auftrag:") &&
+        !anfragen.some((a) => a.id === rawId) &&
+        (angeboteSorted.some((a) => a.id === rawId) ||
+          angeboteAlleAkzeptiert.some((a) => a.id === rawId))
+      ) {
+        setSection("angebote");
+        setListFilter("offen");
+        setSelectedId(rawId);
+        setMobileDetailOpen(true);
+        router.replace(partnerAngebotPortalPath(rawId));
+        return;
+      }
+
       if (anfragen.some((a) => a.id === rawId)) {
         setSelectedId(rawId);
         setMobileDetailOpen(true);
@@ -602,7 +649,7 @@ export function PartnerClient({
     setSelectedId(id);
     setMobileDetailOpen(true);
     router.replace(partnerAngebotPortalPath(id));
-    router.refresh();
+    queueMicrotask(() => router.refresh());
   }
 
   function refreshAnfrageAfterRespond(anfrageId: string) {
@@ -736,7 +783,22 @@ export function PartnerClient({
         <PartnerAnfrageDetail
           item={selectedAnfrageAngebot}
           onAccepted={refreshAnfrageAfterRespond}
+          onKonditionenBestaetigt={weiterZuAngeboten}
         />
+      );
+    }
+    if (
+      section === "anfragen" &&
+      selectedId &&
+      !selectedId.startsWith("auftrag:") &&
+      !selectedAnfrageAngebot &&
+      (angeboteSorted.some((a) => a.id === selectedId) ||
+        angeboteAlleAkzeptiert.some((a) => a.id === selectedId))
+    ) {
+      return (
+        <p className="portal-text-body text-text-secondary">
+          Weiterleitung zu Angeboten …
+        </p>
       );
     }
     if (section === "angebote" && selectedAngebot) {

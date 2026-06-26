@@ -7,6 +7,7 @@ import {
   parsePartnerKonditionenEingabe,
 } from "@/lib/partner/apply-partner-hw-konditionen";
 import {
+  isPartnerAnfrageBestaetigungAusstehend,
   isPartnerAnfrageKonditionenBearbeitbar,
   isPartnerAnfrageOffen,
 } from "@/lib/partner/partner-anfrage-status";
@@ -102,11 +103,26 @@ export async function respondPartnerAnfrage(opts: {
   }
 
   const hwStEarly = String((row as { hw_status?: string }).hw_status ?? "").toLowerCase();
+
+  if (hwStEarly === "bestaetigt" && opts.antwort === "akzeptiert") {
+    const { error: confirmErr } = await supabaseAdmin
+      .from("angebot_handwerker")
+      .update({ hw_status: "uebernommen" })
+      .eq("id", opts.anfrageId)
+      .eq("handwerker_id", link.handwerkerId)
+      .eq("hw_status", "bestaetigt");
+
+    if (confirmErr) return { ok: false, error: confirmErr.message };
+
+    revalidatePath("/partner");
+    return { ok: true };
+  }
+
   if (hwStEarly === "uebernommen") {
     return {
       ok: false,
       error:
-        "Die Konditionen wurden bereits übernommen. Bitte unter „Angebote“ fortfahren.",
+        "Die Konditionen wurden bereits bestätigt. Bitte unter „Angebote“ fortfahren.",
     };
   }
 
@@ -135,7 +151,12 @@ export async function respondPartnerAnfrage(opts: {
     };
   }
 
-  if (row.antwort_at && !isRueckfrage && !konditionenAusstehend) {
+  if (
+    row.antwort_at &&
+    !isRueckfrage &&
+    !konditionenAusstehend &&
+    hwSt !== "bestaetigt"
+  ) {
     return { ok: false, error: "Du hast bereits geantwortet." };
   }
 
@@ -155,7 +176,11 @@ export async function respondPartnerAnfrage(opts: {
       : null,
   };
 
-  if (!isPartnerAnfrageKonditionenBearbeitbar(timingItem) && !isPartnerAnfrageOffen(timingItem)) {
+  if (
+    !isPartnerAnfrageKonditionenBearbeitbar(timingItem) &&
+    !isPartnerAnfrageOffen(timingItem) &&
+    !isPartnerAnfrageBestaetigungAusstehend(timingItem)
+  ) {
     return { ok: false, error: "Diese Anfrage kann nicht mehr beantwortet werden." };
   }
 
@@ -200,6 +225,13 @@ export async function respondPartnerAnfrage(opts: {
 
     revalidatePath("/partner");
     return { ok: true };
+  }
+
+  if (isPartnerAnfrageBestaetigungAusstehend(timingItem)) {
+    return {
+      ok: false,
+      error: "Bitte die vereinbarten Konditionen mit „Vereinbarte Konditionen bestätigen“ abschließen.",
+    };
   }
 
   const konditionenRaw = opts.konditionenJson?.trim() ?? "";
