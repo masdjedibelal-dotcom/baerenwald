@@ -228,6 +228,25 @@ export function summeKonditionBrutto(
   return round2(sum);
 }
 
+export function mapKonditionZeilenVereinbart(
+  zeilen: PartnerKonditionZeile[]
+): PartnerKonditionZeile[] {
+  return zeilen.map((z) => {
+    const netto =
+      z.hwNetto != null && z.hwNetto > 0
+        ? z.hwNetto
+        : z.vorschlagNetto != null && z.vorschlagNetto > 0
+          ? z.vorschlagNetto
+          : null;
+    return {
+      ...z,
+      vorschlagNetto: netto,
+      hwNetto: netto ?? undefined,
+      geaendert: false,
+    };
+  });
+}
+
 export function buildHwKonditionenPayload(
   zeilen: PartnerKonditionZeile[],
   hwNettoById: Record<string, number>

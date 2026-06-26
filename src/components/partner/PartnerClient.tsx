@@ -70,7 +70,7 @@ import {
   type PartnerListFilterId,
 } from "@/lib/partner/partner-list-filters";
 import { cn } from "@/lib/utils";
-import { partnerAngebotPortalPath } from "@/lib/partner/partner-site-url";
+import { partnerAnfragePortalPath } from "@/lib/partner/partner-site-url";
 
 type PartnerSection =
   | "uebersicht"
@@ -243,7 +243,6 @@ export function PartnerClient({
   const [bewertungExpanded, setBewertungExpanded] = useState(false);
   const [listPage, setListPage] = useState(1);
   const [listFilter, setListFilter] = useState<PartnerListFilterId>("alle");
-  const [pendingAngebotId, setPendingAngebotId] = useState<string | null>(null);
 
   const vorname = handwerker.vorname || "Partner";
 
@@ -375,10 +374,9 @@ export function PartnerClient({
       return;
     }
     if (!selectedId || sectionCardRows.some((r) => r.id === selectedId)) return;
-    if (section === "angebote" && pendingAngebotId === selectedId) return;
     if (
       section === "angebote" &&
-      angeboteAlleAkzeptiert.some((a) => a.id === selectedId)
+      anfragenSorted.some((a) => a.id === selectedId)
     ) {
       return;
     }
@@ -387,17 +385,8 @@ export function PartnerClient({
     section,
     sectionCardRows,
     selectedId,
-    pendingAngebotId,
-    angeboteAlleAkzeptiert,
+    anfragenSorted,
   ]);
-
-  useEffect(() => {
-    if (!pendingAngebotId) return;
-    const found =
-      angeboteAlleAkzeptiert.some((a) => a.id === pendingAngebotId) ||
-      angeboteSorted.some((a) => a.id === pendingAngebotId);
-    if (found) setPendingAngebotId(null);
-  }, [pendingAngebotId, angeboteAlleAkzeptiert, angeboteSorted]);
 
   const overviewCardRows = useMemo((): PartnerCardRow[] => {
     if (overviewTab === "anfragen") return anfragenCardRows;
@@ -445,22 +434,22 @@ export function PartnerClient({
 
   const selectedAngebot = useMemo(() => {
     if (selectedId) {
-      const fromAll = angeboteAlleAkzeptiert.find((a) => a.id === selectedId);
-      if (fromAll) return fromAll;
-      const fromOpen = angeboteSorted.find((a) => a.id === selectedId);
-      if (fromOpen) return fromOpen;
-      return undefined;
+      return angeboteSorted.find((a) => a.id === selectedId);
     }
     return angeboteSorted[0];
-  }, [angeboteAlleAkzeptiert, angeboteSorted, selectedId]);
+  }, [angeboteSorted, selectedId]);
 
   useEffect(() => {
     if (section !== "angebote" || !selectedId) return;
-    const found =
-      angeboteAlleAkzeptiert.some((a) => a.id === selectedId) ||
-      angeboteSorted.some((a) => a.id === selectedId);
-    if (!found) router.refresh();
-  }, [section, selectedId, angeboteAlleAkzeptiert, angeboteSorted, router]);
+    if (angeboteSorted.some((a) => a.id === selectedId)) return;
+    if (anfragenSorted.some((a) => a.id === selectedId)) {
+      router.replace(partnerAnfragePortalPath(selectedId));
+      setSection("anfragen");
+      setMobileDetailOpen(true);
+      return;
+    }
+    router.refresh();
+  }, [section, selectedId, angeboteSorted, anfragenSorted, router]);
 
   const selectedAuftrag = useMemo(
     () => auftraege.find((a) => a.id === selectedId) ?? auftraege[0],
@@ -499,6 +488,18 @@ export function PartnerClient({
       const id = searchParams.get("id")?.trim();
       setSection("angebote");
       if (id) {
+        if (angeboteSorted.some((a) => a.id === id)) {
+          setSelectedId(id);
+          setMobileDetailOpen(true);
+          return;
+        }
+        if (anfragenSorted.some((a) => a.id === id)) {
+          router.replace(partnerAnfragePortalPath(id));
+          setSection("anfragen");
+          setSelectedId(id);
+          setMobileDetailOpen(true);
+          return;
+        }
         setSelectedId(id);
         setMobileDetailOpen(true);
       }
@@ -537,21 +538,26 @@ export function PartnerClient({
         auftraege.find((a) => a.id === auftragIdFromParam) ??
         auftragAnfragen.find((a) => a.id === auftragIdFromParam);
       const angebotHwId = auftragItem?.angebotHandwerkerId;
-      if (
-        angebotHwId &&
-        angeboteAlleAkzeptiert.some((a) => a.id === angebotHwId)
-      ) {
-        setSection("angebote");
-        setSelectedId(angebotHwId);
-        setMobileDetailOpen(true);
-        return;
+      if (angebotHwId) {
+        if (angeboteSorted.some((a) => a.id === angebotHwId)) {
+          setSection("angebote");
+          setSelectedId(angebotHwId);
+          setMobileDetailOpen(true);
+          return;
+        }
+        if (anfragenSorted.some((a) => a.id === angebotHwId)) {
+          setSection("anfragen");
+          setSelectedId(angebotHwId);
+          setMobileDetailOpen(true);
+          return;
+        }
       }
 
       setSection("uebersicht");
       setSelectedId(null);
       setMobileDetailOpen(false);
     }
-  }, [searchParams, auftraege, anfragen, angeboteAlleAkzeptiert, auftragAnfragen]);
+  }, [searchParams, auftraege, anfragenSorted, angeboteSorted, auftragAnfragen, router]);
 
   function navigateFromPlaner(
     target: PartnerTerminItem["section"],
@@ -566,16 +572,15 @@ export function PartnerClient({
     }
   }
 
-  function goToAngebotAfterAccept(anfrageId: string) {
+  function refreshAnfrageAfterRespond(anfrageId: string) {
     const id = anfrageId.trim();
     if (!id) return;
-    setPendingAngebotId(id);
-    setSection("angebote");
+    setSection("anfragen");
     setListPage(1);
     setListFilter("alle");
     setSelectedId(id);
     setMobileDetailOpen(true);
-    router.replace(partnerAngebotPortalPath(id));
+    router.replace(partnerAnfragePortalPath(id));
     router.refresh();
   }
 
@@ -685,7 +690,7 @@ export function PartnerClient({
       return (
         <PartnerAuftragAnfrageDetail
           item={selectedAnfrageAuftrag}
-          onAccepted={goToAngebotAfterAccept}
+          onAccepted={refreshAnfrageAfterRespond}
         />
       );
     }
@@ -693,7 +698,7 @@ export function PartnerClient({
       return (
         <PartnerAnfrageDetail
           item={selectedAnfrageAngebot}
-          onAccepted={goToAngebotAfterAccept}
+          onAccepted={refreshAnfrageAfterRespond}
         />
       );
     }

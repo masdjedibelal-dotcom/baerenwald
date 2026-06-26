@@ -8,8 +8,8 @@ export type PartnerPortalPhase = "anfrage" | "angebot" | "auftrag";
  * Phasen-Regeln (Single Source of Truth für Portal-Daten):
  *
  * 1) angebot_handwerker (klassischer Angebots-Funnel)
- *    - anfrage: HW soll annehmen/ablehnen (isPartnerAnfrageOffen)
- *    - angebot: HW hat angenommen, Preis/PDF noch nicht eingereicht
+ *    - anfrage: HW antwortet / Preiseinigung (bis hw_status = uebernommen)
+ *    - angebot: Preise vereinbart — optional Angebots-PDF, Vertragspaket
  *    - auftrag: (nicht im Portal-Listen-Funnel)
  *
  * 2) auftrag_handwerker / auftrag_positionen (CRM weist Leistung am Auftrag zu)
@@ -35,20 +35,21 @@ export function resolveAngebotHandwerkerPhase(
     | "projektvertrag_bereit"
   >
 ): PartnerPortalPhase {
-  if (isPartnerAnfrageOffen(item)) return "anfrage";
   const st = item.status.toLowerCase();
   const hwSt = (item.hw_status ?? "").toLowerCase();
 
   if (st === "abgelehnt") return "auftrag";
 
-  /** CRM hat Angebot übernommen — Vertragspaket unter Angebote bis HW bestätigt. */
+  /** Preiseinigung noch offen → Tab Anfragen. */
+  if (isPartnerAnfrageOffen(item)) return "anfrage";
+  if (st === "akzeptiert" && hwSt !== "uebernommen") return "anfrage";
+
+  /** CRM hat Konditionen übernommen — Vertragspaket unter Angebote bis HW bestätigt. */
   if (hwSt === "uebernommen") {
     if (item.projektvertrag_bestaetigt_am) return "auftrag";
     return "angebot";
   }
 
-  if (st === "akzeptiert") return "angebot";
-  if (item.antwort_at) return "angebot";
   return "auftrag";
 }
 

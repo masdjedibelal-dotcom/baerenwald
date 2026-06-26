@@ -9,23 +9,44 @@ Zielgruppe: **baerenwald-crm-dashboard** + Supabase-Betrieb
 
 | Bereich | Status | Dateien |
 |---------|--------|---------|
-| EK-Vorschlag je Leistung (readonly) | ✅ | `partner-konditionen.ts`, `partner-leistungen-display.ts` |
+| EK-Vorschlag je Leistung (readonly in Anfrage) | ✅ | `partner-konditionen.ts`, `partner-leistungen-display.ts` |
 | Konditionen-Card (eine Tabelle) | ✅ | `PartnerLeistungenKonditionenCard.tsx` |
-| Angebot: bestätigen / Gegenvorschlag | ✅ | `PartnerAngebotDetail.tsx`, `submitPartnerKonditionen()` |
-| Anfrage: readonly Konditionen | ✅ | `PartnerAnfrageDetail.tsx` |
-| Auftrag / Auftrags-Anfrage: Leistungen | ✅ | `PartnerAuftragDetail.tsx`, `PartnerAuftragAnfrageDetail.tsx` |
-| PDF bei Angebot optional | ✅ | `partner-upload-limits.ts`, `partner-angebote.ts` |
+| Anfrage: annehmen / Gegenvorschlag (Preis-Popup) | ✅ | `PartnerAnfrageDetail.tsx`, `respondPartnerAnfrage()` |
+| Anfrage bleibt bis Preiseinigung (`hw_status ≠ uebernommen`) | ✅ | `partner-portal-phase.ts` |
+| Angebot: eine Spalte „Vergütung netto“ + optionales PDF | ✅ | `PartnerAngebotDetail.tsx`, `submitPartnerAngebotPdf()` |
+| Auftrag: vereinbarter Partnerpreis | ✅ | `PartnerAuftragDetail.tsx` |
 | E-Mail mit Positions-Tabelle | ✅ | `partner-mail.ts` |
 
 ---
 
-## 2. SQL (Supabase)
+## 2. Preis-Modell (Grundsatz)
+
+**Nach Preiseinigung gibt es nur einen Netto-Preis je Leistung — kein getrennter EK und Partnerpreis.**
+
+| Phase | Bedeutung | Wo gespeichert |
+|-------|-----------|----------------|
+| Vorschlag | Bärenwald schlägt Vergütung vor | `angebote.positionen[].einkaufspreis` (× `menge` = Zeile netto) |
+| Verhandlung | HW bestätigt oder Gegenvorschlag | `angebot_handwerker.hw_konditionen` (`ek_netto` = Snapshot, `hw_netto` = HW-Vorschlag) |
+| **Vereinbart** | Einigung steht | **gleicher Wert** in `einkaufspreis` **und** `preis_partner` |
+
+### Felder nach „Übernehmen“ (CRM)
+
+| Feld | Tabelle | Einheit | Wert nach Einigung |
+|------|---------|---------|-------------------|
+| `einkaufspreis` | `angebote.positionen` (JSON) | **pro Einheit** netto | `hw_netto / menge` |
+| `preis_partner` | `auftrag_positionen` | **Zeile** netto | `hw_netto` |
+| `hw_preis_netto` / `hw_preis_brutto` | `angebot_handwerker` | Gesamt | Summe der Zeilen |
+| `hw_konditionen` | `angebot_handwerker` | JSON | Historie der Runde (unverändert lassen) |
+
+**Wichtig:** `ek_netto` in `hw_konditionen` ist nur der **Stand bei Einreichung** (Vergleich für die Prüf-UI). Der **lebende** Einkaufspreis ist nach Übernahme `einkaufspreis` in den Angebotspositionen — identisch zur Partnervergütung.
+
+---
+
+## 3. SQL (Supabase)
 
 **Migration:** `supabase/migrations/20260704120000_partner_hw_konditionen.sql`
 
 ```sql
--- Partner-Portal: Konditionen je Leistung (HW bestätigt oder Gegenvorschlag)
-
 alter table public.angebot_handwerker
   add column if not exists hw_konditionen jsonb;
 
@@ -35,80 +56,171 @@ comment on column public.angebot_handwerker.hw_konditionen is
 
 **Reihenfolge:** Nr. 8 in [SUPABASE_PARTNER_PORTAL_SQL.md](./SUPABASE_PARTNER_PORTAL_SQL.md).
 
-**JSON-Schema `hw_konditionen`:**
+**JSON-Schema `hw_konditionen` (Verhandlungs-Snapshot):**
 
 ```json
 {
-  "art": "bestaetigt",
+  "art": "gegenvorschlag",
   "eingereicht_at": "2026-06-25T12:00:00.000Z",
   "positionen": [
     {
       "position_id": "uuid-der-crm-position",
       "leistung": "Fliesen legen",
-      "beschreibung": "optional",
       "ek_netto": 450.0,
-      "hw_netto": 450.0,
+      "hw_netto": 480.0,
       "mwst_satz": 19,
-      "geaendert": false
+      "geaendert": true
     }
   ]
 }
 ```
 
-- `art`: `bestaetigt` (alle Zeilen = EK) oder `gegenvorschlag` (mind. eine Zeile `geaendert: true`)
-- `ek_netto`: Einkaufspreis-Vorschlag Bärenwald (netto Zeile); `null` wenn „Preis folgt“
-- `hw_netto`: vom Handwerker eingereicht (netto Zeile)
-- Bei Einreichung setzt das Portal zusätzlich: `hw_status = eingereicht`, `hw_preis_netto` / `hw_preis_brutto` (Summen), optional `hw_angebot_pdf_url` / Anhänge
+| Feld | Bedeutung |
+|------|-----------|
+| `art` | `bestaetigt` = HW hat Vorschlag unverändert angenommen; `gegenvorschlag` = mind. eine Zeile geändert |
+| `ek_netto` | Vorschlag Bärenwald **zum Zeitpunkt der Einreichung** (Zeile netto); `null` = „Preis folgt“ |
+| `hw_netto` | Vom Handwerker eingereicht (Zeile netto) — **Basis für die Einigung** |
+| `geaendert` | `true` wenn `hw_netto ≠ ek_netto` |
 
-**Bestehende Spalten (unverändert genutzt):**
+**Status `angebot_handwerker.hw_status`:**
 
-| Spalte | Rolle |
-|--------|--------|
-| `hw_status` | `offen` → `eingereicht` → `uebernommen` / `rueckfrage` / `abgelehnt` |
-| `hw_preis_netto`, `hw_preis_brutto` | Gesamtsumme der HW-Konditionen |
-| `preis_partner` (Auftragsposition) | **Partnerpreis nach CRM-Übernahme** |
-
----
-
-## 3. CRM-To-dos (baerenwald-crm-dashboard)
-
-### 3.1 Prüf-UI für eingereichte Konditionen
-
-- [ ] In `HandwerkerEinreichungPruefung.tsx` (o. ä.) `hw_konditionen` aus `angebot_handwerker` laden und parsen
-- [ ] Tabelle je Position: Leistung | EK netto | HW netto | Δ | geändert
-- [ ] Gesamtsumme netto/brutto anzeigen (aus JSON oder `hw_preis_*`)
-- [ ] Badge: „Bestätigt“ vs. „Gegenvorschlag“ (`art`)
-- [ ] Optional: eingereichtes PDF (`hw_angebot_pdf_url`) nur anzeigen, nicht als Pflicht
-
-### 3.2 Aktion „Übernehmen“
-
-- [ ] Button nur bei `hw_status === eingereicht`
-- [ ] Pro Zeile in `hw_konditionen.positionen`: `preis_partner = hw_netto` auf passender Auftragsposition schreiben (Match über `position_id` oder Leistung+Gewerk)
-- [ ] `angebot_handwerker.hw_status = uebernommen`
-- [ ] `hw_crm_antwort_at`, optional `hw_crm_notiz` setzen
-- [ ] Partner-Mail: Konditionen übernommen → Vertrag / Auftrag freischalten (bestehende Flows anbinden)
-
-### 3.3 Aktion „Rückfrage / Ablehnung“
-
-- [ ] EK in CRM-Positionen anpassen (neuer `einkaufspreis` / `lohn_netto` + `material_netto`)
-- [ ] `hw_status = rueckfrage`, `hw_crm_notiz` mit Begründung
-- [ ] `hw_konditionen` optional leeren oder als Historie behalten (Produktentscheidung)
-- [ ] Handwerker erneut einladen / Status auf `offen` für neue Runde (falls gewünscht)
-
-### 3.4 Auftragsphase
-
-- [ ] Nach `uebernommen`: Auftragspositionen zeigen `preis_partner` (bereits Portal-seitig für HW)
-- [ ] Rechnungs-Upload im Portal erst bei `hw_status === uebernommen` (bereits umgesetzt)
-
-### 3.5 Edge Cases
-
-- [ ] Zeilen ohne EK (`ek_netto: null`): CRM muss EK nachziehen oder HW-Gegenvorschlag als Basis nehmen
-- [ ] Mehrere `angebot_handwerker` pro Gewerk: Filter wie im Portal (`gewerk_id`, `handwerker_id`)
-- [ ] Audit: wer hat übernommen/abgelehnt (`hw_crm_antwort_at`, User-ID falls vorhanden)
+| Wert | Bedeutung | Partner-Tab |
+|------|-----------|-------------|
+| `offen` | HW hat noch nicht geantwortet | Anfragen |
+| `eingereicht` | HW hat zugesagt / Gegenvorschlag — CRM prüft | Anfragen |
+| `rueckfrage` | CRM lehnt ab / neuer Vorschlag — HW kann erneut antworten | Anfragen |
+| `uebernommen` | **Preiseinigung** — EK = Partnerpreis geschrieben | Angebote |
+| `abgelehnt` | CRM lehnt endgültig ab (optional → Rückfrage-Runde) | Anfragen |
 
 ---
 
-## 4. Status-Flow (Übersicht)
+## 4. Gegenvorschlag — CRM-Ablauf
+
+### 4.1 Was der Handwerker sendet
+
+1. Unter **Anfragen** Preise prüfen, ggf. per Popup **„Preis bearbeiten“** anpassen.
+2. **Annehmen** → `art: bestaetigt`, alle `hw_netto = ek_netto`.
+3. **Gegenvorschlag senden** → `art: gegenvorschlag`, mind. eine Zeile `geaendert: true`.
+4. Portal setzt: `status = akzeptiert`, `hw_status = eingereicht`, `hw_konditionen`, Summen.
+
+### 4.2 Prüf-UI im CRM
+
+- [ ] `hw_konditionen` laden und Tabelle anzeigen:
+
+  | Leistung | Vorschlag (ek_netto) | HW (hw_netto) | Δ | Geändert |
+  |----------|----------------------|---------------|---|----------|
+
+- [ ] Badge: **Bestätigt** vs. **Gegenvorschlag** (`art`)
+- [ ] Gesamtsumme aus `hw_preis_netto` / `hw_preis_brutto`
+- [ ] Bei Gegenvorschlag: Δ hervorheben (z. B. amber), Sortierung nach größter Abweichung
+
+### 4.3 Entscheidungen des CRM
+
+| Aktion | Wann | Ergebnis |
+|--------|------|----------|
+| **Übernehmen** | Einigung mit HW-Preisen (auch bei Gegenvorschlag) | `hw_status = uebernommen`, **ein** Preis je Zeile in DB |
+| **Rückfrage** | Neuer Bärenwald-Vorschlag, Verhandlung geht weiter | `einkaufspreis` in Positionen anpassen, `hw_status = rueckfrage` |
+| **Ablehnen** | Keine Einigung | `hw_status = abgelehnt` oder `rueckfrage` + Notiz |
+
+**Regel Gegenvorschlag:** Übernahme bedeutet **nicht** „EK behalten und Partnerpreis separat“. Es bedeutet: **Der vereinbarte Netto-Preis ist `hw_netto` — und wird als einziger Wert in EK und Partnerpreis geschrieben.**
+
+---
+
+## 5. Aktion „Übernehmen“ (Implementierung CRM)
+
+Nur bei `hw_status === 'eingereicht'`.
+
+### 5.1 Pseudocode je Position
+
+```typescript
+for (const pos of hw_konditionen.positionen) {
+  const vereinbartNettoZeile = pos.hw_netto; // einzige Wahrheit nach Einigung
+  const menge = positionAusAngebot(pos.position_id).menge ?? 1;
+
+  // 1) Angebotsposition — Einkaufspreis = Partnervergütung (pro Einheit)
+  updateAngebotPosition(pos.position_id, {
+    einkaufspreis: round2(vereinbartNettoZeile / menge),
+    // Optional: lohn_netto + material_netto auf 0 oder Aufteilung — aber Summe × menge = vereinbartNettoZeile
+  });
+
+  // 2) Auftragsposition (falls Auftrag schon existiert)
+  updateAuftragPosition(pos.position_id, {
+    preis_partner: vereinbartNettoZeile,
+  });
+}
+
+updateAngebotHandwerker(anfrageId, {
+  hw_status: 'uebernommen',
+  hw_crm_antwort_at: now(),
+  hw_crm_notiz: optional,
+});
+```
+
+### 5.2 SQL-Beispiel (Angebotspositionen im JSON `angebote.positionen`)
+
+```sql
+-- Vereinbarten Netto-Preis in die Angebotsposition schreiben (JSON-Array positionen)
+-- position_id und hw_netto aus hw_konditionen.positionen[]
+-- einkaufspreis := hw_netto / menge  (Portal rechnet: einkaufspreis * menge = Zeile netto)
+```
+
+> **Implementierungshinweis:** `angebote.positionen` ist JSONB — im CRM per App-Logik patchen (nicht blind SQL), damit `position_id` sicher gematcht wird.
+
+### 5.3 SQL-Beispiel Auftragsposition
+
+```sql
+update public.auftrag_positionen
+set preis_partner = :hw_netto_zeile
+where id = :position_id;
+-- preis_partner = Zeilen-Netto (wie Portal buildPartnerAuftragKonditionZeilen erwartet)
+```
+
+### 5.4 Nach Übernahme
+
+- [ ] Partner-Portal: Eintrag wechselt von **Anfragen** → **Angebote** (`resolveAngebotHandwerkerPhase`)
+- [ ] HW sieht **eine Spalte** „Vergütung netto“ (kein EK vs. Partner)
+- [ ] Optional: Mail „Konditionen übernommen“ / Vertrag vorbereiten
+- [ ] `hw_konditionen` als Historie **nicht löschen**
+
+---
+
+## 6. Aktion „Rückfrage“ (neue Verhandlungsrunde)
+
+Wenn der Gegenvorschlag **nicht** übernommen wird, aber weiterverhandelt werden soll:
+
+1. [ ] Neuen Bärenwald-Vorschlag in `angebote.positionen[].einkaufspreis` setzen (× `menge` = neues `ek_netto` für nächste Runde).
+2. [ ] `hw_status = 'rueckfrage'`, `hw_crm_notiz` mit Begründung (z. B. „Max. 460 € netto möglich“).
+3. [ ] **Nicht** `preis_partner` setzen — noch keine Einigung.
+4. [ ] HW sieht unter **Anfragen** die neue Rückfrage, kann erneut annehmen oder Gegenvorschlag senden (überschreibt `hw_konditionen`).
+
+---
+
+## 7. CRM-To-dos (Checkliste)
+
+### Prüf-UI
+- [ ] `HandwerkerEinreichungPruefung.tsx`: `hw_konditionen` + Δ-Tabelle
+- [ ] Buttons: Übernehmen | Rückfrage | Ablehnen
+
+### Übernehmen
+- [ ] `einkaufspreis` und `preis_partner` auf **denselben** vereinbarten Netto-Wert (`hw_netto`)
+- [ ] `hw_status = uebernommen`
+- [ ] Gesamtsummen konsistent (`hw_preis_*` bereits vom Portal)
+
+### Rückfrage
+- [ ] Nur `einkaufspreis` anpassen, `hw_status = rueckfrage`
+- [ ] Kein `preis_partner` bis zur finalen Einigung
+
+### Auftragsphase
+- [ ] Rechnungs-Upload erst nach `uebernommen` + Vertrag (Portal bereits so)
+
+### Edge Cases
+- [ ] `ek_netto: null` bei Einreichung → Übernahme = `hw_netto` wird erster EK
+- [ ] Mehrere `angebot_handwerker` pro Gewerk: Filter `gewerk_id` + `handwerker_id`
+- [ ] Audit: `hw_crm_antwort_at`, User-ID
+
+---
+
+## 8. Status-Flow
 
 ```mermaid
 sequenceDiagram
@@ -116,25 +228,28 @@ sequenceDiagram
   participant Portal as Partner-Portal
   participant HW as Handwerker
 
-  CRM->>Portal: Anfrage mit EK je Leistung
-  HW->>Portal: Konditionen bestätigen oder Gegenvorschlag
+  CRM->>Portal: Anfrage (einkaufspreis je Position)
+  HW->>Portal: Annehmen oder Gegenvorschlag
   Portal->>CRM: hw_konditionen, hw_status=eingereicht
-  CRM->>CRM: Prüf-UI
-  alt Übernehmen
-    CRM->>CRM: preis_partner setzen
+  Note over Portal: Bleibt unter Anfragen
+
+  alt CRM übernimmt (auch Gegenvorschlag)
+    CRM->>CRM: einkaufspreis = preis_partner = hw_netto
     CRM->>Portal: hw_status=uebernommen
-  else Rückfrage
-    CRM->>CRM: EK anpassen
+    Note over Portal: Wechsel zu Angebote
+  else CRM Rückfrage
+    CRM->>CRM: einkaufspreis anpassen
     CRM->>Portal: hw_status=rueckfrage
+    HW->>Portal: Neue Runde
   end
 ```
 
 ---
 
-## 5. Test-Checkliste (CRM + Portal)
+## 9. Test-Checkliste
 
-1. Anfrage mit EK → HW sieht „Vorschlag netto“, kann bestätigen
-2. Zeile ohne EK → „Preis folgt“, HW kann Gegenvorschlag eintragen
-3. Einreichung ohne PDF → erfolgreich
-4. CRM übernimmt → Auftrag zeigt Partnerpreis
-5. CRM Rückfrage → HW sieht CRM-Notiz, kann erneut einreichen
+1. HW nimmt EK an → CRM übernimmt → `einkaufspreis × menge = preis_partner` = `hw_netto`
+2. HW sendet Gegenvorschlag (+30 €) → CRM übernimmt → **beide** Felder = neuer HW-Preis, nicht alter EK
+3. CRM Rückfrage mit neuem EK → HW sieht Anfrage, kann erneut antworten
+4. Nach `uebernommen` → nur Tab **Angebote**, eine Vergütungsspalte, optional PDF
+5. Auftrag zeigt `preis_partner` = vereinbarter Wert aus Schritt 1/2

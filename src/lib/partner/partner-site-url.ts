@@ -30,7 +30,13 @@ export function partnerAuftragPortalUrl(auftragId: string): string {
 /** Direktlink: Anfragen-Tab, eine HW-Anfrage. */
 export function partnerAnfragePortalUrl(anfrageId: string): string {
   const id = anfrageId.trim();
-  return `${SITE_CONFIG.url}/partner?section=anfragen&id=${encodeURIComponent(id)}`;
+  return `${SITE_CONFIG.url}${partnerAnfragePortalPath(id)}`;
+}
+
+/** Relativer Pfad — Client-Navigation im Partner-Portal (gleiche Origin). */
+export function partnerAnfragePortalPath(anfrageId: string): string {
+  const id = anfrageId.trim();
+  return `/partner?section=anfragen&id=${encodeURIComponent(id)}`;
 }
 
 /** E-Mail-Deep-Link — direkt ins Portal (Middleware → Login mit next inkl. Query). */
@@ -44,7 +50,7 @@ export function partnerAngebotPortalPath(anfrageId: string): string {
   return `/partner?section=angebote&id=${encodeURIComponent(id)}`;
 }
 
-/** Direktlink: Angebote-Tab (nach Annahme Preis + PDF einreichen). */
+/** Direktlink: Angebote-Tab (nach CRM-Übernahme, hw_status = uebernommen). */
 export function partnerAngebotPortalUrl(anfrageId: string): string {
   return `${SITE_CONFIG.url}${partnerAngebotPortalPath(anfrageId)}`;
 }

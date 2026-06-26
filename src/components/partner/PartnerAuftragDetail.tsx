@@ -34,6 +34,7 @@ import {
 import {
   buildPartnerAuftragPortalSections,
   PARTNER_LEISTUNGEN_GESAMT_LABEL,
+  PARTNER_LEISTUNGEN_SECTION_TITLE,
   partnerAuftragDetailMetaLine,
   resolvePartnerAuftragKonditionZeilen,
 } from "@/lib/partner/partner-portal-display";
@@ -337,12 +338,11 @@ export function PartnerAuftragDetail({ item }: { item: PartnerAuftragItem }) {
       <PartnerPortalDetailSections sections={sections} />
 
       {konditionZeilen.length > 0 ? (
-        <PartnerDetailSection title="Leistungen & Vergütung">
+        <PartnerDetailSection title={PARTNER_LEISTUNGEN_SECTION_TITLE}>
           <PartnerLeistungenKonditionenCard
             zeilen={konditionZeilen}
-            mode="vorschlag"
+            mode="readonly"
             gesamtLabel={PARTNER_LEISTUNGEN_GESAMT_LABEL}
-            vorschlagColumnLabel="Vergütung netto"
           />
         </PartnerDetailSection>
       ) : null}

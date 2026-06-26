@@ -19,7 +19,7 @@ const HW_BEANTWORTET = new Set(["akzeptiert", "abgelehnt"]);
 
 type PartnerAnfrageTimingFields = Pick<
   PartnerAnfrageItem,
-  "status" | "antwort_at" | "gesendet_at"
+  "status" | "antwort_at" | "gesendet_at" | "hw_status"
 > & {
   zeitraum?: string;
   lead?: PartnerAnfrageItem["lead"] | null;
@@ -51,16 +51,42 @@ export function isPartnerAnfrageOffen(item: PartnerAnfrageTimingFields): boolean
   return PENDING_STATUS.has(st);
 }
 
+/** HW kann Preise per Popup anpassen (Erstantwort oder CRM-Rückfrage). */
+export function isPartnerAnfrageKonditionenBearbeitbar(
+  item: PartnerAnfrageTimingFields
+): boolean {
+  if (isPartnerAnfrageAntwortAbgelaufen(item)) return false;
+  if (isPartnerAnfrageOffen(item)) return true;
+  const st = item.status.toLowerCase();
+  const hwSt = (item.hw_status ?? "").toLowerCase();
+  return st === "akzeptiert" && (hwSt === "rueckfrage" || hwSt === "abgelehnt");
+}
+
+/** HW hat geantwortet — Bärenwald prüft die Konditionen. */
+export function isPartnerAnfrageWartetAufPreiseinigung(
+  item: PartnerAnfrageTimingFields
+): boolean {
+  const st = item.status.toLowerCase();
+  const hwSt = (item.hw_status ?? "").toLowerCase();
+  return st === "akzeptiert" && hwSt === "eingereicht";
+}
+
 export function partnerAnfrageStatusLabel(item: PartnerAnfrageTimingFields): string {
   if (isPartnerAnfrageAntwortAbgelaufen(item)) return "Antwort abgelaufen";
+  if (isPartnerAnfrageWartetAufPreiseinigung(item)) return "In Prüfung";
+  if (isPartnerAnfrageKonditionenBearbeitbar(item) && item.antwort_at) {
+    const hwSt = (item.hw_status ?? "").toLowerCase();
+    if (hwSt === "rueckfrage") return "Rückfrage";
+    if (hwSt === "abgelehnt") return "Konditionen abgelehnt";
+  }
   if (item.antwort_at) {
     const s = item.status.toLowerCase();
-    if (s === "akzeptiert") return "Angenommen";
+    if (s === "akzeptiert") return "Zugesagt";
     if (s === "abgelehnt") return "Abgelehnt";
   }
   if (isPartnerAnfrageOffen(item)) return "Antwort ausstehend";
   const s = item.status.toLowerCase();
-  if (s === "akzeptiert") return "Angenommen";
+  if (s === "akzeptiert") return "Zugesagt";
   if (s === "abgelehnt") return "Abgelehnt";
   return item.status;
 }

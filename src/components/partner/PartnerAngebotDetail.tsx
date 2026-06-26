@@ -1,12 +1,11 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 
-import { submitPartnerKonditionen, submitPartnerRechnung } from "@/app/actions/partner-angebote";
+import { submitPartnerAngebotPdf, submitPartnerRechnung } from "@/app/actions/partner-angebote";
 import { PartnerLeistungenKonditionenCard } from "@/components/partner/PartnerLeistungenKonditionenCard";
 import {
-  PartnerConfirmDialog,
   PartnerDetailError,
   PartnerDetailHero,
   PartnerDetailInfoBox,
@@ -24,16 +23,13 @@ import {
 import { FileUploadField } from "@/components/shared/FileUploadField";
 import type { PartnerAnfrageItem } from "@/lib/partner/get-partner-data";
 import {
-  initialHwNettoInputs,
-  parseHwNettoInput,
-} from "@/lib/partner/partner-konditionen";
-import {
   fmtPartnerDate,
   partnerDetailStatusPillClass,
 } from "@/lib/partner/partner-detail-format";
 import {
   buildPartnerAngebotPortalSections,
   PARTNER_LEISTUNGEN_GESAMT_LABEL,
+  PARTNER_LEISTUNGEN_SECTION_TITLE,
   partnerDetailDateMetaLine,
   resolvePartnerKonditionZeilen,
 } from "@/lib/partner/partner-portal-display";
@@ -44,56 +40,35 @@ import {
   validatePartnerPdfFile,
 } from "@/lib/partner/partner-upload-limits";
 
-const KONDITIONEN_FORM_ID = "partner-konditionen-form";
+const PDF_FORM_ID = "partner-angebot-pdf-form";
 const RECHNUNG_FORM_ID = "partner-rechnung-form";
 
 function hwStatusLabel(s?: string): string {
   const v = (s ?? "offen").toLowerCase();
-  if (v === "eingereicht") return "In Prüfung";
-  if (v === "uebernommen") return "Übernommen";
-  if (v === "abgelehnt") return "Abgelehnt";
-  if (v === "rueckfrage") return "Rückfrage";
+  if (v === "uebernommen") return "Preise vereinbart";
   return "Offen";
-}
-
-function zeilenGeaendert(
-  zeilen: ReturnType<typeof resolvePartnerKonditionZeilen>,
-  hwValues: Record<string, string>
-): boolean {
-  return zeilen.some((z) => {
-    const hw = parseHwNettoInput(hwValues[z.id] ?? "");
-    if (hw == null) return false;
-    if (z.vorschlagNetto == null || z.vorschlagNetto <= 0) return hw > 0;
-    return Math.abs(hw - z.vorschlagNetto) > 0.009;
-  });
 }
 
 export function PartnerAngebotDetail({ item }: { item: PartnerAnfrageItem }) {
   const router = useRouter();
-  const [konditionenLoading, setKonditionenLoading] = useState(false);
+  const [pdfLoading, setPdfLoading] = useState(false);
   const [rechnungLoading, setRechnungLoading] = useState(false);
-  const [konditionenError, setKonditionenError] = useState<string | null>(null);
+  const [pdfError, setPdfError] = useState<string | null>(null);
   const [rechnungError, setRechnungError] = useState<string | null>(null);
-  const [notiz, setNotiz] = useState("");
   const [angebotPdfs, setAngebotPdfs] = useState<File[]>([]);
   const [rechnungPdf, setRechnungPdf] = useState<File | null>(null);
-  const [confirmKonditionen, setConfirmKonditionen] = useState(false);
 
   const hwSt = (item.hw_status ?? "offen").toLowerCase();
-  const eingereicht = hwSt === "eingereicht";
   const uebernommen = hwSt === "uebernommen";
-  const crmRueckfrage = hwSt === "rueckfrage";
-  const crmAbgelehnt = hwSt === "abgelehnt";
   const vertragBestaetigt = Boolean(item.projektvertrag_bestaetigt_am);
   const vertragspaketAktiv = uebernommen && !vertragBestaetigt;
   const rechnungEingereicht = Boolean(item.hw_rechnung_eingereicht_at);
-  const kannKonditionenEinreichen =
-    item.status.toLowerCase() === "akzeptiert" &&
-    (hwSt === "offen" || crmRueckfrage || crmAbgelehnt);
-  const wartetAufFreigabe = eingereicht;
-  const hatEinreichung =
-    Boolean(item.hw_eingereicht_at) &&
-    (eingereicht || uebernommen || crmRueckfrage || crmAbgelehnt);
+  const hatPdf = Boolean(
+    item.hw_angebot_pdf_url ||
+      item.hw_angebot_pdf_signed_url ||
+      item.hw_angebot_anhang_urls?.length
+  );
+  const kannPdfHochladen = uebernommen && !hatPdf;
   const kannRechnungHochladen =
     uebernommen && vertragBestaetigt && !rechnungEingereicht;
 
@@ -106,12 +81,6 @@ export function PartnerAngebotDetail({ item }: { item: PartnerAnfrageItem }) {
       ),
     [item.crm_positionen_raw, item.gewerk_id, item.hw_konditionen]
   );
-
-  const [hwValues, setHwValues] = useState<Record<string, string>>({});
-
-  useEffect(() => {
-    setHwValues(initialHwNettoInputs(konditionZeilen, item.hw_konditionen));
-  }, [konditionZeilen, item.hw_konditionen]);
 
   const sections = useMemo(
     () =>
@@ -133,10 +102,7 @@ export function PartnerAngebotDetail({ item }: { item: PartnerAnfrageItem }) {
       rows.push({
         id: `hw-angebot-pdf-${i}`,
         datum: item.hw_eingereicht_at,
-        name:
-          anhangSigned.length > 1
-            ? `Angebots-PDF ${i + 1}`
-            : "Angebots-PDF (optional)",
+        name: anhangSigned.length > 1 ? `Angebots-PDF ${i + 1}` : "Angebots-PDF",
         href,
       });
     });
@@ -157,32 +123,15 @@ export function PartnerAngebotDetail({ item }: { item: PartnerAnfrageItem }) {
     item.hw_rechnung_eingereicht_at,
   ]);
 
-  const geaendert = useMemo(
-    () => zeilenGeaendert(konditionZeilen, hwValues),
-    [konditionZeilen, hwValues]
-  );
-
-  const submitLabel = geaendert ? "Gegenvorschlag senden" : "Konditionen bestätigen";
-
-  function buildKonditionenJson(): string | null {
-    const rows: Array<{ position_id: string; hw_netto: number }> = [];
-    for (const z of konditionZeilen) {
-      const hw = parseHwNettoInput(hwValues[z.id] ?? "");
-      if (hw == null) return null;
-      rows.push({ position_id: z.id, hw_netto: hw });
-    }
-    return JSON.stringify(rows);
-  }
-
   function handleAngebotPdfChange(files: File[]) {
     const list = files.slice(0, PARTNER_MAX_ANGEBOT_DATEIEN);
-    const err = validatePartnerAngebotFiles(list, { required: false });
+    const err = validatePartnerAngebotFiles(list, { required: true });
     if (err) {
-      setKonditionenError(err);
+      setPdfError(err);
       setAngebotPdfs([]);
       return;
     }
-    setKonditionenError(null);
+    setPdfError(null);
     setAngebotPdfs(list);
   }
 
@@ -202,37 +151,25 @@ export function PartnerAngebotDetail({ item }: { item: PartnerAnfrageItem }) {
     setRechnungPdf(file);
   }
 
-  async function sendKonditionen() {
-    const json = buildKonditionenJson();
-    if (!json) {
-      setKonditionenError("Bitte für jede Leistung einen gültigen Netto-Preis angeben.");
+  async function onPdfSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    const err = validatePartnerAngebotFiles(angebotPdfs, { required: true });
+    if (err) {
+      setPdfError(err);
       return;
     }
-    setKonditionenLoading(true);
-    setKonditionenError(null);
+    setPdfLoading(true);
+    setPdfError(null);
     const fd = new FormData();
     fd.set("anfrageId", item.id);
-    fd.set("konditionenJson", json);
-    fd.set("notiz", notiz);
     for (const pdf of angebotPdfs) fd.append("pdfs", pdf);
-    const res = await submitPartnerKonditionen(fd);
-    setKonditionenLoading(false);
-    setConfirmKonditionen(false);
+    const res = await submitPartnerAngebotPdf(fd);
+    setPdfLoading(false);
     if (!res.ok) {
-      setKonditionenError(res.error);
+      setPdfError(res.error);
       return;
     }
     router.refresh();
-  }
-
-  function onKonditionenSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    setKonditionenError(null);
-    if (!buildKonditionenJson()) {
-      setKonditionenError("Bitte für jede Leistung einen gültigen Netto-Preis angeben.");
-      return;
-    }
-    setConfirmKonditionen(true);
   }
 
   async function onRechnungSubmit(e: React.FormEvent) {
@@ -257,12 +194,12 @@ export function PartnerAngebotDetail({ item }: { item: PartnerAnfrageItem }) {
     router.refresh();
   }
 
-  const actionFooter = kannKonditionenEinreichen ? (
+  const actionFooter = kannPdfHochladen ? (
     <PartnerDetailStickyActions
-      primaryLabel={submitLabel}
+      primaryLabel="PDF speichern"
       primaryType="submit"
-      primaryForm={KONDITIONEN_FORM_ID}
-      primaryLoading={konditionenLoading}
+      primaryForm={PDF_FORM_ID}
+      primaryLoading={pdfLoading}
     />
   ) : kannRechnungHochladen ? (
     <PartnerDetailStickyActions
@@ -279,40 +216,20 @@ export function PartnerAngebotDetail({ item }: { item: PartnerAnfrageItem }) {
         title={item.listen_titel}
         metaLine={partnerDetailDateMetaLine(item.antwort_at ?? item.gesendet_at)}
         statusLabel={hwStatusLabel(item.hw_status)}
-        statusPillClass={partnerDetailStatusPillClass(item.hw_status ?? "offen")}
+        statusPillClass={partnerDetailStatusPillClass(item.hw_status ?? "uebernommen")}
       />
 
-      {kannKonditionenEinreichen ? (
+      {vertragspaketAktiv ? (
         <PartnerDetailInfoBox>
-          {crmRueckfrage || crmAbgelehnt
-            ? "Bärenwald hat einen neuen Vorschlag oder eine Rückfrage. Bitte prüfe die Preise je Leistung und bestätige oder sende einen Gegenvorschlag."
-            : "Prüfe die vorgeschlagenen Konditionen je Leistung. Du kannst sie bestätigen oder einzelne Preise anpassen. Ein PDF ist optional — du kannst es auch später im Auftrag hochladen."}
-        </PartnerDetailInfoBox>
-      ) : null}
-
-      {(crmRueckfrage || crmAbgelehnt) && item.hw_crm_notiz?.trim() ? (
-        <PartnerDetailInfoBox>
-          <p className="font-semibold">
-            {crmRueckfrage ? "Rückfrage von Bärenwald" : "Konditionen nicht übernommen"}
-          </p>
-          <p className="mt-2 whitespace-pre-wrap text-sm">{item.hw_crm_notiz.trim()}</p>
-        </PartnerDetailInfoBox>
-      ) : wartetAufFreigabe ? (
-        <PartnerDetailInfoBox>
-          Deine Konditionen wurden eingereicht. Bärenwald prüft sie — du erhältst eine E-Mail,
-          sobald wir sie übernommen haben.
-        </PartnerDetailInfoBox>
-      ) : vertragspaketAktiv ? (
-        <PartnerDetailInfoBox>
-          Bärenwald hat deine Konditionen übernommen. Bitte bestätige den Projektvertrag — erst
-          danach wird der Auftrag freigeschaltet.
+          Die Preise sind vereinbart. Bitte bestätige den Projektvertrag — danach wird der Auftrag
+          freigeschaltet. Ein Angebots-PDF kannst du optional hochladen.
         </PartnerDetailInfoBox>
       ) : uebernommen && vertragBestaetigt ? (
         <PartnerDetailSuccessBox>
           <p className="font-semibold">Auftrag bestätigt</p>
           <p className="text-sm">Du findest das laufende Projekt unter „Aufträge“.</p>
         </PartnerDetailSuccessBox>
-      ) : uebernommen && kannRechnungHochladen ? (
+      ) : kannRechnungHochladen ? (
         <PartnerDetailInfoBox>
           Nach Abschluss der Leistung kannst du hier deine Rechnung als PDF einreichen.
         </PartnerDetailInfoBox>
@@ -321,65 +238,40 @@ export function PartnerAngebotDetail({ item }: { item: PartnerAnfrageItem }) {
       <PartnerPortalDetailSections sections={sections} />
 
       {konditionZeilen.length > 0 ? (
-        <PartnerDetailSection title="Leistungen & Vergütung">
-          {kannKonditionenEinreichen ? (
-            <form
-              id={KONDITIONEN_FORM_ID}
-              onSubmit={onKonditionenSubmit}
-              className="space-y-4"
-            >
-              <PartnerLeistungenKonditionenCard
-                zeilen={konditionZeilen}
-                mode="edit"
-                hwValues={hwValues}
-                onHwChange={(id, value) =>
-                  setHwValues((prev) => ({ ...prev, [id]: value }))
-                }
-                gesamtLabel={PARTNER_LEISTUNGEN_GESAMT_LABEL}
-              />
-              <FileUploadField
-                label="Angebots-PDF (optional)"
-                accept="application/pdf,.pdf"
-                multiple
-                hint={`Optional — auch später im Auftrag möglich. Max. ${PARTNER_MAX_ANGEBOT_DATEIEN} PDFs, je ${PARTNER_MAX_PDF_MB} MB`}
-                selectedName={
-                  angebotPdfs.length > 0
-                    ? angebotPdfs.length === 1
-                      ? angebotPdfs[0].name
-                      : `${angebotPdfs.length} PDFs ausgewählt`
-                    : null
-                }
-                onChange={handleAngebotPdfChange}
-              />
-              <label className="block portal-text-body">
-                <span className="text-text-tertiary">Notiz (optional)</span>
-                <textarea
-                  value={notiz}
-                  onChange={(e) => setNotiz(e.target.value)}
-                  rows={2}
-                  className="mt-1 w-full rounded-xl border border-border-default bg-surface-card px-3 py-2"
-                />
-              </label>
-              {konditionenError ? <PartnerDetailError message={konditionenError} /> : null}
-            </form>
-          ) : (
-            <PartnerLeistungenKonditionenCard
-              zeilen={konditionZeilen}
-              mode={hatEinreichung ? "eingereicht" : "vorschlag"}
-              gesamtLabel={PARTNER_LEISTUNGEN_GESAMT_LABEL}
-            />
-          )}
+        <PartnerDetailSection title={PARTNER_LEISTUNGEN_SECTION_TITLE}>
+          <PartnerLeistungenKonditionenCard
+            zeilen={konditionZeilen}
+            mode="readonly"
+            gesamtLabel={PARTNER_LEISTUNGEN_GESAMT_LABEL}
+          />
         </PartnerDetailSection>
       ) : null}
 
-      {hatEinreichung && !kannKonditionenEinreichen && item.hw_konditionen ? (
+      {item.hw_konditionen ? (
         <p className="portal-text-meta text-text-secondary">
-          Eingereicht am {fmtPartnerDate(item.hw_eingereicht_at)}
-          {item.hw_konditionen.art === "gegenvorschlag"
-            ? " · Gegenvorschlag"
-            : " · Konditionen bestätigt"}
-          {item.hw_notiz ? ` — ${item.hw_notiz}` : ""}
+          Vereinbart am {fmtPartnerDate(item.hw_eingereicht_at)}
+          {item.hw_konditionen.art === "gegenvorschlag" ? " · Gegenvorschlag" : " · Konditionen bestätigt"}
         </p>
+      ) : null}
+
+      {kannPdfHochladen ? (
+        <form id={PDF_FORM_ID} onSubmit={onPdfSubmit} className="space-y-3">
+          <FileUploadField
+            label="Angebots-PDF (optional)"
+            accept="application/pdf,.pdf"
+            multiple
+            hint={`Optional. Max. ${PARTNER_MAX_ANGEBOT_DATEIEN} PDFs, je ${PARTNER_MAX_PDF_MB} MB`}
+            selectedName={
+              angebotPdfs.length > 0
+                ? angebotPdfs.length === 1
+                  ? angebotPdfs[0].name
+                  : `${angebotPdfs.length} PDFs ausgewählt`
+                : null
+            }
+            onChange={handleAngebotPdfChange}
+          />
+          {pdfError ? <PartnerDetailError message={pdfError} /> : null}
+        </form>
       ) : null}
 
       {vertragspaketAktiv && item.auftrag_id ? (
@@ -423,26 +315,6 @@ export function PartnerAngebotDetail({ item }: { item: PartnerAnfrageItem }) {
             Hochgeladen am {fmtPartnerDate(item.hw_rechnung_eingereicht_at)}
           </p>
         </PartnerDetailSuccessBox>
-      ) : null}
-
-      <PartnerConfirmDialog
-        open={confirmKonditionen}
-        title={geaendert ? "Gegenvorschlag senden?" : "Konditionen bestätigen?"}
-        description={
-          geaendert
-            ? "Dein Gegenvorschlag je Leistung geht an Bärenwald zur Prüfung. Nach der Übernahme wird der Partnerpreis im System hinterlegt."
-            : "Du bestätigst die vorgeschlagenen Konditionen von Bärenwald. Nach der Übernahme wird der Partnerpreis im System hinterlegt."
-        }
-        confirmLabel="Ja, absenden"
-        loading={konditionenLoading}
-        onConfirm={sendKonditionen}
-        onCancel={() => setConfirmKonditionen(false)}
-      />
-
-      {!kannKonditionenEinreichen && !hatEinreichung ? (
-        <p className="portal-text-body text-text-secondary">
-          Diese Anfrage ist noch nicht angenommen. Bitte zuerst unter „Anfragen“ antworten.
-        </p>
       ) : null}
     </PartnerDetailLayout>
   );

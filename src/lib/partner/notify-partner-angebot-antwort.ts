@@ -1,5 +1,5 @@
 import { sendHandwerkerAngebotAntwortMail } from "@/lib/partner/partner-mail";
-import { partnerLoginForAngebotUrl } from "@/lib/partner/partner-site-url";
+import { partnerLoginForAnfrageUrl } from "@/lib/partner/partner-site-url";
 import { isSupabaseConfigured, supabaseAdmin } from "@/lib/supabase";
 
 function one<T>(x: T | T[] | null | undefined): T | null {
@@ -69,7 +69,7 @@ export async function notifyHandwerkerAngebotAntwort(input: {
     gewerkName: gw?.name?.trim() || "Gewerk",
     angebotTitel: titel,
     crmNotiz,
-    portalLink: partnerLoginForAngebotUrl(id),
+    portalLink: partnerLoginForAnfrageUrl(id),
     typ: input.typ,
     betreff: input.betreff,
     cc: input.cc,

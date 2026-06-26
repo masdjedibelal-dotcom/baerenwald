@@ -4,7 +4,10 @@ import type {
   PartnerAuftragItem,
   PartnerBautagebuchAnfrageItem,
 } from "@/lib/partner/get-partner-data";
-import { isPartnerAnfrageOffen, isPartnerAuftragAnfrageOffen } from "@/lib/partner/partner-anfrage-status";
+import {
+  isPartnerAnfrageKonditionenBearbeitbar,
+  isPartnerAuftragAnfrageOffen,
+} from "@/lib/partner/partner-anfrage-status";
 
 export type PartnerAufgabeTyp =
   | "anfrage_annehmen"
@@ -44,15 +47,18 @@ export function buildPartnerAufgaben(input: {
   const list: PartnerAufgabeItem[] = [];
 
   for (const a of anfragen) {
-    if (!isPartnerAnfrageOffen(a)) continue;
+    if (!isPartnerAnfrageKonditionenBearbeitbar(a)) continue;
+    const istRueckfrage = Boolean(a.antwort_at);
     pushAufgabe(list, {
       id: `anfrage-${a.id}`,
       typ: "anfrage_annehmen",
-      titel: `Anfrage annehmen: ${a.listen_titel}`,
+      titel: istRueckfrage
+        ? `Konditionen anpassen: ${a.listen_titel}`
+        : `Anfrage beantworten: ${a.listen_titel}`,
       untertitel: [a.plz, a.ort].filter(Boolean).join(" ") || undefined,
       section: "anfragen",
       selectedId: a.id,
-      dringend: true,
+      dringend: !istRueckfrage,
       sortKey: `1-${a.gesendet_at ?? a.id}`,
     });
   }
@@ -73,18 +79,15 @@ export function buildPartnerAufgaben(input: {
 
   for (const a of angebote) {
     const hwSt = (a.hw_status ?? "offen").toLowerCase();
-    const brauchtEinreichung =
-      a.status.toLowerCase() === "akzeptiert" &&
-      (hwSt === "offen" || hwSt === "rueckfrage" || hwSt === "abgelehnt");
-    if (brauchtEinreichung) {
+    const hatPdf = Boolean(a.hw_angebot_pdf_url || a.hw_angebot_anhang_urls?.length);
+    if (hwSt === "uebernommen" && !hatPdf) {
       pushAufgabe(list, {
-        id: `angebot-einreichen-${a.id}`,
+        id: `angebot-pdf-${a.id}`,
         typ: "angebot_einreichen",
-        titel: `Preis & Angebot abgeben: ${a.listen_titel}`,
+        titel: `Angebots-PDF hochladen: ${a.listen_titel}`,
         untertitel: [a.plz, a.ort].filter(Boolean).join(" ") || undefined,
         section: "angebote",
         selectedId: a.id,
-        dringend: true,
         sortKey: `3-${a.antwort_at ?? a.gesendet_at ?? a.id}`,
       });
     }

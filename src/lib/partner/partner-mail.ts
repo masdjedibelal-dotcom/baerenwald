@@ -549,14 +549,14 @@ export async function sendPartnerInternalAnfrageAntwortMail(opts: {
         <strong>Handlungsbedarf:</strong> Anderen Handwerker für <strong>${escapeHtml(opts.gewerkName)}</strong> anfragen.
       </p>`
     : `<p style="margin-top:12px;padding:10px 12px;background:#E8F5E9;border-radius:8px;border:1px solid #81C784;">
-        Der Handwerker kann jetzt unter <strong>Angebote</strong> im Partner-Portal die vorgeschlagenen Konditionen bestätigen oder einen Gegenvorschlag je Leistung senden. Du erhältst eine weitere Mail bei der Einreichung.
+        Der Handwerker kann jetzt unter <strong>Anfragen</strong> im Partner-Portal die vorgeschlagenen Konditionen bestätigen oder einen Gegenvorschlag je Leistung senden. Du erhältst eine weitere Mail bei der Einreichung.
       </p>`;
 
   const portalBtn =
     opts.angenommen && opts.partnerAngebotPortalUrl?.trim()
       ? mailActionButtons({
           crmUrl: opts.partnerAngebotPortalUrl.trim(),
-          crmLabel: "Partner-Portal (Angebote)",
+          crmLabel: "Partner-Portal (Anfragen)",
         })
       : "";
 

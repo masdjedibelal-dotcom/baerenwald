@@ -1,6 +1,5 @@
 "use client";
 
-import { cn } from "@/lib/utils";
 import { fmtPartnerEuro } from "@/lib/partner/partner-detail-format";
 import {
   PARTNER_KONDITION_MWST,
@@ -8,21 +7,55 @@ import {
   summeKonditionNetto,
   type PartnerKonditionZeile,
 } from "@/lib/partner/partner-konditionen";
+import {
+  PARTNER_LEISTUNGEN_DEIN_PREIS_LABEL,
+  PARTNER_LEISTUNGEN_VORSCHLAG_LABEL,
+} from "@/lib/partner/partner-portal-display";
 import { stripHtmlToPlainText } from "@/lib/portal/portal-display";
+import { cn } from "@/lib/utils";
+
+const GRID_COLS = "sm:grid-cols-[1fr_8.5rem_9rem]";
 
 function formatVorschlag(netto: number | null | undefined): string {
   if (netto == null || netto <= 0) return "Preis folgt";
   return fmtPartnerEuro(netto);
 }
 
+function displayDeinPreis(
+  z: PartnerKonditionZeile,
+  mode: Props["mode"],
+  hwValues?: Record<string, string>
+): string {
+  if (mode === "readonly") {
+    if (z.hwNetto != null && z.hwNetto > 0) return fmtPartnerEuro(z.hwNetto);
+    if (z.vorschlagNetto != null && z.vorschlagNetto > 0) return fmtPartnerEuro(z.vorschlagNetto);
+    return "—";
+  }
+  const raw = hwValues?.[z.id] ?? "";
+  if (raw.trim()) {
+    const n = Number(raw.replace(",", "."));
+    if (Number.isFinite(n) && n >= 0) return fmtPartnerEuro(n);
+  }
+  if (z.vorschlagNetto != null && z.vorschlagNetto > 0) return fmtPartnerEuro(z.vorschlagNetto);
+  return "—";
+}
+
+function isZeileGeaendert(z: PartnerKonditionZeile, hwValues?: Record<string, string>): boolean {
+  const raw = hwValues?.[z.id] ?? "";
+  if (!raw.trim()) return false;
+  const hw = Number(raw.replace(",", "."));
+  if (!Number.isFinite(hw)) return false;
+  if (z.vorschlagNetto == null || z.vorschlagNetto <= 0) return hw > 0;
+  return Math.abs(hw - z.vorschlagNetto) > 0.009;
+}
+
 type Props = {
   zeilen: PartnerKonditionZeile[];
-  mode: "vorschlag" | "edit" | "eingereicht";
+  /** `edit` = Preis inline bearbeiten; `readonly` = gleiche Ansicht ohne Bearbeitung */
+  mode: "edit" | "readonly";
   hwValues?: Record<string, string>;
   onHwChange?: (id: string, value: string) => void;
   gesamtLabel?: string;
-  /** Spaltenüberschrift für EK/Vorschlag (Standard: „Vorschlag netto“). */
-  vorschlagColumnLabel?: string;
 };
 
 export function PartnerLeistungenKonditionenCard({
@@ -31,58 +64,57 @@ export function PartnerLeistungenKonditionenCard({
   hwValues,
   onHwChange,
   gesamtLabel = "Vergütung Brutto inkl. MwSt.",
-  vorschlagColumnLabel = "Vorschlag netto",
 }: Props) {
   if (!zeilen.length) return null;
 
-  const showHwColumn = mode === "edit" || mode === "eingereicht";
-  const useHwForSum = mode === "eingereicht";
-  const sumNetto = summeKonditionNetto(zeilen, useHwForSum);
-  const sumBrutto = summeKonditionBrutto(zeilen, useHwForSum);
+  const useHwForSum = true;
+  const sumZeilen = zeilen.map((z) => {
+    if (mode === "edit" && hwValues) {
+      const raw = hwValues[z.id] ?? "";
+      const n = raw.trim() ? Number(raw.replace(",", ".")) : null;
+      const hwNetto = n != null && Number.isFinite(n) ? n : z.hwNetto ?? z.vorschlagNetto;
+      return { ...z, hwNetto };
+    }
+    return z;
+  });
+  const sumNetto = summeKonditionNetto(sumZeilen, useHwForSum);
+  const sumBrutto = summeKonditionBrutto(sumZeilen, useHwForSum);
   const sumMwst = Math.round((sumBrutto - sumNetto) * 100) / 100;
 
   return (
     <div className="portal-text-body overflow-hidden rounded-xl border border-border-light bg-muted/20">
       <div
         className={cn(
-          "hidden gap-3 border-b border-border-light bg-muted/30 px-3 py-2 text-xs font-semibold uppercase tracking-wide text-text-tertiary sm:grid",
-          showHwColumn ? "sm:grid-cols-[1fr_7rem_7rem]" : "sm:grid-cols-[1fr_7rem]"
+          "hidden gap-3 border-b border-border-light bg-muted/30 px-4 py-2.5 text-xs font-semibold uppercase tracking-wide text-text-tertiary sm:grid",
+          GRID_COLS
         )}
       >
         <span>Leistung</span>
-        <span className="text-right">{vorschlagColumnLabel}</span>
-        {showHwColumn ? <span className="text-right">Dein Preis netto</span> : null}
+        <span className="text-right">{PARTNER_LEISTUNGEN_VORSCHLAG_LABEL}</span>
+        <span className="text-right">{PARTNER_LEISTUNGEN_DEIN_PREIS_LABEL}</span>
       </div>
 
       <ul>
-        {zeilen.map((z, i) => {
+        {zeilen.map((z) => {
           const title = stripHtmlToPlainText(z.title) || z.title;
-          const hwRaw = hwValues?.[z.id] ?? "";
-          const hwNum =
-            mode === "eingereicht"
-              ? z.hwNetto
-              : hwRaw.trim()
-                ? Number(hwRaw.replace(",", "."))
-                : null;
-          const hwDisplay =
-            mode === "eingereicht" && z.hwNetto != null
-              ? fmtPartnerEuro(z.hwNetto)
-              : null;
+          const geaendert =
+            mode === "readonly" ? z.geaendert : isZeileGeaendert(z, hwValues);
+          const deinPreis = displayDeinPreis(z, mode, hwValues);
+          const inputValue =
+            hwValues?.[z.id] ??
+            (z.vorschlagNetto != null && z.vorschlagNetto > 0
+              ? String(z.vorschlagNetto).replace(".", ",")
+              : "");
 
           return (
             <li
               key={z.id}
               className={cn(
-                "border-b border-border-light px-3 py-3 last:border-b-0",
-                z.geaendert && mode === "eingereicht" && "bg-amber-50/50"
+                "border-b border-border-light px-4 py-3.5 last:border-b-0",
+                geaendert && "bg-amber-50/60"
               )}
             >
-              <div
-                className={cn(
-                  "grid gap-2 sm:items-start sm:gap-3",
-                  showHwColumn ? "sm:grid-cols-[1fr_7rem_7rem]" : "sm:grid-cols-[1fr_7rem]"
-                )}
-              >
+              <div className={cn("grid gap-3 sm:items-center", GRID_COLS)}>
                 <div className="min-w-0">
                   <p className="font-medium text-text-primary">{title}</p>
                   {z.beschreibung ? (
@@ -90,58 +122,107 @@ export function PartnerLeistungenKonditionenCard({
                       {stripHtmlToPlainText(z.beschreibung)}
                     </p>
                   ) : null}
-                  <p className="portal-text-meta mt-1 text-text-tertiary sm:hidden">
-                    {vorschlagColumnLabel}:{" "}
-                    <span
-                      className={
-                        z.vorschlagNetto == null || z.vorschlagNetto <= 0
-                          ? "italic"
-                          : "font-medium text-text-secondary"
-                      }
-                    >
-                      {formatVorschlag(z.vorschlagNetto)}
-                    </span>
-                  </p>
+
+                  <div className="mt-3 space-y-3 sm:hidden">
+                    <div>
+                      <p className="text-sm text-text-tertiary">
+                        {PARTNER_LEISTUNGEN_VORSCHLAG_LABEL}:
+                      </p>
+                      <p
+                        className={cn(
+                          "mt-0.5 text-base tabular-nums",
+                          z.vorschlagNetto == null || z.vorschlagNetto <= 0
+                            ? "italic text-sm text-text-tertiary"
+                            : "font-semibold text-text-primary"
+                        )}
+                      >
+                        {formatVorschlag(z.vorschlagNetto)}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-text-tertiary">
+                        {PARTNER_LEISTUNGEN_DEIN_PREIS_LABEL}
+                      </p>
+                      {mode === "edit" ? (
+                        <input
+                          type="text"
+                          inputMode="decimal"
+                          autoComplete="off"
+                          className={cn(
+                            "mt-1 w-full rounded-lg border border-border-default bg-surface-card px-3 py-2.5 text-right text-base font-medium tabular-nums text-text-primary outline-none focus:border-accent focus:ring-1 focus:ring-accent/30",
+                            geaendert && "border-amber-400"
+                          )}
+                          value={inputValue}
+                          onChange={(e) => onHwChange?.(z.id, e.target.value)}
+                          aria-label={`${PARTNER_LEISTUNGEN_DEIN_PREIS_LABEL} für ${title}`}
+                        />
+                      ) : (
+                        <p
+                          className={cn(
+                            "mt-0.5 text-base font-semibold tabular-nums text-text-primary",
+                            geaendert && "text-amber-800"
+                          )}
+                        >
+                          {deinPreis}
+                        </p>
+                      )}
+                      {geaendert ? (
+                        <span className="mt-1 block text-xs font-medium text-amber-700">
+                          Geändert
+                        </span>
+                      ) : null}
+                    </div>
+                  </div>
                 </div>
 
                 <p
                   className={cn(
-                    "hidden text-right tabular-nums sm:block",
+                    "hidden text-right text-base tabular-nums sm:block sm:text-lg",
                     z.vorschlagNetto == null || z.vorschlagNetto <= 0
-                      ? "italic text-text-tertiary"
-                      : "font-medium text-text-secondary"
+                      ? "italic text-sm text-text-tertiary"
+                      : "font-semibold text-text-secondary"
                   )}
                 >
                   {formatVorschlag(z.vorschlagNetto)}
                 </p>
 
-                {showHwColumn ? (
-                  mode === "edit" ? (
-                    <label className="block sm:text-right">
-                      <span className="portal-text-meta mb-1 block text-text-tertiary sm:sr-only">
-                        Dein Preis netto
-                      </span>
+                <div className="hidden text-right sm:block">
+                  {mode === "edit" ? (
+                    <div className="flex flex-col items-end gap-1.5">
                       <input
                         type="text"
                         inputMode="decimal"
-                        value={hwRaw}
+                        autoComplete="off"
+                        className={cn(
+                          "w-full max-w-[9rem] rounded-lg border border-border-default bg-surface-card px-3 py-2 text-right text-base font-medium tabular-nums text-text-primary outline-none focus:border-accent focus:ring-1 focus:ring-accent/30",
+                          geaendert && "border-amber-400"
+                        )}
+                        value={inputValue}
                         onChange={(e) => onHwChange?.(z.id, e.target.value)}
-                        placeholder="0,00"
-                        className="w-full rounded-lg border border-border-default bg-surface-card px-2.5 py-2 text-right text-base tabular-nums sm:max-w-[7rem] sm:ml-auto"
-                        aria-label={`Dein Preis netto für ${title}`}
+                        aria-label={`${PARTNER_LEISTUNGEN_DEIN_PREIS_LABEL} für ${title}`}
                       />
-                    </label>
+                      {geaendert ? (
+                        <span className="text-xs font-medium text-amber-700">Geändert</span>
+                      ) : null}
+                    </div>
                   ) : (
-                    <p className="text-right font-semibold tabular-nums text-text-primary">
-                      {hwDisplay ?? "—"}
-                      {z.geaendert ? (
-                        <span className="mt-0.5 block text-xs font-normal text-amber-700">
+                    <div>
+                      <p
+                        className={cn(
+                          "text-lg font-bold tabular-nums text-text-primary",
+                          geaendert && "text-amber-800"
+                        )}
+                      >
+                        {deinPreis}
+                      </p>
+                      {geaendert ? (
+                        <span className="mt-0.5 block text-xs font-medium text-amber-700">
                           Geändert
                         </span>
                       ) : null}
-                    </p>
-                  )
-                ) : null}
+                    </div>
+                  )}
+                </div>
               </div>
             </li>
           );
@@ -149,7 +230,7 @@ export function PartnerLeistungenKonditionenCard({
       </ul>
 
       {sumNetto > 0 ? (
-        <div className="border-t border-border-default bg-muted/40 px-3 py-3">
+        <div className="border-t border-border-default bg-muted/40 px-4 py-3.5">
           <div className="flex items-center justify-between gap-4 text-sm">
             <span className="text-text-tertiary">Summe netto</span>
             <span className="font-medium tabular-nums text-text-primary">
@@ -162,7 +243,7 @@ export function PartnerLeistungenKonditionenCard({
           </div>
           <div className="mt-2 flex items-center justify-between gap-4 border-t border-border-light pt-2">
             <span className="font-semibold text-text-primary">{gesamtLabel}</span>
-            <span className="font-bold tabular-nums text-text-primary">
+            <span className="text-lg font-bold tabular-nums text-text-primary">
               {fmtPartnerEuro(sumBrutto)}
             </span>
           </div>

@@ -29,12 +29,13 @@ import {
 import {
   buildPartnerAuftragPortalSections,
   PARTNER_LEISTUNGEN_GESAMT_LABEL,
+  PARTNER_LEISTUNGEN_SECTION_TITLE,
   partnerAuftragDetailMetaLine,
   resolvePartnerAuftragKonditionZeilen,
 } from "@/lib/partner/partner-portal-display";
 import {
-  partnerAngebotPortalPath,
-  partnerAngebotPortalUrl,
+  partnerAnfragePortalPath,
+  partnerAnfragePortalUrl,
 } from "@/lib/partner/partner-site-url";
 
 export function PartnerAuftragAnfrageDetail({
@@ -80,7 +81,7 @@ export function PartnerAuftragAnfrageDetail({
         if (onAccepted) {
           onAccepted(res.angebotAnfrageId);
         } else {
-          router.replace(partnerAngebotPortalPath(res.angebotAnfrageId));
+          router.replace(partnerAnfragePortalPath(res.angebotAnfrageId));
           router.refresh();
         }
       } else {
@@ -97,7 +98,7 @@ export function PartnerAuftragAnfrageDetail({
     ? "Die Antwortfrist ist abgelaufen, weil der geplante Projektstart erreicht ist. Eine Annahme oder Ablehnung ist nicht mehr möglich."
     : hwBeantwortet
     ? hwSt === "akzeptiert"
-      ? "Du hast zugesagt. Als Nächstes bestätigst du die Konditionen je Leistung unter „Angebote“."
+      ? "Du hast zugesagt. Als Nächstes bestätigst du die Konditionen je Leistung unter „Anfragen“."
       : "Du hast diese Zuweisung abgelehnt."
     : "Bärenwald hat dir Leistungen an diesem Projekt zugewiesen. Bitte bestätige oder lehne die Anfrage ab.";
 
@@ -150,10 +151,10 @@ export function PartnerAuftragAnfrageDetail({
       <PartnerPortalDetailSections sections={sections} />
 
       {konditionZeilen.length > 0 ? (
-        <PartnerDetailSection title="Leistungen & Vergütung">
+        <PartnerDetailSection title={PARTNER_LEISTUNGEN_SECTION_TITLE}>
           <PartnerLeistungenKonditionenCard
             zeilen={konditionZeilen}
-            mode="vorschlag"
+            mode="readonly"
             gesamtLabel={PARTNER_LEISTUNGEN_GESAMT_LABEL}
           />
         </PartnerDetailSection>
@@ -163,10 +164,10 @@ export function PartnerAuftragAnfrageDetail({
 
       {hwSt === "akzeptiert" && item.angebotHandwerkerId ? (
         <a
-          href={partnerAngebotPortalUrl(item.angebotHandwerkerId)}
+          href={partnerAnfragePortalUrl(item.angebotHandwerkerId)}
           className="btn-pill-primary portal-btn inline-flex !px-4 !py-2.5"
         >
-          Zum Konditionen-Schritt
+          Konditionen bestätigen
         </a>
       ) : hwSt === "akzeptiert" ? (
         <p className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 portal-text-body text-amber-900">
@@ -204,7 +205,7 @@ export function PartnerAuftragAnfrageDetail({
       <PartnerConfirmDialog
         open={confirmAccept}
         title="Leistung annehmen?"
-        description="Du bestätigst die Zuweisung. Als Nächstes gibst du unter „Angebote“ deinen Preis ein und lädst dein Angebot (PDF) hoch."
+        description="Du bestätigst die Zuweisung. Als Nächstes bestätigst du die Konditionen unter „Anfragen“."
         confirmLabel="Ja, annehmen"
         loading={loading}
         onConfirm={() => sendAntwort("akzeptiert")}
