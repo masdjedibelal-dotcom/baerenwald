@@ -1,4 +1,5 @@
 import type { PartnerAnfrageItem, PartnerAuftragItem } from "@/lib/partner/get-partner-data";
+import { isPartnerAngebotListItemOffen } from "@/lib/partner/partner-angebot-portal-status";
 import { isAuftragAbgeschlossen } from "@/lib/partner/handwerker-bewertung-display";
 import {
   isPartnerAnfrageAktionErforderlich,
@@ -24,13 +25,7 @@ export function filterPartnerAnfragenListen(
   };
 }
 
-/** Offen in Angebote: HW hat bestätigt, CRM hat Auftrag noch nicht freigegeben (PDF/Vertrag möglich). */
-export function isPartnerAngebotListItemOffen(item: PartnerAnfrageItem): boolean {
-  const hwSt = (item.hw_status ?? "offen").toLowerCase();
-  if (hwSt !== "uebernommen") return false;
-  if (item.auftrag_status && item.auftrag_status.toLowerCase() !== "offen") return false;
-  return true;
-}
+export { isPartnerAngebotListItemOffen };
 
 export function isPartnerAuftragListItemOffen(item: PartnerAuftragItem): boolean {
   const s = item.status.toLowerCase();

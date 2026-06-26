@@ -230,7 +230,7 @@ export async function respondPartnerAnfrage(opts: {
   if (isPartnerAnfrageBestaetigungAusstehend(timingItem)) {
     return {
       ok: false,
-      error: "Bitte die vereinbarten Konditionen mit „Vereinbarte Konditionen bestätigen“ abschließen.",
+      error: "Bitte zuerst die Konditionen bestätigen.",
     };
   }
 
@@ -293,7 +293,7 @@ export async function respondPartnerAnfrage(opts: {
   const hw = one(raw.handwerker) as { name: string; firma?: string | null } | null;
   const gw = one(raw.gewerke) as { name: string } | null;
   const artLabel =
-    konditionen.art === "bestaetigt" ? "Konditionen bestätigt" : "Gegenvorschlag";
+    konditionen.art === "bestaetigt" ? "Konditionen bestätigt" : "Preise angepasst";
 
   if (!isRueckfrage) {
     await sendPartnerInternalAnfrageAntwortMail({

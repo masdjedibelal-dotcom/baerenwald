@@ -1,5 +1,7 @@
 "use client";
 
+import { Download } from "lucide-react";
+
 import { PdfFileIcon } from "@/components/shared/PdfFileIcon";
 import { cn } from "@/lib/utils";
 
@@ -46,7 +48,9 @@ export function DokumenteTabelle({
               <tr className="portal-text-meta border-b border-border-light bg-muted/30 text-left text-text-tertiary">
                 <th className="px-3 py-2.5 font-semibold">Datum</th>
                 <th className="px-3 py-2.5 font-semibold">Dateiname</th>
-                <th className="w-14 px-2 py-2.5" aria-label="PDF öffnen" />
+                <th className="w-[5.5rem] px-2 py-2.5 text-right font-semibold">
+                  Aktionen
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -63,15 +67,25 @@ export function DokumenteTabelle({
                   </td>
                   <td className="px-2 py-2 text-right">
                     {doc.href?.trim() ? (
-                      <a
-                        href={normalizeHref(doc.href)}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="portal-touch-target inline-grid place-items-center rounded-lg border border-border-light bg-white text-[#c62828] transition-colors hover:bg-red-50"
-                        aria-label={`${doc.name} als PDF öffnen`}
-                      >
-                        <PdfFileIcon className="h-5 w-5" />
-                      </a>
+                      <div className="flex items-center justify-end gap-1">
+                        <a
+                          href={normalizeHref(doc.href)}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="portal-touch-target inline-grid place-items-center rounded-lg border border-border-light bg-white text-[#c62828] transition-colors hover:bg-red-50"
+                          aria-label={`${doc.name} ansehen`}
+                        >
+                          <PdfFileIcon className="h-5 w-5" />
+                        </a>
+                        <a
+                          href={normalizeHref(doc.href)}
+                          download
+                          className="portal-touch-target inline-grid place-items-center rounded-lg border border-border-light bg-white text-text-secondary transition-colors hover:bg-muted/40"
+                          aria-label={`${doc.name} herunterladen`}
+                        >
+                          <Download className="h-4 w-4" />
+                        </a>
+                      </div>
                     ) : (
                       <span className="portal-text-meta text-text-tertiary">—</span>
                     )}

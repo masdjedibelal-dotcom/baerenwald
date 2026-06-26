@@ -113,7 +113,7 @@ export function partnerAnfrageStatusPillKey(item: PartnerAnfrageTimingFields): s
 export function partnerAnfrageStatusLabel(item: PartnerAnfrageTimingFields): string {
   if (isPartnerAnfrageAntwortAbgelaufen(item)) return "Antwort abgelaufen";
   if (isPartnerAnfrageWartetAufPreiseinigung(item)) return "Wartet auf Prüfung";
-  if (isPartnerAnfrageBestaetigungAusstehend(item)) return "Gegenangebot akzeptiert";
+  if (isPartnerAnfrageBestaetigungAusstehend(item)) return "Konditionen bestätigen";
   if (isPartnerAnfrageKonditionenBearbeitbar(item)) {
     const hwSt = (item.hw_status ?? "").toLowerCase();
     if (hwSt === "rueckfrage") return "Neue Konditionen";
@@ -214,12 +214,8 @@ export function partnerAuftragAnfrageStatusLabel(
   if (isPartnerAuftragWartetAufPreiseinigung(item)) return "Wartet auf Prüfung";
   const ahSt = (item.angebotHwStatus ?? "").toLowerCase();
   if (ahSt === "rueckfrage") return "Neue Konditionen";
-  if (ahSt === "bestaetigt") return "Gegenangebot akzeptiert";
-  if (ahSt === "uebernommen") {
-    return item.angebotHwKonditionenArt === "gegenvorschlag"
-      ? "Gegenangebot akzeptiert"
-      : "Konditionen vereinbart";
-  }
+  if (ahSt === "bestaetigt") return "Konditionen bestätigen";
+  if (ahSt === "uebernommen") return "Bestätigt";
   const hw = item.hwStatus.toLowerCase();
   const map: Record<string, string> = {
     angefragt: "Antwort ausstehend",

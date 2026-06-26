@@ -33,6 +33,13 @@ export function partnerAnfragePortalUrl(anfrageId: string): string {
   return `${SITE_CONFIG.url}${partnerAnfragePortalPath(id)}`;
 }
 
+/** Listen-Ansicht ohne Detail-Deep-Link. */
+export function partnerSectionListPath(
+  section: "anfragen" | "angebote" | "auftraege"
+): string {
+  return `/partner?section=${section}`;
+}
+
 /** Relativer Pfad — Client-Navigation im Partner-Portal (gleiche Origin). */
 export function partnerAnfragePortalPath(anfrageId: string): string {
   const id = anfrageId.trim();

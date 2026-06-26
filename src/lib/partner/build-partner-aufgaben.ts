@@ -4,6 +4,7 @@ import type {
   PartnerAuftragItem,
   PartnerBautagebuchAnfrageItem,
 } from "@/lib/partner/get-partner-data";
+import { resolvePartnerAngebotPortalPhase } from "@/lib/partner/partner-angebot-portal-status";
 import {
   isPartnerAnfrageKonditionenBearbeitbar,
   isPartnerAuftragAnfrageOffen,
@@ -78,29 +79,16 @@ export function buildPartnerAufgaben(input: {
   }
 
   for (const a of angebote) {
-    const hwSt = (a.hw_status ?? "offen").toLowerCase();
-    const hatPdf = Boolean(a.hw_angebot_pdf_url || a.hw_angebot_anhang_urls?.length);
-    if (hwSt === "uebernommen" && !hatPdf) {
+    if (resolvePartnerAngebotPortalPhase(a) === "auftrag_freigegeben") {
       pushAufgabe(list, {
-        id: `angebot-pdf-${a.id}`,
-        typ: "angebot_einreichen",
-        titel: `Angebots-PDF hochladen: ${a.listen_titel}`,
+        id: `auftrag-freigegeben-${a.id}`,
+        typ: "vertrag_bestaetigen",
+        titel: `Auftrag annehmen: ${a.listen_titel}`,
         untertitel: [a.plz, a.ort].filter(Boolean).join(" ") || undefined,
         section: "angebote",
         selectedId: a.id,
-        sortKey: `3-${a.antwort_at ?? a.gesendet_at ?? a.id}`,
-      });
-    }
-
-    if (a.projektvertrag_bereit && !a.projektvertrag_bestaetigt_am) {
-      pushAufgabe(list, {
-        id: `vertrag-angebot-${a.id}`,
-        typ: "vertrag_bestaetigen",
-        titel: `Projektvertrag bestätigen: ${a.listen_titel}`,
-        section: "angebote",
-        selectedId: a.id,
         dringend: true,
-        sortKey: `4-${a.id}`,
+        sortKey: `3-${a.antwort_at ?? a.gesendet_at ?? a.id}`,
       });
     }
   }

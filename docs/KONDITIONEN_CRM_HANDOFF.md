@@ -11,7 +11,7 @@ Zielgruppe: **baerenwald-crm-dashboard** + Supabase-Betrieb
 |---------|--------|---------|
 | EK-Vorschlag je Leistung (readonly in Anfrage) | ✅ | `partner-konditionen.ts`, `partner-leistungen-display.ts` |
 | Konditionen-Card (eine Tabelle) | ✅ | `PartnerLeistungenKonditionenCard.tsx` |
-| Anfrage: annehmen / Gegenvorschlag (Preis-Popup) | ✅ | `PartnerAnfrageDetail.tsx`, `respondPartnerAnfrage()` |
+| Anfrage: annehmen / Preise anpassen | ✅ | `PartnerAnfrageDetail.tsx`, `respondPartnerAnfrage()` |
 | Anfrage bleibt bis HW-Bestätigung (`hw_status` bestaetigt → uebernommen) | ✅ | `partner-portal-phase.ts` |
 | Angebot: eine Spalte „Vergütung netto“ + optionales PDF | ✅ | `PartnerAngebotDetail.tsx`, `submitPartnerAngebotPdf()` |
 | Auftrag: vereinbarter Partnerpreis | ✅ | `PartnerAuftragDetail.tsx` |
@@ -26,7 +26,7 @@ Zielgruppe: **baerenwald-crm-dashboard** + Supabase-Betrieb
 | Phase | Bedeutung | Wo gespeichert |
 |-------|-----------|----------------|
 | Vorschlag | Bärenwald schlägt Vergütung vor | `angebote.positionen[].einkaufspreis` (× `menge` = Zeile netto) |
-| Verhandlung | HW bestätigt oder Gegenvorschlag | `angebot_handwerker.hw_konditionen` (`ek_netto` = Snapshot, `hw_netto` = HW-Vorschlag) |
+| Verhandlung | HW bestätigt oder passt Preise an | `angebot_handwerker.hw_konditionen` |
 | **Vereinbart** | Einigung steht | **gleicher Wert** in `einkaufspreis` **und** `preis_partner` |
 
 ### Felder nach „Übernehmen“ (CRM)
@@ -87,51 +87,45 @@ comment on column public.angebot_handwerker.hw_konditionen is
 | Wert | Bedeutung | Partner-Tab |
 |------|-----------|-------------|
 | `offen` | HW hat noch nicht geantwortet | Anfragen |
-| `eingereicht` | HW hat zugesagt / Gegenvorschlag — CRM prüft | Anfragen |
+| `eingereicht` | HW hat geantwortet — CRM prüft | Anfragen |
 | `bestaetigt` | **CRM hat eingewilligt** — HW muss vereinbarte Preise noch bestätigen | Anfragen (offen) |
-| `uebernommen` | **HW hat bestätigt** — Angebots-PDF, Vertrag | Angebote (offen bis CRM Auftrag freigibt) |
+| `uebernommen` | **HW hat Konditionen bestätigt** — wartet auf CRM-Auftragsfreigabe | Angebote (geschlossen bis Freigabe) |
 | `rueckfrage` | CRM lehnt ab / neuer Vorschlag — HW kann erneut antworten | Anfragen |
 | `abgelehnt` | CRM lehnt endgültig ab (optional → Rückfrage-Runde) | Anfragen |
 
-**Drei Schritte nach Gegenvorschlag:**
+**Vier Schritte bis zum laufenden Auftrag:**
 
-1. CRM akzeptiert → `hw_status = bestaetigt` (+ Preise in DB schreiben) → Partner **Anfragen / offen**
-2. HW bestätigt → `hw_status = uebernommen` → Partner **Angebote / offen** (PDF-Upload möglich)
-3. CRM nimmt Auftrag an (`auftraege.status` ≠ `offen`) → **Angebote geschlossen** → Partner **Aufträge**
+1. CRM akzeptiert Konditionen → `hw_status = bestaetigt` (+ Preise in DB) → Partner **Anfragen / offen**
+2. HW bestätigt → `hw_status = uebernommen` → Partner **Angebote / geschlossen** (Badge: „Warte auf Auftragsfreigabe“, optional PDF)
+3. **CRM: Angebot angenommen → Transfer zu Auftrag** → `auftraege.status` ≠ `offen` → Partner **Angebote / offen** (Badge: „Auftrag freigegeben“)
+4. HW nimmt Auftrag an (Rahmenvertrag + Unterlagen) → `projektvertrag_bestaetigt_am` → Partner **Aufträge**
 
 ---
 
-## 4. Gegenvorschlag — CRM-Ablauf
+## 4. Konditionen-Runde (CRM)
 
-### 4.1 Was der Handwerker sendet
+Ein Prozess für Zuweisung, Annahme und Preisverhandlung — kein Sonderfall.
 
-1. Unter **Anfragen** Preise prüfen, ggf. per Popup **„Preis bearbeiten“** anpassen.
-2. **Annehmen** → `art: bestaetigt`, alle `hw_netto = ek_netto`.
-3. **Gegenvorschlag senden** → `art: gegenvorschlag`, mind. eine Zeile `geaendert: true`.
-4. Portal setzt: `status = akzeptiert`, `hw_status = eingereicht`, `hw_konditionen`, Summen.
+### 4.1 Handwerker (Portal)
 
-### 4.2 Prüf-UI im CRM
+1. Preise prüfen, ggf. „Preis bearbeiten“.
+2. **Annehmen** → `art: bestaetigt` · **Preise senden** → `art: gegenvorschlag`.
+3. Portal setzt `hw_status = eingereicht`.
 
-- [ ] `hw_konditionen` laden und Tabelle anzeigen:
+### 4.2 CRM-Prüfung
 
-  | Leistung | Vorschlag (ek_netto) | HW (hw_netto) | Δ | Geändert |
-  |----------|----------------------|---------------|---|----------|
+- Tabelle: Vorschlag (`ek_netto`) vs. HW (`hw_netto`), Δ bei Abweichung
+- Badge nach `art`: unverändert / angepasst
 
-- [ ] Badge: **Bestätigt** vs. **Gegenvorschlag** (`art`)
-- [ ] Gesamtsumme aus `hw_preis_netto` / `hw_preis_brutto`
-- [ ] Bei Gegenvorschlag: Δ hervorheben (z. B. amber), Sortierung nach größter Abweichung
+### 4.3 CRM-Entscheidung
 
-### 4.3 Entscheidungen des CRM
+| Aktion | Ergebnis |
+|--------|----------|
+| **Übernehmen** | `hw_status = bestaetigt`, ein Preis je Zeile in DB, Notify-Mail |
+| **Rückfrage** | neuer Vorschlag in Positionen, `hw_status = rueckfrage` |
+| **Ablehnen** | `hw_status = abgelehnt` |
 
-| Aktion | Wann | Ergebnis |
-|--------|------|----------|
-| **Übernehmen (Gegenvorschlag)** | Einigung mit HW-Preisen | `hw_status = bestaetigt`, **ein** Preis je Zeile in DB, Mail „bitte bestätigen“ |
-| **Übernehmen (unverändert)** | HW hat Vorschlag bestätigt | optional direkt `uebernommen` oder ebenfalls `bestaetigt` |
-| **Rückfrage** | Neuer Bärenwald-Vorschlag, Verhandlung geht weiter | `einkaufspreis` in Positionen anpassen, `hw_status = rueckfrage` |
-| **Ablehnen** | Keine Einigung | `hw_status = abgelehnt` oder `rueckfrage` + Notiz |
-
-**Regel Gegenvorschlag:** Übernahme bedeutet **nicht** „EK behalten und Partnerpreis separat“. Es bedeutet: **Der vereinbarte Netto-Preis ist `hw_netto` — und wird als einziger Wert in EK und Partnerpreis geschrieben.**
-
+Nach Übernahme: `hw_netto` = einziger Wert in `einkaufspreis` und `preis_partner`.
 ---
 
 ## 5. Aktion „Übernehmen“ (Implementierung CRM)
@@ -188,28 +182,36 @@ where id = :position_id;
 
 ### 5.4 Nach CRM-Übernahme (`bestaetigt`)
 
-- [ ] Partner-Portal: Eintrag bleibt unter **Anfragen** (Filter „offen“, Badge „Gegenangebot akzeptiert“)
-- [ ] HW sieht vereinbarte Preise (readonly) und Button **„Vereinbarte Konditionen bestätigen“**
-- [ ] Mail mit `bitteBestaetigen: true` (Link zu Anfragen)
-- [ ] `hw_konditionen` als Historie **nicht löschen**
+- [ ] Tab **Anfragen**, Badge „Konditionen bestätigen“
+- [ ] Mail: `partner-notify-angebot-bestaetigt` mit `bitteBestaetigen: true`
 
 ### 5.5 Nach HW-Bestätigung (`uebernommen`)
 
-- [ ] Partner-Portal: Eintrag wechselt zu **Angebote** (offen, solange `auftraege.status = offen`)
-- [ ] HW kann optional Angebots-PDF hochladen
-- [ ] Nach CRM-Auftragsfreigabe: Angebote **geschlossen**, Vorgang unter **Aufträge**
+- [ ] Tab **Angebote**, Badge „Warte auf Auftragsfreigabe“
+- [ ] Optional Angebots-PDF
+
+### 5.6 CRM: Angebot → Auftrag (Freigabe)
+
+Bestehender CRM-Transfer — kein extra Endpoint.
+
+| Feld | Wert |
+|------|------|
+| `auftraege.status` | ≠ `offen` |
+| `auftraege.angebot_id` | verknüpft |
+
+Portal: Badge „Auftrag freigegeben“, HW nimmt Auftrag an → Tab **Aufträge**.
+
+### 5.7 Nach HW-Auftragsannahme
+
+- [ ] Tab **Aufträge**, `projektvertrag_bestaetigt_am` gesetzt
 
 ---
 
-## 6. Aktion „Rückfrage“ (neue Verhandlungsrunde)
+## 6. Rückfrage (neue Runde)
 
-Wenn der Gegenvorschlag **nicht** übernommen wird, aber weiterverhandelt werden soll:
-
-1. [ ] Neuen Bärenwald-Vorschlag in `angebote.positionen[].einkaufspreis` setzen (× `menge` = neues `ek_netto` für nächste Runde).
-2. [ ] `hw_status = 'rueckfrage'`, `hw_crm_notiz` mit Begründung (z. B. „Max. 460 € netto möglich“).
-3. [ ] **Nicht** `preis_partner` setzen — noch keine Einigung.
-4. [ ] HW sieht unter **Anfragen** die neue Rückfrage, kann erneut annehmen oder Gegenvorschlag senden (überschreibt `hw_konditionen`).
-
+1. Neuer Vorschlag in `angebote.positionen[].einkaufspreis`
+2. `hw_status = rueckfrage`, optional `hw_crm_notiz`
+3. HW antwortet erneut unter **Anfragen**
 ---
 
 ## 7. CRM-To-dos (Checkliste)
@@ -218,17 +220,19 @@ Wenn der Gegenvorschlag **nicht** übernommen wird, aber weiterverhandelt werden
 - [ ] `HandwerkerEinreichungPruefung.tsx`: `hw_konditionen` + Δ-Tabelle
 - [ ] Buttons: Übernehmen | Rückfrage | Ablehnen
 
-### Übernehmen
+### Übernehmen (Konditionen)
 - [ ] `einkaufspreis` und `preis_partner` auf **denselben** vereinbarten Netto-Wert (`hw_netto`)
-- [ ] `hw_status = uebernommen`
-- [ ] Gesamtsummen konsistent (`hw_preis_*` bereits vom Portal)
+- [ ] `hw_status = bestaetigt` (HW bestätigt danach → `uebernommen`)
+- [ ] Mail: `partner-notify-angebot-bestaetigt` mit `bitteBestaetigen: true`
 
-### Rückfrage
-- [ ] Nur `einkaufspreis` anpassen, `hw_status = rueckfrage`
-- [ ] Kein `preis_partner` bis zur finalen Einigung
+### Auftragsfreigabe (CRM-Transfer)
+- [ ] Beim **Angebot annehmen → Auftrag** automatisch `auftraege.status` auf Wert **≠ `offen`** setzen
+- [ ] `angebot_id` am Auftrag verknüpfen (für Portal-Lookup)
+- [ ] Kein manueller `hw_status`-Wechsel nötig
 
-### Auftragsphase
-- [ ] Rechnungs-Upload erst nach `uebernommen` + Vertrag (Portal bereits so)
+### Auftragsphase (Partner)
+- [ ] Portal erkennt Freigabe über `auftrag_status !== 'offen'` + `hw_status = uebernommen`
+- [ ] Rechnungs-Upload erst nach HW-Auftragsannahme (Tab Aufträge)
 
 ### Edge Cases
 - [ ] `ek_netto: null` bei Einreichung → Übernahme = `hw_netto` wird erster EK
@@ -246,27 +250,39 @@ sequenceDiagram
   participant HW as Handwerker
 
   CRM->>Portal: Anfrage (einkaufspreis je Position)
-  HW->>Portal: Annehmen oder Gegenvorschlag
+  HW->>Portal: Annehmen oder Preise anpassen
   Portal->>CRM: hw_konditionen, hw_status=eingereicht
-  Note over Portal: Bleibt unter Anfragen
+  Note over Portal: Tab Anfragen
 
-  alt CRM übernimmt (auch Gegenvorschlag)
-    CRM->>CRM: einkaufspreis = preis_partner = hw_netto
-    CRM->>Portal: hw_status=uebernommen
-    Note over Portal: Wechsel zu Angebote
-  else CRM Rückfrage
-    CRM->>CRM: einkaufspreis anpassen
-    CRM->>Portal: hw_status=rueckfrage
-    HW->>Portal: Neue Runde
-  end
+  CRM->>CRM: Konditionen übernehmen
+  CRM->>Portal: hw_status=bestaetigt
+  HW->>Portal: Konditionen bestätigen
+  Portal->>Portal: hw_status=uebernommen
+  Note over Portal: Tab Angebote, Warte auf Auftragsfreigabe
+
+  CRM->>CRM: Angebot angenommen → Transfer zu Auftrag
+  Note over CRM: auftraege.status ≠ offen
+  Note over Portal: Tab Angebote OFFEN, Auftrag freigegeben
+
+  HW->>Portal: Rahmenvertrag + Unterlagen, Auftrag annehmen
+  Note over Portal: Tab Aufträge
 ```
+
+**Portal-Erkennung Auftragsfreigabe** (`partner-angebot-portal-status.ts`):
+
+| `hw_status` | `auftrag_status` | `projektvertrag_bestaetigt_am` | Portal-Phase |
+|-------------|------------------|-------------------------------|--------------|
+| `uebernommen` | `offen` oder kein Auftrag | — | Warte auf Auftragsfreigabe |
+| `uebernommen` | ≠ `offen` | — | **Auftrag freigegeben** (offen) |
+| `uebernommen` | beliebig | gesetzt | Angenommen → Tab Aufträge |
 
 ---
 
 ## 9. Test-Checkliste
 
-1. HW nimmt EK an → CRM übernimmt → `einkaufspreis × menge = preis_partner` = `hw_netto`
-2. HW sendet Gegenvorschlag (+30 €) → CRM übernimmt → **beide** Felder = neuer HW-Preis, nicht alter EK
+1. HW nimmt EK an → CRM übernimmt → `hw_status = bestaetigt` → HW bestätigt → `uebernommen`
+2. HW passt Preise an → CRM übernimmt → gleicher Ablauf
 3. CRM Rückfrage mit neuem EK → HW sieht Anfrage, kann erneut antworten
-4. Nach `uebernommen` → nur Tab **Angebote**, eine Vergütungsspalte, optional PDF
-5. Auftrag zeigt `preis_partner` = vereinbarter Wert aus Schritt 1/2
+4. Nach `uebernommen`: Tab **Angebote**, Badge **Warte auf Auftragsfreigabe**, optional PDF
+5. **CRM: Angebot annehmen → Auftrag** → Badge **Auftrag freigegeben**, Angebote **offen**, Rahmenvertrag in Dokumente
+6. HW klickt **Auftrag annehmen** → Tab **Aufträge**, `preis_partner` = vereinbarter Wert

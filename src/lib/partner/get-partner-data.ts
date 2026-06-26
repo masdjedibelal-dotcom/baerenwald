@@ -120,6 +120,7 @@ export type PartnerAnfrageItem = {
   compliance_stamm?: PartnerComplianceItem[];
   compliance_projekt?: PartnerComplianceItem[];
   dokumente?: PartnerVertragKontext["dokumente_zeilen"];
+  rahmenvertrag?: PartnerRahmenvertrag | null;
 };
 
 export type PartnerAuftragPosition = {
@@ -690,6 +691,7 @@ export async function getPartnerDataForHandwerker(handwerkerId: string) {
   }
 
   const complianceBundle = await loadHandwerkerComplianceBundle(id);
+  const rahmenvertrag = await loadRahmenvertrag(id);
 
   const auftragStatusById = new Map(alleAuftraege.map((a) => [a.id, a.status]));
 
@@ -706,6 +708,7 @@ export async function getPartnerDataForHandwerker(handwerkerId: string) {
       compliance_stamm: vertragCtx?.compliance_stamm ?? [],
       compliance_projekt: vertragCtx?.compliance_projekt ?? [],
       dokumente: vertragCtx?.dokumente_zeilen ?? [],
+      rahmenvertrag,
     };
   });
 
@@ -759,7 +762,6 @@ export async function getPartnerDataForHandwerker(handwerkerId: string) {
   const auftragAnfragenListe = alleAuftraege.filter(isAuftragAnfrageListItem);
   const auftraegeListe = alleAuftraege.filter(isAuftragAuftraegeListItem);
 
-  const rahmenvertrag = await loadRahmenvertrag(id);
   const gewerkSlugs = Array.isArray(handwerker.gewerke)
     ? (handwerker.gewerke as string[]).map((s) => s.trim()).filter(Boolean)
     : [];

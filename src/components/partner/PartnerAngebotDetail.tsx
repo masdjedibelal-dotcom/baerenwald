@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { submitPartnerAngebotPdf, submitPartnerRechnung } from "@/app/actions/partner-angebote";
+import { PartnerAngebotAuftragAnnehmen } from "@/components/partner/PartnerAngebotAuftragAnnehmen";
 import { PartnerLeistungenKonditionenCard } from "@/components/partner/PartnerLeistungenKonditionenCard";
 import {
   PartnerDetailError,
@@ -11,21 +12,25 @@ import {
   PartnerDetailInfoBox,
   PartnerDetailLayout,
   PartnerDetailSection,
-  PartnerDetailStickyActions,
   PartnerDetailSuccessBox,
 } from "@/components/partner/PartnerDetailUi";
 import { PartnerPortalDetailSections } from "@/components/partner/PartnerPortalDetailSections";
-import { PartnerProjektvertragPaket } from "@/components/partner/PartnerProjektvertragPaket";
 import {
   DokumenteTabelle,
   type DokumentZeile,
 } from "@/components/shared/DokumenteTabelle";
 import { FileUploadField } from "@/components/shared/FileUploadField";
+import {
+  partnerAngebotPortalStatusLabel,
+  partnerAngebotPortalStatusPillKey,
+  resolvePartnerAngebotPortalPhase,
+} from "@/lib/partner/partner-angebot-portal-status";
 import type { PartnerAnfrageItem } from "@/lib/partner/get-partner-data";
 import {
   fmtPartnerDate,
   partnerDetailStatusPillClass,
 } from "@/lib/partner/partner-detail-format";
+import { partnerAngebotStatusPillClass } from "@/lib/partner/partner-list-mappers";
 import {
   buildPartnerAngebotPortalSections,
   PARTNER_LEISTUNGEN_GESAMT_LABEL,
@@ -33,10 +38,7 @@ import {
   partnerDetailDateMetaLine,
   resolvePartnerKonditionZeilen,
 } from "@/lib/partner/partner-portal-display";
-import {
-  mapKonditionZeilenVereinbart,
-  type PartnerHwKonditionen,
-} from "@/lib/partner/partner-konditionen";
+import { mapKonditionZeilenVereinbart } from "@/lib/partner/partner-konditionen";
 import {
   PARTNER_MAX_ANGEBOT_DATEIEN,
   PARTNER_MAX_PDF_MB,
@@ -46,19 +48,6 @@ import {
 
 const PDF_FORM_ID = "partner-angebot-pdf-form";
 const RECHNUNG_FORM_ID = "partner-rechnung-form";
-
-function hwStatusLabel(
-  s?: string,
-  konditionen?: PartnerHwKonditionen | null
-): string {
-  const v = (s ?? "offen").toLowerCase();
-  if (v === "uebernommen") {
-    return konditionen?.art === "gegenvorschlag"
-      ? "Gegenangebot akzeptiert"
-      : "Preise vereinbart";
-  }
-  return "Offen";
-}
 
 export function PartnerAngebotDetail({ item }: { item: PartnerAnfrageItem }) {
   const router = useRouter();
@@ -71,17 +60,18 @@ export function PartnerAngebotDetail({ item }: { item: PartnerAnfrageItem }) {
 
   const hwSt = (item.hw_status ?? "offen").toLowerCase();
   const uebernommen = hwSt === "uebernommen";
-  const vertragBestaetigt = Boolean(item.projektvertrag_bestaetigt_am);
-  const vertragspaketAktiv = uebernommen && !vertragBestaetigt;
+  const phase = resolvePartnerAngebotPortalPhase(item);
+  const wartetAufFreigabe = phase === "wartet_auf_freigabe";
+  const auftragFreigegeben = phase === "auftrag_freigegeben";
+  const angenommen = phase === "angenommen";
   const rechnungEingereicht = Boolean(item.hw_rechnung_eingereicht_at);
   const hatPdf = Boolean(
     item.hw_angebot_pdf_url ||
       item.hw_angebot_pdf_signed_url ||
       item.hw_angebot_anhang_urls?.length
   );
-  const kannPdfHochladen = uebernommen && !hatPdf;
-  const kannRechnungHochladen =
-    uebernommen && vertragBestaetigt && !rechnungEingereicht;
+  const kannPdfHochladen = uebernommen && wartetAufFreigabe && !hatPdf;
+  const kannRechnungHochladen = uebernommen && angenommen && !rechnungEingereicht;
 
   const konditionZeilen = useMemo(() => {
     const zeilen = resolvePartnerKonditionZeilen(
@@ -90,16 +80,7 @@ export function PartnerAngebotDetail({ item }: { item: PartnerAnfrageItem }) {
       item.hw_konditionen
     );
     if (!uebernommen) return zeilen;
-    const vereinbart = mapKonditionZeilenVereinbart(zeilen);
-    if (item.hw_konditionen?.art !== "gegenvorschlag") return vereinbart;
-    const submitted = new Map(
-      item.hw_konditionen.positionen.map((p) => [p.position_id, p])
-    );
-    return vereinbart.map((z) => {
-      const prev = submitted.get(z.id);
-      if (!prev?.geaendert || prev.ek_netto == null) return z;
-      return { ...z, vorherNetto: prev.ek_netto };
-    });
+    return mapKonditionZeilenVereinbart(zeilen);
   }, [item.crm_positionen_raw, item.gewerk_id, item.hw_konditionen, uebernommen]);
 
   const sections = useMemo(
@@ -112,6 +93,16 @@ export function PartnerAngebotDetail({ item }: { item: PartnerAnfrageItem }) {
 
   const dokumentZeilen = useMemo((): DokumentZeile[] => {
     const rows: DokumentZeile[] = [];
+    const rv = item.rahmenvertrag;
+    const rvHref = rv?.pdf_signed_url?.trim() || rv?.pdf_url?.trim();
+    if (rvHref) {
+      rows.push({
+        id: "rahmenvertrag",
+        datum: rv?.signiert_am ?? rv?.portal_akzeptiert_am,
+        name: "Partnerschafts-Rahmenvertrag",
+        href: rvHref,
+      });
+    }
     const anhangSigned =
       item.hw_angebot_anhang_signed_urls?.length
         ? item.hw_angebot_anhang_signed_urls
@@ -136,6 +127,7 @@ export function PartnerAngebotDetail({ item }: { item: PartnerAnfrageItem }) {
     }
     return rows;
   }, [
+    item.rahmenvertrag,
     item.hw_angebot_anhang_signed_urls,
     item.hw_angebot_pdf_signed_url,
     item.hw_eingereicht_at,
@@ -214,20 +206,11 @@ export function PartnerAngebotDetail({ item }: { item: PartnerAnfrageItem }) {
     router.refresh();
   }
 
-  const actionFooter = kannPdfHochladen ? (
-    <PartnerDetailStickyActions
-      primaryLabel="PDF speichern"
-      primaryType="submit"
-      primaryForm={PDF_FORM_ID}
-      primaryLoading={pdfLoading}
-    />
-  ) : kannRechnungHochladen ? (
-    <PartnerDetailStickyActions
-      primaryLabel="Rechnung absenden"
-      primaryType="submit"
-      primaryForm={RECHNUNG_FORM_ID}
-      primaryLoading={rechnungLoading}
-    />
+  const statusLabel = partnerAngebotPortalStatusLabel(item);
+  const statusPillKey = partnerAngebotPortalStatusPillKey(item);
+
+  const actionFooter = auftragFreigegeben ? (
+    <PartnerAngebotAuftragAnnehmen item={item} footer />
   ) : undefined;
 
   return (
@@ -235,19 +218,21 @@ export function PartnerAngebotDetail({ item }: { item: PartnerAnfrageItem }) {
       <PartnerDetailHero
         title={item.listen_titel}
         metaLine={partnerDetailDateMetaLine(item.antwort_at ?? item.gesendet_at)}
-        statusLabel={hwStatusLabel(item.hw_status, item.hw_konditionen)}
-        statusPillClass={partnerDetailStatusPillClass(item.hw_status ?? "uebernommen")}
+        statusLabel={statusLabel}
+        statusPillClass={partnerAngebotStatusPillClass(statusPillKey)}
       />
 
-      {vertragspaketAktiv ? (
+      {wartetAufFreigabe ? (
         <PartnerDetailInfoBox>
-          {item.hw_konditionen?.art === "gegenvorschlag"
-            ? "Bärenwald hat dein Gegenangebot akzeptiert. Unten die vereinbarten Preise — als Nächstes optional Angebots-PDF und Projektvertrag."
-            : "Die Preise sind vereinbart. Bitte bestätige den Projektvertrag — danach wird der Auftrag freigeschaltet. Ein Angebots-PDF kannst du optional hochladen."}
+          Warte auf Freigabe. Optional Angebots-PDF hochladen.
         </PartnerDetailInfoBox>
-      ) : uebernommen && vertragBestaetigt ? (
+      ) : auftragFreigegeben ? (
+        <PartnerDetailInfoBox>
+          Rahmenvertrag prüfen, Unterlagen hochladen, Auftrag annehmen.
+        </PartnerDetailInfoBox>
+      ) : angenommen ? (
         <PartnerDetailSuccessBox>
-          <p className="font-semibold">Auftrag bestätigt</p>
+          <p className="font-semibold">Auftrag angenommen</p>
           <p className="text-sm">Du findest das laufende Projekt unter „Aufträge“.</p>
         </PartnerDetailSuccessBox>
       ) : kannRechnungHochladen ? (
@@ -268,10 +253,9 @@ export function PartnerAngebotDetail({ item }: { item: PartnerAnfrageItem }) {
         </PartnerDetailSection>
       ) : null}
 
-      {item.hw_konditionen ? (
+      {item.hw_eingereicht_at ? (
         <p className="portal-text-meta text-text-secondary">
           Vereinbart am {fmtPartnerDate(item.hw_eingereicht_at)}
-          {item.hw_konditionen.art === "gegenvorschlag" ? " · Gegenvorschlag" : " · Konditionen bestätigt"}
         </p>
       ) : null}
 
@@ -292,23 +276,24 @@ export function PartnerAngebotDetail({ item }: { item: PartnerAnfrageItem }) {
             onChange={handleAngebotPdfChange}
           />
           {pdfError ? <PartnerDetailError message={pdfError} /> : null}
+          {angebotPdfs.length > 0 ? (
+            <button
+              type="submit"
+              disabled={pdfLoading}
+              className="btn-pill-outline portal-btn !px-4 !py-2.5"
+            >
+              {pdfLoading ? "Wird hochgeladen…" : "PDF hochladen"}
+            </button>
+          ) : null}
         </form>
       ) : null}
 
-      {vertragspaketAktiv && item.auftrag_id ? (
-        <PartnerProjektvertragPaket
-          auftragId={item.auftrag_id}
-          gewerkName={item.gewerk_name}
-          vertrag={item.projektvertrag ?? null}
-          projektvertrag_bestaetigt_am={item.projektvertrag_bestaetigt_am}
-        />
-      ) : null}
+      {auftragFreigegeben ? <PartnerAngebotAuftragAnnehmen item={item} /> : null}
 
       <DokumenteTabelle
         dokumente={dokumentZeilen}
         heading="Dokumente"
         emptyText="Noch keine Dokumente."
-        className="!border-t-0 !pt-0"
       />
 
       {kannRechnungHochladen ? (
@@ -326,6 +311,13 @@ export function PartnerAngebotDetail({ item }: { item: PartnerAnfrageItem }) {
             onChange={handleRechnungPdfChange}
           />
           {rechnungError ? <PartnerDetailError message={rechnungError} /> : null}
+          <button
+            type="submit"
+            disabled={rechnungLoading || !rechnungPdf}
+            className="btn-pill-outline portal-btn !px-4 !py-2.5"
+          >
+            {rechnungLoading ? "Wird gesendet…" : "Rechnung absenden"}
+          </button>
         </form>
       ) : null}
 

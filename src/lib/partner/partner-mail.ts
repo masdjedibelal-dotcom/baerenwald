@@ -280,20 +280,18 @@ export async function sendHandwerkerAngebotBestaetigtMail(opts: {
 
   const bitteBestaetigen = Boolean(opts.bitteBestaetigen);
   const subject = bitteBestaetigen
-    ? `Gegenangebot akzeptiert: ${opts.gewerkName} — bitte bestätigen`
-    : `Angebot übernommen: ${opts.gewerkName} — Bärenwald Partner`;
-  const headline = bitteBestaetigen ? "Gegenangebot akzeptiert" : "Dein Angebot wurde übernommen";
+    ? `Konditionen bestätigen: ${opts.gewerkName}`
+    : `Angebot übernommen: ${opts.gewerkName}`;
+  const headline = bitteBestaetigen ? "Konditionen bestätigen" : "Angebot übernommen";
   const body = bitteBestaetigen
     ? `<p style="margin:0 0 12px;font-size:15px;line-height:1.6;">Hallo ${escapeHtml(opts.handwerkerName)},</p>
-<p style="margin:0 0 12px;font-size:15px;line-height:1.6;">Bärenwald hat dein Gegenangebot <strong>akzeptiert</strong>. Bitte prüfe die vereinbarten Preise und bestätige sie im Partner-Portal unter <strong>Anfragen</strong>.</p>
+<p style="margin:0 0 12px;font-size:15px;line-height:1.6;">Bitte die Preise unter <strong>Anfragen</strong> bestätigen.</p>
 ${preisBlock}
-${mailBtn("Zum Partner-Portal", portalHref)}
-<p style="font-size:13px;color:#6B7280;line-height:1.6;margin:12px 0 0;">Nach deiner Bestätigung findest du den Vorgang unter Angebote (dort kannst du optional dein Angebots-PDF hochladen).</p>`
+${mailBtn("Zum Partner-Portal", portalHref)}`
     : `<p style="margin:0 0 12px;font-size:15px;line-height:1.6;">Hallo ${escapeHtml(opts.handwerkerName)},</p>
-<p style="margin:0 0 12px;font-size:15px;line-height:1.6;">vielen Dank — Bärenwald hat dein Angebot geprüft und <strong>übernommen</strong>. Du findest den Status im Partner-Portal unter <strong>Angebote</strong>.</p>
+<p style="margin:0 0 12px;font-size:15px;line-height:1.6;">Dein Angebot wurde übernommen. Status unter <strong>Angebote</strong>.</p>
 ${preisBlock}
-${mailBtn("Zum Partner-Portal", portalHref)}
-<p style="font-size:13px;color:#6B7280;line-height:1.6;margin:12px 0 0;">Bei Rückfragen melde dich bei uns.</p>`;
+${mailBtn("Zum Partner-Portal", portalHref)}`;
 
   const html = mailShell(headline, body, headline);
 
@@ -334,8 +332,8 @@ export async function sendHandwerkerAngebotAntwortMail(opts: {
   const istRueckfrage = opts.typ === "rueckfrage";
   const titel = istRueckfrage ? "Rückfrage zu deinem Angebot" : "Angebot nicht übernommen";
   const intro = istRueckfrage
-    ? "zu deinem eingereichten Angebot haben wir noch eine <strong>Rückfrage</strong>. Bitte prüfe unsere Nachricht und reiche bei Bedarf ein aktualisiertes Angebot im Partner-Portal ein."
-    : "vielen Dank für dein Angebot. Leider können wir es in der vorliegenden Form <strong>nicht übernehmen</strong>. Du kannst im Partner-Portal ein neues Angebot mit Preis und PDF einreichen.";
+    ? "Neue Nachricht zu deinen Konditionen — bitte im Partner-Portal prüfen."
+    : "Dein Angebot konnte nicht übernommen werden. Du kannst im Portal ein neues einreichen.";
   const defaultBetreff = istRueckfrage
     ? `Rückfrage zu deinem Angebot: ${opts.gewerkName} — Bärenwald Partner`
     : `Angebot nicht übernommen: ${opts.gewerkName} — Bärenwald Partner`;
@@ -372,7 +370,7 @@ ${mailBtn("Zum Partner-Portal", portalHref)}
   }
 }
 
-/** Intern: Handwerker hat Konditionen / Gegenvorschlag eingereicht. */
+/** Intern: Handwerker hat Konditionen eingereicht. */
 export async function sendPartnerInternalAngebotMail(opts: {
   handwerkerName: string;
   firma?: string | null;
@@ -565,7 +563,7 @@ export async function sendPartnerInternalAnfrageAntwortMail(opts: {
         <strong>Handlungsbedarf:</strong> Anderen Handwerker für <strong>${escapeHtml(opts.gewerkName)}</strong> anfragen.
       </p>`
     : `<p style="margin-top:12px;padding:10px 12px;background:#E8F5E9;border-radius:8px;border:1px solid #81C784;">
-        Der Handwerker kann jetzt unter <strong>Anfragen</strong> im Partner-Portal die vorgeschlagenen Konditionen bestätigen oder einen Gegenvorschlag je Leistung senden. Du erhältst eine weitere Mail bei der Einreichung.
+        Handwerker kann unter <strong>Anfragen</strong> Preise bestätigen oder anpassen.
       </p>`;
 
   const portalBtn =

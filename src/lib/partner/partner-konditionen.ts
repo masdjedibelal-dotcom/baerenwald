@@ -10,7 +10,7 @@ export type PartnerKonditionZeile = {
   beschreibung?: string;
   /** Einkaufspreis-Vorschlag von Bärenwald (netto Zeile). null = Preis folgt */
   vorschlagNetto: number | null;
-  /** Vorheriger Preis (z. B. eigener Gegenvorschlag vor neuer CRM-Runde). */
+  /** Vorheriger Preis (z. B. vor neuer CRM-Runde). */
   vorherNetto?: number | null;
   /** Vom Handwerker eingereicht / vereinbart (netto Zeile). */
   hwNetto?: number | null;

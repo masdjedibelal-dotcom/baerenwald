@@ -70,7 +70,7 @@ import {
   type PartnerListFilterId,
 } from "@/lib/partner/partner-list-filters";
 import { cn } from "@/lib/utils";
-import { partnerAnfragePortalPath, partnerAngebotPortalPath } from "@/lib/partner/partner-site-url";
+import { partnerAnfragePortalPath, partnerAngebotPortalPath, partnerSectionListPath } from "@/lib/partner/partner-site-url";
 
 type PartnerSection =
   | "uebersicht"
@@ -364,7 +364,6 @@ export function PartnerClient({
     ) {
       setSection("angebote");
       setListFilter("offen");
-      setMobileDetailOpen(true);
       router.replace(partnerAngebotPortalPath(selectedId));
       return;
     }
@@ -477,7 +476,6 @@ export function PartnerClient({
     setSection("angebote");
     setListFilter("offen");
     setListPage(1);
-    setMobileDetailOpen(true);
     router.replace(partnerAngebotPortalPath(selectedId));
   }, [
     section,
@@ -494,7 +492,6 @@ export function PartnerClient({
     if (anfragenSorted.some((a) => a.id === selectedId)) {
       router.replace(partnerAnfragePortalPath(selectedId));
       setSection("anfragen");
-      setMobileDetailOpen(true);
       return;
     }
     router.refresh();
@@ -536,34 +533,39 @@ export function PartnerClient({
     if (s === "angebote") {
       const id = searchParams.get("id")?.trim();
       setSection("angebote");
-      if (id) {
-        if (angeboteSorted.some((a) => a.id === id)) {
-          setSelectedId(id);
-          setMobileDetailOpen(true);
-          return;
-        }
-        if (angeboteAlleAkzeptiert.some((a) => a.id === id)) {
-          setSelectedId(id);
-          setMobileDetailOpen(true);
-          return;
-        }
-        if (anfragenSorted.some((a) => a.id === id)) {
-          router.replace(partnerAnfragePortalPath(id));
-          setSection("anfragen");
-          setSelectedId(id);
-          setMobileDetailOpen(true);
-          return;
-        }
+      if (!id) {
+        setMobileDetailOpen(false);
+        return;
+      }
+      if (angeboteSorted.some((a) => a.id === id)) {
         setSelectedId(id);
         setMobileDetailOpen(true);
+        return;
       }
+      if (angeboteAlleAkzeptiert.some((a) => a.id === id)) {
+        setSelectedId(id);
+        setMobileDetailOpen(true);
+        return;
+      }
+      if (anfragenSorted.some((a) => a.id === id)) {
+        router.replace(partnerAnfragePortalPath(id));
+        setSection("anfragen");
+        setSelectedId(id);
+        setMobileDetailOpen(true);
+        return;
+      }
+      setSelectedId(id);
+      setMobileDetailOpen(true);
       return;
     }
 
     if (s === "anfragen") {
       const rawId = searchParams.get("id")?.trim();
       setSection("anfragen");
-      if (!rawId) return;
+      if (!rawId) {
+        setMobileDetailOpen(false);
+        return;
+      }
 
       const auftragIdFromParam = rawId.startsWith("auftrag:")
         ? rawId.slice("auftrag:".length)
@@ -665,15 +667,26 @@ export function PartnerClient({
   }
 
   function switchSection(id: PartnerSection) {
-    setSection(id);
     setListPage(1);
     setListFilter("offen");
     setMobileDetailOpen(false);
     if (id !== "gpt") setGptOpen(false);
-    if (id === "uebersicht" || id === "gpt" || id === "profil" || id === "planer") return;
-    if (id === "anfragen") setSelectedId(firstAnfrageId(anfragen, auftragAnfragen));
-    else if (id === "angebote") setSelectedId(angeboteSorted[0]?.id ?? null);
-    else if (id === "auftraege") setSelectedId(auftraege[0]?.id ?? null);
+    if (id === "uebersicht" || id === "gpt" || id === "profil" || id === "planer") {
+      setSection(id);
+      if (id === "uebersicht") router.replace("/partner");
+      return;
+    }
+    setSection(id);
+    if (id === "anfragen") {
+      setSelectedId(firstAnfrageId(anfragen, auftragAnfragen));
+      router.replace(partnerSectionListPath("anfragen"));
+    } else if (id === "angebote") {
+      setSelectedId(angeboteSorted[0]?.id ?? null);
+      router.replace(partnerSectionListPath("angebote"));
+    } else if (id === "auftraege") {
+      setSelectedId(auftraege[0]?.id ?? null);
+      router.replace(partnerSectionListPath("auftraege"));
+    }
   }
 
   function openFromOverview(tab: OverviewTabId, id: string) {

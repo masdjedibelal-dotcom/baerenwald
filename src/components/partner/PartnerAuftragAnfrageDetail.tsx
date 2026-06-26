@@ -176,25 +176,25 @@ export function PartnerAuftragAnfrageDetail({
   const statusLabel = partnerAuftragAnfrageStatusLabel(item);
 
   const infoText = abgelaufen
-    ? "Die Antwortfrist ist abgelaufen, weil der geplante Projektstart erreicht ist. Eine Annahme oder Ablehnung ist nicht mehr möglich."
+    ? "Antwortfrist abgelaufen."
     : wartetAufPruefung
-      ? "Dein Gegenangebot wurde an Bärenwald übermittelt. Wir prüfen die Preise — du musst vorerst nichts tun."
+      ? "Wird von Bärenwald geprüft."
       : konditionenBestaetigen
-        ? "Bärenwald hat dein Gegenangebot akzeptiert. Bitte bestätige die vereinbarten Konditionen in der verknüpften Anfrage — danach findest du den Vorgang unter „Angebote“."
+        ? "Konditionen in der verknüpften Anfrage bestätigen."
         : konditionenUebernommen
-          ? "Die Konditionen sind bestätigt. Unter „Angebote“ kannst du optional dein Angebots-PDF hochladen."
+          ? "Unter Angebote optional PDF hochladen."
         : konditionenNachreichen
-          ? "Du hast zugesagt, die Preise wurden aber noch nicht übermittelt. Bitte unten „Annehmen“ oder „Gegenangebot senden“ erneut ausführen."
+          ? "Preise noch nicht gesendet — bitte unten erneut senden."
           : hwSt === "abgelehnt"
-            ? "Du hast diese Zuweisung abgelehnt."
-            : "Prüfe die Leistungen und passe bei Bedarf den Angebotspreis an. Mit „Annehmen“ oder „Gegenangebot senden“ schickst du deine Antwort an Bärenwald.";
+            ? "Zuweisung abgelehnt."
+            : "Preise prüfen, bei Bedarf anpassen, dann senden.";
 
   const sections = useMemo(
     () => buildPartnerAuftragPortalSections(item.lead),
     [item.lead]
   );
 
-  const primaryLabel = geaendert ? "Gegenangebot senden" : "Annehmen";
+  const primaryLabel = geaendert ? "Preise senden" : "Annehmen";
 
   const statusPillClass = abgelaufen
     ? "tag bg-red-100 text-red-700"
@@ -277,7 +277,7 @@ export function PartnerAuftragAnfrageDetail({
           href={partnerAnfragePortalUrl(item.angebotHandwerkerId)}
           className="btn-pill-primary portal-btn inline-flex !px-4 !py-2.5"
         >
-          Vereinbarte Konditionen bestätigen
+          Konditionen bestätigen
         </a>
       ) : null}
 
@@ -318,13 +318,9 @@ export function PartnerAuftragAnfrageDetail({
 
       <PartnerConfirmDialog
         open={confirmAccept}
-        title={geaendert ? "Gegenangebot senden?" : "Anfrage annehmen?"}
-        description={
-          geaendert
-            ? "Dein Gegenangebot mit den angepassten Preisen geht an Bärenwald zur Prüfung."
-            : "Du nimmst die Anfrage mit den vorgeschlagenen Preisen an."
-        }
-        confirmLabel="Ja, absenden"
+        title={geaendert ? "Preise senden?" : "Annehmen?"}
+        description={geaendert ? "An Bärenwald zur Prüfung." : "Mit den vorgeschlagenen Preisen."}
+        confirmLabel="Senden"
         loading={loading}
         onConfirm={() => sendAntwort("akzeptiert")}
         onCancel={() => setConfirmAccept(false)}

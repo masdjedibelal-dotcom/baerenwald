@@ -4,6 +4,12 @@ import type {
   PartnerAuftragItem,
 } from "@/lib/partner/get-partner-data";
 import {
+  partnerAngebotListenHint,
+  partnerAngebotPortalStatusLabel,
+  partnerAngebotPortalStatusPillKey,
+  resolvePartnerAngebotPortalPhase,
+} from "@/lib/partner/partner-angebot-portal-status";
+import {
   isPartnerAnfrageAktionErforderlich,
   isPartnerAnfrageAntwortAbgelaufen,
   isPartnerAnfrageWartetAufPreiseinigung,
@@ -55,12 +61,12 @@ export function mapAnfrageAngebotToCard(item: PartnerAnfrageItem): PartnerCardRo
   if (aktion) {
     hint =
       hwSt === "bestaetigt"
-        ? "→ Vereinbarte Konditionen bestätigen"
+        ? "→ Konditionen bestätigen"
         : hwSt === "rueckfrage"
           ? "→ Neue Konditionen prüfen"
           : "→ Bitte annehmen oder ablehnen";
   } else if (wartet) {
-    hint = "→ Warte auf Freigabe durch Bärenwald";
+    hint = "→ Warte auf Freigabe";
   }
 
   return {
@@ -92,7 +98,7 @@ export function mapAnfrageAuftragToCard(item: PartnerAuftragItem): PartnerCardRo
   if (aktion) {
     hint = "→ Bitte annehmen oder ablehnen";
   } else if (wartet) {
-    hint = "→ Warte auf Freigabe durch Bärenwald";
+    hint = "→ Warte auf Freigabe";
   } else if (ahSt === "bestaetigt" && item.angebotHandwerkerId) {
     hint = "→ Konditionen in Anfrage bestätigen";
   } else if (ahSt === "uebernommen" && item.angebotHandwerkerId) {
@@ -117,18 +123,23 @@ export function mapAnfrageAuftragToCard(item: PartnerAuftragItem): PartnerCardRo
   };
 }
 
-/** Sortierung: Offen → In Prüfung → Übernommen. */
+/** Sortierung: Freigabe offen → Warten → Übrige. */
 export function angebotPhaseSortKey(item: PartnerAnfrageItem): number {
+  const phase = resolvePartnerAngebotPortalPhase(item);
+  if (phase === "auftrag_freigegeben") return 0;
+  if (phase === "wartet_auf_freigabe") return 1;
   const hwSt = (item.hw_status ?? "").toLowerCase();
   if (hwSt === "uebernommen") return 2;
-  if (item.hw_eingereicht_at) return 1;
-  return 0;
+  if (item.hw_eingereicht_at) return 3;
+  return 4;
 }
 
 export function partnerAngebotStatusPillClass(statusKey: string): string {
   const s = statusKey.toLowerCase();
   if (s === "uebernommen") return "tag bg-emerald-100 text-emerald-700";
   if (s === "geschlossen") return "tag bg-slate-100 text-slate-700";
+  if (s === "auftrag_freigegeben") return "tag bg-violet-100 text-violet-800";
+  if (s === "warte_freigabe") return "tag bg-slate-100 text-slate-700";
   if (s === "vertrag_offen") return "tag bg-violet-100 text-violet-800";
   if (s === "warte_vertrag") return "tag bg-slate-100 text-slate-700";
   if (s === "eingereicht") return "tag bg-blue-100 text-blue-800";
@@ -140,9 +151,11 @@ export function partnerAngebotStatusPillClass(statusKey: string): string {
 }
 
 export function partnerAngebotOverviewStatusLabel(statusKey: string): string {
-  if (statusKey === "uebernommen") return "Preise vereinbart";
-  if (statusKey === "vertrag_offen") return "Vertrag offen";
-  if (statusKey === "warte_vertrag") return "Warte auf Vertrag";
+  if (statusKey === "auftrag_freigegeben") return "Auftrag freigegeben";
+  if (statusKey === "warte_freigabe") return "Warte auf Auftragsfreigabe";
+  if (statusKey === "uebernommen") return "Angebot offen";
+  if (statusKey === "vertrag_offen") return "Auftrag freigegeben";
+  if (statusKey === "warte_vertrag") return "Warte auf Auftragsfreigabe";
   if (statusKey === "eingereicht") return "Wartet auf Prüfung";
   if (statusKey === "rueckfrage") return "Neue Konditionen";
   if (statusKey === "abgelehnt") return "Abgelehnt";
@@ -159,45 +172,21 @@ function angebotListenStatus(item: PartnerAnfrageItem): {
   pillKey: string;
   hint?: string;
 } {
+  const phase = resolvePartnerAngebotPortalPhase(item);
+  if (phase) {
+    return {
+      label: partnerAngebotPortalStatusLabel(item),
+      pillKey: partnerAngebotPortalStatusPillKey(item),
+      hint: partnerAngebotListenHint(item),
+    };
+  }
+
   const hwSt = (item.hw_status ?? "").toLowerCase();
-  const auftragSt = (item.auftrag_status ?? "").toLowerCase();
-  if (
-    hwSt === "uebernommen" &&
-    item.auftrag_status &&
-    auftragSt !== "offen"
-  ) {
-    return {
-      label: "In Auftrag übernommen",
-      pillKey: "geschlossen",
-      hint: "→ Unter Aufträge",
-    };
-  }
-  if (hwSt === "uebernommen" && !item.projektvertrag_bestaetigt_am) {
-    if (item.projektvertrag_bereit) {
-      return {
-        label: "Vertrag offen",
-        pillKey: "vertrag_offen",
-        hint: "→ Projektvertrag bestätigen",
-      };
-    }
-    return {
-      label: "Warte auf Vertrag",
-      pillKey: "warte_vertrag",
-      hint: "→ Bärenwald bereitet Vertrag vor",
-    };
-  }
-  if (hwSt === "uebernommen") {
-    const label =
-      item.hw_konditionen?.art === "gegenvorschlag"
-        ? "Gegenangebot akzeptiert"
-        : "Preise vereinbart";
-    return { label, pillKey: "uebernommen", hint: "→ Vergütung & Vertrag" };
-  }
   if (hwSt === "eingereicht") {
     return {
       label: "Wartet auf Prüfung",
       pillKey: "eingereicht",
-      hint: "→ Warte auf Freigabe durch Bärenwald",
+      hint: "→ Warte auf Freigabe",
     };
   }
   if (hwSt === "rueckfrage") {

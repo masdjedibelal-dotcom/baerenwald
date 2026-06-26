@@ -232,11 +232,11 @@ export function PartnerAnfrageDetail({
     router.refresh();
   }
 
-  const primaryLabel = geaendert ? "Gegenangebot senden" : "Annehmen";
+  const primaryLabel = geaendert ? "Preise senden" : "Annehmen";
 
   const actionFooter = bestaetigungAusstehend ? (
     <PartnerDetailStickyActions
-      primaryLabel="Vereinbarte Konditionen bestätigen"
+      primaryLabel="Konditionen bestätigen"
       onPrimary={() => setConfirmBestaetigt(true)}
       primaryLoading={loading}
     />
@@ -271,34 +271,23 @@ export function PartnerAnfrageDetail({
 
       {bearbeitbar ? (
         <PartnerDetailInfoBox>
-          Prüfe die Leistungen und passe bei Bedarf den Angebotspreis per „Preis bearbeiten“ an.
-          Unverändert bestätigst du mit „Annehmen“, bei geänderten Preisen mit „Gegenangebot
-          senden“.
+          Preise prüfen. Bei Änderungen „Preis bearbeiten“, dann senden.
         </PartnerDetailInfoBox>
       ) : bestaetigungAusstehend ? (
         <PartnerDetailInfoBox>
-          Bärenwald hat dein Gegenangebot akzeptiert. Bitte prüfe die vereinbarten Preise unten
-          und bestätige — danach findest du den Vorgang unter „Angebote“ (dort kannst du optional
-          dein Angebots-PDF hochladen).
+          Bitte Konditionen bestätigen — danach unter Angebote.
         </PartnerDetailInfoBox>
       ) : wartetAufPreis ? (
-        <PartnerDetailInfoBox>
-          Deine Konditionen wurden an Bärenwald übermittelt. Wir prüfen die Preise —
-          du musst vorerst nichts tun. Sobald die Einigung steht, findest du das Angebot unter
-          „Angebote“.
-        </PartnerDetailInfoBox>
+        <PartnerDetailInfoBox>Wird von Bärenwald geprüft.</PartnerDetailInfoBox>
       ) : hwSt === "rueckfrage" ? (
         <PartnerDetailInfoBox>
           {item.hw_crm_notiz?.trim() ? (
             <>
-              <p className="font-semibold">Neue Konditionen von Bärenwald</p>
+              <p className="font-semibold">Neue Konditionen</p>
               <p className="mt-2 whitespace-pre-wrap text-sm">{item.hw_crm_notiz.trim()}</p>
             </>
           ) : (
-            <>
-              Bärenwald hat auf dein Gegenangebot reagiert und neue Konditionen hinterlegt.
-              Bitte prüfe die Preise — geänderte Zeilen sind mit „vorher“ markiert.
-            </>
+            <>Neue Preise von Bärenwald. Geänderte Zeilen sind markiert.</>
           )}
         </PartnerDetailInfoBox>
       ) : hwSt === "abgelehnt" && item.hw_crm_notiz?.trim() ? (
@@ -358,7 +347,6 @@ export function PartnerAnfrageDetail({
       {item.antwort_at ? (
         <p className="portal-text-body text-text-secondary">
           Beantwortet am {fmtPartnerDate(item.antwort_at)}
-          {item.hw_konditionen?.art === "gegenvorschlag" ? " · Gegenvorschlag" : ""}
           {item.antwort_notiz ? ` — ${item.antwort_notiz}` : ""}
         </p>
       ) : null}
@@ -386,9 +374,9 @@ export function PartnerAnfrageDetail({
 
       <PartnerConfirmDialog
         open={confirmBestaetigt}
-        title="Vereinbarte Konditionen bestätigen?"
-        description="Du bestätigst die von Bärenwald akzeptierten Preise. Danach wechselt der Vorgang zu „Angebote“."
-        confirmLabel="Ja, bestätigen"
+        title="Konditionen bestätigen?"
+        description="Danach unter Angebote."
+        confirmLabel="Bestätigen"
         loading={loading}
         onConfirm={confirmVereinbart}
         onCancel={() => setConfirmBestaetigt(false)}
@@ -396,13 +384,13 @@ export function PartnerAnfrageDetail({
 
       <PartnerConfirmDialog
         open={confirmSend}
-        title={geaendert ? "Gegenangebot senden?" : "Anfrage annehmen?"}
+        title={geaendert ? "Preise senden?" : "Annehmen?"}
         description={
           geaendert
-            ? "Dein Gegenangebot mit den angepassten Preisen geht an Bärenwald zur Prüfung."
-            : "Du nimmst die Anfrage mit den vorgeschlagenen Preisen an. Bärenwald prüft deine Zusage."
+            ? "An Bärenwald zur Prüfung."
+            : "Mit den vorgeschlagenen Preisen."
         }
-        confirmLabel="Ja, absenden"
+        confirmLabel="Senden"
         loading={loading}
         onConfirm={sendZusage}
         onCancel={() => setConfirmSend(false)}

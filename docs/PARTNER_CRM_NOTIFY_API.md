@@ -79,7 +79,7 @@ Registrierungs-Hinweis für neue Partner.
 
 ---
 
-## Gegenangebot akzeptiert / Konditionen übernommen
+## Konditionen übernommen
 
 `POST https://baerenwaldmuenchen.de/api/internal/partner-notify-angebot-bestaetigt`
 
@@ -88,14 +88,22 @@ Gleicher Bearer `PARTNER_INTERNAL_API_SECRET`.
 Body (nach CRM setzt `hw_status = bestaetigt`):
 
 ```json
-{ "anfrageId": "<uuid aus angebot_handwerker.id>", "bitteBestaetigen": true }
+{ "anfrageId": "<uuid>", "bitteBestaetigen": true }
 ```
 
-Mail an den Handwerker mit Link zu **Anfragen** — Bitte vereinbarte Konditionen bestätigen.
+Mail: Link zu **Anfragen** — Konditionen bestätigen.
 
-Ohne `bitteBestaetigen` (Legacy / direkt `uebernommen`): Link zu **Angebote**.
+Ohne `bitteBestaetigen` (Legacy): Link zu **Angebote**.
 
-**CRM:** nach Gegenvorschlag-Akzeptanz mit `hw_status = bestaetigt` aufrufen.
+**CRM:** nach Übernahme mit `hw_status = bestaetigt` aufrufen.
+
+---
+
+## Auftragsfreigabe (Angebot → Auftrag)
+
+Kein API-Endpoint. CRM-Transfer setzt `auftraege.status` ≠ `offen`.
+
+Portal zeigt dann Badge „Auftrag freigegeben“ unter **Angebote**.
 
 ## Bereits in der Website (ohne CRM)
 

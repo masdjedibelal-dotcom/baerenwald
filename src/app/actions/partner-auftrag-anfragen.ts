@@ -158,7 +158,7 @@ export async function respondPartnerAuftragZuweisung(opts: {
       return {
         ok: false,
         error:
-          "Bärenwald hat dein Gegenangebot akzeptiert. Bitte bestätige die vereinbarten Konditionen unter „Anfragen“.",
+          "Bitte Konditionen unter „Anfragen“ bestätigen.",
       };
     }
 
@@ -332,7 +332,7 @@ export async function respondPartnerAuftragZuweisung(opts: {
       .maybeSingle();
 
     const artLabel =
-      konditionen.art === "bestaetigt" ? "Konditionen bestätigt" : "Gegenvorschlag";
+      konditionen.art === "bestaetigt" ? "Konditionen bestätigt" : "Preise angepasst";
     const kunde = one(
       (angebotRow as { kunden?: unknown } | null)?.kunden as
         | { plz?: string | null }
