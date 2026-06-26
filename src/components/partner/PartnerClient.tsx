@@ -59,7 +59,7 @@ import {
   formatHandwerkerBewertung,
   HANDWERKER_BEWERTUNG_KATEGORIEN,
 } from "@/lib/partner/handwerker-bewertung-display";
-import { isPartnerAnfrageOffen, isPartnerAuftragAnfrageOffen } from "@/lib/partner/partner-anfrage-status";
+import { isPartnerAnfrageAktionErforderlich, isPartnerAuftragAnfrageAktionErforderlich } from "@/lib/partner/partner-anfrage-status";
 import {
   countPartnerAnfragenFilter,
   countPartnerAngeboteFilter,
@@ -70,7 +70,8 @@ import {
   type PartnerListFilterId,
 } from "@/lib/partner/partner-list-filters";
 import { cn } from "@/lib/utils";
-import { partnerAnfragePortalPath } from "@/lib/partner/partner-site-url";
+import { partnerAnfragePortalPath, partnerAngebotPortalPath } from "@/lib/partner/partner-site-url";
+import { resolveAngebotHandwerkerPhase } from "@/lib/partner/partner-portal-phase";
 
 type PartnerSection =
   | "uebersicht"
@@ -123,9 +124,9 @@ function isAuftragAktiv(a: PartnerAuftragItem): boolean {
 
 function sortAnfragen(items: PartnerAnfrageItem[]): PartnerAnfrageItem[] {
   return [...items].sort((a, b) => {
-    const aOffen = isPartnerAnfrageOffen(a) ? 1 : 0;
-    const bOffen = isPartnerAnfrageOffen(b) ? 1 : 0;
-    if (aOffen !== bOffen) return bOffen - aOffen;
+    const aAktion = isPartnerAnfrageAktionErforderlich(a) ? 1 : 0;
+    const bAktion = isPartnerAnfrageAktionErforderlich(b) ? 1 : 0;
+    if (aAktion !== bAktion) return bAktion - aAktion;
     return (
       new Date(b.gesendet_at || 0).getTime() - new Date(a.gesendet_at || 0).getTime()
     );
@@ -246,8 +247,8 @@ export function PartnerClient({
   const vorname = handwerker.vorname || "Partner";
 
   const offeneAnfragenCount =
-    anfragen.filter(isPartnerAnfrageOffen).length +
-    auftragAnfragen.filter(isPartnerAuftragAnfrageOffen).length;
+    anfragen.filter(isPartnerAnfrageAktionErforderlich).length +
+    auftragAnfragen.filter(isPartnerAuftragAnfrageAktionErforderlich).length;
 
   const anfragenSorted = useMemo(() => sortAnfragen(anfragen), [anfragen]);
 
@@ -262,10 +263,7 @@ export function PartnerClient({
     });
   }, [angebote]);
 
-  const offeneAngeboteCount = angebote.filter((a) => {
-    const hwSt = (a.hw_status ?? "").toLowerCase();
-    return hwSt !== "uebernommen" && !a.hw_eingereicht_at;
-  }).length;
+  const offeneAngeboteCount = angebote.filter(isPartnerAngebotListItemOffen).length;
 
   const aktiveAuftraegeCount = auftraege.filter(isAuftragAktiv).length;
 
@@ -419,6 +417,16 @@ export function PartnerClient({
           : undefined,
     [anfragenSorted, selectedAnfrageParsed]
   );
+
+  useEffect(() => {
+    if (section !== "anfragen" || !selectedAnfrageAngebot) return;
+    if (resolveAngebotHandwerkerPhase(selectedAnfrageAngebot) === "angebot") {
+      setSection("angebote");
+      setListFilter("offen");
+      setSelectedId(selectedAnfrageAngebot.id);
+      router.replace(partnerAngebotPortalPath(selectedAnfrageAngebot.id));
+    }
+  }, [section, selectedAnfrageAngebot, router]);
 
   const selectedAnfrageAuftrag = useMemo(
     () =>
@@ -636,7 +644,7 @@ export function PartnerClient({
         title={row.title}
         statusLabel={row.statusLabel}
         statusPillClass={
-          tab === "angebote"
+          tab === "angebote" || tab === "anfragen"
             ? partnerAngebotStatusPillClass(row.statusPillKey)
             : statusPillClass(row.statusPillKey)
         }
@@ -666,7 +674,7 @@ export function PartnerClient({
         subtitle={row.subtitle}
         statusLabel={row.statusLabel}
         statusPillClass={
-          section === "angebote"
+          section === "angebote" || section === "anfragen"
             ? partnerAngebotStatusPillClass(row.statusPillKey)
             : statusPillClass(row.statusPillKey)
         }

@@ -103,13 +103,23 @@ export function resolveAuftragPortalPhase(
   return "auftrag";
 }
 
-/** Auftrag in „Anfragen“, solange HW noch antworten soll. */
+/** Auftrag in „Anfragen“, solange HW noch antworten soll oder Preiseinigung läuft. */
 export function isAuftragAnfrageListItem(item: {
   portalPhase: PartnerPortalPhase;
   hwStatus: string;
+  angebotHwStatus?: string | null;
+  angebotHandwerkerId?: string | null;
 }): boolean {
+  const h = item.hwStatus.toLowerCase();
+  const ahSt = (item.angebotHwStatus ?? "").toLowerCase();
+
+  /** Nach Zusage: in Anfragen bis CRM die Konditionen übernommen hat. */
+  if (h === "akzeptiert" && item.angebotHandwerkerId && ahSt !== "uebernommen") {
+    return true;
+  }
+
   if (item.portalPhase !== "anfrage") return false;
-  return !HW_BEANTWORTET.has(item.hwStatus.toLowerCase());
+  return !HW_BEANTWORTET.has(h);
 }
 
 /** Auftrag in „Aufträge“ — nach CRM-Bestätigung + verbindlicher Vertragsannahme. */

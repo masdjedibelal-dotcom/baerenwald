@@ -10,6 +10,8 @@ export type PartnerKonditionZeile = {
   beschreibung?: string;
   /** Einkaufspreis-Vorschlag von Bärenwald (netto Zeile). null = Preis folgt */
   vorschlagNetto: number | null;
+  /** Vorheriger Preis (z. B. eigener Gegenvorschlag vor neuer CRM-Runde). */
+  vorherNetto?: number | null;
   /** Vom Handwerker eingereicht / vereinbart (netto Zeile). */
   hwNetto?: number | null;
   /** Optionale Notiz des Handwerkers zu dieser Leistung. */
@@ -163,6 +165,31 @@ export function buildPartnerKonditionZeilen(
       beschreibung: positionBeschreibung(row, title),
       vorschlagNetto: vorschlagNettoFromRow(row),
       mwstSatz: resolveMwstSatz(row),
+    };
+  });
+}
+
+export function mergeKonditionRueckfrageZeilen(
+  zeilen: PartnerKonditionZeile[],
+  hw?: PartnerHwKonditionen | null
+): PartnerKonditionZeile[] {
+  if (!hw?.positionen.length) return zeilen;
+  const byId = new Map(hw.positionen.map((p) => [p.position_id, p]));
+  return zeilen.map((z) => {
+    const prev = byId.get(z.id);
+    if (!prev) return z;
+    const vorher =
+      prev.geaendert || (prev.hw_netto != null && z.vorschlagNetto != null &&
+        Math.abs(prev.hw_netto - z.vorschlagNetto) > 0.009)
+        ? prev.hw_netto
+        : prev.ek_netto != null &&
+            z.vorschlagNetto != null &&
+            Math.abs(prev.ek_netto - z.vorschlagNetto) > 0.009
+          ? prev.hw_netto
+          : undefined;
+    return {
+      ...z,
+      vorherNetto: vorher,
     };
   });
 }

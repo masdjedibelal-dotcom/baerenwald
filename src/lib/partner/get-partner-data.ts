@@ -166,6 +166,8 @@ export type PartnerAuftragItem = {
   hwStatus: string;
   /** Verknüpftes angebot_handwerker für Preis/PDF (nach Auftrags-Annahme). */
   angebotHandwerkerId?: string | null;
+  angebotHwStatus?: string | null;
+  angebotHwEingereichtAt?: string | null;
   /** CRM-Bewertung nach Abschluss (read-only). */
   bewertung?: PartnerAuftragBewertung | null;
   projektvertrag_bestaetigt_am?: string | null;
@@ -700,21 +702,27 @@ export async function getPartnerDataForHandwerker(handwerkerId: string) {
     };
   });
 
-  const angeboteOffenByAngebotId = new Map<string, string>();
+  const ahMetaByAngebotId = new Map<
+    string,
+    { id: string; hw_status?: string; hw_eingereicht_at?: string }
+  >();
   for (const a of anfragenFinal) {
-    if (resolveAngebotHandwerkerPhase(a) === "angebot") {
-      angeboteOffenByAngebotId.set(a.angebot_id, a.id);
-    }
+    ahMetaByAngebotId.set(a.angebot_id, {
+      id: a.id,
+      hw_status: a.hw_status,
+      hw_eingereicht_at: a.hw_eingereicht_at,
+    });
   }
 
   alleAuftraege = alleAuftraege.map((a) => {
     const angebotId = auftragAngebotIdByAuftragId.get(a.id);
+    const ahMeta = angebotId ? ahMetaByAngebotId.get(angebotId) : undefined;
     const vertragCtx = complianceBundle.vertragByAuftragId.get(a.id) ?? null;
     return {
       ...a,
-      angebotHandwerkerId: angebotId
-        ? (angeboteOffenByAngebotId.get(angebotId) ?? null)
-        : null,
+      angebotHandwerkerId: ahMeta?.id ?? null,
+      angebotHwStatus: ahMeta?.hw_status ?? null,
+      angebotHwEingereichtAt: ahMeta?.hw_eingereicht_at ?? null,
       projektvertrag_bestaetigt_am: vertragCtx?.projektvertrag_bestaetigt_am ?? null,
       vertrag: vertragCtx,
     };

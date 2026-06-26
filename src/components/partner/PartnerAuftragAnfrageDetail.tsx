@@ -30,6 +30,7 @@ import {
 import {
   isPartnerAuftragAnfrageAntwortAbgelaufen,
   isPartnerAuftragAnfrageOffen,
+  isPartnerAuftragWartetAufPreiseinigung,
   partnerAuftragAnfrageStatusLabel,
 } from "@/lib/partner/partner-anfrage-status";
 import {
@@ -42,6 +43,7 @@ import {
 import {
   partnerAnfragePortalPath,
   partnerAnfragePortalUrl,
+  partnerAngebotPortalPath,
 } from "@/lib/partner/partner-site-url";
 
 export function PartnerAuftragAnfrageDetail({
@@ -61,11 +63,17 @@ export function PartnerAuftragAnfrageDetail({
   const [notiz, setNotiz] = useState("");
 
   const hwSt = item.hwStatus.toLowerCase();
-  const hwBeantwortet = hwSt === "akzeptiert" || hwSt === "abgelehnt";
+  const ahSt = (item.angebotHwStatus ?? "").toLowerCase();
   const abgelaufen = isPartnerAuftragAnfrageAntwortAbgelaufen(item);
   const kannAntworten = isPartnerAuftragAnfrageOffen(item);
-  const konditionenNachreichen = hwSt === "akzeptiert" && Boolean(item.angebotHandwerkerId);
-  const bearbeitbar = kannAntworten || konditionenNachreichen;
+  const wartetAufPruefung = isPartnerAuftragWartetAufPreiseinigung(item);
+  const konditionenUebernommen = ahSt === "uebernommen";
+  const konditionenNachreichen =
+    hwSt === "akzeptiert" &&
+    !item.angebotHwEingereichtAt &&
+    ahSt !== "eingereicht" &&
+    ahSt !== "uebernommen";
+  const bearbeitbar = (kannAntworten || konditionenNachreichen) && !wartetAufPruefung;
 
   const konditionZeilen = useMemo(
     () => resolvePartnerAuftragKonditionZeilen(item.positionen),
@@ -79,6 +87,12 @@ export function PartnerAuftragAnfrageDetail({
     setHwValues(initialHwNettoInputs(konditionZeilen));
     setHwNotizen(initialHwNotizInputs(konditionZeilen));
   }, [konditionZeilen]);
+
+  useEffect(() => {
+    if (konditionenUebernommen && item.angebotHandwerkerId) {
+      router.replace(partnerAngebotPortalPath(item.angebotHandwerkerId));
+    }
+  }, [konditionenUebernommen, item.angebotHandwerkerId, router]);
 
   const geaendert = useMemo(
     () => sindKonditionPreiseGeaendert(konditionZeilen, hwValues),
@@ -150,11 +164,15 @@ export function PartnerAuftragAnfrageDetail({
 
   const infoText = abgelaufen
     ? "Die Antwortfrist ist abgelaufen, weil der geplante Projektstart erreicht ist. Eine Annahme oder Ablehnung ist nicht mehr möglich."
-    : hwBeantwortet
-      ? hwSt === "akzeptiert"
-        ? "Du hast zugesagt, die Preise wurden aber noch nicht übermittelt. Bitte unten „Annehmen“ oder „Gegenangebot senden“ erneut ausführen."
-        : "Du hast diese Zuweisung abgelehnt."
-      : "Prüfe die Leistungen und passe bei Bedarf den Angebotspreis an. Mit „Annehmen“ oder „Gegenangebot senden“ schickst du deine Antwort an Bärenwald.";
+    : wartetAufPruefung
+      ? "Dein Gegenangebot wurde an Bärenwald übermittelt. Wir prüfen die Preise — du musst vorerst nichts tun."
+      : konditionenUebernommen
+        ? "Bärenwald hat deine Konditionen übernommen. Du findest das Angebot unter „Angebote“."
+        : konditionenNachreichen
+          ? "Du hast zugesagt, die Preise wurden aber noch nicht übermittelt. Bitte unten „Annehmen“ oder „Gegenangebot senden“ erneut ausführen."
+          : hwSt === "abgelehnt"
+            ? "Du hast diese Zuweisung abgelehnt."
+            : "Prüfe die Leistungen und passe bei Bedarf den Angebotspreis an. Mit „Annehmen“ oder „Gegenangebot senden“ schickst du deine Antwort an Bärenwald.";
 
   const sections = useMemo(
     () => buildPartnerAuftragPortalSections(item.lead),
@@ -162,6 +180,12 @@ export function PartnerAuftragAnfrageDetail({
   );
 
   const primaryLabel = geaendert ? "Gegenangebot senden" : "Annehmen";
+
+  const statusPillClass = abgelaufen
+    ? "tag bg-red-100 text-red-700"
+    : wartetAufPruefung
+      ? "tag bg-blue-100 text-blue-800"
+      : partnerDetailStatusPillClass(item.hwStatus);
 
   const actionFooter =
     bearbeitbar && !showReject ? (
@@ -190,11 +214,7 @@ export function PartnerAuftragAnfrageDetail({
         title={item.listen_titel}
         metaLine={partnerAuftragDetailMetaLine(item.start_datum, item.end_datum)}
         statusLabel={statusLabel}
-        statusPillClass={
-          abgelaufen
-            ? "tag bg-red-100 text-red-700"
-            : partnerDetailStatusPillClass(item.hwStatus)
-        }
+        statusPillClass={statusPillClass}
       />
 
       <PartnerDetailInfoBox>{infoText}</PartnerDetailInfoBox>
@@ -237,12 +257,19 @@ export function PartnerAuftragAnfrageDetail({
 
       {error ? <PartnerDetailError message={error} /> : null}
 
-      {hwSt === "akzeptiert" && item.angebotHandwerkerId ? (
+      {item.angebotHandwerkerId && ahSt === "rueckfrage" ? (
         <a
           href={partnerAnfragePortalUrl(item.angebotHandwerkerId)}
           className="btn-pill-primary portal-btn inline-flex !px-4 !py-2.5"
         >
-          Zur Anfrage
+          Neue Konditionen prüfen
+        </a>
+      ) : item.angebotHandwerkerId && konditionenUebernommen ? (
+        <a
+          href={partnerAngebotPortalPath(item.angebotHandwerkerId)}
+          className="btn-pill-primary portal-btn inline-flex !px-4 !py-2.5"
+        >
+          Zum Angebot
         </a>
       ) : null}
 

@@ -86,18 +86,29 @@ export function PartnerAnfrageDetail({
       resolvePartnerKonditionZeilen(
         item.crm_positionen_raw,
         { gewerkId: item.gewerk_id },
-        item.hw_konditionen
+        item.hw_konditionen,
+        hwSt === "rueckfrage" ? { neueVerhandlungsrunde: true } : undefined
       ),
-    [item.crm_positionen_raw, item.gewerk_id, item.hw_konditionen]
+    [item.crm_positionen_raw, item.gewerk_id, item.hw_konditionen, hwSt]
   );
 
   const [hwValues, setHwValues] = useState<Record<string, string>>({});
   const [hwNotizen, setHwNotizen] = useState<Record<string, string>>({});
 
   useEffect(() => {
-    setHwValues(initialHwNettoInputs(konditionZeilen, item.hw_konditionen));
-    setHwNotizen(initialHwNotizInputs(konditionZeilen, item.hw_konditionen));
-  }, [konditionZeilen, item.hw_konditionen]);
+    setHwValues(
+      initialHwNettoInputs(
+        konditionZeilen,
+        hwSt === "rueckfrage" ? null : item.hw_konditionen
+      )
+    );
+    setHwNotizen(
+      initialHwNotizInputs(
+        konditionZeilen,
+        hwSt === "rueckfrage" ? null : item.hw_konditionen
+      )
+    );
+  }, [konditionZeilen, item.hw_konditionen, hwSt]);
 
   const geaendert = useMemo(
     () => zeilenGeaendert(konditionZeilen, hwValues),
@@ -211,13 +222,26 @@ export function PartnerAnfrageDetail({
       ) : wartetAufPreis ? (
         <PartnerDetailInfoBox>
           Deine Konditionen wurden an Bärenwald übermittelt. Wir prüfen die Preise —
-          sobald die Einigung steht, findest du das Angebot unter „Angebote“.
+          du musst vorerst nichts tun. Sobald die Einigung steht, findest du das Angebot unter
+          „Angebote“.
         </PartnerDetailInfoBox>
-      ) : (hwSt === "rueckfrage" || hwSt === "abgelehnt") && item.hw_crm_notiz?.trim() ? (
+      ) : hwSt === "rueckfrage" ? (
         <PartnerDetailInfoBox>
-          <p className="font-semibold">
-            {hwSt === "rueckfrage" ? "Rückfrage von Bärenwald" : "Konditionen nicht übernommen"}
-          </p>
+          {item.hw_crm_notiz?.trim() ? (
+            <>
+              <p className="font-semibold">Neue Konditionen von Bärenwald</p>
+              <p className="mt-2 whitespace-pre-wrap text-sm">{item.hw_crm_notiz.trim()}</p>
+            </>
+          ) : (
+            <>
+              Bärenwald hat auf dein Gegenangebot reagiert und neue Konditionen hinterlegt.
+              Bitte prüfe die Preise — geänderte Zeilen sind mit „vorher“ markiert.
+            </>
+          )}
+        </PartnerDetailInfoBox>
+      ) : hwSt === "abgelehnt" && item.hw_crm_notiz?.trim() ? (
+        <PartnerDetailInfoBox>
+          <p className="font-semibold">Konditionen nicht übernommen</p>
           <p className="mt-2 whitespace-pre-wrap text-sm">{item.hw_crm_notiz.trim()}</p>
         </PartnerDetailInfoBox>
       ) : abgelaufen ? (

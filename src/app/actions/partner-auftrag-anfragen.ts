@@ -142,14 +142,31 @@ export async function respondPartnerAuftragZuweisung(opts: {
       .eq("handwerker_id", link.handwerkerId)
       .order("antwort_at", { ascending: false });
 
-    const pendingAh = (ahRows ?? []).find(
-      (r) =>
-        String(r.hw_status ?? "").toLowerCase() !== "uebernommen" &&
-        !r.hw_eingereicht_at
-    );
-    angebotAnfrageId = pendingAh?.id ? String(pendingAh.id) : null;
+    const ahRow = (ahRows ?? [])[0];
+    angebotAnfrageId = ahRow?.id ? String(ahRow.id) : null;
+    const ahSt = String(ahRow?.hw_status ?? "").toLowerCase();
+
+    if (ahSt === "uebernommen") {
+      return {
+        ok: false,
+        error:
+          "Die Konditionen wurden bereits übernommen. Bitte unter „Angebote“ fortfahren.",
+      };
+    }
+
+    if (ahSt === "eingereicht") {
+      return {
+        ok: false,
+        error:
+          "Dein Angebot wird bereits geprüft. Bitte warte auf die Rückmeldung von Bärenwald.",
+      };
+    }
+
     konditionenAusstehend =
-      hwStatus === "akzeptiert" && Boolean(angebotAnfrageId) && !pendingAh?.hw_eingereicht_at;
+      hwStatus === "akzeptiert" &&
+      Boolean(angebotAnfrageId) &&
+      !ahRow?.hw_eingereicht_at &&
+      ahSt !== "eingereicht";
   }
 
   const kannAntworten = isPartnerAuftragAnfrageOffen({

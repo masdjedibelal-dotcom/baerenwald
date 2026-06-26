@@ -101,6 +101,15 @@ export async function respondPartnerAnfrage(opts: {
     return { ok: false, error: "Keine Berechtigung für diese Anfrage." };
   }
 
+  const hwStEarly = String((row as { hw_status?: string }).hw_status ?? "").toLowerCase();
+  if (hwStEarly === "uebernommen") {
+    return {
+      ok: false,
+      error:
+        "Die Konditionen wurden bereits übernommen. Bitte unter „Angebote“ fortfahren.",
+    };
+  }
+
   const raw = row as Record<string, unknown>;
   const angebote = one(raw.angebote) as {
     positionen?: unknown;
@@ -117,6 +126,14 @@ export async function respondPartnerAnfrage(opts: {
   const isRueckfrage = Boolean(row.antwort_at) && (hwSt === "rueckfrage" || hwSt === "abgelehnt");
   const konditionenAusstehend =
     Boolean(row.antwort_at) && !hwEingereichtAt && !isRueckfrage;
+
+  if (hwSt === "eingereicht" && !isRueckfrage) {
+    return {
+      ok: false,
+      error:
+        "Dein Angebot wird bereits geprüft. Bitte warte auf die Rückmeldung von Bärenwald.",
+    };
+  }
 
   if (row.antwort_at && !isRueckfrage && !konditionenAusstehend) {
     return { ok: false, error: "Du hast bereits geantwortet." };

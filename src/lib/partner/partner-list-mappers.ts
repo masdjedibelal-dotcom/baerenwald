@@ -3,11 +3,15 @@ import type {
   PartnerAnfrageItem,
   PartnerAuftragItem,
 } from "@/lib/partner/get-partner-data";
-import { isPartnerAnfrageOffen, partnerAnfrageStatusLabel } from "@/lib/partner/partner-anfrage-status";
 import {
+  isPartnerAnfrageAktionErforderlich,
   isPartnerAnfrageAntwortAbgelaufen,
+  isPartnerAnfrageWartetAufPreiseinigung,
+  isPartnerAuftragAnfrageAktionErforderlich,
   isPartnerAuftragAnfrageAntwortAbgelaufen,
-  isPartnerAuftragAnfrageOffen,
+  isPartnerAuftragWartetAufPreiseinigung,
+  partnerAnfrageStatusLabel,
+  partnerAnfrageStatusPillKey,
   partnerAuftragAnfrageStatusLabel,
 } from "@/lib/partner/partner-anfrage-status";
 import {
@@ -38,28 +42,41 @@ function ts(v?: string | null): number {
 }
 
 export function mapAnfrageAngebotToCard(item: PartnerAnfrageItem): PartnerCardRow {
-  const offen = isPartnerAnfrageOffen(item);
+  const aktion = isPartnerAnfrageAktionErforderlich(item);
   const abgelaufen = isPartnerAnfrageAntwortAbgelaufen(item);
+  const wartet = isPartnerAnfrageWartetAufPreiseinigung(item);
   const meta = buildPartnerAnfrageCardMeta(item.lead, {
     gewerk_name: item.gewerk_name,
     positionen: item.positionen,
   });
 
+  const hwSt = (item.hw_status ?? "").toLowerCase();
+  let hint: string | undefined;
+  if (aktion) {
+    hint =
+      hwSt === "rueckfrage"
+        ? "→ Neue Konditionen prüfen"
+        : "→ Bitte annehmen oder ablehnen";
+  } else if (wartet) {
+    hint = "→ Warte auf Freigabe durch Bärenwald";
+  }
+
   return {
     id: item.id,
     title: item.listen_titel,
     statusLabel: partnerAnfrageStatusLabel(item),
-    statusPillKey: abgelaufen ? "antwort_abgelaufen" : offen ? "antwort ausstehend" : item.status,
+    statusPillKey: partnerAnfrageStatusPillKey(item),
     accent: "anfrage",
     meta,
-    hint: offen ? "→ Bitte annehmen oder ablehnen" : undefined,
+    hint,
     sortDate: ts(item.gesendet_at),
   };
 }
 
 export function mapAnfrageAuftragToCard(item: PartnerAuftragItem): PartnerCardRow {
-  const offen = isPartnerAuftragAnfrageOffen(item);
+  const aktion = isPartnerAuftragAnfrageAktionErforderlich(item);
   const abgelaufen = isPartnerAuftragAnfrageAntwortAbgelaufen(item);
+  const wartet = isPartnerAuftragWartetAufPreiseinigung(item);
 
   const meta = buildPartnerAuftragCardMeta(
     item.lead?.objekt,
@@ -68,14 +85,30 @@ export function mapAnfrageAuftragToCard(item: PartnerAuftragItem): PartnerCardRo
     item.end_datum
   );
 
+  const ahSt = (item.angebotHwStatus ?? "").toLowerCase();
+  let hint: string | undefined;
+  if (aktion) {
+    hint = "→ Bitte annehmen oder ablehnen";
+  } else if (wartet) {
+    hint = "→ Warte auf Freigabe durch Bärenwald";
+  } else if (ahSt === "uebernommen" && item.angebotHandwerkerId) {
+    hint = "→ Unter Angebote";
+  }
+
+  let statusPillKey = item.hwStatus;
+  if (abgelaufen) statusPillKey = "antwort_abgelaufen";
+  else if (wartet) statusPillKey = "eingereicht";
+  else if (ahSt === "rueckfrage") statusPillKey = "rueckfrage";
+  else if (aktion) statusPillKey = "antwort ausstehend";
+
   return {
     id: `auftrag:${item.id}`,
     title: item.listen_titel,
     statusLabel: partnerAuftragAnfrageStatusLabel(item),
-    statusPillKey: abgelaufen ? "antwort_abgelaufen" : item.hwStatus,
+    statusPillKey,
     accent: "anfrage",
     meta,
-    hint: offen ? "→ Bitte annehmen oder ablehnen" : undefined,
+    hint,
     sortDate: ts(item.start_datum),
   };
 }
@@ -104,8 +137,8 @@ export function partnerAngebotOverviewStatusLabel(statusKey: string): string {
   if (statusKey === "uebernommen") return "Bestätigt";
   if (statusKey === "vertrag_offen") return "Vertrag offen";
   if (statusKey === "warte_vertrag") return "Warte auf Vertrag";
-  if (statusKey === "eingereicht") return "In Prüfung";
-  if (statusKey === "rueckfrage") return "Rückfrage";
+  if (statusKey === "eingereicht") return "Wartet auf Prüfung";
+  if (statusKey === "rueckfrage") return "Neue Konditionen";
   if (statusKey === "abgelehnt") return "Abgelehnt";
   if (statusKey === "offen") return "Offen";
   return statusKey;
@@ -140,16 +173,16 @@ function angebotListenStatus(item: PartnerAnfrageItem): {
   }
   if (hwSt === "eingereicht") {
     return {
-      label: "In Prüfung",
+      label: "Wartet auf Prüfung",
       pillKey: "eingereicht",
       hint: "→ Warte auf Freigabe durch Bärenwald",
     };
   }
   if (hwSt === "rueckfrage") {
     return {
-      label: "Rückfrage",
+      label: "Neue Konditionen",
       pillKey: "rueckfrage",
-      hint: "→ Bitte erneut einreichen",
+      hint: "→ Bitte erneut prüfen",
     };
   }
   if (hwSt === "abgelehnt") {

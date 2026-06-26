@@ -181,6 +181,16 @@ export function PartnerLeistungenKonditionenCard({
                     >
                       {preis}
                     </p>
+                    {z.vorherNetto != null &&
+                    z.vorherNetto > 0 &&
+                    preis !== "Preis folgt" &&
+                    Math.abs(z.vorherNetto - (mode === "edit"
+                      ? Number((hwValues?.[z.id] ?? "").replace(",", ".")) || z.vorschlagNetto || 0
+                      : z.hwNetto ?? z.vorschlagNetto ?? 0)) > 0.009 ? (
+                      <p className="mt-0.5 text-sm tabular-nums text-text-tertiary line-through sm:text-right">
+                        vorher {fmtPartnerEuro(z.vorherNetto)}
+                      </p>
+                    ) : null}
                     {geaendert ? (
                       <span className="mt-0.5 block text-xs font-medium text-amber-700 sm:text-right">
                         Geändert

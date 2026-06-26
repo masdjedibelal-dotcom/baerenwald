@@ -1,5 +1,6 @@
 import { sendHandwerkerAngebotBestaetigtMail } from "@/lib/partner/partner-mail";
 import { partnerLoginForAngebotUrl } from "@/lib/partner/partner-site-url";
+import { resolveAngebotTitel } from "@/lib/portal/portal-display";
 import { isSupabaseConfigured, supabaseAdmin } from "@/lib/supabase";
 
 function one<T>(x: T | T[] | null | undefined): T | null {
@@ -54,9 +55,10 @@ export async function notifyHandwerkerAngebotBestaetigt(anfrageId: string): Prom
     notizen?: string | null;
     angebotsnr?: string | null;
   } | null;
-  const titel =
-    ang?.notizen?.trim()?.slice(0, 80) ||
-    (ang?.angebotsnr ? `Angebot ${ang.angebotsnr}` : "Projekt");
+  const titel = resolveAngebotTitel({
+    notizen: ang?.notizen,
+    angebotsnr: ang?.angebotsnr,
+  });
 
   return sendHandwerkerAngebotBestaetigtMail({
     to,

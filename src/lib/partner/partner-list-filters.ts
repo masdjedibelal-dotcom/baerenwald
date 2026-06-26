@@ -1,7 +1,9 @@
 import type { PartnerAnfrageItem, PartnerAuftragItem } from "@/lib/partner/get-partner-data";
 import { isAuftragAbgeschlossen } from "@/lib/partner/handwerker-bewertung-display";
 import {
+  isPartnerAnfrageAktionErforderlich,
   isPartnerAnfrageOffen,
+  isPartnerAuftragAnfrageAktionErforderlich,
   isPartnerAuftragAnfrageOffen,
 } from "@/lib/partner/partner-anfrage-status";
 
@@ -15,9 +17,9 @@ export function filterPartnerAnfragenListen(
   const match = (offen: boolean) => (filter === "offen" ? offen : !offen);
 
   return {
-    anfragen: anfragen.filter((a) => match(isPartnerAnfrageOffen(a))),
+    anfragen: anfragen.filter((a) => match(isPartnerAnfrageAktionErforderlich(a))),
     auftragAnfragen: auftragAnfragen.filter((a) =>
-      match(isPartnerAuftragAnfrageOffen(a))
+      match(isPartnerAuftragAnfrageAktionErforderlich(a))
     ),
   };
 }
@@ -45,8 +47,8 @@ export function countPartnerAnfragenFilter(
   auftragAnfragen: PartnerAuftragItem[]
 ): Pick<Record<PartnerListFilterId, number>, "offen" | "geschlossen"> {
   const offen =
-    anfragen.filter(isPartnerAnfrageOffen).length +
-    auftragAnfragen.filter(isPartnerAuftragAnfrageOffen).length;
+    anfragen.filter(isPartnerAnfrageAktionErforderlich).length +
+    auftragAnfragen.filter(isPartnerAuftragAnfrageAktionErforderlich).length;
   const alle = anfragen.length + auftragAnfragen.length;
   return { offen, geschlossen: alle - offen };
 }

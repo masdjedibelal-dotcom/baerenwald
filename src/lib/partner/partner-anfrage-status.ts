@@ -81,12 +81,29 @@ export function isPartnerAnfrageWartetAufPreiseinigung(
   return st === "akzeptiert" && hwSt === "eingereicht";
 }
 
+/** Nur wenn der Handwerker noch aktiv handeln muss (Badge, Filter „Offen“). */
+export function isPartnerAnfrageAktionErforderlich(
+  item: PartnerAnfrageTimingFields
+): boolean {
+  return isPartnerAnfrageKonditionenBearbeitbar(item);
+}
+
+export function partnerAnfrageStatusPillKey(item: PartnerAnfrageTimingFields): string {
+  if (isPartnerAnfrageAntwortAbgelaufen(item)) return "antwort_abgelaufen";
+  if (isPartnerAnfrageWartetAufPreiseinigung(item)) return "eingereicht";
+  const hwSt = (item.hw_status ?? "").toLowerCase();
+  if (hwSt === "rueckfrage") return "rueckfrage";
+  if (hwSt === "abgelehnt") return "abgelehnt";
+  if (isPartnerAnfrageAktionErforderlich(item)) return "antwort ausstehend";
+  return item.status.toLowerCase();
+}
+
 export function partnerAnfrageStatusLabel(item: PartnerAnfrageTimingFields): string {
   if (isPartnerAnfrageAntwortAbgelaufen(item)) return "Antwort abgelaufen";
-  if (isPartnerAnfrageWartetAufPreiseinigung(item)) return "In Prüfung";
+  if (isPartnerAnfrageWartetAufPreiseinigung(item)) return "Wartet auf Prüfung";
   if (isPartnerAnfrageKonditionenBearbeitbar(item)) {
     const hwSt = (item.hw_status ?? "").toLowerCase();
-    if (hwSt === "rueckfrage") return "Rückfrage";
+    if (hwSt === "rueckfrage") return "Neue Konditionen";
     if (hwSt === "abgelehnt") return "Konditionen abgelehnt";
     if (item.antwort_at && !item.hw_eingereicht_at) return "Angebotspreis festlegen";
     return "Antwort ausstehend";
@@ -138,19 +155,54 @@ export function isPartnerAuftragAnfrageOffen(
   );
 }
 
+type PartnerAuftragAnfrageAktionFields = Pick<
+  PartnerAuftragItem,
+  "status" | "hwStatus" | "start_datum" | "angebotHwStatus" | "angebotHwEingereichtAt"
+> & {
+  positionen: Array<{ start_datum?: string | null }>;
+};
+
+/** Auftrags-Zuweisung: HW muss noch zu-/absagen oder Konditionen nachreichen. */
+export function isPartnerAuftragAnfrageAktionErforderlich(
+  item: PartnerAuftragAnfrageAktionFields
+): boolean {
+  if (isPartnerAuftragAnfrageOffen(item)) return true;
+  const hw = item.hwStatus.toLowerCase();
+  const ahSt = (item.angebotHwStatus ?? "").toLowerCase();
+  if (hw !== "akzeptiert") return false;
+  if (ahSt === "eingereicht" || ahSt === "uebernommen") return false;
+  return !item.angebotHwEingereichtAt;
+}
+
+export function isPartnerAuftragWartetAufPreiseinigung(
+  item: Pick<PartnerAuftragItem, "hwStatus" | "angebotHwStatus">
+): boolean {
+  return (
+    item.hwStatus.toLowerCase() === "akzeptiert" &&
+    (item.angebotHwStatus ?? "").toLowerCase() === "eingereicht"
+  );
+}
+
 export function partnerAuftragAnfrageStatusLabel(
-  item: Pick<PartnerAuftragItem, "hwStatus" | "start_datum" | "status"> & {
+  item: Pick<
+    PartnerAuftragItem,
+    "hwStatus" | "start_datum" | "status" | "angebotHwStatus"
+  > & {
     positionen: Array<{ start_datum?: string | null }>;
   }
 ): string {
   if (isPartnerAuftragAnfrageAntwortAbgelaufen(item)) return "Antwort abgelaufen";
+  if (isPartnerAuftragWartetAufPreiseinigung(item)) return "Wartet auf Prüfung";
+  const ahSt = (item.angebotHwStatus ?? "").toLowerCase();
+  if (ahSt === "rueckfrage") return "Neue Konditionen";
+  if (ahSt === "uebernommen") return "Konditionen vereinbart";
   const hw = item.hwStatus.toLowerCase();
   const map: Record<string, string> = {
     angefragt: "Antwort ausstehend",
     ausstehend: "Ausstehend",
     warten: "Warten auf Antwort",
     zugewiesen: "Zugewiesen",
-    akzeptiert: "Angenommen",
+    akzeptiert: "Angebotspreis festlegen",
     abgelehnt: "Abgelehnt",
   };
   return map[hw] ?? item.hwStatus ?? "Ausstehend";
