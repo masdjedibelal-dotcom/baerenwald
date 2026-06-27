@@ -21,8 +21,20 @@ export function resolvePartnerAngebotPortalPhase(
   return "auftrag_freigegeben";
 }
 
-/** Offen in Angebote: CRM hat freigegeben, HW muss Auftrag noch annehmen. */
+/**
+ * Offen in Angebote: solange der Vorgang im Tab Angebote ist.
+ * Inkl. „Warte auf Freigabe“ und „Auftrag freigegeben“.
+ * Geschlossen erst nach Auftragsannahme (→ Tab Aufträge).
+ */
 export function isPartnerAngebotListItemOffen(item: PartnerAnfrageItem): boolean {
+  const phase = resolvePartnerAngebotPortalPhase(item);
+  if (phase === "angenommen") return false;
+  if (phase === "wartet_auf_freigabe" || phase === "auftrag_freigegeben") return true;
+  return (item.hw_status ?? "").toLowerCase() === "uebernommen";
+}
+
+/** HW muss handeln (Vertrag + Unterlagen + Auftrag annehmen). */
+export function isPartnerAngebotAktionErforderlich(item: PartnerAnfrageItem): boolean {
   return resolvePartnerAngebotPortalPhase(item) === "auftrag_freigegeben";
 }
 

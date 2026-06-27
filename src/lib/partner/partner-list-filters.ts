@@ -1,5 +1,8 @@
 import type { PartnerAnfrageItem, PartnerAuftragItem } from "@/lib/partner/get-partner-data";
-import { isPartnerAngebotListItemOffen } from "@/lib/partner/partner-angebot-portal-status";
+import {
+  isPartnerAngebotAktionErforderlich,
+  isPartnerAngebotListItemOffen,
+} from "@/lib/partner/partner-angebot-portal-status";
 import { isAuftragAbgeschlossen } from "@/lib/partner/handwerker-bewertung-display";
 import {
   isPartnerAnfrageAktionErforderlich,
@@ -25,7 +28,7 @@ export function filterPartnerAnfragenListen(
   };
 }
 
-export { isPartnerAngebotListItemOffen };
+export { isPartnerAngebotListItemOffen, isPartnerAngebotAktionErforderlich };
 
 export function isPartnerAuftragListItemOffen(item: PartnerAuftragItem): boolean {
   const s = item.status.toLowerCase();

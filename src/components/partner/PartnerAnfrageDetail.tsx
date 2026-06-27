@@ -96,10 +96,11 @@ export function PartnerAnfrageDetail({
         item.hw_konditionen
       );
       const vereinbart = mapKonditionZeilenVereinbart(zeilen);
-      if (item.hw_konditionen?.art !== "gegenvorschlag") return vereinbart;
-      const submitted = new Map(
-        item.hw_konditionen.positionen.map((p) => [p.position_id, p])
-      );
+      const positionen = item.hw_konditionen?.positionen;
+      if (item.hw_konditionen?.art !== "gegenvorschlag" || !positionen?.length) {
+        return vereinbart;
+      }
+      const submitted = new Map(positionen.map((p) => [p.position_id, p]));
       return vereinbart.map((z) => {
         const prev = submitted.get(z.id);
         if (prev?.geaendert && prev.ek_netto != null) {

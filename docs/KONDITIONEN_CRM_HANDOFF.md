@@ -89,14 +89,14 @@ comment on column public.angebot_handwerker.hw_konditionen is
 | `offen` | HW hat noch nicht geantwortet | Anfragen |
 | `eingereicht` | HW hat geantwortet — CRM prüft | Anfragen |
 | `bestaetigt` | **CRM hat eingewilligt** — HW muss vereinbarte Preise noch bestätigen | Anfragen (offen) |
-| `uebernommen` | **HW hat Konditionen bestätigt** — wartet auf CRM-Auftragsfreigabe | Angebote (geschlossen bis Freigabe) |
+| `uebernommen` | **HW hat Konditionen bestätigt** — wartet auf CRM-Auftragsfreigabe | Angebote (offen) |
 | `rueckfrage` | CRM lehnt ab / neuer Vorschlag — HW kann erneut antworten | Anfragen |
 | `abgelehnt` | CRM lehnt endgültig ab (optional → Rückfrage-Runde) | Anfragen |
 
 **Vier Schritte bis zum laufenden Auftrag:**
 
 1. CRM akzeptiert Konditionen → `hw_status = bestaetigt` (+ Preise in DB) → Partner **Anfragen / offen**
-2. HW bestätigt → `hw_status = uebernommen` → Partner **Angebote / geschlossen** (Badge: „Warte auf Auftragsfreigabe“, optional PDF)
+2. HW bestätigt → `hw_status = uebernommen` → Partner **Angebote / offen** (Badge: „Warte auf Auftragsfreigabe“, optional PDF)
 3. **CRM: Angebot angenommen → Transfer zu Auftrag** → `auftraege.status` ≠ `offen` → Partner **Angebote / offen** (Badge: „Auftrag freigegeben“)
 4. HW nimmt Auftrag an (Rahmenvertrag + Unterlagen) → `projektvertrag_bestaetigt_am` → Partner **Aufträge**
 
@@ -272,9 +272,9 @@ sequenceDiagram
 
 | `hw_status` | `auftrag_status` | `projektvertrag_bestaetigt_am` | Portal-Phase |
 |-------------|------------------|-------------------------------|--------------|
-| `uebernommen` | `offen` oder kein Auftrag | — | Warte auf Auftragsfreigabe |
-| `uebernommen` | ≠ `offen` | — | **Auftrag freigegeben** (offen) |
-| `uebernommen` | beliebig | gesetzt | Angenommen → Tab Aufträge |
+| `uebernommen` | `offen` oder kein Auftrag | — | Warte auf Freigabe (**offen**) |
+| `uebernommen` | ≠ `offen` | — | Auftrag freigegeben (**offen**, Aktion nötig) |
+| `uebernommen` | beliebig | gesetzt | Angenommen → Tab **Aufträge** (geschlossen) |
 
 ---
 

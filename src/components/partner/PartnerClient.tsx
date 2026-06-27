@@ -65,6 +65,7 @@ import {
   countPartnerAngeboteFilter,
   countPartnerAuftraegeFilter,
   filterPartnerAnfragenListen,
+  isPartnerAngebotAktionErforderlich,
   isPartnerAngebotListItemOffen,
   isPartnerAuftragListItemOffen,
   type PartnerListFilterId,
@@ -172,7 +173,7 @@ function PartnerListFilterBar({
       {(
         [
           ["offen", "Offen"],
-          ["geschlossen", "Geschlossen"],
+          ["geschlossen", "Erledigt"],
         ] as const
       ).map(([id, label]) => (
         <button
@@ -262,25 +263,25 @@ export function PartnerClient({
     });
   }, [angebote]);
 
-  const offeneAngeboteCount = angebote.filter(isPartnerAngebotListItemOffen).length;
+  const angeboteOffenCount = angebote.filter(isPartnerAngebotListItemOffen).length;
+  const angeboteAktionCount = angebote.filter(isPartnerAngebotAktionErforderlich).length;
 
   const aktiveAuftraegeCount = auftraege.filter(isAuftragAktiv).length;
+
+  const listFilterEffective: PartnerListFilterId =
+    section === "auftraege" ? listFilter : "offen";
 
   const sectionCardRows = useMemo((): PartnerCardRow[] => {
     if (section === "anfragen") {
       const filtered = filterPartnerAnfragenListen(
         anfragenSorted,
         auftragAnfragen,
-        listFilter
+        "offen"
       );
       return buildAnfragenCardRows(filtered.anfragen, filtered.auftragAnfragen);
     }
     if (section === "angebote") {
-      const items = angeboteSorted.filter((a) =>
-        listFilter === "offen"
-          ? isPartnerAngebotListItemOffen(a)
-          : !isPartnerAngebotListItemOffen(a)
-      );
+      const items = angeboteSorted.filter(isPartnerAngebotListItemOffen);
       return items.map(mapAngebotToCard);
     }
     if (section === "auftraege") {
@@ -291,7 +292,7 @@ export function PartnerClient({
             new Date(a.start_datum || 0).getTime()
         )
         .filter((a) =>
-          listFilter === "offen"
+          listFilterEffective === "offen"
             ? isPartnerAuftragListItemOffen(a)
             : !isPartnerAuftragListItemOffen(a)
         );
@@ -300,7 +301,7 @@ export function PartnerClient({
     return [];
   }, [
     section,
-    listFilter,
+    listFilterEffective,
     anfragenSorted,
     auftragAnfragen,
     angeboteSorted,
@@ -573,7 +574,7 @@ export function PartnerClient({
 
       if (
         !rawId.startsWith("auftrag:") &&
-        !anfragen.some((a) => a.id === rawId) &&
+        !anfragenSorted.some((a) => a.id === rawId) &&
         (angeboteSorted.some((a) => a.id === rawId) ||
           angeboteAlleAkzeptiert.some((a) => a.id === rawId))
       ) {
@@ -585,7 +586,7 @@ export function PartnerClient({
         return;
       }
 
-      if (anfragen.some((a) => a.id === rawId)) {
+      if (anfragenSorted.some((a) => a.id === rawId)) {
         setSelectedId(rawId);
         setMobileDetailOpen(true);
         return;
@@ -623,9 +624,11 @@ export function PartnerClient({
         }
       }
 
-      setSection("uebersicht");
-      setSelectedId(null);
+      // Veraltete Deep-Link-ID — Anfragen-Liste behalten, URL bereinigen (nicht Übersicht)
+      setSection("anfragen");
+      setSelectedId(firstAnfrageId(anfragenSorted, auftragAnfragen));
       setMobileDetailOpen(false);
+      router.replace(partnerSectionListPath("anfragen"));
     }
   }, [searchParams, auftraege, anfragenSorted, angeboteSorted, auftragAnfragen, router]);
 
@@ -705,19 +708,29 @@ export function PartnerClient({
     "Hallo Bärenwald, ich habe eine Frage zum Partner-Portal."
   )}`;
 
-  const listTotalCount = listFilterCounts.offen + listFilterCounts.geschlossen;
-  const emptyMessage =
-    listTotalCount === 0
-      ? section === "anfragen"
-        ? "Keine Anfragen — du wirst per E-Mail benachrichtigt, sobald Bärenwald dich einbindet."
-        : section === "angebote"
-          ? "Keine angenommenen Anfragen — nach Annahme erscheinen sie hier zur Angebotseinreichung."
-          : section === "auftraege"
-            ? "Keine Aufträge — sie erscheinen, sobald ein Projekt für dich angelegt ist."
-            : ""
-      : listFilter === "offen"
-        ? `Keine offenen ${listItemLabel}.`
-        : `Keine geschlossenen ${listItemLabel}.`;
+  const emptyMessage = (() => {
+    if (section === "anfragen") {
+      if (anfragenSorted.length + auftragAnfragen.length === 0) {
+        return "Keine Anfragen — du wirst per E-Mail benachrichtigt, sobald Bärenwald dich einbindet.";
+      }
+      return "Keine offenen Anfragen.";
+    }
+    if (section === "angebote") {
+      if (angeboteSorted.length === 0) {
+        return "Keine Angebote — nach bestätigten Anfragen erscheinen sie hier.";
+      }
+      return "Keine offenen Angebote.";
+    }
+    if (section === "auftraege") {
+      if (auftraege.length === 0) {
+        return "Keine Aufträge — sie erscheinen, sobald ein Projekt für dich freigegeben ist.";
+      }
+      return listFilterEffective === "offen"
+        ? "Keine offenen Aufträge."
+        : "Keine erledigten Aufträge.";
+    }
+    return "";
+  })();
 
   const sectionListEmpty = sectionCardRows.length === 0;
 
@@ -885,7 +898,7 @@ export function PartnerClient({
                       : id === "anfragen"
                         ? offeneAnfragenCount
                         : id === "angebote"
-                          ? offeneAngeboteCount
+                          ? angeboteAktionCount
                           : id === "auftraege"
                             ? aktiveAuftraegeCount
                             : ""}
@@ -944,7 +957,7 @@ export function PartnerClient({
                 </article>
                 <article className="portal-kpi-card">
                   <p className="portal-kpi-label">Angebote offen</p>
-                  <p className="portal-kpi-value">{offeneAngeboteCount}</p>
+                  <p className="portal-kpi-value">{angeboteOffenCount}</p>
                 </article>
                 <article className="portal-kpi-card">
                   <p className="portal-kpi-label">Aktive Aufträge</p>
@@ -1164,11 +1177,13 @@ export function PartnerClient({
           section !== "planer" ? (
             <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
               <article className="card-bordered overflow-hidden p-0">
-                <PartnerListFilterBar
-                  filter={listFilter}
-                  onFilterChange={setListFilter}
-                  counts={listFilterCounts}
-                />
+                {section === "auftraege" ? (
+                  <PartnerListFilterBar
+                    filter={listFilter}
+                    onFilterChange={setListFilter}
+                    counts={listFilterCounts}
+                  />
+                ) : null}
                 <div className="space-y-2 p-3 sm:p-4">
                   {sectionListEmpty ? (
                     <p className="portal-text-body rounded-xl border border-dashed border-border-light bg-muted/20 px-3 py-8 text-center text-text-secondary">
@@ -1208,7 +1223,7 @@ export function PartnerClient({
             const { label, icon: Icon } = MENU_ITEMS.find((m) => m.id === id)!;
             const badgeCount = portalNavBadgeCount(id, {
               anfragen: offeneAnfragenCount,
-              angebote: offeneAngeboteCount,
+              angebote: angeboteAktionCount,
               auftraege: aktiveAuftraegeCount,
             });
             return (
