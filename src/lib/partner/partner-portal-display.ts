@@ -15,11 +15,13 @@ import {
 } from "@/lib/partner/partner-leistungen-display";
 import type { PartnerAuftragPosition } from "@/lib/partner/get-partner-data";
 import {
+  buildNachreichungKonditionZeilen,
   buildPartnerKonditionZeilen,
   mergeKonditionNachreichungZeilen,
   mergeKonditionRueckfrageZeilen,
   mergeKonditionZeilenMitHw,
   type PartnerHwKonditionen,
+  type PartnerNachreichungFilter,
 } from "@/lib/partner/partner-konditionen";
 import {
   buildAuftragCardMeta,
@@ -156,11 +158,25 @@ export function buildPartnerAuftragPortalSections(
 
 export function resolvePartnerKonditionZeilen(
   positionenRaw: unknown,
-  filter?: PartnerAngebotPositionenFilter,
+  filter?: PartnerAngebotPositionenFilter & Pick<PartnerNachreichungFilter, "gewerkName">,
   hwKonditionen?: PartnerHwKonditionen | null,
-  opts?: { neueVerhandlungsrunde?: boolean; nachreichungOpenIds?: string[] }
+  opts?: {
+    neueVerhandlungsrunde?: boolean;
+    nachreichungOpenIds?: string[];
+    auftragPositionen?: PartnerAuftragPosition[];
+  }
 ) {
-  const basis = buildPartnerKonditionZeilen(positionenRaw, filter);
+  const basis = opts?.nachreichungOpenIds?.length
+    ? buildNachreichungKonditionZeilen(
+        positionenRaw,
+        opts.auftragPositionen,
+        {
+          gewerkId: filter?.gewerkId ?? undefined,
+          handwerkerId: filter?.handwerkerId ?? undefined,
+          gewerkName: filter?.gewerkName,
+        }
+      )
+    : buildPartnerKonditionZeilen(positionenRaw, filter);
   if (opts?.nachreichungOpenIds?.length) {
     return mergeKonditionNachreichungZeilen(
       basis,

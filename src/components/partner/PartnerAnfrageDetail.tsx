@@ -95,11 +95,25 @@ export function PartnerAnfrageDetail({
     if (!nachreichung) return undefined;
     return partnerKonditionenNachreichungZeilenIds(
       item.crm_positionen_raw,
-      { gewerkId: item.gewerk_id },
+      {
+        gewerkId: item.gewerk_id,
+        handwerkerId: item.handwerker_id,
+        gewerkName: item.gewerk_name,
+      },
       item.hw_konditionen,
-      hwSt
+      hwSt,
+      item.crm_auftrag_positionen
     );
-  }, [item.crm_positionen_raw, item.gewerk_id, item.hw_konditionen, hwSt, nachreichung]);
+  }, [
+    item.crm_positionen_raw,
+    item.crm_auftrag_positionen,
+    item.gewerk_id,
+    item.gewerk_name,
+    item.handwerker_id,
+    item.hw_konditionen,
+    hwSt,
+    nachreichung,
+  ]);
 
   const konditionZeilen = useMemo(() => {
     if (bestaetigungAusstehend) {
@@ -125,17 +139,27 @@ export function PartnerAnfrageDetail({
     }
     return resolvePartnerKonditionZeilen(
       item.crm_positionen_raw,
-      { gewerkId: item.gewerk_id },
+      {
+        gewerkId: item.gewerk_id,
+        handwerkerId: item.handwerker_id,
+        gewerkName: item.gewerk_name,
+      },
       item.hw_konditionen,
       nachreichung && nachreichungOpenIds?.length
-        ? { nachreichungOpenIds: nachreichungOpenIds }
+        ? {
+            nachreichungOpenIds: nachreichungOpenIds,
+            auftragPositionen: item.crm_auftrag_positionen,
+          }
         : hwSt === "rueckfrage"
           ? { neueVerhandlungsrunde: true }
           : undefined
     );
   }, [
     item.crm_positionen_raw,
+    item.crm_auftrag_positionen,
     item.gewerk_id,
+    item.gewerk_name,
+    item.handwerker_id,
     item.hw_konditionen,
     hwSt,
     bestaetigungAusstehend,

@@ -10,6 +10,8 @@ import {
   hasPartnerKonditionenNachreichungAusstehend,
   parsePartnerHwKonditionen,
 } from "@/lib/partner/partner-konditionen";
+import type { PartnerAuftragPosition } from "@/lib/partner/get-partner-data";
+import { stripHtmlToPlainText } from "@/lib/portal/portal-display";
 import {
   HANDWERKER_ABLEHNUNG_GRUND_LABELS,
   isHandwerkerAblehnungGrund,
@@ -35,6 +37,67 @@ export type PartnerAnfrageAntwortResult =
 function one<T>(x: T | T[] | null | undefined): T | null {
   if (x == null) return null;
   return Array.isArray(x) ? (x[0] as T) ?? null : x;
+}
+
+async function loadCrmAuftragPositionenForAngebot(
+  angebotId: string,
+  handwerkerId: string
+): Promise<PartnerAuftragPosition[]> {
+  const { data: auftrag } = await supabaseAdmin
+    .from("auftraege")
+    .select("id")
+    .eq("angebot_id", angebotId)
+    .maybeSingle();
+  if (!auftrag?.id) return [];
+
+  const { data: rows } = await supabaseAdmin
+    .from("auftrag_positionen")
+    .select(
+      "id, gewerk_name, leistung_name, beschreibung, menge, einheit, start_datum, end_datum, preis_partner, lohn_fix, material_fix"
+    )
+    .eq("auftrag_id", auftrag.id)
+    .eq("handwerker_id", handwerkerId);
+
+  return (rows ?? []).map((p) => {
+    const raw = p as Record<string, unknown>;
+    const besch = (raw.beschreibung as string | null) ?? null;
+    return {
+      id: String(raw.id),
+      gewerk_name: String(raw.gewerk_name ?? "Gewerk"),
+      leistung_name:
+        stripHtmlToPlainText(String(raw.leistung_name ?? "")) || "Leistung",
+      beschreibung: besch?.trim() ? stripHtmlToPlainText(besch) || null : null,
+      menge: raw.menge != null ? Number(raw.menge) : null,
+      einheit: (raw.einheit as string | null) ?? null,
+      start_datum: (raw.start_datum as string | null)?.slice(0, 10) ?? null,
+      end_datum: (raw.end_datum as string | null)?.slice(0, 10) ?? null,
+      preis_partner:
+        raw.preis_partner != null ? Number(raw.preis_partner) : null,
+      lohn_fix: raw.lohn_fix != null ? Number(raw.lohn_fix) : null,
+      material_fix: raw.material_fix != null ? Number(raw.material_fix) : null,
+    };
+  });
+}
+
+async function nachreichungKontextFromRow(
+  row: Record<string, unknown>,
+  handwerkerId: string
+) {
+  const angebote = one(row.angebote) as { positionen?: unknown } | null;
+  const gewerk = one(row.gewerke) as { name?: string | null } | null;
+  const auftragPos = await loadCrmAuftragPositionenForAngebot(
+    String(row.angebot_id ?? ""),
+    handwerkerId
+  );
+  return {
+    crm_positionen_raw: angebote?.positionen,
+    crm_auftrag_positionen: auftragPos,
+    gewerk_id: String(row.gewerk_id ?? ""),
+    gewerk_name: gewerk?.name?.trim(),
+    handwerker_id: handwerkerId,
+    hw_konditionen: parsePartnerHwKonditionen(row.hw_konditionen),
+    hw_status: String(row.hw_status ?? "").toLowerCase(),
+  };
 }
 
 export async function respondPartnerAnfrage(opts: {
@@ -85,6 +148,7 @@ export async function respondPartnerAnfrage(opts: {
       gesendet_at,
       status,
       hw_status,
+      hw_konditionen,
       handwerker(name, firma),
       gewerke(name),
       angebote(
@@ -123,17 +187,9 @@ export async function respondPartnerAnfrage(opts: {
   }
 
   if (hwStEarly === "uebernommen" && opts.antwort === "akzeptiert") {
-    const angeboteEarly = one((row as Record<string, unknown>).angebote) as {
-      positionen?: unknown;
-    } | null;
-    const nachreichung = hasPartnerKonditionenNachreichungAusstehend({
-      crm_positionen_raw: angeboteEarly?.positionen,
-      gewerk_id: String((row as { gewerk_id?: string }).gewerk_id ?? ""),
-      hw_konditionen: parsePartnerHwKonditionen(
-        (row as { hw_konditionen?: unknown }).hw_konditionen
-      ),
-      hw_status: hwStEarly,
-    });
+    const nachreichung = hasPartnerKonditionenNachreichungAusstehend(
+      await nachreichungKontextFromRow(row as Record<string, unknown>, link.handwerkerId)
+    );
     if (!nachreichung) {
       return {
         ok: false,
@@ -162,14 +218,10 @@ export async function respondPartnerAnfrage(opts: {
   const leadRow = angebote ? one(angebote.leads) : null;
   const hwSt = String((row as { hw_status?: string }).hw_status ?? "").toLowerCase();
   const hwEingereichtAt = (row as { hw_eingereicht_at?: string | null }).hw_eingereicht_at;
-  const konditionenNachreichung = hasPartnerKonditionenNachreichungAusstehend({
-    crm_positionen_raw: angebote?.positionen,
-    gewerk_id: String((row as { gewerk_id?: string }).gewerk_id ?? ""),
-    hw_konditionen: parsePartnerHwKonditionen(
-      (row as { hw_konditionen?: unknown }).hw_konditionen
-    ),
-    hw_status: hwSt,
-  });
+  const nachreichungKontext = await nachreichungKontextFromRow(raw, link.handwerkerId);
+  const konditionenNachreichung = hasPartnerKonditionenNachreichungAusstehend(
+    nachreichungKontext
+  );
   const isRueckfrage =
     Boolean(row.antwort_at) &&
     (hwSt === "rueckfrage" || hwSt === "abgelehnt" || konditionenNachreichung);
@@ -201,10 +253,11 @@ export async function respondPartnerAnfrage(opts: {
     hw_eingereicht_at: hwEingereichtAt ?? undefined,
     zeitraum: leadRow?.zeitraum?.trim() || "",
     crm_positionen_raw: angebote?.positionen,
+    crm_auftrag_positionen: nachreichungKontext.crm_auftrag_positionen,
     gewerk_id: String((row as { gewerk_id?: string }).gewerk_id ?? ""),
-    hw_konditionen: parsePartnerHwKonditionen(
-      (row as { hw_konditionen?: unknown }).hw_konditionen
-    ),
+    gewerk_name: nachreichungKontext.gewerk_name ?? "Gewerk",
+    handwerker_id: link.handwerkerId,
+    hw_konditionen: nachreichungKontext.hw_konditionen,
     lead: leadRow
       ? {
           zeitraum: leadRow.zeitraum,

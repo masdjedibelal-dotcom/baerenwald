@@ -211,9 +211,12 @@ Portal: Badge „Auftrag freigegeben“, HW nimmt Auftrag an → Tab **Aufträge
 
 **CRM muss `hw_status` nicht manuell setzen**, wenn nur Positionen in `angebote.positionen` ergänzt werden.
 
-Das Portal erkennt bei `hw_status = uebernommen` automatisch:
-- neue Positionen (nicht in `hw_konditionen`)
+Das Portal erkennt bei `hw_status = uebernommen` und gesetztem `hw_konditionen` automatisch:
+- neue Positionen in `angebote.positionen` (nicht in `hw_konditionen`)
+- neue `auftrag_positionen` zum verknüpften Auftrag (falls CRM nur dort ergänzt)
 - geänderte CRM-Preise auf bestehenden Positionen
+
+Positionen brauchen passende `handwerker_id` und `gewerk_id` (Angebot) bzw. `gewerk_name` (Auftrag).
 
 → Vorgang erscheint **zusätzlich** unter **Anfragen** (Badge „Neue Leistung“); unter **Angebote** bleiben die bereits angenommenen Leistungen sichtbar. In der Detailansicht Anfragen: Kontext „Bereits angenommen“ + bearbeitbare „Neue Leistung“. Nach HW-Antwort: `hw_status = eingereicht`.
 

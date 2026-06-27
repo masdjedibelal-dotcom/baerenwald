@@ -80,7 +80,10 @@ export function partnerAngebotListenHint(
     | "auftrag_status"
     | "projektvertrag_bestaetigt_am"
     | "crm_positionen_raw"
+    | "crm_auftrag_positionen"
     | "gewerk_id"
+    | "gewerk_name"
+    | "handwerker_id"
     | "hw_konditionen"
   >
 ): string | undefined {

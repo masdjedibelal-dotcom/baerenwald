@@ -131,6 +131,7 @@ export async function mapAngebotHandwerkerRow(
     status: String(row.status ?? "ausstehend"),
     gewerk_name,
     gewerk_id: gewerkId || undefined,
+    handwerker_id: handwerkerId || undefined,
     angebot_titel,
     listen_titel,
     gesendet_at: (row.gesendet_at as string | null) ?? undefined,

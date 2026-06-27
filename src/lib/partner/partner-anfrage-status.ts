@@ -60,12 +60,26 @@ export function isPartnerAnfrageBestaetigungAusstehend(
 }
 
 type PartnerAnfrageKonditionenFields = PartnerAnfrageTimingFields &
-  Pick<PartnerAnfrageItem, "crm_positionen_raw" | "gewerk_id" | "hw_konditionen">;
+  Pick<
+    PartnerAnfrageItem,
+    | "crm_positionen_raw"
+    | "crm_auftrag_positionen"
+    | "gewerk_id"
+    | "gewerk_name"
+    | "handwerker_id"
+    | "hw_konditionen"
+  >;
 
 export function isPartnerAnfrageKonditionenNachreichung(
   item: Pick<
     PartnerAnfrageItem,
-    "crm_positionen_raw" | "gewerk_id" | "hw_konditionen" | "hw_status"
+    | "crm_positionen_raw"
+    | "crm_auftrag_positionen"
+    | "gewerk_id"
+    | "gewerk_name"
+    | "handwerker_id"
+    | "hw_konditionen"
+    | "hw_status"
   >
 ): boolean {
   return hasPartnerKonditionenNachreichungAusstehend(item);

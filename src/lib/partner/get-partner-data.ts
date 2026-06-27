@@ -72,6 +72,8 @@ export type PartnerAnfrageItem = {
   gewerk_name: string;
   /** Gewerk-UUID aus angebot_handwerker (Filter für CRM-Positionen). */
   gewerk_id?: string;
+  /** Handwerker-UUID (Filter für CRM-Positionen bei Nachreichung). */
+  handwerker_id?: string;
   angebot_titel: string;
   /** Einheitlich: „Gewerk — PLZ Ort“ (Partner-Listen & Detail). */
   listen_titel: string;
@@ -107,6 +109,8 @@ export type PartnerAnfrageItem = {
   /** Projekt-/Lead-Kontext ohne Kundendaten. */
   lead?: PortalAnfrageLeadSource | null;
   crm_positionen_raw?: unknown;
+  /** Auftragspositionen zum Angebot (CRM-Nachreichung nur im Auftrag). */
+  crm_auftrag_positionen?: PartnerAuftragPosition[];
   crm_gesamt_fix?: number | null;
   crm_gesamt_min?: number | null;
   crm_gesamt_max?: number | null;
@@ -266,6 +270,7 @@ function numOrNull(v: unknown): number | null {
 const ANGEBOT_HANDWERKER_BASE_SELECT = `
   id,
   angebot_id,
+  handwerker_id,
   gewerk_id,
   status,
   gesendet_at,
@@ -699,10 +704,14 @@ export async function getPartnerDataForHandwerker(handwerkerId: string) {
   anfragenFinal = anfragenFinal.map((a) => {
     const vertragCtx = vertragKontextForAngebot(a.angebot_id, complianceBundle);
     const auftragId = complianceBundle.auftragIdByAngebotId.get(a.angebot_id) ?? null;
+    const auftragForAngebot = auftragId
+      ? alleAuftraege.find((x) => x.id === auftragId)
+      : undefined;
     return {
       ...a,
       auftrag_id: auftragId,
       auftrag_status: auftragId ? auftragStatusById.get(auftragId) ?? null : null,
+      crm_auftrag_positionen: auftragForAngebot?.positionen,
       projektvertrag_bestaetigt_am: vertragCtx?.projektvertrag_bestaetigt_am ?? null,
       projektvertrag_bereit: vertragCtx?.projektvertrag_bereit ?? false,
       projektvertrag: vertragCtx?.projektvertrag ?? null,

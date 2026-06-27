@@ -1,3 +1,4 @@
+import type { PartnerAuftragPosition } from "@/lib/partner/get-partner-data";
 import type { PartnerAngebotPositionenFilter } from "@/lib/partner/partner-leistungen-display";
 
 const SKIP_POSITION_SLUGS = new Set(["__freitext__", "__gesamtrabatt__"]);
@@ -40,6 +41,84 @@ export type PartnerHwKonditionen = {
   positionen: PartnerHwKonditionPosition[];
   eingereicht_at?: string;
 };
+
+function normalizeKonditionLeistungKey(title: string): string {
+  return title.trim().toLowerCase().replace(/\s+/g, " ");
+}
+
+function positionIdFromRow(row: Record<string, unknown>, index: number): string {
+  const id = String(row.id ?? row.position_id ?? "").trim();
+  return id || `pos-${index}`;
+}
+
+function agreedHwPositionForZeile(
+  z: PartnerKonditionZeile,
+  byId: Map<string, PartnerHwKonditionPosition>,
+  byTitle: Map<string, PartnerHwKonditionPosition>
+): PartnerHwKonditionPosition | undefined {
+  return (
+    byId.get(z.id) ?? byTitle.get(normalizeKonditionLeistungKey(z.title))
+  );
+}
+
+function konditionZeileFromAuftragPosition(
+  p: PartnerAuftragPosition
+): PartnerKonditionZeile {
+  const menge = Math.max(p.menge ?? 1, 0.0001);
+  let vorschlagNetto: number | null = null;
+  if (p.preis_partner != null && p.preis_partner > 0) {
+    vorschlagNetto = round2(p.preis_partner);
+  } else {
+    const parts = (num(p.lohn_fix) + num(p.material_fix)) * menge;
+    if (parts > 0) vorschlagNetto = round2(parts);
+  }
+  return {
+    id: p.id,
+    title: p.leistung_name,
+    beschreibung: p.beschreibung ?? undefined,
+    vorschlagNetto,
+    mwstSatz: PARTNER_KONDITION_MWST,
+  };
+}
+
+export type PartnerNachreichungFilter = PartnerAngebotPositionenFilter & {
+  gewerkName?: string;
+};
+
+/** Angebots-JSON + ggf. nur im Auftrag sichtbare Leistungen (CRM-Nachreichung). */
+export function buildNachreichungKonditionZeilen(
+  angebotPositionenRaw: unknown,
+  auftragPositionen: PartnerAuftragPosition[] | undefined,
+  filter: PartnerNachreichungFilter
+): PartnerKonditionZeile[] {
+  const fromAngebot = buildPartnerKonditionZeilen(angebotPositionenRaw, {
+    gewerkId: filter.gewerkId,
+    handwerkerId: filter.handwerkerId,
+  });
+  if (!auftragPositionen?.length) return fromAngebot;
+
+  const gewerkName = filter.gewerkName?.trim().toLowerCase() ?? "";
+  const filteredAuftrag = gewerkName
+    ? auftragPositionen.filter(
+        (p) => p.gewerk_name.trim().toLowerCase() === gewerkName
+      )
+    : auftragPositionen;
+
+  const knownIds = new Set(fromAngebot.map((z) => z.id));
+  const knownTitles = new Set(
+    fromAngebot.map((z) => normalizeKonditionLeistungKey(z.title))
+  );
+
+  const extra: PartnerKonditionZeile[] = [];
+  for (const ap of filteredAuftrag) {
+    const titleKey = normalizeKonditionLeistungKey(ap.leistung_name);
+    if (knownIds.has(ap.id) || knownTitles.has(titleKey)) continue;
+    extra.push(konditionZeileFromAuftragPosition(ap));
+    knownIds.add(ap.id);
+    knownTitles.add(titleKey);
+  }
+  return [...fromAngebot, ...extra];
+}
 
 function num(v: unknown): number {
   const n = typeof v === "number" ? v : Number(String(v ?? "").replace(",", "."));
@@ -164,7 +243,7 @@ export function buildPartnerKonditionZeilen(
   return filterPositionenRaw(positionenRaw, filter).map((row, i) => {
     const title = positionTitle(row);
     return {
-      id: String(row.id ?? `pos-${i}`),
+      id: positionIdFromRow(row, i),
       title,
       beschreibung: positionBeschreibung(row, title),
       vorschlagNetto: vorschlagNettoFromRow(row),
@@ -333,19 +412,27 @@ export function mapKonditionZeilenVereinbart(
 /** CRM-Leistungen, die nach Einigung (hw_status uebernommen) noch nicht verhandelt sind. */
 export function partnerKonditionenNachreichungZeilenIds(
   positionenRaw: unknown,
-  filter: { gewerkId?: string; handwerkerId?: string } | undefined,
+  filter: PartnerNachreichungFilter | undefined,
   hw: PartnerHwKonditionen | null | undefined,
-  hwStatus: string | null | undefined
+  hwStatus: string | null | undefined,
+  auftragPositionen?: PartnerAuftragPosition[]
 ): string[] {
   const st = (hwStatus ?? "").toLowerCase();
   if (st !== "uebernommen" || !hw?.positionen.length) return [];
 
-  const crmZeilen = buildPartnerKonditionZeilen(positionenRaw, filter);
-  const agreed = new Map(hw.positionen.map((p) => [p.position_id, p]));
+  const crmZeilen = buildNachreichungKonditionZeilen(
+    positionenRaw,
+    auftragPositionen,
+    filter ?? {}
+  );
+  const agreedById = new Map(hw.positionen.map((p) => [p.position_id, p]));
+  const agreedByTitle = new Map(
+    hw.positionen.map((p) => [normalizeKonditionLeistungKey(p.leistung), p])
+  );
   const open: string[] = [];
 
   for (const z of crmZeilen) {
-    const prev = agreed.get(z.id);
+    const prev = agreedHwPositionForZeile(z, agreedById, agreedByTitle);
     if (!prev) {
       open.push(z.id);
       continue;
@@ -360,16 +447,24 @@ export function partnerKonditionenNachreichungZeilenIds(
 
 export function hasPartnerKonditionenNachreichungAusstehend(input: {
   crm_positionen_raw?: unknown;
+  crm_auftrag_positionen?: PartnerAuftragPosition[];
   gewerk_id?: string;
+  gewerk_name?: string;
+  handwerker_id?: string;
   hw_konditionen?: PartnerHwKonditionen | null;
   hw_status?: string | null;
 }): boolean {
   return (
     partnerKonditionenNachreichungZeilenIds(
       input.crm_positionen_raw,
-      { gewerkId: input.gewerk_id },
+      {
+        gewerkId: input.gewerk_id,
+        handwerkerId: input.handwerker_id,
+        gewerkName: input.gewerk_name,
+      },
       input.hw_konditionen,
-      input.hw_status
+      input.hw_status,
+      input.crm_auftrag_positionen
     ).length > 0
   );
 }
