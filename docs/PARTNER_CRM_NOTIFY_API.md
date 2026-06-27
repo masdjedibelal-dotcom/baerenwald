@@ -99,6 +99,16 @@ Ohne `bitteBestaetigen` (Legacy): Link zu **Angebote**.
 
 ---
 
+## Neue Leistung nach Einigung (ohne Status-Änderung)
+
+Wenn `hw_status = uebernommen` ist, **muss das CRM `hw_status` nicht setzen**.
+
+Neue oder geänderte Positionen in `angebote.positionen` (mit passender `handwerker_id` / `gewerk_id`) erkennt das Portal automatisch → **zusätzlicher** Eintrag unter **Anfragen** (Badge „Neue Leistung“). Unter **Angebote** bleiben die vereinbarten Leistungen unverändert sichtbar. Nach HW-Antwort: `hw_status = eingereicht`.
+
+Details: `docs/KONDITIONEN_CRM_HANDOFF.md` §6.
+
+---
+
 ## Auftragsfreigabe (Angebot → Auftrag)
 
 Kein API-Endpoint. CRM-Transfer setzt `auftraege.status` ≠ `offen`.

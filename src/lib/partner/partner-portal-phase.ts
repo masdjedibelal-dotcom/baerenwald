@@ -33,12 +33,17 @@ export function resolveAngebotHandwerkerPhase(
     | "hw_status"
     | "projektvertrag_bestaetigt_am"
     | "projektvertrag_bereit"
+    | "crm_positionen_raw"
+    | "gewerk_id"
+    | "hw_konditionen"
   >
 ): PartnerPortalPhase {
   const st = item.status.toLowerCase();
   const hwSt = (item.hw_status ?? "").toLowerCase();
 
   if (st === "abgelehnt") return "auftrag";
+
+  /** Nachreichung: Vorgang bleibt unter Angebote; zusätzlich Eintrag unter Anfragen (get-partner-data). */
 
   /** HW wartet auf CRM / neue Runde / CRM-Einigung bestätigen — bleibt unter Anfragen. */
   if (

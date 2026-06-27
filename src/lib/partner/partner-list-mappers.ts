@@ -12,6 +12,7 @@ import {
 import {
   isPartnerAnfrageAktionErforderlich,
   isPartnerAnfrageAntwortAbgelaufen,
+  isPartnerAnfrageKonditionenNachreichung,
   isPartnerAnfrageWartetAufPreiseinigung,
   isPartnerAuftragAnfrageAktionErforderlich,
   isPartnerAuftragAnfrageAntwortAbgelaufen,
@@ -62,9 +63,11 @@ export function mapAnfrageAngebotToCard(item: PartnerAnfrageItem): PartnerCardRo
     hint =
       hwSt === "bestaetigt"
         ? "→ Konditionen bestätigen"
-        : hwSt === "rueckfrage"
-          ? "→ Neue Konditionen prüfen"
-          : "→ Bitte annehmen oder ablehnen";
+        : isPartnerAnfrageKonditionenNachreichung(item)
+          ? "→ Neue Leistung prüfen"
+          : hwSt === "rueckfrage"
+            ? "→ Neue Konditionen prüfen"
+            : "→ Bitte annehmen oder ablehnen";
   } else if (wartet) {
     hint = "→ Warte auf Freigabe";
   }
@@ -72,6 +75,9 @@ export function mapAnfrageAngebotToCard(item: PartnerAnfrageItem): PartnerCardRo
   return {
     id: item.id,
     title: item.listen_titel,
+    subtitle: isPartnerAnfrageKonditionenNachreichung(item)
+      ? "Ergänzung zum bestehenden Auftrag"
+      : undefined,
     statusLabel: partnerAnfrageStatusLabel(item),
     statusPillKey: partnerAnfrageStatusPillKey(item),
     accent: "anfrage",

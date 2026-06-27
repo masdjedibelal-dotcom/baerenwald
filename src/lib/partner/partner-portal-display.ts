@@ -16,6 +16,7 @@ import {
 import type { PartnerAuftragPosition } from "@/lib/partner/get-partner-data";
 import {
   buildPartnerKonditionZeilen,
+  mergeKonditionNachreichungZeilen,
   mergeKonditionRueckfrageZeilen,
   mergeKonditionZeilenMitHw,
   type PartnerHwKonditionen,
@@ -157,9 +158,16 @@ export function resolvePartnerKonditionZeilen(
   positionenRaw: unknown,
   filter?: PartnerAngebotPositionenFilter,
   hwKonditionen?: PartnerHwKonditionen | null,
-  opts?: { neueVerhandlungsrunde?: boolean }
+  opts?: { neueVerhandlungsrunde?: boolean; nachreichungOpenIds?: string[] }
 ) {
   const basis = buildPartnerKonditionZeilen(positionenRaw, filter);
+  if (opts?.nachreichungOpenIds?.length) {
+    return mergeKonditionNachreichungZeilen(
+      basis,
+      hwKonditionen,
+      opts.nachreichungOpenIds
+    );
+  }
   if (opts?.neueVerhandlungsrunde && hwKonditionen?.positionen.length) {
     return mergeKonditionRueckfrageZeilen(basis, hwKonditionen);
   }

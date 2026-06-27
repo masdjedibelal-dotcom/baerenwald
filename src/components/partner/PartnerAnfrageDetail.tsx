@@ -26,12 +26,14 @@ import {
   initialHwNotizInputs,
   mapKonditionZeilenVereinbart,
   parseHwNettoInput,
+  partnerKonditionenNachreichungZeilenIds,
   sindKonditionPreiseGeaendert,
 } from "@/lib/partner/partner-konditionen";
 import {
   isPartnerAnfrageAntwortAbgelaufen,
   isPartnerAnfrageBestaetigungAusstehend,
   isPartnerAnfrageKonditionenBearbeitbar,
+  isPartnerAnfrageKonditionenNachreichung,
   isPartnerAnfrageWartetAufPreiseinigung,
   partnerAnfrageStatusLabel,
 } from "@/lib/partner/partner-anfrage-status";
@@ -82,11 +84,22 @@ export function PartnerAnfrageDetail({
   const [notiz, setNotiz] = useState("");
 
   const bearbeitbar = isPartnerAnfrageKonditionenBearbeitbar(item);
+  const nachreichung = isPartnerAnfrageKonditionenNachreichung(item);
   const bestaetigungAusstehend = isPartnerAnfrageBestaetigungAusstehend(item);
   const wartetAufPreis = isPartnerAnfrageWartetAufPreiseinigung(item);
   const abgelaufen = isPartnerAnfrageAntwortAbgelaufen(item);
   const statusLabel = partnerAnfrageStatusLabel(item);
   const hwSt = (item.hw_status ?? "").toLowerCase();
+
+  const nachreichungOpenIds = useMemo(() => {
+    if (!nachreichung) return undefined;
+    return partnerKonditionenNachreichungZeilenIds(
+      item.crm_positionen_raw,
+      { gewerkId: item.gewerk_id },
+      item.hw_konditionen,
+      hwSt
+    );
+  }, [item.crm_positionen_raw, item.gewerk_id, item.hw_konditionen, hwSt, nachreichung]);
 
   const konditionZeilen = useMemo(() => {
     if (bestaetigungAusstehend) {
@@ -114,7 +127,11 @@ export function PartnerAnfrageDetail({
       item.crm_positionen_raw,
       { gewerkId: item.gewerk_id },
       item.hw_konditionen,
-      hwSt === "rueckfrage" ? { neueVerhandlungsrunde: true } : undefined
+      nachreichung && nachreichungOpenIds?.length
+        ? { nachreichungOpenIds: nachreichungOpenIds }
+        : hwSt === "rueckfrage"
+          ? { neueVerhandlungsrunde: true }
+          : undefined
     );
   }, [
     item.crm_positionen_raw,
@@ -122,7 +139,18 @@ export function PartnerAnfrageDetail({
     item.hw_konditionen,
     hwSt,
     bestaetigungAusstehend,
+    nachreichung,
+    nachreichungOpenIds,
   ]);
+
+  const vereinbarteZeilen = useMemo(
+    () => (nachreichung ? konditionZeilen.filter((z) => z.readonly) : []),
+    [konditionZeilen, nachreichung]
+  );
+  const neueZeilen = useMemo(
+    () => (nachreichung ? konditionZeilen.filter((z) => !z.readonly) : konditionZeilen),
+    [konditionZeilen, nachreichung]
+  );
 
   const [hwValues, setHwValues] = useState<Record<string, string>>({});
   const [hwNotizen, setHwNotizen] = useState<Record<string, string>>({});
@@ -131,16 +159,16 @@ export function PartnerAnfrageDetail({
     setHwValues(
       initialHwNettoInputs(
         konditionZeilen,
-        hwSt === "rueckfrage" ? null : item.hw_konditionen
+        hwSt === "rueckfrage" && !nachreichung ? null : item.hw_konditionen
       )
     );
     setHwNotizen(
       initialHwNotizInputs(
         konditionZeilen,
-        hwSt === "rueckfrage" ? null : item.hw_konditionen
+        hwSt === "rueckfrage" && !nachreichung ? null : item.hw_konditionen
       )
     );
-  }, [konditionZeilen, item.hw_konditionen, hwSt]);
+  }, [konditionZeilen, item.hw_konditionen, hwSt, nachreichung]);
 
   const geaendert = useMemo(
     () => zeilenGeaendert(konditionZeilen, hwValues),
@@ -158,6 +186,15 @@ export function PartnerAnfrageDetail({
   function buildKonditionenJson(): string | null {
     const rows: Array<{ position_id: string; hw_netto: number; hw_notiz?: string }> = [];
     for (const z of konditionZeilen) {
+      if (z.readonly && z.hwNetto != null && z.hwNetto > 0) {
+        const notizLocked = z.hwNotiz?.trim();
+        rows.push({
+          position_id: z.id,
+          hw_netto: z.hwNetto,
+          ...(notizLocked ? { hw_notiz: notizLocked } : {}),
+        });
+        continue;
+      }
       const hw = parseHwNettoInput(hwValues[z.id] ?? "");
       if (hw == null) return null;
       const notiz = hwNotizen[z.id]?.trim();
@@ -235,6 +272,14 @@ export function PartnerAnfrageDetail({
 
   const primaryLabel = geaendert ? "Preise senden" : "Annehmen";
 
+  const heroMetaLine = useMemo(() => {
+    const date = partnerDetailDateMetaLine(item.gesendet_at);
+    if (nachreichung) {
+      return date ? `Ergänzung zum Auftrag · ${date}` : "Ergänzung zum Auftrag";
+    }
+    return date;
+  }, [item.gesendet_at, nachreichung]);
+
   const actionFooter = bestaetigungAusstehend ? (
     <PartnerDetailStickyActions
       primaryLabel="Konditionen bestätigen"
@@ -265,14 +310,16 @@ export function PartnerAnfrageDetail({
     <PartnerDetailLayout footer={actionFooter ?? undefined}>
       <PartnerDetailHero
         title={item.listen_titel}
-        metaLine={partnerDetailDateMetaLine(item.gesendet_at)}
+        metaLine={heroMetaLine}
         statusLabel={statusLabel}
         statusPillClass={anfrageStatusPillClass(item, bearbeitbar)}
       />
 
       {bearbeitbar ? (
         <PartnerDetailInfoBox>
-          Preise prüfen. Bei Änderungen „Preis bearbeiten“, dann senden.
+          {nachreichung
+            ? "Neue Leistung zum bestehenden Auftrag — bitte nur die markierte Leistung prüfen und senden. Bereits angenommene Leistungen sind unverändert und weiterhin unter Angebote einsehbar."
+            : "Preise prüfen. Bei Änderungen „Preis bearbeiten“, dann senden."}
         </PartnerDetailInfoBox>
       ) : bestaetigungAusstehend ? (
         <PartnerDetailInfoBox>
@@ -304,10 +351,22 @@ export function PartnerAnfrageDetail({
 
       <PartnerPortalDetailSections sections={sections} />
 
-      {konditionZeilen.length > 0 ? (
-        <PartnerDetailSection title={PARTNER_LEISTUNGEN_SECTION_TITLE}>
+      {nachreichung && vereinbarteZeilen.length > 0 ? (
+        <PartnerDetailSection title="Bereits angenommen">
           <PartnerLeistungenKonditionenCard
-            zeilen={konditionZeilen}
+            zeilen={vereinbarteZeilen}
+            mode="readonly"
+            gesamtLabel="Vergütung angenommen (netto)"
+          />
+        </PartnerDetailSection>
+      ) : null}
+
+      {neueZeilen.length > 0 ? (
+        <PartnerDetailSection
+          title={nachreichung ? "Neue Leistung" : PARTNER_LEISTUNGEN_SECTION_TITLE}
+        >
+          <PartnerLeistungenKonditionenCard
+            zeilen={neueZeilen}
             mode={bearbeitbar ? "edit" : "readonly"}
             hwValues={bearbeitbar ? hwValues : undefined}
             hwNotizen={bearbeitbar ? hwNotizen : undefined}

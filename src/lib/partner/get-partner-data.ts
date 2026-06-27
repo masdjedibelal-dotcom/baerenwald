@@ -1,5 +1,6 @@
 import {
   isPartnerAnfrageAntwortAbgelaufen,
+  isPartnerAnfrageKonditionenNachreichung,
 } from "@/lib/partner/partner-anfrage-status";
 import {
   aggregateAuftragHandwerkerStatus,
@@ -746,6 +747,7 @@ export async function getPartnerDataForHandwerker(handwerkerId: string) {
   });
 
   const anfragenAngebot = anfragenFinal.filter((a) => {
+    if (isPartnerAnfrageKonditionenNachreichung(a)) return true;
     if (resolveAngebotHandwerkerPhase(a) === "anfrage") return true;
     if (isPartnerAnfrageAntwortAbgelaufen(a)) return true;
     const st = a.status.toLowerCase();

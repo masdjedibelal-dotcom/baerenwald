@@ -7,15 +7,19 @@ import {
   parsePartnerKonditionenEingabe,
 } from "@/lib/partner/apply-partner-hw-konditionen";
 import {
-  isPartnerAnfrageBestaetigungAusstehend,
-  isPartnerAnfrageKonditionenBearbeitbar,
-  isPartnerAnfrageOffen,
-} from "@/lib/partner/partner-anfrage-status";
+  hasPartnerKonditionenNachreichungAusstehend,
+  parsePartnerHwKonditionen,
+} from "@/lib/partner/partner-konditionen";
 import {
   HANDWERKER_ABLEHNUNG_GRUND_LABELS,
   isHandwerkerAblehnungGrund,
 } from "@/lib/partner/handwerker-ablehnung";
 import { linkPortalHandwerkerToAuthUser } from "@/lib/partner/link-portal-handwerker";
+import {
+  isPartnerAnfrageBestaetigungAusstehend,
+  isPartnerAnfrageKonditionenBearbeitbar,
+  isPartnerAnfrageOffen,
+} from "@/lib/partner/partner-anfrage-status";
 import {
   MAIL_PDF_LINK_TTL_SEC,
   sendPartnerInternalAnfrageAntwortMail,
@@ -118,7 +122,26 @@ export async function respondPartnerAnfrage(opts: {
     return { ok: true };
   }
 
-  if (hwStEarly === "uebernommen") {
+  if (hwStEarly === "uebernommen" && opts.antwort === "akzeptiert") {
+    const angeboteEarly = one((row as Record<string, unknown>).angebote) as {
+      positionen?: unknown;
+    } | null;
+    const nachreichung = hasPartnerKonditionenNachreichungAusstehend({
+      crm_positionen_raw: angeboteEarly?.positionen,
+      gewerk_id: String((row as { gewerk_id?: string }).gewerk_id ?? ""),
+      hw_konditionen: parsePartnerHwKonditionen(
+        (row as { hw_konditionen?: unknown }).hw_konditionen
+      ),
+      hw_status: hwStEarly,
+    });
+    if (!nachreichung) {
+      return {
+        ok: false,
+        error:
+          "Die Konditionen wurden bereits bestätigt. Bitte unter „Angebote“ fortfahren.",
+      };
+    }
+  } else if (hwStEarly === "uebernommen") {
     return {
       ok: false,
       error:
@@ -139,7 +162,17 @@ export async function respondPartnerAnfrage(opts: {
   const leadRow = angebote ? one(angebote.leads) : null;
   const hwSt = String((row as { hw_status?: string }).hw_status ?? "").toLowerCase();
   const hwEingereichtAt = (row as { hw_eingereicht_at?: string | null }).hw_eingereicht_at;
-  const isRueckfrage = Boolean(row.antwort_at) && (hwSt === "rueckfrage" || hwSt === "abgelehnt");
+  const konditionenNachreichung = hasPartnerKonditionenNachreichungAusstehend({
+    crm_positionen_raw: angebote?.positionen,
+    gewerk_id: String((row as { gewerk_id?: string }).gewerk_id ?? ""),
+    hw_konditionen: parsePartnerHwKonditionen(
+      (row as { hw_konditionen?: unknown }).hw_konditionen
+    ),
+    hw_status: hwSt,
+  });
+  const isRueckfrage =
+    Boolean(row.antwort_at) &&
+    (hwSt === "rueckfrage" || hwSt === "abgelehnt" || konditionenNachreichung);
   const konditionenAusstehend =
     Boolean(row.antwort_at) && !hwEingereichtAt && !isRueckfrage;
 
@@ -167,6 +200,11 @@ export async function respondPartnerAnfrage(opts: {
     hw_status: (row as { hw_status?: string | null }).hw_status ?? undefined,
     hw_eingereicht_at: hwEingereichtAt ?? undefined,
     zeitraum: leadRow?.zeitraum?.trim() || "",
+    crm_positionen_raw: angebote?.positionen,
+    gewerk_id: String((row as { gewerk_id?: string }).gewerk_id ?? ""),
+    hw_konditionen: parsePartnerHwKonditionen(
+      (row as { hw_konditionen?: unknown }).hw_konditionen
+    ),
     lead: leadRow
       ? {
           zeitraum: leadRow.zeitraum,
@@ -273,7 +311,7 @@ export async function respondPartnerAnfrage(opts: {
         .update(updatePayload)
         .eq("id", opts.anfrageId)
         .eq("handwerker_id", link.handwerkerId)
-        .in("hw_status", ["rueckfrage", "abgelehnt"])
+        .in("hw_status", ["rueckfrage", "abgelehnt", "uebernommen"])
     : konditionenAusstehend
       ? await supabaseAdmin
           .from("angebot_handwerker")

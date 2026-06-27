@@ -6,6 +6,7 @@ import {
   isProjektStartDatumErreicht,
   resolvePartnerAnfrageProjektStartIso,
 } from "@/lib/partner/partner-anfrage-projekt-start";
+import { hasPartnerKonditionenNachreichungAusstehend } from "@/lib/partner/partner-konditionen";
 
 /** Status, in denen der Handwerker noch annehmen/ablehnen kann. */
 const PENDING_STATUS = new Set([
@@ -58,13 +59,26 @@ export function isPartnerAnfrageBestaetigungAusstehend(
   return (item.hw_status ?? "").toLowerCase() === "bestaetigt";
 }
 
+type PartnerAnfrageKonditionenFields = PartnerAnfrageTimingFields &
+  Pick<PartnerAnfrageItem, "crm_positionen_raw" | "gewerk_id" | "hw_konditionen">;
+
+export function isPartnerAnfrageKonditionenNachreichung(
+  item: Pick<
+    PartnerAnfrageItem,
+    "crm_positionen_raw" | "gewerk_id" | "hw_konditionen" | "hw_status"
+  >
+): boolean {
+  return hasPartnerKonditionenNachreichungAusstehend(item);
+}
+
 /** HW kann im ersten Schritt Preise anpassen (Erstantwort, ausstehende Konditionen oder CRM-Rückfrage). */
 export function isPartnerAnfrageKonditionenBearbeitbar(
-  item: PartnerAnfrageTimingFields
+  item: PartnerAnfrageKonditionenFields
 ): boolean {
   if (isPartnerAnfrageAntwortAbgelaufen(item)) return false;
   if (isPartnerAnfrageWartetAufPreiseinigung(item)) return false;
   if (isPartnerAnfrageBestaetigungAusstehend(item)) return false;
+  if (isPartnerAnfrageKonditionenNachreichung(item)) return true;
 
   const st = item.status.toLowerCase();
   const hwSt = (item.hw_status ?? "").toLowerCase();
@@ -91,7 +105,7 @@ export function isPartnerAnfrageWartetAufPreiseinigung(
 
 /** Nur wenn der Handwerker noch aktiv handeln muss (Badge, Filter „Offen“). */
 export function isPartnerAnfrageAktionErforderlich(
-  item: PartnerAnfrageTimingFields
+  item: PartnerAnfrageKonditionenFields
 ): boolean {
   return (
     isPartnerAnfrageBestaetigungAusstehend(item) ||
@@ -99,8 +113,9 @@ export function isPartnerAnfrageAktionErforderlich(
   );
 }
 
-export function partnerAnfrageStatusPillKey(item: PartnerAnfrageTimingFields): string {
+export function partnerAnfrageStatusPillKey(item: PartnerAnfrageKonditionenFields): string {
   if (isPartnerAnfrageAntwortAbgelaufen(item)) return "antwort_abgelaufen";
+  if (isPartnerAnfrageKonditionenNachreichung(item)) return "rueckfrage";
   if (isPartnerAnfrageWartetAufPreiseinigung(item)) return "eingereicht";
   const hwSt = (item.hw_status ?? "").toLowerCase();
   if (hwSt === "bestaetigt") return "bestaetigt";
@@ -110,8 +125,11 @@ export function partnerAnfrageStatusPillKey(item: PartnerAnfrageTimingFields): s
   return item.status.toLowerCase();
 }
 
-export function partnerAnfrageStatusLabel(item: PartnerAnfrageTimingFields): string {
+export function partnerAnfrageStatusLabel(
+  item: PartnerAnfrageKonditionenFields
+): string {
   if (isPartnerAnfrageAntwortAbgelaufen(item)) return "Antwort abgelaufen";
+  if (isPartnerAnfrageKonditionenNachreichung(item)) return "Neue Leistung";
   if (isPartnerAnfrageWartetAufPreiseinigung(item)) return "Wartet auf Prüfung";
   if (isPartnerAnfrageBestaetigungAusstehend(item)) return "Konditionen bestätigen";
   if (isPartnerAnfrageKonditionenBearbeitbar(item)) {

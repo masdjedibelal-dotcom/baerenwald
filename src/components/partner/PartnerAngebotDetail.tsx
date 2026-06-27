@@ -38,7 +38,8 @@ import {
   partnerDetailDateMetaLine,
   resolvePartnerKonditionZeilen,
 } from "@/lib/partner/partner-portal-display";
-import { mapKonditionZeilenVereinbart } from "@/lib/partner/partner-konditionen";
+import { mapKonditionZeilenVereinbart, konditionZeilenNurAusHw } from "@/lib/partner/partner-konditionen";
+import { isPartnerAnfrageKonditionenNachreichung } from "@/lib/partner/partner-anfrage-status";
 import {
   PARTNER_MAX_ANGEBOT_DATEIEN,
   PARTNER_MAX_PDF_MB,
@@ -58,6 +59,7 @@ export function PartnerAngebotDetail({ item }: { item: PartnerAnfrageItem }) {
   const [angebotPdfs, setAngebotPdfs] = useState<File[]>([]);
   const [rechnungPdf, setRechnungPdf] = useState<File | null>(null);
 
+  const nachreichung = isPartnerAnfrageKonditionenNachreichung(item);
   const hwSt = (item.hw_status ?? "offen").toLowerCase();
   const uebernommen = hwSt === "uebernommen";
   const phase = resolvePartnerAngebotPortalPhase(item);
@@ -74,6 +76,9 @@ export function PartnerAngebotDetail({ item }: { item: PartnerAnfrageItem }) {
   const kannRechnungHochladen = uebernommen && angenommen && !rechnungEingereicht;
 
   const konditionZeilen = useMemo(() => {
+    if (nachreichung && item.hw_konditionen?.positionen.length) {
+      return mapKonditionZeilenVereinbart(konditionZeilenNurAusHw(item.hw_konditionen));
+    }
     const zeilen = resolvePartnerKonditionZeilen(
       item.crm_positionen_raw,
       { gewerkId: item.gewerk_id },
@@ -81,7 +86,13 @@ export function PartnerAngebotDetail({ item }: { item: PartnerAnfrageItem }) {
     );
     if (!uebernommen) return zeilen;
     return mapKonditionZeilenVereinbart(zeilen);
-  }, [item.crm_positionen_raw, item.gewerk_id, item.hw_konditionen, uebernommen]);
+  }, [
+    item.crm_positionen_raw,
+    item.gewerk_id,
+    item.hw_konditionen,
+    uebernommen,
+    nachreichung,
+  ]);
 
   const sections = useMemo(
     () =>
@@ -222,7 +233,12 @@ export function PartnerAngebotDetail({ item }: { item: PartnerAnfrageItem }) {
         statusPillClass={partnerAngebotStatusPillClass(statusPillKey)}
       />
 
-      {wartetAufFreigabe ? (
+      {nachreichung ? (
+        <PartnerDetailInfoBox>
+          Bärenwald hat eine neue Leistung ergänzt — bitte unter „Anfragen“ prüfen und
+          den Preis senden. Hier siehst du die bereits angenommenen Leistungen.
+        </PartnerDetailInfoBox>
+      ) : wartetAufFreigabe ? (
         <PartnerDetailInfoBox>
           Warte auf Freigabe. Optional Angebots-PDF hochladen.
         </PartnerDetailInfoBox>

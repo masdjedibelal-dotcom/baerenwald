@@ -207,7 +207,17 @@ Portal: Badge „Auftrag freigegeben“, HW nimmt Auftrag an → Tab **Aufträge
 
 ---
 
-## 6. Rückfrage (neue Runde)
+## 6. Rückfrage / neue Leistung (neue Runde)
+
+**CRM muss `hw_status` nicht manuell setzen**, wenn nur Positionen in `angebote.positionen` ergänzt werden.
+
+Das Portal erkennt bei `hw_status = uebernommen` automatisch:
+- neue Positionen (nicht in `hw_konditionen`)
+- geänderte CRM-Preise auf bestehenden Positionen
+
+→ Vorgang erscheint **zusätzlich** unter **Anfragen** (Badge „Neue Leistung“); unter **Angebote** bleiben die bereits angenommenen Leistungen sichtbar. In der Detailansicht Anfragen: Kontext „Bereits angenommen“ + bearbeitbare „Neue Leistung“. Nach HW-Antwort: `hw_status = eingereicht`.
+
+Optional im CRM (wie bisher): `hw_status = rueckfrage` + Notify-Mail.
 
 1. Neuer Vorschlag in `angebote.positionen[].einkaufspreis`
 2. `hw_status = rueckfrage`, optional `hw_crm_notiz`

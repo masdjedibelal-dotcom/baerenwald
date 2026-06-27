@@ -1,4 +1,5 @@
 import type { PartnerAnfrageItem } from "@/lib/partner/get-partner-data";
+import { isPartnerAnfrageKonditionenNachreichung } from "@/lib/partner/partner-anfrage-status";
 
 /** Angebots-Phase nach HW-Bestätigung (hw_status = uebernommen). */
 export type PartnerAngebotPortalPhase =
@@ -74,9 +75,18 @@ export function partnerAngebotPortalStatusPillKey(
 export function partnerAngebotListenHint(
   item: Pick<
     PartnerAnfrageItem,
-    "hw_status" | "auftrag_id" | "auftrag_status" | "projektvertrag_bestaetigt_am"
+    | "hw_status"
+    | "auftrag_id"
+    | "auftrag_status"
+    | "projektvertrag_bestaetigt_am"
+    | "crm_positionen_raw"
+    | "gewerk_id"
+    | "hw_konditionen"
   >
 ): string | undefined {
+  if (isPartnerAnfrageKonditionenNachreichung(item)) {
+    return "→ Neue Leistung unter Anfragen";
+  }
   const phase = resolvePartnerAngebotPortalPhase(item);
   if (phase === "wartet_auf_freigabe") return "→ Warte auf Freigabe";
   if (phase === "auftrag_freigegeben") return "→ Auftrag annehmen";

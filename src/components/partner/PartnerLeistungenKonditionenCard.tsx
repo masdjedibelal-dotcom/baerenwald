@@ -15,6 +15,16 @@ import { PARTNER_LEISTUNGEN_ANGEBOTSPREIS_LABEL } from "@/lib/partner/partner-po
 import { stripHtmlToPlainText } from "@/lib/portal/portal-display";
 import { cn } from "@/lib/utils";
 
+const ZEILEN_BADGE_LABEL: Record<NonNullable<PartnerKonditionZeile["zeilenBadge"]>, string> = {
+  vereinbart: "Angenommen",
+  neu: "Neu",
+};
+
+const ZEILEN_BADGE_CLASS: Record<NonNullable<PartnerKonditionZeile["zeilenBadge"]>, string> = {
+  vereinbart: "bg-emerald-100 text-emerald-700",
+  neu: "bg-amber-100 text-amber-700",
+};
+
 const GRID_COLS = "sm:grid-cols-[1fr_11rem]";
 
 function angebotspreis(
@@ -22,7 +32,7 @@ function angebotspreis(
   mode: Props["mode"],
   hwValues?: Record<string, string>
 ): string {
-  if (mode === "readonly") {
+  if (mode === "readonly" || z.readonly) {
     if (z.hwNetto != null && z.hwNetto > 0) return fmtPartnerEuro(z.hwNetto);
     if (z.vorschlagNetto != null && z.vorschlagNetto > 0) return fmtPartnerEuro(z.vorschlagNetto);
     return "Preis folgt";
@@ -37,6 +47,7 @@ function angebotspreis(
 }
 
 function isZeileGeaendert(z: PartnerKonditionZeile, hwValues?: Record<string, string>): boolean {
+  if (z.readonly) return false;
   const raw = hwValues?.[z.id] ?? "";
   if (!raw.trim()) return false;
   const hw = Number(raw.replace(",", "."));
@@ -152,12 +163,25 @@ export function PartnerLeistungenKonditionenCard({
                 key={z.id}
                 className={cn(
                   "border-b border-border-light px-4 py-3.5 last:border-b-0",
-                  geaendert && "bg-amber-50/60"
+                  geaendert && "bg-amber-50/60",
+                  z.readonly && "bg-muted/25"
                 )}
               >
                 <div className={cn("grid gap-3 sm:items-start", GRID_COLS)}>
                   <div className="min-w-0">
-                    <p className="font-medium text-text-primary">{title}</p>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <p className="font-medium text-text-primary">{title}</p>
+                      {z.zeilenBadge ? (
+                        <span
+                          className={cn(
+                            "tag text-xs font-semibold",
+                            ZEILEN_BADGE_CLASS[z.zeilenBadge]
+                          )}
+                        >
+                          {ZEILEN_BADGE_LABEL[z.zeilenBadge]}
+                        </span>
+                      ) : null}
+                    </div>
                     {z.beschreibung ? (
                       <p className="portal-text-meta mt-0.5 text-text-secondary">
                         {stripHtmlToPlainText(z.beschreibung)}
@@ -202,7 +226,7 @@ export function PartnerLeistungenKonditionenCard({
                       </p>
                     ) : null}
 
-                    {mode === "edit" ? (
+                    {mode === "edit" && !z.readonly ? (
                       <button
                         type="button"
                         onClick={() => openEdit(z)}

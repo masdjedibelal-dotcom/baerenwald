@@ -18,6 +18,10 @@ export type PartnerKonditionZeile = {
   hwNotiz?: string;
   mwstSatz: number;
   geaendert?: boolean;
+  /** Zeile nicht bearbeitbar (z. B. bereits vereinbart bei Nachreichung). */
+  readonly?: boolean;
+  /** Badge neben der Leistung in der Konditionen-Karte. */
+  zeilenBadge?: "vereinbart" | "neu";
 };
 
 export type PartnerHwKonditionPosition = {
@@ -194,6 +198,51 @@ export function mergeKonditionRueckfrageZeilen(
   });
 }
 
+/** Nachreichung: vereinbarte Zeilen sperren, nur offene (neu/geänderter CRM-Preis) bearbeitbar. */
+export function mergeKonditionNachreichungZeilen(
+  zeilen: PartnerKonditionZeile[],
+  hw: PartnerHwKonditionen | null | undefined,
+  openIds: string[]
+): PartnerKonditionZeile[] {
+  const openSet = new Set(openIds);
+  const byId = new Map(hw?.positionen.map((p) => [p.position_id, p]) ?? []);
+
+  return zeilen.map((z) => {
+    const prev = byId.get(z.id);
+    const isOpen = openSet.has(z.id);
+
+    if (!isOpen && prev) {
+      return {
+        ...z,
+        hwNetto: prev.hw_netto,
+        hwNotiz: prev.hw_notiz,
+        vorschlagNetto: prev.hw_netto,
+        geaendert: false,
+        readonly: true,
+        zeilenBadge: "vereinbart" as const,
+      };
+    }
+
+    const isNew = !prev;
+    const open: PartnerKonditionZeile = {
+      ...z,
+      readonly: false,
+      ...(isNew ? { zeilenBadge: "neu" as const } : {}),
+    };
+
+    if (prev && isOpen) {
+      return {
+        ...open,
+        vorherNetto: prev.hw_netto,
+        hwNetto: undefined,
+        hwNotiz: undefined,
+      };
+    }
+
+    return open;
+  });
+}
+
 export function mergeKonditionZeilenMitHw(
   zeilen: PartnerKonditionZeile[],
   hw?: PartnerHwKonditionen | null
@@ -281,6 +330,50 @@ export function mapKonditionZeilenVereinbart(
   });
 }
 
+/** CRM-Leistungen, die nach Einigung (hw_status uebernommen) noch nicht verhandelt sind. */
+export function partnerKonditionenNachreichungZeilenIds(
+  positionenRaw: unknown,
+  filter: { gewerkId?: string; handwerkerId?: string } | undefined,
+  hw: PartnerHwKonditionen | null | undefined,
+  hwStatus: string | null | undefined
+): string[] {
+  const st = (hwStatus ?? "").toLowerCase();
+  if (st !== "uebernommen" || !hw?.positionen.length) return [];
+
+  const crmZeilen = buildPartnerKonditionZeilen(positionenRaw, filter);
+  const agreed = new Map(hw.positionen.map((p) => [p.position_id, p]));
+  const open: string[] = [];
+
+  for (const z of crmZeilen) {
+    const prev = agreed.get(z.id);
+    if (!prev) {
+      open.push(z.id);
+      continue;
+    }
+    const crm = z.vorschlagNetto;
+    if (crm != null && crm > 0 && Math.abs(crm - prev.hw_netto) > 0.009) {
+      open.push(z.id);
+    }
+  }
+  return open;
+}
+
+export function hasPartnerKonditionenNachreichungAusstehend(input: {
+  crm_positionen_raw?: unknown;
+  gewerk_id?: string;
+  hw_konditionen?: PartnerHwKonditionen | null;
+  hw_status?: string | null;
+}): boolean {
+  return (
+    partnerKonditionenNachreichungZeilenIds(
+      input.crm_positionen_raw,
+      { gewerkId: input.gewerk_id },
+      input.hw_konditionen,
+      input.hw_status
+    ).length > 0
+  );
+}
+
 export function buildHwKonditionenPayload(
   zeilen: PartnerKonditionZeile[],
   hwNettoById: Record<string, number>,
@@ -359,6 +452,7 @@ export function sindKonditionPreiseGeaendert(
   hwValues: Record<string, string>
 ): boolean {
   return zeilen.some((z) => {
+    if (z.readonly) return false;
     const hw = parseHwNettoInput(hwValues[z.id] ?? "");
     if (hw == null) return false;
     if (z.vorschlagNetto == null || z.vorschlagNetto <= 0) return hw > 0;
