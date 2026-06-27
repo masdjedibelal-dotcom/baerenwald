@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Briefcase,
   CalendarDays,
@@ -133,16 +133,6 @@ function sortAnfragen(items: PartnerAnfrageItem[]): PartnerAnfrageItem[] {
   });
 }
 
-function firstAnfrageId(
-  angeboteHw: PartnerAnfrageItem[],
-  auftragHw: PartnerAuftragItem[]
-): string | null {
-  const sorted = sortAnfragen(angeboteHw);
-  if (sorted[0]) return sorted[0].id;
-  if (auftragHw[0]) return `auftrag:${auftragHw[0].id}`;
-  return null;
-}
-
 function parseAnfragenSelectedId(
   selectedId: string | null
 ): { kind: "angebot"; id: string } | { kind: "auftrag"; id: string } | null {
@@ -228,10 +218,10 @@ export function PartnerClient({
   const [section, setSection] = useState<PartnerSection>("uebersicht");
   const [overviewTab, setOverviewTab] = useState<OverviewTabId>("anfragen");
   const [overviewPage, setOverviewPage] = useState(1);
-  const [selectedId, setSelectedId] = useState<string | null>(() =>
-    firstAnfrageId(anfragen, auftragAnfragen)
-  );
+  const [selectedId, setSelectedId] = useState<string | null>(null);
   const [mobileDetailOpen, setMobileDetailOpen] = useState(false);
+  /** Tab-Navigation: alte URL-Parameter ignorieren bis Listen-URL ohne id da ist. */
+  const ignoreUrlDetailRef = useRef(false);
   const [gptOpen, setGptOpen] = useState(false);
   const [onboardingOpen, setOnboardingOpen] = useState(false);
 
@@ -350,34 +340,11 @@ export function PartnerClient({
     ) {
       return;
     }
-    if (!selectedId || sectionCardRows.some((r) => r.id === selectedId)) return;
-    if (
-      section === "angebote" &&
-      anfragenSorted.some((a) => a.id === selectedId)
-    ) {
-      return;
-    }
-    if (
-      section === "anfragen" &&
-      !selectedId.startsWith("auftrag:") &&
-      (angeboteSorted.some((a) => a.id === selectedId) ||
-        angeboteAlleAkzeptiert.some((a) => a.id === selectedId))
-    ) {
-      setSection("angebote");
-      setListFilter("offen");
-      router.replace(partnerAngebotPortalPath(selectedId));
-      return;
-    }
-    setSelectedId(sectionCardRows[0]?.id ?? null);
-  }, [
-    section,
-    sectionCardRows,
-    selectedId,
-    anfragenSorted,
-    angeboteSorted,
-    angeboteAlleAkzeptiert,
-    router,
-  ]);
+    if (!selectedId) return;
+    if (sectionCardRows.some((r) => r.id === selectedId)) return;
+    setSelectedId(null);
+    setMobileDetailOpen(false);
+  }, [section, sectionCardRows, selectedId]);
 
   const overviewCardRows = useMemo((): PartnerCardRow[] => {
     if (overviewTab === "anfragen") {
@@ -420,32 +387,30 @@ export function PartnerClient({
   const selectedAnfrageParsed = parseAnfragenSelectedId(selectedId);
 
   const selectedAnfrageAngebot = useMemo(() => {
-    if (selectedAnfrageParsed?.kind === "auftrag") return undefined;
+    if (!selectedId || selectedAnfrageParsed?.kind === "auftrag") return undefined;
 
     const explicitId =
       selectedAnfrageParsed?.kind === "angebot"
         ? selectedAnfrageParsed.id
-        : selectedId && !selectedId.startsWith("auftrag:")
+        : !selectedId.startsWith("auftrag:")
           ? selectedId
           : null;
 
-    if (explicitId) {
-      return anfragenSorted.find((a) => a.id === explicitId);
-    }
-
-    return anfragenSorted[0];
+    if (!explicitId) return undefined;
+    return anfragenSorted.find((a) => a.id === explicitId);
   }, [anfragenSorted, selectedAnfrageParsed, selectedId]);
 
-  const selectedAnfrageAuftrag = useMemo(
-    () =>
-      selectedAnfrageParsed?.kind === "auftrag"
-        ? (auftragAnfragen.find((a) => a.id === selectedAnfrageParsed.id) ??
-          auftragAnfragen[0])
-        : !selectedAnfrageAngebot && auftragAnfragen[0]
-          ? auftragAnfragen[0]
-          : undefined,
-    [auftragAnfragen, selectedAnfrageParsed, selectedAnfrageAngebot]
-  );
+  const selectedAnfrageAuftrag = useMemo(() => {
+    if (!selectedId) return undefined;
+    if (selectedAnfrageParsed?.kind === "auftrag") {
+      return auftragAnfragen.find((a) => a.id === selectedAnfrageParsed.id);
+    }
+    if (selectedId.startsWith("auftrag:")) {
+      const aid = selectedId.slice("auftrag:".length);
+      return auftragAnfragen.find((a) => a.id === aid);
+    }
+    return undefined;
+  }, [auftragAnfragen, selectedAnfrageParsed, selectedId]);
 
   const angeboteDetailPool = useMemo(() => {
     const byId = new Map<string, PartnerAnfrageItem>();
@@ -457,53 +422,33 @@ export function PartnerClient({
   }, [angeboteSorted, angeboteAlleAkzeptiert]);
 
   const selectedAngebot = useMemo(() => {
-    if (selectedId) {
-      return angeboteDetailPool.get(selectedId) ?? angeboteSorted[0];
-    }
-    return angeboteSorted[0];
-  }, [angeboteDetailPool, angeboteSorted, selectedId]);
+    if (!selectedId) return undefined;
+    return angeboteDetailPool.get(selectedId);
+  }, [angeboteDetailPool, selectedId]);
+
+  const selectedAuftrag = useMemo(() => {
+    if (!selectedId) return undefined;
+    return auftraege.find((a) => a.id === selectedId);
+  }, [auftraege, selectedId]);
 
   useEffect(() => {
-    if (section !== "anfragen" || !selectedId || selectedId.startsWith("auftrag:")) return;
-
-    const inAnfragen = anfragenSorted.some((a) => a.id === selectedId);
-    if (inAnfragen) return;
-
-    const inAngebote =
-      angeboteSorted.some((a) => a.id === selectedId) ||
-      angeboteAlleAkzeptiert.some((a) => a.id === selectedId);
-    if (!inAngebote) return;
-
-    setSection("angebote");
-    setListFilter("offen");
-    setListPage(1);
-    router.replace(partnerAngebotPortalPath(selectedId));
-  }, [
-    section,
-    selectedId,
-    anfragenSorted,
-    angeboteSorted,
-    angeboteAlleAkzeptiert,
-    router,
-  ]);
-
-  useEffect(() => {
-    if (section !== "angebote" || !selectedId) return;
-    if (angeboteDetailPool.has(selectedId)) return;
-    if (anfragenSorted.some((a) => a.id === selectedId)) {
-      router.replace(partnerAnfragePortalPath(selectedId));
-      setSection("anfragen");
+    if (ignoreUrlDetailRef.current) {
+      const s = searchParams.get("section")?.trim();
+      const rawId =
+        searchParams.get("id")?.trim() || searchParams.get("auftrag")?.trim();
+      if (
+        s &&
+        (s === "anfragen" || s === "angebote" || s === "auftraege") &&
+        !rawId
+      ) {
+        ignoreUrlDetailRef.current = false;
+        setSection(s);
+        setSelectedId(null);
+        setMobileDetailOpen(false);
+      }
       return;
     }
-    router.refresh();
-  }, [section, selectedId, angeboteDetailPool, anfragenSorted, router]);
 
-  const selectedAuftrag = useMemo(
-    () => auftraege.find((a) => a.id === selectedId) ?? auftraege[0],
-    [auftraege, selectedId]
-  );
-
-  useEffect(() => {
     const s = searchParams.get("section")?.trim();
     if (!s) return;
 
@@ -535,6 +480,7 @@ export function PartnerClient({
       const id = searchParams.get("id")?.trim();
       setSection("angebote");
       if (!id) {
+        setSelectedId(null);
         setMobileDetailOpen(false);
         return;
       }
@@ -564,6 +510,7 @@ export function PartnerClient({
       const rawId = searchParams.get("id")?.trim();
       setSection("anfragen");
       if (!rawId) {
+        setSelectedId(null);
         setMobileDetailOpen(false);
         return;
       }
@@ -624,13 +571,24 @@ export function PartnerClient({
         }
       }
 
-      // Veraltete Deep-Link-ID — Anfragen-Liste behalten, URL bereinigen (nicht Übersicht)
+      // Veraltete Deep-Link-ID — Anfragen-Liste behalten, URL bereinigen
       setSection("anfragen");
-      setSelectedId(firstAnfrageId(anfragenSorted, auftragAnfragen));
+      setSelectedId(null);
       setMobileDetailOpen(false);
       router.replace(partnerSectionListPath("anfragen"));
     }
   }, [searchParams, auftraege, anfragenSorted, angeboteSorted, auftragAnfragen, router]);
+
+  useEffect(() => {
+    if (section !== "angebote" || !selectedId) return;
+    if (angeboteDetailPool.has(selectedId)) return;
+    if (anfragenSorted.some((a) => a.id === selectedId)) {
+      router.replace(partnerAnfragePortalPath(selectedId));
+      setSection("anfragen");
+      return;
+    }
+    router.refresh();
+  }, [section, selectedId, angeboteDetailPool, anfragenSorted, router]);
 
   function navigateFromPlaner(
     target: PartnerTerminItem["section"],
@@ -680,15 +638,10 @@ export function PartnerClient({
       return;
     }
     setSection(id);
-    if (id === "anfragen") {
-      setSelectedId(firstAnfrageId(anfragen, auftragAnfragen));
-      router.replace(partnerSectionListPath("anfragen"));
-    } else if (id === "angebote") {
-      setSelectedId(angeboteSorted[0]?.id ?? null);
-      router.replace(partnerSectionListPath("angebote"));
-    } else if (id === "auftraege") {
-      setSelectedId(auftraege[0]?.id ?? null);
-      router.replace(partnerSectionListPath("auftraege"));
+    if (id === "anfragen" || id === "angebote" || id === "auftraege") {
+      ignoreUrlDetailRef.current = true;
+      setSelectedId(null);
+      router.replace(partnerSectionListPath(id));
     }
   }
 
@@ -813,20 +766,6 @@ export function PartnerClient({
         />
       );
     }
-    if (
-      section === "anfragen" &&
-      selectedId &&
-      !selectedId.startsWith("auftrag:") &&
-      !selectedAnfrageAngebot &&
-      (angeboteSorted.some((a) => a.id === selectedId) ||
-        angeboteAlleAkzeptiert.some((a) => a.id === selectedId))
-    ) {
-      return (
-        <p className="portal-text-body text-text-secondary">
-          Weiterleitung zu Angeboten …
-        </p>
-      );
-    }
     if (section === "angebote" && selectedAngebot) {
       return <PartnerAngebotDetail item={selectedAngebot} />;
     }
@@ -840,7 +779,7 @@ export function PartnerClient({
     if (section === "auftraege" && selectedAuftrag) {
       return <PartnerAuftragDetail item={selectedAuftrag} />;
     }
-    return <p className="portal-text-body text-text-secondary">Nichts ausgewählt.</p>;
+    return <p className="portal-text-body text-text-secondary">Zeile auswählen.</p>;
   })();
 
   return (
@@ -1257,6 +1196,7 @@ export function PartnerClient({
       <PortalMobileBottomSheet
         open={
           mobileDetailOpen &&
+          !!selectedId &&
           section !== "uebersicht" &&
           section !== "gpt" &&
           section !== "profil" &&
