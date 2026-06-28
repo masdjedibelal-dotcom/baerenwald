@@ -1,6 +1,9 @@
 import { NextResponse } from "next/server";
 
 import { notifyHandwerkerLeistungZuweisung } from "@/lib/partner/notify-partner-zuweisung";
+import { createPartnerNotification } from "@/lib/partner/create-partner-notification";
+import { partnerOffenPortalPath } from "@/lib/partner/partner-site-url";
+import { supabaseAdmin } from "@/lib/supabase";
 
 function authorize(request: Request): boolean {
   const secret = process.env.PARTNER_INTERNAL_API_SECRET?.trim();
@@ -41,5 +44,32 @@ export async function POST(request: Request) {
     return NextResponse.json(result, { status: 422 });
   }
 
-  return NextResponse.json({ ok: true });
+  const auftragId = String(body.auftragId ?? "").trim();
+  const handwerkerId = String(body.handwerkerId ?? "").trim();
+  if (handwerkerId && auftragId) {
+    const { data: auftrag } = await supabaseAdmin
+      .from("auftraege")
+      .select("angebot_id, angebote(notizen)")
+      .eq("id", auftragId)
+      .maybeSingle();
+    const angebotId = auftrag?.angebot_id ? String(auftrag.angebot_id) : null;
+    let link = `/partner?section=offen`;
+    if (angebotId) {
+      const { data: hw } = await supabaseAdmin
+        .from("angebot_handwerker")
+        .select("id")
+        .eq("angebot_id", angebotId)
+        .eq("handwerker_id", handwerkerId)
+        .maybeSingle();
+      if (hw?.id) link = partnerOffenPortalPath(String(hw.id));
+    }
+    await createPartnerNotification({
+      handwerkerId,
+      typ: "neu",
+      projektName: "Neue Leistung",
+      link,
+    });
+  }
+
+  return NextResponse.json({ ok: true, deprecated: true });
 }

@@ -3,6 +3,11 @@ import type {
   PartnerAnfrageItem,
   PartnerAuftragItem,
 } from "@/lib/partner/get-partner-data";
+import type { PartnerOffenItem } from "@/lib/partner/partner-offen-status";
+import {
+  partnerOffenStatusLabel,
+  partnerOffenStatusPillKey,
+} from "@/lib/partner/partner-offen-status";
 import {
   partnerAngebotListenHint,
   partnerAngebotPortalStatusLabel,
@@ -259,6 +264,53 @@ export function mapAuftragToCard(item: PartnerAuftragItem): PartnerCardRow {
     auftragPhasen: phasen,
     sortDate: ts(item.start_datum),
   };
+}
+
+export function mapOffenAngebotToCard(
+  item: PartnerAnfrageItem & { offen_karten_typ: "neu" | "nachreichung" | "geaendert" }
+): PartnerCardRow {
+  const typ = item.offen_karten_typ;
+  const meta = buildPartnerAnfrageCardMeta(item.lead, {
+    gewerk_name: item.gewerk_name,
+    positionen: item.positionen,
+  });
+
+  let hint: string | undefined = "→ Bitte bestätigen";
+  if (typ === "nachreichung") {
+    hint = "→ Neue Leistung annehmen";
+  } else if (typ === "geaendert") {
+    hint = "→ Änderung bestätigen";
+  } else if (typ === "neu") {
+    hint = "→ Auftrag annehmen";
+  }
+
+  return {
+    id: item.id,
+    title: item.listen_titel,
+    subtitle:
+      typ === "nachreichung" ? "Ergänzung zum laufenden Auftrag" : undefined,
+    statusLabel: partnerOffenStatusLabel(typ),
+    statusPillKey: partnerOffenStatusPillKey(typ),
+    accent: typ === "nachreichung" ? "anfrage" : "angebot",
+    meta,
+    hint,
+    sortDate: ts(item.gesendet_at ?? item.antwort_at),
+  };
+}
+
+export function buildOffenCardRows(offen: PartnerOffenItem[]): PartnerCardRow[] {
+  const rows = offen.map((entry) => {
+    if (entry.kind === "angebot") {
+      return mapOffenAngebotToCard(entry.item);
+    }
+    return mapAnfrageAuftragToCard(entry.item);
+  });
+  return rows.sort((a, b) => {
+    const aPending = a.hint ? 1 : 0;
+    const bPending = b.hint ? 1 : 0;
+    if (aPending !== bPending) return bPending - aPending;
+    return b.sortDate - a.sortDate;
+  });
 }
 
 export function buildAnfragenCardRows(

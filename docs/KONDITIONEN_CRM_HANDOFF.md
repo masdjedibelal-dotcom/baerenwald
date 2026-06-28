@@ -1,7 +1,9 @@
 # Konditionen-Workflow — SQL & CRM-To-dos
 
-Stand: 25.06.2026  
+Stand: Juni 2026  
 Zielgruppe: **baerenwald-crm-dashboard** + Supabase-Betrieb
+
+**Koordinations-Gesamtprozess (Portal-Sicht):** [handwerker-koordination/HANDWERKER_KOORDINATION_PROZESS.md](./handwerker-koordination/HANDWERKER_KOORDINATION_PROZESS.md)
 
 ---
 
@@ -84,14 +86,14 @@ comment on column public.angebot_handwerker.hw_konditionen is
 
 **Status `angebot_handwerker.hw_status`:**
 
-| Wert | Bedeutung | Partner-Tab |
-|------|-----------|-------------|
-| `offen` | HW hat noch nicht geantwortet | Anfragen |
-| `eingereicht` | HW hat geantwortet — CRM prüft | Anfragen |
-| `bestaetigt` | **CRM hat eingewilligt** — HW muss vereinbarte Preise noch bestätigen | Anfragen (offen) |
-| `uebernommen` | **HW hat Konditionen bestätigt** — wartet auf CRM-Auftragsfreigabe | Angebote (offen) |
-| `rueckfrage` | CRM lehnt ab / neuer Vorschlag — HW kann erneut antworten | Anfragen |
-| `abgelehnt` | CRM lehnt endgültig ab (optional → Rückfrage-Runde) | Anfragen |
+| Wert | Bedeutung | Partner-Tab | In Liste „Offen“ |
+|------|-----------|-------------|------------------|
+| leer / offen | HW hat noch nicht eingereicht | Anfragen | Ja (wenn Zu-/Absage oder Preise offen) |
+| `eingereicht` | HW hat geantwortet — CRM prüft | Anfragen *(Daten)* | **Nein** (Wartet auf Prüfung) |
+| `bestaetigt` | CRM hat eingewilligt — HW muss bestätigen | Anfragen | Ja |
+| `uebernommen` | HW hat bestätigt — Preise verbindlich | Angebote | Ja (bis Auftrag angenommen) |
+| `rueckfrage` | CRM: neuer Vorschlag | Anfragen | Ja |
+| `abgelehnt` | CRM hat abgelehnt | Anfragen | Ja (wenn erneut bearbeitbar) |
 
 **Vier Schritte bis zum laufenden Auftrag:**
 

@@ -1,8 +1,22 @@
-# Partner — CRM-Anbindung (E-Mail „Neue Anfrage“)
+# Partner — CRM-Anbindung (Notify-APIs)
 
-Die Website sendet Handwerkern eine **Partner-Portal-Mail** (Link `/partner/login`). Das CRM soll diese Mail **zusätzlich** oder **statt** der reinen Token-Mail auslösen.
+Die Website sendet Handwerkern E-Mails mit Deep-Links ins Partner-Portal. Das CRM ruft die Endpoints nach den jeweiligen Aktionen auf.
 
-## Endpoint
+**Prozess-Übersicht:** [handwerker-koordination/HANDWERKER_KOORDINATION_PROZESS.md](./handwerker-koordination/HANDWERKER_KOORDINATION_PROZESS.md)
+
+## Übersicht
+
+| Endpoint | Wann (CRM) | Portal-Ziel |
+|----------|------------|-------------|
+| `partner-notify-anfrage` | HW-Anfrage am Angebot gesendet | Anfragen |
+| `partner-notify-angebot-bestaetigt` | Nach CRM „Übernehmen“ (`hw_status=bestaetigt`) | Anfragen — bestätigen |
+| `partner-notify-angebot-antwort` | CRM Rückfrage oder Ablehnung | Anfragen |
+| `partner-notify-zuweisung` | HW am Auftrag zugewiesen | Anfragen (`auftrag:…`) |
+| *(keiner)* | Angebot → Auftrag (`auftraege.status≠offen`) | Angebote — Badge ändert sich |
+
+---
+
+## Neue Anfrage (Angebot)
 
 `POST https://baerenwaldmuenchen.de/api/internal/partner-notify-anfrage`
 
@@ -99,11 +113,39 @@ Ohne `bitteBestaetigen` (Legacy): Link zu **Angebote**.
 
 ---
 
+## CRM Rückfrage / Ablehnung (Konditionen)
+
+`POST https://baerenwaldmuenchen.de/api/internal/partner-notify-angebot-antwort`
+
+Gleicher Bearer `PARTNER_INTERNAL_API_SECRET`.
+
+Body:
+
+```json
+{
+  "anfrageId": "<uuid>",
+  "typ": "rueckfrage",
+  "crmNotiz": "Optionaler Text für den Handwerker",
+  "betreff": "Optional",
+  "cc": ["optional@example.com"]
+}
+```
+
+`typ`: `"rueckfrage"` oder `"abgelehnt"`.
+
+Mail: Link zu **Anfragen** — neue Konditionen prüfen.
+
+**CRM:** nach Setzen von `hw_status = rueckfrage` bzw. `abgelehnt` aufrufen (`notify-partner-angebot-antwort.ts`).
+
+**DB:** CRM setzt parallel `hw_status` und optional `hw_crm_notiz`.
+
+---
+
 ## Neue Leistung nach Einigung (ohne Status-Änderung)
 
 Wenn `hw_status = uebernommen` ist, **muss das CRM `hw_status` nicht setzen**.
 
-Neue oder geänderte Positionen in `angebote.positionen` (mit passender `handwerker_id` / `gewerk_id`) erkennt das Portal automatisch → **zusätzlicher** Eintrag unter **Anfragen** (Badge „Neue Leistung“). Unter **Angebote** bleiben die vereinbarten Leistungen unverändert sichtbar. Nach HW-Antwort: `hw_status = eingereicht`.
+Neue oder geänderte Positionen in `angebote.positionen` **oder** `auftrag_positionen` (mit passender `handwerker_id` / Gewerk) erkennt das Portal automatisch → **zusätzlicher** Eintrag unter **Anfragen** (Badge „Neue Leistung“). Unter **Angebote** bleiben die vereinbarten Leistungen unverändert sichtbar. Nach HW-Antwort: `hw_status = eingereicht`.
 
 Details: `docs/KONDITIONEN_CRM_HANDOFF.md` §6.
 

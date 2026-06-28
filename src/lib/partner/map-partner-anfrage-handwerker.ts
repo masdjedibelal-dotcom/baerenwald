@@ -160,6 +160,7 @@ export async function mapAngebotHandwerkerRow(
     crm_leistungsumfang,
     hw_status: (row.hw_status as string | null) ?? undefined,
     hw_eingereicht_at: (row.hw_eingereicht_at as string | null) ?? undefined,
+    bestaetigt_at: (row.bestaetigt_at as string | null) ?? undefined,
     hw_preis_netto: row.hw_preis_netto != null ? Number(row.hw_preis_netto) : null,
     hw_preis_brutto:
       row.hw_preis_brutto != null ? Number(row.hw_preis_brutto) : null,

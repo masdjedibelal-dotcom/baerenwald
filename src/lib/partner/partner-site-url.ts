@@ -13,12 +13,12 @@ export function partnerRegisterUrl(): string {
 }
 
 /**
- * Auftrags-Zuweisung (CRM: Auftrag noch „offen“) — Annehmen/Ablehnen unter Anfragen.
+ * Auftrags-Zuweisung (CRM: Auftrag noch „offen“) — Bestätigung unter Tab Offen.
  * Listen-ID im Portal: `auftrag:{auftragId}`.
  */
 export function partnerAuftragAnfragePortalUrl(auftragId: string): string {
   const id = auftragId.trim();
-  return `${SITE_CONFIG.url}/partner?section=anfragen&id=${encodeURIComponent(`auftrag:${id}`)}`;
+  return `${SITE_CONFIG.url}/partner?section=offen&id=${encodeURIComponent(`auftrag:${id}`)}`;
 }
 
 /** Laufender Auftrag — Tab Aufträge. */
@@ -35,15 +35,23 @@ export function partnerAnfragePortalUrl(anfrageId: string): string {
 
 /** Listen-Ansicht ohne Detail-Deep-Link. */
 export function partnerSectionListPath(
-  section: "anfragen" | "angebote" | "auftraege"
+  section: "offen" | "auftraege" | "anfragen" | "angebote"
 ): string {
+  if (section === "anfragen" || section === "angebote") {
+    return `/partner?section=offen`;
+  }
   return `/partner?section=${section}`;
 }
 
-/** Relativer Pfad — Client-Navigation im Partner-Portal (gleiche Origin). */
-export function partnerAnfragePortalPath(anfrageId: string): string {
+/** Relativer Pfad — Tab Offen, eine HW-Anfrage (ersetzt Anfragen/Angebote-Deep-Links). */
+export function partnerOffenPortalPath(anfrageId: string): string {
   const id = anfrageId.trim();
-  return `/partner?section=anfragen&id=${encodeURIComponent(id)}`;
+  return `/partner?section=offen&id=${encodeURIComponent(id)}`;
+}
+
+/** @deprecated Nutzt Tab Offen — Alias für Mail-Links und Legacy-CRM. */
+export function partnerAnfragePortalPath(anfrageId: string): string {
+  return partnerOffenPortalPath(anfrageId);
 }
 
 /** E-Mail-Deep-Link — direkt ins Portal (Middleware → Login mit next inkl. Query). */
@@ -51,10 +59,9 @@ export function partnerLoginForAnfrageUrl(anfrageId: string): string {
   return partnerAnfragePortalUrl(anfrageId);
 }
 
-/** Relativer Pfad — Client-Navigation im Partner-Portal (gleiche Origin). */
+/** @deprecated Nutzt Tab Offen — Alias für Mail-Links und Legacy-CRM. */
 export function partnerAngebotPortalPath(anfrageId: string): string {
-  const id = anfrageId.trim();
-  return `/partner?section=angebote&id=${encodeURIComponent(id)}`;
+  return partnerOffenPortalPath(anfrageId);
 }
 
 /** Direktlink: Angebote-Tab (nach CRM-Übernahme, hw_status = uebernommen). */

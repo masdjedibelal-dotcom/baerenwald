@@ -1,6 +1,9 @@
 import { NextResponse } from "next/server";
 
 import { notifyHandwerkerAngebotBestaetigt } from "@/lib/partner/notify-partner-angebot-bestaetigt";
+import { createPartnerNotification } from "@/lib/partner/create-partner-notification";
+import { partnerOffenPortalPath } from "@/lib/partner/partner-site-url";
+import { supabaseAdmin } from "@/lib/supabase";
 
 function authorize(request: Request): boolean {
   const secret = process.env.PARTNER_INTERNAL_API_SECRET?.trim();
@@ -12,6 +15,8 @@ function authorize(request: Request): boolean {
 /**
  * POST — vom CRM nach Bestätigung einer HW-Einreichung.
  * Body: { "anfrageId": "<angebot_handwerker.id>", "bitteBestaetigen": true }
+ *
+ * @deprecated Bitte `/api/internal/partner-notify` nutzen — Route bleibt für Legacy-CRM.
  */
 export async function POST(request: Request) {
   if (!authorize(request)) {
@@ -25,12 +30,29 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: false, error: "Ungültiger Body" }, { status: 400 });
   }
 
-  const result = await notifyHandwerkerAngebotBestaetigt(String(body.anfrageId ?? ""), {
+  const anfrageId = String(body.anfrageId ?? "").trim();
+  const result = await notifyHandwerkerAngebotBestaetigt(anfrageId, {
     bitteBestaetigen: Boolean(body.bitteBestaetigen),
   });
   if (!result.ok) {
     return NextResponse.json(result, { status: 422 });
   }
 
-  return NextResponse.json({ ok: true });
+  if (Boolean(body.bitteBestaetigen) && anfrageId) {
+    const { data: row } = await supabaseAdmin
+      .from("angebot_handwerker")
+      .select("handwerker_id, angebote(notizen)")
+      .eq("id", anfrageId)
+      .maybeSingle();
+    if (row?.handwerker_id) {
+      await createPartnerNotification({
+        handwerkerId: String(row.handwerker_id),
+        typ: "neu",
+        projektName: "Bestätigung ausstehend",
+        link: partnerOffenPortalPath(anfrageId),
+      });
+    }
+  }
+
+  return NextResponse.json({ ok: true, deprecated: true });
 }

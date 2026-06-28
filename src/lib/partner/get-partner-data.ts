@@ -3,6 +3,10 @@ import {
   isPartnerAnfrageKonditionenNachreichung,
 } from "@/lib/partner/partner-anfrage-status";
 import {
+  buildPartnerOffenListe,
+  type PartnerOffenItem,
+} from "@/lib/partner/partner-offen-status";
+import {
   aggregateAuftragHandwerkerStatus,
   resolveAngebotHandwerkerPhase,
   isAuftragAnfrageListItem,
@@ -93,6 +97,8 @@ export type PartnerAnfrageItem = {
   }>;
   hw_status?: string;
   hw_eingereicht_at?: string;
+  /** Zeitpunkt der verbindlichen Auftragsannahme (Tab Offen). */
+  bestaetigt_at?: string | null;
   hw_preis_netto?: number | null;
   hw_preis_brutto?: number | null;
   hw_angebot_pdf_url?: string | null;
@@ -106,7 +112,6 @@ export type PartnerAnfrageItem = {
   hw_crm_notiz?: string | null;
   hw_crm_antwort_at?: string | null;
   hw_konditionen?: PartnerHwKonditionen | null;
-  /** Projekt-/Lead-Kontext ohne Kundendaten. */
   lead?: PortalAnfrageLeadSource | null;
   crm_positionen_raw?: unknown;
   /** Auftragspositionen zum Angebot (CRM-Nachreichung nur im Auftrag). */
@@ -290,6 +295,7 @@ const ANGEBOT_HANDWERKER_BASE_SELECT = `
   hw_crm_notiz,
   hw_crm_antwort_at,
   hw_konditionen,
+  bestaetigt_at,
   gewerke(name),
   angebote(${PARTNER_ANGEBOT_EMBED})
 `;
@@ -852,6 +858,12 @@ export async function getPartnerDataForHandwerker(handwerkerId: string) {
   const auftragAnfragen = auftragAnfragenListe.map(markBautagebuchAnfrage);
   const auftraege = auftraegeListe.map(markBautagebuchAnfrage);
 
+  const offen = buildPartnerOffenListe({
+    anfragen: anfragenAngebot,
+    angebote,
+    auftragAnfragen,
+  });
+
   const auftragTitelById = new Map<string, string>();
   for (const a of [...auftragAnfragen, ...auftraege]) {
     auftragTitelById.set(a.id, a.listen_titel);
@@ -909,6 +921,7 @@ export async function getPartnerDataForHandwerker(handwerkerId: string) {
     anfragen: anfragenAngebot,
     angebote,
     angeboteAlleAkzeptiert,
+    offen,
     auftragAnfragen,
     auftraege,
   };

@@ -7,7 +7,6 @@ import {
   Briefcase,
   CalendarDays,
   ClipboardList,
-  FileText,
   LayoutDashboard,
   Mail,
   MessageCircle,
@@ -18,10 +17,10 @@ import {
 
 import { OnboardingTour } from "@/components/onboarding/OnboardingTour";
 import "@/components/onboarding/onboarding.css";
-import { PartnerAnfrageDetail } from "@/components/partner/PartnerAnfrageDetail";
+import { PartnerNotificationBell } from "@/components/partner/PartnerNotificationBell";
+import { PartnerOffenDetail } from "@/components/partner/PartnerOffenDetail";
 import { PartnerPlanerPanel } from "@/components/partner/PartnerPlanerPanel";
 import { PartnerProfilPanel } from "@/components/partner/PartnerProfilPanel";
-import { PartnerAngebotDetail } from "@/components/partner/PartnerAngebotDetail";
 import { PartnerAuftragAnfrageDetail } from "@/components/partner/PartnerAuftragAnfrageDetail";
 import { PartnerAuftragDetail } from "@/components/partner/PartnerAuftragDetail";
 import { PartnerListCard } from "@/components/partner/PartnerListCard";
@@ -47,10 +46,9 @@ import type {
   PartnerAufgabeItem,
   PartnerTodoItem,
 } from "@/lib/partner/get-partner-data";
+import type { PartnerOffenItem } from "@/lib/partner/partner-offen-status";
 import {
-  angebotPhaseSortKey,
-  buildAnfragenCardRows,
-  mapAngebotToCard,
+  buildOffenCardRows,
   mapAuftragToCard,
   partnerAngebotStatusPillClass,
   type PartnerCardRow,
@@ -59,29 +57,22 @@ import {
   formatHandwerkerBewertung,
   HANDWERKER_BEWERTUNG_KATEGORIEN,
 } from "@/lib/partner/handwerker-bewertung-display";
-import { isPartnerAnfrageAktionErforderlich, isPartnerAuftragAnfrageAktionErforderlich } from "@/lib/partner/partner-anfrage-status";
 import {
-  countPartnerAnfragenFilter,
-  countPartnerAngeboteFilter,
   countPartnerAuftraegeFilter,
-  filterPartnerAnfragenListen,
-  isPartnerAngebotAktionErforderlich,
-  isPartnerAngebotListItemOffen,
   isPartnerAuftragListItemOffen,
   type PartnerListFilterId,
 } from "@/lib/partner/partner-list-filters";
 import { cn } from "@/lib/utils";
-import { partnerAnfragePortalPath, partnerAngebotPortalPath, partnerSectionListPath } from "@/lib/partner/partner-site-url";
+import { partnerOffenPortalPath, partnerSectionListPath } from "@/lib/partner/partner-site-url";
 
 type PartnerSection =
   | "uebersicht"
   | "profil"
   | "planer"
-  | "anfragen"
-  | "angebote"
+  | "offen"
   | "auftraege"
   | "gpt";
-type OverviewTabId = "anfragen" | "angebote" | "auftraege";
+type OverviewTabId = "offen" | "auftraege";
 
 const MENU_ITEMS: Array<{
   id: PartnerSection;
@@ -89,9 +80,8 @@ const MENU_ITEMS: Array<{
   icon: typeof LayoutDashboard;
 }> = [
   { id: "uebersicht", label: "Übersicht", icon: LayoutDashboard },
-  { id: "anfragen", label: "Anfragen", icon: ClipboardList },
-  { id: "angebote", label: "Angebote", icon: FileText },
-  { id: "auftraege", label: "Aufträge", icon: Briefcase },
+  { id: "offen", label: "Offen", icon: ClipboardList },
+  { id: "auftraege", label: "Meine Aufträge", icon: Briefcase },
   { id: "gpt", label: "GPT", icon: MessagesSquare },
   { id: "planer", label: "Planer", icon: CalendarDays },
   { id: "profil", label: "Profil", icon: User },
@@ -99,12 +89,30 @@ const MENU_ITEMS: Array<{
 
 const MOBILE_NAV_ITEMS = [
   "uebersicht",
-  "anfragen",
-  "angebote",
+  "offen",
   "auftraege",
   "planer",
   "profil",
 ] as const satisfies readonly PartnerSection[];
+
+function normalizeSectionFromUrl(raw: string | undefined): PartnerSection | null {
+  if (!raw) return null;
+  if (raw === "anfragen" || raw === "angebote" || raw === "offen") return "offen";
+  if (
+    raw === "uebersicht" ||
+    raw === "profil" ||
+    raw === "planer" ||
+    raw === "auftraege" ||
+    raw === "gpt"
+  ) {
+    return raw;
+  }
+  return null;
+}
+
+function isPartnerListSection(section: PartnerSection): boolean {
+  return section === "offen" || section === "auftraege";
+}
 
 function statusPillClass(status: string): string {
   const s = status.toLowerCase();
@@ -122,17 +130,6 @@ function isAuftragAktiv(a: PartnerAuftragItem): boolean {
   return s !== "abgeschlossen" && s !== "storniert";
 }
 
-function sortAnfragen(items: PartnerAnfrageItem[]): PartnerAnfrageItem[] {
-  return [...items].sort((a, b) => {
-    const aAktion = isPartnerAnfrageAktionErforderlich(a) ? 1 : 0;
-    const bAktion = isPartnerAnfrageAktionErforderlich(b) ? 1 : 0;
-    if (aAktion !== bAktion) return bAktion - aAktion;
-    return (
-      new Date(b.gesendet_at || 0).getTime() - new Date(a.gesendet_at || 0).getTime()
-    );
-  });
-}
-
 function parseAnfragenSelectedId(
   selectedId: string | null
 ): { kind: "angebot"; id: string } | { kind: "auftrag"; id: string } | null {
@@ -144,8 +141,7 @@ function parseAnfragenSelectedId(
 }
 
 function emptyLabelForTab(tab: OverviewTabId): string {
-  if (tab === "anfragen") return "Keine offenen Anfragen";
-  if (tab === "angebote") return "Keine offenen Angebote";
+  if (tab === "offen") return "Keine offenen Bestätigungen";
   return "Keine aktiven Aufträge";
 }
 
@@ -190,11 +186,12 @@ export function PartnerClient({
   profil,
   termine,
   aufgaben,
-  anfragen,
-  angebote,
-  angeboteAlleAkzeptiert,
+  anfragen: _anfragen,
+  angebote: _angebote,
+  angeboteAlleAkzeptiert: _angeboteAlleAkzeptiert,
   auftragAnfragen,
   auftraege,
+  offen,
 }: {
   handwerker: PartnerHandwerkerProfil;
   profil: PartnerProfilKontext;
@@ -202,12 +199,14 @@ export function PartnerClient({
   aufgaben: PartnerAufgabeItem[];
   /** @deprecated Eigene Todos entfallen zugunsten systemischer Aufgaben */
   todos?: PartnerTodoItem[];
-  /** Offene angebot_handwerker-Anfragen (Server-Filter). */
+  /** @deprecated Legacy-Listen — Tab Offen nutzt `offen`. */
   anfragen: PartnerAnfrageItem[];
-  /** Akzeptiert, hw_status !== uebernommen (Server-Filter). */
+  /** @deprecated Legacy-Listen — Tab Offen nutzt `offen`. */
   angebote: PartnerAnfrageItem[];
   /** Alle akzeptierten HW-Angebote inkl. übernommen (Deep-Link). */
   angeboteAlleAkzeptiert: PartnerAnfrageItem[];
+  /** Offene Bestätigungen (Anfragen + Angebote vereint). */
+  offen: PartnerOffenItem[];
   /** Auftrag mit status offen / HW noch ausstehend (Server-Filter). */
   auftragAnfragen: PartnerAuftragItem[];
   /** Laufende Aufträge (Server-Filter). */
@@ -216,7 +215,7 @@ export function PartnerClient({
   const router = useRouter();
   const searchParams = useSearchParams();
   const [section, setSection] = useState<PartnerSection>("uebersicht");
-  const [overviewTab, setOverviewTab] = useState<OverviewTabId>("anfragen");
+  const [overviewTab, setOverviewTab] = useState<OverviewTabId>("offen");
   const [overviewPage, setOverviewPage] = useState(1);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [mobileDetailOpen, setMobileDetailOpen] = useState(false);
@@ -236,25 +235,9 @@ export function PartnerClient({
 
   const vorname = handwerker.vorname || "Partner";
 
-  const offeneAnfragenCount =
-    anfragen.filter(isPartnerAnfrageAktionErforderlich).length +
-    auftragAnfragen.filter(isPartnerAuftragAnfrageAktionErforderlich).length;
+  const offenCount = offen.length;
 
-  const anfragenSorted = useMemo(() => sortAnfragen(anfragen), [anfragen]);
-
-  const angeboteSorted = useMemo(() => {
-    return [...angebote].sort((a, b) => {
-      const phaseDiff = angebotPhaseSortKey(a) - angebotPhaseSortKey(b);
-      if (phaseDiff !== 0) return phaseDiff;
-      return (
-        new Date(b.antwort_at || b.gesendet_at || 0).getTime() -
-        new Date(a.antwort_at || a.gesendet_at || 0).getTime()
-      );
-    });
-  }, [angebote]);
-
-  const angeboteOffenCount = angebote.filter(isPartnerAngebotListItemOffen).length;
-  const angeboteAktionCount = angebote.filter(isPartnerAngebotAktionErforderlich).length;
+  const offenCardRows = useMemo(() => buildOffenCardRows(offen), [offen]);
 
   const aktiveAuftraegeCount = auftraege.filter(isAuftragAktiv).length;
 
@@ -262,17 +245,8 @@ export function PartnerClient({
     section === "auftraege" ? listFilter : "offen";
 
   const sectionCardRows = useMemo((): PartnerCardRow[] => {
-    if (section === "anfragen") {
-      const filtered = filterPartnerAnfragenListen(
-        anfragenSorted,
-        auftragAnfragen,
-        "offen"
-      );
-      return buildAnfragenCardRows(filtered.anfragen, filtered.auftragAnfragen);
-    }
-    if (section === "angebote") {
-      const items = angeboteSorted.filter(isPartnerAngebotListItemOffen);
-      return items.map(mapAngebotToCard);
+    if (section === "offen") {
+      return offenCardRows;
     }
     if (section === "auftraege") {
       const items = [...auftraege]
@@ -289,27 +263,14 @@ export function PartnerClient({
       return items.map(mapAuftragToCard);
     }
     return [];
-  }, [
-    section,
-    listFilterEffective,
-    anfragenSorted,
-    auftragAnfragen,
-    angeboteSorted,
-    auftraege,
-  ]);
+  }, [section, listFilterEffective, offenCardRows, auftraege]);
 
   const listFilterCounts = useMemo((): Record<PartnerListFilterId, number> => {
-    if (section === "anfragen") {
-      return countPartnerAnfragenFilter(anfragenSorted, auftragAnfragen);
-    }
-    if (section === "angebote") {
-      return countPartnerAngeboteFilter(angeboteSorted);
-    }
     if (section === "auftraege") {
       return countPartnerAuftraegeFilter(auftraege);
     }
     return { offen: 0, geschlossen: 0 };
-  }, [section, anfragenSorted, auftragAnfragen, angeboteSorted, auftraege]);
+  }, [section, auftraege]);
 
   const listTotalPages = Math.max(
     1,
@@ -322,43 +283,31 @@ export function PartnerClient({
   );
 
   const listItemLabel =
-    section === "anfragen"
-      ? "Anfragen"
-      : section === "angebote"
-        ? "Angebote"
-        : "Aufträge";
+    section === "offen" ? "Offen" : section === "auftraege" ? "Aufträge" : "";
 
   useEffect(() => {
     setListPage(1);
   }, [section, listFilter]);
 
   useEffect(() => {
-    if (
-      section !== "anfragen" &&
-      section !== "angebote" &&
-      section !== "auftraege"
-    ) {
+    if (!isPartnerListSection(section)) {
       return;
     }
     if (!selectedId) return;
     if (sectionCardRows.some((r) => r.id === selectedId)) return;
+    if (selectedId.startsWith("auftrag:")) {
+      const aid = selectedId.slice("auftrag:".length);
+      if (sectionCardRows.some((r) => r.id === `auftrag:${aid}` || r.id === aid)) {
+        return;
+      }
+    }
     setSelectedId(null);
     setMobileDetailOpen(false);
   }, [section, sectionCardRows, selectedId]);
 
   const overviewCardRows = useMemo((): PartnerCardRow[] => {
-    if (overviewTab === "anfragen") {
-      const filtered = filterPartnerAnfragenListen(
-        anfragenSorted,
-        auftragAnfragen,
-        "offen"
-      );
-      return buildAnfragenCardRows(filtered.anfragen, filtered.auftragAnfragen);
-    }
-    if (overviewTab === "angebote") {
-      return angeboteSorted
-        .filter(isPartnerAngebotListItemOffen)
-        .map(mapAngebotToCard);
+    if (overviewTab === "offen") {
+      return offenCardRows;
     }
     return [...auftraege]
       .sort(
@@ -368,7 +317,7 @@ export function PartnerClient({
       )
       .filter(isPartnerAuftragListItemOffen)
       .map(mapAuftragToCard);
-  }, [overviewTab, anfragenSorted, auftragAnfragen, angeboteSorted, auftraege]);
+  }, [overviewTab, offenCardRows, auftraege]);
 
   const overviewTotalPages = Math.max(
     1,
@@ -384,87 +333,62 @@ export function PartnerClient({
     setOverviewPage(1);
   }, [overviewTab]);
 
-  const selectedAnfrageParsed = parseAnfragenSelectedId(selectedId);
+  const selectedOffenAngebot = useMemo(() => {
+    if (section !== "offen" || !selectedId || selectedId.startsWith("auftrag:")) {
+      return undefined;
+    }
+    const entry = offen.find((e) => e.kind === "angebot" && e.item.id === selectedId);
+    return entry?.kind === "angebot" ? entry.item : undefined;
+  }, [offen, section, selectedId]);
 
-  const selectedAnfrageAngebot = useMemo(() => {
-    if (!selectedId || selectedAnfrageParsed?.kind === "auftrag") return undefined;
-
-    const explicitId =
-      selectedAnfrageParsed?.kind === "angebot"
-        ? selectedAnfrageParsed.id
-        : !selectedId.startsWith("auftrag:")
-          ? selectedId
+  const selectedOffenAuftrag = useMemo(() => {
+    if (section !== "offen" || !selectedId) return undefined;
+    const parsed = parseAnfragenSelectedId(selectedId);
+    const auftragId =
+      parsed?.kind === "auftrag"
+        ? parsed.id
+        : selectedId.startsWith("auftrag:")
+          ? selectedId.slice("auftrag:".length)
           : null;
-
-    if (!explicitId) return undefined;
-    return anfragenSorted.find((a) => a.id === explicitId);
-  }, [anfragenSorted, selectedAnfrageParsed, selectedId]);
-
-  const selectedAnfrageAuftrag = useMemo(() => {
-    if (!selectedId) return undefined;
-    if (selectedAnfrageParsed?.kind === "auftrag") {
-      return auftragAnfragen.find((a) => a.id === selectedAnfrageParsed.id);
-    }
-    if (selectedId.startsWith("auftrag:")) {
-      const aid = selectedId.slice("auftrag:".length);
-      return auftragAnfragen.find((a) => a.id === aid);
-    }
-    return undefined;
-  }, [auftragAnfragen, selectedAnfrageParsed, selectedId]);
-
-  const angeboteDetailPool = useMemo(() => {
-    const byId = new Map<string, PartnerAnfrageItem>();
-    for (const a of angeboteSorted) byId.set(a.id, a);
-    for (const a of angeboteAlleAkzeptiert) {
-      if (!byId.has(a.id)) byId.set(a.id, a);
-    }
-    return byId;
-  }, [angeboteSorted, angeboteAlleAkzeptiert]);
-
-  const selectedAngebot = useMemo(() => {
-    if (!selectedId) return undefined;
-    return angeboteDetailPool.get(selectedId);
-  }, [angeboteDetailPool, selectedId]);
-
-  const selectedAuftrag = useMemo(() => {
-    if (!selectedId) return undefined;
-    return auftraege.find((a) => a.id === selectedId);
-  }, [auftraege, selectedId]);
+    if (!auftragId) return undefined;
+    const entry = offen.find((e) => e.kind === "auftrag" && e.item.id === auftragId);
+    return entry?.kind === "auftrag" ? entry.item : undefined;
+  }, [offen, section, selectedId]);
 
   useEffect(() => {
     if (ignoreUrlDetailRef.current) {
-      const s = searchParams.get("section")?.trim();
+      const rawSection = searchParams.get("section")?.trim();
+      const normalized = normalizeSectionFromUrl(rawSection);
       const rawId =
         searchParams.get("id")?.trim() || searchParams.get("auftrag")?.trim();
-      if (
-        s &&
-        (s === "anfragen" || s === "angebote" || s === "auftraege") &&
-        !rawId
-      ) {
+      if (normalized && isPartnerListSection(normalized) && !rawId) {
         ignoreUrlDetailRef.current = false;
-        setSection(s);
+        setSection(normalized);
         setSelectedId(null);
         setMobileDetailOpen(false);
       }
       return;
     }
 
-    const s = searchParams.get("section")?.trim();
-    if (!s) return;
+    const rawSection = searchParams.get("section")?.trim();
+    if (!rawSection) return;
 
-    if (s === "profil" || s === "unterlagen") {
+    if (rawSection === "profil" || rawSection === "unterlagen") {
       setSection("profil");
       setMobileDetailOpen(false);
       return;
     }
 
-    if (s === "planer") {
+    if (rawSection === "planer") {
       setSection("planer");
       setMobileDetailOpen(false);
       return;
     }
 
-    if (s === "auftraege") {
+    const normalized = normalizeSectionFromUrl(rawSection);
+    if (!normalized) return;
+
+    if (normalized === "auftraege") {
       const auftragId =
         searchParams.get("auftrag")?.trim() || searchParams.get("id")?.trim();
       if (!auftragId || auftragId.startsWith("auftrag:")) return;
@@ -476,39 +400,18 @@ export function PartnerClient({
       return;
     }
 
-    if (s === "angebote") {
-      const id = searchParams.get("id")?.trim();
-      setSection("angebote");
-      if (!id) {
-        setSelectedId(null);
-        setMobileDetailOpen(false);
-        return;
-      }
-      if (angeboteSorted.some((a) => a.id === id)) {
-        setSelectedId(id);
-        setMobileDetailOpen(true);
-        return;
-      }
-      if (angeboteAlleAkzeptiert.some((a) => a.id === id)) {
-        setSelectedId(id);
-        setMobileDetailOpen(true);
-        return;
-      }
-      if (anfragenSorted.some((a) => a.id === id)) {
-        router.replace(partnerAnfragePortalPath(id));
-        setSection("anfragen");
-        setSelectedId(id);
-        setMobileDetailOpen(true);
-        return;
-      }
-      setSelectedId(id);
-      setMobileDetailOpen(true);
-      return;
-    }
-
-    if (s === "anfragen") {
+    if (normalized === "offen") {
       const rawId = searchParams.get("id")?.trim();
-      setSection("anfragen");
+      setSection("offen");
+
+      if (rawSection === "anfragen" || rawSection === "angebote") {
+        if (rawId) {
+          router.replace(partnerOffenPortalPath(rawId));
+        } else {
+          router.replace(partnerSectionListPath("offen"));
+        }
+      }
+
       if (!rawId) {
         setSelectedId(null);
         setMobileDetailOpen(false);
@@ -519,82 +422,47 @@ export function PartnerClient({
         ? rawId.slice("auftrag:".length)
         : rawId;
 
-      if (
-        !rawId.startsWith("auftrag:") &&
-        !anfragenSorted.some((a) => a.id === rawId) &&
-        (angeboteSorted.some((a) => a.id === rawId) ||
-          angeboteAlleAkzeptiert.some((a) => a.id === rawId))
-      ) {
-        setSection("angebote");
-        setListFilter("offen");
-        setSelectedId(rawId);
-        setMobileDetailOpen(true);
-        router.replace(partnerAngebotPortalPath(rawId));
-        return;
-      }
+      const inOffen =
+        offen.some(
+          (e) =>
+            (e.kind === "angebot" && e.item.id === rawId) ||
+            (e.kind === "auftrag" && e.item.id === auftragIdFromParam)
+        ) ||
+        offen.some(
+          (e) => e.kind === "auftrag" && e.item.id === rawId
+        );
 
-      if (anfragenSorted.some((a) => a.id === rawId)) {
-        setSelectedId(rawId);
-        setMobileDetailOpen(true);
-        return;
-      }
-      if (
-        rawId.startsWith("auftrag:") &&
-        auftragAnfragen.some((a) => a.id === auftragIdFromParam)
-      ) {
-        setSelectedId(rawId);
-        setMobileDetailOpen(true);
-        return;
-      }
-      if (auftragAnfragen.some((a) => a.id === auftragIdFromParam)) {
-        setSelectedId(`auftrag:${auftragIdFromParam}`);
+      if (inOffen) {
+        setSelectedId(rawId.startsWith("auftrag:") ? rawId : rawId);
         setMobileDetailOpen(true);
         return;
       }
 
-      const auftragItem =
-        auftraege.find((a) => a.id === auftragIdFromParam) ??
-        auftragAnfragen.find((a) => a.id === auftragIdFromParam);
-      const angebotHwId = auftragItem?.angebotHandwerkerId;
-      if (angebotHwId) {
-        if (angeboteSorted.some((a) => a.id === angebotHwId)) {
-          setSection("angebote");
-          setSelectedId(angebotHwId);
-          setMobileDetailOpen(true);
-          return;
-        }
-        if (anfragenSorted.some((a) => a.id === angebotHwId)) {
-          setSection("anfragen");
-          setSelectedId(angebotHwId);
-          setMobileDetailOpen(true);
-          return;
-        }
+      if (auftraege.some((a) => a.id === auftragIdFromParam)) {
+        setSection("auftraege");
+        setSelectedId(auftragIdFromParam);
+        setMobileDetailOpen(true);
+        router.replace(`/partner?section=auftraege&auftrag=${encodeURIComponent(auftragIdFromParam)}`);
+        return;
       }
 
-      // Veraltete Deep-Link-ID — Anfragen-Liste behalten, URL bereinigen
-      setSection("anfragen");
-      setSelectedId(null);
-      setMobileDetailOpen(false);
-      router.replace(partnerSectionListPath("anfragen"));
+      setSelectedId(rawId);
+      setMobileDetailOpen(true);
     }
-  }, [searchParams, auftraege, anfragenSorted, angeboteSorted, auftragAnfragen, router]);
+  }, [searchParams, auftraege, offen, router]);
 
-  useEffect(() => {
-    if (section !== "angebote" || !selectedId) return;
-    if (angeboteDetailPool.has(selectedId)) return;
-    if (anfragenSorted.some((a) => a.id === selectedId)) {
-      router.replace(partnerAnfragePortalPath(selectedId));
-      setSection("anfragen");
-      return;
-    }
-    router.refresh();
-  }, [section, selectedId, angeboteDetailPool, anfragenSorted, router]);
+  const selectedAuftrag = useMemo(() => {
+    if (!selectedId) return undefined;
+    return auftraege.find((a) => a.id === selectedId);
+  }, [auftraege, selectedId]);
 
   function navigateFromPlaner(
     target: PartnerTerminItem["section"],
     selectedId?: string
   ) {
-    setSection(target);
+    const mapped =
+      target === "anfragen" || target === "angebote" ? "offen" : target;
+    setSection(mapped as PartnerSection);
     setListPage(1);
     setListFilter("offen");
     if (selectedId) {
@@ -603,27 +471,26 @@ export function PartnerClient({
     }
   }
 
-  function weiterZuAngeboten(angebotHandwerkerId: string) {
-    const id = angebotHandwerkerId.trim();
-    if (!id) return;
-    setSection("angebote");
-    setListPage(1);
-    setListFilter("offen");
-    setSelectedId(id);
-    setMobileDetailOpen(true);
-    router.replace(partnerAngebotPortalPath(id));
-    queueMicrotask(() => router.refresh());
-  }
-
-  function refreshAnfrageAfterRespond(anfrageId: string) {
+  function refreshOffenAfterConfirm(anfrageId: string) {
     const id = anfrageId.trim();
     if (!id) return;
-    setSection("anfragen");
+    setSection("auftraege");
     setListPage(1);
     setListFilter("offen");
+    setSelectedId(null);
+    setMobileDetailOpen(false);
+    router.replace(partnerSectionListPath("auftraege"));
+    router.refresh();
+  }
+
+  function refreshOffenDetail(anfrageId: string) {
+    const id = anfrageId.trim();
+    if (!id) return;
+    setSection("offen");
+    setListPage(1);
     setSelectedId(id);
     setMobileDetailOpen(true);
-    router.replace(partnerAnfragePortalPath(id));
+    router.replace(partnerOffenPortalPath(id));
     router.refresh();
   }
 
@@ -638,7 +505,7 @@ export function PartnerClient({
       return;
     }
     setSection(id);
-    if (id === "anfragen" || id === "angebote" || id === "auftraege") {
+    if (id === "offen" || id === "auftraege") {
       ignoreUrlDetailRef.current = true;
       setSelectedId(null);
       router.replace(partnerSectionListPath(id));
@@ -647,13 +514,21 @@ export function PartnerClient({
 
   function openFromOverview(tab: OverviewTabId, id: string) {
     setSelectedId(id);
-    setSection(tab);
+    setSection(tab === "offen" ? "offen" : "auftraege");
     setMobileDetailOpen(true);
+    if (tab === "offen") {
+      router.replace(`/partner?section=offen&id=${encodeURIComponent(id)}`);
+    }
   }
 
   function selectRow(id: string) {
     setSelectedId(id);
     setMobileDetailOpen(true);
+    if (section === "offen") {
+      router.replace(
+        `/partner?section=offen&id=${encodeURIComponent(id)}`
+      );
+    }
   }
 
   const waNumber = SITE_CONFIG.phoneMobil.replace(/\D/g, "");
@@ -662,17 +537,11 @@ export function PartnerClient({
   )}`;
 
   const emptyMessage = (() => {
-    if (section === "anfragen") {
-      if (anfragenSorted.length + auftragAnfragen.length === 0) {
-        return "Keine Anfragen — du wirst per E-Mail benachrichtigt, sobald Bärenwald dich einbindet.";
+    if (section === "offen") {
+      if (offen.length === 0) {
+        return "Keine offenen Bestätigungen — du wirst per E-Mail benachrichtigt, sobald Bärenwald dich einbindet.";
       }
-      return "Keine offenen Anfragen.";
-    }
-    if (section === "angebote") {
-      if (angeboteSorted.length === 0) {
-        return "Keine Angebote — nach bestätigten Anfragen erscheinen sie hier.";
-      }
-      return "Keine offenen Angebote.";
+      return "Keine offenen Bestätigungen.";
     }
     if (section === "auftraege") {
       if (auftraege.length === 0) {
@@ -696,7 +565,7 @@ export function PartnerClient({
         title={row.title}
         statusLabel={row.statusLabel}
         statusPillClass={
-          tab === "angebote" || tab === "anfragen"
+          tab === "offen" || tab === "auftraege"
             ? partnerAngebotStatusPillClass(row.statusPillKey)
             : statusPillClass(row.statusPillKey)
         }
@@ -726,7 +595,7 @@ export function PartnerClient({
         subtitle={row.subtitle}
         statusLabel={row.statusLabel}
         statusPillClass={
-          section === "angebote" || section === "anfragen"
+          section === "offen"
             ? partnerAngebotStatusPillClass(row.statusPillKey)
             : statusPillClass(row.statusPillKey)
         }
@@ -748,31 +617,27 @@ export function PartnerClient({
   }
 
   const detailPanel = (() => {
-    if (section === "anfragen" && selectedAnfrageAuftrag && !selectedAnfrageAngebot) {
+    if (section === "offen" && selectedOffenAuftrag && !selectedOffenAngebot) {
       return (
         <PartnerAuftragAnfrageDetail
-          item={selectedAnfrageAuftrag}
-          onAccepted={refreshAnfrageAfterRespond}
-          onWeiterZuAngeboten={weiterZuAngeboten}
+          item={selectedOffenAuftrag}
+          onAccepted={refreshOffenDetail}
+          onWeiterZuAngeboten={refreshOffenDetail}
         />
       );
     }
-    if (section === "anfragen" && selectedAnfrageAngebot) {
+    if (section === "offen" && selectedOffenAngebot) {
       return (
-        <PartnerAnfrageDetail
-          item={selectedAnfrageAngebot}
-          onAccepted={refreshAnfrageAfterRespond}
-          onKonditionenBestaetigt={weiterZuAngeboten}
+        <PartnerOffenDetail
+          item={selectedOffenAngebot}
+          onConfirmed={refreshOffenAfterConfirm}
         />
       );
     }
-    if (section === "angebote" && selectedAngebot) {
-      return <PartnerAngebotDetail item={selectedAngebot} />;
-    }
-    if (section === "angebote" && selectedId) {
+    if (section === "offen" && selectedId) {
       return (
         <p className="portal-text-body text-text-secondary">
-          Angebot wird geladen …
+          Vorgang wird geladen …
         </p>
       );
     }
@@ -795,6 +660,7 @@ export function PartnerClient({
             </div>
           </div>
           <div className="flex shrink-0 items-center gap-2">
+            <PartnerNotificationBell />
             <form action="/partner/auth/signout" method="post">
               <button
                 type="submit"
@@ -834,13 +700,11 @@ export function PartnerClient({
                   <span className="portal-text-meta text-text-tertiary">
                     {id === "planer"
                       ? termine.length + aufgaben.length
-                      : id === "anfragen"
-                        ? offeneAnfragenCount
-                        : id === "angebote"
-                          ? angeboteAktionCount
-                          : id === "auftraege"
-                            ? aktiveAuftraegeCount
-                            : ""}
+                      : id === "offen"
+                        ? offenCount
+                        : id === "auftraege"
+                          ? aktiveAuftraegeCount
+                          : ""}
                   </span>
                 </button>
               ))}
@@ -891,15 +755,11 @@ export function PartnerClient({
 
               <div className="grid min-w-0 grid-cols-3 gap-2">
                 <article className="portal-kpi-card">
-                  <p className="portal-kpi-label">Offene Anfragen</p>
-                  <p className="portal-kpi-value">{offeneAnfragenCount}</p>
+                  <p className="portal-kpi-label">Offen</p>
+                  <p className="portal-kpi-value">{offenCount}</p>
                 </article>
                 <article className="portal-kpi-card">
-                  <p className="portal-kpi-label">Angebote offen</p>
-                  <p className="portal-kpi-value">{angeboteOffenCount}</p>
-                </article>
-                <article className="portal-kpi-card">
-                  <p className="portal-kpi-label">Aktive Aufträge</p>
+                  <p className="portal-kpi-label">Meine Aufträge</p>
                   <p className="portal-kpi-value">{aktiveAuftraegeCount}</p>
                 </article>
               </div>
@@ -1007,9 +867,8 @@ export function PartnerClient({
                   <div className="flex gap-2">
                     {(
                       [
-                        ["anfragen", "Anfragen"],
-                        ["angebote", "Angebote"],
-                        ["auftraege", "Aufträge"],
+                        ["offen", "Offen"],
+                        ["auftraege", "Meine Aufträge"],
                       ] as const
                     ).map(([id, label]) => (
                       <button
@@ -1054,11 +913,7 @@ export function PartnerClient({
                   <PartnerListPagination
                     totalItems={overviewCardRows.length}
                     itemLabel={
-                      overviewTab === "anfragen"
-                        ? "Anfragen"
-                        : overviewTab === "angebote"
-                          ? "Angebote"
-                          : "Aufträge"
+                      overviewTab === "offen" ? "Offen" : "Aufträge"
                     }
                     currentPage={overviewSafePage}
                     totalPages={overviewTotalPages}
@@ -1161,8 +1016,9 @@ export function PartnerClient({
           {MOBILE_NAV_ITEMS.map((id) => {
             const { label, icon: Icon } = MENU_ITEMS.find((m) => m.id === id)!;
             const badgeCount = portalNavBadgeCount(id, {
-              anfragen: offeneAnfragenCount,
-              angebote: angeboteAktionCount,
+              offen: offenCount,
+              anfragen: 0,
+              angebote: 0,
               auftraege: aktiveAuftraegeCount,
             });
             return (

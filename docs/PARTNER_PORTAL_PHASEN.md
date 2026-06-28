@@ -1,5 +1,8 @@
 # Partner-Portal — Menü-Phasen (Anfragen / Angebote / Aufträge)
 
+> **Vollständiger Koordinationsprozess:** [handwerker-koordination/HANDWERKER_KOORDINATION_PROZESS.md](./handwerker-koordination/HANDWERKER_KOORDINATION_PROZESS.md)  
+> **UI-Guide für Koordination:** [handwerker-koordination/HANDWERKER_KOORDINATION_PORTAL_UI.md](./handwerker-koordination/HANDWERKER_KOORDINATION_PORTAL_UI.md)
+
 Die Website liefert **vorgefilterte Listen** aus `getPartnerDataForHandwerker()`.
 Das Frontend soll **nicht** selbst nach `auftraege.status === "offen"` filtern.
 
@@ -14,14 +17,21 @@ Das Frontend soll **nicht** selbst nach `auftraege.status === "offen"` filtern.
 
 ### `angebot_handwerker`
 
-1. **anfrage** — `isPartnerAnfrageOffen()` (noch keine Antwort / Pending)
-2. **angebot** — Status `akzeptiert`, `hw_status` ≠ `uebernommen` (Einreichung offen, in Prüfung oder übernommen-Anzeige)
-3. Sonst nicht in den drei Menü-Listen
+| Phase | Bedingung (vereinfacht) |
+|-------|-------------------------|
+| **anfrage** | Noch keine verbindliche Einigung: inkl. `akzeptiert` + Preise offen, `eingereicht`, `bestaetigt`, `rueckfrage`; plus Nachreichungs-Eintrag |
+| **angebot** | `hw_status = uebernommen` und Vertrag noch nicht abgeschlossen |
+| **auftrag** | `projektvertrag_bestaetigt_am` gesetzt |
+
+**Wichtig:** Tab **Angebote** beginnt erst bei `hw_status = uebernommen` — nicht schon bei `status = akzeptiert`.
 
 ### Auftrag (Leistungs-Zuweisung)
 
-1. **anfrage** — `auftraege.status === "offen"` **oder** HW-Status `angefragt` / `ausstehend` / `warten`
-2. **auftrag** — Projekt läuft (`in_arbeit`, `abgeschlossen`, …) und HW nicht mehr pending
+| Phase | Bedingung |
+|-------|-----------|
+| **anfrage** | `auftraege.status === "offen"` oder HW-Status pending |
+| **angebot** | Auftrag `offen`, HW `akzeptiert`, verknüpftes Angebot — Preis/PDF |
+| **auftrag** | Projekt läuft, HW nicht mehr pending |
 
 HW-Status wird aus `auftrag_handwerker.status` und `auftrag_positionen.handwerker_status` aggregiert.
 
@@ -29,10 +39,10 @@ HW-Status wird aus `auftrag_handwerker.status` und `auftrag_positionen.handwerke
 
 ```ts
 {
-  anfragen: PartnerAnfrageItem[];      // nur angebot_handwerker, Phase anfrage
-  angebote: PartnerAnfrageItem[];      // nur angebot_handwerker, Phase angebot
+  anfragen: PartnerAnfrageItem[];       // angebot_handwerker (Phase anfrage) + Nachreichung
+  angebote: PartnerAnfrageItem[];       // angebot_handwerker, Phase angebot
   auftragAnfragen: PartnerAuftragItem[]; // Auftrag Phase anfrage
-  auftraege: PartnerAuftragItem[];     // Auftrag Phase auftrag (+ portalPhase, hwStatus)
+  auftraege: PartnerAuftragItem[];      // Auftrag Phase auftrag
 }
 ```
 
@@ -41,18 +51,27 @@ Listen-IDs in **Anfragen**:
 - Angebots-Anfrage: `angebot_handwerker.id` (UUID)
 - Auftrags-Anfrage: `auftrag:{auftrag_id}`
 
+## Filter „Offen“ in der UI
+
+`PartnerClient` filtert Anfragen mit `isPartnerAnfrageAktionErforderlich()`:
+
+- **Sichtbar:** Zu-/Absage, Preise festlegen, bestätigen, Rückfrage, Nachreichung
+- **Nicht sichtbar:** `hw_status = eingereicht` („Wartet auf Prüfung“) — CRM muss reagieren
+
+## Nachreichung (dual listing)
+
+Bei `hw_status = uebernommen` + neuer CRM-/Auftragsposition:
+
+- **Angebote:** vereinbarte Leistungen (readonly)
+- **Anfragen:** zusätzlicher Eintrag „Neue Leistung“
+
+Siehe `partner-konditionen.ts` und [KONDITIONEN_CRM_HANDOFF.md](./KONDITIONEN_CRM_HANDOFF.md) §6.
+
 ## CRM-Hinweis
 
-Wenn im CRM nur am **Auftrag** zugewiesen wird (ohne `angebot_handwerker`), erscheint der Eintrag unter **Anfragen** (nicht Aufträge), solange der Auftrag `offen` ist.
+Wenn im CRM nur am **Auftrag** zugewiesen wird (ohne `angebot_handwerker`), erscheint der Eintrag unter **Anfragen** (`auftrag:…`), solange der Auftrag `offen` ist.
 
-Nach Annahme (`respondPartnerAuftragZuweisung`) wird die verknüpfte `angebot_handwerker`-Zeile auf **akzeptiert** gesetzt — der Eintrag erscheint unter **Angebote** (Preis/PDF). Er verschwindet aus **Anfragen**.
-
-Unter **Aufträge** erscheint er erst nach:
-1. Angebotseinreichung + CRM-Bestätigung (`hw_status = uebernommen`)
-2. Projektvertrag + fehlende Unterlagen im Tab **Angebote**
-3. Verbindlicher Bestätigung (`auftrag_handwerker.projektvertrag_bestaetigt_am`)
-
-Ohne `angebot_handwerker`-Zeile am Angebot kann im Portal kein HW-Angebot eingereicht werden (Hinweis im Detail).
+Unter **Aufträge** erscheint er erst nach Angebotseinreichung, `hw_status = uebernommen`, Vertragspaket und `projektvertrag_bestaetigt_am`.
 
 ## E-Mail-Links (`partner-site-url.ts`)
 
@@ -60,7 +79,8 @@ Ohne `angebot_handwerker`-Zeile am Angebot kann im Portal kein HW-Angebot einger
 |--------|-----|
 | HW-Anfrage (`angebot_handwerker`) | `?section=anfragen&id={uuid}` |
 | Auftrags-Zuweisung (offen) | `?section=anfragen&id=auftrag:{auftragId}` |
-| Laufender Auftrag | `?section=auftraege&auftrag={auftragId}` |
-| Angebot einreichen (nach Annahme) | `?section=angebote&id={angebot_handwerker.id}` |
+| Konditionen bestätigen | `?section=anfragen&id={uuid}` |
+| Angebot / Vertrag (nach Einigung) | `?section=angebote&id={angebot_handwerker.id}` |
+| Laufender Auftrag | `?section=auftraege&id={auftragId}` |
 
-Zuweisungs-Mail: `partnerLoginForAuftragAnfrageUrl()` → Anfragen-Tab, nicht Aufträge.
+Alle Notify-Endpoints: [PARTNER_CRM_NOTIFY_API.md](./PARTNER_CRM_NOTIFY_API.md)
