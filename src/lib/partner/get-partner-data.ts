@@ -1,16 +1,11 @@
-import {
-  isPartnerAnfrageAktionErforderlich,
-  isPartnerAnfrageAntwortAbgelaufen,
-  isPartnerAnfrageKonditionenNachreichung,
-  isPartnerAuftragAnfrageAktionErforderlich,
-} from "@/lib/partner/partner-anfrage-status";
+import { isPartnerAuftragAnfrageAktionErforderlich } from "@/lib/partner/partner-anfrage-status";
 import {
   buildPartnerOffenListe,
+  isPartnerAngebotOffenListItem,
   type PartnerOffenItem,
 } from "@/lib/partner/partner-offen-status";
 import {
   aggregateAuftragHandwerkerStatus,
-  resolveAngebotHandwerkerPhase,
   resolveAuftragPortalPhase,
   type PartnerPortalPhase,
 } from "@/lib/partner/partner-portal-phase";
@@ -35,7 +30,6 @@ import {
   isPrivatPortalKontext,
   resolvePrivatPortalTitel,
 } from "@/lib/portal/portal-titel";
-import { syncAngebotHandwerkerAfterAuftragAccept } from "@/lib/partner/sync-angebot-handwerker";
 import { resolveHandwerkerAnsprechpartner } from "@/lib/partner/handwerker-ansprechpartner";
 import { parseHwAnhangStoragePaths } from "@/lib/partner/partner-hw-dokument-typen";
 import {
@@ -66,6 +60,8 @@ import {
 } from "@/lib/partner/load-partner-compliance-data";
 import type { PartnerProjektvertrag } from "@/lib/partner/partner-compliance";
 import { resolvePartnerListenTitel } from "@/lib/partner/partner-listen-titel";
+import { acceptCrmRahmenvertragLoggedIn } from "@/lib/partner/partner-crm-api";
+import { createClient } from "@/lib/supabase/server";
 import { isSupabaseConfigured, supabaseAdmin } from "@/lib/supabase";
 import { stripHtmlToPlainText } from "@/lib/portal/portal-display";
 import type { PartnerHwKonditionen } from "@/lib/partner/partner-konditionen";
@@ -140,7 +136,6 @@ export type PartnerAnfrageItem = {
   /** Aus gewerke.ist_bauleistung der Auftragspositionen — nicht das HW-Profil. */
   ist_bauprojekt?: boolean;
   dokumente?: PartnerVertragKontext["dokumente_zeilen"];
-  rahmenvertrag?: PartnerRahmenvertrag | null;
 };
 
 export type PartnerAuftragPosition = {
@@ -676,55 +671,23 @@ export async function getPartnerDataForHandwerker(handwerkerId: string) {
   }
 
   let anfragenFinal = anfragen;
-  let repaired = false;
-  for (const a of alleAuftraege) {
-    if (a.hwStatus.toLowerCase() !== "akzeptiert") continue;
-    const angebotId = auftragAngebotIdByAuftragId.get(a.id);
-    if (!angebotId) continue;
-    const hasAngebotPhase = anfragenFinal.some(
-      (x) =>
-        x.angebot_id === angebotId &&
-        resolveAngebotHandwerkerPhase(x) === "angebot"
-    );
-    if (hasAngebotPhase) continue;
-    await syncAngebotHandwerkerAfterAuftragAccept({
-      handwerkerId: id,
-      angebotId,
-      auftragId: a.id,
-    });
-    repaired = true;
-  }
-
-  if (repaired) {
-    const { data: rowsReload, error: reloadError } = await supabaseAdmin
-      .from("angebot_handwerker")
-      .select(ANGEBOT_HANDWERKER_BASE_SELECT)
-      .eq("handwerker_id", id)
-      .order("gesendet_at", { ascending: false });
-    if (reloadError) {
-      console.error(
-        "[partner] angebot_handwerker reload fehlgeschlagen:",
-        reloadError.message
-      );
-    }
-    if (rowsReload?.length) {
-      const reloadRaw = rowsReload as Array<Record<string, unknown>>;
-      const reloadObjektById = await loadPartnerObjektById(
-        collectObjektIdsFromAngebotHandwerkerRows(reloadRaw)
-      );
-      anfragenFinal = (
-        await mapAngebotHandwerkerRows(reloadRaw, reloadObjektById)
-      ).filter((_, i) => {
-        const row = reloadRaw[i]!;
-        const gate = extractPartnerLeadGateFromAngebotHandwerkerRow(row);
-        if (!isPartnerBlockedByOrgFreigabe(gate)) return true;
-        return Boolean((row.gesendet_at as string | null | undefined)?.trim());
-      });
-    }
-  }
 
   const complianceBundle = await loadHandwerkerComplianceBundle(id);
-  const rahmenvertrag = await loadRahmenvertrag(id);
+  let rahmenvertrag = await loadRahmenvertrag(id);
+
+  if (!rahmenvertrag?.portal_akzeptiert_am) {
+    const supabase = await createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    const rvMeta = user?.user_metadata?.rv_akzeptiert_at;
+    if (typeof rvMeta === "string" && rvMeta.trim()) {
+      const healed = await acceptCrmRahmenvertragLoggedIn();
+      if (healed.ok) {
+        rahmenvertrag = await loadRahmenvertrag(id);
+      }
+    }
+  }
 
   const auftragStatusById = new Map(alleAuftraege.map((a) => [a.id, a.status]));
 
@@ -757,7 +720,6 @@ export async function getPartnerDataForHandwerker(handwerkerId: string) {
       compliance_projekt: vertragCtx?.compliance_projekt ?? [],
       ist_bauprojekt: vertragCtx?.ist_bauprojekt ?? false,
       dokumente: vertragCtx?.dokumente_zeilen ?? [],
-      rahmenvertrag,
     };
   });
 
@@ -798,6 +760,15 @@ export async function getPartnerDataForHandwerker(handwerkerId: string) {
 
     return {
       ...a,
+      listen_titel: anfrage?.gewerk_name
+        ? resolvePartnerListenTitel({
+            gewerk_name: anfrage.gewerk_name,
+            plz: a.plz,
+            ort: a.ort,
+            lead: a.lead,
+            fallbackTitel: a.titel,
+          })
+        : a.listen_titel,
       angebotHandwerkerId: anfrage?.id ?? null,
       angebotHwStatus: anfrage?.hw_status ?? null,
       angebotHwEingereichtAt: anfrage?.hw_eingereicht_at ?? null,
@@ -825,26 +796,17 @@ export async function getPartnerDataForHandwerker(handwerkerId: string) {
     }
   }
 
-  const anfragenAngebot = anfragenFinal.filter((a) => {
-    if (nachreichungAnfrageIds.has(a.id)) return true;
-    if (isPartnerAnfrageKonditionenNachreichung(a)) return true;
-    if (isPartnerAnfrageAktionErforderlich(a)) return true;
-    if (resolveAngebotHandwerkerPhase(a) === "anfrage") return true;
-    if (isPartnerAnfrageAntwortAbgelaufen(a)) return true;
-    const st = a.status.toLowerCase();
-    if (st === "abgelehnt" && a.gesendet_at) return true;
-    return false;
+  const anfragenAngebot = anfragenFinal.filter(
+    (a) => isPartnerAngebotOffenListItem(a) || nachreichungAnfrageIds.has(a.id)
+  );
+  const angebote: typeof anfragenFinal = [];
+  const angeboteAlleAkzeptiert: typeof anfragenFinal = [];
+  const auftragAnfragenListe = alleAuftraege.filter((a) => {
+    if (!isPartnerAuftragAnfrageAktionErforderlich(a)) return false;
+    const angebotId = auftragAngebotIdByAuftragId.get(a.id);
+    if (!angebotId) return true;
+    return !anfragenAngebot.some((x) => x.angebot_id === angebotId);
   });
-  const angebote = anfragenFinal.filter(
-    (a) => resolveAngebotHandwerkerPhase(a) === "angebot"
-  );
-  /** Akzeptierte HW-Angebote (inkl. übernommen) — Deep-Link & Detail nach CRM-Bestätigung. */
-  const angeboteAlleAkzeptiert = anfragenFinal.filter(
-    (a) => a.status.toLowerCase() === "akzeptiert"
-  );
-  const auftragAnfragenListe = alleAuftraege.filter((a) =>
-    isPartnerAuftragAnfrageAktionErforderlich(a)
-  );
   const auftraegeListe = alleAuftraege.filter(
     (a) => !isPartnerAuftragAnfrageAktionErforderlich(a)
   );
@@ -930,9 +892,7 @@ export async function getPartnerDataForHandwerker(handwerkerId: string) {
 
   const offen = buildPartnerOffenListe({
     anfragen: anfragenAngebot,
-    angebote,
     auftragAnfragen,
-    nachreichungAnfrageIds,
   });
 
   const auftragTitelById = new Map<string, string>();

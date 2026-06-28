@@ -61,7 +61,7 @@ export function PartnerAngebotAuftragAnnehmen({
               className="mt-1"
             />
             <span className="portal-text-body text-text-primary">
-              Ich habe den Partnerschafts-Rahmenvertrag gelesen.
+              Ich habe den Projekt-Nachunternehmervertrag gelesen.
             </span>
           </label>
           <label className="flex cursor-pointer items-start gap-3">
@@ -72,7 +72,7 @@ export function PartnerAngebotAuftragAnnehmen({
               className="mt-1"
             />
             <span className="portal-text-body text-text-primary">
-              Ich nehme diesen Auftrag verbindlich an.
+              Ich nehme diesen Auftrag verbindlich an (Projekt-Nachunternehmervertrag).
             </span>
           </label>
           {error ? <PartnerDetailError message={error} /> : null}

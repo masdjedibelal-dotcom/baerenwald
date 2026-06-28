@@ -3,12 +3,7 @@ import type {
   PartnerAuftragItem,
   PartnerBautagebuchAnfrageItem,
 } from "@/lib/partner/get-partner-data";
-import { resolvePartnerAngebotPortalPhase } from "@/lib/partner/partner-angebot-portal-status";
-import {
-  isPartnerAuftragAnfrageAktionErforderlich,
-  isPartnerAuftragWartetAufPreiseinigung,
-  partnerAuftragAnfrageStatusLabel,
-} from "@/lib/partner/partner-anfrage-status";
+import { isPartnerAuftragAnfrageAktionErforderlich } from "@/lib/partner/partner-anfrage-status";
 import {
   partnerOffenStatusLabel,
   type PartnerOffenItem,
@@ -18,8 +13,6 @@ import type { PartnerPlanerSection } from "@/lib/partner/build-partner-termine";
 export type PartnerAufgabeTyp =
   | "bestaetigen"
   | "auftrag_annehmen"
-  | "preise_senden"
-  | "vertrag_bestaetigen"
   | "unterlagen_hochladen"
   | "bautagebuch_eintrag"
   | "rechnung_einreichen"
@@ -34,7 +27,6 @@ export type PartnerAufgabeItem = {
   selectedId?: string;
   dringend?: boolean;
   sortKey: string;
-  /** Gruppierung nach Projekt/Auftrag */
   gruppeKey: string;
   gruppeTitel: string;
   gruppeUntertitel?: string;
@@ -109,61 +101,19 @@ export function buildPartnerAufgaben(input: {
     if (entry.kind === "angebot") {
       const a = entry.item;
       const gruppe = gruppeFromOffenAngebot(entry);
-      const phase = resolvePartnerAngebotPortalPhase(a);
       const typ = entry.item.offen_karten_typ;
 
-      if (phase === "auftrag_freigegeben") {
-        pushAufgabe(list, {
-          id: `offen-vertrag-${a.id}`,
-          typ: "vertrag_bestaetigen",
-          titel: "Auftrag verbindlich annehmen",
-          untertitel: "Rahmenvertrag prüfen und bestätigen",
-          dringend: true,
-          ...gruppe,
-        });
-      } else if (typ === "nachreichung") {
-        pushAufgabe(list, {
-          id: `offen-nachreichung-${a.id}`,
-          typ: "bestaetigen",
-          titel: "Neue Leistung bestätigen",
-          untertitel: partnerOffenStatusLabel(typ),
-          dringend: true,
-          ...gruppe,
-        });
-      } else if (typ === "geaendert") {
-        pushAufgabe(list, {
-          id: `offen-geaendert-${a.id}`,
-          typ: "bestaetigen",
-          titel: "Geänderte Leistung prüfen",
-          dringend: true,
-          ...gruppe,
-        });
-      } else {
-        pushAufgabe(list, {
-          id: `offen-bestaetigen-${a.id}`,
-          typ: "bestaetigen",
-          titel: "Leistung bestätigen",
-          untertitel: partnerOffenStatusLabel(typ),
-          dringend: true,
-          ...gruppe,
-        });
-      }
-
-      if (
-        phase === "wartet_auf_freigabe" &&
-        !a.hw_angebot_pdf_url &&
-        !a.hw_angebot_anhang_urls?.length
-      ) {
-        pushAufgabe(list, {
-          id: `offen-pdf-${a.id}`,
-          typ: "dokument_hochladen",
-          titel: "Unterlagen hochladen (optional)",
-          untertitel: "PDF für Bärenwald — z. B. Angebot oder Kalkulation",
-          dringend: false,
-          ...gruppe,
-          sortKey: `9-${a.id}`,
-        });
-      }
+      pushAufgabe(list, {
+        id: `offen-bestaetigen-${a.id}`,
+        typ: "bestaetigen",
+        titel:
+          typ === "nachreichung"
+            ? "Ergänzung bestätigen"
+            : "Leistung bestätigen",
+        untertitel: partnerOffenStatusLabel(typ),
+        dringend: true,
+        ...gruppe,
+      });
       continue;
     }
 
@@ -171,37 +121,17 @@ export function buildPartnerAufgaben(input: {
     const gruppe = gruppeFromAuftrag(a);
 
     if (isPartnerAuftragAnfrageAktionErforderlich(a)) {
-      if (isPartnerAuftragWartetAufPreiseinigung(a)) {
-        continue;
-      }
-
-      const hw = a.hwStatus.toLowerCase();
-      if (hw === "akzeptiert") {
-        pushAufgabe(list, {
-          id: `offen-preise-${a.id}`,
-          typ: "preise_senden",
-          titel: "Angebotspreis senden",
-          untertitel: partnerAuftragAnfrageStatusLabel(a),
-          dringend: true,
-          ...gruppe,
-        });
-      } else {
-        pushAufgabe(list, {
-          id: `offen-auftrag-${a.id}`,
-          typ: "auftrag_annehmen",
-          titel: "Auftrag annehmen oder ablehnen",
-          untertitel: partnerAuftragAnfrageStatusLabel(a),
-          dringend: true,
-          ...gruppe,
-        });
-      }
+      pushAufgabe(list, {
+        id: `offen-auftrag-${a.id}`,
+        typ: "auftrag_annehmen",
+        titel: "Auftrag annehmen oder ablehnen",
+        dringend: true,
+        ...gruppe,
+      });
     }
   }
 
   for (const a of auftraege) {
-    const s = a.status.toLowerCase();
-    if (s === "abgeschlossen" || s === "storniert") continue;
-
     const gruppe = {
       gruppeKey: `auftrag:${a.id}`,
       gruppeTitel: a.listen_titel,
@@ -211,103 +141,81 @@ export function buildPartnerAufgaben(input: {
       sortKey: `auftrag-${a.start_datum ?? a.id}`,
     };
 
-    if (a.vertrag?.projektvertrag_bereit && !a.projektvertrag_bestaetigt_am) {
+    if (a.bautagebuchAnfrageOffen) {
       pushAufgabe(list, {
-        id: `vertrag-auftrag-${a.id}`,
-        typ: "vertrag_bestaetigen",
-        titel: "Projektvertrag bestätigen",
+        id: `bt-anfrage-${a.id}`,
+        typ: "bautagebuch_eintrag",
+        titel: "Bautagebuch-Eintrag",
+        untertitel: "Bärenwald hat um einen Eintrag gebeten",
         dringend: true,
         ...gruppe,
       });
     }
-
-    if (a.bautagebuchAnfrageOffen) {
-      const already = bautagebuchAnfragen.some((r) => r.auftrag_id === a.id);
-      if (!already) {
-        pushAufgabe(list, {
-          id: `bautagebuch-flag-${a.id}`,
-          typ: "bautagebuch_eintrag",
-          titel: "Tagebucheintrag erstellen",
-          untertitel: "Bärenwald hat einen Eintrag angefordert",
-          dringend: true,
-          ...gruppe,
-        });
-      }
-    }
   }
 
-  for (const req of bautagebuchAnfragen) {
-    const auftrag = auftraege.find((a) => a.id === req.auftrag_id);
-    const titel = auftrag?.listen_titel ?? "Auftrag";
+  for (const bt of bautagebuchAnfragen) {
+    const auftrag = auftraege.find((a) => a.id === bt.auftrag_id);
+    if (!auftrag) continue;
     pushAufgabe(list, {
-      id: `bautagebuch-${req.id}`,
+      id: `bt-offen-${bt.id}`,
       typ: "bautagebuch_eintrag",
-      titel: "Tagebucheintrag erstellen",
-      untertitel: req.notiz?.trim() || "Bärenwald hat einen Tagebucheintrag angefordert.",
-      section: "auftraege",
-      selectedId: req.auftrag_id,
+      titel: "Bautagebuch-Eintrag",
+      untertitel: bt.notiz?.trim() || undefined,
       dringend: true,
-      gruppeKey: `auftrag:${req.auftrag_id}`,
-      gruppeTitel: titel,
-      gruppeUntertitel: auftrag
-        ? [auftrag.plz, auftrag.ort].filter(Boolean).join(" ") || undefined
-        : undefined,
-      sortKey: `5-${req.created_at}`,
+      gruppeKey: `auftrag:${auftrag.id}`,
+      gruppeTitel: auftrag.listen_titel,
+      gruppeUntertitel: [auftrag.plz, auftrag.ort].filter(Boolean).join(" ") || undefined,
+      section: "auftraege",
+      selectedId: auftrag.id,
+      sortKey: `bt-${bt.created_at}`,
     });
   }
 
   for (const block of offeneLeistungsunterlagen) {
-    pushAufgabe(list, {
-      id: `unterlagen-${block.auftrag_id}`,
-      typ: "unterlagen_hochladen",
-      titel: `Pflicht-Unterlagen hochladen (${block.offene_pflicht})`,
-      untertitel: "Im Auftrag unter Dokumente / Compliance",
-      section: "auftraege",
-      selectedId: block.auftrag_id,
-      dringend: true,
-      gruppeKey: `auftrag:${block.auftrag_id}`,
-      gruppeTitel: block.auftrag_titel,
-      sortKey: `6-${block.auftrag_id}`,
-    });
+    for (const u of block.items) {
+      pushAufgabe(list, {
+        id: `unterlage-${block.auftrag_id}-${u.slug}`,
+        typ: "unterlagen_hochladen",
+        titel: u.bezeichnung,
+        untertitel: block.auftrag_titel,
+        dringend: false,
+        gruppeKey: `auftrag:${block.auftrag_id}`,
+        gruppeTitel: block.auftrag_titel,
+        section: "auftraege",
+        selectedId: block.auftrag_id,
+        sortKey: `unterlage-${u.slug}`,
+      });
+    }
   }
 
-  return list.sort((a, b) => a.sortKey.localeCompare(b.sortKey, "de"));
+  return list;
 }
 
 export function groupPartnerAufgaben(
-  aufgaben: PartnerAufgabeItem[]
+  items: PartnerAufgabeItem[]
 ): PartnerAufgabenGruppe[] {
-  const map = new Map<string, PartnerAufgabenGruppe>();
+  const byKey = new Map<string, PartnerAufgabenGruppe>();
 
-  for (const item of aufgaben) {
-    const existing = map.get(item.gruppeKey);
-    if (!existing) {
-      map.set(item.gruppeKey, {
-        key: item.gruppeKey,
-        titel: item.gruppeTitel,
-        untertitel: item.gruppeUntertitel,
-        section: item.section,
-        selectedId: item.selectedId,
-        sortKey: item.sortKey,
-        items: [item],
-        dringend: Boolean(item.dringend),
-      });
+  for (const item of items) {
+    const existing = byKey.get(item.gruppeKey);
+    if (existing) {
+      existing.items.push(item);
+      existing.dringend = existing.dringend || Boolean(item.dringend);
       continue;
     }
-    existing.items.push(item);
-    if (item.dringend) existing.dringend = true;
-    if (item.sortKey.localeCompare(existing.sortKey, "de") < 0) {
-      existing.sortKey = item.sortKey;
-    }
+    byKey.set(item.gruppeKey, {
+      key: item.gruppeKey,
+      titel: item.gruppeTitel,
+      untertitel: item.gruppeUntertitel,
+      section: item.section,
+      selectedId: item.selectedId,
+      sortKey: item.sortKey,
+      items: [item],
+      dringend: Boolean(item.dringend),
+    });
   }
 
-  return Array.from(map.values())
-    .map((g) => ({
-      ...g,
-      items: [...g.items].sort((a, b) => a.sortKey.localeCompare(b.sortKey, "de")),
-    }))
-    .sort((a, b) => {
-      if (a.dringend !== b.dringend) return a.dringend ? -1 : 1;
-      return a.sortKey.localeCompare(b.sortKey, "de");
-    });
+  return Array.from(byKey.values()).sort((a, b) =>
+    a.sortKey.localeCompare(b.sortKey)
+  );
 }

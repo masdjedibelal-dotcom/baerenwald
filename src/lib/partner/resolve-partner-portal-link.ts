@@ -1,13 +1,11 @@
 import {
   aggregateAuftragHandwerkerStatus,
-  resolveAngebotHandwerkerPhase,
   resolveAuftragPortalPhase,
 } from "@/lib/partner/partner-portal-phase";
 import {
-  partnerAnfragePortalUrl,
-  partnerAngebotPortalUrl,
   partnerAuftragAnfragePortalUrl,
   partnerDashboardUrl,
+  partnerOffenPortalPath,
 } from "@/lib/partner/partner-site-url";
 
 const HW_BEANTWORTET = new Set(["akzeptiert", "abgelehnt"]);
@@ -24,10 +22,11 @@ export type ZuweisungPortalLinkInput = {
     gesendet_at?: string | null;
     hw_eingereicht_at?: string | null;
     hw_status?: string | null;
+    bestaetigt_at?: string | null;
   } | null;
 };
 
-/** Ziel-URL für die „Leistung zugewiesen“-Mail — nie Tab Aufträge bei offener Zuweisung. */
+/** Ziel-URL für Zuweisungs-Mails — Tab Offen oder Meine Aufträge. */
 export function resolveZuweisungPortalUrl(input: ZuweisungPortalLinkInput): string {
   const hwStatus = aggregateAuftragHandwerkerStatus(
     input.zuweisungStatuses,
@@ -36,31 +35,16 @@ export function resolveZuweisungPortalUrl(input: ZuweisungPortalLinkInput): stri
   const portalPhase = resolveAuftragPortalPhase(input.auftragStatus, hwStatus);
 
   if (portalPhase === "anfrage" && !HW_BEANTWORTET.has(hwStatus.toLowerCase())) {
+    const ah = input.angebotHandwerker;
+    if (ah?.id && !ah.bestaetigt_at) {
+      return `${partnerDashboardUrl()}?section=offen&id=${encodeURIComponent(ah.id)}`;
+    }
     return partnerAuftragAnfragePortalUrl(input.auftragId);
   }
 
-  if (portalPhase === "angebot") {
-    const ah = input.angebotHandwerker;
-    if (ah?.id) return partnerAngebotPortalUrl(ah.id);
-    return `${partnerDashboardUrl()}?section=angebote`;
-  }
+  return `${partnerDashboardUrl()}?section=auftraege&id=${encodeURIComponent(input.auftragId)}`;
+}
 
-  const ah = input.angebotHandwerker;
-  if (ah) {
-    const angebotPhase = resolveAngebotHandwerkerPhase({
-      status: ah.status,
-      antwort_at: ah.antwort_at ?? undefined,
-      gesendet_at: ah.gesendet_at ?? undefined,
-      hw_eingereicht_at: ah.hw_eingereicht_at ?? undefined,
-      hw_status: ah.hw_status ?? undefined,
-    });
-    if (angebotPhase === "angebot") {
-      return partnerAngebotPortalUrl(ah.id);
-    }
-    if (angebotPhase === "anfrage") {
-      return partnerAnfragePortalUrl(ah.id);
-    }
-  }
-
-  return partnerDashboardUrl();
+export function resolveAngebotHandwerkerPortalUrl(anfrageId: string): string {
+  return partnerOffenPortalPath(anfrageId);
 }

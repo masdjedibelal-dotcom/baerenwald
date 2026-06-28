@@ -6,7 +6,10 @@ import {
   isProjektStartDatumErreicht,
   resolvePartnerAnfrageProjektStartIso,
 } from "@/lib/partner/partner-anfrage-projekt-start";
-import { hasPartnerKonditionenNachreichungAusstehend } from "@/lib/partner/partner-konditionen";
+import {
+  hasPartnerKonditionenNachreichungAusstehend,
+  positionBrauchtHandwerkerAktion,
+} from "@/lib/partner/partner-konditionen";
 
 /** Status, in denen der Handwerker noch annehmen/ablehnen kann. */
 const PENDING_STATUS = new Set([
@@ -20,16 +23,18 @@ const HW_BEANTWORTET = new Set(["akzeptiert", "abgelehnt"]);
 
 type PartnerAnfrageTimingFields = Pick<
   PartnerAnfrageItem,
-  "status" | "antwort_at" | "gesendet_at" | "hw_status" | "hw_eingereicht_at"
+  "status" | "antwort_at" | "gesendet_at" | "hw_status" | "bestaetigt_at"
 > & {
   zeitraum?: string;
   lead?: PartnerAnfrageItem["lead"] | null;
 };
 
-export function isPartnerAnfrageAntwortAbgelaufen(item: PartnerAnfrageTimingFields): boolean {
-  if (item.antwort_at) return false;
+export function isPartnerAnfrageAntwortAbgelaufen(
+  item: PartnerAnfrageTimingFields
+): boolean {
+  if (item.antwort_at || item.bestaetigt_at) return false;
   const st = item.status.toLowerCase();
-  if (st === "akzeptiert" || st === "abgelehnt") return false;
+  if (st === "akzeptiert" || st === "abgelehnt" || st === "angenommen") return false;
 
   const start = resolvePartnerAnfrageProjektStartIso({
     gesendet_at: item.gesendet_at,
@@ -39,24 +44,15 @@ export function isPartnerAnfrageAntwortAbgelaufen(item: PartnerAnfrageTimingFiel
   return isProjektStartDatumErreicht(start);
 }
 
-/**
- * Offene Bärenwald-Anfrage (HW soll antworten).
- * Primär: gesendet, noch keine Antwort. Fallback: bekannter Pending-Status ohne Antwort.
- */
+/** Erstzuweisung — noch keine verbindliche Annahme. */
 export function isPartnerAnfrageOffen(item: PartnerAnfrageTimingFields): boolean {
   if (isPartnerAnfrageAntwortAbgelaufen(item)) return false;
-  if (item.antwort_at) return false;
+  if (item.bestaetigt_at) return false;
   const st = item.status.toLowerCase();
-  if (st === "akzeptiert" || st === "abgelehnt") return false;
+  if (st === "angenommen" || st === "abgelehnt") return false;
+  if (item.antwort_at) return false;
   if (item.gesendet_at) return true;
   return PENDING_STATUS.has(st);
-}
-
-/** CRM hat eingewilligt — HW muss vereinbarte Konditionen noch bestätigen (Tab Anfragen). */
-export function isPartnerAnfrageBestaetigungAusstehend(
-  item: Pick<PartnerAnfrageItem, "hw_status">
-): boolean {
-  return (item.hw_status ?? "").toLowerCase() === "bestaetigt";
 }
 
 type PartnerAnfrageKonditionenFields = PartnerAnfrageTimingFields &
@@ -68,6 +64,7 @@ type PartnerAnfrageKonditionenFields = PartnerAnfrageTimingFields &
     | "gewerk_name"
     | "handwerker_id"
     | "hw_konditionen"
+    | "alle_hw_konditionen"
   >;
 
 export function isPartnerAnfrageKonditionenNachreichung(
@@ -80,62 +77,27 @@ export function isPartnerAnfrageKonditionenNachreichung(
     | "handwerker_id"
     | "hw_konditionen"
     | "hw_status"
+    | "alle_hw_konditionen"
   >
 ): boolean {
   return hasPartnerKonditionenNachreichungAusstehend(item);
 }
 
-/** HW kann im ersten Schritt Preise anpassen (Erstantwort, ausstehende Konditionen oder CRM-Rückfrage). */
-export function isPartnerAnfrageKonditionenBearbeitbar(
-  item: PartnerAnfrageKonditionenFields
-): boolean {
-  if (isPartnerAnfrageKonditionenNachreichung(item)) return true;
-  if (isPartnerAnfrageAntwortAbgelaufen(item)) return false;
-  if (isPartnerAnfrageWartetAufPreiseinigung(item)) return false;
-  if (isPartnerAnfrageBestaetigungAusstehend(item)) return false;
-
-  const st = item.status.toLowerCase();
-  const hwSt = (item.hw_status ?? "").toLowerCase();
-
-  if (st === "abgelehnt") return false;
-  if (hwSt === "eingereicht" || hwSt === "uebernommen") return false;
-  if (hwSt === "rueckfrage" || hwSt === "abgelehnt") return true;
-  if (isPartnerAnfrageOffen(item)) return true;
-
-  /** Zusage liegt vor, Konditionen/Preise noch nicht eingereicht. */
-  if (st === "akzeptiert" && !item.hw_eingereicht_at) return true;
-
-  return false;
-}
-
-/** HW hat geantwortet — Bärenwald prüft die Konditionen. */
-export function isPartnerAnfrageWartetAufPreiseinigung(
-  item: PartnerAnfrageTimingFields
-): boolean {
-  const st = item.status.toLowerCase();
-  const hwSt = (item.hw_status ?? "").toLowerCase();
-  return st === "akzeptiert" && hwSt === "eingereicht";
-}
-
-/** Nur wenn der Handwerker noch aktiv handeln muss (Badge, Filter „Offen“). */
+/** HW muss noch handeln (Tab Offen). */
 export function isPartnerAnfrageAktionErforderlich(
   item: PartnerAnfrageKonditionenFields
 ): boolean {
-  return (
-    isPartnerAnfrageBestaetigungAusstehend(item) ||
-    isPartnerAnfrageKonditionenBearbeitbar(item)
-  );
+  if (isPartnerAnfrageAntwortAbgelaufen(item)) return false;
+  if (isPartnerAnfrageKonditionenNachreichung(item)) return true;
+  return isPartnerAnfrageOffen(item);
 }
 
-export function partnerAnfrageStatusPillKey(item: PartnerAnfrageKonditionenFields): string {
+export function partnerAnfrageStatusPillKey(
+  item: PartnerAnfrageKonditionenFields
+): string {
   if (isPartnerAnfrageAntwortAbgelaufen(item)) return "antwort_abgelaufen";
-  if (isPartnerAnfrageKonditionenNachreichung(item)) return "rueckfrage";
-  if (isPartnerAnfrageWartetAufPreiseinigung(item)) return "eingereicht";
-  const hwSt = (item.hw_status ?? "").toLowerCase();
-  if (hwSt === "bestaetigt") return "bestaetigt";
-  if (hwSt === "rueckfrage") return "rueckfrage";
-  if (hwSt === "abgelehnt") return "abgelehnt";
-  if (isPartnerAnfrageAktionErforderlich(item)) return "antwort ausstehend";
+  if (isPartnerAnfrageKonditionenNachreichung(item)) return "ergaenzung";
+  if (isPartnerAnfrageAktionErforderlich(item)) return "neu";
   return item.status.toLowerCase();
 }
 
@@ -143,24 +105,9 @@ export function partnerAnfrageStatusLabel(
   item: PartnerAnfrageKonditionenFields
 ): string {
   if (isPartnerAnfrageAntwortAbgelaufen(item)) return "Antwort abgelaufen";
-  if (isPartnerAnfrageKonditionenNachreichung(item)) return "Neue Leistung";
-  if (isPartnerAnfrageWartetAufPreiseinigung(item)) return "Wartet auf Prüfung";
-  if (isPartnerAnfrageBestaetigungAusstehend(item)) return "Konditionen bestätigen";
-  if (isPartnerAnfrageKonditionenBearbeitbar(item)) {
-    const hwSt = (item.hw_status ?? "").toLowerCase();
-    if (hwSt === "rueckfrage") return "Neue Konditionen";
-    if (hwSt === "abgelehnt") return "Konditionen abgelehnt";
-    if (item.antwort_at && !item.hw_eingereicht_at) return "Angebotspreis festlegen";
-    return "Antwort ausstehend";
-  }
-  if (item.antwort_at) {
-    const s = item.status.toLowerCase();
-    if (s === "akzeptiert" && item.hw_eingereicht_at) return "Zugesagt";
-    if (s === "abgelehnt") return "Abgelehnt";
-  }
-  if (isPartnerAnfrageOffen(item)) return "Antwort ausstehend";
+  if (isPartnerAnfrageKonditionenNachreichung(item)) return "Ergänzung";
+  if (isPartnerAnfrageAktionErforderlich(item)) return "Neu";
   const s = item.status.toLowerCase();
-  if (s === "akzeptiert") return "Zugesagt";
   if (s === "abgelehnt") return "Abgelehnt";
   return item.status;
 }
@@ -188,17 +135,27 @@ export function isPartnerAuftragAnfrageAntwortAbgelaufen(
 export function isPartnerAuftragAnfrageOffen(
   item: Pick<
     PartnerAuftragItem,
-    "status" | "hwStatus" | "start_datum" | "angebotHwStatus"
+    "status" | "hwStatus" | "start_datum"
   > & {
-    positionen: Array<{ start_datum?: string | null }>;
+    positionen: Array<{
+      start_datum?: string | null;
+      handwerker_status?: string | null;
+    }>;
   }
 ): boolean {
-  const ahSt = (item.angebotHwStatus ?? "").toLowerCase();
-  if (ahSt === "uebernommen" || ahSt === "eingereicht" || ahSt === "bestaetigt") return false;
-
-  if (isPartnerAuftragAnfrageAntwortAbgelaufen(item)) return false;
   const hw = item.hwStatus.toLowerCase();
-  if (HW_BEANTWORTET.has(hw)) return false;
+  if (hw === "abgelehnt") return false;
+
+  const hatOffenePosition = item.positionen.some((p) =>
+    positionBrauchtHandwerkerAktion(p.handwerker_status)
+  );
+
+  /** Noch offene Leistungen — immer in Offen, auch nach Projektstart. */
+  if (hatOffenePosition) return true;
+
+  if (hw === "akzeptiert") return false;
+  if (isPartnerAuftragAnfrageAntwortAbgelaufen(item)) return false;
+
   return (
     item.status.toLowerCase() === "offen" ||
     PENDING_STATUS.has(hw) ||
@@ -208,54 +165,33 @@ export function isPartnerAuftragAnfrageOffen(
 
 type PartnerAuftragAnfrageAktionFields = Pick<
   PartnerAuftragItem,
-  "status" | "hwStatus" | "start_datum" | "angebotHwStatus" | "angebotHwEingereichtAt"
+  "status" | "hwStatus" | "start_datum" | "angebotHandwerkerId"
 > & {
-  positionen: Array<{ start_datum?: string | null }>;
+  positionen: Array<{
+    start_datum?: string | null;
+    handwerker_status?: string | null;
+  }>;
 };
 
-/** Auftrags-Zuweisung: HW muss noch zu-/absagen oder Konditionen nachreichen. */
+/** Auftrags-Zuweisung ohne verknüpfte Angebots-Anfrage — sonst nur über angebot_handwerker in Offen. */
 export function isPartnerAuftragAnfrageAktionErforderlich(
   item: PartnerAuftragAnfrageAktionFields
 ): boolean {
-  if (isPartnerAuftragAnfrageOffen(item)) return true;
-  const hw = item.hwStatus.toLowerCase();
-  const ahSt = (item.angebotHwStatus ?? "").toLowerCase();
-  if (hw !== "akzeptiert") return false;
-  if (ahSt === "eingereicht" || ahSt === "uebernommen" || ahSt === "bestaetigt") return false;
-  return !item.angebotHwEingereichtAt;
-}
-
-export function isPartnerAuftragWartetAufPreiseinigung(
-  item: Pick<PartnerAuftragItem, "hwStatus" | "angebotHwStatus">
-): boolean {
-  return (
-    item.hwStatus.toLowerCase() === "akzeptiert" &&
-    (item.angebotHwStatus ?? "").toLowerCase() === "eingereicht"
-  );
+  if (item.angebotHandwerkerId) return false;
+  return isPartnerAuftragAnfrageOffen(item);
 }
 
 export function partnerAuftragAnfrageStatusLabel(
-  item: Pick<
-    PartnerAuftragItem,
-    "hwStatus" | "start_datum" | "status" | "angebotHwStatus" | "angebotHwKonditionenArt"
-  > & {
-    positionen: Array<{ start_datum?: string | null }>;
+  item: Pick<PartnerAuftragItem, "hwStatus" | "start_datum" | "status"> & {
+    positionen: Array<{
+      start_datum?: string | null;
+      handwerker_status?: string | null;
+    }>;
   }
 ): string {
   if (isPartnerAuftragAnfrageAntwortAbgelaufen(item)) return "Antwort abgelaufen";
-  if (isPartnerAuftragWartetAufPreiseinigung(item)) return "Wartet auf Prüfung";
-  const ahSt = (item.angebotHwStatus ?? "").toLowerCase();
-  if (ahSt === "rueckfrage") return "Neue Konditionen";
-  if (ahSt === "bestaetigt") return "Konditionen bestätigen";
-  if (ahSt === "uebernommen") return "Bestätigt";
+  if (isPartnerAuftragAnfrageOffen(item)) return "Neu";
   const hw = item.hwStatus.toLowerCase();
-  const map: Record<string, string> = {
-    angefragt: "Antwort ausstehend",
-    ausstehend: "Ausstehend",
-    warten: "Warten auf Antwort",
-    zugewiesen: "Zugewiesen",
-    akzeptiert: "Angebotspreis festlegen",
-    abgelehnt: "Abgelehnt",
-  };
-  return map[hw] ?? item.hwStatus ?? "Ausstehend";
+  if (hw === "abgelehnt") return "Abgelehnt";
+  return "Neu";
 }

@@ -2,52 +2,12 @@
 
 import { revalidatePath } from "next/cache";
 
-import { confirmCrmProjektvertrag } from "@/lib/partner/partner-crm-api";
+import { confirmCrmProjektvertrag, acceptCrmRahmenvertragForEmail, acceptCrmRahmenvertragLoggedIn } from "@/lib/partner/partner-crm-api";
 import { linkPortalHandwerkerToAuthUser } from "@/lib/partner/link-portal-handwerker";
-import { RAHMENVERTRAG_TYP_SLUG } from "@/lib/partner/compliance-summary";
 import { findHandwerkerForRegistration } from "@/lib/partner/partner-registration-eligibility";
 import { PARTNER_AUTH_COPY } from "@/lib/partner/partner-auth-copy";
 import { createClient } from "@/lib/supabase/server";
 import { isSupabaseConfigured, supabaseAdmin } from "@/lib/supabase";
-
-async function syncRahmenvertragDokumentNachPortalAkzeptanz(
-  handwerkerId: string,
-  pdfUrl: string | null | undefined
-): Promise<void> {
-  const now = new Date().toISOString();
-  const { data: existing } = await supabaseAdmin
-    .from("partner_dokumente")
-    .select("id")
-    .eq("handwerker_id", handwerkerId)
-    .eq("typ", RAHMENVERTRAG_TYP_SLUG)
-    .is("auftrag_id", null)
-    .order("hochgeladen_am", { ascending: false })
-    .limit(1)
-    .maybeSingle();
-
-  if (existing?.id) {
-    await supabaseAdmin
-      .from("partner_dokumente")
-      .update({
-        status: "freigegeben",
-        freigegeben_am: now,
-      })
-      .eq("id", existing.id);
-    return;
-  }
-
-  const url = pdfUrl?.trim();
-  if (!url) return;
-
-  await supabaseAdmin.from("partner_dokumente").insert({
-    handwerker_id: handwerkerId,
-    typ: RAHMENVERTRAG_TYP_SLUG,
-    bezeichnung: "Partnerschafts-Rahmenvertrag",
-    datei_url: url,
-    status: "freigegeben",
-    freigegeben_am: now,
-  });
-}
 
 export type PartnerVertragConfirmResult =
   | { ok: true; vertrags_nr?: string; pdf_url?: string }
@@ -65,7 +25,7 @@ export async function confirmPartnerProjektvertrag(opts: {
   if (!opts.gelesen || !opts.verbindlich) {
     return {
       ok: false,
-      error: "Bitte Vertrag lesen und verbindliche Annahme bestätigen.",
+      error: "Bitte Projektvertrag lesen und verbindliche Annahme bestätigen.",
     };
   }
 
@@ -191,36 +151,9 @@ export async function acceptPartnerRahmenvertragForEmail(opts: {
     };
   }
 
-  const { data: vertrag } = await supabaseAdmin
-    .from("handwerker_vertraege")
-    .select("id, pdf_url, portal_akzeptiert_am")
-    .eq("handwerker_id", hw.id)
-    .eq("typ", "rahmen")
-    .is("auftrag_id", null)
-    .order("created_at", { ascending: false })
-    .limit(1)
-    .maybeSingle();
-
-  if (vertrag?.portal_akzeptiert_am) {
-    return { ok: true };
-  }
-
-  if (vertrag?.id) {
-    const now = new Date().toISOString();
-    const { error } = await supabaseAdmin
-      .from("handwerker_vertraege")
-      .update({
-        portal_akzeptiert_am: now,
-        updated_at: now,
-      })
-      .eq("id", vertrag.id);
-
-    if (error) return { ok: false, error: error.message };
-
-    await syncRahmenvertragDokumentNachPortalAkzeptanz(
-      String(hw.id),
-      (vertrag as { pdf_url?: string | null }).pdf_url
-    );
+  const crm = await acceptCrmRahmenvertragForEmail(email);
+  if (!crm.ok) {
+    return { ok: false, error: crm.error };
   }
 
   return { ok: true };
@@ -253,48 +186,8 @@ export async function acceptPartnerRahmenvertrag(opts: {
   });
   if (!link.ok) return { ok: false, error: link.error };
 
-  const vertragId = opts.vertragId.trim();
-  if (!vertragId) return { ok: false, error: "Vertrag fehlt." };
-
-  const { data: vertrag } = await supabaseAdmin
-    .from("handwerker_vertraege")
-    .select("id, typ, pdf_url, status, portal_akzeptiert_am")
-    .eq("id", vertragId)
-    .eq("handwerker_id", link.handwerkerId)
-    .maybeSingle();
-
-  if (!vertrag?.id) {
-    return { ok: false, error: "Rahmenvertrag nicht gefunden." };
-  }
-
-  if (String(vertrag.typ).toLowerCase() !== "rahmen") {
-    return { ok: false, error: "Ungültiger Vertragstyp." };
-  }
-
-  if (!String(vertrag.pdf_url ?? "").trim()) {
-    return { ok: false, error: "Der Rahmenvertrag ist noch nicht als PDF verfügbar." };
-  }
-
-  if (vertrag.portal_akzeptiert_am) {
-    return { ok: false, error: "Rahmenvertrag wurde bereits akzeptiert." };
-  }
-
-  const now = new Date().toISOString();
-  const { error } = await supabaseAdmin
-    .from("handwerker_vertraege")
-    .update({
-      portal_akzeptiert_am: now,
-      portal_akzeptiert_auth_user_id: user.id,
-      updated_at: now,
-    })
-    .eq("id", vertrag.id);
-
-  if (error) return { ok: false, error: error.message };
-
-  await syncRahmenvertragDokumentNachPortalAkzeptanz(
-    link.handwerkerId,
-    String(vertrag.pdf_url ?? "")
-  );
+  const crm = await acceptCrmRahmenvertragLoggedIn();
+  if (!crm.ok) return { ok: false, error: crm.error };
 
   revalidatePath("/partner");
   return { ok: true };

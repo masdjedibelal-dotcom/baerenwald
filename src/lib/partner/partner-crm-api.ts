@@ -78,3 +78,76 @@ export async function confirmCrmProjektvertrag(
     return { ok: false, error: "CRM nicht erreichbar." };
   }
 }
+
+function internalSecretHeaders(): HeadersInit | null {
+  const secret = process.env.PARTNER_INTERNAL_API_SECRET?.trim();
+  if (!secret) return null;
+  return {
+    Authorization: `Bearer ${secret}`,
+    "Content-Type": "application/json",
+  };
+}
+
+/** Registrierung (ohne Login): RV-PDF erzeugen + Annahme speichern. */
+export async function acceptCrmRahmenvertragForEmail(
+  email: string
+): Promise<
+  | { ok: true; vertrags_nr?: string; pdf_url?: string | null }
+  | { ok: false; error: string }
+> {
+  const base = dashboardBase();
+  const headers = internalSecretHeaders();
+  if (!base || !headers) {
+    return { ok: false, error: "CRM-Verbindung nicht konfiguriert." };
+  }
+
+  try {
+    const res = await fetch(`${base}/api/internal/partner-rahmenvertrag-accept`, {
+      method: "POST",
+      headers,
+      body: JSON.stringify({ email: email.trim().toLowerCase() }),
+    });
+    const body = (await res.json().catch(() => ({}))) as {
+      error?: string;
+      vertrags_nr?: string;
+      pdf_url?: string | null;
+      ok?: boolean;
+    };
+    if (!res.ok || body.ok === false) {
+      return { ok: false, error: body.error || "Rahmenvertrag konnte nicht gespeichert werden." };
+    }
+    return { ok: true, vertrags_nr: body.vertrags_nr, pdf_url: body.pdf_url ?? null };
+  } catch {
+    return { ok: false, error: "CRM nicht erreichbar." };
+  }
+}
+
+/** Eingeloggt: RV-PDF erzeugen + Annahme speichern. */
+export async function acceptCrmRahmenvertragLoggedIn(): Promise<
+  | { ok: true; vertrags_nr?: string; pdf_url?: string | null }
+  | { ok: false; error: string }
+> {
+  const base = dashboardBase();
+  const headers = await partnerAuthHeaders();
+  if (!base || !headers) {
+    return { ok: false, error: "CRM-Verbindung nicht konfiguriert." };
+  }
+
+  try {
+    const res = await fetch(`${base}/api/portal/rahmenvertrag/accept`, {
+      method: "POST",
+      headers,
+    });
+    const body = (await res.json().catch(() => ({}))) as {
+      error?: string;
+      vertrags_nr?: string;
+      pdf_url?: string | null;
+    };
+    if (!res.ok) {
+      return { ok: false, error: body.error || "Rahmenvertrag konnte nicht gespeichert werden." };
+    }
+    return { ok: true, vertrags_nr: body.vertrags_nr, pdf_url: body.pdf_url ?? null };
+  } catch {
+    return { ok: false, error: "CRM nicht erreichbar." };
+  }
+}

@@ -11,7 +11,7 @@ export function buildPartnerAuftragPflichten(opts: {
   });
   const pflichten: string[] = [
     "Leistungen und Konditionen prüfen und verbindlich bestätigen",
-    "Partnerschafts-Rahmenvertrag zur Kenntnis nehmen",
+    "Projektvertrag (Leistungsvertrag) prüfen und verbindlich bestätigen",
   ];
 
   if (istBauprojekt) {

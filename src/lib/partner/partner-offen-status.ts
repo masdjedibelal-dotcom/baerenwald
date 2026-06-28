@@ -1,8 +1,5 @@
 import type { PartnerAnfrageItem, PartnerAuftragItem } from "@/lib/partner/get-partner-data";
-import {
-  isPartnerAnfrageAktionErforderlich,
-  isPartnerAnfrageKonditionenNachreichung,
-} from "@/lib/partner/partner-anfrage-status";
+import { isPartnerAnfrageAktionErforderlich } from "@/lib/partner/partner-anfrage-status";
 import {
   hasPartnerKonditionenNachreichungAusstehend,
   resolveNachreichungOpenZeilenIds,
@@ -13,7 +10,7 @@ import { isPartnerAuftragAnfrageAktionErforderlich } from "@/lib/partner/partner
 export type PartnerPortalStatus = "ausstehend" | "angenommen" | "abgelehnt";
 
 /** Karten-Typ im Bereich „Offen“. */
-export type PartnerOffenKartenTyp = "neu" | "nachreichung" | "geaendert";
+export type PartnerOffenKartenTyp = "neu" | "nachreichung";
 
 export type PartnerOffenAngebotItem = PartnerAnfrageItem & {
   portal_status: PartnerPortalStatus;
@@ -42,7 +39,7 @@ type AngebotStatusFields = Pick<
   | "alle_hw_konditionen"
 >;
 
-/** Mappt Legacy status/hw_status auf vereinfachten Portal-Status. */
+/** Mappt DB-Werte auf vereinfachten Portal-Status. */
 export function resolvePartnerPortalStatus(
   item: AngebotStatusFields
 ): PartnerPortalStatus {
@@ -51,66 +48,56 @@ export function resolvePartnerPortalStatus(
 
   if (st === "abgelehnt" || hwSt === "abgelehnt") return "abgelehnt";
 
-  if (
-    st === "angenommen" ||
-    item.bestaetigt_at ||
-    item.projektvertrag_bestaetigt_am
-  ) {
+  if (hasPartnerKonditionenNachreichungAusstehend(item)) return "ausstehend";
+
+  if (st === "angenommen" || item.bestaetigt_at || item.projektvertrag_bestaetigt_am) {
     return "angenommen";
   }
 
-  /** CRM prüft Einreichung — weder Offen noch Meine Aufträge. */
-  if (hwSt === "eingereicht") return "angenommen";
-
-  if (st === "angefragt" || st === "ausstehend") return "ausstehend";
-  if (st === "akzeptiert") return "ausstehend";
-  if (st === "bestaetigt" || hwSt === "bestaetigt") return "ausstehend";
-
-  /** Legacy: Preise verbindlich, Auftrag noch nicht angenommen. */
-  if (hwSt === "uebernommen") return "ausstehend";
-
-  if (item.gesendet_at && !item.antwort_at) return "ausstehend";
+  if (hwSt === "uebernommen" || hwSt === "eingereicht") return "angenommen";
 
   return "ausstehend";
 }
 
 /** Sichtbar im Tab „Offen“ (Handwerker-Aktion nötig). */
 export function isPartnerAngebotOffenListItem(item: AngebotStatusFields): boolean {
+  if (hasPartnerKonditionenNachreichungAusstehend(item)) return true;
   if (resolvePartnerPortalStatus(item) !== "ausstehend") return false;
-  const hwSt = (item.hw_status ?? "").toLowerCase();
-  if (hwSt === "eingereicht") return false;
-  return true;
+  return isPartnerAnfrageAktionErforderlich(item);
 }
 
 export function resolvePartnerOffenKartenTyp(
   item: AngebotStatusFields
 ): PartnerOffenKartenTyp {
-  if (isPartnerAnfrageKonditionenNachreichung(item)) {
-    const openIds = resolveNachreichungOpenZeilenIds({
-      crm_positionen_raw: item.crm_positionen_raw,
-      crm_auftrag_positionen: item.crm_auftrag_positionen,
-      filter: {
-        gewerkId: item.gewerk_id,
-        handwerkerId: item.handwerker_id,
-        gewerkName: item.gewerk_name,
-      },
-      hw_konditionen: item.hw_konditionen,
-      hw_status: item.hw_status,
-      alle_hw_konditionen: item.alle_hw_konditionen,
-    });
-    const agreed = new Set(
-      item.hw_konditionen?.positionen.map((p) => p.position_id) ?? []
-    );
-    const hasNew = openIds.some((id) => !agreed.has(id));
-    if (hasNew) return "nachreichung";
-    if (openIds.length) return "geaendert";
-  }
-
-  if (hasPartnerKonditionenNachreichungAusstehend(item)) {
+  if (
+    hasPartnerKonditionenNachreichungAusstehend(item) ||
+    isPartnerAnfrageKonditionenNachreichung(item)
+  ) {
     return "nachreichung";
   }
-
   return "neu";
+}
+
+function isPartnerAnfrageKonditionenNachreichung(
+  item: AngebotStatusFields
+): boolean {
+  const openIds = resolveNachreichungOpenZeilenIds({
+    crm_positionen_raw: item.crm_positionen_raw,
+    crm_auftrag_positionen: item.crm_auftrag_positionen,
+    filter: {
+      gewerkId: item.gewerk_id,
+      handwerkerId: item.handwerker_id,
+      gewerkName: item.gewerk_name,
+    },
+    hw_konditionen: item.hw_konditionen,
+    hw_status: item.hw_status,
+    alle_hw_konditionen: item.alle_hw_konditionen,
+  });
+  if (!openIds.length) return false;
+  if (!item.bestaetigt_at && (item.hw_status ?? "").toLowerCase() !== "uebernommen") {
+    return false;
+  }
+  return true;
 }
 
 export function enrichPartnerOffenAngebot(
@@ -125,30 +112,22 @@ export function enrichPartnerOffenAngebot(
 
 export function buildPartnerOffenListe(input: {
   anfragen: PartnerAnfrageItem[];
-  angebote: PartnerAnfrageItem[];
   auftragAnfragen: PartnerAuftragItem[];
-  /** Anfragen mit offener Nachreichung am verknüpften Auftrag (auch bei uebernommen). */
-  nachreichungAnfrageIds?: Set<string>;
 }): PartnerOffenItem[] {
   const seen = new Set<string>();
+  const auftragIdsViaAngebot = new Set<string>();
   const out: PartnerOffenItem[] = [];
-  const forcedNachreichung = input.nachreichungAnfrageIds ?? new Set<string>();
 
-  for (const raw of [...input.anfragen, ...input.angebote]) {
+  for (const raw of input.anfragen) {
     if (seen.has(raw.id)) continue;
-    const forced = forcedNachreichung.has(raw.id);
-    if (
-      !forced &&
-      !isPartnerAngebotOffenListItem(raw) &&
-      !isPartnerAnfrageAktionErforderlich(raw)
-    ) {
-      continue;
-    }
+    if (!isPartnerAngebotOffenListItem(raw)) continue;
     seen.add(raw.id);
+    if (raw.auftrag_id) auftragIdsViaAngebot.add(raw.auftrag_id);
     out.push({ kind: "angebot", item: enrichPartnerOffenAngebot(raw) });
   }
 
   for (const a of input.auftragAnfragen) {
+    if (auftragIdsViaAngebot.has(a.id)) continue;
     if (!isPartnerAuftragAnfrageAktionErforderlich(a)) continue;
     out.push({ kind: "auftrag", item: a });
   }
@@ -167,13 +146,11 @@ export function buildPartnerOffenListe(input: {
 }
 
 export function partnerOffenStatusLabel(typ: PartnerOffenKartenTyp): string {
-  if (typ === "nachreichung") return "Neue Leistung";
-  if (typ === "geaendert") return "Geändert";
+  if (typ === "nachreichung") return "Ergänzung";
   return "Neu";
 }
 
 export function partnerOffenStatusPillKey(typ: PartnerOffenKartenTyp): string {
-  if (typ === "nachreichung") return "neue_leistung";
-  if (typ === "geaendert") return "geaendert";
+  if (typ === "nachreichung") return "ergaenzung";
   return "neu";
 }

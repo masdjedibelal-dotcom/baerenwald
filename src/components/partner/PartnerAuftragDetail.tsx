@@ -30,8 +30,6 @@ import {
   partnerAuftragZeigtDokumenteUpload,
 } from "@/lib/partner/partner-auftrag-dokumente";
 import {
-  PARTNER_HW_DOKUMENTE_BESCHREIBUNG,
-  PARTNER_HW_DOKUMENT_NUR_CRM,
   PARTNER_HW_DOKUMENT_UPLOAD_LABEL,
   partnerHwDokumentUploadHint,
 } from "@/lib/partner/partner-hw-dokument-copy";
@@ -505,11 +503,7 @@ export function PartnerAuftragDetail({ item }: { item: PartnerAuftragItem }) {
         />
       </div>
 
-      <PartnerDetailSection title="Dokumente">
-        <p className="portal-text-body mb-4 text-text-secondary">
-          {PARTNER_HW_DOKUMENTE_BESCHREIBUNG}
-        </p>
-
+      <PartnerDetailSection title="Unterlagen">
         <DokumenteTabelle
           dokumente={dokumentZeilen}
           heading=""
@@ -522,21 +516,18 @@ export function PartnerAuftragDetail({ item }: { item: PartnerAuftragItem }) {
             {kannUnterlagenHochladen ? (
               <form
                 onSubmit={onPdfSubmit}
-                className="space-y-2 rounded-xl border border-border-light p-4"
+                className="space-y-2 rounded-xl border border-dashed border-border-light p-4"
               >
-                <p className="portal-text-body font-semibold text-text-primary">
-                  {PARTNER_HW_DOKUMENT_UPLOAD_LABEL}
-                </p>
                 <FileUploadField
-                  label="PDF auswählen"
-                  accept="application/pdf,.pdf"
+                  label={PARTNER_HW_DOKUMENT_UPLOAD_LABEL}
+                  accept="image/jpeg,image/png,image/webp,application/pdf,.pdf"
                   multiple
                   hint={partnerHwDokumentUploadHint()}
                   selectedName={
                     angebotPdfs.length > 0
                       ? angebotPdfs.length === 1
                         ? angebotPdfs[0].name
-                        : `${angebotPdfs.length} PDFs`
+                        : `${angebotPdfs.length} Dateien`
                       : null
                   }
                   onChange={(files) => {
@@ -553,7 +544,7 @@ export function PartnerAuftragDetail({ item }: { item: PartnerAuftragItem }) {
                     disabled={pdfLoading}
                     className="btn-pill-outline portal-btn !px-4 !py-2.5"
                   >
-                    {pdfLoading ? "Wird hochgeladen…" : "Hochladen und versenden"}
+                    {pdfLoading ? "Wird hochgeladen…" : "Hochladen"}
                   </button>
                 ) : null}
               </form>
@@ -607,9 +598,6 @@ export function PartnerAuftragDetail({ item }: { item: PartnerAuftragItem }) {
           </div>
         ) : null}
 
-        <p className="portal-text-meta mt-4 text-text-secondary">
-          {PARTNER_HW_DOKUMENT_NUR_CRM}
-        </p>
       </PartnerDetailSection>
 
       {bauauftragUnterlagen.length > 0 ? (

@@ -4,20 +4,20 @@ import {
 } from "@/lib/partner/partner-upload-limits";
 import { PARTNER_MAX_HW_UNTERLAGEN_GESAMT } from "@/lib/partner/partner-hw-dokument-typen";
 
-/** Handwerker-PDFs sind nur im CRM sichtbar — nicht im Kundenportal. */
-export const PARTNER_HW_DOKUMENT_NUR_CRM =
-  "Nur für Bärenwald sichtbar — nicht für den Kunden.";
-
+/** Unterlagen an Bärenwald senden. */
 export const PARTNER_HW_DOKUMENTE_BESCHREIBUNG =
-  "Angebote, Rechnungs- oder sonstige Unterlagen an Bärenwald hochladen und versenden.";
+  "Fotos und Dokumente zum Auftrag hochladen.";
+
+/** @deprecated Nicht mehr in der UI anzeigen */
+export const PARTNER_HW_DOKUMENT_NUR_CRM = "";
+
+export const PARTNER_HW_DOKUMENT_UPLOAD_LABEL = "Fotos & Dokumente";
 
 /** @deprecated Alias — gleicher Text wie PARTNER_HW_DOKUMENTE_BESCHREIBUNG */
 export const PARTNER_AUFTRAG_DOKUMENTE_BESCHREIBUNG = PARTNER_HW_DOKUMENTE_BESCHREIBUNG;
 
 export const PARTNER_HW_DOKUMENT_TYPEN_KURZ =
-  "Angebot, Rechnung oder sonstige Unterlage";
-
-export const PARTNER_HW_DOKUMENT_UPLOAD_LABEL = "PDF hochladen";
+  "Fotos (JPG/PNG/WebP) oder PDF";
 
 export function partnerHwDokumentUploadHint(opts?: {
   maxDateien?: number;

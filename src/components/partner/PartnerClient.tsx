@@ -24,7 +24,6 @@ import { PartnerProfilPanel } from "@/components/partner/PartnerProfilPanel";
 import { PartnerAuftragAnfrageDetail } from "@/components/partner/PartnerAuftragAnfrageDetail";
 import { PartnerAuftragDetail } from "@/components/partner/PartnerAuftragDetail";
 import { PartnerListCard } from "@/components/partner/PartnerListCard";
-import { PortalAuftragPhasenStrip } from "@/components/shared/PortalAuftragPhasenStrip";
 import { PortalMobileBottomSheet } from "@/components/shared/PortalMobileBottomSheet";
 import {
   PARTNER_LIST_PAGE_SIZE,
@@ -542,7 +541,7 @@ export function PartnerClient({
         return "Keine Aufträge — sie erscheinen, sobald ein Projekt für dich freigegeben ist.";
       }
       return listFilterEffective === "aktiv"
-        ? "Keine Aufträge in Bearbeitung."
+        ? "Keine Aufträge in Ausführung."
         : "Keine erledigten Aufträge.";
     }
     return "";
@@ -565,15 +564,6 @@ export function PartnerClient({
         }
         meta={row.meta}
         hint={row.hint}
-        footer={
-          row.auftragPhasen ? (
-            <PortalAuftragPhasenStrip
-              states={row.auftragPhasen.states}
-              aktuellePhase={row.auftragPhasen.aktuellePhase}
-              fortschritt={row.auftragPhasen.fortschritt}
-            />
-          ) : undefined
-        }
         onClick={() => openFromOverview(tab, row.id)}
       />
     );
@@ -595,15 +585,6 @@ export function PartnerClient({
         }
         meta={row.meta}
         hint={row.hint}
-        footer={
-          row.auftragPhasen ? (
-            <PortalAuftragPhasenStrip
-              states={row.auftragPhasen.states}
-              aktuellePhase={row.auftragPhasen.aktuellePhase}
-              fortschritt={row.auftragPhasen.fortschritt}
-            />
-          ) : undefined
-        }
         selected={selectedId === row.id}
         onClick={() => selectRow(row.id)}
       />
@@ -615,9 +596,7 @@ export function PartnerClient({
       return (
         <PartnerAuftragAnfrageDetail
           item={selectedOffenAuftrag}
-          rahmenvertrag={profil.rahmenvertrag}
-          onAccepted={refreshOffenDetail}
-          onWeiterZuAngeboten={refreshOffenDetail}
+          onAccepted={refreshOffenAfterConfirm}
         />
       );
     }

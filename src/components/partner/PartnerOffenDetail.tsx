@@ -3,8 +3,10 @@
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 
-import { confirmPartnerAuftrag } from "@/app/actions/partner-auftrag-bestaetigen";
-import { PartnerAnfrageDetail } from "@/components/partner/PartnerAnfrageDetail";
+import {
+  confirmPartnerAuftrag,
+  declinePartnerAnfrage,
+} from "@/app/actions/partner-auftrag-bestaetigen";
 import { PartnerPflichtenCard } from "@/components/partner/PartnerPflichtenCard";
 import { PartnerProjektvertragPaket } from "@/components/partner/PartnerProjektvertragPaket";
 import { PartnerLeistungenKonditionenCard } from "@/components/partner/PartnerLeistungenKonditionenCard";
@@ -22,9 +24,15 @@ import { DokumenteTabelle, type DokumentZeile } from "@/components/shared/Dokume
 import type { PartnerOffenAngebotItem } from "@/lib/partner/partner-offen-status";
 import { partnerDetailStatusPillClass } from "@/lib/partner/partner-detail-format";
 import {
+  HANDWERKER_ABLEHNUNG_GRUND_LABELS,
+  HANDWERKER_ABLEHNUNG_GRUND_VALUES,
+} from "@/lib/partner/handwerker-ablehnung";
+import {
   mapKonditionZeilenVereinbart,
   konditionZeilenNurAusHw,
+  resolveNachreichungOpenZeilenIds,
 } from "@/lib/partner/partner-konditionen";
+import { buildPartnerAuftragKonditionZeilen } from "@/lib/partner/partner-leistungen-display";
 import {
   partnerOffenStatusLabel,
   partnerOffenStatusPillKey,
@@ -44,39 +52,51 @@ export function PartnerOffenDetail({
   item: PartnerOffenAngebotItem;
   onConfirmed?: (anfrageId: string) => void;
 }) {
-  const typ = item.offen_karten_typ;
-
-  if (typ === "nachreichung" || typ === "geaendert") {
-    return (
-      <PartnerAnfrageDetail
-        item={item}
-        onAccepted={onConfirmed}
-        onKonditionenBestaetigt={onConfirmed}
-      />
-    );
-  }
-
-  return <PartnerOffenNeuDetail item={item} onConfirmed={onConfirmed} />;
-}
-
-function PartnerOffenNeuDetail({
-  item,
-  onConfirmed,
-}: {
-  item: PartnerOffenAngebotItem;
-  onConfirmed?: (anfrageId: string) => void;
-}) {
   const router = useRouter();
-  const [gelesen, setGelesen] = useState(false);
-  const [verbindlich, setVerbindlich] = useState(false);
+  const isNachreichung = item.offen_karten_typ === "nachreichung";
+  const [projektvertragBereit, setProjektvertragBereit] = useState(
+    isNachreichung && Boolean(item.projektvertrag_bestaetigt_am)
+  );
+  const [anfrageVerbindlich, setAnfrageVerbindlich] = useState(false);
+  const [ergaenzungVerbindlich, setErgaenzungVerbindlich] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const [showReject, setShowReject] = useState(false);
+  const [confirmReject, setConfirmReject] = useState(false);
+  const [grund, setGrund] = useState<string>(HANDWERKER_ABLEHNUNG_GRUND_VALUES[0]);
+  const [notiz, setNotiz] = useState("");
+  const hatAuftrag = Boolean(item.auftrag_id);
+  const projektvertragBereits = Boolean(item.projektvertrag_bestaetigt_am);
 
   const statusLabel = partnerOffenStatusLabel(item.offen_karten_typ);
   const statusPillKey = partnerOffenStatusPillKey(item.offen_karten_typ);
 
+  const openPositionIds = useMemo(() => {
+    if (!isNachreichung) return null;
+    return resolveNachreichungOpenZeilenIds({
+      crm_positionen_raw: item.crm_positionen_raw,
+      crm_auftrag_positionen: item.crm_auftrag_positionen,
+      filter: {
+        gewerkId: item.gewerk_id,
+        handwerkerId: item.handwerker_id,
+        gewerkName: item.gewerk_name,
+      },
+      hw_konditionen: item.hw_konditionen,
+      hw_status: item.hw_status,
+      alle_hw_konditionen: item.alle_hw_konditionen,
+    });
+  }, [isNachreichung, item]);
+
   const konditionZeilen = useMemo(() => {
+    if (isNachreichung && item.crm_auftrag_positionen?.length && openPositionIds) {
+      const openSet = new Set(openPositionIds);
+      const zeilen = buildPartnerAuftragKonditionZeilen(
+        item.crm_auftrag_positionen.filter((p) => openSet.has(p.id))
+      );
+      return mapKonditionZeilenVereinbart(zeilen);
+    }
+
     if (item.hw_konditionen?.positionen.length) {
       return mapKonditionZeilenVereinbart(konditionZeilenNurAusHw(item.hw_konditionen));
     }
@@ -87,9 +107,7 @@ function PartnerOffenNeuDetail({
       item.hw_konditionen
     );
     return mapKonditionZeilenVereinbart(zeilen);
-  }, [item]);
-
-  const aktiveZeilen = konditionZeilen;
+  }, [isNachreichung, item, openPositionIds]);
 
   const sections = useMemo(
     () =>
@@ -113,29 +131,28 @@ function PartnerOffenNeuDetail({
         href: pvHref,
       });
     }
-    const rv = item.rahmenvertrag;
-    const rvHref = rv?.pdf_signed_url?.trim() || rv?.pdf_url?.trim();
-    if (rvHref) {
-      rows.push({
-        id: "rahmenvertrag",
-        datum: rv?.signiert_am ?? rv?.portal_akzeptiert_am,
-        name: "Partnerschafts-Rahmenvertrag",
-        href: rvHref,
-      });
-    }
     return rows;
-  }, [item.projektvertrag, item.rahmenvertrag]);
+  }, [item.projektvertrag]);
 
   const heroMeta = partnerDetailDateMetaLine(item.gesendet_at ?? item.antwort_at);
 
-  const infoText =
-    "Bitte Leistungen, Bedingungen (Rahmenvertrag) und Projektvertrag prüfen — dann annehmen.";
+  const infoText = isNachreichung
+    ? "Bärenwald hat zusätzliche Leistungen festgelegt — bitte prüfen und annehmen oder ablehnen."
+    : hatAuftrag
+      ? "Bitte Leistungen und Projektvertrag prüfen — dann annehmen."
+      : "Bitte Leistungen prüfen und die Anfrage verbindlich annehmen.";
 
-  const primaryLabel = "Auftrag annehmen";
+  const primaryLabel = isNachreichung ? "Ergänzung annehmen" : "Annehmen";
 
   async function onConfirm() {
     setLoading(true);
     setError(null);
+    const gelesen = isNachreichung
+      ? ergaenzungVerbindlich || projektvertragBereit
+      : hatAuftrag
+        ? projektvertragBereit
+        : anfrageVerbindlich;
+    const verbindlich = gelesen;
     const res = await confirmPartnerAuftrag({
       anfrageId: item.id,
       gelesen,
@@ -151,16 +168,52 @@ function PartnerOffenNeuDetail({
     else router.refresh();
   }
 
-  const kannBestaetigen = gelesen && verbindlich;
+  async function onDecline() {
+    setLoading(true);
+    setError(null);
+    const res = await declinePartnerAnfrage({
+      anfrageId: item.id,
+      grund,
+      notiz: notiz.trim() || undefined,
+    });
+    setLoading(false);
+    setConfirmReject(false);
+    setShowReject(false);
+    if (!res.ok) {
+      setError(res.error);
+      return;
+    }
+    if (onConfirmed) onConfirmed(item.id);
+    else router.refresh();
+  }
 
-  const actionFooter = (
-    <PartnerDetailStickyActions
-      primaryLabel={primaryLabel}
-      onPrimary={() => setConfirmOpen(true)}
-      primaryLoading={loading}
-      primaryDisabled={!kannBestaetigen}
-    />
-  );
+  const kannBestaetigen = isNachreichung
+    ? ergaenzungVerbindlich
+    : hatAuftrag
+      ? projektvertragBereit
+      : anfrageVerbindlich;
+
+  const actionFooter =
+    !showReject ? (
+      <PartnerDetailStickyActions
+        primaryLabel={primaryLabel}
+        onPrimary={() => setConfirmOpen(true)}
+        primaryLoading={loading}
+        primaryDisabled={!kannBestaetigen}
+        secondaryLabel="Ablehnen"
+        onSecondary={() => setShowReject(true)}
+        secondaryDisabled={loading}
+      />
+    ) : (
+      <PartnerDetailStickyActions
+        primaryLabel="Ablehnung senden"
+        onPrimary={() => setConfirmReject(true)}
+        primaryLoading={loading}
+        secondaryLabel="Zurück"
+        onSecondary={() => setShowReject(false)}
+        secondaryDisabled={loading}
+      />
+    );
 
   return (
     <PartnerDetailLayout footer={actionFooter}>
@@ -175,10 +228,14 @@ function PartnerOffenNeuDetail({
 
       <PartnerPortalDetailSections sections={sections} />
 
-      {aktiveZeilen.length > 0 ? (
-        <PartnerDetailSection title={PARTNER_LEISTUNGEN_SECTION_TITLE}>
+      {konditionZeilen.length > 0 ? (
+        <PartnerDetailSection
+          title={
+            isNachreichung ? "Neue Leistungen" : PARTNER_LEISTUNGEN_SECTION_TITLE
+          }
+        >
           <PartnerLeistungenKonditionenCard
-            zeilen={aktiveZeilen}
+            zeilen={konditionZeilen}
             mode="readonly"
             gesamtLabel={PARTNER_LEISTUNGEN_GESAMT_LABEL}
           />
@@ -190,13 +247,56 @@ function PartnerOffenNeuDetail({
         ist_bauprojekt={item.ist_bauprojekt}
       />
 
-      {item.auftrag_id ? (
+      {hatAuftrag && !isNachreichung ? (
         <PartnerProjektvertragPaket
-          auftragId={item.auftrag_id}
+          auftragId={item.auftrag_id!}
           gewerkName={item.gewerk_name}
           vertrag={item.projektvertrag ?? null}
           projektvertrag_bestaetigt_am={item.projektvertrag_bestaetigt_am}
+          embedded
+          onEmbeddedReadyChange={setProjektvertragBereit}
         />
+      ) : null}
+
+      {hatAuftrag && isNachreichung && !projektvertragBereits ? (
+        <PartnerProjektvertragPaket
+          auftragId={item.auftrag_id!}
+          gewerkName={item.gewerk_name}
+          vertrag={item.projektvertrag ?? null}
+          projektvertrag_bestaetigt_am={item.projektvertrag_bestaetigt_am}
+          embedded
+          onEmbeddedReadyChange={setProjektvertragBereit}
+        />
+      ) : null}
+
+      {!hatAuftrag && !isNachreichung ? (
+        <div className="space-y-3 border-t border-border-default pt-4">
+          <label className="flex cursor-pointer items-start gap-3">
+            <input
+              type="checkbox"
+              checked={anfrageVerbindlich}
+              onChange={(e) => setAnfrageVerbindlich(e.target.checked)}
+              className="mt-1"
+            />
+            <span className="portal-text-body text-text-primary">
+              Ich nehme diese Anfrage verbindlich an.
+            </span>
+          </label>
+        </div>
+      ) : null}
+
+      {isNachreichung ? (
+        <label className="flex cursor-pointer items-start gap-3 border-t border-border-default pt-4">
+          <input
+            type="checkbox"
+            checked={ergaenzungVerbindlich}
+            onChange={(e) => setErgaenzungVerbindlich(e.target.checked)}
+            className="mt-1"
+          />
+          <span className="portal-text-body text-text-primary">
+            Ich nehme die ergänzenden Leistungen verbindlich an.
+          </span>
+        </label>
       ) : null}
 
       <DokumenteTabelle
@@ -205,40 +305,58 @@ function PartnerOffenNeuDetail({
         emptyText="Noch keine Dokumente."
       />
 
-      <div className="space-y-3 border-t border-border-default pt-4">
-        <label className="flex cursor-pointer items-start gap-3">
-          <input
-            type="checkbox"
-            checked={gelesen}
-            onChange={(e) => setGelesen(e.target.checked)}
-            className="mt-1"
+      {showReject ? (
+        <div className="space-y-3 rounded-xl border border-border-light bg-muted/30 p-4">
+          <label className="block space-y-1">
+            <span className="portal-form-label">Ablehnungsgrund</span>
+            <select
+              value={grund}
+              onChange={(e) => setGrund(e.target.value)}
+              className="portal-input w-full rounded-xl border border-border-default bg-surface-card px-3 py-3"
+            >
+              {HANDWERKER_ABLEHNUNG_GRUND_VALUES.map((v) => (
+                <option key={v} value={v}>
+                  {HANDWERKER_ABLEHNUNG_GRUND_LABELS[v]}
+                </option>
+              ))}
+            </select>
+          </label>
+          <textarea
+            value={notiz}
+            onChange={(e) => setNotiz(e.target.value)}
+            placeholder="Optionale Notiz"
+            rows={3}
+            className="portal-input w-full rounded-xl border border-border-default bg-surface-card px-3 py-3"
           />
-          <span className="portal-text-body text-text-primary">
-            Ich habe die Bedingungen (Partnerschafts-Rahmenvertrag) gelesen.
-          </span>
-        </label>
-        <label className="flex cursor-pointer items-start gap-3">
-          <input
-            type="checkbox"
-            checked={verbindlich}
-            onChange={(e) => setVerbindlich(e.target.checked)}
-            className="mt-1"
-          />
-          <span className="portal-text-body text-text-primary">
-            Ich nehme den Auftrag verbindlich an.
-          </span>
-        </label>
-      </div>
+        </div>
+      ) : null}
 
       {error ? <PartnerDetailError message={error} /> : null}
 
       <PartnerConfirmDialog
         open={confirmOpen}
         title={primaryLabel}
-        description="Mit der Bestätigung nimmst du den Auftrag verbindlich an."
+        description={
+          isNachreichung
+            ? "Mit der Bestätigung nimmst du die ergänzenden Leistungen verbindlich an."
+            : hatAuftrag
+              ? "Mit der Bestätigung nimmst du den Auftrag verbindlich an."
+              : "Mit der Bestätigung nimmst du die Anfrage verbindlich an."
+        }
         confirmLabel={primaryLabel}
         onConfirm={onConfirm}
         onCancel={() => setConfirmOpen(false)}
+        loading={loading}
+      />
+
+      <PartnerConfirmDialog
+        open={confirmReject}
+        title="Ablehnen?"
+        description="Bärenwald wird informiert."
+        confirmLabel="Ablehnen"
+        confirmVariant="danger"
+        onConfirm={onDecline}
+        onCancel={() => setConfirmReject(false)}
         loading={loading}
       />
     </PartnerDetailLayout>

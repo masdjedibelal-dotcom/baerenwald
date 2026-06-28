@@ -1,15 +1,14 @@
 import { isAuftragAbgeschlossen } from "@/lib/partner/handwerker-bewertung-display";
 
 /**
- * Laufende Aufträge in „Meine Aufträge“ — nicht mit Tab „Offen“ (Anfrage/Angebot/Leistung) verwechseln.
- * CRM-Status `offen` bedeutet hier: Projekt läuft → „In Bearbeitung“.
+ * Laufende Aufträge in „Meine Aufträge“ — nicht mit Tab „Offen“ verwechseln.
  */
 export function partnerAuftragListenStatusLabel(status: string): string {
   const s = status.toLowerCase();
   if (s === "storniert") return "Storniert";
   if (isAuftragAbgeschlossen(status)) return "Abgeschlossen";
   if (s === "abnahme") return "Abnahme";
-  return "In Bearbeitung";
+  return "Ausführung";
 }
 
 export function partnerAuftragListenStatusPillKey(status: string): string {
@@ -20,7 +19,7 @@ export function partnerAuftragListenStatusPillKey(status: string): string {
   return "in_arbeit";
 }
 
-/** Phasen-Streifen: laufender Auftrag nicht als CRM-„offen“/Planung-only darstellen. */
+/** @deprecated Phasen-Streifen entfernt — nur noch für Legacy-Aufrufer. */
 export function partnerAuftragStatusFuerPhasen(status?: string | null): string {
   const s = (status ?? "").toLowerCase();
   if (s === "storniert" || isAuftragAbgeschlossen(status ?? "")) return status ?? "";

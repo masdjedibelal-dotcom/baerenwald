@@ -17,9 +17,8 @@ import type { PartnerComplianceItem } from "@/lib/partner/partner-compliance";
 import { fmtPartnerDate } from "@/lib/partner/partner-detail-format";
 import { cn } from "@/lib/utils";
 
-function statusLabel(erfüllt: boolean, status: string, portalAkzeptiert: boolean): string {
+function statusLabel(erfüllt: boolean, portalAkzeptiert: boolean): string {
   if (portalAkzeptiert || erfüllt) return "Akzeptiert";
-  if (status === "entwurf") return "In Vorbereitung";
   return "Ausstehend";
 }
 
@@ -39,7 +38,6 @@ export function PartnerRahmenvertragCard({
 
   const erfüllt = rahmenvertragErfuellt(stammItems, rahmenvertrag);
   const portalAkzeptiert = Boolean(rahmenvertrag?.portal_akzeptiert_am);
-  const status = rahmenvertrag?.status ?? "entwurf";
   const pdfUrl = rahmenvertrag?.pdf_signed_url ?? rahmenvertrag?.pdf_url;
   const brauchtAkzeptanz = rahmenvertragBrauchtPortalAkzeptanz(rahmenvertrag);
 
@@ -103,7 +101,7 @@ export function PartnerRahmenvertragCard({
               erfüllt || portalAkzeptiert ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-800"
             )}
           >
-            {statusLabel(erfüllt, status, portalAkzeptiert)}
+            {statusLabel(erfüllt, portalAkzeptiert)}
           </span>
         </div>
 
@@ -125,6 +123,23 @@ export function PartnerRahmenvertragCard({
               {loading ? "Wird gespeichert…" : "Annahme speichern"}
             </button>
           </div>
+        ) : portalAkzeptiert ? (
+          <p className="portal-text-meta text-emerald-800">
+            Bei der Registrierung akzeptiert — kein weiterer Schritt nötig.
+            {pdfUrl ? (
+              <>
+                {" "}
+                <a
+                  href={pdfUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="font-medium text-accent underline-offset-2 hover:underline"
+                >
+                  PDF herunterladen
+                </a>
+              </>
+            ) : null}
+          </p>
         ) : pdfUrl ? (
           <a
             href={pdfUrl}
