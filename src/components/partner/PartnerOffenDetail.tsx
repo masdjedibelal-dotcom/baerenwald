@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 
 import { confirmPartnerAuftrag } from "@/app/actions/partner-auftrag-bestaetigen";
+import { PartnerAnfrageDetail } from "@/components/partner/PartnerAnfrageDetail";
 import { PartnerPflichtenCard } from "@/components/partner/PartnerPflichtenCard";
 import { PartnerLeistungenKonditionenCard } from "@/components/partner/PartnerLeistungenKonditionenCard";
 import {
@@ -34,11 +35,30 @@ import {
   partnerDetailDateMetaLine,
   resolvePartnerKonditionZeilen,
 } from "@/lib/partner/partner-portal-display";
-import {
-  partnerKonditionenNachreichungZeilenIds,
-} from "@/lib/partner/partner-konditionen";
 
 export function PartnerOffenDetail({
+  item,
+  onConfirmed,
+}: {
+  item: PartnerOffenAngebotItem;
+  onConfirmed?: (anfrageId: string) => void;
+}) {
+  const typ = item.offen_karten_typ;
+
+  if (typ === "nachreichung" || typ === "geaendert") {
+    return (
+      <PartnerAnfrageDetail
+        item={item}
+        onAccepted={onConfirmed}
+        onKonditionenBestaetigt={onConfirmed}
+      />
+    );
+  }
+
+  return <PartnerOffenNeuDetail item={item} onConfirmed={onConfirmed} />;
+}
+
+function PartnerOffenNeuDetail({
   item,
   onConfirmed,
 }: {
@@ -52,37 +72,10 @@ export function PartnerOffenDetail({
   const [error, setError] = useState<string | null>(null);
   const [confirmOpen, setConfirmOpen] = useState(false);
 
-  const typ = item.offen_karten_typ;
-  const statusLabel = partnerOffenStatusLabel(typ);
-  const statusPillKey = partnerOffenStatusPillKey(typ);
+  const statusLabel = partnerOffenStatusLabel(item.offen_karten_typ);
+  const statusPillKey = partnerOffenStatusPillKey(item.offen_karten_typ);
 
   const konditionZeilen = useMemo(() => {
-    if (typ === "nachreichung" || typ === "geaendert") {
-      const openIds = partnerKonditionenNachreichungZeilenIds(
-        item.crm_positionen_raw,
-        {
-          gewerkId: item.gewerk_id,
-          handwerkerId: item.handwerker_id,
-          gewerkName: item.gewerk_name,
-        },
-        item.hw_konditionen,
-        item.hw_status,
-        item.crm_auftrag_positionen
-      );
-      if (openIds.length) {
-        return resolvePartnerKonditionZeilen(
-          item.crm_positionen_raw,
-          {
-            gewerkId: item.gewerk_id,
-            handwerkerId: item.handwerker_id,
-            gewerkName: item.gewerk_name,
-          },
-          item.hw_konditionen,
-          { nachreichungOpenIds: openIds, auftragPositionen: item.crm_auftrag_positionen }
-        );
-      }
-    }
-
     if (item.hw_konditionen?.positionen.length) {
       return mapKonditionZeilenVereinbart(konditionZeilenNurAusHw(item.hw_konditionen));
     }
@@ -93,19 +86,9 @@ export function PartnerOffenDetail({
       item.hw_konditionen
     );
     return mapKonditionZeilenVereinbart(zeilen);
-  }, [item, typ]);
+  }, [item]);
 
-  const vereinbarteZeilen = useMemo(() => {
-    if (typ !== "nachreichung" && typ !== "geaendert") return [];
-    return konditionZeilen.filter((z) => z.readonly);
-  }, [konditionZeilen, typ]);
-
-  const aktiveZeilen = useMemo(() => {
-    if (typ === "nachreichung" || typ === "geaendert") {
-      return konditionZeilen.filter((z) => !z.readonly);
-    }
-    return konditionZeilen;
-  }, [konditionZeilen, typ]);
+  const aktiveZeilen = konditionZeilen;
 
   const sections = useMemo(
     () =>
@@ -130,20 +113,12 @@ export function PartnerOffenDetail({
     return rows;
   }, [item.rahmenvertrag]);
 
-  const heroMeta =
-    typ === "nachreichung"
-      ? `Ergänzung zum Auftrag · ${partnerDetailDateMetaLine(item.gesendet_at) ?? ""}`.trim()
-      : partnerDetailDateMetaLine(item.gesendet_at ?? item.antwort_at);
+  const heroMeta = partnerDetailDateMetaLine(item.gesendet_at ?? item.antwort_at);
 
   const infoText =
-    typ === "nachreichung"
-      ? "Neue Leistung zum laufenden Auftrag — bitte prüfen und unten bestätigen."
-      : typ === "geaendert"
-        ? "Bärenwald hat eine Leistung angepasst — bitte Änderung prüfen und bestätigen."
-        : "Bitte Leistungen, Rahmenvertrag und Unterlagen prüfen — dann Auftrag annehmen.";
+    "Bitte Leistungen, Rahmenvertrag und Unterlagen prüfen — dann Auftrag annehmen.";
 
-  const primaryLabel =
-    typ === "geaendert" ? "Bestätigen" : typ === "nachreichung" ? "Annehmen" : "Auftrag annehmen";
+  const primaryLabel = "Auftrag annehmen";
 
   async function onConfirm() {
     setLoading(true);
@@ -187,26 +162,8 @@ export function PartnerOffenDetail({
 
       <PartnerPortalDetailSections sections={sections} />
 
-      {vereinbarteZeilen.length > 0 ? (
-        <PartnerDetailSection title="Bereits angenommen">
-          <PartnerLeistungenKonditionenCard
-            zeilen={vereinbarteZeilen}
-            mode="readonly"
-            gesamtLabel="Vergütung angenommen (netto)"
-          />
-        </PartnerDetailSection>
-      ) : null}
-
       {aktiveZeilen.length > 0 ? (
-        <PartnerDetailSection
-          title={
-            typ === "nachreichung"
-              ? "Neue Leistung"
-              : typ === "geaendert"
-                ? "Geänderte Leistung"
-                : PARTNER_LEISTUNGEN_SECTION_TITLE
-          }
-        >
+        <PartnerDetailSection title={PARTNER_LEISTUNGEN_SECTION_TITLE}>
           <PartnerLeistungenKonditionenCard
             zeilen={aktiveZeilen}
             mode="readonly"
@@ -215,7 +172,10 @@ export function PartnerOffenDetail({
         </PartnerDetailSection>
       ) : null}
 
-      <PartnerPflichtenCard compliance_projekt={item.compliance_projekt} />
+      <PartnerPflichtenCard
+        compliance_projekt={item.compliance_projekt}
+        ist_bauprojekt={item.ist_bauprojekt}
+      />
 
       <DokumenteTabelle
         dokumente={dokumentZeilen}

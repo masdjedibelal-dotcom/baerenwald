@@ -5,7 +5,7 @@ import {
 } from "@/lib/partner/partner-anfrage-status";
 import {
   hasPartnerKonditionenNachreichungAusstehend,
-  partnerKonditionenNachreichungZeilenIds,
+  resolveNachreichungOpenZeilenIds,
 } from "@/lib/partner/partner-konditionen";
 import { isPartnerAuftragAnfrageAktionErforderlich } from "@/lib/partner/partner-anfrage-status";
 
@@ -39,6 +39,7 @@ type AngebotStatusFields = Pick<
   | "gewerk_name"
   | "handwerker_id"
   | "hw_konditionen"
+  | "alle_hw_konditionen"
 >;
 
 /** Mappt Legacy status/hw_status auf vereinfachten Portal-Status. */
@@ -85,17 +86,18 @@ export function resolvePartnerOffenKartenTyp(
   item: AngebotStatusFields
 ): PartnerOffenKartenTyp {
   if (isPartnerAnfrageKonditionenNachreichung(item)) {
-    const openIds = partnerKonditionenNachreichungZeilenIds(
-      item.crm_positionen_raw,
-      {
+    const openIds = resolveNachreichungOpenZeilenIds({
+      crm_positionen_raw: item.crm_positionen_raw,
+      crm_auftrag_positionen: item.crm_auftrag_positionen,
+      filter: {
         gewerkId: item.gewerk_id,
         handwerkerId: item.handwerker_id,
         gewerkName: item.gewerk_name,
       },
-      item.hw_konditionen,
-      item.hw_status,
-      item.crm_auftrag_positionen
-    );
+      hw_konditionen: item.hw_konditionen,
+      hw_status: item.hw_status,
+      alle_hw_konditionen: item.alle_hw_konditionen,
+    });
     const agreed = new Set(
       item.hw_konditionen?.positionen.map((p) => p.position_id) ?? []
     );

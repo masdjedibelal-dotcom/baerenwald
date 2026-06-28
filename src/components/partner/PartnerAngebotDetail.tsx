@@ -41,6 +41,7 @@ import {
 import { mapKonditionZeilenVereinbart, konditionZeilenNurAusHw } from "@/lib/partner/partner-konditionen";
 import { isPartnerAnfrageKonditionenNachreichung } from "@/lib/partner/partner-anfrage-status";
 import {
+  PARTNER_HW_DOKUMENTE_BESCHREIBUNG,
   PARTNER_HW_DOKUMENT_NUR_CRM,
   PARTNER_HW_DOKUMENT_UPLOAD_LABEL,
   partnerHwDokumentUploadHint,
@@ -326,6 +327,9 @@ export function PartnerAngebotDetail({ item }: { item: PartnerAnfrageItem }) {
         heading="Dokumente"
         emptyText="Noch keine Unterlagen hochgeladen."
       />
+      <p className="portal-text-body text-text-secondary">
+        {PARTNER_HW_DOKUMENTE_BESCHREIBUNG}
+      </p>
       <p className="portal-text-meta text-text-secondary">{PARTNER_HW_DOKUMENT_NUR_CRM}</p>
 
       {kannRechnungHochladen ? (

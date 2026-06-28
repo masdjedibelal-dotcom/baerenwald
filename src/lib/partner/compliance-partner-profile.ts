@@ -64,6 +64,45 @@ export function partnerHatMeisterGewerke(
   return slugs.some((slug) => istFachbetriebGewerk(alleGewerke.find((x) => x.slug === slug)));
 }
 
+function gewerkSlugByName(
+  gewerkName: string | null | undefined,
+  alleGewerke: PartnerGewerkRow[]
+): string | null {
+  const name = gewerkName?.trim().toLowerCase();
+  if (!name) return null;
+  const hit = alleGewerke.find((g) => g.name?.trim().toLowerCase() === name);
+  return hit?.slug ?? null;
+}
+
+/** Mindestens ein Gewerk **dieses Auftrags** ist explizit als Bauleistung markiert. */
+export function projektHatBauleistung(
+  projektGewerkSlugs: string[],
+  alleGewerke: PartnerGewerkRow[]
+): boolean {
+  if (!projektGewerkSlugs.length) return false;
+  return projektGewerkSlugs.some((slug) => {
+    const g = alleGewerke.find((x) => x.slug === slug);
+    return g?.ist_bauleistung === true;
+  });
+}
+
+export function resolveProjektGewerkSlugsFromPositionen(
+  positionen: Array<{ gewerk_slug?: string | null; gewerk_name?: string | null }>,
+  alleGewerke: PartnerGewerkRow[]
+): string[] {
+  const slugs = new Set<string>();
+  for (const pos of positionen) {
+    const slug = pos.gewerk_slug?.trim();
+    if (slug) {
+      slugs.add(slug);
+      continue;
+    }
+    const fromName = gewerkSlugByName(pos.gewerk_name, alleGewerke);
+    if (fromName) slugs.add(fromName);
+  }
+  return Array.from(slugs);
+}
+
 function typPasstZuGewerken(typ: PartnerComplianceTypEbene, gewerkSlugs: string[]): boolean {
   const filter = typ.gewerk_slugs?.filter(Boolean) ?? [];
   if (!filter.length) return true;
@@ -97,16 +136,15 @@ export function typGiltFuerProjekt(
 ): boolean {
   if (typ.aktiv === false) return false;
   if (normalizeComplianceEbene(typ) !== "leistung") return false;
-  const hwSlugs = partnerGewerkSlugs(handwerkerGewerke);
-  const relevantSlugs = projektGewerkSlugs.length ? projektGewerkSlugs : hwSlugs;
-  const hatBau =
-    relevantSlugs.some((s) => {
-      const g = alleGewerke.find((x) => x.slug === s);
-      return g?.ist_bauleistung !== false;
-    }) || partnerLeistetBauleistung(hwSlugs, alleGewerke);
 
-  if (typ.nur_bei_bauleistung && !hatBau) return false;
-  return typPasstZuGewerken(typ, relevantSlugs);
+  /** Nur Gewerke **dieses Auftrags** — kein Fallback auf das HW-Profil. */
+  if (!projektGewerkSlugs.length) return false;
+  if (!projektHatBauleistung(projektGewerkSlugs, alleGewerke)) return false;
+
+  if (typ.nur_bei_bauleistung && !projektHatBauleistung(projektGewerkSlugs, alleGewerke)) {
+    return false;
+  }
+  return typPasstZuGewerken(typ, projektGewerkSlugs);
 }
 
 export function istPflichtFuerPartner(

@@ -22,13 +22,15 @@ import {
 import { PartnerPortalDetailSections } from "@/components/partner/PartnerPortalDetailSections";
 import { PartnerComplianceCheckliste } from "@/components/partner/PartnerComplianceCheckliste";
 import { BautagebuchAccordionList } from "@/components/shared/BautagebuchAccordionList";
-import { buildBauauftragComplianceItems, isPartnerBauprojektCompliance } from "@/lib/partner/compliance-summary";
+import { buildBauauftragComplianceItems, isPartnerBauprojektAuftrag } from "@/lib/partner/compliance-summary";
 import {
   buildPartnerAuftragDokumentZeilen,
   partnerAuftragKannRechnungHochladen,
   partnerAuftragKannUnterlagenHochladen,
+  partnerAuftragZeigtDokumenteUpload,
 } from "@/lib/partner/partner-auftrag-dokumente";
 import {
+  PARTNER_HW_DOKUMENTE_BESCHREIBUNG,
   PARTNER_HW_DOKUMENT_NUR_CRM,
   PARTNER_HW_DOKUMENT_UPLOAD_LABEL,
   partnerHwDokumentUploadHint,
@@ -64,6 +66,10 @@ import {
   HANDWERKER_BEWERTUNG_KATEGORIEN,
   isAuftragAbgeschlossen,
 } from "@/lib/partner/handwerker-bewertung-display";
+import {
+  partnerAuftragListenStatusLabel,
+  partnerAuftragListenStatusPillKey,
+} from "@/lib/partner/partner-auftrag-list-status";
 import { cn } from "@/lib/utils";
 import { DokumenteTabelle } from "@/components/shared/DokumenteTabelle";
 import { FileUploadField } from "@/components/shared/FileUploadField";
@@ -262,14 +268,6 @@ function BautagebuchEintragActions({
   );
 }
 
-function formatAuftragStatus(status: string): string {
-  const s = status.toLowerCase();
-  if (s === "in_arbeit") return "In Arbeit";
-  if (s === "abgeschlossen") return "Abgeschlossen";
-  if (s === "storniert") return "Storniert";
-  return status;
-}
-
 export function PartnerAuftragDetail({ item }: { item: PartnerAuftragItem }) {
   const router = useRouter();
   const [showNew, setShowNew] = useState(false);
@@ -283,6 +281,7 @@ export function PartnerAuftragDetail({ item }: { item: PartnerAuftragItem }) {
 
   const kannUnterlagenHochladen = partnerAuftragKannUnterlagenHochladen(item);
   const kannRechnungHochladen = partnerAuftragKannRechnungHochladen(item);
+  const zeigtDokumenteUpload = partnerAuftragZeigtDokumenteUpload(item);
   const rechnungEingereicht = Boolean(item.hw_rechnung_eingereicht_at);
 
   const accordionEintraege = useMemo(
@@ -332,7 +331,11 @@ export function PartnerAuftragDetail({ item }: { item: PartnerAuftragItem }) {
   );
   const bauauftragUnterlagen = useMemo(
     () =>
-      item.vertrag && isPartnerBauprojektCompliance(item.vertrag.compliance_projekt)
+      item.vertrag &&
+      isPartnerBauprojektAuftrag({
+        ist_bauprojekt: item.vertrag.ist_bauprojekt,
+        compliance_projekt: item.vertrag.compliance_projekt,
+      })
         ? buildBauauftragComplianceItems(
             item.vertrag.compliance_stamm,
             item.vertrag.compliance_projekt
@@ -396,8 +399,10 @@ export function PartnerAuftragDetail({ item }: { item: PartnerAuftragItem }) {
       <PartnerDetailHero
         title={item.listen_titel}
         metaLine={partnerAuftragDetailMetaLine(item.start_datum, item.end_datum)}
-        statusLabel={formatAuftragStatus(item.status)}
-        statusPillClass={partnerDetailStatusPillClass(item.status)}
+        statusLabel={partnerAuftragListenStatusLabel(item.status)}
+        statusPillClass={partnerDetailStatusPillClass(
+          partnerAuftragListenStatusPillKey(item.status)
+        )}
       />
 
       {item.bautagebuchAnfrageOffen ? (
@@ -500,89 +505,112 @@ export function PartnerAuftragDetail({ item }: { item: PartnerAuftragItem }) {
         />
       </div>
 
-      <DokumenteTabelle
-        dokumente={dokumentZeilen}
-        heading="Dokumente"
-        emptyText="Noch keine Dokumente — z. B. Unterlagen an Bärenwald oder Rechnung nach Abschluss."
-        className="!border-t-0 !pt-0"
-      />
+      <PartnerDetailSection title="Dokumente">
+        <p className="portal-text-body mb-4 text-text-secondary">
+          {PARTNER_HW_DOKUMENTE_BESCHREIBUNG}
+        </p>
 
-      {kannUnterlagenHochladen ? (
-        <form onSubmit={onPdfSubmit} className="space-y-2 rounded-xl border border-border-light p-4">
-          <p className="portal-text-body font-semibold text-text-primary">
-            {PARTNER_HW_DOKUMENT_UPLOAD_LABEL}
-          </p>
-          <FileUploadField
-            label="PDF auswählen"
-            accept="application/pdf,.pdf"
-            multiple
-            hint={partnerHwDokumentUploadHint()}
-            selectedName={
-              angebotPdfs.length > 0
-                ? angebotPdfs.length === 1
-                  ? angebotPdfs[0].name
-                  : `${angebotPdfs.length} PDFs`
-                : null
-            }
-            onChange={(files) => {
-              const list = files.slice(0, PARTNER_MAX_ANGEBOT_DATEIEN);
-              const err = validatePartnerAngebotFiles(list, { required: false });
-              setPdfError(err);
-              setAngebotPdfs(err ? [] : list);
-            }}
-          />
-          {pdfError ? <PartnerDetailError message={pdfError} /> : null}
-          {angebotPdfs.length > 0 ? (
-            <button
-              type="submit"
-              disabled={pdfLoading}
-              className="btn-pill-outline portal-btn !px-4 !py-2.5"
-            >
-              {pdfLoading ? "Wird hochgeladen…" : "Hochladen"}
-            </button>
-          ) : null}
-          <p className="portal-text-meta text-text-secondary">{PARTNER_HW_DOKUMENT_NUR_CRM}</p>
-        </form>
-      ) : null}
+        <DokumenteTabelle
+          dokumente={dokumentZeilen}
+          heading=""
+          emptyText="Noch keine Unterlagen hochgeladen."
+          className="!border-t-0 !pt-0"
+        />
 
-      {kannRechnungHochladen ? (
-        <form onSubmit={onRechnungSubmit} className="space-y-2 rounded-xl border border-border-light p-4">
-          <p className="portal-text-body font-semibold text-text-primary">Rechnung einreichen</p>
-          <FileUploadField
-            label="Rechnungs-PDF"
-            accept="application/pdf,.pdf"
-            hint={`PDF, max. ${PARTNER_MAX_PDF_MB} MB`}
-            selectedName={rechnungPdf?.name}
-            onChange={(files) => {
-              const file = files[0] ?? null;
-              if (!file) {
-                setRechnungPdf(null);
-                return;
-              }
-              const err = validatePartnerPdfFile(file);
-              setRechnungError(err);
-              setRechnungPdf(err ? null : file);
-            }}
-          />
-          {rechnungError ? <PartnerDetailError message={rechnungError} /> : null}
-          <button
-            type="submit"
-            disabled={rechnungLoading || !rechnungPdf}
-            className="btn-pill-outline portal-btn !px-4 !py-2.5"
-          >
-            {rechnungLoading ? "Wird gesendet…" : "Rechnung absenden"}
-          </button>
-        </form>
-      ) : null}
+        {zeigtDokumenteUpload ? (
+          <div className="mt-4 space-y-4">
+            {kannUnterlagenHochladen ? (
+              <form
+                onSubmit={onPdfSubmit}
+                className="space-y-2 rounded-xl border border-border-light p-4"
+              >
+                <p className="portal-text-body font-semibold text-text-primary">
+                  {PARTNER_HW_DOKUMENT_UPLOAD_LABEL}
+                </p>
+                <FileUploadField
+                  label="PDF auswählen"
+                  accept="application/pdf,.pdf"
+                  multiple
+                  hint={partnerHwDokumentUploadHint()}
+                  selectedName={
+                    angebotPdfs.length > 0
+                      ? angebotPdfs.length === 1
+                        ? angebotPdfs[0].name
+                        : `${angebotPdfs.length} PDFs`
+                      : null
+                  }
+                  onChange={(files) => {
+                    const list = files.slice(0, PARTNER_MAX_ANGEBOT_DATEIEN);
+                    const err = validatePartnerAngebotFiles(list, { required: false });
+                    setPdfError(err);
+                    setAngebotPdfs(err ? [] : list);
+                  }}
+                />
+                {pdfError ? <PartnerDetailError message={pdfError} /> : null}
+                {angebotPdfs.length > 0 ? (
+                  <button
+                    type="submit"
+                    disabled={pdfLoading}
+                    className="btn-pill-outline portal-btn !px-4 !py-2.5"
+                  >
+                    {pdfLoading ? "Wird hochgeladen…" : "Hochladen und versenden"}
+                  </button>
+                ) : null}
+              </form>
+            ) : null}
 
-      {rechnungEingereicht ? (
-        <PartnerDetailSuccessBox>
-          <p className="font-semibold">Rechnung eingereicht</p>
-          <p className="text-sm">
-            Hochgeladen am {fmtPartnerDate(item.hw_rechnung_eingereicht_at)}
-          </p>
-        </PartnerDetailSuccessBox>
-      ) : null}
+            {kannRechnungHochladen ? (
+              <form
+                onSubmit={onRechnungSubmit}
+                className="space-y-2 rounded-xl border border-border-light p-4"
+              >
+                <p className="portal-text-body font-semibold text-text-primary">
+                  Rechnung einreichen
+                </p>
+                <FileUploadField
+                  label="Rechnungs-PDF"
+                  accept="application/pdf,.pdf"
+                  hint={`PDF, max. ${PARTNER_MAX_PDF_MB} MB`}
+                  selectedName={rechnungPdf?.name}
+                  onChange={(files) => {
+                    const file = files[0] ?? null;
+                    if (!file) {
+                      setRechnungPdf(null);
+                      return;
+                    }
+                    const err = validatePartnerPdfFile(file);
+                    setRechnungError(err);
+                    setRechnungPdf(err ? null : file);
+                  }}
+                />
+                {rechnungError ? <PartnerDetailError message={rechnungError} /> : null}
+                <button
+                  type="submit"
+                  disabled={rechnungLoading || !rechnungPdf}
+                  className="btn-pill-outline portal-btn !px-4 !py-2.5"
+                >
+                  {rechnungLoading ? "Wird gesendet…" : "Rechnung absenden"}
+                </button>
+              </form>
+            ) : null}
+          </div>
+        ) : null}
+
+        {rechnungEingereicht ? (
+          <div className="mt-4">
+            <PartnerDetailSuccessBox>
+              <p className="font-semibold">Rechnung eingereicht</p>
+              <p className="text-sm">
+                Hochgeladen am {fmtPartnerDate(item.hw_rechnung_eingereicht_at)}
+              </p>
+            </PartnerDetailSuccessBox>
+          </div>
+        ) : null}
+
+        <p className="portal-text-meta mt-4 text-text-secondary">
+          {PARTNER_HW_DOKUMENT_NUR_CRM}
+        </p>
+      </PartnerDetailSection>
 
       {bauauftragUnterlagen.length > 0 ? (
         <PartnerComplianceCheckliste

@@ -98,5 +98,10 @@ export function PartnerAngebotAuftragAnnehmen({
     );
   }
 
-  return <PartnerPflichtenCard compliance_projekt={item.compliance_projekt} />;
+  return (
+    <PartnerPflichtenCard
+      compliance_projekt={item.compliance_projekt}
+      ist_bauprojekt={item.ist_bauprojekt}
+    />
+  );
 }

@@ -9,7 +9,11 @@ import {
   type PartnerDokumentRow,
   type PartnerProjektvertrag,
 } from "@/lib/partner/partner-compliance";
-import type { PartnerGewerkRow } from "@/lib/partner/compliance-partner-profile";
+import {
+  projektHatBauleistung,
+  resolveProjektGewerkSlugsFromPositionen,
+  type PartnerGewerkRow,
+} from "@/lib/partner/compliance-partner-profile";
 import { fetchCrmProjektvertrag } from "@/lib/partner/partner-crm-api";
 import type { PartnerRahmenvertrag } from "@/lib/partner/compliance-summary";
 import { resolvePartnerFileUrl } from "@/lib/partner/partner-storage";
@@ -20,6 +24,9 @@ export type PartnerVertragKontext = {
   projektvertrag_bestaetigt_am: string | null;
   projektvertrag: PartnerProjektvertrag | null;
   projektvertrag_bereit: boolean;
+  /** Gewerke dieses Auftrags mit ist_bauleistung=true in gewerke-Tabelle. */
+  ist_bauprojekt: boolean;
+  projekt_gewerk_slugs: string[];
   compliance_allgemein: PartnerComplianceItem[];
   compliance_meister: PartnerComplianceItem[];
   compliance_leistung: PartnerComplianceItem[];
@@ -95,19 +102,18 @@ async function loadPartnerDokumente(
 
 async function loadProjektGewerkSlugs(
   handwerkerId: string,
-  auftragId: string
+  auftragId: string,
+  alleGewerke: PartnerGewerkRow[]
 ): Promise<string[]> {
   const { data } = await supabaseAdmin
     .from("auftrag_positionen")
-    .select("gewerk_slug")
+    .select("gewerk_slug, gewerk_name")
     .eq("auftrag_id", auftragId)
     .eq("handwerker_id", handwerkerId);
-  const slugs = new Set<string>();
-  for (const row of data ?? []) {
-    const s = (row as { gewerk_slug?: string | null }).gewerk_slug?.trim();
-    if (s) slugs.add(s);
-  }
-  return Array.from(slugs);
+  return resolveProjektGewerkSlugsFromPositionen(
+    (data ?? []) as Array<{ gewerk_slug?: string | null; gewerk_name?: string | null }>,
+    alleGewerke
+  );
 }
 
 export async function loadRahmenvertrag(
@@ -272,7 +278,12 @@ export async function buildVertragKontextForAuftrag(opts: {
     opts.auftragId
   );
 
-  const projektGewerkSlugs = await loadProjektGewerkSlugs(opts.handwerkerId, opts.auftragId);
+  const projektGewerkSlugs = await loadProjektGewerkSlugs(
+    opts.handwerkerId,
+    opts.auftragId,
+    opts.alleGewerke
+  );
+  const ist_bauprojekt = projektHatBauleistung(projektGewerkSlugs, opts.alleGewerke);
   const projektDoks = opts.alleDokumente.filter(
     (d) => d.auftrag_id === opts.auftragId || !d.auftrag_id
   );
@@ -322,6 +333,8 @@ export async function buildVertragKontextForAuftrag(opts: {
     projektvertrag_bestaetigt_am,
     projektvertrag,
     projektvertrag_bereit: hasGueltigerProjektvertrag(projektvertrag),
+    ist_bauprojekt,
+    projekt_gewerk_slugs: projektGewerkSlugs,
     ...stammKontext({ allgemein, meister }, leistung),
     dokumente_zeilen,
   };

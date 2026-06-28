@@ -60,8 +60,9 @@ import {
 } from "@/lib/partner/handwerker-bewertung-display";
 import {
   countPartnerAuftraegeFilter,
-  isPartnerAuftragListItemOffen,
-  type PartnerListFilterId,
+  isPartnerAuftragListItemAktiv,
+  PARTNER_AUFTRAG_LIST_FILTER_LABELS,
+  type PartnerAuftragListFilterId,
 } from "@/lib/partner/partner-list-filters";
 import { cn } from "@/lib/utils";
 import { partnerOffenPortalPath, partnerSectionListPath } from "@/lib/partner/partner-site-url";
@@ -143,26 +144,21 @@ function parseAnfragenSelectedId(
 
 function emptyLabelForTab(tab: OverviewTabId): string {
   if (tab === "offen") return "Keine offenen Bestätigungen";
-  return "Keine aktiven Aufträge";
+  return "Keine Aufträge in Bearbeitung";
 }
 
-function PartnerListFilterBar({
+function PartnerAuftragListFilterBar({
   filter,
   onFilterChange,
   counts,
 }: {
-  filter: PartnerListFilterId;
-  onFilterChange: (filter: PartnerListFilterId) => void;
-  counts: Pick<Record<PartnerListFilterId, number>, "offen" | "geschlossen">;
+  filter: PartnerAuftragListFilterId;
+  onFilterChange: (filter: PartnerAuftragListFilterId) => void;
+  counts: Record<PartnerAuftragListFilterId, number>;
 }) {
   return (
     <div className="flex flex-wrap gap-2 border-b border-border-default px-3 py-3 sm:px-4">
-      {(
-        [
-          ["offen", "Offen"],
-          ["geschlossen", "Erledigt"],
-        ] as const
-      ).map(([id, label]) => (
+      {(["aktiv", "erledigt"] as const).map((id) => (
         <button
           key={id}
           type="button"
@@ -174,7 +170,7 @@ function PartnerListFilterBar({
               : "bg-muted text-text-secondary"
           )}
         >
-          {label}
+          {PARTNER_AUFTRAG_LIST_FILTER_LABELS[id]}
           <span className="ml-1.5 text-text-tertiary">({counts[id]})</span>
         </button>
       ))}
@@ -232,7 +228,8 @@ export function PartnerClient({
   }, []);
   const [bewertungExpanded, setBewertungExpanded] = useState(false);
   const [listPage, setListPage] = useState(1);
-  const [listFilter, setListFilter] = useState<PartnerListFilterId>("offen");
+  const [auftragListFilter, setAuftragListFilter] =
+    useState<PartnerAuftragListFilterId>("aktiv");
 
   const vorname = handwerker.vorname || "Partner";
 
@@ -242,8 +239,8 @@ export function PartnerClient({
 
   const aktiveAuftraegeCount = auftraege.filter(isAuftragAktiv).length;
 
-  const listFilterEffective: PartnerListFilterId =
-    section === "auftraege" ? listFilter : "offen";
+  const listFilterEffective: PartnerAuftragListFilterId =
+    section === "auftraege" ? auftragListFilter : "aktiv";
 
   const sectionCardRows = useMemo((): PartnerCardRow[] => {
     if (section === "offen") {
@@ -257,21 +254,19 @@ export function PartnerClient({
             new Date(a.start_datum || 0).getTime()
         )
         .filter((a) =>
-          listFilterEffective === "offen"
-            ? isPartnerAuftragListItemOffen(a)
-            : !isPartnerAuftragListItemOffen(a)
+          listFilterEffective === "aktiv"
+            ? isPartnerAuftragListItemAktiv(a)
+            : !isPartnerAuftragListItemAktiv(a)
         );
       return items.map(mapAuftragToCard);
     }
     return [];
   }, [section, listFilterEffective, offenCardRows, auftraege]);
 
-  const listFilterCounts = useMemo((): Record<PartnerListFilterId, number> => {
-    if (section === "auftraege") {
-      return countPartnerAuftraegeFilter(auftraege);
-    }
-    return { offen: 0, geschlossen: 0 };
-  }, [section, auftraege]);
+  const auftragListFilterCounts = useMemo(
+    () => countPartnerAuftraegeFilter(auftraege),
+    [auftraege]
+  );
 
   const listTotalPages = Math.max(
     1,
@@ -288,7 +283,7 @@ export function PartnerClient({
 
   useEffect(() => {
     setListPage(1);
-  }, [section, listFilter]);
+  }, [section, auftragListFilter]);
 
   useEffect(() => {
     if (!isPartnerListSection(section)) {
@@ -316,7 +311,7 @@ export function PartnerClient({
           new Date(b.start_datum || 0).getTime() -
           new Date(a.start_datum || 0).getTime()
       )
-      .filter(isPartnerAuftragListItemOffen)
+      .filter(isPartnerAuftragListItemAktiv)
       .map(mapAuftragToCard);
   }, [overviewTab, offenCardRows, auftraege]);
 
@@ -463,7 +458,7 @@ export function PartnerClient({
   ) {
     setSection(target);
     setListPage(1);
-    setListFilter("offen");
+    setAuftragListFilter("aktiv");
     if (selectedId) {
       setSelectedId(selectedId);
       if (target !== "profil") setMobileDetailOpen(true);
@@ -475,7 +470,7 @@ export function PartnerClient({
     if (!id) return;
     setSection("auftraege");
     setListPage(1);
-    setListFilter("offen");
+    setAuftragListFilter("aktiv");
     setSelectedId(null);
     setMobileDetailOpen(false);
     router.replace(partnerSectionListPath("auftraege"));
@@ -495,7 +490,7 @@ export function PartnerClient({
 
   function switchSection(id: PartnerSection) {
     setListPage(1);
-    setListFilter("offen");
+    setAuftragListFilter("aktiv");
     setMobileDetailOpen(false);
     if (id !== "gpt") setGptOpen(false);
     if (id === "uebersicht" || id === "gpt" || id === "profil" || id === "planer") {
@@ -546,8 +541,8 @@ export function PartnerClient({
       if (auftraege.length === 0) {
         return "Keine Aufträge — sie erscheinen, sobald ein Projekt für dich freigegeben ist.";
       }
-      return listFilterEffective === "offen"
-        ? "Keine offenen Aufträge."
+      return listFilterEffective === "aktiv"
+        ? "Keine Aufträge in Bearbeitung."
         : "Keine erledigten Aufträge.";
     }
     return "";
@@ -973,10 +968,10 @@ export function PartnerClient({
             <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
               <article className="card-bordered overflow-hidden p-0">
                 {section === "auftraege" ? (
-                  <PartnerListFilterBar
-                    filter={listFilter}
-                    onFilterChange={setListFilter}
-                    counts={listFilterCounts}
+                  <PartnerAuftragListFilterBar
+                    filter={auftragListFilter}
+                    onFilterChange={setAuftragListFilter}
+                    counts={auftragListFilterCounts}
                   />
                 ) : null}
                 <div className="space-y-2 p-3 sm:p-4">

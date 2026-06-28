@@ -57,6 +57,8 @@ export function buildPartnerAuftragDokumentZeilen(
 }
 
 export function partnerAuftragKannRechnungHochladen(item: PartnerAuftragItem): boolean {
+  if (!item.angebotHandwerkerId) return false;
+  if (item.status.toLowerCase() === "storniert") return false;
   const hwSt = (item.angebotHwStatus ?? "").toLowerCase();
   return (
     hwSt === "uebernommen" &&
@@ -66,8 +68,20 @@ export function partnerAuftragKannRechnungHochladen(item: PartnerAuftragItem): b
 }
 
 export function partnerAuftragKannUnterlagenHochladen(item: PartnerAuftragItem): boolean {
+  if (!item.angebotHandwerkerId) return false;
+  if (item.status.toLowerCase() === "storniert") return false;
   const hwSt = (item.angebotHwStatus ?? "").toLowerCase();
+  if (hwSt !== "uebernommen") return false;
   const anzahl =
     item.hw_angebot_anhang_urls?.length ?? (item.hw_angebot_pdf_url ? 1 : 0);
-  return hwSt === "uebernommen" && anzahl < PARTNER_MAX_HW_UNTERLAGEN_GESAMT;
+  return anzahl < PARTNER_MAX_HW_UNTERLAGEN_GESAMT;
+}
+
+export function partnerAuftragZeigtDokumenteUpload(
+  item: PartnerAuftragItem
+): boolean {
+  return (
+    partnerAuftragKannUnterlagenHochladen(item) ||
+    partnerAuftragKannRechnungHochladen(item)
+  );
 }

@@ -36,7 +36,9 @@ export function DokumenteTabelle({
 }) {
   return (
     <section className={cn("space-y-2.5 border-t border-border-light pt-5", className)}>
-      <h4 className="portal-text-label text-text-tertiary">{heading}</h4>
+      {heading?.trim() ? (
+        <h4 className="portal-text-label text-text-tertiary">{heading}</h4>
+      ) : null}
       {dokumente.length === 0 ? (
         <p className="portal-text-body rounded-xl border border-dashed border-border-light bg-muted/20 px-3 py-5 text-center text-text-secondary">
           {emptyText}

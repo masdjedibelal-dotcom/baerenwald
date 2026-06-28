@@ -79,14 +79,31 @@ async function loadCrmAuftragPositionenForAngebot(
   });
 }
 
+async function loadAlleHwKonditionenForAngebot(
+  angebotId: string,
+  handwerkerId: string
+) {
+  const { data: rows } = await supabaseAdmin
+    .from("angebot_handwerker")
+    .select("hw_konditionen")
+    .eq("angebot_id", angebotId)
+    .eq("handwerker_id", handwerkerId);
+
+  return (rows ?? []).map((row) =>
+    parsePartnerHwKonditionen((row as { hw_konditionen?: unknown }).hw_konditionen)
+  );
+}
+
 async function nachreichungKontextFromRow(
   row: Record<string, unknown>,
   handwerkerId: string
 ) {
+  const angebotId = String(row.angebot_id ?? "");
   const angebote = one(row.angebote) as { positionen?: unknown } | null;
   const gewerk = one(row.gewerke) as { name?: string | null } | null;
-  const auftragPos = await loadCrmAuftragPositionenForAngebot(
-    String(row.angebot_id ?? ""),
+  const auftragPos = await loadCrmAuftragPositionenForAngebot(angebotId, handwerkerId);
+  const alle_hw_konditionen = await loadAlleHwKonditionenForAngebot(
+    angebotId,
     handwerkerId
   );
   return {
@@ -97,6 +114,7 @@ async function nachreichungKontextFromRow(
     handwerker_id: handwerkerId,
     hw_konditionen: parsePartnerHwKonditionen(row.hw_konditionen),
     hw_status: String(row.hw_status ?? "").toLowerCase(),
+    alle_hw_konditionen,
   };
 }
 
@@ -258,6 +276,7 @@ export async function respondPartnerAnfrage(opts: {
     gewerk_name: nachreichungKontext.gewerk_name ?? "Gewerk",
     handwerker_id: link.handwerkerId,
     hw_konditionen: nachreichungKontext.hw_konditionen,
+    alle_hw_konditionen: nachreichungKontext.alle_hw_konditionen,
     lead: leadRow
       ? {
           zeitraum: leadRow.zeitraum,

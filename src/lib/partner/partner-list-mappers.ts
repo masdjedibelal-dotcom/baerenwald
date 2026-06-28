@@ -27,6 +27,11 @@ import {
   partnerAuftragAnfrageStatusLabel,
 } from "@/lib/partner/partner-anfrage-status";
 import {
+  partnerAuftragListenStatusLabel,
+  partnerAuftragListenStatusPillKey,
+  partnerAuftragStatusFuerPhasen,
+} from "@/lib/partner/partner-auftrag-list-status";
+import {
   buildPartnerAnfrageCardMeta,
   buildPartnerAngebotCardMeta,
   buildPartnerAuftragCardMeta,
@@ -243,7 +248,7 @@ export function mapAngebotToCard(item: PartnerAnfrageItem): PartnerCardRow {
 
 export function mapAuftragToCard(item: PartnerAuftragItem): PartnerCardRow {
   const phasen = partnerAuftragListFooter({
-    status: item.status,
+    status: partnerAuftragStatusFuerPhasen(item.status),
     fortschritt: item.fortschritt,
     hatAngebot: Boolean(item.angebot_id),
     abgeschlossen: item.status.toLowerCase() === "abgeschlossen",
@@ -252,8 +257,8 @@ export function mapAuftragToCard(item: PartnerAuftragItem): PartnerCardRow {
   return {
     id: item.id,
     title: item.listen_titel,
-    statusLabel: item.status.replace(/_/g, " "),
-    statusPillKey: item.status,
+    statusLabel: partnerAuftragListenStatusLabel(item.status),
+    statusPillKey: partnerAuftragListenStatusPillKey(item.status),
     accent: "auftrag",
     meta: buildPartnerAuftragCardMeta(
       item.lead?.objekt,

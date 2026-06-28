@@ -23,11 +23,13 @@ export function filterBauauftragStammCompliance(
   );
 }
 
-/** Bauprojekt = es gibt leistungsbezogene Compliance-Pflichten für diesen Auftrag. */
-export function isPartnerBauprojektCompliance(
-  projekt: PartnerComplianceItem[] | undefined | null
-): boolean {
-  return (projekt?.length ?? 0) > 0;
+/** Bauprojekt = mindestens ein Auftrags-Gewerk mit gewerke.ist_bauleistung = true. */
+export function isPartnerBauprojektAuftrag(input: {
+  ist_bauprojekt?: boolean | null;
+  compliance_projekt?: PartnerComplianceItem[] | null;
+}): boolean {
+  if (input.ist_bauprojekt != null) return input.ist_bauprojekt;
+  return (input.compliance_projekt?.length ?? 0) > 0;
 }
 
 /** Nur Bauprojekt-Unterlagen (Leistungsvertrag & Auftrag) — keine Stammdaten aus dem Profil. */

@@ -403,7 +403,80 @@ export function mapKonditionZeilenVereinbart(
   });
 }
 
-/** CRM-Leistungen, die nach Einigung (hw_status uebernommen) noch nicht verhandelt sind. */
+function leistungTitleKeysFromPosition(pos: PartnerAuftragPosition): string[] {
+  const full =
+    [pos.gewerk_name, pos.leistung_name].filter(Boolean).join(" — ").trim() ||
+    pos.leistung_name;
+  return Array.from(
+    new Set(
+      [pos.leistung_name, full]
+        .map((t) => normalizeKonditionLeistungKey(t))
+        .filter(Boolean)
+    )
+  );
+}
+
+/**
+ * Robuste Nachreichungs-Erkennung: Auftragspositionen, die in keiner
+ * vereinbarten hw_konditionen-Zeile (alle angebot_handwerker zum Angebot) vorkommen.
+ * Unabhängig von hw_status — entscheidend ist: Auftrag läuft, Leistung fehlt in der Einigung.
+ */
+export function resolveAuftragNachreichungOpenIds(
+  auftragPositionen: PartnerAuftragPosition[],
+  anfragen: Array<{ hw_konditionen?: PartnerHwKonditionen | null }>
+): string[] {
+  const agreedIds = new Set<string>();
+  const agreedTitles = new Set<string>();
+  let hasPriorAgreement = false;
+
+  for (const a of anfragen) {
+    for (const p of a.hw_konditionen?.positionen ?? []) {
+      hasPriorAgreement = true;
+      if (p.position_id) agreedIds.add(p.position_id);
+      agreedTitles.add(normalizeKonditionLeistungKey(p.leistung));
+    }
+  }
+
+  if (!hasPriorAgreement) return [];
+
+  const open: string[] = [];
+  for (const pos of auftragPositionen) {
+    if (agreedIds.has(pos.id)) continue;
+    const keys = leistungTitleKeysFromPosition(pos);
+    if (keys.some((k) => agreedTitles.has(k))) continue;
+    open.push(pos.id);
+  }
+  return open;
+}
+
+export function resolveNachreichungOpenZeilenIds(input: {
+  crm_positionen_raw?: unknown;
+  crm_auftrag_positionen?: PartnerAuftragPosition[];
+  filter?: PartnerNachreichungFilter;
+  hw_konditionen?: PartnerHwKonditionen | null;
+  hw_status?: string | null;
+  alle_hw_konditionen?: Array<PartnerHwKonditionen | null | undefined>;
+}): string[] {
+  const anfragen = (input.alle_hw_konditionen ?? [input.hw_konditionen]).map(
+    (hw) => ({ hw_konditionen: hw })
+  );
+
+  const ausAuftrag = input.crm_auftrag_positionen?.length
+    ? resolveAuftragNachreichungOpenIds(input.crm_auftrag_positionen, anfragen)
+    : [];
+
+  const ausAngebot = partnerKonditionenNachreichungZeilenIds(
+    input.crm_positionen_raw,
+    input.filter,
+    input.hw_konditionen,
+    input.hw_status,
+    input.crm_auftrag_positionen
+  );
+
+  return Array.from(new Set([...ausAuftrag, ...ausAngebot]));
+}
+
+/** CRM-Leistungen, die nach Einigung noch nicht verhandelt sind (Angebots-JSON + Preisänderungen). */
 export function partnerKonditionenNachreichungZeilenIds(
   positionenRaw: unknown,
   filter: PartnerNachreichungFilter | undefined,
@@ -447,20 +520,20 @@ export function hasPartnerKonditionenNachreichungAusstehend(input: {
   handwerker_id?: string;
   hw_konditionen?: PartnerHwKonditionen | null;
   hw_status?: string | null;
+  alle_hw_konditionen?: Array<PartnerHwKonditionen | null | undefined>;
 }): boolean {
-  return (
-    partnerKonditionenNachreichungZeilenIds(
-      input.crm_positionen_raw,
-      {
-        gewerkId: input.gewerk_id,
-        handwerkerId: input.handwerker_id,
-        gewerkName: input.gewerk_name,
-      },
-      input.hw_konditionen,
-      input.hw_status,
-      input.crm_auftrag_positionen
-    ).length > 0
-  );
+  return resolveNachreichungOpenZeilenIds({
+    crm_positionen_raw: input.crm_positionen_raw,
+    crm_auftrag_positionen: input.crm_auftrag_positionen,
+    filter: {
+      gewerkId: input.gewerk_id,
+      handwerkerId: input.handwerker_id,
+      gewerkName: input.gewerk_name,
+    },
+    hw_konditionen: input.hw_konditionen,
+    hw_status: input.hw_status,
+    alle_hw_konditionen: input.alle_hw_konditionen,
+  }).length > 0;
 }
 
 export function buildHwKonditionenPayload(

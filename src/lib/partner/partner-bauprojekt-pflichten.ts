@@ -1,10 +1,14 @@
 import type { PartnerComplianceItem } from "@/lib/partner/partner-compliance";
-import { isPartnerBauprojektCompliance } from "@/lib/partner/compliance-summary";
+import { isPartnerBauprojektAuftrag } from "@/lib/partner/compliance-summary";
 
 export function buildPartnerAuftragPflichten(opts: {
   compliance_projekt?: PartnerComplianceItem[];
+  ist_bauprojekt?: boolean;
 }): string[] {
-  const istBauprojekt = isPartnerBauprojektCompliance(opts.compliance_projekt);
+  const istBauprojekt = isPartnerBauprojektAuftrag({
+    ist_bauprojekt: opts.ist_bauprojekt,
+    compliance_projekt: opts.compliance_projekt,
+  });
   const pflichten: string[] = [
     "Leistungen und Konditionen prüfen und verbindlich bestätigen",
     "Partnerschafts-Rahmenvertrag zur Kenntnis nehmen",

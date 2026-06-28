@@ -26,7 +26,7 @@ import {
   initialHwNotizInputs,
   mapKonditionZeilenVereinbart,
   parseHwNettoInput,
-  partnerKonditionenNachreichungZeilenIds,
+  resolveNachreichungOpenZeilenIds,
   sindKonditionPreiseGeaendert,
 } from "@/lib/partner/partner-konditionen";
 import {
@@ -93,17 +93,18 @@ export function PartnerAnfrageDetail({
 
   const nachreichungOpenIds = useMemo(() => {
     if (!nachreichung) return undefined;
-    return partnerKonditionenNachreichungZeilenIds(
-      item.crm_positionen_raw,
-      {
+    return resolveNachreichungOpenZeilenIds({
+      crm_positionen_raw: item.crm_positionen_raw,
+      crm_auftrag_positionen: item.crm_auftrag_positionen,
+      filter: {
         gewerkId: item.gewerk_id,
         handwerkerId: item.handwerker_id,
         gewerkName: item.gewerk_name,
       },
-      item.hw_konditionen,
-      hwSt,
-      item.crm_auftrag_positionen
-    );
+      hw_konditionen: item.hw_konditionen,
+      hw_status: item.hw_status,
+      alle_hw_konditionen: item.alle_hw_konditionen,
+    });
   }, [
     item.crm_positionen_raw,
     item.crm_auftrag_positionen,
@@ -111,7 +112,8 @@ export function PartnerAnfrageDetail({
     item.gewerk_name,
     item.handwerker_id,
     item.hw_konditionen,
-    hwSt,
+    item.hw_status,
+    item.alle_hw_konditionen,
     nachreichung,
   ]);
 

@@ -69,7 +69,8 @@ import { resolvePartnerListenTitel } from "@/lib/partner/partner-listen-titel";
 import { isSupabaseConfigured, supabaseAdmin } from "@/lib/supabase";
 import { stripHtmlToPlainText } from "@/lib/portal/portal-display";
 import type { PartnerHwKonditionen } from "@/lib/partner/partner-konditionen";
-import { partnerKonditionenNachreichungZeilenIds } from "@/lib/partner/partner-konditionen";
+import { resolveNachreichungOpenZeilenIds } from "@/lib/partner/partner-konditionen";
+import { pickPrimaryAngebotHandwerkerAnfrage } from "@/lib/partner/pick-primary-angebot-handwerker";
 
 export type PartnerAnfrageItem = {
   id: string;
@@ -118,6 +119,8 @@ export type PartnerAnfrageItem = {
   crm_positionen_raw?: unknown;
   /** Auftragspositionen zum Angebot (CRM-Nachreichung nur im Auftrag). */
   crm_auftrag_positionen?: PartnerAuftragPosition[];
+  /** Alle hw_konditionen-Zeilen zum Angebot (Multi-Gewerk). */
+  alle_hw_konditionen?: Array<PartnerHwKonditionen | null | undefined>;
   crm_gesamt_fix?: number | null;
   crm_gesamt_min?: number | null;
   crm_gesamt_max?: number | null;
@@ -131,6 +134,8 @@ export type PartnerAnfrageItem = {
   projektvertrag?: PartnerProjektvertrag | null;
   compliance_stamm?: PartnerComplianceItem[];
   compliance_projekt?: PartnerComplianceItem[];
+  /** Aus gewerke.ist_bauleistung der Auftragspositionen — nicht das HW-Profil. */
+  ist_bauprojekt?: boolean;
   dokumente?: PartnerVertragKontext["dokumente_zeilen"];
   rahmenvertrag?: PartnerRahmenvertrag | null;
 };
@@ -717,6 +722,16 @@ export async function getPartnerDataForHandwerker(handwerkerId: string) {
 
   const auftragStatusById = new Map(alleAuftraege.map((a) => [a.id, a.status]));
 
+  const alleHwKonditionenByAngebotId = new Map<
+    string,
+    Array<PartnerHwKonditionen | null | undefined>
+  >();
+  for (const a of anfragenFinal) {
+    const list = alleHwKonditionenByAngebotId.get(a.angebot_id) ?? [];
+    list.push(a.hw_konditionen);
+    alleHwKonditionenByAngebotId.set(a.angebot_id, list);
+  }
+
   anfragenFinal = anfragenFinal.map((a) => {
     const vertragCtx = vertragKontextForAngebot(a.angebot_id, complianceBundle);
     const auftragId = complianceBundle.auftragIdByAngebotId.get(a.angebot_id) ?? null;
@@ -728,60 +743,52 @@ export async function getPartnerDataForHandwerker(handwerkerId: string) {
       auftrag_id: auftragId,
       auftrag_status: auftragId ? auftragStatusById.get(auftragId) ?? null : null,
       crm_auftrag_positionen: auftragForAngebot?.positionen,
+      alle_hw_konditionen: alleHwKonditionenByAngebotId.get(a.angebot_id) ?? [],
       projektvertrag_bestaetigt_am: vertragCtx?.projektvertrag_bestaetigt_am ?? null,
       projektvertrag_bereit: vertragCtx?.projektvertrag_bereit ?? false,
       projektvertrag: vertragCtx?.projektvertrag ?? null,
       compliance_stamm: vertragCtx?.compliance_stamm ?? [],
       compliance_projekt: vertragCtx?.compliance_projekt ?? [],
+      ist_bauprojekt: vertragCtx?.ist_bauprojekt ?? false,
       dokumente: vertragCtx?.dokumente_zeilen ?? [],
       rahmenvertrag,
     };
   });
 
-  const ahMetaByAngebotId = new Map<
-    string,
-    {
-      id: string;
-      hw_status?: string;
-      hw_eingereicht_at?: string;
-      hw_konditionen_art?: "bestaetigt" | "gegenvorschlag" | null;
-    }
-  >();
+  const anfragenByAngebotId = new Map<string, typeof anfragenFinal>();
   for (const a of anfragenFinal) {
-    ahMetaByAngebotId.set(a.angebot_id, {
-      id: a.id,
-      hw_status: a.hw_status,
-      hw_eingereicht_at: a.hw_eingereicht_at,
-      hw_konditionen_art: a.hw_konditionen?.art ?? null,
-    });
+    const list = anfragenByAngebotId.get(a.angebot_id) ?? [];
+    list.push(a);
+    anfragenByAngebotId.set(a.angebot_id, list);
   }
 
   alleAuftraege = alleAuftraege.map((a) => {
     const angebotId = auftragAngebotIdByAuftragId.get(a.id);
-    const ahMeta = angebotId ? ahMetaByAngebotId.get(angebotId) : undefined;
+    const anfragenForAngebot = angebotId
+      ? anfragenByAngebotId.get(angebotId) ?? []
+      : [];
+    const anfrage = pickPrimaryAngebotHandwerkerAnfrage(anfragenForAngebot);
     const vertragCtx = complianceBundle.vertragByAuftragId.get(a.id) ?? null;
-    const anfrage = angebotId
-      ? anfragenFinal.find((x) => x.angebot_id === angebotId)
-      : undefined;
     const nachreichungOpenPositionIds = anfrage
-      ? partnerKonditionenNachreichungZeilenIds(
-          anfrage.crm_positionen_raw,
-          {
+      ? resolveNachreichungOpenZeilenIds({
+          crm_positionen_raw: anfrage.crm_positionen_raw,
+          crm_auftrag_positionen: anfrage.crm_auftrag_positionen ?? a.positionen,
+          filter: {
             gewerkId: anfrage.gewerk_id,
             handwerkerId: anfrage.handwerker_id,
             gewerkName: anfrage.gewerk_name,
           },
-          anfrage.hw_konditionen,
-          anfrage.hw_status,
-          anfrage.crm_auftrag_positionen ?? a.positionen
-        )
+          hw_konditionen: anfrage.hw_konditionen,
+          hw_status: anfrage.hw_status,
+          alle_hw_konditionen: anfrage.alle_hw_konditionen,
+        })
       : [];
     return {
       ...a,
-      angebotHandwerkerId: ahMeta?.id ?? null,
-      angebotHwStatus: ahMeta?.hw_status ?? null,
-      angebotHwEingereichtAt: ahMeta?.hw_eingereicht_at ?? null,
-      angebotHwKonditionenArt: ahMeta?.hw_konditionen_art ?? null,
+      angebotHandwerkerId: anfrage?.id ?? null,
+      angebotHwStatus: anfrage?.hw_status ?? null,
+      angebotHwEingereichtAt: anfrage?.hw_eingereicht_at ?? null,
+      angebotHwKonditionenArt: anfrage?.hw_konditionen?.art ?? null,
       projektvertrag_bestaetigt_am: vertragCtx?.projektvertrag_bestaetigt_am ?? null,
       vertrag: vertragCtx,
       nachreichungOpenPositionIds,
