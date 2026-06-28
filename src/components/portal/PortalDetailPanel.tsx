@@ -50,9 +50,12 @@ export function PortalDetailPanel({ item }: { item: KundePortalDetailItem }) {
     ? anfrageDisplayTitle(item.anfrageVorhaben, item.anfrageGewerk)
     : item.title;
 
-  const statusLabel = isAnfrageDetail
-    ? undefined
-    : isAuftragDetail
+  const statusLabel =
+    isAnfrageDetail && !item.vorgangPhase
+      ? item.status
+      : isAnfrageDetail
+        ? item.status
+        : isAuftragDetail
       ? fmtPortalAuftragStatus(item.status || "offen")
       : fmtPortalStatus(item.status || "offen");
   const metaLine =
@@ -109,7 +112,9 @@ export function PortalDetailPanel({ item }: { item: KundePortalDetailItem }) {
         statusLabel={statusLabel}
         statusPillClass={
           statusLabel
-            ? portalDetailStatusPillClass(item.status || "offen")
+            ? portalDetailStatusPillClass(
+                item.statusPillKey || item.status || "offen"
+              )
             : undefined
         }
         subtitle={heroSubtitle}

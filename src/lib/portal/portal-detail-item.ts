@@ -27,9 +27,14 @@ export type PortalMilestoneItem = {
 
 export type KundePortalDetailItem = {
   id: string;
+  /** Lead-ID falls vom Vorgang abweichend (z. B. Angebot/Auftrag). */
+  leadId?: string;
   date?: string;
   title: string;
   status?: string;
+  statusPillKey?: string;
+  vorgangPhase?: string;
+  needsAction?: boolean;
   summary?: string;
   anfrageGewerk?: string;
   anfrageVorhaben?: string;

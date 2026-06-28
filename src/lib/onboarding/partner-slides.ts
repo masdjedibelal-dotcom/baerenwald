@@ -30,10 +30,10 @@ export const PARTNER_ONBOARDING_SLIDES: OnboardingSlide[] = [
     imageBase: "03-angebote",
     eyebrow: "KALKULATION",
     title: "Preis & PDF an Bärenwald",
-    body: "Netto oder Brutto plus Angebots-PDF einreichen — als Kalkulation für Bärenwald als Generalunternehmer.",
+    body: "Netto oder Brutto plus PDF-Unterlagen einreichen — z. B. Angebot, Protokoll oder Kalkulation für Bärenwald als Generalunternehmer.",
     highlights: [
       "Preis eintragen (Netto/Brutto)",
-      "Angebots-PDF hochladen",
+      "PDF-Unterlagen hochladen",
       "Bärenwald prüft und vergibt die Leistung als GU",
     ],
   },

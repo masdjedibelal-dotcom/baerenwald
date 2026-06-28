@@ -1,6 +1,4 @@
-import { randomUUID } from "crypto";
 import { NextResponse } from "next/server";
-import { Resend } from "resend";
 
 import {
   buildMelderBestaetigungHtml,
@@ -8,18 +6,15 @@ import {
   buildOrgNeueMeldungHtml,
 } from "@/lib/email/meldung-mail-templates";
 import { AUTOMATED_CUSTOMER_EMAIL_BCC } from "@/lib/email/resend-bcc";
-import { persistLead } from "@/lib/lead/persist-lead";
-import {
-  meldeKategorieToSituation,
-  meldeKategorieToZeitraum,
-} from "@/lib/org/melde-kategorien";
+import { parseMeldeBereichId, persistMeldungLead } from "@/lib/org/persist-meldung-lead";
 import { resolveMeldeKontext } from "@/lib/org/resolve-melde-kontext";
 import type { MeldeKategorie } from "@/lib/org/types";
 import { getClientIp } from "@/lib/request-ip";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { isValidEmail, isValidName } from "@/lib/validation";
-import { notifyCrmOrgPortal } from "@/lib/org/notify-crm-org";
 import { supabaseAdmin } from "@/lib/supabase";
+import { Resend } from "resend";
+import { randomUUID } from "crypto";
 
 export const runtime = "nodejs";
 
@@ -31,6 +26,9 @@ type MeldungBody = {
   telefon?: string;
   einheit?: string;
   kategorie?: MeldeKategorie;
+  bereichId?: string;
+  fachdetailAnswers?: Record<string, string | string[]>;
+  dringlichkeit?: string | null;
   beschreibung?: string;
   fotos?: string[];
   website?: string;
@@ -72,6 +70,7 @@ export async function POST(req: Request) {
   const einheit = String(body.einheit ?? "").trim();
   const beschreibung = String(body.beschreibung ?? "").trim();
   const kategorie = (body.kategorie ?? "reparatur") as MeldeKategorie;
+  const bereichId = parseMeldeBereichId(body.bereichId);
   const fotos = Array.isArray(body.fotos)
     ? body.fotos.filter((u) => typeof u === "string" && /^https?:\/\//i.test(u))
     : [];
@@ -111,48 +110,25 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Objekt fehlt." }, { status: 400 });
   }
 
-  const situation = meldeKategorieToSituation(kategorie);
-  const zeitraum = meldeKategorieToZeitraum(kategorie);
-  const bereiche =
-    kategorie === "notfall"
-      ? ["wasser"]
-      : kategorie === "schaden"
-        ? ["feuchtigkeit_schimmel"]
-        : ["sanitaer"];
-
-  const orgFreigabe =
-    kategorie === "notfall"
-      ? "nicht_noetig"
-      : "nicht_noetig";
-
-  const result = await persistLead({
+  const result = await persistMeldungLead({
     name,
     email: isValidEmail(email) ? email : undefined,
     telefon: telefon || undefined,
-    plz: objekt.plz ?? undefined,
-    strasse: objekt.strasse ?? undefined,
-    hausnummer: objekt.hausnummer ?? undefined,
-    situation,
-    bereiche,
-    zeitraum,
-    kanal: "hv_melder_link",
-    anlass: "meldung",
-    erfassung_von: "melder",
+    einheit,
+    beschreibung,
+    kategorie,
+    bereichId,
+    fachdetailAnswers: body.fachdetailAnswers,
+    dringlichkeit: body.dringlichkeit,
+    fotos,
+    plz: objekt.plz ?? "",
+    strasse: objekt.strasse,
+    hausnummer: objekt.hausnummer,
     auftraggeber_kunde_id: orgRow.id,
     kunde_objekt_id: objekt.id,
-    melder_name: name,
-    melder_einheit: einheit || null,
-    melder_telefon: telefon || null,
-    melder_email: isValidEmail(email) ? email : null,
-    org_freigabe_status: orgFreigabe,
-    skipKundeMail: true,
-    funnel_daten: {
-      melde_kategorie: kategorie,
-      fotos,
-      quelle: "melder_link",
-    },
-    notizen: beschreibung,
-    funnel_quelle: "meldung",
+    kanal: "hv_melder_link",
+    erfassung_von: "melder",
+    skipInternMail: true,
   });
 
   if (!result.ok) {
@@ -160,7 +136,7 @@ export async function POST(req: Request) {
   }
 
   const orgDisplay =
-    orgRow.org_anzeigename?.trim() || orgRow.name?.trim() || "Auftraggeber";
+    orgRow.org_anzeigename?.trim() || orgRow.name?.trim() || "Hausverwaltung";
 
   const resendKey = process.env.RESEND_API_KEY;
   if (resendKey && isValidEmail(email)) {
@@ -209,6 +185,7 @@ export async function POST(req: Request) {
             melderEinheit: einheit,
             kategorie,
             beschreibung,
+            portalPath: `/portal?section=freigabe&id=${result.id}`,
           }),
         });
       } catch (e) {
@@ -216,8 +193,6 @@ export async function POST(req: Request) {
       }
     }
   }
-
-  void notifyCrmOrgPortal({ leadId: result.id })
 
   return NextResponse.json({ ok: true, id: result.id });
 }

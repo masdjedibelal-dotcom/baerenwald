@@ -37,6 +37,7 @@ import { PortalNavCountBadge, portalNavBadgeCount } from "@/components/shared/Po
 import { SITE_CONFIG } from "@/lib/config";
 import { isOnboardingCompleted } from "@/lib/onboarding/storage";
 import { PARTNER_ONBOARDING_SLIDES } from "@/lib/onboarding/partner-slides";
+import type { PartnerPlanerSection } from "@/lib/partner/build-partner-termine";
 import type {
   PartnerAnfrageItem,
   PartnerAuftragItem,
@@ -457,12 +458,10 @@ export function PartnerClient({
   }, [auftraege, selectedId]);
 
   function navigateFromPlaner(
-    target: PartnerTerminItem["section"],
+    target: PartnerPlanerSection,
     selectedId?: string
   ) {
-    const mapped =
-      target === "anfragen" || target === "angebote" ? "offen" : target;
-    setSection(mapped as PartnerSection);
+    setSection(target);
     setListPage(1);
     setListFilter("offen");
     if (selectedId) {
@@ -737,6 +736,8 @@ export function PartnerClient({
               <PartnerPlanerPanel
                 termine={termine}
                 aufgaben={aufgaben}
+                auftragAnfragen={auftragAnfragen}
+                auftraege={auftraege}
                 onNavigate={navigateFromPlaner}
               />
             </article>
@@ -800,7 +801,7 @@ export function PartnerClient({
                       <p className="portal-text-meta text-text-secondary">
                         {termine.length} Termine
                         {aufgaben.length > 0
-                          ? ` · ${aufgaben.length} Aufgaben`
+                          ? ` · ${aufgaben.length} To-dos`
                           : ""}
                       </p>
                     </div>
@@ -1012,7 +1013,7 @@ export function PartnerClient({
         className="fixed inset-x-0 bottom-0 z-[90] border-t border-border-default bg-surface-card/95 backdrop-blur-sm lg:hidden"
         aria-label="Partner Navigation"
       >
-        <div className="grid grid-cols-6 px-0.5 pb-2 pt-1">
+        <div className="grid w-full grid-cols-5 px-1 pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-1">
           {MOBILE_NAV_ITEMS.map((id) => {
             const { label, icon: Icon } = MENU_ITEMS.find((m) => m.id === id)!;
             const badgeCount = portalNavBadgeCount(id, {
@@ -1027,7 +1028,7 @@ export function PartnerClient({
                 type="button"
                 onClick={() => switchSection(id)}
                 className={cn(
-                  "portal-text-nav rounded-lg px-0.5 py-2.5",
+                  "portal-text-nav flex w-full flex-col items-center justify-center rounded-lg px-1 py-2.5",
                   section === id ? "text-accent" : "text-text-tertiary"
                 )}
                 aria-label={

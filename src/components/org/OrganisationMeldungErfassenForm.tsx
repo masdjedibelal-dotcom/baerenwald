@@ -2,21 +2,26 @@
 
 import { useState } from "react";
 
+import { MELDE_BEREICHE } from "@/lib/org/melde-bereiche";
 import { MELDE_KATEGORIEN } from "@/lib/org/melde-kategorien";
-import type { OrganisationObjekt } from "@/lib/org/types";
+import type { MeldeKategorie, OrganisationObjekt } from "@/lib/org/types";
+
+type Mode = "direkt" | "einladen";
 
 type Props = {
   objekte: OrganisationObjekt[];
+  mode: Mode;
   onDone: () => void;
 };
 
-export function OrganisationMeldungErfassenForm({ objekte, onDone }: Props) {
+export function OrganisationMeldungErfassenForm({ objekte, mode, onDone }: Props) {
   const [objektId, setObjektId] = useState(objekte[0]?.id ?? "");
   const [melderName, setMelderName] = useState("");
   const [melderEmail, setMelderEmail] = useState("");
   const [melderTelefon, setMelderTelefon] = useState("");
   const [melderEinheit, setMelderEinheit] = useState("");
-  const [kategorie, setKategorie] = useState("reparatur");
+  const [kategorie, setKategorie] = useState<MeldeKategorie>("reparatur");
+  const [bereichId, setBereichId] = useState("wasser");
   const [beschreibung, setBeschreibung] = useState("");
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
@@ -26,8 +31,11 @@ export function OrganisationMeldungErfassenForm({ objekte, onDone }: Props) {
     e.preventDefault();
     setBusy(true);
     setMessage(null);
+    setLink(null);
     try {
-      const res = await fetch("/api/org/meldung-vorab", {
+      const endpoint =
+        mode === "direkt" ? "/api/org/meldung-direkt" : "/api/org/meldung-vorab";
+      const res = await fetch(endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -37,6 +45,7 @@ export function OrganisationMeldungErfassenForm({ objekte, onDone }: Props) {
           melderTelefon,
           melderEinheit,
           kategorie,
+          bereichId,
           beschreibung,
         }),
       });
@@ -45,8 +54,13 @@ export function OrganisationMeldungErfassenForm({ objekte, onDone }: Props) {
         setMessage(json.error ?? "Fehler");
         return;
       }
-      setLink(json.link ?? null);
-      setMessage("Einladung erstellt.");
+      if (mode === "einladen") {
+        setLink(json.link ?? null);
+        setMessage("Einladung erstellt.");
+      } else {
+        setMessage("Meldung erfasst — sie erscheint unter Meldungen.");
+        setTimeout(onDone, 1200);
+      }
     } finally {
       setBusy(false);
     }
@@ -54,6 +68,11 @@ export function OrganisationMeldungErfassenForm({ objekte, onDone }: Props) {
 
   return (
     <form onSubmit={submit} className="space-y-3">
+      <p className="text-sm text-text-secondary">
+        {mode === "direkt"
+          ? "Telefonische oder schriftliche Meldung direkt erfassen (ohne Mieter-Link)."
+          : "Mieter per Link einladen, Details und Fotos selbst ergänzen zu lassen."}
+      </p>
       <div>
         <label className="text-sm text-text-secondary">Objekt</label>
         <select
@@ -70,15 +89,29 @@ export function OrganisationMeldungErfassenForm({ objekte, onDone }: Props) {
         </select>
       </div>
       <div>
-        <label className="text-sm text-text-secondary">Kategorie</label>
+        <label className="text-sm text-text-secondary">Was ist passiert?</label>
         <select
           className="w-full mt-1 border rounded-lg px-3 py-2"
           value={kategorie}
-          onChange={(e) => setKategorie(e.target.value)}
+          onChange={(e) => setKategorie(e.target.value as MeldeKategorie)}
         >
           {MELDE_KATEGORIEN.map((k) => (
             <option key={k.id} value={k.id}>
               {k.label}
+            </option>
+          ))}
+        </select>
+      </div>
+      <div>
+        <label className="text-sm text-text-secondary">Was ist betroffen?</label>
+        <select
+          className="w-full mt-1 border rounded-lg px-3 py-2"
+          value={bereichId}
+          onChange={(e) => setBereichId(e.target.value)}
+        >
+          {MELDE_BEREICHE.map((b) => (
+            <option key={b.id} value={b.id}>
+              {b.label}
             </option>
           ))}
         </select>
@@ -112,27 +145,35 @@ export function OrganisationMeldungErfassenForm({ objekte, onDone }: Props) {
       <textarea
         className="w-full border rounded-lg px-3 py-2"
         rows={3}
-        placeholder="Kurznotiz für Melder"
+        placeholder="Beschreibung (mind. 8 Zeichen)"
         value={beschreibung}
         onChange={(e) => setBeschreibung(e.target.value)}
+        required
+        minLength={8}
       />
-      <p className="text-xs text-text-tertiary rounded-lg bg-muted/30 p-2">
-        Hinweis: Bitte Melderdaten nur übermitteln, wenn eine rechtliche Grundlage
-        vorliegt (z. B. Mietverhältnis/Verwaltung). Die betroffene Person muss über
-        die Datenverarbeitung informiert werden.
-      </p>
+      {mode === "einladen" ? (
+        <p className="text-xs text-text-tertiary rounded-lg bg-muted/30 p-2">
+          Bitte Melderdaten nur übermitteln, wenn eine rechtliche Grundlage
+          vorliegt. Die betroffene Person muss über die Datenverarbeitung
+          informiert werden.
+        </p>
+      ) : null}
       {message ? <p className="text-sm text-text-secondary">{message}</p> : null}
       {link ? (
-        <p className="text-xs break-all text-text-tertiary">
-          Link: {link}
-        </p>
+        <p className="text-xs break-all text-text-tertiary">Link: {link}</p>
       ) : null}
       <div className="flex gap-2">
         <button type="button" className="btn-pill-outline flex-1" onClick={onDone}>
           Schließen
         </button>
         <button type="submit" className="btn-pill-primary flex-1" disabled={busy}>
-          Einladung senden
+          {mode === "direkt"
+            ? busy
+              ? "Speichern…"
+              : "Meldung speichern"
+            : busy
+              ? "Senden…"
+              : "Einladung senden"}
         </button>
       </div>
     </form>

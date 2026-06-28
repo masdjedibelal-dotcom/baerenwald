@@ -348,4 +348,32 @@ npm run dev
 
 ---
 
+## HV-Meldungs-Workflow (Website — Stand Juni 2026)
+
+### Ablauf
+
+1. **Mieter-Meldung** (`kanal=hv_melder_link`) oder **HV-Direkt** (`kanal=hv_direkt`) → Lead `anlass=meldung`, `hv_meldung_status=neu`, `org_freigabe_status=nicht_noetig`
+2. **Preisspanne** serverseitig via `mapMeldeToPrice()` — bei Unsicherheit `preis_unsicher=true`, Mieter sieht keinen Preis
+3. **HV-Aktion** im Portal (`POST /api/org/meldung-aktion`):
+   - `angebot_einfordern` → `hv_meldung_status=angebot_eingefordert` + **`notifyCrmOrgPortal({ typ: 'meldung' })`**
+   - `kleinreparatur_freigeben` → `hv_meldung_status=kleinreparatur` (nur wenn ≤ Schwelle + Einstellung aktiv)
+   - `ablehnen` → `hv_meldung_status=abgelehnt`
+4. **CRM** erstellt Angebot → setzt `org_freigabe_status=ausstehend` (bestehende Schwelle `freigabe_schwelle_eur`)
+5. **Angebots-Freigabe** im Portal (`POST /api/org/freigabe`) → Partner-Pipeline wie Privatkunde
+
+### CRM-relevante Felder
+
+| Feld | Bedeutung |
+|------|-----------|
+| `hv_meldung_status` | `neu` → wartet HV · `angebot_eingefordert` → CRM aktiv · `kleinreparatur` / `abgelehnt` / `abgeschlossen` |
+| `preis_unsicher` | Keine zuverlässige Spanne — HV sieht „Preis nach Prüfung durch Bärenwald“ |
+| `org_freigabe_status` | Erst ab Angebotsphase relevant (`ausstehend` nach CRM-Angebot) |
+| `kanal` | `hv_melder_link` · `hv_direkt` · `hv_einladung` |
+
+### Migration
+
+`supabase/migrations/20260728120000_hv_meldung_workflow.sql` — Spalten `hv_meldung_status`, `preis_unsicher`, `kleinreparatur_*` auf `kunden`
+
+---
+
 *Stand: Juni 2026 — Frontend handwerks-plattform vollständig für Org-Portal MVP.*

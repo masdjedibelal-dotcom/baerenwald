@@ -13,16 +13,16 @@ export default function MeldenBestaetigungPage() {
           Danke — Meldung ist bei uns
         </h1>
         <p className="text-text-secondary mt-2 text-sm">
-          Wir koordinieren den nächsten Schritt. Mit derselben E-Mail kannst du
-          den Status in MeinBärenwald verfolgen.
+          Deine Hausverwaltung und Bärenwald haben die Meldung erhalten. Wir
+          melden uns, sobald der nächste Schritt geklärt ist.
         </p>
         <p className="text-text-tertiary mt-2 text-xs">
-          Die Registrierung bei MeinBärenwald ist optional und keine Voraussetzung
-          für die Bearbeitung deiner Meldung.
+          Referenz findest du in der Bestätigungs-E-Mail. MeinBärenwald ist
+          optional — keine Voraussetzung für die Bearbeitung.
         </p>
         <div className="mt-5 flex flex-col gap-2">
           <Link href="/portal/registrieren" className="btn-pill-primary text-center">
-            MeinBärenwald registrieren
+            Status in MeinBärenwald verfolgen
           </Link>
           <Link href="/" className="btn-pill-outline text-center">
             Zur Startseite

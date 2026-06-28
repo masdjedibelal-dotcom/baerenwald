@@ -182,7 +182,7 @@ export function PartnerAuftragAnfrageDetail({
       : konditionenBestaetigen
         ? "Konditionen in der verknüpften Anfrage bestätigen."
         : konditionenUebernommen
-          ? "Unter Angebote optional PDF hochladen."
+          ? "Unter Angebote optional Unterlagen als PDF hochladen."
         : konditionenNachreichen
           ? "Preise noch nicht gesendet — bitte unten erneut senden."
           : hwSt === "abgelehnt"

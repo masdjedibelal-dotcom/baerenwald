@@ -86,7 +86,7 @@ export function validatePartnerAngebotFiles(
   const list = files.filter((f) => f.size > 0);
   if (!list.length) {
     if (opts?.required === false) return null;
-    return "Bitte mindestens ein Angebots-PDF hochladen.";
+    return "Bitte mindestens ein PDF hochladen.";
   }
   if (list.length > PARTNER_MAX_ANGEBOT_DATEIEN) {
     return `Maximal ${PARTNER_MAX_ANGEBOT_DATEIEN} PDF-Dateien pro Angebot.`;

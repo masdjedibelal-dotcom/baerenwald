@@ -1,21 +1,19 @@
 "use client";
 
 import Image from "next/image";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useMemo, useState } from "react";
 import {
   Briefcase,
   Building2,
   ClipboardList,
-  FileText,
-  Inbox,
   LayoutDashboard,
   PlusCircle,
   Settings,
 } from "lucide-react";
 
 import { OrganisationAnfrageHub } from "@/components/org/OrganisationAnfrageHub";
-import { OrganisationEingangPanel } from "@/components/org/OrganisationEingangPanel";
+import { OrganisationFreigabePanel } from "@/components/org/OrganisationFreigabePanel";
 import { OrganisationEinstellungenPanel } from "@/components/org/OrganisationEinstellungenPanel";
 import { OrganisationObjektePanel } from "@/components/org/OrganisationObjektePanel";
 import { PortalClient } from "@/components/portal/PortalClient";
@@ -26,9 +24,7 @@ import "@/components/org/organisation-portal.css";
 
 type OrgSection =
   | "uebersicht"
-  | "eingang"
-  | "anfragen"
-  | "angebote"
+  | "freigabe"
   | "auftraege"
   | "objekte"
   | "einstellungen"
@@ -36,9 +32,7 @@ type OrgSection =
 
 const NAV: Array<{ id: OrgSection; label: string; icon: typeof LayoutDashboard }> = [
   { id: "uebersicht", label: "Übersicht", icon: LayoutDashboard },
-  { id: "eingang", label: "Eingang", icon: Inbox },
-  { id: "anfragen", label: "Anfragen", icon: ClipboardList },
-  { id: "angebote", label: "Angebote", icon: FileText },
+  { id: "freigabe", label: "Zur Freigabe", icon: ClipboardList },
   { id: "auftraege", label: "Aufträge", icon: Briefcase },
   { id: "objekte", label: "Objekte", icon: Building2 },
   { id: "einstellungen", label: "Einstellungen", icon: Settings },
@@ -53,6 +47,27 @@ type Props = {
   auftraege: Parameters<typeof PortalClient>[0]["auftraege"];
 };
 
+function sectionFromParam(raw: string | null): OrgSection | null {
+  if (
+    raw === "freigabe" ||
+    raw === "meldungen" ||
+    raw === "eingang" ||
+    raw === "anfragen" ||
+    raw === "angebote"
+  ) {
+    return "freigabe";
+  }
+  if (
+    raw === "uebersicht" ||
+    raw === "auftraege" ||
+    raw === "objekte" ||
+    raw === "einstellungen"
+  ) {
+    return raw;
+  }
+  return null;
+}
+
 export function OrganisationPortalClient({
   kunde,
   objekte,
@@ -62,27 +77,32 @@ export function OrganisationPortalClient({
   auftraege,
 }: Props) {
   const router = useRouter();
-  const [section, setSection] = useState<OrgSection>("uebersicht");
+  const searchParams = useSearchParams();
+  const initialSection = sectionFromParam(searchParams.get("section"));
+  const initialItemId = searchParams.get("id");
+
+  const [section, setSection] = useState<OrgSection>(initialSection ?? "uebersicht");
   const [hubOpen, setHubOpen] = useState(false);
 
   const displayName =
-    kunde.org_anzeigename?.trim() || kunde.name?.trim() || "Auftraggeber";
+    kunde.org_anzeigename?.trim() || kunde.name?.trim() || "Hausverwaltung";
 
-  const kpis = useMemo(
-    () => ({
-      eingang: eingang.filter((l) => l.status === "neu" || !l.status).length,
-      freigabe: [...eingang, ...leads].filter(
-        (l) => l.org_freigabe_status === "ausstehend"
-      ).length,
-      auftraege: auftraege.length,
-    }),
-    [eingang, leads, auftraege]
-  );
-
-  const pipelineSection =
-    section === "anfragen" || section === "angebote" || section === "auftraege"
-      ? section
-      : null;
+  const kpis = useMemo(() => {
+    const neueMeldungen = eingang.filter(
+      (l) => (l.hv_meldung_status ?? "neu") === "neu"
+    ).length;
+    const angebotFreigabe = [...eingang, ...leads].filter(
+      (l) => l.org_freigabe_status === "ausstehend"
+    ).length;
+    const aktiveAuftraege = auftraege.filter((a) => {
+      const s = (a.status ?? "").toLowerCase();
+      return !s.includes("abgeschlossen") && !s.includes("storniert");
+    }).length;
+    return {
+      freigabe: neueMeldungen + angebotFreigabe,
+      auftraege: aktiveAuftraege,
+    };
+  }, [eingang, leads, auftraege]);
 
   const refresh = () => router.refresh();
 
@@ -105,7 +125,7 @@ export function OrganisationPortalClient({
             )}
             <div>
               <p className="portal-text-body font-semibold">{displayName}</p>
-              <p className="text-xs text-text-tertiary">Auftraggeber-Portal</p>
+              <p className="text-xs text-text-tertiary">Hausverwaltung</p>
             </div>
           </div>
           <form action="/portal/auth/signout" method="post">
@@ -129,6 +149,11 @@ export function OrganisationPortalClient({
               >
                 <Icon className="h-4 w-4" />
                 {label}
+                {id === "freigabe" && kpis.freigabe > 0 ? (
+                  <span className="ml-auto text-xs font-semibold text-red-600">
+                    {kpis.freigabe}
+                  </span>
+                ) : null}
               </button>
             ))}
           </nav>
@@ -146,11 +171,7 @@ export function OrganisationPortalClient({
 
               <div className="org-kpi-grid">
                 <article className="org-kpi-card">
-                  <p className="text-xs text-text-tertiary">Neue Meldungen</p>
-                  <p className="text-2xl font-semibold">{kpis.eingang}</p>
-                </article>
-                <article className="org-kpi-card">
-                  <p className="text-xs text-text-tertiary">Wartet Freigabe</p>
+                  <p className="text-xs text-text-tertiary">Zur Freigabe</p>
                   <p className="text-2xl font-semibold">{kpis.freigabe}</p>
                 </article>
                 <article className="org-kpi-card">
@@ -170,26 +191,38 @@ export function OrganisationPortalClient({
             </>
           )}
 
-          {section === "eingang" && (
-            <OrganisationEingangPanel
+          {section === "freigabe" && (
+            <OrganisationFreigabePanel
+              kunde={kunde}
               eingang={eingang}
               objekte={objekte}
+              leads={leads}
+              angebote={angebote}
+              initialSelectedId={initialItemId}
               onRefresh={refresh}
             />
           )}
 
-          {pipelineSection ? (
-            <PortalClient
-              layout="embedded"
-              activeSection={pipelineSection}
-              showProductPicker={false}
-              showAnlassBadge
-              kunde={kunde}
-              leads={leads as Parameters<typeof PortalClient>[0]["leads"]}
-              angebote={angebote}
-              auftraege={auftraege}
-            />
-          ) : null}
+          {section === "auftraege" && (
+            <div className="space-y-3">
+              <div>
+                <h2 className="text-lg font-semibold">Aufträge</h2>
+                <p className="text-sm text-text-secondary">
+                  Laufende und abgeschlossene Aufträge verfolgen.
+                </p>
+              </div>
+              <PortalClient
+                layout="embedded"
+                activeSection="auftraege"
+                showProductPicker={false}
+                showAnlassBadge
+                kunde={kunde}
+                leads={leads as Parameters<typeof PortalClient>[0]["leads"]}
+                angebote={angebote}
+                auftraege={auftraege}
+              />
+            </div>
+          )}
 
           {section === "objekte" && (
             <OrganisationObjektePanel
@@ -206,7 +239,7 @@ export function OrganisationPortalClient({
       </div>
 
       <nav className="organisation-mobile-nav lg:hidden">
-        {NAV.slice(0, 5).map(({ id, label, icon: Icon }) => (
+        {NAV.slice(0, 4).map(({ id, label, icon: Icon }) => (
           <button
             key={id}
             type="button"

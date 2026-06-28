@@ -36,7 +36,7 @@ export async function requireOrganisationSession(): Promise<OrgSessionResult> {
   const { data: kunde, error } = await supabaseAdmin
     .from("kunden")
     .select(
-      "id, name, email, portal_modus, org_kennung, org_anzeigename, org_logo_url, freigabe_modus, freigabe_schwelle_eur, notfall_direkt"
+      "id, name, email, portal_modus, org_kennung, org_anzeigename, org_logo_url, freigabe_modus, freigabe_schwelle_eur, notfall_direkt, kleinreparatur_aktiv, kleinreparatur_schwelle_eur"
     )
     .eq("id", link.kundeId)
     .maybeSingle();

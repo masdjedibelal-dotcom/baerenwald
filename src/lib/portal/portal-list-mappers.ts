@@ -50,7 +50,7 @@ export function mapKundeDetailToCard(
     title: item.title,
     subtitle: item.cardMeta?.length ? undefined : item.cardSubtitle,
     statusLabel: item.status || "offen",
-    statusPillKey: item.status || "offen",
+    statusPillKey: item.statusPillKey || item.status || "offen",
     accent,
     meta,
     footer: item.listFooter,

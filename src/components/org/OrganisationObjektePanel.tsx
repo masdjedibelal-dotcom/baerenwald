@@ -134,6 +134,18 @@ export function OrganisationObjektePanel({ kunde, objekte, onRefresh }: Props) {
                 <button
                   type="button"
                   className="btn-pill-outline !py-1.5 !text-xs"
+                  onClick={() =>
+                    window.open(
+                      `/api/org/melde-aushang?objektId=${encodeURIComponent(o.id)}`,
+                      "_blank"
+                    )
+                  }
+                >
+                  Aushang PDF
+                </button>
+                <button
+                  type="button"
+                  className="btn-pill-outline !py-1.5 !text-xs"
                   onClick={() => toggleAktiv(o)}
                 >
                   {o.melde_aktiv ? "Deaktivieren" : "Aktivieren"}

@@ -33,7 +33,16 @@ export type OrganisationKunde = {
   freigabe_modus: FreigabeModus;
   freigabe_schwelle_eur: number | null;
   notfall_direkt: boolean;
+  kleinreparatur_aktiv: boolean;
+  kleinreparatur_schwelle_eur: number;
 };
+
+export type HvMeldungStatus =
+  | "neu"
+  | "angebot_eingefordert"
+  | "kleinreparatur"
+  | "abgelehnt"
+  | "abgeschlossen";
 
 export type OrganisationObjekt = {
   id: string;
@@ -65,6 +74,8 @@ export type OrganisationLead = {
   einladung_token?: string | null;
   einladung_status?: EinladungStatus | null;
   org_freigabe_status?: OrgFreigabeStatus | null;
+  hv_meldung_status?: HvMeldungStatus | null;
+  preis_unsicher?: boolean | null;
   service_modus?: ServiceModus | null;
   preis_min?: number | null;
   preis_max?: number | null;

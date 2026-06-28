@@ -1,5 +1,8 @@
 import type { PartnerAnfrageItem, PartnerAuftragItem } from "@/lib/partner/get-partner-data";
-import { isPartnerAnfrageKonditionenNachreichung } from "@/lib/partner/partner-anfrage-status";
+import {
+  isPartnerAnfrageAktionErforderlich,
+  isPartnerAnfrageKonditionenNachreichung,
+} from "@/lib/partner/partner-anfrage-status";
 import {
   hasPartnerKonditionenNachreichungAusstehend,
   partnerKonditionenNachreichungZeilenIds,
@@ -128,7 +131,12 @@ export function buildPartnerOffenListe(input: {
 
   for (const raw of [...input.anfragen, ...input.angebote]) {
     if (seen.has(raw.id)) continue;
-    if (!isPartnerAngebotOffenListItem(raw)) continue;
+    if (
+      !isPartnerAngebotOffenListItem(raw) &&
+      !isPartnerAnfrageAktionErforderlich(raw)
+    ) {
+      continue;
+    }
     seen.add(raw.id);
     out.push({ kind: "angebot", item: enrichPartnerOffenAngebot(raw) });
   }

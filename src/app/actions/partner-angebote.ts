@@ -7,6 +7,10 @@ import {
   MAIL_PDF_LINK_TTL_SEC,
   sendPartnerInternalRechnungMail,
 } from "@/lib/partner/partner-mail";
+import {
+  PARTNER_MAX_HW_UNTERLAGEN_GESAMT,
+  parseHwAnhangStoragePaths,
+} from "@/lib/partner/partner-hw-dokument-typen";
 import { validatePartnerAngebotFiles } from "@/lib/partner/partner-upload-limits";
 import {
   resolvePartnerFileUrl,
@@ -56,7 +60,9 @@ export async function submitPartnerAngebotPdf(
 
   const { data: row, error } = await supabaseAdmin
     .from("angebot_handwerker")
-    .select("id, handwerker_id, status, hw_status, hw_eingereicht_at")
+    .select(
+      "id, handwerker_id, status, hw_status, hw_eingereicht_at, hw_angebot_pdf_url, hw_angebot_anhang_urls"
+    )
     .eq("id", anfrageId)
     .maybeSingle();
 
@@ -75,7 +81,7 @@ export async function submitPartnerAngebotPdf(
   if (String(row.hw_status ?? "").toLowerCase() !== "uebernommen") {
     return {
       ok: false,
-      error: "Angebots-PDF erst nach Preiseinigung mit Bärenwald möglich.",
+      error: "Unterlagen-PDF erst nach Preiseinigung mit Bärenwald möglich.",
     };
   }
 
@@ -93,14 +99,25 @@ export async function submitPartnerAngebotPdf(
   });
   if (!upload.ok) return { ok: false, error: upload.error };
 
-  const primaryPath = upload.paths[0]!;
-  const anhangPaths = upload.paths;
+  const existingPaths = parseHwAnhangStoragePaths(
+    row.hw_angebot_anhang_urls,
+    (row.hw_angebot_pdf_url as string | null) ?? null
+  );
+  const combined = Array.from(new Set([...existingPaths, ...upload.paths]));
+  if (combined.length > PARTNER_MAX_HW_UNTERLAGEN_GESAMT) {
+    return {
+      ok: false,
+      error: `Maximal ${PARTNER_MAX_HW_UNTERLAGEN_GESAMT} Unterlagen pro Vorgang (bereits ${existingPaths.length} hochgeladen).`,
+    };
+  }
+  const mergedPaths = combined;
+  const primaryPath = mergedPaths[0]!;
 
   const { error: upErr } = await supabaseAdmin
     .from("angebot_handwerker")
     .update({
       hw_angebot_pdf_url: primaryPath,
-      hw_angebot_anhang_urls: anhangPaths,
+      hw_angebot_anhang_urls: mergedPaths,
     })
     .eq("id", anfrageId)
     .eq("handwerker_id", link.handwerkerId);

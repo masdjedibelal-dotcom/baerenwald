@@ -1,16 +1,15 @@
 import { NextResponse } from "next/server";
 
-import { buildMelderEinladungHtml } from "@/lib/email/meldung-mail-templates";
-import { buildEinladungUrl } from "@/lib/org/melde-url";
-import { parseMeldeBereichId, persistMeldungLead } from "@/lib/org/persist-meldung-lead";
+import { buildOrgNeueMeldungHtml } from "@/lib/email/meldung-mail-templates";
+import {
+  parseMeldeBereichId,
+  persistMeldungLead,
+} from "@/lib/org/persist-meldung-lead";
 import { requireOrganisationSession } from "@/lib/org/require-org-session";
 import type { MeldeKategorie } from "@/lib/org/types";
-import { isValidEmail } from "@/lib/validation";
+import { isValidEmail, isValidName } from "@/lib/validation";
 import { supabaseAdmin } from "@/lib/supabase";
 import { Resend } from "resend";
-import { randomUUID } from "crypto";
-
-export const runtime = "nodejs";
 
 type Body = {
   objektId: string;
@@ -18,10 +17,18 @@ type Body = {
   melderEmail?: string;
   melderTelefon?: string;
   melderEinheit?: string;
-  kategorie?: string;
+  kategorie?: MeldeKategorie;
   bereichId?: string;
+  fachdetailAnswers?: Record<string, string | string[]>;
   beschreibung?: string;
 };
+
+const KATEGORIEN = new Set<MeldeKategorie>([
+  "notfall",
+  "schaden",
+  "reparatur",
+  "sonstiges",
+]);
 
 export async function POST(req: Request) {
   const session = await requireOrganisationSession();
@@ -39,8 +46,17 @@ export async function POST(req: Request) {
   const kategorie = (body.kategorie ?? "reparatur") as MeldeKategorie;
   const bereichId = parseMeldeBereichId(body.bereichId);
 
-  if (!objektId || !melderName) {
+  if (!objektId || !isValidName(melderName)) {
     return NextResponse.json({ error: "Pflichtfelder fehlen." }, { status: 400 });
+  }
+  if (!KATEGORIEN.has(kategorie)) {
+    return NextResponse.json({ error: "Kategorie ungültig." }, { status: 400 });
+  }
+  if (beschreibung.length < 8) {
+    return NextResponse.json(
+      { error: "Bitte kurz beschreiben (mind. 8 Zeichen)." },
+      { status: 400 }
+    );
   }
 
   const { data: objekt } = await supabaseAdmin
@@ -54,27 +70,22 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Objekt nicht gefunden." }, { status: 404 });
   }
 
-  const token = randomUUID();
-  const org = session.kunde;
-
   const result = await persistMeldungLead({
     name: melderName,
     email: isValidEmail(melderEmail) ? melderEmail : undefined,
     telefon: melderTelefon || undefined,
     einheit: melderEinheit,
-    beschreibung:
-      beschreibung || "Meldung vorerfasst — wartet auf Ergänzung durch Melder.",
+    beschreibung,
     kategorie,
     bereichId,
+    fachdetailAnswers: body.fachdetailAnswers,
     plz: String(objekt.plz ?? ""),
     strasse: objekt.strasse,
     hausnummer: objekt.hausnummer,
-    auftraggeber_kunde_id: org.id,
+    auftraggeber_kunde_id: session.kunde.id,
     kunde_objekt_id: objektId,
-    kanal: "hv_einladung",
+    kanal: "hv_direkt",
     erfassung_von: "organisation",
-    einladung_token: token,
-    einladung_status: "offen",
     skipInternMail: true,
   });
 
@@ -82,30 +93,36 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: result.error }, { status: result.status });
   }
 
-  const link = buildEinladungUrl(token);
   const orgName =
-    org.org_anzeigename?.trim() || org.name?.trim() || "Hausverwaltung";
+    session.kunde.org_anzeigename?.trim() ||
+    session.kunde.name?.trim() ||
+    "Hausverwaltung";
+  const orgEmail = session.kunde.email?.trim() ?? "";
+  const portalPath = `/portal?section=freigabe&id=${result.id}`;
 
-  if (isValidEmail(melderEmail) && process.env.RESEND_API_KEY) {
+  if (process.env.RESEND_API_KEY && isValidEmail(orgEmail)) {
     const resend = new Resend(process.env.RESEND_API_KEY);
     try {
       await resend.emails.send({
         from:
-          process.env.RESEND_FROM_CUSTOMER ??
-          "Bärenwald München <anfragen@baerenwaldmuenchen.de>",
-        to: melderEmail.toLowerCase(),
-        subject: `Meldung ergänzen — ${objekt.titel}`,
-        html: buildMelderEinladungHtml({
-          melderName,
+          process.env.RESEND_FROM_SYSTEM ??
+          "System <system@baerenwaldmuenchen.de>",
+        to: orgEmail,
+        subject: `Neue Meldung — ${objekt.titel}`,
+        html: buildOrgNeueMeldungHtml({
           orgName,
           objektTitel: String(objekt.titel),
-          link,
+          melderName,
+          melderEinheit: melderEinheit || undefined,
+          kategorie,
+          beschreibung,
+          portalPath,
         }),
       });
     } catch (e) {
-      console.error("[meldung-vorab] mail:", e);
+      console.error("[meldung-direkt] mail:", e);
     }
   }
 
-  return NextResponse.json({ ok: true, id: result.id, link, token });
+  return NextResponse.json({ ok: true, id: result.id });
 }

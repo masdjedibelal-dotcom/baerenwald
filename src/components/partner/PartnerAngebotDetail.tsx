@@ -41,6 +41,15 @@ import {
 import { mapKonditionZeilenVereinbart, konditionZeilenNurAusHw } from "@/lib/partner/partner-konditionen";
 import { isPartnerAnfrageKonditionenNachreichung } from "@/lib/partner/partner-anfrage-status";
 import {
+  PARTNER_HW_DOKUMENT_NUR_CRM,
+  PARTNER_HW_DOKUMENT_UPLOAD_LABEL,
+  partnerHwDokumentUploadHint,
+} from "@/lib/partner/partner-hw-dokument-copy";
+import {
+  PARTNER_MAX_HW_UNTERLAGEN_GESAMT,
+  partnerHwDokumentListenName,
+} from "@/lib/partner/partner-hw-dokument-typen";
+import {
   PARTNER_MAX_ANGEBOT_DATEIEN,
   PARTNER_MAX_PDF_MB,
   validatePartnerAngebotFiles,
@@ -67,12 +76,13 @@ export function PartnerAngebotDetail({ item }: { item: PartnerAnfrageItem }) {
   const auftragFreigegeben = phase === "auftrag_freigegeben";
   const angenommen = phase === "angenommen";
   const rechnungEingereicht = Boolean(item.hw_rechnung_eingereicht_at);
-  const hatPdf = Boolean(
-    item.hw_angebot_pdf_url ||
-      item.hw_angebot_pdf_signed_url ||
-      item.hw_angebot_anhang_urls?.length
-  );
-  const kannPdfHochladen = uebernommen && wartetAufFreigabe && !hatPdf;
+  const unterlagenAnzahl =
+    item.hw_angebot_anhang_urls?.length ??
+    (item.hw_angebot_pdf_url ? 1 : 0);
+  const kannPdfHochladen =
+    uebernommen &&
+    wartetAufFreigabe &&
+    unterlagenAnzahl < PARTNER_MAX_HW_UNTERLAGEN_GESAMT;
   const kannRechnungHochladen = uebernommen && angenommen && !rechnungEingereicht;
 
   const konditionZeilen = useMemo(() => {
@@ -124,7 +134,10 @@ export function PartnerAngebotDetail({ item }: { item: PartnerAnfrageItem }) {
       rows.push({
         id: `hw-angebot-pdf-${i}`,
         datum: item.hw_eingereicht_at,
-        name: anhangSigned.length > 1 ? `Angebots-PDF ${i + 1}` : "Angebots-PDF",
+        name: partnerHwDokumentListenName("unterlage", {
+          index: i,
+          total: anhangSigned.length,
+        }),
         href,
       });
     });
@@ -132,7 +145,7 @@ export function PartnerAngebotDetail({ item }: { item: PartnerAnfrageItem }) {
       rows.push({
         id: "hw-rechnung-pdf",
         datum: item.hw_rechnung_eingereicht_at,
-        name: "Rechnung (eingereicht)",
+        name: partnerHwDokumentListenName("rechnung"),
         href: item.hw_rechnung_pdf_signed_url,
       });
     }
@@ -240,7 +253,8 @@ export function PartnerAngebotDetail({ item }: { item: PartnerAnfrageItem }) {
         </PartnerDetailInfoBox>
       ) : wartetAufFreigabe ? (
         <PartnerDetailInfoBox>
-          Warte auf Freigabe. Optional Angebots-PDF hochladen.
+          Warte auf Freigabe. Optional kannst du hier Unterlagen als PDF hochladen —{" "}
+          {PARTNER_HW_DOKUMENT_NUR_CRM}
         </PartnerDetailInfoBox>
       ) : auftragFreigegeben ? (
         <PartnerDetailInfoBox>
@@ -253,7 +267,8 @@ export function PartnerAngebotDetail({ item }: { item: PartnerAnfrageItem }) {
         </PartnerDetailSuccessBox>
       ) : kannRechnungHochladen ? (
         <PartnerDetailInfoBox>
-          Nach Abschluss der Leistung kannst du hier deine Rechnung als PDF einreichen.
+          Nach Abschluss der Leistung kannst du hier deine Rechnung als PDF einreichen —{" "}
+          {PARTNER_HW_DOKUMENT_NUR_CRM}
         </PartnerDetailInfoBox>
       ) : null}
 
@@ -278,10 +293,10 @@ export function PartnerAngebotDetail({ item }: { item: PartnerAnfrageItem }) {
       {kannPdfHochladen ? (
         <form id={PDF_FORM_ID} onSubmit={onPdfSubmit} className="space-y-3">
           <FileUploadField
-            label="Angebots-PDF (optional)"
+            label={PARTNER_HW_DOKUMENT_UPLOAD_LABEL}
             accept="application/pdf,.pdf"
             multiple
-            hint={`Optional. Max. ${PARTNER_MAX_ANGEBOT_DATEIEN} PDFs, je ${PARTNER_MAX_PDF_MB} MB`}
+            hint={partnerHwDokumentUploadHint()}
             selectedName={
               angebotPdfs.length > 0
                 ? angebotPdfs.length === 1
@@ -298,7 +313,7 @@ export function PartnerAngebotDetail({ item }: { item: PartnerAnfrageItem }) {
               disabled={pdfLoading}
               className="btn-pill-outline portal-btn !px-4 !py-2.5"
             >
-              {pdfLoading ? "Wird hochgeladen…" : "PDF hochladen"}
+              {pdfLoading ? "Wird hochgeladen…" : "Hochladen"}
             </button>
           ) : null}
         </form>
@@ -309,8 +324,9 @@ export function PartnerAngebotDetail({ item }: { item: PartnerAnfrageItem }) {
       <DokumenteTabelle
         dokumente={dokumentZeilen}
         heading="Dokumente"
-        emptyText="Noch keine Dokumente."
+        emptyText="Noch keine Unterlagen hochgeladen."
       />
+      <p className="portal-text-meta text-text-secondary">{PARTNER_HW_DOKUMENT_NUR_CRM}</p>
 
       {kannRechnungHochladen ? (
         <form
@@ -318,11 +334,11 @@ export function PartnerAngebotDetail({ item }: { item: PartnerAnfrageItem }) {
           onSubmit={onRechnungSubmit}
           className="space-y-3 rounded-xl border border-border-light p-4"
         >
-          <p className="portal-text-section">Rechnung hochladen</p>
+          <p className="portal-text-section">Rechnung einreichen</p>
           <FileUploadField
             label="Rechnungs-PDF"
             accept="application/pdf,.pdf"
-            hint={`PDF, max. ${PARTNER_MAX_PDF_MB} MB`}
+            hint={`PDF, max. ${PARTNER_MAX_PDF_MB} MB. ${PARTNER_HW_DOKUMENT_NUR_CRM}`}
             selectedName={rechnungPdf?.name}
             onChange={handleRechnungPdfChange}
           />

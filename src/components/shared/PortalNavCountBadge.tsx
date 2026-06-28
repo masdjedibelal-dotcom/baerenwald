@@ -14,6 +14,8 @@ export function PortalNavCountBadge({ count }: { count: number }) {
 
 export type PortalNavBadgeCounts = {
   offen?: number;
+  freigabe?: number;
+  vorgaenge?: number;
   anfragen: number;
   angebote: number;
   auftraege: number;
@@ -23,7 +25,12 @@ export function portalNavBadgeCount(
   id: string,
   counts: PortalNavBadgeCounts
 ): number {
-  if (id === "offen") return counts.offen ?? 0;
+  if (id === "offen" || id === "freigabe") {
+    return counts.freigabe ?? counts.offen ?? 0;
+  }
+  if (id === "vorgaenge") {
+    return counts.vorgaenge ?? 0;
+  }
   if (id === "anfragen") return counts.anfragen;
   if (id === "angebote") return counts.angebote;
   if (id === "auftraege") return counts.auftraege;

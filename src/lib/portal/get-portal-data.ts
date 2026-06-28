@@ -581,14 +581,12 @@ export async function getPortalDataForKunde(kundeId: string) {
     })),
   });
 
-  const anfragenLeadIds = new Set(split.anfragenLeads.map((l) => l.id));
-  const angebotIdsTab = new Set(split.angebote.map((a) => a.id));
-  const auftragIdsTab = new Set(split.auftraege.map((a) => a.id));
-
   return {
     kunde,
-    leads: mappedLeads.filter((l) => anfragenLeadIds.has(String(l.id))),
-    angebote: mappedAngebote.filter((a) => angebotIdsTab.has(String(a.id))),
-    auftraege: mappedAuftraege.filter((a) => auftragIdsTab.has(String(a.id))),
+    leads: mappedLeads,
+    angebote: mappedAngebote,
+    auftraege: mappedAuftraege,
+    /** @deprecated Nur für Abwärtskompatibilität — Pipeline-Split clientseitig. */
+    splitPipeline: split,
   };
 }

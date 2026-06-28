@@ -1,6 +1,7 @@
 import {
   isPartnerAnfrageAntwortAbgelaufen,
   isPartnerAnfrageKonditionenNachreichung,
+  isPartnerAuftragAnfrageAktionErforderlich,
 } from "@/lib/partner/partner-anfrage-status";
 import {
   buildPartnerOffenListe,
@@ -9,8 +10,6 @@ import {
 import {
   aggregateAuftragHandwerkerStatus,
   resolveAngebotHandwerkerPhase,
-  isAuftragAnfrageListItem,
-  isAuftragAuftraegeListItem,
   resolveAuftragPortalPhase,
   type PartnerPortalPhase,
 } from "@/lib/partner/partner-portal-phase";
@@ -37,6 +36,7 @@ import {
 } from "@/lib/portal/portal-titel";
 import { syncAngebotHandwerkerAfterAuftragAccept } from "@/lib/partner/sync-angebot-handwerker";
 import { resolveHandwerkerAnsprechpartner } from "@/lib/partner/handwerker-ansprechpartner";
+import { parseHwAnhangStoragePaths } from "@/lib/partner/partner-hw-dokument-typen";
 import {
   resolvePartnerFileUrl,
   resolvePartnerFileUrls,
@@ -240,12 +240,7 @@ function one<T>(x: T | T[] | null | undefined): T | null {
 }
 
 function parseHwAnhangUrls(raw: unknown, fallbackPath: string | null): string[] {
-  if (Array.isArray(raw)) {
-    const paths = raw.map((x) => String(x).trim()).filter(Boolean);
-    if (paths.length) return paths;
-  }
-  const fb = fallbackPath?.trim();
-  return fb ? [fb] : [];
+  return parseHwAnhangStoragePaths(raw, fallbackPath);
 }
 
 async function mapHwAngebotAnhaenge(raw: Record<string, unknown>) {
@@ -410,12 +405,12 @@ export async function getPartnerDataForHandwerker(handwerkerId: string) {
   );
   const anfragen: PartnerAnfrageItem[] = (
     await mapAngebotHandwerkerRows(rawRows, objektById)
-  ).filter(
-    (_, i) =>
-      !isPartnerBlockedByOrgFreigabe(
-        extractPartnerLeadGateFromAngebotHandwerkerRow(rawRows[i]!)
-      )
-  );
+  ).filter((_, i) => {
+    const row = rawRows[i]!;
+    const gate = extractPartnerLeadGateFromAngebotHandwerkerRow(row);
+    if (!isPartnerBlockedByOrgFreigabe(gate)) return true;
+    return Boolean((row.gesendet_at as string | null | undefined)?.trim());
+  });
 
   const { data: hwAuftraege } = await supabaseAdmin
     .from("auftrag_handwerker")
@@ -558,12 +553,15 @@ export async function getPartnerDataForHandwerker(handwerkerId: string) {
     const auftragObjektById = await loadPartnerObjektById(auftragObjektIds);
 
     alleAuftraege = (aufRows ?? [])
-      .filter(
-        (row) =>
-          !isPartnerBlockedByOrgFreigabe(
-            extractPartnerLeadGateFromAuftragRow(row as Record<string, unknown>)
-          )
-      )
+      .filter((row) => {
+        const raw = row as Record<string, unknown>;
+        const gate = extractPartnerLeadGateFromAuftragRow(raw);
+        if (!isPartnerBlockedByOrgFreigabe(gate)) return true;
+        const positions = (raw.auftrag_positionen ?? []) as Array<{
+          handwerker_id?: string | null;
+        }>;
+        return positions.some((p) => String(p.handwerker_id ?? "") === id);
+      })
       .map((row) => {
       const raw = row as Record<string, unknown>;
       const kunde = one(raw.kunden) as {
@@ -693,12 +691,12 @@ export async function getPartnerDataForHandwerker(handwerkerId: string) {
       );
       anfragenFinal = (
         await mapAngebotHandwerkerRows(reloadRaw, reloadObjektById)
-      ).filter(
-        (_, i) =>
-          !isPartnerBlockedByOrgFreigabe(
-            extractPartnerLeadGateFromAngebotHandwerkerRow(reloadRaw[i]!)
-          )
-      );
+      ).filter((_, i) => {
+        const row = reloadRaw[i]!;
+        const gate = extractPartnerLeadGateFromAngebotHandwerkerRow(row);
+        if (!isPartnerBlockedByOrgFreigabe(gate)) return true;
+        return Boolean((row.gesendet_at as string | null | undefined)?.trim());
+      });
     }
   }
 
@@ -776,8 +774,12 @@ export async function getPartnerDataForHandwerker(handwerkerId: string) {
   const angeboteAlleAkzeptiert = anfragenFinal.filter(
     (a) => a.status.toLowerCase() === "akzeptiert"
   );
-  const auftragAnfragenListe = alleAuftraege.filter(isAuftragAnfrageListItem);
-  const auftraegeListe = alleAuftraege.filter(isAuftragAuftraegeListItem);
+  const auftragAnfragenListe = alleAuftraege.filter((a) =>
+    isPartnerAuftragAnfrageAktionErforderlich(a)
+  );
+  const auftraegeListe = alleAuftraege.filter(
+    (a) => !isPartnerAuftragAnfrageAktionErforderlich(a)
+  );
 
   const gewerkSlugs = Array.isArray(handwerker.gewerke)
     ? (handwerker.gewerke as string[]).map((s) => s.trim()).filter(Boolean)
@@ -875,12 +877,10 @@ export async function getPartnerDataForHandwerker(handwerkerId: string) {
   });
 
   const aufgaben = buildPartnerAufgaben({
-    anfragen: anfragenAngebot,
-    angebote,
-    auftragAnfragen,
+    offen,
     auftraege,
     bautagebuchAnfragen,
-    auftragTitelById,
+    offeneLeistungsunterlagen: offeneLeistungsunterlagen,
   });
 
   return {

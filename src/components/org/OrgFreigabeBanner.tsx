@@ -32,9 +32,10 @@ export function OrgFreigabeBanner({ leadId, status, onUpdated }: Props) {
 
   return (
     <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 mb-4">
-      <p className="text-sm font-medium text-amber-900">Freigabe ausstehend</p>
+      <p className="text-sm font-medium text-amber-900">Angebot zur Freigabe</p>
       <p className="text-xs text-amber-800 mt-1">
-        Dieser Vorgang wartet auf Ihre Freigabe, bevor wir weiter planen.
+        Bärenwald hat ein Angebot erstellt. Bitte freigeben oder ablehnen, bevor
+        wir den Auftrag starten.
       </p>
       <div className="flex gap-2 mt-3">
         <button

@@ -5,6 +5,9 @@ import {
   meldeKategorieToSituation,
   meldeKategorieToZeitraum,
 } from "@/lib/org/melde-kategorien";
+import { meldeBereichToFunnelBereiche } from "@/lib/org/melde-bereiche";
+import { mapMeldeToPrice } from "@/lib/org/map-melde-to-price";
+import { parseMeldeBereichId } from "@/lib/org/persist-meldung-lead";
 import { resolveEinladungKontext } from "@/lib/org/resolve-melde-kontext";
 import type { MeldeKategorie } from "@/lib/org/types";
 import { getClientIp } from "@/lib/request-ip";
@@ -28,6 +31,8 @@ export async function POST(req: Request) {
     telefon?: string;
     einheit?: string;
     kategorie?: MeldeKategorie;
+    bereichId?: string;
+    fachdetailAnswers?: Record<string, string | string[]>;
     beschreibung?: string;
     fotos?: string[];
   };
@@ -39,6 +44,7 @@ export async function POST(req: Request) {
   const einheit = String(body.einheit ?? "").trim();
   const beschreibung = String(body.beschreibung ?? "").trim();
   const kategorie = (body.kategorie ?? "reparatur") as MeldeKategorie;
+  const bereichId = parseMeldeBereichId(body.bereichId);
   const fotos = Array.isArray(body.fotos)
     ? body.fotos.filter((u) => typeof u === "string")
     : [];
@@ -97,6 +103,25 @@ export async function POST(req: Request) {
 
   const situation = meldeKategorieToSituation(kategorie);
   const zeitraum = meldeKategorieToZeitraum(kategorie);
+  const bereiche = meldeBereichToFunnelBereiche(bereichId);
+
+  let plz = "80331";
+  if (ctx.lead.kunde_objekt_id) {
+    const { data: objPlz } = await supabaseAdmin
+      .from("kunden_objekte")
+      .select("plz")
+      .eq("id", ctx.lead.kunde_objekt_id)
+      .maybeSingle();
+    if (objPlz?.plz) plz = String(objPlz.plz);
+  }
+
+  const price = mapMeldeToPrice({
+    kategorie,
+    bereichId,
+    plz,
+    fachdetailAnswers: body.fachdetailAnswers,
+  });
+
   const prevFunnel =
     typeof ctx.lead.funnel_daten === "object" && ctx.lead.funnel_daten
       ? (ctx.lead.funnel_daten as Record<string, unknown>)
@@ -108,9 +133,13 @@ export async function POST(req: Request) {
       kunde_id: kundeId,
       einladung_status: "ergaenzt",
       erfassung_von: "melder",
+      hv_meldung_status: "neu",
       situation,
       zeitraum,
-      bereiche: ["sanitaer"],
+      bereiche,
+      preis_min: price.preis_min,
+      preis_max: price.preis_max,
+      preis_unsicher: price.preis_unsicher,
       melder_name: name,
       melder_einheit: einheit || null,
       melder_telefon: telefon || null,
@@ -122,6 +151,8 @@ export async function POST(req: Request) {
       funnel_daten: {
         ...prevFunnel,
         melde_kategorie: kategorie,
+        melde_bereich: bereichId,
+        fachdetailAnswers: body.fachdetailAnswers ?? {},
         fotos,
         quelle: "einladung_ergaenzt",
       },

@@ -55,6 +55,8 @@ export type PersistLeadInput = {
   einladung_token?: string | null;
   einladung_status?: string | null;
   org_freigabe_status?: string | null;
+  hv_meldung_status?: string | null;
+  preis_unsicher?: boolean | null;
   service_modus?: string | null;
   /** Keine Standard-Kunden-Mail (Meldung nutzt eigene Templates) */
   skipKundeMail?: boolean;
@@ -169,8 +171,8 @@ function guProjektDisplayName(bereiche: string[]): string {
 }
 
 function formatPreisrahmen(
-  preis_min?: number,
-  preis_max?: number
+  preis_min?: number | null,
+  preis_max?: number | null
 ): string | undefined {
   if (
     typeof preis_min === "number" &&
@@ -349,8 +351,14 @@ async function persistLeadInner(
     undefined;
   const situation = raw.situation ?? null;
   const bereiche = Array.isArray(raw.bereiche) ? raw.bereiche : [];
-  const preis_min = raw.preis_min ?? raw.priceMin ?? 0;
-  const preis_max = raw.preis_max ?? raw.priceMax ?? 0;
+  const preis_min =
+    raw.preis_min != null || raw.priceMin != null
+      ? Number(raw.preis_min ?? raw.priceMin ?? 0)
+      : null;
+  const preis_max =
+    raw.preis_max != null || raw.priceMax != null
+      ? Number(raw.preis_max ?? raw.priceMax ?? 0)
+      : null;
   const plz = (raw.plz ?? "").trim();
   const strasse = (raw.strasse ?? "").trim() || null;
   const hausnummer = (raw.hausnummer ?? "").trim() || null;
@@ -372,6 +380,8 @@ async function persistLeadInner(
   const einladung_status = (raw.einladung_status ?? "").trim() || null;
   const org_freigabe_status =
     (raw.org_freigabe_status ?? "").trim() || "nicht_noetig";
+  const hv_meldung_status = (raw.hv_meldung_status ?? "").trim() || null;
+  const preis_unsicher = raw.preis_unsicher === true;
   const service_modus = (raw.service_modus ?? "").trim() || null;
   const skipKundeMail = raw.skipKundeMail === true;
   const skipInternMail = raw.skipInternMail === true;
@@ -482,8 +492,8 @@ async function persistLeadInner(
     status: "neu",
     situation,
     bereiche,
-    preis_min,
-    preis_max,
+    preis_min: preis_min ?? null,
+    preis_max: preis_max ?? null,
     plz: plz || null,
     strasse,
     hausnummer,
@@ -512,6 +522,12 @@ async function persistLeadInner(
   if (einladung_status) leadInsert.einladung_status = einladung_status;
   if (org_freigabe_status) {
     leadInsert.org_freigabe_status = org_freigabe_status;
+  }
+  if (hv_meldung_status) {
+    leadInsert.hv_meldung_status = hv_meldung_status;
+  }
+  if (preis_unsicher) {
+    leadInsert.preis_unsicher = true;
   }
   if (service_modus) leadInsert.service_modus = service_modus;
 
@@ -574,8 +590,8 @@ async function persistLeadInner(
       bereiche,
       plz: plz || null,
       zeitraum,
-      preis_min,
-      preis_max,
+      preis_min: preis_min ?? undefined,
+      preis_max: preis_max ?? undefined,
       kanal,
       funnel_quelle: String(funnel_quelle),
     },
@@ -646,8 +662,8 @@ async function persistLeadInner(
             strasse: strasse ?? undefined,
             hausnummer: hausnummer ?? undefined,
             bereiche: bereiche.length > 0 ? bereiche : undefined,
-            preis_min,
-            preis_max,
+            preis_min: preis_min ?? undefined,
+            preis_max: preis_max ?? undefined,
             nachricht: notizen,
             funnel_daten,
             kanal: "Website",

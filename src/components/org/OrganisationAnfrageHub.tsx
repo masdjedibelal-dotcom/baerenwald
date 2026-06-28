@@ -8,7 +8,7 @@ import { OrganisationServicepaketFlow } from "@/components/org/OrganisationServi
 import type { OrganisationObjekt } from "@/lib/org/types";
 import { track } from "@/lib/analytics";
 
-type HubMode = "hub" | "meldung" | "projekt" | "servicepaket";
+type HubMode = "hub" | "meldung_direkt" | "meldung_einladen" | "projekt" | "servicepaket";
 
 type Props = {
   objekte: OrganisationObjekt[];
@@ -38,10 +38,24 @@ export function OrganisationAnfrageHub({
     );
   }
 
-  if (mode === "meldung") {
+  if (mode === "meldung_direkt") {
     return (
       <OrganisationMeldungErfassenForm
         objekte={objekte}
+        mode="direkt"
+        onDone={() => {
+          onDone();
+          onClose();
+        }}
+      />
+    );
+  }
+
+  if (mode === "meldung_einladen") {
+    return (
+      <OrganisationMeldungErfassenForm
+        objekte={objekte}
+        mode="einladen"
         onDone={() => {
           onDone();
           onClose();
@@ -86,12 +100,25 @@ export function OrganisationAnfrageHub({
           className="org-hub-card"
           onClick={() => {
             track.orgAnfrageGestartet("meldung");
-            setMode("meldung");
+            setMode("meldung_direkt");
           }}
         >
-          <span className="font-medium block">Meldung erfassen</span>
+          <span className="font-medium block">Meldung anlegen</span>
           <span className="text-xs text-text-tertiary mt-1">
-            Für Mieter per Einladungslink
+            Direkterfassung (Telefon, E-Mail)
+          </span>
+        </button>
+        <button
+          type="button"
+          className="org-hub-card"
+          onClick={() => {
+            track.orgAnfrageGestartet("meldung");
+            setMode("meldung_einladen");
+          }}
+        >
+          <span className="font-medium block">Mieter einladen</span>
+          <span className="text-xs text-text-tertiary mt-1">
+            Link mit Fotos und Details
           </span>
         </button>
         <button

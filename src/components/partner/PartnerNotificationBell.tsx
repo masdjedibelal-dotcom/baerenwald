@@ -90,7 +90,7 @@ export function PartnerNotificationBell() {
       </button>
 
       {open ? (
-        <div className="absolute right-0 top-full z-50 mt-2 w-[min(100vw-2rem,22rem)] overflow-hidden rounded-xl border border-border-default bg-surface-card shadow-lg">
+        <div className="fixed left-3 right-3 top-[4.25rem] z-[100] overflow-hidden rounded-xl border border-border-default bg-surface-card shadow-lg sm:absolute sm:left-auto sm:right-0 sm:top-full sm:mt-2 sm:w-[min(22rem,calc(100vw-2rem))]">
           <div className="flex items-center justify-between border-b border-border-light px-4 py-3">
             <p className="text-sm font-semibold text-text-primary">Benachrichtigungen</p>
             {unread > 0 ? (
