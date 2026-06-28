@@ -145,7 +145,6 @@ export function PartnerRahmenvertragCard({
         <PartnerComplianceCheckliste
           title="Handwerkskarte"
           items={handwerkskarte}
-          accordion={false}
           emptyText="Keine Handwerkskarte hinterlegt."
         />
       ) : null}

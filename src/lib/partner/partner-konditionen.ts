@@ -97,20 +97,14 @@ export function buildNachreichungKonditionZeilen(
   });
   if (!auftragPositionen?.length) return fromAngebot;
 
-  const gewerkName = filter.gewerkName?.trim().toLowerCase() ?? "";
-  const filteredAuftrag = gewerkName
-    ? auftragPositionen.filter(
-        (p) => p.gewerk_name.trim().toLowerCase() === gewerkName
-      )
-    : auftragPositionen;
-
   const knownIds = new Set(fromAngebot.map((z) => z.id));
   const knownTitles = new Set(
     fromAngebot.map((z) => normalizeKonditionLeistungKey(z.title))
   );
 
+  /** Alle HW-Positionen am Auftrag — nicht nach Gewerk filtern (Multi-Gewerk / eine AH-Zeile). */
   const extra: PartnerKonditionZeile[] = [];
-  for (const ap of filteredAuftrag) {
+  for (const ap of auftragPositionen) {
     const titleKey = normalizeKonditionLeistungKey(ap.leistung_name);
     if (knownIds.has(ap.id) || knownTitles.has(titleKey)) continue;
     extra.push(konditionZeileFromAuftragPosition(ap));

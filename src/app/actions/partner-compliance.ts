@@ -11,6 +11,76 @@ export type PartnerComplianceUploadResult =
   | { ok: true }
   | { ok: false; error: string };
 
+export async function deletePartnerComplianceDokument(input: {
+  dokumentId: string;
+  auftragId?: string | null;
+}): Promise<PartnerComplianceUploadResult> {
+  if (!isSupabaseConfigured()) {
+    return { ok: false, error: "Datenbank nicht konfiguriert." };
+  }
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user?.email) return { ok: false, error: "Nicht angemeldet." };
+
+  const link = await linkPortalHandwerkerToAuthUser({
+    userId: user.id,
+    email: user.email,
+  });
+  if (!link.ok) return { ok: false, error: link.error };
+
+  const { data: row } = await supabaseAdmin
+    .from("partner_dokumente")
+    .select("id, handwerker_id, auftrag_id, status")
+    .eq("id", input.dokumentId)
+    .maybeSingle();
+
+  if (!row) return { ok: false, error: "Dokument nicht gefunden." };
+  if (String(row.handwerker_id) !== link.handwerkerId) {
+    return { ok: false, error: "Keine Berechtigung." };
+  }
+
+  const st = String(row.status ?? "").toLowerCase();
+  if (st === "erledigt") {
+    return { ok: false, error: "Bestätigte Dokumente können nicht gelöscht werden." };
+  }
+
+  if (input.auftragId?.trim()) {
+    const aid = input.auftragId.trim();
+    const { data: zuweisung } = await supabaseAdmin
+      .from("auftrag_handwerker")
+      .select("id")
+      .eq("auftrag_id", aid)
+      .eq("handwerker_id", link.handwerkerId)
+      .maybeSingle();
+    const { data: pos } = await supabaseAdmin
+      .from("auftrag_positionen")
+      .select("id")
+      .eq("auftrag_id", aid)
+      .eq("handwerker_id", link.handwerkerId)
+      .limit(1);
+    if (!zuweisung && !(pos?.length ?? 0)) {
+      return { ok: false, error: "Keine Berechtigung für diesen Auftrag." };
+    }
+    if (row.auftrag_id && String(row.auftrag_id) !== aid) {
+      return { ok: false, error: "Dokument gehört nicht zu diesem Auftrag." };
+    }
+  }
+
+  const { error } = await supabaseAdmin
+    .from("partner_dokumente")
+    .delete()
+    .eq("id", input.dokumentId)
+    .eq("handwerker_id", link.handwerkerId);
+
+  if (error) return { ok: false, error: error.message };
+
+  revalidatePath("/partner");
+  return { ok: true };
+}
+
 export async function uploadPartnerComplianceDokument(
   formData: FormData
 ): Promise<PartnerComplianceUploadResult> {

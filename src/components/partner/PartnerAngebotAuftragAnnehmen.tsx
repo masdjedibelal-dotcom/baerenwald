@@ -4,12 +4,11 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 import { confirmPartnerProjektvertrag } from "@/app/actions/partner-vertrag";
-import { PartnerComplianceCheckliste } from "@/components/partner/PartnerComplianceCheckliste";
+import { PartnerPflichtenCard } from "@/components/partner/PartnerPflichtenCard";
 import {
   PartnerConfirmDialog,
   PartnerDetailError,
 } from "@/components/partner/PartnerDetailUi";
-import { buildBauauftragComplianceItems } from "@/lib/partner/compliance-summary";
 import type { PartnerAnfrageItem } from "@/lib/partner/get-partner-data";
 
 export function PartnerAngebotAuftragAnnehmen({
@@ -29,11 +28,6 @@ export function PartnerAngebotAuftragAnnehmen({
 
   const auftragId = item.auftrag_id?.trim();
   if (!auftragId) return null;
-
-  const complianceItems = buildBauauftragComplianceItems(
-    item.compliance_stamm,
-    item.compliance_projekt
-  );
 
   const kannBestaetigen = gelesen && verbindlich;
 
@@ -104,15 +98,5 @@ export function PartnerAngebotAuftragAnnehmen({
     );
   }
 
-  return (
-    <PartnerComplianceCheckliste
-      title="Erforderliche Unterlagen"
-      items={complianceItems}
-      auftragId={auftragId}
-      gruppiert
-      accordion
-      defaultOpen={false}
-      emptyText="Für dieses Projekt sind keine zusätzlichen Unterlagen nötig."
-    />
-  );
+  return <PartnerPflichtenCard compliance_projekt={item.compliance_projekt} />;
 }

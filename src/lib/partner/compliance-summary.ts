@@ -23,14 +23,19 @@ export function filterBauauftragStammCompliance(
   );
 }
 
+/** Bauprojekt = es gibt leistungsbezogene Compliance-Pflichten für diesen Auftrag. */
+export function isPartnerBauprojektCompliance(
+  projekt: PartnerComplianceItem[] | undefined | null
+): boolean {
+  return (projekt?.length ?? 0) > 0;
+}
+
+/** Nur Bauprojekt-Unterlagen (Leistungsvertrag & Auftrag) — keine Stammdaten aus dem Profil. */
 export function buildBauauftragComplianceItems(
-  stamm: PartnerComplianceItem[] | undefined,
+  _stamm: PartnerComplianceItem[] | undefined,
   projekt: PartnerComplianceItem[] | undefined
 ): PartnerComplianceItem[] {
-  return [
-    ...filterBauauftragStammCompliance(stamm ?? []),
-    ...(projekt ?? []),
-  ];
+  return [...(projekt ?? [])];
 }
 
 export type ComplianceStammSummary = {

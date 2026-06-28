@@ -1,4 +1,5 @@
 import {
+  isPartnerAnfrageAktionErforderlich,
   isPartnerAnfrageAntwortAbgelaufen,
   isPartnerAnfrageKonditionenNachreichung,
   isPartnerAuftragAnfrageAktionErforderlich,
@@ -68,6 +69,7 @@ import { resolvePartnerListenTitel } from "@/lib/partner/partner-listen-titel";
 import { isSupabaseConfigured, supabaseAdmin } from "@/lib/supabase";
 import { stripHtmlToPlainText } from "@/lib/portal/portal-display";
 import type { PartnerHwKonditionen } from "@/lib/partner/partner-konditionen";
+import { partnerKonditionenNachreichungZeilenIds } from "@/lib/partner/partner-konditionen";
 
 export type PartnerAnfrageItem = {
   id: string;
@@ -188,6 +190,16 @@ export type PartnerAuftragItem = {
   vertrag?: PartnerVertragKontext | null;
   /** Offene CRM-Anforderung für Bautagebuch-Eintrag. */
   bautagebuchAnfrageOffen?: boolean;
+  /** Auftragspositionen, die noch unter Offen bestätigt werden müssen (Nachreichung). */
+  nachreichungOpenPositionIds?: string[];
+  /** Verknüpftes angebot_handwerker — HW-Unterlagen & Rechnung. */
+  hw_angebot_pdf_url?: string | null;
+  hw_angebot_pdf_signed_url?: string | null;
+  hw_angebot_anhang_urls?: string[];
+  hw_angebot_anhang_signed_urls?: string[];
+  hw_rechnung_pdf_url?: string | null;
+  hw_rechnung_pdf_signed_url?: string | null;
+  hw_rechnung_eingereicht_at?: string | null;
 };
 
 export type PartnerHandwerkerProfil = {
@@ -748,6 +760,22 @@ export async function getPartnerDataForHandwerker(handwerkerId: string) {
     const angebotId = auftragAngebotIdByAuftragId.get(a.id);
     const ahMeta = angebotId ? ahMetaByAngebotId.get(angebotId) : undefined;
     const vertragCtx = complianceBundle.vertragByAuftragId.get(a.id) ?? null;
+    const anfrage = angebotId
+      ? anfragenFinal.find((x) => x.angebot_id === angebotId)
+      : undefined;
+    const nachreichungOpenPositionIds = anfrage
+      ? partnerKonditionenNachreichungZeilenIds(
+          anfrage.crm_positionen_raw,
+          {
+            gewerkId: anfrage.gewerk_id,
+            handwerkerId: anfrage.handwerker_id,
+            gewerkName: anfrage.gewerk_name,
+          },
+          anfrage.hw_konditionen,
+          anfrage.hw_status,
+          anfrage.crm_auftrag_positionen ?? a.positionen
+        )
+      : [];
     return {
       ...a,
       angebotHandwerkerId: ahMeta?.id ?? null,
@@ -756,11 +784,20 @@ export async function getPartnerDataForHandwerker(handwerkerId: string) {
       angebotHwKonditionenArt: ahMeta?.hw_konditionen_art ?? null,
       projektvertrag_bestaetigt_am: vertragCtx?.projektvertrag_bestaetigt_am ?? null,
       vertrag: vertragCtx,
+      nachreichungOpenPositionIds,
+      hw_angebot_pdf_url: anfrage?.hw_angebot_pdf_url ?? null,
+      hw_angebot_pdf_signed_url: anfrage?.hw_angebot_pdf_signed_url ?? null,
+      hw_angebot_anhang_urls: anfrage?.hw_angebot_anhang_urls,
+      hw_angebot_anhang_signed_urls: anfrage?.hw_angebot_anhang_signed_urls,
+      hw_rechnung_pdf_url: anfrage?.hw_rechnung_pdf_url ?? null,
+      hw_rechnung_pdf_signed_url: anfrage?.hw_rechnung_pdf_signed_url ?? null,
+      hw_rechnung_eingereicht_at: anfrage?.hw_rechnung_eingereicht_at ?? null,
     };
   });
 
   const anfragenAngebot = anfragenFinal.filter((a) => {
     if (isPartnerAnfrageKonditionenNachreichung(a)) return true;
+    if (isPartnerAnfrageAktionErforderlich(a)) return true;
     if (resolveAngebotHandwerkerPhase(a) === "anfrage") return true;
     if (isPartnerAnfrageAntwortAbgelaufen(a)) return true;
     const st = a.status.toLowerCase();

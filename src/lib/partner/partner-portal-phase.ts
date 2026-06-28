@@ -1,5 +1,6 @@
 import type { PartnerAnfrageItem } from "@/lib/partner/get-partner-data";
 import { isPartnerAnfrageOffen } from "@/lib/partner/partner-anfrage-status";
+import { hasPartnerKonditionenNachreichungAusstehend } from "@/lib/partner/partner-konditionen";
 
 /** Menü-Bereich im Partner-Portal (Website). */
 export type PartnerPortalPhase = "anfrage" | "angebot" | "auftrag";
@@ -23,20 +24,31 @@ export type PartnerPortalPhase = "anfrage" | "angebot" | "auftrag";
 const HW_PENDING = new Set(["angefragt", "ausstehend", "warten", "offen"]);
 const HW_BEANTWORTET = new Set(["akzeptiert", "abgelehnt"]);
 
+/** Eingabe für Phasen-Auflösung — Nachreichungs-Felder optional (z. B. E-Mail-Links). */
+export type ResolveAngebotHandwerkerPhaseInput = Pick<
+  PartnerAnfrageItem,
+  | "status"
+  | "antwort_at"
+  | "gesendet_at"
+  | "hw_eingereicht_at"
+  | "hw_status"
+  | "projektvertrag_bestaetigt_am"
+  | "projektvertrag_bereit"
+> &
+  Partial<
+    Pick<
+      PartnerAnfrageItem,
+      | "crm_positionen_raw"
+      | "crm_auftrag_positionen"
+      | "gewerk_id"
+      | "gewerk_name"
+      | "handwerker_id"
+      | "hw_konditionen"
+    >
+  >;
+
 export function resolveAngebotHandwerkerPhase(
-  item: Pick<
-    PartnerAnfrageItem,
-    | "status"
-    | "antwort_at"
-    | "gesendet_at"
-    | "hw_eingereicht_at"
-    | "hw_status"
-    | "projektvertrag_bestaetigt_am"
-    | "projektvertrag_bereit"
-    | "crm_positionen_raw"
-    | "gewerk_id"
-    | "hw_konditionen"
-  >
+  item: ResolveAngebotHandwerkerPhaseInput
 ): PartnerPortalPhase {
   const st = item.status.toLowerCase();
   const hwSt = (item.hw_status ?? "").toLowerCase();
@@ -57,6 +69,7 @@ export function resolveAngebotHandwerkerPhase(
 
   /** HW hat CRM-Einigung bestätigt — Tab Angebote (PDF, Vertrag). */
   if (hwSt === "uebernommen") {
+    if (hasPartnerKonditionenNachreichungAusstehend(item)) return "anfrage";
     if (item.projektvertrag_bestaetigt_am) return "auftrag";
     return "angebot";
   }

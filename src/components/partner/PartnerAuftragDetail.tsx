@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 
+import { submitPartnerAngebotPdf, submitPartnerRechnung } from "@/app/actions/partner-angebote";
 import {
   createPartnerBautagebuchEintrag,
   deletePartnerBautagebuchEintrag,
@@ -10,18 +11,37 @@ import {
 } from "@/app/actions/partner-bautagebuch";
 import { PartnerLeistungenKonditionenCard } from "@/components/partner/PartnerLeistungenKonditionenCard";
 import {
+  PartnerDetailError,
   PartnerDetailHero,
   PartnerDetailInfoBox,
   PartnerDetailLayout,
   PartnerDetailSection,
+  PartnerDetailSuccessBox,
   PartnerJobFieldActions,
 } from "@/components/partner/PartnerDetailUi";
 import { PartnerPortalDetailSections } from "@/components/partner/PartnerPortalDetailSections";
-import { BautagebuchAccordionList } from "@/components/shared/BautagebuchAccordionList";
 import { PartnerComplianceCheckliste } from "@/components/partner/PartnerComplianceCheckliste";
-import { buildBauauftragComplianceItems } from "@/lib/partner/compliance-summary";
-import { DokumenteTabelle } from "@/components/shared/DokumenteTabelle";
-import { FileUploadField } from "@/components/shared/FileUploadField";
+import { BautagebuchAccordionList } from "@/components/shared/BautagebuchAccordionList";
+import { buildBauauftragComplianceItems, isPartnerBauprojektCompliance } from "@/lib/partner/compliance-summary";
+import {
+  buildPartnerAuftragDokumentZeilen,
+  partnerAuftragKannRechnungHochladen,
+  partnerAuftragKannUnterlagenHochladen,
+} from "@/lib/partner/partner-auftrag-dokumente";
+import {
+  PARTNER_HW_DOKUMENT_NUR_CRM,
+  PARTNER_HW_DOKUMENT_UPLOAD_LABEL,
+  partnerHwDokumentUploadHint,
+} from "@/lib/partner/partner-hw-dokument-copy";
+import {
+  PARTNER_MAX_ANGEBOT_DATEIEN,
+  PARTNER_MAX_BAUTAGEBUCH_ANHAENGE,
+  PARTNER_MAX_PDF_MB,
+  PARTNER_MAX_PHOTO_MB,
+  validatePartnerAngebotFiles,
+  validatePartnerBautagebuchFiles,
+  validatePartnerPdfFile,
+} from "@/lib/partner/partner-upload-limits";
 import type {
   PartnerAuftragItem,
   PartnerBautagebuchItem,
@@ -44,13 +64,9 @@ import {
   HANDWERKER_BEWERTUNG_KATEGORIEN,
   isAuftragAbgeschlossen,
 } from "@/lib/partner/handwerker-bewertung-display";
-import {
-  PARTNER_MAX_BAUTAGEBUCH_ANHAENGE,
-  PARTNER_MAX_PDF_MB,
-  PARTNER_MAX_PHOTO_MB,
-  validatePartnerBautagebuchFiles,
-} from "@/lib/partner/partner-upload-limits";
 import { cn } from "@/lib/utils";
+import { DokumenteTabelle } from "@/components/shared/DokumenteTabelle";
+import { FileUploadField } from "@/components/shared/FileUploadField";
 
 function BautagebuchForm({
   auftragId,
@@ -255,8 +271,19 @@ function formatAuftragStatus(status: string): string {
 }
 
 export function PartnerAuftragDetail({ item }: { item: PartnerAuftragItem }) {
+  const router = useRouter();
   const [showNew, setShowNew] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
+  const [pdfLoading, setPdfLoading] = useState(false);
+  const [rechnungLoading, setRechnungLoading] = useState(false);
+  const [pdfError, setPdfError] = useState<string | null>(null);
+  const [rechnungError, setRechnungError] = useState<string | null>(null);
+  const [angebotPdfs, setAngebotPdfs] = useState<File[]>([]);
+  const [rechnungPdf, setRechnungPdf] = useState<File | null>(null);
+
+  const kannUnterlagenHochladen = partnerAuftragKannUnterlagenHochladen(item);
+  const kannRechnungHochladen = partnerAuftragKannRechnungHochladen(item);
+  const rechnungEingereicht = Boolean(item.hw_rechnung_eingereicht_at);
 
   const accordionEintraege = useMemo(
     () =>
@@ -297,12 +324,15 @@ export function PartnerAuftragDetail({ item }: { item: PartnerAuftragItem }) {
     [item.lead]
   );
   const konditionZeilen = useMemo(
-    () => resolvePartnerAuftragKonditionZeilen(item.positionen),
-    [item.positionen]
+    () =>
+      resolvePartnerAuftragKonditionZeilen(item.positionen, {
+        excludePositionIds: item.nachreichungOpenPositionIds,
+      }),
+    [item.positionen, item.nachreichungOpenPositionIds]
   );
   const bauauftragUnterlagen = useMemo(
     () =>
-      item.vertrag
+      item.vertrag && isPartnerBauprojektCompliance(item.vertrag.compliance_projekt)
         ? buildBauauftragComplianceItems(
             item.vertrag.compliance_stamm,
             item.vertrag.compliance_projekt
@@ -310,6 +340,48 @@ export function PartnerAuftragDetail({ item }: { item: PartnerAuftragItem }) {
         : [],
     [item.vertrag]
   );
+  const dokumentZeilen = useMemo(() => buildPartnerAuftragDokumentZeilen(item), [item]);
+
+  async function onPdfSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!item.angebotHandwerkerId) return;
+    const err = validatePartnerAngebotFiles(angebotPdfs, { required: true });
+    if (err) {
+      setPdfError(err);
+      return;
+    }
+    setPdfLoading(true);
+    setPdfError(null);
+    const fd = new FormData();
+    fd.set("anfrageId", item.angebotHandwerkerId);
+    for (const f of angebotPdfs) fd.append("pdfs", f);
+    const res = await submitPartnerAngebotPdf(fd);
+    setPdfLoading(false);
+    if (!res.ok) {
+      setPdfError(res.error);
+      return;
+    }
+    setAngebotPdfs([]);
+    router.refresh();
+  }
+
+  async function onRechnungSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!item.angebotHandwerkerId || !rechnungPdf) return;
+    setRechnungLoading(true);
+    setRechnungError(null);
+    const fd = new FormData();
+    fd.set("anfrageId", item.angebotHandwerkerId);
+    fd.set("pdf", rechnungPdf);
+    const res = await submitPartnerRechnung(fd);
+    setRechnungLoading(false);
+    if (!res.ok) {
+      setRechnungError(res.error);
+      return;
+    }
+    setRechnungPdf(null);
+    router.refresh();
+  }
   const photoFooter = (
     <PartnerJobFieldActions
       onAddPhoto={() => {
@@ -332,6 +404,14 @@ export function PartnerAuftragDetail({ item }: { item: PartnerAuftragItem }) {
         <PartnerDetailInfoBox>
           Bärenwald hat einen <strong>Tagebucheintrag</strong> angefordert. Bitte unten im
           Bautagebuch dokumentieren.
+        </PartnerDetailInfoBox>
+      ) : null}
+
+      {item.nachreichungOpenPositionIds?.length ? (
+        <PartnerDetailInfoBox>
+          Bärenwald hat eine <strong>neue Leistung</strong> ergänzt — bitte unter{" "}
+          <strong>Offen</strong> prüfen und den Preis bestätigen. Hier siehst du nur die
+          bereits vereinbarten Leistungen.
         </PartnerDetailInfoBox>
       ) : null}
 
@@ -384,14 +464,7 @@ export function PartnerAuftragDetail({ item }: { item: PartnerAuftragItem }) {
         </PartnerDetailSection>
       ) : null}
 
-      <DokumenteTabelle
-        dokumente={item.vertrag?.dokumente_zeilen ?? []}
-        heading="Dokumente"
-        emptyText="Noch keine Dokumente."
-        className="!border-t-0 !pt-0"
-      />
-
-      <div className="space-y-3">
+      <div className="space-y-3 border-t border-border-light pt-5">
         <div className="flex items-center justify-between gap-2">
           <p className="portal-text-section">Bautagebuch</p>
           {!showNew && !editingEintrag ? (
@@ -427,13 +500,96 @@ export function PartnerAuftragDetail({ item }: { item: PartnerAuftragItem }) {
         />
       </div>
 
+      <DokumenteTabelle
+        dokumente={dokumentZeilen}
+        heading="Dokumente"
+        emptyText="Noch keine Dokumente — z. B. Unterlagen an Bärenwald oder Rechnung nach Abschluss."
+        className="!border-t-0 !pt-0"
+      />
+
+      {kannUnterlagenHochladen ? (
+        <form onSubmit={onPdfSubmit} className="space-y-2 rounded-xl border border-border-light p-4">
+          <p className="portal-text-body font-semibold text-text-primary">
+            {PARTNER_HW_DOKUMENT_UPLOAD_LABEL}
+          </p>
+          <FileUploadField
+            label="PDF auswählen"
+            accept="application/pdf,.pdf"
+            multiple
+            hint={partnerHwDokumentUploadHint()}
+            selectedName={
+              angebotPdfs.length > 0
+                ? angebotPdfs.length === 1
+                  ? angebotPdfs[0].name
+                  : `${angebotPdfs.length} PDFs`
+                : null
+            }
+            onChange={(files) => {
+              const list = files.slice(0, PARTNER_MAX_ANGEBOT_DATEIEN);
+              const err = validatePartnerAngebotFiles(list, { required: false });
+              setPdfError(err);
+              setAngebotPdfs(err ? [] : list);
+            }}
+          />
+          {pdfError ? <PartnerDetailError message={pdfError} /> : null}
+          {angebotPdfs.length > 0 ? (
+            <button
+              type="submit"
+              disabled={pdfLoading}
+              className="btn-pill-outline portal-btn !px-4 !py-2.5"
+            >
+              {pdfLoading ? "Wird hochgeladen…" : "Hochladen"}
+            </button>
+          ) : null}
+          <p className="portal-text-meta text-text-secondary">{PARTNER_HW_DOKUMENT_NUR_CRM}</p>
+        </form>
+      ) : null}
+
+      {kannRechnungHochladen ? (
+        <form onSubmit={onRechnungSubmit} className="space-y-2 rounded-xl border border-border-light p-4">
+          <p className="portal-text-body font-semibold text-text-primary">Rechnung einreichen</p>
+          <FileUploadField
+            label="Rechnungs-PDF"
+            accept="application/pdf,.pdf"
+            hint={`PDF, max. ${PARTNER_MAX_PDF_MB} MB`}
+            selectedName={rechnungPdf?.name}
+            onChange={(files) => {
+              const file = files[0] ?? null;
+              if (!file) {
+                setRechnungPdf(null);
+                return;
+              }
+              const err = validatePartnerPdfFile(file);
+              setRechnungError(err);
+              setRechnungPdf(err ? null : file);
+            }}
+          />
+          {rechnungError ? <PartnerDetailError message={rechnungError} /> : null}
+          <button
+            type="submit"
+            disabled={rechnungLoading || !rechnungPdf}
+            className="btn-pill-outline portal-btn !px-4 !py-2.5"
+          >
+            {rechnungLoading ? "Wird gesendet…" : "Rechnung absenden"}
+          </button>
+        </form>
+      ) : null}
+
+      {rechnungEingereicht ? (
+        <PartnerDetailSuccessBox>
+          <p className="font-semibold">Rechnung eingereicht</p>
+          <p className="text-sm">
+            Hochgeladen am {fmtPartnerDate(item.hw_rechnung_eingereicht_at)}
+          </p>
+        </PartnerDetailSuccessBox>
+      ) : null}
+
       {bauauftragUnterlagen.length > 0 ? (
         <PartnerComplianceCheckliste
-          title="Unterlagen Bauprojekt"
+          title="Checkliste Bauprojekt"
           items={bauauftragUnterlagen}
           auftragId={item.id}
-          defaultOpen
-          emptyText="Keine Unterlagen für diesen Bauauftrag."
+          gruppiert
         />
       ) : null}
     </PartnerDetailLayout>

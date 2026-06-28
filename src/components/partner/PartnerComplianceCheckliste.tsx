@@ -1,37 +1,29 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState } from "react";
-import { AlertTriangle, CheckCircle2, ChevronDown, Clock, Upload, XCircle } from "lucide-react";
+import { useRef, useState } from "react";
+import { Eye, Trash2, Upload } from "lucide-react";
 
-import { uploadPartnerComplianceDokument } from "@/app/actions/partner-compliance";
-import { FileUploadField } from "@/components/shared/FileUploadField";
+import {
+  deletePartnerComplianceDokument,
+  uploadPartnerComplianceDokument,
+} from "@/app/actions/partner-compliance";
 import { gruppeComplianceItems } from "@/lib/partner/compliance-summary";
 import {
   complianceStatusLabel,
   type PartnerComplianceItem,
 } from "@/lib/partner/partner-compliance";
-import { fmtPartnerDate } from "@/lib/partner/partner-detail-format";
 import { cn } from "@/lib/utils";
 
-function statusIcon(status: PartnerComplianceItem["status"]) {
-  if (status === "erledigt") return CheckCircle2;
-  if (status === "in_pruefung") return Clock;
-  if (status === "abgelehnt") return XCircle;
-  if (status === "ablauf_warnung" || status === "abgelaufen") return AlertTriangle;
-  return Upload;
+function statusPillClass(status: PartnerComplianceItem["status"]): string {
+  if (status === "erledigt") return "bg-emerald-100 text-emerald-700";
+  if (status === "in_pruefung") return "bg-amber-100 text-amber-800";
+  if (status === "abgelehnt" || status === "abgelaufen") return "bg-red-100 text-red-700";
+  if (status === "ablauf_warnung") return "bg-amber-100 text-amber-800";
+  return "bg-muted text-text-secondary";
 }
 
-function statusClass(status: PartnerComplianceItem["status"]): string {
-  if (status === "erledigt") return "text-emerald-700 bg-emerald-50";
-  if (status === "in_pruefung") return "text-amber-800 bg-amber-50";
-  if (status === "abgelehnt") return "text-red-700 bg-red-50";
-  if (status === "abgelaufen") return "text-red-800 bg-red-50";
-  if (status === "ablauf_warnung") return "text-amber-800 bg-amber-50";
-  return "text-amber-800 bg-amber-50";
-}
-
-function ComplianceRow({
+function KompaktComplianceRow({
   item,
   auftragId,
   disabled,
@@ -41,23 +33,26 @@ function ComplianceRow({
   disabled?: boolean;
 }) {
   const router = useRouter();
+  const inputRef = useRef<HTMLInputElement>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [uploadOk, setUploadOk] = useState(false);
-  const Icon = statusIcon(item.status);
+
   const kannHochladen =
     !disabled &&
     (item.status === "offen" ||
       item.status === "abgelehnt" ||
       item.status === "abgelaufen" ||
       item.status === "ablauf_warnung");
+  const kannLoeschen =
+    !disabled &&
+    Boolean(item.dokument?.id) &&
+    item.status !== "erledigt" &&
+    item.status !== "in_pruefung";
+  const href = item.dokument?.signed_url?.trim();
 
-  async function onUpload(files: File[]) {
-    const file = files[0];
-    if (!file) return;
+  async function onUpload(file: File) {
     setLoading(true);
     setError(null);
-    setUploadOk(false);
     const fd = new FormData();
     fd.set("typ", item.slug);
     fd.set("bezeichnung", item.bezeichnung);
@@ -70,131 +65,107 @@ function ComplianceRow({
       setError(res.error);
       return;
     }
-    setUploadOk(true);
+    router.refresh();
+  }
+
+  async function onDelete() {
+    if (!item.dokument?.id) return;
+    if (!confirm(`„${item.bezeichnung}“ wirklich entfernen?`)) return;
+    setLoading(true);
+    setError(null);
+    const res = await deletePartnerComplianceDokument({
+      dokumentId: item.dokument.id,
+      auftragId,
+    });
+    setLoading(false);
+    if (!res.ok) {
+      setError(res.error);
+      return;
+    }
     router.refresh();
   }
 
   return (
-    <li className="rounded-xl border border-border-light bg-surface-card p-3">
-      <div className="flex flex-wrap items-start justify-between gap-2">
+    <li className="border-b border-border-light last:border-b-0">
+      <div className="flex items-center gap-2 px-3 py-2.5">
         <div className="min-w-0 flex-1">
-          <p className="portal-text-body font-semibold text-text-primary">
+          <p className="portal-text-body font-medium text-text-primary line-clamp-2">
             {item.bezeichnung}
           </p>
-          {item.beschreibung ? (
-            <p className="portal-text-meta mt-0.5 text-text-secondary">{item.beschreibung}</p>
-          ) : null}
-          {item.dokument?.gueltig_bis ? (
-            <p className="portal-text-meta mt-1 text-text-secondary">
-              Gültig bis: {fmtPartnerDate(item.dokument.gueltig_bis)}
-            </p>
-          ) : null}
-          {item.ablauf_hinweis ? (
-            <p
-              className={cn(
-                "portal-text-meta mt-1 font-medium",
-                item.status === "abgelaufen" || item.status === "offen"
-                  ? "text-red-700"
-                  : "text-amber-800"
-              )}
-            >
-              {item.ablauf_hinweis}
-            </p>
-          ) : null}
           {item.status === "abgelehnt" && item.dokument?.ablehnung_grund ? (
-            <p className="portal-text-meta mt-1 text-red-700">
-              Grund: {item.dokument.ablehnung_grund}
-            </p>
-          ) : null}
-          {item.status === "erledigt" ? (
-            <p className="portal-text-meta mt-1 font-medium text-emerald-700">
-              Von Bärenwald bestätigt
-              {item.dokument?.freigegeben_am
-                ? ` · ${fmtPartnerDate(item.dokument.freigegeben_am)}`
-                : ""}
-            </p>
-          ) : null}
-          {item.status === "in_pruefung" ? (
-            <p className="portal-text-meta mt-1 text-amber-800">
-              Wird von Bärenwald geprüft — Sie erhalten hier den Status.
+            <p className="portal-text-meta mt-0.5 text-red-700 line-clamp-2">
+              {item.dokument.ablehnung_grund}
             </p>
           ) : null}
         </div>
         <span
           className={cn(
-            "inline-flex shrink-0 items-center gap-1 rounded-full px-2.5 py-1 portal-text-meta font-semibold",
-            statusClass(item.status)
+            "tag shrink-0 text-[11px]",
+            statusPillClass(item.status)
           )}
         >
-          <Icon className="h-3.5 w-3.5" />
           {complianceStatusLabel(item.status)}
         </span>
-      </div>
-
-      {item.dokument?.signed_url ? (
-        <a
-          href={item.dokument.signed_url}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="portal-text-meta mt-2 inline-block font-medium text-accent underline-offset-2 hover:underline"
-        >
-          Hochgeladenes Dokument ansehen
-        </a>
-      ) : null}
-
-      {kannHochladen ? (
-        <div className="mt-3">
-          <FileUploadField
-            label={
-              item.status === "abgelaufen" || item.status === "ablauf_warnung"
-                ? "Neu hochladen"
-                : "Datei hochladen"
-            }
-            accept="application/pdf,.pdf,image/jpeg,image/png,image/webp"
-            hint="PDF oder Foto (JPG/PNG)"
-            selectedName={loading ? "Wird hochgeladen…" : null}
-            onChange={onUpload}
-          />
-          {uploadOk ? (
-            <p className="portal-text-meta mt-1 font-medium text-emerald-700" role="status">
-              Hochgeladen — wird von Bärenwald geprüft.
-            </p>
+        <div className="flex shrink-0 items-center gap-0.5">
+          {href ? (
+            <a
+              href={href}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="portal-touch-target inline-grid place-items-center rounded-lg text-accent hover:bg-accent-light/30"
+              aria-label={`${item.bezeichnung} ansehen`}
+            >
+              <Eye className="h-4 w-4" />
+            </a>
           ) : null}
-          {error ? (
-            <p className="portal-text-meta mt-1 text-red-700" role="alert">
-              {error}
-            </p>
+          {kannHochladen ? (
+            <>
+              <input
+                ref={inputRef}
+                type="file"
+                accept="application/pdf,.pdf,image/jpeg,image/png,image/webp"
+                className="sr-only"
+                disabled={loading}
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) void onUpload(file);
+                  e.target.value = "";
+                }}
+              />
+              <button
+                type="button"
+                disabled={loading}
+                onClick={() => inputRef.current?.click()}
+                className="portal-touch-target inline-grid place-items-center rounded-lg text-accent hover:bg-accent-light/30 disabled:opacity-50"
+                aria-label={`${item.bezeichnung} hochladen`}
+              >
+                <Upload className="h-4 w-4" />
+              </button>
+            </>
+          ) : null}
+          {kannLoeschen ? (
+            <button
+              type="button"
+              disabled={loading}
+              onClick={() => void onDelete()}
+              className="portal-touch-target inline-grid place-items-center rounded-lg text-red-700 hover:bg-red-50 disabled:opacity-50"
+              aria-label={`${item.bezeichnung} löschen`}
+            >
+              <Trash2 className="h-4 w-4" />
+            </button>
           ) : null}
         </div>
+      </div>
+      {error ? (
+        <p className="portal-text-meta px-3 pb-2 text-red-700" role="alert">
+          {error}
+        </p>
       ) : null}
     </li>
   );
 }
 
-function ItemList({
-  items,
-  auftragId,
-  disabled,
-}: {
-  items: PartnerComplianceItem[];
-  auftragId?: string | null;
-  disabled?: boolean;
-}) {
-  return (
-    <ul className="space-y-2">
-      {items.map((item) => (
-        <ComplianceRow
-          key={`${item.ebene}-${item.slug}`}
-          item={item}
-          auftragId={auftragId}
-          disabled={disabled}
-        />
-      ))}
-    </ul>
-  );
-}
-
-function ChecklistContent({
+function KompaktListe({
   items,
   auftragId,
   disabled,
@@ -207,20 +178,40 @@ function ChecklistContent({
 }) {
   if (gruppiert) {
     return (
-      <div className="space-y-4">
+      <div className="divide-y divide-border-light">
         {gruppeComplianceItems(items).map((gruppe) => (
-          <div key={gruppe.kategorie} className="space-y-2">
-            <h5 className="portal-text-meta font-semibold uppercase tracking-wide text-text-tertiary">
+          <div key={gruppe.kategorie}>
+            <p className="portal-text-meta bg-muted/30 px-3 py-2 font-semibold uppercase tracking-wide text-text-tertiary">
               {gruppe.kategorie}
-            </h5>
-            <ItemList items={gruppe.items} auftragId={auftragId} disabled={disabled} />
+            </p>
+            <ul>
+              {gruppe.items.map((item) => (
+                <KompaktComplianceRow
+                  key={`${item.ebene}-${item.slug}`}
+                  item={item}
+                  auftragId={auftragId}
+                  disabled={disabled}
+                />
+              ))}
+            </ul>
           </div>
         ))}
       </div>
     );
   }
 
-  return <ItemList items={items} auftragId={auftragId} disabled={disabled} />;
+  return (
+    <ul>
+      {items.map((item) => (
+        <KompaktComplianceRow
+          key={`${item.ebene}-${item.slug}`}
+          item={item}
+          auftragId={auftragId}
+          disabled={disabled}
+        />
+      ))}
+    </ul>
+  );
 }
 
 export function PartnerComplianceCheckliste({
@@ -230,8 +221,6 @@ export function PartnerComplianceCheckliste({
   disabled,
   gruppiert = false,
   emptyText = "Keine Unterlagen erforderlich.",
-  accordion = true,
-  defaultOpen = false,
 }: {
   title: string;
   items: PartnerComplianceItem[];
@@ -239,60 +228,26 @@ export function PartnerComplianceCheckliste({
   disabled?: boolean;
   gruppiert?: boolean;
   emptyText?: string;
-  accordion?: boolean;
-  defaultOpen?: boolean;
 }) {
-  const [open, setOpen] = useState(defaultOpen);
+  if (!items.length) return null;
 
-  const content =
-    items.length > 0 ? (
-      <ChecklistContent
+  return (
+    <section className="overflow-hidden rounded-xl border border-border-light bg-surface-card">
+      <div className="border-b border-border-light px-4 py-3">
+        <h4 className="portal-text-section text-text-primary">{title}</h4>
+        <p className="portal-text-meta mt-0.5 text-text-secondary">
+          {items.length} {items.length === 1 ? "Punkt" : "Punkte"} — hochladen, ansehen oder
+          löschen direkt in der Zeile
+        </p>
+      </div>
+      <KompaktListe
         items={items}
         auftragId={auftragId}
         disabled={disabled}
         gruppiert={gruppiert}
       />
-    ) : (
-      <p className="portal-text-body text-text-secondary">{emptyText}</p>
-    );
-
-  if (!accordion) {
-    return (
-      <section className="space-y-3">
-        <h4 className="portal-text-section">{title}</h4>
-        {content}
-      </section>
-    );
-  }
-
-  return (
-    <section className="overflow-hidden rounded-xl border border-border-light">
-      <button
-        type="button"
-        onClick={() => setOpen((v) => !v)}
-        className="flex min-h-[52px] w-full items-center gap-3 px-3 py-3.5 text-left transition-colors hover:bg-muted/30"
-        aria-expanded={open}
-      >
-        <span className="min-w-0 flex-1">
-          <span className="portal-text-section block text-text-primary">{title}</span>
-          {items.length > 0 ? (
-            <span className="portal-text-meta mt-0.5 block text-text-secondary">
-              {items.length} {items.length === 1 ? "Dokument" : "Dokumente"}
-            </span>
-          ) : null}
-        </span>
-        <ChevronDown
-          className={cn(
-            "h-5 w-5 shrink-0 text-text-tertiary transition-transform",
-            open && "rotate-180"
-          )}
-          aria-hidden
-        />
-      </button>
-      {open ? (
-        <div className="space-y-3 border-t border-border-light bg-muted/15 px-3 py-4">
-          {content}
-        </div>
+      {items.length === 0 ? (
+        <p className="portal-text-body px-4 py-6 text-text-secondary">{emptyText}</p>
       ) : null}
     </section>
   );

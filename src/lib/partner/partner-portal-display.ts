@@ -193,8 +193,14 @@ export function resolvePartnerKonditionZeilen(
   return basis;
 }
 
-export function resolvePartnerAuftragKonditionZeilen(positionen: PartnerAuftragPosition[]) {
-  return buildPartnerAuftragKonditionZeilen(positionen);
+export function resolvePartnerAuftragKonditionZeilen(
+  positionen: PartnerAuftragPosition[],
+  opts?: { excludePositionIds?: string[] }
+) {
+  const zeilen = buildPartnerAuftragKonditionZeilen(positionen);
+  const exclude = new Set(opts?.excludePositionIds ?? []);
+  if (!exclude.size) return zeilen;
+  return zeilen.filter((z) => !exclude.has(z.id));
 }
 
 /** @deprecated Nutze resolvePartnerKonditionZeilen für Partner-Portal */

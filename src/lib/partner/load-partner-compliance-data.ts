@@ -221,7 +221,11 @@ function dokumenteZeilenFromKontext(
   }
 
   for (const d of dokumente) {
-    if (auftragId && d.auftrag_id !== auftragId && d.auftrag_id) continue;
+    if (auftragId) {
+      if (d.auftrag_id !== auftragId) continue;
+    } else if (d.auftrag_id) {
+      continue;
+    }
     rows.push({
       id: d.id,
       datum: d.hochgeladen_am,

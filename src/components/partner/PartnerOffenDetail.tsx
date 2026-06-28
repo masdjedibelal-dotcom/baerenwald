@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 
 import { confirmPartnerAuftrag } from "@/app/actions/partner-auftrag-bestaetigen";
-import { PartnerComplianceCheckliste } from "@/components/partner/PartnerComplianceCheckliste";
+import { PartnerPflichtenCard } from "@/components/partner/PartnerPflichtenCard";
 import { PartnerLeistungenKonditionenCard } from "@/components/partner/PartnerLeistungenKonditionenCard";
 import {
   PartnerConfirmDialog,
@@ -17,7 +17,6 @@ import {
 } from "@/components/partner/PartnerDetailUi";
 import { PartnerPortalDetailSections } from "@/components/partner/PartnerPortalDetailSections";
 import { DokumenteTabelle, type DokumentZeile } from "@/components/shared/DokumenteTabelle";
-import { buildBauauftragComplianceItems } from "@/lib/partner/compliance-summary";
 import type { PartnerOffenAngebotItem } from "@/lib/partner/partner-offen-status";
 import { partnerDetailStatusPillClass } from "@/lib/partner/partner-detail-format";
 import {
@@ -114,11 +113,6 @@ export function PartnerOffenDetail({
         crm_leistungsumfang: item.crm_leistungsumfang,
       }),
     [item.lead, item.crm_leistungsumfang]
-  );
-
-  const complianceItems = buildBauauftragComplianceItems(
-    item.compliance_stamm,
-    item.compliance_projekt
   );
 
   const dokumentZeilen = useMemo((): DokumentZeile[] => {
@@ -221,18 +215,7 @@ export function PartnerOffenDetail({
         </PartnerDetailSection>
       ) : null}
 
-      {complianceItems.length > 0 ? (
-        <PartnerComplianceCheckliste
-          title="Erforderliche Unterlagen"
-          items={complianceItems}
-          auftragId={item.auftrag_id}
-          gruppiert
-          accordion
-          defaultOpen={false}
-          disabled
-          emptyText="Für dieses Projekt sind keine zusätzlichen Unterlagen nötig."
-        />
-      ) : null}
+      <PartnerPflichtenCard compliance_projekt={item.compliance_projekt} />
 
       <DokumenteTabelle
         dokumente={dokumentZeilen}
