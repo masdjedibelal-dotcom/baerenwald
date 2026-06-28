@@ -3,6 +3,38 @@ import type { PartnerAngebotPositionenFilter } from "@/lib/partner/partner-leist
 
 const SKIP_POSITION_SLUGS = new Set(["__freitext__", "__gesamtrabatt__"]);
 
+/** Positionen, bei denen der Handwerker noch zu-/absagen oder Preise festlegen muss. */
+const AUFTRAG_POSITION_HW_AKTION = new Set([
+  "angefragt",
+  "ausstehend",
+  "zugewiesen",
+  "warten",
+  "offen",
+]);
+
+export function positionBrauchtHandwerkerAktion(
+  handwerkerStatus: string | null | undefined
+): boolean {
+  return AUFTRAG_POSITION_HW_AKTION.has((handwerkerStatus ?? "").toLowerCase());
+}
+
+/** Offene Auftragspositionen nach CRM-`handwerker_status` (primäres Signal bei Nachreichung). */
+export function resolveOffeneAuftragPositionIdsByStatus(
+  positionen: Array<Pick<PartnerAuftragPosition, "id" | "gewerk_name" | "handwerker_status">>,
+  filter?: PartnerNachreichungFilter
+): string[] {
+  const gewerkName = filter?.gewerkName?.trim() || "";
+  return positionen
+    .filter((p) => {
+      if (!positionBrauchtHandwerkerAktion(p.handwerker_status)) return false;
+      if (gewerkName && p.gewerk_name?.trim() && p.gewerk_name.trim() !== gewerkName) {
+        return false;
+      }
+      return true;
+    })
+    .map((p) => p.id);
+}
+
 export const PARTNER_KONDITION_MWST = 19;
 
 export type PartnerKonditionZeile = {
@@ -425,6 +457,9 @@ export function resolveAuftragNachreichungOpenIds(
   auftragPositionen: PartnerAuftragPosition[],
   anfragen: Array<{ hw_konditionen?: PartnerHwKonditionen | null }>
 ): string[] {
+  const fromStatus = resolveOffeneAuftragPositionIdsByStatus(auftragPositionen);
+  if (fromStatus.length) return fromStatus;
+
   const agreedIds = new Set<string>();
   const agreedTitles = new Set<string>();
   let hasPriorAgreement = false;
@@ -437,7 +472,13 @@ export function resolveAuftragNachreichungOpenIds(
     }
   }
 
-  if (!hasPriorAgreement) return [];
+  /** Laufender Auftrag mit bereits bearbeiteten Leistungen, aber ohne hw_konditionen-JSON. */
+  if (!hasPriorAgreement) {
+    const settled = auftragPositionen.some(
+      (p) => !positionBrauchtHandwerkerAktion(p.handwerker_status)
+    );
+    if (!settled) return [];
+  }
 
   const open: string[] = [];
   for (const pos of auftragPositionen) {
@@ -457,6 +498,13 @@ export function resolveNachreichungOpenZeilenIds(input: {
   hw_status?: string | null;
   alle_hw_konditionen?: Array<PartnerHwKonditionen | null | undefined>;
 }): string[] {
+  const ausStatus = input.crm_auftrag_positionen?.length
+    ? resolveOffeneAuftragPositionIdsByStatus(
+        input.crm_auftrag_positionen,
+        input.filter
+      )
+    : [];
+
   const anfragen = (input.alle_hw_konditionen ?? [input.hw_konditionen]).map(
     (hw) => ({ hw_konditionen: hw })
   );
@@ -473,7 +521,7 @@ export function resolveNachreichungOpenZeilenIds(input: {
     input.crm_auftrag_positionen
   );
 
-  return Array.from(new Set([...ausAuftrag, ...ausAngebot]));
+  return Array.from(new Set([...ausStatus, ...ausAuftrag, ...ausAngebot]));
 }
 
 /** CRM-Leistungen, die nach Einigung noch nicht verhandelt sind (Angebots-JSON + Preisänderungen). */
@@ -599,6 +647,31 @@ export function initialHwNotizInputs(
     out[z.id] = submitted.get(z.id) ?? z.hwNotiz ?? "";
   }
   return out;
+}
+
+/** CRM-Preise aus Zeilen (Handwerker bearbeitet Preise nicht mehr). */
+export function buildKonditionenEingabeFromZeilen(
+  zeilen: PartnerKonditionZeile[],
+  notizen?: Record<string, string>
+): Array<{ position_id: string; hw_netto: number; hw_notiz?: string }> | null {
+  const rows: Array<{ position_id: string; hw_netto: number; hw_notiz?: string }> = [];
+  for (const z of zeilen) {
+    const netto =
+      z.hwNetto != null && z.hwNetto > 0
+        ? z.hwNetto
+        : z.vorschlagNetto != null && z.vorschlagNetto > 0
+          ? z.vorschlagNetto
+          : null;
+    if (netto == null) return null;
+    const notiz = notizen?.[z.id]?.trim() || z.hwNotiz?.trim();
+    rows.push({
+      position_id: z.id,
+      hw_netto: netto,
+      ...(notiz ? { hw_notiz: notiz } : {}),
+    });
+  }
+  if (!rows.length) return null;
+  return rows;
 }
 
 export function parseHwNettoInput(raw: string): number | null {

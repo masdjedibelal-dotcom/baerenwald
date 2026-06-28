@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 
 import {
+  buildPartnerHwKonditionenFromAuftragEingabe,
   buildPartnerHwKonditionenFromEingabe,
   parsePartnerKonditionenEingabe,
 } from "@/lib/partner/apply-partner-hw-konditionen";
@@ -352,14 +353,34 @@ export async function respondPartnerAnfrage(opts: {
   const parsed = parsePartnerKonditionenEingabe(konditionenRaw);
   if (!parsed.ok) return { ok: false, error: parsed.error };
 
-  const built = buildPartnerHwKonditionenFromEingabe({
-    positionenRaw: angebote?.positionen,
-    gewerkId: String((row as { gewerk_id?: string }).gewerk_id ?? ""),
-    eingabe: parsed.rows,
-  });
+  const built =
+    konditionenNachreichung && nachreichungKontext.crm_auftrag_positionen?.length
+      ? buildPartnerHwKonditionenFromAuftragEingabe({
+          auftragPositionen: nachreichungKontext.crm_auftrag_positionen.filter((p) =>
+            parsed.rows.some((r) => r.position_id === p.id)
+          ),
+          eingabe: parsed.rows,
+        })
+      : buildPartnerHwKonditionenFromEingabe({
+          positionenRaw: angebote?.positionen,
+          gewerkId: String((row as { gewerk_id?: string }).gewerk_id ?? ""),
+          eingabe: parsed.rows,
+        });
   if (!built.ok) return { ok: false, error: built.error };
 
-  const konditionen = built.konditionen;
+  let konditionen = built.konditionen;
+  if (konditionenNachreichung && nachreichungKontext.hw_konditionen?.positionen.length) {
+    const byId = new Map(
+      nachreichungKontext.hw_konditionen.positionen.map((p) => [p.position_id, p])
+    );
+    for (const p of konditionen.positionen) {
+      byId.set(p.position_id, p);
+    }
+    konditionen = {
+      ...konditionen,
+      positionen: Array.from(byId.values()),
+    };
+  }
   konditionen.eingereicht_at = now;
 
   const updatePayload = {
@@ -377,13 +398,17 @@ export async function respondPartnerAnfrage(opts: {
     hw_crm_antwort_at: null,
   };
 
+  const rueckfrageHwStatus = konditionenNachreichung
+    ? ["rueckfrage", "abgelehnt", "uebernommen", "eingereicht"]
+    : ["rueckfrage", "abgelehnt", "uebernommen"];
+
   const { error: upErr } = isRueckfrage
     ? await supabaseAdmin
         .from("angebot_handwerker")
         .update(updatePayload)
         .eq("id", opts.anfrageId)
         .eq("handwerker_id", link.handwerkerId)
-        .in("hw_status", ["rueckfrage", "abgelehnt", "uebernommen"])
+        .in("hw_status", rueckfrageHwStatus)
     : konditionenAusstehend
       ? await supabaseAdmin
           .from("angebot_handwerker")

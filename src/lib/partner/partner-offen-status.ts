@@ -127,13 +127,18 @@ export function buildPartnerOffenListe(input: {
   anfragen: PartnerAnfrageItem[];
   angebote: PartnerAnfrageItem[];
   auftragAnfragen: PartnerAuftragItem[];
+  /** Anfragen mit offener Nachreichung am verknüpften Auftrag (auch bei uebernommen). */
+  nachreichungAnfrageIds?: Set<string>;
 }): PartnerOffenItem[] {
   const seen = new Set<string>();
   const out: PartnerOffenItem[] = [];
+  const forcedNachreichung = input.nachreichungAnfrageIds ?? new Set<string>();
 
   for (const raw of [...input.anfragen, ...input.angebote]) {
     if (seen.has(raw.id)) continue;
+    const forced = forcedNachreichung.has(raw.id);
     if (
+      !forced &&
       !isPartnerAngebotOffenListItem(raw) &&
       !isPartnerAnfrageAktionErforderlich(raw)
     ) {

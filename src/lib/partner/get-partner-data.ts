@@ -69,7 +69,10 @@ import { resolvePartnerListenTitel } from "@/lib/partner/partner-listen-titel";
 import { isSupabaseConfigured, supabaseAdmin } from "@/lib/supabase";
 import { stripHtmlToPlainText } from "@/lib/portal/portal-display";
 import type { PartnerHwKonditionen } from "@/lib/partner/partner-konditionen";
-import { resolveNachreichungOpenZeilenIds } from "@/lib/partner/partner-konditionen";
+import {
+  resolveNachreichungOpenZeilenIds,
+  resolveOffeneAuftragPositionIdsByStatus,
+} from "@/lib/partner/partner-konditionen";
 import { pickPrimaryAngebotHandwerkerAnfrage } from "@/lib/partner/pick-primary-angebot-handwerker";
 
 export type PartnerAnfrageItem = {
@@ -152,6 +155,8 @@ export type PartnerAuftragPosition = {
   preis_partner?: number | null;
   lohn_fix?: number | null;
   material_fix?: number | null;
+  /** CRM-Zuweisungsstatus dieser Leistung (z. B. angefragt nach Nachreichung). */
+  handwerker_status?: string | null;
 };
 
 export type PartnerBautagebuchItem = {
@@ -615,6 +620,7 @@ export async function getPartnerDataForHandwerker(handwerkerId: string) {
           p.preis_partner != null ? Number(p.preis_partner) : null,
         lohn_fix: p.lohn_fix != null ? Number(p.lohn_fix) : null,
         material_fix: p.material_fix != null ? Number(p.material_fix) : null,
+        handwerker_status: (p.handwerker_status as string | null) ?? null,
       }));
 
       const aid = String(raw.id);
@@ -769,20 +775,27 @@ export async function getPartnerDataForHandwerker(handwerkerId: string) {
       : [];
     const anfrage = pickPrimaryAngebotHandwerkerAnfrage(anfragenForAngebot);
     const vertragCtx = complianceBundle.vertragByAuftragId.get(a.id) ?? null;
-    const nachreichungOpenPositionIds = anfrage
-      ? resolveNachreichungOpenZeilenIds({
-          crm_positionen_raw: anfrage.crm_positionen_raw,
-          crm_auftrag_positionen: anfrage.crm_auftrag_positionen ?? a.positionen,
-          filter: {
-            gewerkId: anfrage.gewerk_id,
-            handwerkerId: anfrage.handwerker_id,
-            gewerkName: anfrage.gewerk_name,
-          },
-          hw_konditionen: anfrage.hw_konditionen,
-          hw_status: anfrage.hw_status,
-          alle_hw_konditionen: anfrage.alle_hw_konditionen,
-        })
-      : [];
+
+    const nachreichungOpenPositionIds = Array.from(
+      new Set([
+        ...resolveOffeneAuftragPositionIdsByStatus(a.positionen),
+        ...anfragenForAngebot.flatMap((af) =>
+          resolveNachreichungOpenZeilenIds({
+            crm_positionen_raw: af.crm_positionen_raw,
+            crm_auftrag_positionen: a.positionen,
+            filter: {
+              gewerkId: af.gewerk_id,
+              handwerkerId: af.handwerker_id,
+              gewerkName: af.gewerk_name,
+            },
+            hw_konditionen: af.hw_konditionen,
+            hw_status: af.hw_status,
+            alle_hw_konditionen: af.alle_hw_konditionen,
+          })
+        ),
+      ])
+    );
+
     return {
       ...a,
       angebotHandwerkerId: anfrage?.id ?? null,
@@ -802,7 +815,18 @@ export async function getPartnerDataForHandwerker(handwerkerId: string) {
     };
   });
 
+  const nachreichungAnfrageIds = new Set<string>();
+  for (const a of alleAuftraege) {
+    if (!a.nachreichungOpenPositionIds?.length) continue;
+    const angebotId = auftragAngebotIdByAuftragId.get(a.id);
+    if (!angebotId) continue;
+    for (const af of anfragenByAngebotId.get(angebotId) ?? []) {
+      nachreichungAnfrageIds.add(af.id);
+    }
+  }
+
   const anfragenAngebot = anfragenFinal.filter((a) => {
+    if (nachreichungAnfrageIds.has(a.id)) return true;
     if (isPartnerAnfrageKonditionenNachreichung(a)) return true;
     if (isPartnerAnfrageAktionErforderlich(a)) return true;
     if (resolveAngebotHandwerkerPhase(a) === "anfrage") return true;
@@ -908,6 +932,7 @@ export async function getPartnerDataForHandwerker(handwerkerId: string) {
     anfragen: anfragenAngebot,
     angebote,
     auftragAnfragen,
+    nachreichungAnfrageIds,
   });
 
   const auftragTitelById = new Map<string, string>();

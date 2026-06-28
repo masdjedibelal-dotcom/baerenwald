@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { confirmPartnerProjektvertrag } from "@/app/actions/partner-vertrag";
 import {
@@ -22,11 +22,16 @@ export function PartnerProjektvertragPaket({
   gewerkName,
   vertrag,
   projektvertrag_bestaetigt_am,
+  embedded = false,
+  onEmbeddedReadyChange,
 }: {
   auftragId: string;
   gewerkName?: string;
   vertrag: PartnerProjektvertrag | null;
   projektvertrag_bestaetigt_am?: string | null;
+  /** Ohne eigenen Bestätigen-Button — Parent steuert Annahme (z. B. Tab Offen). */
+  embedded?: boolean;
+  onEmbeddedReadyChange?: (ready: boolean) => void;
 }) {
   const router = useRouter();
   const [gelesen, setGelesen] = useState(false);
@@ -37,6 +42,15 @@ export function PartnerProjektvertragPaket({
 
   const bestaetigt = Boolean(projektvertrag_bestaetigt_am);
   const kannBestaetigen = !bestaetigt && vertrag && gelesen && verbindlich;
+
+  useEffect(() => {
+    if (!embedded || !onEmbeddedReadyChange) return;
+    if (bestaetigt || !vertrag) {
+      onEmbeddedReadyChange(true);
+      return;
+    }
+    onEmbeddedReadyChange(gelesen && verbindlich);
+  }, [embedded, onEmbeddedReadyChange, bestaetigt, vertrag, gelesen, verbindlich]);
 
   async function onConfirm() {
     setLoading(true);
@@ -80,10 +94,12 @@ export function PartnerProjektvertragPaket({
 
   if (!vertrag) {
     return (
-      <PartnerDetailInfoBox>
-        Bärenwald bereitet deinen Projektvertrag vor. Sobald dein Angebot geprüft und der Kunde
-        bestätigt hat, erhältst du hier den Vertrag zur verbindlichen Annahme.
-      </PartnerDetailInfoBox>
+      <PartnerDetailSection title="Projektvertrag (Leistungsvertrag)">
+        <PartnerDetailInfoBox>
+          Bärenwald bereitet deinen Projektvertrag für diesen Auftrag vor. Er erscheint hier,
+          sobald er im CRM freigegeben ist — ein Vertrag pro Auftrag, unabhängig vom Gewerk.
+        </PartnerDetailInfoBox>
+      </PartnerDetailSection>
     );
   }
 
@@ -105,7 +121,7 @@ export function PartnerProjektvertragPaket({
         einreichst.
       </PartnerDetailInfoBox>
 
-      <PartnerDetailSection title="Projektvertrag">
+      <PartnerDetailSection title="Projektvertrag (Leistungsvertrag)">
         <PartnerDetailKeyValues rows={vertragRows} />
         {vertrag.pdf_signed_url || vertrag.pdf_url ? (
           <a
@@ -148,13 +164,13 @@ export function PartnerProjektvertragPaket({
         </div>
       ) : null}
 
-      {!bestaetigt && (!gelesen || !verbindlich) ? (
+      {!embedded && !bestaetigt && (!gelesen || !verbindlich) ? (
         <p className="portal-text-meta text-text-secondary">
           Bitte beide Bestätigungen ankreuzen, um den Auftrag verbindlich anzunehmen.
         </p>
       ) : null}
 
-      {kannBestaetigen ? (
+      {!embedded && kannBestaetigen ? (
         <button
           type="button"
           disabled={loading}
@@ -165,15 +181,17 @@ export function PartnerProjektvertragPaket({
         </button>
       ) : null}
 
-      <PartnerConfirmDialog
-        open={confirmOpen}
-        title="Auftrag verbindlich bestätigen?"
-        description="Du schließt den Projekt-Nachunternehmervertrag ab. Bärenwald wird informiert. Der Auftrag wird danach unter „Aufträge“ freigeschaltet."
-        confirmLabel="Ja, verbindlich bestätigen"
-        loading={loading}
-        onConfirm={onConfirm}
-        onCancel={() => setConfirmOpen(false)}
-      />
+      {!embedded ? (
+        <PartnerConfirmDialog
+          open={confirmOpen}
+          title="Auftrag verbindlich bestätigen?"
+          description="Du schließt den Projekt-Nachunternehmervertrag ab. Bärenwald wird informiert. Der Auftrag wird danach unter „Aufträge“ freigeschaltet."
+          confirmLabel="Ja, verbindlich bestätigen"
+          loading={loading}
+          onConfirm={onConfirm}
+          onCancel={() => setConfirmOpen(false)}
+        />
+      ) : null}
     </div>
   );
 }

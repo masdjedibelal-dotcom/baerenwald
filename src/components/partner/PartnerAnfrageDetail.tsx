@@ -5,6 +5,8 @@ import { useEffect, useMemo, useState } from "react";
 
 import { respondPartnerAnfrage } from "@/app/actions/partner-anfragen";
 import { PartnerLeistungenKonditionenCard } from "@/components/partner/PartnerLeistungenKonditionenCard";
+import { PartnerProjektvertragPaket } from "@/components/partner/PartnerProjektvertragPaket";
+import { PartnerRahmenvertragAcceptBlock } from "@/components/partner/PartnerRahmenvertragAcceptBlock";
 import { DokumenteTabelle } from "@/components/shared/DokumenteTabelle";
 import {
   PartnerConfirmDialog,
@@ -22,12 +24,10 @@ import {
 } from "@/lib/partner/handwerker-ablehnung";
 import type { PartnerAnfrageItem } from "@/lib/partner/get-partner-data";
 import {
-  initialHwNettoInputs,
+  buildKonditionenEingabeFromZeilen,
   initialHwNotizInputs,
   mapKonditionZeilenVereinbart,
-  parseHwNettoInput,
   resolveNachreichungOpenZeilenIds,
-  sindKonditionPreiseGeaendert,
 } from "@/lib/partner/partner-konditionen";
 import {
   isPartnerAnfrageAntwortAbgelaufen,
@@ -57,13 +57,6 @@ function anfrageStatusPillClass(item: PartnerAnfrageItem, bearbeitbar: boolean):
   return partnerDetailStatusPillClass(item.status);
 }
 
-function zeilenGeaendert(
-  zeilen: ReturnType<typeof resolvePartnerKonditionZeilen>,
-  hwValues: Record<string, string>
-): boolean {
-  return sindKonditionPreiseGeaendert(zeilen, hwValues);
-}
-
 export function PartnerAnfrageDetail({
   item,
   onAccepted,
@@ -82,6 +75,8 @@ export function PartnerAnfrageDetail({
   const [confirmReject, setConfirmReject] = useState(false);
   const [grund, setGrund] = useState<string>(HANDWERKER_ABLEHNUNG_GRUND_VALUES[0]);
   const [notiz, setNotiz] = useState("");
+  const [bedingungenAkzeptiert, setBedingungenAkzeptiert] = useState(false);
+  const [projektvertragBereit, setProjektvertragBereit] = useState(true);
 
   const bearbeitbar = isPartnerAnfrageKonditionenBearbeitbar(item);
   const nachreichung = isPartnerAnfrageKonditionenNachreichung(item);
@@ -178,16 +173,9 @@ export function PartnerAnfrageDetail({
     [konditionZeilen, nachreichung]
   );
 
-  const [hwValues, setHwValues] = useState<Record<string, string>>({});
   const [hwNotizen, setHwNotizen] = useState<Record<string, string>>({});
 
   useEffect(() => {
-    setHwValues(
-      initialHwNettoInputs(
-        konditionZeilen,
-        hwSt === "rueckfrage" && !nachreichung ? null : item.hw_konditionen
-      )
-    );
     setHwNotizen(
       initialHwNotizInputs(
         konditionZeilen,
@@ -195,11 +183,6 @@ export function PartnerAnfrageDetail({
       )
     );
   }, [konditionZeilen, item.hw_konditionen, hwSt, nachreichung]);
-
-  const geaendert = useMemo(
-    () => zeilenGeaendert(konditionZeilen, hwValues),
-    [konditionZeilen, hwValues]
-  );
 
   const sections = useMemo(
     () =>
@@ -210,26 +193,8 @@ export function PartnerAnfrageDetail({
   );
 
   function buildKonditionenJson(): string | null {
-    const rows: Array<{ position_id: string; hw_netto: number; hw_notiz?: string }> = [];
-    for (const z of konditionZeilen) {
-      if (z.readonly && z.hwNetto != null && z.hwNetto > 0) {
-        const notizLocked = z.hwNotiz?.trim();
-        rows.push({
-          position_id: z.id,
-          hw_netto: z.hwNetto,
-          ...(notizLocked ? { hw_notiz: notizLocked } : {}),
-        });
-        continue;
-      }
-      const hw = parseHwNettoInput(hwValues[z.id] ?? "");
-      if (hw == null) return null;
-      const notiz = hwNotizen[z.id]?.trim();
-      rows.push({
-        position_id: z.id,
-        hw_netto: hw,
-        ...(notiz ? { hw_notiz: notiz } : {}),
-      });
-    }
+    const rows = buildKonditionenEingabeFromZeilen(konditionZeilen, hwNotizen);
+    if (!rows) return null;
     return JSON.stringify(rows);
   }
 
@@ -296,7 +261,9 @@ export function PartnerAnfrageDetail({
     router.refresh();
   }
 
-  const primaryLabel = geaendert ? "Preise senden" : "Annehmen";
+  const primaryLabel = "Annehmen";
+
+  const kannAnnehmen = bedingungenAkzeptiert && projektvertragBereit;
 
   const heroMetaLine = useMemo(() => {
     const date = partnerDetailDateMetaLine(item.gesendet_at);
@@ -317,6 +284,7 @@ export function PartnerAnfrageDetail({
         primaryLabel={primaryLabel}
         onPrimary={() => setConfirmSend(true)}
         primaryLoading={loading}
+        primaryDisabled={!kannAnnehmen}
         secondaryLabel="Ablehnen"
         onSecondary={() => setShowReject(true)}
         secondaryDisabled={loading}
@@ -344,8 +312,8 @@ export function PartnerAnfrageDetail({
       {bearbeitbar ? (
         <PartnerDetailInfoBox>
           {nachreichung
-            ? "Neue Leistung zum bestehenden Auftrag — bitte nur die markierte Leistung prüfen und senden. Bereits angenommene Leistungen sind unverändert und weiterhin unter Angebote einsehbar."
-            : "Preise prüfen. Bei Änderungen „Preis bearbeiten“, dann senden."}
+            ? "Neue Leistung zum bestehenden Auftrag — bitte den Angebotspreis von Bärenwald prüfen und annehmen. Bereits vereinbarte Leistungen sind unverändert."
+            : "Bärenwald hat die Angebotspreise festgelegt. Bitte prüfen und annehmen oder ablehnen."}
         </PartnerDetailInfoBox>
       ) : bestaetigungAusstehend ? (
         <PartnerDetailInfoBox>
@@ -393,22 +361,33 @@ export function PartnerAnfrageDetail({
         >
           <PartnerLeistungenKonditionenCard
             zeilen={neueZeilen}
-            mode={bearbeitbar ? "edit" : "readonly"}
-            hwValues={bearbeitbar ? hwValues : undefined}
-            hwNotizen={bearbeitbar ? hwNotizen : undefined}
-            onHwChange={
-              bearbeitbar
-                ? (id, value) => setHwValues((prev) => ({ ...prev, [id]: value }))
-                : undefined
-            }
-            onHwNotizChange={
-              bearbeitbar
-                ? (id, value) => setHwNotizen((prev) => ({ ...prev, [id]: value }))
-                : undefined
-            }
+            mode="readonly"
             gesamtLabel={PARTNER_LEISTUNGEN_GESAMT_LABEL}
           />
         </PartnerDetailSection>
+      ) : null}
+
+      {bearbeitbar ? (
+        <PartnerDetailSection title="Bedingungen">
+          <PartnerRahmenvertragAcceptBlock
+            pdfUrl={item.rahmenvertrag?.pdf_signed_url ?? item.rahmenvertrag?.pdf_url}
+            vertragsNr={item.rahmenvertrag?.vertrags_nr}
+            akzeptiert={bedingungenAkzeptiert}
+            onAkzeptiertChange={setBedingungenAkzeptiert}
+            alreadyAcceptedAt={item.rahmenvertrag?.portal_akzeptiert_am}
+          />
+        </PartnerDetailSection>
+      ) : null}
+
+      {item.auftrag_id && !nachreichung ? (
+        <PartnerProjektvertragPaket
+          auftragId={item.auftrag_id}
+          gewerkName={item.gewerk_name}
+          vertrag={item.projektvertrag ?? null}
+          projektvertrag_bestaetigt_am={item.projektvertrag_bestaetigt_am}
+          embedded={bearbeitbar}
+          onEmbeddedReadyChange={setProjektvertragBereit}
+        />
       ) : null}
 
       {bearbeitbar && !showReject ? (
@@ -470,13 +449,9 @@ export function PartnerAnfrageDetail({
 
       <PartnerConfirmDialog
         open={confirmSend}
-        title={geaendert ? "Preise senden?" : "Annehmen?"}
-        description={
-          geaendert
-            ? "An Bärenwald zur Prüfung."
-            : "Mit den vorgeschlagenen Preisen."
-        }
-        confirmLabel="Senden"
+        title="Annehmen?"
+        description="Du nimmst die von Bärenwald festgelegten Preise an."
+        confirmLabel="Annehmen"
         loading={loading}
         onConfirm={sendZusage}
         onCancel={() => setConfirmSend(false)}

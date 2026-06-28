@@ -118,10 +118,27 @@ export async function respondPartnerAuftragZuweisung(opts: {
     .eq("auftrag_id", auftragId)
     .eq("handwerker_id", link.handwerkerId);
 
-  const rows = zuweisungen ?? [];
+  let rows = zuweisungen ?? [];
   const posRows = positionen ?? [];
+
   if (!rows.length && !posRows.length) {
     return { ok: false, error: "Keine Zuweisung für diesen Auftrag." };
+  }
+
+  if (!rows.length && posRows.length) {
+    const first = posRows[0] as { gewerk_id?: string | null };
+    const { data: inserted, error: insErr } = await supabaseAdmin
+      .from("auftrag_handwerker")
+      .insert({
+        auftrag_id: auftragId,
+        handwerker_id: link.handwerkerId,
+        gewerk_id: first.gewerk_id ?? null,
+        status: "angefragt",
+      })
+      .select("id, status, gewerk_id, gewerke(name)")
+      .single();
+    if (insErr) return { ok: false, error: insErr.message };
+    if (inserted) rows = [inserted];
   }
 
   const hwStatus = aggregateAuftragHandwerkerStatus(
@@ -203,16 +220,36 @@ export async function respondPartnerAuftragZuweisung(opts: {
     | null = null;
 
   if (opts.antwort === "akzeptiert") {
-    const konditionenRaw = opts.konditionenJson?.trim() ?? "";
+    let konditionenRaw = opts.konditionenJson?.trim() ?? "";
     if (!konditionenRaw) {
-      return { ok: false, error: "Bitte die Angebotspreise je Leistung angeben." };
+      const pending = posRows.filter((p) => {
+        const st = String(p.handwerker_status ?? "").toLowerCase();
+        return PENDING_HW.has(st) || st === "zugewiesen";
+      });
+      const autoRows = pending
+        .map((p) => {
+          const netto = p.preis_partner != null ? Number(p.preis_partner) : 0;
+          if (!Number.isFinite(netto) || netto <= 0) return null;
+          return { position_id: String(p.id), hw_netto: netto };
+        })
+        .filter((r): r is { position_id: string; hw_netto: number } => Boolean(r));
+      if (!autoRows.length) {
+        return {
+          ok: false,
+          error: "Für die offenen Leistungen fehlt noch ein Angebotspreis von Bärenwald.",
+        };
+      }
+      konditionenRaw = JSON.stringify(autoRows);
     }
 
     const parsed = parsePartnerKonditionenEingabe(konditionenRaw);
     if (!parsed.ok) return { ok: false, error: parsed.error };
 
+    const openPositionen = auftragPositionen.filter((p) =>
+      parsed.rows.some((r) => r.position_id === p.id)
+    );
     const auftragBuilt = buildPartnerHwKonditionenFromAuftragEingabe({
-      auftragPositionen,
+      auftragPositionen: openPositionen.length ? openPositionen : auftragPositionen,
       eingabe: parsed.rows,
     });
     if (!auftragBuilt.ok) return { ok: false, error: auftragBuilt.error };

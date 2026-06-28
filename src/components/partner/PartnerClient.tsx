@@ -615,6 +615,7 @@ export function PartnerClient({
       return (
         <PartnerAuftragAnfrageDetail
           item={selectedOffenAuftrag}
+          rahmenvertrag={profil.rahmenvertrag}
           onAccepted={refreshOffenDetail}
           onWeiterZuAngeboten={refreshOffenDetail}
         />

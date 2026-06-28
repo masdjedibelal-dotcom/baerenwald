@@ -6,6 +6,7 @@ import { useMemo, useState } from "react";
 import { confirmPartnerAuftrag } from "@/app/actions/partner-auftrag-bestaetigen";
 import { PartnerAnfrageDetail } from "@/components/partner/PartnerAnfrageDetail";
 import { PartnerPflichtenCard } from "@/components/partner/PartnerPflichtenCard";
+import { PartnerProjektvertragPaket } from "@/components/partner/PartnerProjektvertragPaket";
 import { PartnerLeistungenKonditionenCard } from "@/components/partner/PartnerLeistungenKonditionenCard";
 import {
   PartnerConfirmDialog,
@@ -100,6 +101,18 @@ function PartnerOffenNeuDetail({
 
   const dokumentZeilen = useMemo((): DokumentZeile[] => {
     const rows: DokumentZeile[] = [];
+    const pv = item.projektvertrag;
+    const pvHref = pv?.pdf_signed_url?.trim() || pv?.pdf_url?.trim();
+    if (pvHref) {
+      rows.push({
+        id: "projektvertrag",
+        datum: pv?.signiert_am ?? null,
+        name: pv?.vertrags_nr
+          ? `Projektvertrag ${pv.vertrags_nr}`
+          : "Projektvertrag (Leistungsvertrag)",
+        href: pvHref,
+      });
+    }
     const rv = item.rahmenvertrag;
     const rvHref = rv?.pdf_signed_url?.trim() || rv?.pdf_url?.trim();
     if (rvHref) {
@@ -111,12 +124,12 @@ function PartnerOffenNeuDetail({
       });
     }
     return rows;
-  }, [item.rahmenvertrag]);
+  }, [item.projektvertrag, item.rahmenvertrag]);
 
   const heroMeta = partnerDetailDateMetaLine(item.gesendet_at ?? item.antwort_at);
 
   const infoText =
-    "Bitte Leistungen, Rahmenvertrag und Unterlagen prüfen — dann Auftrag annehmen.";
+    "Bitte Leistungen, Bedingungen (Rahmenvertrag) und Projektvertrag prüfen — dann annehmen.";
 
   const primaryLabel = "Auftrag annehmen";
 
@@ -177,6 +190,15 @@ function PartnerOffenNeuDetail({
         ist_bauprojekt={item.ist_bauprojekt}
       />
 
+      {item.auftrag_id ? (
+        <PartnerProjektvertragPaket
+          auftragId={item.auftrag_id}
+          gewerkName={item.gewerk_name}
+          vertrag={item.projektvertrag ?? null}
+          projektvertrag_bestaetigt_am={item.projektvertrag_bestaetigt_am}
+        />
+      ) : null}
+
       <DokumenteTabelle
         dokumente={dokumentZeilen}
         heading="Dokumente"
@@ -192,7 +214,7 @@ function PartnerOffenNeuDetail({
             className="mt-1"
           />
           <span className="portal-text-body text-text-primary">
-            Ich habe den Partnerschafts-Rahmenvertrag gelesen.
+            Ich habe die Bedingungen (Partnerschafts-Rahmenvertrag) gelesen.
           </span>
         </label>
         <label className="flex cursor-pointer items-start gap-3">

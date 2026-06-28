@@ -89,10 +89,10 @@ export function isPartnerAnfrageKonditionenNachreichung(
 export function isPartnerAnfrageKonditionenBearbeitbar(
   item: PartnerAnfrageKonditionenFields
 ): boolean {
+  if (isPartnerAnfrageKonditionenNachreichung(item)) return true;
   if (isPartnerAnfrageAntwortAbgelaufen(item)) return false;
   if (isPartnerAnfrageWartetAufPreiseinigung(item)) return false;
   if (isPartnerAnfrageBestaetigungAusstehend(item)) return false;
-  if (isPartnerAnfrageKonditionenNachreichung(item)) return true;
 
   const st = item.status.toLowerCase();
   const hwSt = (item.hw_status ?? "").toLowerCase();
