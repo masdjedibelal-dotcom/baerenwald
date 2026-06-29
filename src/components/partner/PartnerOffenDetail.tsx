@@ -29,8 +29,9 @@ import {
 } from "@/lib/partner/handwerker-ablehnung";
 import {
   buildNachreichungKonditionZeilen,
-  mapKonditionZeilenVereinbart,
   konditionZeilenNurAusHw,
+  mapKonditionZeilenVereinbart,
+  positionBrauchtVorgangAktion,
   resolveNachreichungOpenZeilenIds,
 } from "@/lib/partner/partner-konditionen";
 import { buildPartnerAuftragKonditionZeilen } from "@/lib/partner/partner-leistungen-display";
@@ -133,13 +134,14 @@ export function PartnerOffenDetail({
         }));
       }
 
-      if (item.crm_auftrag_positionen?.length) {
-        return buildPartnerAuftragKonditionZeilen(item.crm_auftrag_positionen).map(
-          (z) => ({
-            ...z,
-            zeilenBadge: z.zeilenBadge ?? "neu",
-          })
-        );
+      const offenAusDb = (item.crm_auftrag_positionen ?? []).filter((p) =>
+        positionBrauchtVorgangAktion(p)
+      );
+      if (offenAusDb.length) {
+        return buildPartnerAuftragKonditionZeilen(offenAusDb).map((z) => ({
+          ...z,
+          zeilenBadge: z.zeilenBadge ?? "neu",
+        }));
       }
     }
 

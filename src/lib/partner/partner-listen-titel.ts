@@ -6,6 +6,7 @@ import type { PortalAnfrageLeadSource } from "@/lib/portal/portal-anfrage-displa
 import { objektPlzOrt } from "@/lib/portal/portal-detail-item";
 import type { PortalObjekt } from "@/lib/portal/portal-objekt";
 import { isPrivatPortalKontext } from "@/lib/portal/portal-titel";
+import { labelSituation } from "@/lib/lead-funnel-labels";
 
 export type PartnerListenTitelInput = {
   gewerk_name?: string | null;
@@ -63,15 +64,20 @@ function resolveOrtLabel(opts: PartnerListenTitelInput): string | undefined {
   return parts.length ? parts.join(" ") : undefined;
 }
 
-/** Einheitlicher Listen-/Detail-Titel: „Gewerk — PLZ Ort“ (Gewerbe: Objektname). */
+function resolveSituationLabel(lead?: PortalAnfrageLeadSource | null): string | undefined {
+  const labeled = labelSituation(lead?.situation);
+  return labeled !== "—" ? labeled : undefined;
+}
+
+/** Einheitlicher Listen-/Detail-Titel: „Situation — Gewerk — PLZ Ort“. */
 export function resolvePartnerListenTitel(opts: PartnerListenTitelInput): string {
+  const situation = resolveSituationLabel(opts.lead);
   const gewerk = resolveGewerkLabel(opts.gewerk_name, opts.gewerk_names);
   const ort = resolveOrtLabel(opts);
   const fallback = opts.fallbackTitel?.trim();
 
-  if (gewerk && ort) return `${gewerk} — ${ort}`;
-  if (gewerk) return gewerk;
-  if (ort) return ort;
+  const parts = [situation, gewerk, ort].filter((p): p is string => Boolean(p));
+  if (parts.length) return parts.join(" — ");
   if (fallback) return fallback;
   return "Projekt";
 }

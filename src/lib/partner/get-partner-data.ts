@@ -69,6 +69,8 @@ import { isSupabaseConfigured, supabaseAdmin } from "@/lib/supabase";
 import { stripHtmlToPlainText } from "@/lib/portal/portal-display";
 import type { PartnerHwKonditionen } from "@/lib/partner/partner-konditionen";
 import {
+  filterOffeneNachreichungPositionIds,
+  positionIstHandwerkerZugewiesen,
   resolveNachreichungOpenZeilenIds,
   resolveOffeneAuftragPositionIdsByStatus,
 } from "@/lib/partner/partner-konditionen";
@@ -609,7 +611,11 @@ export async function getPartnerDataForHandwerker(handwerkerId: string) {
         objektById: auftragObjektById,
       });
       const allPos = (raw.auftrag_positionen ?? []) as Array<Record<string, unknown>>;
-      const ownPos = allPos.filter((p) => String(p.handwerker_id ?? "") === id);
+      const ownPos = allPos.filter(
+        (p) =>
+          String(p.handwerker_id ?? "") === id &&
+          positionIstHandwerkerZugewiesen(p.handwerker_status as string | null)
+      );
       const positionen = ownPos.map((p) => ({
         id: String(p.id),
         gewerk_name: String(p.gewerk_name ?? "Gewerk"),
@@ -761,24 +767,27 @@ export async function getPartnerDataForHandwerker(handwerkerId: string) {
     const anfrage = pickPrimaryAngebotHandwerkerAnfrage(anfragenForAngebot);
     const vertragCtx = complianceBundle.vertragByAuftragId.get(a.id) ?? null;
 
-    const nachreichungOpenPositionIds = Array.from(
-      new Set([
-        ...resolveOffeneAuftragPositionIdsByStatus(a.positionen),
-        ...anfragenForAngebot.flatMap((af) =>
-          resolveNachreichungOpenZeilenIds({
-            crm_positionen_raw: af.crm_positionen_raw,
-            crm_auftrag_positionen: a.positionen,
-            filter: {
-              gewerkId: af.gewerk_id,
-              handwerkerId: af.handwerker_id,
-              gewerkName: af.gewerk_name,
-            },
-            hw_konditionen: af.hw_konditionen,
-            hw_status: af.hw_status,
-            alle_hw_konditionen: af.alle_hw_konditionen,
-          })
-        ),
-      ])
+    const nachreichungOpenPositionIds = filterOffeneNachreichungPositionIds(
+      a.positionen,
+      Array.from(
+        new Set([
+          ...resolveOffeneAuftragPositionIdsByStatus(a.positionen),
+          ...anfragenForAngebot.flatMap((af) =>
+            resolveNachreichungOpenZeilenIds({
+              crm_positionen_raw: af.crm_positionen_raw,
+              crm_auftrag_positionen: a.positionen,
+              filter: {
+                gewerkId: af.gewerk_id,
+                handwerkerId: af.handwerker_id,
+                gewerkName: af.gewerk_name,
+              },
+              hw_konditionen: af.hw_konditionen,
+              hw_status: af.hw_status,
+              alle_hw_konditionen: af.alle_hw_konditionen,
+            })
+          ),
+        ])
+      )
     );
 
     return {

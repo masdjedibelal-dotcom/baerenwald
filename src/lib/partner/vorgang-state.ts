@@ -1,5 +1,7 @@
-import { positionBrauchtHandwerkerAktion } from "@/lib/partner/partner-konditionen";
+import { positionBrauchtVorgangAktion } from "@/lib/partner/partner-konditionen";
 import type { PartnerAuftragPosition } from "@/lib/partner/get-partner-data";
+
+export { positionBrauchtVorgangAktion } from "@/lib/partner/partner-konditionen";
 
 export type VorgangState = "neu" | "geaendert" | "in_bearbeitung" | "erledigt";
 
@@ -13,14 +15,6 @@ const ERLEDIGT_AUFTRAG_STATUS = new Set([
 
 export function isVorgangAuftragErledigt(auftragStatus: string): boolean {
   return ERLEDIGT_AUFTRAG_STATUS.has(auftragStatus.trim().toLowerCase());
-}
-
-export function positionBrauchtVorgangAktion(
-  position: Pick<PartnerAuftragPosition, "aenderung_typ" | "handwerker_status">
-): boolean {
-  const typ = (position.aenderung_typ ?? "").trim().toLowerCase();
-  if (typ === "neu" || typ === "geaendert" || typ === "entfernt") return true;
-  return positionBrauchtHandwerkerAktion(position.handwerker_status);
 }
 
 export function hatOffeneVorgangAktion(

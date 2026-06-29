@@ -1,6 +1,5 @@
 import type { PartnerAuftragPosition } from "@/lib/partner/get-partner-data";
 import type { PartnerAngebotPositionenFilter } from "@/lib/partner/partner-leistungen-display";
-import { positionBrauchtVorgangAktion } from "@/lib/partner/vorgang-state";
 
 const SKIP_POSITION_SLUGS = new Set(["__freitext__", "__gesamtrabatt__"]);
 
@@ -13,10 +12,47 @@ const AUFTRAG_POSITION_HW_AKTION = new Set([
   "offen",
 ]);
 
+const AUFTRAG_POSITION_HW_ABGESCHLOSSEN = new Set([
+  "angenommen",
+  "akzeptiert",
+  "uebernommen",
+  "eingereicht",
+  "bestaetigt",
+]);
+
+export function positionHandwerkerAbgeschlossen(
+  handwerkerStatus: string | null | undefined
+): boolean {
+  return AUFTRAG_POSITION_HW_ABGESCHLOSSEN.has((handwerkerStatus ?? "").toLowerCase());
+}
+
+/** CRM hat die Leistung an den Handwerker gesendet (handwerker_status gesetzt). */
+export function positionIstHandwerkerZugewiesen(
+  handwerkerStatus: string | null | undefined
+): boolean {
+  return Boolean((handwerkerStatus ?? "").trim());
+}
+
 export function positionBrauchtHandwerkerAktion(
   handwerkerStatus: string | null | undefined
 ): boolean {
   return AUFTRAG_POSITION_HW_AKTION.has((handwerkerStatus ?? "").toLowerCase());
+}
+
+export function positionBrauchtVorgangAktion(
+  position: Pick<PartnerAuftragPosition, "aenderung_typ" | "handwerker_status">
+): boolean {
+  if (!positionIstHandwerkerZugewiesen(position.handwerker_status)) return false;
+
+  const typ = (position.aenderung_typ ?? "").trim().toLowerCase();
+  const hwAbgeschlossen = positionHandwerkerAbgeschlossen(position.handwerker_status);
+
+  if (hwAbgeschlossen) {
+    return typ === "geaendert" || typ === "entfernt";
+  }
+
+  if (typ === "neu" || typ === "geaendert" || typ === "entfernt") return true;
+  return positionBrauchtHandwerkerAktion(position.handwerker_status);
 }
 
 /** Offene Auftragspositionen (Status oder CRM-`aenderung_typ`). */
@@ -143,6 +179,7 @@ export function buildNachreichungKonditionZeilen(
   /** Alle HW-Positionen am Auftrag — nicht nach Gewerk filtern (Multi-Gewerk / eine AH-Zeile). */
   const extra: PartnerKonditionZeile[] = [];
   for (const ap of auftragPositionen) {
+    if (!positionIstHandwerkerZugewiesen(ap.handwerker_status)) continue;
     const titleKey = normalizeKonditionLeistungKey(ap.leistung_name);
     if (knownIds.has(ap.id) || knownTitles.has(titleKey)) continue;
     extra.push(konditionZeileFromAuftragPosition(ap));
@@ -446,9 +483,11 @@ export type PartnerLeistungStatusAmpel = "gruen" | "gelb" | "rot";
 /** Ampel neben Leistungstitel: grün = angenommen, gelb = Aktion nötig, rot = entfernt. */
 export function resolvePartnerLeistungStatusAmpel(
   z: PartnerKonditionZeile,
-  opts?: { mode?: "edit" | "readonly"; hwValue?: string }
+  opts?: { mode?: "edit" | "readonly"; hwValue?: string; handwerker_status?: string | null }
 ): PartnerLeistungStatusAmpel {
   if (z.zeilenBadge === "entfernt") return "rot";
+  if (z.zeilenBadge === "vereinbart") return "gruen";
+  if (positionHandwerkerAbgeschlossen(opts?.handwerker_status)) return "gruen";
   if (z.zeilenBadge === "neu" || z.zeilenBadge === "geaendert") return "gelb";
   if (z.zeilenBadge === "vereinbart") return "gruen";
   if (z.readonly) return "gruen";
@@ -518,6 +557,7 @@ export function resolveAuftragNachreichungOpenIds(
 
   const open: string[] = [];
   for (const pos of auftragPositionen) {
+    if (!positionBrauchtVorgangAktion(pos)) continue;
     if (agreedIds.has(pos.id)) continue;
     const keys = leistungTitleKeysFromPosition(pos);
     if (keys.some((k) => agreedTitles.has(k))) continue;
@@ -534,9 +574,14 @@ export function resolveNachreichungOpenZeilenIds(input: {
   hw_status?: string | null;
   alle_hw_konditionen?: Array<PartnerHwKonditionen | null | undefined>;
 }): string[] {
-  const ausStatus = input.crm_auftrag_positionen?.length
+  const zugewiesenePositionen = (input.crm_auftrag_positionen ?? []).filter((p) =>
+    positionIstHandwerkerZugewiesen(p.handwerker_status)
+  );
+  const zugewieseneIds = new Set(zugewiesenePositionen.map((p) => p.id));
+
+  const ausStatus = zugewiesenePositionen.length
     ? resolveOffeneAuftragPositionIdsByStatus(
-        input.crm_auftrag_positionen,
+        zugewiesenePositionen,
         input.filter
       )
     : [];
@@ -545,8 +590,8 @@ export function resolveNachreichungOpenZeilenIds(input: {
     (hw) => ({ hw_konditionen: hw })
   );
 
-  const ausAuftrag = input.crm_auftrag_positionen?.length
-    ? resolveAuftragNachreichungOpenIds(input.crm_auftrag_positionen, anfragen)
+  const ausAuftrag = zugewiesenePositionen.length
+    ? resolveAuftragNachreichungOpenIds(zugewiesenePositionen, anfragen)
     : [];
 
   const ausAngebot = partnerKonditionenNachreichungZeilenIds(
@@ -554,10 +599,27 @@ export function resolveNachreichungOpenZeilenIds(input: {
     input.filter,
     input.hw_konditionen,
     input.hw_status,
-    input.crm_auftrag_positionen
-  );
+    zugewiesenePositionen
+  ).filter((id) => zugewieseneIds.has(id));
 
-  return Array.from(new Set([...ausStatus, ...ausAuftrag, ...ausAngebot]));
+  return filterOffeneNachreichungPositionIds(
+    zugewiesenePositionen,
+    Array.from(new Set([...ausStatus, ...ausAuftrag, ...ausAngebot]))
+  );
+}
+
+/** Entfernt bereits angenommene Positionen aus der offenen Nachreichungs-Liste. */
+export function filterOffeneNachreichungPositionIds(
+  positionen: PartnerAuftragPosition[] | undefined,
+  ids: string[]
+): string[] {
+  if (!positionen?.length) return ids;
+  const byId = new Map(positionen.map((p) => [p.id, p]));
+  return ids.filter((id) => {
+    const pos = byId.get(id);
+    if (!pos) return false;
+    return positionBrauchtVorgangAktion(pos);
+  });
 }
 
 /** CRM-Leistungen, die nach Einigung noch nicht verhandelt sind (Angebots-JSON + Preisänderungen). */
