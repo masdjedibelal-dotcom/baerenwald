@@ -345,7 +345,8 @@ export function PartnerAuftragDetail({
       })
         ? buildBauauftragComplianceItems(
             item.vertrag.compliance_stamm,
-            item.vertrag.compliance_projekt
+            item.vertrag.compliance_projekt,
+            item.vertrag.compliance_bauauftrag
           )
         : [],
     [item.vertrag]
@@ -602,7 +603,7 @@ export function PartnerAuftragDetail({
 
       {bauauftragUnterlagen.length > 0 ? (
         <PartnerComplianceCheckliste
-          title="Checkliste Bauprojekt"
+          title="Nachweise laut Projektvertrag (Anlage 1)"
           items={bauauftragUnterlagen}
           auftragId={item.id}
           gruppiert

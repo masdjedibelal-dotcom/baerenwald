@@ -1,6 +1,7 @@
 import {
   sendHandwerkerLeistungZuweisungMail,
   type LeistungZuweisungMailLeistung,
+  type PartnerAuftragMailVariant,
 } from "@/lib/partner/partner-mail";
 import { resolveZuweisungPortalUrl } from "@/lib/partner/resolve-partner-portal-link";
 import { isSupabaseConfigured, supabaseAdmin } from "@/lib/supabase";
@@ -40,6 +41,7 @@ export async function notifyHandwerkerLeistungZuweisung(input: {
   handwerkerId: string;
   positionId?: string;
   positionIds?: string[];
+  variant?: PartnerAuftragMailVariant;
 }): Promise<{ ok: boolean; error?: string }> {
   if (!isSupabaseConfigured()) {
     return { ok: false, error: "Datenbank nicht konfiguriert." };
@@ -89,7 +91,7 @@ export async function notifyHandwerkerLeistungZuweisung(input: {
 
   let posQuery = supabaseAdmin
     .from("auftrag_positionen")
-    .select("id, gewerk_name, leistung_name, beschreibung, menge, einheit")
+    .select("id, gewerk_name, leistung_name, beschreibung, menge, einheit, preis_partner")
     .eq("auftrag_id", auftragId)
     .eq("handwerker_id", handwerkerId);
 
@@ -111,6 +113,7 @@ export async function notifyHandwerkerLeistungZuweisung(input: {
     beschreibung: p.beschreibung as string | null,
     menge: p.menge as number | null,
     einheit: p.einheit as string | null,
+    preis_netto: p.preis_partner as number | null,
   }));
 
   if (!leistungen.length) {
@@ -195,5 +198,6 @@ export async function notifyHandwerkerLeistungZuweisung(input: {
     ),
     leistungen,
     portalLink,
+    variant: input.variant,
   });
 }

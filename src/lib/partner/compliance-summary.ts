@@ -2,6 +2,7 @@ import {
   COMPLIANCE_EBENE_LABELS,
   type ComplianceEbene,
 } from "@/lib/partner/compliance-partner-profile";
+import { mergeNachunternehmerComplianceItems } from "@/lib/partner/nachunternehmervertrag-compliance";
 import type { PartnerComplianceItem } from "@/lib/partner/partner-compliance";
 
 export const RAHMENVERTRAG_TYP_SLUG = "rahmenvertrag";
@@ -32,12 +33,14 @@ export function isPartnerBauprojektAuftrag(input: {
   return (input.compliance_projekt?.length ?? 0) > 0;
 }
 
-/** Nur Bauprojekt-Unterlagen (Leistungsvertrag & Auftrag) — keine Stammdaten aus dem Profil. */
+/** Nachweise laut Projekt-Nachunternehmervertrag (Stamm + auftragsspezifisch). */
 export function buildBauauftragComplianceItems(
-  _stamm: PartnerComplianceItem[] | undefined,
-  projekt: PartnerComplianceItem[] | undefined
+  stamm: PartnerComplianceItem[] | undefined,
+  projekt: PartnerComplianceItem[] | undefined,
+  bauauftrag?: PartnerComplianceItem[] | undefined
 ): PartnerComplianceItem[] {
-  return [...(projekt ?? [])];
+  if (bauauftrag?.length) return [...bauauftrag];
+  return mergeNachunternehmerComplianceItems(stamm, projekt);
 }
 
 export type ComplianceStammSummary = {

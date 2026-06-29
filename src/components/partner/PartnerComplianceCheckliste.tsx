@@ -24,6 +24,13 @@ function statusPillClass(status: PartnerComplianceItem["status"]): string {
   return "bg-muted text-text-secondary";
 }
 
+function uploadAuftragIdForItem(
+  item: PartnerComplianceItem,
+  auftragId?: string | null
+): string | null | undefined {
+  return item.ebene === "leistung" ? auftragId : null;
+}
+
 function KompaktComplianceRow({
   item,
   auftragId,
@@ -57,7 +64,7 @@ function KompaktComplianceRow({
     const fd = new FormData();
     fd.set("typ", item.slug);
     fd.set("bezeichnung", item.bezeichnung);
-    if (auftragId) fd.set("auftragId", auftragId);
+    if (auftragId) fd.set("auftragId", uploadAuftragIdForItem(item, auftragId) ?? "");
     if (item.erneuerung_monate) fd.set("erneuerungMonate", String(item.erneuerung_monate));
     fd.set("file", file);
     const res = await uploadPartnerComplianceDokument(fd);
@@ -77,7 +84,7 @@ function KompaktComplianceRow({
     setError(null);
     const res = await deletePartnerComplianceDokument({
       dokumentId: item.dokument.id,
-      auftragId,
+      auftragId: uploadAuftragIdForItem(item, auftragId),
     });
     setLoading(false);
     if (!res.ok) {

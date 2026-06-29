@@ -4,6 +4,7 @@ import {
   buildMelderBestaetigungHtml,
   buildMelderBestaetigungSubject,
   buildOrgNeueMeldungHtml,
+  buildOrgNeueMeldungSubject,
 } from "@/lib/email/meldung-mail-templates";
 import { AUTOMATED_CUSTOMER_EMAIL_BCC } from "@/lib/email/resend-bcc";
 import { parseMeldeBereichId, persistMeldungLead } from "@/lib/org/persist-meldung-lead";
@@ -177,15 +178,21 @@ export async function POST(req: Request) {
             process.env.RESEND_FROM_SYSTEM ??
             "System <system@baerenwaldmuenchen.de>",
           to: orgEmail,
-          subject: `Neue Meldung — ${objekt.titel}`,
+          subject: buildOrgNeueMeldungSubject(objekt.titel),
           html: buildOrgNeueMeldungHtml({
-            orgName: orgDisplay,
             objektTitel: objekt.titel,
             melderName: name,
             melderEinheit: einheit,
+            melderTelefon: telefon || undefined,
+            melderEmail: isValidEmail(email) ? email : undefined,
             kategorie,
+            bereichId,
             beschreibung,
+            fotoCount: fotos.length,
+            dringlichkeit: body.dringlichkeit,
+            quelle: "mieter",
             portalPath: `/portal?section=freigabe&id=${result.id}`,
+            referenz: result.id.slice(0, 8).toUpperCase(),
           }),
         });
       } catch (e) {

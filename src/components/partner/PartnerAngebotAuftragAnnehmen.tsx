@@ -102,8 +102,11 @@ export function PartnerAngebotAuftragAnnehmen({
 
   return (
     <PartnerPflichtenCard
+      compliance_stamm={item.compliance_stamm}
       compliance_projekt={item.compliance_projekt}
+      compliance_bauauftrag={item.compliance_bauauftrag}
       ist_bauprojekt={item.ist_bauprojekt}
+      auftragId={auftragId}
     />
   );
 }

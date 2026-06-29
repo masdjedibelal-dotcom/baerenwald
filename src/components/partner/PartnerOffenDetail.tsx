@@ -37,6 +37,7 @@ import {
   resolveNachreichungOpenZeilenIds,
 } from "@/lib/partner/partner-konditionen";
 import { buildPartnerAuftragKonditionZeilen } from "@/lib/partner/partner-leistungen-display";
+import { isPartnerBauprojektAuftrag } from "@/lib/partner/compliance-summary";
 import { sortPartnerDokumentZeilen } from "@/lib/partner/partner-auftrag-dokumente";
 import {
   partnerOffenStatusLabel,
@@ -78,6 +79,11 @@ export function PartnerOffenDetail({
   const [grund, setGrund] = useState<string>(HANDWERKER_ABLEHNUNG_GRUND_VALUES[0]);
   const [notiz, setNotiz] = useState("");
   const hatAuftrag = Boolean(item.auftrag_id);
+  const istBauprojekt = isPartnerBauprojektAuftrag({
+    ist_bauprojekt: item.ist_bauprojekt,
+    compliance_projekt: item.compliance_projekt,
+  });
+  const brauchtProjektvertrag = hatAuftrag && !isNachreichung && istBauprojekt;
 
   const statusLabel = vorgangState
     ? vorgangStateLabel(vorgangState)
@@ -170,7 +176,7 @@ export function PartnerOffenDetail({
     const rows: DokumentZeile[] = [];
     const pv = item.projektvertrag;
     const pvHref = pv?.pdf_signed_url?.trim() || pv?.pdf_url?.trim();
-    if (pvHref) {
+    if (brauchtProjektvertrag && pvHref) {
       rows.push({
         id: "projektvertrag",
         datum: pv?.signiert_am ?? null,
@@ -181,15 +187,17 @@ export function PartnerOffenDetail({
       });
     }
     return sortPartnerDokumentZeilen(rows);
-  }, [item.projektvertrag]);
+  }, [item.projektvertrag, brauchtProjektvertrag]);
 
   const heroMeta = partnerDetailDateMetaLine(item.gesendet_at ?? item.antwort_at);
 
   const infoText = useMemo(() => {
     if (!isNachreichung) {
       return hatAuftrag
-        ? "Prüfe die Pflichten, Leistungen und den Projektvertrag. Mit „Annehmen“ bestätigst du den Auftrag verbindlich."
-        : "Prüfe die Pflichten und Leistungen deiner Zuweisung. Mit „Annehmen“ bestätigst du sie verbindlich.";
+        ? brauchtProjektvertrag
+          ? "Prüfe die Pflichten, Leistungen und den Projektvertrag. Mit „Annehmen“ bestätigst du den Auftrag verbindlich."
+          : "Prüfe die Leistungen und Konditionen. Mit „Annehmen“ nimmst du den Auftrag verbindlich an."
+        : "Prüfe die Leistungen und Konditionen. Mit „Annehmen“ nimmst du die Zuweisung verbindlich an.";
     }
     const openIds = openPositionIds ?? [];
     const openPos =
@@ -201,7 +209,7 @@ export function PartnerOffenDetail({
       return "Bärenwald hat Leistungen oder Preise angepasst — bitte prüfen und bestätigen.";
     }
     return "Bärenwald hat Leistungen angepasst — markierte Zeilen unten prüfen und bestätigen.";
-  }, [isNachreichung, hatAuftrag, openPositionIds, item.crm_auftrag_positionen]);
+  }, [isNachreichung, hatAuftrag, brauchtProjektvertrag, openPositionIds, item.crm_auftrag_positionen]);
 
   const primaryLabel = isNachreichung ? "Änderungen bestätigen" : "Annehmen";
 
@@ -210,7 +218,7 @@ export function PartnerOffenDetail({
     setError(null);
     const gelesen = isNachreichung
       ? pflichtenGelesen
-      : hatAuftrag
+      : brauchtProjektvertrag
         ? pflichtenGelesen && projektvertragBereit
         : pflichtenGelesen;
     const verbindlich = gelesen;
@@ -258,7 +266,7 @@ export function PartnerOffenDetail({
 
   const kannBestaetigen = isNachreichung
     ? pflichtenGelesen
-    : hatAuftrag
+    : brauchtProjektvertrag
       ? pflichtenGelesen && projektvertragBereit
       : pflichtenGelesen;
 
@@ -320,16 +328,19 @@ export function PartnerOffenDetail({
       ) : null}
 
       <PartnerPflichtenCard
+        compliance_stamm={item.compliance_stamm}
         compliance_projekt={item.compliance_projekt}
+        compliance_bauauftrag={item.compliance_bauauftrag}
         ist_bauprojekt={item.ist_bauprojekt}
-        includeProjektvertrag={!isNachreichung && hatAuftrag}
+        auftragId={item.auftrag_id}
+        includeProjektvertrag={brauchtProjektvertrag}
         acknowledgment={{
           checked: pflichtenGelesen,
           onChange: setPflichtenGelesen,
         }}
       />
 
-      {hatAuftrag && !isNachreichung ? (
+      {brauchtProjektvertrag ? (
         <PartnerProjektvertragPaket
           auftragId={item.auftrag_id!}
           gewerkName={item.gewerk_name}
@@ -380,9 +391,11 @@ export function PartnerOffenDetail({
         description={
           isNachreichung
             ? "Mit der Bestätigung nimmst du die geänderten Leistungen verbindlich an (stille Aktualisierung — kein neuer Projektvertrag)."
-            : hatAuftrag
+            : brauchtProjektvertrag
               ? "Mit der Bestätigung nimmst du den Auftrag inkl. Projektvertrag verbindlich an."
-              : "Mit der Bestätigung nimmst du die Zuweisung verbindlich an."
+              : hatAuftrag
+                ? "Mit der Bestätigung nimmst du Leistungen und Konditionen verbindlich an."
+                : "Mit der Bestätigung nimmst du die Zuweisung verbindlich an."
         }
         confirmLabel={primaryLabel}
         onConfirm={onConfirm}

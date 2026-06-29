@@ -180,6 +180,19 @@ function itemFromTyp(
   };
 }
 
+/** Für Nachunternehmervertrag-Checkliste (Bauprojekt). */
+export function itemFromTypForNachunternehmer(
+  typ: PartnerComplianceTypRow,
+  dokumente: PartnerDokumentRow[],
+  opts: {
+    pflicht: boolean;
+    auftragId?: string | null;
+    ebene: ComplianceEbene;
+  }
+): PartnerComplianceItem {
+  return itemFromTyp(typ, dokumente, opts);
+}
+
 /** @deprecated Nutze buildPartnerStammCompliance / buildProjektCompliance */
 export function buildComplianceChecklist(opts: {
   typen: PartnerComplianceTypRow[];

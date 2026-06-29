@@ -14,6 +14,7 @@ import {
   resolveProjektGewerkSlugsFromPositionen,
   type PartnerGewerkRow,
 } from "@/lib/partner/compliance-partner-profile";
+import { buildBauprojektNachunternehmerCompliance } from "@/lib/partner/nachunternehmervertrag-compliance";
 import { fetchCrmProjektvertrag } from "@/lib/partner/partner-crm-api";
 import type { PartnerRahmenvertrag } from "@/lib/partner/compliance-summary";
 import { resolvePartnerFileUrl } from "@/lib/partner/partner-storage";
@@ -34,6 +35,8 @@ export type PartnerVertragKontext = {
   compliance_stamm: PartnerComplianceItem[];
   /** Alias für compliance_leistung */
   compliance_projekt: PartnerComplianceItem[];
+  /** §6 / Anlage 1 Nachunternehmervertrag — nur bei Bauprojekten */
+  compliance_bauauftrag: PartnerComplianceItem[];
   dokumente_zeilen: Array<{
     id: string;
     datum?: string | null;
@@ -244,7 +247,8 @@ function dokumenteZeilenFromKontext(
 
 function stammKontext(
   stamm: { allgemein: PartnerComplianceItem[]; meister: PartnerComplianceItem[] },
-  leistung: PartnerComplianceItem[]
+  leistung: PartnerComplianceItem[],
+  compliance_bauauftrag: PartnerComplianceItem[]
 ): Pick<
   PartnerVertragKontext,
   | "compliance_allgemein"
@@ -252,6 +256,7 @@ function stammKontext(
   | "compliance_leistung"
   | "compliance_stamm"
   | "compliance_projekt"
+  | "compliance_bauauftrag"
 > {
   return {
     compliance_allgemein: stamm.allgemein,
@@ -259,6 +264,7 @@ function stammKontext(
     compliance_leistung: leistung,
     compliance_stamm: [...stamm.allgemein, ...stamm.meister],
     compliance_projekt: leistung,
+    compliance_bauauftrag,
   };
 }
 
@@ -283,7 +289,22 @@ export async function buildVertragKontextForAuftrag(opts: {
     opts.auftragId,
     opts.alleGewerke
   );
-  const ist_bauprojekt = projektHatBauleistung(projektGewerkSlugs, opts.alleGewerke);
+
+  const { data: auftragRow } = await supabaseAdmin
+    .from("auftraege")
+    .select("ist_bauprojekt")
+    .eq("id", opts.auftragId)
+    .maybeSingle();
+
+  const explicitBauprojekt = (auftragRow as { ist_bauprojekt?: boolean | null } | null)
+    ?.ist_bauprojekt;
+
+  const ist_bauprojekt =
+    explicitBauprojekt === true
+      ? true
+      : explicitBauprojekt === false
+        ? false
+        : projektHatBauleistung(projektGewerkSlugs, opts.alleGewerke);
   const projektDoks = opts.alleDokumente.filter(
     (d) => d.auftrag_id === opts.auftragId || !d.auftrag_id
   );
@@ -310,6 +331,19 @@ export async function buildVertragKontextForAuftrag(opts: {
     enrichComplianceWithSignedUrls(leistungRaw, projektDoks),
   ]);
 
+  const compliance_bauauftragRaw = buildBauprojektNachunternehmerCompliance({
+    typen: opts.typen,
+    dokumente: projektDoks,
+    stamm: [...stammRaw.allgemein, ...stammRaw.meister],
+    projekt: leistungRaw,
+    auftragId: opts.auftragId,
+    ist_bauprojekt,
+  });
+  const compliance_bauauftrag = await enrichComplianceWithSignedUrls(
+    compliance_bauauftragRaw,
+    projektDoks
+  );
+
   const dokumente_zeilen = dokumenteZeilenFromKontext(
     projektvertrag,
     opts.alleDokumente,
@@ -335,7 +369,7 @@ export async function buildVertragKontextForAuftrag(opts: {
     projektvertrag_bereit: hasGueltigerProjektvertrag(projektvertrag),
     ist_bauprojekt,
     projekt_gewerk_slugs: projektGewerkSlugs,
-    ...stammKontext({ allgemein, meister }, leistung),
+    ...stammKontext({ allgemein, meister }, leistung, compliance_bauauftrag),
     dokumente_zeilen,
   };
 }

@@ -1,6 +1,9 @@
 import { NextResponse } from "next/server";
 
-import { buildOrgNeueMeldungHtml } from "@/lib/email/meldung-mail-templates";
+import {
+  buildOrgNeueMeldungHtml,
+  buildOrgNeueMeldungSubject,
+} from "@/lib/email/meldung-mail-templates";
 import {
   parseMeldeBereichId,
   persistMeldungLead,
@@ -93,10 +96,6 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: result.error }, { status: result.status });
   }
 
-  const orgName =
-    session.kunde.org_anzeigename?.trim() ||
-    session.kunde.name?.trim() ||
-    "Hausverwaltung";
   const orgEmail = session.kunde.email?.trim() ?? "";
   const portalPath = `/portal?section=freigabe&id=${result.id}`;
 
@@ -108,15 +107,19 @@ export async function POST(req: Request) {
           process.env.RESEND_FROM_SYSTEM ??
           "System <system@baerenwaldmuenchen.de>",
         to: orgEmail,
-        subject: `Neue Meldung — ${objekt.titel}`,
+        subject: buildOrgNeueMeldungSubject(String(objekt.titel)),
         html: buildOrgNeueMeldungHtml({
-          orgName,
           objektTitel: String(objekt.titel),
           melderName,
           melderEinheit: melderEinheit || undefined,
+          melderTelefon: melderTelefon || undefined,
+          melderEmail: isValidEmail(melderEmail) ? melderEmail : undefined,
           kategorie,
+          bereichId,
           beschreibung,
+          quelle: "hausverwaltung",
           portalPath,
+          referenz: result.id.slice(0, 8).toUpperCase(),
         }),
       });
     } catch (e) {

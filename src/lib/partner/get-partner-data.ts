@@ -142,6 +142,8 @@ export type PartnerAnfrageItem = {
   projektvertrag?: PartnerProjektvertrag | null;
   compliance_stamm?: PartnerComplianceItem[];
   compliance_projekt?: PartnerComplianceItem[];
+  /** Nachweise laut Nachunternehmervertrag — nur Bauprojekt */
+  compliance_bauauftrag?: PartnerComplianceItem[];
   /** Aus gewerke.ist_bauleistung der Auftragspositionen — nicht das HW-Profil. */
   ist_bauprojekt?: boolean;
   dokumente?: PartnerVertragKontext["dokumente_zeilen"];
@@ -756,6 +758,7 @@ export async function getPartnerDataForHandwerker(handwerkerId: string) {
       projektvertrag: vertragCtx?.projektvertrag ?? null,
       compliance_stamm: vertragCtx?.compliance_stamm ?? [],
       compliance_projekt: vertragCtx?.compliance_projekt ?? [],
+      compliance_bauauftrag: vertragCtx?.compliance_bauauftrag ?? [],
       ist_bauprojekt: vertragCtx?.ist_bauprojekt ?? false,
       dokumente: vertragCtx?.dokumente_zeilen ?? [],
     };
@@ -871,7 +874,8 @@ export async function getPartnerDataForHandwerker(handwerkerId: string) {
           auftrag_titel: auftrag?.listen_titel ?? auftrag?.titel ?? "Auftrag",
           items: buildBauauftragComplianceItems(
             ctx.compliance_stamm,
-            ctx.compliance_projekt
+            ctx.compliance_projekt,
+            ctx.compliance_bauauftrag
           ),
         };
       }

@@ -41,6 +41,8 @@ type AuftragDokumentInput = {
   id: string;
   abnahme_protokoll_url?: string | null;
   abnahme_datum?: string | null;
+  abschlussdokumentation_url?: string | null;
+  abschlussdokumentation_gesendet_at?: string | null;
   updated_at?: string | null;
   created_at?: string | null;
 };
@@ -186,6 +188,22 @@ export function dokumenteFromAuftrag(
         auftrag.created_at ??
         undefined,
       href: abnahme,
+      art: "protokoll",
+    });
+  }
+
+  const abschluss = auftrag.abschlussdokumentation_url?.trim();
+  if (abschluss) {
+    rows.push({
+      id: `abschluss-${auftrag.id}`,
+      name: "Abschlussdokumentation",
+      subtitle: "Projektabschluss",
+      datum:
+        auftrag.abschlussdokumentation_gesendet_at ??
+        auftrag.updated_at ??
+        auftrag.created_at ??
+        undefined,
+      href: abschluss,
       art: "protokoll",
     });
   }

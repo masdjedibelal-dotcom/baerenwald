@@ -22,6 +22,7 @@ import {
   HANDWERKER_ABLEHNUNG_GRUND_LABELS,
   HANDWERKER_ABLEHNUNG_GRUND_VALUES,
 } from "@/lib/partner/handwerker-ablehnung";
+import { partnerPortalToast } from "@/lib/shared/portal-toast";
 import type { PartnerAuftragItem } from "@/lib/partner/get-partner-data";
 import { resolvePartnerDetailTitelFromAuftrag } from "@/lib/partner/partner-listen-titel";
 import { partnerDetailStatusPillClass } from "@/lib/partner/partner-detail-format";
@@ -32,7 +33,7 @@ import {
   isPartnerAuftragAnfrageOffen,
   partnerAuftragAnfrageStatusLabel,
 } from "@/lib/partner/partner-anfrage-status";
-import { partnerPortalToast } from "@/lib/shared/portal-toast";
+import { isPartnerBauprojektAuftrag } from "@/lib/partner/compliance-summary";
 import {
   buildPartnerAuftragPortalSections,
   PARTNER_LEISTUNGEN_GESAMT_LABEL,
@@ -60,6 +61,11 @@ export function PartnerAuftragAnfrageDetail({
   const [notiz, setNotiz] = useState("");
 
   const bearbeitbar = isPartnerAuftragAnfrageOffen(item);
+  const istBauprojekt = isPartnerBauprojektAuftrag({
+    ist_bauprojekt: item.vertrag?.ist_bauprojekt,
+    compliance_projekt: item.vertrag?.compliance_projekt,
+  });
+  const brauchtProjektvertrag = bearbeitbar && istBauprojekt;
 
   const konditionZeilen = useMemo(
     () =>
@@ -74,8 +80,8 @@ export function PartnerAuftragAnfrageDetail({
     setError(null);
     const res = await confirmPartnerAuftragZuweisung({
       auftragId: item.id,
-      gelesen: pflichtenGelesen && projektvertragBereit,
-      verbindlich: pflichtenGelesen && projektvertragBereit,
+      gelesen: pflichtenGelesen,
+      verbindlich: pflichtenGelesen,
     });
     setLoading(false);
     setConfirmAccept(false);
@@ -126,7 +132,7 @@ export function PartnerAuftragAnfrageDetail({
         primaryLabel="Annehmen"
         onPrimary={() => setConfirmAccept(true)}
         primaryLoading={loading}
-        primaryDisabled={!pflichtenGelesen || !projektvertragBereit}
+        primaryDisabled={!pflichtenGelesen || (brauchtProjektvertrag && !projektvertragBereit)}
         secondaryLabel="Ablehnen"
         onSecondary={() => setShowReject(true)}
         secondaryDisabled={loading}
@@ -156,22 +162,28 @@ export function PartnerAuftragAnfrageDetail({
       <PartnerPortalDetailSections sections={sections} />
 
       <PartnerPflichtenCard
+        compliance_stamm={item.vertrag?.compliance_stamm}
         compliance_projekt={item.vertrag?.compliance_projekt}
+        compliance_bauauftrag={item.vertrag?.compliance_bauauftrag}
         ist_bauprojekt={item.vertrag?.ist_bauprojekt}
+        auftragId={item.id}
+        includeProjektvertrag={brauchtProjektvertrag}
         acknowledgment={{
           checked: pflichtenGelesen,
           onChange: setPflichtenGelesen,
         }}
       />
 
-      <PartnerProjektvertragPaket
-        auftragId={item.id}
-        gewerkName={item.positionen[0]?.gewerk_name}
-        vertrag={item.vertrag?.projektvertrag ?? null}
-        projektvertrag_bestaetigt_am={item.projektvertrag_bestaetigt_am}
-        embedded={bearbeitbar}
-        onEmbeddedReadyChange={setProjektvertragBereit}
-      />
+      {brauchtProjektvertrag ? (
+        <PartnerProjektvertragPaket
+          auftragId={item.id}
+          gewerkName={item.positionen[0]?.gewerk_name}
+          vertrag={item.vertrag?.projektvertrag ?? null}
+          projektvertrag_bestaetigt_am={item.projektvertrag_bestaetigt_am}
+          embedded={bearbeitbar}
+          onEmbeddedReadyChange={setProjektvertragBereit}
+        />
+      ) : null}
 
       {konditionZeilen.length > 0 ? (
         <PartnerDetailSection title={PARTNER_LEISTUNGEN_SECTION_TITLE}>
@@ -214,7 +226,11 @@ export function PartnerAuftragAnfrageDetail({
       <PartnerConfirmDialog
         open={confirmAccept}
         title="Annehmen?"
-        description="Du nimmst Leistungen und Projektvertrag verbindlich an."
+        description={
+          brauchtProjektvertrag
+            ? "Du nimmst Leistungen und Projektvertrag verbindlich an."
+            : "Du nimmst Leistungen und Konditionen verbindlich an."
+        }
         confirmLabel="Annehmen"
         loading={loading}
         onConfirm={onAccept}

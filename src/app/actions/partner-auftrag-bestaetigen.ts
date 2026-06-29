@@ -26,6 +26,7 @@ import { positionBrauchtVorgangAktion } from "@/lib/partner/vorgang-state";
 import { stripHtmlToPlainText } from "@/lib/portal/portal-display";
 import { createClient } from "@/lib/supabase/server";
 import { isSupabaseConfigured, supabaseAdmin } from "@/lib/supabase";
+import { resolveAuftragIstBauprojekt } from "@/lib/partner/resolve-auftrag-ist-bauprojekt";
 
 export type PartnerAuftragBestaetigenResult =
   | { ok: true }
@@ -342,11 +343,15 @@ export async function confirmPartnerAuftrag(opts: {
       return { ok: false, error: "Dieser Vorgang kann nicht mehr bestätigt werden." };
     }
     if (!opts.gelesen || !opts.verbindlich) {
+      const istBauprojekt = auftragId
+        ? await resolveAuftragIstBauprojekt(auftragId)
+        : false;
       return {
         ok: false,
-        error: auftragId
-          ? "Bitte Projektvertrag lesen und verbindliche Annahme bestätigen."
-          : "Bitte die verbindliche Annahme bestätigen.",
+        error:
+          auftragId && istBauprojekt
+            ? "Bitte Projektvertrag lesen und verbindliche Annahme bestätigen."
+            : "Bitte Leistungen und Konditionen verbindlich bestätigen.",
       };
     }
   } else if (!opts.verbindlich) {
@@ -430,8 +435,11 @@ export async function confirmPartnerAuftrag(opts: {
         .maybeSingle()
     : { data: null };
 
+  const istBauprojekt = auftragId ? await resolveAuftragIstBauprojekt(auftragId) : false;
+
   const projektvertragNoetig =
     Boolean(auftragId) &&
+    istBauprojekt &&
     !isNachreichung &&
     !(vertragRow as { projektvertrag_bestaetigt_am?: string | null } | null)
       ?.projektvertrag_bestaetigt_am;
@@ -462,9 +470,12 @@ export async function confirmPartnerAuftragZuweisung(opts: {
     return { ok: false, error: "Datenbank nicht konfiguriert." };
   }
   if (!opts.gelesen || !opts.verbindlich) {
+    const istBauprojekt = await resolveAuftragIstBauprojekt(opts.auftragId.trim());
     return {
       ok: false,
-      error: "Bitte Projektvertrag lesen und verbindliche Annahme bestätigen.",
+      error: istBauprojekt
+        ? "Bitte Projektvertrag lesen und verbindliche Annahme bestätigen."
+        : "Bitte Leistungen und Konditionen verbindlich bestätigen.",
     };
   }
 

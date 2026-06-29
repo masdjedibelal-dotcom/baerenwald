@@ -108,13 +108,14 @@ export async function POST(request: Request) {
   if (anfrageId && body.bitteBestaetigen) {
     void notifyHandwerkerAngebotBestaetigt(anfrageId, { bitteBestaetigen: true });
   }
-  if (body.auftragId && typ === "neu") {
+  if (body.auftragId && (typ === "neu" || typ === "geaendert")) {
     void notifyHandwerkerLeistungZuweisung({
       auftragId: String(body.auftragId),
       handwerkerId,
       positionIds: Array.isArray(body.positionIds)
         ? body.positionIds.map(String)
         : undefined,
+      variant: typ === "geaendert" ? "aenderung" : "neu",
     });
   }
   if (anfrageId && (typ === "geaendert" || body.typ === "rueckfrage")) {

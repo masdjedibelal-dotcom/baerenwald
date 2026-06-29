@@ -184,7 +184,7 @@ export async function getPortalDataForKunde(kundeId: string) {
 
   /** Nur Spalten, die in Supabase existieren (kein budget/phasen — sonst leere Auftragsliste). */
   const auftragSelect =
-    "id, titel, status, fortschritt, start_datum, end_datum, abnahme_datum, abnahme_protokoll_url, created_at, lead_id, kunde_id, angebot_id, betreuer_id, updated_at";
+    "id, titel, status, fortschritt, start_datum, end_datum, abnahme_datum, abnahme_protokoll_url, abschlussdokumentation_url, abschlussdokumentation_gesendet_at, created_at, lead_id, kunde_id, angebot_id, betreuer_id, updated_at";
 
   const mergeAuftraege = (
     rows: Array<Record<string, unknown>> | null | undefined
@@ -464,6 +464,14 @@ export async function getPortalDataForKunde(kundeId: string) {
                 : null,
             abnahme_datum:
               typeof a.abnahme_datum === "string" ? a.abnahme_datum : null,
+            abschlussdokumentation_url:
+              typeof a.abschlussdokumentation_url === "string"
+                ? a.abschlussdokumentation_url
+                : null,
+            abschlussdokumentation_gesendet_at:
+              typeof a.abschlussdokumentation_gesendet_at === "string"
+                ? a.abschlussdokumentation_gesendet_at
+                : null,
             updated_at:
               typeof a.updated_at === "string" ? a.updated_at : null,
             created_at:

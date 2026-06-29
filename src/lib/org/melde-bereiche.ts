@@ -90,3 +90,8 @@ export function meldeBereichToFunnelBereiche(id: MeldeBereichId): string[] {
 export function isMeldeBereichId(v: string): v is MeldeBereichId {
   return MELDE_BEREICHE.some((o) => o.id === v);
 }
+
+export function meldeBereichLabel(id: string | null | undefined): string {
+  const opt = MELDE_BEREICHE.find((o) => o.id === id);
+  return opt?.label ?? "Sonstiges";
+}

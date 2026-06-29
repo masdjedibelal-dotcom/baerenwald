@@ -167,9 +167,12 @@ export type LeistungZuweisungMailLeistung = {
   beschreibung?: string | null;
   menge?: number | null;
   einheit?: string | null;
+  preis_netto?: number | null;
 };
 
-/** Handwerker: Leistung/Auftrag zugewiesen (vom CRM bei Zuweisung). */
+export type PartnerAuftragMailVariant = "neu" | "aenderung";
+
+/** Handwerker: Leistung/Auftrag zugewiesen oder Änderungsanfrage (vom CRM). */
 export async function sendHandwerkerLeistungZuweisungMail(opts: {
   to: string;
   handwerkerName: string;
@@ -181,6 +184,8 @@ export async function sendHandwerkerLeistungZuweisungMail(opts: {
   leistungen: LeistungZuweisungMailLeistung[];
   /** Phasenabhängiger Portal-Link (Anfragen / Angebote / Übersicht). */
   portalLink?: string;
+  /** neu = Erstzuweisung, aenderung = geänderte Leistungen / Ergänzung */
+  variant?: PartnerAuftragMailVariant;
 }): Promise<{ ok: boolean; error?: string }> {
   const resend = resendClient();
   if (!resend) {
@@ -197,6 +202,14 @@ export async function sendHandwerkerLeistungZuweisungMail(opts: {
       ? Array.from(gewerkSet)[0]!
       : `${gewerkSet.size} Gewerke`;
 
+  const gesamtNetto = opts.leistungen.reduce(
+    (sum, l) => sum + (l.preis_netto != null && Number.isFinite(l.preis_netto) ? l.preis_netto : 0),
+    0
+  );
+  const hatPreise = opts.leistungen.some(
+    (l) => l.preis_netto != null && Number.isFinite(l.preis_netto)
+  );
+
   const lis = opts.leistungen
     .map((l) => {
       const qty =
@@ -206,7 +219,11 @@ export async function sendHandwerkerLeistungZuweisungMail(opts: {
       const desc = l.beschreibung?.trim()
         ? ` — ${escapeHtml(l.beschreibung.trim())}`
         : "";
-      return `<li style="margin:6px 0;"><strong>${escapeHtml(l.leistung_name)}</strong>${desc}<span style="color:#6B7280;font-size:13px;"> · ${escapeHtml(l.gewerk_name)}${qty}</span></li>`;
+      const preis =
+        l.preis_netto != null && Number.isFinite(l.preis_netto)
+          ? ` · ${escapeHtml(fmtEuro(l.preis_netto))} netto`
+          : "";
+      return `<li style="margin:6px 0;"><strong>${escapeHtml(l.leistung_name)}</strong>${desc}<span style="color:#6B7280;font-size:13px;"> · ${escapeHtml(l.gewerk_name)}${qty}${preis}</span></li>`;
     })
     .join("");
 
@@ -217,33 +234,43 @@ export async function sendHandwerkerLeistungZuweisungMail(opts: {
       <tr><td style="color:#2E7D52;padding:4px 0;">Einsatzort:</td><td style="font-weight:600;color:#1A3D2B;">${escapeHtml(opts.adresseZeile)}</td></tr>
       <tr><td style="color:#2E7D52;padding:4px 0;">Zeitraum:</td><td style="font-weight:600;color:#1A3D2B;">${escapeHtml(zeitraum)}</td></tr>
       <tr><td style="color:#2E7D52;padding:4px 0;">Gewerk:</td><td style="font-weight:600;color:#1A3D2B;">${escapeHtml(gewerkLabel)}</td></tr>
+      ${
+        hatPreise
+          ? `<tr><td style="color:#2E7D52;padding:4px 0;">Vergütung:</td><td style="font-weight:600;color:#1A3D2B;">${escapeHtml(fmtEuro(gesamtNetto))} netto</td></tr>`
+          : ""
+      }
     </table>
   `);
 
+  const isAenderung = opts.variant === "aenderung";
+  const subject = isAenderung
+    ? "Neue Änderungsanfrage"
+    : "Neuer Auftrag wartet auf dich";
+  const intro = isAenderung
+    ? "Es gibt eine Änderungsanfrage zu deinem Auftrag. Kurz die Vorgangsdetails:"
+    : "Ein neuer Auftrag wartet auf dich. Kurz die Vorgangsdetails:";
+  const footer = isAenderung
+    ? "Die Änderungen findest du im Partner-Portal unter Vorgänge."
+    : "Vertrag und Leistungen findest du im Partner-Portal unter Vorgänge.";
+
   const html = mailShell(
-    "Leistung für dich zugewiesen",
+    subject,
     `<p style="margin:0 0 12px;font-size:15px;line-height:1.6;">Hallo ${escapeHtml(opts.handwerkerName)},</p>
-<p style="margin:0 0 12px;font-size:15px;line-height:1.6;">Bärenwald hat dir ${opts.leistungen.length === 1 ? "eine Leistung" : `${opts.leistungen.length} Leistungen`} auf der Baustelle zugewiesen. Details findest du im Partner-Portal.</p>
+<p style="margin:0 0 12px;font-size:15px;line-height:1.6;">${intro}</p>
 ${detailsBox}
 <ul style="font-size:14px;line-height:1.7;padding-left:20px;margin:12px 0 16px;color:#1A3D2B;">${lis}</ul>
 ${mailBtn("Zum Partner-Portal →", portalLink)}
 <p style="font-size:13px;color:#6B7280;line-height:1.6;margin:0 0 8px;">
-  Melde dich mit der E-Mail an, die Bärenwald für deinen Betrieb hinterlegt hat.
-</p>
-<p style="font-size:12px;color:#9CA3AF;word-break:break-all;margin:0;">Link: <a href="${escapeHtml(portalLink)}" style="color:#2E7D52;">${escapeHtml(portalLink)}</a></p>`,
-    `Leistung zugewiesen: ${opts.leistungen[0]?.leistung_name ?? gewerkLabel}`
+  ${footer}
+</p>`,
+    opts.auftragTitel
   );
-
-  const subjectLeistung =
-    opts.leistungen.length === 1
-      ? opts.leistungen[0]!.leistung_name
-      : `${opts.leistungen.length} Leistungen`;
 
   try {
     const { error } = await resend.emails.send({
       from: systemFrom(),
       to: opts.to.trim(),
-      subject: `Leistung zugewiesen: ${subjectLeistung} — Bärenwald Partner`,
+      subject,
       html,
     });
     if (error) return { ok: false, error: error.message };
