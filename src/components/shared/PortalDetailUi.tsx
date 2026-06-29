@@ -202,6 +202,9 @@ export function PortalDetailLeistungenPreisListe({
     title: string;
     beschreibung?: string;
     preisBrutto: number;
+    preisBruttoAlt?: number;
+    aenderungBadge?: "neu" | "geaendert" | "entfernt";
+    entfernt?: boolean;
   }>;
   gesamtBrutto?: number;
   gesamtLabel?: string;
@@ -209,32 +212,96 @@ export function PortalDetailLeistungenPreisListe({
   if (!items.length) return null;
   const showGesamt = typeof gesamtBrutto === "number" && gesamtBrutto > 0;
 
+  const BADGE_LABEL = {
+    neu: "Neu",
+    geaendert: "Geändert",
+    entfernt: "Entfernt",
+  } as const;
+
+  const BADGE_CLASS = {
+    neu: "bg-amber-100 text-amber-700",
+    geaendert: "bg-amber-100 text-amber-800",
+    entfernt: "bg-red-100 text-red-700",
+  } as const;
+
   return (
     <div className="portal-text-body overflow-hidden rounded-xl border border-border-light bg-muted/20">
       <ul>
-        {items.map((p, i) => (
-          <li
-            key={p.id}
-            className={cn(
-              "flex items-start justify-between gap-4 px-3 py-3 sm:gap-6",
-              i < items.length - 1 && "border-b border-border-light"
-            )}
-          >
-            <div className="min-w-0 flex-1">
-              <p className="font-medium text-text-primary">
-                {stripHtmlToPlainText(p.title) || p.title}
-              </p>
-              {p.beschreibung ? (
-                <p className="portal-text-meta mt-0.5 text-text-secondary">
-                  {stripHtmlToPlainText(p.beschreibung)}
+        {items.map((p, i) => {
+          const isEntfernt = Boolean(p.entfernt || p.aenderungBadge === "entfernt");
+          const geaendert = p.aenderungBadge === "geaendert";
+          const preisLabel =
+            p.preisBrutto > 0 ? formatEuro(p.preisBrutto) : "Preis folgt";
+
+          return (
+            <li
+              key={p.id}
+              className={cn(
+                "flex items-start justify-between gap-4 px-3 py-3 sm:gap-6",
+                i < items.length - 1 && "border-b border-border-light",
+                isEntfernt && "bg-red-50/70",
+                geaendert && "bg-amber-50/60"
+              )}
+            >
+              <div className="min-w-0 flex-1">
+                <div className="flex flex-wrap items-center gap-2">
+                  <p
+                    className={cn(
+                      "font-medium text-text-primary",
+                      isEntfernt && "line-through text-text-secondary"
+                    )}
+                  >
+                    {stripHtmlToPlainText(p.title) || p.title}
+                  </p>
+                  {p.aenderungBadge ? (
+                    <span
+                      className={cn(
+                        "tag text-xs font-semibold",
+                        BADGE_CLASS[p.aenderungBadge]
+                      )}
+                    >
+                      {BADGE_LABEL[p.aenderungBadge]}
+                    </span>
+                  ) : null}
+                </div>
+                {p.beschreibung ? (
+                  <p className="portal-text-meta mt-0.5 text-text-secondary">
+                    {stripHtmlToPlainText(p.beschreibung)}
+                  </p>
+                ) : null}
+                {isEntfernt ? (
+                  <p className="portal-text-meta mt-1 text-red-700">
+                    Diese Leistung entfällt — bitte bestätigen.
+                  </p>
+                ) : null}
+              </div>
+              <div className="shrink-0 pt-0.5 text-right">
+                <p
+                  className={cn(
+                    "font-semibold tabular-nums",
+                    preisLabel === "Preis folgt"
+                      ? "text-sm font-normal italic text-text-tertiary"
+                      : isEntfernt
+                        ? "text-text-tertiary line-through"
+                        : geaendert
+                          ? "text-amber-800"
+                          : "text-text-primary"
+                  )}
+                >
+                  {preisLabel}
                 </p>
-              ) : null}
-            </div>
-            <p className="shrink-0 pt-0.5 text-right font-semibold tabular-nums text-text-primary">
-              {formatEuro(p.preisBrutto)}
-            </p>
-          </li>
-        ))}
+                {p.preisBruttoAlt != null &&
+                p.preisBruttoAlt > 0 &&
+                p.preisBrutto > 0 &&
+                Math.abs(p.preisBruttoAlt - p.preisBrutto) > 0.009 ? (
+                  <p className="mt-0.5 text-sm tabular-nums text-text-tertiary line-through">
+                    vorher {formatEuro(p.preisBruttoAlt)}
+                  </p>
+                ) : null}
+              </div>
+            </li>
+          );
+        })}
       </ul>
       {showGesamt ? (
         <div className="flex items-center justify-between gap-4 border-t border-border-default bg-muted/40 px-3 py-3 sm:gap-6">

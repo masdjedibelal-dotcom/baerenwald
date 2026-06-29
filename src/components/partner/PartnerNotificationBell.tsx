@@ -10,6 +10,10 @@ import {
   markPartnerNotificationRead,
 } from "@/app/actions/partner-notifications";
 import type { PartnerNotificationRow } from "@/lib/partner/partner-notifications";
+import {
+  partnerVorgangIdFromNotificationLink,
+  resolvePartnerNotificationLink,
+} from "@/lib/partner/partner-site-url";
 import { cn } from "@/lib/utils";
 
 const POLL_MS = 30_000;
@@ -21,7 +25,12 @@ function typLabel(typ: PartnerNotificationRow["typ"]): string {
   return "Erinnerung";
 }
 
-export function PartnerNotificationBell() {
+export function PartnerNotificationBell({
+  onOpenVorgang,
+}: {
+  /** Direkt Vorgang öffnen (PartnerClient setzt Detail + URL). */
+  onOpenVorgang?: (vorgangId: string, href: string) => void;
+}) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [items, setItems] = useState<PartnerNotificationRow[]>([]);
@@ -62,9 +71,16 @@ export function PartnerNotificationBell() {
       setUnread((c) => Math.max(0, c - 1));
     }
     setOpen(false);
-    if (n.link?.trim()) {
-      router.push(n.link.startsWith("/") ? n.link : `/partner`);
+    const href = resolvePartnerNotificationLink(n.link);
+    if (!href) return;
+
+    const vorgangId = partnerVorgangIdFromNotificationLink(n.link);
+    if (vorgangId && onOpenVorgang) {
+      onOpenVorgang(vorgangId, href);
+      return;
     }
+
+    router.push(href);
   }
 
   async function onMarkAll() {

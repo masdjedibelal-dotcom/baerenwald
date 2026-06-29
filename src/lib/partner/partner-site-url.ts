@@ -39,6 +39,42 @@ export function partnerVorgangPortalPath(vorgangId: string): string {
   return `/partner?section=vorgaenge&id=${encodeURIComponent(id)}`;
 }
 
+/**
+ * Notification-/Mail-Link → relativer Portal-Pfad (pathname + query).
+ * Akzeptiert `/partner?…`, volle URLs und bare IDs (Vorgang/Auftrag/Anfrage).
+ */
+export function resolvePartnerNotificationLink(
+  link: string | null | undefined
+): string | null {
+  const raw = link?.trim();
+  if (!raw) return null;
+
+  try {
+    if (/^https?:\/\//i.test(raw)) {
+      const u = new URL(raw);
+      return `${u.pathname}${u.search}`;
+    }
+    if (raw.startsWith("/")) return raw;
+    if (raw.includes("section=") || raw.startsWith("?")) {
+      return raw.startsWith("?") ? `/partner${raw}` : `/partner?${raw}`;
+    }
+    return partnerVorgangPortalPath(raw.replace(/^auftrag:/, ""));
+  } catch {
+    return partnerVorgangPortalPath(raw.replace(/^auftrag:/, ""));
+  }
+}
+
+/** `id` aus Notification-Link — Auftrags- oder Anfrage-ID. */
+export function partnerVorgangIdFromNotificationLink(
+  link: string | null | undefined
+): string | null {
+  const path = resolvePartnerNotificationLink(link);
+  if (!path) return null;
+  const q = path.includes("?") ? path.slice(path.indexOf("?") + 1) : "";
+  const id = new URLSearchParams(q).get("id")?.trim();
+  return id ? id.replace(/^auftrag:/, "") : null;
+}
+
 /** Listen-Ansicht ohne Detail-Deep-Link. */
 export function partnerSectionListPath(
   section: "vorgaenge" | "offen" | "auftraege" | "anfragen" | "angebote"

@@ -13,6 +13,12 @@ import {
   buildAuftragPortalSections,
 } from "@/lib/portal/portal-auftrag-display";
 import {
+  buildKundeAuftragPositionenDisplay,
+  hatOffeneKundeAuftragAenderung,
+  type KundeAuftragPositionInput,
+  resolveKundeAuftragGesamtBrutto,
+} from "@/lib/portal/kunde-auftrag-aenderung";
+import {
   portalAnsprechpartnerFallback,
   type PortalAnsprechpartner,
 } from "@/lib/portal/portal-ansprechpartner";
@@ -58,6 +64,7 @@ type PortalAuftrag = {
   id: string;
   titel: string;
   lead_id?: string | null;
+  angebot_id?: string | null;
   linkedLead?: PortalAnfrageLeadSource | null;
   ansprechpartner?: PortalAnsprechpartner;
   objekt?: PortalObjekt | null;
@@ -68,6 +75,8 @@ type PortalAuftrag = {
   created_at?: string | null;
   bautagebuch?: PortalBautagebuchEntry[];
   dokumente?: PortalDokument[];
+  positionen?: KundeAuftragPositionInput[];
+  angebotPositionenRaw?: unknown;
 };
 
 function formatAnfrageGewerk(bereiche?: string[] | null): string | undefined {
@@ -103,6 +112,12 @@ function buildItemFromLead(
       ...lead,
       objekt: lead.objekt ?? auftrag.objekt ?? null,
     };
+    const auftragPositionen = buildKundeAuftragPositionenDisplay(
+      auftrag.positionen ?? [],
+      auftrag.angebotPositionenRaw
+    );
+    const auftragGesamtBrutto = resolveKundeAuftragGesamtBrutto(auftragPositionen);
+    const pendingAenderung = hatOffeneKundeAuftragAenderung(auftrag.positionen);
     return {
       id: auftrag.id,
       leadId: lead.id,
@@ -123,6 +138,11 @@ function buildItemFromLead(
       ansprechpartner: auftrag.ansprechpartner ?? portalAnsprechpartnerFallback(),
       dokumente: auftrag.dokumente ?? lead.dokumente ?? [],
       bautagebuch: auftrag.bautagebuch ?? [],
+      auftragPositionen,
+      gesamtBrutto: auftragGesamtBrutto,
+      infoHint: pendingAenderung
+        ? "Bärenwald hat Leistungen ergänzt oder angepasst. Bitte prüfe die Änderungen und nimm sie verbindlich an."
+        : undefined,
       vorgangPhase: vorgangStatus.phase,
       needsAction: vorgangStatus.needsAction,
     };
@@ -209,6 +229,9 @@ export function buildKundeVorgaenge(input: {
       auftragFortschritt: auftrag?.fortschritt,
       hasAngebotRecord: Boolean(angebot),
       hasAuftragRecord: Boolean(auftrag),
+      hasPendingAuftragAenderung: auftrag
+        ? hatOffeneKundeAuftragAenderung(auftrag.positionen)
+        : false,
     });
 
     items.push(buildItemFromLead(lead, angebot, auftrag, vorgangStatus));
@@ -253,6 +276,7 @@ export function buildKundeVorgaenge(input: {
       auftragStatus: auftrag.status,
       auftragFortschritt: auftrag.fortschritt,
       hasAuftragRecord: true,
+      hasPendingAuftragAenderung: hatOffeneKundeAuftragAenderung(auftrag.positionen),
     });
     items.push(buildItemFromLead(pseudoLead, null, auftrag, vorgangStatus));
   }

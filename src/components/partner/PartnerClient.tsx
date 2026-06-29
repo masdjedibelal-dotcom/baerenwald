@@ -371,6 +371,20 @@ export function PartnerClient({
     }
   }
 
+  function openVorgangFromNotification(vorgangId: string, href: string) {
+    ignoreUrlDetailRef.current = false;
+    setSection("vorgaenge");
+    setListPage(1);
+
+    const match =
+      vorgaenge.find((v) => v.id === vorgangId) ??
+      vorgaenge.find((v) => v.anfrage?.id === vorgangId);
+
+    setSelectedId(match?.id ?? vorgangId);
+    setMobileDetailOpen(true);
+    router.push(href);
+  }
+
   function refreshVorgangAfterConfirm(id: string) {
     const vorgangId = id.trim();
     if (!vorgangId) return;
@@ -499,7 +513,7 @@ export function PartnerClient({
             </div>
           </div>
           <div className="flex shrink-0 items-center gap-2">
-            <PartnerNotificationBell />
+            <PartnerNotificationBell onOpenVorgang={openVorgangFromNotification} />
             <form action="/partner/auth/signout" method="post">
               <button
                 type="submit"

@@ -23,6 +23,7 @@ export function PortalBaerenwaldGpt({
     <GptStudioChat
       locked={false}
       priceHandoff
+      showPhotoUpload={false}
       onPreisBereit={() => router.push("/rechner?modus=ki")}
       onBeratungBereit={() => router.push("/rechner?modus=ki")}
     />

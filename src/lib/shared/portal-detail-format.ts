@@ -63,6 +63,9 @@ export function portalDetailStatusPillClass(status: string): string {
   if (s === "abgelehnt" || s === "storniert" || s === "antwort_abgelaufen") {
     return "tag bg-red-100 text-red-700";
   }
+  if (s === "geaendert" || s.includes("geändert")) {
+    return "tag bg-amber-100 text-amber-800";
+  }
   if (s === "in_arbeit" || s.includes("arbeit") || s.includes("aktiv")) {
     return "tag bg-blue-100 text-blue-800";
   }

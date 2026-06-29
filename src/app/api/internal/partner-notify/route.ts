@@ -6,7 +6,7 @@ import { notifyHandwerkerNewAnfrage } from "@/lib/partner/notify-partner-anfrage
 import { notifyHandwerkerAngebotBestaetigt } from "@/lib/partner/notify-partner-angebot-bestaetigt";
 import { notifyHandwerkerLeistungZuweisung } from "@/lib/partner/notify-partner-zuweisung";
 import { notifyHandwerkerAngebotAntwort } from "@/lib/partner/notify-partner-angebot-antwort";
-import { partnerOffenPortalPath } from "@/lib/partner/partner-site-url";
+import { partnerOffenPortalPath, partnerVorgangPortalPath } from "@/lib/partner/partner-site-url";
 import { isSupabaseConfigured, supabaseAdmin } from "@/lib/supabase";
 
 function authorize(request: Request): boolean {
@@ -79,6 +79,10 @@ export async function POST(request: Request) {
   }
   if (!link && anfrageId) {
     link = partnerOffenPortalPath(anfrageId);
+  }
+  const auftragId = String(body.auftragId ?? "").trim();
+  if (!link && auftragId) {
+    link = partnerVorgangPortalPath(auftragId);
   }
   if (!link) {
     return NextResponse.json({ ok: false, error: "link fehlt." }, { status: 400 });

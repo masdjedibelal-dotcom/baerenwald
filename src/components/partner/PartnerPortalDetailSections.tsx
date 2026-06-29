@@ -14,11 +14,13 @@ import type { PortalDetailSection } from "@/lib/portal/portal-display";
 export function PartnerPortalDetailSections({
   sections,
   angebotPositionen,
+  auftragPositionen,
   gesamtBrutto,
   gesamtLabel,
 }: {
   sections: PortalDetailSection[];
   angebotPositionen?: PortalAngebotPositionDisplay[];
+  auftragPositionen?: PortalAngebotPositionDisplay[];
   gesamtBrutto?: number;
   gesamtLabel?: string;
 }) {
@@ -28,6 +30,10 @@ export function PartnerPortalDetailSections({
       (section.bullets && section.bullets.length > 0) ||
       Boolean(section.text)
   );
+
+  const leistungen = auftragPositionen?.length
+    ? auftragPositionen
+    : angebotPositionen;
 
   return (
     <>
@@ -57,10 +63,10 @@ export function PartnerPortalDetailSections({
         </PartnerDetailSection>
       ))}
 
-      {angebotPositionen && angebotPositionen.length > 0 ? (
+      {leistungen && leistungen.length > 0 ? (
         <PartnerDetailSection title="Leistungen">
           <PortalDetailLeistungenPreisListe
-            items={angebotPositionen}
+            items={leistungen}
             gesamtBrutto={gesamtBrutto}
             gesamtLabel={gesamtLabel ?? "Gesamtpreis Brutto inkl. MwSt."}
           />

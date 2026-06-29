@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 import { acceptKundeAngebot } from "@/app/actions/portal-angebot";
+import { acceptKundeAuftragAenderungen } from "@/app/actions/portal-auftrag";
 import { OrgAnlassBadge } from "@/components/org/OrgAnlassBadge";
 import { PartnerPortalDetailSections } from "@/components/partner/PartnerPortalDetailSections";
 import { BautagebuchAccordionList } from "@/components/shared/BautagebuchAccordionList";
@@ -43,11 +44,17 @@ export function PortalVorgangDetail({
   const metaLine = rel ? `${rel}` : undefined;
   const statusPill = portalDetailStatusPillClass(item.statusPillKey ?? item.status ?? "offen");
 
+  const isAngebotAccept = Boolean(item.isAngebotDetail && item.needsAction);
+  const isAuftragAccept = Boolean(item.isAuftragDetail && item.needsAction);
+
   async function handleAccept() {
-    if (!item.isAngebotDetail) return;
     setLoading(true);
     setError(null);
-    const res = await acceptKundeAngebot(item.id);
+    const res = isAngebotAccept
+      ? await acceptKundeAngebot(item.id)
+      : isAuftragAccept
+        ? await acceptKundeAuftragAenderungen(item.id)
+        : { ok: false as const, error: "Keine Annahme möglich." };
     setLoading(false);
     setConfirmOpen(false);
     if (!res.ok) {
@@ -59,11 +66,11 @@ export function PortalVorgangDetail({
     router.refresh();
   }
 
-  const showAcceptCta = item.needsAction && item.isAngebotDetail && !accepted;
+  const showAcceptCta = (isAngebotAccept || isAuftragAccept) && !accepted;
 
   const footer = showAcceptCta ? (
     <PortalDetailStickyActions
-      primaryLabel="Angebot annehmen"
+      primaryLabel={isAuftragAccept ? "Änderungen annehmen" : "Angebot annehmen"}
       onPrimary={() => setConfirmOpen(true)}
       primaryLoading={loading}
     />
@@ -85,9 +92,13 @@ export function PortalVorgangDetail({
 
         {accepted ? (
           <PortalDetailSuccessBox>
-            <p className="font-semibold">Angebot angenommen</p>
+            <p className="font-semibold">
+              {isAuftragAccept ? "Änderungen angenommen" : "Angebot angenommen"}
+            </p>
             <p className="portal-text-meta mt-1">
-              Wir bereiten den Auftrag vor und melden uns, sobald es weitergeht.
+              {isAuftragAccept
+                ? "Danke — wir setzen die Anpassungen am Auftrag um."
+                : "Wir bereiten den Auftrag vor und melden uns, sobald es weitergeht."}
             </p>
           </PortalDetailSuccessBox>
         ) : null}
@@ -109,6 +120,7 @@ export function PortalVorgangDetail({
         <PartnerPortalDetailSections
           sections={item.sections}
           angebotPositionen={item.angebotPositionen}
+          auftragPositionen={item.auftragPositionen}
           gesamtBrutto={item.gesamtBrutto}
         />
 
@@ -152,8 +164,12 @@ export function PortalVorgangDetail({
 
       <PortalConfirmDialog
         open={confirmOpen}
-        title="Angebot annehmen?"
-        description="Mit der Annahme beauftragst du Bärenwald verbindlich mit der Ausführung zu den genannten Konditionen. Wir melden uns zur weiteren Planung."
+        title={isAuftragAccept ? "Änderungen am Auftrag annehmen?" : "Angebot annehmen?"}
+        description={
+          isAuftragAccept
+            ? "Mit der Annahme bestätigst du die geänderten Leistungen und Preise am laufenden Auftrag verbindlich."
+            : "Mit der Annahme beauftragst du Bärenwald verbindlich mit der Ausführung zu den genannten Konditionen. Wir melden uns zur weiteren Planung."
+        }
         confirmLabel="Verbindlich annehmen"
         loading={loading}
         onConfirm={handleAccept}

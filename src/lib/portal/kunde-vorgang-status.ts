@@ -65,6 +65,8 @@ export function resolveKundeVorgangStatus(input: {
   auftragFortschritt?: number | null;
   hasAngebotRecord?: boolean;
   hasAuftragRecord?: boolean;
+  /** Offene Positionsänderungen am Auftrag (neu / geändert / entfernt). */
+  hasPendingAuftragAenderung?: boolean;
 }): KundeVorgangStatus {
   if (isAbgelehnt(input.auftragStatus ?? input.angebotStatus ?? input.leadStatus)) {
     return {
@@ -88,6 +90,15 @@ export function resolveKundeVorgangStatus(input: {
         pillKey: "abgeschlossen",
         sortPriority: 80,
         needsAction: false,
+      };
+    }
+    if (input.hasPendingAuftragAenderung) {
+      return {
+        phase: "in_ausfuehrung",
+        label: "Geändert",
+        pillKey: "geaendert",
+        sortPriority: 4,
+        needsAction: true,
       };
     }
     return {

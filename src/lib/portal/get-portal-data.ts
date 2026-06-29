@@ -25,6 +25,12 @@ type PortalPositionRow = {
   leistung_name: string | null;
   beschreibung: string | null;
   leistung_status: string | null;
+  menge: number | null;
+  lohn_fix: number | null;
+  material_fix: number | null;
+  aenderung_typ: string | null;
+  preis_alt: number | null;
+  kunde_akzeptiert_at: string | null;
 };
 
 type PortalBautagebuchRow = {
@@ -262,7 +268,7 @@ export async function getPortalDataForKunde(kundeId: string) {
       ? await supabaseAdmin
           .from("auftrag_positionen")
           .select(
-            "id, auftrag_id, gewerk_name, leistung_name, beschreibung, leistung_status, menge, einheit"
+            "id, auftrag_id, gewerk_name, leistung_name, beschreibung, leistung_status, menge, einheit, lohn_fix, material_fix, aenderung_typ, preis_alt, kunde_akzeptiert_at"
           )
           .in("auftrag_id", auftragIds)
       : { data: [] as PortalPositionRow[], error: null };
@@ -483,17 +489,18 @@ export async function getPortalDataForKunde(kundeId: string) {
           .filter((p) => String(p.auftrag_id) === String(a.id))
           .map((p) => ({
             id: String(p.id),
-            titel: String(p.leistung_name ?? p.gewerk_name ?? "Leistung"),
-            beschreibung:
-              typeof p.beschreibung === "string" ? p.beschreibung : undefined,
-            status:
-              typeof p.leistung_status === "string" ? p.leistung_status : undefined,
-            gewerk_name:
-              typeof p.gewerk_name === "string" ? p.gewerk_name : undefined,
-            datum: undefined,
-            fotos_urls: [],
-            bautagebuch: [],
+            gewerk_name: p.gewerk_name,
+            leistung_name: p.leistung_name,
+            beschreibung: p.beschreibung,
+            menge: p.menge,
+            lohn_fix: p.lohn_fix,
+            material_fix: p.material_fix,
+            aenderung_typ: p.aenderung_typ,
+            preis_alt: p.preis_alt,
+            kunde_akzeptiert_at: p.kunde_akzeptiert_at,
+            leistung_status: p.leistung_status,
           })),
+        angebotPositionenRaw: angebot?.positionen,
         bautagebuch: bautagebuchByAuftrag.get(auftragId) ?? [],
         milestones: milestonesByAuftrag.get(auftragId) ?? [],
       };

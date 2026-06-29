@@ -1,5 +1,6 @@
 import type { PortalListCardMeta } from "@/components/shared/PortalListCard";
 import type { PortalAngebotPositionDisplay } from "@/lib/portal/portal-angebot-display";
+import type { PortalAuftragPositionDisplay } from "@/lib/portal/kunde-auftrag-aenderung";
 import type { PortalAuftragPhasenInput } from "@/lib/portal/portal-auftrag-display";
 import type {
   PortalAuftragPhaseId,
@@ -40,6 +41,7 @@ export type KundePortalDetailItem = {
   anfrageVorhaben?: string;
   isAngebotDetail?: boolean;
   angebotPositionen?: PortalAngebotPositionDisplay[];
+  auftragPositionen?: PortalAuftragPositionDisplay[];
   gesamtBrutto?: number;
   isAuftragDetail?: boolean;
   auftragPhasen?: PortalAuftragPhasenInput & {

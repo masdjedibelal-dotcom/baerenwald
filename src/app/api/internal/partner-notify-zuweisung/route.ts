@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 
 import { notifyHandwerkerLeistungZuweisung } from "@/lib/partner/notify-partner-zuweisung";
 import { createPartnerNotification } from "@/lib/partner/create-partner-notification";
-import { partnerOffenPortalPath } from "@/lib/partner/partner-site-url";
+import { partnerOffenPortalPath, partnerVorgangPortalPath } from "@/lib/partner/partner-site-url";
 import { supabaseAdmin } from "@/lib/supabase";
 
 function authorize(request: Request): boolean {
@@ -53,7 +53,7 @@ export async function POST(request: Request) {
       .eq("id", auftragId)
       .maybeSingle();
     const angebotId = auftrag?.angebot_id ? String(auftrag.angebot_id) : null;
-    let link = `/partner?section=vorgaenge`;
+    let link = partnerVorgangPortalPath(auftragId);
     if (angebotId) {
       const { data: hw } = await supabaseAdmin
         .from("angebot_handwerker")

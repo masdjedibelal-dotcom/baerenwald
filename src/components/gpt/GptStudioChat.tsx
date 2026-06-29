@@ -76,6 +76,8 @@ type GptStudioChatProps = {
   locked?: boolean;
   /** Rechner/Portal: Preisrahmen oder Beratungs-Funnel vorbereiten (parallel zur Visualisierung). */
   priceHandoff?: boolean;
+  /** Raumfoto-Button in der Eingabezeile (Portal: aus). */
+  showPhotoUpload?: boolean;
 };
 
 function isActiveVizFlow(phase: GptVizPhase, flowActive: boolean): boolean {
@@ -103,6 +105,7 @@ export function GptStudioChat({
   onBeratungBereit,
   locked = false,
   priceHandoff = false,
+  showPhotoUpload = true,
 }: GptStudioChatProps) {
 
   const {
@@ -1270,15 +1273,17 @@ export function GptStudioChat({
               e.target.value = "";
             }}
           />
-          <button
-            type="button"
-            className="gpt-chat-attach"
-            disabled={inputDisabled}
-            aria-label={pendingUpload === "inspiration" ? "Inspirationsbild" : "Raumfoto hochladen"}
-            onClick={() => fileInputRef.current?.click()}
-          >
-            <ImagePlus className="h-5 w-5" aria-hidden />
-          </button>
+          {showPhotoUpload ? (
+            <button
+              type="button"
+              className="gpt-chat-attach"
+              disabled={inputDisabled}
+              aria-label={pendingUpload === "inspiration" ? "Inspirationsbild" : "Raumfoto hochladen"}
+              onClick={() => fileInputRef.current?.click()}
+            >
+              <ImagePlus className="h-5 w-5" aria-hidden />
+            </button>
+          ) : null}
           <textarea
             ref={textareaRef}
             rows={1}
