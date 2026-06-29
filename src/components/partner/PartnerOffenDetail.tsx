@@ -139,22 +139,22 @@ export function PartnerOffenDetail({
   const infoText = useMemo(() => {
     if (!isNachreichung) {
       return hatAuftrag
-        ? "Bitte Leistungen und Projektvertrag prüfen — dann annehmen."
-        : "Bitte Leistungen prüfen und die Anfrage verbindlich annehmen.";
+        ? "Prüfe Leistungen und Projektvertrag. Mit „Annehmen“ bestätigst du den Auftrag verbindlich."
+        : "Prüfe die Leistungen deiner Zuweisung. Mit „Annehmen“ bestätigst du sie verbindlich.";
     }
     const openIds = openPositionIds ?? [];
     const openPos =
       item.crm_auftrag_positionen?.filter((p) => openIds.includes(p.id)) ?? [];
     if (openPos.some((p) => p.aenderung_typ === "entfernt")) {
-      return "Bärenwald hat Leistungen angepasst — bitte Änderungen und Entfernungen bestätigen.";
+      return "Bärenwald hat Leistungen entfernt — bitte die Änderungen prüfen und bestätigen.";
     }
     if (openPos.some((p) => p.aenderung_typ === "geaendert")) {
-      return "Bärenwald hat Preise oder Leistungen geändert — bitte prüfen und annehmen.";
+      return "Bärenwald hat Leistungen oder Preise angepasst — bitte prüfen und bestätigen.";
     }
-    return "Bärenwald hat zusätzliche Leistungen festgelegt — bitte prüfen und annehmen oder ablehnen.";
+    return "Bärenwald hat neue Leistungen ergänzt — bitte prüfen und bestätigen.";
   }, [isNachreichung, hatAuftrag, openPositionIds, item.crm_auftrag_positionen]);
 
-  const primaryLabel = isNachreichung ? "Ergänzung annehmen" : "Annehmen";
+  const primaryLabel = isNachreichung ? "Änderungen bestätigen" : "Annehmen";
 
   async function onConfirm() {
     setLoading(true);
@@ -291,7 +291,7 @@ export function PartnerOffenDetail({
               className="mt-1"
             />
             <span className="portal-text-body text-text-primary">
-              Ich nehme diese Anfrage verbindlich an.
+              Ich bestätige die Zuweisung verbindlich.
             </span>
           </label>
         </div>
@@ -306,7 +306,7 @@ export function PartnerOffenDetail({
             className="mt-1"
           />
           <span className="portal-text-body text-text-primary">
-            Ich nehme die ergänzenden Leistungen verbindlich an.
+            Ich bestätige die geänderten Leistungen verbindlich.
           </span>
         </label>
       ) : null}
@@ -350,10 +350,10 @@ export function PartnerOffenDetail({
         title={primaryLabel}
         description={
           isNachreichung
-            ? "Mit der Bestätigung nimmst du die ergänzenden Leistungen verbindlich an."
+            ? "Mit der Bestätigung nimmst du die geänderten Leistungen verbindlich an."
             : hatAuftrag
-              ? "Mit der Bestätigung nimmst du den Auftrag verbindlich an."
-              : "Mit der Bestätigung nimmst du die Anfrage verbindlich an."
+              ? "Mit der Bestätigung nimmst du den Auftrag inkl. Projektvertrag verbindlich an."
+              : "Mit der Bestätigung nimmst du die Zuweisung verbindlich an."
         }
         confirmLabel={primaryLabel}
         onConfirm={onConfirm}

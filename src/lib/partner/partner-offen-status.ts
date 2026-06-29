@@ -146,8 +146,8 @@ export function buildPartnerOffenListe(input: {
 }
 
 export function partnerOffenStatusLabel(typ: PartnerOffenKartenTyp): string {
-  if (typ === "nachreichung") return "Ergänzung";
-  return "Neu";
+  if (typ === "nachreichung") return "Geändert";
+  return "Aktion nötig";
 }
 
 export function partnerOffenStatusPillKey(typ: PartnerOffenKartenTyp): string {

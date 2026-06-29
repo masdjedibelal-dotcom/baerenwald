@@ -105,8 +105,8 @@ export function partnerAnfrageStatusLabel(
   item: PartnerAnfrageKonditionenFields
 ): string {
   if (isPartnerAnfrageAntwortAbgelaufen(item)) return "Antwort abgelaufen";
-  if (isPartnerAnfrageKonditionenNachreichung(item)) return "Ergänzung";
-  if (isPartnerAnfrageAktionErforderlich(item)) return "Neu";
+  if (isPartnerAnfrageKonditionenNachreichung(item)) return "Geändert";
+  if (isPartnerAnfrageAktionErforderlich(item)) return "Aktion nötig";
   const s = item.status.toLowerCase();
   if (s === "abgelehnt") return "Abgelehnt";
   return item.status;
@@ -130,6 +130,35 @@ export function isPartnerAuftragAnfrageAntwortAbgelaufen(
     position_start_daten: item.positionen.map((p) => p.start_datum),
   });
   return isProjektStartDatumErreicht(start);
+}
+
+/** Abgelaufene Zuweisung ohne HW-Antwort — nicht in Vorgängen listen. */
+export function isPartnerVorgangAusgeblendet(input: {
+  handwerker_bestaetigt_at: string | null;
+  anfrage?: PartnerAnfrageTimingFields | null;
+  auftrag: PartnerAuftragAnfrageTiming & {
+    hwStatus: string;
+    status: string;
+  };
+}): boolean {
+  if (input.handwerker_bestaetigt_at?.trim()) return false;
+
+  const hw = input.auftrag.hwStatus.toLowerCase();
+  const anfrageSt = (input.anfrage?.status ?? "").toLowerCase();
+  if (hw === "abgelehnt" || anfrageSt === "abgelehnt") return false;
+
+  if (input.anfrage && isPartnerAnfrageAntwortAbgelaufen(input.anfrage)) {
+    return true;
+  }
+
+  if (
+    isPartnerAuftragAnfrageAntwortAbgelaufen(input.auftrag) &&
+    !HW_BEANTWORTET.has(hw)
+  ) {
+    return true;
+  }
+
+  return false;
 }
 
 export function isPartnerAuftragAnfrageOffen(
@@ -190,8 +219,8 @@ export function partnerAuftragAnfrageStatusLabel(
   }
 ): string {
   if (isPartnerAuftragAnfrageAntwortAbgelaufen(item)) return "Antwort abgelaufen";
-  if (isPartnerAuftragAnfrageOffen(item)) return "Neu";
+  if (isPartnerAuftragAnfrageOffen(item)) return "Aktion nötig";
   const hw = item.hwStatus.toLowerCase();
   if (hw === "abgelehnt") return "Abgelehnt";
-  return "Neu";
+  return "Aktion nötig";
 }

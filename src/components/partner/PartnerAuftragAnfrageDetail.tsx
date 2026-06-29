@@ -27,7 +27,6 @@ import { partnerDetailStatusPillClass } from "@/lib/partner/partner-detail-forma
 import { PartnerProjektvertragPaket } from "@/components/partner/PartnerProjektvertragPaket";
 import { positionBrauchtHandwerkerAktion } from "@/lib/partner/partner-konditionen";
 import {
-  isPartnerAuftragAnfrageAntwortAbgelaufen,
   isPartnerAuftragAnfrageOffen,
   partnerAuftragAnfrageStatusLabel,
 } from "@/lib/partner/partner-anfrage-status";
@@ -56,7 +55,6 @@ export function PartnerAuftragAnfrageDetail({
   const [grund, setGrund] = useState<string>(HANDWERKER_ABLEHNUNG_GRUND_VALUES[0]);
   const [notiz, setNotiz] = useState("");
 
-  const abgelaufen = isPartnerAuftragAnfrageAntwortAbgelaufen(item);
   const bearbeitbar = isPartnerAuftragAnfrageOffen(item);
 
   const konditionZeilen = useMemo(
@@ -106,18 +104,15 @@ export function PartnerAuftragAnfrageDetail({
 
   const statusLabel = partnerAuftragAnfrageStatusLabel(item);
 
-  const infoText = abgelaufen
-    ? "Antwortfrist abgelaufen."
-    : "Bärenwald hat die Angebotspreise festgelegt — bitte prüfen und annehmen.";
+  const infoText =
+    "Prüfe die Leistungen und den Projektvertrag. Mit „Annehmen“ bestätigst du den Auftrag verbindlich.";
 
   const sections = useMemo(
     () => buildPartnerAuftragPortalSections(item.lead),
     [item.lead]
   );
 
-  const statusPillClass = abgelaufen
-    ? "tag bg-red-100 text-red-700"
-    : partnerDetailStatusPillClass("neu");
+  const statusPillClass = partnerDetailStatusPillClass("neu");
 
   const actionFooter =
     bearbeitbar && !showReject ? (
@@ -204,7 +199,7 @@ export function PartnerAuftragAnfrageDetail({
       <PartnerConfirmDialog
         open={confirmAccept}
         title="Annehmen?"
-        description="Du nimmst die von Bärenwald festgelegten Preise an."
+        description="Du nimmst Leistungen und Projektvertrag verbindlich an."
         confirmLabel="Annehmen"
         loading={loading}
         onConfirm={onAccept}
@@ -212,7 +207,7 @@ export function PartnerAuftragAnfrageDetail({
       />
       <PartnerConfirmDialog
         open={confirmReject}
-        title="Anfrage ablehnen?"
+        title="Zuweisung ablehnen?"
         description="Bärenwald wird informiert."
         confirmLabel="Ablehnen"
         confirmVariant="danger"

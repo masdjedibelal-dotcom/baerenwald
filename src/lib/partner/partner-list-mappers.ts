@@ -44,10 +44,14 @@ function ts(v?: string | null): number {
 
 export function partnerAngebotStatusPillClass(statusKey: string): string {
   const s = statusKey.toLowerCase();
-  if (s === "ergaenzung" || s === "geaendert") return "tag bg-amber-100 text-amber-800";
-  if (s === "neu") return "tag bg-amber-100 text-amber-700";
-  if (s === "abgelehnt") return "tag bg-red-100 text-red-800";
-  return "tag bg-amber-100 text-amber-700";
+  if (s === "neu") return "tag bg-orange-100 text-orange-800";
+  if (s === "geaendert" || s === "ergaenzung") return "tag bg-violet-100 text-violet-800";
+  if (s === "in_arbeit" || s === "abnahme") return "tag bg-blue-100 text-blue-800";
+  if (s === "abgeschlossen" || s === "erledigt") return "tag bg-emerald-100 text-emerald-700";
+  if (s === "abgelehnt" || s === "storniert" || s === "antwort_abgelaufen") {
+    return "tag bg-red-100 text-red-700";
+  }
+  return "tag bg-muted text-text-secondary";
 }
 
 export function mapAnfrageAuftragToCard(item: PartnerAuftragItem): PartnerCardRow {
@@ -65,7 +69,7 @@ export function mapAnfrageAuftragToCard(item: PartnerAuftragItem): PartnerCardRo
     statusPillKey: "neu",
     accent: "anfrage",
     meta,
-    hint: "→ Bitte annehmen oder ablehnen",
+    hint: "→ Leistungen & Vertrag prüfen",
     sortDate: ts(item.start_datum),
   };
 }
@@ -100,12 +104,12 @@ export function mapOffenAngebotToCard(
     id: item.id,
     title: item.listen_titel,
     subtitle:
-      typ === "nachreichung" ? "Ergänzung zum laufenden Auftrag" : undefined,
+      typ === "nachreichung" ? "Leistungsänderung am laufenden Auftrag" : undefined,
     statusLabel: partnerOffenStatusLabel(typ),
     statusPillKey: partnerOffenStatusPillKey(typ),
     accent: typ === "nachreichung" ? "anfrage" : "angebot",
     meta,
-    hint: typ === "nachreichung" ? "→ Ergänzung annehmen" : "→ Bitte annehmen",
+    hint: typ === "nachreichung" ? "→ Änderungen bestätigen" : "→ Leistungen & Vertrag prüfen",
     sortDate: ts(item.gesendet_at ?? item.antwort_at),
   };
 }
@@ -121,7 +125,7 @@ export function mapVorgangToCard(vorgang: PartnerVorgangItem): PartnerCardRow {
 
   const hint =
     state === "neu"
-      ? "→ Bitte annehmen oder ablehnen"
+      ? "→ Leistungen & Vertrag prüfen"
       : state === "geaendert"
         ? "→ Änderungen bestätigen"
         : undefined;
@@ -129,8 +133,7 @@ export function mapVorgangToCard(vorgang: PartnerVorgangItem): PartnerCardRow {
   return {
     id: vorgang.id,
     title: auftrag.listen_titel,
-    subtitle:
-      state === "geaendert" ? "Änderungen vom CRM" : anfrage ? undefined : undefined,
+    subtitle: state === "geaendert" ? "Leistungsänderung durch Bärenwald" : undefined,
     statusLabel: vorgangStateLabel(state),
     statusPillKey: vorgangStatePillKey(state),
     accent:

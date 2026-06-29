@@ -5,6 +5,7 @@ import type {
 import {
   isPartnerAnfrageAktionErforderlich,
   isPartnerAuftragAnfrageAktionErforderlich,
+  isPartnerVorgangAusgeblendet,
 } from "@/lib/partner/partner-anfrage-status";
 import {
   enrichPartnerOffenAngebot,
@@ -124,19 +125,28 @@ export function buildPartnerVorgaenge(input: {
     out.push(buildVorgangFromAuftrag(pseudoAuftrag, anfrage));
   }
 
-  return out.sort((a, b) => {
-    const ta = ts(
-      a.anfrage?.gesendet_at ??
-        a.auftrag.start_datum ??
-        a.handwerker_bestaetigt_at
-    );
-    const tb = ts(
-      b.anfrage?.gesendet_at ??
-        b.auftrag.start_datum ??
-        b.handwerker_bestaetigt_at
-    );
-    return tb - ta;
-  });
+  return out
+    .filter(
+      (v) =>
+        !isPartnerVorgangAusgeblendet({
+          handwerker_bestaetigt_at: v.handwerker_bestaetigt_at,
+          anfrage: v.anfrage,
+          auftrag: v.auftrag,
+        })
+    )
+    .sort((a, b) => {
+      const ta = ts(
+        a.anfrage?.gesendet_at ??
+          a.auftrag.start_datum ??
+          a.handwerker_bestaetigt_at
+      );
+      const tb = ts(
+        b.anfrage?.gesendet_at ??
+          b.auftrag.start_datum ??
+          b.handwerker_bestaetigt_at
+      );
+      return tb - ta;
+    });
 }
 
 export function countPartnerVorgaengeFilter(

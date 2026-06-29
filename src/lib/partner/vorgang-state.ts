@@ -65,7 +65,7 @@ export function vorgangPasstFilter(
 export function vorgangStateLabel(state: VorgangState): string {
   switch (state) {
     case "neu":
-      return "Neu";
+      return "Aktion nötig";
     case "geaendert":
       return "Geändert";
     case "in_bearbeitung":

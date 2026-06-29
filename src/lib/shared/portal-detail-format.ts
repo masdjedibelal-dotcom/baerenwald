@@ -54,6 +54,7 @@ export function portalDetailStatusPillClass(status: string): string {
     s === "akzeptiert" ||
     s === "eingereicht" ||
     s === "abgeschlossen" ||
+    s === "erledigt" ||
     s === "uebernommen" ||
     s.includes("abgeschlossen") ||
     s.includes("fertig")
@@ -63,16 +64,19 @@ export function portalDetailStatusPillClass(status: string): string {
   if (s === "abgelehnt" || s === "storniert" || s === "antwort_abgelaufen") {
     return "tag bg-red-100 text-red-700";
   }
-  if (s === "geaendert" || s.includes("geändert")) {
-    return "tag bg-amber-100 text-amber-800";
+  if (s === "geaendert" || s === "ergaenzung" || s.includes("geändert")) {
+    return "tag bg-violet-100 text-violet-800";
   }
-  if (s === "in_arbeit" || s.includes("arbeit") || s.includes("aktiv")) {
+  if (s === "neu") {
+    return "tag bg-orange-100 text-orange-800";
+  }
+  if (s === "in_arbeit" || s === "abnahme" || s.includes("arbeit") || s.includes("aktiv")) {
     return "tag bg-blue-100 text-blue-800";
   }
   if (s.includes("angebot") || s.includes("gesendet") || s.includes("entwurf")) {
-    return "tag bg-amber-100 text-amber-700";
+    return "tag bg-amber-100 text-amber-800";
   }
-  return "tag bg-amber-100 text-amber-700";
+  return "tag bg-muted text-text-secondary";
 }
 
 /** @deprecated Alias für Partner-Importe */

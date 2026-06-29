@@ -17,7 +17,6 @@ import {
   PartnerDetailLayout,
   PartnerDetailSection,
   PartnerDetailSuccessBox,
-  PartnerJobFieldActions,
 } from "@/components/partner/PartnerDetailUi";
 import { PartnerPortalDetailSections } from "@/components/partner/PartnerPortalDetailSections";
 import { PartnerComplianceCheckliste } from "@/components/partner/PartnerComplianceCheckliste";
@@ -383,17 +382,8 @@ export function PartnerAuftragDetail({ item }: { item: PartnerAuftragItem }) {
     setRechnungPdf(null);
     router.refresh();
   }
-  const photoFooter = (
-    <PartnerJobFieldActions
-      onAddPhoto={() => {
-        setEditId(null);
-        setShowNew(true);
-      }}
-    />
-  );
-
   return (
-    <PartnerDetailLayout footer={photoFooter}>
+    <PartnerDetailLayout>
       <PartnerDetailHero
         title={item.listen_titel}
         metaLine={partnerAuftragDetailMetaLine(item.start_datum, item.end_datum)}
