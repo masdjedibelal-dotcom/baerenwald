@@ -94,6 +94,11 @@ export function buildPartnerVorgaenge(input: {
   }
 
   const seenAuftragIds = new Set<string>();
+  const angebotIdsMitAuftrag = new Set(
+    input.alleAuftraege
+      .map((a) => a.angebot_id?.trim())
+      .filter((id): id is string => Boolean(id))
+  );
   const out: PartnerVorgangItem[] = [];
 
   for (const auftrag of input.alleAuftraege) {
@@ -108,6 +113,9 @@ export function buildPartnerVorgaenge(input: {
   for (const anfrage of input.anfragen) {
     const auftragId = anfrage.auftrag_id?.trim();
     if (auftragId && seenAuftragIds.has(auftragId)) continue;
+    if (anfrage.angebot_id && angebotIdsMitAuftrag.has(anfrage.angebot_id.trim())) {
+      continue;
+    }
     if (!isPartnerAngebotOffenListItem(anfrage)) continue;
 
     const pseudoAuftrag: PartnerAuftragItem = {

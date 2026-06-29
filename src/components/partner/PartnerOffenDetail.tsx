@@ -28,6 +28,7 @@ import {
   HANDWERKER_ABLEHNUNG_GRUND_VALUES,
 } from "@/lib/partner/handwerker-ablehnung";
 import {
+  buildNachreichungKonditionZeilen,
   mapKonditionZeilenVereinbart,
   konditionZeilenNurAusHw,
   resolveNachreichungOpenZeilenIds,
@@ -103,15 +104,43 @@ export function PartnerOffenDetail({
   }, [isNachreichung, item]);
 
   const konditionZeilen = useMemo(() => {
-    if (isNachreichung && item.crm_auftrag_positionen?.length && openPositionIds) {
+    if (isNachreichung && openPositionIds?.length) {
       const openSet = new Set(openPositionIds);
-      const zeilen = buildPartnerAuftragKonditionZeilen(
-        item.crm_auftrag_positionen.filter((p) => openSet.has(p.id))
+
+      const ausAuftrag = (item.crm_auftrag_positionen ?? []).filter((p) =>
+        openSet.has(p.id)
       );
-      return zeilen.map((z) => ({
-        ...z,
-        zeilenBadge: z.zeilenBadge ?? "neu",
-      }));
+      if (ausAuftrag.length) {
+        return buildPartnerAuftragKonditionZeilen(ausAuftrag).map((z) => ({
+          ...z,
+          zeilenBadge: z.zeilenBadge ?? "neu",
+        }));
+      }
+
+      const ausCrm = buildNachreichungKonditionZeilen(
+        item.crm_positionen_raw,
+        item.crm_auftrag_positionen,
+        {
+          gewerkId: item.gewerk_id,
+          handwerkerId: item.handwerker_id,
+          gewerkName: item.gewerk_name,
+        }
+      ).filter((z) => openSet.has(z.id));
+      if (ausCrm.length) {
+        return ausCrm.map((z) => ({
+          ...z,
+          zeilenBadge: z.zeilenBadge ?? "neu",
+        }));
+      }
+
+      if (item.crm_auftrag_positionen?.length) {
+        return buildPartnerAuftragKonditionZeilen(item.crm_auftrag_positionen).map(
+          (z) => ({
+            ...z,
+            zeilenBadge: z.zeilenBadge ?? "neu",
+          })
+        );
+      }
     }
 
     if (item.hw_konditionen?.positionen.length) {
@@ -168,7 +197,7 @@ export function PartnerOffenDetail({
     if (openPos.some((p) => p.aenderung_typ === "geaendert")) {
       return "Bärenwald hat Leistungen oder Preise angepasst — bitte prüfen und bestätigen.";
     }
-    return "Bärenwald hat Leistungen angepasst — markierte Zeilen prüfen und bestätigen.";
+    return "Bärenwald hat Leistungen angepasst — markierte Zeilen unten prüfen und bestätigen.";
   }, [isNachreichung, hatAuftrag, openPositionIds, item.crm_auftrag_positionen]);
 
   const primaryLabel = isNachreichung ? "Änderungen bestätigen" : "Annehmen";
@@ -256,6 +285,14 @@ export function PartnerOffenDetail({
       <PartnerDetailInfoBox>{infoText}</PartnerDetailInfoBox>
 
       <PartnerPortalDetailSections sections={sections} />
+
+      {isNachreichung && konditionZeilen.length === 0 ? (
+        <PartnerDetailInfoBox>
+          Bärenwald hat Leistungen an diesem Auftrag angepasst. Die Details konnten
+          gerade nicht geladen werden — bitte Seite neu laden. Bei anhaltendem
+          Problem melde dich bei Bärenwald.
+        </PartnerDetailInfoBox>
+      ) : null}
 
       {konditionZeilen.length > 0 ? (
         <PartnerDetailSection

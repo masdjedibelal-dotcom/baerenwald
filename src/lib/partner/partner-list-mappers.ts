@@ -123,17 +123,28 @@ export function mapVorgangToCard(vorgang: PartnerVorgangItem): PartnerCardRow {
     auftrag.end_datum
   );
 
+  const offeneAenderungen = vorgang.auftrag.nachreichungOpenPositionIds?.length ?? 0;
+
   const hint =
     state === "neu"
       ? "→ Leistungen & Vertrag prüfen"
       : state === "geaendert"
-        ? "→ Änderungen bestätigen"
+        ? offeneAenderungen > 0
+          ? `→ ${offeneAenderungen} Leistung${offeneAenderungen === 1 ? "" : "en"} bestätigen`
+          : "→ Änderungen bestätigen"
         : undefined;
+
+  const subtitle =
+    state === "geaendert"
+      ? offeneAenderungen > 0
+        ? `Leistungsänderung am laufenden Auftrag (${offeneAenderungen} offen)`
+        : "Leistungsänderung am laufenden Auftrag"
+      : undefined;
 
   return {
     id: vorgang.id,
     title: auftrag.listen_titel,
-    subtitle: state === "geaendert" ? "Leistungsänderung durch Bärenwald" : undefined,
+    subtitle,
     statusLabel: vorgangStateLabel(state),
     statusPillKey: vorgangStatePillKey(state),
     accent:
