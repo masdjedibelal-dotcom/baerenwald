@@ -37,14 +37,19 @@ export function ableitenVorgangState(input: {
   positionen: Array<
     Pick<PartnerAuftragPosition, "aenderung_typ" | "handwerker_status">
   >;
+  /** Offene CRM-Nachreichung (kann von Positions-Status abweichen). */
+  offeneNachreichungPositionIds?: string[];
   /** Legacy: angebot_handwerker noch ohne Auftrags-Annahme */
   anfrageAktionNoetig?: boolean;
 }): VorgangState {
   if (isVorgangAuftragErledigt(input.auftragStatus)) return "erledigt";
 
   const bestaetigt = Boolean(input.handwerkerBestaetigtAt?.trim());
+  const offeneNachreichung =
+    (input.offeneNachreichungPositionIds?.length ?? 0) > 0;
   const offeneAktion =
     hatOffeneVorgangAktion(input.positionen) ||
+    offeneNachreichung ||
     Boolean(input.anfrageAktionNoetig && !bestaetigt);
 
   if (!bestaetigt && offeneAktion) return "neu";

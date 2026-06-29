@@ -151,6 +151,6 @@ export function partnerOffenStatusLabel(typ: PartnerOffenKartenTyp): string {
 }
 
 export function partnerOffenStatusPillKey(typ: PartnerOffenKartenTyp): string {
-  if (typ === "nachreichung") return "ergaenzung";
+  if (typ === "nachreichung") return "geaendert";
   return "neu";
 }

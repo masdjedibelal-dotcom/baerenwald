@@ -38,6 +38,11 @@ import {
   partnerOffenStatusPillKey,
 } from "@/lib/partner/partner-offen-status";
 import {
+  vorgangStateLabel,
+  vorgangStatePillKey,
+  type VorgangState,
+} from "@/lib/partner/vorgang-state";
+import {
   buildPartnerAngebotPortalSections,
   PARTNER_LEISTUNGEN_GESAMT_LABEL,
   PARTNER_LEISTUNGEN_SECTION_TITLE,
@@ -47,9 +52,11 @@ import {
 
 export function PartnerOffenDetail({
   item,
+  vorgangState,
   onConfirmed,
 }: {
   item: PartnerOffenAngebotItem;
+  vorgangState?: VorgangState;
   onConfirmed?: (anfrageId: string) => void;
 }) {
   const router = useRouter();
@@ -69,11 +76,18 @@ export function PartnerOffenDetail({
   const hatAuftrag = Boolean(item.auftrag_id);
   const projektvertragBereits = Boolean(item.projektvertrag_bestaetigt_am);
 
-  const statusLabel = partnerOffenStatusLabel(item.offen_karten_typ);
-  const statusPillKey = partnerOffenStatusPillKey(item.offen_karten_typ);
+  const statusLabel = vorgangState
+    ? vorgangStateLabel(vorgangState)
+    : partnerOffenStatusLabel(item.offen_karten_typ);
+  const statusPillKey = vorgangState
+    ? vorgangStatePillKey(vorgangState)
+    : partnerOffenStatusPillKey(item.offen_karten_typ);
 
   const openPositionIds = useMemo(() => {
     if (!isNachreichung) return null;
+    if (item.nachreichung_open_position_ids?.length) {
+      return item.nachreichung_open_position_ids;
+    }
     return resolveNachreichungOpenZeilenIds({
       crm_positionen_raw: item.crm_positionen_raw,
       crm_auftrag_positionen: item.crm_auftrag_positionen,
@@ -94,7 +108,10 @@ export function PartnerOffenDetail({
       const zeilen = buildPartnerAuftragKonditionZeilen(
         item.crm_auftrag_positionen.filter((p) => openSet.has(p.id))
       );
-      return mapKonditionZeilenVereinbart(zeilen);
+      return zeilen.map((z) => ({
+        ...z,
+        zeilenBadge: z.zeilenBadge ?? "neu",
+      }));
     }
 
     if (item.hw_konditionen?.positionen.length) {
@@ -151,7 +168,7 @@ export function PartnerOffenDetail({
     if (openPos.some((p) => p.aenderung_typ === "geaendert")) {
       return "Bärenwald hat Leistungen oder Preise angepasst — bitte prüfen und bestätigen.";
     }
-    return "Bärenwald hat neue Leistungen ergänzt — bitte prüfen und bestätigen.";
+    return "Bärenwald hat Leistungen angepasst — markierte Zeilen prüfen und bestätigen.";
   }, [isNachreichung, hatAuftrag, openPositionIds, item.crm_auftrag_positionen]);
 
   const primaryLabel = isNachreichung ? "Änderungen bestätigen" : "Annehmen";
@@ -243,7 +260,7 @@ export function PartnerOffenDetail({
       {konditionZeilen.length > 0 ? (
         <PartnerDetailSection
           title={
-            isNachreichung ? "Neue Leistungen" : PARTNER_LEISTUNGEN_SECTION_TITLE
+            isNachreichung ? "Geänderte Leistungen" : PARTNER_LEISTUNGEN_SECTION_TITLE
           }
         >
           <PartnerLeistungenKonditionenCard

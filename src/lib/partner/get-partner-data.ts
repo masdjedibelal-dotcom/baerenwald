@@ -121,6 +121,8 @@ export type PartnerAnfrageItem = {
   crm_positionen_raw?: unknown;
   /** Auftragspositionen zum Angebot (CRM-Nachreichung nur im Auftrag). */
   crm_auftrag_positionen?: PartnerAuftragPosition[];
+  /** Vom Auftrag vorberechnete offene Positions-IDs (Nachreichung). */
+  nachreichung_open_position_ids?: string[];
   /** Alle hw_konditionen-Zeilen zum Angebot (Multi-Gewerk). */
   alle_hw_konditionen?: Array<PartnerHwKonditionen | null | undefined>;
   crm_gesamt_fix?: number | null;

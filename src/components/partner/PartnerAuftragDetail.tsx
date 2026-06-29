@@ -67,6 +67,11 @@ import {
   partnerAuftragListenStatusLabel,
   partnerAuftragListenStatusPillKey,
 } from "@/lib/partner/partner-auftrag-list-status";
+import {
+  vorgangStateLabel,
+  vorgangStatePillKey,
+  type VorgangState,
+} from "@/lib/partner/vorgang-state";
 import { cn } from "@/lib/utils";
 import { DokumenteTabelle } from "@/components/shared/DokumenteTabelle";
 import { FileUploadField } from "@/components/shared/FileUploadField";
@@ -265,7 +270,13 @@ function BautagebuchEintragActions({
   );
 }
 
-export function PartnerAuftragDetail({ item }: { item: PartnerAuftragItem }) {
+export function PartnerAuftragDetail({
+  item,
+  vorgangState,
+}: {
+  item: PartnerAuftragItem;
+  vorgangState?: VorgangState;
+}) {
   const router = useRouter();
   const [showNew, setShowNew] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
@@ -382,29 +393,26 @@ export function PartnerAuftragDetail({ item }: { item: PartnerAuftragItem }) {
     setRechnungPdf(null);
     router.refresh();
   }
+  const statusLabel = vorgangState
+    ? vorgangStateLabel(vorgangState)
+    : partnerAuftragListenStatusLabel(item.status);
+  const statusPillKey = vorgangState
+    ? vorgangStatePillKey(vorgangState)
+    : partnerAuftragListenStatusPillKey(item.status);
+
   return (
     <PartnerDetailLayout>
       <PartnerDetailHero
         title={item.listen_titel}
         metaLine={partnerAuftragDetailMetaLine(item.start_datum, item.end_datum)}
-        statusLabel={partnerAuftragListenStatusLabel(item.status)}
-        statusPillClass={partnerDetailStatusPillClass(
-          partnerAuftragListenStatusPillKey(item.status)
-        )}
+        statusLabel={statusLabel}
+        statusPillClass={partnerDetailStatusPillClass(statusPillKey)}
       />
 
       {item.bautagebuchAnfrageOffen ? (
         <PartnerDetailInfoBox>
           Bärenwald hat einen <strong>Tagebucheintrag</strong> angefordert. Bitte unten im
           Bautagebuch dokumentieren.
-        </PartnerDetailInfoBox>
-      ) : null}
-
-      {item.nachreichungOpenPositionIds?.length ? (
-        <PartnerDetailInfoBox>
-          Bärenwald hat eine <strong>neue Leistung</strong> ergänzt — bitte unter{" "}
-          <strong>Offen</strong> prüfen und den Preis bestätigen. Hier siehst du nur die
-          bereits vereinbarten Leistungen.
         </PartnerDetailInfoBox>
       ) : null}
 

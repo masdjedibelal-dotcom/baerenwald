@@ -4,9 +4,14 @@ import { Pencil } from "lucide-react";
 import { useState } from "react";
 
 import { PartnerPreisBearbeitenDialog } from "@/components/partner/PartnerPreisBearbeitenDialog";
+import {
+  LeistungStatusDot,
+  type LeistungStatusAmpel,
+} from "@/components/shared/LeistungStatusDot";
 import { fmtPartnerEuro } from "@/lib/partner/partner-detail-format";
 import {
   PARTNER_KONDITION_MWST,
+  resolvePartnerLeistungStatusAmpel,
   summeKonditionBrutto,
   summeKonditionNetto,
   type PartnerKonditionZeile,
@@ -14,20 +19,6 @@ import {
 import { PARTNER_LEISTUNGEN_ANGEBOTSPREIS_LABEL } from "@/lib/partner/partner-portal-display";
 import { stripHtmlToPlainText } from "@/lib/portal/portal-display";
 import { cn } from "@/lib/utils";
-
-const ZEILEN_BADGE_LABEL: Record<NonNullable<PartnerKonditionZeile["zeilenBadge"]>, string> = {
-  vereinbart: "Angenommen",
-  neu: "Neu",
-  geaendert: "Geändert",
-  entfernt: "Entfernt",
-};
-
-const ZEILEN_BADGE_CLASS: Record<NonNullable<PartnerKonditionZeile["zeilenBadge"]>, string> = {
-  vereinbart: "bg-emerald-100 text-emerald-700",
-  neu: "bg-amber-100 text-amber-700",
-  geaendert: "bg-amber-100 text-amber-800",
-  entfernt: "bg-red-100 text-red-700",
-};
 
 const GRID_COLS = "sm:grid-cols-[1fr_11rem]";
 
@@ -153,6 +144,21 @@ export function PartnerLeistungenKonditionenCard({
           <span className="text-right">{PARTNER_LEISTUNGEN_ANGEBOTSPREIS_LABEL}</span>
         </div>
 
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 border-b border-border-light px-4 py-2 text-xs text-text-tertiary">
+          <span className="inline-flex items-center gap-1.5">
+            <LeistungStatusDot status="gruen" className="mt-0.5" />
+            Angenommen
+          </span>
+          <span className="inline-flex items-center gap-1.5">
+            <LeistungStatusDot status="gelb" className="mt-0.5" />
+            Aktion nötig
+          </span>
+          <span className="inline-flex items-center gap-1.5">
+            <LeistungStatusDot status="rot" className="mt-0.5" />
+            Entfernt
+          </span>
+        </div>
+
         <ul>
           {zeilen.map((z) => {
             const title = stripHtmlToPlainText(z.title) || z.title;
@@ -165,6 +171,10 @@ export function PartnerLeistungenKonditionenCard({
             const preis = angebotspreis(z, mode, hwValues);
             const notiz = zeilenNotiz(z, mode, hwNotizen);
             const preisFolgt = preis === "Preis folgt";
+            const ampel: LeistungStatusAmpel = resolvePartnerLeistungStatusAmpel(z, {
+              mode,
+              hwValue: hwValues?.[z.id],
+            });
 
             return (
               <li
@@ -178,36 +188,29 @@ export function PartnerLeistungenKonditionenCard({
               >
                 <div className={cn("grid gap-3 sm:items-start", GRID_COLS)}>
                   <div className="min-w-0">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <p
-                        className={cn(
-                          "font-medium text-text-primary",
-                          isEntfernt && "line-through text-text-secondary"
-                        )}
-                      >
-                        {title}
-                      </p>
-                      {z.zeilenBadge ? (
-                        <span
+                    <div className="flex items-start gap-2">
+                      <LeistungStatusDot status={ampel} className="mt-1.5" />
+                      <div className="min-w-0 flex-1">
+                        <p
                           className={cn(
-                            "tag text-xs font-semibold",
-                            ZEILEN_BADGE_CLASS[z.zeilenBadge]
+                            "font-medium text-text-primary",
+                            isEntfernt && "line-through text-text-secondary"
                           )}
                         >
-                          {ZEILEN_BADGE_LABEL[z.zeilenBadge]}
-                        </span>
-                      ) : null}
+                          {title}
+                        </p>
+                        {z.beschreibung ? (
+                          <p className="portal-text-meta mt-0.5 text-text-secondary">
+                            {stripHtmlToPlainText(z.beschreibung)}
+                          </p>
+                        ) : null}
+                        {isEntfernt ? (
+                          <p className="portal-text-meta mt-1 text-red-700">
+                            Bärenwald entfernt diese Leistung — bitte bestätigen.
+                          </p>
+                        ) : null}
+                      </div>
                     </div>
-                    {z.beschreibung ? (
-                      <p className="portal-text-meta mt-0.5 text-text-secondary">
-                        {stripHtmlToPlainText(z.beschreibung)}
-                      </p>
-                    ) : null}
-                    {isEntfernt ? (
-                      <p className="portal-text-meta mt-1 text-red-700">
-                        Bärenwald entfernt diese Leistung — bitte bestätigen.
-                      </p>
-                    ) : null}
                   </div>
 
                   <div className="sm:text-right">

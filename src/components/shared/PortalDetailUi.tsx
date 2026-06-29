@@ -2,6 +2,10 @@
 
 import { Info } from "lucide-react";
 
+import {
+  LeistungStatusDot,
+  resolvePortalLeistungStatusAmpel,
+} from "@/components/shared/LeistungStatusDot";
 import { cn } from "@/lib/utils";
 import { stripHtmlToPlainText } from "@/lib/portal/portal-display";
 
@@ -212,18 +216,6 @@ export function PortalDetailLeistungenPreisListe({
   if (!items.length) return null;
   const showGesamt = typeof gesamtBrutto === "number" && gesamtBrutto > 0;
 
-  const BADGE_LABEL = {
-    neu: "Neu",
-    geaendert: "Geändert",
-    entfernt: "Entfernt",
-  } as const;
-
-  const BADGE_CLASS = {
-    neu: "bg-amber-100 text-amber-700",
-    geaendert: "bg-amber-100 text-amber-800",
-    entfernt: "bg-red-100 text-red-700",
-  } as const;
-
   return (
     <div className="portal-text-body overflow-hidden rounded-xl border border-border-light bg-muted/20">
       <ul>
@@ -232,6 +224,10 @@ export function PortalDetailLeistungenPreisListe({
           const geaendert = p.aenderungBadge === "geaendert";
           const preisLabel =
             p.preisBrutto > 0 ? formatEuro(p.preisBrutto) : "Preis folgt";
+          const ampel = resolvePortalLeistungStatusAmpel({
+            aenderungBadge: p.aenderungBadge,
+            entfernt: isEntfernt,
+          });
 
           return (
             <li
@@ -244,36 +240,29 @@ export function PortalDetailLeistungenPreisListe({
               )}
             >
               <div className="min-w-0 flex-1">
-                <div className="flex flex-wrap items-center gap-2">
-                  <p
-                    className={cn(
-                      "font-medium text-text-primary",
-                      isEntfernt && "line-through text-text-secondary"
-                    )}
-                  >
-                    {stripHtmlToPlainText(p.title) || p.title}
-                  </p>
-                  {p.aenderungBadge ? (
-                    <span
+                <div className="flex items-start gap-2">
+                  <LeistungStatusDot status={ampel} className="mt-1.5" />
+                  <div className="min-w-0 flex-1">
+                    <p
                       className={cn(
-                        "tag text-xs font-semibold",
-                        BADGE_CLASS[p.aenderungBadge]
+                        "font-medium text-text-primary",
+                        isEntfernt && "line-through text-text-secondary"
                       )}
                     >
-                      {BADGE_LABEL[p.aenderungBadge]}
-                    </span>
-                  ) : null}
+                      {stripHtmlToPlainText(p.title) || p.title}
+                    </p>
+                    {p.beschreibung ? (
+                      <p className="portal-text-meta mt-0.5 text-text-secondary">
+                        {stripHtmlToPlainText(p.beschreibung)}
+                      </p>
+                    ) : null}
+                    {isEntfernt ? (
+                      <p className="portal-text-meta mt-1 text-red-700">
+                        Diese Leistung entfällt — bitte bestätigen.
+                      </p>
+                    ) : null}
+                  </div>
                 </div>
-                {p.beschreibung ? (
-                  <p className="portal-text-meta mt-0.5 text-text-secondary">
-                    {stripHtmlToPlainText(p.beschreibung)}
-                  </p>
-                ) : null}
-                {isEntfernt ? (
-                  <p className="portal-text-meta mt-1 text-red-700">
-                    Diese Leistung entfällt — bitte bestätigen.
-                  </p>
-                ) : null}
               </div>
               <div className="shrink-0 pt-0.5 text-right">
                 <p

@@ -441,6 +441,36 @@ export function mapKonditionZeilenVereinbart(
   });
 }
 
+export type PartnerLeistungStatusAmpel = "gruen" | "gelb" | "rot";
+
+/** Ampel neben Leistungstitel: grün = angenommen, gelb = Aktion nötig, rot = entfernt. */
+export function resolvePartnerLeistungStatusAmpel(
+  z: PartnerKonditionZeile,
+  opts?: { mode?: "edit" | "readonly"; hwValue?: string }
+): PartnerLeistungStatusAmpel {
+  if (z.zeilenBadge === "entfernt") return "rot";
+  if (z.zeilenBadge === "neu" || z.zeilenBadge === "geaendert") return "gelb";
+  if (z.zeilenBadge === "vereinbart") return "gruen";
+  if (z.readonly) return "gruen";
+  if (opts?.mode === "edit" && !z.readonly) return "gelb";
+  if (z.geaendert) return "gelb";
+  const raw = opts?.hwValue?.trim();
+  if (raw) {
+    const hw = Number(raw.replace(",", "."));
+    if (
+      Number.isFinite(hw) &&
+      z.vorschlagNetto != null &&
+      z.vorschlagNetto > 0 &&
+      Math.abs(hw - z.vorschlagNetto) > 0.009
+    ) {
+      return "gelb";
+    }
+  }
+  const netto = z.hwNetto ?? z.vorschlagNetto;
+  if (netto == null || netto <= 0) return "gelb";
+  return "gruen";
+}
+
 function leistungTitleKeysFromPosition(pos: PartnerAuftragPosition): string[] {
   const full =
     [pos.gewerk_name, pos.leistung_name].filter(Boolean).join(" — ").trim() ||

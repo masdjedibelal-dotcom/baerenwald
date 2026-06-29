@@ -48,7 +48,14 @@ function buildVorgangFromAuftrag(
   auftrag: PartnerAuftragItem,
   anfrage: PartnerAnfrageItem | undefined
 ): PartnerVorgangItem {
-  const enrichedAnfrage = anfrage ? enrichPartnerOffenAngebot(anfrage) : undefined;
+  const enrichedAnfrage = anfrage
+    ? enrichPartnerOffenAngebot({
+        ...anfrage,
+        crm_auftrag_positionen:
+          anfrage.crm_auftrag_positionen ?? auftrag.positionen,
+        nachreichung_open_position_ids: auftrag.nachreichungOpenPositionIds,
+      })
+    : undefined;
   const handwerker_bestaetigt_at = resolveHandwerkerBestaetigtAt({
     handwerker_bestaetigt_at: auftrag.handwerker_bestaetigt_at,
     projektvertrag_bestaetigt_am: auftrag.projektvertrag_bestaetigt_am,
@@ -59,6 +66,7 @@ function buildVorgangFromAuftrag(
     auftragStatus: auftrag.status,
     handwerkerBestaetigtAt: handwerker_bestaetigt_at,
     positionen: auftrag.positionen,
+    offeneNachreichungPositionIds: auftrag.nachreichungOpenPositionIds,
     anfrageAktionNoetig:
       !handwerker_bestaetigt_at &&
       (anfrageAktionNoetig(anfrage) ||
