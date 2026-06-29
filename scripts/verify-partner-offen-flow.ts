@@ -220,7 +220,7 @@ async function main() {
     console.log(
       `  ✅ [${label}] ${v.auftrag.listen_titel}${meta ? ` (${meta})` : ""}`
     );
-    if (!["Neu", "Geändert", "In Bearbeitung", "Erledigt"].includes(label)) {
+    if (!["Neu", "Geändert", "Durchführung", "Erledigt"].includes(label)) {
       issues.push({ level: "error", msg: `Ungültiger Vorgangs-State: ${label}` });
     }
   }

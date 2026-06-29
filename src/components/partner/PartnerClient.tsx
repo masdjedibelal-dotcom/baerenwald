@@ -205,7 +205,8 @@ export function PartnerClient({
 
   const vorname = handwerker.vorname || "Partner";
 
-  const vorgaengeOffenCount = countPartnerVorgaengeFilter(vorgaenge).offen;
+  /** Nur echte To-dos (neu, geändert, Bautagebuch, Unterlagen) — nicht „Durchführung“. */
+  const vorgaengeTodoCount = aufgaben.length;
 
   const vorgangFilterEffective: VorgangFilter =
     section === "vorgaenge" ? vorgangListFilter : "offen";
@@ -554,7 +555,7 @@ export function PartnerClient({
                     {id === "planer"
                       ? termine.length + aufgaben.length
                       : id === "vorgaenge"
-                        ? vorgaengeOffenCount
+                        ? vorgaengeTodoCount
                         : ""}
                   </span>
                 </button>
@@ -608,8 +609,8 @@ export function PartnerClient({
 
               <div className="grid min-w-0 grid-cols-2 gap-2">
                 <article className="portal-kpi-card">
-                  <p className="portal-kpi-label">Vorgänge offen</p>
-                  <p className="portal-kpi-value">{vorgaengeOffenCount}</p>
+                  <p className="portal-kpi-label">Offene Aufgaben</p>
+                  <p className="portal-kpi-value">{vorgaengeTodoCount}</p>
                 </article>
                 <article className="portal-kpi-card">
                   <p className="portal-kpi-label">Gesamt</p>
@@ -637,30 +638,6 @@ export function PartnerClient({
                 </div>
                 <span className="portal-text-body font-semibold text-accent">Öffnen →</span>
               </button>
-
-              {(termine.length > 0 || aufgaben.length > 0) && (
-                <button
-                  type="button"
-                  onClick={() => switchSection("planer")}
-                  className="card-bordered flex w-full items-center justify-between gap-3 p-4 text-left transition-colors hover:border-accent/30 lg:hidden"
-                >
-                  <div className="flex items-center gap-3">
-                    <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-accent-light text-accent">
-                      <CalendarDays className="h-5 w-5" aria-hidden />
-                    </span>
-                    <div>
-                      <p className="portal-text-body font-semibold text-text-primary">Planer</p>
-                      <p className="portal-text-meta text-text-secondary">
-                        {termine.length} Termine
-                        {aufgaben.length > 0
-                          ? ` · ${aufgaben.length} To-dos`
-                          : ""}
-                      </p>
-                    </div>
-                  </div>
-                  <span className="portal-text-body font-semibold text-accent">Öffnen →</span>
-                </button>
-              )}
 
               {handwerker.bewertung.bewertung_anzahl >= 1 &&
               handwerker.bewertung.bewertung_gesamt != null ? (
@@ -845,7 +822,7 @@ export function PartnerClient({
           {MOBILE_NAV_ITEMS.map((id) => {
             const { label, icon: Icon } = MENU_ITEMS.find((m) => m.id === id)!;
             const badgeCount = portalNavBadgeCount(id, {
-              vorgaenge: vorgaengeOffenCount,
+              vorgaenge: vorgaengeTodoCount,
               anfragen: 0,
               angebote: 0,
               auftraege: 0,

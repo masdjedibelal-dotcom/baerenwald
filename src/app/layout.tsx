@@ -3,6 +3,7 @@ import type { CSSProperties } from "react";
 import { Lora, Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
 import { JsonLdLocalBusiness } from "@/components/JsonLd";
+import { PortalToaster } from "@/components/shared/PortalToaster";
 import { OG_IMAGE, SITE_CONFIG } from "@/lib/config";
 import { PHProvider } from "./providers";
 
@@ -120,6 +121,7 @@ requestAnimationFrame(function () {
         />
         <PHProvider>
           <JsonLdLocalBusiness />
+          <PortalToaster />
           {children}
         </PHProvider>
       </body>

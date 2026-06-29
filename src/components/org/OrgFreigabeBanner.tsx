@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 
+import { orgPortalToast } from "@/lib/shared/portal-toast";
 import { track } from "@/lib/analytics";
 
 type Props = {
@@ -24,6 +25,11 @@ export function OrgFreigabeBanner({ leadId, status, onUpdated }: Props) {
         body: JSON.stringify({ leadId, aktion }),
       });
       track.orgFreigabe(aktion);
+      if (aktion === "freigegeben") {
+        orgPortalToast.freigegeben();
+      } else {
+        orgPortalToast.freigabeAbgelehnt();
+      }
       onUpdated();
     } finally {
       setBusy(false);

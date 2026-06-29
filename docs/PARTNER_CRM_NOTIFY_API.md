@@ -12,6 +12,7 @@ Die Website sendet Handwerkern E-Mails mit Deep-Links ins Partner-Portal. Das CR
 | `partner-notify-angebot-bestaetigt` | Nach CRM „Übernehmen“ (`hw_status=bestaetigt`) | Anfragen — bestätigen |
 | `partner-notify-angebot-antwort` | CRM Rückfrage oder Ablehnung | Anfragen |
 | `partner-notify-zuweisung` | HW am Auftrag zugewiesen | Anfragen (`auftrag:…`) |
+| `partner-notify-bautagebuch-anfrage` | CRM fordert Tagebucheintrag an | Vorgang — Bautagebuch |
 | *(keiner)* | Angebot → Auftrag (`auftraege.status≠offen`) | Angebote — Badge ändert sich |
 
 ---
@@ -148,6 +149,39 @@ Wenn `hw_status = uebernommen` ist, **muss das CRM `hw_status` nicht setzen**.
 Neue oder geänderte Positionen in `angebote.positionen` **oder** `auftrag_positionen` (mit passender `handwerker_id` / Gewerk) erkennt das Portal automatisch → **zusätzlicher** Eintrag unter **Anfragen** (Badge „Neue Leistung“). Unter **Angebote** bleiben die vereinbarten Leistungen unverändert sichtbar. Nach HW-Antwort: `hw_status = eingereicht`.
 
 Details: `docs/KONDITIONEN_CRM_HANDOFF.md` §6.
+
+---
+
+## Tagebucheintrag anfordern (Bautagebuch)
+
+`POST https://baerenwaldmuenchen.de/api/internal/partner-notify-bautagebuch-anfrage`
+
+Header:
+
+```
+Authorization: Bearer <PARTNER_INTERNAL_API_SECRET>
+Content-Type: application/json
+```
+
+Body:
+
+```json
+{
+  "auftragId": "<uuid aus auftraege.id>",
+  "handwerkerId": "<uuid aus handwerker.id>",
+  "notiz": "Optional: Hinweis vom CRM"
+}
+```
+
+Antwort: `{ "ok": true }` oder `{ "ok": false, "error": "..." }`
+
+**Wirkung:**
+
+- Zeile in `partner_bautagebuch_anfragen` (offen bis HW einen Eintrag erstellt)
+- Partner-Benachrichtigung (Glocke + E-Mail) mit Deep-Link zum Vorgang
+- Status im Portal: **Tagebuch offen**; im Bautagebuch-Bereich farbiger Hinweis
+
+**CRM:** Nach „Tagebuch anfordern“ aufrufen. Alternativ nur DB-Insert — beim nächsten Portal-Laden wird die Glocke einmalig nachgezogen.
 
 ---
 

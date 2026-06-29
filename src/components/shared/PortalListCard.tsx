@@ -93,7 +93,7 @@ export function PortalListCard({
       {footer ? <div className="mt-3">{footer}</div> : null}
 
       {hint ? (
-        <p className="portal-text-meta mt-2.5 font-medium text-accent">{hint}</p>
+        <p className="portal-text-meta mt-2.5 text-text-tertiary">{hint}</p>
       ) : null}
     </button>
   );

@@ -5,10 +5,9 @@ import type {
 } from "@/lib/partner/get-partner-data";
 import type { PartnerVorgangItem } from "@/lib/partner/build-partner-vorgaenge";
 import {
-  vorgangStateLabel,
-  vorgangStatePillKey,
   type VorgangFilter,
 } from "@/lib/partner/vorgang-state";
+import { resolvePartnerVorgangListenStatus } from "@/lib/partner/partner-vorgang-display";
 import {
   partnerOffenStatusLabel,
   partnerOffenStatusPillKey,
@@ -69,7 +68,7 @@ export function mapAnfrageAuftragToCard(item: PartnerAuftragItem): PartnerCardRo
     statusPillKey: "neu",
     accent: "anfrage",
     meta,
-    hint: "→ Leistungen & Vertrag prüfen",
+    hint: "To-do: Leistungen & Vertrag prüfen",
     sortDate: ts(item.start_datum),
   };
 }
@@ -109,7 +108,7 @@ export function mapOffenAngebotToCard(
     statusPillKey: partnerOffenStatusPillKey(typ),
     accent: typ === "nachreichung" ? "anfrage" : "angebot",
     meta,
-    hint: typ === "nachreichung" ? "→ Änderungen bestätigen" : "→ Leistungen & Vertrag prüfen",
+    hint: typ === "nachreichung" ? "To-do: Änderungen bestätigen" : "To-do: Leistungen & Vertrag prüfen",
     sortDate: ts(item.gesendet_at ?? item.antwort_at),
   };
 }
@@ -125,28 +124,34 @@ export function mapVorgangToCard(vorgang: PartnerVorgangItem): PartnerCardRow {
 
   const offeneAenderungen = vorgang.auftrag.nachreichungOpenPositionIds?.length ?? 0;
 
-  const hint =
-    state === "neu"
-      ? "→ Leistungen & Vertrag prüfen"
-      : state === "geaendert"
-        ? offeneAenderungen > 0
-          ? `→ ${offeneAenderungen} Leistung${offeneAenderungen === 1 ? "" : "en"} bestätigen`
-          : "→ Änderungen bestätigen"
-        : undefined;
-
   const subtitle =
     state === "geaendert"
       ? offeneAenderungen > 0
         ? `Leistungsänderung am laufenden Auftrag (${offeneAenderungen} offen)`
         : "Leistungsänderung am laufenden Auftrag"
-      : undefined;
+      : auftrag.bautagebuchAnfrageOffen && state === "in_bearbeitung"
+        ? "Tagebucheintrag vom CRM angefordert"
+        : undefined;
+
+  const listenStatus = resolvePartnerVorgangListenStatus(state, auftrag);
+
+  const hint =
+    state === "neu"
+      ? "To-do: Leistungen & Vertrag prüfen"
+      : state === "geaendert"
+        ? offeneAenderungen > 0
+          ? `To-do: ${offeneAenderungen} Leistung${offeneAenderungen === 1 ? "" : "en"} bestätigen`
+          : "To-do: Änderungen bestätigen"
+        : auftrag.bautagebuchAnfrageOffen && state === "in_bearbeitung"
+          ? "To-do: Tagebucheintrag erstellen"
+          : undefined;
 
   return {
     id: vorgang.id,
     title: auftrag.listen_titel,
     subtitle,
-    statusLabel: vorgangStateLabel(state),
-    statusPillKey: vorgangStatePillKey(state),
+    statusLabel: listenStatus.label,
+    statusPillKey: listenStatus.pillKey,
     accent:
       state === "neu" || state === "geaendert"
         ? state === "geaendert"

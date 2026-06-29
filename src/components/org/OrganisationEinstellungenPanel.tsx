@@ -3,6 +3,7 @@
 import { useState } from "react";
 
 import type { OrganisationKunde, FreigabeModus } from "@/lib/org/types";
+import { orgPortalToast } from "@/lib/shared/portal-toast";
 
 type Props = {
   kunde: OrganisationKunde;
@@ -48,6 +49,7 @@ export function OrganisationEinstellungenPanel({ kunde, onSaved }: Props) {
         return;
       }
       setMessage("Gespeichert.");
+      orgPortalToast.einstellungenGespeichert();
       onSaved();
     } finally {
       setBusy(false);

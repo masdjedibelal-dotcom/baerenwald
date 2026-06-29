@@ -3,6 +3,7 @@
 import { useState } from "react";
 
 import { BW_FUNNEL_STEP1_OPTIONS } from "@/lib/funnel/situation-options";
+import { orgPortalToast } from "@/lib/shared/portal-toast";
 import { mapToPrice } from "@/lib/funnel/price-calc";
 import type { FunnelState } from "@/lib/funnel/types";
 import type { OrganisationObjekt } from "@/lib/org/types";
@@ -86,6 +87,7 @@ export function OrganisationProjektFunnel({
         setError(json.error ?? "Fehler");
         return;
       }
+      orgPortalToast.projektAnfrageGesendet();
       onDone();
     } finally {
       setBusy(false);

@@ -9,6 +9,7 @@ import {
   PartnerConfirmDialog,
   PartnerDetailError,
 } from "@/components/partner/PartnerDetailUi";
+import { partnerPortalToast } from "@/lib/shared/portal-toast";
 import type { PartnerAnfrageItem } from "@/lib/partner/get-partner-data";
 
 export function PartnerAngebotAuftragAnnehmen({
@@ -46,6 +47,7 @@ export function PartnerAngebotAuftragAnnehmen({
       setError(res.error);
       return;
     }
+    partnerPortalToast.projektvertragBestaetigt();
     router.refresh();
   }
 

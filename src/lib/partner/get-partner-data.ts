@@ -47,6 +47,7 @@ import {
   buildPartnerVorgaenge,
   type PartnerVorgangItem,
 } from "@/lib/partner/build-partner-vorgaenge";
+import { ensurePartnerBautagebuchNotifications } from "@/lib/partner/notify-partner-bautagebuch-anfrage";
 import { buildPartnerTermine, type PartnerTerminItem } from "@/lib/partner/build-partner-termine";
 import {
   applyRahmenvertragPortalAkzeptanz,
@@ -64,6 +65,7 @@ import {
 import type { PartnerProjektvertrag } from "@/lib/partner/partner-compliance";
 import { resolvePartnerListenTitel } from "@/lib/partner/partner-listen-titel";
 import { acceptCrmRahmenvertragLoggedIn } from "@/lib/partner/partner-crm-api";
+import { persistPortalRahmenvertragAkzeptanz } from "@/lib/partner/persist-portal-rahmenvertrag";
 import { createClient } from "@/lib/supabase/server";
 import { isSupabaseConfigured, supabaseAdmin } from "@/lib/supabase";
 import { stripHtmlToPlainText } from "@/lib/portal/portal-display";
@@ -207,6 +209,8 @@ export type PartnerAuftragItem = {
   vertrag?: PartnerVertragKontext | null;
   /** Offene CRM-Anforderung für Bautagebuch-Eintrag. */
   bautagebuchAnfrageOffen?: boolean;
+  /** Optionale Notiz zur offenen Tagebuch-Anforderung. */
+  bautagebuchAnfrageNotiz?: string | null;
   /** Auftragspositionen, die noch unter Offen bestätigt werden müssen (Nachreichung). */
   nachreichungOpenPositionIds?: string[];
   /** Verknüpftes angebot_handwerker — HW-Unterlagen & Rechnung. */
@@ -711,7 +715,12 @@ export async function getPartnerDataForHandwerker(handwerkerId: string) {
     } = await supabase.auth.getUser();
     const rvMeta = user?.user_metadata?.rv_akzeptiert_at;
     if (typeof rvMeta === "string" && rvMeta.trim()) {
-      const healed = await acceptCrmRahmenvertragLoggedIn();
+      void acceptCrmRahmenvertragLoggedIn();
+      const healed = await persistPortalRahmenvertragAkzeptanz({
+        handwerkerId: id,
+        authUserId: user?.id ?? null,
+        akzeptiertAt: rvMeta,
+      });
       if (healed.ok) {
         rahmenvertrag = await loadRahmenvertrag(id);
       }
@@ -913,10 +922,14 @@ export async function getPartnerDataForHandwerker(handwerkerId: string) {
   );
 
   const bautagebuchAnfrageAuftragIds = new Set(bautagebuchAnfragen.map((r) => r.auftrag_id));
+  const bautagebuchNotizByAuftragId = new Map(
+    bautagebuchAnfragen.map((r) => [r.auftrag_id, r.notiz] as const)
+  );
 
   const markBautagebuchAnfrage = (item: PartnerAuftragItem): PartnerAuftragItem => ({
     ...item,
     bautagebuchAnfrageOffen: bautagebuchAnfrageAuftragIds.has(item.id),
+    bautagebuchAnfrageNotiz: bautagebuchNotizByAuftragId.get(item.id) ?? null,
   });
 
   const alleAuftraegeMitMeta = alleAuftraege.map(markBautagebuchAnfrage);
@@ -949,6 +962,14 @@ export async function getPartnerDataForHandwerker(handwerkerId: string) {
     bautagebuchAnfragen,
     offeneLeistungsunterlagen: offeneLeistungsunterlagen,
   });
+
+  if (bautagebuchAnfragen.length > 0) {
+    void ensurePartnerBautagebuchNotifications({
+      handwerkerId: id,
+      anfragen: bautagebuchAnfragen,
+      titelByAuftragId: auftragTitelById,
+    });
+  }
 
   return {
     profil: profilKontext,

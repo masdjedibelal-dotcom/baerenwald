@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 
+import { orgPortalToast } from "@/lib/shared/portal-toast";
 import { MELDE_BEREICHE } from "@/lib/org/melde-bereiche";
 import { MELDE_KATEGORIEN } from "@/lib/org/melde-kategorien";
 import type { MeldeKategorie, OrganisationObjekt } from "@/lib/org/types";
@@ -57,8 +58,10 @@ export function OrganisationMeldungErfassenForm({ objekte, mode, onDone }: Props
       if (mode === "einladen") {
         setLink(json.link ?? null);
         setMessage("Einladung erstellt.");
+        orgPortalToast.einladungErstellt();
       } else {
         setMessage("Meldung erfasst — sie erscheint unter Meldungen.");
+        orgPortalToast.meldungErfasst();
         setTimeout(onDone, 1200);
       }
     } finally {

@@ -7,6 +7,7 @@ import {
   formatPreisspanneDisplay,
 } from "@/lib/org/hv-meldung-workflow";
 import { isMeldeNotfall } from "@/lib/org/org-eingang-utils";
+import { orgPortalToast } from "@/lib/shared/portal-toast";
 import type { OrganisationKunde, OrganisationLead } from "@/lib/org/types";
 
 type Props = {
@@ -42,6 +43,13 @@ export function OrgMeldungAktionBanner({ lead, kunde, onUpdated }: Props) {
       if (!res.ok) {
         setError(json.error ?? "Aktion fehlgeschlagen.");
         return;
+      }
+      if (aktion === "angebot_einfordern") {
+        orgPortalToast.angebotEingefordert();
+      } else if (aktion === "ablehnen") {
+        orgPortalToast.meldungAbgelehnt();
+      } else {
+        orgPortalToast.kleinreparaturFreigegeben();
       }
       onUpdated();
     } finally {

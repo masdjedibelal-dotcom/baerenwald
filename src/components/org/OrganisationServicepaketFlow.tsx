@@ -13,6 +13,7 @@ import { computeHausserviceMonatPreis } from "@/lib/products/hausservice-preis";
 import type { HausserviceStufe } from "@/lib/products/types";
 import { HAUSSERVICE_FEATURE_MATRIX } from "@/lib/products/hausservice-feature-matrix";
 import { HAUSSERVICE_DEFAULT_PRODUKT_SLUG } from "@/lib/products/katalog-hausservice";
+import { orgPortalToast } from "@/lib/shared/portal-toast";
 
 type Props = {
   objekte: OrganisationObjekt[];
@@ -86,6 +87,7 @@ export function OrganisationServicepaketFlow({
         setError(json.error ?? "Fehler");
         return;
       }
+      orgPortalToast.servicepaketAnfrageGesendet();
       onDone();
     } finally {
       setBusy(false);

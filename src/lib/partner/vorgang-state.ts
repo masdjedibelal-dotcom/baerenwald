@@ -68,7 +68,7 @@ export function vorgangStateLabel(state: VorgangState): string {
     case "geaendert":
       return "Geändert";
     case "in_bearbeitung":
-      return "In Bearbeitung";
+      return "Durchführung";
     case "erledigt":
       return "Erledigt";
   }

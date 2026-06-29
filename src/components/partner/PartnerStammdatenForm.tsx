@@ -10,6 +10,7 @@ import {
   PartnerDetailSuccessBox,
 } from "@/components/partner/PartnerDetailUi";
 import type { PartnerHandwerkerProfil } from "@/lib/partner/get-partner-data";
+import { partnerPortalToast } from "@/lib/shared/portal-toast";
 
 const inputClass =
   "w-full rounded-xl border border-border-default bg-surface-card px-3 py-2.5 portal-text-body text-text-primary outline-none focus:border-accent";
@@ -33,6 +34,7 @@ export function PartnerStammdatenForm({ handwerker }: { handwerker: PartnerHandw
       return;
     }
     setSuccess(true);
+    partnerPortalToast.stammdatenGespeichert();
     router.refresh();
   }
 

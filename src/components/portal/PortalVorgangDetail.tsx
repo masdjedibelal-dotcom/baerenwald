@@ -21,6 +21,7 @@ import {
   PortalDetailStickyActions,
   PortalDetailSuccessBox,
 } from "@/components/shared/PortalDetailUi";
+import { kundePortalToast } from "@/lib/shared/portal-toast";
 import type { KundePortalDetailItem } from "@/lib/portal/portal-detail-item";
 import { fmtPortalRelativeTime } from "@/lib/shared/portal-detail-format";
 import { portalDetailStatusPillClass } from "@/lib/shared/portal-detail-format";
@@ -60,6 +61,11 @@ export function PortalVorgangDetail({
     if (!res.ok) {
       setError(res.error);
       return;
+    }
+    if (isAuftragAccept) {
+      kundePortalToast.aenderungenAngenommen();
+    } else {
+      kundePortalToast.angebotAngenommen();
     }
     setAccepted(true);
     onAccepted?.();

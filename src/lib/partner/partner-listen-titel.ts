@@ -111,3 +111,21 @@ export function resolvePartnerListenTitelFromAuftrag(
     fallbackTitel: item.titel,
   });
 }
+
+/** Detail-Überschrift: CRM-Auftragstitel, sonst Listen-Titel. */
+export function resolvePartnerDetailTitelFromAuftrag(
+  item: Pick<PartnerAuftragItem, "titel" | "listen_titel">
+): string {
+  const titel = item.titel?.trim();
+  if (titel && titel !== "Auftrag") return titel;
+  return item.listen_titel;
+}
+
+/** Detail-Überschrift für Anfragen: CRM-Angebotstitel, sonst Listen-Titel. */
+export function resolvePartnerDetailTitelFromAnfrage(
+  item: Pick<PartnerAnfrageItem, "angebot_titel" | "listen_titel">
+): string {
+  const titel = item.angebot_titel?.trim();
+  if (titel && titel !== "Angebot") return titel;
+  return item.listen_titel;
+}

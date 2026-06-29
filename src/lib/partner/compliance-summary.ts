@@ -154,9 +154,17 @@ export function rahmenvertragErfuellt(
   if (rahmen?.portal_akzeptiert_am) return true;
   const doc = stammItems.find((i) => i.slug === RAHMENVERTRAG_TYP_SLUG);
   if (doc?.status === "erledigt" || doc?.status === "in_pruefung") return true;
-  if (!rahmen?.pdf_url?.trim()) return false;
+  if (!rahmen?.pdf_url?.trim()) {
+    const st = rahmen?.status?.toLowerCase() ?? "";
+    return st === "portal_akzeptiert";
+  }
   const st = rahmen.status.toLowerCase();
-  return st === "pdf_erzeugt" || st === "unterschrieben" || st === "signiert";
+  return (
+    st === "portal_akzeptiert" ||
+    st === "pdf_erzeugt" ||
+    st === "unterschrieben" ||
+    st === "signiert"
+  );
 }
 
 export type PartnerOffeneLeistungsUnterlage = {

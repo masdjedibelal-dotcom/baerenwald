@@ -4,6 +4,8 @@ import { isPartnerBauprojektAuftrag } from "@/lib/partner/compliance-summary";
 export function buildPartnerAuftragPflichten(opts: {
   compliance_projekt?: PartnerComplianceItem[];
   ist_bauprojekt?: boolean;
+  /** Bei Leistungsänderungen am laufenden Auftrag — kein erneuter Projektvertrag. */
+  includeProjektvertrag?: boolean;
 }): string[] {
   const istBauprojekt = isPartnerBauprojektAuftrag({
     ist_bauprojekt: opts.ist_bauprojekt,
@@ -11,8 +13,13 @@ export function buildPartnerAuftragPflichten(opts: {
   });
   const pflichten: string[] = [
     "Leistungen und Konditionen prüfen und verbindlich bestätigen",
-    "Projektvertrag (Leistungsvertrag) prüfen und verbindlich bestätigen",
   ];
+
+  if (opts.includeProjektvertrag !== false) {
+    pflichten.push(
+      "Projektvertrag (Leistungsvertrag) prüfen und verbindlich bestätigen"
+    );
+  }
 
   if (istBauprojekt) {
     pflichten.push(

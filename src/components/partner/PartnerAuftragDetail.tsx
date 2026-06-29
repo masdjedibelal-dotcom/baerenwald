@@ -13,7 +13,6 @@ import { PartnerLeistungenKonditionenCard } from "@/components/partner/PartnerLe
 import {
   PartnerDetailError,
   PartnerDetailHero,
-  PartnerDetailInfoBox,
   PartnerDetailLayout,
   PartnerDetailSection,
   PartnerDetailSuccessBox,
@@ -21,7 +20,11 @@ import {
 import { PartnerPortalDetailSections } from "@/components/partner/PartnerPortalDetailSections";
 import { PartnerComplianceCheckliste } from "@/components/partner/PartnerComplianceCheckliste";
 import { BautagebuchAccordionList } from "@/components/shared/BautagebuchAccordionList";
-import { buildBauauftragComplianceItems, isPartnerBauprojektAuftrag } from "@/lib/partner/compliance-summary";
+import { resolvePartnerDetailTitelFromAuftrag } from "@/lib/partner/partner-listen-titel";
+import {
+  buildBauauftragComplianceItems,
+  isPartnerBauprojektAuftrag,
+} from "@/lib/partner/compliance-summary";
 import {
   buildPartnerAuftragDokumentZeilen,
   partnerAuftragKannRechnungHochladen,
@@ -63,16 +66,10 @@ import {
   HANDWERKER_BEWERTUNG_KATEGORIEN,
   isAuftragAbgeschlossen,
 } from "@/lib/partner/handwerker-bewertung-display";
-import {
-  partnerAuftragListenStatusLabel,
-  partnerAuftragListenStatusPillKey,
-} from "@/lib/partner/partner-auftrag-list-status";
-import {
-  vorgangStateLabel,
-  vorgangStatePillKey,
-  type VorgangState,
-} from "@/lib/partner/vorgang-state";
+import { resolvePartnerVorgangListenStatus } from "@/lib/partner/partner-vorgang-display";
+import { type VorgangState } from "@/lib/partner/vorgang-state";
 import { cn } from "@/lib/utils";
+import { partnerPortalToast } from "@/lib/shared/portal-toast";
 import { DokumenteTabelle } from "@/components/shared/DokumenteTabelle";
 import { FileUploadField } from "@/components/shared/FileUploadField";
 
@@ -134,6 +131,7 @@ function BautagebuchForm({
       setError(res.error);
       return;
     }
+    partnerPortalToast.bautagebuchGespeichert(!eintrag);
     router.refresh();
     onDone();
   }
@@ -243,6 +241,7 @@ function BautagebuchEintragActions({
       setError(res.error);
       return;
     }
+    partnerPortalToast.bautagebuchGeloescht();
     router.refresh();
   }
 
@@ -372,6 +371,7 @@ export function PartnerAuftragDetail({
       setPdfError(res.error);
       return;
     }
+    partnerPortalToast.unterlagenHochgeladen();
     setAngebotPdfs([]);
     router.refresh();
   }
@@ -390,31 +390,23 @@ export function PartnerAuftragDetail({
       setRechnungError(res.error);
       return;
     }
+    partnerPortalToast.rechnungEingereicht();
     setRechnungPdf(null);
     router.refresh();
   }
-  const statusLabel = vorgangState
-    ? vorgangStateLabel(vorgangState)
-    : partnerAuftragListenStatusLabel(item.status);
-  const statusPillKey = vorgangState
-    ? vorgangStatePillKey(vorgangState)
-    : partnerAuftragListenStatusPillKey(item.status);
+  const { label: statusLabel, pillKey: statusPillKey } = resolvePartnerVorgangListenStatus(
+    vorgangState,
+    item
+  );
 
   return (
     <PartnerDetailLayout>
       <PartnerDetailHero
-        title={item.listen_titel}
+        title={resolvePartnerDetailTitelFromAuftrag(item)}
         metaLine={partnerAuftragDetailMetaLine(item.start_datum, item.end_datum)}
         statusLabel={statusLabel}
         statusPillClass={partnerDetailStatusPillClass(statusPillKey)}
       />
-
-      {item.bautagebuchAnfrageOffen ? (
-        <PartnerDetailInfoBox>
-          Bärenwald hat einen <strong>Tagebucheintrag</strong> angefordert. Bitte unten im
-          Bautagebuch dokumentieren.
-        </PartnerDetailInfoBox>
-      ) : null}
 
       <PartnerPortalDetailSections sections={sections} />
 
@@ -478,6 +470,16 @@ export function PartnerAuftragDetail({
             </button>
           ) : null}
         </div>
+        {item.bautagebuchAnfrageOffen ? (
+          <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm font-semibold text-amber-900">
+            Bitte Tagebucheintrag erstellen.
+            {item.bautagebuchAnfrageNotiz?.trim() ? (
+              <span className="mt-1 block font-normal text-amber-800">
+                {item.bautagebuchAnfrageNotiz.trim()}
+              </span>
+            ) : null}
+          </p>
+        ) : null}
         <p className="portal-text-meta text-text-secondary">
           Einträge werden von Bärenwald geprüft, bevor sie für Kunden sichtbar werden.
         </p>

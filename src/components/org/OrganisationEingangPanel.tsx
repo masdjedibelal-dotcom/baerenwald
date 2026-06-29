@@ -6,6 +6,7 @@ import { AlertTriangle, Filter, Mail, Phone, X } from "lucide-react";
 
 import { OrgFreigabeBanner } from "@/components/org/OrgFreigabeBanner";
 import { OrgMeldungAktionBanner } from "@/components/org/OrgMeldungAktionBanner";
+import { orgPortalToast } from "@/lib/shared/portal-toast";
 import { PortalListCard } from "@/components/shared/PortalListCard";
 import { formatPreisspanneDisplay } from "@/lib/org/hv-meldung-workflow";
 import { meldeKategorieLabel } from "@/lib/org/melde-kategorien";
@@ -67,6 +68,7 @@ function MeldungDetail({
         setResendMsg(json.error ?? "Fehler beim Senden.");
         return;
       }
+      orgPortalToast.einladungErneutGesendet();
       setResendMsg("Einladung erneut gesendet.");
     } finally {
       setResendBusy(false);

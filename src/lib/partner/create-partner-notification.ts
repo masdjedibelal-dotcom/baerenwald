@@ -3,6 +3,7 @@ import { Resend } from "resend";
 import { partnerLoginUrl } from "@/lib/partner/partner-site-url";
 import {
   partnerNotificationSubject,
+  partnerNotificationVorgangKey,
   type PartnerNotificationTyp,
 } from "@/lib/partner/partner-notifications";
 import { isSupabaseConfigured, supabaseAdmin } from "@/lib/supabase";
@@ -39,7 +40,7 @@ export type PartnerNotifyInput = {
 /** INSERT notification + optional Resend-Mail an Handwerker. */
 export async function createPartnerNotification(
   input: PartnerNotifyInput
-): Promise<{ ok: boolean; error?: string; notificationId?: string }> {
+): Promise<{ ok: boolean; error?: string; notificationId?: string; deduplicated?: boolean }> {
   if (!isSupabaseConfigured()) {
     return { ok: false, error: "Datenbank nicht konfiguriert." };
   }
@@ -49,6 +50,39 @@ export async function createPartnerNotification(
 
   const link = input.link.trim();
   if (!link) return { ok: false, error: "link fehlt." };
+
+  const vorgangKey = partnerNotificationVorgangKey(link);
+
+  if (vorgangKey) {
+    const { data: existingRows } = await supabaseAdmin
+      .from("notifications")
+      .select("id, link")
+      .eq("handwerker_id", handwerkerId)
+      .eq("gelesen", false)
+      .ilike("link", `%id=${vorgangKey}%`)
+      .order("created_at", { ascending: false })
+      .limit(20);
+
+    const existing = (existingRows ?? []).find(
+      (row) => partnerNotificationVorgangKey(String(row.link ?? "")) === vorgangKey
+    );
+
+    if (existing?.id) {
+      const { error: updErr } = await supabaseAdmin
+        .from("notifications")
+        .update({
+          typ: input.typ,
+          projekt_name: input.projektName.trim() || "Projekt",
+          leistung_name: input.leistungName?.trim() || null,
+          link,
+          created_at: new Date().toISOString(),
+        })
+        .eq("id", existing.id);
+
+      if (updErr) return { ok: false, error: updErr.message };
+      return { ok: true, notificationId: String(existing.id), deduplicated: true };
+    }
+  }
 
   const { data: inserted, error: insErr } = await supabaseAdmin
     .from("notifications")

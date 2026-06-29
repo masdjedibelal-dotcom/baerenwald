@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 
 import { confirmCrmProjektvertrag, acceptCrmRahmenvertragForEmail, acceptCrmRahmenvertragLoggedIn } from "@/lib/partner/partner-crm-api";
+import { persistPortalRahmenvertragAkzeptanz } from "@/lib/partner/persist-portal-rahmenvertrag";
 import { linkPortalHandwerkerToAuthUser } from "@/lib/partner/link-portal-handwerker";
 import { findHandwerkerForRegistration } from "@/lib/partner/partner-registration-eligibility";
 import { PARTNER_AUTH_COPY } from "@/lib/partner/partner-auth-copy";
@@ -153,7 +154,15 @@ export async function acceptPartnerRahmenvertragForEmail(opts: {
 
   const crm = await acceptCrmRahmenvertragForEmail(email);
   if (!crm.ok) {
-    return { ok: false, error: crm.error };
+    console.warn("[partner-vertrag] CRM Rahmenvertrag (Registrierung):", crm.error);
+  }
+
+  const persisted = await persistPortalRahmenvertragAkzeptanz({
+    handwerkerId: String(hw.id),
+    akzeptiertAt: new Date().toISOString(),
+  });
+  if (!persisted.ok) {
+    return { ok: false, error: persisted.error };
   }
 
   return { ok: true };
@@ -187,7 +196,15 @@ export async function acceptPartnerRahmenvertrag(opts: {
   if (!link.ok) return { ok: false, error: link.error };
 
   const crm = await acceptCrmRahmenvertragLoggedIn();
-  if (!crm.ok) return { ok: false, error: crm.error };
+  if (!crm.ok) {
+    console.warn("[partner-vertrag] CRM Rahmenvertrag (eingeloggt):", crm.error);
+  }
+
+  const persisted = await persistPortalRahmenvertragAkzeptanz({
+    handwerkerId: link.handwerkerId,
+    authUserId: user.id,
+  });
+  if (!persisted.ok) return { ok: false, error: persisted.error };
 
   revalidatePath("/partner");
   return { ok: true };

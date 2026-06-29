@@ -21,6 +21,7 @@ const VALID_TYP: PartnerNotificationTyp[] = [
   "geaendert",
   "entfernt",
   "erinnerung",
+  "bautagebuch",
 ];
 
 /**

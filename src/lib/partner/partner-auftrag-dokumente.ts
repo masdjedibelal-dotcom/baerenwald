@@ -2,6 +2,26 @@ import type { DokumentZeile } from "@/components/shared/DokumenteTabelle";
 import type { PartnerAuftragItem } from "@/lib/partner/get-partner-data";
 import { partnerHwDokumentListenName, PARTNER_MAX_HW_UNTERLAGEN_GESAMT } from "@/lib/partner/partner-hw-dokument-typen";
 
+function dokumentDatumMs(datum?: string | null): number {
+  if (!datum?.trim()) return 0;
+  const ms = new Date(datum).getTime();
+  return Number.isNaN(ms) ? 0 : ms;
+}
+
+/** Neueste zuerst; Einträge ohne Datum unten (wie Kundenportal). */
+export function sortPartnerDokumentZeilen(rows: DokumentZeile[]): DokumentZeile[] {
+  return [...rows].sort((a, b) => {
+    const ta = dokumentDatumMs(a.datum);
+    const tb = dokumentDatumMs(b.datum);
+    if (ta !== tb) {
+      if (ta === 0) return 1;
+      if (tb === 0) return -1;
+      return tb - ta;
+    }
+    return a.name.localeCompare(b.name, "de");
+  });
+}
+
 /** Dokumente im Auftrag: Projektvertrag, HW-Unterlagen/Rechnung, Auftrags-Compliance — keine Stammdaten. */
 export function buildPartnerAuftragDokumentZeilen(
   item: PartnerAuftragItem
@@ -53,7 +73,7 @@ export function buildPartnerAuftragDokumentZeilen(
     rows.push(d);
   }
 
-  return rows;
+  return sortPartnerDokumentZeilen(rows);
 }
 
 export function partnerAuftragKannRechnungHochladen(item: PartnerAuftragItem): boolean {

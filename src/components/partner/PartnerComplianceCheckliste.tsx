@@ -8,6 +8,7 @@ import {
   deletePartnerComplianceDokument,
   uploadPartnerComplianceDokument,
 } from "@/app/actions/partner-compliance";
+import { partnerPortalToast } from "@/lib/shared/portal-toast";
 import { gruppeComplianceItems } from "@/lib/partner/compliance-summary";
 import {
   complianceStatusLabel,
@@ -65,6 +66,7 @@ function KompaktComplianceRow({
       setError(res.error);
       return;
     }
+    partnerPortalToast.complianceHochgeladen(item.bezeichnung);
     router.refresh();
   }
 
@@ -82,6 +84,7 @@ function KompaktComplianceRow({
       setError(res.error);
       return;
     }
+    partnerPortalToast.complianceGeloescht(item.bezeichnung);
     router.refresh();
   }
 

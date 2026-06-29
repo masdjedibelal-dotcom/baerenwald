@@ -15,6 +15,7 @@ import {
 import {
   type PartnerProjektvertrag,
 } from "@/lib/partner/partner-compliance";
+import { partnerPortalToast } from "@/lib/shared/portal-toast";
 import { fmtPartnerDate } from "@/lib/partner/partner-detail-format";
 
 export function PartnerProjektvertragPaket({
@@ -66,6 +67,7 @@ export function PartnerProjektvertragPaket({
       setError(res.error);
       return;
     }
+    partnerPortalToast.projektvertragBestaetigt();
     router.refresh();
   }
 

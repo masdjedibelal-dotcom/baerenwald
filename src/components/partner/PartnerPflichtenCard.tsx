@@ -8,16 +8,34 @@ export function PartnerPflichtenCard({
   compliance_projekt,
   ist_bauprojekt,
   titel = "Deine Pflichten",
+  includeProjektvertrag = true,
+  acknowledgment,
 }: {
   compliance_projekt?: PartnerComplianceItem[];
   ist_bauprojekt?: boolean;
   titel?: string;
+  includeProjektvertrag?: boolean;
+  acknowledgment?: {
+    checked: boolean;
+    onChange: (checked: boolean) => void;
+    label?: string;
+  };
 }) {
   const bauprojekt = isPartnerBauprojektAuftrag({
     ist_bauprojekt,
     compliance_projekt,
   });
-  const punkte = buildPartnerAuftragPflichten({ compliance_projekt, ist_bauprojekt: bauprojekt });
+  const punkte = buildPartnerAuftragPflichten({
+    compliance_projekt,
+    ist_bauprojekt: bauprojekt,
+    includeProjektvertrag,
+  });
+
+  const checkboxLabel =
+    acknowledgment?.label ??
+    (includeProjektvertrag
+      ? "Ich habe die Pflichten gelesen und bestätige sie."
+      : "Ich bestätige die geänderten Leistungen und Pflichten verbindlich.");
 
   return (
     <section className="rounded-xl border border-border-light bg-muted/15 px-4 py-4">
@@ -37,6 +55,17 @@ export function PartnerPflichtenCard({
           </li>
         ))}
       </ul>
+      {acknowledgment ? (
+        <label className="mt-4 flex cursor-pointer items-start gap-3 border-t border-border-light pt-4">
+          <input
+            type="checkbox"
+            checked={acknowledgment.checked}
+            onChange={(e) => acknowledgment.onChange(e.target.checked)}
+            className="mt-1"
+          />
+          <span className="portal-text-body text-text-primary">{checkboxLabel}</span>
+        </label>
+      ) : null}
     </section>
   );
 }

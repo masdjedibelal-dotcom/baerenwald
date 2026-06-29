@@ -23,13 +23,16 @@ import {
   HANDWERKER_ABLEHNUNG_GRUND_VALUES,
 } from "@/lib/partner/handwerker-ablehnung";
 import type { PartnerAuftragItem } from "@/lib/partner/get-partner-data";
+import { resolvePartnerDetailTitelFromAuftrag } from "@/lib/partner/partner-listen-titel";
 import { partnerDetailStatusPillClass } from "@/lib/partner/partner-detail-format";
+import { PartnerPflichtenCard } from "@/components/partner/PartnerPflichtenCard";
 import { PartnerProjektvertragPaket } from "@/components/partner/PartnerProjektvertragPaket";
 import { positionBrauchtHandwerkerAktion } from "@/lib/partner/partner-konditionen";
 import {
   isPartnerAuftragAnfrageOffen,
   partnerAuftragAnfrageStatusLabel,
 } from "@/lib/partner/partner-anfrage-status";
+import { partnerPortalToast } from "@/lib/shared/portal-toast";
 import {
   buildPartnerAuftragPortalSections,
   PARTNER_LEISTUNGEN_GESAMT_LABEL,
@@ -52,6 +55,7 @@ export function PartnerAuftragAnfrageDetail({
   const [confirmAccept, setConfirmAccept] = useState(false);
   const [confirmReject, setConfirmReject] = useState(false);
   const [projektvertragBereit, setProjektvertragBereit] = useState(false);
+  const [pflichtenGelesen, setPflichtenGelesen] = useState(false);
   const [grund, setGrund] = useState<string>(HANDWERKER_ABLEHNUNG_GRUND_VALUES[0]);
   const [notiz, setNotiz] = useState("");
 
@@ -70,8 +74,8 @@ export function PartnerAuftragAnfrageDetail({
     setError(null);
     const res = await confirmPartnerAuftragZuweisung({
       auftragId: item.id,
-      gelesen: projektvertragBereit,
-      verbindlich: projektvertragBereit,
+      gelesen: pflichtenGelesen && projektvertragBereit,
+      verbindlich: pflichtenGelesen && projektvertragBereit,
     });
     setLoading(false);
     setConfirmAccept(false);
@@ -79,6 +83,7 @@ export function PartnerAuftragAnfrageDetail({
       setError(res.error);
       return;
     }
+    partnerPortalToast.auftragAngenommen();
     if (onAccepted) onAccepted(item.id);
     else router.refresh();
   }
@@ -98,6 +103,7 @@ export function PartnerAuftragAnfrageDetail({
       setError(res.error);
       return;
     }
+    partnerPortalToast.abgelehnt();
     if (onAccepted) onAccepted(item.id);
     else router.refresh();
   }
@@ -120,7 +126,7 @@ export function PartnerAuftragAnfrageDetail({
         primaryLabel="Annehmen"
         onPrimary={() => setConfirmAccept(true)}
         primaryLoading={loading}
-        primaryDisabled={!projektvertragBereit}
+        primaryDisabled={!pflichtenGelesen || !projektvertragBereit}
         secondaryLabel="Ablehnen"
         onSecondary={() => setShowReject(true)}
         secondaryDisabled={loading}
@@ -139,7 +145,7 @@ export function PartnerAuftragAnfrageDetail({
   return (
     <PartnerDetailLayout footer={actionFooter}>
       <PartnerDetailHero
-        title={item.listen_titel}
+        title={resolvePartnerDetailTitelFromAuftrag(item)}
         metaLine={partnerAuftragDetailMetaLine(item.start_datum, item.end_datum)}
         statusLabel={statusLabel}
         statusPillClass={statusPillClass}
@@ -148,6 +154,15 @@ export function PartnerAuftragAnfrageDetail({
       <PartnerDetailInfoBox>{infoText}</PartnerDetailInfoBox>
 
       <PartnerPortalDetailSections sections={sections} />
+
+      <PartnerPflichtenCard
+        compliance_projekt={item.vertrag?.compliance_projekt}
+        ist_bauprojekt={item.vertrag?.ist_bauprojekt}
+        acknowledgment={{
+          checked: pflichtenGelesen,
+          onChange: setPflichtenGelesen,
+        }}
+      />
 
       <PartnerProjektvertragPaket
         auftragId={item.id}

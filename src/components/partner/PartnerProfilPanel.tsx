@@ -24,8 +24,8 @@ export function PartnerProfilPanel({
         <div>
           <h2 className="portal-text-section text-text-primary">Profil & Unterlagen</h2>
           <p className="portal-text-body mt-0.5 text-text-secondary">
-            Stammdaten, Rahmenvertrag und Handwerkskarte — Unterlagen je Bauauftrag findest du
-            unter Angebote und Aufträge.
+            Stammdaten und Stammunterlagen (Rahmenvertrag, Handwerkskarte) — weitere Unterlagen je
+            Bauauftrag findest du unter Vorgängen.
           </p>
         </div>
       </div>

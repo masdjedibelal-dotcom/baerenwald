@@ -5,6 +5,7 @@ import { useState } from "react";
 import { buildMeldeUrl, buildMeldeQrUrl } from "@/lib/org/melde-url";
 import { suggestMeldeSlugFromAddress } from "@/lib/org/slug";
 import type { OrganisationKunde, OrganisationObjekt } from "@/lib/org/types";
+import { orgPortalToast } from "@/lib/shared/portal-toast";
 
 type Props = {
   kunde: OrganisationKunde;
@@ -52,6 +53,7 @@ export function OrganisationObjektePanel({ kunde, objekte, onRefresh }: Props) {
         setError(json.error ?? "Fehler");
         return;
       }
+      orgPortalToast.objektAngelegt();
       setFormOpen(false);
       setTitel("");
       onRefresh();

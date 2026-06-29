@@ -1,11 +1,17 @@
 import { getPortalDataForKunde } from "@/lib/portal/get-portal-data";
 import { resolvePortalObjekt } from "@/lib/portal/portal-objekt";
+import { loadOrganisationKunde } from "@/lib/org/load-organisation-kunde";
 import type {
-  OrganisationKunde,
   OrganisationLead,
   OrganisationObjekt,
 } from "@/lib/org/types";
 import { isSupabaseConfigured, supabaseAdmin } from "@/lib/supabase";
+
+const EINGANG_SELECT_FULL =
+  "id, situation, bereiche, status, created_at, plz, strasse, hausnummer, zeitraum, kontakt_name, preis_min, preis_max, preis_unsicher, kontakt_nachricht, funnel_daten, kunde_objekt_id, anlass, erfassung_von, melder_name, melder_einheit, melder_telefon, melder_email, einladung_token, einladung_status, org_freigabe_status, hv_meldung_status, service_modus, auftraggeber_kunde_id, kunde_id";
+
+const EINGANG_SELECT_BASE =
+  "id, situation, bereiche, status, created_at, plz, strasse, hausnummer, zeitraum, kontakt_name, preis_min, preis_max, kontakt_nachricht, funnel_daten, kunde_objekt_id, anlass, erfassung_von, melder_name, melder_einheit, melder_telefon, melder_email, einladung_token, einladung_status, org_freigabe_status, service_modus, auftraggeber_kunde_id, kunde_id";
 
 export async function getOrganisationPortalData(kundeId: string) {
   if (!isSupabaseConfigured()) return null;
@@ -13,17 +19,8 @@ export async function getOrganisationPortalData(kundeId: string) {
   const base = await getPortalDataForKunde(kundeId);
   if (!base) return null;
 
-  const { data: kundeRow } = await supabaseAdmin
-    .from("kunden")
-    .select(
-      "id, name, email, portal_modus, org_kennung, org_anzeigename, org_logo_url, freigabe_modus, freigabe_schwelle_eur, notfall_direkt, kleinreparatur_aktiv, kleinreparatur_schwelle_eur"
-    )
-    .eq("id", kundeId)
-    .maybeSingle();
-
-  if (!kundeRow || kundeRow.portal_modus !== "organisation") return null;
-
-  const kunde = kundeRow as OrganisationKunde;
+  const kunde = await loadOrganisationKunde(kundeId);
+  if (!kunde) return null;
 
   const { data: objekteRows } = await supabaseAdmin
     .from("kunden_objekte")
@@ -58,16 +55,36 @@ export async function getOrganisationPortalData(kundeId: string) {
     });
   };
 
-  const { data: eingangRows } = await supabaseAdmin
+  const { data: eingangRows, error: eingangErr } = await supabaseAdmin
     .from("leads")
-    .select(
-      "id, situation, bereiche, status, created_at, plz, strasse, hausnummer, zeitraum, kontakt_name, preis_min, preis_max, preis_unsicher, kontakt_nachricht, funnel_daten, kunde_objekt_id, anlass, erfassung_von, melder_name, melder_einheit, melder_telefon, melder_email, einladung_token, einladung_status, org_freigabe_status, hv_meldung_status, service_modus, auftraggeber_kunde_id, kunde_id"
-    )
+    .select(EINGANG_SELECT_FULL)
     .eq("auftraggeber_kunde_id", kundeId)
     .eq("anlass", "meldung")
     .order("created_at", { ascending: false });
 
-  const eingang = (eingangRows ?? []).map((row) => {
+  let eingangSource: Record<string, unknown>[] | null = (eingangRows ??
+    null) as Record<string, unknown>[] | null;
+  if (eingangErr) {
+    console.warn("[org-portal] eingang (voll):", eingangErr.message);
+    const fallback = await supabaseAdmin
+      .from("leads")
+      .select(EINGANG_SELECT_BASE)
+      .eq("auftraggeber_kunde_id", kundeId)
+      .eq("anlass", "meldung")
+      .order("created_at", { ascending: false });
+    if (fallback.error) {
+      console.error("[org-portal] eingang (basis):", fallback.error.message);
+      eingangSource = [];
+    } else {
+      eingangSource = (fallback.data ?? []).map((row) => ({
+        ...(row as Record<string, unknown>),
+        preis_unsicher: false,
+        hv_meldung_status: null,
+      }));
+    }
+  }
+
+  const eingang = (eingangSource ?? []).map((row) => {
     const r = row as { kunde_objekt_id?: string | null };
     return {
       ...(row as object),

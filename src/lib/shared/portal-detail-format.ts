@@ -70,6 +70,9 @@ export function portalDetailStatusPillClass(status: string): string {
   if (s === "neu") {
     return "tag bg-orange-100 text-orange-800";
   }
+  if (s === "bautagebuch" || s.includes("tagebuch")) {
+    return "tag bg-amber-100 text-amber-900";
+  }
   if (s === "in_arbeit" || s === "abnahme" || s.includes("arbeit") || s.includes("aktiv")) {
     return "tag bg-blue-100 text-blue-800";
   }

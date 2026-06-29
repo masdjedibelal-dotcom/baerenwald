@@ -57,8 +57,8 @@ export function mapKundeDetailToCard(
     footer: item.listFooter,
     hint: item.needsAction
       ? item.isAuftragDetail
-        ? "→ Änderungen prüfen & annehmen"
-        : "→ Angebot prüfen & annehmen"
+        ? "To-do: Änderungen prüfen & annehmen"
+        : "To-do: Angebot prüfen & annehmen"
       : undefined,
     sortDate: ts(item.date),
   };

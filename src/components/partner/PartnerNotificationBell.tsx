@@ -9,7 +9,11 @@ import {
   markAllPartnerNotificationsRead,
   markPartnerNotificationRead,
 } from "@/app/actions/partner-notifications";
-import type { PartnerNotificationRow } from "@/lib/partner/partner-notifications";
+import {
+  dedupePartnerNotificationsByVorgang,
+  partnerNotificationVorgangKey,
+  type PartnerNotificationRow,
+} from "@/lib/partner/partner-notifications";
 import {
   partnerVorgangIdFromNotificationLink,
   resolvePartnerNotificationLink,
@@ -22,6 +26,7 @@ function typLabel(typ: PartnerNotificationRow["typ"]): string {
   if (typ === "neu") return "Neu";
   if (typ === "geaendert") return "Geändert";
   if (typ === "entfernt") return "Entfernt";
+  if (typ === "bautagebuch") return "Tagebuch";
   return "Erinnerung";
 }
 
@@ -65,8 +70,19 @@ export function PartnerNotificationBell({
   async function onItemClick(n: PartnerNotificationRow) {
     if (!n.gelesen) {
       await markPartnerNotificationRead(n.id);
+      const vorgangKey = partnerNotificationVorgangKey(n.link);
       setItems((prev) =>
-        prev.map((x) => (x.id === n.id ? { ...x, gelesen: true } : x))
+        dedupePartnerNotificationsByVorgang(
+          prev.map((x) => {
+            if (x.gelesen) return x;
+            if (vorgangKey) {
+              return partnerNotificationVorgangKey(x.link) === vorgangKey
+                ? { ...x, gelesen: true }
+                : x;
+            }
+            return x.id === n.id ? { ...x, gelesen: true } : x;
+          })
+        )
       );
       setUnread((c) => Math.max(0, c - 1));
     }
