@@ -11,6 +11,8 @@ import { linkPortalKundeToAuthUser } from "@/lib/portal/link-portal-kunde";
 import { createClient } from "@/lib/supabase/server";
 import { isSupabaseConfigured, supabaseAdmin } from "@/lib/supabase";
 
+export const dynamic = "force-dynamic";
+
 export const metadata = {
   title: "MeinBärenwald",
   robots: { index: false, follow: false },

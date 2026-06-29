@@ -7,6 +7,8 @@ import { PARTNER_AUTH_COPY } from "@/lib/partner/partner-auth-copy";
 import { createClient } from "@/lib/supabase/server";
 import { isSupabaseConfigured } from "@/lib/supabase";
 
+export const dynamic = "force-dynamic";
+
 export const metadata = {
   title: "Partner-Anmeldung — Bärenwald",
   robots: { index: false, follow: false },

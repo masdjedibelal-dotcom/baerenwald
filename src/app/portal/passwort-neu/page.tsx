@@ -3,6 +3,8 @@ import { Suspense } from "react";
 import { PortalAuthShell } from "@/components/portal/PortalAuthShell";
 import { PortalSetPasswordForm } from "@/components/portal/PortalSetPasswordForm";
 
+export const dynamic = "force-dynamic";
+
 export const metadata = {
   title: "Neues Passwort — MeinBärenwald",
   robots: { index: false, follow: false },

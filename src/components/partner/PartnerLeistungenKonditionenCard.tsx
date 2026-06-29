@@ -245,7 +245,7 @@ export function PartnerLeistungenKonditionenCard({
                     ) : null}
                     {notiz ? (
                       <p className="portal-text-meta mt-1.5 text-text-secondary sm:text-right">
-                        „{notiz}"
+                        „{notiz}&ldquo;
                       </p>
                     ) : null}
 

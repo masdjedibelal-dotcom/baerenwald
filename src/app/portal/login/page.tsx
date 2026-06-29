@@ -3,6 +3,8 @@ import { Suspense } from "react";
 import { PortalAuthShell } from "@/components/portal/PortalAuthShell";
 import { PortalLoginForm } from "@/components/portal/PortalLoginForm";
 
+export const dynamic = "force-dynamic";
+
 export const metadata = {
   title: "Anmelden — MeinBärenwald",
   robots: { index: false, follow: false },

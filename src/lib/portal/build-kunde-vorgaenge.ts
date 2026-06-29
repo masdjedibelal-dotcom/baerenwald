@@ -22,13 +22,10 @@ import {
   type PortalBautagebuchEntry,
   objektPlzOrt,
 } from "@/lib/portal/portal-detail-item";
-import { fmtPortalAuftragStatus, sanitizeCustomerText } from "@/lib/portal/portal-display";
+import { sanitizeCustomerText } from "@/lib/portal/portal-display";
 import { resolveKundeVorgangStatus } from "@/lib/portal/kunde-vorgang-status";
 import type { PortalObjekt } from "@/lib/portal/portal-objekt";
 import { labelBereich, labelSituation } from "@/lib/lead-funnel-labels";
-import {
-  isPortalAuftragAbgeschlossenRecord,
-} from "@/lib/portal/portal-pipeline";
 
 type PortalLead = PortalAnfrageLeadSource & {
   id: string;
@@ -106,10 +103,6 @@ function buildItemFromLead(
       ...lead,
       objekt: lead.objekt ?? auftrag.objekt ?? null,
     };
-    const abgeschlossen = isPortalAuftragAbgeschlossenRecord({
-      status: auftrag.status,
-      fortschritt: auftrag.fortschritt,
-    });
     return {
       id: auftrag.id,
       leadId: lead.id,

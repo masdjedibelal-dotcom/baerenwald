@@ -116,7 +116,7 @@ function isPartnerListSection(section: PartnerSection): boolean {
   return section === "vorgaenge";
 }
 
-function emptyLabelForTab(_tab: OverviewTabId): string {
+function emptyOverviewLabel(): string {
   return "Keine offenen Vorgänge";
 }
 
@@ -156,13 +156,9 @@ export function PartnerClient({
   profil,
   termine,
   aufgaben,
-  anfragen: _anfragen,
-  angebote: _angebote,
-  angeboteAlleAkzeptiert: _angeboteAlleAkzeptiert,
   auftragAnfragen,
   auftraege,
   vorgaenge,
-  offen: _offen,
 }: {
   handwerker: PartnerHandwerkerProfil;
   profil: PartnerProfilKontext;
@@ -171,11 +167,11 @@ export function PartnerClient({
   /** @deprecated Eigene Todos entfallen zugunsten systemischer Aufgaben */
   todos?: PartnerTodoItem[];
   /** @deprecated Legacy-Listen — Tab Vorgänge nutzt `vorgaenge`. */
-  anfragen: PartnerAnfrageItem[];
+  anfragen?: PartnerAnfrageItem[];
   /** @deprecated Legacy-Listen — Tab Vorgänge nutzt `vorgaenge`. */
-  angebote: PartnerAnfrageItem[];
+  angebote?: PartnerAnfrageItem[];
   /** Alle akzeptierten HW-Angebote inkl. übernommen (Deep-Link). */
-  angeboteAlleAkzeptiert: PartnerAnfrageItem[];
+  angeboteAlleAkzeptiert?: PartnerAnfrageItem[];
   /** @deprecated — ersetzt durch `vorgaenge`. */
   offen?: unknown[];
   /** Planer-Termine (Legacy-Split). */
@@ -188,7 +184,7 @@ export function PartnerClient({
   const router = useRouter();
   const searchParams = useSearchParams();
   const [section, setSection] = useState<PartnerSection>("uebersicht");
-  const [overviewTab, setOverviewTab] = useState<OverviewTabId>("vorgaenge");
+  const overviewTab: OverviewTabId = "vorgaenge";
   const [overviewPage, setOverviewPage] = useState(1);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [mobileDetailOpen, setMobileDetailOpen] = useState(false);
@@ -722,7 +718,7 @@ export function PartnerClient({
                 <div className="space-y-2">
                   {overviewCardRows.length === 0 ? (
                     <p className="portal-text-body rounded-xl border border-dashed border-border-light bg-muted/20 px-3 py-6 text-center text-text-secondary">
-                      {emptyLabelForTab(overviewTab)}
+                      {emptyOverviewLabel()}
                     </p>
                   ) : (
                     paginatedOverviewCardRows.map((row) =>

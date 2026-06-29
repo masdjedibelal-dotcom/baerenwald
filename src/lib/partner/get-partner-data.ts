@@ -2,7 +2,6 @@ import { isPartnerAuftragAnfrageAktionErforderlich } from "@/lib/partner/partner
 import {
   buildPartnerOffenListe,
   isPartnerAngebotOffenListItem,
-  type PartnerOffenItem,
 } from "@/lib/partner/partner-offen-status";
 import {
   aggregateAuftragHandwerkerStatus,
