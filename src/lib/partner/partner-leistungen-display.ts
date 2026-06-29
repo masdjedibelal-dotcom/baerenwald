@@ -146,13 +146,30 @@ export function buildPartnerAuftragKonditionZeilen(
         : (pos.lohn_fix ?? 0) + (pos.material_fix ?? 0) > 0
           ? Math.round(((pos.lohn_fix ?? 0) + (pos.material_fix ?? 0)) * 100) / 100
           : null;
+    const typ = pos.aenderung_typ ?? null;
+    const isEntfernt = typ === "entfernt";
+    const isGeaendert = typ === "geaendert";
+    const isNeu = typ === "neu";
+    const preisAlt =
+      pos.preis_alt != null && pos.preis_alt > 0 ? pos.preis_alt : null;
+
     return {
       id: pos.id,
       title,
       beschreibung:
         pos.beschreibung && pos.beschreibung !== title ? pos.beschreibung : undefined,
-      vorschlagNetto: partnerNetto,
-      hwNetto: partnerNetto ?? undefined,
+      vorschlagNetto: isEntfernt ? preisAlt ?? partnerNetto : partnerNetto,
+      hwNetto: isEntfernt ? undefined : partnerNetto ?? undefined,
+      vorherNetto: isGeaendert ? preisAlt : undefined,
+      geaendert: isGeaendert,
+      readonly: isEntfernt,
+      zeilenBadge: isEntfernt
+        ? "entfernt"
+        : isGeaendert
+          ? "geaendert"
+          : isNeu
+            ? "neu"
+            : undefined,
       mwstSatz: 19,
     };
   });

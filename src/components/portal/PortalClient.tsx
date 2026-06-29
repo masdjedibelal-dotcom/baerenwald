@@ -1,1315 +1,575 @@
 "use client";
 
 import Image from "next/image";
-import { useSearchParams } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
-  Briefcase,
   ClipboardList,
-  FileText,
   LayoutDashboard,
-  Mail,
-  MessageCircle,
-  Phone,
   MessagesSquare,
+  Phone,
+  X,
 } from "lucide-react";
 
-import { PortalProductPicker } from "@/components/portal/PortalProductPicker";
-import { OrgAnlassBadge } from "@/components/org/OrgAnlassBadge";
 import { OnboardingTour } from "@/components/onboarding/OnboardingTour";
 import "@/components/onboarding/onboarding.css";
-import { PortalDetailPanel } from "@/components/portal/PortalDetailPanel";
-import { PortalMobileBottomSheet } from "@/components/shared/PortalMobileBottomSheet";
+import { PortalBaerenwaldGpt } from "@/components/portal/PortalBaerenwaldGpt";
+import { PortalVorgangDetail } from "@/components/portal/PortalVorgangDetail";
+import { PortalLegalFooter } from "@/components/shared/PortalLegalFooter";
 import { PortalListCard } from "@/components/shared/PortalListCard";
+import { PortalMobileBottomSheet } from "@/components/shared/PortalMobileBottomSheet";
 import {
   PORTAL_LIST_PAGE_SIZE,
-  PORTAL_OVERVIEW_PAGE_SIZE,
   PortalListPagination,
 } from "@/components/shared/PortalListPagination";
+import { PortalNavCountBadge } from "@/components/shared/PortalNavCountBadge";
 import { SITE_CONFIG } from "@/lib/config";
-import { labelBereich, labelSituation } from "@/lib/lead-funnel-labels";
-import {
-  fmtPortalAuftragStatus,
-  fmtPortalStatus,
-  sanitizeCustomerText,
-} from "@/lib/portal/portal-display";
-import {
-  isPortalAngebotPhaseStatus,
-  isPortalAuftragAbgeschlossenRecord,
-  isPortalAuftragPhaseStatus,
-  splitKundePortalPipeline,
-} from "@/lib/portal/portal-pipeline";
-import type { PortalDokument } from "@/lib/portal/portal-dokumente";
-import {
-  type KundePortalDetailItem,
-  type PortalBautagebuchEntry,
-  objektPlzOrt,
-} from "@/lib/portal/portal-detail-item";
 import { isOnboardingCompleted } from "@/lib/onboarding/storage";
 import { PORTAL_ONBOARDING_SLIDES } from "@/lib/onboarding/portal-slides";
-import { buildKundeCardRows, type PortalCardRow } from "@/lib/portal/portal-list-mappers";
 import { buildKundeVorgaenge } from "@/lib/portal/build-kunde-vorgaenge";
 import {
-  buildAnfrageCardMeta,
-  buildAnfragePortalSections,
-  type PortalAnfrageLeadSource,
-} from "@/lib/portal/portal-anfrage-display";
+  countKundeVorgaengeFilter,
+  countKundeVorgaengeNeedsAction,
+  filterKundeVorgaenge,
+  type KundeVorgangFilter,
+} from "@/lib/portal/kunde-vorgang-filter";
 import {
-  buildAngebotCardMeta,
-  buildAngebotPortalSections,
-  type PortalAngebotPositionDisplay,
-} from "@/lib/portal/portal-angebot-display";
-import {
-  buildAuftragCardMeta,
-  buildAuftragPortalSections,
-} from "@/lib/portal/portal-auftrag-display";
-import {
-  portalAnsprechpartnerFallback,
-  type PortalAnsprechpartner,
-} from "@/lib/portal/portal-ansprechpartner";
-import type { PortalObjekt } from "@/lib/portal/portal-objekt";
-import { buildPortalContactPrefill } from "@/lib/portal/portal-contact-prefill";
-import { portalDetailStatusPillClass } from "@/lib/shared/portal-detail-format";
+  buildKundeVorgangCardRows,
+  type PortalCardRow,
+} from "@/lib/portal/portal-list-mappers";
 import { cn } from "@/lib/utils";
-import { PortalBaerenwaldGpt } from "@/components/portal/PortalBaerenwaldGpt";
-import { PortalLegalFooter } from "@/components/shared/PortalLegalFooter";
-import {
-  PortalNavCountBadge,
-  portalNavBadgeCount,
-} from "@/components/shared/PortalNavCountBadge";
+import { portalDetailStatusPillClass } from "@/lib/shared/portal-detail-format";
 
 type PortalKunde = {
   name?: string | null;
   email?: string | null;
-  plz?: string | null;
-  ort?: string | null;
-  adresse?: string | null;
-};
-type PortalPosition = {
-  id: string;
-  titel: string;
-  beschreibung?: string;
-  status?: string;
-  gewerk_name?: string;
-  datum?: string;
-  fotos_urls?: string[];
-  bautagebuch?: PortalBautagebuchEntry[];
-};
-type PortalAuftrag = {
-  id: string;
-  titel: string;
-  lead_id?: string;
-  angebot_id?: string;
-  linkedLead?: PortalAnfrageLeadSource | null;
-  ansprechpartner?: PortalAnsprechpartner;
-  objekt?: PortalObjekt | null;
-  status?: string;
-  fortschritt?: number;
-  budget?: number;
-  start_datum?: string;
-  end_datum?: string;
-  abnahme_datum?: string;
-  created_at?: string;
-  milestones?: Array<{ id: string; titel: string; erledigt: boolean }>;
-  positionen?: PortalPosition[];
-  bautagebuch?: PortalBautagebuchEntry[];
-  dokumente?: PortalDokument[];
-};
-type PortalAngebot = {
-  id: string;
-  titel?: string;
-  objekt?: PortalObjekt | null;
-  linkedLead?: PortalAnfrageLeadSource | null;
-  status_einfach?: string | null;
-  status?: string;
-  lead_id?: string | null;
-  leistungen?: string[];
-  hinweise?: string;
-  angebotsnr?: string | null;
-  betrag?: number;
-  gesamtBrutto?: number;
-  positionenDisplay?: PortalAngebotPositionDisplay[];
-  gueltig_bis?: string | null;
-  gesendet_am?: string | null;
-  created_at?: string | null;
-  auftrag_titel?: string;
-  dokumente?: PortalDokument[];
-};
-type PortalLead = {
-  id: string;
-  situation?: string;
-  bereiche?: string[];
-  created_at?: string;
-  status?: string;
-  objekt?: PortalObjekt | null;
-  plz?: string;
-  strasse?: string | null;
-  hausnummer?: string | null;
-  zeitraum?: string | null;
-  kontakt_name?: string | null;
-  kontakt_nachricht?: string | null;
-  funnel_daten?: unknown;
-  preis_min?: number;
-  preis_max?: number;
-  budget_ca?: number;
-  dokumente?: PortalDokument[];
-  anlass?: string | null;
 };
 
-type PortalClientProps = {
-  kunde: PortalKunde;
-  auftraege: PortalAuftrag[];
-  angebote: PortalAngebot[];
-  leads: PortalLead[];
-  /** Nur Listen+Detail ohne Portal-Shell (Auftraggeber-Portal). */
-  layout?: "default" | "embedded";
-  activeSection?: SectionId;
-  /** Privat-Portal: Produktpicker nur im Privat-Modus */
-  showProductPicker?: boolean;
-  /** Auftraggeber-Portal: Anlass-Badge in Anfragen-Liste */
-  showAnlassBadge?: boolean;
+type PortalLead = Parameters<typeof buildKundeVorgaenge>[0]["leads"][number];
+type PortalAngebot = Parameters<typeof buildKundeVorgaenge>[0]["angebote"][number];
+type PortalAuftrag = Parameters<typeof buildKundeVorgaenge>[0]["auftraege"][number];
+
+type SectionId = "uebersicht" | "vorgaenge" | "gpt";
+
+const VORGANG_FILTER_LABELS: Record<KundeVorgangFilter, string> = {
+  aktiv: "Aktiv",
+  erledigt: "Erledigt",
 };
 
-type SectionId = "uebersicht" | "vorgaenge" | "anfragen" | "angebote" | "auftraege" | "gpt";
-type OverviewTabId = "vorgaenge";
-type AuftraegeListFilterId = "alle" | "aktiv" | "abgeschlossen";
-type VorgaengeListFilterId = "aktiv" | "alle" | "abgeschlossen";
-
-function formatAnfrageGewerk(bereiche?: string[]): string | undefined {
-  const parts = (bereiche ?? [])
-    .map((b) => labelBereich(b.trim()))
-    .filter((l) => l && l !== "—");
-  if (parts.length === 0) return undefined;
-  return parts.join(", ");
-}
-
-/** Listen- und Detail-Titel: Vorhaben + Gewerk, z. B. „Erneuern · Bad“. */
-function anfrageDisplayTitle(vorhaben?: string, gewerk?: string): string {
-  const v = vorhaben?.trim();
-  const g = gewerk?.trim();
-  if (v && g) return `${v} · ${g}`;
-  return v || g || "Anfrage";
-}
-
-function anfrageTitleFromLead(lead: Pick<PortalLead, "situation" | "bereiche">): {
-  title: string;
-  anfrageVorhaben?: string;
-  anfrageGewerk?: string;
-} {
-  const vorhabenLabel = labelSituation(lead.situation);
-  const gewerk = formatAnfrageGewerk(lead.bereiche);
-  const vorhaben =
-    vorhabenLabel !== "—" ? vorhabenLabel : undefined;
-  return {
-    title: anfrageDisplayTitle(vorhaben, gewerk),
-    anfrageVorhaben: vorhaben,
-    anfrageGewerk: gewerk,
-  };
-}
-
-const MENU_ITEMS_UNIFIED: Array<{
+const MENU_ITEMS: Array<{
   id: SectionId;
   label: string;
   icon: typeof LayoutDashboard;
 }> = [
   { id: "uebersicht", label: "Übersicht", icon: LayoutDashboard },
-  { id: "vorgaenge", label: "Meine Vorgänge", icon: ClipboardList },
+  { id: "vorgaenge", label: "Vorgänge", icon: ClipboardList },
   { id: "gpt", label: "GPT", icon: MessagesSquare },
 ];
 
-const MENU_ITEMS_SPLIT: Array<{
-  id: SectionId;
-  label: string;
-  icon: typeof LayoutDashboard;
-}> = [
-  { id: "uebersicht", label: "Übersicht", icon: LayoutDashboard },
-  { id: "anfragen", label: "Anfragen", icon: ClipboardList },
-  { id: "angebote", label: "Angebote", icon: FileText },
-  { id: "auftraege", label: "Aufträge", icon: Briefcase },
-  { id: "gpt", label: "GPT", icon: MessagesSquare },
-];
+const MOBILE_NAV_ITEMS = ["uebersicht", "vorgaenge", "gpt"] as const satisfies readonly SectionId[];
 
-function emptyLabelForSection(section: OverviewTabId | SectionId): string {
-  if (section === "vorgaenge") return "Noch keine Vorgänge";
-  if (section === "angebote") return "Noch keine Angebote";
-  if (section === "auftraege") return "Noch keine Aufträge";
-  return "Noch keine Einträge";
+function normalizeSectionFromUrl(raw: string | undefined): SectionId | null {
+  if (!raw) return null;
+  if (
+    raw === "anfragen" ||
+    raw === "angebote" ||
+    raw === "auftraege" ||
+    raw === "vorgaenge"
+  ) {
+    return "vorgaenge";
+  }
+  if (raw === "uebersicht" || raw === "gpt") return raw;
+  return null;
 }
 
-function PortalEmptyState({ section }: { section: OverviewTabId | SectionId }) {
-  const label = emptyLabelForSection(section);
+function VorgangListFilterBar({
+  filter,
+  onFilterChange,
+  counts,
+}: {
+  filter: KundeVorgangFilter;
+  onFilterChange: (filter: KundeVorgangFilter) => void;
+  counts: Record<KundeVorgangFilter, number>;
+}) {
   return (
-    <div className="rounded-xl border border-dashed border-border-light bg-muted/20 px-4 py-8 text-center">
-      <p className="portal-text-body text-text-secondary">{label}</p>
-      <p className="portal-text-meta mt-1 text-text-tertiary">
-        Wähle oben ein Projekt — wir koordinieren den Rest.
-      </p>
+    <div className="flex flex-wrap gap-2 border-b border-border-default px-3 py-3 sm:px-4">
+      {(["aktiv", "erledigt"] as const).map((id) => (
+        <button
+          key={id}
+          type="button"
+          onClick={() => onFilterChange(id)}
+          className={cn(
+            "rounded-full px-3 py-1.5 portal-text-meta font-semibold",
+            filter === id
+              ? "bg-accent-light text-accent"
+              : "bg-muted text-text-secondary"
+          )}
+        >
+          {VORGANG_FILTER_LABELS[id]}
+          <span className="ml-1.5 text-text-tertiary">({counts[id]})</span>
+        </button>
+      ))}
     </div>
   );
-}
-
-function isCompletedStatus(status?: string): boolean {
-  const normalized = (status || "").toLowerCase().replace(/[\s-]+/g, "_");
-  return (
-    normalized === "abgeschlossen" ||
-    normalized.includes("abgeschlossen") ||
-    normalized.includes("fertig") ||
-    normalized.includes("completed") ||
-    normalized.includes("done")
-  );
-}
-
-function isStorniertStatus(status?: string): boolean {
-  return (status || "").toLowerCase().includes("storniert");
-}
-
-function isAuftragAbgeschlossen(auftrag: PortalAuftrag): boolean {
-  return isPortalAuftragAbgeschlossenRecord({
-    status: auftrag.status,
-    fortschritt: auftrag.fortschritt,
-  });
-}
-
-function isAuftragDetailItemAbgeschlossen(
-  item: KundePortalDetailItem,
-  allAuftraege: PortalAuftrag[],
-  allLeads: PortalLead[]
-): boolean {
-  if (item.id.startsWith("lead-")) {
-    const leadId = item.id.slice("lead-".length);
-    const lead = allLeads.find((l) => l.id === leadId);
-    return lead ? isCompletedStatus(lead.status) : false;
-  }
-  const auftrag = allAuftraege.find((a) => a.id === item.id);
-  return auftrag ? isAuftragAbgeschlossen(auftrag) : false;
-}
-
-function listItemLabel(section: SectionId): string {
-  if (section === "vorgaenge") return "Vorgänge";
-  if (section === "anfragen") return "Anfragen";
-  if (section === "angebote") return "Angebote";
-  if (section === "auftraege") return "Aufträge";
-  return "Einträge";
 }
 
 export function PortalClient({
   kunde,
-  auftraege = [],
-  angebote = [],
-  leads = [],
+  leads,
+  angebote,
+  auftraege,
   layout = "default",
   activeSection,
-  showProductPicker = true,
   showAnlassBadge = false,
-}: PortalClientProps) {
+}: {
+  kunde: PortalKunde;
+  leads: PortalLead[];
+  angebote: PortalAngebot[];
+  auftraege: PortalAuftrag[];
+  layout?: "default" | "embedded";
+  activeSection?: "uebersicht" | "vorgaenge" | "auftraege";
+  showProductPicker?: boolean;
+  showAnlassBadge?: boolean;
+}) {
+  const router = useRouter();
   const searchParams = useSearchParams();
-  const unifiedNav = layout === "default";
-  const menuItems = unifiedNav ? MENU_ITEMS_UNIFIED : MENU_ITEMS_SPLIT;
+  const embedded = layout === "embedded";
+
+  const initialSection = normalizeSectionFromUrl(
+    activeSection === "auftraege" ? "vorgaenge" : activeSection ?? searchParams.get("section") ?? undefined
+  );
+
   const [section, setSection] = useState<SectionId>(
-    activeSection ?? "uebersicht"
+    embedded ? "vorgaenge" : initialSection ?? "uebersicht"
   );
-  const [overviewTab] = useState<OverviewTabId>("vorgaenge");
-  const allLeads = leads;
-
-  const pipelineSplit = useMemo(
-    () =>
-      splitKundePortalPipeline({
-        leads: allLeads.map((l) => ({ id: l.id, status: l.status })),
-        angebote: angebote.map((a) => ({ id: a.id, lead_id: a.lead_id })),
-        auftraege: auftraege.map((a) => ({
-          id: a.id,
-          lead_id: a.lead_id,
-          angebot_id: a.angebot_id,
-          status: a.status,
-          fortschritt: a.fortschritt,
-        })),
-      }),
-    [allLeads, angebote, auftraege]
+  const [vorgangFilter, setVorgangFilter] = useState<KundeVorgangFilter>("aktiv");
+  const [selectedId, setSelectedId] = useState<string | null>(
+    searchParams.get("id")?.trim() || null
   );
-
-  const anfragenLeadIds = useMemo(
-    () => new Set(pipelineSplit.anfragenLeads.map((l) => l.id)),
-    [pipelineSplit.anfragenLeads]
-  );
-  const angebotTabIds = useMemo(
-    () => new Set(pipelineSplit.angebote.map((a) => a.id)),
-    [pipelineSplit.angebote]
-  );
-  const auftragTabIds = useMemo(
-    () => new Set(pipelineSplit.auftraege.map((a) => a.id)),
-    [pipelineSplit.auftraege]
-  );
-
-  const leadsAnfragePhase = useMemo(
-    () =>
-      unifiedNav
-        ? allLeads
-        : allLeads.filter((l) => anfragenLeadIds.has(l.id)),
-    [unifiedNav, allLeads, anfragenLeadIds]
-  );
-
-  const angeboteTab = useMemo(
-    () =>
-      unifiedNav ? angebote : angebote.filter((a) => angebotTabIds.has(a.id)),
-    [unifiedNav, angebote, angebotTabIds]
-  );
-
-  const auftraegeTab = useMemo(
-    () =>
-      unifiedNav
-        ? auftraege
-        : auftraege.filter((a) => auftragTabIds.has(a.id)),
-    [unifiedNav, auftraege, auftragTabIds]
-  );
-
-  const leadsNurAngebotPhase = useMemo(
-    () =>
-      leads.filter(
-        (l) =>
-          isPortalAngebotPhaseStatus(l.status) &&
-          !angeboteTab.some((a) => a.lead_id === l.id)
-      ),
-    [leads, angeboteTab]
-  );
-
-  const [selectedVorgangId, setSelectedVorgangId] = useState<string | null>(null);
-  const [selectedAnfrageId, setSelectedAnfrageId] = useState<string | null>(
-    () => leadsAnfragePhase[0]?.id ?? null
-  );
-  const [selectedAngebotId, setSelectedAngebotId] = useState<string | null>(
-    () => angeboteTab[0]?.id ?? leadsNurAngebotPhase[0]?.id ?? null
-  );
-  const [selectedAuftragId, setSelectedAuftragId] = useState<string | null>(
-    auftraegeTab[0]?.id ?? null
-  );
-  const [mobileDetailOpen, setMobileDetailOpen] = useState(false);
+  const [mobileDetailOpen, setMobileDetailOpen] = useState(Boolean(selectedId));
+  const [listPage, setListPage] = useState(1);
   const [gptOpen, setGptOpen] = useState(false);
   const [onboardingOpen, setOnboardingOpen] = useState(false);
+  const ignoreUrlDetailRef = useRef(false);
 
-  useEffect(() => {
-    if (layout === "embedded" && activeSection) {
-      setSection(activeSection);
-    }
-  }, [layout, activeSection]);
-
-  useEffect(() => {
-    if (!isOnboardingCompleted("portal") && layout === "default") {
-      setOnboardingOpen(true);
-    }
-  }, [layout]);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [overviewPage, setOverviewPage] = useState(1);
-  const [auftraegeListFilter, setAuftraegeListFilter] =
-    useState<AuftraegeListFilterId>("alle");
-  const [vorgaengeListFilter, setVorgaengeListFilter] =
-    useState<VorgaengeListFilterId>("aktiv");
-
-  const vorname = (kunde?.name || "Kunde").split(" ")[0] || "Kunde";
-
-  const contactPrefill = useMemo(
-    () =>
-      buildPortalContactPrefill({
-        kunde,
-        leads: [...leads, ...leadsNurAngebotPhase].sort((a, b) => {
-          const ta = a.created_at ? new Date(a.created_at).getTime() : 0;
-          const tb = b.created_at ? new Date(b.created_at).getTime() : 0;
-          return tb - ta;
-        }),
-      }),
-    [kunde, leads, leadsNurAngebotPhase]
-  );
-  const offeneAuftraegeCount = auftraegeTab.filter(
-    (a) => !isStorniertStatus(a.status) && !isAuftragAbgeschlossen(a)
-  ).length;
-  const abgeschlosseneAuftraegeCount = auftraegeTab.filter((a) =>
-    isAuftragAbgeschlossen(a)
-  ).length;
-  const offeneAnfragenCount = unifiedNav
-    ? 0
-    : leadsAnfragePhase.length;
+  const vorname =
+    kunde.name?.trim().split(/\s+/)[0] ||
+    kunde.email?.split("@")[0]?.replace(/[._]/g, " ") ||
+    "du";
 
   const vorgaengeItems = useMemo(
-    () =>
-      unifiedNav
-        ? buildKundeVorgaenge({
-            leads: allLeads,
-            angebote,
-            auftraege,
-          })
-        : [],
-    [unifiedNav, allLeads, angebote, auftraege]
+    () => buildKundeVorgaenge({ leads, angebote, auftraege }),
+    [leads, angebote, auftraege]
   );
 
-  const filteredVorgaengeItems = useMemo(() => {
-    if (!unifiedNav) return [];
-    if (vorgaengeListFilter === "alle") return vorgaengeItems;
-    return vorgaengeItems.filter((item) => {
-      const done = item.vorgangPhase === "abgeschlossen";
-      return vorgaengeListFilter === "abgeschlossen" ? done : !done;
-    });
-  }, [unifiedNav, vorgaengeItems, vorgaengeListFilter]);
-
-  const aktiveVorgaengeCount = vorgaengeItems.filter(
-    (v) => v.vorgangPhase !== "abgeschlossen" && v.vorgangPhase !== "abgelehnt"
-  ).length;
-  const vorgaengeActionCount = vorgaengeItems.filter((v) => v.needsAction).length;
-
-  const anfragenItems = useMemo<KundePortalDetailItem[]>(
-    () =>
-      [...leadsAnfragePhase]
-        .sort(
-          (a, b) =>
-            new Date(b.created_at || 0).getTime() -
-            new Date(a.created_at || 0).getTime()
-        )
-        .map((lead) => {
-          const { title, anfrageVorhaben, anfrageGewerk } = anfrageTitleFromLead(lead);
-          const { plz, ort } = objektPlzOrt(lead.objekt, lead.plz);
-          return {
-            id: lead.id,
-            date: lead.created_at,
-            title,
-            anfrageGewerk,
-            anfrageVorhaben,
-            plz,
-            ort,
-            cardMeta: buildAnfrageCardMeta(lead),
-            status: fmtPortalStatus(lead.status || "neu"),
-            sections: buildAnfragePortalSections(lead),
-            dokumente: lead.dokumente ?? [],
-            listFooter:
-              showAnlassBadge && lead.anlass ? (
-                <OrgAnlassBadge anlass={lead.anlass} />
-              ) : undefined,
-          };
-        }),
-    [leadsAnfragePhase, showAnlassBadge]
+  const filterCounts = useMemo(
+    () => countKundeVorgaengeFilter(vorgaengeItems),
+    [vorgaengeItems]
   );
 
-  const angeboteItems = useMemo<KundePortalDetailItem[]>(() => {
-    const fromAngebote = [...angeboteTab]
-      .sort(
-        (a, b) =>
-          new Date(b.created_at || 0).getTime() -
-          new Date(a.created_at || 0).getTime()
-      )
-      .map((a) => {
-        const st = a.status_einfach || a.status || "angebot";
-        const leadSource: PortalAnfrageLeadSource | null = a.linkedLead
-          ? { ...a.linkedLead, objekt: a.linkedLead.objekt ?? a.objekt ?? null }
-          : null;
-        return {
-          id: a.id,
-          date: a.created_at ?? undefined,
-          title:
-            sanitizeCustomerText(a.titel, 200) ||
-            (a.angebotsnr ? `Angebot ${a.angebotsnr}` : "Angebot"),
-          cardMeta: buildAngebotCardMeta(leadSource, a.created_at),
-          isAngebotDetail: true,
-          angebotPositionen: a.positionenDisplay,
-          gesamtBrutto: a.gesamtBrutto,
-          suppressLocationInHero: true,
-          status: fmtPortalStatus(st),
-          sections: buildAngebotPortalSections({
-            lead: leadSource,
-            objekt: a.objekt,
-          }),
-          dokumente: a.dokumente ?? [],
-        };
-      });
-
-    const fromLeads = [...leadsNurAngebotPhase]
-      .sort(
-        (a, b) =>
-          new Date(b.created_at || 0).getTime() -
-          new Date(a.created_at || 0).getTime()
-      )
-      .map((lead) => {
-        const { title, anfrageVorhaben, anfrageGewerk } = anfrageTitleFromLead(lead);
-        return {
-          id: `lead-${lead.id}`,
-          date: lead.created_at,
-          title,
-          anfrageVorhaben,
-          anfrageGewerk,
-          cardMeta: buildAngebotCardMeta(lead, lead.created_at),
-          infoHint: "Wir bereiten dein Angebot vor und melden uns, sobald es bereitsteht.",
-          status: fmtPortalStatus(lead.status || "angebot"),
-          sections: buildAngebotPortalSections({ lead, objekt: lead.objekt }),
-          dokumente: lead.dokumente ?? [],
-        };
-      });
-
-    return [...fromAngebote, ...fromLeads];
-  }, [angeboteTab, leadsNurAngebotPhase]);
-
-  const portalNavBadgeCounts = useMemo(
-    () => ({
-      vorgaenge: vorgaengeActionCount,
-      anfragen: offeneAnfragenCount,
-      angebote: angeboteItems.length,
-      auftraege: offeneAuftraegeCount,
-    }),
-    [
-      vorgaengeActionCount,
-      offeneAnfragenCount,
-      angeboteItems.length,
-      offeneAuftraegeCount,
-    ]
+  const needsActionCount = useMemo(
+    () => countKundeVorgaengeNeedsAction(vorgaengeItems),
+    [vorgaengeItems]
   );
 
-  const leadsNurAuftragPhase = useMemo(
-    () =>
-      leads.filter(
-        (l) =>
-          isPortalAuftragPhaseStatus(l.status) &&
-          !auftraege.some((a) => a.lead_id === l.id)
-      ),
-    [leads, auftraege]
+  const filteredVorgaenge = useMemo(
+    () => filterKundeVorgaenge(vorgaengeItems, vorgangFilter),
+    [vorgaengeItems, vorgangFilter]
   );
 
-  const auftraegeItems = useMemo<KundePortalDetailItem[]>(() => {
-    const fromAuftraege = [...auftraegeTab]
-      .sort((a, b) => {
-        const aDone = isAuftragAbgeschlossen(a) ? 1 : 0;
-        const bDone = isAuftragAbgeschlossen(b) ? 1 : 0;
-        if (aDone !== bDone) return aDone - bDone;
-        return (
-          new Date(b.start_datum || b.created_at || 0).getTime() -
-          new Date(a.start_datum || a.created_at || 0).getTime()
-        );
-      })
-      .map((a) => {
-          const abgeschlossen = isAuftragAbgeschlossen(a);
-          const leadSource: PortalAnfrageLeadSource | null = a.linkedLead
-            ? {
-                ...a.linkedLead,
-                objekt: a.linkedLead.objekt ?? a.objekt ?? null,
-              }
-            : null;
-          return {
-            id: a.id,
-            date: a.start_datum || a.created_at,
-            auftragEndDatum: a.end_datum,
-            title: a.titel,
-            cardMeta: buildAuftragCardMeta(
-              a.objekt,
-              leadSource,
-              a.start_datum || a.created_at,
-              a.end_datum
-            ),
-            isAuftragDetail: true,
-            suppressLocationInHero: true,
-            status: fmtPortalAuftragStatus(
-              abgeschlossen ? "abgeschlossen" : a.status || "auftrag"
-            ),
-            sections: buildAuftragPortalSections({
-              lead: leadSource,
-              objekt: a.objekt,
-            }),
-            ansprechpartner: a.ansprechpartner ?? portalAnsprechpartnerFallback(),
-            dokumente: a.dokumente ?? [],
-            bautagebuch: a.bautagebuch ?? [],
-          };
-        });
+  const cardRows = useMemo(
+    () => buildKundeVorgangCardRows(filteredVorgaenge),
+    [filteredVorgaenge]
+  );
 
-    const fromLeads = [...leadsNurAuftragPhase]
-      .sort(
-        (a, b) =>
-          new Date(b.created_at || 0).getTime() -
-          new Date(a.created_at || 0).getTime()
-      )
-      .map((lead) => {
-        const { title } = anfrageTitleFromLead(lead);
-        const abgeschlossen = isCompletedStatus(lead.status);
-        return {
-          id: `lead-${lead.id}`,
-          date: lead.created_at,
-          title,
-          cardMeta: buildAuftragCardMeta(lead.objekt, lead, lead.created_at),
-          isAuftragDetail: true,
-          suppressLocationInHero: true,
-          status: fmtPortalAuftragStatus(
-            abgeschlossen ? "abgeschlossen" : lead.status || "auftrag"
-          ),
-          sections: buildAuftragPortalSections({ lead, objekt: lead.objekt }),
-          ansprechpartner: portalAnsprechpartnerFallback(),
-          dokumente: lead.dokumente ?? [],
-        };
-      });
+  const listTotalPages = Math.max(1, Math.ceil(cardRows.length / PORTAL_LIST_PAGE_SIZE));
+  const safeListPage = Math.min(listPage, listTotalPages);
+  const paginatedRows = cardRows.slice(
+    (safeListPage - 1) * PORTAL_LIST_PAGE_SIZE,
+    safeListPage * PORTAL_LIST_PAGE_SIZE
+  );
 
-    return [...fromAuftraege, ...fromLeads];
-  }, [auftraegeTab, leadsNurAuftragPhase]);
-
-  const filteredAuftraegeItems = useMemo(() => {
-    if (auftraegeListFilter === "alle") return auftraegeItems;
-    return auftraegeItems.filter((item) => {
-      const abgeschlossen = isAuftragDetailItemAbgeschlossen(
-        item,
-        auftraege,
-        leads
-      );
-      return auftraegeListFilter === "abgeschlossen"
-        ? abgeschlossen
-        : !abgeschlossen;
-    });
-  }, [auftraegeItems, auftraegeListFilter, auftraege, leads]);
+  const selectedItem =
+    vorgaengeItems.find((i) => i.id === selectedId) ??
+    filteredVorgaenge.find((i) => i.id === selectedId) ??
+    filteredVorgaenge[0] ??
+    null;
 
   useEffect(() => {
-    const s = searchParams.get("section");
-    const itemId = searchParams.get("id")?.trim();
-    if (!s || !itemId) return;
+    if (embedded || isOnboardingCompleted("portal")) return;
+    setOnboardingOpen(true);
+  }, [embedded]);
 
-    if (s === "vorgaenge" && unifiedNav) {
-      if (vorgaengeItems.some((v) => v.id === itemId)) {
+  useEffect(() => {
+    setListPage(1);
+  }, [section, vorgangFilter]);
+
+  useEffect(() => {
+    if (embedded) return;
+    if (ignoreUrlDetailRef.current) {
+      const rawSection = searchParams.get("section")?.trim();
+      const normalized = normalizeSectionFromUrl(rawSection);
+      const rawId = searchParams.get("id")?.trim();
+      if (normalized === "vorgaenge" && !rawId) {
+        ignoreUrlDetailRef.current = false;
         setSection("vorgaenge");
-        setSelectedVorgangId(itemId);
-        setMobileDetailOpen(true);
+        setSelectedId(null);
+        setMobileDetailOpen(false);
       }
       return;
     }
 
-    if (s === "auftraege") {
-      if (auftraege.some((a) => a.id === itemId)) {
-        setSection("auftraege");
-        setSelectedAuftragId(itemId);
-        setMobileDetailOpen(true);
-        return;
-      }
-      const leadId = itemId.startsWith("lead-") ? itemId.slice("lead-".length) : null;
-      if (leadId && leadsNurAuftragPhase.some((l) => l.id === leadId)) {
-        setSection("auftraege");
-        setSelectedAuftragId(itemId);
-        setMobileDetailOpen(true);
-      }
-      return;
-    }
+    const rawSection = searchParams.get("section")?.trim();
+    if (!rawSection) return;
+    const normalized = normalizeSectionFromUrl(rawSection);
+    if (!normalized) return;
 
-    if (s === "angebote") {
-      if (angebote.some((a) => a.id === itemId)) {
-        setSection("angebote");
-        setSelectedAngebotId(itemId);
-        setMobileDetailOpen(true);
-        return;
-      }
-      const leadId = itemId.startsWith("lead-") ? itemId.slice("lead-".length) : null;
-      if (leadId && leadsNurAngebotPhase.some((l) => l.id === leadId)) {
-        setSection("angebote");
-        setSelectedAngebotId(itemId);
+    setSection(normalized);
+    const itemId = searchParams.get("id")?.trim();
+    if (normalized === "vorgaenge" && itemId) {
+      if (vorgaengeItems.some((v) => v.id === itemId)) {
+        setSelectedId(itemId);
         setMobileDetailOpen(true);
       }
-      return;
     }
+  }, [searchParams, vorgaengeItems, embedded]);
 
-    if (s === "anfragen" && leads.some((l) => l.id === itemId)) {
-      setSection("anfragen");
-      setSelectedAnfrageId(itemId);
-      setMobileDetailOpen(true);
-    }
-  }, [
-    searchParams,
-    auftraege,
-    angebote,
-    leads,
-    leadsNurAngebotPhase,
-    leadsNurAuftragPhase,
-    vorgaengeItems,
-    unifiedNav,
-  ]);
-
-  const selectedVorgang =
-    filteredVorgaengeItems.find((i) => i.id === selectedVorgangId) ??
-    filteredVorgaengeItems[0] ??
-    vorgaengeItems[0];
-
-  const selectedAnfrage =
-    anfragenItems.find((i) => i.id === selectedAnfrageId) ?? anfragenItems[0];
-  const selectedAngebot =
-    angeboteItems.find((i) => i.id === selectedAngebotId) ?? angeboteItems[0];
-  const selectedAuftrag =
-    filteredAuftraegeItems.find((i) => i.id === selectedAuftragId) ??
-    filteredAuftraegeItems[0];
-
-  const selectedDetail =
-    section === "vorgaenge"
-      ? selectedVorgang
-      : section === "anfragen"
-      ? selectedAnfrage
-      : section === "angebote"
-        ? selectedAngebot
-        : section === "auftraege"
-          ? selectedAuftrag
-          : null;
-
-  const sectionCardRows = useMemo(() => {
-    if (section === "vorgaenge") {
-      return buildKundeCardRows(filteredVorgaengeItems, "anfrage");
-    }
-    if (section === "anfragen") return buildKundeCardRows(anfragenItems, "anfrage");
-    if (section === "angebote") return buildKundeCardRows(angeboteItems, "angebot");
-    if (section === "auftraege") {
-      return buildKundeCardRows(filteredAuftraegeItems, "auftrag");
-    }
-    return [];
-  }, [section, filteredVorgaengeItems, anfragenItems, angeboteItems, filteredAuftraegeItems]);
-
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [section, auftraegeListFilter, vorgaengeListFilter]);
-
-  useEffect(() => {
-    if (section !== "auftraege") return;
-    if (
-      selectedAuftragId &&
-      filteredAuftraegeItems.some((item) => item.id === selectedAuftragId)
-    ) {
-      return;
-    }
-    setSelectedAuftragId(filteredAuftraegeItems[0]?.id ?? null);
-  }, [section, auftraegeListFilter, filteredAuftraegeItems, selectedAuftragId]);
-
-  useEffect(() => {
-    setOverviewPage(1);
-  }, [overviewTab]);
-
-  const overviewCardRows = useMemo(() => {
-    if (unifiedNav) {
-      return buildKundeCardRows(
-        vorgaengeItems.slice(0, PORTAL_OVERVIEW_PAGE_SIZE * 2),
-        "anfrage"
-      );
-    }
-    if (overviewTab === "vorgaenge") {
-      return buildKundeCardRows(vorgaengeItems, "anfrage");
-    }
-    return buildKundeCardRows(auftraegeItems, "auftrag");
-  }, [unifiedNav, overviewTab, vorgaengeItems, auftraegeItems]);
-
-  const PAGE_SIZE = PORTAL_LIST_PAGE_SIZE;
-  const totalPages = Math.max(1, Math.ceil(sectionCardRows.length / PAGE_SIZE));
-  const safePage = Math.min(currentPage, totalPages);
-  const paginatedCardRows = sectionCardRows.slice(
-    (safePage - 1) * PAGE_SIZE,
-    safePage * PAGE_SIZE
-  );
-
-  const overviewTotalPages = Math.max(
-    1,
-    Math.ceil(overviewCardRows.length / PORTAL_OVERVIEW_PAGE_SIZE)
-  );
-  const overviewSafePage = Math.min(overviewPage, overviewTotalPages);
-  const paginatedOverviewCardRows = overviewCardRows.slice(
-    (overviewSafePage - 1) * PORTAL_OVERVIEW_PAGE_SIZE,
-    overviewSafePage * PORTAL_OVERVIEW_PAGE_SIZE
-  );
-
-  const selectedId =
-    section === "vorgaenge"
-      ? selectedVorgangId ?? selectedVorgang?.id ?? null
-      : section === "anfragen"
-      ? selectedAnfrageId
-      : section === "angebote"
-        ? selectedAngebotId
-        : section === "auftraege"
-          ? selectedAuftragId
-          : null;
-
-  function selectRow(id: string) {
-    if (section === "vorgaenge") setSelectedVorgangId(id);
-    if (section === "anfragen") setSelectedAnfrageId(id);
-    if (section === "angebote") setSelectedAngebotId(id);
-    if (section === "auftraege") setSelectedAuftragId(id);
-    setMobileDetailOpen(true);
-  }
-
-  function renderCard(row: PortalCardRow) {
-    return (
-      <PortalListCard
-        key={row.id}
-        accent={row.accent}
-        showLeftAccent={false}
-        title={row.title}
-        subtitle={row.subtitle}
-        statusLabel={row.statusLabel}
-        statusPillClass={portalDetailStatusPillClass(row.statusPillKey)}
-        meta={row.meta}
-        footer={row.footer}
-        selected={selectedId === row.id}
-        onClick={() => selectRow(row.id)}
-      />
-    );
-  }
-
-  function renderOverviewCard(row: PortalCardRow) {
-    return (
-      <PortalListCard
-        key={row.id}
-        accent={row.accent}
-        showLeftAccent={false}
-        title={row.title}
-        subtitle={row.subtitle}
-        statusLabel={row.statusLabel}
-        statusPillClass={portalDetailStatusPillClass(row.statusPillKey)}
-        meta={row.meta}
-        footer={row.footer}
-        onClick={() => {
-          if (unifiedNav) {
-            setSelectedVorgangId(row.id);
-            setSection("vorgaenge");
-          } else if (overviewTab === "vorgaenge") {
-            setSelectedVorgangId(row.id);
-            setSection("vorgaenge");
-          } else {
-            setSelectedAuftragId(row.id);
-            setSection("auftraege");
-          }
-          setMobileDetailOpen(true);
-        }}
-      />
-    );
-  }
-
-  const sectionListEmpty =
-    section !== "uebersicht" &&
-    section !== "gpt" &&
-    (section === "vorgaenge"
-      ? filteredVorgaengeItems.length === 0
-      : section === "anfragen"
-      ? anfragenItems.length === 0
-      : section === "angebote"
-        ? angeboteItems.length === 0
-        : filteredAuftraegeItems.length === 0);
-
-  const waNumber = SITE_CONFIG.phoneMobil.replace(/\D/g, "");
-  const waHref = `https://wa.me/${waNumber}?text=${encodeURIComponent(
-    "Hallo Bärenwald, ich habe eine Frage"
-  )}`;
-
-  function switchSection(id: SectionId) {
-    setSection(id);
+  function switchSection(next: SectionId) {
+    ignoreUrlDetailRef.current = true;
+    setSection(next);
+    setSelectedId(null);
     setMobileDetailOpen(false);
-    if (id !== "gpt") setGptOpen(false);
+    if (!embedded) {
+      router.replace(`/portal?section=${next}`, { scroll: false });
+    }
   }
 
-  function renderMobileNavButton(id: SectionId) {
-    const item = menuItems.find((m) => m.id === id);
-    if (!item) return null;
-    const { label, icon: Icon } = item;
-    const badgeCount = portalNavBadgeCount(id, portalNavBadgeCounts);
+  function openVorgang(row: PortalCardRow) {
+    setSelectedId(row.id);
+    setMobileDetailOpen(true);
+    if (!embedded) {
+      router.replace(`/portal?section=vorgaenge&id=${encodeURIComponent(row.id)}`, {
+        scroll: false,
+      });
+    }
+  }
+
+  function renderListCard(row: PortalCardRow) {
     return (
-      <button
-        key={id}
-        type="button"
-        onClick={() => switchSection(id)}
-        className={cn(
-          "portal-text-nav rounded-lg px-0.5 py-2.5",
-          section === id ? "text-accent" : "text-text-tertiary"
-        )}
-        aria-label={badgeCount > 0 ? `${label}, ${badgeCount} offen` : label}
-      >
-        <span className="flex flex-col items-center gap-0.5">
-          <span className="relative inline-flex">
-            <Icon className="h-[18px] w-[18px] stroke-[1.75]" />
-            <PortalNavCountBadge count={badgeCount} />
-          </span>
-          <span className="max-w-[58px] truncate">{label}</span>
-        </span>
-      </button>
+      <PortalListCard
+        key={row.id}
+        selected={selectedId === row.id}
+        onClick={() => openVorgang(row)}
+        title={row.title}
+        subtitle={row.subtitle}
+        statusLabel={row.statusLabel}
+        statusPillClass={portalDetailStatusPillClass(row.statusPillKey)}
+        accent={row.accent}
+        meta={row.meta}
+        hint={row.hint}
+        footer={row.footer}
+      />
     );
   }
 
-  const pipelineGrid = (
-    <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
-      <article className="card-bordered overflow-hidden p-0">
-        {section === "vorgaenge" || section === "auftraege" ? (
-          <div className="flex flex-wrap gap-2 border-b border-border-default px-3 py-3 sm:px-4">
-            {(
-              section === "vorgaenge"
-                ? ([
-                    ["aktiv", "Aktiv"],
-                    ["alle", "Alle"],
-                    ["abgeschlossen", "Abgeschlossen"],
-                  ] as const)
-                : ([
-                    ["alle", "Alle"],
-                    ["aktiv", "Aktiv"],
-                    ["abgeschlossen", "Abgeschlossen"],
-                  ] as const)
-            ).map(([id, label]) => (
-              <button
-                key={id}
-                type="button"
-                onClick={() =>
-                  section === "vorgaenge"
-                    ? setVorgaengeListFilter(id)
-                    : setAuftraegeListFilter(id)
-                }
-                className={cn(
-                  "rounded-full px-3 py-1.5 portal-text-meta font-semibold",
-                  (section === "vorgaenge"
-                    ? vorgaengeListFilter
-                    : auftraegeListFilter) === id
-                    ? "bg-accent-light text-accent"
-                    : "bg-muted text-text-secondary"
-                )}
-              >
-                {label}
-                <span className="ml-1.5 text-text-tertiary">
-                  (
-                  {section === "vorgaenge"
-                    ? id === "alle"
-                      ? vorgaengeItems.length
-                      : id === "aktiv"
-                        ? aktiveVorgaengeCount
-                        : vorgaengeItems.filter(
-                            (v) => v.vorgangPhase === "abgeschlossen"
-                          ).length
-                    : id === "alle"
-                      ? auftraegeItems.length
-                      : id === "aktiv"
-                        ? offeneAuftraegeCount
-                        : abgeschlosseneAuftraegeCount}
-                  )
-                </span>
-              </button>
-            ))}
-          </div>
-        ) : null}
-        <div className="space-y-2 p-3 sm:p-4">
-          {sectionListEmpty ? (
-            section === "vorgaenge" && vorgaengeListFilter !== "alle" ? (
-              <p className="portal-text-body rounded-xl border border-dashed border-border-light bg-muted/20 px-3 py-6 text-center text-text-secondary">
-                Keine Vorgänge für diesen Filter.
-              </p>
-            ) : section === "auftraege" && auftraegeListFilter !== "alle" ? (
-              <p className="portal-text-body rounded-xl border border-dashed border-border-light bg-muted/20 px-3 py-6 text-center text-text-secondary">
-                Keine Aufträge für diesen Filter.
-              </p>
-            ) : (
-              <PortalEmptyState section={section} />
-            )
-          ) : (
-            paginatedCardRows.map(renderCard)
-          )}
-        </div>
-        {!sectionListEmpty ? (
-          <PortalListPagination
-            totalItems={sectionCardRows.length}
-            itemLabel={listItemLabel(section)}
-            currentPage={safePage}
-            totalPages={totalPages}
-            onPageChange={setCurrentPage}
-          />
-        ) : null}
-      </article>
-
-      <aside className="hidden lg:block">
-        <article className="card-bordered sticky top-[92px] max-h-[calc(100vh-110px)] overflow-y-auto p-4">
-          {selectedDetail ? (
-            <PortalDetailPanel item={selectedDetail} />
-          ) : (
-            <p className="portal-text-body text-text-secondary">
-              Kein Eintrag ausgewählt.
-            </p>
-          )}
-        </article>
-      </aside>
-    </div>
+  const listPanel = (
+    <article className="card-bordered flex min-h-0 flex-col overflow-hidden lg:min-h-[520px]">
+      <VorgangListFilterBar
+        filter={vorgangFilter}
+        onFilterChange={setVorgangFilter}
+        counts={filterCounts}
+      />
+      <div className="min-h-0 flex-1 space-y-2 overflow-y-auto p-3 sm:p-4">
+        {paginatedRows.length === 0 ? (
+          <p className="portal-text-body py-8 text-center text-text-secondary">
+            {vorgangFilter === "aktiv"
+              ? "Keine aktiven Vorgänge."
+              : "Keine erledigten Vorgänge."}
+          </p>
+        ) : (
+          paginatedRows.map(renderListCard)
+        )}
+      </div>
+      {cardRows.length > PORTAL_LIST_PAGE_SIZE ? (
+        <PortalListPagination
+          totalItems={cardRows.length}
+          itemLabel="Vorgänge"
+          currentPage={safeListPage}
+          totalPages={listTotalPages}
+          onPageChange={setListPage}
+        />
+      ) : null}
+    </article>
   );
 
-  if (layout === "embedded") {
-    return (
-      <div className="portal-ui">
-        {pipelineGrid}
-        <PortalMobileBottomSheet
-          open={mobileDetailOpen}
-          onClose={() => setMobileDetailOpen(false)}
-          ariaLabel="Details"
+  const detailPanel = selectedItem ? (
+    <article className="card-bordered min-h-0 overflow-y-auto p-4 sm:p-5 lg:max-h-[calc(100vh-180px)]">
+      <div className="mb-3 flex justify-end lg:hidden">
+        <button
+          type="button"
+          onClick={() => {
+            setMobileDetailOpen(false);
+            setSelectedId(null);
+          }}
+          className="rounded-full p-2 hover:bg-muted"
+          aria-label="Schließen"
         >
-          {selectedDetail ? <PortalDetailPanel item={selectedDetail} /> : null}
+          <X className="h-5 w-5" />
+        </button>
+      </div>
+      <PortalVorgangDetail
+        item={selectedItem}
+        showAnlassBadge={showAnlassBadge}
+        onAccepted={() => router.refresh()}
+      />
+    </article>
+  ) : (
+    <article className="card-bordered hidden min-h-[320px] items-center justify-center p-8 text-center lg:flex">
+      <p className="portal-text-body text-text-secondary">
+        Wähle links einen Vorgang für Details.
+      </p>
+    </article>
+  );
+
+  if (embedded) {
+    return (
+      <div className="grid gap-4 lg:grid-cols-[minmax(0,340px)_1fr]">
+        {listPanel}
+        {detailPanel}
+        <PortalMobileBottomSheet
+          open={mobileDetailOpen && Boolean(selectedItem)}
+          onClose={() => setMobileDetailOpen(false)}
+          ariaLabel="Vorgangsdetails"
+        >
+          {selectedItem ? (
+            <PortalVorgangDetail
+              item={selectedItem}
+              showAnlassBadge={showAnlassBadge}
+              onAccepted={() => router.refresh()}
+            />
+          ) : null}
         </PortalMobileBottomSheet>
       </div>
     );
   }
 
   return (
-    <div className="portal-ui min-h-screen bg-surface-page">
+    <div className="portal-ui min-h-screen bg-surface-page pb-[calc(4.5rem+env(safe-area-inset-bottom,0px))] lg:pb-8">
       <header className="sticky top-0 z-50 border-b border-border-default bg-surface-card/95 backdrop-blur-sm">
         <div className="mx-auto flex h-[68px] max-w-[1200px] items-center justify-between px-4 sm:px-6">
           <div className="flex items-center gap-2.5">
-            <Image src="/logo-mark-green.png" alt="Bärenwald" width={28} height={28} />
+            <Image src="/logo-mark-green.png" alt="" width={28} height={28} />
             <div>
-              <p className="portal-text-body font-semibold leading-none text-text-primary">
-                <span className="font-display text-base italic bg-gradient-to-r from-[#1A3D2B] via-[#2E7D52] to-[#5AA7A7] bg-clip-text text-transparent sm:text-[17px]">
-                  Mein
-                </span>
-                <span className="ml-0.5">Bärenwald</span>
+              <p className="portal-text-body font-semibold">
+                Mein<span className="text-accent">Bärenwald</span>
               </p>
+              <p className="text-xs text-text-tertiary">{kunde.name?.trim() || "Kundenportal"}</p>
             </div>
           </div>
-          <div className="flex shrink-0 items-center gap-2">
-            <form action="/portal/auth/signout" method="post">
-              <button
-                type="submit"
-                className="btn-pill-outline portal-btn-compact !px-2.5 sm:!px-3"
-              >
-                Abmelden
-              </button>
-            </form>
-          </div>
+          <form action="/portal/auth/signout" method="post">
+            <button type="submit" className="btn-pill-outline portal-btn-compact">
+              Abmelden
+            </button>
+          </form>
         </div>
       </header>
 
-      <main className="mx-auto grid max-w-[1200px] grid-cols-1 gap-4 px-4 pb-36 pt-5 lg:grid-cols-[240px_minmax(0,1fr)] lg:px-6 lg:pb-10">
+      <div className="mx-auto grid max-w-[1200px] gap-4 px-4 py-5 lg:grid-cols-[220px_1fr] lg:px-6">
         <aside className="hidden lg:block">
-          <div className="sticky top-[92px] space-y-3">
-            <nav className="card-bordered p-2">
-              {menuItems.map(({ id, label, icon: Icon }) => (
-                <button
-                  key={id}
-                  onClick={() => switchSection(id)}
-                  className={cn(
-                    "mb-1 flex w-full items-center justify-between rounded-xl px-3 py-2.5 text-left portal-text-body font-semibold",
-                    section === id
-                      ? id === "gpt"
-                        ? "bg-[#EAF3DE] text-[#2E7D52]"
-                        : "bg-accent-light text-accent"
-                      : id === "gpt"
-                        ? "text-[#2E7D52] hover:bg-[#EAF3DE]/60"
-                        : "text-text-secondary hover:bg-muted"
-                  )}
-                >
-                  <span className="inline-flex items-center gap-2">
-                    <Icon className="h-4 w-4" />
-                    <span>{label}</span>
-                  </span>
-                  <span className="portal-text-meta text-text-tertiary">
-                    {id === "vorgaenge"
-                      ? aktiveVorgaengeCount
-                      : id === "anfragen"
-                      ? anfragenItems.length
-                      : id === "angebote"
-                        ? angeboteItems.length
-                        : id === "auftraege"
-                          ? auftraegeItems.length
-                          : ""}
-                  </span>
-                </button>
-              ))}
-            </nav>
-          </div>
+          <nav className="sticky top-[84px] space-y-1">
+            {MENU_ITEMS.map(({ id, label, icon: Icon }) => (
+              <button
+                key={id}
+                type="button"
+                onClick={() => switchSection(id)}
+                className={cn(
+                  "mb-1 flex w-full items-center justify-between rounded-xl px-3 py-2.5 text-left portal-text-body font-semibold",
+                  section === id
+                    ? id === "gpt"
+                      ? "bg-[#EAF3DE] text-[#2E7D52]"
+                      : "bg-accent-light text-accent"
+                    : id === "gpt"
+                      ? "text-[#2E7D52] hover:bg-[#EAF3DE]/60"
+                      : "text-text-secondary hover:bg-muted"
+                )}
+              >
+                <span className="relative inline-flex items-center gap-2">
+                  <Icon className="h-4 w-4" />
+                  {label}
+                  {id === "vorgaenge" ? (
+                    <PortalNavCountBadge count={needsActionCount} />
+                  ) : null}
+                </span>
+              </button>
+            ))}
+          </nav>
         </aside>
 
-        <section className="space-y-4">
+        <main className="min-w-0 space-y-4">
           {section === "gpt" ? (
             <article className="card-bordered hidden overflow-hidden p-0 lg:block">
-              <PortalBaerenwaldGpt
-                variant="embedded"
-                open
-                onClose={() => setSection("uebersicht")}
-              />
+              <PortalBaerenwaldGpt variant="embedded" open onClose={() => switchSection("uebersicht")} />
             </article>
           ) : null}
 
-          {section === "uebersicht" && (
-            <div className="space-y-4">
+          {section === "uebersicht" ? (
+            <>
               <div className="space-y-0.5">
-                <p className="portal-text-section text-text-primary">
-                  Hallo {vorname}
+                <p className="portal-text-section text-text-primary">Hallo {vorname}</p>
+                <p className="portal-text-body text-text-secondary">
+                  Deine Projekte an einem Ort
                 </p>
               </div>
 
               <div className="grid min-w-0 grid-cols-3 gap-2">
                 <article className="portal-kpi-card">
-                  <p className="portal-kpi-label">Aktive Vorgänge</p>
-                  <p className="portal-kpi-value">{aktiveVorgaengeCount}</p>
+                  <p className="portal-kpi-label">Aktiv</p>
+                  <p className="portal-kpi-value">{filterCounts.aktiv}</p>
                 </article>
                 <article className="portal-kpi-card">
                   <p className="portal-kpi-label">Zur Prüfung</p>
-                  <p className="portal-kpi-value">{vorgaengeActionCount}</p>
+                  <p className="portal-kpi-value">{needsActionCount}</p>
                 </article>
                 <article className="portal-kpi-card">
-                  <p className="portal-kpi-label">Abgeschlossen</p>
-                  <p className="portal-kpi-value">
-                    {vorgaengeItems.filter((v) => v.vorgangPhase === "abgeschlossen").length}
-                  </p>
+                  <p className="portal-kpi-label">Erledigt</p>
+                  <p className="portal-kpi-value">{filterCounts.erledigt}</p>
                 </article>
               </div>
 
-              <article className="card-bordered p-4">
-                {vorgaengeActionCount > 0 ? (
-                  <div className="mb-4 rounded-xl border border-accent/25 bg-accent-light/40 p-4">
-                    <p className="portal-text-body font-semibold text-text-primary">
-                      Angebot prüfen
-                    </p>
-                    <p className="portal-text-meta mt-0.5 text-text-secondary">
-                      Du hast {vorgaengeActionCount}{" "}
-                      {vorgaengeActionCount === 1 ? "Vorgang" : "Vorgänge"} mit offenem Angebot.
-                    </p>
-                    <button
-                      type="button"
-                      className="btn-pill-primary portal-btn mt-3 !px-4 !py-2.5"
-                      onClick={() => setSection("vorgaenge")}
-                    >
-                      Vorgang ansehen
-                    </button>
+              <button
+                type="button"
+                onClick={() => setGptOpen(true)}
+                className="card-bordered flex w-full items-center justify-between gap-3 p-4 text-left lg:hidden"
+              >
+                <div className="flex items-center gap-3">
+                  <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#EAF3DE] text-[#2E7D52]">
+                    <MessagesSquare className="h-5 w-5" />
+                  </span>
+                  <div>
+                    <p className="portal-text-body font-semibold">Bärenwald GPT</p>
+                    <p className="portal-text-meta text-text-secondary">Beratung & Visualisierung</p>
                   </div>
-                ) : aktiveVorgaengeCount > 0 ? (
-                  <div className="mb-4 rounded-xl border border-accent/25 bg-accent-light/40 p-4">
-                    <p className="portal-text-body font-semibold text-text-primary">
-                      Vorgang in Bearbeitung
-                    </p>
-                    <p className="portal-text-meta mt-0.5 text-text-secondary">
-                      Wir melden uns — du kannst den Status jederzeit hier verfolgen.
-                    </p>
-                    <button
-                      type="button"
-                      className="btn-pill-outline portal-btn mt-3 !px-4 !py-2.5"
-                      onClick={() => setSection("vorgaenge")}
-                    >
-                      Meine Vorgänge
-                    </button>
-                  </div>
-                ) : null}
+                </div>
+                <span className="font-semibold text-accent">Öffnen →</span>
+              </button>
 
-                <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-                  <p className="portal-text-body font-semibold text-text-primary">
-                    Letzte Vorgänge
-                  </p>
+              <article className="card-bordered p-4 sm:p-5">
+                <div className="mb-3 flex items-center justify-between gap-2">
+                  <h2 className="font-semibold text-text-primary">Deine Vorgänge</h2>
                   <button
-                    className="portal-text-body font-semibold text-accent"
-                    onClick={() => setSection("vorgaenge")}
+                    type="button"
+                    onClick={() => switchSection("vorgaenge")}
+                    className="portal-text-meta font-semibold text-accent"
                   >
-                    Alle anzeigen →
+                    Alle anzeigen
                   </button>
                 </div>
-
                 <div className="space-y-2">
-                  {overviewCardRows.length === 0 ? (
-                    <PortalEmptyState section="vorgaenge" />
-                  ) : (
-                    paginatedOverviewCardRows.map((row) => renderOverviewCard(row))
-                  )}
+                  {buildKundeVorgangCardRows(filterKundeVorgaenge(vorgaengeItems, "aktiv"))
+                    .slice(0, 5)
+                    .map(renderListCard)}
+                  {filterCounts.aktiv === 0 ? (
+                    <p className="portal-text-body py-4 text-center text-text-secondary">
+                      Noch keine Vorgänge — starte gern eine{" "}
+                      <Link href="/rechner" className="text-accent underline-offset-2 hover:underline">
+                        Anfrage
+                      </Link>
+                      .
+                    </p>
+                  ) : null}
                 </div>
-                {overviewCardRows.length > 0 ? (
-                  <PortalListPagination
-                    totalItems={overviewCardRows.length}
-                    itemLabel="Vorgänge"
-                    currentPage={overviewSafePage}
-                    totalPages={overviewTotalPages}
-                    onPageChange={setOverviewPage}
-                  />
-                ) : null}
               </article>
 
-              {showProductPicker ? (
-                <PortalProductPicker contactPrefill={contactPrefill} />
-              ) : null}
-
-              <section className="border-t border-border-default pt-4">
-                <div className="flex flex-wrap items-center justify-between gap-3">
-                  <div>
-                    <p className="portal-text-label text-text-tertiary">Kontakt</p>
-                    <p className="portal-text-body text-text-secondary">
-                      Fragen zu deinem Projekt? Wir sind direkt erreichbar.
-                    </p>
-                  </div>
-                  <div className="flex flex-wrap gap-2">
-                    <a
-                      href={SITE_CONFIG.phoneHref}
-                      className="btn-pill-primary portal-btn !justify-center !px-4 !py-3"
-                    >
-                      <Phone className="h-3.5 w-3.5" />
-                      Jetzt anrufen
-                    </a>
-                    <a
-                      href={waHref}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="btn-pill-outline portal-btn !justify-center !px-4 !py-3"
-                    >
-                      <MessageCircle className="h-3.5 w-3.5" />
-                      WhatsApp
-                    </a>
-                    <a
-                      href={`mailto:${SITE_CONFIG.email}?subject=${encodeURIComponent(
-                        "Frage an Bärenwald"
-                      )}`}
-                      className="btn-pill-outline portal-btn !justify-center !px-4 !py-3"
-                    >
-                      <Mail className="h-3.5 w-3.5" />
-                      E-Mail
-                    </a>
-                  </div>
+              <article className="card-bordered p-4 sm:p-5">
+                <h2 className="font-semibold text-text-primary">Kontakt</h2>
+                <p className="portal-text-body mt-2 text-text-secondary">
+                  Fragen zu deinem Projekt? Wir sind für dich da.
+                </p>
+                <div className="mt-4 flex flex-wrap gap-2">
+                  <a href={SITE_CONFIG.phoneHref} className="btn-pill-primary inline-flex items-center gap-2 !py-2.5">
+                    <Phone className="h-4 w-4" />
+                    Anrufen
+                  </a>
+                  <a
+                    href={`mailto:${SITE_CONFIG.email}`}
+                    className="btn-pill-outline !py-2.5"
+                  >
+                    E-Mail schreiben
+                  </a>
                 </div>
-              </section>
+              </article>
+            </>
+          ) : null}
+
+          {section === "vorgaenge" ? (
+            <div className="grid gap-4 lg:grid-cols-[minmax(0,340px)_1fr]">
+              {listPanel}
+              {detailPanel}
             </div>
-          )}
+          ) : null}
+        </main>
+      </div>
 
-          {section !== "uebersicht" && section !== "gpt" && pipelineGrid}
-        </section>
-      </main>
-
-      <nav
-        className="fixed inset-x-0 bottom-0 z-[90] border-t border-border-default bg-surface-card/95 backdrop-blur-sm lg:hidden"
-        aria-label="Portal Navigation"
-      >
-        <div className="grid grid-cols-3 items-end px-0.5 pb-2 pt-1">
-          {renderMobileNavButton("uebersicht")}
-
-          <div className="flex flex-col items-center justify-end">
-            <button
-              type="button"
-              onClick={() => setGptOpen(true)}
-              aria-label="GPT öffnen"
-              aria-pressed={gptOpen}
-              className={cn(
-                "-mt-8 flex min-h-[64px] w-[72px] flex-col items-center justify-center gap-1 rounded-full border-[3px] border-white/30 bg-[#2E7D52] px-1 py-2 text-white shadow-[0_8px_24px_rgba(46,125,82,0.35)] ring-[5px] ring-surface-card transition-transform active:scale-95",
-                gptOpen && "ring-[#2E7D52] shadow-[0_10px_28px_rgba(46,125,82,0.45)]"
-              )}
-            >
-              <MessagesSquare className="h-7 w-7 shrink-0 stroke-[1.75]" aria-hidden />
-              <span className="portal-text-fab max-w-[72px] text-center text-white">
-                GPT
-              </span>
-            </button>
-          </div>
-
-          {renderMobileNavButton("vorgaenge")}
+      <nav className="fixed inset-x-0 bottom-0 z-50 border-t border-border-default bg-surface-card/95 backdrop-blur-sm lg:hidden">
+        <div className="mx-auto flex max-w-[1200px]">
+          {MOBILE_NAV_ITEMS.map((id) => {
+            const item = MENU_ITEMS.find((m) => m.id === id)!;
+            const Icon = item.icon;
+            const active = section === id;
+            return (
+              <button
+                key={id}
+                type="button"
+                onClick={() => switchSection(id)}
+                className={cn(
+                  "relative flex flex-1 flex-col items-center gap-0.5 py-2.5 text-[10px] font-medium",
+                  active ? "text-accent" : "text-text-tertiary"
+                )}
+              >
+                <Icon className="h-5 w-5" />
+                {item.label}
+                {id === "vorgaenge" && needsActionCount > 0 ? (
+                  <span className="absolute right-[calc(50%-22px)] top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-600 px-1 text-[9px] font-bold text-white">
+                    {needsActionCount}
+                  </span>
+                ) : null}
+              </button>
+            );
+          })}
         </div>
       </nav>
 
       <PortalMobileBottomSheet
-        open={
-          mobileDetailOpen &&
-          section !== "uebersicht" &&
-          section !== "gpt" &&
-          !sectionListEmpty &&
-          Boolean(selectedDetail)
-        }
+        open={section === "vorgaenge" && mobileDetailOpen && Boolean(selectedItem)}
         onClose={() => setMobileDetailOpen(false)}
-        ariaLabel="Details"
+        ariaLabel="Vorgangsdetails"
       >
-        {selectedDetail ? <PortalDetailPanel item={selectedDetail} /> : null}
+        {selectedItem ? (
+          <PortalVorgangDetail
+            item={selectedItem}
+            showAnlassBadge={showAnlassBadge}
+            onAccepted={() => router.refresh()}
+          />
+        ) : null}
       </PortalMobileBottomSheet>
 
-      <PortalBaerenwaldGpt
-        variant="overlay"
-        open={gptOpen}
-        onClose={() => setGptOpen(false)}
-      />
+      {gptOpen ? (
+        <PortalBaerenwaldGpt open onClose={() => setGptOpen(false)} />
+      ) : null}
 
-      <OnboardingTour
-        open={onboardingOpen}
-        audience="portal"
-        slides={PORTAL_ONBOARDING_SLIDES}
-        onClose={() => setOnboardingOpen(false)}
-      />
+      {onboardingOpen ? (
+        <OnboardingTour
+          open={onboardingOpen}
+          audience="portal"
+          slides={PORTAL_ONBOARDING_SLIDES}
+          onClose={() => setOnboardingOpen(false)}
+        />
+      ) : null}
 
-      <PortalLegalFooter
-        variant="kunde"
-        className="mx-auto max-w-[1200px] px-4 pb-28 pt-3 lg:px-6 lg:pb-6"
-      />
+      <div className="mx-auto hidden max-w-[1200px] px-6 lg:block">
+        <PortalLegalFooter variant="kunde" className="mt-8" />
+      </div>
     </div>
   );
 }

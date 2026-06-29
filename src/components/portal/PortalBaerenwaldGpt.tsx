@@ -1,147 +1,79 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { X } from "lucide-react";
 
-import { GptProjektProvider } from "@/components/gpt/gpt-projekt-context";
 import { GptStudioChat } from "@/components/gpt/GptStudioChat";
-import { PortalMobileSheetHeader } from "@/components/shared/PortalMobileBottomSheet";
-import { RECHNER_KI_BERATUNG_HREF } from "@/lib/rechner-links";
+import { cn } from "@/lib/utils";
 
-import "./portal-gpt.css";
-import "@/components/gpt/gpt-viz.css";
-
-type PortalBaerenwaldGptProps = {
-  open: boolean;
-  onClose: () => void;
-  variant?: "overlay" | "embedded";
-};
-
-function PortalBaerenwaldGptInner({
-  open,
-  onClose,
+export function PortalBaerenwaldGpt({
   variant = "overlay",
-}: PortalBaerenwaldGptProps) {
-  const [kiChatLocked, setKiChatLocked] = useState(false);
-  const [preisCtaVisible, setPreisCtaVisible] = useState(false);
-  const [beratungCtaVisible, setBeratungCtaVisible] = useState(false);
-  const isEmbedded = variant === "embedded";
-
-  useEffect(() => {
-    if (!open || isEmbedded) return;
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    return () => {
-      document.body.style.overflow = prev;
-    };
-  }, [open, isEmbedded]);
-
-  const handlePreisBereit = useCallback(() => {
-    setPreisCtaVisible(false);
-    setBeratungCtaVisible(false);
-    setKiChatLocked(false);
-  }, []);
-
-  const handleBeratungBereit = useCallback(() => {
-    setBeratungCtaVisible(true);
-    setPreisCtaVisible(false);
-    setKiChatLocked(true);
-  }, []);
-
-  const handleClose = useCallback(() => {
-    setKiChatLocked(false);
-    setPreisCtaVisible(false);
-    setBeratungCtaVisible(false);
-    onClose();
-  }, [onClose]);
+  open = true,
+  onClose,
+}: {
+  variant?: "overlay" | "embedded";
+  open?: boolean;
+  onClose?: () => void;
+}) {
+  const router = useRouter();
 
   if (!open) return null;
 
-  const showHandoffFooter = preisCtaVisible || beratungCtaVisible;
-  const showCloseInFooter = !isEmbedded;
-
-  const shell = (
-    <div className="portal-gpt-shell">
-      <div className="portal-gpt-body portal-gpt-chat-active">
-        <GptStudioChat
-          priceHandoff
-          locked={kiChatLocked}
-          onPreisBereit={handlePreisBereit}
-          onBeratungBereit={handleBeratungBereit}
-        />
-      </div>
-
-      {showHandoffFooter || showCloseInFooter ? (
-        <footer
-          className={
-            showHandoffFooter
-              ? "portal-gpt-footer"
-              : "portal-gpt-footer portal-gpt-footer--close-only"
-          }
-        >
-          <div className="portal-gpt-footer-actions">
-            {preisCtaVisible ? (
-              <a
-                href={RECHNER_KI_BERATUNG_HREF}
-                target="_blank"
-                rel="noreferrer"
-                className="btn-pill-primary portal-btn !px-4 !py-3"
-              >
-                Zum Preis
-              </a>
-            ) : null}
-            {beratungCtaVisible ? (
-              <a
-                href="/rechner"
-                target="_blank"
-                rel="noreferrer"
-                className="btn-pill-outline portal-btn !px-4 !py-3"
-              >
-                Zur Beratung
-              </a>
-            ) : null}
-          </div>
-          {showCloseInFooter ? (
-            <button
-              type="button"
-              onClick={handleClose}
-              className="portal-gpt-close"
-              aria-label="Chat schließen"
-            >
-              <X className="h-5 w-5" aria-hidden />
-            </button>
-          ) : null}
-        </footer>
-      ) : null}
-    </div>
+  const chat = (
+    <GptStudioChat
+      locked={false}
+      priceHandoff
+      onPreisBereit={() => router.push("/rechner?modus=ki")}
+      onBeratungBereit={() => router.push("/rechner?modus=ki")}
+    />
   );
 
-  if (isEmbedded) {
-    return <div className="portal-gpt-embedded">{shell}</div>;
+  if (variant === "embedded") {
+    return (
+      <div className="flex min-h-[min(70vh,640px)] flex-col">
+        {onClose ? (
+          <div className="flex justify-end border-b border-border-light px-3 py-2">
+            <button
+              type="button"
+              onClick={onClose}
+              className="rounded-full p-2 text-text-secondary hover:bg-muted"
+              aria-label="Schließen"
+            >
+              <X className="h-5 w-5" />
+            </button>
+          </div>
+        ) : null}
+        <div className="min-h-0 flex-1">{chat}</div>
+      </div>
+    );
   }
 
   return (
-    <div className="portal-gpt-overlay" role="dialog" aria-modal="true" aria-label="GPT">
+    <div className="fixed inset-0 z-[140] bg-black/45 lg:hidden">
       <button
         type="button"
-        className="portal-gpt-overlay-backdrop lg:hidden"
-        onClick={handleClose}
+        className="absolute inset-0"
+        onClick={onClose}
         aria-label="Schließen"
       />
-      <div className="portal-gpt-sheet">
-        <div className="shrink-0 bg-surface-card lg:hidden">
-          <PortalMobileSheetHeader onClose={handleClose} />
+      <article
+        className={cn(
+          "absolute inset-x-0 bottom-0 top-[8vh] flex flex-col rounded-t-2xl border border-border-default bg-surface-card shadow-xl"
+        )}
+      >
+        <div className="flex shrink-0 items-center justify-between border-b border-border-light px-4 py-3">
+          <p className="font-semibold text-text-primary">Bärenwald GPT</p>
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-full p-2 text-text-secondary hover:bg-muted"
+            aria-label="Schließen"
+          >
+            <X className="h-5 w-5" />
+          </button>
         </div>
-        {shell}
-      </div>
+        <div className="min-h-0 flex-1 overflow-hidden">{chat}</div>
+      </article>
     </div>
-  );
-}
-
-export function PortalBaerenwaldGpt(props: PortalBaerenwaldGptProps) {
-  return (
-    <GptProjektProvider>
-      <PortalBaerenwaldGptInner {...props} />
-    </GptProjektProvider>
   );
 }

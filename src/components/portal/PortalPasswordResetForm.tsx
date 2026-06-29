@@ -33,8 +33,8 @@ export function PortalPasswordResetForm() {
     return (
       <div className="space-y-3 text-center portal-text-body text-text-secondary">
         <p>
-          Wenn ein Konto mit dieser E-Mail existiert, haben wir dir einen Link zum
-          Zurücksetzen geschickt.
+          Wenn ein Konto existiert, haben wir dir einen Link zum Zurücksetzen
+          geschickt.
         </p>
         <Link href="/portal/login" className="font-semibold text-accent hover:underline">
           Zurück zum Login
@@ -55,21 +55,16 @@ export function PortalPasswordResetForm() {
           required
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          className="portal-input w-full rounded-xl border border-border-default bg-surface-card px-3 py-3 focus:border-accent"
+          className="portal-input w-full rounded-xl border border-border-default bg-surface-card px-3 py-3"
         />
       </label>
       <button
         type="submit"
         disabled={loading}
-        className="btn-pill-primary portal-btn w-full !py-3 disabled:opacity-60"
+        className="btn-pill-primary w-full !py-2.5 disabled:opacity-60"
       >
         {loading ? "Wird gesendet…" : "Link senden"}
       </button>
-      <p className="portal-text-body text-center">
-        <Link href="/portal/login" className="text-accent hover:underline">
-          Zurück zum Login
-        </Link>
-      </p>
     </form>
   );
 }

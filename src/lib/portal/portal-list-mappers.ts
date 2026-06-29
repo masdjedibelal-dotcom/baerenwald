@@ -17,6 +17,7 @@ export type PortalCardRow = {
   accent: PortalListCardAccent;
   meta: PortalListCardMeta[];
   footer?: ReactNode;
+  hint?: string;
   sortDate: number;
 };
 
@@ -54,6 +55,7 @@ export function mapKundeDetailToCard(
     accent,
     meta,
     footer: item.listFooter,
+    hint: item.needsAction ? "→ Angebot prüfen & annehmen" : undefined,
     sortDate: ts(item.date),
   };
 }
@@ -64,5 +66,19 @@ export function buildKundeCardRows(
 ): PortalCardRow[] {
   return items
     .map((item) => mapKundeDetailToCard(item, accent))
+    .sort((a, b) => b.sortDate - a.sortDate);
+}
+
+export function kundeVorgangAccent(item: KundePortalDetailItem): PortalListCardAccent {
+  if (item.isAuftragDetail) return "auftrag";
+  if (item.isAngebotDetail) return "angebot";
+  return "anfrage";
+}
+
+export function buildKundeVorgangCardRows(
+  items: KundePortalDetailItem[]
+): PortalCardRow[] {
+  return items
+    .map((item) => mapKundeDetailToCard(item, kundeVorgangAccent(item)))
     .sort((a, b) => b.sortDate - a.sortDate);
 }

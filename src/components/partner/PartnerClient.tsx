@@ -4,7 +4,6 @@ import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
-  Briefcase,
   CalendarDays,
   ClipboardList,
   LayoutDashboard,
@@ -18,11 +17,9 @@ import {
 import { OnboardingTour } from "@/components/onboarding/OnboardingTour";
 import "@/components/onboarding/onboarding.css";
 import { PartnerNotificationBell } from "@/components/partner/PartnerNotificationBell";
-import { PartnerOffenDetail } from "@/components/partner/PartnerOffenDetail";
 import { PartnerPlanerPanel } from "@/components/partner/PartnerPlanerPanel";
 import { PartnerProfilPanel } from "@/components/partner/PartnerProfilPanel";
-import { PartnerAuftragAnfrageDetail } from "@/components/partner/PartnerAuftragAnfrageDetail";
-import { PartnerAuftragDetail } from "@/components/partner/PartnerAuftragDetail";
+import { VorgangCard } from "@/components/partner/VorgangCard";
 import { PartnerListCard } from "@/components/partner/PartnerListCard";
 import { PortalMobileBottomSheet } from "@/components/shared/PortalMobileBottomSheet";
 import {
@@ -45,11 +42,11 @@ import type {
   PartnerTerminItem,
   PartnerAufgabeItem,
   PartnerTodoItem,
+  PartnerVorgangItem,
 } from "@/lib/partner/get-partner-data";
-import type { PartnerOffenItem } from "@/lib/partner/partner-offen-status";
+import { countPartnerVorgaengeFilter } from "@/lib/partner/build-partner-vorgaenge";
 import {
-  buildOffenCardRows,
-  mapAuftragToCard,
+  buildVorgangCardRows,
   partnerAngebotStatusPillClass,
   type PartnerCardRow,
 } from "@/lib/partner/partner-list-mappers";
@@ -57,23 +54,22 @@ import {
   formatHandwerkerBewertung,
   HANDWERKER_BEWERTUNG_KATEGORIEN,
 } from "@/lib/partner/handwerker-bewertung-display";
-import {
-  countPartnerAuftraegeFilter,
-  isPartnerAuftragListItemAktiv,
-  PARTNER_AUFTRAG_LIST_FILTER_LABELS,
-  type PartnerAuftragListFilterId,
-} from "@/lib/partner/partner-list-filters";
+import type { VorgangFilter } from "@/lib/partner/vorgang-state";
 import { cn } from "@/lib/utils";
-import { partnerOffenPortalPath, partnerSectionListPath } from "@/lib/partner/partner-site-url";
+import { partnerSectionListPath, partnerVorgangPortalPath } from "@/lib/partner/partner-site-url";
 
 type PartnerSection =
   | "uebersicht"
   | "profil"
   | "planer"
-  | "offen"
-  | "auftraege"
+  | "vorgaenge"
   | "gpt";
-type OverviewTabId = "offen" | "auftraege";
+type OverviewTabId = "vorgaenge";
+
+const VORGANG_FILTER_LABELS: Record<VorgangFilter, string> = {
+  offen: "Offen",
+  erledigt: "Erledigt",
+};
 
 const MENU_ITEMS: Array<{
   id: PartnerSection;
@@ -81,8 +77,7 @@ const MENU_ITEMS: Array<{
   icon: typeof LayoutDashboard;
 }> = [
   { id: "uebersicht", label: "Übersicht", icon: LayoutDashboard },
-  { id: "offen", label: "Offen", icon: ClipboardList },
-  { id: "auftraege", label: "Meine Aufträge", icon: Briefcase },
+  { id: "vorgaenge", label: "Vorgänge", icon: ClipboardList },
   { id: "gpt", label: "GPT", icon: MessagesSquare },
   { id: "planer", label: "Planer", icon: CalendarDays },
   { id: "profil", label: "Profil", icon: User },
@@ -90,20 +85,26 @@ const MENU_ITEMS: Array<{
 
 const MOBILE_NAV_ITEMS = [
   "uebersicht",
-  "offen",
-  "auftraege",
+  "vorgaenge",
   "planer",
   "profil",
 ] as const satisfies readonly PartnerSection[];
 
 function normalizeSectionFromUrl(raw: string | undefined): PartnerSection | null {
   if (!raw) return null;
-  if (raw === "anfragen" || raw === "angebote" || raw === "offen") return "offen";
+  if (
+    raw === "anfragen" ||
+    raw === "angebote" ||
+    raw === "offen" ||
+    raw === "auftraege"
+  ) {
+    return "vorgaenge";
+  }
   if (
     raw === "uebersicht" ||
     raw === "profil" ||
     raw === "planer" ||
-    raw === "auftraege" ||
+    raw === "vorgaenge" ||
     raw === "gpt"
   ) {
     return raw;
@@ -112,52 +113,25 @@ function normalizeSectionFromUrl(raw: string | undefined): PartnerSection | null
 }
 
 function isPartnerListSection(section: PartnerSection): boolean {
-  return section === "offen" || section === "auftraege";
+  return section === "vorgaenge";
 }
 
-function statusPillClass(status: string): string {
-  const s = status.toLowerCase();
-  if (s === "akzeptiert" || s === "eingereicht" || s === "abgeschlossen") {
-    return "tag bg-emerald-100 text-emerald-700";
-  }
-  if (s === "abgelehnt" || s === "storniert") return "tag bg-red-100 text-red-700";
-  if (s === "antwort_abgelaufen") return "tag bg-red-100 text-red-700";
-  if (s === "in_arbeit") return "tag bg-blue-100 text-blue-800";
-  return "tag bg-amber-100 text-amber-700";
+function emptyLabelForTab(_tab: OverviewTabId): string {
+  return "Keine offenen Vorgänge";
 }
 
-function isAuftragAktiv(a: PartnerAuftragItem): boolean {
-  const s = a.status.toLowerCase();
-  return s !== "abgeschlossen" && s !== "storniert";
-}
-
-function parseAnfragenSelectedId(
-  selectedId: string | null
-): { kind: "angebot"; id: string } | { kind: "auftrag"; id: string } | null {
-  if (!selectedId) return null;
-  if (selectedId.startsWith("auftrag:")) {
-    return { kind: "auftrag", id: selectedId.slice("auftrag:".length) };
-  }
-  return { kind: "angebot", id: selectedId };
-}
-
-function emptyLabelForTab(tab: OverviewTabId): string {
-  if (tab === "offen") return "Keine offenen Bestätigungen";
-  return "Keine Aufträge in Bearbeitung";
-}
-
-function PartnerAuftragListFilterBar({
+function PartnerVorgangListFilterBar({
   filter,
   onFilterChange,
   counts,
 }: {
-  filter: PartnerAuftragListFilterId;
-  onFilterChange: (filter: PartnerAuftragListFilterId) => void;
-  counts: Record<PartnerAuftragListFilterId, number>;
+  filter: VorgangFilter;
+  onFilterChange: (filter: VorgangFilter) => void;
+  counts: Record<VorgangFilter, number>;
 }) {
   return (
     <div className="flex flex-wrap gap-2 border-b border-border-default px-3 py-3 sm:px-4">
-      {(["aktiv", "erledigt"] as const).map((id) => (
+      {(["offen", "erledigt"] as const).map((id) => (
         <button
           key={id}
           type="button"
@@ -169,7 +143,7 @@ function PartnerAuftragListFilterBar({
               : "bg-muted text-text-secondary"
           )}
         >
-          {PARTNER_AUFTRAG_LIST_FILTER_LABELS[id]}
+          {VORGANG_FILTER_LABELS[id]}
           <span className="ml-1.5 text-text-tertiary">({counts[id]})</span>
         </button>
       ))}
@@ -187,7 +161,8 @@ export function PartnerClient({
   angeboteAlleAkzeptiert: _angeboteAlleAkzeptiert,
   auftragAnfragen,
   auftraege,
-  offen,
+  vorgaenge,
+  offen: _offen,
 }: {
   handwerker: PartnerHandwerkerProfil;
   profil: PartnerProfilKontext;
@@ -195,23 +170,25 @@ export function PartnerClient({
   aufgaben: PartnerAufgabeItem[];
   /** @deprecated Eigene Todos entfallen zugunsten systemischer Aufgaben */
   todos?: PartnerTodoItem[];
-  /** @deprecated Legacy-Listen — Tab Offen nutzt `offen`. */
+  /** @deprecated Legacy-Listen — Tab Vorgänge nutzt `vorgaenge`. */
   anfragen: PartnerAnfrageItem[];
-  /** @deprecated Legacy-Listen — Tab Offen nutzt `offen`. */
+  /** @deprecated Legacy-Listen — Tab Vorgänge nutzt `vorgaenge`. */
   angebote: PartnerAnfrageItem[];
   /** Alle akzeptierten HW-Angebote inkl. übernommen (Deep-Link). */
   angeboteAlleAkzeptiert: PartnerAnfrageItem[];
-  /** Offene Bestätigungen (Anfragen + Angebote vereint). */
-  offen: PartnerOffenItem[];
-  /** Auftrag mit status offen / HW noch ausstehend (Server-Filter). */
+  /** @deprecated — ersetzt durch `vorgaenge`. */
+  offen?: unknown[];
+  /** Planer-Termine (Legacy-Split). */
   auftragAnfragen: PartnerAuftragItem[];
-  /** Laufende Aufträge (Server-Filter). */
+  /** Planer-Termine (Legacy-Split). */
   auftraege: PartnerAuftragItem[];
+  /** Vereinheitlichte Vorgänge-Liste (ein Tab). */
+  vorgaenge: PartnerVorgangItem[];
 }) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [section, setSection] = useState<PartnerSection>("uebersicht");
-  const [overviewTab, setOverviewTab] = useState<OverviewTabId>("offen");
+  const [overviewTab, setOverviewTab] = useState<OverviewTabId>("vorgaenge");
   const [overviewPage, setOverviewPage] = useState(1);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [mobileDetailOpen, setMobileDetailOpen] = useState(false);
@@ -227,44 +204,26 @@ export function PartnerClient({
   }, []);
   const [bewertungExpanded, setBewertungExpanded] = useState(false);
   const [listPage, setListPage] = useState(1);
-  const [auftragListFilter, setAuftragListFilter] =
-    useState<PartnerAuftragListFilterId>("aktiv");
+  const [vorgangListFilter, setVorgangListFilter] =
+    useState<VorgangFilter>("offen");
 
   const vorname = handwerker.vorname || "Partner";
 
-  const offenCount = offen.length;
+  const vorgaengeOffenCount = countPartnerVorgaengeFilter(vorgaenge).offen;
 
-  const offenCardRows = useMemo(() => buildOffenCardRows(offen), [offen]);
-
-  const aktiveAuftraegeCount = auftraege.filter(isAuftragAktiv).length;
-
-  const listFilterEffective: PartnerAuftragListFilterId =
-    section === "auftraege" ? auftragListFilter : "aktiv";
+  const vorgangFilterEffective: VorgangFilter =
+    section === "vorgaenge" ? vorgangListFilter : "offen";
 
   const sectionCardRows = useMemo((): PartnerCardRow[] => {
-    if (section === "offen") {
-      return offenCardRows;
-    }
-    if (section === "auftraege") {
-      const items = [...auftraege]
-        .sort(
-          (a, b) =>
-            new Date(b.start_datum || 0).getTime() -
-            new Date(a.start_datum || 0).getTime()
-        )
-        .filter((a) =>
-          listFilterEffective === "aktiv"
-            ? isPartnerAuftragListItemAktiv(a)
-            : !isPartnerAuftragListItemAktiv(a)
-        );
-      return items.map(mapAuftragToCard);
+    if (section === "vorgaenge") {
+      return buildVorgangCardRows(vorgaenge, vorgangFilterEffective);
     }
     return [];
-  }, [section, listFilterEffective, offenCardRows, auftraege]);
+  }, [section, vorgangFilterEffective, vorgaenge]);
 
-  const auftragListFilterCounts = useMemo(
-    () => countPartnerAuftraegeFilter(auftraege),
-    [auftraege]
+  const vorgangListFilterCounts = useMemo(
+    () => countPartnerVorgaengeFilter(vorgaenge),
+    [vorgaenge]
   );
 
   const listTotalPages = Math.max(
@@ -277,12 +236,11 @@ export function PartnerClient({
     safeListPage * PARTNER_LIST_PAGE_SIZE
   );
 
-  const listItemLabel =
-    section === "offen" ? "Offen" : section === "auftraege" ? "Aufträge" : "";
+  const listItemLabel = section === "vorgaenge" ? "Vorgänge" : "";
 
   useEffect(() => {
     setListPage(1);
-  }, [section, auftragListFilter]);
+  }, [section, vorgangListFilter]);
 
   useEffect(() => {
     if (!isPartnerListSection(section)) {
@@ -301,18 +259,8 @@ export function PartnerClient({
   }, [section, sectionCardRows, selectedId]);
 
   const overviewCardRows = useMemo((): PartnerCardRow[] => {
-    if (overviewTab === "offen") {
-      return offenCardRows;
-    }
-    return [...auftraege]
-      .sort(
-        (a, b) =>
-          new Date(b.start_datum || 0).getTime() -
-          new Date(a.start_datum || 0).getTime()
-      )
-      .filter(isPartnerAuftragListItemAktiv)
-      .map(mapAuftragToCard);
-  }, [overviewTab, offenCardRows, auftraege]);
+    return buildVorgangCardRows(vorgaenge, "offen");
+  }, [vorgaenge]);
 
   const overviewTotalPages = Math.max(
     1,
@@ -327,28 +275,6 @@ export function PartnerClient({
   useEffect(() => {
     setOverviewPage(1);
   }, [overviewTab]);
-
-  const selectedOffenAngebot = useMemo(() => {
-    if (section !== "offen" || !selectedId || selectedId.startsWith("auftrag:")) {
-      return undefined;
-    }
-    const entry = offen.find((e) => e.kind === "angebot" && e.item.id === selectedId);
-    return entry?.kind === "angebot" ? entry.item : undefined;
-  }, [offen, section, selectedId]);
-
-  const selectedOffenAuftrag = useMemo(() => {
-    if (section !== "offen" || !selectedId) return undefined;
-    const parsed = parseAnfragenSelectedId(selectedId);
-    const auftragId =
-      parsed?.kind === "auftrag"
-        ? parsed.id
-        : selectedId.startsWith("auftrag:")
-          ? selectedId.slice("auftrag:".length)
-          : null;
-    if (!auftragId) return undefined;
-    const entry = offen.find((e) => e.kind === "auftrag" && e.item.id === auftragId);
-    return entry?.kind === "auftrag" ? entry.item : undefined;
-  }, [offen, section, selectedId]);
 
   useEffect(() => {
     if (ignoreUrlDetailRef.current) {
@@ -383,27 +309,22 @@ export function PartnerClient({
     const normalized = normalizeSectionFromUrl(rawSection);
     if (!normalized) return;
 
-    if (normalized === "auftraege") {
-      const auftragId =
-        searchParams.get("auftrag")?.trim() || searchParams.get("id")?.trim();
-      if (!auftragId || auftragId.startsWith("auftrag:")) return;
-      setSection("auftraege");
-      if (auftraege.some((a) => a.id === auftragId)) {
-        setSelectedId(auftragId);
-        setMobileDetailOpen(true);
+    if (normalized === "vorgaenge") {
+      const filterRaw = searchParams.get("filter")?.trim();
+      if (filterRaw === "erledigt") {
+        setVorgangListFilter("erledigt");
+      } else if (filterRaw === "offen") {
+        setVorgangListFilter("offen");
       }
-      return;
-    }
 
-    if (normalized === "offen") {
-      const rawId = searchParams.get("id")?.trim();
-      setSection("offen");
+      const rawId = searchParams.get("id")?.trim() || searchParams.get("auftrag")?.trim();
+      setSection("vorgaenge");
 
-      if (rawSection === "anfragen" || rawSection === "angebote") {
+      if (rawSection === "anfragen" || rawSection === "angebote" || rawSection === "offen") {
         if (rawId) {
-          router.replace(partnerOffenPortalPath(rawId));
+          router.replace(partnerVorgangPortalPath(rawId.replace(/^auftrag:/, "")));
         } else {
-          router.replace(partnerSectionListPath("offen"));
+          router.replace(partnerSectionListPath("vorgaenge"));
         }
       }
 
@@ -413,43 +334,32 @@ export function PartnerClient({
         return;
       }
 
-      const auftragIdFromParam = rawId.startsWith("auftrag:")
+      const vorgangId = rawId.startsWith("auftrag:")
         ? rawId.slice("auftrag:".length)
         : rawId;
 
-      const inOffen =
-        offen.some(
-          (e) =>
-            (e.kind === "angebot" && e.item.id === rawId) ||
-            (e.kind === "auftrag" && e.item.id === auftragIdFromParam)
-        ) ||
-        offen.some(
-          (e) => e.kind === "auftrag" && e.item.id === rawId
-        );
+      const match =
+        vorgaenge.find((v) => v.id === vorgangId) ??
+        vorgaenge.find((v) => v.anfrage?.id === vorgangId);
 
-      if (inOffen) {
-        setSelectedId(rawId.startsWith("auftrag:") ? rawId : rawId);
+      if (match) {
+        setSelectedId(match.id);
         setMobileDetailOpen(true);
         return;
       }
 
-      if (auftraege.some((a) => a.id === auftragIdFromParam)) {
-        setSection("auftraege");
-        setSelectedId(auftragIdFromParam);
-        setMobileDetailOpen(true);
-        router.replace(`/partner?section=auftraege&auftrag=${encodeURIComponent(auftragIdFromParam)}`);
-        return;
-      }
-
-      setSelectedId(rawId);
+      setSelectedId(vorgangId);
       setMobileDetailOpen(true);
     }
-  }, [searchParams, auftraege, offen, router]);
+  }, [searchParams, vorgaenge, router]);
 
-  const selectedAuftrag = useMemo(() => {
+  const selectedVorgang = useMemo(() => {
     if (!selectedId) return undefined;
-    return auftraege.find((a) => a.id === selectedId);
-  }, [auftraege, selectedId]);
+    return (
+      vorgaenge.find((v) => v.id === selectedId) ??
+      vorgaenge.find((v) => v.anfrage?.id === selectedId)
+    );
+  }, [vorgaenge, selectedId]);
 
   function navigateFromPlaner(
     target: PartnerPlanerSection,
@@ -457,39 +367,29 @@ export function PartnerClient({
   ) {
     setSection(target);
     setListPage(1);
-    setAuftragListFilter("aktiv");
+    setVorgangListFilter("offen");
     if (selectedId) {
-      setSelectedId(selectedId);
+      const id = selectedId.replace(/^auftrag:/, "");
+      setSelectedId(id);
       if (target !== "profil") setMobileDetailOpen(true);
     }
   }
 
-  function refreshOffenAfterConfirm(anfrageId: string) {
-    const id = anfrageId.trim();
-    if (!id) return;
-    setSection("auftraege");
+  function refreshVorgangAfterConfirm(id: string) {
+    const vorgangId = id.trim();
+    if (!vorgangId) return;
+    setSection("vorgaenge");
     setListPage(1);
-    setAuftragListFilter("aktiv");
+    setVorgangListFilter("offen");
     setSelectedId(null);
     setMobileDetailOpen(false);
-    router.replace(partnerSectionListPath("auftraege"));
-    router.refresh();
-  }
-
-  function refreshOffenDetail(anfrageId: string) {
-    const id = anfrageId.trim();
-    if (!id) return;
-    setSection("offen");
-    setListPage(1);
-    setSelectedId(id);
-    setMobileDetailOpen(true);
-    router.replace(partnerOffenPortalPath(id));
+    router.replace(partnerSectionListPath("vorgaenge"));
     router.refresh();
   }
 
   function switchSection(id: PartnerSection) {
     setListPage(1);
-    setAuftragListFilter("aktiv");
+    setVorgangListFilter("offen");
     setMobileDetailOpen(false);
     if (id !== "gpt") setGptOpen(false);
     if (id === "uebersicht" || id === "gpt" || id === "profil" || id === "planer") {
@@ -498,29 +398,25 @@ export function PartnerClient({
       return;
     }
     setSection(id);
-    if (id === "offen" || id === "auftraege") {
+    if (id === "vorgaenge") {
       ignoreUrlDetailRef.current = true;
       setSelectedId(null);
-      router.replace(partnerSectionListPath(id));
+      router.replace(partnerSectionListPath("vorgaenge"));
     }
   }
 
-  function openFromOverview(tab: OverviewTabId, id: string) {
+  function openFromOverview(_tab: OverviewTabId, id: string) {
     setSelectedId(id);
-    setSection(tab === "offen" ? "offen" : "auftraege");
+    setSection("vorgaenge");
     setMobileDetailOpen(true);
-    if (tab === "offen") {
-      router.replace(`/partner?section=offen&id=${encodeURIComponent(id)}`);
-    }
+    router.replace(partnerVorgangPortalPath(id));
   }
 
   function selectRow(id: string) {
     setSelectedId(id);
     setMobileDetailOpen(true);
-    if (section === "offen") {
-      router.replace(
-        `/partner?section=offen&id=${encodeURIComponent(id)}`
-      );
+    if (section === "vorgaenge") {
+      router.replace(partnerVorgangPortalPath(id));
     }
   }
 
@@ -530,21 +426,13 @@ export function PartnerClient({
   )}`;
 
   const emptyMessage = (() => {
-    if (section === "offen") {
-      if (offen.length === 0) {
-        return "Keine offenen Bestätigungen — du wirst per E-Mail benachrichtigt, sobald Bärenwald dich einbindet.";
-      }
-      return "Keine offenen Bestätigungen.";
+    if (section !== "vorgaenge") return "";
+    if (vorgaenge.length === 0) {
+      return "Keine Vorgänge — du wirst per E-Mail benachrichtigt, sobald Bärenwald dich einbindet.";
     }
-    if (section === "auftraege") {
-      if (auftraege.length === 0) {
-        return "Keine Aufträge — sie erscheinen, sobald ein Projekt für dich freigegeben ist.";
-      }
-      return listFilterEffective === "aktiv"
-        ? "Keine Aufträge in Ausführung."
-        : "Keine erledigten Aufträge.";
-    }
-    return "";
+    return vorgangFilterEffective === "offen"
+      ? "Keine offenen Vorgänge."
+      : "Keine erledigten Vorgänge.";
   })();
 
   const sectionListEmpty = sectionCardRows.length === 0;
@@ -557,11 +445,7 @@ export function PartnerClient({
         showLeftAccent={false}
         title={row.title}
         statusLabel={row.statusLabel}
-        statusPillClass={
-          tab === "offen" || tab === "auftraege"
-            ? partnerAngebotStatusPillClass(row.statusPillKey)
-            : statusPillClass(row.statusPillKey)
-        }
+        statusPillClass={partnerAngebotStatusPillClass(row.statusPillKey)}
         meta={row.meta}
         hint={row.hint}
         onClick={() => openFromOverview(tab, row.id)}
@@ -578,11 +462,7 @@ export function PartnerClient({
         title={row.title}
         subtitle={row.subtitle}
         statusLabel={row.statusLabel}
-        statusPillClass={
-          section === "offen"
-            ? partnerAngebotStatusPillClass(row.statusPillKey)
-            : statusPillClass(row.statusPillKey)
-        }
+        statusPillClass={partnerAngebotStatusPillClass(row.statusPillKey)}
         meta={row.meta}
         hint={row.hint}
         selected={selectedId === row.id}
@@ -592,31 +472,20 @@ export function PartnerClient({
   }
 
   const detailPanel = (() => {
-    if (section === "offen" && selectedOffenAuftrag && !selectedOffenAngebot) {
+    if (section === "vorgaenge" && selectedVorgang) {
       return (
-        <PartnerAuftragAnfrageDetail
-          item={selectedOffenAuftrag}
-          onAccepted={refreshOffenAfterConfirm}
+        <VorgangCard
+          vorgang={selectedVorgang}
+          onUpdated={refreshVorgangAfterConfirm}
         />
       );
     }
-    if (section === "offen" && selectedOffenAngebot) {
-      return (
-        <PartnerOffenDetail
-          item={selectedOffenAngebot}
-          onConfirmed={refreshOffenAfterConfirm}
-        />
-      );
-    }
-    if (section === "offen" && selectedId) {
+    if (section === "vorgaenge" && selectedId) {
       return (
         <p className="portal-text-body text-text-secondary">
           Vorgang wird geladen …
         </p>
       );
-    }
-    if (section === "auftraege" && selectedAuftrag) {
-      return <PartnerAuftragDetail item={selectedAuftrag} />;
     }
     return <p className="portal-text-body text-text-secondary">Zeile auswählen.</p>;
   })();
@@ -674,11 +543,9 @@ export function PartnerClient({
                   <span className="portal-text-meta text-text-tertiary">
                     {id === "planer"
                       ? termine.length + aufgaben.length
-                      : id === "offen"
-                        ? offenCount
-                        : id === "auftraege"
-                          ? aktiveAuftraegeCount
-                          : ""}
+                      : id === "vorgaenge"
+                        ? vorgaengeOffenCount
+                        : ""}
                   </span>
                 </button>
               ))}
@@ -729,14 +596,14 @@ export function PartnerClient({
                 </p>
               </div>
 
-              <div className="grid min-w-0 grid-cols-3 gap-2">
+              <div className="grid min-w-0 grid-cols-2 gap-2">
                 <article className="portal-kpi-card">
-                  <p className="portal-kpi-label">Offen</p>
-                  <p className="portal-kpi-value">{offenCount}</p>
+                  <p className="portal-kpi-label">Vorgänge offen</p>
+                  <p className="portal-kpi-value">{vorgaengeOffenCount}</p>
                 </article>
                 <article className="portal-kpi-card">
-                  <p className="portal-kpi-label">Meine Aufträge</p>
-                  <p className="portal-kpi-value">{aktiveAuftraegeCount}</p>
+                  <p className="portal-kpi-label">Gesamt</p>
+                  <p className="portal-kpi-value">{vorgaenge.length}</p>
                 </article>
               </div>
 
@@ -840,35 +707,13 @@ export function PartnerClient({
 
               <article className="card-bordered p-4">
                 <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-                  <div className="flex gap-2">
-                    {(
-                      [
-                        ["offen", "Offen"],
-                        ["auftraege", "Meine Aufträge"],
-                      ] as const
-                    ).map(([id, label]) => (
-                      <button
-                        key={id}
-                        type="button"
-                        onClick={() => {
-                          setOverviewTab(id);
-                          setOverviewPage(1);
-                        }}
-                        className={cn(
-                          "rounded-full px-3 py-1.5 portal-text-meta font-semibold",
-                          overviewTab === id
-                            ? "bg-accent-light text-accent"
-                            : "bg-muted text-text-secondary"
-                        )}
-                      >
-                        {label}
-                      </button>
-                    ))}
-                  </div>
+                  <p className="portal-text-body font-semibold text-text-primary">
+                    Offene Vorgänge
+                  </p>
                   <button
                     type="button"
                     className="portal-text-body font-semibold text-accent"
-                    onClick={() => switchSection(overviewTab)}
+                    onClick={() => switchSection("vorgaenge")}
                   >
                     Alle anzeigen →
                   </button>
@@ -888,9 +733,7 @@ export function PartnerClient({
                 {overviewCardRows.length > PORTAL_OVERVIEW_PAGE_SIZE ? (
                   <PartnerListPagination
                     totalItems={overviewCardRows.length}
-                    itemLabel={
-                      overviewTab === "offen" ? "Offen" : "Aufträge"
-                    }
+                    itemLabel="Vorgänge"
                     currentPage={overviewSafePage}
                     totalPages={overviewTotalPages}
                     onPageChange={setOverviewPage}
@@ -947,11 +790,11 @@ export function PartnerClient({
           section !== "planer" ? (
             <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
               <article className="card-bordered overflow-hidden p-0">
-                {section === "auftraege" ? (
-                  <PartnerAuftragListFilterBar
-                    filter={auftragListFilter}
-                    onFilterChange={setAuftragListFilter}
-                    counts={auftragListFilterCounts}
+                {section === "vorgaenge" ? (
+                  <PartnerVorgangListFilterBar
+                    filter={vorgangListFilter}
+                    onFilterChange={setVorgangListFilter}
+                    counts={vorgangListFilterCounts}
                   />
                 ) : null}
                 <div className="space-y-2 p-3 sm:p-4">
@@ -988,14 +831,14 @@ export function PartnerClient({
         className="fixed inset-x-0 bottom-0 z-[90] border-t border-border-default bg-surface-card/95 backdrop-blur-sm lg:hidden"
         aria-label="Partner Navigation"
       >
-        <div className="grid w-full grid-cols-5 px-1 pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-1">
+        <div className="grid w-full grid-cols-4 px-1 pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-1">
           {MOBILE_NAV_ITEMS.map((id) => {
             const { label, icon: Icon } = MENU_ITEMS.find((m) => m.id === id)!;
             const badgeCount = portalNavBadgeCount(id, {
-              offen: offenCount,
+              vorgaenge: vorgaengeOffenCount,
               anfragen: 0,
               angebote: 0,
-              auftraege: aktiveAuftraegeCount,
+              auftraege: 0,
             });
             return (
               <button

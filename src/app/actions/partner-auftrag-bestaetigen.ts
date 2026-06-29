@@ -16,13 +16,13 @@ import {
   buildPartnerKonditionZeilen,
   hasPartnerKonditionenNachreichungAusstehend,
   parsePartnerHwKonditionen,
-  positionBrauchtHandwerkerAktion,
   resolveNachreichungOpenZeilenIds,
   type PartnerHwKonditionen,
 } from "@/lib/partner/partner-konditionen";
 import { buildPartnerAuftragKonditionZeilen } from "@/lib/partner/partner-leistungen-display";
 import { sendPartnerInternalAnfrageAntwortMail } from "@/lib/partner/partner-mail";
 import { syncAngebotHandwerkerAfterAuftragAccept } from "@/lib/partner/sync-angebot-handwerker";
+import { positionBrauchtVorgangAktion } from "@/lib/partner/vorgang-state";
 import { stripHtmlToPlainText } from "@/lib/portal/portal-display";
 import { createClient } from "@/lib/supabase/server";
 import { isSupabaseConfigured, supabaseAdmin } from "@/lib/supabase";
@@ -45,7 +45,7 @@ async function loadAuftragPositionen(
   const { data: rows } = await supabaseAdmin
     .from("auftrag_positionen")
     .select(
-      "id, gewerk_name, leistung_name, beschreibung, menge, einheit, start_datum, end_datum, preis_partner, lohn_fix, material_fix, handwerker_status"
+      "id, gewerk_name, leistung_name, beschreibung, menge, einheit, start_datum, end_datum, preis_partner, lohn_fix, material_fix, handwerker_status, aenderung_typ, preis_alt"
     )
     .eq("auftrag_id", auftragId)
     .eq("handwerker_id", handwerkerId);
@@ -68,6 +68,12 @@ async function loadAuftragPositionen(
       lohn_fix: raw.lohn_fix != null ? Number(raw.lohn_fix) : null,
       material_fix: raw.material_fix != null ? Number(raw.material_fix) : null,
       handwerker_status: (raw.handwerker_status as string | null) ?? null,
+      aenderung_typ: (() => {
+        const v = (raw.aenderung_typ as string | null)?.trim().toLowerCase();
+        if (v === "neu" || v === "geaendert" || v === "entfernt") return v;
+        return null;
+      })(),
+      preis_alt: raw.preis_alt != null ? Number(raw.preis_alt) : null,
     };
   });
 }
@@ -153,6 +159,7 @@ async function persistAcceptance(opts: {
   preisNetto: number;
   preisBrutto: number;
   openPositionIds: string[];
+  auftragPositionen?: PartnerAuftragPosition[];
   projektvertragNoetig: boolean;
   gelesen: boolean;
   verbindlich: boolean;
@@ -177,12 +184,29 @@ async function persistAcceptance(opts: {
   if (upErr) return { ok: false, error: upErr.message };
 
   if (opts.auftragId) {
+    await supabaseAdmin
+      .from("auftraege")
+      .update({ handwerker_bestaetigt_at: now })
+      .eq("id", opts.auftragId);
+
     for (const posId of opts.openPositionIds) {
+      const pos = opts.auftragPositionen?.find((p) => p.id === posId);
+      if (pos?.aenderung_typ === "entfernt") {
+        await supabaseAdmin
+          .from("auftrag_positionen")
+          .delete()
+          .eq("id", posId)
+          .eq("handwerker_id", opts.handwerkerId);
+        continue;
+      }
+
       await supabaseAdmin
         .from("auftrag_positionen")
         .update({
           handwerker_status: "akzeptiert",
           handwerker_angefragt_at: now,
+          aenderung_typ: null,
+          preis_alt: null,
         })
         .eq("id", posId)
         .eq("handwerker_id", opts.handwerkerId);
@@ -332,17 +356,34 @@ export async function confirmPartnerAuftrag(opts: {
   const openPositionIds = isNachreichung
     ? resolveNachreichungOpenZeilenIds(nachreichungKontext)
     : auftragPositionen
-        .filter((p) => positionBrauchtHandwerkerAktion(p.handwerker_status))
+        .filter((p) => positionBrauchtVorgangAktion(p))
         .map((p) => p.id);
+
+  const openKonditionIds = openPositionIds.filter((id) => {
+    const pos = auftragPositionen.find((p) => p.id === id);
+    return pos?.aenderung_typ !== "entfernt";
+  });
 
   let built: AcceptKonditionenResult;
 
   if (auftragPositionen.length && openPositionIds.length) {
-    built = buildAcceptKonditionen({
-      auftragPositionen,
-      openPositionIds,
-      existingHw: isNachreichung ? existingHw : null,
-    });
+    if (openKonditionIds.length) {
+      built = buildAcceptKonditionen({
+        auftragPositionen,
+        openPositionIds: openKonditionIds,
+        existingHw: isNachreichung ? existingHw : null,
+      });
+    } else if (existingHw?.positionen.length) {
+      built = {
+        ok: true,
+        konditionen: existingHw,
+        preisNetto: Number((row as { hw_preis_netto?: number | null }).hw_preis_netto ?? 0),
+        preisBrutto: Number((row as { hw_preis_brutto?: number | null }).hw_preis_brutto ?? 0),
+        openPositionIds,
+      };
+    } else {
+      return { ok: false, error: "Keine offenen Leistungen zum Annehmen." };
+    }
   } else if (!auftragPositionen.length) {
     const { data: angebotRow } = await supabaseAdmin
       .from("angebote")
@@ -404,6 +445,7 @@ export async function confirmPartnerAuftrag(opts: {
     preisNetto: built.preisNetto,
     preisBrutto: built.preisBrutto,
     openPositionIds: built.openPositionIds,
+    auftragPositionen,
     projektvertragNoetig,
     gelesen: opts.gelesen,
     verbindlich: opts.verbindlich,

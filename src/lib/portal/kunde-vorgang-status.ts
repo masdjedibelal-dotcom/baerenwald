@@ -48,6 +48,16 @@ function isAngebotBereit(status?: string | null): boolean {
   );
 }
 
+/** Kunde kann im Portal annehmen — nur bei „gesendet“, nicht nach Annahme. */
+function isAngebotWartetAufKunde(status?: string | null): boolean {
+  return normalizeStatus(status) === "gesendet";
+}
+
+function isAngebotVomKundenAngenommen(status?: string | null): boolean {
+  const s = normalizeStatus(status);
+  return s === "kunde_akzeptiert" || s === "angenommen";
+}
+
 export function resolveKundeVorgangStatus(input: {
   leadStatus?: string | null;
   angebotStatus?: string | null;
@@ -99,13 +109,23 @@ export function resolveKundeVorgangStatus(input: {
     };
   }
 
-  if (input.hasAngebotRecord && isAngebotBereit(input.angebotStatus)) {
+  if (input.hasAngebotRecord && isAngebotWartetAufKunde(input.angebotStatus)) {
     return {
       phase: "angebot_liegt_vor",
       label: LABELS.angebot_liegt_vor,
       pillKey: "angebot",
       sortPriority: 5,
       needsAction: true,
+    };
+  }
+
+  if (input.hasAngebotRecord && isAngebotVomKundenAngenommen(input.angebotStatus)) {
+    return {
+      phase: "angebot_wird_erstellt",
+      label: "Angebot angenommen",
+      pillKey: "angenommen",
+      sortPriority: 12,
+      needsAction: false,
     };
   }
 

@@ -18,11 +18,15 @@ import { cn } from "@/lib/utils";
 const ZEILEN_BADGE_LABEL: Record<NonNullable<PartnerKonditionZeile["zeilenBadge"]>, string> = {
   vereinbart: "Angenommen",
   neu: "Neu",
+  geaendert: "Geändert",
+  entfernt: "Entfernt",
 };
 
 const ZEILEN_BADGE_CLASS: Record<NonNullable<PartnerKonditionZeile["zeilenBadge"]>, string> = {
   vereinbart: "bg-emerald-100 text-emerald-700",
   neu: "bg-amber-100 text-amber-700",
+  geaendert: "bg-amber-100 text-amber-800",
+  entfernt: "bg-red-100 text-red-700",
 };
 
 const GRID_COLS = "sm:grid-cols-[1fr_11rem]";
@@ -94,7 +98,7 @@ export function PartnerLeistungenKonditionenCard({
   if (!zeilen.length) return null;
 
   const useHwForSum = true;
-  const sumZeilen = zeilen.map((z) => {
+  const sumZeilen = zeilen.filter((z) => z.zeilenBadge !== "entfernt").map((z) => {
     if (mode === "edit" && hwValues) {
       const raw = hwValues[z.id] ?? "";
       const n = raw.trim() ? Number(raw.replace(",", ".")) : null;
@@ -152,8 +156,12 @@ export function PartnerLeistungenKonditionenCard({
         <ul>
           {zeilen.map((z) => {
             const title = stripHtmlToPlainText(z.title) || z.title;
+            const isEntfernt = z.zeilenBadge === "entfernt";
             const geaendert =
-              mode === "readonly" ? z.geaendert : isZeileGeaendert(z, hwValues);
+              !isEntfernt &&
+              (mode === "readonly"
+                ? Boolean(z.geaendert) || z.zeilenBadge === "geaendert"
+                : isZeileGeaendert(z, hwValues));
             const preis = angebotspreis(z, mode, hwValues);
             const notiz = zeilenNotiz(z, mode, hwNotizen);
             const preisFolgt = preis === "Preis folgt";
@@ -163,14 +171,22 @@ export function PartnerLeistungenKonditionenCard({
                 key={z.id}
                 className={cn(
                   "border-b border-border-light px-4 py-3.5 last:border-b-0",
+                  isEntfernt && "bg-red-50/70",
                   geaendert && "bg-amber-50/60",
-                  z.readonly && "bg-muted/25"
+                  z.readonly && !isEntfernt && "bg-muted/25"
                 )}
               >
                 <div className={cn("grid gap-3 sm:items-start", GRID_COLS)}>
                   <div className="min-w-0">
                     <div className="flex flex-wrap items-center gap-2">
-                      <p className="font-medium text-text-primary">{title}</p>
+                      <p
+                        className={cn(
+                          "font-medium text-text-primary",
+                          isEntfernt && "line-through text-text-secondary"
+                        )}
+                      >
+                        {title}
+                      </p>
                       {z.zeilenBadge ? (
                         <span
                           className={cn(
@@ -187,6 +203,11 @@ export function PartnerLeistungenKonditionenCard({
                         {stripHtmlToPlainText(z.beschreibung)}
                       </p>
                     ) : null}
+                    {isEntfernt ? (
+                      <p className="portal-text-meta mt-1 text-red-700">
+                        Bärenwald entfernt diese Leistung — bitte bestätigen.
+                      </p>
+                    ) : null}
                   </div>
 
                   <div className="sm:text-right">
@@ -198,9 +219,11 @@ export function PartnerLeistungenKonditionenCard({
                         "mt-0.5 text-lg font-bold tabular-nums sm:text-right",
                         preisFolgt
                           ? "text-sm font-normal italic text-text-tertiary"
-                          : geaendert
-                            ? "text-amber-800"
-                            : "text-text-primary"
+                          : isEntfernt
+                            ? "text-text-tertiary line-through"
+                            : geaendert
+                              ? "text-amber-800"
+                              : "text-text-primary"
                       )}
                     >
                       {preis}
@@ -215,7 +238,7 @@ export function PartnerLeistungenKonditionenCard({
                         vorher {fmtPartnerEuro(z.vorherNetto)}
                       </p>
                     ) : null}
-                    {geaendert ? (
+                    {geaendert && z.zeilenBadge !== "geaendert" ? (
                       <span className="mt-0.5 block text-xs font-medium text-amber-700 sm:text-right">
                         Geändert
                       </span>

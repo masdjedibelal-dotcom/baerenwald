@@ -44,6 +44,10 @@ import {
   partnerLeistetBauleistung,
 } from "@/lib/partner/compliance-partner-profile";
 import { buildPartnerAufgaben, type PartnerAufgabeItem } from "@/lib/partner/build-partner-aufgaben";
+import {
+  buildPartnerVorgaenge,
+  type PartnerVorgangItem,
+} from "@/lib/partner/build-partner-vorgaenge";
 import { buildPartnerTermine, type PartnerTerminItem } from "@/lib/partner/build-partner-termine";
 import {
   applyRahmenvertragPortalAkzeptanz,
@@ -152,6 +156,9 @@ export type PartnerAuftragPosition = {
   material_fix?: number | null;
   /** CRM-Zuweisungsstatus dieser Leistung (z. B. angefragt nach Nachreichung). */
   handwerker_status?: string | null;
+  /** CRM-Änderungstyp — null nach HW-Bestätigung. */
+  aenderung_typ?: "neu" | "geaendert" | "entfernt" | null;
+  preis_alt?: number | null;
 };
 
 export type PartnerBautagebuchItem = {
@@ -191,6 +198,8 @@ export type PartnerAuftragItem = {
   angebotHwKonditionenArt?: "bestaetigt" | "gegenvorschlag" | null;
   /** CRM-Bewertung nach Abschluss (read-only). */
   bewertung?: PartnerAuftragBewertung | null;
+  /** Verbindliche HW-Annahme auf Auftragsebene. */
+  handwerker_bestaetigt_at?: string | null;
   projektvertrag_bestaetigt_am?: string | null;
   vertrag?: PartnerVertragKontext | null;
   /** Offene CRM-Anforderung für Bautagebuch-Eintrag. */
@@ -249,7 +258,7 @@ export type PartnerBautagebuchAnfrageItem = {
   created_at: string;
 };
 
-export type { PartnerAufgabeItem, PartnerTerminItem };
+export type { PartnerAufgabeItem, PartnerTerminItem, PartnerVorgangItem };
 
 function one<T>(x: T | T[] | null | undefined): T | null {
   if (x == null) return null;
@@ -478,6 +487,7 @@ export async function getPartnerDataForHandwerker(handwerkerId: string) {
         fortschritt,
         start_datum,
         end_datum,
+        handwerker_bestaetigt_at,
         kunden(plz, ort, name),
         leads(${PARTNER_LEAD_EMBED}),
         angebote(kunde_objekt_id),
@@ -494,7 +504,9 @@ export async function getPartnerDataForHandwerker(handwerkerId: string) {
           end_datum,
           preis_partner,
           lohn_fix,
-          material_fix
+          material_fix,
+          aenderung_typ,
+          preis_alt
         )
       `
       )
@@ -616,6 +628,14 @@ export async function getPartnerDataForHandwerker(handwerkerId: string) {
         lohn_fix: p.lohn_fix != null ? Number(p.lohn_fix) : null,
         material_fix: p.material_fix != null ? Number(p.material_fix) : null,
         handwerker_status: (p.handwerker_status as string | null) ?? null,
+        aenderung_typ: (() => {
+          const raw = (p.aenderung_typ as string | null)?.trim().toLowerCase();
+          if (raw === "neu" || raw === "geaendert" || raw === "entfernt") {
+            return raw as "neu" | "geaendert" | "entfernt";
+          }
+          return null;
+        })(),
+        preis_alt: p.preis_alt != null ? Number(p.preis_alt) : null,
       }));
 
       const aid = String(raw.id);
@@ -666,6 +686,8 @@ export async function getPartnerDataForHandwerker(handwerkerId: string) {
         portalPhase,
         hwStatus,
         bewertung: bewertungByAuftragId.get(aid) ?? null,
+        handwerker_bestaetigt_at:
+          (raw.handwerker_bestaetigt_at as string | null)?.slice(0, 19) ?? null,
       };
     });
   }
@@ -887,6 +909,13 @@ export async function getPartnerDataForHandwerker(handwerkerId: string) {
     bautagebuchAnfrageOffen: bautagebuchAnfrageAuftragIds.has(item.id),
   });
 
+  const alleAuftraegeMitMeta = alleAuftraege.map(markBautagebuchAnfrage);
+
+  const vorgaenge = buildPartnerVorgaenge({
+    alleAuftraege: alleAuftraegeMitMeta,
+    anfragen: anfragenAngebot,
+  });
+
   const auftragAnfragen = auftragAnfragenListe.map(markBautagebuchAnfrage);
   const auftraege = auftraegeListe.map(markBautagebuchAnfrage);
 
@@ -906,8 +935,7 @@ export async function getPartnerDataForHandwerker(handwerkerId: string) {
   });
 
   const aufgaben = buildPartnerAufgaben({
-    offen,
-    auftraege,
+    vorgaenge,
     bautagebuchAnfragen,
     offeneLeistungsunterlagen: offeneLeistungsunterlagen,
   });
@@ -951,6 +979,7 @@ export async function getPartnerDataForHandwerker(handwerkerId: string) {
     angebote,
     angeboteAlleAkzeptiert,
     offen,
+    vorgaenge,
     auftragAnfragen,
     auftraege,
   };

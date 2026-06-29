@@ -136,11 +136,23 @@ export function PartnerOffenDetail({
 
   const heroMeta = partnerDetailDateMetaLine(item.gesendet_at ?? item.antwort_at);
 
-  const infoText = isNachreichung
-    ? "Bärenwald hat zusätzliche Leistungen festgelegt — bitte prüfen und annehmen oder ablehnen."
-    : hatAuftrag
-      ? "Bitte Leistungen und Projektvertrag prüfen — dann annehmen."
-      : "Bitte Leistungen prüfen und die Anfrage verbindlich annehmen.";
+  const infoText = useMemo(() => {
+    if (!isNachreichung) {
+      return hatAuftrag
+        ? "Bitte Leistungen und Projektvertrag prüfen — dann annehmen."
+        : "Bitte Leistungen prüfen und die Anfrage verbindlich annehmen.";
+    }
+    const openIds = openPositionIds ?? [];
+    const openPos =
+      item.crm_auftrag_positionen?.filter((p) => openIds.includes(p.id)) ?? [];
+    if (openPos.some((p) => p.aenderung_typ === "entfernt")) {
+      return "Bärenwald hat Leistungen angepasst — bitte Änderungen und Entfernungen bestätigen.";
+    }
+    if (openPos.some((p) => p.aenderung_typ === "geaendert")) {
+      return "Bärenwald hat Preise oder Leistungen geändert — bitte prüfen und annehmen.";
+    }
+    return "Bärenwald hat zusätzliche Leistungen festgelegt — bitte prüfen und annehmen oder ablehnen.";
+  }, [isNachreichung, hatAuftrag, openPositionIds, item.crm_auftrag_positionen]);
 
   const primaryLabel = isNachreichung ? "Ergänzung annehmen" : "Annehmen";
 

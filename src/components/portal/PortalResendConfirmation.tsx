@@ -2,84 +2,72 @@
 
 import { useState } from "react";
 
-import { portalAuthCallbackUrl } from "@/lib/portal/portal-auth-url";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
+import { cn } from "@/lib/utils";
 
-type Props = {
-  /** Vorausgefüllte E-Mail (z. B. von Login-Formular) */
+export function PortalResendConfirmation({
+  defaultEmail = "",
+  className,
+}: {
   defaultEmail?: string;
   className?: string;
-};
-
-export function PortalResendConfirmation({ defaultEmail = "", className }: Props) {
+}) {
   const [email, setEmail] = useState(defaultEmail);
   const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState<string | null>(null);
+  const [sent, setSent] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  async function onResend(e: React.FormEvent) {
-    e.preventDefault();
+  async function resend() {
     const trimmed = email.trim();
-    if (!trimmed) return;
-
+    if (!trimmed.includes("@")) {
+      setError("Bitte gib deine E-Mail ein.");
+      return;
+    }
     setLoading(true);
-    setMessage(null);
     setError(null);
-
     const supabase = getSupabaseBrowserClient();
     const { error: resendError } = await supabase.auth.resend({
       type: "signup",
       email: trimmed,
-      options: { emailRedirectTo: portalAuthCallbackUrl() },
     });
-
     setLoading(false);
-
     if (resendError) {
-      const msg = resendError.message.toLowerCase();
-      if (msg.includes("rate limit") || msg.includes("too many")) {
-        setError(
-          "Zu viele Versuche — bitte in ein paar Minuten erneut versuchen oder uns anrufen."
-        );
-      } else {
-        setError(resendError.message);
-      }
+      setError("Link konnte nicht gesendet werden. Bitte später erneut versuchen.");
       return;
     }
+    setSent(true);
+  }
 
-    setMessage(
-      "Wenn ein unbestätigtes Konto mit dieser E-Mail existiert, haben wir dir einen neuen Link geschickt. Bitte auch den Spam-Ordner prüfen."
+  if (sent) {
+    return (
+      <p className={cn("portal-text-body text-emerald-800", className)}>
+        Bestätigungslink wurde erneut gesendet.
+      </p>
     );
   }
 
   return (
-    <form onSubmit={onResend} className={className ?? "space-y-2"}>
-      <p className="portal-form-label">
-        Bestätigungsmail erneut senden
-      </p>
-      <div className="flex flex-col gap-2 sm:flex-row">
+    <div className={cn("space-y-2", className)}>
+      <label className="block space-y-1">
+        <span className="portal-form-label">E-Mail für erneuten Link</span>
         <input
           type="email"
-          required
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          placeholder="deine@email.de"
-          className="min-w-0 flex-1 portal-input rounded-xl border border-border-default bg-surface-card px-3 py-3 focus:border-accent"
+          className="portal-input w-full rounded-xl border border-border-default bg-surface-card px-3 py-2.5"
         />
-        <button
-          type="submit"
-          disabled={loading}
-          className="shrink-0 rounded-xl border border-border-default bg-surface-card portal-text-body px-3 py-2.5 font-medium text-text-primary hover:bg-surface-muted disabled:opacity-60"
-        >
-          {loading ? "Sende…" : "Erneut senden"}
-        </button>
-      </div>
-      {message ? (
-        <p className="rounded-lg bg-green-50 px-3 py-2 portal-text-meta text-green-900">{message}</p>
-      ) : null}
+      </label>
       {error ? (
-        <p className="rounded-lg bg-red-50 px-3 py-2 portal-text-meta text-red-800">{error}</p>
+        <p className="portal-text-meta text-red-700">{error}</p>
       ) : null}
-    </form>
+      <button
+        type="button"
+        disabled={loading}
+        onClick={resend}
+        className="btn-pill-outline w-full !py-2.5 disabled:opacity-60"
+      >
+        {loading ? "Wird gesendet…" : "Bestätigungslink erneut senden"}
+      </button>
+    </div>
   );
 }

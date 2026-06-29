@@ -37,12 +37,12 @@ export function resolveZuweisungPortalUrl(input: ZuweisungPortalLinkInput): stri
   if (portalPhase === "anfrage" && !HW_BEANTWORTET.has(hwStatus.toLowerCase())) {
     const ah = input.angebotHandwerker;
     if (ah?.id && !ah.bestaetigt_at) {
-      return `${partnerDashboardUrl()}?section=offen&id=${encodeURIComponent(ah.id)}`;
+      return `${partnerDashboardUrl()}?section=vorgaenge&id=${encodeURIComponent(ah.id)}`;
     }
     return partnerAuftragAnfragePortalUrl(input.auftragId);
   }
 
-  return `${partnerDashboardUrl()}?section=auftraege&id=${encodeURIComponent(input.auftragId)}`;
+  return `${partnerDashboardUrl()}?section=vorgaenge&id=${encodeURIComponent(input.auftragId)}`;
 }
 
 export function resolveAngebotHandwerkerPortalUrl(anfrageId: string): string {

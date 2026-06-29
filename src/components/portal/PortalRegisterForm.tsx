@@ -1,116 +1,59 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
 
-import { PortalResendConfirmation } from "@/components/portal/PortalResendConfirmation";
 import { portalAuthCallbackUrl } from "@/lib/portal/portal-auth-url";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 
 export function PortalRegisterForm() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const next = searchParams.get("next") || "/portal";
+
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
-  const [telefon, setTelefon] = useState("");
   const [password, setPassword] = useState("");
   const [datenschutz, setDatenschutz] = useState(false);
-  const [agb, setAgb] = useState(false);
-  const [datenschutzError, setDatenschutzError] = useState(false);
-  const [agbError, setAgbError] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
-  const [registeredEmail, setRegisteredEmail] = useState("");
-  const [alreadyRegistered, setAlreadyRegistered] = useState(false);
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
-    let hasError = false;
     if (!datenschutz) {
-      setDatenschutzError(true);
-      hasError = true;
-    } else {
-      setDatenschutzError(false);
+      setError("Bitte akzeptiere die Datenschutzerklärung.");
+      return;
     }
-    if (!agb) {
-      setAgbError(true);
-      hasError = true;
-    } else {
-      setAgbError(false);
-    }
-    if (hasError) return;
-
     setLoading(true);
     setError(null);
     const supabase = getSupabaseBrowserClient();
-    const trimmedEmail = email.trim();
-    const now = new Date().toISOString();
-    const { data, error: signUpError } = await supabase.auth.signUp({
-      email: trimmedEmail,
+    const { error: signUpError } = await supabase.auth.signUp({
+      email: email.trim(),
       password,
       options: {
-        emailRedirectTo: portalAuthCallbackUrl(),
-        data: {
-          name: name.trim(),
-          telefon: telefon.trim() || null,
-          datenschutz_akzeptiert_at: now,
-          agb_akzeptiert_at: now,
-        },
+        emailRedirectTo: portalAuthCallbackUrl(next),
+        data: { name: name.trim() || undefined },
       },
     });
     setLoading(false);
     if (signUpError) {
-      if (signUpError.message.toLowerCase().includes("already registered")) {
-        setError("Diese E-Mail ist bereits registriert. Bitte melde dich an.");
-      } else {
-        setError(signUpError.message);
-      }
+      setError(signUpError.message);
       return;
     }
-
-    // Supabase gibt bei bestehender E-Mail oft trotzdem „Erfolg“ (Enumeration-Schutz),
-    // sendet aber keine neue Mail — identities ist dann leer.
-    const identities = data.user?.identities ?? [];
-    if (identities.length === 0) {
-      setAlreadyRegistered(true);
-      setRegisteredEmail(trimmedEmail);
-      setSuccess(true);
-      return;
-    }
-
-    setAlreadyRegistered(false);
-    setRegisteredEmail(trimmedEmail);
     setSuccess(true);
+    router.refresh();
   }
 
   if (success) {
     return (
-      <div className="space-y-4 text-center">
-        <p className="portal-text-section">
-          {alreadyRegistered
-            ? "E-Mail prüfen oder anmelden"
-            : "Fast geschafft — bitte E-Mail bestätigen"}
+      <div className="space-y-3 portal-text-body text-text-secondary">
+        <p>
+          Fast geschafft — wir haben dir einen Bestätigungslink geschickt. Nach
+          der Bestätigung kannst du dich anmelden.
         </p>
-        <p className="portal-text-body leading-relaxed text-text-secondary">
-          {alreadyRegistered ? (
-            <>
-              Unter <strong>{registeredEmail}</strong> existiert vermutlich schon ein Konto.
-              Prüfe dein Postfach (auch Spam) oder sende die Bestätigung erneut.
-            </>
-          ) : (
-            <>
-              Wir haben dir eine Nachricht an <strong>{registeredEmail}</strong> geschickt.
-              Klicke auf den Bestätigungslink, danach kannst du dich anmelden.
-            </>
-          )}
-        </p>
-        <PortalResendConfirmation
-          defaultEmail={registeredEmail}
-          className="rounded-xl border border-border-light bg-surface-muted/40 p-3 text-left"
-        />
-        <Link
-          href="/portal/login"
-          className="btn-pill-primary portal-btn inline-flex !px-4 !py-2.5"
-        >
+        <Link href="/portal/login" className="btn-pill-primary inline-block w-full text-center !py-2.5">
           Zum Login
         </Link>
       </div>
@@ -128,13 +71,11 @@ export function PortalRegisterForm() {
         <input
           type="text"
           autoComplete="name"
-          required
           value={name}
           onChange={(e) => setName(e.target.value)}
-          className="portal-input w-full rounded-xl border border-border-default bg-surface-card px-3 py-3 focus:border-accent"
+          className="portal-input w-full rounded-xl border border-border-default bg-surface-card px-3 py-3"
         />
       </label>
-
       <label className="block space-y-1.5">
         <span className="portal-form-label">E-Mail</span>
         <input
@@ -143,28 +84,11 @@ export function PortalRegisterForm() {
           required
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          className="portal-input w-full rounded-xl border border-border-default bg-surface-card px-3 py-3 focus:border-accent"
+          className="portal-input w-full rounded-xl border border-border-default bg-surface-card px-3 py-3"
         />
       </label>
-
       <label className="block space-y-1.5">
-        <span className="portal-form-label">
-          Telefon <span className="text-text-tertiary">(optional)</span>
-        </span>
-        <input
-          type="tel"
-          autoComplete="tel"
-          value={telefon}
-          onChange={(e) => setTelefon(e.target.value)}
-          placeholder="Für die Verknüpfung mit bestehenden Anfragen"
-          className="portal-input w-full rounded-xl border border-border-default bg-surface-card px-3 py-3 focus:border-accent"
-        />
-      </label>
-
-      <label className="block space-y-1.5">
-        <span className="portal-form-label">
-          Passwort <span className="text-text-tertiary">(mind. 8 Zeichen)</span>
-        </span>
+        <span className="portal-form-label">Passwort</span>
         <input
           type="password"
           autoComplete="new-password"
@@ -172,83 +96,37 @@ export function PortalRegisterForm() {
           minLength={8}
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          className="portal-input w-full rounded-xl border border-border-default bg-surface-card px-3 py-3 focus:border-accent"
+          className="portal-input w-full rounded-xl border border-border-default bg-surface-card px-3 py-3"
         />
       </label>
 
-      <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-border-light bg-muted/20 p-3">
+      <label className="flex items-start gap-2.5 portal-text-body text-text-secondary">
         <input
           type="checkbox"
           checked={datenschutz}
-          onChange={(e) => {
-            setDatenschutz(e.target.checked);
-            if (e.target.checked) setDatenschutzError(false);
-          }}
-          className="mt-0.5 h-4 w-4 shrink-0 accent-[#2E7D52]"
+          onChange={(e) => setDatenschutz(e.target.checked)}
+          className="mt-1"
         />
-        <span className="portal-text-body text-text-primary">
+        <span>
           Ich habe die{" "}
-          <a
-            href="/datenschutz#meinbaerenwald"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="font-medium text-accent underline-offset-2 hover:underline"
-          >
+          <Link href="/datenschutz" className="text-accent underline-offset-2 hover:underline">
             Datenschutzerklärung
-          </a>{" "}
-          gelesen und stimme der Verarbeitung meiner Daten in MeinBärenwald zu.
+          </Link>{" "}
+          gelesen.
         </span>
       </label>
-      {datenschutzError ? (
-        <p className="portal-text-body -mt-2 text-red-700">
-          Bitte stimme der Datenschutzerklärung zu.
-        </p>
-      ) : null}
-
-      <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-border-light bg-muted/20 p-3">
-        <input
-          type="checkbox"
-          checked={agb}
-          onChange={(e) => {
-            setAgb(e.target.checked);
-            if (e.target.checked) setAgbError(false);
-          }}
-          className="mt-0.5 h-4 w-4 shrink-0 accent-[#2E7D52]"
-        />
-        <span className="portal-text-body text-text-primary">
-          Ich habe die{" "}
-          <a
-            href="/agb"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="font-medium text-accent underline-offset-2 hover:underline"
-          >
-            Allgemeinen Geschäftsbedingungen
-          </a>{" "}
-          gelesen und akzeptiere sie für die Nutzung des Kundenportals sowie für
-          künftige Beauftragungen über Bärenwald.
-        </span>
-      </label>
-      {agbError ? (
-        <p className="portal-text-body -mt-2 text-red-700">
-          Bitte akzeptiere die AGB.
-        </p>
-      ) : null}
 
       <button
         type="submit"
         disabled={loading}
-        className="btn-pill-primary portal-btn w-full !py-3 disabled:opacity-60"
+        className="btn-pill-primary w-full !py-2.5 disabled:opacity-60"
       >
-        {loading ? "Wird registriert…" : "Konto anlegen"}
+        {loading ? "Wird angelegt…" : "Konto anlegen"}
       </button>
 
-      <p className="border-t border-border-light pt-4 text-center portal-text-body text-text-secondary">
+      <p className="portal-text-body text-center text-text-secondary">
         Bereits registriert?{" "}
-        <Link
-          href="/portal/login"
-          className="font-semibold text-accent underline-offset-2 hover:underline"
-        >
+        <Link href="/portal/login" className="font-semibold text-accent hover:underline">
           Anmelden
         </Link>
       </p>

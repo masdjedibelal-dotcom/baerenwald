@@ -120,6 +120,7 @@ export default async function PartnerDashboardPage({
         anfragen={data.anfragen}
         angebote={data.angebote}
         angeboteAlleAkzeptiert={data.angeboteAlleAkzeptiert}
+        vorgaenge={data.vorgaenge}
         auftragAnfragen={data.auftragAnfragen}
         auftraege={data.auftraege}
         offen={data.offen}

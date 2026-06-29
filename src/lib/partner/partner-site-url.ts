@@ -18,13 +18,13 @@ export function partnerRegisterUrl(): string {
  */
 export function partnerAuftragAnfragePortalUrl(auftragId: string): string {
   const id = auftragId.trim();
-  return `${SITE_CONFIG.url}/partner?section=offen&id=${encodeURIComponent(`auftrag:${id}`)}`;
+  return `${SITE_CONFIG.url}/partner?section=vorgaenge&id=${encodeURIComponent(id)}`;
 }
 
-/** Laufender Auftrag — Tab Aufträge. */
+/** Laufender Auftrag — Tab Vorgänge. */
 export function partnerAuftragPortalUrl(auftragId: string): string {
   const id = auftragId.trim();
-  return `${SITE_CONFIG.url}/partner?section=auftraege&auftrag=${encodeURIComponent(id)}`;
+  return `${SITE_CONFIG.url}/partner?section=vorgaenge&id=${encodeURIComponent(id)}`;
 }
 
 /** Direktlink: Anfragen-Tab, eine HW-Anfrage. */
@@ -33,20 +33,28 @@ export function partnerAnfragePortalUrl(anfrageId: string): string {
   return `${SITE_CONFIG.url}${partnerAnfragePortalPath(id)}`;
 }
 
+/** Tab Vorgänge — eine HW-Anfrage oder ein Auftrag. */
+export function partnerVorgangPortalPath(vorgangId: string): string {
+  const id = vorgangId.trim();
+  return `/partner?section=vorgaenge&id=${encodeURIComponent(id)}`;
+}
+
 /** Listen-Ansicht ohne Detail-Deep-Link. */
 export function partnerSectionListPath(
-  section: "offen" | "auftraege" | "anfragen" | "angebote"
+  section: "vorgaenge" | "offen" | "auftraege" | "anfragen" | "angebote"
 ): string {
-  if (section === "anfragen" || section === "angebote") {
-    return `/partner?section=offen`;
+  if (section === "anfragen" || section === "angebote" || section === "offen") {
+    return `/partner?section=vorgaenge`;
+  }
+  if (section === "auftraege") {
+    return `/partner?section=vorgaenge&filter=offen`;
   }
   return `/partner?section=${section}`;
 }
 
-/** Relativer Pfad — Tab Offen, eine HW-Anfrage (ersetzt Anfragen/Angebote-Deep-Links). */
+/** Relativer Pfad — Tab Vorgänge (ersetzt Offen-Deep-Links). */
 export function partnerOffenPortalPath(anfrageId: string): string {
-  const id = anfrageId.trim();
-  return `/partner?section=offen&id=${encodeURIComponent(id)}`;
+  return partnerVorgangPortalPath(anfrageId);
 }
 
 /** @deprecated Nutzt Tab Offen — Alias für Mail-Links und Legacy-CRM. */

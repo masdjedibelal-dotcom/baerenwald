@@ -1,25 +1,31 @@
 /**
- * Vollständiger Partner-Flow-Check (read-only) gegen Live-DB.
+ * Partner Vorgänge-Flow-Check (read-only) gegen Live-DB.
  * npx tsx --env-file=.env.local scripts/verify-partner-offen-flow.ts
  */
 import {
-  buildPartnerOffenListe,
-  isPartnerAngebotOffenListItem,
-  partnerOffenStatusLabel,
-} from "@/lib/partner/partner-offen-status";
+  buildPartnerVorgaenge,
+  countPartnerVorgaengeFilter,
+} from "@/lib/partner/build-partner-vorgaenge";
+import { isPartnerAngebotOffenListItem } from "@/lib/partner/partner-offen-status";
 import { isPartnerAuftragAnfrageAktionErforderlich } from "@/lib/partner/partner-anfrage-status";
-import { isPartnerAuftragListItemAktiv as isAktiv } from "@/lib/partner/partner-list-filters";
 import {
   hasPartnerKonditionenNachreichungAusstehend,
   parsePartnerHwKonditionen,
 } from "@/lib/partner/partner-konditionen";
 import { resolvePartnerListenTitel } from "@/lib/partner/partner-listen-titel";
 import { aggregateAuftragHandwerkerStatus } from "@/lib/partner/partner-portal-phase";
+import { vorgangStateLabel } from "@/lib/partner/vorgang-state";
 import { supabaseAdmin, isSupabaseConfigured } from "@/lib/supabase";
 
 const TEST_EMAIL = "info@baerenwald-muenchen.de";
 
 type Issue = { level: "error" | "warn"; msg: string };
+
+function mapAenderungTyp(raw: unknown): "neu" | "geaendert" | "entfernt" | null {
+  const v = String(raw ?? "").trim().toLowerCase();
+  if (v === "neu" || v === "geaendert" || v === "entfernt") return v;
+  return null;
+}
 
 async function main() {
   if (!isSupabaseConfigured()) process.exit(1);
@@ -34,26 +40,36 @@ async function main() {
     process.exit(1);
   }
   const hwId = String(hw.id);
-  console.log(`\n=== Partner-Flow-Check: ${hw.name} ===\n`);
+  console.log(`\n=== Partner-Vorgänge-Check: ${hw.name} ===\n`);
 
   const issues: Issue[] = [];
 
   const { data: ahRows } = await supabaseAdmin
     .from("angebot_handwerker")
-    .select("id, angebot_id, gewerk_id, status, hw_status, bestaetigt_at, antwort_at, gesendet_at, hw_konditionen, hw_eingereicht_at")
+    .select(
+      "id, angebot_id, gewerk_id, status, hw_status, bestaetigt_at, antwort_at, gesendet_at, hw_konditionen, hw_eingereicht_at"
+    )
     .eq("handwerker_id", hwId);
 
   const { data: posRows } = await supabaseAdmin
     .from("auftrag_positionen")
-    .select("id, auftrag_id, gewerk_name, leistung_name, handwerker_status, preis_partner, handwerker_id")
+    .select(
+      "id, auftrag_id, gewerk_name, leistung_name, handwerker_status, preis_partner, handwerker_id, aenderung_typ, preis_alt"
+    )
     .eq("handwerker_id", hwId);
 
   const auftragIds = [...new Set((posRows ?? []).map((p) => String(p.auftrag_id)))];
   const { data: hwZuweisungen } = await supabaseAdmin
     .from("auftrag_handwerker")
-    .select("auftrag_id, status")
+    .select("auftrag_id, status, projektvertrag_bestaetigt_am")
     .eq("handwerker_id", hwId);
 
+  const vertragByAuftrag = new Map(
+    (hwZuweisungen ?? []).map((z) => [
+      String(z.auftrag_id),
+      (z.projektvertrag_bestaetigt_am as string | null) ?? null,
+    ])
+  );
   const zuweisungByAuftrag = new Map(
     (hwZuweisungen ?? []).map((z) => [String(z.auftrag_id), String(z.status ?? "")])
   );
@@ -61,7 +77,7 @@ async function main() {
   const { data: auftragRows } = auftragIds.length
     ? await supabaseAdmin
         .from("auftraege")
-        .select("id, titel, status, angebot_id, start_datum, end_datum")
+        .select("id, titel, status, angebot_id, start_datum, end_datum, handwerker_bestaetigt_at")
         .in("id", auftragIds)
     : { data: [] };
 
@@ -83,8 +99,15 @@ async function main() {
       id: String(p.id),
       gewerk_name: String(p.gewerk_name ?? "Gewerk"),
       leistung_name: String(p.leistung_name ?? "Leistung"),
+      beschreibung: null,
+      menge: null,
+      einheit: null,
+      start_datum: null,
+      end_datum: null,
       preis_partner: p.preis_partner != null ? Number(p.preis_partner) : null,
       handwerker_status: (p.handwerker_status as string | null) ?? null,
+      aenderung_typ: mapAenderungTyp(p.aenderung_typ),
+      preis_alt: p.preis_alt != null ? Number(p.preis_alt) : null,
     }));
 
     return {
@@ -114,7 +137,7 @@ async function main() {
       plz: "",
       ort: "",
       angebot_titel: auftrag?.titel ?? "",
-      projektvertrag_bestaetigt_am: null,
+      projektvertrag_bestaetigt_am: vertragByAuftrag.get(String(auftrag?.id ?? "")) ?? null,
       crm_positionen_raw: null,
     };
   });
@@ -127,8 +150,17 @@ async function main() {
       id: String(p.id),
       gewerk_name: String(p.gewerk_name ?? "Gewerk"),
       leistung_name: String(p.leistung_name ?? "Leistung"),
-      handwerker_status: (p.handwerker_status as string | null) ?? null,
+      beschreibung: null,
+      menge: null,
+      einheit: null,
       start_datum: null,
+      end_datum: null,
+      preis_partner: p.preis_partner != null ? Number(p.preis_partner) : null,
+      lohn_fix: null,
+      material_fix: null,
+      handwerker_status: (p.handwerker_status as string | null) ?? null,
+      aenderung_typ: mapAenderungTyp(p.aenderung_typ),
+      preis_alt: p.preis_alt != null ? Number(p.preis_alt) : null,
     }));
     const angebotId = raw.angebot_id != null ? String(raw.angebot_id) : "";
     const anfrage = anfragenItems.find((a) => a.angebot_id === angebotId);
@@ -158,6 +190,9 @@ async function main() {
       hwStatus,
       start_datum: (raw.start_datum as string | null) ?? null,
       end_datum: (raw.end_datum as string | null) ?? null,
+      handwerker_bestaetigt_at:
+        (raw.handwerker_bestaetigt_at as string | null)?.slice(0, 19) ?? null,
+      projektvertrag_bestaetigt_am: vertragByAuftrag.get(aid) ?? null,
       positionen: ownPos,
       plz: "—",
       ort: "—",
@@ -169,46 +204,49 @@ async function main() {
     };
   });
 
-  const auftragAnfragen = auftragItems.filter((a) => {
+  const vorgaenge = buildPartnerVorgaenge({
+    alleAuftraege: auftragItems,
+    anfragen: anfragenAngebot,
+  });
+  const counts = countPartnerVorgaengeFilter(vorgaenge);
+
+  console.log(`--- Tab „Vorgänge“ (${vorgaenge.length} gesamt, ${counts.offen} offen) ---`);
+  for (const v of vorgaenge) {
+    const label = vorgangStateLabel(v.state);
+    const meta = v.auftrag.positionen
+      .filter((p) => p.aenderung_typ)
+      .map((p) => `${p.leistung_name}:${p.aenderung_typ}`)
+      .join(", ");
+    console.log(
+      `  ✅ [${label}] ${v.auftrag.listen_titel}${meta ? ` (${meta})` : ""}`
+    );
+    if (!["Neu", "Geändert", "In Bearbeitung", "Erledigt"].includes(label)) {
+      issues.push({ level: "error", msg: `Ungültiger Vorgangs-State: ${label}` });
+    }
+  }
+
+  const dup = new Map<string, number>();
+  for (const v of vorgaenge) {
+    dup.set(v.id, (dup.get(v.id) ?? 0) + 1);
+  }
+  for (const [aid, n] of dup) {
+    if (n > 1) {
+      issues.push({ level: "error", msg: `Doppel-Vorgang: ${n}x für ${aid.slice(0, 8)}` });
+    }
+  }
+
+  const legacyAuftragAnfragen = auftragItems.filter((a) => {
     if (!isPartnerAuftragAnfrageAktionErforderlich(a)) return false;
     if (!a.angebot_id) return true;
     return !anfragenAngebot.some((x) => x.angebot_id === a.angebot_id);
   });
-
-  const auftraege = auftragItems.filter(
-    (a) => !isPartnerAuftragAnfrageAktionErforderlich(a)
-  );
-
-  const offen = buildPartnerOffenListe({ anfragen: anfragenAngebot, auftragAnfragen });
-
-  console.log(`--- Erwarteter Tab „Offen“ (${offen.length} Karten) ---`);
-  for (const e of offen) {
-    if (e.kind === "angebot") {
-      const badge = partnerOffenStatusLabel(e.item.offen_karten_typ);
-      console.log(`  ✅ [${badge}] ${e.item.listen_titel}`);
-      if (!["Neu", "Ergänzung"].includes(badge)) {
-        issues.push({ level: "error", msg: `Ungültiges Badge: ${badge}` });
-      }
-    } else {
-      console.log(`  ✅ [Neu] ${e.item.listen_titel} (nur Auftrag, kein Angebot)`);
-    }
-  }
-
-  console.log(`\n--- Erwarteter Tab „Meine Aufträge / Ausführung“ (${auftraege.filter(isAktiv).length} aktiv) ---`);
-  for (const a of auftraege) {
-    const aktiv = isAktiv(a);
-    if (!aktiv) {
-      console.log(`  [Erledigt] ${a.listen_titel}`);
-      continue;
-    }
-    const inOffen = offen.some(
-      (e) =>
-        (e.kind === "angebot" && e.item.auftrag_id === a.id) ||
-        (e.kind === "auftrag" && e.item.id === a.id)
-    );
-    console.log(`  ${inOffen ? "⚠ auch Offen" : "✅"} ${a.listen_titel} (hw=${a.hwStatus})`);
-    if (inOffen && a.hwStatus === "akzeptiert") {
-      issues.push({ level: "error", msg: `Parallel Offen+Ausführung: ${a.listen_titel}` });
+  for (const a of legacyAuftragAnfragen) {
+    const v = vorgaenge.find((x) => x.id === a.id);
+    if (!v || v.state !== "neu") {
+      issues.push({
+        level: "error",
+        msg: `Auftrags-Zuweisung ohne Vorgang „Neu“: ${a.listen_titel}`,
+      });
     }
   }
 
@@ -223,28 +261,29 @@ async function main() {
           gewerk_name: String(p.gewerk_name ?? ""),
           leistung_name: String(p.leistung_name ?? ""),
           handwerker_status: (p.handwerker_status as string | null) ?? null,
+          aenderung_typ: mapAenderungTyp(p.aenderung_typ),
         })),
         hw_konditionen: parsePartnerHwKonditionen(row.hw_konditionen),
         hw_status: String(row.hw_status),
         handwerker_id: hwId,
       });
       console.log(
-        `  Legacy eingereicht → ${nach ? "erscheint als Ergänzung in Offen" : "⚠ nicht in Offen"} (angebot ${String(row.angebot_id).slice(0, 8)})`
+        `  Legacy eingereicht → ${nach ? "erscheint als Geändert/Neu" : "⚠ kein offener Vorgang"} (angebot ${String(row.angebot_id).slice(0, 8)})`
       );
       if (!nach) {
-        issues.push({ level: "warn", msg: `Legacy eingereicht ohne sichtbare Ergänzung` });
+        issues.push({ level: "warn", msg: "Legacy eingereicht ohne sichtbaren Vorgang" });
       }
     }
   }
 
-  const dup = new Map<string, number>();
-  for (const e of offen) {
-    const aid = e.kind === "angebot" ? e.item.auftrag_id : e.item.id;
-    if (!aid) continue;
-    dup.set(aid, (dup.get(aid) ?? 0) + 1);
-  }
-  for (const [aid, n] of dup) {
-    if (n > 1) issues.push({ level: "error", msg: `Doppelkarte: ${n}x für Auftrag ${aid.slice(0, 8)}` });
+  for (const p of posRows ?? []) {
+    const typ = mapAenderungTyp(p.aenderung_typ);
+    if (typ === "geaendert" && (p.preis_alt == null || Number(p.preis_alt) <= 0)) {
+      issues.push({
+        level: "warn",
+        msg: `geaendert ohne preis_alt: ${String(p.leistung_name).slice(0, 40)}`,
+      });
+    }
   }
 
   console.log("\n=== Ergebnis ===");

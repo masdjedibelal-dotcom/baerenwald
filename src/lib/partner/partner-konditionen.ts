@@ -1,5 +1,6 @@
 import type { PartnerAuftragPosition } from "@/lib/partner/get-partner-data";
 import type { PartnerAngebotPositionenFilter } from "@/lib/partner/partner-leistungen-display";
+import { positionBrauchtVorgangAktion } from "@/lib/partner/vorgang-state";
 
 const SKIP_POSITION_SLUGS = new Set(["__freitext__", "__gesamtrabatt__"]);
 
@@ -18,15 +19,20 @@ export function positionBrauchtHandwerkerAktion(
   return AUFTRAG_POSITION_HW_AKTION.has((handwerkerStatus ?? "").toLowerCase());
 }
 
-/** Offene Auftragspositionen nach CRM-`handwerker_status` (primäres Signal bei Nachreichung). */
+/** Offene Auftragspositionen (Status oder CRM-`aenderung_typ`). */
 export function resolveOffeneAuftragPositionIdsByStatus(
-  positionen: Array<Pick<PartnerAuftragPosition, "id" | "gewerk_name" | "handwerker_status">>,
+  positionen: Array<
+    Pick<
+      PartnerAuftragPosition,
+      "id" | "gewerk_name" | "handwerker_status" | "aenderung_typ"
+    >
+  >,
   filter?: PartnerNachreichungFilter
 ): string[] {
   const gewerkName = filter?.gewerkName?.trim() || "";
   return positionen
     .filter((p) => {
-      if (!positionBrauchtHandwerkerAktion(p.handwerker_status)) return false;
+      if (!positionBrauchtVorgangAktion(p)) return false;
       if (gewerkName && p.gewerk_name?.trim() && p.gewerk_name.trim() !== gewerkName) {
         return false;
       }
@@ -54,7 +60,7 @@ export type PartnerKonditionZeile = {
   /** Zeile nicht bearbeitbar (z. B. bereits vereinbart bei Nachreichung). */
   readonly?: boolean;
   /** Badge neben der Leistung in der Konditionen-Karte. */
-  zeilenBadge?: "vereinbart" | "neu";
+  zeilenBadge?: "vereinbart" | "neu" | "geaendert" | "entfernt";
 };
 
 export type PartnerHwKonditionPosition = {

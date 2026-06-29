@@ -18,17 +18,23 @@ export function portalRegisterForGptUrl(): string {
 
 export function portalAnfrageUrl(leadId: string): string {
   const id = leadId.trim();
-  return `${SITE_CONFIG.url}/portal?section=anfragen&id=${encodeURIComponent(id)}`;
+  return `${SITE_CONFIG.url}/portal?section=vorgaenge&id=${encodeURIComponent(id)}`;
 }
 
 export function portalAngebotUrl(angebotId: string): string {
   const id = angebotId.trim();
-  return `${SITE_CONFIG.url}/portal?section=angebote&id=${encodeURIComponent(id)}`;
+  return `${SITE_CONFIG.url}/portal?section=vorgaenge&id=${encodeURIComponent(id)}`;
 }
 
 export function portalAuftragUrl(auftragId: string): string {
   const id = auftragId.trim();
-  return `${SITE_CONFIG.url}/portal?section=auftraege&id=${encodeURIComponent(id)}`;
+  return `${SITE_CONFIG.url}/portal?section=vorgaenge&id=${encodeURIComponent(id)}`;
+}
+
+/** @deprecated Alias — ein Tab „Vorgänge“. */
+export function portalVorgangUrl(vorgangId: string): string {
+  const id = vorgangId.trim();
+  return `${SITE_CONFIG.url}/portal?section=vorgaenge&id=${encodeURIComponent(id)}`;
 }
 
 export function portalLoginForAnfrageUrl(leadId: string): string {

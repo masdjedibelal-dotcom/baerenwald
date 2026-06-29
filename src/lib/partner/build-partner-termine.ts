@@ -1,7 +1,7 @@
 import type { PartnerAuftragItem } from "@/lib/partner/get-partner-data";
 import { fmtPartnerDate } from "@/lib/partner/partner-detail-format";
 
-export type PartnerPlanerSection = "offen" | "auftraege" | "profil";
+export type PartnerPlanerSection = "vorgaenge" | "profil";
 
 const OHNE_DATUM = "9999-12-31";
 
@@ -149,7 +149,7 @@ export function buildPartnerTerminAuftragCards(input: {
 
   for (const a of input.auftragAnfragen) {
     if (seen.has(a.id)) continue;
-    const card = buildAuftragTerminCard(a, "offen", `auftrag:${a.id}`);
+    const card = buildAuftragTerminCard(a, "vorgaenge", a.id);
     if (card) {
       seen.add(a.id);
       cards.push(card);
@@ -160,7 +160,7 @@ export function buildPartnerTerminAuftragCards(input: {
     const s = a.status.toLowerCase();
     if (s === "abgeschlossen" || s === "storniert") continue;
     if (seen.has(a.id)) continue;
-    const card = buildAuftragTerminCard(a, "auftraege", a.id);
+    const card = buildAuftragTerminCard(a, "vorgaenge", a.id);
     if (card) {
       seen.add(a.id);
       cards.push(card);

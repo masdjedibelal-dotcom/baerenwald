@@ -53,7 +53,7 @@ export async function POST(request: Request) {
       .eq("id", auftragId)
       .maybeSingle();
     const angebotId = auftrag?.angebot_id ? String(auftrag.angebot_id) : null;
-    let link = `/partner?section=offen`;
+    let link = `/partner?section=vorgaenge`;
     if (angebotId) {
       const { data: hw } = await supabaseAdmin
         .from("angebot_handwerker")
