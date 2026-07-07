@@ -25,6 +25,11 @@ import {
   type OrgVorgangFilter,
 } from "@/lib/org/org-vorgang-filter";
 import type { KatalogProdukt } from "@/lib/katalog/katalog-produkte";
+import type {
+  OrganisationKunde,
+  OrganisationLead,
+  OrganisationObjekt,
+} from "@/lib/org/types";
 import type { OrgPartnerBefundEntry } from "@/lib/org/load-partner-befund";
 import type { OrgMitgliedRolle } from "@/lib/org/org-rbac";
 import { buildKundeVorgaenge } from "@/lib/portal/build-kunde-vorgaenge";

@@ -1,4 +1,3 @@
-import type { OrganisationKunde, OrganisationObjekt } from "@/lib/org/types";
 import { supabaseAdmin } from "@/lib/supabase";
 
 export type KatalogProdukt = {

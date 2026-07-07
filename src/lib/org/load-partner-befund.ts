@@ -14,7 +14,9 @@ export type OrgPartnerBefundEntry = {
 export async function loadPartnerBefundeByLeadIds(
   leadIds: string[]
 ): Promise<Record<string, OrgPartnerBefundEntry[]>> {
-  const ids = [...new Set(leadIds.map((id) => id.trim()).filter(Boolean))];
+  const ids = Array.from(
+    new Set(leadIds.map((id) => id.trim()).filter(Boolean))
+  );
   const out: Record<string, OrgPartnerBefundEntry[]> = {};
   if (!ids.length) return out;
 
@@ -38,7 +40,7 @@ export async function loadPartnerBefundeByLeadIds(
     auftragByLead.set(leadId, list);
   }
 
-  const auftragIds = [...auftragByLead.values()].flat();
+  const auftragIds = Array.from(auftragByLead.values()).flat();
   if (!auftragIds.length) return out;
 
   const { data: eintraege, error: eErr } = await supabaseAdmin
@@ -56,7 +58,7 @@ export async function loadPartnerBefundeByLeadIds(
   }
 
   const leadIdByAuftrag = new Map<string, string>();
-  for (const [leadId, aids] of auftragByLead) {
+  for (const [leadId, aids] of Array.from(auftragByLead.entries())) {
     for (const aid of aids) leadIdByAuftrag.set(aid, leadId);
   }
 

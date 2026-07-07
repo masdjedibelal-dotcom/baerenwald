@@ -28,7 +28,6 @@ const FAMILIEN: Array<{ id: string; label: string }> = [
 ];
 
 export function OrganisationLeistungenPanel({
-  kunde,
   objekte,
   produkte,
   onOrdered,

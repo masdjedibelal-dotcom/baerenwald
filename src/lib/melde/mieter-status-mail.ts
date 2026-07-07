@@ -1,7 +1,4 @@
-import {
-  buildMelderBestaetigungHtml,
-  buildMelderBestaetigungSubject,
-} from "@/lib/email/meldung-mail-templates";
+import { buildMelderBestaetigungHtml } from "@/lib/email/meldung-mail-templates";
 import { AUTOMATED_CUSTOMER_EMAIL_BCC } from "@/lib/email/resend-bcc";
 import { meldeStatusUrl } from "@/lib/melde/melde-tracking";
 import {
