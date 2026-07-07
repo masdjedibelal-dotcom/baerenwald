@@ -1,4 +1,4 @@
--- KI-Rechner: Lead-Verknüpfung und Vertriebs-Analyse
+-- KI-Rechner: Lead-Verknüpfung und Vertriebs-Analyse (gleiche DB wie Website)
 ALTER TABLE leads
   ADD COLUMN IF NOT EXISTS ki_session_id text,
   ADD COLUMN IF NOT EXISTS ki_zusammenfassung text;

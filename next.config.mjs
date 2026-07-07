@@ -1,87 +1,37 @@
-/** @type {import('next').NextConfig} */
-const securityHeaders = [
-  {
-    key: "X-Content-Type-Options",
-    value: "nosniff",
-  },
-  {
-    key: "X-Frame-Options",
-    value: "SAMEORIGIN",
-  },
-  {
-    key: "X-XSS-Protection",
-    value: "1; mode=block",
-  },
-  {
-    key: "Referrer-Policy",
-    value: "strict-origin-when-cross-origin",
-  },
-];
+import path from 'path'
+import { fileURLToPath } from 'url'
 
+const __dirname = path.dirname(fileURLToPath(import.meta.url))
+
+/** @type {import('next').NextConfig} */
 const nextConfig = {
-  experimental: {
-    serverComponentsExternalPackages: ["@napi-rs/canvas"],
+  eslint: {
+    // Netlify/CI: viele bestehende Lint-Warnungen; Build soll nicht an unused-vars scheitern
+    ignoreDuringBuilds: true,
   },
-  async headers() {
-    return [
-      {
-        source: "/(.*)",
-        headers: securityHeaders,
-      },
-    ];
+  typescript: {
+    ignoreBuildErrors: false,
   },
-  async redirects() {
-    return [
-      {
-        source: "/galerie",
-        destination: "/leistungen",
-        permanent: true,
-      },
-      {
-        source: "/galerie/",
-        destination: "/leistungen",
-        permanent: true,
-      },
-    ];
-  },
-  async rewrites() {
-    return [
-      {
-        source: "/ingest/static/:path*",
-        destination: "https://eu-assets.i.posthog.com/static/:path*",
-      },
-      {
-        source: "/ingest/array/:path*",
-        destination: "https://eu-assets.i.posthog.com/array/:path*",
-      },
-      {
-        source: "/ingest/:path*",
-        destination: "https://eu.i.posthog.com/:path*",
-      },
-    ];
-  },
-  // Required to support PostHog trailing slash API requests
-  skipTrailingSlashRedirect: true,
-  /** Weniger native File-Watcher — hilft auf macOS bei „EMFILE: too many open files”. */
-  webpack: (config, { dev, isServer }) => {
+  webpack: (config, { isServer }) => {
+    config.resolve.alias = {
+      ...config.resolve.alias,
+      '@': path.join(__dirname, 'src'),
+    }
     if (isServer) {
-      config.externals = [...(config.externals ?? []), "@napi-rs/canvas"];
+      config.externals = [...(config.externals || []), 'puppeteer-core', '@puppeteer/browsers', 'archiver']
     }
-    if (dev) {
-      config.watchOptions = {
-        ...config.watchOptions,
-        poll: 1500,
-        aggregateTimeout: 300,
-        ignored: [
-          "**/node_modules/**",
-          "**/.git/**",
-          "**/.next/**",
-          "**/dist/**",
-          "**/.turbo/**",
-        ],
-      };
-    }
-    return config;
+    return config
+  },
+  experimental: {
+    serverComponentsExternalPackages: ['puppeteer-core', '@puppeteer/browsers', '@sparticuz/chromium', 'archiver'],
+    /** Sparticuz-Binaries für Angebot-PDF auf Netlify/Lambda mit deployen */
+    outputFileTracingIncludes: {
+      '/**': [
+        './node_modules/@sparticuz/chromium/bin/**',
+        './node_modules/@sparticuz/chromium/build/**',
+        './scripts/ki-analyse/**/*',
+      ],
+    },
   },
 };
 

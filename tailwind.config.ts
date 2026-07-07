@@ -1,138 +1,147 @@
-import type { Config } from "tailwindcss";
+import type { Config } from 'tailwindcss'
+import forms from '@tailwindcss/forms'
+import plugin from 'tailwindcss/plugin'
 
 const config: Config = {
-  darkMode: ["class"],
-  content: [
-    "./src/pages/**/*.{js,ts,jsx,tsx,mdx}",
-    "./src/components/**/*.{js,ts,jsx,tsx,mdx}",
-    "./src/app/**/*.{js,ts,jsx,tsx,mdx}",
-  ],
+  content: ['./src/**/*.{js,ts,jsx,tsx,mdx}', './src/app/globals.css'],
   theme: {
     extend: {
-      fontFamily: {
-        sans: ["var(--font-sans)", "Helvetica Neue", "Arial", "sans-serif"],
-        display: ["var(--font-display)", "Georgia", "serif"],
-      },
       colors: {
-        accent: {
-          DEFAULT: "#2E7D52",
-          dark: "#1A3D2B",
-          light: "#EAF3DE",
-          hover: "#256642",
-          foreground: "#FFFFFF",
-        },
-        surface: {
-          page: "#F4F4F3",
-          card: "#FFFFFF",
-          muted: "#EDEAE4",
-          dark: "#1A3D2B",
-        },
-        text: {
-          primary: "#1E1C1A",
-          secondary: "#6B6560",
-          tertiary: "#9E9890",
-          inverse: "#FFFFFF",
-          brand: "#2E7D52",
-        },
-        "border-default": "var(--border-default)",
-        "border-strong": "var(--border-strong)",
-        "border-light": "var(--border-light)",
-        acc: "var(--acc)",
-        border: "var(--border)",
-        input: "var(--input)",
-        ring: "var(--ring)",
-        background: "var(--background)",
-        foreground: "var(--foreground)",
-        primary: {
-          DEFAULT: "var(--primary)",
-          foreground: "var(--primary-foreground)",
-        },
-        secondary: {
-          DEFAULT: "var(--secondary)",
-          foreground: "var(--secondary-foreground)",
-        },
-        destructive: {
-          DEFAULT: "var(--destructive)",
-          foreground: "var(--destructive-foreground)",
-        },
-        muted: {
-          DEFAULT: "var(--muted)",
-          foreground: "var(--muted-foreground)",
-        },
-        popover: {
-          DEFAULT: "var(--popover)",
-          foreground: "var(--popover-foreground)",
-        },
-        card: {
-          DEFAULT: "var(--card)",
-          foreground: "var(--card-foreground)",
-        },
-        "funnel-accent": "#2E7D52",
-        "funnel-accent-bg": "rgba(46, 125, 82, 0.06)",
-        "funnel-accent-hover": "rgba(46, 125, 82, 0.03)",
-        info: {
-          bg: "var(--info-bg)",
-          border: "var(--info-border)",
-          text: "var(--info-text)",
-        },
-        warning: {
-          bg: "var(--warning-bg)",
-          border: "var(--warning-border)",
-          text: "var(--warning-text)",
-        },
+        'bw-primary': '#2E7D52',
+        'bw-dark': '#1A3D2B',
+        'bw-mid': '#3D6B4F',
+        'bw-light': '#6B9E80',
+        'bw-pale': '#A8C5A0',
+        'bw-green-bg': '#EAF3DE',
+
+        'bw-accent': '#C4922A',
+        'bw-accent-bg': '#FDF3E3',
+
+        'bw-bg': '#FFFFFF',
+        'app-grouped': '#F2F2F7',
+        'bw-bg-soft': '#EAF3DE',
+        'bw-card': '#FFFFFF',
+        'bw-hover': '#F0F7F2',
+        'bw-border': '#A8C5A0',
+        'bw-border-strong': '#2E7D52',
+        'bw-text': '#14181F',
+        'bw-text-mid': '#3F4750',
+        'bw-text-muted': '#6B7280',
+        'bw-text-subtle': '#9AA1AB',
+        'bw-link': '#2E7D52',
+
+        'status-new-bg': '#EBF5FB',
+        'status-new-text': '#1D6FA4',
+        'status-contact-bg': '#FEF9E7',
+        'status-contact-text': '#9A7D0A',
+        'status-offer-bg': '#FEF0E6',
+        'status-offer-text': '#C0622B',
+        'status-order-bg': '#EAF3DE',
+        'status-order-text': '#1A5C35',
+        'status-done-bg': '#F2F4F2',
+        'status-done-text': '#4A5568',
+        'status-cancel-bg': '#FDEDEC',
+        'status-cancel-text': '#A93226',
+
+        'sidebar-bg': '#1A3D2B',
+        'sidebar-hover': '#243D2E',
+        'sidebar-active': '#2E7D52',
+        'sidebar-text': '#A8C5A0',
+        'sidebar-muted': '#6B9E80',
+
+        // Legacy (bestehende Komponenten)
+        primary: '#2E7D52',
+        canvas: '#FFFFFF',
+        surface: '#FFFFFF',
+        ink: '#1E1E1E',
+        muted: '#6B7280',
+        border: '#A8C5A0',
+        danger: '#A93226',
+        warning: '#C0622B',
+        sidebar: '#1A3D2B',
+        'bw-success': '#2E7D52',
       },
-      borderRadius: {
-        none: "0",
-        sm: "4px",
-        md: "8px",
-        lg: "12px",
-        xl: "16px",
-        "2xl": "20px",
-        full: "9999px",
-        tile: "14px",
-        card: "18px",
-        pill: "999px",
+      fontFamily: {
+        sans: [
+          '-apple-system',
+          'BlinkMacSystemFont',
+          '"Segoe UI"',
+          'system-ui',
+          'Roboto',
+          '"Helvetica Neue"',
+          'Arial',
+          'sans-serif',
+        ],
       },
-      boxShadow: {
-        card: "0 2px 16px rgba(0,0,0,0.08)",
-        cardHover: "0 4px 24px rgba(0,0,0,0.12)",
-        sm: "0 1px 6px rgba(0,0,0,0.08)",
-      },
-      keyframes: {
-        "accordion-down": {
-          from: { height: "0" },
-          to: { height: "var(--radix-accordion-content-height)" },
-        },
-        "accordion-up": {
-          from: { height: "var(--radix-accordion-content-height)" },
-          to: { height: "0" },
-        },
-        "fade-in": {
-          from: { opacity: "0" },
-          to: { opacity: "1" },
-        },
-        fadeIn: {
-          from: { opacity: "0" },
-          to: { opacity: "1" },
-        },
-        "funnel-spin": {
-          to: { transform: "rotate(360deg)" },
-        },
-      },
-      animation: {
-        "accordion-down": "accordion-down 0.2s ease-out",
-        "accordion-up": "accordion-up 0.2s ease-out",
-        "fade-in": "fade-in 0.25s ease-out forwards",
-        "fade-in-screen": "fadeIn 0.25s ease-out forwards",
-        "funnel-spin": "funnel-spin 2s linear infinite",
-        "spin-slow": "spin 2s linear infinite",
+      fontSize: {
+        xs: ['12px', { lineHeight: '1.4' }],
+        sm: ['13px', { lineHeight: '1.5' }],
+        base: ['14px', { lineHeight: '1.6' }],
+        md: ['15px', { lineHeight: '1.5' }],
+        lg: ['18px', { lineHeight: '1.4' }],
+        xl: ['22px', { lineHeight: '1.3' }],
+        '2xl': ['28px', { lineHeight: '1.2' }],
       },
       spacing: {
-        header: "60px",
-        footer: "56px",
+        11: '44px',
+        18: '72px',
+        22: '88px',
+        'sidebar-rail': '44px',
+        'topbar': '44px',
+      },
+      borderWidth: {
+        hairline: '0.5px',
+      },
+      boxShadow: {
+        sm: '0 1px 2px rgba(0,0,0,0.05)',
+        md: '0 2px 8px rgba(0,0,0,0.08)',
+        lg: '0 4px 16px rgba(0,0,0,0.12)',
+        card: '0 1px 3px rgba(0,0,0,0.06)',
+      },
+      borderRadius: {
+        sm: '4px',
+        md: '6px',
+        lg: '8px',
+        xl: '12px',
+        '2xl': '16px',
+      },
+      animation: {
+        skeleton: 'skeleton 1.5s ease-in-out infinite',
+        'slide-up': 'slideUp 200ms ease',
+        'slide-right': 'slideRight 200ms ease',
+        'fade-in': 'fadeIn 150ms ease',
+      },
+      keyframes: {
+        skeleton: {
+          '0%, 100%': { opacity: '1' },
+          '50%': { opacity: '0.4' },
+        },
+        slideUp: {
+          '0%': { transform: 'translateY(8px)', opacity: '0' },
+          '100%': { transform: 'translateY(0)', opacity: '1' },
+        },
+        slideRight: {
+          from: { transform: 'translateX(100%)', opacity: '0' },
+          to: { transform: 'translateX(0)', opacity: '1' },
+        },
+        fadeIn: {
+          '0%': { opacity: '0' },
+          '100%': { opacity: '1' },
+        },
       },
     },
   },
-  plugins: [require("tailwindcss-animate")],
-};
-export default config;
+  plugins: [
+    forms,
+    /** @apply border-hairline in globals.css — explizit, damit Netlify/Linux-Build nicht scheitert */
+    plugin(({ addUtilities, theme }) => {
+      addUtilities({
+        '.border-hairline': {
+          borderWidth: theme('borderWidth.hairline', '0.5px'),
+        },
+      })
+    }),
+  ],
+}
+
+export default config
