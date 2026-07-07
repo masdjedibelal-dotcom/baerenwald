@@ -1,0 +1,561 @@
+/**
+ * Synchronisiert flache fachdetailAnswers in die bestehende FachdetailsState-Struktur
+ * (Preiskalkulation / zu_komplex).
+ */
+
+import type { FachdetailsState } from "@/lib/funnel/types";
+
+function bucket(
+  fd: FachdetailsState,
+  gewerk: string
+): Record<string, string | string[] | null | undefined> {
+  const cur = (fd as Record<string, unknown>)[gewerk];
+  if (cur && typeof cur === "object" && !Array.isArray(cur)) {
+    return { ...(cur as Record<string, unknown>) } as Record<
+      string,
+      string | string[] | null | undefined
+    >;
+  }
+  return {};
+}
+
+/** Antwort setzen: fachdetailAnswers + Legacy-Felder. */
+export function buildPatchForFachdetailAnswer(
+  fd: FachdetailsState,
+  questionId: string,
+  value: string | string[]
+): Partial<FachdetailsState> {
+  const nextAnswers: Record<string, string | string[] | undefined> = {
+    ...(fd.fachdetailAnswers ?? {}),
+    [questionId]: value,
+  };
+  const patch: Partial<FachdetailsState> = {
+    fachdetailAnswers: nextAnswers,
+  };
+
+  const str = (v: string | string[]): string | undefined =>
+    Array.isArray(v) ? v.join(",") : v;
+
+  switch (questionId) {
+    case "bad_was":
+      patch.sanitaer = {
+        ...fd.sanitaer,
+        badWas: str(value as string),
+        objektListe: undefined,
+        lage: str(value as string) === "wanne_dusche" ? "sichtbar" : undefined,
+        rohre: undefined,
+      };
+      break;
+    case "bad_objekt_liste":
+      patch.sanitaer = {
+        ...fd.sanitaer,
+        objektListe: Array.isArray(value)
+          ? value
+          : String(value)
+              .split(",")
+              .filter(Boolean),
+      };
+      break;
+    case "sanitaer_lage": {
+      const sl = str(value as string);
+      if (sl !== "leitung_leck") {
+        delete nextAnswers.sanitaer_leck_zugang;
+      }
+      patch.sanitaer = {
+        ...fd.sanitaer,
+        lage: sl,
+        rohre: undefined,
+      };
+      patch.fachdetailAnswers = nextAnswers;
+      break;
+    }
+    case "sanitaer_leck_zugang": {
+      const z = str(value as string);
+      if (z === "sichtbar" || z === "wand") {
+        patch.sanitaer = {
+          ...fd.sanitaer,
+          lage: z,
+          rohre: undefined,
+        };
+      }
+      break;
+    }
+    case "sanitaer_notfall":
+      patch.sanitaer = {
+        ...fd.sanitaer,
+        notfallSchwere: str(value as string),
+      };
+      break;
+    case "sanitaer_problem": {
+      const sp = str(value as string);
+      if (sp !== "leitung_leck") {
+        delete nextAnswers.sanitaer_leck_zugang;
+      }
+      patch.sanitaer = {
+        ...fd.sanitaer,
+        lage: sp,
+        rohre: undefined,
+      };
+      patch.fachdetailAnswers = nextAnswers;
+      break;
+    }
+    case "elektro_notfall":
+      patch.elektro = {
+        ...fd.elektro,
+        problem: str(value as string),
+        folge: undefined,
+      };
+      break;
+    case "elektro_erneuern":
+      patch.elektro = {
+        ...fd.elektro,
+        problem: str(value as string),
+        folge: undefined,
+      };
+      break;
+    case "elektro_kaputt":
+      patch.elektro = {
+        ...fd.elektro,
+        problem: str(value as string),
+        folge: undefined,
+      };
+      break;
+    case "elektro_folge_sicherung":
+    case "elektro_folge_steckdose":
+    case "elektro_folge_leitungen":
+      patch.elektro = {
+        ...fd.elektro,
+        problem: fd.elektro?.problem,
+        folge: str(value as string),
+      };
+      break;
+    case "heizung_notfall":
+      patch.heizung = {
+        ...fd.heizung,
+        typ: str(value as string),
+        alter: undefined,
+        vorhaben: undefined,
+        ziel: undefined,
+      };
+      break;
+    case "heizung_erneuern":
+      patch.heizung = {
+        ...fd.heizung,
+        typ: str(value as string),
+        alter: undefined,
+        vorhaben: undefined,
+        anzahl: undefined,
+        ziel: undefined,
+      };
+      break;
+    case "heizung_ziel": {
+      const z = str(value as string);
+      const zielOk =
+        z === "waermepumpe" ||
+        z === "hybrid" ||
+        z === "gas_brennwert" ||
+        z === "beratung";
+      patch.heizung = {
+        ...fd.heizung,
+        typ: fd.heizung?.typ,
+        ziel: zielOk ? (z as NonNullable<FachdetailsState["heizung"]>["ziel"]) : undefined,
+      };
+      break;
+    }
+    case "heizung_heizkoerper_anzahl": {
+      const raw = str(value as string);
+      const n = raw ? Number.parseInt(raw, 10) : 1;
+      patch.heizung = {
+        ...fd.heizung,
+        typ: fd.heizung?.typ,
+        anzahl: Number.isFinite(n) && n >= 1 ? n : 1,
+      };
+      break;
+    }
+    case "heizung_oel_alter": {
+      const v = str(value as string);
+      patch.heizung = {
+        ...fd.heizung,
+        typ: fd.heizung?.typ,
+        alter: v,
+        vorhaben: undefined,
+      };
+      break;
+    }
+    case "heizung_kaputt":
+      patch.heizung = {
+        ...fd.heizung,
+        typ: str(value as string),
+        alter: undefined,
+        vorhaben: undefined,
+        ziel: undefined,
+      };
+      break;
+    case "maler_was": {
+      const was = str(value as string);
+      patch.maler = {
+        ...fd.maler,
+        was,
+        zustand: undefined,
+        fassade: undefined,
+      };
+      patch.fassade = {
+        ...fd.fassade,
+        art: undefined,
+      };
+      const ans = { ...nextAnswers };
+      delete ans.fassade_art;
+      patch.fachdetailAnswers = ans;
+      break;
+    }
+    case "maler_zustand":
+      patch.maler = {
+        ...fd.maler,
+        was: fd.maler?.was,
+        zustand: str(value as string),
+        fassade: undefined,
+      };
+      break;
+    case "fassade_art": {
+      const raw = str(value as string);
+      const art =
+        raw === "klinker"
+          ? "bekleidung"
+          : (raw as NonNullable<FachdetailsState["fassade"]>["art"]);
+      patch.fassade = {
+        ...fd.fassade,
+        art,
+      };
+      break;
+    }
+    case "boden_material":
+      patch.boden = {
+        ...fd.boden,
+        aktuell: str(value as string),
+        ziel: undefined,
+        zustand: undefined,
+        verlegung: undefined,
+      };
+      break;
+    case "boden_ziel":
+      patch.boden = {
+        ...fd.boden,
+        aktuell: fd.boden?.aktuell,
+        ziel: str(value as string),
+        zustand: fd.boden?.zustand,
+        verlegung: fd.boden?.verlegung,
+      };
+      break;
+    case "boden_zustand":
+      patch.boden = {
+        ...fd.boden,
+        aktuell: fd.boden?.aktuell,
+        zustand: str(value as string),
+        verlegung: undefined,
+      };
+      break;
+    case "boden_verlegung":
+      patch.boden = {
+        ...fd.boden,
+        aktuell: fd.boden?.aktuell,
+        verlegung: str(value as string),
+      };
+      break;
+    case "dach_vorhaben":
+      patch.dach = {
+        ...fd.dach,
+        vorhaben: str(value as string),
+        alter: undefined,
+      };
+      break;
+    case "dach_alter":
+      patch.dach = {
+        ...fd.dach,
+        vorhaben: fd.dach?.vorhaben,
+        alter: str(value as string),
+      };
+      break;
+    case "fenster_erneuern":
+      patch.fenster = {
+        ...fd.fenster,
+        ausstattung: str(value as string) as
+          | "standard"
+          | "premium"
+          | "tuer"
+          | "balkon_tuer",
+        defekt: undefined,
+      };
+      break;
+    case "fenster_defekt":
+      patch.fenster = {
+        ...fd.fenster,
+        defekt: str(value as string),
+        ausstattung: undefined,
+      };
+      break;
+    case "garten_was": {
+      const w = str(value as string);
+      delete nextAnswers.garten_followup;
+      patch.garten = {
+        ...fd.garten,
+        was: w,
+        /** Rhythmus kommt aus zentralem `umfang` (Betreuung) bzw. erneut aus `garten_followup` (z. B. Erneuern). */
+        haeufigkeit: undefined,
+        baumgroesse:
+          w === "baum" || w === "obstbaum" ? fd.garten?.baumgroesse : undefined,
+      };
+      break;
+    }
+    case "garten_followup": {
+      const w = fd.garten?.was;
+      if (w === "pflege") {
+        patch.garten = {
+          ...fd.garten,
+          was: w,
+          haeufigkeit: str(value as string),
+        };
+      } else if (w === "baum" || w === "obstbaum") {
+        patch.garten = {
+          ...fd.garten,
+          was: w,
+          baumgroesse: str(value as string),
+        };
+      }
+      break;
+    }
+    default:
+      if (questionId.endsWith("_freitext")) {
+        const g = questionId.replace(/_freitext$/, "");
+        const ft = str(value as string) ?? "";
+        const v = ft.trim() === "" ? null : ft.slice(0, 150);
+        switch (g) {
+          case "elektro":
+            patch.elektro = { ...fd.elektro, freitext: v };
+            break;
+          case "sanitaer":
+            patch.sanitaer = { ...fd.sanitaer, freitext: v };
+            break;
+          case "heizung":
+            patch.heizung = { ...fd.heizung, freitext: v };
+            break;
+          case "maler":
+            patch.maler = { ...fd.maler, freitext: v };
+            break;
+          case "boden":
+            patch.boden = { ...fd.boden, freitext: v };
+            break;
+          case "dach":
+            patch.dach = { ...fd.dach, freitext: v };
+            break;
+          case "garten":
+            patch.garten = { ...fd.garten, freitext: v };
+            break;
+          case "fenster":
+            patch.fenster = { ...fd.fenster, freitext: v };
+            break;
+          default:
+            break;
+        }
+      }
+      break;
+  }
+
+  return patch;
+}
+
+export function buildPatchClearFachdetailAnswer(
+  fd: FachdetailsState,
+  questionId: string
+): Partial<FachdetailsState> {
+  const next = { ...(fd.fachdetailAnswers ?? {}) };
+  delete next[questionId];
+  const patch: Partial<FachdetailsState> = {
+    fachdetailAnswers: next,
+  };
+
+  switch (questionId) {
+    case "bad_was":
+      patch.sanitaer = {
+        ...fd.sanitaer,
+        badWas: undefined,
+        objektListe: undefined,
+        lage: undefined,
+        rohre: undefined,
+      };
+      break;
+    case "bad_objekt_liste":
+      patch.sanitaer = { ...fd.sanitaer, objektListe: undefined };
+      break;
+    case "sanitaer_lage":
+      delete next.sanitaer_leck_zugang;
+      patch.fachdetailAnswers = next;
+      patch.sanitaer = {
+        ...fd.sanitaer,
+        lage: undefined,
+        rohre: undefined,
+      };
+      break;
+    case "sanitaer_leck_zugang":
+      patch.sanitaer = {
+        ...fd.sanitaer,
+        lage: "leitung_leck",
+        rohre: undefined,
+      };
+      break;
+    case "sanitaer_notfall":
+      patch.sanitaer = {
+        ...fd.sanitaer,
+        notfallSchwere: undefined,
+      };
+      break;
+    case "sanitaer_problem":
+      delete next.sanitaer_leck_zugang;
+      patch.fachdetailAnswers = next;
+      patch.sanitaer = {
+        ...fd.sanitaer,
+        lage: undefined,
+        rohre: undefined,
+      };
+      break;
+    case "elektro_notfall":
+    case "elektro_erneuern":
+    case "elektro_kaputt":
+      patch.elektro = {
+        ...fd.elektro,
+        problem: undefined,
+        folge: undefined,
+      };
+      break;
+    case "elektro_folge_sicherung":
+    case "elektro_folge_steckdose":
+    case "elektro_folge_leitungen":
+      patch.elektro = { ...fd.elektro, folge: undefined };
+      break;
+    case "heizung_notfall":
+    case "heizung_erneuern":
+    case "heizung_kaputt":
+      patch.heizung = {
+        ...fd.heizung,
+        typ: undefined,
+        alter: undefined,
+        vorhaben: undefined,
+        anzahl: undefined,
+        ziel: undefined,
+      };
+      break;
+    case "heizung_ziel":
+      patch.heizung = {
+        ...fd.heizung,
+        typ: fd.heizung?.typ,
+        alter: fd.heizung?.alter,
+        vorhaben: fd.heizung?.vorhaben,
+        anzahl: fd.heizung?.anzahl,
+        ziel: undefined,
+      };
+      break;
+    case "heizung_heizkoerper_anzahl":
+      patch.heizung = { ...fd.heizung, anzahl: undefined };
+      break;
+    case "heizung_oel_alter":
+      patch.heizung = { ...fd.heizung, alter: undefined };
+      break;
+    case "maler_was":
+      delete next.fassade_art;
+      patch.fachdetailAnswers = next;
+      patch.maler = {
+        was: undefined,
+        zustand: undefined,
+        fassade: undefined,
+        freitext: fd.maler?.freitext,
+      };
+      patch.fassade = { ...fd.fassade, art: undefined };
+      break;
+    case "maler_zustand":
+      patch.maler = {
+        was: undefined,
+        zustand: undefined,
+        fassade: undefined,
+        freitext: fd.maler?.freitext,
+      };
+      break;
+    case "fassade_art":
+      patch.fassade = { ...fd.fassade, art: undefined };
+      break;
+    case "boden_material":
+    case "boden_verlegung":
+      patch.boden = {
+        aktuell: undefined,
+        ziel: undefined,
+        zustand: undefined,
+        verlegung: undefined,
+        freitext: fd.boden?.freitext,
+      };
+      break;
+    case "boden_ziel":
+      patch.boden = {
+        aktuell: fd.boden?.aktuell,
+        ziel: undefined,
+        zustand: fd.boden?.zustand,
+        verlegung: fd.boden?.verlegung,
+        freitext: fd.boden?.freitext,
+      };
+      break;
+    case "boden_zustand":
+      patch.boden = {
+        aktuell: fd.boden?.aktuell,
+        zustand: undefined,
+        verlegung: undefined,
+        freitext: fd.boden?.freitext,
+      };
+      break;
+    case "dach_vorhaben":
+    case "dach_alter":
+      patch.dach = {
+        vorhaben: undefined,
+        alter: undefined,
+        freitext: fd.dach?.freitext,
+      };
+      break;
+    case "fenster_erneuern":
+    case "fenster_defekt":
+      patch.fenster = {
+        ausstattung: undefined,
+        defekt: undefined,
+        freitext: fd.fenster?.freitext,
+      };
+      break;
+    case "garten_was":
+      delete next.garten_followup;
+      patch.fachdetailAnswers = next;
+      patch.garten = {
+        was: undefined,
+        haeufigkeit: undefined,
+        baumgroesse: undefined,
+        gestaltung: undefined,
+        freitext: fd.garten?.freitext,
+      };
+      break;
+    case "garten_followup": {
+      const w = fd.garten?.was;
+      patch.garten = {
+        ...fd.garten,
+        was: w,
+        haeufigkeit: w === "pflege" ? undefined : fd.garten?.haeufigkeit,
+        baumgroesse:
+          w === "baum" || w === "obstbaum" ? undefined : fd.garten?.baumgroesse,
+        gestaltung: fd.garten?.gestaltung,
+        freitext: fd.garten?.freitext,
+      };
+      break;
+    }
+    default:
+      if (questionId.endsWith("_freitext")) {
+        const g = questionId.replace(/_freitext$/, "");
+        const b = bucket(fd, g);
+        b.freitext = null;
+        (patch as Record<string, unknown>)[g] = b;
+      }
+      break;
+  }
+  return patch;
+}

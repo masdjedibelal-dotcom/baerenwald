@@ -1,41 +1,36 @@
-# Bärenwald CRM Dashboard
+This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
-Next.js 14 CRM — Deployment ausschließlich über **Netlify** (`netlify.toml`, `@netlify/plugin-nextjs`).
+## Getting Started
 
-## Lokal starten
+First, run the development server:
 
 ```bash
-npm install
-cp .env.example .env.local   # Werte ausfüllen
 npm run dev
+# or
+yarn dev
+# or
+pnpm dev
+# or
+bun dev
 ```
 
-Optional ohne Login: `npm run dev:skip-auth` (Port 3001).
+Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
-## Build (wie Netlify)
+You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 
-```bash
-npm run build
-```
+This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
-Vor dem Build werden veraltete Root-Duplikate und abgelöste Dateien per `scripts/remove-deploy-blockers.mjs` entfernt.
+## Learn More
 
-## Netlify
+To learn more about Next.js, take a look at the following resources:
 
-1. Repo verbinden, Build-Command: `npm run build` (steht in `netlify.toml`)
-2. **Environment variables** (Site settings):
-   - `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`
-   - `NEXT_PUBLIC_APP_URL` — produktive CRM-URL (z. B. `https://crm.example.de`)
-   - `CRON_SECRET` — für Scheduled Functions (`Authorization: Bearer …`)
-   - `RESEND_API_KEY`, ggf. weitere aus `.env.example`
-3. **Scheduled Functions** (in `netlify.toml`):
-   - `/api/cron/einbehalte` — täglich 07:30
-   - `/api/cron/rechnungen` — täglich 08:00
-   - `/api/cron/datenschutz` — monatlich, 1., 08:00
-   - `/api/cron/angebot-nachfass` — täglich 09:00
+- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
+- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
 
-Ohne `NEXT_PUBLIC_APP_URL` nutzt die App auf Netlify die Variable `URL` (Site-URL).
+You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
 
-## Supabase
+## Deploy on Vercel
 
-Migrationen unter `supabase/migrations/`. Lokal z. B. `npm run db:angebot-handwerker-gaps` (siehe `package.json`).
+The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+
+Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.

@@ -22,7 +22,7 @@ Zielgruppe: **baerenwald-crm-dashboard** (Betrieb, Entwicklung, Datenschutz)
 | Bestätigungsseite „Registrierung optional“ | ✅ | `melden/bestaetigung/page.tsx` |
 | Vertragsvorlagen (Anwalt) | ✅ | `docs/legal/*` |
 
-**Spiegel im CRM:** `docs/DATENSCHUTZ_CRM_HANDOFF.md` (vollständig)
+**Spiegel im CRM:** `docs/DATENSCHUTZ_CRM_HANDOFF.md` (dieses Dokument als Kurzverweis)
 
 ---
 
@@ -90,8 +90,8 @@ Neuer Eintrag **„Mieter-Schadenmeldungen (Melde-Link)“** in CRM-Datenschutz-
 
 **To-do CRM:**
 
-- [x] VVT-Eintrag im UI anlegen (`Einstellungen → Integration → Datenschutz → VVT`)
-- [x] AVV-Register Unterauftragsverarbeiter aktuell halten (`avv-register.ts` + UI-Tab)
+- [ ] VVT-Eintrag im UI anlegen (`Einstellungen → Datenschutz`)
+- [ ] AVV-Register Unterauftragsverarbeiter aktuell halten
 
 ---
 
@@ -129,12 +129,12 @@ values
 on conflict (kategorie) do nothing;
 ```
 
-**Löschlogik (`execute-loeschung.ts`):**
+**Löschlogik (noch implementieren in `execute-loeschung.ts`):**
 
-- [x] Kategorie `melder_fotos`: URLs aus `leads.funnel_daten.fotos` lesen → Storage löschen → Array leeren
-- [x] Kategorie `melder_leads_*`: `melder_*` Felder nullen, `kontakt_*` anonymisieren, `funnel_daten` bereinigen
-- [x] Prüfung: Lead mit aktivem Auftrag → **nicht** löschen (wie bestehende Lead-Logik)
-- [x] Cron/Scheduled Job: Kandidaten aus `datenschutz_fristen` + `created_at`/`status` ermitteln
+- [ ] Kategorie `melder_fotos`: URLs aus `leads.funnel_daten.fotos` lesen → Storage löschen → Array leeren
+- [ ] Kategorie `melder_leads_*`: `melder_*` Felder nullen, `kontakt_*` anonymisieren, `funnel_daten` bereinigen
+- [ ] Prüfung: Lead mit aktivem Auftrag → **nicht** löschen (wie bestehende Lead-Logik)
+- [ ] Cron/Scheduled Job: Kandidaten aus `datenschutz_fristen` + `created_at`/`status` ermitteln
 
 **Referenz:** bestehende Implementierung in `src/lib/datenschutz/execute-loeschung.ts` (Kategorien `leads_abgebrochen`, `fotos_auftraege`).
 
@@ -146,11 +146,11 @@ Prozess: `docs/legal/ORGANISATION_BETROFFENENRECHTE_PROZESS.md`
 
 **To-dos:**
 
-- [x] Anfrage-Typ/Tag „Mieter-Meldung“ in `datenschutz_anfragen` (Spalte `kontext`)
-- [x] Lead-Suche nach `melder_email` + `kanal in (hv_melder_link, hv_einladung)`
-- [x] Export „Melder-Auskunft“ aus Lead-Detail (strukturierter Text)
-- [x] Lösch-Button mit Melder-spezifischer Kategorie
-- [x] Schulungs-Sheet für CRM-Nutzer (1 Seite, datensparsame Nutzung)
+- [ ] Anfrage-Typ/Tag „Mieter-Meldung“ in `datenschutz_anfragen`
+- [ ] Lead-Suche nach `melder_email` + `kanal in (hv_melder_link, hv_einladung)`
+- [ ] Export „Melder-Auskunft“ aus Lead-Detail (PDF oder strukturierter Text)
+- [ ] Lösch-Button mit Melder-spezifischer Kategorie
+- [ ] Schulungs-Sheet für CRM-Nutzer (1 Seite, datensparsame Nutzung)
 
 **Zuständigkeit:** Mieter → primär HV; Bärenwald unterstützt technisch.
 
@@ -187,7 +187,7 @@ Themen für CRM-Nutzer:
 |----------------|------|
 | Datenschutz-Modul | `src/lib/datenschutz/` |
 | Löschung API | `src/app/api/datenschutz/loeschen/route.ts` |
-| UI Einstellungen | `src/app/(dashboard)/einstellungen/integration?section=datenschutz` |
+| UI Einstellungen | `src/app/(dashboard)/einstellungen/datenschutz/` |
 | Lead Melder-Block | `src/components/anfragen/LeadOrgKontextBlock.tsx` |
 | Org-Mail bei Meldung | `src/lib/org/org-mail-notify.ts` |
 | SQL Org-Felder | `supabase/migrations/20260708120000_organisation_portal_stamm.sql` |
@@ -205,14 +205,14 @@ Themen für CRM-Nutzer:
 
 ### P1 — innerhalb 4 Wochen nach Go-Live
 
-5. [x] Migration `datenschutz_fristen` Melder-Kategorien (`20260725120000_datenschutz_melder.sql`)
-6. [x] `execute-loeschung.ts` erweitern (`melder_fotos`, `melder_leads_*`)
-7. [x] Cron für automatische Löschkandidaten (`loadDatenschutzFaellige` + `/api/cron/datenschutz`)
-8. [x] Betroffenenanfragen-Prozess im CRM testen (UI + Melder-Suche)
+5. Migration `datenschutz_fristen` Melder-Kategorien
+6. `execute-loeschung.ts` erweitern (`melder_fotos`, `melder_leads_*`)
+7. Cron für automatische Löschkandidaten
+8. Betroffenenanfragen-Prozess im CRM testen
 
 ### P2 — Verbesserungen
 
-9. [x] Export Melder-Auskunft (Text; PDF optional offen)
+9. Export Melder-Auskunft PDF
 10. Optional: Checkbox „Hinweis gelesen“ im Meldeformular (Rechtsbewertung)
 11. Incident-Log für Datenpannen
 
@@ -225,7 +225,7 @@ Themen für CRM-Nutzer:
 | Melde-Flow To-dos (Status) | `handwerks-plattform/docs/DATENSCHUTZ_MELDEFLOW_TODOS.md` |
 | Org-Portal Backend | `handwerks-plattform/docs/ORGANISATION_PORTAL_BACKEND.md` |
 | Org-Portal Übersicht | `handwerks-plattform/docs/ORGANISATION_PORTAL.md` |
-| Vertragsvorlagen | `docs/legal/` (Spiegel aus handwerks-plattform) |
+| Vertragsvorlagen | `handwerks-plattform/docs/legal/` |
 
 ---
 

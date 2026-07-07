@@ -1,362 +1,201 @@
-# Handwerker-Koordination — Gesamtprozess (CRM ↔ Partner-Portal)
+# Handwerker-Koordination — Prozess (Partner-Portal-Sicht)
 
 **Stand:** Juni 2026  
-**CRM-Repo:** `baerenwald-crm-dashboard`  
-**Portal-Repo:** `handwerks-plattform` (Website `baerenwaldmuenchen.de/partner`)  
-**Supabase-Projekt:** `wnotlydvhsmfkhexgeol`
+**Single Source of Truth (Code):** `partner-portal-phase.ts`, `partner-anfrage-status.ts`, `partner-angebot-portal-status.ts`, `get-partner-data.ts`
 
-Dieses Dokument beschreibt den **kompletten Lebenszyklus** einer Handwerker-Zuweisung: von der Angebots-Anfrage bis zur Ausführung und Nachreichung neuer Leistungen.
+CRM-Gegenstück: `baerenwald-crm-dashboard/docs/handwerker-koordination/HANDWERKER_KOORDINATION_PROZESS.md`
 
 ---
 
-## 1. Zwei parallele Welten (wichtig!)
+## 1. Drei Ebenen (nicht vermischen)
 
-| Ebene | Tabelle / Feld | Bedeutung |
-|-------|----------------|-----------|
-| **Angebots-Funnel** | `angebot_handwerker` | Partner wurde am **Angebot** angefragt; Konditionen, PDF, `hw_status` |
-| **Auftrags-Funnel** | `auftrag_positionen.handwerker_id` + `handwerker_status` | Partner ist einer **konkreten Leistung** am laufenden Auftrag zugewiesen |
-| **Auftrags-Kopf** | `auftrag_handwerker` | Gewerk-Zuweisung auf Auftragsebene (Legacy/Übersicht) |
-| **Baufortschritt** | `auftrag_positionen.leistung_status` | `offen` / `in_arbeit` / `erledigt` — **unabhängig** von Verhandlung |
+| Ebene | DB | Was Koordination daraus liest |
+|-------|-----|-------------------------------|
+| **Zuweisung** | `angebot_handwerker.status` | Hat HW die Anfrage angenommen? (`angefragt` / `akzeptiert` / `abgelehnt`) |
+| **Konditionen** | `angebot_handwerker.hw_status` + `hw_konditionen` | Wo steht die Preisverhandlung? |
+| **Bau** | `auftrag_positionen.leistung_status` | `offen` / `in_arbeit` / `erledigt` — nur CRM, kein Portal-Push |
 
-**Regel:** „Akzeptiert“ auf `angebot_handwerker.status` = Partner hat die **Anfrage** angenommen, **nicht** dass Preise final vereinbart sind. Preise stecken in `hw_konditionen` / `hw_status`.
-
----
-
-## 2. Status-Matrix
-
-### `angebot_handwerker.status` (Portal-Antwort auf Anfrage)
-
-| Wert | Bedeutung |
-|------|-----------|
-| `angefragt` | CRM hat angefragt, Partner hat noch nicht geantwortet |
-| `akzeptiert` | Partner nimmt Zuweisung an (Portal) |
-| `abgelehnt` | Partner lehnt ab |
-
-### `angebot_handwerker.hw_status` (Konditionen / Verhandlung)
-
-| Wert | CRM-Aktion | Portal-Phase |
-|------|------------|--------------|
-| `offen` / leer | Noch keine Einreichung | Angebote (nach Annahme) |
-| `eingereicht` | Gegenvorschlag/Bestätigung wartet auf CRM | Angebote |
-| `bestaetigt` | CRM hat **Übernehmen** geklickt; Partner muss im Portal bestätigen | Anfragen (Bestätigung) |
-| `uebernommen` | Partner hat bestätigt; Preise verbindlich | Aufträge (nach weiteren Hürden) |
-| `rueckfrage` | CRM hat Rückfrage gestellt | Angebote |
-| `abgelehnt` | CRM hat abgelehnt | — |
-
-### `auftrag_positionen.handwerker_status` (Zuweisung am Auftrag)
-
-| Wert | Bedeutung |
-|------|-----------|
-| `angefragt` / `warten` | Zuweisung versendet, Antwort offen |
-| `akzeptiert` | Partner hat zugewiesene Leistung angenommen |
-| `abgelehnt` | Abgelehnt |
-
-### `auftrag_positionen.leistung_status` (Bau)
-
-`offen` → `in_arbeit` → `erledigt` (preisgewichteter Auftragsfortschritt)
+Zusätzlich **Auftrags-Zuweisung** ohne Angebots-Funnel: `auftrag_positionen.handwerker_status` → eigener Eintrag unter Anfragen (`id=auftrag:{uuid}`).
 
 ---
 
-## 3. Prozessdiagramm (Happy Path)
+## 2. Portal-Tabs vs. `hw_status`
+
+### Wann erscheint ein `angebot_handwerker`-Vorgang in welchem Tab?
+
+| `hw_status` | Zusatz | Tab(s) | Badge (Handwerker) | Aktion nötig? |
+|-------------|--------|--------|-------------------|---------------|
+| leer / offen | `status=angefragt`, keine `antwort_at` | **Anfragen** | Antwort ausstehend | Ja — annehmen/ablehnen |
+| leer | `status=akzeptiert`, keine `hw_eingereicht_at` | **Anfragen** | Angebotspreis festlegen | Ja — Preise senden |
+| `eingereicht` | | **Anfragen** *(nicht in „Offen“-Filter)* | Wartet auf Prüfung | Nein — CRM prüft |
+| `bestaetigt` | | **Anfragen** | Konditionen bestätigen | Ja |
+| `rueckfrage` / `abgelehnt` | | **Anfragen** | Neue Konditionen / abgelehnt | Ja |
+| `uebernommen` | | **Angebote** | Warte auf Auftragsfreigabe | Optional PDF |
+| `uebernommen` | `auftrag_status ≠ offen` | **Angebote** | Auftrag freigegeben | Ja — Vertrag + annehmen |
+| `uebernommen` | `projektvertrag_bestaetigt_am` | **Aufträge** | Projektstatus | Ausführung |
+| `uebernommen` | **+ Nachreichung** (neue Position) | **Angebote** + **Anfragen** | Angebote: Hinweis „Neue Leistung unter Anfragen“; Anfragen: „Neue Leistung“ | Ja — nur neue Zeile |
+
+**Nachreichung:** Vorgang bleibt in **Angebote** (vereinbarte Leistungen). Zusätzlich erscheint er in **Anfragen** für die neue Leistung. Erkennung: `partner-konditionen.ts` (`hasPartnerKonditionenNachreichungAusstehend`), Quellen: `angebote.positionen` **und** `auftrag_positionen`.
+
+---
+
+## 3. Sequenzdiagramm (Portal-Sicht)
 
 ```mermaid
 sequenceDiagram
-  participant CRM as CRM Team
+  participant CRM as CRM
   participant DB as Supabase
-  participant API as Website API
-  participant HW as Partner-Portal
+  participant P as Partner-Portal
 
-  Note over CRM,HW: Phase A — Angebot
-  CRM->>DB: angebot_handwerker anlegen (Wizard)
-  CRM->>DB: status = angefragt
-  CRM->>API: POST partner-notify-anfrage
-  API->>HW: E-Mail + Link Anfragen
-  HW->>DB: status = akzeptiert
-  HW->>DB: hw_konditionen + hw_status = eingereicht
-  CRM->>DB: Übernehmen → hw_status = bestaetigt
-  CRM->>API: POST partner-notify-angebot-bestaetigt (bitteBestaetigen)
-  HW->>DB: hw_status = uebernommen
-  CRM->>DB: preis_partner + EK im Angebot
+  Note over CRM,P: Phase A — Konditionen (alles Tab Anfragen bis uebernommen)
+  CRM->>DB: status=angefragt, gesendet_at
+  CRM->>P: Mail → Anfragen
+  P->>DB: status=akzeptiert
+  P->>P: Tab Anfragen — Preise festlegen
+  P->>DB: hw_konditionen, hw_status=eingereicht
+  Note over P: Liste „Offen“ leer — Wartet auf Prüfung
+  CRM->>DB: Übernehmen → hw_status=bestaetigt
+  CRM->>P: Mail → Anfragen bestätigen
+  P->>DB: hw_status=uebernommen
 
-  Note over CRM,HW: Phase B — Auftrag
-  CRM->>DB: createAuftragFromAngebot
-  CRM->>DB: auftrag_positionen aus Angebot
-  HW->>HW: Tab Aufträge (nach Vertrag/Unterlagen)
+  Note over CRM,P: Phase B — Angebot / Auftrag (Tab Angebote → Aufträge)
+  P->>P: Tab Angebote — optional PDF
+  CRM->>DB: Auftrag anlegen, status≠offen
+  P->>P: Tab Angebote — Auftrag freigegeben
+  P->>DB: projektvertrag_bestaetigt_am
+  P->>P: Tab Aufträge
+
+  Note over CRM,P: Phase C — Nachreichung
+  CRM->>DB: neue auftrag_position / Angebotsposition
+  P->>P: Angebote (alt) + Anfragen (neu)
+  P->>DB: hw_status=eingereicht (erneut)
 ```
 
 ---
 
-## 4. Schritt-für-Schritt
+## 4. Schritte 0–10 (Portal-Bezug)
 
 ### Schritt 0 — Stammdaten
 
-| Wo (CRM) | Aktion |
-|----------|--------|
-| `/handwerker` | Handwerker anlegen (Name, E-Mail, Gewerke, aktiv) |
-| `/handwerker/[id]` | Portal-Zugang / Einladung |
+Portal: Registrierung `/partner/register` nur wenn Handwerker im CRM existiert.
 
-**DB:** `handwerker`  
-**Portal:** Registrierung nur nach Anlage im CRM (`/partner/register`)
+### Schritt 1–2 — Zuweisen & Anfrage senden (CRM)
 
----
+Portal: noch unsichtbar bis `gesendet_at` / `status=angefragt`.
 
-### Schritt 1 — Angebot: Handwerker pro Gewerk zuweisen
+**API:** `POST /api/internal/partner-notify-anfrage`  
+**Link:** `?section=anfragen&id={angebot_handwerker.id}`
 
-| Wo (CRM) | Route / Komponente |
-|----------|-------------------|
-| Angebot-Wizard | `AngebotWizard` → Schritt Handwerker (`AngebotWizardHandwerkerStep.tsx`) |
-| Angebot bearbeiten | `/angebote/[id]` |
+### Schritt 3 — Zu-/Absage
 
-**Aktion:** Pro Gewerk Handwerker auswählen, optional Aufgaben-Notiz.
+| Portal | Detail |
+|--------|--------|
+| Tab | **Anfragen** |
+| Komponente | `PartnerAnfrageDetail.tsx` |
+| Server | `respondPartnerAnfrage()` — `status`, `antwort_at` |
 
-**DB:**
-```sql
-INSERT angebot_handwerker (angebot_id, handwerker_id, gewerk_id, status, aufgabe_notiz)
--- status initial oft leer oder vorbereitet
-```
+**Wichtig:** Nach Annahme bleibt der Eintrag in **Anfragen** (nicht Angebote).
 
-**Portal:** Noch nichts sichtbar, bis Anfrage gesendet wird.
+### Schritt 4 — Konditionen einreichen
 
----
+| Portal | Detail |
+|--------|--------|
+| Tab | **Anfragen** |
+| Badge | „Angebotspreis festlegen“ |
+| UI | `PartnerLeistungenKonditionenCard` — Annehmen / Preise senden |
+| DB | `hw_konditionen`, `hw_status=eingereicht`, `hw_eingereicht_at` |
 
-### Schritt 2 — Handwerker-Anfrage senden
+Optional: Angebots-PDF-Upload erst ab Tab **Angebote** (`hw_status=uebernommen`).
 
-| Wo (CRM) | Aktion |
-|----------|--------|
-| Angebot-Wizard „Senden“ oder Angebot-Detail | „Handwerker anfragen“ / E-Mail-Versand |
+### Schritt 5 — CRM prüft (kein Portal-Schritt)
 
-**Code:** `sendHandwerkerAnfrageFuerZuweisung()` → `lib/angebote/send-handwerker-anfrage.ts`
+Portal: Eintrag mit `eingereicht` ist **nicht** in der Anfragen-Liste „Offen“ (Filter `isPartnerAnfrageAktionErforderlich`). Handwerker sieht ihn erst wieder bei `bestaetigt` oder per Direktlink.
 
-**DB-Update:**
-```sql
-UPDATE angebot_handwerker SET status = 'angefragt', gesendet_at = now()
-```
+### Schritt 6 — Konditionen bestätigen
 
-**Was ins Portal geht:**
+| Portal | Detail |
+|--------|--------|
+| Tab | **Anfragen** |
+| Badge | „Konditionen bestätigen“ |
+| DB | `hw_status=uebernommen` (ein Klick, kein erneutes Preis-JSON) |
 
-| Kanal | Details |
-|-------|---------|
-| API | `POST {SITE}/api/internal/partner-notify-anfrage` |
-| Body | `{ "anfrageId": "<angebot_handwerker.id>" }` |
-| Auth | `Bearer PARTNER_INTERNAL_API_SECRET` |
-| Mail | Resend auf der **Website**, Link `?section=anfragen&id={uuid}` |
+**API:** `POST /api/internal/partner-notify-angebot-bestaetigt` (`bitteBestaetigen: true`)
 
-**Portal-Liste:** Tab **Anfragen** (`PARTNER_PORTAL_PHASEN.md`)
+### Schritt 7 — Tab Angebote
 
-![CRM Login](screenshots/00-crm-login.png)
+| Unterphase | Badge | Aktion |
+|------------|-------|--------|
+| Warte Freigabe | Warte auf Auftragsfreigabe | Optional PDF (`submitPartnerAngebotPdf`) |
+| CRM Transfer | Auftrag freigegeben | Rahmenvertrag, Unterlagen, **Auftrag annehmen** |
 
----
+**Freigabe-Trigger:** `auftraege.status ≠ offen` — kein Portal-API-Call.
 
-### Schritt 3 — Partner antwortet auf Anfrage
+### Schritt 8 — Direkte Auftrags-Zuweisung
 
-| Wo (Portal) | Aktion |
-|-------------|--------|
-| `/partner` → Anfragen | Annehmen oder Ablehnen |
+| Portal | Detail |
+|--------|--------|
+| Listen-ID | `auftrag:{auftrag_id}` |
+| Tab | **Anfragen** solange `auftraege.status=offen` |
+| Nach Annahme | ggf. verknüpftes `angebot_handwerker` → **Angebote** |
 
-**DB:**
-```sql
-UPDATE angebot_handwerker SET status = 'akzeptiert'|'abgelehnt', antwort_at = now()
-```
+**API:** `POST /api/internal/partner-notify-zuweisung`
 
-**Portal:** Eintrag wandert von **Anfragen** → **Angebote** (bei Annahme).
+### Schritt 9 — Nachreichung
 
-**CRM:** Angebot-Detail zeigt Badge „Akzeptiert“ — **noch keine Konditionen**.
+Siehe [KONDITIONEN_CRM_HANDOFF.md](../KONDITIONEN_CRM_HANDOFF.md) §6 und [HANDWERKER_KOORDINATION_PORTAL_UI.md](./HANDWERKER_KOORDINATION_PORTAL_UI.md).
 
----
+Voraussetzungen: `hw_status=uebernommen`, `hw_konditionen` gesetzt, neue Position mit passender `handwerker_id` / Gewerk.
 
-### Schritt 4 — Partner reicht Konditionen ein (Gegenvorschlag oder Bestätigung)
+### Schritt 10 — Baufortschritt
 
-| Wo (Portal) | Aktion |
-|-------------|--------|
-| Tab **Angebote** | Preise je Leistung, PDF optional, „Senden“ |
-
-**DB:**
-```sql
-UPDATE angebot_handwerker SET
-  hw_konditionen = '{ art, positionen[], eingereicht_at }',
-  hw_status = 'eingereicht',
-  hw_eingereicht_at = now(),
-  hw_preis_netto / hw_preis_brutto
-```
-
-**JSON `hw_konditionen` (Beispiel):**
-```json
-{
-  "art": "gegenvorschlag",
-  "positionen": [
-    { "position_id": "...", "leistung": "Wandfliesen", "ek_netto": 500, "hw_netto": 750, "geaendert": true }
-  ]
-}
-```
-
-**CRM:** Noch keine automatische Mail — Eintrag erscheint zur Prüfung am Auftrag/Angebot.
+Nur CRM (`leistung_status`). Portal **Aufträge** zeigt Projektstatus/Fortschritt indirekt.
 
 ---
 
-### Schritt 5 — CRM prüft Konditionen
+## 5. APIs (CRM → Portal)
 
-| Wo (CRM) | Route |
-|----------|-------|
-| Auftrag → Tab **Leistungen & Steuerung** | Position aufklappen → Tab **Handwerker & Verhandlung** |
-| Oder Angebot-Detail | `HandwerkerEinreichungPruefung.tsx` |
+| Endpoint | Wann | Portal-Ziel |
+|----------|------|-------------|
+| `partner-notify-anfrage` | HW-Anfrage gesendet | Anfragen |
+| `partner-notify-angebot-bestaetigt` | CRM Übernehmen | Anfragen (bestätigen) |
+| `partner-notify-angebot-antwort` | CRM Rückfrage/Ablehnung | Anfragen |
+| `partner-notify-zuweisung` | Zuweisung am Auftrag | Anfragen (`auftrag:…`) |
+| *(keiner)* | Angebot → Auftrag Transfer | Angebote (Badge ändert sich) |
 
-**Komponenten:**
-- `HwKonditionenPruefungTable.tsx` — Tabelle Vorschlag vs. Vergütung vs. Δ
-- Aktionen: **Übernehmen** | **Rückfrage** | **Ablehnen**
-
-**Code Übernehmen:** `bestaetigeHandwerkerEinreichung()` → `uebernehmeHandwerkerEinreichungEk()`
-
-**DB nach Übernehmen:**
-```sql
--- Angebot: einkaufspreis in positionen[]
--- Auftrag: preis_partner auf passenden auftrag_positionen
-UPDATE angebot_handwerker SET hw_status = 'bestaetigt', hw_crm_antwort_at = now()
-```
-
-**Was ins Portal geht:**
-
-| API | `POST partner-notify-angebot-bestaetigt` |
-| Body | `{ "anfrageId": "...", "bitteBestaetigen": true }` |
-| Mail | Link zu Anfragen — Partner soll Konditionen **bestätigen** |
+Details: [PARTNER_CRM_NOTIFY_API.md](../PARTNER_CRM_NOTIFY_API.md)
 
 ---
 
-### Schritt 6 — Partner bestätigt übernommene Konditionen
-
-| Wo (Portal) | Aktion |
-|-------------|--------|
-| Anfragen / Bestätigungsflow | „Bestätigen“ |
-
-**DB:**
-```sql
-UPDATE angebot_handwerker SET hw_status = 'uebernommen'
-```
-
-**CRM:** Badge **Übernommen**; `preis_partner` gesetzt; Zeile zeigt vereinbarten EK.
-
----
-
-### Schritt 7 — Kunde akzeptiert → Auftrag anlegen
-
-| Wo (CRM) | Aktion |
-|----------|--------|
-| Angebot-Detail | „Auftrag anlegen“ |
-
-**Code:** `createAuftragFromAngebot()` in `angebote/actions.ts`
-
-**DB:**
-- `auftraege` INSERT
-- `auftrag_positionen` aus `angebote.positionen` (via `angebotPositionenToAuftragRows`)
-- `auftrag_handwerker` für akzeptierte Gewerke
-- Eingereichte Konditionen werden auf Positionen angewendet (EK/`preis_partner`)
-
-**Hinweis:** Wenn `hw_status` beim Anlegen noch nicht `uebernommen`, kann der Flow `bestaetigt` überspringen — bekanntes Risiko.
-
----
-
-### Schritt 8 — Handwerker direkt am Auftrag zuweisen (ohne Angebots-Funnel)
-
-| Wo (CRM) | Aktion |
-|----------|--------|
-| Auftrag → Leistungen | „Handwerker fürs Gewerk“ oder Dropdown pro Position |
-| Modal | `HandwerkerZuweisenModal.tsx` |
-
-**Code:** `assignAuftragHandwerkerGewerk()` / `assignAuftragHandwerkerPosition()`  
-**DB:** `auftrag_positionen.handwerker_id`, `handwerker_status = angefragt`
-
-**Was ins Portal geht (wenn implementiert):**
-
-| API | `POST partner-notify-zuweisung` |
-| Body | `{ auftragId, handwerkerId, positionIds? }` |
-| Link | `?section=anfragen&id=auftrag:{auftragId}` |
-
-**Portal:** Erscheint unter **Anfragen** (nicht Aufträge), solange `auftraege.status = offen`.
-
----
-
-### Schritt 9 — Neue Leistung nachrüsten (Nachreichung)
-
-| Wo (CRM) | Aktion |
-|----------|--------|
-| Auftrag → Gewerk | „Leistung hinzufügen“ |
-| Oder | Angebot-Korrektur-Wizard → Sync |
-
-**Code:** `addAuftragPosition()` — erbt automatisch `handwerker_id` von Geschwister-Positionen (`auftrag-position-handwerker-erbe.ts`)
-
-**Voraussetzungen Portal-Erkennung:**
-
-| Feld | Wert |
-|------|------|
-| `angebot_handwerker.hw_status` | `uebernommen` |
-| `hw_konditionen` | gesetzt (alte Positionen) |
-| Neue Zeile | in `auftrag_positionen` **oder** `angebote.positionen` |
-| Zuordnung | `handwerker_id` + `gewerk_slug`/`gewerk_name` |
-| `angebot_handwerker.gewerk_id` | gesetzt (CRM backfill bei Zuweisung) |
-
-**Portal:** Neue Leistung erscheint unter **Anfragen** als Nachreichung (Delta zu `hw_konditionen`).
-
-**Nicht** bei `hw_status = bestaetigt` oder `eingereicht` ohne vorherige Einigung — dann normaler Anfragen-Flow.
-
----
-
-### Schritt 10 — Baufortschritt (getrennt)
-
-| Wo (CRM) | Tab **Termine & Fortschritt** |
-|----------|--------------------------------|
-| Segmented Control | Offen / In Arbeit / Erledigt |
-
-**Code:** `updateAuftragPositionLeistungStatus()`  
-**DB:** `auftrag_positionen.leistung_status` → synchronisiert `auftraege.fortschritt`
-
-**Portal:** Kein direkter Push — nur indirekt über Projektstatus.
-
----
-
-## 5. API-Übersicht CRM → Website
-
-| Endpoint | Wann | Datei |
-|----------|------|-------|
-| `partner-notify-anfrage` | HW-Anfrage am Angebot | `notify-partner-anfrage.ts` |
-| `partner-notify-zuweisung` | Zuweisung am Auftrag | `notify-partner-zuweisung.ts` |
-| `partner-notify-angebot-bestaetigt` | Nach CRM-Übernehmen | `notify-partner-angebot-bestaetigt.ts` |
-| `partner-notify-angebot-antwort` | Rückfrage/Ablehnung | `notify-partner-angebot-antwort.ts` |
-
-**Env (identisch CRM + Netlify):** `PARTNER_INTERNAL_API_SECRET`, `NEXT_PUBLIC_SITE_URL`
-
----
-
-## 6. Referenz-Auftrag (Test)
-
-| Entität | ID |
-|---------|-----|
-| Auftrag | `a5ebfa7d-b77a-4109-b68b-873896734f5d` |
-| Zuweisung | `3b7768c4-b2c5-469b-9acf-0cd8f5495b54` |
-| Handwerker | Bärenwald München |
-| Stand (DB) | `hw_status=eingereicht`, Gegenvorschlag 750 € netto |
-
----
-
-## 7. Bekannte Lücken / Risiken
-
-1. **Zwei Status-Ebenen** verwirren Nutzer („Akzeptiert“ ≠ Preis OK).
-2. **`notify-partner-zuweisung`** war lange nicht überall angebunden.
-3. **`createAuftragFromAngebot`** kann `hw_status` direkt auf `uebernommen` setzen und `bestaetigt` überspringen.
-4. **Angebot-Korrektur** schreibt primär `angebote.positionen` → Sync zu Auftrag; direktes „Leistung hinzufügen“ nur `auftrag_positionen`.
-5. **UI** — siehe `HANDWERKER_KOORDINATION_UI_ANALYSE.md` (Accordion-Problem, Redesign v2).
-
----
-
-## 8. Datei-Index (CRM)
+## 6. Code-Index (Portal)
 
 | Bereich | Pfad |
 |---------|------|
-| Positions-Tab | `src/components/auftraege/AuftragPositionenSteuerungTab.tsx` |
-| Zeile v2 | `src/components/auftraege/AuftragPositionRowSummary.tsx` |
-| Detail 3 Tabs | `src/components/auftraege/AuftragPositionDetailPanel.tsx` |
-| Konditionen prüfen | `src/components/angebote/HandwerkerEinreichungPruefung.tsx` |
-| HW-Zuweisung | `src/app/(dashboard)/auftraege/handwerker-actions.ts` |
-| EK übernehmen | `src/app/(dashboard)/angebote/actions.ts` |
-| Handwerker erben | `src/lib/auftraege/auftrag-position-handwerker-erbe.ts` |
-| Konditionen-Schema | `src/lib/partner/hw-konditionen.ts` |
+| Listen-Aufteilung | `get-partner-data.ts` |
+| Phasen | `partner-portal-phase.ts` |
+| Anfragen-Badges | `partner-anfrage-status.ts` |
+| Angebote-Badges | `partner-angebot-portal-status.ts` |
+| Nachreichung | `partner-konditionen.ts` |
+| Anfrage-Detail | `PartnerAnfrageDetail.tsx` |
+| Angebot-Detail | `PartnerAngebotDetail.tsx` |
+| Auftrag-Detail | `PartnerAuftragDetail.tsx` |
+| UI Shell | `PartnerClient.tsx` |
 
-**Portal-Docs:** `handwerks-plattform/docs/PARTNER_PORTAL_PHASEN.md`, `PARTNER_CRM_NOTIFY_API.md`
+---
+
+## 7. Bekannte UX-Lücken (Portal)
+
+1. **`eingereicht` unsichtbar** in Anfragen-„Offen“ — Handwerker kann denken, alles erledigt; CRM muss innerhalb SLA reagieren oder Mail nutzen.
+2. **Zwei Status-Ebenen** (`status` vs. `hw_status`) — in Schulung klar trennen.
+3. **Nachreichung** erfordert korrekte `handwerker_id` / Gewerk — sonst keine Erkennung.
+4. **CRM `createAuftragFromAngebot`** kann `bestaetigt` überspringen — Portal-Verhalten dann abweichend (Risiko in CRM-Doc §7).
+
+---
+
+## 8. Test-Auftrag
+
+| Entität | ID |
+|---------|-----|
+| Auftrag (CRM) | `a5ebfa7d-b77a-4109-b68b-873896734f5d` |
+| CRM-Tab | Leistungen & Steuerung (v2) |
+
+Portal-Test: gleicher Handwerker einloggen → Tabs je `hw_status` durchklicken.
