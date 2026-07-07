@@ -13,7 +13,15 @@
     "verify:produkte": "npx tsx scripts/verify-produkt-preise.ts",
     "audit:screenshots": "node scripts/design-audit-screenshots.mjs",
     "capture:portal-marketing": "node scripts/capture-marketing-portal-screenshots.mjs",
-    "audit:pdf": "node scripts/design-audit-pdf.mjs"
+    "audit:pdf": "node scripts/design-audit-pdf.mjs",
+    "test:e2e": "TEST_AUTH_BYPASS=true playwright test",
+    "test:e2e:ui": "TEST_AUTH_BYPASS=true playwright test --ui",
+    "test:e2e:public": "TEST_AUTH_BYPASS=true playwright test --project=public",
+    "test:e2e:portal": "TEST_AUTH_BYPASS=true playwright test --project=org-portal",
+    "test:e2e:crm": "TEST_AUTH_BYPASS=true playwright test --project=crm",
+    "e2e:seed": "npx tsx scripts/e2e-seed.ts",
+    "e2e:seed:muster": "npx tsx scripts/e2e-seed-musterverwaltung.ts",
+    "test:e2e:hv": "E2E_MUSTER=true TEST_AUTH_BYPASS=true playwright test --project=hv-spec"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.100.1",
@@ -37,6 +45,7 @@
     "tailwindcss-animate": "^1.0.7"
   },
   "devDependencies": {
+    "@playwright/test": "^1.61.1",
     "@types/node": "^20",
     "@types/react": "^18",
     "@types/react-dom": "^18",

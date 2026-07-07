@@ -13,17 +13,24 @@ type Props = {
 
 export function OrgFreigabeBanner({ leadId, status, onUpdated }: Props) {
   const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   if (status !== "ausstehend") return null;
 
   const act = async (aktion: "freigegeben" | "abgelehnt") => {
     setBusy(true);
+    setError(null);
     try {
-      await fetch("/api/org/freigabe", {
+      const res = await fetch("/api/org/freigabe", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ leadId, aktion }),
       });
+      const json = (await res.json().catch(() => ({}))) as { error?: string };
+      if (!res.ok) {
+        setError(json.error ?? "Freigabe fehlgeschlagen.");
+        return;
+      }
       track.orgFreigabe(aktion);
       if (aktion === "freigegeben") {
         orgPortalToast.freigegeben();
@@ -37,13 +44,14 @@ export function OrgFreigabeBanner({ leadId, status, onUpdated }: Props) {
   };
 
   return (
-    <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 mb-4">
+    <div className="mb-4 rounded-xl border border-amber-200 bg-amber-50 p-4">
       <p className="text-sm font-medium text-amber-900">Angebot zur Freigabe</p>
-      <p className="text-xs text-amber-800 mt-1">
+      <p className="mt-1 text-xs text-amber-800">
         Bärenwald hat ein Angebot erstellt. Bitte freigeben oder ablehnen, bevor
         wir den Auftrag starten.
       </p>
-      <div className="flex gap-2 mt-3">
+      {error ? <p className="mt-2 text-xs text-red-700">{error}</p> : null}
+      <div className="mt-3 flex gap-2">
         <button
           type="button"
           className="btn-pill-primary !py-1.5 !text-xs"

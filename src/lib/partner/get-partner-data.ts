@@ -176,6 +176,7 @@ export type PartnerBautagebuchItem = {
   foto_urls: string[];
   foto_signed_urls: string[];
   fuer_kunde_freigegeben: boolean;
+  eintrag_typ: "tagebuch" | "befund";
   own: boolean;
   handwerker_id: string | null;
 };
@@ -525,7 +526,7 @@ export async function getPartnerDataForHandwerker(handwerkerId: string) {
     const { data: btRows } = await supabaseAdmin
       .from("auftrag_bautagebuch_eintraege")
       .select(
-        "id, auftrag_id, titel, beschreibung, datum, foto_urls, fuer_kunde_freigegeben, handwerker_id"
+        "id, auftrag_id, titel, beschreibung, datum, foto_urls, fuer_kunde_freigegeben, handwerker_id, eintrag_typ"
       )
       .in("auftrag_id", auftragIds)
       .order("datum", { ascending: false });
@@ -569,6 +570,7 @@ export async function getPartnerDataForHandwerker(handwerkerId: string) {
         foto_urls: paths,
         foto_signed_urls: signed,
         fuer_kunde_freigegeben: Boolean(r.fuer_kunde_freigegeben),
+        eintrag_typ: (r.eintrag_typ as "tagebuch" | "befund") ?? "tagebuch",
         own: String(r.handwerker_id ?? "") === id,
         handwerker_id: (r.handwerker_id as string | null) ?? null,
       };
@@ -595,6 +597,8 @@ export async function getPartnerDataForHandwerker(handwerkerId: string) {
         const raw = row as Record<string, unknown>;
         const gate = extractPartnerLeadGateFromAuftragRow(raw);
         if (!isPartnerBlockedByOrgFreigabe(gate)) return true;
+        const aid = String(raw.id);
+        if (hwStatusByAuftrag.has(aid)) return true;
         const positions = (raw.auftrag_positionen ?? []) as Array<{
           handwerker_id?: string | null;
         }>;

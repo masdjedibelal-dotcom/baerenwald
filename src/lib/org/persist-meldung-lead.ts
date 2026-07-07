@@ -1,4 +1,7 @@
 import { persistLead } from "@/lib/lead/persist-lead";
+import { generateMeldeTrackingToken } from "@/lib/melde/melde-tracking";
+import { vorgeschlagenerKostentraeger } from "@/lib/vorgang/kostentraeger";
+import { supabaseAdmin } from "@/lib/supabase";
 import {
   meldeKategorieToSituation,
   meldeKategorieToZeitraum,
@@ -50,7 +53,7 @@ export async function persistMeldungLead(input: PersistMeldungLeadInput) {
   if (input.kategorie === "notfall") zeitraum = "sofort";
   else if (input.dringlichkeit) zeitraum = input.dringlichkeit;
 
-  return persistLead({
+  const result = await persistLead({
     name: input.name,
     email: input.email,
     telefon: input.telefon,
@@ -88,6 +91,56 @@ export async function persistMeldungLead(input: PersistMeldungLeadInput) {
       quelle: input.kanal,
     },
   });
+
+  if (!result.ok) return result;
+
+  const token = generateMeldeTrackingToken();
+  const vorschlag = vorgeschlagenerKostentraeger({
+    hv_meldung_status: initial.hv_meldung_status,
+    anlass: "meldung",
+    funnel_daten: {
+      melde_kategorie: input.kategorie,
+    },
+  });
+
+  let duplikatHinweis = false;
+  if (input.einheit?.trim() && input.kunde_objekt_id) {
+    const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+    const { data: dup } = await supabaseAdmin
+      .from("leads")
+      .select("id")
+      .eq("kunde_objekt_id", input.kunde_objekt_id)
+      .eq("melder_einheit", input.einheit.trim())
+      .gte("created_at", since)
+      .limit(1)
+      .maybeSingle();
+    duplikatHinweis = Boolean(dup?.id);
+  }
+
+  const patch: Record<string, unknown> = {
+    melde_tracking_token: token,
+    vorgang_phase: "eingegangen",
+    duplikat_hinweis: duplikatHinweis,
+  };
+  if (vorschlag) {
+    patch.kostentraeger = vorschlag;
+    patch.kostentraeger_vorgeschlagen = true;
+  }
+
+  await supabaseAdmin.from("leads").update(patch).eq("id", result.id);
+
+  if (duplikatHinweis) {
+    const { writeAuditEvent } = await import("@/lib/audit/write-audit-event");
+    await writeAuditEvent({
+      entityType: "lead",
+      entityId: result.id,
+      aktion: "duplikat_hinweis",
+      kundeId: input.auftraggeber_kunde_id,
+      payload: { einheit: input.einheit, fenster_h: 24 },
+    });
+  }
+
+  return { ...result, meldeTrackingToken: token };
 }
 
 export function parseMeldeBereichId(raw: string | undefined): MeldeBereichId {

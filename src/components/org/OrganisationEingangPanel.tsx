@@ -4,9 +4,12 @@ import Image from "next/image";
 import { useEffect, useMemo, useState } from "react";
 import { AlertTriangle, Filter, Mail, Phone, X } from "lucide-react";
 
+import { KostentraegerSelector } from "@/components/org/KostentraegerSelector";
 import { OrgFreigabeBanner } from "@/components/org/OrgFreigabeBanner";
 import { OrgMeldungAktionBanner } from "@/components/org/OrgMeldungAktionBanner";
+import { BautagebuchAccordionList } from "@/components/shared/BautagebuchAccordionList";
 import { orgPortalToast } from "@/lib/shared/portal-toast";
+import type { OrgPartnerBefundEntry } from "@/lib/org/load-partner-befund";
 import { PortalListCard } from "@/components/shared/PortalListCard";
 import { formatPreisspanneDisplay } from "@/lib/org/hv-meldung-workflow";
 import { meldeKategorieLabel } from "@/lib/org/melde-kategorien";
@@ -31,6 +34,7 @@ type Props = {
   objekte: OrganisationObjekt[];
   initialSelectedId?: string | null;
   onRefresh: () => void;
+  partnerBefundByLeadId?: Record<string, OrgPartnerBefundEntry[]>;
 };
 
 type StatusFilter = "alle" | "neu" | "wartet_melder" | "in_bearbeitung";
@@ -41,12 +45,14 @@ function MeldungDetail({
   onRefresh,
   onClose,
   showClose,
+  partnerBefunde,
 }: {
   lead: OrganisationLead;
   kunde: OrganisationKunde;
   onRefresh: () => void;
   onClose?: () => void;
   showClose?: boolean;
+  partnerBefunde?: OrgPartnerBefundEntry[];
 }) {
   const [resendBusy, setResendBusy] = useState(false);
   const [resendMsg, setResendMsg] = useState<string | null>(null);
@@ -96,6 +102,14 @@ function MeldungDetail({
       ) : null}
 
       <OrgMeldungAktionBanner lead={lead} kunde={kunde} onUpdated={onRefresh} />
+
+      <KostentraegerSelector
+        leadId={lead.id}
+        value={lead.kostentraeger}
+        vorgeschlagen={lead.kostentraeger_vorgeschlagen ?? false}
+        versicherungsNr={lead.versicherungs_nr}
+        onSaved={onRefresh}
+      />
 
       {showAngebotFreigabe ? (
         <OrgFreigabeBanner
@@ -226,6 +240,27 @@ function MeldungDetail({
         </div>
       ) : null}
 
+      {partnerBefunde && partnerBefunde.length > 0 ? (
+        <div data-testid="hv-partner-befund">
+          <BautagebuchAccordionList
+            heading="Partner-Befund (nur Ansicht)"
+            className="!border-t-0 !pt-0"
+            eintraege={partnerBefunde.map((b) => ({
+              id: b.id,
+              datum: b.datum,
+              titel: b.titel,
+              beschreibung: [
+                b.handwerkerName ? `Partner: ${b.handwerkerName}` : null,
+                b.beschreibung,
+              ]
+                .filter(Boolean)
+                .join("\n\n"),
+              fotos: b.fotos,
+            }))}
+          />
+        </div>
+      ) : null}
+
       {lead.created_at ? (
         <p className="text-xs text-text-tertiary">
           Eingegangen: {new Date(lead.created_at).toLocaleString("de-DE")}
@@ -241,6 +276,7 @@ export function OrganisationEingangPanel({
   objekte,
   initialSelectedId,
   onRefresh,
+  partnerBefundByLeadId = {},
 }: Props) {
   const [objektFilter, setObjektFilter] = useState<string>("alle");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("alle");
@@ -383,6 +419,7 @@ export function OrganisationEingangPanel({
               lead={selected}
               kunde={kunde}
               onRefresh={onRefresh}
+              partnerBefunde={partnerBefundByLeadId[selected.id]}
             />
           ) : (
             <p className="text-sm text-text-secondary">Meldung auswählen</p>
@@ -405,6 +442,7 @@ export function OrganisationEingangPanel({
               onRefresh={onRefresh}
               showClose
               onClose={() => setMobileDetailOpen(false)}
+              partnerBefunde={partnerBefundByLeadId[selected.id]}
             />
           </div>
         </div>

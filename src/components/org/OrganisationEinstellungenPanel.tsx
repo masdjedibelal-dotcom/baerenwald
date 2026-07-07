@@ -8,9 +8,16 @@ import { orgPortalToast } from "@/lib/shared/portal-toast";
 type Props = {
   kunde: OrganisationKunde;
   onSaved: () => void;
+  embedded?: boolean;
+  readOnly?: boolean;
 };
 
-export function OrganisationEinstellungenPanel({ kunde, onSaved }: Props) {
+export function OrganisationEinstellungenPanel({
+  kunde,
+  onSaved,
+  embedded = false,
+  readOnly = false,
+}: Props) {
   const [kleinreparaturAktiv, setKleinreparaturAktiv] = useState(
     kunde.kleinreparatur_aktiv === true
   );
@@ -29,6 +36,7 @@ export function OrganisationEinstellungenPanel({ kunde, onSaved }: Props) {
 
   const save = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (readOnly) return;
     setBusy(true);
     setMessage(null);
     try {
@@ -57,15 +65,23 @@ export function OrganisationEinstellungenPanel({ kunde, onSaved }: Props) {
   };
 
   return (
-    <form onSubmit={save} className="max-w-lg space-y-6">
-      <div className="rounded-xl border border-border-light bg-muted/20 p-3 text-xs text-text-secondary">
-        <p className="font-medium text-text-primary mb-1">Datenschutz-Hinweis</p>
-        <p>
-          Als Hausverwaltung sind Sie gegenüber Mietern für die Rechtmäßigkeit der
-          Datenübermittlung verantwortlich. Bitte informieren Sie Mieter über den
-          Melde-Link.
+    <form onSubmit={save} className={embedded ? "space-y-6" : "max-w-lg space-y-6"}>
+      {readOnly ? (
+        <p className="text-sm text-text-secondary rounded-lg border border-border-light bg-muted/20 p-3">
+          Nur Administratoren können Freigabe-Regeln und Schwellen ändern.
         </p>
-      </div>
+      ) : null}
+
+      {!embedded ? (
+        <div className="rounded-xl border border-border-light bg-muted/20 p-3 text-xs text-text-secondary">
+          <p className="mb-1 font-medium text-text-primary">Datenschutz-Hinweis</p>
+          <p>
+            Als Hausverwaltung sind Sie gegenüber Mietern für die Rechtmäßigkeit der
+            Datenübermittlung verantwortlich. Bitte informieren Sie Mieter über den
+            Melde-Link.
+          </p>
+        </div>
+      ) : null}
 
       <section className="space-y-3">
         <h3 className="text-sm font-semibold">Block A — Meldungen</h3>
@@ -74,11 +90,10 @@ export function OrganisationEinstellungenPanel({ kunde, onSaved }: Props) {
             type="checkbox"
             checked={kleinreparaturAktiv}
             onChange={(e) => setKleinreparaturAktiv(e.target.checked)}
+            disabled={readOnly}
             className="mt-0.5"
           />
-          <span>
-            Kleinreparatur ohne Angebot erlauben (optional, standardmäßig aus)
-          </span>
+          <span>Kleinreparatur ohne Angebot erlauben (optional, standardmäßig aus)</span>
         </label>
         {kleinreparaturAktiv ? (
           <div>
@@ -92,6 +107,7 @@ export function OrganisationEinstellungenPanel({ kunde, onSaved }: Props) {
               onChange={(e) => setKleinreparaturSchwelle(e.target.value)}
               min={1}
               max={500}
+              disabled={readOnly}
             />
           </div>
         ) : null}
@@ -102,13 +118,13 @@ export function OrganisationEinstellungenPanel({ kunde, onSaved }: Props) {
         <div>
           <p className="text-sm font-medium">Freigabe-Modus</p>
           <p className="text-xs text-text-tertiary mb-2">
-            Bei „Freigabe“ müssen Angebote oberhalb der Schwelle erst von Ihnen
-            freigegeben werden.
+            Bei „Freigabe“ müssen Angebote oberhalb der Schwelle erst von Ihnen freigegeben werden.
           </p>
           <select
             className="w-full border rounded-lg px-3 py-2"
             value={freigabeModus}
             onChange={(e) => setFreigabeModus(e.target.value as FreigabeModus)}
+            disabled={readOnly}
           >
             <option value="direkt">Direkt — ohne Freigabe</option>
             <option value="freigabe">Freigabe erforderlich</option>
@@ -126,6 +142,7 @@ export function OrganisationEinstellungenPanel({ kunde, onSaved }: Props) {
               value={schwelle}
               onChange={(e) => setSchwelle(e.target.value)}
               placeholder="z. B. 2000"
+              disabled={readOnly}
             />
           </div>
         ) : null}
@@ -135,6 +152,7 @@ export function OrganisationEinstellungenPanel({ kunde, onSaved }: Props) {
             type="checkbox"
             checked={notfallDirekt}
             onChange={(e) => setNotfallDirekt(e.target.checked)}
+            disabled={readOnly}
           />
           Notfall-Angebote umgehen Freigabe-Schwelle
         </label>
@@ -142,9 +160,11 @@ export function OrganisationEinstellungenPanel({ kunde, onSaved }: Props) {
 
       {message ? <p className="text-sm text-text-secondary">{message}</p> : null}
 
-      <button type="submit" className="btn-pill-primary" disabled={busy}>
-        Speichern
-      </button>
+      {!readOnly ? (
+        <button type="submit" className="btn-pill-primary" disabled={busy}>
+          Speichern
+        </button>
+      ) : null}
     </form>
   );
 }

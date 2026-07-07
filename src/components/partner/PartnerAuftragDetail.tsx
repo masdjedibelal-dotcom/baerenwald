@@ -4,11 +4,11 @@ import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 
 import { submitPartnerAngebotPdf, submitPartnerRechnung } from "@/app/actions/partner-angebote";
-import {
-  createPartnerBautagebuchEintrag,
+import { createPartnerBautagebuchEintrag,
   deletePartnerBautagebuchEintrag,
   updatePartnerBautagebuchEintrag,
 } from "@/app/actions/partner-bautagebuch";
+import { createPartnerBefundEintrag } from "@/app/actions/partner-befund";
 import { PartnerLeistungenKonditionenCard } from "@/components/partner/PartnerLeistungenKonditionenCard";
 import {
   PartnerDetailError,
@@ -215,6 +215,116 @@ function BautagebuchForm({
   );
 }
 
+function PartnerBefundForm({
+  auftragId,
+  onDone,
+}: {
+  auftragId: string;
+  onDone: () => void;
+}) {
+  const router = useRouter();
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [beschreibung, setBeschreibung] = useState("");
+  const [datum, setDatum] = useState(new Date().toISOString().slice(0, 10));
+  const [anhaenge, setAnhaenge] = useState<File[]>([]);
+
+  function handleAnhaengeChange(files: File[]) {
+    const list = files.slice(0, PARTNER_MAX_BAUTAGEBUCH_ANHAENGE);
+    const err = validatePartnerBautagebuchFiles(list, 0);
+    if (err) {
+      setError(err);
+      setAnhaenge([]);
+      return;
+    }
+    setError(null);
+    setAnhaenge(list);
+  }
+
+  async function onSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setLoading(true);
+    setError(null);
+    const fd = new FormData();
+    fd.set("auftragId", auftragId);
+    fd.set("beschreibung", beschreibung);
+    fd.set("datum", datum);
+    for (const f of anhaenge) fd.append("photos", f);
+
+    const res = await createPartnerBefundEintrag(fd);
+    setLoading(false);
+    if (!res.ok) {
+      setError(res.error);
+      return;
+    }
+    partnerPortalToast.bautagebuchGespeichert(true);
+    router.refresh();
+    onDone();
+  }
+
+  return (
+    <form
+      onSubmit={onSubmit}
+      data-testid="partner-befund-form"
+      className="portal-text-body space-y-3 rounded-xl border border-amber-200 bg-amber-50/60 p-4"
+    >
+      <p className="font-semibold text-text-primary">Schadenbefund dokumentieren</p>
+      <p className="portal-text-meta text-text-secondary">
+        Leckortung und Schadenursache mit Fotos — sichtbar für Hausverwaltung und Versicherungsakte.
+      </p>
+      <label className="block">
+        <span className="portal-text-meta text-text-tertiary">Datum</span>
+        <input
+          type="date"
+          required
+          value={datum}
+          onChange={(e) => setDatum(e.target.value)}
+          className="mt-1 portal-input w-full rounded-xl border border-border-default bg-surface-card px-3 py-3"
+        />
+      </label>
+      <label className="block">
+        <span className="portal-text-meta text-text-tertiary">Befund</span>
+        <textarea
+          required
+          value={beschreibung}
+          onChange={(e) => setBeschreibung(e.target.value)}
+          rows={4}
+          placeholder="z. B. Leck in Versorgungsleitung Decke Bad, Feuchtigkeit Wand …"
+          className="mt-1 portal-input w-full rounded-xl border border-border-default bg-surface-card px-3 py-3"
+        />
+      </label>
+      <FileUploadField
+        label="Fotos zum Befund"
+        hint={`Mindestens 1 Foto (JPG/PNG/WebP, max. ${PARTNER_MAX_PHOTO_MB} MB).`}
+        accept="image/jpeg,image/png,image/webp"
+        multiple
+        selectedName={
+          anhaenge.length > 0
+            ? anhaenge.length === 1
+              ? anhaenge[0].name
+              : `${anhaenge.length} Fotos ausgewählt`
+            : null
+        }
+        onChange={handleAnhaengeChange}
+      />
+      {error ? (
+        <p className="portal-text-body text-red-700" role="alert">
+          {error}
+        </p>
+      ) : null}
+      <div className="flex flex-wrap gap-2">
+        <button
+          type="submit"
+          disabled={loading}
+          className="btn-pill-primary portal-btn-compact disabled:opacity-60"
+        >
+          {loading ? "Wird gespeichert…" : "Befund speichern"}
+        </button>
+      </div>
+    </form>
+  );
+}
+
 function BautagebuchEintragActions({
   auftragId,
   eintrag,
@@ -277,6 +387,7 @@ export function PartnerAuftragDetail({
   vorgangState?: VorgangState;
 }) {
   const router = useRouter();
+  const [showBefund, setShowBefund] = useState(false);
   const [showNew, setShowNew] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
   const [pdfLoading, setPdfLoading] = useState(false);
@@ -291,9 +402,21 @@ export function PartnerAuftragDetail({
   const zeigtDokumenteUpload = partnerAuftragZeigtDokumenteUpload(item);
   const rechnungEingereicht = Boolean(item.hw_rechnung_eingereicht_at);
 
+  const tagebuchEintraege = useMemo(
+    () => item.bautagebuch.filter((e) => e.eintrag_typ !== "befund"),
+    [item.bautagebuch]
+  );
+  const befundEintraege = useMemo(
+    () => item.bautagebuch.filter((e) => e.eintrag_typ === "befund"),
+    [item.bautagebuch]
+  );
+  const eigenerBefund = befundEintraege.some((e) => e.own);
+  const zeigtBefundBereich =
+    item.lead?.hv_meldung_status === "notmassnahme" || befundEintraege.length > 0;
+
   const accordionEintraege = useMemo(
     () =>
-      item.bautagebuch.map((e) => ({
+      tagebuchEintraege.map((e) => ({
         id: e.id,
         datum: e.datum,
         titel: e.titel,
@@ -318,7 +441,19 @@ export function PartnerAuftragDetail({
             />
           ) : undefined,
       })),
-    [item.bautagebuch, item.id]
+    [tagebuchEintraege, item.id]
+  );
+
+  const befundAccordion = useMemo(
+    () =>
+      befundEintraege.map((e) => ({
+        id: e.id,
+        datum: e.datum,
+        titel: e.titel,
+        beschreibung: e.beschreibung,
+        fotos: e.foto_signed_urls,
+      })),
+    [befundEintraege]
   );
 
   const editingEintrag = editId
@@ -455,6 +590,31 @@ export function PartnerAuftragDetail({
               Noch keine Bewertung für diesen Auftrag.
             </p>
           )}
+        </PartnerDetailSection>
+      ) : null}
+
+      {zeigtBefundBereich ? (
+        <PartnerDetailSection title="Schadenbefund">
+          {befundAccordion.length > 0 ? (
+            <BautagebuchAccordionList
+              heading="Dokumentierter Befund"
+              className="!border-t-0 !pt-0"
+              eintraege={befundAccordion}
+            />
+          ) : null}
+          {!eigenerBefund && !showBefund ? (
+            <button
+              type="button"
+              onClick={() => setShowBefund(true)}
+              className="btn-pill-primary portal-btn-compact"
+              data-testid="partner-befund-start"
+            >
+              Befund + Fotos hochladen
+            </button>
+          ) : null}
+          {showBefund && !eigenerBefund ? (
+            <PartnerBefundForm auftragId={item.id} onDone={() => setShowBefund(false)} />
+          ) : null}
         </PartnerDetailSection>
       ) : null}
 

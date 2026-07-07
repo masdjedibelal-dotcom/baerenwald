@@ -4,6 +4,8 @@ const LABELS: Record<LeadAnlass, string> = {
   meldung: "Meldung",
   projekt: "Projekt",
   servicepaket: "Servicepaket",
+  katalog: "Katalog",
+  fixauftrag: "Fixauftrag",
   sonstiges: "Sonstiges",
 };
 

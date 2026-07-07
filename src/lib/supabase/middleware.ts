@@ -5,6 +5,7 @@ import {
   AUTH_SESSION_COOKIE_OPTIONS,
   applyAuthSessionCookieOptions,
 } from "@/lib/supabase/auth-session";
+import { isTestAuthBypassEnabled } from "@/lib/dev-auth";
 
 const PUBLIC_PORTAL_PATHS = [
   "/portal/login",
@@ -84,6 +85,14 @@ export async function updateSession(request: NextRequest) {
   const isPublic =
     publicPaths.some((p) => path === p || path.startsWith(`${p}/`)) ||
     isAuthCallback;
+
+  if (isTestAuthBypassEnabled() && !user && !isPublic && path !== loginPath) {
+    const url = request.nextUrl.clone();
+    url.pathname = "/api/dev/auto-login";
+    url.searchParams.set("role", area === "partner" ? "partner" : "org");
+    url.searchParams.set("next", path + request.nextUrl.search);
+    return NextResponse.redirect(url);
+  }
 
   const segments = path.split("/").filter(Boolean);
   if (segments.length === 2 && segments[0] === area) {

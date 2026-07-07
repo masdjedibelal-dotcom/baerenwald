@@ -67,6 +67,15 @@ export function VorgangCard({
   const { state, auftrag } = vorgang;
   const vorgangState = state as VorgangState;
 
+  if (auftrag.lead?.hv_meldung_status === "notmassnahme") {
+    return (
+      <PartnerAuftragDetail
+        item={auftrag}
+        vorgangState="in_bearbeitung"
+      />
+    );
+  }
+
   if (state === "in_bearbeitung" || state === "erledigt") {
     return <PartnerAuftragDetail item={auftrag} vorgangState={vorgangState} />;
   }

@@ -13,6 +13,7 @@ import type { MeldeKategorie } from "@/lib/org/types";
 import { getClientIp } from "@/lib/request-ip";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { isValidEmail, isValidName } from "@/lib/validation";
+import { meldeStatusUrl } from "@/lib/melde/melde-tracking";
 import { supabaseAdmin } from "@/lib/supabase";
 import { Resend } from "resend";
 import { randomUUID } from "crypto";
@@ -156,6 +157,10 @@ export async function POST(req: Request) {
           objektTitel: objekt.titel,
           kategorie,
           referenz: result.id.slice(0, 8).toUpperCase(),
+          statusLink:
+            "meldeTrackingToken" in result && result.meldeTrackingToken
+              ? meldeStatusUrl(String(result.meldeTrackingToken))
+              : undefined,
         }),
       });
     } catch (e) {

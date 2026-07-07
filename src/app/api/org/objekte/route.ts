@@ -1,8 +1,31 @@
 import { NextResponse } from "next/server";
 
 import { requireOrganisationSession } from "@/lib/org/require-org-session";
-import { isValidMeldeSlug, suggestMeldeSlugFromAddress } from "@/lib/org/slug";
+import {
+  isValidMeldeSlug,
+  suggestMeldeSlugFromAddress,
+} from "@/lib/org/slug";
 import { supabaseAdmin } from "@/lib/supabase";
+
+async function allocateMeldeSlug(
+  kundeId: string,
+  base: string
+): Promise<string> {
+  let candidate = base;
+  let suffix = 2;
+  for (let i = 0; i < 50; i++) {
+    const { data } = await supabaseAdmin
+      .from("kunden_objekte")
+      .select("id")
+      .eq("kunde_id", kundeId)
+      .ilike("melde_slug", candidate)
+      .maybeSingle();
+    if (!data) return candidate;
+    candidate = `${base}-${suffix}`;
+    suffix += 1;
+  }
+  return `${base}-${Date.now().toString(36).slice(-4)}`;
+}
 
 export async function GET() {
   const session = await requireOrganisationSession();
@@ -13,7 +36,7 @@ export async function GET() {
   const { data, error } = await supabaseAdmin
     .from("kunden_objekte")
     .select(
-      "id, titel, strasse, hausnummer, plz, ort, melde_slug, melde_aktiv, einheiten_hinweis, notizen_intern, created_at"
+      "id, titel, strasse, hausnummer, plz, ort, melde_slug, melde_aktiv, einheiten_hinweis, notizen_intern, kostenstelle_nr, created_at"
     )
     .eq("kunde_id", session.kunde.id)
     .order("titel", { ascending: true });
@@ -33,6 +56,7 @@ type ObjektBody = {
   plz?: string;
   ort?: string;
   melde_slug?: string;
+  kostenstelle_nr?: string;
   melde_aktiv?: boolean;
   einheiten_hinweis?: string;
 };
@@ -49,12 +73,14 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Titel fehlt." }, { status: 400 });
   }
 
-  const melde_slug =
-    String(body.melde_slug ?? "").trim().toLowerCase() ||
-    suggestMeldeSlugFromAddress(body.strasse, body.hausnummer, body.plz);
+  const baseSlug =
+    suggestMeldeSlugFromAddress(body.strasse, body.hausnummer, body.plz) ||
+    suggestMeldeSlugFromAddress(titel, null, null);
+
+  const melde_slug = await allocateMeldeSlug(session.kunde.id, baseSlug);
 
   if (!isValidMeldeSlug(melde_slug)) {
-    return NextResponse.json({ error: "Ungültiger Link-Name." }, { status: 400 });
+    return NextResponse.json({ error: "Link konnte nicht erzeugt werden." }, { status: 400 });
   }
 
   const { data, error } = await supabaseAdmin
@@ -75,12 +101,6 @@ export async function POST(req: Request) {
     .single();
 
   if (error) {
-    if (error.code === "23505") {
-      return NextResponse.json(
-        { error: "Link-Name bereits vergeben." },
-        { status: 409 }
-      );
-    }
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
@@ -111,12 +131,8 @@ export async function PATCH(req: Request) {
   if (body.einheiten_hinweis !== undefined) {
     patch.einheiten_hinweis = body.einheiten_hinweis?.trim() || null;
   }
-  if (body.melde_slug !== undefined) {
-    const slug = String(body.melde_slug).trim().toLowerCase();
-    if (!isValidMeldeSlug(slug)) {
-      return NextResponse.json({ error: "Ungültiger Link-Name." }, { status: 400 });
-    }
-    patch.melde_slug = slug;
+  if (body.kostenstelle_nr !== undefined) {
+    patch.kostenstelle_nr = body.kostenstelle_nr?.trim() || null;
   }
   patch.updated_at = new Date().toISOString();
 
@@ -129,12 +145,6 @@ export async function PATCH(req: Request) {
     .maybeSingle();
 
   if (error) {
-    if (error.code === "23505") {
-      return NextResponse.json(
-        { error: "Link-Name bereits vergeben." },
-        { status: 409 }
-      );
-    }
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
   if (!data) {

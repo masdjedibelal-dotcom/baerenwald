@@ -5,6 +5,8 @@ import { OrganisationPortalClient } from "@/components/org/OrganisationPortalCli
 import { PortalClient } from "@/components/portal/PortalClient";
 import { PortalAuthShell } from "@/components/portal/PortalAuthShell";
 import { SITE_CONFIG } from "@/lib/config";
+import { loadKatalogProdukte } from "@/lib/katalog/katalog-produkte";
+import { resolveOrgMitgliedRolle } from "@/lib/org/org-rbac";
 import { getOrganisationPortalData } from "@/lib/org/get-organisation-portal-data";
 import { getPortalDataForKunde } from "@/lib/portal/get-portal-data";
 import { linkPortalKundeToAuthUser } from "@/lib/portal/link-portal-kunde";
@@ -81,7 +83,10 @@ export default async function PortalDashboardPage() {
   const portalModus = (kundeMeta?.portal_modus as string | undefined) ?? "privat";
 
   if (portalModus === "organisation") {
-    const orgData = await getOrganisationPortalData(link.kundeId);
+    const [orgData, katalogProdukte] = await Promise.all([
+      getOrganisationPortalData(link.kundeId),
+      loadKatalogProdukte().catch(() => []),
+    ]);
     if (!orgData) {
       return (
         <PortalAuthShell title="Keine Kundendaten">
@@ -92,6 +97,8 @@ export default async function PortalDashboardPage() {
       );
     }
 
+    const mitgliedRolle = await resolveOrgMitgliedRolle(user.id, link.kundeId);
+
     return (
       <Suspense fallback={<p className="px-4 py-8 text-center">Portal wird geladen…</p>}>
         <OrganisationPortalClient
@@ -101,6 +108,9 @@ export default async function PortalDashboardPage() {
           leads={orgData.leads}
           angebote={orgData.angebote}
           auftraege={orgData.auftraege}
+          katalogProdukte={katalogProdukte}
+          mitgliedRolle={mitgliedRolle}
+          partnerBefundByLeadId={orgData.partnerBefundByLeadId}
         />
       </Suspense>
     );

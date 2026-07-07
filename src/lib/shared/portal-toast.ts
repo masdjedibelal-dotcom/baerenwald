@@ -161,7 +161,16 @@ export const orgPortalToast = {
   objektAngelegt() {
     portalToastSuccess(
       "Objekt angelegt",
-      "Melde-Link und QR-Code findest du in der Objektliste."
+      "Das Gebäude erscheint in der Mieter-Auswahl im Meldeformular."
+    );
+  },
+  linkKopiert() {
+    portalToastSuccess("Link kopiert", "Der Melde-Link liegt in der Zwischenablage.");
+  },
+  aushangPdfErstellt() {
+    portalToastSuccess(
+      "Aushang-PDF erstellt",
+      "Die PDF wurde heruntergeladen — zum Ausdrucken im Treppenhaus."
     );
   },
   objektAktualisiert() {

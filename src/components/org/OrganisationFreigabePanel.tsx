@@ -5,6 +5,7 @@ import { OrgFreigabeBanner } from "@/components/org/OrgFreigabeBanner";
 import { PortalListCard } from "@/components/shared/PortalListCard";
 import { fmtPortalStatus } from "@/lib/portal/portal-display";
 import { portalDetailStatusPillClass } from "@/lib/shared/portal-detail-format";
+import type { OrgPartnerBefundEntry } from "@/lib/org/load-partner-befund";
 import type {
   OrganisationKunde,
   OrganisationLead,
@@ -36,6 +37,8 @@ type Props = {
   angebote: OrgFreigabeAngebotRow[];
   initialSelectedId?: string | null;
   onRefresh: () => void;
+  embedded?: boolean;
+  partnerBefundByLeadId?: Record<string, OrgPartnerBefundEntry[]>;
 };
 
 function buildAngebotFreigaben(
@@ -70,18 +73,21 @@ export function OrganisationFreigabePanel({
   angebote,
   initialSelectedId,
   onRefresh,
+  embedded = false,
+  partnerBefundByLeadId = {},
 }: Props) {
   const angebotFreigaben = buildAngebotFreigaben(leads, angebote);
 
   return (
     <div className="space-y-8">
-      <div>
-        <h2 className="text-lg font-semibold">Zur Freigabe</h2>
-        <p className="text-sm text-text-secondary">
-          Meldungen bearbeiten und Angebote freigeben — danach unter Aufträge
-          verfolgen.
-        </p>
-      </div>
+      {!embedded ? (
+        <div>
+          <h2 className="text-lg font-semibold">Zur Freigabe</h2>
+          <p className="text-sm text-text-secondary">
+            Meldungen bearbeiten und Angebote freigeben.
+          </p>
+        </div>
+      ) : null}
 
       <section className="space-y-3">
         <h3 className="text-sm font-semibold text-text-primary">Meldungen</h3>
@@ -91,6 +97,7 @@ export function OrganisationFreigabePanel({
           objekte={objekte}
           initialSelectedId={initialSelectedId}
           onRefresh={onRefresh}
+          partnerBefundByLeadId={partnerBefundByLeadId}
         />
       </section>
 

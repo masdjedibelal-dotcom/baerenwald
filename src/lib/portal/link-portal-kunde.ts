@@ -111,6 +111,17 @@ export async function linkPortalKundeToAuthUser(opts: {
     return { ok: false, error: "Keine E-Mail-Adresse im Konto." };
   }
 
+  const { data: mitglied } = await supabaseAdmin
+    .from("kunden_mitglieder")
+    .select("kunde_id")
+    .eq("auth_user_id", opts.userId)
+    .eq("aktiv", true)
+    .maybeSingle();
+
+  if (mitglied?.kunde_id) {
+    return { ok: true, kundeId: String(mitglied.kunde_id) };
+  }
+
   const { data: linkedByAuth } = await supabaseAdmin
     .from("kunden")
     .select("id, auth_user_id, email")

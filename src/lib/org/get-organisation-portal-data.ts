@@ -1,3 +1,4 @@
+import { loadPartnerBefundeByLeadIds } from "@/lib/org/load-partner-befund";
 import { getPortalDataForKunde } from "@/lib/portal/get-portal-data";
 import { resolvePortalObjekt } from "@/lib/portal/portal-objekt";
 import { loadOrganisationKunde } from "@/lib/org/load-organisation-kunde";
@@ -8,7 +9,7 @@ import type {
 import { isSupabaseConfigured, supabaseAdmin } from "@/lib/supabase";
 
 const EINGANG_SELECT_FULL =
-  "id, situation, bereiche, status, created_at, plz, strasse, hausnummer, zeitraum, kontakt_name, preis_min, preis_max, preis_unsicher, kontakt_nachricht, funnel_daten, kunde_objekt_id, anlass, erfassung_von, melder_name, melder_einheit, melder_telefon, melder_email, einladung_token, einladung_status, org_freigabe_status, hv_meldung_status, service_modus, auftraggeber_kunde_id, kunde_id";
+  "id, situation, bereiche, status, created_at, plz, strasse, hausnummer, zeitraum, kontakt_name, preis_min, preis_max, preis_unsicher, kontakt_nachricht, funnel_daten, kunde_objekt_id, anlass, erfassung_von, melder_name, melder_einheit, melder_telefon, melder_email, einladung_token, einladung_status, org_freigabe_status, hv_meldung_status, service_modus, auftraggeber_kunde_id, kunde_id, kostentraeger, kostentraeger_vorgeschlagen, versicherungs_nr, vorgang_phase";
 
 const EINGANG_SELECT_BASE =
   "id, situation, bereiche, status, created_at, plz, strasse, hausnummer, zeitraum, kontakt_name, preis_min, preis_max, kontakt_nachricht, funnel_daten, kunde_objekt_id, anlass, erfassung_von, melder_name, melder_einheit, melder_telefon, melder_email, einladung_token, einladung_status, org_freigabe_status, service_modus, auftraggeber_kunde_id, kunde_id";
@@ -25,7 +26,7 @@ export async function getOrganisationPortalData(kundeId: string) {
   const { data: objekteRows } = await supabaseAdmin
     .from("kunden_objekte")
     .select(
-      "id, kunde_id, titel, strasse, hausnummer, plz, ort, melde_slug, melde_aktiv, einheiten_hinweis, notizen_intern, created_at"
+      "id, kunde_id, titel, strasse, hausnummer, plz, ort, melde_slug, melde_aktiv, einheiten_hinweis, notizen_intern, kostenstelle_nr, created_at"
     )
     .eq("kunde_id", kundeId)
     .order("titel", { ascending: true });
@@ -97,6 +98,10 @@ export async function getOrganisationPortalData(kundeId: string) {
     objekt: (l as { objekt?: OrganisationLead["objekt"] }).objekt ?? null,
   }));
 
+  const partnerBefundByLeadId = await loadPartnerBefundeByLeadIds(
+    eingang.map((l) => l.id)
+  );
+
   return {
     kunde,
     objekte,
@@ -104,5 +109,6 @@ export async function getOrganisationPortalData(kundeId: string) {
     leads: orgLeads,
     angebote: base.angebote,
     auftraege: base.auftraege,
+    partnerBefundByLeadId,
   };
 }

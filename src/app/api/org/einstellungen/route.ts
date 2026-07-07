@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
-import { requireOrganisationSession } from "@/lib/org/require-org-session";
+import { writeAuditEvent } from "@/lib/audit/write-audit-event";
+import { requireOrgAdminSession } from "@/lib/org/require-org-session";
 import type { FreigabeModus } from "@/lib/org/types";
 import { supabaseAdmin } from "@/lib/supabase";
 
@@ -13,7 +14,7 @@ type Body = {
 };
 
 export async function PATCH(req: Request) {
-  const session = await requireOrganisationSession();
+  const session = await requireOrgAdminSession();
   if (!session.ok) {
     return NextResponse.json({ error: session.error }, { status: session.status });
   }
@@ -58,6 +59,16 @@ export async function PATCH(req: Request) {
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
+
+  await writeAuditEvent({
+    entityType: "kunde",
+    entityId: session.kunde.id,
+    aktion: "einstellungen_geaendert",
+    actorId: session.userId,
+    actorRolle: session.rolle,
+    kundeId: session.kunde.id,
+    payload: patch,
+  });
 
   return NextResponse.json({ ok: true, settings: data });
 }

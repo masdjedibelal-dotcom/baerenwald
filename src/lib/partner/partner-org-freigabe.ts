@@ -1,6 +1,7 @@
 export type OrgFreigabeLeadGate = {
   auftraggeber_kunde_id?: string | null;
   org_freigabe_status?: string | null;
+  hv_meldung_status?: string | null;
 };
 
 /** Partner sieht Anfragen/Aufträge erst nach Org-Freigabe (oder wenn keine Org beteiligt). */
@@ -8,6 +9,7 @@ export function isPartnerBlockedByOrgFreigabe(
   lead: OrgFreigabeLeadGate | null | undefined
 ): boolean {
   if (!lead?.auftraggeber_kunde_id) return false;
+  if ((lead.hv_meldung_status ?? "").trim() === "notmassnahme") return false;
   const status = lead.org_freigabe_status ?? "nicht_noetig";
   return status === "ausstehend" || status === "abgelehnt";
 }

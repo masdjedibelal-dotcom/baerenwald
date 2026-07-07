@@ -15,31 +15,41 @@ export async function GET(req: Request) {
 
   const url = new URL(req.url);
   const objektId = url.searchParams.get("objektId")?.trim() ?? "";
-  if (!objektId) {
-    return NextResponse.json({ error: "objektId fehlt." }, { status: 400 });
-  }
 
   const org = session.kunde;
   const orgKennung = org.org_kennung?.trim() ?? "";
   if (!orgKennung) {
-    return NextResponse.json({ error: "Org-Kennung fehlt." }, { status: 400 });
+    return NextResponse.json(
+      { error: "Organisations-Kennung fehlt. Bitte Bärenwald kontaktieren." },
+      { status: 400 }
+    );
   }
 
-  const { data: objekt } = await supabaseAdmin
-    .from("kunden_objekte")
-    .select("id, titel, strasse, hausnummer, plz, ort, melde_slug")
-    .eq("id", objektId)
-    .eq("kunde_id", org.id)
-    .maybeSingle();
+  const orgName =
+    org.org_anzeigename?.trim() || org.name?.trim() || "Hausverwaltung";
 
-  if (!objekt?.melde_slug) {
-    return NextResponse.json({ error: "Objekt oder Melde-Link fehlt." }, { status: 404 });
+  let meldeUrl = buildMeldeUrl(orgKennung);
+  let objektTitel = "Schaden melden — Objekt im Formular wählen";
+  let objektAdresse = "";
+
+  if (objektId) {
+    const { data: objekt } = await supabaseAdmin
+      .from("kunden_objekte")
+      .select("id, titel, strasse, hausnummer, plz, ort, melde_slug")
+      .eq("id", objektId)
+      .eq("kunde_id", org.id)
+      .maybeSingle();
+
+    if (!objekt?.melde_slug) {
+      return NextResponse.json({ error: "Objekt oder Melde-Link fehlt." }, { status: 404 });
+    }
+
+    meldeUrl = buildMeldeUrl(orgKennung, objekt.melde_slug);
+    objektTitel = String(objekt.titel);
+    objektAdresse = [objekt.strasse, objekt.hausnummer, objekt.plz, objekt.ort]
+      .filter(Boolean)
+      .join(" ");
   }
-
-  const meldeUrl = buildMeldeUrl(orgKennung, objekt.melde_slug);
-  const adresse = [objekt.strasse, objekt.hausnummer, objekt.plz, objekt.ort]
-    .filter(Boolean)
-    .join(" ");
 
   let qrPngBytes: Uint8Array | null = null;
   try {
@@ -51,18 +61,18 @@ export async function GET(req: Request) {
     qrPngBytes = null;
   }
 
-  const orgName =
-    org.org_anzeigename?.trim() || org.name?.trim() || "Hausverwaltung";
-
   const bytes = await generateMeldeAushangPdf({
     orgName,
-    objektTitel: String(objekt.titel),
-    objektAdresse: adresse,
+    objektTitel,
+    objektAdresse,
     meldeUrl,
     qrPngBytes,
   });
 
-  const filename = `Aushang-${objekt.melde_slug}.pdf`;
+  const filename = objektId
+    ? `Aushang-objekt.pdf`
+    : `Aushang-${orgKennung}.pdf`;
+
   return new NextResponse(Buffer.from(bytes), {
     headers: {
       "Content-Type": "application/pdf",

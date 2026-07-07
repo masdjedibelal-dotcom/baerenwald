@@ -16,6 +16,7 @@ export type PartnerLeadDbRow = {
   kunde_objekt_id?: string | null;
   auftraggeber_kunde_id?: string | null;
   org_freigabe_status?: string | null;
+  hv_meldung_status?: string | null;
   kontakt_name?: string | null;
 };
 
@@ -67,6 +68,7 @@ export function buildPartnerLeadSource(opts: {
     budget_ca: lead.budget_ca,
     kontakt_nachricht: lead.kontakt_nachricht,
     funnel_daten: lead.funnel_daten,
+    hv_meldung_status: lead.hv_meldung_status,
     objekt,
   };
 }

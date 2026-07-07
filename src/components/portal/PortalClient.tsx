@@ -122,6 +122,9 @@ export function PortalClient({
   layout = "default",
   activeSection,
   showAnlassBadge = false,
+  hideFilterBar = false,
+  controlledVorgangFilter,
+  onVorgangFilterChange,
 }: {
   kunde: PortalKunde;
   leads: PortalLead[];
@@ -131,6 +134,9 @@ export function PortalClient({
   activeSection?: "uebersicht" | "vorgaenge" | "auftraege";
   showProductPicker?: boolean;
   showAnlassBadge?: boolean;
+  hideFilterBar?: boolean;
+  controlledVorgangFilter?: KundeVorgangFilter;
+  onVorgangFilterChange?: (filter: KundeVorgangFilter) => void;
 }) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -143,7 +149,10 @@ export function PortalClient({
   const [section, setSection] = useState<SectionId>(
     embedded ? "vorgaenge" : initialSection ?? "uebersicht"
   );
-  const [vorgangFilter, setVorgangFilter] = useState<KundeVorgangFilter>("aktiv");
+  const [internalVorgangFilter, setInternalVorgangFilter] =
+    useState<KundeVorgangFilter>("aktiv");
+  const vorgangFilter = controlledVorgangFilter ?? internalVorgangFilter;
+  const setVorgangFilter = onVorgangFilterChange ?? setInternalVorgangFilter;
   const [selectedId, setSelectedId] = useState<string | null>(
     searchParams.get("id")?.trim() || null
   );
@@ -275,11 +284,13 @@ export function PortalClient({
 
   const listPanel = (
     <article className="card-bordered flex min-h-0 flex-col overflow-hidden lg:min-h-[520px]">
-      <VorgangListFilterBar
-        filter={vorgangFilter}
-        onFilterChange={setVorgangFilter}
-        counts={filterCounts}
-      />
+      {!hideFilterBar ? (
+        <VorgangListFilterBar
+          filter={vorgangFilter}
+          onFilterChange={setVorgangFilter}
+          counts={filterCounts}
+        />
+      ) : null}
       <div className="min-h-0 flex-1 space-y-2 overflow-y-auto p-3 sm:p-4">
         {paginatedRows.length === 0 ? (
           <p className="portal-text-body py-8 text-center text-text-secondary">

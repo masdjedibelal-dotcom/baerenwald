@@ -1,6 +1,12 @@
 export type PortalModus = "privat" | "organisation";
 
-export type LeadAnlass = "meldung" | "projekt" | "servicepaket" | "sonstiges";
+export type LeadAnlass =
+  | "meldung"
+  | "projekt"
+  | "servicepaket"
+  | "katalog"
+  | "fixauftrag"
+  | "sonstiges";
 
 export type ErfassungVon = "melder" | "organisation" | "crm";
 
@@ -39,6 +45,7 @@ export type OrganisationKunde = {
 
 export type HvMeldungStatus =
   | "neu"
+  | "notmassnahme"
   | "angebot_eingefordert"
   | "kleinreparatur"
   | "abgelehnt"
@@ -56,6 +63,7 @@ export type OrganisationObjekt = {
   melde_aktiv: boolean;
   einheiten_hinweis: string | null;
   notizen_intern: string | null;
+  kostenstelle_nr?: string | null;
   created_at?: string | null;
 };
 
@@ -84,6 +92,10 @@ export type OrganisationLead = {
   kunde_objekt_id?: string | null;
   auftraggeber_kunde_id?: string | null;
   kunde_id?: string | null;
+  kostentraeger?: string | null;
+  kostentraeger_vorgeschlagen?: boolean | null;
+  versicherungs_nr?: string | null;
+  vorgang_phase?: string | null;
   plz?: string | null;
   strasse?: string | null;
   hausnummer?: string | null;

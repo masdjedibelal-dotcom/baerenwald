@@ -28,6 +28,7 @@ export const PARTNER_LEAD_EMBED = `
   kunde_objekt_id,
   auftraggeber_kunde_id,
   org_freigabe_status,
+  hv_meldung_status,
   kontakt_name
 `;
 

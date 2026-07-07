@@ -34,6 +34,7 @@ export type PortalAnfrageLeadSource = {
   kontakt_name?: string | null;
   kontakt_nachricht?: string | null;
   funnel_daten?: unknown;
+  hv_meldung_status?: string | null;
   objekt?: PortalObjekt | null;
 };
 

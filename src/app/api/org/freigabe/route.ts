@@ -1,7 +1,9 @@
 import { NextResponse } from "next/server";
 
+import { writeAuditEvent } from "@/lib/audit/write-audit-event";
 import { notifyCrmOrgPortal } from "@/lib/org/notify-crm-org";
-import { requireOrganisationSession } from "@/lib/org/require-org-session";
+import { requireOrgFreigabeSession } from "@/lib/org/require-org-session";
+import { transitionLeadVorgangPhase } from "@/lib/vorgang/vorgang-lifecycle";
 import type { OrgFreigabeStatus } from "@/lib/org/types";
 import { supabaseAdmin } from "@/lib/supabase";
 
@@ -13,7 +15,7 @@ type Body = {
 };
 
 export async function POST(req: Request) {
-  const session = await requireOrganisationSession();
+  const session = await requireOrgFreigabeSession();
   if (!session.ok) {
     return NextResponse.json({ error: session.error }, { status: session.status });
   }
@@ -55,6 +57,25 @@ export async function POST(req: Request) {
     notiz: body.notiz?.trim() || null,
     erstellt_von: "portal",
   });
+
+  await writeAuditEvent({
+    entityType: "lead",
+    entityId: leadId,
+    aktion: aktion === "freigegeben" ? "org_freigabe" : "org_freigabe_abgelehnt",
+    actorId: session.userId,
+    actorRolle: session.rolle,
+    kundeId: orgId,
+    payload: { betrag_eur: body.betrag_eur ?? null, notiz: body.notiz ?? null },
+  });
+
+  if (aktion === "freigegeben") {
+    await transitionLeadVorgangPhase(leadId, "in_bearbeitung", {
+      aktion: "phase_in_bearbeitung",
+      actorId: session.userId,
+      actorRolle: session.rolle,
+      kundeId: orgId,
+    });
+  }
 
   void notifyCrmOrgPortal({
     leadId,
