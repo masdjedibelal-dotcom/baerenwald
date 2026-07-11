@@ -24,7 +24,7 @@ import { DokumenteTabelle, type DokumentZeile } from "@/components/shared/Dokume
 import type { PartnerOffenAngebotItem } from "@/lib/partner/partner-offen-status";
 import { resolvePartnerDetailTitelFromAnfrage } from "@/lib/partner/partner-listen-titel";
 import { partnerDetailStatusPillClass } from "@/lib/partner/partner-detail-format";
-import { partnerPortalToast } from "@/lib/shared/portal-toast";
+import { partnerPortalToast, portalToastError } from "@/lib/shared/portal-toast";
 import {
   HANDWERKER_ABLEHNUNG_GRUND_LABELS,
   HANDWERKER_ABLEHNUNG_GRUND_VALUES,
@@ -231,6 +231,7 @@ export function PartnerOffenDetail({
     setConfirmOpen(false);
     if (!res.ok) {
       setError(res.error);
+      portalToastError("Annahme fehlgeschlagen", res.error);
       return;
     }
     if (isNachreichung) {

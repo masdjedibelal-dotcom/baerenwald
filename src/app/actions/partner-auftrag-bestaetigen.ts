@@ -104,6 +104,57 @@ type AcceptKonditionenResult =
     }
   | { ok: false; error: string };
 
+function builtFromExistingHwKonditionen(opts: {
+  existingHw: PartnerHwKonditionen;
+  row: { hw_preis_netto?: number | null; hw_preis_brutto?: number | null };
+  openPositionIds: string[];
+}): AcceptKonditionenResult {
+  return {
+    ok: true,
+    konditionen: opts.existingHw,
+    preisNetto: Number(opts.row.hw_preis_netto ?? 0),
+    preisBrutto: Number(opts.row.hw_preis_brutto ?? 0),
+    openPositionIds: opts.openPositionIds,
+  };
+}
+
+async function builtFromAngebotPositionen(opts: {
+  angebotId: string;
+  gewerkId: string;
+  handwerkerId: string;
+}): Promise<AcceptKonditionenResult> {
+  const { data: angebotRow } = await supabaseAdmin
+    .from("angebote")
+    .select("positionen")
+    .eq("id", opts.angebotId)
+    .maybeSingle();
+
+  const zeilen = buildPartnerKonditionZeilen(
+    (angebotRow as { positionen?: unknown } | null)?.positionen,
+    { gewerkId: opts.gewerkId, handwerkerId: opts.handwerkerId }
+  );
+  const eingabe = buildKonditionenEingabeFromZeilen(zeilen);
+  if (!eingabe) {
+    return {
+      ok: false,
+      error: "Für die Leistungen fehlt noch ein Angebotspreis von Bärenwald.",
+    };
+  }
+  const angebotBuilt = buildPartnerHwKonditionenFromEingabe({
+    positionenRaw: (angebotRow as { positionen?: unknown } | null)?.positionen,
+    gewerkId: opts.gewerkId,
+    eingabe,
+  });
+  if (!angebotBuilt.ok) return angebotBuilt;
+  return {
+    ok: true,
+    konditionen: angebotBuilt.konditionen,
+    preisNetto: angebotBuilt.preisNetto,
+    preisBrutto: angebotBuilt.preisBrutto,
+    openPositionIds: [],
+  };
+}
+
 function buildAcceptKonditionen(opts: {
   auftragPositionen: PartnerAuftragPosition[];
   openPositionIds: string[];
@@ -358,16 +409,26 @@ export async function confirmPartnerAuftrag(opts: {
     return { ok: false, error: "Bitte die Ergänzung verbindlich bestätigen." };
   }
 
-  const openPositionIds = isNachreichung
+  let openPositionIds = isNachreichung
     ? resolveNachreichungOpenZeilenIds(nachreichungKontext)
     : auftragPositionen
         .filter((p) => positionBrauchtVorgangAktion(p))
         .map((p) => p.id);
 
+  /** Erstzuweisung: Positionen ohne handwerker_status gelten trotzdem als offen. */
+  if (!isNachreichung && auftragPositionen.length > 0 && openPositionIds.length === 0) {
+    openPositionIds = auftragPositionen.map((p) => p.id);
+  }
+
   const openKonditionIds = openPositionIds.filter((id) => {
     const pos = auftragPositionen.find((p) => p.id === id);
     return pos?.aenderung_typ !== "entfernt";
   });
+
+  const rowPreise = row as {
+    hw_preis_netto?: number | null;
+    hw_preis_brutto?: number | null;
+  };
 
   let built: AcceptKonditionenResult;
 
@@ -378,50 +439,43 @@ export async function confirmPartnerAuftrag(opts: {
         openPositionIds: openKonditionIds,
         existingHw: isNachreichung ? existingHw : null,
       });
+      if (!built.ok && !isNachreichung && existingHw?.positionen.length) {
+        built = builtFromExistingHwKonditionen({
+          existingHw,
+          row: rowPreise,
+          openPositionIds,
+        });
+      }
     } else if (existingHw?.positionen.length) {
-      built = {
-        ok: true,
-        konditionen: existingHw,
-        preisNetto: Number((row as { hw_preis_netto?: number | null }).hw_preis_netto ?? 0),
-        preisBrutto: Number((row as { hw_preis_brutto?: number | null }).hw_preis_brutto ?? 0),
+      built = builtFromExistingHwKonditionen({
+        existingHw,
+        row: rowPreise,
         openPositionIds,
-      };
+      });
     } else {
       return { ok: false, error: "Keine offenen Leistungen zum Annehmen." };
     }
   } else if (!auftragPositionen.length) {
-    const { data: angebotRow } = await supabaseAdmin
-      .from("angebote")
-      .select("positionen")
-      .eq("id", angebotId)
-      .maybeSingle();
-
-    const zeilen = buildPartnerKonditionZeilen(
-      (angebotRow as { positionen?: unknown } | null)?.positionen,
-      { gewerkId: String(row.gewerk_id ?? ""), handwerkerId: link.handwerkerId }
-    );
-    const eingabe = buildKonditionenEingabeFromZeilen(zeilen);
-    if (!eingabe) {
-      return {
-        ok: false,
-        error: "Für die Leistungen fehlt noch ein Angebotspreis von Bärenwald.",
-      };
-    }
-    const angebotBuilt = buildPartnerHwKonditionenFromEingabe({
-      positionenRaw: (angebotRow as { positionen?: unknown } | null)?.positionen,
+    built = await builtFromAngebotPositionen({
+      angebotId,
       gewerkId: String(row.gewerk_id ?? ""),
-      eingabe,
+      handwerkerId: link.handwerkerId,
     });
-    if (!angebotBuilt.ok) return angebotBuilt;
-    built = {
-      ok: true,
-      konditionen: angebotBuilt.konditionen,
-      preisNetto: angebotBuilt.preisNetto,
-      preisBrutto: angebotBuilt.preisBrutto,
-      openPositionIds: [],
-    };
+  } else if (existingHw?.positionen.length) {
+    built = builtFromExistingHwKonditionen({
+      existingHw,
+      row: rowPreise,
+      openPositionIds,
+    });
   } else {
-    return { ok: false, error: "Keine offenen Leistungen zum Annehmen." };
+    built = await builtFromAngebotPositionen({
+      angebotId,
+      gewerkId: String(row.gewerk_id ?? ""),
+      handwerkerId: link.handwerkerId,
+    });
+    if (!built.ok) {
+      return { ok: false, error: "Keine offenen Leistungen zum Annehmen." };
+    }
   }
 
   if (!built.ok) return built;

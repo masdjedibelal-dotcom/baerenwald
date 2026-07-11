@@ -1,4 +1,6 @@
 import { supabaseAdmin, isSupabaseConfigured } from "@/lib/supabase";
+import { ensureMeldeSlugsForKunde } from "@/lib/org/ensure-melde-slug";
+import { MELDE_ALLGEMEIN_SLUG } from "@/lib/org/melde-url";
 
 export type MeldeKontext = {
   org: {
@@ -30,6 +32,26 @@ export type ResolveMeldeResult =
   | { ok: true; kontext: MeldeKontext }
   | { ok: false; code: "not_found" | "disabled" | "config"; message: string };
 
+type OrgRow = {
+  id: string;
+  name: string | null;
+  org_kennung: string;
+  org_anzeigename: string | null;
+  org_logo_url: string | null;
+};
+
+type ObjektRow = {
+  id: string;
+  titel: string;
+  strasse: string | null;
+  hausnummer: string | null;
+  plz: string | null;
+  ort: string | null;
+  melde_slug: string | null;
+  melde_aktiv: boolean | null;
+  einheiten_hinweis: string | null;
+};
+
 function formatAdresse(
   strasse?: string | null,
   hausnummer?: string | null,
@@ -39,6 +61,70 @@ function formatAdresse(
   const str = [strasse?.trim(), hausnummer?.trim()].filter(Boolean).join(" ");
   const ortLine = [plz?.trim(), ort?.trim()].filter(Boolean).join(" ");
   return [str, ortLine].filter(Boolean).join(", ");
+}
+
+function normalizeSlug(raw?: string | null): string {
+  return String(raw ?? "")
+    .trim()
+    .toLowerCase();
+}
+
+function effectiveMeldeSlug(row: ObjektRow): string {
+  const slug = normalizeSlug(row.melde_slug);
+  if (slug) return slug;
+  return `obj-${row.id.replace(/-/g, "").slice(0, 8)}`;
+}
+
+function mapObjekt(row: ObjektRow): MeldeKontext["objekt"] {
+  return {
+    id: row.id,
+    titel: row.titel,
+    strasse: row.strasse,
+    hausnummer: row.hausnummer,
+    plz: row.plz,
+    ort: row.ort,
+    melde_slug: effectiveMeldeSlug(row),
+    einheiten_hinweis: row.einheiten_hinweis,
+  };
+}
+
+function findObjektRow(rows: ObjektRow[], objSlug: string): ObjektRow | undefined {
+  return rows.find((row) => {
+    const slug = effectiveMeldeSlug(row);
+    return slug === objSlug || row.id.toLowerCase() === objSlug;
+  });
+}
+
+async function loadOrganisation(orgSlug: string): Promise<OrgRow | null> {
+  const select =
+    "id, name, org_kennung, org_anzeigename, org_logo_url, portal_modus";
+
+  const { data: orgRows, error: orgErr } = await supabaseAdmin
+    .from("kunden")
+    .select(select)
+    .ilike("org_kennung", orgSlug)
+    .eq("portal_modus", "organisation")
+    .limit(1);
+
+  if (orgErr) {
+    console.error("[resolveMeldeKontext] org:", orgErr.message);
+    throw orgErr;
+  }
+
+  if (orgRows?.[0]) return orgRows[0] as OrgRow;
+
+  const { data: fallback, error: fbErr } = await supabaseAdmin
+    .from("kunden")
+    .select(select)
+    .ilike("org_kennung", orgSlug)
+    .limit(1);
+
+  if (fbErr) {
+    console.error("[resolveMeldeKontext] org fallback:", fbErr.message);
+    throw fbErr;
+  }
+
+  return (fallback?.[0] as OrgRow | undefined) ?? null;
 }
 
 export async function resolveMeldeKontext(
@@ -54,120 +140,62 @@ export async function resolveMeldeKontext(
     return { ok: false, code: "not_found", message: "Organisation unbekannt." };
   }
 
-  const { data: orgRows, error: orgErr } = await supabaseAdmin
-    .from("kunden")
-    .select(
-      "id, name, org_kennung, org_anzeigename, org_logo_url, portal_modus"
-    )
-    .ilike("org_kennung", orgSlug)
-    .eq("portal_modus", "organisation")
-    .limit(1);
-
-  if (orgErr) {
-    console.error("[resolveMeldeKontext] org:", orgErr.message);
+  let org: OrgRow | null;
+  try {
+    org = await loadOrganisation(orgSlug);
+  } catch {
     return { ok: false, code: "config", message: "Fehler beim Laden." };
   }
-
-  const org = orgRows?.[0] as
-    | {
-        id: string;
-        name: string | null;
-        org_kennung: string;
-        org_anzeigename: string | null;
-        org_logo_url: string | null;
-      }
-    | undefined;
 
   if (!org?.id) {
     return { ok: false, code: "not_found", message: "Organisation unbekannt." };
   }
 
-  const { data: objekteRows } = await supabaseAdmin
+  const { data: objekteRowsRaw } = await supabaseAdmin
     .from("kunden_objekte")
     .select(
-      "id, titel, strasse, hausnummer, plz, ort, melde_slug, melde_aktiv"
+      "id, titel, strasse, hausnummer, plz, ort, melde_slug, melde_aktiv, einheiten_hinweis"
     )
     .eq("kunde_id", org.id)
-    .eq("melde_aktiv", true)
-    .not("melde_slug", "is", null)
     .order("titel", { ascending: true });
 
-  const objekte = (objekteRows ?? [])
-    .map((o) => {
-      const row = o as {
-        id: string;
-        titel: string;
-        strasse: string | null;
-        hausnummer: string | null;
-        plz: string | null;
-        ort: string | null;
-        melde_slug: string;
-      };
-      return {
-        id: row.id,
-        titel: row.titel,
-        melde_slug: row.melde_slug.trim().toLowerCase(),
-        adresseZeile: formatAdresse(
-          row.strasse,
-          row.hausnummer,
-          row.plz,
-          row.ort
-        ),
-      };
-    })
-    .filter((o) => o.melde_slug);
+  const objekteRowsAll = (objekteRowsRaw ?? []) as ObjektRow[];
+  await ensureMeldeSlugsForKunde(org.id, objekteRowsAll);
 
-  const objSlug = objektSlug?.trim().toLowerCase();
+  const { data: objekteRowsReloaded } = await supabaseAdmin
+    .from("kunden_objekte")
+    .select(
+      "id, titel, strasse, hausnummer, plz, ort, melde_slug, melde_aktiv, einheiten_hinweis"
+    )
+    .eq("kunde_id", org.id)
+    .order("titel", { ascending: true });
+
+  const objekteRows = (objekteRowsReloaded ?? objekteRowsAll) as ObjektRow[];
+
+  const objekte = objekteRows.map((row) => ({
+    id: row.id,
+    titel: row.titel,
+    melde_slug: effectiveMeldeSlug(row),
+    adresseZeile: formatAdresse(
+      row.strasse,
+      row.hausnummer,
+      row.plz,
+      row.ort
+    ),
+  }));
+
+  const objSlug = normalizeSlug(objektSlug);
   let objekt: MeldeKontext["objekt"] = null;
 
-  if (objSlug) {
-    const hit = (objekteRows ?? []).find((o) => {
-      const row = o as { melde_slug?: string | null; melde_aktiv?: boolean };
-      return (
-        row.melde_aktiv !== false &&
-        String(row.melde_slug ?? "")
-          .trim()
-          .toLowerCase() === objSlug
-      );
-    }) as
-      | {
-          id: string;
-          titel: string;
-          strasse: string | null;
-          hausnummer: string | null;
-          plz: string | null;
-          ort: string | null;
-          melde_slug: string;
-          einheiten_hinweis: string | null;
-          melde_aktiv: boolean;
-        }
-      | undefined;
-
-    if (!hit) {
-      return {
-        ok: false,
-        code: "not_found",
-        message: "Objekt nicht gefunden oder Link deaktiviert.",
-      };
+  if (objSlug === MELDE_ALLGEMEIN_SLUG) {
+    objekt = null;
+  } else if (objSlug) {
+    const hit = findObjektRow(objekteRows, objSlug);
+    if (hit) {
+      objekt = mapObjekt(hit);
     }
-    if (!hit.melde_aktiv) {
-      return {
-        ok: false,
-        code: "disabled",
-        message: "Melde-Link für dieses Objekt ist deaktiviert.",
-      };
-    }
-
-    objekt = {
-      id: hit.id,
-      titel: hit.titel,
-      strasse: hit.strasse,
-      hausnummer: hit.hausnummer,
-      plz: hit.plz,
-      ort: hit.ort,
-      melde_slug: hit.melde_slug.trim().toLowerCase(),
-      einheiten_hinweis: hit.einheiten_hinweis,
-    };
+  } else if (objekteRows.length === 1) {
+    objekt = mapObjekt(objekteRows[0]!);
   }
 
   return {

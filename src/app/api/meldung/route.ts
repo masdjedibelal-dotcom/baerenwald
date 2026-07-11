@@ -8,6 +8,7 @@ import {
 } from "@/lib/email/meldung-mail-templates";
 import { AUTOMATED_CUSTOMER_EMAIL_BCC } from "@/lib/email/resend-bcc";
 import { parseMeldeBereichId, persistMeldungLead } from "@/lib/org/persist-meldung-lead";
+import { MELDE_ALLGEMEIN_SLUG } from "@/lib/org/melde-url";
 import { resolveMeldeKontext } from "@/lib/org/resolve-melde-kontext";
 import type { MeldeKategorie } from "@/lib/org/types";
 import { getClientIp } from "@/lib/request-ip";
@@ -108,9 +109,16 @@ export async function POST(req: Request) {
   }
 
   const { org: orgRow, objekt } = resolved.kontext;
-  if (!objekt) {
+  const isAllgemein = objektSlug.toLowerCase() === MELDE_ALLGEMEIN_SLUG;
+  if (!objekt && !isAllgemein) {
     return NextResponse.json({ error: "Objekt fehlt." }, { status: 400 });
   }
+
+  const objektTitel =
+    objekt?.titel?.trim() ||
+    orgRow.org_anzeigename?.trim() ||
+    orgRow.name?.trim() ||
+    "Objekt";
 
   const result = await persistMeldungLead({
     name,
@@ -123,11 +131,11 @@ export async function POST(req: Request) {
     fachdetailAnswers: body.fachdetailAnswers,
     dringlichkeit: body.dringlichkeit,
     fotos,
-    plz: objekt.plz ?? "",
-    strasse: objekt.strasse,
-    hausnummer: objekt.hausnummer,
+    plz: objekt?.plz ?? "",
+    strasse: objekt?.strasse,
+    hausnummer: objekt?.hausnummer,
     auftraggeber_kunde_id: orgRow.id,
-    kunde_objekt_id: objekt.id,
+    kunde_objekt_id: objekt?.id ?? null,
     kanal: "hv_melder_link",
     erfassung_von: "melder",
     skipInternMail: true,
@@ -154,7 +162,7 @@ export async function POST(req: Request) {
         html: buildMelderBestaetigungHtml({
           melderName: name,
           orgName: orgDisplay,
-          objektTitel: objekt.titel,
+          objektTitel,
           kategorie,
           referenz: result.id.slice(0, 8).toUpperCase(),
           statusLink:
@@ -183,9 +191,9 @@ export async function POST(req: Request) {
             process.env.RESEND_FROM_SYSTEM ??
             "System <system@baerenwaldmuenchen.de>",
           to: orgEmail,
-          subject: buildOrgNeueMeldungSubject(objekt.titel),
+          subject: buildOrgNeueMeldungSubject(objektTitel),
           html: buildOrgNeueMeldungHtml({
-            objektTitel: objekt.titel,
+            objektTitel,
             melderName: name,
             melderEinheit: einheit,
             melderTelefon: telefon || undefined,

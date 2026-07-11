@@ -4,10 +4,12 @@ import { useState } from "react";
 
 import { OrganisationObjektAkteTabs } from "@/components/org/OrganisationObjektAkteTabs";
 import type { OrganisationObjekt } from "@/lib/org/types";
+import { buildMeldeUrl } from "@/lib/org/melde-url";
 import { orgPortalToast } from "@/lib/shared/portal-toast";
 
 type Props = {
   objekte: OrganisationObjekt[];
+  orgKennung?: string | null;
   onRefresh: () => void;
 };
 
@@ -21,7 +23,7 @@ type EditState = {
   kostenstelle_nr: string;
 };
 
-export function OrganisationObjektePanel({ objekte, onRefresh }: Props) {
+export function OrganisationObjektePanel({ objekte, orgKennung, onRefresh }: Props) {
   const [formOpen, setFormOpen] = useState(false);
   const [titel, setTitel] = useState("");
   const [strasse, setStrasse] = useState("");
@@ -191,6 +193,29 @@ export function OrganisationObjektePanel({ objekte, onRefresh }: Props) {
                       Kostenstelle: {o.kostenstelle_nr}
                     </p>
                   ) : null}
+                  {orgKennung && o.melde_slug && o.melde_aktiv ? (
+                    <p className="portal-text-meta text-text-tertiary mt-1 break-all">
+                      Mieter-Link:{" "}
+                      <button
+                        type="button"
+                        className="text-accent underline"
+                        onClick={async () => {
+                          await navigator.clipboard.writeText(
+                            buildMeldeUrl(orgKennung, o.melde_slug!)
+                          );
+                          orgPortalToast.linkKopiert();
+                        }}
+                      >
+                        {buildMeldeUrl(orgKennung, o.melde_slug!)}
+                      </button>
+                    </p>
+                  ) : null}
+                  {o.melde_aktiv && !o.melde_slug ? (
+                    <p className="portal-text-meta text-amber-800 mt-1">
+                      Melde-Link wird beim nächsten Laden automatisch erzeugt — Seite
+                      kurz neu laden.
+                    </p>
+                  ) : null}
                 </div>
                 <span
                   className={`rounded-full px-2 py-0.5 text-xs font-medium ${
@@ -201,6 +226,11 @@ export function OrganisationObjektePanel({ objekte, onRefresh }: Props) {
                 >
                   {o.melde_aktiv ? "Aktiv" : "Inaktiv"}
                 </span>
+                {!o.melde_slug && o.melde_aktiv ? (
+                  <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-900">
+                    Melde-Link fehlt — bitte speichern/aktivieren
+                  </span>
+                ) : null}
               </div>
               <div className="mt-3 flex flex-wrap gap-2">
                 <button

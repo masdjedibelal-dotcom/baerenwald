@@ -30,7 +30,7 @@ export type PersistMeldungLeadInput = {
   strasse?: string | null;
   hausnummer?: string | null;
   auftraggeber_kunde_id: string;
-  kunde_objekt_id: string;
+  kunde_objekt_id?: string | null;
   kanal: "hv_melder_link" | "hv_direkt" | "hv_einladung";
   erfassung_von: "melder" | "organisation";
   einladung_token?: string | null;

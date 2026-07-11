@@ -5,27 +5,8 @@ import {
   isValidMeldeSlug,
   suggestMeldeSlugFromAddress,
 } from "@/lib/org/slug";
+import { allocateMeldeSlug, ensureMeldeSlugsForKunde } from "@/lib/org/ensure-melde-slug";
 import { supabaseAdmin } from "@/lib/supabase";
-
-async function allocateMeldeSlug(
-  kundeId: string,
-  base: string
-): Promise<string> {
-  let candidate = base;
-  let suffix = 2;
-  for (let i = 0; i < 50; i++) {
-    const { data } = await supabaseAdmin
-      .from("kunden_objekte")
-      .select("id")
-      .eq("kunde_id", kundeId)
-      .ilike("melde_slug", candidate)
-      .maybeSingle();
-    if (!data) return candidate;
-    candidate = `${base}-${suffix}`;
-    suffix += 1;
-  }
-  return `${base}-${Date.now().toString(36).slice(-4)}`;
-}
 
 export async function GET() {
   const session = await requireOrganisationSession();
@@ -45,7 +26,22 @@ export async function GET() {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  return NextResponse.json({ objekte: data ?? [] });
+  const rows = data ?? [];
+  await ensureMeldeSlugsForKunde(session.kunde.id, rows);
+
+  const { data: healed, error: reloadErr } = await supabaseAdmin
+    .from("kunden_objekte")
+    .select(
+      "id, titel, strasse, hausnummer, plz, ort, melde_slug, melde_aktiv, einheiten_hinweis, notizen_intern, kostenstelle_nr, created_at"
+    )
+    .eq("kunde_id", session.kunde.id)
+    .order("titel", { ascending: true });
+
+  if (reloadErr) {
+    return NextResponse.json({ error: reloadErr.message }, { status: 500 });
+  }
+
+  return NextResponse.json({ objekte: healed ?? [] });
 }
 
 type ObjektBody = {
@@ -120,6 +116,17 @@ export async function PATCH(req: Request) {
     return NextResponse.json({ error: "ID fehlt." }, { status: 400 });
   }
 
+  const { data: existing } = await supabaseAdmin
+    .from("kunden_objekte")
+    .select("id, titel, strasse, hausnummer, plz, ort, melde_slug, melde_aktiv")
+    .eq("id", id)
+    .eq("kunde_id", session.kunde.id)
+    .maybeSingle();
+
+  if (!existing) {
+    return NextResponse.json({ error: "Objekt nicht gefunden." }, { status: 404 });
+  }
+
   const patch: Record<string, unknown> = {};
   if (body.titel !== undefined) patch.titel = String(body.titel).trim();
   if (body.strasse !== undefined) patch.strasse = body.strasse?.trim() || null;
@@ -139,6 +146,19 @@ export async function PATCH(req: Request) {
     patch.freigabe_schwelle_eur =
       body.freigabe_schwelle_eur == null ? null : Number(body.freigabe_schwelle_eur);
   }
+
+  const willBeActive =
+    body.melde_aktiv !== undefined ? Boolean(body.melde_aktiv) : existing.melde_aktiv !== false;
+  if (willBeActive && !String(existing.melde_slug ?? "").trim()) {
+    const baseSlug =
+      suggestMeldeSlugFromAddress(
+        body.strasse ?? existing.strasse,
+        body.hausnummer ?? existing.hausnummer,
+        body.plz ?? existing.plz
+      ) || suggestMeldeSlugFromAddress(body.titel ?? existing.titel, null, null);
+    patch.melde_slug = await allocateMeldeSlug(session.kunde.id, baseSlug);
+  }
+
   patch.updated_at = new Date().toISOString();
 
   const { data, error } = await supabaseAdmin

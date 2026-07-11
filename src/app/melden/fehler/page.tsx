@@ -17,6 +17,10 @@ const MESSAGES: Record<string, { title: string; text: string }> = {
     title: "Vorübergehend nicht verfügbar",
     text: "Der Service ist momentan nicht erreichbar. Bitte versuchen Sie es später erneut.",
   },
+  no_objects: {
+    title: "Noch keine Objekte freigeschaltet",
+    text: "Für diese Hausverwaltung ist derzeit kein Gebäude für Online-Meldungen eingerichtet. Bitte wenden Sie sich an Ihre Hausverwaltung oder nutzen Sie den Aushang-Link mit direktem Objekt-QR.",
+  },
 };
 
 export default function MeldenFehlerPage({ searchParams }: Props) {

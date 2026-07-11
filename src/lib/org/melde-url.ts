@@ -1,5 +1,8 @@
 import { SITE_CONFIG } from "@/lib/config";
 
+/** Slug für Meldungen ohne zugeordnetes Objekt (Org-Einstieg ohne Gebäude). */
+export const MELDE_ALLGEMEIN_SLUG = "allgemein";
+
 function portalOrigin(): string {
   const env = process.env.NEXT_PUBLIC_SITE_URL?.trim();
   if (env) return env.replace(/\/$/, "");

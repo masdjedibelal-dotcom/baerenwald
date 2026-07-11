@@ -2,10 +2,11 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import { MeldeFormular } from "@/components/melden/MeldeFormular";
+import { MELDE_ALLGEMEIN_SLUG } from "@/lib/org/melde-url";
 import { resolveMeldeKontext } from "@/lib/org/resolve-melde-kontext";
 
 export const metadata = {
-  title: "Objekt wählen — Meldung",
+  title: "Schaden melden",
   robots: { index: false, follow: false },
 };
 
@@ -23,16 +24,30 @@ export default async function MeldenOrgPage({ params }: Props) {
     kontext.org.name?.trim() ||
     kontext.org.org_kennung;
 
-  if (kontext.objekte.length === 1 && kontext.objekte[0]) {
-    const o = kontext.objekte[0];
+  if (kontext.objekt) {
+    const obj = kontext.objekt;
     return (
       <MeldeFormular
         orgName={orgName}
         orgLogoUrl={kontext.org.org_logo_url}
-        objektTitel={o.titel}
-        objektAdresse={o.adresseZeile}
+        objektTitel={obj.titel}
+        objektAdresse={[obj.strasse, obj.hausnummer].filter(Boolean).join(" ")}
+        objektPlzOrt={[obj.plz, obj.ort].filter(Boolean).join(" ")}
+        einheitenHinweis={obj.einheiten_hinweis}
         orgKennung={kontext.org.org_kennung}
-        objektSlug={o.melde_slug}
+        objektSlug={obj.melde_slug}
+      />
+    );
+  }
+
+  if (kontext.objekte.length === 0) {
+    return (
+      <MeldeFormular
+        orgName={orgName}
+        orgLogoUrl={kontext.org.org_logo_url}
+        objektTitel={orgName}
+        orgKennung={kontext.org.org_kennung}
+        objektSlug={MELDE_ALLGEMEIN_SLUG}
       />
     );
   }

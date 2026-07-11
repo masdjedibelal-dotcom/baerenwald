@@ -313,7 +313,11 @@ export function OrganisationPortalClient({
           ) : null}
 
           {section === "objekte" ? (
-            <OrganisationObjektePanel objekte={objekte} onRefresh={refresh} />
+            <OrganisationObjektePanel
+              objekte={objekte}
+              orgKennung={kunde.org_kennung}
+              onRefresh={refresh}
+            />
           ) : null}
 
           {section === "leistungen" ? (
