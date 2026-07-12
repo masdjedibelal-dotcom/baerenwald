@@ -58,8 +58,13 @@ function isAngebotVomKundenAngenommen(status?: string | null): boolean {
   return s === "kunde_akzeptiert" || s === "angenommen";
 }
 
+function isLeadVorgangAbgeschlossen(phase?: string | null): boolean {
+  return normalizeStatus(phase) === "abgeschlossen";
+}
+
 export function resolveKundeVorgangStatus(input: {
   leadStatus?: string | null;
+  leadVorgangPhase?: string | null;
   angebotStatus?: string | null;
   auftragStatus?: string | null;
   auftragFortschritt?: number | null;
@@ -106,6 +111,19 @@ export function resolveKundeVorgangStatus(input: {
       label: LABELS.in_ausfuehrung,
       pillKey: "in_arbeit",
       sortPriority: 20,
+      needsAction: false,
+    };
+  }
+
+  if (
+    input.hasAuftragRecord === false &&
+    isLeadVorgangAbgeschlossen(input.leadVorgangPhase)
+  ) {
+    return {
+      phase: "abgeschlossen",
+      label: LABELS.abgeschlossen,
+      pillKey: "abgeschlossen",
+      sortPriority: 80,
       needsAction: false,
     };
   }

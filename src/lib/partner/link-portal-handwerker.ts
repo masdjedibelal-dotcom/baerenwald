@@ -4,7 +4,7 @@ import { supabaseAdmin } from "@/lib/supabase";
 
 export type LinkPortalHandwerkerResult =
   | { ok: true; handwerkerId: string }
-  | { ok: false; error: string };
+  | { ok: false; error: string; signOut?: boolean };
 
 /**
  * Verknüpft Auth-User mit handwerker.auth_user_id.
@@ -43,6 +43,7 @@ export async function linkPortalHandwerkerToAuthUser(opts: {
     return {
       ok: false,
       error: PARTNER_AUTH_COPY.errors.emailVerknuepft,
+      signOut: true,
     };
   }
 

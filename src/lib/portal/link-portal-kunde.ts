@@ -7,17 +7,27 @@ import {
 import { mapKundenPortalError } from "@/lib/kunden/kunde-portal-errors";
 import { supabaseAdmin } from "@/lib/supabase";
 
-function fail(error: string | { code?: string; message?: string }): LinkPortalKundeResult {
+function fail(
+  error: string | { code?: string; message?: string },
+  opts?: { signOut?: boolean }
+): LinkPortalKundeResult {
   const raw = typeof error === "string" ? error : error.message ?? "";
   if (raw && raw !== mapKundenPortalError(error)) {
     console.error("[linkPortalKunde]", raw);
   }
-  return { ok: false, error: mapKundenPortalError(error) };
+  return {
+    ok: false,
+    error: mapKundenPortalError(error),
+    signOut: opts?.signOut,
+  };
 }
+
+const PORTAL_ACCOUNT_CONFLICT =
+  "Diese E-Mail ist bereits mit einem anderen Portal-Konto verknüpft. Bitte wende dich an uns.";
 
 export type LinkPortalKundeResult =
   | { ok: true; kundeId: string }
-  | { ok: false; error: string };
+  | { ok: false; error: string; signOut?: boolean };
 
 type KundeCandidate = {
   id: string;
@@ -140,8 +150,8 @@ export async function linkPortalKundeToAuthUser(opts: {
     if (foreignAuth && foreignAuth !== opts.userId) {
       return {
         ok: false,
-        error:
-          "Diese E-Mail ist bereits mit einem anderen Portal-Konto verknüpft. Bitte wende dich an uns.",
+        error: PORTAL_ACCOUNT_CONFLICT,
+        signOut: true,
       };
     }
 
@@ -199,8 +209,8 @@ export async function linkPortalKundeToAuthUser(opts: {
         if (foreignAuth && foreignAuth !== opts.userId) {
           return {
             ok: false,
-            error:
-              "Diese E-Mail ist bereits mit einem anderen Portal-Konto verknüpft. Bitte wende dich an uns.",
+            error: PORTAL_ACCOUNT_CONFLICT,
+            signOut: true,
           };
         }
         if (linkedByAuth?.id && linkedByAuth.id !== existingId) {

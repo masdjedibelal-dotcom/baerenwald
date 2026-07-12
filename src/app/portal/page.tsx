@@ -10,6 +10,7 @@ import { resolveOrgMitgliedRolle } from "@/lib/org/org-rbac";
 import { getOrganisationPortalData } from "@/lib/org/get-organisation-portal-data";
 import { getPortalDataForKunde } from "@/lib/portal/get-portal-data";
 import { linkPortalKundeToAuthUser } from "@/lib/portal/link-portal-kunde";
+import { clearAdminViewCookie } from "@/lib/auth/crm-impersonation-session";
 import { createClient } from "@/lib/supabase/server";
 import { isSupabaseConfigured, supabaseAdmin } from "@/lib/supabase";
 
@@ -54,6 +55,11 @@ export default async function PortalDashboardPage() {
   });
 
   if (!link.ok) {
+    if (link.signOut) {
+      clearAdminViewCookie();
+      await supabase.auth.signOut();
+      redirect("/portal/login?hint=session_mismatch");
+    }
     return (
       <PortalAuthShell title="Konto konnte nicht verknüpft werden">
         <p className="portal-text-body text-text-secondary">

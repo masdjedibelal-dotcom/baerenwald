@@ -159,7 +159,7 @@ export async function getPortalDataForKunde(kundeId: string) {
   const { data: leads } = await supabaseAdmin
     .from("leads")
     .select(
-      "id, situation, bereiche, status, created_at, plz, strasse, hausnummer, zeitraum, kontakt_name, preis_min, preis_max, budget_ca, kontakt_nachricht, funnel_daten, kunde_objekt_id, anlass"
+      "id, situation, bereiche, status, vorgang_phase, created_at, plz, strasse, hausnummer, zeitraum, kontakt_name, preis_min, preis_max, budget_ca, kontakt_nachricht, funnel_daten, kunde_objekt_id, anlass"
     )
     .eq("kunde_id", kunde.id)
     .order("created_at", { ascending: false });

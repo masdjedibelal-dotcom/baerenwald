@@ -39,11 +39,17 @@ type PortalLead = PortalAnfrageLeadSource & {
   bereiche?: string[] | null;
   created_at?: string | null;
   status?: string | null;
+  vorgang_phase?: string | null;
   objekt?: PortalObjekt | null;
   plz?: string | null;
   dokumente?: PortalDokument[];
   anlass?: string | null;
 };
+
+function normPortalId(id: string | null | undefined): string | null {
+  const s = id != null ? String(id).trim() : "";
+  return s || null;
+}
 
 type PortalAngebot = {
   id: string;
@@ -197,6 +203,22 @@ function buildItemFromLead(
   };
 }
 
+function resolveAuftragForLead(
+  leadId: string,
+  angebot: PortalAngebot | null,
+  auftragByLead: Map<string, PortalAuftrag>,
+  auftragByAngebot: Map<string, PortalAuftrag>
+): PortalAuftrag | null {
+  const byLead = auftragByLead.get(leadId);
+  if (byLead) return byLead;
+  const angebotId = normPortalId(angebot?.id);
+  if (angebotId) {
+    const byAngebot = auftragByAngebot.get(angebotId);
+    if (byAngebot) return byAngebot;
+  }
+  return null;
+}
+
 export function buildKundeVorgaenge(input: {
   leads: PortalLead[];
   angebote: PortalAngebot[];
@@ -204,12 +226,17 @@ export function buildKundeVorgaenge(input: {
 }): KundePortalDetailItem[] {
   const angebotByLead = new Map<string, PortalAngebot>();
   for (const a of input.angebote) {
-    if (a.lead_id) angebotByLead.set(a.lead_id, a);
+    const leadId = normPortalId(a.lead_id);
+    if (leadId) angebotByLead.set(leadId, a);
   }
 
   const auftragByLead = new Map<string, PortalAuftrag>();
+  const auftragByAngebot = new Map<string, PortalAuftrag>();
   for (const a of input.auftraege) {
-    if (a.lead_id) auftragByLead.set(a.lead_id, a);
+    const leadId = normPortalId(a.lead_id);
+    if (leadId) auftragByLead.set(leadId, a);
+    const angebotId = normPortalId(a.angebot_id);
+    if (angebotId) auftragByAngebot.set(angebotId, a);
   }
 
   const usedAngebotIds = new Set<string>();
@@ -217,13 +244,21 @@ export function buildKundeVorgaenge(input: {
   const items: KundePortalDetailItem[] = [];
 
   for (const lead of input.leads) {
-    const angebot = angebotByLead.get(lead.id) ?? null;
-    const auftrag = auftragByLead.get(lead.id) ?? null;
+    const leadId = normPortalId(lead.id);
+    if (!leadId) continue;
+    const angebot = angebotByLead.get(leadId) ?? null;
+    const auftrag = resolveAuftragForLead(
+      leadId,
+      angebot,
+      auftragByLead,
+      auftragByAngebot
+    );
     if (angebot) usedAngebotIds.add(angebot.id);
     if (auftrag) usedAuftragIds.add(auftrag.id);
 
     const vorgangStatus = resolveKundeVorgangStatus({
       leadStatus: lead.status,
+      leadVorgangPhase: lead.vorgang_phase,
       angebotStatus: angebot?.status_einfach ?? angebot?.status,
       auftragStatus: auftrag?.status,
       auftragFortschritt: auftrag?.fortschritt,

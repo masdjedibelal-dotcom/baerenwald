@@ -2,10 +2,21 @@
 
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { PortalResendConfirmation } from "@/components/portal/PortalResendConfirmation";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
+
+function parseHashSession(): { access_token?: string; refresh_token?: string } {
+  if (typeof window === "undefined") return {};
+  const raw = window.location.hash.replace(/^#/, "");
+  if (!raw) return {};
+  const params = new URLSearchParams(raw);
+  return {
+    access_token: params.get("access_token") ?? undefined,
+    refresh_token: params.get("refresh_token") ?? undefined,
+  };
+}
 
 export function PortalLoginForm() {
   const router = useRouter();
@@ -18,6 +29,29 @@ export function PortalLoginForm() {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [hashBusy, setHashBusy] = useState(true);
+
+  useEffect(() => {
+    const { access_token, refresh_token } = parseHashSession();
+    if (!access_token || !refresh_token) {
+      setHashBusy(false);
+      return;
+    }
+
+    const supabase = getSupabaseBrowserClient();
+    void supabase.auth
+      .setSession({ access_token, refresh_token })
+      .then(({ error: sessionError }) => {
+        if (sessionError) {
+          setError("Anmeldung über Link fehlgeschlagen.");
+          setHashBusy(false);
+          return;
+        }
+        window.history.replaceState(null, "", window.location.pathname + window.location.search);
+        router.replace(next);
+        router.refresh();
+      });
+  }, [next, router]);
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -46,6 +80,16 @@ export function PortalLoginForm() {
 
   return (
     <form onSubmit={onSubmit} className="space-y-4">
+      {hashBusy ? (
+        <p className="rounded-lg bg-accent-light/60 px-3 py-3 portal-text-body text-accent">
+          Anmeldung wird abgeschlossen…
+        </p>
+      ) : null}
+      {hint === "signed_out" ? (
+        <p className="rounded-lg bg-accent-light/60 px-3 py-3 portal-text-body text-accent">
+          Du bist abgemeldet.
+        </p>
+      ) : null}
       {hint === "confirm" ? (
         <div className="space-y-3 rounded-lg bg-amber-50 px-3 py-3 portal-text-body text-amber-900">
           <p>

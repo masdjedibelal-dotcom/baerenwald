@@ -8,6 +8,7 @@ import { PartnerClient } from "@/components/partner/PartnerClient";
 import { PARTNER_AUTH_COPY } from "@/lib/partner/partner-auth-copy";
 import { getPartnerDataForHandwerker } from "@/lib/partner/get-partner-data";
 import { linkPortalHandwerkerToAuthUser } from "@/lib/partner/link-portal-handwerker";
+import { clearAdminViewCookie } from "@/lib/auth/crm-impersonation-session";
 import { SITE_CONFIG } from "@/lib/config";
 import { createClient } from "@/lib/supabase/server";
 import { isSupabaseConfigured } from "@/lib/supabase";
@@ -69,6 +70,11 @@ export default async function PartnerDashboardPage({
   });
 
   if (!link.ok) {
+    if (link.signOut) {
+      clearAdminViewCookie();
+      await supabase.auth.signOut();
+      redirect(partnerLoginRedirect(searchParams, "session_mismatch"));
+    }
     return (
       <PartnerAuthShell title={PARTNER_AUTH_COPY.blocked.title}>
         <div className="space-y-4">

@@ -27,10 +27,30 @@ const HV_KANALE = new Set([
   "hv_katalog",
 ]);
 
-export function isHvPortalLead(lead: LeadRow): boolean {
+export function isHvPortalLead(lead: LeadRow & { kunde_id?: string | null }): boolean {
   if (lead.auftraggeber_kunde_id) return true;
   if (lead.anlass === "meldung" && lead.kanal && HV_KANALE.has(lead.kanal)) return true;
   return false;
+}
+
+async function isOrganisationKundeLead(
+  lead: LeadRow & { kunde_id?: string | null }
+): Promise<boolean> {
+  const kundeId = lead.kunde_id?.trim();
+  if (!kundeId) return false;
+  const { data: kunde } = await supabaseAdmin
+    .from("kunden")
+    .select("portal_modus")
+    .eq("id", kundeId)
+    .maybeSingle();
+  return kunde?.portal_modus === "organisation";
+}
+
+async function shouldSyncPortalLead(
+  lead: LeadRow & { kunde_id?: string | null }
+): Promise<boolean> {
+  if (isHvPortalLead(lead)) return true;
+  return isOrganisationKundeLead(lead);
 }
 
 function phaseForEvent(event: CrmLeadSyncEvent): VorgangPhase {
@@ -66,14 +86,16 @@ export async function syncLeadFromCrm(
   const { data: lead, error } = await supabaseAdmin
     .from("leads")
     .select(
-      "id, auftraggeber_kunde_id, anlass, kanal, hv_meldung_status, vorgang_phase"
+      "id, auftraggeber_kunde_id, kunde_id, anlass, kanal, hv_meldung_status, vorgang_phase"
     )
     .eq("id", leadId)
     .maybeSingle();
 
   if (error) return { ok: false, error: error.message };
   if (!lead?.id) return { ok: false, error: "Lead nicht gefunden" };
-  if (!isHvPortalLead(lead as LeadRow)) return { ok: true };
+  if (!(await shouldSyncPortalLead(lead as LeadRow & { kunde_id?: string | null }))) {
+    return { ok: true };
+  }
 
   const phase = phaseForEvent(event);
   const patch: Record<string, unknown> = {

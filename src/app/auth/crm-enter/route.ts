@@ -1,10 +1,10 @@
-import { NextResponse } from "next/server";
-import { cookies } from "next/headers";
 import { createHmac, timingSafeEqual } from "crypto";
+import { NextResponse } from "next/server";
 
-import { supabaseAdmin } from "@/lib/supabase";
-
-const COOKIE_NAME = "bw_admin_view";
+import {
+  establishPortalSessionForEmail,
+  setAdminViewCookie,
+} from "@/lib/auth/crm-impersonation-session";
 
 type ImpersonationPayload = {
   email: string;
@@ -57,7 +57,7 @@ function siteOrigin(): string {
   );
 }
 
-/** CRM-Admin: Token einlösen → Magic-Link-Session + Banner-Cookie. */
+/** CRM-Admin: Token einlösen → Session serverseitig setzen (ohne Login-Seite). */
 export async function GET(request: Request) {
   const url = new URL(request.url);
   const token = url.searchParams.get("t")?.trim() ?? "";
@@ -68,36 +68,22 @@ export async function GET(request: Request) {
     return NextResponse.redirect(`${siteOrigin()}/portal/login?hint=crm_enter_invalid`);
   }
 
-  const redirectTo = `${siteOrigin()}${next.startsWith("/") ? next : `/${next}`}`;
-
-  const { data: linkData, error: linkErr } = await supabaseAdmin.auth.admin.generateLink({
-    type: "magiclink",
-    email: payload.email,
-    options: { redirectTo },
-  });
-
-  const actionLink = linkData?.properties?.action_link?.trim();
-  if (linkErr || !actionLink) {
-    console.error("[crm-enter]", linkErr?.message);
-    return NextResponse.redirect(`${siteOrigin()}/portal/login?hint=crm_enter_failed`);
+  const session = await establishPortalSessionForEmail(payload.email);
+  if (!session.ok) {
+    console.error("[crm-enter]", session.error);
+    return NextResponse.redirect(
+      `${siteOrigin()}/portal/login?hint=crm_enter_failed&msg=${encodeURIComponent(session.error.slice(0, 120))}`
+    );
   }
 
-  const cookieStore = await cookies();
-  cookieStore.set(
-    COOKIE_NAME,
-    JSON.stringify({
-      roleLabel: payload.roleLabel,
-      adminEmail: payload.adminEmail,
-      startedAt: new Date().toISOString(),
-    }),
-    {
-      httpOnly: false,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
-      maxAge: 60 * 60 * 4,
-      path: "/",
-    }
-  );
+  setAdminViewCookie({
+    roleLabel: payload.roleLabel,
+    adminEmail: payload.adminEmail,
+  });
 
-  return NextResponse.redirect(actionLink);
+  const target = next.startsWith("/") ? next : `/${next}`;
+  const safeTarget =
+    target.startsWith("/portal") || target.startsWith("/partner") ? target : "/portal";
+
+  return NextResponse.redirect(`${siteOrigin()}${safeTarget}`);
 }

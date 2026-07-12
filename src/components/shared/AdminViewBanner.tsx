@@ -1,6 +1,6 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 
 const COOKIE_NAME = "bw_admin_view";
 
@@ -33,9 +33,13 @@ function clearBannerCookie() {
 }
 
 export function AdminViewBanner() {
-  const router = useRouter();
+  const pathname = usePathname();
   const info = readBanner();
   if (!info) return null;
+
+  const signoutPath = pathname.startsWith("/partner")
+    ? "/partner/auth/signout"
+    : "/portal/auth/signout";
 
   return (
     <div
@@ -47,19 +51,20 @@ export function AdminViewBanner() {
           <strong>Admin-Ansicht:</strong> Du siehst das Portal als{" "}
           <strong>{info.roleLabel}</strong>. (Eingestiegen von {info.adminEmail})
         </span>
-        <button
-          type="button"
-          className="rounded-lg border border-amber-400 bg-white px-3 py-1 text-xs font-medium hover:bg-amber-100"
-          onClick={() => {
+        <form
+          action={signoutPath}
+          method="post"
+          onSubmit={() => {
             clearBannerCookie();
-            const path = window.location.pathname.startsWith("/partner")
-              ? "/partner/auth/signout"
-              : "/portal/auth/signout";
-            router.push(path);
           }}
         >
-          Admin-Ansicht beenden
-        </button>
+          <button
+            type="submit"
+            className="rounded-lg border border-amber-400 bg-white px-3 py-1 text-xs font-medium hover:bg-amber-100"
+          >
+            Admin-Ansicht beenden
+          </button>
+        </form>
       </div>
     </div>
   );
