@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 
 import { linkPortalHandwerkerToAuthUser } from "@/lib/partner/link-portal-handwerker";
 import { sendPartnerInternalBautagebuchMail } from "@/lib/partner/partner-mail";
+import { notifyHvPartnerBautagebuch } from "@/lib/org/notify-hv-bautagebuch";
 import {
   PARTNER_MAX_BAUTAGEBUCH_ANHAENGE,
   validatePartnerBautagebuchFiles,
@@ -146,6 +147,12 @@ export async function createPartnerBautagebuchEintrag(
     eintragTitel: titel,
     datum,
     auftragId,
+  });
+
+  void notifyHvPartnerBautagebuch({
+    auftragId,
+    handwerkerName: String(hw?.name ?? "Partner"),
+    eintragTitel: titel,
   });
 
   revalidatePath("/partner");

@@ -55,13 +55,14 @@ export async function notifyMieterStatusChange(leadId: string): Promise<void> {
   const label = mieterStatusLabel(stufe);
 
   const resend = new Resend(resendKey);
+  const subjectPrefix = orgName && orgName !== "Hausverwaltung" ? `[${orgName}] ` : "";
   await resend.emails.send({
     from:
       process.env.RESEND_FROM_CUSTOMER ??
       "Bärenwald München <anfragen@baerenwaldmuenchen.de>",
     to: String(lead.melder_email).toLowerCase(),
     bcc: AUTOMATED_CUSTOMER_EMAIL_BCC,
-    subject: `Meldung: ${label} — ${objektTitel}`,
+    subject: `${subjectPrefix}Meldung: ${label} — ${objektTitel}`,
     html: buildMelderBestaetigungHtml({
       melderName: String(lead.melder_name ?? "Mieter"),
       orgName,
@@ -69,6 +70,7 @@ export async function notifyMieterStatusChange(leadId: string): Promise<void> {
       kategorie: label,
       referenz: String(lead.id).slice(0, 8).toUpperCase(),
       statusLink,
+      introNote: `Ihre Hausverwaltung ${orgName} bearbeitet die Meldung über Bärenwald.`,
     }),
   });
 }

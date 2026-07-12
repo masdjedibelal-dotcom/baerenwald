@@ -72,6 +72,10 @@ export default async function PartnerDashboardPage({
     return (
       <PartnerAuthShell title={PARTNER_AUTH_COPY.blocked.title}>
         <div className="space-y-4">
+          <p className="portal-text-body text-text-secondary">
+            Eingeloggt als <strong>{user.email}</strong>. Für das Partner-Portal bitte mit der
+            Betriebs-E-Mail aus dem CRM-Stamm anmelden.
+          </p>
           <p className="portal-text-body text-text-secondary">{link.error}</p>
           <PartnerAuthFlowHint variant="blocked" />
           <div className="flex flex-col gap-2">

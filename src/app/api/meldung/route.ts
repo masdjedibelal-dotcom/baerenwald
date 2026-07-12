@@ -120,6 +120,31 @@ export async function POST(req: Request) {
     orgRow.name?.trim() ||
     "Objekt";
 
+  if (objekt?.id) {
+    const since = new Date(Date.now() - 15 * 60 * 1000).toISOString();
+    const { data: recent } = await supabaseAdmin
+      .from("leads")
+      .select("id, melde_tracking_token")
+      .eq("kunde_objekt_id", objekt.id)
+      .eq("auftraggeber_kunde_id", orgRow.id)
+      .gte("created_at", since)
+      .in("kanal", ["hv_melder_link", "hv_direkt"])
+      .order("created_at", { ascending: false })
+      .limit(1);
+    if (recent?.[0]?.id) {
+      return NextResponse.json({
+        ok: true,
+        id: recent[0].id,
+        duplicateWarning:
+          "Eine ähnliche Meldung wurde in den letzten 15 Minuten bereits erfasst.",
+        statusLink: recent[0].melde_tracking_token
+          ? meldeStatusUrl(String(recent[0].melde_tracking_token))
+          : undefined,
+        reused: true,
+      });
+    }
+  }
+
   const result = await persistMeldungLead({
     name,
     email: isValidEmail(email) ? email : undefined,

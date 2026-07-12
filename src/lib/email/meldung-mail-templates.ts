@@ -130,17 +130,21 @@ export function buildMelderBestaetigungHtml(input: {
   kategorie: string;
   referenz?: string;
   statusLink?: string;
+  introNote?: string;
 }): string {
   const kat = meldeKategorieLabel(input.kategorie);
   const statusBlock = input.statusLink
     ? `<p style="margin:20px 0"><a href="${esc(input.statusLink)}" style="display:inline-block;background:#1a5c3a;color:#fff;padding:12px 20px;border-radius:8px;text-decoration:none;font-weight:600">Status verfolgen</a></p>`
     : "";
+  const intro =
+    input.introNote?.trim() ||
+    `${esc(input.orgName)} und Bärenwald koordinieren den nächsten Schritt.`;
   return `<!DOCTYPE html>
 <html lang="de">
 <body style="font-family:system-ui,sans-serif;color:#1a2420;line-height:1.5;max-width:560px;margin:0 auto;padding:24px">
   <p>Hallo ${esc(input.melderName)},</p>
   <p>wir haben deine <strong>${esc(kat)}</strong>-Meldung für <strong>${esc(input.objektTitel)}</strong> erhalten.</p>
-  <p>${esc(input.orgName)} und Bärenwald koordinieren den nächsten Schritt.</p>
+  <p>${intro}</p>
   ${statusBlock}
   ${input.referenz ? `<p style="color:#6b7f74;font-size:14px">Referenz: ${esc(input.referenz)}</p>` : ""}
   <p style="margin-top:24px">Herzliche Grüße<br/>${esc(SITE_CONFIG.companyName)}</p>

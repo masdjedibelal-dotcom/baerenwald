@@ -56,7 +56,9 @@ export default async function PortalDashboardPage() {
   if (!link.ok) {
     return (
       <PortalAuthShell title="Konto konnte nicht verknüpft werden">
-        <p className="portal-text-body text-text-secondary">{link.error}</p>
+        <p className="portal-text-body text-text-secondary">
+          Eingeloggt als <strong>{user.email}</strong>. {link.error}
+        </p>
         <div className="mt-4 flex flex-col gap-2">
           <a
             href={`mailto:${SITE_CONFIG.email}?subject=${encodeURIComponent("MeinBärenwald – Konto verknüpfen")}`}
