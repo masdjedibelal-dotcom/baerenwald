@@ -17,12 +17,14 @@ export function PartnerPortalDetailSections({
   auftragPositionen,
   gesamtBrutto,
   gesamtLabel,
+  hidePreise,
 }: {
   sections: PortalDetailSection[];
   angebotPositionen?: PortalAngebotPositionDisplay[];
   auftragPositionen?: PortalAngebotPositionDisplay[];
   gesamtBrutto?: number;
   gesamtLabel?: string;
+  hidePreise?: boolean;
 }) {
   const visible = sections.filter(
     (section) =>
@@ -69,6 +71,7 @@ export function PartnerPortalDetailSections({
             items={leistungen}
             gesamtBrutto={gesamtBrutto}
             gesamtLabel={gesamtLabel ?? "Gesamtpreis Brutto inkl. MwSt."}
+            hidePreise={hidePreise}
           />
         </PartnerDetailSection>
       ) : null}

@@ -26,7 +26,7 @@ export async function notifyHvPartnerBautagebuch(input: {
   if (!kundeId) return;
 
   const titel = `Bautagebuch: ${input.eintragTitel}`;
-  const body = `${input.handwerkerName} hat einen Eintrag zu „${auftrag.titel ?? "Auftrag"}“ erstellt.`;
+  const body = `${input.handwerkerName} hat einen Eintrag zu „${auftrag.titel ?? "Auftrag"}“ veröffentlicht — direkt im Portal sichtbar.`;
   const link = `/portal?section=vorgaenge&id=${encodeURIComponent(String(auftrag.lead_id))}`;
 
   await supabaseAdmin.from("hv_notifications").insert({

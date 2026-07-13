@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 
+import type { OrgFreigabeAngebot } from "@/components/org/OrgAngebotFreigabeInhalt";
 import { OrganisationEingangPanel } from "@/components/org/OrganisationEingangPanel";
 import { OrgFreigabeBanner } from "@/components/org/OrgFreigabeBanner";
 import { PortalListCard } from "@/components/shared/PortalListCard";
@@ -12,12 +13,16 @@ import {
   plattformStatusPillClass,
   resolvePlattformStatus,
 } from "@/lib/vorgang/plattform-status";
-import type { OrgPartnerBefundEntry } from "@/lib/org/load-partner-befund";
 import type {
   OrganisationKunde,
   OrganisationLead,
   OrganisationObjekt,
 } from "@/lib/org/types";
+import type { OrgPartnerBefundEntry } from "@/lib/org/load-partner-befund";
+import {
+  buildAuftragByLeadId,
+  isInOrgFreigabeQueue,
+} from "@/lib/org/org-vorgang-filter";
 
 type AngebotFreigabe = {
   id: string;
@@ -36,6 +41,15 @@ type OrgFreigabeAngebotRow = {
   objekt?: { name?: string | null; titel?: string | null } | null;
 };
 
+type BautagebuchEntry = {
+  id?: string;
+  datum?: string;
+  created_at?: string;
+  titel?: string;
+  notiz?: string;
+  fotos_urls?: string[];
+};
+
 type Props = {
   kunde: OrganisationKunde;
   eingang: OrganisationLead[];
@@ -47,14 +61,40 @@ type Props = {
   onRefresh: () => void;
   embedded?: boolean;
   partnerBefundByLeadId?: Record<string, OrgPartnerBefundEntry[]>;
+  bautagebuchByLeadId?: Record<string, BautagebuchEntry[]>;
+  hwErledigtByLeadId?: Record<string, boolean>;
+  feedbackBereitByLeadId?: Record<string, boolean>;
+  hvFeedbackByLeadId?: Record<
+    string,
+    {
+      bewertung?: { sterne: number; freitext?: string | null } | null;
+      maengel?: Array<{ freitext?: string | null; created_at?: string }>;
+    }
+  >;
+  auftragKontextByLeadId?: Record<
+    string,
+    import("@/lib/portal/vorgang-erledigt").PortalAuftragKontext
+  >;
+  dokumenteByLeadId?: Record<
+    string,
+    Array<{
+      id: string;
+      name: string;
+      subtitle?: string;
+      datum?: string;
+      href: string;
+    }>
+  >;
 };
 
 function buildAngebotFreigaben(
   leads: OrganisationLead[],
-  angebote: OrgFreigabeAngebotRow[]
+  angebote: OrgFreigabeAngebotRow[],
+  auftragByLeadId: Record<string, string>
 ): AngebotFreigabe[] {
   const freigabeLeadIds = new Set(
     leads
+      .filter((l) => isInOrgFreigabeQueue(l, auftragByLeadId))
       .filter((l) => l.org_freigabe_status === "ausstehend")
       .map((l) => l.id)
   );
@@ -84,18 +124,49 @@ export function OrganisationFreigabePanel({
   onRefresh,
   embedded = false,
   partnerBefundByLeadId = {},
+  bautagebuchByLeadId = {},
+  hwErledigtByLeadId = {},
+  feedbackBereitByLeadId = {},
+  hvFeedbackByLeadId = {},
+  auftragKontextByLeadId = {},
+  dokumenteByLeadId = {},
 }: Props) {
   const [selectedAngebotId, setSelectedAngebotId] = useState<string | null>(null);
-  const angebotFreigaben = buildAngebotFreigaben(leads, angebote);
+  const auftragByLeadId = useMemo(
+    () => buildAuftragByLeadId(auftraege as Array<{ id: string; lead_id?: string | null }>),
+    [auftraege]
+  );
+  const freigabeEingang = useMemo(
+    () => eingang.filter((l) => isInOrgFreigabeQueue(l, auftragByLeadId)),
+    [eingang, auftragByLeadId]
+  );
+  const angebotFreigaben = buildAngebotFreigaben(leads, angebote, auftragByLeadId);
 
-  const auftragByLeadId = useMemo(() => {
-    const map: Record<string, string> = {};
-    for (const a of auftraege) {
-      const leadId = (a as { lead_id?: string | null }).lead_id;
-      if (leadId) map[String(leadId)] = String((a as { id: string }).id);
-    }
-    return map;
-  }, [auftraege]);
+  const freigabeAngebote = useMemo((): OrgFreigabeAngebot[] => {
+    const freigabeLeadIds = new Set(
+      leads
+        .filter((l) => isInOrgFreigabeQueue(l, auftragByLeadId))
+        .filter((l) => l.org_freigabe_status === "ausstehend")
+        .map((l) => l.id)
+    );
+    return angebote
+      .filter((a) => a.lead_id && freigabeLeadIds.has(String(a.lead_id)))
+      .map((a) => ({
+        id: String(a.id),
+        lead_id: a.lead_id != null ? String(a.lead_id) : null,
+        angebotsnr: (a as { angebotsnr?: string | null }).angebotsnr ?? null,
+        gueltig_bis: (a as { gueltig_bis?: string | null }).gueltig_bis ?? null,
+        leistungsumfang:
+          (a as { leistungsumfang?: string | null }).leistungsumfang ?? null,
+        notizen: (a as { notizen?: string | null }).notizen ?? null,
+        pdf_url: (a as { pdf_url?: string | null }).pdf_url ?? null,
+        gesendet_am: (a as { gesendet_am?: string | null }).gesendet_am ?? null,
+        positionenDisplay: (a as { positionenDisplay?: OrgFreigabeAngebot["positionenDisplay"] })
+          .positionenDisplay,
+        gesamtBrutto: (a as { gesamtBrutto?: number }).gesamtBrutto,
+        dokumente: (a as { dokumente?: OrgFreigabeAngebot["dokumente"] }).dokumente,
+      }));
+  }, [angebote, leads, auftragByLeadId]);
 
   const vorgaengeItems = buildKundeVorgaenge({
     leads: leads as Parameters<typeof buildKundeVorgaenge>[0]["leads"],
@@ -125,12 +196,19 @@ export function OrganisationFreigabePanel({
         <h3 className="text-sm font-semibold text-text-primary">Meldungen</h3>
         <OrganisationEingangPanel
           kunde={kunde}
-          eingang={eingang}
+          eingang={freigabeEingang}
           objekte={objekte}
+          angebote={freigabeAngebote}
           initialSelectedId={initialSelectedId}
           onRefresh={onRefresh}
           partnerBefundByLeadId={partnerBefundByLeadId}
           auftragByLeadId={auftragByLeadId}
+          auftragKontextByLeadId={auftragKontextByLeadId}
+          bautagebuchByLeadId={bautagebuchByLeadId}
+          hwErledigtByLeadId={hwErledigtByLeadId}
+          feedbackBereitByLeadId={feedbackBereitByLeadId}
+          hvFeedbackByLeadId={hvFeedbackByLeadId}
+          dokumenteByLeadId={dokumenteByLeadId}
         />
       </section>
 

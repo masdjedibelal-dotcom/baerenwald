@@ -2,6 +2,11 @@
  * Einheitliches Status-Vokabular (PDF: Neu · Wartet Freigabe · In Ausführung · Erledigt · Notfall · Storniert)
  */
 
+import {
+  portalErledigtFromLeadAndAuftrag,
+  type PortalAuftragKontext,
+} from "@/lib/portal/vorgang-erledigt";
+
 export type PlattformStatusKey =
   | "neu"
   | "wartet_freigabe"
@@ -19,30 +24,30 @@ export const PLATTFORM_STATUS_LABELS: Record<PlattformStatusKey, string> = {
   storniert: "Storniert",
 };
 
-export function resolvePlattformStatus(lead: {
-  hv_meldung_status?: string | null;
-  vorgang_phase?: string | null;
-  org_freigabe_status?: string | null;
-  storniert_am?: string | null;
-  funnel_daten?: unknown;
-}): PlattformStatusKey {
+export function resolvePlattformStatus(
+  lead: {
+    hv_meldung_status?: string | null;
+    vorgang_phase?: string | null;
+    org_freigabe_status?: string | null;
+    storniert_am?: string | null;
+    funnel_daten?: unknown;
+  },
+  auftrag?: PortalAuftragKontext | null
+): PlattformStatusKey {
   if (lead.storniert_am) return "storniert";
+
+  if (portalErledigtFromLeadAndAuftrag(lead, auftrag)) return "erledigt";
 
   const fd = lead.funnel_daten as { melde_kategorie?: string } | null;
   if (fd?.melde_kategorie === "notfall" || lead.hv_meldung_status === "notmassnahme") {
-    if (
-      lead.vorgang_phase !== "abgeschlossen" &&
-      lead.hv_meldung_status !== "abgeschlossen"
-    ) {
-      return "notfall";
-    }
+    return "notfall";
   }
 
   const phase = (lead.vorgang_phase ?? "").trim();
-  if (phase === "abgeschlossen" || phase === "abgelehnt") return "erledigt";
+  if (phase === "abgelehnt") return "storniert";
 
   const hv = (lead.hv_meldung_status ?? "").trim();
-  if (hv === "abgeschlossen" || hv === "abgelehnt") return "erledigt";
+  if (hv === "abgelehnt") return "storniert";
 
   const freigabe = (lead.org_freigabe_status ?? "").trim();
   if (freigabe === "ausstehend" || freigabe === "angefordert") {

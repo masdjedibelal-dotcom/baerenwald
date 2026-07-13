@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { linkPortalHandwerkerToAuthUser } from "@/lib/partner/link-portal-handwerker";
 import { sendPartnerInternalBautagebuchMail } from "@/lib/partner/partner-mail";
 import { notifyHvPartnerBautagebuch } from "@/lib/org/notify-hv-bautagebuch";
+import { notifyMieterBautagebuchEintrag } from "@/lib/melde/notify-mieter-bautagebuch";
 import {
   PARTNER_MAX_BAUTAGEBUCH_ANHAENGE,
   validatePartnerBautagebuchFiles,
@@ -112,6 +113,15 @@ export async function createPartnerBautagebuchEintrag(
     fotoPaths = up.paths;
   }
 
+  const { data: auftragRow } = await supabaseAdmin
+    .from("auftraege")
+    .select("lead_id, titel")
+    .eq("id", auftragId)
+    .maybeSingle();
+
+  const leadId =
+    auftragRow?.lead_id != null ? String(auftragRow.lead_id).trim() : "";
+
   const { error } = await supabaseAdmin.from("auftrag_bautagebuch_eintraege").insert({
     auftrag_id: auftragId,
     handwerker_id: auth.handwerkerId,
@@ -119,7 +129,7 @@ export async function createPartnerBautagebuchEintrag(
     beschreibung,
     datum,
     foto_urls: fotoPaths,
-    fuer_kunde_freigegeben: false,
+    fuer_kunde_freigegeben: true,
   });
 
   if (error) return { ok: false, error: error.message };
@@ -140,10 +150,13 @@ export async function createPartnerBautagebuchEintrag(
     supabaseAdmin.from("auftraege").select("titel").eq("id", auftragId).maybeSingle(),
   ]);
 
+  const handwerkerName = String(hw?.name ?? "Partner");
+  const auftragTitel = String(auf?.titel ?? "Auftrag").trim() || "Auftrag";
+
   void sendPartnerInternalBautagebuchMail({
-    handwerkerName: String(hw?.name ?? "Partner"),
+    handwerkerName,
     firma: (hw?.firma as string | null) ?? null,
-    auftragTitel: String(auf?.titel ?? "Auftrag").trim() || "Auftrag",
+    auftragTitel,
     eintragTitel: titel,
     datum,
     auftragId,
@@ -151,11 +164,21 @@ export async function createPartnerBautagebuchEintrag(
 
   void notifyHvPartnerBautagebuch({
     auftragId,
-    handwerkerName: String(hw?.name ?? "Partner"),
+    handwerkerName,
     eintragTitel: titel,
   });
 
+  if (leadId) {
+    void notifyMieterBautagebuchEintrag({
+      leadId,
+      handwerkerName,
+      eintragTitel: titel,
+      auftragTitel,
+    });
+  }
+
   revalidatePath("/partner");
+  revalidatePath("/portal");
   return { ok: true };
 }
 

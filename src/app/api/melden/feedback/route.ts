@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { supabaseAdmin } from "@/lib/supabase";
+import { vorgangFeedbackBereit } from "@/lib/portal/vorgang-feedback-eligibility";
 
 type Body = { token?: string; sterne?: number; freitext?: string };
 
@@ -31,24 +32,35 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Nicht gefunden." }, { status: 404 });
   }
 
-  const erledigt =
-    lead.vorgang_phase === "abgeschlossen" ||
-    lead.hv_meldung_status === "abgeschlossen";
-
-  if (!erledigt) {
-    return NextResponse.json(
-      { error: "Feedback erst nach Abschluss möglich." },
-      { status: 400 }
-    );
-  }
-
   const { data: auftrag } = await supabaseAdmin
     .from("auftraege")
-    .select("id")
+    .select("id, status, fortschritt")
     .eq("lead_id", lead.id)
     .order("created_at", { ascending: false })
     .limit(1)
     .maybeSingle();
+
+  const { data: positionen } = auftrag
+    ? await supabaseAdmin
+        .from("auftrag_positionen")
+        .select("handwerker_id, handwerker_status")
+        .eq("auftrag_id", auftrag.id)
+    : { data: [] as Array<{ handwerker_id: string | null; handwerker_status: string | null }> };
+
+  const bereit = vorgangFeedbackBereit({
+    leadVorgangPhase: lead.vorgang_phase,
+    hv_meldung_status: lead.hv_meldung_status,
+    auftragStatus: auftrag?.status,
+    auftragFortschritt: auftrag?.fortschritt,
+    positionen,
+  });
+
+  if (!bereit) {
+    return NextResponse.json(
+      { error: "Feedback erst nach Abschluss der Arbeiten möglich." },
+      { status: 400 }
+    );
+  }
 
   const { error } = await supabaseAdmin.from("mieter_feedback").upsert(
     {

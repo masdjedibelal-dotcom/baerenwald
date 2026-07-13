@@ -9,6 +9,7 @@ import {
   mieterStatusLabel,
   type MieterStatusStufe,
 } from "@/lib/vorgang/vorgang-phase";
+import { DokumenteTabelle } from "@/components/shared/DokumenteTabelle";
 import { cn } from "@/lib/utils";
 
 type Slot = {
@@ -27,6 +28,7 @@ type Props = {
   referenz: string;
   initialStufe: MieterStatusStufe;
   erledigt: boolean;
+  anhaenge?: Array<{ id: string; name: string; datum?: string; href: string }>;
 };
 
 function fmtSlot(iso: string) {
@@ -49,6 +51,7 @@ export function MeldeStatusClient({
   referenz,
   initialStufe,
   erledigt,
+  anhaenge = [],
 }: Props) {
   const [stufe] = useState(initialStufe);
   const [slots, setSlots] = useState<Slot[]>([]);
@@ -224,6 +227,10 @@ export function MeldeStatusClient({
             ))}
           </ul>
         </article>
+      ) : null}
+
+      {erledigt && anhaenge.length > 0 ? (
+        <DokumenteTabelle heading="Anhänge" dokumente={anhaenge} />
       ) : null}
 
       {erledigt && !feedbackDone ? (

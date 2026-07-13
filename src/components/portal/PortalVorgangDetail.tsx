@@ -6,6 +6,9 @@ import { useState } from "react";
 import { acceptKundeAngebot } from "@/app/actions/portal-angebot";
 import { acceptKundeAuftragAenderungen } from "@/app/actions/portal-auftrag";
 import { OrgAnlassBadge } from "@/components/org/OrgAnlassBadge";
+import { OrgVorgangFeedbackSection } from "@/components/org/OrgVorgangFeedbackSection";
+import { PortalHvTerminSection } from "@/components/portal/PortalHvTerminSection";
+import { PortalVorgangFeedbackSection } from "@/components/portal/PortalVorgangFeedbackSection";
 import { PartnerPortalDetailSections } from "@/components/partner/PartnerPortalDetailSections";
 import { BautagebuchAccordionList } from "@/components/shared/BautagebuchAccordionList";
 import { DokumenteTabelle } from "@/components/shared/DokumenteTabelle";
@@ -30,10 +33,19 @@ export function PortalVorgangDetail({
   item,
   showAnlassBadge,
   onAccepted,
+  hwErledigt,
+  hvFeedback,
+  onHvFeedbackSubmitted,
 }: {
   item: KundePortalDetailItem;
   showAnlassBadge?: boolean;
   onAccepted?: () => void;
+  hwErledigt?: boolean;
+  hvFeedback?: {
+    bewertung?: { sterne: number; freitext?: string | null } | null;
+    maengel?: Array<{ freitext?: string | null; created_at?: string }>;
+  };
+  onHvFeedbackSubmitted?: () => void;
 }) {
   const router = useRouter();
   const [confirmOpen, setConfirmOpen] = useState(false);
@@ -115,7 +127,7 @@ export function PortalVorgangDetail({
           <PortalDetailInfoBox>{item.infoHint}</PortalDetailInfoBox>
         ) : null}
 
-        {item.isAuftragDetail && item.auftragPhasen ? (
+        {item.isAuftragDetail && item.auftragPhasen && !item.hvMieterView ? (
           <PortalAuftragPhasenStrip
             states={item.auftragPhasen.states}
             aktuellePhase={item.auftragPhasen.aktuellePhase}
@@ -123,12 +135,27 @@ export function PortalVorgangDetail({
           />
         ) : null}
 
-        <PartnerPortalDetailSections
-          sections={item.sections}
-          angebotPositionen={item.angebotPositionen}
-          auftragPositionen={item.auftragPositionen}
-          gesamtBrutto={item.gesamtBrutto}
-        />
+        {item.hvMieterView &&
+        item.terminAuftragId &&
+        item.terminSlots &&
+        item.terminSlots.length > 0 ? (
+          <PortalHvTerminSection
+            auftragId={item.terminAuftragId}
+            slots={item.terminSlots}
+          />
+        ) : null}
+
+        {!item.hvMieterView ? (
+          <PartnerPortalDetailSections
+            sections={item.sections}
+            angebotPositionen={item.angebotPositionen}
+            auftragPositionen={item.auftragPositionen}
+            gesamtBrutto={item.gesamtBrutto}
+            hidePreise={item.hidePreise}
+          />
+        ) : (
+          <PartnerPortalDetailSections sections={item.sections} />
+        )}
 
         {item.milestones && item.milestones.length > 0 ? (
           <PortalDetailMilestoneList items={item.milestones} />
@@ -158,6 +185,7 @@ export function PortalVorgangDetail({
 
         {item.dokumente && item.dokumente.length > 0 ? (
           <DokumenteTabelle
+            heading={item.feedbackBereit ? "Anhänge" : "Dokumente"}
             dokumente={item.dokumente.map((d) => ({
               id: d.id,
               name: d.name,
@@ -166,6 +194,24 @@ export function PortalVorgangDetail({
             }))}
           />
         ) : null}
+
+        {item.leadId ? (
+          showAnlassBadge ? (
+            <OrgVorgangFeedbackSection
+              leadId={item.leadId}
+              feedbackBereit={item.feedbackBereit}
+              handwerkerErledigt={hwErledigt}
+              hvFeedback={hvFeedback}
+              onSubmitted={onHvFeedbackSubmitted}
+            />
+          ) : (
+            <PortalVorgangFeedbackSection
+              leadId={item.leadId}
+              feedbackBereit={item.feedbackBereit}
+              mieterFeedback={item.mieterFeedback}
+            />
+          )
+        ) : null}
       </PortalDetailLayout>
 
       <PortalConfirmDialog
@@ -173,8 +219,12 @@ export function PortalVorgangDetail({
         title={isAuftragAccept ? "Änderungen am Auftrag annehmen?" : "Angebot annehmen?"}
         description={
           isAuftragAccept
-            ? "Mit der Annahme bestätigst du die geänderten Leistungen und Preise am laufenden Auftrag verbindlich."
-            : "Mit der Annahme beauftragst du Bärenwald verbindlich mit der Ausführung zu den genannten Konditionen. Wir melden uns zur weiteren Planung."
+            ? item.hidePreise
+              ? "Mit der Annahme bestätigst du die geänderten Leistungen am laufenden Auftrag verbindlich."
+              : "Mit der Annahme bestätigst du die geänderten Leistungen und Preise am laufenden Auftrag verbindlich."
+            : item.hidePreise
+              ? "Mit der Annahme beauftragst du Bärenwald verbindlich mit der Ausführung. Wir melden uns zur weiteren Planung."
+              : "Mit der Annahme beauftragst du Bärenwald verbindlich mit der Ausführung zu den genannten Konditionen. Wir melden uns zur weiteren Planung."
         }
         confirmLabel="Verbindlich annehmen"
         loading={loading}

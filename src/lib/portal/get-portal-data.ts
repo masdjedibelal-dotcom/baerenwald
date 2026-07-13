@@ -15,7 +15,8 @@ import {
   resolvePortalObjekt,
   type PortalObjekt,
 } from "@/lib/portal/portal-objekt";
-import { resolvePartnerFileUrls } from "@/lib/partner/partner-storage";
+import { isHvPortalLead } from "@/lib/portal/hv-portal-lead";
+import { resolvePartnerFileUrl, resolvePartnerFileUrls } from "@/lib/partner/partner-storage";
 import { isSupabaseConfigured, supabaseAdmin } from "@/lib/supabase";
 
 type PortalPositionRow = {
@@ -25,6 +26,8 @@ type PortalPositionRow = {
   leistung_name: string | null;
   beschreibung: string | null;
   leistung_status: string | null;
+  handwerker_status: string | null;
+  handwerker_id: string | null;
   menge: number | null;
   lohn_fix: number | null;
   material_fix: number | null;
@@ -40,6 +43,8 @@ type PortalBautagebuchRow = {
   titel: string | null;
   beschreibung: string | null;
   foto_urls: unknown;
+  fuer_kunde_freigegeben: boolean | null;
+  eintrag_typ?: string | null;
 };
 
 type PortalKundenObjektRow = {
@@ -159,7 +164,7 @@ export async function getPortalDataForKunde(kundeId: string) {
   const { data: leads } = await supabaseAdmin
     .from("leads")
     .select(
-      "id, situation, bereiche, status, vorgang_phase, created_at, plz, strasse, hausnummer, zeitraum, kontakt_name, preis_min, preis_max, budget_ca, kontakt_nachricht, funnel_daten, kunde_objekt_id, anlass"
+      "id, situation, bereiche, status, vorgang_phase, created_at, plz, strasse, hausnummer, zeitraum, kontakt_name, preis_min, preis_max, budget_ca, kontakt_nachricht, funnel_daten, kunde_objekt_id, anlass, kanal, auftraggeber_kunde_id, hv_meldung_status, org_freigabe_status"
     )
     .eq("kunde_id", kunde.id)
     .order("created_at", { ascending: false });
@@ -268,7 +273,7 @@ export async function getPortalDataForKunde(kundeId: string) {
       ? await supabaseAdmin
           .from("auftrag_positionen")
           .select(
-            "id, auftrag_id, gewerk_name, leistung_name, beschreibung, leistung_status, menge, einheit, lohn_fix, material_fix, aenderung_typ, preis_alt, kunde_akzeptiert_at"
+            "id, auftrag_id, gewerk_name, leistung_name, beschreibung, leistung_status, handwerker_status, handwerker_id, menge, einheit, lohn_fix, material_fix, aenderung_typ, preis_alt, kunde_akzeptiert_at"
           )
           .in("auftrag_id", auftragIds)
       : { data: [] as PortalPositionRow[], error: null };
@@ -279,13 +284,74 @@ export async function getPortalDataForKunde(kundeId: string) {
       ? await supabaseAdmin
           .from("auftrag_bautagebuch_eintraege")
           .select(
-            "id, auftrag_id, datum, titel, beschreibung, foto_urls, fuer_kunde_freigegeben"
+            "id, auftrag_id, datum, titel, beschreibung, foto_urls, fuer_kunde_freigegeben, eintrag_typ"
           )
           .in("auftrag_id", auftragIds)
-          .eq("fuer_kunde_freigegeben", true)
+          .neq("eintrag_typ", "befund")
           .order("datum", { ascending: false })
       : { data: [] as PortalBautagebuchRow[], error: null };
   if (btErr) console.warn("[portal] bautagebuch:", btErr.message);
+
+  const { data: abnahmeProtokolleRows, error: abnahmeErr } =
+    auftragIds.length > 0
+      ? await supabaseAdmin
+          .from("abnahme_protokolle")
+          .select(
+            "id, auftrag_id, handwerker_id, abnahme_datum, pdf_path, created_at, handwerker:handwerker_id(name, firma)"
+          )
+          .in("auftrag_id", auftragIds)
+          .order("created_at", { ascending: false })
+      : { data: [] as Record<string, unknown>[], error: null };
+  if (abnahmeErr) console.warn("[portal] abnahme_protokolle:", abnahmeErr.message);
+
+  const abnahmeByAuftrag = new Map<
+    string,
+    Array<{
+      id: string;
+      abnahme_datum?: string | null;
+      created_at?: string | null;
+      pdf_href?: string | null;
+      handwerker_label?: string | null;
+    }>
+  >();
+
+  for (const row of abnahmeProtokolleRows ?? []) {
+    const aid = String((row as { auftrag_id: string }).auftrag_id);
+    const pdfPath = String((row as { pdf_path?: string }).pdf_path ?? "").trim();
+    const pdfHref = pdfPath ? await resolvePartnerFileUrl(pdfPath) : null;
+    const hw = (row as { handwerker?: { name?: string; firma?: string } | null })
+      .handwerker;
+    const handwerkerLabel =
+      hw?.firma?.trim() || hw?.name?.trim() || null;
+    const entry = {
+      id: String((row as { id: string }).id),
+      abnahme_datum: (row as { abnahme_datum?: string | null }).abnahme_datum ?? null,
+      created_at: (row as { created_at?: string | null }).created_at ?? null,
+      pdf_href: pdfHref,
+      handwerker_label: handwerkerLabel,
+    };
+    const list = abnahmeByAuftrag.get(aid) ?? [];
+    list.push(entry);
+    abnahmeByAuftrag.set(aid, list);
+  }
+
+  const leadPortalByIdEarly = new Map(
+    (leads ?? []).map((lead) => [String((lead as { id: string }).id), lead])
+  );
+  const hvAuftragIds = new Set<string>();
+  for (const a of auftraege) {
+    const leadId = a.lead_id != null ? String(a.lead_id).trim() : "";
+    if (!leadId) continue;
+    const lead = leadPortalByIdEarly.get(leadId) as {
+      auftraggeber_kunde_id?: string | null;
+      anlass?: string | null;
+      kanal?: string | null;
+      hv_meldung_status?: string | null;
+    } | undefined;
+    if (lead && isHvPortalLead(lead)) {
+      hvAuftragIds.add(String(a.id));
+    }
+  }
 
   const { data: milestones } =
     auftragIds.length > 0
@@ -296,6 +362,41 @@ export async function getPortalDataForKunde(kundeId: string) {
           .eq("fuer_kunden_sichtbar", true)
           .order("sort_order", { ascending: true })
       : { data: [] };
+
+  const { data: terminslots } =
+    auftragIds.length > 0
+      ? await supabaseAdmin
+          .from("auftrag_terminslots")
+          .select("id, auftrag_id, slot_beginn, slot_ende, status, bestaetigt_am")
+          .in("auftrag_id", auftragIds)
+          .in("status", ["vorgeschlagen", "bestaetigt"])
+          .order("slot_beginn", { ascending: true })
+      : { data: [] };
+
+  const terminsByAuftrag = new Map<
+    string,
+    Array<{
+      id: string;
+      slot_beginn: string;
+      slot_ende: string | null;
+      status: string;
+      bestaetigt_am: string | null;
+    }>
+  >();
+  for (const row of terminslots ?? []) {
+    const raw = row as {
+      id: string;
+      auftrag_id: string;
+      slot_beginn: string;
+      slot_ende: string | null;
+      status: string;
+      bestaetigt_am: string | null;
+    };
+    const aid = String(raw.auftrag_id);
+    const list = terminsByAuftrag.get(aid) ?? [];
+    list.push(raw);
+    terminsByAuftrag.set(aid, list);
+  }
 
   const angebote = Array.from(angeboteByIdEarly.values());
 
@@ -350,6 +451,11 @@ export async function getPortalDataForKunde(kundeId: string) {
 
   for (const b of bautagebuch ?? []) {
     const aid = String(b.auftrag_id);
+    const typ = (b.eintrag_typ ?? "tagebuch").trim();
+    if (typ === "befund") continue;
+    const freigegeben = Boolean(b.fuer_kunde_freigegeben);
+    if (!freigegeben && !hvAuftragIds.has(aid)) continue;
+
     const fotoRaw = b.foto_urls;
     const paths = Array.isArray(fotoRaw)
       ? (fotoRaw as string[]).map((s) => String(s).trim()).filter(Boolean)
@@ -416,6 +522,17 @@ export async function getPortalDataForKunde(kundeId: string) {
     })
   );
 
+  const abnahmeUrlByAuftrag = new Map<string, string>();
+  for (const a of auftraege) {
+    const raw =
+      typeof a.abnahme_protokoll_url === "string"
+        ? a.abnahme_protokoll_url.trim()
+        : "";
+    if (!raw) continue;
+    const signed = (await resolvePartnerFileUrl(raw)) ?? raw;
+    abnahmeUrlByAuftrag.set(String(a.id), signed);
+  }
+
   const mappedAuftraege = auftraege.map((a) => {
       const auftragId = String(a.id);
       const angebotId =
@@ -459,9 +576,10 @@ export async function getPortalDataForKunde(kundeId: string) {
           {
             id: auftragId,
             abnahme_protokoll_url:
-              typeof a.abnahme_protokoll_url === "string"
+              abnahmeUrlByAuftrag.get(auftragId) ??
+              (typeof a.abnahme_protokoll_url === "string"
                 ? a.abnahme_protokoll_url
-                : null,
+                : null),
             abnahme_datum:
               typeof a.abnahme_datum === "string" ? a.abnahme_datum : null,
             abschlussdokumentation_url:
@@ -491,6 +609,7 @@ export async function getPortalDataForKunde(kundeId: string) {
               titel: entry.titel,
               fotos_urls: entry.fotos_urls,
             })),
+            abnahmeProtokolle: abnahmeByAuftrag.get(auftragId) ?? [],
           }
         ),
         positionen: (positionen ?? [])
@@ -507,10 +626,19 @@ export async function getPortalDataForKunde(kundeId: string) {
             preis_alt: p.preis_alt,
             kunde_akzeptiert_at: p.kunde_akzeptiert_at,
             leistung_status: p.leistung_status,
+            handwerker_status: p.handwerker_status,
+            handwerker_id: p.handwerker_id,
           })),
         angebotPositionenRaw: angebot?.positionen,
         bautagebuch: bautagebuchByAuftrag.get(auftragId) ?? [],
         milestones: milestonesByAuftrag.get(auftragId) ?? [],
+        terminSlots: (terminsByAuftrag.get(auftragId) ?? []).map((s) => ({
+          id: String(s.id),
+          slot_beginn: s.slot_beginn,
+          slot_ende: s.slot_ende,
+          status: s.status,
+          bestaetigt_am: s.bestaetigt_am,
+        })),
       };
     });
 
@@ -596,11 +724,33 @@ export async function getPortalDataForKunde(kundeId: string) {
     })),
   });
 
+  const feedbackLeadIds = mappedLeads
+    .map((l) => String((l as { id: string }).id))
+    .filter(Boolean);
+  const mieterFeedbackByLeadId: Record<
+    string,
+    { sterne: number; freitext?: string | null }
+  > = {};
+  if (feedbackLeadIds.length) {
+    const { data: feedbackRows } = await supabaseAdmin
+      .from("mieter_feedback")
+      .select("lead_id, sterne, freitext")
+      .in("lead_id", feedbackLeadIds);
+    for (const row of feedbackRows ?? []) {
+      const lid = String((row as { lead_id: string }).lead_id);
+      mieterFeedbackByLeadId[lid] = {
+        sterne: Number((row as { sterne: number }).sterne),
+        freitext: (row as { freitext?: string | null }).freitext ?? null,
+      };
+    }
+  }
+
   return {
     kunde,
     leads: mappedLeads,
     angebote: mappedAngebote,
     auftraege: mappedAuftraege,
+    mieterFeedbackByLeadId,
     /** @deprecated Nur für Abwärtskompatibilität — Pipeline-Split clientseitig. */
     splitPipeline: split,
   };

@@ -9,6 +9,7 @@ import { createPartnerBautagebuchEintrag,
   updatePartnerBautagebuchEintrag,
 } from "@/app/actions/partner-bautagebuch";
 import { createPartnerBefundEintrag } from "@/app/actions/partner-befund";
+import { PartnerAuftragErledigtSection } from "@/components/partner/PartnerAuftragErledigtSection";
 import { PartnerLeistungenKonditionenCard } from "@/components/partner/PartnerLeistungenKonditionenCard";
 import {
   PartnerDetailError,
@@ -429,7 +430,9 @@ export function PartnerAuftragDetail({
               <span className="tag bg-accent-light text-accent">Dein Eintrag</span>
             ) : null}
             {e.fuer_kunde_freigegeben ? (
-              <span className="tag bg-emerald-100 text-emerald-700">Freigegeben</span>
+              <span className="tag bg-emerald-100 text-emerald-700">
+                Im Portal sichtbar
+              </span>
             ) : null}
           </>
         ),
@@ -774,6 +777,14 @@ export function PartnerAuftragDetail({
       {vorgangState === "in_bearbeitung" ? (
         <PartnerTermineRueckfrageSection auftragId={item.id} />
       ) : null}
+
+      <PartnerAuftragErledigtSection
+        auftragId={item.id}
+        auftragStatus={item.status}
+        positionen={item.positionen}
+        vorgangState={vorgangState}
+        defaultOrt={[item.plz, item.ort].filter((v) => v && v !== "—").join(" ")}
+      />
     </PartnerDetailLayout>
   );
 }

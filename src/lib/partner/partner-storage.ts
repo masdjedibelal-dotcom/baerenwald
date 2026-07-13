@@ -79,6 +79,27 @@ export async function uploadPartnerPdf(opts: {
   return { ok: true, path };
 }
 
+/** Abnahmeprotokoll-PDF (Auftrag). */
+export async function uploadAbnahmeProtokollPdf(opts: {
+  handwerkerId: string;
+  auftragId: string;
+  pdfBytes: Uint8Array;
+}): Promise<{ ok: true; path: string } | { ok: false; error: string }> {
+  if (!isSupabaseConfigured()) {
+    return { ok: false, error: "Storage nicht konfiguriert." };
+  }
+
+  const path = `${opts.handwerkerId}/auftraege/${opts.auftragId}/abnahme-${randomUUID()}.pdf`;
+  const buf = Buffer.from(opts.pdfBytes);
+
+  const { error } = await supabaseAdmin.storage
+    .from(PARTNER_UPLOAD_BUCKET)
+    .upload(path, buf, { contentType: "application/pdf", upsert: false });
+
+  if (error) return { ok: false, error: error.message };
+  return { ok: true, path };
+}
+
 export async function uploadPartnerAngebotPdfs(opts: {
   handwerkerId: string;
   anfrageId: string;

@@ -1,5 +1,9 @@
 import type { OrganisationLead } from "@/lib/org/types";
 import {
+  countOrgFreigabeLeads,
+  filterOrgFreigabeLeads,
+} from "@/lib/org/org-freigabe-queue";
+import {
   countKundeVorgaengeFilter,
   type KundeVorgangFilter,
 } from "@/lib/portal/kunde-vorgang-filter";
@@ -13,30 +17,35 @@ export const ORG_VORGANG_FILTER_LABELS: Record<OrgVorgangFilter, string> = {
   erledigt: "Erledigt",
 };
 
+export { buildAuftragByLeadId, isInOrgFreigabeQueue } from "@/lib/org/org-freigabe-queue";
+
 export function countOrgFreigabe(
   eingang: OrganisationLead[],
-  leads: OrganisationLead[]
+  leads: OrganisationLead[],
+  auftragByLeadId: Record<string, string> = {}
 ): number {
-  const neueMeldungen = eingang.filter(
-    (l) => (l.hv_meldung_status ?? "neu") === "neu"
-  ).length;
-  const angebotFreigabe = [...eingang, ...leads].filter(
-    (l) => l.org_freigabe_status === "ausstehend"
-  ).length;
-  return neueMeldungen + angebotFreigabe;
+  return countOrgFreigabeLeads(eingang, leads, auftragByLeadId);
 }
 
 export function buildOrgVorgangFilterCounts(
   eingang: OrganisationLead[],
   leads: OrganisationLead[],
-  vorgaengeItems: ReturnType<typeof buildKundeVorgaenge>
+  vorgaengeItems: ReturnType<typeof buildKundeVorgaenge>,
+  auftragByLeadId: Record<string, string> = {}
 ): Record<OrgVorgangFilter, number> {
   const vorgangCounts = countKundeVorgaengeFilter(vorgaengeItems);
   return {
-    freigabe: countOrgFreigabe(eingang, leads),
+    freigabe: countOrgFreigabe(eingang, leads, auftragByLeadId),
     aktiv: vorgangCounts.aktiv,
     erledigt: vorgangCounts.erledigt,
   };
+}
+
+export function filterOrgFreigabeEingang(
+  eingang: OrganisationLead[],
+  auftragByLeadId: Record<string, string>
+): OrganisationLead[] {
+  return filterOrgFreigabeLeads(eingang, auftragByLeadId);
 }
 
 export function orgSectionFromParam(raw: string | null): OrgVorgangFilter | null {

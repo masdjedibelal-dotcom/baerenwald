@@ -18,7 +18,14 @@ const AUFTRAG_POSITION_HW_ABGESCHLOSSEN = new Set([
   "uebernommen",
   "eingereicht",
   "bestaetigt",
+  "erledigt",
 ]);
+
+export function positionHandwerkerErledigt(
+  handwerkerStatus: string | null | undefined
+): boolean {
+  return (handwerkerStatus ?? "").toLowerCase() === "erledigt";
+}
 
 export function positionHandwerkerAbgeschlossen(
   handwerkerStatus: string | null | undefined

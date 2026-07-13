@@ -25,6 +25,7 @@ import { PortalListCard } from "@/components/shared/PortalListCard";
 import { PortalNavCountBadge } from "@/components/shared/PortalNavCountBadge";
 import {
   buildOrgVorgangFilterCounts,
+  buildAuftragByLeadId,
   type OrgVorgangFilter,
 } from "@/lib/org/org-vorgang-filter";
 import type { KatalogProdukt } from "@/lib/katalog/katalog-produkte";
@@ -61,6 +62,40 @@ type Props = {
   katalogProdukte?: KatalogProdukt[];
   mitgliedRolle?: OrgMitgliedRolle;
   partnerBefundByLeadId?: Record<string, OrgPartnerBefundEntry[]>;
+  bautagebuchByLeadId?: Record<
+    string,
+    Array<{
+      id?: string;
+      datum?: string;
+      created_at?: string;
+      titel?: string;
+      notiz?: string;
+      fotos_urls?: string[];
+    }>
+  >;
+  hwErledigtByLeadId?: Record<string, boolean>;
+  feedbackBereitByLeadId?: Record<string, boolean>;
+  hvFeedbackByLeadId?: Record<
+    string,
+    {
+      bewertung?: { sterne: number; freitext?: string | null } | null;
+      maengel?: Array<{ freitext?: string | null; created_at?: string }>;
+    }
+  >;
+  auftragKontextByLeadId?: Record<
+    string,
+    import("@/lib/portal/vorgang-erledigt").PortalAuftragKontext
+  >;
+  dokumenteByLeadId?: Record<
+    string,
+    Array<{
+      id: string;
+      name: string;
+      subtitle?: string;
+      datum?: string;
+      href: string;
+    }>
+  >;
 };
 
 function portalSectionFromParam(raw: string | null): OrgSection | null {
@@ -90,6 +125,12 @@ export function OrganisationPortalClient({
   katalogProdukte = [],
   mitgliedRolle = "admin",
   partnerBefundByLeadId = {},
+  bautagebuchByLeadId = {},
+  hwErledigtByLeadId = {},
+  feedbackBereitByLeadId = {},
+  hvFeedbackByLeadId = {},
+  auftragKontextByLeadId = {},
+  dokumenteByLeadId = {},
 }: Props) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -117,9 +158,23 @@ export function OrganisationPortalClient({
     [leads, angebote, auftraege]
   );
 
+  const auftragByLeadId = useMemo(
+    () =>
+      buildAuftragByLeadId(
+        auftraege as Array<{ id: string; lead_id?: string | null }>
+      ),
+    [auftraege]
+  );
+
   const filterCounts = useMemo(
-    () => buildOrgVorgangFilterCounts(eingang, leads, vorgaengeItems),
-    [eingang, leads, vorgaengeItems]
+    () =>
+      buildOrgVorgangFilterCounts(
+        eingang,
+        leads,
+        vorgaengeItems,
+        auftragByLeadId
+      ),
+    [eingang, leads, vorgaengeItems, auftragByLeadId]
   );
 
   const vorgaengeBadgeCount = filterCounts.freigabe;
@@ -309,6 +364,12 @@ export function OrganisationPortalClient({
                 router.replace(`/portal?section=vorgaenge&filter=${f}`, { scroll: false })
               }
               partnerBefundByLeadId={partnerBefundByLeadId}
+              bautagebuchByLeadId={bautagebuchByLeadId}
+              hwErledigtByLeadId={hwErledigtByLeadId}
+              feedbackBereitByLeadId={feedbackBereitByLeadId}
+              hvFeedbackByLeadId={hvFeedbackByLeadId}
+              auftragKontextByLeadId={auftragKontextByLeadId}
+              dokumenteByLeadId={dokumenteByLeadId}
             />
           ) : null}
 

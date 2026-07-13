@@ -168,6 +168,7 @@ export function dokumenteFromAuftrag(
     rechnungen?: RechnungDokumentInput[];
     timeline?: TimelineDokumentInput[];
     bautagebuch?: BautagebuchDokumentInput[];
+    abnahmeProtokolle?: AbnahmeProtokollDokumentInput[];
   }
 ): PortalDokument[] {
   const rows: PortalDokument[] = [];
@@ -176,20 +177,25 @@ export function dokumenteFromAuftrag(
     rows.push(...dokumenteFromAngebot(opts.angebot));
   }
 
-  const abnahme = auftrag.abnahme_protokoll_url?.trim();
-  if (abnahme) {
-    rows.push({
-      id: `abnahme-${auftrag.id}`,
-      name: "Abnahmeprotokoll",
-      subtitle: "Abnahme",
-      datum:
-        auftrag.abnahme_datum ??
-        auftrag.updated_at ??
-        auftrag.created_at ??
-        undefined,
-      href: abnahme,
-      art: "protokoll",
-    });
+  const abnahmeProtokolle = opts.abnahmeProtokolle ?? [];
+  if (abnahmeProtokolle.length > 0) {
+    rows.push(...dokumenteFromAbnahmeProtokolle(abnahmeProtokolle));
+  } else {
+    const abnahme = auftrag.abnahme_protokoll_url?.trim();
+    if (abnahme) {
+      rows.push({
+        id: `abnahme-${auftrag.id}`,
+        name: "Abnahmeprotokoll",
+        subtitle: "Abnahme",
+        datum:
+          auftrag.abnahme_datum ??
+          auftrag.updated_at ??
+          auftrag.created_at ??
+          undefined,
+        href: abnahme,
+        art: "protokoll",
+      });
+    }
   }
 
   const abschluss = auftrag.abschlussdokumentation_url?.trim();
@@ -217,6 +223,46 @@ export function dokumenteFromAuftrag(
     const tb = new Date(b.datum || 0).getTime();
     return tb - ta;
   });
+}
+
+type AbnahmeProtokollDokumentInput = {
+  id: string;
+  abnahme_datum?: string | null;
+  created_at?: string | null;
+  pdf_href?: string | null;
+  handwerker_label?: string | null;
+};
+
+export function dokumenteFromAbnahmeProtokolle(
+  protokolle: AbnahmeProtokollDokumentInput[]
+): PortalDokument[] {
+  return protokolle
+    .filter((p) => p.pdf_href?.trim())
+    .map((p) => ({
+      id: `abnahme-protokoll-${p.id}`,
+      name: p.handwerker_label
+        ? `Abnahmeprotokoll — ${p.handwerker_label}`
+        : "Abnahmeprotokoll",
+      subtitle: "Abnahme",
+      datum: p.abnahme_datum ?? p.created_at ?? undefined,
+      href: p.pdf_href!.trim(),
+      art: "protokoll" as const,
+    }));
+}
+
+/** Mieter sieht kein Angebot/Rechnung; HV sieht alle Unterlagen. */
+export function filterPortalDokumenteForViewer(
+  docs: PortalDokument[],
+  opts: { hvMieterView?: boolean; nurErledigt?: boolean; erledigt?: boolean }
+): PortalDokument[] {
+  let rows = docs;
+  if (opts.hvMieterView) {
+    rows = rows.filter((d) => d.art !== "angebot" && d.art !== "rechnung");
+  }
+  if (opts.nurErledigt && !opts.erledigt) {
+    rows = rows.filter((d) => d.art === "foto" || d.art === "dokument");
+  }
+  return rows;
 }
 
 export function dokumenteFromUrls(

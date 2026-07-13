@@ -4,7 +4,14 @@ import Image from "next/image";
 import { useEffect, useMemo, useState } from "react";
 import { AlertTriangle, Filter, Mail, Phone, X } from "lucide-react";
 
+import { OrgVorgangFeedbackSection } from "@/components/org/OrgVorgangFeedbackSection";
 import { OrganisationVorgangNotizenPanel } from "@/components/org/OrganisationObjektNotizenPanel";
+import {
+  OrgAngebotFreigabeInhalt,
+  orgAngebotPdfZeilen,
+  type OrgFreigabeAngebot,
+} from "@/components/org/OrgAngebotFreigabeInhalt";
+import { DokumenteTabelle } from "@/components/shared/DokumenteTabelle";
 import { VersicherungsakteButton } from "@/components/org/VersicherungsakteButton";
 import { VorgangKommentareThread } from "@/components/org/VorgangKommentareThread";
 import { VorgangStornoDialog } from "@/components/org/VorgangStornoDialog";
@@ -38,10 +45,46 @@ type Props = {
   kunde: OrganisationKunde;
   eingang: OrganisationLead[];
   objekte: OrganisationObjekt[];
+  angebote?: OrgFreigabeAngebot[];
   initialSelectedId?: string | null;
   onRefresh: () => void;
   partnerBefundByLeadId?: Record<string, OrgPartnerBefundEntry[]>;
   auftragByLeadId?: Record<string, string>;
+  auftragKontextByLeadId?: Record<
+    string,
+    import("@/lib/portal/vorgang-erledigt").PortalAuftragKontext
+  >;
+  bautagebuchByLeadId?: Record<
+    string,
+    Array<{
+      id?: string;
+      datum?: string;
+      created_at?: string;
+      titel?: string;
+      notiz?: string;
+      fotos_urls?: string[];
+    }>
+  >;
+  hwErledigtByLeadId?: Record<string, boolean>;
+  feedbackBereitByLeadId?: Record<string, boolean>;
+  dokumenteByLeadId?: Record<
+    string,
+    Array<{
+      id: string;
+      name: string;
+      subtitle?: string;
+      datum?: string;
+      href: string;
+      art?: string;
+    }>
+  >;
+  hvFeedbackByLeadId?: Record<
+    string,
+    {
+      bewertung?: { sterne: number; freitext?: string | null } | null;
+      maengel?: Array<{ freitext?: string | null; created_at?: string }>;
+    }
+  >;
 };
 
 type StatusFilter = "alle" | "neu" | "wartet_melder" | "in_bearbeitung";
@@ -49,19 +92,47 @@ type StatusFilter = "alle" | "neu" | "wartet_melder" | "in_bearbeitung";
 function MeldungDetail({
   lead,
   kunde,
+  angebot,
   onRefresh,
   onClose,
   showClose,
   partnerBefunde,
   auftragId,
+  bautagebuchEintraege,
+  hwErledigt,
+  feedbackBereit,
+  hvFeedback,
+  vorgangUnterlagen,
 }: {
   lead: OrganisationLead;
   kunde: OrganisationKunde;
+  angebot?: OrgFreigabeAngebot | null;
   onRefresh: () => void;
   onClose?: () => void;
   showClose?: boolean;
   partnerBefunde?: OrgPartnerBefundEntry[];
   auftragId?: string;
+  bautagebuchEintraege?: Array<{
+    id?: string;
+    datum?: string;
+    created_at?: string;
+    titel?: string;
+    notiz?: string;
+    fotos_urls?: string[];
+  }>;
+  hwErledigt?: boolean;
+  feedbackBereit?: boolean;
+  hvFeedback?: {
+    bewertung?: { sterne: number; freitext?: string | null } | null;
+    maengel?: Array<{ freitext?: string | null; created_at?: string }>;
+  };
+  vorgangUnterlagen?: Array<{
+    id: string;
+    name: string;
+    subtitle?: string;
+    datum?: string;
+    href: string;
+  }>;
 }) {
   const [resendBusy, setResendBusy] = useState(false);
   const [resendMsg, setResendMsg] = useState<string | null>(null);
@@ -90,10 +161,16 @@ function MeldungDetail({
     }
   };
 
-  const showAngebotFreigabe =
-    lead.org_freigabe_status === "ausstehend" &&
-    (lead.hv_meldung_status === "angebot_eingefordert" ||
-      lead.hv_meldung_status === "kleinreparatur");
+  const wartetOrgFreigabe = lead.org_freigabe_status === "ausstehend";
+  const hatAngebotsdaten = Boolean(
+    angebot &&
+      ((angebot.positionenDisplay?.length ?? 0) > 0 ||
+        (typeof angebot.gesamtBrutto === "number" && angebot.gesamtBrutto > 0) ||
+        angebot.pdf_url?.trim() ||
+        angebot.dokumente?.some((d) => d.href?.trim()))
+  );
+  const angebotPdfZeilen =
+    wartetOrgFreigabe && angebot ? orgAngebotPdfZeilen(angebot) : [];
 
   return (
     <>
@@ -110,28 +187,8 @@ function MeldungDetail({
         </div>
       ) : null}
 
-      <OrgMeldungAktionBanner lead={lead} kunde={kunde} onUpdated={onRefresh} />
-
-      <KostentraegerSelector
-        leadId={lead.id}
-        value={lead.kostentraeger}
-        vorgeschlagen={lead.kostentraeger_vorgeschlagen ?? false}
-        versicherungsNr={lead.versicherungs_nr}
-        onSaved={onRefresh}
-      />
-
-      {auftragId &&
-      (lead.kostentraeger === "versicherung" ||
-        lead.kostentraeger === "versicherung_wasserschaden") ? (
-        <VersicherungsakteButton auftragId={auftragId} />
-      ) : null}
-
-      {showAngebotFreigabe ? (
-        <OrgFreigabeBanner
-          leadId={lead.id}
-          status={lead.org_freigabe_status ?? ""}
-          onUpdated={onRefresh}
-        />
+      {!wartetOrgFreigabe ? (
+        <OrgMeldungAktionBanner lead={lead} kunde={kunde} onUpdated={onRefresh} />
       ) : null}
 
       <div className="flex items-start justify-between gap-2">
@@ -157,18 +214,9 @@ function MeldungDetail({
         ) : null}
       </div>
 
-      <div className="rounded-lg bg-muted/40 p-3 text-sm">
-        <p className="text-xs font-medium text-text-tertiary mb-1">
-          Geschätzte Preisspanne
-        </p>
-        <p>
-          {formatPreisspanneDisplay(
-            lead.preis_min,
-            lead.preis_max,
-            lead.preis_unsicher
-          )}
-        </p>
-      </div>
+      {wartetOrgFreigabe && angebot ? (
+        <OrgAngebotFreigabeInhalt angebot={angebot} />
+      ) : null}
 
       {lead.kontakt_nachricht ? (
         <div>
@@ -255,6 +303,37 @@ function MeldungDetail({
         </div>
       ) : null}
 
+      {angebotPdfZeilen.length > 0 ? (
+        <DokumenteTabelle
+          heading="Angebot (PDF)"
+          dokumente={angebotPdfZeilen}
+          emptyText="Noch kein Angebots-PDF verfügbar."
+        />
+      ) : null}
+
+      {!wartetOrgFreigabe || !hatAngebotsdaten ? (
+        <div className="rounded-lg bg-muted/40 p-3 text-sm">
+          <p className="text-xs font-medium text-text-tertiary mb-1">
+            {wartetOrgFreigabe ? "Vorläufige Einschätzung" : "Geschätzte Preisspanne"}
+          </p>
+          <p>
+            {formatPreisspanneDisplay(
+              lead.preis_min,
+              lead.preis_max,
+              lead.preis_unsicher
+            )}
+          </p>
+        </div>
+      ) : null}
+
+      {wartetOrgFreigabe ? (
+        <OrgFreigabeBanner
+          leadId={lead.id}
+          status={lead.org_freigabe_status ?? ""}
+          onUpdated={onRefresh}
+        />
+      ) : null}
+
       {partnerBefunde && partnerBefunde.length > 0 ? (
         <div data-testid="hv-partner-befund">
           <BautagebuchAccordionList
@@ -274,6 +353,54 @@ function MeldungDetail({
             }))}
           />
         </div>
+      ) : null}
+
+      {bautagebuchEintraege && bautagebuchEintraege.length > 0 ? (
+        <BautagebuchAccordionList
+          heading="Bautagebuch"
+          className="!border-t-0 !pt-0"
+          eintraege={bautagebuchEintraege.map((b) => ({
+            id: b.id ?? `${b.datum}-${b.titel}`,
+            datum: b.datum ?? b.created_at,
+            titel: b.titel ?? "Eintrag",
+            beschreibung: b.notiz,
+            fotos: b.fotos_urls,
+          }))}
+        />
+      ) : null}
+
+      {vorgangUnterlagen && vorgangUnterlagen.length > 0 ? (
+        <DokumenteTabelle
+          heading="Anhänge"
+          dokumente={vorgangUnterlagen.map((d) => ({
+            id: d.id,
+            name: d.subtitle ? `${d.name} — ${d.subtitle}` : d.name,
+            datum: d.datum,
+            href: d.href,
+          }))}
+        />
+      ) : null}
+
+      <OrgVorgangFeedbackSection
+        leadId={lead.id}
+        feedbackBereit={feedbackBereit}
+        handwerkerErledigt={hwErledigt}
+        hvFeedback={hvFeedback}
+        onSubmitted={onRefresh}
+      />
+
+      <KostentraegerSelector
+        leadId={lead.id}
+        value={lead.kostentraeger}
+        vorgeschlagen={lead.kostentraeger_vorgeschlagen ?? false}
+        versicherungsNr={lead.versicherungs_nr}
+        onSaved={onRefresh}
+      />
+
+      {auftragId &&
+      (lead.kostentraeger === "versicherung" ||
+        lead.kostentraeger === "versicherung_wasserschaden") ? (
+        <VersicherungsakteButton auftragId={auftragId} />
       ) : null}
 
       <VorgangKommentareThread leadId={lead.id} />
@@ -305,11 +432,27 @@ export function OrganisationEingangPanel({
   kunde,
   eingang,
   objekte,
+  angebote = [],
   initialSelectedId,
   onRefresh,
   partnerBefundByLeadId = {},
   auftragByLeadId = {},
+  auftragKontextByLeadId = {},
+  bautagebuchByLeadId = {},
+  hwErledigtByLeadId = {},
+  feedbackBereitByLeadId = {},
+  hvFeedbackByLeadId = {},
+  dokumenteByLeadId = {},
 }: Props) {
+  const angebotByLeadId = useMemo(() => {
+    const map = new Map<string, OrgFreigabeAngebot>();
+    for (const a of angebote) {
+      const leadId = a.lead_id?.trim();
+      if (leadId) map.set(leadId, a);
+    }
+    return map;
+  }, [angebote]);
+
   const [objektFilter, setObjektFilter] = useState<string>("alle");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("alle");
   const [onlyNotfall, setOnlyNotfall] = useState(false);
@@ -420,8 +563,12 @@ export function OrganisationEingangPanel({
                   onClick={() => openDetail(lead.id)}
                   title={kat}
                   subtitle={lead.objekt?.titel ?? "Objekt"}
-                  statusLabel={plattformStatusLabel(resolvePlattformStatus(lead))}
-                  statusPillClass={plattformStatusPillClass(resolvePlattformStatus(lead))}
+                  statusLabel={plattformStatusLabel(
+                    resolvePlattformStatus(lead, auftragKontextByLeadId[lead.id])
+                  )}
+                  statusPillClass={plattformStatusPillClass(
+                    resolvePlattformStatus(lead, auftragKontextByLeadId[lead.id])
+                  )}
                   accent="anfrage"
                   meta={[
                     {
@@ -444,9 +591,20 @@ export function OrganisationEingangPanel({
             <MeldungDetail
               lead={selected}
               kunde={kunde}
+              angebot={angebotByLeadId.get(selected.id) ?? null}
               onRefresh={onRefresh}
               partnerBefunde={partnerBefundByLeadId[selected.id]}
               auftragId={auftragByLeadId[selected.id]}
+              bautagebuchEintraege={bautagebuchByLeadId[selected.id]}
+              hwErledigt={hwErledigtByLeadId[selected.id]}
+              feedbackBereit={feedbackBereitByLeadId[selected.id]}
+              hvFeedback={hvFeedbackByLeadId[selected.id]}
+              vorgangUnterlagen={
+                hwErledigtByLeadId[selected.id] ||
+                feedbackBereitByLeadId[selected.id]
+                  ? dokumenteByLeadId[selected.id]
+                  : undefined
+              }
             />
           ) : (
             <p className="text-sm text-text-secondary">Meldung auswählen</p>
@@ -466,11 +624,22 @@ export function OrganisationEingangPanel({
             <MeldungDetail
               lead={selected}
               kunde={kunde}
+              angebot={angebotByLeadId.get(selected.id) ?? null}
               onRefresh={onRefresh}
               showClose
               onClose={() => setMobileDetailOpen(false)}
               partnerBefunde={partnerBefundByLeadId[selected.id]}
               auftragId={auftragByLeadId[selected.id]}
+              bautagebuchEintraege={bautagebuchByLeadId[selected.id]}
+              hwErledigt={hwErledigtByLeadId[selected.id]}
+              feedbackBereit={feedbackBereitByLeadId[selected.id]}
+              hvFeedback={hvFeedbackByLeadId[selected.id]}
+              vorgangUnterlagen={
+                hwErledigtByLeadId[selected.id] ||
+                feedbackBereitByLeadId[selected.id]
+                  ? dokumenteByLeadId[selected.id]
+                  : undefined
+              }
             />
           </div>
         </div>

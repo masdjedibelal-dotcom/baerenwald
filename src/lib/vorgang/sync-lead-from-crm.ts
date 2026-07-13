@@ -1,6 +1,7 @@
 import { writeAuditEvent } from "@/lib/audit/write-audit-event";
 import { notifyMieterStatusChange } from "@/lib/melde/mieter-status-mail";
 import type { VorgangPhase } from "@/lib/vorgang/vorgang-phase";
+import { isHvPortalLead } from "@/lib/portal/hv-portal-lead";
 import { supabaseAdmin } from "@/lib/supabase";
 
 export type CrmLeadSyncEvent =
@@ -19,19 +20,7 @@ type LeadRow = {
   vorgang_phase: string | null;
 };
 
-const HV_KANALE = new Set([
-  "hv_melder_link",
-  "hv_direkt",
-  "hv_einladung",
-  "hv_manuell",
-  "hv_katalog",
-]);
-
-export function isHvPortalLead(lead: LeadRow & { kunde_id?: string | null }): boolean {
-  if (lead.auftraggeber_kunde_id) return true;
-  if (lead.anlass === "meldung" && lead.kanal && HV_KANALE.has(lead.kanal)) return true;
-  return false;
-}
+export { isHvPortalLead } from "@/lib/portal/hv-portal-lead";
 
 async function isOrganisationKundeLead(
   lead: LeadRow & { kunde_id?: string | null }

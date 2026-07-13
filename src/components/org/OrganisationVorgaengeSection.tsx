@@ -6,6 +6,7 @@ import { OrganisationFreigabePanel } from "@/components/org/OrganisationFreigabe
 import { PortalClient } from "@/components/portal/PortalClient";
 import {
   buildOrgVorgangFilterCounts,
+  buildAuftragByLeadId,
   ORG_VORGANG_FILTER_LABELS,
   type OrgVorgangFilter,
 } from "@/lib/org/org-vorgang-filter";
@@ -29,6 +30,40 @@ type Props = {
   onRefresh: () => void;
   onFilterChange?: (filter: OrgVorgangFilter) => void;
   partnerBefundByLeadId?: Record<string, OrgPartnerBefundEntry[]>;
+  bautagebuchByLeadId?: Record<
+    string,
+    Array<{
+      id?: string;
+      datum?: string;
+      created_at?: string;
+      titel?: string;
+      notiz?: string;
+      fotos_urls?: string[];
+    }>
+  >;
+  hwErledigtByLeadId?: Record<string, boolean>;
+  feedbackBereitByLeadId?: Record<string, boolean>;
+  hvFeedbackByLeadId?: Record<
+    string,
+    {
+      bewertung?: { sterne: number; freitext?: string | null } | null;
+      maengel?: Array<{ freitext?: string | null; created_at?: string }>;
+    }
+  >;
+  auftragKontextByLeadId?: Record<
+    string,
+    import("@/lib/portal/vorgang-erledigt").PortalAuftragKontext
+  >;
+  dokumenteByLeadId?: Record<
+    string,
+    Array<{
+      id: string;
+      name: string;
+      subtitle?: string;
+      datum?: string;
+      href: string;
+    }>
+  >;
 };
 
 function OrgVorgangFilterBar({
@@ -74,6 +109,12 @@ export function OrganisationVorgaengeSection({
   onRefresh,
   onFilterChange,
   partnerBefundByLeadId = {},
+  bautagebuchByLeadId = {},
+  hwErledigtByLeadId = {},
+  feedbackBereitByLeadId = {},
+  hvFeedbackByLeadId = {},
+  auftragKontextByLeadId = {},
+  dokumenteByLeadId = {},
 }: Props) {
   const [filter, setFilter] = useState<OrgVorgangFilter>(initialFilter ?? "freigabe");
 
@@ -96,9 +137,23 @@ export function OrganisationVorgaengeSection({
     [leads, angebote, auftraege]
   );
 
+  const auftragByLeadId = useMemo(
+    () =>
+      buildAuftragByLeadId(
+        auftraege as Array<{ id: string; lead_id?: string | null }>
+      ),
+    [auftraege]
+  );
+
   const counts = useMemo(
-    () => buildOrgVorgangFilterCounts(eingang, leads, vorgaengeItems),
-    [eingang, leads, vorgaengeItems]
+    () =>
+      buildOrgVorgangFilterCounts(
+        eingang,
+        leads,
+        vorgaengeItems,
+        auftragByLeadId
+      ),
+    [eingang, leads, vorgaengeItems, auftragByLeadId]
   );
 
   const vorgangFilter: KundeVorgangFilter =
@@ -122,6 +177,12 @@ export function OrganisationVorgaengeSection({
           onRefresh={onRefresh}
           embedded
           partnerBefundByLeadId={partnerBefundByLeadId}
+          bautagebuchByLeadId={bautagebuchByLeadId}
+          hwErledigtByLeadId={hwErledigtByLeadId}
+          feedbackBereitByLeadId={feedbackBereitByLeadId}
+          hvFeedbackByLeadId={hvFeedbackByLeadId}
+          auftragKontextByLeadId={auftragKontextByLeadId}
+          dokumenteByLeadId={dokumenteByLeadId}
         />
       ) : (
         <PortalClient
@@ -134,6 +195,8 @@ export function OrganisationVorgaengeSection({
           leads={leads as Parameters<typeof PortalClient>[0]["leads"]}
           angebote={angebote as Parameters<typeof PortalClient>[0]["angebote"]}
           auftraege={auftraege}
+          hwErledigtByLeadId={hwErledigtByLeadId}
+          hvFeedbackByLeadId={hvFeedbackByLeadId}
         />
       )}
     </div>

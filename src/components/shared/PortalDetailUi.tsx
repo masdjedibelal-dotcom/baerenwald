@@ -200,6 +200,7 @@ export function PortalDetailLeistungenPreisListe({
   items,
   gesamtBrutto,
   gesamtLabel = "Gesamtpreis Brutto inkl. MwSt.",
+  hidePreise = false,
 }: {
   items: Array<{
     id: string;
@@ -212,9 +213,11 @@ export function PortalDetailLeistungenPreisListe({
   }>;
   gesamtBrutto?: number;
   gesamtLabel?: string;
+  hidePreise?: boolean;
 }) {
   if (!items.length) return null;
-  const showGesamt = typeof gesamtBrutto === "number" && gesamtBrutto > 0;
+  const showGesamt =
+    !hidePreise && typeof gesamtBrutto === "number" && gesamtBrutto > 0;
 
   return (
     <div className="portal-text-body overflow-hidden rounded-xl border border-border-light bg-muted/20">
@@ -233,7 +236,8 @@ export function PortalDetailLeistungenPreisListe({
             <li
               key={p.id}
               className={cn(
-                "flex items-start justify-between gap-4 px-3 py-3 sm:gap-6",
+                "flex items-start gap-4 px-3 py-3 sm:gap-6",
+                !hidePreise && "justify-between",
                 i < items.length - 1 && "border-b border-border-light",
                 isEntfernt && "bg-red-50/70",
                 geaendert && "bg-amber-50/60"
@@ -264,30 +268,32 @@ export function PortalDetailLeistungenPreisListe({
                   </div>
                 </div>
               </div>
-              <div className="shrink-0 pt-0.5 text-right">
-                <p
-                  className={cn(
-                    "font-semibold tabular-nums",
-                    preisLabel === "Preis folgt"
-                      ? "text-sm font-normal italic text-text-tertiary"
-                      : isEntfernt
-                        ? "text-text-tertiary line-through"
-                        : geaendert
-                          ? "text-amber-800"
-                          : "text-text-primary"
-                  )}
-                >
-                  {preisLabel}
-                </p>
-                {p.preisBruttoAlt != null &&
-                p.preisBruttoAlt > 0 &&
-                p.preisBrutto > 0 &&
-                Math.abs(p.preisBruttoAlt - p.preisBrutto) > 0.009 ? (
-                  <p className="mt-0.5 text-sm tabular-nums text-text-tertiary line-through">
-                    vorher {formatEuro(p.preisBruttoAlt)}
+              {!hidePreise ? (
+                <div className="shrink-0 pt-0.5 text-right">
+                  <p
+                    className={cn(
+                      "font-semibold tabular-nums",
+                      preisLabel === "Preis folgt"
+                        ? "text-sm font-normal italic text-text-tertiary"
+                        : isEntfernt
+                          ? "text-text-tertiary line-through"
+                          : geaendert
+                            ? "text-amber-800"
+                            : "text-text-primary"
+                    )}
+                  >
+                    {preisLabel}
                   </p>
-                ) : null}
-              </div>
+                  {p.preisBruttoAlt != null &&
+                  p.preisBruttoAlt > 0 &&
+                  p.preisBrutto > 0 &&
+                  Math.abs(p.preisBruttoAlt - p.preisBrutto) > 0.009 ? (
+                    <p className="mt-0.5 text-sm tabular-nums text-text-tertiary line-through">
+                      vorher {formatEuro(p.preisBruttoAlt)}
+                    </p>
+                  ) : null}
+                </div>
+              ) : null}
             </li>
           );
         })}

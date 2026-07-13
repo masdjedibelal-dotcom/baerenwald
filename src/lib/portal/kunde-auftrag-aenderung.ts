@@ -14,6 +14,9 @@ export type KundeAuftragPositionInput = {
   aenderung_typ?: KundeAuftragAenderungTyp | null;
   preis_alt?: number | null;
   kunde_akzeptiert_at?: string | null;
+  handwerker_id?: string | null;
+  handwerker_status?: string | null;
+  leistung_status?: string | null;
 };
 
 export type PortalAuftragPositionDisplay = PortalAngebotPositionDisplay & {

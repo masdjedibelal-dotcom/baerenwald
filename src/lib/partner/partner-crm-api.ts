@@ -151,3 +151,51 @@ export async function acceptCrmRahmenvertragLoggedIn(): Promise<
     return { ok: false, error: "CRM nicht erreichbar." };
   }
 }
+
+export type CrmAbnahmeprotokollPayload = {
+  protokoll_text: string;
+  maengel_text?: string | null;
+  ort: string;
+  abnahme_datum: string;
+  hw_unterschrift_name: string;
+  kunde_unterschrift_name: string;
+  leistungen: string[];
+  pdf_path: string;
+  vollstaendig: boolean;
+};
+
+/** Abnahmeprotokoll ans CRM (PDF bereits in Storage). */
+export async function submitCrmAbnahmeprotokoll(
+  auftragId: string,
+  payload: CrmAbnahmeprotokollPayload
+): Promise<
+  | { ok: true; pdf_url?: string | null }
+  | { ok: false; error: string }
+> {
+  const base = dashboardBase();
+  const headers = await partnerAuthHeaders();
+  if (!base || !headers) {
+    return { ok: false, error: "CRM nicht konfiguriert." };
+  }
+
+  try {
+    const res = await fetch(
+      `${base}/api/portal/auftraege/${auftragId}/abnahmeprotokoll`,
+      {
+        method: "POST",
+        headers,
+        body: JSON.stringify(payload),
+      }
+    );
+    const body = (await res.json().catch(() => ({}))) as {
+      error?: string;
+      pdf_url?: string | null;
+    };
+    if (!res.ok) {
+      return { ok: false, error: body.error || "CRM-Abnahme fehlgeschlagen." };
+    }
+    return { ok: true, pdf_url: body.pdf_url ?? null };
+  } catch {
+    return { ok: false, error: "CRM nicht erreichbar." };
+  }
+}

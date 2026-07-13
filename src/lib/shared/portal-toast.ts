@@ -44,7 +44,7 @@ export const partnerPortalToast = {
     portalToastSuccess(
       neu ? "Tagebucheintrag erstellt" : "Tagebucheintrag gespeichert",
       neu
-        ? "Bärenwald prüft den Eintrag. Die Tagebuch-Anforderung ist damit erledigt."
+        ? "Mieter und Hausverwaltung sehen den Eintrag sofort im Portal."
         : "Deine Änderungen wurden übernommen."
     );
   },
@@ -87,6 +87,12 @@ export const partnerPortalToast = {
       "Der Auftrag ist verbindlich. Als Nächstes: Unterlagen im Vorgang hochladen."
     );
   },
+  erledigtGemeldet() {
+    portalToastSuccess(
+      "Als erledigt gemeldet",
+      "Bärenwald und die Hausverwaltung wurden informiert."
+    );
+  },
 };
 
 /** Kunden-Portal (MeinBärenwald) */
@@ -101,6 +107,12 @@ export const kundePortalToast = {
     portalToastSuccess(
       "Änderungen angenommen",
       "Danke — wir setzen die Anpassungen am Auftrag um."
+    );
+  },
+  feedbackGesendet() {
+    portalToastSuccess(
+      "Feedback gesendet",
+      "Danke für deine Rückmeldung — Bärenwald wurde informiert."
     );
   },
 };
@@ -180,6 +192,18 @@ export const orgPortalToast = {
     portalToastSuccess(
       "Projekt-Anfrage gesendet",
       "Bärenwald prüft dein Vorhaben und meldet sich mit einem Angebot."
+    );
+  },
+  feedbackGesendet() {
+    portalToastSuccess(
+      "Feedback gesendet",
+      "Danke für deine Rückmeldung."
+    );
+  },
+  maengelGemeldet() {
+    portalToastSuccess(
+      "Mängel gemeldet",
+      "Bärenwald wurde informiert und kümmert sich um die Nachbearbeitung."
     );
   },
   servicepaketAnfrageGesendet() {

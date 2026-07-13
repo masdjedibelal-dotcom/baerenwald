@@ -1,9 +1,10 @@
 import { notFound } from "next/navigation";
 
 import { MeldeStatusClient } from "@/components/melden/MeldeStatusClient";
-import {
-  resolveMieterStatusStufe,
-} from "@/lib/vorgang/vorgang-phase";
+import { loadPortalAuftraegeByLeadIds } from "@/lib/portal/load-auftraege-by-lead-ids";
+import { portalErledigtFromLeadAndAuftrag } from "@/lib/portal/vorgang-erledigt";
+import { resolveMieterStatusStufe } from "@/lib/vorgang/vorgang-phase";
+import { resolvePartnerFileUrl } from "@/lib/partner/partner-storage";
 import { supabaseAdmin } from "@/lib/supabase";
 
 type Props = { params: Promise<{ token: string }> };
@@ -22,6 +23,36 @@ export default async function MeldeStatusPage({ params }: Props) {
     .maybeSingle();
 
   if (!lead) notFound();
+
+  const { kontextByLeadId, auftragIdByLeadId } = await loadPortalAuftraegeByLeadIds([
+    String(lead.id),
+  ]);
+  const auftragKontext = kontextByLeadId[String(lead.id)] ?? null;
+  const auftragId = auftragIdByLeadId[String(lead.id)] ?? null;
+
+  const anhaenge: Array<{ id: string; name: string; datum?: string; href: string }> =
+    [];
+  if (auftragId) {
+    const { data: protokolle } = await supabaseAdmin
+      .from("abnahme_protokolle")
+      .select("id, abnahme_datum, pdf_path, created_at")
+      .eq("auftrag_id", auftragId)
+      .order("created_at", { ascending: false });
+    for (const p of protokolle ?? []) {
+      const path = String((p as { pdf_path?: string }).pdf_path ?? "").trim();
+      const href = path ? await resolvePartnerFileUrl(path) : null;
+      if (!href) continue;
+      anhaenge.push({
+        id: String((p as { id: string }).id),
+        name: "Abnahmeprotokoll",
+        datum:
+          (p as { abnahme_datum?: string | null }).abnahme_datum ??
+          (p as { created_at?: string | null }).created_at ??
+          undefined,
+        href,
+      });
+    }
+  }
 
   let objektTitel = "Objekt";
   if (lead.kunde_objekt_id) {
@@ -45,13 +76,11 @@ export default async function MeldeStatusPage({ params }: Props) {
       "Hausverwaltung";
   }
 
-  const stufe = resolveMieterStatusStufe(lead);
+  const stufe = resolveMieterStatusStufe(lead, auftragKontext);
   const referenz = String(lead.id).slice(0, 8).toUpperCase();
   const melderName = String(lead.melder_name ?? "Mieter");
   const einheit = lead.melder_einheit ? String(lead.melder_einheit) : null;
-  const erledigt =
-    lead.vorgang_phase === "abgeschlossen" ||
-    lead.hv_meldung_status === "abgeschlossen";
+  const erledigt = portalErledigtFromLeadAndAuftrag(lead, auftragKontext);
 
   return (
     <div className="portal-ui min-h-screen bg-surface-page px-4 py-10">
@@ -64,6 +93,7 @@ export default async function MeldeStatusPage({ params }: Props) {
         referenz={referenz}
         initialStufe={stufe}
         erledigt={erledigt}
+        anhaenge={anhaenge}
       />
     </div>
   );

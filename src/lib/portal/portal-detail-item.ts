@@ -10,6 +10,7 @@ import type { ReactNode } from "react";
 import type { PortalDetailSection } from "@/lib/portal/portal-display";
 import type { PortalAnsprechpartner } from "@/lib/portal/portal-ansprechpartner";
 import type { PortalDokument } from "@/lib/portal/portal-dokumente";
+import type { PortalTerminSlot } from "@/lib/portal/portal-termin";
 
 export type PortalBautagebuchEntry = {
   id?: string;
@@ -66,6 +67,15 @@ export type KundePortalDetailItem = {
   milestones?: PortalMilestoneItem[];
   bautagebuch?: PortalBautagebuchEntry[];
   dokumente?: PortalDokument[];
+  /** Keine Preise anzeigen (Mieter über Hausverwaltung). */
+  hidePreise?: boolean;
+  /** HV-Mieter: vereinfachte Ansicht ohne Leistungen/Angebot. */
+  hvMieterView?: boolean;
+  terminAuftragId?: string;
+  terminSlots?: PortalTerminSlot[];
+  /** Feedback nach HW-Abschluss oder CRM-Abschluss. */
+  feedbackBereit?: boolean;
+  mieterFeedback?: { sterne: number; freitext?: string | null } | null;
 };
 
 export function objektPlzOrt(

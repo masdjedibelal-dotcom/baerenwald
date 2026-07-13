@@ -3,6 +3,7 @@ import {
   isPortalAuftragAbgeschlossenRecord,
   isPortalAuftragPhaseStatus,
 } from "@/lib/portal/portal-pipeline";
+import { isVorgangPortalErledigt } from "@/lib/portal/vorgang-erledigt";
 
 export type KundeVorgangPhase =
   | "eingegangen"
@@ -62,9 +63,144 @@ function isLeadVorgangAbgeschlossen(phase?: string | null): boolean {
   return normalizeStatus(phase) === "abgeschlossen";
 }
 
+function isHvMieterErledigt(input: {
+  leadVorgangPhase?: string | null;
+  hv_meldung_status?: string | null;
+  hasAuftragRecord?: boolean;
+  auftragStatus?: string | null;
+  auftragFortschritt?: number | null;
+  auftragPositionen?: Array<{
+    handwerker_id?: string | null;
+    handwerker_status?: string | null;
+    leistung_status?: string | null;
+  }> | null;
+}): boolean {
+  if (!input.hasAuftragRecord) {
+    return isVorgangPortalErledigt({
+      leadVorgangPhase: input.leadVorgangPhase,
+      hv_meldung_status: input.hv_meldung_status,
+    });
+  }
+
+  return isVorgangPortalErledigt({
+    leadVorgangPhase: input.leadVorgangPhase,
+    hv_meldung_status: input.hv_meldung_status,
+    auftragStatus: input.auftragStatus,
+    auftragFortschritt: input.auftragFortschritt,
+    positionen: input.auftragPositionen,
+  });
+}
+
+function isHvMieterTerminPhase(input: {
+  hasMieterTermin?: boolean;
+}): boolean {
+  return Boolean(input.hasMieterTermin);
+}
+
+function isHvMieterInBearbeitung(input: {
+  hasAngebotRecord?: boolean;
+  hasAuftragRecord?: boolean;
+  leadStatus?: string | null;
+  angebotStatus?: string | null;
+  leadVorgangPhase?: string | null;
+  hv_meldung_status?: string | null;
+  org_freigabe_status?: string | null;
+}): boolean {
+  const hv = normalizeStatus(input.hv_meldung_status);
+  const freigabe = normalizeStatus(input.org_freigabe_status);
+  const phase = normalizeStatus(input.leadVorgangPhase);
+
+  if (input.hasAngebotRecord || input.hasAuftragRecord) return true;
+  if (isPortalAngebotPhaseStatus(input.leadStatus)) return true;
+  if (isAngebotBereit(input.angebotStatus)) return true;
+  if (phase === "in_bearbeitung") return true;
+  if (freigabe === "freigegeben") return true;
+  if (
+    hv === "notmassnahme" ||
+    hv === "kleinreparatur" ||
+    hv === "angebot_eingefordert"
+  ) {
+    return true;
+  }
+  return false;
+}
+
+/** Mieter über HV: Offen · In Bearbeitung · Termin · Erledigt (kein Angebots-Wording). */
+function resolveHvMieterVorgangStatus(input: {
+  leadStatus?: string | null;
+  leadVorgangPhase?: string | null;
+  hv_meldung_status?: string | null;
+  org_freigabe_status?: string | null;
+  angebotStatus?: string | null;
+  auftragStatus?: string | null;
+  auftragFortschritt?: number | null;
+  hasAngebotRecord?: boolean;
+  hasAuftragRecord?: boolean;
+  hasMieterTermin?: boolean;
+  hasOffeneTerminvorschlaege?: boolean;
+  auftragPositionen?: Array<{
+    handwerker_id?: string | null;
+    handwerker_status?: string | null;
+    leistung_status?: string | null;
+  }> | null;
+}): KundeVorgangStatus {
+  if (
+    isAbgelehnt(input.auftragStatus ?? input.angebotStatus ?? input.leadStatus) ||
+    normalizeStatus(input.hv_meldung_status) === "abgelehnt"
+  ) {
+    return {
+      phase: "abgelehnt",
+      label: LABELS.abgelehnt,
+      pillKey: "abgelehnt",
+      sortPriority: 90,
+      needsAction: false,
+    };
+  }
+
+  if (isHvMieterErledigt(input)) {
+    return {
+      phase: "abgeschlossen",
+      label: "Erledigt",
+      pillKey: "abgeschlossen",
+      sortPriority: 80,
+      needsAction: false,
+    };
+  }
+
+  if (isHvMieterTerminPhase(input)) {
+    return {
+      phase: "in_ausfuehrung",
+      label: "Termin",
+      pillKey: "termin",
+      sortPriority: 18,
+      needsAction: Boolean(input.hasOffeneTerminvorschlaege),
+    };
+  }
+
+  if (isHvMieterInBearbeitung(input)) {
+    return {
+      phase: "angebot_wird_erstellt",
+      label: "In Bearbeitung",
+      pillKey: "in_arbeit",
+      sortPriority: 15,
+      needsAction: false,
+    };
+  }
+
+  return {
+    phase: "eingegangen",
+    label: "Offen",
+    pillKey: "neu",
+    sortPriority: 10,
+    needsAction: false,
+  };
+}
+
 export function resolveKundeVorgangStatus(input: {
   leadStatus?: string | null;
   leadVorgangPhase?: string | null;
+  hv_meldung_status?: string | null;
+  org_freigabe_status?: string | null;
   angebotStatus?: string | null;
   auftragStatus?: string | null;
   auftragFortschritt?: number | null;
@@ -72,7 +208,20 @@ export function resolveKundeVorgangStatus(input: {
   hasAuftragRecord?: boolean;
   /** Offene Positionsänderungen am Auftrag (neu / geändert / entfernt). */
   hasPendingAuftragAenderung?: boolean;
+  /** Mieter-Portal + HV-Vorgang: vereinfachte Status ohne Angebots-Labels. */
+  useHvMieterStatus?: boolean;
+  hasMieterTermin?: boolean;
+  hasOffeneTerminvorschlaege?: boolean;
+  auftragPositionen?: Array<{
+    handwerker_id?: string | null;
+    handwerker_status?: string | null;
+    leistung_status?: string | null;
+  }> | null;
 }): KundeVorgangStatus {
+  if (input.useHvMieterStatus) {
+    return resolveHvMieterVorgangStatus(input);
+  }
+
   if (isAbgelehnt(input.auftragStatus ?? input.angebotStatus ?? input.leadStatus)) {
     return {
       phase: "abgelehnt",

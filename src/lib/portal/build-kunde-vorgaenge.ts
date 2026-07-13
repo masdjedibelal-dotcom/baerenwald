@@ -24,12 +24,22 @@ import {
 } from "@/lib/portal/portal-ansprechpartner";
 import type { PortalDokument } from "@/lib/portal/portal-dokumente";
 import {
+  filterPortalDokumenteForViewer,
+} from "@/lib/portal/portal-dokumente";
+import {
   type KundePortalDetailItem,
   type PortalBautagebuchEntry,
   objektPlzOrt,
 } from "@/lib/portal/portal-detail-item";
 import { sanitizeCustomerText } from "@/lib/portal/portal-display";
+import { vorgangFeedbackBereit } from "@/lib/portal/vorgang-feedback-eligibility";
 import { resolveKundeVorgangStatus } from "@/lib/portal/kunde-vorgang-status";
+import { isHvPortalLead } from "@/lib/portal/hv-portal-lead";
+import {
+  hasMieterTerminPhase,
+  hasOffeneTerminvorschlaege,
+  type PortalTerminSlot,
+} from "@/lib/portal/portal-termin";
 import type { PortalObjekt } from "@/lib/portal/portal-objekt";
 import { labelBereich, labelSituation } from "@/lib/lead-funnel-labels";
 
@@ -44,6 +54,10 @@ type PortalLead = PortalAnfrageLeadSource & {
   plz?: string | null;
   dokumente?: PortalDokument[];
   anlass?: string | null;
+  kanal?: string | null;
+  auftraggeber_kunde_id?: string | null;
+  hv_meldung_status?: string | null;
+  org_freigabe_status?: string | null;
 };
 
 function normPortalId(id: string | null | undefined): string | null {
@@ -83,7 +97,48 @@ type PortalAuftrag = {
   dokumente?: PortalDokument[];
   positionen?: KundeAuftragPositionInput[];
   angebotPositionenRaw?: unknown;
+  terminSlots?: PortalTerminSlot[];
 };
+
+function filterHvMieterDokumente(
+  docs: PortalDokument[],
+  hvMieterView: boolean,
+  erledigt?: boolean
+): PortalDokument[] {
+  return filterPortalDokumenteForViewer(docs, {
+    hvMieterView,
+    erledigt,
+  });
+}
+
+function resolveVorgangStatusForLead(
+  lead: PortalLead,
+  angebot: PortalAngebot | null,
+  auftrag: PortalAuftrag | null,
+  opts: {
+    mieterStatusMode?: boolean;
+    hasPendingAuftragAenderung?: boolean;
+  }
+) {
+  const hidePreise = isHvPortalLead(lead);
+  const terminSlots = auftrag?.terminSlots ?? [];
+  return resolveKundeVorgangStatus({
+    leadStatus: lead.status,
+    leadVorgangPhase: lead.vorgang_phase,
+    hv_meldung_status: lead.hv_meldung_status,
+    org_freigabe_status: lead.org_freigabe_status,
+    angebotStatus: angebot?.status_einfach ?? angebot?.status,
+    auftragStatus: auftrag?.status,
+    auftragFortschritt: auftrag?.fortschritt,
+    hasAngebotRecord: Boolean(angebot),
+    hasAuftragRecord: Boolean(auftrag),
+    hasPendingAuftragAenderung: opts.hasPendingAuftragAenderung,
+    useHvMieterStatus: Boolean(opts.mieterStatusMode && hidePreise),
+    hasMieterTermin: hasMieterTerminPhase(terminSlots),
+    hasOffeneTerminvorschlaege: hasOffeneTerminvorschlaege(terminSlots),
+    auftragPositionen: auftrag?.positionen,
+  });
+}
 
 function formatAnfrageGewerk(bereiche?: string[] | null): string | undefined {
   const parts = (bereiche ?? [])
@@ -108,10 +163,26 @@ function buildItemFromLead(
   lead: PortalLead,
   angebot: PortalAngebot | null,
   auftrag: PortalAuftrag | null,
-  vorgangStatus: ReturnType<typeof resolveKundeVorgangStatus>
+  vorgangStatus: ReturnType<typeof resolveKundeVorgangStatus>,
+  mieterStatusMode?: boolean,
+  mieterFeedbackByLeadId?: Map<
+    string,
+    { sterne: number; freitext?: string | null }
+  >
 ): KundePortalDetailItem {
   const { title, anfrageVorhaben, anfrageGewerk } = anfrageTitleFromLead(lead);
   const { plz, ort } = objektPlzOrt(lead.objekt, lead.plz);
+  const hidePreise = isHvPortalLead(lead);
+  const hvMieterView = Boolean(mieterStatusMode && hidePreise);
+  const leadId = lead.id;
+  const feedbackBereit = vorgangFeedbackBereit({
+    leadVorgangPhase: lead.vorgang_phase,
+    hv_meldung_status: lead.hv_meldung_status,
+    auftragStatus: auftrag?.status,
+    auftragFortschritt: auftrag?.fortschritt,
+    positionen: auftrag?.positionen,
+  });
+  const mieterFeedback = mieterFeedbackByLeadId?.get(leadId) ?? null;
 
   if (auftrag) {
     const leadSource: PortalAnfrageLeadSource = {
@@ -142,15 +213,28 @@ function buildItemFromLead(
       statusPillKey: vorgangStatus.pillKey,
       sections: buildAuftragPortalSections({ lead: leadSource, objekt: auftrag.objekt }),
       ansprechpartner: auftrag.ansprechpartner ?? portalAnsprechpartnerFallback(),
-      dokumente: auftrag.dokumente ?? lead.dokumente ?? [],
+      dokumente: filterHvMieterDokumente(
+        auftrag.dokumente ?? lead.dokumente ?? [],
+        hvMieterView,
+        vorgangStatus.phase === "abgeschlossen"
+      ),
       bautagebuch: auftrag.bautagebuch ?? [],
-      auftragPositionen,
-      gesamtBrutto: auftragGesamtBrutto,
-      infoHint: pendingAenderung
-        ? "Bärenwald hat Leistungen ergänzt oder angepasst. Bitte prüfe die Änderungen und nimm sie verbindlich an."
-        : undefined,
+      auftragPositionen: hvMieterView ? undefined : auftragPositionen,
+      gesamtBrutto: hidePreise ? undefined : auftragGesamtBrutto,
+      hidePreise,
+      hvMieterView,
+      terminAuftragId: hvMieterView ? auftrag.id : undefined,
+      terminSlots: hvMieterView ? auftrag.terminSlots ?? [] : undefined,
+      infoHint:
+        hvMieterView && vorgangStatus.needsAction
+          ? "Bitte wähle einen Terminvorschlag aus."
+          : !hvMieterView && pendingAenderung
+            ? "Bärenwald hat Leistungen ergänzt oder angepasst. Bitte prüfe die Änderungen und nimm sie verbindlich an."
+            : undefined,
       vorgangPhase: vorgangStatus.phase,
       needsAction: vorgangStatus.needsAction,
+      feedbackBereit,
+      mieterFeedback,
     };
   }
 
@@ -168,19 +252,28 @@ function buildItemFromLead(
         (angebot.angebotsnr ? `Angebot ${angebot.angebotsnr}` : title),
       cardMeta: buildAngebotCardMeta(leadSource, angebot.created_at),
       isAngebotDetail: true,
-      angebotPositionen: angebot.positionenDisplay,
-      gesamtBrutto: angebot.gesamtBrutto,
+      angebotPositionen: hvMieterView ? undefined : angebot.positionenDisplay,
+      gesamtBrutto: hidePreise ? undefined : angebot.gesamtBrutto,
+      hidePreise,
+      hvMieterView,
       suppressLocationInHero: true,
       status: vorgangStatus.label,
       statusPillKey: vorgangStatus.pillKey,
       sections: buildAngebotPortalSections({ lead: leadSource, objekt: angebot.objekt }),
-      dokumente: angebot.dokumente ?? lead.dokumente ?? [],
+      dokumente: filterHvMieterDokumente(
+        angebot.dokumente ?? lead.dokumente ?? [],
+        hvMieterView,
+        vorgangStatus.phase === "abgeschlossen"
+      ),
       infoHint:
+        !hvMieterView &&
         vorgangStatus.phase === "angebot_wird_erstellt"
           ? "Wir bereiten dein Angebot vor und melden uns, sobald es bereitsteht."
           : undefined,
       vorgangPhase: vorgangStatus.phase,
       needsAction: vorgangStatus.needsAction,
+      feedbackBereit,
+      mieterFeedback,
     };
   }
 
@@ -197,9 +290,17 @@ function buildItemFromLead(
     status: vorgangStatus.label,
     statusPillKey: vorgangStatus.pillKey,
     sections: buildAnfragePortalSections(lead),
-    dokumente: lead.dokumente ?? [],
+    dokumente: filterHvMieterDokumente(
+      lead.dokumente ?? [],
+      hvMieterView,
+      vorgangStatus.phase === "abgeschlossen"
+    ),
     vorgangPhase: vorgangStatus.phase,
     needsAction: vorgangStatus.needsAction,
+    hidePreise,
+    hvMieterView,
+    feedbackBereit,
+    mieterFeedback,
   };
 }
 
@@ -223,6 +324,12 @@ export function buildKundeVorgaenge(input: {
   leads: PortalLead[];
   angebote: PortalAngebot[];
   auftraege: PortalAuftrag[];
+  /** MeinBärenwald: HV-Mieter sehen vereinfachte Status (Offen / In Bearbeitung / Termin / Erledigt). */
+  mieterStatusMode?: boolean;
+  mieterFeedbackByLeadId?: Record<
+    string,
+    { sterne: number; freitext?: string | null }
+  >;
 }): KundePortalDetailItem[] {
   const angebotByLead = new Map<string, PortalAngebot>();
   for (const a of input.angebote) {
@@ -242,6 +349,9 @@ export function buildKundeVorgaenge(input: {
   const usedAngebotIds = new Set<string>();
   const usedAuftragIds = new Set<string>();
   const items: KundePortalDetailItem[] = [];
+  const feedbackMap = new Map(
+    Object.entries(input.mieterFeedbackByLeadId ?? {})
+  );
 
   for (const lead of input.leads) {
     const leadId = normPortalId(lead.id);
@@ -256,20 +366,23 @@ export function buildKundeVorgaenge(input: {
     if (angebot) usedAngebotIds.add(angebot.id);
     if (auftrag) usedAuftragIds.add(auftrag.id);
 
-    const vorgangStatus = resolveKundeVorgangStatus({
-      leadStatus: lead.status,
-      leadVorgangPhase: lead.vorgang_phase,
-      angebotStatus: angebot?.status_einfach ?? angebot?.status,
-      auftragStatus: auftrag?.status,
-      auftragFortschritt: auftrag?.fortschritt,
-      hasAngebotRecord: Boolean(angebot),
-      hasAuftragRecord: Boolean(auftrag),
+    const vorgangStatus = resolveVorgangStatusForLead(lead, angebot, auftrag, {
+      mieterStatusMode: input.mieterStatusMode,
       hasPendingAuftragAenderung: auftrag
         ? hatOffeneKundeAuftragAenderung(auftrag.positionen)
         : false,
     });
 
-    items.push(buildItemFromLead(lead, angebot, auftrag, vorgangStatus));
+    items.push(
+      buildItemFromLead(
+        lead,
+        angebot,
+        auftrag,
+        vorgangStatus,
+        input.mieterStatusMode,
+        feedbackMap
+      )
+    );
   }
 
   for (const angebot of input.angebote) {
@@ -285,12 +398,19 @@ export function buildKundeVorgaenge(input: {
       plz: lead?.plz,
       ...lead,
     };
-    const vorgangStatus = resolveKundeVorgangStatus({
-      leadStatus: "angebot",
-      angebotStatus: angebot.status_einfach ?? angebot.status,
-      hasAngebotRecord: true,
+    const vorgangStatus = resolveVorgangStatusForLead(pseudoLead, angebot, null, {
+      mieterStatusMode: input.mieterStatusMode,
     });
-    items.push(buildItemFromLead(pseudoLead, angebot, null, vorgangStatus));
+    items.push(
+      buildItemFromLead(
+        pseudoLead,
+        angebot,
+        null,
+        vorgangStatus,
+        input.mieterStatusMode,
+        feedbackMap
+      )
+    );
   }
 
   for (const auftrag of input.auftraege) {
@@ -306,14 +426,22 @@ export function buildKundeVorgaenge(input: {
       plz: lead?.plz,
       ...lead,
     };
-    const vorgangStatus = resolveKundeVorgangStatus({
-      leadStatus: auftrag.status,
-      auftragStatus: auftrag.status,
-      auftragFortschritt: auftrag.fortschritt,
-      hasAuftragRecord: true,
-      hasPendingAuftragAenderung: hatOffeneKundeAuftragAenderung(auftrag.positionen),
+    const vorgangStatus = resolveVorgangStatusForLead(pseudoLead, null, auftrag, {
+      mieterStatusMode: input.mieterStatusMode,
+      hasPendingAuftragAenderung: hatOffeneKundeAuftragAenderung(
+        auftrag.positionen
+      ),
     });
-    items.push(buildItemFromLead(pseudoLead, null, auftrag, vorgangStatus));
+    items.push(
+      buildItemFromLead(
+        pseudoLead,
+        null,
+        auftrag,
+        vorgangStatus,
+        input.mieterStatusMode,
+        feedbackMap
+      )
+    );
   }
 
   return items.sort((a, b) => {

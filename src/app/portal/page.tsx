@@ -119,6 +119,12 @@ export default async function PortalDashboardPage() {
           katalogProdukte={katalogProdukte}
           mitgliedRolle={mitgliedRolle}
           partnerBefundByLeadId={orgData.partnerBefundByLeadId}
+          bautagebuchByLeadId={orgData.bautagebuchByLeadId}
+          hwErledigtByLeadId={orgData.hwErledigtByLeadId}
+          feedbackBereitByLeadId={orgData.feedbackBereitByLeadId}
+          hvFeedbackByLeadId={orgData.hvFeedbackByLeadId}
+          auftragKontextByLeadId={orgData.auftragKontextByLeadId}
+          dokumenteByLeadId={orgData.dokumenteByLeadId}
         />
       </Suspense>
     );
@@ -136,7 +142,7 @@ export default async function PortalDashboardPage() {
     );
   }
 
-  const { kunde, auftraege, angebote, leads } = data;
+  const { kunde, auftraege, angebote, leads, mieterFeedbackByLeadId } = data;
 
   return (
     <Suspense
@@ -151,6 +157,7 @@ export default async function PortalDashboardPage() {
         auftraege={auftraege}
         angebote={angebote}
         leads={leads}
+        mieterFeedbackByLeadId={mieterFeedbackByLeadId ?? {}}
       />
     </Suspense>
   );

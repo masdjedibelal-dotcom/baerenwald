@@ -627,4 +627,90 @@ ${mailActionButtons({ crmUrl: crm, crmLabel: "Angebot im CRM öffnen" })}`
   }
 }
 
+/** Intern: Handwerker meldet Leistungen als erledigt. */
+export async function sendPartnerInternalErledigtMail(opts: {
+  handwerkerName: string;
+  firma?: string | null;
+  auftragTitel: string;
+  auftragId: string;
+  leistungen: string[];
+}): Promise<void> {
+  const to = internTo();
+  const resend = resendClient();
+  if (!to || !resend) return;
+
+  const hw = opts.firma?.trim() || opts.handwerkerName;
+  const crm = crmAuftragUrl(opts.auftragId);
+  const leistungenHtml =
+    opts.leistungen.length > 0
+      ? `<ul style="margin:8px 0;padding-left:20px;">${opts.leistungen
+          .map((l) => `<li>${escapeHtml(l)}</li>`)
+          .join("")}</ul>`
+      : "";
+
+  const html = mailShell(
+    `Handwerker abgeschlossen — ${hw}`,
+    `<p><strong>${escapeHtml(hw)}</strong> meldet Leistungen am Auftrag als <strong>erledigt</strong>.</p>
+<p>Auftrag: ${escapeHtml(opts.auftragTitel)}</p>
+${leistungenHtml}
+<p style="margin-top:12px;padding:10px 12px;background:#E3F2FD;border-radius:8px;border:1px solid #64B5F6;">
+  Im CRM unter <strong>Positionen</strong> ist der Handwerker-Status auf „erledigt“ gesetzt.
+</p>
+${mailActionButtons({
+  crmUrl: crm,
+  crmLabel: "Positionen im CRM öffnen",
+})}`
+  );
+
+  try {
+    await resend.emails.send({
+      from: systemFrom(),
+      to,
+      subject: `Erledigt gemeldet: ${opts.auftragTitel} — ${hw}`,
+      html,
+    });
+  } catch (e) {
+    console.error("[partner-mail] intern erledigt:", e);
+  }
+}
+
+/** Intern: HV meldet Mängel — Hinweis für Bärenwald. */
+export async function sendHvMaengelInternMail(opts: {
+  hvName: string;
+  leadId: string;
+  auftragTitel?: string | null;
+  freitext: string;
+}): Promise<void> {
+  const to = internTo();
+  const resend = resendClient();
+  if (!to || !resend) return;
+
+  const base = process.env.NEXT_PUBLIC_DASHBOARD_URL?.replace(/\/$/, "");
+  const crmUrl = base
+    ? `${base}/leads/${encodeURIComponent(opts.leadId)}`
+    : undefined;
+
+  const html = mailShell(
+    `Mängelmeldung von ${opts.hvName}`,
+    `<p style="margin-top:0;padding:10px 12px;background:#FFF3E0;border-radius:8px;border:1px solid #FFB74D;">
+  <strong>Hinweis:</strong> Die Hausverwaltung <strong>${escapeHtml(opts.hvName)}</strong> meldet Mängel nach Handwerker-Abschluss.
+</p>
+${opts.auftragTitel ? `<p>Vorgang: ${escapeHtml(opts.auftragTitel)}</p>` : ""}
+<p><strong>Meldung:</strong></p>
+<p style="white-space:pre-wrap;">${escapeHtml(opts.freitext)}</p>
+${mailActionButtons({ crmUrl, crmLabel: "Vorgang im CRM öffnen" })}`
+  );
+
+  try {
+    await resend.emails.send({
+      from: systemFrom(),
+      to,
+      subject: `Mängelmeldung HV: ${opts.hvName}`,
+      html,
+    });
+  } catch (e) {
+    console.error("[partner-mail] intern hv maengel:", e);
+  }
+}
+
 export { MAIL_PDF_LINK_TTL_SEC };

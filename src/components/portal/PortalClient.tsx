@@ -125,11 +125,26 @@ export function PortalClient({
   hideFilterBar = false,
   controlledVorgangFilter,
   onVorgangFilterChange,
+  mieterFeedbackByLeadId = {},
+  hwErledigtByLeadId = {},
+  hvFeedbackByLeadId = {},
 }: {
   kunde: PortalKunde;
   leads: PortalLead[];
   angebote: PortalAngebot[];
   auftraege: PortalAuftrag[];
+  mieterFeedbackByLeadId?: Record<
+    string,
+    { sterne: number; freitext?: string | null }
+  >;
+  hwErledigtByLeadId?: Record<string, boolean>;
+  hvFeedbackByLeadId?: Record<
+    string,
+    {
+      bewertung?: { sterne: number; freitext?: string | null } | null;
+      maengel?: Array<{ freitext?: string | null; created_at?: string }>;
+    }
+  >;
   layout?: "default" | "embedded";
   activeSection?: "uebersicht" | "vorgaenge" | "auftraege";
   showProductPicker?: boolean;
@@ -168,8 +183,15 @@ export function PortalClient({
     "du";
 
   const vorgaengeItems = useMemo(
-    () => buildKundeVorgaenge({ leads, angebote, auftraege }),
-    [leads, angebote, auftraege]
+    () =>
+      buildKundeVorgaenge({
+        leads,
+        angebote,
+        auftraege,
+        mieterStatusMode: true,
+        mieterFeedbackByLeadId,
+      }),
+    [leads, angebote, auftraege, mieterFeedbackByLeadId]
   );
 
   const filterCounts = useMemo(
@@ -314,6 +336,8 @@ export function PortalClient({
     </article>
   );
 
+  const selectedLeadId = selectedItem?.leadId ?? selectedItem?.id ?? "";
+
   const detailPanel = selectedItem ? (
     <article className="card-bordered min-h-0 overflow-y-auto p-4 sm:p-5 lg:max-h-[calc(100vh-180px)]">
       <div className="mb-3 flex justify-end lg:hidden">
@@ -333,6 +357,9 @@ export function PortalClient({
         item={selectedItem}
         showAnlassBadge={showAnlassBadge}
         onAccepted={() => router.refresh()}
+        hwErledigt={hwErledigtByLeadId[selectedLeadId]}
+        hvFeedback={hvFeedbackByLeadId[selectedLeadId]}
+        onHvFeedbackSubmitted={() => router.refresh()}
       />
     </article>
   ) : (
@@ -358,6 +385,9 @@ export function PortalClient({
               item={selectedItem}
               showAnlassBadge={showAnlassBadge}
               onAccepted={() => router.refresh()}
+              hwErledigt={hwErledigtByLeadId[selectedLeadId]}
+              hvFeedback={hvFeedbackByLeadId[selectedLeadId]}
+              onHvFeedbackSubmitted={() => router.refresh()}
             />
           ) : null}
         </PortalMobileBottomSheet>
@@ -561,6 +591,9 @@ export function PortalClient({
             item={selectedItem}
             showAnlassBadge={showAnlassBadge}
             onAccepted={() => router.refresh()}
+            hwErledigt={hwErledigtByLeadId[selectedLeadId]}
+            hvFeedback={hvFeedbackByLeadId[selectedLeadId]}
+            onHvFeedbackSubmitted={() => router.refresh()}
           />
         ) : null}
       </PortalMobileBottomSheet>

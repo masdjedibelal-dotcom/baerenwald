@@ -8,39 +8,13 @@ import {
   positionBrauchtKundeAktion,
 } from "@/lib/portal/kunde-auftrag-aenderung";
 import { linkPortalKundeToAuthUser } from "@/lib/portal/link-portal-kunde";
+import { auftragGehoertKunde } from "@/lib/portal/portal-kunde-auth";
 import { createClient } from "@/lib/supabase/server";
 import { isSupabaseConfigured, supabaseAdmin } from "@/lib/supabase";
 
 export type AcceptKundeAuftragAenderungenResult =
   | { ok: true }
   | { ok: false; error: string };
-
-async function auftragGehoertKunde(
-  auftragId: string,
-  kundeId: string
-): Promise<boolean> {
-  const { data: auftrag } = await supabaseAdmin
-    .from("auftraege")
-    .select("id, kunde_id, lead_id")
-    .eq("id", auftragId)
-    .maybeSingle();
-
-  if (!auftrag) return false;
-  if (auftrag.kunde_id != null && String(auftrag.kunde_id) === kundeId) {
-    return true;
-  }
-
-  const leadId = auftrag.lead_id != null ? String(auftrag.lead_id) : null;
-  if (!leadId) return false;
-
-  const { data: lead } = await supabaseAdmin
-    .from("leads")
-    .select("kunde_id")
-    .eq("id", leadId)
-    .maybeSingle();
-
-  return lead?.kunde_id != null && String(lead.kunde_id) === kundeId;
-}
 
 /**
  * Kunde nimmt CRM-Änderungen am laufenden Auftrag an (neu / geändert / entfernt).
