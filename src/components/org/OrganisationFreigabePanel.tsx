@@ -85,6 +85,16 @@ type Props = {
       href: string;
     }>
   >;
+  auftragIdByLeadId?: Record<string, string>;
+  hvAbnahmeByLeadId?: Record<
+    string,
+    {
+      art: "ohne_vorbehalt" | "mit_anmerkung" | "zurueckgewiesen";
+      anmerkung?: string | null;
+      signiert_name: string;
+      signiert_am: string;
+    }
+  >;
 };
 
 function buildAngebotFreigaben(
@@ -130,6 +140,7 @@ export function OrganisationFreigabePanel({
   hvFeedbackByLeadId = {},
   auftragKontextByLeadId = {},
   dokumenteByLeadId = {},
+  hvAbnahmeByLeadId = {},
 }: Props) {
   const [selectedAngebotId, setSelectedAngebotId] = useState<string | null>(null);
   const auftragByLeadId = useMemo(
@@ -172,6 +183,7 @@ export function OrganisationFreigabePanel({
     leads: leads as Parameters<typeof buildKundeVorgaenge>[0]["leads"],
     angebote: angebote as Parameters<typeof buildKundeVorgaenge>[0]["angebote"],
     auftraege,
+    hvPortalMode: true,
   });
   const selectedAngebotItem = selectedAngebotId
     ? vorgaengeItems.find(
@@ -209,6 +221,7 @@ export function OrganisationFreigabePanel({
           feedbackBereitByLeadId={feedbackBereitByLeadId}
           hvFeedbackByLeadId={hvFeedbackByLeadId}
           dokumenteByLeadId={dokumenteByLeadId}
+          hvAbnahmeByLeadId={hvAbnahmeByLeadId}
         />
       </section>
 

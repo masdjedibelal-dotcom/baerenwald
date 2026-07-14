@@ -548,6 +548,13 @@ export function PartnerAuftragDetail({
         statusPillClass={partnerDetailStatusPillClass(statusPillKey)}
       />
 
+      {item.lead?.hv_meldung_status ? (
+        <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950">
+          <strong>Hinweis:</strong> Dieser Auftrag läuft im Auftrag einer Hausverwaltung.
+          Bitte vor Ort als Beauftragter der Hausverwaltung auftreten.
+        </div>
+      ) : null}
+
       <PartnerPortalDetailSections sections={sections} />
 
       {konditionZeilen.length > 0 ? (

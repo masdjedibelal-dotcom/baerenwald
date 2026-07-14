@@ -163,6 +163,7 @@ export type PartnerAuftragPosition = {
   material_fix?: number | null;
   /** CRM-Zuweisungsstatus dieser Leistung (z. B. angefragt nach Nachreichung). */
   handwerker_status?: string | null;
+  handwerker_id?: string | null;
   /** CRM-Änderungstyp — null nach HW-Bestätigung. */
   aenderung_typ?: "neu" | "geaendert" | "entfernt" | null;
   preis_alt?: number | null;
@@ -645,6 +646,7 @@ export async function getPartnerDataForHandwerker(handwerkerId: string) {
         lohn_fix: p.lohn_fix != null ? Number(p.lohn_fix) : null,
         material_fix: p.material_fix != null ? Number(p.material_fix) : null,
         handwerker_status: (p.handwerker_status as string | null) ?? null,
+        handwerker_id: (p.handwerker_id as string | null) ?? null,
         aenderung_typ: (() => {
           const raw = (p.aenderung_typ as string | null)?.trim().toLowerCase();
           if (raw === "neu" || raw === "geaendert" || raw === "entfernt") {

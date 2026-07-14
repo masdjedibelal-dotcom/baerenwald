@@ -1,7 +1,8 @@
 # Auftraggeber-Portal — Backend/CRM Handoff
 
-> **Ziel:** Dieses Dokument ist die vollständige Checkliste für das **CRM-Projekt** (`baerenwald-crm-dashboard`).  
-> Das **Frontend** (`handwerks-plattform`) ist fertig. SQL-Migrationen sind auf Supabase angewendet.
+> **Ziel:** Checkliste für das **CRM-Projekt** (`baerenwald-crm-dashboard`).  
+> **CRM-Reihenfolge:** [CRM_TRACK_PLAN.md](./CRM_TRACK_PLAN.md) (Schritt 0–2, Phasen A–D).  
+> Das **Portal-Frontend** (`handwerks-plattform`) ist für HV/Mieter/Partner fertig. SQL-Migrationen auf Supabase angewendet.
 
 ---
 
@@ -331,12 +332,28 @@ cd ~/Desktop/Bärenwald-Backend/baerenwald-crm-dashboard
 npm run dev
 ```
 
-**Empfohlene Reihenfolge im CRM:**
-1. Types + Kunden-Tab Organisation
-2. Objekte erweitern (melde_slug)
-3. Anfragen-Filter + Lead-Detail-Blöcke
-4. Freigabe-Workflow + Partner-Gate in `send-handwerker-anfrage`
-5. E-Mail-Templates
+**Empfohlene Reihenfolge im CRM:** Siehe **[CRM_TRACK_PLAN.md](./CRM_TRACK_PLAN.md)** — einziges Rückgrat (Schritt 0 → 1 → 2 → A–D).
+
+Die folgenden Punkte sind **Phase-D-Einträge** (HV-Support), nicht die Startreihenfolge:
+
+| Phase-D | Inhalt |
+|---------|--------|
+| D1 | Objekte erweitern (`melde_slug`, Melde-Links) — Portal ✅ |
+| D2 | Types + Kunden-Tab Organisation |
+| D3 | Anfragen-Filter + Lead-Detail-Blöcke |
+| D4 | Freigabe-Workflow + Partner-Gate in `send-handwerker-anfrage` |
+| D5 | E-Mail-Templates CRM |
+
+<details>
+<summary>Legacy-Liste (Referenz, nicht parallel ausführen)</summary>
+
+1. Types + Kunden-Tab Organisation → **D2**
+2. Objekte erweitern (melde_slug) → **D1**
+3. Anfragen-Filter + Lead-Detail-Blöcke → **D3**
+4. Freigabe-Workflow + Partner-Gate → **D4**
+5. E-Mail-Templates → **D5**
+
+</details>
 
 ---
 

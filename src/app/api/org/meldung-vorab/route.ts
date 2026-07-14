@@ -1,13 +1,11 @@
 import { NextResponse } from "next/server";
 
-import { buildMelderEinladungHtml } from "@/lib/email/meldung-mail-templates";
 import { buildEinladungUrl } from "@/lib/org/melde-url";
 import { parseMeldeBereichId, persistMeldungLead } from "@/lib/org/persist-meldung-lead";
 import { requireOrganisationSession } from "@/lib/org/require-org-session";
 import type { MeldeKategorie } from "@/lib/org/types";
-import { isValidEmail } from "@/lib/validation";
 import { supabaseAdmin } from "@/lib/supabase";
-import { Resend } from "resend";
+import { isValidEmail } from "@/lib/validation";
 import { randomUUID } from "crypto";
 
 export const runtime = "nodejs";
@@ -83,29 +81,6 @@ export async function POST(req: Request) {
   }
 
   const link = buildEinladungUrl(token);
-  const orgName =
-    org.org_anzeigename?.trim() || org.name?.trim() || "Hausverwaltung";
-
-  if (isValidEmail(melderEmail) && process.env.RESEND_API_KEY) {
-    const resend = new Resend(process.env.RESEND_API_KEY);
-    try {
-      await resend.emails.send({
-        from:
-          process.env.RESEND_FROM_CUSTOMER ??
-          "Bärenwald München <anfragen@baerenwaldmuenchen.de>",
-        to: melderEmail.toLowerCase(),
-        subject: `Meldung ergänzen — ${objekt.titel}`,
-        html: buildMelderEinladungHtml({
-          melderName,
-          orgName,
-          objektTitel: String(objekt.titel),
-          link,
-        }),
-      });
-    } catch (e) {
-      console.error("[meldung-vorab] mail:", e);
-    }
-  }
 
   return NextResponse.json({ ok: true, id: result.id, link, token });
 }

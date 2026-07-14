@@ -5,6 +5,7 @@ import Image from "next/image";
 import { OrganisationExportPanel, OrganisationTeamPanel } from "@/components/org/OrganisationTeamPanel";
 import { OrganisationEinstellungenPanel } from "@/components/org/OrganisationEinstellungenPanel";
 import { OrganisationMeldeMaterial } from "@/components/org/OrganisationMeldeMaterial";
+import { OrganisationMieterKontaktPanel } from "@/components/org/OrganisationMieterKontaktPanel";
 import type { OrganisationKunde } from "@/lib/org/types";
 
 type Props = {
@@ -51,6 +52,12 @@ export function OrganisationProfilPanel({ kunde, objektCount, onSaved, isAdmin =
       </section>
 
       <OrganisationMeldeMaterial kunde={kunde} objektCount={objektCount} />
+
+      <OrganisationMieterKontaktPanel
+        kunde={kunde}
+        onSaved={onSaved}
+        readOnly={!isAdmin}
+      />
 
       <OrganisationTeamPanel kunde={kunde} isAdmin={isAdmin} />
 

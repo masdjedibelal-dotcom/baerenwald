@@ -70,7 +70,7 @@ export function PartnerAuftragAnfrageDetail({
   const konditionZeilen = useMemo(
     () =>
       resolvePartnerAuftragKonditionZeilen(
-        item.positionen.filter((p) => positionBrauchtHandwerkerAktion(p.handwerker_status))
+        item.positionen.filter((p) => positionBrauchtHandwerkerAktion(p))
       ),
     [item.positionen]
   );

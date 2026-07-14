@@ -3,13 +3,13 @@
 export function meldeDatenschutzKurztext(orgName: string, mode: "melden" | "ergaenzen"): string[] {
   const intro =
     mode === "ergaenzen"
-      ? `Du ergänzt eine vorerfasste Meldung. Verantwortlich ist in der Regel deine Hausverwaltung (${orgName}). Bärenwald unterstützt die technische Erfassung und Koordination.`
-      : `Verantwortlich ist in der Regel deine Hausverwaltung (${orgName}). Bärenwald unterstützt die technische Erfassung und Koordination der Bearbeitung.`;
+      ? `Du ergänzt eine vorerfasste Meldung. Verantwortlich ist in der Regel deine Hausverwaltung (${orgName}). Ein technischer Dienstleister unterstützt die Erfassung und Koordination.`
+      : `Verantwortlich ist in der Regel deine Hausverwaltung (${orgName}). Ein technischer Dienstleister unterstützt die Erfassung und Koordination der Bearbeitung.`;
 
   return [
     intro,
     "Zweck: Aufnahme und Bearbeitung deiner Meldung, Abstimmung mit der Hausverwaltung und ggf. Weitergabe an beauftragte Handwerksbetriebe.",
-    "Rechtsgrundlagen: Art. 6 Abs. 1 lit. b und/oder lit. f DSGVO. Empfänger: Hausverwaltung, Bärenwald, ggf. beauftragte Handwerksbetriebe.",
+    "Rechtsgrundlagen: Art. 6 Abs. 1 lit. b und/oder lit. f DSGVO. Empfänger: Ihre Hausverwaltung, ein technischer Dienstleister für den Plattformbetrieb sowie ggf. beauftragte Handwerksbetriebe.",
     "Speicherdauer: bis Abschluss des Vorgangs und darüber hinaus nur im Rahmen gesetzlicher Aufbewahrungspflichten.",
     "Bei Notfällen kann die Meldung zur Gefahrenabwehr ohne vorherige Freigabe weitergeleitet werden.",
     "Bitte lade nur schadensrelevante Fotos hoch und vermeide unnötige personenbezogene Inhalte.",

@@ -1,16 +1,8 @@
 import type { PartnerAuftragPosition } from "@/lib/partner/get-partner-data";
 import type { PartnerAngebotPositionenFilter } from "@/lib/partner/partner-leistungen-display";
+import { positionBrauchtHandwerkerAktion as crmPositionBrauchtHandwerkerAktion } from "@/lib/crm-vorgang/handwerker-aktion-offen";
 
 const SKIP_POSITION_SLUGS = new Set(["__freitext__", "__gesamtrabatt__"]);
-
-/** Positionen, bei denen der Handwerker noch zu-/absagen oder Preise festlegen muss. */
-const AUFTRAG_POSITION_HW_AKTION = new Set([
-  "angefragt",
-  "ausstehend",
-  "zugewiesen",
-  "warten",
-  "offen",
-]);
 
 const AUFTRAG_POSITION_HW_ABGESCHLOSSEN = new Set([
   "angenommen",
@@ -41,13 +33,28 @@ export function positionIstHandwerkerZugewiesen(
 }
 
 export function positionBrauchtHandwerkerAktion(
-  handwerkerStatus: string | null | undefined
+  statusOrPos:
+    | string
+    | null
+    | undefined
+    | Pick<PartnerAuftragPosition, "handwerker_status" | "handwerker_id">
 ): boolean {
-  return AUFTRAG_POSITION_HW_AKTION.has((handwerkerStatus ?? "").toLowerCase());
+  if (typeof statusOrPos === "object" && statusOrPos !== null) {
+    return crmPositionBrauchtHandwerkerAktion({
+      handwerker_id: statusOrPos.handwerker_id,
+      handwerker_status: statusOrPos.handwerker_status,
+    });
+  }
+  return crmPositionBrauchtHandwerkerAktion({
+    handwerker_status: statusOrPos,
+  });
 }
 
 export function positionBrauchtVorgangAktion(
-  position: Pick<PartnerAuftragPosition, "aenderung_typ" | "handwerker_status">
+  position: Pick<
+    PartnerAuftragPosition,
+    "aenderung_typ" | "handwerker_status" | "handwerker_id"
+  >
 ): boolean {
   if (!positionIstHandwerkerZugewiesen(position.handwerker_status)) return false;
 
@@ -59,7 +66,7 @@ export function positionBrauchtVorgangAktion(
   }
 
   if (typ === "neu" || typ === "geaendert" || typ === "entfernt") return true;
-  return positionBrauchtHandwerkerAktion(position.handwerker_status);
+  return positionBrauchtHandwerkerAktion(position);
 }
 
 /** Offene Auftragspositionen (Status oder CRM-`aenderung_typ`). */
@@ -557,7 +564,7 @@ export function resolveAuftragNachreichungOpenIds(
   /** Laufender Auftrag mit bereits bearbeiteten Leistungen, aber ohne hw_konditionen-JSON. */
   if (!hasPriorAgreement) {
     const settled = auftragPositionen.some(
-      (p) => !positionBrauchtHandwerkerAktion(p.handwerker_status)
+      (p) => !positionBrauchtHandwerkerAktion(p)
     );
     if (!settled) return [];
   }

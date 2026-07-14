@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 
 import { MeldeFormular } from "@/components/melden/MeldeFormular";
 import { MELDE_ALLGEMEIN_SLUG } from "@/lib/org/melde-url";
+import { resolveMeldeLegalUrls } from "@/lib/org/melde-legal-urls";
 import { resolveMeldeKontext } from "@/lib/org/resolve-melde-kontext";
 
 export const metadata = {
@@ -31,10 +32,19 @@ export default async function MeldenObjektPage({ params }: Props) {
 
   const obj = kontext.objekt;
 
+  const legal = resolveMeldeLegalUrls({
+    meldeSlug: kontext.org.org_kennung,
+    datenschutz_url: kontext.org.datenschutz_url,
+    impressum_url: kontext.org.impressum_url,
+  });
+
   return (
     <MeldeFormular
       orgName={orgName}
       orgLogoUrl={kontext.org.org_logo_url}
+      mieterKontaktTelefon={kontext.org.mieter_kontakt_telefon}
+      mieterKontaktEmail={kontext.org.mieter_kontakt_email}
+      mieterKontaktHinweis={kontext.org.mieter_kontakt_hinweis}
       objektTitel={obj?.titel ?? orgName}
       objektAdresse={
         obj
@@ -45,6 +55,8 @@ export default async function MeldenObjektPage({ params }: Props) {
       einheitenHinweis={obj?.einheiten_hinweis}
       orgKennung={kontext.org.org_kennung}
       objektSlug={obj?.melde_slug ?? MELDE_ALLGEMEIN_SLUG}
+      datenschutzHref={legal.datenschutz}
+      impressumHref={legal.impressum}
     />
   );
 }

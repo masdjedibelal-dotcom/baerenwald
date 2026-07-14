@@ -55,11 +55,13 @@ export function mapKundeDetailToCard(
     accent,
     meta,
     footer: item.listFooter,
-    hint: item.needsAction
-      ? item.isAuftragDetail
-        ? "To-do: Änderungen prüfen & annehmen"
-        : "To-do: Angebot prüfen & annehmen"
-      : undefined,
+    hint:
+      item.actionHint ??
+      (item.needsAction
+        ? item.isAuftragDetail
+          ? "To-do: Änderungen prüfen & annehmen"
+          : "To-do: Angebot prüfen & annehmen"
+        : undefined),
     sortDate: ts(item.date),
   };
 }

@@ -11,7 +11,15 @@ type Props = {
   mode?: "melden" | "ergaenzen";
 };
 
-export function MeldeDatenschutzHinweis({ orgName, mode = "melden" }: Props) {
+export function MeldeDatenschutzHinweis({
+  orgName,
+  mode = "melden",
+  datenschutzHref = MELDE_DATENSCHUTZ_LINK,
+  impressumHref = MELDE_IMPRESSUM_LINK,
+}: Props & {
+  datenschutzHref?: string;
+  impressumHref?: string;
+}) {
   const paragraphs = meldeDatenschutzKurztext(orgName, mode);
 
   return (
@@ -25,11 +33,11 @@ export function MeldeDatenschutzHinweis({ orgName, mode = "melden" }: Props) {
       <p className="melden-privacy-text">
         Weitere Informationen zu deinen Rechten (Auskunft, Löschung, Widerspruch,
         Beschwerde) findest du in unserer{" "}
-        <Link href={MELDE_DATENSCHUTZ_LINK} className="underline">
+        <Link href={datenschutzHref} className="underline">
           Datenschutzerklärung
         </Link>{" "}
         und im{" "}
-        <Link href={MELDE_IMPRESSUM_LINK} className="underline">
+        <Link href={impressumHref} className="underline">
           Impressum
         </Link>
         .

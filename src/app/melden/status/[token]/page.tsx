@@ -65,15 +65,23 @@ export default async function MeldeStatusPage({ params }: Props) {
   }
 
   let orgName = "Hausverwaltung";
+  let mieterKontaktTelefon: string | null = null;
+  let mieterKontaktEmail: string | null = null;
+  let mieterKontaktHinweis: string | null = null;
   if (lead.auftraggeber_kunde_id) {
     const { data: org } = await supabaseAdmin
       .from("kunden")
-      .select("name, org_anzeigename")
+      .select(
+        "name, org_anzeigename, mieter_kontakt_telefon, mieter_kontakt_email, mieter_kontakt_hinweis"
+      )
       .eq("id", lead.auftraggeber_kunde_id)
       .maybeSingle();
     orgName =
       String(org?.org_anzeigename ?? org?.name ?? "Hausverwaltung").trim() ||
       "Hausverwaltung";
+    mieterKontaktTelefon = (org?.mieter_kontakt_telefon as string | null) ?? null;
+    mieterKontaktEmail = (org?.mieter_kontakt_email as string | null) ?? null;
+    mieterKontaktHinweis = (org?.mieter_kontakt_hinweis as string | null) ?? null;
   }
 
   const stufe = resolveMieterStatusStufe(lead, auftragKontext);
@@ -88,6 +96,9 @@ export default async function MeldeStatusPage({ params }: Props) {
         token={trimmed}
         objektTitel={objektTitel}
         orgName={orgName}
+        mieterKontaktTelefon={mieterKontaktTelefon}
+        mieterKontaktEmail={mieterKontaktEmail}
+        mieterKontaktHinweis={mieterKontaktHinweis}
         melderName={melderName}
         einheit={einheit}
         referenz={referenz}

@@ -1,16 +1,15 @@
 import { NextResponse } from "next/server";
-import { Resend } from "resend";
 
-import { buildMelderEinladungHtml } from "@/lib/email/meldung-mail-templates";
 import { buildEinladungUrl } from "@/lib/org/melde-url";
 import { requireOrganisationSession } from "@/lib/org/require-org-session";
-import { isValidEmail } from "@/lib/validation";
+import { MIETER_EMAIL_ENABLED } from "@/lib/melde/mieter-mail-policy";
 import { supabaseAdmin } from "@/lib/supabase";
 
 export const runtime = "nodejs";
 
 type Body = { leadId: string };
 
+/** Einladungs-Link erneut abrufen — kein Mieter-Mail-Versand (Standard). */
 export async function POST(req: Request) {
   const session = await requireOrganisationSession();
   if (!session.ok) {
@@ -26,7 +25,7 @@ export async function POST(req: Request) {
   const { data: lead } = await supabaseAdmin
     .from("leads")
     .select(
-      "id, einladung_token, einladung_status, melder_name, melder_email, kunde_objekt_id, auftraggeber_kunde_id"
+      "id, einladung_token, einladung_status, melder_name, kunde_objekt_id, auftraggeber_kunde_id"
     )
     .eq("id", leadId)
     .eq("auftraggeber_kunde_id", session.kunde.id)
@@ -41,55 +40,13 @@ export async function POST(req: Request) {
       { status: 400 }
     );
   }
-  if (!isValidEmail(lead.melder_email)) {
-    return NextResponse.json(
-      { error: "Keine gültige Melder-E-Mail hinterlegt." },
-      { status: 400 }
-    );
-  }
 
-  const { data: objekt } = lead.kunde_objekt_id
-    ? await supabaseAdmin
-        .from("kunden_objekte")
-        .select("titel")
-        .eq("id", lead.kunde_objekt_id)
-        .maybeSingle()
-    : { data: null };
-
-  const org = session.kunde;
-  const orgName =
-    org.org_anzeigename?.trim() || org.name?.trim() || "Auftraggeber";
   const link = buildEinladungUrl(String(lead.einladung_token));
-  const melderName = String(lead.melder_name ?? "Melder").trim();
-  const objektTitel = String(objekt?.titel ?? "Objekt");
 
-  if (!process.env.RESEND_API_KEY) {
+  if (MIETER_EMAIL_ENABLED) {
     return NextResponse.json(
-      { error: "E-Mail-Versand nicht konfiguriert." },
-      { status: 503 }
-    );
-  }
-
-  const resend = new Resend(process.env.RESEND_API_KEY);
-  try {
-    await resend.emails.send({
-      from:
-        process.env.RESEND_FROM_CUSTOMER ??
-        "Bärenwald München <anfragen@baerenwaldmuenchen.de>",
-      to: String(lead.melder_email).toLowerCase(),
-      subject: `Meldung ergänzen — ${objektTitel}`,
-      html: buildMelderEinladungHtml({
-        melderName,
-        orgName,
-        objektTitel,
-        link,
-      }),
-    });
-  } catch (e) {
-    console.error("[meldung-einladung-erneut]", e);
-    return NextResponse.json(
-      { error: "E-Mail konnte nicht gesendet werden." },
-      { status: 500 }
+      { error: "Mieter-Mail-Versand ist derzeit deaktiviert." },
+      { status: 501 }
     );
   }
 

@@ -22,7 +22,7 @@ import type {
 import { isSupabaseConfigured, supabaseAdmin } from "@/lib/supabase";
 
 const EINGANG_SELECT_FULL =
-  "id, situation, bereiche, status, created_at, plz, strasse, hausnummer, zeitraum, kontakt_name, preis_min, preis_max, preis_unsicher, kontakt_nachricht, funnel_daten, kunde_objekt_id, anlass, erfassung_von, melder_name, melder_einheit, melder_telefon, melder_email, einladung_token, einladung_status, org_freigabe_status, hv_meldung_status, service_modus, auftraggeber_kunde_id, kunde_id, kostentraeger, kostentraeger_vorgeschlagen, versicherungs_nr, vorgang_phase";
+  "id, situation, bereiche, status, created_at, plz, strasse, hausnummer, zeitraum, kontakt_name, preis_min, preis_max, preis_unsicher, kontakt_nachricht, funnel_daten, kunde_objekt_id, anlass, erfassung_von, melder_name, melder_einheit, melder_telefon, melder_email, melde_tracking_token, einladung_token, einladung_status, org_freigabe_status, hv_meldung_status, service_modus, auftraggeber_kunde_id, kunde_id, kostentraeger, kostentraeger_vorgeschlagen, versicherungs_nr, vorgang_phase, kanal";
 
 const EINGANG_SELECT_BASE =
   "id, situation, bereiche, status, created_at, plz, strasse, hausnummer, zeitraum, kontakt_name, preis_min, preis_max, kontakt_nachricht, funnel_daten, kunde_objekt_id, anlass, erfassung_von, melder_name, melder_einheit, melder_telefon, melder_email, einladung_token, einladung_status, org_freigabe_status, service_modus, auftraggeber_kunde_id, kunde_id";
@@ -280,6 +280,45 @@ export async function getOrganisationPortalData(kundeId: string) {
     }
   }
 
+  const auftragIdByLeadId: Record<string, string> = {};
+  for (const a of mergedAuftraege) {
+    const leadId =
+      (a as { lead_id?: string | null }).lead_id != null
+        ? String((a as { lead_id?: string | null }).lead_id)
+        : "";
+    const aid = String((a as { id: string }).id);
+    if (leadId) auftragIdByLeadId[leadId] = aid;
+  }
+
+  const hvAbnahmeByLeadId: Record<
+    string,
+    {
+      art: "ohne_vorbehalt" | "mit_anmerkung" | "zurueckgewiesen";
+      anmerkung?: string | null;
+      signiert_name: string;
+      signiert_am: string;
+    }
+  > = {};
+
+  const auftragIds = Object.values(auftragIdByLeadId);
+  if (auftragIds.length) {
+    const { data: abnahmeRows } = await supabaseAdmin
+      .from("hv_portal_abnahmen")
+      .select("lead_id, art, anmerkung, signiert_name, signiert_am")
+      .in("auftrag_id", auftragIds);
+
+    for (const row of abnahmeRows ?? []) {
+      const lid = String((row as { lead_id?: string | null }).lead_id ?? "");
+      if (!lid) continue;
+      hvAbnahmeByLeadId[lid] = {
+        art: (row as { art: "ohne_vorbehalt" | "mit_anmerkung" | "zurueckgewiesen" }).art,
+        anmerkung: (row as { anmerkung?: string | null }).anmerkung ?? null,
+        signiert_name: String((row as { signiert_name: string }).signiert_name),
+        signiert_am: String((row as { signiert_am: string }).signiert_am),
+      };
+    }
+  }
+
   return {
     kunde,
     objekte,
@@ -294,5 +333,7 @@ export async function getOrganisationPortalData(kundeId: string) {
     hvFeedbackByLeadId,
     auftragKontextByLeadId,
     dokumenteByLeadId,
+    auftragIdByLeadId,
+    hvAbnahmeByLeadId,
   };
 }

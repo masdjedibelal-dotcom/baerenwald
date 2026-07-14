@@ -41,6 +41,17 @@ export type OrganisationKunde = {
   notfall_direkt: boolean;
   kleinreparatur_aktiv: boolean;
   kleinreparatur_schwelle_eur: number;
+  org_primary_color?: string | null;
+  mieter_kontakt_telefon?: string | null;
+  mieter_kontakt_email?: string | null;
+  mieter_kontakt_hinweis?: string | null;
+  av_akzeptiert_am?: string | null;
+  av_version?: string | null;
+  av_akzeptiert_von?: string | null;
+  av_text_snapshot?: string | null;
+  wl_ansprache_am?: string | null;
+  impressum_url?: string | null;
+  datenschutz_url?: string | null;
 };
 
 export type HvMeldungStatus =

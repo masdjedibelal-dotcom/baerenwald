@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 
 import { MeldeFormular } from "@/components/melden/MeldeFormular";
 import { MELDE_ALLGEMEIN_SLUG } from "@/lib/org/melde-url";
+import { resolveMeldeLegalUrls } from "@/lib/org/melde-legal-urls";
 import { resolveMeldeKontext } from "@/lib/org/resolve-melde-kontext";
 
 export const metadata = {
@@ -24,18 +25,29 @@ export default async function MeldenOrgPage({ params }: Props) {
     kontext.org.name?.trim() ||
     kontext.org.org_kennung;
 
+  const legal = resolveMeldeLegalUrls({
+    meldeSlug: kontext.org.org_kennung,
+    datenschutz_url: kontext.org.datenschutz_url,
+    impressum_url: kontext.org.impressum_url,
+  });
+
   if (kontext.objekt) {
     const obj = kontext.objekt;
     return (
       <MeldeFormular
         orgName={orgName}
         orgLogoUrl={kontext.org.org_logo_url}
+        mieterKontaktTelefon={kontext.org.mieter_kontakt_telefon}
+        mieterKontaktEmail={kontext.org.mieter_kontakt_email}
+        mieterKontaktHinweis={kontext.org.mieter_kontakt_hinweis}
         objektTitel={obj.titel}
         objektAdresse={[obj.strasse, obj.hausnummer].filter(Boolean).join(" ")}
         objektPlzOrt={[obj.plz, obj.ort].filter(Boolean).join(" ")}
         einheitenHinweis={obj.einheiten_hinweis}
         orgKennung={kontext.org.org_kennung}
         objektSlug={obj.melde_slug}
+        datenschutzHref={legal.datenschutz}
+        impressumHref={legal.impressum}
       />
     );
   }
@@ -45,9 +57,14 @@ export default async function MeldenOrgPage({ params }: Props) {
       <MeldeFormular
         orgName={orgName}
         orgLogoUrl={kontext.org.org_logo_url}
+        mieterKontaktTelefon={kontext.org.mieter_kontakt_telefon}
+        mieterKontaktEmail={kontext.org.mieter_kontakt_email}
+        mieterKontaktHinweis={kontext.org.mieter_kontakt_hinweis}
         objektTitel={orgName}
         orgKennung={kontext.org.org_kennung}
         objektSlug={MELDE_ALLGEMEIN_SLUG}
+        datenschutzHref={legal.datenschutz}
+        impressumHref={legal.impressum}
       />
     );
   }

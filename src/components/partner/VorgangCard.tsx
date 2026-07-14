@@ -4,7 +4,10 @@ import { PartnerAuftragAnfrageDetail } from "@/components/partner/PartnerAuftrag
 import { PartnerAuftragDetail } from "@/components/partner/PartnerAuftragDetail";
 import { PartnerOffenDetail } from "@/components/partner/PartnerOffenDetail";
 import type { PartnerVorgangItem } from "@/lib/partner/build-partner-vorgaenge";
-import type { PartnerOffenAngebotItem } from "@/lib/partner/partner-offen-status";
+import {
+  enrichPartnerOffenAngebot,
+  type PartnerOffenAngebotItem,
+} from "@/lib/partner/partner-offen-status";
 import type { VorgangState } from "@/lib/partner/vorgang-state";
 
 function toOffenAngebotItem(vorgang: PartnerVorgangItem): PartnerOffenAngebotItem {
@@ -21,7 +24,7 @@ function toOffenAngebotItem(vorgang: PartnerVorgangItem): PartnerOffenAngebotIte
         vorgang.auftrag.nachreichungOpenPositionIds,
     };
   }
-  return anfrage;
+  return enrichPartnerOffenAngebot(anfrage);
 }
 
 function resolveOffenDetailItem(

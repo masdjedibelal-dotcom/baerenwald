@@ -1,10 +1,11 @@
 import { NextResponse } from "next/server";
 
 import {
-  buildMelderAbgelehntHtml,
   buildOrgAngebotEingefordertHtml,
   buildOrgKleinreparaturHtml,
 } from "@/lib/email/meldung-mail-templates";
+import { notifyHvMieterEvent } from "@/lib/org/notify-hv-mieter-event";
+import { MIETER_EMAIL_ENABLED } from "@/lib/melde/mieter-mail-policy";
 import { notifyCrmOrgPortal } from "@/lib/org/notify-crm-org";
 import {
   canOfferKleinreparatur,
@@ -153,29 +154,16 @@ export async function POST(req: Request) {
     }
   }
 
-  const melderEmail = String(lead.melder_email ?? "").trim();
   if (
     aktion === "ablehnen" &&
-    resendKey &&
-    isValidEmail(melderEmail)
+    !MIETER_EMAIL_ENABLED
   ) {
-    const resend = new Resend(resendKey);
-    try {
-      await resend.emails.send({
-        from:
-          process.env.RESEND_FROM_CUSTOMER ??
-          "Bärenwald München <anfragen@baerenwaldmuenchen.de>",
-        to: melderEmail.toLowerCase(),
-        subject: `Meldung abgeschlossen — ${objektTitel}`,
-        html: buildMelderAbgelehntHtml({
-          melderName: lead.melder_name ?? "Mieter",
-          orgName,
-          objektTitel,
-        }),
-      });
-    } catch (e) {
-      console.error("[meldung-aktion] melder mail:", e);
-    }
+    await notifyHvMieterEvent({
+      leadId,
+      typ: "meldung_abgelehnt",
+      titel: `Meldung abgelehnt — ${objektTitel}`,
+      body: `Sie haben die Meldung abgelehnt. Bitte informieren Sie ${lead.melder_name ?? "den Mieter"} direkt.`,
+    });
   }
 
   return NextResponse.json({ ok: true, status: nextStatus });

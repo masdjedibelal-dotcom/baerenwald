@@ -212,4 +212,7 @@ export const orgPortalToast = {
       "Bärenwald meldet sich mit den nächsten Schritten zur Betreuung."
     );
   },
+  saved() {
+    portalToastSuccess("Gespeichert", "Die Einstellungen wurden übernommen.");
+  },
 };

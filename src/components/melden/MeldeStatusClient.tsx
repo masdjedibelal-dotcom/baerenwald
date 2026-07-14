@@ -2,14 +2,14 @@
 
 import { useEffect, useState } from "react";
 
-import {
-  buildMieterStatusTimeline,
-} from "@/lib/vorgang/plattform-status";
+import { VorgangTimeline } from "@/components/shared/VorgangTimeline";
+import { buildSimpleMieterTimeline } from "@/lib/crm-vorgang/role-status-ui";
 import {
   mieterStatusLabel,
   type MieterStatusStufe,
 } from "@/lib/vorgang/vorgang-phase";
 import { DokumenteTabelle } from "@/components/shared/DokumenteTabelle";
+import { orgMieterKontaktFooter, orgMieterKontaktKurz } from "@/lib/org/org-mieter-kontakt";
 import { cn } from "@/lib/utils";
 
 type Slot = {
@@ -23,6 +23,9 @@ type Props = {
   token: string;
   objektTitel: string;
   orgName: string;
+  mieterKontaktTelefon?: string | null;
+  mieterKontaktEmail?: string | null;
+  mieterKontaktHinweis?: string | null;
   melderName: string;
   einheit: string | null;
   referenz: string;
@@ -46,6 +49,9 @@ export function MeldeStatusClient({
   token,
   objektTitel,
   orgName,
+  mieterKontaktTelefon,
+  mieterKontaktEmail,
+  mieterKontaktHinweis,
   melderName,
   einheit,
   referenz,
@@ -62,8 +68,17 @@ export function MeldeStatusClient({
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
 
-  const timeline = buildMieterStatusTimeline(stufe);
+  const timeline = buildSimpleMieterTimeline(stufe);
   const label = mieterStatusLabel(stufe);
+  const orgKontakt = {
+    org_anzeigename: orgName,
+    name: orgName,
+    mieter_kontakt_telefon: mieterKontaktTelefon,
+    mieter_kontakt_email: mieterKontaktEmail,
+    mieter_kontakt_hinweis: mieterKontaktHinweis,
+  };
+  const introKurz = orgMieterKontaktKurz(orgKontakt, "de");
+  const footerText = orgMieterKontaktFooter(orgKontakt, "de");
 
   async function loadSlots() {
     const res = await fetch(`/api/melden/terminslots?token=${encodeURIComponent(token)}`);
@@ -155,36 +170,12 @@ export function MeldeStatusClient({
           <p className="mt-1 text-lg font-semibold text-accent">{label}</p>
         </div>
 
-        <ol className="space-y-2 border-t border-border-default pt-4">
-          {timeline.map((step) => (
-            <li key={step.id} className="flex items-center gap-3 text-sm">
-              <span
-                className={cn(
-                  "flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-bold",
-                  step.done
-                    ? "bg-emerald-100 text-emerald-800"
-                    : step.active
-                      ? "bg-accent-light text-accent"
-                      : "bg-muted text-text-tertiary"
-                )}
-              >
-                {step.done ? "✓" : step.active ? "•" : ""}
-              </span>
-              <span
-                className={cn(
-                  step.active ? "font-semibold text-text-primary" : "text-text-secondary"
-                )}
-              >
-                {step.label}
-              </span>
-            </li>
-          ))}
-        </ol>
+        <VorgangTimeline steps={timeline} className="border-t border-border-default pt-4" />
 
         <div className="border-t border-border-default pt-4 text-sm text-text-secondary">
           <p>Hallo {melderName},</p>
           <p className="mt-2">
-            {orgName} und Bärenwald bearbeiten deine Meldung. Referenz{" "}
+            {introKurz} Referenz{" "}
             <span className="font-mono font-medium">{referenz}</span>.
           </p>
         </div>
@@ -276,9 +267,7 @@ export function MeldeStatusClient({
         </p>
       ) : null}
 
-      <p className="text-center text-xs text-text-tertiary">
-        Bärenwald München · Hausverwaltungs-Service
-      </p>
+      <p className="text-center text-xs text-text-tertiary">{footerText}</p>
     </div>
   );
 }

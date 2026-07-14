@@ -22,6 +22,9 @@ const STRINGS = {
     senden: "Meldung absenden",
     sending: "Wird gesendet…",
     bearbeitung: "Bearbeitung durch",
+    verfuegbarkeit: "Wann passt es Ihnen?",
+    verfuegbarkeitHint: "Optional: Wunschzeitraum für einen Termin — Sie können diesen Schritt überspringen.",
+    verfuegbarkeitSkip: "Überspringen — kein Wunschtermin",
   },
   en: {
     melden: "Report damage",
@@ -44,6 +47,9 @@ const STRINGS = {
     senden: "Submit report",
     sending: "Sending…",
     bearbeitung: "Processed by",
+    verfuegbarkeit: "When works for you?",
+    verfuegbarkeitHint: "Optional: preferred time window for an appointment — you can skip this step.",
+    verfuegbarkeitSkip: "Skip — no preferred time",
   },
 } as const;
 

@@ -1,23 +1,27 @@
 "use client";
 
 import Image from "next/image";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { PhotoUpload } from "@/components/funnel/PhotoUpload";
 import { MeldeDatenschutzHinweis } from "@/components/melden/MeldeDatenschutzHinweis";
 import { meldeT, type MeldeLang } from "@/lib/melden/melde-i18n";
+import { orgMieterKontaktKurz } from "@/lib/org/org-mieter-kontakt";
 import { MELDE_KATEGORIEN } from "@/lib/org/melde-kategorien";
 import { MELDE_BEREICHE, type MeldeBereichId } from "@/lib/org/melde-bereiche";
 import { getMeldeFachdetailQuestions } from "@/lib/org/melde-fachdetails";
 import type { MeldeKategorie } from "@/lib/org/types";
+import { cn } from "@/lib/utils";
 import { track } from "@/lib/analytics";
 import "./melden.css";
 
 type Props = {
   orgName: string;
   orgLogoUrl?: string | null;
+  mieterKontaktTelefon?: string | null;
+  mieterKontaktEmail?: string | null;
+  mieterKontaktHinweis?: string | null;
   objektTitel: string;
   objektAdresse?: string;
   objektPlzOrt?: string;
@@ -25,6 +29,8 @@ type Props = {
   einheitenHinweis?: string | null;
   orgKennung: string;
   objektSlug: string;
+  datenschutzHref?: string;
+  impressumHref?: string;
   mode?: "melden" | "ergaenzen";
   einladungToken?: string;
   prefill?: {
@@ -42,11 +48,21 @@ type Step =
   | "fachdetail"
   | "beschreibung"
   | "medien"
+  | "verfuegbarkeit"
   | "kontakt";
+
+const VERFUEGBARKEIT_OPTIONS = [
+  { id: "sofort", de: "So bald wie möglich", en: "As soon as possible" },
+  { id: "diese_woche", de: "Diese Woche", en: "This week" },
+  { id: "flexibel", de: "Flexibel", en: "Flexible" },
+] as const;
 
 export function MeldeFormular({
   orgName,
   orgLogoUrl,
+  mieterKontaktTelefon,
+  mieterKontaktEmail,
+  mieterKontaktHinweis,
   objektTitel,
   objektAdresse,
   objektPlzOrt,
@@ -54,6 +70,8 @@ export function MeldeFormular({
   einheitenHinweis,
   orgKennung,
   objektSlug,
+  datenschutzHref,
+  impressumHref,
   mode = "melden",
   einladungToken,
   prefill,
@@ -77,6 +95,25 @@ export function MeldeFormular({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [privacyOpen, setPrivacyOpen] = useState(false);
+  const [dringlichkeit, setDringlichkeit] = useState<string | null>(null);
+
+  const orgKontakt = useMemo(
+    () => ({
+      org_anzeigename: orgName,
+      name: orgName,
+      mieter_kontakt_telefon: mieterKontaktTelefon,
+      mieter_kontakt_email: mieterKontaktEmail,
+      mieter_kontakt_hinweis: mieterKontaktHinweis,
+    }),
+    [
+      orgName,
+      mieterKontaktTelefon,
+      mieterKontaktEmail,
+      mieterKontaktHinweis,
+    ]
+  );
+
+  const footerKurz = orgMieterKontaktKurz(orgKontakt, lang);
 
   const sessionKey = useMemo(
     () => `melde-${orgKennung}-${objektSlug}`,
@@ -184,6 +221,7 @@ export function MeldeFormular({
               fachdetailAnswers,
               beschreibung,
               fotos,
+              ...(dringlichkeit ? { dringlichkeit } : {}),
             };
 
       const res = await fetch(endpoint, {
@@ -191,7 +229,11 @@ export function MeldeFormular({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
-      const json = (await res.json()) as { error?: string };
+      const json = (await res.json()) as {
+        error?: string;
+        statusLink?: string;
+        meldeTrackingToken?: string;
+      };
       if (!res.ok) {
         setError(json.error ?? "Senden fehlgeschlagen.");
         return;
@@ -199,7 +241,10 @@ export function MeldeFormular({
       if (mode === "melden") {
         track.meldeAbgeschickt(kategorie, orgKennung);
       }
-      router.push("/melden/bestaetigung");
+      const q = new URLSearchParams({ org: orgName });
+      if (json.statusLink) q.set("statusLink", json.statusLink);
+      else if (json.meldeTrackingToken) q.set("token", json.meldeTrackingToken);
+      router.push(`/melden/bestaetigung?${q.toString()}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Netzwerkfehler.");
     } finally {
@@ -371,7 +416,7 @@ export function MeldeFormular({
             </div>
           ) : null}
 
-          {step === "beschreibung" || step === "medien" || step === "kontakt" ? (
+          {step === "beschreibung" || step === "medien" || step === "verfuegbarkeit" || step === "kontakt" ? (
             <form onSubmit={onSubmit} className="mt-4">
               {step === "beschreibung" ? (
                 <>
@@ -462,10 +507,67 @@ export function MeldeFormular({
                       className="melden-submit flex-1"
                       onClick={() => {
                         setError(null);
-                        setStep("kontakt");
+                        setStep("verfuegbarkeit");
                       }}
                     >
                       {meldeT(lang, "weiter")}
+                    </button>
+                  </div>
+                </>
+              ) : step === "verfuegbarkeit" ? (
+                <>
+                  <p className="text-sm text-text-secondary">{meldeT(lang, "verfuegbarkeitHint")}</p>
+                  <div className="space-y-2 mt-3">
+                    {VERFUEGBARKEIT_OPTIONS.map((opt) => (
+                      <label
+                        key={opt.id}
+                        className={cn(
+                          "flex cursor-pointer items-center gap-3 rounded-xl border p-3 text-sm",
+                          dringlichkeit === opt.id
+                            ? "border-[#1a3d2b] bg-[#f0f7f3]"
+                            : "border-[#d9e3dd]"
+                        )}
+                      >
+                        <input
+                          type="radio"
+                          name="verfuegbarkeit"
+                          checked={dringlichkeit === opt.id}
+                          onChange={() => setDringlichkeit(opt.id)}
+                        />
+                        {lang === "de" ? opt.de : opt.en}
+                      </label>
+                    ))}
+                  </div>
+                  <div className="flex flex-col gap-2 mt-4">
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        className="melden-submit !bg-white !text-[#1a3d2b] border border-[#d9e3dd]"
+                        onClick={() => setStep("medien")}
+                      >
+                        {meldeT(lang, "zurueck")}
+                      </button>
+                      <button
+                        type="button"
+                        className="melden-submit flex-1"
+                        onClick={() => {
+                          setError(null);
+                          setStep("kontakt");
+                        }}
+                      >
+                        {meldeT(lang, "weiter")}
+                      </button>
+                    </div>
+                    <button
+                      type="button"
+                      className="text-xs text-text-tertiary underline"
+                      onClick={() => {
+                        setDringlichkeit(null);
+                        setError(null);
+                        setStep("kontakt");
+                      }}
+                    >
+                      {meldeT(lang, "verfuegbarkeitSkip")}
                     </button>
                   </div>
                 </>
@@ -524,13 +626,18 @@ export function MeldeFormular({
                         : "Show privacy notice"}
                   </button>
                   {privacyOpen ? (
-                    <MeldeDatenschutzHinweis orgName={orgName} mode={mode} />
+                    <MeldeDatenschutzHinweis
+                      orgName={orgName}
+                      mode={mode}
+                      datenschutzHref={datenschutzHref}
+                      impressumHref={impressumHref}
+                    />
                   ) : null}
                   <div className="flex gap-2 mt-4">
                     <button
                       type="button"
                       className="melden-submit !bg-white !text-[#1a3d2b] border border-[#d9e3dd]"
-                      onClick={() => setStep("medien")}
+                      onClick={() => setStep("verfuegbarkeit")}
                     >
                       {meldeT(lang, "zurueck")}
                     </button>
@@ -549,13 +656,7 @@ export function MeldeFormular({
           ) : null}
         </div>
 
-        <p className="text-center text-xs text-text-tertiary mt-4">
-          {meldeT(lang, "bearbeitung")} {orgName} und{" "}
-          <Link href="/" className="underline">
-            Bärenwald
-          </Link>
-          .
-        </p>
+        <p className="text-center text-xs text-text-tertiary mt-4">{footerKurz}</p>
       </div>
     </div>
   );

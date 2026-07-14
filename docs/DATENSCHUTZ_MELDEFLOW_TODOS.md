@@ -1,55 +1,56 @@
 # Datenschutz To-dos - Melde-Flow / Auftraggeber-Portal
 
-Stand: 25.06.2026
+Stand: Juli 2026
 
-Hinweis: Diese Liste ist eine Umsetzungs- und Projektcheckliste und ersetzt keine
-anwaltliche Prüfung.
+Hinweis: Umsetzungs-Checkliste, ersetzt keine anwaltliche Prüfung.
 
-**CRM-Handoff (vollständig):** [DATENSCHUTZ_CRM_HANDOFF.md](./DATENSCHUTZ_CRM_HANDOFF.md)  
-**Vertragsvorlagen:** [legal/](./legal/)
+**Rechtspaket (Entwurf):** [legal/RECHTPAKET_BAERENWALD_ENTWURF.md](./legal/RECHTPAKET_BAERENWALD_ENTWURF.md)  
+**CRM-Handoff:** [DATENSCHUTZ_CRM_HANDOFF.md](./DATENSCHUTZ_CRM_HANDOFF.md)
 
 ## A) Öffentliches Meldeformular (/melden)
 
 - [x] Art.-13-Kurzhinweis direkt im Formular ergänzt
 - [x] Zentrale Komponente `MeldeDatenschutzHinweis` + Copy-Modul
 - [x] Modus `ergaenzen` mit gleichem Hinweis
-- [x] Links auf `Datenschutzerklärung` (#melden-hv) und `Impressum`
-- [x] Hinweis zu fotosensiblen Inhalten ergänzt ("nur schadensrelevant")
+- [x] Org-spezifische Rechts-URLs (`/melden/[org]/datenschutz`, `/impressum`)
+- [x] Hinweis zu fotosensiblen Inhalten ergänzt
 - [x] Bestätigungsseite um Hinweis "Registrierung optional" ergänzt
-- [ ] Optional: zusätzliche "Hinweis gelesen"-Checkbox evaluieren (nicht Pflicht)
+- [ ] Optional: „Hinweis gelesen“-Checkbox evaluieren (nicht Pflicht)
 
 ## B) Datenschutzerklärung (Website)
 
-- [x] Abschnitt "Schadenmeldung über Hausverwaltung (/melden)" ergänzt
-- [x] Abschnitt "Auftraggeber-Portal (Organisationen)" ergänzt
-- [x] Speicherdauer Melder-Leads und Melder-Fotos in Abschnitt 10
-- [ ] Anwaltliche Finalprüfung zu Rollenmodell-Formulierung (HV/Bärenwald)
-- [ ] Speicherdauer final mit Rechtsberatung und operativem Löschkonzept abgleichen
+- [x] Abschnitt Schadenmeldung HV (/melden)
+- [x] Abschnitt Auftraggeber-Portal
+- [x] Speicherdauer Melder-Leads und Fotos in Abschnitt 10
+- [x] Entwurf org-spezifische Mieter-Seite + Rechtspaket Teile D/E
+- [ ] Anwaltliche Finalprüfung Rollenmodell (HV/Bärenwald)
+- [ ] Speicherdauer final mit Löschkonzept abgleichen
 
 ## C) Hausverwaltung / Vertrag
 
-- [x] Vertragsvorlagen als Gliederung/AVV/Prozess/Onboarding angelegt (`docs/legal/`)
-- [ ] Auftraggebervertrag für HV finalisieren (Anwalt)
-- [ ] AVV-Anlage nach Art. 28 DSGVO für HV finalisieren (Anwalt)
-- [ ] Rollenklärung dokumentieren (HV allein verantwortlich oder Art. 26)
-- [ ] Prozess für Betroffenenanfragen verbindlich festlegen (operativ im CRM)
-- [ ] Notfall-Ausnahme (sofortige Weiterleitung) vertraglich und textlich finalisieren
+- [x] Vertragsvorlagen Gliederung/AVV/Prozess/Onboarding
+- [x] AVV-Kernentwurf + TOM + Subprozessoren + Fragenkatalog (Entwurf)
+- [ ] Auftraggebervertrag HV finalisieren (Anwalt)
+- [ ] AVV-Anlage finalisieren (Anwalt) → `av_version` 1.0
+- [ ] Rollenklärung / Handwerker-Einordnung (Anwalt Frage 1)
+- [ ] Betroffenenanfragen-Prozess verbindlich (operativ CRM)
+- [ ] Notfall-Ausnahme vertraglich finalisieren
 
 ## D) CRM / Betrieb
 
-- [x] Hinweis im HV-Einladungsflow ergänzt ("nur mit Rechtsgrundlage")
-- [x] Hinweis im HV-Portal Einstellungen
-- [x] CRM-Handoff-Dokument mit SQL-Snippets und Prioritäten
-- [ ] VVT-Eintrag "Mieter-Schadenmeldungen" in CRM final hinterlegen
-- [ ] Löschkonzept für `melder_*`, `funnel_daten.fotos`, Leads finalisieren + implementieren
-- [ ] AVV-Register für Unterauftragsverarbeiter laufend pflegen
-- [ ] interne Schulung: datensparsame Nutzung im CRM
+- [x] Hinweise HV-Einladung + Portal-Einstellungen
+- [x] CRM-Handoff-Dokument
+- [x] VVT-Entwurf + Löschkonzept-Entwurf dokumentiert
+- [ ] VVT final im CRM hinterlegen
+- [ ] Löschjobs implementieren (nach anwaltlicher Fristen-Freigabe)
+- [ ] AVV-Register Subprozessoren laufend pflegen
+- [ ] Interne Schulung datensparsame CRM-Nutzung
 
-## E) Rollout-Checkliste je neue Hausverwaltung
+## E) Rollout je neue HV
 
-- [x] Checkliste als Vorlage: `docs/legal/ORGANISATION_ONBOARDING_CHECKLISTE_HV.md`
-- [ ] Vertrag + AVV unterschrieben
-- [ ] Org-Kennung und Objekte angelegt
-- [ ] Melde-Link in HV-Kommunikation datenschutzkonform eingebunden
-- [ ] Ansprechpartner für Datenschutzanfragen festgelegt
-- [ ] Testfall: Meldung mit/ohne Foto, Freigabe, Löschung geprüft
+- [x] Checkliste Vorlage: [ORGANISATION_ONBOARDING_CHECKLISTE_HV.md](./legal/ORGANISATION_ONBOARDING_CHECKLISTE_HV.md)
+- [ ] Vertrag + AVV unterschrieben / digital akzeptiert
+- [ ] Org + Objekte angelegt, Gate grün
+- [ ] Melde-Link datenschutzkonform (org-URLs)
+- [ ] Ansprechpartner Datenschutz festgelegt
+- [ ] Testfall Meldung + Abnahme + Löschung

@@ -1,7 +1,6 @@
 "use client";
 
-import Image from "next/image";
-import { useRouter, useSearchParams } from "next/navigation";
+import { PortalShell } from "@/components/shared/PortalShell";
 import { useMemo, useState } from "react";
 import {
   Building2,
@@ -20,9 +19,14 @@ import { OrganisationSuche } from "@/components/org/OrganisationSuche";
 import { OrganisationAnfrageHub } from "@/components/org/OrganisationAnfrageHub";
 import { OrganisationObjektePanel } from "@/components/org/OrganisationObjektePanel";
 import { OrganisationProfilPanel } from "@/components/org/OrganisationProfilPanel";
+import { OrganisationWhitelabelGate } from "@/components/org/OrganisationWhitelabelGate";
 import { OrganisationVorgaengeSection } from "@/components/org/OrganisationVorgaengeSection";
+import {
+  orgWhitelabelGateCanComplete,
+  orgWhitelabelGateVisible,
+} from "@/lib/org/org-whitelabel-gate";
 import { PortalListCard } from "@/components/shared/PortalListCard";
-import { PortalNavCountBadge } from "@/components/shared/PortalNavCountBadge";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   buildOrgVorgangFilterCounts,
   buildAuftragByLeadId,
@@ -40,7 +44,6 @@ import { buildKundeVorgaenge } from "@/lib/portal/build-kunde-vorgaenge";
 import { filterKundeVorgaenge } from "@/lib/portal/kunde-vorgang-filter";
 import { buildKundeVorgangCardRows } from "@/lib/portal/portal-list-mappers";
 import { portalDetailStatusPillClass } from "@/lib/shared/portal-detail-format";
-import { cn } from "@/lib/utils";
 
 type OrgSection = "uebersicht" | "vorgaenge" | "objekte" | "leistungen" | "profil";
 
@@ -96,6 +99,16 @@ type Props = {
       href: string;
     }>
   >;
+  auftragIdByLeadId?: Record<string, string>;
+  hvAbnahmeByLeadId?: Record<
+    string,
+    {
+      art: "ohne_vorbehalt" | "mit_anmerkung" | "zurueckgewiesen";
+      anmerkung?: string | null;
+      signiert_name: string;
+      signiert_am: string;
+    }
+  >;
 };
 
 function portalSectionFromParam(raw: string | null): OrgSection | null {
@@ -131,6 +144,8 @@ export function OrganisationPortalClient({
   hvFeedbackByLeadId = {},
   auftragKontextByLeadId = {},
   dokumenteByLeadId = {},
+  auftragIdByLeadId = {},
+  hvAbnahmeByLeadId = {},
 }: Props) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -154,6 +169,7 @@ export function OrganisationPortalClient({
         leads: leads as Parameters<typeof buildKundeVorgaenge>[0]["leads"],
         angebote: angebote as Parameters<typeof buildKundeVorgaenge>[0]["angebote"],
         auftraege,
+        hvPortalMode: true,
       }),
     [leads, angebote, auftraege]
   );
@@ -196,29 +212,40 @@ export function OrganisationPortalClient({
     filterKundeVorgaenge(vorgaengeItems, "aktiv")
   ).slice(0, 5);
 
+  const showWlGate = orgWhitelabelGateVisible(kunde, mitgliedRolle);
+  const canCompleteWlGate = orgWhitelabelGateCanComplete(mitgliedRolle);
+
   return (
-    <div className="portal-ui min-h-screen bg-surface-page pb-[calc(4.5rem+env(safe-area-inset-bottom,0px))] lg:pb-8">
-      <header className="sticky top-0 z-50 border-b border-border-default bg-surface-card/95 backdrop-blur-sm">
-        <div className="mx-auto flex h-[68px] max-w-[1200px] items-center justify-between px-4 sm:px-6">
-          <div className="flex items-center gap-2.5">
-            {kunde.org_logo_url ? (
-              <Image
-                src={kunde.org_logo_url}
-                alt=""
-                width={28}
-                height={28}
-                className="rounded"
-                unoptimized
-              />
-            ) : (
-              <Image src="/logo-mark-green.png" alt="" width={28} height={28} />
-            )}
-            <div>
-              <p className="portal-text-body font-semibold">{displayName}</p>
-              <p className="text-xs text-text-tertiary">Hausverwaltung</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
+    <>
+      {showWlGate ? (
+        <OrganisationWhitelabelGate
+          kunde={kunde}
+          canComplete={canCompleteWlGate}
+          onComplete={refresh}
+        />
+      ) : null}
+      <PortalShell
+        variant="org"
+        brandTitle={displayName}
+        brandSubtitle="Hausverwaltung"
+        brandLogoUrl={kunde.org_logo_url}
+        orgPrimaryColor={kunde.org_primary_color}
+        activeNavId={section}
+        onNavChange={(id) => switchSection(id as OrgSection)}
+        nav={NAV.map(({ id, label, icon }) => ({
+          id,
+          label,
+          icon,
+          badge: id === "vorgaenge" ? vorgaengeBadgeCount : undefined,
+        }))}
+        footer={displayName}
+        fab={{
+          label: "Neue Anfrage",
+          onClick: () => setHubOpen(true),
+          icon: PlusCircle,
+        }}
+        headerActions={
+          <>
             <HvNotificationBell />
             <OrganisationSuche
               onSelect={(id) => {
@@ -233,38 +260,9 @@ export function OrganisationPortalClient({
                 Abmelden
               </button>
             </form>
-          </div>
-        </div>
-      </header>
-
-      <div className="mx-auto grid max-w-[1200px] gap-4 px-4 py-5 lg:grid-cols-[220px_1fr] lg:px-6">
-        <aside className="hidden lg:block">
-          <nav className="sticky top-[84px] space-y-1">
-            {NAV.map(({ id, label, icon: Icon }) => (
-              <button
-                key={id}
-                type="button"
-                onClick={() => switchSection(id)}
-                className={cn(
-                  "mb-1 flex w-full items-center justify-between rounded-xl px-3 py-2.5 text-left portal-text-body font-semibold",
-                  section === id
-                    ? "bg-accent-light text-accent"
-                    : "text-text-secondary hover:bg-muted"
-                )}
-              >
-                <span className="relative inline-flex items-center gap-2">
-                  <Icon className="h-4 w-4" />
-                  {label}
-                  {id === "vorgaenge" ? (
-                    <PortalNavCountBadge count={vorgaengeBadgeCount} />
-                  ) : null}
-                </span>
-              </button>
-            ))}
-          </nav>
-        </aside>
-
-        <main className="min-w-0 space-y-4">
+          </>
+        }
+      >
           {section === "uebersicht" ? (
             <>
               <div className="space-y-0.5">
@@ -368,6 +366,8 @@ export function OrganisationPortalClient({
               hwErledigtByLeadId={hwErledigtByLeadId}
               feedbackBereitByLeadId={feedbackBereitByLeadId}
               hvFeedbackByLeadId={hvFeedbackByLeadId}
+              auftragIdByLeadId={auftragIdByLeadId}
+              hvAbnahmeByLeadId={hvAbnahmeByLeadId}
               auftragKontextByLeadId={auftragKontextByLeadId}
               dokumenteByLeadId={dokumenteByLeadId}
             />
@@ -409,35 +409,7 @@ export function OrganisationPortalClient({
               />
             </>
           ) : null}
-        </main>
-      </div>
-
-      <nav className="fixed inset-x-0 bottom-0 z-50 border-t border-border-default bg-surface-card/95 backdrop-blur-sm lg:hidden">
-        <div className="mx-auto flex max-w-[1200px]">
-          {NAV.map(({ id, label, icon: Icon }) => {
-            const active = section === id;
-            return (
-              <button
-                key={id}
-                type="button"
-                onClick={() => switchSection(id)}
-                className={cn(
-                  "relative flex flex-1 flex-col items-center gap-0.5 py-2.5 text-[10px] font-medium",
-                  active ? "text-accent" : "text-text-tertiary"
-                )}
-              >
-                <Icon className="h-5 w-5" />
-                {label}
-                {id === "vorgaenge" && vorgaengeBadgeCount > 0 ? (
-                  <span className="absolute right-[calc(50%-22px)] top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-600 px-1 text-[9px] font-bold text-white">
-                    {vorgaengeBadgeCount}
-                  </span>
-                ) : null}
-              </button>
-            );
-          })}
-        </div>
-      </nav>
+      </PortalShell>
 
       {hubOpen ? (
         <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 p-4 sm:items-center">
@@ -456,6 +428,6 @@ export function OrganisationPortalClient({
           </div>
         </div>
       ) : null}
-    </div>
+    </>
   );
 }

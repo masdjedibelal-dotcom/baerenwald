@@ -7,7 +7,7 @@ import type { PartnerVorgangItem } from "@/lib/partner/build-partner-vorgaenge";
 import {
   type VorgangFilter,
 } from "@/lib/partner/vorgang-state";
-import { resolvePartnerVorgangListenStatus } from "@/lib/partner/partner-vorgang-display";
+import { resolvePartnerVorgangCardStatus } from "@/lib/partner/partner-vorgang-display";
 import {
   partnerOffenStatusLabel,
   partnerOffenStatusPillKey,
@@ -133,10 +133,11 @@ export function mapVorgangToCard(vorgang: PartnerVorgangItem): PartnerCardRow {
         ? "Tagebucheintrag vom CRM angefordert"
         : undefined;
 
-  const listenStatus = resolvePartnerVorgangListenStatus(state, auftrag);
+  const listenStatus = resolvePartnerVorgangCardStatus(vorgang);
 
   const hint =
-    state === "neu"
+    listenStatus.actionHint ??
+    (state === "neu"
       ? "To-do: Leistungen & Vertrag prüfen"
       : state === "geaendert"
         ? offeneAenderungen > 0
@@ -144,7 +145,7 @@ export function mapVorgangToCard(vorgang: PartnerVorgangItem): PartnerCardRow {
           : "To-do: Änderungen bestätigen"
         : auftrag.bautagebuchAnfrageOffen && state === "in_bearbeitung"
           ? "To-do: Tagebucheintrag erstellen"
-          : undefined;
+          : undefined);
 
   return {
     id: vorgang.id,

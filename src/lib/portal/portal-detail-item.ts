@@ -37,6 +37,8 @@ export type KundePortalDetailItem = {
   statusPillKey?: string;
   vorgangPhase?: string;
   needsAction?: boolean;
+  /** CRM-Resolver: rollenspezifischer Hinweis (z. B. „Freigabe ausstehend“). */
+  actionHint?: string;
   summary?: string;
   anfrageGewerk?: string;
   anfrageVorhaben?: string;
@@ -76,6 +78,8 @@ export type KundePortalDetailItem = {
   /** Feedback nach HW-Abschluss oder CRM-Abschluss. */
   feedbackBereit?: boolean;
   mieterFeedback?: { sterne: number; freitext?: string | null } | null;
+  /** HV: Link zum Mieter-Status (kein Mieter-Mail). */
+  melderStatusUrl?: string;
 };
 
 export function objektPlzOrt(

@@ -24,7 +24,7 @@
   --fl-accent-light: #eaf3de;
   --accent-light: #eaf3de;
   --accent-foreground: #ffffff;
-  --surface-page: #f4f4f3;
+  --surface-page: #e6e8e6;
   --surface-card: #ffffff;
   --surface-muted: #edeae4;
   --radius-card: 18px;
@@ -214,6 +214,150 @@ h3 {
 
   .portal-touch-target {
     @apply min-h-[44px] min-w-[44px];
+  }
+
+  /* PortalShell (Design P0-1) */
+  .portal-shell-header {
+    @apply border-b border-border-default bg-surface-card/95 backdrop-blur-sm;
+  }
+
+  .portal-shell-sidebar {
+    @apply sticky top-[84px] self-start rounded-xl px-3 py-4;
+    background: var(--accent-dark);
+    color: #cfe0d6;
+    min-height: calc(100vh - 120px);
+  }
+
+  .portal-shell-brand {
+    @apply px-2 pb-4;
+  }
+
+  .portal-shell-brand-title {
+    @apply text-[15px] font-bold text-white;
+  }
+
+  .portal-shell-brand-sub {
+    @apply mt-0.5 text-[10px] font-semibold tracking-[0.14em] text-[#8fae9d];
+  }
+
+  .portal-shell-nav-item {
+    @apply mb-1 flex w-full items-center justify-between rounded-lg px-2.5 py-2.5 text-left text-sm font-medium;
+    color: #cfe0d6;
+  }
+
+  .portal-shell-nav-item:hover {
+    background: rgba(255, 255, 255, 0.07);
+  }
+
+  .portal-shell-nav-item--active {
+    background: rgba(255, 255, 255, 0.12);
+    color: #fff;
+    font-weight: 600;
+  }
+
+  .portal-shell-nav-badge {
+    @apply flex h-5 min-w-5 items-center justify-center rounded-full px-1 text-[10px] font-bold;
+    background: #dc2626;
+    color: #fff;
+  }
+
+  .portal-shell-sidebar-foot {
+    @apply mt-auto px-2 pt-3 text-xs text-[#8fae9d];
+  }
+
+  .portal-shell-mobile-nav {
+    @apply fixed inset-x-0 bottom-0 z-50 border-t border-border-default bg-surface-card/95 backdrop-blur-sm;
+  }
+
+  .portal-shell-mobile-item {
+    @apply relative flex flex-1 flex-col items-center gap-0.5 py-2.5 text-[10px] font-medium text-text-tertiary;
+  }
+
+  .portal-shell-mobile-item--active {
+    @apply font-semibold text-accent;
+  }
+
+  .portal-shell-mobile-badge {
+    @apply absolute right-[calc(50%-22px)] top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-600 px-1 text-[9px] font-bold text-white;
+  }
+
+  .portal-shell-fab {
+    @apply fixed z-[60] flex h-[52px] w-[52px] items-center justify-center rounded-full text-white shadow-lg;
+    right: max(16px, env(safe-area-inset-right, 0px));
+    bottom: calc(68px + env(safe-area-inset-bottom, 0px));
+    background: var(--org-primary, var(--accent));
+  }
+
+  /* VorgangTimeline (Design P0-2) */
+  .vorgang-timeline {
+    @apply flex items-start overflow-x-auto rounded-xl bg-surface-card p-4 shadow-sm;
+    box-shadow: 0 1px 2px rgba(20, 30, 25, 0.06);
+  }
+
+  .vorgang-timeline-step {
+    @apply relative min-w-[110px] flex-1 text-center text-xs text-text-tertiary;
+  }
+
+  .vorgang-timeline-line {
+    @apply absolute left-0 top-[11px] -z-0 h-0.5 w-full -translate-x-1/2 bg-[#dde2df];
+  }
+
+  .vorgang-timeline-dot {
+    @apply relative z-[1] mx-auto mb-1.5 flex h-[22px] w-[22px] items-center justify-center rounded-full border-2 border-[#dde2df] bg-[#eceeed] text-[11px] font-bold text-[#5c6661];
+  }
+
+  .vorgang-timeline-label {
+    @apply block leading-snug;
+  }
+
+  .vorgang-timeline-step--done .vorgang-timeline-dot {
+    @apply border-accent bg-accent text-white;
+  }
+
+  .vorgang-timeline-step--done .vorgang-timeline-line {
+    @apply bg-accent;
+  }
+
+  .vorgang-timeline-step--current {
+    @apply font-semibold text-text-primary;
+  }
+
+  .vorgang-timeline-step--current .vorgang-timeline-dot {
+    @apply border-accent bg-white text-accent;
+  }
+
+  .vorgang-timeline-step--current .vorgang-timeline-line {
+    @apply bg-accent;
+  }
+
+  /* RoleStatusPill (Design P0-2) */
+  .role-pill {
+    @apply inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-2.5 py-0.5 text-xs font-semibold;
+  }
+
+  .role-pill-neu {
+    background: #e3ecfa;
+    color: #1d4f9c;
+  }
+
+  .role-pill-warten {
+    background: #faf0d8;
+    color: #8a6d1a;
+  }
+
+  .role-pill-aktiv {
+    background: #e2f0e8;
+    color: #226041;
+  }
+
+  .role-pill-fertig {
+    background: #eceeed;
+    color: #5c6661;
+  }
+
+  .role-pill-storniert {
+    background: #fce8e8;
+    color: #9b1c1c;
   }
 }
 

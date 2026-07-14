@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
@@ -30,7 +29,7 @@ import {
 import { PORTAL_OVERVIEW_PAGE_SIZE } from "@/components/shared/PortalListPagination";
 import { PortalBaerenwaldGpt } from "@/components/portal/PortalBaerenwaldGpt";
 import { PortalLegalFooter } from "@/components/shared/PortalLegalFooter";
-import { PortalNavCountBadge, portalNavBadgeCount } from "@/components/shared/PortalNavCountBadge";
+import { PortalShell } from "@/components/shared/PortalShell";
 import { SITE_CONFIG } from "@/lib/config";
 import { isOnboardingCompleted } from "@/lib/onboarding/storage";
 import { PARTNER_ONBOARDING_SLIDES } from "@/lib/onboarding/partner-slides";
@@ -502,19 +501,39 @@ export function PartnerClient({
     return <p className="portal-text-body text-text-secondary">Zeile auswählen.</p>;
   })();
 
+  const shellNav = MENU_ITEMS.map(({ id, label, icon }) => ({
+    id,
+    label,
+    icon,
+    badge:
+      id === "planer"
+        ? termine.length + aufgaben.length
+        : id === "vorgaenge"
+          ? vorgaengeTodoCount
+          : undefined,
+  }));
+
+  const mobileShellNav = MOBILE_NAV_ITEMS.map((id) => {
+    const item = shellNav.find((n) => n.id === id)!;
+    return item;
+  });
+
+  const partnerFooter =
+    handwerker.firma?.trim() || handwerker.name?.trim() || "Partner-Betrieb";
+
   return (
-    <div className="portal-ui min-h-screen bg-surface-page">
-      <header className="sticky top-0 z-50 border-b border-border-default bg-surface-card/95 backdrop-blur-sm">
-        <div className="mx-auto flex h-[68px] max-w-[1200px] items-center justify-between px-4 sm:px-6">
-          <div className="flex items-center gap-2.5">
-            <Image src="/logo-mark-green.png" alt="Bärenwald" width={28} height={28} />
-            <div>
-              <p className="portal-text-body font-semibold leading-none text-text-primary">
-                Bärenwald <span className="text-accent">Partner</span>
-              </p>
-            </div>
-          </div>
-          <div className="flex shrink-0 items-center gap-2">
+    <>
+      <PortalShell
+        variant="partner"
+        brandTitle="Bärenwald Partner"
+        brandSubtitle="Partner-Portal"
+        activeNavId={section}
+        onNavChange={(id) => switchSection(id as PartnerSection)}
+        nav={shellNav}
+        mobileNav={mobileShellNav}
+        footer={partnerFooter}
+        headerActions={
+          <>
             <PartnerNotificationBell onOpenVorgang={openVorgangFromNotification} />
             <form action="/partner/auth/signout" method="post">
               <button
@@ -524,48 +543,10 @@ export function PartnerClient({
                 Abmelden
               </button>
             </form>
-          </div>
-        </div>
-      </header>
-
-      <main className="mx-auto grid max-w-[1200px] grid-cols-1 gap-4 px-4 pb-36 pt-5 lg:grid-cols-[240px_minmax(0,1fr)] lg:px-6 lg:pb-10">
-        <aside className="hidden lg:block">
-          <div className="sticky top-[92px] space-y-3">
-            <nav className="card-bordered space-y-1 p-2">
-              {MENU_ITEMS.map(({ id, label, icon: Icon }) => (
-                <button
-                  key={id}
-                  type="button"
-                  onClick={() => switchSection(id)}
-                  className={cn(
-                    "flex w-full items-center justify-between rounded-xl px-3 py-2.5 text-left portal-text-body font-semibold",
-                    section === id
-                      ? id === "gpt"
-                        ? "bg-[#EAF3DE] text-[#2E7D52]"
-                        : "bg-accent-light text-accent"
-                      : id === "gpt"
-                        ? "text-[#2E7D52] hover:bg-[#EAF3DE]/60"
-                        : "text-text-secondary hover:bg-muted"
-                  )}
-                >
-                  <span className="inline-flex items-center gap-2">
-                    <Icon className="h-4 w-4" />
-                    {label}
-                  </span>
-                  <span className="portal-text-meta text-text-tertiary">
-                    {id === "planer"
-                      ? termine.length + aufgaben.length
-                      : id === "vorgaenge"
-                        ? vorgaengeTodoCount
-                        : ""}
-                  </span>
-                </button>
-              ))}
-            </nav>
-          </div>
-        </aside>
-
-        <section className="space-y-4">
+          </>
+        }
+      >
+        <div className="space-y-4">
           {section === "gpt" ? (
             <article className="card-bordered hidden overflow-hidden p-0 lg:block">
               <PortalBaerenwaldGpt
@@ -814,49 +795,8 @@ export function PartnerClient({
               </aside>
             </div>
           ) : null}
-        </section>
-      </main>
-
-      <nav
-        className="fixed inset-x-0 bottom-0 z-[90] border-t border-border-default bg-surface-card/95 backdrop-blur-sm lg:hidden"
-        aria-label="Partner Navigation"
-      >
-        <div className="grid w-full grid-cols-4 px-1 pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-1">
-          {MOBILE_NAV_ITEMS.map((id) => {
-            const { label, icon: Icon } = MENU_ITEMS.find((m) => m.id === id)!;
-            const badgeCount = portalNavBadgeCount(id, {
-              vorgaenge: vorgaengeTodoCount,
-              anfragen: 0,
-              angebote: 0,
-              auftraege: 0,
-            });
-            return (
-              <button
-                key={id}
-                type="button"
-                onClick={() => switchSection(id)}
-                className={cn(
-                  "portal-text-nav flex w-full flex-col items-center justify-center rounded-lg px-1 py-2.5",
-                  section === id ? "text-accent" : "text-text-tertiary"
-                )}
-                aria-label={
-                  badgeCount > 0 ? `${label}, ${badgeCount} offen` : label
-                }
-              >
-                <span className="flex flex-col items-center gap-0.5">
-                  <span className="relative inline-flex">
-                    <Icon className="h-[18px] w-[18px] stroke-[1.75]" />
-                    <PortalNavCountBadge count={badgeCount} />
-                  </span>
-                  <span className="max-w-[52px] truncate text-[10px] leading-tight sm:text-[11px]">
-                    {label}
-                  </span>
-                </span>
-              </button>
-            );
-          })}
         </div>
-      </nav>
+      </PortalShell>
 
       <PortalMobileBottomSheet
         open={
@@ -891,8 +831,8 @@ export function PartnerClient({
 
       <PortalLegalFooter
         variant="partner"
-        className="mx-auto max-w-[1200px] px-4 pb-28 pt-3 lg:px-6 lg:pb-6"
+        className="mx-auto max-w-[1200px] px-4 pb-8 pt-3 lg:px-6"
       />
-    </div>
+    </>
   );
 }

@@ -11,6 +11,8 @@
     "start": "next start",
     "lint": "next lint",
     "verify:produkte": "npx tsx scripts/verify-produkt-preise.ts",
+    "test:crm-vorgang": "npx tsx scripts/test-crm-vorgang-resolver.ts",
+    "test:org-whitelabel-gate": "npx tsx scripts/test-org-whitelabel-gate.ts",
     "audit:screenshots": "node scripts/design-audit-screenshots.mjs",
     "capture:portal-marketing": "node scripts/capture-marketing-portal-screenshots.mjs",
     "audit:pdf": "node scripts/design-audit-pdf.mjs",

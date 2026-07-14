@@ -176,7 +176,7 @@ export function isPartnerAuftragAnfrageOffen(
   if (hw === "abgelehnt") return false;
 
   const hatOffenePosition = item.positionen.some((p) =>
-    positionBrauchtHandwerkerAktion(p.handwerker_status)
+    positionBrauchtHandwerkerAktion(p)
   );
 
   /** Noch offene Leistungen — immer in Offen, auch nach Projektstart. */

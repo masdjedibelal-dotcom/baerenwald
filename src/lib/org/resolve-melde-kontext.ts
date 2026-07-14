@@ -9,6 +9,11 @@ export type MeldeKontext = {
     org_anzeigename: string | null;
     org_logo_url: string | null;
     name: string | null;
+    mieter_kontakt_telefon?: string | null;
+    mieter_kontakt_email?: string | null;
+    mieter_kontakt_hinweis?: string | null;
+    impressum_url?: string | null;
+    datenschutz_url?: string | null;
   };
   objekt: {
     id: string;
@@ -38,7 +43,17 @@ type OrgRow = {
   org_kennung: string;
   org_anzeigename: string | null;
   org_logo_url: string | null;
+  mieter_kontakt_telefon?: string | null;
+  mieter_kontakt_email?: string | null;
+  mieter_kontakt_hinweis?: string | null;
+  impressum_url?: string | null;
+  datenschutz_url?: string | null;
 };
+
+const ORG_SELECT_WL =
+  "id, name, org_kennung, org_anzeigename, org_logo_url, portal_modus, mieter_kontakt_telefon, mieter_kontakt_email, mieter_kontakt_hinweis, impressum_url, datenschutz_url";
+const ORG_SELECT_BASE =
+  "id, name, org_kennung, org_anzeigename, org_logo_url, portal_modus";
 
 type ObjektRow = {
   id: string;
@@ -96,35 +111,38 @@ function findObjektRow(rows: ObjektRow[], objSlug: string): ObjektRow | undefine
 }
 
 async function loadOrganisation(orgSlug: string): Promise<OrgRow | null> {
-  const select =
-    "id, name, org_kennung, org_anzeigename, org_logo_url, portal_modus";
+  const tryLoad = async (select: string) => {
+    const { data: orgRows, error: orgErr } = await supabaseAdmin
+      .from("kunden")
+      .select(select)
+      .ilike("org_kennung", orgSlug)
+      .eq("portal_modus", "organisation")
+      .limit(1);
 
-  const { data: orgRows, error: orgErr } = await supabaseAdmin
-    .from("kunden")
-    .select(select)
-    .ilike("org_kennung", orgSlug)
-    .eq("portal_modus", "organisation")
-    .limit(1);
+    if (orgErr) throw orgErr;
+    if (orgRows?.[0]) return orgRows[0] as unknown as OrgRow;
 
-  if (orgErr) {
-    console.error("[resolveMeldeKontext] org:", orgErr.message);
-    throw orgErr;
+    const { data: fallback, error: fbErr } = await supabaseAdmin
+      .from("kunden")
+      .select(select)
+      .ilike("org_kennung", orgSlug)
+      .limit(1);
+
+    if (fbErr) throw fbErr;
+    return (fallback?.[0] as unknown as OrgRow | undefined) ?? null;
+  };
+
+  try {
+    return await tryLoad(ORG_SELECT_WL);
+  } catch (e) {
+    console.warn("[resolveMeldeKontext] org (wl):", e);
+    try {
+      return await tryLoad(ORG_SELECT_BASE);
+    } catch (e2) {
+      console.error("[resolveMeldeKontext] org:", e2);
+      throw e2;
+    }
   }
-
-  if (orgRows?.[0]) return orgRows[0] as OrgRow;
-
-  const { data: fallback, error: fbErr } = await supabaseAdmin
-    .from("kunden")
-    .select(select)
-    .ilike("org_kennung", orgSlug)
-    .limit(1);
-
-  if (fbErr) {
-    console.error("[resolveMeldeKontext] org fallback:", fbErr.message);
-    throw fbErr;
-  }
-
-  return (fallback?.[0] as OrgRow | undefined) ?? null;
 }
 
 export async function resolveMeldeKontext(
@@ -207,6 +225,11 @@ export async function resolveMeldeKontext(
         org_anzeigename: org.org_anzeigename,
         org_logo_url: org.org_logo_url,
         name: org.name,
+        mieter_kontakt_telefon: org.mieter_kontakt_telefon ?? null,
+        mieter_kontakt_email: org.mieter_kontakt_email ?? null,
+        mieter_kontakt_hinweis: org.mieter_kontakt_hinweis ?? null,
+        impressum_url: org.impressum_url ?? null,
+        datenschutz_url: org.datenschutz_url ?? null,
       },
       objekt,
       objekte,

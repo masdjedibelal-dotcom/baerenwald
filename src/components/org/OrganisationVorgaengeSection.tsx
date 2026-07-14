@@ -64,6 +64,16 @@ type Props = {
       href: string;
     }>
   >;
+  auftragIdByLeadId?: Record<string, string>;
+  hvAbnahmeByLeadId?: Record<
+    string,
+    {
+      art: "ohne_vorbehalt" | "mit_anmerkung" | "zurueckgewiesen";
+      anmerkung?: string | null;
+      signiert_name: string;
+      signiert_am: string;
+    }
+  >;
 };
 
 function OrgVorgangFilterBar({
@@ -115,6 +125,8 @@ export function OrganisationVorgaengeSection({
   hvFeedbackByLeadId = {},
   auftragKontextByLeadId = {},
   dokumenteByLeadId = {},
+  auftragIdByLeadId = {},
+  hvAbnahmeByLeadId = {},
 }: Props) {
   const [filter, setFilter] = useState<OrgVorgangFilter>(initialFilter ?? "freigabe");
 
@@ -133,6 +145,7 @@ export function OrganisationVorgaengeSection({
         leads: leads as Parameters<typeof buildKundeVorgaenge>[0]["leads"],
         angebote: angebote as Parameters<typeof buildKundeVorgaenge>[0]["angebote"],
         auftraege,
+        hvPortalMode: true,
       }),
     [leads, angebote, auftraege]
   );
@@ -183,6 +196,8 @@ export function OrganisationVorgaengeSection({
           hvFeedbackByLeadId={hvFeedbackByLeadId}
           auftragKontextByLeadId={auftragKontextByLeadId}
           dokumenteByLeadId={dokumenteByLeadId}
+          auftragIdByLeadId={auftragIdByLeadId}
+          hvAbnahmeByLeadId={hvAbnahmeByLeadId}
         />
       ) : (
         <PortalClient
@@ -190,6 +205,7 @@ export function OrganisationVorgaengeSection({
           activeSection="auftraege"
           showAnlassBadge
           hideFilterBar
+          hvPortalMode
           controlledVorgangFilter={vorgangFilter}
           kunde={kunde}
           leads={leads as Parameters<typeof PortalClient>[0]["leads"]}
@@ -197,6 +213,8 @@ export function OrganisationVorgaengeSection({
           auftraege={auftraege}
           hwErledigtByLeadId={hwErledigtByLeadId}
           hvFeedbackByLeadId={hvFeedbackByLeadId}
+          auftragIdByLeadId={auftragIdByLeadId}
+          hvAbnahmeByLeadId={hvAbnahmeByLeadId}
         />
       )}
     </div>

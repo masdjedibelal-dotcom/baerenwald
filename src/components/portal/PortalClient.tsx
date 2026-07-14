@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -17,13 +16,13 @@ import "@/components/onboarding/onboarding.css";
 import { PortalBaerenwaldGpt } from "@/components/portal/PortalBaerenwaldGpt";
 import { PortalVorgangDetail } from "@/components/portal/PortalVorgangDetail";
 import { PortalLegalFooter } from "@/components/shared/PortalLegalFooter";
+import { PortalShell } from "@/components/shared/PortalShell";
 import { PortalListCard } from "@/components/shared/PortalListCard";
 import { PortalMobileBottomSheet } from "@/components/shared/PortalMobileBottomSheet";
 import {
   PORTAL_LIST_PAGE_SIZE,
   PortalListPagination,
 } from "@/components/shared/PortalListPagination";
-import { PortalNavCountBadge } from "@/components/shared/PortalNavCountBadge";
 import { SITE_CONFIG } from "@/lib/config";
 import { isOnboardingCompleted } from "@/lib/onboarding/storage";
 import { PORTAL_ONBOARDING_SLIDES } from "@/lib/onboarding/portal-slides";
@@ -66,8 +65,6 @@ const MENU_ITEMS: Array<{
   { id: "vorgaenge", label: "Vorgänge", icon: ClipboardList },
   { id: "gpt", label: "GPT", icon: MessagesSquare },
 ];
-
-const MOBILE_NAV_ITEMS = ["uebersicht", "vorgaenge", "gpt"] as const satisfies readonly SectionId[];
 
 function normalizeSectionFromUrl(raw: string | undefined): SectionId | null {
   if (!raw) return null;
@@ -125,9 +122,12 @@ export function PortalClient({
   hideFilterBar = false,
   controlledVorgangFilter,
   onVorgangFilterChange,
+  hvPortalMode = false,
   mieterFeedbackByLeadId = {},
   hwErledigtByLeadId = {},
   hvFeedbackByLeadId = {},
+  auftragIdByLeadId = {},
+  hvAbnahmeByLeadId = {},
 }: {
   kunde: PortalKunde;
   leads: PortalLead[];
@@ -145,6 +145,16 @@ export function PortalClient({
       maengel?: Array<{ freitext?: string | null; created_at?: string }>;
     }
   >;
+  auftragIdByLeadId?: Record<string, string>;
+  hvAbnahmeByLeadId?: Record<
+    string,
+    {
+      art: "ohne_vorbehalt" | "mit_anmerkung" | "zurueckgewiesen";
+      anmerkung?: string | null;
+      signiert_name: string;
+      signiert_am: string;
+    }
+  >;
   layout?: "default" | "embedded";
   activeSection?: "uebersicht" | "vorgaenge" | "auftraege";
   showProductPicker?: boolean;
@@ -152,6 +162,8 @@ export function PortalClient({
   hideFilterBar?: boolean;
   controlledVorgangFilter?: KundeVorgangFilter;
   onVorgangFilterChange?: (filter: KundeVorgangFilter) => void;
+  /** Hausverwaltungs-Portal: CRM-Resolver mit role „hv“ (kein Mieter-Status). */
+  hvPortalMode?: boolean;
 }) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -188,10 +200,11 @@ export function PortalClient({
         leads,
         angebote,
         auftraege,
-        mieterStatusMode: true,
+        hvPortalMode,
+        mieterStatusMode: hvPortalMode ? false : true,
         mieterFeedbackByLeadId,
       }),
-    [leads, angebote, auftraege, mieterFeedbackByLeadId]
+    [leads, angebote, auftraege, hvPortalMode, mieterFeedbackByLeadId]
   );
 
   const filterCounts = useMemo(
@@ -359,6 +372,9 @@ export function PortalClient({
         onAccepted={() => router.refresh()}
         hwErledigt={hwErledigtByLeadId[selectedLeadId]}
         hvFeedback={hvFeedbackByLeadId[selectedLeadId]}
+        auftragId={auftragIdByLeadId[selectedLeadId]}
+        hvAbnahme={hvAbnahmeByLeadId[selectedLeadId] ?? null}
+        showHvAbnahme={hvPortalMode}
         onHvFeedbackSubmitted={() => router.refresh()}
       />
     </article>
@@ -387,6 +403,9 @@ export function PortalClient({
               onAccepted={() => router.refresh()}
               hwErledigt={hwErledigtByLeadId[selectedLeadId]}
               hvFeedback={hvFeedbackByLeadId[selectedLeadId]}
+              auftragId={auftragIdByLeadId[selectedLeadId]}
+              hvAbnahme={hvAbnahmeByLeadId[selectedLeadId] ?? null}
+              showHvAbnahme={hvPortalMode}
               onHvFeedbackSubmitted={() => router.refresh()}
             />
           ) : null}
@@ -396,58 +415,42 @@ export function PortalClient({
   }
 
   return (
-    <div className="portal-ui min-h-screen bg-surface-page pb-[calc(4.5rem+env(safe-area-inset-bottom,0px))] lg:pb-8">
-      <header className="sticky top-0 z-50 border-b border-border-default bg-surface-card/95 backdrop-blur-sm">
-        <div className="mx-auto flex h-[68px] max-w-[1200px] items-center justify-between px-4 sm:px-6">
-          <div className="flex items-center gap-2.5">
-            <Image src="/logo-mark-green.png" alt="" width={28} height={28} />
-            <div>
-              <p className="portal-text-body font-semibold">
-                Mein<span className="text-accent">Bärenwald</span>
-              </p>
-              <p className="text-xs text-text-tertiary">{kunde.name?.trim() || "Kundenportal"}</p>
-            </div>
-          </div>
+    <>
+      <PortalShell
+        variant="kunde"
+        brandTitle="MeinBärenwald"
+        brandSubtitle={kunde.name?.trim() || "Kundenportal"}
+        activeNavId={section}
+        onNavChange={(id) => {
+          if (id === "gpt") {
+            if (typeof window !== "undefined" && window.innerWidth < 1024) {
+              setGptOpen(true);
+            } else {
+              switchSection("gpt");
+            }
+            return;
+          }
+          switchSection(id as SectionId);
+        }}
+        nav={MENU_ITEMS.map(({ id, label, icon }) => ({
+          id,
+          label,
+          icon,
+          badge: id === "vorgaenge" ? needsActionCount : undefined,
+        }))}
+        fab={{
+          label: "Bärenwald GPT",
+          onClick: () => setGptOpen(true),
+          icon: MessagesSquare,
+        }}
+        headerActions={
           <form action="/portal/auth/signout" method="post">
             <button type="submit" className="btn-pill-outline portal-btn-compact">
               Abmelden
             </button>
           </form>
-        </div>
-      </header>
-
-      <div className="mx-auto grid max-w-[1200px] gap-4 px-4 py-5 lg:grid-cols-[220px_1fr] lg:px-6">
-        <aside className="hidden lg:block">
-          <nav className="sticky top-[84px] space-y-1">
-            {MENU_ITEMS.map(({ id, label, icon: Icon }) => (
-              <button
-                key={id}
-                type="button"
-                onClick={() => switchSection(id)}
-                className={cn(
-                  "mb-1 flex w-full items-center justify-between rounded-xl px-3 py-2.5 text-left portal-text-body font-semibold",
-                  section === id
-                    ? id === "gpt"
-                      ? "bg-[#EAF3DE] text-[#2E7D52]"
-                      : "bg-accent-light text-accent"
-                    : id === "gpt"
-                      ? "text-[#2E7D52] hover:bg-[#EAF3DE]/60"
-                      : "text-text-secondary hover:bg-muted"
-                )}
-              >
-                <span className="relative inline-flex items-center gap-2">
-                  <Icon className="h-4 w-4" />
-                  {label}
-                  {id === "vorgaenge" ? (
-                    <PortalNavCountBadge count={needsActionCount} />
-                  ) : null}
-                </span>
-              </button>
-            ))}
-          </nav>
-        </aside>
-
-        <main className="min-w-0 space-y-4">
+        }
+      >
           {section === "gpt" ? (
             <article className="card-bordered hidden overflow-hidden p-0 lg:block">
               <PortalBaerenwaldGpt variant="embedded" open onClose={() => switchSection("uebersicht")} />
@@ -549,37 +552,7 @@ export function PortalClient({
               {detailPanel}
             </div>
           ) : null}
-        </main>
-      </div>
-
-      <nav className="fixed inset-x-0 bottom-0 z-50 border-t border-border-default bg-surface-card/95 backdrop-blur-sm lg:hidden">
-        <div className="mx-auto flex max-w-[1200px]">
-          {MOBILE_NAV_ITEMS.map((id) => {
-            const item = MENU_ITEMS.find((m) => m.id === id)!;
-            const Icon = item.icon;
-            const active = section === id;
-            return (
-              <button
-                key={id}
-                type="button"
-                onClick={() => switchSection(id)}
-                className={cn(
-                  "relative flex flex-1 flex-col items-center gap-0.5 py-2.5 text-[10px] font-medium",
-                  active ? "text-accent" : "text-text-tertiary"
-                )}
-              >
-                <Icon className="h-5 w-5" />
-                {item.label}
-                {id === "vorgaenge" && needsActionCount > 0 ? (
-                  <span className="absolute right-[calc(50%-22px)] top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-600 px-1 text-[9px] font-bold text-white">
-                    {needsActionCount}
-                  </span>
-                ) : null}
-              </button>
-            );
-          })}
-        </div>
-      </nav>
+      </PortalShell>
 
       <PortalMobileBottomSheet
         open={section === "vorgaenge" && mobileDetailOpen && Boolean(selectedItem)}
@@ -593,6 +566,9 @@ export function PortalClient({
             onAccepted={() => router.refresh()}
             hwErledigt={hwErledigtByLeadId[selectedLeadId]}
             hvFeedback={hvFeedbackByLeadId[selectedLeadId]}
+            auftragId={auftragIdByLeadId[selectedLeadId]}
+            hvAbnahme={hvAbnahmeByLeadId[selectedLeadId] ?? null}
+            showHvAbnahme={hvPortalMode}
             onHvFeedbackSubmitted={() => router.refresh()}
           />
         ) : null}
@@ -614,6 +590,6 @@ export function PortalClient({
       <div className="mx-auto hidden max-w-[1200px] px-6 lg:block">
         <PortalLegalFooter variant="kunde" className="mt-8" />
       </div>
-    </div>
+    </>
   );
 }

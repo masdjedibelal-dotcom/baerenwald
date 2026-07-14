@@ -66,6 +66,8 @@ export type OrgNeueMeldungMailInput = {
   quelle?: "mieter" | "hausverwaltung";
   portalPath?: string;
   referenz?: string;
+  /** Status-Link zum Weitergeben an den Mieter (kein Mieter-Mail-Versand). */
+  mieterStatusLink?: string;
 };
 
 export function buildOrgNeueMeldungSubject(objektTitel: string): string {
@@ -107,7 +109,12 @@ export function buildOrgNeueMeldungHtml(input: OrgNeueMeldungMailInput): string 
     ),
     mailDataRow("Beschreibung", input.beschreibung),
     mailDataRow("Referenz", input.referenz),
+    mailDataRow("Mieter-Status-Link", input.mieterStatusLink),
   ].join("");
+
+  const mieterHinweis = input.mieterStatusLink
+    ? `<p style="font-size:14px;color:#374151;margin-top:16px"><strong>Mieter-Status:</strong> Es geht keine E-Mail an den Mieter. Bitte geben Sie den Status-Link selbst weiter (SMS, Anruf, WhatsApp):<br/><a href="${esc(input.mieterStatusLink)}">${esc(input.mieterStatusLink)}</a></p>`
+    : "";
 
   return `<!DOCTYPE html>
 <html lang="de">
@@ -116,13 +123,14 @@ export function buildOrgNeueMeldungHtml(input: OrgNeueMeldungMailInput): string 
   <p>${einleitung}</p>
   ${mailSummaryTable(rows)}
   <p style="font-size:14px;color:#374151">Bitte prüfen Sie den Vorgang im Auftraggeber-Portal und wählen Sie den nächsten Schritt (z.&nbsp;B. Angebot einfordern oder Kleinreparatur).</p>
+  ${mieterHinweis}
   ${portalButtonHtml(link)}
   <p style="color:#6b7f74;font-size:13px;margin-top:8px">Status: Neu · Bereich Meldungen</p>
 </body>
 </html>`;
 }
 
-/** M1 — Mieter: Meldung eingegangen */
+/** @deprecated Mieter-Mail-Versand deaktiviert — nur HV-Benachrichtigung. */
 export function buildMelderBestaetigungHtml(input: {
   melderName: string;
   orgName: string;
@@ -131,6 +139,7 @@ export function buildMelderBestaetigungHtml(input: {
   referenz?: string;
   statusLink?: string;
   introNote?: string;
+  footerNote?: string;
 }): string {
   const kat = meldeKategorieLabel(input.kategorie);
   const statusBlock = input.statusLink
@@ -138,7 +147,10 @@ export function buildMelderBestaetigungHtml(input: {
     : "";
   const intro =
     input.introNote?.trim() ||
-    `${esc(input.orgName)} und Bärenwald koordinieren den nächsten Schritt.`;
+    `${esc(input.orgName)} bearbeitet Ihre Meldung und meldet sich zum nächsten Schritt.`;
+  const footer =
+    input.footerNote?.trim() ||
+    `Bei Rückfragen wenden Sie sich an ${esc(input.orgName)}.`;
   return `<!DOCTYPE html>
 <html lang="de">
 <body style="font-family:system-ui,sans-serif;color:#1a2420;line-height:1.5;max-width:560px;margin:0 auto;padding:24px">
@@ -147,7 +159,8 @@ export function buildMelderBestaetigungHtml(input: {
   <p>${intro}</p>
   ${statusBlock}
   ${input.referenz ? `<p style="color:#6b7f74;font-size:14px">Referenz: ${esc(input.referenz)}</p>` : ""}
-  <p style="margin-top:24px">Herzliche Grüße<br/>${esc(SITE_CONFIG.companyName)}</p>
+  <p style="margin-top:24px;color:#6b7f74;font-size:13px">${footer}</p>
+  <p style="margin-top:16px">Herzliche Grüße<br/>${esc(input.orgName)}</p>
 </body>
 </html>`;
 }
@@ -238,6 +251,35 @@ export function buildOrgAngebotFreigabeHtml(input: {
   <p>Angebot wartet auf Freigabe</p>
   <p>Für <strong>${esc(input.objektTitel)}</strong>${input.betrag ? ` (${esc(input.betrag)})` : ""} liegt ein Angebot vor. Bitte im Portal freigeben oder ablehnen.</p>
   ${portalButtonHtml(link)}
+</body>
+</html>`;
+}
+
+/** HV: Ereignis, das früher an den Mieter ging — inkl. optional Status-Link zum Weitergeben. */
+export function buildOrgHvMieterEventHtml(input: {
+  objektTitel: string;
+  melderName?: string;
+  eventTitel: string;
+  eventBody: string;
+  mieterStatusLink?: string;
+  portalPath?: string;
+}): string {
+  const link = orgPortalDeepLink(input.portalPath);
+  const melder = input.melderName?.trim()
+    ? ` (${esc(input.melderName.trim())})`
+    : "";
+  const statusBlock = input.mieterStatusLink
+    ? `<p style="margin:16px 0;font-size:14px"><strong>Mieter-Status-Link</strong> (bitte selbst weitergeben):<br/><a href="${esc(input.mieterStatusLink)}">${esc(input.mieterStatusLink)}</a></p>`
+    : "";
+  return `<!DOCTYPE html>
+<html lang="de">
+<body style="font-family:system-ui,sans-serif;color:#1a2420;line-height:1.5;max-width:560px;margin:0 auto;padding:24px">
+  <p>Guten Tag,</p>
+  <p><strong>${esc(input.eventTitel)}</strong> — <strong>${esc(input.objektTitel)}</strong>${melder}</p>
+  <p>${esc(input.eventBody)}</p>
+  ${statusBlock}
+  ${portalButtonHtml(link)}
+  <p style="color:#6b7f74;font-size:13px;margin-top:8px">Es geht keine E-Mail an den Mieter. Bitte koordinieren Sie Rückfragen und Termine direkt.</p>
 </body>
 </html>`;
 }

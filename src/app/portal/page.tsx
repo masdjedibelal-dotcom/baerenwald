@@ -123,6 +123,8 @@ export default async function PortalDashboardPage() {
           hwErledigtByLeadId={orgData.hwErledigtByLeadId}
           feedbackBereitByLeadId={orgData.feedbackBereitByLeadId}
           hvFeedbackByLeadId={orgData.hvFeedbackByLeadId}
+          auftragIdByLeadId={orgData.auftragIdByLeadId}
+          hvAbnahmeByLeadId={orgData.hvAbnahmeByLeadId}
           auftragKontextByLeadId={orgData.auftragKontextByLeadId}
           dokumenteByLeadId={orgData.dokumenteByLeadId}
         />

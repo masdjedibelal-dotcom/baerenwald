@@ -11,6 +11,7 @@ import {
   dokumenteFromAuftrag,
   dokumenteFromUrls,
 } from "@/lib/portal/portal-dokumente";
+import { mapPortalRechnungForResolver } from "@/lib/crm-vorgang/portal-resolve";
 import {
   resolvePortalObjekt,
   type PortalObjekt,
@@ -82,6 +83,9 @@ type PortalRechnungRow = {
   status: string | null;
   rechnungsdatum: string | null;
   gesendet_at: string | null;
+  faellig_am?: string | null;
+  created_at?: string | null;
+  updated_at?: string | null;
 };
 
 type PortalTimelineRow = {
@@ -164,7 +168,7 @@ export async function getPortalDataForKunde(kundeId: string) {
   const { data: leads } = await supabaseAdmin
     .from("leads")
     .select(
-      "id, situation, bereiche, status, vorgang_phase, created_at, plz, strasse, hausnummer, zeitraum, kontakt_name, preis_min, preis_max, budget_ca, kontakt_nachricht, funnel_daten, kunde_objekt_id, anlass, kanal, auftraggeber_kunde_id, hv_meldung_status, org_freigabe_status"
+      "id, situation, bereiche, status, vorgang_phase, created_at, plz, strasse, hausnummer, zeitraum, kontakt_name, preis_min, preis_max, budget_ca, kontakt_nachricht, funnel_daten, kunde_objekt_id, anlass, kanal, auftraggeber_kunde_id, hv_meldung_status, org_freigabe_status, melde_tracking_token"
     )
     .eq("kunde_id", kunde.id)
     .order("created_at", { ascending: false });
@@ -405,7 +409,7 @@ export async function getPortalDataForKunde(kundeId: string) {
       ? await supabaseAdmin
           .from("rechnungen")
           .select(
-            "id, auftrag_id, rechnungsnummer, pdf_url, status, rechnungsdatum, gesendet_at"
+            "id, auftrag_id, rechnungsnummer, pdf_url, status, rechnungsdatum, gesendet_at, faellig_am, created_at, updated_at"
           )
           .in("auftrag_id", auftragIds)
       : { data: [] as PortalRechnungRow[] };
@@ -547,6 +551,9 @@ export async function getPortalDataForKunde(kundeId: string) {
       const leadPlz = leadId ? leadPlzByLeadId.get(leadId) : null;
 
       const bautagebuchEntries = bautagebuchByAuftrag.get(auftragId) ?? [];
+      const auftragRechnungen = (rechnungen ?? [])
+        .filter((r) => String(r.auftrag_id) === auftragId)
+        .map((r) => mapPortalRechnungForResolver(r));
       const linkedLead = leadId ? leadPortalById.get(leadId) ?? null : null;
       const betreuerId =
         typeof a.betreuer_id === "string" ? a.betreuer_id.trim() : "";
@@ -639,6 +646,7 @@ export async function getPortalDataForKunde(kundeId: string) {
           status: s.status,
           bestaetigt_am: s.bestaetigt_am,
         })),
+        rechnungen: auftragRechnungen,
       };
     });
 

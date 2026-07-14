@@ -4,6 +4,7 @@ import Image from "next/image";
 import { useEffect, useMemo, useState } from "react";
 import { AlertTriangle, Filter, Mail, Phone, X } from "lucide-react";
 
+import { OrgVorgangAbnahmeSection } from "@/components/org/OrgVorgangAbnahmeSection";
 import { OrgVorgangFeedbackSection } from "@/components/org/OrgVorgangFeedbackSection";
 import { OrganisationVorgangNotizenPanel } from "@/components/org/OrganisationObjektNotizenPanel";
 import {
@@ -85,6 +86,15 @@ type Props = {
       maengel?: Array<{ freitext?: string | null; created_at?: string }>;
     }
   >;
+  hvAbnahmeByLeadId?: Record<
+    string,
+    {
+      art: "ohne_vorbehalt" | "mit_anmerkung" | "zurueckgewiesen";
+      anmerkung?: string | null;
+      signiert_name: string;
+      signiert_am: string;
+    }
+  >;
 };
 
 type StatusFilter = "alle" | "neu" | "wartet_melder" | "in_bearbeitung";
@@ -102,6 +112,7 @@ function MeldungDetail({
   hwErledigt,
   feedbackBereit,
   hvFeedback,
+  hvAbnahme,
   vorgangUnterlagen,
 }: {
   lead: OrganisationLead;
@@ -126,6 +137,12 @@ function MeldungDetail({
     bewertung?: { sterne: number; freitext?: string | null } | null;
     maengel?: Array<{ freitext?: string | null; created_at?: string }>;
   };
+  hvAbnahme?: {
+    art: "ohne_vorbehalt" | "mit_anmerkung" | "zurueckgewiesen";
+    anmerkung?: string | null;
+    signiert_name: string;
+    signiert_am: string;
+  } | null;
   vorgangUnterlagen?: Array<{
     id: string;
     name: string;
@@ -149,13 +166,19 @@ function MeldungDetail({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ leadId: lead.id }),
       });
-      const json = (await res.json()) as { error?: string };
+      const json = (await res.json()) as { error?: string; link?: string };
       if (!res.ok) {
-        setResendMsg(json.error ?? "Fehler beim Senden.");
+        setResendMsg(json.error ?? "Fehler.");
         return;
       }
-      orgPortalToast.einladungErneutGesendet();
-      setResendMsg("Einladung erneut gesendet.");
+      if (json.link) {
+        const url = json.link.startsWith("http")
+          ? json.link
+          : `${window.location.origin}${json.link.startsWith("/") ? json.link : `/${json.link}`}`;
+        await navigator.clipboard.writeText(url);
+        orgPortalToast.linkKopiert();
+        setResendMsg("Einladungs-Link kopiert — bitte an Mieter weitergeben.");
+      }
     } finally {
       setResendBusy(false);
     }
@@ -381,9 +404,23 @@ function MeldungDetail({
         />
       ) : null}
 
+      {hwErledigt && auftragId ? (
+        <OrgVorgangAbnahmeSection
+          leadId={lead.id}
+          auftragId={auftragId}
+          existing={hvAbnahme ?? null}
+          onSubmitted={onRefresh}
+        />
+      ) : null}
+
       <OrgVorgangFeedbackSection
         leadId={lead.id}
-        feedbackBereit={feedbackBereit}
+        feedbackBereit={
+          feedbackBereit &&
+          (hvAbnahme?.art === "ohne_vorbehalt" ||
+            hvAbnahme?.art === "mit_anmerkung" ||
+            !hwErledigt)
+        }
         handwerkerErledigt={hwErledigt}
         hvFeedback={hvFeedback}
         onSubmitted={onRefresh}
@@ -443,6 +480,7 @@ export function OrganisationEingangPanel({
   feedbackBereitByLeadId = {},
   hvFeedbackByLeadId = {},
   dokumenteByLeadId = {},
+  hvAbnahmeByLeadId = {},
 }: Props) {
   const angebotByLeadId = useMemo(() => {
     const map = new Map<string, OrgFreigabeAngebot>();
@@ -599,6 +637,7 @@ export function OrganisationEingangPanel({
               hwErledigt={hwErledigtByLeadId[selected.id]}
               feedbackBereit={feedbackBereitByLeadId[selected.id]}
               hvFeedback={hvFeedbackByLeadId[selected.id]}
+              hvAbnahme={hvAbnahmeByLeadId[selected.id] ?? null}
               vorgangUnterlagen={
                 hwErledigtByLeadId[selected.id] ||
                 feedbackBereitByLeadId[selected.id]
@@ -634,6 +673,7 @@ export function OrganisationEingangPanel({
               hwErledigt={hwErledigtByLeadId[selected.id]}
               feedbackBereit={feedbackBereitByLeadId[selected.id]}
               hvFeedback={hvFeedbackByLeadId[selected.id]}
+              hvAbnahme={hvAbnahmeByLeadId[selected.id] ?? null}
               vorgangUnterlagen={
                 hwErledigtByLeadId[selected.id] ||
                 feedbackBereitByLeadId[selected.id]

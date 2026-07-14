@@ -19,7 +19,7 @@ function fmtEur(n: number): string {
   }).format(n);
 }
 
-/** S12 Eigentümer-Jahresbericht (PDF). */
+/** S12 Eigentümer-Jahresbericht (PDF). Enthält keine Mieternamen — nur Aggregat je Objekt. */
 export async function generateEigentuemerBerichtPdf(
   input: EigentuemerBerichtInput
 ): Promise<Uint8Array> {

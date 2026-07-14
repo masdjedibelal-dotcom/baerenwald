@@ -1,12 +1,9 @@
 import { NextResponse } from "next/server";
 
 import {
-  buildMelderBestaetigungHtml,
-  buildMelderBestaetigungSubject,
   buildOrgNeueMeldungHtml,
   buildOrgNeueMeldungSubject,
 } from "@/lib/email/meldung-mail-templates";
-import { AUTOMATED_CUSTOMER_EMAIL_BCC } from "@/lib/email/resend-bcc";
 import { parseMeldeBereichId, persistMeldungLead } from "@/lib/org/persist-meldung-lead";
 import { MELDE_ALLGEMEIN_SLUG } from "@/lib/org/melde-url";
 import { resolveMeldeKontext } from "@/lib/org/resolve-melde-kontext";
@@ -170,37 +167,13 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: result.error }, { status: result.status });
   }
 
-  const orgDisplay =
-    orgRow.org_anzeigename?.trim() || orgRow.name?.trim() || "Hausverwaltung";
+  const trackingToken =
+    "meldeTrackingToken" in result && result.meldeTrackingToken
+      ? String(result.meldeTrackingToken)
+      : undefined;
+  const statusLink = trackingToken ? meldeStatusUrl(trackingToken) : undefined;
 
   const resendKey = process.env.RESEND_API_KEY;
-  if (resendKey && isValidEmail(email)) {
-    const resend = new Resend(resendKey);
-    try {
-      await resend.emails.send({
-        from:
-          process.env.RESEND_FROM_CUSTOMER ??
-          "Bärenwald München <anfragen@baerenwaldmuenchen.de>",
-        to: email.toLowerCase(),
-        bcc: AUTOMATED_CUSTOMER_EMAIL_BCC,
-        subject: buildMelderBestaetigungSubject(kategorie),
-        html: buildMelderBestaetigungHtml({
-          melderName: name,
-          orgName: orgDisplay,
-          objektTitel,
-          kategorie,
-          referenz: result.id.slice(0, 8).toUpperCase(),
-          statusLink:
-            "meldeTrackingToken" in result && result.meldeTrackingToken
-              ? meldeStatusUrl(String(result.meldeTrackingToken))
-              : undefined,
-        }),
-      });
-    } catch (e) {
-      console.error("[meldung] melder mail:", e);
-    }
-  }
-
   if (resendKey) {
     const { data: orgKunde } = await supabaseAdmin
       .from("kunden")
@@ -231,6 +204,7 @@ export async function POST(req: Request) {
             quelle: "mieter",
             portalPath: `/portal?section=freigabe&id=${result.id}`,
             referenz: result.id.slice(0, 8).toUpperCase(),
+            mieterStatusLink: statusLink,
           }),
         });
       } catch (e) {
@@ -239,5 +213,10 @@ export async function POST(req: Request) {
     }
   }
 
-  return NextResponse.json({ ok: true, id: result.id });
+  return NextResponse.json({
+    ok: true,
+    id: result.id,
+    statusLink,
+    meldeTrackingToken: trackingToken,
+  });
 }
