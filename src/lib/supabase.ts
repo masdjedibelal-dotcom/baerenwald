@@ -1,33 +1,15 @@
-import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+'use client'
 
-const placeholderUrl = "https://placeholder.supabase.co";
+import { createBrowserClient } from '@supabase/ssr'
+import type { SupabaseClient } from '@supabase/supabase-js'
 
-function envUrl(): string {
-  return process.env.NEXT_PUBLIC_SUPABASE_URL?.trim() || "";
-}
+let _client: SupabaseClient | null = null
 
-function envAnon(): string {
-  return process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.trim() || "";
-}
-
-function envService(): string {
-  return process.env.SUPABASE_SERVICE_ROLE_KEY?.trim() || "";
-}
-
-/** Öffentlicher Client (z. B. Client Components) — ohne Env nur Platzhalter, keine echten Requests. */
-export const supabase: SupabaseClient = createClient(
-  envUrl() || placeholderUrl,
-  envAnon() || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.e30.invalid",
-  { auth: { persistSession: false, autoRefreshToken: false } }
-);
-
-/** Server: Schreibzugriff — in API-Routen immer zuerst {@link isSupabaseConfigured} prüfen. */
-export const supabaseAdmin: SupabaseClient = createClient(
-  envUrl() || placeholderUrl,
-  envService() || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.e30.invalid",
-  { auth: { persistSession: false, autoRefreshToken: false } }
-);
-
-export function isSupabaseConfigured(): boolean {
-  return Boolean(envUrl() && envService());
+export function createClient(): SupabaseClient {
+  if (_client) return _client
+  _client = createBrowserClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  )
+  return _client
 }
