@@ -235,7 +235,7 @@ export function EigentuemerPortalClient({
   );
 
   const cardRows = useMemo(
-    () => buildKundeVorgangCardRows(filteredItems),
+    () => buildKundeVorgangCardRows(filteredItems, { mockListe: true }),
     [filteredItems]
   );
 
@@ -473,20 +473,21 @@ export function EigentuemerPortalClient({
                 onPrimary={() => setCreateOpen(true)}
               />
             ) : (
-              <div className="portal-list-panel portal-list-rows">
+              <div className="flex flex-col gap-2.5">
                 {pageRows.map((row) => (
                   <PortalListCard
                     key={row.id}
+                    variant="card"
                     selected={false}
                     title={row.title}
                     subtitle={row.subtitle}
+                    idLabel={row.idLabel}
                     statusLabel={row.statusLabel}
                     statusPillClass={portalDetailStatusPillClass(row.statusPillKey)}
                     accent={row.accent}
                     meta={row.meta}
-                    hint={row.hint}
-                    footer={row.footer}
-                    showLeftAccent={false}
+                    showCheckbox
+                    showChevron
                     onClick={() => {
                       setSelectedId(row.id);
                       setMobileDetailOpen(true);

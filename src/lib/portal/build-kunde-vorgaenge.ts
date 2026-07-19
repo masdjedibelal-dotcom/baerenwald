@@ -1,6 +1,8 @@
 import {
   buildAnfrageCardMeta,
   buildAnfragePortalSections,
+  formatAnfrageStrasseHausnummer,
+  formatMockVorgangListSubtitle,
   type PortalAnfrageLeadSource,
 } from "@/lib/portal/portal-anfrage-display";
 import {
@@ -65,6 +67,9 @@ type PortalLead = PortalAnfrageLeadSource & {
   org_freigabe_status?: string | null;
   kontakt_name?: string | null;
   melde_tracking_token?: string | null;
+  melder_name?: string | null;
+  melder_einheit?: string | null;
+  erfassung_von?: string | null;
 };
 
 function resolveMelderStatusUrl(lead: PortalLead): string | undefined {
@@ -248,6 +253,17 @@ function buildItemFromLead(
     positionen: auftrag?.positionen,
   });
   const mieterFeedback = mieterFeedbackByLeadId?.get(leadId) ?? null;
+  const hvListMeta = Boolean(
+    lead.melder_name || lead.melder_einheit || lead.hv_meldung_status
+  );
+  const cardSubtitle = hvListMeta
+    ? formatMockVorgangListSubtitle(lead)
+    : [
+        formatAnfrageStrasseHausnummer(lead),
+        anfrageGewerk,
+      ]
+        .filter(Boolean)
+        .join(" · ") || formatMockVorgangListSubtitle(lead);
 
   if (auftrag) {
     const leadSource: PortalAnfrageLeadSource = {
@@ -266,6 +282,7 @@ function buildItemFromLead(
       date: auftrag.start_datum || auftrag.created_at || lead.created_at || undefined,
       auftragEndDatum: auftrag.end_datum ?? undefined,
       title: auftrag.titel || title,
+      cardSubtitle: formatMockVorgangListSubtitle(leadSource) ?? cardSubtitle,
       cardMeta: buildAuftragCardMeta(
         auftrag.objekt ?? lead.objekt,
         leadSource,
@@ -317,6 +334,7 @@ function buildItemFromLead(
       title:
         sanitizeCustomerText(angebot.titel, 200) ||
         (angebot.angebotsnr ? `Angebot ${angebot.angebotsnr}` : title),
+      cardSubtitle: formatMockVorgangListSubtitle(leadSource) ?? cardSubtitle,
       cardMeta: buildAngebotCardMeta(leadSource, angebot.created_at),
       isAngebotDetail: true,
       angebotPositionen: hvMieterView ? undefined : angebot.positionenDisplay,
@@ -356,6 +374,7 @@ function buildItemFromLead(
     anfrageVorhaben,
     plz,
     ort,
+    cardSubtitle,
     cardMeta: buildAnfrageCardMeta(lead),
     status: vorgangStatus.label,
     statusPillKey: vorgangStatus.pillKey,

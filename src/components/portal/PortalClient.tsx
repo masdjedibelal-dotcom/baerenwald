@@ -332,7 +332,7 @@ export function PortalClient({
   const cardRows = useMemo(
     () =>
       buildKundeVorgangCardRows(filteredVorgaenge, {
-        mockListe: isPrivatLike && !hvPortalMode,
+        mockListe: hvPortalMode || (isPrivatLike && !hvPortalMode),
       }),
     [filteredVorgaenge, isPrivatLike, hvPortalMode]
   );
@@ -433,7 +433,7 @@ export function PortalClient({
 
   function renderListCard(row: PortalCardRow) {
     const flow = flowByItemId.get(row.id);
-    const mockListe = isPrivatLike && !hvPortalMode;
+    const mockListe = hvPortalMode || (isPrivatLike && !hvPortalMode);
     const statusLabel =
       mockListe && flow ? PORTAL_STATUS[flow].label : row.statusLabel;
     const statusPillStyle =
@@ -442,6 +442,7 @@ export function PortalClient({
     return (
       <PortalListCard
         key={row.id}
+        variant={mockListe ? "card" : "row"}
         selected={false}
         onClick={() => openVorgang(row)}
         title={row.title}
@@ -452,10 +453,11 @@ export function PortalClient({
         statusPillStyle={statusPillStyle}
         accent={row.accent}
         meta={row.meta}
-        hint={row.hint}
-        footer={row.footer}
-        showLeftAccent={!hvPortalMode && !mockListe}
+        hint={mockListe ? undefined : row.hint}
+        footer={mockListe ? undefined : row.footer}
+        showLeftAccent={false}
         showChevron={mockListe}
+        showCheckbox={mockListe && hvPortalMode}
       />
     );
   }
@@ -500,17 +502,23 @@ export function PortalClient({
           counts={filterCounts}
         />
       ) : null}
-      <div className="portal-list-panel portal-list-rows">
+      <div
+        className={cn(
+          hvPortalMode || (isPrivatLike && !hvPortalMode)
+            ? "flex flex-col gap-2.5"
+            : "portal-list-panel portal-list-rows"
+        )}
+      >
         {paginatedRows.length === 0 ? (
           vorgaengeItems.length === 0 ? (
-            <div className="p-4">
+            <div className="rounded-[12px] border border-border-default bg-white p-4">
               <PortalEmptyState
                 role={hvPortalMode ? "hv" : "kunde"}
                 compact
               />
             </div>
           ) : (
-            <p className="portal-text-body px-4 py-8 text-center text-text-secondary">
+            <p className="portal-text-body rounded-[12px] border border-border-default bg-white px-4 py-8 text-center text-text-secondary">
               {isPrivatLike
                 ? "Keine Vorgänge in diesem Filter."
                 : vorgangFilter === "aktiv"

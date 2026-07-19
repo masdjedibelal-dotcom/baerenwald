@@ -36,7 +36,48 @@ export type PortalAnfrageLeadSource = {
   funnel_daten?: unknown;
   hv_meldung_status?: string | null;
   objekt?: PortalObjekt | null;
+  /** HV-Meldung: Name des Melders */
+  melder_name?: string | null;
+  /** HV-Meldung: Einheit / WE */
+  melder_einheit?: string | null;
+  anlass?: string | null;
+  erfassung_von?: string | null;
 };
+
+/**
+ * Mock-Vorgangsliste: „Lindenstr. 24 · WE 1 · H. Berger (Eigentümer)“
+ */
+export function formatMockVorgangListSubtitle(
+  lead: PortalAnfrageLeadSource
+): string | undefined {
+  const adresse = formatAnfrageStrasseHausnummer(lead);
+  const weRaw = lead.melder_einheit?.trim();
+  const we = weRaw
+    ? /^(WE|Whg\.?|Einheit)\b/i.test(weRaw)
+      ? weRaw
+      : `WE ${weRaw}`
+    : undefined;
+  const name = lead.melder_name?.trim() || lead.kontakt_name?.trim();
+  let person: string | undefined;
+  if (name) {
+    const rawRole =
+      lead.anlass?.trim() ||
+      lead.erfassung_von?.trim() ||
+      (typeof asRecord(lead.funnel_daten).rolle === "string"
+        ? String(asRecord(lead.funnel_daten).rolle)
+        : "");
+    const role = /mieter/i.test(rawRole)
+      ? "Mieter"
+      : /eigent/i.test(rawRole)
+        ? "Eigentümer"
+        : lead.melder_name || lead.hv_meldung_status
+          ? "Eigentümer"
+          : undefined;
+    person = role && !/\(/.test(name) ? `${name} (${role})` : name;
+  }
+  const parts = [adresse, we, person].filter(Boolean);
+  return parts.length ? parts.join(" · ") : undefined;
+}
 
 function asRecord(v: unknown): Record<string, unknown> {
   if (v && typeof v === "object" && !Array.isArray(v)) {

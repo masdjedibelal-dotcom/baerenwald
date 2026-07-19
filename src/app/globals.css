@@ -1451,7 +1451,7 @@ h3 {
   .portal-shell-main {
     flex: 1;
     min-width: 0;
-    background: #fff;
+    background: #f6f7f6;
   }
 
   .portal-shell-brand {

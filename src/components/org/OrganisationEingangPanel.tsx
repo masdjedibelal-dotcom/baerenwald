@@ -32,6 +32,7 @@ import {
   meldeFotosFromLead,
   meldeKategorieFromLead,
 } from "@/lib/org/org-eingang-utils";
+import { formatMockVorgangIdLabel } from "@/lib/portal/portal-list-mappers";
 import type {
   OrganisationKunde,
   OrganisationLead,
@@ -635,9 +636,9 @@ export function OrganisationEingangPanel({
         </>
       ) : null}
 
-      <div className="portal-list-panel portal-list-rows">
+      <div className="flex flex-col gap-2.5">
         {filtered.length === 0 ? (
-          <p className="portal-text-body px-4 py-8 text-center text-text-secondary">
+          <p className="portal-text-body rounded-[12px] border border-border-default bg-white px-4 py-8 text-center text-text-secondary">
             Keine Meldungen für die gewählten Filter.
           </p>
         ) : (
@@ -646,13 +647,37 @@ export function OrganisationEingangPanel({
               meldeKategorieFromLead(lead) ?? undefined
             );
             const notfall = isMeldeNotfall(lead);
+            const adresse = [
+              lead.strasse,
+              lead.hausnummer,
+            ]
+              .filter(Boolean)
+              .join(" ");
+            const we = lead.melder_einheit?.trim()
+              ? /^(WE|Whg)/i.test(lead.melder_einheit.trim())
+                ? lead.melder_einheit.trim()
+                : `WE ${lead.melder_einheit.trim()}`
+              : undefined;
+            const person = lead.melder_name?.trim()
+              ? `${lead.melder_name.trim()} (Eigentümer)`
+              : undefined;
+            const subtitle = [
+              adresse || lead.objekt?.titel || "Objekt",
+              we,
+              person,
+            ]
+              .filter(Boolean)
+              .join(" · ");
+            const idLabel = formatMockVorgangIdLabel(lead.id);
             return (
-              <div key={lead.id}>
+              <div key={lead.id} className="space-y-2">
                 <PortalListCard
+                  variant="card"
                   selected={false}
                   onClick={() => openDetail(lead.id)}
                   title={kat}
-                  subtitle={lead.objekt?.titel ?? "Objekt"}
+                  subtitle={subtitle}
+                  idLabel={idLabel}
                   statusLabel={plattformStatusLabel(
                     resolvePlattformStatus(lead, auftragKontextByLeadId[lead.id])
                   )}
@@ -660,19 +685,16 @@ export function OrganisationEingangPanel({
                     resolvePlattformStatus(lead, auftragKontextByLeadId[lead.id])
                   )}
                   accent="anfrage"
-                  meta={[
-                    {
-                      text: lead.melder_name
-                        ? `Melder: ${lead.melder_name}`
-                        : "Melder",
-                    },
-                    ...(notfall
+                  meta={
+                    notfall
                       ? [{ icon: AlertTriangle, text: "Notfall" }]
-                      : []),
-                  ]}
+                      : []
+                  }
+                  showCheckbox
+                  showChevron
                 />
                 {listActions ? (
-                  <div className="px-4 pb-3">
+                  <div className="px-1">
                     <HvMeldungListActions
                       lead={lead}
                       kunde={kunde}

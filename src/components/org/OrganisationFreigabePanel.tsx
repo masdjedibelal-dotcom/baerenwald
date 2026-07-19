@@ -8,6 +8,7 @@ import { OrganisationEingangPanel } from "@/components/org/OrganisationEingangPa
 import { OrgFreigabeBanner } from "@/components/org/OrgFreigabeBanner";
 import { PortalListCard } from "@/components/shared/PortalListCard";
 import { buildKundeVorgaenge } from "@/lib/portal/build-kunde-vorgaenge";
+import { formatMockVorgangIdLabel } from "@/lib/portal/portal-list-mappers";
 import { PortalVorgangDetail } from "@/components/portal/PortalVorgangDetail";
 import {
   plattformStatusLabel,
@@ -334,31 +335,46 @@ export function OrganisationFreigabePanel({
             {HV_SECTION_EMPTY}
           </p>
         ) : (
-          <ul
-            className="overflow-hidden rounded-xl border bg-white"
-            style={{ borderColor: PORTAL_C.line }}
-          >
-            {angebotFreigaben.map((a) => (
-              <li
-                key={a.id}
-                className="border-b last:border-b-0"
-                style={{ borderColor: PORTAL_C.line2 }}
-              >
-                <div className="space-y-2 p-4">
+          <div className="flex flex-col gap-2.5">
+            {angebotFreigaben.map((a) => {
+              const lead = leads.find((l) => l.id === a.leadId);
+              const adresse = [
+                lead?.strasse,
+                lead?.hausnummer,
+              ]
+                .filter(Boolean)
+                .join(" ");
+              const we = lead?.melder_einheit?.trim()
+                ? /^(WE|Whg)/i.test(lead.melder_einheit.trim())
+                  ? lead.melder_einheit.trim()
+                  : `WE ${lead.melder_einheit.trim()}`
+                : undefined;
+              const person = lead?.melder_name?.trim()
+                ? `${lead.melder_name.trim()} (Eigentümer)`
+                : undefined;
+              const subtitle = [
+                adresse || a.objektTitel || "Objekt",
+                we,
+                person,
+              ]
+                .filter(Boolean)
+                .join(" · ");
+              const idLabel = formatMockVorgangIdLabel(a.leadId);
+              return (
+                <div key={a.id} className="space-y-2">
                   <PortalListCard
+                    variant="card"
                     accent="angebot"
-                    showLeftAccent={false}
+                    showCheckbox
+                    showChevron
+                    idLabel={idLabel}
                     title={a.titel}
-                    subtitle={a.objektTitel ?? "Objekt"}
+                    subtitle={subtitle}
                     statusLabel={plattformStatusLabel(
-                      resolvePlattformStatus(
-                        leads.find((l) => l.id === a.leadId) ?? {}
-                      )
+                      resolvePlattformStatus(lead ?? {})
                     )}
                     statusPillClass={plattformStatusPillClass(
-                      resolvePlattformStatus(
-                        leads.find((l) => l.id === a.leadId) ?? {}
-                      )
+                      resolvePlattformStatus(lead ?? {})
                     )}
                     meta={[]}
                     onClick={() => {
@@ -369,11 +385,16 @@ export function OrganisationFreigabePanel({
                       );
                     }}
                   />
-                  <HvAngebotListActions leadId={a.leadId} onUpdated={onRefresh} />
+                  <div className="px-1">
+                    <HvAngebotListActions
+                      leadId={a.leadId}
+                      onUpdated={onRefresh}
+                    />
+                  </div>
                 </div>
-              </li>
-            ))}
-          </ul>
+              );
+            })}
+          </div>
         )}
       </section>
     </div>
