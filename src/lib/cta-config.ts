@@ -1,11 +1,11 @@
 /** Zentrale CTA-Texte — für konsistente Labels importieren, nicht duplizieren. */
 export const CTA = {
-  hero: "Was kostet mein Projekt?",
+  hero: "Preis berechnen",
   heroSub: "Unverbindlich — Anfahrt wird bei Auftrag angerechnet",
-  nav: "Angebot anfordern",
+  nav: "Preis berechnen",
   section: "Preis herausfinden →",
   result: "Angebot anfordern",
-  final: "Jetzt loslegen — unverbindlich",
+  final: "Preis berechnen",
   call: "Jetzt anrufen",
   termin: "Termin vereinbaren",
   ratgeber: "Preisrechner nutzen →",

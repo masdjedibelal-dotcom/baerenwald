@@ -26,8 +26,10 @@ import { WarumBaerenwaldScrollSection } from "@/components/landing/WarumBaerenwa
 import { MarketingFooter } from "@/components/layout/MarketingFooter";
 import { WaveUnderline } from "@/components/ui/WaveUnderline";
 import { SITE_CONFIG } from "@/lib/config";
+import { CTA } from "@/lib/cta-config";
 import { HOME_FAQ_ITEMS } from "@/lib/home-content";
 import { capturePostHogEvent } from "@/lib/consent/posthog-client";
+import { RECHNER_HREF } from "@/lib/rechner-links";
 
 const TESTIMONIALS = [
   {
@@ -392,8 +394,14 @@ export default function BaerenwaldLandingClient({
           <a href="#faq">FAQ</a>
           <a href="#kontakt">Kontakt</a>
         </nav>
-        <Link href="/kontakt" className="nav-cta">
-          Kontakt aufnehmen
+        <Link
+          href={RECHNER_HREF}
+          className="nav-cta"
+          onClick={() =>
+            capturePostHogEvent("cta_rechner_clicked", { location: "nav" })
+          }
+        >
+          {CTA.nav}
         </Link>
         <button
           type="button"
@@ -451,8 +459,17 @@ export default function BaerenwaldLandingClient({
               Ratgeber
             </Link>
           </nav>
-          <Link href="/kontakt" className="site-mobile-cta" onClick={closeMobile}>
-            Kontakt aufnehmen →
+          <Link
+            href={RECHNER_HREF}
+            className="site-mobile-cta"
+            onClick={() => {
+              closeMobile();
+              capturePostHogEvent("cta_rechner_clicked", {
+                location: "nav_mobile",
+              });
+            }}
+          >
+            {CTA.nav} →
           </Link>
         </div>
       ) : null}
@@ -486,6 +503,29 @@ export default function BaerenwaldLandingClient({
                 Bärenwald bleibt von Anfang bis Ende dabei — Koordination,
                 Handwerk und Umsetzung.
               </p>
+              <div className="hero-cta-row au d5" style={{ marginTop: 28 }}>
+                <Link
+                  href={RECHNER_HREF}
+                  className="btn-hero-cta"
+                  onClick={() =>
+                    capturePostHogEvent("cta_rechner_clicked", {
+                      location: "hero",
+                    })
+                  }
+                >
+                  {CTA.hero}
+                </Link>
+                <p
+                  className="hero-cta-sub"
+                  style={{
+                    marginTop: 10,
+                    fontSize: 13,
+                    color: "var(--fl-muted, #6b7f74)",
+                  }}
+                >
+                  {CTA.heroSub}
+                </p>
+              </div>
             </div>
 
             <div className="hero-visual fade-up d2">
@@ -562,10 +602,15 @@ export default function BaerenwaldLandingClient({
           </p>
           <div className="final-cta-btns">
             <Link
-              href="/kontakt"
+              href={RECHNER_HREF}
               className="final-cta-btn-primary btn-primary"
+              onClick={() =>
+                capturePostHogEvent("cta_rechner_clicked", {
+                  location: "final_cta",
+                })
+              }
             >
-              Kontakt aufnehmen
+              {CTA.final}
             </Link>
             <a
               href={SITE_CONFIG.phoneHref}
