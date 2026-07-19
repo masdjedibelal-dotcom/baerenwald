@@ -183,6 +183,7 @@ export function OrganisationVorgaengeSection({
 
   function changeFilter(next: OrgVorgangFilter) {
     setFilter(next);
+    // Filterwechsel schließt Detail (Parent entfernt id aus der URL).
     onFilterChange?.(next);
   }
 

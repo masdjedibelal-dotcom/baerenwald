@@ -587,10 +587,10 @@ export function OrganisationHvVorgangDetail({
           <button
             type="button"
             onClick={onBack}
-            className="absolute left-3.5 top-3 rounded-full px-2.5 py-1 text-[12.5px] font-semibold text-white"
-            style={{ background: "rgba(0,0,0,.42)" }}
+            className="absolute left-3.5 top-3 z-10 inline-flex items-center gap-1 rounded-full px-3 py-1.5 text-[13px] font-semibold text-white shadow-md"
+            style={{ background: "rgba(0,0,0,.55)" }}
           >
-            ‹ Zurück
+            ← Zurück zur Liste
           </button>
         ) : null}
       </div>

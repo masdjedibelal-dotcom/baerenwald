@@ -500,7 +500,7 @@ export function OrganisationEingangPanel({
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("alle");
   const [onlyNotfall, setOnlyNotfall] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(
-    initialSelectedId ?? eingang[0]?.id ?? null
+    initialSelectedId ?? null
   );
   const [_mobileDetailOpen, setMobileDetailOpen] = useState(false);
 

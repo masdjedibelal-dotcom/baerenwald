@@ -344,11 +344,11 @@ export function PortalClient({
     safeListPage * PORTAL_LIST_PAGE_SIZE
   );
 
-  const selectedItem =
-    vorgaengeItems.find((i) => i.id === selectedId) ??
-    filteredVorgaenge.find((i) => i.id === selectedId) ??
-    filteredVorgaenge[0] ??
-    null;
+  const selectedItem = selectedId
+    ? vorgaengeItems.find((i) => i.id === selectedId) ??
+      filteredVorgaenge.find((i) => i.id === selectedId) ??
+      null
+    : null;
 
   useEffect(() => {
     if (embedded || isOnboardingCompleted("portal")) return;
@@ -386,6 +386,9 @@ export function PortalClient({
         setSelectedId(itemId);
         setMobileDetailOpen(true);
       }
+    } else if (normalized === "vorgaenge") {
+      setSelectedId(null);
+      setMobileDetailOpen(false);
     }
   }, [searchParams, vorgaengeItems, embedded]);
 
@@ -417,6 +420,7 @@ export function PortalClient({
   }
 
   function closeDetail() {
+    ignoreUrlDetailRef.current = true;
     setSelectedId(null);
     setMobileDetailOpen(false);
     if (embedded && hvPortalMode) {
