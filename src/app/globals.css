@@ -82,7 +82,7 @@
  * Keine Rundung der Hex-/RGBA-Werte.
  */
 .portal-ui {
-  --p2-bg: #e6e8e6;
+  --p2-bg: #ffffff;
   --p2-panel: #ffffff;
   --p2-line: rgba(0, 0, 0, 0.08);
   --p2-line2: rgba(0, 0, 0, 0.05);
@@ -1394,37 +1394,38 @@ h3 {
     justify-content: center;
   }
 
-  /* PortalShell — Mock desktopFrame: eine Fläche Sidebar + Content */
+  /* PortalShell — Fullscreen (kein Mock-desktopFrame / Floating Card) */
   .portal-shell-header {
     @apply border-b border-border-default bg-surface-card/95 backdrop-blur-sm;
   }
 
   .portal-shell-body {
-    max-width: 1180px;
-    margin-inline: auto;
+    width: 100%;
+    max-width: none;
+    margin-inline: 0;
   }
 
   .portal-shell-frame {
     display: flex;
     align-items: stretch;
     min-width: 0;
-    background: transparent;
+    width: 100%;
+    background: #fff;
+    min-height: calc(100vh - 56px);
   }
 
   @media (min-width: 1024px) {
     .portal-shell-body {
-      padding: 20px 24px 28px;
+      padding: 0;
     }
 
     .portal-shell-frame {
       overflow: hidden;
-      min-height: calc(100vh - 88px);
-      border-radius: 16px;
-      border: 0.5px solid var(--p2-line, rgba(0, 0, 0, 0.08));
-      background: var(--p2-panel, #fff);
-      box-shadow:
-        0 16px 40px -12px rgba(0, 0, 0, 0.18),
-        0 4px 10px -4px rgba(0, 0, 0, 0.07);
+      min-height: calc(100vh - 64px);
+      border-radius: 0;
+      border: none;
+      box-shadow: none;
+      background: #fff;
     }
   }
 
@@ -1450,7 +1451,7 @@ h3 {
   .portal-shell-main {
     flex: 1;
     min-width: 0;
-    background: #f6f7f6;
+    background: #fff;
   }
 
   .portal-shell-brand {

@@ -34,7 +34,10 @@ import {
   type PortalCardRow,
 } from "@/lib/portal/portal-list-mappers";
 import { portalCreateLabel } from "@/lib/portal2/create";
-import { inferFlowFromKundeItem } from "@/lib/portal2/hv-detail-adapters";
+import {
+  countLeadsByPortalFlow,
+  resolveLeadPortalFlowStatus,
+} from "@/lib/portal2/hv-dashboard";
 import {
   buildPrivatDashboardKpis,
   PRIVAT_LISTE_CHIPS,
@@ -49,10 +52,8 @@ import {
   resolvePortalKundeTyp,
   type PortalKundeTyp,
 } from "@/lib/portal2/kunde-typ";
-import {
-  countLeadsByPortalFlow,
-} from "@/lib/portal2/hv-dashboard";
 import { buildPortalShellNav } from "@/lib/portal2/nav-items";
+import type { PortalMockStatusId } from "@/lib/portal2/status";
 import { cn } from "@/lib/utils";
 import { portalDetailStatusPillClass } from "@/lib/shared/portal-detail-format";
 
@@ -188,7 +189,8 @@ export function PortalClient({
       typ: kunde.typ,
     });
   const isPrivatLike = kundeTyp === "privat" || kundeTyp === "gewerbe";
-  const useKundeDetail = hvPortalMode || isPrivatLike;
+  /** HV-Mock-Detail nur für echtes HV-Portal — Privat/Gewerbe: CRM-Detail. */
+  const useHvMockDetail = hvPortalMode;
 
   const initialSection = normalizeSectionFromUrl(
     activeSection === "auftraege" ? "vorgaenge" : activeSection ?? searchParams.get("section") ?? undefined
@@ -247,27 +249,42 @@ export function PortalClient({
   );
 
   const flowByItemId = useMemo(() => {
-    const map = new Map<string, ReturnType<typeof inferFlowFromKundeItem>>();
+    const angebotByLead = new Map<string, PortalAngebot>();
+    for (const a of angebote as PortalAngebot[]) {
+      const lid = (a as { lead_id?: string | null }).lead_id?.trim();
+      if (lid && !angebotByLead.has(lid)) angebotByLead.set(lid, a);
+    }
+    const auftragByLead = new Map<string, PortalAuftrag>();
+    for (const a of auftraege as PortalAuftrag[]) {
+      const lid = (a as { lead_id?: string | null }).lead_id?.trim();
+      if (lid && !auftragByLead.has(lid)) auftragByLead.set(lid, a);
+    }
+
+    const map = new Map<string, PortalMockStatusId>();
     for (const item of vorgaengeItems) {
       const leadId = item.leadId ?? item.id;
-      const lead = (leads as Array<{
-        id: string;
-        org_freigabe_status?: string | null;
-        hv_meldung_status?: string | null;
-      }>).find((l) => l.id === leadId);
+      const lead = (leads as PortalLead[]).find((l) => l.id === leadId);
+      if (!lead) {
+        map.set(item.id, "gemeldet");
+        continue;
+      }
       map.set(
         item.id,
-        inferFlowFromKundeItem(item, {
-          orgFreigabeStatus: lead?.org_freigabe_status,
-          hvMeldungStatus: lead?.hv_meldung_status,
-          hasRechnung: Boolean(
-            item.dokumente?.some((d) => /rechnung/i.test(d.name ?? ""))
-          ),
+        resolveLeadPortalFlowStatus({
+          lead: lead as Parameters<typeof resolveLeadPortalFlowStatus>[0]["lead"],
+          angebot: (angebotByLead.get(leadId) ??
+            null) as Parameters<
+            typeof resolveLeadPortalFlowStatus
+          >[0]["angebot"],
+          auftrag: (auftragByLead.get(leadId) ??
+            null) as Parameters<
+            typeof resolveLeadPortalFlowStatus
+          >[0]["auftrag"],
         })
       );
     }
     return map;
-  }, [vorgaengeItems, leads]);
+  }, [vorgaengeItems, leads, angebote, auftraege]);
 
   const filteredVorgaenge = useMemo(() => {
     if (isPrivatLike && !hvPortalMode) {
@@ -508,7 +525,7 @@ export function PortalClient({
         hvFeedback={hvFeedbackByLeadId[selectedLeadId]}
         auftragId={auftragIdByLeadId[selectedLeadId]}
         hvAbnahme={hvAbnahmeByLeadId[selectedLeadId] ?? null}
-        showHvAbnahme={useKundeDetail}
+        showHvAbnahme={useHvMockDetail}
         privatkunde={isPrivatLike}
         orgFreigabeStatus={
           (leads as Array<{ id: string; org_freigabe_status?: string | null }>).find(
