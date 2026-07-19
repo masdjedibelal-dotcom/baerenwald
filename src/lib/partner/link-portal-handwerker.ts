@@ -1,4 +1,8 @@
 import { findHandwerkerForRegistration } from "@/lib/partner/partner-registration-eligibility";
+import {
+  HANDWERKER_PORTAL_GESPERRT_MESSAGE,
+  isHandwerkerPortalGesperrt,
+} from "@/lib/partner/handwerker-portal-gesperrt";
 import { PARTNER_AUTH_COPY } from "@/lib/partner/partner-auth-copy";
 import { supabaseAdmin } from "@/lib/supabase";
 
@@ -19,13 +23,33 @@ export async function linkPortalHandwerkerToAuthUser(opts: {
     return { ok: false, error: PARTNER_AUTH_COPY.errors.keineEmailImKonto };
   }
 
+  try {
+    const gesperrt = await isHandwerkerPortalGesperrt({ email });
+    if (gesperrt) {
+      return {
+        ok: false,
+        error: HANDWERKER_PORTAL_GESPERRT_MESSAGE,
+        signOut: true,
+      };
+    }
+  } catch (e) {
+    console.error("[linkPortalHandwerker] Portal-Sperre-Check fehlgeschlagen:", e);
+  }
+
   const { data: byAuth } = await supabaseAdmin
     .from("handwerker")
-    .select("id")
+    .select("id, ist_portal_gesperrt")
     .eq("auth_user_id", opts.userId)
     .maybeSingle();
 
   if (byAuth?.id) {
+    if ((byAuth as { ist_portal_gesperrt?: boolean | null }).ist_portal_gesperrt) {
+      return {
+        ok: false,
+        error: HANDWERKER_PORTAL_GESPERRT_MESSAGE,
+        signOut: true,
+      };
+    }
     return { ok: true, handwerkerId: String(byAuth.id) };
   }
 
@@ -35,6 +59,14 @@ export async function linkPortalHandwerkerToAuthUser(opts: {
     return {
       ok: false,
       error: PARTNER_AUTH_COPY.errors.betriebNichtAngelegt,
+    };
+  }
+
+  if ((byEmail as { ist_portal_gesperrt?: boolean | null }).ist_portal_gesperrt) {
+    return {
+      ok: false,
+      error: HANDWERKER_PORTAL_GESPERRT_MESSAGE,
+      signOut: true,
     };
   }
 

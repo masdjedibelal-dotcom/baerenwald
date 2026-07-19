@@ -4,6 +4,10 @@ import {
   isKundenRowUniqueViolation,
   normalizeKundenEmail,
 } from "@/lib/kunden/kunde-email";
+import {
+  isKundeAlsSpamGesperrt,
+  KUNDE_GESPERRT_MESSAGE,
+} from "@/lib/kunden/kunde-spam";
 import { mapKundenPortalError } from "@/lib/kunden/kunde-portal-errors";
 import { supabaseAdmin } from "@/lib/supabase";
 
@@ -119,6 +123,15 @@ export async function linkPortalKundeToAuthUser(opts: {
   const email = normalizeKundenEmail(opts.email);
   if (!email) {
     return { ok: false, error: "Keine E-Mail-Adresse im Konto." };
+  }
+
+  try {
+    const spam = await isKundeAlsSpamGesperrt({ email });
+    if (spam) {
+      return { ok: false, error: KUNDE_GESPERRT_MESSAGE, signOut: true };
+    }
+  } catch (e) {
+    console.error("[linkPortalKunde] Spam-Check fehlgeschlagen:", e);
   }
 
   const { data: mitglied } = await supabaseAdmin

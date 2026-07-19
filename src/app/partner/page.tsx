@@ -73,6 +73,31 @@ export default async function PartnerDashboardPage({
     if (link.signOut) {
       clearAdminViewCookie();
       await supabase.auth.signOut();
+      const isGesperrt =
+        link.error.includes("gesperrt") ||
+        link.error === PARTNER_AUTH_COPY.errors.portalGesperrt;
+      if (isGesperrt) {
+        return (
+          <PartnerAuthShell title={PARTNER_AUTH_COPY.portalGesperrt.title}>
+            <div className="space-y-4">
+              <p className="portal-text-body text-text-secondary">
+                {PARTNER_AUTH_COPY.portalGesperrt.body}
+              </p>
+              <a
+                href={`mailto:${SITE_CONFIG.email}`}
+                className="btn-pill-primary text-center !py-2.5 block"
+              >
+                Bärenwald kontaktieren
+              </a>
+              <form action="/partner/auth/signout" method="post">
+                <button type="submit" className="btn-pill-outline w-full !py-2.5">
+                  Abmelden
+                </button>
+              </form>
+            </div>
+          </PartnerAuthShell>
+        );
+      }
       redirect(partnerLoginRedirect(searchParams, "session_mismatch"));
     }
     return (

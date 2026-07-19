@@ -17,7 +17,9 @@ import { BwBeratungLead, BW_BAUM_NOTFALL_TEL_HREF } from "@/components/funnel/Bw
 import { BwResultScreen } from "@/components/funnel/BwResultScreen";
 import { FachdetailsStep } from "@/components/funnel/FachdetailsStep";
 import { FunnelErrorBoundary } from "@/components/funnel/FunnelErrorBoundary";
+import { FunnelPortalAuthGate } from "@/components/funnel/FunnelPortalAuthGate";
 import { HWLeadForm } from "@/components/funnel/HWLeadForm";
+import type { PortalContactPrefill } from "@/lib/portal/portal-contact-prefill";
 import {
   buildBwLeadPayload,
   buildFullLeadNotizen,
@@ -306,6 +308,8 @@ function FunnelRechnerInner() {
   const [gefahrenabwehrBeratung, setGefahrenabwehrBeratung] = useState(false);
   const [leadSubmitting, setLeadSubmitting] = useState(false);
   const [leadSubmitError, setLeadSubmitError] = useState<string | null>(null);
+  /** Website-Funnel: MeinBärenwald Login/Registrierung vor Preis. */
+  const [portalAuthReady, setPortalAuthReady] = useState(false);
   /** Kurzzeit-Hinweis nach Suche ohne Allowlist-Treffer (`?nf=1`). */
   const [searchNotFoundBanner, setSearchNotFoundBanner] = useState(false);
   /** Nach erstem „Preis berechnen“: auf „ort“ wieder „Weiter →“ (Footer rendert zuverlässig). */
@@ -339,6 +343,20 @@ function FunnelRechnerInner() {
     setKiHandoff,
     reset,
   } = useFunnelState();
+
+  const applyPortalContactPrefill = useCallback(
+    (prefill: PortalContactPrefill) => {
+      if (prefill.vorname) updateLeadField("vorname", prefill.vorname);
+      if (prefill.nachname) updateLeadField("nachname", prefill.nachname);
+      if (prefill.email) updateLeadField("email", prefill.email);
+      if (prefill.telefon) updateLeadField("telefon", prefill.telefon);
+      if (prefill.strasse) updateLeadField("strasse", prefill.strasse);
+      if (prefill.hausnummer) updateLeadField("hausnummer", prefill.hausnummer);
+      if (prefill.ort) updateLeadField("ort", prefill.ort);
+      if (prefill.plz) setPlz(prefill.plz);
+    },
+    [updateLeadField, setPlz]
+  );
 
   const onFachdetailsPatch = useCallback(
     (patch: Partial<FachdetailsState>) => {
@@ -1045,6 +1063,7 @@ function FunnelRechnerInner() {
     setGefahrenabwehrBeratung(false);
     setLeadSubmitting(false);
     setLeadSubmitError(null);
+    setPortalAuthReady(false);
     funnelFromWahlRef.current = false;
     kiDirectEntryRef.current = false;
     resetKiFlowState();
@@ -1600,6 +1619,7 @@ function FunnelRechnerInner() {
           !bwLeadFormOk(state)
         );
       case "lead":
+        if (!portalAuthReady) return true;
         return !bwLeadFormOk(state) || leadSubmitting;
       case "beratung-lead":
         if (baumNotfallBeratung || gefahrenabwehrBeratung) return false;
@@ -1625,6 +1645,7 @@ function FunnelRechnerInner() {
     wahlAuswahl,
     kiPreisBereit,
     kiBeratungBereit,
+    portalAuthReady,
   ]);
 
   const nextLabel = useMemo(() => {
@@ -1639,7 +1660,9 @@ function FunnelRechnerInner() {
     if (screen === "ort") {
       return "Weiter →";
     }
-    if (screen === "lead") return "Preis anzeigen →";
+    if (screen === "lead") {
+      return portalAuthReady ? "Preis anzeigen →" : "Konto erforderlich";
+    }
     if (screen === "result" && leadSubmitting) return "Wird gesendet…";
     if (screen === "beratung-lead") {
       if (baumNotfallBeratung || gefahrenabwehrBeratung) return "Jetzt anrufen →";
@@ -1668,11 +1691,12 @@ function FunnelRechnerInner() {
     leadSubmitting,
     einstiegModus,
     kiBeratungBereit,
+    portalAuthReady,
   ]);
 
   /** Erklärt, warum „Absenden“ ausgegraut ist (Footer nutzt dieselbe Logik wie nextDisabled). */
   const leadFormBlockHint = useMemo(() => {
-    if (screen !== "lead" || leadSubmitting) return null;
+    if (screen !== "lead" || leadSubmitting || !portalAuthReady) return null;
     if (!state.vorname.trim() || !state.nachname.trim()) {
       return "Bitte Vor- und Nachname eintragen — sonst bleibt „Preis anzeigen →“ ausgegraut.";
     }
@@ -1693,6 +1717,7 @@ function FunnelRechnerInner() {
     state.hausnummer,
     state.plz,
     state.ort,
+    portalAuthReady,
   ]);
 
   const showFooterNav =
@@ -2665,42 +2690,106 @@ function FunnelRechnerInner() {
       case "lead":
         return (
           <StepWrapper
-            stepLabel="Kontakt"
-            question="Deine Kontaktdaten"
-            subtext="Danach zeigen wir dir den Preisrahmen."
-            animateKey="lead"
+            stepLabel="Konto"
+            question={
+              portalAuthReady
+                ? "Kontaktdaten prüfen"
+                : "MeinBärenwald Konto"
+            }
+            subtext={
+              portalAuthReady
+                ? "Danach zeigen wir dir den Preisrahmen."
+                : "Login oder einmalige Registrierung — danach siehst du den Preis."
+            }
+            animateKey={portalAuthReady ? "lead-contact" : "lead-auth"}
           >
-            {leadFormBlockHint ? (
-              <p
-                className="mb-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-950"
-                role="status"
-              >
-                {leadFormBlockHint}
-              </p>
-            ) : null}
             <div className="funnel-step-tiles-card">
-              {leadSubmitError ? (
-                <p
-                  className="mb-3 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-900"
-                  role="alert"
-                >
-                  {leadSubmitError}
-                </p>
-              ) : null}
-              <HWLeadForm
-                vorname={state.vorname}
-                nachname={state.nachname}
-                email={state.email}
-                telefon={state.telefon}
-                strasse={state.strasse}
-                hausnummer={state.hausnummer}
-                plz={state.plz}
-                ort={state.ort}
-                onFieldChange={(field, value) => updateLeadField(field, value)}
-                onPlzChange={setPlz}
-                formId={LEAD_FORM_ID}
-                onSubmit={handleLeadSubmit}
-              />
+              {!portalAuthReady ? (
+                <FunnelPortalAuthGate
+                  initialPlz={state.plz}
+                  onAuthenticated={(payload) => {
+                    applyPortalContactPrefill(payload.prefill);
+                    setPortalAuthReady(true);
+                    if (payload.skipContact) {
+                      const {
+                        min,
+                        max,
+                        breakdown,
+                        mindestauftragAktiv,
+                        resultModus: rm,
+                        schwellenwertAusgeloest: swa,
+                        istFallback,
+                        komplexReason,
+                      } = calculatePrice({
+                        ...state,
+                        vorname: payload.prefill.vorname ?? state.vorname,
+                        nachname: payload.prefill.nachname ?? state.nachname,
+                        email: payload.prefill.email ?? state.email,
+                        telefon: payload.prefill.telefon ?? state.telefon,
+                        strasse: payload.prefill.strasse ?? state.strasse,
+                        hausnummer:
+                          payload.prefill.hausnummer ?? state.hausnummer,
+                        plz: payload.prefill.plz ?? state.plz,
+                        ort: payload.prefill.ort ?? state.ort,
+                        name: [
+                          payload.prefill.vorname ?? state.vorname,
+                          payload.prefill.nachname ?? state.nachname,
+                        ]
+                          .filter(Boolean)
+                          .join(" ")
+                          .trim(),
+                      });
+                      setPrice(
+                        min,
+                        max,
+                        breakdown,
+                        istFallback,
+                        komplexReason ?? null
+                      );
+                      setMindestauftrag(mindestauftragAktiv);
+                      setResultModus(rm);
+                      setSchwellenwertAusgeloest(swa);
+                      setPriceConfirmed(true);
+                      setScreen("loading");
+                    }
+                  }}
+                />
+              ) : (
+                <>
+                  {leadFormBlockHint ? (
+                    <p
+                      className="mb-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-950"
+                      role="status"
+                    >
+                      {leadFormBlockHint}
+                    </p>
+                  ) : null}
+                  {leadSubmitError ? (
+                    <p
+                      className="mb-3 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-900"
+                      role="alert"
+                    >
+                      {leadSubmitError}
+                    </p>
+                  ) : null}
+                  <HWLeadForm
+                    vorname={state.vorname}
+                    nachname={state.nachname}
+                    email={state.email}
+                    telefon={state.telefon}
+                    strasse={state.strasse}
+                    hausnummer={state.hausnummer}
+                    plz={state.plz}
+                    ort={state.ort}
+                    onFieldChange={(field, value) =>
+                      updateLeadField(field, value)
+                    }
+                    onPlzChange={setPlz}
+                    formId={LEAD_FORM_ID}
+                    onSubmit={handleLeadSubmit}
+                  />
+                </>
+              )}
             </div>
           </StepWrapper>
         );
@@ -2906,6 +2995,8 @@ function FunnelRechnerInner() {
           onNext={
             einstiegModus === "ki"
               ? handleNext
+              : screen === "lead" && !portalAuthReady
+                ? undefined
               : screen === "result" && isBwZuKomplexErgebnis(state, resultModus)
                 ? undefined
                 : handleNext

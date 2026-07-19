@@ -4,8 +4,10 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
 
+import { assertPartnerEmailAllowed } from "@/app/actions/assert-partner-email-allowed";
 import { PortalResendConfirmation } from "@/components/portal/PortalResendConfirmation";
 import { PartnerAuthFlowHint } from "@/components/partner/PartnerAuthFlowHint";
+import { PARTNER_AUTH_COPY } from "@/lib/partner/partner-auth-copy";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 
 export function PartnerLoginForm() {
@@ -24,6 +26,12 @@ export function PartnerLoginForm() {
     e.preventDefault();
     setLoading(true);
     setError(null);
+    const allowed = await assertPartnerEmailAllowed(email.trim());
+    if (!allowed.ok) {
+      setLoading(false);
+      setError(allowed.error);
+      return;
+    }
     const supabase = getSupabaseBrowserClient();
     const { error: signInError } = await supabase.auth.signInWithPassword({
       email: email.trim(),
@@ -36,6 +44,10 @@ export function PartnerLoginForm() {
         setError(
           "Bitte bestätige zuerst deine E-Mail — wir haben dir einen Link geschickt."
         );
+        return;
+      }
+      if (msg.includes("banned") || msg.includes("user is banned")) {
+        setError(PARTNER_AUTH_COPY.errors.portalGesperrt);
         return;
       }
       setError("E-Mail oder Passwort ist ungültig.");

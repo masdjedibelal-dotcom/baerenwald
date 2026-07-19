@@ -36,6 +36,8 @@ export const PARTNER_AUTH_COPY = {
       "Diese E-Mail ist bereits mit einem anderen Partner-Konto verknüpft. Bitte wende dich an Bärenwald.",
 
     keineEmailImKonto: "In deinem Konto ist keine E-Mail hinterlegt.",
+
+    portalGesperrt: `Dein Partner-Zugang wurde gesperrt. Bitte wende dich an Bärenwald (${SITE_CONFIG.email}).`,
   },
 
   blocked: {
@@ -46,6 +48,11 @@ export const PARTNER_AUTH_COPY = {
       "Du erhältst die Bestätigung mit der hinterlegten E-Mail.",
       "Unter „Registrieren“ legst du dein Passwort an — fertig.",
     ],
+  },
+
+  portalGesperrt: {
+    title: "Zugang gesperrt",
+    body: `Dein Partner-Zugang wurde gesperrt. Bitte wende dich an Bärenwald — wir helfen dir weiter.`,
   },
 
   confirmEmailSuccess:

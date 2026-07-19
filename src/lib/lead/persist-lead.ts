@@ -15,6 +15,10 @@ import {
   findKundeIdByEmail,
   isKundenEmailUniqueViolation,
 } from "@/lib/kunden/kunde-email";
+import {
+  isKundeAlsSpamGesperrt,
+  KUNDE_GESPERRT_MESSAGE,
+} from "@/lib/kunden/kunde-spam";
 import { generateLeadVertriebsAnalyse } from "@/lib/lead/generate-ki-zusammenfassung";
 import { loadKundenVertriebsKontext } from "@/lib/lead/kunden-vertrieb-status";
 import type { MarketingJourney } from "@/lib/marketing/journey-types";
@@ -436,6 +440,19 @@ async function persistLeadInner(
     };
   }
 
+  try {
+    const spam = await isKundeAlsSpamGesperrt({
+      kundeId: kundeIdOverride,
+      email: hasEmail ? emailRaw : null,
+      telefon: hasTel ? telefon : null,
+    });
+    if (spam) {
+      return { ok: false, error: KUNDE_GESPERRT_MESSAGE, status: 403 };
+    }
+  } catch (e) {
+    console.error("[persistLead] Spam-Check fehlgeschlagen:", e);
+  }
+
   const typ = situation === "gewerbe" ? "gewerbe" : "privat";
 
   const emailForKunde = hasEmail
@@ -458,6 +475,17 @@ async function persistLeadInner(
       .maybeSingle();
     if (errTel) throw errTel;
     kunde_id = byTel?.id as string | undefined;
+  }
+
+  if (kunde_id) {
+    try {
+      const spamExisting = await isKundeAlsSpamGesperrt({ kundeId: kunde_id });
+      if (spamExisting) {
+        return { ok: false, error: KUNDE_GESPERRT_MESSAGE, status: 403 };
+      }
+    } catch (e) {
+      console.error("[persistLead] Spam-Check (Kunde) fehlgeschlagen:", e);
+    }
   }
 
   if (!kunde_id && !kundeIdOverride) {

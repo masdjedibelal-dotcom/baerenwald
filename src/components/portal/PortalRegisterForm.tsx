@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 
+import { assertPortalEmailAllowed } from "@/app/actions/assert-portal-email-allowed";
 import { portalAuthCallbackUrl } from "@/lib/portal/portal-auth-url";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 
@@ -38,8 +39,14 @@ export function PortalRegisterForm() {
 
     setLoading(true);
     setError(null);
-    const supabase = getSupabaseBrowserClient();
     const trimmedEmail = email.trim();
+    const allowed = await assertPortalEmailAllowed(trimmedEmail);
+    if (!allowed.ok) {
+      setLoading(false);
+      setError(allowed.error);
+      return;
+    }
+    const supabase = getSupabaseBrowserClient();
     const now = new Date().toISOString();
     const { error: signUpError } = await supabase.auth.signUp({
       email: trimmedEmail,

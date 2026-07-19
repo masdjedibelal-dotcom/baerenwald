@@ -16,10 +16,16 @@ export async function GET(request: Request) {
         data: { user },
       } = await supabase.auth.getUser();
       if (user?.email) {
-        await linkPortalHandwerkerToAuthUser({
+        const link = await linkPortalHandwerkerToAuthUser({
           userId: user.id,
           email: user.email,
         });
+        if (!link.ok && link.signOut) {
+          await supabase.auth.signOut();
+          return NextResponse.redirect(
+            `${origin}/partner/login?error=link&msg=${encodeURIComponent(link.error.slice(0, 160))}`
+          );
+        }
       }
       const safeNext = next.startsWith("/partner") ? next : "/partner";
       return NextResponse.redirect(`${origin}${safeNext}`);

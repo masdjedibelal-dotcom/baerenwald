@@ -12,6 +12,7 @@ import {
 } from "@/components/portal/auth/AuthPrimitives";
 import { PortalAuthConfirm } from "@/components/portal/auth/PortalAuthConfirm";
 import { PortalResendConfirmation } from "@/components/portal/PortalResendConfirmation";
+import { assertPortalEmailAllowed } from "@/app/actions/assert-portal-email-allowed";
 import {
   AUTH_CONFIRM,
   AUTH_LOGIN,
@@ -96,6 +97,12 @@ export function PortalLoginForm({
   async function sendMagicLink() {
     setLoading(true);
     setError(null);
+    const allowed = await assertPortalEmailAllowed(email.trim());
+    if (!allowed.ok) {
+      setLoading(false);
+      setError(allowed.error);
+      return;
+    }
     const supabase = getSupabaseBrowserClient();
     const { error: otpError } = await supabase.auth.signInWithOtp({
       email: email.trim(),
@@ -117,6 +124,12 @@ export function PortalLoginForm({
     }
     setLoading(true);
     setError(null);
+    const allowed = await assertPortalEmailAllowed(email.trim());
+    if (!allowed.ok) {
+      setLoading(false);
+      setError(allowed.error);
+      return;
+    }
     const supabase = getSupabaseBrowserClient();
     const { error: signInError } = await supabase.auth.signInWithPassword({
       email: email.trim(),
@@ -128,6 +141,12 @@ export function PortalLoginForm({
       if (msg.includes("email not confirmed")) {
         setError(
           "Bitte bestätigen Sie zuerst Ihre E-Mail — wir haben Ihnen einen Link geschickt."
+        );
+        return;
+      }
+      if (msg.includes("banned") || msg.includes("user is banned")) {
+        setError(
+          "Diese Kontaktadresse ist gesperrt. Bitte wende dich an uns, wenn du Hilfe brauchst."
         );
         return;
       }

@@ -16,13 +16,35 @@ export async function findHandwerkerForRegistration(email: string) {
   const normalized = normalizePartnerEmail(email);
   if (!normalized.includes("@")) return null;
 
-  const { data, error } = await supabaseAdmin
+  const withPortal = await supabaseAdmin
     .from("handwerker")
-    .select("id, email, auth_user_id")
+    .select("id, email, auth_user_id, ist_portal_gesperrt")
     .ilike("email", normalized)
     .not("email", "is", null)
     .limit(1)
     .maybeSingle();
+
+  let data = withPortal.data;
+  let error = withPortal.error;
+
+  if (error) {
+    const msg = (error.message ?? "").toLowerCase();
+    const missingCol =
+      error.code === "42703" ||
+      error.code === "PGRST204" ||
+      msg.includes("ist_portal_gesperrt");
+    if (missingCol) {
+      const fallback = await supabaseAdmin
+        .from("handwerker")
+        .select("id, email, auth_user_id")
+        .ilike("email", normalized)
+        .not("email", "is", null)
+        .limit(1)
+        .maybeSingle();
+      data = fallback.data;
+      error = fallback.error;
+    }
+  }
 
   if (error || !data?.id) return null;
   const stored = String(data.email ?? "").trim();
@@ -39,6 +61,13 @@ export async function verifyPartnerRegistrationEmail(
     return {
       ok: false,
       error: PARTNER_AUTH_COPY.errors.betriebNichtAngelegt,
+    };
+  }
+
+  if ((hw as { ist_portal_gesperrt?: boolean | null }).ist_portal_gesperrt) {
+    return {
+      ok: false,
+      error: PARTNER_AUTH_COPY.errors.portalGesperrt,
     };
   }
 

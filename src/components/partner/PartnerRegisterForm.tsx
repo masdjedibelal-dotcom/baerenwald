@@ -5,6 +5,7 @@ import { useCallback, useState } from "react";
 
 import { acceptPartnerRahmenvertragForEmail } from "@/app/actions/partner-vertrag";
 import { verifyPartnerRegistrationEmail } from "@/app/actions/partner-registration";
+import { assertPartnerEmailAllowed } from "@/app/actions/assert-partner-email-allowed";
 import { getPartnerRahmenvertragPreview } from "@/app/actions/partner-rahmenvertrag-preview";
 import { PartnerRahmenvertragAcceptBlock } from "@/components/partner/PartnerRahmenvertragAcceptBlock";
 import { PartnerAuthFlowHint } from "@/components/partner/PartnerAuthFlowHint";
@@ -89,6 +90,13 @@ export function PartnerRegisterForm() {
     setLoading(true);
     setError(null);
     const trimmedEmail = email.trim();
+
+    const allowed = await assertPartnerEmailAllowed(trimmedEmail);
+    if (!allowed.ok) {
+      setLoading(false);
+      setError(allowed.error);
+      return;
+    }
 
     const rvRes = await acceptPartnerRahmenvertragForEmail({
       email: trimmedEmail,
