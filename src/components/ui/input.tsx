@@ -1,41 +1,24 @@
-'use client'
+import * as React from "react";
 
-import { forwardRef, type InputHTMLAttributes } from 'react'
-import { cn } from '@/lib/utils'
+import { cn } from "@/lib/utils";
 
-export type InputProps = InputHTMLAttributes<HTMLInputElement> & {
-  label?: string
-  error?: string
-  hint?: string
-}
+export type InputProps = React.InputHTMLAttributes<HTMLInputElement>;
 
-export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
-  { label, error, hint, className = '', id, ...props },
-  ref
-) {
-  const inputId = id ?? props.name
-  return (
-    <div className="w-full">
-      {label ? (
-        <label className="input-label" htmlFor={inputId}>
-          {label}
-          {props.required ? (
-            <span className="ml-0.5 text-bw-accent" aria-hidden>
-              *
-            </span>
-          ) : null}
-        </label>
-      ) : null}
+const Input = React.forwardRef<HTMLInputElement, InputProps>(
+  ({ className, type, ...props }, ref) => {
+    return (
       <input
+        type={type}
+        className={cn(
+          "flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background file:border-0 file:bg-transparent file:text-base file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50",
+          className
+        )}
         ref={ref}
-        id={inputId}
         {...props}
-        className={cn('input', error && 'input-error', className)}
       />
-      {hint && !error ? <p className="mt-1 text-xs text-bw-light">{hint}</p> : null}
-      {error ? <p className="input-error-msg">{error}</p> : null}
-    </div>
-  )
-})
+    );
+  }
+);
+Input.displayName = "Input";
 
-Input.displayName = 'Input'
+export { Input };

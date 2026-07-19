@@ -1,0 +1,22 @@
+{
+  "source": "Baerenwald Portale (5).html — openDoc / docViewer",
+  "openDoc": {
+    "signature": "openDoc(name, meta)",
+    "state": "docView: { name, meta: meta||'PDF' }",
+    "live": "PortalDocView { name, meta?, url, kind? } — url Pflicht"
+  },
+  "docViewer": {
+    "overlay": {
+      "zIndex": 220,
+      "background": "rgba(10,14,12,.7)",
+      "flexColumn": true
+    },
+    "bar": {
+      "background": "#1b241f",
+      "badgePdf": { "bg": "#FCE3E3", "color": "#A1242A", "label": "PDF" },
+      "downloadDesktopOnly": "↓ Herunterladen",
+      "close": "×"
+    },
+    "mockPage": "graue Platzhalter-Linien — LIVE: echte PDF-iframe / img (kein Attrappe)"
+  }
+}

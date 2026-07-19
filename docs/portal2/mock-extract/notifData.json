@@ -1,0 +1,48 @@
+{
+  "schema": {
+    "tuple_fields": ["type", "title", "body", "time", "unread", "bg_color", "text_color", "icon"],
+    "description": "notifData() returns base[role] — array of 8-tuples"
+  },
+  "data": {
+    "kunde": [
+      ["angebot", "Angebot freigabebereit", "Angebot AN-2041 „Badsanierung\" wartet auf Ihre Freigabe.", "vor 12 Min", true, "#E4ECF7", "#1F4FA8", "📄"],
+      ["termin", "Termin bestätigt", "Sanitär Nord GmbH kommt am 18.07. zwischen 8–10 Uhr.", "vor 3 Std", true, "#E7F1E9", "#2E7D52", "📅"],
+      ["status", "Vorgang abgeschlossen", "V-1039 „Heizung entlüften\" wurde als erledigt markiert.", "Gestern", false, "#EEF0F2", "#5B6470", "✓"]
+    ],
+    "eigentuemer": [
+      ["freigabe", "Kostenfreigabe nötig", "V-1042 überschreitet Ihren Schwellenwert (500 €).", "vor 40 Min", true, "#FBF1D6", "#8A5A06", "€"],
+      ["status", "Angebot angenommen", "Ihre Hausverwaltung hat AN-2041 freigegeben.", "vor 5 Std", true, "#E7F1E9", "#2E7D52", "✓"]
+    ],
+    "mieter": [
+      ["termin", "Termin steht fest", "Der Handwerker kommt am 18.07., 8–10 Uhr. Bitte Zugang ermöglichen.", "vor 1 Std", true, "#E4ECF7", "#1F4FA8", "📅"],
+      ["status", "Meldung in Bearbeitung", "Ihre Meldung „Wasserhahn tropft\" wird bearbeitet.", "vor 2 Std", true, "#E7F1E9", "#2E7D52", "🔧"],
+      ["info", "Feedback erwünscht", "Ihr Vorgang ist abgeschlossen — wie zufrieden waren Sie?", "Gestern", false, "#EEF0F2", "#5B6470", "★"]
+    ],
+    "handwerker": [
+      ["auftrag", "Neuer Auftrag", "V-1042 „Wasserhahn Bad\" wurde Ihnen zugewiesen.", "vor 8 Min", true, "#E4ECF7", "#1F4FA8", "🔧"],
+      ["termin", "Termin morgen", "Lindenstr. 24 · WE 3 — 18.07., 8–10 Uhr.", "vor 6 Std", true, "#FBF1D6", "#8A5A06", "📅"],
+      ["status", "Freigabe erteilt", "Ihr Angebot für V-1030 wurde freigegeben.", "Gestern", false, "#E7F1E9", "#2E7D52", "✓"]
+    ]
+  },
+  "structured": {
+    "kunde": [
+      {"type": "angebot", "title": "Angebot freigabebereit", "body": "Angebot AN-2041 „Badsanierung\" wartet auf Ihre Freigabe.", "time": "vor 12 Min", "unread": true, "bg_color": "#E4ECF7", "text_color": "#1F4FA8", "icon": "📄"},
+      {"type": "termin", "title": "Termin bestätigt", "body": "Sanitär Nord GmbH kommt am 18.07. zwischen 8–10 Uhr.", "time": "vor 3 Std", "unread": true, "bg_color": "#E7F1E9", "text_color": "#2E7D52", "icon": "📅"},
+      {"type": "status", "title": "Vorgang abgeschlossen", "body": "V-1039 „Heizung entlüften\" wurde als erledigt markiert.", "time": "Gestern", "unread": false, "bg_color": "#EEF0F2", "text_color": "#5B6470", "icon": "✓"}
+    ],
+    "eigentuemer": [
+      {"type": "freigabe", "title": "Kostenfreigabe nötig", "body": "V-1042 überschreitet Ihren Schwellenwert (500 €).", "time": "vor 40 Min", "unread": true, "bg_color": "#FBF1D6", "text_color": "#8A5A06", "icon": "€"},
+      {"type": "status", "title": "Angebot angenommen", "body": "Ihre Hausverwaltung hat AN-2041 freigegeben.", "time": "vor 5 Std", "unread": true, "bg_color": "#E7F1E9", "text_color": "#2E7D52", "icon": "✓"}
+    ],
+    "mieter": [
+      {"type": "termin", "title": "Termin steht fest", "body": "Der Handwerker kommt am 18.07., 8–10 Uhr. Bitte Zugang ermöglichen.", "time": "vor 1 Std", "unread": true, "bg_color": "#E4ECF7", "text_color": "#1F4FA8", "icon": "📅"},
+      {"type": "status", "title": "Meldung in Bearbeitung", "body": "Ihre Meldung „Wasserhahn tropft\" wird bearbeitet.", "time": "vor 2 Std", "unread": true, "bg_color": "#E7F1E9", "text_color": "#2E7D52", "icon": "🔧"},
+      {"type": "info", "title": "Feedback erwünscht", "body": "Ihr Vorgang ist abgeschlossen — wie zufrieden waren Sie?", "time": "Gestern", "unread": false, "bg_color": "#EEF0F2", "text_color": "#5B6470", "icon": "★"}
+    ],
+    "handwerker": [
+      {"type": "auftrag", "title": "Neuer Auftrag", "body": "V-1042 „Wasserhahn Bad\" wurde Ihnen zugewiesen.", "time": "vor 8 Min", "unread": true, "bg_color": "#E4ECF7", "text_color": "#1F4FA8", "icon": "🔧"},
+      {"type": "termin", "title": "Termin morgen", "body": "Lindenstr. 24 · WE 3 — 18.07., 8–10 Uhr.", "time": "vor 6 Std", "unread": true, "bg_color": "#FBF1D6", "text_color": "#8A5A06", "icon": "📅"},
+      {"type": "status", "title": "Freigabe erteilt", "body": "Ihr Angebot für V-1030 wurde freigegeben.", "time": "Gestern", "unread": false, "bg_color": "#E7F1E9", "text_color": "#2E7D52", "icon": "✓"}
+    ]
+  }
+}

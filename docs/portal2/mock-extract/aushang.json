@@ -1,0 +1,25 @@
+{
+  "source": "Baerenwald Portale (5).html — aushangPoster / modalAushang / qrMatrix",
+  "openAushang": "setState({ aushangObj: o })",
+  "modalAushang": {
+    "title": "Aushang für den Hausflur",
+    "sub": "Ausdrucken (A4) und im Eingang aufhängen",
+    "previewW": { "mobile": 300, "desktop": 430 },
+    "printW": 793,
+    "actions": ["🖨  Drucken (A4)", "Schließen"]
+  },
+  "aushangPoster": {
+    "aspect": "A4 hoch (210:297)",
+    "branding": "ORG primary/dk/soft/logo/name/sub",
+    "steps": [
+      ["01", "Scannen", "Handy-Kamera auf den Code halten"],
+      ["02", "Anliegen melden", "Schaden beschreiben – ein Foto genügt"],
+      ["03", "Informiert bleiben", "Status live verfolgen, ganz ohne Anruf"]
+    ]
+  },
+  "qr": {
+    "mock": "qrMatrix/qrSvg — dekorativ, nicht scannbar",
+    "live": "buildMeldeQrUrl(meldeUrl) — scannbar (E3)"
+  },
+  "aushangUrl": "Live: buildMeldeUrl(orgKennung, melde_slug)"
+}

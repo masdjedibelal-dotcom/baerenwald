@@ -12,27 +12,45 @@ const config: Config = {
       fontFamily: {
         sans: ["var(--font-sans)", "Helvetica Neue", "Arial", "sans-serif"],
         display: ["var(--font-display)", "Georgia", "serif"],
+        "p2-head": ["var(--p2-font-head)"],
+        "p2-body": ["var(--p2-font-body)"],
       },
       colors: {
         accent: {
           DEFAULT: "#2E7D52",
           dark: "#1A3D2B",
-          light: "#EAF3DE",
-          hover: "#256642",
+          light: "#E7F1E9",
+          hover: "#2a724b",
           foreground: "#FFFFFF",
         },
         surface: {
-          page: "#F4F4F3",
-          card: "#FFFFFF",
+          page: "#e6e8e6",
+          card: "#ffffff",
           muted: "#EDEAE4",
           dark: "#1A3D2B",
         },
         text: {
-          primary: "#1E1C1A",
-          secondary: "#6B6560",
-          tertiary: "#9E9890",
+          primary: "#16201B",
+          secondary: "#404A45",
+          tertiary: "#6A746F",
           inverse: "#FFFFFF",
           brand: "#2E7D52",
+        },
+        /** Portal 2.0 Mock `const C` — Nutzung: `bg-p2-bg`, `text-p2-ink`, … */
+        p2: {
+          bg: "#e6e8e6",
+          panel: "#ffffff",
+          line: "rgba(0,0,0,0.08)",
+          line2: "rgba(0,0,0,0.05)",
+          ink: "#16201B",
+          sub: "#404A45",
+          faint: "#6A746F",
+          faint2: "#9AA39E",
+          primary: "#2E7D52",
+          "primary-dk": "#2a724b",
+          "primary-soft": "#E7F1E9",
+          "green-dark": "#1A3D2B",
+          "green-50": "#E7F1E9",
         },
         "border-default": "var(--border-default)",
         "border-strong": "var(--border-strong)",
@@ -97,6 +115,8 @@ const config: Config = {
         card: "0 2px 16px rgba(0,0,0,0.08)",
         cardHover: "0 4px 24px rgba(0,0,0,0.12)",
         sm: "0 1px 6px rgba(0,0,0,0.08)",
+        /** Portal 2.0 Mock `C.shadow` */
+        p2: "var(--p2-shadow)",
       },
       keyframes: {
         "accordion-down": {
