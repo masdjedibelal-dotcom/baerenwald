@@ -37,6 +37,56 @@ import {
   buildHvVerlaufSeed,
   inferFlowFromKundeItem,
 } from "@/lib/portal2/hv-detail-adapters";
+import { PORTAL_OBJEKT_COVER_DEFAULT_SRC } from "@/lib/portal2/portal-media";
+import type { PortalMockStatusId } from "@/lib/portal2/status";
+
+function sectionText(
+  item: KundePortalDetailItem,
+  headingRe: RegExp
+): string {
+  const s = item.sections.find((sec) => headingRe.test(sec.heading ?? ""));
+  return (
+    s?.text?.trim() ||
+    s?.bullets?.join("\n").trim() ||
+    s?.rows?.map((r) => `${r.label}: ${r.value}`).join("\n").trim() ||
+    ""
+  );
+}
+
+function extractMelderName(item: KundePortalDetailItem): string | undefined {
+  const person = item.sections.find((s) =>
+    /persönlich|kontakt|angaben/i.test(s.heading ?? "")
+  );
+  if (person?.rows?.length) {
+    const vor = person.rows.find((r) => /vorname/i.test(r.label))?.value;
+    const nach = person.rows.find((r) => /nachname/i.test(r.label))?.value;
+    const name = [vor, nach].filter(Boolean).join(" ").trim();
+    if (name) return name;
+  }
+  return item.ansprechpartner?.name?.trim() || undefined;
+}
+
+function extractObjektLine(item: KundePortalDetailItem): string {
+  const objektSection = item.sections.find((s) =>
+    /objekt|leistungsort/i.test(s.heading ?? "")
+  );
+  if (objektSection?.rows?.length) {
+    const strasse = objektSection.rows.find((r) =>
+      /straße|strasse|hausnummer/i.test(r.label)
+    )?.value;
+    const plz = objektSection.rows.find((r) => /plz/i.test(r.label))?.value;
+    const ort = objektSection.rows.find((r) => /^ort$/i.test(r.label))?.value;
+    const line = [strasse, [plz, ort].filter(Boolean).join(" ")]
+      .filter(Boolean)
+      .join(", ");
+    if (line) return line;
+  }
+  const fromMeta = item.cardMeta?.find((m) =>
+    /\d{5}|str|weg|allee|platz/i.test(m.text)
+  )?.text;
+  if (fromMeta) return fromMeta;
+  return [item.plz, item.ort].filter(Boolean).join(" ") || "Objekt";
+}
 
 export function PortalVorgangDetail({
   item,
@@ -53,6 +103,7 @@ export function PortalVorgangDetail({
   schwelleEur,
   onBack,
   privatkunde = false,
+  flowStatusOverride,
 }: {
   item: KundePortalDetailItem;
   showAnlassBadge?: boolean;
@@ -77,6 +128,8 @@ export function PortalVorgangDetail({
   hvMeldungStatus?: string | null;
   schwelleEur?: number;
   onBack?: () => void;
+  /** Kanonischer Flow aus CRM-Resolver (bevorzugt gegenüber Heuristik). */
+  flowStatusOverride?: PortalMockStatusId;
 }) {
   const router = useRouter();
   const [confirmOpen, setConfirmOpen] = useState(false);
@@ -86,6 +139,7 @@ export function PortalVorgangDetail({
 
   const flowStatus = useMemo(
     () =>
+      flowStatusOverride ??
       inferFlowFromKundeItem(item, {
         orgFreigabeStatus,
         hvMeldungStatus,
@@ -93,36 +147,30 @@ export function PortalVorgangDetail({
           item.dokumente?.some((d) => /rechnung/i.test(d.name ?? ""))
         ),
       }),
-    [item, orgFreigabeStatus, hvMeldungStatus]
+    [flowStatusOverride, item, orgFreigabeStatus, hvMeldungStatus]
   );
 
   if (showHvAbnahme) {
-    const beschrSection = item.sections.find((s) =>
-      /beschreibung|anliegen|nachricht/i.test(s.heading ?? "")
-    );
-    const objektSection = item.sections.find((s) =>
-      /objekt/i.test(s.heading ?? "")
-    );
     const beschreibung =
-      beschrSection?.text?.trim() ||
-      beschrSection?.bullets?.join("\n") ||
+      sectionText(item, /beschreibung|anliegen|nachricht|projekt/i) ||
       item.summary ||
       "";
-    const objektRaw =
-      objektSection?.text?.trim() ||
-      objektSection?.rows?.map((r) => r.value).join(", ") ||
-      [item.plz, item.ort].filter(Boolean).join(" ") ||
-      "Objekt";
+    const objektRaw = extractObjektLine(item);
+    const melder = extractMelderName(item);
     const rechnungPdf =
       item.dokumente?.find((d) => /rechnung/i.test(d.name ?? "") && d.href)
         ?.href ?? null;
+    const kategorie =
+      item.anfrageGewerk?.trim() ||
+      item.cardSubtitle?.trim() ||
+      undefined;
 
     return (
       <OrganisationHvVorgangDetail
         idLabel={(item.leadId ?? item.id).slice(0, 8).toUpperCase()}
         titel={item.title}
         objekt={String(objektRaw).slice(0, 160)}
-        kategorie={item.anfrageGewerk ?? item.cardSubtitle ?? undefined}
+        kategorie={kategorie}
         beschreibung={beschreibung}
         flowStatus={flowStatus}
         leadId={item.leadId ?? item.id}
@@ -137,13 +185,16 @@ export function PortalVorgangDetail({
         bautagebuch={item.bautagebuch}
         verlauf={buildHvVerlaufSeed({
           createdAt: item.date,
-          melder: item.ansprechpartner?.name,
+          melder,
           freigabeStatus: orgFreigabeStatus,
+          privatAuto: privatkunde,
         })}
+        melder={melder}
         handwerkerName={item.ansprechpartner?.name}
         orgFreigabeStatus={orgFreigabeStatus}
         hvMeldungStatus={hvMeldungStatus}
         privatkunde={privatkunde}
+        coverUrl={PORTAL_OBJEKT_COVER_DEFAULT_SRC}
         onBack={onBack}
         onUpdated={() => {
           onAccepted?.();

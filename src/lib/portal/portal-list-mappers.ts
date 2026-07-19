@@ -12,6 +12,7 @@ export type PortalCardRow = {
   id: string;
   title: string;
   subtitle?: string;
+  idLabel?: string;
   statusLabel: string;
   statusPillKey: string;
   accent: PortalListCardAccent;
@@ -27,29 +28,52 @@ function ts(v?: string | null): number {
   return Number.isNaN(d.getTime()) ? 0 : d.getTime();
 }
 
+function buildMockSubtitle(item: KundePortalDetailItem): string | undefined {
+  if (item.cardSubtitle?.trim()) return item.cardSubtitle.trim();
+  const ortParts = [item.plz, item.ort].filter(Boolean).join(" ");
+  const adresse =
+    item.cardMeta?.find((m) => /plz|ort|str|weg|allee|platz/i.test(m.text))
+      ?.text ??
+    (ortParts || undefined);
+  const kategorie = item.anfrageGewerk?.trim();
+  const parts = [adresse, kategorie].filter(Boolean);
+  return parts.length ? parts.join(" · ") : undefined;
+}
+
 export function mapKundeDetailToCard(
   item: KundePortalDetailItem,
-  accent: PortalListCardAccent
+  accent: PortalListCardAccent,
+  opts?: { mockListe?: boolean }
 ): PortalCardRow {
-  const meta: PortalListCardMeta[] = item.cardMeta?.length
-    ? item.cardMeta
-    : (() => {
-        const ortLine = fmtPortalOrt(item.plz ?? "—", item.ort ?? "—");
-        const lines: PortalListCardMeta[] = [];
-        if (item.cardSubtitle) {
-          lines.push({ icon: Hammer, text: item.cardSubtitle });
-        }
-        if (ortLine !== "—") {
-          lines.push({ icon: MapPin, text: ortLine });
-        }
-        lines.push({ icon: Calendar, text: fmtPortalDate(item.date) });
-        return lines;
-      })();
+  const mockListe = opts?.mockListe === true;
+  const meta: PortalListCardMeta[] = mockListe
+    ? []
+    : item.cardMeta?.length
+      ? item.cardMeta
+      : (() => {
+          const ortLine = fmtPortalOrt(item.plz ?? "—", item.ort ?? "—");
+          const lines: PortalListCardMeta[] = [];
+          if (item.cardSubtitle) {
+            lines.push({ icon: Hammer, text: item.cardSubtitle });
+          }
+          if (ortLine !== "—") {
+            lines.push({ icon: MapPin, text: ortLine });
+          }
+          lines.push({ icon: Calendar, text: fmtPortalDate(item.date) });
+          return lines;
+        })();
+
+  const idLabel = (item.leadId ?? item.id).slice(0, 8).toUpperCase();
 
   return {
     id: item.id,
     title: item.title,
-    subtitle: item.cardMeta?.length ? undefined : item.cardSubtitle,
+    subtitle: mockListe
+      ? buildMockSubtitle(item)
+      : item.cardMeta?.length
+        ? undefined
+        : item.cardSubtitle,
+    idLabel: mockListe ? idLabel : undefined,
     statusLabel: item.status || "offen",
     statusPillKey: item.statusPillKey || item.status || "offen",
     accent,
@@ -82,9 +106,12 @@ export function kundeVorgangAccent(item: KundePortalDetailItem): PortalListCardA
 }
 
 export function buildKundeVorgangCardRows(
-  items: KundePortalDetailItem[]
+  items: KundePortalDetailItem[],
+  opts?: { mockListe?: boolean }
 ): PortalCardRow[] {
   return items
-    .map((item) => mapKundeDetailToCard(item, kundeVorgangAccent(item)))
+    .map((item) =>
+      mapKundeDetailToCard(item, kundeVorgangAccent(item), opts)
+    )
     .sort((a, b) => b.sortDate - a.sortDate);
 }

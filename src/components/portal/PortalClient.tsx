@@ -53,9 +53,13 @@ import {
   type PortalKundeTyp,
 } from "@/lib/portal2/kunde-typ";
 import { buildPortalShellNav } from "@/lib/portal2/nav-items";
-import type { PortalMockStatusId } from "@/lib/portal2/status";
-import { cn } from "@/lib/utils";
 import { portalDetailStatusPillClass } from "@/lib/shared/portal-detail-format";
+import {
+  PORTAL_STATUS,
+  portalStatusChipStyle,
+  type PortalMockStatusId,
+} from "@/lib/portal2/status";
+import { cn } from "@/lib/utils";
 
 type PortalKunde = {
   name?: string | null;
@@ -189,8 +193,8 @@ export function PortalClient({
       typ: kunde.typ,
     });
   const isPrivatLike = kundeTyp === "privat" || kundeTyp === "gewerbe";
-  /** HV-Mock-Detail nur für echtes HV-Portal — Privat/Gewerbe: CRM-Detail. */
-  const useHvMockDetail = hvPortalMode;
+  /** Mock-Detail (Timeline/Meta): HV und Privat/Gewerbe. */
+  const useHvMockDetail = hvPortalMode || isPrivatLike;
 
   const initialSection = normalizeSectionFromUrl(
     activeSection === "auftraege" ? "vorgaenge" : activeSection ?? searchParams.get("section") ?? undefined
@@ -326,8 +330,11 @@ export function PortalClient({
   }, [vorgaengeItems, flowByItemId]);
 
   const cardRows = useMemo(
-    () => buildKundeVorgangCardRows(filteredVorgaenge),
-    [filteredVorgaenge]
+    () =>
+      buildKundeVorgangCardRows(filteredVorgaenge, {
+        mockListe: isPrivatLike && !hvPortalMode,
+      }),
+    [filteredVorgaenge, isPrivatLike, hvPortalMode]
   );
 
   const listTotalPages = Math.max(1, Math.ceil(cardRows.length / PORTAL_LIST_PAGE_SIZE));
@@ -421,6 +428,13 @@ export function PortalClient({
   }
 
   function renderListCard(row: PortalCardRow) {
+    const flow = flowByItemId.get(row.id);
+    const mockListe = isPrivatLike && !hvPortalMode;
+    const statusLabel =
+      mockListe && flow ? PORTAL_STATUS[flow].label : row.statusLabel;
+    const statusPillStyle =
+      mockListe && flow ? portalStatusChipStyle(flow) : undefined;
+
     return (
       <PortalListCard
         key={row.id}
@@ -428,13 +442,16 @@ export function PortalClient({
         onClick={() => openVorgang(row)}
         title={row.title}
         subtitle={row.subtitle}
-        statusLabel={row.statusLabel}
+        idLabel={row.idLabel}
+        statusLabel={statusLabel}
         statusPillClass={portalDetailStatusPillClass(row.statusPillKey)}
+        statusPillStyle={statusPillStyle}
         accent={row.accent}
         meta={row.meta}
         hint={row.hint}
         footer={row.footer}
-        showLeftAccent={!hvPortalMode}
+        showLeftAccent={!hvPortalMode && !mockListe}
+        showChevron={mockListe}
       />
     );
   }
@@ -527,6 +544,9 @@ export function PortalClient({
         hvAbnahme={hvAbnahmeByLeadId[selectedLeadId] ?? null}
         showHvAbnahme={useHvMockDetail}
         privatkunde={isPrivatLike}
+        flowStatusOverride={
+          selectedItem ? flowByItemId.get(selectedItem.id) : undefined
+        }
         orgFreigabeStatus={
           (leads as Array<{ id: string; org_freigabe_status?: string | null }>).find(
             (l) => l.id === selectedLeadId
