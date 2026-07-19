@@ -502,7 +502,7 @@ export function OrganisationEingangPanel({
   const [selectedId, setSelectedId] = useState<string | null>(
     initialSelectedId ?? eingang[0]?.id ?? null
   );
-  const [mobileDetailOpen, setMobileDetailOpen] = useState(false);
+  const [_mobileDetailOpen, setMobileDetailOpen] = useState(false);
 
   useEffect(() => {
     if (initialSelectedId) {

@@ -13,7 +13,6 @@ import {
   PORTAL_LIST_PAGE_SIZE,
   PortalListPagination,
 } from "@/components/shared/PortalListPagination";
-import { PortalMobileBottomSheet } from "@/components/shared/PortalMobileBottomSheet";
 import { PortalShell } from "@/components/shared/PortalShell";
 import { PortalEmptyState } from "@/components/shared/PortalStateView";
 import { buildKundeVorgaenge } from "@/lib/portal/build-kunde-vorgaenge";
@@ -129,7 +128,7 @@ export function EigentuemerPortalClient({
   const [selectedId, setSelectedId] = useState<string | null>(
     searchParams.get("id")?.trim() || null
   );
-  const [mobileDetailOpen, setMobileDetailOpen] = useState(Boolean(selectedId));
+  const [_mobileDetailOpen, setMobileDetailOpen] = useState(Boolean(selectedId));
   const [listPage, setListPage] = useState(1);
   const [objektDetailId, setObjektDetailId] = useState<string | null>(null);
   const [freigabeBusy, setFreigabeBusy] = useState(false);

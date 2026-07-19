@@ -190,7 +190,10 @@ export function OrganisationBrandingEditor({
           </div>
           <p className="text-[12.5px] leading-relaxed text-text-secondary">
             {EINSTELLUNGEN_LOGO_HINT}{" "}
-            <b className="text-text-primary">„{draft.logo || "HV"}"</b> als
+            <b className="text-text-primary">
+              „{draft.logo || "HV"}“
+            </b>{" "}
+            als
             Platzhalter.
             <span className="mt-1 block text-[11px] text-text-tertiary">
               {EINSTELLUNGEN_LOGO_UPLOAD_OFFENER_PUNKT}

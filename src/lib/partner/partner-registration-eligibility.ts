@@ -41,7 +41,9 @@ export async function findHandwerkerForRegistration(email: string) {
         .not("email", "is", null)
         .limit(1)
         .maybeSingle();
-      data = fallback.data;
+      data = fallback.data
+        ? { ...fallback.data, ist_portal_gesperrt: false }
+        : null;
       error = fallback.error;
     }
   }

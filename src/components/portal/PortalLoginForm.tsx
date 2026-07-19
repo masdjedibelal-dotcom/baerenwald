@@ -55,7 +55,7 @@ export function PortalLoginForm({
   const authError = searchParams.get("error");
   const next = searchParams.get("next") || "/portal";
 
-  const brand = useMemo(
+  const _brand = useMemo(
     () => authBrandName(role, orgName),
     [role, orgName]
   );

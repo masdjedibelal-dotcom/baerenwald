@@ -147,9 +147,9 @@ export function PartnerClient({
   const router = useRouter();
   const searchParams = useSearchParams();
   const [section, setSection] = useState<PartnerSection>("uebersicht");
-  const overviewTab: OverviewTabId = "vorgaenge";
+  const _overviewTab: OverviewTabId = "vorgaenge";
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [mobileDetailOpen, setMobileDetailOpen] = useState(false);
+  const [_mobileDetailOpen, setMobileDetailOpen] = useState(false);
   /** Tab-Navigation: alte URL-Parameter ignorieren bis Listen-URL ohne id da ist. */
   const ignoreUrlDetailRef = useRef(false);
   const [gptOpen, setGptOpen] = useState(false);

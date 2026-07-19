@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 
@@ -206,7 +205,7 @@ export function PortalClient({
   const [selectedId, setSelectedId] = useState<string | null>(
     searchParams.get("id")?.trim() || null
   );
-  const [mobileDetailOpen, setMobileDetailOpen] = useState(Boolean(selectedId));
+  const [_mobileDetailOpen, setMobileDetailOpen] = useState(Boolean(selectedId));
   const [listPage, setListPage] = useState(1);
   const [gptOpen, setGptOpen] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
