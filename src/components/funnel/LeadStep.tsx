@@ -70,6 +70,7 @@ export type PostBwLeadPayload = {
   plz?: string;
   strasse?: string;
   hausnummer?: string;
+  ort?: string;
   zeitraum?: string | null;
   kundentyp?: string | null;
   funnel_daten?: unknown;
@@ -90,6 +91,7 @@ type BuildBwLeadPayloadInput = {
   plz?: string;
   strasse?: string;
   hausnummer?: string;
+  ort?: string;
   zeitraum?: string | null;
   kundentyp?: string | null;
   funnel_daten?: unknown;
@@ -130,6 +132,7 @@ export function buildBwLeadPayload(
     plz: input.plz,
     strasse: input.strasse?.trim() || undefined,
     hausnummer: input.hausnummer?.trim() || undefined,
+    ort: input.ort?.trim() || undefined,
     zeitraum: input.zeitraum,
     kundentyp: input.kundentyp,
     funnel_daten: mergedFunnelDaten,
@@ -159,6 +162,7 @@ export async function submitBwLead(
     plz: body.plz,
     strasse: body.strasse,
     hausnummer: body.hausnummer,
+    ort: body.ort,
     zeitraum: body.zeitraum,
     kundentyp: body.kundentyp,
     funnel_daten: body.funnel_daten,

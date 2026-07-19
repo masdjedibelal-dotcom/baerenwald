@@ -51,7 +51,8 @@ export type BwFunnelAction =
         | "leadBeschreibung"
         | "freitext"
         | "strasse"
-        | "hausnummer";
+        | "hausnummer"
+        | "ort";
       value: string;
     }
   | { type: "SET_SLOT"; date: string; time: string }
@@ -117,6 +118,7 @@ export const BW_FUNNEL_INITIAL_STATE: FunnelState = {
   telefon: "",
   strasse: "",
   hausnummer: "",
+  ort: "",
   selectedSlot: null,
   submitted: false,
 };
@@ -423,7 +425,8 @@ export function useBwFunnelState() {
       field !== "leadBeschreibung" &&
       field !== "freitext" &&
       field !== "strasse" &&
-      field !== "hausnummer"
+      field !== "hausnummer" &&
+      field !== "ort"
     ) {
       return;
     }

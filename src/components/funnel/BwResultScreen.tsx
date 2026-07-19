@@ -32,6 +32,7 @@ import {
 } from "@/components/funnel/LeadStep";
 import { DatenschutzCheckbox } from "./DatenschutzCheckbox";
 import { NeueAnfrageResetLink } from "./NeueAnfrageResetLink";
+import { PhotoUpload } from "./PhotoUpload";
 
 function ResultSituationBanner({ state }: { state: FunnelState }) {
   const hasRange = state.priceMin > 0 && state.priceMax > 0;
@@ -241,6 +242,9 @@ export interface BwResultScreenProps {
   onKomplexRueckrufSuccess?: () => void;
   /** Funnel neu ab Situation / Trust — State wird im Parent zurückgesetzt. */
   onReset?: () => void;
+  /** Optional: Fotos / Vergleichsangebote unter der Preiskarte. */
+  photos?: File[];
+  onPhotosChange?: (files: File[]) => void;
   className?: string;
 }
 
@@ -775,6 +779,8 @@ export function BwResultScreen({
   resultModus,
   onKomplexRueckrufSuccess,
   onReset,
+  photos,
+  onPhotosChange,
   className,
 }: BwResultScreenProps) {
   const [emailSaveOpen, setEmailSaveOpen] = useState(false);
@@ -932,6 +938,16 @@ export function BwResultScreen({
         </div>
       )}
 
+      {onPhotosChange ? (
+        <div className="mt-4">
+          <PhotoUpload
+            files={photos ?? []}
+            onChange={onPhotosChange}
+            showCompareOfferHint={true}
+          />
+        </div>
+      ) : null}
+
       {hasRange ? (
         <p className="preis-disclaimer">
           Unverbindlicher Preisrahmen (Preisindikation) auf Basis unserer
@@ -940,12 +956,12 @@ export function BwResultScreen({
         </p>
       ) : null}
 
-      {showVergleichHint ? (
+      {showVergleichHint && !onPhotosChange ? (
         <div className="vergleich-hint">
           <p className="vergleich-hint-text">
-            Haben Sie bereits ein günstigeres Angebot erhalten? Laden Sie es im
-            nächsten Schritt einfach hoch — wir prüfen es ehrlich und sagen Ihnen
-            ob wir mithalten können.
+            Haben Sie bereits ein günstigeres Angebot erhalten? Laden Sie es
+            einfach hoch — wir prüfen es ehrlich und sagen Ihnen ob wir mithalten
+            können.
           </p>
         </div>
       ) : null}

@@ -1,77 +1,93 @@
 "use client";
 
-import { PhotoUpload } from "@/components/funnel/PhotoUpload";
 import { cn } from "@/lib/utils";
 
 export interface HWLeadFormProps {
-  photos: File[];
-  onPhotosChange: (files: File[]) => void;
-  name: string;
+  vorname: string;
+  nachname: string;
   email: string;
   telefon: string;
   strasse: string;
   hausnummer: string;
+  plz: string;
+  ort: string;
   onFieldChange: (
-    field: "name" | "email" | "telefon" | "strasse" | "hausnummer",
+    field:
+      | "vorname"
+      | "nachname"
+      | "email"
+      | "telefon"
+      | "strasse"
+      | "hausnummer"
+      | "ort",
     value: string
   ) => void;
+  onPlzChange: (plz: string) => void;
   formId: string;
   onSubmit: (e: React.FormEvent) => void;
   className?: string;
 }
 
 export function HWLeadForm({
-  photos,
-  onPhotosChange,
-  name,
+  vorname,
+  nachname,
   email,
   telefon,
   strasse,
   hausnummer,
+  plz,
+  ort,
   onFieldChange,
+  onPlzChange,
   formId,
   onSubmit,
   className,
 }: HWLeadFormProps) {
   return (
     <div id="lead-form" className={cn(className)}>
-      <PhotoUpload
-        files={photos}
-        onChange={onPhotosChange}
-        className="mb-4"
-        showCompareOfferHint={true}
-      />
-
       <form id={formId} onSubmit={onSubmit} className="space-y-3">
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <input
             type="text"
             inputMode="text"
-            autoComplete="name"
+            autoComplete="given-name"
             autoCapitalize="words"
+            required
             className="funnel-input"
-            placeholder="Name"
-            value={name}
-            onChange={(e) => onFieldChange("name", e.target.value)}
+            placeholder="Vorname"
+            value={vorname}
+            onChange={(e) => onFieldChange("vorname", e.target.value)}
           />
           <input
-            type="email"
-            inputMode="email"
-            autoComplete="email"
-            autoCapitalize="none"
-            autoCorrect="off"
+            type="text"
+            inputMode="text"
+            autoComplete="family-name"
+            autoCapitalize="words"
+            required
             className="funnel-input"
-            placeholder="E-Mail"
-            value={email}
-            onChange={(e) => onFieldChange("email", e.target.value)}
+            placeholder="Nachname"
+            value={nachname}
+            onChange={(e) => onFieldChange("nachname", e.target.value)}
           />
         </div>
+        <input
+          type="email"
+          inputMode="email"
+          autoComplete="email"
+          autoCapitalize="none"
+          autoCorrect="off"
+          required
+          className="funnel-input"
+          placeholder="E-Mail"
+          value={email}
+          onChange={(e) => onFieldChange("email", e.target.value)}
+        />
         <input
           type="tel"
           inputMode="tel"
           autoComplete="tel"
           className="funnel-input"
-          placeholder="+49 151 23456789"
+          placeholder="Telefon (optional)"
           value={telefon}
           onChange={(e) => onFieldChange("telefon", e.target.value)}
         />
@@ -79,8 +95,9 @@ export function HWLeadForm({
           <input
             type="text"
             inputMode="text"
-            autoComplete="street-address"
+            autoComplete="address-line1"
             autoCapitalize="words"
+            required
             className="funnel-input"
             placeholder="Straße"
             value={strasse}
@@ -90,10 +107,37 @@ export function HWLeadForm({
             type="text"
             inputMode="text"
             autoComplete="address-line2"
+            required
             className="funnel-input"
             placeholder="Nr."
             value={hausnummer}
             onChange={(e) => onFieldChange("hausnummer", e.target.value)}
+          />
+        </div>
+        <div className="grid grid-cols-[110px_1fr] gap-3">
+          <input
+            type="text"
+            inputMode="numeric"
+            autoComplete="postal-code"
+            maxLength={5}
+            required
+            className="funnel-input"
+            placeholder="PLZ"
+            value={plz}
+            onChange={(e) =>
+              onPlzChange(e.target.value.replace(/\D/g, "").slice(0, 5))
+            }
+          />
+          <input
+            type="text"
+            inputMode="text"
+            autoComplete="address-level2"
+            autoCapitalize="words"
+            required
+            className="funnel-input"
+            placeholder="Ort"
+            value={ort}
+            onChange={(e) => onFieldChange("ort", e.target.value)}
           />
         </div>
         <p

@@ -32,6 +32,7 @@ export type PersistLeadInput = {
   plz?: string | null;
   strasse?: string | null;
   hausnummer?: string | null;
+  ort?: string | null;
   situation?: string | null;
   bereiche?: string[] | null;
   preis_min?: number | null;
@@ -271,10 +272,14 @@ function sanitizeFunnelDatenJson(input: unknown): unknown {
 /** Nur Werte, die zur Supabase-Spalte / zum Funnel-Typ passen — verhindert Check-Constraint-Fehler. */
 function formatKundeAdresse(
   strasse?: string | null,
-  hausnummer?: string | null
+  hausnummer?: string | null,
+  plz?: string | null,
+  ort?: string | null
 ): string | null {
-  const parts = [strasse?.trim(), hausnummer?.trim()].filter(Boolean);
-  return parts.length ? parts.join(" ") : null;
+  const street = [strasse?.trim(), hausnummer?.trim()].filter(Boolean).join(" ");
+  const city = [plz?.trim(), ort?.trim()].filter(Boolean).join(" ");
+  const parts = [street, city].filter(Boolean);
+  return parts.length ? parts.join(", ") : null;
 }
 
 function normalizeKundentypForDb(
@@ -362,7 +367,15 @@ async function persistLeadInner(
   const plz = (raw.plz ?? "").trim();
   const strasse = (raw.strasse ?? "").trim() || null;
   const hausnummer = (raw.hausnummer ?? "").trim() || null;
-  const kundeAdresse = formatKundeAdresse(strasse, hausnummer);
+  const ortFromInput = (raw.ort ?? "").trim() || null;
+  const ortFromFunnel =
+    raw.funnel_daten &&
+    typeof raw.funnel_daten === "object" &&
+    typeof (raw.funnel_daten as Record<string, unknown>).ort === "string"
+      ? String((raw.funnel_daten as Record<string, unknown>).ort).trim() || null
+      : null;
+  const ort = ortFromInput || ortFromFunnel;
+  const kundeAdresse = formatKundeAdresse(strasse, hausnummer, plz, ort);
   const zeitraum = raw.zeitraum ?? null;
   const kundentyp = normalizeKundentypForDb(raw.kundentyp ?? null);
   const kanal = (raw.kanal ?? "website").trim() || "website";

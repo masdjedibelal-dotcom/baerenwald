@@ -121,17 +121,40 @@ import { cn } from "@/lib/utils";
 const LEAD_FORM_ID = "bw-funnel-lead";
 const BERATUNG_LEAD_FORM_ID = "bw-beratung-lead";
 
-/** CRM-Regel: mindestens gültige E-Mail oder Telefon (mind. 3 Zeichen). */
-function bwLeadContactOk(email: string, telefon: string): boolean {
-  const e = email.trim();
-  const t = telefon.trim();
-  const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e);
-  const telOk = t.length >= 3;
-  return emailOk || telOk;
+/** CRM-Regel: gültige E-Mail Pflicht; Telefon optional. */
+function bwLeadEmailOk(email: string): boolean {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
 }
 
-function bwLeadAddressOk(strasse: string, hausnummer: string): boolean {
-  return strasse.trim().length >= 2 && hausnummer.trim().length >= 1;
+function bwLeadAddressOk(
+  strasse: string,
+  hausnummer: string,
+  plz: string,
+  ort: string
+): boolean {
+  return (
+    strasse.trim().length >= 2 &&
+    hausnummer.trim().length >= 1 &&
+    /^\d{5}$/.test(plz.trim()) &&
+    ort.trim().length >= 2
+  );
+}
+
+function bwLeadFormOk(state: {
+  vorname: string;
+  nachname: string;
+  email: string;
+  strasse: string;
+  hausnummer: string;
+  plz: string;
+  ort: string;
+}): boolean {
+  return (
+    Boolean(state.vorname.trim()) &&
+    Boolean(state.nachname.trim()) &&
+    bwLeadEmailOk(state.email) &&
+    bwLeadAddressOk(state.strasse, state.hausnummer, state.plz, state.ort)
+  );
 }
 
 /** Betreuung: kein Ort-/PLZ-Schritt in {@link getBwRechnerScreenSequence}. */
@@ -1296,10 +1319,7 @@ function FunnelRechnerInner() {
         break;
       }
       case "lead": {
-        const invalidLead =
-          !state.name.trim() ||
-          !bwLeadContactOk(state.email, state.telefon) ||
-          !bwLeadAddressOk(state.strasse, state.hausnummer);
+        const invalidLead = !bwLeadFormOk(state);
         if (invalidLead) break;
         {
           const {
@@ -1577,17 +1597,10 @@ function FunnelRechnerInner() {
         return (
           isBwZuKomplexErgebnis(state, resultModus) ||
           leadSubmitting ||
-          !state.name.trim() ||
-          !bwLeadContactOk(state.email, state.telefon) ||
-          !bwLeadAddressOk(state.strasse, state.hausnummer)
+          !bwLeadFormOk(state)
         );
       case "lead":
-        return (
-          !state.name.trim() ||
-          !bwLeadContactOk(state.email, state.telefon) ||
-          !bwLeadAddressOk(state.strasse, state.hausnummer) ||
-          leadSubmitting
-        );
+        return !bwLeadFormOk(state) || leadSubmitting;
       case "beratung-lead":
         if (baumNotfallBeratung || gefahrenabwehrBeratung) return false;
         return (
@@ -1660,24 +1673,26 @@ function FunnelRechnerInner() {
   /** Erklärt, warum „Absenden“ ausgegraut ist (Footer nutzt dieselbe Logik wie nextDisabled). */
   const leadFormBlockHint = useMemo(() => {
     if (screen !== "lead" || leadSubmitting) return null;
-    if (!state.name.trim()) {
-      return "Bitte trage oben deinen Namen ein — ohne Namen bleibt „Preis anzeigen →“ ausgegraut.";
+    if (!state.vorname.trim() || !state.nachname.trim()) {
+      return "Bitte Vor- und Nachname eintragen — sonst bleibt „Preis anzeigen →“ ausgegraut.";
     }
-    if (!bwLeadContactOk(state.email, state.telefon)) {
-      return "Bitte eine gültige E-Mail oder eine Telefonnummer (mind. 3 Zeichen) angeben — sonst bleibt der Button gesperrt.";
+    if (!bwLeadEmailOk(state.email)) {
+      return "Bitte eine gültige E-Mail angeben — sonst bleibt der Button gesperrt.";
     }
-    if (!bwLeadAddressOk(state.strasse, state.hausnummer)) {
-      return "Bitte Straße und Hausnummer angeben.";
+    if (!bwLeadAddressOk(state.strasse, state.hausnummer, state.plz, state.ort)) {
+      return "Bitte Straße, Hausnummer, PLZ und Ort angeben.";
     }
     return null;
   }, [
     screen,
     leadSubmitting,
-    state.name,
+    state.vorname,
+    state.nachname,
     state.email,
-    state.telefon,
     state.strasse,
     state.hausnummer,
+    state.plz,
+    state.ort,
   ]);
 
   const showFooterNav =
@@ -1691,10 +1706,7 @@ function FunnelRechnerInner() {
   const handleLeadSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (leadSubmitting) return;
-    const invalidLead =
-      !state.name.trim() ||
-      !bwLeadContactOk(state.email, state.telefon) ||
-      !bwLeadAddressOk(state.strasse, state.hausnummer);
+    const invalidLead = !bwLeadFormOk(state);
     if (invalidLead) return;
     /** Kontakt-Gate: Formular-Enter → Preis, Absenden erst auf Ergebnis. */
     if (screen === "lead") {
@@ -1718,13 +1730,13 @@ function FunnelRechnerInner() {
     }
     setLeadSubmitError(null);
     setLeadSubmitting(true);
-    const nameTrim = state.name.trim();
     const notizen = buildFullLeadNotizen(state);
     try {
       const emailTrim = state.email.trim();
       const result = await submitBwLead(
         buildBwLeadPayload({
-          name: nameTrim,
+          vorname: state.vorname.trim(),
+          nachname: state.nachname.trim(),
           email: emailTrim || undefined,
           telefon: state.telefon.trim() || undefined,
           nachricht: notizen || undefined,
@@ -1735,9 +1747,16 @@ function FunnelRechnerInner() {
           plz: state.plz,
           strasse: state.strasse,
           hausnummer: state.hausnummer,
+          ort: state.ort,
           zeitraum: state.zeitraum,
           kundentyp: state.kundentyp,
           funnel_daten: serializeFunnelStateForLead(state),
+          extra_funnel_daten: {
+            vorname: state.vorname.trim(),
+            nachname: state.nachname.trim(),
+            ort: state.ort.trim(),
+            photoCount: state.photos.length,
+          },
         })
       );
       if (!result.ok) {
@@ -2462,6 +2481,8 @@ function FunnelRechnerInner() {
               mindestauftragAktiv={mindestauftragAktiv}
               resultModus={resultModus}
               schwellenwertAusgeloest={schwellenwertAusgeloest}
+              photos={state.photos}
+              onPhotosChange={addPhotos}
               onKomplexRueckrufSuccess={() => {
                 track.leadAbgeschickt(
                   formatTrackLeistung(state.situation, state.bereiche)
@@ -2646,7 +2667,7 @@ function FunnelRechnerInner() {
           <StepWrapper
             stepLabel="Kontakt"
             question="Deine Kontaktdaten"
-            subtext="Danach zeigen wir dir den Preisrahmen. Optional kannst du Fotos hinzufügen."
+            subtext="Danach zeigen wir dir den Preisrahmen."
             animateKey="lead"
           >
             {leadFormBlockHint ? (
@@ -2667,14 +2688,16 @@ function FunnelRechnerInner() {
                 </p>
               ) : null}
               <HWLeadForm
-                photos={state.photos}
-                onPhotosChange={addPhotos}
-                name={state.name}
+                vorname={state.vorname}
+                nachname={state.nachname}
                 email={state.email}
                 telefon={state.telefon}
                 strasse={state.strasse}
                 hausnummer={state.hausnummer}
+                plz={state.plz}
+                ort={state.ort}
                 onFieldChange={(field, value) => updateLeadField(field, value)}
+                onPlzChange={setPlz}
                 formId={LEAD_FORM_ID}
                 onSubmit={handleLeadSubmit}
               />

@@ -99,6 +99,7 @@ export function produktToFunnelState(
     telefon: "",
     strasse: "",
     hausnummer: "",
+    ort: "",
     selectedSlot: null,
     submitted: false,
   };
