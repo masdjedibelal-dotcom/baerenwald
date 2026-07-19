@@ -368,7 +368,7 @@ export function OrganisationObjektePanel({
       ) : null}
 
       {empty ? (
-        <div className="card-bordered p-6 text-center portal-text-body text-text-secondary">
+        <div className="portal-surface p-6 text-center portal-text-body text-text-secondary">
           Noch keine Objekte. Legen Sie Ihr erstes Gebäude an — Link und Aushang
           finden Sie danach im Detail.
         </div>
@@ -396,6 +396,7 @@ export function OrganisationObjektePanel({
                 hasRegeln={hasRegeln}
                 onOpen={() => setMode({ kind: "detail", id: o.id })}
                 onToggleSelect={() => toggleSel(o.id)}
+                onCoverUploaded={() => onRefresh()}
                 actions={
                   <>
                     {canAushang ? (

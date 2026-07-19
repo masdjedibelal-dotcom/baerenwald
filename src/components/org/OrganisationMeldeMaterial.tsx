@@ -9,9 +9,14 @@ import { orgPortalToast } from "@/lib/shared/portal-toast";
 type Props = {
   kunde: OrganisationKunde;
   objektCount?: number;
+  nested?: boolean;
 };
 
-export function OrganisationMeldeMaterial({ kunde, objektCount = 0 }: Props) {
+export function OrganisationMeldeMaterial({
+  kunde,
+  objektCount = 0,
+  nested = false,
+}: Props) {
   const orgKennung = kunde.org_kennung?.trim() ?? "";
   const meldeUrl = orgKennung ? buildMeldeUrl(orgKennung) : "";
   const [qrOpen, setQrOpen] = useState(false);
@@ -60,7 +65,13 @@ export function OrganisationMeldeMaterial({ kunde, objektCount = 0 }: Props) {
   }
 
   return (
-    <section className="card-bordered space-y-4 p-4 sm:p-5">
+    <section
+      className={
+        nested
+          ? "space-y-4 border-t border-border-default pt-5"
+          : "portal-surface space-y-4 p-4 sm:p-5"
+      }
+    >
       <div>
         <h3 className="font-semibold text-text-primary">Schadensmeldung für Mieter</h3>
         <p className="portal-text-meta mt-1 text-text-secondary">

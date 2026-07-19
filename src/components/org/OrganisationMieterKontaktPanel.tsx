@@ -10,12 +10,14 @@ type Props = {
   kunde: OrganisationKunde;
   onSaved: () => void;
   readOnly?: boolean;
+  nested?: boolean;
 };
 
 export function OrganisationMieterKontaktPanel({
   kunde,
   onSaved,
   readOnly = false,
+  nested = false,
 }: Props) {
   const [tel, setTel] = useState(kunde.mieter_kontakt_telefon ?? "");
   const [mail, setMail] = useState(kunde.mieter_kontakt_email ?? "");
@@ -57,7 +59,13 @@ export function OrganisationMieterKontaktPanel({
   }
 
   return (
-    <section className="card-bordered space-y-3 p-4 sm:p-5">
+    <section
+      className={
+        nested
+          ? "space-y-3 border-t border-border-default pt-5"
+          : "portal-surface space-y-3 p-4 sm:p-5"
+      }
+    >
       <div className="flex items-start justify-between gap-3">
         <div>
           <h2 className="font-semibold text-text-primary">Mieter-Kommunikation</h2>

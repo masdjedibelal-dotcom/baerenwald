@@ -21,7 +21,7 @@ export function OrganisationProfilPanel({ kunde, objektCount, onSaved, isAdmin =
 
   return (
     <div className="space-y-6">
-      <section className="card-bordered space-y-3 p-4 sm:p-5">
+      <section className="portal-surface space-y-3 p-4 sm:p-5">
         <h2 className="font-semibold text-text-primary">Organisation</h2>
         <div className="flex items-center gap-3">
           {kunde.org_logo_url ? (
@@ -63,7 +63,7 @@ export function OrganisationProfilPanel({ kunde, objektCount, onSaved, isAdmin =
 
       <OrganisationExportPanel />
 
-      <section className="card-bordered p-4 sm:p-5">
+      <section className="portal-surface p-4 sm:p-5">
         <h2 className="mb-4 font-semibold text-text-primary">Freigabe & Regeln</h2>
         <OrganisationEinstellungenPanel kunde={kunde} onSaved={onSaved} embedded readOnly={!isAdmin} />
       </section>

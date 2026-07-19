@@ -39,13 +39,22 @@ export async function getOrganisationPortalData(kundeId: string) {
   const { data: objekteRows, error: objErr } = await supabaseAdmin
     .from("kunden_objekte")
     .select(
-      "id, kunde_id, titel, strasse, hausnummer, plz, ort, typ, melde_slug, melde_aktiv, einheiten_hinweis, notizen_intern, kostenstelle_nr, freigabe_schwelle_eur, created_at"
+      "id, kunde_id, titel, strasse, hausnummer, plz, ort, typ, melde_slug, melde_aktiv, einheiten_hinweis, notizen_intern, kostenstelle_nr, freigabe_schwelle_eur, cover_url, created_at"
     )
     .eq("kunde_id", kundeId)
     .order("titel", { ascending: true });
 
   let rawObjekte = (objekteRows ?? []) as OrganisationObjekt[];
-  if (objErr && /typ/i.test(objErr.message)) {
+  if (objErr && /cover_url/i.test(objErr.message)) {
+    const { data: fallback } = await supabaseAdmin
+      .from("kunden_objekte")
+      .select(
+        "id, kunde_id, titel, strasse, hausnummer, plz, ort, typ, melde_slug, melde_aktiv, einheiten_hinweis, notizen_intern, kostenstelle_nr, freigabe_schwelle_eur, created_at"
+      )
+      .eq("kunde_id", kundeId)
+      .order("titel", { ascending: true });
+    rawObjekte = (fallback ?? []) as OrganisationObjekt[];
+  } else if (objErr && /typ/i.test(objErr.message)) {
     const { data: fallback } = await supabaseAdmin
       .from("kunden_objekte")
       .select(
@@ -54,6 +63,9 @@ export async function getOrganisationPortalData(kundeId: string) {
       .eq("kunde_id", kundeId)
       .order("titel", { ascending: true });
     rawObjekte = (fallback ?? []) as OrganisationObjekt[];
+  } else if (objErr) {
+    console.error("[getOrganisationPortalData] objekte", objErr.message);
+    rawObjekte = [];
   }
 
   const objektIds = rawObjekte.map((o) => o.id);

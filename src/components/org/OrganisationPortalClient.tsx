@@ -1,7 +1,7 @@
 "use client";
 
-import { OrganisationWiedervorlagenCard } from "@/components/org/OrganisationWiedervorlagenCard";
 import { OrganisationHvDashboard } from "@/components/org/OrganisationHvDashboard";
+import { PORTAL_HEADER_HERO_SRC } from "@/lib/portal2/portal-media";
 import { HvNotificationBell } from "@/components/org/HvNotificationBell";
 import { OrganisationAktiveAbosPanel } from "@/components/org/OrganisationAktiveAbosPanel";
 import { OrganisationServicepaketePanel } from "@/components/org/OrganisationServicepaketePanel";
@@ -40,7 +40,6 @@ import {
 } from "@/lib/portal2/hv-dashboard";
 import { portalCreateLabel } from "@/lib/portal2/create";
 import { buildPortalShellNav } from "@/lib/portal2/nav-items";
-import { PlusCircle } from "lucide-react";
 import { PortalShell } from "@/components/shared/PortalShell";
 import { useMemo, useState } from "react";
 
@@ -328,6 +327,7 @@ export function OrganisationPortalClient({
                 orgName={displayName}
                 kpis={hvKpis}
                 recent={recentItems}
+                heroImageUrl={PORTAL_HEADER_HERO_SRC}
                 onOpenFilter={openVorgaenge}
                 onOpenItem={(id) => {
                   setSection("vorgaenge");
@@ -337,17 +337,6 @@ export function OrganisationPortalClient({
                   );
                 }}
               />
-
-              <OrganisationWiedervorlagenCard />
-
-              <button
-                type="button"
-                className="btn-pill-primary inline-flex items-center gap-2"
-                onClick={() => setHubOpen(true)}
-              >
-                <PlusCircle className="h-4 w-4" />
-                {portalCreateLabel("kunde_hv")}
-              </button>
             </>
           ) : null}
 

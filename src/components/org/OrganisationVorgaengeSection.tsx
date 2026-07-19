@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
 
 import { OrganisationFreigabePanel } from "@/components/org/OrganisationFreigabePanel";
 import { PortalClient } from "@/components/portal/PortalClient";
@@ -18,7 +19,6 @@ import type {
 import { buildKundeVorgaenge } from "@/lib/portal/build-kunde-vorgaenge";
 import type { KundeVorgangFilter } from "@/lib/portal/kunde-vorgang-filter";
 import {
-  HV_BULK_DELETE_OFFENER_PUNKT,
   HV_CHIPS,
   HV_LISTE_PAGE_EYEBROW,
   HV_LISTE_PAGE_TITLE,
@@ -171,6 +171,8 @@ export function OrganisationVorgaengeSection({
   auftragIdByLeadId = {},
   hvAbnahmeByLeadId = {},
 }: Props) {
+  const searchParams = useSearchParams();
+  const detailOpen = Boolean(searchParams.get("id")?.trim());
   const [filter, setFilter] = useState<OrgVorgangFilter>(
     initialFilter ?? "freigabe"
   );
@@ -219,16 +221,12 @@ export function OrganisationVorgaengeSection({
 
   return (
     <div className="space-y-3">
-      <HvListeChrome
-        filter={filter}
-        onFilterChange={changeFilter}
-        freigabeCount={counts.freigabe}
-      />
-
-      {filter !== "freigabe" ? (
-        <p className="px-1 text-[11px]" style={{ color: PORTAL_C.faint }}>
-          {HV_BULK_DELETE_OFFENER_PUNKT}
-        </p>
+      {!detailOpen ? (
+        <HvListeChrome
+          filter={filter}
+          onFilterChange={changeFilter}
+          freigabeCount={counts.freigabe}
+        />
       ) : null}
 
       {filter === "freigabe" ? (
@@ -253,26 +251,24 @@ export function OrganisationVorgaengeSection({
           hvAbnahmeByLeadId={hvAbnahmeByLeadId}
         />
       ) : (
-        <div className="overflow-hidden rounded-xl border border-[rgba(0,0,0,0.08)] bg-white">
-          <PortalClient
-            layout="embedded"
-            hideFilterBar
-            hvPortalMode
-            controlledVorgangFilter={vorgangFilter}
-            kunde={{
-              name: kunde.org_anzeigename ?? kunde.name,
-              email: kunde.email,
-              freigabe_schwelle_eur: kunde.freigabe_schwelle_eur,
-            }}
-            leads={leads as Parameters<typeof PortalClient>[0]["leads"]}
-            angebote={angebote as Parameters<typeof PortalClient>[0]["angebote"]}
-            auftraege={auftraege}
-            hwErledigtByLeadId={hwErledigtByLeadId}
-            hvFeedbackByLeadId={hvFeedbackByLeadId}
-            auftragIdByLeadId={auftragIdByLeadId}
-            hvAbnahmeByLeadId={hvAbnahmeByLeadId}
-          />
-        </div>
+        <PortalClient
+          layout="embedded"
+          hideFilterBar
+          hvPortalMode
+          controlledVorgangFilter={vorgangFilter}
+          kunde={{
+            name: kunde.org_anzeigename ?? kunde.name,
+            email: kunde.email,
+            freigabe_schwelle_eur: kunde.freigabe_schwelle_eur,
+          }}
+          leads={leads as Parameters<typeof PortalClient>[0]["leads"]}
+          angebote={angebote as Parameters<typeof PortalClient>[0]["angebote"]}
+          auftraege={auftraege}
+          hwErledigtByLeadId={hwErledigtByLeadId}
+          hvFeedbackByLeadId={hvFeedbackByLeadId}
+          auftragIdByLeadId={auftragIdByLeadId}
+          hvAbnahmeByLeadId={hvAbnahmeByLeadId}
+        />
       )}
     </div>
   );

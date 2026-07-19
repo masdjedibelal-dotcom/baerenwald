@@ -19,7 +19,7 @@ export function OrgMelderStatusLinkPanel({ statusUrl, melderName }: Props) {
   }
 
   return (
-    <section className="card-bordered space-y-2 p-4">
+    <section className="portal-surface space-y-2 p-4">
       <h3 className="text-sm font-semibold text-text-primary">Mieter-Status-Link</h3>
       <p className="portal-text-meta text-text-secondary">
         {melderName?.trim()

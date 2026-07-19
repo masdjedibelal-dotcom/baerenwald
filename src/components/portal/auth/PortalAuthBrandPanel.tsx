@@ -1,5 +1,7 @@
 "use client";
 
+import Image from "next/image";
+
 import {
   AUTH_BRAND_BODY_BW,
   AUTH_BRAND_BODY_WL,
@@ -24,6 +26,7 @@ type Props = {
 
 /**
  * Mock `authBrand()` — linke Spalte; WL = HV-Farben.
+ * Bärenwald-Portale: Marke = Logo (nicht Buchstabe „B“).
  */
 export function PortalAuthBrandPanel({
   role,
@@ -38,9 +41,13 @@ export function PortalAuthBrandPanel({
   const bg = wl
     ? primaryDk?.trim() || "var(--org-primary-dk, #1a3d2b)"
     : "#1a3d2b";
-  const mark = wl
-    ? (logoKuerzel?.trim() || name.trim().charAt(0) || "H").slice(0, 2).toUpperCase()
-    : "B";
+  const wlMark = (
+    logoKuerzel?.trim() ||
+    name.trim().charAt(0) ||
+    "H"
+  )
+    .slice(0, 2)
+    .toUpperCase();
 
   return (
     <aside
@@ -48,9 +55,20 @@ export function PortalAuthBrandPanel({
       style={{ background: bg }}
     >
       <div className="portal-auth-brand-head">
-        <div className="portal-auth-brand-mark" style={{ color: bg }}>
-          {mark}
-        </div>
+        {wl ? (
+          <div className="portal-auth-brand-mark" style={{ color: bg }}>
+            {wlMark}
+          </div>
+        ) : (
+          <Image
+            src="/logo-mark-white.png"
+            alt="Bärenwald"
+            width={40}
+            height={40}
+            priority
+            className="portal-auth-brand-logo"
+          />
+        )}
         <div>
           <div className="portal-auth-brand-name">{name}</div>
           {wl && orgSub?.trim() ? (

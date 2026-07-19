@@ -3,10 +3,9 @@
  *
  * Spec-Schrittfolge (verbindlich für Live):
  * objekt → einheiten → bereich → kategorie → fachdetail → notfall → medien →
- * beschreibung → stamm → verwaltung → regeln → termin → fertig
+ * beschreibung → stamm → verwaltung → regeln → fertig
  *
- * Pflichtlogik erweitert aus Mock `createStepValid` / `createNext`
- * (Mock-Demo hatte nur objekt/kategorie/beschreibung/notfall).
+ * Termin-Schritt entfernt (Produkt 2026-07) — Koordination später im Portal.
  */
 
 import {
@@ -33,7 +32,6 @@ export type MeldeFunnelStepId =
   | "stamm"
   | "verwaltung"
   | "regeln"
-  | "termin"
   | "fertig";
 
 export type MeldeFunnelStep = readonly [MeldeFunnelStepId, string];
@@ -51,7 +49,6 @@ export const MELDE_FUNNEL_STEPS: MeldeFunnelStep[] = [
   ["stamm", "Kontakt"],
   ["verwaltung", "Verwaltung"],
   ["regeln", "Regeln"],
-  ["termin", "Terminwunsch"],
   ["fertig", "Absenden"],
 ];
 
@@ -68,8 +65,6 @@ export type MeldeFunnelDraft = {
   email?: string;
   telefon?: string;
   regelnAccepted?: boolean;
-  /** MELDE_SLOTS-Zeile oder qualitativ (`sofort`/`diese_woche`/`flexibel`) */
-  terminwunsch?: string | null;
 };
 
 export const MELDE_FUNNEL_TITLES: Record<
@@ -93,7 +88,6 @@ export const MELDE_FUNNEL_TITLES: Record<
     en: "Your property management",
   },
   regeln: { de: "Hinweise & Einwilligung", en: "Notes & consent" },
-  termin: { de: "Terminwunsch", en: "Preferred appointment" },
   fertig: { de: "Prüfen & absenden", en: "Review & submit" },
 };
 
@@ -129,10 +123,6 @@ export const MELDE_FUNNEL_ERRORS: Record<string, { de: string; en: string }> = {
   regeln: {
     de: "Bitte der Verarbeitung zustimmen.",
     en: "Please accept data processing.",
-  },
-  termin: {
-    de: "Bitte einen Terminwunsch wählen.",
-    en: "Please choose a preferred slot.",
   },
 };
 
@@ -182,7 +172,6 @@ export function createStepValid(
     return !!(d.name?.trim() && d.email?.trim());
   if (step === "verwaltung") return true;
   if (step === "regeln") return d.regelnAccepted === true;
-  if (step === "termin") return !!d.terminwunsch?.trim();
   if (step === "fertig") return true;
   return true;
 }

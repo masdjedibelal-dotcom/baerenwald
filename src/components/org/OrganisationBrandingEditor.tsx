@@ -28,6 +28,8 @@ type Props = {
   kunde: OrganisationKunde;
   readOnly?: boolean;
   onSaved: () => void;
+  /** Ohne äußere Surface — z. B. in PortalEinstellungenShell. */
+  nested?: boolean;
 };
 
 type Draft = {
@@ -66,6 +68,7 @@ export function OrganisationBrandingEditor({
   kunde,
   readOnly = false,
   onSaved,
+  nested = false,
 }: Props) {
   const [draft, setDraft] = useState(() => draftFromKunde(kunde));
   const [saving, setSaving] = useState(false);
@@ -148,7 +151,13 @@ export function OrganisationBrandingEditor({
   };
 
   return (
-    <section className="card-bordered space-y-4 p-4 sm:p-5">
+    <section
+      className={
+        nested
+          ? "space-y-4"
+          : "portal-surface space-y-4 p-4 sm:p-5"
+      }
+    >
       <div>
         <h2 className="font-[family-name:var(--font-display)] text-sm font-bold text-text-primary">
           {EINSTELLUNGEN_BRANDING_TITLE}

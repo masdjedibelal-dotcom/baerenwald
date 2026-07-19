@@ -44,7 +44,7 @@ const order = MELDE_FUNNEL_STEPS.map((s) => s[0]);
 assert(
   "step order",
   order.join(",") ===
-    "objekt,einheiten,bereich,kategorie,fachdetail,notfall,medien,beschreibung,stamm,verwaltung,regeln,termin,fertig"
+    "objekt,einheiten,bereich,kategorie,fachdetail,notfall,medien,beschreibung,stamm,verwaltung,regeln,fertig"
 );
 
 assert("FACHFRAGEN 7 keys", Object.keys(FACHFRAGEN).length === 7);
@@ -102,7 +102,6 @@ const base: MeldeFunnelDraft = {
   name: "Max Mustermann",
   email: "max@example.com",
   regelnAccepted: true,
-  terminwunsch: "flexibel",
 };
 
 assert("valid objekt", createStepValid("objekt", base));

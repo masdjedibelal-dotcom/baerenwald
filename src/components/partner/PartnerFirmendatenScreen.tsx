@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import { updatePartnerProfil } from "@/app/actions/partner-profil";
+import { PortalEinstellungenShell } from "@/components/shared/PortalEinstellungenShell";
 import {
   EinstellungenEdField,
   EinstellungenGrid2,
@@ -11,14 +12,10 @@ import {
 } from "@/components/shared/PortalEinstellungenUi";
 import type { PartnerHandwerkerProfil } from "@/lib/partner/get-partner-data";
 import {
-  HW_FIRMEN_CARD_TITLE,
   HW_FIRMEN_FOOTER,
-  HW_FIRMEN_INTRO,
   HW_FIRMEN_LOGO_HINT,
   HW_FIRMEN_SECTIONS,
-  einstellungenMaxWidthClass,
 } from "@/lib/portal2/einstellungen-ui";
-import { einstellungenPageTitle } from "@/lib/portal2/einstellungen";
 import { partnerPortalToast, portalToastError } from "@/lib/shared/portal-toast";
 
 type Draft = {
@@ -78,7 +75,8 @@ function draftFromProfil(h: PartnerHandwerkerProfil): Draft {
 }
 
 /**
- * D12 Handwerker — Mock `screenSettings` / Firmendaten (edField + grid2, max 640).
+ * D12 Handwerker — Einstellungen mit Subnav:
+ * Anschrift & Kontakt · Steuer & Register · Bankverbindung
  */
 export function PartnerFirmendatenScreen({
   handwerker,
@@ -139,149 +137,149 @@ export function PartnerFirmendatenScreen({
     schedule({ ...draft, [key]: val });
   };
 
+  const footer = (
+    <p className="text-[11.5px] leading-relaxed text-text-tertiary">
+      {HW_FIRMEN_FOOTER}
+      {saving ? " · Speichern…" : ""}
+    </p>
+  );
+
   return (
-    <div
-      className={`mx-auto flex w-full flex-col gap-3.5 ${einstellungenMaxWidthClass("handwerker")}`}
-    >
-      <div className="space-y-0.5">
-        <h2 className="portal-text-section text-text-primary">
-          {einstellungenPageTitle("handwerker")}
-        </h2>
-      </div>
-
-      <section className="card-bordered space-y-4 p-4 sm:p-5">
-        <div>
-          <h3 className="font-[family-name:var(--font-display)] text-sm font-bold text-text-primary">
-            {HW_FIRMEN_CARD_TITLE}
-          </h3>
-          <p className="mt-2 text-[13px] leading-relaxed text-text-secondary">
-            {HW_FIRMEN_INTRO}
-          </p>
-        </div>
-
-        <div>
-          <EinstellungenSectionLabel>
-            {HW_FIRMEN_SECTIONS.logo}
-          </EinstellungenSectionLabel>
-          <div className="flex items-center gap-3.5">
-            <div className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-border-default bg-muted">
-              <span className="font-[family-name:var(--font-display)] text-sm font-bold text-text-primary">
-                {draft.logo}
-              </span>
+    <PortalEinstellungenShell variant="handwerker">
+      {(tab) => {
+        if (tab === "steuer") {
+          return (
+            <div className="space-y-3">
+              <EinstellungenSectionLabel>
+                {HW_FIRMEN_SECTIONS.steuer}
+              </EinstellungenSectionLabel>
+              <div className="flex flex-col gap-[11px]">
+                <EinstellungenGrid2>
+                  <EinstellungenEdField
+                    label="USt-IdNr."
+                    value={draft.ustid}
+                    onChange={(v) => set("ustid", v)}
+                  />
+                  <EinstellungenEdField
+                    label="Steuernummer"
+                    value={draft.steuernr}
+                    onChange={(v) => set("steuernr", v)}
+                  />
+                </EinstellungenGrid2>
+                <EinstellungenEdField
+                  label="Handelsregister"
+                  value={draft.hrb}
+                  onChange={(v) => set("hrb", v)}
+                />
+              </div>
+              {footer}
             </div>
-            <p className="text-[12.5px] leading-relaxed text-text-secondary">
-              {HW_FIRMEN_LOGO_HINT}
-            </p>
-          </div>
-        </div>
+          );
+        }
 
-        <div>
-          <EinstellungenSectionLabel>
-            {HW_FIRMEN_SECTIONS.anschrift}
-          </EinstellungenSectionLabel>
-          <div className="flex flex-col gap-[11px]">
-            <EinstellungenGrid2>
-              <EinstellungenEdField
-                label="Firmenname"
-                value={draft.firma}
-                onChange={(v) => set("firma", v)}
-                autoComplete="organization"
-              />
-              <EinstellungenEdField
-                label="Inhaber / Geschäftsführung"
-                value={draft.inhaber}
-                onChange={(v) => set("inhaber", v)}
-                autoComplete="name"
-              />
-            </EinstellungenGrid2>
-            <EinstellungenGrid2>
-              <EinstellungenEdField
-                label="Straße"
-                value={draft.strasse}
-                onChange={(v) => set("strasse", v)}
-                autoComplete="street-address"
-              />
-              <EinstellungenEdField
-                label="PLZ / Ort"
-                value={draft.ort}
-                onChange={(v) => set("ort", v)}
-                autoComplete="address-level2"
-              />
-            </EinstellungenGrid2>
-            <EinstellungenGrid2>
-              <EinstellungenEdField
-                label="Telefon"
-                value={draft.tel}
-                onChange={(v) => set("tel", v)}
-                type="tel"
-                autoComplete="tel"
-              />
-              <EinstellungenEdField
-                label="E-Mail"
-                value={draft.mail}
-                onChange={() => undefined}
-                disabled
-              />
-            </EinstellungenGrid2>
-          </div>
-        </div>
+        if (tab === "bank") {
+          return (
+            <div className="space-y-3">
+              <EinstellungenSectionLabel>
+                {HW_FIRMEN_SECTIONS.bank}
+              </EinstellungenSectionLabel>
+              <div className="flex flex-col gap-[11px]">
+                <EinstellungenEdField
+                  label="IBAN"
+                  value={draft.iban}
+                  onChange={(v) => set("iban", v)}
+                  autoComplete="off"
+                />
+                <EinstellungenGrid2>
+                  <EinstellungenEdField
+                    label="BIC"
+                    value={draft.bic}
+                    onChange={(v) => set("bic", v)}
+                  />
+                  <EinstellungenEdField
+                    label="Bank"
+                    value={draft.bank}
+                    onChange={(v) => set("bank", v)}
+                  />
+                </EinstellungenGrid2>
+              </div>
+              {footer}
+            </div>
+          );
+        }
 
-        <div>
-          <EinstellungenSectionLabel>
-            {HW_FIRMEN_SECTIONS.steuer}
-          </EinstellungenSectionLabel>
-          <div className="flex flex-col gap-[11px]">
-            <EinstellungenGrid2>
-              <EinstellungenEdField
-                label="USt-IdNr."
-                value={draft.ustid}
-                onChange={(v) => set("ustid", v)}
-              />
-              <EinstellungenEdField
-                label="Steuernummer"
-                value={draft.steuernr}
-                onChange={(v) => set("steuernr", v)}
-              />
-            </EinstellungenGrid2>
-            <EinstellungenEdField
-              label="Handelsregister"
-              value={draft.hrb}
-              onChange={(v) => set("hrb", v)}
-            />
-          </div>
-        </div>
+        return (
+          <div className="space-y-4">
+            <div>
+              <EinstellungenSectionLabel>
+                {HW_FIRMEN_SECTIONS.logo}
+              </EinstellungenSectionLabel>
+              <div className="flex items-center gap-3.5">
+                <div className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-border-default bg-muted">
+                  <span className="font-[family-name:var(--font-display)] text-sm font-bold text-text-primary">
+                    {draft.logo}
+                  </span>
+                </div>
+                <p className="text-[12.5px] leading-relaxed text-text-secondary">
+                  {HW_FIRMEN_LOGO_HINT}
+                </p>
+              </div>
+            </div>
 
-        <div>
-          <EinstellungenSectionLabel>
-            {HW_FIRMEN_SECTIONS.bank}
-          </EinstellungenSectionLabel>
-          <div className="flex flex-col gap-[11px]">
-            <EinstellungenEdField
-              label="IBAN"
-              value={draft.iban}
-              onChange={(v) => set("iban", v)}
-              autoComplete="off"
-            />
-            <EinstellungenGrid2>
-              <EinstellungenEdField
-                label="BIC"
-                value={draft.bic}
-                onChange={(v) => set("bic", v)}
-              />
-              <EinstellungenEdField
-                label="Bank"
-                value={draft.bank}
-                onChange={(v) => set("bank", v)}
-              />
-            </EinstellungenGrid2>
+            <div>
+              <EinstellungenSectionLabel>
+                {HW_FIRMEN_SECTIONS.anschrift}
+              </EinstellungenSectionLabel>
+              <div className="flex flex-col gap-[11px]">
+                <EinstellungenGrid2>
+                  <EinstellungenEdField
+                    label="Firmenname"
+                    value={draft.firma}
+                    onChange={(v) => set("firma", v)}
+                    autoComplete="organization"
+                  />
+                  <EinstellungenEdField
+                    label="Inhaber / Geschäftsführung"
+                    value={draft.inhaber}
+                    onChange={(v) => set("inhaber", v)}
+                    autoComplete="name"
+                  />
+                </EinstellungenGrid2>
+                <EinstellungenGrid2>
+                  <EinstellungenEdField
+                    label="Straße"
+                    value={draft.strasse}
+                    onChange={(v) => set("strasse", v)}
+                    autoComplete="street-address"
+                  />
+                  <EinstellungenEdField
+                    label="PLZ / Ort"
+                    value={draft.ort}
+                    onChange={(v) => set("ort", v)}
+                    autoComplete="address-level2"
+                  />
+                </EinstellungenGrid2>
+                <EinstellungenGrid2>
+                  <EinstellungenEdField
+                    label="Telefon"
+                    value={draft.tel}
+                    onChange={(v) => set("tel", v)}
+                    type="tel"
+                    autoComplete="tel"
+                  />
+                  <EinstellungenEdField
+                    label="E-Mail"
+                    value={draft.mail}
+                    onChange={() => undefined}
+                    disabled
+                  />
+                </EinstellungenGrid2>
+              </div>
+            </div>
+            {footer}
           </div>
-        </div>
-
-        <p className="text-[11.5px] leading-relaxed text-text-tertiary">
-          {HW_FIRMEN_FOOTER}
-          {saving ? " · Speichern…" : ""}
-        </p>
-      </section>
-    </div>
+        );
+      }}
+    </PortalEinstellungenShell>
   );
 }

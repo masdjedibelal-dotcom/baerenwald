@@ -2,6 +2,7 @@
 
 import type { ReactNode } from "react";
 
+import { OrganisationObjektCover } from "@/components/org/OrganisationObjektCover";
 import type { ObjCardModel } from "@/lib/portal2/objekte";
 import { cn } from "@/lib/utils";
 
@@ -12,11 +13,12 @@ type Props = {
   onOpen: () => void;
   onToggleSelect: () => void;
   actions?: ReactNode;
+  onCoverUploaded?: (url: string) => void;
 };
 
 /**
  * TEIL E / E1 — Mock `screenObjekte` Karte:
- * Name · Adresse · Badges offen / n Wohneinheiten · Aktionen.
+ * Gebäudefoto · Name · Adresse · Badges · Aktionen.
  */
 export function OrganisationObjektCard({
   card,
@@ -25,6 +27,7 @@ export function OrganisationObjektCard({
   onOpen,
   onToggleSelect,
   actions,
+  onCoverUploaded,
 }: Props) {
   return (
     <div
@@ -61,8 +64,16 @@ export function OrganisationObjektCard({
         {selected ? "✓" : ""}
       </button>
 
-      <div className="flex h-[140px] w-full items-center justify-center bg-gradient-to-br from-muted to-[#e8ebe9] text-xs text-text-tertiary">
-        Gebäudefoto ziehen
+      <div
+        onClick={(e) => e.stopPropagation()}
+        onKeyDown={(e) => e.stopPropagation()}
+      >
+        <OrganisationObjektCover
+          objektId={card.id}
+          coverUrl={card.coverUrl}
+          variant="card"
+          onUploaded={onCoverUploaded}
+        />
       </div>
 
       <div className="p-4">

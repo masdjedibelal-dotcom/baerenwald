@@ -29,7 +29,7 @@ export function PortalVorgangFeedbackSection({
   if (mieterFeedback || done) {
     const s = mieterFeedback?.sterne ?? sterne;
     return (
-      <article className="card-bordered space-y-2 p-4">
+      <article className="portal-surface space-y-2 p-4">
         <PortalDetailSuccessBox>
           <p className="font-semibold">Danke für dein Feedback!</p>
           {s > 0 ? (
@@ -69,7 +69,7 @@ export function PortalVorgangFeedbackSection({
   }
 
   return (
-    <article className="card-bordered space-y-3 p-4">
+    <article className="portal-surface space-y-3 p-4">
       <p className="portal-text-body font-semibold text-text-primary">
         Wie war der Service?
       </p>

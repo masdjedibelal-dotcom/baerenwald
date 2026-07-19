@@ -24,7 +24,6 @@ import {
   submitBwLead,
   serializeFunnelStateForLead,
 } from "@/components/funnel/LeadStep";
-import { LeadAvailabilityHint } from "@/components/funnel/ResultScreen";
 import { FunnelFooter } from "@/components/funnel/FunnelFooter";
 import { FunnelHeader } from "@/components/funnel/FunnelHeader";
 import { FunnelProgressBar } from "@/components/funnel/FunnelProgressBar";
@@ -496,7 +495,11 @@ function FunnelRechnerInner() {
     (currentScreen: Screen): boolean => {
       if (!preisVonKiModus) return false;
       if (currentScreen === "lead") {
-        setScreen("result");
+        goBackFromKiPreisErgebnis();
+        return true;
+      }
+      if (currentScreen === "loading" || currentScreen === "result") {
+        setScreen("lead");
         window.scrollTo({
           top: 0,
           left: 0,
@@ -504,11 +507,7 @@ function FunnelRechnerInner() {
         });
         return true;
       }
-      if (
-        currentScreen === "loading" ||
-        currentScreen === "result" ||
-        currentScreen === "beratung-lead"
-      ) {
+      if (currentScreen === "beratung-lead") {
         goBackFromKiPreisErgebnis();
         return true;
       }
@@ -620,7 +619,7 @@ function FunnelRechnerInner() {
 
       if (opts.navigate) {
         setEinstiegModus("funnel");
-        setScreen("loading");
+        setScreen("lead");
       }
       return "preis";
     },
@@ -1199,8 +1198,8 @@ function FunnelRechnerInner() {
             setMindestauftrag(mindestauftragAktiv);
             setResultModus(rm);
             setSchwellenwertAusgeloest(swa);
-            setPriceConfirmed(true);
-            setScreen("loading");
+            setPriceConfirmed(false);
+            setScreen("lead");
           } else {
             setScreen("ort");
           }
@@ -1292,20 +1291,42 @@ function FunnelRechnerInner() {
         setMindestauftrag(mindestauftragAktiv);
         setResultModus(rm);
         setSchwellenwertAusgeloest(swa);
-        setPriceConfirmed(true);
-        setScreen("loading");
+        setPriceConfirmed(false);
+        setScreen("lead");
+        break;
+      }
+      case "lead": {
+        const invalidLead =
+          !state.name.trim() ||
+          !bwLeadContactOk(state.email, state.telefon) ||
+          !bwLeadAddressOk(state.strasse, state.hausnummer);
+        if (invalidLead) break;
+        {
+          const {
+            min,
+            max,
+            breakdown,
+            mindestauftragAktiv,
+            resultModus: rm,
+            schwellenwertAusgeloest: swa,
+            istFallback,
+            komplexReason,
+          } = calculatePrice(state);
+          setPrice(min, max, breakdown, istFallback, komplexReason ?? null);
+          setMindestauftrag(mindestauftragAktiv);
+          setResultModus(rm);
+          setSchwellenwertAusgeloest(swa);
+          setPriceConfirmed(true);
+          setScreen("loading");
+        }
         break;
       }
       case "result":
         if (isBwZuKomplexErgebnis(state, resultModus)) break;
-        setScreen("lead");
-        break;
-      case "lead": {
         (
           document.getElementById(LEAD_FORM_ID) as HTMLFormElement | null
         )?.requestSubmit();
         break;
-      }
       case "beratung-lead":
         if (baumNotfallBeratung || gefahrenabwehrBeratung) break;
         (
@@ -1423,23 +1444,9 @@ function FunnelRechnerInner() {
       case "result":
       case "beratung-lead":
         if (tryBackFromKiFunnel(screen)) break;
-        if (screen === "loading") {
-          setPriceConfirmed(true);
-          setScreen(
-            bwSkipsOrtPlzScreen(state.situation) ? "kundentyp" : "ort"
-          );
-          window.scrollTo({
-            top: 0,
-            left: 0,
-            behavior: "instant" as ScrollBehavior,
-          });
-          break;
-        }
-        if (screen === "result") {
-          setPriceConfirmed(true);
-          setScreen(
-            bwSkipsOrtPlzScreen(state.situation) ? "kundentyp" : "ort"
-          );
+        if (screen === "loading" || screen === "result") {
+          setPriceConfirmed(false);
+          setScreen("lead");
           window.scrollTo({
             top: 0,
             left: 0,
@@ -1460,7 +1467,10 @@ function FunnelRechnerInner() {
         break;
       case "lead":
         if (tryBackFromKiFunnel("lead")) break;
-        setScreen("result");
+        setPriceConfirmed(false);
+        setScreen(
+          bwSkipsOrtPlzScreen(state.situation) ? "kundentyp" : "ort"
+        );
         window.scrollTo({
           top: 0,
           left: 0,
@@ -1564,7 +1574,13 @@ function FunnelRechnerInner() {
       case "loading":
         return true;
       case "result":
-        return isBwZuKomplexErgebnis(state, resultModus);
+        return (
+          isBwZuKomplexErgebnis(state, resultModus) ||
+          leadSubmitting ||
+          !state.name.trim() ||
+          !bwLeadContactOk(state.email, state.telefon) ||
+          !bwLeadAddressOk(state.strasse, state.hausnummer)
+        );
       case "lead":
         return (
           !state.name.trim() ||
@@ -1605,13 +1621,13 @@ function FunnelRechnerInner() {
     if (einstiegModus === "wahl") return "Weiter →";
     if (screen === "trust_intro") return "Los geht's →";
     if (screen === "kundentyp" && bwSkipsOrtPlzScreen(state.situation)) {
-      return priceConfirmed ? "Weiter →" : "Preis berechnen";
+      return "Weiter →";
     }
     if (screen === "ort") {
-      return priceConfirmed ? "Weiter →" : "Preis berechnen";
+      return "Weiter →";
     }
-    if (screen === "lead" && leadSubmitting) return "Wird gesendet…";
-    if (screen === "lead") return "Absenden →";
+    if (screen === "lead") return "Preis anzeigen →";
+    if (screen === "result" && leadSubmitting) return "Wird gesendet…";
     if (screen === "beratung-lead") {
       if (baumNotfallBeratung || gefahrenabwehrBeratung) return "Jetzt anrufen →";
       if (gartenBeratungLeadKind === "garten_planung" || gartenBeratungLeadKind === "garten_terrasse") {
@@ -1623,8 +1639,8 @@ function FunnelRechnerInner() {
       return "Rückruf anfordern →";
     }
     if (screen === "result" && resultModus === "preisrahmen_warnung")
-      return "Vor-Ort-Termin anfragen";
-    if (screen === "result") return "Weiter";
+      return "Absenden →";
+    if (screen === "result") return "Absenden →";
     return "Weiter →";
   }, [
     screen,
@@ -1645,13 +1661,13 @@ function FunnelRechnerInner() {
   const leadFormBlockHint = useMemo(() => {
     if (screen !== "lead" || leadSubmitting) return null;
     if (!state.name.trim()) {
-      return "Bitte trage oben deinen Namen ein — ohne Namen bleibt „Absenden →“ ausgegraut.";
+      return "Bitte trage oben deinen Namen ein — ohne Namen bleibt „Preis anzeigen →“ ausgegraut.";
     }
     if (!bwLeadContactOk(state.email, state.telefon)) {
       return "Bitte eine gültige E-Mail oder eine Telefonnummer (mind. 3 Zeichen) angeben — sonst bleibt der Button gesperrt.";
     }
     if (!bwLeadAddressOk(state.strasse, state.hausnummer)) {
-      return "Bitte Straße und Hausnummer angeben — für den Vor-Ort-Termin.";
+      return "Bitte Straße und Hausnummer angeben.";
     }
     return null;
   }, [
@@ -1679,7 +1695,27 @@ function FunnelRechnerInner() {
       !state.name.trim() ||
       !bwLeadContactOk(state.email, state.telefon) ||
       !bwLeadAddressOk(state.strasse, state.hausnummer);
-    if (screen === "lead" && invalidLead) return;
+    if (invalidLead) return;
+    /** Kontakt-Gate: Formular-Enter → Preis, Absenden erst auf Ergebnis. */
+    if (screen === "lead") {
+      const {
+        min,
+        max,
+        breakdown,
+        mindestauftragAktiv,
+        resultModus: rm,
+        schwellenwertAusgeloest: swa,
+        istFallback,
+        komplexReason,
+      } = calculatePrice(state);
+      setPrice(min, max, breakdown, istFallback, komplexReason ?? null);
+      setMindestauftrag(mindestauftragAktiv);
+      setResultModus(rm);
+      setSchwellenwertAusgeloest(swa);
+      setPriceConfirmed(true);
+      setScreen("loading");
+      return;
+    }
     setLeadSubmitError(null);
     setLeadSubmitting(true);
     const nameTrim = state.name.trim();
@@ -2436,6 +2472,21 @@ function FunnelRechnerInner() {
               }}
               onReset={handleReset}
             />
+            {/* Hidden lead form so footer „Absenden“ via requestSubmit funktioniert */}
+            <form
+              id={LEAD_FORM_ID}
+              className="hidden"
+              onSubmit={handleLeadSubmit}
+              aria-hidden
+            />
+            {leadSubmitError ? (
+              <p
+                className="mt-3 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-900"
+                role="alert"
+              >
+                {leadSubmitError}
+              </p>
+            ) : null}
           </StepWrapper>
         );
 
@@ -2593,12 +2644,11 @@ function FunnelRechnerInner() {
       case "lead":
         return (
           <StepWrapper
-            stepLabel="Ergebnis"
-            question="Fast geschafft"
-            subtext="Optional Fotos, Terminwunsch — wir melden uns."
+            stepLabel="Kontakt"
+            question="Deine Kontaktdaten"
+            subtext="Danach zeigen wir dir den Preisrahmen. Optional kannst du Fotos hinzufügen."
             animateKey="lead"
           >
-            <LeadAvailabilityHint className="mb-4" />
             {leadFormBlockHint ? (
               <p
                 className="mb-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-950"

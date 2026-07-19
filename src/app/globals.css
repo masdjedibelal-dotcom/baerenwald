@@ -273,8 +273,45 @@ h3 {
     @apply text-xs font-semibold uppercase tracking-wider;
   }
 
+  /* Mock KPI-Tiles — weiß, Hairline, kein Card-Stack */
   .portal-kpi-card {
-    @apply card-bordered min-w-0 overflow-hidden p-3 sm:p-4;
+    min-width: 0;
+    overflow: hidden;
+    padding: 0.75rem 1rem;
+    background: #fff;
+    border: 0.5px solid var(--p2-line, rgba(0, 0, 0, 0.08));
+    border-radius: 14px;
+    box-shadow: var(--p2-shadow, 0 1px 3px rgba(0, 0, 0, 0.04));
+  }
+
+  /* Zusammenhängende Listenfläche (Mock „Zuletzt“ / Liste) */
+  .portal-list-panel {
+    background: #fff;
+    border: 0.5px solid var(--p2-line, rgba(0, 0, 0, 0.08));
+    border-radius: 12px;
+    overflow: hidden;
+  }
+
+  .portal-list-panel > * + * {
+    border-top: 0.5px solid var(--p2-line2, rgba(0, 0, 0, 0.05));
+  }
+
+  .portal-list-rows > * + * {
+    border-top: 0.5px solid var(--p2-line2, rgba(0, 0, 0, 0.05));
+  }
+
+  /* Inhalt ohne Card-Chrome — fließt auf Content-BG */
+  .portal-surface {
+    background: transparent;
+    border: none;
+    border-radius: 0;
+    box-shadow: none;
+  }
+
+  .portal-page-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
   }
 
   .portal-kpi-label {
@@ -1357,9 +1394,38 @@ h3 {
     justify-content: center;
   }
 
-  /* PortalShell (Design P0-1) */
+  /* PortalShell — Mock desktopFrame: eine Fläche Sidebar + Content */
   .portal-shell-header {
     @apply border-b border-border-default bg-surface-card/95 backdrop-blur-sm;
+  }
+
+  .portal-shell-body {
+    max-width: 1180px;
+    margin-inline: auto;
+  }
+
+  .portal-shell-frame {
+    display: flex;
+    align-items: stretch;
+    min-width: 0;
+    background: transparent;
+  }
+
+  @media (min-width: 1024px) {
+    .portal-shell-body {
+      padding: 20px 24px 28px;
+    }
+
+    .portal-shell-frame {
+      overflow: hidden;
+      min-height: calc(100vh - 88px);
+      border-radius: 16px;
+      border: 0.5px solid var(--p2-line, rgba(0, 0, 0, 0.08));
+      background: var(--p2-panel, #fff);
+      box-shadow:
+        0 16px 40px -12px rgba(0, 0, 0, 0.18),
+        0 4px 10px -4px rgba(0, 0, 0, 0.07);
+    }
   }
 
   .portal-shell-sidebar {
@@ -1370,14 +1436,21 @@ h3 {
     padding: 14px 10px 12px;
     background: var(--org-primary-dk, var(--accent-dark, #1a3d2b));
     color: rgba(255, 255, 255, 0.62);
-    @apply sticky top-[60px] self-start rounded-xl;
-    min-height: calc(100vh - 96px);
+    border-radius: 0;
+    align-self: stretch;
+    min-height: 100%;
   }
 
   @media (min-width: 1024px) {
     .portal-shell-sidebar {
       display: flex;
     }
+  }
+
+  .portal-shell-main {
+    flex: 1;
+    min-width: 0;
+    background: #f6f7f6;
   }
 
   .portal-shell-brand {
@@ -1667,6 +1740,23 @@ h3 {
   background: var(--surface-card);
   border-radius: var(--radius-card);
   border: 1px solid #d8d5cf;
+}
+
+/* Portal: Card-Chrome auflösen (schlägt unlayered .card-bordered) */
+.portal-ui .card-bordered {
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.portal-ui .portal-list-panel,
+.portal-ui .card-bordered.portal-list-panel,
+.portal-ui .portal-list-panel.card-bordered {
+  background: #fff;
+  border: 0.5px solid var(--p2-line, rgba(0, 0, 0, 0.08));
+  border-radius: 12px;
+  overflow: hidden;
 }
 
 .btn-pill-primary {
@@ -2001,6 +2091,14 @@ select {
   display: grid;
   place-items: center;
   font-family: var(--font-display), Georgia, serif;
+  flex-shrink: 0;
+}
+
+.portal-auth-brand-logo {
+  width: 40px;
+  height: 40px;
+  object-fit: contain;
+  flex-shrink: 0;
 }
 
 .portal-auth-brand-name {

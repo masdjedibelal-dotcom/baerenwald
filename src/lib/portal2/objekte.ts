@@ -181,6 +181,7 @@ export type ObjCardModel = {
   typLine: string;
   einheitenLabel: string;
   offen: number;
+  coverUrl?: string | null;
 };
 
 /** E1 Kartenmodell aus `kunden_objekte` (+ optional Einheiten-Count). */
@@ -196,6 +197,7 @@ export function buildObjCardModel(
     notizen_intern?: string | null;
     einheiten_hinweis?: string | null;
     einheitenCount?: number | null;
+    cover_url?: string | null;
   },
   offen = 0
 ): ObjCardModel {
@@ -209,6 +211,7 @@ export function buildObjCardModel(
       o.einheitenCount
     ),
     offen,
+    coverUrl: o.cover_url ?? null,
   };
 }
 

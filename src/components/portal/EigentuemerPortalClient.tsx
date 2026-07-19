@@ -3,9 +3,11 @@
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
+import { PortalCreateFunnelModal } from "@/components/portal/PortalCreateFunnelModal";
 import { PortalUserNotificationBell } from "@/components/portal/PortalUserNotificationBell";
 import { PortalVorgangDetail } from "@/components/portal/PortalVorgangDetail";
 import { PortalKundePrivatDashboard } from "@/components/portal/PortalKundePrivatDashboard";
+import { PORTAL_HEADER_HERO_SRC } from "@/lib/portal2/portal-media";
 import { PortalListCard } from "@/components/shared/PortalListCard";
 import {
   PORTAL_LIST_PAGE_SIZE,
@@ -107,7 +109,7 @@ function freigabeStatusOf(
 
 /**
  * D8 Eigentümer-Portal — Dashboard · Vorgänge · Objekte (Lesesicht).
- * Create: „Anfrage erstellen“ → Funnel C (`/rechner`).
+ * Create: „Anfrage erstellen“ → eingebetteter Portal-Funnel (Preis + Objekte).
  */
 export function EigentuemerPortalClient({
   kunde,
@@ -131,6 +133,7 @@ export function EigentuemerPortalClient({
   const [listPage, setListPage] = useState(1);
   const [objektDetailId, setObjektDetailId] = useState<string | null>(null);
   const [freigabeBusy, setFreigabeBusy] = useState(false);
+  const [createOpen, setCreateOpen] = useState(false);
 
   useEffect(() => {
     const s = normalizeSection(searchParams.get("section"));
@@ -296,6 +299,7 @@ export function EigentuemerPortalClient({
     : null;
 
   return (
+    <>
     <PortalShell
       variant="kunde"
       brandTitle="MeinBärenwald"
@@ -309,7 +313,7 @@ export function EigentuemerPortalClient({
       })}
       createAction={{
         label: portalCreateLabel("eigentuemer"),
-        onClick: () => router.push("/rechner"),
+        onClick: () => setCreateOpen(true),
       }}
       headerUser={{ name: kunde.name?.trim() || EIGENTUEMER_DASHBOARD_ROLE }}
       headerRoleBadge={
@@ -332,200 +336,159 @@ export function EigentuemerPortalClient({
       }
     >
       {section === "uebersicht" ? (
-        <div className="space-y-4">
-          <PortalKundePrivatDashboard
-            hello={`Hallo ${helloName}`}
-            kundeTyp="privat"
-            roleLabel={EIGENTUEMER_DASHBOARD_ROLE}
-            kpis={privatKpis}
-            recent={recentItems}
-            onOpenAll={() => switchSection("vorgaenge")}
-            onOpenItem={(id) => {
-              setSelectedId(id);
-              setMobileDetailOpen(true);
-              switchSection("vorgaenge");
-              router.replace(
-                `/portal?section=vorgaenge&id=${encodeURIComponent(id)}`,
-                { scroll: false }
-              );
-            }}
-          />
-          {pendingFreigabe.length > 0 ? (
-            <div className="space-y-2">
-              <p className="portal-text-section text-text-primary">
-                Kostenfreigabe nötig
-              </p>
-              {pendingFreigabe.slice(0, 5).map((item) => {
-                const lid = item.leadId ?? item.id;
-                const vg =
-                  item.title?.slice(0, 40) ||
-                  lid.slice(0, 8).toUpperCase();
-                return (
-                  <button
-                    key={item.id}
-                    type="button"
-                    className="card-bordered flex w-full flex-col gap-1 p-4 text-left"
-                    onClick={() => {
-                      setSelectedId(item.id);
-                      setMobileDetailOpen(true);
-                      switchSection("vorgaenge");
-                      router.replace(
-                        `/portal?section=vorgaenge&id=${encodeURIComponent(item.id)}`,
-                        { scroll: false }
-                      );
-                    }}
-                  >
-                    <p className="portal-text-body font-semibold text-text-primary">
-                      {EIGENTUEMER_KOSTENFREIGABE_TITLE}: {vg}
-                    </p>
-                    <p className="portal-text-meta text-text-secondary">
-                      überschreitet Ihren Schwellenwert (
-                      {formatEigentuemerSchwelle(schwelleEur)})
-                    </p>
-                  </button>
-                );
-              })}
-            </div>
-          ) : null}
-        </div>
+        <PortalKundePrivatDashboard
+          hello={`Hallo ${helloName}`}
+          kundeTyp="privat"
+          roleLabel={EIGENTUEMER_DASHBOARD_ROLE}
+          kpis={privatKpis}
+          recent={recentItems}
+          heroImageUrl={PORTAL_HEADER_HERO_SRC}
+          onOpenAll={() => switchSection("vorgaenge")}
+          onOpenItem={(id) => {
+            setSelectedId(id);
+            setMobileDetailOpen(true);
+            switchSection("vorgaenge");
+            router.replace(
+              `/portal?section=vorgaenge&id=${encodeURIComponent(id)}`,
+              { scroll: false }
+            );
+          }}
+        />
       ) : null}
 
       {section === "vorgaenge" ? (
-        <div className="space-y-0">
-          <div className="mb-3 space-y-0.5">
-            <h2 className="portal-text-section text-text-primary">Vorgänge</h2>
-            <p className="portal-text-body text-text-secondary">
-              Nur Vorgänge Ihrer zugeordneten Objekte · Schwelle{" "}
-              {formatEigentuemerSchwelle(schwelleEur)}
-            </p>
-          </div>
-
-          <div className="flex flex-wrap gap-2 border-b border-border-default pb-3">
-            {PRIVAT_LISTE_CHIPS.map((chip) => (
-              <button
-                key={chip.id}
-                type="button"
-                onClick={() => {
-                  setListeChip(chip.id);
-                  setListPage(1);
-                }}
-                className={cn(
-                  "rounded-full px-3 py-1.5 portal-text-meta font-semibold",
-                  listeChip === chip.id
-                    ? "bg-accent-light text-accent"
-                    : "bg-muted text-text-secondary"
-                )}
-              >
-                {chip.label}
-              </button>
-            ))}
-          </div>
-
-          {pageRows.length === 0 ? (
-            <PortalEmptyState
-              role="eigentuemer"
-              createLabel={portalCreateLabel("eigentuemer")}
-              canCreate
-              onPrimary={() => router.push("/rechner")}
-            />
-          ) : (
-            <div className="mt-3 space-y-2">
-              {pageRows.map((row) => (
-                <PortalListCard
-                  key={row.id}
-                  selected={selectedId === row.id}
-                  title={row.title}
-                  subtitle={row.subtitle}
-                  statusLabel={row.statusLabel}
-                  statusPillClass={portalDetailStatusPillClass(row.statusPillKey)}
-                  accent={row.accent}
-                  meta={row.meta}
-                  hint={row.hint}
-                  footer={row.footer}
-                  onClick={() => {
-                    setSelectedId(row.id);
-                    setMobileDetailOpen(true);
-                    router.replace(
-                      `/portal?section=vorgaenge&id=${encodeURIComponent(row.id)}`,
-                      { scroll: false }
-                    );
-                  }}
-                />
-              ))}
-              <PortalListPagination
-                totalItems={cardRows.length}
-                itemLabel="Vorgänge"
-                currentPage={listPage}
-                totalPages={pageCount}
-                onPageChange={setListPage}
-              />
-            </div>
-          )}
-
-          <PortalMobileBottomSheet
-            open={mobileDetailOpen && Boolean(selectedItem)}
-            onClose={() => {
-              setMobileDetailOpen(false);
-              setSelectedId(null);
-              router.replace("/portal?section=vorgaenge", { scroll: false });
-            }}
-          >
-            {selectedItem && selectedLeadId ? (
-              <div className="space-y-4">
-                {selectedNeedsFreigabe ? (
-                  <div className="rounded-xl border border-[#F5C2C0] bg-[#FEF3F2] p-4">
-                    <p className="portal-text-body font-semibold text-[#B42318]">
-                      {EIGENTUEMER_KOSTENFREIGABE_TITLE}
-                    </p>
-                    <p className="portal-text-meta mt-1 text-text-secondary">
-                      {selectedItem.title} überschreitet Ihren Schwellenwert (
-                      {formatEigentuemerSchwelle(schwelleEur)}).
-                    </p>
-                    <div className="mt-3 flex flex-wrap gap-2">
-                      <button
-                        type="button"
-                        disabled={freigabeBusy}
-                        className="btn-pill-primary !text-sm"
-                        onClick={() => void submitFreigabe("freigegeben")}
-                      >
-                        {EIGENTUEMER_KOSTENFREIGABE_BTN}
-                      </button>
-                      <button
-                        type="button"
-                        disabled={freigabeBusy}
-                        className="btn-pill-outline !text-sm"
-                        onClick={() => void submitFreigabe("abgelehnt")}
-                      >
-                        {EIGENTUEMER_KOSTENFREIGABE_ABLEHNEN}
-                      </button>
-                    </div>
-                  </div>
-                ) : null}
-
-                <div className="rounded-xl border border-border-default bg-muted/40 p-4">
-                  <p className="portal-text-label text-text-tertiary">
-                    {EIGENTUEMER_DETAIL_STATUS_TITLE}
-                  </p>
-                  <p className="portal-text-body mt-1 text-text-secondary">
-                    {EIGENTUEMER_DETAIL_STATUS_NOTE}
-                  </p>
+        selectedItem && selectedLeadId ? (
+          <div className="-mx-4 -mt-4 min-w-0 space-y-4 lg:-mx-6 lg:-mt-5">
+            {selectedNeedsFreigabe ? (
+              <div className="mx-4 rounded-xl border border-[#F5C2C0] bg-[#FEF3F2] p-4 lg:mx-6">
+                <p className="portal-text-body font-semibold text-[#B42318]">
+                  {EIGENTUEMER_KOSTENFREIGABE_TITLE}
+                </p>
+                <p className="portal-text-meta mt-1 text-text-secondary">
+                  {selectedItem.title} überschreitet Ihren Schwellenwert (
+                  {formatEigentuemerSchwelle(schwelleEur)}).
+                </p>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    disabled={freigabeBusy}
+                    className="btn-pill-primary !text-sm"
+                    onClick={() => void submitFreigabe("freigegeben")}
+                  >
+                    {EIGENTUEMER_KOSTENFREIGABE_BTN}
+                  </button>
+                  <button
+                    type="button"
+                    disabled={freigabeBusy}
+                    className="btn-pill-outline !text-sm"
+                    onClick={() => void submitFreigabe("abgelehnt")}
+                  >
+                    {EIGENTUEMER_KOSTENFREIGABE_ABLEHNEN}
+                  </button>
                 </div>
-
-                <PortalVorgangDetail
-                  item={selectedItem}
-                  privatkunde
-                  onBack={() => {
-                    setMobileDetailOpen(false);
-                    setSelectedId(null);
-                    router.replace("/portal?section=vorgaenge", {
-                      scroll: false,
-                    });
-                  }}
-                />
               </div>
             ) : null}
-          </PortalMobileBottomSheet>
-        </div>
+
+            <div className="mx-4 rounded-xl border border-border-default bg-muted/40 p-4 lg:mx-6">
+              <p className="portal-text-label text-text-tertiary">
+                {EIGENTUEMER_DETAIL_STATUS_TITLE}
+              </p>
+              <p className="portal-text-body mt-1 text-text-secondary">
+                {EIGENTUEMER_DETAIL_STATUS_NOTE}
+              </p>
+            </div>
+
+            <PortalVorgangDetail
+              item={selectedItem}
+              privatkunde
+              onBack={() => {
+                setMobileDetailOpen(false);
+                setSelectedId(null);
+                router.replace("/portal?section=vorgaenge", {
+                  scroll: false,
+                });
+              }}
+            />
+          </div>
+        ) : (
+          <div className="flex min-w-0 flex-col">
+            <div className="px-0.5 pb-1">
+              <p className="mb-1 text-[12px] font-semibold uppercase tracking-wide text-text-tertiary">
+                Eigentümer
+              </p>
+              <h1 className="text-[25px] font-bold text-text-primary">
+                Meine Wohnung
+              </h1>
+              <p className="portal-text-body mt-1 text-text-secondary">
+                Nur Vorgänge Ihrer zugeordneten Objekte · Schwelle{" "}
+                {formatEigentuemerSchwelle(schwelleEur)}
+              </p>
+            </div>
+
+            <div className="flex flex-wrap gap-2 py-3.5">
+              {PRIVAT_LISTE_CHIPS.map((chip) => (
+                <button
+                  key={chip.id}
+                  type="button"
+                  onClick={() => {
+                    setListeChip(chip.id);
+                    setListPage(1);
+                  }}
+                  className={cn(
+                    "rounded-full px-3 py-1.5 text-[12.5px] font-semibold",
+                    listeChip === chip.id
+                      ? "border border-transparent bg-[#1A3D2B] text-white"
+                      : "border border-border-default bg-white text-text-secondary"
+                  )}
+                >
+                  {chip.label}
+                </button>
+              ))}
+            </div>
+
+            {pageRows.length === 0 ? (
+              <PortalEmptyState
+                role="eigentuemer"
+                createLabel={portalCreateLabel("eigentuemer")}
+                canCreate
+                onPrimary={() => setCreateOpen(true)}
+              />
+            ) : (
+              <div className="portal-list-panel portal-list-rows">
+                {pageRows.map((row) => (
+                  <PortalListCard
+                    key={row.id}
+                    selected={false}
+                    title={row.title}
+                    subtitle={row.subtitle}
+                    statusLabel={row.statusLabel}
+                    statusPillClass={portalDetailStatusPillClass(row.statusPillKey)}
+                    accent={row.accent}
+                    meta={row.meta}
+                    hint={row.hint}
+                    footer={row.footer}
+                    showLeftAccent={false}
+                    onClick={() => {
+                      setSelectedId(row.id);
+                      setMobileDetailOpen(true);
+                      router.replace(
+                        `/portal?section=vorgaenge&id=${encodeURIComponent(row.id)}`,
+                        { scroll: false }
+                      );
+                    }}
+                  />
+                ))}
+                <PortalListPagination
+                  totalItems={cardRows.length}
+                  itemLabel="Vorgänge"
+                  currentPage={listPage}
+                  totalPages={pageCount}
+                  onPageChange={setListPage}
+                />
+              </div>
+            )}
+          </div>
+        )
       ) : null}
 
       {section === "objekte" ? (
@@ -550,7 +513,7 @@ export function EigentuemerPortalClient({
                     : ""}
                 </p>
               </div>
-              <dl className="card-bordered space-y-3 p-4">
+              <dl className="portal-surface space-y-3 p-4">
                 <div>
                   <dt className="portal-text-meta text-text-tertiary">Adresse</dt>
                   <dd className="portal-text-body font-medium">
@@ -585,17 +548,17 @@ export function EigentuemerPortalClient({
                 </p>
               </div>
               {objekte.length === 0 ? (
-                <div className="card-bordered p-6 text-center portal-text-body text-text-secondary">
+                <div className="portal-surface p-6 text-center portal-text-body text-text-secondary">
                   Noch keine Objekte zugeordnet. Die Hausverwaltung legt die
                   Zuordnung fest.
                 </div>
               ) : (
-                <div className="grid grid-cols-1 gap-3.5 md:grid-cols-2">
+                <div className="portal-list-panel portal-list-rows">
                   {objekte.map((o) => (
                     <button
                       key={o.id}
                       type="button"
-                      className="card-bordered p-4 text-left transition hover:border-accent"
+                      className="w-full px-4 py-3.5 text-left transition-colors hover:bg-[#f7f8fa]"
                       onClick={() => setObjektDetailId(o.id)}
                     >
                       <p className="portal-text-body font-semibold text-text-primary">
@@ -616,5 +579,29 @@ export function EigentuemerPortalClient({
         </div>
       ) : null}
     </PortalShell>
+
+      <PortalCreateFunnelModal
+        open={createOpen}
+        channel="portal_eigentuemer"
+        title={portalCreateLabel("eigentuemer")}
+        objekte={objekte.map((o) => ({
+          id: o.id,
+          titel: o.titel,
+          strasse: o.strasse,
+          hausnummer: o.hausnummer,
+          plz: o.plz,
+          ort: o.ort,
+        }))}
+        prefill={{
+          name: kunde.name?.trim() || undefined,
+          email: kunde.email?.trim() || undefined,
+        }}
+        onClose={() => setCreateOpen(false)}
+        onDone={() => {
+          setCreateOpen(false);
+          router.refresh();
+        }}
+      />
+    </>
   );
 }

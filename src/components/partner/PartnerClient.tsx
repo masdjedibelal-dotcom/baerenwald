@@ -2,32 +2,24 @@
 
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
-import {
-  Mail,
-  MessageCircle,
-  MessagesSquare,
-  Phone,
-} from "lucide-react";
 
 import { OnboardingTour } from "@/components/onboarding/OnboardingTour";
 import "@/components/onboarding/onboarding.css";
-import { PartnerControllingSection } from "@/components/partner/PartnerControllingSection";
+import { PartnerHwDashboard, partnerDashboardStatusColors } from "@/components/partner/PartnerHwDashboard";
+import { PORTAL_HEADER_HERO_SRC } from "@/lib/portal2/portal-media";
 import { PartnerNotificationBell } from "@/components/partner/PartnerNotificationBell";
 import { PartnerPlanerPanel } from "@/components/partner/PartnerPlanerPanel";
 import { PartnerProfilPanel } from "@/components/partner/PartnerProfilPanel";
 import { VorgangCard } from "@/components/partner/VorgangCard";
 import { PartnerListCard } from "@/components/partner/PartnerListCard";
-import { PortalMobileBottomSheet } from "@/components/shared/PortalMobileBottomSheet";
 import {
   PARTNER_LIST_PAGE_SIZE,
   PartnerListPagination,
 } from "@/components/partner/PartnerListPagination";
-import { PORTAL_OVERVIEW_PAGE_SIZE } from "@/components/shared/PortalListPagination";
 import { PortalBaerenwaldGpt } from "@/components/portal/PortalBaerenwaldGpt";
 import { PortalLegalFooter } from "@/components/shared/PortalLegalFooter";
 import { PortalShell } from "@/components/shared/PortalShell";
 import { PortalEmptyState } from "@/components/shared/PortalStateView";
-import { SITE_CONFIG } from "@/lib/config";
 import { isOnboardingCompleted } from "@/lib/onboarding/storage";
 import { PARTNER_ONBOARDING_SLIDES } from "@/lib/onboarding/partner-slides";
 import type { PartnerPlanerSection } from "@/lib/partner/build-partner-termine";
@@ -47,12 +39,7 @@ import {
   partnerAngebotStatusPillClass,
   type PartnerCardRow,
 } from "@/lib/partner/partner-list-mappers";
-import {
-  formatHandwerkerBewertung,
-  HANDWERKER_BEWERTUNG_KATEGORIEN,
-} from "@/lib/partner/handwerker-bewertung-display";
 import type { VorgangFilter } from "@/lib/partner/vorgang-state";
-import { toHandwerkerDisplay } from "@/lib/portal2/handwerker-display";
 import { buildPortalShellNav } from "@/lib/portal2/nav-items";
 import { cn } from "@/lib/utils";
 import { partnerSectionListPath, partnerVorgangPortalPath } from "@/lib/partner/partner-site-url";
@@ -161,7 +148,6 @@ export function PartnerClient({
   const searchParams = useSearchParams();
   const [section, setSection] = useState<PartnerSection>("uebersicht");
   const overviewTab: OverviewTabId = "vorgaenge";
-  const [overviewPage, setOverviewPage] = useState(1);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [mobileDetailOpen, setMobileDetailOpen] = useState(false);
   /** Tab-Navigation: alte URL-Parameter ignorieren bis Listen-URL ohne id da ist. */
@@ -174,28 +160,10 @@ export function PartnerClient({
       setOnboardingOpen(true);
     }
   }, []);
-  const [bewertungExpanded, setBewertungExpanded] = useState(false);
   const [listPage, setListPage] = useState(1);
 
-  const handwerkerDisplay = useMemo(
-    () =>
-      toHandwerkerDisplay({
-        id: "self",
-        firma: handwerker.firma,
-        name: handwerker.name,
-        vorname: handwerker.vorname,
-        nachname: handwerker.nachname,
-        gewerkNamen: handwerker.gewerkNamen,
-        gewerke: handwerker.gewerke,
-        bewertung_gesamt: handwerker.bewertung.bewertung_gesamt,
-        bewertung_anzahl: handwerker.bewertung.bewertung_anzahl,
-      }),
-    [handwerker]
-  );
   const [vorgangListFilter, setVorgangListFilter] =
     useState<VorgangFilter>("offen");
-
-  const vorname = handwerker.vorname || "Partner";
 
   /** Nur echte To-dos (neu, geändert, Bautagebuch, Unterlagen) — nicht „Durchführung“. */
   const vorgaengeTodoCount = aufgaben.length;
@@ -250,20 +218,6 @@ export function PartnerClient({
   const overviewCardRows = useMemo((): PartnerCardRow[] => {
     return buildVorgangCardRows(vorgaenge, "offen");
   }, [vorgaenge]);
-
-  const overviewTotalPages = Math.max(
-    1,
-    Math.ceil(overviewCardRows.length / PORTAL_OVERVIEW_PAGE_SIZE)
-  );
-  const overviewSafePage = Math.min(overviewPage, overviewTotalPages);
-  const paginatedOverviewCardRows = overviewCardRows.slice(
-    (overviewSafePage - 1) * PORTAL_OVERVIEW_PAGE_SIZE,
-    overviewSafePage * PORTAL_OVERVIEW_PAGE_SIZE
-  );
-
-  useEffect(() => {
-    setOverviewPage(1);
-  }, [overviewTab]);
 
   useEffect(() => {
     if (ignoreUrlDetailRef.current) {
@@ -423,10 +377,11 @@ export function PartnerClient({
     }
   }
 
-  const waNumber = SITE_CONFIG.phoneMobil.replace(/\D/g, "");
-  const waHref = `https://wa.me/${waNumber}?text=${encodeURIComponent(
-    "Hallo Bärenwald, ich habe eine Frage zum Partner-Portal."
-  )}`;
+  function closeDetail() {
+    setSelectedId(null);
+    setMobileDetailOpen(false);
+    router.replace(partnerSectionListPath("vorgaenge"));
+  }
 
   const sectionListEmpty = sectionCardRows.length === 0;
   /** Mock-Leerzustand nur wenn wirklich keine Vorgänge; Filter-Leer = Kurztext. */
@@ -436,22 +391,6 @@ export function PartnerClient({
     vorgangFilterEffective === "offen"
       ? "Keine offenen Vorgänge."
       : "Keine erledigten Vorgänge.";
-
-  function renderOverviewCard(row: PartnerCardRow, tab: OverviewTabId) {
-    return (
-      <PartnerListCard
-        key={row.id}
-        accent={row.accent}
-        showLeftAccent={false}
-        title={row.title}
-        statusLabel={row.statusLabel}
-        statusPillClass={partnerAngebotStatusPillClass(row.statusPillKey)}
-        meta={row.meta}
-        hint={row.hint}
-        onClick={() => openFromOverview(tab, row.id)}
-      />
-    );
-  }
 
   function renderSectionCard(row: PartnerCardRow) {
     return (
@@ -465,30 +404,77 @@ export function PartnerClient({
         statusPillClass={partnerAngebotStatusPillClass(row.statusPillKey)}
         meta={row.meta}
         hint={row.hint}
-        selected={selectedId === row.id}
+        selected={false}
         onClick={() => selectRow(row.id)}
       />
     );
   }
 
-  const detailPanel = (() => {
-    if (section === "vorgaenge" && selectedVorgang) {
-      return (
-        <VorgangCard
-          vorgang={selectedVorgang}
-          onUpdated={refreshVorgangAfterConfirm}
-        />
-      );
-    }
-    if (section === "vorgaenge" && selectedId) {
-      return (
-        <p className="portal-text-body text-text-secondary">
-          Vorgang wird geladen …
+  const detailScreen =
+    section === "vorgaenge" && selectedVorgang ? (
+      <div className="-mx-4 -mt-4 min-w-0 space-y-3 lg:-mx-6 lg:-mt-5">
+        <div className="px-4 pt-3 lg:px-6">
+          <button
+            type="button"
+            onClick={closeDetail}
+            className="rounded-full px-3 py-1.5 text-[12.5px] font-semibold text-white"
+            style={{ background: "rgba(0,0,0,.42)" }}
+          >
+            ‹ Zurück
+          </button>
+        </div>
+        <div className="px-4 pb-4 lg:px-6">
+          <VorgangCard
+            vorgang={selectedVorgang}
+            onUpdated={refreshVorgangAfterConfirm}
+          />
+        </div>
+      </div>
+    ) : section === "vorgaenge" && selectedId ? (
+      <p className="portal-text-body text-text-secondary">Vorgang wird geladen …</p>
+    ) : null;
+
+  const listScreen = (
+    <div className="flex min-w-0 flex-col">
+      <div className="px-0.5 pb-1">
+        <p className="mb-1 text-[12px] font-semibold uppercase tracking-wide text-text-tertiary">
+          Handwerker
         </p>
-      );
-    }
-    return <p className="portal-text-body text-text-secondary">Zeile auswählen.</p>;
-  })();
+        <h1 className="text-[25px] font-bold text-text-primary">
+          Anfragen &amp; Aufträge
+        </h1>
+      </div>
+      <PartnerVorgangListFilterBar
+        filter={vorgangListFilter}
+        onFilterChange={setVorgangListFilter}
+        counts={vorgangListFilterCounts}
+      />
+      <div className="portal-list-panel portal-list-rows">
+        {sectionListEmpty ? (
+          showPortalEmptyVorgaenge ? (
+            <div className="p-4">
+              <PortalEmptyState role="handwerker" compact />
+            </div>
+          ) : (
+            <p className="portal-text-body px-4 py-8 text-center text-text-secondary">
+              {filterEmptyMessage}
+            </p>
+          )
+        ) : (
+          paginatedCardRows.map(renderSectionCard)
+        )}
+        {!sectionListEmpty ? (
+          <PartnerListPagination
+            totalItems={sectionCardRows.length}
+            itemLabel={listItemLabel}
+            currentPage={safeListPage}
+            totalPages={listTotalPages}
+            onPageChange={setListPage}
+          />
+        ) : null}
+      </div>
+    </div>
+  );
 
   const shellNav = buildPortalShellNav("handwerker", "partner", {
     liste: vorgaengeTodoCount,
@@ -526,9 +512,9 @@ export function PartnerClient({
           </>
         }
       >
-        <div className="space-y-4">
+        <div className="space-y-5">
           {section === "gpt" ? (
-            <article className="card-bordered hidden overflow-hidden p-0 lg:block">
+            <article className="portal-surface hidden overflow-hidden p-0 lg:block">
               <PortalBaerenwaldGpt
                 variant="embedded"
                 open
@@ -538,7 +524,7 @@ export function PartnerClient({
           ) : null}
 
           {section === "profil" ? (
-            <article className="card-bordered p-4 sm:p-5">
+            <article className="portal-surface p-4 sm:p-5">
               <PartnerProfilPanel
                 handwerker={handwerker}
                 profil={profil}
@@ -547,7 +533,7 @@ export function PartnerClient({
           ) : null}
 
           {section === "planer" ? (
-            <article className="card-bordered p-4 sm:p-5">
+            <article className="portal-surface p-4 sm:p-5">
               <PartnerPlanerPanel
                 termine={termine}
                 aufgaben={aufgaben}
@@ -559,246 +545,52 @@ export function PartnerClient({
           ) : null}
 
           {section === "uebersicht" ? (
-            <div className="space-y-4">
-              <div className="space-y-0.5">
-                <p className="portal-text-section text-text-primary">
-                  Hallo {vorname}
-                </p>
-                <p className="portal-text-body text-text-secondary">
-                  Willkommen im Partner-Portal
-                </p>
-              </div>
-
-              <div className="grid min-w-0 grid-cols-2 gap-2">
-                <article className="portal-kpi-card">
-                  <p className="portal-kpi-label">Offene Aufgaben</p>
-                  <p className="portal-kpi-value">{vorgaengeTodoCount}</p>
-                </article>
-                <article className="portal-kpi-card">
-                  <p className="portal-kpi-label">Gesamt</p>
-                  <p className="portal-kpi-value">{vorgaenge.length}</p>
-                </article>
-              </div>
-
-              <PartnerControllingSection vorgaenge={vorgaenge} />
-
-              <button
-                type="button"
-                onClick={() => setGptOpen(true)}
-                className="card-bordered flex w-full items-center justify-between gap-3 p-4 text-left transition-colors hover:border-accent/30 lg:hidden"
-              >
-                <div className="flex items-center gap-3">
-                  <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#EAF3DE] text-[#2E7D52]">
-                    <MessagesSquare className="h-5 w-5" aria-hidden />
-                  </span>
-                  <div>
-                    <p className="portal-text-body font-semibold text-text-primary">
-                      Bärenwald GPT
-                    </p>
-                    <p className="portal-text-meta text-text-secondary">
-                      Fragen zu Projekten, Gewerken & Abläufen
-                    </p>
-                  </div>
-                </div>
-                <span className="portal-text-body font-semibold text-accent">Öffnen →</span>
-              </button>
-
-              {handwerkerDisplay.rating != null ? (
-                <article className="card-bordered p-4">
-                  <div className="flex flex-wrap items-start justify-between gap-3">
-                    <div>
-                      <p className="portal-text-label text-text-tertiary">
-                        Dein Durchschnitt
-                      </p>
-                      <p className="mt-1 flex flex-wrap items-center gap-2 font-display text-2xl font-semibold text-text-primary">
-                        <span>
-                          {formatHandwerkerBewertung(handwerkerDisplay.rating)} ★
-                        </span>
-                        <span className="portal-text-body font-normal text-text-secondary">
-                          · {handwerker.bewertung.bewertung_anzahl}{" "}
-                          {handwerker.bewertung.bewertung_anzahl === 1
-                            ? "Bewertung"
-                            : "Bewertungen"}
-                        </span>
-                      </p>
-                      {handwerkerDisplay.trade ? (
-                        <p className="portal-text-meta mt-1 text-text-secondary">
-                          {handwerkerDisplay.trade}
-                        </p>
-                      ) : null}
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => setBewertungExpanded((v) => !v)}
-                      className="portal-text-body font-semibold text-accent"
-                    >
-                      {bewertungExpanded ? "Weniger" : "Kategorien"}
-                    </button>
-                  </div>
-                  {bewertungExpanded ? (
-                    <ul className="mt-4 space-y-2 border-t border-border-light pt-4">
-                      {HANDWERKER_BEWERTUNG_KATEGORIEN.map((kat) => {
-                        const profilKey = `bewertung_${kat.key}` as keyof typeof handwerker.bewertung;
-                        const val = handwerker.bewertung[profilKey];
-                        if (typeof val !== "number" || val == null) return null;
-                        return (
-                          <li
-                            key={kat.key}
-                            className="flex items-center justify-between gap-2"
-                          >
-                            <span className="portal-text-body text-text-secondary">
-                              {kat.label}
-                            </span>
-                            <span className="portal-text-body font-semibold text-text-primary">
-                              {formatHandwerkerBewertung(val)} ★
-                            </span>
-                          </li>
-                        );
-                      })}
-                    </ul>
-                  ) : null}
-                </article>
-              ) : null}
-
-              <article className="card-bordered p-4">
-                <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-                  <p className="portal-text-body font-semibold text-text-primary">
-                    Offene Anfragen
-                  </p>
-                  <button
-                    type="button"
-                    className="portal-text-body font-semibold text-accent"
-                    onClick={() => switchSection("vorgaenge")}
-                  >
-                    Alle anzeigen →
-                  </button>
-                </div>
-
-                <div className="space-y-2">
-                  {overviewCardRows.length === 0 ? (
-                    <PortalEmptyState role="handwerker" compact />
-                  ) : (
-                    paginatedOverviewCardRows.map((row) =>
-                      renderOverviewCard(row, overviewTab)
-                    )
-                  )}
-                </div>
-                {overviewCardRows.length > PORTAL_OVERVIEW_PAGE_SIZE ? (
-                  <PartnerListPagination
-                    totalItems={overviewCardRows.length}
-                    itemLabel="Vorgänge"
-                    currentPage={overviewSafePage}
-                    totalPages={overviewTotalPages}
-                    onPageChange={setOverviewPage}
-                  />
-                ) : null}
-              </article>
-
-              <section className="border-t border-border-default pt-4">
-                <div className="flex flex-wrap items-center justify-between gap-3">
-                  <div>
-                    <p className="portal-text-label text-text-tertiary">
-                      Kontakt
-                    </p>
-                    <p className="portal-text-body text-text-secondary">
-                      Fragen zu Anfragen, Aufträgen oder dem Portal? Bärenwald ist für dich
-                      erreichbar.
-                    </p>
-                  </div>
-                  <div className="flex flex-wrap gap-2">
-                    <a
-                      href={SITE_CONFIG.phoneHref}
-                      className="btn-pill-primary portal-btn !justify-center !px-4 !py-3"
-                    >
-                      <Phone className="h-3.5 w-3.5" />
-                      Jetzt anrufen
-                    </a>
-                    <a
-                      href={waHref}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="btn-pill-outline portal-btn !justify-center !px-4 !py-3"
-                    >
-                      <MessageCircle className="h-3.5 w-3.5" />
-                      WhatsApp
-                    </a>
-                    <a
-                      href={`mailto:${SITE_CONFIG.email}?subject=${encodeURIComponent(
-                        "Frage Partner-Portal"
-                      )}`}
-                      className="btn-pill-outline portal-btn !justify-center !px-4 !py-3"
-                    >
-                      <Mail className="h-3.5 w-3.5" />
-                      E-Mail
-                    </a>
-                  </div>
-                </div>
-              </section>
-            </div>
+            <PartnerHwDashboard
+              firmName={partnerFooter}
+              heroImageUrl={PORTAL_HEADER_HERO_SRC}
+              kpis={{
+                neueAnfragen: vorgaenge.filter(
+                  (v) => v.state === "neu" || v.state === "geaendert"
+                ).length,
+                inAusfuehrung: vorgaenge.filter(
+                  (v) => v.state === "in_bearbeitung"
+                ).length,
+                erledigt: vorgaenge.filter((v) => v.state === "erledigt").length,
+              }}
+              onOpenAll={() => switchSection("vorgaenge")}
+              onKpiClick={(id) => {
+                if (id === "erledigt") {
+                  setVorgangListFilter("erledigt");
+                } else {
+                  setVorgangListFilter("offen");
+                }
+                switchSection("vorgaenge");
+              }}
+              onOpenItem={(id) => openFromOverview("vorgaenge", id)}
+              recent={overviewCardRows.slice(0, 4).map((row) => {
+                const colors = partnerDashboardStatusColors(row.statusPillKey);
+                return {
+                  id: row.id,
+                  titel: row.title,
+                  objekt:
+                    row.subtitle?.trim() ||
+                    row.meta.map((m) => m.text).find(Boolean) ||
+                    "—",
+                  statusLabel: row.statusLabel,
+                  statusColor: colors.color,
+                  statusBg: colors.bg,
+                };
+              })}
+            />
           ) : null}
 
-          {section !== "uebersicht" &&
-          section !== "gpt" &&
-          section !== "profil" &&
-          section !== "planer" ? (
-            <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
-              <article className="card-bordered overflow-hidden p-0">
-                {section === "vorgaenge" ? (
-                  <PartnerVorgangListFilterBar
-                    filter={vorgangListFilter}
-                    onFilterChange={setVorgangListFilter}
-                    counts={vorgangListFilterCounts}
-                  />
-                ) : null}
-                <div className="space-y-2 p-3 sm:p-4">
-                  {sectionListEmpty ? (
-                    showPortalEmptyVorgaenge ? (
-                      <PortalEmptyState role="handwerker" compact />
-                    ) : (
-                      <p className="portal-text-body rounded-xl border border-dashed border-border-light bg-muted/20 px-3 py-8 text-center text-text-secondary">
-                        {filterEmptyMessage}
-                      </p>
-                    )
-                  ) : (
-                    paginatedCardRows.map(renderSectionCard)
-                  )}
-                </div>
-                {!sectionListEmpty ? (
-                  <PartnerListPagination
-                    totalItems={sectionCardRows.length}
-                    itemLabel={listItemLabel}
-                    currentPage={safeListPage}
-                    totalPages={listTotalPages}
-                    onPageChange={setListPage}
-                  />
-                ) : null}
-              </article>
-
-              <aside className="hidden lg:block">
-                <article className="card-bordered sticky top-[92px] max-h-[calc(100vh-110px)] overflow-y-auto p-4">
-                  {detailPanel}
-                </article>
-              </aside>
-            </div>
-          ) : null}
+          {section === "vorgaenge"
+            ? selectedId
+              ? detailScreen
+              : listScreen
+            : null}
         </div>
       </PortalShell>
-
-      <PortalMobileBottomSheet
-        open={
-          mobileDetailOpen &&
-          !!selectedId &&
-          section !== "uebersicht" &&
-          section !== "gpt" &&
-          section !== "profil" &&
-          section !== "planer" &&
-          !sectionListEmpty
-        }
-        onClose={() => setMobileDetailOpen(false)}
-        ariaLabel="Details"
-      >
-        {detailPanel}
-      </PortalMobileBottomSheet>
 
       <PortalBaerenwaldGpt
         variant="overlay"

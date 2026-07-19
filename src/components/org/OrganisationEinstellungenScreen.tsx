@@ -10,6 +10,7 @@ import {
 } from "@/components/org/OrganisationTeamPanel";
 import { OrganisationMeldeMaterial } from "@/components/org/OrganisationMeldeMaterial";
 import { OrganisationMieterKontaktPanel } from "@/components/org/OrganisationMieterKontaktPanel";
+import { PortalEinstellungenShell } from "@/components/shared/PortalEinstellungenShell";
 import { EinstellungenPfRow } from "@/components/shared/PortalEinstellungenUi";
 import type { OrganisationKunde, OrganisationObjekt } from "@/lib/org/types";
 import {
@@ -17,11 +18,10 @@ import {
   EINSTELLUNGEN_PROFIL_EDIT,
   EINSTELLUNGEN_SCHWELLE_INTRO,
   EINSTELLUNGEN_SCHWELLE_TITLE,
-  einstellungenPageTitle,
   formatEinstellungenSchwelle,
 } from "@/lib/portal2/einstellungen";
-import { einstellungenMaxWidthClass } from "@/lib/portal2/einstellungen-ui";
 import { formatObjektTypLine } from "@/lib/portal2/objekte";
+import { PORTAL_C } from "@/lib/portal2/tokens";
 import { orgPortalToast, portalToastError } from "@/lib/shared/portal-toast";
 
 type Props = {
@@ -33,8 +33,8 @@ type Props = {
 };
 
 /**
- * D6 / D12 HV-Variante von `screenSettings`:
- * Profil · Branding · globale + Objekt-Schwellen · bestehende Org-Panels.
+ * D6 / D12 HV — Mock Einstellungen mit Subnav:
+ * Profil · Branding & White-Label · Freigabe-Regeln
  */
 export function OrganisationEinstellungenScreen({
   kunde,
@@ -43,7 +43,6 @@ export function OrganisationEinstellungenScreen({
   onSaved,
   isAdmin = true,
 }: Props) {
-  const brandingRef = useRef<HTMLDivElement>(null);
   const [schwelle, setSchwelle] = useState(() =>
     kunde.freigabe_schwelle_eur != null
       ? Number(kunde.freigabe_schwelle_eur)
@@ -104,130 +103,154 @@ export function OrganisationEinstellungenScreen({
   };
 
   return (
-    <div
-      className={`mx-auto flex w-full flex-col gap-3.5 ${einstellungenMaxWidthClass("hv")}`}
-    >
-      <div className="space-y-0.5">
-        <h2 className="portal-text-section text-text-primary">
-          {einstellungenPageTitle("hv")}
-        </h2>
-      </div>
-
-      <section className="card-bordered space-y-2.5 p-4 sm:p-5">
-        <h3 className="font-[family-name:var(--font-display)] text-sm font-bold text-text-primary">
-          Profil
-        </h3>
-        <EinstellungenPfRow label="Name" value={displayName} />
-        <EinstellungenPfRow label="E-Mail" value={kunde.email?.trim() || "—"} />
-        <EinstellungenPfRow label="Telefon" value={tel} />
-        <button
-          type="button"
-          className="mt-1 w-full rounded-[9px] border border-border-default bg-white px-3 py-2.5 text-[13px] font-semibold text-text-secondary"
-          onClick={() =>
-            brandingRef.current?.scrollIntoView({
-              behavior: "smooth",
-              block: "start",
-            })
-          }
-        >
-          {EINSTELLUNGEN_PROFIL_EDIT}
-        </button>
-      </section>
-
-      <div ref={brandingRef}>
-        <OrganisationBrandingEditor
-          kunde={kunde}
-          readOnly={!isAdmin}
-          onSaved={onSaved}
-        />
-      </div>
-
-      <section className="card-bordered space-y-3 p-4 sm:p-5">
-        <h3 className="font-[family-name:var(--font-display)] text-sm font-bold text-text-primary">
-          {EINSTELLUNGEN_SCHWELLE_TITLE}
-        </h3>
-        <p className="text-[13px] leading-relaxed text-text-secondary">
-          {EINSTELLUNGEN_SCHWELLE_INTRO}
-        </p>
-        <div className="flex items-center gap-3">
-          <input
-            type="range"
-            min={0}
-            max={2000}
-            step={50}
-            value={schwelle}
-            disabled={!isAdmin}
-            onChange={(e) => onSchwelleChange(Number(e.target.value))}
-            className="flex-1"
-          />
-          <span className="w-[110px] text-right font-[family-name:var(--font-display)] text-xl font-bold text-accent">
-            {formatEinstellungenSchwelle(schwelle)}
-          </span>
-        </div>
-      </section>
-
-      <section className="card-bordered space-y-2.5 p-4 sm:p-5">
-        <h3 className="font-[family-name:var(--font-display)] text-sm font-bold text-text-primary">
-          {EINSTELLUNGEN_OBJEKT_SCHWELLE_TITLE}
-        </h3>
-        {objekte.length === 0 ? (
-          <p className="text-[13px] text-text-secondary">
-            Noch keine Objekte — Schwellen erscheinen nach dem Anlegen.
-          </p>
-        ) : (
-          objekte.map((o) => {
-            const val =
-              o.freigabe_schwelle_eur != null
-                ? formatEinstellungenSchwelle(Number(o.freigabe_schwelle_eur))
-                : "Standard";
-            return (
-              <div
-                key={o.id}
-                className="flex items-center justify-between gap-3 rounded-[9px] border border-border-default px-3.5 py-[11px]"
+    <PortalEinstellungenShell variant="hv">
+      {(tab) => {
+        if (tab === "profil") {
+          return (
+            <div className="space-y-2.5">
+              <h3
+                className="text-sm font-bold"
+                style={{
+                  color: PORTAL_C.ink,
+                  fontFamily: "var(--p2-font-head, " + PORTAL_C.head + ")",
+                }}
               >
-                <div className="min-w-0">
-                  <p className="truncate text-[13.5px] font-semibold text-text-primary">
-                    {o.titel}
-                  </p>
-                  <p className="truncate text-[11px] text-text-tertiary">
-                    {formatObjektTypLine(o)}
-                  </p>
-                </div>
-                <span className="shrink-0 text-[13.5px] font-semibold text-accent">
-                  {val}
+                Profil
+              </h3>
+              <EinstellungenPfRow label="Name" value={displayName} />
+              <EinstellungenPfRow
+                label="E-Mail"
+                value={kunde.email?.trim() || "—"}
+              />
+              <EinstellungenPfRow label="Telefon" value={tel} />
+              <button
+                type="button"
+                className="mt-1 w-full rounded-[9px] border border-border-default bg-white px-3 py-2.5 text-[13px] font-semibold text-text-secondary"
+                disabled
+                title="Stammdaten unter Branding & White-Label"
+              >
+                {EINSTELLUNGEN_PROFIL_EDIT}
+              </button>
+            </div>
+          );
+        }
+
+        if (tab === "branding") {
+          return (
+            <OrganisationBrandingEditor
+              kunde={kunde}
+              readOnly={!isAdmin}
+              onSaved={onSaved}
+              nested
+            />
+          );
+        }
+
+        return (
+          <div className="space-y-5">
+            <div className="space-y-3">
+              <h3
+                className="text-sm font-bold"
+                style={{
+                  color: PORTAL_C.ink,
+                  fontFamily: "var(--p2-font-head, " + PORTAL_C.head + ")",
+                }}
+              >
+                {EINSTELLUNGEN_SCHWELLE_TITLE}
+              </h3>
+              <p className="text-[13px] leading-relaxed text-text-secondary">
+                {EINSTELLUNGEN_SCHWELLE_INTRO}
+              </p>
+              <div className="flex items-center gap-3">
+                <input
+                  type="range"
+                  min={0}
+                  max={2000}
+                  step={50}
+                  value={schwelle}
+                  disabled={!isAdmin}
+                  onChange={(e) => onSchwelleChange(Number(e.target.value))}
+                  className="flex-1"
+                />
+                <span className="w-[110px] text-right font-[family-name:var(--font-display)] text-xl font-bold text-accent">
+                  {formatEinstellungenSchwelle(schwelle)}
                 </span>
               </div>
-            );
-          })
-        )}
-        <p className="text-[11.5px] text-text-tertiary">
-          Objekt-Schwellen unter Objekte → Detail → Regeln festlegen.
-        </p>
-      </section>
+            </div>
 
-      <OrganisationMeldeMaterial kunde={kunde} objektCount={objektCount} />
+            <div className="space-y-2.5">
+              <h3
+                className="text-sm font-bold"
+                style={{
+                  color: PORTAL_C.ink,
+                  fontFamily: "var(--p2-font-head, " + PORTAL_C.head + ")",
+                }}
+              >
+                {EINSTELLUNGEN_OBJEKT_SCHWELLE_TITLE}
+              </h3>
+              {objekte.length === 0 ? (
+                <p className="text-[13px] text-text-secondary">
+                  Noch keine Objekte — Schwellen erscheinen nach dem Anlegen.
+                </p>
+              ) : (
+                objekte.map((o) => {
+                  const val =
+                    o.freigabe_schwelle_eur != null
+                      ? formatEinstellungenSchwelle(
+                          Number(o.freigabe_schwelle_eur)
+                        )
+                      : "Standard";
+                  return (
+                    <div
+                      key={o.id}
+                      className="flex items-center justify-between gap-3 rounded-[9px] border border-border-default px-3.5 py-[11px]"
+                    >
+                      <div className="min-w-0">
+                        <p className="truncate text-[13.5px] font-semibold text-text-primary">
+                          {o.titel}
+                        </p>
+                        <p className="truncate text-[11px] text-text-tertiary">
+                          {formatObjektTypLine(o)}
+                        </p>
+                      </div>
+                      <span className="shrink-0 text-[13.5px] font-semibold text-accent">
+                        {val}
+                      </span>
+                    </div>
+                  );
+                })
+              )}
+              <p className="text-[11.5px] text-text-tertiary">
+                Objekt-Schwellen unter Objekte → Detail → Regeln festlegen.
+              </p>
+            </div>
 
-      <OrganisationMieterKontaktPanel
-        kunde={kunde}
-        onSaved={onSaved}
-        readOnly={!isAdmin}
-      />
+            <OrganisationEinstellungenPanel
+              kunde={kunde}
+              onSaved={onSaved}
+              embedded
+              readOnly={!isAdmin}
+            />
 
-      <OrganisationTeamPanel kunde={kunde} isAdmin={isAdmin} />
+            <OrganisationMeldeMaterial
+              kunde={kunde}
+              objektCount={objektCount}
+              nested
+            />
 
-      <OrganisationExportPanel />
+            <OrganisationMieterKontaktPanel
+              kunde={kunde}
+              onSaved={onSaved}
+              readOnly={!isAdmin}
+              nested
+            />
 
-      <section className="card-bordered p-4 sm:p-5">
-        <h3 className="mb-4 font-[family-name:var(--font-display)] text-sm font-bold text-text-primary">
-          Weitere Freigabe-Regeln
-        </h3>
-        <OrganisationEinstellungenPanel
-          kunde={kunde}
-          onSaved={onSaved}
-          embedded
-          readOnly={!isAdmin}
-        />
-      </section>
-    </div>
+            <OrganisationTeamPanel kunde={kunde} isAdmin={isAdmin} nested />
+
+            <OrganisationExportPanel nested />
+          </div>
+        );
+      }}
+    </PortalEinstellungenShell>
   );
 }

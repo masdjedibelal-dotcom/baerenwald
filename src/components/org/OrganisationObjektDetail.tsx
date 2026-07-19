@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 
+import { OrganisationObjektCover } from "@/components/org/OrganisationObjektCover";
 import { OrganisationObjektDokumentePanel } from "@/components/org/OrganisationObjektDokumentePanel";
 import { OrganisationObjektEinheitenBewohnerPanel } from "@/components/org/OrganisationObjektEinheitenBewohnerPanel";
 import { OrganisationObjektKontaktePanel } from "@/components/org/OrganisationObjektKontaktePanel";
@@ -304,12 +305,23 @@ export function OrganisationObjektDetail({
         <span>{objekt.titel}</span>
       </div>
 
+      <div className="mb-3 md:hidden">
+        <OrganisationObjektCover
+          objektId={objekt.id}
+          coverUrl={objekt.cover_url}
+          variant="card"
+          onUploaded={() => onRefresh()}
+        />
+      </div>
+
       <div className="mb-4 flex flex-col gap-3.5 md:flex-row md:items-center">
-        <div className="hidden h-[66px] w-24 shrink-0 overflow-hidden rounded-[10px] bg-muted md:block">
-          <div className="flex h-full items-center justify-center text-[10px] text-text-tertiary">
-            Foto
-          </div>
-        </div>
+        <OrganisationObjektCover
+          objektId={objekt.id}
+          coverUrl={objekt.cover_url}
+          variant="detail"
+          className="hidden md:block"
+          onUploaded={() => onRefresh()}
+        />
         <div className="min-w-0 flex-1">
           <h2 className="font-[family-name:var(--font-display)] text-[21px] font-bold text-text-primary md:text-[25px]">
             {objekt.titel}

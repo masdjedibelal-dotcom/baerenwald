@@ -65,7 +65,7 @@ export function OrgVorgangAbnahmeSection({
 
   if (done && existing) {
     return (
-      <div className="card-bordered space-y-3 p-4">
+      <div className="portal-surface space-y-3 p-4">
         <div className="flex flex-wrap items-center gap-2">
           <h2 className="font-semibold">Abnahme</h2>
           <RoleStatusPill
@@ -138,7 +138,7 @@ export function OrgVorgangAbnahmeSection({
       <VorgangTimeline steps={TIMELINE} />
 
       {doku ? (
-        <div className="card-bordered space-y-3 p-4">
+        <div className="portal-surface space-y-3 p-4">
           <h2 className="font-semibold">Abschlussdokumentation des Betriebs</h2>
           {(objektLabel || einheitLabel) && (
             <div className="grid gap-2 text-sm sm:grid-cols-2">
@@ -185,7 +185,7 @@ export function OrgVorgangAbnahmeSection({
         </div>
       ) : null}
 
-      <div className="card-bordered space-y-4 p-4">
+      <div className="portal-surface space-y-4 p-4">
         <h2 className="font-semibold">Abnahme</h2>
 
         <label className="flex cursor-pointer gap-3">

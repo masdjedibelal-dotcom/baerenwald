@@ -104,7 +104,7 @@ export function HWLeadForm({
             lineHeight: 1.5,
           }}
         >
-          Mit Absenden stimmst du zu, dass wir dich zur Bearbeitung deiner
+          Mit Weiter stimmst du zu, dass wir dich zur Bearbeitung deiner
           Anfrage kontaktieren. Weitere Infos in unserer{" "}
           <a
             href="/datenschutz"

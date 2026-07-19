@@ -1,13 +1,11 @@
 "use client";
 
+import { PortalEinstellungenShell } from "@/components/shared/PortalEinstellungenShell";
 import { EinstellungenPfRow } from "@/components/shared/PortalEinstellungenUi";
-import {
-  EINSTELLUNGEN_PROFIL_EDIT,
-  einstellungenPageTitle,
-} from "@/lib/portal2/einstellungen";
-import { einstellungenMaxWidthClass } from "@/lib/portal2/einstellungen-ui";
+import { EINSTELLUNGEN_PROFIL_EDIT } from "@/lib/portal2/einstellungen";
 import type { PortalKundeTyp } from "@/lib/portal2/kunde-typ";
 import { portalKundeTypRoleLabel } from "@/lib/portal2/kunde-typ";
+import { PORTAL_C } from "@/lib/portal2/tokens";
 
 type Props = {
   name?: string | null;
@@ -17,7 +15,7 @@ type Props = {
 };
 
 /**
- * D12 schlanke Variante für Privat/Gewerbe — Profil (pf) + Abmelden, kein Branding.
+ * D12 Privat/Gewerbe — Einstellungen (nur Profil), Mock-Chrome ohne Subnav-Liste.
  */
 export function PortalEinstellungenPrivat({
   name,
@@ -26,42 +24,49 @@ export function PortalEinstellungenPrivat({
   kundeTyp,
 }: Props) {
   return (
-    <div
-      className={`mx-auto flex w-full flex-col gap-3.5 ${einstellungenMaxWidthClass("privat")}`}
-    >
-      <div className="space-y-0.5">
-        <p className="text-xs font-semibold uppercase tracking-wide text-text-tertiary">
-          {portalKundeTypRoleLabel(kundeTyp)}
-        </p>
-        <h2 className="portal-text-section text-text-primary">
-          {einstellungenPageTitle("privat")}
-        </h2>
+    <div className="space-y-4">
+      <PortalEinstellungenShell
+        variant="privat"
+        eyebrow={portalKundeTypRoleLabel(kundeTyp)}
+      >
+        {() => (
+          <div className="space-y-2.5">
+            <h3
+              className="text-sm font-bold"
+              style={{
+                color: PORTAL_C.ink,
+                fontFamily: "var(--p2-font-head, " + PORTAL_C.head + ")",
+              }}
+            >
+              Profil
+            </h3>
+            <EinstellungenPfRow label="Name" value={name?.trim() || "—"} />
+            <EinstellungenPfRow label="E-Mail" value={email?.trim() || "—"} />
+            <EinstellungenPfRow
+              label="Telefon"
+              value={telefon?.trim() || "—"}
+            />
+            <p className="text-[12.5px] leading-relaxed text-text-secondary">
+              Stammdaten ändern Sie über den Support —{" "}
+              <a
+                href="mailto:hello@baerenwald.de?subject=MeinBärenwald%20Profil"
+                className="font-semibold text-accent underline"
+              >
+                {EINSTELLUNGEN_PROFIL_EDIT}
+              </a>
+              .
+            </p>
+          </div>
+        )}
+      </PortalEinstellungenShell>
+
+      <div className="px-4 lg:px-6">
+        <form action="/portal/auth/signout" method="post">
+          <button type="submit" className="btn-pill-outline w-full">
+            Abmelden
+          </button>
+        </form>
       </div>
-
-      <section className="card-bordered space-y-2.5 p-4 sm:p-5">
-        <h3 className="font-[family-name:var(--font-display)] text-sm font-bold text-text-primary">
-          Profil
-        </h3>
-        <EinstellungenPfRow label="Name" value={name?.trim() || "—"} />
-        <EinstellungenPfRow label="E-Mail" value={email?.trim() || "—"} />
-        <EinstellungenPfRow label="Telefon" value={telefon?.trim() || "—"} />
-        <p className="text-[12.5px] leading-relaxed text-text-secondary">
-          Stammdaten ändern Sie über den Support —{" "}
-          <a
-            href="mailto:hello@baerenwald.de?subject=MeinBärenwald%20Profil"
-            className="font-semibold text-accent underline"
-          >
-            {EINSTELLUNGEN_PROFIL_EDIT}
-          </a>
-          .
-        </p>
-      </section>
-
-      <form action="/portal/auth/signout" method="post">
-        <button type="submit" className="btn-pill-outline w-full">
-          Abmelden
-        </button>
-      </form>
     </div>
   );
 }

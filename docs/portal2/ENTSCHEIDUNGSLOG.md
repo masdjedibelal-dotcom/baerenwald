@@ -758,3 +758,94 @@ Anzeigeformen 1:1 zum Mock; **keine** hartkodierten Demo-Stammdaten zur Laufzeit
 
 **Dateien:** `verlauf.ts`, `angebot-summe.ts`, `viewport.ts`, `use-portal-view.ts`, `SignatureCanvas`  
 **Tests:** `npm run test:portal2-querschnitt`
+
+---
+
+## Layout — Card-Auflösung / desktopFrame — ENTSCHEIDUNG: JETZT
+
+| Entscheidung | Begründung |
+|---|---|
+| Shell = Mock `desktopFrame` (eine Fläche Sidebar+Content, `#f6f7f6`) | Kein Gap zwischen Sidebar und Main; kein separates Sidebar-Card |
+| `.portal-ui .card-bordered` → transparent | Card-Logik global im Portal weg; Marketing unberührt |
+| Listen = `.portal-list-panel` + Hairline-Zeilen (`PortalListCard`) | Mock „Zuletzt“/Liste, keine gestapelten Einzel-Cards |
+| KPI = `.portal-kpi-card` (weiße Tiles) | Mock Stat-Tiles; bewusst kein Card-Stack |
+| Hero edge-to-edge im Content | Mock `screenDashboard` ohne inset rounded Hero |
+| Screenshots Startseiten | Optional für QA; Mock-JS reicht für Umsetzung |
+
+**Dateien:** `PortalShell`, `globals.css`, `PortalListCard`, Dashboards HV/Privat, `PortalClient`, `PartnerClient`, Org-Listenpanels
+
+
+| Partner-Start = Hero + 3 KPIs (Mock HW) + Offene-Anfragen-Liste | Folge Explore: Partner war Rest-Gap; Controlling-4er-Grid ersetzt durch Mock-Tiles |
+| `PartnerHwDashboard` | Analog HV/Privat; KPIs aus `VorgangState` |
+
+
+| Startseiten = `PortalScreenDashboard` 1:1 Mock | Hero 150/200, Tiles, „Zuletzt“/„Alle ansehen“/„Noch nichts“; keine Live-Extras auf Start |
+| Extras (Wiedervorlage, GPT, Kontakt, Freigabe-Block) | nicht auf Übersicht — Mock `screenDashboard` endet bei Liste |
+
+
+---
+
+## Vorgänge — Liste/Detail-Screens (Mock screenListe / screenDetail) — ENTSCHEIDUNG: JETZT
+
+| Entscheidung | Begründung |
+|---|---|
+| Kein Split-Pane (Liste\|Detail nebeneinander) | Mock: `setScreen('liste')` → `setScreen('detail')` |
+| Alle Portale: Liste **oder** Detail vollbreit | HV / Partner / Privat / Eigentümer |
+| HV Freigabe: Sektionen + Row-Aktionen; Detail eigener Screen | Mock `hvFilter==='freigabe'` |
+| Detail: Cover + ‹ Zurück + Header + Timeline-Kreise + 2-Spalten | Mock `screenDetail` |
+| URL `id` steuert Detail; Chips/pageHead nur auf Liste | Chrome ausgeblendet im Detail |
+
+**Dateien:** `PortalClient`, `OrganisationVorgaengeSection`, `OrganisationEingangPanel`, `OrganisationFreigabePanel`, `OrganisationHvVorgangDetail`, `PartnerClient`, `EigentuemerPortalClient`
+
+
+---
+
+## Einstellungen — Subnav (Mock settingsTab) — ENTSCHEIDUNG: JETZT
+
+| Entscheidung | Begründung |
+|---|---|
+| Kein Stapel aller Blöcke untereinander | Mock: Subnav links + eine aktive Fläche |
+| Desktop: vertikale Subnav · Mobile: horizontale Tabs | Mock-Annotation |
+| HV: Profil · Branding & White-Label · Freigabe-Regeln | Mock HV |
+| Handwerker: Anschrift · Steuer · Bank | Mock HW |
+| Mieter: Profil · Zugang | Mock Mieter |
+| Privat: nur Profil (ohne Subnav-Liste) | Mock Privatkunde |
+| Tab in `sessionStorage` (`portal2_settings_tab_*`) | Mock `settingsTab` Persistenz |
+
+**Dateien:** `PortalEinstellungenShell`, `einstellungen-nav.ts`, Org/Partner/Mieter/Privat-Einstellungen-Screens
+
+
+---
+
+## Funnel-Varianten (Web + Portale) — ENTSCHEIDUNG: JETZT
+
+| Entscheidung | Begründung |
+|---|---|
+| Web: Kontakt inkl. volle Adresse **vor** Preis → Ergebnis → Absenden | Preise nicht ohne Lead sichtbar |
+| Shared Core `PortalFunnelHost` | Ein Design/Sequenz für Melde + Portale |
+| Melde/Mieter: `kaputt`, kein Preis, Website-Fachdetails | Ersetzt altes Melde-13-Schritt-UI |
+| HV: ein Funnel + Objekt neu (`POST /api/org/objekte`) + Fachdetails + Preis | Kein Hub-Multi-Choice |
+| Privat/Eigentümer: Modal-Funnel statt `/rechner` | Kein Trust/GPT im Portal |
+| Servicepakete: Cards → `persistLead` | Unverändert |
+| Kein Termin-Schritt im Melde | Produkt |
+
+**Dateien:** `PortalFunnelHost`, `MeldeFormular`, `OrganisationAnfrageHub`, `PortalCreateFunnelModal`, `PortalClient`, `EigentuemerPortalClient`, `funnel-variant.ts`
+
+
+---
+
+## Funnel-Varianten (Web + Portale) — ENTSCHEIDUNG: JETZT
+
+| Entscheidung | Begründung |
+|---|---|
+| Web: Kontakt inkl. volle Adresse **vor** Preis → Ergebnis → Absenden | Preise nicht ohne Lead sichtbar (Konkurrenzschutz) |
+| Portale: kein Trust, kein GPT-Einstieg | Nur Website |
+| Mieter: nur `kaputt`, kein Preis | Melde-Kontext |
+| HV: **ein** Funnel-Einstieg (Objekt/Mieter-Prefix + Fachfragen + Preis) | Kein Multi-Choice-Hub mehr |
+| Eigentümer/Privat: Preis ja; Prefix Objekte | Wie Endkunde |
+| Servicepakete: Cards → `persistLead` (`org_service`) | Nicht Create-Hub; CRM ok |
+| Kein Termin-Schritt im Melde-Funnel | Koordination später im Portal |
+| Varianten-Matrix | `src/lib/funnel/funnel-variant.ts` |
+
+**Dateien:** `rechner/page.tsx`, `portal-tools/rechner`, `melde-funnel.ts`, `MeldeFormular`, `OrganisationAnfrageHub`, `OrganisationPortalCreateFunnel`, `funnel-variant.ts`
+

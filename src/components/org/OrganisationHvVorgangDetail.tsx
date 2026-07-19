@@ -570,7 +570,7 @@ export function OrganisationHvVorgangDetail({
 
   return (
     <div className="flex flex-col">
-      <div className="relative w-full shrink-0 overflow-hidden rounded-t-xl" style={{ height: 130 }}>
+      <div className="relative w-full shrink-0 overflow-hidden" style={{ height: 150 }}>
         {coverUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img src={coverUrl} alt="" className="absolute inset-0 h-full w-full object-cover" />
@@ -632,30 +632,57 @@ export function OrganisationHvVorgangDetail({
         </div>
       </div>
 
-      <div className="px-4 py-3 sm:px-6">
-        <div className="flex gap-1.5 overflow-x-auto pb-1">
-          {timeline.map((step) => (
-            <div
-              key={step.id}
-              className="min-w-[72px] flex-1 text-center"
-            >
-              <div
-                className="mx-auto mb-1 h-1.5 rounded-full"
-                style={{
-                  background: step.done || step.active ? PORTAL_C.primary : "#e3e6ea",
-                }}
-              />
-              <p
-                className="text-[10px] font-semibold leading-tight"
-                style={{
-                  color: step.active ? PORTAL_C.ink : PORTAL_C.faint,
-                }}
-              >
-                {step.label}
-              </p>
+      <div
+        className="flex gap-0 overflow-x-auto bg-white px-4 py-3 sm:px-6"
+        style={{ borderBottom: `1px solid ${PORTAL_C.line2}` }}
+      >
+        {timeline.map((step, i) => {
+          const done = step.done;
+          const act = step.active;
+          return (
+            <div key={step.id} className="flex shrink-0 items-center">
+              <div className="flex flex-col items-center gap-1">
+                <div
+                  className="grid h-[22px] w-[22px] place-items-center rounded-full text-[11px] font-bold"
+                  style={{
+                    background: done
+                      ? "var(--org-primary, " + PORTAL_C.primary + ")"
+                      : act
+                        ? "#fff"
+                        : "#f1f3f5",
+                    color: done
+                      ? "#fff"
+                      : act
+                        ? "var(--org-primary, " + PORTAL_C.primary + ")"
+                        : PORTAL_C.faint,
+                    border:
+                      "2px solid " +
+                      (done || act
+                        ? "var(--org-primary, " + PORTAL_C.primary + ")"
+                        : "#e3e6ea"),
+                  }}
+                >
+                  {done ? "✓" : i + 1}
+                </div>
+                <p
+                  className="max-w-[72px] text-center text-[9.5px] font-semibold leading-tight"
+                  style={{
+                    color: act ? PORTAL_C.ink : PORTAL_C.faint,
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  {step.label}
+                </p>
+              </div>
+              {i < timeline.length - 1 ? (
+                <div
+                  className="mx-1 mb-4 h-px w-4 shrink-0 sm:w-6"
+                  style={{ background: "#e3e6ea" }}
+                />
+              ) : null}
             </div>
-          ))}
-        </div>
+          );
+        })}
       </div>
 
       <div className="flex flex-col gap-4 px-4 pb-6 sm:flex-row sm:px-6">

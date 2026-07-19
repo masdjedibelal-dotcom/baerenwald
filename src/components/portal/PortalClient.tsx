@@ -3,29 +3,24 @@
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
-import {
-  MessagesSquare,
-  Phone,
-  X,
-} from "lucide-react";
 
 import { OnboardingTour } from "@/components/onboarding/OnboardingTour";
 import "@/components/onboarding/onboarding.css";
 import { PortalBaerenwaldGpt } from "@/components/portal/PortalBaerenwaldGpt";
+import { PortalCreateFunnelModal } from "@/components/portal/PortalCreateFunnelModal";
 import { PortalEinstellungenPrivat } from "@/components/portal/PortalEinstellungenPrivat";
 import { PortalKundePrivatDashboard } from "@/components/portal/PortalKundePrivatDashboard";
+import { PORTAL_HEADER_HERO_SRC } from "@/lib/portal2/portal-media";
 import { PortalUserNotificationBell } from "@/components/portal/PortalUserNotificationBell";
 import { PortalVorgangDetail } from "@/components/portal/PortalVorgangDetail";
 import { PortalLegalFooter } from "@/components/shared/PortalLegalFooter";
 import { PortalShell } from "@/components/shared/PortalShell";
 import { PortalEmptyState } from "@/components/shared/PortalStateView";
 import { PortalListCard } from "@/components/shared/PortalListCard";
-import { PortalMobileBottomSheet } from "@/components/shared/PortalMobileBottomSheet";
 import {
   PORTAL_LIST_PAGE_SIZE,
   PortalListPagination,
 } from "@/components/shared/PortalListPagination";
-import { SITE_CONFIG } from "@/lib/config";
 import { isOnboardingCompleted } from "@/lib/onboarding/storage";
 import { PORTAL_ONBOARDING_SLIDES } from "@/lib/onboarding/portal-slides";
 import { buildKundeVorgaenge } from "@/lib/portal/build-kunde-vorgaenge";
@@ -214,13 +209,9 @@ export function PortalClient({
   const [mobileDetailOpen, setMobileDetailOpen] = useState(Boolean(selectedId));
   const [listPage, setListPage] = useState(1);
   const [gptOpen, setGptOpen] = useState(false);
+  const [createOpen, setCreateOpen] = useState(false);
   const [onboardingOpen, setOnboardingOpen] = useState(false);
   const ignoreUrlDetailRef = useRef(false);
-
-  const vorname =
-    kunde.name?.trim().split(/\s+/)[0] ||
-    kunde.email?.split("@")[0]?.replace(/[._]/g, " ") ||
-    "du";
 
   const auftragIdByLeadId = useMemo(() => {
     if (Object.keys(auftragIdByLeadIdProp).length) return auftragIdByLeadIdProp;
@@ -388,10 +379,28 @@ export function PortalClient({
   function openVorgang(row: PortalCardRow) {
     setSelectedId(row.id);
     setMobileDetailOpen(true);
-    if (!embedded) {
-      router.replace(`/portal?section=vorgaenge&id=${encodeURIComponent(row.id)}`, {
-        scroll: false,
-      });
+    if (embedded && hvPortalMode) {
+      const f = controlledVorgangFilter === "erledigt" ? "erledigt" : "aktiv";
+      router.replace(
+        `/portal?section=vorgaenge&filter=${f}&id=${encodeURIComponent(row.id)}`,
+        { scroll: false }
+      );
+    } else if (!embedded) {
+      router.replace(
+        `/portal?section=vorgaenge&id=${encodeURIComponent(row.id)}`,
+        { scroll: false }
+      );
+    }
+  }
+
+  function closeDetail() {
+    setSelectedId(null);
+    setMobileDetailOpen(false);
+    if (embedded && hvPortalMode) {
+      const f = controlledVorgangFilter === "erledigt" ? "erledigt" : "aktiv";
+      router.replace(`/portal?section=vorgaenge&filter=${f}`, { scroll: false });
+    } else if (!embedded) {
+      router.replace(`/portal?section=vorgaenge`, { scroll: false });
     }
   }
 
@@ -399,7 +408,7 @@ export function PortalClient({
     return (
       <PortalListCard
         key={row.id}
-        selected={selectedId === row.id}
+        selected={false}
         onClick={() => openVorgang(row)}
         title={row.title}
         subtitle={row.subtitle}
@@ -409,23 +418,24 @@ export function PortalClient({
         meta={row.meta}
         hint={row.hint}
         footer={row.footer}
+        showLeftAccent={!hvPortalMode}
       />
     );
   }
 
   const listPanel = (
-    <article className="card-bordered flex min-h-0 flex-col overflow-hidden lg:min-h-[520px]">
+    <div className="flex min-w-0 flex-col">
       {isPrivatLike && !hvPortalMode ? (
         <>
-          <div className="border-b border-border-default px-3 pt-4 sm:px-4">
-            <p className="text-[11px] font-semibold uppercase tracking-wide text-text-tertiary">
+          <div className="px-0.5 pb-1">
+            <p className="mb-1 text-[12px] font-semibold uppercase tracking-wide text-text-tertiary">
               {portalKundeTypRoleLabel(kundeTyp)}
             </p>
-            <h2 className="portal-text-section text-text-primary">
+            <h1 className="text-[25px] font-bold text-text-primary">
               {portalKundeListeTitle(kundeTyp)}
-            </h2>
+            </h1>
           </div>
-          <div className="flex flex-wrap gap-2 border-b border-border-default px-3 py-3 sm:px-4">
+          <div className="flex flex-wrap gap-2 py-3.5">
             {PRIVAT_LISTE_CHIPS.map((chip) => {
               const on = privatChip === chip.id;
               return (
@@ -453,15 +463,17 @@ export function PortalClient({
           counts={filterCounts}
         />
       ) : null}
-      <div className="min-h-0 flex-1 space-y-2 overflow-y-auto p-3 sm:p-4">
+      <div className="portal-list-panel portal-list-rows">
         {paginatedRows.length === 0 ? (
           vorgaengeItems.length === 0 ? (
-            <PortalEmptyState
-              role={hvPortalMode ? "hv" : "kunde"}
-              compact
-            />
+            <div className="p-4">
+              <PortalEmptyState
+                role={hvPortalMode ? "hv" : "kunde"}
+                compact
+              />
+            </div>
           ) : (
-            <p className="portal-text-body py-8 text-center text-text-secondary">
+            <p className="portal-text-body px-4 py-8 text-center text-text-secondary">
               {isPrivatLike
                 ? "Keine Vorgänge in diesem Filter."
                 : vorgangFilter === "aktiv"
@@ -472,36 +484,23 @@ export function PortalClient({
         ) : (
           paginatedRows.map(renderListCard)
         )}
+        {cardRows.length > PORTAL_LIST_PAGE_SIZE ? (
+          <PortalListPagination
+            totalItems={cardRows.length}
+            itemLabel={isPrivatLike ? "Aufträge" : "Vorgänge"}
+            currentPage={safeListPage}
+            totalPages={listTotalPages}
+            onPageChange={setListPage}
+          />
+        ) : null}
       </div>
-      {cardRows.length > PORTAL_LIST_PAGE_SIZE ? (
-        <PortalListPagination
-          totalItems={cardRows.length}
-          itemLabel={isPrivatLike ? "Aufträge" : "Vorgänge"}
-          currentPage={safeListPage}
-          totalPages={listTotalPages}
-          onPageChange={setListPage}
-        />
-      ) : null}
-    </article>
+    </div>
   );
 
   const selectedLeadId = selectedItem?.leadId ?? selectedItem?.id ?? "";
 
-  const detailPanel = selectedItem ? (
-    <article className="card-bordered min-h-0 overflow-y-auto p-4 sm:p-5 lg:max-h-[calc(100vh-180px)]">
-      <div className="mb-3 flex justify-end lg:hidden">
-        <button
-          type="button"
-          onClick={() => {
-            setMobileDetailOpen(false);
-            setSelectedId(null);
-          }}
-          className="rounded-full p-2 hover:bg-muted"
-          aria-label="Schließen"
-        >
-          <X className="h-5 w-5" />
-        </button>
-      </div>
+  const detailScreen = selectedItem ? (
+    <div className="-mx-4 -mt-4 min-w-0 lg:-mx-6 lg:-mt-5">
       <PortalVorgangDetail
         item={selectedItem}
         showAnlassBadge={showAnlassBadge}
@@ -524,54 +523,16 @@ export function PortalClient({
         }
         schwelleEur={kunde.freigabe_schwelle_eur ?? undefined}
         onHvFeedbackSubmitted={() => router.refresh()}
+        onBack={closeDetail}
       />
-    </article>
-  ) : (
-    <article className="card-bordered hidden min-h-[320px] items-center justify-center p-8 text-center lg:flex">
-      <p className="portal-text-body text-text-secondary">
-        Wähle links einen Vorgang für Details.
-      </p>
-    </article>
-  );
+    </div>
+  ) : null;
+
+  /** Mock: Liste und Detail sind getrennte Screens — kein Split-Pane. */
+  const vorgaengeScreen = selectedItem ? detailScreen : listPanel;
 
   if (embedded) {
-    return (
-      <div className="grid gap-4 lg:grid-cols-[minmax(0,340px)_1fr]">
-        {listPanel}
-        {detailPanel}
-        <PortalMobileBottomSheet
-          open={mobileDetailOpen && Boolean(selectedItem)}
-          onClose={() => setMobileDetailOpen(false)}
-          ariaLabel="Vorgangsdetails"
-        >
-          {selectedItem ? (
-            <PortalVorgangDetail
-              item={selectedItem}
-              showAnlassBadge={showAnlassBadge}
-              onAccepted={() => router.refresh()}
-              hwErledigt={hwErledigtByLeadId[selectedLeadId]}
-              hvFeedback={hvFeedbackByLeadId[selectedLeadId]}
-              auftragId={auftragIdByLeadId[selectedLeadId]}
-              hvAbnahme={hvAbnahmeByLeadId[selectedLeadId] ?? null}
-              showHvAbnahme={useKundeDetail}
-              privatkunde={isPrivatLike}
-              orgFreigabeStatus={
-                (leads as Array<{ id: string; org_freigabe_status?: string | null }>).find(
-                  (l) => l.id === selectedLeadId
-                )?.org_freigabe_status ?? null
-              }
-              hvMeldungStatus={
-                (leads as Array<{ id: string; hv_meldung_status?: string | null }>).find(
-                  (l) => l.id === selectedLeadId
-                )?.hv_meldung_status ?? null
-              }
-              schwelleEur={kunde.freigabe_schwelle_eur ?? undefined}
-              onHvFeedbackSubmitted={() => router.refresh()}
-            />
-          ) : null}
-        </PortalMobileBottomSheet>
-      </div>
-    );
+    return <div className="min-w-0">{vorgaengeScreen}</div>;
   }
 
   const navRole = portalNavRoleForKundeTyp(kundeTyp);
@@ -593,7 +554,7 @@ export function PortalClient({
         })}
         createAction={{
           label: portalCreateLabel(navRole),
-          onClick: () => router.push("/rechner"),
+          onClick: () => setCreateOpen(true),
         }}
         headerUser={{
           name: kunde.name?.trim() || "MeinBärenwald",
@@ -610,7 +571,7 @@ export function PortalClient({
         }
       >
           {section === "gpt" ? (
-            <article className="card-bordered hidden overflow-hidden p-0 lg:block">
+            <article className="portal-surface hidden overflow-hidden p-0 lg:block">
               <PortalBaerenwaldGpt variant="embedded" open onClose={() => switchSection("uebersicht")} />
             </article>
           ) : null}
@@ -624,7 +585,7 @@ export function PortalClient({
           ) : null}
 
           {section === "profil" && !isPrivatLike ? (
-            <article className="card-bordered space-y-4 p-4 sm:p-5">
+            <article className="portal-surface space-y-4 p-4 sm:p-5">
               <div>
                 <p className="portal-text-section text-text-primary">Einstellungen</p>
                 <p className="portal-text-body mt-1 text-text-secondary">
@@ -654,170 +615,66 @@ export function PortalClient({
           ) : null}
 
           {section === "uebersicht" && isPrivatLike ? (
-            <div className="space-y-4">
-              <PortalKundePrivatDashboard
-                hello={portalKundeDashboardHello(kundeTyp, kunde.name)}
-                kundeTyp={kundeTyp === "gewerbe" ? "gewerbe" : "privat"}
-                kpis={privatKpis}
-                recent={recentItems}
-                onOpenAll={() => switchSection("vorgaenge")}
-                onOpenItem={(id) => {
-                  setSelectedId(id);
-                  setMobileDetailOpen(true);
-                  switchSection("vorgaenge");
-                  router.replace(
-                    `/portal?section=vorgaenge&id=${encodeURIComponent(id)}`,
-                    { scroll: false }
-                  );
-                }}
-              />
-              <button
-                type="button"
-                onClick={() => setGptOpen(true)}
-                className="card-bordered flex w-full items-center justify-between gap-3 p-4 text-left lg:hidden"
-              >
-                <div className="flex items-center gap-3">
-                  <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#EAF3DE] text-[#2E7D52]">
-                    <MessagesSquare className="h-5 w-5" />
-                  </span>
-                  <div>
-                    <p className="portal-text-body font-semibold">Bärenwald GPT</p>
-                    <p className="portal-text-meta text-text-secondary">
-                      Beratung & Visualisierung
-                    </p>
-                  </div>
-                </div>
-                <span className="font-semibold text-accent">Öffnen →</span>
-              </button>
-            </div>
+            <PortalKundePrivatDashboard
+              hello={portalKundeDashboardHello(kundeTyp, kunde.name)}
+              kundeTyp={kundeTyp === "gewerbe" ? "gewerbe" : "privat"}
+              kpis={privatKpis}
+              recent={recentItems}
+              heroImageUrl={PORTAL_HEADER_HERO_SRC}
+              onOpenAll={() => switchSection("vorgaenge")}
+              onOpenItem={(id) => {
+                setSelectedId(id);
+                setMobileDetailOpen(true);
+                switchSection("vorgaenge");
+                router.replace(
+                  `/portal?section=vorgaenge&id=${encodeURIComponent(id)}`,
+                  { scroll: false }
+                );
+              }}
+            />
           ) : null}
 
           {section === "uebersicht" && !isPrivatLike ? (
-            <>
-              <div className="space-y-0.5">
-                <p className="portal-text-section text-text-primary">Hallo {vorname}</p>
-                <p className="portal-text-body text-text-secondary">
-                  Deine Projekte an einem Ort
-                </p>
-              </div>
-
-              <div className="grid min-w-0 grid-cols-3 gap-2">
-                <article className="portal-kpi-card">
-                  <p className="portal-kpi-label">Aktiv</p>
-                  <p className="portal-kpi-value">{filterCounts.aktiv}</p>
-                </article>
-                <article className="portal-kpi-card">
-                  <p className="portal-kpi-label">Zur Prüfung</p>
-                  <p className="portal-kpi-value">{needsActionCount}</p>
-                </article>
-                <article className="portal-kpi-card">
-                  <p className="portal-kpi-label">Erledigt</p>
-                  <p className="portal-kpi-value">{filterCounts.erledigt}</p>
-                </article>
-              </div>
-
-              <button
-                type="button"
-                onClick={() => setGptOpen(true)}
-                className="card-bordered flex w-full items-center justify-between gap-3 p-4 text-left lg:hidden"
-              >
-                <div className="flex items-center gap-3">
-                  <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#EAF3DE] text-[#2E7D52]">
-                    <MessagesSquare className="h-5 w-5" />
-                  </span>
-                  <div>
-                    <p className="portal-text-body font-semibold">Bärenwald GPT</p>
-                    <p className="portal-text-meta text-text-secondary">Beratung & Visualisierung</p>
-                  </div>
-                </div>
-                <span className="font-semibold text-accent">Öffnen →</span>
-              </button>
-
-              <article className="card-bordered p-4 sm:p-5">
-                <div className="mb-3 flex items-center justify-between gap-2">
-                  <h2 className="font-semibold text-text-primary">Deine Vorgänge</h2>
-                  <button
-                    type="button"
-                    onClick={() => switchSection("vorgaenge")}
-                    className="portal-text-meta font-semibold text-accent"
-                  >
-                    Alle anzeigen
-                  </button>
-                </div>
-                <div className="space-y-2">
-                  {buildKundeVorgangCardRows(filterKundeVorgaenge(vorgaengeItems, "aktiv"))
-                    .slice(0, 5)
-                    .map(renderListCard)}
-                  {filterCounts.aktiv === 0 ? (
-                    <PortalEmptyState role="kunde" compact />
-                  ) : null}
-                </div>
-              </article>
-
-              <article className="card-bordered p-4 sm:p-5">
-                <h2 className="font-semibold text-text-primary">Kontakt</h2>
-                <p className="portal-text-body mt-2 text-text-secondary">
-                  Fragen zu deinem Projekt? Wir sind für dich da.
-                </p>
-                <div className="mt-4 flex flex-wrap gap-2">
-                  <a href={SITE_CONFIG.phoneHref} className="btn-pill-primary inline-flex items-center gap-2 !py-2.5">
-                    <Phone className="h-4 w-4" />
-                    Anrufen
-                  </a>
-                  <a
-                    href={`mailto:${SITE_CONFIG.email}`}
-                    className="btn-pill-outline !py-2.5"
-                  >
-                    E-Mail schreiben
-                  </a>
-                </div>
-              </article>
-            </>
+            <PortalKundePrivatDashboard
+              hello={portalKundeDashboardHello(kundeTyp, kunde.name)}
+              kundeTyp="privat"
+              kpis={privatKpis}
+              recent={recentItems}
+              heroImageUrl={PORTAL_HEADER_HERO_SRC}
+              onOpenAll={() => switchSection("vorgaenge")}
+              onOpenItem={(id) => {
+                setSelectedId(id);
+                setMobileDetailOpen(true);
+                switchSection("vorgaenge");
+                router.replace(
+                  `/portal?section=vorgaenge&id=${encodeURIComponent(id)}`,
+                  { scroll: false }
+                );
+              }}
+            />
           ) : null}
 
-          {section === "vorgaenge" ? (
-            <div className="grid gap-4 lg:grid-cols-[minmax(0,340px)_1fr]">
-              {listPanel}
-              {detailPanel}
-            </div>
-          ) : null}
+          {section === "vorgaenge" ? vorgaengeScreen : null}
       </PortalShell>
-
-      <PortalMobileBottomSheet
-        open={section === "vorgaenge" && mobileDetailOpen && Boolean(selectedItem)}
-        onClose={() => setMobileDetailOpen(false)}
-        ariaLabel="Vorgangsdetails"
-      >
-        {selectedItem ? (
-          <PortalVorgangDetail
-            item={selectedItem}
-            showAnlassBadge={showAnlassBadge}
-            onAccepted={() => router.refresh()}
-            hwErledigt={hwErledigtByLeadId[selectedLeadId]}
-            hvFeedback={hvFeedbackByLeadId[selectedLeadId]}
-            auftragId={auftragIdByLeadId[selectedLeadId]}
-            hvAbnahme={hvAbnahmeByLeadId[selectedLeadId] ?? null}
-            showHvAbnahme={useKundeDetail}
-            privatkunde={isPrivatLike}
-            orgFreigabeStatus={
-              (leads as Array<{ id: string; org_freigabe_status?: string | null }>).find(
-                (l) => l.id === selectedLeadId
-              )?.org_freigabe_status ?? null
-            }
-            hvMeldungStatus={
-              (leads as Array<{ id: string; hv_meldung_status?: string | null }>).find(
-                (l) => l.id === selectedLeadId
-              )?.hv_meldung_status ?? null
-            }
-            schwelleEur={kunde.freigabe_schwelle_eur ?? undefined}
-            onHvFeedbackSubmitted={() => router.refresh()}
-          />
-        ) : null}
-      </PortalMobileBottomSheet>
 
       {gptOpen ? (
         <PortalBaerenwaldGpt open onClose={() => setGptOpen(false)} />
       ) : null}
+
+      <PortalCreateFunnelModal
+        open={createOpen}
+        channel="portal_privat"
+        title={portalCreateLabel(navRole)}
+        prefill={{
+          name: kunde.name?.trim() || undefined,
+          email: kunde.email?.trim() || undefined,
+        }}
+        onClose={() => setCreateOpen(false)}
+        onDone={() => {
+          setCreateOpen(false);
+          router.refresh();
+        }}
+      />
 
       {onboardingOpen ? (
         <OnboardingTour

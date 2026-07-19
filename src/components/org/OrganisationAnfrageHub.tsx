@@ -1,25 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
-import { OrganisationManuellerVorgangForm } from "@/components/org/OrganisationManuellerVorgangForm";
-import { OrganisationMeldungErfassenForm } from "@/components/org/OrganisationMeldungErfassenForm";
-import { OrganisationProjektFunnel } from "@/components/org/OrganisationProjektFunnel";
-import { OrganisationServicepaketFlow } from "@/components/org/OrganisationServicepaketFlow";
-import { PortalModalEinladen } from "@/components/shared/PortalModalEinladen";
-import { PortalModalNeueAnfrage } from "@/components/shared/PortalModalNeueAnfrage";
+import { PortalFunnelHost } from "@/components/funnel/PortalFunnelHost";
 import { PortalModalShell } from "@/components/shared/PortalModalShell";
 import { track } from "@/lib/analytics";
-import type { PortalNeueAnfrageActionId } from "@/lib/portal2/modal-neue-anfrage";
 import type { OrganisationObjekt } from "@/lib/org/types";
-
-type HubMode =
-  | "hub"
-  | "meldung_direkt"
-  | "einladen"
-  | "projekt"
-  | "servicepaket"
-  | "vorgang_manuell";
 
 type Props = {
   open?: boolean;
@@ -32,144 +18,93 @@ type Props = {
   onDone: () => void;
 };
 
-const FLOW_TITLES: Record<Exclude<HubMode, "hub" | "einladen">, string> = {
-  meldung_direkt: "Meldung anlegen",
-  projekt: "Projekt / Sanierung",
-  vorgang_manuell: "Manueller Vorgang",
-  servicepaket: "Servicepaket bestellen",
-};
-
 /**
- * Org-Create-Hub — B8 `modalNeueAnfrage` + B9 `modalEinladen` + reale Flows.
+ * HV Create — ein Funnel (PortalFunnelHost, channel portal_hv).
  */
 export function OrganisationAnfrageHub({
   open = true,
-  objekte,
-  orgKennung,
-  orgAnzeigename,
+  objekte: objekteProp,
   kundeEmail,
   kundeName,
   onClose,
   onDone,
 }: Props) {
-  const [mode, setMode] = useState<HubMode>("hub");
+  const [objekte, setObjekte] = useState(objekteProp);
 
-  function backToHub() {
-    setMode("hub");
-  }
+  useEffect(() => {
+    setObjekte(objekteProp);
+  }, [objekteProp]);
 
-  function handleClose() {
-    setMode("hub");
-    onClose();
-  }
+  useEffect(() => {
+    if (open) track.orgAnfrageGestartet("projekt");
+  }, [open]);
 
-  function handleSelect(id: PortalNeueAnfrageActionId) {
-    if (id === "einladen") {
-      track.orgAnfrageGestartet("meldung");
-      setMode("einladen");
-      return;
-    }
-    if (objekte.length === 0) return;
-    switch (id) {
-      case "meldung":
-        track.orgAnfrageGestartet("meldung");
-        setMode("meldung_direkt");
-        break;
-      case "projekt":
-        track.orgAnfrageGestartet("projekt");
-        setMode("projekt");
-        break;
-      case "manuell":
-        track.orgAnfrageGestartet("meldung");
-        setMode("vorgang_manuell");
-        break;
-      case "servicepaket":
-        track.orgAnfrageGestartet("servicepaket");
-        setMode("servicepaket");
-        break;
-    }
-  }
-
-  function finish() {
-    setMode("hub");
-    onDone();
-  }
-
-  if (mode === "hub") {
-    return (
-      <PortalModalNeueAnfrage
-        open={open}
-        onClose={handleClose}
-        onSelect={handleSelect}
-        notice={
-          objekte.length === 0
-            ? "Bitte zuerst ein Objekt anlegen — danach können Sie Vorgänge starten."
-            : null
-        }
-        enabledIds={objekte.length === 0 ? [] : undefined}
-      />
-    );
-  }
-
-  if (mode === "einladen") {
-    return (
-      <PortalModalEinladen
-        open={open}
-        onClose={handleClose}
-        orgKennung={orgKennung?.trim() || ""}
-        orgAnzeigename={orgAnzeigename}
-        objekte={objekte}
-      />
-    );
-  }
+  if (!open) return null;
 
   return (
     <PortalModalShell
       open={open}
-      title={FLOW_TITLES[mode]}
-      onClose={handleClose}
-      maxWidth={520}
+      title="Neuer Vorgang"
+      onClose={onClose}
+      maxWidth={680}
     >
-      <button
-        type="button"
-        className="portal-neue-anfrage-back"
-        onClick={backToHub}
-      >
-        ‹ Zurück zur Auswahl
-      </button>
-
-      {mode === "meldung_direkt" ? (
-        <OrganisationMeldungErfassenForm
-          objekte={objekte}
-          mode="direkt"
-          onDone={finish}
-        />
+      {objekte.length === 0 ? (
+        <p className="mb-3 text-sm text-text-secondary">
+          Noch kein Objekt — Sie können im Funnel ein neues anlegen.
+        </p>
       ) : null}
-
-      {mode === "projekt" ? (
-        <OrganisationProjektFunnel
-          objekte={objekte}
-          kundeEmail={kundeEmail}
-          kundeName={kundeName}
-          onDone={finish}
-        />
-      ) : null}
-
-      {mode === "vorgang_manuell" ? (
-        <OrganisationManuellerVorgangForm
-          objekte={objekte}
-          onDone={finish}
-        />
-      ) : null}
-
-      {mode === "servicepaket" ? (
-        <OrganisationServicepaketFlow
-          objekte={objekte}
-          kundeEmail={kundeEmail}
-          kundeName={kundeName}
-          onDone={finish}
-        />
-      ) : null}
+      <PortalFunnelHost
+        channel="portal_hv"
+        objekte={objekte.map((o) => ({
+          id: o.id,
+          titel: o.titel,
+          strasse: o.strasse,
+          hausnummer: o.hausnummer,
+          plz: o.plz,
+          ort: o.ort,
+          melde_slug: o.melde_slug,
+        }))}
+        prefill={{
+          name: kundeName ?? undefined,
+          email: kundeEmail ?? undefined,
+        }}
+        onClose={onClose}
+        onDone={() => {
+          onDone();
+        }}
+        onObjekteChanged={(next) => {
+          setObjekte((prev) => {
+            const byId = new Map(prev.map((o) => [o.id, o]));
+            return next.map((n) => {
+              const old = byId.get(n.id);
+              if (old) {
+                return {
+                  ...old,
+                  titel: n.titel,
+                  strasse: n.strasse ?? old.strasse,
+                  hausnummer: n.hausnummer ?? old.hausnummer,
+                  plz: n.plz ?? old.plz,
+                  ort: n.ort ?? old.ort,
+                  melde_slug: n.melde_slug ?? old.melde_slug,
+                };
+              }
+              return {
+                id: n.id,
+                kunde_id: "",
+                titel: n.titel,
+                strasse: n.strasse ?? null,
+                hausnummer: n.hausnummer ?? null,
+                plz: n.plz ?? null,
+                ort: n.ort ?? null,
+                melde_slug: n.melde_slug ?? null,
+                melde_aktiv: true,
+                einheiten_hinweis: null,
+                notizen_intern: null,
+              } as OrganisationObjekt;
+            });
+          });
+        }}
+      />
     </PortalModalShell>
   );
 }

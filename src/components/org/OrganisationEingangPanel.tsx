@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { AlertTriangle, Filter, Mail, Phone, X } from "lucide-react";
 
@@ -533,174 +534,157 @@ export function OrganisationEingangPanel({
     eingang.find((l) => l.id === selectedId) ??
     null;
 
+  const router = useRouter();
+
   const openDetail = (id: string) => {
     setSelectedId(id);
-    if (typeof window !== "undefined" && window.innerWidth < 1024) {
-      setMobileDetailOpen(true);
-    }
+    setMobileDetailOpen(true);
+    router.replace(
+      `/portal?section=vorgaenge&filter=freigabe&id=${encodeURIComponent(id)}`,
+      { scroll: false }
+    );
   };
+
+  const closeDetail = () => {
+    setSelectedId(null);
+    setMobileDetailOpen(false);
+    router.replace(`/portal?section=vorgaenge&filter=freigabe`, { scroll: false });
+  };
+
+  if (selected) {
+    return (
+      <div className="-mx-4 -mt-2 min-w-0 space-y-3 lg:-mx-6">
+        <button
+          type="button"
+          onClick={closeDetail}
+          className="rounded-full px-3 py-1.5 text-[12.5px] font-semibold text-white"
+          style={{ background: "rgba(0,0,0,.42)" }}
+        >
+          ‹ Zurück
+        </button>
+        <MeldungDetail
+          lead={selected}
+          kunde={kunde}
+          angebot={angebotByLeadId.get(selected.id) ?? null}
+          onRefresh={onRefresh}
+          partnerBefunde={partnerBefundByLeadId[selected.id]}
+          auftragId={auftragByLeadId[selected.id]}
+          bautagebuchEintraege={bautagebuchByLeadId[selected.id]}
+          hwErledigt={hwErledigtByLeadId[selected.id]}
+          feedbackBereit={feedbackBereitByLeadId[selected.id]}
+          hvFeedback={hvFeedbackByLeadId[selected.id]}
+          hvAbnahme={hvAbnahmeByLeadId[selected.id] ?? null}
+          vorgangUnterlagen={
+            hwErledigtByLeadId[selected.id] ||
+            feedbackBereitByLeadId[selected.id]
+              ? dokumenteByLeadId[selected.id]
+              : undefined
+          }
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4">
-      <div>
-        <h2 className="text-lg font-semibold">Meldungen</h2>
-        <p className="text-sm text-text-secondary">
-          Mieter-Meldungen und Direkterfassungen — Aktionen für neue Vorgänge.
-        </p>
-      </div>
-
-      <div className="flex flex-wrap items-center gap-2 rounded-xl border border-border-default bg-surface-card p-3">
-        <span className="inline-flex items-center gap-1 text-xs text-text-tertiary">
-          <Filter className="h-3.5 w-3.5" />
-          Filter
-        </span>
-        <select
-          className="rounded-lg border border-border-default px-2 py-1.5 text-sm"
-          value={objektFilter}
-          onChange={(e) => setObjektFilter(e.target.value)}
-        >
-          <option value="alle">Alle Objekte</option>
-          {objekte.map((o) => (
-            <option key={o.id} value={o.id}>
-              {o.titel}
-            </option>
-          ))}
-        </select>
-        <select
-          className="rounded-lg border border-border-default px-2 py-1.5 text-sm"
-          value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value as StatusFilter)}
-        >
-          <option value="alle">Alle Status</option>
-          <option value="neu">Neu</option>
-          <option value="wartet_melder">Wartet auf Melder</option>
-          <option value="in_bearbeitung">In Bearbeitung</option>
-        </select>
-        <label className="inline-flex items-center gap-1.5 text-sm cursor-pointer">
-          <input
-            type="checkbox"
-            checked={onlyNotfall}
-            onChange={(e) => setOnlyNotfall(e.target.checked)}
-          />
-          Nur Notfall
-        </label>
-      </div>
-
-      <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_360px]">
-        <div className="space-y-2">
-          {filtered.length === 0 ? (
-            <p className="text-sm text-text-secondary rounded-xl border border-dashed p-6 text-center">
-              Keine Meldungen für die gewählten Filter.
+      {!listActions ? (
+        <>
+          <div>
+            <h2 className="text-lg font-semibold">Meldungen</h2>
+            <p className="text-sm text-text-secondary">
+              Mieter-Meldungen und Direkterfassungen — Aktionen für neue Vorgänge.
             </p>
-          ) : (
-            filtered.map((lead) => {
-              const kat = meldeKategorieLabel(
-                meldeKategorieFromLead(lead) ?? undefined
-              );
-              const notfall = isMeldeNotfall(lead);
-              return (
-                <div
-                  key={lead.id}
-                  className="rounded-xl border border-[rgba(0,0,0,0.08)] bg-white overflow-hidden"
-                >
-                  <PortalListCard
-                    selected={selectedId === lead.id}
-                    onClick={() => openDetail(lead.id)}
-                    title={kat}
-                    subtitle={lead.objekt?.titel ?? "Objekt"}
-                    statusLabel={plattformStatusLabel(
-                      resolvePlattformStatus(lead, auftragKontextByLeadId[lead.id])
-                    )}
-                    statusPillClass={plattformStatusPillClass(
-                      resolvePlattformStatus(lead, auftragKontextByLeadId[lead.id])
-                    )}
-                    accent="anfrage"
-                    meta={[
-                      {
-                        text: lead.melder_name
-                          ? `Melder: ${lead.melder_name}`
-                          : "Melder",
-                      },
-                      ...(notfall
-                        ? [{ icon: AlertTriangle, text: "Notfall" }]
-                        : []),
-                    ]}
-                  />
-                  {listActions ? (
-                    <div className="px-4 pb-3">
-                      <HvMeldungListActions
-                        lead={lead}
-                        kunde={kunde}
-                        onUpdated={onRefresh}
-                      />
-                    </div>
-                  ) : null}
-                </div>
-              );
-            })
-          )}
-        </div>
-
-        <aside className="hidden lg:block card-bordered p-4 rounded-xl space-y-3 min-h-[280px]">
-          {selected ? (
-            <MeldungDetail
-              lead={selected}
-              kunde={kunde}
-              angebot={angebotByLeadId.get(selected.id) ?? null}
-              onRefresh={onRefresh}
-              partnerBefunde={partnerBefundByLeadId[selected.id]}
-              auftragId={auftragByLeadId[selected.id]}
-              bautagebuchEintraege={bautagebuchByLeadId[selected.id]}
-              hwErledigt={hwErledigtByLeadId[selected.id]}
-              feedbackBereit={feedbackBereitByLeadId[selected.id]}
-              hvFeedback={hvFeedbackByLeadId[selected.id]}
-              hvAbnahme={hvAbnahmeByLeadId[selected.id] ?? null}
-              vorgangUnterlagen={
-                hwErledigtByLeadId[selected.id] ||
-                feedbackBereitByLeadId[selected.id]
-                  ? dokumenteByLeadId[selected.id]
-                  : undefined
-              }
-            />
-          ) : (
-            <p className="text-sm text-text-secondary">Meldung auswählen</p>
-          )}
-        </aside>
-      </div>
-
-      {mobileDetailOpen && selected ? (
-        <div className="fixed inset-x-0 bottom-0 z-50 lg:hidden">
-          <button
-            type="button"
-            className="absolute inset-0 -top-[100vh] bg-black/40"
-            aria-label="Overlay schließen"
-            onClick={() => setMobileDetailOpen(false)}
-          />
-          <div className="relative max-h-[85vh] overflow-y-auto rounded-t-2xl bg-white p-4 shadow-xl border-t border-border-default">
-            <MeldungDetail
-              lead={selected}
-              kunde={kunde}
-              angebot={angebotByLeadId.get(selected.id) ?? null}
-              onRefresh={onRefresh}
-              showClose
-              onClose={() => setMobileDetailOpen(false)}
-              partnerBefunde={partnerBefundByLeadId[selected.id]}
-              auftragId={auftragByLeadId[selected.id]}
-              bautagebuchEintraege={bautagebuchByLeadId[selected.id]}
-              hwErledigt={hwErledigtByLeadId[selected.id]}
-              feedbackBereit={feedbackBereitByLeadId[selected.id]}
-              hvFeedback={hvFeedbackByLeadId[selected.id]}
-              hvAbnahme={hvAbnahmeByLeadId[selected.id] ?? null}
-              vorgangUnterlagen={
-                hwErledigtByLeadId[selected.id] ||
-                feedbackBereitByLeadId[selected.id]
-                  ? dokumenteByLeadId[selected.id]
-                  : undefined
-              }
-            />
           </div>
-        </div>
+
+          <div className="flex flex-wrap items-center gap-2 rounded-xl border border-border-default bg-surface-card p-3">
+            <span className="inline-flex items-center gap-1 text-xs text-text-tertiary">
+              <Filter className="h-3.5 w-3.5" />
+              Filter
+            </span>
+            <select
+              className="rounded-lg border border-border-default px-2 py-1.5 text-sm"
+              value={objektFilter}
+              onChange={(e) => setObjektFilter(e.target.value)}
+            >
+              <option value="alle">Alle Objekte</option>
+              {objekte.map((o) => (
+                <option key={o.id} value={o.id}>
+                  {o.titel}
+                </option>
+              ))}
+            </select>
+            <select
+              className="rounded-lg border border-border-default px-2 py-1.5 text-sm"
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value as StatusFilter)}
+            >
+              <option value="alle">Alle Status</option>
+              <option value="neu">Neu</option>
+              <option value="wartet_melder">Wartet auf Melder</option>
+              <option value="in_bearbeitung">In Bearbeitung</option>
+            </select>
+            <label className="inline-flex items-center gap-1.5 text-sm cursor-pointer">
+              <input
+                type="checkbox"
+                checked={onlyNotfall}
+                onChange={(e) => setOnlyNotfall(e.target.checked)}
+              />
+              Nur Notfall
+            </label>
+          </div>
+        </>
       ) : null}
+
+      <div className="portal-list-panel portal-list-rows">
+        {filtered.length === 0 ? (
+          <p className="portal-text-body px-4 py-8 text-center text-text-secondary">
+            Keine Meldungen für die gewählten Filter.
+          </p>
+        ) : (
+          filtered.map((lead) => {
+            const kat = meldeKategorieLabel(
+              meldeKategorieFromLead(lead) ?? undefined
+            );
+            const notfall = isMeldeNotfall(lead);
+            return (
+              <div key={lead.id}>
+                <PortalListCard
+                  selected={false}
+                  onClick={() => openDetail(lead.id)}
+                  title={kat}
+                  subtitle={lead.objekt?.titel ?? "Objekt"}
+                  statusLabel={plattformStatusLabel(
+                    resolvePlattformStatus(lead, auftragKontextByLeadId[lead.id])
+                  )}
+                  statusPillClass={plattformStatusPillClass(
+                    resolvePlattformStatus(lead, auftragKontextByLeadId[lead.id])
+                  )}
+                  accent="anfrage"
+                  meta={[
+                    {
+                      text: lead.melder_name
+                        ? `Melder: ${lead.melder_name}`
+                        : "Melder",
+                    },
+                    ...(notfall
+                      ? [{ icon: AlertTriangle, text: "Notfall" }]
+                      : []),
+                  ]}
+                />
+                {listActions ? (
+                  <div className="px-4 pb-3">
+                    <HvMeldungListActions
+                      lead={lead}
+                      kunde={kunde}
+                      onUpdated={onRefresh}
+                    />
+                  </div>
+                ) : null}
+              </div>
+            );
+          })
+        )}
+      </div>
     </div>
   );
 }

@@ -38,15 +38,15 @@ export function OrganisationWiedervorlagenCard() {
   if (items.length === 0) return null;
 
   return (
-    <article className="card-bordered space-y-3 p-4">
-      <p className="portal-text-body font-semibold text-text-primary">
+    <article className="portal-list-panel space-y-0 p-0">
+      <p className="portal-text-body px-4 py-3 font-semibold text-text-primary">
         Ihre Wiedervorlagen ({items.length})
       </p>
-      <ul className="space-y-2">
+      <ul className="divide-y divide-[var(--p2-line2)]">
         {items.map((w) => (
           <li
             key={w.id}
-            className="flex flex-wrap items-start justify-between gap-2 rounded-lg bg-amber-50/80 px-3 py-2 text-sm"
+            className="flex flex-wrap items-start justify-between gap-2 px-4 py-3 text-sm"
           >
             <button
               type="button"

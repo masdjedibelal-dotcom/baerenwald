@@ -87,6 +87,8 @@ export type OrganisationObjekt = {
   notizen_intern: string | null;
   kostenstelle_nr?: string | null;
   freigabe_schwelle_eur?: number | null;
+  /** Dekoratives Gebäudefoto (öffentlich). */
+  cover_url?: string | null;
   created_at?: string | null;
 };
 

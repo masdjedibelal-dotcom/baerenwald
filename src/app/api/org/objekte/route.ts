@@ -15,13 +15,29 @@ export async function GET() {
   }
 
   const selectCols =
-    "id, titel, strasse, hausnummer, plz, ort, melde_slug, melde_aktiv, einheiten_hinweis, notizen_intern, kostenstelle_nr, freigabe_schwelle_eur, created_at";
+    "id, titel, strasse, hausnummer, plz, ort, melde_slug, melde_aktiv, einheiten_hinweis, notizen_intern, kostenstelle_nr, freigabe_schwelle_eur, cover_url, created_at";
 
   const { data, error } = await supabaseAdmin
     .from("kunden_objekte")
     .select(selectCols)
     .eq("kunde_id", session.kunde.id)
     .order("titel", { ascending: true });
+
+  if (error && /cover_url/i.test(error.message)) {
+    const fallbackCols =
+      "id, titel, strasse, hausnummer, plz, ort, melde_slug, melde_aktiv, einheiten_hinweis, notizen_intern, kostenstelle_nr, freigabe_schwelle_eur, created_at";
+    const { data: healed, error: reloadErr } = await supabaseAdmin
+      .from("kunden_objekte")
+      .select(fallbackCols)
+      .eq("kunde_id", session.kunde.id)
+      .order("titel", { ascending: true });
+    if (reloadErr) {
+      return NextResponse.json({ error: reloadErr.message }, { status: 500 });
+    }
+    const rows = healed ?? [];
+    await ensureMeldeSlugsForKunde(session.kunde.id, rows);
+    return NextResponse.json({ objekte: rows });
+  }
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
@@ -35,6 +51,10 @@ export async function GET() {
     .select(selectCols)
     .eq("kunde_id", session.kunde.id)
     .order("titel", { ascending: true });
+
+  if (reloadErr && /cover_url/i.test(reloadErr.message)) {
+    return NextResponse.json({ objekte: rows });
+  }
 
   if (reloadErr) {
     return NextResponse.json({ error: reloadErr.message }, { status: 500 });

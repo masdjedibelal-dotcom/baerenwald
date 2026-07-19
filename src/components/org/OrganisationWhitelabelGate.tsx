@@ -73,7 +73,7 @@ export function OrganisationWhitelabelGate({ kunde, canComplete, onComplete }: P
   }
 
   const panelClass =
-    "card-bordered max-h-[90vh] w-full max-w-lg overflow-y-auto bg-surface-card p-5 sm:p-6";
+    "portal-surface max-h-[90vh] w-full max-w-lg overflow-y-auto bg-surface-card p-5 sm:p-6";
 
   const inner = (
     <>

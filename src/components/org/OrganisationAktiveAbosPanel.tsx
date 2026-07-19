@@ -60,7 +60,7 @@ export function OrganisationAktiveAbosPanel() {
       </div>
       <ul className="space-y-2">
         {abos.map((a) => (
-          <li key={a.id} className="card-bordered flex flex-wrap items-center justify-between gap-3 p-4">
+          <li key={a.id} className="portal-surface flex flex-wrap items-center justify-between gap-3 p-4">
             <div>
               <p className="font-medium text-text-primary">{a.produktSlug}</p>
               <p className="text-sm text-text-secondary">{a.objektTitel}</p>

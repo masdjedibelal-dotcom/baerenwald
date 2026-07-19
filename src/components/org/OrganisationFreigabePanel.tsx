@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 
 import type { OrgFreigabeAngebot } from "@/components/org/OrgAngebotFreigabeInhalt";
 import { OrganisationEingangPanel } from "@/components/org/OrganisationEingangPanel";
@@ -150,6 +151,9 @@ export function OrganisationFreigabePanel({
   dokumenteByLeadId = {},
   hvAbnahmeByLeadId = {},
 }: Props) {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const urlDetailId = searchParams.get("id")?.trim() || null;
   const [selectedAngebotId, setSelectedAngebotId] = useState<string | null>(null);
   const auftragByLeadId = useMemo(
     () => buildAuftragByLeadId(auftraege as Array<{ id: string; lead_id?: string | null }>),
@@ -201,6 +205,59 @@ export function OrganisationFreigabePanel({
       )
     : null;
 
+  const eingangDetailProps = {
+    kunde,
+    eingang: freigabeEingang,
+    objekte,
+    angebote: freigabeAngebote,
+    initialSelectedId: initialSelectedId ?? urlDetailId,
+    onRefresh,
+    partnerBefundByLeadId,
+    auftragByLeadId,
+    auftragKontextByLeadId,
+    bautagebuchByLeadId,
+    hwErledigtByLeadId,
+    feedbackBereitByLeadId,
+    hvFeedbackByLeadId,
+    dokumenteByLeadId,
+    hvAbnahmeByLeadId,
+    listActions: true as const,
+  };
+
+  /** Mock: Detail ist eigener Screen — kein Split / Inline-Expand. */
+  if (selectedAngebotItem) {
+    const leadId =
+      (selectedAngebotItem as { leadId?: string }).leadId ??
+      selectedAngebotItem.id;
+    return (
+      <div className="-mx-4 -mt-2 min-w-0 lg:-mx-6">
+        <OrgFreigabeBanner
+          leadId={leadId}
+          status="ausstehend"
+          onUpdated={onRefresh}
+        />
+        <PortalVorgangDetail
+          item={selectedAngebotItem}
+          onAccepted={onRefresh}
+          showHvAbnahme
+          showAnlassBadge
+          orgFreigabeStatus="ausstehend"
+          schwelleEur={kunde.freigabe_schwelle_eur ?? undefined}
+          onBack={() => {
+            setSelectedAngebotId(null);
+            router.replace(`/portal?section=vorgaenge&filter=freigabe`, {
+              scroll: false,
+            });
+          }}
+        />
+      </div>
+    );
+  }
+
+  if (urlDetailId) {
+    return <OrganisationEingangPanel {...eingangDetailProps} />;
+  }
+
   return (
     <div className="space-y-6">
       {!embedded ? (
@@ -238,24 +295,7 @@ export function OrganisationFreigabePanel({
             {HV_SECTION_EMPTY}
           </p>
         ) : (
-          <OrganisationEingangPanel
-            kunde={kunde}
-            eingang={freigabeEingang}
-            objekte={objekte}
-            angebote={freigabeAngebote}
-            initialSelectedId={initialSelectedId}
-            onRefresh={onRefresh}
-            partnerBefundByLeadId={partnerBefundByLeadId}
-            auftragByLeadId={auftragByLeadId}
-            auftragKontextByLeadId={auftragKontextByLeadId}
-            bautagebuchByLeadId={bautagebuchByLeadId}
-            hwErledigtByLeadId={hwErledigtByLeadId}
-            feedbackBereitByLeadId={feedbackBereitByLeadId}
-            hvFeedbackByLeadId={hvFeedbackByLeadId}
-            dokumenteByLeadId={dokumenteByLeadId}
-            hvAbnahmeByLeadId={hvAbnahmeByLeadId}
-            listActions
-          />
+          <OrganisationEingangPanel {...eingangDetailProps} />
         )}
       </section>
 
@@ -321,26 +361,15 @@ export function OrganisationFreigabePanel({
                       )
                     )}
                     meta={[]}
-                    onClick={() => setSelectedAngebotId(a.id)}
+                    onClick={() => {
+                      setSelectedAngebotId(a.id);
+                      router.replace(
+                        `/portal?section=vorgaenge&filter=freigabe&id=${encodeURIComponent(a.leadId)}`,
+                        { scroll: false }
+                      );
+                    }}
                   />
                   <HvAngebotListActions leadId={a.leadId} onUpdated={onRefresh} />
-                  {selectedAngebotId === a.id && selectedAngebotItem ? (
-                    <div className="rounded-xl border border-border-default p-3">
-                      <OrgFreigabeBanner
-                        leadId={a.leadId}
-                        status="ausstehend"
-                        onUpdated={onRefresh}
-                      />
-                      <PortalVorgangDetail
-                        item={selectedAngebotItem}
-                        onAccepted={onRefresh}
-                        showHvAbnahme
-                        showAnlassBadge
-                        orgFreigabeStatus="ausstehend"
-                        schwelleEur={kunde.freigabe_schwelle_eur ?? undefined}
-                      />
-                    </div>
-                  ) : null}
                 </div>
               </li>
             ))}

@@ -116,7 +116,7 @@ export function OrganisationLeistungenPanel({
 
       <div className="grid gap-3 sm:grid-cols-2">
         {filtered.map((p) => (
-          <article key={p.slug} className="card-bordered flex flex-col p-4">
+          <article key={p.slug} className="portal-surface flex flex-col p-4">
             <div className="mb-2 flex items-start gap-2">
               <Package className="mt-0.5 h-4 w-4 shrink-0 text-accent" />
               <div>

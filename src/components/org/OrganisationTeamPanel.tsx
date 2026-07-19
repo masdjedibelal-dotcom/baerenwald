@@ -16,9 +16,14 @@ type Mitglied = {
 type Props = {
   kunde: OrganisationKunde;
   isAdmin?: boolean;
+  nested?: boolean;
 };
 
-export function OrganisationTeamPanel({ kunde, isAdmin = true }: Props) {
+export function OrganisationTeamPanel({
+  kunde,
+  isAdmin = true,
+  nested = false,
+}: Props) {
   const [mitglieder, setMitglieder] = useState<Mitglied[]>([]);
   const [loading, setLoading] = useState(true);
   const [email, setEmail] = useState("");
@@ -83,7 +88,13 @@ export function OrganisationTeamPanel({ kunde, isAdmin = true }: Props) {
   }
 
   return (
-    <section className="card-bordered space-y-4 p-4 sm:p-5">
+    <section
+      className={
+        nested
+          ? "space-y-4 border-t border-border-default pt-5"
+          : "portal-surface space-y-4 p-4 sm:p-5"
+      }
+    >
       <div>
         <h2 className="font-semibold text-text-primary">Team</h2>
         <p className="portal-text-meta text-text-secondary">
@@ -163,7 +174,7 @@ export function OrganisationTeamPanel({ kunde, isAdmin = true }: Props) {
   );
 }
 
-export function OrganisationExportPanel() {
+export function OrganisationExportPanel({ nested = false }: { nested?: boolean }) {
   const [von, setVon] = useState("");
   const [bis, setBis] = useState("");
 
@@ -176,7 +187,13 @@ export function OrganisationExportPanel() {
   }
 
   return (
-    <section className="card-bordered space-y-4 p-4 sm:p-5">
+    <section
+      className={
+        nested
+          ? "space-y-4 border-t border-border-default pt-5"
+          : "portal-surface space-y-4 p-4 sm:p-5"
+      }
+    >
       <div>
         <h2 className="font-semibold text-text-primary">Rechnungs-Export</h2>
         <p className="portal-text-meta text-text-secondary">

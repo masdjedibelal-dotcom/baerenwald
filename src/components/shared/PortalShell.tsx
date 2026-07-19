@@ -176,57 +176,59 @@ export function PortalShell({
           notifications={topbarRight}
         />
 
-        <div className="portal-shell-body mx-auto grid max-w-[1200px] gap-0 px-0 lg:grid-cols-[212px_1fr] lg:gap-4 lg:px-6 lg:py-5">
-          <aside className="portal-shell-sidebar">
-            <div className="portal-shell-brand">
-              <p className="portal-shell-brand-owner">{owner}</p>
-            </div>
+        <div className="portal-shell-body">
+          <div className="portal-shell-frame">
+            <aside className="portal-shell-sidebar">
+              <div className="portal-shell-brand">
+                <p className="portal-shell-brand-owner">{owner}</p>
+              </div>
 
-            {createAction ? (
-              <button
-                type="button"
-                className="portal-shell-create"
-                onClick={createAction.onClick}
-              >
-                + {createAction.label}
-              </button>
-            ) : null}
+              {createAction ? (
+                <button
+                  type="button"
+                  className="portal-shell-create"
+                  onClick={createAction.onClick}
+                >
+                  + {createAction.label}
+                </button>
+              ) : null}
 
-            <nav className="portal-shell-nav flex-1" aria-label="Hauptnavigation">
-              {nav.map((item) => {
-                const active = activeNavId === item.id;
-                return (
-                  <button
-                    key={item.id}
-                    type="button"
-                    onClick={() => onNavChange(item.id)}
-                    aria-current={active ? "page" : undefined}
-                    className={cn(
-                      "portal-shell-nav-item",
-                      active && "portal-shell-nav-item--active"
-                    )}
-                  >
-                    <span className="portal-shell-nav-item-main">
-                      <NavGlyph
-                        item={item}
-                        active={active}
-                        surface="sidebar"
-                        size={16}
-                      />
-                      {item.label}
-                    </span>
-                    {item.badge != null && item.badge > 0 ? (
-                      <span className="portal-shell-nav-badge">{item.badge}</span>
-                    ) : null}
-                  </button>
-                );
-              })}
-            </nav>
-          </aside>
+              <nav className="portal-shell-nav flex-1" aria-label="Hauptnavigation">
+                {nav.map((item) => {
+                  const active = activeNavId === item.id;
+                  return (
+                    <button
+                      key={item.id}
+                      type="button"
+                      onClick={() => onNavChange(item.id)}
+                      aria-current={active ? "page" : undefined}
+                      className={cn(
+                        "portal-shell-nav-item",
+                        active && "portal-shell-nav-item--active"
+                      )}
+                    >
+                      <span className="portal-shell-nav-item-main">
+                        <NavGlyph
+                          item={item}
+                          active={active}
+                          surface="sidebar"
+                          size={16}
+                        />
+                        {item.label}
+                      </span>
+                      {item.badge != null && item.badge > 0 ? (
+                        <span className="portal-shell-nav-badge">{item.badge}</span>
+                      ) : null}
+                    </button>
+                  );
+                })}
+              </nav>
+            </aside>
 
-          <main className="portal-shell-main min-w-0 space-y-4 px-4 py-5 pb-[calc(5.5rem+env(safe-area-inset-bottom,0px))] lg:px-0 lg:pb-8">
-            {children}
-          </main>
+            <main className="portal-shell-main px-4 py-4 pb-[calc(5.5rem+env(safe-area-inset-bottom,0px))] lg:px-6 lg:py-5 lg:pb-8">
+              <div className="portal-page-stack">{children}</div>
+            </main>
+          </div>
         </div>
 
         <nav className="portal-shell-mobile-nav lg:hidden" aria-label="Mobile Navigation">

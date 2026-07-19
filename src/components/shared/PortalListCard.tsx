@@ -34,6 +34,9 @@ const ACCENT_CLASS: Record<PortalListCardAccent, string> = {
   auftrag: "border-l-blue-600",
 };
 
+/**
+ * Listenzeile im Mock-Stil — Hairline-Trenner, keine Einzel-Card.
+ */
 export function PortalListCard({
   selected,
   onClick,
@@ -52,13 +55,11 @@ export function PortalListCard({
       type="button"
       onClick={onClick}
       className={cn(
-        "relative w-full rounded-xl border border-border-light bg-surface-card text-left transition-colors",
-        showLeftAccent ? "border-l-4 pl-3 sm:pl-4" : "px-3 sm:px-4",
-        "pr-3 py-3.5 sm:pr-4 sm:py-4",
+        "relative w-full text-left transition-colors",
+        showLeftAccent ? "border-l-4 pl-3 sm:pl-4" : "px-4",
+        "pr-3 py-3.5 sm:pr-4 sm:py-3.5",
         showLeftAccent && ACCENT_CLASS[accent],
-        selected
-          ? "lg:border-border-default lg:bg-muted/55 lg:ring-1 lg:ring-border-default/80"
-          : "hover:bg-muted/40"
+        selected ? "bg-[#f0f2f0]" : "bg-transparent hover:bg-[#f7f8fa]"
       )}
     >
       <div className="flex items-start justify-between gap-2">
@@ -74,7 +75,7 @@ export function PortalListCard({
       </div>
 
       {meta.length > 0 ? (
-        <ul className="mt-3 space-y-1.5">
+        <ul className="mt-2 space-y-1">
           {meta.map((m, i) => {
             const Icon = m.icon ?? Hammer;
             return (
@@ -90,10 +91,10 @@ export function PortalListCard({
         </ul>
       ) : null}
 
-      {footer ? <div className="mt-3">{footer}</div> : null}
+      {footer ? <div className="mt-2">{footer}</div> : null}
 
       {hint ? (
-        <p className="portal-text-meta mt-2.5 text-text-tertiary">{hint}</p>
+        <p className="portal-text-meta mt-2 text-text-tertiary">{hint}</p>
       ) : null}
     </button>
   );
