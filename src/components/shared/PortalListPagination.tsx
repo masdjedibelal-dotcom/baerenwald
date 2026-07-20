@@ -58,5 +58,6 @@ export function PortalListPagination({
 
 export const PORTAL_LIST_PAGE_SIZE = 10;
 
+
 /** Übersicht (Startseite): maximal 4 Karten pro Tab. */
 export const PORTAL_OVERVIEW_PAGE_SIZE = 4;

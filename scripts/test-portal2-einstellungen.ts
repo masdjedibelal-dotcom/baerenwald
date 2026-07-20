@@ -23,6 +23,9 @@ import {
   mieterKontoZugangHinweis,
 } from "../src/lib/portal2/einstellungen-ui";
 import {
+  EINSTELLUNGEN_NAV_HW,
+} from "../src/lib/portal2/einstellungen-nav";
+import {
   BRAND_PRESETS,
   findBrandPresetByPrimary,
 } from "../src/lib/portal2/brand-presets";
@@ -95,6 +98,15 @@ assert("hw intro ustg", HW_FIRMEN_INTRO.includes("§14 UStG"));
 assert("hw footer autosave", HW_FIRMEN_FOOTER.includes("automatisch gespeichert"));
 assert("hw section anschrift", HW_FIRMEN_SECTIONS.anschrift === "ANSCHRIFT & KONTAKT");
 assert("hw section bank", HW_FIRMEN_SECTIONS.bank.includes("BANKVERBINDUNG"));
+assert(
+  "hw nav inkl. Stammunterlagen",
+  EINSTELLUNGEN_NAV_HW.map((n) => n.id).join(",") ===
+    "anschrift,steuer,bank,stamm"
+);
+assert(
+  "hw nav label stamm",
+  EINSTELLUNGEN_NAV_HW.find((n) => n.id === "stamm")?.label === "Stammunterlagen"
+);
 
 assert("mieter zugang", MIETER_KONTO_ZUGANG_TITLE === "Zugang");
 assert("mieter sprache", MIETER_SPRACHE_TITLE === "Sprache");

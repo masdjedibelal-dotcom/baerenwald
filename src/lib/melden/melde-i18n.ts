@@ -1,4 +1,5 @@
-export type MeldeLang = "de" | "en";
+
+xport type MeldeLang = "de" | "en";
 
 const STRINGS = {
   de: {

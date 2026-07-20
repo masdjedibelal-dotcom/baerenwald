@@ -1,14 +1,10 @@
-import type { Metadata } from "next";
+import type { ReactNode } from "react";
 
-export const metadata: Metadata = {
-  title: "Aushang PDF",
-  robots: { index: false, follow: false },
-};
-
-export default function AushangPrintLayout({
+/** Minimal-Layout: Seite leitet auf den Aushang-PDF-Endpoint um. */
+export default function PortalAushangLayout({
   children,
 }: {
-  children: React.ReactNode;
+  children: ReactNode;
 }) {
   return children;
 }

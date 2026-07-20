@@ -1,16 +1,21 @@
 /**
- * Portal 2.0 B10 — Aushang slug/url + PDF-Pfad.
+ * Portal 2.0 — Aushang Texte & Pfade (Konzept „Details vereinheitlichen“).
  */
 import {
+  AUSHANG_BADGE,
+  AUSHANG_FOOTER_CONTACT,
+  AUSHANG_FOOTER_NO_PHONE,
+  AUSHANG_HERO_BODY,
   AUSHANG_HERO_LINE1,
   AUSHANG_HERO_LINE2,
+  AUSHANG_SCAN_LABEL,
   AUSHANG_STEPS,
-  aushangPrintPath,
+  AUSHANG_STEPS_TITLE,
+  AUSHANG_TAGLINE,
   aushangSlug,
   aushangUrl,
   meldeAushangPdfPath,
 } from "../src/lib/portal2/aushang";
-import { qrMatrix, qrSvgMarkup } from "../src/lib/portal2/qr-matrix";
 
 let failed = 0;
 function assert(name: string, ok: boolean) {
@@ -22,41 +27,29 @@ function assert(name: string, ok: boolean) {
   }
 }
 
-console.log("portal2 B10 aushang");
+console.log("portal2 aushang");
 
-assert("hero line1", AUSHANG_HERO_LINE1 === "Schaden melden.");
-assert("hero line2", AUSHANG_HERO_LINE2 === "Einfach scannen.");
+assert("hero line1", AUSHANG_HERO_LINE1 === "Schaden melden,");
+assert("hero line2", AUSHANG_HERO_LINE2 === "einfach scannen.");
+assert("hero body unter 2 Minuten", AUSHANG_HERO_BODY.includes("unter 2 Minuten"));
+assert("badge MIETERSERVICE", AUSHANG_BADGE === "MIETERSERVICE");
+assert("scan label", AUSHANG_SCAN_LABEL.includes("HANDY"));
+assert("steps title", AUSHANG_STEPS_TITLE.includes("FUNKTIONIERT"));
 assert("3 steps", AUSHANG_STEPS.length === 3);
-assert("step 01", AUSHANG_STEPS[0]!.n === "01" && AUSHANG_STEPS[0]!.title === "Scannen");
-
+assert("step 01", AUSHANG_STEPS[0].n === "01" && AUSHANG_STEPS[0].title === "Scannen");
+assert("tagline", AUSHANG_TAGLINE.includes("ZUHAUSE"));
+assert("no phone", AUSHANG_FOOTER_NO_PHONE.includes("SMARTPHONE"));
+assert("contact", AUSHANG_FOOTER_CONTACT.includes("Hausverwaltung"));
+assert("slug melde", aushangSlug({ melde_slug: "Seitz Str." }) === "seitz-str");
 assert(
-  "slug from melde_slug",
-  aushangSlug({ melde_slug: "Parkallee 9" }) === "parkallee-9"
+  "url",
+  aushangUrl("hv-demo", { melde_slug: "haus-a" }).includes("/melden/hv-demo/haus-a")
 );
-assert(
-  "slug fallback name",
-  aushangSlug({ name: "Lindenstr. 24" }).includes("lindenstr")
-);
-
-const url = aushangUrl("steiner", { melde_slug: "parkallee-9" });
-assert("url contains org", url.includes("/melden/steiner/"));
-assert("url contains slug", url.includes("parkallee-9"));
-
+assert("pdf path org", meldeAushangPdfPath() === "/api/org/melde-aushang");
 assert(
   "pdf path objekt",
-  meldeAushangPdfPath("abc-123") === "/api/org/melde-aushang?objektId=abc-123"
+  meldeAushangPdfPath("abc") === "/api/org/melde-aushang?objektId=abc"
 );
-assert(
-  "print path alias",
-  aushangPrintPath("abc-123") === meldeAushangPdfPath("abc-123")
-);
-
-const m = qrMatrix("BW|parkallee-9|Test");
-assert("matrix 29", m.length === 29 && m[0]!.length === 29);
-assert("finder top-left on", m[0]![0] === true);
-
-const svg = qrSvgMarkup("test-seed", 100);
-assert("svg has root", svg.includes("<svg") && svg.includes('data-om-raster="true"'));
 
 if (failed > 0) {
   console.error(`\n${failed} assertion(s) failed`);

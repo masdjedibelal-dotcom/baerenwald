@@ -12,6 +12,7 @@ export type EinstellungenTabId =
   | "anschrift"
   | "steuer"
   | "bank"
+  | "stamm"
   | "zugang";
 
 export type EinstellungenNavItem = {
@@ -29,6 +30,7 @@ export const EINSTELLUNGEN_NAV_HW: EinstellungenNavItem[] = [
   { id: "anschrift", label: "Anschrift & Kontakt" },
   { id: "steuer", label: "Steuer & Register" },
   { id: "bank", label: "Bankverbindung" },
+  { id: "stamm", label: "Stammunterlagen" },
 ];
 
 export const EINSTELLUNGEN_NAV_MIETER: EinstellungenNavItem[] = [

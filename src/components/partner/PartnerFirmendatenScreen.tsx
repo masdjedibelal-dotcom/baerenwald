@@ -4,13 +4,19 @@ import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import { updatePartnerProfil } from "@/app/actions/partner-profil";
+import { PartnerDetailInfoBox } from "@/components/partner/PartnerDetailUi";
+import { PartnerRahmenvertragCard } from "@/components/partner/PartnerRahmenvertragCard";
 import { PortalEinstellungenShell } from "@/components/shared/PortalEinstellungenShell";
 import {
   EinstellungenEdField,
   EinstellungenGrid2,
   EinstellungenSectionLabel,
 } from "@/components/shared/PortalEinstellungenUi";
-import type { PartnerHandwerkerProfil } from "@/lib/partner/get-partner-data";
+import { filterProfilStammCompliance } from "@/lib/partner/compliance-summary";
+import type {
+  PartnerHandwerkerProfil,
+  PartnerProfilKontext,
+} from "@/lib/partner/get-partner-data";
 import {
   HW_FIRMEN_FOOTER,
   HW_FIRMEN_LOGO_HINT,
@@ -75,13 +81,15 @@ function draftFromProfil(h: PartnerHandwerkerProfil): Draft {
 }
 
 /**
- * D12 Handwerker — Einstellungen mit Subnav:
- * Anschrift & Kontakt · Steuer & Register · Bankverbindung
+ * D12 Handwerker — Firmendaten mit Subnav:
+ * Anschrift & Kontakt · Steuer & Register · Bankverbindung · Stammunterlagen
  */
 export function PartnerFirmendatenScreen({
   handwerker,
+  profil,
 }: {
   handwerker: PartnerHandwerkerProfil;
+  profil: PartnerProfilKontext;
 }) {
   const router = useRouter();
   const [draft, setDraft] = useState(() => draftFromProfil(handwerker));
@@ -144,9 +152,33 @@ export function PartnerFirmendatenScreen({
     </p>
   );
 
+  const handwerkskarte = filterProfilStammCompliance([
+    ...profil.allgemein,
+    ...profil.meister,
+  ]);
+
   return (
     <PortalEinstellungenShell variant="handwerker">
       {(tab) => {
+        if (tab === "stamm") {
+          return (
+            <div className="space-y-6">
+              <PartnerRahmenvertragCard
+                rahmenvertrag={profil.rahmenvertrag}
+                stammItems={profil.stamm}
+                handwerkskarte={handwerkskarte}
+              />
+              {handwerkskarte.length === 0 ? (
+                <PartnerDetailInfoBox>
+                  Weitere Unterlagen zum Bauauftrag (z. B. Freistellungsbescheinigung,
+                  Personalliste) erscheinen, sobald Bärenwald dein Angebot übernommen
+                  hat — unter „Angebote“ und „Aufträge“.
+                </PartnerDetailInfoBox>
+              ) : null}
+            </div>
+          );
+        }
+
         if (tab === "steuer") {
           return (
             <div className="space-y-3">

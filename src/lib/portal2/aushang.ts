@@ -1,5 +1,6 @@
 /**
  * Portal 2.0 — Aushang-Texte & Typen (PDF-Aushang Schadensmeldung).
+ * Layout: Konzept „Details vereinheitlichen“.
  */
 
 import { buildMeldeUrl } from "@/lib/org/melde-url";
@@ -34,32 +35,47 @@ export const AUSHANG_STEPS = [
   {
     n: "01",
     title: "Scannen",
-    detail: "Handy-Kamera auf den QR – öffnet sich im Browser",
+    detail:
+      "Handy-Kamera auf den QR-Code halten — die Meldeseite öffnet sich sofort.",
   },
   {
     n: "02",
     title: "Melden",
-    detail: "Bereich wählen, Foto + kurze Beschreibung",
+    detail:
+      "Bereich wählen, Foto aufnehmen, Schaden kurz beschreiben — fertig.",
   },
   {
     n: "03",
     title: "Verfolgen",
-    detail: "Nach Registrierung Status jederzeit in der App abrufbar",
+    detail:
+      "Sie bekommen eine Bestätigung und sehen den Status jederzeit.",
   },
 ] as const;
 
-export const AUSHANG_HERO_LINE1 = "Schaden melden.";
-export const AUSHANG_HERO_LINE2 = "Einfach scannen.";
+export const AUSHANG_HERO_LINE1 = "Schaden melden,";
+export const AUSHANG_HERO_LINE2 = "einfach scannen.";
 export const AUSHANG_HERO_BODY =
-  "Defekte in Ihrer Wohnung oder im Gebäude online melden – mit Foto, ohne App, direkt im Browser. Sie erhalten eine Bestätigung und können den Status verfolgen.";
-export const AUSHANG_PILL_HINT = "ohne App · direkt im Browser";
-export const AUSHANG_OBJEKT_LABEL = "Für dieses Gebäude";
-export const AUSHANG_FOOTER_NO_PHONE = "Kein Smartphone?";
+  "Ein Defekt in Ihrer Wohnung oder im Haus? Melden Sie ihn online — mit Foto, ohne App, in unter 2 Minuten. Sie bekommen sofort eine Bestätigung und sehen jederzeit, wie es weitergeht.";
+
+export const AUSHANG_BADGE = "MIETERSERVICE";
+export const AUSHANG_SCAN_LABEL = "MIT DER HANDY-KAMERA SCANNEN";
+export const AUSHANG_STEPS_TITLE = "SO FUNKTIONIERT'S";
+export const AUSHANG_PHOTO_HINT =
+  "Foto einfügen (Gebäude, Team oder Handwerker)";
+export const AUSHANG_TAGLINE = "IHR ZUHAUSE IN GUTEN HÄNDEN";
+export const AUSHANG_FOOTER_NO_PHONE = "KEIN SMARTPHONE?";
+export const AUSHANG_FOOTER_CONTACT = "Wenden Sie sich an Ihre Hausverwaltung";
 export const AUSHANG_FOOTER_DATENSCHUTZ =
   "Datenschutz & Impressum: nach dem Scan im Formular";
+
+/** @deprecated — Konzept ohne separaten Objekt-Kasten */
+export const AUSHANG_OBJEKT_LABEL = "Für dieses Gebäude";
+/** @deprecated */
+export const AUSHANG_PILL_HINT = "ohne App · direkt im Browser";
+/** @deprecated */
 export const AUSHANG_FOOTER_OPERATOR = "Bearbeitet durch";
+/** @deprecated */
 export const AUSHANG_PROCESSED_BY = "Bärenwald Bau & Sanierung GmbH";
-export const AUSHANG_BADGE = "Mieterportal";
 
 /** PDF-Aushang im Browser (Drucken / Speichern über PDF-Viewer). */
 export function meldeAushangPdfPath(objektId?: string): string {
@@ -94,4 +110,3 @@ export type AushangObjektView = {
 export function aushangPdfPath(objektId: string): string {
   return meldeAushangPdfPath(objektId);
 }
-

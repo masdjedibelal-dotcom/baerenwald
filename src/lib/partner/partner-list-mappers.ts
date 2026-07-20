@@ -43,14 +43,16 @@ function ts(v?: string | null): number {
 
 export function partnerAngebotStatusPillClass(statusKey: string): string {
   const s = statusKey.toLowerCase();
-  if (s === "neu") return "tag bg-orange-100 text-orange-800";
-  if (s === "geaendert" || s === "ergaenzung") return "tag bg-violet-100 text-violet-800";
-  if (s === "in_arbeit" || s === "abnahme") return "tag bg-blue-100 text-blue-800";
-  if (s === "abgeschlossen" || s === "erledigt") return "tag bg-emerald-100 text-emerald-700";
-  if (s === "abgelehnt" || s === "storniert" || s === "antwort_abgelaufen") {
-    return "tag bg-red-100 text-red-700";
+  if (s === "neu") return "bg-orange-100 text-orange-800";
+  if (s === "geaendert" || s === "ergaenzung") return "bg-violet-100 text-violet-800";
+  if (s === "in_arbeit" || s === "abnahme" || s === "durchfuehrung") {
+    return "bg-[#E4ECF7] text-[#1F4FA8]";
   }
-  return "tag bg-muted text-text-secondary";
+  if (s === "abgeschlossen" || s === "erledigt") return "bg-[#DDEEDF] text-[#1F6A3F]";
+  if (s === "abgelehnt" || s === "storniert" || s === "antwort_abgelaufen") {
+    return "bg-red-100 text-red-700";
+  }
+  return "bg-muted text-text-secondary";
 }
 
 export function mapAnfrageAuftragToCard(item: PartnerAuftragItem): PartnerCardRow {

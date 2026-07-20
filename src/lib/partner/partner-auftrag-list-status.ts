@@ -18,11 +18,3 @@ export function partnerAuftragListenStatusPillKey(status: string): string {
   if (s === "abnahme") return "abnahme";
   return "in_arbeit";
 }
-
-/** @deprecated Phasen-Streifen entfernt — nur noch für Legacy-Aufrufer. */
-export function partnerAuftragStatusFuerPhasen(status?: string | null): string {
-  const s = (status ?? "").toLowerCase();
-  if (s === "storniert" || isAuftragAbgeschlossen(status ?? "")) return status ?? "";
-  if (s === "offen" || s === "planung" || s === "vorbereitung") return "in_arbeit";
-  return status ?? "in_arbeit";
-}

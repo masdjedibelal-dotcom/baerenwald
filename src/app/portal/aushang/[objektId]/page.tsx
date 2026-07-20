@@ -1,19 +1,13 @@
 import { redirect } from "next/navigation";
 
-import { meldeAushangPdfPath } from "@/lib/org/melde-aushang-ui";
-import { requireOrganisationSession } from "@/lib/org/require-org-session";
+import { meldeAushangPdfPath } from "@/lib/portal2/aushang";
 
 type Props = { params: { objektId: string } };
 
-/** Legacy-Route — leitet auf die PDF-Ansicht im Browser um. */
-export default async function PortalAushangPrintPage({ params }: Props) {
-  const { objektId } = params;
-  const session = await requireOrganisationSession();
-  if (!session.ok) {
-    redirect(
-      `/portal/login?next=${encodeURIComponent(meldeAushangPdfPath(objektId))}`
-    );
-  }
-
-  redirect(meldeAushangPdfPath(objektId));
+/**
+ * Alte Print-Route → individualisierter Aushang-PDF
+ * (Konzept „Details vereinheitlichen“).
+ */
+export default function PortalAushangRedirectPage({ params }: Props) {
+  redirect(meldeAushangPdfPath(params.objektId));
 }

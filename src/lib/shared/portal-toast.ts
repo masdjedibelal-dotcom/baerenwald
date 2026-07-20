@@ -44,7 +44,7 @@ export const partnerPortalToast = {
     portalToastSuccess(
       neu ? "Tagebucheintrag erstellt" : "Tagebucheintrag gespeichert",
       neu
-        ? "Mieter und Hausverwaltung sehen den Eintrag sofort im Portal."
+        ? "Bärenwald prüft den Eintrag. Die Tagebuch-Anforderung ist damit erledigt."
         : "Deine Änderungen wurden übernommen."
     );
   },
@@ -87,24 +87,6 @@ export const partnerPortalToast = {
       "Der Auftrag ist verbindlich. Als Nächstes: Unterlagen im Vorgang hochladen."
     );
   },
-  erledigtGemeldet() {
-    portalToastSuccess(
-      "Als erledigt gemeldet",
-      "Bärenwald und die Hausverwaltung wurden informiert."
-    );
-  },
-  hwAngebotEingereicht() {
-    portalToastSuccess(
-      "Angebot eingereicht",
-      "Positionen und Summe sind im CRM und bei der Hausverwaltung als empfohlenes Angebot sichtbar."
-    );
-  },
-  abschlussSigniert() {
-    portalToastSuccess(
-      "Abschluss signiert",
-      "Signatur und Protokoll sind am Vorgang gespeichert. Hausverwaltung und Kunde können gegenzeichnen."
-    );
-  },
 };
 
 /** Kunden-Portal (MeinBärenwald) */
@@ -119,12 +101,6 @@ export const kundePortalToast = {
     portalToastSuccess(
       "Änderungen angenommen",
       "Danke — wir setzen die Anpassungen am Auftrag um."
-    );
-  },
-  feedbackGesendet() {
-    portalToastSuccess(
-      "Feedback gesendet",
-      "Danke für deine Rückmeldung — Bärenwald wurde informiert."
     );
   },
 };
@@ -185,23 +161,11 @@ export const orgPortalToast = {
   objektAngelegt() {
     portalToastSuccess(
       "Objekt angelegt",
-      "Das Gebäude erscheint in der Mieter-Auswahl im Meldeformular."
-    );
-  },
-  linkKopiert() {
-    portalToastSuccess("Link kopiert", "Der Melde-Link liegt in der Zwischenablage.");
-  },
-  aushangPdfGeoeffnet() {
-    portalToastSuccess(
-      "Aushang-PDF geöffnet",
-      "Im Browser drucken oder als PDF speichern."
+      "Melde-Link und QR-Code findest du in der Objektliste."
     );
   },
   objektAktualisiert() {
     portalToastSuccess("Objekt gespeichert", "Die Objektdaten wurden aktualisiert.");
-  },
-  objektGeloescht() {
-    portalToastSuccess("Objekt gelöscht", "Das Gebäude wurde aus der Liste entfernt.");
   },
   projektAnfrageGesendet() {
     portalToastSuccess(
@@ -209,25 +173,10 @@ export const orgPortalToast = {
       "Bärenwald prüft dein Vorhaben und meldet sich mit einem Angebot."
     );
   },
-  feedbackGesendet() {
-    portalToastSuccess(
-      "Feedback gesendet",
-      "Danke für deine Rückmeldung."
-    );
-  },
-  maengelGemeldet() {
-    portalToastSuccess(
-      "Mängel gemeldet",
-      "Bärenwald wurde informiert und kümmert sich um die Nachbearbeitung."
-    );
-  },
   servicepaketAnfrageGesendet() {
     portalToastSuccess(
       "Servicepaket-Anfrage gesendet",
       "Bärenwald meldet sich mit den nächsten Schritten zur Betreuung."
     );
-  },
-  saved() {
-    portalToastSuccess("Gespeichert", "Die Einstellungen wurden übernommen.");
   },
 };

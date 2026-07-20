@@ -1,25 +1,31 @@
 {
-  "source": "Baerenwald Portale (5).html — aushangPoster / modalAushang / qrMatrix",
-  "openAushang": "setState({ aushangObj: o })",
-  "modalAushang": {
-    "title": "Aushang für den Hausflur",
-    "sub": "Ausdrucken (A4) und im Eingang aufhängen",
-    "previewW": { "mobile": 300, "desktop": 430 },
-    "printW": 793,
-    "actions": ["🖨  Drucken (A4)", "Schließen"]
+  "source": "Konzept „Details vereinheitlichen konzept.pdf“ — Melde-Aushang PDF",
+  "delivery": "GET /api/org/melde-aushang?objektId=… → generateMeldeAushangPdf",
+  "brandingPlaceholders": {
+    "name": "org_anzeigename / name",
+    "colors": "org_primary_color (+ soft via resolveBrandPalette / orgBrandFromKunde)",
+    "logo": "org_logo_url oder org_logo_kuerzel",
+    "hero": "org_hero_url, sonst /images/portal/header-hero.jpg",
+    "qr": "buildMeldeQrUrl(meldeUrl)",
+    "url": "buildMeldeUrl(org_kennung, melde_slug)",
+    "telefon": "mieter_kontakt_telefon → org_telefon → SITE_CONFIG",
+    "email": "mieter_kontakt_email → email → SITE_CONFIG"
   },
-  "aushangPoster": {
-    "aspect": "A4 hoch (210:297)",
-    "branding": "ORG primary/dk/soft/logo/name/sub",
-    "steps": [
-      ["01", "Scannen", "Handy-Kamera auf den Code halten"],
-      ["02", "Anliegen melden", "Schaden beschreiben – ein Foto genügt"],
-      ["03", "Informiert bleiben", "Status live verfolgen, ganz ohne Anruf"]
-    ]
+  "layout": {
+    "header": "Logo/Kürzel · HV-Name · MIETERSERVICE",
+    "hero": ["Schaden melden,", "einfach scannen.", "Intro-Absatz"],
+    "photo": "Hero-Bild oder gestrichelter Platzhalter + Tagline",
+    "columns": "QR + Melde-URL | SO FUNKTIONIERT'S (01–03)",
+    "footer": "KEIN SMARTPHONE? · Kontakt · Tel/E-Mail · Datenschutz"
   },
-  "qr": {
-    "mock": "qrMatrix/qrSvg — dekorativ, nicht scannbar",
-    "live": "buildMeldeQrUrl(meldeUrl) — scannbar (E3)"
-  },
-  "aushangUrl": "Live: buildMeldeUrl(orgKennung, melde_slug)"
+  "steps": [
+    ["01", "Scannen", "Handy-Kamera auf den QR-Code halten — die Meldeseite öffnet sich sofort."],
+    ["02", "Melden", "Bereich wählen, Foto aufnehmen, Schaden kurz beschreiben — fertig."],
+    ["03", "Verfolgen", "Sie bekommen eine Bestätigung und sehen den Status jederzeit."]
+  ],
+  "ui": {
+    "list": "▦ Aushang PDF",
+    "detail": "Aushang PDF",
+    "open": "openMeldeAushangPdf(objektId)"
+  }
 }

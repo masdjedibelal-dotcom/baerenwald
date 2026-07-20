@@ -94,25 +94,35 @@ function PartnerVorgangListFilterBar({
   counts: Record<VorgangFilter, number>;
 }) {
   return (
-    <div className="flex flex-wrap gap-2 border-b border-border-default px-3 py-3 sm:px-4">
+    <div className="flex flex-wrap gap-2 py-3.5">
       {(["offen", "erledigt"] as const).map((id) => (
         <button
           key={id}
           type="button"
           onClick={() => onFilterChange(id)}
           className={cn(
-            "rounded-full px-3 py-1.5 portal-text-meta font-semibold",
+            "rounded-full px-3 py-1.5 text-[12.5px] font-semibold",
             filter === id
-              ? "bg-accent-light text-accent"
-              : "bg-muted text-text-secondary"
+              ? "border border-transparent bg-[#1A3D2B] text-white"
+              : "border border-border-default bg-white text-text-secondary"
           )}
         >
           {VORGANG_FILTER_LABELS[id]}
-          <span className="ml-1.5 text-text-tertiary">({counts[id]})</span>
+          <span className={cn("ml-1.5", filter === id ? "text-white/70" : "text-text-tertiary")}>
+            ({counts[id]})
+          </span>
         </button>
       ))}
     </div>
   );
+}
+
+/** Listen-Unterzeile wie Kundenportal: Adresse, kein Icon-Stack. */
+function partnerListSubtitle(row: PartnerCardRow): string | undefined {
+  if (row.subtitle?.trim()) return row.subtitle.trim();
+  // buildAuftragCardMeta: zuerst Ort, dann Zeitraum
+  const ort = row.meta[0]?.text?.trim();
+  return ort && ort !== "—" ? ort : undefined;
 }
 
 export function PartnerClient({
@@ -397,14 +407,15 @@ export function PartnerClient({
     return (
       <PartnerListCard
         key={row.id}
+        variant="card"
         accent={row.accent}
         showLeftAccent={false}
+        showChevron
         title={row.title}
-        subtitle={row.subtitle}
+        subtitle={partnerListSubtitle(row)}
         statusLabel={row.statusLabel}
         statusPillClass={partnerAngebotStatusPillClass(row.statusPillKey)}
-        meta={row.meta}
-        hint={row.hint}
+        meta={[]}
         selected={false}
         onClick={() => selectRow(row.id)}
       />
@@ -450,21 +461,21 @@ export function PartnerClient({
         onFilterChange={setVorgangListFilter}
         counts={vorgangListFilterCounts}
       />
-      <div className="portal-list-panel portal-list-rows">
+      <div className="flex flex-col gap-2.5">
         {sectionListEmpty ? (
           showPortalEmptyVorgaenge ? (
-            <div className="p-4">
+            <div className="rounded-[12px] border border-border-default bg-white p-4">
               <PortalEmptyState role="handwerker" compact />
             </div>
           ) : (
-            <p className="portal-text-body px-4 py-8 text-center text-text-secondary">
+            <p className="portal-text-body rounded-[12px] border border-border-default bg-white px-4 py-8 text-center text-text-secondary">
               {filterEmptyMessage}
             </p>
           )
         ) : (
           paginatedCardRows.map(renderSectionCard)
         )}
-        {!sectionListEmpty ? (
+        {!sectionListEmpty && sectionCardRows.length > PARTNER_LIST_PAGE_SIZE ? (
           <PartnerListPagination
             totalItems={sectionCardRows.length}
             itemLabel={listItemLabel}
