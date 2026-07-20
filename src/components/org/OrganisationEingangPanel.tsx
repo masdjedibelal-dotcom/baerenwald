@@ -5,19 +5,6 @@ import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { AlertTriangle, Filter, Mail, Phone, X } from "lucide-react";
 
-import { OrgVorgangAbnahmeSection } from "@/components/org/OrgVorgangAbnahmeSection";
-import { OrgVorgangFeedbackSection } from "@/components/org/OrgVorgangFeedbackSection";
-import { OrganisationVorgangNotizenPanel } from "@/components/org/OrganisationObjektNotizenPanel";
-import {
-  OrgAngebotFreigabeInhalt,
-  orgAngebotPdfZeilen,
-  type OrgFreigabeAngebot,
-} from "@/components/org/OrgAngebotFreigabeInhalt";
-import { DokumenteTabelle } from "@/components/shared/DokumenteTabelle";
-import { VersicherungsakteButton } from "@/components/org/VersicherungsakteButton";
-import { VorgangKommentareThread } from "@/components/org/VorgangKommentareThread";
-import { VorgangStornoDialog } from "@/components/org/VorgangStornoDialog";
-import { KostentraegerSelector } from "@/components/org/KostentraegerSelector";
 import { OrgFreigabeBanner } from "@/components/org/OrgFreigabeBanner";
 import { OrgMeldungAktionBanner } from "@/components/org/OrgMeldungAktionBanner";
 import { HvMeldungListActions } from "@/components/org/HvMeldungListActions";
@@ -32,7 +19,6 @@ import {
   meldeFotosFromLead,
   meldeKategorieFromLead,
 } from "@/lib/org/org-eingang-utils";
-import { formatMockVorgangIdLabel } from "@/lib/portal/portal-list-mappers";
 import type {
   OrganisationKunde,
   OrganisationLead,
@@ -44,6 +30,18 @@ import {
   resolvePlattformStatus,
 } from "@/lib/vorgang/plattform-status";
 import { cn } from "@/lib/utils";
+import { OrgVorgangFeedbackSection } from "@/components/org/OrgVorgangFeedbackSection";
+import { OrganisationVorgangNotizenPanel } from "@/components/org/OrganisationObjektNotizenPanel";
+import {
+  OrgAngebotFreigabeInhalt,
+  orgAngebotPdfZeilen,
+  type OrgFreigabeAngebot,
+} from "@/components/org/OrgAngebotFreigabeInhalt";
+import { DokumenteTabelle } from "@/components/shared/DokumenteTabelle";
+import { VersicherungsakteButton } from "@/components/org/VersicherungsakteButton";
+import { VorgangKommentareThread } from "@/components/org/VorgangKommentareThread";
+import { VorgangStornoDialog } from "@/components/org/VorgangStornoDialog";
+import { KostentraegerSelector } from "@/components/org/KostentraegerSelector";
 
 type Props = {
   kunde: OrganisationKunde;
@@ -117,7 +115,7 @@ function MeldungDetail({
   hwErledigt,
   feedbackBereit,
   hvFeedback,
-  hvAbnahme,
+  hvAbnahme: _hvAbnahme,
   vorgangUnterlagen,
 }: {
   lead: OrganisationLead;
@@ -409,23 +407,9 @@ function MeldungDetail({
         />
       ) : null}
 
-      {hwErledigt && auftragId ? (
-        <OrgVorgangAbnahmeSection
-          leadId={lead.id}
-          auftragId={auftragId}
-          existing={hvAbnahme ?? null}
-          onSubmitted={onRefresh}
-        />
-      ) : null}
-
       <OrgVorgangFeedbackSection
         leadId={lead.id}
-        feedbackBereit={
-          feedbackBereit &&
-          (hvAbnahme?.art === "ohne_vorbehalt" ||
-            hvAbnahme?.art === "mit_anmerkung" ||
-            !hwErledigt)
-        }
+        feedbackBereit={feedbackBereit}
         handwerkerErledigt={hwErledigt}
         hvFeedback={hvFeedback}
         onSubmitted={onRefresh}
@@ -541,7 +525,7 @@ export function OrganisationEingangPanel({
     setSelectedId(id);
     setMobileDetailOpen(true);
     router.replace(
-      `/portal?section=vorgaenge&filter=freigabe&id=${encodeURIComponent(id)}`,
+      `/portal?section=vorgaenge&filter=offen&id=${encodeURIComponent(id)}`,
       { scroll: false }
     );
   };
@@ -549,7 +533,7 @@ export function OrganisationEingangPanel({
   const closeDetail = () => {
     setSelectedId(null);
     setMobileDetailOpen(false);
-    router.replace(`/portal?section=vorgaenge&filter=freigabe`, { scroll: false });
+    router.replace(`/portal?section=vorgaenge&filter=offen`, { scroll: false });
   };
 
   if (selected) {
@@ -658,9 +642,7 @@ export function OrganisationEingangPanel({
                 ? lead.melder_einheit.trim()
                 : `WE ${lead.melder_einheit.trim()}`
               : undefined;
-            const person = lead.melder_name?.trim()
-              ? `${lead.melder_name.trim()} (Eigentümer)`
-              : undefined;
+            const person = lead.melder_name?.trim() || undefined;
             const subtitle = [
               adresse || lead.objekt?.titel || "Objekt",
               we,
@@ -668,7 +650,6 @@ export function OrganisationEingangPanel({
             ]
               .filter(Boolean)
               .join(" · ");
-            const idLabel = formatMockVorgangIdLabel(lead.id);
             return (
               <div key={lead.id} className="space-y-2">
                 <PortalListCard
@@ -677,7 +658,6 @@ export function OrganisationEingangPanel({
                   onClick={() => openDetail(lead.id)}
                   title={kat}
                   subtitle={subtitle}
-                  idLabel={idLabel}
                   statusLabel={plattformStatusLabel(
                     resolvePlattformStatus(lead, auftragKontextByLeadId[lead.id])
                   )}
@@ -690,7 +670,6 @@ export function OrganisationEingangPanel({
                       ? [{ icon: AlertTriangle, text: "Notfall" }]
                       : []
                   }
-                  showCheckbox
                   showChevron
                 />
                 {listActions ? (

@@ -46,7 +46,8 @@ export function OrganisationAnfrageHub({
       open={open}
       title="Neuer Vorgang"
       onClose={onClose}
-      maxWidth={680}
+      size="funnel"
+      maxWidth={1360}
     >
       {objekte.length === 0 ? (
         <p className="mb-3 text-sm text-text-secondary">
@@ -55,6 +56,7 @@ export function OrganisationAnfrageHub({
       ) : null}
       <PortalFunnelHost
         channel="portal_hv"
+        layout="modal"
         objekte={objekte.map((o) => ({
           id: o.id,
           titel: o.titel,

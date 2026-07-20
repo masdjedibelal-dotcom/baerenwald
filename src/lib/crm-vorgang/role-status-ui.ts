@@ -33,14 +33,13 @@ export function rolePillClass(semantic: RolePillSemantic): string {
 export const HV_AUFTRAG_TIMELINE: Array<{ id: RoleTimelineStep; label: string }> = [
   { id: "beauftragt", label: "Beauftragt" },
   { id: "auftrag", label: "Ausführung" },
-  { id: "abschluss", label: "Abnahme" },
+  { id: "abschluss", label: "Abschluss" },
   { id: "erledigt", label: "Erledigt" },
 ];
 
 export const HANDWERKER_AUFTRAG_TIMELINE: Array<{ id: RoleTimelineStep; label: string }> = [
   { id: "auftrag", label: "Durchführung" },
-  { id: "abschluss", label: "Abschluss" },
-  { id: "abschluss", label: "Abnahme (HV)" },
+  { id: "abschluss", label: "Abnahme & Signatur" },
   { id: "erledigt", label: "Erledigt" },
 ];
 
@@ -74,32 +73,12 @@ export function buildMieterTimelineSteps(resolved: ResolvedVorgang): TimelineSte
 
 export function buildHandwerkerTimelineSteps(
   resolved: ResolvedVorgang,
-  opts?: { hvAbnahmeOffen?: boolean }
+  _opts?: { hvAbnahmeOffen?: boolean }
 ): TimelineStepView[] {
   const role = resolveRoleStatus(resolved, "handwerker");
   let step = role.timelineStep;
-  if (opts?.hvAbnahmeOffen && step === "abschluss") {
-    return buildTimelineFromOrder(
-      [
-        { id: "auftrag", label: "Durchführung" },
-        { id: "abschluss", label: "Abschluss" },
-        { id: "abschluss", label: "Abnahme (HV)" },
-        { id: "erledigt", label: "Erledigt" },
-      ],
-      "abschluss",
-      { 2: "Abnahme (HV)" }
-    );
-  }
   if (step === "erledigt") step = "erledigt";
-  return buildTimelineFromOrder(
-    [
-      { id: "auftrag", label: "Durchführung" },
-      { id: "abschluss", label: "Abschluss" },
-      { id: "abschluss", label: "Abnahme (HV)" },
-      { id: "erledigt", label: "Erledigt" },
-    ],
-    step
-  );
+  return buildTimelineFromOrder(HANDWERKER_AUFTRAG_TIMELINE, step);
 }
 
 export function buildHvAuftragTimelineSteps(

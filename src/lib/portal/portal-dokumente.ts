@@ -250,15 +250,50 @@ export function dokumenteFromAbnahmeProtokolle(
     }));
 }
 
-/** Mieter sieht kein Angebot/Rechnung; HV sieht alle Unterlagen. */
+/** Portal-Rollen für Dokumenten-Sichtbarkeit im Vorgang. */
+export type PortalDokumenteViewer = "kunde" | "mieter" | "eigentuemer" | "hv";
+
+/** Abnahmeprotokoll / Abnahmedokumentation (Signatur) — nicht Abschlussdokumentation. */
+export function isAbnahmePortalDokument(d: PortalDokument): boolean {
+  if (d.id.startsWith("abnahme-")) return true;
+  if (d.id.startsWith("abschluss-")) return false;
+  if (/abschlussdokumentation/i.test(d.name ?? "")) return false;
+  if (/abnahme/i.test(d.name ?? "")) return true;
+  if (d.subtitle && /abnahme/i.test(d.subtitle) && !/projektabschluss|abschluss/i.test(d.subtitle)) {
+    return true;
+  }
+  return false;
+}
+
+/**
+ * Sichtbarkeit je Rolle:
+ * - Kunde/HV: alle CRM-Unterlagen
+ * - Mieter: nur Abnahmedokumentation (Signatur)
+ * - Eigentümer: alles außer Rechnung
+ */
 export function filterPortalDokumenteForViewer(
   docs: PortalDokument[],
-  opts: { hvMieterView?: boolean; nurErledigt?: boolean; erledigt?: boolean }
-): PortalDokument[] {
-  let rows = docs;
-  if (opts.hvMieterView) {
-    rows = rows.filter((d) => d.art !== "angebot" && d.art !== "rechnung");
+  opts: {
+    viewer?: PortalDokumenteViewer;
+    /** @deprecated Nutze `viewer: "mieter"` */
+    hvMieterView?: boolean;
+    nurErledigt?: boolean;
+    erledigt?: boolean;
   }
+): PortalDokument[] {
+  const viewer: PortalDokumenteViewer =
+    opts.viewer ?? (opts.hvMieterView ? "mieter" : "kunde");
+
+  let rows = docs;
+
+  if (viewer === "mieter") {
+    rows = rows.filter(isAbnahmePortalDokument);
+  } else if (viewer === "eigentuemer") {
+    rows = rows.filter(
+      (d) => d.art !== "rechnung" && !/^Rechnung\b/i.test(d.name ?? "")
+    );
+  }
+
   if (opts.nurErledigt && !opts.erledigt) {
     rows = rows.filter((d) => d.art === "foto" || d.art === "dokument");
   }

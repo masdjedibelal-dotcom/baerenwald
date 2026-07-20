@@ -2,6 +2,7 @@
 
 import { OrganisationHvDashboard } from "@/components/org/OrganisationHvDashboard";
 import { PORTAL_HEADER_HERO_SRC } from "@/lib/portal2/portal-media";
+import { resolvePortalHeroSrc } from "@/lib/portal2/portal-media";
 import { HvNotificationBell } from "@/components/org/HvNotificationBell";
 import { OrganisationAktiveAbosPanel } from "@/components/org/OrganisationAktiveAbosPanel";
 import { OrganisationServicepaketePanel } from "@/components/org/OrganisationServicepaketePanel";
@@ -9,6 +10,7 @@ import { OrganisationSuche } from "@/components/org/OrganisationSuche";
 import { OrganisationAnfrageHub } from "@/components/org/OrganisationAnfrageHub";
 import { OrganisationObjektePanel } from "@/components/org/OrganisationObjektePanel";
 import { OrganisationEinstellungenScreen } from "@/components/org/OrganisationEinstellungenScreen";
+import { OrganisationTeamPanel } from "@/components/org/OrganisationTeamPanel";
 import { OrganisationWhitelabelGate } from "@/components/org/OrganisationWhitelabelGate";
 import { OrganisationVorgaengeSection } from "@/components/org/OrganisationVorgaengeSection";
 import {
@@ -43,7 +45,13 @@ import { buildPortalShellNav } from "@/lib/portal2/nav-items";
 import { PortalShell } from "@/components/shared/PortalShell";
 import { useMemo, useState } from "react";
 
-type OrgSection = "uebersicht" | "vorgaenge" | "objekte" | "leistungen" | "profil";
+type OrgSection =
+  | "uebersicht"
+  | "vorgaenge"
+  | "objekte"
+  | "leistungen"
+  | "team"
+  | "profil";
 
 type Props = {
   kunde: OrganisationKunde;
@@ -102,7 +110,15 @@ type Props = {
 };
 
 function portalSectionFromParam(raw: string | null): OrgSection | null {
-  if (raw === "uebersicht" || raw === "objekte" || raw === "profil" || raw === "leistungen") return raw;
+  if (
+    raw === "uebersicht" ||
+    raw === "objekte" ||
+    raw === "profil" ||
+    raw === "leistungen" ||
+    raw === "team"
+  ) {
+    return raw;
+  }
   if (
     raw === "vorgaenge" ||
     raw === "freigabe" ||
@@ -143,7 +159,9 @@ export function OrganisationPortalClient({
   const initialItemId = searchParams.get("id");
   const initialVorgangFilter = ((): OrgVorgangFilter | null => {
     const f = searchParams.get("filter");
-    if (f === "freigabe" || f === "aktiv" || f === "erledigt") return f;
+    if (f === "alle") return "alle";
+    if (f === "offen" || f === "freigabe" || f === "aktiv") return "offen";
+    if (f === "erledigt") return "erledigt";
     return null;
   })();
 
@@ -183,7 +201,7 @@ export function OrganisationPortalClient({
     [eingang, leads, vorgaengeItems, auftragByLeadId]
   );
 
-  const vorgaengeBadgeCount = filterCounts.freigabe;
+  const vorgaengeBadgeCount = filterCounts.offen;
 
   const refresh = () => router.refresh();
 
@@ -302,17 +320,19 @@ export function OrganisationPortalClient({
           onClick: () => setHubOpen(true),
         }}
         headerUser={{ name: displayName }}
+        headerSearch={
+          <OrganisationSuche
+            onSelect={(id) => {
+              openVorgaenge("offen");
+              router.replace(`/portal?section=vorgaenge&filter=offen&id=${id}`, {
+                scroll: false,
+              });
+            }}
+          />
+        }
         notifications={
           <>
             <HvNotificationBell />
-            <OrganisationSuche
-              onSelect={(id) => {
-                openVorgaenge("aktiv");
-                router.replace(`/portal?section=vorgaenge&filter=aktiv&id=${id}`, {
-                  scroll: false,
-                });
-              }}
-            />
             <form action="/portal/auth/signout" method="post">
               <button type="submit" className="btn-pill-outline portal-btn-compact">
                 Abmelden
@@ -332,7 +352,7 @@ export function OrganisationPortalClient({
                 onOpenItem={(id) => {
                   setSection("vorgaenge");
                   router.replace(
-                    `/portal?section=vorgaenge&filter=freigabe&id=${id}`,
+                    `/portal?section=vorgaenge&filter=offen&id=${id}`,
                     { scroll: false }
                   );
                 }}
@@ -382,6 +402,13 @@ export function OrganisationPortalClient({
               <OrganisationServicepaketePanel onRequested={refresh} />
               <OrganisationAktiveAbosPanel />
             </div>
+          ) : null}
+
+          {section === "team" ? (
+            <OrganisationTeamPanel
+              kunde={kunde}
+              isAdmin={mitgliedRolle === "admin"}
+            />
           ) : null}
 
           {section === "profil" ? (

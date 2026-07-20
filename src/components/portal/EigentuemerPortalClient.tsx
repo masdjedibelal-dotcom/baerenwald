@@ -14,6 +14,7 @@ import {
   PortalListPagination,
 } from "@/components/shared/PortalListPagination";
 import { PortalShell } from "@/components/shared/PortalShell";
+import { PortalHeaderSearch } from "@/components/shared/PortalHeaderSearch";
 import { PortalEmptyState } from "@/components/shared/PortalStateView";
 import { buildKundeVorgaenge } from "@/lib/portal/build-kunde-vorgaenge";
 import {
@@ -165,6 +166,7 @@ export function EigentuemerPortalClient({
         auftraege,
         hvPortalMode: true,
         mieterStatusMode: false,
+        eigentuemerMode: true,
       }),
     [leads, angebote, auftraege]
   );
@@ -335,6 +337,13 @@ export function EigentuemerPortalClient({
         onClick: () => setCreateOpen(true),
       }}
       headerUser={{ name: kunde.name?.trim() || EIGENTUEMER_DASHBOARD_ROLE }}
+      headerSearch={
+        <PortalHeaderSearch
+          onSubmit={() => {
+            switchSection("vorgaenge");
+          }}
+        />
+      }
       headerRoleBadge={
         <span className="rounded-full bg-muted px-2 py-0.5 portal-text-meta font-semibold text-text-secondary">
           {EIGENTUEMER_DASHBOARD_ROLE}
@@ -357,6 +366,7 @@ export function EigentuemerPortalClient({
       {section === "uebersicht" ? (
         <PortalKundePrivatDashboard
           hello={`Hallo ${helloName}`}
+          profileName={kunde.name?.trim() || helloName}
           kundeTyp="privat"
           roleLabel={EIGENTUEMER_DASHBOARD_ROLE}
           kpis={privatKpis}
@@ -481,12 +491,10 @@ export function EigentuemerPortalClient({
                     selected={false}
                     title={row.title}
                     subtitle={row.subtitle}
-                    idLabel={row.idLabel}
                     statusLabel={row.statusLabel}
                     statusPillClass={portalDetailStatusPillClass(row.statusPillKey)}
                     accent={row.accent}
                     meta={row.meta}
-                    showCheckbox
                     showChevron
                     onClick={() => {
                       setSelectedId(row.id);

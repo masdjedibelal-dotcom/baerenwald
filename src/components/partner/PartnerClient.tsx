@@ -19,6 +19,7 @@ import {
 import { PortalBaerenwaldGpt } from "@/components/portal/PortalBaerenwaldGpt";
 import { PortalLegalFooter } from "@/components/shared/PortalLegalFooter";
 import { PortalShell } from "@/components/shared/PortalShell";
+import { PortalHeaderSearch } from "@/components/shared/PortalHeaderSearch";
 import { PortalEmptyState } from "@/components/shared/PortalStateView";
 import { isOnboardingCompleted } from "@/lib/onboarding/storage";
 import { PARTNER_ONBOARDING_SLIDES } from "@/lib/onboarding/partner-slides";
@@ -498,6 +499,13 @@ export function PartnerClient({
         nav={shellNav}
         footer={partnerFooter}
         headerUser={{ name: partnerFooter }}
+        headerSearch={
+          <PortalHeaderSearch
+            onSubmit={() => {
+              switchSection("vorgaenge");
+            }}
+          />
+        }
         notifications={
           <>
             <PartnerNotificationBell onOpenVorgang={openVorgangFromNotification} />

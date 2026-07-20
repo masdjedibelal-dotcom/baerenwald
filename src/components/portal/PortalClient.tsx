@@ -14,6 +14,7 @@ import { PortalUserNotificationBell } from "@/components/portal/PortalUserNotifi
 import { PortalVorgangDetail } from "@/components/portal/PortalVorgangDetail";
 import { PortalLegalFooter } from "@/components/shared/PortalLegalFooter";
 import { PortalShell } from "@/components/shared/PortalShell";
+import { PortalHeaderSearch } from "@/components/shared/PortalHeaderSearch";
 import { PortalEmptyState } from "@/components/shared/PortalStateView";
 import { PortalListCard } from "@/components/shared/PortalListCard";
 import {
@@ -76,6 +77,7 @@ type PortalAuftrag = Parameters<typeof buildKundeVorgaenge>[0]["auftraege"][numb
 type SectionId = "uebersicht" | "vorgaenge" | "gpt" | "profil";
 
 const VORGANG_FILTER_LABELS: Record<KundeVorgangFilter, string> = {
+  alle: "Alle",
   aktiv: "Aktiv",
   erledigt: "Erledigt",
 };
@@ -406,7 +408,12 @@ export function PortalClient({
     setSelectedId(row.id);
     setMobileDetailOpen(true);
     if (embedded && hvPortalMode) {
-      const f = controlledVorgangFilter === "erledigt" ? "erledigt" : "aktiv";
+      const f =
+        controlledVorgangFilter === "erledigt"
+          ? "erledigt"
+          : controlledVorgangFilter === "alle"
+            ? "alle"
+            : "offen";
       router.replace(
         `/portal?section=vorgaenge&filter=${f}&id=${encodeURIComponent(row.id)}`,
         { scroll: false }
@@ -424,7 +431,12 @@ export function PortalClient({
     setSelectedId(null);
     setMobileDetailOpen(false);
     if (embedded && hvPortalMode) {
-      const f = controlledVorgangFilter === "erledigt" ? "erledigt" : "aktiv";
+      const f =
+        controlledVorgangFilter === "erledigt"
+          ? "erledigt"
+          : controlledVorgangFilter === "alle"
+            ? "alle"
+            : "offen";
       router.replace(`/portal?section=vorgaenge&filter=${f}`, { scroll: false });
     } else if (!embedded) {
       router.replace(`/portal?section=vorgaenge`, { scroll: false });
@@ -447,7 +459,6 @@ export function PortalClient({
         onClick={() => openVorgang(row)}
         title={row.title}
         subtitle={row.subtitle}
-        idLabel={row.idLabel}
         statusLabel={statusLabel}
         statusPillClass={portalDetailStatusPillClass(row.statusPillKey)}
         statusPillStyle={statusPillStyle}
@@ -457,7 +468,6 @@ export function PortalClient({
         footer={mockListe ? undefined : row.footer}
         showLeftAccent={false}
         showChevron={mockListe}
-        showCheckbox={mockListe && hvPortalMode}
       />
     );
   }
@@ -521,9 +531,13 @@ export function PortalClient({
             <p className="portal-text-body rounded-[12px] border border-border-default bg-white px-4 py-8 text-center text-text-secondary">
               {isPrivatLike
                 ? "Keine Vorgänge in diesem Filter."
-                : vorgangFilter === "aktiv"
-                  ? "Keine aktiven Vorgänge."
-                  : "Keine erledigten Vorgänge."}
+                : vorgangFilter === "alle"
+                  ? "Keine Vorgänge."
+                  : vorgangFilter === "aktiv"
+                    ? hvPortalMode
+                      ? "Keine offenen Vorgänge."
+                      : "Keine aktiven Vorgänge."
+                    : "Keine erledigten Vorgänge."}
             </p>
           )
         ) : (
@@ -607,6 +621,13 @@ export function PortalClient({
         headerUser={{
           name: kunde.name?.trim() || "MeinBärenwald",
         }}
+        headerSearch={
+          <PortalHeaderSearch
+            onSubmit={() => {
+              switchSection("vorgaenge");
+            }}
+          />
+        }
         notifications={
           <>
             <PortalUserNotificationBell role="kunde" />
@@ -665,6 +686,7 @@ export function PortalClient({
           {section === "uebersicht" && isPrivatLike ? (
             <PortalKundePrivatDashboard
               hello={portalKundeDashboardHello(kundeTyp, kunde.name)}
+              profileName={kunde.name?.trim() || "MeinBärenwald"}
               kundeTyp={kundeTyp === "gewerbe" ? "gewerbe" : "privat"}
               kpis={privatKpis}
               recent={recentItems}
@@ -685,6 +707,7 @@ export function PortalClient({
           {section === "uebersicht" && !isPrivatLike ? (
             <PortalKundePrivatDashboard
               hello={portalKundeDashboardHello(kundeTyp, kunde.name)}
+              profileName={kunde.name?.trim() || "MeinBärenwald"}
               kundeTyp="privat"
               kpis={privatKpis}
               recent={recentItems}

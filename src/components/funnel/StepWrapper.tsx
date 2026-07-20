@@ -16,6 +16,11 @@ export interface StepWrapperProps {
   animateKey?: string | number;
   /** Kacheln in einer hellen Karte mit Rand (Abgrenzung zur Frage) */
   tilesCard?: boolean;
+  /**
+   * `page` = Rechner (max-w-xl, großzügiges Padding).
+   * `modal` = Portal-/Create-Modal (volle Breite, kompakter).
+   */
+  layout?: "page" | "modal";
 }
 
 export function StepWrapper({
@@ -27,6 +32,7 @@ export function StepWrapper({
   className,
   animateKey = 0,
   tilesCard = false,
+  layout = "page",
 }: StepWrapperProps) {
   const [show, setShow] = useState(false);
 
@@ -42,10 +48,14 @@ export function StepWrapper({
     children
   );
 
+  const isModal = layout === "modal";
+
   return (
     <div
       className={cn(
-        "mx-auto max-w-xl px-6 pb-4 pt-8",
+        isModal
+          ? "funnel-step-embed w-full"
+          : "mx-auto max-w-xl px-6 pb-4 pt-8",
         show && "animate-fade-in",
         className
       )}
@@ -61,7 +71,7 @@ export function StepWrapper({
       {subtext ? (
         <p className="funnel-step-subtext">{subtext}</p>
       ) : question ? (
-        <div className="mb-6" />
+        <div className={isModal ? "mb-4" : "mb-6"} />
       ) : null}
       {banner ? (
         <div

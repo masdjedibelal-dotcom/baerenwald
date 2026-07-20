@@ -4,14 +4,16 @@ import { useEffect, useRef, useState } from "react";
 
 import { OrganisationBrandingEditor } from "@/components/org/OrganisationBrandingEditor";
 import { OrganisationEinstellungenPanel } from "@/components/org/OrganisationEinstellungenPanel";
-import {
-  OrganisationExportPanel,
-  OrganisationTeamPanel,
-} from "@/components/org/OrganisationTeamPanel";
+import { OrganisationExportPanel } from "@/components/org/OrganisationTeamPanel";
 import { OrganisationMeldeMaterial } from "@/components/org/OrganisationMeldeMaterial";
 import { OrganisationMieterKontaktPanel } from "@/components/org/OrganisationMieterKontaktPanel";
 import { PortalEinstellungenShell } from "@/components/shared/PortalEinstellungenShell";
-import { EinstellungenPfRow } from "@/components/shared/PortalEinstellungenUi";
+import {
+  EinstellungenCard,
+  EinstellungenObjektSchwelleRow,
+  EinstellungenPfRow,
+  EinstellungenSchwelleSlider,
+} from "@/components/shared/PortalEinstellungenUi";
 import type { OrganisationKunde, OrganisationObjekt } from "@/lib/org/types";
 import {
   EINSTELLUNGEN_OBJEKT_SCHWELLE_TITLE,
@@ -20,7 +22,6 @@ import {
   EINSTELLUNGEN_SCHWELLE_TITLE,
   formatEinstellungenSchwelle,
 } from "@/lib/portal2/einstellungen";
-import { formatObjektTypLine } from "@/lib/portal2/objekte";
 import { PORTAL_C } from "@/lib/portal2/tokens";
 import { orgPortalToast, portalToastError } from "@/lib/shared/portal-toast";
 
@@ -147,83 +148,51 @@ export function OrganisationEinstellungenScreen({
         }
 
         return (
-          <div className="space-y-5">
-            <div className="space-y-3">
-              <h3
-                className="text-sm font-bold"
-                style={{
-                  color: PORTAL_C.ink,
-                  fontFamily: "var(--p2-font-head, " + PORTAL_C.head + ")",
-                }}
-              >
-                {EINSTELLUNGEN_SCHWELLE_TITLE}
-              </h3>
-              <p className="text-[13px] leading-relaxed text-text-secondary">
-                {EINSTELLUNGEN_SCHWELLE_INTRO}
-              </p>
-              <div className="flex items-center gap-3">
-                <input
-                  type="range"
-                  min={0}
-                  max={2000}
-                  step={50}
+          <>
+            <EinstellungenCard title={EINSTELLUNGEN_SCHWELLE_TITLE}>
+              <div className="flex flex-col gap-3">
+                <p
+                  className="text-[13px] leading-[1.55]"
+                  style={{ color: PORTAL_C.sub }}
+                >
+                  {EINSTELLUNGEN_SCHWELLE_INTRO}
+                </p>
+                <EinstellungenSchwelleSlider
                   value={schwelle}
                   disabled={!isAdmin}
-                  onChange={(e) => onSchwelleChange(Number(e.target.value))}
-                  className="flex-1"
+                  onChange={onSchwelleChange}
                 />
-                <span className="w-[110px] text-right font-[family-name:var(--font-display)] text-xl font-bold text-accent">
-                  {formatEinstellungenSchwelle(schwelle)}
-                </span>
               </div>
-            </div>
+            </EinstellungenCard>
 
-            <div className="space-y-2.5">
-              <h3
-                className="text-sm font-bold"
-                style={{
-                  color: PORTAL_C.ink,
-                  fontFamily: "var(--p2-font-head, " + PORTAL_C.head + ")",
-                }}
-              >
-                {EINSTELLUNGEN_OBJEKT_SCHWELLE_TITLE}
-              </h3>
+            <EinstellungenCard title={EINSTELLUNGEN_OBJEKT_SCHWELLE_TITLE}>
               {objekte.length === 0 ? (
-                <p className="text-[13px] text-text-secondary">
+                <p
+                  className="text-[13px] leading-[1.55]"
+                  style={{ color: PORTAL_C.sub }}
+                >
                   Noch keine Objekte — Schwellen erscheinen nach dem Anlegen.
                 </p>
               ) : (
-                objekte.map((o) => {
-                  const val =
-                    o.freigabe_schwelle_eur != null
-                      ? formatEinstellungenSchwelle(
-                          Number(o.freigabe_schwelle_eur)
-                        )
-                      : "Standard";
-                  return (
-                    <div
-                      key={o.id}
-                      className="flex items-center justify-between gap-3 rounded-[9px] border border-border-default px-3.5 py-[11px]"
-                    >
-                      <div className="min-w-0">
-                        <p className="truncate text-[13.5px] font-semibold text-text-primary">
-                          {o.titel}
-                        </p>
-                        <p className="truncate text-[11px] text-text-tertiary">
-                          {formatObjektTypLine(o)}
-                        </p>
-                      </div>
-                      <span className="shrink-0 text-[13.5px] font-semibold text-accent">
-                        {val}
-                      </span>
-                    </div>
-                  );
-                })
+                <div className="flex flex-col gap-[9px]">
+                  {objekte.map((o) => {
+                    const val =
+                      o.freigabe_schwelle_eur != null
+                        ? formatEinstellungenSchwelle(
+                            Number(o.freigabe_schwelle_eur)
+                          )
+                        : formatEinstellungenSchwelle(schwelle);
+                    return (
+                      <EinstellungenObjektSchwelleRow
+                        key={o.id}
+                        name={o.titel}
+                        value={val}
+                      />
+                    );
+                  })}
+                </div>
               )}
-              <p className="text-[11.5px] text-text-tertiary">
-                Objekt-Schwellen unter Objekte → Detail → Regeln festlegen.
-              </p>
-            </div>
+            </EinstellungenCard>
 
             <OrganisationEinstellungenPanel
               kunde={kunde}
@@ -245,10 +214,8 @@ export function OrganisationEinstellungenScreen({
               nested
             />
 
-            <OrganisationTeamPanel kunde={kunde} isAdmin={isAdmin} nested />
-
             <OrganisationExportPanel nested />
-          </div>
+          </>
         );
       }}
     </PortalEinstellungenShell>

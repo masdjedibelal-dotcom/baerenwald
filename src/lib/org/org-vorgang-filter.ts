@@ -9,11 +9,12 @@ import {
 } from "@/lib/portal/kunde-vorgang-filter";
 import type { buildKundeVorgaenge } from "@/lib/portal/build-kunde-vorgaenge";
 
-export type OrgVorgangFilter = "freigabe" | KundeVorgangFilter;
+/** Alle = komplette Liste; Offen = nicht erledigt; Erledigt = abgeschlossen. */
+export type OrgVorgangFilter = "alle" | "offen" | "erledigt";
 
 export const ORG_VORGANG_FILTER_LABELS: Record<OrgVorgangFilter, string> = {
-  freigabe: "Zur Freigabe",
-  aktiv: "Aktiv",
+  alle: "Alle",
+  offen: "Offen",
   erledigt: "Erledigt",
 };
 
@@ -31,12 +32,12 @@ export function buildOrgVorgangFilterCounts(
   eingang: OrganisationLead[],
   leads: OrganisationLead[],
   vorgaengeItems: ReturnType<typeof buildKundeVorgaenge>,
-  auftragByLeadId: Record<string, string> = {}
+  _auftragByLeadId: Record<string, string> = {}
 ): Record<OrgVorgangFilter, number> {
   const vorgangCounts = countKundeVorgaengeFilter(vorgaengeItems);
   return {
-    freigabe: countOrgFreigabe(eingang, leads, auftragByLeadId),
-    aktiv: vorgangCounts.aktiv,
+    alle: vorgangCounts.alle,
+    offen: vorgangCounts.aktiv,
     erledigt: vorgangCounts.erledigt,
   };
 }
@@ -48,9 +49,29 @@ export function filterOrgFreigabeEingang(
   return filterOrgFreigabeLeads(eingang, auftragByLeadId);
 }
 
+/** URL/Filter-Param → Chip (Legacy: freigabe/aktiv/meldungen → offen). */
 export function orgSectionFromParam(raw: string | null): OrgVorgangFilter | null {
-  if (raw === "freigabe" || raw === "meldungen" || raw === "eingang") return "freigabe";
-  if (raw === "aktiv" || raw === "auftraege" || raw === "vorgaenge") return "aktiv";
+  if (raw === "alle") return "alle";
+  if (
+    raw === "offen" ||
+    raw === "freigabe" ||
+    raw === "aktiv" ||
+    raw === "meldungen" ||
+    raw === "eingang" ||
+    raw === "auftraege" ||
+    raw === "vorgaenge"
+  ) {
+    return "offen";
+  }
   if (raw === "erledigt") return "erledigt";
   return null;
+}
+
+/** Für PortalClient-Liste. */
+export function orgFilterToKundeFilter(
+  filter: OrgVorgangFilter
+): KundeVorgangFilter {
+  if (filter === "erledigt") return "erledigt";
+  if (filter === "offen") return "aktiv";
+  return "alle";
 }

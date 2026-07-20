@@ -12,7 +12,6 @@ export type PortalCardRow = {
   id: string;
   title: string;
   subtitle?: string;
-  idLabel?: string;
   statusLabel: string;
   statusPillKey: string;
   accent: PortalListCardAccent;
@@ -28,14 +27,6 @@ function ts(v?: string | null): number {
   return Number.isNaN(d.getTime()) ? 0 : d.getTime();
 }
 
-/** Mock-ID wie V-1039 — deterministisch aus UUID. */
-export function formatMockVorgangIdLabel(id: string): string {
-  const hex = id.replace(/[^a-fA-F0-9]/g, "");
-  const n = parseInt(hex.slice(-4) || "0", 16);
-  if (!Number.isFinite(n)) return id.slice(0, 8).toUpperCase();
-  return `V-${String(n % 10000).padStart(4, "0")}`;
-}
-
 function buildMockSubtitle(item: KundePortalDetailItem): string | undefined {
   if (item.cardSubtitle?.trim()) return item.cardSubtitle.trim();
   const metaTexts = item.cardMeta?.map((m) => m.text) ?? [];
@@ -47,7 +38,7 @@ function buildMockSubtitle(item: KundePortalDetailItem): string | undefined {
     (ortParts || undefined);
   const we = metaTexts.find((t) => /\bWE\b|Einheit|Whg/i.test(t));
   const person = metaTexts.find((t) =>
-    /Melder|Eigentümer|Mieter|\(/i.test(t)
+    /Melder|Mieter|\(/i.test(t)
   );
   const kategorie = item.anfrageGewerk?.trim();
   const parts = [adresse, we, person ?? kategorie].filter(Boolean);
@@ -85,9 +76,6 @@ export function mapKundeDetailToCard(
       : item.cardMeta?.length
         ? undefined
         : item.cardSubtitle,
-    idLabel: mockListe
-      ? formatMockVorgangIdLabel(item.leadId ?? item.id)
-      : undefined,
     statusLabel: item.status || "offen",
     statusPillKey: item.statusPillKey || item.status || "offen",
     accent,

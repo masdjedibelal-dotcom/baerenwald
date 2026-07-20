@@ -32,19 +32,23 @@ export function OrganisationSuche({ onSelect }: Props) {
   }
 
   return (
-    <div className="relative hidden sm:block">
-      <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-text-tertiary" />
+    <div className="portal-search relative">
+      <Search
+        className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-text-tertiary"
+        aria-hidden
+      />
       <input
         type="search"
         value={q}
         onChange={(e) => void search(e.target.value)}
         onFocus={() => results.length && setOpen(true)}
         onBlur={() => setTimeout(() => setOpen(false), 150)}
-        placeholder="Vorgänge suchen …"
-        className="input-field w-56 pl-9 portal-btn-compact"
+        placeholder="Suchen…"
+        aria-label="Vorgänge suchen"
+        className="portal-search-input"
       />
       {open && results.length > 0 ? (
-        <ul className="absolute right-0 z-50 mt-1 max-h-64 w-72 overflow-y-auto rounded-xl border border-border-default bg-white shadow-lg">
+        <ul className="absolute left-0 right-0 z-50 mt-1 max-h-64 overflow-y-auto rounded-xl border border-border-default bg-white shadow-lg sm:left-auto sm:right-0 sm:w-72">
           {results.map((r) => (
             <li key={r.id}>
               <button

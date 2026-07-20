@@ -39,10 +39,17 @@ export function PortalCreateFunnelModal({
   if (!open) return null;
 
   return (
-    <PortalModalShell open={open} title={title} onClose={onClose} maxWidth={680}>
+    <PortalModalShell
+      open={open}
+      title={title}
+      onClose={onClose}
+      size="funnel"
+      maxWidth={1360}
+    >
       <PortalFunnelHost
         channel={channel}
         title={title}
+        layout="modal"
         objekte={objekte}
         prefill={prefill}
         onClose={onClose}

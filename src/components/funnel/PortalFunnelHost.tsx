@@ -3,6 +3,8 @@
 import { useCallback, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 
+import "@/app/funnel-ui.css";
+
 import { FachdetailsStep } from "@/components/funnel/FachdetailsStep";
 import { PhotoUpload } from "@/components/funnel/PhotoUpload";
 import { SelectionTile } from "@/components/funnel/SelectionTile";
@@ -89,6 +91,11 @@ type Props = {
   onDone: () => void;
   /** Nach Objekt-Neuanlage (HV) — Parent kann Liste refreshen. */
   onObjekteChanged?: (objekte: PortalFunnelObjekt[]) => void;
+  /**
+   * `modal` = Portal-Create (kompakte Steps, füllt Modal).
+   * `page` = Melde-Seite (wie Rechner-Abstand).
+   */
+  layout?: "modal" | "page";
 };
 
 function bereicheOptions(situation: Situation): StepOption[] {
@@ -116,10 +123,12 @@ export function PortalFunnelHost({
   onClose,
   onDone,
   onObjekteChanged,
+  layout = "modal",
 }: Props) {
   const router = useRouter();
   const cfg = funnelVariant(channel);
   const [objekte, setObjekte] = useState(objekteProp);
+  const stepLayout = layout === "page" ? "page" : "modal";
 
   const initialSituation: Situation | null = cfg.forceKaputt
     ? "kaputt"
@@ -593,8 +602,13 @@ export function PortalFunnelHost({
         : "Neuer Vorgang");
 
   return (
-    <div className="flex min-h-[65vh] flex-col">
-      <div className="mb-4 flex items-center justify-between gap-3">
+    <div
+      className={cn(
+        "portal-funnel-host",
+        layout === "modal" ? "portal-funnel-host--modal" : "min-h-[50vh]"
+      )}
+    >
+      <div className="mb-3 flex shrink-0 items-center justify-between gap-3">
         <button
           type="button"
           className="text-[13px] font-semibold text-text-secondary"
@@ -602,14 +616,23 @@ export function PortalFunnelHost({
         >
           ‹ Zurück
         </button>
-        <p className="text-[12px] font-semibold uppercase tracking-wide text-text-tertiary">
-          {headline}
-        </p>
+        {layout === "page" ? (
+          <p className="text-[12px] font-semibold uppercase tracking-wide text-text-tertiary">
+            {headline}
+          </p>
+        ) : (
+          <span className="text-[12px] font-semibold uppercase tracking-wide text-text-tertiary">
+            {headline}
+          </span>
+        )}
         <span className="w-14" />
       </div>
 
+      <div className="portal-funnel-host__body">
+
       {step === "objekt" ? (
         <StepWrapper
+          layout={stepLayout}
           stepLabel="Objekt"
           question="Welches Objekt?"
           animateKey="objekt"
@@ -648,6 +671,7 @@ export function PortalFunnelHost({
 
       {step === "objekt_neu" ? (
         <StepWrapper
+          layout={stepLayout}
           stepLabel="Objekt"
           question="Neues Objekt"
           animateKey="objekt_neu"
@@ -685,6 +709,7 @@ export function PortalFunnelHost({
 
       {step === "mieter" ? (
         <StepWrapper
+          layout={stepLayout}
           stepLabel="Mieter"
           question="Mieter zuordnen?"
           subtext={
@@ -758,11 +783,12 @@ export function PortalFunnelHost({
 
       {step === "situation" ? (
         <StepWrapper
+          layout={stepLayout}
           stepLabel="Anliegen"
           question="Worum geht es?"
           animateKey="situation"
         >
-          <div className="funnel-step-tiles-card grid gap-2 sm:grid-cols-2">
+          <div className="funnel-step-tiles-card grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
             {situations.map((o) => (
               <SelectionTile
                 key={o.id}
@@ -791,11 +817,12 @@ export function PortalFunnelHost({
 
       {step === "bereiche" && state.situation ? (
         <StepWrapper
+          layout={stepLayout}
           stepLabel="Bereich"
           question="Was ist betroffen?"
           animateKey="bereiche"
         >
-          <div className="funnel-step-tiles-card grid gap-2 sm:grid-cols-2">
+          <div className="funnel-step-tiles-card grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
             {bereicheOptions(state.situation).map((o) => (
               <SelectionTile
                 key={o.value}
@@ -817,6 +844,7 @@ export function PortalFunnelHost({
 
       {step === "dringlichkeit" ? (
         <StepWrapper
+          layout={stepLayout}
           stepLabel="Dringlichkeit"
           question="Wie dringend ist es?"
           animateKey="dringlichkeit"
@@ -855,6 +883,7 @@ export function PortalFunnelHost({
 
       {step === "fachdetail" && !currentFachId ? (
         <StepWrapper
+          layout={stepLayout}
           stepLabel="Details"
           question="Keine weiteren Fachfragen"
           animateKey="fach-empty"
@@ -867,6 +896,7 @@ export function PortalFunnelHost({
 
       {step === "medien" ? (
         <StepWrapper
+          layout={stepLayout}
           stepLabel="Fotos"
           question="Fotos hinzufügen"
           subtext="Optional — hilft bei der Einschätzung"
@@ -881,6 +911,7 @@ export function PortalFunnelHost({
 
       {step === "beschreibung" ? (
         <StepWrapper
+          layout={stepLayout}
           stepLabel="Beschreibung"
           question="Was ist passiert?"
           subtext="Mindestens 10 Zeichen"
@@ -899,6 +930,7 @@ export function PortalFunnelHost({
 
       {step === "kontakt" ? (
         <StepWrapper
+          layout={stepLayout}
           stepLabel={cfg.include.ortPlz ? "Ort & Kontakt" : "Kontakt"}
           question={
             cfg.include.ortPlz
@@ -992,6 +1024,7 @@ export function PortalFunnelHost({
 
       {step === "result" ? (
         <StepWrapper
+          layout={stepLayout}
           stepLabel="Abschluss"
           question={cfg.showPrice ? "Preisrahmen" : "Prüfen & absenden"}
           subtext={
@@ -1002,7 +1035,7 @@ export function PortalFunnelHost({
           animateKey="result"
         >
           {cfg.showPrice ? (
-            <div className="rounded-xl border border-border-default bg-white p-4">
+            <div className="funnel-card-float p-4">
               {price ? (
                 <p className="font-[family-name:var(--font-display)] text-2xl font-bold text-accent">
                   {formatCurrencyEUR(price.min)} –{" "}
@@ -1015,7 +1048,7 @@ export function PortalFunnelHost({
               )}
             </div>
           ) : (
-            <div className="rounded-xl bg-[#f7f8fa] p-4 text-sm space-y-1">
+            <div className="funnel-card-float space-y-1 p-4 text-sm">
               <p>
                 <b>Bereich:</b> {state.bereiche.join(", ") || "—"}
               </p>
@@ -1041,7 +1074,9 @@ export function PortalFunnelHost({
         </p>
       ) : null}
 
-      <div className={cn("mt-auto flex gap-2 pt-6")}>
+      </div>
+
+      <div className={cn("portal-funnel-host__actions flex gap-2")}>
         {step === "objekt_neu" ? (
           <button
             type="button"

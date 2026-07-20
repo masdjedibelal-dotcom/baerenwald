@@ -2,8 +2,8 @@
 
 import { useMemo, useState } from "react";
 
-import { OrgVorgangAbnahmeSection } from "@/components/org/OrgVorgangAbnahmeSection";
 import { BautagebuchAccordionList } from "@/components/shared/BautagebuchAccordionList";
+import { DokumenteTabelle } from "@/components/shared/DokumenteTabelle";
 import { PortalFlowStatusChip } from "@/components/shared/PortalFlowStatusChip";
 import {
   HV_DEFAULT_SCHWELLE_EUR,
@@ -26,6 +26,7 @@ import { orgPortalToast } from "@/lib/shared/portal-toast";
 import { track } from "@/lib/analytics";
 import type { PortalBautagebuchEntry } from "@/lib/portal/portal-detail-item";
 import type { PortalAngebotPositionDisplay } from "@/lib/portal/portal-angebot-display";
+import type { PortalDokument } from "@/lib/portal/portal-dokumente";
 
 export type OrganisationHvVorgangDetailProps = {
   idLabel: string;
@@ -58,6 +59,8 @@ export type OrganisationHvVorgangDetailProps = {
   gesamtBrutto?: number;
   rechnungPdfHref?: string | null;
   bautagebuch?: PortalBautagebuchEntry[];
+  /** CRM-/Portal-Unterlagen (bereits rollen-gefiltert). */
+  dokumente?: PortalDokument[];
   verlauf?: HvVerlaufEntry[];
   coverUrl?: string | null;
   onBack?: () => void;
@@ -211,7 +214,7 @@ export function OrganisationHvVorgangDetail({
   handwerkerName,
   leadId,
   auftragId,
-  hvAbnahme,
+  hvAbnahme: _hvAbnahme,
   hwErledigt,
   schwelleEur = HV_DEFAULT_SCHWELLE_EUR,
   offers = [],
@@ -220,6 +223,7 @@ export function OrganisationHvVorgangDetail({
   gesamtBrutto,
   rechnungPdfHref,
   bautagebuch = [],
+  dokumente = [],
   verlauf = [],
   coverUrl,
   onBack,
@@ -228,7 +232,6 @@ export function OrganisationHvVorgangDetail({
 }: OrganisationHvVorgangDetailProps) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [showAbnahme, setShowAbnahme] = useState(false);
 
   const timeline = portalFlowTimeline(flowStatus);
   const actionKind = hvRoleActionKind(flowStatus, { privatkunde });
@@ -439,33 +442,9 @@ export function OrganisationHvVorgangDetail({
     if (actionKind === "abschluss") {
       return (
         <DetailCard title={HV_DETAIL_COPY.abnahmeTitle}>
-          <p className="mb-3 text-[13px] leading-relaxed" style={{ color: PORTAL_C.sub }}>
+          <p className="text-[13px] leading-relaxed" style={{ color: PORTAL_C.sub }}>
             {HV_DETAIL_COPY.abnahmeNote}
           </p>
-          <ActionBtn
-            label={HV_DETAIL_COPY.abnahmeBtn}
-            onClick={() => setShowAbnahme(true)}
-          />
-          {showAbnahme && auftragId ? (
-            <div className="mt-4">
-              <OrgVorgangAbnahmeSection
-                leadId={leadId}
-                auftragId={auftragId}
-                existing={hvAbnahme ?? null}
-                onSubmitted={onUpdated}
-              />
-            </div>
-          ) : null}
-          {!showAbnahme && hwErledigt && auftragId ? (
-            <div className="mt-4">
-              <OrgVorgangAbnahmeSection
-                leadId={leadId}
-                auftragId={auftragId}
-                existing={hvAbnahme ?? null}
-                onSubmitted={onUpdated}
-              />
-            </div>
-          ) : null}
         </DetailCard>
       );
     }
@@ -720,6 +699,20 @@ export function OrganisationHvVorgangDetail({
               )}
             </DetailCard>
           ) : null}
+
+          <DetailCard title={HV_DETAIL_COPY.dokumenteTitle}>
+            <DokumenteTabelle
+              heading=""
+              className="!border-0 !pt-0"
+              emptyText={HV_DETAIL_COPY.dokumenteEmpty}
+              dokumente={dokumente.map((d) => ({
+                id: d.id,
+                name: d.name,
+                datum: d.datum,
+                href: d.href,
+              }))}
+            />
+          </DetailCard>
         </div>
 
         <div className="flex w-full flex-col gap-3.5 sm:w-[260px] sm:shrink-0">

@@ -1,9 +1,9 @@
 "use client";
 
 import type { LucideIcon } from "lucide-react";
-import { Plus } from "lucide-react";
 import type { ReactNode } from "react";
 
+import { PortalCreateFabIcon } from "@/components/shared/PortalCreateFabIcon";
 import { PortalDocViewerProvider } from "@/components/shared/PortalDocViewerContext";
 import { PortalHeader, type PortalHeaderUser } from "@/components/shared/PortalHeader";
 import { PortalNavIcon } from "@/components/shared/PortalNavIcon";
@@ -49,11 +49,15 @@ export type PortalShellProps = {
   onNavChange: (id: string) => void;
   /**
    * Topbar/PortalHeader rechts — B4 Glocke; B5 Avatar+Name daneben (Desktop).
-   * Suche/Abmelden weiter im Slot erlaubt.
+   * Abmelden weiter im Slot erlaubt.
    */
   notifications?: ReactNode;
   /** @deprecated Prefer `notifications` */
   headerActions?: ReactNode;
+  /**
+   * Suchleiste im Header (Mobil links neben Glocke/Avatar).
+   */
+  headerSearch?: ReactNode;
   /**
    * Mock `portalHeader` User-Chip (Avatar + Name), Desktop sichtbar.
    * Name real aus Auth/Stamm — kein Demo-Fake.
@@ -65,7 +69,7 @@ export type PortalShellProps = {
    */
   headerRoleBadge?: ReactNode;
   /**
-   * Mock `canCreate` + `createLabel`: Sidebar-Button + zentraler Mobile-Create.
+   * Mock `canCreate` + `createLabel`: Sidebar-Button + Mobile-FAB (rechts).
    * Handwerker: weglassen (`portalCanCreate` = false).
    */
   createAction?: PortalShellCreateAction | null;
@@ -108,7 +112,7 @@ function NavGlyph({
 }
 
 /**
- * Gemeinsame Portal-Shell: Topbar (B1) + Sidebar (B2) + Bottom-Nav/Create (B3).
+ * Gemeinsame Portal-Shell: Topbar (B1) + Sidebar (B2) + Bottom-Nav (B3) + Mobile-FAB.
  */
 export function PortalShell({
   variant = "org",
@@ -124,6 +128,7 @@ export function PortalShell({
   onNavChange,
   notifications,
   headerActions,
+  headerSearch,
   headerUser,
   headerRoleBadge,
   createAction,
@@ -145,14 +150,10 @@ export function PortalShell({
   const ownerRaw = sidebarOwner ?? (typeof footer === "string" ? footer : null) ?? brandTitle;
   const owner = ownerRaw.trim() || brandTitle;
 
-  /** Zentraler Create: Mitte der Bottom-Nav (B3). */
-  const createMid = createAction ? Math.ceil(bottomNav.length / 2) : -1;
-  const mobileLeft = createAction ? bottomNav.slice(0, createMid) : bottomNav;
-  const mobileRight = createAction ? bottomNav.slice(createMid) : [];
-
   const topbarRight =
-    notifSlot || headerUser || headerRoleBadge ? (
+    headerSearch || notifSlot || headerUser || headerRoleBadge ? (
       <PortalHeader
+        search={headerSearch}
         notifications={notifSlot}
         user={headerUser}
         actions={headerRoleBadge}
@@ -233,46 +234,7 @@ export function PortalShell({
 
         <nav className="portal-shell-mobile-nav lg:hidden" aria-label="Mobile Navigation">
           <div className="portal-shell-mobile-nav-inner">
-            {mobileLeft.map((item) => {
-              const active = activeNavId === item.id;
-              return (
-                <button
-                  key={item.id}
-                  type="button"
-                  onClick={() => onNavChange(item.id)}
-                  aria-current={active ? "page" : undefined}
-                  className={cn(
-                    "portal-shell-mobile-item",
-                    active && "portal-shell-mobile-item--active"
-                  )}
-                >
-                  <NavGlyph item={item} active={active} surface="nav" size={17} />
-                  <span>{item.label}</span>
-                  {item.badge != null && item.badge > 0 ? (
-                    <span className="portal-shell-mobile-badge">{item.badge}</span>
-                  ) : null}
-                </button>
-              );
-            })}
-
-            {createAction ? (
-              <button
-                type="button"
-                className="portal-shell-mobile-create"
-                onClick={createAction.onClick}
-                aria-label={createAction.label}
-                title={createAction.label}
-              >
-                <span className="portal-shell-mobile-create-btn" aria-hidden>
-                  <Plus className="h-6 w-6" strokeWidth={2.5} />
-                </span>
-                <span className="portal-shell-mobile-create-label">
-                  {createAction.label}
-                </span>
-              </button>
-            ) : null}
-
-            {mobileRight.map((item) => {
+            {bottomNav.map((item) => {
               const active = activeNavId === item.id;
               return (
                 <button
@@ -295,6 +257,18 @@ export function PortalShell({
             })}
           </div>
         </nav>
+
+        {createAction ? (
+          <button
+            type="button"
+            className="portal-shell-fab lg:hidden"
+            onClick={createAction.onClick}
+            aria-label={createAction.label}
+            title={createAction.label}
+          >
+            <PortalCreateFabIcon />
+          </button>
+        ) : null}
       </PortalOfflineGate>
       </PortalDocViewerProvider>
     </div>

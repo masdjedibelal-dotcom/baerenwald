@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { generateMeldeAushangPdf } from "@/lib/org/generate-melde-aushang-pdf";
+import { brandFromOrgKunde } from "@/lib/org/melde-aushang-ui";
 import { buildMeldeQrUrl, buildMeldeUrl } from "@/lib/org/melde-url";
 import { requireOrganisationSession } from "@/lib/org/require-org-session";
 import { supabaseAdmin } from "@/lib/supabase";
@@ -25,11 +26,9 @@ export async function GET(req: Request) {
     );
   }
 
-  const orgName =
-    org.org_anzeigename?.trim() || org.name?.trim() || "Hausverwaltung";
-
+  const brand = brandFromOrgKunde(org);
   let meldeUrl = buildMeldeUrl(orgKennung);
-  let objektTitel = "Schaden melden — Objekt im Formular wählen";
+  let objektTitel = "";
   let objektAdresse = "";
 
   if (objektId) {
@@ -62,21 +61,28 @@ export async function GET(req: Request) {
   }
 
   const bytes = await generateMeldeAushangPdf({
-    orgName,
-    objektTitel,
-    objektAdresse,
+    orgName: brand.name,
+    orgSub: brand.sub,
+    logoKuerzel: brand.logoKuerzel,
+    primaryColor: brand.primary,
+    primaryColorSoft: brand.soft,
+    objektTitel: objektTitel || undefined,
+    objektAdresse: objektAdresse || undefined,
     meldeUrl,
     qrPngBytes,
+    hvTelefon: brand.telefon ?? undefined,
+    hvEmail: brand.email ?? undefined,
   });
 
   const filename = objektId
-    ? `Aushang-objekt.pdf`
+    ? `Aushang-${objektTitel.replace(/[^\w\-äöüÄÖÜß]+/g, "-").slice(0, 40) || "objekt"}.pdf`
     : `Aushang-${orgKennung}.pdf`;
 
   return new NextResponse(Buffer.from(bytes), {
     headers: {
       "Content-Type": "application/pdf",
-      "Content-Disposition": `attachment; filename="${filename}"`,
+      "Content-Disposition": `inline; filename="${filename}"`,
+      "Cache-Control": "private, no-store",
     },
   });
 }

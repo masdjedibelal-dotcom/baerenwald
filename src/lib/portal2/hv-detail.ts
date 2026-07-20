@@ -132,10 +132,12 @@ export const HV_DETAIL_COPY = {
   inAusfuehrung: "In Ausführung",
   inAusfuehrungNoteHv:
     "Der Handwerker dokumentiert unten im Bautagebuch. Mieter sehen diese Einträge nicht.",
-  abnahmeTitle: "Abnahme & Signatur",
+  abnahmeTitle: "Abschluss",
   abnahmeNote:
-    "Die Arbeiten sind abgeschlossen. Bitte prüfen und digital abnehmen.",
+    "Die Abnahme und Signatur erfolgt durch den Handwerker vor Ort. Danach kannst du hier Feedback geben.",
   abnahmeBtn: "✍ Digital signieren & abnehmen",
+  dokumenteTitle: "Dokumente",
+  dokumenteEmpty: "Noch keine Dokumente.",
   rechnungTitle: "Rechnung",
   rechnungNote:
     "Gesamtpaket von Bärenwald erhalten: Rechnung + Abschlussdokumentation.",

@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 
-import { OrganisationExportPanel, OrganisationTeamPanel } from "@/components/org/OrganisationTeamPanel";
+import { OrganisationExportPanel } from "@/components/org/OrganisationTeamPanel";
 import { OrganisationEinstellungenPanel } from "@/components/org/OrganisationEinstellungenPanel";
 import { OrganisationMeldeMaterial } from "@/components/org/OrganisationMeldeMaterial";
 import { OrganisationMieterKontaktPanel } from "@/components/org/OrganisationMieterKontaktPanel";
@@ -58,8 +58,6 @@ export function OrganisationProfilPanel({ kunde, objektCount, onSaved, isAdmin =
         onSaved={onSaved}
         readOnly={!isAdmin}
       />
-
-      <OrganisationTeamPanel kunde={kunde} isAdmin={isAdmin} />
 
       <OrganisationExportPanel />
 

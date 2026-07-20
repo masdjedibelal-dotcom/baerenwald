@@ -6,10 +6,10 @@ import { OrganisationObjektCard } from "@/components/org/OrganisationObjektCard"
 import { OrganisationObjektDetail } from "@/components/org/OrganisationObjektDetail";
 import { OrganisationObjektWizard } from "@/components/org/OrganisationObjektWizard";
 import {
-  brandFromOrgKunde,
-  PortalModalAushang,
-  toAushangObjektView,
-} from "@/components/shared/PortalModalAushang";
+  copyMeldeLink,
+  openMeldeAushangPdf,
+} from "@/lib/org/melde-aushang-ui";
+import { aushangUrl } from "@/lib/portal2/aushang";
 import { PortalModalEinladen } from "@/components/shared/PortalModalEinladen";
 import type {
   OrganisationKunde,
@@ -60,9 +60,6 @@ export function OrganisationObjektePanel({
 }: Props) {
   const [mode, setMode] = useState<Mode>({ kind: "list" });
   const [selected, setSelected] = useState<string[]>([]);
-  const [aushangObjekt, setAushangObjekt] = useState<OrganisationObjekt | null>(
-    null
-  );
   const [einladenObjektId, setEinladenObjektId] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -284,7 +281,15 @@ export function OrganisationObjektePanel({
           offenCount={offenById[activeObjekt.id] ?? 0}
           canAushang={canAushang}
           onBack={() => setMode({ kind: "list" })}
-          onAushang={() => setAushangObjekt(activeObjekt)}
+          onCopyMeldeLink={() =>
+            void copyMeldeLink(
+              aushangUrl(orgKennung!, {
+                melde_slug: activeObjekt.melde_slug,
+                titel: activeObjekt.titel,
+              })
+            )
+          }
+          onOpenAushangPdf={() => openMeldeAushangPdf(activeObjekt.id)}
           onEdit={() =>
             setMode({
               kind: "wizard",
@@ -297,15 +302,6 @@ export function OrganisationObjektePanel({
           onEinladen={() => setEinladenObjektId(activeObjekt.id)}
           onRefresh={onRefresh}
         />
-        {aushangObjekt && orgKennung && kunde ? (
-          <PortalModalAushang
-            open
-            onClose={() => setAushangObjekt(null)}
-            brand={brandFromOrgKunde(kunde)}
-            objekt={toAushangObjektView(aushangObjekt)}
-            orgKennung={orgKennung}
-          />
-        ) : null}
         {einladenObjektId && orgKennung ? (
           <PortalModalEinladen
             open
@@ -402,11 +398,11 @@ export function OrganisationObjektePanel({
                     {canAushang ? (
                       <button
                         type="button"
-                        title="QR-Aushang erstellen"
+                        title="Aushang-PDF im Browser öffnen"
                         className="rounded-full border border-accent bg-accent-light px-2.5 py-1 text-[11.5px] font-semibold text-accent"
-                        onClick={() => setAushangObjekt(o)}
+                        onClick={() => openMeldeAushangPdf(o.id)}
                       >
-                        ▦ Aushang
+                        ▦ Aushang PDF
                       </button>
                     ) : null}
                     <button
@@ -457,15 +453,6 @@ export function OrganisationObjektePanel({
         </button>
       ) : null}
 
-      {aushangObjekt && orgKennung && kunde ? (
-        <PortalModalAushang
-          open
-          onClose={() => setAushangObjekt(null)}
-          brand={brandFromOrgKunde(kunde)}
-          objekt={toAushangObjektView(aushangObjekt)}
-          orgKennung={orgKennung}
-        />
-      ) : null}
     </div>
   );
 }

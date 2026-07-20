@@ -2,7 +2,13 @@
 
 import { useState } from "react";
 
+import {
+  EinstellungenCard,
+  EinstellungenEdField,
+  EinstellungenToggle,
+} from "@/components/shared/PortalEinstellungenUi";
 import type { OrganisationKunde, FreigabeModus } from "@/lib/org/types";
+import { PORTAL_C } from "@/lib/portal2/tokens";
 import { orgPortalToast } from "@/lib/shared/portal-toast";
 
 type Props = {
@@ -27,9 +33,6 @@ export function OrganisationEinstellungenPanel({
   const [freigabeModus, setFreigabeModus] = useState<FreigabeModus>(
     kunde.freigabe_modus ?? "direkt"
   );
-  const [schwelle, setSchwelle] = useState(
-    kunde.freigabe_schwelle_eur != null ? String(kunde.freigabe_schwelle_eur) : ""
-  );
   const [notfallDirekt, setNotfallDirekt] = useState(kunde.notfall_direkt !== false);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
@@ -47,7 +50,6 @@ export function OrganisationEinstellungenPanel({
           kleinreparatur_aktiv: kleinreparaturAktiv,
           kleinreparatur_schwelle_eur: Number(kleinreparaturSchwelle) || 200,
           freigabe_modus: freigabeModus,
-          freigabe_schwelle_eur: schwelle ? Number(schwelle) : null,
           notfall_direkt: notfallDirekt,
         }),
       });
@@ -64,64 +66,56 @@ export function OrganisationEinstellungenPanel({
     }
   };
 
-  return (
-    <form onSubmit={save} className={embedded ? "space-y-6" : "max-w-lg space-y-6"}>
-      {readOnly ? (
-        <p className="text-sm text-text-secondary rounded-lg border border-border-light bg-muted/20 p-3">
-          Nur Administratoren können Freigabe-Regeln und Schwellen ändern.
-        </p>
-      ) : null}
+  const readOnlyNote = readOnly ? (
+    <p
+      className="rounded-[9px] border border-border-default px-3.5 py-[11px] text-[13px] leading-[1.55]"
+      style={{ color: PORTAL_C.sub }}
+    >
+      Nur Administratoren können Freigabe-Regeln und Schwellen ändern.
+    </p>
+  ) : null;
 
-      {!embedded ? (
-        <div className="rounded-xl border border-border-light bg-muted/20 p-3 text-xs text-text-secondary">
-          <p className="mb-1 font-medium text-text-primary">Datenschutz-Hinweis</p>
-          <p>
-            Als Hausverwaltung sind Sie gegenüber Mietern für die Rechtmäßigkeit der
-            Datenübermittlung verantwortlich. Bitte informieren Sie Mieter über den
-            Melde-Link.
-          </p>
-        </div>
-      ) : null}
-
-      <section className="space-y-3">
-        <h3 className="text-sm font-semibold">Block A — Meldungen</h3>
-        <label className="flex items-start gap-2 text-sm">
-          <input
-            type="checkbox"
-            checked={kleinreparaturAktiv}
-            onChange={(e) => setKleinreparaturAktiv(e.target.checked)}
-            disabled={readOnly}
-            className="mt-0.5"
-          />
-          <span>Kleinreparatur ohne Angebot erlauben (optional, standardmäßig aus)</span>
-        </label>
+  const meldungenCard = (
+    <EinstellungenCard title="Meldungen">
+      <div className="flex flex-col gap-3">
+        {readOnlyNote}
+        <EinstellungenToggle
+          checked={kleinreparaturAktiv}
+          disabled={readOnly}
+          onChange={setKleinreparaturAktiv}
+          title="Kleinreparatur ohne Angebot"
+          description="Optional — standardmäßig aus. Kleine Schäden können direkt beauftragt werden."
+        />
         {kleinreparaturAktiv ? (
-          <div>
-            <label className="text-sm text-text-secondary">
-              Schwelle Kleinreparatur (€ netto, Standard 200)
-            </label>
-            <input
-              type="number"
-              className="w-full mt-1 border rounded-lg px-3 py-2"
-              value={kleinreparaturSchwelle}
-              onChange={(e) => setKleinreparaturSchwelle(e.target.value)}
-              min={1}
-              max={500}
-              disabled={readOnly}
-            />
-          </div>
+          <EinstellungenEdField
+            label="Schwelle Kleinreparatur (€ netto)"
+            type="number"
+            value={kleinreparaturSchwelle}
+            disabled={readOnly}
+            onChange={setKleinreparaturSchwelle}
+          />
         ) : null}
-      </section>
+      </div>
+    </EinstellungenCard>
+  );
 
-      <section className="space-y-3">
-        <h3 className="text-sm font-semibold">Block B — Angebote</h3>
-        <div>
-          <p className="text-sm font-medium">Freigabe-Modus</p>
-          <p className="text-xs text-text-tertiary mb-2">
-            Bei „Freigabe“ müssen Angebote oberhalb der Schwelle erst von Ihnen freigegeben werden.
+  const angeboteCard = (
+    <EinstellungenCard title="Angebote & Notfall">
+      <div className="flex flex-col gap-3">
+        {!embedded ? readOnlyNote : null}
+        <label className="flex flex-col gap-1">
+          <span className="text-[11.5px] font-bold tracking-wide text-text-tertiary">
+            Freigabe-Modus
+          </span>
+          <p
+            className="mb-1 text-[13px] leading-[1.55]"
+            style={{ color: PORTAL_C.sub }}
+          >
+            Bei „Freigabe“ müssen Angebote oberhalb der Schwelle erst von Ihnen
+            freigegeben werden.
           </p>
           <select
-            className="w-full border rounded-lg px-3 py-2"
+            className="w-full rounded-[9px] border border-border-default bg-white px-3 py-2.5 text-[13.5px] text-text-primary outline-none focus:border-accent disabled:cursor-not-allowed disabled:opacity-70"
             value={freigabeModus}
             onChange={(e) => setFreigabeModus(e.target.value as FreigabeModus)}
             disabled={readOnly}
@@ -129,37 +123,61 @@ export function OrganisationEinstellungenPanel({
             <option value="direkt">Direkt — ohne Freigabe</option>
             <option value="freigabe">Freigabe erforderlich</option>
           </select>
-        </div>
-
-        {freigabeModus === "freigabe" ? (
-          <div>
-            <label className="text-sm text-text-secondary">
-              Schwelle Angebots-Freigabe (€ brutto, optional)
-            </label>
-            <input
-              type="number"
-              className="w-full mt-1 border rounded-lg px-3 py-2"
-              value={schwelle}
-              onChange={(e) => setSchwelle(e.target.value)}
-              placeholder="z. B. 2000"
-              disabled={readOnly}
-            />
-          </div>
-        ) : null}
-
-        <label className="flex items-center gap-2 text-sm">
-          <input
-            type="checkbox"
-            checked={notfallDirekt}
-            onChange={(e) => setNotfallDirekt(e.target.checked)}
-            disabled={readOnly}
-          />
-          Notfall-Angebote umgehen Freigabe-Schwelle
         </label>
-      </section>
+        <EinstellungenToggle
+          checked={notfallDirekt}
+          disabled={readOnly}
+          onChange={setNotfallDirekt}
+          title="Notfall-Angebote ohne Wartezeit"
+          description="Bei Notfall-Meldungen direkt Handwerker anfragen, ohne HV-Freigabe."
+        />
+      </div>
+    </EinstellungenCard>
+  );
 
-      {message ? <p className="text-sm text-text-secondary">{message}</p> : null}
+  if (embedded) {
+    return (
+      <form onSubmit={save} className="contents">
+        {meldungenCard}
+        {angeboteCard}
+        {message ? (
+          <p className="text-[13px]" style={{ color: PORTAL_C.sub }}>
+            {message}
+          </p>
+        ) : null}
+        {!readOnly ? (
+          <button
+            type="submit"
+            className="btn-pill-primary w-full sm:w-auto"
+            disabled={busy}
+          >
+            Regeln speichern
+          </button>
+        ) : null}
+      </form>
+    );
+  }
 
+  return (
+    <form onSubmit={save} className="max-w-lg space-y-6">
+      <div
+        className="rounded-[9px] border border-border-default px-3.5 py-[11px] text-[13px] leading-[1.55]"
+        style={{ color: PORTAL_C.sub }}
+      >
+        <p className="mb-1 font-semibold text-text-primary">Datenschutz-Hinweis</p>
+        <p>
+          Als Hausverwaltung sind Sie gegenüber Mietern für die Rechtmäßigkeit der
+          Datenübermittlung verantwortlich. Bitte informieren Sie Mieter über den
+          Melde-Link.
+        </p>
+      </div>
+      {meldungenCard}
+      {angeboteCard}
+      {message ? (
+        <p className="text-[13px]" style={{ color: PORTAL_C.sub }}>
+          {message}
+        </p>
+      ) : null}
       {!readOnly ? (
         <button type="submit" className="btn-pill-primary" disabled={busy}>
           Speichern

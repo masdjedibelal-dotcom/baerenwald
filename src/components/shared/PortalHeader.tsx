@@ -18,18 +18,23 @@ export type PortalHeaderUser = {
 };
 
 export type PortalHeaderProps = {
-  /** Mock: Glocke (+ Slot für Suche/Abmelden) */
+  /** Mobil: Suchleiste links (über Header-Bild). */
+  search?: ReactNode;
+  /** Glocke (+ Abmelden Desktop). */
   notifications?: ReactNode;
-  /** Desktop: Avatar 34² + Name; mobil ausgeblendet (Mock `!mobile`) */
+  /** Avatar (+ Name Desktop); mobil nur Kreis neben Glocke. */
   user?: PortalHeaderUser | null;
   actions?: ReactNode;
   className?: string;
 };
 
 /**
- * Mock `portalHeader(mobile)` — Cluster: Bell · (Desktop: Avatar + Name).
+ * Portal-Header-Cluster:
+ * Mobil: Suche · Glocke · Avatar
+ * Desktop: (Suche) · Glocke · Avatar + Name · Actions
  */
 export function PortalHeader({
+  search,
   notifications,
   user,
   actions,
@@ -42,6 +47,10 @@ export function PortalHeader({
 
   return (
     <div className={cn("portal-header", className)} data-portal-header="">
+      {search ? (
+        <div className="portal-header-search">{search}</div>
+      ) : null}
+
       {notifications ? (
         <div className="portal-header-notifications">{notifications}</div>
       ) : null}

@@ -36,6 +36,8 @@ export type OrganisationKunde = {
   org_kennung: string | null;
   org_anzeigename: string | null;
   org_logo_url: string | null;
+  /** Dashboard-Hero (optional). */
+  org_hero_url?: string | null;
   freigabe_modus: FreigabeModus;
   freigabe_schwelle_eur: number | null;
   notfall_direkt: boolean;

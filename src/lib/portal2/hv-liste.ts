@@ -1,6 +1,5 @@
 /**
  * Portal 2.0 D2 — HV Vorgänge-Liste (`screenListe`, `hvChips`, `pageHead`).
- * Wortlaut 1:1 Mock; Aktionen an echte Freigabe-APIs.
  */
 
 import type { OrgVorgangFilter } from "@/lib/org/org-vorgang-filter";
@@ -11,11 +10,11 @@ export const HV_LISTE_PAGE_TITLE = "Vorgänge" as const;
 export const HV_CHIPS: Array<{
   id: OrgVorgangFilter;
   label: string;
-  /** Badge nur bei „Zur Freigabe“ (Meldungen+Angebote). */
+  /** Badge bei „Offen“. */
   showCount: boolean;
 }> = [
-  { id: "freigabe", label: "Zur Freigabe", showCount: true },
-  { id: "aktiv", label: "Aktiv", showCount: false },
+  { id: "alle", label: "Alle", showCount: false },
+  { id: "offen", label: "Offen", showCount: true },
   { id: "erledigt", label: "Erledigt", showCount: false },
 ];
 

@@ -24,21 +24,21 @@ export const HV_DASHBOARD_KPI_DEFS = [
     label: "Wartet auf Freigabe",
     color: "#8A5A06",
     bg: "#fef3c7",
-    filter: "freigabe" as const,
+    filter: "offen" as const,
   },
   {
     id: "in_arbeit" as const,
     label: "In Arbeit",
     color: "#0f766e",
     bg: "#ccfbf1",
-    filter: "aktiv" as const,
+    filter: "offen" as const,
   },
   {
     id: "gesamt_offen" as const,
     label: "Gesamt offen",
     color: PORTAL_C.primary,
     bg: PORTAL_C.primarySoft,
-    filter: "aktiv" as const,
+    filter: "offen" as const,
   },
 ] as const;
 

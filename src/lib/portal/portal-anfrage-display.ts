@@ -45,7 +45,8 @@ export type PortalAnfrageLeadSource = {
 };
 
 /**
- * Mock-Vorgangsliste: „Lindenstr. 24 · WE 1 · H. Berger (Eigentümer)“
+ * Listen-Untertitel: „Lindenstr. 24 · WE 1 · Max Mustermann“
+ * (Meldername ohne Rollen-Suffix wie „Eigentümer“.)
  */
 export function formatMockVorgangListSubtitle(
   lead: PortalAnfrageLeadSource
@@ -57,25 +58,8 @@ export function formatMockVorgangListSubtitle(
       ? weRaw
       : `WE ${weRaw}`
     : undefined;
-  const name = lead.melder_name?.trim() || lead.kontakt_name?.trim();
-  let person: string | undefined;
-  if (name) {
-    const rawRole =
-      lead.anlass?.trim() ||
-      lead.erfassung_von?.trim() ||
-      (typeof asRecord(lead.funnel_daten).rolle === "string"
-        ? String(asRecord(lead.funnel_daten).rolle)
-        : "");
-    const role = /mieter/i.test(rawRole)
-      ? "Mieter"
-      : /eigent/i.test(rawRole)
-        ? "Eigentümer"
-        : lead.melder_name || lead.hv_meldung_status
-          ? "Eigentümer"
-          : undefined;
-    person = role && !/\(/.test(name) ? `${name} (${role})` : name;
-  }
-  const parts = [adresse, we, person].filter(Boolean);
+  const melder = lead.melder_name?.trim() || undefined;
+  const parts = [adresse, we, melder].filter(Boolean);
   return parts.length ? parts.join(" · ") : undefined;
 }
 

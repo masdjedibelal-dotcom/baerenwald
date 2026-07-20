@@ -31,6 +31,8 @@ type Props = {
   onOpenAll: () => void;
   onOpenItem: (id: string) => void;
   heroImageUrl?: string | null;
+  /** Name für Avatar/Kurve; Default = `hello`. */
+  profileName?: string | null;
 };
 
 /** Mock `screenDashboard` Privat/Gewerbe/Eigentümer — 1:1. */
@@ -43,6 +45,7 @@ export function PortalKundePrivatDashboard({
   onOpenAll,
   onOpenItem,
   heroImageUrl,
+  profileName,
 }: Props) {
   const roleLabel =
     roleLabelProp?.trim() ||
@@ -50,10 +53,13 @@ export function PortalKundePrivatDashboard({
       ? GEWERBE_DASHBOARD_ROLE_LABEL
       : PRIVAT_DASHBOARD_ROLE_LABEL);
 
+  const nameForProfile = profileName?.trim() || hello;
+
   return (
     <PortalScreenDashboard
       roleLabel={roleLabel}
       hello={hello}
+      avatarName={nameForProfile}
       heroImageUrl={heroImageUrl}
       tiles={PRIVAT_DASHBOARD_KPI_DEFS.map((def) => ({
         id: def.id,

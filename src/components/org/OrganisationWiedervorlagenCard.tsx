@@ -53,7 +53,7 @@ export function OrganisationWiedervorlagenCard() {
               className="text-left"
               onClick={() => {
                 if (w.leadId) {
-                  router.push(`/portal?section=vorgaenge&filter=aktiv&id=${w.leadId}`);
+                  router.push(`/portal?section=vorgaenge&filter=offen&id=${w.leadId}`);
                 } else if (w.objektId) {
                   router.push("/portal?section=objekte");
                 }

@@ -50,6 +50,7 @@ export function PartnerHwDashboard({
     <PortalScreenDashboard
       roleLabel="Handwerker"
       hello={firmName}
+      avatarName={firmName}
       heroImageUrl={heroImageUrl}
       tiles={KPI_DEFS.map((def) => ({
         id: def.id,

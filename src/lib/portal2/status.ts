@@ -58,7 +58,7 @@ export const PORTAL_STATUS: Record<PortalMockStatusId, PortalMockStatusMeta> = {
   },
   abschluss: {
     id: "abschluss",
-    label: "Abschluss / Signatur",
+    label: "Abschluss",
     color: "#1F6A3F",
     bg: "#DDEEDF",
   },

@@ -2,7 +2,10 @@
 
 import { useRef, useState, type DragEvent } from "react";
 
-import { PORTAL_OBJEKT_COVER_DEFAULT_SRC } from "@/lib/portal2/portal-media";
+import {
+  isPortalDefaultMediaUrl,
+  resolveObjektCoverSrc,
+} from "@/lib/portal2/portal-media";
 import { orgPortalToast, portalToastError } from "@/lib/shared/portal-toast";
 import { cn } from "@/lib/utils";
 
@@ -18,7 +21,7 @@ type Props = {
 };
 
 /**
- * Dekoratives Gebäudefoto — Klick oder Drop zum direkten Hochladen.
+ * Dekoratives Gebäudefoto — Klick oder Drop zum direkten Hochladen / Ersetzen.
  */
 export function OrganisationObjektCover({
   objektId,
@@ -33,8 +36,11 @@ export function OrganisationObjektCover({
   const [preview, setPreview] = useState<string | null>(null);
   const [dragging, setDragging] = useState(false);
 
-  const src = preview || coverUrl || PORTAL_OBJEKT_COVER_DEFAULT_SRC;
-  const hasCustom = Boolean(preview || coverUrl);
+  const effectiveCover =
+    preview ||
+    (coverUrl && !isPortalDefaultMediaUrl(coverUrl) ? coverUrl : null);
+  const src = resolveObjektCoverSrc(effectiveCover);
+  const hasCustom = Boolean(effectiveCover);
 
   const upload = async (file: File) => {
     if (!canUpload || busy) return;
@@ -111,7 +117,7 @@ export function OrganisationObjektCover({
           <input
             ref={inputRef}
             type="file"
-            accept="image/jpeg,image/png,image/webp"
+            accept="image/jpeg,image/png,image/webp,image/heic,image/heif"
             className="hidden"
             onChange={(e) => {
               const f = e.target.files?.[0];
@@ -122,32 +128,26 @@ export function OrganisationObjektCover({
           <button
             type="button"
             className={cn(
-              "absolute inset-0 flex flex-col items-center justify-center gap-1 bg-black/0 text-center transition-colors",
-              "hover:bg-black/35 focus-visible:bg-black/35",
-              dragging && "bg-black/40",
-              (!hasCustom || dragging) && "bg-black/25"
+              "absolute inset-0 flex flex-col items-center justify-center gap-1 text-center transition-colors",
+              dragging ? "bg-black/40" : "bg-black/20 hover:bg-black/40",
+              "focus-visible:bg-black/40"
             )}
             onClick={(e) => {
               e.stopPropagation();
               inputRef.current?.click();
             }}
             disabled={busy}
-            title="Gebäudefoto hochladen"
+            title={hasCustom ? "Gebäudefoto ersetzen" : "Gebäudefoto hochladen"}
           >
-            <span
-              className={cn(
-                "rounded-full px-2.5 py-1 text-[11.5px] font-semibold text-white shadow-sm",
-                "bg-black/45 backdrop-blur-[2px]"
-              )}
-            >
+            <span className="rounded-full bg-black/55 px-2.5 py-1 text-[11.5px] font-semibold text-white shadow-sm backdrop-blur-[2px]">
               {busy
                 ? "Wird hochgeladen…"
                 : hasCustom
-                  ? "Foto ändern"
+                  ? "Foto ersetzen"
                   : "Foto hochladen"}
             </span>
-            {variant === "card" && !hasCustom ? (
-              <span className="text-[11px] text-white/90">
+            {variant === "card" ? (
+              <span className="text-[11px] text-white/95">
                 Tippen oder Datei hierher ziehen
               </span>
             ) : null}

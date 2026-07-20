@@ -20,7 +20,7 @@ export async function GET(req: Request) {
   const { data: leads } = await supabaseAdmin
     .from("leads")
     .select(
-      "id, kontakt_name, melder_name, melder_einheit, anlass, status, hv_meldung_status, kunde_objekt_id, created_at"
+      "id, kontakt_name, melder_name, melder_einheit, anlass, status, hv_meldung_status, kunde_objekt_id, created_at, situation, bereiche"
     )
     .eq("auftraggeber_kunde_id", session.kunde.id)
     .order("created_at", { ascending: false })

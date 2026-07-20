@@ -18,6 +18,7 @@ export type PortalNavKey =
   | "liste"
   | "objekte"
   | "servicepakete"
+  | "team"
   | "settings";
 
 export type PortalNavItemDef = {
@@ -33,6 +34,7 @@ export const PORTAL_NAV_ITEMS: Record<PortalNavRole, readonly PortalNavItemDef[]
       { key: "liste", label: "Vorgänge", glyph: "▤" },
       { key: "objekte", label: "Objekte", glyph: "▦" },
       { key: "servicepakete", label: "Servicepakete", glyph: "◇" },
+      { key: "team", label: "Team", glyph: "◎" },
       { key: "settings", label: "Einstellungen", glyph: "⚙" },
     ],
     kunde_privat: [
@@ -75,6 +77,7 @@ export const PORTAL_NAV_SECTION_BY_VARIANT = {
     liste: "vorgaenge",
     objekte: "objekte",
     servicepakete: "leistungen",
+    team: "team",
     settings: "profil",
   },
   kunde: {

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useId, type ReactNode } from "react";
+import { useEffect, useId, type CSSProperties, type ReactNode } from "react";
 
 import {
   PORTAL_MODAL_DEFAULT_MAX_W,
@@ -21,6 +21,10 @@ export type PortalModalShellProps = {
    * Zahl = px; String = CSS-Wert (z. B. `min(560px, 100%)`).
    */
   maxWidth?: number | string;
+  /**
+   * `funnel` = großes Create-Modal (volle Funnel-Höhe, ~2× Standardbreite).
+   */
+  size?: "default" | "funnel";
   /** Backdrop-Klick schließt (Mock). Default true. */
   closeOnBackdrop?: boolean;
   className?: string;
@@ -39,6 +43,7 @@ export function PortalModalShell({
   children,
   onClose,
   maxWidth = PORTAL_MODAL_DEFAULT_MAX_W,
+  size = "default",
   closeOnBackdrop = true,
   className,
   headerExtra,
@@ -62,12 +67,21 @@ export function PortalModalShell({
 
   if (!open) return null;
 
+  const isFunnel = size === "funnel";
+  const resolvedMax =
+    isFunnel && maxWidth === PORTAL_MODAL_DEFAULT_MAX_W
+      ? 1360
+      : maxWidth;
   const maxW =
-    typeof maxWidth === "number" ? `${maxWidth}px` : maxWidth;
+    typeof resolvedMax === "number" ? `${resolvedMax}px` : resolvedMax;
 
   return (
     <div
-      className={cn("portal-modal-shell", className)}
+      className={cn(
+        "portal-modal-shell",
+        isFunnel && "portal-modal-shell--funnel",
+        className
+      )}
       style={{
         zIndex: PORTAL_MODAL_Z_INDEX,
         background: PORTAL_MODAL_SCRIM,
@@ -76,8 +90,16 @@ export function PortalModalShell({
       onClick={closeOnBackdrop ? onClose : undefined}
     >
       <div
-        className="portal-modal-shell-panel"
-        style={{ maxWidth: maxW }}
+        className={cn(
+          "portal-modal-shell-panel",
+          isFunnel && "portal-modal-shell-panel--funnel"
+        )}
+        style={
+          {
+            maxWidth: maxW,
+            ["--portal-funnel-modal-max"]: maxW,
+          } as CSSProperties
+        }
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}

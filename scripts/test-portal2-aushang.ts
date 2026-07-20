@@ -1,14 +1,14 @@
 /**
- * Portal 2.0 B10 — Aushang slug/url + Mock-qrMatrix.
+ * Portal 2.0 B10 — Aushang slug/url + PDF-Pfad.
  */
 import {
-  AUSHANG_MODAL_TITLE,
-  AUSHANG_PRINT_META_CONTENT,
-  AUSHANG_PRINT_META_NAME,
+  AUSHANG_HERO_LINE1,
+  AUSHANG_HERO_LINE2,
   AUSHANG_STEPS,
   aushangPrintPath,
   aushangSlug,
   aushangUrl,
+  meldeAushangPdfPath,
 } from "../src/lib/portal2/aushang";
 import { qrMatrix, qrSvgMarkup } from "../src/lib/portal2/qr-matrix";
 
@@ -24,7 +24,8 @@ function assert(name: string, ok: boolean) {
 
 console.log("portal2 B10 aushang");
 
-assert("modal title", AUSHANG_MODAL_TITLE === "Aushang für den Hausflur");
+assert("hero line1", AUSHANG_HERO_LINE1 === "Schaden melden.");
+assert("hero line2", AUSHANG_HERO_LINE2 === "Einfach scannen.");
 assert("3 steps", AUSHANG_STEPS.length === 3);
 assert("step 01", AUSHANG_STEPS[0]!.n === "01" && AUSHANG_STEPS[0]!.title === "Scannen");
 
@@ -42,11 +43,13 @@ assert("url contains org", url.includes("/melden/steiner/"));
 assert("url contains slug", url.includes("parkallee-9"));
 
 assert(
-  "print path",
-  aushangPrintPath("abc-123") === "/portal/aushang/abc-123"
+  "pdf path objekt",
+  meldeAushangPdfPath("abc-123") === "/api/org/melde-aushang?objektId=abc-123"
 );
-assert("print meta name", AUSHANG_PRINT_META_NAME === "omelette-owns-print");
-assert("print meta content", AUSHANG_PRINT_META_CONTENT === "aushang");
+assert(
+  "print path alias",
+  aushangPrintPath("abc-123") === meldeAushangPdfPath("abc-123")
+);
 
 const m = qrMatrix("BW|parkallee-9|Test");
 assert("matrix 29", m.length === 29 && m[0]!.length === 29);

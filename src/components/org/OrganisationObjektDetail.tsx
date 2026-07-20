@@ -31,7 +31,8 @@ type Props = {
   offenCount: number;
   canAushang: boolean;
   onBack: () => void;
-  onAushang: () => void;
+  onCopyMeldeLink: () => void;
+  onOpenAushangPdf: () => void;
   onEdit: () => void;
   onCopy: () => void;
   onDelete: () => void;
@@ -73,7 +74,8 @@ export function OrganisationObjektDetail({
   offenCount,
   canAushang,
   onBack,
-  onAushang,
+  onCopyMeldeLink,
+  onOpenAushangPdf,
   onEdit,
   onCopy,
   onDelete,
@@ -333,13 +335,22 @@ export function OrganisationObjektDetail({
         </div>
         <div className="flex flex-wrap gap-2">
           {canAushang ? (
-            <button
-              type="button"
-              className="rounded-[9px] border border-accent bg-accent-light px-3.5 py-2 text-[13px] font-semibold text-accent"
-              onClick={onAushang}
-            >
-              ▦ QR-Aushang
-            </button>
+            <>
+              <button
+                type="button"
+                className="rounded-[9px] border border-border-default bg-white px-3.5 py-2 text-[13px] font-semibold text-text-secondary"
+                onClick={onCopyMeldeLink}
+              >
+                Link kopieren
+              </button>
+              <button
+                type="button"
+                className="rounded-[9px] border border-accent bg-accent-light px-3.5 py-2 text-[13px] font-semibold text-accent"
+                onClick={onOpenAushangPdf}
+              >
+                Aushang PDF
+              </button>
+            </>
           ) : null}
           <button
             type="button"

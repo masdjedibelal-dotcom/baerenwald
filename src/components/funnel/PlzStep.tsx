@@ -165,7 +165,7 @@ export function PlzStep({
                 >
                   {c.icon ? (
                     <span className="funnel-tile-icon-wrap" aria-hidden>
-                      <BwIcon name={c.icon} />
+                      <BwIcon name={c.icon} size={22} />
                     </span>
                   ) : c.emoji ? (
                     <span className="funnel-tile-emoji" aria-hidden>

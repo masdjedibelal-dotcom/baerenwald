@@ -4,6 +4,8 @@ import { useCallback, useEffect, useState } from "react";
 import { Download, UserPlus } from "lucide-react";
 
 import type { OrganisationKunde } from "@/lib/org/types";
+import { EinstellungenCard, EinstellungenEdField } from "@/components/shared/PortalEinstellungenUi";
+import { PORTAL_C } from "@/lib/portal2/tokens";
 import { portalToastError, portalToastSuccess } from "@/lib/shared/portal-toast";
 
 type Mitglied = {
@@ -186,34 +188,49 @@ export function OrganisationExportPanel({ nested = false }: { nested?: boolean }
     window.location.href = `/api/org/export/rechnungen${q ? `?${q}` : ""}`;
   }
 
+  const body = (
+    <div className="flex flex-col gap-3">
+      <p className="text-[13px] leading-[1.55]" style={{ color: PORTAL_C.sub }}>
+        Neutrale CSV (Semikolon, UTF-8) für Buchhaltung.
+      </p>
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
+        <EinstellungenEdField
+          label="Von"
+          type="date"
+          value={von}
+          onChange={setVon}
+        />
+        <EinstellungenEdField
+          label="Bis"
+          type="date"
+          value={bis}
+          onChange={setBis}
+        />
+        <button
+          type="button"
+          onClick={download}
+          className="btn-pill-primary inline-flex items-center justify-center gap-2 sm:mb-0.5"
+        >
+          <Download className="h-4 w-4" />
+          CSV herunterladen
+        </button>
+      </div>
+    </div>
+  );
+
+  if (nested) {
+    return <EinstellungenCard title="Rechnungs-Export">{body}</EinstellungenCard>;
+  }
+
   return (
-    <section
-      className={
-        nested
-          ? "space-y-4 border-t border-border-default pt-5"
-          : "portal-surface space-y-4 p-4 sm:p-5"
-      }
-    >
+    <section className="portal-surface space-y-4 p-4 sm:p-5">
       <div>
         <h2 className="font-semibold text-text-primary">Rechnungs-Export</h2>
         <p className="portal-text-meta text-text-secondary">
           Neutrale CSV (Semikolon, UTF-8) für Buchhaltung.
         </p>
       </div>
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
-        <label className="space-y-1">
-          <span className="portal-text-meta text-text-secondary">Von</span>
-          <input type="date" value={von} onChange={(e) => setVon(e.target.value)} className="input-field" />
-        </label>
-        <label className="space-y-1">
-          <span className="portal-text-meta text-text-secondary">Bis</span>
-          <input type="date" value={bis} onChange={(e) => setBis(e.target.value)} className="input-field" />
-        </label>
-        <button type="button" onClick={download} className="btn-pill-primary inline-flex items-center gap-2">
-          <Download className="h-4 w-4" />
-          CSV herunterladen
-        </button>
-      </div>
+      {body}
     </section>
   );
 }

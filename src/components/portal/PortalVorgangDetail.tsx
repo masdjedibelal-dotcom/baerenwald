@@ -8,7 +8,6 @@ import { acceptKundeAuftragAenderungen } from "@/app/actions/portal-auftrag";
 import { OrgAnlassBadge } from "@/components/org/OrgAnlassBadge";
 import { OrganisationHvVorgangDetail } from "@/components/org/OrganisationHvVorgangDetail";
 import { OrgVorgangFeedbackSection } from "@/components/org/OrgVorgangFeedbackSection";
-import { OrgVorgangAbnahmeSection } from "@/components/org/OrgVorgangAbnahmeSection";
 import { OrgMelderStatusLinkPanel } from "@/components/org/OrgMelderStatusLinkPanel";
 import { VorgangTimeline } from "@/components/shared/VorgangTimeline";
 import { PortalHvTerminSection } from "@/components/portal/PortalHvTerminSection";
@@ -182,7 +181,8 @@ export function PortalVorgangDetail({
         positionenBrutto={item.angebotPositionen}
         gesamtBrutto={item.gesamtBrutto}
         rechnungPdfHref={rechnungPdf}
-        bautagebuch={item.bautagebuch}
+        bautagebuch={item.hvMieterView ? undefined : item.bautagebuch}
+        dokumente={item.dokumente ?? []}
         verlauf={buildHvVerlaufSeed({
           createdAt: item.date,
           melder,
@@ -214,22 +214,19 @@ export function PortalVorgangDetail({
           { id: "beauftragt", label: "Beauftragt", done: true, active: false },
           { id: "ausfuehrung", label: "Ausführung", done: true, active: false },
           {
-            id: "abnahme",
-            label: "Abnahme",
-            done: Boolean(hvAbnahme && hvAbnahme.art !== "zurueckgewiesen"),
-            active: !hvAbnahme || hvAbnahme.art === "zurueckgewiesen",
+            id: "abschluss",
+            label: "Abschluss",
+            done: Boolean(hwErledigt),
+            active: !hwErledigt,
           },
           {
             id: "erledigt",
             label: "Erledigt",
-            done: Boolean(hvAbnahme && hvAbnahme.art !== "zurueckgewiesen"),
+            done: Boolean(hwErledigt),
             active: false,
           },
         ]
       : null;
-
-  const abnahmeAbgeschlossen =
-    hvAbnahme?.art === "ohne_vorbehalt" || hvAbnahme?.art === "mit_anmerkung";
 
   const isAngebotAccept = Boolean(item.isAngebotDetail && item.needsAction);
   const isAuftragAccept = Boolean(item.isAuftragDetail && item.needsAction);
@@ -343,7 +340,9 @@ export function PortalVorgangDetail({
           <PortalDetailMilestoneList items={item.milestones} />
         ) : null}
 
-        {item.bautagebuch && item.bautagebuch.length > 0 ? (
+        {item.bautagebuch &&
+        item.bautagebuch.length > 0 &&
+        !item.hvMieterView ? (
           <BautagebuchAccordionList
             eintraege={item.bautagebuch.map((b) => ({
               id: b.id ?? `${b.datum}-${b.titel}`,
@@ -365,39 +364,26 @@ export function PortalVorgangDetail({
           />
         ) : null}
 
-        {item.dokumente && item.dokumente.length > 0 ? (
-          <DokumenteTabelle
-            heading={item.feedbackBereit ? "Anhänge" : "Dokumente"}
-            dokumente={item.dokumente.map((d) => ({
-              id: d.id,
-              name: d.name,
-              datum: d.datum,
-              href: d.href,
-            }))}
-          />
-        ) : null}
+        <DokumenteTabelle
+          heading={item.feedbackBereit ? "Anhänge" : "Dokumente"}
+          emptyText="Noch keine Dokumente."
+          dokumente={(item.dokumente ?? []).map((d) => ({
+            id: d.id,
+            name: d.name,
+            datum: d.datum,
+            href: d.href,
+          }))}
+        />
 
         {item.leadId ? (
           showAnlassBadge ? (
-            <>
-              {showHvAbnahme && hwErledigt && auftragId ? (
-                <OrgVorgangAbnahmeSection
-                  leadId={item.leadId}
-                  auftragId={auftragId}
-                  existing={hvAbnahme ?? null}
-                  onSubmitted={onHvFeedbackSubmitted}
-                />
-              ) : null}
-              {(abnahmeAbgeschlossen || !hwErledigt) && (
-                <OrgVorgangFeedbackSection
-                  leadId={item.leadId}
-                  feedbackBereit={item.feedbackBereit && (abnahmeAbgeschlossen || !showHvAbnahme)}
-                  handwerkerErledigt={hwErledigt}
-                  hvFeedback={hvFeedback}
-                  onSubmitted={onHvFeedbackSubmitted}
-                />
-              )}
-            </>
+            <OrgVorgangFeedbackSection
+              leadId={item.leadId}
+              feedbackBereit={item.feedbackBereit}
+              handwerkerErledigt={hwErledigt}
+              hvFeedback={hvFeedback}
+              onSubmitted={onHvFeedbackSubmitted}
+            />
           ) : (
             <PortalVorgangFeedbackSection
               leadId={item.leadId}

@@ -8,7 +8,6 @@ import { OrganisationEingangPanel } from "@/components/org/OrganisationEingangPa
 import { OrgFreigabeBanner } from "@/components/org/OrgFreigabeBanner";
 import { PortalListCard } from "@/components/shared/PortalListCard";
 import { buildKundeVorgaenge } from "@/lib/portal/build-kunde-vorgaenge";
-import { formatMockVorgangIdLabel } from "@/lib/portal/portal-list-mappers";
 import { PortalVorgangDetail } from "@/components/portal/PortalVorgangDetail";
 import {
   plattformStatusLabel,
@@ -246,7 +245,7 @@ export function OrganisationFreigabePanel({
           schwelleEur={kunde.freigabe_schwelle_eur ?? undefined}
           onBack={() => {
             setSelectedAngebotId(null);
-            router.replace(`/portal?section=vorgaenge&filter=freigabe`, {
+            router.replace(`/portal?section=vorgaenge&filter=offen`, {
               scroll: false,
             });
           }}
@@ -349,9 +348,7 @@ export function OrganisationFreigabePanel({
                   ? lead.melder_einheit.trim()
                   : `WE ${lead.melder_einheit.trim()}`
                 : undefined;
-              const person = lead?.melder_name?.trim()
-                ? `${lead.melder_name.trim()} (Eigentümer)`
-                : undefined;
+              const person = lead?.melder_name?.trim() || undefined;
               const subtitle = [
                 adresse || a.objektTitel || "Objekt",
                 we,
@@ -359,15 +356,12 @@ export function OrganisationFreigabePanel({
               ]
                 .filter(Boolean)
                 .join(" · ");
-              const idLabel = formatMockVorgangIdLabel(a.leadId);
               return (
                 <div key={a.id} className="space-y-2">
                   <PortalListCard
                     variant="card"
                     accent="angebot"
-                    showCheckbox
                     showChevron
-                    idLabel={idLabel}
                     title={a.titel}
                     subtitle={subtitle}
                     statusLabel={plattformStatusLabel(
@@ -380,7 +374,7 @@ export function OrganisationFreigabePanel({
                     onClick={() => {
                       setSelectedAngebotId(a.id);
                       router.replace(
-                        `/portal?section=vorgaenge&filter=freigabe&id=${encodeURIComponent(a.leadId)}`,
+                        `/portal?section=vorgaenge&filter=offen&id=${encodeURIComponent(a.leadId)}`,
                         { scroll: false }
                       );
                     }}

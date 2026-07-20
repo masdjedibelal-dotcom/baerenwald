@@ -14,9 +14,10 @@ import {
   EINSTELLUNGEN_BRANDING_FOOTER,
   EINSTELLUNGEN_BRANDING_INTRO,
   EINSTELLUNGEN_BRANDING_TITLE,
+  EINSTELLUNGEN_HERO_HINT,
   EINSTELLUNGEN_LOGO_HINT,
-  EINSTELLUNGEN_LOGO_UPLOAD_OFFENER_PUNKT,
 } from "@/lib/portal2/einstellungen";
+import { resolvePortalHeroSrc } from "@/lib/portal2/portal-media";
 import {
   EinstellungenEdField,
   EinstellungenGrid2,
@@ -72,14 +73,25 @@ export function OrganisationBrandingEditor({
 }: Props) {
   const [draft, setDraft] = useState(() => draftFromKunde(kunde));
   const [saving, setSaving] = useState(false);
+  const [logoBusy, setLogoBusy] = useState(false);
+  const [heroBusy, setHeroBusy] = useState(false);
+  const [logoPreview, setLogoPreview] = useState<string | null>(null);
+  const [heroPreview, setHeroPreview] = useState<string | null>(null);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const logoInputRef = useRef<HTMLInputElement>(null);
+  const heroInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     setDraft(draftFromKunde(kunde));
+    setLogoPreview(null);
+    setHeroPreview(null);
   }, [kunde]);
 
   const activeBrand =
     findBrandPresetByPrimary(draft.primary)?.id ?? null;
+
+  const logoSrc = logoPreview || kunde.org_logo_url;
+  const heroSrc = resolvePortalHeroSrc(heroPreview || kunde.org_hero_url);
 
   const persist = useCallback(
     async (next: Draft) => {
@@ -134,7 +146,43 @@ export function OrganisationBrandingEditor({
     };
   }, []);
 
-  // Auto-save when draft changes after first paint from user edits only via scheduleSave
+  const uploadMedia = async (kind: "logo" | "hero", file: File) => {
+    if (readOnly) return;
+    if (!file.type.startsWith("image/")) {
+      portalToastError("Nur Bilder erlaubt");
+      return;
+    }
+    const setBusy = kind === "logo" ? setLogoBusy : setHeroBusy;
+    const setPreview = kind === "logo" ? setLogoPreview : setHeroPreview;
+    setBusy(true);
+    try {
+      setPreview(URL.createObjectURL(file));
+      const fd = new FormData();
+      fd.set("kind", kind);
+      fd.set("file", file);
+      const res = await fetch("/api/org/branding/media", {
+        method: "POST",
+        body: fd,
+      });
+      const json = (await res.json()) as { error?: string; url?: string };
+      if (!res.ok || !json.url) {
+        setPreview(null);
+        portalToastError(
+          kind === "logo" ? "Logo nicht gespeichert" : "Hero nicht gespeichert",
+          json.error
+        );
+        return;
+      }
+      setPreview(json.url);
+      orgPortalToast.saved();
+      onSaved();
+    } catch {
+      setPreview(null);
+      portalToastError("Upload fehlgeschlagen");
+    } finally {
+      setBusy(false);
+    }
+  };
 
   const applyPreset = (p: BrandPreset) => {
     const next = {
@@ -173,9 +221,9 @@ export function OrganisationBrandingEditor({
         </p>
         <div className="flex items-center gap-3.5">
           <div className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-border-default bg-muted">
-            {kunde.org_logo_url ? (
+            {logoSrc ? (
               <Image
-                src={kunde.org_logo_url}
+                src={logoSrc}
                 alt=""
                 width={64}
                 height={64}
@@ -188,18 +236,85 @@ export function OrganisationBrandingEditor({
               </span>
             )}
           </div>
-          <p className="text-[12.5px] leading-relaxed text-text-secondary">
-            {EINSTELLUNGEN_LOGO_HINT}{" "}
-            <b className="text-text-primary">
-              „{draft.logo || "HV"}“
-            </b>{" "}
-            als
-            Platzhalter.
-            <span className="mt-1 block text-[11px] text-text-tertiary">
-              {EINSTELLUNGEN_LOGO_UPLOAD_OFFENER_PUNKT}
-            </span>
-          </p>
+          <div className="min-w-0 flex-1">
+            <p className="text-[12.5px] leading-relaxed text-text-secondary">
+              {EINSTELLUNGEN_LOGO_HINT}{" "}
+              <b className="text-text-primary">„{draft.logo || "HV"}“</b> als
+              Platzhalter.
+            </p>
+            {!readOnly ? (
+              <>
+                <input
+                  ref={logoInputRef}
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  className="hidden"
+                  onChange={(e) => {
+                    const f = e.target.files?.[0];
+                    e.target.value = "";
+                    if (f) void uploadMedia("logo", f);
+                  }}
+                />
+                <button
+                  type="button"
+                  disabled={logoBusy}
+                  onClick={() => logoInputRef.current?.click()}
+                  className="mt-2 rounded-lg border border-border-default bg-white px-3 py-1.5 text-[12.5px] font-semibold text-text-primary disabled:opacity-50"
+                >
+                  {logoBusy
+                    ? "Wird hochgeladen…"
+                    : logoSrc
+                      ? "Logo ersetzen"
+                      : "Logo hochladen"}
+                </button>
+              </>
+            ) : null}
+          </div>
         </div>
+      </div>
+
+      <div>
+        <p className="mb-1.5 text-[11.5px] font-bold text-text-tertiary">
+          ÜBERSICHTS-BILD (HERO)
+        </p>
+        <div className="overflow-hidden rounded-xl border border-border-default">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={heroSrc}
+            alt=""
+            className="h-[88px] w-full object-cover sm:h-[110px]"
+          />
+        </div>
+        <p className="mt-2 text-[12.5px] leading-relaxed text-text-secondary">
+          {EINSTELLUNGEN_HERO_HINT}
+        </p>
+        {!readOnly ? (
+          <>
+            <input
+              ref={heroInputRef}
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              className="hidden"
+              onChange={(e) => {
+                const f = e.target.files?.[0];
+                e.target.value = "";
+                if (f) void uploadMedia("hero", f);
+              }}
+            />
+            <button
+              type="button"
+              disabled={heroBusy}
+              onClick={() => heroInputRef.current?.click()}
+              className="mt-2 rounded-lg border border-border-default bg-white px-3 py-1.5 text-[12.5px] font-semibold text-text-primary disabled:opacity-50"
+            >
+              {heroBusy
+                ? "Wird hochgeladen…"
+                : kunde.org_hero_url || heroPreview
+                  ? "Übersichtsbild ersetzen"
+                  : "Übersichtsbild hochladen"}
+            </button>
+          </>
+        ) : null}
       </div>
 
       <div>
@@ -309,9 +424,14 @@ export function OrganisationBrandingEditor({
             style={{ background: draft.primaryDk }}
           >
             <div
-              className="grid h-8 w-8 place-items-center rounded-lg border border-white/30 bg-white/15 font-[family-name:var(--font-display)] text-[13px] font-bold"
+              className="grid h-8 w-8 place-items-center overflow-hidden rounded-lg border border-white/30 bg-white/15 font-[family-name:var(--font-display)] text-[13px] font-bold"
             >
-              {draft.logo || "HV"}
+              {logoSrc ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={logoSrc} alt="" className="h-full w-full object-cover" />
+              ) : (
+                draft.logo || "HV"
+              )}
             </div>
             <div>
               <p className="font-[family-name:var(--font-display)] text-sm font-bold">

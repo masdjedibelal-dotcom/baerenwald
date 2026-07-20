@@ -112,6 +112,7 @@ export function MeldeFormular({
         </div>
         <PortalFunnelHost
           channel="melde_anon"
+          layout="page"
           title={mode === "ergaenzen" ? "Meldung ergänzen" : "Schaden melden"}
           prefill={prefill}
           melde={{

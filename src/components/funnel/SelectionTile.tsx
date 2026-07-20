@@ -96,7 +96,7 @@ export function SelectionTile({
       >
         {optIconName ? (
           <span className="funnel-tile-icon-wrap" aria-hidden>
-            <BwIcon name={optIconName} />
+            <BwIcon name={optIconName} size={22} />
           </span>
         ) : emoji ? (
           <span className="funnel-tile-emoji" aria-hidden>

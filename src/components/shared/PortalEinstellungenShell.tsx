@@ -138,11 +138,6 @@ export function PortalEinstellungenShell({
                               ")"
                             : "transparent",
                           color: on ? PORTAL_C.ink : PORTAL_C.sub,
-                          boxShadow: on
-                            ? "inset 3px 0 0 var(--org-primary, " +
-                              PORTAL_C.primary +
-                              ")"
-                            : "none",
                         }}
                       >
                         {item.label}
@@ -156,12 +151,18 @@ export function PortalEinstellungenShell({
         ) : null}
 
         <div className="min-w-0 flex-1">
-          <div
-            className="rounded-xl bg-white p-4 sm:p-5"
-            style={{ border: `1px solid ${PORTAL_C.line}` }}
-          >
-            {children(tab)}
-          </div>
+          {variant === "hv" && tab === "freigabe" ? (
+            <div className="portal-einstellungen-stack max-w-[560px]">
+              {children(tab)}
+            </div>
+          ) : (
+            <div
+              className="rounded-xl bg-white p-4 sm:p-5"
+              style={{ border: `1px solid ${PORTAL_C.line}` }}
+            >
+              {children(tab)}
+            </div>
+          )}
         </div>
       </div>
     </div>

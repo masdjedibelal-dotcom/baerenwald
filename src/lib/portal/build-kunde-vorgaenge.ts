@@ -130,14 +130,22 @@ type PortalAuftrag = {
   }>;
 };
 
-function filterHvMieterDokumente(
+function filterVorgangDokumente(
   docs: PortalDokument[],
-  hvMieterView: boolean,
-  erledigt?: boolean
+  opts: {
+    hvMieterView?: boolean;
+    eigentuemerView?: boolean;
+    erledigt?: boolean;
+  }
 ): PortalDokument[] {
+  const viewer = opts.hvMieterView
+    ? "mieter"
+    : opts.eigentuemerView
+      ? "eigentuemer"
+      : "kunde";
   return filterPortalDokumenteForViewer(docs, {
-    hvMieterView,
-    erledigt,
+    viewer,
+    erledigt: opts.erledigt,
   });
 }
 
@@ -224,8 +232,19 @@ function anfrageTitleFromLead(lead: Pick<PortalLead, "situation" | "bereiche">):
   const vorhabenLabel = labelSituation(lead.situation);
   const gewerk = formatAnfrageGewerk(lead.bereiche);
   const vorhaben = vorhabenLabel !== "—" ? vorhabenLabel : undefined;
+  /** Fallback ohne CRM-Angebot: Situation · Vorhaben/Gewerk — nie Kunden-/Meldername. */
   const title = [vorhaben, gewerk].filter(Boolean).join(" · ") || "Vorgang";
   return { title, anfrageVorhaben: vorhaben, anfrageGewerk: gewerk };
+}
+
+/** Card-Titel: CRM-Angebotstitel, sonst Situation · Vorhaben. */
+function resolveListCardTitle(
+  lead: PortalLead,
+  angebot: PortalAngebot | null
+): string {
+  const angebotTitel = sanitizeCustomerText(angebot?.titel, 200)?.trim();
+  if (angebotTitel) return angebotTitel;
+  return anfrageTitleFromLead(lead).title;
 }
 
 function buildItemFromLead(
@@ -237,9 +256,11 @@ function buildItemFromLead(
   mieterFeedbackByLeadId?: Map<
     string,
     { sterne: number; freitext?: string | null }
-  >
+  >,
+  eigentuemerView?: boolean
 ): KundePortalDetailItem {
-  const { title, anfrageVorhaben, anfrageGewerk } = anfrageTitleFromLead(lead);
+  const { anfrageVorhaben, anfrageGewerk } = anfrageTitleFromLead(lead);
+  const title = resolveListCardTitle(lead, angebot);
   const { plz, ort } = objektPlzOrt(lead.objekt, lead.plz);
   const hidePreise = isHvPortalLead(lead);
   const hvMieterView = Boolean(mieterStatusMode && hidePreise);
@@ -265,6 +286,14 @@ function buildItemFromLead(
         .filter(Boolean)
         .join(" · ") || formatMockVorgangListSubtitle(lead);
 
+  const filterDocs = (docs: PortalDokument[]) =>
+    filterVorgangDokumente(docs, {
+      /** Dokumente: jeder Mieter-Modus — nur Abnahme. */
+      hvMieterView: Boolean(mieterStatusMode),
+      eigentuemerView,
+      erledigt: vorgangStatus.phase === "abgeschlossen",
+    });
+
   if (auftrag) {
     const leadSource: PortalAnfrageLeadSource = {
       ...lead,
@@ -281,7 +310,7 @@ function buildItemFromLead(
       leadId: lead.id,
       date: auftrag.start_datum || auftrag.created_at || lead.created_at || undefined,
       auftragEndDatum: auftrag.end_datum ?? undefined,
-      title: auftrag.titel || title,
+      title,
       cardSubtitle: formatMockVorgangListSubtitle(leadSource) ?? cardSubtitle,
       cardMeta: buildAuftragCardMeta(
         auftrag.objekt ?? lead.objekt,
@@ -295,12 +324,8 @@ function buildItemFromLead(
       statusPillKey: vorgangStatus.pillKey,
       sections: buildAuftragPortalSections({ lead: leadSource, objekt: auftrag.objekt }),
       ansprechpartner: auftrag.ansprechpartner ?? portalAnsprechpartnerFallback(),
-      dokumente: filterHvMieterDokumente(
-        auftrag.dokumente ?? lead.dokumente ?? [],
-        hvMieterView,
-        vorgangStatus.phase === "abgeschlossen"
-      ),
-      bautagebuch: auftrag.bautagebuch ?? [],
+      dokumente: filterDocs(auftrag.dokumente ?? lead.dokumente ?? []),
+      bautagebuch: hvMieterView ? undefined : auftrag.bautagebuch ?? [],
       auftragPositionen: hvMieterView ? undefined : auftragPositionen,
       gesamtBrutto: hidePreise ? undefined : auftragGesamtBrutto,
       hidePreise,
@@ -331,9 +356,7 @@ function buildItemFromLead(
       id: angebot.id,
       leadId: lead.id,
       date: angebot.created_at ?? lead.created_at ?? undefined,
-      title:
-        sanitizeCustomerText(angebot.titel, 200) ||
-        (angebot.angebotsnr ? `Angebot ${angebot.angebotsnr}` : title),
+      title,
       cardSubtitle: formatMockVorgangListSubtitle(leadSource) ?? cardSubtitle,
       cardMeta: buildAngebotCardMeta(leadSource, angebot.created_at),
       isAngebotDetail: true,
@@ -346,11 +369,7 @@ function buildItemFromLead(
       status: vorgangStatus.label,
       statusPillKey: vorgangStatus.pillKey,
       sections: buildAngebotPortalSections({ lead: leadSource, objekt: angebot.objekt }),
-      dokumente: filterHvMieterDokumente(
-        angebot.dokumente ?? lead.dokumente ?? [],
-        hvMieterView,
-        vorgangStatus.phase === "abgeschlossen"
-      ),
+      dokumente: filterDocs(angebot.dokumente ?? lead.dokumente ?? []),
       infoHint:
         !hvMieterView &&
         vorgangStatus.phase === "angebot_wird_erstellt"
@@ -379,11 +398,7 @@ function buildItemFromLead(
     status: vorgangStatus.label,
     statusPillKey: vorgangStatus.pillKey,
     sections: buildAnfragePortalSections(lead),
-    dokumente: filterHvMieterDokumente(
-      lead.dokumente ?? [],
-      hvMieterView,
-      vorgangStatus.phase === "abgeschlossen"
-    ),
+    dokumente: filterDocs(lead.dokumente ?? []),
     vorgangPhase: vorgangStatus.phase,
     needsAction: vorgangStatus.needsAction,
     actionHint: vorgangStatus.resolverActionHint ?? undefined,
@@ -419,6 +434,8 @@ export function buildKundeVorgaenge(input: {
   hvPortalMode?: boolean;
   /** MeinBärenwald: HV-Mieter sehen vereinfachte Status (Offen / In Bearbeitung / Termin / Erledigt). */
   mieterStatusMode?: boolean;
+  /** Eigentümer: Dokumente ohne Rechnung. */
+  eigentuemerMode?: boolean;
   mieterFeedbackByLeadId?: Record<
     string,
     { sterne: number; freitext?: string | null }
@@ -445,6 +462,7 @@ export function buildKundeVorgaenge(input: {
   const feedbackMap = new Map(
     Object.entries(input.mieterFeedbackByLeadId ?? {})
   );
+  const eigentuemerView = Boolean(input.eigentuemerMode);
 
   for (const lead of input.leads) {
     const leadId = normPortalId(lead.id);
@@ -474,7 +492,8 @@ export function buildKundeVorgaenge(input: {
         auftrag,
         vorgangStatus,
         input.mieterStatusMode,
-        feedbackMap
+        feedbackMap,
+        eigentuemerView
       )
     );
   }
@@ -503,7 +522,8 @@ export function buildKundeVorgaenge(input: {
         null,
         vorgangStatus,
         input.mieterStatusMode,
-        feedbackMap
+        feedbackMap,
+        eigentuemerView
       )
     );
   }
@@ -535,7 +555,8 @@ export function buildKundeVorgaenge(input: {
         auftrag,
         vorgangStatus,
         input.mieterStatusMode,
-        feedbackMap
+        feedbackMap,
+        eigentuemerView
       )
     );
   }

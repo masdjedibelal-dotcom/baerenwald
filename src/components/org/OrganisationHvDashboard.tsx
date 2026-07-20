@@ -42,6 +42,7 @@ export function OrganisationHvDashboard({
     <PortalScreenDashboard
       roleLabel={HV_DASHBOARD_ROLE_LABEL}
       hello={orgName}
+      avatarName={orgName}
       heroImageUrl={heroImageUrl}
       tiles={HV_DASHBOARD_KPI_DEFS.map((def) => ({
         id: def.id,
@@ -61,7 +62,7 @@ export function OrganisationHvDashboard({
           notfall: v.notfall,
         };
       })}
-      onOpenAll={() => onOpenFilter("aktiv")}
+      onOpenAll={() => onOpenFilter("offen")}
       onOpenItem={onOpenItem}
       recentTitle={HV_DASHBOARD_RECENT_TITLE}
       recentAllLabel={HV_DASHBOARD_RECENT_ALL}

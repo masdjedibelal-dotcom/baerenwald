@@ -191,10 +191,10 @@ export const orgPortalToast = {
   linkKopiert() {
     portalToastSuccess("Link kopiert", "Der Melde-Link liegt in der Zwischenablage.");
   },
-  aushangPdfErstellt() {
+  aushangPdfGeoeffnet() {
     portalToastSuccess(
-      "Aushang-PDF erstellt",
-      "Die PDF wurde heruntergeladen — zum Ausdrucken im Treppenhaus."
+      "Aushang-PDF geöffnet",
+      "Im Browser drucken oder als PDF speichern."
     );
   },
   objektAktualisiert() {

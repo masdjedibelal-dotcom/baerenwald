@@ -3,6 +3,8 @@
 import type { ReactNode } from "react";
 
 import { usePortalView } from "@/hooks/use-portal-view";
+import { portalDayGreetingLabel } from "@/lib/portal2/greeting";
+import { portalHeaderInitials } from "@/lib/portal2/role-badge";
 import { isPortalMobileView } from "@/lib/portal2/viewport";
 import { PORTAL_C } from "@/lib/portal2/tokens";
 
@@ -25,8 +27,12 @@ export type PortalDashboardRecentRow = {
 
 type Props = {
   roleLabel: string;
+  /** Anzeigename unter der Begrüßung (Mobil) / Hero-Titel (Desktop). */
   hello: string;
   heroImageUrl?: string | null;
+  /** Avatar-Initialen; Default aus `hello`. */
+  avatarName?: string | null;
+  avatarInitials?: string | null;
   tiles: PortalDashboardTile[];
   recent: PortalDashboardRecentRow[];
   onOpenAll: () => void;
@@ -39,12 +45,15 @@ type Props = {
 };
 
 /**
- * Mock `screenDashboard` 1:1 — Hero, 3 KPI-Tiles, „Zuletzt“.
+ * Mock `screenDashboard` — mobil: Header-Bild + Kurve + Avatar + Begrüßung;
+ * Desktop: klassischer Hero mit Overlay-Text.
  */
 export function PortalScreenDashboard({
   roleLabel,
   hello,
   heroImageUrl,
+  avatarName,
+  avatarInitials,
   tiles,
   recent,
   onOpenAll,
@@ -56,14 +65,125 @@ export function PortalScreenDashboard({
 }: Props) {
   const view = usePortalView();
   const mobile = isPortalMobileView(view);
+  const greet = portalDayGreetingLabel();
+  const profileLabel = (avatarName?.trim() || hello).trim();
+  const initials =
+    avatarInitials?.trim() ||
+    portalHeaderInitials(profileLabel);
+
+  if (mobile) {
+    return (
+      <div className="portal-dash -mx-4 -mt-4">
+        <div className="portal-dash-hero-mobile">
+          <div className="portal-dash-hero-media">
+            {heroImageUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={heroImageUrl} alt="" className="portal-dash-hero-img" />
+            ) : (
+              <div className="portal-dash-hero-fallback" aria-hidden />
+            )}
+          </div>
+
+          <div className="portal-dash-curve">
+            <svg
+              className="portal-dash-curve-svg"
+              viewBox="0 0 390 48"
+              preserveAspectRatio="none"
+              aria-hidden
+            >
+              <path
+                d="M0 48 V28 C80 4 140 0 195 0 C250 0 310 4 390 28 V48 Z"
+                fill="#fff"
+              />
+            </svg>
+
+            <div className="portal-dash-curve-body">
+              <div className="portal-dash-avatar" aria-hidden>
+                {initials.slice(0, 2)}
+              </div>
+              <p className="portal-dash-greet">{greet}</p>
+              <h1 className="portal-dash-name">{profileLabel}</h1>
+            </div>
+          </div>
+        </div>
+
+        <div className="portal-dash-tiles">
+          {tiles.map((tile) => {
+            const inner = (
+              <>
+                <p className="portal-dash-tile-value">{tile.value}</p>
+                <p className="portal-dash-tile-label">{tile.label}</p>
+              </>
+            );
+            if (tile.onClick) {
+              return (
+                <button
+                  key={tile.id}
+                  type="button"
+                  onClick={tile.onClick}
+                  className="portal-dash-tile"
+                >
+                  {inner}
+                </button>
+              );
+            }
+            return (
+              <div key={tile.id} className="portal-dash-tile">
+                {inner}
+              </div>
+            );
+          })}
+        </div>
+
+        <div className="portal-dash-recent">
+          <div className="portal-dash-recent-head">
+            <h2 className="portal-dash-recent-title">{recentTitle}</h2>
+            <button
+              type="button"
+              onClick={onOpenAll}
+              className="portal-dash-recent-all"
+            >
+              {recentAllLabel}
+            </button>
+          </div>
+          <div className="portal-dash-recent-list">
+            {recent.length === 0 ? (
+              <div className="portal-dash-recent-empty">{recentEmpty}</div>
+            ) : (
+              recent.map((v) => (
+                <button
+                  key={v.id}
+                  type="button"
+                  onClick={() => onOpenItem(v.id)}
+                  className="portal-dash-recent-item"
+                >
+                  {v.notfall ? (
+                    <span className="portal-dash-recent-bolt">⚡</span>
+                  ) : null}
+                  <div className="portal-dash-recent-text">
+                    <p className="portal-dash-recent-titel">{v.titel}</p>
+                    <p className="portal-dash-recent-objekt">{v.objekt}</p>
+                  </div>
+                  <span
+                    className="portal-dash-recent-pill"
+                    style={{ color: v.statusColor, background: v.statusBg }}
+                  >
+                    {v.statusLabel}
+                  </span>
+                </button>
+              ))
+            )}
+          </div>
+        </div>
+
+        {after}
+      </div>
+    );
+  }
 
   return (
     <div className="-mx-4 -mt-4 lg:-mx-6 lg:-mt-5">
-      {/* Hero — Mock height 150/200, overlay, role + hello */}
-      <div
-        className="relative w-full overflow-hidden"
-        style={{ height: mobile ? 150 : 200 }}
-      >
+      <div className="relative w-full overflow-hidden" style={{ height: 200 }}>
         {heroImageUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
@@ -89,16 +209,12 @@ export function PortalScreenDashboard({
           }}
         />
         <div
-          className="pointer-events-none absolute right-4"
-          style={{
-            left: mobile ? 16 : 24,
-            bottom: mobile ? 14 : 18,
-          }}
+          className="pointer-events-none absolute bottom-[18px] left-6 right-4"
         >
           <p
             className="mb-1 font-bold uppercase"
             style={{
-              fontSize: mobile ? 10.5 : 11.5,
+              fontSize: 11.5,
               color: "rgba(255,255,255,.82)",
               letterSpacing: 0.5,
             }}
@@ -109,7 +225,7 @@ export function PortalScreenDashboard({
             className="font-bold text-white"
             style={{
               fontFamily: PORTAL_C.head,
-              fontSize: mobile ? 23 : 30,
+              fontSize: 30,
               lineHeight: 1.05,
               textShadow: "0 1px 6px rgba(0,0,0,.25)",
             }}
@@ -119,13 +235,9 @@ export function PortalScreenDashboard({
         </div>
       </div>
 
-      {/* KPI-Tiles — Mock: weiß, ink-Zahl, faint-Label */}
       <div
         className="grid grid-cols-3"
-        style={{
-          gap: mobile ? 9 : 12,
-          padding: mobile ? "14px 16px" : "16px 24px",
-        }}
+        style={{ gap: 12, padding: "16px 24px" }}
       >
         {tiles.map((tile) => {
           const inner = (
@@ -134,7 +246,7 @@ export function PortalScreenDashboard({
                 className="font-bold leading-none"
                 style={{
                   fontFamily: PORTAL_C.head,
-                  fontSize: mobile ? 24 : 30,
+                  fontSize: 30,
                   color: PORTAL_C.ink,
                 }}
               >
@@ -143,7 +255,7 @@ export function PortalScreenDashboard({
               <p
                 className="font-semibold"
                 style={{
-                  fontSize: mobile ? 11 : 12,
+                  fontSize: 12,
                   color: PORTAL_C.faint,
                   marginTop: 5,
                 }}
@@ -157,7 +269,7 @@ export function PortalScreenDashboard({
             border: `0.5px solid ${PORTAL_C.line}`,
             boxShadow: PORTAL_C.shadow,
             borderRadius: 14,
-            padding: mobile ? "13px 12px" : "16px 16px",
+            padding: "16px 16px",
             textAlign: "left" as const,
           };
           if (tile.onClick) {
@@ -180,12 +292,7 @@ export function PortalScreenDashboard({
         })}
       </div>
 
-      {/* Zuletzt */}
-      <div
-        style={{
-          padding: mobile ? "8px 16px 24px" : "10px 24px 24px",
-        }}
-      >
+      <div style={{ padding: "10px 24px 24px" }}>
         <div
           className="flex items-center justify-between"
           style={{ marginBottom: 10 }}
@@ -253,9 +360,7 @@ export function PortalScreenDashboard({
                   background: "transparent",
                 }}
               >
-                {v.notfall ? (
-                  <span style={{ fontSize: 13 }}>⚡</span>
-                ) : null}
+                {v.notfall ? <span style={{ fontSize: 13 }}>⚡</span> : null}
                 <div className="min-w-0 flex-1">
                   <p
                     className="truncate font-semibold"

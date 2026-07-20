@@ -21,7 +21,10 @@ export const EINSTELLUNGEN_BRANDING_FOOTER =
   "Änderungen werden automatisch gespeichert und sofort in allen Mieter-Ansichten übernommen." as const;
 
 export const EINSTELLUNGEN_LOGO_HINT =
-  "PNG/SVG, quadratisch, min. 256 px. Ohne Upload nutzen wir Ihr Namenskürzel" as const;
+  "PNG oder JPG, quadratisch, min. 256 px. Ohne Upload nutzen wir Ihr Namenskürzel" as const;
+
+export const EINSTELLUNGEN_HERO_HINT =
+  "Breites Foto für die Übersicht (ca. 1600×400 px). Ohne Upload bleibt das Standardbild." as const;
 
 export const EINSTELLUNGEN_SCHWELLE_TITLE =
   "Globaler Freigabe-Schwellenwert" as const;
@@ -33,9 +36,6 @@ export const EINSTELLUNGEN_OBJEKT_SCHWELLE_TITLE =
   "Objekt-spezifische Schwellenwerte" as const;
 
 export const EINSTELLUNGEN_PROFIL_EDIT = "Profil bearbeiten" as const;
-
-export const EINSTELLUNGEN_LOGO_UPLOAD_OFFENER_PUNKT =
-  "Logo-Datei-Upload: noch kein Storage-Flow — Anzeige über org_logo_url (Bärenwald) bzw. Namenskürzel (OFFENE-PUNKTE)." as const;
 
 /** Format wie Mock `money(schwelle)`. */
 export function formatEinstellungenSchwelle(

@@ -1,9 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { Check } from "lucide-react";
 
 import {
-  checkFunnelPortalEmail,
   getFunnelSessionContactPrefill,
   registerFunnelPortalAccount,
   resendFunnelPortalCode,
@@ -19,7 +19,14 @@ export type FunnelAuthCompletePayload = {
   skipContact: boolean;
 };
 
-type Phase = "boot" | "email" | "login" | "register" | "verify";
+type AuthTab = "login" | "register";
+type Phase = "boot" | "auth" | "verify";
+
+const MEIN_BAERENWALD_VORTEILE = [
+  "Preisrahmen berechnen und Angebot speichern",
+  "Vorgang jederzeit in Mein Bärenwald nachverfolgen",
+  "Angebote annehmen und Termine koordinieren",
+] as const;
 
 function isContactComplete(p: PortalContactPrefill): boolean {
   return Boolean(
@@ -46,6 +53,7 @@ export function FunnelPortalAuthGate({
   className,
 }: FunnelPortalAuthGateProps) {
   const [phase, setPhase] = useState<Phase>("boot");
+  const [tab, setTab] = useState<AuthTab>("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [password2, setPassword2] = useState("");
@@ -72,7 +80,7 @@ export function FunnelPortalAuthGate({
         });
         return;
       }
-      setPhase("email");
+      setPhase("auth");
     })();
     return () => {
       cancelled = true;
@@ -87,17 +95,11 @@ export function FunnelPortalAuthGate({
     });
   }
 
-  async function onEmailContinue(e: React.FormEvent) {
-    e.preventDefault();
-    setBusy(true);
+  function switchTab(next: AuthTab) {
+    setTab(next);
     setError(null);
-    const result = await checkFunnelPortalEmail(email);
-    setBusy(false);
-    if (!result.ok) {
-      setError(result.error);
-      return;
-    }
-    setPhase(result.status === "registered" ? "login" : "register");
+    setPassword("");
+    setPassword2("");
   }
 
   async function onLogin(e: React.FormEvent) {
@@ -154,6 +156,9 @@ export function FunnelPortalAuthGate({
     setBusy(false);
     if (!result.ok) {
       setError(result.error);
+      if (result.error.toLowerCase().includes("bereits registriert")) {
+        setTab("login");
+      }
       return;
     }
     setCode("");
@@ -180,7 +185,8 @@ export function FunnelPortalAuthGate({
       setError(
         "Konto bestätigt — Anmeldung fehlgeschlagen. Bitte mit Passwort erneut anmelden."
       );
-      setPhase("login");
+      setPhase("auth");
+      setTab("login");
       return;
     }
     await finishWithPrefill(verified.prefill);
@@ -206,12 +212,26 @@ export function FunnelPortalAuthGate({
   }
 
   return (
-    <div className={cn("space-y-4", className)}>
-      <p className="text-sm leading-relaxed text-text-secondary">
-        Für den Preisrahmen brauchst du ein MeinBärenwald-Konto — so schützen wir
-        Anfragen vor Fake-Eingaben und du kannst deinen Vorgang später im Portal
-        nachverfolgen.
-      </p>
+    <div className={cn("space-y-5", className)}>
+      <div className="space-y-2">
+        <p className="text-sm leading-relaxed text-text-secondary">
+          Melde dich bei <strong className="text-text-primary">Mein Bärenwald</strong>{" "}
+          an, um deinen Preis zu berechnen und das Angebot zu versenden.
+        </p>
+        <ul className="space-y-2 pt-1">
+          {MEIN_BAERENWALD_VORTEILE.map((text) => (
+            <li key={text} className="flex items-start gap-2.5 text-sm text-text-primary">
+              <span
+                className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-funnel-accent/15 text-funnel-accent"
+                aria-hidden
+              >
+                <Check className="h-3.5 w-3.5" strokeWidth={2.5} />
+              </span>
+              <span>{text}</span>
+            </li>
+          ))}
+        </ul>
+      </div>
 
       {error ? (
         <p
@@ -222,189 +242,182 @@ export function FunnelPortalAuthGate({
         </p>
       ) : null}
 
-      {phase === "email" ? (
-        <form onSubmit={onEmailContinue} className="space-y-3">
-          <input
-            type="email"
-            inputMode="email"
-            autoComplete="email"
-            required
-            className="funnel-input"
-            placeholder="E-Mail"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-          />
-          <button
-            type="submit"
-            disabled={busy || !email.trim()}
-            className="w-full rounded-full bg-funnel-accent px-6 py-3 text-sm font-semibold text-white transition-opacity disabled:opacity-40"
+      {phase === "auth" ? (
+        <>
+          <div
+            className="grid grid-cols-2 gap-1 rounded-full border border-border-default bg-surface-muted p-1"
+            role="tablist"
+            aria-label="Anmelden oder registrieren"
           >
-            {busy ? "Prüfen…" : "Weiter →"}
-          </button>
-        </form>
-      ) : null}
+            {(
+              [
+                { id: "login", label: "Login" },
+                { id: "register", label: "Registrierung" },
+              ] as const
+            ).map((item) => {
+              const on = tab === item.id;
+              return (
+                <button
+                  key={item.id}
+                  type="button"
+                  role="tab"
+                  aria-selected={on}
+                  onClick={() => switchTab(item.id)}
+                  className={cn(
+                    "rounded-full px-3 py-2 text-sm font-semibold transition-colors",
+                    on
+                      ? "bg-funnel-accent text-white shadow-sm"
+                      : "text-text-secondary hover:text-text-primary"
+                  )}
+                >
+                  {item.label}
+                </button>
+              );
+            })}
+          </div>
 
-      {phase === "login" ? (
-        <form onSubmit={onLogin} className="space-y-3">
-          <p className="text-sm text-text-primary">
-            Willkommen zurück — melde dich mit deinem Passwort an.
-          </p>
-          <input
-            type="email"
-            className="funnel-input"
-            value={email}
-            readOnly
-          />
-          <input
-            type="password"
-            autoComplete="current-password"
-            required
-            minLength={8}
-            className="funnel-input"
-            placeholder="Passwort"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-          />
-          <button
-            type="submit"
-            disabled={busy || password.length < 8}
-            className="w-full rounded-full bg-funnel-accent px-6 py-3 text-sm font-semibold text-white transition-opacity disabled:opacity-40"
-          >
-            {busy ? "Anmelden…" : "Anmelden →"}
-          </button>
-          <button
-            type="button"
-            className="w-full text-center text-sm text-funnel-accent underline"
-            onClick={() => {
-              setPhase("email");
-              setPassword("");
-              setError(null);
-            }}
-          >
-            Andere E-Mail
-          </button>
-        </form>
-      ) : null}
-
-      {phase === "register" ? (
-        <form onSubmit={onRegister} className="space-y-3">
-          <p className="text-sm text-text-primary">
-            Neu bei MeinBärenwald — bitte Kontaktdaten und Passwort festlegen.
-          </p>
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            <input
-              type="text"
-              autoComplete="given-name"
-              required
-              className="funnel-input"
-              placeholder="Vorname"
-              value={vorname}
-              onChange={(e) => setVorname(e.target.value)}
-            />
-            <input
-              type="text"
-              autoComplete="family-name"
-              required
-              className="funnel-input"
-              placeholder="Nachname"
-              value={nachname}
-              onChange={(e) => setNachname(e.target.value)}
-            />
-          </div>
-          <input
-            type="email"
-            className="funnel-input"
-            value={email}
-            readOnly
-          />
-          <input
-            type="tel"
-            autoComplete="tel"
-            className="funnel-input"
-            placeholder="Telefon (optional)"
-            value={telefon}
-            onChange={(e) => setTelefon(e.target.value)}
-          />
-          <div className="grid grid-cols-[1fr_88px] gap-3">
-            <input
-              type="text"
-              autoComplete="address-line1"
-              required
-              className="funnel-input"
-              placeholder="Straße"
-              value={strasse}
-              onChange={(e) => setStrasse(e.target.value)}
-            />
-            <input
-              type="text"
-              required
-              className="funnel-input"
-              placeholder="Nr."
-              value={hausnummer}
-              onChange={(e) => setHausnummer(e.target.value)}
-            />
-          </div>
-          <div className="grid grid-cols-[110px_1fr] gap-3">
-            <input
-              type="text"
-              inputMode="numeric"
-              maxLength={5}
-              required
-              className="funnel-input"
-              placeholder="PLZ"
-              value={plz}
-              onChange={(e) =>
-                setPlz(e.target.value.replace(/\D/g, "").slice(0, 5))
-              }
-            />
-            <input
-              type="text"
-              autoComplete="address-level2"
-              required
-              className="funnel-input"
-              placeholder="Ort"
-              value={ort}
-              onChange={(e) => setOrt(e.target.value)}
-            />
-          </div>
-          <input
-            type="password"
-            autoComplete="new-password"
-            required
-            minLength={8}
-            className="funnel-input"
-            placeholder="Passwort (mind. 8 Zeichen)"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-          />
-          <input
-            type="password"
-            autoComplete="new-password"
-            required
-            minLength={8}
-            className="funnel-input"
-            placeholder="Passwort wiederholen"
-            value={password2}
-            onChange={(e) => setPassword2(e.target.value)}
-          />
-          <button
-            type="submit"
-            disabled={busy}
-            className="w-full rounded-full bg-funnel-accent px-6 py-3 text-sm font-semibold text-white transition-opacity disabled:opacity-40"
-          >
-            {busy ? "Konto wird angelegt…" : "Code per E-Mail senden →"}
-          </button>
-          <button
-            type="button"
-            className="w-full text-center text-sm text-funnel-accent underline"
-            onClick={() => {
-              setPhase("email");
-              setError(null);
-            }}
-          >
-            Andere E-Mail
-          </button>
-        </form>
+          {tab === "login" ? (
+            <form onSubmit={onLogin} className="space-y-3">
+              <input
+                type="email"
+                inputMode="email"
+                autoComplete="email"
+                required
+                className="funnel-input"
+                placeholder="E-Mail"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+              />
+              <input
+                type="password"
+                autoComplete="current-password"
+                required
+                minLength={8}
+                className="funnel-input"
+                placeholder="Passwort"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+              />
+              <button
+                type="submit"
+                disabled={busy || !email.trim() || password.length < 8}
+                className="w-full rounded-full bg-funnel-accent px-6 py-3 text-sm font-semibold text-white transition-opacity disabled:opacity-40"
+              >
+                {busy ? "Anmelden…" : "Anmelden →"}
+              </button>
+            </form>
+          ) : (
+            <form onSubmit={onRegister} className="space-y-3">
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <input
+                  type="text"
+                  autoComplete="given-name"
+                  required
+                  className="funnel-input"
+                  placeholder="Vorname"
+                  value={vorname}
+                  onChange={(e) => setVorname(e.target.value)}
+                />
+                <input
+                  type="text"
+                  autoComplete="family-name"
+                  required
+                  className="funnel-input"
+                  placeholder="Nachname"
+                  value={nachname}
+                  onChange={(e) => setNachname(e.target.value)}
+                />
+              </div>
+              <input
+                type="email"
+                inputMode="email"
+                autoComplete="email"
+                required
+                className="funnel-input"
+                placeholder="E-Mail"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+              />
+              <input
+                type="tel"
+                autoComplete="tel"
+                className="funnel-input"
+                placeholder="Telefon (optional)"
+                value={telefon}
+                onChange={(e) => setTelefon(e.target.value)}
+              />
+              <div className="grid grid-cols-[1fr_88px] gap-3">
+                <input
+                  type="text"
+                  autoComplete="address-line1"
+                  required
+                  className="funnel-input"
+                  placeholder="Straße"
+                  value={strasse}
+                  onChange={(e) => setStrasse(e.target.value)}
+                />
+                <input
+                  type="text"
+                  required
+                  className="funnel-input"
+                  placeholder="Nr."
+                  value={hausnummer}
+                  onChange={(e) => setHausnummer(e.target.value)}
+                />
+              </div>
+              <div className="grid grid-cols-[110px_1fr] gap-3">
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  maxLength={5}
+                  required
+                  className="funnel-input"
+                  placeholder="PLZ"
+                  value={plz}
+                  onChange={(e) =>
+                    setPlz(e.target.value.replace(/\D/g, "").slice(0, 5))
+                  }
+                />
+                <input
+                  type="text"
+                  autoComplete="address-level2"
+                  required
+                  className="funnel-input"
+                  placeholder="Ort"
+                  value={ort}
+                  onChange={(e) => setOrt(e.target.value)}
+                />
+              </div>
+              <input
+                type="password"
+                autoComplete="new-password"
+                required
+                minLength={8}
+                className="funnel-input"
+                placeholder="Passwort (mind. 8 Zeichen)"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+              />
+              <input
+                type="password"
+                autoComplete="new-password"
+                required
+                minLength={8}
+                className="funnel-input"
+                placeholder="Passwort wiederholen"
+                value={password2}
+                onChange={(e) => setPassword2(e.target.value)}
+              />
+              <button
+                type="submit"
+                disabled={busy}
+                className="w-full rounded-full bg-funnel-accent px-6 py-3 text-sm font-semibold text-white transition-opacity disabled:opacity-40"
+              >
+                {busy ? "Konto wird angelegt…" : "Registrieren →"}
+              </button>
+            </form>
+          )}
+        </>
       ) : null}
 
       {phase === "verify" ? (
@@ -440,6 +453,17 @@ export function FunnelPortalAuthGate({
             onClick={() => void onResendCode()}
           >
             Code erneut senden
+          </button>
+          <button
+            type="button"
+            className="w-full text-center text-sm text-text-secondary underline"
+            onClick={() => {
+              setPhase("auth");
+              setTab("login");
+              setError(null);
+            }}
+          >
+            Zurück zum Login
           </button>
         </form>
       ) : null}

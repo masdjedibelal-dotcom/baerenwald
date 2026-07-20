@@ -1,6 +1,5 @@
 /**
- * Portal 2.0 B10 / E3 — Aushang-Slug, URL, Poster-Texte.
- * QR: Live = scannbar auf meldeUrl (Spec E3); Mock qrMatrix nur Referenz.
+ * Portal 2.0 — Aushang-Texte & Typen (PDF-Aushang Schadensmeldung).
  */
 
 import { buildMeldeUrl } from "@/lib/org/melde-url";
@@ -35,35 +34,43 @@ export const AUSHANG_STEPS = [
   {
     n: "01",
     title: "Scannen",
-    detail: "Handy-Kamera auf den Code halten",
+    detail: "Handy-Kamera auf den QR – öffnet sich im Browser",
   },
   {
     n: "02",
-    title: "Anliegen melden",
-    detail: "Schaden beschreiben – ein Foto genügt",
+    title: "Melden",
+    detail: "Bereich wählen, Foto + kurze Beschreibung",
   },
   {
     n: "03",
-    title: "Informiert bleiben",
-    detail: "Status live verfolgen, ganz ohne Anruf",
+    title: "Verfolgen",
+    detail: "Nach Registrierung Status jederzeit in der App abrufbar",
   },
 ] as const;
 
-export const AUSHANG_MODAL_TITLE = "Aushang für den Hausflur";
-export const AUSHANG_MODAL_SUB =
-  "Ausdrucken (A4) und im Eingang aufhängen";
-export const AUSHANG_PRINT_LABEL = "🖨  Drucken (A4)";
-export const AUSHANG_HERO_EYEBROW = "Ihr digitaler Draht zur Hausverwaltung";
-export const AUSHANG_HERO_LINE1 = "Ihr Mieterportal.";
+export const AUSHANG_HERO_LINE1 = "Schaden melden.";
 export const AUSHANG_HERO_LINE2 = "Einfach scannen.";
 export const AUSHANG_HERO_BODY =
-  "Schäden melden, Status verfolgen, Termine & Kontakte im Blick – alles rund um Ihre Wohnung, digital in unter einer Minute. Kein Papier, keine Telefonschleife.";
+  "Defekte in Ihrer Wohnung oder im Gebäude online melden – mit Foto, ohne App, direkt im Browser. Sie erhalten eine Bestätigung und können den Status verfolgen.";
 export const AUSHANG_PILL_HINT = "ohne App · direkt im Browser";
 export const AUSHANG_OBJEKT_LABEL = "Für dieses Gebäude";
 export const AUSHANG_FOOTER_NO_PHONE = "Kein Smartphone?";
-export const AUSHANG_POWERED = "Portal bereitgestellt mit";
-export const AUSHANG_POWERED_BRAND = "Bärenwald";
+export const AUSHANG_FOOTER_DATENSCHUTZ =
+  "Datenschutz & Impressum: nach dem Scan im Formular";
+export const AUSHANG_FOOTER_OPERATOR = "Bearbeitet durch";
+export const AUSHANG_PROCESSED_BY = "Bärenwald Bau & Sanierung GmbH";
 export const AUSHANG_BADGE = "Mieterportal";
+
+/** PDF-Aushang im Browser (Drucken / Speichern über PDF-Viewer). */
+export function meldeAushangPdfPath(objektId?: string): string {
+  if (!objektId?.trim()) return "/api/org/melde-aushang";
+  return `/api/org/melde-aushang?objektId=${encodeURIComponent(objektId.trim())}`;
+}
+
+/** @deprecated Alias — siehe meldeAushangPdfPath */
+export function aushangPrintPath(objektId: string): string {
+  return meldeAushangPdfPath(objektId);
+}
 
 export type AushangBrand = {
   name: string;
@@ -83,11 +90,8 @@ export type AushangObjektView = {
   melde_slug?: string | null;
 };
 
-/** Mock-Meta `omelette-owns-print: aushang` — Print-Ansicht markieren. */
-export const AUSHANG_PRINT_META_NAME = "omelette-owns-print" as const;
-export const AUSHANG_PRINT_META_CONTENT = "aushang" as const;
-
-/** Eigene Print-Route (E3). */
-export function aushangPrintPath(objektId: string): string {
-  return `/portal/aushang/${encodeURIComponent(objektId)}`;
+/** @deprecated Alias — siehe meldeAushangPdfPath */
+export function aushangPdfPath(objektId: string): string {
+  return meldeAushangPdfPath(objektId);
 }
+
