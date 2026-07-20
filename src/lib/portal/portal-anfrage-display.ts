@@ -27,6 +27,7 @@ export type PortalAnfrageLeadSource = {
   plz?: string | null;
   strasse?: string | null;
   hausnummer?: string | null;
+  ort?: string | null;
   zeitraum?: string | null;
   preis_min?: number | null;
   preis_max?: number | null;
@@ -40,6 +41,8 @@ export type PortalAnfrageLeadSource = {
   melder_name?: string | null;
   /** HV-Meldung: Einheit / WE */
   melder_einheit?: string | null;
+  melder_telefon?: string | null;
+  melder_email?: string | null;
   anlass?: string | null;
   erfassung_von?: string | null;
 };

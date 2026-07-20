@@ -18,6 +18,10 @@ export type PartnerLeadDbRow = {
   org_freigabe_status?: string | null;
   hv_meldung_status?: string | null;
   kontakt_name?: string | null;
+  melder_name?: string | null;
+  melder_einheit?: string | null;
+  melder_telefon?: string | null;
+  melder_email?: string | null;
 };
 
 export type PartnerKundenObjektRow = {
@@ -62,13 +66,19 @@ export function buildPartnerLeadSource(opts: {
     plz: lead.plz ?? objekt?.plz ?? opts.kundePlz ?? null,
     strasse: lead.strasse,
     hausnummer: lead.hausnummer,
+    ort: objekt?.ort ?? opts.kundeOrt ?? null,
     zeitraum: lead.zeitraum,
     preis_min: lead.preis_min,
     preis_max: lead.preis_max,
     budget_ca: lead.budget_ca,
+    kontakt_name: lead.kontakt_name,
     kontakt_nachricht: lead.kontakt_nachricht,
     funnel_daten: lead.funnel_daten,
     hv_meldung_status: lead.hv_meldung_status,
+    melder_name: lead.melder_name,
+    melder_einheit: lead.melder_einheit,
+    melder_telefon: lead.melder_telefon,
+    melder_email: lead.melder_email,
     objekt,
   };
 }

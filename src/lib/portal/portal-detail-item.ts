@@ -82,6 +82,17 @@ export type KundePortalDetailItem = {
   mieterFeedback?: { sterne: number; freitext?: string | null } | null;
   /** HV: Link zum Mieter-Status (kein Mieter-Mail). */
   melderStatusUrl?: string;
+  /** Einheitliche Detail-Blöcke (Objekt/Melder/Freigabe). */
+  melderName?: string | null;
+  melderEinheit?: string | null;
+  melderTelefon?: string | null;
+  melderEmail?: string | null;
+  kostentraeger?: string | null;
+  kostentraegerVorgeschlagen?: boolean;
+  versicherungsNr?: string | null;
+  meldeFotos?: string[];
+  orgFreigabeStatus?: string | null;
+  hvMeldungStatus?: string | null;
 };
 
 export function objektPlzOrt(

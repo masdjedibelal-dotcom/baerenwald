@@ -64,7 +64,7 @@ export const AUSHANG_PHOTO_HINT =
   "Foto einfügen (Gebäude, Team oder Handwerker)";
 export const AUSHANG_TAGLINE = "IHR ZUHAUSE IN GUTEN HÄNDEN";
 export const AUSHANG_FOOTER_NO_PHONE = "KEIN SMARTPHONE?";
-export const AUSHANG_FOOTER_CONTACT = "Wenden Sie sich an Ihre Hausverwaltung";
+export const AUSHANG_FOOTER_CONTACT = "Melden Sie sich direkt";
 export const AUSHANG_FOOTER_DATENSCHUTZ =
   "Datenschutz & Impressum: nach dem Scan im Formular";
 

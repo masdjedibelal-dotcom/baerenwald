@@ -38,6 +38,14 @@ import { vorgangFeedbackBereit } from "@/lib/portal/vorgang-feedback-eligibility
 import { resolveKundeVorgangStatus } from "@/lib/portal/kunde-vorgang-status";
 import { isHvPortalLead } from "@/lib/portal/hv-portal-lead";
 import { meldeStatusUrl } from "@/lib/melde/melde-tracking";
+
+function meldeFotosFromFunnel(funnelDaten: unknown): string[] {
+  const fd = funnelDaten as { fotos?: unknown } | null | undefined;
+  if (!Array.isArray(fd?.fotos)) return [];
+  return fd.fotos
+    .filter((u): u is string => typeof u === "string" && /^https?:\/\//i.test(u))
+    .slice(0, 12);
+}
 import {
   hasMieterTerminPhase,
   hasOffeneTerminvorschlaege,
@@ -69,7 +77,13 @@ type PortalLead = PortalAnfrageLeadSource & {
   melde_tracking_token?: string | null;
   melder_name?: string | null;
   melder_einheit?: string | null;
+  melder_telefon?: string | null;
+  melder_email?: string | null;
+  kostentraeger?: string | null;
+  kostentraeger_vorgeschlagen?: boolean | null;
+  versicherungs_nr?: string | null;
   erfassung_von?: string | null;
+  funnel_daten?: unknown;
 };
 
 function resolveMelderStatusUrl(lead: PortalLead): string | undefined {
@@ -262,9 +276,21 @@ function buildItemFromLead(
   const { anfrageVorhaben, anfrageGewerk } = anfrageTitleFromLead(lead);
   const title = resolveListCardTitle(lead, angebot);
   const { plz, ort } = objektPlzOrt(lead.objekt, lead.plz);
-  const hidePreise = isHvPortalLead(lead);
-  const hvMieterView = Boolean(mieterStatusMode && hidePreise);
+  const hidePreise = Boolean(mieterStatusMode && isHvPortalLead(lead));
+  const hvMieterView = Boolean(mieterStatusMode && isHvPortalLead(lead));
   const melderStatusUrl = resolveMelderStatusUrl(lead);
+  const detailKontext = {
+    melderName: lead.melder_name ?? lead.kontakt_name ?? null,
+    melderEinheit: lead.melder_einheit ?? null,
+    melderTelefon: lead.melder_telefon ?? null,
+    melderEmail: lead.melder_email ?? null,
+    kostentraeger: lead.kostentraeger ?? null,
+    kostentraegerVorgeschlagen: Boolean(lead.kostentraeger_vorgeschlagen),
+    versicherungsNr: lead.versicherungs_nr ?? null,
+    meldeFotos: meldeFotosFromFunnel(lead.funnel_daten),
+    orgFreigabeStatus: lead.org_freigabe_status ?? null,
+    hvMeldungStatus: lead.hv_meldung_status ?? null,
+  };
   const leadId = lead.id;
   const feedbackBereit = vorgangFeedbackBereit({
     leadVorgangPhase: lead.vorgang_phase,
@@ -327,7 +353,7 @@ function buildItemFromLead(
       dokumente: filterDocs(auftrag.dokumente ?? lead.dokumente ?? []),
       bautagebuch: hvMieterView ? undefined : auftrag.bautagebuch ?? [],
       auftragPositionen: hvMieterView ? undefined : auftragPositionen,
-      gesamtBrutto: hidePreise ? undefined : auftragGesamtBrutto,
+      gesamtBrutto: hvMieterView ? undefined : auftragGesamtBrutto,
       hidePreise,
       hvMieterView,
       terminAuftragId: hvMieterView ? auftrag.id : undefined,
@@ -344,6 +370,7 @@ function buildItemFromLead(
       feedbackBereit,
       mieterFeedback,
       melderStatusUrl: hvMieterView ? undefined : melderStatusUrl,
+      ...detailKontext,
     };
   }
 
@@ -361,7 +388,7 @@ function buildItemFromLead(
       cardMeta: buildAngebotCardMeta(leadSource, angebot.created_at),
       isAngebotDetail: true,
       angebotPositionen: hvMieterView ? undefined : angebot.positionenDisplay,
-      gesamtBrutto: hidePreise ? undefined : angebot.gesamtBrutto,
+      gesamtBrutto: hvMieterView ? undefined : angebot.gesamtBrutto,
       angebotHerkunft: angebot.herkunft ?? null,
       hidePreise,
       hvMieterView,
@@ -381,6 +408,7 @@ function buildItemFromLead(
       feedbackBereit,
       mieterFeedback,
       melderStatusUrl: hvMieterView ? undefined : melderStatusUrl,
+      ...detailKontext,
     };
   }
 
@@ -407,6 +435,7 @@ function buildItemFromLead(
     feedbackBereit,
     mieterFeedback,
     melderStatusUrl: hvMieterView ? undefined : melderStatusUrl,
+    ...detailKontext,
   };
 }
 

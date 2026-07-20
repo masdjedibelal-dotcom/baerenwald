@@ -9,6 +9,9 @@ import { createPartnerBautagebuchEintrag,
   updatePartnerBautagebuchEintrag,
 } from "@/app/actions/partner-bautagebuch";
 import { createPartnerBefundEintrag } from "@/app/actions/partner-befund";
+import { VorgangDetailBlocks } from "@/components/shared/vorgang-detail";
+import { buildPartnerVorgangDetailVm } from "@/lib/vorgang/build-vorgang-detail-vm";
+import { sightForRole } from "@/lib/vorgang/vorgang-detail-vm";
 import { PartnerAuftragErledigtSection } from "@/components/partner/PartnerAuftragErledigtSection";
 import { PartnerHwKalkulationScreen } from "@/components/partner/PartnerHwKalkulationScreen";
 import { PartnerLeistungenKonditionenCard } from "@/components/partner/PartnerLeistungenKonditionenCard";
@@ -548,6 +551,23 @@ export function PartnerAuftragDetail({
         metaLine={partnerAuftragDetailMetaLine(item.start_datum, item.end_datum)}
         statusLabel={statusLabel}
         statusPillClass={partnerDetailStatusPillClass(statusPillKey)}
+      />
+
+      <VorgangDetailBlocks
+        vm={buildPartnerVorgangDetailVm({
+          idLabel: item.id.slice(0, 8).toUpperCase(),
+          titel: resolvePartnerDetailTitelFromAuftrag(item),
+          statusLabel,
+          lead: item.lead,
+          plz: item.plz,
+          ort: item.ort,
+          gewerkName: item.positionen?.[0]?.gewerk_name ?? null,
+          aufgabeNotiz: null,
+          konditionZeilen: resolvePartnerAuftragKonditionZeilen(item.positionen),
+          startDatum: item.start_datum,
+          endDatum: item.end_datum,
+        })}
+        sight={{ ...sightForRole("partner"), leistungen: "hidden" }}
       />
 
       {item.lead?.hv_meldung_status ? (

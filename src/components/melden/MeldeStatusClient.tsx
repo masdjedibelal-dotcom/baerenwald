@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 
 import { DokumenteTabelle } from "@/components/shared/DokumenteTabelle";
+import { VorgangDetailBlocks } from "@/components/shared/vorgang-detail";
 import {
   MieterWlCard,
   MieterWlFrame,
@@ -14,6 +15,7 @@ import {
   mieterStgActiveCopy,
   type MieterWlBrand,
 } from "@/lib/portal2/mieter-wl";
+import { buildMieterVorgangDetailVm } from "@/lib/vorgang/build-vorgang-detail-vm";
 import type { MieterStatusStufe } from "@/lib/vorgang/vorgang-phase";
 import { cn } from "@/lib/utils";
 import "./melden.css";
@@ -35,6 +37,9 @@ type Props = {
   initialStufe: MieterStatusStufe;
   erledigt: boolean;
   anhaenge?: Array<{ id: string; name: string; datum?: string; href: string }>;
+  /** Kurzbeschreibung der Meldung (ohne Preise) */
+  beschreibung?: string | null;
+  statusLabel?: string;
 };
 
 function fmtSlot(iso: string) {
@@ -61,6 +66,8 @@ export function MeldeStatusClient({
   initialStufe,
   erledigt,
   anhaenge = [],
+  beschreibung = null,
+  statusLabel,
 }: Props) {
   const [lang, setLang] = useState<MeldeLang>("de");
   const [stufe] = useState(initialStufe);
@@ -75,6 +82,29 @@ export function MeldeStatusClient({
   const active = useMemo(
     () => mieterStgActiveCopy(stufe, lang),
     [stufe, lang]
+  );
+
+  const detailVm = useMemo(
+    () =>
+      buildMieterVorgangDetailVm({
+        idLabel: referenz,
+        titel: active.title,
+        statusLabel: statusLabel ?? active.subtitle,
+        objektTitel,
+        einheit,
+        melderName,
+        beschreibungPlain: beschreibung,
+      }),
+    [
+      referenz,
+      active.title,
+      active.subtitle,
+      statusLabel,
+      objektTitel,
+      einheit,
+      melderName,
+      beschreibung,
+    ]
   );
 
   const metaLine = [objektTitel, einheit, referenz].filter(Boolean).join(" · ");
@@ -176,6 +206,8 @@ export function MeldeStatusClient({
         </div>
 
         <MieterStgTimeline stufe={stufe} lang={lang} />
+
+        <VorgangDetailBlocks vm={detailVm} />
 
         {bestaetigt ? (
           <MieterWlCard>

@@ -1,6 +1,11 @@
 import {
   PDFDocument,
   StandardFonts,
+  clip,
+  endPath,
+  popGraphicsState,
+  pushGraphicsState,
+  rectangle,
   rgb,
   type PDFFont,
   type PDFImage,
@@ -317,28 +322,35 @@ export async function generateMeldeAushangPdf(
   );
   y -= 14;
 
-  // —— Foto / Hero-Bild ——
+  // —— Foto / Hero-Bild (feste Platzhalter-Box, object-fit: cover + Clip) ——
   const photoH = 150;
   const photoY = y - photoH;
   const heroImg = await embedImage(pdf, input.heroImageBytes);
+  page.drawRectangle({
+    x: margin,
+    y: photoY,
+    width: contentW,
+    height: photoH,
+    color: rgb(0.88, 0.88, 0.86),
+  });
   if (heroImg) {
+    // Cover: füllt die Box, Überschuss wird per Clip abgeschnitten
     const scale = Math.max(contentW / heroImg.width, photoH / heroImg.height);
     const iw = heroImg.width * scale;
     const ih = heroImg.height * scale;
-    page.drawRectangle({
-      x: margin,
-      y: photoY,
-      width: contentW,
-      height: photoH,
-      color: rgb(0.88, 0.88, 0.86),
-    });
-    // Clip via overlapping: draw image centered, then cover overflow is fine for PDF
+    page.pushOperators(
+      pushGraphicsState(),
+      rectangle(margin, photoY, contentW, photoH),
+      clip(),
+      endPath()
+    );
     page.drawImage(heroImg, {
       x: margin + (contentW - iw) / 2,
       y: photoY + (photoH - ih) / 2,
       width: iw,
       height: ih,
     });
+    page.pushOperators(popGraphicsState());
   } else {
     drawDashedRect(page, margin, photoY, contentW, photoH, lighten(primary, 0.5));
     const hint = AUSHANG_PHOTO_HINT;

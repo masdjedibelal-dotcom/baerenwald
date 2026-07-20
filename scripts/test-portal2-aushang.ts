@@ -39,7 +39,7 @@ assert("3 steps", AUSHANG_STEPS.length === 3);
 assert("step 01", AUSHANG_STEPS[0].n === "01" && AUSHANG_STEPS[0].title === "Scannen");
 assert("tagline", AUSHANG_TAGLINE.includes("ZUHAUSE"));
 assert("no phone", AUSHANG_FOOTER_NO_PHONE.includes("SMARTPHONE"));
-assert("contact", AUSHANG_FOOTER_CONTACT.includes("Hausverwaltung"));
+assert("contact", AUSHANG_FOOTER_CONTACT.includes("direkt"));
 assert("slug melde", aushangSlug({ melde_slug: "Seitz Str." }) === "seitz-str");
 assert(
   "url",

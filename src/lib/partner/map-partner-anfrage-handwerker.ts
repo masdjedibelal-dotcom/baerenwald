@@ -29,7 +29,11 @@ export const PARTNER_LEAD_EMBED = `
   auftraggeber_kunde_id,
   org_freigabe_status,
   hv_meldung_status,
-  kontakt_name
+  kontakt_name,
+  melder_name,
+  melder_einheit,
+  melder_telefon,
+  melder_email
 `;
 
 export const PARTNER_ANGEBOT_EMBED = `

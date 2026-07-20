@@ -17,7 +17,7 @@ export default async function MeldeStatusPage({ params }: Props) {
   const { data: lead } = await supabaseAdmin
     .from("leads")
     .select(
-      "id, melder_name, melder_einheit, created_at, hv_meldung_status, vorgang_phase, org_freigabe_status, kunde_objekt_id, auftraggeber_kunde_id, storniert_am"
+      "id, melder_name, melder_einheit, created_at, hv_meldung_status, vorgang_phase, org_freigabe_status, kunde_objekt_id, auftraggeber_kunde_id, storniert_am, kontakt_nachricht, anlass"
     )
     .eq("melde_tracking_token", trimmed)
     .maybeSingle();
@@ -117,6 +117,10 @@ export default async function MeldeStatusPage({ params }: Props) {
   const melderName = String(lead.melder_name ?? "Mieter");
   const einheit = lead.melder_einheit ? String(lead.melder_einheit) : null;
   const erledigt = portalErledigtFromLeadAndAuftrag(lead, auftragKontext);
+  const beschreibung =
+    typeof lead.kontakt_nachricht === "string"
+      ? lead.kontakt_nachricht.trim() || null
+      : null;
 
   return (
     <MeldeStatusClient
@@ -129,6 +133,7 @@ export default async function MeldeStatusPage({ params }: Props) {
       initialStufe={stufe}
       erledigt={erledigt}
       anhaenge={anhaenge}
+      beschreibung={beschreibung}
     />
   );
 }

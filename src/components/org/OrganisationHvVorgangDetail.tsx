@@ -2,6 +2,8 @@
 
 import { useMemo, useState } from "react";
 
+import { VorgangDetailBlocks } from "@/components/shared/vorgang-detail";
+import { buildKundeHvVorgangDetailVm } from "@/lib/vorgang/build-vorgang-detail-vm";
 import { BautagebuchAccordionList } from "@/components/shared/BautagebuchAccordionList";
 import { DokumenteTabelle } from "@/components/shared/DokumenteTabelle";
 import { PortalFlowStatusChip } from "@/components/shared/PortalFlowStatusChip";
@@ -68,6 +70,15 @@ export type OrganisationHvVorgangDetailProps = {
   /** org_freigabe_status für Angebots-Freigabe */
   orgFreigabeStatus?: string | null;
   hvMeldungStatus?: string | null;
+  /** Einheitliche Detail-Blöcke */
+  melderEinheit?: string | null;
+  melderTelefon?: string | null;
+  melderEmail?: string | null;
+  kostentraeger?: string | null;
+  kostentraegerVorgeschlagen?: boolean;
+  versicherungsNr?: string | null;
+  meldeFotos?: string[];
+  detailRole?: "hv" | "kunde";
 };
 
 function DetailCard({
@@ -229,6 +240,15 @@ export function OrganisationHvVorgangDetail({
   onBack,
   onUpdated,
   orgFreigabeStatus,
+  hvMeldungStatus,
+  melderEinheit,
+  melderTelefon,
+  melderEmail,
+  kostentraeger,
+  kostentraegerVorgeschlagen,
+  versicherungsNr,
+  meldeFotos,
+  detailRole = "hv",
 }: OrganisationHvVorgangDetailProps) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -236,6 +256,65 @@ export function OrganisationHvVorgangDetail({
   const timeline = portalFlowTimeline(flowStatus);
   const actionKind = hvRoleActionKind(flowStatus, { privatkunde });
   const empfohlen = pickEmpfohlenesAngebot(offers);
+
+  const detailVm = useMemo(
+    () =>
+      buildKundeHvVorgangDetailVm({
+        role: detailRole,
+        idLabel,
+        titel,
+        statusLabel: PORTAL_STATUS[flowStatus].label,
+        notfall,
+        kategorie,
+        beschreibung,
+        objektZeile: objekt,
+        melderName: melder,
+        einheit: melderEinheit,
+        fotos: meldeFotos,
+        angebotPositionen: positionenBrutto,
+        gesamtBrutto:
+          typeof gesamtBrutto === "number"
+            ? gesamtBrutto
+            : empfohlen?.betrag ?? null,
+        handwerkerName,
+        rechnungsempfaengerHint: null,
+        lead: {
+          melder_name: melder,
+          melder_einheit: melderEinheit,
+          melder_telefon: melderTelefon,
+          melder_email: melderEmail,
+          kostentraeger,
+          kostentraeger_vorgeschlagen: kostentraegerVorgeschlagen,
+          versicherungs_nr: versicherungsNr,
+          org_freigabe_status: orgFreigabeStatus,
+          hv_meldung_status: hvMeldungStatus,
+        },
+      }),
+    [
+      detailRole,
+      idLabel,
+      titel,
+      flowStatus,
+      notfall,
+      kategorie,
+      beschreibung,
+      objekt,
+      melder,
+      melderEinheit,
+      meldeFotos,
+      positionenBrutto,
+      gesamtBrutto,
+      empfohlen?.betrag,
+      handwerkerName,
+      melderTelefon,
+      melderEmail,
+      kostentraeger,
+      kostentraegerVorgeschlagen,
+      versicherungsNr,
+      orgFreigabeStatus,
+      hvMeldungStatus,
+    ]
+  );
 
   const derivedPositionen: HvDetailPosition[] = useMemo(() => {
     if (positionen.length) return positionen;
@@ -666,11 +745,7 @@ export function OrganisationHvVorgangDetail({
 
       <div className="flex flex-col gap-4 px-4 pb-6 sm:flex-row sm:px-6">
         <div className="flex min-w-0 flex-1 flex-col gap-3.5">
-          <DetailCard title={HV_DETAIL_COPY.beschreibungTitle}>
-            <p className="text-[13.5px] leading-relaxed" style={{ color: PORTAL_C.sub }}>
-              {beschreibung?.trim() || "Keine Beschreibung."}
-            </p>
-          </DetailCard>
+          <VorgangDetailBlocks vm={detailVm} />
 
           {rolePanel}
           {error ? (

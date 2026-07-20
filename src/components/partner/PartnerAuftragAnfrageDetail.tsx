@@ -7,6 +7,9 @@ import {
   confirmPartnerAuftragZuweisung,
   declinePartnerAuftragZuweisung,
 } from "@/app/actions/partner-auftrag-bestaetigen";
+import { VorgangDetailBlocks } from "@/components/shared/vorgang-detail";
+import { buildPartnerVorgangDetailVm } from "@/lib/vorgang/build-vorgang-detail-vm";
+import { sightForRole } from "@/lib/vorgang/vorgang-detail-vm";
 import { PartnerLeistungenKonditionenCard } from "@/components/partner/PartnerLeistungenKonditionenCard";
 import {
   PartnerConfirmDialog,
@@ -155,6 +158,22 @@ export function PartnerAuftragAnfrageDetail({
         metaLine={partnerAuftragDetailMetaLine(item.start_datum, item.end_datum)}
         statusLabel={statusLabel}
         statusPillClass={statusPillClass}
+      />
+
+      <VorgangDetailBlocks
+        vm={buildPartnerVorgangDetailVm({
+          idLabel: item.id.slice(0, 8).toUpperCase(),
+          titel: resolvePartnerDetailTitelFromAuftrag(item),
+          statusLabel,
+          lead: item.lead,
+          plz: item.plz,
+          ort: item.ort,
+          gewerkName: item.positionen?.[0]?.gewerk_name ?? null,
+          konditionZeilen,
+          startDatum: item.start_datum,
+          endDatum: item.end_datum,
+        })}
+        sight={{ ...sightForRole("partner"), leistungen: "hidden" }}
       />
 
       <PartnerDetailInfoBox>{infoText}</PartnerDetailInfoBox>

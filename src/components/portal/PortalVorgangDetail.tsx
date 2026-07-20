@@ -178,7 +178,7 @@ export function PortalVorgangDetail({
         hwErledigt={hwErledigt}
         schwelleEur={schwelleEur}
         offers={buildHvOffersFromItem(item, item.ansprechpartner?.name)}
-        positionenBrutto={item.angebotPositionen}
+        positionenBrutto={item.auftragPositionen ?? item.angebotPositionen}
         gesamtBrutto={item.gesamtBrutto}
         rechnungPdfHref={rechnungPdf}
         bautagebuch={item.hvMieterView ? undefined : item.bautagebuch}
@@ -190,10 +190,18 @@ export function PortalVorgangDetail({
           privatAuto: privatkunde,
         })}
         melder={melder}
+        melderEinheit={item.melderEinheit}
+        melderTelefon={item.melderTelefon}
+        melderEmail={item.melderEmail}
+        kostentraeger={item.kostentraeger}
+        kostentraegerVorgeschlagen={item.kostentraegerVorgeschlagen}
+        versicherungsNr={item.versicherungsNr}
+        meldeFotos={item.meldeFotos}
         handwerkerName={item.ansprechpartner?.name}
-        orgFreigabeStatus={orgFreigabeStatus}
-        hvMeldungStatus={hvMeldungStatus}
+        orgFreigabeStatus={orgFreigabeStatus ?? item.orgFreigabeStatus}
+        hvMeldungStatus={hvMeldungStatus ?? item.hvMeldungStatus}
         privatkunde={privatkunde}
+        detailRole={privatkunde ? "kunde" : "hv"}
         coverUrl={PORTAL_OBJEKT_COVER_DEFAULT_SRC}
         onBack={onBack}
         onUpdated={() => {
