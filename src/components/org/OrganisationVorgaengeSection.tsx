@@ -167,7 +167,7 @@ export function OrganisationVorgaengeSection({
   auftraege,
   initialFilter,
   initialSelectedId: _initialSelectedId,
-  onRefresh,
+  onRefresh: _onRefresh,
   onFilterChange,
   partnerBefundByLeadId: _partnerBefundByLeadId = {},
   bautagebuchByLeadId: _bautagebuchByLeadId = {},

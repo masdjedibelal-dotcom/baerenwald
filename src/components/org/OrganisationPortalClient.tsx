@@ -2,7 +2,6 @@
 
 import { OrganisationHvDashboard } from "@/components/org/OrganisationHvDashboard";
 import { PORTAL_HEADER_HERO_SRC } from "@/lib/portal2/portal-media";
-import { resolvePortalHeroSrc } from "@/lib/portal2/portal-media";
 import { HvNotificationBell } from "@/components/org/HvNotificationBell";
 import { OrganisationAktiveAbosPanel } from "@/components/org/OrganisationAktiveAbosPanel";
 import { OrganisationServicepaketePanel } from "@/components/org/OrganisationServicepaketePanel";

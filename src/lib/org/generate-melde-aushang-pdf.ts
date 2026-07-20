@@ -184,8 +184,8 @@ export async function generateMeldeAushangPdf(
   const page = pdf.addPage([595, 842]);
   const font = await pdf.embedFont(StandardFonts.Helvetica);
   const fontBold = await pdf.embedFont(StandardFonts.HelveticaBold);
-  const serifBold = await pdf.embedFont(StandardFonts.TimesBold);
-  const serifItalic = await pdf.embedFont(StandardFonts.TimesBoldItalic);
+  const serifBold = await pdf.embedFont(StandardFonts.TimesRomanBold);
+  const serifItalic = await pdf.embedFont(StandardFonts.TimesRomanBoldItalic);
 
   const pageW = 595;
   const pageH = 842;
