@@ -1,4 +1,5 @@
 import { loadPartnerBefundeByLeadIds } from "@/lib/org/load-partner-befund";
+import { resolveLeadObjektId } from "@/lib/org/match-lead-objekt";
 import { getPortalDataForKunde } from "@/lib/portal/get-portal-data";
 import {
   isVorgangPortalErledigt,
@@ -143,10 +144,18 @@ export async function getOrganisationPortalData(kundeId: string) {
   }
 
   const eingang = (eingangSource ?? []).map((row) => {
-    const r = row as { kunde_objekt_id?: string | null };
+    const r = row as {
+      kunde_objekt_id?: string | null;
+      strasse?: string | null;
+      hausnummer?: string | null;
+      plz?: string | null;
+      funnel_daten?: unknown;
+    };
+    const matchedId =
+      resolveLeadObjektId(r, objekte) ?? r.kunde_objekt_id ?? null;
     return {
       ...(row as object),
-      objekt: resolveObj(r.kunde_objekt_id),
+      objekt: resolveObj(matchedId),
     };
   }) as OrganisationLead[];
 

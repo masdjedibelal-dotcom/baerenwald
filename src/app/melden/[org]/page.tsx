@@ -71,6 +71,7 @@ export default async function MeldenOrgPage({ params }: Props) {
         objektPlzOrt={obj.display.adr}
         einheitenHinweis={obj.display.we}
         objektSlug={obj.melde_slug}
+        objektLocked
       />
     );
   }

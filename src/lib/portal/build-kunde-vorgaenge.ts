@@ -1,3 +1,4 @@
+import { labelSituation, labelZeitraum, labelBereich } from "@/lib/lead-funnel-labels";
 import {
   buildAnfrageCardMeta,
   buildAnfragePortalSections,
@@ -25,9 +26,7 @@ import {
   type PortalAnsprechpartner,
 } from "@/lib/portal/portal-ansprechpartner";
 import type { PortalDokument } from "@/lib/portal/portal-dokumente";
-import {
-  filterPortalDokumenteForViewer,
-} from "@/lib/portal/portal-dokumente";
+import { filterPortalDokumenteForViewer } from "@/lib/portal/portal-dokumente";
 import {
   type KundePortalDetailItem,
   type PortalBautagebuchEntry,
@@ -38,6 +37,24 @@ import { vorgangFeedbackBereit } from "@/lib/portal/vorgang-feedback-eligibility
 import { resolveKundeVorgangStatus } from "@/lib/portal/kunde-vorgang-status";
 import { isHvPortalLead } from "@/lib/portal/hv-portal-lead";
 import { meldeStatusUrl } from "@/lib/melde/melde-tracking";
+import {
+  hasMieterTerminPhase,
+  hasOffeneTerminvorschlaege,
+  type PortalTerminSlot,
+} from "@/lib/portal/portal-termin";
+import type { PortalObjekt } from "@/lib/portal/portal-objekt";
+import {
+  resolvePortalBuildRole,
+  resolvePortalKundeVorgangStatus,
+} from "@/lib/crm-vorgang/portal-resolve";
+
+function meldeOrtFromFunnel(funnelDaten: unknown): string | null {
+  if (!funnelDaten || typeof funnelDaten !== "object" || Array.isArray(funnelDaten)) {
+    return null;
+  }
+  const ort = (funnelDaten as Record<string, unknown>).ort;
+  return typeof ort === "string" && ort.trim() ? ort.trim() : null;
+}
 
 function meldeFotosFromFunnel(funnelDaten: unknown): string[] {
   const fd = funnelDaten as { fotos?: unknown } | null | undefined;
@@ -46,17 +63,6 @@ function meldeFotosFromFunnel(funnelDaten: unknown): string[] {
     .filter((u): u is string => typeof u === "string" && /^https?:\/\//i.test(u))
     .slice(0, 12);
 }
-import {
-  hasMieterTerminPhase,
-  hasOffeneTerminvorschlaege,
-  type PortalTerminSlot,
-} from "@/lib/portal/portal-termin";
-import type { PortalObjekt } from "@/lib/portal/portal-objekt";
-import { labelBereich, labelSituation } from "@/lib/lead-funnel-labels";
-import {
-  resolvePortalBuildRole,
-  resolvePortalKundeVorgangStatus,
-} from "@/lib/crm-vorgang/portal-resolve";
 
 type PortalLead = PortalAnfrageLeadSource & {
   id: string;
@@ -279,6 +285,26 @@ function buildItemFromLead(
   const hidePreise = Boolean(mieterStatusMode && isHvPortalLead(lead));
   const hvMieterView = Boolean(mieterStatusMode && isHvPortalLead(lead));
   const melderStatusUrl = resolveMelderStatusUrl(lead);
+  const meldeStrasse =
+    formatAnfrageStrasseHausnummer(lead) ||
+    lead.objekt?.strasse?.trim() ||
+    null;
+  const meldePlz =
+    lead.plz?.trim() ||
+    lead.objekt?.plz?.trim() ||
+    (plz !== "—" ? plz : null) ||
+    null;
+  const meldeOrt =
+    lead.ort?.trim() ||
+    lead.objekt?.ort?.trim() ||
+    meldeOrtFromFunnel(lead.funnel_daten) ||
+    (ort !== "—" ? ort : null) ||
+    null;
+  const meldeBereich =
+    (lead.bereiche ?? [])
+      .map((b) => labelBereich(b))
+      .filter((b) => b && b !== "—")
+      .join(", ") || null;
   const detailKontext = {
     melderName: lead.melder_name ?? lead.kontakt_name ?? null,
     melderEinheit: lead.melder_einheit ?? null,
@@ -290,6 +316,15 @@ function buildItemFromLead(
     meldeFotos: meldeFotosFromFunnel(lead.funnel_daten),
     orgFreigabeStatus: lead.org_freigabe_status ?? null,
     hvMeldungStatus: lead.hv_meldung_status ?? null,
+    meldeStrasse,
+    meldeHausnummer: lead.hausnummer?.trim() || null,
+    meldePlz,
+    meldeOrt,
+    meldeSituation: lead.situation
+      ? labelSituation(lead.situation)
+      : null,
+    meldeBereich,
+    meldeZeitraum: lead.zeitraum ? labelZeitraum(lead.zeitraum) : null,
   };
   const leadId = lead.id;
   const feedbackBereit = vorgangFeedbackBereit({
@@ -455,6 +490,29 @@ function resolveAuftragForLead(
   return null;
 }
 
+/** Bevorzugtes Angebot pro Lead (aktive vor Entwurf/ersetzt, dann neueste). */
+function pickPreferredAngebot(candidates: PortalAngebot[]): PortalAngebot {
+  const rank = (a: PortalAngebot): number => {
+    const s = String(a.status_einfach ?? a.status ?? "")
+      .toLowerCase()
+      .trim();
+    if (s === "angenommen" || s === "beauftragt" || s === "kunde_akzeptiert") {
+      return 0;
+    }
+    if (s === "gesendet") return 1;
+    if (s === "entwurf") return 3;
+    if (s === "ersetzt" || s === "abgelehnt" || s === "abgelaufen") return 9;
+    return 5;
+  };
+  return [...candidates].sort((a, b) => {
+    const diff = rank(a) - rank(b);
+    if (diff !== 0) return diff;
+    const ta = a.created_at ? new Date(a.created_at).getTime() : 0;
+    const tb = b.created_at ? new Date(b.created_at).getTime() : 0;
+    return tb - ta;
+  })[0]!;
+}
+
 export function buildKundeVorgaenge(input: {
   leads: PortalLead[];
   angebote: PortalAngebot[];
@@ -470,10 +528,18 @@ export function buildKundeVorgaenge(input: {
     { sterne: number; freitext?: string | null }
   >;
 }): KundePortalDetailItem[] {
-  const angebotByLead = new Map<string, PortalAngebot>();
+  const angeboteByLeadId = new Map<string, PortalAngebot[]>();
   for (const a of input.angebote) {
     const leadId = normPortalId(a.lead_id);
-    if (leadId) angebotByLead.set(leadId, a);
+    if (!leadId) continue;
+    const list = angeboteByLeadId.get(leadId) ?? [];
+    list.push(a);
+    angeboteByLeadId.set(leadId, list);
+  }
+
+  const angebotByLead = new Map<string, PortalAngebot>();
+  for (const [leadId, list] of Array.from(angeboteByLeadId.entries())) {
+    angebotByLead.set(leadId, pickPreferredAngebot(list));
   }
 
   const auftragByLead = new Map<string, PortalAuftrag>();
@@ -487,6 +553,7 @@ export function buildKundeVorgaenge(input: {
 
   const usedAngebotIds = new Set<string>();
   const usedAuftragIds = new Set<string>();
+  const usedLeadIds = new Set<string>();
   const items: KundePortalDetailItem[] = [];
   const feedbackMap = new Map(
     Object.entries(input.mieterFeedbackByLeadId ?? {})
@@ -496,6 +563,8 @@ export function buildKundeVorgaenge(input: {
   for (const lead of input.leads) {
     const leadId = normPortalId(lead.id);
     if (!leadId) continue;
+    usedLeadIds.add(leadId);
+
     const angebot = angebotByLead.get(leadId) ?? null;
     const auftrag = resolveAuftragForLead(
       leadId,
@@ -503,8 +572,15 @@ export function buildKundeVorgaenge(input: {
       auftragByLead,
       auftragByAngebot
     );
+
+    // Alle Angebote/Aufträge zu diesem Lead zählen als „bereits dargestellt“
+    for (const a of angeboteByLeadId.get(leadId) ?? []) {
+      usedAngebotIds.add(a.id);
+    }
     if (angebot) usedAngebotIds.add(angebot.id);
     if (auftrag) usedAuftragIds.add(auftrag.id);
+    const auftragViaLead = auftragByLead.get(leadId);
+    if (auftragViaLead) usedAuftragIds.add(auftragViaLead.id);
 
     const vorgangStatus = resolveVorgangStatusForLead(lead, angebot, auftrag, {
       mieterStatusMode: input.mieterStatusMode,
@@ -529,6 +605,10 @@ export function buildKundeVorgaenge(input: {
 
   for (const angebot of input.angebote) {
     if (usedAngebotIds.has(angebot.id)) continue;
+    const linkedLeadId = normPortalId(angebot.lead_id);
+    // Lead bereits als Vorgang dargestellt → kein zweites Angebot-Kartending
+    if (linkedLeadId && usedLeadIds.has(linkedLeadId)) continue;
+
     const lead = angebot.linkedLead as PortalLead | null;
     const pseudoLead: PortalLead = {
       id: `angebot-only-${angebot.id}`,
@@ -540,6 +620,7 @@ export function buildKundeVorgaenge(input: {
       plz: lead?.plz,
       ...lead,
     };
+    usedAngebotIds.add(angebot.id);
     const vorgangStatus = resolveVorgangStatusForLead(pseudoLead, angebot, null, {
       mieterStatusMode: input.mieterStatusMode,
       hvPortalMode: input.hvPortalMode,
@@ -559,6 +640,11 @@ export function buildKundeVorgaenge(input: {
 
   for (const auftrag of input.auftraege) {
     if (usedAuftragIds.has(auftrag.id)) continue;
+    const linkedLeadId = normPortalId(auftrag.lead_id);
+    if (linkedLeadId && usedLeadIds.has(linkedLeadId)) continue;
+    const linkedAngebotId = normPortalId(auftrag.angebot_id);
+    if (linkedAngebotId && usedAngebotIds.has(linkedAngebotId)) continue;
+
     const lead = auftrag.linkedLead as PortalLead | null;
     const pseudoLead: PortalLead = {
       id: `auftrag-only-${auftrag.id}`,
@@ -570,6 +656,7 @@ export function buildKundeVorgaenge(input: {
       plz: lead?.plz,
       ...lead,
     };
+    usedAuftragIds.add(auftrag.id);
     const vorgangStatus = resolveVorgangStatusForLead(pseudoLead, null, auftrag, {
       mieterStatusMode: input.mieterStatusMode,
       hvPortalMode: input.hvPortalMode,

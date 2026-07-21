@@ -21,7 +21,10 @@ export function OrganisationMeldeMaterial({
   nested = false,
 }: Props) {
   const orgKennung = kunde.org_kennung?.trim() ?? "";
-  const meldeUrl = orgKennung ? buildMeldeUrl(orgKennung) : "";
+  // Öffentlicher Mieter-Link immer Produktions-Domain (nicht Preview/localhost)
+  const meldeUrl = orgKennung
+    ? buildMeldeUrl(orgKennung, undefined, { forPrint: true })
+    : "";
 
   async function copyLink() {
     if (!meldeUrl) return;
@@ -61,11 +64,15 @@ export function OrganisationMeldeMaterial({
           : " Objekt-spezifische Aushänge finden Sie im Objekt-Detail."}
       </p>
 
-      <div className="rounded-[9px] border border-border-default bg-muted/40 px-3 py-2.5">
-        <p className="text-[11.5px] font-bold text-text-tertiary">Melde-Link</p>
-        <p className="mt-0.5 break-all text-[13.5px] font-semibold text-text-primary">
-          {meldeUrl}
-        </p>
+      <div className="flex flex-col gap-1">
+        <span className="text-[11.5px] font-bold tracking-wide text-text-tertiary">
+          Melde-Link
+        </span>
+        <div className="rounded-[9px] border border-border-default bg-[#f3f4f3] px-3 py-2.5">
+          <p className="break-all text-[13.5px] font-semibold text-text-primary">
+            {meldeUrl}
+          </p>
+        </div>
       </div>
 
       <div className="flex flex-wrap gap-2">

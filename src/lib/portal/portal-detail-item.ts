@@ -93,6 +93,14 @@ export type KundePortalDetailItem = {
   meldeFotos?: string[];
   orgFreigabeStatus?: string | null;
   hvMeldungStatus?: string | null;
+  /** Melde-Adresse (Lead / Objekt) */
+  meldeStrasse?: string | null;
+  meldeHausnummer?: string | null;
+  meldePlz?: string | null;
+  meldeOrt?: string | null;
+  meldeSituation?: string | null;
+  meldeBereich?: string | null;
+  meldeZeitraum?: string | null;
 };
 
 export function objektPlzOrt(

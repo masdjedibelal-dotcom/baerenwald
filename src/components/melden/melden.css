@@ -162,28 +162,48 @@
 
 .mieter-wl-page {
   min-height: 100dvh;
-  background: #f2f4f6;
+  background: #fff;
+  /* HV-Akzent für FunnelFooter / Tiles wie Website-Funnel */
+  --fl-accent: var(--org-primary, #2e7d52);
+  --fl-accent-dark: var(--org-primary-dk, #1a3d2b);
+  --fl-accent-light: var(--org-primary-soft, #eaf3de);
 }
 
 .mieter-wl-shell {
-  max-width: 620px;
+  max-width: none;
   margin: 0 auto;
   min-height: 100dvh;
   display: flex;
   flex-direction: column;
   background: #fff;
-  box-shadow: 0 16px 40px -12px rgba(0, 0, 0, 0.12);
+  box-shadow: none;
+}
+
+/* Flacher Funnel wie /rechner — kein Desktop-„iframe“-Rahmen */
+.mieter-wl-page--funnel .mieter-wl-shell {
+  max-width: none;
+  border-radius: 0;
+  border: none;
+  overflow: visible;
+}
+
+.mieter-wl-page--funnel .mieter-wl-body {
+  background: #fff;
+  padding: 0 0 calc(6.5rem + env(safe-area-inset-bottom, 0px));
 }
 
 @media (min-width: 720px) {
-  .mieter-wl-page {
+  .mieter-wl-page:not(.mieter-wl-page--funnel) {
     padding: 34px 20px 48px;
+    background: #f2f4f6;
   }
-  .mieter-wl-shell {
+  .mieter-wl-page:not(.mieter-wl-page--funnel) .mieter-wl-shell {
+    max-width: 620px;
     min-height: auto;
     border-radius: 16px;
     border: 0.5px solid rgba(0, 0, 0, 0.08);
     overflow: hidden;
+    box-shadow: 0 16px 40px -12px rgba(0, 0, 0, 0.12);
   }
 }
 
@@ -273,8 +293,22 @@
 
 .mieter-wl-body {
   flex: 1;
-  background: #f6f7f8;
+  background: #fff;
   padding: 18px 16px 20px;
+}
+
+.mieter-wl-objekt-banner {
+  margin: 0 auto;
+  max-width: 36rem;
+  padding: 1rem 1.5rem 0;
+}
+
+.mieter-wl-objekt-banner__card {
+  border-radius: 12px;
+  border: 1px solid rgba(30, 28, 26, 0.08);
+  background: var(--org-primary-soft, #f7f8fa);
+  padding: 0.75rem 1rem;
+  font-size: 13px;
 }
 
 .mieter-wl-footer {

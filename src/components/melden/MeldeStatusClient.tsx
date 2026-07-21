@@ -9,7 +9,6 @@ import {
   MieterWlFrame,
 } from "@/components/melden/MieterWlFrame";
 import { MieterStgTimeline } from "@/components/melden/MieterStgTimeline";
-import type { MeldeLang } from "@/lib/melden/melde-i18n";
 import {
   MIETER_WL_STATUS,
   mieterStgActiveCopy,
@@ -69,7 +68,7 @@ export function MeldeStatusClient({
   beschreibung = null,
   statusLabel,
 }: Props) {
-  const [lang, setLang] = useState<MeldeLang>("de");
+  const lang = "de" as const;
   const [stufe] = useState(initialStufe);
   const [slots, setSlots] = useState<Slot[]>([]);
   const [bestaetigt, setBestaetigt] = useState<Slot | null>(null);
@@ -139,7 +138,7 @@ export function MeldeStatusClient({
         setMsg(json.error ?? "Fehler");
         return;
       }
-      setMsg(lang === "en" ? "Appointment confirmed." : "Termin bestätigt.");
+      setMsg("Termin bestätigt.");
       await loadSlots();
     } finally {
       setBusy(false);
@@ -178,7 +177,7 @@ export function MeldeStatusClient({
         return;
       }
       setFeedbackDone(true);
-      setMsg(lang === "en" ? "Thanks for your feedback!" : "Danke für Ihr Feedback!");
+      setMsg("Danke für Ihr Feedback!");
     } finally {
       setBusy(false);
     }
@@ -189,11 +188,11 @@ export function MeldeStatusClient({
   const t = MIETER_WL_STATUS;
 
   return (
-    <MieterWlFrame brand={brand} lang={lang} onLangChange={setLang}>
+    <MieterWlFrame brand={brand}>
       <div className="space-y-4">
         <div>
           <h1 className="mieter-wl-objekt-title" style={{ fontSize: 21 }}>
-            {lang === "en" ? t.title_en : t.title_de}
+            {t.title_de}
           </h1>
           <p className="text-[13px] text-[#4a5c54] mt-1">{metaLine}</p>
           <p className="mt-3 text-[14px] font-semibold text-[#16201B]">
@@ -213,7 +212,7 @@ export function MeldeStatusClient({
           <MieterWlCard>
             <div className="p-4">
               <p className="text-[14.5px] font-bold text-[#16201B]">
-                {lang === "en" ? "Your appointment" : "Ihr Termin"}
+                {"Ihr Termin"}
               </p>
               <p className="mt-1 text-sm font-semibold text-[color:var(--org-primary,#2E7D52)]">
                 {fmtSlot(bestaetigt.slot_beginn)}
@@ -224,12 +223,11 @@ export function MeldeStatusClient({
           <MieterWlCard>
             <div className="p-4 space-y-3">
               <p className="text-[14.5px] font-bold text-[#16201B]">
-                {lang === "en" ? "Appointment" : "Terminvorschlag"}
+                {"Terminvorschlag"}
               </p>
               <p className="text-[12.5px] text-[#4a5c54] leading-relaxed">
-                {lang === "en"
-                  ? "The assigned contractor suggests the following times. Please choose one."
-                  : "Der beauftragte Betrieb schlägt folgende Zeiten vor. Bitte wählen Sie einen Termin."}
+                Der beauftragte Betrieb schlägt folgende Zeiten vor. Bitte wählen
+                Sie einen Termin.
               </p>
               <ul className="space-y-2">
                 {vorgeschlagene.map((s) => (
@@ -247,7 +245,7 @@ export function MeldeStatusClient({
                         disabled={busy}
                         onClick={() => void confirmSlot(s.id)}
                       >
-                        {lang === "en" ? "Confirm" : "Bestätigen"}
+                        {"Bestätigen"}
                       </button>
                       <button
                         type="button"
@@ -255,7 +253,7 @@ export function MeldeStatusClient({
                         disabled={busy}
                         onClick={() => void declineSlot(s.id)}
                       >
-                        {lang === "en" ? "Doesn't fit" : "Passt nicht"}
+                        {"Passt nicht"}
                       </button>
                     </div>
                   </li>
@@ -266,14 +264,14 @@ export function MeldeStatusClient({
         ) : null}
 
         {erledigt && anhaenge.length > 0 ? (
-          <DokumenteTabelle heading={lang === "en" ? "Attachments" : "Anhänge"} dokumente={anhaenge} />
+          <DokumenteTabelle heading={"Anhänge"} dokumente={anhaenge} />
         ) : null}
 
         {erledigt && !feedbackDone ? (
           <MieterWlCard>
             <div className="p-4 space-y-3">
               <p className="text-[14.5px] font-bold text-[#16201B]">
-                {lang === "en" ? "How was the service?" : "Wie war der Service?"}
+                {"Wie war der Service?"}
               </p>
               <form onSubmit={submitFeedback} className="space-y-3">
                 <div className="flex gap-1">
@@ -295,7 +293,7 @@ export function MeldeStatusClient({
                 <textarea
                   className="input-field w-full min-h-[72px]"
                   placeholder={
-                    lang === "en" ? "Optional note" : "Optional: Anmerkung"
+                    "Optional: Anmerkung"
                   }
                   value={freitext}
                   onChange={(e) => setFreitext(e.target.value)}
@@ -305,7 +303,7 @@ export function MeldeStatusClient({
                   className="mieter-wl-btn mieter-wl-btn--primary"
                   disabled={busy || sterne < 1}
                 >
-                  {lang === "en" ? "Send feedback" : "Feedback senden"}
+                  {"Feedback senden"}
                 </button>
               </form>
             </div>
@@ -319,11 +317,11 @@ export function MeldeStatusClient({
         ) : null}
 
         <p className="text-[12.5px] text-[#4a5c54] leading-relaxed">
-          {lang === "en" ? t.hello_en : t.hello_de}
+          {t.hello_de}
           {firstName}
           {" – "}
           {brand.name}
-          {lang === "en" ? t.keep_updated_en : t.keep_updated_de}
+          {t.keep_updated_de}
         </p>
       </div>
     </MieterWlFrame>

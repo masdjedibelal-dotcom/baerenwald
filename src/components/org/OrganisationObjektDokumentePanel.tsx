@@ -1,104 +1,185 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useMemo, useState } from "react";
 
-import { portalToastError } from "@/lib/shared/portal-toast";
+import { DokumenteTabelle } from "@/components/shared/DokumenteTabelle";
+import {
+  PORTAL_LIST_PAGE_SIZE,
+  PortalListPagination,
+} from "@/components/shared/PortalListPagination";
+import { meldeKategorieLabel } from "@/lib/org/melde-kategorien";
+import { meldeKategorieFromLead } from "@/lib/org/org-eingang-utils";
+import type { OrganisationLead, OrganisationObjekt } from "@/lib/org/types";
+import { PORTAL_C } from "@/lib/portal2/tokens";
 
-type Dok = {
+export type ObjektDokumentEintrag = {
   id: string;
-  kategorie: string;
-  titel: string;
-  ablauf_datum?: string | null;
-  storage_url?: string | null;
+  name: string;
+  subtitle?: string;
+  datum?: string;
+  href: string;
 };
 
-const KATS = [
-  { id: "versicherung", label: "Versicherung" },
-  { id: "vertrag", label: "Vertrag" },
-  { id: "protokoll", label: "Protokoll" },
-  { id: "grundbuch", label: "Grundbuch" },
-  { id: "sonstiges", label: "Sonstiges" },
-];
+type VorgangDokGruppe = {
+  leadId: string;
+  title: string;
+  subtitle: string;
+  dokumente: ObjektDokumentEintrag[];
+};
 
-export function OrganisationObjektDokumentePanel({ objektId }: { objektId: string }) {
-  const [items, setItems] = useState<Dok[]>([]);
-  const [titel, setTitel] = useState("");
-  const [kategorie, setKategorie] = useState("sonstiges");
-  const [ablauf, setAblauf] = useState("");
-  const [file, setFile] = useState<File | null>(null);
-  const [busy, setBusy] = useState(false);
+type Props = {
+  objekt: OrganisationObjekt;
+  leads: OrganisationLead[];
+  dokumenteByLeadId?: Record<string, ObjektDokumentEintrag[]>;
+  onOpenVorgang?: (leadId: string) => void;
+};
 
-  const load = useCallback(async () => {
-    const res = await fetch(`/api/org/objekte/dokumente?objektId=${objektId}`);
-    const json = (await res.json()) as { dokumente?: Dok[] };
-    setItems(json.dokumente ?? []);
-  }, [objektId]);
+function buildSubtitle(lead: OrganisationLead, objektTitel: string): string {
+  const adresse = [lead.strasse, lead.hausnummer].filter(Boolean).join(" ");
+  const we = lead.melder_einheit?.trim()
+    ? /^(WE|Whg)/i.test(lead.melder_einheit.trim())
+      ? lead.melder_einheit.trim()
+      : `WE ${lead.melder_einheit.trim()}`
+    : undefined;
+  const person = lead.melder_name?.trim() || undefined;
+  return [adresse || objektTitel || "Objekt", we, person]
+    .filter(Boolean)
+    .join(" · ");
+}
 
-  useEffect(() => {
-    void load();
-  }, [load]);
+export function OrganisationObjektDokumentePanel({
+  objekt,
+  leads,
+  dokumenteByLeadId = {},
+  onOpenVorgang,
+}: Props) {
+  const [listPage, setListPage] = useState(1);
 
-  async function upload(e: React.FormEvent) {
-    e.preventDefault();
-    setBusy(true);
-    try {
-      const fd = new FormData();
-      fd.set("objektId", objektId);
-      fd.set("titel", titel);
-      fd.set("kategorie", kategorie);
-      if (ablauf) fd.set("ablaufDatum", ablauf);
-      if (file) fd.set("file", file);
-      const res = await fetch("/api/org/objekte/dokumente", { method: "POST", body: fd });
-      const json = (await res.json()) as { error?: string };
-      if (!res.ok) throw new Error(json.error ?? "Fehler");
-      setTitel("");
-      setAblauf("");
-      setFile(null);
-      await load();
-    } catch (err) {
-      portalToastError(err instanceof Error ? err.message : "Fehler");
-    } finally {
-      setBusy(false);
+  const gruppen = useMemo((): VorgangDokGruppe[] => {
+    const rows: VorgangDokGruppe[] = [];
+    for (const lead of leads) {
+      const docs = dokumenteByLeadId[lead.id] ?? [];
+      if (docs.length === 0) continue;
+      const kat = meldeKategorieLabel(
+        meldeKategorieFromLead(lead) ?? undefined
+      );
+      rows.push({
+        leadId: lead.id,
+        title: kat,
+        subtitle: buildSubtitle(lead, objekt.titel),
+        dokumente: docs,
+      });
     }
+    rows.sort((a, b) => {
+      const da = a.dokumente[0]?.datum ?? "";
+      const db = b.dokumente[0]?.datum ?? "";
+      return db.localeCompare(da);
+    });
+    return rows;
+  }, [leads, dokumenteByLeadId, objekt.titel]);
+
+  const totalDocs = useMemo(
+    () => gruppen.reduce((n, g) => n + g.dokumente.length, 0),
+    [gruppen]
+  );
+
+  const totalPages = Math.max(
+    1,
+    Math.ceil(gruppen.length / PORTAL_LIST_PAGE_SIZE)
+  );
+  const safePage = Math.min(listPage, totalPages);
+  const pageGruppen = gruppen.slice(
+    (safePage - 1) * PORTAL_LIST_PAGE_SIZE,
+    safePage * PORTAL_LIST_PAGE_SIZE
+  );
+
+  if (gruppen.length === 0) {
+    return (
+      <div className="rounded-xl border border-dashed border-border-light bg-muted/20 px-4 py-10 text-center">
+        <p className="portal-text-body text-text-secondary">
+          Noch keine Dokumente zu Vorgängen an diesem Objekt.
+        </p>
+        <p
+          className="mt-1.5 text-[12.5px] leading-snug"
+          style={{ color: PORTAL_C.sub }}
+        >
+          Angebote, Protokolle und Unterlagen erscheinen hier, sobald sie im
+          Vorgang vorliegen.
+        </p>
+      </div>
+    );
   }
 
   return (
-    <div className="space-y-4">
-      <p className="text-sm font-semibold text-text-primary">Objekt-Dokumente</p>
-      <p className="text-xs text-text-tertiary">Erinnerung 60 und 30 Tage vor Ablauf im Kalender.</p>
-      <ul className="space-y-2 text-sm">
-        {items.map((d) => (
-          <li key={d.id} className="flex flex-wrap justify-between gap-2 rounded-lg bg-muted/40 px-3 py-2">
-            <span>
-              <span className="tag bg-muted text-text-secondary mr-1">{d.kategorie}</span>
-              {d.titel}
-            </span>
-            <span className="text-text-secondary">
-              {d.ablauf_datum ? `Ablauf ${d.ablauf_datum}` : "—"}
-              {d.storage_url ? (
-                <a href={d.storage_url} target="_blank" rel="noopener noreferrer" className="ml-2 text-accent">
-                  Öffnen
-                </a>
+    <div className="space-y-0 overflow-hidden rounded-xl border border-border-default bg-white">
+      <div className="flex items-baseline justify-between gap-2 border-b border-border-light px-3.5 py-3 sm:px-4">
+        <p className="font-[family-name:var(--font-display)] text-sm font-bold text-text-primary">
+          Dokumente
+        </p>
+        <p className="text-xs text-text-tertiary">
+          {totalDocs} {totalDocs === 1 ? "Datei" : "Dateien"} · {gruppen.length}{" "}
+          {gruppen.length === 1 ? "Vorgang" : "Vorgänge"}
+        </p>
+      </div>
+
+      <div className="flex flex-col gap-0 divide-y divide-border-light">
+        {pageGruppen.map((g) => (
+          <section key={g.leadId} className="px-3.5 py-4 sm:px-4">
+            <div className="mb-2.5 flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <p className="truncate text-[13.5px] font-semibold text-text-primary">
+                  {g.title}
+                </p>
+                <p
+                  className="mt-0.5 truncate text-[12.5px]"
+                  style={{ color: PORTAL_C.sub }}
+                >
+                  {g.subtitle}
+                </p>
+              </div>
+              {onOpenVorgang ? (
+                <button
+                  type="button"
+                  onClick={() => onOpenVorgang(g.leadId)}
+                  className="shrink-0 rounded-full border border-border-default px-2.5 py-1 text-[12px] font-semibold text-accent hover:bg-accent/5"
+                >
+                  Vorgang ›
+                </button>
               ) : null}
-            </span>
-          </li>
+            </div>
+            <DokumenteTabelle
+              heading=""
+              className="!border-0 !pt-0"
+              emptyText="Keine Dokumente."
+              dokumente={g.dokumente.map((d) => ({
+                id: d.id,
+                name: d.subtitle ? `${d.name} — ${d.subtitle}` : d.name,
+                datum: d.datum,
+                href: d.href,
+              }))}
+            />
+          </section>
         ))}
-      </ul>
-      <form onSubmit={upload} className="space-y-2 border-t border-border-light pt-4">
-        <input className="input-field w-full" placeholder="Titel" value={titel} onChange={(e) => setTitel(e.target.value)} required />
-        <select className="input-field w-full" value={kategorie} onChange={(e) => setKategorie(e.target.value)}>
-          {KATS.map((k) => (
-            <option key={k.id} value={k.id}>
-              {k.label}
-            </option>
-          ))}
-        </select>
-        <input type="date" className="input-field w-full" value={ablauf} onChange={(e) => setAblauf(e.target.value)} />
-        <input type="file" className="text-sm" onChange={(e) => setFile(e.target.files?.[0] ?? null)} />
-        <button type="submit" className="btn-pill-outline portal-btn-compact" disabled={busy}>
-          Dokument speichern
-        </button>
-      </form>
+      </div>
+
+      {gruppen.length > PORTAL_LIST_PAGE_SIZE ? (
+        <PortalListPagination
+          totalItems={gruppen.length}
+          itemLabel={gruppen.length === 1 ? "Vorgang" : "Vorgänge"}
+          currentPage={safePage}
+          totalPages={totalPages}
+          onPageChange={setListPage}
+        />
+      ) : (
+        <div className="border-t border-border-light px-3 py-2.5 sm:px-4">
+          <p className="portal-text-meta text-text-secondary">
+            <span className="font-medium text-text-primary">
+              {gruppen.length}
+            </span>{" "}
+            {gruppen.length === 1 ? "Vorgang" : "Vorgänge"}
+          </p>
+        </div>
+      )}
     </div>
   );
 }

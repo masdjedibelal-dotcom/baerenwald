@@ -55,7 +55,7 @@ export function HvMeldungListActions({ lead, kunde, onUpdated }: Props) {
 
   const act = async (aktion: Aktion) => {
     if (aktion === "kleinreparatur_freigeben" && !kleinOk) {
-      setError("Kleinreparatur für diese Meldung nicht verfügbar.");
+      setError("Sofort beauftragen ist für diese Meldung nicht verfügbar.");
       return;
     }
     setBusy(true);

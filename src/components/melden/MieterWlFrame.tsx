@@ -4,7 +4,6 @@ import Image from "next/image";
 import type { ReactNode } from "react";
 
 import { PortalBrandRoot } from "@/components/shared/PortalBrandRoot";
-import type { MeldeLang } from "@/lib/melden/melde-i18n";
 import {
   formatMieterWlFooterContact,
   mieterWlFooterNoreply,
@@ -17,57 +16,52 @@ import "./melden.css";
 
 export type MieterWlFrameProps = {
   brand: MieterWlBrand;
-  lang: MeldeLang;
-  onLangChange?: (lang: MeldeLang) => void;
   children: ReactNode;
   /** Ohne äußeren Desktop-Padding (z. B. Fehler mittig) */
   compact?: boolean;
   className?: string;
   /** Footer ausblenden */
   hideFooter?: boolean;
+  /**
+   * Flaches Funnel-Layout wie /rechner (kein Desktop-Kartenrahmen).
+   * Standard für MeldeFormular.
+   */
+  variant?: "default" | "funnel";
 };
 
 /**
- * Mock `mieterWLFrame` + `wlHeader` / `wlFooter` / Branding A2.
+ * HV-Branding-Shell für Mieter-Melde (Header + optional Footer).
+ * Sprache nur Deutsch — kein Sprachtoggle.
  */
 export function MieterWlFrame({
   brand,
-  lang,
-  onLangChange,
   children,
   compact,
   className,
   hideFooter,
+  variant = "default",
 }: MieterWlFrameProps) {
   return (
     <PortalBrandRoot
-      className={cn("mieter-wl-page", className)}
+      className={cn(
+        "mieter-wl-page",
+        variant === "funnel" && "mieter-wl-page--funnel",
+        className
+      )}
       primary={brand.primary}
       primaryDk={brand.primaryDk}
       soft={brand.soft}
     >
       <div className={cn("mieter-wl-shell", compact && "mieter-wl-shell--compact")}>
-        <MieterWlHeader
-          brand={brand}
-          lang={lang}
-          onLangChange={onLangChange}
-        />
+        <MieterWlHeader brand={brand} />
         <div className="mieter-wl-body">{children}</div>
-        {!hideFooter ? <MieterWlFooter brand={brand} lang={lang} /> : null}
+        {!hideFooter ? <MieterWlFooter brand={brand} /> : null}
       </div>
     </PortalBrandRoot>
   );
 }
 
-export function MieterWlHeader({
-  brand,
-  lang,
-  onLangChange,
-}: {
-  brand: MieterWlBrand;
-  lang: MeldeLang;
-  onLangChange?: (lang: MeldeLang) => void;
-}) {
+export function MieterWlHeader({ brand }: { brand: MieterWlBrand }) {
   const letter = mieterWlLogoLetter(brand);
   const sub = brand.sub?.trim() || "Hausverwaltung";
 
@@ -91,43 +85,20 @@ export function MieterWlHeader({
         <p className="mieter-wl-org-name">{brand.name}</p>
         <p className="mieter-wl-org-sub">{sub}</p>
       </div>
-      {onLangChange ? (
-        <div className="mieter-wl-lang" role="group" aria-label="Language">
-          {(["de", "en"] as const).map((l) => (
-            <button
-              key={l}
-              type="button"
-              className={cn(
-                "mieter-wl-lang-btn",
-                lang === l && "mieter-wl-lang-btn--active"
-              )}
-              onClick={() => onLangChange(l)}
-            >
-              {l}
-            </button>
-          ))}
-        </div>
-      ) : null}
     </header>
   );
 }
 
-export function MieterWlFooter({
-  brand,
-  lang,
-}: {
-  brand: MieterWlBrand;
-  lang: MeldeLang;
-}) {
+export function MieterWlFooter({ brand }: { brand: MieterWlBrand }) {
   return (
     <footer className="mieter-wl-footer">
-      <p>{formatMieterWlFooterContact(brand, lang)}</p>
-      <p className="mieter-wl-footer-noreply">{mieterWlFooterNoreply(lang)}</p>
+      <p>{formatMieterWlFooterContact(brand, "de")}</p>
+      <p className="mieter-wl-footer-noreply">{mieterWlFooterNoreply("de")}</p>
     </footer>
   );
 }
 
-/** Mock `wlCard` */
+/** @deprecated Card-Wrapper erzeugt den iframe-Look — nicht im Funnel nutzen. */
 export function MieterWlCard({
   children,
   className,

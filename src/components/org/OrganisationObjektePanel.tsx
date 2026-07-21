@@ -37,6 +37,18 @@ type Props = {
   /** Für Aushang-Branding (A2 / E3) */
   kunde?: OrganisationKunde | null;
   onRefresh: () => void;
+  /** Öffnet einen Vorgang in der Vorgänge-Liste. */
+  onOpenVorgang?: (leadId: string) => void;
+  dokumenteByLeadId?: Record<
+    string,
+    Array<{
+      id: string;
+      name: string;
+      subtitle?: string;
+      datum?: string;
+      href: string;
+    }>
+  >;
 };
 
 type Mode =
@@ -57,6 +69,8 @@ export function OrganisationObjektePanel({
   orgKennung,
   kunde,
   onRefresh,
+  onOpenVorgang,
+  dokumenteByLeadId = {},
 }: Props) {
   const [mode, setMode] = useState<Mode>({ kind: "list" });
   const [selected, setSelected] = useState<string[]>([]);
@@ -66,7 +80,10 @@ export function OrganisationObjektePanel({
   const defaultHv =
     kunde?.org_anzeigename?.trim() || kunde?.name?.trim() || "";
 
-  const offenById = useMemo(() => countOffeneByObjektId(leads), [leads]);
+  const offenById = useMemo(
+    () => countOffeneByObjektId(leads, objekte),
+    [leads, objekte]
+  );
 
   const activeObjekt =
     mode.kind === "detail"
@@ -301,6 +318,8 @@ export function OrganisationObjektePanel({
           onDelete={() => void deleteObjekt(activeObjekt)}
           onEinladen={() => setEinladenObjektId(activeObjekt.id)}
           onRefresh={onRefresh}
+          onOpenVorgang={onOpenVorgang}
+          dokumenteByLeadId={dokumenteByLeadId}
         />
         {einladenObjektId && orgKennung ? (
           <PortalModalEinladen

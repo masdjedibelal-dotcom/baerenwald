@@ -84,7 +84,7 @@ export const FUNNEL_VARIANT: Record<FunnelChannel, FunnelVariantConfig> = {
       objektNeu: false,
       mieter: "hidden",
       mieterNeu: false,
-      einheit: true,
+      einheit: false,
     },
     include: {
       kundentyp: false,

@@ -1,16 +1,54 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useSearchParams } from "next/navigation";
+import { useMemo, useState } from "react";
 
 import { assertPortalEmailAllowed } from "@/app/actions/assert-portal-email-allowed";
 import { portalAuthCallbackUrl } from "@/lib/portal/portal-auth-url";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 
-export function PortalRegisterForm() {
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [telefon, setTelefon] = useState("");
+export type PortalRegisterPrefill = {
+  name?: string;
+  email?: string;
+  telefon?: string;
+  /** Felder Name/E-Mail/Telefon nur anzeigen, nicht ändern */
+  locked?: boolean;
+};
+
+type Props = {
+  /** Server-Prefill (Melde-Flow); Query-Params greifen zusätzlich */
+  prefill?: PortalRegisterPrefill;
+};
+
+/**
+ * MeinBärenwald-Registrierung.
+ * Melde-Flow: Daten vorausgefüllt & gesperrt, nur Passwort + Checkboxen.
+ */
+export function PortalRegisterForm({ prefill }: Props) {
+  const searchParams = useSearchParams();
+
+  const fromQuery = useMemo((): PortalRegisterPrefill => {
+    const locked =
+      searchParams.get("locked") === "1" ||
+      searchParams.get("from") === "melde";
+    return {
+      name: searchParams.get("name")?.trim() || undefined,
+      email: searchParams.get("email")?.trim() || undefined,
+      telefon: searchParams.get("telefon")?.trim() || undefined,
+      locked,
+    };
+  }, [searchParams]);
+
+  const locked = Boolean(prefill?.locked || fromQuery.locked);
+  const initialName = prefill?.name?.trim() || fromQuery.name || "";
+  const initialEmail = prefill?.email?.trim() || fromQuery.email || "";
+  const initialTelefon =
+    prefill?.telefon?.trim() || fromQuery.telefon || "";
+
+  const [name, setName] = useState(initialName);
+  const [email, setEmail] = useState(initialEmail);
+  const [telefon, setTelefon] = useState(initialTelefon);
   const [password, setPassword] = useState("");
   const [datenschutz, setDatenschutz] = useState(false);
   const [agb, setAgb] = useState(false);
@@ -19,6 +57,11 @@ export function PortalRegisterForm() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+
+  const nextPath = searchParams.get("next") || "/portal";
+  const loginHref = `/portal/login?next=${encodeURIComponent(nextPath)}${
+    email.trim() ? `&email=${encodeURIComponent(email.trim())}` : ""
+  }`;
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -52,7 +95,9 @@ export function PortalRegisterForm() {
       email: trimmedEmail,
       password,
       options: {
-        emailRedirectTo: portalAuthCallbackUrl(),
+        emailRedirectTo: portalAuthCallbackUrl(
+          typeof nextPath === "string" ? nextPath : undefined
+        ),
         data: {
           name: name.trim(),
           telefon: telefon.trim() || null,
@@ -82,7 +127,7 @@ export function PortalRegisterForm() {
           Klicke auf den Bestätigungslink, danach kannst du dich anmelden.
         </p>
         <Link
-          href="/portal/login"
+          href={loginHref}
           className="btn-pill-primary portal-btn inline-flex !px-4 !py-2.5"
         >
           Zum Login
@@ -91,8 +136,19 @@ export function PortalRegisterForm() {
     );
   }
 
+  const fieldClass = locked
+    ? "portal-input w-full rounded-xl border border-border-default bg-muted/40 px-3 py-3 text-text-secondary"
+    : "portal-input w-full rounded-xl border border-border-default bg-surface-card px-3 py-3 focus:border-accent";
+
   return (
     <form onSubmit={onSubmit} className="space-y-4">
+      {locked ? (
+        <p className="rounded-lg border border-border-light bg-muted/30 px-3 py-2.5 text-[13px] leading-relaxed text-text-secondary">
+          Ihre Angaben aus der Schadenmeldung sind übernommen. Bitte nur noch
+          ein Passwort vergeben und die Zustimmung erteilen.
+        </p>
+      ) : null}
+
       {error ? (
         <p className="rounded-lg bg-red-50 px-3 py-2 portal-text-body text-red-800">{error}</p>
       ) : null}
@@ -104,8 +160,11 @@ export function PortalRegisterForm() {
           autoComplete="name"
           required
           value={name}
-          onChange={(e) => setName(e.target.value)}
-          className="portal-input w-full rounded-xl border border-border-default bg-surface-card px-3 py-3 focus:border-accent"
+          onChange={(e) => {
+            if (!locked) setName(e.target.value);
+          }}
+          readOnly={locked}
+          className={fieldClass}
         />
       </label>
 
@@ -116,22 +175,33 @@ export function PortalRegisterForm() {
           autoComplete="email"
           required
           value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          className="portal-input w-full rounded-xl border border-border-default bg-surface-card px-3 py-3 focus:border-accent"
+          onChange={(e) => {
+            if (!locked) setEmail(e.target.value);
+          }}
+          readOnly={locked}
+          className={fieldClass}
         />
       </label>
 
       <label className="block space-y-1.5">
         <span className="portal-form-label">
-          Telefon <span className="text-text-tertiary">(optional)</span>
+          Telefon{" "}
+          {!locked ? (
+            <span className="text-text-tertiary">(optional)</span>
+          ) : null}
         </span>
         <input
           type="tel"
           autoComplete="tel"
           value={telefon}
-          onChange={(e) => setTelefon(e.target.value)}
-          placeholder="Für die Verknüpfung mit bestehenden Anfragen"
-          className="portal-input w-full rounded-xl border border-border-default bg-surface-card px-3 py-3 focus:border-accent"
+          onChange={(e) => {
+            if (!locked) setTelefon(e.target.value);
+          }}
+          readOnly={locked}
+          placeholder={
+            locked ? undefined : "Für die Verknüpfung mit bestehenden Anfragen"
+          }
+          className={fieldClass}
         />
       </label>
 
@@ -209,7 +279,7 @@ export function PortalRegisterForm() {
 
       <button
         type="submit"
-        disabled={loading}
+        disabled={loading || (locked && (!name.trim() || !email.trim()))}
         className="btn-pill-primary portal-btn w-full !py-3 disabled:opacity-60"
       >
         {loading ? "Wird registriert…" : "Konto anlegen"}
@@ -218,7 +288,7 @@ export function PortalRegisterForm() {
       <p className="border-t border-border-light pt-4 text-center portal-text-body text-text-secondary">
         Bereits registriert?{" "}
         <Link
-          href="/portal/login"
+          href={loginHref}
           className="font-semibold text-accent underline-offset-2 hover:underline"
         >
           Anmelden

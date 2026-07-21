@@ -40,7 +40,7 @@ export async function PATCH(req: Request) {
   if (body.kleinreparatur_schwelle_eur !== undefined) {
     const v = Number(body.kleinreparatur_schwelle_eur);
     patch.kleinreparatur_schwelle_eur =
-      Number.isFinite(v) && v > 0 ? Math.min(v, 500) : 200;
+      Number.isFinite(v) && v > 0 ? Math.min(v, 2000) : 200;
   }
 
   if (!Object.keys(patch).length) {

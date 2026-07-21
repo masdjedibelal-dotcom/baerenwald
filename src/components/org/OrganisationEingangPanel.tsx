@@ -19,6 +19,7 @@ import {
   meldeFotosFromLead,
   meldeKategorieFromLead,
 } from "@/lib/org/org-eingang-utils";
+import { leadBelongsToObjekt } from "@/lib/org/match-lead-objekt";
 import type {
   OrganisationKunde,
   OrganisationLead,
@@ -498,8 +499,9 @@ export function OrganisationEingangPanel({
 
   const filtered = useMemo(() => {
     return eingang.filter((lead) => {
-      if (objektFilter !== "alle" && lead.kunde_objekt_id !== objektFilter) {
-        return false;
+      if (objektFilter !== "alle") {
+        const obj = objekte.find((o) => o.id === objektFilter);
+        if (!obj || !leadBelongsToObjekt(lead, obj)) return false;
       }
       if (onlyNotfall && !isMeldeNotfall(lead)) return false;
       const hv = lead.hv_meldung_status ?? "neu";
@@ -512,7 +514,7 @@ export function OrganisationEingangPanel({
       }
       return true;
     });
-  }, [eingang, objektFilter, onlyNotfall, statusFilter]);
+  }, [eingang, objektFilter, objekte, onlyNotfall, statusFilter]);
 
   const selected =
     filtered.find((l) => l.id === selectedId) ??

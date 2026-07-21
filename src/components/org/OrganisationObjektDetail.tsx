@@ -1,29 +1,52 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { AlertTriangle } from "lucide-react";
 
 import { OrganisationObjektCover } from "@/components/org/OrganisationObjektCover";
 import { OrganisationObjektDokumentePanel } from "@/components/org/OrganisationObjektDokumentePanel";
 import { OrganisationObjektEinheitenBewohnerPanel } from "@/components/org/OrganisationObjektEinheitenBewohnerPanel";
-import { OrganisationObjektKontaktePanel } from "@/components/org/OrganisationObjektKontaktePanel";
 import { OrganisationObjektMieterTab } from "@/components/org/OrganisationObjektMieterTab";
+import { PortalListCard } from "@/components/shared/PortalListCard";
+import {
+  EinstellungenCard,
+  EinstellungenEdField,
+  EinstellungenEuroInput,
+  EinstellungenInfoBox,
+} from "@/components/shared/PortalEinstellungenUi";
 import { cn } from "@/lib/utils";
+import { leadBelongsToObjekt } from "@/lib/org/match-lead-objekt";
+import { meldeKategorieLabel } from "@/lib/org/melde-kategorien";
+import {
+  isMeldeNotfall,
+  meldeKategorieFromLead,
+} from "@/lib/org/org-eingang-utils";
 import type { OrganisationLead, OrganisationObjekt } from "@/lib/org/types";
 import {
+  EINSTELLUNGEN_SCHWELLE_PRESETS,
+} from "@/lib/portal2/einstellungen";
+import {
   decodeObjektMeta,
+  encodeObjektMeta,
   formatObjektIdKurz,
   formatObjektPlzOrt,
   formatObjektStrasse,
   formatObjektTypLine,
-  formatSchwelleEur,
-  OBJ_AUTOPASS_DETAIL_DESC,
-  OBJ_AUTOPASS_OFFENER_PUNKT,
   OBJ_DETAIL_TABS,
   OBJ_REGELN_FALLBACK,
+  OBJ_SCHWELLE_INFO,
+  OBJ_SCHWELLE_WIZARD_DESC,
+  OBJ_SCHWELLE_WIZARD_TITLE,
   parseEinheitenCount,
   type ObjDetailTabId,
 } from "@/lib/portal2/objekte";
+import { PORTAL_C } from "@/lib/portal2/tokens";
 import { orgPortalToast, portalToastError } from "@/lib/shared/portal-toast";
+import {
+  plattformStatusLabel,
+  plattformStatusPillClass,
+  resolvePlattformStatus,
+} from "@/lib/vorgang/plattform-status";
 
 type Props = {
   objekt: OrganisationObjekt;
@@ -38,6 +61,18 @@ type Props = {
   onDelete: () => void;
   onEinladen: () => void;
   onRefresh: () => void;
+  /** Öffnet den Vorgang in der Listenansicht (Vorgänge). */
+  onOpenVorgang?: (leadId: string) => void;
+  dokumenteByLeadId?: Record<
+    string,
+    Array<{
+      id: string;
+      name: string;
+      subtitle?: string;
+      datum?: string;
+      href: string;
+    }>
+  >;
 };
 
 function ObjCard({
@@ -81,20 +116,48 @@ export function OrganisationObjektDetail({
   onDelete,
   onEinladen,
   onRefresh,
+  onOpenVorgang,
+  dokumenteByLeadId = {},
 }: Props) {
   const [tab, setTab] = useState<ObjDetailTabId>("stamm");
   const [schwelle, setSchwelle] = useState(() =>
     objekt.freigabe_schwelle_eur != null
-      ? String(objekt.freigabe_schwelle_eur)
-      : "500"
+      ? Number(objekt.freigabe_schwelle_eur)
+      : 500
   );
-  const [busySchwelle, setBusySchwelle] = useState(false);
-  const [autopassUi, setAutopassUi] = useState(false);
+  const schwelleTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const meta = useMemo(
     () => decodeObjektMeta(objekt.notizen_intern),
     [objekt.notizen_intern]
   );
+
+  const [kontaktName, setKontaktName] = useState(meta.kontakt ?? "");
+  const [kontaktTel, setKontaktTel] = useState(meta.tel ?? "");
+  const [kontaktEmail, setKontaktEmail] = useState(meta.email ?? "");
+  const kontaktTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    setKontaktName(meta.kontakt ?? "");
+    setKontaktTel(meta.tel ?? "");
+    setKontaktEmail(meta.email ?? "");
+  }, [meta.kontakt, meta.tel, meta.email, objekt.id]);
+
+  useEffect(() => {
+    setSchwelle(
+      objekt.freigabe_schwelle_eur != null
+        ? Number(objekt.freigabe_schwelle_eur)
+        : 500
+    );
+  }, [objekt.id, objekt.freigabe_schwelle_eur]);
+
+  useEffect(() => {
+    return () => {
+      if (kontaktTimer.current) clearTimeout(kontaktTimer.current);
+      if (schwelleTimer.current) clearTimeout(schwelleTimer.current);
+    };
+  }, []);
+
   const typLine = formatObjektTypLine(objekt);
   const plzOrt = formatObjektPlzOrt(objekt) || "—";
   const strasse = formatObjektStrasse(objekt) || "—";
@@ -104,20 +167,69 @@ export function OrganisationObjektDetail({
       : parseEinheitenCount(objekt.einheiten_hinweis);
 
   const objektLeads = useMemo(
-    () => leads.filter((l) => l.kunde_objekt_id === objekt.id),
-    [leads, objekt.id]
+    () => leads.filter((l) => leadBelongsToObjekt(l, objekt)),
+    [leads, objekt]
   );
 
-  const saveSchwelle = async () => {
-    setBusySchwelle(true);
+  const saveAnsprechpartner = async (next: {
+    kontakt: string;
+    tel: string;
+    email: string;
+  }) => {
     try {
-      const v = schwelle.trim();
+      const notizen_intern = encodeObjektMeta(
+        {
+          typ: meta.typ,
+          kontakt: next.kontakt.trim() || undefined,
+          tel: next.tel.trim() || undefined,
+          email: next.email.trim() || undefined,
+        },
+        objekt.notizen_intern
+      );
+      const res = await fetch("/api/org/objekte", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: objekt.id, notizen_intern }),
+      });
+      const json = (await res.json()) as { error?: string };
+      if (!res.ok) {
+        portalToastError("Ansprechpartner nicht gespeichert", json.error);
+        return;
+      }
+      orgPortalToast.objektAktualisiert();
+      onRefresh();
+    } catch {
+      portalToastError("Ansprechpartner nicht gespeichert");
+    }
+  };
+
+  const scheduleAnsprechpartner = (patch: {
+    kontakt?: string;
+    tel?: string;
+    email?: string;
+  }) => {
+    const next = {
+      kontakt: patch.kontakt ?? kontaktName,
+      tel: patch.tel ?? kontaktTel,
+      email: patch.email ?? kontaktEmail,
+    };
+    if (patch.kontakt !== undefined) setKontaktName(patch.kontakt);
+    if (patch.tel !== undefined) setKontaktTel(patch.tel);
+    if (patch.email !== undefined) setKontaktEmail(patch.email);
+    if (kontaktTimer.current) clearTimeout(kontaktTimer.current);
+    kontaktTimer.current = setTimeout(() => {
+      void saveAnsprechpartner(next);
+    }, 550);
+  };
+
+  const saveSchwelle = async (value: number) => {
+    try {
       const res = await fetch("/api/org/objekte", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           id: objekt.id,
-          freigabe_schwelle_eur: v ? Number(v) : null,
+          freigabe_schwelle_eur: value,
         }),
       });
       const json = (await res.json()) as { error?: string };
@@ -127,9 +239,17 @@ export function OrganisationObjektDetail({
       }
       orgPortalToast.objektAktualisiert();
       onRefresh();
-    } finally {
-      setBusySchwelle(false);
+    } catch {
+      portalToastError("Schwelle nicht gespeichert");
     }
+  };
+
+  const onSchwelleChange = (value: number) => {
+    setSchwelle(value);
+    if (schwelleTimer.current) clearTimeout(schwelleTimer.current);
+    schwelleTimer.current = setTimeout(() => {
+      void saveSchwelle(value);
+    }, 450);
   };
 
   let body: React.ReactNode = null;
@@ -137,6 +257,39 @@ export function OrganisationObjektDetail({
   if (tab === "stamm") {
     body = (
       <div className="grid gap-3.5 md:grid-cols-2">
+        <ObjCard title="Ansprechpartner">
+          <div className="flex flex-col gap-3">
+            <p
+              className="text-[13px] leading-[1.55]"
+              style={{ color: PORTAL_C.sub }}
+            >
+              Kontakt für diese WEG — Name, Telefon und E-Mail.
+            </p>
+            <EinstellungenEdField
+              label="Name"
+              value={kontaktName}
+              onChange={(v) => scheduleAnsprechpartner({ kontakt: v })}
+              placeholder="Max Mustermann"
+              autoComplete="name"
+            />
+            <EinstellungenEdField
+              label="Telefon"
+              type="tel"
+              value={kontaktTel}
+              onChange={(v) => scheduleAnsprechpartner({ tel: v })}
+              placeholder="089 / …"
+              autoComplete="tel"
+            />
+            <EinstellungenEdField
+              label="E-Mail"
+              type="email"
+              value={kontaktEmail}
+              onChange={(v) => scheduleAnsprechpartner({ email: v })}
+              placeholder="name@firma.de"
+              autoComplete="email"
+            />
+          </div>
+        </ObjCard>
         <ObjCard title="Objektdaten">
           <ObjRow label="Bezeichnung" value={objekt.titel} />
           <ObjRow label="Typ" value={typLine} />
@@ -150,11 +303,6 @@ export function OrganisationObjektDetail({
             label="Melde-Link"
             value={objekt.melde_aktiv && objekt.melde_slug ? "Aktiv" : "Inaktiv"}
           />
-        </ObjCard>
-        <ObjCard title="Hausverwaltung">
-          <ObjRow label="Verwaltung" value={meta.hv?.trim() || "—"} />
-          <ObjRow label="Ansprechpartner" value={meta.kontakt?.trim() || "—"} />
-          <ObjRow label="Telefon" value={meta.tel?.trim() || "—"} />
         </ObjCard>
       </div>
     );
@@ -177,119 +325,98 @@ export function OrganisationObjektDetail({
     );
   } else if (tab === "vorgaenge") {
     body = (
-      <ObjCard title={`Vorgänge (${objektLeads.length})`}>
-        {objektLeads.length === 0 ? (
-          <p className="text-[13px] text-text-secondary">
-            Keine Vorgänge an diesem Objekt.
+      <div className="space-y-2.5">
+        <div className="flex items-baseline justify-between gap-2 px-0.5">
+          <p className="font-[family-name:var(--font-display)] text-sm font-bold text-text-primary">
+            Vorgänge ({objektLeads.length})
           </p>
+          <p className="text-xs text-text-tertiary">{offenCount} offen</p>
+        </div>
+        {objektLeads.length === 0 ? (
+          <div className="rounded-xl border border-border-default bg-white px-4 py-8 text-center text-[13px] text-text-secondary">
+            Keine Vorgänge an diesem Objekt.
+          </div>
         ) : (
-          <ul className="space-y-0">
-            {objektLeads.map((l) => (
-              <li
+          objektLeads.map((l) => {
+            const kat = meldeKategorieLabel(
+              meldeKategorieFromLead(l) ?? undefined
+            );
+            const notfall = isMeldeNotfall(l);
+            const adresse = [l.strasse, l.hausnummer]
+              .filter(Boolean)
+              .join(" ");
+            const we = l.melder_einheit?.trim()
+              ? /^(WE|Whg)/i.test(l.melder_einheit.trim())
+                ? l.melder_einheit.trim()
+                : `WE ${l.melder_einheit.trim()}`
+              : undefined;
+            const person = l.melder_name?.trim() || undefined;
+            const subtitle = [
+              adresse || objekt.titel || "Objekt",
+              we,
+              person,
+            ]
+              .filter(Boolean)
+              .join(" · ");
+            return (
+              <PortalListCard
                 key={l.id}
-                className="flex items-center justify-between gap-2 border-b border-border-default py-2.5 text-[13px] last:border-0"
-              >
-                <div className="min-w-0">
-                  <p className="text-[11.5px] font-semibold text-text-tertiary">
-                    {l.id.slice(0, 8).toUpperCase()}
-                  </p>
-                  <p className="truncate font-medium text-text-primary">
-                    {(l.situation ?? l.kontakt_name ?? "Vorgang").slice(0, 80)}
-                  </p>
-                  <p className="truncate text-[12px] text-text-secondary">
-                    {objekt.titel}
-                  </p>
-                </div>
-                <span className="shrink-0 rounded-full bg-muted px-2.5 py-1 text-[11.5px] font-semibold text-text-secondary">
-                  {l.vorgang_phase ?? l.status ?? "—"}
-                </span>
-                <span className="shrink-0 text-text-tertiary" aria-hidden>
-                  ›
-                </span>
-              </li>
-            ))}
-          </ul>
+                variant="card"
+                selected={false}
+                onClick={() => onOpenVorgang?.(l.id)}
+                title={kat}
+                subtitle={subtitle}
+                statusLabel={plattformStatusLabel(resolvePlattformStatus(l))}
+                statusPillClass={plattformStatusPillClass(
+                  resolvePlattformStatus(l)
+                )}
+                accent="anfrage"
+                meta={
+                  notfall ? [{ icon: AlertTriangle, text: "Notfall" }] : []
+                }
+                showChevron
+              />
+            );
+          })
         )}
-        <p className="mt-2 text-xs text-text-tertiary">
-          {offenCount} offen · Details unter Vorgänge in der Navigation.
-        </p>
-      </ObjCard>
+      </div>
     );
   } else if (tab === "regeln") {
     body = (
-      <ObjCard title="Regeln für dieses Objekt">
-        <button
-          type="button"
-          onClick={() => setAutopassUi((v) => !v)}
-          className="mb-4 flex w-full items-start gap-3 rounded-[10px] border border-border-default bg-muted/30 p-3 text-left"
-        >
-          <span
-            className={cn(
-              "mt-0.5 flex h-6 w-10 shrink-0 items-center rounded-full p-0.5",
-              autopassUi ? "bg-accent" : "bg-border-default"
-            )}
+      <EinstellungenCard title={OBJ_SCHWELLE_WIZARD_TITLE}>
+        <div className="flex flex-col gap-3">
+          <p
+            className="text-[13px] leading-[1.55]"
+            style={{ color: PORTAL_C.sub }}
           >
-            <span
-              className={cn(
-                "h-5 w-5 rounded-full bg-white shadow transition-transform",
-                autopassUi ? "translate-x-4" : "translate-x-0"
-              )}
-            />
-          </span>
-          <span>
-            <span className="block text-[13.5px] font-semibold text-text-primary">
-              Notfall-Autopass
-            </span>
-            <span className="mt-1 block text-xs leading-snug text-text-secondary">
-              {OBJ_AUTOPASS_DETAIL_DESC}
-            </span>
-            <span className="mt-1.5 block text-[11px] text-text-tertiary">
-              {OBJ_AUTOPASS_OFFENER_PUNKT}
-            </span>
-          </span>
-        </button>
-
-        <p className="portal-text-label mb-1">Freigabe-Schwelle (€)</p>
-        <div className="flex gap-2">
-          <input
-            type="number"
-            className="portal-input flex-1 rounded-xl border border-border-default px-3 py-2 text-sm"
+            {OBJ_SCHWELLE_WIZARD_DESC}
+          </p>
+          <EinstellungenEuroInput
             value={schwelle}
-            onChange={(e) => setSchwelle(e.target.value)}
+            presets={EINSTELLUNGEN_SCHWELLE_PRESETS}
+            onChange={onSchwelleChange}
           />
-          <button
-            type="button"
-            className="btn-pill-outline !text-xs"
-            disabled={busySchwelle}
-            onClick={() => void saveSchwelle()}
+          <EinstellungenInfoBox>
+            {OBJ_SCHWELLE_INFO(schwelle)}
+          </EinstellungenInfoBox>
+          <p
+            className="text-[12.5px] leading-relaxed"
+            style={{ color: PORTAL_C.sub }}
           >
-            Speichern
-          </button>
+            {OBJ_REGELN_FALLBACK}
+          </p>
         </div>
-        <p className="mt-2 text-xs text-text-tertiary">
-          Aktuell:{" "}
-          {formatSchwelleEur(
-            objekt.freigabe_schwelle_eur != null
-              ? Number(objekt.freigabe_schwelle_eur)
-              : 500
-          )}
-        </p>
-        <p className="mt-3 text-[12.5px] leading-relaxed text-text-secondary">
-          {OBJ_REGELN_FALLBACK}
-        </p>
-      </ObjCard>
-    );
-  } else if (tab === "eigentuemer") {
-    body = (
-      <ObjCard title="Eigentümer & Kontakte">
-        <OrganisationObjektKontaktePanel objektId={objekt.id} />
-      </ObjCard>
+      </EinstellungenCard>
     );
   } else {
     body = (
-      <ObjCard title="Dokumente">
-        <OrganisationObjektDokumentePanel objektId={objekt.id} />
-      </ObjCard>
+      <OrganisationObjektDokumentePanel
+        key={objekt.id}
+        objekt={objekt}
+        leads={objektLeads}
+        dokumenteByLeadId={dokumenteByLeadId}
+        onOpenVorgang={onOpenVorgang}
+      />
     );
   }
 
@@ -316,7 +443,7 @@ export function OrganisationObjektDetail({
         />
       </div>
 
-      <div className="mb-4 flex flex-col gap-3.5 md:flex-row md:items-center">
+      <div className="mb-4 flex flex-col gap-3.5 md:mb-5 md:flex-row md:items-center">
         <OrganisationObjektCover
           objektId={objekt.id}
           coverUrl={objekt.cover_url}
@@ -376,7 +503,7 @@ export function OrganisationObjektDetail({
         </div>
       </div>
 
-      <div className="mb-4 flex gap-3.5 overflow-x-auto whitespace-nowrap border-b border-border-default md:gap-5">
+      <div className="mb-6 flex gap-3.5 overflow-x-auto whitespace-nowrap border-b border-border-default pb-0.5 md:mb-8 md:gap-5">
         {OBJ_DETAIL_TABS.map((t) => {
           const on = tab === t.id;
           return (
@@ -397,7 +524,7 @@ export function OrganisationObjektDetail({
         })}
       </div>
 
-      <div>{body}</div>
+      <div className="pt-1">{body}</div>
     </div>
   );
 }

@@ -24,8 +24,10 @@ assert("FLOW length 8", PORTAL_FLOW.length === 8);
 assert(
   "STATUS labels",
   PORTAL_STATUS.gemeldet.label === "Neu gemeldet" &&
-    PORTAL_STATUS.angefragt.label === "Handwerker angefragt" &&
-    PORTAL_STATUS.abschluss.label === "Abschluss / Signatur" &&
+    PORTAL_STATUS.freigegeben.label === "Freigegeben" &&
+    PORTAL_STATUS.angebot.label === "Angebot" &&
+    PORTAL_STATUS.auftrag.label === "Auftrag" &&
+    PORTAL_STATUS.rechnung.label === "Rechnung" &&
     PORTAL_STATUS.bezahlt.label === "Abgeschlossen"
 );
 assert(
@@ -184,7 +186,8 @@ function leadBase(over: Partial<ResolveVorgangInput["lead"]> = {}): ResolveVorga
   const tl = portalFlowTimeline("auftrag");
   assert(
     "timeline done/active",
-    tl.filter((s) => s.done).length === 4 &&
+    tl.length === 5 &&
+      tl.filter((s) => s.done).length === 3 &&
       tl.find((s) => s.active)?.id === "auftrag"
   );
 }

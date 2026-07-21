@@ -108,7 +108,7 @@ export function PortalEinladungRegisterForm({
   }
 
   return (
-    <MieterWlFrame brand={brand} lang="de">
+    <MieterWlFrame brand={brand}>
       <MieterWlCard>
         <h1 className="font-[family-name:var(--font-display)] text-xl font-bold text-text-primary">
           Konto anlegen

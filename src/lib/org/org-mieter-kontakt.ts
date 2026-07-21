@@ -3,6 +3,8 @@
 export type OrgMieterKontakt = {
   org_anzeigename?: string | null;
   name?: string | null;
+  email?: string | null;
+  org_telefon?: string | null;
   mieter_kontakt_telefon?: string | null;
   mieter_kontakt_email?: string | null;
   mieter_kontakt_hinweis?: string | null;
@@ -22,11 +24,26 @@ export function orgDisplayName(org: Pick<OrgMieterKontakt, "org_anzeigename" | "
   return org.org_anzeigename?.trim() || org.name?.trim() || "Ihre Hausverwaltung";
 }
 
-/** Mindestens ein erreichbarer Mieter-Kontaktweg. */
-export function orgHasMieterKontakt(org: OrgMieterKontakt): boolean {
-  return Boolean(
-    org.mieter_kontakt_telefon?.trim() || org.mieter_kontakt_email?.trim()
+/** Effektiver Mieter-Kontakt: dedizierte Felder, sonst Profil (Telefon/E-Mail). */
+export function orgEffectiveMieterTel(org: OrgMieterKontakt): string {
+  return (
+    org.mieter_kontakt_telefon?.trim() ||
+    org.org_telefon?.trim() ||
+    ""
   );
+}
+
+export function orgEffectiveMieterMail(org: OrgMieterKontakt): string {
+  return (
+    org.mieter_kontakt_email?.trim() ||
+    org.email?.trim() ||
+    ""
+  );
+}
+
+/** Mindestens ein erreichbarer Mieter-Kontaktweg (inkl. Profil-Fallback). */
+export function orgHasMieterKontakt(org: OrgMieterKontakt): boolean {
+  return Boolean(orgEffectiveMieterTel(org) || orgEffectiveMieterMail(org));
 }
 
 /** AV + Mieter-Kontakt für WL-Melde-Flow. */
@@ -37,8 +54,8 @@ export function orgWhitelabelReady(org: OrgWhitelabelFields): boolean {
 /** Fußzeile für Mieter-Mails/Status (No-Reply + HV-Kontakt oder Fallback). */
 export function orgMieterKontaktFooter(org: OrgMieterKontakt, lang: "de" | "en" = "de"): string {
   const name = orgDisplayName(org);
-  const tel = org.mieter_kontakt_telefon?.trim();
-  const mail = org.mieter_kontakt_email?.trim();
+  const tel = orgEffectiveMieterTel(org) || undefined;
+  const mail = orgEffectiveMieterMail(org) || undefined;
   const hint = org.mieter_kontakt_hinweis?.trim();
   const noReply =
     lang === "de"
@@ -69,8 +86,8 @@ export function orgMieterKontaktFooter(org: OrgMieterKontakt, lang: "de" | "en" 
 
 /** Kurztext für Melde-UI (ohne No-Reply). */
 export function orgMieterKontaktKurz(org: OrgMieterKontakt, lang: "de" | "en" = "de"): string {
-  const tel = org.mieter_kontakt_telefon?.trim();
-  const mail = org.mieter_kontakt_email?.trim();
+  const tel = orgEffectiveMieterTel(org) || undefined;
+  const mail = orgEffectiveMieterMail(org) || undefined;
   const name = orgDisplayName(org);
   if (!tel && !mail) {
     return lang === "de"

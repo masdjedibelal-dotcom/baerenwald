@@ -2,11 +2,14 @@
 
 import type { ReactNode } from "react";
 
-import { formatEinstellungenSchwelle } from "@/lib/portal2/einstellungen";
+import {
+  formatEinstellungenSchwelle,
+  formatEinstellungenSchwellePreset,
+} from "@/lib/portal2/einstellungen";
 import { PORTAL_C } from "@/lib/portal2/tokens";
 import { cn } from "@/lib/utils";
 
-/** Mock `pf(k, val)` — Label 12.5px links, Wert 13.5px rechts. */
+/** Mock `pf(k, val)` — Bezeichnung oben, Wert im Feld darunter. */
 export function EinstellungenPfRow({
   label,
   value,
@@ -15,13 +18,13 @@ export function EinstellungenPfRow({
   value: string;
 }) {
   return (
-    <div className="flex items-center justify-between gap-3 rounded-[9px] border border-border-default px-3.5 py-[11px]">
-      <span className="text-[12.5px] font-semibold text-text-tertiary">
+    <div className="flex flex-col gap-1">
+      <span className="text-[11.5px] font-bold tracking-wide text-text-tertiary">
         {label}
       </span>
-      <span className="text-right text-[13.5px] font-semibold text-text-primary">
+      <div className="w-full rounded-[9px] border border-border-default bg-[#f3f4f3] px-3 py-2.5 text-[13.5px] font-semibold text-text-primary">
         {value}
-      </span>
+      </div>
     </div>
   );
 }
@@ -59,6 +62,135 @@ export function EinstellungenEdField({
         onChange={(e) => onChange(e.target.value)}
       />
     </label>
+  );
+}
+
+/** Mock Euro-Betrag + Schnellwahl-Pills (250 / 500 / 1k / 2k). */
+export function EinstellungenEuroInput({
+  value,
+  onChange,
+  disabled,
+  presets = [250, 500, 1000, 2000],
+  min = 0,
+  max = 5000,
+}: {
+  value: number;
+  onChange: (value: number) => void;
+  disabled?: boolean;
+  presets?: readonly number[];
+  min?: number;
+  max?: number;
+}) {
+  return (
+    <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:gap-3">
+      <label className="relative block w-full max-w-[140px] shrink-0">
+        <input
+          type="number"
+          inputMode="numeric"
+          min={min}
+          max={max}
+          step={50}
+          disabled={disabled}
+          value={Number.isFinite(value) ? value : ""}
+          onChange={(e) => {
+            const n = Number(e.target.value);
+            if (!Number.isFinite(n)) return;
+            onChange(Math.min(max, Math.max(min, Math.round(n))));
+          }}
+          className="w-full rounded-[9px] border border-border-default bg-white py-2.5 pl-3 pr-8 text-[15px] font-semibold text-text-primary outline-none focus:border-accent disabled:opacity-70"
+        />
+        <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[13px] font-semibold text-text-tertiary">
+          €
+        </span>
+      </label>
+      <div className="flex flex-wrap gap-1.5">
+        {presets.map((p) => {
+          const active = value === p;
+          return (
+            <button
+              key={p}
+              type="button"
+              disabled={disabled}
+              onClick={() => onChange(p)}
+              className={cn(
+                "rounded-full border px-3 py-1.5 text-[12.5px] font-semibold transition-colors disabled:opacity-60",
+                active
+                  ? "border-accent/40 bg-accent/10 text-accent"
+                  : "border-border-default bg-white text-text-secondary hover:border-accent/30"
+              )}
+            >
+              {formatEinstellungenSchwellePreset(p)}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+export function EinstellungenInfoBox({ children }: { children: ReactNode }) {
+  return (
+    <div className="flex gap-2.5 rounded-[11px] border border-accent/20 bg-accent/[0.08] px-3.5 py-3 text-[13px] leading-[1.5] text-text-primary">
+      <span
+        className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-accent text-[11px] font-bold text-white"
+        aria-hidden
+      >
+        i
+      </span>
+      <span>{children}</span>
+    </div>
+  );
+}
+
+/** Mock Auswahlkachel (Angebots-Freigabe). */
+export function EinstellungenChoiceCard({
+  selected,
+  title,
+  description,
+  onSelect,
+  disabled,
+}: {
+  selected: boolean;
+  title: string;
+  description: string;
+  onSelect: () => void;
+  disabled?: boolean;
+}) {
+  return (
+    <button
+      type="button"
+      disabled={disabled}
+      onClick={onSelect}
+      className={cn(
+        "flex w-full items-start gap-3 rounded-[11px] border px-3.5 py-3 text-left transition-colors disabled:opacity-60",
+        selected
+          ? "border-accent bg-accent/[0.08]"
+          : "border-border-default bg-white hover:border-accent/30"
+      )}
+    >
+      <span
+        className={cn(
+          "mt-0.5 flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-full border-2",
+          selected ? "border-accent" : "border-[#c5cbc8]"
+        )}
+        aria-hidden
+      >
+        {selected ? (
+          <span className="h-2 w-2 rounded-full bg-accent" />
+        ) : null}
+      </span>
+      <span className="min-w-0">
+        <span className="block text-[13.5px] font-semibold text-text-primary">
+          {title}
+        </span>
+        <span
+          className="mt-0.5 block text-[12.5px] leading-snug"
+          style={{ color: PORTAL_C.sub }}
+        >
+          {description}
+        </span>
+      </span>
+    </button>
   );
 }
 

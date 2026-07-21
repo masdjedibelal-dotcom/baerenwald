@@ -22,6 +22,8 @@ type Body = {
   org_ort?: string | null;
   /** Service-E-Mail für Mieter (= mieter_kontakt_email) */
   mieter_kontakt_email?: string | null;
+  /** Telefon für Mieter (= mieter_kontakt_telefon), sync mit org_telefon */
+  mieter_kontakt_telefon?: string | null;
 };
 
 function trimOrNull(v: unknown): string | null {
@@ -70,6 +72,12 @@ export async function PATCH(req: Request) {
   if (body.mieter_kontakt_email !== undefined) {
     patch.mieter_kontakt_email = trimOrNull(body.mieter_kontakt_email);
   }
+  if (body.mieter_kontakt_telefon !== undefined) {
+    patch.mieter_kontakt_telefon = trimOrNull(body.mieter_kontakt_telefon);
+  } else if (body.org_telefon !== undefined) {
+    // Profil-Telefon = Mieter-Kommunikation (kein Doppel-Feld nötig)
+    patch.mieter_kontakt_telefon = trimOrNull(body.org_telefon);
+  }
 
   if (body.org_primary_color !== undefined) {
     const primary = trimOrNull(body.org_primary_color);
@@ -106,7 +114,7 @@ export async function PATCH(req: Request) {
     .update(patch)
     .eq("id", session.kunde.id)
     .select(
-      "org_anzeigename, org_sub, org_logo_kuerzel, org_primary_color, org_primary_color_dk, org_primary_color_soft, org_telefon, org_strasse, org_ort, mieter_kontakt_email, org_logo_url"
+      "org_anzeigename, org_sub, org_logo_kuerzel, org_primary_color, org_primary_color_dk, org_primary_color_soft, org_telefon, org_strasse, org_ort, mieter_kontakt_email, mieter_kontakt_telefon, org_logo_url"
     )
     .single();
 

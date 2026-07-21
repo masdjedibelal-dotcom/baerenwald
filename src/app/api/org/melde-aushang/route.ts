@@ -5,7 +5,7 @@ import { NextResponse } from "next/server";
 
 import { SITE_CONFIG } from "@/lib/config";
 import { generateMeldeAushangPdf } from "@/lib/org/generate-melde-aushang-pdf";
-import { buildMeldeQrUrl, buildMeldeUrl } from "@/lib/org/melde-url";
+import { buildMeldeUrl, generateMeldeQrPng } from "@/lib/org/melde-url";
 import { requireOrganisationSession } from "@/lib/org/require-org-session";
 import { orgBrandFromKunde } from "@/lib/portal2/brand-presets";
 import {
@@ -65,7 +65,8 @@ export async function GET(req: Request) {
 
   const brand = orgBrandFromKunde(org);
 
-  let meldeUrl = buildMeldeUrl(orgKennung);
+  // QR/Print immer kanonische Produktions-URL — nie Preview/localhost
+  let meldeUrl = buildMeldeUrl(orgKennung, undefined, { forPrint: true });
   let objektTitel = "";
   let objektAdresse = "";
 
@@ -84,7 +85,7 @@ export async function GET(req: Request) {
       );
     }
 
-    meldeUrl = buildMeldeUrl(orgKennung, objekt.melde_slug);
+    meldeUrl = buildMeldeUrl(orgKennung, objekt.melde_slug, { forPrint: true });
     objektTitel = String(objekt.titel ?? "");
     objektAdresse = [objekt.strasse, objekt.hausnummer, objekt.plz, objekt.ort]
       .filter(Boolean)
@@ -93,11 +94,9 @@ export async function GET(req: Request) {
 
   let qrPngBytes: Uint8Array | null = null;
   try {
-    const qrRes = await fetch(buildMeldeQrUrl(meldeUrl), { cache: "no-store" });
-    if (qrRes.ok) {
-      qrPngBytes = new Uint8Array(await qrRes.arrayBuffer());
-    }
-  } catch {
+    qrPngBytes = await generateMeldeQrPng(meldeUrl, 640);
+  } catch (e) {
+    console.error("[melde-aushang] QR-Generierung fehlgeschlagen", e);
     qrPngBytes = null;
   }
 

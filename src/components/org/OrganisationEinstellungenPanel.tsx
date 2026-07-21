@@ -83,12 +83,12 @@ export function OrganisationEinstellungenPanel({
           checked={kleinreparaturAktiv}
           disabled={readOnly}
           onChange={setKleinreparaturAktiv}
-          title="Kleinreparatur ohne Angebot"
-          description="Optional — standardmäßig aus. Kleine Schäden können direkt beauftragt werden."
+          title="Kleinreparatur: Handwerker sofort ausrücken"
+          description="Wenn aktiv: Bei Meldungen bis zur Schwelle unten können Sie „Sofort beauftragen“ wählen. Der Handwerker wird ohne formales Angebot beauftragt und rückt direkt aus."
         />
         {kleinreparaturAktiv ? (
           <EinstellungenEdField
-            label="Schwelle Kleinreparatur (€ netto)"
+            label="Bis zu diesem Betrag (€ netto) — Sofort-Ausrückung"
             type="number"
             value={kleinreparaturSchwelle}
             disabled={readOnly}
@@ -111,8 +111,9 @@ export function OrganisationEinstellungenPanel({
             className="mb-1 text-[13px] leading-[1.55]"
             style={{ color: PORTAL_C.sub }}
           >
-            Bei „Freigabe“ müssen Angebote oberhalb der Schwelle erst von Ihnen
-            freigegeben werden.
+            Bei „Freigabe“ müssen Angebote oberhalb Ihrer Freigabeschwelle erst
+            von Ihnen freigegeben werden. Unter der Schwelle startet die
+            Durchführung direkt — ohne Freigabe-Button.
           </p>
           <select
             className="w-full rounded-[9px] border border-border-default bg-white px-3 py-2.5 text-[13.5px] text-text-primary outline-none focus:border-accent disabled:cursor-not-allowed disabled:opacity-70"
@@ -121,15 +122,15 @@ export function OrganisationEinstellungenPanel({
             disabled={readOnly}
           >
             <option value="direkt">Direkt — ohne Freigabe</option>
-            <option value="freigabe">Freigabe erforderlich</option>
+            <option value="freigabe">Freigabe erforderlich (über Schwelle)</option>
           </select>
         </label>
         <EinstellungenToggle
           checked={notfallDirekt}
           disabled={readOnly}
           onChange={setNotfallDirekt}
-          title="Notfall-Angebote ohne Wartezeit"
-          description="Bei Notfall-Meldungen direkt Handwerker anfragen, ohne HV-Freigabe."
+          title="Notfall: Handwerker sofort ausrücken"
+          description="Bei Notfall-Meldungen wird der Handwerker sofort angefragt und kann direkt ausrücken — ohne dass Sie freigeben müssen."
         />
       </div>
     </EinstellungenCard>

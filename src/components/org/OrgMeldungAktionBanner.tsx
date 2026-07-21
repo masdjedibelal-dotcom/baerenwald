@@ -38,7 +38,7 @@ export function OrgMeldungAktionBanner({ lead, kunde, onUpdated }: Props) {
     aktion: "angebot_einfordern" | "ablehnen" | "kleinreparatur_freigeben"
   ) => {
     if (aktion === "kleinreparatur_freigeben" && !kleinOk) {
-      setError("Kleinreparatur für diese Meldung nicht verfügbar.");
+      setError("Sofort beauftragen ist für diese Meldung nicht verfügbar.");
       return;
     }
     setBusy(true);

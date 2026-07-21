@@ -393,6 +393,14 @@ export function OrganisationPortalClient({
               orgKennung={kunde.org_kennung}
               kunde={kunde}
               onRefresh={refresh}
+              dokumenteByLeadId={dokumenteByLeadId}
+              onOpenVorgang={(id) => {
+                setSection("vorgaenge");
+                router.replace(
+                  `/portal?section=vorgaenge&filter=offen&id=${encodeURIComponent(id)}`,
+                  { scroll: false }
+                );
+              }}
             />
           ) : null}
 

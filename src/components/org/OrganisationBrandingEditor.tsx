@@ -112,6 +112,7 @@ export function OrganisationBrandingEditor({
             org_strasse: next.strasse,
             org_ort: next.ort,
             mieter_kontakt_email: next.mail,
+            mieter_kontakt_telefon: next.tel,
           }),
         });
         const json = (await res.json()) as { error?: string };

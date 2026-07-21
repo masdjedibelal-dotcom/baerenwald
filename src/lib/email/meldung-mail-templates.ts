@@ -10,6 +10,10 @@ function esc(s: string): string {
     .replace(/"/g, "&quot;");
 }
 
+function escAttr(s: string): string {
+  return esc(s).replace(/'/g, "&#39;");
+}
+
 function orgPortalDeepLink(portalPath?: string): string {
   const base = SITE_CONFIG.url.replace(/\/$/, "");
   const path =
@@ -33,22 +37,66 @@ function mailDataRow(label: string, value: string | undefined | null): string {
   const v = value?.trim();
   if (!v) return "";
   return `<tr>
-  <td style="padding:8px 14px;font-size:12px;color:#6b7f74;vertical-align:top;width:130px;border-top:1px solid #eef0ee">${esc(label)}</td>
-  <td style="padding:8px 14px;font-size:14px;color:#1a2420;vertical-align:top;border-top:1px solid #eef0ee">${esc(v)}</td>
+  <td style="padding:10px 16px;font-size:12px;color:#6b7f74;vertical-align:top;width:130px;border-top:1px solid #eef0ee">${esc(label)}</td>
+  <td style="padding:10px 16px;font-size:14px;color:#1a2420;vertical-align:top;border-top:1px solid #eef0ee">${esc(v).replace(/\n/g, "<br/>")}</td>
 </tr>`;
 }
 
-function mailSummaryTable(rows: string): string {
-  if (!rows.trim()) return "";
-  return `<table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="margin:20px 0;border:1px solid #e5e7eb;border-radius:10px;overflow:hidden;background:#fafbfa">
-${rows}
-</table>`;
-}
+/** Bärenwald-Standard: dunkler Header, weiße Karte, CTA-Button. */
+function wrapBaerenwaldMail(opts: {
+  headerTitle: string;
+  bodyHtml: string;
+  ctaHref?: string;
+  ctaLabel?: string;
+}): string {
+  const button =
+    opts.ctaHref && opts.ctaLabel
+      ? `
+    <table cellpadding="0" cellspacing="0" style="margin:20px 16px 8px;">
+    <tr>
+      <td style="background:#2E7D52;border-radius:6px;">
+        <a href="${escAttr(opts.ctaHref)}" style="display:inline-block;padding:12px 24px;color:#ffffff;font-size:14px;font-weight:700;text-decoration:none;">
+          ${esc(opts.ctaLabel)}
+        </a>
+      </td>
+    </tr>
+    </table>`
+      : "";
 
-function portalButtonHtml(link: string): string {
-  return `<p style="margin:24px 0 8px">
-  <a href="${esc(link)}" style="display:inline-block;background:#1a3d2b;color:#fff;padding:12px 22px;border-radius:999px;text-decoration:none;font-weight:600;font-size:14px">Zum Auftraggeber-Portal →</a>
-</p>`;
+  return `<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+</head>
+<body style="margin:0;padding:0;font-family:Arial,Helvetica,sans-serif;background:#f7f6f3;">
+
+<table width="100%" cellpadding="0" cellspacing="0" style="background:#f7f6f3;">
+<tr><td align="center" style="padding:24px 16px;">
+
+<table width="100%" style="max-width:560px;background:#ffffff;border-radius:8px;overflow:hidden;" cellpadding="0" cellspacing="0">
+
+<tr>
+  <td style="background:#1A3D2B;padding:16px 24px;">
+    <p style="margin:0;color:#ffffff;font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:1px;">
+      ${esc(opts.headerTitle)}
+    </p>
+  </td>
+</tr>
+
+<tr>
+  <td style="padding:20px 8px 24px;">
+    ${opts.bodyHtml}
+    ${button}
+  </td>
+</tr>
+
+</table>
+</td></tr>
+</table>
+
+</body>
+</html>`;
 }
 
 export type OrgNeueMeldungMailInput = {
@@ -65,9 +113,6 @@ export type OrgNeueMeldungMailInput = {
   /** mieter = Meldeformular · hausverwaltung = HV hat selbst erfasst */
   quelle?: "mieter" | "hausverwaltung";
   portalPath?: string;
-  referenz?: string;
-  /** Status-Link zum Weitergeben an den Mieter (kein Mieter-Mail-Versand). */
-  mieterStatusLink?: string;
 };
 
 export function buildOrgNeueMeldungSubject(objektTitel: string): string {
@@ -108,26 +153,29 @@ export function buildOrgNeueMeldungHtml(input: OrgNeueMeldungMailInput): string 
         : undefined
     ),
     mailDataRow("Beschreibung", input.beschreibung),
-    mailDataRow("Referenz", input.referenz),
-    mailDataRow("Mieter-Status-Link", input.mieterStatusLink),
   ].join("");
 
-  const mieterHinweis = input.mieterStatusLink
-    ? `<p style="font-size:14px;color:#374151;margin-top:16px"><strong>Mieter-Status:</strong> Es geht keine E-Mail an den Mieter. Bitte geben Sie den Status-Link selbst weiter (SMS, Anruf, WhatsApp):<br/><a href="${esc(input.mieterStatusLink)}">${esc(input.mieterStatusLink)}</a></p>`
+  const table = rows.trim()
+    ? `<table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="margin:16px 8px;border:1px solid #e5e7eb;border-radius:8px;overflow:hidden;background:#fafbfa">
+${rows}
+</table>`
     : "";
 
-  return `<!DOCTYPE html>
-<html lang="de">
-<body style="font-family:system-ui,sans-serif;color:#1a2420;line-height:1.5;max-width:560px;margin:0 auto;padding:24px">
-  <p>Guten Tag,</p>
-  <p>${einleitung}</p>
-  ${mailSummaryTable(rows)}
-  <p style="font-size:14px;color:#374151">Bitte prüfen Sie den Vorgang im Auftraggeber-Portal und wählen Sie den nächsten Schritt (z.&nbsp;B. Angebot einfordern oder Kleinreparatur).</p>
-  ${mieterHinweis}
-  ${portalButtonHtml(link)}
-  <p style="color:#6b7f74;font-size:13px;margin-top:8px">Status: Neu · Bereich Meldungen</p>
-</body>
-</html>`;
+  const bodyHtml = `
+    <div style="padding:0 16px;">
+      <p style="margin:0 0 12px;font-size:15px;color:#1a2420;line-height:1.55">Guten Tag,</p>
+      <p style="margin:0 0 8px;font-size:15px;color:#1a2420;line-height:1.55">${einleitung}</p>
+    </div>
+    ${table}
+    <p style="margin:8px 16px 0;font-size:14px;color:#374151;line-height:1.55">Bitte prüfen Sie den Vorgang im Auftraggeber-Portal und wählen Sie den nächsten Schritt (z.&nbsp;B. Angebot einfordern oder Sofort beauftragen bei Kleinreparatur).</p>
+  `;
+
+  return wrapBaerenwaldMail({
+    headerTitle: "Bärenwald — Neuer Vorgang",
+    bodyHtml,
+    ctaHref: link,
+    ctaLabel: "Zum Auftraggeber-Portal →",
+  });
 }
 
 /** @deprecated Mieter-Mail-Versand deaktiviert — nur HV-Benachrichtigung. */
@@ -177,14 +225,16 @@ export function buildOrgAngebotEingefordertHtml(input: {
   portalPath?: string;
 }): string {
   const link = orgPortalDeepLink(input.portalPath);
-  return `<!DOCTYPE html>
-<html lang="de">
-<body style="font-family:system-ui,sans-serif;color:#1a2420;line-height:1.5;max-width:560px;margin:0 auto;padding:24px">
-  <p>Angebot eingefordert</p>
-  <p>Für <strong>${esc(input.objektTitel)}</strong>${input.melderName ? ` (${esc(input.melderName)})` : ""} erstellt Bärenwald ein Angebot. Sie sehen es im Portal, sobald es vorliegt.</p>
-  ${portalButtonHtml(link)}
-</body>
-</html>`;
+  return wrapBaerenwaldMail({
+    headerTitle: "Bärenwald — Angebot eingefordert",
+    bodyHtml: `
+    <div style="padding:0 16px;">
+      <p style="margin:0 0 12px;font-size:15px;color:#1a2420;line-height:1.55">Guten Tag,</p>
+      <p style="margin:0;font-size:15px;color:#1a2420;line-height:1.55">Für <strong>${esc(input.objektTitel)}</strong>${input.melderName ? ` (${esc(input.melderName)})` : ""} erstellt Bärenwald ein Angebot. Sie sehen es im Portal, sobald es vorliegt.</p>
+    </div>`,
+    ctaHref: link,
+    ctaLabel: "Zum Auftraggeber-Portal →",
+  });
 }
 
 /** M5 — Mieter: Einladung zur Ergänzung */
@@ -228,58 +278,83 @@ export function buildOrgKleinreparaturHtml(input: {
   portalPath?: string;
 }): string {
   const link = orgPortalDeepLink(input.portalPath);
-  return `<!DOCTYPE html>
-<html lang="de">
-<body style="font-family:system-ui,sans-serif;color:#1a2420;line-height:1.5;max-width:560px;margin:0 auto;padding:24px">
-  <p>Kleinreparatur freigegeben</p>
-  <p><strong>${esc(input.objektTitel)}</strong>${input.melderName ? ` · ${esc(input.melderName)}` : ""} — Bärenwald koordiniert die Ausführung ohne formales Angebot.</p>
-  ${portalButtonHtml(link)}
-</body>
-</html>`;
+  return wrapBaerenwaldMail({
+    headerTitle: "Bärenwald — Sofort beauftragt",
+    bodyHtml: `
+    <div style="padding:0 16px;">
+      <p style="margin:0 0 12px;font-size:15px;color:#1a2420;line-height:1.55">Guten Tag,</p>
+      <p style="margin:0;font-size:15px;color:#1a2420;line-height:1.55"><strong>${esc(input.objektTitel)}</strong>${input.melderName ? ` · ${esc(input.melderName)}` : ""} — Kleinreparatur: Der Handwerker rückt ohne formales Angebot aus und kann direkt starten.</p>
+    </div>`,
+    ctaHref: link,
+    ctaLabel: "Zum Auftraggeber-Portal →",
+  });
 }
 
-/** M8 — HV: Angebot zur Freigabe (nur Mieter-Schäden) */
+/** M8 — HV: Angebot zur Freigabe (über Schwelle) */
 export function buildOrgAngebotFreigabeHtml(input: {
   objektTitel: string;
   betrag?: string;
   portalPath?: string;
 }): string {
   const link = orgPortalDeepLink(input.portalPath);
-  return `<!DOCTYPE html>
-<html lang="de">
-<body style="font-family:system-ui,sans-serif;color:#1a2420;line-height:1.5;max-width:560px;margin:0 auto;padding:24px">
-  <p>Angebot wartet auf Freigabe</p>
-  <p>Für <strong>${esc(input.objektTitel)}</strong>${input.betrag ? ` (${esc(input.betrag)})` : ""} liegt ein Angebot vor. Bitte im Portal freigeben oder ablehnen.</p>
-  ${portalButtonHtml(link)}
-</body>
-</html>`;
+  return wrapBaerenwaldMail({
+    headerTitle: "Bärenwald — Freigabe erforderlich",
+    bodyHtml: `
+    <div style="padding:0 16px;">
+      <p style="margin:0 0 12px;font-size:15px;color:#1a2420;line-height:1.55">Guten Tag,</p>
+      <p style="margin:0;font-size:15px;color:#1a2420;line-height:1.55">Für <strong>${esc(input.objektTitel)}</strong>${input.betrag ? ` (${esc(input.betrag)})` : ""} liegt ein Angebot vor. Bitte im Portal freigeben oder ablehnen.</p>
+    </div>`,
+    ctaHref: link,
+    ctaLabel: "Zum Auftraggeber-Portal →",
+  });
 }
 
-/** HV: Ereignis, das früher an den Mieter ging — inkl. optional Status-Link zum Weitergeben. */
+/** HV: Angebot unter Freigabeschwelle — Direkt Durchführung, kein Freigabe-Button. */
+export function buildOrgAngebotUnterSchwelleHtml(input: {
+  objektTitel: string;
+  betrag?: string;
+  schwelleLabel?: string;
+  portalPath?: string;
+}): string {
+  const link = orgPortalDeepLink(input.portalPath);
+  const schwelle =
+    input.schwelleLabel?.trim() != null && input.schwelleLabel.trim() !== ""
+      ? ` (Freigabeschwelle ${esc(input.schwelleLabel.trim())})`
+      : "";
+  return wrapBaerenwaldMail({
+    headerTitle: "Bärenwald — Angebot unter Freigabeschwelle",
+    bodyHtml: `
+    <div style="padding:0 16px;">
+      <p style="margin:0 0 12px;font-size:15px;color:#1a2420;line-height:1.55">Guten Tag,</p>
+      <p style="margin:0 0 12px;font-size:15px;color:#1a2420;line-height:1.55">Für <strong>${esc(input.objektTitel)}</strong>${input.betrag ? ` liegt ein Angebot (${esc(input.betrag)})` : " liegt ein Angebot"} unter Ihrer Freigabeschwelle${schwelle}.</p>
+      <p style="margin:0;font-size:15px;color:#1a2420;line-height:1.55"><strong>Direkt Durchführung:</strong> Der Handwerker kann ohne Ihre Freigabe starten. Im Portal sehen Sie den Hinweis — einen Freigabe-Button gibt es nicht.</p>
+    </div>`,
+    ctaHref: link,
+    ctaLabel: "Zum Auftraggeber-Portal →",
+  });
+}
+
+/** HV: Ereignis-Hinweis (kein Mieter-Mail, kein Status-Link). */
 export function buildOrgHvMieterEventHtml(input: {
   objektTitel: string;
   melderName?: string;
   eventTitel: string;
   eventBody: string;
-  mieterStatusLink?: string;
   portalPath?: string;
 }): string {
   const link = orgPortalDeepLink(input.portalPath);
   const melder = input.melderName?.trim()
     ? ` (${esc(input.melderName.trim())})`
     : "";
-  const statusBlock = input.mieterStatusLink
-    ? `<p style="margin:16px 0;font-size:14px"><strong>Mieter-Status-Link</strong> (bitte selbst weitergeben):<br/><a href="${esc(input.mieterStatusLink)}">${esc(input.mieterStatusLink)}</a></p>`
-    : "";
-  return `<!DOCTYPE html>
-<html lang="de">
-<body style="font-family:system-ui,sans-serif;color:#1a2420;line-height:1.5;max-width:560px;margin:0 auto;padding:24px">
-  <p>Guten Tag,</p>
-  <p><strong>${esc(input.eventTitel)}</strong> — <strong>${esc(input.objektTitel)}</strong>${melder}</p>
-  <p>${esc(input.eventBody)}</p>
-  ${statusBlock}
-  ${portalButtonHtml(link)}
-  <p style="color:#6b7f74;font-size:13px;margin-top:8px">Es geht keine E-Mail an den Mieter. Bitte koordinieren Sie Rückfragen und Termine direkt.</p>
-</body>
-</html>`;
+  return wrapBaerenwaldMail({
+    headerTitle: `Bärenwald — ${input.eventTitel}`,
+    bodyHtml: `
+    <div style="padding:0 16px;">
+      <p style="margin:0 0 12px;font-size:15px;color:#1a2420;line-height:1.55">Guten Tag,</p>
+      <p style="margin:0 0 12px;font-size:15px;color:#1a2420;line-height:1.55"><strong>${esc(input.eventTitel)}</strong> — <strong>${esc(input.objektTitel)}</strong>${melder}</p>
+      <p style="margin:0;font-size:15px;color:#1a2420;line-height:1.55">${esc(input.eventBody)}</p>
+    </div>`,
+    ctaHref: link,
+    ctaLabel: "Zum Auftraggeber-Portal →",
+  });
 }

@@ -196,12 +196,13 @@ export function PartnerHwKalkulationScreen({
         </div>
         {unterSchwelle ? (
           <p className="mt-2 text-xs font-semibold text-[#1F6A3F]">
-            ✓ Unter Schwellenwert ({formatHwMoney(schwelleEur)}) — Freigabe oft
-            automatisch.
+            ✓ Unter Freigabeschwelle ({formatHwMoney(schwelleEur)}) — Sie können
+            die Durchführung direkt starten, ohne Freigabe der Hausverwaltung.
           </p>
         ) : (
           <p className="mt-2 text-xs text-text-secondary">
-            Über Schwellenwert — Hausverwaltung prüft das empfohlene Angebot.
+            Über Freigabeschwelle — die Hausverwaltung muss das Angebot erst
+            freigeben.
           </p>
         )}
       </div>

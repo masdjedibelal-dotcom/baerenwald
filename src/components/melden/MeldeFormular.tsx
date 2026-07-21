@@ -1,14 +1,11 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import { useRouter } from "next/navigation";
 
 import { PortalFunnelHost } from "@/components/funnel/PortalFunnelHost";
-import {
-  MieterWlCard,
-  MieterWlFrame,
-} from "@/components/melden/MieterWlFrame";
-import type { MeldeLang } from "@/lib/melden/melde-i18n";
+import { MieterWlFrame } from "@/components/melden/MieterWlFrame";
+import { MELDE_ALLGEMEIN_SLUG } from "@/lib/org/melde-url";
 import type { MieterWlBrand } from "@/lib/portal2/mieter-wl";
 
 type Props = {
@@ -33,6 +30,11 @@ type Props = {
   impressumHref?: string;
   mode?: "melden" | "ergaenzen";
   einladungToken?: string;
+  /**
+   * Objekt-Link/Aushang: Objekt ist fest — Mieter sieht nur dieses Objekt
+   * (erster Schritt: Bestätigung, kein Sprung zur HV-Objektliste).
+   */
+  objektLocked?: boolean;
   prefill?: {
     name?: string;
     email?: string;
@@ -43,7 +45,7 @@ type Props = {
 };
 
 /**
- * Melde-Link / Ergänzen — Website-Funnel-Design (kaputt, kein Preis).
+ * Melde-Link / Ergänzen — Website-Funnel-Chrome + HV-Branding.
  */
 export function MeldeFormular({
   orgName,
@@ -62,10 +64,10 @@ export function MeldeFormular({
   objektSlug,
   mode = "melden",
   einladungToken,
+  objektLocked = false,
   prefill,
 }: Props) {
   const router = useRouter();
-  const [lang, setLang] = useState<MeldeLang>("de");
 
   const brand: MieterWlBrand = useMemo(
     () => ({
@@ -93,44 +95,52 @@ export function MeldeFormular({
   );
 
   const sessionKey = `melde-${orgKennung}-${objektSlug}`;
+  const isAllgemein =
+    !objektLocked &&
+    objektSlug.trim().toLowerCase() === MELDE_ALLGEMEIN_SLUG;
 
   return (
-    <MieterWlFrame brand={brand} lang={lang} onLangChange={setLang}>
-      <MieterWlCard>
-        <div className="mb-4 rounded-lg bg-[#f7f8fa] px-3 py-2.5 text-[13px]">
-          <p className="font-semibold text-text-primary">{objektTitel}</p>
-          {(objektAdresse || objektPlzOrt) && (
-            <p className="text-text-secondary">
-              {[objektAdresse, objektPlzOrt].filter(Boolean).join(" · ")}
-            </p>
-          )}
-          <p className="mt-1 text-[12px] text-text-tertiary">
-            {mode === "ergaenzen"
-              ? `Ergänzung · ${orgName}`
-              : `Meldung an ${orgName}`}
-          </p>
-        </div>
-        <PortalFunnelHost
-          channel="melde_anon"
-          layout="page"
-          title={mode === "ergaenzen" ? "Meldung ergänzen" : "Schaden melden"}
-          prefill={prefill}
-          melde={{
-            orgKennung,
-            objektSlug,
-            orgName,
-            sessionKey,
-            ergaenzenToken:
-              mode === "ergaenzen" ? einladungToken : undefined,
-          }}
-          onClose={() =>
-            mode === "ergaenzen"
-              ? router.push("/")
-              : router.push(`/melden/${orgKennung}`)
+    <MieterWlFrame brand={brand} variant="funnel" hideFooter>
+      <PortalFunnelHost
+        channel="melde_anon"
+        layout="page"
+        title={mode === "ergaenzen" ? "Meldung ergänzen" : "Schaden melden"}
+        prefill={prefill}
+        melde={{
+          orgKennung,
+          objektSlug,
+          orgName,
+          sessionKey,
+          ergaenzenToken: mode === "ergaenzen" ? einladungToken : undefined,
+          needsAddress: isAllgemein,
+          objektConfirm: objektLocked
+            ? {
+                titel: objektTitel,
+                adresse: [objektAdresse, objektPlzOrt]
+                  .filter(Boolean)
+                  .join(" · "),
+              }
+            : isAllgemein
+              ? null
+              : {
+                  titel: objektTitel,
+                  adresse: [objektAdresse, objektPlzOrt]
+                    .filter(Boolean)
+                    .join(" · "),
+                },
+          objektLocked,
+        }}
+        onClose={() => {
+          if (mode === "ergaenzen") {
+            router.push("/");
+            return;
           }
-          onDone={() => undefined}
-        />
-      </MieterWlCard>
+          // Objekt-Link: nicht zur HV-Objektliste (andere Gebäude) springen
+          if (objektLocked) return;
+          router.push(`/melden/${orgKennung}`);
+        }}
+        onDone={() => undefined}
+      />
     </MieterWlFrame>
   );
 }

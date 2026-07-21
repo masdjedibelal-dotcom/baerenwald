@@ -16,14 +16,18 @@ import type { FachdetailsState, FunnelState } from "@/lib/funnel/types";
 import type { StepOption as LibStepOption } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
-function asLibOpt(o: FachdetailOption): LibStepOption {
+function asLibOpt(
+  o: FachdetailOption,
+  stripInfoBoxes?: boolean
+): LibStepOption {
   return {
     value: o.value,
     label: o.label,
     hint: o.hint,
     icon: o.icon,
     emoji: o.emoji,
-    warnText: o.direktKomplex ? o.komplex_text : undefined,
+    warnText:
+      stripInfoBoxes || !o.direktKomplex ? undefined : o.komplex_text,
   };
 }
 
@@ -46,6 +50,8 @@ export type FachdetailsStepProps = {
   detailTotal: number;
   animateKey?: string | number;
   banner?: ReactNode;
+  /** Keine Termin-/SLA-Infoboxen unter den Optionen (Melde/HV). */
+  stripInfoBoxes?: boolean;
 };
 
 export function FachdetailsStep({
@@ -57,6 +63,7 @@ export function FachdetailsStep({
   detailTotal,
   animateKey = 0,
   banner,
+  stripInfoBoxes = false,
 }: FachdetailsStepProps) {
   const question = useMemo(
     () => resolveFachdetailQuestionForUi(state, questionId),
@@ -125,7 +132,7 @@ export function FachdetailsStep({
 
       <div className="space-y-3">
         {question.optionen.map((opt) => {
-          const libOpt = asLibOpt(opt);
+          const libOpt = asLibOpt(opt, stripInfoBoxes);
           const selected = multi
             ? selectedMulti.includes(opt.value)
             : selectedSingle === opt.value;

@@ -5,6 +5,8 @@ import { useState } from "react";
 import { getOrgAvTextForVersion } from "@/lib/org/org-av-text";
 import {
   ORG_AV_VERSION_CURRENT,
+  orgEffectiveMieterMail,
+  orgEffectiveMieterTel,
   orgHasMieterKontakt,
   orgWhitelabelReady,
 } from "@/lib/org/org-mieter-kontakt";
@@ -22,8 +24,8 @@ type Props = {
 };
 
 export function OrganisationWhitelabelGate({ kunde, canComplete, onComplete }: Props) {
-  const [tel, setTel] = useState(kunde.mieter_kontakt_telefon ?? "");
-  const [mail, setMail] = useState(kunde.mieter_kontakt_email ?? "");
+  const [tel, setTel] = useState(orgEffectiveMieterTel(kunde));
+  const [mail, setMail] = useState(orgEffectiveMieterMail(kunde));
   const [hint, setHint] = useState(kunde.mieter_kontakt_hinweis ?? "");
   const [avOk, setAvOk] = useState(Boolean(kunde.av_akzeptiert_am));
   const [avExpanded, setAvExpanded] = useState(false);

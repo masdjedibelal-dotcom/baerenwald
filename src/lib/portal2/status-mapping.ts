@@ -11,8 +11,9 @@
 import type { ResolvedVorgang } from "@/lib/crm-vorgang/types";
 import {
   PORTAL_FLOW,
+  PORTAL_FLOW_TIMELINE,
   PORTAL_STATUS,
-  portalFlowIndex,
+  portalFlowTimelineIndex,
   type PortalMockStatusId,
   type PortalMockStatusMeta,
 } from "@/lib/portal2/status";
@@ -216,8 +217,8 @@ export function resolvePortalFlowStatus(
 export function portalFlowTimeline(
   current: PortalMockStatusId
 ): Array<PortalMockStatusMeta & { done: boolean; active: boolean }> {
-  const cur = portalFlowIndex(current);
-  return PORTAL_FLOW.map((id, i) => ({
+  const cur = portalFlowTimelineIndex(current);
+  return PORTAL_FLOW_TIMELINE.map((id, i) => ({
     ...PORTAL_STATUS[id],
     done: i < cur,
     active: i === cur,

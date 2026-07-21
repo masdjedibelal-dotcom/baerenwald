@@ -46,13 +46,13 @@ export const PORTAL_STATUS: Record<PortalMockStatusId, PortalMockStatusMeta> = {
   },
   angebot: {
     id: "angebot",
-    label: "Angebot vorgelegt",
+    label: "Angebot",
     color: "#8A5A06",
     bg: "#FBF1D6",
   },
   auftrag: {
     id: "auftrag",
-    label: "Beauftragt",
+    label: "Auftrag",
     color: "#1F6A3F",
     bg: "#DDEEDF",
   },
@@ -64,7 +64,7 @@ export const PORTAL_STATUS: Record<PortalMockStatusId, PortalMockStatusMeta> = {
   },
   rechnung: {
     id: "rechnung",
-    label: "Rechnung offen",
+    label: "Rechnung",
     color: "#8A5A06",
     bg: "#FBF1D6",
   },
@@ -76,7 +76,10 @@ export const PORTAL_STATUS: Record<PortalMockStatusId, PortalMockStatusMeta> = {
   },
 };
 
-/** Mock `FLOW` — Reihenfolge der Meilensteine. */
+/**
+ * Interne Meilenstein-Reihenfolge (granular für Mapping/Actions).
+ * UI-Timeline: `PORTAL_FLOW_TIMELINE` (5 Schritte).
+ */
 export const PORTAL_FLOW: readonly PortalMockStatusId[] = [
   "gemeldet",
   "freigegeben",
@@ -88,12 +91,41 @@ export const PORTAL_FLOW: readonly PortalMockStatusId[] = [
   "bezahlt",
 ] as const;
 
+/** Verdichtete HV-Timeline in der Detail-UI. */
+export const PORTAL_FLOW_TIMELINE: readonly PortalMockStatusId[] = [
+  "gemeldet",
+  "freigegeben",
+  "angebot",
+  "auftrag",
+  "rechnung",
+] as const;
+
 export function portalStatusMeta(id: PortalMockStatusId): PortalMockStatusMeta {
   return PORTAL_STATUS[id];
 }
 
 export function portalFlowIndex(id: PortalMockStatusId): number {
   return PORTAL_FLOW.indexOf(id);
+}
+
+/** Index in der 5-Schritt-UI-Timeline (Zwischenstatus werden verdichtet). */
+export function portalFlowTimelineIndex(id: PortalMockStatusId): number {
+  switch (id) {
+    case "gemeldet":
+      return 0;
+    case "freigegeben":
+    case "angefragt":
+      return 1;
+    case "angebot":
+      return 2;
+    case "auftrag":
+    case "abschluss":
+      return 3;
+    case "rechnung":
+      return 4;
+    case "bezahlt":
+      return 5; // alle Schritte erledigt
+  }
 }
 
 /** Inline-Styles für Status-Chip (Mock-Farben). */
@@ -107,7 +139,7 @@ export function portalStatusChipStyle(id: PortalMockStatusId): {
 
 /**
  * Mieter-Timeline STG (4 Stufen, de+en) — Mock `STG`.
- * Nicht identisch mit FLOW (HV sieht 8 Schritte; Mieter verdichtet).
+ * Nicht identisch mit FLOW (HV-UI: 5 Schritte; Mieter verdichtet auf 4).
  */
 export const MIETER_STG = [
   {

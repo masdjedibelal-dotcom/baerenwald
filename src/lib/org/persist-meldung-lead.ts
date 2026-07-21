@@ -43,6 +43,7 @@ export type PersistMeldungLeadInput = {
   plz: string;
   strasse?: string | null;
   hausnummer?: string | null;
+  ort?: string | null;
   auftraggeber_kunde_id: string;
   kunde_objekt_id?: string | null;
   kanal: "hv_melder_link" | "hv_direkt" | "hv_einladung";
@@ -74,6 +75,7 @@ export async function persistMeldungLead(input: PersistMeldungLeadInput) {
     plz: input.plz,
     strasse: input.strasse ?? undefined,
     hausnummer: input.hausnummer ?? undefined,
+    ort: input.ort ?? undefined,
     situation: meldeKategorieToSituation(input.kategorie),
     bereiche,
     zeitraum,
@@ -106,6 +108,7 @@ export async function persistMeldungLead(input: PersistMeldungLeadInput) {
       ...(input.terminwunsch
         ? { terminwunsch: input.terminwunsch }
         : {}),
+      ...(input.ort?.trim() ? { ort: input.ort.trim() } : {}),
       fotos: input.fotos ?? [],
       quelle: input.kanal,
     },

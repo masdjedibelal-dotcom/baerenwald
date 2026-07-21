@@ -69,6 +69,11 @@ export function PortalLoginForm({
   const [magicSent, setMagicSent] = useState(false);
 
   useEffect(() => {
+    const prefillEmail = searchParams.get("email")?.trim();
+    if (prefillEmail) setEmail(prefillEmail);
+  }, [searchParams]);
+
+  useEffect(() => {
     const { access_token, refresh_token } = parseHashSession();
     if (!access_token || !refresh_token) {
       setHashBusy(false);

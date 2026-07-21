@@ -128,7 +128,7 @@ export const HV_DETAIL_COPY = {
   empfohlenDetail: "Empfohlenes Angebot im Detail",
   empfohlenAnnehmen: "Empfohlenes annehmen",
   unterSchwelle: (schwelleLabel: string) =>
-    `✓ Unter Schwellenwert (${schwelleLabel}) – keine manuelle Freigabe nötig, Auftrag läuft automatisch.`,
+    `Direkt Durchführung — Angebot unter Freigabeschwelle (${schwelleLabel}). Der Handwerker kann starten, ohne dass Sie freigeben. Sie erhalten eine E-Mail und sehen diesen Hinweis im Vorgang.`,
   inAusfuehrung: "In Ausführung",
   inAusfuehrungNoteHv:
     "Der Handwerker dokumentiert unten im Bautagebuch. Mieter sehen diese Einträge nicht.",
@@ -143,7 +143,7 @@ export const HV_DETAIL_COPY = {
     "Gesamtpaket von Bärenwald erhalten: Rechnung + Abschlussdokumentation.",
   rechnungsbetrag: "Rechnungsbetrag",
   ueberweisungOffen:
-    "Überweisung veranlassen ist im Portal noch nicht angebunden (OFFENE-PUNKTE). Rechnungsstatus siehe unten.",
+    "Überweisung veranlassen ist im Portal noch nicht angebunden. Rechnungsstatus siehe unten.",
   paketOeffnen: "📄 Paket öffnen",
   abgeschlossenTitle: "Abgeschlossen",
   abgeschlossenNote: "Vorgang vollständig abgeschlossen und bezahlt.",

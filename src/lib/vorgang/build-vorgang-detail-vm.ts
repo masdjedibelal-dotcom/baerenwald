@@ -100,6 +100,12 @@ export type BuildKundeHvVmInput = {
   melderName?: string | null;
   einheit?: string | null;
   fotos?: string[];
+  meldeStrasse?: string | null;
+  meldePlz?: string | null;
+  meldeOrt?: string | null;
+  meldeSituation?: string | null;
+  meldeBereich?: string | null;
+  meldeZeitraum?: string | null;
   angebotPositionen?: PortalAngebotPositionDisplay[];
   auftragPositionen?: PortalAuftragPositionDisplay[];
   gesamtBrutto?: number | null;
@@ -113,10 +119,33 @@ export function buildKundeHvVorgangDetailVm(
   input: BuildKundeHvVmInput
 ): VorgangDetailVM {
   const lead = input.lead;
+  const adresseFromLead = formatAdresse(input.objekt ?? lead?.objekt, {
+    strasse: input.meldeStrasse
+      ? input.meldeStrasse
+      : lead?.strasse,
+    hausnummer: input.meldeStrasse ? null : lead?.hausnummer,
+    plz: input.meldePlz ?? lead?.plz,
+    ort: input.meldeOrt ?? lead?.ort,
+  });
   const adresse =
-    formatAdresse(input.objekt ?? lead?.objekt, lead) ||
+    adresseFromLead ||
+    input.meldeStrasse?.trim() ||
     input.objektZeile?.trim() ||
     null;
+
+  const adresseStrasse =
+    input.meldeStrasse?.trim() ||
+    [lead?.strasse, lead?.hausnummer].filter(Boolean).join(" ").trim() ||
+    input.objekt?.strasse?.trim() ||
+    lead?.objekt?.strasse?.trim() ||
+    null;
+
+  const plzOrt =
+    [input.meldePlz ?? lead?.plz ?? input.objekt?.plz ?? lead?.objekt?.plz,
+      input.meldeOrt ?? lead?.ort ?? input.objekt?.ort ?? lead?.objekt?.ort]
+      .filter(Boolean)
+      .join(" ")
+      .trim() || null;
 
   const leistungen =
     leistungenFromAuftragDisplay(input.auftragPositionen).length > 0
@@ -134,6 +163,8 @@ export function buildKundeHvVorgangDetailVm(
   const objektMelder: VorgangDetailObjektMelder = {
     objektTitel: input.objekt?.name ?? lead?.objekt?.name ?? null,
     adresseZeile: adresse,
+    adresseStrasse,
+    plzOrt,
     einheit: input.einheit ?? lead?.melder_einheit ?? null,
     zugangshinweis: input.lead?.einheiten_hinweis ?? null,
     melderName:
@@ -142,6 +173,9 @@ export function buildKundeHvVorgangDetailVm(
     melderEmail: lead?.melder_email ?? null,
     beschreibung: input.beschreibung ?? null,
     fotos: input.fotos ?? [],
+    situationLabel: input.meldeSituation ?? null,
+    bereichLabel: input.meldeBereich ?? null,
+    zeitraumLabel: input.meldeZeitraum ?? null,
   };
 
   const ausfuehrung: VorgangDetailAusfuehrung = {

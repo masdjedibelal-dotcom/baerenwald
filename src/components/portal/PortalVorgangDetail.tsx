@@ -52,6 +52,16 @@ function sectionText(
   );
 }
 
+function extractProjektbeschreibung(item: KundePortalDetailItem): string {
+  for (const sec of item.sections ?? []) {
+    const row = sec.rows?.find((r) =>
+      /projektbeschreibung|beschreibung|anliegen|nachricht/i.test(r.label ?? "")
+    );
+    if (row?.value?.trim()) return row.value.trim();
+  }
+  return item.summary?.trim() || "";
+}
+
 function extractMelderName(item: KundePortalDetailItem): string | undefined {
   const person = item.sections.find((s) =>
     /persönlich|kontakt|angaben/i.test(s.heading ?? "")
@@ -150,10 +160,7 @@ export function PortalVorgangDetail({
   );
 
   if (showHvAbnahme) {
-    const beschreibung =
-      sectionText(item, /beschreibung|anliegen|nachricht|projekt/i) ||
-      item.summary ||
-      "";
+    const beschreibung = extractProjektbeschreibung(item);
     const objektRaw = extractObjektLine(item);
     const melder = extractMelderName(item);
     const rechnungPdf =
@@ -197,6 +204,12 @@ export function PortalVorgangDetail({
         kostentraegerVorgeschlagen={item.kostentraegerVorgeschlagen}
         versicherungsNr={item.versicherungsNr}
         meldeFotos={item.meldeFotos}
+        meldeStrasse={item.meldeStrasse}
+        meldePlz={item.meldePlz}
+        meldeOrt={item.meldeOrt}
+        meldeSituation={item.meldeSituation}
+        meldeBereich={item.meldeBereich}
+        meldeZeitraum={item.meldeZeitraum}
         handwerkerName={item.ansprechpartner?.name}
         orgFreigabeStatus={orgFreigabeStatus ?? item.orgFreigabeStatus}
         hvMeldungStatus={hvMeldungStatus ?? item.hvMeldungStatus}

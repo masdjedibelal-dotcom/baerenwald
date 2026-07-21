@@ -157,8 +157,8 @@ export const orgPortalToast = {
   },
   kleinreparaturFreigegeben() {
     portalToastSuccess(
-      "Kleinreparatur freigegeben",
-      "Bärenwald beauftragt die Reparatur ohne formales Angebot."
+      "Sofort beauftragt",
+      "Der Handwerker rückt ohne formales Angebot aus und kann direkt starten."
     );
   },
   freigegeben() {

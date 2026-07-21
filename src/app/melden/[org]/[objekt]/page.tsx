@@ -62,6 +62,7 @@ export default async function MeldenObjektPage({ params }: Props) {
       einheitenHinweis={obj?.display.we}
       orgKennung={kontext.org.org_kennung}
       objektSlug={obj?.melde_slug ?? MELDE_ALLGEMEIN_SLUG}
+      objektLocked={Boolean(obj)}
       datenschutzHref={legal.datenschutz}
       impressumHref={legal.impressum}
     />

@@ -2,11 +2,13 @@
  * Portal 2.0 E1–E2 — Objekte-Liste / Wizard (`objWizValid` / `objWizNext`).
  */
 
+import { resolveLeadObjektId } from "@/lib/org/match-lead-objekt";
+
 export const OBJ_WIZ_STEPS = [
   ["stamm", "Stammdaten"],
   ["einheiten", "Einheiten"],
-  ["verwaltung", "Verwaltung"],
-  ["regeln", "Regeln"],
+  ["verwaltung", "Kontakt"],
+  ["regeln", "Freigabe"],
   ["fertig", "Prüfen"],
 ] as const;
 
@@ -21,12 +23,17 @@ export const OBJ_TYP_OPTIONS = [
 export type ObjWizDraft = {
   name?: string;
   typ?: string;
+  /** @deprecated Prefer strasse + hausnummer */
   adr?: string;
+  strasse?: string;
+  hausnummer?: string;
   plz?: string;
   ort?: string;
   we?: number | string;
+  /** @deprecated Nicht mehr im Wizard — HV ist die eingeloggte Organisation */
   hv?: string;
   kontakt?: string;
+  email?: string;
   tel?: string;
   schwelle?: number | string | null;
   /** UI only — Persistenz objektbezogen = OFFENE-PUNKTE (kein DB-Feld). */
@@ -34,27 +41,25 @@ export type ObjWizDraft = {
 };
 
 export const OBJ_WIZ_ERRORS: Record<string, string> = {
-  stamm: "Bitte Bezeichnung, Typ und Adresse ausfüllen.",
+  stamm: "Bitte Bezeichnung, Typ, Straße, Hausnummer, PLZ und Ort ausfüllen.",
   einheiten: "Bitte mindestens 1 Einheit angeben.",
-  verwaltung: "Bitte die Hausverwaltung angeben.",
 };
 
 export const OBJ_WIZ_TITLES: Record<ObjWizStepId, string> = {
   stamm: "Stammdaten",
   einheiten: "Wie viele Einheiten?",
-  verwaltung: "Verwaltung & Kontakt",
-  regeln: "Freigabe-Regeln",
+  verwaltung: "Ansprechpartner (optional)",
+  regeln: "Freigabeschwelle",
   fertig: "Prüfen & anlegen",
 };
 
 /** Mock-Detail-Tabs (`screenObjektDetail`). */
 export const OBJ_DETAIL_TABS = [
   { id: "stamm", label: "Stammdaten" },
-  { id: "einheiten", label: "Einheiten" },
+  { id: "einheiten", label: "Bewohner" },
   { id: "mieter", label: "Mieter" },
   { id: "vorgaenge", label: "Vorgänge" },
-  { id: "regeln", label: "Regeln" },
-  { id: "eigentuemer", label: "Eigentümer" },
+  { id: "regeln", label: "Freigabe" },
   { id: "dokumente", label: "Dokumente" },
 ] as const;
 
@@ -64,8 +69,10 @@ const META_RE = /<!--portal2-objekt:([\s\S]*?)-->/;
 
 export type Portal2ObjektMeta = {
   typ?: string;
+  /** @deprecated Legacy — HV ist die Organisation */
   hv?: string;
   kontakt?: string;
+  email?: string;
   tel?: string;
 };
 
@@ -234,14 +241,27 @@ export function formatObjektStrasse(input: {
 /** Mock `objWizValid`. */
 export function objWizValid(step: ObjWizStepId, d: ObjWizDraft): boolean {
   if (step === "stamm") {
-    return !!(d.name?.trim() && d.typ && d.adr?.trim());
+    const strasse = (d.strasse ?? d.adr ?? "").trim();
+    const hausnummer = (d.hausnummer ?? "").trim();
+    const plz = (d.plz ?? "").trim();
+    const ort = (d.ort ?? "").trim();
+    // Legacy: kombiniertes PLZ/Ort-Feld
+    const legacyPlzOrt = !ort && /^\d{4,5}\s+\S+/.test(plz);
+    return !!(
+      d.name?.trim() &&
+      d.typ &&
+      strasse &&
+      hausnummer &&
+      (legacyPlzOrt || (plz.length >= 4 && ort))
+    );
   }
   if (step === "einheiten") {
     const we = d.we === undefined || d.we === "" ? 1 : Number(d.we);
     return Number.isFinite(we) && we >= 1;
   }
   if (step === "verwaltung") {
-    return !!d.hv?.trim();
+    // Alles optional — Ansprechpartner nur bei Bedarf
+    return true;
   }
   return true;
 }
@@ -293,14 +313,25 @@ export function objWizNext(
   const typ = d.typ ?? "Mehrfamilienhaus";
   const typLabel =
     typ === "Einfamilienhaus (B2C)" ? typ : `${typ} · ${we} WE`;
-  const adr = (d.adr ?? "").trim();
-  const plzOrt = (d.plz ?? "").trim();
-  const plzMatch = plzOrt.match(/^(\d{4,5})\s*(.*)$/);
-  const plz = plzMatch?.[1] ?? plzOrt;
-  const ort = plzMatch?.[2]?.trim() || (d.ort ?? "").trim();
-  const adrMatch = adr.match(/^(.*?)[\s,]+(\d+\s*[a-zA-Z]?)$/);
-  const strasse = adrMatch?.[1]?.trim() || adr;
-  const hausnummer = adrMatch?.[2]?.trim() || "";
+
+  let strasse = (d.strasse ?? "").trim();
+  let hausnummer = (d.hausnummer ?? "").trim();
+  if (!strasse && (d.adr ?? "").trim()) {
+    const adr = (d.adr ?? "").trim();
+    const adrMatch = adr.match(/^(.*?)[\s,]+(\d+\s*[a-zA-Z]?)$/);
+    strasse = adrMatch?.[1]?.trim() || adr;
+    hausnummer = hausnummer || adrMatch?.[2]?.trim() || "";
+  }
+
+  let plz = (d.plz ?? "").trim();
+  let ort = (d.ort ?? "").trim();
+  if (!ort) {
+    const plzMatch = plz.match(/^(\d{4,5})\s+(.*)$/);
+    if (plzMatch) {
+      plz = plzMatch[1] ?? plz;
+      ort = (plzMatch[2] ?? "").trim();
+    }
+  }
 
   const schwelleRaw = d.schwelle;
   const schwelle =
@@ -322,8 +353,8 @@ export function objWizNext(
       notizen_intern: encodeObjektMeta(
         {
           typ,
-          hv: d.hv?.trim() || undefined,
           kontakt: d.kontakt?.trim() || undefined,
+          email: d.email?.trim() || undefined,
           tel: d.tel?.trim() || undefined,
         },
         existingNotizen
@@ -354,18 +385,28 @@ export function objDeleteConfirm(name: string): string {
   return `Objekt „${name}“ wirklich löschen? Zugeordnete Vorgänge bleiben erhalten.`;
 }
 
-export const OBJ_AUTOPASS_OFFENER_PUNKT =
-  "Notfall-Autopass pro Objekt: kein DB-Feld — Toggle speichert noch nicht (OFFENE-PUNKTE). Org-weit: notfall_direkt." as const;
+export const OBJ_AUTOPASS_OFFENER_PUNKT = "" as const; // legacy export — nicht mehr in der UI anzeigen
 
-/** Mock Wizard/Detail — Autopass-Beschreibung (wortwörtlich). */
+/** @deprecated UI ohne Sofort-Ausrückung — nur noch Freigabeschwelle. */
 export const OBJ_AUTOPASS_WIZARD_DESC =
-  "Bei Notfällen direkt Handwerker anfragen, ohne HV-Freigabe." as const;
+  "Angebote bis zur Freigabeschwelle werden automatisch beauftragt — darüber ist Ihre Freigabe nötig." as const;
 
+/** @deprecated UI ohne Sofort-Ausrückung — nur noch Freigabeschwelle. */
 export const OBJ_AUTOPASS_DETAIL_DESC =
-  "Bei Notfall-Meldungen direkt Handwerker anfragen, ohne HV-Freigabe." as const;
+  "Angebote bis zur Freigabeschwelle werden automatisch beauftragt — darüber ist Ihre Freigabe nötig." as const;
 
 export const OBJ_REGELN_FALLBACK =
-  "Ohne eigene Regel gilt die Einstellung der Hausverwaltung: Autopass aus · Schwelle 500 €." as const;
+  "Ohne eigene Schwelle gilt die Standard-Regel Ihrer Hausverwaltung." as const;
+
+/** Freigabeschwelle — analog Einstellungen (Standard-Regel). */
+export const OBJ_SCHWELLE_WIZARD_TITLE = "Freigabeschwelle" as const;
+export const OBJ_SCHWELLE_WIZARD_DESC =
+  "Gilt nur für dieses Objekt. Angebote bis zu diesem Betrag werden automatisch beauftragt — darüber ist Ihre Freigabe nötig." as const;
+
+export const OBJ_SCHWELLE_INFO = (value: number) => {
+  const label = formatSchwelleEur(value);
+  return `Angebote bis ${label} werden automatisch beauftragt. Ab ${label} ist Ihre Freigabe nötig.`;
+};
 
 /** Mock `objMieterMenu` Labels. */
 export const OBJ_MIETER_MENU = {
@@ -382,8 +423,11 @@ export const OBJ_MIETER_PORTAL_STATUS = {
   nicht: "○ Nicht eingeladen",
 } as const;
 
-export function formatObjRegelnReview(autopass: boolean, schwelle: number): string {
-  return `${autopass ? "Autopass an" : "Autopass aus"} · Schwelle ${formatSchwelleEur(schwelle)}`;
+export function formatObjRegelnReview(
+  _autopass: boolean,
+  schwelle: number
+): string {
+  return `Freigabeschwelle ${formatSchwelleEur(schwelle)}`;
 }
 
 export function formatObjektIdKurz(id: string): string {
@@ -417,11 +461,13 @@ export function openObjEditDraft(
   return {
     name: o.titel,
     typ: resolveObjektTyp(o),
-    adr: formatObjektStrasse(o) || o.titel,
-    plz: formatObjektPlzOrt(o),
+    strasse: o.strasse?.trim() || "",
+    hausnummer: o.hausnummer?.trim() || "",
+    plz: o.plz?.trim() || "",
+    ort: o.ort?.trim() || "",
     we,
-    hv: meta.hv || defaultHv,
     kontakt: meta.kontakt || "",
+    email: meta.email || "",
     tel: meta.tel || "",
     schwelle: o.freigabe_schwelle_eur ?? 500,
     autopass: false,
@@ -465,12 +511,28 @@ export function countOffeneByObjektId(
     status?: string | null;
     vorgang_phase?: string | null;
     hv_meldung_status?: string | null;
+    strasse?: string | null;
+    hausnummer?: string | null;
+    plz?: string | null;
+    funnel_daten?: unknown;
+  }>,
+  objekte?: Array<{
+    id: string;
+    strasse?: string | null;
+    hausnummer?: string | null;
+    plz?: string | null;
+    ort?: string | null;
   }>
 ): Record<string, number> {
   const out: Record<string, number> = {};
+  const list = objekte ?? [];
   for (const lead of leads) {
-    const oid = lead.kunde_objekt_id?.trim();
-    if (!oid || !leadIsOffenAmObjekt(lead)) continue;
+    if (!leadIsOffenAmObjekt(lead)) continue;
+    const oid =
+      list.length > 0
+        ? resolveLeadObjektId(lead, list)
+        : lead.kunde_objekt_id?.trim() || null;
+    if (!oid) continue;
     out[oid] = (out[oid] ?? 0) + 1;
   }
   return out;

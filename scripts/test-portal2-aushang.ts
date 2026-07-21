@@ -45,6 +45,12 @@ assert(
   "url",
   aushangUrl("hv-demo", { melde_slug: "haus-a" }).includes("/melden/hv-demo/haus-a")
 );
+assert(
+  "url print canonical",
+  aushangUrl("hv-demo", { melde_slug: "haus-a" }, { forPrint: true }).startsWith(
+    "https://baerenwaldmuenchen.de/melden/"
+  )
+);
 assert("pdf path org", meldeAushangPdfPath() === "/api/org/melde-aushang");
 assert(
   "pdf path objekt",

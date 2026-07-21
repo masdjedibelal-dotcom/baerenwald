@@ -57,6 +57,12 @@ export const MIETER_WL_BESTAETIGUNG = {
   copy_en: "Copy link",
   copied_de: "Kopiert",
   copied_en: "Copied",
+  portal_register_hint_de:
+    "Möchten Sie den Status live verfolgen? Mit MeinBärenwald sehen Sie Fortschritt und Termine jederzeit — wir übernehmen Ihre Angaben aus der Meldung.",
+  portal_register_cta_de: "MeinBärenwald registrieren",
+  portal_existing_hint_de:
+    "Sie können den Status Ihrer Meldung in MeinBärenwald live verfolgen.",
+  portal_login_cta_de: "Zu MeinBärenwald anmelden",
 } as const;
 
 /** Mock `wlStatus` Kopf */

@@ -1,13 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
 
 import {
   MieterWlBtn,
   MieterWlFrame,
 } from "@/components/melden/MieterWlFrame";
-import type { MeldeLang } from "@/lib/melden/melde-i18n";
 import {
   MIETER_WL_BESTAETIGUNG,
   type MieterWlBrand,
@@ -17,107 +15,98 @@ import "./melden.css";
 type Props = {
   brand: MieterWlBrand;
   statusToken?: string | null;
-  statusLink?: string | null;
   referenz?: string | null;
-  /** Zurück zur Objektauswahl (Org-Kennung) */
   objektAuswahlHref?: string | null;
+  /** Kontakt aus der Meldung */
+  contactName?: string | null;
+  contactEmail?: string | null;
+  contactTelefon?: string | null;
+  /** E-Mail hat bereits ein MeinBärenwald-Konto */
+  portalAccountExists?: boolean;
 };
 
 /**
- * Mock `wlBestaetigung` + Spec: Status-Link, keine Mieter-Mail.
+ * Bestätigung nach Meldung → CTA MeinBärenwald (Registrieren oder Login).
  */
 export function MeldenBestaetigungClient({
   brand,
   statusToken,
-  statusLink,
   referenz,
   objektAuswahlHref,
+  contactName,
+  contactEmail,
+  contactTelefon,
+  portalAccountExists = false,
 }: Props) {
-  const [lang, setLang] = useState<MeldeLang>("de");
-  const [copied, setCopied] = useState(false);
-
-  const href = useMemo(() => {
-    if (statusLink?.trim()) return statusLink.trim();
-    if (statusToken?.trim()) return `/melden/status/${statusToken.trim()}`;
-    return null;
-  }, [statusLink, statusToken]);
-
-  const absoluteUrl = useMemo(() => {
-    if (!href) return null;
-    if (href.startsWith("http")) return href;
-    if (typeof window !== "undefined") {
-      return `${window.location.origin}${href.startsWith("/") ? href : `/${href}`}`;
-    }
-    return href;
-  }, [href]);
-
+  const t = MIETER_WL_BESTAETIGUNG;
   const ref =
     referenz?.trim() ||
     (statusToken ? statusToken.slice(0, 8).toUpperCase() : null);
 
-  async function copyLink() {
-    if (!absoluteUrl) return;
-    try {
-      await navigator.clipboard.writeText(absoluteUrl);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2500);
-    } catch {
-      setCopied(false);
-    }
-  }
+  const registerHref = (() => {
+    const q = new URLSearchParams();
+    q.set("from", "melde");
+    if (statusToken?.trim()) q.set("meldeToken", statusToken.trim());
+    if (contactName?.trim()) q.set("name", contactName.trim());
+    if (contactEmail?.trim()) q.set("email", contactEmail.trim());
+    if (contactTelefon?.trim()) q.set("telefon", contactTelefon.trim());
+    q.set("locked", "1");
+    q.set("next", "/portal");
+    return `/portal/registrieren?${q.toString()}`;
+  })();
 
-  const t = MIETER_WL_BESTAETIGUNG;
+  const loginHref = (() => {
+    const q = new URLSearchParams();
+    q.set("next", "/portal");
+    if (contactEmail?.trim()) q.set("email", contactEmail.trim());
+    return `/portal/login?${q.toString()}`;
+  })();
 
   return (
-    <MieterWlFrame brand={brand} lang={lang} onLangChange={setLang}>
+    <MieterWlFrame brand={brand}>
       <div className="mieter-wl-center">
         <div className="mieter-wl-check" aria-hidden>
           ✓
         </div>
-        <h1 className="mieter-wl-center-title">
-          {lang === "en" ? t.title_en : t.title_de}
-        </h1>
+        <h1 className="mieter-wl-center-title">{t.title_de}</h1>
         <p className="mieter-wl-center-body">
           {brand.name}
-          {lang === "en" ? t.body_suffix_en : t.body_suffix_de}
-        </p>
-        <p className="text-[12.5px] text-[#8a9690] mb-4 max-w-[340px]">
-          {lang === "en" ? t.status_hint_en : t.status_hint_de}
+          {t.body_suffix_de}
         </p>
 
         {ref ? (
           <div className="mieter-wl-ref">
-            <p className="mieter-wl-ref-label">
-              {lang === "en" ? t.ref_en : t.ref_de}
-            </p>
+            <p className="mieter-wl-ref-label">{t.ref_de}</p>
             <p className="mieter-wl-ref-value">{ref}</p>
           </div>
         ) : null}
 
-        <div className="w-full max-w-[340px] space-y-2.5">
-          {href ? (
+        <div className="w-full max-w-[340px] space-y-2.5 mt-2">
+          {portalAccountExists ? (
             <>
-              <MieterWlBtn href={href}>
-                {lang === "en" ? t.track_en : t.track_de}
-              </MieterWlBtn>
-              <MieterWlBtn kind="ghost" onClick={() => void copyLink()}>
-                {copied
-                  ? lang === "en"
-                    ? t.copied_en
-                    : t.copied_de
-                  : lang === "en"
-                    ? t.copy_en
-                    : t.copy_de}
+              <p className="text-[13px] leading-relaxed text-[#4a5c54] text-center mb-1">
+                {t.portal_existing_hint_de}
+              </p>
+              <MieterWlBtn href={loginHref}>{t.portal_login_cta_de}</MieterWlBtn>
+            </>
+          ) : (
+            <>
+              <p className="text-[13px] leading-relaxed text-[#4a5c54] text-center mb-1">
+                {t.portal_register_hint_de}
+              </p>
+              <MieterWlBtn href={registerHref}>
+                {t.portal_register_cta_de}
               </MieterWlBtn>
             </>
-          ) : null}
+          )}
+
           {objektAuswahlHref ? (
             <Link
               href={objektAuswahlHref}
               className="block text-center text-sm font-semibold mt-2"
               style={{ color: "var(--org-primary, #2E7D52)" }}
             >
-              {lang === "en" ? "Close" : "Schließen"}
+              Schließen
             </Link>
           ) : null}
         </div>

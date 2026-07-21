@@ -6,8 +6,8 @@
     "colors": "org_primary_color (+ soft via resolveBrandPalette / orgBrandFromKunde)",
     "logo": "org_logo_url oder org_logo_kuerzel",
     "hero": "org_hero_url, sonst /images/portal/header-hero.jpg",
-    "qr": "buildMeldeQrUrl(meldeUrl)",
-    "url": "buildMeldeUrl(org_kennung, melde_slug)",
+    "qr": "generateMeldeQrPng(meldeUrl) — lokal, Quiet Zone, https://baerenwaldmuenchen.de",
+    "url": "buildMeldeUrl(org_kennung, melde_slug, { forPrint: true })",
     "telefon": "mieter_kontakt_telefon → org_telefon → SITE_CONFIG",
     "email": "mieter_kontakt_email → email → SITE_CONFIG"
   },

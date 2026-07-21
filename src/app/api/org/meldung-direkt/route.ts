@@ -119,7 +119,6 @@ export async function POST(req: Request) {
           beschreibung,
           quelle: "hausverwaltung",
           portalPath,
-          referenz: result.id.slice(0, 8).toUpperCase(),
         }),
       });
     } catch (e) {

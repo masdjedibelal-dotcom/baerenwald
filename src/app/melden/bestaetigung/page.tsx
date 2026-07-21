@@ -1,4 +1,8 @@
 import { MeldenBestaetigungClient } from "@/components/melden/MeldenBestaetigungClient";
+import {
+  loadMeldeContactByToken,
+  meldePortalAccountExists,
+} from "@/lib/melde/melde-bestaetigung";
 import { resolveMeldeKontext } from "@/lib/org/resolve-melde-kontext";
 
 export const metadata = {
@@ -12,6 +16,10 @@ type Props = {
     kennung?: string;
     token?: string;
     statusLink?: string;
+    /** Fallback wenn Token fehlt (Client-Redirect) */
+    name?: string;
+    email?: string;
+    telefon?: string;
   };
 };
 
@@ -56,15 +64,42 @@ export default async function MeldenBestaetigungPage({ searchParams }: Props) {
   }
 
   const token = searchParams.token?.trim() || null;
-  const referenz = token ? token.slice(0, 8).toUpperCase() : null;
+  // statusLink kann Token enthalten: /melden/status/TOKEN
+  const tokenFromLink = (() => {
+    const link = searchParams.statusLink?.trim();
+    if (!link) return null;
+    const m = link.match(/\/melden\/status\/([^/?#]+)/i);
+    return m?.[1] ? decodeURIComponent(m[1]) : null;
+  })();
+  const effectiveToken = token || tokenFromLink;
+
+  const fromDb = effectiveToken
+    ? await loadMeldeContactByToken(effectiveToken)
+    : null;
+
+  const contactName =
+    fromDb?.name || searchParams.name?.trim() || null;
+  const contactEmail =
+    fromDb?.email || searchParams.email?.trim()?.toLowerCase() || null;
+  const contactTelefon =
+    fromDb?.telefon || searchParams.telefon?.trim() || null;
+
+  const portalAccountExists = await meldePortalAccountExists(contactEmail);
+
+  const referenz = effectiveToken
+    ? effectiveToken.slice(0, 8).toUpperCase()
+    : null;
 
   return (
     <MeldenBestaetigungClient
       brand={brand}
-      statusToken={token}
-      statusLink={searchParams.statusLink}
+      statusToken={effectiveToken}
       referenz={referenz}
       objektAuswahlHref={objektHref}
+      contactName={contactName}
+      contactEmail={contactEmail}
+      contactTelefon={contactTelefon}
+      portalAccountExists={portalAccountExists}
     />
   );
 }

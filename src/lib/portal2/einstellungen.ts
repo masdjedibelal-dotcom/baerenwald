@@ -27,15 +27,41 @@ export const EINSTELLUNGEN_HERO_HINT =
   "Breites Foto für die Übersicht (ca. 1600×400 px). Ohne Upload bleibt das Standardbild." as const;
 
 export const EINSTELLUNGEN_SCHWELLE_TITLE =
-  "Globaler Freigabe-Schwellenwert" as const;
+  "Standard-Regel & Ausnahmen" as const;
 
 export const EINSTELLUNGEN_SCHWELLE_INTRO =
-  "Angebote unter diesem Betrag werden ohne manuelle Freigabe direkt beauftragt. Darüber muss die Verwaltung das Angebot annehmen." as const;
+  "Gilt für alle Objekte ohne eigene Ausnahme. Angebote bis zu diesem Betrag werden automatisch beauftragt — darüber ist Ihre Freigabe nötig." as const;
+
+export const EINSTELLUNGEN_KLEINREPARATUR_TITLE =
+  "Grenzbetrag Kleinreparaturen" as const;
+
+export const EINSTELLUNGEN_KLEINREPARATUR_INTRO =
+  "Bis zu diesem Betrag darf Bärenwald ohne Angebot sofort reparieren — sofern beim Objekt aktiviert." as const;
 
 export const EINSTELLUNGEN_OBJEKT_SCHWELLE_TITLE =
-  "Objekt-spezifische Schwellenwerte" as const;
+  "Ausnahmen je Objekt" as const;
+
+export const EINSTELLUNGEN_OBJEKT_SCHWELLE_INTRO =
+  "Überschreibt die Standard-Regel für einzelne Objekte." as const;
+
+export const EINSTELLUNGEN_ANGEBOT_FREIGABE_TITLE =
+  "Angebots-Freigabe" as const;
+
+export const EINSTELLUNGEN_ANGEBOT_FREIGABE_INTRO =
+  "Wie sollen Angebote oberhalb der Schwelle behandelt werden?" as const;
 
 export const EINSTELLUNGEN_PROFIL_EDIT = "Profil bearbeiten" as const;
+
+/** Schnellwahl-Beträge wie im Mock (250 / 500 / 1k / 2k). */
+export const EINSTELLUNGEN_SCHWELLE_PRESETS = [250, 500, 1000, 2000] as const;
+
+export function formatEinstellungenSchwellePreset(value: number): string {
+  if (value >= 1000) {
+    const k = value / 1000;
+    return Number.isInteger(k) ? `${k}k €` : `${k}k €`;
+  }
+  return `${value} €`;
+}
 
 /** Format wie Mock `money(schwelle)`. */
 export function formatEinstellungenSchwelle(
@@ -48,4 +74,9 @@ export function formatEinstellungenSchwelle(
     currency: "EUR",
     maximumFractionDigits: 0,
   }).format(n);
+}
+
+export function einstellungenSchwelleInfo(value: number): string {
+  const label = formatEinstellungenSchwelle(value);
+  return `Angebote bis ${label} werden automatisch beauftragt. Ab ${label} ist Ihre Freigabe nötig.`;
 }

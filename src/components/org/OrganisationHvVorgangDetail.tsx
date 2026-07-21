@@ -78,6 +78,12 @@ export type OrganisationHvVorgangDetailProps = {
   kostentraegerVorgeschlagen?: boolean;
   versicherungsNr?: string | null;
   meldeFotos?: string[];
+  meldeStrasse?: string | null;
+  meldePlz?: string | null;
+  meldeOrt?: string | null;
+  meldeSituation?: string | null;
+  meldeBereich?: string | null;
+  meldeZeitraum?: string | null;
   detailRole?: "hv" | "kunde";
 };
 
@@ -248,6 +254,12 @@ export function OrganisationHvVorgangDetail({
   kostentraegerVorgeschlagen,
   versicherungsNr,
   meldeFotos,
+  meldeStrasse,
+  meldePlz,
+  meldeOrt,
+  meldeSituation,
+  meldeBereich,
+  meldeZeitraum,
   detailRole = "hv",
 }: OrganisationHvVorgangDetailProps) {
   const [busy, setBusy] = useState(false);
@@ -271,6 +283,12 @@ export function OrganisationHvVorgangDetail({
         melderName: melder,
         einheit: melderEinheit,
         fotos: meldeFotos,
+        meldeStrasse,
+        meldePlz,
+        meldeOrt,
+        meldeSituation,
+        meldeBereich,
+        meldeZeitraum,
         angebotPositionen: positionenBrutto,
         gesamtBrutto:
           typeof gesamtBrutto === "number"
@@ -283,6 +301,9 @@ export function OrganisationHvVorgangDetail({
           melder_einheit: melderEinheit,
           melder_telefon: melderTelefon,
           melder_email: melderEmail,
+          strasse: meldeStrasse,
+          plz: meldePlz,
+          ort: meldeOrt,
           kostentraeger,
           kostentraeger_vorgeschlagen: kostentraegerVorgeschlagen,
           versicherungs_nr: versicherungsNr,
@@ -302,6 +323,12 @@ export function OrganisationHvVorgangDetail({
       melder,
       melderEinheit,
       meldeFotos,
+      meldeStrasse,
+      meldePlz,
+      meldeOrt,
+      meldeSituation,
+      meldeBereich,
+      meldeZeitraum,
       positionenBrutto,
       gesamtBrutto,
       empfohlen?.betrag,
@@ -401,26 +428,8 @@ export function OrganisationHvVorgangDetail({
       );
     }
     if (actionKind === "freigabe") {
-      return (
-        <DetailCard title={HV_DETAIL_COPY.freigabeTitle}>
-          <p className="mb-3 text-[13px] leading-relaxed" style={{ color: PORTAL_C.sub }}>
-            {HV_DETAIL_COPY.freigabeNote}
-          </p>
-          <div className="flex flex-wrap gap-2">
-            <ActionBtn
-              label={HV_DETAIL_COPY.freigabeBtn}
-              disabled={busy}
-              onClick={() => void meldungAct("angebot_einfordern")}
-            />
-            <ActionBtn
-              label={HV_DETAIL_COPY.ablehnen}
-              kind="ghost"
-              disabled={busy}
-              onClick={() => void meldungAct("ablehnen")}
-            />
-          </div>
-        </DetailCard>
-      );
+      // CTAs sitzen im Header — keine Card hier.
+      return null;
     }
     if (actionKind === "angebot") {
       return (
@@ -683,10 +692,35 @@ export function OrganisationHvVorgangDetail({
               {kategorie ? ` · ${kategorie}` : ""}
             </p>
           </div>
-          <PortalFlowStatusChip
-            statusId={flowStatus}
-            label={PORTAL_STATUS[flowStatus].label}
-          />
+          <div className="flex shrink-0 flex-col items-end gap-2">
+            <PortalFlowStatusChip
+              statusId={flowStatus}
+              label={PORTAL_STATUS[flowStatus].label}
+            />
+            {actionKind === "freigabe" ? (
+              <div className="flex flex-wrap justify-end gap-2">
+                <ActionBtn
+                  label={HV_DETAIL_COPY.freigabeBtn}
+                  disabled={busy}
+                  onClick={() => void meldungAct("angebot_einfordern")}
+                />
+                <ActionBtn
+                  label={HV_DETAIL_COPY.ablehnen}
+                  kind="ghost"
+                  disabled={busy}
+                  onClick={() => void meldungAct("ablehnen")}
+                />
+              </div>
+            ) : null}
+            {actionKind === "privat_auto" ? (
+              <p
+                className="max-w-[220px] text-right text-[11.5px] font-semibold"
+                style={{ color: PORTAL_C.sub }}
+              >
+                {HV_DETAIL_COPY.privatAuto}
+              </p>
+            ) : null}
+          </div>
         </div>
       </div>
 
@@ -743,7 +777,7 @@ export function OrganisationHvVorgangDetail({
         })}
       </div>
 
-      <div className="flex flex-col gap-4 px-4 pb-6 sm:flex-row sm:px-6">
+      <div className="flex flex-col gap-4 px-4 pb-6 pt-5 sm:flex-row sm:px-6 sm:pt-6">
         <div className="flex min-w-0 flex-1 flex-col gap-3.5">
           <VorgangDetailBlocks vm={detailVm} />
 
@@ -791,39 +825,6 @@ export function OrganisationHvVorgangDetail({
         </div>
 
         <div className="flex w-full flex-col gap-3.5 sm:w-[260px] sm:shrink-0">
-          <DetailCard title={HV_DETAIL_COPY.metaTitle}>
-            {(
-              [
-                ["Melder", melder || "—"],
-                ["Kategorie", kategorie || "—"],
-                ["Priorität", notfall ? "Notfall" : prioritaet || "Normal"],
-                ["Handwerker", handwerkerName || "—"],
-                derivedPositionen.length || sum.brutto > 0
-                  ? ["Angebot", moneyEur(sum.brutto)]
-                  : null,
-              ] as Array<[string, string] | null>
-            )
-              .filter(Boolean)
-              .map((row) => {
-                const [k, val] = row as [string, string];
-                return (
-                  <div
-                    key={k}
-                    className="flex justify-between border-b py-1.5 text-[12.5px] last:border-0"
-                    style={{ borderColor: PORTAL_C.line2 }}
-                  >
-                    <span style={{ color: PORTAL_C.faint }}>{k}</span>
-                    <span
-                      className="max-w-[150px] text-right font-semibold"
-                      style={{ color: PORTAL_C.ink }}
-                    >
-                      {val}
-                    </span>
-                  </div>
-                );
-              })}
-          </DetailCard>
-
           <DetailCard title={HV_DETAIL_COPY.verlaufTitle}>
             {verlauf.length === 0 ? (
               <p className="text-[12.5px]" style={{ color: PORTAL_C.faint }}>

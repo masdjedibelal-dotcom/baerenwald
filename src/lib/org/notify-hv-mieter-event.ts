@@ -1,5 +1,4 @@
 import { buildOrgHvMieterEventHtml } from "@/lib/email/meldung-mail-templates";
-import { meldeStatusUrl } from "@/lib/melde/melde-tracking";
 import { supabaseAdmin } from "@/lib/supabase";
 import { isValidEmail } from "@/lib/validation";
 import { Resend } from "resend";
@@ -19,9 +18,7 @@ export async function notifyHvMieterEvent(input: {
 }): Promise<void> {
   const { data: lead } = await supabaseAdmin
     .from("leads")
-    .select(
-      "id, melder_name, melde_tracking_token, kunde_objekt_id, auftraggeber_kunde_id"
-    )
+    .select("id, melder_name, kunde_objekt_id, auftraggeber_kunde_id")
     .eq("id", input.leadId)
     .maybeSingle();
 
@@ -60,9 +57,6 @@ export async function notifyHvMieterEvent(input: {
     objektTitel = String(obj?.titel ?? "Objekt");
   }
 
-  const token = lead.melde_tracking_token ? String(lead.melde_tracking_token) : null;
-  const mieterStatusLink = token ? meldeStatusUrl(token) : undefined;
-
   const resend = new Resend(resendKey);
   try {
     await resend.emails.send({
@@ -76,7 +70,6 @@ export async function notifyHvMieterEvent(input: {
         melderName: lead.melder_name ? String(lead.melder_name) : undefined,
         eventTitel: input.titel,
         eventBody: input.body,
-        mieterStatusLink,
         portalPath,
       }),
     });

@@ -229,11 +229,21 @@ export function OrganisationFreigabePanel({
     const leadId =
       (selectedAngebotItem as { leadId?: string }).leadId ??
       selectedAngebotItem.id;
+    const schwelleEur = Number(kunde.freigabe_schwelle_eur ?? 500);
+    const betrag = Number(selectedAngebotItem.gesamtBrutto ?? 0);
+    const unterSchwelle = betrag > 0 && betrag <= schwelleEur;
+    const schwelleLabel = new Intl.NumberFormat("de-DE", {
+      style: "currency",
+      currency: "EUR",
+      maximumFractionDigits: 0,
+    }).format(schwelleEur);
     return (
       <div className="-mx-4 -mt-2 min-w-0 lg:-mx-6">
         <OrgFreigabeBanner
           leadId={leadId}
-          status="ausstehend"
+          status={unterSchwelle ? "nicht_noetig" : "ausstehend"}
+          unterSchwelle={unterSchwelle}
+          schwelleLabel={schwelleLabel}
           onUpdated={onRefresh}
         />
         <PortalVorgangDetail
@@ -241,8 +251,8 @@ export function OrganisationFreigabePanel({
           onAccepted={onRefresh}
           showHvAbnahme
           showAnlassBadge
-          orgFreigabeStatus="ausstehend"
-          schwelleEur={kunde.freigabe_schwelle_eur ?? undefined}
+          orgFreigabeStatus={unterSchwelle ? "nicht_noetig" : "ausstehend"}
+          schwelleEur={schwelleEur}
           onBack={() => {
             setSelectedAngebotId(null);
             router.replace(`/portal?section=vorgaenge&filter=offen`, {

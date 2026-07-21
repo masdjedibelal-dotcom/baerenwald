@@ -68,7 +68,7 @@ assert(
 assert("copy rechnung", HV_DETAIL_COPY.rechnungsbetrag === "Rechnungsbetrag");
 assert(
   "ueberweisung offen punkt",
-  HV_DETAIL_COPY.ueberweisungOffen.includes("OFFENE-PUNKTE")
+  HV_DETAIL_COPY.ueberweisungOffen.includes("Überweisung")
 );
 assert("privat hint", HV_DETAIL_COPY.privatAuto.includes("Privatkunde"));
 assert("default schwelle", HV_DEFAULT_SCHWELLE_EUR === 500);
@@ -97,7 +97,7 @@ assert(
 );
 
 const tl = portalFlowTimeline("auftrag");
-assert("timeline 8", tl.length === 8);
+assert("timeline 5", tl.length === 5);
 assert("auftrag active", tl.find((s) => s.id === "auftrag")?.active === true);
 
 const flow = inferFlowFromKundeItem(

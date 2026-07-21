@@ -3,7 +3,6 @@
 import { useState } from "react";
 
 import { OrganisationObjektDashboard } from "@/components/org/OrganisationObjektDashboard";
-import { OrganisationObjektDokumentePanel } from "@/components/org/OrganisationObjektDokumentePanel";
 import { OrganisationObjektEinheitenBewohnerPanel } from "@/components/org/OrganisationObjektEinheitenBewohnerPanel";
 import { OrganisationObjektFremdVorgaengePanel } from "@/components/org/OrganisationObjektFremdVorgaengePanel";
 import { OrganisationObjektKalenderPanel } from "@/components/org/OrganisationObjektKalenderPanel";
@@ -54,7 +53,11 @@ export function OrganisationObjektAkteTabs({ objektId }: { objektId: string }) {
       ) : null}
       {tab === "kontakte" ? <OrganisationObjektKontaktePanel objektId={objektId} /> : null}
       {tab === "notizen" ? <OrganisationObjektNotizenPanel objektId={objektId} /> : null}
-      {tab === "dokumente" ? <OrganisationObjektDokumentePanel objektId={objektId} /> : null}
+      {tab === "dokumente" ? (
+        <p className="portal-text-body rounded-xl border border-dashed border-border-light bg-muted/20 px-3 py-5 text-center text-text-secondary">
+          Dokumente finden Sie unter Objekt → Dokumente (gruppiert nach Vorgängen).
+        </p>
+      ) : null}
       {tab === "fremd" ? <OrganisationObjektFremdVorgaengePanel objektId={objektId} /> : null}
       {tab === "pruef" ? <OrganisationObjektPruefpflichtenPanel objektId={objektId} /> : null}
       {tab === "kalender" ? <OrganisationObjektKalenderPanel objektId={objektId} /> : null}

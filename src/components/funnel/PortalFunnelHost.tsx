@@ -1,11 +1,12 @@
 "use client";
 
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import "@/app/funnel-ui.css";
 
 import { FachdetailsStep } from "@/components/funnel/FachdetailsStep";
+import { FunnelFooter } from "@/components/funnel/FunnelFooter";
 import { PhotoUpload } from "@/components/funnel/PhotoUpload";
 import { SelectionTile } from "@/components/funnel/SelectionTile";
 import { StepWrapper } from "@/components/funnel/StepWrapper";
@@ -54,6 +55,12 @@ export type PortalFunnelMeldeCtx = {
   sessionKey: string;
   /** Einladung ergänzen statt neuer Meldung */
   ergaenzenToken?: string;
+  /** Kein Objekt hinterlegt → Adresse im Kontaktschritt */
+  needsAddress?: boolean;
+  /** Objekt-Link/Aushang: Bestätigungsschritt mit festem Objekt */
+  objektConfirm?: { titel: string; adresse?: string } | null;
+  /** Zurück darf nicht zur HV-Objektliste führen */
+  objektLocked?: boolean;
 };
 
 export type PortalFunnelPrefill = {
@@ -67,9 +74,18 @@ export type PortalFunnelPrefill = {
   hausnummer?: string;
 };
 
+type HvMieterOption = {
+  id: string;
+  name: string;
+  email?: string | null;
+  telefon?: string | null;
+  einheitLabel?: string | null;
+};
+
 type StepId =
   | "objekt"
   | "objekt_neu"
+  | "objekt_confirm"
   | "mieter"
   | "situation"
   | "bereiche"
@@ -104,10 +120,22 @@ function bereicheOptions(situation: Situation): StepOption[] {
   return (s?.options ?? []) as StepOption[];
 }
 
-function dringlichkeitOptions(): StepOption[] {
+function dringlichkeitOptions(opts?: { stripSlaCopy?: boolean }): StepOption[] {
   const steps = SITUATIONEN_CONFIG.kaputt.steps;
   const s = steps.find((x) => x.id === "kaputt_dringlichkeit");
-  return (s?.options ?? []) as StepOption[];
+  const raw = (s?.options ?? []) as Array<
+    StepOption & { infoText?: string; warnText?: string }
+  >;
+  if (!opts?.stripSlaCopy) return raw;
+  // Melde / HV-intern: keine Zeitversprechen zu Terminen
+  return raw.map((o) => {
+    const { infoText: _i, warnText: _w, infoExpand: _e, ...rest } = o as StepOption & {
+      infoText?: string;
+      warnText?: string;
+      infoExpand?: string;
+    };
+    return rest;
+  });
 }
 
 /**
@@ -135,6 +163,9 @@ export function PortalFunnelHost({
     : null;
 
   const [step, setStep] = useState<StepId>(() => {
+    if (channel === "melde_anon" && melde?.objektConfirm) {
+      return "objekt_confirm";
+    }
     if (
       cfg.prefix.objekt === "required" ||
       cfg.prefix.objekt === "optional"
@@ -158,13 +189,21 @@ export function PortalFunnelHost({
   const [ohneMieter, setOhneMieter] = useState(
     cfg.prefix.mieter === "ohne_erlaubt" || cfg.prefix.mieter === "hidden"
   );
+  const [mieterMode, setMieterMode] = useState<"ohne" | "liste" | "neu">(
+    cfg.prefix.mieter === "ohne_erlaubt" || cfg.prefix.mieter === "hidden"
+      ? "ohne"
+      : "neu"
+  );
   const [mieterName, setMieterName] = useState(prefill?.name ?? "");
   const [mieterEmail, setMieterEmail] = useState(prefill?.email ?? "");
   const [mieterTel, setMieterTel] = useState(prefill?.telefon ?? "");
   const [einheit, setEinheit] = useState(prefill?.einheit ?? "");
+  const [hvMieterListe, setHvMieterListe] = useState<HvMieterOption[]>([]);
+  const [selectedMieterId, setSelectedMieterId] = useState<string | null>(null);
 
   const [neuTitel, setNeuTitel] = useState("");
   const [neuStrasse, setNeuStrasse] = useState("");
+  const [neuHausnummer, setNeuHausnummer] = useState("");
   const [neuPlz, setNeuPlz] = useState("");
   const [neuOrt, setNeuOrt] = useState("");
   const [neuBusy, setNeuBusy] = useState(false);
@@ -192,6 +231,47 @@ export function PortalFunnelHost({
   const [regelnOk, setRegelnOk] = useState(false);
 
   const objekt = objekte.find((o) => o.id === objektId) ?? null;
+  const isHvIntern = channel === "portal_hv";
+  const stripTerminInfos = channel === "melde_anon" || isHvIntern;
+
+  useEffect(() => {
+    if (!isHvIntern || !objektId) {
+      setHvMieterListe([]);
+      return;
+    }
+    let cancelled = false;
+    void (async () => {
+      try {
+        const res = await fetch(
+          `/api/org/einheit-bewohner?objektId=${encodeURIComponent(objektId)}`
+        );
+        const json = (await res.json()) as {
+          bewohner?: Array<{
+            id: string;
+            name: string;
+            email?: string | null;
+            telefon?: string | null;
+            objekt_einheiten?: { bezeichnung?: string | null } | null;
+          }>;
+        };
+        if (cancelled) return;
+        setHvMieterListe(
+          (json.bewohner ?? []).map((b) => ({
+            id: b.id,
+            name: b.name,
+            email: b.email,
+            telefon: b.telefon,
+            einheitLabel: b.objekt_einheiten?.bezeichnung ?? null,
+          }))
+        );
+      } catch {
+        if (!cancelled) setHvMieterListe([]);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [isHvIntern, objektId]);
 
   const fachIds = useMemo(
     () => getActiveFachdetailQuestionIds(state),
@@ -228,6 +308,9 @@ export function PortalFunnelHost({
 
   const buildStepOrder = useCallback((): StepId[] => {
     const out: StepId[] = [];
+    if (channel === "melde_anon" && melde?.objektConfirm) {
+      out.push("objekt_confirm");
+    }
     if (
       cfg.prefix.objekt === "required" ||
       cfg.prefix.objekt === "optional"
@@ -246,12 +329,13 @@ export function PortalFunnelHost({
     if (cfg.include.notfallDringlichkeit && state.situation === "kaputt") {
       out.push("dringlichkeit");
     }
-    out.push("fachdetail");
+    if (getActiveFachdetailQuestionIds(state).length > 0) {
+      out.push("fachdetail");
+    }
     if (cfg.include.photos) out.push("medien");
     if (cfg.include.beschreibung) out.push("beschreibung");
     /** Privat: PLZ vor Ergebnis (kein Objekt-Prefix). */
     if (cfg.include.ortPlz && channel === "portal_privat") {
-      /* PLZ im Kontakt-ähnlichen Block vor result — reuse kontakt fields */
       out.push("kontakt");
     } else if (channel === "melde_anon") {
       out.push("kontakt");
@@ -263,7 +347,7 @@ export function PortalFunnelHost({
     }
     out.push("result");
     return out;
-  }, [cfg, state.situation, channel]);
+  }, [cfg, state, channel, melde?.objektConfirm]);
 
   const steps = buildStepOrder();
 
@@ -305,6 +389,7 @@ export function PortalFunnelHost({
     }
     const i = steps.indexOf(step);
     if (i <= 0) {
+      if (melde?.objektLocked) return;
       onClose();
       return;
     }
@@ -317,11 +402,25 @@ export function PortalFunnelHost({
   };
 
   const canNext = (): boolean => {
+    if (step === "objekt_confirm") return true;
     if (step === "objekt") return !!objektId;
     if (step === "objekt_neu") {
-      return neuTitel.trim().length > 1 && neuPlz.trim().length >= 4;
+      return (
+        neuTitel.trim().length > 1 &&
+        neuStrasse.trim().length > 1 &&
+        neuHausnummer.trim().length > 0 &&
+        neuPlz.trim().length >= 4 &&
+        neuOrt.trim().length > 1
+      );
     }
     if (step === "mieter") {
+      if (isHvIntern) {
+        if (mieterMode === "ohne") return true;
+        if (mieterMode === "liste") return Boolean(selectedMieterId);
+        return (
+          mieterName.trim().length > 1 && mieterEmail.trim().includes("@")
+        );
+      }
       if (ohneMieter && cfg.prefix.mieter === "ohne_erlaubt") return true;
       if (ohneMieter && cfg.prefix.mieter === "optional") return true;
       return (
@@ -341,9 +440,20 @@ export function PortalFunnelHost({
       return (state.leadBeschreibung || "").trim().length >= 10;
     }
     if (step === "kontakt") {
-      if (cfg.include.ortPlz && state.plz.trim().length < 4) return false;
+      const needsAddress =
+        (cfg.include.ortPlz && channel === "portal_privat") ||
+        Boolean(melde?.needsAddress);
+      if (needsAddress) {
+        if (state.plz.trim().length < 4) return false;
+        if (state.strasse.trim().length < 2) return false;
+        if (state.ort.trim().length < 2) return false;
+      }
+      const fullName =
+        `${state.vorname} ${state.nachname}`.trim() || state.name.trim();
       return (
-        state.name.trim().length > 1 &&
+        (channel === "melde_anon"
+          ? state.vorname.trim().length > 0 && state.nachname.trim().length > 0
+          : fullName.length > 1) &&
         state.email.trim().includes("@") &&
         (!cfg.include.datenschutzCheckbox || regelnOk)
       );
@@ -361,6 +471,7 @@ export function PortalFunnelHost({
         body: JSON.stringify({
           titel: neuTitel.trim(),
           strasse: neuStrasse.trim() || undefined,
+          hausnummer: neuHausnummer.trim() || undefined,
           plz: neuPlz.trim(),
           ort: neuOrt.trim() || undefined,
           melde_aktiv: true,
@@ -379,6 +490,7 @@ export function PortalFunnelHost({
         id: String(json.id),
         titel: neuTitel.trim(),
         strasse: neuStrasse.trim(),
+        hausnummer: neuHausnummer.trim(),
         plz: neuPlz.trim(),
         ort: neuOrt.trim(),
       };
@@ -424,13 +536,16 @@ export function PortalFunnelHost({
         const endpoint = isErgaenzen
           ? "/api/meldung/ergaenzen"
           : "/api/meldung";
+        const contactName =
+          `${state.vorname.trim()} ${state.nachname.trim()}`.trim() ||
+          state.name.trim() ||
+          mieterName.trim();
         const payload = isErgaenzen
           ? {
               token: melde.ergaenzenToken,
-              name: state.name.trim() || mieterName.trim(),
+              name: contactName,
               email: state.email.trim() || mieterEmail.trim(),
               telefon: state.telefon.trim() || mieterTel.trim() || undefined,
-              einheit: einheit.trim() || undefined,
               kategorie: notfall ? "notfall" : "reparatur",
               bereichId,
               fachdetailAnswers: state.fachdetails?.fachdetailAnswers ?? {},
@@ -441,10 +556,9 @@ export function PortalFunnelHost({
           : {
               org: melde.orgKennung,
               objekt: melde.objektSlug,
-              name: state.name.trim() || mieterName.trim(),
+              name: contactName,
               email: state.email.trim() || mieterEmail.trim(),
               telefon: state.telefon.trim() || mieterTel.trim() || undefined,
-              einheit: einheit.trim() || undefined,
               kategorie: notfall ? "notfall" : "reparatur",
               bereichId,
               fachdetailAnswers: state.fachdetails?.fachdetailAnswers ?? {},
@@ -453,6 +567,14 @@ export function PortalFunnelHost({
               fotos,
               ...(state.dringlichkeit
                 ? { dringlichkeit: state.dringlichkeit }
+                : {}),
+              ...(melde.needsAddress
+                ? {
+                    plz: state.plz.trim(),
+                    strasse: state.strasse.trim(),
+                    hausnummer: state.hausnummer.trim() || undefined,
+                    ort: state.ort.trim(),
+                  }
                 : {}),
             };
         const res = await fetch(endpoint, {
@@ -479,17 +601,42 @@ export function PortalFunnelHost({
           org: melde.orgName,
           kennung: melde.orgKennung,
         });
-        if (json.statusLink) q.set("statusLink", json.statusLink);
-        else if (json.meldeTrackingToken) {
+        if (json.meldeTrackingToken) {
           q.set("token", json.meldeTrackingToken);
+        } else if (json.statusLink) {
+          q.set("statusLink", json.statusLink);
         }
+        const contactEmail = state.email.trim() || mieterEmail.trim();
+        const contactTel = state.telefon.trim() || mieterTel.trim();
+        if (contactName) q.set("name", contactName);
+        if (contactEmail) q.set("email", contactEmail);
+        if (contactTel) q.set("telefon", contactTel);
         router.push(`/melden/bestaetigung?${q.toString()}`);
         onDone();
         return;
       }
 
       if (channel === "portal_hv") {
-        if (!objektId || !state.situation) return;
+        if (!objektId) {
+          setError("Bitte ein Objekt wählen.");
+          return;
+        }
+        if (!state.situation) {
+          setError("Bitte ein Anliegen wählen.");
+          return;
+        }
+        const contactName =
+          mieterMode === "ohne"
+            ? prefill?.name
+            : mieterName.trim() || prefill?.name;
+        const contactEmail =
+          mieterMode === "ohne"
+            ? prefill?.email
+            : mieterEmail.trim() || prefill?.email;
+        const contactTel =
+          mieterMode === "ohne"
+            ? undefined
+            : mieterTel.trim() || prefill?.telefon || undefined;
         const res = await fetch("/api/org/anfrage", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -500,30 +647,39 @@ export function PortalFunnelHost({
             bereiche: state.bereiche,
             preis_min: price?.min ?? 0,
             preis_max: price?.max ?? 0,
-            name: prefill?.name,
-            email: prefill?.email,
+            zeitraum: state.dringlichkeit || state.zeitraum || null,
+            name: contactName,
+            email: contactEmail,
+            telefon: contactTel,
             beschreibung: [
               state.leadBeschreibung.trim(),
-              ohneMieter
+              mieterMode === "ohne"
                 ? "Ohne Mieterbezug"
                 : `Mieter: ${mieterName} · ${mieterEmail} · ${mieterTel || "—"}`,
               einheit.trim() ? `Einheit: ${einheit.trim()}` : "",
             ]
               .filter(Boolean)
               .join("\n"),
-            telefon: mieterTel || undefined,
             funnel_daten: {
               channel,
               fachdetails: state.fachdetails,
               dringlichkeit: state.dringlichkeit,
-              ohne_mieter: ohneMieter,
+              ohne_mieter: mieterMode === "ohne",
+              fotos_count: state.photos.length,
+              ...(objekt?.ort ? { ort: objekt.ort } : {}),
             },
           }),
         });
-        const json = (await res.json()) as { error?: string };
+        let json: { error?: string } = {};
+        try {
+          json = (await res.json()) as { error?: string };
+        } catch {
+          json = { error: "Antwort vom Server ungültig." };
+        }
         if (!res.ok) {
-          setError(json.error ?? "Absenden fehlgeschlagen.");
-          portalToastError("Vorgang nicht erstellt", json.error);
+          const msg = json.error ?? "Absenden fehlgeschlagen.";
+          setError(msg);
+          portalToastError("Vorgang nicht erstellt", msg);
           return;
         }
         portalToastSuccess("Vorgang erstellt");
@@ -605,30 +761,50 @@ export function PortalFunnelHost({
     <div
       className={cn(
         "portal-funnel-host",
-        layout === "modal" ? "portal-funnel-host--modal" : "min-h-[50vh]"
+        layout === "modal" ? "portal-funnel-host--modal" : "portal-funnel-host--page"
       )}
     >
-      <div className="mb-3 flex shrink-0 items-center justify-between gap-3">
-        <button
-          type="button"
-          className="text-[13px] font-semibold text-text-secondary"
-          onClick={goBack}
-        >
-          ‹ Zurück
-        </button>
-        {layout === "page" ? (
-          <p className="text-[12px] font-semibold uppercase tracking-wide text-text-tertiary">
-            {headline}
-          </p>
-        ) : (
-          <span className="text-[12px] font-semibold uppercase tracking-wide text-text-tertiary">
+      {layout === "modal" ? (
+        <div className="mb-3 grid shrink-0 grid-cols-[1fr_auto_1fr] items-center gap-3">
+          <button
+            type="button"
+            className="justify-self-start text-[13px] font-semibold text-text-secondary"
+            onClick={goBack}
+          >
+            ‹ Zurück
+          </button>
+          <span className="text-center text-[12px] font-semibold uppercase tracking-wide text-text-tertiary">
             {headline}
           </span>
-        )}
-        <span className="w-14" />
-      </div>
+          <span className="w-14 justify-self-end" aria-hidden />
+        </div>
+      ) : null}
 
       <div className="portal-funnel-host__body">
+
+      {step === "objekt_confirm" && melde?.objektConfirm ? (
+        <StepWrapper
+          layout={stepLayout}
+          stepLabel="Objekt"
+          question="Ihr Objekt"
+          subtext="Bitte bestätigen und fortfahren"
+          animateKey="objekt_confirm"
+        >
+          <div className="funnel-step-tiles-card rounded-[12px] border border-border-default bg-surface-card px-4 py-3.5">
+            <p className="text-[15px] font-semibold text-text-primary">
+              {melde.objektConfirm.titel}
+            </p>
+            {melde.objektConfirm.adresse ? (
+              <p className="mt-0.5 text-[13px] text-text-secondary">
+                {melde.objektConfirm.adresse}
+              </p>
+            ) : null}
+            <p className="mt-2 text-[12px] text-text-tertiary">
+              Meldung an {melde.orgName}
+            </p>
+          </div>
+        </StepWrapper>
+      ) : null}
 
       {step === "objekt" ? (
         <StepWrapper
@@ -683,12 +859,20 @@ export function PortalFunnelHost({
               value={neuTitel}
               onChange={(e) => setNeuTitel(e.target.value)}
             />
-            <input
-              className="funnel-input w-full"
-              placeholder="Straße"
-              value={neuStrasse}
-              onChange={(e) => setNeuStrasse(e.target.value)}
-            />
+            <div className="grid grid-cols-[1fr_88px] gap-2">
+              <input
+                className="funnel-input w-full"
+                placeholder="Straße"
+                value={neuStrasse}
+                onChange={(e) => setNeuStrasse(e.target.value)}
+              />
+              <input
+                className="funnel-input w-full"
+                placeholder="Nr."
+                value={neuHausnummer}
+                onChange={(e) => setNeuHausnummer(e.target.value)}
+              />
+            </div>
             <div className="grid grid-cols-[100px_1fr] gap-2">
               <input
                 className="funnel-input"
@@ -713,12 +897,111 @@ export function PortalFunnelHost({
           stepLabel="Mieter"
           question="Mieter zuordnen?"
           subtext={
-            cfg.prefix.einheit
-              ? "Optional Einheit angeben"
-              : "Optional — oder ohne Mieter"
+            isHvIntern
+              ? "Optional — ohne Mieter oder aus der Liste wählen"
+              : cfg.prefix.einheit
+                ? "Optional Einheit angeben"
+                : "Optional — oder ohne Mieter"
           }
           animateKey="mieter"
         >
+          {isHvIntern ? (
+            <div className="funnel-step-tiles-card flex flex-col gap-2">
+              <div className="mb-1 flex items-center justify-between gap-2">
+                <span className="text-[12px] font-semibold uppercase tracking-wide text-text-tertiary">
+                  Auswahl
+                </span>
+                {cfg.prefix.mieterNeu ? (
+                  <button
+                    type="button"
+                    className="rounded-full border border-border-default bg-white px-3 py-1 text-[12px] font-semibold text-accent"
+                    onClick={() => {
+                      setMieterMode("neu");
+                      setOhneMieter(false);
+                      setSelectedMieterId(null);
+                      setMieterName("");
+                      setMieterEmail("");
+                      setMieterTel("");
+                    }}
+                  >
+                    + Neu
+                  </button>
+                ) : null}
+              </div>
+              <SelectionTile
+                option={{
+                  value: "ohne",
+                  label: "Ohne Mieter",
+                  hint: "Interner Vorgang",
+                }}
+                multi={false}
+                selected={mieterMode === "ohne"}
+                onChange={() => {
+                  setMieterMode("ohne");
+                  setOhneMieter(true);
+                  setSelectedMieterId(null);
+                }}
+              />
+              {hvMieterListe.map((m) => (
+                <SelectionTile
+                  key={m.id}
+                  option={{
+                    value: m.id,
+                    label: m.name,
+                    hint: [m.einheitLabel, m.email, m.telefon]
+                      .filter(Boolean)
+                      .join(" · "),
+                  }}
+                  multi={false}
+                  selected={mieterMode === "liste" && selectedMieterId === m.id}
+                  onChange={() => {
+                    setMieterMode("liste");
+                    setOhneMieter(false);
+                    setSelectedMieterId(m.id);
+                    setMieterName(m.name);
+                    setMieterEmail(m.email ?? "");
+                    setMieterTel(m.telefon ?? "");
+                    if (m.einheitLabel) setEinheit(m.einheitLabel);
+                  }}
+                />
+              ))}
+              {mieterMode === "neu" ? (
+                <div className="mt-2 space-y-2 border-t border-border-light pt-3">
+                  <p className="text-[13px] font-semibold text-text-primary">
+                    Neuer Mieter
+                  </p>
+                  <input
+                    className="funnel-input w-full"
+                    placeholder="Name"
+                    value={mieterName}
+                    onChange={(e) => setMieterName(e.target.value)}
+                  />
+                  <input
+                    className="funnel-input w-full"
+                    type="email"
+                    placeholder="E-Mail"
+                    value={mieterEmail}
+                    onChange={(e) => setMieterEmail(e.target.value)}
+                  />
+                  <input
+                    className="funnel-input w-full"
+                    type="tel"
+                    placeholder="Telefon (optional)"
+                    value={mieterTel}
+                    onChange={(e) => setMieterTel(e.target.value)}
+                  />
+                </div>
+              ) : null}
+              {cfg.prefix.einheit ? (
+                <input
+                  className="funnel-input mt-2 w-full"
+                  placeholder="Einheit / Wohnung (optional)"
+                  value={einheit}
+                  onChange={(e) => setEinheit(e.target.value)}
+                />
+              ) : null}
+            </div>
+          ) : (
           <div className="funnel-step-tiles-card flex flex-col gap-2">
             {cfg.prefix.mieter === "ohne_erlaubt" ||
             cfg.prefix.mieter === "optional" ? (
@@ -778,6 +1061,7 @@ export function PortalFunnelHost({
               />
             ) : null}
           </div>
+          )}
         </StepWrapper>
       ) : null}
 
@@ -823,12 +1107,28 @@ export function PortalFunnelHost({
           animateKey="bereiche"
         >
           <div className="funnel-step-tiles-card grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
-            {bereicheOptions(state.situation).map((o) => (
+            {bereicheOptions(state.situation).map((o) => {
+              const opt = stripTerminInfos
+                ? (() => {
+                    const {
+                      infoText: _i,
+                      warnText: _w,
+                      infoExpand: _e,
+                      ...rest
+                    } = o as StepOption & {
+                      infoText?: string;
+                      warnText?: string;
+                      infoExpand?: string;
+                    };
+                    return rest;
+                  })()
+                : o;
+              return (
               <SelectionTile
-                key={o.value}
-                option={o}
+                key={opt.value}
+                option={opt}
                 multi={false}
-                selected={state.bereiche.includes(o.value)}
+                selected={state.bereiche.includes(opt.value)}
                 onChange={(v) =>
                   setState((s) => ({
                     ...s,
@@ -837,7 +1137,8 @@ export function PortalFunnelHost({
                   }))
                 }
               />
-            ))}
+            );
+            })}
           </div>
         </StepWrapper>
       ) : null}
@@ -850,7 +1151,9 @@ export function PortalFunnelHost({
           animateKey="dringlichkeit"
         >
           <div className="funnel-step-tiles-card flex flex-col gap-2">
-            {dringlichkeitOptions().map((o) => (
+            {dringlichkeitOptions({
+              stripSlaCopy: stripTerminInfos,
+            }).map((o) => (
               <SelectionTile
                 key={o.value}
                 option={o}
@@ -878,20 +1181,8 @@ export function PortalFunnelHost({
           detailIndex={fachIdx}
           detailTotal={Math.max(1, fachIds.length)}
           animateKey={currentFachId}
+          stripInfoBoxes={stripTerminInfos}
         />
-      ) : null}
-
-      {step === "fachdetail" && !currentFachId ? (
-        <StepWrapper
-          layout={stepLayout}
-          stepLabel="Details"
-          question="Keine weiteren Fachfragen"
-          animateKey="fach-empty"
-        >
-          <p className="text-sm text-text-secondary">
-            Weiter zur Beschreibung.
-          </p>
-        </StepWrapper>
       ) : null}
 
       {step === "medien" ? (
@@ -905,6 +1196,17 @@ export function PortalFunnelHost({
           <PhotoUpload
             files={state.photos}
             onChange={(files) => setState((s) => ({ ...s, photos: files }))}
+            buttonTitle={
+              channel === "melde_anon" || isHvIntern
+                ? "Fotos hochladen"
+                : "Fotos oder Vergleichsangebote hochladen"
+            }
+            buttonHint={
+              channel === "melde_anon" || isHvIntern
+                ? "Fotos vom Schaden oder Objekt — optional"
+                : undefined
+            }
+            showCompareOfferHint={false}
           />
         </StepWrapper>
       ) : null}
@@ -931,25 +1233,61 @@ export function PortalFunnelHost({
       {step === "kontakt" ? (
         <StepWrapper
           layout={stepLayout}
-          stepLabel={cfg.include.ortPlz ? "Ort & Kontakt" : "Kontakt"}
+          stepLabel={
+            melde?.needsAddress || cfg.include.ortPlz
+              ? "Ort & Kontakt"
+              : "Kontakt"
+          }
           question={
-            cfg.include.ortPlz
-              ? "Wo und wie erreichen wir dich?"
+            melde?.needsAddress || cfg.include.ortPlz
+              ? "Ihre Adresse und Kontaktdaten"
               : "Ihre Kontaktdaten"
           }
           animateKey="kontakt"
         >
           <div className="space-y-2">
-            {cfg.include.ortPlz ? (
-              <>
+            {channel === "melde_anon" ? (
+              <div className="grid grid-cols-2 gap-2">
                 <input
                   className="funnel-input w-full"
-                  placeholder="PLZ"
-                  value={state.plz}
+                  placeholder="Vorname"
+                  value={state.vorname}
                   onChange={(e) =>
-                    setState((s) => ({ ...s, plz: e.target.value }))
+                    setState((s) => ({
+                      ...s,
+                      vorname: e.target.value,
+                      name: `${e.target.value} ${s.nachname}`.trim(),
+                    }))
                   }
+                  autoComplete="given-name"
                 />
+                <input
+                  className="funnel-input w-full"
+                  placeholder="Nachname"
+                  value={state.nachname}
+                  onChange={(e) =>
+                    setState((s) => ({
+                      ...s,
+                      nachname: e.target.value,
+                      name: `${s.vorname} ${e.target.value}`.trim(),
+                    }))
+                  }
+                  autoComplete="family-name"
+                />
+              </div>
+            ) : (
+              <input
+                className="funnel-input w-full"
+                placeholder="Name"
+                value={state.name}
+                onChange={(e) =>
+                  setState((s) => ({ ...s, name: e.target.value }))
+                }
+              />
+            )}
+            {(melde?.needsAddress ||
+              (cfg.include.ortPlz && channel === "portal_privat")) && (
+              <>
                 <div className="grid grid-cols-[1fr_88px] gap-2">
                   <input
                     className="funnel-input"
@@ -958,6 +1296,7 @@ export function PortalFunnelHost({
                     onChange={(e) =>
                       setState((s) => ({ ...s, strasse: e.target.value }))
                     }
+                    autoComplete="street-address"
                   />
                   <input
                     className="funnel-input"
@@ -968,16 +1307,28 @@ export function PortalFunnelHost({
                     }
                   />
                 </div>
+                <div className="grid grid-cols-[100px_1fr] gap-2">
+                  <input
+                    className="funnel-input"
+                    placeholder="PLZ"
+                    value={state.plz}
+                    onChange={(e) =>
+                      setState((s) => ({ ...s, plz: e.target.value }))
+                    }
+                    autoComplete="postal-code"
+                  />
+                  <input
+                    className="funnel-input"
+                    placeholder="Ort"
+                    value={state.ort}
+                    onChange={(e) =>
+                      setState((s) => ({ ...s, ort: e.target.value }))
+                    }
+                    autoComplete="address-level2"
+                  />
+                </div>
               </>
-            ) : null}
-            <input
-              className="funnel-input w-full"
-              placeholder="Name"
-              value={state.name}
-              onChange={(e) =>
-                setState((s) => ({ ...s, name: e.target.value }))
-              }
-            />
+            )}
             <input
               className="funnel-input w-full"
               type="email"
@@ -986,6 +1337,7 @@ export function PortalFunnelHost({
               onChange={(e) =>
                 setState((s) => ({ ...s, email: e.target.value }))
               }
+              autoComplete="email"
             />
             <input
               className="funnel-input w-full"
@@ -995,6 +1347,7 @@ export function PortalFunnelHost({
               onChange={(e) =>
                 setState((s) => ({ ...s, telefon: e.target.value }))
               }
+              autoComplete="tel"
             />
             {cfg.include.datenschutzCheckbox ? (
               <label className="flex items-start gap-2 text-[13px] text-text-secondary">
@@ -1010,14 +1363,6 @@ export function PortalFunnelHost({
                 </span>
               </label>
             ) : null}
-            {cfg.prefix.einheit && channel === "melde_anon" ? (
-              <input
-                className="funnel-input w-full"
-                placeholder="Einheit / Wohnung (optional)"
-                value={einheit}
-                onChange={(e) => setEinheit(e.target.value)}
-              />
-            ) : null}
           </div>
         </StepWrapper>
       ) : null}
@@ -1029,7 +1374,9 @@ export function PortalFunnelHost({
           question={cfg.showPrice ? "Preisrahmen" : "Prüfen & absenden"}
           subtext={
             cfg.showPrice
-              ? "Indikation — verbindlich nach Prüfung"
+              ? isHvIntern
+                ? "Indikation zur Orientierung — verbindlich nach Prüfung"
+                : "Indikation — verbindlich nach Prüfung"
               : "Angaben prüfen und absenden"
           }
           animateKey="result"
@@ -1076,36 +1423,71 @@ export function PortalFunnelHost({
 
       </div>
 
-      <div className={cn("portal-funnel-host__actions flex gap-2")}>
-        {step === "objekt_neu" ? (
-          <button
-            type="button"
-            className="btn-pill-primary flex-1 disabled:opacity-40"
-            disabled={!canNext() || neuBusy}
-            onClick={() => void createObjekt()}
-          >
-            {neuBusy ? "Speichern…" : "Objekt speichern →"}
-          </button>
-        ) : step !== "result" ? (
-          <button
-            type="button"
-            className="btn-pill-primary flex-1 disabled:opacity-40"
-            disabled={!canNext()}
-            onClick={goNext}
-          >
-            Weiter →
-          </button>
-        ) : (
-          <button
-            type="button"
-            className="btn-pill-primary flex-1 disabled:opacity-40"
-            disabled={busy}
-            onClick={() => void submit()}
-          >
-            {busy ? "Wird gesendet…" : "Absenden →"}
-          </button>
-        )}
-      </div>
+      {layout === "page" ? (
+        <FunnelFooter
+          onBack={
+            steps.indexOf(step) <= 0 && melde?.objektLocked
+              ? undefined
+              : goBack
+          }
+          onNext={
+            step === "objekt_neu"
+              ? () => void createObjekt()
+              : step === "result"
+                ? () => void submit()
+                : goNext
+          }
+          nextDisabled={
+            step === "objekt_neu"
+              ? !canNext() || neuBusy
+              : step === "result"
+                ? busy
+                : !canNext()
+          }
+          nextLabel={
+            step === "objekt_neu"
+              ? neuBusy
+                ? "Speichern…"
+                : "Objekt speichern →"
+              : step === "result"
+                ? busy
+                  ? "Wird gesendet…"
+                  : "Absenden →"
+                : "Weiter →"
+          }
+        />
+      ) : (
+        <div className={cn("portal-funnel-host__actions flex gap-2")}>
+          {step === "objekt_neu" ? (
+            <button
+              type="button"
+              className="btn-pill-primary flex-1 disabled:opacity-40"
+              disabled={!canNext() || neuBusy}
+              onClick={() => void createObjekt()}
+            >
+              {neuBusy ? "Speichern…" : "Objekt speichern →"}
+            </button>
+          ) : step !== "result" ? (
+            <button
+              type="button"
+              className="btn-pill-primary flex-1 disabled:opacity-40"
+              disabled={!canNext()}
+              onClick={goNext}
+            >
+              Weiter →
+            </button>
+          ) : (
+            <button
+              type="button"
+              className="btn-pill-primary flex-1 disabled:opacity-40"
+              disabled={busy}
+              onClick={() => void submit()}
+            >
+              {busy ? "Wird gesendet…" : "Absenden →"}
+            </button>
+          )}
+        </div>
+      )}
     </div>
   );
 }

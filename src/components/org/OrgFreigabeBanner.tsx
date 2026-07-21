@@ -9,13 +9,42 @@ type Props = {
   leadId: string;
   status: string;
   onUpdated: () => void;
+  /**
+   * Angebot unter Freigabeschwelle: kein Freigabe-Button,
+   * nur Hinweis auf Direkt-Durchführung.
+   */
+  unterSchwelle?: boolean;
+  schwelleLabel?: string;
 };
 
-export function OrgFreigabeBanner({ leadId, status, onUpdated }: Props) {
+export function OrgFreigabeBanner({
+  leadId,
+  status,
+  onUpdated,
+  unterSchwelle = false,
+  schwelleLabel,
+}: Props) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  if (status !== "ausstehend") return null;
+  if (status !== "ausstehend" && !unterSchwelle) return null;
+
+  if (unterSchwelle) {
+    return (
+      <div className="mb-4 rounded-xl border border-emerald-200 bg-emerald-50 p-4">
+        <p className="text-sm font-medium text-emerald-900">
+          Direkt Durchführung — Angebot unter Freigabeschwelle
+        </p>
+        <p className="mt-1 text-xs text-emerald-800">
+          {schwelleLabel
+            ? `Das Angebot liegt unter Ihrer Freigabeschwelle (${schwelleLabel}). `
+            : "Das Angebot liegt unter Ihrer Freigabeschwelle. "}
+          Der Handwerker kann die Durchführung direkt starten — Sie müssen nicht
+          freigeben. Sie erhalten dazu eine E-Mail.
+        </p>
+      </div>
+    );
+  }
 
   const act = async (aktion: "freigegeben" | "abgelehnt") => {
     setBusy(true);

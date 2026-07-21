@@ -27,9 +27,9 @@ export type VorgangDetailSight = {
 export const VORGANG_DETAIL_SIGHT: Record<VorgangDetailRole, VorgangDetailSight> =
   {
     hv: {
-      auftraggeber: "full",
+      auftraggeber: "hidden",
       objektMelder: "full",
-      ausfuehrung: "summary",
+      ausfuehrung: "hidden",
       leistungen: "vk",
     },
     mieter: {
@@ -87,6 +87,9 @@ export type VorgangDetailAuftraggeber = {
 export type VorgangDetailObjektMelder = {
   objektTitel?: string | null;
   adresseZeile?: string | null;
+  /** Straße / Hausnummer ohne PLZ */
+  adresseStrasse?: string | null;
+  plzOrt?: string | null;
   einheit?: string | null;
   zugangshinweis?: string | null;
   melderName?: string | null;
@@ -94,6 +97,10 @@ export type VorgangDetailObjektMelder = {
   melderEmail?: string | null;
   beschreibung?: string | null;
   fotos?: string[];
+  /** Melde-Auswahl: Situation, Bereich, Zeitraum */
+  situationLabel?: string | null;
+  bereichLabel?: string | null;
+  zeitraumLabel?: string | null;
 };
 
 export type VorgangDetailAusfuehrung = {

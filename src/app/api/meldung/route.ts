@@ -5,6 +5,7 @@ import {
   buildOrgNeueMeldungSubject,
 } from "@/lib/email/meldung-mail-templates";
 import { parseMeldeBereichId, persistMeldungLead } from "@/lib/org/persist-meldung-lead";
+import { addressesMatch } from "@/lib/org/match-lead-objekt";
 import { MELDE_ALLGEMEIN_SLUG } from "@/lib/org/melde-url";
 import { resolveMeldeKontext } from "@/lib/org/resolve-melde-kontext";
 import type { MeldeKategorie } from "@/lib/org/types";
@@ -25,6 +26,10 @@ type MeldungBody = {
   email?: string;
   telefon?: string;
   einheit?: string;
+  plz?: string;
+  strasse?: string;
+  hausnummer?: string;
+  ort?: string;
   kategorie?: MeldeKategorie;
   bereichId?: string;
   fachdetailAnswers?: Record<string, string | string[]>;
@@ -80,6 +85,10 @@ export async function POST(req: Request) {
   const email = String(body.email ?? "").trim();
   const telefon = String(body.telefon ?? "").trim();
   const einheit = String(body.einheit ?? "").trim();
+  const bodyPlz = String(body.plz ?? "").trim();
+  const bodyStrasse = String(body.strasse ?? "").trim();
+  const bodyHausnummer = String(body.hausnummer ?? "").trim();
+  const bodyOrt = String(body.ort ?? "").trim();
   const beschreibung = String(body.beschreibung ?? "").trim();
   const kategorie = (body.kategorie ?? "reparatur") as MeldeKategorie;
   const bereichId = parseMeldeBereichId(body.bereichId);
@@ -123,18 +132,48 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Objekt fehlt." }, { status: 400 });
   }
 
+  const leadStrasse = objekt?.strasse ?? (bodyStrasse || null);
+  const leadHausnummer = objekt?.hausnummer ?? (bodyHausnummer || null);
+  const leadPlz = objekt?.plz?.trim() || bodyPlz || "80331";
+  const leadOrt = bodyOrt || objekt?.ort || null;
+
+  /** Ohne Objekt-Link: gleiche Anschrift wie bestehendes Objekt → zuordnen. */
+  let matchedObjektId = objekt?.id ?? null;
+  let matchedObjektTitel = objekt?.titel?.trim() || null;
+  if (!matchedObjektId && leadStrasse && leadHausnummer) {
+    const { data: orgObjekte } = await supabaseAdmin
+      .from("kunden_objekte")
+      .select("id, titel, strasse, hausnummer, plz, ort")
+      .eq("kunde_id", orgRow.id);
+    const hit = (orgObjekte ?? []).find((o) =>
+      addressesMatch(
+        {
+          strasse: leadStrasse,
+          hausnummer: leadHausnummer,
+          plz: leadPlz,
+          ort: leadOrt,
+        },
+        o
+      )
+    );
+    if (hit) {
+      matchedObjektId = hit.id;
+      matchedObjektTitel = hit.titel?.trim() || matchedObjektTitel;
+    }
+  }
+
   const objektTitel =
-    objekt?.titel?.trim() ||
+    matchedObjektTitel ||
     orgRow.org_anzeigename?.trim() ||
     orgRow.name?.trim() ||
     "Objekt";
 
-  if (objekt?.id) {
+  if (matchedObjektId) {
     const since = new Date(Date.now() - 15 * 60 * 1000).toISOString();
     const { data: recent } = await supabaseAdmin
       .from("leads")
       .select("id, melde_tracking_token")
-      .eq("kunde_objekt_id", objekt.id)
+      .eq("kunde_objekt_id", matchedObjektId)
       .eq("auftraggeber_kunde_id", orgRow.id)
       .gte("created_at", since)
       .in("kanal", ["hv_melder_link", "hv_direkt"])
@@ -168,11 +207,12 @@ export async function POST(req: Request) {
     terminwunsch: body.terminwunsch?.trim() || null,
     dringlichkeit: body.dringlichkeit,
     fotos,
-    plz: objekt?.plz ?? "",
-    strasse: objekt?.strasse,
-    hausnummer: objekt?.hausnummer,
+    plz: leadPlz,
+    strasse: leadStrasse,
+    hausnummer: leadHausnummer,
+    ort: leadOrt,
     auftraggeber_kunde_id: orgRow.id,
-    kunde_objekt_id: objekt?.id ?? null,
+    kunde_objekt_id: matchedObjektId,
     kanal: "hv_melder_link",
     erfassung_von: "melder",
     skipInternMail: true,
@@ -218,8 +258,6 @@ export async function POST(req: Request) {
             dringlichkeit: body.dringlichkeit,
             quelle: "mieter",
             portalPath: `/portal?section=freigabe&id=${result.id}`,
-            referenz: result.id.slice(0, 8).toUpperCase(),
-            mieterStatusLink: statusLink,
           }),
         });
       } catch (e) {

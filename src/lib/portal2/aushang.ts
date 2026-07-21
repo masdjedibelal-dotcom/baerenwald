@@ -22,13 +22,14 @@ export function aushangSlug(input: {
   return normalizeOrgSlug(preferred) || "objekt";
 }
 
-/** Live-Melde-URL (nicht Mock-Domain melden.hv…). */
+/** Live-Melde-URL (nicht Mock-Domain melden.hv…). Print/QR: kanonische Domain. */
 export function aushangUrl(
   orgKennung: string,
-  objekt: Parameters<typeof aushangSlug>[0]
+  objekt: Parameters<typeof aushangSlug>[0],
+  opts?: { forPrint?: boolean }
 ): string {
   const slug = aushangSlug(objekt);
-  return buildMeldeUrl(orgKennung.trim().toLowerCase(), slug);
+  return buildMeldeUrl(orgKennung.trim().toLowerCase(), slug, opts);
 }
 
 export const AUSHANG_STEPS = [

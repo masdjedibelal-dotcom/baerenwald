@@ -2,11 +2,18 @@
 
 import { useState } from "react";
 
-import { cn } from "@/lib/utils";
 import {
-  formatSchwelleEur,
+  EinstellungenCard,
+  EinstellungenEuroInput,
+  EinstellungenInfoBox,
+} from "@/components/shared/PortalEinstellungenUi";
+import { EINSTELLUNGEN_SCHWELLE_PRESETS } from "@/lib/portal2/einstellungen";
+import { PORTAL_C } from "@/lib/portal2/tokens";
+import {
   formatObjRegelnReview,
-  OBJ_AUTOPASS_OFFENER_PUNKT,
+  OBJ_SCHWELLE_INFO,
+  OBJ_SCHWELLE_WIZARD_DESC,
+  OBJ_SCHWELLE_WIZARD_TITLE,
   OBJ_TYP_OPTIONS,
   OBJ_WIZ_STEPS,
   OBJ_WIZ_TITLES,
@@ -15,6 +22,7 @@ import {
   type ObjWizDraft,
   type ObjWizPayload,
 } from "@/lib/portal2/objekte";
+import { cn } from "@/lib/utils";
 
 type Props = {
   initialDraft?: ObjWizDraft;
@@ -136,7 +144,7 @@ export function OrganisationObjektWizard({
           </span>
           <input
             className="portal-input w-full rounded-[10px] border border-border-default px-3 py-3 text-sm"
-            placeholder="z. B. Lindenstraße 24"
+            placeholder="WEG Mustermannstraße 1"
             value={draft.name ?? ""}
             onChange={(e) => set("name", e.target.value)}
           />
@@ -156,28 +164,57 @@ export function OrganisationObjektWizard({
             ))}
           </div>
         </div>
-        <label className="block">
-          <span className="portal-text-label mb-1.5 block text-text-secondary">
-            Adresse
-          </span>
-          <input
-            className="portal-input w-full rounded-[10px] border border-border-default px-3 py-3 text-sm"
-            placeholder="Straße & Hausnummer"
-            value={draft.adr ?? ""}
-            onChange={(e) => set("adr", e.target.value)}
-          />
-        </label>
-        <label className="block">
-          <span className="portal-text-label mb-1.5 block text-text-secondary">
-            PLZ / Ort
-          </span>
-          <input
-            className="portal-input w-full rounded-[10px] border border-border-default px-3 py-3 text-sm"
-            placeholder="z. B. 80802 München"
-            value={draft.plz ?? ""}
-            onChange={(e) => set("plz", e.target.value)}
-          />
-        </label>
+        <div className="grid grid-cols-[1fr_100px] gap-2.5">
+          <label className="block min-w-0">
+            <span className="portal-text-label mb-1.5 block text-text-secondary">
+              Straße
+            </span>
+            <input
+              className="portal-input w-full rounded-[10px] border border-border-default px-3 py-3 text-sm"
+              placeholder="Mustermannstraße"
+              value={draft.strasse ?? ""}
+              onChange={(e) => set("strasse", e.target.value)}
+            />
+          </label>
+          <label className="block">
+            <span className="portal-text-label mb-1.5 block text-text-secondary">
+              Nr.
+            </span>
+            <input
+              className="portal-input w-full rounded-[10px] border border-border-default px-3 py-3 text-sm"
+              placeholder="1"
+              value={draft.hausnummer ?? ""}
+              onChange={(e) => set("hausnummer", e.target.value)}
+            />
+          </label>
+        </div>
+        <div className="grid grid-cols-[110px_1fr] gap-2.5">
+          <label className="block">
+            <span className="portal-text-label mb-1.5 block text-text-secondary">
+              PLZ
+            </span>
+            <input
+              className="portal-input w-full rounded-[10px] border border-border-default px-3 py-3 text-sm"
+              placeholder="80331"
+              inputMode="numeric"
+              autoComplete="postal-code"
+              value={draft.plz ?? ""}
+              onChange={(e) => set("plz", e.target.value)}
+            />
+          </label>
+          <label className="block min-w-0">
+            <span className="portal-text-label mb-1.5 block text-text-secondary">
+              Ort
+            </span>
+            <input
+              className="portal-input w-full rounded-[10px] border border-border-default px-3 py-3 text-sm"
+              placeholder="München"
+              autoComplete="address-level2"
+              value={draft.ort ?? ""}
+              onChange={(e) => set("ort", e.target.value)}
+            />
+          </label>
+        </div>
       </div>
     );
   } else if (step === "einheiten") {
@@ -226,99 +263,70 @@ export function OrganisationObjektWizard({
   } else if (step === "verwaltung") {
     content = (
       <div className="flex flex-col gap-3.5">
+        <p className="rounded-[10px] bg-muted px-3.5 py-2.5 text-[12.5px] leading-relaxed text-text-secondary">
+          Optional — nur wenn für dieses Objekt ein eigener Ansprechpartner
+          hinterlegt werden soll.
+        </p>
         <label className="block">
           <span className="portal-text-label mb-1.5 block text-text-secondary">
-            Hausverwaltung
-          </span>
-          <input
-            className="portal-input w-full rounded-[10px] border border-border-default px-3 py-3 text-sm"
-            placeholder="z. B. Immobilien Steiner GmbH"
-            value={draft.hv ?? ""}
-            onChange={(e) => set("hv", e.target.value)}
-          />
-        </label>
-        <label className="block">
-          <span className="portal-text-label mb-1.5 block text-text-secondary">
-            Ansprechpartner (optional)
+            Ansprechpartner
           </span>
           <input
             className="portal-input w-full rounded-[10px] border border-border-default px-3 py-3 text-sm"
             placeholder="Name"
             value={draft.kontakt ?? ""}
             onChange={(e) => set("kontakt", e.target.value)}
+            autoComplete="name"
           />
         </label>
         <label className="block">
           <span className="portal-text-label mb-1.5 block text-text-secondary">
-            Telefon (optional)
+            E-Mail
+          </span>
+          <input
+            type="email"
+            className="portal-input w-full rounded-[10px] border border-border-default px-3 py-3 text-sm"
+            placeholder="name@firma.de"
+            value={draft.email ?? ""}
+            onChange={(e) => set("email", e.target.value)}
+            autoComplete="email"
+          />
+        </label>
+        <label className="block">
+          <span className="portal-text-label mb-1.5 block text-text-secondary">
+            Telefon
           </span>
           <input
             type="tel"
             className="portal-input w-full rounded-[10px] border border-border-default px-3 py-3 text-sm"
-            placeholder="030 / …"
+            placeholder="089 / …"
             value={draft.tel ?? ""}
             onChange={(e) => set("tel", e.target.value)}
+            autoComplete="tel"
           />
         </label>
       </div>
     );
   } else if (step === "regeln") {
     content = (
-      <div className="flex flex-col gap-4">
-        <button
-          type="button"
-          onClick={() => set("autopass", !draft.autopass)}
-          className="flex w-full items-start gap-3 rounded-[12px] border border-border-default bg-white p-4 text-left"
-        >
-          <span
-            className={cn(
-              "mt-0.5 flex h-6 w-10 shrink-0 items-center rounded-full p-0.5 transition-colors",
-              draft.autopass ? "bg-accent" : "bg-border-default"
-            )}
-            aria-hidden
+      <EinstellungenCard title={OBJ_SCHWELLE_WIZARD_TITLE}>
+        <div className="flex flex-col gap-3">
+          <p
+            className="text-[13px] leading-[1.55]"
+            style={{ color: PORTAL_C.sub }}
           >
-            <span
-              className={cn(
-                "h-5 w-5 rounded-full bg-white shadow transition-transform",
-                draft.autopass ? "translate-x-4" : "translate-x-0"
-              )}
-            />
-          </span>
-          <span>
-            <span className="block text-[13.5px] font-semibold text-text-primary">
-              Notfall-Autopass
-            </span>
-            <span className="mt-1 block text-xs leading-snug text-text-secondary">
-              Bei Notfällen direkt Handwerker anfragen, ohne HV-Freigabe.
-            </span>
-            <span className="mt-1.5 block text-[11px] text-text-tertiary">
-              {OBJ_AUTOPASS_OFFENER_PUNKT}
-            </span>
-          </span>
-        </button>
-        <div className="rounded-[12px] border border-border-default bg-white p-4">
-          <p className="text-[13.5px] font-semibold text-text-primary">
-            Freigabe-Schwellenwert
+            {OBJ_SCHWELLE_WIZARD_DESC}
           </p>
-          <p className="mb-3 mt-1 text-xs leading-snug text-text-secondary">
-            Angebote bis zu diesem Betrag ohne HV-Freigabe beauftragen.
-          </p>
-          <div className="flex items-center gap-3">
-            <input
-              type="range"
-              min={0}
-              max={2000}
-              step={50}
-              value={Number.isFinite(schwelle) ? schwelle : 500}
-              onChange={(e) => set("schwelle", Number(e.target.value))}
-              className="flex-1"
-            />
-            <span className="w-[100px] text-right font-[family-name:var(--font-display)] text-lg font-bold text-accent">
-              {formatSchwelleEur(schwelle)}
-            </span>
-          </div>
+          <EinstellungenEuroInput
+            value={Number.isFinite(schwelle) ? schwelle : 500}
+            presets={EINSTELLUNGEN_SCHWELLE_PRESETS}
+            onChange={(v) => set("schwelle", v)}
+          />
+          <EinstellungenInfoBox>
+            {OBJ_SCHWELLE_INFO(Number.isFinite(schwelle) ? schwelle : 500)}
+          </EinstellungenInfoBox>
         </div>
-      </div>
+      </EinstellungenCard>
     );
   } else {
     const row = (k: string, v: string | number | undefined) => (
@@ -340,13 +348,20 @@ export function OrganisationObjektWizard({
           {row("Typ", draft.typ)}
           {row(
             "Adresse",
-            [draft.adr, draft.plz].filter(Boolean).join(", ")
+            [
+              [draft.strasse, draft.hausnummer].filter(Boolean).join(" "),
+              [draft.plz, draft.ort].filter(Boolean).join(" "),
+            ]
+              .filter(Boolean)
+              .join(", ")
           )}
           {row(
             "Einheiten",
             draft.typ === "Einfamilienhaus (B2C)" ? 1 : we
           )}
-          {row("Verwaltung", draft.hv)}
+          {row("Ansprechpartner", draft.kontakt)}
+          {row("E-Mail", draft.email)}
+          {row("Telefon", draft.tel)}
           {row(
             "Regeln",
             formatObjRegelnReview(!!draft.autopass, schwelle)
@@ -357,8 +372,8 @@ export function OrganisationObjektWizard({
   }
 
   return (
-    <div className="flex flex-col">
-      <div className="mb-4">
+    <div className="mx-auto flex w-full max-w-[640px] flex-col">
+      <div className="mb-5">
         <button
           type="button"
           className="mb-3 text-[13px] font-semibold text-accent"
@@ -372,26 +387,26 @@ export function OrganisationObjektWizard({
         >
           ‹ {stepIndex === 0 ? "Abbrechen" : "Zurück"}
         </button>
-        <div className="mb-1.5 flex gap-1">
+        <div className="mb-2 flex gap-1.5">
           {OBJ_WIZ_STEPS.map((_, si) => (
             <div
               key={si}
               className={cn(
-                "h-1 flex-1 rounded-sm",
+                "h-1.5 flex-1 rounded-full",
                 si <= stepIndex ? "bg-accent" : "bg-border-default"
               )}
             />
           ))}
         </div>
-        <p className="mb-1 text-xs font-semibold text-text-tertiary">
+        <p className="mb-1.5 text-xs font-semibold text-text-tertiary">
           Schritt {stepIndex + 1} von {OBJ_WIZ_STEPS.length}
         </p>
-        <h2 className="font-[family-name:var(--font-display)] text-[22px] font-bold text-text-primary md:text-[23px]">
+        <h2 className="font-[family-name:var(--font-display)] text-[22px] font-bold leading-tight text-text-primary md:text-[23px]">
           {titles[step]}
         </h2>
       </div>
 
-      <div className="mx-auto w-full max-w-[640px] space-y-3">
+      <div className="w-full space-y-3">
         {err ? (
           <div
             role="alert"
@@ -410,7 +425,7 @@ export function OrganisationObjektWizard({
           disabled={busy || (!valid && step !== "fertig")}
           onClick={() => void advance()}
           className={cn(
-            "w-full max-w-[640px] rounded-[10px] px-4 py-3.5 text-[15px] font-semibold text-white",
+            "w-full rounded-[10px] px-4 py-3.5 text-[15px] font-semibold text-white",
             valid || step === "fertig"
               ? "bg-accent hover:opacity-95"
               : "cursor-not-allowed bg-[#B9C4BC]"
