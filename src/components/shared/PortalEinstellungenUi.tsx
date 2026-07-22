@@ -4,7 +4,7 @@ import type { ReactNode } from "react";
 
 import {
   formatEinstellungenSchwelle,
-  formatEinstellungenSchwellePreset,
+  snapEinstellungenSchwelle,
 } from "@/lib/portal2/einstellungen";
 import { PORTAL_C } from "@/lib/portal2/tokens";
 import { cn } from "@/lib/utils";
@@ -62,37 +62,6 @@ export function EinstellungenEdField({
         onChange={(e) => onChange(e.target.value)}
       />
     </label>
-  );
-}
-
-/** @deprecated Nutzen Sie EinstellungenEuroSlider (0–5000 / 500er). */
-export function EinstellungenEuroInput({
-  value,
-  onChange,
-  disabled,
-  min = EINSTELLUNGEN_SCHWELLE_SLIDER_MIN,
-  max = EINSTELLUNGEN_SCHWELLE_SLIDER_MAX,
-  step = EINSTELLUNGEN_SCHWELLE_SLIDER_STEP,
-}: {
-  value: number;
-  onChange: (value: number) => void;
-  disabled?: boolean;
-  /** @deprecated Ignoriert — Slider statt Pills */
-  presets?: readonly number[];
-  min?: number;
-  max?: number;
-  step?: number;
-}) {
-  return (
-    <EinstellungenEuroSlider
-      value={snapEinstellungenSchwelle(value)}
-      onChange={(v) => onChange(snapEinstellungenSchwelle(v))}
-      disabled={disabled}
-      min={min}
-      max={max}
-      step={step}
-      formatValue={formatEinstellungenSchwelle}
-    />
   );
 }
 
@@ -214,8 +183,8 @@ export function EinstellungenSchwelleSlider({
   onChange,
   disabled,
   min = 0,
-  max = 2000,
-  step = 50,
+  max = 5000,
+  step = 500,
 }: {
   value: number;
   onChange: (value: number) => void;
@@ -313,6 +282,37 @@ export function EinstellungenEuroSlider({
         {label}
       </span>
     </div>
+  );
+}
+
+/** @deprecated Alias — gleicher Slider wie EinstellungenEuroSlider (0–5000 / 500er). */
+export function EinstellungenEuroInput({
+  value,
+  onChange,
+  disabled,
+  min = 0,
+  max = 5000,
+  step = 500,
+}: {
+  value: number;
+  onChange: (value: number) => void;
+  disabled?: boolean;
+  /** @deprecated Ignoriert — Slider statt Pills */
+  presets?: readonly number[];
+  min?: number;
+  max?: number;
+  step?: number;
+}) {
+  return (
+    <EinstellungenEuroSlider
+      value={snapEinstellungenSchwelle(value)}
+      onChange={(v) => onChange(snapEinstellungenSchwelle(v))}
+      disabled={disabled}
+      min={min}
+      max={max}
+      step={step}
+      formatValue={formatEinstellungenSchwelle}
+    />
   );
 }
 

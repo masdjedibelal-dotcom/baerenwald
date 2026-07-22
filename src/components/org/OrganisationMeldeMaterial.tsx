@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Check, Copy } from "lucide-react";
 
+import { OrganisationMeldeQrModal } from "@/components/org/OrganisationMeldeQrModal";
 import {
   copyMeldeLink,
   openMeldeAushangPdf,
@@ -30,6 +31,7 @@ export function OrganisationMeldeMaterial({
     ? buildMeldeUrl(orgKennung, undefined, { forPrint: true })
     : "";
   const [copied, setCopied] = useState(false);
+  const [qrOpen, setQrOpen] = useState(false);
 
   async function copyLink() {
     if (!meldeUrl) return;
@@ -107,7 +109,22 @@ export function OrganisationMeldeMaterial({
         >
           Aushang PDF
         </button>
+        <button
+          type="button"
+          className="rounded-full border border-border-default bg-white px-4 py-2 text-[13px] font-semibold text-text-secondary hover:border-accent hover:text-accent"
+          onClick={() => setQrOpen(true)}
+        >
+          QR-Code
+        </button>
       </div>
+
+      {qrOpen ? (
+        <OrganisationMeldeQrModal
+          open
+          onClose={() => setQrOpen(false)}
+          label={kunde.org_anzeigename?.trim() || kunde.name || "Melde-Link"}
+        />
+      ) : null}
     </div>
   );
 

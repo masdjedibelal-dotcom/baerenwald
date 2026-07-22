@@ -5,6 +5,7 @@ import { useMemo, useState } from "react";
 import { OrganisationObjektCard } from "@/components/org/OrganisationObjektCard";
 import { OrganisationObjektDetail } from "@/components/org/OrganisationObjektDetail";
 import { OrganisationObjektWizard } from "@/components/org/OrganisationObjektWizard";
+import { OrganisationMeldeQrModal } from "@/components/org/OrganisationMeldeQrModal";
 import {
   copyMeldeLink,
   openMeldeAushangPdf,
@@ -75,6 +76,10 @@ export function OrganisationObjektePanel({
   const [mode, setMode] = useState<Mode>({ kind: "list" });
   const [selected, setSelected] = useState<string[]>([]);
   const [einladenObjektId, setEinladenObjektId] = useState<string | null>(null);
+  const [qrModal, setQrModal] = useState<{
+    objektId?: string;
+    label: string;
+  } | null>(null);
   const [busy, setBusy] = useState(false);
 
   const defaultHv =
@@ -307,6 +312,12 @@ export function OrganisationObjektePanel({
             )
           }
           onOpenAushangPdf={() => openMeldeAushangPdf(activeObjekt.id)}
+          onOpenQrCode={() =>
+            setQrModal({
+              objektId: activeObjekt.id,
+              label: activeObjekt.titel,
+            })
+          }
           onEdit={() =>
             setMode({
               kind: "wizard",
@@ -321,6 +332,14 @@ export function OrganisationObjektePanel({
           onOpenVorgang={onOpenVorgang}
           dokumenteByLeadId={dokumenteByLeadId}
         />
+        {qrModal ? (
+          <OrganisationMeldeQrModal
+            open
+            onClose={() => setQrModal(null)}
+            objektId={qrModal.objektId}
+            label={qrModal.label}
+          />
+        ) : null}
         {einladenObjektId && orgKennung ? (
           <PortalModalEinladen
             open
@@ -415,14 +434,26 @@ export function OrganisationObjektePanel({
                 actions={
                   <>
                     {canAushang ? (
-                      <button
-                        type="button"
-                        title="Aushang-PDF im Browser öffnen"
-                        className="rounded-full border border-accent bg-accent-light px-2.5 py-1 text-[11.5px] font-semibold text-accent"
-                        onClick={() => openMeldeAushangPdf(o.id)}
-                      >
-                        ▦ Aushang PDF
-                      </button>
+                      <>
+                        <button
+                          type="button"
+                          title="Aushang-PDF im Browser öffnen"
+                          className="rounded-full border border-accent bg-accent-light px-2.5 py-1 text-[11.5px] font-semibold text-accent"
+                          onClick={() => openMeldeAushangPdf(o.id)}
+                        >
+                          ▦ Aushang PDF
+                        </button>
+                        <button
+                          type="button"
+                          title="QR-Code anzeigen"
+                          className="rounded-full border border-border-default bg-white px-2.5 py-1 text-[11.5px] font-semibold text-text-secondary hover:border-accent hover:text-accent"
+                          onClick={() =>
+                            setQrModal({ objektId: o.id, label: o.titel })
+                          }
+                        >
+                          QR-Code
+                        </button>
+                      </>
                     ) : null}
                     <button
                       type="button"
@@ -472,6 +503,14 @@ export function OrganisationObjektePanel({
         </button>
       ) : null}
 
+      {qrModal ? (
+        <OrganisationMeldeQrModal
+          open
+          onClose={() => setQrModal(null)}
+          objektId={qrModal.objektId}
+          label={qrModal.label}
+        />
+      ) : null}
     </div>
   );
 }

@@ -25,6 +25,7 @@ import {
   EINSTELLUNGEN_SCHWELLE_SLIDER_MIN,
   EINSTELLUNGEN_SCHWELLE_SLIDER_STEP,
   formatEinstellungenSchwelle,
+  snapEinstellungenSchwelle,
 } from "@/lib/portal2/einstellungen";
 import {
   decodeObjektMeta,
@@ -57,6 +58,7 @@ type Props = {
   onBack: () => void;
   onCopyMeldeLink: () => void;
   onOpenAushangPdf: () => void;
+  onOpenQrCode: () => void;
   onEdit: () => void;
   onCopy: () => void;
   onDelete: () => void;
@@ -144,6 +146,7 @@ export function OrganisationObjektDetail({
   onBack,
   onCopyMeldeLink,
   onOpenAushangPdf,
+  onOpenQrCode,
   onEdit,
   onCopy,
   onDelete,
@@ -154,9 +157,11 @@ export function OrganisationObjektDetail({
 }: Props) {
   const [tab, setTab] = useState<ObjDetailTabId>("stamm");
   const [schwelle, setSchwelle] = useState(() =>
-    objekt.freigabe_schwelle_eur != null
-      ? Number(objekt.freigabe_schwelle_eur)
-      : 500
+    snapEinstellungenSchwelle(
+      objekt.freigabe_schwelle_eur != null
+        ? Number(objekt.freigabe_schwelle_eur)
+        : 500
+    )
   );
   const schwelleTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -184,9 +189,11 @@ export function OrganisationObjektDetail({
 
   useEffect(() => {
     setSchwelle(
-      objekt.freigabe_schwelle_eur != null
-        ? Number(objekt.freigabe_schwelle_eur)
-        : 500
+      snapEinstellungenSchwelle(
+        objekt.freigabe_schwelle_eur != null
+          ? Number(objekt.freigabe_schwelle_eur)
+          : 500
+      )
     );
     setVersicherer(objekt.versicherer ?? "");
     setObjVersNr(objekt.versicherungs_nr ?? "");
@@ -345,7 +352,8 @@ export function OrganisationObjektDetail({
     }, 550);
   };
 
-  const onSchwelleChange = (value: number) => {
+  const onSchwelleChange = (raw: number) => {
+    const value = snapEinstellungenSchwelle(raw);
     setSchwelle(value);
     if (schwelleTimer.current) clearTimeout(schwelleTimer.current);
     schwelleTimer.current = setTimeout(() => {
@@ -595,6 +603,13 @@ export function OrganisationObjektDetail({
                 onClick={onOpenAushangPdf}
               >
                 Aushang PDF
+              </button>
+              <button
+                type="button"
+                className="rounded-[9px] border border-border-default bg-white px-3.5 py-2 text-[13px] font-semibold text-text-secondary"
+                onClick={onOpenQrCode}
+              >
+                QR-Code
               </button>
             </>
           ) : null}

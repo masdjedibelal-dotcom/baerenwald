@@ -94,6 +94,12 @@ export function meldeAushangPdfPath(objektId?: string): string {
   return `/api/org/melde-aushang?objektId=${encodeURIComponent(objektId.trim())}`;
 }
 
+/** QR-PNG für Melde-Link (Modal / Download). */
+export function meldeQrPngPath(objektId?: string): string {
+  if (!objektId?.trim()) return "/api/org/melde-qr";
+  return `/api/org/melde-qr?objektId=${encodeURIComponent(objektId.trim())}`;
+}
+
 /** @deprecated Alias — siehe meldeAushangPdfPath */
 export function aushangPrintPath(objektId: string): string {
   return meldeAushangPdfPath(objektId);

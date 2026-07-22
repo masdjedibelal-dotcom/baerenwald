@@ -51,7 +51,7 @@ export const EINSTELLUNGEN_OBJEKT_SCHWELLE_INTRO =
 
 export const EINSTELLUNGEN_PROFIL_EDIT = "Profil bearbeiten" as const;
 
-/** Schnellwahl-Beträge (Legacy). */
+/** @deprecated Pills entfernt — nutzen Sie den Slider (0–5000 / 500er). */
 export const EINSTELLUNGEN_SCHWELLE_PRESETS = [500, 1000, 1500, 2000, 2500, 5000] as const;
 
 /** Regler: 0–5000 € in 500er-Schritten. */

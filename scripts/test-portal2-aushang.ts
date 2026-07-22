@@ -12,6 +12,7 @@ import {
   aushangSlug,
   aushangUrl,
   meldeAushangPdfPath,
+  meldeQrPngPath,
 } from "../src/lib/portal2/aushang";
 
 let failed = 0;
@@ -56,6 +57,11 @@ assert("pdf path org", meldeAushangPdfPath() === "/api/org/melde-aushang");
 assert(
   "pdf path objekt",
   meldeAushangPdfPath("abc") === "/api/org/melde-aushang?objektId=abc"
+);
+assert("qr path org", meldeQrPngPath() === "/api/org/melde-qr");
+assert(
+  "qr path objekt",
+  meldeQrPngPath("abc") === "/api/org/melde-qr?objektId=abc"
 );
 
 if (failed > 0) {
