@@ -3,6 +3,19 @@ import { NextResponse } from "next/server";
 import { requireOrganisationSession } from "@/lib/org/require-org-session";
 import { supabaseAdmin } from "@/lib/supabase";
 
+const LEAD_ID_IN_LINK =
+  /[?&]id=([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})/i;
+
+/** Lead-IDs aus Notif-Links extrahieren. */
+function leadIdsFromLinks(links: Array<string | null | undefined>): string[] {
+  const ids = new Set<string>();
+  for (const link of links) {
+    const m = String(link ?? "").match(LEAD_ID_IN_LINK);
+    if (m?.[1]) ids.add(m[1].toLowerCase());
+  }
+  return Array.from(ids);
+}
+
 /** HV-Benachrichtigungen (S13). */
 export async function GET() {
   const session = await requireOrganisationSession();
@@ -21,8 +34,39 @@ export async function GET() {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  const unread = (data ?? []).filter((n) => !n.gelesen_am).length;
-  return NextResponse.json({ notifications: data ?? [], unread });
+  const rows = data ?? [];
+  const linkedLeadIds = leadIdsFromLinks(rows.map((n) => n.link));
+  let existingLeadIds = new Set<string>();
+  if (linkedLeadIds.length) {
+    const { data: leads } = await supabaseAdmin
+      .from("leads")
+      .select("id")
+      .in("id", linkedLeadIds);
+    existingLeadIds = new Set(
+      (leads ?? []).map((l) => String(l.id).toLowerCase())
+    );
+
+    // Geister-Notifs (Vorgang schon gelöscht) aufräumen
+    const orphanIds = rows
+      .filter((n) => {
+        const m = String(n.link ?? "").match(LEAD_ID_IN_LINK);
+        if (!m?.[1]) return false;
+        return !existingLeadIds.has(m[1].toLowerCase());
+      })
+      .map((n) => String(n.id));
+    if (orphanIds.length) {
+      void supabaseAdmin.from("hv_notifications").delete().in("id", orphanIds);
+    }
+  }
+
+  const notifications = rows.filter((n) => {
+    const m = String(n.link ?? "").match(LEAD_ID_IN_LINK);
+    if (!m?.[1]) return true;
+    return existingLeadIds.has(m[1].toLowerCase());
+  });
+
+  const unread = notifications.filter((n) => !n.gelesen_am).length;
+  return NextResponse.json({ notifications, unread });
 }
 
 export async function PATCH(req: Request) {

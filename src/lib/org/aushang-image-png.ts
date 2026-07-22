@@ -1,8 +1,6 @@
-import { createCanvas, loadImage } from "@napi-rs/canvas";
-
 /**
  * pdf-lib kann nur PNG/JPEG — HV-Logos liegen oft als WebP.
- * Konvertiert beliebige decodierbare Bytes nach PNG.
+ * Konvertiert Bytes nach PNG. Canvas wird lazy geladen (Netlify-sicher).
  */
 export async function imageBytesToPng(
   bytes: Uint8Array | null | undefined,
@@ -10,6 +8,7 @@ export async function imageBytesToPng(
 ): Promise<Uint8Array | null> {
   if (!bytes?.length) return null;
   try {
+    const { createCanvas, loadImage } = await import("@napi-rs/canvas");
     const img = await loadImage(Buffer.from(bytes));
     const maxEdge = opts?.maxEdge ?? 512;
     const scale = Math.min(1, maxEdge / Math.max(img.width, img.height));

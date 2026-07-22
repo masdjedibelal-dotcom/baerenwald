@@ -440,7 +440,6 @@ export async function generateMeldeAushangPdf(
 
   const stepTitleSize = 15;
   const stepDetailSize = 10.5;
-  const arrowSize = 14;
 
   AUSHANG_STEPS.forEach((step, i) => {
     const numLabel = `${step.n}  ${step.title}`;
@@ -465,15 +464,29 @@ export async function generateMeldeAushangPdf(
     );
 
     if (i < AUSHANG_STEPS.length - 1) {
-      rightY -= 6;
-      page.drawText("↓", {
-        x: rightX,
-        y: rightY,
-        size: arrowSize,
-        font: fontBold,
+      rightY -= 8;
+      // Geometrischer Pfeil — StandardFonts können kein „↓“ (WinAnsi).
+      const ax = rightX + 6;
+      const ay = rightY + 2;
+      page.drawLine({
+        start: { x: ax, y: ay + 10 },
+        end: { x: ax, y: ay },
+        thickness: 1.6,
         color: primary,
       });
-      rightY -= arrowSize + 8;
+      page.drawLine({
+        start: { x: ax - 4, y: ay + 5 },
+        end: { x: ax, y: ay },
+        thickness: 1.6,
+        color: primary,
+      });
+      page.drawLine({
+        start: { x: ax + 4, y: ay + 5 },
+        end: { x: ax, y: ay },
+        thickness: 1.6,
+        color: primary,
+      });
+      rightY -= 16;
     }
   });
 

@@ -46,6 +46,23 @@ async function loadPublicImageBytes(
  * Platzhalter aus Org-/Portal-Branding: Name, Farben, Logo, Hero, QR, Melde-URL, Tel, E-Mail.
  */
 export async function GET(req: Request) {
+  try {
+    return await handleMeldeAushangGet(req);
+  } catch (e) {
+    console.error("[melde-aushang] 500:", e);
+    return NextResponse.json(
+      {
+        error:
+          e instanceof Error
+            ? e.message
+            : "Aushang konnte nicht erzeugt werden.",
+      },
+      { status: 500 }
+    );
+  }
+}
+
+async function handleMeldeAushangGet(req: Request) {
   const session = await requireOrganisationSession();
   if (!session.ok) {
     return NextResponse.json({ error: session.error }, { status: session.status });
@@ -112,8 +129,13 @@ export async function GET(req: Request) {
   ]);
 
   // WebP u. a. → PNG, sonst fehlt das Logo im PDF (pdf-lib)
-  const { imageBytesToPng } = await import("@/lib/org/aushang-image-png");
-  const logoImageBytes = (await imageBytesToPng(logoRaw)) ?? logoRaw;
+  let logoImageBytes = logoRaw;
+  try {
+    const { imageBytesToPng } = await import("@/lib/org/aushang-image-png");
+    logoImageBytes = (await imageBytesToPng(logoRaw)) ?? logoRaw;
+  } catch (e) {
+    console.warn("[melde-aushang] Logo-Konvertierung übersprungen:", e);
+  }
 
   // Eigenes HV-Hero, sonst Portal-Default (Innenhof / Wohnatmosphäre)
   const heroImageBytes =
