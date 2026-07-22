@@ -62,9 +62,10 @@ test.describe("HV Journey — Portal @org-portal", () => {
     await page.getByRole("button", { name: "Leistungen" }).click();
     await expect(page.getByText(/Übergabe|Leistungen/i).first()).toBeVisible();
 
-    await page.getByRole("button", { name: "Profil" }).click();
-    await expect(page.getByRole("heading", { name: "Team" })).toBeVisible();
-    await expect(page.getByText("Rechnungs-Export")).toBeVisible();
+    await page.getByRole("button", { name: "Einstellungen" }).click();
+    await expect(page.getByRole("heading", { name: /Einstellungen|Profil/i }).first()).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Team" })).toHaveCount(0);
+    await expect(page.getByRole("button", { name: "Team" })).toHaveCount(0);
   });
 
   test("Vorgänge-Filter und Suche", async ({ page }) => {

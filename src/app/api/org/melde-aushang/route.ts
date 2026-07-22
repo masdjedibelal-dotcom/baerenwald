@@ -106,10 +106,14 @@ export async function GET(req: Request) {
       ? customHero.trim()
       : null;
 
-  const [logoImageBytes, customHeroBytes] = await Promise.all([
+  const [logoRaw, customHeroBytes] = await Promise.all([
     fetchImageBytes(org.org_logo_url ?? brand.logoUrl),
     fetchImageBytes(customHeroUrl),
   ]);
+
+  // WebP u. a. → PNG, sonst fehlt das Logo im PDF (pdf-lib)
+  const { imageBytesToPng } = await import("@/lib/org/aushang-image-png");
+  const logoImageBytes = (await imageBytesToPng(logoRaw)) ?? logoRaw;
 
   // Eigenes HV-Hero, sonst Portal-Default (Innenhof / Wohnatmosphäre)
   const heroImageBytes =

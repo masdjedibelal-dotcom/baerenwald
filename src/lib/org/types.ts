@@ -89,6 +89,11 @@ export type OrganisationObjekt = {
   notizen_intern: string | null;
   kostenstelle_nr?: string | null;
   freigabe_schwelle_eur?: number | null;
+  /** Gebäudeversicherer (Stammdaten). */
+  versicherer?: string | null;
+  /** Policen-Nr. am Objekt. */
+  versicherungs_nr?: string | null;
+  selbstbehalt_eur?: number | null;
   /** Dekoratives Gebäudefoto (öffentlich). */
   cover_url?: string | null;
   created_at?: string | null;

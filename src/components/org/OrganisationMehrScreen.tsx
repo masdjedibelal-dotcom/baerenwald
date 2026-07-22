@@ -13,7 +13,7 @@ type Props = {
 };
 
 /**
- * Mobile „Mehr“ — Kacheln für Serviceabos, Team, Einstellungen.
+ * Mobile „Mehr“ — Kacheln für Serviceabos und Einstellungen.
  */
 export function OrganisationMehrScreen({ onOpen }: Props) {
   return (
@@ -26,7 +26,7 @@ export function OrganisationMehrScreen({ onOpen }: Props) {
           Mehr
         </h2>
         <p className="mt-1 text-[13px] text-text-secondary">
-          Service, Team und Einstellungen
+          Service und Einstellungen
         </p>
       </div>
 

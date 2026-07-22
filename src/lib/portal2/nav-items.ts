@@ -18,7 +18,6 @@ export type PortalNavKey =
   | "liste"
   | "objekte"
   | "servicepakete"
-  | "team"
   | "settings"
   | "mehr";
 
@@ -35,7 +34,6 @@ export const PORTAL_NAV_ITEMS: Record<PortalNavRole, readonly PortalNavItemDef[]
       { key: "liste", label: "Vorgänge", glyph: "▤" },
       { key: "objekte", label: "Objekte", glyph: "▦" },
       { key: "servicepakete", label: "Servicepakete", glyph: "◇" },
-      { key: "team", label: "Team", glyph: "◎" },
       { key: "settings", label: "Einstellungen", glyph: "⚙" },
     ],
     kunde_privat: [
@@ -78,7 +76,6 @@ export const PORTAL_HV_MEHR_TILES: readonly {
   glyph: string;
 }[] = [
   { key: "servicepakete", label: "Serviceabos", glyph: "◇" },
-  { key: "team", label: "Team", glyph: "◎" },
   { key: "settings", label: "Einstellungen", glyph: "⚙" },
 ] as const;
 
@@ -96,7 +93,6 @@ export const PORTAL_NAV_SECTION_BY_VARIANT = {
     liste: "vorgaenge",
     objekte: "objekte",
     servicepakete: "leistungen",
-    team: "team",
     settings: "profil",
     mehr: "mehr",
   },
@@ -161,7 +157,7 @@ export function buildPortalShellNav(
   });
 }
 
-/** Mobile Bottom-Nav für HV (ohne Service/Team/Settings — die liegen unter Mehr). */
+/** Mobile Bottom-Nav für HV (ohne Service/Settings — die liegen unter Mehr). */
 export function buildPortalHvMobileNav(
   badges?: Partial<Record<PortalNavKey, number>>
 ): PortalShellNavBuilt[] {

@@ -24,7 +24,7 @@ assert(
   getPortalNavItems("kunde_hv")
     .map((i) => i.label)
     .join(" · ") ===
-    "Dashboard · Vorgänge · Objekte · Servicepakete · Team · Einstellungen"
+    "Dashboard · Vorgänge · Objekte · Servicepakete · Einstellungen"
 );
 assert(
   "kunde_privat labels",
@@ -61,11 +61,11 @@ const orgNav = buildPortalShellNav("kunde_hv", "org", { liste: 3 });
 assert("org section map home", orgNav[0]!.id === "uebersicht");
 assert("org section map liste", orgNav[1]!.id === "vorgaenge");
 assert("org section map servicepakete", orgNav[3]!.id === "leistungen");
-assert("org section map team", orgNav[4]!.id === "team");
-assert("org section map settings", orgNav[5]!.id === "profil");
+assert("org section map settings", orgNav[4]!.id === "profil");
 assert("org badge on liste", orgNav[1]!.badge === 3);
 assert("org label Servicepakete", orgNav[3]!.label === "Servicepakete");
-assert("org label Team", orgNav[4]!.label === "Team");
+assert("org label Einstellungen", orgNav[4]!.label === "Einstellungen");
+assert("org ohne Team-Nav", orgNav.every((i) => i.id !== "team"));
 
 const partnerNav = buildPortalShellNav("handwerker", "partner");
 assert("partner 3 items", partnerNav.length === 3);

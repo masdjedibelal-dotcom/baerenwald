@@ -24,6 +24,9 @@ type Body = {
   bereichId?: string;
   fachdetailAnswers?: Record<string, string | string[]>;
   beschreibung?: string;
+  /** Abrechnung über Versicherung */
+  versicherung?: boolean;
+  versicherungsNr?: string;
 };
 
 const KATEGORIEN = new Set<MeldeKategorie>([
@@ -94,6 +97,18 @@ export async function POST(req: Request) {
 
   if (!result.ok) {
     return NextResponse.json({ error: result.error }, { status: result.status });
+  }
+
+  if (body.versicherung) {
+    const versNr = String(body.versicherungsNr ?? "").trim() || null;
+    await supabaseAdmin
+      .from("leads")
+      .update({
+        kostentraeger: "versicherung",
+        kostentraeger_vorgeschlagen: false,
+        ...(versNr ? { versicherungs_nr: versNr } : {}),
+      })
+      .eq("id", result.id);
   }
 
   const orgEmail = session.kunde.email?.trim() ?? "";

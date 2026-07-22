@@ -143,7 +143,6 @@ export const PORTAL_NAV_ICONS = {
   liste: "list",
   objekte: "building",
   servicepakete: "package",
-  team: "users",
   settings: "settings",
   mehr: "dots",
 } as const satisfies Record<string, MockIconName>;

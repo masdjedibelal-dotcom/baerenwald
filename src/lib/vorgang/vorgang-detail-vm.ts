@@ -137,7 +137,6 @@ export function kostentraegerLabel(raw: string | null | undefined): string | nul
     sondereigentum: "Sondereigentum",
     mieter: "Mieter",
     versicherung: "Versicherung",
-    versicherung_wasserschaden: "Versicherung (Wasserschaden)",
     unklar: "Noch unklar",
   };
   const k = raw.trim().toLowerCase();

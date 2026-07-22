@@ -43,6 +43,7 @@ type AuftragDokumentInput = {
   abnahme_datum?: string | null;
   abschlussdokumentation_url?: string | null;
   abschlussdokumentation_gesendet_at?: string | null;
+  versicherungsakte_pdf_url?: string | null;
   updated_at?: string | null;
   created_at?: string | null;
 };
@@ -171,6 +172,19 @@ export function dokumenteFromAuftrag(
   }
 ): PortalDokument[] {
   const rows: PortalDokument[] = [];
+
+  const versAkte = auftrag.versicherungsakte_pdf_url?.trim();
+  if (versAkte) {
+    rows.push({
+      id: `versicherungsakte-${auftrag.id}`,
+      name: "Schadenakte Versicherung",
+      subtitle: "Versicherung",
+      datum:
+        auftrag.updated_at ?? auftrag.created_at ?? undefined,
+      href: versAkte,
+      art: "protokoll",
+    });
+  }
 
   if (opts.angebot) {
     rows.push(...dokumenteFromAngebot(opts.angebot));

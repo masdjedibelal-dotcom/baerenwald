@@ -14,6 +14,7 @@ import { PartnerAbschlussModal } from "@/components/partner/PartnerAbschlussModa
 import { PartnerDokumentPreviewModal } from "@/components/partner/PartnerDokumentPreviewModal";
 import { PartnerAuftragErledigtSection } from "@/components/partner/PartnerAuftragErledigtSection";
 import { PartnerLeistungenKonditionenCard } from "@/components/partner/PartnerLeistungenKonditionenCard";
+import { PartnerPositionLebenszyklusList } from "@/components/partner/PartnerPositionLebenszyklusList";
 import {
   PartnerDetailError,
   PartnerDetailLayout,
@@ -777,6 +778,25 @@ export function PartnerAuftragDetail({
               done={abschlussDone}
               vollstaendig={abschlussVollstaendig}
             />
+
+            {item.positionen.length > 0 ? (
+              <PartnerPositionLebenszyklusList
+                auftragId={item.id}
+                positionen={item.positionen.map((p) => ({
+                  id: p.id,
+                  leistung_name: p.leistung_name,
+                  leistung_status: p.leistung_status,
+                  verguetung: p.verguetung,
+                  typ: p.typ,
+                  anerkennung_status: p.anerkennung_status,
+                  preis_partner: p.preis_partner,
+                  einheit: p.einheit,
+                  menge: p.menge,
+                  zeit_minuten_summe: p.zeit_minuten_summe,
+                }))}
+                onDone={() => router.refresh()}
+              />
+            ) : null}
 
             {konditionZeilen.length > 0 ? (
               <PortalDetailCard title={HW_AUFTRAG_COPY.leistungenTitle}>

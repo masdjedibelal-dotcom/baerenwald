@@ -169,6 +169,12 @@ export function OrganisationObjektDetail({
   const [kontaktTel, setKontaktTel] = useState(meta.tel ?? "");
   const [kontaktEmail, setKontaktEmail] = useState(meta.email ?? "");
   const kontaktTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [versicherer, setVersicherer] = useState(objekt.versicherer ?? "");
+  const [objVersNr, setObjVersNr] = useState(objekt.versicherungs_nr ?? "");
+  const [selbstbehalt, setSelbstbehalt] = useState(
+    objekt.selbstbehalt_eur != null ? String(objekt.selbstbehalt_eur) : ""
+  );
+  const versTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     setKontaktName(meta.kontakt ?? "");
@@ -182,12 +188,24 @@ export function OrganisationObjektDetail({
         ? Number(objekt.freigabe_schwelle_eur)
         : 500
     );
-  }, [objekt.id, objekt.freigabe_schwelle_eur]);
+    setVersicherer(objekt.versicherer ?? "");
+    setObjVersNr(objekt.versicherungs_nr ?? "");
+    setSelbstbehalt(
+      objekt.selbstbehalt_eur != null ? String(objekt.selbstbehalt_eur) : ""
+    );
+  }, [
+    objekt.freigabe_schwelle_eur,
+    objekt.versicherer,
+    objekt.versicherungs_nr,
+    objekt.selbstbehalt_eur,
+    objekt.id,
+  ]);
 
   useEffect(() => {
     return () => {
       if (kontaktTimer.current) clearTimeout(kontaktTimer.current);
       if (schwelleTimer.current) clearTimeout(schwelleTimer.current);
+      if (versTimer.current) clearTimeout(versTimer.current);
     };
   }, []);
 
@@ -277,6 +295,56 @@ export function OrganisationObjektDetail({
     }
   };
 
+  const saveVersicherung = async (next: {
+    versicherer: string;
+    versicherungs_nr: string;
+    selbstbehalt: string;
+  }) => {
+    try {
+      const sb = next.selbstbehalt.trim()
+        ? Number(next.selbstbehalt.replace(",", "."))
+        : null;
+      const res = await fetch("/api/org/objekte", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id: objekt.id,
+          versicherer: next.versicherer.trim() || null,
+          versicherungs_nr: next.versicherungs_nr.trim() || null,
+          selbstbehalt_eur: Number.isFinite(sb as number) ? sb : null,
+        }),
+      });
+      const json = (await res.json()) as { error?: string };
+      if (!res.ok) {
+        portalToastError("Versicherung nicht gespeichert", json.error);
+        return;
+      }
+      orgPortalToast.objektAktualisiert();
+      onRefresh();
+    } catch {
+      portalToastError("Versicherung nicht gespeichert");
+    }
+  };
+
+  const scheduleVersicherung = (patch: {
+    versicherer?: string;
+    versicherungs_nr?: string;
+    selbstbehalt?: string;
+  }) => {
+    const next = {
+      versicherer: patch.versicherer ?? versicherer,
+      versicherungs_nr: patch.versicherungs_nr ?? objVersNr,
+      selbstbehalt: patch.selbstbehalt ?? selbstbehalt,
+    };
+    if (patch.versicherer !== undefined) setVersicherer(patch.versicherer);
+    if (patch.versicherungs_nr !== undefined) setObjVersNr(patch.versicherungs_nr);
+    if (patch.selbstbehalt !== undefined) setSelbstbehalt(patch.selbstbehalt);
+    if (versTimer.current) clearTimeout(versTimer.current);
+    versTimer.current = setTimeout(() => {
+      void saveVersicherung(next);
+    }, 550);
+  };
+
   const onSchwelleChange = (value: number) => {
     setSchwelle(value);
     if (schwelleTimer.current) clearTimeout(schwelleTimer.current);
@@ -333,6 +401,30 @@ export function OrganisationObjektDetail({
             label="Melde-Link"
             value={objekt.melde_aktiv && objekt.melde_slug ? "Aktiv" : "Inaktiv"}
           />
+        </ObjCard>
+        <ObjCard title="Gebäudeversicherung">
+          <ObjEditRow
+            label="Versicherer"
+            value={versicherer}
+            onChange={(v) => scheduleVersicherung({ versicherer: v })}
+            placeholder="z. B. Allianz"
+          />
+          <ObjEditRow
+            label="Policen-Nr."
+            value={objVersNr}
+            onChange={(v) => scheduleVersicherung({ versicherungs_nr: v })}
+            placeholder="Police / Vertragsnummer"
+          />
+          <ObjEditRow
+            label="Selbstbehalt (€)"
+            value={selbstbehalt}
+            onChange={(v) => scheduleVersicherung({ selbstbehalt: v })}
+            placeholder="0"
+          />
+          <p className="mt-2 text-[12px] leading-relaxed text-text-tertiary">
+            Einmal hinterlegt — jede Schadenmeldung übernimmt diese Daten
+            automatisch.
+          </p>
         </ObjCard>
       </div>
     );

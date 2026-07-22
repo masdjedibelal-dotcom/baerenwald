@@ -1,6 +1,5 @@
 /**
  * Portal 2.0 — Aushang-Texte & Typen (PDF-Aushang Schadensmeldung).
- * Layout: Konzept „Details vereinheitlichen“.
  */
 
 import { buildMeldeUrl } from "@/lib/org/melde-url";
@@ -36,33 +35,32 @@ export const AUSHANG_STEPS = [
   {
     n: "01",
     title: "Scannen",
-    detail:
-      "Handy-Kamera auf den QR-Code halten — die Meldeseite öffnet sich sofort.",
+    detail: "Kamera auf den Code — Meldeseite öffnet sich.",
   },
   {
     n: "02",
     title: "Melden",
-    detail:
-      "Bereich wählen, Foto aufnehmen, Schaden kurz beschreiben — fertig.",
+    detail: "Bereich, Foto, kurze Beschreibung — fertig.",
   },
   {
     n: "03",
     title: "Verfolgen",
-    detail:
-      "Sie bekommen eine Bestätigung und sehen den Status jederzeit.",
+    detail: "Bestätigung per Mail, Status jederzeit einsehen.",
   },
 ] as const;
 
 export const AUSHANG_HERO_LINE1 = "Schaden melden,";
 export const AUSHANG_HERO_LINE2 = "einfach scannen.";
 export const AUSHANG_HERO_BODY =
-  "Ein Defekt in Ihrer Wohnung oder im Haus? Melden Sie ihn online — mit Foto, ohne App, in unter 2 Minuten. Sie bekommen sofort eine Bestätigung und sehen jederzeit, wie es weitergeht.";
+  "Defekt in Wohnung oder Haus? Online melden — mit Foto, ohne App, in unter 2 Minuten.";
 
+/** @deprecated — nicht mehr auf dem Aushang */
 export const AUSHANG_BADGE = "MIETERSERVICE";
-export const AUSHANG_SCAN_LABEL = "MIT DER HANDY-KAMERA SCANNEN";
-export const AUSHANG_STEPS_TITLE = "SO FUNKTIONIERT'S";
+export const AUSHANG_SCAN_LABEL = "Mit der Handy-Kamera scannen";
+export const AUSHANG_STEPS_TITLE = "So funktioniert's";
 export const AUSHANG_PHOTO_HINT =
-  "Foto einfügen (Gebäude, Team oder Handwerker)";
+  "Foto einfügen (Gebäude oder Objekt)";
+/** @deprecated — nicht mehr auf dem Aushang */
 export const AUSHANG_TAGLINE = "IHR ZUHAUSE IN GUTEN HÄNDEN";
 export const AUSHANG_FOOTER_NO_PHONE = "KEIN SMARTPHONE?";
 export const AUSHANG_FOOTER_CONTACT = "Melden Sie sich direkt";

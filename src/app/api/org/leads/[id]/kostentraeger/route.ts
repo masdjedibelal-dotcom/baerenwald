@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { writeAuditEvent } from "@/lib/audit/write-audit-event";
+import { ensureVersicherungsakteForLead } from "@/lib/org/ensure-versicherungsakte";
 import {
   isKostentraeger,
   KOSTENTRAEGER,
@@ -40,7 +41,7 @@ export async function PATCH(
 
   const { data: lead } = await supabaseAdmin
     .from("leads")
-    .select("id, auftraggeber_kunde_id, kostentraeger")
+    .select("id, auftraggeber_kunde_id, kostentraeger, kunde_objekt_id")
     .eq("id", id)
     .maybeSingle();
 
@@ -53,14 +54,34 @@ export async function PATCH(
     kostentraeger_vorgeschlagen: false,
     updated_at: new Date().toISOString(),
   };
-  if (kt === "versicherung" && body.versicherungs_nr?.trim()) {
-    patch.versicherungs_nr = body.versicherungs_nr.trim();
+  if (kt === "versicherung") {
+    if (body.versicherungs_nr?.trim()) {
+      patch.versicherungs_nr = body.versicherungs_nr.trim();
+    } else if (lead.kunde_objekt_id) {
+      const { data: obj } = await supabaseAdmin
+        .from("kunden_objekte")
+        .select("versicherungs_nr")
+        .eq("id", lead.kunde_objekt_id)
+        .maybeSingle();
+      if (obj?.versicherungs_nr?.trim()) {
+        patch.versicherungs_nr = obj.versicherungs_nr.trim();
+      }
+    }
+  } else {
+    patch.versicherungs_nr = null;
   }
 
   const { error } = await supabaseAdmin.from("leads").update(patch).eq("id", id);
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
+
+  // Sync auf verknüpfte Aufträge
+  const auftragPatch: Record<string, unknown> = { kostentraeger: kt };
+  if (kt === "versicherung" && body.versicherungs_nr?.trim()) {
+    auftragPatch.versicherungs_nr = body.versicherungs_nr.trim();
+  }
+  await supabaseAdmin.from("auftraege").update(auftragPatch).eq("lead_id", id);
 
   await writeAuditEvent({
     entityType: "lead",
@@ -75,6 +96,13 @@ export async function PATCH(
       label: KOSTENTRAEGER_LABELS[kt],
     },
   });
+
+  if (kt === "versicherung") {
+    await ensureVersicherungsakteForLead(id, {
+      actorId: session.userId,
+      actorRolle: session.rolle,
+    });
+  }
 
   return NextResponse.json({ ok: true, kostentraeger: kt });
 }

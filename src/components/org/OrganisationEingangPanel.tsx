@@ -386,6 +386,18 @@ function MeldungDetail({
         <BautagebuchAccordionList
           heading="Bautagebuch"
           className="!border-t-0 !pt-0"
+          headerAction={
+            auftragId && lead.kostentraeger === "versicherung" ? (
+              <a
+                href={`/api/org/bautagebuch-versicherung?auftragId=${encodeURIComponent(auftragId)}`}
+                className="btn-pill-outline portal-btn-compact"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                Für Versicherung exportieren
+              </a>
+            ) : null
+          }
           eintraege={bautagebuchEintraege.map((b) => ({
             id: b.id ?? `${b.datum}-${b.titel}`,
             datum: b.datum ?? b.created_at,
@@ -425,8 +437,7 @@ function MeldungDetail({
       />
 
       {auftragId &&
-      (lead.kostentraeger === "versicherung" ||
-        lead.kostentraeger === "versicherung_wasserschaden") ? (
+      (lead.kostentraeger === "versicherung") ? (
         <VersicherungsakteButton auftragId={auftragId} />
       ) : null}
 

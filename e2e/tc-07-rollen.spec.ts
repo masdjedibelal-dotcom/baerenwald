@@ -5,7 +5,7 @@ import { test, expect } from "@playwright/test";
 import { dismissCookieBanner } from "./helpers/cookie";
 import { recordUxScreen } from "./helpers/ux-report";
 
-test.describe("TC-07 Multi-User & Rollen", () => {
+test.describe("TC-07 Multi-User & Rollen (entfernt)", () => {
   test.use({
     storageState: path.join(__dirname, ".auth/org-sb.json"),
   });
@@ -21,6 +21,7 @@ test.describe("TC-07 Multi-User & Rollen", () => {
     await expect(page.getByPlaceholder("kollege@hausverwaltung.de")).toHaveCount(0);
     await expect(page.getByRole("link", { name: "Team" })).toHaveCount(0);
     await expect(page.getByRole("button", { name: "Team" })).toHaveCount(0);
+    await expect(page.getByRole("heading", { name: "Team" })).toHaveCount(0);
 
     recordUxScreen({
       screen: "HV Profil Sachbearbeiter",
@@ -45,11 +46,11 @@ test.describe("TC-07 Multi-User & Rollen", () => {
     expect(res.status()).toBe(403);
   });
 
-  test("Sachbearbeiter: POST Team-Einladung → 403", async ({ page }) => {
+  test("Team-API existiert nicht mehr", async ({ page }) => {
     const res = await page.request.post("/api/org/team", {
       data: { email: "blocked@example.com", rolle: "lesen" },
     });
-    expect(res.status()).toBe(403);
+    expect([404, 405]).toContain(res.status());
   });
 });
 
@@ -58,14 +59,12 @@ test.describe("TC-07 Admin", () => {
     storageState: path.join(__dirname, ".auth/org-admin.json"),
   });
 
-  test("Admin: Team-API gesperrt (kein Multi-User)", async ({ page }) => {
+  test("Admin: Team-API entfernt", async ({ page }) => {
     const email = `e2e-lesen+${Date.now()}@baerenwald-test.local`;
     const res = await page.request.post("/api/org/team", {
       data: { email, rolle: "lesen" },
     });
-    expect(res.status()).toBe(403);
-    const body = (await res.json()) as { error?: string };
-    expect(body.error).toMatch(/deaktiviert/i);
+    expect([404, 405]).toContain(res.status());
   });
 
   test("Admin: kein Team in Navigation", async ({ page }) => {
@@ -73,5 +72,6 @@ test.describe("TC-07 Admin", () => {
     await dismissCookieBanner(page);
     await expect(page.getByRole("link", { name: "Team" })).toHaveCount(0);
     await expect(page.getByRole("button", { name: "Team" })).toHaveCount(0);
+    await expect(page.getByRole("heading", { name: "Team" })).toHaveCount(0);
   });
 });

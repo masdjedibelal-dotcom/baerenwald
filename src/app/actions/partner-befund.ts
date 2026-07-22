@@ -146,5 +146,32 @@ export async function createPartnerBefundEintrag(
 
   revalidatePath("/partner");
   revalidatePath("/portal");
+
+  // Schadenakte aktualisieren, falls Versicherungsfall
+  void (async () => {
+    const { data: a } = await supabaseAdmin
+      .from("auftraege")
+      .select("kostentraeger, lead_id")
+      .eq("id", auftragId)
+      .maybeSingle();
+    let kt = a?.kostentraeger;
+    if (!kt && a?.lead_id) {
+      const { data: lead } = await supabaseAdmin
+        .from("leads")
+        .select("kostentraeger")
+        .eq("id", a.lead_id)
+        .maybeSingle();
+      kt = lead?.kostentraeger;
+    }
+    if (kt === "versicherung") {
+      const { ensureVersicherungsakteForAuftrag } = await import(
+        "@/lib/org/ensure-versicherungsakte"
+      );
+      await ensureVersicherungsakteForAuftrag(auftragId, {
+        actorRolle: "partner",
+      });
+    }
+  })();
+
   return { ok: true };
 }

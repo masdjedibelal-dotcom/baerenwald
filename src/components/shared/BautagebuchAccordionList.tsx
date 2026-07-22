@@ -31,17 +31,23 @@ export function BautagebuchAccordionList({
   heading = "Bautagebuch",
   emptyText = "Noch keine Einträge im Bautagebuch.",
   className,
+  headerAction,
 }: {
   eintraege: BautagebuchEintrag[];
   heading?: string;
   emptyText?: string;
   className?: string;
+  /** z. B. Export-Button für Versicherung */
+  headerAction?: React.ReactNode;
 }) {
   const [openId, setOpenId] = useState<string | null>(null);
 
   return (
     <section className={cn("space-y-2.5 border-t border-border-light pt-5", className)}>
-      <h4 className="portal-text-label text-text-tertiary">{heading}</h4>
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <h4 className="portal-text-label text-text-tertiary">{heading}</h4>
+        {headerAction}
+      </div>
       {eintraege.length === 0 ? (
         <p className="portal-text-body rounded-xl border border-dashed border-border-light bg-muted/20 px-3 py-5 text-center text-text-secondary">
           {emptyText}

@@ -14,6 +14,7 @@ type Body = {
   beschreibung?: string;
   kundeObjektId?: string;
   kostentraeger?: string;
+  versicherungsNr?: string;
   preisNetto?: number;
 };
 
@@ -35,6 +36,7 @@ export async function POST(req: Request) {
   const beschreibung = String(body.beschreibung ?? "").trim();
   const kundeObjektId = String(body.kundeObjektId ?? "").trim();
   const kostentraeger = String(body.kostentraeger ?? "gemeinschaft").trim();
+  const versicherungsNr = String(body.versicherungsNr ?? "").trim() || null;
   const preisNetto = Number(body.preisNetto ?? 0);
 
   if (!titel || titel.length < 4) {
@@ -102,20 +104,22 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: result.error }, { status: result.status });
   }
 
-  await supabaseAdmin
-    .from("leads")
-    .update({
-      melde_tracking_token: null,
-      melder_name: null,
-      melder_email: null,
-      melder_telefon: null,
-      melder_einheit: null,
-      kontakt_nachricht: beschreibung,
-      vorgang_phase: "eingegangen",
-      kostentraeger: kostentraeger,
-      kostentraeger_vorgeschlagen: false,
-    })
-    .eq("id", result.id);
+  const leadPatch: Record<string, unknown> = {
+    melde_tracking_token: null,
+    melder_name: null,
+    melder_email: null,
+    melder_telefon: null,
+    melder_einheit: null,
+    kontakt_nachricht: beschreibung,
+    vorgang_phase: "eingegangen",
+    kostentraeger: kostentraeger,
+    kostentraeger_vorgeschlagen: false,
+  };
+  if (kostentraeger === "versicherung" && versicherungsNr) {
+    leadPatch.versicherungs_nr = versicherungsNr;
+  }
+
+  await supabaseAdmin.from("leads").update(leadPatch).eq("id", result.id);
 
   await writeAuditEvent({
     entityType: "lead",

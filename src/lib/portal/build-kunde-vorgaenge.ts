@@ -650,6 +650,8 @@ export function buildKundeVorgaenge(input: {
   for (const auftrag of input.auftraege) {
     if (usedAuftragIds.has(auftrag.id)) continue;
     const linkedLeadId = normPortalId(auftrag.lead_id);
+    // HV: Aufträge ohne Lead (z. B. nach CRM-Löschung + SET NULL) nicht als Geister-Vorgang zeigen.
+    if (input.hvPortalMode && !linkedLeadId) continue;
     if (linkedLeadId && usedLeadIds.has(linkedLeadId)) continue;
     const linkedAngebotId = normPortalId(auftrag.angebot_id);
     if (linkedAngebotId && usedAngebotIds.has(linkedAngebotId)) continue;

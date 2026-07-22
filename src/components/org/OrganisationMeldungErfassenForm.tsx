@@ -24,6 +24,8 @@ export function OrganisationMeldungErfassenForm({ objekte, mode, onDone }: Props
   const [kategorie, setKategorie] = useState<MeldeKategorie>("reparatur");
   const [bereichId, setBereichId] = useState("wasser");
   const [beschreibung, setBeschreibung] = useState("");
+  const [versicherung, setVersicherung] = useState(false);
+  const [versicherungsNr, setVersicherungsNr] = useState("");
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [link, setLink] = useState<string | null>(null);
@@ -48,6 +50,14 @@ export function OrganisationMeldungErfassenForm({ objekte, mode, onDone }: Props
           kategorie,
           bereichId,
           beschreibung,
+          ...(mode === "direkt"
+            ? {
+                versicherung,
+                versicherungsNr: versicherung
+                  ? versicherungsNr || undefined
+                  : undefined,
+              }
+            : {}),
         }),
       });
       const json = (await res.json()) as { error?: string; link?: string };
@@ -154,6 +164,48 @@ export function OrganisationMeldungErfassenForm({ objekte, mode, onDone }: Props
         required
         minLength={8}
       />
+      {mode === "direkt" ? (
+        <div className="space-y-2 rounded-xl border border-border-default bg-muted/30 p-3">
+          <p className="text-sm font-medium text-text-secondary">
+            Abrechnung über Versicherung?
+          </p>
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={() => setVersicherung(true)}
+              className={
+                versicherung
+                  ? "btn-pill-primary portal-btn-compact"
+                  : "btn-pill-outline portal-btn-compact"
+              }
+            >
+              Ja
+            </button>
+            <button
+              type="button"
+              onClick={() => setVersicherung(false)}
+              className={
+                !versicherung
+                  ? "btn-pill-primary portal-btn-compact"
+                  : "btn-pill-outline portal-btn-compact"
+              }
+            >
+              Nein
+            </button>
+          </div>
+          <p className="text-xs text-text-tertiary">
+            Bei Ja erstellen wir die Schadenakte automatisch für die Einreichung.
+          </p>
+          {versicherung ? (
+            <input
+              className="w-full border rounded-lg px-3 py-2"
+              placeholder="Policen- / Versicherungsnummer (optional)"
+              value={versicherungsNr}
+              onChange={(e) => setVersicherungsNr(e.target.value)}
+            />
+          ) : null}
+        </div>
+      ) : null}
       {mode === "einladen" ? (
         <p className="text-xs text-text-tertiary rounded-lg bg-muted/30 p-2">
           Bitte Melderdaten nur übermitteln, wenn eine rechtliche Grundlage

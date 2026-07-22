@@ -280,7 +280,7 @@ export function PortalShell({
                   const active =
                     activeNavId === item.id ||
                     (item.id === "mehr" &&
-                      ["leistungen", "team", "profil"].includes(activeNavId));
+                      ["leistungen", "profil"].includes(activeNavId));
                   return (
                     <button
                       key={item.id}

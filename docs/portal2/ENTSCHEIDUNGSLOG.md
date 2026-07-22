@@ -610,7 +610,7 @@ Anzeigeformen 1:1 zum Mock; **keine** hartkodierten Demo-Stammdaten zur Laufzeit
 | Logo-Datei-Upload | **OFFENE-PUNKTE** — Anzeige `org_logo_url` / Kürzel |
 | Globale Schwelle Range 0–2000 / 50 | Mock; → `/api/org/einstellungen` |
 | Objekt-Schwellen Liste real | aus `kunden_objekte.freigabe_schwelle_eur`; Edit unter Objekt-Detail |
-| MeldeMaterial / Team / AV / weitere Regeln darunter | Bestand nicht entfernen |
+| MeldeMaterial / AV / weitere Regeln darunter | Bestand nicht entfernen; Team-/Rollen-UI für HV entfernt (ein Zugang) |
 | Privatkunde/Mieter/HW-Varianten | **D12 v3 erledigt** (siehe Abschnitt darunter) |
 
 **Migration:** Branding-Palette weiter `20260818120000_org_branding_palette.sql` (nicht neu). Ohne Apply: API meldet fehlende Spalten klar.

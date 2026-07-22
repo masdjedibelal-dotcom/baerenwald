@@ -233,6 +233,35 @@ export async function uploadPartnerBautagebuchAnhaenge(opts: {
   return { ok: true, paths };
 }
 
+/** Foto für Positions-Eintrag (Lebenszyklus). */
+export async function uploadPartnerEintragFoto(opts: {
+  handwerkerId: string;
+  auftragId: string;
+  positionId: string;
+  file: File;
+}): Promise<{ ok: true; path: string } | { ok: false; error: string }> {
+  if (!isSupabaseConfigured()) {
+    return { ok: false, error: "Storage nicht konfiguriert." };
+  }
+  const err = validatePartnerBautagebuchFile(opts.file);
+  if (err) return { ok: false, error: err };
+
+  const mime = opts.file.type || "image/jpeg";
+  if (!/^image\//i.test(mime)) {
+    return { ok: false, error: "Bitte ein Foto aufnehmen." };
+  }
+
+  const ext = extFromMime(mime);
+  const path = `${opts.handwerkerId}/position-eintraege/${opts.auftragId}/${opts.positionId}/${randomUUID()}.${ext}`;
+  const buf = Buffer.from(await opts.file.arrayBuffer());
+  const { error } = await supabaseAdmin.storage
+    .from(PARTNER_UPLOAD_BUCKET)
+    .upload(path, buf, { contentType: mime, upsert: false });
+
+  if (error) return { ok: false, error: error.message };
+  return { ok: true, path };
+}
+
 /** @deprecated — nutze uploadPartnerBautagebuchAnhaenge */
 export const uploadPartnerPhotos = uploadPartnerBautagebuchAnhaenge;
 

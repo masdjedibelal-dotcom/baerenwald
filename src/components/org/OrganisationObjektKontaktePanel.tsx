@@ -19,6 +19,7 @@ const ROLLEN = [
   { id: "beirat", label: "Beirat" },
   { id: "dienstleister", label: "Dienstleister" },
   { id: "notfall", label: "Notfall" },
+  { id: "makler", label: "Makler / Versicherung" },
   { id: "sonstiges", label: "Sonstiges" },
 ];
 

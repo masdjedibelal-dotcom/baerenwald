@@ -5,12 +5,12 @@ import { PORTAL_HEADER_HERO_SRC } from "@/lib/portal2/portal-media";
 import { HvNotificationBell } from "@/components/org/HvNotificationBell";
 import { OrganisationAktiveAbosPanel } from "@/components/org/OrganisationAktiveAbosPanel";
 import { OrganisationServicepaketePanel } from "@/components/org/OrganisationServicepaketePanel";
+import { OrganisationMieterwechselPanel } from "@/components/org/OrganisationMieterwechselPanel";
 import { OrganisationSuche } from "@/components/org/OrganisationSuche";
 import { OrganisationAnfrageHub } from "@/components/org/OrganisationAnfrageHub";
 import { OrganisationMehrScreen } from "@/components/org/OrganisationMehrScreen";
 import { OrganisationObjektePanel } from "@/components/org/OrganisationObjektePanel";
 import { OrganisationEinstellungenScreen } from "@/components/org/OrganisationEinstellungenScreen";
-import { OrganisationTeamPanel } from "@/components/org/OrganisationTeamPanel";
 import { OrganisationWhitelabelGate } from "@/components/org/OrganisationWhitelabelGate";
 import { OrganisationVorgaengeSection } from "@/components/org/OrganisationVorgaengeSection";
 import { OnboardingTour } from "@/components/onboarding/OnboardingTour";
@@ -58,7 +58,6 @@ type OrgSection =
   | "vorgaenge"
   | "objekte"
   | "leistungen"
-  | "team"
   | "profil"
   | "mehr";
 
@@ -124,10 +123,13 @@ function portalSectionFromParam(raw: string | null): OrgSection | null {
     raw === "objekte" ||
     raw === "profil" ||
     raw === "leistungen" ||
-    raw === "team" ||
     raw === "mehr"
   ) {
     return raw;
+  }
+  // Team-/Rollen-Verwaltung ist deaktiviert (ein Zugang pro HV).
+  if (raw === "team") {
+    return "uebersicht";
   }
   if (
     raw === "vorgaenge" ||
@@ -432,17 +434,14 @@ export function OrganisationPortalClient({
           ) : null}
 
           {section === "leistungen" ? (
-            <div className="space-y-8">
+            <div className="space-y-10">
               <OrganisationServicepaketePanel onRequested={refresh} />
+              <OrganisationMieterwechselPanel
+                objekte={objekte}
+                onRequested={refresh}
+              />
               <OrganisationAktiveAbosPanel />
             </div>
-          ) : null}
-
-          {section === "team" ? (
-            <OrganisationTeamPanel
-              kunde={kunde}
-              isAdmin={mitgliedRolle === "admin"}
-            />
           ) : null}
 
           {section === "profil" ? (

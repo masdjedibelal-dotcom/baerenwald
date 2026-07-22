@@ -47,7 +47,7 @@ export const ORG_ONBOARDING_SLIDES: OnboardingSlide[] = [
     highlights: [
       "Fortschritt und Bautagebuch einsehen",
       "Abnahme und Rückmeldungen erfassen",
-      "Team und Whitelabel unter Mehr/Einstellungen",
+      "Whitelabel und Freigaben unter Mehr/Einstellungen",
     ],
   },
 ];

@@ -15,7 +15,7 @@ export async function GET() {
   }
 
   const selectCols =
-    "id, titel, strasse, hausnummer, plz, ort, melde_slug, melde_aktiv, einheiten_hinweis, notizen_intern, kostenstelle_nr, freigabe_schwelle_eur, cover_url, created_at";
+    "id, titel, strasse, hausnummer, plz, ort, melde_slug, melde_aktiv, einheiten_hinweis, notizen_intern, kostenstelle_nr, freigabe_schwelle_eur, versicherer, versicherungs_nr, selbstbehalt_eur, cover_url, created_at";
 
   const { data, error } = await supabaseAdmin
     .from("kunden_objekte")
@@ -23,7 +23,7 @@ export async function GET() {
     .eq("kunde_id", session.kunde.id)
     .order("titel", { ascending: true });
 
-  if (error && /cover_url/i.test(error.message)) {
+  if (error && /cover_url|versicherer|versicherungs_nr|selbstbehalt/i.test(error.message)) {
     const fallbackCols =
       "id, titel, strasse, hausnummer, plz, ort, melde_slug, melde_aktiv, einheiten_hinweis, notizen_intern, kostenstelle_nr, freigabe_schwelle_eur, created_at";
     const { data: healed, error: reloadErr } = await supabaseAdmin
@@ -77,6 +77,9 @@ type ObjektBody = {
   einheiten_hinweis?: string;
   notizen_intern?: string | null;
   freigabe_schwelle_eur?: number | null;
+  versicherer?: string | null;
+  versicherungs_nr?: string | null;
+  selbstbehalt_eur?: number | null;
 };
 
 /** Spec E2: aktive Vorgänge blockieren Löschen. */
@@ -224,6 +227,17 @@ export async function PATCH(req: Request) {
     patch.freigabe_schwelle_eur =
       body.freigabe_schwelle_eur == null ? null : Number(body.freigabe_schwelle_eur);
   }
+  if (body.versicherer !== undefined) {
+    patch.versicherer = body.versicherer?.trim() || null;
+  }
+  if (body.versicherungs_nr !== undefined) {
+    patch.versicherungs_nr = body.versicherungs_nr?.trim() || null;
+  }
+  if (body.selbstbehalt_eur !== undefined) {
+    const n =
+      body.selbstbehalt_eur == null ? NaN : Number(body.selbstbehalt_eur);
+    patch.selbstbehalt_eur = Number.isFinite(n) ? n : null;
+  }
   if (body.typ !== undefined) {
     patch.typ = body.typ?.trim() || null;
   }
@@ -255,6 +269,25 @@ export async function PATCH(req: Request) {
     ({ data, error } = await supabaseAdmin
       .from("kunden_objekte")
       .update(withoutTyp)
+      .eq("id", id)
+      .eq("kunde_id", session.kunde.id)
+      .select("id, titel, melde_slug, melde_aktiv")
+      .maybeSingle());
+  }
+
+  if (
+    error &&
+    /versicherer|versicherungs_nr|selbstbehalt/i.test(error.message)
+  ) {
+    const {
+      versicherer: _v,
+      versicherungs_nr: _vn,
+      selbstbehalt_eur: _s,
+      ...withoutVers
+    } = patch;
+    ({ data, error } = await supabaseAdmin
+      .from("kunden_objekte")
+      .update(withoutVers)
       .eq("id", id)
       .eq("kunde_id", session.kunde.id)
       .select("id, titel, melde_slug, melde_aktiv")

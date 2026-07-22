@@ -16,6 +16,8 @@ export function OrganisationManuellerVorgangForm({ objekte, onDone }: Props) {
   const [objektId, setObjektId] = useState(objekte[0]?.id ?? "");
   const [titel, setTitel] = useState("");
   const [beschreibung, setBeschreibung] = useState("");
+  const [versicherung, setVersicherung] = useState(false);
+  const [versicherungsNr, setVersicherungsNr] = useState("");
   const [kostentraeger, setKostentraeger] = useState("gemeinschaft");
   const [preisNetto, setPreisNetto] = useState("");
   const [busy, setBusy] = useState(false);
@@ -24,6 +26,7 @@ export function OrganisationManuellerVorgangForm({ objekte, onDone }: Props) {
     e.preventDefault();
     setBusy(true);
     try {
+      const kt = versicherung ? "versicherung" : kostentraeger;
       const res = await fetch("/api/org/vorgang-manuell", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -31,7 +34,8 @@ export function OrganisationManuellerVorgangForm({ objekte, onDone }: Props) {
           titel,
           beschreibung,
           kundeObjektId: objektId,
-          kostentraeger,
+          kostentraeger: kt,
+          versicherungsNr: versicherung ? versicherungsNr || undefined : undefined,
           preisNetto: preisNetto ? Number(preisNetto) : 0,
         }),
       });
@@ -91,20 +95,70 @@ export function OrganisationManuellerVorgangForm({ objekte, onDone }: Props) {
           minLength={8}
         />
       </label>
-      <label className="block space-y-1">
-        <span className="portal-form-label">Kostenträger</span>
-        <select
-          className="portal-input w-full rounded-xl border border-border-default px-3 py-2.5"
-          value={kostentraeger}
-          onChange={(e) => setKostentraeger(e.target.value)}
-        >
-          {KOSTENTRAEGER.map((k) => (
-            <option key={k} value={k}>
-              {KOSTENTRAEGER_LABELS[k]}
-            </option>
-          ))}
-        </select>
-      </label>
+
+      <div className="space-y-2 rounded-xl border border-border-default bg-muted/30 p-3">
+        <p className="portal-form-label">Abrechnung über Versicherung?</p>
+        <div className="flex flex-wrap gap-2">
+          <button
+            type="button"
+            onClick={() => {
+              setVersicherung(true);
+              setKostentraeger("versicherung");
+            }}
+            className={
+              versicherung
+                ? "btn-pill-primary portal-btn-compact"
+                : "btn-pill-outline portal-btn-compact"
+            }
+          >
+            Ja
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setVersicherung(false);
+              if (kostentraeger === "versicherung") setKostentraeger("gemeinschaft");
+            }}
+            className={
+              !versicherung
+                ? "btn-pill-primary portal-btn-compact"
+                : "btn-pill-outline portal-btn-compact"
+            }
+          >
+            Nein
+          </button>
+        </div>
+        <p className="text-xs text-text-tertiary">
+          Bei Ja erstellen wir die Schadenakte automatisch für die Einreichung.
+        </p>
+        {versicherung ? (
+          <input
+            type="text"
+            className="portal-input w-full rounded-xl border border-border-default px-3 py-2.5"
+            value={versicherungsNr}
+            onChange={(e) => setVersicherungsNr(e.target.value)}
+            placeholder="Policen- / Versicherungsnummer (optional)"
+          />
+        ) : null}
+      </div>
+
+      {!versicherung ? (
+        <label className="block space-y-1">
+          <span className="portal-form-label">Kostenträger</span>
+          <select
+            className="portal-input w-full rounded-xl border border-border-default px-3 py-2.5"
+            value={kostentraeger}
+            onChange={(e) => setKostentraeger(e.target.value)}
+          >
+            {KOSTENTRAEGER.filter((k) => k !== "versicherung").map((k) => (
+              <option key={k} value={k}>
+                {KOSTENTRAEGER_LABELS[k]}
+              </option>
+            ))}
+          </select>
+        </label>
+      ) : null}
+
       <label className="block space-y-1">
         <span className="portal-form-label">Geschätzter Netto-Preis (optional)</span>
         <input

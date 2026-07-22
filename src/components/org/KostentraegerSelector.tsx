@@ -30,7 +30,7 @@ export function KostentraegerSelector({
   const [versNr, setVersNr] = useState(versicherungsNr ?? "");
   const [busy, setBusy] = useState(false);
 
-  async function speichern(next?: Kostentraeger) {
+  async function speichern(next?: Kostentraeger, nrOverride?: string) {
     const chosen = next ?? kt;
     if (!chosen) return;
     setBusy(true);
@@ -40,12 +40,19 @@ export function KostentraegerSelector({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           kostentraeger: chosen,
-          versicherungs_nr: chosen === "versicherung" ? versNr : undefined,
+          versicherungs_nr:
+            chosen === "versicherung"
+              ? (nrOverride ?? versNr) || undefined
+              : undefined,
         }),
       });
       const data = (await res.json()) as { error?: string };
       if (!res.ok) throw new Error(data.error ?? "Speichern fehlgeschlagen");
-      portalToastSuccess("Kostenträger gespeichert.");
+      portalToastSuccess(
+        chosen === "versicherung"
+          ? "Versicherung gesetzt — Schadenakte wird aktualisiert."
+          : "Kostenträger gespeichert."
+      );
       onSaved?.();
     } catch (e) {
       portalToastError(e instanceof Error ? e.message : "Fehler");
@@ -57,49 +64,95 @@ export function KostentraegerSelector({
   if (readOnly && value) {
     return (
       <p className="portal-text-body">
-        Kostenträger: <strong>{KOSTENTRAEGER_LABELS[value as Kostentraeger] ?? value}</strong>
+        Kostenträger:{" "}
+        <strong>{KOSTENTRAEGER_LABELS[value as Kostentraeger] ?? value}</strong>
       </p>
     );
   }
 
+  const isVersicherung = kt === "versicherung" || value === "versicherung";
+
   return (
-    <div className="space-y-2 rounded-xl border border-border-default bg-muted/30 p-3">
-      <p className="portal-text-meta font-semibold text-text-secondary">
-        Kostenträger
-        {vorgeschlagen ? (
-          <span className="ml-2 font-normal text-accent">(Vorschlag)</span>
-        ) : null}
-      </p>
-      <div className="flex flex-wrap gap-2">
-        {KOSTENTRAEGER.map((k) => (
+    <div className="space-y-3 rounded-xl border border-border-default bg-muted/30 p-3">
+      <div className="space-y-2">
+        <p className="portal-text-meta font-semibold text-text-secondary">
+          Abrechnung über Versicherung?
+        </p>
+        <div className="flex flex-wrap gap-2">
           <button
-            key={k}
             type="button"
             disabled={busy || readOnly}
             onClick={() => {
-              setKt(k);
-              void speichern(k);
+              setKt("versicherung");
+              void speichern("versicherung");
             }}
             className={
-              kt === k || value === k
+              isVersicherung
                 ? "btn-pill-primary portal-btn-compact"
                 : "btn-pill-outline portal-btn-compact"
             }
           >
-            {KOSTENTRAEGER_LABELS[k]}
+            Ja
           </button>
-        ))}
+          <button
+            type="button"
+            disabled={busy || readOnly || !isVersicherung}
+            onClick={() => {
+              setKt("unklar");
+              void speichern("unklar");
+            }}
+            className={
+              !isVersicherung && kt
+                ? "btn-pill-primary portal-btn-compact"
+                : "btn-pill-outline portal-btn-compact"
+            }
+          >
+            Nein
+          </button>
+        </div>
+        <p className="text-xs text-text-tertiary">
+          Bei Ja erstellen wir die Schadenakte automatisch für die Einreichung.
+        </p>
       </div>
-      {(kt === "versicherung" || value === "versicherung") && !readOnly ? (
-        <input
-          type="text"
-          value={versNr}
-          onChange={(e) => setVersNr(e.target.value)}
-          onBlur={() => void speichern()}
-          placeholder="Versicherungsnummer"
-          className="input-field w-full max-w-xs"
-        />
-      ) : null}
+
+      <div className="space-y-2 border-t border-border-light pt-3">
+        <p className="portal-text-meta font-semibold text-text-secondary">
+          Kostenträger
+          {vorgeschlagen ? (
+            <span className="ml-2 font-normal text-accent">(Vorschlag)</span>
+          ) : null}
+        </p>
+        <div className="flex flex-wrap gap-2">
+          {KOSTENTRAEGER.map((k) => (
+            <button
+              key={k}
+              type="button"
+              disabled={busy || readOnly}
+              onClick={() => {
+                setKt(k);
+                void speichern(k);
+              }}
+              className={
+                kt === k || value === k
+                  ? "btn-pill-primary portal-btn-compact"
+                  : "btn-pill-outline portal-btn-compact"
+              }
+            >
+              {KOSTENTRAEGER_LABELS[k]}
+            </button>
+          ))}
+        </div>
+        {isVersicherung && !readOnly ? (
+          <input
+            type="text"
+            value={versNr}
+            onChange={(e) => setVersNr(e.target.value)}
+            onBlur={() => void speichern("versicherung")}
+            placeholder="Policen- / Versicherungsnummer"
+            className="input-field w-full max-w-xs"
+          />
+        ) : null}
+      </div>
     </div>
   );
 }

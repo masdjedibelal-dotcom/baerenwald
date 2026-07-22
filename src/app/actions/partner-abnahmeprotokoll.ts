@@ -316,5 +316,29 @@ export async function submitPartnerAbnahmeprotokoll(
   }
 
   revalidatePath("/partner");
+
+  void (async () => {
+    const { data: a } = await supabaseAdmin
+      .from("auftraege")
+      .select("kostentraeger, lead_id")
+      .eq("id", id)
+      .maybeSingle();
+    let kt = a?.kostentraeger;
+    if (!kt && a?.lead_id) {
+      const { data: lead } = await supabaseAdmin
+        .from("leads")
+        .select("kostentraeger")
+        .eq("id", a.lead_id)
+        .maybeSingle();
+      kt = lead?.kostentraeger;
+    }
+    if (kt === "versicherung") {
+      const { ensureVersicherungsakteForAuftrag } = await import(
+        "@/lib/org/ensure-versicherungsakte"
+      );
+      await ensureVersicherungsakteForAuftrag(id, { actorRolle: "partner" });
+    }
+  })();
+
   return { ok: true, vollstaendig: auftragVollstaendigErledigt };
 }
