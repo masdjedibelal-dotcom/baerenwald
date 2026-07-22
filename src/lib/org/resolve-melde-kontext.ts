@@ -296,6 +296,10 @@ export async function resolveEinladungKontext(token: string) {
   let objekt: {
     titel: string;
     adresseZeile: string;
+    strasse: string | null;
+    hausnummer: string | null;
+    plz: string | null;
+    ort: string | null;
   } | null = null;
 
   if (lead.kunde_objekt_id) {
@@ -313,6 +317,10 @@ export async function resolveEinladungKontext(token: string) {
           obj.plz as string | null,
           obj.ort as string | null
         ),
+        strasse: (obj.strasse as string | null) ?? null,
+        hausnummer: (obj.hausnummer as string | null) ?? null,
+        plz: (obj.plz as string | null) ?? null,
+        ort: (obj.ort as string | null) ?? null,
       };
     }
   }

@@ -56,7 +56,7 @@ export type PortalFunnelMeldeCtx = {
   sessionKey: string;
   /** Einladung ergänzen statt neuer Meldung */
   ergaenzenToken?: string;
-  /** Kein Objekt hinterlegt → Adresse im Kontaktschritt */
+  /** Kein oder unvollständiges Objekt → Adresse im Kontaktschritt (immer für Melde-Link) */
   needsAddress?: boolean;
   /** Zurück darf nicht zur HV-Objektliste führen */
   objektLocked?: boolean;
@@ -74,6 +74,7 @@ export type PortalFunnelPrefill = {
   plz?: string;
   strasse?: string;
   hausnummer?: string;
+  ort?: string;
 };
 
 type HvMieterOption = {
@@ -302,6 +303,7 @@ export function PortalFunnelHost({
     plz: prefill?.plz ?? "",
     strasse: prefill?.strasse ?? "",
     hausnummer: prefill?.hausnummer ?? "",
+    ort: prefill?.ort ?? "",
     kundentyp:
       channel === "portal_hv"
         ? "hausverwaltung"
@@ -652,6 +654,7 @@ export function PortalFunnelHost({
     }
     if (step === "kontakt") {
       const needsAddress =
+        channel === "melde_anon" ||
         (cfg.include.ortPlz && channel === "portal_privat") ||
         Boolean(melde?.needsAddress);
       if (needsAddress) {
@@ -779,7 +782,7 @@ export function PortalFunnelHost({
               ...(state.dringlichkeit
                 ? { dringlichkeit: state.dringlichkeit }
                 : {}),
-              ...(melde.needsAddress
+              ...(channel === "melde_anon" || melde.needsAddress
                 ? {
                     plz: state.plz.trim(),
                     strasse: state.strasse.trim(),
@@ -1560,12 +1563,16 @@ export function PortalFunnelHost({
         <StepWrapper
           layout={stepLayout}
           stepLabel={
-            melde?.needsAddress || cfg.include.ortPlz
+            channel === "melde_anon" ||
+            melde?.needsAddress ||
+            cfg.include.ortPlz
               ? "Ort & Kontakt"
               : "Kontakt"
           }
           question={
-            melde?.needsAddress || cfg.include.ortPlz
+            channel === "melde_anon" ||
+            melde?.needsAddress ||
+            cfg.include.ortPlz
               ? "Ihre Adresse und Kontaktdaten"
               : "Ihre Kontaktdaten"
           }
@@ -1611,7 +1618,8 @@ export function PortalFunnelHost({
                 }
               />
             )}
-            {(melde?.needsAddress ||
+            {(channel === "melde_anon" ||
+              melde?.needsAddress ||
               (cfg.include.ortPlz && channel === "portal_privat")) && (
               <>
                 <div className="grid grid-cols-[1fr_88px] gap-2">

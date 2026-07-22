@@ -39,6 +39,10 @@ export default async function MeldenErgaenzenPage({ params }: Props) {
       mieterKontaktEmail={(org.mieter_kontakt_email as string | null) ?? null}
       objektTitel={ctx.objekt?.titel ?? "Objekt"}
       objektAdresse={ctx.objekt?.adresseZeile}
+      objektStrasse={ctx.objekt?.strasse}
+      objektHausnummer={ctx.objekt?.hausnummer}
+      objektPlz={ctx.objekt?.plz}
+      objektOrt={ctx.objekt?.ort}
       orgKennung="einladung"
       objektSlug="einladung"
       prefill={{

@@ -69,6 +69,10 @@ export default async function MeldenOrgPage({ params }: Props) {
         objektTitel={obj.display.name}
         objektAdresse={[obj.strasse, obj.hausnummer].filter(Boolean).join(" ")}
         objektPlzOrt={obj.display.adr}
+        objektStrasse={obj.strasse}
+        objektHausnummer={obj.hausnummer}
+        objektPlz={obj.plz}
+        objektOrt={obj.ort}
         einheitenHinweis={obj.display.we}
         objektSlug={obj.melde_slug}
         objektLocked

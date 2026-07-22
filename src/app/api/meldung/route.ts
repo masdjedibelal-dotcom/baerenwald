@@ -132,10 +132,11 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Objekt fehlt." }, { status: 400 });
   }
 
-  const leadStrasse = objekt?.strasse ?? (bodyStrasse || null);
-  const leadHausnummer = objekt?.hausnummer ?? (bodyHausnummer || null);
-  const leadPlz = objekt?.plz?.trim() || bodyPlz || "80331";
-  const leadOrt = bodyOrt || objekt?.ort || null;
+  // Mieter-Angaben haben Vorrang (Objekt nur Prefill / Fallback)
+  const leadStrasse = bodyStrasse || objekt?.strasse?.trim() || null;
+  const leadHausnummer = bodyHausnummer || objekt?.hausnummer?.trim() || null;
+  const leadPlz = bodyPlz || objekt?.plz?.trim() || "80331";
+  const leadOrt = bodyOrt || objekt?.ort?.trim() || null;
 
   /** Ohne Objekt-Link: gleiche Anschrift wie bestehendes Objekt → zuordnen. */
   let matchedObjektId = objekt?.id ?? null;

@@ -59,6 +59,10 @@ export default async function MeldenObjektPage({ params }: Props) {
           : undefined
       }
       objektPlzOrt={obj?.display.adr}
+      objektStrasse={obj?.strasse}
+      objektHausnummer={obj?.hausnummer}
+      objektPlz={obj?.plz}
+      objektOrt={obj?.ort}
       einheitenHinweis={obj?.display.we}
       orgKennung={kontext.org.org_kennung}
       objektSlug={obj?.melde_slug ?? MELDE_ALLGEMEIN_SLUG}
