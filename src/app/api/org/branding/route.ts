@@ -54,7 +54,7 @@ export async function PATCH(req: Request) {
     patch.org_anzeigename = trimOrNull(body.org_anzeigename);
   }
   if (body.org_sub !== undefined) {
-    patch.org_sub = trimOrNull(body.org_sub) || "Hausverwaltung";
+    patch.org_sub = trimOrNull(body.org_sub) || "Verwaltung";
   }
   if (body.org_logo_kuerzel !== undefined) {
     const k = trimOrNull(body.org_logo_kuerzel);

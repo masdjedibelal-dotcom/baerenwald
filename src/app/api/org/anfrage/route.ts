@@ -62,7 +62,7 @@ export async function POST(req: Request) {
         ? "hv_manuell"
         : "hv_direkt";
 
-  const contactName = body.name?.trim() || org.name?.trim() || "Hausverwaltung";
+  const contactName = body.name?.trim() || org.name?.trim() || "Verwaltung";
   const contactEmail = body.email?.trim() || org.email?.trim() || undefined;
   const contactTel = body.telefon?.trim() || undefined;
   const melderName = body.melder_name?.trim() || null;
@@ -115,7 +115,7 @@ export async function POST(req: Request) {
     return NextResponse.json(
       {
         error:
-          "Für den Vorgang fehlt eine Kontakt-E-Mail der Hausverwaltung. Bitte in den Einstellungen hinterlegen.",
+          "Für den Vorgang fehlt eine Kontakt-E-Mail der Verwaltung. Bitte in den Einstellungen hinterlegen.",
       },
       { status: 400 }
     );

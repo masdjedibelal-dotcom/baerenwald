@@ -65,8 +65,8 @@ export default async function MeldeStatusPage({ params }: Props) {
   }
 
   let brand = {
-    name: "Hausverwaltung",
-    sub: "Hausverwaltung" as string | null,
+    name: "Verwaltung",
+    sub: "Verwaltung" as string | null,
     logoUrl: null as string | null,
     logoKuerzel: null as string | null,
     primary: null as string | null,
@@ -99,9 +99,9 @@ export default async function MeldeStatusPage({ params }: Props) {
     }
     brand = {
       name:
-        String(org?.org_anzeigename ?? org?.name ?? "Hausverwaltung").trim() ||
-        "Hausverwaltung",
-      sub: (org?.org_sub as string | null) ?? "Hausverwaltung",
+        String(org?.org_anzeigename ?? org?.name ?? "Verwaltung").trim() ||
+        "Verwaltung",
+      sub: (org?.org_sub as string | null) ?? "Verwaltung",
       logoUrl: (org?.org_logo_url as string | null) ?? null,
       logoKuerzel: (org?.org_logo_kuerzel as string | null) ?? null,
       primary: (org?.org_primary_color as string | null) ?? null,

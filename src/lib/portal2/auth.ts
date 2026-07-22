@@ -29,7 +29,7 @@ export function authBrandName(
   orgName?: string | null
 ): string {
   if (authWL(role)) {
-    return orgName?.trim() || "Hausverwaltung";
+    return orgName?.trim() || "Verwaltung";
   }
   return "Bärenwald";
 }

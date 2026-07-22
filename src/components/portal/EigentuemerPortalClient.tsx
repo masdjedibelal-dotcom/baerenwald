@@ -574,7 +574,7 @@ export function EigentuemerPortalClient({
                 </div>
               </dl>
               <p className="portal-text-meta text-text-tertiary">
-                Lesesicht — Änderungen nimmt die Hausverwaltung vor.
+                Lesesicht — Änderungen nimmt die Verwaltung vor.
               </p>
             </div>
           ) : (
@@ -587,7 +587,7 @@ export function EigentuemerPortalClient({
               </div>
               {objekte.length === 0 ? (
                 <div className="portal-surface p-6 text-center portal-text-body text-text-secondary">
-                  Noch keine Objekte zugeordnet. Die Hausverwaltung legt die
+                  Noch keine Objekte zugeordnet. Die Verwaltung legt die
                   Zuordnung fest.
                 </div>
               ) : (

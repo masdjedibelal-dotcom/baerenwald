@@ -33,7 +33,7 @@ export default async function MeldenOrgDatenschutzPage({ params }: Props) {
       </p>
       <h2>Dienstleister</h2>
       <p>
-        Für den technischen Betrieb der Meldeplattform setzt Ihre Hausverwaltung einen
+        Für den technischen Betrieb der Meldeplattform setzt Ihre Verwaltung einen
         technischen Dienstleister ein. Beauftragte Handwerksbetriebe erhalten die für
         die Termin- und Ausführungskoordination erforderlichen Angaben.
       </p>
@@ -54,7 +54,7 @@ export default async function MeldenOrgDatenschutzPage({ params }: Props) {
       <h2>Ihre Rechte</h2>
       <p>
         Auskunft, Berichtigung, Löschung, Einschränkung, Widerspruch, Beschwerde bei
-        der Aufsichtsbehörde. Wenden Sie sich an Ihre Hausverwaltung ({orgName}).
+        der Aufsichtsbehörde. Wenden Sie sich an Ihre Verwaltung ({orgName}).
       </p>
       <p>
         <Link href={`/melden/${params.org}`}>← Zurück zur Meldung</Link>

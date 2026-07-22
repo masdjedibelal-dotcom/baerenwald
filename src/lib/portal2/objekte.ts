@@ -395,7 +395,7 @@ export const OBJ_AUTOPASS_DETAIL_DESC =
   "Angebote bis zur Freigabeschwelle werden automatisch beauftragt — darüber ist Ihre Freigabe nötig." as const;
 
 export const OBJ_REGELN_FALLBACK =
-  "Ohne eigene Schwelle gilt die Standard-Regel Ihrer Hausverwaltung." as const;
+  "Ohne eigene Schwelle gilt die Standard-Regel Ihrer Verwaltung." as const;
 
 /** Freigabeschwelle — analog Einstellungen (Standard-Regel). */
 export const OBJ_SCHWELLE_WIZARD_TITLE = "Freigabeschwelle" as const;

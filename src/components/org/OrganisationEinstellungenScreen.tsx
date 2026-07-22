@@ -26,7 +26,7 @@ export function OrganisationEinstellungenScreen({
   isAdmin = true,
 }: Props) {
   const displayName =
-    kunde.org_anzeigename?.trim() || kunde.name?.trim() || "Hausverwaltung";
+    kunde.org_anzeigename?.trim() || kunde.name?.trim() || "Verwaltung";
   const tel =
     kunde.org_telefon?.trim() ||
     kunde.mieter_kontakt_telefon?.trim() ||

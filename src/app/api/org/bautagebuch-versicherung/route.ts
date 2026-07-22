@@ -49,7 +49,7 @@ export async function GET(req: Request) {
     .order("datum", { ascending: true });
 
   const pdfBytes = await generateBautagebuchVersicherungPdf({
-    orgName: session.kunde.name?.trim() || "Hausverwaltung",
+    orgName: session.kunde.name?.trim() || "Verwaltung",
     objektTitel: String(auftrag.titel ?? "Vorgang"),
     versicherungsNr: versNr,
     schadenNr: versNr,

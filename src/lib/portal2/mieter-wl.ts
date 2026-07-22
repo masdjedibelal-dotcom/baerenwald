@@ -23,7 +23,7 @@ export const MIETER_WL_FEHLER = {
   title_de: "Link nicht verfügbar",
   title_en: "Link unavailable",
   body_de:
-    "Dieser Melde-Link ist ungültig oder wurde deaktiviert. Bitte wenden Sie sich an Ihre Hausverwaltung.",
+    "Dieser Melde-Link ist ungültig oder wurde deaktiviert. Bitte wenden Sie sich an Ihre Verwaltung.",
   body_en:
     "This report link is invalid or has been disabled. Please contact your property manager.",
   btn_de: "Zur Objektauswahl",
@@ -107,7 +107,7 @@ export function formatMieterWlFooterContact(
   brand: MieterWlBrand,
   lang: MeldeLang
 ): string {
-  const name = brand.name.trim() || "Ihre Hausverwaltung";
+  const name = brand.name.trim() || "Ihre Verwaltung";
   const parts = [name];
   if (brand.tel?.trim()) parts.push(brand.tel.trim());
   if (brand.mail?.trim()) parts.push(brand.mail.trim());

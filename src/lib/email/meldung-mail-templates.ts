@@ -111,7 +111,7 @@ export function buildOrgNeueMeldungHtml(input: OrgNeueMeldungMailInput): string 
   const quelle = input.quelle ?? "mieter";
   const einleitung =
     quelle === "hausverwaltung"
-      ? `Für <strong>${esc(input.objektTitel)}</strong> wurde ein neuer Vorgang von Ihrer Hausverwaltung erfasst.`
+      ? `Für <strong>${esc(input.objektTitel)}</strong> wurde ein neuer Vorgang von Ihrer Verwaltung erfasst.`
       : `Für <strong>${esc(input.objektTitel)}</strong> wurde ein neuer Vorgang durch eine <strong>Mieter-Meldung</strong> erstellt.`;
 
   const kontakt = [input.melderEmail?.trim(), input.melderTelefon?.trim()]
@@ -237,7 +237,7 @@ export function buildMelderAbgelehntHtml(input: {
     bodyHtml: `
       <p style="margin:0 0 12px;font-size:15px;color:#374151;line-height:1.6;">${mailBegruessungHtml("du", input.melderName)}</p>
       <p style="margin:0 0 12px;font-size:15px;color:#374151;line-height:1.6;">${esc(input.orgName)} hat deine Meldung für <strong>${esc(input.objektTitel)}</strong> ohne Beauftragung abgeschlossen.</p>
-      <p style="margin:0;font-size:15px;color:#374151;line-height:1.6;">Bei Rückfragen wende dich bitte direkt an deine Hausverwaltung.</p>
+      <p style="margin:0;font-size:15px;color:#374151;line-height:1.6;">Bei Rückfragen wende dich bitte direkt an deine Verwaltung.</p>
       <p style="margin:24px 0 0;font-size:15px;color:#374151;line-height:1.6;">${mailTeamGrussHtml("du")}</p>
     `,
   });

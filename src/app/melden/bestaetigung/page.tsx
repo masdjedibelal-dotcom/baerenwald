@@ -26,11 +26,11 @@ type Props = {
 export default async function MeldenBestaetigungPage({ searchParams }: Props) {
   const kennung = searchParams.kennung?.trim();
   const orgNameFallback =
-    searchParams.org?.trim() || "Ihre Hausverwaltung";
+    searchParams.org?.trim() || "Ihre Verwaltung";
 
   let brand = {
     name: orgNameFallback,
-    sub: "Hausverwaltung" as string | null,
+    sub: "Verwaltung" as string | null,
     logoUrl: null as string | null,
     logoKuerzel: null as string | null,
     primary: null as string | null,
@@ -50,7 +50,7 @@ export default async function MeldenBestaetigungPage({ searchParams }: Props) {
           org.org_anzeigename?.trim() ||
           org.name?.trim() ||
           orgNameFallback,
-        sub: org.org_sub ?? "Hausverwaltung",
+        sub: org.org_sub ?? "Verwaltung",
         logoUrl: org.org_logo_url ?? null,
         logoKuerzel: org.org_logo_kuerzel ?? null,
         primary: org.org_primary_color ?? null,

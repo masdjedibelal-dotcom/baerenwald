@@ -86,7 +86,7 @@ export async function ensureVersicherungsakteForAuftrag(
     null;
   let selbstbehaltEur: number | null = null;
 
-  let orgName = "Hausverwaltung";
+  let orgName = "Verwaltung";
   const kundeId = auftrag.kunde_id
     ? String(auftrag.kunde_id)
     : lead?.auftraggeber_kunde_id

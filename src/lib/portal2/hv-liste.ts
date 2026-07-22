@@ -4,7 +4,7 @@
 
 import type { OrgVorgangFilter } from "@/lib/org/org-vorgang-filter";
 
-export const HV_LISTE_PAGE_EYEBROW = "Hausverwaltung" as const;
+export const HV_LISTE_PAGE_EYEBROW = "Verwaltung" as const;
 export const HV_LISTE_PAGE_TITLE = "Vorgänge" as const;
 
 export const HV_CHIPS: Array<{

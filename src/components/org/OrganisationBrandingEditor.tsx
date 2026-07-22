@@ -439,7 +439,7 @@ export function OrganisationBrandingEditor({
                 {draft.name || "Firmenname"}
               </p>
               <p className="text-[10.5px] uppercase tracking-wide opacity-80">
-                {draft.sub || "Hausverwaltung"}
+                {draft.sub || "Verwaltung"}
               </p>
             </div>
           </div>

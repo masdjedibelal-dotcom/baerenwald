@@ -108,7 +108,7 @@ export async function POST(req: Request) {
 
   if (feedbackTyp === "maengel" && freitext) {
     await sendHvMaengelInternMail({
-      hvName: session.kunde.org_anzeigename?.trim() || session.kunde.name?.trim() || "Hausverwaltung",
+      hvName: session.kunde.org_anzeigename?.trim() || session.kunde.name?.trim() || "Verwaltung",
       leadId,
       auftragTitel: auftrag?.titel,
       freitext,

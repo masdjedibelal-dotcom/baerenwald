@@ -288,7 +288,7 @@ function PartnerBefundForm({
     >
       <p className="font-semibold text-text-primary">Schadenbefund dokumentieren</p>
       <p className="portal-text-meta text-text-secondary">
-        Leckortung und Schadenursache mit Fotos — sichtbar für Hausverwaltung und Versicherungsakte.
+        Leckortung und Schadenursache mit Fotos — sichtbar für Verwaltung und Versicherungsakte.
       </p>
       <label className="block">
         <span className="portal-text-meta text-text-tertiary">Datum</span>

@@ -76,7 +76,7 @@ export async function POST(req: Request) {
 
   const result = await persistLead({
     kunde_id: session.kunde.id,
-    name: session.kunde.name?.trim() || "Hausverwaltung",
+    name: session.kunde.name?.trim() || "Verwaltung",
     email: session.kunde.email?.trim() || undefined,
     plz: String(objekt.plz ?? ""),
     strasse: String(objekt.strasse ?? ""),

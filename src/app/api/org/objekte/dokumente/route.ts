@@ -33,7 +33,7 @@ export async function POST() {
   return NextResponse.json(
     {
       error:
-        "Dokumente werden über Vorgänge bereitgestellt — Upload durch die Hausverwaltung ist nicht möglich.",
+        "Dokumente werden über Vorgänge bereitgestellt — Upload durch die Verwaltung ist nicht möglich.",
     },
     { status: 403 }
   );
@@ -43,7 +43,7 @@ export async function DELETE() {
   return NextResponse.json(
     {
       error:
-        "Dokumente werden über Vorgänge bereitgestellt — Löschen durch die Hausverwaltung ist hier nicht möglich.",
+        "Dokumente werden über Vorgänge bereitgestellt — Löschen durch die Verwaltung ist hier nicht möglich.",
     },
     { status: 403 }
   );

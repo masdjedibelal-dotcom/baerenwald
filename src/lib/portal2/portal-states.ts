@@ -93,7 +93,7 @@ export function resolvePortalStateCopy(
         iconFg: "#8A5A06",
         title: "Kein Zugriff",
         subtitle:
-          "Für diesen Bereich fehlt Ihnen die Berechtigung. Wenden Sie sich an Ihre Hausverwaltung oder Bärenwald.",
+          "Für diesen Bereich fehlt Ihnen die Berechtigung. Wenden Sie sich an Ihre Verwaltung oder Bärenwald.",
         primaryLabel: BTN.overview,
         secondaryLabel: BTN.support,
       };

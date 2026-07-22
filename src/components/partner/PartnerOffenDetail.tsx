@@ -317,7 +317,7 @@ export function PartnerOffenDetail({
         />
         <PartnerDetailInfoBox>
           Als Nächstes: Kalkulation einreichen — Positionen und Summe erscheinen
-          im CRM und bei der Hausverwaltung als empfohlenes Angebot.
+          im CRM und bei der Verwaltung als empfohlenes Angebot.
         </PartnerDetailInfoBox>
         <PartnerHwKalkulationScreen
           anfrageId={item.id}

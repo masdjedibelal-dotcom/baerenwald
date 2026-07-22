@@ -91,7 +91,7 @@ export async function generateEigentuemerBerichtPdf(
   }
 
   y = 80;
-  page.drawText("Erstellt über Bärenwald Hausverwaltungs-Plattform", {
+  page.drawText("Erstellt über Bärenwald Verwaltungs-Plattform", {
     x: 48,
     y,
     size: 9,

@@ -114,7 +114,7 @@ export const PORTAL_NOTIF_TEMPLATES = {
   },
   eigentuemer: {
     freigabe: "{vg} überschreitet Ihren Schwellenwert ({betrag}).",
-    status: "Ihre Hausverwaltung hat {nr} freigegeben.",
+    status: "Ihre Verwaltung hat {nr} freigegeben.",
   },
   mieter: {
     termin:

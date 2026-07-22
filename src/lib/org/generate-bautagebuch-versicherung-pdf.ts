@@ -142,7 +142,7 @@ export async function generateBautagebuchVersicherungPdf(
     }
   }
 
-  page.drawText("Erstellt über Bärenwald Hausverwaltungs-Plattform", {
+  page.drawText("Erstellt über Bärenwald Verwaltungs-Plattform", {
     x: margin,
     y: 52,
     size: 9,

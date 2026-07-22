@@ -38,7 +38,7 @@ export function portalNavRoleForKundeTyp(
 }
 
 export function portalKundeTypRoleLabel(typ: PortalKundeTyp): string {
-  if (typ === "hv") return "Hausverwaltung";
+  if (typ === "hv") return "Verwaltung";
   if (typ === "gewerbe") return "Gewerbe";
   return "Privatkunde";
 }
@@ -53,7 +53,7 @@ export function portalKundeDashboardHello(
   name: string | null | undefined
 ): string {
   if (typ === "hv") {
-    return name?.trim() || "Hausverwaltung";
+    return name?.trim() || "Verwaltung";
   }
   const n = name?.trim();
   if (!n) return typ === "gewerbe" ? "Hallo" : "Hallo";

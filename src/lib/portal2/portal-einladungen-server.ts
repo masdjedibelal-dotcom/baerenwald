@@ -160,7 +160,7 @@ export async function resolvePortalEinladungByToken(
     name:
       (org as { org_anzeigename?: string }).org_anzeigename?.trim() ||
       org.name?.trim() ||
-      "Hausverwaltung",
+      "Verwaltung",
     sub: (org as { org_sub?: string | null }).org_sub,
     logoUrl: (org as { org_logo_url?: string | null }).org_logo_url,
     logoKuerzel: (org as { org_logo_kuerzel?: string | null }).org_logo_kuerzel,

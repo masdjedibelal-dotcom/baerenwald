@@ -33,7 +33,7 @@ export default async function MeldenOrgImpressumPage({ params }: Props) {
       <p>
         {orgName}
         <br />
-        Kontakt: {org.mieter_kontakt_email ?? org.mieter_kontakt_telefon ?? "siehe Hausverwaltung"}
+        Kontakt: {org.mieter_kontakt_email ?? org.mieter_kontakt_telefon ?? "siehe Verwaltung"}
       </p>
       <h2>Technischer Betrieb</h2>
       <p>

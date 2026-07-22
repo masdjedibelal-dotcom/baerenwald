@@ -37,7 +37,7 @@ export function PartnerAuftragErledigtSection({
       <p className="font-semibold">Leistungen als erledigt gemeldet</p>
       <p className="portal-text-meta mt-1 text-text-secondary">
         {vollstaendig
-          ? "Abnahmeprotokoll erstellt. Bärenwald und die Hausverwaltung werden informiert."
+          ? "Abnahmeprotokoll erstellt. Bärenwald und die Verwaltung werden informiert."
           : "Ihr Abnahmeprotokoll wurde gespeichert. Weitere Handwerker am Auftrag sind ggf. noch offen."}
       </p>
     </PartnerDetailSuccessBox>

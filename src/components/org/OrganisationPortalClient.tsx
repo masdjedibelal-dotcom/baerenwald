@@ -188,7 +188,7 @@ export function OrganisationPortalClient({
   }, []);
 
   const displayName =
-    kunde.org_anzeigename?.trim() || kunde.name?.trim() || "Hausverwaltung";
+    kunde.org_anzeigename?.trim() || kunde.name?.trim() || "Verwaltung";
 
   const vorgaengeItems = useMemo(
     () =>
@@ -321,7 +321,7 @@ export function OrganisationPortalClient({
       <PortalShell
         variant="org"
         brandTitle={displayName}
-        brandSubtitle={kunde.org_sub?.trim() || "Hausverwaltung"}
+        brandSubtitle={kunde.org_sub?.trim() || "Verwaltung"}
         brandLogoUrl={kunde.org_logo_url}
         brandKuerzel={kunde.org_logo_kuerzel}
         orgPrimaryColor={kunde.org_primary_color}

@@ -50,8 +50,8 @@ assert(
   formatHvVerlaufLine({
     t: "Gerade eben",
     txt: "Freigegeben",
-    who: "Hausverwaltung",
-  }) === "Gerade eben · Freigegeben · Hausverwaltung"
+    who: "Verwaltung",
+  }) === "Gerade eben · Freigegeben · Verwaltung"
 );
 
 assert("freigabe kind", hvRoleActionKind("gemeldet") === "freigabe");
@@ -63,7 +63,7 @@ assert("angebot kind", hvRoleActionKind("angebot") === "angebot");
 assert("copy freigabe", HV_DETAIL_COPY.freigabeTitle === "Freigabe erforderlich");
 assert(
   "copy empfohlen",
-  HV_DETAIL_COPY.empfohlenDetail === "Empfohlenes Angebot im Detail"
+  HV_DETAIL_COPY.empfohlenDetail === "Leistungen & Preise"
 );
 assert("copy rechnung", HV_DETAIL_COPY.rechnungsbetrag === "Rechnungsbetrag");
 assert(

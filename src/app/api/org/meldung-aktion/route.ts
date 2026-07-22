@@ -108,7 +108,7 @@ export async function POST(req: Request) {
   const orgName =
     session.kunde.org_anzeigename?.trim() ||
     session.kunde.name?.trim() ||
-    "Hausverwaltung";
+    "Verwaltung";
   const portalPath = `/portal?section=freigabe&id=${leadId}`;
 
   if (aktion === "angebot_einfordern" || aktion === "kleinreparatur_freigeben") {

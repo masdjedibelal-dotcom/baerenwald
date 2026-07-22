@@ -97,7 +97,7 @@ export async function POST(req: Request) {
   const result = await persistLead({
     kunde_id: org.id,
     auftraggeber_kunde_id: org.id,
-    name: org.name?.trim() || org.org_anzeigename?.trim() || "Hausverwaltung",
+    name: org.name?.trim() || org.org_anzeigename?.trim() || "Verwaltung",
     email: org.email?.trim() || undefined,
     plz,
     strasse: strasse ?? undefined,

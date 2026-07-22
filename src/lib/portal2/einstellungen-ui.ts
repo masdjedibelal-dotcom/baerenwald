@@ -41,7 +41,7 @@ export const HW_FIRMEN_SECTIONS = {
 export const MIETER_KONTO_ZUGANG_TITLE = "Zugang" as const;
 
 export function mieterKontoZugangHinweis(orgMail: string): string {
-  return `Ihr Zugang wird von Ihrer Hausverwaltung verwaltet. Bei Fragen zum Konto wenden Sie sich an ${orgMail}.`;
+  return `Ihr Zugang wird von Ihrer Verwaltung verwaltet. Bei Fragen zum Konto wenden Sie sich an ${orgMail}.`;
 }
 
 export const MIETER_SPRACHE_TITLE = "Sprache" as const;

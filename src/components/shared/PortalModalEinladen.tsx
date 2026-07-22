@@ -65,7 +65,7 @@ export function PortalModalEinladen({
   const einheitLabel =
     einheiten.find((e) => e.id === einheitId)?.bezeichnung?.trim() || null;
 
-  const hvName = orgAnzeigename?.trim() || "Ihre Hausverwaltung";
+  const hvName = orgAnzeigename?.trim() || "Ihre Verwaltung";
 
   const loadEinheiten = useCallback(async (oid: string) => {
     if (!oid) {

@@ -37,7 +37,7 @@ assert(
 );
 assert(
   "brand wl fallback",
-  authBrandName("eigentuemer") === "Hausverwaltung"
+  authBrandName("eigentuemer") === "Verwaltung"
 );
 
 assert("login title", AUTH_LOGIN.title === "Willkommen zurück");

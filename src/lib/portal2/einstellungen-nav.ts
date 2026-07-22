@@ -73,7 +73,7 @@ export const EINSTELLUNGEN_PAGE_EYEBROW: Record<
   EinstellungenVariant,
   string
 > = {
-  hv: "Hausverwaltung",
+  hv: "Verwaltung",
   privat: "Privatkunde",
   mieter: "Mieter",
   handwerker: "Handwerker",

@@ -36,7 +36,7 @@ const BEWOHNER_COLUMNS = [
 ];
 
 const BEWOHNER_INTRO =
-  "Der Vorteil: Hier sammeln Sie Mieter intern. Bei Schadensmeldungen können Sie Vorgänge direkt mit einem Mieter verknüpfen. Sichtbar nur für die Hausverwaltung im Portal — nicht im öffentlichen Meldeformular.";
+  "Der Vorteil: Hier sammeln Sie Mieter intern. Bei Schadensmeldungen können Sie Vorgänge direkt mit einem Mieter verknüpfen. Sichtbar nur für die Verwaltung im Portal — nicht im öffentlichen Meldeformular.";
 
 type Props = {
   objektId: string;

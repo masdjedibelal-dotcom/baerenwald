@@ -146,14 +146,14 @@ export const MIETER_STG = [
     id: "eingegangen",
     title_de: "Eingegangen",
     title_en: "Received",
-    subtitle_de: "Ihre Meldung ist bei Ihrer Hausverwaltung eingegangen.",
+    subtitle_de: "Ihre Meldung ist bei Ihrer Verwaltung eingegangen.",
     subtitle_en: "Your report has reached your property manager.",
   },
   {
     id: "in_bearbeitung",
     title_de: "In Bearbeitung",
     title_en: "In progress",
-    subtitle_de: "Ihre Hausverwaltung bearbeitet Ihre Meldung.",
+    subtitle_de: "Ihre Verwaltung bearbeitet Ihre Meldung.",
     subtitle_en: "Your property manager is handling your report.",
   },
   {
@@ -161,7 +161,7 @@ export const MIETER_STG = [
     title_de: "Beauftragt",
     title_en: "Assigned",
     subtitle_de:
-      "Ein Fachbetrieb wurde von Ihrer Hausverwaltung beauftragt.",
+      "Ein Fachbetrieb wurde von Ihrer Verwaltung beauftragt.",
     subtitle_en: "A contractor has been assigned by your property manager.",
   },
   {

@@ -44,7 +44,7 @@ export const partnerPortalToast = {
     portalToastSuccess(
       neu ? "Tagebucheintrag erstellt" : "Tagebucheintrag gespeichert",
       neu
-        ? "Mieter und Hausverwaltung sehen den Eintrag sofort im Portal."
+        ? "Mieter und Verwaltung sehen den Eintrag sofort im Portal."
         : "Deine Änderungen wurden übernommen."
     );
   },
@@ -90,19 +90,19 @@ export const partnerPortalToast = {
   erledigtGemeldet() {
     portalToastSuccess(
       "Als erledigt gemeldet",
-      "Bärenwald und die Hausverwaltung wurden informiert."
+      "Bärenwald und die Verwaltung wurden informiert."
     );
   },
   hwAngebotEingereicht() {
     portalToastSuccess(
       "Angebot eingereicht",
-      "Positionen und Summe sind im CRM und bei der Hausverwaltung als empfohlenes Angebot sichtbar."
+      "Positionen und Summe sind im CRM und bei der Verwaltung als empfohlenes Angebot sichtbar."
     );
   },
   abschlussSigniert() {
     portalToastSuccess(
       "Abschluss signiert",
-      "Signatur und Protokoll sind am Vorgang gespeichert. Hausverwaltung und Kunde können gegenzeichnen."
+      "Signatur und Protokoll sind am Vorgang gespeichert. Verwaltung und Kunde können gegenzeichnen."
     );
   },
 };
@@ -129,7 +129,7 @@ export const kundePortalToast = {
   },
 };
 
-/** Auftraggeber-Portal (Hausverwaltung) */
+/** Auftraggeber-Portal (Verwaltung) */
 export const orgPortalToast = {
   meldungErfasst() {
     portalToastSuccess(

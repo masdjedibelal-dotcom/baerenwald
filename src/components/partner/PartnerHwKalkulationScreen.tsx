@@ -76,7 +76,7 @@ export function PartnerHwKalkulationScreen({
     <PartnerDetailSection title="Kalkulation / Angebot">
       <p className="portal-text-body text-text-secondary mb-3">
         Positionen anlegen, Summen prüfen und einreichen. Das Angebot erscheint
-        im CRM und bei der Hausverwaltung als empfohlenes Angebot.
+        im CRM und bei der Verwaltung als empfohlenes Angebot.
       </p>
 
       <div className="mb-3 flex rounded-[10px] bg-muted p-1">
@@ -197,11 +197,11 @@ export function PartnerHwKalkulationScreen({
         {unterSchwelle ? (
           <p className="mt-2 text-xs font-semibold text-[#1F6A3F]">
             ✓ Unter Freigabeschwelle ({formatHwMoney(schwelleEur)}) — Sie können
-            die Durchführung direkt starten, ohne Freigabe der Hausverwaltung.
+            die Durchführung direkt starten, ohne Freigabe der Verwaltung.
           </p>
         ) : (
           <p className="mt-2 text-xs text-text-secondary">
-            Über Freigabeschwelle — die Hausverwaltung muss das Angebot erst
+            Über Freigabeschwelle — die Verwaltung muss das Angebot erst
             freigeben.
           </p>
         )}

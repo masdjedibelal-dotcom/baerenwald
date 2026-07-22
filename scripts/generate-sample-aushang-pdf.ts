@@ -34,8 +34,8 @@ async function main() {
   }
 
   const pdf = await generateMeldeAushangPdf({
-    orgName: "Hausverwaltung BM",
-    orgSub: "Hausverwaltung",
+    orgName: "Verwaltung BM",
+    orgSub: "Verwaltung",
     logoKuerzel: "HB",
     primaryColor: "#22508C",
     primaryColorSoft: "#E8EEF6",

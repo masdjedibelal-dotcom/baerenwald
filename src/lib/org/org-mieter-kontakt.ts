@@ -21,7 +21,7 @@ export type OrgWhitelabelFields = OrgMieterKontakt & {
 export const ORG_AV_VERSION_CURRENT = "2026-07";
 
 export function orgDisplayName(org: Pick<OrgMieterKontakt, "org_anzeigename" | "name">): string {
-  return org.org_anzeigename?.trim() || org.name?.trim() || "Ihre Hausverwaltung";
+  return org.org_anzeigename?.trim() || org.name?.trim() || "Ihre Verwaltung";
 }
 
 /** Effektiver Mieter-Kontakt: dedizierte Felder, sonst Profil (Telefon/E-Mail). */
@@ -79,7 +79,7 @@ export function orgMieterKontaktFooter(org: OrgMieterKontakt, lang: "de" | "en" 
 
   const fallback =
     lang === "de"
-      ? `Bei Rückfragen wenden Sie sich an Ihre Hausverwaltung. ${noReply}`
+      ? `Bei Rückfragen wenden Sie sich an Ihre Verwaltung. ${noReply}`
       : `For questions, contact your property management. ${noReply}`;
   return fallback;
 }

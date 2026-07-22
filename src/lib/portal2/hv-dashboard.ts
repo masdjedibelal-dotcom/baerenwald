@@ -12,7 +12,7 @@ import {
 import type { PortalMockStatusId } from "@/lib/portal2/status";
 import { PORTAL_C } from "@/lib/portal2/tokens";
 
-export const HV_DASHBOARD_ROLE_LABEL = "Hausverwaltung" as const;
+export const HV_DASHBOARD_ROLE_LABEL = "Verwaltung" as const;
 export const HV_DASHBOARD_RECENT_TITLE = "Zuletzt" as const;
 export const HV_DASHBOARD_RECENT_ALL = "Alle ansehen" as const;
 export const HV_DASHBOARD_EMPTY_RECENT = "Noch nichts" as const;

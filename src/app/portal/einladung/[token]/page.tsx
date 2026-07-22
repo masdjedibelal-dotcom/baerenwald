@@ -49,7 +49,7 @@ export default async function PortalEinladungPage({ params }: Props) {
     data.status === "eingeloest"
       ? "Diese Einladung wurde bereits eingelöst. Bitte melden Sie sich an."
       : data.status === "abgelaufen"
-        ? "Diese Einladung ist abgelaufen. Bitte Ihre Hausverwaltung um einen neuen Link."
+        ? "Diese Einladung ist abgelaufen. Bitte Ihre Verwaltung um einen neuen Link."
         : "Diese Einladung ist nicht mehr gültig.";
 
   return (

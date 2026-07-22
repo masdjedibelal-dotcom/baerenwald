@@ -79,7 +79,7 @@ export async function GET(req: Request) {
     orgName:
       session.kunde.org_anzeigename?.trim() ||
       session.kunde.name?.trim() ||
-      "Hausverwaltung",
+      "Verwaltung",
     objektTitel: objekt.titel,
     objektAdresse: [adresse, plzOrt].filter(Boolean).join(", ") || undefined,
     jahr,

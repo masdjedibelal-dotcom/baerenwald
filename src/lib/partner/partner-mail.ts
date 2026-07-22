@@ -682,7 +682,7 @@ export async function sendHvMaengelInternMail(opts: {
   const html = mailShell(
     `Mängelmeldung von ${opts.hvName}`,
     `<p style="margin-top:0;padding:10px 12px;background:#FFF3E0;border-radius:8px;border:1px solid #FFB74D;">
-  <strong>Hinweis:</strong> Die Hausverwaltung <strong>${escapeHtml(opts.hvName)}</strong> meldet Mängel nach Handwerker-Abschluss.
+  <strong>Hinweis:</strong> Die Verwaltung <strong>${escapeHtml(opts.hvName)}</strong> meldet Mängel nach Handwerker-Abschluss.
 </p>
 ${opts.auftragTitel ? `<p>Vorgang: ${escapeHtml(opts.auftragTitel)}</p>` : ""}
 <p><strong>Meldung:</strong></p>

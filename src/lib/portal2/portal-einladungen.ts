@@ -81,7 +81,7 @@ export function buildPortalEinladungMailto(opts: {
   objektLabel: string;
   einheitRef?: string | null;
 }): string {
-  const hv = opts.hvName.trim() || "Ihre Hausverwaltung";
+  const hv = opts.hvName.trim() || "Ihre Verwaltung";
   const objekt = opts.objektLabel.trim() || "Objekt";
   const we = opts.einheitRef?.trim();
   const where = we ? `${objekt} · ${we}` : objekt;

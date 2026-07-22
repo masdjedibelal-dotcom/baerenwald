@@ -89,7 +89,7 @@ export function buildHvVerlaufSeed(input: {
     entries.unshift({
       t: "Gerade eben",
       txt: "Freigegeben – Bärenwald fragt Handwerker an",
-      who: "Hausverwaltung",
+      who: "Verwaltung",
     });
   }
   return entries;

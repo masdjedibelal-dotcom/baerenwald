@@ -84,7 +84,7 @@ export const MELDE_FUNNEL_TITLES: Record<
   },
   stamm: { de: "Ihre Kontaktdaten", en: "Your contact details" },
   verwaltung: {
-    de: "Ihre Hausverwaltung",
+    de: "Ihre Verwaltung",
     en: "Your property management",
   },
   regeln: { de: "Hinweise & Einwilligung", en: "Notes & consent" },

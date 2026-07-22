@@ -33,19 +33,19 @@ assert(
   "STG eingegangen de",
   MIETER_STG[0]!.title_de === "Eingegangen" &&
     MIETER_STG[0]!.subtitle_de ===
-      "Ihre Meldung ist bei Ihrer Hausverwaltung eingegangen."
+      "Ihre Meldung ist bei Ihrer Verwaltung eingegangen."
 );
 assert(
   "STG bearbeitung de",
   MIETER_STG[1]!.title_de === "In Bearbeitung" &&
     MIETER_STG[1]!.subtitle_de ===
-      "Ihre Hausverwaltung bearbeitet Ihre Meldung."
+      "Ihre Verwaltung bearbeitet Ihre Meldung."
 );
 assert(
   "STG beauftragt de",
   MIETER_STG[2]!.title_de === "Beauftragt" &&
     MIETER_STG[2]!.subtitle_de ===
-      "Ein Fachbetrieb wurde von Ihrer Hausverwaltung beauftragt."
+      "Ein Fachbetrieb wurde von Ihrer Verwaltung beauftragt."
 );
 assert(
   "STG erledigt en",
@@ -57,7 +57,7 @@ const headline = formatMieterStgHeadline("eingegangen", "de");
 assert(
   "headline format",
   headline ===
-    "Eingegangen — Ihre Meldung ist bei Ihrer Hausverwaltung eingegangen."
+    "Eingegangen — Ihre Meldung ist bei Ihrer Verwaltung eingegangen."
 );
 
 const tl = buildMieterStgTimeline("beauftragt", "de");
@@ -75,7 +75,7 @@ assert(
 assert(
   "wlFehler body de",
   MIETER_WL_FEHLER.body_de ===
-    "Dieser Melde-Link ist ungültig oder wurde deaktiviert. Bitte wenden Sie sich an Ihre Hausverwaltung."
+    "Dieser Melde-Link ist ungültig oder wurde deaktiviert. Bitte wenden Sie sich an Ihre Verwaltung."
 );
 assert(
   "wlFehler body en",

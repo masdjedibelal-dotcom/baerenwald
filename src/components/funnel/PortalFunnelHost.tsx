@@ -456,7 +456,7 @@ export function PortalFunnelHost({
         adr ? `${melde.objektTitel.trim()} · ${adr}` : melde.objektTitel.trim()
       );
     } else if (melde?.orgName) {
-      push("Hausverwaltung", melde.orgName);
+      push("Verwaltung", melde.orgName);
     }
 
     if (isHvIntern) {

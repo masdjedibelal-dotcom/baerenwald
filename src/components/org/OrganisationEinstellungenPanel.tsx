@@ -167,7 +167,7 @@ export function OrganisationEinstellungenPanel({
       >
         <p className="mb-1 font-semibold text-text-primary">Datenschutz-Hinweis</p>
         <p>
-          Als Hausverwaltung sind Sie gegenüber Mietern für die Rechtmäßigkeit der
+          Als Verwaltung sind Sie gegenüber Mietern für die Rechtmäßigkeit der
           Datenübermittlung verantwortlich. Bitte informieren Sie Mieter über den
           Melde-Link.
         </p>

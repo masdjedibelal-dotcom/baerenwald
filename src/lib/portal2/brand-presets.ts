@@ -72,7 +72,7 @@ export type OrgBrand = {
 
 export const ORG_BRAND_DEFAULT: OrgBrand = {
   name: "Immobilien Steiner GmbH",
-  sub: "Hausverwaltung",
+  sub: "Verwaltung",
   logo: "IS",
   primary: "#22508C",
   primaryDk: "#1b426f",
@@ -150,7 +150,7 @@ export function orgBrandFromKunde(
   const name =
     src.org_anzeigename?.trim() ||
     src.name?.trim() ||
-    (opts?.useDemoFallback ? ORG_BRAND_DEFAULT.name : "Hausverwaltung");
+    (opts?.useDemoFallback ? ORG_BRAND_DEFAULT.name : "Verwaltung");
   const palette = resolveBrandPalette({
     primary: src.org_primary_color,
     primaryDk: src.org_primary_color_dk,
@@ -163,7 +163,7 @@ export function orgBrandFromKunde(
 
   return {
     name,
-    sub: src.org_sub?.trim() || "Hausverwaltung",
+    sub: src.org_sub?.trim() || "Verwaltung",
     logo,
     primary: palette.primary,
     primaryDk: palette.primaryDk,

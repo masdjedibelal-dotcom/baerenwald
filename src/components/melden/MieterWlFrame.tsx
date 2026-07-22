@@ -63,7 +63,7 @@ export function MieterWlFrame({
 
 export function MieterWlHeader({ brand }: { brand: MieterWlBrand }) {
   const letter = mieterWlLogoLetter(brand);
-  const sub = brand.sub?.trim() || "Hausverwaltung";
+  const sub = brand.sub?.trim() || "Verwaltung";
 
   return (
     <header className="mieter-wl-header">

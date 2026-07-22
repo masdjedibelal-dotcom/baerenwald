@@ -98,7 +98,7 @@ export function PartnerAbnahmeprotokollForm({
     <PartnerDetailSection title="Abschlussdokumentation">
       <p className="portal-text-body text-text-secondary mb-4">
         Checkliste, Bericht und Canvas-Signatur vor Ort. Die Gegenzeichnung der
-        Hausverwaltung bleibt im Kunden-/HV-Portal.
+        Verwaltung bleibt im Kunden-/HV-Portal.
       </p>
 
       {leistungen.length > 0 ? (

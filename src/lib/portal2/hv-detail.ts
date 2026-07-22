@@ -116,7 +116,7 @@ export function pickEmpfohlenesAngebot(
 export const HV_DETAIL_COPY = {
   freigabeTitle: "Freigabe erforderlich",
   freigabeNote:
-    "Als Hausverwaltung geben Sie den Vorgang für Bärenwald frei — erst dann werden Handwerker angefragt.",
+    "Als Verwaltung geben Sie den Vorgang für Bärenwald frei — erst dann werden Handwerker angefragt.",
   freigabeBtn: "✓ Freigeben & Handwerker anfragen",
   ablehnen: "Ablehnen",
   privatAuto:

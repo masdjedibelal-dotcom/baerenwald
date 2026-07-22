@@ -11,7 +11,7 @@ import {
 import "./melden.css";
 
 const DEFAULT_BRAND: MieterWlBrand = {
-  name: "Hausverwaltung",
+  name: "Verwaltung",
   sub: "Melde-Link",
 };
 

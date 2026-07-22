@@ -48,7 +48,7 @@ const brand = orgBrandFromKunde({
   org_ort: "80331 München",
 });
 assert("org name", brand.name === "Muster HV");
-assert("org sub default", brand.sub === "Hausverwaltung");
+assert("org sub default", brand.sub === "Verwaltung");
 assert("org primary petrol", brand.primary === "#1F6E78");
 assert("org logo kuerzel", brand.logo === "MH");
 assert("org tel", brand.tel === "089 111");

@@ -16,7 +16,7 @@ type Props = {
 /** Legacy-Profilansicht — Portal nutzt `OrganisationEinstellungenScreen`. */
 export function OrganisationProfilPanel({ kunde, objektCount, onSaved, isAdmin = true }: Props) {
   const displayName =
-    kunde.org_anzeigename?.trim() || kunde.name?.trim() || "Hausverwaltung";
+    kunde.org_anzeigename?.trim() || kunde.name?.trim() || "Verwaltung";
 
   return (
     <div className="space-y-6">

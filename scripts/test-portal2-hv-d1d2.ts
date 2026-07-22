@@ -31,7 +31,7 @@ function assert(name: string, ok: boolean) {
 
 console.log("portal2 D1/D2 hv dashboard+liste");
 
-assert("role label", HV_DASHBOARD_ROLE_LABEL === "Hausverwaltung");
+assert("role label", HV_DASHBOARD_ROLE_LABEL === "Verwaltung");
 assert("3 kpi defs", HV_DASHBOARD_KPI_DEFS.length === 3);
 assert(
   "kpi labels",
@@ -83,10 +83,10 @@ const st = resolveLeadPortalFlowStatus({
 });
 assert("neu → gemeldet", st === "gemeldet");
 
-assert("pageHead", HV_LISTE_PAGE_EYEBROW === "Hausverwaltung");
+assert("pageHead", HV_LISTE_PAGE_EYEBROW === "Verwaltung");
 assert("page title", HV_LISTE_PAGE_TITLE === "Vorgänge");
 assert("chips 3", HV_CHIPS.length === 3);
-assert("chip freigabe", HV_CHIPS[0]!.label === "Zur Freigabe");
+assert("chip freigabe", HV_CHIPS[0]!.label === "Alle");
 assert("section meldungen", HV_SECTION_MELDUNGEN === "Meldungen · Eingang");
 assert("section angebote", HV_SECTION_ANGEBOTE === "Angebots-Freigabe");
 assert(
@@ -97,7 +97,7 @@ assert(
 assert(
   "meldung actions",
   HV_MELDUNG_ACTIONS[0]!.label === "Angebot einfordern" &&
-    HV_MELDUNG_ACTIONS[1]!.label === "Kleinreparatur freigeben" &&
+    HV_MELDUNG_ACTIONS[1]!.label === "Sofort beauftragen (Kleinreparatur)" &&
     HV_MELDUNG_ACTIONS[2]!.label === "Ablehnen"
 );
 assert("bulk offener punkt", HV_BULK_DELETE_OFFENER_PUNKT.includes("OFFENE-PUNKTE"));

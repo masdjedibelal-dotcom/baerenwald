@@ -13,9 +13,9 @@ type Kommentar = {
 };
 
 const ROLLE_LABELS: Record<string, string> = {
-  admin: "Hausverwaltung",
-  sachbearbeiter: "Hausverwaltung",
-  lesen: "Hausverwaltung",
+  admin: "Verwaltung",
+  sachbearbeiter: "Verwaltung",
+  lesen: "Verwaltung",
   baerenwald: "Bärenwald",
   crm: "Bärenwald",
 };

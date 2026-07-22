@@ -56,7 +56,7 @@ export async function submitOrgHvAbnahme(input: {
       art: input.art,
       anmerkung: input.anmerkung?.trim() || null,
       signatur_png: input.signaturPng ?? null,
-      signiert_name: input.signiertName.trim() || "Hausverwaltung",
+      signiert_name: input.signiertName.trim() || "Verwaltung",
       signiert_am: new Date().toISOString(),
     },
     { onConflict: "auftrag_id" }
