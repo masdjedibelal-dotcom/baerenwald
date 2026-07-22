@@ -329,6 +329,11 @@ test.describe.serial("TC-01 Kernpfad Havarie", () => {
       .single();
     expect(auftrag?.versicherungsakte_pdf_url).toBeTruthy();
 
+    const pdfRes = await fetch(String(auftrag?.versicherungsakte_pdf_url));
+    expect(pdfRes.ok).toBe(true);
+    const buf = Buffer.from(await pdfRes.arrayBuffer());
+    expect(buf.subarray(0, 4).toString("utf8")).toBe("%PDF");
+
     const events = await auditEventsFor("auftrag", auftragId);
     expect(events.some((e) => e.aktion === "versicherungsakte_erstellt")).toBe(true);
     await assertTc10AfterStep(leadId, "11", { mieterStufe: "erledigt" });

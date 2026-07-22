@@ -11,5 +11,5 @@
 | DD-07 | Duplikat-Meldung 24h | Hinweis vs. Hard-Block | Spec: Hinweis only | **entschieden + implementiert** |
 | DD-08 | Storno-Export | Negative Zeile vs. nur Status | Spec: Storno-Zeile | **implementiert** (TC-11e) |
 | DD-09 | Dev-Bypass Production | Env-Flag allein vs. NODE_ENV-Guard | Wie Portal: `!== production` + Flag | **implementiert** (TC-08) |
-| DD-10 | Notmaßnahme Betragsdeckel | Unbegrenzt vs. Cap [X] € | Vertrag + Pilot-HV (Frau Berg) | **offen — Vertrag/Produkt** |
+| DD-10 | Notmaßnahme Betragsdeckel | Unbegrenzt vs. Cap [X] € | Vertrag + Pilot-HV (Frau Berg) | **revidiert (Juli 2026): Cap entfällt ersatzlos — Notfall nach Aufwand ohne Schwellenprüfung** |
 | W2-01 | TC-01/3 Partner-Befund | Upload-Portal vs. WhatsApp-Umweg | Spec: Pflicht in Versicherungsakte | **implementiert** (Welle 2a) |

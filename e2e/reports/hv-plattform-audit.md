@@ -104,7 +104,7 @@ Stand: 2026-08-08 · E2E-Muster-HV (`muster-hv`)
 2. **EXPORT_KOSTENSTELLE** — TC-11f Export-Fallback
 3. **MIETER_FEEDBACK** — optional TC-01 Schritt 13
 
-Zusätzlich **DD-10** Notmaßnahme-Betragsdeckel (Vertrag/Produkt).
+Zusätzlich **DD-10** Notmaßnahme-Betragsdeckel — **erledigt/revidiert (Juli 2026): Cap entfällt ersatzlos**.
 
 ---
 
