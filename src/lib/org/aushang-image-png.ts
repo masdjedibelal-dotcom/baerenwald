@@ -27,3 +27,32 @@ export async function imageBytesToPng(
     return null;
   }
 }
+
+/**
+ * Cover-Crop auf feste Pixelgröße als PNG — ohne PDF-Clip (Chrome/PDFium-sicher).
+ */
+export async function imageBytesToCoverPng(
+  bytes: Uint8Array | null | undefined,
+  targetW: number,
+  targetH: number
+): Promise<Uint8Array | null> {
+  if (!bytes?.length || targetW < 1 || targetH < 1) return null;
+  try {
+    const { createCanvas, loadImage } = await import("@napi-rs/canvas");
+    const img = await loadImage(Buffer.from(bytes));
+    const scale = Math.max(targetW / img.width, targetH / img.height);
+    const sw = img.width * scale;
+    const sh = img.height * scale;
+    const canvas = createCanvas(targetW, targetH);
+    const ctx = canvas.getContext("2d");
+    ctx.clearRect(0, 0, targetW, targetH);
+    ctx.drawImage(img, (targetW - sw) / 2, (targetH - sh) / 2, sw, sh);
+    return new Uint8Array(canvas.toBuffer("image/png"));
+  } catch (e) {
+    console.warn(
+      "[aushang] Cover-Crop fehlgeschlagen:",
+      e instanceof Error ? e.message : e
+    );
+    return null;
+  }
+}

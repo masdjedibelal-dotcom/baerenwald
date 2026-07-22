@@ -1,11 +1,6 @@
 import {
   PDFDocument,
   StandardFonts,
-  clip,
-  endPath,
-  popGraphicsState,
-  pushGraphicsState,
-  rectangle,
   rgb,
   type PDFFont,
   type PDFImage,
@@ -13,11 +8,15 @@ import {
   type RGB,
 } from "pdf-lib";
 
-import { imageBytesToPng } from "@/lib/org/aushang-image-png";
+import {
+  imageBytesToCoverPng,
+  imageBytesToPng,
+} from "@/lib/org/aushang-image-png";
 import {
   AUSHANG_FOOTER_CONTACT,
   AUSHANG_FOOTER_DATENSCHUTZ,
   AUSHANG_FOOTER_NO_PHONE,
+  AUSHANG_FOOTER_PARTNER,
   AUSHANG_HERO_BODY,
   AUSHANG_HERO_LINE1,
   AUSHANG_HERO_LINE2,
@@ -44,6 +43,18 @@ export type MeldeAushangInput = {
   hvTelefon?: string | null;
   hvEmail?: string | null;
 };
+
+/** StandardFonts = WinAnsi: problematische Unicode-Zeichen ersetzen. */
+function pdfSafe(text: string): string {
+  return text
+    .replace(/\u2014|\u2013/g, "-") // em/en dash
+    .replace(/\u2026/g, "...")
+    .replace(/[\u2018\u2019\u201A]/g, "'")
+    .replace(/[\u201C\u201D\u201E]/g, '"')
+    .replace(/\u00A0/g, " ")
+    .replace(/\u2022/g, "-")
+    .replace(/\u2192|\u2193|\u25BC|\u25B2/g, "");
+}
 
 function hexToRgb(hex: string): RGB {
   const raw = hex.replace("#", "").trim();
@@ -73,7 +84,7 @@ function wrapText(
   size: number,
   maxWidth: number
 ): string[] {
-  const words = text.split(/\s+/).filter(Boolean);
+  const words = pdfSafe(text).split(/\s+/).filter(Boolean);
   const lines: string[] = [];
   let line = "";
   for (const word of words) {
@@ -107,6 +118,20 @@ function drawWrapped(
     cy -= size * lineHeight;
   }
   return cy;
+}
+
+function drawTextSafe(
+  page: PDFPage,
+  text: string,
+  opts: {
+    x: number;
+    y: number;
+    size: number;
+    font: PDFFont;
+    color: RGB;
+  }
+) {
+  page.drawText(pdfSafe(text), opts);
 }
 
 function drawDashedRect(
@@ -253,7 +278,7 @@ export async function generateMeldeAushangPdf(
       height: markSize,
       color: primary,
     });
-    page.drawText(logoLetters, {
+  page.drawText(logoLetters, {
       x: markX + (markSize - fontBold.widthOfTextAtSize(logoLetters, 14)) / 2,
       y: markY + 12,
       size: 14,
@@ -265,7 +290,7 @@ export async function generateMeldeAushangPdf(
   const nameX = markX + markSize + 14;
   const nameMaxW = contentW - markSize - 20;
   const nameLines = wrapText(input.orgName, fontBold, 16, nameMaxW).slice(0, 1);
-  page.drawText(nameLines[0] || input.orgName, {
+  drawTextSafe(page, nameLines[0] || input.orgName, {
     x: nameX,
     y: markY + markSize / 2 - 5,
     size: 16,
@@ -273,10 +298,9 @@ export async function generateMeldeAushangPdf(
     color: ink,
   });
 
-  // —— 2) Banner-Bild unter dem Header ——
-  const photoH = 128;
+  // —— 2) Banner: Cover-Crop als PNG (kein PDF-clip — Chrome/PDFium-sicher) ——
+  const photoH = 152;
   const photoY = headerBottom - photoH;
-  const heroImg = await embedImage(pdf, input.heroImageBytes);
   page.drawRectangle({
     x: 0,
     y: photoY,
@@ -284,24 +308,27 @@ export async function generateMeldeAushangPdf(
     height: photoH,
     color: rgb(0.9, 0.88, 0.84),
   });
-  if (heroImg) {
-    const scale = Math.max(pageW / heroImg.width, photoH / heroImg.height);
-    const iw = heroImg.width * scale;
-    const ih = heroImg.height * scale;
-    page.pushOperators(
-      pushGraphicsState(),
-      rectangle(0, photoY, pageW, photoH),
-      clip(),
-      endPath()
-    );
-    page.drawImage(heroImg, {
-      x: (pageW - iw) / 2,
-      y: photoY + (photoH - ih) / 2,
-      width: iw,
-      height: ih,
-    });
-    page.pushOperators(popGraphicsState());
-  } else {
+  const heroCover = await imageBytesToCoverPng(
+    input.heroImageBytes,
+    Math.round(pageW * 2),
+    Math.round(photoH * 2)
+  );
+  let heroDrawn = false;
+  if (heroCover?.length) {
+    try {
+      const heroImg = await pdf.embedPng(heroCover);
+      page.drawImage(heroImg, {
+        x: 0,
+        y: photoY,
+        width: pageW,
+        height: photoH,
+      });
+      heroDrawn = true;
+    } catch {
+      heroDrawn = false;
+    }
+  }
+  if (!heroDrawn) {
     drawDashedRect(
       page,
       margin,
@@ -311,8 +338,8 @@ export async function generateMeldeAushangPdf(
       lighten(primary, 0.45)
     );
     const hint = AUSHANG_PHOTO_HINT;
-    page.drawText(hint, {
-      x: margin + (contentW - font.widthOfTextAtSize(hint, 10)) / 2,
+    drawTextSafe(page, hint, {
+      x: margin + (contentW - font.widthOfTextAtSize(pdfSafe(hint), 10)) / 2,
       y: photoY + photoH / 2 - 3,
       size: 10,
       font,
@@ -320,57 +347,63 @@ export async function generateMeldeAushangPdf(
     });
   }
 
-  // —— 3) Headline + kurzer Intro ——
-  let y = photoY - 36;
-  page.drawText(AUSHANG_HERO_LINE1, {
+  // —— 3) Headline + Intro (Abstand zum Banner) ——
+  let y = photoY - 48;
+  const heroSize = 40;
+  drawTextSafe(page, AUSHANG_HERO_LINE1, {
     x: margin,
     y,
-    size: 36,
+    size: heroSize,
     font: serifBold,
     color: ink,
   });
-  y -= 42;
-  page.drawText(AUSHANG_HERO_LINE2, {
+  y -= 46;
+  drawTextSafe(page, AUSHANG_HERO_LINE2, {
     x: margin,
     y,
-    size: 36,
+    size: heroSize,
     font: serifBold,
     color: primary,
   });
-  y -= 28;
+  y -= 30;
   y = drawWrapped(
     page,
     AUSHANG_HERO_BODY,
     margin,
     y,
     font,
-    12.5,
+    14.5,
     muted,
     contentW,
-    1.35
+    1.42
   );
 
-  // —— 4) Zwei Spalten: QR (vertikal zentriert) + Schritte ——
-  const footerH = 56;
-  const colTop = y - 22;
-  const colBottom = footerH + 14;
-  const colH = colTop - colBottom;
+  // —— 4) Zwei Spalten: QR und Schritte weiter unten ——
+  const footerH = 68;
+  const colTop = y - 44;
+  const colBottom = footerH + 18;
 
-  const colGap = 28;
-  const leftW = 230;
+  const colGap = 30;
+  const leftW = 210;
   const rightX = margin + leftW + colGap;
   const rightW = contentW - leftW - colGap;
 
-  // QR: feste sinnvolle Größe, vertikal mittig in der linken Spalte
-  const qrOuter = Math.min(leftW - 8, 200);
-  const qrFrame = 11;
-  const qrBox = qrOuter - qrFrame * 2;
+  // Sanfte Fläche hinter QR + Schritte
+  page.drawRectangle({
+    x: margin - 10,
+    y: colBottom - 8,
+    width: contentW + 20,
+    height: colTop - colBottom + 20,
+    color: rgb(0.995, 0.992, 0.985),
+  });
+
+  // QR: fest kleiner, oben bündig, zentriert in linker Spalte
   const scanLabel = AUSHANG_SCAN_LABEL;
-  const scanSize = 9;
-  const labelGap = 28;
-  const leftStackH = qrOuter + labelGap;
-  const leftStackTop = colBottom + (colH + leftStackH) / 2;
-  const qrOuterY = leftStackTop - qrOuter;
+  const scanSize = 9.5;
+  const qrOuter = 168;
+  const qrFrame = 10;
+  const qrBox = qrOuter - qrFrame * 2;
+  const qrOuterY = colTop - qrOuter;
   const qrOuterX = margin + (leftW - qrOuter) / 2;
 
   page.drawRectangle({
@@ -403,7 +436,7 @@ export async function generateMeldeAushangPdf(
     }
   } else {
     const missing = "QR fehlt";
-    page.drawText(missing, {
+    drawTextSafe(page, missing, {
       x: qrOuterX + (qrOuter - font.widthOfTextAtSize(missing, 11)) / 2,
       y: qrOuterY + qrOuter / 2 - 4,
       size: 11,
@@ -412,83 +445,91 @@ export async function generateMeldeAushangPdf(
     });
   }
 
-  page.drawText(scanLabel, {
-    x: margin + (leftW - font.widthOfTextAtSize(scanLabel, scanSize)) / 2,
+  const scanSafe = pdfSafe(scanLabel);
+  drawTextSafe(page, scanSafe, {
+    x: margin + (leftW - fontBold.widthOfTextAtSize(scanSafe, scanSize)) / 2,
     y: qrOuterY - 16,
     size: scanSize,
     font: fontBold,
     color: primary,
   });
 
-  // Rechte Spalte: Schritte kompakter + Pfeile dazwischen
-  let rightY = colTop - 4;
-  page.drawText(AUSHANG_STEPS_TITLE, {
+  // Rechte Spalte: Oberkante optisch = QR-Oberkante (ohne Strich)
+  const stepsTitleSize = 13;
+  const titleAscent = stepsTitleSize * 0.72;
+  let rightY = colTop - titleAscent;
+  drawTextSafe(page, AUSHANG_STEPS_TITLE, {
     x: rightX,
     y: rightY,
-    size: 13,
+    size: stepsTitleSize,
     font: fontBold,
     color: ink,
   });
-  const titleW = fontBold.widthOfTextAtSize(AUSHANG_STEPS_TITLE, 13);
-  page.drawLine({
-    start: { x: rightX + titleW + 10, y: rightY + 4 },
-    end: { x: rightX + rightW, y: rightY + 4 },
-    thickness: 1.2,
-    color: primary,
-  });
-  rightY -= 28;
+  rightY -= 24;
 
-  const stepTitleSize = 15;
-  const stepDetailSize = 10.5;
+  const stepTitleSize = 14;
+  const stepDetailSize = 11;
+  /** Fester Abstand zwischen Schritten — nicht über die Spalte strecken. */
+  const gapBetweenSteps = 14;
+
+  // Timeline-Schiene links
+  const railX = rightX + 5;
+  const textX = rightX + 22;
+  const textW = rightW - 22;
+  const dotR = 4.5;
+
+  const titleYs: number[] = [];
 
   AUSHANG_STEPS.forEach((step, i) => {
+    titleYs.push(rightY);
+    const dotY = rightY + stepTitleSize * 0.28;
+
+    page.drawCircle({
+      x: railX,
+      y: dotY,
+      size: dotR,
+      color: primary,
+    });
+
     const numLabel = `${step.n}  ${step.title}`;
-    page.drawText(numLabel, {
-      x: rightX,
+    drawTextSafe(page, numLabel, {
+      x: textX,
       y: rightY,
       size: stepTitleSize,
       font: fontBold,
       color: primary,
     });
-    rightY -= stepTitleSize + 4;
+    rightY -= stepTitleSize + 5;
     rightY = drawWrapped(
       page,
       step.detail,
-      rightX,
+      textX,
       rightY,
       font,
       stepDetailSize,
       muted,
-      rightW,
-      1.28
+      textW,
+      1.32
     );
 
     if (i < AUSHANG_STEPS.length - 1) {
-      rightY -= 8;
-      // Geometrischer Pfeil — StandardFonts können kein „↓“ (WinAnsi).
-      const ax = rightX + 6;
-      const ay = rightY + 2;
-      page.drawLine({
-        start: { x: ax, y: ay + 10 },
-        end: { x: ax, y: ay },
-        thickness: 1.6,
-        color: primary,
-      });
-      page.drawLine({
-        start: { x: ax - 4, y: ay + 5 },
-        end: { x: ax, y: ay },
-        thickness: 1.6,
-        color: primary,
-      });
-      page.drawLine({
-        start: { x: ax + 4, y: ay + 5 },
-        end: { x: ax, y: ay },
-        thickness: 1.6,
-        color: primary,
-      });
-      rightY -= 16;
+      rightY -= gapBetweenSteps;
     }
   });
+
+  // Verbindungslinien zwischen den Punkten (nach bekannter Titel-Höhe)
+  for (let i = 0; i < titleYs.length - 1; i++) {
+    const lineTop = titleYs[i]! + stepTitleSize * 0.28 - dotR - 1;
+    const lineBottom = titleYs[i + 1]! + stepTitleSize * 0.28 + dotR + 1;
+    if (lineTop > lineBottom) {
+      page.drawLine({
+        start: { x: railX, y: lineTop },
+        end: { x: railX, y: lineBottom },
+        thickness: 1.4,
+        color: lighten(primary, 0.35),
+      });
+    }
+  }
 
   // —— Footer ——
   page.drawRectangle({
@@ -499,9 +540,9 @@ export async function generateMeldeAushangPdf(
     color: primary,
   });
 
-  page.drawText(AUSHANG_FOOTER_NO_PHONE, {
+  drawTextSafe(page, AUSHANG_FOOTER_NO_PHONE, {
     x: margin,
-    y: footerH - 16,
+    y: footerH - 14,
     size: 8,
     font: fontBold,
     color: lighten(primary, 0.72),
@@ -514,15 +555,23 @@ export async function generateMeldeAushangPdf(
     tel ? `Tel. ${tel}` : null,
     mail || null,
   ].filter(Boolean) as string[];
-  page.drawText(contactBits.join("  ·  "), {
+  drawTextSafe(page, contactBits.join("  ·  "), {
     x: margin,
-    y: footerH - 32,
+    y: footerH - 28,
     size: 10.5,
     font: fontBold,
     color: white,
   });
 
-  page.drawText(AUSHANG_FOOTER_DATENSCHUTZ, {
+  drawTextSafe(page, AUSHANG_FOOTER_PARTNER, {
+    x: margin,
+    y: footerH - 44,
+    size: 8.5,
+    font,
+    color: lighten(primary, 0.68),
+  });
+
+  drawTextSafe(page, AUSHANG_FOOTER_DATENSCHUTZ, {
     x: margin,
     y: 10,
     size: 8,
@@ -530,5 +579,6 @@ export async function generateMeldeAushangPdf(
     color: lighten(primary, 0.55),
   });
 
-  return pdf.save();
+  // Object Streams aus: bessere Kompatibilität Chrome-Viewer vs. gespeicherte Datei
+  return pdf.save({ useObjectStreams: false });
 }

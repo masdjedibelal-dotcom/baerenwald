@@ -4,10 +4,16 @@ import { useState } from "react";
 
 import {
   EinstellungenCard,
-  EinstellungenEuroInput,
+  EinstellungenEuroSlider,
   EinstellungenInfoBox,
 } from "@/components/shared/PortalEinstellungenUi";
-import { EINSTELLUNGEN_SCHWELLE_PRESETS } from "@/lib/portal2/einstellungen";
+import {
+  EINSTELLUNGEN_SCHWELLE_SLIDER_MAX,
+  EINSTELLUNGEN_SCHWELLE_SLIDER_MIN,
+  EINSTELLUNGEN_SCHWELLE_SLIDER_STEP,
+  formatEinstellungenSchwelle,
+  snapEinstellungenSchwelle,
+} from "@/lib/portal2/einstellungen";
 import { PORTAL_C } from "@/lib/portal2/tokens";
 import {
   formatObjRegelnReview,
@@ -317,13 +323,20 @@ export function OrganisationObjektWizard({
           >
             {OBJ_SCHWELLE_WIZARD_DESC}
           </p>
-          <EinstellungenEuroInput
-            value={Number.isFinite(schwelle) ? schwelle : 500}
-            presets={EINSTELLUNGEN_SCHWELLE_PRESETS}
-            onChange={(v) => set("schwelle", v)}
+          <EinstellungenEuroSlider
+            value={snapEinstellungenSchwelle(
+              Number.isFinite(schwelle) ? schwelle : 500
+            )}
+            min={EINSTELLUNGEN_SCHWELLE_SLIDER_MIN}
+            max={EINSTELLUNGEN_SCHWELLE_SLIDER_MAX}
+            step={EINSTELLUNGEN_SCHWELLE_SLIDER_STEP}
+            formatValue={formatEinstellungenSchwelle}
+            onChange={(v) => set("schwelle", snapEinstellungenSchwelle(v))}
           />
           <EinstellungenInfoBox>
-            {OBJ_SCHWELLE_INFO(Number.isFinite(schwelle) ? schwelle : 500)}
+            {OBJ_SCHWELLE_INFO(
+              snapEinstellungenSchwelle(Number.isFinite(schwelle) ? schwelle : 500)
+            )}
           </EinstellungenInfoBox>
         </div>
       </EinstellungenCard>

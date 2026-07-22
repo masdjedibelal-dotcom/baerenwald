@@ -130,16 +130,28 @@ async function handleMeldeAushangGet(req: Request) {
 
   // WebP u. a. → PNG, sonst fehlt das Logo im PDF (pdf-lib)
   let logoImageBytes = logoRaw;
+  let heroImageBytes: Uint8Array | null = customHeroBytes;
   try {
     const { imageBytesToPng } = await import("@/lib/org/aushang-image-png");
     logoImageBytes = (await imageBytesToPng(logoRaw)) ?? logoRaw;
+    if (customHeroBytes) {
+      heroImageBytes = (await imageBytesToPng(customHeroBytes)) ?? customHeroBytes;
+    }
   } catch (e) {
-    console.warn("[melde-aushang] Logo-Konvertierung übersprungen:", e);
+    console.warn("[melde-aushang] Bild-Konvertierung übersprungen:", e);
   }
 
-  // Eigenes HV-Hero, sonst Portal-Default (Innenhof / Wohnatmosphäre)
-  const heroImageBytes =
-    customHeroBytes ?? (await loadPublicImageBytes(PORTAL_HEADER_HERO_SRC));
+  // Eigenes HV-Hero, sonst Portal-Default aus /public — Fallback per URL (Serverless)
+  if (!heroImageBytes?.length) {
+    heroImageBytes = await loadPublicImageBytes(PORTAL_HEADER_HERO_SRC);
+  }
+  if (!heroImageBytes?.length) {
+    const base =
+      process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, "") ||
+      SITE_CONFIG.url?.replace(/\/$/, "") ||
+      "https://baerenwaldmuenchen.de";
+    heroImageBytes = await fetchImageBytes(`${base}${PORTAL_HEADER_HERO_SRC}`);
+  }
 
   // Mieter-Kontakt bevorzugt (wie Melde-Flow), sonst Org-/Portal-Fallback
   const hvTelefon =
@@ -172,12 +184,15 @@ async function handleMeldeAushangGet(req: Request) {
     .replace(/-+/g, "-")
     .slice(0, 40);
   const filename = `Aushang-${safeName || "HV"}.pdf`;
+  const body = Buffer.from(bytes);
 
-  return new NextResponse(Buffer.from(bytes), {
+  return new NextResponse(body, {
     headers: {
       "Content-Type": "application/pdf",
       "Content-Disposition": `inline; filename="${filename}"`,
+      "Content-Length": String(body.byteLength),
       "Cache-Control": "private, no-store",
+      "X-Content-Type-Options": "nosniff",
     },
   });
 }

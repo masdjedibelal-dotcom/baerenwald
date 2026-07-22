@@ -34,36 +34,48 @@ export function aushangUrl(
 export const AUSHANG_STEPS = [
   {
     n: "01",
-    title: "Scannen",
-    detail: "Kamera auf den Code — Meldeseite öffnet sich.",
+    title: "Digital",
+    detail:
+      "Kein Warten am Telefon — melden Sie den Schaden online, wann es Ihnen passt.",
   },
   {
     n: "02",
-    title: "Melden",
-    detail: "Bereich, Foto, kurze Beschreibung — fertig.",
+    title: "Einfach",
+    detail:
+      "QR scannen, Foto dazu, kurz beschreiben. Fertig in wenigen Minuten — ohne App.",
   },
   {
     n: "03",
-    title: "Verfolgen",
-    detail: "Bestätigung per Mail, Status jederzeit einsehen.",
+    title: "Transparent",
+    detail:
+      "Sofort eine Bestätigung — und Sie sehen jederzeit, was mit Ihrer Meldung passiert.",
   },
 ] as const;
 
 export const AUSHANG_HERO_LINE1 = "Schaden melden,";
-export const AUSHANG_HERO_LINE2 = "einfach scannen.";
+export const AUSHANG_HERO_LINE2 = "Status im Blick.";
 export const AUSHANG_HERO_BODY =
-  "Defekt in Wohnung oder Haus? Online melden — mit Foto, ohne App, in unter 2 Minuten.";
+  "Kein Warten am Telefon. Melden Sie den Defekt digital — mit Foto, in wenigen Minuten. Sofort eine Bestätigung, und Sie behalten den Stand jederzeit im Blick.";
 
 /** @deprecated — nicht mehr auf dem Aushang */
 export const AUSHANG_BADGE = "MIETERSERVICE";
-export const AUSHANG_SCAN_LABEL = "Mit der Handy-Kamera scannen";
-export const AUSHANG_STEPS_TITLE = "So funktioniert's";
+export const AUSHANG_SCAN_LABEL = "Jetzt melden";
+export const AUSHANG_STEPS_TITLE = "Ihre Vorteile";
+/** @deprecated — Chips nicht mehr auf dem Aushang */
+export const AUSHANG_TRUST_CHIPS = [
+  "Ohne Warteschleife",
+  "Mit Foto",
+  "Status live",
+] as const;
 export const AUSHANG_PHOTO_HINT =
   "Foto einfügen (Gebäude oder Objekt)";
 /** @deprecated — nicht mehr auf dem Aushang */
 export const AUSHANG_TAGLINE = "IHR ZUHAUSE IN GUTEN HÄNDEN";
-export const AUSHANG_FOOTER_NO_PHONE = "KEIN SMARTPHONE?";
-export const AUSHANG_FOOTER_CONTACT = "Melden Sie sich direkt";
+export const AUSHANG_FOOTER_NO_PHONE = "LIEBER TELEFONISCH?";
+export const AUSHANG_FOOTER_CONTACT = "Wir sind erreichbar unter";
+/** Hinweis: Aushang im Namen der HV, Abwicklung über Partner. */
+export const AUSHANG_FOOTER_PARTNER =
+  "Ihre Meldung läuft über unseren Partner Bärenwald.";
 export const AUSHANG_FOOTER_DATENSCHUTZ =
   "Datenschutz & Impressum: nach dem Scan im Formular";
 
@@ -71,7 +83,7 @@ export const AUSHANG_FOOTER_DATENSCHUTZ =
 export const AUSHANG_OBJEKT_LABEL = "Für dieses Gebäude";
 /** @deprecated */
 export const AUSHANG_PILL_HINT = "ohne App · direkt im Browser";
-/** @deprecated */
+/** @deprecated — siehe AUSHANG_FOOTER_PARTNER */
 export const AUSHANG_FOOTER_OPERATOR = "Bearbeitet durch";
 /** @deprecated */
 export const AUSHANG_PROCESSED_BY = "Bärenwald Bau & Sanierung GmbH";

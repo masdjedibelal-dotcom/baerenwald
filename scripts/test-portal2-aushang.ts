@@ -2,6 +2,7 @@
  * Portal 2.0 — Aushang Texte & Pfade.
  */
 import {
+  AUSHANG_FOOTER_PARTNER,
   AUSHANG_HERO_BODY,
   AUSHANG_HERO_LINE1,
   AUSHANG_HERO_LINE2,
@@ -26,12 +27,20 @@ function assert(name: string, ok: boolean) {
 console.log("portal2 aushang");
 
 assert("hero line1", AUSHANG_HERO_LINE1 === "Schaden melden,");
-assert("hero line2", AUSHANG_HERO_LINE2 === "einfach scannen.");
-assert("hero body kurz", AUSHANG_HERO_BODY.length < 120);
-assert("scan label normal case", AUSHANG_SCAN_LABEL === "Mit der Handy-Kamera scannen");
-assert("steps title sentence case", AUSHANG_STEPS_TITLE === "So funktioniert's");
+assert("hero line2", AUSHANG_HERO_LINE2 === "Status im Blick.");
+assert("hero body mieter vorteil", AUSHANG_HERO_BODY.includes("Bestätigung") && AUSHANG_HERO_BODY.includes("Telefon"));
+assert("hero body erwachsen", !AUSHANG_HERO_BODY.toLowerCase().includes("kamera hinhalten"));
+assert("scan label action", AUSHANG_SCAN_LABEL === "Jetzt melden");
+assert("steps title", AUSHANG_STEPS_TITLE === "Ihre Vorteile");
 assert("3 steps", AUSHANG_STEPS.length === 3);
-assert("step 01", AUSHANG_STEPS[0]!.n === "01" && AUSHANG_STEPS[0]!.title === "Scannen");
+assert("step 01", AUSHANG_STEPS[0]!.n === "01" && AUSHANG_STEPS[0]!.title === "Digital");
+assert("step 02", AUSHANG_STEPS[1]!.title === "Einfach");
+assert("step 03", AUSHANG_STEPS[2]!.title === "Transparent");
+assert("step copy ohne belehren", !AUSHANG_STEPS[0]!.detail.toLowerCase().includes("halten sie"));
+assert(
+  "footer partner hinweis",
+  AUSHANG_FOOTER_PARTNER.includes("Partner Bärenwald")
+);
 assert("slug melde", aushangSlug({ melde_slug: "Seitz Str." }) === "seitz-str");
 assert(
   "url",

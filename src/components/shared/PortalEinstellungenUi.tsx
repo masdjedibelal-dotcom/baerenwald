@@ -65,66 +65,34 @@ export function EinstellungenEdField({
   );
 }
 
-/** Mock Euro-Betrag + Schnellwahl-Pills (250 / 500 / 1k / 2k). */
+/** @deprecated Nutzen Sie EinstellungenEuroSlider (0–5000 / 500er). */
 export function EinstellungenEuroInput({
   value,
   onChange,
   disabled,
-  presets = [250, 500, 1000, 2000],
-  min = 0,
-  max = 5000,
+  min = EINSTELLUNGEN_SCHWELLE_SLIDER_MIN,
+  max = EINSTELLUNGEN_SCHWELLE_SLIDER_MAX,
+  step = EINSTELLUNGEN_SCHWELLE_SLIDER_STEP,
 }: {
   value: number;
   onChange: (value: number) => void;
   disabled?: boolean;
+  /** @deprecated Ignoriert — Slider statt Pills */
   presets?: readonly number[];
   min?: number;
   max?: number;
+  step?: number;
 }) {
   return (
-    <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:gap-3">
-      <label className="relative block w-full max-w-[140px] shrink-0">
-        <input
-          type="number"
-          inputMode="numeric"
-          min={min}
-          max={max}
-          step={50}
-          disabled={disabled}
-          value={Number.isFinite(value) ? value : ""}
-          onChange={(e) => {
-            const n = Number(e.target.value);
-            if (!Number.isFinite(n)) return;
-            onChange(Math.min(max, Math.max(min, Math.round(n))));
-          }}
-          className="w-full rounded-[9px] border border-border-default bg-white py-2.5 pl-3 pr-8 text-[15px] font-semibold text-text-primary outline-none focus:border-accent disabled:opacity-70"
-        />
-        <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[13px] font-semibold text-text-tertiary">
-          €
-        </span>
-      </label>
-      <div className="flex flex-wrap gap-1.5">
-        {presets.map((p) => {
-          const active = value === p;
-          return (
-            <button
-              key={p}
-              type="button"
-              disabled={disabled}
-              onClick={() => onChange(p)}
-              className={cn(
-                "rounded-full border px-3 py-1.5 text-[12.5px] font-semibold transition-colors disabled:opacity-60",
-                active
-                  ? "border-accent/40 bg-accent/10 text-accent"
-                  : "border-border-default bg-white text-text-secondary hover:border-accent/30"
-              )}
-            >
-              {formatEinstellungenSchwellePreset(p)}
-            </button>
-          );
-        })}
-      </div>
-    </div>
+    <EinstellungenEuroSlider
+      value={snapEinstellungenSchwelle(value)}
+      onChange={(v) => onChange(snapEinstellungenSchwelle(v))}
+      disabled={disabled}
+      min={min}
+      max={max}
+      step={step}
+      formatValue={formatEinstellungenSchwelle}
+    />
   );
 }
 
