@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 
-import { updatePartnerProfil } from "@/app/actions/partner-profil";
+import { updatePartnerProfil, uploadPartnerProfilLogo } from "@/app/actions/partner-profil";
 import { PartnerDetailInfoBox } from "@/components/partner/PartnerDetailUi";
 import { PartnerRahmenvertragCard } from "@/components/partner/PartnerRahmenvertragCard";
 import { PortalEinstellungenShell } from "@/components/shared/PortalEinstellungenShell";
@@ -17,6 +17,7 @@ import type {
   PartnerHandwerkerProfil,
   PartnerProfilKontext,
 } from "@/lib/partner/get-partner-data";
+import { checkPartnerFirmendatenGate } from "@/lib/partner/partner-firmendaten-gate";
 import {
   HW_FIRMEN_FOOTER,
   HW_FIRMEN_LOGO_HINT,
@@ -38,6 +39,7 @@ type Draft = {
   bic: string;
   bank: string;
   logo: string;
+  kleinunternehmer: boolean;
 };
 
 function draftFromProfil(h: PartnerHandwerkerProfil): Draft {
@@ -77,6 +79,7 @@ function draftFromProfil(h: PartnerHandwerkerProfil): Draft {
     bic: h.bic?.trim() || "",
     bank: h.bank?.trim() || "",
     logo,
+    kleinunternehmer: Boolean(h.kleinunternehmer),
   };
 }
 
@@ -95,6 +98,19 @@ export function PartnerFirmendatenScreen({
   const [draft, setDraft] = useState(() => draftFromProfil(handwerker));
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [saving, setSaving] = useState(false);
+  const [logoBusy, setLogoBusy] = useState(false);
+  const logoInputRef = useRef<HTMLInputElement | null>(null);
+
+  const gate = checkPartnerFirmendatenGate({
+    firma: draft.firma,
+    name: draft.inhaber,
+    strasse: draft.strasse,
+    ort: draft.ort,
+    telefon: draft.tel,
+    steuernummer: draft.steuernr,
+    ustid: draft.ustid,
+    iban: draft.iban,
+  });
 
   useEffect(() => {
     setDraft(draftFromProfil(handwerker));
@@ -121,6 +137,7 @@ export function PartnerFirmendatenScreen({
       fd.set("iban", next.iban);
       fd.set("bic", next.bic);
       fd.set("bank", next.bank);
+      fd.set("kleinunternehmer", next.kleinunternehmer ? "1" : "0");
       const res = await updatePartnerProfil(fd);
       setSaving(false);
       if (!res.ok) {
@@ -141,9 +158,24 @@ export function PartnerFirmendatenScreen({
     }, 650);
   };
 
-  const set = (key: keyof Draft, val: string) => {
-    schedule({ ...draft, [key]: val });
+  const set = (key: keyof Draft, val: string | boolean) => {
+    schedule({ ...draft, [key]: val } as Draft);
   };
+
+  async function onLogoChange(file: File | null) {
+    if (!file) return;
+    setLogoBusy(true);
+    const fd = new FormData();
+    fd.set("logo", file);
+    const res = await uploadPartnerProfilLogo(fd);
+    setLogoBusy(false);
+    if (!res.ok) {
+      portalToastError("Logo nicht gespeichert", res.error);
+      return;
+    }
+    partnerPortalToast.stammdatenGespeichert();
+    router.refresh();
+  }
 
   const footer = (
     <p className="text-[11.5px] leading-relaxed text-text-tertiary">
@@ -203,6 +235,22 @@ export function PartnerFirmendatenScreen({
                   value={draft.hrb}
                   onChange={(v) => set("hrb", v)}
                 />
+                <label className="flex cursor-pointer items-start gap-2.5 rounded-xl border border-border-default px-3 py-2.5">
+                  <input
+                    type="checkbox"
+                    className="mt-0.5"
+                    checked={draft.kleinunternehmer}
+                    onChange={(e) => set("kleinunternehmer", e.target.checked)}
+                  />
+                  <span className="text-[13px] leading-snug text-text-secondary">
+                    <span className="font-semibold text-text-primary">
+                      Kleinunternehmer §19 UStG
+                    </span>
+                    <span className="mt-0.5 block text-[12px]">
+                      Rechnungen ohne MwSt-Ausweis, mit gesetzlichem Hinweis.
+                    </span>
+                  </span>
+                </label>
               </div>
               {footer}
             </div>
@@ -242,19 +290,56 @@ export function PartnerFirmendatenScreen({
 
         return (
           <div className="space-y-4">
+            {!gate.okRechnung ? (
+              <PartnerDetailInfoBox>
+                Für Auto-Angebot & Rechnung fehlen noch:{" "}
+                {gate.missingRechnung.join(", ")}.
+              </PartnerDetailInfoBox>
+            ) : null}
+
             <div>
               <EinstellungenSectionLabel>
                 {HW_FIRMEN_SECTIONS.logo}
               </EinstellungenSectionLabel>
               <div className="flex items-center gap-3.5">
                 <div className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-border-default bg-muted">
-                  <span className="font-[family-name:var(--font-display)] text-sm font-bold text-text-primary">
-                    {draft.logo}
-                  </span>
+                  {handwerker.logo_signed_url ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={handwerker.logo_signed_url}
+                      alt="Firmenlogo"
+                      className="h-full w-full object-contain"
+                    />
+                  ) : (
+                    <span className="font-[family-name:var(--font-display)] text-sm font-bold text-text-primary">
+                      {draft.logo}
+                    </span>
+                  )}
                 </div>
-                <p className="text-[12.5px] leading-relaxed text-text-secondary">
-                  {HW_FIRMEN_LOGO_HINT}
-                </p>
+                <div className="min-w-0 flex-1">
+                  <p className="text-[12.5px] leading-relaxed text-text-secondary">
+                    {HW_FIRMEN_LOGO_HINT}
+                  </p>
+                  <input
+                    ref={logoInputRef}
+                    type="file"
+                    accept="image/png,image/jpeg,image/webp"
+                    className="sr-only"
+                    onChange={(e) => {
+                      const f = e.target.files?.[0] ?? null;
+                      void onLogoChange(f);
+                      e.target.value = "";
+                    }}
+                  />
+                  <button
+                    type="button"
+                    disabled={logoBusy}
+                    onClick={() => logoInputRef.current?.click()}
+                    className="mt-2 rounded-lg border border-border-default px-3 py-1.5 text-[12.5px] font-semibold text-text-primary disabled:opacity-50"
+                  >
+                    {logoBusy ? "Wird hochgeladen…" : "Logo hochladen"}
+                  </button>
+                </div>
               </div>
             </div>
 

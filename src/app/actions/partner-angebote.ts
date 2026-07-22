@@ -74,7 +74,8 @@ export async function submitPartnerAngebotPdf(
     return { ok: false, error: "Keine Berechtigung." };
   }
 
-  if (String(row.status).toLowerCase() !== "akzeptiert") {
+  if (String(row.status).toLowerCase() !== "akzeptiert" &&
+      String(row.status).toLowerCase() !== "angenommen") {
     return { ok: false, error: "Nur für zugesagte Anfragen möglich." };
   }
 
@@ -198,7 +199,8 @@ export async function submitPartnerRechnung(
     return { ok: false, error: "Keine Berechtigung." };
   }
 
-  if (String(row.status).toLowerCase() !== "akzeptiert") {
+  const st = String(row.status).toLowerCase();
+  if (st !== "akzeptiert" && st !== "angenommen") {
     return { ok: false, error: "Nur für angenommene Anfragen möglich." };
   }
 

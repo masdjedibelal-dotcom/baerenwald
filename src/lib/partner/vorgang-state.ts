@@ -5,7 +5,14 @@ export { positionBrauchtVorgangAktion } from "@/lib/partner/partner-konditionen"
 
 export type VorgangState = "neu" | "geaendert" | "in_bearbeitung" | "erledigt";
 
-export type VorgangFilter = "offen" | "erledigt";
+export type VorgangFilter = "alle" | "offen" | "auftrag" | "erledigt";
+
+export const VORGANG_FILTER_ORDER: VorgangFilter[] = [
+  "alle",
+  "offen",
+  "auftrag",
+  "erledigt",
+];
 
 const ERLEDIGT_AUFTRAG_STATUS = new Set([
   "abgeschlossen",
@@ -57,8 +64,11 @@ export function vorgangPasstFilter(
   state: VorgangState,
   filter: VorgangFilter
 ): boolean {
+  if (filter === "alle") return true;
   if (filter === "erledigt") return state === "erledigt";
-  return state === "neu" || state === "geaendert" || state === "in_bearbeitung";
+  if (filter === "auftrag") return state === "in_bearbeitung";
+  // Offen: nur noch anzunehmen (neu) bzw. Nachreichung bestätigen (geaendert)
+  return state === "neu" || state === "geaendert";
 }
 
 export function vorgangStateLabel(state: VorgangState): string {

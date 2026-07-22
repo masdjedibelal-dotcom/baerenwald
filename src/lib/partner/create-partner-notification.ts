@@ -1,5 +1,11 @@
 import { Resend } from "resend";
 
+import {
+  buildStandardMailHtml,
+  mailBegruessungHtml,
+  mailPrimaryButtonHtml,
+  mailTeamGrussHtml,
+} from "@/lib/email/mail-shell";
 import { partnerLoginUrl } from "@/lib/partner/partner-site-url";
 import {
   partnerNotificationSubject,
@@ -36,6 +42,20 @@ export type PartnerNotifyInput = {
   leistungName?: string | null;
   link: string;
 };
+
+function partnerNotifyBodyHtml(opts: {
+  handwerkerName: string;
+  subjectLine: string;
+  portalUrl: string;
+}): string {
+  return `
+    <p style="margin:0 0 12px;font-size:15px;color:#374151;line-height:1.6;">${mailBegruessungHtml("du", opts.handwerkerName)}</p>
+    <p style="margin:0 0 16px;font-size:15px;color:#374151;line-height:1.6;"><strong>${escapeHtml(opts.subjectLine)}</strong></p>
+    <p style="margin:0 0 8px;font-size:14px;color:#374151;line-height:1.6;">Bitte im Partner-Portal prüfen und bestätigen.</p>
+    ${mailPrimaryButtonHtml("Zum Partner-Portal →", opts.portalUrl)}
+    <p style="margin:24px 0 0;font-size:15px;color:#374151;line-height:1.6;">${mailTeamGrussHtml("du")}</p>
+  `;
+}
 
 /** INSERT notification + optional Resend-Mail an Handwerker. */
 export async function createPartnerNotification(
@@ -115,12 +135,19 @@ export async function createPartnerNotification(
     );
     const base = (process.env.NEXT_PUBLIC_SITE_URL ?? "").replace(/\/$/, "");
     const portalUrl = link.startsWith("http") ? link : `${base}${link}`;
-    const html = `<!DOCTYPE html><html lang="de"><body style="font-family:Arial,sans-serif;">
-<p>Hallo ${escapeHtml((hw as { name?: string })?.name?.trim() || "Partner")},</p>
-<p>${escapeHtml(subject)}</p>
-<p><a href="${escapeHtml(portalUrl || partnerLoginUrl())}" style="display:inline-block;background:#2E7D52;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:600;">Zum Partner-Portal</a></p>
-<p style="font-size:12px;color:#666;">Bärenwald München · Partner-Portal</p>
-</body></html>`;
+    const handwerkerName =
+      (hw as { name?: string })?.name?.trim() || "Partner";
+    const html = buildStandardMailHtml({
+      preheader: subject,
+      bodyHtml: partnerNotifyBodyHtml({
+        handwerkerName,
+        subjectLine: subject,
+        portalUrl: portalUrl || partnerLoginUrl(),
+      }),
+      disclaimer:
+        "Du erhältst diese Mail, weil dir im Partner-Portal ein Vorgang zugewiesen wurde.",
+      footerNote: "Bärenwald München · Partner-Portal",
+    });
 
     await resend.emails.send({
       from: systemFrom(),

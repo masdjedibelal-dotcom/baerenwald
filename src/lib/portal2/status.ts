@@ -28,7 +28,7 @@ export type PortalMockStatusMeta = {
 export const PORTAL_STATUS: Record<PortalMockStatusId, PortalMockStatusMeta> = {
   gemeldet: {
     id: "gemeldet",
-    label: "Neu gemeldet",
+    label: "Neu",
     color: "#1F4FA8",
     bg: "#E4ECF7",
   },

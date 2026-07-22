@@ -21,6 +21,11 @@ import {
   PORTAL_LIST_PAGE_SIZE,
   PortalListPagination,
 } from "@/components/shared/PortalListPagination";
+import {
+  PortalListeEyebrow,
+  PortalListeFilterChip,
+  PortalListeTitle,
+} from "@/components/shared/PortalListeChrome";
 import { isOnboardingCompleted } from "@/lib/onboarding/storage";
 import { PORTAL_ONBOARDING_SLIDES } from "@/lib/onboarding/portal-slides";
 import { buildKundeVorgaenge } from "@/lib/portal/build-kunde-vorgaenge";
@@ -42,6 +47,7 @@ import {
 import {
   buildPrivatDashboardKpis,
   PRIVAT_LISTE_CHIPS,
+  privatKpiToListeChip,
   privatListeChipMatches,
   type PrivatListeChip,
 } from "@/lib/portal2/kunde-dashboard";
@@ -477,32 +483,23 @@ export function PortalClient({
       {isPrivatLike && !hvPortalMode ? (
         <>
           <div className="px-0.5 pb-1">
-            <p className="mb-1 text-[12px] font-semibold uppercase tracking-wide text-text-tertiary">
+            <PortalListeEyebrow>
               {portalKundeTypRoleLabel(kundeTyp)}
-            </p>
-            <h1 className="text-[25px] font-bold text-text-primary">
+            </PortalListeEyebrow>
+            <PortalListeTitle>
               {portalKundeListeTitle(kundeTyp)}
-            </h1>
+            </PortalListeTitle>
           </div>
           <div className="flex flex-wrap gap-2 py-3.5">
-            {PRIVAT_LISTE_CHIPS.map((chip) => {
-              const on = privatChip === chip.id;
-              return (
-                <button
-                  key={chip.id}
-                  type="button"
-                  onClick={() => setPrivatChip(chip.id)}
-                  className={cn(
-                    "rounded-full px-3 py-1.5 text-[12.5px] font-semibold",
-                    on
-                      ? "border border-transparent bg-[#1A3D2B] text-white"
-                      : "border border-border-default bg-white text-text-secondary"
-                  )}
-                >
-                  {chip.label}
-                </button>
-              );
-            })}
+            {PRIVAT_LISTE_CHIPS.map((chip) => (
+              <PortalListeFilterChip
+                key={chip.id}
+                active={privatChip === chip.id}
+                onClick={() => setPrivatChip(chip.id)}
+              >
+                {chip.label}
+              </PortalListeFilterChip>
+            ))}
           </div>
         </>
       ) : !hideFilterBar ? (
@@ -691,7 +688,14 @@ export function PortalClient({
               kpis={privatKpis}
               recent={recentItems}
               heroImageUrl={PORTAL_HEADER_HERO_SRC}
-              onOpenAll={() => switchSection("vorgaenge")}
+              onOpenAll={() => {
+                setPrivatChip("alle");
+                switchSection("vorgaenge");
+              }}
+              onKpiClick={(id) => {
+                setPrivatChip(privatKpiToListeChip(id));
+                switchSection("vorgaenge");
+              }}
               onOpenItem={(id) => {
                 setSelectedId(id);
                 setMobileDetailOpen(true);
@@ -712,7 +716,14 @@ export function PortalClient({
               kpis={privatKpis}
               recent={recentItems}
               heroImageUrl={PORTAL_HEADER_HERO_SRC}
-              onOpenAll={() => switchSection("vorgaenge")}
+              onOpenAll={() => {
+                setPrivatChip("alle");
+                switchSection("vorgaenge");
+              }}
+              onKpiClick={(id) => {
+                setPrivatChip(privatKpiToListeChip(id));
+                switchSection("vorgaenge");
+              }}
               onOpenItem={(id) => {
                 setSelectedId(id);
                 setMobileDetailOpen(true);

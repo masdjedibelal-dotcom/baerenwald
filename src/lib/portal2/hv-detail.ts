@@ -121,12 +121,14 @@ export const HV_DETAIL_COPY = {
   ablehnen: "Ablehnen",
   privatAuto:
     "Automatisch freigegeben (Privatkunde)",
-  angeboteVergleichen: "Angebote vergleichen",
+  angeboteVergleichen: "Angebotdetails",
   angeboteVergleichNote:
-    "Handwerker haben ein Angebot abgegeben. Bärenwald empfiehlt das markierte Angebot.",
-  empfohlenBadge: "★ Empfohlen",
-  empfohlenDetail: "Empfohlenes Angebot im Detail",
-  empfohlenAnnehmen: "Empfohlenes annehmen",
+    "Bärenwald hat ein Angebot vorgelegt. Prüfen Sie Preise und Leistungen — danach können Sie verbindlich annehmen.",
+  empfohlenBadge: "★ Angebot",
+  empfohlenDetail: "Leistungen & Preise",
+  empfohlenAnnehmen: "Angebot annehmen",
+  angebotAnnehmenNote:
+    "Mit der Annahme wird der Vorgang im CRM zum Auftrag (Angebot angenommen).",
   unterSchwelle: (schwelleLabel: string) =>
     `Direkt Durchführung — Angebot unter Freigabeschwelle (${schwelleLabel}). Der Handwerker kann starten, ohne dass Sie freigeben. Sie erhalten eine E-Mail und sehen diesen Hinweis im Vorgang.`,
   inAusfuehrung: "In Ausführung",
@@ -150,7 +152,7 @@ export const HV_DETAIL_COPY = {
   abschlagsplanTitle: "Abschlagsplan · 2 Raten",
   abschlagsplanNote:
     "Von Bärenwald auf Basis des Angebots erstellt. Raten und enthaltene Gewerke:",
-  bautagebuchTitle: "Bautagebuch (Einblick)",
+  bautagebuchTitle: "Bautagebuch",
   bautagebuchEmpty: "Noch keine Einträge.",
   metaTitle: "Details",
   verlaufTitle: "Verlauf",

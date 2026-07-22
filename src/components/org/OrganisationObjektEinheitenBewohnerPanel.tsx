@@ -38,24 +38,38 @@ const BEWOHNER_COLUMNS = [
 const BEWOHNER_INTRO =
   "Der Vorteil: Hier sammeln Sie Mieter intern. Bei Schadensmeldungen können Sie Vorgänge direkt mit einem Mieter verknüpfen. Sichtbar nur für die Hausverwaltung im Portal — nicht im öffentlichen Meldeformular.";
 
-export function OrganisationObjektEinheitenBewohnerPanel({
-  objektId,
-  detailLayout = false,
-}: {
+type Props = {
   objektId: string;
+  /** Objektadresse zum Vorausfüllen */
+  defaultStrasse?: string | null;
+  defaultHausnummer?: string | null;
   /** E2 Detail-Tab: Listenfläche ohne Extra-Chrome. */
   detailLayout?: boolean;
   /** @deprecated Einheiten-Count — nicht mehr benötigt */
   titleCount?: number;
-}) {
+};
+
+export function OrganisationObjektEinheitenBewohnerPanel({
+  objektId,
+  defaultStrasse = "",
+  defaultHausnummer = "",
+  detailLayout = false,
+}: Props) {
   const [bewohner, setBewohner] = useState<Bewohner[]>([]);
-  const [name, setName] = useState("");
-  const [wohnung, setWohnung] = useState("");
-  const [etage, setEtage] = useState("");
+  const [vorname, setVorname] = useState("");
+  const [nachname, setNachname] = useState("");
+  const [strasse, setStrasse] = useState(defaultStrasse?.trim() || "");
+  const [hausnummer, setHausnummer] = useState(defaultHausnummer?.trim() || "");
+  const [einheit, setEinheit] = useState("");
   const [telefon, setTelefon] = useState("");
   const [email, setEmail] = useState("");
   const [busy, setBusy] = useState(false);
   const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (defaultStrasse?.trim()) setStrasse(defaultStrasse.trim());
+    if (defaultHausnummer?.trim()) setHausnummer(defaultHausnummer.trim());
+  }, [defaultStrasse, defaultHausnummer]);
 
   const loadBewohner = useCallback(async () => {
     setLoading(true);
@@ -74,7 +88,8 @@ export function OrganisationObjektEinheitenBewohnerPanel({
 
   async function addBewohner(e: React.FormEvent) {
     e.preventDefault();
-    if (!name.trim() || !wohnung.trim()) return;
+    const name = [vorname, nachname].map((s) => s.trim()).filter(Boolean).join(" ");
+    if (!name || !strasse.trim() || !hausnummer.trim()) return;
     setBusy(true);
     try {
       const res = await fetch("/api/org/einheit-bewohner", {
@@ -82,18 +97,18 @@ export function OrganisationObjektEinheitenBewohnerPanel({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           objektId,
-          name: name.trim(),
-          wohnung: wohnung.trim(),
-          etage: etage.trim() || undefined,
+          name,
+          wohnung: einheit.trim() || undefined,
+          etage: einheit.trim() || undefined,
           telefon: telefon.trim() || undefined,
           email: email.trim() || undefined,
         }),
       });
       const json = (await res.json()) as { error?: string };
       if (!res.ok) throw new Error(json.error ?? "Fehler");
-      setName("");
-      setWohnung("");
-      setEtage("");
+      setVorname("");
+      setNachname("");
+      setEinheit("");
       setTelefon("");
       setEmail("");
       orgPortalToast.objektAktualisiert();
@@ -123,6 +138,12 @@ export function OrganisationObjektEinheitenBewohnerPanel({
       setBusy(false);
     }
   }
+
+  const canSubmit =
+    vorname.trim().length > 0 &&
+    nachname.trim().length > 0 &&
+    strasse.trim().length > 1 &&
+    hausnummer.trim().length > 0;
 
   return (
     <div
@@ -208,32 +229,48 @@ export function OrganisationObjektEinheitenBewohnerPanel({
         )}
       </PortalListTable>
 
-      <EinstellungenCard title="Bewohner hinzufügen">
+      <EinstellungenCard title="Mieter anlegen">
         <form
           onSubmit={(e) => void addBewohner(e)}
           className="flex flex-col gap-3"
         >
-          <EinstellungenEdField
-            label="Name"
-            value={name}
-            onChange={setName}
-            placeholder="Max Mustermann"
-            autoComplete="name"
-          />
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <EinstellungenEdField
-              label="Wohnung"
-              value={wohnung}
-              onChange={setWohnung}
-              placeholder="z. B. Whg 12"
+              label="Vorname"
+              value={vorname}
+              onChange={setVorname}
+              placeholder="Max"
+              autoComplete="given-name"
             />
             <EinstellungenEdField
-              label="Etage"
-              value={etage}
-              onChange={setEtage}
-              placeholder="z. B. EG, 1. OG"
+              label="Nachname"
+              value={nachname}
+              onChange={setNachname}
+              placeholder="Mustermann"
+              autoComplete="family-name"
             />
           </div>
+          <div className="grid grid-cols-[1fr_88px] gap-3">
+            <EinstellungenEdField
+              label="Straße"
+              value={strasse}
+              onChange={setStrasse}
+              placeholder="Musterstraße"
+              autoComplete="address-line1"
+            />
+            <EinstellungenEdField
+              label="Nr."
+              value={hausnummer}
+              onChange={setHausnummer}
+              placeholder="12"
+            />
+          </div>
+          <EinstellungenEdField
+            label="Wohnung / Etage (optional)"
+            value={einheit}
+            onChange={setEinheit}
+            placeholder="z. B. 4. Stock li"
+          />
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <EinstellungenEdField
               label="Telefon (optional)"
@@ -255,10 +292,10 @@ export function OrganisationObjektEinheitenBewohnerPanel({
           <button
             type="submit"
             className="btn-pill-primary inline-flex w-full items-center justify-center gap-2 sm:w-auto"
-            disabled={busy || !name.trim() || !wohnung.trim()}
+            disabled={busy || !canSubmit}
           >
             <UserPlus className="h-4 w-4" aria-hidden />
-            {busy ? "Speichern…" : "Bewohner anlegen"}
+            {busy ? "Speichern…" : "Mieter anlegen"}
           </button>
         </form>
       </EinstellungenCard>

@@ -59,9 +59,11 @@ export function PartnerPflichtenCard({
 
   return (
     <>
-      <section className="rounded-xl border border-border-light bg-muted/15 px-4 py-4">
-        <h4 className="portal-text-section text-text-primary">{titel}</h4>
-        <p className="portal-text-meta mt-1 text-text-secondary">
+      <section className="rounded-xl border border-border-default bg-white p-4">
+        <h3 className="mb-1 font-[family-name:var(--font-display)] text-[14px] font-bold text-text-primary">
+          {titel}
+        </h3>
+        <p className="text-[12.5px] text-text-secondary">
           {bauprojekt
             ? "Bauprojekt — bitte vor der Bestätigung durchlesen, was du erfüllen musst."
             : "Bitte Leistungen und Konditionen prüfen und verbindlich bestätigen."}
@@ -71,7 +73,7 @@ export function PartnerPflichtenCard({
             {punkte.map((text) => (
               <li
                 key={text}
-                className="portal-text-body flex gap-2 text-text-primary before:shrink-0 before:content-['•']"
+                className="flex gap-2 text-[13px] text-text-primary before:shrink-0 before:content-['•']"
               >
                 <span>{text}</span>
               </li>
@@ -86,7 +88,7 @@ export function PartnerPflichtenCard({
               onChange={(e) => acknowledgment.onChange(e.target.checked)}
               className="mt-1"
             />
-            <span className="portal-text-body text-text-primary">{checkboxLabel}</span>
+            <span className="text-[13px] text-text-primary">{checkboxLabel}</span>
           </label>
         ) : null}
       </section>

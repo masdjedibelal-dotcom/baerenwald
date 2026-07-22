@@ -5,6 +5,11 @@ import { useSearchParams } from "next/navigation";
 
 import { PortalClient } from "@/components/portal/PortalClient";
 import {
+  PortalListeEyebrow,
+  PortalListeFilterChip,
+  PortalListeTitle,
+} from "@/components/shared/PortalListeChrome";
+import {
   buildOrgVorgangFilterCounts,
   buildAuftragByLeadId,
   orgFilterToKundeFilter,
@@ -22,7 +27,6 @@ import {
   HV_LISTE_PAGE_EYEBROW,
   HV_LISTE_PAGE_TITLE,
 } from "@/lib/portal2/hv-liste";
-import { PORTAL_C } from "@/lib/portal2/tokens";
 
 type Props = {
   kunde: OrganisationKunde;
@@ -106,51 +110,22 @@ function HvListeChrome({
   return (
     <div>
       <div className="px-1 pt-1 pb-1 sm:px-0">
-        <p
-          className="mb-1 text-[12px] font-semibold uppercase tracking-wide"
-          style={{ color: PORTAL_C.faint }}
-        >
-          {HV_LISTE_PAGE_EYEBROW}
-        </p>
-        <h1
-          className="text-[25px] font-bold"
-          style={{
-            color: PORTAL_C.ink,
-            fontFamily: "var(--p2-font-head, " + PORTAL_C.head + ")",
-          }}
-        >
-          {HV_LISTE_PAGE_TITLE}
-        </h1>
+        <PortalListeEyebrow>{HV_LISTE_PAGE_EYEBROW}</PortalListeEyebrow>
+        <PortalListeTitle>{HV_LISTE_PAGE_TITLE}</PortalListeTitle>
       </div>
       <div className="flex flex-wrap gap-2 py-3.5">
         {HV_CHIPS.map((chip) => {
           const on = filter === chip.id;
           const count = chip.showCount ? offenCount : null;
           return (
-            <button
+            <PortalListeFilterChip
               key={chip.id}
-              type="button"
+              active={on}
               onClick={() => onFilterChange(chip.id)}
-              className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[12.5px] font-semibold"
-              style={{
-                border: `1px solid ${on ? "transparent" : PORTAL_C.line}`,
-                background: on ? PORTAL_C.greenDark : "#fff",
-                color: on ? "#fff" : PORTAL_C.sub,
-              }}
+              countBadge={count}
             >
               {chip.label}
-              {count != null && count > 0 ? (
-                <span
-                  className="rounded-full px-1.5 py-px text-[10.5px] font-bold"
-                  style={{
-                    color: on ? PORTAL_C.greenDark : "#fff",
-                    background: on ? "#fff" : PORTAL_C.primary,
-                  }}
-                >
-                  {count}
-                </span>
-              ) : null}
-            </button>
+            </PortalListeFilterChip>
           );
         })}
       </div>

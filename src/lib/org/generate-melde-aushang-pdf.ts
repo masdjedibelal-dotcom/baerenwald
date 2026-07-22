@@ -174,8 +174,9 @@ async function embedImage(
 }
 
 /**
- * Aushang-PDF nach Konzept „Details vereinheitlichen“.
- * Dichtes Layout: große Headline, kompakter Hero, großer scannbarer QR.
+ * Aushang-PDF 1:1 Konzept „Details vereinheitlichen“ (neu):
+ * Großer Primär-Hero (Headline darin, kein separater Seitentitel),
+ * schmaler Foto-Streifen, dichter Zwei-Spalten-Block, kompakter Footer.
  */
 export async function generateMeldeAushangPdf(
   input: MeldeAushangInput
@@ -189,18 +190,19 @@ export async function generateMeldeAushangPdf(
 
   const pageW = 595;
   const pageH = 842;
-  const margin = 36;
+  const margin = 45;
   const contentW = pageW - margin * 2;
 
   const primary = hexToRgb(input.primaryColor?.trim() || "#22508C");
   const soft = input.primaryColorSoft?.trim()
     ? hexToRgb(input.primaryColorSoft)
     : lighten(primary, 0.88);
-  const paper = rgb(0.965, 0.955, 0.93);
+  const paper = rgb(0.961, 0.945, 0.91);
   const ink = rgb(0.1, 0.12, 0.14);
   const muted = rgb(0.32, 0.34, 0.36);
   const white = rgb(1, 1, 1);
-  const labelAccent = rgb(0.92, 0.62, 0.28);
+  /** Gold-Akzent wie Konzept („einfach scannen.“ / Footer-Label) */
+  const accent = rgb(0.92, 0.72, 0.28);
   const hairline = soft;
 
   const logo = (input.logoKuerzel?.trim() || input.orgName.trim().charAt(0) || "HV")
@@ -215,19 +217,21 @@ export async function generateMeldeAushangPdf(
     color: paper,
   });
 
-  // —— Header ——
-  const headerH = 52;
+  // —— Primär-Hero (Brand-Zeile + Headline + Intro, kein Extra-Titel) ——
+  const heroH = 268;
+  const heroTop = pageH;
+  const heroBottom = pageH - heroH;
   page.drawRectangle({
     x: 0,
-    y: pageH - headerH,
+    y: heroBottom,
     width: pageW,
-    height: headerH,
+    height: heroH,
     color: primary,
   });
 
-  const markSize = 32;
+  const markSize = 34;
   const markX = margin;
-  const markY = pageH - headerH + (headerH - markSize) / 2;
+  const markY = heroTop - 18 - markSize;
   page.drawRectangle({
     x: markX,
     y: markY,
@@ -252,7 +256,7 @@ export async function generateMeldeAushangPdf(
   } else {
     page.drawText(logo, {
       x: markX + (markSize - fontBold.widthOfTextAtSize(logo, 13)) / 2,
-      y: markY + 9,
+      y: markY + 10,
       size: 13,
       font: fontBold,
       color: primary,
@@ -260,110 +264,112 @@ export async function generateMeldeAushangPdf(
   }
 
   const nameX = markX + markSize + 12;
-  const nameMaxW = contentW - markSize - 150;
-  const nameLines = wrapText(input.orgName, serifBold, 16, nameMaxW);
-  let nameY = pageH - headerH + (nameLines.length > 1 ? 32 : 20);
-  for (const line of nameLines.slice(0, 2)) {
-    page.drawText(line, {
-      x: nameX,
-      y: nameY,
-      size: 16,
-      font: serifBold,
-      color: white,
-    });
-    nameY -= 16;
-  }
+  const nameMaxW = contentW - markSize - 130;
+  const nameLines = wrapText(input.orgName, serifBold, 17, nameMaxW).slice(0, 1);
+  page.drawText(nameLines[0] || input.orgName, {
+    x: nameX,
+    y: markY + 11,
+    size: 17,
+    font: serifBold,
+    color: white,
+  });
 
   const badge = spacedCaps(AUSHANG_BADGE);
-  const badgeSize = 8.5;
+  const badgeSize = 8.2;
   const badgeW = font.widthOfTextAtSize(badge, badgeSize);
   page.drawText(badge, {
     x: pageW - margin - badgeW,
-    y: pageH - headerH + 21,
+    y: markY + 12,
     size: badgeSize,
     font,
-    color: lighten(primary, 0.55),
+    color: lighten(primary, 0.62),
   });
 
-  // —— Hero (große Schrift wie Mock, wenig Luft) ——
-  let y = pageH - headerH - 22;
+  // Headline im Hero (weiß / Gold) — kein Seitentitel außerhalb
+  let y = markY - 40;
   page.drawText(AUSHANG_HERO_LINE1, {
     x: margin,
     y,
-    size: 42,
+    size: 44,
     font: serifBold,
-    color: ink,
+    color: white,
   });
-  y -= 44;
+  y -= 50;
   page.drawText(AUSHANG_HERO_LINE2, {
     x: margin,
     y,
-    size: 42,
+    size: 44,
     font: serifItalic,
-    color: primary,
+    color: accent,
   });
-  y -= 20;
-  y = drawWrapped(
+  y -= 26;
+  drawWrapped(
     page,
     AUSHANG_HERO_BODY,
     margin,
     y,
     font,
-    14.5,
-    muted,
+    13.5,
+    lighten(primary, 0.78),
     contentW,
-    1.28
+    1.38
   );
-  y -= 10;
 
-  // —— Foto kompakt (Platz → Schrift + QR) ——
-  const photoH = 86;
-  const photoY = y - photoH;
+  // —— Schmaler Foto-Streifen ——
+  const photoH = 78;
+  const photoY = heroBottom - photoH;
   const heroImg = await embedImage(pdf, input.heroImageBytes);
   page.drawRectangle({
-    x: margin,
+    x: 0,
     y: photoY,
-    width: contentW,
+    width: pageW,
     height: photoH,
-    color: rgb(0.88, 0.88, 0.86),
+    color: rgb(0.9, 0.88, 0.84),
   });
   if (heroImg) {
-    const scale = Math.max(contentW / heroImg.width, photoH / heroImg.height);
+    const scale = Math.max(pageW / heroImg.width, photoH / heroImg.height);
     const iw = heroImg.width * scale;
     const ih = heroImg.height * scale;
     page.pushOperators(
       pushGraphicsState(),
-      rectangle(margin, photoY, contentW, photoH),
+      rectangle(0, photoY, pageW, photoH),
       clip(),
       endPath()
     );
     page.drawImage(heroImg, {
-      x: margin + (contentW - iw) / 2,
+      x: (pageW - iw) / 2,
       y: photoY + (photoH - ih) / 2,
       width: iw,
       height: ih,
     });
     page.pushOperators(popGraphicsState());
   } else {
-    drawDashedRect(page, margin, photoY, contentW, photoH, lighten(primary, 0.5));
+    drawDashedRect(
+      page,
+      margin,
+      photoY + 10,
+      contentW,
+      photoH - 20,
+      lighten(primary, 0.45)
+    );
     const hint = AUSHANG_PHOTO_HINT;
     page.drawText(hint, {
-      x: margin + (contentW - font.widthOfTextAtSize(hint, 11)) / 2,
-      y: photoY + photoH / 2 - 4,
-      size: 11,
+      x: margin + (contentW - font.widthOfTextAtSize(hint, 10)) / 2,
+      y: photoY + photoH / 2 - 3,
+      size: 10,
       font,
       color: muted,
     });
   }
 
   const tag = spacedCaps(AUSHANG_TAGLINE);
-  const tagSize = 8;
-  const tagPadX = 10;
+  const tagSize = 8.5;
+  const tagPadX = 12;
   const tagW = Math.min(
     fontBold.widthOfTextAtSize(tag, tagSize) + tagPadX * 2,
-    contentW * 0.8
+    contentW * 0.72
   );
-  const tagH = 18;
+  const tagH = 20;
   page.drawRectangle({
     x: margin,
     y: photoY,
@@ -373,52 +379,54 @@ export async function generateMeldeAushangPdf(
   });
   page.drawText(tag, {
     x: margin + tagPadX,
-    y: photoY + 5,
+    y: photoY + 6,
     size: tagSize,
     font: fontBold,
     color: white,
   });
 
-  y = photoY - 14;
+  // —— Zwei Spalten dicht unter dem Foto ——
+  const footerH = 56;
+  const colTop = photoY - 14;
+  const colBottom = footerH + 12;
 
-  // —— Zwei Spalten: großer QR | Schritte ——
-  const colGap = 18;
-  const leftW = 248;
+  const colGap = 20;
+  const leftW = 240;
   const rightX = margin + leftW + colGap;
   const rightW = contentW - leftW - colGap;
 
-  const qrBox = 218;
-  const qrFrame = 8;
-  const qrOuter = qrBox + qrFrame * 2;
+  // QR: farbiger Rahmen wie Konzept — so groß wie der Platz erlaubt
+  const qrLabelReserve = 48;
+  const qrOuter = Math.min(leftW, colTop - colBottom - qrLabelReserve);
+  const qrFrame = 13;
+  const qrBox = qrOuter - qrFrame * 2;
   const qrOuterX = margin + (leftW - qrOuter) / 2;
-  const qrOuterY = y - qrOuter;
+  const qrOuterY = colTop - qrOuter;
 
-  // Weißer Außenrand (Quiet Zone) — kein farbiger Rahmen am Code selbst
   page.drawRectangle({
     x: qrOuterX,
     y: qrOuterY,
     width: qrOuter,
     height: qrOuter,
-    color: white,
+    color: primary,
   });
   page.drawRectangle({
-    x: qrOuterX + 1.2,
-    y: qrOuterY + 1.2,
-    width: qrOuter - 2.4,
-    height: qrOuter - 2.4,
-    borderColor: primary,
-    borderWidth: 1.8,
-    color: white,
+    x: qrOuterX + qrFrame,
+    y: qrOuterY + qrFrame,
+    width: qrBox,
+    height: qrBox,
+    color: paper,
   });
 
   if (input.qrPngBytes?.length) {
     try {
       const qr = await pdf.embedPng(input.qrPngBytes);
+      const pad = 6;
       page.drawImage(qr, {
-        x: qrOuterX + qrFrame,
-        y: qrOuterY + qrFrame,
-        width: qrBox,
-        height: qrBox,
+        x: qrOuterX + qrFrame + pad,
+        y: qrOuterY + qrFrame + pad,
+        width: qrBox - pad * 2,
+        height: qrBox - pad * 2,
       });
     } catch {
       /* QR optional */
@@ -444,11 +452,11 @@ export async function generateMeldeAushangPdf(
       y: leftY,
       size: scanSize,
       font: fontBold,
-      color: muted,
+      color: primary,
     });
     leftY -= 11;
   }
-  leftY -= 3;
+  leftY -= 2;
 
   const displayUrl = input.meldeUrl.replace(/^https?:\/\//i, "");
   leftY = drawWrapped(
@@ -457,87 +465,70 @@ export async function generateMeldeAushangPdf(
     margin,
     leftY,
     fontBold,
-    11,
+    11.5,
     primary,
     leftW,
-    1.22
+    1.2
   );
 
-  if (input.objektTitel?.trim()) {
-    leftY -= 6;
-    leftY = drawWrapped(
-      page,
-      input.objektTitel.trim(),
-      margin,
-      leftY,
-      font,
-      9.5,
-      muted,
-      leftW,
-      1.25
-    );
-  }
-
-  // Rechte Spalte: Schritte (größere Typo)
-  let rightY = y;
+  // Rechte Spalte: Schritte (große „01 Scannen“-Zeile)
+  let rightY = colTop - 2;
   const stepsTitle = spacedCaps(AUSHANG_STEPS_TITLE);
   page.drawText(stepsTitle, {
     x: rightX,
     y: rightY,
-    size: 11,
+    size: 10,
     font: fontBold,
     color: primary,
   });
-  const titleW = fontBold.widthOfTextAtSize(stepsTitle, 11);
+  const titleW = fontBold.widthOfTextAtSize(stepsTitle, 10);
   page.drawLine({
     start: { x: rightX + titleW + 10, y: rightY + 3 },
     end: { x: rightX + rightW, y: rightY + 3 },
     thickness: 1.6,
     color: primary,
   });
-  rightY -= 26;
+  rightY -= 32;
+
+  const stepBlockH =
+    (rightY - colBottom - 8) / Math.max(1, AUSHANG_STEPS.length);
 
   AUSHANG_STEPS.forEach((step, i) => {
-    page.drawText(step.n, {
+    const blockTop = rightY;
+    const numLabel = `${step.n}  ${step.title}`;
+    const stepSize = 34;
+    page.drawText(numLabel, {
       x: rightX,
       y: rightY,
-      size: 24,
+      size: stepSize,
       font: serifBold,
       color: primary,
     });
-    page.drawText(step.title, {
-      x: rightX + 40,
-      y: rightY + 5,
-      size: 16,
-      font: fontBold,
-      color: ink,
-    });
-    rightY -= 18;
+    rightY -= stepSize + 4;
     rightY = drawWrapped(
       page,
       step.detail,
-      rightX + 40,
+      rightX,
       rightY,
       font,
-      12.5,
+      12,
       muted,
-      rightW - 40,
+      rightW,
       1.28
     );
-    rightY -= 6;
     if (i < AUSHANG_STEPS.length - 1) {
+      const ruleY = blockTop - stepBlockH + 6;
       page.drawLine({
-        start: { x: rightX + 40, y: rightY + 4 },
-        end: { x: rightX + rightW, y: rightY + 4 },
-        thickness: 0.8,
+        start: { x: rightX, y: ruleY },
+        end: { x: rightX + rightW, y: ruleY },
+        thickness: 0.7,
         color: hairline,
       });
-      rightY -= 10;
+      rightY = ruleY - 14;
     }
   });
 
-  // —— Footer ——
-  const footerH = 88;
+  // —— Kompakter Footer ——
   page.drawRectangle({
     x: 0,
     y: 0,
@@ -548,38 +539,31 @@ export async function generateMeldeAushangPdf(
 
   page.drawText(spacedCaps(AUSHANG_FOOTER_NO_PHONE), {
     x: margin,
-    y: footerH - 22,
-    size: 8.5,
+    y: footerH - 16,
+    size: 8,
     font: fontBold,
-    color: labelAccent,
-  });
-  page.drawText(AUSHANG_FOOTER_CONTACT, {
-    x: margin,
-    y: footerH - 42,
-    size: 15,
-    font: serifBold,
-    color: white,
+    color: accent,
   });
 
   const tel = input.hvTelefon?.trim();
   const mail = input.hvEmail?.trim();
-  const contactBits = [tel ? `Tel. ${tel}` : null, mail || null].filter(
-    Boolean
-  ) as string[];
-  if (contactBits.length) {
-    page.drawText(contactBits.join("  ·  "), {
-      x: margin,
-      y: footerH - 60,
-      size: 11.5,
-      font,
-      color: lighten(primary, 0.62),
-    });
-  }
+  const contactBits = [
+    AUSHANG_FOOTER_CONTACT,
+    tel ? `Tel. ${tel}` : null,
+    mail || null,
+  ].filter(Boolean) as string[];
+  page.drawText(contactBits.join("  ·  "), {
+    x: margin,
+    y: footerH - 32,
+    size: 10.5,
+    font: fontBold,
+    color: white,
+  });
 
   page.drawText(AUSHANG_FOOTER_DATENSCHUTZ, {
     x: margin,
-    y: 16,
-    size: 9,
+    y: 10,
+    size: 8,
     font,
     color: lighten(primary, 0.55),
   });

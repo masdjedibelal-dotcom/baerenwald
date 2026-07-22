@@ -101,6 +101,8 @@ export type KundePortalDetailItem = {
   meldeSituation?: string | null;
   meldeBereich?: string | null;
   meldeZeitraum?: string | null;
+  /** Fachfragen (Frage → Antwort) aus dem Melde-Funnel */
+  meldeFachdetails?: Array<{ label: string; value: string }>;
 };
 
 export function objektPlzOrt(

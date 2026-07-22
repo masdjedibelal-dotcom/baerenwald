@@ -226,7 +226,7 @@ export function PortalShell({
               </nav>
             </aside>
 
-            <main className="portal-shell-main px-4 py-4 pb-[calc(5.5rem+env(safe-area-inset-bottom,0px))] lg:px-6 lg:py-5 lg:pb-8">
+            <main className="portal-shell-main px-4 py-5 pb-[calc(5.5rem+env(safe-area-inset-bottom,0px))] lg:px-6 lg:py-7 lg:pb-8">
               <div className="portal-page-stack">{children}</div>
             </main>
           </div>
@@ -234,31 +234,114 @@ export function PortalShell({
 
         <nav className="portal-shell-mobile-nav lg:hidden" aria-label="Mobile Navigation">
           <div className="portal-shell-mobile-nav-inner">
-            {bottomNav.map((item) => {
-              const active = activeNavId === item.id;
-              return (
+            {createAction && bottomNav.length >= 4 ? (
+              <>
+                {bottomNav.slice(0, 2).map((item) => {
+                  const active = activeNavId === item.id;
+                  return (
+                    <button
+                      key={item.id}
+                      type="button"
+                      onClick={() => onNavChange(item.id)}
+                      aria-current={active ? "page" : undefined}
+                      className={cn(
+                        "portal-shell-mobile-item",
+                        active && "portal-shell-mobile-item--active"
+                      )}
+                    >
+                      <NavGlyph
+                        item={item}
+                        active={active}
+                        surface="nav"
+                        size={17}
+                      />
+                      <span>{item.label}</span>
+                      {item.badge != null && item.badge > 0 ? (
+                        <span className="portal-shell-mobile-badge">
+                          {item.badge}
+                        </span>
+                      ) : null}
+                    </button>
+                  );
+                })}
                 <button
-                  key={item.id}
                   type="button"
-                  onClick={() => onNavChange(item.id)}
-                  aria-current={active ? "page" : undefined}
-                  className={cn(
-                    "portal-shell-mobile-item",
-                    active && "portal-shell-mobile-item--active"
-                  )}
+                  className="portal-shell-mobile-create"
+                  onClick={createAction.onClick}
+                  aria-label={createAction.label}
+                  title={createAction.label}
                 >
-                  <NavGlyph item={item} active={active} surface="nav" size={17} />
-                  <span>{item.label}</span>
-                  {item.badge != null && item.badge > 0 ? (
-                    <span className="portal-shell-mobile-badge">{item.badge}</span>
-                  ) : null}
+                  <span className="portal-shell-mobile-create-btn">
+                    <PortalCreateFabIcon className="h-5 w-5" />
+                  </span>
+                  <span className="portal-shell-mobile-create-label">Neu</span>
                 </button>
-              );
-            })}
+                {bottomNav.slice(2, 4).map((item) => {
+                  const active =
+                    activeNavId === item.id ||
+                    (item.id === "mehr" &&
+                      ["leistungen", "team", "profil"].includes(activeNavId));
+                  return (
+                    <button
+                      key={item.id}
+                      type="button"
+                      onClick={() => onNavChange(item.id)}
+                      aria-current={active ? "page" : undefined}
+                      className={cn(
+                        "portal-shell-mobile-item",
+                        active && "portal-shell-mobile-item--active"
+                      )}
+                    >
+                      <NavGlyph
+                        item={item}
+                        active={active}
+                        surface="nav"
+                        size={17}
+                      />
+                      <span>{item.label}</span>
+                      {item.badge != null && item.badge > 0 ? (
+                        <span className="portal-shell-mobile-badge">
+                          {item.badge}
+                        </span>
+                      ) : null}
+                    </button>
+                  );
+                })}
+              </>
+            ) : (
+              bottomNav.map((item) => {
+                const active = activeNavId === item.id;
+                return (
+                  <button
+                    key={item.id}
+                    type="button"
+                    onClick={() => onNavChange(item.id)}
+                    aria-current={active ? "page" : undefined}
+                    className={cn(
+                      "portal-shell-mobile-item",
+                      active && "portal-shell-mobile-item--active"
+                    )}
+                  >
+                    <NavGlyph
+                      item={item}
+                      active={active}
+                      surface="nav"
+                      size={17}
+                    />
+                    <span>{item.label}</span>
+                    {item.badge != null && item.badge > 0 ? (
+                      <span className="portal-shell-mobile-badge">
+                        {item.badge}
+                      </span>
+                    ) : null}
+                  </button>
+                );
+              })
+            )}
           </div>
         </nav>
 
-        {createAction ? (
+        {createAction && bottomNav.length < 4 ? (
           <button
             type="button"
             className="portal-shell-fab lg:hidden"

@@ -94,10 +94,12 @@ export function countPartnerVorgaengeFilter(
   vorgaenge: PartnerVorgangItem[]
 ): Record<VorgangFilter, number> {
   let offen = 0;
+  let auftrag = 0;
   let erledigt = 0;
   for (const v of vorgaenge) {
     if (vorgangPasstFilter(v.state, "erledigt")) erledigt++;
+    else if (vorgangPasstFilter(v.state, "auftrag")) auftrag++;
     else if (vorgangPasstFilter(v.state, "offen")) offen++;
   }
-  return { offen, erledigt };
+  return { alle: vorgaenge.length, offen, auftrag, erledigt };
 }

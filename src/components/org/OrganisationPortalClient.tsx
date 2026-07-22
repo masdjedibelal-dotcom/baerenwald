@@ -7,11 +7,18 @@ import { OrganisationAktiveAbosPanel } from "@/components/org/OrganisationAktive
 import { OrganisationServicepaketePanel } from "@/components/org/OrganisationServicepaketePanel";
 import { OrganisationSuche } from "@/components/org/OrganisationSuche";
 import { OrganisationAnfrageHub } from "@/components/org/OrganisationAnfrageHub";
+import { OrganisationMehrScreen } from "@/components/org/OrganisationMehrScreen";
 import { OrganisationObjektePanel } from "@/components/org/OrganisationObjektePanel";
 import { OrganisationEinstellungenScreen } from "@/components/org/OrganisationEinstellungenScreen";
 import { OrganisationTeamPanel } from "@/components/org/OrganisationTeamPanel";
 import { OrganisationWhitelabelGate } from "@/components/org/OrganisationWhitelabelGate";
 import { OrganisationVorgaengeSection } from "@/components/org/OrganisationVorgaengeSection";
+import { OnboardingTour } from "@/components/onboarding/OnboardingTour";
+import "@/components/onboarding/onboarding.css";
+import { PortalLegalFooter } from "@/components/shared/PortalLegalFooter";
+import { PortalShell } from "@/components/shared/PortalShell";
+import { ORG_ONBOARDING_SLIDES } from "@/lib/onboarding/org-slides";
+import { isOnboardingCompleted } from "@/lib/onboarding/storage";
 import {
   orgWhitelabelGateCanComplete,
   orgWhitelabelGateVisible,
@@ -40,9 +47,11 @@ import {
   resolveLeadPortalFlowStatus,
 } from "@/lib/portal2/hv-dashboard";
 import { portalCreateLabel } from "@/lib/portal2/create";
-import { buildPortalShellNav } from "@/lib/portal2/nav-items";
-import { PortalShell } from "@/components/shared/PortalShell";
-import { useMemo, useState } from "react";
+import {
+  buildPortalHvMobileNav,
+  buildPortalShellNav,
+} from "@/lib/portal2/nav-items";
+import { useEffect, useMemo, useState } from "react";
 
 type OrgSection =
   | "uebersicht"
@@ -50,7 +59,8 @@ type OrgSection =
   | "objekte"
   | "leistungen"
   | "team"
-  | "profil";
+  | "profil"
+  | "mehr";
 
 type Props = {
   kunde: OrganisationKunde;
@@ -114,7 +124,8 @@ function portalSectionFromParam(raw: string | null): OrgSection | null {
     raw === "objekte" ||
     raw === "profil" ||
     raw === "leistungen" ||
-    raw === "team"
+    raw === "team" ||
+    raw === "mehr"
   ) {
     return raw;
   }
@@ -166,6 +177,13 @@ export function OrganisationPortalClient({
 
   const [section, setSection] = useState<OrgSection>(initialSection ?? "uebersicht");
   const [hubOpen, setHubOpen] = useState(false);
+  const [onboardingOpen, setOnboardingOpen] = useState(false);
+
+  useEffect(() => {
+    if (!isOnboardingCompleted("org")) {
+      setOnboardingOpen(true);
+    }
+  }, []);
 
   const displayName =
     kunde.org_anzeigename?.trim() || kunde.name?.trim() || "Hausverwaltung";
@@ -313,6 +331,9 @@ export function OrganisationPortalClient({
         nav={buildPortalShellNav("kunde_hv", "org", {
           liste: vorgaengeBadgeCount,
         })}
+        mobileNav={buildPortalHvMobileNav({
+          liste: vorgaengeBadgeCount,
+        })}
         footer={displayName}
         createAction={{
           label: portalCreateLabel("kunde_hv"),
@@ -404,6 +425,12 @@ export function OrganisationPortalClient({
             />
           ) : null}
 
+          {section === "mehr" ? (
+            <OrganisationMehrScreen
+              onOpen={(id) => switchSection(id as OrgSection)}
+            />
+          ) : null}
+
           {section === "leistungen" ? (
             <div className="space-y-8">
               <OrganisationServicepaketePanel onRequested={refresh} />
@@ -421,7 +448,6 @@ export function OrganisationPortalClient({
           {section === "profil" ? (
             <OrganisationEinstellungenScreen
               kunde={kunde}
-              objekte={objekte}
               objektCount={objekte.length}
               onSaved={refresh}
               isAdmin={mitgliedRolle === "admin"}
@@ -444,6 +470,19 @@ export function OrganisationPortalClient({
           }}
         />
       ) : null}
+
+      {onboardingOpen ? (
+        <OnboardingTour
+          open={onboardingOpen}
+          audience="org"
+          slides={ORG_ONBOARDING_SLIDES}
+          onClose={() => setOnboardingOpen(false)}
+        />
+      ) : null}
+
+      <div className="mx-auto hidden max-w-[1200px] px-6 lg:block">
+        <PortalLegalFooter variant="org" className="mt-8" />
+      </div>
     </>
   );
 }

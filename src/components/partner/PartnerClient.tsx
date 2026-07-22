@@ -38,11 +38,17 @@ import { countPartnerVorgaengeFilter } from "@/lib/partner/build-partner-vorgaen
 import {
   buildVorgangCardRows,
   partnerAngebotStatusPillClass,
+  partnerStatusChipStyle,
   type PartnerCardRow,
 } from "@/lib/partner/partner-list-mappers";
+import {
+  PortalListeEyebrow,
+  PortalListeFilterChip,
+  PortalListeTitle,
+} from "@/components/shared/PortalListeChrome";
 import type { VorgangFilter } from "@/lib/partner/vorgang-state";
+import { VORGANG_FILTER_ORDER } from "@/lib/partner/vorgang-state";
 import { buildPortalShellNav } from "@/lib/portal2/nav-items";
-import { cn } from "@/lib/utils";
 import { partnerSectionListPath, partnerVorgangPortalPath } from "@/lib/partner/partner-site-url";
 
 type PartnerSection =
@@ -54,7 +60,9 @@ type PartnerSection =
 type OverviewTabId = "vorgaenge";
 
 const VORGANG_FILTER_LABELS: Record<VorgangFilter, string> = {
+  alle: "Alle",
   offen: "Offen",
+  auftrag: "Auftrag",
   erledigt: "Erledigt",
 };
 
@@ -95,23 +103,15 @@ function PartnerVorgangListFilterBar({
 }) {
   return (
     <div className="flex flex-wrap gap-2 py-3.5">
-      {(["offen", "erledigt"] as const).map((id) => (
-        <button
+      {VORGANG_FILTER_ORDER.map((id) => (
+        <PortalListeFilterChip
           key={id}
-          type="button"
+          active={filter === id}
           onClick={() => onFilterChange(id)}
-          className={cn(
-            "rounded-full px-3 py-1.5 text-[12.5px] font-semibold",
-            filter === id
-              ? "border border-transparent bg-[#1A3D2B] text-white"
-              : "border border-border-default bg-white text-text-secondary"
-          )}
+          count={counts[id]}
         >
           {VORGANG_FILTER_LABELS[id]}
-          <span className={cn("ml-1.5", filter === id ? "text-white/70" : "text-text-tertiary")}>
-            ({counts[id]})
-          </span>
-        </button>
+        </PortalListeFilterChip>
       ))}
     </div>
   );
@@ -174,13 +174,13 @@ export function PartnerClient({
   const [listPage, setListPage] = useState(1);
 
   const [vorgangListFilter, setVorgangListFilter] =
-    useState<VorgangFilter>("offen");
+    useState<VorgangFilter>("alle");
 
   /** Nur echte To-dos (neu, geändert, Bautagebuch, Unterlagen) — nicht „Durchführung“. */
   const vorgaengeTodoCount = aufgaben.length;
 
   const vorgangFilterEffective: VorgangFilter =
-    section === "vorgaenge" ? vorgangListFilter : "offen";
+    section === "vorgaenge" ? vorgangListFilter : "alle";
 
   const sectionCardRows = useMemo((): PartnerCardRow[] => {
     if (section === "vorgaenge") {
@@ -227,7 +227,11 @@ export function PartnerClient({
   }, [section, sectionCardRows, selectedId]);
 
   const overviewCardRows = useMemo((): PartnerCardRow[] => {
-    return buildVorgangCardRows(vorgaenge, "offen");
+    // Dashboard „Zuletzt“: aktive Vorgänge (Offen + Auftrag), ohne Erledigt
+    return buildVorgangCardRows(
+      vorgaenge.filter((v) => v.state !== "erledigt"),
+      "alle"
+    );
   }, [vorgaenge]);
 
   useEffect(() => {
@@ -265,10 +269,13 @@ export function PartnerClient({
 
     if (normalized === "vorgaenge") {
       const filterRaw = searchParams.get("filter")?.trim();
-      if (filterRaw === "erledigt") {
-        setVorgangListFilter("erledigt");
-      } else if (filterRaw === "offen") {
-        setVorgangListFilter("offen");
+      if (
+        filterRaw === "erledigt" ||
+        filterRaw === "offen" ||
+        filterRaw === "auftrag" ||
+        filterRaw === "alle"
+      ) {
+        setVorgangListFilter(filterRaw);
       }
 
       const rawId = searchParams.get("id")?.trim() || searchParams.get("auftrag")?.trim();
@@ -321,7 +328,7 @@ export function PartnerClient({
   ) {
     setSection(target);
     setListPage(1);
-    setVorgangListFilter("offen");
+    setVorgangListFilter("alle");
     if (selectedId) {
       const id = selectedId.replace(/^auftrag:/, "");
       setSelectedId(id);
@@ -348,16 +355,16 @@ export function PartnerClient({
     if (!vorgangId) return;
     setSection("vorgaenge");
     setListPage(1);
-    setVorgangListFilter("offen");
+    setVorgangListFilter("auftrag");
     setSelectedId(null);
     setMobileDetailOpen(false);
-    router.replace(partnerSectionListPath("vorgaenge"));
+    router.replace(`/partner?section=vorgaenge&filter=auftrag`);
     router.refresh();
   }
 
-  function switchSection(id: PartnerSection) {
+  function switchSection(id: PartnerSection, filter: VorgangFilter = "alle") {
     setListPage(1);
-    setVorgangListFilter("offen");
+    setVorgangListFilter(filter);
     setMobileDetailOpen(false);
     if (id !== "gpt") setGptOpen(false);
     if (id === "uebersicht" || id === "gpt" || id === "profil" || id === "planer") {
@@ -369,11 +376,16 @@ export function PartnerClient({
     if (id === "vorgaenge") {
       ignoreUrlDetailRef.current = true;
       setSelectedId(null);
-      router.replace(partnerSectionListPath("vorgaenge"));
+      router.replace(
+        filter === "alle"
+          ? partnerSectionListPath("vorgaenge")
+          : `/partner?section=vorgaenge&filter=${filter}`
+      );
     }
   }
 
   function openFromOverview(_tab: OverviewTabId, id: string) {
+    setVorgangListFilter("alle");
     setSelectedId(id);
     setSection("vorgaenge");
     setMobileDetailOpen(true);
@@ -401,7 +413,11 @@ export function PartnerClient({
   const filterEmptyMessage =
     vorgangFilterEffective === "offen"
       ? "Keine offenen Vorgänge."
-      : "Keine erledigten Vorgänge.";
+      : vorgangFilterEffective === "auftrag"
+        ? "Keine Aufträge in Ausführung."
+        : vorgangFilterEffective === "erledigt"
+          ? "Keine erledigten Vorgänge."
+          : "Keine Vorgänge.";
 
   function renderSectionCard(row: PartnerCardRow) {
     return (
@@ -415,6 +431,7 @@ export function PartnerClient({
         subtitle={partnerListSubtitle(row)}
         statusLabel={row.statusLabel}
         statusPillClass={partnerAngebotStatusPillClass(row.statusPillKey)}
+        statusPillStyle={partnerStatusChipStyle(row.statusPillKey)}
         meta={[]}
         selected={false}
         onClick={() => selectRow(row.id)}
@@ -449,12 +466,8 @@ export function PartnerClient({
   const listScreen = (
     <div className="flex min-w-0 flex-col">
       <div className="px-0.5 pb-1">
-        <p className="mb-1 text-[12px] font-semibold uppercase tracking-wide text-text-tertiary">
-          Handwerker
-        </p>
-        <h1 className="text-[25px] font-bold text-text-primary">
-          Anfragen &amp; Aufträge
-        </h1>
+        <PortalListeEyebrow>Handwerker</PortalListeEyebrow>
+        <PortalListeTitle>Anfragen &amp; Aufträge</PortalListeTitle>
       </div>
       <PartnerVorgangListFilterBar
         filter={vorgangListFilter}
@@ -576,14 +589,15 @@ export function PartnerClient({
                 ).length,
                 erledigt: vorgaenge.filter((v) => v.state === "erledigt").length,
               }}
-              onOpenAll={() => switchSection("vorgaenge")}
+              onOpenAll={() => switchSection("vorgaenge", "alle")}
               onKpiClick={(id) => {
                 if (id === "erledigt") {
-                  setVorgangListFilter("erledigt");
+                  switchSection("vorgaenge", "erledigt");
+                } else if (id === "inAusfuehrung") {
+                  switchSection("vorgaenge", "auftrag");
                 } else {
-                  setVorgangListFilter("offen");
+                  switchSection("vorgaenge", "offen");
                 }
-                switchSection("vorgaenge");
               }}
               onOpenItem={(id) => openFromOverview("vorgaenge", id)}
               recent={overviewCardRows.slice(0, 4).map((row) => {

@@ -73,7 +73,7 @@ export function PortalScreenDashboard({
 
   if (mobile) {
     return (
-      <div className="portal-dash -mx-4 -mt-4">
+      <div className="portal-dash -mx-4 -mt-5">
         <div className="portal-dash-hero-mobile">
           <div className="portal-dash-hero-media">
             {heroImageUrl ? (
@@ -182,7 +182,7 @@ export function PortalScreenDashboard({
   }
 
   return (
-    <div className="-mx-4 -mt-4 lg:-mx-6 lg:-mt-5">
+    <div className="-mx-4 -mt-5 lg:-mx-6 lg:-mt-7">
       <div className="relative w-full overflow-hidden" style={{ height: 200 }}>
         {heroImageUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
@@ -237,7 +237,7 @@ export function PortalScreenDashboard({
 
       <div
         className="grid grid-cols-3"
-        style={{ gap: 12, padding: "16px 24px" }}
+        style={{ gap: 12, padding: "28px 24px 16px" }}
       >
         {tiles.map((tile) => {
           const inner = (

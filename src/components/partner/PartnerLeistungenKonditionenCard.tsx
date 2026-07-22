@@ -71,6 +71,11 @@ type Props = {
   onHwChange?: (id: string, value: string) => void;
   onHwNotizChange?: (id: string, value: string) => void;
   gesamtLabel?: string;
+  /**
+   * `boxed` = eigener Rahmen + Ampel-Legende (Legacy).
+   * `plain` = Mock-Zeilen ohne äußeren Rahmen (Card-Parent liefert Chrome).
+   */
+  variant?: "boxed" | "plain";
 };
 
 export function PartnerLeistungenKonditionenCard({
@@ -81,6 +86,7 @@ export function PartnerLeistungenKonditionenCard({
   onHwChange,
   onHwNotizChange,
   gesamtLabel = "Vergütung Brutto inkl. MwSt.",
+  variant = "boxed",
 }: Props) {
   const [editId, setEditId] = useState<string | null>(null);
   const [draftPreis, setDraftPreis] = useState("");
@@ -131,33 +137,44 @@ export function PartnerLeistungenKonditionenCard({
     setDraftNotiz("");
   }
 
+  const plain = variant === "plain";
+
   return (
     <>
-      <div className="portal-text-body overflow-hidden rounded-xl border border-border-light bg-muted/20">
-        <div
-          className={cn(
-            "hidden gap-3 border-b border-border-light bg-muted/30 px-4 py-2.5 text-xs font-semibold uppercase tracking-wide text-text-tertiary sm:grid",
-            GRID_COLS
-          )}
-        >
-          <span>Leistung</span>
-          <span className="text-right">{PARTNER_LEISTUNGEN_ANGEBOTSPREIS_LABEL}</span>
-        </div>
+      <div
+        className={cn(
+          "portal-text-body overflow-hidden",
+          plain ? "" : "rounded-xl border border-border-light bg-muted/20"
+        )}
+      >
+        {!plain ? (
+          <>
+            <div
+              className={cn(
+                "hidden gap-3 border-b border-border-light bg-muted/30 px-4 py-2.5 text-xs font-semibold uppercase tracking-wide text-text-tertiary sm:grid",
+                GRID_COLS
+              )}
+            >
+              <span>Leistung</span>
+              <span className="text-right">{PARTNER_LEISTUNGEN_ANGEBOTSPREIS_LABEL}</span>
+            </div>
 
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 border-b border-border-light px-4 py-2 text-xs text-text-tertiary">
-          <span className="inline-flex items-center gap-1.5">
-            <LeistungStatusDot status="gruen" className="mt-0.5" />
-            Angenommen
-          </span>
-          <span className="inline-flex items-center gap-1.5">
-            <LeistungStatusDot status="gelb" className="mt-0.5" />
-            Aktion nötig
-          </span>
-          <span className="inline-flex items-center gap-1.5">
-            <LeistungStatusDot status="rot" className="mt-0.5" />
-            Entfernt
-          </span>
-        </div>
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 border-b border-border-light px-4 py-2 text-xs text-text-tertiary">
+              <span className="inline-flex items-center gap-1.5">
+                <LeistungStatusDot status="gruen" className="mt-0.5" />
+                Angenommen
+              </span>
+              <span className="inline-flex items-center gap-1.5">
+                <LeistungStatusDot status="gelb" className="mt-0.5" />
+                Aktion nötig
+              </span>
+              <span className="inline-flex items-center gap-1.5">
+                <LeistungStatusDot status="rot" className="mt-0.5" />
+                Entfernt
+              </span>
+            </div>
+          </>
+        ) : null}
 
         <ul>
           {zeilen.map((z) => {
@@ -175,31 +192,57 @@ export function PartnerLeistungenKonditionenCard({
               mode,
               hwValue: hwValues?.[z.id],
             });
+            const metaLine =
+              z.meta?.trim() ||
+              (z.beschreibung ? stripHtmlToPlainText(z.beschreibung) : "");
 
             return (
               <li
                 key={z.id}
                 className={cn(
-                  "border-b border-border-light px-4 py-3.5 last:border-b-0",
-                  isEntfernt && "bg-red-50/70",
-                  geaendert && "bg-amber-50/60",
-                  z.readonly && !isEntfernt && "bg-muted/25"
+                  "last:border-b-0",
+                  plain
+                    ? "border-b border-black/[0.05] py-3 first:pt-0"
+                    : cn(
+                        "border-b border-border-light px-4 py-3.5",
+                        isEntfernt && "bg-red-50/70",
+                        geaendert && "bg-amber-50/60",
+                        z.readonly && !isEntfernt && "bg-muted/25"
+                      )
                 )}
               >
-                <div className={cn("grid gap-3 sm:items-start", GRID_COLS)}>
+                <div
+                  className={cn(
+                    "grid gap-3 sm:items-start",
+                    plain ? "grid-cols-[1fr_auto]" : GRID_COLS
+                  )}
+                >
                   <div className="min-w-0">
-                    <div className="flex items-start gap-2">
-                      <LeistungStatusDot status={ampel} className="mt-1.5" />
+                    <div className={cn("flex items-start gap-2", plain && "gap-0")}>
+                      {!plain ? (
+                        <LeistungStatusDot status={ampel} className="mt-1.5" />
+                      ) : null}
                       <div className="min-w-0 flex-1">
                         <p
                           className={cn(
-                            "font-medium text-text-primary",
+                            "font-semibold text-text-primary",
+                            plain && "text-[13.5px]",
                             isEntfernt && "line-through text-text-secondary"
                           )}
                         >
                           {title}
                         </p>
-                        {z.beschreibung ? (
+                        {metaLine ? (
+                          <p
+                            className={cn(
+                              "mt-0.5 text-text-secondary",
+                              plain ? "text-[12px]" : "portal-text-meta"
+                            )}
+                          >
+                            {metaLine}
+                          </p>
+                        ) : null}
+                        {!plain && z.beschreibung && z.meta ? (
                           <p className="portal-text-meta mt-0.5 text-text-secondary">
                             {stripHtmlToPlainText(z.beschreibung)}
                           </p>
@@ -214,34 +257,47 @@ export function PartnerLeistungenKonditionenCard({
                   </div>
 
                   <div className="sm:text-right">
-                    <p className="text-sm text-text-tertiary sm:hidden">
-                      {PARTNER_LEISTUNGEN_ANGEBOTSPREIS_LABEL}
-                    </p>
+                    {!plain ? (
+                      <p className="text-sm text-text-tertiary sm:hidden">
+                        {PARTNER_LEISTUNGEN_ANGEBOTSPREIS_LABEL}
+                      </p>
+                    ) : null}
                     <p
                       className={cn(
-                        "mt-0.5 text-lg font-bold tabular-nums sm:text-right",
-                        preisFolgt
-                          ? "text-sm font-normal italic text-text-tertiary"
-                          : isEntfernt
-                            ? "text-text-tertiary line-through"
-                            : geaendert
-                              ? "text-amber-800"
-                              : "text-text-primary"
+                        "tabular-nums sm:text-right",
+                        plain
+                          ? "text-[13.5px] font-semibold text-text-primary"
+                          : cn(
+                              "mt-0.5 text-lg font-bold",
+                              preisFolgt
+                                ? "text-sm font-normal italic text-text-tertiary"
+                                : isEntfernt
+                                  ? "text-text-tertiary line-through"
+                                  : geaendert
+                                    ? "text-amber-800"
+                                    : "text-text-primary"
+                            )
                       )}
                     >
                       {preis}
                     </p>
-                    {z.vorherNetto != null &&
+                    {!plain &&
+                    z.vorherNetto != null &&
                     z.vorherNetto > 0 &&
                     preis !== "Preis folgt" &&
-                    Math.abs(z.vorherNetto - (mode === "edit"
-                      ? Number((hwValues?.[z.id] ?? "").replace(",", ".")) || z.vorschlagNetto || 0
-                      : z.hwNetto ?? z.vorschlagNetto ?? 0)) > 0.009 ? (
+                    Math.abs(
+                      z.vorherNetto -
+                        (mode === "edit"
+                          ? Number((hwValues?.[z.id] ?? "").replace(",", ".")) ||
+                            z.vorschlagNetto ||
+                            0
+                          : z.hwNetto ?? z.vorschlagNetto ?? 0)
+                    ) > 0.009 ? (
                       <p className="mt-0.5 text-sm tabular-nums text-text-tertiary line-through sm:text-right">
                         vorher {fmtPartnerEuro(z.vorherNetto)}
                       </p>
                     ) : null}
-                    {geaendert && z.zeilenBadge !== "geaendert" ? (
+                    {!plain && geaendert && z.zeilenBadge !== "geaendert" ? (
                       <span className="mt-0.5 block text-xs font-medium text-amber-700 sm:text-right">
                         Geändert
                       </span>
@@ -270,23 +326,58 @@ export function PartnerLeistungenKonditionenCard({
         </ul>
 
         {sumNetto > 0 ? (
-          <div className="border-t border-border-default bg-muted/40 px-4 py-3.5">
-            <div className="flex items-center justify-between gap-4 text-sm">
-              <span className="text-text-tertiary">Summe netto</span>
-              <span className="font-medium tabular-nums text-text-primary">
-                {fmtPartnerEuro(sumNetto)}
-              </span>
-            </div>
-            <div className="mt-1 flex items-center justify-between gap-4 text-sm">
-              <span className="text-text-tertiary">MwSt. ({PARTNER_KONDITION_MWST} %)</span>
-              <span className="tabular-nums text-text-secondary">{fmtPartnerEuro(sumMwst)}</span>
-            </div>
-            <div className="mt-2 flex items-center justify-between gap-4 border-t border-border-light pt-2">
-              <span className="font-semibold text-text-primary">{gesamtLabel}</span>
-              <span className="text-lg font-bold tabular-nums text-text-primary">
-                {fmtPartnerEuro(sumBrutto)}
-              </span>
-            </div>
+          <div
+            className={cn(
+              plain
+                ? "mt-2 space-y-1 border-t border-black/[0.05] pt-3 text-right"
+                : "border-t border-border-default bg-muted/40 px-4 py-3.5"
+            )}
+          >
+            {plain ? (
+              <>
+                <div className="text-[12.5px] text-text-secondary">
+                  Netto{" "}
+                  <span className="ml-3 tabular-nums text-text-primary">
+                    {fmtPartnerEuro(sumNetto)}
+                  </span>
+                </div>
+                <div className="text-[12.5px] text-text-secondary">
+                  MwSt. {PARTNER_KONDITION_MWST}%{" "}
+                  <span className="ml-3 tabular-nums">
+                    {fmtPartnerEuro(sumMwst)}
+                  </span>
+                </div>
+                <div className="pt-1 text-[13.5px] font-bold text-text-primary">
+                  Gesamt{" "}
+                  <span className="ml-3 tabular-nums">
+                    {fmtPartnerEuro(sumBrutto)}
+                  </span>
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="flex items-center justify-between gap-4 text-sm">
+                  <span className="text-text-tertiary">Summe netto</span>
+                  <span className="font-medium tabular-nums text-text-primary">
+                    {fmtPartnerEuro(sumNetto)}
+                  </span>
+                </div>
+                <div className="mt-1 flex items-center justify-between gap-4 text-sm">
+                  <span className="text-text-tertiary">
+                    MwSt. ({PARTNER_KONDITION_MWST} %)
+                  </span>
+                  <span className="tabular-nums text-text-secondary">
+                    {fmtPartnerEuro(sumMwst)}
+                  </span>
+                </div>
+                <div className="mt-2 flex items-center justify-between gap-4 border-t border-border-light pt-2">
+                  <span className="font-semibold text-text-primary">{gesamtLabel}</span>
+                  <span className="text-lg font-bold tabular-nums text-text-primary">
+                    {fmtPartnerEuro(sumBrutto)}
+                  </span>
+                </div>
+              </>
+            )}
           </div>
         ) : null}
       </div>

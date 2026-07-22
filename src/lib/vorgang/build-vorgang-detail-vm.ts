@@ -5,8 +5,13 @@
 import type { PortalAngebotPositionDisplay } from "@/lib/portal/portal-angebot-display";
 import type { PortalAuftragPositionDisplay } from "@/lib/portal/kunde-auftrag-aenderung";
 import type { PartnerKonditionZeile } from "@/lib/partner/partner-konditionen";
-import type { PortalAnfrageLeadSource } from "@/lib/portal/portal-anfrage-display";
+import {
+  formatAnfrageBereiche,
+  type PortalAnfrageLeadSource,
+} from "@/lib/portal/portal-anfrage-display";
+import { labelSituation } from "@/lib/lead-funnel-labels";
 import type { PortalObjekt } from "@/lib/portal/portal-objekt";
+import { normalizeFunnelDaten } from "@/lib/lead-funnel-daten";
 import {
   kostentraegerLabel,
   type VorgangDetailAusfuehrung,
@@ -106,6 +111,7 @@ export type BuildKundeHvVmInput = {
   meldeSituation?: string | null;
   meldeBereich?: string | null;
   meldeZeitraum?: string | null;
+  meldeFachdetails?: Array<{ label: string; value: string }>;
   angebotPositionen?: PortalAngebotPositionDisplay[];
   auftragPositionen?: PortalAuftragPositionDisplay[];
   gesamtBrutto?: number | null;
@@ -176,6 +182,7 @@ export function buildKundeHvVorgangDetailVm(
     situationLabel: input.meldeSituation ?? null,
     bereichLabel: input.meldeBereich ?? null,
     zeitraumLabel: input.meldeZeitraum ?? null,
+    fachdetailRows: input.meldeFachdetails ?? [],
   };
 
   const ausfuehrung: VorgangDetailAusfuehrung = {
@@ -229,6 +236,14 @@ export function buildPartnerVorgangDetailVm(
   input: BuildPartnerVmInput
 ): VorgangDetailVM {
   const lead = input.lead;
+  const plz = lead?.objekt?.plz ?? lead?.plz ?? input.plz ?? null;
+  const ort = lead?.objekt?.ort ?? lead?.ort ?? input.ort ?? null;
+  const strasse =
+    lead?.objekt?.strasse?.trim() ||
+    [lead?.strasse, lead?.hausnummer].filter(Boolean).join(" ").trim() ||
+    null;
+  const plzOrt =
+    [plz, ort].filter(Boolean).join(" ").trim() || null;
   const adresse =
     formatAdresse(lead?.objekt, {
       strasse: lead?.strasse,
@@ -245,6 +260,16 @@ export function buildPartnerVorgangDetailVm(
     0
   );
 
+  const norm = lead
+    ? normalizeFunnelDaten(lead.funnel_daten, lead.bereiche)
+    : null;
+  const situationSlug = norm?.situation || lead?.situation || undefined;
+  const situationLabel =
+    situationSlug && labelSituation(situationSlug) !== "—"
+      ? labelSituation(situationSlug)
+      : null;
+  const bereichLabel = lead ? formatAnfrageBereiche(lead) ?? null : null;
+
   return {
     role: "partner",
     kopf: {
@@ -257,12 +282,17 @@ export function buildPartnerVorgangDetailVm(
     objektMelder: {
       objektTitel: lead?.objekt?.name ?? null,
       adresseZeile: adresse,
+      adresseStrasse: strasse,
+      plzOrt,
       einheit: lead?.melder_einheit ?? null,
       melderName: lead?.melder_name ?? lead?.kontakt_name ?? null,
       melderTelefon: lead?.melder_telefon ?? null,
       melderEmail: lead?.melder_email ?? null,
       beschreibung: lead?.kontakt_nachricht ?? null,
       fotos: input.fotos ?? [],
+      situationLabel,
+      bereichLabel,
+      zeitraumLabel: input.zeitraum?.trim() || null,
     },
     ausfuehrung: {
       gewerk: input.gewerkName ?? null,

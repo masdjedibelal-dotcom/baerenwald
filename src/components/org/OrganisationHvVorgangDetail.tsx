@@ -7,6 +7,7 @@ import { buildKundeHvVorgangDetailVm } from "@/lib/vorgang/build-vorgang-detail-
 import { BautagebuchAccordionList } from "@/components/shared/BautagebuchAccordionList";
 import { DokumenteTabelle } from "@/components/shared/DokumenteTabelle";
 import { PortalFlowStatusChip } from "@/components/shared/PortalFlowStatusChip";
+import { acceptKundeAngebot } from "@/app/actions/portal-angebot";
 import {
   HV_DEFAULT_SCHWELLE_EUR,
   HV_DETAIL_COPY,
@@ -24,7 +25,7 @@ import {
 import { portalFlowTimeline } from "@/lib/portal2/status-mapping";
 import { PORTAL_STATUS, type PortalMockStatusId } from "@/lib/portal2/status";
 import { PORTAL_C } from "@/lib/portal2/tokens";
-import { orgPortalToast } from "@/lib/shared/portal-toast";
+import { kundePortalToast, orgPortalToast } from "@/lib/shared/portal-toast";
 import { track } from "@/lib/analytics";
 import type { PortalBautagebuchEntry } from "@/lib/portal/portal-detail-item";
 import type { PortalAngebotPositionDisplay } from "@/lib/portal/portal-angebot-display";
@@ -70,6 +71,9 @@ export type OrganisationHvVorgangDetailProps = {
   /** org_freigabe_status für Angebots-Freigabe */
   orgFreigabeStatus?: string | null;
   hvMeldungStatus?: string | null;
+  /** Gesendetes Angebot — Annahme legt Auftrag an */
+  angebotId?: string | null;
+  canAcceptAngebot?: boolean;
   /** Einheitliche Detail-Blöcke */
   melderEinheit?: string | null;
   melderTelefon?: string | null;
@@ -84,6 +88,7 @@ export type OrganisationHvVorgangDetailProps = {
   meldeSituation?: string | null;
   meldeBereich?: string | null;
   meldeZeitraum?: string | null;
+  meldeFachdetails?: Array<{ label: string; value: string }>;
   detailRole?: "hv" | "kunde";
 };
 
@@ -247,6 +252,8 @@ export function OrganisationHvVorgangDetail({
   onUpdated,
   orgFreigabeStatus,
   hvMeldungStatus,
+  angebotId,
+  canAcceptAngebot = false,
   melderEinheit,
   melderTelefon,
   melderEmail,
@@ -260,10 +267,12 @@ export function OrganisationHvVorgangDetail({
   meldeSituation,
   meldeBereich,
   meldeZeitraum,
+  meldeFachdetails,
   detailRole = "hv",
 }: OrganisationHvVorgangDetailProps) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [accepted, setAccepted] = useState(false);
 
   const timeline = portalFlowTimeline(flowStatus);
   const actionKind = hvRoleActionKind(flowStatus, { privatkunde });
@@ -289,6 +298,7 @@ export function OrganisationHvVorgangDetail({
         meldeSituation,
         meldeBereich,
         meldeZeitraum,
+        meldeFachdetails,
         angebotPositionen: positionenBrutto,
         gesamtBrutto:
           typeof gesamtBrutto === "number"
@@ -329,6 +339,7 @@ export function OrganisationHvVorgangDetail({
       meldeSituation,
       meldeBereich,
       meldeZeitraum,
+      meldeFachdetails,
       positionenBrutto,
       gesamtBrutto,
       empfohlen?.betrag,
@@ -417,15 +428,34 @@ export function OrganisationHvVorgangDetail({
     }
   };
 
+  const acceptAngebotAct = async () => {
+    const id = (angebotId ?? empfohlen?.id ?? "").trim();
+    if (!id) {
+      setError("Kein Angebot zum Annehmen hinterlegt.");
+      return;
+    }
+    setBusy(true);
+    setError(null);
+    try {
+      const res = await acceptKundeAngebot(id);
+      if (!res.ok) {
+        setError(res.error);
+        return;
+      }
+      setAccepted(true);
+      kundePortalToast.angebotAngenommen();
+      onUpdated();
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const showAcceptCta = Boolean(canAcceptAngebot && !accepted);
+
   const rolePanel = (() => {
     if (actionKind === "privat_auto") {
-      return (
-        <DetailCard title="Status">
-          <p className="text-[13px]" style={{ color: PORTAL_C.sub }}>
-            {HV_DETAIL_COPY.privatAuto}
-          </p>
-        </DetailCard>
-      );
+      // Privatkunde: kein Freigabe-/Auftraggeber-Hinweis
+      return null;
     }
     if (actionKind === "freigabe") {
       // CTAs sitzen im Header — keine Card hier.
@@ -436,9 +466,7 @@ export function OrganisationHvVorgangDetail({
         <div className="flex flex-col gap-3.5">
           <DetailCard title={HV_DETAIL_COPY.angeboteVergleichen}>
             <p className="mb-3 text-[12.5px]" style={{ color: PORTAL_C.sub }}>
-              {offers.length > 0
-                ? `${offers.length} Handwerker haben ein Angebot abgegeben. Bärenwald empfiehlt das markierte Angebot.`
-                : HV_DETAIL_COPY.angeboteVergleichNote}
+              {HV_DETAIL_COPY.angeboteVergleichNote}
             </p>
             {empfohlen ? (
               <div
@@ -474,9 +502,19 @@ export function OrganisationHvVorgangDetail({
                     fontFamily: "var(--p2-font-head, " + PORTAL_C.head + ")",
                   }}
                 >
-                  {moneyEur(empfohlen.betrag)}
+                  {moneyEur(empfohlen.betrag || sum.brutto)}
                 </p>
               </div>
+            ) : sum.brutto > 0 ? (
+              <p
+                className="text-xl font-extrabold"
+                style={{
+                  color: PORTAL_C.ink,
+                  fontFamily: "var(--p2-font-head, " + PORTAL_C.head + ")",
+                }}
+              >
+                {moneyEur(sum.brutto)}
+              </p>
             ) : (
               <p className="text-[12.5px]" style={{ color: PORTAL_C.faint }}>
                 Noch kein Angebot hinterlegt.
@@ -499,11 +537,32 @@ export function OrganisationHvVorgangDetail({
               >
                 {HV_DETAIL_COPY.unterSchwelle(moneyEur(schwelleEur))}
               </div>
-            ) : (
+            ) : null}
+            {showAcceptCta ? (
+              <div className="mt-3 space-y-2">
+                <p className="text-[12px]" style={{ color: PORTAL_C.sub }}>
+                  {HV_DETAIL_COPY.angebotAnnehmenNote}
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  <ActionBtn
+                    label={HV_DETAIL_COPY.empfohlenAnnehmen}
+                    disabled={busy}
+                    onClick={() => void acceptAngebotAct()}
+                  />
+                </div>
+              </div>
+            ) : accepted ? (
+              <p
+                className="mt-3 text-[12.5px] font-semibold"
+                style={{ color: PORTAL_C.primary }}
+              >
+                Angebot angenommen — Auftrag wird vorbereitet.
+              </p>
+            ) : orgFreigabeStatus === "ausstehend" ? (
               <div className="mt-3 flex flex-wrap gap-2">
                 <ActionBtn
-                  label={HV_DETAIL_COPY.empfohlenAnnehmen}
-                  disabled={busy || orgFreigabeStatus !== "ausstehend"}
+                  label="Freigabe erteilen"
+                  disabled={busy}
                   onClick={() => void freigabeAct("freigegeben")}
                 />
                 <ActionBtn
@@ -513,12 +572,13 @@ export function OrganisationHvVorgangDetail({
                   onClick={() => void freigabeAct("abgelehnt")}
                 />
               </div>
-            )}
+            ) : null}
           </DetailCard>
         </div>
       );
     }
     if (actionKind === "auftrag") {
+      if (privatkunde || detailRole === "kunde") return null;
       return (
         <DetailCard title={HV_DETAIL_COPY.inAusfuehrung}>
           <p className="text-[13px] leading-relaxed" style={{ color: PORTAL_C.sub }}>
@@ -712,13 +772,12 @@ export function OrganisationHvVorgangDetail({
                 />
               </div>
             ) : null}
-            {actionKind === "privat_auto" ? (
-              <p
-                className="max-w-[220px] text-right text-[11.5px] font-semibold"
-                style={{ color: PORTAL_C.sub }}
-              >
-                {HV_DETAIL_COPY.privatAuto}
-              </p>
+            {actionKind === "angebot" && showAcceptCta ? (
+              <ActionBtn
+                label={HV_DETAIL_COPY.empfohlenAnnehmen}
+                disabled={busy}
+                onClick={() => void acceptAngebotAct()}
+              />
             ) : null}
           </div>
         </div>

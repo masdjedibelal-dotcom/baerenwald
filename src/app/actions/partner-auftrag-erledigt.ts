@@ -108,17 +108,23 @@ export async function markPartnerAuftragErledigt(
     };
   }
 
-  const now = new Date().toISOString();
   const ids = zuErledigen.map((p) => String(p.id));
 
-  const { error: updateErr } = await supabaseAdmin
+  // auftrag_positionen hat kein updated_at — nur Status-Felder patchen
+  let { error: updateErr } = await supabaseAdmin
     .from("auftrag_positionen")
     .update({
       handwerker_status: "erledigt",
       leistung_status: "erledigt",
-      updated_at: now,
     })
     .in("id", ids);
+
+  if (updateErr && /leistung_status/i.test(updateErr.message)) {
+    ({ error: updateErr } = await supabaseAdmin
+      .from("auftrag_positionen")
+      .update({ handwerker_status: "erledigt" })
+      .in("id", ids));
+  }
 
   if (updateErr) {
     console.error("[markPartnerAuftragErledigt]", updateErr.message);

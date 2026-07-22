@@ -26,17 +26,22 @@ export const EINSTELLUNGEN_LOGO_HINT =
 export const EINSTELLUNGEN_HERO_HINT =
   "Breites Foto für die Übersicht (ca. 1600×400 px). Ohne Upload bleibt das Standardbild." as const;
 
-export const EINSTELLUNGEN_SCHWELLE_TITLE =
-  "Standard-Regel & Ausnahmen" as const;
+export const EINSTELLUNGEN_SCHWELLE_TITLE = "Freigabebetrag" as const;
 
 export const EINSTELLUNGEN_SCHWELLE_INTRO =
-  "Gilt für alle Objekte ohne eigene Ausnahme. Angebote bis zu diesem Betrag werden automatisch beauftragt — darüber ist Ihre Freigabe nötig." as const;
+  "Gilt für alle Objekte ohne eigene Ausnahme. Bis zu diesem Betrag kann automatisch beauftragt werden — darüber ist immer Ihre Freigabe nötig, bevor an Bärenwald weitergeleitet wird." as const;
 
 export const EINSTELLUNGEN_KLEINREPARATUR_TITLE =
-  "Grenzbetrag Kleinreparaturen" as const;
+  "Kleinreparaturen ohne Angebot" as const;
 
 export const EINSTELLUNGEN_KLEINREPARATUR_INTRO =
-  "Bis zu diesem Betrag darf Bärenwald ohne Angebot sofort reparieren — sofern beim Objekt aktiviert." as const;
+  "Bis zur Freigabeschwelle darf Bärenwald ohne Angebot sofort reparieren — sofern aktiviert." as const;
+
+export const EINSTELLUNGEN_AKUT_TITLE =
+  "Freigaberegelung bei akuten Schäden" as const;
+
+export const EINSTELLUNGEN_AKUT_INTRO =
+  "Einzige Ausnahme von der Freigabe-Pflicht: Bei akuten Schäden kann optional sofort beauftragt werden." as const;
 
 export const EINSTELLUNGEN_OBJEKT_SCHWELLE_TITLE =
   "Ausnahmen je Objekt" as const;
@@ -44,16 +49,26 @@ export const EINSTELLUNGEN_OBJEKT_SCHWELLE_TITLE =
 export const EINSTELLUNGEN_OBJEKT_SCHWELLE_INTRO =
   "Überschreibt die Standard-Regel für einzelne Objekte." as const;
 
-export const EINSTELLUNGEN_ANGEBOT_FREIGABE_TITLE =
-  "Angebots-Freigabe" as const;
-
-export const EINSTELLUNGEN_ANGEBOT_FREIGABE_INTRO =
-  "Wie sollen Angebote oberhalb der Schwelle behandelt werden?" as const;
-
 export const EINSTELLUNGEN_PROFIL_EDIT = "Profil bearbeiten" as const;
 
-/** Schnellwahl-Beträge wie im Mock (250 / 500 / 1k / 2k). */
-export const EINSTELLUNGEN_SCHWELLE_PRESETS = [250, 500, 1000, 2000] as const;
+/** Schnellwahl-Beträge (Legacy). */
+export const EINSTELLUNGEN_SCHWELLE_PRESETS = [500, 1000, 1500, 2000, 2500, 5000] as const;
+
+/** Regler: 0–5000 € in 500er-Schritten. */
+export const EINSTELLUNGEN_SCHWELLE_SLIDER_MIN = 0;
+export const EINSTELLUNGEN_SCHWELLE_SLIDER_MAX = 5000;
+export const EINSTELLUNGEN_SCHWELLE_SLIDER_STEP = 500;
+
+export function snapEinstellungenSchwelle(value: number): number {
+  const n = Number.isFinite(value) ? value : 500;
+  const stepped =
+    Math.round(n / EINSTELLUNGEN_SCHWELLE_SLIDER_STEP) *
+    EINSTELLUNGEN_SCHWELLE_SLIDER_STEP;
+  return Math.min(
+    EINSTELLUNGEN_SCHWELLE_SLIDER_MAX,
+    Math.max(EINSTELLUNGEN_SCHWELLE_SLIDER_MIN, stepped)
+  );
+}
 
 export function formatEinstellungenSchwellePreset(value: number): string {
   if (value >= 1000) {
@@ -78,5 +93,5 @@ export function formatEinstellungenSchwelle(
 
 export function einstellungenSchwelleInfo(value: number): string {
   const label = formatEinstellungenSchwelle(value);
-  return `Angebote bis ${label} werden automatisch beauftragt. Ab ${label} ist Ihre Freigabe nötig.`;
+  return `Bis ${label} kann automatisch beauftragt werden. Darüber ist immer Ihre Freigabe nötig, bevor an Bärenwald weitergeleitet wird.`;
 }

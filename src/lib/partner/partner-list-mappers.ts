@@ -6,6 +6,7 @@ import type {
 import type { PartnerVorgangItem } from "@/lib/partner/build-partner-vorgaenge";
 import {
   type VorgangFilter,
+  vorgangPasstFilter,
 } from "@/lib/partner/vorgang-state";
 import { resolvePartnerVorgangCardStatus } from "@/lib/partner/partner-vorgang-display";
 import {
@@ -18,6 +19,7 @@ import {
   partnerAuftragListenStatusLabel,
   partnerAuftragListenStatusPillKey,
 } from "@/lib/partner/partner-auftrag-list-status";
+import { portalDetailStatusPillStyle } from "@/lib/shared/portal-detail-format";
 import {
   buildPartnerAnfrageCardMeta,
   buildPartnerAuftragCardMeta,
@@ -53,6 +55,14 @@ export function partnerAngebotStatusPillClass(statusKey: string): string {
     return "bg-red-100 text-red-700";
   }
   return "bg-muted text-text-secondary";
+}
+
+/** Inline-Styles analog PORTAL_STATUS / PortalFlowStatusChip. */
+export function partnerStatusChipStyle(statusKey: string): {
+  color: string;
+  backgroundColor: string;
+} {
+  return portalDetailStatusPillStyle(statusKey);
 }
 
 export function mapAnfrageAuftragToCard(item: PartnerAuftragItem): PartnerCardRow {
@@ -174,9 +184,7 @@ export function buildVorgangCardRows(
   filter: VorgangFilter
 ): PartnerCardRow[] {
   const rows = vorgaenge
-    .filter((v) =>
-      filter === "erledigt" ? v.state === "erledigt" : v.state !== "erledigt"
-    )
+    .filter((v) => vorgangPasstFilter(v.state, filter))
     .map(mapVorgangToCard);
   return rows.sort((a, b) => b.sortDate - a.sortDate);
 }

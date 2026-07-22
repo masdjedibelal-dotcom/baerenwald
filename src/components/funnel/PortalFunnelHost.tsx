@@ -18,6 +18,7 @@ import {
 import { SITUATIONEN_CONFIG } from "@/lib/funnel/config";
 import {
   getActiveFachdetailQuestionIds,
+  getActiveFachdetailQuestions,
 } from "@/lib/funnel/fachdetail-questions-flat";
 import {
   funnelVariant,
@@ -57,10 +58,11 @@ export type PortalFunnelMeldeCtx = {
   ergaenzenToken?: string;
   /** Kein Objekt hinterlegt → Adresse im Kontaktschritt */
   needsAddress?: boolean;
-  /** Objekt-Link/Aushang: Bestätigungsschritt mit festem Objekt */
-  objektConfirm?: { titel: string; adresse?: string } | null;
   /** Zurück darf nicht zur HV-Objektliste führen */
   objektLocked?: boolean;
+  /** Anzeige in der Zusammenfassung */
+  objektTitel?: string | null;
+  objektAdresse?: string | null;
 };
 
 export type PortalFunnelPrefill = {
@@ -85,7 +87,6 @@ type HvMieterOption = {
 type StepId =
   | "objekt"
   | "objekt_neu"
-  | "objekt_confirm"
   | "mieter"
   | "situation"
   | "bereiche"
@@ -138,6 +139,29 @@ function dringlichkeitOptions(opts?: { stripSlaCopy?: boolean }): StepOption[] {
   });
 }
 
+function optionLabel(options: StepOption[], value: string): string {
+  return options.find((o) => o.value === value)?.label ?? value;
+}
+
+function fachAnswerLabel(
+  optionen: Array<{ value: string; label: string }>,
+  raw: string | string[] | undefined
+): string {
+  if (raw == null || raw === "") return "—";
+  const values = Array.isArray(raw)
+    ? raw
+    : String(raw)
+        .split(",")
+        .map((s) => s.trim())
+        .filter(Boolean);
+  if (values.length === 0) return "—";
+  return values
+    .map((v) => optionen.find((o) => o.value === v)?.label ?? v)
+    .join(", ");
+}
+
+type SummaryRow = { label: string; value: string };
+
 /**
  * Gemeinsamer Portal-/Melde-Funnel auf Basis Website-Design.
  * Trust/GPT entfallen; Felder und Preis je `funnelVariant(channel)`.
@@ -163,9 +187,6 @@ export function PortalFunnelHost({
     : null;
 
   const [step, setStep] = useState<StepId>(() => {
-    if (channel === "melde_anon" && melde?.objektConfirm) {
-      return "objekt_confirm";
-    }
     if (
       cfg.prefix.objekt === "required" ||
       cfg.prefix.objekt === "optional"
@@ -194,12 +215,76 @@ export function PortalFunnelHost({
       ? "ohne"
       : "neu"
   );
+  const [mieterVorname, setMieterVorname] = useState("");
+  const [mieterNachname, setMieterNachname] = useState("");
   const [mieterName, setMieterName] = useState(prefill?.name ?? "");
   const [mieterEmail, setMieterEmail] = useState(prefill?.email ?? "");
   const [mieterTel, setMieterTel] = useState(prefill?.telefon ?? "");
+  const [mieterStrasse, setMieterStrasse] = useState(prefill?.strasse ?? "");
+  const [mieterHausnummer, setMieterHausnummer] = useState(
+    prefill?.hausnummer ?? ""
+  );
+  const [mieterPlz, setMieterPlz] = useState(prefill?.plz ?? "");
+  const [mieterOrt, setMieterOrt] = useState("");
   const [einheit, setEinheit] = useState(prefill?.einheit ?? "");
   const [hvMieterListe, setHvMieterListe] = useState<HvMieterOption[]>([]);
   const [selectedMieterId, setSelectedMieterId] = useState<string | null>(null);
+
+  const mieterVollname = useMemo(() => {
+    const fromParts = [mieterVorname, mieterNachname]
+      .map((s) => s.trim())
+      .filter(Boolean)
+      .join(" ");
+    return fromParts || mieterName.trim();
+  }, [mieterVorname, mieterNachname, mieterName]);
+
+  const resetMieterNeuForm = useCallback(
+    (fromObjekt?: PortalFunnelObjekt | null) => {
+      setMieterVorname("");
+      setMieterNachname("");
+      setMieterName("");
+      setMieterEmail("");
+      setMieterTel("");
+      setEinheit("");
+      setMieterStrasse(fromObjekt?.strasse?.trim() || "");
+      setMieterHausnummer(fromObjekt?.hausnummer?.trim() || "");
+      setMieterPlz(fromObjekt?.plz?.trim() || "");
+      setMieterOrt(fromObjekt?.ort?.trim() || "");
+    },
+    []
+  );
+
+  const mieterKontaktOk = useCallback(() => {
+    const nameOk =
+      mieterVollname.length > 1 ||
+      (mieterVorname.trim().length > 0 && mieterNachname.trim().length > 0);
+    if (channel === "portal_hv") {
+      return (
+        mieterVorname.trim().length > 0 &&
+        mieterNachname.trim().length > 0 &&
+        mieterStrasse.trim().length > 1 &&
+        mieterHausnummer.trim().length > 0
+      );
+    }
+    return (
+      nameOk &&
+      mieterEmail.trim().includes("@") &&
+      mieterStrasse.trim().length > 1 &&
+      mieterHausnummer.trim().length > 0 &&
+      mieterPlz.trim().length >= 4 &&
+      mieterOrt.trim().length > 1
+    );
+  }, [
+    channel,
+    mieterVollname,
+    mieterVorname,
+    mieterNachname,
+    mieterEmail,
+    mieterStrasse,
+    mieterHausnummer,
+    mieterPlz,
+    mieterOrt,
+  ]);
 
   const [neuTitel, setNeuTitel] = useState("");
   const [neuStrasse, setNeuStrasse] = useState("");
@@ -308,9 +393,6 @@ export function PortalFunnelHost({
 
   const buildStepOrder = useCallback((): StepId[] => {
     const out: StepId[] = [];
-    if (channel === "melde_anon" && melde?.objektConfirm) {
-      out.push("objekt_confirm");
-    }
     if (
       cfg.prefix.objekt === "required" ||
       cfg.prefix.objekt === "optional"
@@ -332,7 +414,10 @@ export function PortalFunnelHost({
     if (getActiveFachdetailQuestionIds(state).length > 0) {
       out.push("fachdetail");
     }
-    if (cfg.include.photos) out.push("medien");
+    /** Umbau & Modernisierung: keine Fotos. */
+    if (cfg.include.photos && state.situation !== "erneuern") {
+      out.push("medien");
+    }
     if (cfg.include.beschreibung) out.push("beschreibung");
     /** Privat: PLZ vor Ergebnis (kein Objekt-Prefix). */
     if (cfg.include.ortPlz && channel === "portal_privat") {
@@ -347,9 +432,139 @@ export function PortalFunnelHost({
     }
     out.push("result");
     return out;
-  }, [cfg, state, channel, melde?.objektConfirm]);
+  }, [cfg, state, channel]);
 
   const steps = buildStepOrder();
+
+  const summaryRows = useMemo((): SummaryRow[] => {
+    const rows: SummaryRow[] = [];
+    const push = (label: string, value: string | null | undefined) => {
+      const v = (value ?? "").trim();
+      if (v) rows.push({ label, value: v });
+    };
+
+    if (objekt) {
+      const adr = [objekt.strasse, objekt.hausnummer, objekt.plz, objekt.ort]
+        .filter(Boolean)
+        .join(" ")
+        .trim();
+      push("Objekt", adr ? `${objekt.titel} · ${adr}` : objekt.titel);
+    } else if (melde?.objektTitel?.trim()) {
+      const adr = melde.objektAdresse?.trim();
+      push(
+        "Objekt",
+        adr ? `${melde.objektTitel.trim()} · ${adr}` : melde.objektTitel.trim()
+      );
+    } else if (melde?.orgName) {
+      push("Hausverwaltung", melde.orgName);
+    }
+
+    if (isHvIntern) {
+      if (mieterMode === "ohne") {
+        push("Mieter", "Ohne Mieter");
+      } else if (mieterMode === "liste" && selectedMieterId) {
+        const m = hvMieterListe.find((x) => x.id === selectedMieterId);
+        push("Mieter", m?.name ?? "Aus Liste");
+        if (m?.einheitLabel) push("Einheit", m.einheitLabel);
+      } else if (mieterMode === "neu") {
+        push("Mieter", mieterVollname || null);
+        const adr = [
+          mieterStrasse,
+          mieterHausnummer,
+          mieterPlz,
+          mieterOrt,
+        ]
+          .map((s) => s.trim())
+          .filter(Boolean)
+          .join(" ");
+        push("Mieter-Adresse", adr || null);
+        push("E-Mail", mieterEmail.trim() || null);
+        push("Telefon", mieterTel.trim() || null);
+      }
+    }
+
+    if (einheit.trim()) push("Einheit", einheit.trim());
+
+    if (state.situation && !cfg.forceKaputt) {
+      const sit = BW_FUNNEL_STEP1_OPTIONS.find((o) => o.id === state.situation);
+      push("Situation", sit?.label ?? state.situation);
+    }
+
+    if (state.situation && state.bereiche.length > 0) {
+      const opts = bereicheOptions(state.situation);
+      push(
+        "Bereich",
+        state.bereiche.map((b) => optionLabel(opts, b)).join(", ")
+      );
+    }
+
+    if (state.dringlichkeit) {
+      push(
+        "Dringlichkeit",
+        optionLabel(
+          dringlichkeitOptions({ stripSlaCopy: stripTerminInfos }),
+          state.dringlichkeit
+        )
+      );
+    }
+
+    for (const q of getActiveFachdetailQuestions(state)) {
+      const raw = state.fachdetails?.fachdetailAnswers?.[q.id];
+      push(q.frage, fachAnswerLabel(q.optionen, raw));
+    }
+
+    if (cfg.include.photos && state.situation !== "erneuern") {
+      const n = state.photos.length;
+      push("Fotos", n === 0 ? "Keine" : `${n} Datei${n === 1 ? "" : "en"}`);
+    }
+
+    push("Beschreibung", state.leadBeschreibung.trim() || null);
+
+    const contactName =
+      `${state.vorname.trim()} ${state.nachname.trim()}`.trim() ||
+      state.name.trim();
+    const showKontakt =
+      steps.includes("kontakt") ||
+      Boolean(contactName) ||
+      Boolean(state.email.trim());
+    if (showKontakt) {
+      push("Name", contactName || null);
+      push("E-Mail", state.email.trim() || null);
+      push("Telefon", state.telefon.trim() || null);
+      const adr = [
+        state.strasse.trim(),
+        state.hausnummer.trim(),
+        [state.plz.trim(), state.ort.trim()].filter(Boolean).join(" "),
+      ]
+        .filter(Boolean)
+        .join(", ");
+      push("Adresse", adr || null);
+    }
+
+    return rows;
+  }, [
+    objekt,
+    melde?.orgName,
+    melde?.objektTitel,
+    melde?.objektAdresse,
+    isHvIntern,
+    mieterMode,
+    selectedMieterId,
+    hvMieterListe,
+    mieterVollname,
+    mieterStrasse,
+    mieterHausnummer,
+    mieterPlz,
+    mieterOrt,
+    mieterEmail,
+    mieterTel,
+    einheit,
+    state,
+    cfg.forceKaputt,
+    cfg.include.photos,
+    stripTerminInfos,
+    steps,
+  ]);
 
   const goNext = () => {
     setError(null);
@@ -402,7 +617,6 @@ export function PortalFunnelHost({
   };
 
   const canNext = (): boolean => {
-    if (step === "objekt_confirm") return true;
     if (step === "objekt") return !!objektId;
     if (step === "objekt_neu") {
       return (
@@ -417,15 +631,11 @@ export function PortalFunnelHost({
       if (isHvIntern) {
         if (mieterMode === "ohne") return true;
         if (mieterMode === "liste") return Boolean(selectedMieterId);
-        return (
-          mieterName.trim().length > 1 && mieterEmail.trim().includes("@")
-        );
+        return mieterKontaktOk();
       }
       if (ohneMieter && cfg.prefix.mieter === "ohne_erlaubt") return true;
       if (ohneMieter && cfg.prefix.mieter === "optional") return true;
-      return (
-        mieterName.trim().length > 1 && mieterEmail.trim().includes("@")
-      );
+      return mieterKontaktOk();
     }
     if (step === "situation") return !!state.situation;
     if (step === "bereiche") return state.bereiche.length > 0;
@@ -437,6 +647,7 @@ export function PortalFunnelHost({
     }
     if (step === "medien") return true;
     if (step === "beschreibung") {
+      if (state.situation === "erneuern") return true;
       return (state.leadBeschreibung || "").trim().length >= 10;
     }
     if (step === "kontakt") {
@@ -628,7 +839,7 @@ export function PortalFunnelHost({
         const contactName =
           mieterMode === "ohne"
             ? prefill?.name
-            : mieterName.trim() || prefill?.name;
+            : mieterVollname || prefill?.name;
         const contactEmail =
           mieterMode === "ohne"
             ? prefill?.email
@@ -637,6 +848,21 @@ export function PortalFunnelHost({
           mieterMode === "ohne"
             ? undefined
             : mieterTel.trim() || prefill?.telefon || undefined;
+        const mieterAdresse =
+          mieterMode === "ohne"
+            ? null
+            : {
+                vorname: mieterVorname.trim() || null,
+                nachname: mieterNachname.trim() || null,
+                name: mieterVollname || null,
+                strasse: mieterStrasse.trim() || null,
+                hausnummer: mieterHausnummer.trim() || null,
+                plz: mieterPlz.trim() || null,
+                ort: mieterOrt.trim() || null,
+                email: mieterEmail.trim() || null,
+                telefon: mieterTel.trim() || null,
+                einheit: einheit.trim() || null,
+              };
         const res = await fetch("/api/org/anfrage", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -651,11 +877,40 @@ export function PortalFunnelHost({
             name: contactName,
             email: contactEmail,
             telefon: contactTel,
+            melder_name:
+              mieterMode === "ohne" ? undefined : mieterVollname || undefined,
+            melder_email:
+              mieterMode === "ohne"
+                ? undefined
+                : mieterEmail.trim() || undefined,
+            melder_telefon:
+              mieterMode === "ohne"
+                ? undefined
+                : mieterTel.trim() || undefined,
+            melder_einheit:
+              mieterMode === "ohne"
+                ? undefined
+                : einheit.trim() || undefined,
             beschreibung: [
               state.leadBeschreibung.trim(),
               mieterMode === "ohne"
                 ? "Ohne Mieterbezug"
-                : `Mieter: ${mieterName} · ${mieterEmail} · ${mieterTel || "—"}`,
+                : [
+                    `Mieter: ${mieterVollname}`,
+                    [
+                      mieterStrasse.trim(),
+                      mieterHausnummer.trim(),
+                    ]
+                      .filter(Boolean)
+                      .join(" "),
+                    [mieterPlz.trim(), mieterOrt.trim()]
+                      .filter(Boolean)
+                      .join(" "),
+                    mieterEmail.trim(),
+                    mieterTel.trim() || null,
+                  ]
+                    .filter(Boolean)
+                    .join(" · "),
               einheit.trim() ? `Einheit: ${einheit.trim()}` : "",
             ]
               .filter(Boolean)
@@ -665,7 +920,9 @@ export function PortalFunnelHost({
               fachdetails: state.fachdetails,
               dringlichkeit: state.dringlichkeit,
               ohne_mieter: mieterMode === "ohne",
+              mieter_neu: mieterMode === "neu",
               fotos_count: state.photos.length,
+              ...(mieterAdresse ? { mieter: mieterAdresse } : {}),
               ...(objekt?.ort ? { ort: objekt.ort } : {}),
             },
           }),
@@ -747,7 +1004,19 @@ export function PortalFunnelHost({
     }
   };
 
-  const situations = BW_FUNNEL_STEP1_OPTIONS.filter((o) => o.id !== "gewerbe");
+  const situations = BW_FUNNEL_STEP1_OPTIONS.filter((o) => {
+    if (o.id === "gewerbe") return false;
+    /** HV/Mieter: Betreuung nur über Servicepakete, nicht im Vorgangsmelder. */
+    if (
+      o.id === "betreuung" &&
+      (channel === "portal_hv" ||
+        channel === "portal_mieter" ||
+        channel === "melde_anon")
+    ) {
+      return false;
+    }
+    return true;
+  });
 
   const headline =
     title ??
@@ -765,46 +1034,14 @@ export function PortalFunnelHost({
       )}
     >
       {layout === "modal" ? (
-        <div className="mb-3 grid shrink-0 grid-cols-[1fr_auto_1fr] items-center gap-3">
-          <button
-            type="button"
-            className="justify-self-start text-[13px] font-semibold text-text-secondary"
-            onClick={goBack}
-          >
-            ‹ Zurück
-          </button>
-          <span className="text-center text-[12px] font-semibold uppercase tracking-wide text-text-tertiary">
+        <div className="mb-2 shrink-0 text-center">
+          <span className="text-[12px] font-semibold uppercase tracking-wide text-text-tertiary">
             {headline}
           </span>
-          <span className="w-14 justify-self-end" aria-hidden />
         </div>
       ) : null}
 
       <div className="portal-funnel-host__body">
-
-      {step === "objekt_confirm" && melde?.objektConfirm ? (
-        <StepWrapper
-          layout={stepLayout}
-          stepLabel="Objekt"
-          question="Ihr Objekt"
-          subtext="Bitte bestätigen und fortfahren"
-          animateKey="objekt_confirm"
-        >
-          <div className="funnel-step-tiles-card rounded-[12px] border border-border-default bg-surface-card px-4 py-3.5">
-            <p className="text-[15px] font-semibold text-text-primary">
-              {melde.objektConfirm.titel}
-            </p>
-            {melde.objektConfirm.adresse ? (
-              <p className="mt-0.5 text-[13px] text-text-secondary">
-                {melde.objektConfirm.adresse}
-              </p>
-            ) : null}
-            <p className="mt-2 text-[12px] text-text-tertiary">
-              Meldung an {melde.orgName}
-            </p>
-          </div>
-        </StepWrapper>
-      ) : null}
 
       {step === "objekt" ? (
         <StepWrapper
@@ -919,9 +1156,7 @@ export function PortalFunnelHost({
                       setMieterMode("neu");
                       setOhneMieter(false);
                       setSelectedMieterId(null);
-                      setMieterName("");
-                      setMieterEmail("");
-                      setMieterTel("");
+                      resetMieterNeuForm(objekt);
                     }}
                   >
                     + Neu
@@ -959,8 +1194,14 @@ export function PortalFunnelHost({
                     setOhneMieter(false);
                     setSelectedMieterId(m.id);
                     setMieterName(m.name);
+                    setMieterVorname("");
+                    setMieterNachname("");
                     setMieterEmail(m.email ?? "");
                     setMieterTel(m.telefon ?? "");
+                    setMieterStrasse(objekt?.strasse?.trim() || "");
+                    setMieterHausnummer(objekt?.hausnummer?.trim() || "");
+                    setMieterPlz(objekt?.plz?.trim() || "");
+                    setMieterOrt(objekt?.ort?.trim() || "");
                     if (m.einheitLabel) setEinheit(m.einheitLabel);
                   }}
                 />
@@ -970,18 +1211,51 @@ export function PortalFunnelHost({
                   <p className="text-[13px] font-semibold text-text-primary">
                     Neuer Mieter
                   </p>
+                  <div className="grid grid-cols-2 gap-2">
+                    <input
+                      className="funnel-input w-full"
+                      placeholder="Vorname"
+                      value={mieterVorname}
+                      onChange={(e) => setMieterVorname(e.target.value)}
+                      autoComplete="given-name"
+                    />
+                    <input
+                      className="funnel-input w-full"
+                      placeholder="Nachname"
+                      value={mieterNachname}
+                      onChange={(e) => setMieterNachname(e.target.value)}
+                      autoComplete="family-name"
+                    />
+                  </div>
+                  <div className="grid grid-cols-[1fr_88px] gap-2">
+                    <input
+                      className="funnel-input"
+                      placeholder="Straße"
+                      value={mieterStrasse}
+                      onChange={(e) => setMieterStrasse(e.target.value)}
+                      autoComplete="address-line1"
+                    />
+                    <input
+                      className="funnel-input"
+                      placeholder="Nr."
+                      value={mieterHausnummer}
+                      onChange={(e) => setMieterHausnummer(e.target.value)}
+                    />
+                  </div>
                   <input
                     className="funnel-input w-full"
-                    placeholder="Name"
-                    value={mieterName}
-                    onChange={(e) => setMieterName(e.target.value)}
+                    placeholder="z. B. 4. Stock li"
+                    value={einheit}
+                    onChange={(e) => setEinheit(e.target.value)}
+                    aria-label="Wohnung / Etage (optional)"
                   />
                   <input
                     className="funnel-input w-full"
                     type="email"
-                    placeholder="E-Mail"
+                    placeholder="E-Mail (optional)"
                     value={mieterEmail}
                     onChange={(e) => setMieterEmail(e.target.value)}
+                    autoComplete="email"
                   />
                   <input
                     className="funnel-input w-full"
@@ -989,13 +1263,14 @@ export function PortalFunnelHost({
                     placeholder="Telefon (optional)"
                     value={mieterTel}
                     onChange={(e) => setMieterTel(e.target.value)}
+                    autoComplete="tel"
                   />
                 </div>
               ) : null}
-              {cfg.prefix.einheit ? (
+              {cfg.prefix.einheit && mieterMode !== "neu" ? (
                 <input
                   className="funnel-input mt-2 w-full"
-                  placeholder="Einheit / Wohnung (optional)"
+                  placeholder="z. B. 4. Stock li"
                   value={einheit}
                   onChange={(e) => setEinheit(e.target.value)}
                 />
@@ -1030,12 +1305,51 @@ export function PortalFunnelHost({
             />
             {!ohneMieter ? (
               <div className="mt-2 space-y-2">
-                <input
-                  className="funnel-input w-full"
-                  placeholder="Name"
-                  value={mieterName}
-                  onChange={(e) => setMieterName(e.target.value)}
-                />
+                <div className="grid grid-cols-2 gap-2">
+                  <input
+                    className="funnel-input w-full"
+                    placeholder="Vorname"
+                    value={mieterVorname}
+                    onChange={(e) => setMieterVorname(e.target.value)}
+                    autoComplete="given-name"
+                  />
+                  <input
+                    className="funnel-input w-full"
+                    placeholder="Nachname"
+                    value={mieterNachname}
+                    onChange={(e) => setMieterNachname(e.target.value)}
+                    autoComplete="family-name"
+                  />
+                </div>
+                <div className="grid grid-cols-[1fr_88px] gap-2">
+                  <input
+                    className="funnel-input"
+                    placeholder="Straße"
+                    value={mieterStrasse}
+                    onChange={(e) => setMieterStrasse(e.target.value)}
+                  />
+                  <input
+                    className="funnel-input"
+                    placeholder="Nr."
+                    value={mieterHausnummer}
+                    onChange={(e) => setMieterHausnummer(e.target.value)}
+                  />
+                </div>
+                <div className="grid grid-cols-[100px_1fr] gap-2">
+                  <input
+                    className="funnel-input"
+                    placeholder="PLZ"
+                    value={mieterPlz}
+                    onChange={(e) => setMieterPlz(e.target.value)}
+                    inputMode="numeric"
+                  />
+                  <input
+                    className="funnel-input"
+                    placeholder="Ort"
+                    value={mieterOrt}
+                    onChange={(e) => setMieterOrt(e.target.value)}
+                  />
+                </div>
                 <input
                   className="funnel-input w-full"
                   type="email"
@@ -1215,8 +1529,16 @@ export function PortalFunnelHost({
         <StepWrapper
           layout={stepLayout}
           stepLabel="Beschreibung"
-          question="Was ist passiert?"
-          subtext="Mindestens 10 Zeichen"
+          question={
+            state.situation === "erneuern"
+              ? "Beschreibung"
+              : "Was ist passiert?"
+          }
+          subtext={
+            state.situation === "erneuern"
+              ? "Willst du uns noch was mitteilen?"
+              : "Mindestens 10 Zeichen"
+          }
           animateKey="beschreibung"
         >
           <textarea
@@ -1225,7 +1547,11 @@ export function PortalFunnelHost({
             onChange={(e) =>
               setState((s) => ({ ...s, leadBeschreibung: e.target.value }))
             }
-            placeholder="Kurz beschreiben…"
+            placeholder={
+              state.situation === "erneuern"
+                ? "Optional — z. B. Wunschtermin, Besonderheiten …"
+                : "Beschreiben Sie den Schaden oder das Anliegen …"
+            }
           />
         </StepWrapper>
       ) : null}
@@ -1377,36 +1703,50 @@ export function PortalFunnelHost({
               ? isHvIntern
                 ? "Indikation zur Orientierung — verbindlich nach Prüfung"
                 : "Indikation — verbindlich nach Prüfung"
-              : "Angaben prüfen und absenden"
+              : "Alle Angaben prüfen und absenden"
           }
           animateKey="result"
         >
-          {cfg.showPrice ? (
-            <div className="funnel-card-float p-4">
-              {price ? (
-                <p className="font-[family-name:var(--font-display)] text-2xl font-bold text-accent">
-                  {formatCurrencyEUR(price.min)} –{" "}
-                  {formatCurrencyEUR(price.max)}
-                </p>
-              ) : (
-                <p className="text-sm text-text-secondary">
-                  Preisrahmen wird nach Prüfung mitgeteilt.
-                </p>
-              )}
+          <div className="space-y-3">
+            {cfg.showPrice ? (
+              <div className="funnel-card-float p-4">
+                {price ? (
+                  <p className="font-[family-name:var(--font-display)] text-2xl font-bold text-accent">
+                    {formatCurrencyEUR(price.min)} –{" "}
+                    {formatCurrencyEUR(price.max)}
+                  </p>
+                ) : (
+                  <p className="text-sm text-text-secondary">
+                    Preisrahmen wird nach Prüfung mitgeteilt.
+                  </p>
+                )}
+              </div>
+            ) : null}
+
+            <div className="funnel-card-float overflow-hidden">
+              <p className="border-b border-border-light px-4 py-2.5 text-[12px] font-bold uppercase tracking-wide text-text-tertiary">
+                Ihre Angaben
+              </p>
+              <dl className="divide-y divide-border-light px-4">
+                {summaryRows.map((row) => (
+                  <div
+                    key={`${row.label}-${row.value.slice(0, 24)}`}
+                    className="flex justify-between gap-3 py-2.5 text-[13px]"
+                  >
+                    <dt className="shrink-0 text-text-secondary">{row.label}</dt>
+                    <dd className="max-w-[62%] whitespace-pre-wrap text-right font-semibold text-text-primary">
+                      {row.value}
+                    </dd>
+                  </div>
+                ))}
+                {summaryRows.length === 0 ? (
+                  <p className="py-3 text-sm text-text-secondary">
+                    Keine Angaben vorhanden.
+                  </p>
+                ) : null}
+              </dl>
             </div>
-          ) : (
-            <div className="funnel-card-float space-y-1 p-4 text-sm">
-              <p>
-                <b>Bereich:</b> {state.bereiche.join(", ") || "—"}
-              </p>
-              <p>
-                <b>Dringlichkeit:</b> {state.dringlichkeit || "—"}
-              </p>
-              <p>
-                <b>Beschreibung:</b> {state.leadBeschreibung || "—"}
-              </p>
-            </div>
-          )}
+          </div>
           {error ? (
             <p className="mt-3 text-sm text-red-700" role="alert">
               {error}
@@ -1423,71 +1763,41 @@ export function PortalFunnelHost({
 
       </div>
 
-      {layout === "page" ? (
-        <FunnelFooter
-          onBack={
-            steps.indexOf(step) <= 0 && melde?.objektLocked
-              ? undefined
-              : goBack
-          }
-          onNext={
-            step === "objekt_neu"
-              ? () => void createObjekt()
-              : step === "result"
-                ? () => void submit()
-                : goNext
-          }
-          nextDisabled={
-            step === "objekt_neu"
-              ? !canNext() || neuBusy
-              : step === "result"
-                ? busy
-                : !canNext()
-          }
-          nextLabel={
-            step === "objekt_neu"
-              ? neuBusy
-                ? "Speichern…"
-                : "Objekt speichern →"
-              : step === "result"
-                ? busy
-                  ? "Wird gesendet…"
-                  : "Absenden →"
-                : "Weiter →"
-          }
-        />
-      ) : (
-        <div className={cn("portal-funnel-host__actions flex gap-2")}>
-          {step === "objekt_neu" ? (
-            <button
-              type="button"
-              className="btn-pill-primary flex-1 disabled:opacity-40"
-              disabled={!canNext() || neuBusy}
-              onClick={() => void createObjekt()}
-            >
-              {neuBusy ? "Speichern…" : "Objekt speichern →"}
-            </button>
-          ) : step !== "result" ? (
-            <button
-              type="button"
-              className="btn-pill-primary flex-1 disabled:opacity-40"
-              disabled={!canNext()}
-              onClick={goNext}
-            >
-              Weiter →
-            </button>
-          ) : (
-            <button
-              type="button"
-              className="btn-pill-primary flex-1 disabled:opacity-40"
-              disabled={busy}
-              onClick={() => void submit()}
-            >
-              {busy ? "Wird gesendet…" : "Absenden →"}
-            </button>
-          )}
-        </div>
-      )}
+      <FunnelFooter
+        className={
+          layout === "modal" ? "portal-funnel-host__footer" : undefined
+        }
+        onBack={
+          steps.indexOf(step) <= 0 && melde?.objektLocked
+            ? undefined
+            : goBack
+        }
+        onNext={
+          step === "objekt_neu"
+            ? () => void createObjekt()
+            : step === "result"
+              ? () => void submit()
+              : goNext
+        }
+        nextDisabled={
+          step === "objekt_neu"
+            ? !canNext() || neuBusy
+            : step === "result"
+              ? busy
+              : !canNext()
+        }
+        nextLabel={
+          step === "objekt_neu"
+            ? neuBusy
+              ? "Speichern…"
+              : "Objekt speichern →"
+            : step === "result"
+              ? busy
+                ? "Wird gesendet…"
+                : "Absenden →"
+              : "Weiter →"
+        }
+      />
     </div>
   );
 }

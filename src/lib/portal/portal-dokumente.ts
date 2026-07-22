@@ -167,7 +167,6 @@ export function dokumenteFromAuftrag(
     angebot?: AngebotDokumentInput | null;
     rechnungen?: RechnungDokumentInput[];
     timeline?: TimelineDokumentInput[];
-    bautagebuch?: BautagebuchDokumentInput[];
     abnahmeProtokolle?: AbnahmeProtokollDokumentInput[];
   }
 ): PortalDokument[] {
@@ -215,7 +214,6 @@ export function dokumenteFromAuftrag(
   }
 
   rows.push(...dokumenteFromRechnungen(opts.rechnungen ?? []));
-  rows.push(...dokumenteFromBautagebuch(opts.bautagebuch ?? []));
   rows.push(...dokumenteFromTimeline(opts.timeline ?? []));
 
   return rows.sort((a, b) => {
@@ -265,9 +263,15 @@ export function isAbnahmePortalDokument(d: PortalDokument): boolean {
   return false;
 }
 
+/** Bautagebuch-Anhänge (eigene UI-Section, nicht unter Dokumente). */
+export function isBautagebuchPortalDokument(d: PortalDokument): boolean {
+  if (d.id.startsWith("bautagebuch-")) return true;
+  return /^Bautagebuch\b/i.test(d.name ?? "");
+}
+
 /**
  * Sichtbarkeit je Rolle:
- * - Kunde/HV: alle CRM-Unterlagen
+ * - Kunde/HV: alle CRM-Unterlagen (ohne Bautagebuch — eigene Section)
  * - Mieter: nur Abnahmedokumentation (Signatur)
  * - Eigentümer: alles außer Rechnung
  */
@@ -284,7 +288,7 @@ export function filterPortalDokumenteForViewer(
   const viewer: PortalDokumenteViewer =
     opts.viewer ?? (opts.hvMieterView ? "mieter" : "kunde");
 
-  let rows = docs;
+  let rows = docs.filter((d) => !isBautagebuchPortalDokument(d));
 
   if (viewer === "mieter") {
     rows = rows.filter(isAbnahmePortalDokument);

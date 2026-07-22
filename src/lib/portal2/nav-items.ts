@@ -19,7 +19,8 @@ export type PortalNavKey =
   | "objekte"
   | "servicepakete"
   | "team"
-  | "settings";
+  | "settings"
+  | "mehr";
 
 export type PortalNavItemDef = {
   key: PortalNavKey;
@@ -63,6 +64,24 @@ export const PORTAL_NAV_ITEMS: Record<PortalNavRole, readonly PortalNavItemDef[]
     ],
   } as const;
 
+/** Mobile Bottom-Nav HV: 2 links · FAB Mitte · 2 rechts (Mehr bündelt Rest). */
+export const PORTAL_HV_MOBILE_NAV_KEYS: readonly PortalNavKey[] = [
+  "home",
+  "liste",
+  "objekte",
+  "mehr",
+] as const;
+
+export const PORTAL_HV_MEHR_TILES: readonly {
+  key: PortalNavKey;
+  label: string;
+  glyph: string;
+}[] = [
+  { key: "servicepakete", label: "Serviceabos", glyph: "◇" },
+  { key: "team", label: "Team", glyph: "◎" },
+  { key: "settings", label: "Einstellungen", glyph: "⚙" },
+] as const;
+
 export function getPortalNavItems(role: PortalNavRole): readonly PortalNavItemDef[] {
   return PORTAL_NAV_ITEMS[role];
 }
@@ -79,6 +98,7 @@ export const PORTAL_NAV_SECTION_BY_VARIANT = {
     servicepakete: "leistungen",
     team: "team",
     settings: "profil",
+    mehr: "mehr",
   },
   kunde: {
     home: "uebersicht",
@@ -111,22 +131,52 @@ export function portalNavSectionId(
   return map[key];
 }
 
-/** Shell-Nav aus Rolle + Variant + optionalen Badges. */
-export function buildPortalShellNav(
-  role: PortalNavRole,
-  variant: PortalNavVariant,
-  badges?: Partial<Record<PortalNavKey, number>>
-): Array<{
+export type PortalShellNavBuilt = {
   id: string;
   label: string;
   navKey: PortalNavKey;
   glyph: string;
   badge?: number;
-}> {
+};
+
+/** Shell-Nav aus Rolle + Variant + optionalen Badges. */
+export function buildPortalShellNav(
+  role: PortalNavRole,
+  variant: PortalNavVariant,
+  badges?: Partial<Record<PortalNavKey, number>>
+): PortalShellNavBuilt[] {
   return getPortalNavItems(role).flatMap((item) => {
     const id = portalNavSectionId(variant, item.key);
     if (!id) return [];
     const badge = badges?.[item.key];
+    return [
+      {
+        id,
+        label: item.label,
+        navKey: item.key,
+        glyph: item.glyph,
+        ...(badge != null && badge > 0 ? { badge } : {}),
+      },
+    ];
+  });
+}
+
+/** Mobile Bottom-Nav für HV (ohne Service/Team/Settings — die liegen unter Mehr). */
+export function buildPortalHvMobileNav(
+  badges?: Partial<Record<PortalNavKey, number>>
+): PortalShellNavBuilt[] {
+  const defs: Record<string, PortalNavItemDef> = {
+    home: { key: "home", label: "Dashboard", glyph: "◈" },
+    liste: { key: "liste", label: "Vorgänge", glyph: "▤" },
+    objekte: { key: "objekte", label: "Objekte", glyph: "▦" },
+    mehr: { key: "mehr", label: "Mehr", glyph: "⋯" },
+  };
+  return PORTAL_HV_MOBILE_NAV_KEYS.flatMap((key) => {
+    const item = defs[key];
+    if (!item) return [];
+    const id = portalNavSectionId("org", key);
+    if (!id) return [];
+    const badge = badges?.[key];
     return [
       {
         id,

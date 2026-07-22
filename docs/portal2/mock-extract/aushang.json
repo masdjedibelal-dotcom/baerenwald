@@ -12,11 +12,10 @@
     "email": "mieter_kontakt_email → email → SITE_CONFIG"
   },
   "layout": {
-    "header": "Logo/Kürzel · HV-Name · MIETERSERVICE",
-    "hero": ["Schaden melden,", "einfach scannen.", "Intro-Absatz"],
-    "photo": "Hero-Bild oder gestrichelter Platzhalter + Tagline",
-    "columns": "QR + Melde-URL | SO FUNKTIONIERT'S (01–03)",
-    "footer": "KEIN SMARTPHONE? · Kontakt · Tel/E-Mail · Datenschutz"
+    "hero": "Primärfarbe-Block: Logo · HV-Name · MIETERSERVICE + Headline (weiß/Gold) + Intro — kein separater Seitentitel",
+    "photo": "schmaler Streifen + Tagline-Tab",
+    "columns": "QR (farbiger Rahmen) + Melde-URL | SO FUNKTIONIERT'S (01–03 groß)",
+    "footer": "kompakt: KEIN SMARTPHONE? · Kontakt · Datenschutz"
   },
   "steps": [
     ["01", "Scannen", "Handy-Kamera auf den QR-Code halten — die Meldeseite öffnet sich sofort."],

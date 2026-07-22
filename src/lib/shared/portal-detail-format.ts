@@ -82,6 +82,52 @@ export function portalDetailStatusPillClass(status: string): string {
   return "tag bg-muted text-text-secondary";
 }
 
+/** Inline-Styles im PORTAL_STATUS-Look (Partner-/Detail-Chips). */
+export function portalDetailStatusPillStyle(status: string): {
+  color: string;
+  backgroundColor: string;
+} {
+  const s = status.toLowerCase();
+  if (
+    s === "akzeptiert" ||
+    s === "eingereicht" ||
+    s === "abgeschlossen" ||
+    s === "erledigt" ||
+    s === "uebernommen" ||
+    s === "angenommen" ||
+    s.includes("abgeschlossen") ||
+    s.includes("fertig")
+  ) {
+    return { color: "#4B5563", backgroundColor: "#EAEDEC" };
+  }
+  if (s === "abgelehnt" || s === "storniert" || s === "antwort_abgelaufen") {
+    return { color: "#b91c1c", backgroundColor: "#fee2e2" };
+  }
+  if (s === "geaendert" || s === "ergaenzung" || s.includes("geändert")) {
+    return { color: "#6d28d9", backgroundColor: "#ede9fe" };
+  }
+  if (s === "neu" || s === "aktion") {
+    return { color: "#1F4FA8", backgroundColor: "#E4ECF7" };
+  }
+  if (s === "bautagebuch" || s.includes("tagebuch")) {
+    return { color: "#8A5A06", backgroundColor: "#FBF1D6" };
+  }
+  if (
+    s === "in_arbeit" ||
+    s === "abnahme" ||
+    s === "termin" ||
+    s === "durchfuehrung" ||
+    s.includes("arbeit") ||
+    s.includes("aktiv")
+  ) {
+    return { color: "#1F6A3F", backgroundColor: "#DDEEDF" };
+  }
+  if (s.includes("angebot") || s.includes("gesendet") || s.includes("entwurf")) {
+    return { color: "#8A5A06", backgroundColor: "#FBF1D6" };
+  }
+  return { color: "#4B5563", backgroundColor: "#EAEDEC" };
+}
+
 /** @deprecated Alias für Partner-Importe */
 export const fmtPartnerDate = fmtPortalDate;
 /** @deprecated Alias für Partner-Importe */
@@ -94,3 +140,4 @@ export const fmtPartnerMetaLine = fmtPortalMetaLine;
 export const fmtPartnerEuro = fmtPortalEuro;
 /** @deprecated Alias für Partner-Importe */
 export const partnerDetailStatusPillClass = portalDetailStatusPillClass;
+export const partnerDetailStatusPillStyle = portalDetailStatusPillStyle;

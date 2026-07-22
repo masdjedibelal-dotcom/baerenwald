@@ -31,8 +31,7 @@ type Props = {
   mode?: "melden" | "ergaenzen";
   einladungToken?: string;
   /**
-   * Objekt-Link/Aushang: Objekt ist fest — Mieter sieht nur dieses Objekt
-   * (erster Schritt: Bestätigung, kein Sprung zur HV-Objektliste).
+   * Objekt-Link/Aushang: Objekt ist fest — kein Sprung zur HV-Objektliste.
    */
   objektLocked?: boolean;
   prefill?: {
@@ -113,22 +112,11 @@ export function MeldeFormular({
           sessionKey,
           ergaenzenToken: mode === "ergaenzen" ? einladungToken : undefined,
           needsAddress: isAllgemein,
-          objektConfirm: objektLocked
-            ? {
-                titel: objektTitel,
-                adresse: [objektAdresse, objektPlzOrt]
-                  .filter(Boolean)
-                  .join(" · "),
-              }
-            : isAllgemein
-              ? null
-              : {
-                  titel: objektTitel,
-                  adresse: [objektAdresse, objektPlzOrt]
-                    .filter(Boolean)
-                    .join(" · "),
-                },
           objektLocked,
+          objektTitel: isAllgemein ? null : objektTitel,
+          objektAdresse: isAllgemein
+            ? null
+            : [objektAdresse, objektPlzOrt].filter(Boolean).join(" · ") || null,
         }}
         onClose={() => {
           if (mode === "ergaenzen") {

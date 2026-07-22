@@ -1,6 +1,7 @@
 "use client";
 
 import { PortalScreenDashboard } from "@/components/shared/PortalScreenDashboard";
+import { partnerStatusChipStyle } from "@/lib/partner/partner-list-mappers";
 
 export type PartnerHwDashboardKpis = {
   neueAnfragen: number;
@@ -80,13 +81,6 @@ export function partnerDashboardStatusColors(key: string): {
   color: string;
   bg: string;
 } {
-  switch (key) {
-    case "neu":
-    case "aktion":
-      return { color: "#6d28d9", bg: "#ede9fe" };
-    case "erledigt":
-      return { color: "#1F6A3F", bg: "#DDEEDF" };
-    default:
-      return { color: "#0f766e", bg: "#ccfbf1" };
-  }
+  const style = partnerStatusChipStyle(key);
+  return { color: style.color, bg: style.backgroundColor };
 }

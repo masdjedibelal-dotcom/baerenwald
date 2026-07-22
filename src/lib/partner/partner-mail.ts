@@ -2,6 +2,11 @@ import { Resend } from "resend";
 
 import { SITE_CONFIG } from "@/lib/config";
 import {
+  buildStandardMailHtml,
+  mailPrimaryButtonHtml,
+  mailTeamGrussHtml,
+} from "@/lib/email/mail-shell";
+import {
   partnerDashboardUrl,
   partnerLoginForAuftragAnfrageUrl,
 } from "@/lib/partner/partner-site-url";
@@ -56,34 +61,23 @@ function escapeHtml(s: string): string {
     .replace(/"/g, "&quot;");
 }
 
+/** Partner-Mails: Standard-Hülle (Logo, Footer) + optionaler Titel im Body. */
 function mailShell(title: string, bodyHtml: string, preheader?: string): string {
-  const pre = preheader?.trim()
-    ? `<div style="display:none;max-height:0;overflow:hidden;">${escapeHtml(preheader)}</div>`
+  const headline = title.trim()
+    ? `<h2 style="color:#2E7D52;margin:0 0 16px;font-size:20px;line-height:1.3;">${escapeHtml(title)}</h2>`
     : "";
-  return `<!DOCTYPE html><html lang="de"><head><meta charset="UTF-8"/></head>
-<body style="margin:0;padding:0;background:#ffffff;font-family:Arial,Helvetica,sans-serif;">
-${pre}
-<table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="background:#ffffff;">
-<tr><td align="center" style="padding:32px 16px;">
-<table width="580" cellpadding="0" cellspacing="0" role="presentation" style="max-width:580px;width:100%;">
-<tr><td style="padding:0 0 20px;border-bottom:1px solid #E5E7EB;">
-  <span style="font-size:20px;font-weight:700;color:#1A3D2B;letter-spacing:-0.02em;">Bärenwald</span>
-</td></tr>
-<tr><td style="padding:28px 0 20px;">
-  <h2 style="color:#2E7D52;margin:0 0 16px;font-size:20px;line-height:1.3;">${escapeHtml(title)}</h2>
-  ${bodyHtml}
-</td></tr>
-<tr><td style="padding:16px 0 0;border-top:1px solid #E5E7EB;">
-  <p style="font-size:12px;color:#9CA3AF;margin:0;line-height:1.6;">Bärenwald München · Partner-Portal</p>
-</td></tr>
-</table>
-</td></tr>
-</table>
-</body></html>`;
+  return buildStandardMailHtml({
+    preheader: preheader ?? title,
+    bodyHtml: `${headline}${bodyHtml}
+      <p style="margin:24px 0 0;font-size:15px;color:#374151;line-height:1.6;">${mailTeamGrussHtml("du")}</p>`,
+    disclaimer:
+      "Du erhältst diese Mail, weil dir im Partner-Portal ein Vorgang zugewiesen wurde.",
+    footerNote: "Bärenwald München · Partner-Portal",
+  });
 }
 
 function mailBtn(text: string, url: string): string {
-  return `<a href="${escapeHtml(url)}" style="display:inline-block;background:#2E7D52;color:#ffffff;text-decoration:none;padding:14px 28px;border-radius:8px;font-weight:600;font-size:15px;margin:20px 0 8px;">${escapeHtml(text)}</a>`;
+  return mailPrimaryButtonHtml(text, url);
 }
 
 function mailGreenBox(innerHtml: string): string {
@@ -210,23 +204,6 @@ export async function sendHandwerkerLeistungZuweisungMail(opts: {
     (l) => l.preis_netto != null && Number.isFinite(l.preis_netto)
   );
 
-  const lis = opts.leistungen
-    .map((l) => {
-      const qty =
-        l.einheit && l.einheit !== "pauschal" && l.menge != null
-          ? ` (${l.menge} ${escapeHtml(l.einheit)})`
-          : "";
-      const desc = l.beschreibung?.trim()
-        ? ` — ${escapeHtml(l.beschreibung.trim())}`
-        : "";
-      const preis =
-        l.preis_netto != null && Number.isFinite(l.preis_netto)
-          ? ` · ${escapeHtml(fmtEuro(l.preis_netto))} netto`
-          : "";
-      return `<li style="margin:6px 0;"><strong>${escapeHtml(l.leistung_name)}</strong>${desc}<span style="color:#6B7280;font-size:13px;"> · ${escapeHtml(l.gewerk_name)}${qty}${preis}</span></li>`;
-    })
-    .join("");
-
   const detailsBox = mailGreenBox(`
     <table width="100%" cellpadding="0" cellspacing="0" style="font-size:14px;line-height:1.6;">
       <tr><td style="color:#2E7D52;padding:4px 0;width:38%;">Auftrag:</td><td style="font-weight:600;color:#1A3D2B;">${escapeHtml(opts.auftragTitel)}</td></tr>
@@ -258,7 +235,6 @@ export async function sendHandwerkerLeistungZuweisungMail(opts: {
     `<p style="margin:0 0 12px;font-size:15px;line-height:1.6;">Hallo ${escapeHtml(opts.handwerkerName)},</p>
 <p style="margin:0 0 12px;font-size:15px;line-height:1.6;">${intro}</p>
 ${detailsBox}
-<ul style="font-size:14px;line-height:1.7;padding-left:20px;margin:12px 0 16px;color:#1A3D2B;">${lis}</ul>
 ${mailBtn("Zum Partner-Portal →", portalLink)}
 <p style="font-size:13px;color:#6B7280;line-height:1.6;margin:0 0 8px;">
   ${footer}
@@ -538,16 +514,29 @@ export async function sendPartnerInternalBautagebuchMail(opts: {
 
   const hw = opts.firma?.trim() || opts.handwerkerName;
   const crm = crmAuftragUrl(opts.auftragId);
+  const preheader = `Neuer Bautagebuch-Eintrag von ${hw}`;
 
-  const html = mailShell(
-    `Neuer Bautagebuch-Eintrag von ${hw}`,
-    `<p><strong>${escapeHtml(hw)}</strong> hat einen Bautagebuch-Eintrag erstellt.</p>
-<p>Auftrag: ${escapeHtml(opts.auftragTitel)}<br>Eintrag: ${escapeHtml(opts.eintragTitel)} (${escapeHtml(opts.datum)})</p>
-${mailActionButtons({
-  crmUrl: crm,
-  crmLabel: "Bautagebuch im CRM öffnen",
-})}`
-  );
+  const html = buildStandardMailHtml({
+    preheader,
+    bodyHtml: `
+      <p style="margin:0 0 12px;font-size:15px;color:#374151;line-height:1.6;">Guten Tag,</p>
+      <p style="margin:0 0 16px;font-size:15px;color:#374151;line-height:1.6;"><strong>${escapeHtml(hw)}</strong> hat einen Bautagebuch-Eintrag erstellt.</p>
+      ${mailGreenBox(`
+        <table width="100%" cellpadding="0" cellspacing="0" style="font-size:14px;line-height:1.6;">
+          <tr><td style="color:#2E7D52;padding:4px 0;width:38%;">Auftrag:</td><td style="font-weight:600;color:#1A3D2B;">${escapeHtml(opts.auftragTitel)}</td></tr>
+          <tr><td style="color:#2E7D52;padding:4px 0;">Eintrag:</td><td style="font-weight:600;color:#1A3D2B;">${escapeHtml(opts.eintragTitel)}</td></tr>
+          <tr><td style="color:#2E7D52;padding:4px 0;">Datum:</td><td style="font-weight:600;color:#1A3D2B;">${escapeHtml(opts.datum)}</td></tr>
+        </table>
+      `)}
+      ${mailActionButtons({
+        crmUrl: crm,
+        crmLabel: "Bautagebuch im CRM öffnen",
+      })}
+      <p style="margin:24px 0 0;font-size:15px;color:#374151;line-height:1.6;">${mailTeamGrussHtml("sie")}</p>
+    `,
+    disclaimer:
+      "Sie erhalten diese Mail intern, weil ein Partner einen Bautagebuch-Eintrag veröffentlicht hat.",
+  });
 
   try {
     await resend.emails.send({

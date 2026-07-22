@@ -64,12 +64,14 @@ export function PortalDetailHero({
   metaLine,
   statusLabel,
   statusPillClass,
+  statusPillStyle,
   subtitle,
 }: {
   title: string;
   metaLine?: string;
   statusLabel?: string;
   statusPillClass?: string;
+  statusPillStyle?: { color: string; backgroundColor: string };
   subtitle?: string;
 }) {
   const showStatusRow = Boolean(statusLabel?.trim());
@@ -81,8 +83,16 @@ export function PortalDetailHero({
       {metaLine ? <p className="portal-text-body text-accent">{metaLine}</p> : null}
       {showStatusRow || subtitle ? (
         <div className="flex flex-wrap items-center gap-2">
-          {showStatusRow && statusPillClass ? (
-            <span className={statusPillClass}>{statusLabel}</span>
+          {showStatusRow ? (
+            <span
+              className={cn(
+                "inline-flex items-center rounded-md px-2 py-0.5 text-[12px] font-semibold",
+                !statusPillStyle && statusPillClass
+              )}
+              style={statusPillStyle}
+            >
+              {statusLabel}
+            </span>
           ) : null}
           {subtitle ? (
             <span className="portal-text-meta text-text-secondary">{subtitle}</span>
@@ -351,13 +361,13 @@ export function PortalDetailStickyActions({
   secondaryDisabled?: boolean;
 }) {
   return (
-    <div className="flex gap-2">
+    <div className="flex w-full gap-2">
       {secondaryLabel ? (
         <button
           type="button"
           disabled={secondaryDisabled || primaryLoading}
           onClick={onSecondary}
-          className="btn-pill-outline portal-btn min-w-0 flex-1 !py-3"
+          className="min-w-0 flex-1 rounded-[9px] border border-border-default bg-white px-[18px] py-[11px] text-[13.5px] font-semibold text-text-secondary disabled:opacity-60"
         >
           {secondaryLabel}
         </button>
@@ -368,8 +378,8 @@ export function PortalDetailStickyActions({
         disabled={primaryDisabled || primaryLoading}
         onClick={primaryType === "button" ? onPrimary : undefined}
         className={cn(
-          "btn-pill-primary portal-btn min-w-0 flex-1 !py-3",
-          (primaryDisabled || primaryLoading) && "opacity-60"
+          "min-w-0 flex-1 rounded-[9px] border-0 px-[18px] py-[11px] text-[13.5px] font-semibold text-white disabled:opacity-60",
+          "bg-[var(--org-primary,var(--accent,#2E7D52))]"
         )}
       >
         {primaryLoading ? "Wird gesendet…" : primaryLabel}

@@ -27,10 +27,19 @@ export async function GET() {
 
   const userIds = (data ?? []).map((m) => m.auth_user_id).filter(Boolean);
   const emailByUser = new Map<string, string>();
+  const nameByUser = new Map<string, string>();
   if (userIds.length) {
     const { data: users } = await supabaseAdmin.auth.admin.listUsers();
     for (const u of users?.users ?? []) {
-      if (u.id && u.email) emailByUser.set(u.id, u.email);
+      if (!u.id) continue;
+      if (u.email) emailByUser.set(u.id, u.email);
+      const meta = (u.user_metadata ?? {}) as Record<string, unknown>;
+      const display =
+        (typeof meta.name === "string" && meta.name.trim()) ||
+        (typeof meta.full_name === "string" && meta.full_name.trim()) ||
+        (typeof meta.display_name === "string" && meta.display_name.trim()) ||
+        "";
+      if (display) nameByUser.set(u.id, display);
     }
   }
 
@@ -38,6 +47,7 @@ export async function GET() {
     mitglieder: (data ?? []).map((m) => ({
       id: m.id,
       email: emailByUser.get(String(m.auth_user_id)) ?? null,
+      name: nameByUser.get(String(m.auth_user_id)) ?? null,
       rolle: m.rolle,
       aktiv: m.aktiv,
       eingeladen_am: m.eingeladen_am,
@@ -47,7 +57,7 @@ export async function GET() {
   });
 }
 
-type PostBody = { email?: string; rolle?: string };
+type PostBody = { email?: string; name?: string; rolle?: string };
 
 export async function POST(req: Request) {
   const session = await requireOrgAdminSession();
@@ -63,6 +73,7 @@ export async function POST(req: Request) {
   }
 
   const email = String(body.email ?? "").trim().toLowerCase();
+  const name = String(body.name ?? "").trim();
   const rolle = String(body.rolle ?? "sachbearbeiter").trim();
   if (!isValidEmail(email)) {
     return NextResponse.json({ error: "Gültige E-Mail erforderlich." }, { status: 400 });
@@ -77,7 +88,12 @@ export async function POST(req: Request) {
   if (!authUserId) {
     const { data: invited, error: invErr } = await supabaseAdmin.auth.admin.inviteUserByEmail(
       email,
-      { redirectTo: `${process.env.NEXT_PUBLIC_APP_URL ?? ""}/portal` }
+      {
+        redirectTo: `${process.env.NEXT_PUBLIC_APP_URL ?? ""}/portal`,
+        data: name
+          ? { name, full_name: name, display_name: name }
+          : undefined,
+      }
     );
     if (invErr || !invited.user?.id) {
       return NextResponse.json(
@@ -86,6 +102,10 @@ export async function POST(req: Request) {
       );
     }
     authUserId = invited.user.id;
+  } else if (name) {
+    await supabaseAdmin.auth.admin.updateUserById(authUserId, {
+      user_metadata: { name, full_name: name, display_name: name },
+    });
   }
 
   const { error } = await supabaseAdmin.from("kunden_mitglieder").upsert(
@@ -109,7 +129,7 @@ export async function POST(req: Request) {
     actorId: session.userId,
     actorRolle: session.rolle,
     kundeId: session.kunde.id,
-    payload: { email, rolle },
+    payload: { email, name: name || null, rolle },
   });
 
   return NextResponse.json({ ok: true });

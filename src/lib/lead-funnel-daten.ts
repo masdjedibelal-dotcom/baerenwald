@@ -75,8 +75,17 @@ export function normalizeFunnelDaten(
   const fdRaw = d.fachdetails;
   const fachdetails: FachdetailsState =
     fdRaw && typeof fdRaw === "object" && !Array.isArray(fdRaw)
-      ? (fdRaw as FachdetailsState)
+      ? { ...(fdRaw as FachdetailsState) }
       : {};
+
+  /** Melde-API legt Antworten top-level ab (`funnel_daten.fachdetailAnswers`). */
+  const topAnswers = d.fachdetailAnswers;
+  if (topAnswers && typeof topAnswers === "object" && !Array.isArray(topAnswers)) {
+    fachdetails.fachdetailAnswers = {
+      ...(fachdetails.fachdetailAnswers ?? {}),
+      ...(topAnswers as Record<string, string | string[] | undefined>),
+    };
+  }
 
   const breakdown = Array.isArray(d.breakdown)
     ? (d.breakdown as PriceLineItem[])
@@ -218,6 +227,49 @@ export function buildLeistungenRows(
     });
   }
   return rows;
+}
+
+/**
+ * Einzelne Fachfragen → Antwort (Frage als Label) — für HV-/Portal-Details.
+ */
+export function buildFachdetailAnswerRows(
+  norm: NormalizedFunnelDaten
+): MailTableRow[] {
+  const ans = norm.fachdetails.fachdetailAnswers ?? {};
+  const rows: MailTableRow[] = [];
+  const seen = new Set<string>();
+
+  for (const q of FACHDETAIL_QUESTIONS) {
+    const v = ans[q.id];
+    if (v === undefined || v === null || v === "") continue;
+    const value = answerLabel(q.id, v);
+    if (!value) continue;
+    rows.push({ label: q.frage, value });
+    seen.add(q.id);
+  }
+
+  for (const [id, v] of Object.entries(ans)) {
+    if (seen.has(id)) continue;
+    if (v === undefined || v === null || v === "") continue;
+    const value = answerLabel(id, v);
+    if (!value) continue;
+    rows.push({
+      label: id.replace(/_/g, " "),
+      value,
+    });
+  }
+
+  return rows;
+}
+
+/** Convenience: direkt aus Lead-`funnel_daten`. */
+export function fachdetailRowsFromFunnelDaten(
+  funnel_daten: unknown,
+  bereicheFallback?: string[] | null
+): MailTableRow[] {
+  return buildFachdetailAnswerRows(
+    normalizeFunnelDaten(funnel_daten, bereicheFallback)
+  );
 }
 
 export function buildBreakdownRows(

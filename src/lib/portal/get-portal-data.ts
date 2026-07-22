@@ -582,7 +582,6 @@ export async function getPortalDataForKunde(kundeId: string) {
         (leadId ? leadObjektIdByLeadId.get(leadId) : null);
       const leadPlz = leadId ? leadPlzByLeadId.get(leadId) : null;
 
-      const bautagebuchEntries = bautagebuchByAuftrag.get(auftragId) ?? [];
       const auftragRechnungen = (rechnungen ?? [])
         .filter((r) => String(r.auftrag_id) === auftragId)
         .map((r) => mapPortalRechnungForResolver(r));
@@ -642,12 +641,6 @@ export async function getPortalDataForKunde(kundeId: string) {
             timeline: (timeline ?? []).filter(
               (t) => String(t.auftrag_id) === auftragId
             ),
-            bautagebuch: bautagebuchEntries.map((entry) => ({
-              id: entry.id,
-              datum: entry.datum ?? null,
-              titel: entry.titel,
-              fotos_urls: entry.fotos_urls,
-            })),
             abnahmeProtokolle: abnahmeByAuftrag.get(auftragId) ?? [],
           }
         ),

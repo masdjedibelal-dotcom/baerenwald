@@ -5,13 +5,11 @@ import { AlertTriangle } from "lucide-react";
 
 import { OrganisationObjektCover } from "@/components/org/OrganisationObjektCover";
 import { OrganisationObjektDokumentePanel } from "@/components/org/OrganisationObjektDokumentePanel";
-import { OrganisationObjektEinheitenBewohnerPanel } from "@/components/org/OrganisationObjektEinheitenBewohnerPanel";
 import { OrganisationObjektMieterTab } from "@/components/org/OrganisationObjektMieterTab";
 import { PortalListCard } from "@/components/shared/PortalListCard";
 import {
   EinstellungenCard,
-  EinstellungenEdField,
-  EinstellungenEuroInput,
+  EinstellungenEuroSlider,
   EinstellungenInfoBox,
 } from "@/components/shared/PortalEinstellungenUi";
 import { cn } from "@/lib/utils";
@@ -23,7 +21,10 @@ import {
 } from "@/lib/org/org-eingang-utils";
 import type { OrganisationLead, OrganisationObjekt } from "@/lib/org/types";
 import {
-  EINSTELLUNGEN_SCHWELLE_PRESETS,
+  EINSTELLUNGEN_SCHWELLE_SLIDER_MAX,
+  EINSTELLUNGEN_SCHWELLE_SLIDER_MIN,
+  EINSTELLUNGEN_SCHWELLE_SLIDER_STEP,
+  formatEinstellungenSchwelle,
 } from "@/lib/portal2/einstellungen";
 import {
   decodeObjektMeta,
@@ -96,9 +97,41 @@ function ObjCard({
 
 function ObjRow({ label, value }: { label: string; value: string }) {
   return (
-    <div className="flex justify-between gap-3 border-b border-border-default py-2 text-[13.5px] last:border-b-0">
-      <span className="text-text-secondary">{label}</span>
-      <span className="text-right font-semibold text-text-primary">{value}</span>
+    <div className="flex items-center justify-between gap-3 border-b border-border-default py-2 text-[13.5px] last:border-b-0">
+      <span className="shrink-0 text-text-secondary">{label}</span>
+      <span className="min-w-0 text-right font-semibold text-text-primary">
+        {value}
+      </span>
+    </div>
+  );
+}
+
+function ObjEditRow({
+  label,
+  value,
+  onChange,
+  placeholder,
+  type = "text",
+  autoComplete,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  placeholder?: string;
+  type?: string;
+  autoComplete?: string;
+}) {
+  return (
+    <div className="flex items-center justify-between gap-3 border-b border-border-default py-1.5 text-[13.5px] last:border-b-0">
+      <span className="shrink-0 text-text-secondary">{label}</span>
+      <input
+        type={type}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+        autoComplete={autoComplete}
+        className="min-w-0 max-w-[65%] flex-1 rounded-lg border border-transparent bg-transparent px-2 py-1.5 text-right font-semibold text-text-primary outline-none placeholder:font-normal placeholder:text-text-tertiary focus:border-border-default focus:bg-white"
+      />
     </div>
   );
 }
@@ -258,42 +291,39 @@ export function OrganisationObjektDetail({
     body = (
       <div className="grid gap-3.5 md:grid-cols-2">
         <ObjCard title="Ansprechpartner">
-          <div className="flex flex-col gap-3">
-            <p
-              className="text-[13px] leading-[1.55]"
-              style={{ color: PORTAL_C.sub }}
-            >
-              Kontakt für diese WEG — Name, Telefon und E-Mail.
-            </p>
-            <EinstellungenEdField
-              label="Name"
-              value={kontaktName}
-              onChange={(v) => scheduleAnsprechpartner({ kontakt: v })}
-              placeholder="Max Mustermann"
-              autoComplete="name"
-            />
-            <EinstellungenEdField
-              label="Telefon"
-              type="tel"
-              value={kontaktTel}
-              onChange={(v) => scheduleAnsprechpartner({ tel: v })}
-              placeholder="089 / …"
-              autoComplete="tel"
-            />
-            <EinstellungenEdField
-              label="E-Mail"
-              type="email"
-              value={kontaktEmail}
-              onChange={(v) => scheduleAnsprechpartner({ email: v })}
-              placeholder="name@firma.de"
-              autoComplete="email"
-            />
-          </div>
+          <ObjEditRow
+            label="Name"
+            value={kontaktName}
+            onChange={(v) => scheduleAnsprechpartner({ kontakt: v })}
+            placeholder="Max Mustermann"
+            autoComplete="name"
+          />
+          <ObjEditRow
+            label="Telefon"
+            type="tel"
+            value={kontaktTel}
+            onChange={(v) => scheduleAnsprechpartner({ tel: v })}
+            placeholder="089 / …"
+            autoComplete="tel"
+          />
+          <ObjEditRow
+            label="E-Mail"
+            type="email"
+            value={kontaktEmail}
+            onChange={(v) => scheduleAnsprechpartner({ email: v })}
+            placeholder="name@firma.de"
+            autoComplete="email"
+          />
         </ObjCard>
         <ObjCard title="Objektdaten">
           <ObjRow label="Bezeichnung" value={objekt.titel} />
           <ObjRow label="Typ" value={typLine} />
-          <ObjRow label="Adresse" value={strasse} />
+          <ObjRow
+            label="Adresse"
+            value={
+              [strasse, plzOrt].filter((x) => x && x !== "—").join(", ") || "—"
+            }
+          />
           <ObjRow
             label="Einheiten"
             value={we === 1 ? "1 Einheit" : `${we} Einheiten`}
@@ -306,19 +336,13 @@ export function OrganisationObjektDetail({
         </ObjCard>
       </div>
     );
-  } else if (tab === "einheiten") {
-    body = (
-      <OrganisationObjektEinheitenBewohnerPanel
-        objektId={objekt.id}
-        detailLayout
-        titleCount={we}
-      />
-    );
   } else if (tab === "mieter") {
     body = (
       <OrganisationObjektMieterTab
         objektId={objekt.id}
         leads={objektLeads}
+        defaultStrasse={objekt.strasse}
+        defaultHausnummer={objekt.hausnummer}
         onEinladen={onEinladen}
         onGotoVorgaenge={() => setTab("vorgaenge")}
       />
@@ -391,9 +415,12 @@ export function OrganisationObjektDetail({
           >
             {OBJ_SCHWELLE_WIZARD_DESC}
           </p>
-          <EinstellungenEuroInput
+          <EinstellungenEuroSlider
             value={schwelle}
-            presets={EINSTELLUNGEN_SCHWELLE_PRESETS}
+            min={EINSTELLUNGEN_SCHWELLE_SLIDER_MIN}
+            max={EINSTELLUNGEN_SCHWELLE_SLIDER_MAX}
+            step={EINSTELLUNGEN_SCHWELLE_SLIDER_STEP}
+            formatValue={formatEinstellungenSchwelle}
             onChange={onSchwelleChange}
           />
           <EinstellungenInfoBox>

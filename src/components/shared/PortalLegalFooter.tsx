@@ -7,11 +7,15 @@ export function PortalLegalFooter({
   variant,
   className,
 }: {
-  variant: "partner" | "kunde";
+  variant: "partner" | "kunde" | "org";
   className?: string;
 }) {
   const datenschutzHref =
-    variant === "partner" ? "/datenschutz#partner-portal" : "/datenschutz#meinbaerenwald";
+    variant === "partner"
+      ? "/datenschutz#partner-portal"
+      : variant === "org"
+        ? "/datenschutz#hausverwaltung"
+        : "/datenschutz#meinbaerenwald";
 
   return (
     <footer

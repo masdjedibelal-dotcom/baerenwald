@@ -47,7 +47,7 @@ export function OrganisationAnfrageHub({
       title="Neuer Vorgang"
       onClose={onClose}
       size="funnel"
-      maxWidth={1360}
+      maxWidth={560}
     >
       {objekte.length === 0 ? (
         <p className="mb-3 text-sm text-text-secondary">

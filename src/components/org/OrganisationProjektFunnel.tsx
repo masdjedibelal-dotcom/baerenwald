@@ -99,7 +99,9 @@ export function OrganisationProjektFunnel({
       <div>
         <p className="text-sm text-text-secondary mb-2">Art des Vorhabens</p>
         <div className="grid grid-cols-2 gap-2">
-          {BW_FUNNEL_STEP1_OPTIONS.filter((o) => o.id !== "gewerbe").map((o) => (
+          {BW_FUNNEL_STEP1_OPTIONS.filter(
+            (o) => o.id !== "gewerbe" && o.id !== "betreuung"
+          ).map((o) => (
             <button
               key={o.id}
               type="button"

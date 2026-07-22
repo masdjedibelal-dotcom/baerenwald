@@ -13,6 +13,12 @@ import {
   PORTAL_LIST_PAGE_SIZE,
   PortalListPagination,
 } from "@/components/shared/PortalListPagination";
+import {
+  PortalListeEyebrow,
+  PortalListeFilterChip,
+  PortalListeTitle,
+} from "@/components/shared/PortalListeChrome";
+import { PortalLegalFooter } from "@/components/shared/PortalLegalFooter";
 import { PortalShell } from "@/components/shared/PortalShell";
 import { PortalHeaderSearch } from "@/components/shared/PortalHeaderSearch";
 import { PortalEmptyState } from "@/components/shared/PortalStateView";
@@ -31,6 +37,7 @@ import {
 import {
   buildPrivatDashboardKpis,
   PRIVAT_LISTE_CHIPS,
+  privatKpiToListeChip,
   privatListeChipMatches,
   type PrivatListeChip,
 } from "@/lib/portal2/kunde-dashboard";
@@ -53,9 +60,8 @@ import {
   formatObjektTypLine,
   parseEinheitenCount,
 } from "@/lib/portal2/objekte";
-import { portalDetailStatusPillClass } from "@/lib/shared/portal-detail-format";
+import { portalDetailStatusPillStyle } from "@/lib/shared/portal-detail-format";
 import { portalToastError, portalToastSuccess } from "@/lib/shared/portal-toast";
-import { cn } from "@/lib/utils";
 
 type SectionId = "uebersicht" | "vorgaenge" | "objekte";
 
@@ -372,7 +378,14 @@ export function EigentuemerPortalClient({
           kpis={privatKpis}
           recent={recentItems}
           heroImageUrl={PORTAL_HEADER_HERO_SRC}
-          onOpenAll={() => switchSection("vorgaenge")}
+          onOpenAll={() => {
+            setListeChip("alle");
+            switchSection("vorgaenge");
+          }}
+          onKpiClick={(id) => {
+            setListeChip(privatKpiToListeChip(id));
+            switchSection("vorgaenge");
+          }}
           onOpenItem={(id) => {
             setSelectedId(id);
             setMobileDetailOpen(true);
@@ -430,6 +443,12 @@ export function EigentuemerPortalClient({
             <PortalVorgangDetail
               item={selectedItem}
               privatkunde
+              showHvAbnahme
+              flowStatusOverride={
+                flowByItemId.get(selectedItem.id) ?? "gemeldet"
+              }
+              orgFreigabeStatus={freigabeStatusOf(selectedLeadId, leads)}
+              schwelleEur={schwelleEur}
               onBack={() => {
                 setMobileDetailOpen(false);
                 setSelectedId(null);
@@ -442,12 +461,8 @@ export function EigentuemerPortalClient({
         ) : (
           <div className="flex min-w-0 flex-col">
             <div className="px-0.5 pb-1">
-              <p className="mb-1 text-[12px] font-semibold uppercase tracking-wide text-text-tertiary">
-                Eigentümer
-              </p>
-              <h1 className="text-[25px] font-bold text-text-primary">
-                Meine Wohnung
-              </h1>
+              <PortalListeEyebrow>Eigentümer</PortalListeEyebrow>
+              <PortalListeTitle>Meine Wohnung</PortalListeTitle>
               <p className="portal-text-body mt-1 text-text-secondary">
                 Nur Vorgänge Ihrer zugeordneten Objekte · Schwelle{" "}
                 {formatEigentuemerSchwelle(schwelleEur)}
@@ -456,22 +471,16 @@ export function EigentuemerPortalClient({
 
             <div className="flex flex-wrap gap-2 py-3.5">
               {PRIVAT_LISTE_CHIPS.map((chip) => (
-                <button
+                <PortalListeFilterChip
                   key={chip.id}
-                  type="button"
+                  active={listeChip === chip.id}
                   onClick={() => {
                     setListeChip(chip.id);
                     setListPage(1);
                   }}
-                  className={cn(
-                    "rounded-full px-3 py-1.5 text-[12.5px] font-semibold",
-                    listeChip === chip.id
-                      ? "border border-transparent bg-[#1A3D2B] text-white"
-                      : "border border-border-default bg-white text-text-secondary"
-                  )}
                 >
                   {chip.label}
-                </button>
+                </PortalListeFilterChip>
               ))}
             </div>
 
@@ -492,7 +501,8 @@ export function EigentuemerPortalClient({
                     title={row.title}
                     subtitle={row.subtitle}
                     statusLabel={row.statusLabel}
-                    statusPillClass={portalDetailStatusPillClass(row.statusPillKey)}
+                    statusPillClass=""
+                    statusPillStyle={portalDetailStatusPillStyle(row.statusPillKey)}
                     accent={row.accent}
                     meta={row.meta}
                     showChevron
@@ -630,6 +640,10 @@ export function EigentuemerPortalClient({
           router.refresh();
         }}
       />
+
+      <div className="mx-auto hidden max-w-[1200px] px-6 lg:block">
+        <PortalLegalFooter variant="kunde" className="mt-8" />
+      </div>
     </>
   );
 }

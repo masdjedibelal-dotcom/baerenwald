@@ -35,13 +35,13 @@ export const VORGANG_DETAIL_SIGHT: Record<VorgangDetailRole, VorgangDetailSight>
     mieter: {
       auftraggeber: "hidden",
       objektMelder: "safe",
-      ausfuehrung: "plain",
+      ausfuehrung: "hidden",
       leistungen: "plain",
     },
     kunde: {
-      auftraggeber: "full",
+      auftraggeber: "hidden",
       objektMelder: "safe",
-      ausfuehrung: "summary",
+      ausfuehrung: "hidden",
       leistungen: "vk",
     },
     partner: {
@@ -101,6 +101,8 @@ export type VorgangDetailObjektMelder = {
   situationLabel?: string | null;
   bereichLabel?: string | null;
   zeitraumLabel?: string | null;
+  /** Fachfragen aus dem Melde-/Rechner-Funnel */
+  fachdetailRows?: Array<{ label: string; value: string }>;
 };
 
 export type VorgangDetailAusfuehrung = {

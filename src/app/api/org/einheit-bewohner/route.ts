@@ -4,6 +4,7 @@ import {
   assertOrgEinheit,
   requireOrgWrite,
 } from "@/lib/org/assert-org-objekt";
+import { ensureObjektBewohner } from "@/lib/org/ensure-objekt-bewohner";
 import { requireOrganisationSession } from "@/lib/org/require-org-session";
 import { supabaseAdmin } from "@/lib/supabase";
 
@@ -104,13 +105,11 @@ async function resolveEinheitId(opts: {
   }
 
   const objektId = opts.objektId?.trim() ?? "";
-  const wohnung = opts.wohnung?.trim() ?? "";
-  if (!objektId || !wohnung) {
-    return {
-      error: "Wohnung und Objekt erforderlich.",
-      status: 400,
-    };
+  if (!objektId) {
+    return { error: "Objekt erforderlich.", status: 400 };
   }
+
+  const wohnung = opts.wohnung?.trim() || "Allgemein";
 
   const { data: objekt } = await supabaseAdmin
     .from("kunden_objekte")
@@ -191,10 +190,33 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Name erforderlich." }, { status: 400 });
   }
 
+  const objektId = String(body.objektId ?? "").trim();
+  const einheitId = String(body.einheitId ?? "").trim();
+
+  if (objektId && !einheitId) {
+    const ensured = await ensureObjektBewohner({
+      kundeId: session.kunde.id,
+      objektId,
+      name,
+      wohnung: body.wohnung,
+      etage: body.etage,
+      email: body.email,
+      telefon: body.telefon,
+    });
+    if (!ensured.ok) {
+      return NextResponse.json({ error: ensured.error }, { status: 400 });
+    }
+    return NextResponse.json({
+      ok: true,
+      id: ensured.bewohnerId,
+      einheitId: ensured.einheitId,
+    });
+  }
+
   const resolved = await resolveEinheitId({
     kundeId: session.kunde.id,
-    einheitId: String(body.einheitId ?? "").trim() || undefined,
-    objektId: String(body.objektId ?? "").trim() || undefined,
+    einheitId: einheitId || undefined,
+    objektId: objektId || undefined,
     wohnung: String(body.wohnung ?? "").trim() || undefined,
     etage: body.etage?.trim() || undefined,
   });

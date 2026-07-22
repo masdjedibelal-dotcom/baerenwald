@@ -153,11 +153,21 @@ export function buildPartnerAuftragKonditionZeilen(
     const preisAlt =
       pos.preis_alt != null && pos.preis_alt > 0 ? pos.preis_alt : null;
 
+    const menge =
+      pos.menge != null && Number.isFinite(pos.menge)
+        ? String(pos.menge).replace(".", ",")
+        : null;
+    const einheit = pos.einheit?.trim() || null;
+    const mengeLine = [menge, einheit].filter(Boolean).join(" ");
+    const gewerk = pos.gewerk_name?.trim() || null;
+    const meta = [mengeLine || null, gewerk].filter(Boolean).join(" · ") || undefined;
+
     return {
       id: pos.id,
-      title,
+      title: pos.leistung_name?.trim() || title,
       beschreibung:
         pos.beschreibung && pos.beschreibung !== title ? pos.beschreibung : undefined,
+      meta,
       vorschlagNetto: isEntfernt ? preisAlt ?? partnerNetto : partnerNetto,
       hwNetto: isEntfernt ? undefined : partnerNetto ?? undefined,
       vorherNetto: isGeaendert ? preisAlt : undefined,

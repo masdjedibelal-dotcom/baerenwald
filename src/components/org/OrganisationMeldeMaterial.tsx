@@ -1,5 +1,8 @@
 "use client";
 
+import { useState } from "react";
+import { Check, Copy } from "lucide-react";
+
 import {
   copyMeldeLink,
   openMeldeAushangPdf,
@@ -8,6 +11,7 @@ import { buildMeldeUrl } from "@/lib/org/melde-url";
 import type { OrganisationKunde } from "@/lib/org/types";
 import { EinstellungenCard } from "@/components/shared/PortalEinstellungenUi";
 import { PORTAL_C } from "@/lib/portal2/tokens";
+import { cn } from "@/lib/utils";
 
 type Props = {
   kunde: OrganisationKunde;
@@ -25,10 +29,14 @@ export function OrganisationMeldeMaterial({
   const meldeUrl = orgKennung
     ? buildMeldeUrl(orgKennung, undefined, { forPrint: true })
     : "";
+  const [copied, setCopied] = useState(false);
 
   async function copyLink() {
     if (!meldeUrl) return;
-    await copyMeldeLink(meldeUrl);
+    const ok = await copyMeldeLink(meldeUrl);
+    if (!ok) return;
+    setCopied(true);
+    window.setTimeout(() => setCopied(false), 1600);
   }
 
   if (!orgKennung) {
@@ -39,7 +47,7 @@ export function OrganisationMeldeMaterial({
         </p>
         <p className="mt-1 text-[13px] leading-[1.55]" style={{ color: PORTAL_C.sub }}>
           Die Organisations-Kennung fehlt. Bitte Bärenwald kontaktieren — danach
-          können Sie Link kopieren und den Aushang als PDF öffnen.
+          können Sie den Link kopieren und den Aushang als PDF öffnen.
         </p>
       </>
     );
@@ -68,17 +76,30 @@ export function OrganisationMeldeMaterial({
         <span className="text-[11.5px] font-bold tracking-wide text-text-tertiary">
           Melde-Link
         </span>
-        <div className="rounded-[9px] border border-border-default bg-[#f3f4f3] px-3 py-2.5">
-          <p className="break-all text-[13.5px] font-semibold text-text-primary">
+        <div className="flex items-center gap-2 rounded-[9px] border border-border-default bg-[#f3f4f3] px-3 py-2">
+          <p className="min-w-0 flex-1 break-all text-[13.5px] font-semibold text-text-primary">
             {meldeUrl}
           </p>
+          <button
+            type="button"
+            className={cn(
+              "grid h-8 w-8 shrink-0 place-items-center rounded-lg text-text-secondary transition-colors hover:bg-white hover:text-accent",
+              copied && "text-accent"
+            )}
+            onClick={() => void copyLink()}
+            aria-label={copied ? "Kopiert" : "Link kopieren"}
+            title={copied ? "Kopiert" : "Link kopieren"}
+          >
+            {copied ? (
+              <Check className="h-4 w-4" strokeWidth={2.25} />
+            ) : (
+              <Copy className="h-4 w-4" strokeWidth={2.25} />
+            )}
+          </button>
         </div>
       </div>
 
       <div className="flex flex-wrap gap-2">
-        <button type="button" className="btn-pill-outline !py-2" onClick={() => void copyLink()}>
-          Link kopieren
-        </button>
         <button
           type="button"
           className="btn-pill-primary !py-2"

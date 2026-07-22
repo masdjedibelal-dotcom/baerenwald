@@ -38,7 +38,7 @@ export const PRIVAT_DASHBOARD_KPI_DEFS = [
 /**
  * Mock privat-Tiles:
  * - Offen = gemeldet+freigegeben+angefragt+angebot
- * - In Arbeit = auftrag+abschluss
+ * - In Arbeit = nur aktiver Auftrag (Abschluss zählt als erledigt)
  * - Gesamt offen = wie Offen (Mock zeigt dieselbe Aggregation in Tile 1 und 3 für Nicht-HV)
  */
 export function buildPrivatDashboardKpis(
@@ -48,12 +48,12 @@ export function buildPrivatDashboardKpis(
     flow.gemeldet + flow.freigegeben + flow.angefragt + flow.angebot;
   return {
     offen,
-    in_arbeit: flow.auftrag + flow.abschluss,
+    in_arbeit: flow.auftrag,
     gesamt_offen: offen,
   };
 }
 
-/** Liste-Chips Privat (Mock): Alle · Offen · In Arbeit · Abgeschlossen */
+/** Liste-Chips Privat (Mock): Alle · Offen · In Arbeit · Erledigt */
 export type PrivatListeChip =
   | "alle"
   | "offen"
@@ -67,7 +67,7 @@ export const PRIVAT_LISTE_CHIPS: Array<{
   { id: "alle", label: "Alle" },
   { id: "offen", label: "Offen" },
   { id: "arbeit", label: "In Arbeit" },
-  { id: "abgeschlossen", label: "Abgeschlossen" },
+  { id: "abgeschlossen", label: "Erledigt" },
 ];
 
 export function privatListeChipMatches(
@@ -84,7 +84,19 @@ export function privatListeChipMatches(
     );
   }
   if (chip === "arbeit") {
-    return flow === "auftrag" || flow === "abschluss";
+    return flow === "auftrag";
   }
-  return flow === "rechnung" || flow === "bezahlt";
+  // Abschluss / Rechnung / bezahlt → Erledigt (nicht mehr „In Arbeit“)
+  return (
+    flow === "abschluss" || flow === "rechnung" || flow === "bezahlt"
+  );
+}
+
+/** KPI-Klick → Listen-Filterchip. */
+export function privatKpiToListeChip(
+  kpi: PrivatDashboardKpiId
+): PrivatListeChip {
+  if (kpi === "in_arbeit") return "arbeit";
+  if (kpi === "gesamt_offen") return "alle";
+  return "offen";
 }

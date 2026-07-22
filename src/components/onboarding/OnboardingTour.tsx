@@ -20,7 +20,9 @@ type OnboardingTourProps = {
 
 function slideImageSrc(audience: OnboardingAudience, imageBase: string, mobile: boolean): string {
   const vp = mobile ? "mobile" : "desktop";
-  return `/images/onboarding/${audience}/${vp}/${imageBase}.png`;
+  // HV nutzt dieselben Bild-Assets wie das Kundenportal
+  const folder = audience === "org" ? "portal" : audience;
+  return `/images/onboarding/${folder}/${vp}/${imageBase}.png`;
 }
 
 export function OnboardingTour({ open, audience, slides, onClose }: OnboardingTourProps) {

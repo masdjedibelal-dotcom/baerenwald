@@ -1,106 +1,50 @@
 "use client";
 
-import { useMemo, useState } from "react";
-
-import { PartnerAbnahmeprotokollForm } from "@/components/partner/PartnerAbnahmeprotokollForm";
 import {
   PartnerDetailSection,
   PartnerDetailSuccessBox,
 } from "@/components/partner/PartnerDetailUi";
-import {
-  allePartnerPositionenErledigt,
-  partnerKannErledigtMelden,
-} from "@/lib/partner/partner-position-erledigt";
-import {
-  positionHandwerkerAbgeschlossen,
-  positionHandwerkerErledigt,
-} from "@/lib/partner/partner-konditionen";
+import { PortalDetailCard } from "@/components/shared/PortalDetailCard";
+import { allePartnerPositionenErledigt } from "@/lib/partner/partner-position-erledigt";
 import type { PartnerAuftragPosition } from "@/lib/partner/get-partner-data";
 import type { VorgangState } from "@/lib/partner/vorgang-state";
 
+/**
+ * Nur Erfolgszustand nach Abschluss.
+ * CTA + Multi-Step-Formular: Header-Button → PartnerAbschlussModal.
+ */
 export function PartnerAuftragErledigtSection({
-  auftragId,
-  auftragStatus,
   positionen,
-  vorgangState,
-  defaultOrt,
+  done,
+  vollstaendig,
+  layout = "section",
 }: {
-  auftragId: string;
-  auftragStatus: string;
+  auftragId?: string;
+  auftragStatus?: string;
   positionen: PartnerAuftragPosition[];
   vorgangState?: VorgangState;
   defaultOrt?: string;
+  layout?: "section" | "cta";
+  /** Lokal nach Modal-Submit, bis Router-Refresh greift. */
+  done?: boolean;
+  vollstaendig?: boolean;
 }) {
-  const [showForm, setShowForm] = useState(false);
-  const [done, setDone] = useState(false);
-  const [vollstaendig, setVollstaendig] = useState(false);
-
-  const kannMelden = partnerKannErledigtMelden({
-    positionen,
-    vorgangState,
-    auftragStatus,
-  });
   const alleErledigt = allePartnerPositionenErledigt(positionen);
+  if (!alleErledigt && !done) return null;
 
-  const offeneLeistungen = useMemo(
-    () =>
-      positionen
-        .filter(
-          (p) =>
-            positionHandwerkerAbgeschlossen(p.handwerker_status) &&
-            !positionHandwerkerErledigt(p.handwerker_status)
-        )
-        .map((p) => String(p.leistung_name ?? "Leistung").trim())
-        .filter(Boolean),
-    [positionen]
-  );
-
-  if (!kannMelden && !alleErledigt && !done) return null;
-
-  if (alleErledigt || done) {
-    return (
-      <PartnerDetailSection title="Abschluss">
-        <PartnerDetailSuccessBox>
-          <p className="font-semibold">Leistungen als erledigt gemeldet</p>
-          <p className="portal-text-meta mt-1 text-text-secondary">
-            {vollstaendig
-              ? "Abnahmeprotokoll erstellt. Bärenwald und die Hausverwaltung werden informiert."
-              : "Ihr Abnahmeprotokoll wurde gespeichert. Weitere Handwerker am Auftrag sind ggf. noch offen."}
-          </p>
-        </PartnerDetailSuccessBox>
-      </PartnerDetailSection>
-    );
-  }
-
-  if (showForm) {
-    return (
-      <PartnerAbnahmeprotokollForm
-        auftragId={auftragId}
-        leistungen={offeneLeistungen}
-        defaultOrt={defaultOrt}
-        onSuccess={(v) => {
-          setVollstaendig(v);
-          setDone(true);
-          setShowForm(false);
-        }}
-        onCancel={() => setShowForm(false)}
-      />
-    );
-  }
-
-  return (
-    <PartnerDetailSection title="Abschluss">
-      <p className="portal-text-body text-text-secondary mb-4">
-        Wenn alle Arbeiten erledigt sind: Abschluss-Checkliste, Fotos/Bericht und
-        Canvas-Signatur mit dem Kunden vor Ort.
+  const success = (
+    <PartnerDetailSuccessBox>
+      <p className="font-semibold">Leistungen als erledigt gemeldet</p>
+      <p className="portal-text-meta mt-1 text-text-secondary">
+        {vollstaendig
+          ? "Abnahmeprotokoll erstellt. Bärenwald und die Hausverwaltung werden informiert."
+          : "Ihr Abnahmeprotokoll wurde gespeichert. Weitere Handwerker am Auftrag sind ggf. noch offen."}
       </p>
-      <button
-        type="button"
-        onClick={() => setShowForm(true)}
-        className="btn-pill-primary portal-btn w-full sm:w-auto"
-      >
-        Abschlussdokumentation &amp; Signatur
-      </button>
-    </PartnerDetailSection>
+    </PartnerDetailSuccessBox>
   );
+
+  if (layout === "cta") {
+    return <PortalDetailCard title="Abschluss">{success}</PortalDetailCard>;
+  }
+  return <PartnerDetailSection title="Abschluss">{success}</PartnerDetailSection>;
 }

@@ -97,6 +97,8 @@ export type PartnerKonditionZeile = {
   id: string;
   title: string;
   beschreibung?: string;
+  /** Unterzeile z. B. „1 Psch. · Sanitär“ (Mock Leistungen). */
+  meta?: string;
   /** Einkaufspreis-Vorschlag von Bärenwald (netto Zeile). null = Preis folgt */
   vorschlagNetto: number | null;
   /** Vorheriger Preis (z. B. vor neuer CRM-Runde). */

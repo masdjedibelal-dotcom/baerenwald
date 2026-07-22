@@ -1,4 +1,5 @@
 import { labelSituation, labelZeitraum, labelBereich } from "@/lib/lead-funnel-labels";
+import { fachdetailRowsFromFunnelDaten } from "@/lib/lead-funnel-daten";
 import {
   buildAnfrageCardMeta,
   buildAnfragePortalSections,
@@ -325,6 +326,10 @@ function buildItemFromLead(
       : null,
     meldeBereich,
     meldeZeitraum: lead.zeitraum ? labelZeitraum(lead.zeitraum) : null,
+    meldeFachdetails: fachdetailRowsFromFunnelDaten(
+      lead.funnel_daten,
+      lead.bereiche
+    ),
   };
   const leadId = lead.id;
   const feedbackBereit = vorgangFeedbackBereit({
@@ -434,9 +439,13 @@ function buildItemFromLead(
       dokumente: filterDocs(angebot.dokumente ?? lead.dokumente ?? []),
       infoHint:
         !hvMieterView &&
-        vorgangStatus.phase === "angebot_wird_erstellt"
-          ? "Wir bereiten dein Angebot vor und melden uns, sobald es bereitsteht."
-          : undefined,
+        vorgangStatus.phase === "angebot_liegt_vor" &&
+        vorgangStatus.needsAction
+          ? "Bitte prüfen Sie das Angebot und nehmen Sie es an — danach wird der Auftrag im CRM angelegt."
+          : !hvMieterView &&
+              vorgangStatus.phase === "angebot_wird_erstellt"
+            ? "Wir bereiten dein Angebot vor und melden uns, sobald es bereitsteht."
+            : undefined,
       vorgangPhase: vorgangStatus.phase,
       needsAction: vorgangStatus.needsAction,
       actionHint: vorgangStatus.resolverActionHint ?? undefined,

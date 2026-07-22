@@ -210,9 +210,12 @@ export function PortalVorgangDetail({
         meldeSituation={item.meldeSituation}
         meldeBereich={item.meldeBereich}
         meldeZeitraum={item.meldeZeitraum}
+        meldeFachdetails={item.meldeFachdetails}
         handwerkerName={item.ansprechpartner?.name}
         orgFreigabeStatus={orgFreigabeStatus ?? item.orgFreigabeStatus}
         hvMeldungStatus={hvMeldungStatus ?? item.hvMeldungStatus}
+        angebotId={item.isAngebotDetail ? item.id : null}
+        canAcceptAngebot={Boolean(item.isAngebotDetail && item.needsAction)}
         privatkunde={privatkunde}
         detailRole={privatkunde ? "kunde" : "hv"}
         coverUrl={PORTAL_OBJEKT_COVER_DEFAULT_SRC}

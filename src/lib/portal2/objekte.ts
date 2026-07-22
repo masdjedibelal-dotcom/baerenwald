@@ -56,7 +56,6 @@ export const OBJ_WIZ_TITLES: Record<ObjWizStepId, string> = {
 /** Mock-Detail-Tabs (`screenObjektDetail`). */
 export const OBJ_DETAIL_TABS = [
   { id: "stamm", label: "Stammdaten" },
-  { id: "einheiten", label: "Bewohner" },
   { id: "mieter", label: "Mieter" },
   { id: "vorgaenge", label: "Vorgänge" },
   { id: "regeln", label: "Freigabe" },

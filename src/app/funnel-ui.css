@@ -216,6 +216,46 @@
   border-top: 1px solid rgba(30, 28, 26, 0.06);
 }
 
+/* Modal: gleicher Footer wie Website-Rechner (Zurück links, Weiter rechts) */
+.portal-funnel-host--modal .portal-funnel-host__footer.funnel-footer {
+  position: static;
+  flex-shrink: 0;
+  margin-top: auto;
+  z-index: 1;
+  border-top: 1px solid rgba(30, 28, 26, 0.06);
+  padding-left: 0;
+  padding-right: 0;
+  padding-bottom: max(4px, env(safe-area-inset-bottom, 0px));
+}
+
+.portal-funnel-host--modal .portal-funnel-host__footer .funnel-footer-inner {
+  max-width: none;
+  margin-left: 0;
+  margin-right: 0;
+}
+
+/* Schmale HV-Create-Modals (560px) nutzen trotzdem Funnel-Flex-Layout */
+.portal-modal-shell-panel:has(.portal-funnel-host--modal) {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.portal-modal-shell-panel:has(.portal-funnel-host--modal) .portal-modal-shell-body {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  padding-bottom: 8px;
+}
+
+.portal-modal-shell-panel:has(.portal-funnel-host--modal) .portal-funnel-host--modal {
+  flex: 1;
+  min-height: 0;
+  height: 100%;
+}
+
 /* Page-Layout (Melde): Website-Funnel-Footer */
 .portal-funnel-host--page {
   min-height: 50vh;

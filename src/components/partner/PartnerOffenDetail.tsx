@@ -9,7 +9,6 @@ import {
 } from "@/app/actions/partner-auftrag-bestaetigen";
 import { VorgangDetailBlocks } from "@/components/shared/vorgang-detail";
 import { buildPartnerVorgangDetailVm } from "@/lib/vorgang/build-vorgang-detail-vm";
-import { sightForRole } from "@/lib/vorgang/vorgang-detail-vm";
 import { PartnerPflichtenCard } from "@/components/partner/PartnerPflichtenCard";
 import { PartnerProjektvertragPaket } from "@/components/partner/PartnerProjektvertragPaket";
 import { PartnerLeistungenKonditionenCard } from "@/components/partner/PartnerLeistungenKonditionenCard";
@@ -22,12 +21,15 @@ import {
   PartnerDetailSection,
   PartnerDetailStickyActions,
 } from "@/components/partner/PartnerDetailUi";
-import { PartnerPortalDetailSections } from "@/components/partner/PartnerPortalDetailSections";
 import { PartnerHwKalkulationScreen } from "@/components/partner/PartnerHwKalkulationScreen";
+import { PartnerDokumentPreviewModal } from "@/components/partner/PartnerDokumentPreviewModal";
 import { DokumenteTabelle, type DokumentZeile } from "@/components/shared/DokumenteTabelle";
 import type { PartnerOffenAngebotItem } from "@/lib/partner/partner-offen-status";
 import { resolvePartnerDetailTitelFromAnfrage } from "@/lib/partner/partner-listen-titel";
-import { partnerDetailStatusPillClass } from "@/lib/partner/partner-detail-format";
+import {
+  partnerDetailStatusPillClass,
+  partnerDetailStatusPillStyle,
+} from "@/lib/partner/partner-detail-format";
 import { partnerPortalToast, portalToastError } from "@/lib/shared/portal-toast";
 import {
   HANDWERKER_ABLEHNUNG_GRUND_LABELS,
@@ -53,7 +55,6 @@ import {
   type VorgangState,
 } from "@/lib/partner/vorgang-state";
 import {
-  buildPartnerAngebotPortalSections,
   PARTNER_LEISTUNGEN_GESAMT_LABEL,
   PARTNER_LEISTUNGEN_SECTION_TITLE,
   partnerDetailDateMetaLine,
@@ -83,6 +84,7 @@ export function PartnerOffenDetail({
   const [grund, setGrund] = useState<string>(HANDWERKER_ABLEHNUNG_GRUND_VALUES[0]);
   const [notiz, setNotiz] = useState("");
   const [showKalkulation, setShowKalkulation] = useState(false);
+  const [angebotDocOpen, setAngebotDocOpen] = useState(false);
   const hatAuftrag = Boolean(item.auftrag_id);
   const istBauprojekt = isPartnerBauprojektAuftrag({
     ist_bauprojekt: item.ist_bauprojekt,
@@ -169,14 +171,6 @@ export function PartnerOffenDetail({
     return mapKonditionZeilenVereinbart(zeilen);
   }, [isNachreichung, item, openPositionIds]);
 
-  const sections = useMemo(
-    () =>
-      buildPartnerAngebotPortalSections(item.lead, {
-        crm_leistungsumfang: item.crm_leistungsumfang,
-      }),
-    [item.lead, item.crm_leistungsumfang]
-  );
-
   const dokumentZeilen = useMemo((): DokumentZeile[] => {
     const rows: DokumentZeile[] = [];
     const pv = item.projektvertrag;
@@ -250,6 +244,11 @@ export function PartnerOffenDetail({
     } else {
       partnerPortalToast.zuweisungAngenommen();
     }
+    setAngebotDocOpen(true);
+  }
+
+  function continueAfterAngebotDoc() {
+    setAngebotDocOpen(false);
     setShowKalkulation(true);
   }
 
@@ -314,6 +313,7 @@ export function PartnerOffenDetail({
           metaLine={heroMeta}
           statusLabel="Angenommen"
           statusPillClass={partnerDetailStatusPillClass("angenommen")}
+          statusPillStyle={partnerDetailStatusPillStyle("angenommen")}
         />
         <PartnerDetailInfoBox>
           Als Nächstes: Kalkulation einreichen — Positionen und Summe erscheinen
@@ -335,6 +335,7 @@ export function PartnerOffenDetail({
         metaLine={heroMeta}
         statusLabel={statusLabel}
         statusPillClass={partnerDetailStatusPillClass(statusPillKey)}
+        statusPillStyle={partnerDetailStatusPillStyle(statusPillKey)}
       />
 
       <VorgangDetailBlocks
@@ -350,12 +351,9 @@ export function PartnerOffenDetail({
           aufgabeNotiz: item.aufgabe_notiz,
           konditionZeilen,
         })}
-        sight={{ ...sightForRole("partner"), leistungen: "hidden" }}
       />
 
       <PartnerDetailInfoBox>{infoText}</PartnerDetailInfoBox>
-
-      <PartnerPortalDetailSections sections={sections} />
 
       {isNachreichung && konditionZeilen.length === 0 ? (
         <PartnerDetailInfoBox>
@@ -464,6 +462,15 @@ export function PartnerOffenDetail({
         onConfirm={onDecline}
         onCancel={() => setConfirmReject(false)}
         loading={loading}
+      />
+
+      <PartnerDokumentPreviewModal
+        open={angebotDocOpen}
+        anfrageId={item.id}
+        art="angebot"
+        onClose={continueAfterAngebotDoc}
+        onSuccess={continueAfterAngebotDoc}
+        allowSkip
       />
     </PartnerDetailLayout>
   );

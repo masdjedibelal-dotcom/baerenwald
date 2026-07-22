@@ -106,7 +106,7 @@ export function MeldeStatusClient({
     ]
   );
 
-  const metaLine = [objektTitel, einheit, referenz].filter(Boolean).join(" · ");
+  const metaLine = [objektTitel, einheit].filter(Boolean).join(" · ");
 
   async function loadSlots() {
     const res = await fetch(

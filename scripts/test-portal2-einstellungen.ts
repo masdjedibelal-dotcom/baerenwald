@@ -5,7 +5,6 @@ import {
   EINSTELLUNGEN_BRANDING_FOOTER,
   EINSTELLUNGEN_BRANDING_INTRO,
   EINSTELLUNGEN_BRANDING_TITLE,
-  EINSTELLUNGEN_OBJEKT_SCHWELLE_TITLE,
   EINSTELLUNGEN_PROFIL_EDIT,
   EINSTELLUNGEN_SCHWELLE_INTRO,
   EINSTELLUNGEN_SCHWELLE_TITLE,
@@ -68,15 +67,11 @@ assert(
 assert("profil edit", EINSTELLUNGEN_PROFIL_EDIT === "Profil bearbeiten");
 assert(
   "schwelle title",
-  EINSTELLUNGEN_SCHWELLE_TITLE === "Globaler Freigabe-Schwellenwert"
+  EINSTELLUNGEN_SCHWELLE_TITLE === "Freigabebetrag"
 );
 assert(
   "schwelle intro",
-  EINSTELLUNGEN_SCHWELLE_INTRO.includes("ohne manuelle Freigabe")
-);
-assert(
-  "objekt schwelle",
-  EINSTELLUNGEN_OBJEKT_SCHWELLE_TITLE === "Objekt-spezifische Schwellenwerte"
+  EINSTELLUNGEN_SCHWELLE_INTRO.includes("automatisch beauftragt")
 );
 
 assert("5 presets for editor", BRAND_PRESETS.length === 5);

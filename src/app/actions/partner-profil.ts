@@ -3,8 +3,9 @@
 import { revalidatePath } from "next/cache";
 
 import { linkPortalHandwerkerToAuthUser } from "@/lib/partner/link-portal-handwerker";
+import { uploadPartnerLogo } from "@/lib/partner/partner-storage";
 import { createClient } from "@/lib/supabase/server";
-import { isSupabaseConfigured } from "@/lib/supabase";
+import { isSupabaseConfigured, supabaseAdmin } from "@/lib/supabase";
 
 export type PartnerProfilUpdateResult = { ok: true } | { ok: false; error: string };
 
@@ -83,6 +84,10 @@ export async function updatePartnerProfil(
   const iban = ibanRaw ? ibanRaw.replace(/\s+/g, "") : null;
   const bic = cleanOptional(formData.get("bic"));
   const bank = cleanOptional(formData.get("bank"));
+  const kleinRaw = formData.get("kleinunternehmer");
+  const hasKleinField = kleinRaw !== null;
+  const kleinunternehmer =
+    kleinRaw === "1" || kleinRaw === "true" || kleinRaw === "on";
 
   if (!inhaberRaw) {
     return { ok: false, error: "Bitte Inhaber / Geschäftsführung angeben." };
@@ -107,6 +112,7 @@ export async function updatePartnerProfil(
     iban,
     bic,
     bank,
+    ...(hasKleinField ? { kleinunternehmer } : {}),
   };
 
   let { error } = await supabase
@@ -114,13 +120,22 @@ export async function updatePartnerProfil(
     .update(patchFull)
     .eq("id", link.handwerkerId);
 
+  if (error && /kleinunternehmer/i.test(error.message)) {
+    const { kleinunternehmer: _k, ...withoutKu } = patchFull;
+    ({ error } = await supabase
+      .from("handwerker")
+      .update(withoutKu)
+      .eq("id", link.handwerkerId));
+  }
+
   if (error && /strasse|ort|handelsregister|bic|bank/i.test(error.message)) {
     const {
       strasse: _s,
       ort: _o,
       handelsregister: _h,
       bic: _b,
-      bank: _k,
+      bank: _bank,
+      kleinunternehmer: _ku,
       ...base
     } = patchFull;
     ({ error } = await supabase
@@ -129,6 +144,55 @@ export async function updatePartnerProfil(
       .eq("id", link.handwerkerId));
   }
 
+  if (error) return { ok: false, error: error.message };
+
+  revalidatePath("/partner");
+  return { ok: true };
+}
+
+/** Firmenlogo hochladen (PNG/JPG/WebP). */
+export async function uploadPartnerProfilLogo(
+  formData: FormData
+): Promise<PartnerProfilUpdateResult> {
+  if (!isSupabaseConfigured()) {
+    return { ok: false, error: "Datenbank nicht konfiguriert." };
+  }
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user?.email) return { ok: false, error: "Nicht angemeldet." };
+
+  const link = await linkPortalHandwerkerToAuthUser({
+    userId: user.id,
+    email: user.email,
+  });
+  if (!link.ok) return { ok: false, error: link.error };
+
+  const file = formData.get("logo");
+  if (!(file instanceof File) || file.size === 0) {
+    return { ok: false, error: "Bitte eine Bilddatei wählen." };
+  }
+
+  const upload = await uploadPartnerLogo({
+    handwerkerId: link.handwerkerId,
+    file,
+  });
+  if (!upload.ok) return upload;
+
+  let { error } = await supabaseAdmin
+    .from("handwerker")
+    .update({ logo_url: upload.path })
+    .eq("id", link.handwerkerId);
+
+  if (error && /logo_url/i.test(error.message)) {
+    return {
+      ok: false,
+      error:
+        "Logo-Spalte fehlt noch in der Datenbank. Bitte Migration handwerker_auto_dokumente anwenden.",
+    };
+  }
   if (error) return { ok: false, error: error.message };
 
   revalidatePath("/partner");

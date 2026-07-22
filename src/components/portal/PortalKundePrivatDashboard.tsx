@@ -30,6 +30,7 @@ type Props = {
   recent: PrivatDashboardRecentItem[];
   onOpenAll: () => void;
   onOpenItem: (id: string) => void;
+  onKpiClick?: (id: PrivatDashboardKpiId) => void;
   heroImageUrl?: string | null;
   /** Name für Avatar/Kurve; Default = `hello`. */
   profileName?: string | null;
@@ -44,6 +45,7 @@ export function PortalKundePrivatDashboard({
   recent,
   onOpenAll,
   onOpenItem,
+  onKpiClick,
   heroImageUrl,
   profileName,
 }: Props) {
@@ -65,6 +67,7 @@ export function PortalKundePrivatDashboard({
         id: def.id,
         label: def.label,
         value: kpis[def.id],
+        onClick: onKpiClick ? () => onKpiClick(def.id) : undefined,
       }))}
       recent={recent.slice(0, 4).map((v) => {
         const st = PORTAL_STATUS[v.flowStatus];

@@ -15,6 +15,7 @@ import "./melden.css";
 type Props = {
   brand: MieterWlBrand;
   statusToken?: string | null;
+  /** @deprecated nicht mehr angezeigt */
   referenz?: string | null;
   objektAuswahlHref?: string | null;
   /** Kontakt aus der Meldung */
@@ -31,7 +32,6 @@ type Props = {
 export function MeldenBestaetigungClient({
   brand,
   statusToken,
-  referenz,
   objektAuswahlHref,
   contactName,
   contactEmail,
@@ -39,9 +39,6 @@ export function MeldenBestaetigungClient({
   portalAccountExists = false,
 }: Props) {
   const t = MIETER_WL_BESTAETIGUNG;
-  const ref =
-    referenz?.trim() ||
-    (statusToken ? statusToken.slice(0, 8).toUpperCase() : null);
 
   const registerHref = (() => {
     const q = new URLSearchParams();
@@ -73,13 +70,6 @@ export function MeldenBestaetigungClient({
           {brand.name}
           {t.body_suffix_de}
         </p>
-
-        {ref ? (
-          <div className="mieter-wl-ref">
-            <p className="mieter-wl-ref-label">{t.ref_de}</p>
-            <p className="mieter-wl-ref-value">{ref}</p>
-          </div>
-        ) : null}
 
         <div className="w-full max-w-[340px] space-y-2.5 mt-2">
           {portalAccountExists ? (

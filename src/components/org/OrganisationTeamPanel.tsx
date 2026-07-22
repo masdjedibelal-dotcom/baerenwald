@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { UserPlus } from "lucide-react";
+import { Plus, UserPlus } from "lucide-react";
 
 import {
   EinstellungenCard,
@@ -12,6 +12,7 @@ import {
   PortalListTableCell,
   PortalListTableRow,
 } from "@/components/shared/PortalListTable";
+import { PortalModalShell } from "@/components/shared/PortalModalShell";
 import type { OrganisationKunde } from "@/lib/org/types";
 import { PORTAL_C } from "@/lib/portal2/tokens";
 import { portalToastError, portalToastSuccess } from "@/lib/shared/portal-toast";
@@ -20,6 +21,7 @@ import { cn } from "@/lib/utils";
 type Mitglied = {
   id: string;
   email: string | null;
+  name?: string | null;
   rolle: string;
   aktiv: boolean;
 };
@@ -54,8 +56,9 @@ export function OrganisationTeamPanel({
   const [mitglieder, setMitglieder] = useState<Mitglied[]>([]);
   const [loading, setLoading] = useState(true);
   const [email, setEmail] = useState("");
-  const [rolle, setRolle] = useState("sachbearbeiter");
+  const [name, setName] = useState("");
   const [busy, setBusy] = useState(false);
+  const [modalOpen, setModalOpen] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -80,6 +83,16 @@ export function OrganisationTeamPanel({
     void load();
   }, [load]);
 
+  function resetForm() {
+    setEmail("");
+    setName("");
+  }
+
+  function closeModal() {
+    setModalOpen(false);
+    resetForm();
+  }
+
   async function einladen(e: React.FormEvent) {
     e.preventDefault();
     setBusy(true);
@@ -87,13 +100,17 @@ export function OrganisationTeamPanel({
       const res = await fetch("/api/org/team", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, rolle }),
+        body: JSON.stringify({
+          email,
+          name: name.trim() || undefined,
+          rolle: "sachbearbeiter",
+        }),
       });
       const data = (await res.json()) as { error?: string };
       if (!res.ok) throw new Error(data.error ?? "Einladung fehlgeschlagen");
       portalToastSuccess("Einladung versendet.");
-      setEmail("");
-      setRolle("sachbearbeiter");
+      resetForm();
+      setModalOpen(false);
       await load();
     } catch (err) {
       portalToastError(err instanceof Error ? err.message : "Fehler");
@@ -121,6 +138,27 @@ export function OrganisationTeamPanel({
   }
 
   const aktive = mitglieder.filter((m) => m.aktiv);
+
+  const inviteFields = (
+    <>
+      <EinstellungenEdField
+        label="Name"
+        type="text"
+        value={name}
+        onChange={setName}
+        placeholder="Max Mustermann"
+        autoComplete="name"
+      />
+      <EinstellungenEdField
+        label="E-Mail"
+        type="email"
+        value={email}
+        onChange={setEmail}
+        placeholder="kollege@hausverwaltung.de"
+        autoComplete="email"
+      />
+    </>
+  );
 
   const table = (
     <PortalListTable
@@ -166,9 +204,23 @@ export function OrganisationTeamPanel({
           {aktive.map((m) => (
             <PortalListTableRow key={m.id} columns={3}>
               <PortalListTableCell label="E-Mail">
-                <p className="truncate text-[13.5px] font-semibold text-text-primary">
-                  {m.email ?? "—"}
-                </p>
+                <div className="min-w-0">
+                  {m.name?.trim() ? (
+                    <p className="truncate text-[13.5px] font-semibold text-text-primary">
+                      {m.name.trim()}
+                    </p>
+                  ) : null}
+                  <p
+                    className={cn(
+                      "truncate text-[13.5px]",
+                      m.name?.trim()
+                        ? "text-text-secondary"
+                        : "font-semibold text-text-primary"
+                    )}
+                  >
+                    {m.email ?? "—"}
+                  </p>
+                </div>
               </PortalListTableCell>
               <PortalListTableCell label="Rolle">
                 <span className="text-[13px] font-medium text-text-secondary">
@@ -196,66 +248,90 @@ export function OrganisationTeamPanel({
     </PortalListTable>
   );
 
-  const inviteForm = isAdmin ? (
-    <form onSubmit={(e) => void einladen(e)} className="flex flex-col gap-3">
-      <EinstellungenEdField
-        label="E-Mail"
-        type="email"
-        value={email}
-        onChange={setEmail}
-        placeholder="kollege@hausverwaltung.de"
-        autoComplete="email"
-      />
-      <label className="flex flex-col gap-1">
-        <span className="text-[11.5px] font-bold tracking-wide text-text-tertiary">
-          Rolle
-        </span>
-        <select
-          value={rolle}
-          onChange={(e) => setRolle(e.target.value)}
-          className="w-full rounded-[9px] border border-border-default bg-white px-3 py-2.5 text-[13.5px] text-text-primary outline-none focus:border-accent"
+  const header = (
+    <div className="flex items-start justify-between gap-3">
+      <div className="min-w-0">
+        <h2 className="font-semibold text-text-primary">Team</h2>
+        <p
+          className="mt-1 text-[13px] leading-[1.55]"
+          style={{ color: PORTAL_C.sub }}
         >
-          <option value="admin">Admin</option>
-          <option value="sachbearbeiter">Sachbearbeiter</option>
-          <option value="lesen">Nur Lesen</option>
-        </select>
-      </label>
-      <button
-        type="submit"
-        disabled={busy || !email.trim()}
-        className="btn-pill-primary inline-flex w-full items-center justify-center gap-2 sm:w-auto"
-      >
-        <UserPlus className="h-4 w-4" aria-hidden />
-        {busy ? "Wird eingeladen…" : "Einladen"}
-      </button>
-    </form>
+          Weitere Nutzer für {kunde.org_anzeigename ?? kunde.name} einladen und
+          Rollen verwalten.
+        </p>
+      </div>
+      {isAdmin ? (
+        <button
+          type="button"
+          onClick={() => setModalOpen(true)}
+          className="hidden h-10 w-10 shrink-0 items-center justify-center rounded-full border border-border-default bg-white text-text-primary shadow-sm transition hover:border-accent/40 hover:text-accent md:inline-flex"
+          aria-label="Mitglied hinzufügen"
+          title="Mitglied hinzufügen"
+        >
+          <Plus className="h-5 w-5" strokeWidth={2.25} aria-hidden />
+        </button>
+      ) : null}
+    </div>
+  );
+
+  const mobileInvite = isAdmin ? (
+    <div className="md:hidden">
+      <EinstellungenCard title="Mitglied hinzufügen">
+        <form
+          onSubmit={(e) => void einladen(e)}
+          className="flex flex-col gap-3"
+        >
+          {inviteFields}
+          <button
+            type="submit"
+            disabled={busy || !email.trim()}
+            className="btn-pill-primary inline-flex w-full items-center justify-center gap-2"
+          >
+            <UserPlus className="h-4 w-4" aria-hidden />
+            {busy ? "Wird eingeladen…" : "Einladen"}
+          </button>
+        </form>
+      </EinstellungenCard>
+    </div>
   ) : (
     <p className="text-[13px]" style={{ color: PORTAL_C.sub }}>
       Nur Administratoren können Teammitglieder einladen oder entfernen.
     </p>
   );
 
+  const modal = isAdmin ? (
+    <PortalModalShell
+      open={modalOpen}
+      title="Mitglied hinzufügen"
+      subtitle="Name und E-Mail eingeben — die Person erhält eine Einladung."
+      onClose={closeModal}
+    >
+      <form onSubmit={(e) => void einladen(e)} className="flex flex-col gap-3">
+        {inviteFields}
+        <button
+          type="submit"
+          disabled={busy || !email.trim() || !name.trim()}
+          className="btn-pill-primary mt-1 inline-flex w-full items-center justify-center gap-2"
+        >
+          <UserPlus className="h-4 w-4" aria-hidden />
+          {busy ? "Wird eingeladen…" : "Einladen"}
+        </button>
+      </form>
+    </PortalModalShell>
+  ) : null;
+
   const body = (
     <div className="flex flex-col gap-3">
-      <p className="text-[13px] leading-[1.55]" style={{ color: PORTAL_C.sub }}>
-        Weitere Nutzer für {kunde.org_anzeigename ?? kunde.name} einladen und
-        Rollen verwalten.
-      </p>
       {table}
-      {isAdmin ? (
-        <EinstellungenCard title="Mitglied hinzufügen">
-          {inviteForm}
-        </EinstellungenCard>
-      ) : (
-        inviteForm
-      )}
+      {mobileInvite}
+      {modal}
     </div>
   );
 
   if (nested) {
     return (
       <section className="space-y-4 border-t border-border-default pt-5">
-        <h2 className="font-semibold text-text-primary">Team</h2>
+        {header}
         {body}
       </section>
     );
@@ -263,9 +339,7 @@ export function OrganisationTeamPanel({
 
   return (
     <section className={cn("portal-surface space-y-4 p-4 sm:p-5")}>
-      <div>
-        <h2 className="font-semibold text-text-primary">Team</h2>
-      </div>
+      {header}
       {body}
     </section>
   );

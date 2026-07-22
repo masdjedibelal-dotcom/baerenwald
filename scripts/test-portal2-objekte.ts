@@ -200,12 +200,12 @@ assert(
   objDeleteConfirm("X").includes("X") && OBJ_DELETE_BLOCKED.includes("offene")
 );
 
-assert("6 detail tabs", OBJ_DETAIL_TABS.length === 6);
+assert("5 detail tabs", OBJ_DETAIL_TABS.length === 5);
 assert("mieter tab", OBJ_DETAIL_TABS.some((t) => t.id === "mieter"));
 assert(
   "tab order",
   OBJ_DETAIL_TABS.map((t) => t.id).join(",") ===
-    "stamm,einheiten,mieter,vorgaenge,regeln,dokumente"
+    "stamm,mieter,vorgaenge,regeln,dokumente"
 );
 
 const editDraft = openObjEditDraft(

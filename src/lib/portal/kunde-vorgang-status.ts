@@ -233,10 +233,20 @@ export function resolveKundeVorgangStatus(input: {
   }
 
   if (input.hasAuftragRecord) {
-    const done = isPortalAuftragAbgeschlossenRecord({
-      status: input.auftragStatus,
-      fortschritt: input.auftragFortschritt,
-    });
+    const st = normalizeStatus(input.auftragStatus);
+    const done =
+      isPortalAuftragAbgeschlossenRecord({
+        status: input.auftragStatus,
+        fortschritt: input.auftragFortschritt,
+      }) ||
+      st === "abnahme" ||
+      isVorgangPortalErledigt({
+        leadVorgangPhase: input.leadVorgangPhase,
+        hv_meldung_status: input.hv_meldung_status,
+        auftragStatus: input.auftragStatus,
+        auftragFortschritt: input.auftragFortschritt,
+        positionen: input.auftragPositionen,
+      });
     if (done) {
       return {
         phase: "abgeschlossen",

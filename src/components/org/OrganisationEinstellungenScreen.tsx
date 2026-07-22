@@ -5,13 +5,11 @@ import { OrganisationFreigabeRegelnPanel } from "@/components/org/OrganisationFr
 import { OrganisationMeldeMaterial } from "@/components/org/OrganisationMeldeMaterial";
 import { PortalEinstellungenShell } from "@/components/shared/PortalEinstellungenShell";
 import { EinstellungenPfRow } from "@/components/shared/PortalEinstellungenUi";
-import type { OrganisationKunde, OrganisationObjekt } from "@/lib/org/types";
-import { EINSTELLUNGEN_PROFIL_EDIT } from "@/lib/portal2/einstellungen";
+import type { OrganisationKunde } from "@/lib/org/types";
 import { PORTAL_C } from "@/lib/portal2/tokens";
 
 type Props = {
   kunde: OrganisationKunde;
-  objekte: OrganisationObjekt[];
   objektCount: number;
   onSaved: () => void;
   isAdmin?: boolean;
@@ -23,7 +21,6 @@ type Props = {
  */
 export function OrganisationEinstellungenScreen({
   kunde,
-  objekte,
   objektCount,
   onSaved,
   isAdmin = true,
@@ -64,14 +61,6 @@ export function OrganisationEinstellungenScreen({
                   Diese Kontaktdaten gelten auch für die Mieter-Kommunikation
                   (Melde-Flow, Status und E-Mails).
                 </p>
-                <button
-                  type="button"
-                  className="mt-1 w-full rounded-[9px] border border-border-default bg-white px-3 py-2.5 text-[13px] font-semibold text-text-secondary"
-                  disabled
-                  title="Stammdaten unter Branding & White-Label"
-                >
-                  {EINSTELLUNGEN_PROFIL_EDIT}
-                </button>
               </div>
 
               <OrganisationMeldeMaterial
@@ -97,7 +86,6 @@ export function OrganisationEinstellungenScreen({
         return (
           <OrganisationFreigabeRegelnPanel
             kunde={kunde}
-            objekte={objekte}
             onSaved={onSaved}
             isAdmin={isAdmin}
           />

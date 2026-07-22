@@ -46,6 +46,59 @@ function visible(sight: BlockSight): boolean {
   return sight !== "hidden";
 }
 
+/** Partner: eine Details-Card (HV-Stil), keine gestapelten Teil-Cards. */
+function PartnerUnifiedDetails({
+  vm,
+  className,
+}: {
+  vm: VorgangDetailVM;
+  className?: string;
+}) {
+  const { objektMelder: B, ausfuehrung: C } = vm;
+  const adresse =
+    B.adresseStrasse?.trim() || B.adresseZeile?.trim() || null;
+  const kontakt =
+    [C.kontaktVorOrtName, C.kontaktVorOrtTel].filter(Boolean).join(" · ") ||
+    [B.melderName, B.melderTelefon].filter(Boolean).join(" · ") ||
+    null;
+
+  return (
+    <div className={cn(className)}>
+      <BlockShell title="Details">
+        <div className="space-y-0">
+          {adresse ? <MetaRow label="Adresse" value={adresse} /> : null}
+          {B.melderTelefon ? (
+            <MetaRow label="Telefon" value={B.melderTelefon} />
+          ) : null}
+          {C.gewerk ? <MetaRow label="Gewerk" value={C.gewerk} /> : null}
+          {C.terminLabel ? (
+            <MetaRow label="Termin" value={C.terminLabel} />
+          ) : null}
+          {kontakt ? <MetaRow label="Kontakt vor Ort" value={kontakt} /> : null}
+          {B.plzOrt ? <MetaRow label="PLZ / Ort" value={B.plzOrt} /> : null}
+          {B.objektTitel ? (
+            <MetaRow label="Objekt" value={B.objektTitel} />
+          ) : null}
+          {B.situationLabel ? (
+            <MetaRow label="Situation" value={B.situationLabel} />
+          ) : null}
+          {B.bereichLabel ? (
+            <MetaRow label="Bereich" value={B.bereichLabel} />
+          ) : null}
+          {C.aufgabeNotiz ? (
+            <MetaRow label="Aufgabe" value={C.aufgabeNotiz} />
+          ) : null}
+        </div>
+        {B.beschreibung ? (
+          <p className="mt-3 whitespace-pre-wrap text-[13px] text-text-secondary">
+            {B.beschreibung}
+          </p>
+        ) : null}
+      </BlockShell>
+    </div>
+  );
+}
+
 type Props = {
   vm: VorgangDetailVM;
   /** Override; default aus vm.role */
@@ -55,9 +108,14 @@ type Props = {
 
 /**
  * Einheitliche Blöcke für alle Portale — Sichtbarkeit über Sight-Matrix.
+ * Partner: eine Details-Card (kein Card-Stack).
  * HV: Objekt & Melder + Details (Situation/Bereich/Beschreibung/Fotos/Zeitraum).
  */
 export function VorgangDetailBlocks({ vm, sight: sightProp, className }: Props) {
+  if (vm.role === "partner") {
+    return <PartnerUnifiedDetails vm={vm} className={className} />;
+  }
+
   const sight = sightProp ?? sightForRole(vm.role);
   const { auftraggeber: A, objektMelder: B, ausfuehrung: C } = vm;
   const isHv = vm.role === "hv";
@@ -85,6 +143,7 @@ export function VorgangDetailBlocks({ vm, sight: sightProp, className }: Props) 
         B.bereichLabel ||
         B.beschreibung ||
         B.zeitraumLabel ||
+        (B.fachdetailRows && B.fachdetailRows.length > 0) ||
         (B.fotos && B.fotos.length > 0)
     );
 
@@ -150,6 +209,13 @@ export function VorgangDetailBlocks({ vm, sight: sightProp, className }: Props) 
             {B.zeitraumLabel ? (
               <MetaRow label="Zeitraum" value={B.zeitraumLabel} />
             ) : null}
+            {B.fachdetailRows?.map((row) => (
+              <MetaRow
+                key={`${row.label}:${row.value}`}
+                label={row.label}
+                value={row.value}
+              />
+            ))}
           </div>
           {B.beschreibung ? (
             <div className="mt-3">

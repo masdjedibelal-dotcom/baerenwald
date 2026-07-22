@@ -246,6 +246,10 @@ export type PartnerHandwerkerProfil = {
   iban: string | null;
   bic?: string | null;
   bank?: string | null;
+  /** Firmenlogo (Storage-Pfad oder URL). */
+  logo_url?: string | null;
+  logo_signed_url?: string | null;
+  kleinunternehmer?: boolean;
   gewerke: string[];
   gewerkNamen: string[];
   bewertung: PartnerHandwerkerBewertungProfil;
@@ -416,6 +420,8 @@ export async function getPartnerDataForHandwerker(handwerkerId: string) {
       iban,
       bic,
       bank,
+      logo_url,
+      kleinunternehmer,
       gewerke,
       bewertung_gesamt,
       bewertung_qualitaet,
@@ -456,7 +462,9 @@ export async function getPartnerDataForHandwerker(handwerkerId: string) {
 
   if (
     hwLoadErr &&
-    /strasse|ort|handelsregister|bic|bank/i.test(hwLoadErr.message)
+    /strasse|ort|handelsregister|bic|bank|logo_url|kleinunternehmer/i.test(
+      hwLoadErr.message
+    )
   ) {
     ({ data: handwerker, error: hwLoadErr } = await supabaseAdmin
       .from("handwerker")
@@ -1032,12 +1040,18 @@ export async function getPartnerDataForHandwerker(handwerkerId: string) {
     profil: profilKontext,
     termine,
     aufgaben,
-    handwerker: (() => {
+    handwerker: await (async () => {
       const ansprechpartner = resolveHandwerkerAnsprechpartner({
         vorname: handwerker.vorname as string | null | undefined,
         nachname: handwerker.nachname as string | null | undefined,
         name: handwerker.name as string | null | undefined,
       });
+      const logoPath =
+        ((handwerker as { logo_url?: string | null }).logo_url as string | null) ??
+        null;
+      const logoSigned = logoPath
+        ? await resolvePartnerFileUrl(logoPath)
+        : null;
       return {
       name: ansprechpartner.vollname || "Partner",
       vorname: ansprechpartner.vorname,
@@ -1058,6 +1072,11 @@ export async function getPartnerDataForHandwerker(handwerkerId: string) {
       iban: (handwerker.iban as string | null) ?? null,
       bic: ((handwerker as { bic?: string | null }).bic as string | null) ?? null,
       bank: ((handwerker as { bank?: string | null }).bank as string | null) ?? null,
+      logo_url: logoPath,
+      logo_signed_url: logoSigned,
+      kleinunternehmer: Boolean(
+        (handwerker as { kleinunternehmer?: boolean | null }).kleinunternehmer
+      ),
       gewerke: gewerkSlugs,
       gewerkNamen,
       bewertung: {

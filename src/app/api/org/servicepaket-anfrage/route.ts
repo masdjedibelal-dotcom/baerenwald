@@ -5,7 +5,11 @@ import { persistLead } from "@/lib/lead/persist-lead";
 import { requireOrganisationSession } from "@/lib/org/require-org-session";
 import {
   findServicepaket,
+  findServicepaketGroesse,
+  SERVICEPAKET_GROESSE_DEFAULT,
   SERVICEPAKET_KANAL_LIVE,
+  servicepaketPreisAb,
+  type ServicepaketGroesseId,
 } from "@/lib/portal2/servicepakete";
 import { supabaseAdmin } from "@/lib/supabase";
 
@@ -15,6 +19,10 @@ type Body = {
   /** Paket-id oder Name aus Mock-Karten */
   paket?: string;
   paketName?: string;
+  /** Objektgröße s | m | l */
+  groesse?: string;
+  /** Optional — Client-Richtpreis; Server berechnet verbindlich nach */
+  preisAb?: number;
   /** Optional — Mock weist Objekt später zu */
   objektId?: string | null;
 };
@@ -41,6 +49,13 @@ export async function POST(req: Request) {
   if (!paket) {
     return NextResponse.json({ error: "Unbekanntes Paket." }, { status: 400 });
   }
+
+  const groesseRaw = String(body.groesse ?? SERVICEPAKET_GROESSE_DEFAULT).trim();
+  const groesseOpt =
+    findServicepaketGroesse(groesseRaw) ??
+    findServicepaketGroesse(SERVICEPAKET_GROESSE_DEFAULT)!;
+  const groesse = groesseOpt.id as ServicepaketGroesseId;
+  const preisAb = servicepaketPreisAb(paket, groesse);
 
   const org = session.kunde;
   let objektId = String(body.objektId ?? "").trim() || null;
@@ -77,7 +92,7 @@ export async function POST(req: Request) {
     }
   }
 
-  const notizen = `Servicepaket „${paket.name}" angefragt (${paket.preis}${paket.zyklus}). Objekt-Zuordnung und Aktivierung durch Bärenwald.`;
+  const notizen = `Servicepaket „${paket.name}" angefragt (ab ${preisAb} €${paket.zyklus}, Objektgröße ${groesseOpt.label}). Richtpreis — verbindlicher Preis nach Klärung. Objekt-Zuordnung und Aktivierung durch Bärenwald.`;
 
   const result = await persistLead({
     kunde_id: org.id,
@@ -89,8 +104,8 @@ export async function POST(req: Request) {
     hausnummer: hausnummer ?? undefined,
     situation: "betreuung",
     bereiche: ["hausmeister"],
-    preis_min: paket.preisEur,
-    preis_max: paket.preisEur,
+    preis_min: preisAb,
+    preis_max: preisAb,
     kanal: SERVICEPAKET_KANAL_LIVE,
     anlass: "servicepaket",
     erfassung_von: "organisation",
@@ -104,9 +119,13 @@ export async function POST(req: Request) {
       portal2_servicepaket: {
         id: paket.id,
         name: paket.name,
-        preis: paket.preis,
+        preis: `ab ${preisAb} €`,
         zyklus: paket.zyklus,
-        preis_eur: paket.preisEur,
+        preis_eur: preisAb,
+        preis_basis_eur: paket.preisEur,
+        groesse: groesse,
+        groesse_label: groesseOpt.label,
+        preis_richtwert: true,
       },
     },
     funnel_quelle: "org_service",
@@ -125,6 +144,9 @@ export async function POST(req: Request) {
     payload: {
       paketId: paket.id,
       paketName: paket.name,
+      groesse,
+      groesseLabel: groesseOpt.label,
+      preisAb,
       kanal: SERVICEPAKET_KANAL_LIVE,
       kanalVorschlag: "servicepaket",
       objektId,
@@ -135,6 +157,8 @@ export async function POST(req: Request) {
     ok: true,
     id: result.id,
     paketName: paket.name,
+    groesse,
+    preisAb,
     kanal: SERVICEPAKET_KANAL_LIVE,
   });
 }

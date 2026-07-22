@@ -694,7 +694,7 @@ h3 {
   .portal-dash-curve-body {
     background: #fff;
     text-align: center;
-    padding: 0 20px 18px;
+    padding: 0 20px 24px;
     margin-top: -1px;
   }
 
@@ -737,7 +737,7 @@ h3 {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
     gap: 10px;
-    padding: 4px 16px 14px;
+    padding: 16px 16px 18px;
     background: #f6f7f6;
   }
 
@@ -1956,6 +1956,38 @@ h3 {
 
   .portal-shell-mobile-badge {
     @apply absolute right-[calc(50%-22px)] top-0 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-600 px-1 text-[9px] font-bold text-white;
+  }
+
+  .portal-shell-mobile-create {
+    position: relative;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    padding: 0 0 4px;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    min-width: 0;
+    margin-top: -18px;
+  }
+
+  .portal-shell-mobile-create-btn {
+    display: grid;
+    place-items: center;
+    width: 52px;
+    height: 52px;
+    border-radius: 999px;
+    color: #fff;
+    background: var(--org-primary, var(--p2-primary, #2e7d52));
+    box-shadow: 0 6px 18px rgba(46, 125, 82, 0.35);
+  }
+
+  .portal-shell-mobile-create-label {
+    font-size: 10.5px;
+    font-weight: 700;
+    color: var(--org-primary, var(--p2-primary, #2e7d52));
   }
 
   .portal-shell-fab {

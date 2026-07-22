@@ -299,7 +299,56 @@ export function EinstellungenObjektSchwelleRow({
   );
 }
 
-/** Mock Toggle (Objekt-Regeln / Notfall-Autopass). */
+/** Euro-Betrag als Regler (z. B. Freigabebetrag 0–5000 € / 500er). */
+export function EinstellungenEuroSlider({
+  value,
+  onChange,
+  disabled,
+  min = 0,
+  max = 5000,
+  step = 500,
+  formatValue,
+}: {
+  value: number;
+  onChange: (value: number) => void;
+  disabled?: boolean;
+  min?: number;
+  max?: number;
+  step?: number;
+  formatValue?: (value: number) => string;
+}) {
+  const label =
+    formatValue?.(value) ??
+    new Intl.NumberFormat("de-DE", {
+      style: "currency",
+      currency: "EUR",
+      maximumFractionDigits: 0,
+    }).format(value);
+
+  return (
+    <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-4">
+      <input
+        type="range"
+        min={min}
+        max={max}
+        step={step}
+        disabled={disabled}
+        value={Number.isFinite(value) ? value : min}
+        onChange={(e) => onChange(Number(e.target.value))}
+        className="h-2 w-full flex-1 cursor-pointer appearance-none rounded-full bg-border-default accent-[var(--accent,#2F5D50)] disabled:cursor-not-allowed disabled:opacity-60"
+        aria-valuemin={min}
+        aria-valuemax={max}
+        aria-valuenow={value}
+        aria-label="Betrag"
+      />
+      <span className="shrink-0 text-right font-[family-name:var(--font-display)] text-lg font-bold text-accent tabular-nums sm:w-[110px]">
+        {label}
+      </span>
+    </div>
+  );
+}
+
+/** Mock Toggle (Objekt-Regeln / Freigabe). */
 export function EinstellungenToggle({
   checked,
   onChange,

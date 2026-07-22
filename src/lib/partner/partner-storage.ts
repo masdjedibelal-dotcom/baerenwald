@@ -100,6 +100,61 @@ export async function uploadAbnahmeProtokollPdf(opts: {
   return { ok: true, path };
 }
 
+/** Generiertes Partner-PDF (Angebot/Rechnung) als Bytes. */
+export async function uploadPartnerGeneratedPdf(opts: {
+  handwerkerId: string;
+  anfrageId: string;
+  pdfBytes: Uint8Array;
+  kind: "angebot" | "rechnung";
+}): Promise<{ ok: true; path: string } | { ok: false; error: string }> {
+  if (!isSupabaseConfigured()) {
+    return { ok: false, error: "Storage nicht konfiguriert." };
+  }
+
+  const prefix =
+    opts.kind === "rechnung"
+      ? `${opts.handwerkerId}/angebote/${opts.anfrageId}/rechnung-auto`
+      : `${opts.handwerkerId}/angebote/${opts.anfrageId}/angebot-auto`;
+  const path = `${prefix}-${randomUUID()}.pdf`;
+  const buf = Buffer.from(opts.pdfBytes);
+
+  const { error } = await supabaseAdmin.storage
+    .from(PARTNER_UPLOAD_BUCKET)
+    .upload(path, buf, { contentType: "application/pdf", upsert: false });
+
+  if (error) return { ok: false, error: error.message };
+  return { ok: true, path };
+}
+
+/** Firmenlogo (PNG/JPEG/WebP), max. ~2 MB. */
+export async function uploadPartnerLogo(opts: {
+  handwerkerId: string;
+  file: File;
+}): Promise<{ ok: true; path: string } | { ok: false; error: string }> {
+  if (!isSupabaseConfigured()) {
+    return { ok: false, error: "Storage nicht konfiguriert." };
+  }
+
+  const mime = opts.file.type || "";
+  if (!/^image\/(png|jpeg|jpg|webp)$/i.test(mime)) {
+    return { ok: false, error: "Bitte PNG, JPG oder WebP hochladen." };
+  }
+  if (opts.file.size > 2 * 1024 * 1024) {
+    return { ok: false, error: "Logo max. 2 MB." };
+  }
+
+  const ext = extFromMime(mime);
+  const path = `${opts.handwerkerId}/firma/logo-${randomUUID()}.${ext}`;
+  const buf = Buffer.from(await opts.file.arrayBuffer());
+
+  const { error } = await supabaseAdmin.storage
+    .from(PARTNER_UPLOAD_BUCKET)
+    .upload(path, buf, { contentType: mime, upsert: false });
+
+  if (error) return { ok: false, error: error.message };
+  return { ok: true, path };
+}
+
 export async function uploadPartnerAngebotPdfs(opts: {
   handwerkerId: string;
   anfrageId: string;
