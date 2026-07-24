@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { PORTAL_MODAL_SCRIM } from "@/lib/portal2/modal-shell";
 
 import { fmtPartnerEuro } from "@/lib/partner/partner-detail-format";
 import { parseHwNettoInput } from "@/lib/partner/partner-konditionen";
@@ -53,7 +54,8 @@ export function PartnerPreisBearbeitenDialog({
 
   return (
     <div
-      className="fixed inset-0 z-[150] flex items-end justify-center bg-black/45 p-4 sm:items-center"
+      className="fixed inset-0 z-[150] flex items-end justify-center p-4 sm:items-center"
+      style={{ background: PORTAL_MODAL_SCRIM }}
       role="dialog"
       aria-modal="true"
       aria-labelledby="preis-dialog-title"

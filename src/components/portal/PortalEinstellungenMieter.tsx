@@ -1,10 +1,17 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
+import { PortalKontoSicherheitPanel } from "@/components/shared/PortalKontoSicherheitPanel";
+import { PortalPushPermissionRationale } from "@/components/shared/PortalPushPermissionRationale";
+import { PortalTrackingConsentPanel } from "@/components/shared/PortalTrackingConsentPanel";
 import { PortalEinstellungenShell } from "@/components/shared/PortalEinstellungenShell";
-import { EinstellungenPfRow } from "@/components/shared/PortalEinstellungenUi";
-import { EINSTELLUNGEN_PROFIL_EDIT } from "@/lib/portal2/einstellungen";
+import {
+  EinstellungenEdField,
+  EinstellungenPfRow,
+} from "@/components/shared/PortalEinstellungenUi";
+import { SITE_CONFIG } from "@/lib/config";
 import {
   MIETER_KONTO_ZUGANG_TITLE,
   MIETER_SPRACHE_INTRO,
@@ -13,7 +20,8 @@ import {
   mieterKontoZugangHinweis,
   type PortalUiLang,
 } from "@/lib/portal2/einstellungen-ui";
-import { PORTAL_C } from "@/lib/portal2/tokens";
+import { PORTAL_VAR } from "@/lib/portal2/tokens";
+import { portalToastError, portalToastSuccess } from "@/lib/shared/portal-toast";
 import { cn } from "@/lib/utils";
 
 type Props = {
@@ -36,7 +44,10 @@ export function PortalEinstellungenMieter({
   orgName,
   orgMail,
 }: Props) {
+  const router = useRouter();
   const [lang, setLang] = useState<PortalUiLang>("de");
+  const [editTel, setEditTel] = useState(telefon?.trim() || "");
+  const [busy, setBusy] = useState(false);
 
   useEffect(() => {
     try {
@@ -59,7 +70,28 @@ export function PortalEinstellungenMieter({
     }
   };
 
-  const mail = orgMail?.trim() || "hello@baerenwald.de";
+  const supportMail = orgMail?.trim() || SITE_CONFIG.email;
+  const zugangMail = orgMail?.trim() || supportMail;
+
+  async function saveTelefon() {
+    setBusy(true);
+    try {
+      const res = await fetch("/api/account/profil", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ telefon: editTel }),
+      });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        portalToastError(json.error || "Speichern fehlgeschlagen.");
+        return;
+      }
+      portalToastSuccess("Telefon gespeichert.");
+      router.refresh();
+    } finally {
+      setBusy(false);
+    }
+  }
 
   return (
     <div className="space-y-4">
@@ -72,9 +104,9 @@ export function PortalEinstellungenMieter({
                   <h3
                     className="text-sm font-bold"
                     style={{
-                      color: PORTAL_C.ink,
+                      color: PORTAL_VAR.ink,
                       fontFamily:
-                        "var(--p2-font-head, " + PORTAL_C.head + ")",
+                        "var(--p2-font-head, " + PORTAL_VAR.head + ")",
                     }}
                   >
                     {MIETER_KONTO_ZUGANG_TITLE}
@@ -88,7 +120,7 @@ export function PortalEinstellungenMieter({
                     value={orgName?.trim() || "—"}
                   />
                   <p className="text-[12.5px] leading-relaxed text-text-secondary">
-                    {mieterKontoZugangHinweis(mail)}
+                    {mieterKontoZugangHinweis(zugangMail)}
                   </p>
                 </div>
 
@@ -96,9 +128,9 @@ export function PortalEinstellungenMieter({
                   <h3
                     className="text-sm font-bold"
                     style={{
-                      color: PORTAL_C.ink,
+                      color: PORTAL_VAR.ink,
                       fontFamily:
-                        "var(--p2-font-head, " + PORTAL_C.head + ")",
+                        "var(--p2-font-head, " + PORTAL_VAR.head + ")",
                     }}
                   >
                     {MIETER_SPRACHE_TITLE}
@@ -128,6 +160,10 @@ export function PortalEinstellungenMieter({
                     ))}
                   </div>
                 </div>
+
+                <PortalKontoSicherheitPanel signOutHref="/portal/login" />
+                <PortalPushPermissionRationale role="kunde" embedded />
+                <PortalTrackingConsentPanel />
               </div>
             );
           }
@@ -137,24 +173,38 @@ export function PortalEinstellungenMieter({
               <h3
                 className="text-sm font-bold"
                 style={{
-                  color: PORTAL_C.ink,
-                  fontFamily: "var(--p2-font-head, " + PORTAL_C.head + ")",
+                  color: PORTAL_VAR.ink,
+                  fontFamily: "var(--p2-font-head, " + PORTAL_VAR.head + ")",
                 }}
               >
                 Profil
               </h3>
               <EinstellungenPfRow label="Name" value={name?.trim() || "—"} />
               <EinstellungenPfRow label="E-Mail" value={email?.trim() || "—"} />
-              <EinstellungenPfRow
+              <EinstellungenEdField
                 label="Telefon"
-                value={telefon?.trim() || "—"}
+                value={editTel}
+                onChange={setEditTel}
+                type="tel"
+                autoComplete="tel"
               />
-              <a
-                href={`mailto:${mail}?subject=${encodeURIComponent("MeinBärenwald Konto")}`}
-                className="mt-1 block w-full rounded-[9px] border border-border-default bg-white px-3 py-2.5 text-center text-[13px] font-semibold text-text-secondary"
+              <button
+                type="button"
+                className="btn-pill-outline portal-btn-compact"
+                disabled={busy}
+                onClick={() => void saveTelefon()}
               >
-                {EINSTELLUNGEN_PROFIL_EDIT}
-              </a>
+                {busy ? "Speichern…" : "Telefon speichern"}
+              </button>
+              <p className="text-[12.5px] leading-relaxed text-text-secondary">
+                Name oder E-Mail ändern? Schreiben Sie Ihrer Verwaltung:{" "}
+                <a
+                  href={`mailto:${supportMail}?subject=${encodeURIComponent("Portal Konto")}`}
+                  className="font-semibold text-accent underline"
+                >
+                  {supportMail}
+                </a>
+              </p>
             </div>
           );
         }}

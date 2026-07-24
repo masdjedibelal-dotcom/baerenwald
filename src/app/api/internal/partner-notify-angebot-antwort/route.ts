@@ -66,6 +66,7 @@ export async function POST(request: Request) {
         typ: "geaendert",
         projektName: "Konditionen angepasst",
         link: partnerOffenPortalPath(anfrageId),
+        sendMail: false,
       });
     }
   }

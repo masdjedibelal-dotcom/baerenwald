@@ -9,6 +9,7 @@ import {
   resendFunnelPortalCode,
   verifyFunnelPortalCode,
 } from "@/app/actions/funnel-portal-auth";
+import { PortalAuthBusy } from "@/components/portal/auth/PortalAuthBusy";
 import type { PortalContactPrefill } from "@/lib/portal/portal-contact-prefill";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
@@ -205,8 +206,28 @@ export function FunnelPortalAuthGate({
 
   if (phase === "boot") {
     return (
-      <div className={cn("py-8 text-center text-sm text-text-secondary", className)}>
-        Anmeldung wird geprüft…
+      <div className={cn(className)}>
+        <PortalAuthBusy
+          title="Anmeldung wird geprüft…"
+          body="Einen Moment — wir prüfen, ob du bereits angemeldet bist."
+        />
+      </div>
+    );
+  }
+
+  if (busy) {
+    return (
+      <div className={cn(className)}>
+        <PortalAuthBusy
+          title={
+            phase === "verify"
+              ? "Code wird geprüft…"
+              : tab === "register"
+                ? "Konto wird angelegt…"
+                : "Anmeldung läuft…"
+          }
+          body="Einen Moment — danach geht es weiter mit deinem Preisrahmen."
+        />
       </div>
     );
   }

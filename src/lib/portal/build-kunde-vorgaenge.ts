@@ -48,6 +48,7 @@ import {
   resolvePortalBuildRole,
   resolvePortalKundeVorgangStatus,
 } from "@/lib/crm-vorgang/portal-resolve";
+import { resolveHvWartetAufHw } from "@/lib/portal2/hv-wartet-auf-hw";
 
 function meldeOrtFromFunnel(funnelDaten: unknown): string | null {
   if (!funnelDaten || typeof funnelDaten !== "object" || Array.isArray(funnelDaten)) {
@@ -116,6 +117,8 @@ type PortalAngebot = {
   gesamtBrutto?: number;
   positionenDisplay?: PortalAngebotPositionDisplay[];
   created_at?: string | null;
+  gesendet_am?: string | null;
+  gesendet_kunde_at?: string | null;
   dokumente?: PortalDokument[];
   /** D11: angebote.herkunft */
   herkunft?: string | null;
@@ -182,7 +185,10 @@ function resolveVorgangStatusForLead(
 ) {
   const hidePreise = isHvPortalLead(lead);
   const useLegacyHvMieter = Boolean(opts.mieterStatusMode && hidePreise);
-  const portalRole = resolvePortalBuildRole(opts);
+  const portalRole = resolvePortalBuildRole({
+    mieterStatusMode: useLegacyHvMieter,
+    hvPortalMode: opts.hvPortalMode,
+  });
   const terminSlots = auftrag?.terminSlots ?? [];
   const legacy = resolveKundeVorgangStatus({
     leadStatus: lead.status,
@@ -352,10 +358,21 @@ function buildItemFromLead(
         .filter(Boolean)
         .join(" · ") || formatMockVorgangListSubtitle(lead);
 
+  const wartetAufHw =
+    !hvMieterView && !eigentuemerView
+      ? resolveHvWartetAufHw({
+          positionen: auftrag?.positionen,
+          hwAngebotAusstehend:
+            String(lead.hv_meldung_status ?? "").toLowerCase() ===
+            "angebot_eingefordert",
+        })
+      : null;
+  const wartetAufHwLabel = wartetAufHw?.label ?? null;
+
   const filterDocs = (docs: PortalDokument[]) =>
     filterVorgangDokumente(docs, {
-      /** Dokumente: jeder Mieter-Modus — nur Abnahme. */
-      hvMieterView: Boolean(mieterStatusMode),
+      /** Dokumente: Mieter bei HV-Lead — nur Abnahme. */
+      hvMieterView,
       eigentuemerView,
       erledigt: vorgangStatus.phase === "abgeschlossen",
     });
@@ -410,6 +427,7 @@ function buildItemFromLead(
       feedbackBereit,
       mieterFeedback,
       melderStatusUrl: hvMieterView ? undefined : melderStatusUrl,
+      wartetAufHwLabel,
       ...detailKontext,
     };
   }
@@ -452,6 +470,7 @@ function buildItemFromLead(
       feedbackBereit,
       mieterFeedback,
       melderStatusUrl: hvMieterView ? undefined : melderStatusUrl,
+      wartetAufHwLabel,
       ...detailKontext,
     };
   }
@@ -479,6 +498,7 @@ function buildItemFromLead(
     feedbackBereit,
     mieterFeedback,
     melderStatusUrl: hvMieterView ? undefined : melderStatusUrl,
+    wartetAufHwLabel,
     ...detailKontext,
   };
 }

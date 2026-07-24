@@ -68,6 +68,8 @@ export async function POST(request: Request) {
       typ: "neu",
       projektName: "Neue Leistung",
       link,
+      // Mail kommt schon von notifyHandwerkerLeistungZuweisung
+      sendMail: false,
     });
   }
 

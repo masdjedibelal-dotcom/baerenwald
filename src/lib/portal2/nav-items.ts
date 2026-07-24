@@ -38,7 +38,7 @@ export const PORTAL_NAV_ITEMS: Record<PortalNavRole, readonly PortalNavItemDef[]
     ],
     kunde_privat: [
       { key: "home", label: "Übersicht", glyph: "◈" },
-      { key: "liste", label: "Meine Aufträge", glyph: "▤" },
+      { key: "liste", label: "Vorgänge", glyph: "▤" },
       { key: "settings", label: "Einstellungen", glyph: "⚙" },
     ],
     eigentuemer: [

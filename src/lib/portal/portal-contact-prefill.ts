@@ -24,6 +24,7 @@ type PortalKundeSource = {
   plz?: string | null;
   ort?: string | null;
   adresse?: string | null;
+  telefon?: string | null;
 };
 
 function splitName(name?: string | null): { vorname?: string; nachname?: string } {
@@ -46,6 +47,8 @@ function parseStrasseHausnummer(line?: string | null): {
 }
 
 function telefonFromLead(lead?: PortalAnfrageLeadSource | null): string | undefined {
+  const melder = lead?.melder_telefon?.trim();
+  if (melder) return melder;
   if (!lead?.funnel_daten || typeof lead.funnel_daten !== "object") return undefined;
   const d = lead.funnel_daten as Record<string, unknown>;
   const tel = typeof d.telefon === "string" ? d.telefon.trim() : "";
@@ -79,18 +82,26 @@ export function buildPortalContactPrefill(opts: {
   const hausnummer =
     latestLead?.hausnummer?.trim() || parsedStrasse.hausnummer;
 
+  /** Nicht nochmals die kombinierte Objekt-Zeile — die steckt schon in `parsedStrasse`. */
   const strasse =
-    latestLead?.strasse?.trim() ||
-    latestObjekt?.strasse?.trim() ||
-    parsedStrasse.strasse;
+    latestLead?.strasse?.trim() || parsedStrasse.strasse;
 
-  const { plz, ort } = objektPlzOrt(latestObjekt, latestLead?.plz ?? opts.kunde.plz);
+  const { plz, ort } = objektPlzOrt(
+    latestObjekt ??
+      (opts.kunde.plz || opts.kunde.ort
+        ? { plz: opts.kunde.plz, ort: opts.kunde.ort }
+        : null),
+    latestLead?.plz ?? opts.kunde.plz
+  );
 
   return {
     vorname,
     nachname,
     email: opts.kunde.email?.trim() || undefined,
-    telefon: telefonFromLead(latestLead),
+    telefon:
+      opts.kunde.telefon?.trim() ||
+      telefonFromLead(latestLead) ||
+      undefined,
     plz: plz !== "—" ? plz : opts.kunde.plz?.trim() || undefined,
     ort: ort !== "—" ? ort : opts.kunde.ort?.trim() || undefined,
     strasse,

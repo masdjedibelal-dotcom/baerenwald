@@ -11,6 +11,7 @@ import {
   type PortalEinladungStatus,
 } from "@/lib/portal2/portal-einladungen";
 import type { MieterWlBrand } from "@/lib/portal2/mieter-wl";
+import { resolveOrgSubLabel } from "@/lib/portal2/brand-presets";
 import { supabaseAdmin } from "@/lib/supabase";
 
 export type PortalEinladungRow = {
@@ -161,7 +162,7 @@ export async function resolvePortalEinladungByToken(
       (org as { org_anzeigename?: string }).org_anzeigename?.trim() ||
       org.name?.trim() ||
       "Verwaltung",
-    sub: (org as { org_sub?: string | null }).org_sub,
+    sub: resolveOrgSubLabel((org as { org_sub?: string | null }).org_sub),
     logoUrl: (org as { org_logo_url?: string | null }).org_logo_url,
     logoKuerzel: (org as { org_logo_kuerzel?: string | null }).org_logo_kuerzel,
     primary: (org as { org_primary_color?: string | null }).org_primary_color,

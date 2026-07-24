@@ -103,6 +103,8 @@ export type KundePortalDetailItem = {
   meldeZeitraum?: string | null;
   /** Fachfragen (Frage → Antwort) aus dem Melde-Funnel */
   meldeFachdetails?: Array<{ label: string; value: string }>;
+  /** C4 — HV Meta „Wartet auf HW · …“ */
+  wartetAufHwLabel?: string | null;
 };
 
 export function objektPlzOrt(

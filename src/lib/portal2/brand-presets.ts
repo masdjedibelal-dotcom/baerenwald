@@ -1,4 +1,4 @@
-import { PORTAL_C } from "@/lib/portal2/tokens";
+import { PORTAL_C, PORTAL_VAR } from "@/lib/portal2/tokens";
 
 /**
  * White-Label Brand-Presets — Mock `BRAND_PRESETS` + Default-`ORG`
@@ -83,6 +83,14 @@ export const ORG_BRAND_DEFAULT: OrgBrand = {
   ort: "10719 Berlin",
 };
 
+/** Untertitel Header/Sidebar — Legacy „Hausverwaltung“ → „Verwaltung“. */
+export function resolveOrgSubLabel(raw?: string | null): string {
+  const s = (raw ?? "").trim();
+  if (!s) return "Verwaltung";
+  if (/^hausverwaltung$/i.test(s)) return "Verwaltung";
+  return s;
+}
+
 export type OrgBrandSource = {
   name?: string | null;
   email?: string | null;
@@ -128,17 +136,17 @@ export function resolveBrandPalette(input: {
   const raw = input.primary?.trim();
   if (!raw) {
     return {
-      primary: PORTAL_C.primary,
-      primaryDk: PORTAL_C.primaryDk,
-      soft: PORTAL_C.primarySoft,
+      primary: PORTAL_VAR.primary,
+      primaryDk: PORTAL_VAR.primaryDk,
+      soft: PORTAL_VAR.primarySoft,
     };
   }
   const preset = findBrandPresetByPrimary(raw);
   return {
     primary: raw,
     primaryDk:
-      input.primaryDk?.trim() || preset?.primaryDk || PORTAL_C.primaryDk,
-    soft: input.soft?.trim() || preset?.soft || PORTAL_C.primarySoft,
+      input.primaryDk?.trim() || preset?.primaryDk || PORTAL_VAR.primaryDk,
+    soft: input.soft?.trim() || preset?.soft || PORTAL_VAR.primarySoft,
   };
 }
 
@@ -163,7 +171,7 @@ export function orgBrandFromKunde(
 
   return {
     name,
-    sub: src.org_sub?.trim() || "Verwaltung",
+    sub: resolveOrgSubLabel(src.org_sub),
     logo,
     primary: palette.primary,
     primaryDk: palette.primaryDk,

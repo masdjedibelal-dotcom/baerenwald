@@ -3,6 +3,7 @@
 import type { ReactNode } from "react";
 import { X } from "lucide-react";
 
+import { PORTAL_MODAL_SCRIM } from "@/lib/portal2/modal-shell";
 import { cn } from "@/lib/utils";
 
 /** Einheitliche Mobile-Sheet-Höhe (Kunden- + Partnerportal). */
@@ -25,13 +26,13 @@ export function PortalMobileSheetHeader({ onClose }: { onClose: () => void }) {
     <div className="flex shrink-0 items-center justify-between px-3 pb-2 pt-3">
       <div className="w-11 shrink-0" aria-hidden />
       <div
-        className="h-1.5 w-12 shrink-0 rounded-full bg-border-default"
+        className="h-1.5 w-12 shrink-0 rounded-full bg-[var(--p2-line)]"
         aria-hidden
       />
       <button
         type="button"
         onClick={onClose}
-        className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-border-default bg-surface-card text-text-secondary transition-colors hover:bg-muted hover:text-text-primary"
+        className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-[var(--p2-line)] bg-[var(--p2-panel)] text-[var(--p2-sub)] transition-colors hover:bg-[var(--p2-hover)] hover:text-[var(--p2-ink)]"
         aria-label="Schließen"
       >
         <X className="h-5 w-5" aria-hidden />
@@ -51,16 +52,11 @@ export function PortalMobileBottomSheet({
   if (!open) return null;
 
   return (
-    <div
-      className={cn(
-        "fixed inset-0 bg-black/40 lg:hidden",
-        zIndexClass,
-        className
-      )}
-    >
+    <div className={cn("fixed inset-0 lg:hidden", zIndexClass, className)}>
       <button
         type="button"
         className="absolute inset-0"
+        style={{ background: PORTAL_MODAL_SCRIM }}
         onClick={onClose}
         aria-label="Schließen"
       />
@@ -69,7 +65,8 @@ export function PortalMobileBottomSheet({
         aria-modal="true"
         aria-label={ariaLabel}
         className={cn(
-          "absolute inset-x-0 bottom-0 flex flex-col rounded-t-2xl border border-border-default bg-surface-card shadow-xl",
+          "absolute inset-x-0 bottom-0 flex flex-col border border-[var(--p2-line)] bg-[var(--p2-panel)] shadow-xl",
+          "rounded-t-[var(--p2-radius-sheet,20px)]",
           PORTAL_MOBILE_SHEET_HEIGHT_CLASS
         )}
       >

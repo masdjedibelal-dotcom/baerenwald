@@ -38,6 +38,7 @@ import {
 } from "@/lib/portal2/hv-detail-adapters";
 import { PORTAL_OBJEKT_COVER_DEFAULT_SRC } from "@/lib/portal2/portal-media";
 import type { PortalMockStatusId } from "@/lib/portal2/status";
+import { portalMieterStatusLabel } from "@/lib/portal2/status";
 
 function sectionText(
   item: KundePortalDetailItem,
@@ -113,6 +114,7 @@ export function PortalVorgangDetail({
   onBack,
   privatkunde = false,
   flowStatusOverride,
+  mieterStatusMode = false,
 }: {
   item: KundePortalDetailItem;
   showAnlassBadge?: boolean;
@@ -139,6 +141,8 @@ export function PortalVorgangDetail({
   onBack?: () => void;
   /** Kanonischer Flow aus CRM-Resolver (bevorzugt gegenüber Heuristik). */
   flowStatusOverride?: PortalMockStatusId;
+  /** Mieter (HV-Lead): Status ohne Angebots-/Handwerker-Wording. */
+  mieterStatusMode?: boolean;
 }) {
   const router = useRouter();
   const [confirmOpen, setConfirmOpen] = useState(false);
@@ -166,14 +170,15 @@ export function PortalVorgangDetail({
     const rechnungPdf =
       item.dokumente?.find((d) => /rechnung/i.test(d.name ?? "") && d.href)
         ?.href ?? null;
-    const kategorie =
-      item.anfrageGewerk?.trim() ||
-      item.cardSubtitle?.trim() ||
-      undefined;
+    const kategorie = privatkunde
+      ? undefined
+      : item.anfrageGewerk?.trim() ||
+        item.cardSubtitle?.trim() ||
+        undefined;
 
     return (
       <OrganisationHvVorgangDetail
-        idLabel={(item.leadId ?? item.id).slice(0, 8).toUpperCase()}
+        idLabel=""
         titel={item.title}
         objekt={String(objektRaw).slice(0, 160)}
         kategorie={kategorie}
@@ -218,7 +223,18 @@ export function PortalVorgangDetail({
         canAcceptAngebot={Boolean(item.isAngebotDetail && item.needsAction)}
         privatkunde={privatkunde}
         detailRole={privatkunde ? "kunde" : "hv"}
+        mieterStatusMode={mieterStatusMode || Boolean(item.hvMieterView)}
+        statusLabelOverride={
+          mieterStatusMode || item.hvMieterView
+            ? item.status?.trim() || portalMieterStatusLabel(flowStatus)
+            : undefined
+        }
         coverUrl={PORTAL_OBJEKT_COVER_DEFAULT_SRC}
+        wartetAufHwLabel={
+          mieterStatusMode || item.hvMieterView
+            ? null
+            : item.wartetAufHwLabel ?? null
+        }
         onBack={onBack}
         onUpdated={() => {
           onAccepted?.();

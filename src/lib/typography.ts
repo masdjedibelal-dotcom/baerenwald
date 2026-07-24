@@ -24,9 +24,9 @@ export const TYPO = {
     "font-sans text-xs text-text-tertiary leading-relaxed font-normal",
 
   label:
-    "font-sans text-[11px] font-bold uppercase tracking-widest",
+    "font-sans text-[11px] font-bold uppercase tracking-wider",
   labelSm:
-    "font-sans text-[10px] font-semibold uppercase tracking-widest",
+    "font-sans text-[11px] font-semibold uppercase tracking-widest",
 
   meta: "font-sans text-xs text-text-tertiary font-normal",
 

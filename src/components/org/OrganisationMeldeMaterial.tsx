@@ -11,7 +11,7 @@ import {
 import { buildMeldeUrl } from "@/lib/org/melde-url";
 import type { OrganisationKunde } from "@/lib/org/types";
 import { EinstellungenCard } from "@/components/shared/PortalEinstellungenUi";
-import { PORTAL_C } from "@/lib/portal2/tokens";
+import { PORTAL_VAR } from "@/lib/portal2/tokens";
 import { cn } from "@/lib/utils";
 
 type Props = {
@@ -47,7 +47,7 @@ export function OrganisationMeldeMaterial({
         <p className="text-[13.5px] font-semibold text-text-primary">
           Melde-Link noch nicht verfügbar
         </p>
-        <p className="mt-1 text-[13px] leading-[1.55]" style={{ color: PORTAL_C.sub }}>
+        <p className="mt-1 text-[13px] leading-[1.55]" style={{ color: PORTAL_VAR.sub }}>
           Die Organisations-Kennung fehlt. Bitte Bärenwald kontaktieren — danach
           können Sie den Link kopieren und den Aushang als PDF öffnen.
         </p>
@@ -67,7 +67,7 @@ export function OrganisationMeldeMaterial({
 
   const body = (
     <div className="flex flex-col gap-3">
-      <p className="text-[13px] leading-[1.55]" style={{ color: PORTAL_C.sub }}>
+      <p className="text-[13px] leading-[1.55]" style={{ color: PORTAL_VAR.sub }}>
         Ein Link für alle Objekte — Mieter wählen ihr Gebäude im Formular.
         {objektCount === 0
           ? " Legen Sie zuerst unter Objekte mindestens ein Gebäude an."

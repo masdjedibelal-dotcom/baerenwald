@@ -11,8 +11,6 @@ export type AuthPortalRole =
 
 export type AuthScreenId =
   | "login"
-  | "magic"
-  | "magicSent"
   | "forgot"
   | "forgotSent"
   | "invite"
@@ -60,21 +58,12 @@ export const AUTH_LOGIN = {
   passwordLabel: "Passwort",
   passwordPh: "••••••••",
   forgot: "Vergessen?",
-  magicToggle: "Ohne Passwort per Magic-Link anmelden",
   submit: "Anmelden",
-  submitMagic: "Magic-Link senden",
   or: "oder",
   google: "Google",
   microsoft: "Microsoft",
   neu: "Neu hier?",
-  zugang: "Zugang anfordern",
-} as const;
-
-export const AUTH_MAGIC = {
-  title: "Anmeldelink anfordern",
-  subtitle: "Wir senden Ihnen einen sicheren Einmal-Link — kein Passwort nötig.",
-  submit: "Link senden",
-  back: "‹ Zurück zum Login",
+  zugang: "Registrieren",
 } as const;
 
 export const AUTH_FORGOT = {
@@ -100,12 +89,6 @@ export const AUTH_INVITE = {
 
 /** Mock `authConfirm` Screens. */
 export const AUTH_CONFIRM = {
-  magicSent: {
-    icon: "✉",
-    title: "Link gesendet",
-    body: "Wir haben einen Anmeldelink an Ihre E-Mail geschickt. Öffnen Sie ihn auf diesem Gerät, um sich anzumelden. Der Link ist 15 Minuten gültig.",
-    action: "Erneut senden",
-  },
   forgotSent: {
     icon: "✓",
     title: "E-Mail unterwegs",

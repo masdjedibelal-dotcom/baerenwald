@@ -63,6 +63,7 @@ type PortalAngebotRow = {
   lead_id: string | null;
   kunde_objekt_id: string | null;
   status_einfach: string | null;
+  status?: string | null;
   gesamt_fix: number | null;
   gesamt_min: number | null;
   gesamt_max: number | null;
@@ -72,6 +73,7 @@ type PortalAngebotRow = {
   positionen: unknown;
   created_at: string | null;
   gesendet_am: string | null;
+  gesendet_kunde_at?: string | null;
   pdf_url: string | null;
   /** D11 — optional bis Migration applied. */
   herkunft?: string | null;
@@ -132,7 +134,7 @@ export async function getPortalDataForKunde(kundeId: string) {
   const { data: kundePrimary, error: kundePrimaryErr } = await supabaseAdmin
     .from("kunden")
     .select(
-      "id, name, email, plz, ort, adresse, auth_user_id, portal_modus, freigabe_schwelle_eur, typ"
+      "id, name, email, telefon, plz, ort, adresse, auth_user_id, portal_modus, freigabe_schwelle_eur, typ"
     )
     .eq("id", id)
     .maybeSingle();
@@ -141,6 +143,7 @@ export async function getPortalDataForKunde(kundeId: string) {
     id: string;
     name?: string | null;
     email?: string | null;
+    telefon?: string | null;
     plz?: string | null;
     ort?: string | null;
     adresse?: string | null;
@@ -159,6 +162,17 @@ export async function getPortalDataForKunde(kundeId: string) {
       .eq("id", id)
       .maybeSingle();
     kundeRow = kundeFallback as typeof kundeRow;
+  }
+
+  if (!kundeRow && kundePrimaryErr && /telefon/i.test(kundePrimaryErr.message)) {
+    const { data: ohneTelefon } = await supabaseAdmin
+      .from("kunden")
+      .select(
+        "id, name, email, plz, ort, adresse, auth_user_id, portal_modus, freigabe_schwelle_eur, typ"
+      )
+      .eq("id", id)
+      .maybeSingle();
+    kundeRow = ohneTelefon as typeof kundeRow;
   }
 
   if (!kundeRow) return null;
@@ -248,7 +262,7 @@ export async function getPortalDataForKunde(kundeId: string) {
   const angeboteByIdEarly = new Map<string, PortalAngebotRow>();
 
   const angebotSelectBase =
-    "id, angebotsnr, lead_id, kunde_id, kunde_objekt_id, status_einfach, gesamt_preis, gesamt_min, gesamt_max, gueltig_bis, leistungsumfang, notizen, positionen, created_at, gesendet_am, pdf_url";
+    "id, angebotsnr, lead_id, kunde_id, kunde_objekt_id, status_einfach, status, gesamt_preis, gesamt_min, gesamt_max, gueltig_bis, leistungsumfang, notizen, positionen, created_at, gesendet_am, gesendet_kunde_at, pdf_url";
   const angebotSelectWithHerkunft = `${angebotSelectBase}, herkunft`;
 
   async function loadAngeboteRows(filter: {
@@ -267,6 +281,14 @@ export async function getPortalDataForKunde(kundeId: string) {
     let { data, error } = await run(angebotSelectWithHerkunft);
     if (error && /herkunft/i.test(error.message)) {
       ({ data, error } = await run(angebotSelectBase));
+    }
+    if (
+      error &&
+      /gesendet_kunde_at|column.*status/i.test(error.message)
+    ) {
+      const legacy =
+        "id, angebotsnr, lead_id, kunde_id, kunde_objekt_id, status_einfach, gesamt_preis, gesamt_min, gesamt_max, gueltig_bis, leistungsumfang, notizen, positionen, created_at, gesendet_am, pdf_url";
+      ({ data, error } = await run(legacy));
     }
     if (error) {
       console.warn("[portal] angebote:", error.message);
@@ -717,8 +739,8 @@ export async function getPortalDataForKunde(kundeId: string) {
           angebotsnr: a.angebotsnr,
           angebotstitel: display.titel,
           pdf_url: a.pdf_url,
-          gesendet_am: a.gesendet_am,
-          status_einfach: a.status_einfach,
+          gesendet_am: a.gesendet_am ?? a.gesendet_kunde_at,
+          status_einfach: a.status_einfach ?? a.status,
           created_at: a.created_at,
         }),
       };

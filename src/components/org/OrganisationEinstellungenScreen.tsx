@@ -3,10 +3,15 @@
 import { OrganisationBrandingEditor } from "@/components/org/OrganisationBrandingEditor";
 import { OrganisationFreigabeRegelnPanel } from "@/components/org/OrganisationFreigabeRegelnPanel";
 import { OrganisationMeldeMaterial } from "@/components/org/OrganisationMeldeMaterial";
+import { OrganisationMieterLegalLinksPanel } from "@/components/org/OrganisationMieterLegalLinksPanel";
+import { PortalKontoSicherheitPanel } from "@/components/shared/PortalKontoSicherheitPanel";
+import { PortalPushPermissionRationale } from "@/components/shared/PortalPushPermissionRationale";
+import { PortalTrackingConsentPanel } from "@/components/shared/PortalTrackingConsentPanel";
 import { PortalEinstellungenShell } from "@/components/shared/PortalEinstellungenShell";
 import { EinstellungenPfRow } from "@/components/shared/PortalEinstellungenUi";
 import type { OrganisationKunde } from "@/lib/org/types";
-import { PORTAL_C } from "@/lib/portal2/tokens";
+import { PORTAL_VAR } from "@/lib/portal2/tokens";
+import { SITE_CONFIG } from "@/lib/config";
 
 type Props = {
   kunde: OrganisationKunde;
@@ -42,8 +47,8 @@ export function OrganisationEinstellungenScreen({
                 <h3
                   className="text-sm font-bold"
                   style={{
-                    color: PORTAL_C.ink,
-                    fontFamily: "var(--p2-font-head, " + PORTAL_C.head + ")",
+                    color: PORTAL_VAR.ink,
+                    fontFamily: "var(--p2-font-head, " + PORTAL_VAR.head + ")",
                   }}
                 >
                   Profil
@@ -56,7 +61,7 @@ export function OrganisationEinstellungenScreen({
                 <EinstellungenPfRow label="Telefon" value={tel} />
                 <p
                   className="text-[12.5px] leading-relaxed"
-                  style={{ color: PORTAL_C.sub }}
+                  style={{ color: PORTAL_VAR.sub }}
                 >
                   Diese Kontaktdaten gelten auch für die Mieter-Kommunikation
                   (Melde-Flow, Status und E-Mails).
@@ -68,6 +73,21 @@ export function OrganisationEinstellungenScreen({
                 objektCount={objektCount}
                 nested
               />
+
+              <OrganisationMieterLegalLinksPanel
+                kunde={kunde}
+                readOnly={!isAdmin}
+                onSaved={onSaved}
+              />
+
+              <PortalKontoSicherheitPanel
+                signOutHref="/portal/login"
+                allowDelete={false}
+                deleteBlockedHint={`Organisationskonten löschen Sie über den Support (${SITE_CONFIG.email}). Passwort ändern und Datenexport sind möglich.`}
+              />
+
+              <PortalPushPermissionRationale role="hv" embedded />
+              <PortalTrackingConsentPanel />
             </div>
           );
         }

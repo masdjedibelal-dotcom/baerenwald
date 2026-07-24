@@ -22,7 +22,7 @@ import {
   formatEinstellungenSchwelle,
   snapEinstellungenSchwelle,
 } from "@/lib/portal2/einstellungen";
-import { PORTAL_C } from "@/lib/portal2/tokens";
+import { PORTAL_VAR } from "@/lib/portal2/tokens";
 import { orgPortalToast, portalToastError } from "@/lib/shared/portal-toast";
 
 type Props = {
@@ -148,7 +148,7 @@ export function OrganisationFreigabeRegelnPanel({
       {!isAdmin ? (
         <p
           className="rounded-[9px] border border-border-default px-3.5 py-[11px] text-[13px] leading-[1.55]"
-          style={{ color: PORTAL_C.sub }}
+          style={{ color: PORTAL_VAR.sub }}
         >
           Nur Administratoren können Freigabe-Regeln und Schwellen ändern.
         </p>
@@ -159,7 +159,7 @@ export function OrganisationFreigabeRegelnPanel({
           <div className="flex flex-col gap-3">
             <p
               className="text-[13px] leading-[1.55]"
-              style={{ color: PORTAL_C.sub }}
+              style={{ color: PORTAL_VAR.sub }}
             >
               {EINSTELLUNGEN_SCHWELLE_INTRO}
             </p>
@@ -194,7 +194,7 @@ export function OrganisationFreigabeRegelnPanel({
           <div className="border-t border-border-light pt-4">
             <p
               className="mb-2.5 text-[13px] leading-[1.55]"
-              style={{ color: PORTAL_C.sub }}
+              style={{ color: PORTAL_VAR.sub }}
             >
               {EINSTELLUNGEN_AKUT_INTRO}
             </p>

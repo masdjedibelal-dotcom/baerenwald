@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { MeldeStatusClient } from "@/components/melden/MeldeStatusClient";
 import { loadPortalAuftraegeByLeadIds } from "@/lib/portal/load-auftraege-by-lead-ids";
 import { portalErledigtFromLeadAndAuftrag } from "@/lib/portal/vorgang-erledigt";
+import { resolveOrgSubLabel } from "@/lib/portal2/brand-presets";
 import { resolveMieterStatusStufe } from "@/lib/vorgang/vorgang-phase";
 import { resolvePartnerFileUrl } from "@/lib/partner/partner-storage";
 import { supabaseAdmin } from "@/lib/supabase";
@@ -101,7 +102,7 @@ export default async function MeldeStatusPage({ params }: Props) {
       name:
         String(org?.org_anzeigename ?? org?.name ?? "Verwaltung").trim() ||
         "Verwaltung",
-      sub: (org?.org_sub as string | null) ?? "Verwaltung",
+      sub: resolveOrgSubLabel(org?.org_sub as string | null),
       logoUrl: (org?.org_logo_url as string | null) ?? null,
       logoKuerzel: (org?.org_logo_kuerzel as string | null) ?? null,
       primary: (org?.org_primary_color as string | null) ?? null,

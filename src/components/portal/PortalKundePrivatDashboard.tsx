@@ -5,13 +5,14 @@ import {
   GEWERBE_DASHBOARD_ROLE_LABEL,
   PRIVAT_DASHBOARD_EMPTY_RECENT,
   PRIVAT_DASHBOARD_KPI_DEFS,
+  PRIVAT_DASHBOARD_KPI_SECTION,
   PRIVAT_DASHBOARD_RECENT_ALL,
   PRIVAT_DASHBOARD_RECENT_TITLE,
   PRIVAT_DASHBOARD_ROLE_LABEL,
   type PrivatDashboardKpiId,
 } from "@/lib/portal2/kunde-dashboard";
 import type { PortalKundeTyp } from "@/lib/portal2/kunde-typ";
-import { PORTAL_STATUS, type PortalMockStatusId } from "@/lib/portal2/status";
+import { PORTAL_STATUS, portalMieterStatusLabel, type PortalMockStatusId } from "@/lib/portal2/status";
 
 export type PrivatDashboardRecentItem = {
   id: string;
@@ -19,6 +20,9 @@ export type PrivatDashboardRecentItem = {
   objekt: string;
   flowStatus: PortalMockStatusId;
   notfall?: boolean;
+  /** HV-Mieter: eigenes Label statt PORTAL_STATUS. */
+  hvMieterView?: boolean;
+  statusLabel?: string;
 };
 
 type Props = {
@@ -69,13 +73,17 @@ export function PortalKundePrivatDashboard({
         value: kpis[def.id],
         onClick: onKpiClick ? () => onKpiClick(def.id) : undefined,
       }))}
+      tilesTitle={PRIVAT_DASHBOARD_KPI_SECTION}
       recent={recent.slice(0, 4).map((v) => {
         const st = PORTAL_STATUS[v.flowStatus];
+        const statusLabel = v.hvMieterView
+          ? v.statusLabel?.trim() || portalMieterStatusLabel(v.flowStatus)
+          : st.label;
         return {
           id: v.id,
           titel: v.titel,
           objekt: v.objekt,
-          statusLabel: st.label,
+          statusLabel,
           statusColor: st.color,
           statusBg: st.bg,
           notfall: v.notfall,

@@ -26,7 +26,7 @@ export const SITE_CONFIG = {
   /** Nur intern / Impressum & Pflichtangaben — nicht im allgemeinen UI */
   phoneMobil: "+49 163 7316161",
   phoneMobilHref: "tel:+491637316161",
-  email: "info@baerenwald-muenchen.de",
+  email: "info@baerenwaldmuenchen.de",
   /** Geschäftsanschrift (Impressum, Schema, Kontakt). */
   addressStreet: "Bärenwaldstraße",
   addressHouseNumber: "20",

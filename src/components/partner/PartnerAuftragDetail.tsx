@@ -37,6 +37,7 @@ import {
   partnerAuftragKannUnterlagenHochladen,
   partnerAuftragZeigtDokumenteUpload,
 } from "@/lib/partner/partner-auftrag-dokumente";
+import { HW_ABNAHME_COPY } from "@/lib/partner/hw-abnahme";
 import {
   PARTNER_HW_DOKUMENT_UPLOAD_LABEL,
   partnerHwDokumentUploadHint,
@@ -85,7 +86,7 @@ import {
   hwAuftragStatusStyle,
   hwAuftragTimelineIndex,
 } from "@/lib/portal2/hw-auftrag-detail";
-import { PORTAL_C } from "@/lib/portal2/tokens";
+import { PORTAL_VAR } from "@/lib/portal2/tokens";
 import { partnerPortalToast } from "@/lib/shared/portal-toast";
 import { DokumenteTabelle } from "@/components/shared/DokumenteTabelle";
 import { FileUploadField } from "@/components/shared/FileUploadField";
@@ -512,18 +513,26 @@ export function PartnerAuftragDetail({
     positionen: item.positionen,
     vorgangState,
     auftragStatus: item.status,
+    hwAbschlussSigniertAm: item.hw_abschluss_signiert_am,
+    abnahmeProtokollUrl: item.abnahme_protokoll_url,
   });
 
   const offeneAbschlussLeistungen = useMemo(
     () =>
       item.positionen
-        .filter(
-          (p) =>
+        .filter((p) => {
+          const ls = String(p.leistung_status ?? "").toLowerCase();
+          if (ls === "erledigt") return true;
+          return (
             positionHandwerkerAbgeschlossen(p.handwerker_status) &&
             !positionHandwerkerErledigt(p.handwerker_status)
-        )
-        .map((p) => String(p.leistung_name ?? "Leistung").trim())
-        .filter(Boolean),
+          );
+        })
+        .map((p) => ({
+          id: p.id,
+          leistung_name: String(p.leistung_name ?? "Leistung").trim() || "Leistung",
+          leistung_status: p.leistung_status,
+        })),
     [item.positionen]
   );
 
@@ -626,7 +635,7 @@ export function PartnerAuftragDetail({
             <a
               href={`tel:${kontaktTel.replace(/\s+/g, "")}`}
               className="mt-0.5 flex items-center gap-1.5 text-[13px] font-semibold"
-              style={{ color: PORTAL_C.primary }}
+              style={{ color: PORTAL_VAR.primary }}
             >
               <Phone className="h-3.5 w-3.5 shrink-0" aria-hidden />
               {kontaktTel}
@@ -653,14 +662,14 @@ export function PartnerAuftragDetail({
             <div
               className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full"
               style={{
-                background: i === 0 ? PORTAL_C.primary : "#cfd4da",
+                background: i === 0 ? PORTAL_VAR.primary : "#cfd4da",
               }}
             />
             <div>
-              <p className="text-[12.5px] font-medium" style={{ color: PORTAL_C.ink }}>
+              <p className="text-[12.5px] font-medium" style={{ color: PORTAL_VAR.ink }}>
                 {e.text}
               </p>
-              <p className="text-[11px]" style={{ color: PORTAL_C.faint }}>
+              <p className="text-[11px]" style={{ color: PORTAL_VAR.faint }}>
                 {e.meta}
               </p>
             </div>
@@ -676,27 +685,27 @@ export function PartnerAuftragDetail({
         {/* Header */}
         <div
           className="rounded-xl bg-white px-4 py-4"
-          style={{ border: `1px solid ${PORTAL_C.line}` }}
+          style={{ border: `1px solid ${PORTAL_VAR.line}` }}
         >
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div className="min-w-0 flex-1">
               <p
                 className="text-[12px] font-semibold"
-                style={{ color: PORTAL_C.faint }}
+                style={{ color: PORTAL_VAR.faint }}
               >
                 {idLabel}
               </p>
               <h1
                 className="mt-1 text-[22px] font-bold leading-snug"
                 style={{
-                  color: PORTAL_C.ink,
-                  fontFamily: "var(--p2-font-head, " + PORTAL_C.head + ")",
+                  color: PORTAL_VAR.ink,
+                  fontFamily: "var(--p2-font-head, " + PORTAL_VAR.head + ")",
                 }}
               >
                 {titel}
               </h1>
               {headerSub ? (
-                <p className="mt-1 text-[13px]" style={{ color: PORTAL_C.sub }}>
+                <p className="mt-1 text-[13px]" style={{ color: PORTAL_VAR.sub }}>
                   {headerSub}
                 </p>
               ) : null}
@@ -714,18 +723,23 @@ export function PartnerAuftragDetail({
                   type="button"
                   onClick={() => setAbschlussOpen(true)}
                   className="rounded-[9px] px-3 py-2 text-[12.5px] font-semibold text-white"
-                  style={{ background: PORTAL_C.primary }}
+                  style={{ background: PORTAL_VAR.primary }}
                 >
                   {HW_AUFTRAG_COPY.ausfuehrenCta}
                 </button>
               ) : null}
             </div>
           </div>
+          {kannAbschluss ? (
+            <p className="mt-2 text-[12px]" style={{ color: PORTAL_VAR.sub }}>
+              {HW_AUFTRAG_COPY.ausfuehrenHint}
+            </p>
+          ) : null}
 
           {/* Timeline */}
           <div
             className="mt-4 flex gap-0 overflow-x-auto pb-1"
-            style={{ borderTop: `1px solid ${PORTAL_C.line2}` }}
+            style={{ borderTop: `1px solid ${PORTAL_VAR.line2}` }}
           >
             {HW_AUFTRAG_TIMELINE.map((step, i) => {
               const done = i < timelineIdx;
@@ -738,15 +752,15 @@ export function PartnerAuftragDetail({
                   <div
                     className="flex h-7 w-7 items-center justify-center rounded-full text-[12px] font-bold"
                     style={{
-                      background: done || act ? PORTAL_C.primary : "#e8ebe9",
-                      color: done || act ? "#fff" : PORTAL_C.faint,
+                      background: done || act ? PORTAL_VAR.primary : "#e8ebe9",
+                      color: done || act ? "#fff" : PORTAL_VAR.faint,
                     }}
                   >
                     {done ? "✓" : i + 1}
                   </div>
                   <span
                     className="text-center text-[10.5px] font-semibold leading-tight"
-                    style={{ color: act ? PORTAL_C.ink : PORTAL_C.faint }}
+                    style={{ color: act ? PORTAL_VAR.ink : PORTAL_VAR.faint }}
                   >
                     {step.label}
                   </span>
@@ -766,7 +780,7 @@ export function PartnerAuftragDetail({
           <div className="flex min-w-0 flex-1 flex-col gap-3.5">
             {beschreibung ? (
               <PortalDetailCard title={HW_AUFTRAG_COPY.beschreibungTitle}>
-                <p className="text-[13px] leading-relaxed" style={{ color: PORTAL_C.sub }}>
+                <p className="text-[13px] leading-relaxed" style={{ color: PORTAL_VAR.sub }}>
                   {beschreibung}
                 </p>
               </PortalDetailCard>
@@ -779,24 +793,22 @@ export function PartnerAuftragDetail({
               vollstaendig={abschlussVollstaendig}
             />
 
-            {item.positionen.length > 0 ? (
-              <PartnerPositionLebenszyklusList
-                auftragId={item.id}
-                positionen={item.positionen.map((p) => ({
-                  id: p.id,
-                  leistung_name: p.leistung_name,
-                  leistung_status: p.leistung_status,
-                  verguetung: p.verguetung,
-                  typ: p.typ,
-                  anerkennung_status: p.anerkennung_status,
-                  preis_partner: p.preis_partner,
-                  einheit: p.einheit,
-                  menge: p.menge,
-                  zeit_minuten_summe: p.zeit_minuten_summe,
-                }))}
-                onDone={() => router.refresh()}
-              />
-            ) : null}
+            <PartnerPositionLebenszyklusList
+              auftragId={item.id}
+              positionen={item.positionen.map((p) => ({
+                id: p.id,
+                leistung_name: p.leistung_name,
+                leistung_status: p.leistung_status,
+                verguetung: p.verguetung,
+                typ: p.typ,
+                anerkennung_status: p.anerkennung_status,
+                preis_partner: p.preis_partner,
+                einheit: p.einheit,
+                menge: p.menge,
+                zeit_minuten_summe: p.zeit_minuten_summe,
+              }))}
+              onDone={() => router.refresh()}
+            />
 
             {konditionZeilen.length > 0 ? (
               <PortalDetailCard title={HW_AUFTRAG_COPY.leistungenTitle}>
@@ -842,7 +854,7 @@ export function PartnerAuftragDetail({
                     ) : null}
                   </div>
                 ) : (
-                  <p className="text-[13px]" style={{ color: PORTAL_C.sub }}>
+                  <p className="text-[13px]" style={{ color: PORTAL_VAR.sub }}>
                     Noch keine Bewertung für diesen Auftrag.
                   </p>
                 )}
@@ -879,8 +891,8 @@ export function PartnerAuftragDetail({
 
             <PortalDetailCard title={HW_AUFTRAG_COPY.bautagebuchTitle}>
               <div className="mb-3 flex items-center justify-between gap-2">
-                <p className="text-[12.5px]" style={{ color: PORTAL_C.faint }}>
-                  Einträge werden geprüft, bevor sie für Kunden sichtbar werden.
+                <p className="text-[12.5px]" style={{ color: PORTAL_VAR.faint }}>
+                  {HW_AUFTRAG_COPY.bautagebuchHint}
                 </p>
                 {!showNew && !editingEintrag ? (
                   <button
@@ -888,8 +900,8 @@ export function PartnerAuftragDetail({
                     onClick={() => setShowNew(true)}
                     className="shrink-0 rounded-full border px-3 py-1.5 text-[12px] font-semibold"
                     style={{
-                      borderColor: PORTAL_C.line,
-                      color: PORTAL_C.sub,
+                      borderColor: PORTAL_VAR.line,
+                      color: PORTAL_VAR.sub,
                       background: "#fff",
                     }}
                   >
@@ -941,7 +953,7 @@ export function PartnerAuftragDetail({
                     <form
                       onSubmit={onPdfSubmit}
                       className="space-y-2 rounded-xl border border-dashed p-4"
-                      style={{ borderColor: PORTAL_C.line }}
+                      style={{ borderColor: PORTAL_VAR.line }}
                     >
                       <FileUploadField
                         label={PARTNER_HW_DOKUMENT_UPLOAD_LABEL}
@@ -980,14 +992,13 @@ export function PartnerAuftragDetail({
                   {kannRechnungHochladen && item.angebotHandwerkerId ? (
                     <div
                       className="space-y-2 rounded-xl border p-4"
-                      style={{ borderColor: PORTAL_C.line }}
+                      style={{ borderColor: PORTAL_VAR.line }}
                     >
                       <p className="portal-text-body font-semibold text-text-primary">
-                        Rechnung erstellen
+                        {HW_ABNAHME_COPY.rechnungTitle}
                       </p>
                       <p className="text-[12.5px] text-text-secondary">
-                        Automatisch aus Firmendaten und bestätigten Konditionen —
-                        oder optional eigenes PDF hochladen.
+                        {HW_ABNAHME_COPY.rechnungBody}
                       </p>
                       <button
                         type="button"
@@ -997,13 +1008,22 @@ export function PartnerAuftragDetail({
                         Rechnung prüfen &amp; einreichen
                       </button>
                     </div>
+                  ) : item.angebotHandwerkerId &&
+                    !item.hw_rechnung_eingereicht_at &&
+                    (item.angebotHwStatus ?? "").toLowerCase() === "uebernommen" &&
+                    item.projektvertrag_bestaetigt_am &&
+                    !item.hw_abschluss_signiert_am &&
+                    !item.abnahme_protokoll_url ? (
+                    <p className="rounded-xl border border-dashed px-3 py-3 text-[12.5px] text-text-secondary">
+                      {HW_ABNAHME_COPY.rechnungBlockedOhneAbnahme}
+                    </p>
                   ) : null}
 
                   {kannRechnungHochladen ? (
                     <form
                       onSubmit={onRechnungSubmit}
                       className="space-y-2 rounded-xl border border-dashed p-4"
-                      style={{ borderColor: PORTAL_C.line }}
+                      style={{ borderColor: PORTAL_VAR.line }}
                     >
                       <p className="portal-text-body font-semibold text-text-primary">
                         Eigenes Rechnungs-PDF (optional)
@@ -1072,7 +1092,7 @@ export function PartnerAuftragDetail({
       <PartnerAbschlussModal
         open={abschlussOpen}
         auftragId={item.id}
-        leistungen={offeneAbschlussLeistungen}
+        leistungItems={offeneAbschlussLeistungen}
         defaultOrt={[item.plz, item.ort]
           .filter((v) => v && v !== "—")
           .join(" ")}

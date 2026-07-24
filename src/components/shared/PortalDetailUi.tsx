@@ -331,7 +331,7 @@ export function PortalDetailLayout({
         {children}
       </div>
       {footer ? (
-        <div className="z-10 -mx-4 mt-3 border-t border-border-light bg-surface-card/95 px-4 py-3.5 shadow-[0_-4px_12px_rgba(0,0,0,0.06)] backdrop-blur-sm max-lg:static max-lg:shadow-none lg:sticky lg:bottom-0 lg:mx-0 lg:mt-5 lg:shadow-none lg:backdrop-blur-none">
+        <div className="z-10 -mx-4 mt-3 border-t border-[var(--p2-line)] bg-[var(--p2-panel)]/95 px-4 py-3.5 shadow-[0_-4px_12px_rgba(16,25,20,0.08)] backdrop-blur-sm max-lg:sticky max-lg:bottom-[calc(4.5rem+env(safe-area-inset-bottom,0px))] lg:sticky lg:bottom-0 lg:mx-0 lg:mt-5">
           {footer}
         </div>
       ) : null}

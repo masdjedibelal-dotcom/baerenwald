@@ -1,5 +1,12 @@
 import type { PortalRole, ResolvedVorgang } from "@/lib/crm-vorgang/types";
 
+/**
+ * D1 (leicht): CRM-Resolver-Labels für Rollen.
+ * Portal-UI-Flow-Chips/Timeline: kanonisch `src/lib/portal2/status-mapping.ts`
+ * (`resolvePortalFlowStatus` / `portalFlowTimeline`). Nicht parallel erweitern —
+ * neue Labels dort oder hier spiegeln, dann Konsumenten umstellen (voller D1).
+ */
+
 export type RoleTimelineStep =
   | "eingegangen"
   | "in_bearbeitung"
@@ -28,8 +35,10 @@ function mieterTimeline(resolved: ResolvedVorgang): RoleTimelineStep {
   ) {
     return "erledigt";
   }
-  if (resolved.phase === "auftrag") return "beauftragt";
-  if (resolved.phase === "angebot" || resolved.phase === "rechnung") {
+  if (resolved.phase === "auftrag" || resolved.phase === "rechnung") {
+    return "beauftragt";
+  }
+  if (resolved.phase === "angebot") {
     return "in_bearbeitung";
   }
   return "eingegangen";
@@ -42,7 +51,7 @@ function mieterListLabel(step: RoleTimelineStep): string {
     case "in_bearbeitung":
       return "In Bearbeitung";
     case "beauftragt":
-      return "Beauftragt";
+      return "Bestätigung";
     case "erledigt":
       return "Erledigt";
     default:
@@ -203,7 +212,7 @@ export function buildMieterTimelineFromResolver(resolved: ResolvedVorgang) {
   const labels: Record<(typeof MIETER_TIMELINE_ORDER)[number], string> = {
     eingegangen: "Eingegangen",
     in_bearbeitung: "In Bearbeitung",
-    beauftragt: "Beauftragt",
+    beauftragt: "Bestätigung",
     erledigt: "Erledigt",
   };
   const idx = MIETER_TIMELINE_ORDER.indexOf(

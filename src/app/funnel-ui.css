@@ -204,6 +204,7 @@
   min-height: 0;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
+  padding-bottom: 1.25rem;
 }
 
 .portal-funnel-host--modal .portal-funnel-host__actions {
@@ -256,14 +257,21 @@
   height: 100%;
 }
 
-/* Page-Layout (Melde): Website-Funnel-Footer */
+/* Page-Layout (Melde): Website-Funnel-Footer (sticky) */
 .portal-funnel-host--page {
   min-height: 50vh;
   background: #fff;
+  display: flex;
+  flex-direction: column;
 }
 
+/*
+ * Inhalt muss unter dem sticky Footer freibleiben
+ * (Aktionen + Impressum/Datenschutz + Service-by).
+ */
 .portal-funnel-host--page .portal-funnel-host__body {
   flex: 1;
+  padding-bottom: calc(8.5rem + env(safe-area-inset-bottom, 0px));
 }
 
 .funnel-footer {
@@ -333,6 +341,13 @@
   color: var(--fl-text-2, #524e4a);
 }
 
+.funnel-footer-legal .funnel-footer-service-by {
+  font-size: inherit;
+  color: inherit;
+  opacity: 0.85;
+  font-weight: 400;
+}
+
 .funnel-footer-dot {
   opacity: 0.4;
 }
@@ -372,7 +387,7 @@
   padding-left: 0;
   padding-right: 0;
   padding-top: 4px;
-  padding-bottom: 8px;
+  padding-bottom: 12px;
 }
 
 .portal-funnel-host--modal .funnel-step-question {

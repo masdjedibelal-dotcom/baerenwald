@@ -134,7 +134,7 @@ export const orgPortalToast = {
   meldungErfasst() {
     portalToastSuccess(
       "Meldung erfasst",
-      "Die Meldung erscheint unter Eingang. Als Nächstes: Angebot einfordern oder ablehnen."
+      "Die Meldung erscheint unter Eingang. Als Nächstes: Vorgang freigeben oder ablehnen."
     );
   },
   einladungErstellt() {

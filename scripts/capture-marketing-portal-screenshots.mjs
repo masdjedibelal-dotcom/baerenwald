@@ -78,7 +78,32 @@ async function resolveBaseUrl() {
   throw new Error("Dev-Server nicht erreichbar — bitte npm run dev starten.");
 }
 
+/**
+ * Service-Role-Passwort-Reset nur gegen lokale Supabase oder mit explizitem Allow.
+ * Verhindert versehentliche Prod-Account-Resets via INTERN_EMAIL.
+ */
+function assertServiceRolePasswordResetAllowed() {
+  if (process.env.AUDIT_ALLOW_SERVICE_ROLE_PASSWORD_RESET === "true") {
+    return;
+  }
+  const raw = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim() ?? "";
+  let host = "";
+  try {
+    host = new URL(raw).hostname;
+  } catch {
+    host = raw;
+  }
+  if (/localhost|127\.0\.0\.1|\[::1\]/i.test(host)) {
+    return;
+  }
+  throw new Error(
+    `Service-Role-Passwort-Reset verweigert für „${host || "(keine URL)"}“. ` +
+      `Setze AUDIT_*_PASSWORD oder (nur Staging) AUDIT_ALLOW_SERVICE_ROLE_PASSWORD_RESET=true.`
+  );
+}
+
 async function ensureAuditPassword(email) {
+  assertServiceRolePasswordResetAllowed();
   const admin = getSupabaseAdmin();
   if (!admin || !email) return null;
   const { data, error } = await admin.auth.admin.generateLink({

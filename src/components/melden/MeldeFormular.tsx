@@ -69,6 +69,8 @@ export function MeldeFormular({
   objektOrt,
   orgKennung,
   objektSlug,
+  datenschutzHref,
+  impressumHref,
   mode = "melden",
   einladungToken,
   objektLocked = false,
@@ -163,6 +165,8 @@ export function MeldeFormular({
           objektAdresse: isAllgemein
             ? null
             : [objektAdresse, objektPlzOrt].filter(Boolean).join(" · ") || null,
+          datenschutzHref,
+          impressumHref,
         }}
         onClose={() => {
           if (mode === "ergaenzen") {

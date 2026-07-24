@@ -45,7 +45,7 @@ export function portalKundeTypRoleLabel(typ: PortalKundeTyp): string {
 
 export function portalKundeListeTitle(typ: PortalKundeTyp): string {
   if (typ === "hv") return "Vorgänge";
-  return "Meine Aufträge";
+  return "Meine Vorgänge";
 }
 
 export function portalKundeDashboardHello(

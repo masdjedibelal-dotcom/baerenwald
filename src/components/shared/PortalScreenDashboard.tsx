@@ -6,7 +6,7 @@ import { usePortalView } from "@/hooks/use-portal-view";
 import { portalDayGreetingLabel } from "@/lib/portal2/greeting";
 import { portalHeaderInitials } from "@/lib/portal2/role-badge";
 import { isPortalMobileView } from "@/lib/portal2/viewport";
-import { PORTAL_C } from "@/lib/portal2/tokens";
+import { PORTAL_VAR } from "@/lib/portal2/tokens";
 
 export type PortalDashboardTile = {
   id: string;
@@ -34,6 +34,8 @@ type Props = {
   avatarName?: string | null;
   avatarInitials?: string | null;
   tiles: PortalDashboardTile[];
+  /** Überschrift über den KPI-Kacheln (z. B. „Vorgänge“). */
+  tilesTitle?: string;
   recent: PortalDashboardRecentRow[];
   onOpenAll: () => void;
   onOpenItem: (id: string) => void;
@@ -55,6 +57,7 @@ export function PortalScreenDashboard({
   avatarName,
   avatarInitials,
   tiles,
+  tilesTitle,
   recent,
   onOpenAll,
   onOpenItem,
@@ -108,6 +111,9 @@ export function PortalScreenDashboard({
         </div>
 
         <div className="portal-dash-tiles">
+          {tilesTitle ? (
+            <p className="portal-dash-tiles-title col-span-3">{tilesTitle}</p>
+          ) : null}
           {tiles.map((tile) => {
             const inner = (
               <>
@@ -158,7 +164,7 @@ export function PortalScreenDashboard({
                   className="portal-dash-recent-item"
                 >
                   {v.notfall ? (
-                    <span className="portal-dash-recent-bolt">⚡</span>
+                    <span className="portal-dash-recent-notfall">Notfall</span>
                   ) : null}
                   <div className="portal-dash-recent-text">
                     <p className="portal-dash-recent-titel">{v.titel}</p>
@@ -211,20 +217,22 @@ export function PortalScreenDashboard({
         <div
           className="pointer-events-none absolute bottom-[18px] left-6 right-4"
         >
-          <p
-            className="mb-1 font-bold uppercase"
-            style={{
-              fontSize: 11.5,
-              color: "rgba(255,255,255,.82)",
-              letterSpacing: 0.5,
-            }}
-          >
-            {roleLabel}
-          </p>
+          {roleLabel ? (
+            <p
+              className="mb-1 font-bold uppercase"
+              style={{
+                fontSize: 11.5,
+                color: "rgba(255,255,255,.82)",
+                letterSpacing: 0.5,
+              }}
+            >
+              {roleLabel}
+            </p>
+          ) : null}
           <h1
             className="font-bold text-white"
             style={{
-              fontFamily: PORTAL_C.head,
+              fontFamily: PORTAL_VAR.head,
               fontSize: 30,
               lineHeight: 1.05,
               textShadow: "0 1px 6px rgba(0,0,0,.25)",
@@ -235,9 +243,25 @@ export function PortalScreenDashboard({
         </div>
       </div>
 
+      {tilesTitle ? (
+        <p
+          className="font-bold"
+          style={{
+            fontFamily: PORTAL_VAR.head,
+            fontSize: 15,
+            color: PORTAL_VAR.ink,
+            padding: "22px 24px 0",
+          }}
+        >
+          {tilesTitle}
+        </p>
+      ) : null}
       <div
         className="grid grid-cols-3"
-        style={{ gap: 12, padding: "28px 24px 16px" }}
+        style={{
+          gap: 12,
+          padding: tilesTitle ? "12px 24px 16px" : "28px 24px 16px",
+        }}
       >
         {tiles.map((tile) => {
           const inner = (
@@ -245,9 +269,9 @@ export function PortalScreenDashboard({
               <p
                 className="font-bold leading-none"
                 style={{
-                  fontFamily: PORTAL_C.head,
+                  fontFamily: PORTAL_VAR.head,
                   fontSize: 30,
-                  color: PORTAL_C.ink,
+                  color: PORTAL_VAR.ink,
                 }}
               >
                 {tile.value}
@@ -256,7 +280,7 @@ export function PortalScreenDashboard({
                 className="font-semibold"
                 style={{
                   fontSize: 12,
-                  color: PORTAL_C.faint,
+                  color: PORTAL_VAR.faint,
                   marginTop: 5,
                 }}
               >
@@ -266,8 +290,8 @@ export function PortalScreenDashboard({
           );
           const style = {
             background: "#fff",
-            border: `0.5px solid ${PORTAL_C.line}`,
-            boxShadow: PORTAL_C.shadow,
+            border: `0.5px solid ${PORTAL_VAR.line}`,
+            boxShadow: PORTAL_VAR.shadow,
             borderRadius: 14,
             padding: "16px 16px",
             textAlign: "left" as const,
@@ -300,9 +324,9 @@ export function PortalScreenDashboard({
           <h2
             className="font-bold"
             style={{
-              fontFamily: PORTAL_C.head,
+              fontFamily: PORTAL_VAR.head,
               fontSize: 15,
-              color: PORTAL_C.ink,
+              color: PORTAL_VAR.ink,
             }}
           >
             {recentTitle}
@@ -313,7 +337,7 @@ export function PortalScreenDashboard({
             className="font-semibold"
             style={{
               fontSize: 12.5,
-              color: "var(--org-primary, " + PORTAL_C.primary + ")",
+              color: PORTAL_VAR.primary,
               cursor: "pointer",
               background: "none",
               border: "none",
@@ -327,7 +351,7 @@ export function PortalScreenDashboard({
           style={{
             background: "#fff",
             borderRadius: 12,
-            border: `1px solid ${PORTAL_C.line}`,
+            border: `1px solid ${PORTAL_VAR.line}`,
             overflow: "hidden",
           }}
         >
@@ -336,7 +360,7 @@ export function PortalScreenDashboard({
               style={{
                 padding: 34,
                 textAlign: "center",
-                color: PORTAL_C.faint,
+                color: PORTAL_VAR.faint,
                 fontSize: 13,
               }}
             >
@@ -354,20 +378,35 @@ export function PortalScreenDashboard({
                   padding: "13px 15px",
                   borderBottom:
                     idx < recent.length - 1
-                      ? `1px solid ${PORTAL_C.line2}`
+                      ? `1px solid ${PORTAL_VAR.line2}`
                       : "none",
                   cursor: "pointer",
                   background: "transparent",
                 }}
               >
-                {v.notfall ? <span style={{ fontSize: 13 }}>⚡</span> : null}
+                {v.notfall ? (
+                  <span
+                    style={{
+                      flexShrink: 0,
+                      fontSize: 10,
+                      fontWeight: 700,
+                      letterSpacing: 0.02,
+                      color: PORTAL_VAR.danger,
+                      background: PORTAL_VAR.dangerSoft,
+                      borderRadius: 4,
+                      padding: "2px 6px",
+                    }}
+                  >
+                    Notfall
+                  </span>
+                ) : null}
                 <div className="min-w-0 flex-1">
                   <p
                     className="truncate font-semibold"
                     style={{
                       fontSize: 14,
-                      color: PORTAL_C.ink,
-                      fontFamily: PORTAL_C.head,
+                      color: PORTAL_VAR.ink,
+                      fontFamily: PORTAL_VAR.head,
                     }}
                   >
                     {v.titel}
@@ -375,7 +414,7 @@ export function PortalScreenDashboard({
                   <p
                     style={{
                       fontSize: 12,
-                      color: PORTAL_C.sub,
+                      color: PORTAL_VAR.sub,
                       marginTop: 1,
                     }}
                   >

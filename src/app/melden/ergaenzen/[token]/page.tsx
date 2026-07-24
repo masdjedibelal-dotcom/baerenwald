@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 
 import { MeldeFormular } from "@/components/melden/MeldeFormular";
+import { resolveMeldeLegalUrls } from "@/lib/org/melde-legal-urls";
 import { resolveEinladungKontext } from "@/lib/org/resolve-melde-kontext";
 
 export const metadata = {
@@ -15,10 +16,17 @@ export default async function MeldenErgaenzenPage({ params }: Props) {
   if (!ctx) notFound();
 
   const org = (ctx.org ?? {}) as Record<string, unknown>;
+  const orgKennung =
+    String(org.org_kennung ?? "").trim() || "einladung";
   const orgName =
     String(org.org_anzeigename ?? "").trim() ||
     String(org.name ?? "").trim() ||
     "Auftraggeber";
+  const legal = resolveMeldeLegalUrls({
+    meldeSlug: orgKennung !== "einladung" ? orgKennung : null,
+    datenschutz_url: (org.datenschutz_url as string | null) ?? null,
+    impressum_url: (org.impressum_url as string | null) ?? null,
+  });
 
   return (
     <MeldeFormular
@@ -43,8 +51,10 @@ export default async function MeldenErgaenzenPage({ params }: Props) {
       objektHausnummer={ctx.objekt?.hausnummer}
       objektPlz={ctx.objekt?.plz}
       objektOrt={ctx.objekt?.ort}
-      orgKennung="einladung"
+      orgKennung={orgKennung}
       objektSlug="einladung"
+      datenschutzHref={legal.datenschutz}
+      impressumHref={legal.impressum}
       prefill={{
         name: (ctx.lead.melder_name as string | null) ?? undefined,
         email: (ctx.lead.melder_email as string | null) ?? undefined,

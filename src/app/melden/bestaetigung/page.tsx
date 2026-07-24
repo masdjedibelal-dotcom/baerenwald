@@ -1,9 +1,7 @@
 import { MeldenBestaetigungClient } from "@/components/melden/MeldenBestaetigungClient";
-import {
-  loadMeldeContactByToken,
-  meldePortalAccountExists,
-} from "@/lib/melde/melde-bestaetigung";
+import { meldeStatusUrl } from "@/lib/melde/melde-tracking";
 import { resolveMeldeKontext } from "@/lib/org/resolve-melde-kontext";
+import { resolveOrgSubLabel } from "@/lib/portal2/brand-presets";
 
 export const metadata = {
   title: "Meldung eingegangen",
@@ -50,7 +48,7 @@ export default async function MeldenBestaetigungPage({ searchParams }: Props) {
           org.org_anzeigename?.trim() ||
           org.name?.trim() ||
           orgNameFallback,
-        sub: org.org_sub ?? "Verwaltung",
+        sub: resolveOrgSubLabel(org.org_sub),
         logoUrl: org.org_logo_url ?? null,
         logoKuerzel: org.org_logo_kuerzel ?? null,
         primary: org.org_primary_color ?? null,
@@ -72,19 +70,12 @@ export default async function MeldenBestaetigungPage({ searchParams }: Props) {
     return m?.[1] ? decodeURIComponent(m[1]) : null;
   })();
   const effectiveToken = token || tokenFromLink;
-
-  const fromDb = effectiveToken
-    ? await loadMeldeContactByToken(effectiveToken)
-    : null;
-
-  const contactName =
-    fromDb?.name || searchParams.name?.trim() || null;
-  const contactEmail =
-    fromDb?.email || searchParams.email?.trim()?.toLowerCase() || null;
-  const contactTelefon =
-    fromDb?.telefon || searchParams.telefon?.trim() || null;
-
-  const portalAccountExists = await meldePortalAccountExists(contactEmail);
+  const statusUrlFromQuery = searchParams.statusLink?.trim() || null;
+  const statusUrl = statusUrlFromQuery
+    ? statusUrlFromQuery
+    : effectiveToken
+      ? meldeStatusUrl(effectiveToken)
+      : null;
 
   const referenz = effectiveToken
     ? effectiveToken.slice(0, 8).toUpperCase()
@@ -94,12 +85,9 @@ export default async function MeldenBestaetigungPage({ searchParams }: Props) {
     <MeldenBestaetigungClient
       brand={brand}
       statusToken={effectiveToken}
+      statusUrl={statusUrl}
       referenz={referenz}
       objektAuswahlHref={objektHref}
-      contactName={contactName}
-      contactEmail={contactEmail}
-      contactTelefon={contactTelefon}
-      portalAccountExists={portalAccountExists}
     />
   );
 }

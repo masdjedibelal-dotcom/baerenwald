@@ -10,7 +10,7 @@ import {
 import { meldeKategorieLabel } from "@/lib/org/melde-kategorien";
 import { meldeKategorieFromLead } from "@/lib/org/org-eingang-utils";
 import type { OrganisationLead, OrganisationObjekt } from "@/lib/org/types";
-import { PORTAL_C } from "@/lib/portal2/tokens";
+import { PORTAL_VAR } from "@/lib/portal2/tokens";
 
 export type ObjektDokumentEintrag = {
   id: string;
@@ -101,7 +101,7 @@ export function OrganisationObjektDokumentePanel({
         </p>
         <p
           className="mt-1.5 text-[12.5px] leading-snug"
-          style={{ color: PORTAL_C.sub }}
+          style={{ color: PORTAL_VAR.sub }}
         >
           Angebote, Protokolle und Unterlagen erscheinen hier, sobald sie im
           Vorgang vorliegen.
@@ -132,7 +132,7 @@ export function OrganisationObjektDokumentePanel({
                 </p>
                 <p
                   className="mt-0.5 truncate text-[12.5px]"
-                  style={{ color: PORTAL_C.sub }}
+                  style={{ color: PORTAL_VAR.sub }}
                 >
                   {g.subtitle}
                 </p>

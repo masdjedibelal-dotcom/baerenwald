@@ -202,7 +202,7 @@ export function PartnerLeistungenKonditionenCard({
                 className={cn(
                   "last:border-b-0",
                   plain
-                    ? "border-b border-black/[0.05] py-3 first:pt-0"
+                    ? "border-b border-[var(--p2-line2)] py-3 first:pt-0"
                     : cn(
                         "border-b border-border-light px-4 py-3.5",
                         isEntfernt && "bg-red-50/70",
@@ -329,7 +329,7 @@ export function PartnerLeistungenKonditionenCard({
           <div
             className={cn(
               plain
-                ? "mt-2 space-y-1 border-t border-black/[0.05] pt-3 text-right"
+                ? "mt-2 space-y-1 border-t border-[var(--p2-line2)] pt-3 text-right"
                 : "border-t border-border-default bg-muted/40 px-4 py-3.5"
             )}
           >

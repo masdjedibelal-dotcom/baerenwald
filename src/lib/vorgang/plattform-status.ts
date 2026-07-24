@@ -105,7 +105,7 @@ export function buildMieterStatusTimeline(stufe: string): MieterTimelineStep[] {
   const labels: Record<(typeof order)[number], string> = {
     eingegangen: "Eingegangen",
     in_bearbeitung: "In Bearbeitung",
-    beauftragt: "Beauftragt",
+    beauftragt: "Bestätigung",
     erledigt: "Erledigt",
   };
   const idx = order.indexOf(stufe as (typeof order)[number]);

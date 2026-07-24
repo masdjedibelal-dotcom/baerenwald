@@ -8,6 +8,7 @@ import {
   AuthLabel,
   AuthLink,
 } from "@/components/portal/auth/AuthPrimitives";
+import { PortalAuthBusy } from "@/components/portal/auth/PortalAuthBusy";
 import { PortalAuthConfirm } from "@/components/portal/auth/PortalAuthConfirm";
 import { AUTH_CONFIRM, AUTH_FORGOT, AUTH_LOGIN } from "@/lib/portal2/auth";
 import { portalPasswordResetCallbackUrl } from "@/lib/portal/portal-auth-url";
@@ -34,6 +35,15 @@ export function PortalPasswordResetForm() {
       return;
     }
     setSent(true);
+  }
+
+  if (loading) {
+    return (
+      <PortalAuthBusy
+        title="Link wird gesendet…"
+        body="Einen Moment — wir bereiten den Zurücksetzen-Link vor."
+      />
+    );
   }
 
   if (sent) {
@@ -71,9 +81,7 @@ export function PortalPasswordResetForm() {
         />
       </div>
       <div className="mt-2 h-2" />
-      <AuthBtn type="submit" disabled={loading}>
-        {loading ? "…" : AUTH_FORGOT.submit}
-      </AuthBtn>
+      <AuthBtn type="submit">{AUTH_FORGOT.submit}</AuthBtn>
       <p className="mt-5 text-center text-[13px] text-text-secondary">
         <AuthLink href="/portal/login">{AUTH_FORGOT.back}</AuthLink>
       </p>

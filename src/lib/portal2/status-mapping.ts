@@ -10,10 +10,12 @@
 
 import type { ResolvedVorgang } from "@/lib/crm-vorgang/types";
 import {
+  MIETER_STG,
   PORTAL_FLOW,
   PORTAL_FLOW_TIMELINE,
   PORTAL_STATUS,
   portalFlowTimelineIndex,
+  portalFlowToMieterStg,
   type PortalMockStatusId,
   type PortalMockStatusMeta,
 } from "@/lib/portal2/status";
@@ -222,6 +224,25 @@ export function portalFlowTimeline(
     ...PORTAL_STATUS[id],
     done: i < cur,
     active: i === cur,
+  }));
+}
+
+/**
+ * Mieter-Detail-Timeline: kein Angebots-Schritt, „Auftrag“ → „Bestätigung“.
+ * Schritte = MIETER_STG (Eingegangen · In Bearbeitung · Bestätigung · Erledigt).
+ */
+export function portalMieterFlowTimeline(
+  current: PortalMockStatusId
+): Array<{ id: string; label: string; done: boolean; active: boolean }> {
+  const stufe = portalFlowToMieterStg(current);
+  const order = MIETER_STG.map((s) => s.id);
+  let idx = order.indexOf(stufe);
+  if (idx < 0) idx = 0;
+  return MIETER_STG.map((s, i) => ({
+    id: s.id,
+    label: s.title_de,
+    done: i < idx,
+    active: i === idx,
   }));
 }
 

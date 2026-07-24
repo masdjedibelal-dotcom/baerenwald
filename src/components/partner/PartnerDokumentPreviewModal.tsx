@@ -12,7 +12,7 @@ import {
 } from "@/app/actions/partner-auto-dokumente";
 import { PartnerDetailError } from "@/components/partner/PartnerDetailUi";
 import { PortalModalShell } from "@/components/shared/PortalModalShell";
-import { PORTAL_C } from "@/lib/portal2/tokens";
+import { PORTAL_VAR } from "@/lib/portal2/tokens";
 import { partnerPortalToast } from "@/lib/shared/portal-toast";
 import { cn } from "@/lib/utils";
 
@@ -134,7 +134,7 @@ export function PartnerDokumentPreviewModal({
       <div className="flex min-h-0 flex-1 flex-col">
         <div className="min-h-0 flex-1 space-y-4 overflow-y-auto pb-4">
           {previewLoading ? (
-            <p className="text-[13px]" style={{ color: PORTAL_C.sub }}>
+            <p className="text-[13px]" style={{ color: PORTAL_VAR.sub }}>
               Vorschau wird geladen…
             </p>
           ) : null}
@@ -143,12 +143,12 @@ export function PartnerDokumentPreviewModal({
             <>
               <div
                 className="rounded-xl p-3 space-y-3"
-                style={{ border: `1px solid ${PORTAL_C.line}` }}
+                style={{ border: `1px solid ${PORTAL_VAR.line}` }}
               >
                 <label className="block space-y-1.5">
                   <span
                     className="text-[12px] font-semibold"
-                    style={{ color: PORTAL_C.faint }}
+                    style={{ color: PORTAL_VAR.faint }}
                   >
                     {art === "angebot"
                       ? "Angebotsnummer *"
@@ -166,14 +166,14 @@ export function PartnerDokumentPreviewModal({
                   />
                   <span
                     className="block text-[11.5px] leading-snug"
-                    style={{ color: PORTAL_C.faint }}
+                    style={{ color: PORTAL_VAR.faint }}
                   >
                     {art === "rechnung"
                       ? "Pflichtangabe auf der Rechnung — bitte deine interne, fortlaufende Nummer verwenden. Vorschlag ist anpassbar."
                       : "Vorschlag aus Firma/Datum — kannst du vor dem Erstellen anpassen."}
                   </span>
                 </label>
-                <p className="text-[13px]" style={{ color: PORTAL_C.sub }}>
+                <p className="text-[13px]" style={{ color: PORTAL_VAR.sub }}>
                   {preview.betreff}
                   {preview.objektOrt ? ` · ${preview.objektOrt}` : ""}
                 </p>
@@ -182,7 +182,7 @@ export function PartnerDokumentPreviewModal({
               <div className="space-y-2">
                 <p
                   className="text-[11px] font-semibold uppercase tracking-wide"
-                  style={{ color: PORTAL_C.faint }}
+                  style={{ color: PORTAL_VAR.faint }}
                 >
                   Positionen
                 </p>
@@ -190,14 +190,14 @@ export function PartnerDokumentPreviewModal({
                   <div
                     key={`${p.titel}-${i}`}
                     className="flex justify-between gap-3 rounded-lg px-3 py-2"
-                    style={{ border: `1px solid ${PORTAL_C.line2}` }}
+                    style={{ border: `1px solid ${PORTAL_VAR.line2}` }}
                   >
-                    <span className="text-[13px]" style={{ color: PORTAL_C.ink }}>
+                    <span className="text-[13px]" style={{ color: PORTAL_VAR.ink }}>
                       {p.titel}
                     </span>
                     <span
                       className="shrink-0 text-[13px] font-semibold"
-                      style={{ color: PORTAL_C.ink }}
+                      style={{ color: PORTAL_VAR.ink }}
                     >
                       {fmtEur(p.netto)}
                     </span>
@@ -205,7 +205,7 @@ export function PartnerDokumentPreviewModal({
                 ))}
                 <p
                   className="pt-1 text-right text-[14px] font-semibold"
-                  style={{ color: PORTAL_C.ink }}
+                  style={{ color: PORTAL_VAR.ink }}
                 >
                   Netto {fmtEur(preview.nettoSumme)}
                 </p>
@@ -240,7 +240,7 @@ export function PartnerDokumentPreviewModal({
 
         <div
           className="flex shrink-0 flex-wrap gap-2 border-t pt-3"
-          style={{ borderColor: PORTAL_C.line2 }}
+          style={{ borderColor: PORTAL_VAR.line2 }}
         >
           {allowSkip ? (
             <button
@@ -249,8 +249,8 @@ export function PartnerDokumentPreviewModal({
               onClick={onClose}
               className="rounded-[9px] border px-4 py-2.5 text-[13px] font-semibold"
               style={{
-                borderColor: PORTAL_C.line,
-                color: PORTAL_C.sub,
+                borderColor: PORTAL_VAR.line,
+                color: PORTAL_VAR.sub,
                 background: "#fff",
               }}
             >
@@ -263,8 +263,8 @@ export function PartnerDokumentPreviewModal({
               onClick={onClose}
               className="rounded-[9px] border px-4 py-2.5 text-[13px] font-semibold"
               style={{
-                borderColor: PORTAL_C.line,
-                color: PORTAL_C.sub,
+                borderColor: PORTAL_VAR.line,
+                color: PORTAL_VAR.sub,
                 background: "#fff",
               }}
             >
@@ -283,7 +283,7 @@ export function PartnerDokumentPreviewModal({
             className={cn(
               "ml-auto flex-1 rounded-[9px] px-4 py-2.5 text-[13.5px] font-semibold text-white disabled:opacity-50 sm:flex-none"
             )}
-            style={{ background: PORTAL_C.primary }}
+            style={{ background: PORTAL_VAR.primary }}
           >
             {primary}
           </button>

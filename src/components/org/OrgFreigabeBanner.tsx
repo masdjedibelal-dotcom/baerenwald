@@ -76,7 +76,9 @@ export function OrgFreigabeBanner({
     <div className="mb-4 rounded-xl border border-amber-200 bg-amber-50 p-4">
       <p className="text-sm font-medium text-amber-900">Angebots-Freigabe</p>
       <p className="mt-1 text-xs text-amber-800">
-        Bärenwald hat Angebote erstellt — bitte prüfen und freigeben.
+        Bärenwald hat Angebote erstellt — bitte prüfen und freigeben. Das gibt
+        den Vorgang für die weitere Koordination frei. Es ist kein „Angebot
+        annehmen“ (kein Auftrag aus Ihrer Annahme).
       </p>
       {error ? <p className="mt-2 text-xs text-red-700">{error}</p> : null}
       <div className="mt-3 flex gap-2">

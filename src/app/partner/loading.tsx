@@ -1,0 +1,12 @@
+import { PortalAuthBusy } from "@/components/portal/auth/PortalAuthBusy";
+
+export default function PartnerLoading() {
+  return (
+    <div className="flex min-h-[50vh] items-center justify-center px-4 py-16">
+      <PortalAuthBusy
+        title="Partner-Portal wird geladen…"
+        body="Einen Moment — wir bereiten deine Übersicht vor."
+      />
+    </div>
+  );
+}

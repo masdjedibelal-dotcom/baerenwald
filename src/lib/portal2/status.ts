@@ -40,7 +40,7 @@ export const PORTAL_STATUS: Record<PortalMockStatusId, PortalMockStatusMeta> = {
   },
   angefragt: {
     id: "angefragt",
-    label: "Handwerker angefragt",
+    label: "Angebot angefragt",
     color: "#8A5A06",
     bg: "#FBF1D6",
   },
@@ -158,11 +158,10 @@ export const MIETER_STG = [
   },
   {
     id: "beauftragt",
-    title_de: "Beauftragt",
-    title_en: "Assigned",
-    subtitle_de:
-      "Ein Fachbetrieb wurde von Ihrer Verwaltung beauftragt.",
-    subtitle_en: "A contractor has been assigned by your property manager.",
+    title_de: "Bestätigung",
+    title_en: "Confirmation",
+    subtitle_de: "Ihre Verwaltung hat die Ausführung bestätigt.",
+    subtitle_en: "Your property manager confirmed the work will be carried out.",
   },
   {
     id: "erledigt",
@@ -183,12 +182,23 @@ export function portalFlowToMieterStg(
     case "freigegeben":
     case "angefragt":
     case "angebot":
-    case "rechnung":
       return "in_bearbeitung";
     case "auftrag":
     case "abschluss":
+    case "rechnung":
       return "beauftragt";
     case "bezahlt":
       return "erledigt";
   }
+}
+
+/** Portal-Status-Label für Mieter (kein HV-/Angebots-Wording). */
+export function portalMieterStatusLabel(
+  flowId: PortalMockStatusId,
+  lang: "de" | "en" = "de"
+): string {
+  const stgId = portalFlowToMieterStg(flowId);
+  const step = MIETER_STG.find((s) => s.id === stgId);
+  if (!step) return lang === "en" ? "In progress" : "In Bearbeitung";
+  return lang === "en" ? step.title_en : step.title_de;
 }

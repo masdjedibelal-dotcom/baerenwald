@@ -12,7 +12,7 @@ import {
   PortalListTableCell,
   PortalListTableRow,
 } from "@/components/shared/PortalListTable";
-import { PORTAL_C } from "@/lib/portal2/tokens";
+import { PORTAL_VAR } from "@/lib/portal2/tokens";
 import { orgPortalToast, portalToastError } from "@/lib/shared/portal-toast";
 import { cn } from "@/lib/utils";
 
@@ -156,7 +156,7 @@ export function OrganisationObjektEinheitenBewohnerPanel({
         <p className="text-sm font-semibold text-text-primary">Bewohner</p>
         <p
           className="mt-1.5 text-[13px] leading-[1.55]"
-          style={{ color: PORTAL_C.sub }}
+          style={{ color: PORTAL_VAR.sub }}
         >
           {BEWOHNER_INTRO}
         </p>
@@ -168,7 +168,7 @@ export function OrganisationObjektEinheitenBewohnerPanel({
           !loading && bewohner.length === 0 ? (
             <p
               className="px-3.5 py-4 text-[13px]"
-              style={{ color: PORTAL_C.sub }}
+              style={{ color: PORTAL_VAR.sub }}
             >
               Noch keine Bewohner erfasst.
             </p>
@@ -178,7 +178,7 @@ export function OrganisationObjektEinheitenBewohnerPanel({
         {loading ? (
           <p
             className="px-3.5 py-4 text-[13px]"
-            style={{ color: PORTAL_C.sub }}
+            style={{ color: PORTAL_VAR.sub }}
           >
             Lade Bewohner …
           </p>
@@ -197,7 +197,7 @@ export function OrganisationObjektEinheitenBewohnerPanel({
                   {kontakt ? (
                     <p
                       className="mt-0.5 truncate text-[12px]"
-                      style={{ color: PORTAL_C.sub }}
+                      style={{ color: PORTAL_VAR.sub }}
                     >
                       {kontakt}
                     </p>

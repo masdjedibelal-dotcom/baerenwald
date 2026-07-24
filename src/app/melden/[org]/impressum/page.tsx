@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
+import { MeldeServiceByLine } from "@/components/melden/MeldeServiceByLine";
 import { SITE_CONFIG } from "@/lib/config";
 import { resolveMeldeKontext } from "@/lib/org/resolve-melde-kontext";
 
@@ -12,8 +13,8 @@ export const metadata = {
 type Props = { params: { org: string } };
 
 /**
- * Impressum Mieter-Melde-Routen — Variante B (Entwurf): HV + technischer Betreiber.
- * Endgültige Variante wählt der Anwalt (siehe docs/legal/MIETER_IMPRESSUM_VARIANTEN.md).
+ * Impressum Mieter-Melde-Routen — Variante B (freigegeben):
+ * HV = Diensteanbieterin (Inhalt), Bärenwald = technischer Betrieb.
  */
 export default async function MeldenOrgImpressumPage({ params }: Props) {
   const resolved = await resolveMeldeKontext(params.org);
@@ -25,15 +26,15 @@ export default async function MeldenOrgImpressumPage({ params }: Props) {
 
   return (
     <main className="mx-auto max-w-2xl px-4 py-10 prose prose-sm">
-      <p className="text-xs text-amber-800 bg-amber-50 rounded-lg p-3 not-prose">
-        <strong>Entwurf — Variante B.</strong> Anwaltliche Freigabe ausstehend.
-      </p>
       <h1>Impressum</h1>
       <h2>Diensteanbieterin (Inhalt)</h2>
       <p>
         {orgName}
         <br />
-        Kontakt: {org.mieter_kontakt_email ?? org.mieter_kontakt_telefon ?? "siehe Verwaltung"}
+        Kontakt:{" "}
+        {org.mieter_kontakt_email ??
+          org.mieter_kontakt_telefon ??
+          "siehe Verwaltung"}
       </p>
       <h2>Technischer Betrieb</h2>
       <p>
@@ -43,11 +44,9 @@ export default async function MeldenOrgImpressumPage({ params }: Props) {
         <br />
         {SITE_CONFIG.email}
       </p>
-      <p className="text-sm text-text-secondary">
-        Unauffälliger Footer-Link — kein Marketing. Siehe White-Label-Konzept.
-      </p>
-      <p>
+      <p className="not-prose mt-8 flex flex-col gap-3">
         <Link href={`/melden/${params.org}`}>← Zurück zur Meldung</Link>
+        <MeldeServiceByLine />
       </p>
     </main>
   );

@@ -250,6 +250,23 @@ async function main() {
     }
   }
 
+  // Angebots-Anfragen ohne Auftrag müssen als Vorgang „Neu“ erscheinen
+  for (const a of anfragenAngebot) {
+    const hasAuftrag =
+      Boolean(a.auftrag_id && auftragItems.some((x) => x.id === a.auftrag_id)) ||
+      Boolean(a.angebot_id && auftragItems.some((x) => x.angebot_id === a.angebot_id));
+    if (hasAuftrag) continue;
+    const v =
+      vorgaenge.find((x) => x.id === a.id) ??
+      vorgaenge.find((x) => x.anfrage?.id === a.id);
+    if (!v || v.state !== "neu") {
+      issues.push({
+        level: "error",
+        msg: `Angebots-Anfrage ohne Vorgang „Neu“: ${a.listen_titel} (${a.id.slice(0, 8)})`,
+      });
+    }
+  }
+
   console.log("\n--- Daten-Hinweise ---");
   for (const row of ahRows ?? []) {
     if (String(row.hw_status).toLowerCase() === "eingereicht" && !row.bestaetigt_at) {

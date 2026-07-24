@@ -28,11 +28,11 @@
 }
 
 .melden-card {
-  background: #fff;
-  border: 1px solid #e6ebe8;
+  background: var(--p2-panel, #fff);
+  border: 1px solid var(--p2-line, rgba(0, 0, 0, 0.08));
   border-radius: 1rem;
   padding: 1.25rem;
-  box-shadow: 0 8px 24px rgba(15, 40, 24, 0.06);
+  box-shadow: var(--p2-shadow, 0 1px 3px rgba(0, 0, 0, 0.04), 0 0 0 0.5px rgba(0, 0, 0, 0.05));
 }
 
 .melden-kategorie-grid {
@@ -42,11 +42,11 @@
 }
 
 .melden-kategorie-btn {
-  border: 1px solid #d9e3dd;
+  border: 1px solid var(--p2-line, rgba(0, 0, 0, 0.08));
   border-radius: 0.75rem;
   padding: 0.75rem;
   text-align: left;
-  background: #fff;
+  background: var(--p2-panel, #fff);
   transition: border-color 0.15s, background 0.15s;
 }
 
@@ -69,13 +69,13 @@
 
 .melden-field label {
   font-size: 0.875rem;
-  color: #4a5c54;
+  color: var(--p2-sub, #404a45);
 }
 
 .melden-field input,
 .melden-field textarea,
 .melden-field select {
-  border: 1px solid #d9e3dd;
+  border: 1px solid var(--p2-line, rgba(0, 0, 0, 0.08));
   border-radius: 0.65rem;
   padding: 0.65rem 0.75rem;
   font-size: 1rem;
@@ -93,7 +93,7 @@
   height: 72px;
   border-radius: 0.5rem;
   object-fit: cover;
-  border: 1px solid #e6ebe8;
+  border: 1px solid var(--p2-line, rgba(0, 0, 0, 0.08));
 }
 
 .melden-submit {
@@ -120,37 +120,37 @@
 
 .melden-objekt-link {
   display: block;
-  border: 1px solid #d9e3dd;
+  border: 1px solid var(--p2-line, rgba(0, 0, 0, 0.08));
   border-radius: 0.75rem;
   padding: 0.85rem 1rem;
-  background: #fff;
+  background: var(--p2-panel, #fff);
   text-decoration: none;
   color: inherit;
 }
 
 .melden-objekt-link:hover {
-  border-color: #2e7d52;
+  border-color: var(--org-primary, var(--p2-primary, #2e7d52));
 }
 
 .melden-privacy-notice {
   margin-top: 1rem;
   padding: 0.85rem 1rem;
   border-radius: 0.75rem;
-  border: 1px solid #dce5df;
-  background: #f6f9f7;
+  border: 1px solid var(--p2-line, rgba(0, 0, 0, 0.08));
+  background: var(--p2-hover, #f7f8fa);
 }
 
 .melden-privacy-title {
   font-size: 0.8125rem;
   font-weight: 600;
-  color: #1a2420;
+  color: var(--p2-ink, #16201b);
   margin-bottom: 0.5rem;
 }
 
 .melden-privacy-text {
   font-size: 0.75rem;
   line-height: 1.45;
-  color: #4a5c52;
+  color: var(--p2-sub, #404a45);
   margin-bottom: 0.35rem;
 }
 
@@ -189,21 +189,22 @@
 
 .mieter-wl-page--funnel .mieter-wl-body {
   background: #fff;
-  padding: 0 0 calc(6.5rem + env(safe-area-inset-bottom, 0px));
+  /* Abstand zum sticky Footer sitzt auf .portal-funnel-host__body */
+  padding: 0;
 }
 
 @media (min-width: 720px) {
   .mieter-wl-page:not(.mieter-wl-page--funnel) {
     padding: 34px 20px 48px;
-    background: #f2f4f6;
+    background: var(--p2-bg, #e6e8e6);
   }
   .mieter-wl-page:not(.mieter-wl-page--funnel) .mieter-wl-shell {
     max-width: 620px;
     min-height: auto;
     border-radius: 16px;
-    border: 0.5px solid rgba(0, 0, 0, 0.08);
+    border: 0.5px solid var(--p2-line, rgba(0, 0, 0, 0.08));
     overflow: hidden;
-    box-shadow: 0 16px 40px -12px rgba(0, 0, 0, 0.12);
+    box-shadow: var(--p2-shadow, 0 1px 3px rgba(0, 0, 0, 0.04), 0 0 0 0.5px rgba(0, 0, 0, 0.05));
   }
 }
 
@@ -216,7 +217,7 @@
   align-items: center;
   gap: 11px;
   padding: 14px 20px;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+  border-bottom: 1px solid var(--p2-line2, rgba(0, 0, 0, 0.05));
   background: #fff;
   flex-shrink: 0;
 }
@@ -252,7 +253,7 @@
   font-family: var(--font-display, system-ui);
   font-weight: 700;
   font-size: 16px;
-  color: #16201b;
+  color: var(--p2-ink, #16201b);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -261,13 +262,13 @@
 .mieter-wl-org-sub {
   font-size: 12px;
   font-weight: 600;
-  color: #8a9690;
+  color: var(--p2-faint2, #9aa39e);
 }
 
 .mieter-wl-lang {
   display: flex;
   gap: 3px;
-  background: #f1f3f5;
+  background: var(--p2-hover, #f7f8fa);
   padding: 3px;
   border-radius: 8px;
   flex-shrink: 0;
@@ -279,7 +280,7 @@
   font-size: 11.5px;
   font-weight: 700;
   text-transform: uppercase;
-  color: #8a9690;
+  color: var(--p2-faint2, #9aa39e);
   background: transparent;
   border: none;
   cursor: pointer;
@@ -288,7 +289,7 @@
 .mieter-wl-lang-btn--active {
   background: #fff;
   color: var(--org-primary, var(--p2-primary, #2e7d52));
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+  box-shadow: var(--p2-shadow, 0 1px 3px rgba(0, 0, 0, 0.04));
 }
 
 .mieter-wl-body {
@@ -305,31 +306,31 @@
 
 .mieter-wl-objekt-banner__card {
   border-radius: 12px;
-  border: 1px solid rgba(30, 28, 26, 0.08);
-  background: var(--org-primary-soft, #f7f8fa);
+  border: 1px solid var(--p2-line, rgba(0, 0, 0, 0.08));
+  background: var(--org-primary-soft, var(--p2-hover, #f7f8fa));
   padding: 0.75rem 1rem;
   font-size: 13px;
 }
 
 .mieter-wl-footer {
   padding: 16px 20px 18px;
-  border-top: 1px solid rgba(0, 0, 0, 0.06);
+  border-top: 1px solid var(--p2-line2, rgba(0, 0, 0, 0.05));
   background: #fff;
   font-size: 11.5px;
-  color: #8a9690;
+  color: var(--p2-faint2, #9aa39e);
   line-height: 1.6;
 }
 
 .mieter-wl-footer-noreply {
-  color: #a8b2ac;
+  color: var(--p2-faint2, #9aa39e);
   margin-top: 4px;
 }
 
 .mieter-wl-card {
   background: #fff;
   border-radius: 16px;
-  border: 0.5px solid rgba(0, 0, 0, 0.08);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  border: 0.5px solid var(--p2-line, rgba(0, 0, 0, 0.08));
+  box-shadow: var(--p2-shadow, 0 1px 3px rgba(0, 0, 0, 0.04), 0 0 0 0.5px rgba(0, 0, 0, 0.05));
   overflow: hidden;
 }
 
@@ -354,8 +355,8 @@
 
 .mieter-wl-btn--ghost {
   background: #fff;
-  color: #4a5c54;
-  border: 1px solid rgba(0, 0, 0, 0.1);
+  color: var(--p2-sub, #404a45);
+  border: 1px solid var(--p2-line, rgba(0, 0, 0, 0.08));
 }
 
 .mieter-wl-btn:disabled {
@@ -368,13 +369,13 @@
   font-family: var(--font-display, system-ui);
   font-weight: 700;
   font-size: 22px;
-  color: #16201b;
+  color: var(--p2-ink, #16201b);
   margin-bottom: 5px;
 }
 
 .mieter-wl-objekt-sub {
   font-size: 13.5px;
-  color: #4a5c54;
+  color: var(--p2-sub, #404a45);
   line-height: 1.5;
   margin-bottom: 16px;
 }
@@ -390,12 +391,12 @@
   align-items: center;
   gap: 13px;
   background: #fff;
-  border: 1px solid rgba(0, 0, 0, 0.08);
+  border: 1px solid var(--p2-line, rgba(0, 0, 0, 0.08));
   border-radius: 13px;
   padding: 15px 16px;
   text-decoration: none;
   color: inherit;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  box-shadow: var(--p2-shadow, 0 1px 3px rgba(0, 0, 0, 0.04));
 }
 
 .mieter-wl-objekt-icon {
@@ -414,12 +415,12 @@
   font-family: var(--font-display, system-ui);
   font-weight: 700;
   font-size: 15px;
-  color: #16201b;
+  color: var(--p2-ink, #16201b);
 }
 
 .mieter-wl-objekt-item-meta {
   font-size: 12.5px;
-  color: #4a5c54;
+  color: var(--p2-sub, #404a45);
   margin-top: 2px;
 }
 
@@ -454,9 +455,9 @@
   place-items: center;
   font-size: 11px;
   font-weight: 700;
-  background: #f1f3f5;
-  color: #8a9690;
-  border: 2px solid #e3e6ea;
+  background: var(--p2-hover, #f7f8fa);
+  color: var(--p2-faint2, #9aa39e);
+  border: 2px solid var(--p2-line, rgba(0, 0, 0, 0.08));
 }
 
 .mieter-stg-row--done .mieter-stg-dot {
@@ -475,7 +476,7 @@
   width: 2px;
   flex: 1;
   min-height: 22px;
-  background: #e3e6ea;
+  background: var(--p2-line, rgba(0, 0, 0, 0.08));
   margin: 2px 0;
 }
 
@@ -494,17 +495,17 @@
 .mieter-stg-title {
   font-size: 14px;
   font-weight: 600;
-  color: #8a9690;
+  color: var(--p2-faint2, #9aa39e);
 }
 
 .mieter-stg-row--done .mieter-stg-title,
 .mieter-stg-row--active .mieter-stg-title {
-  color: #16201b;
+  color: var(--p2-ink, #16201b);
 }
 
 .mieter-stg-sub {
   font-size: 12.5px;
-  color: #4a5c54;
+  color: var(--p2-sub, #404a45);
   margin-top: 2px;
   line-height: 1.45;
 }
@@ -536,8 +537,8 @@
   width: 60px;
   height: 60px;
   border-radius: 50%;
-  background: #f1f3f5;
-  color: #8a9690;
+  background: var(--p2-hover, #f7f8fa);
+  color: var(--p2-faint2, #9aa39e);
   display: grid;
   place-items: center;
   font-size: 28px;
@@ -548,13 +549,13 @@
   font-family: var(--font-display, system-ui);
   font-weight: 700;
   font-size: 22px;
-  color: #16201b;
+  color: var(--p2-ink, #16201b);
   margin-bottom: 8px;
 }
 
 .mieter-wl-center-body {
   font-size: 14px;
-  color: #4a5c54;
+  color: var(--p2-sub, #404a45);
   line-height: 1.55;
   max-width: 380px;
   margin-bottom: 18px;
@@ -562,7 +563,7 @@
 
 .mieter-wl-ref {
   background: #fff;
-  border: 1px solid rgba(0, 0, 0, 0.08);
+  border: 1px solid var(--p2-line, rgba(0, 0, 0, 0.08));
   border-radius: 12px;
   padding: 12px 18px;
   margin-bottom: 24px;
@@ -570,7 +571,7 @@
 
 .mieter-wl-ref-label {
   font-size: 11.5px;
-  color: #8a9690;
+  color: var(--p2-faint2, #9aa39e);
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.4px;
@@ -580,8 +581,7 @@
   font-family: var(--font-display, system-ui);
   font-weight: 700;
   font-size: 19px;
-  color: #16201b;
+  color: var(--p2-ink, #16201b);
   letter-spacing: 0.5px;
   margin-top: 2px;
 }
-

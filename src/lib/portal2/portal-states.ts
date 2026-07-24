@@ -37,10 +37,13 @@ const BTN = {
 
 export function portalEmptySubtitle(role: PortalStateRole = "kunde"): string {
   if (role === "handwerker") {
-    return "Sobald Ihnen ein Auftrag zugewiesen wird, erscheint er hier.";
+    return "Sobald Ihnen ein Auftrag zugewiesen wird, erscheint er hier. Tipp: Prüfen Sie auch den Filter „Offen“.";
   }
   if (role === "eigentuemer" || role === "mieter") {
-    return "Für Ihre Wohnung liegt aktuell keine Meldung vor.";
+    return "Für Ihre Wohnung liegt aktuell keine Meldung vor. Bei Schäden nutzen Sie den Melde-Link Ihrer Verwaltung.";
+  }
+  if (role === "hv") {
+    return "Hier erscheinen Meldungen und Vorgänge Ihrer Objekte. Legen Sie den ersten Vorgang an oder warten Sie auf Mieter-Meldungen.";
   }
   return "Hier erscheinen Ihre Anfragen und Aufträge. Legen Sie den ersten Vorgang an.";
 }
@@ -101,8 +104,8 @@ export function resolvePortalStateCopy(
       return {
         kind,
         glyph: "⚠",
-        iconBg: "#FCE3E3",
-        iconFg: "#A1242A",
+        iconBg: "var(--p2-danger-soft, #FCE3E3)",
+        iconFg: "var(--p2-danger, #A1242A)",
         title: "Etwas ist schiefgelaufen",
         subtitle:
           "Wir konnten die Daten nicht laden. Bitte versuchen Sie es in einem Moment erneut.",

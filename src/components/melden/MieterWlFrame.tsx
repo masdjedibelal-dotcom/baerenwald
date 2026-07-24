@@ -10,6 +10,7 @@ import {
   mieterWlLogoLetter,
   type MieterWlBrand,
 } from "@/lib/portal2/mieter-wl";
+import { resolveOrgSubLabel } from "@/lib/portal2/brand-presets";
 import { cn } from "@/lib/utils";
 
 import "./melden.css";
@@ -63,7 +64,7 @@ export function MieterWlFrame({
 
 export function MieterWlHeader({ brand }: { brand: MieterWlBrand }) {
   const letter = mieterWlLogoLetter(brand);
-  const sub = brand.sub?.trim() || "Verwaltung";
+  const sub = resolveOrgSubLabel(brand.sub);
 
   return (
     <header className="mieter-wl-header">

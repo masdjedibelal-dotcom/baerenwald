@@ -530,6 +530,13 @@ export const SITUATIONEN_CONFIG: Record<
             direktKomplex: true,
             triggerGewerke: ["sanitaer", "maler"],
           },
+          {
+            value: "sonstiges",
+            label: "Sonstiges",
+            hint: "Passt nichts dazu — kurz beschreiben, was vorliegt",
+            icon: "02-reparatur",
+            triggerGewerke: ["sonstiges"],
+          },
         ],
       },
       {

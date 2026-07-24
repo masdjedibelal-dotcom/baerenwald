@@ -116,8 +116,10 @@ export function pickEmpfohlenesAngebot(
 export const HV_DETAIL_COPY = {
   freigabeTitle: "Freigabe erforderlich",
   freigabeNote:
-    "Als Verwaltung geben Sie den Vorgang für Bärenwald frei — erst dann werden Handwerker angefragt.",
-  freigabeBtn: "✓ Freigeben & Handwerker anfragen",
+    "Als Verwaltung geben Sie den Vorgang für Bärenwald frei — erst dann wird ein Angebot angefragt. Das ist kein Annehmen eines Angebots.",
+  freigabeBtn: "Vorgang freigeben",
+  /** Kurzer CTA auf schmalen Screens (Sticky-/Stack-Bar). */
+  freigabeBtnMobile: "Vorgang freigeben",
   ablehnen: "Ablehnen",
   privatAuto:
     "Automatisch freigegeben (Privatkunde)",
@@ -127,13 +129,11 @@ export const HV_DETAIL_COPY = {
   empfohlenBadge: "★ Angebot",
   empfohlenDetail: "Leistungen & Preise",
   empfohlenAnnehmen: "Angebot annehmen",
+  angebotAnnehmenTitle: "Angebot annehmen",
   angebotAnnehmenNote:
-    "Mit der Annahme wird der Vorgang im CRM zum Auftrag (Angebot angenommen).",
+    "Hiermit nehmen Sie das vorliegende Angebot an — der Vorgang wird zum Auftrag. Das ist keine Freigabe einer Meldung.",
   unterSchwelle: (schwelleLabel: string) =>
     `Direkt Durchführung — Angebot unter Freigabeschwelle (${schwelleLabel}). Der Handwerker kann starten, ohne dass Sie freigeben. Sie erhalten eine E-Mail und sehen diesen Hinweis im Vorgang.`,
-  inAusfuehrung: "In Ausführung",
-  inAusfuehrungNoteHv:
-    "Der Handwerker dokumentiert unten im Bautagebuch. Mieter sehen diese Einträge nicht.",
   abnahmeTitle: "Abschluss",
   abnahmeNote:
     "Die Abnahme und Signatur erfolgt durch den Handwerker vor Ort. Danach kannst du hier Feedback geben.",
@@ -171,12 +171,12 @@ export type HvRoleActionKind =
 
 export function hvRoleActionKind(
   flow: PortalMockStatusId,
-  opts?: { privatkunde?: boolean }
+  opts?: { privatkunde?: boolean; angebotVorgelegt?: boolean }
 ): HvRoleActionKind {
   if (flow === "gemeldet") {
     return opts?.privatkunde ? "privat_auto" : "freigabe";
   }
-  if (flow === "angebot") return "angebot";
+  if (flow === "angebot" || opts?.angebotVorgelegt) return "angebot";
   if (flow === "auftrag") return "auftrag";
   if (flow === "abschluss") return "abschluss";
   if (flow === "rechnung") return "rechnung";

@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useState } from "react";
 
 import {
   MieterWlBtn,
@@ -15,49 +16,43 @@ import "./melden.css";
 type Props = {
   brand: MieterWlBrand;
   statusToken?: string | null;
+  /** Absolute oder relative Status-URL */
+  statusUrl?: string | null;
   /** @deprecated nicht mehr angezeigt */
   referenz?: string | null;
   objektAuswahlHref?: string | null;
-  /** Kontakt aus der Meldung */
-  contactName?: string | null;
-  contactEmail?: string | null;
-  contactTelefon?: string | null;
-  /** E-Mail hat bereits ein MeinBärenwald-Konto */
-  portalAccountExists?: boolean;
 };
 
 /**
- * Bestätigung nach Meldung → CTA MeinBärenwald (Registrieren oder Login).
+ * Bestätigung nach Meldung — Soft-WL: Status-Link statt MeinBärenwald-CTA.
  */
 export function MeldenBestaetigungClient({
   brand,
   statusToken,
+  statusUrl: statusUrlProp,
   objektAuswahlHref,
-  contactName,
-  contactEmail,
-  contactTelefon,
-  portalAccountExists = false,
 }: Props) {
   const t = MIETER_WL_BESTAETIGUNG;
+  const [copied, setCopied] = useState(false);
 
-  const registerHref = (() => {
-    const q = new URLSearchParams();
-    q.set("from", "melde");
-    if (statusToken?.trim()) q.set("meldeToken", statusToken.trim());
-    if (contactName?.trim()) q.set("name", contactName.trim());
-    if (contactEmail?.trim()) q.set("email", contactEmail.trim());
-    if (contactTelefon?.trim()) q.set("telefon", contactTelefon.trim());
-    q.set("locked", "1");
-    q.set("next", "/portal");
-    return `/portal/registrieren?${q.toString()}`;
-  })();
+  const statusUrl =
+    statusUrlProp?.trim() ||
+    (statusToken?.trim() ? `/melden/status/${statusToken.trim()}` : null);
 
-  const loginHref = (() => {
-    const q = new URLSearchParams();
-    q.set("next", "/portal");
-    if (contactEmail?.trim()) q.set("email", contactEmail.trim());
-    return `/portal/login?${q.toString()}`;
-  })();
+  async function copyLink() {
+    if (!statusUrl) return;
+    try {
+      const absolute =
+        typeof window !== "undefined" && statusUrl.startsWith("/")
+          ? `${window.location.origin}${statusUrl}`
+          : statusUrl;
+      await navigator.clipboard.writeText(absolute);
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 2000);
+    } catch {
+      /* ignore */
+    }
+  }
 
   return (
     <MieterWlFrame brand={brand}>
@@ -70,24 +65,26 @@ export function MeldenBestaetigungClient({
           {brand.name}
           {t.body_suffix_de}
         </p>
+        <p className="text-[13px] leading-relaxed text-[#4a5c54] text-center mt-2 max-w-[340px]">
+          {t.status_hint_de}
+        </p>
 
-        <div className="w-full max-w-[340px] space-y-2.5 mt-2">
-          {portalAccountExists ? (
+        <div className="w-full max-w-[340px] space-y-2.5 mt-3">
+          {statusUrl ? (
             <>
-              <p className="text-[13px] leading-relaxed text-[#4a5c54] text-center mb-1">
-                {t.portal_existing_hint_de}
-              </p>
-              <MieterWlBtn href={loginHref}>{t.portal_login_cta_de}</MieterWlBtn>
+              <MieterWlBtn href={statusUrl}>{t.track_de}</MieterWlBtn>
+              <button
+                type="button"
+                className="mieter-wl-btn mieter-wl-btn--ghost w-full"
+                onClick={() => void copyLink()}
+              >
+                {copied ? t.copied_de : t.copy_de}
+              </button>
             </>
           ) : (
-            <>
-              <p className="text-[13px] leading-relaxed text-[#4a5c54] text-center mb-1">
-                {t.portal_register_hint_de}
-              </p>
-              <MieterWlBtn href={registerHref}>
-                {t.portal_register_cta_de}
-              </MieterWlBtn>
-            </>
+            <p className="text-[13px] leading-relaxed text-[#4a5c54] text-center">
+              Bitte wenden Sie sich bei Fragen an Ihre Verwaltung.
+            </p>
           )}
 
           {objektAuswahlHref ? (

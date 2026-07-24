@@ -54,10 +54,10 @@ Art. 13: Kategorien genügen im Hinweis („technischer Dienstleister“, „bea
 
 ---
 
-## 6. Impressum → Doppelnennung risikoarm (Variante B)
+## 6. Impressum → Doppelnennung risikoarm (Variante B) — **freigegeben**
 
 HV als Anbieterin des Dienstes; Bärenwald als technischer Betreiber im Footer Melde-Routen.  
-Ein bewusster, kleiner WL-Bruch — Templates A/B vorbereitet.
+Live ohne Entwurfs-Banner.
 
 ---
 

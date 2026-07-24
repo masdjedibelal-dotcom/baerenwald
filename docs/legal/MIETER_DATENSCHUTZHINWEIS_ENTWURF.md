@@ -1,18 +1,21 @@
-# Datenschutzhinweise Mieter-Meldeflow — ENTWURF
+# Datenschutzhinweise Mieter-Meldeflow
 
-Live-Entwurf (mit Banner): `/melden/[org]/datenschutz`  
+Live: `/melden/[org]/datenschutz`  
 Kurzhinweis im Formular: `MeldeDatenschutzHinweis`
+
+## Freigabe
+
+**Freigegeben (Anwalt, 2026-07):** Verantwortlicher = HV; Bärenwald = technischer Dienstleister. Entwurfs-Banner entfernt.
 
 ## Struktur (Art. 13)
 
 1. **Verantwortlicher:** HV-Stammdaten (`org_anzeigename`, Mieter-Kontakt)
-2. **Dienstleister:** technischer Betrieb — **[ANWALT]** Bärenwald namentlich?
+2. **Dienstleister:** technischer Betrieb (Bärenwald, ohne Marketing-Fokus)
 3. **Zwecke:** Meldung, Termin, Reparatur, Dokumentation
-4. **Rechtsgrundlage:** **[ANWALT]** lit. b Mietverhältnis / lit. f
-5. **Empfänger:** Handwerker — abhängig von A.8
-6. **Speicherdauer:** [LOESCHKONZEPT_ENTWURF.md](./LOESCHKONZEPT_ENTWURF.md)
-7. **Betroffenenrechte** + Beschwerde
-8. **Kontakt:** immer HV (kein Mieter-Mail an Bärenwald)
+4. **Empfänger:** Handwerker zur Ausführung
+5. **Speicherdauer:** bis Abschluss, danach Löschkonzept der Verwaltung
+6. **Betroffenenrechte** + Beschwerde
+7. **Kontakt:** immer HV (kein Mieter-Mail an Bärenwald)
 
 ## Org-URLs
 

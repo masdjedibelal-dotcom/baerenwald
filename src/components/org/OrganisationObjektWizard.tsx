@@ -14,7 +14,7 @@ import {
   formatEinstellungenSchwelle,
   snapEinstellungenSchwelle,
 } from "@/lib/portal2/einstellungen";
-import { PORTAL_C } from "@/lib/portal2/tokens";
+import { PORTAL_VAR } from "@/lib/portal2/tokens";
 import {
   formatObjRegelnReview,
   OBJ_SCHWELLE_INFO,
@@ -319,7 +319,7 @@ export function OrganisationObjektWizard({
         <div className="flex flex-col gap-3">
           <p
             className="text-[13px] leading-[1.55]"
-            style={{ color: PORTAL_C.sub }}
+            style={{ color: PORTAL_VAR.sub }}
           >
             {OBJ_SCHWELLE_WIZARD_DESC}
           </p>
@@ -423,7 +423,7 @@ export function OrganisationObjektWizard({
         {err ? (
           <div
             role="alert"
-            className="flex items-center gap-2 rounded-[9px] border border-[#F5C2C0] bg-[#FDECEC] px-3 py-2.5 text-[12.5px] font-semibold text-[#B42318]"
+            className="portal-danger-soft flex items-center gap-2 rounded-[9px] border px-3 py-2.5 text-[12.5px] font-semibold"
           >
             <span aria-hidden>⚠</span>
             {err}

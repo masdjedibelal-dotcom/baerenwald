@@ -43,9 +43,9 @@ assert(
 );
 assert(
   "STG beauftragt de",
-  MIETER_STG[2]!.title_de === "Beauftragt" &&
+  MIETER_STG[2]!.title_de === "Bestätigung" &&
     MIETER_STG[2]!.subtitle_de ===
-      "Ein Fachbetrieb wurde von Ihrer Verwaltung beauftragt."
+      "Ihre Verwaltung hat die Ausführung bestätigt."
 );
 assert(
   "STG erledigt en",
@@ -91,6 +91,15 @@ assert(
 assert(
   "bestaetigung no-mail hint",
   MIETER_WL_BESTAETIGUNG.status_hint_de.includes("keine Bestätigungs-E-Mail")
+);
+assert(
+  "bestaetigung track cta",
+  MIETER_WL_BESTAETIGUNG.track_de === "Status verfolgen" &&
+    MIETER_WL_BESTAETIGUNG.copy_de === "Link kopieren"
+);
+assert(
+  "bestaetigung no MeinBärenwald leak",
+  !JSON.stringify(MIETER_WL_BESTAETIGUNG).includes("MeinBärenwald")
 );
 assert(
   "status title",

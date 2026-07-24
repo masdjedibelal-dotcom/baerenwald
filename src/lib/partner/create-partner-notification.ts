@@ -41,6 +41,11 @@ export type PartnerNotifyInput = {
   projektName: string;
   leistungName?: string | null;
   link: string;
+  /**
+   * Default true. false = nur In-App-Glocke, wenn eine spezialisierte
+   * Partner-Mail (Zuweisung/Anfrage) parallel schon gesendet wird.
+   */
+  sendMail?: boolean;
 };
 
 function partnerNotifyBodyHtml(opts: {
@@ -125,9 +130,10 @@ export async function createPartnerNotification(
     .eq("id", handwerkerId)
     .maybeSingle();
 
+  const sendMail = input.sendMail !== false;
   const to = (hw as { email?: string | null } | null)?.email?.trim();
   const resend = resendClient();
-  if (to && resend) {
+  if (sendMail && to && resend) {
     const subject = partnerNotificationSubject(
       input.typ,
       input.projektName,

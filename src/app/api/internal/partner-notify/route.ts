@@ -25,12 +25,15 @@ const VALID_TYP: PartnerNotificationTyp[] = [
 ];
 
 /**
- * POST — vereinheitlichte CRM-Benachrichtigung (Glocke + Mail).
+ * POST — vereinheitlichte CRM-Benachrichtigung (Glocke + max. 1 Mail).
  * Body: { handwerkerId, typ, projektName, leistungName?, link }
  *
  * Legacy-Aliase (optional, für schrittweise CRM-Migration):
  * - anfrageId → notify + link zu Offen
  * - auftragId + handwerkerId → Zuweisung
+ *
+ * Wichtig: Spezialisierte Mails (Anfrage/Zuweisung) ersetzen die generische
+ * Glocken-Mail — sonst kommen zwei E-Mails an.
  */
 export async function POST(request: Request) {
   if (!authorize(request)) {
@@ -62,6 +65,7 @@ export async function POST(request: Request) {
         typ: "neu",
         projektName: "Neue Anfrage",
         link: partnerOffenPortalPath(anfrageId),
+        sendMail: false,
       });
     }
     return NextResponse.json({ ok: true });
@@ -89,41 +93,63 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: false, error: "link fehlt." }, { status: 400 });
   }
 
+  const willSendSpecialMail =
+    isSupabaseConfigured() &&
+    ((anfrageId && typ === "neu") ||
+      (Boolean(auftragId) && (typ === "neu" || typ === "geaendert")) ||
+      Boolean(anfrageId && body.bitteBestaetigen) ||
+      (anfrageId && (typ === "geaendert" || body.typ === "rueckfrage")));
+
   const result = await createPartnerNotification({
     handwerkerId,
     typ,
     projektName: projektName || "Projekt",
     leistungName: body.leistungName != null ? String(body.leistungName) : null,
     link,
+    sendMail: !willSendSpecialMail,
   });
 
   if (!result.ok) {
     return NextResponse.json(result, { status: 422 });
   }
 
-  /** Legacy-Mails weiterhin auslösen wenn CRM alte Felder mitschickt. */
+  /** Spezialisierte Mails (eine pro Event) — Glocken-Mail oben ggf. unterdrückt. */
   if (anfrageId && typ === "neu" && isSupabaseConfigured()) {
-    void notifyHandwerkerNewAnfrage(anfrageId);
+    const mail = await notifyHandwerkerNewAnfrage(anfrageId);
+    if (!mail.ok) {
+      return NextResponse.json(mail, { status: 422 });
+    }
   }
   if (anfrageId && body.bitteBestaetigen) {
-    void notifyHandwerkerAngebotBestaetigt(anfrageId, { bitteBestaetigen: true });
+    const mail = await notifyHandwerkerAngebotBestaetigt(anfrageId, {
+      bitteBestaetigen: true,
+    });
+    if (!mail.ok) {
+      return NextResponse.json(mail, { status: 422 });
+    }
   }
-  if (body.auftragId && (typ === "neu" || typ === "geaendert")) {
-    void notifyHandwerkerLeistungZuweisung({
-      auftragId: String(body.auftragId),
+  if (auftragId && (typ === "neu" || typ === "geaendert")) {
+    const mail = await notifyHandwerkerLeistungZuweisung({
+      auftragId,
       handwerkerId,
       positionIds: Array.isArray(body.positionIds)
         ? body.positionIds.map(String)
         : undefined,
       variant: typ === "geaendert" ? "aenderung" : "neu",
     });
+    if (!mail.ok) {
+      return NextResponse.json(mail, { status: 422 });
+    }
   }
   if (anfrageId && (typ === "geaendert" || body.typ === "rueckfrage")) {
-    void notifyHandwerkerAngebotAntwort({
+    const mail = await notifyHandwerkerAngebotAntwort({
       anfrageId,
       typ: "rueckfrage",
       crmNotiz: String(body.crmNotiz ?? ""),
     });
+    if (!mail.ok) {
+      return NextResponse.json(mail, { status: 422 });
+    }
   }
 
   return NextResponse.json({ ok: true, notificationId: result.notificationId });

@@ -3,6 +3,7 @@
  */
 
 import type { OrgVorgangFilter } from "@/lib/org/org-vorgang-filter";
+import type { PortalMockStatusId } from "@/lib/portal2/status";
 
 export const HV_LISTE_PAGE_EYEBROW = "Verwaltung" as const;
 export const HV_LISTE_PAGE_TITLE = "Vorgänge" as const;
@@ -15,8 +16,43 @@ export const HV_CHIPS: Array<{
 }> = [
   { id: "alle", label: "Alle", showCount: false },
   { id: "offen", label: "Offen", showCount: true },
+  { id: "in_arbeit", label: "In Arbeit", showCount: false },
   { id: "erledigt", label: "Erledigt", showCount: false },
 ];
+
+/** Listen-Chip ↔ Portal-Flow (HV).
+ * Offen = wartet auf Freigabe · In Arbeit = Angebot angefragt bis Auftrag · Erledigt = Abschluss+.
+ * D3: Semantik = KPI-Klick (`HV_DASHBOARD_KPI_DEFS[].filter`).
+ */
+export function hvListeChipMatches(
+  filter: OrgVorgangFilter,
+  flow: PortalMockStatusId
+): boolean {
+  if (filter === "alle") return true;
+  if (filter === "offen") {
+    return flow === "gemeldet";
+  }
+  if (filter === "in_arbeit") {
+    return (
+      flow === "freigegeben" ||
+      flow === "angefragt" ||
+      flow === "angebot" ||
+      flow === "auftrag"
+    );
+  }
+  return (
+    flow === "abschluss" || flow === "rechnung" || flow === "bezahlt"
+  );
+}
+
+/** D3 — KPI-ID → Listen-Filter (identisch zu `HV_DASHBOARD_KPI_DEFS[].filter`). */
+export function hvKpiToListeFilter(
+  kpiId: "wartet_freigabe" | "in_arbeit" | "erledigt"
+): OrgVorgangFilter {
+  if (kpiId === "wartet_freigabe") return "offen";
+  if (kpiId === "in_arbeit") return "in_arbeit";
+  return "erledigt";
+}
 
 export const HV_SECTION_MELDUNGEN = "Meldungen · Eingang" as const;
 export const HV_SECTION_ANGEBOTE = "Angebots-Freigabe" as const;
@@ -24,12 +60,12 @@ export const HV_SECTION_EMPTY = "Nichts offen" as const;
 
 /** Gelbes Hinweisbanner (Mock screenListe Angebots-Freigabe). */
 export const HV_ANGEBOT_BANNER =
-  "Bärenwald hat Angebote erstellt — bitte prüfen und freigeben." as const;
+  "Bärenwald hat Angebote erstellt — bitte prüfen und freigeben (Freigabe ≠ Angebot annehmen)." as const;
 
 export const HV_MELDUNG_ACTIONS = [
   {
     id: "angebot_einfordern" as const,
-    label: "Angebot einfordern",
+    label: "Vorgang freigeben",
     variant: "primary" as const,
   },
   {

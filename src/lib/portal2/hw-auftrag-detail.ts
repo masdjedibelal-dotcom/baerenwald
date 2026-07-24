@@ -2,19 +2,23 @@
  * Handwerker Auftrag-Detail — Copy & Timeline (Mock screenAuftrag).
  */
 
-import { PORTAL_C } from "@/lib/portal2/tokens";
+import { PORTAL_VAR } from "@/lib/portal2/tokens";
 import type { VorgangState } from "@/lib/partner/vorgang-state";
 
 export const HW_AUFTRAG_COPY = {
   beschreibungTitle: "Beschreibung",
   ausfuehrenTitle: "Auftrag ausführen",
   ausfuehrenBody:
-    "Dokumentieren Sie im Bautagebuch. Wenn fertig, führen wir Sie durch die Abschlussdokumentation.",
+    "Dokumentieren Sie je Leistung: Startfoto → optional Fortschritt → Endfoto. Bei Regie/Aufwand Zeit miterfassen.",
   ausfuehrenCta: "Auftrag abschließen →",
+  ausfuehrenHint:
+    "Nach Dokumentation je Leistung: Abnahme mit Signatur. Danach Rechnung prüfen & einreichen.",
   leistungenTitle: "Leistungen & Vergütung",
   einsatzTitle: "Einsatz",
   verlaufTitle: "Verlauf",
-  bautagebuchTitle: "Bautagebuch",
+  bautagebuchTitle: "Zusatznotiz für die Verwaltung",
+  bautagebuchHint:
+    "Freies Bautagebuch — Zusatznotiz an die HV, kein Ersatz für Start-/Endfotos je Leistung.",
   unterlagenTitle: "Unterlagen",
   statusBeauftragt: "Beauftragt",
 } as const;
@@ -126,4 +130,4 @@ export function formatHwLeistungMeta(input: {
   return parts.length ? parts.join(" · ") : null;
 }
 
-export const HW_DETAIL_CARD_BORDER = PORTAL_C.line;
+export const HW_DETAIL_CARD_BORDER = PORTAL_VAR.line;

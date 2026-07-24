@@ -27,7 +27,7 @@ import {
   HV_SECTION_EMPTY,
   HV_SECTION_MELDUNGEN,
 } from "@/lib/portal2/hv-liste";
-import { PORTAL_C } from "@/lib/portal2/tokens";
+import { PORTAL_VAR } from "@/lib/portal2/tokens";
 import {
   buildAuftragByLeadId,
   isInOrgFreigabeQueue,
@@ -284,15 +284,15 @@ export function OrganisationFreigabePanel({
           <h3
             className="text-sm font-bold"
             style={{
-              color: PORTAL_C.ink,
-              fontFamily: "var(--p2-font-head, " + PORTAL_C.head + ")",
+              color: PORTAL_VAR.ink,
+              fontFamily: "var(--p2-font-head, " + PORTAL_VAR.head + ")",
             }}
           >
             {HV_SECTION_MELDUNGEN}
           </h3>
           <span
             className="rounded-full px-2 py-0.5 text-[11px] font-bold"
-            style={{ color: PORTAL_C.faint, background: "#eceef0" }}
+            style={{ color: PORTAL_VAR.faint, background: "#eceef0" }}
           >
             {freigabeEingang.length}
           </span>
@@ -300,7 +300,7 @@ export function OrganisationFreigabePanel({
         {freigabeEingang.length === 0 ? (
           <p
             className="rounded-xl border bg-white py-7 text-center text-[12.5px]"
-            style={{ color: PORTAL_C.faint, borderColor: PORTAL_C.line }}
+            style={{ color: PORTAL_VAR.faint, borderColor: PORTAL_VAR.line }}
           >
             {HV_SECTION_EMPTY}
           </p>
@@ -314,15 +314,15 @@ export function OrganisationFreigabePanel({
           <h3
             className="text-sm font-bold"
             style={{
-              color: PORTAL_C.ink,
-              fontFamily: "var(--p2-font-head, " + PORTAL_C.head + ")",
+              color: PORTAL_VAR.ink,
+              fontFamily: "var(--p2-font-head, " + PORTAL_VAR.head + ")",
             }}
           >
             {HV_SECTION_ANGEBOTE}
           </h3>
           <span
             className="rounded-full px-2 py-0.5 text-[11px] font-bold"
-            style={{ color: PORTAL_C.faint, background: "#eceef0" }}
+            style={{ color: PORTAL_VAR.faint, background: "#eceef0" }}
           >
             {angebotFreigaben.length}
           </span>
@@ -339,7 +339,7 @@ export function OrganisationFreigabePanel({
         {angebotFreigaben.length === 0 ? (
           <p
             className="rounded-xl border bg-white py-7 text-center text-[12.5px]"
-            style={{ color: PORTAL_C.faint, borderColor: PORTAL_C.line }}
+            style={{ color: PORTAL_VAR.faint, borderColor: PORTAL_VAR.line }}
           >
             {HV_SECTION_EMPTY}
           </p>
@@ -369,7 +369,7 @@ export function OrganisationFreigabePanel({
               return (
                 <div key={a.id} className="space-y-2">
                   <PortalListCard
-                    variant="card"
+                    variant="responsive"
                     accent="angebot"
                     showChevron
                     title={a.titel}

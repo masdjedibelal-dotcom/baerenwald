@@ -6,7 +6,7 @@ import {
   portalNavSectionId,
   type PortalNavKey,
 } from "@/lib/portal2/nav-items";
-import { PORTAL_C } from "@/lib/portal2/tokens";
+import { PORTAL_VAR } from "@/lib/portal2/tokens";
 
 type Props = {
   onOpen: (sectionId: string) => void;
@@ -21,7 +21,7 @@ export function OrganisationMehrScreen({ onOpen }: Props) {
       <div>
         <h2
           className="text-[18px] font-bold text-text-primary"
-          style={{ fontFamily: PORTAL_C.head }}
+          style={{ fontFamily: PORTAL_VAR.head }}
         >
           Mehr
         </h2>

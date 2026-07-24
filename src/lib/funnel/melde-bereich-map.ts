@@ -21,6 +21,8 @@ export function kaputtBereichToMeldeId(bereich: string): MeldeBereichId {
       return "baum_notfall";
     case "schimmel":
       return "schimmel";
+    case "sonstiges":
+      return "sonstiges";
     default:
       return "sonstiges";
   }

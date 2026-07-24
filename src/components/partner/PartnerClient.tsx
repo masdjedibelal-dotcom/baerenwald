@@ -2,6 +2,7 @@
 
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { PORTAL_MODAL_SCRIM } from "@/lib/portal2/modal-shell";
 
 import { OnboardingTour } from "@/components/onboarding/OnboardingTour";
 import "@/components/onboarding/onboarding.css";
@@ -12,6 +13,7 @@ import { PartnerPlanerPanel } from "@/components/partner/PartnerPlanerPanel";
 import { PartnerProfilPanel } from "@/components/partner/PartnerProfilPanel";
 import { VorgangCard } from "@/components/partner/VorgangCard";
 import { PartnerListCard } from "@/components/partner/PartnerListCard";
+import { portalListStackClass } from "@/lib/portal2/layout-chrome";
 import {
   PARTNER_LIST_PAGE_SIZE,
   PartnerListPagination,
@@ -423,7 +425,7 @@ export function PartnerClient({
     return (
       <PartnerListCard
         key={row.id}
-        variant="card"
+        variant="responsive"
         accent={row.accent}
         showLeftAccent={false}
         showChevron
@@ -447,7 +449,7 @@ export function PartnerClient({
             type="button"
             onClick={closeDetail}
             className="rounded-full px-3 py-1.5 text-[12.5px] font-semibold text-white"
-            style={{ background: "rgba(0,0,0,.42)" }}
+            style={{ background: PORTAL_MODAL_SCRIM }}
           >
             ‹ Zurück
           </button>
@@ -474,7 +476,7 @@ export function PartnerClient({
         onFilterChange={setVorgangListFilter}
         counts={vorgangListFilterCounts}
       />
-      <div className="flex flex-col gap-2.5">
+      <div className={portalListStackClass("responsive")}>
         {sectionListEmpty ? (
           showPortalEmptyVorgaenge ? (
             <div className="rounded-[12px] border border-border-default bg-white p-4">

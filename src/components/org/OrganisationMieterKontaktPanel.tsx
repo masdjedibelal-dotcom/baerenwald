@@ -8,7 +8,7 @@ import {
   EinstellungenCard,
   EinstellungenEdField,
 } from "@/components/shared/PortalEinstellungenUi";
-import { PORTAL_C } from "@/lib/portal2/tokens";
+import { PORTAL_VAR } from "@/lib/portal2/tokens";
 import { orgPortalToast } from "@/lib/shared/portal-toast";
 
 type Props = {
@@ -65,7 +65,7 @@ export function OrganisationMieterKontaktPanel({
 
   const formBody = (
     <form onSubmit={save} className="flex flex-col gap-3">
-      <p className="text-[13px] leading-[1.55]" style={{ color: PORTAL_C.sub }}>
+      <p className="text-[13px] leading-[1.55]" style={{ color: PORTAL_VAR.sub }}>
         Erscheint in Melde-Flow, Status-Seite und E-Mails an Mieter (White-Label).
       </p>
       <div className="flex items-start justify-between gap-3">

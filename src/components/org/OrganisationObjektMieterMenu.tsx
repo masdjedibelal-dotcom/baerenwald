@@ -45,7 +45,7 @@ export function OrganisationObjektMieterMenu({
       className={cn(
         "block w-full px-3.5 py-2.5 text-left text-[13px] font-semibold",
         danger
-          ? "text-[#B42318] hover:bg-[#FEF3F2]"
+          ? "portal-danger hover:bg-[var(--p2-danger-soft)]"
           : "text-text-primary hover:bg-muted"
       )}
       onClick={() => {

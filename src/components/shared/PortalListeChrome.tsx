@@ -1,6 +1,6 @@
 "use client";
 
-import { PORTAL_C } from "@/lib/portal2/tokens";
+import { PORTAL_VAR } from "@/lib/portal2/tokens";
 import { cn } from "@/lib/utils";
 import type { ReactNode } from "react";
 
@@ -9,7 +9,7 @@ export function PortalListeEyebrow({ children }: { children: ReactNode }) {
   return (
     <p
       className="mb-1 text-[12px] font-semibold uppercase tracking-wide"
-      style={{ color: PORTAL_C.faint }}
+      style={{ color: PORTAL_VAR.faint }}
     >
       {children}
     </p>
@@ -22,8 +22,8 @@ export function PortalListeTitle({ children }: { children: ReactNode }) {
     <h1
       className="text-[25px] font-bold"
       style={{
-        color: PORTAL_C.ink,
-        fontFamily: "var(--p2-font-head, " + PORTAL_C.head + ")",
+        color: PORTAL_VAR.ink,
+        fontFamily: "var(--p2-font-head, " + PORTAL_VAR.head + ")",
       }}
     >
       {children}
@@ -31,7 +31,7 @@ export function PortalListeTitle({ children }: { children: ReactNode }) {
   );
 }
 
-/** Filter-Chip im HV-Stil (PORTAL_C.greenDark aktiv). */
+/** Filter-Chip im HV-Stil (PORTAL_VAR.greenDark aktiv). */
 export function PortalListeFilterChip({
   active,
   onClick,
@@ -56,14 +56,14 @@ export function PortalListeFilterChip({
         "inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[12.5px] font-semibold"
       )}
       style={{
-        border: `1px solid ${active ? "transparent" : PORTAL_C.line}`,
-        background: active ? PORTAL_C.greenDark : "#fff",
-        color: active ? "#fff" : PORTAL_C.sub,
+        border: `1px solid ${active ? "transparent" : PORTAL_VAR.line}`,
+        background: active ? PORTAL_VAR.greenDark : "#fff",
+        color: active ? "#fff" : PORTAL_VAR.sub,
       }}
     >
       {children}
       {count != null ? (
-        <span style={{ color: active ? "rgba(255,255,255,0.7)" : PORTAL_C.faint }}>
+        <span style={{ color: active ? "rgba(255,255,255,0.7)" : PORTAL_VAR.faint }}>
           ({count})
         </span>
       ) : null}
@@ -71,8 +71,8 @@ export function PortalListeFilterChip({
         <span
           className="rounded-full px-1.5 py-px text-[10.5px] font-bold"
           style={{
-            color: active ? PORTAL_C.greenDark : "#fff",
-            background: active ? "#fff" : PORTAL_C.primary,
+            color: active ? PORTAL_VAR.greenDark : "#fff",
+            background: active ? "#fff" : PORTAL_VAR.primary,
           }}
         >
           {countBadge}

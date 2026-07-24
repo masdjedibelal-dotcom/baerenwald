@@ -30,7 +30,7 @@ assert(
   "kunde_privat labels",
   getPortalNavItems("kunde_privat")
     .map((i) => i.label)
-    .join(" · ") === "Übersicht · Meine Aufträge · Einstellungen"
+    .join(" · ") === "Übersicht · Vorgänge · Einstellungen"
 );
 assert(
   "eigentuemer labels",

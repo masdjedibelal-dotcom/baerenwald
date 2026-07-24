@@ -42,7 +42,7 @@ import {
   parseEinheitenCount,
   type ObjDetailTabId,
 } from "@/lib/portal2/objekte";
-import { PORTAL_C } from "@/lib/portal2/tokens";
+import { PORTAL_VAR } from "@/lib/portal2/tokens";
 import { orgPortalToast, portalToastError } from "@/lib/shared/portal-toast";
 import {
   plattformStatusLabel,
@@ -511,7 +511,7 @@ export function OrganisationObjektDetail({
         <div className="flex flex-col gap-3">
           <p
             className="text-[13px] leading-[1.55]"
-            style={{ color: PORTAL_C.sub }}
+            style={{ color: PORTAL_VAR.sub }}
           >
             {OBJ_SCHWELLE_WIZARD_DESC}
           </p>
@@ -528,7 +528,7 @@ export function OrganisationObjektDetail({
           </EinstellungenInfoBox>
           <p
             className="text-[12.5px] leading-relaxed"
-            style={{ color: PORTAL_C.sub }}
+            style={{ color: PORTAL_VAR.sub }}
           >
             {OBJ_REGELN_FALLBACK}
           </p>
@@ -615,7 +615,7 @@ export function OrganisationObjektDetail({
           ) : null}
           <button
             type="button"
-            className="rounded-[9px] border border-border-default bg-white px-3.5 py-2 text-[13px] font-semibold text-[#B42318]"
+            className="portal-danger rounded-[9px] border border-border-default bg-white px-3.5 py-2 text-[13px] font-semibold"
             onClick={onDelete}
           >
             Löschen

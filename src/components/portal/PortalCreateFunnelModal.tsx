@@ -19,6 +19,7 @@ type Props = {
     telefon?: string;
     objektId?: string;
     plz?: string;
+    ort?: string;
     strasse?: string;
     hausnummer?: string;
   };

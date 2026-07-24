@@ -1,9 +1,6 @@
 import { NextResponse } from "next/server";
 
-import {
-  buildOrgAngebotEingefordertHtml,
-  buildOrgKleinreparaturHtml,
-} from "@/lib/email/meldung-mail-templates";
+import { buildOrgKleinreparaturHtml } from "@/lib/email/meldung-mail-templates";
 import { notifyHvMieterEvent } from "@/lib/org/notify-hv-mieter-event";
 import { MIETER_EMAIL_ENABLED } from "@/lib/melde/mieter-mail-policy";
 import { notifyCrmOrgPortal } from "@/lib/org/notify-crm-org";
@@ -105,10 +102,6 @@ export async function POST(req: Request) {
     : { data: null };
 
   const objektTitel = String(objekt?.titel ?? "Objekt");
-  const orgName =
-    session.kunde.org_anzeigename?.trim() ||
-    session.kunde.name?.trim() ||
-    "Verwaltung";
   const portalPath = `/portal?section=freigabe&id=${leadId}`;
 
   if (aktion === "angebot_einfordern" || aktion === "kleinreparatur_freigeben") {
@@ -118,37 +111,27 @@ export async function POST(req: Request) {
   const resendKey = process.env.RESEND_API_KEY;
   const orgEmail = session.kunde.email?.trim() ?? "";
 
-  if (resendKey && isValidEmail(orgEmail)) {
+  // Keine Bestätigungsmail bei „Vorgang freigeben“ / Angebot einfordern —
+  // nur noch bei Kleinreparatur.
+  if (
+    aktion === "kleinreparatur_freigeben" &&
+    resendKey &&
+    isValidEmail(orgEmail)
+  ) {
     const resend = new Resend(resendKey);
     try {
-      if (aktion === "angebot_einfordern") {
-        await resend.emails.send({
-          from:
-            process.env.RESEND_FROM_SYSTEM ??
-            "System <system@baerenwaldmuenchen.de>",
-          to: orgEmail,
-          subject: `Angebot eingefordert — ${objektTitel}`,
-          html: buildOrgAngebotEingefordertHtml({
-            orgName,
-            objektTitel,
-            melderName: lead.melder_name ?? undefined,
-            portalPath,
-          }),
-        });
-      } else if (aktion === "kleinreparatur_freigeben") {
-        await resend.emails.send({
-          from:
-            process.env.RESEND_FROM_SYSTEM ??
-            "System <system@baerenwaldmuenchen.de>",
-          to: orgEmail,
-          subject: `Kleinreparatur — ${objektTitel}`,
-          html: buildOrgKleinreparaturHtml({
-            objektTitel,
-            melderName: lead.melder_name ?? undefined,
-            portalPath,
-          }),
-        });
-      }
+      await resend.emails.send({
+        from:
+          process.env.RESEND_FROM_SYSTEM ??
+          "System <system@baerenwaldmuenchen.de>",
+        to: orgEmail,
+        subject: `Kleinreparatur — ${objektTitel}`,
+        html: buildOrgKleinreparaturHtml({
+          objektTitel,
+          melderName: lead.melder_name ?? undefined,
+          portalPath,
+        }),
+      });
     } catch (e) {
       console.error("[meldung-aktion] org mail:", e);
     }

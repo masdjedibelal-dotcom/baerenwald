@@ -71,8 +71,8 @@ export const MELDE_BEREICHE: MeldeBereichOption[] = [
   },
   {
     id: "sonstiges",
-    label: "Etwas anderes",
-    hint: "kurz beschreiben",
+    label: "Sonstiges",
+    hint: "Passt nichts dazu — kurz beschreiben",
     bereich: "sonstiges",
     icon: "02-reparatur",
   },
@@ -80,8 +80,8 @@ export const MELDE_BEREICHE: MeldeBereichOption[] = [
 
 export function meldeBereichToFunnelBereiche(id: MeldeBereichId): string[] {
   const opt = MELDE_BEREICHE.find((o) => o.id === id);
-  if (!opt) return ["sanitaer"];
-  if (opt.bereich === "sonstiges") return ["sanitaer"];
+  if (!opt) return ["sonstiges"];
+  if (opt.bereich === "sonstiges") return ["sonstiges"];
   if (opt.bereich === "schimmel") return ["feuchtigkeit_schimmel", "schimmel"];
   if (opt.bereich === "elektro") return ["elektro", "strom"];
   return [opt.bereich];

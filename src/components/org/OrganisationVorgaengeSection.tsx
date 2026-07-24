@@ -12,7 +12,6 @@ import {
 import {
   buildOrgVorgangFilterCounts,
   buildAuftragByLeadId,
-  orgFilterToKundeFilter,
   type OrgVorgangFilter,
 } from "@/lib/org/org-vorgang-filter";
 import type { OrgPartnerBefundEntry } from "@/lib/org/load-partner-befund";
@@ -27,6 +26,10 @@ import {
   HV_LISTE_PAGE_EYEBROW,
   HV_LISTE_PAGE_TITLE,
 } from "@/lib/portal2/hv-liste";
+import type {
+  HvDashboardAngebotSlice,
+  HvDashboardAuftragSlice,
+} from "@/lib/portal2/hv-dashboard";
 
 type Props = {
   kunde: OrganisationKunde;
@@ -155,7 +158,9 @@ export function OrganisationVorgaengeSection({
   hvAbnahmeByLeadId = {},
 }: Props) {
   const searchParams = useSearchParams();
-  const detailOpen = Boolean(searchParams.get("id")?.trim());
+  const [detailOpen, setDetailOpen] = useState(() =>
+    Boolean(searchParams.get("id")?.trim())
+  );
   const [filter, setFilter] = useState<OrgVorgangFilter>(
     initialFilter ?? "alle"
   );
@@ -199,12 +204,14 @@ export function OrganisationVorgaengeSection({
         eingang,
         allLeads,
         vorgaengeItems,
-        auftragByLeadId
+        auftragByLeadId,
+        {
+          angebote: angebote as HvDashboardAngebotSlice[],
+          auftraege: auftraege as HvDashboardAuftragSlice[],
+        }
       ),
-    [eingang, allLeads, vorgaengeItems, auftragByLeadId]
+    [eingang, allLeads, vorgaengeItems, auftragByLeadId, angebote, auftraege]
   );
-
-  const vorgangFilter = orgFilterToKundeFilter(filter);
 
   return (
     <div className="space-y-3">
@@ -220,7 +227,8 @@ export function OrganisationVorgaengeSection({
         layout="embedded"
         hideFilterBar
         hvPortalMode
-        controlledVorgangFilter={vorgangFilter}
+        controlledHvListeFilter={filter}
+        onHvDetailOpenChange={setDetailOpen}
         kunde={{
           name: kunde.org_anzeigename ?? kunde.name,
           email: kunde.email,

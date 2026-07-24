@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
+import { PortalAuthBusy } from "@/components/portal/auth/PortalAuthBusy";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 
 export function PortalSetPasswordForm({
@@ -31,15 +32,29 @@ export function PortalSetPasswordForm({
     }
     setLoading(true);
     setError(null);
-    const supabase = getSupabaseBrowserClient();
-    const { error: updateError } = await supabase.auth.updateUser({ password });
-    setLoading(false);
-    if (updateError) {
-      setError(updateError.message);
-      return;
+    try {
+      const supabase = getSupabaseBrowserClient();
+      const { error: updateError } = await supabase.auth.updateUser({ password });
+      if (updateError) {
+        setError(updateError.message);
+        setLoading(false);
+        return;
+      }
+      router.push(`${loginHref}?hint=password-updated`);
+      router.refresh();
+    } catch {
+      setError("Speichern fehlgeschlagen. Bitte erneut versuchen.");
+      setLoading(false);
     }
-    router.push(`${loginHref}?hint=password-updated`);
-    router.refresh();
+  }
+
+  if (loading) {
+    return (
+      <PortalAuthBusy
+        title="Passwort wird gespeichert…"
+        body="Einen Moment — danach kannst du dich mit dem neuen Passwort anmelden."
+      />
+    );
   }
 
   return (
@@ -70,12 +85,8 @@ export function PortalSetPasswordForm({
           className="portal-input w-full rounded-xl border border-border-default bg-surface-card px-3 py-3"
         />
       </label>
-      <button
-        type="submit"
-        disabled={loading}
-        className="btn-pill-primary w-full !py-2.5 disabled:opacity-60"
-      >
-        {loading ? "Wird gespeichert…" : "Passwort speichern"}
+      <button type="submit" className="btn-pill-primary w-full !py-2.5">
+        Passwort speichern
       </button>
       <p className="portal-text-body text-center text-text-secondary">
         <Link href={forgotHref} className="text-accent hover:underline">

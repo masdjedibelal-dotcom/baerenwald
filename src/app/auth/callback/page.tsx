@@ -1,8 +1,9 @@
 "use client";
 
-import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 
+import { PortalAuthBusy } from "@/components/portal/auth/PortalAuthBusy";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 
 /** Fallback für alte Reset-Links mit `/auth/callback?code=…&next=…` */
@@ -32,8 +33,11 @@ function AuthCallbackInner() {
   }, [router, searchParams]);
 
   return (
-    <div className="flex min-h-[40vh] items-center justify-center px-4">
-      <p className="portal-text-body text-text-secondary">Anmeldung wird vorbereitet…</p>
+    <div className="flex min-h-[50vh] items-center justify-center px-4">
+      <PortalAuthBusy
+        title="Anmeldung wird vorbereitet…"
+        body="Einen Moment — die Sitzung wird eingerichtet."
+      />
     </div>
   );
 }
@@ -42,8 +46,8 @@ export default function AuthCallbackPage() {
   return (
     <Suspense
       fallback={
-        <div className="flex min-h-[40vh] items-center justify-center px-4">
-          <p className="portal-text-body text-text-secondary">Wird geladen…</p>
+        <div className="flex min-h-[50vh] items-center justify-center px-4">
+          <PortalAuthBusy title="Wird geladen…" body="Bitte kurz warten." />
         </div>
       }
     >

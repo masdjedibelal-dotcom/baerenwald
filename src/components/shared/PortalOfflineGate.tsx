@@ -10,16 +10,19 @@ type Props = {
 
 /**
  * Zeigt Mock-`offline`-State, sobald `navigator.onLine` false ist.
- * Jeder Portal-Screen unter PortalShell profitiert davon.
+ * E3: Jeder Portal-Screen unter PortalShell profitiert davon
+ * (Kunde / HV / Partner / Eigentümer).
  */
 export function PortalOfflineGate({ children }: Props) {
   const [online, setOnline] = useState(true);
+  const [ready, setReady] = useState(false);
 
   useEffect(() => {
     function sync() {
       setOnline(typeof navigator === "undefined" ? true : navigator.onLine);
     }
     sync();
+    setReady(true);
     window.addEventListener("online", sync);
     window.addEventListener("offline", sync);
     return () => {
@@ -28,7 +31,8 @@ export function PortalOfflineGate({ children }: Props) {
     };
   }, []);
 
-  if (!online) {
+  // Ersten Paint nicht flashen — erst nach Mount prüfen.
+  if (ready && !online) {
     return (
       <PortalOfflineState
         onPrimary={() => {

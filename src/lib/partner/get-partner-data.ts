@@ -233,6 +233,10 @@ export type PartnerAuftragItem = {
   hw_rechnung_pdf_url?: string | null;
   hw_rechnung_pdf_signed_url?: string | null;
   hw_rechnung_eingereicht_at?: string | null;
+  /** F1/F4 — Abnahme signiert → Rechnung freigeben */
+  hw_abschluss_signiert_am?: string | null;
+  abnahme_protokoll_url?: string | null;
+  abnahme_datum?: string | null;
 };
 
 export type PartnerHandwerkerProfil = {
@@ -562,6 +566,9 @@ export async function getPartnerDataForHandwerker(handwerkerId: string) {
         start_datum,
         end_datum,
         handwerker_bestaetigt_at,
+        hw_abschluss_signiert_am,
+        abnahme_protokoll_url,
+        abnahme_datum,
         kunden(plz, ort, name),
         leads(${PARTNER_LEAD_EMBED}),
         angebote(kunde_objekt_id),
@@ -783,6 +790,11 @@ export async function getPartnerDataForHandwerker(handwerkerId: string) {
         bewertung: bewertungByAuftragId.get(aid) ?? null,
         handwerker_bestaetigt_at:
           (raw.handwerker_bestaetigt_at as string | null)?.slice(0, 19) ?? null,
+        hw_abschluss_signiert_am:
+          (raw.hw_abschluss_signiert_am as string | null) ?? null,
+        abnahme_protokoll_url:
+          (raw.abnahme_protokoll_url as string | null) ?? null,
+        abnahme_datum: (raw.abnahme_datum as string | null) ?? null,
       };
     });
   }

@@ -5,7 +5,7 @@ import { useState } from "react";
 import { HV_ANGEBOT_ACTIONS } from "@/lib/portal2/hv-liste";
 import { orgPortalToast } from "@/lib/shared/portal-toast";
 import { track } from "@/lib/analytics";
-import { PORTAL_C } from "@/lib/portal2/tokens";
+import { PORTAL_VAR } from "@/lib/portal2/tokens";
 
 type Props = {
   leadId: string;
@@ -58,10 +58,10 @@ export function HvAngebotListActions({ leadId, onUpdated }: Props) {
             className="rounded-lg px-3.5 py-2 text-[12.5px] font-semibold disabled:opacity-60"
             style={
               a.variant === "danger"
-                ? { border: "none", background: "#FCE3E3", color: "#A1242A" }
+                ? { border: "none", background: PORTAL_VAR.dangerSoft, color: PORTAL_VAR.danger }
                 : {
                     border: "none",
-                    background: "var(--org-primary, " + PORTAL_C.primary + ")",
+                    background: PORTAL_VAR.primary,
                     color: "#fff",
                   }
             }

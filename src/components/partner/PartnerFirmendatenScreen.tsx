@@ -6,6 +6,9 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { updatePartnerProfil, uploadPartnerProfilLogo } from "@/app/actions/partner-profil";
 import { PartnerDetailInfoBox } from "@/components/partner/PartnerDetailUi";
 import { PartnerRahmenvertragCard } from "@/components/partner/PartnerRahmenvertragCard";
+import { PortalKontoSicherheitPanel } from "@/components/shared/PortalKontoSicherheitPanel";
+import { PortalPushPermissionRationale } from "@/components/shared/PortalPushPermissionRationale";
+import { PortalTrackingConsentPanel } from "@/components/shared/PortalTrackingConsentPanel";
 import { PortalEinstellungenShell } from "@/components/shared/PortalEinstellungenShell";
 import {
   EinstellungenEdField,
@@ -394,6 +397,9 @@ export function PartnerFirmendatenScreen({
               </div>
             </div>
             {footer}
+            <PortalKontoSicherheitPanel signOutHref="/partner/login" />
+            <PortalPushPermissionRationale role="handwerker" embedded />
+            <PortalTrackingConsentPanel />
           </div>
         );
       }}

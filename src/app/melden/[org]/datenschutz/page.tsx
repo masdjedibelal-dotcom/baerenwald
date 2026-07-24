@@ -1,7 +1,8 @@
 import Link from "next/link";
-
-import { resolveMeldeKontext } from "@/lib/org/resolve-melde-kontext";
 import { redirect } from "next/navigation";
+
+import { MeldeServiceByLine } from "@/components/melden/MeldeServiceByLine";
+import { resolveMeldeKontext } from "@/lib/org/resolve-melde-kontext";
 
 export const metadata = {
   title: "Datenschutzhinweis — Schadenmeldung",
@@ -10,7 +11,10 @@ export const metadata = {
 
 type Props = { params: { org: string } };
 
-/** Org-spezifischer Datenschutzhinweis Mieter-Meldeflow — Entwurf, siehe docs/legal/. */
+/**
+ * Org-spezifischer Datenschutzhinweis Mieter-Meldeflow —
+ * Verantwortlicher = HV, technischer Dienstleister = Bärenwald (freigegeben).
+ */
 export default async function MeldenOrgDatenschutzPage({ params }: Props) {
   const resolved = await resolveMeldeKontext(params.org);
   if (!resolved.ok) redirect(`/melden/fehler?reason=${resolved.code}`);
@@ -21,10 +25,6 @@ export default async function MeldenOrgDatenschutzPage({ params }: Props) {
 
   return (
     <main className="mx-auto max-w-2xl px-4 py-10 prose prose-sm">
-      <p className="text-xs text-amber-800 bg-amber-50 rounded-lg p-3 not-prose">
-        <strong>Entwurf zur anwaltlichen Prüfung.</strong> Keine rechtsverbindliche
-        Fassung. Siehe internes Rechtspaket in docs/legal/.
-      </p>
       <h1>Datenschutzhinweis — Schadenmeldung</h1>
       <p>
         <strong>Verantwortlicher:</strong> {orgName}
@@ -44,20 +44,20 @@ export default async function MeldenOrgDatenschutzPage({ params }: Props) {
       </p>
       <h2>Empfänger</h2>
       <p>
-        Beauftragte Handwerksbetriebe zur Terminwahrnehmung und Ausführung (Einordnung
-        siehe Rechtspaket Teil A.8).
+        Beauftragte Handwerksbetriebe zur Terminwahrnehmung und Ausführung.
       </p>
       <h2>Speicherdauer</h2>
       <p>
-        Bis Abschluss des Vorgangs; danach gemäß Löschkonzept (docs/legal/LOESCHKONZEPT_ENTWURF.md).
+        Bis Abschluss des Vorgangs; danach gemäß dem Löschkonzept Ihrer Verwaltung.
       </p>
       <h2>Ihre Rechte</h2>
       <p>
         Auskunft, Berichtigung, Löschung, Einschränkung, Widerspruch, Beschwerde bei
         der Aufsichtsbehörde. Wenden Sie sich an Ihre Verwaltung ({orgName}).
       </p>
-      <p>
+      <p className="not-prose mt-8 flex flex-col gap-3">
         <Link href={`/melden/${params.org}`}>← Zurück zur Meldung</Link>
+        <MeldeServiceByLine />
       </p>
     </main>
   );

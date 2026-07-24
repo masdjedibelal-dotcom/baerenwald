@@ -5,6 +5,7 @@ import { requireOrgAdminSession } from "@/lib/org/require-org-session";
 import {
   findBrandPresetByPrimary,
   resolveBrandPalette,
+  resolveOrgSubLabel,
 } from "@/lib/portal2/brand-presets";
 import { supabaseAdmin } from "@/lib/supabase";
 
@@ -24,7 +25,22 @@ type Body = {
   mieter_kontakt_email?: string | null;
   /** Telefon für Mieter (= mieter_kontakt_telefon), sync mit org_telefon */
   mieter_kontakt_telefon?: string | null;
+  /** Optionale eigene Legal-URLs für Mieter-Funnel (leer = org Melde-Routen) */
+  impressum_url?: string | null;
+  datenschutz_url?: string | null;
 };
+
+function normalizeHttpUrlOrNull(v: unknown): string | null | "invalid" {
+  const s = String(v ?? "").trim();
+  if (!s) return null;
+  try {
+    const u = new URL(s);
+    if (u.protocol !== "http:" && u.protocol !== "https:") return "invalid";
+    return u.toString();
+  } catch {
+    return "invalid";
+  }
+}
 
 function trimOrNull(v: unknown): string | null {
   const s = String(v ?? "").trim();
@@ -54,7 +70,7 @@ export async function PATCH(req: Request) {
     patch.org_anzeigename = trimOrNull(body.org_anzeigename);
   }
   if (body.org_sub !== undefined) {
-    patch.org_sub = trimOrNull(body.org_sub) || "Verwaltung";
+    patch.org_sub = resolveOrgSubLabel(trimOrNull(body.org_sub));
   }
   if (body.org_logo_kuerzel !== undefined) {
     const k = trimOrNull(body.org_logo_kuerzel);
@@ -77,6 +93,27 @@ export async function PATCH(req: Request) {
   } else if (body.org_telefon !== undefined) {
     // Profil-Telefon = Mieter-Kommunikation (kein Doppel-Feld nötig)
     patch.mieter_kontakt_telefon = trimOrNull(body.org_telefon);
+  }
+
+  if (body.impressum_url !== undefined) {
+    const u = normalizeHttpUrlOrNull(body.impressum_url);
+    if (u === "invalid") {
+      return NextResponse.json(
+        { error: "Impressum-URL ungültig (https://…)." },
+        { status: 400 }
+      );
+    }
+    patch.impressum_url = u;
+  }
+  if (body.datenschutz_url !== undefined) {
+    const u = normalizeHttpUrlOrNull(body.datenschutz_url);
+    if (u === "invalid") {
+      return NextResponse.json(
+        { error: "Datenschutz-URL ungültig (https://…)." },
+        { status: 400 }
+      );
+    }
+    patch.datenschutz_url = u;
   }
 
   if (body.org_primary_color !== undefined) {
@@ -114,7 +151,7 @@ export async function PATCH(req: Request) {
     .update(patch)
     .eq("id", session.kunde.id)
     .select(
-      "org_anzeigename, org_sub, org_logo_kuerzel, org_primary_color, org_primary_color_dk, org_primary_color_soft, org_telefon, org_strasse, org_ort, mieter_kontakt_email, mieter_kontakt_telefon, org_logo_url"
+      "org_anzeigename, org_sub, org_logo_kuerzel, org_primary_color, org_primary_color_dk, org_primary_color_soft, org_telefon, org_strasse, org_ort, mieter_kontakt_email, mieter_kontakt_telefon, org_logo_url, impressum_url, datenschutz_url"
     )
     .single();
 

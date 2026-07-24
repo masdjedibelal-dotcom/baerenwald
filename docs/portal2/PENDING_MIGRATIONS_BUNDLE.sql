@@ -436,6 +436,13 @@ alter table public.auftraege
 comment on column public.auftraege.hw_abschluss_signiert_am is
   'D11: HW hat Abschlussdokumentation inkl. Signatur eingereicht';
 
+/* ========== 20260724140000_abnahme_abschluss_checks.sql ========== */
+alter table public.abnahme_protokolle
+  add column if not exists abschluss_checks jsonb;
+
+comment on column public.abnahme_protokolle.abschluss_checks is
+  'Checkliste je Leistung + globale Checks (Partner-Abschluss).';
+
 /* ========== 20260825120000_handwerker_firmendaten_d12.sql ========== */
 -- Portal 2.0 D12 — Handwerker Firmendaten (Mock HW_FIRMA)
 -- STOP: Migration anzeigen, NICHT applyen bis Belal freigibt.

@@ -5,7 +5,7 @@ import { useState, type CSSProperties } from "react";
 import { HV_MELDUNG_ACTIONS } from "@/lib/portal2/hv-liste";
 import { canOfferKleinreparatur } from "@/lib/org/hv-meldung-workflow";
 import { orgPortalToast } from "@/lib/shared/portal-toast";
-import { PORTAL_C } from "@/lib/portal2/tokens";
+import { PORTAL_VAR } from "@/lib/portal2/tokens";
 import type { OrganisationKunde, OrganisationLead } from "@/lib/org/types";
 
 type Aktion = (typeof HV_MELDUNG_ACTIONS)[number]["id"];
@@ -19,21 +19,21 @@ type Props = {
 function btnStyle(variant: "primary" | "ghost" | "danger"): CSSProperties {
   if (variant === "ghost") {
     return {
-      border: `1px solid ${PORTAL_C.line}`,
+      border: `1px solid ${PORTAL_VAR.line}`,
       background: "#fff",
-      color: PORTAL_C.sub,
+      color: PORTAL_VAR.sub,
     };
   }
   if (variant === "danger") {
     return {
       border: "none",
-      background: "#FCE3E3",
-      color: "#A1242A",
+      background: PORTAL_VAR.dangerSoft,
+      color: PORTAL_VAR.danger,
     };
   }
   return {
     border: "none",
-    background: "var(--org-primary, " + PORTAL_C.primary + ")",
+    background: PORTAL_VAR.primary,
     color: "#fff",
   };
 }

@@ -7,13 +7,20 @@ import { cn } from "@/lib/utils";
 type Props = {
   onChange: (hasSignature: boolean, dataUrl: string | null) => void;
   className?: string;
+  /** F5 — höheres Pad für Mobile / Querformat-Hinweis */
+  large?: boolean;
 };
 
 /** Canvas-Unterschrift — TEIL G4 gemeinsames Signatur-Modul (D3/D7 Kunde/HV, D11 HW). */
-export function SignatureCanvas({ onChange, className }: Props) {
+export function SignatureCanvas({ onChange, className, large = false }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const drawingRef = useRef(false);
+  const onChangeRef = useRef(onChange);
+  onChangeRef.current = onChange;
   const [hasSig, setHasSig] = useState(false);
+  const [expanded, setExpanded] = useState(false);
+
+  const height = expanded || large ? 220 : 150;
 
   useEffect(() => {
     const cv = canvasRef.current;
@@ -26,12 +33,16 @@ export function SignatureCanvas({ onChange, className }: Props) {
 
     function pos(e: MouseEvent | TouchEvent) {
       const r = cv!.getBoundingClientRect();
-      const clientX = "touches" in e ? e.touches[0].clientX : e.clientX;
-      const clientY = "touches" in e ? e.touches[0].clientY : e.clientY;
+      const clientX = "touches" in e ? e.touches[0]!.clientX : e.clientX;
+      const clientY = "touches" in e ? e.touches[0]!.clientY : e.clientY;
       return {
         x: (clientX - r.left) * (cv!.width / r.width),
         y: (clientY - r.top) * (cv!.height / r.height),
       };
+    }
+
+    function emit() {
+      onChangeRef.current(true, cv!.toDataURL("image/png"));
     }
 
     function start(e: MouseEvent | TouchEvent) {
@@ -47,12 +58,8 @@ export function SignatureCanvas({ onChange, className }: Props) {
       const p = pos(e);
       ctx!.lineTo(p.x, p.y);
       ctx!.stroke();
-      if (!hasSig) {
-        setHasSig(true);
-        onChange(true, cv!.toDataURL("image/png"));
-      } else {
-        onChange(true, cv!.toDataURL("image/png"));
-      }
+      setHasSig(true);
+      emit();
       e.preventDefault();
     }
 
@@ -75,7 +82,7 @@ export function SignatureCanvas({ onChange, className }: Props) {
       cv.removeEventListener("touchmove", move);
       cv.removeEventListener("touchend", end);
     };
-  }, [hasSig, onChange]);
+  }, [height]);
 
   function clear() {
     const cv = canvasRef.current;
@@ -84,7 +91,7 @@ export function SignatureCanvas({ onChange, className }: Props) {
     if (!ctx) return;
     ctx.clearRect(0, 0, cv.width, cv.height);
     setHasSig(false);
-    onChange(false, null);
+    onChangeRef.current(false, null);
   }
 
   return (
@@ -93,23 +100,33 @@ export function SignatureCanvas({ onChange, className }: Props) {
         <canvas
           ref={canvasRef}
           width={640}
-          height={150}
+          height={height}
           className="block w-full touch-none rounded-xl"
+          style={{ minHeight: height }}
           aria-label="Unterschriftsfeld — mit Maus oder Finger zeichnen"
         />
         {!hasSig ? (
-          <p className="pointer-events-none absolute inset-0 flex items-center justify-center text-sm text-text-tertiary">
-            Hier mit Maus oder Finger unterschreiben
+          <p className="pointer-events-none absolute inset-0 flex items-center justify-center px-4 text-center text-sm text-text-tertiary">
+            Hier mit Finger oder Stift unterschreiben
           </p>
         ) : null}
       </div>
-      <button
-        type="button"
-        onClick={clear}
-        className="text-xs text-text-tertiary underline"
-      >
-        Unterschrift löschen
-      </button>
+      <div className="flex flex-wrap items-center gap-3">
+        <button
+          type="button"
+          onClick={clear}
+          className="text-xs text-text-tertiary underline"
+        >
+          Unterschrift löschen
+        </button>
+        <button
+          type="button"
+          onClick={() => setExpanded((v) => !v)}
+          className="text-xs font-semibold text-accent underline sm:hidden"
+        >
+          {expanded ? "Feld verkleinern" : "Feld vergrößern"}
+        </button>
+      </div>
     </div>
   );
 }

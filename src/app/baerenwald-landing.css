@@ -142,9 +142,10 @@
 /*
  * Rechner: einheitlicher Abstand bis zur sticky Footer-Leiste
  * (nur hier — StepWrapper hat nur noch wenig pb, kein Doppel-Abstand)
+ * inkl. Legal-Zeile + „Technischer Service von …“
  */
 .funnel-rechner-main {
-  padding-bottom: calc(6.5rem + env(safe-area-inset-bottom, 0px));
+  padding-bottom: calc(8.5rem + env(safe-area-inset-bottom, 0px));
 }
 
 /*
@@ -5613,7 +5614,7 @@ html.js .hero-picker-chips-wrap {
 
 /* ── KI-Rechner Einstieg (Chat + Starter) ── */
 .ki-rechner-einstieg-active .funnel-rechner-main {
-  padding-bottom: calc(6.5rem + env(safe-area-inset-bottom, 0px));
+  padding-bottom: calc(8.5rem + env(safe-area-inset-bottom, 0px));
 }
 
 /* KI-Chat: Abstand zum Header, Höhe bis Footer */
@@ -7871,6 +7872,13 @@ html.js .hero-picker-chips-wrap {
 
 .funnel-footer-legal a:hover {
   color: var(--fl-text-2);
+}
+
+.funnel-footer-legal .funnel-footer-service-by {
+  font-size: inherit;
+  color: inherit;
+  opacity: 0.85;
+  font-weight: 400;
 }
 
 .funnel-footer-dot {

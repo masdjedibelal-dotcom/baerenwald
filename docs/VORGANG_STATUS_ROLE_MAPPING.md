@@ -84,11 +84,11 @@ Implementierung heute teils in `resolveVorgangDisplay()` → `pillKind`; Ziel: e
 | Timeline-ID | Label (DE) | Resolver → Schritt |
 |-------------|------------|---------------------|
 | `eingegangen` | Eingegangen | `phase=anfrage` |
-| `in_bearbeitung` | In Bearbeitung | `phase=angebot` **oder** `phase=rechnung` (Mieter sieht Rechnung nicht separat) |
-| `beauftragt` | Beauftragt | `phase=auftrag`, `unterstatus` ∉ `abgeschlossen,storniert` |
+| `in_bearbeitung` | In Bearbeitung | `phase=angebot` |
+| `beauftragt` | Bestätigung | `phase=auftrag` **oder** `phase=rechnung` (kein Rückfall), `unterstatus` ∉ `abgeschlossen,storniert` |
 | `erledigt` | Erledigt | Auftrag `abgeschlossen` **oder** Lead/HV erledigt (siehe `portalErledigtFromLeadAndAuftrag`) |
 
-**Abnahme** ist intern (`auftrag`/`abnahme`) — Mieter bleibt bei **Beauftragt** bis Erledigt.
+**Abnahme** ist intern (`auftrag`/`abnahme`) — Mieter bleibt bei **Bestätigung** bis Erledigt.
 
 Live-Referenz: `buildMieterStatusTimeline()` + `resolveMieterStatusStufe()` in `src/lib/vorgang/vorgang-phase.ts`.
 
@@ -98,8 +98,8 @@ Live-Referenz: `buildMieterStatusTimeline()` + `resolveMieterStatusStufe()` in `
 |---------|------------|------------------|
 | `anfrage` | Eingegangen | `eingegangen` |
 | `angebot` | In Bearbeitung | `in_bearbeitung` |
-| `auftrag` | Beauftragt | `beauftragt` |
-| `rechnung` | In Bearbeitung | `in_bearbeitung` (kein Rechnungs-Wording) |
+| `auftrag` | Bestätigung | `beauftragt` |
+| `rechnung` | Bestätigung | `beauftragt` (kein Rechnungs-Wording, kein Rückfall auf In Bearbeitung) |
 
 ### 5.3 Hausverwaltung (`role: hv`) — voller Flow, CRM-Labels
 
@@ -156,9 +156,9 @@ Ausgabe: `{ listLabel, timelineStep, pillKind, pillSemantic, actionHint?, metaLi
 | anfrage | * | notfall | eingegangen | Eingegangen | neu |
 | anfrage | * | | eingegangen | Eingegangen | neu |
 | angebot | * | | in_bearbeitung | In Bearbeitung | aktiv |
-| auftrag | offen, in_arbeit, abnahme | | beauftragt | Beauftragt | aktiv |
+| auftrag | offen, in_arbeit, abnahme | | beauftragt | Bestätigung | aktiv |
 | auftrag | abgeschlossen | | erledigt | Erledigt | fertig |
-| rechnung | * | | in_bearbeitung | In Bearbeitung | aktiv |
+| rechnung | * | | beauftragt | Bestätigung | aktiv |
 | * | storniert | | erledigt | Abgelehnt | storniert |
 
 ### 6.2 HV (`hv`)

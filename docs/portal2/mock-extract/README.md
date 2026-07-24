@@ -62,7 +62,8 @@ wasser, heizung, strom, fenster, dach, schimmel, sonstiges — je 3 Ja/Nein-Frag
 
 ## Mieter-Status-Timeline (STG.json)
 
-4 Stufen: Eingegangen → In Bearbeitung → Beauftragt → Erledigt
+4 Stufen: Eingegangen → In Bearbeitung → Bestätigung → Erledigt
+(Live-Code: `MIETER_STG` in `src/lib/portal2/status.ts`; Mock-JSON kann historisch „Beauftragt“ heißen.)
 
 ## Übersetzungen (tr)
 

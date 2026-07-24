@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 
+import { PortalAuthBusy } from "@/components/portal/auth/PortalAuthBusy";
 import { partnerPasswordResetCallbackUrl } from "@/lib/partner/partner-auth-url";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 
@@ -27,6 +28,15 @@ export function PartnerPasswordResetForm() {
       return;
     }
     setSent(true);
+  }
+
+  if (loading) {
+    return (
+      <PortalAuthBusy
+        title="Link wird gesendet…"
+        body="Einen Moment — wir bereiten den Zurücksetzen-Link vor."
+      />
+    );
   }
 
   if (sent) {
@@ -58,12 +68,8 @@ export function PartnerPasswordResetForm() {
           className="portal-input w-full rounded-xl border border-border-default bg-surface-card px-3 py-3 focus:border-accent"
         />
       </label>
-      <button
-        type="submit"
-        disabled={loading}
-        className="btn-pill-primary w-full !py-2.5 disabled:opacity-60"
-      >
-        {loading ? "Wird gesendet…" : "Link senden"}
+      <button type="submit" className="btn-pill-primary w-full !py-2.5">
+        Link senden
       </button>
     </form>
   );

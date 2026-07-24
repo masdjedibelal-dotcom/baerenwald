@@ -27,6 +27,7 @@ import {
   countKundeVorgaengeNeedsAction,
 } from "@/lib/portal/kunde-vorgang-filter";
 import { buildKundeVorgangCardRows } from "@/lib/portal/portal-list-mappers";
+import { portalListStackClass } from "@/lib/portal2/layout-chrome";
 import type { EigentuemerPortalObjekt } from "@/lib/portal/get-eigentuemer-portal-data";
 import { resolveEigentuemerVorgangBetrag } from "@/lib/portal/get-eigentuemer-portal-data";
 import { portalCreateLabel } from "@/lib/portal2/create";
@@ -402,8 +403,8 @@ export function EigentuemerPortalClient({
         selectedItem && selectedLeadId ? (
           <div className="-mx-4 -mt-4 min-w-0 space-y-4 lg:-mx-6 lg:-mt-5">
             {selectedNeedsFreigabe ? (
-              <div className="mx-4 rounded-xl border border-[#F5C2C0] bg-[#FEF3F2] p-4 lg:mx-6">
-                <p className="portal-text-body font-semibold text-[#B42318]">
+              <div className="portal-danger-soft mx-4 rounded-xl border p-4 lg:mx-6">
+                <p className="portal-text-body portal-danger font-semibold">
                   {EIGENTUEMER_KOSTENFREIGABE_TITLE}
                 </p>
                 <p className="portal-text-meta mt-1 text-text-secondary">
@@ -492,11 +493,11 @@ export function EigentuemerPortalClient({
                 onPrimary={() => setCreateOpen(true)}
               />
             ) : (
-              <div className="flex flex-col gap-2.5">
+              <div className={portalListStackClass("responsive")}>
                 {pageRows.map((row) => (
                   <PortalListCard
                     key={row.id}
-                    variant="card"
+                    variant="responsive"
                     selected={false}
                     title={row.title}
                     subtitle={row.subtitle}

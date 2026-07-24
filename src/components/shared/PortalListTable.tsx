@@ -60,7 +60,7 @@ export function PortalListTable({
         {empty}
       </div>
       {footer ? (
-        <div className="border-t border-[var(--p2-line2,rgba(0,0,0,0.05))] bg-[#fafaf9] px-3.5 py-3">
+        <div className="border-t border-[var(--p2-line2,rgba(0,0,0,0.05))] bg-[var(--p2-hover)] px-3.5 py-3">
           {footer}
         </div>
       ) : null}

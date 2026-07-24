@@ -15,6 +15,7 @@ export const EINTRAG_TYPEN = [
   "fortschritt",
   "ergebnis",
   "weitere_arbeit",
+  "notiz",
 ] as const;
 export type EintragTyp = (typeof EINTRAG_TYPEN)[number];
 

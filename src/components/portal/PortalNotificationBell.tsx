@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { MockIcon } from "@/components/shared/MockIcon";
-import { PORTAL_C } from "@/lib/portal2/tokens";
+import { PORTAL_VAR } from "@/lib/portal2/tokens";
 import {
   formatPortalNotifTime,
   type PortalNotifItem,
@@ -219,7 +219,7 @@ export function PortalNotificationBell({
                           {n.unread ? (
                             <span
                               className="h-[7px] w-[7px] shrink-0 rounded-full"
-                              style={{ background: PORTAL_C.primary }}
+                              style={{ background: PORTAL_VAR.primary }}
                               aria-label="Ungelesen"
                             />
                           ) : null}

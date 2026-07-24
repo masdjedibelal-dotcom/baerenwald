@@ -9,6 +9,7 @@ import {
   MieterWlCard,
   MieterWlFrame,
 } from "@/components/melden/MieterWlFrame";
+import { PortalAuthBusy } from "@/components/portal/auth/PortalAuthBusy";
 import type { MieterWlBrand } from "@/lib/portal2/mieter-wl";
 import { portalAuthCallbackUrl } from "@/lib/portal/portal-auth-url";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
@@ -91,6 +92,7 @@ export function PortalEinladungRegisterForm({
         } else {
           setError(signUpError.message);
         }
+        setLoading(false);
         return;
       }
 
@@ -100,9 +102,9 @@ export function PortalEinladungRegisterForm({
         return;
       }
       setSuccess(true);
+      setLoading(false);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Fehler");
-    } finally {
       setLoading(false);
     }
   }
@@ -118,7 +120,14 @@ export function PortalEinladungRegisterForm({
           {einheitLabel ? ` · ${einheitLabel}` : ""}
         </p>
 
-        {!canRegister ? (
+        {loading ? (
+          <div className="mt-4">
+            <PortalAuthBusy
+              title="Konto wird angelegt…"
+              body="Einen Moment — wir richten Ihren Zugang ein und ordnen die Wohnung zu."
+            />
+          </div>
+        ) : !canRegister ? (
           <div className="mt-4 space-y-3">
             <p className="text-sm text-text-secondary">{statusHint}</p>
             <MieterWlBtn href="/portal/login">Zum Login</MieterWlBtn>
@@ -218,9 +227,7 @@ export function PortalEinladungRegisterForm({
                 .
               </span>
             </label>
-            <MieterWlBtn type="submit" disabled={loading}>
-              {loading ? "Wird angelegt…" : "Konto anlegen"}
-            </MieterWlBtn>
+            <MieterWlBtn type="submit">Konto anlegen</MieterWlBtn>
             <p className="text-center text-[12px] text-text-tertiary">
               Bereits Konto?{" "}
               <Link

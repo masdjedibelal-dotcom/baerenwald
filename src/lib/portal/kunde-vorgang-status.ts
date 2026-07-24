@@ -125,7 +125,11 @@ function isHvMieterInBearbeitung(input: {
   return false;
 }
 
-/** Mieter über HV: Offen · In Bearbeitung · Termin · Erledigt (kein Angebots-Wording). */
+/**
+ * Mieter über HV: nur MIETER_STG-Labels —
+ * Eingegangen · In Bearbeitung · Bestätigung · Erledigt.
+ * Termin ist Hint/needsAction, kein eigener Status.
+ */
 function resolveHvMieterVorgangStatus(input: {
   leadStatus?: string | null;
   leadVorgangPhase?: string | null;
@@ -167,11 +171,11 @@ function resolveHvMieterVorgangStatus(input: {
     };
   }
 
-  if (isHvMieterTerminPhase(input)) {
+  if (input.hasAuftragRecord || isHvMieterTerminPhase(input)) {
     return {
       phase: "in_ausfuehrung",
-      label: "Termin",
-      pillKey: "termin",
+      label: "Bestätigung",
+      pillKey: "beauftragt",
       sortPriority: 18,
       needsAction: Boolean(input.hasOffeneTerminvorschlaege),
     };
@@ -183,13 +187,13 @@ function resolveHvMieterVorgangStatus(input: {
       label: "In Bearbeitung",
       pillKey: "in_arbeit",
       sortPriority: 15,
-      needsAction: false,
+      needsAction: Boolean(input.hasOffeneTerminvorschlaege),
     };
   }
 
   return {
     phase: "eingegangen",
-    label: "Offen",
+    label: "Eingegangen",
     pillKey: "neu",
     sortPriority: 10,
     needsAction: false,

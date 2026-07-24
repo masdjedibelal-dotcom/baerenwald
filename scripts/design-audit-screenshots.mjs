@@ -6,7 +6,9 @@
  * Auth (optional, in dieser Reihenfolge):
  *   1. AUDIT_KUNDE_EMAIL / AUDIT_KUNDE_PASSWORD
  *   2. AUDIT_PARTNER_EMAIL / AUDIT_PARTNER_PASSWORD
- *   3. Magic-Link via SUPABASE_SERVICE_ROLE_KEY + INTERN_EMAIL (aus .env.local)
+ *   3. Nur lokal: Service-Role setzt Temp-Passwort für INTERN_EMAIL
+ *      (Remote-Supabase: verweigert ohne AUDIT_*_PASSWORD bzw.
+ *       AUDIT_ALLOW_SERVICE_ROLE_PASSWORD_RESET=true für Staging)
  *
  * Usage: npm run audit:screenshots
  */
@@ -249,8 +251,34 @@ function getSupabaseAdmin() {
   });
 }
 
-/** Temporäres Passwort setzen (lokal testbar, ohne Prod-Redirect des Magic-Links). */
+/**
+ * Service-Role-Passwort-Reset nur gegen lokale Supabase oder mit explizitem Allow.
+ * Verhindert versehentliche Prod-Account-Resets via INTERN_EMAIL.
+ */
+function assertServiceRolePasswordResetAllowed() {
+  if (process.env.AUDIT_ALLOW_SERVICE_ROLE_PASSWORD_RESET === "true") {
+    return;
+  }
+  const raw = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim() ?? "";
+  let host = "";
+  try {
+    host = new URL(raw).hostname;
+  } catch {
+    host = raw;
+  }
+  if (/localhost|127\.0\.0\.1|\[::1\]/i.test(host)) {
+    return;
+  }
+  throw new Error(
+    `Service-Role-Passwort-Reset verweigert für „${host || "(keine URL)"}“. ` +
+      `Setze AUDIT_*_PASSWORD oder (nur Staging) AUDIT_ALLOW_SERVICE_ROLE_PASSWORD_RESET=true.`
+  );
+}
+
+/** Temporäres Passwort setzen (nur lokal / explizit erlaubtes Staging). */
 async function ensureAuditPassword(email) {
+  assertServiceRolePasswordResetAllowed();
+
   const admin = getSupabaseAdmin();
   if (!admin || !email) return null;
 
@@ -285,7 +313,13 @@ async function loginWithPassword(page, base, email, password, loginPath) {
 }
 
 async function loginWithAuditPassword(page, base, email, loginPath, dashboardPath) {
-  const tempPassword = await ensureAuditPassword(email);
+  let tempPassword;
+  try {
+    tempPassword = await ensureAuditPassword(email);
+  } catch (err) {
+    console.error(err instanceof Error ? err.message : err);
+    return false;
+  }
   if (!tempPassword) return false;
   await loginWithPassword(page, base, email, tempPassword, loginPath);
   const onDashboard = page.url().includes(dashboardPath.split("?")[0]);

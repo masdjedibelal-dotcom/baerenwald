@@ -10,6 +10,8 @@ import { FunnelFooter } from "@/components/funnel/FunnelFooter";
 import { PhotoUpload } from "@/components/funnel/PhotoUpload";
 import { SelectionTile } from "@/components/funnel/SelectionTile";
 import { StepWrapper } from "@/components/funnel/StepWrapper";
+import { MeldeDatenschutzHinweis } from "@/components/melden/MeldeDatenschutzHinweis";
+import { PortalAuthBusy } from "@/components/portal/auth/PortalAuthBusy";
 import {
   buildBwLeadPayload,
   serializeFunnelStateForLead,
@@ -63,6 +65,9 @@ export type PortalFunnelMeldeCtx = {
   /** Anzeige in der Zusammenfassung */
   objektTitel?: string | null;
   objektAdresse?: string | null;
+  /** Rechtslinks: Verwaltung (nicht Website-Bärenwald) */
+  datenschutzHref?: string;
+  impressumHref?: string;
 };
 
 export type PortalFunnelPrefill = {
@@ -169,7 +174,6 @@ type SummaryRow = { label: string; value: string };
  */
 export function PortalFunnelHost({
   channel,
-  title,
   objekte: objekteProp = [],
   prefill,
   melde,
@@ -319,7 +323,11 @@ export function PortalFunnelHost({
 
   const objekt = objekte.find((o) => o.id === objektId) ?? null;
   const isHvIntern = channel === "portal_hv";
-  const stripTerminInfos = channel === "melde_anon" || isHvIntern;
+  /** Melde / Mieter / HV: keine Termin-/SLA-Infoboxen unter den Optionen. */
+  const stripTerminInfos =
+    channel === "melde_anon" ||
+    channel === "portal_mieter" ||
+    isHvIntern;
 
   useEffect(() => {
     if (!isHvIntern || !objektId) {
@@ -421,15 +429,10 @@ export function PortalFunnelHost({
       out.push("medien");
     }
     if (cfg.include.beschreibung) out.push("beschreibung");
-    /** Privat: PLZ vor Ergebnis (kein Objekt-Prefix). */
+    /** Privat / Melde / eingeloggter Mieter: Kontakt (+ Adresse) vor Ergebnis. */
     if (cfg.include.ortPlz && channel === "portal_privat") {
       out.push("kontakt");
-    } else if (channel === "melde_anon") {
-      out.push("kontakt");
-    } else if (
-      channel === "portal_mieter" &&
-      cfg.prefix.mieter !== "prefilled"
-    ) {
+    } else if (channel === "melde_anon" || channel === "portal_mieter") {
       out.push("kontakt");
     }
     out.push("result");
@@ -655,6 +658,7 @@ export function PortalFunnelHost({
     if (step === "kontakt") {
       const needsAddress =
         channel === "melde_anon" ||
+        channel === "portal_mieter" ||
         (cfg.include.ortPlz && channel === "portal_privat") ||
         Boolean(melde?.needsAddress);
       if (needsAddress) {
@@ -740,6 +744,7 @@ export function PortalFunnelHost({
   const submit = async () => {
     setBusy(true);
     setError(null);
+    let navigatedAway = false;
     try {
       if (channel === "melde_anon" && melde) {
         const bereich = state.bereiche[0] ?? "sonstiges";
@@ -827,6 +832,7 @@ export function PortalFunnelHost({
         if (contactTel) q.set("telefon", contactTel);
         router.push(`/melden/bestaetigung?${q.toString()}`);
         onDone();
+        navigatedAway = true;
         return;
       }
 
@@ -982,8 +988,17 @@ export function PortalFunnelHost({
           preis_min: price?.min ?? 0,
           preis_max: price?.max ?? 0,
           plz,
-          strasse: state.strasse || objekt?.strasse || undefined,
-          hausnummer: state.hausnummer || objekt?.hausnummer || undefined,
+          strasse:
+            state.strasse.trim() ||
+            objekt?.strasse ||
+            prefill?.strasse ||
+            undefined,
+          hausnummer:
+            state.hausnummer.trim() ||
+            objekt?.hausnummer ||
+            prefill?.hausnummer ||
+            undefined,
+          ort: state.ort.trim() || prefill?.ort || objekt?.ort || undefined,
           zeitraum: state.zeitraum ?? state.dringlichkeit ?? "flexibel",
           kundentyp: state.kundentyp,
           funnel_daten: serializeFunnelStateForLead(state),
@@ -1000,34 +1015,29 @@ export function PortalFunnelHost({
       }
       portalToastSuccess("Anfrage gesendet");
       onDone();
+      navigatedAway = true;
     } catch (e) {
       setError(e instanceof Error ? e.message : "Netzwerkfehler.");
     } finally {
-      setBusy(false);
+      if (!navigatedAway) setBusy(false);
     }
   };
 
   const situations = BW_FUNNEL_STEP1_OPTIONS.filter((o) => {
     if (o.id === "gewerbe") return false;
-    /** HV/Mieter: Betreuung nur über Servicepakete, nicht im Vorgangsmelder. */
+    /** Mieter / QR-Melde: nur Reparatur & Notfall (kein Umbau / Betreuung). */
     if (
-      o.id === "betreuung" &&
-      (channel === "portal_hv" ||
-        channel === "portal_mieter" ||
-        channel === "melde_anon")
+      (o.id === "betreuung" || o.id === "erneuern") &&
+      (channel === "portal_mieter" || channel === "melde_anon")
     ) {
+      return false;
+    }
+    /** HV: Betreuung nur über Servicepakete, nicht im Vorgangsmelder. */
+    if (o.id === "betreuung" && channel === "portal_hv") {
       return false;
     }
     return true;
   });
-
-  const headline =
-    title ??
-    (channel === "melde_anon" || channel === "portal_mieter"
-      ? "Schaden melden"
-      : channel === "portal_eigentuemer"
-        ? "Anfrage erstellen"
-        : "Neuer Vorgang");
 
   return (
     <div
@@ -1036,14 +1046,19 @@ export function PortalFunnelHost({
         layout === "modal" ? "portal-funnel-host--modal" : "portal-funnel-host--page"
       )}
     >
-      {layout === "modal" ? (
-        <div className="mb-2 shrink-0 text-center">
-          <span className="text-[12px] font-semibold uppercase tracking-wide text-text-tertiary">
-            {headline}
-          </span>
+      {busy ? (
+        <div className="portal-funnel-host__body flex flex-1 items-center justify-center px-4 py-12">
+          <PortalAuthBusy
+            title={
+              channel === "melde_anon"
+                ? "Meldung wird gesendet…"
+                : "Anfrage wird gesendet…"
+            }
+            body="Einen Moment — Fotos und Angaben werden übermittelt."
+          />
         </div>
-      ) : null}
-
+      ) : (
+        <>
       <div className="portal-funnel-host__body">
 
       {step === "objekt" ? (
@@ -1514,12 +1529,16 @@ export function PortalFunnelHost({
             files={state.photos}
             onChange={(files) => setState((s) => ({ ...s, photos: files }))}
             buttonTitle={
-              channel === "melde_anon" || isHvIntern
+              channel === "melde_anon" ||
+              channel === "portal_mieter" ||
+              isHvIntern
                 ? "Fotos hochladen"
                 : "Fotos oder Vergleichsangebote hochladen"
             }
             buttonHint={
-              channel === "melde_anon" || isHvIntern
+              channel === "melde_anon" ||
+              channel === "portal_mieter" ||
+              isHvIntern
                 ? "Fotos vom Schaden oder Objekt — optional"
                 : undefined
             }
@@ -1564,6 +1583,7 @@ export function PortalFunnelHost({
           layout={stepLayout}
           stepLabel={
             channel === "melde_anon" ||
+            channel === "portal_mieter" ||
             melde?.needsAddress ||
             cfg.include.ortPlz
               ? "Ort & Kontakt"
@@ -1571,6 +1591,7 @@ export function PortalFunnelHost({
           }
           question={
             channel === "melde_anon" ||
+            channel === "portal_mieter" ||
             melde?.needsAddress ||
             cfg.include.ortPlz
               ? "Ihre Adresse und Kontaktdaten"
@@ -1619,6 +1640,7 @@ export function PortalFunnelHost({
               />
             )}
             {(channel === "melde_anon" ||
+              channel === "portal_mieter" ||
               melde?.needsAddress ||
               (cfg.include.ortPlz && channel === "portal_privat")) && (
               <>
@@ -1696,6 +1718,15 @@ export function PortalFunnelHost({
                   der Anfrage zu.
                 </span>
               </label>
+            ) : null}
+            {melde?.orgName &&
+            (channel === "melde_anon" || channel === "portal_mieter") ? (
+              <MeldeDatenschutzHinweis
+                orgName={melde.orgName}
+                mode={melde.ergaenzenToken ? "ergaenzen" : "melden"}
+                datenschutzHref={melde.datenschutzHref}
+                impressumHref={melde.impressumHref}
+              />
             ) : null}
           </div>
         </StepWrapper>
@@ -1775,6 +1806,8 @@ export function PortalFunnelHost({
         className={
           layout === "modal" ? "portal-funnel-host__footer" : undefined
         }
+        impressumHref={melde?.impressumHref}
+        datenschutzHref={melde?.datenschutzHref}
         onBack={
           steps.indexOf(step) <= 0 && melde?.objektLocked
             ? undefined
@@ -1800,12 +1833,12 @@ export function PortalFunnelHost({
               ? "Speichern…"
               : "Objekt speichern →"
             : step === "result"
-              ? busy
-                ? "Wird gesendet…"
-                : "Absenden →"
+              ? "Absenden →"
               : "Weiter →"
         }
       />
+        </>
+      )}
     </div>
   );
 }

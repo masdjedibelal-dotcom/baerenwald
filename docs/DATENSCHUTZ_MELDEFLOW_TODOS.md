@@ -22,8 +22,8 @@ Hinweis: Umsetzungs-Checkliste, ersetzt keine anwaltliche Prüfung.
 - [x] Abschnitt Schadenmeldung HV (/melden)
 - [x] Abschnitt Auftraggeber-Portal
 - [x] Speicherdauer Melder-Leads und Fotos in Abschnitt 10
-- [x] Entwurf org-spezifische Mieter-Seite + Rechtspaket Teile D/E
-- [ ] Anwaltliche Finalprüfung Rollenmodell (HV/Bärenwald)
+- [x] Org-spezifische Mieter-Seiten + Rechtspaket Teile D/E (Variante B freigegeben)
+- [x] Anwaltliche Freigabe Rollenmodell Mieter-Impressum/Datenschutz (HV Inhalt / Bärenwald Betrieb)
 - [ ] Speicherdauer final mit Löschkonzept abgleichen
 
 ## C) Hausverwaltung / Vertrag

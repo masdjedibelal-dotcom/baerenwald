@@ -48,6 +48,8 @@ export async function POST(request: Request) {
       typ: "neu",
       projektName: "Neue Anfrage",
       link: partnerOffenPortalPath(anfrageId),
+      // Mail kommt schon von notifyHandwerkerNewAnfrage
+      sendMail: false,
     });
   }
 

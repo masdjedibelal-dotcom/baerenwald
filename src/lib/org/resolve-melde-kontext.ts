@@ -289,7 +289,9 @@ export async function resolveEinladungKontext(token: string) {
 
   const { data: org } = await supabaseAdmin
     .from("kunden")
-    .select("id, org_anzeigename, org_logo_url, name")
+    .select(
+      "id, name, org_kennung, org_anzeigename, org_logo_url, org_logo_kuerzel, org_sub, org_primary_color, org_primary_color_dk, org_primary_color_soft, mieter_kontakt_telefon, mieter_kontakt_email, impressum_url, datenschutz_url"
+    )
     .eq("id", auftraggeberId)
     .maybeSingle();
 

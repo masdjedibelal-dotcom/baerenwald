@@ -233,7 +233,7 @@ export function MeldeStatusClient({
                 {vorgeschlagene.map((s) => (
                   <li
                     key={s.id}
-                    className="flex flex-wrap items-center justify-between gap-2 rounded-[10px] border border-[rgba(0,0,0,.08)] p-3"
+                    className="flex flex-wrap items-center justify-between gap-2 rounded-[10px] border border-[var(--p2-line)] p-3"
                   >
                     <span className="text-[13.5px] font-semibold">
                       {fmtSlot(s.slot_beginn)}

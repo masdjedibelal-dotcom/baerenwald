@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { submitPartnerAbnahmeprotokoll } from "@/app/actions/partner-abnahmeprotokoll";
@@ -11,7 +11,14 @@ import {
   HW_ABSCHLUSS_CHECKS,
   type HwAbschlussCheckId,
 } from "@/lib/portal2/hw-kalkulation";
-import { PORTAL_C } from "@/lib/portal2/tokens";
+import {
+  allLeistungChecksDone,
+  buildLeistungAbschlussChecks,
+  flattenAbschlussChecksForPersist,
+  HW_ABNAHME_COPY,
+  type LeistungAbschlussCheckState,
+} from "@/lib/partner/hw-abnahme";
+import { PORTAL_VAR } from "@/lib/portal2/tokens";
 import { partnerPortalToast } from "@/lib/shared/portal-toast";
 import { cn } from "@/lib/utils";
 
@@ -23,10 +30,18 @@ const STEPS = [
 
 type StepId = (typeof STEPS)[number]["id"];
 
+type LeistungInput = {
+  id: string;
+  leistung_name: string;
+  leistung_status?: string | null;
+};
+
 type Props = {
   open: boolean;
   auftragId: string;
-  leistungen: string[];
+  /** @deprecated use leistungItems */
+  leistungen?: string[];
+  leistungItems?: LeistungInput[];
   defaultOrt?: string;
   onClose: () => void;
   onSuccess: (vollstaendig: boolean) => void;
@@ -35,7 +50,8 @@ type Props = {
 export function PartnerAbschlussModal({
   open,
   auftragId,
-  leistungen,
+  leistungen = [],
+  leistungItems,
   defaultOrt = "",
   onClose,
   onSuccess,
@@ -45,12 +61,20 @@ export function PartnerAbschlussModal({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const [checks, setChecks] = useState<Record<HwAbschlussCheckId, boolean>>({
-    leistung: false,
-    funktion: false,
-    sauber: false,
-    material: false,
-  });
+  const initialRows = useMemo(() => {
+    if (leistungItems?.length) {
+      return buildLeistungAbschlussChecks(leistungItems);
+    }
+    return buildLeistungAbschlussChecks(
+      leistungen.map((name, i) => ({
+        id: `legacy-${i}`,
+        leistung_name: name,
+        leistung_status: null,
+      }))
+    );
+  }, [leistungItems, leistungen]);
+
+  const [rows, setRows] = useState<LeistungAbschlussCheckState[]>(initialRows);
   const [protokollText, setProtokollText] = useState("");
   const [maengelText, setMaengelText] = useState("");
   const [ort, setOrt] = useState(defaultOrt);
@@ -64,11 +88,13 @@ export function PartnerAbschlussModal({
   const [kundeSig, setKundeSig] = useState<string | null>(null);
   const [kundeHasSig, setKundeHasSig] = useState(false);
 
+  // Reset rows when modal opens with new items
+  useEffect(() => {
+    if (open) setRows(initialRows);
+  }, [open, initialRows]);
+
   const stepIndex = STEPS.findIndex((s) => s.id === step);
-  const allChecks = useMemo(
-    () => HW_ABSCHLUSS_CHECKS.every((c) => checks[c.id]),
-    [checks]
-  );
+  const allChecks = allLeistungChecksDone(rows);
 
   function resetAndClose() {
     setStep("checkliste");
@@ -76,11 +102,25 @@ export function PartnerAbschlussModal({
     onClose();
   }
 
+  function setCheck(
+    leistungId: string,
+    checkId: HwAbschlussCheckId,
+    value: boolean
+  ) {
+    setRows((prev) =>
+      prev.map((r) =>
+        r.leistungId === leistungId
+          ? { ...r, checks: { ...r.checks, [checkId]: value } }
+          : r
+      )
+    );
+  }
+
   function goNext() {
     setError(null);
     if (step === "checkliste") {
       if (!allChecks) {
-        setError("Bitte alle Abschluss-Punkte bestätigen.");
+        setError("Bitte alle Abschluss-Punkte je Leistung bestätigen.");
         return;
       }
       setStep("beschreibung");
@@ -118,8 +158,13 @@ export function PartnerAbschlussModal({
       setError("Bitte die Handwerker-Signatur zeichnen.");
       return;
     }
+    if (!kundeHasSig || !kundeSig) {
+      setError(HW_ABNAHME_COPY.kundeSigRequiredSoft);
+      return;
+    }
     setLoading(true);
     setError(null);
+    const payload = flattenAbschlussChecksForPersist(rows);
     const res = await submitPartnerAbnahmeprotokoll({
       auftragId,
       protokollText,
@@ -129,8 +174,9 @@ export function PartnerAbschlussModal({
       hwUnterschriftName: hwName,
       kundeUnterschriftName: kundeName,
       hwSignaturPng: hwSig,
-      kundeSignaturPng: kundeHasSig ? kundeSig ?? undefined : undefined,
-      abschlussChecks: checks,
+      kundeSignaturPng: kundeSig,
+      abschlussChecks: payload.global,
+      abschlussChecksPayload: payload,
     });
     setLoading(false);
     if (!res.ok) {
@@ -161,7 +207,6 @@ export function PartnerAbschlussModal({
       closeOnBackdrop={false}
     >
       <div className="flex min-h-0 flex-1 flex-col">
-        {/* Step dots */}
         <div className="mb-4 flex items-center gap-2">
           {STEPS.map((s, i) => {
             const done = i < stepIndex;
@@ -172,12 +217,12 @@ export function PartnerAbschlussModal({
                   className="h-1.5 w-full rounded-full"
                   style={{
                     background:
-                      done || act ? PORTAL_C.primary : "rgba(0,0,0,0.08)",
+                      done || act ? PORTAL_VAR.primary : PORTAL_VAR.line,
                   }}
                 />
                 <span
                   className="text-[10.5px] font-semibold"
-                  style={{ color: act ? PORTAL_C.ink : PORTAL_C.faint }}
+                  style={{ color: act ? PORTAL_VAR.ink : PORTAL_VAR.faint }}
                 >
                   {s.label}
                 </span>
@@ -187,65 +232,68 @@ export function PartnerAbschlussModal({
         </div>
 
         <div className="min-h-0 flex-1 space-y-4 overflow-y-auto pb-4">
-          {leistungen.length > 0 && step === "checkliste" ? (
-            <div
-              className="rounded-xl p-3"
-              style={{
-                border: `1px solid ${PORTAL_C.line}`,
-                background: "rgba(0,0,0,0.02)",
-              }}
-            >
-              <p
-                className="mb-1 text-[11px] font-semibold uppercase tracking-wide"
-                style={{ color: PORTAL_C.faint }}
-              >
-                Leistungen in diesem Abschluss
-              </p>
-              <ul
-                className="list-disc space-y-0.5 pl-5 text-[13px]"
-                style={{ color: PORTAL_C.sub }}
-              >
-                {leistungen.map((l) => (
-                  <li key={l}>{l}</li>
-                ))}
-              </ul>
-            </div>
-          ) : null}
-
           {step === "checkliste" ? (
-            <div className="space-y-2">
-              {HW_ABSCHLUSS_CHECKS.map((c) => (
-                <label
-                  key={c.id}
-                  className="flex cursor-pointer gap-3 rounded-xl px-3 py-3"
-                  style={{ border: `1px solid ${PORTAL_C.line}` }}
+            <div className="space-y-4">
+              <p className="text-[12.5px]" style={{ color: PORTAL_VAR.sub }}>
+                Je Leistung bestätigen. Dokumentierte Leistungen sind
+                vorbelegt — bitte prüfen und abhaken.
+              </p>
+              {rows.map((row) => (
+                <div
+                  key={row.leistungId}
+                  className="space-y-2 rounded-xl p-3"
+                  style={{ border: `1px solid ${PORTAL_VAR.line}` }}
                 >
-                  <input
-                    type="checkbox"
-                    className="mt-1"
-                    checked={checks[c.id]}
-                    onChange={(e) =>
-                      setChecks((prev) => ({
-                        ...prev,
-                        [c.id]: e.target.checked,
-                      }))
-                    }
-                  />
-                  <span>
-                    <span
-                      className="block text-[13.5px] font-semibold"
-                      style={{ color: PORTAL_C.ink }}
+                  <div className="flex items-start justify-between gap-2">
+                    <p
+                      className="text-[13.5px] font-semibold"
+                      style={{ color: PORTAL_VAR.ink }}
                     >
-                      {c.title}
-                    </span>
-                    <span
-                      className="mt-0.5 block text-[12px]"
-                      style={{ color: PORTAL_C.sub }}
+                      {row.leistungName}
+                    </p>
+                    {row.dokumentiert ? (
+                      <span
+                        className="shrink-0 rounded-md px-1.5 py-0.5 text-[10px] font-bold uppercase"
+                        style={{
+                          background: "rgba(31,106,63,0.12)",
+                          color: PORTAL_VAR.primary,
+                        }}
+                      >
+                        dokumentiert
+                      </span>
+                    ) : null}
+                  </div>
+                  {HW_ABSCHLUSS_CHECKS.map((c) => (
+                    <label
+                      key={c.id}
+                      className="flex cursor-pointer gap-3 rounded-lg px-2 py-2"
+                      style={{ background: "rgba(0,0,0,0.02)" }}
                     >
-                      {c.subtitle}
-                    </span>
-                  </span>
-                </label>
+                      <input
+                        type="checkbox"
+                        className="mt-1"
+                        checked={row.checks[c.id]}
+                        onChange={(e) =>
+                          setCheck(row.leistungId, c.id, e.target.checked)
+                        }
+                      />
+                      <span>
+                        <span
+                          className="block text-[13px] font-semibold"
+                          style={{ color: PORTAL_VAR.ink }}
+                        >
+                          {c.title}
+                        </span>
+                        <span
+                          className="mt-0.5 block text-[11.5px]"
+                          style={{ color: PORTAL_VAR.sub }}
+                        >
+                          {c.subtitle}
+                        </span>
+                      </span>
+                    </label>
+                  ))}
+                </div>
               ))}
             </div>
           ) : null}
@@ -255,7 +303,7 @@ export function PartnerAbschlussModal({
               <label className="block space-y-1.5">
                 <span
                   className="text-[12px] font-semibold"
-                  style={{ color: PORTAL_C.sub }}
+                  style={{ color: PORTAL_VAR.sub }}
                 >
                   Protokoll / durchgeführte Arbeiten *
                 </span>
@@ -271,7 +319,7 @@ export function PartnerAbschlussModal({
               <label className="block space-y-1.5">
                 <span
                   className="text-[12px] font-semibold"
-                  style={{ color: PORTAL_C.sub }}
+                  style={{ color: PORTAL_VAR.sub }}
                 >
                   Mängel / Vorbehalte (optional)
                 </span>
@@ -287,7 +335,7 @@ export function PartnerAbschlussModal({
                 <label className="block space-y-1.5">
                   <span
                     className="text-[12px] font-semibold"
-                    style={{ color: PORTAL_C.sub }}
+                    style={{ color: PORTAL_VAR.sub }}
                   >
                     Ort *
                   </span>
@@ -303,7 +351,7 @@ export function PartnerAbschlussModal({
                 <label className="block space-y-1.5">
                   <span
                     className="text-[12px] font-semibold"
-                    style={{ color: PORTAL_C.sub }}
+                    style={{ color: PORTAL_VAR.sub }}
                   >
                     Datum *
                   </span>
@@ -321,10 +369,19 @@ export function PartnerAbschlussModal({
 
           {step === "signatur" ? (
             <div className="space-y-5">
+              <p
+                className="rounded-lg px-3 py-2 text-[12px]"
+                style={{
+                  background: "rgba(31,106,63,0.08)",
+                  color: PORTAL_VAR.sub,
+                }}
+              >
+                {HW_ABNAHME_COPY.mobileSigHint}
+              </p>
               <label className="block space-y-1.5">
                 <span
                   className="text-[12px] font-semibold"
-                  style={{ color: PORTAL_C.sub }}
+                  style={{ color: PORTAL_VAR.sub }}
                 >
                   Handwerker / Ausführender Betrieb *
                 </span>
@@ -338,6 +395,7 @@ export function PartnerAbschlussModal({
                   autoComplete="name"
                 />
                 <SignatureCanvas
+                  large
                   onChange={(has, dataUrl) => {
                     setHwHasSig(has);
                     setHwSig(dataUrl);
@@ -347,7 +405,7 @@ export function PartnerAbschlussModal({
               <label className="block space-y-1.5">
                 <span
                   className="text-[12px] font-semibold"
-                  style={{ color: PORTAL_C.sub }}
+                  style={{ color: PORTAL_VAR.sub }}
                 >
                   Kunde / Auftraggeber vor Ort *
                 </span>
@@ -360,11 +418,11 @@ export function PartnerAbschlussModal({
                   className="portal-input w-full font-medium"
                   autoComplete="name"
                 />
-                <p className="text-[11.5px]" style={{ color: PORTAL_C.faint }}>
-                  Optional: Gegenzeichnung vor Ort (HV-Gegenzeichnung bleibt im
-                  Kunden-/HV-Portal).
+                <p className="text-[11.5px]" style={{ color: PORTAL_VAR.faint }}>
+                  {HW_ABNAHME_COPY.kundeSigHint}
                 </p>
                 <SignatureCanvas
+                  large
                   onChange={(has, dataUrl) => {
                     setKundeHasSig(has);
                     setKundeSig(dataUrl);
@@ -379,7 +437,7 @@ export function PartnerAbschlussModal({
 
         <div
           className="flex shrink-0 flex-wrap gap-2 border-t pt-3"
-          style={{ borderColor: PORTAL_C.line2 }}
+          style={{ borderColor: PORTAL_VAR.line2 }}
         >
           {stepIndex > 0 ? (
             <button
@@ -388,8 +446,8 @@ export function PartnerAbschlussModal({
               onClick={goBack}
               className="rounded-[9px] border px-4 py-2.5 text-[13px] font-semibold"
               style={{
-                borderColor: PORTAL_C.line,
-                color: PORTAL_C.sub,
+                borderColor: PORTAL_VAR.line,
+                color: PORTAL_VAR.sub,
                 background: "#fff",
               }}
             >
@@ -402,8 +460,8 @@ export function PartnerAbschlussModal({
               onClick={resetAndClose}
               className="rounded-[9px] border px-4 py-2.5 text-[13px] font-semibold"
               style={{
-                borderColor: PORTAL_C.line,
-                color: PORTAL_C.sub,
+                borderColor: PORTAL_VAR.line,
+                color: PORTAL_VAR.sub,
                 background: "#fff",
               }}
             >
@@ -415,7 +473,8 @@ export function PartnerAbschlussModal({
             disabled={
               loading ||
               (step === "checkliste" && !allChecks) ||
-              (step === "signatur" && (!hwHasSig || !hwName.trim()))
+              (step === "signatur" &&
+                (!hwHasSig || !kundeHasSig || !hwName.trim() || !kundeName.trim()))
             }
             onClick={() => {
               if (step === "signatur") void onSubmit();
@@ -424,7 +483,7 @@ export function PartnerAbschlussModal({
             className={cn(
               "ml-auto flex-1 rounded-[9px] px-4 py-2.5 text-[13.5px] font-semibold text-white disabled:opacity-50 sm:flex-none"
             )}
-            style={{ background: PORTAL_C.primary }}
+            style={{ background: PORTAL_VAR.primary }}
           >
             {primaryLabel}
           </button>

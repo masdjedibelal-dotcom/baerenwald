@@ -15,8 +15,8 @@
 }
 
 .organisation-portal-sidebar {
-  border-right: 1px solid var(--border-light, #e6ebe8);
-  background: #fff;
+  border-right: 1px solid var(--p2-line, rgba(0, 0, 0, 0.08));
+  background: var(--p2-panel, #fff);
   padding: 1rem 0.75rem;
 }
 
@@ -28,12 +28,12 @@
   border-radius: 0.65rem;
   padding: 0.55rem 0.75rem;
   font-size: 0.9rem;
-  color: #4a5c54;
+  color: var(--p2-sub, #404a45);
 }
 
 .organisation-portal-nav-btn[data-active="true"] {
-  background: #eef3ec;
-  color: #1a3d2b;
+  background: var(--org-primary-soft, var(--p2-primary-soft, #e7f1e9));
+  color: var(--p2-green-dark, #1a3d2b);
   font-weight: 600;
 }
 
@@ -46,8 +46,8 @@
   display: flex;
   gap: 0.25rem;
   padding: 0.35rem;
-  background: #fff;
-  border-top: 1px solid #e6ebe8;
+  background: var(--p2-panel, #fff);
+  border-top: 1px solid var(--p2-line, rgba(0, 0, 0, 0.08));
 }
 
 @media (min-width: 1024px) {
@@ -69,10 +69,10 @@
 }
 
 .org-kpi-card {
-  border: 1px solid #e6ebe8;
+  border: 1px solid var(--p2-line, rgba(0, 0, 0, 0.08));
   border-radius: 0.85rem;
   padding: 0.85rem 1rem;
-  background: #fff;
+  background: var(--p2-panel, #fff);
 }
 
 .org-hub-grid {
@@ -88,13 +88,13 @@
 }
 
 .org-hub-card {
-  border: 1px solid #d9e3dd;
+  border: 1px solid var(--p2-line, rgba(0, 0, 0, 0.08));
   border-radius: 0.85rem;
   padding: 1rem;
   text-align: left;
-  background: #fff;
+  background: var(--p2-panel, #fff);
 }
 
 .org-hub-card:hover {
-  border-color: #2e7d52;
+  border-color: var(--org-primary, var(--p2-primary, #2e7d52));
 }

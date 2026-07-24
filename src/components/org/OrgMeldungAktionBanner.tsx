@@ -9,7 +9,7 @@ import {
 import { isMeldeNotfall } from "@/lib/org/org-eingang-utils";
 import { orgPortalToast } from "@/lib/shared/portal-toast";
 import { HV_MELDUNG_ACTIONS } from "@/lib/portal2/hv-liste";
-import { PORTAL_C } from "@/lib/portal2/tokens";
+import { PORTAL_VAR } from "@/lib/portal2/tokens";
 import type { OrganisationKunde, OrganisationLead } from "@/lib/org/types";
 
 type Props = {
@@ -88,19 +88,19 @@ export function OrgMeldungAktionBanner({ lead, kunde, onUpdated }: Props) {
           const style =
             a.variant === "ghost"
               ? {
-                  border: `1px solid ${PORTAL_C.line}`,
+                  border: `1px solid ${PORTAL_VAR.line}`,
                   background: "#fff",
-                  color: PORTAL_C.sub,
+                  color: PORTAL_VAR.sub,
                 }
               : a.variant === "danger"
                 ? {
                     border: "none",
-                    background: "#FCE3E3",
-                    color: "#A1242A",
+                    background: PORTAL_VAR.dangerSoft,
+                    color: PORTAL_VAR.danger,
                   }
                 : {
                     border: "none",
-                    background: "var(--org-primary, " + PORTAL_C.primary + ")",
+                    background: PORTAL_VAR.primary,
                     color: "#fff",
                   };
           return (
@@ -113,7 +113,7 @@ export function OrgMeldungAktionBanner({ lead, kunde, onUpdated }: Props) {
               style={style}
             >
               {a.id === "angebot_einfordern" && notfall
-                ? "Angebot einfordern (Express)"
+                ? "Vorgang freigeben (Express)"
                 : a.label}
             </button>
           );

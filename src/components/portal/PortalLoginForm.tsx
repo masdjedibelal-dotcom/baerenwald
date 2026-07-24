@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 
 import {
   AuthBtn,
@@ -10,16 +10,10 @@ import {
   AuthLabel,
   AuthLink,
 } from "@/components/portal/auth/AuthPrimitives";
-import { PortalAuthConfirm } from "@/components/portal/auth/PortalAuthConfirm";
+import { PortalAuthBusy } from "@/components/portal/auth/PortalAuthBusy";
 import { PortalResendConfirmation } from "@/components/portal/PortalResendConfirmation";
 import { assertPortalEmailAllowed } from "@/app/actions/assert-portal-email-allowed";
-import {
-  AUTH_CONFIRM,
-  AUTH_LOGIN,
-  authBrandName,
-  type AuthPortalRole,
-} from "@/lib/portal2/auth";
-import { portalAuthCallbackUrl } from "@/lib/portal/portal-auth-url";
+import { AUTH_LOGIN, type AuthPortalRole } from "@/lib/portal2/auth";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 
 function parseHashSession(): { access_token?: string; refresh_token?: string } {
@@ -41,11 +35,9 @@ type Props = {
 };
 
 /**
- * TEIL F Login-Body — Mock-Wortlaut; Supabase signIn / Magic-Link.
+ * Portal-Login — nur E-Mail + Passwort (kein Magic-Link).
  */
 export function PortalLoginForm({
-  role = "kunde",
-  orgName,
   registerHref = "/portal/registrieren",
   forgotHref = "/portal/passwort-vergessen",
 }: Props) {
@@ -55,18 +47,11 @@ export function PortalLoginForm({
   const authError = searchParams.get("error");
   const next = searchParams.get("next") || "/portal";
 
-  const _brand = useMemo(
-    () => authBrandName(role, orgName),
-    [role, orgName]
-  );
-
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [magic, setMagic] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [hashBusy, setHashBusy] = useState(true);
-  const [magicSent, setMagicSent] = useState(false);
 
   useEffect(() => {
     const prefillEmail = searchParams.get("email")?.trim();
@@ -99,93 +84,67 @@ export function PortalLoginForm({
       });
   }, [next, router]);
 
-  async function sendMagicLink() {
-    setLoading(true);
-    setError(null);
-    const allowed = await assertPortalEmailAllowed(email.trim());
-    if (!allowed.ok) {
-      setLoading(false);
-      setError(allowed.error);
-      return;
-    }
-    const supabase = getSupabaseBrowserClient();
-    const { error: otpError } = await supabase.auth.signInWithOtp({
-      email: email.trim(),
-      options: { emailRedirectTo: portalAuthCallbackUrl(next) },
-    });
-    setLoading(false);
-    if (otpError) {
-      setError(otpError.message);
-      return;
-    }
-    setMagicSent(true);
-  }
-
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (magic) {
-      await sendMagicLink();
-      return;
-    }
     setLoading(true);
     setError(null);
-    const allowed = await assertPortalEmailAllowed(email.trim());
-    if (!allowed.ok) {
+    try {
+      const allowed = await assertPortalEmailAllowed(email.trim());
+      if (!allowed.ok) {
+        setError(allowed.error);
+        setLoading(false);
+        return;
+      }
+      const supabase = getSupabaseBrowserClient();
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email: email.trim(),
+        password,
+      });
+      if (signInError) {
+        const msg = signInError.message.toLowerCase();
+        if (msg.includes("email not confirmed")) {
+          setError(
+            "Bitte bestätigen Sie zuerst Ihre E-Mail — wir haben Ihnen einen Link geschickt."
+          );
+        } else if (msg.includes("banned") || msg.includes("user is banned")) {
+          setError(
+            "Diese Kontaktadresse ist gesperrt. Bitte wende dich an uns, wenn du Hilfe brauchst."
+          );
+        } else {
+          setError("E-Mail oder Passwort ist ungültig.");
+        }
+        setLoading(false);
+        return;
+      }
+      // Loading bleibt an bis Redirect — sonst wirkt die Seite „hängend“
+      router.push(next);
+      router.refresh();
+    } catch {
+      setError("Anmeldung fehlgeschlagen. Bitte erneut versuchen.");
       setLoading(false);
-      setError(allowed.error);
-      return;
     }
-    const supabase = getSupabaseBrowserClient();
-    const { error: signInError } = await supabase.auth.signInWithPassword({
-      email: email.trim(),
-      password,
-    });
-    setLoading(false);
-    if (signInError) {
-      const msg = signInError.message.toLowerCase();
-      if (msg.includes("email not confirmed")) {
-        setError(
-          "Bitte bestätigen Sie zuerst Ihre E-Mail — wir haben Ihnen einen Link geschickt."
-        );
-        return;
-      }
-      if (msg.includes("banned") || msg.includes("user is banned")) {
-        setError(
-          "Diese Kontaktadresse ist gesperrt. Bitte wende dich an uns, wenn du Hilfe brauchst."
-        );
-        return;
-      }
-      setError("E-Mail oder Passwort ist ungültig.");
-      return;
-    }
-    router.push(next);
-    router.refresh();
   }
 
-  if (magicSent) {
+  if (loading) {
     return (
-      <PortalAuthConfirm
-        icon={AUTH_CONFIRM.magicSent.icon}
-        title={AUTH_CONFIRM.magicSent.title}
-        body={AUTH_CONFIRM.magicSent.body}
-        actionLabel={AUTH_CONFIRM.magicSent.action}
-        onAction={() => void sendMagicLink()}
-        footer={
-          <AuthLink onClick={() => setMagicSent(false)}>
-            ‹ Zurück zum Login
-          </AuthLink>
-        }
+      <PortalAuthBusy
+        title="Anmeldung läuft…"
+        body="Einen Moment — wir melden Sie an und öffnen Ihr Portal."
+      />
+    );
+  }
+
+  if (hashBusy) {
+    return (
+      <PortalAuthBusy
+        title="Anmeldung wird abgeschlossen…"
+        body="Sitzung wird eingerichtet. Bitte kurz warten."
       />
     );
   }
 
   return (
     <form onSubmit={(e) => void onSubmit(e)} className="space-y-0">
-      {hashBusy ? (
-        <p className="mb-4 rounded-lg bg-accent-light/60 px-3 py-3 text-sm text-accent">
-          Anmeldung wird abgeschlossen…
-        </p>
-      ) : null}
       {hint === "signed_out" ? (
         <p className="mb-4 rounded-lg bg-accent-light/60 px-3 py-3 text-sm text-accent">
           Sie sind abgemeldet.
@@ -228,42 +187,23 @@ export function PortalLoginForm({
         />
       </div>
 
-      {!magic ? (
-        <div className="mt-3.5">
-          <div className="mb-1.5 flex items-center justify-between gap-2">
-            <AuthLabel>{AUTH_LOGIN.passwordLabel}</AuthLabel>
-            <AuthLink href={forgotHref}>{AUTH_LOGIN.forgot}</AuthLink>
-          </div>
-          <AuthInput
-            type="password"
-            autoComplete="current-password"
-            required={!magic}
-            placeholder={AUTH_LOGIN.passwordPh}
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-          />
+      <div className="mt-3.5">
+        <div className="mb-1.5 flex items-center justify-between gap-2">
+          <AuthLabel>{AUTH_LOGIN.passwordLabel}</AuthLabel>
+          <AuthLink href={forgotHref}>{AUTH_LOGIN.forgot}</AuthLink>
         </div>
-      ) : null}
-
-      <label className="mt-3.5 mb-[18px] flex cursor-pointer items-center gap-2 text-[13px] text-text-secondary">
-        <input
-          type="checkbox"
-          checked={magic}
-          onChange={(e) => setMagic(e.target.checked)}
+        <AuthInput
+          type="password"
+          autoComplete="current-password"
+          required
+          placeholder={AUTH_LOGIN.passwordPh}
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
         />
-        {AUTH_LOGIN.magicToggle}
-      </label>
+      </div>
 
-      <AuthBtn
-        type="submit"
-        disabled={loading || hashBusy}
-        className="!mt-0"
-      >
-        {loading
-          ? "…"
-          : magic
-            ? AUTH_LOGIN.submitMagic
-            : AUTH_LOGIN.submit}
+      <AuthBtn type="submit" className="!mt-[18px]">
+        {AUTH_LOGIN.submit}
       </AuthBtn>
 
       <p className="mt-[22px] text-center text-[13px] text-text-secondary">

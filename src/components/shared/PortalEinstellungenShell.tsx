@@ -13,7 +13,7 @@ import type { EinstellungenVariant } from "@/lib/portal2/einstellungen";
 import { einstellungenPageTitle } from "@/lib/portal2/einstellungen";
 import { usePortalView } from "@/hooks/use-portal-view";
 import { isPortalMobileView } from "@/lib/portal2/viewport";
-import { PORTAL_C } from "@/lib/portal2/tokens";
+import { PORTAL_VAR } from "@/lib/portal2/tokens";
 import { cn } from "@/lib/utils";
 
 type Props = {
@@ -68,15 +68,15 @@ export function PortalEinstellungenShell({
       <div className="px-4 pb-1 lg:px-6">
         <p
           className="mb-1 text-[12px] font-semibold uppercase tracking-wide"
-          style={{ color: PORTAL_C.faint }}
+          style={{ color: PORTAL_VAR.faint }}
         >
           {eye}
         </p>
         <h1
           className="text-[25px] font-bold"
           style={{
-            color: PORTAL_C.ink,
-            fontFamily: "var(--p2-font-head, " + PORTAL_C.head + ")",
+            color: PORTAL_VAR.ink,
+            fontFamily: "var(--p2-font-head, " + PORTAL_VAR.head + ")",
           }}
         >
           {einstellungenPageTitle(variant)}
@@ -107,9 +107,9 @@ export function PortalEinstellungenShell({
                     onClick={() => selectTab(item.id)}
                     className="shrink-0 rounded-full px-3 py-1.5 text-[12.5px] font-semibold"
                     style={{
-                      border: `1px solid ${on ? "transparent" : PORTAL_C.line}`,
-                      background: on ? PORTAL_C.greenDark : "#fff",
-                      color: on ? "#fff" : PORTAL_C.sub,
+                      border: `1px solid ${on ? "transparent" : PORTAL_VAR.line}`,
+                      background: on ? PORTAL_VAR.greenDark : "#fff",
+                      color: on ? "#fff" : PORTAL_VAR.sub,
                     }}
                   >
                     {item.label}
@@ -134,10 +134,10 @@ export function PortalEinstellungenShell({
                         style={{
                           background: on
                             ? "var(--org-primary-soft, " +
-                              PORTAL_C.primarySoft +
+                              PORTAL_VAR.primarySoft +
                               ")"
                             : "transparent",
-                          color: on ? PORTAL_C.ink : PORTAL_C.sub,
+                          color: on ? PORTAL_VAR.ink : PORTAL_VAR.sub,
                         }}
                       >
                         {item.label}
@@ -158,7 +158,7 @@ export function PortalEinstellungenShell({
           ) : (
             <div
               className="rounded-xl bg-white p-4 sm:p-5"
-              style={{ border: `1px solid ${PORTAL_C.line}` }}
+              style={{ border: `1px solid ${PORTAL_VAR.line}` }}
             >
               {children(tab)}
             </div>

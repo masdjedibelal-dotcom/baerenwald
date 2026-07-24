@@ -45,6 +45,8 @@
   "Ihre Meldung ist bei Ihrer Verwaltung eingegangen.": "Your report has reached your property manager.",
   "In Bearbeitung": "In progress",
   "Ihre Verwaltung bearbeitet Ihre Meldung.": "Your property manager is handling your report.",
+  "Bestätigung": "Confirmation",
+  "Ihre Verwaltung hat die Ausführung bestätigt — ein Fachbetrieb ist beauftragt.": "Your property manager confirmed the job — a contractor has been assigned.",
   "Beauftragt": "Assigned",
   "Ein Fachbetrieb wurde von Ihrer Verwaltung beauftragt.": "A contractor has been assigned by your property manager.",
   "Erledigt": "Completed",

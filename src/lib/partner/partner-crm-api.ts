@@ -162,6 +162,12 @@ export type CrmAbnahmeprotokollPayload = {
   leistungen: string[];
   pdf_path: string;
   vollstaendig: boolean;
+  /** F2 — Timestamps + optionale Signatur-Data-URLs */
+  hw_signiert_am?: string | null;
+  kunde_signiert_am?: string | null;
+  hw_signatur_png?: string | null;
+  kunde_signatur_png?: string | null;
+  abschluss_checks?: Record<string, unknown> | null;
 };
 
 /** Abnahmeprotokoll ans CRM (PDF bereits in Storage). */

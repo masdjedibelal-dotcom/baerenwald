@@ -37,7 +37,7 @@ assert(
   "kpi labels",
   HV_DASHBOARD_KPI_DEFS[0]!.label === "Wartet auf Freigabe" &&
     HV_DASHBOARD_KPI_DEFS[1]!.label === "In Arbeit" &&
-    HV_DASHBOARD_KPI_DEFS[2]!.label === "Gesamt offen"
+    HV_DASHBOARD_KPI_DEFS[2]!.label === "Erledigt"
 );
 
 const flow = countLeadsByPortalFlow({
@@ -69,9 +69,8 @@ assert("has gemeldet", flow.gemeldet >= 1);
 const kpis = buildHvDashboardKpis(flow);
 assert("wartet = gemeldet", kpis.wartet_freigabe === flow.gemeldet);
 assert(
-  "gesamt offen formula",
-  kpis.gesamt_offen ===
-    flow.gemeldet + flow.freigegeben + flow.angefragt + flow.angebot
+  "erledigt formula",
+  kpis.erledigt === flow.abschluss + flow.rechnung + flow.bezahlt
 );
 
 const st = resolveLeadPortalFlowStatus({
@@ -85,18 +84,19 @@ assert("neu → gemeldet", st === "gemeldet");
 
 assert("pageHead", HV_LISTE_PAGE_EYEBROW === "Verwaltung");
 assert("page title", HV_LISTE_PAGE_TITLE === "Vorgänge");
-assert("chips 3", HV_CHIPS.length === 3);
+assert("chips 4", HV_CHIPS.length === 4);
 assert("chip freigabe", HV_CHIPS[0]!.label === "Alle");
+assert("chip in arbeit", HV_CHIPS[2]!.label === "In Arbeit");
 assert("section meldungen", HV_SECTION_MELDUNGEN === "Meldungen · Eingang");
 assert("section angebote", HV_SECTION_ANGEBOTE === "Angebots-Freigabe");
 assert(
   "banner",
   HV_ANGEBOT_BANNER ===
-    "Bärenwald hat Angebote erstellt — bitte prüfen und freigeben."
+    "Bärenwald hat Angebote erstellt — bitte prüfen und freigeben (Freigabe ≠ Angebot annehmen)."
 );
 assert(
   "meldung actions",
-  HV_MELDUNG_ACTIONS[0]!.label === "Angebot einfordern" &&
+  HV_MELDUNG_ACTIONS[0]!.label === "Vorgang freigeben" &&
     HV_MELDUNG_ACTIONS[1]!.label === "Sofort beauftragen (Kleinreparatur)" &&
     HV_MELDUNG_ACTIONS[2]!.label === "Ablehnen"
 );

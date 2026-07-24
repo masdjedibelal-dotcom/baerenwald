@@ -161,7 +161,7 @@ const auftragFx = RESOLVE_VORGANG_FIXTURES.find((f) => f.id === "3-hw-anfrage-of
 if (auftragFx) {
   const resolved = resolveVorgang(auftragFx.input);
   const mieter = resolveRoleStatus(resolved, "mieter");
-  if (mieter.timelineStep !== "beauftragt" || mieter.listLabel !== "Beauftragt") {
+  if (mieter.timelineStep !== "beauftragt" || mieter.listLabel !== "Bestätigung") {
     failed++;
     console.error("  ✗ role-status-beauftragt", mieter.timelineStep);
   } else {

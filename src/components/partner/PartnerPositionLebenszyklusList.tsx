@@ -14,8 +14,11 @@ import {
   formatZeitMinuten,
   lebenszyklusLabel,
 } from "@/lib/partner/position-lebenszyklus";
+import { HW_DOKU_STORY } from "@/lib/portal2/hw-doku-story";
 import { portalToastError, portalToastSuccess } from "@/lib/shared/portal-toast";
 import { cn } from "@/lib/utils";
+import { PORTAL_MODAL_SCRIM } from "@/lib/portal2/modal-shell";
+import { PORTAL_VAR } from "@/lib/portal2/tokens";
 
 export type LebenszyklusPosition = {
   id: string;
@@ -78,7 +81,7 @@ export function PartnerPositionLebenszyklusList({
           ? "Position gestartet."
           : sheet.mode === "fortschritt"
             ? "Fortschritt gespeichert."
-            : "Als erledigt gemeldet."
+            : HW_DOKU_STORY.positionEndeToast
       );
       setSheet(null);
       setNachreich(false);
@@ -103,11 +106,55 @@ export function PartnerPositionLebenszyklusList({
   return (
     <section className="space-y-3 border-t border-border-light pt-5">
       <div className="flex items-baseline justify-between gap-2">
-        <h4 className="portal-text-label text-text-tertiary">Leistungen</h4>
+        <h4 className="portal-text-label text-text-tertiary">
+          {HW_DOKU_STORY.title}
+        </h4>
         <p className="text-xs text-text-tertiary">
           {erledigtCount} von {positionen.length} erledigt
         </p>
       </div>
+
+      <p className="text-[12.5px] leading-relaxed" style={{ color: PORTAL_VAR.sub }}>
+        {HW_DOKU_STORY.lead}
+      </p>
+
+      <ol className="grid gap-2 sm:grid-cols-3">
+        {HW_DOKU_STORY.steps.map((s) => (
+          <li
+            key={s.n}
+            className="rounded-lg px-3 py-2.5"
+            style={{ background: "#F6F7F6" }}
+          >
+            <p
+              className="text-[11px] font-bold uppercase tracking-wide"
+              style={{ color: PORTAL_VAR.faint }}
+            >
+              {s.n}. {s.title}
+            </p>
+            <p className="mt-0.5 text-[11.5px] leading-snug" style={{ color: PORTAL_VAR.sub }}>
+              {s.body}
+            </p>
+          </li>
+        ))}
+      </ol>
+
+      {positionen.length === 0 ? (
+        <div
+          className="rounded-xl border border-dashed px-4 py-5 text-center"
+          style={{ borderColor: PORTAL_VAR.line }}
+          data-testid="hw-first-job-empty"
+        >
+          <p
+            className="text-[14px] font-bold"
+            style={{ color: PORTAL_VAR.ink }}
+          >
+            {HW_DOKU_STORY.firstJobTitle}
+          </p>
+          <p className="mt-1.5 text-[12.5px]" style={{ color: PORTAL_VAR.sub }}>
+            {HW_DOKU_STORY.firstJobEmpty}
+          </p>
+        </div>
+      ) : null}
 
       <ul className="space-y-2.5">
         {positionen.map((p) => {
@@ -115,12 +162,14 @@ export function PartnerPositionLebenszyklusList({
           const isArbeit = st === "in_arbeit";
           const isErledigt = st === "erledigt";
           const isAufwand = p.verguetung === "aufwand";
+          const isRegie = p.typ === "regie" || isAufwand;
           const meta = [
             lebenszyklusLabel(st),
             p.einheit && p.menge != null
               ? `${p.menge} ${p.einheit}`
               : null,
             p.anerkennung_status === "in_pruefung" ? "in Prüfung" : null,
+            isRegie ? "Regie/Aufwand" : null,
           ]
             .filter(Boolean)
             .join(" · ");
@@ -152,13 +201,21 @@ export function PartnerPositionLebenszyklusList({
 
               {!isErledigt ? (
                 <div className="mt-3 flex flex-col gap-2">
+                  {isRegie ? (
+                    <p
+                      className="rounded-lg px-2.5 py-2 text-[11.5px] font-medium"
+                      style={{ background: "#FBF1D6", color: "#8A5A06" }}
+                    >
+                      {HW_DOKU_STORY.regieHint}
+                    </p>
+                  ) : null}
                   {st === "offen" ? (
                     <button
                       type="button"
                       className="btn-pill-primary w-full"
                       onClick={() => setSheet({ mode: "start", position: p })}
                     >
-                      ▶ Start — Ankunftsfoto
+                      ▶ 1. Start — Ankunftsfoto
                     </button>
                   ) : null}
                   {isArbeit ? (
@@ -170,7 +227,7 @@ export function PartnerPositionLebenszyklusList({
                           setSheet({ mode: "fortschritt", position: p })
                         }
                       >
-                        + Fortschritt
+                        2. Fortschritt
                       </button>
                       <button
                         type="button"
@@ -179,7 +236,7 @@ export function PartnerPositionLebenszyklusList({
                           setSheet({ mode: "erledigt", position: p })
                         }
                       >
-                        Erledigt melden
+                        3. Ende — Dokumentieren
                       </button>
                     </div>
                   ) : null}
@@ -208,7 +265,8 @@ export function PartnerPositionLebenszyklusList({
       </p>
 
       {sheet ? (
-        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 p-0 sm:items-center sm:p-4">
+        <div className="fixed inset-0 z-50 flex items-end justify-center p-0 sm:items-center sm:p-4"
+          style={{ background: PORTAL_MODAL_SCRIM }}>
           <form
             action={submitSheet}
             className="max-h-[92vh] w-full max-w-lg overflow-y-auto rounded-t-2xl bg-white p-4 shadow-xl sm:rounded-2xl"
@@ -311,8 +369,8 @@ export function PartnerPositionLebenszyklusList({
               <div className="mt-3 space-y-1">
                 <p className="portal-form-label">
                   {sheet.mode === "erledigt"
-                    ? "Meine Zeit gesamt"
-                    : "Zeitaufwand"}
+                    ? "Meine Zeit gesamt (Pflicht bei Regie)"
+                    : "Zeitaufwand (Regie)"}
                 </p>
                 <div className="flex gap-2">
                   <label className="flex-1">
@@ -322,6 +380,7 @@ export function PartnerPositionLebenszyklusList({
                       name="zeitStd"
                       min={0}
                       step={1}
+                      required={sheet.mode === "erledigt"}
                       defaultValue={
                         sheet.mode === "erledigt" &&
                         sheet.position.zeit_minuten_summe
@@ -340,6 +399,7 @@ export function PartnerPositionLebenszyklusList({
                       min={0}
                       max={59}
                       step={1}
+                      required={sheet.mode === "erledigt"}
                       defaultValue={
                         sheet.mode === "erledigt" &&
                         sheet.position.zeit_minuten_summe
@@ -351,6 +411,9 @@ export function PartnerPositionLebenszyklusList({
                     />
                   </label>
                 </div>
+                <p className="text-[11px] text-amber-800">
+                  Soft-Gate: Ohne Zeitnachweis bleibt die Regie-Position unvollständig.
+                </p>
               </div>
             ) : null}
 
@@ -372,14 +435,15 @@ export function PartnerPositionLebenszyklusList({
                   ? "Position starten"
                   : sheet.mode === "fortschritt"
                     ? "Fortschritt speichern"
-                    : "Erledigt melden"}
+                    : "Dokumentieren"}
             </button>
           </form>
         </div>
       ) : null}
 
       {weitereOpen ? (
-        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 sm:items-center sm:p-4">
+        <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center sm:p-4"
+          style={{ background: PORTAL_MODAL_SCRIM }}>
           <form
             action={submitWeitere}
             className="w-full max-w-lg rounded-t-2xl bg-white p-4 sm:rounded-2xl"

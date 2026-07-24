@@ -5,7 +5,7 @@ import { Download } from "lucide-react";
 
 import { PortalModalShell } from "@/components/shared/PortalModalShell";
 import { meldeQrPngPath } from "@/lib/portal2/aushang";
-import { PORTAL_C } from "@/lib/portal2/tokens";
+import { PORTAL_VAR } from "@/lib/portal2/tokens";
 
 type Props = {
   open: boolean;
@@ -115,12 +115,12 @@ export function OrganisationMeldeQrModal({
     >
       <div className="flex flex-col items-center gap-4 px-1 pb-1 pt-2">
         {busy ? (
-          <p className="py-10 text-[13px]" style={{ color: PORTAL_C.sub }}>
+          <p className="py-10 text-[13px]" style={{ color: PORTAL_VAR.sub }}>
             QR-Code wird erzeugt…
           </p>
         ) : null}
         {error ? (
-          <p className="py-6 text-center text-[13px] text-[#B42318]">{error}</p>
+          <p className="portal-danger py-6 text-center text-[13px]">{error}</p>
         ) : null}
         {blobUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
@@ -143,7 +143,7 @@ export function OrganisationMeldeQrModal({
         </button>
         <p
           className="text-center text-[12px] leading-relaxed"
-          style={{ color: PORTAL_C.sub }}
+          style={{ color: PORTAL_VAR.sub }}
         >
           PNG-Datei — zum Ausdrucken oder Teilen geeignet.
         </p>

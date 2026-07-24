@@ -389,12 +389,12 @@ export async function completePartnerPosition(
   if (!attached.ok) return attached;
 
   const now = new Date().toISOString();
+  // F1: Nur Dokumentation (leistung_status) — handwerker_status=erledigt erst nach Abnahme-Signatur
   await supabaseAdmin
     .from("auftrag_positionen")
     .update({
       leistung_status: "erledigt",
       erledigt_am: now,
-      handwerker_status: "erledigt",
     })
     .eq("id", positionId);
 

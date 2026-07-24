@@ -22,10 +22,14 @@ import {
   PortalListPagination,
 } from "@/components/shared/PortalListPagination";
 import {
-  PortalListeEyebrow,
   PortalListeFilterChip,
   PortalListeTitle,
 } from "@/components/shared/PortalListeChrome";
+import {
+  countUnreadBautagebuch,
+  getBautagebuchLastSeenAt,
+} from "@/lib/portal2/bautagebuch-attention";
+import { portalListStackClass } from "@/lib/portal2/layout-chrome";
 import { isOnboardingCompleted } from "@/lib/onboarding/storage";
 import { PORTAL_ONBOARDING_SLIDES } from "@/lib/onboarding/portal-slides";
 import { buildKundeVorgaenge } from "@/lib/portal/build-kunde-vorgaenge";
@@ -35,15 +39,19 @@ import {
   filterKundeVorgaenge,
   type KundeVorgangFilter,
 } from "@/lib/portal/kunde-vorgang-filter";
+import type { OrgVorgangFilter } from "@/lib/org/org-vorgang-filter";
 import {
   buildKundeVorgangCardRows,
   type PortalCardRow,
 } from "@/lib/portal/portal-list-mappers";
-import { portalCreateLabel } from "@/lib/portal2/create";
+import { portalCreateChannel, portalCreateLabel } from "@/lib/portal2/create";
+import { buildPortalContactPrefill } from "@/lib/portal/portal-contact-prefill";
 import {
   countLeadsByPortalFlow,
+  pickPreferredAngebotForPortalFlow,
   resolveLeadPortalFlowStatus,
 } from "@/lib/portal2/hv-dashboard";
+import { hvListeChipMatches } from "@/lib/portal2/hv-liste";
 import {
   buildPrivatDashboardKpis,
   PRIVAT_LISTE_CHIPS,
@@ -54,7 +62,6 @@ import {
 import {
   portalKundeDashboardHello,
   portalKundeListeTitle,
-  portalKundeTypRoleLabel,
   portalNavRoleForKundeTyp,
   resolvePortalKundeTyp,
   type PortalKundeTyp,
@@ -63,6 +70,7 @@ import { buildPortalShellNav } from "@/lib/portal2/nav-items";
 import { portalDetailStatusPillClass } from "@/lib/shared/portal-detail-format";
 import {
   PORTAL_STATUS,
+  portalMieterStatusLabel,
   portalStatusChipStyle,
   type PortalMockStatusId,
 } from "@/lib/portal2/status";
@@ -71,6 +79,10 @@ import { cn } from "@/lib/utils";
 type PortalKunde = {
   name?: string | null;
   email?: string | null;
+  telefon?: string | null;
+  plz?: string | null;
+  ort?: string | null;
+  adresse?: string | null;
   freigabe_schwelle_eur?: number | null;
   portal_modus?: string | null;
   typ?: string | null;
@@ -143,7 +155,9 @@ export function PortalClient({
   showAnlassBadge = false,
   hideFilterBar = false,
   controlledVorgangFilter,
+  controlledHvListeFilter,
   onVorgangFilterChange,
+  onHvDetailOpenChange,
   hvPortalMode = false,
   kundeTyp: kundeTypProp,
   mieterFeedbackByLeadId = {},
@@ -184,6 +198,10 @@ export function PortalClient({
   showAnlassBadge?: boolean;
   hideFilterBar?: boolean;
   controlledVorgangFilter?: KundeVorgangFilter;
+  /** HV-Liste: Flow-Chips (Offen · In Arbeit · Erledigt). */
+  controlledHvListeFilter?: OrgVorgangFilter;
+  /** Embedded HV: Parent blendet Listen-Chrome aus, sobald Detail offen ist. */
+  onHvDetailOpenChange?: (open: boolean) => void;
   onVorgangFilterChange?: (filter: KundeVorgangFilter) => void;
   /** Hausverwaltungs-Portal: CRM-Resolver mit role „hv“ (kein Mieter-Status). */
   hvPortalMode?: boolean;
@@ -203,6 +221,37 @@ export function PortalClient({
   const isPrivatLike = kundeTyp === "privat" || kundeTyp === "gewerbe";
   /** Mock-Detail (Timeline/Meta): HV und Privat/Gewerbe. */
   const useHvMockDetail = hvPortalMode || isPrivatLike;
+  const [clientReady, setClientReady] = useState(false);
+  useEffect(() => {
+    setClientReady(true);
+  }, []);
+
+  const fabContactPrefill = useMemo(() => {
+    const built = buildPortalContactPrefill({
+      kunde: {
+        name: kunde.name,
+        email: kunde.email,
+        telefon: kunde.telefon,
+        plz: kunde.plz,
+        ort: kunde.ort,
+        adresse: kunde.adresse,
+      },
+      leads: leads as Parameters<typeof buildPortalContactPrefill>[0]["leads"],
+    });
+    const name =
+      [built.vorname, built.nachname].filter(Boolean).join(" ").trim() ||
+      kunde.name?.trim() ||
+      undefined;
+    return {
+      name,
+      email: built.email || kunde.email?.trim() || undefined,
+      telefon: built.telefon,
+      plz: built.plz,
+      ort: built.ort,
+      strasse: built.strasse,
+      hausnummer: built.hausnummer,
+    };
+  }, [kunde, leads]);
 
   const initialSection = normalizeSectionFromUrl(
     activeSection === "auftraege" ? "vorgaenge" : activeSection ?? searchParams.get("section") ?? undefined
@@ -244,7 +293,7 @@ export function PortalClient({
         angebote,
         auftraege,
         hvPortalMode: hvPortalMode || isPrivatLike,
-        mieterStatusMode: hvPortalMode || isPrivatLike ? false : true,
+        mieterStatusMode: !hvPortalMode,
         mieterFeedbackByLeadId,
       }),
     [leads, angebote, auftraege, hvPortalMode, isPrivatLike, mieterFeedbackByLeadId]
@@ -261,10 +310,18 @@ export function PortalClient({
   );
 
   const flowByItemId = useMemo(() => {
-    const angebotByLead = new Map<string, PortalAngebot>();
+    const angeboteByLead = new Map<string, PortalAngebot[]>();
     for (const a of angebote as PortalAngebot[]) {
       const lid = (a as { lead_id?: string | null }).lead_id?.trim();
-      if (lid && !angebotByLead.has(lid)) angebotByLead.set(lid, a);
+      if (!lid) continue;
+      const list = angeboteByLead.get(lid) ?? [];
+      list.push(a);
+      angeboteByLead.set(lid, list);
+    }
+    const angebotByLead = new Map<string, PortalAngebot>();
+    for (const [lid, list] of Array.from(angeboteByLead.entries())) {
+      const preferred = pickPreferredAngebotForPortalFlow(list);
+      if (preferred) angebotByLead.set(lid, preferred);
     }
     const auftragByLead = new Map<string, PortalAuftrag>();
     for (const a of auftraege as PortalAuftrag[]) {
@@ -305,6 +362,12 @@ export function PortalClient({
         return privatListeChipMatches(privatChip, flow);
       });
     }
+    if (hvPortalMode && controlledHvListeFilter) {
+      return vorgaengeItems.filter((item) => {
+        const flow = flowByItemId.get(item.id) ?? "gemeldet";
+        return hvListeChipMatches(controlledHvListeFilter, flow);
+      });
+    }
     return filterKundeVorgaenge(vorgaengeItems, vorgangFilter);
   }, [
     isPrivatLike,
@@ -313,6 +376,7 @@ export function PortalClient({
     privatChip,
     flowByItemId,
     vorgangFilter,
+    controlledHvListeFilter,
   ]);
 
   const privatKpis = useMemo(() => {
@@ -333,6 +397,10 @@ export function PortalClient({
         objekt: item.cardSubtitle ?? item.plz ?? "—",
         flowStatus: flow,
         notfall: false,
+        hvMieterView: Boolean(item.hvMieterView),
+        statusLabel: item.hvMieterView
+          ? item.status || portalMieterStatusLabel(flow)
+          : undefined,
       };
     });
   }, [vorgaengeItems, flowByItemId]);
@@ -365,10 +433,31 @@ export function PortalClient({
 
   useEffect(() => {
     setListPage(1);
-  }, [section, vorgangFilter, privatChip]);
+  }, [section, vorgangFilter, privatChip, controlledHvListeFilter]);
 
   useEffect(() => {
-    if (embedded) return;
+    if (!hvPortalMode || !onHvDetailOpenChange) return;
+    onHvDetailOpenChange(Boolean(selectedId));
+  }, [hvPortalMode, onHvDetailOpenChange, selectedId]);
+
+  useEffect(() => {
+    if (embedded) {
+      if (!hvPortalMode) return;
+      if (ignoreUrlDetailRef.current) {
+        const rawId = searchParams.get("id")?.trim();
+        if (!rawId) ignoreUrlDetailRef.current = false;
+        return;
+      }
+      const itemId = searchParams.get("id")?.trim();
+      if (itemId && vorgaengeItems.some((v) => v.id === itemId)) {
+        setSelectedId(itemId);
+        setMobileDetailOpen(true);
+      } else if (!itemId) {
+        setSelectedId(null);
+        setMobileDetailOpen(false);
+      }
+      return;
+    }
     if (ignoreUrlDetailRef.current) {
       const rawSection = searchParams.get("section")?.trim();
       const normalized = normalizeSectionFromUrl(rawSection);
@@ -398,7 +487,7 @@ export function PortalClient({
       setSelectedId(null);
       setMobileDetailOpen(false);
     }
-  }, [searchParams, vorgaengeItems, embedded]);
+  }, [searchParams, vorgaengeItems, embedded, hvPortalMode]);
 
   function switchSection(next: SectionId) {
     ignoreUrlDetailRef.current = true;
@@ -410,16 +499,18 @@ export function PortalClient({
     }
   }
 
+  function hvListeFilterForUrl(): OrgVorgangFilter {
+    if (controlledHvListeFilter) return controlledHvListeFilter;
+    if (controlledVorgangFilter === "erledigt") return "erledigt";
+    if (controlledVorgangFilter === "alle") return "alle";
+    return "offen";
+  }
+
   function openVorgang(row: PortalCardRow) {
     setSelectedId(row.id);
     setMobileDetailOpen(true);
     if (embedded && hvPortalMode) {
-      const f =
-        controlledVorgangFilter === "erledigt"
-          ? "erledigt"
-          : controlledVorgangFilter === "alle"
-            ? "alle"
-            : "offen";
+      const f = hvListeFilterForUrl();
       router.replace(
         `/portal?section=vorgaenge&filter=${f}&id=${encodeURIComponent(row.id)}`,
         { scroll: false }
@@ -436,13 +527,9 @@ export function PortalClient({
     ignoreUrlDetailRef.current = true;
     setSelectedId(null);
     setMobileDetailOpen(false);
+    onHvDetailOpenChange?.(false);
     if (embedded && hvPortalMode) {
-      const f =
-        controlledVorgangFilter === "erledigt"
-          ? "erledigt"
-          : controlledVorgangFilter === "alle"
-            ? "alle"
-            : "offen";
+      const f = hvListeFilterForUrl();
       router.replace(`/portal?section=vorgaenge&filter=${f}`, { scroll: false });
     } else if (!embedded) {
       router.replace(`/portal?section=vorgaenge`, { scroll: false });
@@ -452,15 +539,29 @@ export function PortalClient({
   function renderListCard(row: PortalCardRow) {
     const flow = flowByItemId.get(row.id);
     const mockListe = hvPortalMode || (isPrivatLike && !hvPortalMode);
+    const mieterStatus = Boolean(row.hvMieterView);
     const statusLabel =
-      mockListe && flow ? PORTAL_STATUS[flow].label : row.statusLabel;
+      mieterStatus
+        ? row.statusLabel
+        : mockListe && flow
+          ? PORTAL_STATUS[flow].label
+          : row.statusLabel;
     const statusPillStyle =
       mockListe && flow ? portalStatusChipStyle(flow) : undefined;
+
+    const leadKey = row.leadId ?? row.id;
+    const btUnread =
+      clientReady && hvPortalMode && !mieterStatus && row.bautagebuch?.length
+        ? countUnreadBautagebuch(
+            row.bautagebuch,
+            getBautagebuchLastSeenAt(leadKey)
+          )
+        : 0;
 
     return (
       <PortalListCard
         key={row.id}
-        variant={mockListe ? "card" : "row"}
+        variant={mockListe ? "responsive" : "row"}
         selected={false}
         onClick={() => openVorgang(row)}
         title={row.title}
@@ -474,6 +575,7 @@ export function PortalClient({
         footer={mockListe ? undefined : row.footer}
         showLeftAccent={false}
         showChevron={mockListe}
+        attentionBadge={btUnread > 0 ? btUnread : null}
       />
     );
   }
@@ -483,9 +585,6 @@ export function PortalClient({
       {isPrivatLike && !hvPortalMode ? (
         <>
           <div className="px-0.5 pb-1">
-            <PortalListeEyebrow>
-              {portalKundeTypRoleLabel(kundeTyp)}
-            </PortalListeEyebrow>
             <PortalListeTitle>
               {portalKundeListeTitle(kundeTyp)}
             </PortalListeTitle>
@@ -512,7 +611,7 @@ export function PortalClient({
       <div
         className={cn(
           hvPortalMode || (isPrivatLike && !hvPortalMode)
-            ? "flex flex-col gap-2.5"
+            ? portalListStackClass("responsive")
             : "portal-list-panel portal-list-rows"
         )}
       >
@@ -526,15 +625,21 @@ export function PortalClient({
             </div>
           ) : (
             <p className="portal-text-body rounded-[12px] border border-border-default bg-white px-4 py-8 text-center text-text-secondary">
-              {isPrivatLike
-                ? "Keine Vorgänge in diesem Filter."
-                : vorgangFilter === "alle"
+              {hvPortalMode && controlledHvListeFilter
+                ? controlledHvListeFilter === "alle"
                   ? "Keine Vorgänge."
-                  : vorgangFilter === "aktiv"
-                    ? hvPortalMode
-                      ? "Keine offenen Vorgänge."
-                      : "Keine aktiven Vorgänge."
-                    : "Keine erledigten Vorgänge."}
+                  : controlledHvListeFilter === "offen"
+                    ? "Keine offenen Vorgänge."
+                    : controlledHvListeFilter === "in_arbeit"
+                      ? "Keine Vorgänge in Arbeit."
+                      : "Keine erledigten Vorgänge."
+                : isPrivatLike
+                  ? "Noch keine Vorgänge"
+                  : vorgangFilter === "alle"
+                    ? "Keine Vorgänge."
+                    : vorgangFilter === "aktiv"
+                      ? "Keine aktiven Vorgänge."
+                      : "Keine erledigten Vorgänge."}
             </p>
           )
         ) : (
@@ -570,6 +675,7 @@ export function PortalClient({
         flowStatusOverride={
           selectedItem ? flowByItemId.get(selectedItem.id) : undefined
         }
+        mieterStatusMode={Boolean(selectedItem?.hvMieterView)}
         orgFreigabeStatus={
           (leads as Array<{ id: string; org_freigabe_status?: string | null }>).find(
             (l) => l.id === selectedLeadId
@@ -646,6 +752,7 @@ export function PortalClient({
             <PortalEinstellungenPrivat
               name={kunde.name}
               email={kunde.email}
+              telefon={kunde.telefon}
               kundeTyp={kundeTyp === "gewerbe" ? "gewerbe" : "privat"}
             />
           ) : null}
@@ -745,12 +852,9 @@ export function PortalClient({
 
       <PortalCreateFunnelModal
         open={createOpen}
-        channel="portal_privat"
+        channel={portalCreateChannel(navRole)}
         title={portalCreateLabel(navRole)}
-        prefill={{
-          name: kunde.name?.trim() || undefined,
-          email: kunde.email?.trim() || undefined,
-        }}
+        prefill={fabContactPrefill}
         onClose={() => setCreateOpen(false)}
         onDone={() => {
           setCreateOpen(false);

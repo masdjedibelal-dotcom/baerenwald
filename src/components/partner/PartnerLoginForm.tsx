@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
 
 import { assertPartnerEmailAllowed } from "@/app/actions/assert-partner-email-allowed";
+import { PortalAuthBusy } from "@/components/portal/auth/PortalAuthBusy";
 import { PortalResendConfirmation } from "@/components/portal/PortalResendConfirmation";
 import { PartnerAuthFlowHint } from "@/components/partner/PartnerAuthFlowHint";
 import { PARTNER_AUTH_COPY } from "@/lib/partner/partner-auth-copy";
@@ -26,35 +27,47 @@ export function PartnerLoginForm() {
     e.preventDefault();
     setLoading(true);
     setError(null);
-    const allowed = await assertPartnerEmailAllowed(email.trim());
-    if (!allowed.ok) {
+    try {
+      const allowed = await assertPartnerEmailAllowed(email.trim());
+      if (!allowed.ok) {
+        setError(allowed.error);
+        setLoading(false);
+        return;
+      }
+      const supabase = getSupabaseBrowserClient();
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email: email.trim(),
+        password,
+      });
+      if (signInError) {
+        const msg = signInError.message.toLowerCase();
+        if (msg.includes("email not confirmed")) {
+          setError(
+            "Bitte bestätige zuerst deine E-Mail — wir haben dir einen Link geschickt."
+          );
+        } else if (msg.includes("banned") || msg.includes("user is banned")) {
+          setError(PARTNER_AUTH_COPY.errors.portalGesperrt);
+        } else {
+          setError("E-Mail oder Passwort ist ungültig.");
+        }
+        setLoading(false);
+        return;
+      }
+      router.push(next);
+      router.refresh();
+    } catch {
+      setError("Anmeldung fehlgeschlagen. Bitte erneut versuchen.");
       setLoading(false);
-      setError(allowed.error);
-      return;
     }
-    const supabase = getSupabaseBrowserClient();
-    const { error: signInError } = await supabase.auth.signInWithPassword({
-      email: email.trim(),
-      password,
-    });
-    setLoading(false);
-    if (signInError) {
-      const msg = signInError.message.toLowerCase();
-      if (msg.includes("email not confirmed")) {
-        setError(
-          "Bitte bestätige zuerst deine E-Mail — wir haben dir einen Link geschickt."
-        );
-        return;
-      }
-      if (msg.includes("banned") || msg.includes("user is banned")) {
-        setError(PARTNER_AUTH_COPY.errors.portalGesperrt);
-        return;
-      }
-      setError("E-Mail oder Passwort ist ungültig.");
-      return;
-    }
-    router.push(next);
-    router.refresh();
+  }
+
+  if (loading) {
+    return (
+      <PortalAuthBusy
+        title="Anmeldung läuft…"
+        body="Einen Moment — wir melden dich an und öffnen das Partner-Portal."
+      />
+    );
   }
 
   return (
@@ -108,12 +121,8 @@ export function PartnerLoginForm() {
         />
       </label>
 
-      <button
-        type="submit"
-        disabled={loading}
-        className="btn-pill-primary portal-btn w-full !py-3 disabled:opacity-60"
-      >
-        {loading ? "Wird angemeldet…" : "Anmelden"}
+      <button type="submit" className="btn-pill-primary portal-btn w-full !py-3">
+        Anmelden
       </button>
 
       <p className="portal-text-meta text-center text-text-tertiary">

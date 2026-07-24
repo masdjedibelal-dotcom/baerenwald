@@ -19,6 +19,13 @@ export type PortalCardRow = {
   footer?: ReactNode;
   hint?: string;
   sortDate: number;
+  /** HV-Lead im Mieter-Portal: kein Angebots-/HV-Status-Wording. */
+  hvMieterView?: boolean;
+  /** C4 */
+  wartetAufHwLabel?: string | null;
+  /** C3 — ungelesene BT-Einträge (Client setzt oft separat) */
+  bautagebuch?: KundePortalDetailItem["bautagebuch"];
+  leadId?: string;
 };
 
 function ts(v?: string | null): number {
@@ -28,7 +35,13 @@ function ts(v?: string | null): number {
 }
 
 function buildMockSubtitle(item: KundePortalDetailItem): string | undefined {
-  if (item.cardSubtitle?.trim()) return item.cardSubtitle.trim();
+  if (item.cardSubtitle?.trim()) {
+    const base = item.cardSubtitle.trim();
+    if (item.wartetAufHwLabel?.trim()) {
+      return `${base} · ${item.wartetAufHwLabel.trim()}`;
+    }
+    return base;
+  }
   const metaTexts = item.cardMeta?.map((m) => m.text) ?? [];
   const ortParts = [item.plz, item.ort].filter(Boolean).join(" ");
   const adresse =
@@ -41,7 +54,12 @@ function buildMockSubtitle(item: KundePortalDetailItem): string | undefined {
     /Melder|Mieter|\(/i.test(t)
   );
   const kategorie = item.anfrageGewerk?.trim();
-  const parts = [adresse, we, person ?? kategorie].filter(Boolean);
+  const parts = [
+    adresse,
+    we,
+    person ?? kategorie,
+    item.wartetAufHwLabel?.trim() || null,
+  ].filter(Boolean);
   return parts.length ? parts.join(" · ") : undefined;
 }
 
@@ -90,6 +108,10 @@ export function mapKundeDetailToCard(
             : "To-do: Angebot prüfen & annehmen"
           : undefined),
     sortDate: ts(item.date),
+    hvMieterView: Boolean(item.hvMieterView),
+    wartetAufHwLabel: item.wartetAufHwLabel ?? null,
+    bautagebuch: item.hvMieterView ? undefined : item.bautagebuch,
+    leadId: item.leadId ?? item.id,
   };
 }
 

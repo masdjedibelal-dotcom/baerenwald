@@ -386,7 +386,7 @@ export function OrganisationObjektePanel({
           <button
             type="button"
             disabled={busy}
-            className="ml-auto rounded-lg border border-[#F5C2C0] bg-white px-3 py-1.5 text-[12.5px] font-semibold text-[#B42318]"
+            className="portal-danger ml-auto rounded-lg border border-[var(--p2-danger-border)] bg-white px-3 py-1.5 text-[12.5px] font-semibold"
             onClick={() => void bulkDelete()}
           >
             ✕ Löschen
@@ -470,7 +470,7 @@ export function OrganisationObjektePanel({
                     </button>
                     <button
                       type="button"
-                      className="rounded-full border border-border-default bg-white px-2.5 py-1 text-[11.5px] font-semibold text-[#B42318] hover:border-[#B42318] hover:bg-[#FEF3F2]"
+                      className="portal-danger rounded-full border border-border-default bg-white px-2.5 py-1 text-[11.5px] font-semibold hover:border-[var(--p2-danger)] hover:bg-[var(--p2-danger-soft)]"
                       onClick={() => void deleteObjekt(o)}
                     >
                       ✕ Löschen

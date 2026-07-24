@@ -17,6 +17,7 @@ import { OnboardingTour } from "@/components/onboarding/OnboardingTour";
 import "@/components/onboarding/onboarding.css";
 import { PortalLegalFooter } from "@/components/shared/PortalLegalFooter";
 import { PortalShell } from "@/components/shared/PortalShell";
+import { resolveOrgSubLabel } from "@/lib/portal2/brand-presets";
 import { ORG_ONBOARDING_SLIDES } from "@/lib/onboarding/org-slides";
 import { isOnboardingCompleted } from "@/lib/onboarding/storage";
 import {
@@ -45,6 +46,8 @@ import {
   buildHvDashboardKpis,
   countLeadsByPortalFlow,
   resolveLeadPortalFlowStatus,
+  type HvDashboardAngebotSlice,
+  type HvDashboardAuftragSlice,
 } from "@/lib/portal2/hv-dashboard";
 import { portalCreateLabel } from "@/lib/portal2/create";
 import {
@@ -173,6 +176,7 @@ export function OrganisationPortalClient({
     const f = searchParams.get("filter");
     if (f === "alle") return "alle";
     if (f === "offen" || f === "freigabe" || f === "aktiv") return "offen";
+    if (f === "in_arbeit" || f === "arbeit") return "in_arbeit";
     if (f === "erledigt") return "erledigt";
     return null;
   })();
@@ -215,9 +219,13 @@ export function OrganisationPortalClient({
         eingang,
         leads,
         vorgaengeItems,
-        auftragByLeadId
+        auftragByLeadId,
+        {
+          angebote: angebote as HvDashboardAngebotSlice[],
+          auftraege: auftraege as HvDashboardAuftragSlice[],
+        }
       ),
-    [eingang, leads, vorgaengeItems, auftragByLeadId]
+    [eingang, leads, vorgaengeItems, auftragByLeadId, angebote, auftraege]
   );
 
   const vorgaengeBadgeCount = filterCounts.offen;
@@ -321,7 +329,7 @@ export function OrganisationPortalClient({
       <PortalShell
         variant="org"
         brandTitle={displayName}
-        brandSubtitle={kunde.org_sub?.trim() || "Verwaltung"}
+        brandSubtitle={resolveOrgSubLabel(kunde.org_sub)}
         brandLogoUrl={kunde.org_logo_url}
         brandKuerzel={kunde.org_logo_kuerzel}
         orgPrimaryColor={kunde.org_primary_color}
@@ -384,7 +392,6 @@ export function OrganisationPortalClient({
 
           {section === "vorgaenge" ? (
             <OrganisationVorgaengeSection
-              key={initialVorgangFilter ?? "default"}
               kunde={kunde}
               eingang={eingang}
               objekte={objekte}
@@ -394,9 +401,13 @@ export function OrganisationPortalClient({
               initialFilter={initialVorgangFilter}
               initialSelectedId={initialItemId}
               onRefresh={refresh}
-              onFilterChange={(f) =>
-                router.replace(`/portal?section=vorgaenge&filter=${f}`, { scroll: false })
-              }
+              onFilterChange={(f) => {
+                const id = searchParams.get("id")?.trim();
+                const q = id
+                  ? `?section=vorgaenge&filter=${f}&id=${encodeURIComponent(id)}`
+                  : `?section=vorgaenge&filter=${f}`;
+                router.replace(`/portal${q}`, { scroll: false });
+              }}
               partnerBefundByLeadId={partnerBefundByLeadId}
               bautagebuchByLeadId={bautagebuchByLeadId}
               hwErledigtByLeadId={hwErledigtByLeadId}

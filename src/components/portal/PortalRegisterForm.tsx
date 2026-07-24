@@ -5,6 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { useMemo, useState } from "react";
 
 import { assertPortalEmailAllowed } from "@/app/actions/assert-portal-email-allowed";
+import { PortalAuthBusy } from "@/components/portal/auth/PortalAuthBusy";
 import { portalAuthCallbackUrl } from "@/lib/portal/portal-auth-url";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 
@@ -106,8 +107,8 @@ export function PortalRegisterForm({ prefill }: Props) {
         },
       },
     });
-    setLoading(false);
     if (signUpError) {
+      setLoading(false);
       if (signUpError.message.toLowerCase().includes("already registered")) {
         setError("Diese E-Mail ist bereits registriert. Bitte melde dich an.");
       } else {
@@ -115,7 +116,17 @@ export function PortalRegisterForm({ prefill }: Props) {
       }
       return;
     }
+    setLoading(false);
     setSuccess(true);
+  }
+
+  if (loading) {
+    return (
+      <PortalAuthBusy
+        title="Konto wird angelegt…"
+        body="Einen Moment — wir richten Ihren Zugang ein."
+      />
+    );
   }
 
   if (success) {
@@ -279,10 +290,10 @@ export function PortalRegisterForm({ prefill }: Props) {
 
       <button
         type="submit"
-        disabled={loading || (locked && (!name.trim() || !email.trim()))}
+        disabled={locked && (!name.trim() || !email.trim())}
         className="btn-pill-primary portal-btn w-full !py-3 disabled:opacity-60"
       >
-        {loading ? "Wird registriert…" : "Konto anlegen"}
+        Konto anlegen
       </button>
 
       <p className="border-t border-border-light pt-4 text-center portal-text-body text-text-secondary">

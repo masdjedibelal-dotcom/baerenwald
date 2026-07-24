@@ -2,6 +2,7 @@
 
 import type { ReactNode } from "react";
 
+import { MeldeServiceByLine } from "@/components/melden/MeldeServiceByLine";
 import { cn } from "@/lib/utils";
 
 export interface FunnelFooterProps {
@@ -14,6 +15,11 @@ export interface FunnelFooterProps {
   /** Zusatzzeile unter der Button-Zeile (z. B. Hinweis bei Beratungs-Flow) */
   belowActions?: ReactNode;
   className?: string;
+  /** Org-/Melde-spezifisch; Default Website-Impressum */
+  impressumHref?: string;
+  datenschutzHref?: string;
+  /** Unauffälliger „Technischer Service von Bärenwald“ (Default an). */
+  showServiceBy?: boolean;
 }
 
 export function FunnelFooter({
@@ -24,6 +30,9 @@ export function FunnelFooter({
   nextLeadingIcon,
   belowActions,
   className,
+  impressumHref = "/impressum",
+  datenschutzHref = "/datenschutz",
+  showServiceBy = true,
 }: FunnelFooterProps) {
   return (
     <footer
@@ -66,13 +75,26 @@ export function FunnelFooter({
           <div className="mt-1.5 text-center">{belowActions}</div>
         ) : null}
         <div className="funnel-footer-legal">
-          <a href="/impressum" target="_blank" rel="noopener noreferrer">
+          <a href={impressumHref} target="_blank" rel="noopener noreferrer">
             Impressum
           </a>
-          <span className="funnel-footer-dot" aria-hidden>·</span>
-          <a href="/datenschutz" target="_blank" rel="noopener noreferrer">
+          <span className="funnel-footer-dot" aria-hidden>
+            ·
+          </span>
+          <a href={datenschutzHref} target="_blank" rel="noopener noreferrer">
             Datenschutz
           </a>
+          {showServiceBy ? (
+            <>
+              <span className="funnel-footer-dot" aria-hidden>
+                ·
+              </span>
+              <MeldeServiceByLine
+                as="span"
+                className="funnel-footer-service-by"
+              />
+            </>
+          ) : null}
         </div>
       </div>
     </footer>

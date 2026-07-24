@@ -8,7 +8,7 @@ import {
   EinstellungenToggle,
 } from "@/components/shared/PortalEinstellungenUi";
 import type { OrganisationKunde, FreigabeModus } from "@/lib/org/types";
-import { PORTAL_C } from "@/lib/portal2/tokens";
+import { PORTAL_VAR } from "@/lib/portal2/tokens";
 import { orgPortalToast } from "@/lib/shared/portal-toast";
 
 type Props = {
@@ -69,7 +69,7 @@ export function OrganisationEinstellungenPanel({
   const readOnlyNote = readOnly ? (
     <p
       className="rounded-[9px] border border-border-default px-3.5 py-[11px] text-[13px] leading-[1.55]"
-      style={{ color: PORTAL_C.sub }}
+      style={{ color: PORTAL_VAR.sub }}
     >
       Nur Administratoren können Freigabe-Regeln und Schwellen ändern.
     </p>
@@ -109,7 +109,7 @@ export function OrganisationEinstellungenPanel({
           </span>
           <p
             className="mb-1 text-[13px] leading-[1.55]"
-            style={{ color: PORTAL_C.sub }}
+            style={{ color: PORTAL_VAR.sub }}
           >
             Bei „Freigabe“ müssen Angebote oberhalb Ihrer Freigabeschwelle erst
             von Ihnen freigegeben werden. Unter der Schwelle startet die
@@ -142,7 +142,7 @@ export function OrganisationEinstellungenPanel({
         {meldungenCard}
         {angeboteCard}
         {message ? (
-          <p className="text-[13px]" style={{ color: PORTAL_C.sub }}>
+          <p className="text-[13px]" style={{ color: PORTAL_VAR.sub }}>
             {message}
           </p>
         ) : null}
@@ -163,7 +163,7 @@ export function OrganisationEinstellungenPanel({
     <form onSubmit={save} className="max-w-lg space-y-6">
       <div
         className="rounded-[9px] border border-border-default px-3.5 py-[11px] text-[13px] leading-[1.55]"
-        style={{ color: PORTAL_C.sub }}
+        style={{ color: PORTAL_VAR.sub }}
       >
         <p className="mb-1 font-semibold text-text-primary">Datenschutz-Hinweis</p>
         <p>
@@ -175,7 +175,7 @@ export function OrganisationEinstellungenPanel({
       {meldungenCard}
       {angeboteCard}
       {message ? (
-        <p className="text-[13px]" style={{ color: PORTAL_C.sub }}>
+        <p className="text-[13px]" style={{ color: PORTAL_VAR.sub }}>
           {message}
         </p>
       ) : null}

@@ -1,18 +1,19 @@
 /**
- * Portal 2.0 D7 — Privat/Gewerbe Dashboard-KPIs (`screenDashboard` privat-Variante).
+ * Portal 2.0 D7 — Privat/Gewerbe/Mieter Dashboard-KPIs (`screenDashboard` privat-Variante).
  */
 
 import type { PortalMockStatusId } from "@/lib/portal2/status";
 import type { HvFlowCountMap } from "@/lib/portal2/hv-dashboard";
 
-export const PRIVAT_DASHBOARD_ROLE_LABEL = "Privatkunde" as const;
+export const PRIVAT_DASHBOARD_ROLE_LABEL = "" as const;
 export const GEWERBE_DASHBOARD_ROLE_LABEL = "Gewerbe" as const;
 
 export const PRIVAT_DASHBOARD_RECENT_TITLE = "Zuletzt" as const;
 export const PRIVAT_DASHBOARD_RECENT_ALL = "Alle ansehen" as const;
 export const PRIVAT_DASHBOARD_EMPTY_RECENT = "Noch nichts" as const;
+export const PRIVAT_DASHBOARD_KPI_SECTION = "Vorgänge" as const;
 
-export type PrivatDashboardKpiId = "offen" | "in_arbeit" | "gesamt_offen";
+export type PrivatDashboardKpiId = "offen" | "in_arbeit" | "erledigt";
 
 export const PRIVAT_DASHBOARD_KPI_DEFS = [
   {
@@ -28,8 +29,8 @@ export const PRIVAT_DASHBOARD_KPI_DEFS = [
     bg: "#ccfbf1",
   },
   {
-    id: "gesamt_offen" as const,
-    label: "Gesamt offen",
+    id: "erledigt" as const,
+    label: "Erledigt",
     color: "#2E7D52",
     bg: "#E7F1E9",
   },
@@ -38,18 +39,19 @@ export const PRIVAT_DASHBOARD_KPI_DEFS = [
 /**
  * Mock privat-Tiles:
  * - Offen = gemeldet+freigegeben+angefragt+angebot
- * - In Arbeit = nur aktiver Auftrag (Abschluss zählt als erledigt)
- * - Gesamt offen = wie Offen (Mock zeigt dieselbe Aggregation in Tile 1 und 3 für Nicht-HV)
+ * - In Arbeit = nur aktiver Auftrag
+ * - Erledigt = abschluss+rechnung+bezahlt
  */
 export function buildPrivatDashboardKpis(
   flow: HvFlowCountMap
 ): Record<PrivatDashboardKpiId, number> {
   const offen =
     flow.gemeldet + flow.freigegeben + flow.angefragt + flow.angebot;
+  const erledigt = flow.abschluss + flow.rechnung + flow.bezahlt;
   return {
     offen,
     in_arbeit: flow.auftrag,
-    gesamt_offen: offen,
+    erledigt,
   };
 }
 
@@ -97,6 +99,6 @@ export function privatKpiToListeChip(
   kpi: PrivatDashboardKpiId
 ): PrivatListeChip {
   if (kpi === "in_arbeit") return "arbeit";
-  if (kpi === "gesamt_offen") return "alle";
+  if (kpi === "erledigt") return "abgeschlossen";
   return "offen";
 }

@@ -50,6 +50,7 @@ export async function POST(request: Request) {
         typ: "neu",
         projektName: "Bestätigung ausstehend",
         link: partnerOffenPortalPath(anfrageId),
+        sendMail: false,
       });
     }
   }

@@ -1,5 +1,6 @@
 "use client";
 
+import { PortalPhotoGallery } from "@/components/shared/PortalPhotoGallery";
 import { VorgangLeistungenListe } from "@/components/shared/vorgang-detail/VorgangLeistungenListe";
 import { cn } from "@/lib/utils";
 import {
@@ -110,6 +111,7 @@ type Props = {
  * Einheitliche Blöcke für alle Portale — Sichtbarkeit über Sight-Matrix.
  * Partner: eine Details-Card (kein Card-Stack).
  * HV: Objekt & Melder + Details (Situation/Bereich/Beschreibung/Fotos/Zeitraum).
+ * Kunde/Mieter: gleiche Melde-Details wie HV, ohne Fotos.
  */
 export function VorgangDetailBlocks({ vm, sight: sightProp, className }: Props) {
   if (vm.role === "partner") {
@@ -136,16 +138,17 @@ export function VorgangDetailBlocks({ vm, sight: sightProp, className }: Props) 
     null;
   const plzOrtDisplay = B.plzOrt?.trim() || null;
 
+  const isKunde = vm.role === "kunde";
+  const hasMeldeTextDetails = Boolean(
+    B.situationLabel ||
+      B.bereichLabel ||
+      B.beschreibung ||
+      B.zeitraumLabel ||
+      (B.fachdetailRows && B.fachdetailRows.length > 0)
+  );
   const showMeldeDetails =
-    isHv &&
-    Boolean(
-      B.situationLabel ||
-        B.bereichLabel ||
-        B.beschreibung ||
-        B.zeitraumLabel ||
-        (B.fachdetailRows && B.fachdetailRows.length > 0) ||
-        (B.fotos && B.fotos.length > 0)
-    );
+    (isHv || isKunde) &&
+    (hasMeldeTextDetails || (isHv && Boolean(B.fotos && B.fotos.length > 0)));
 
   return (
     <div className={cn("space-y-3.5", className)}>
@@ -176,23 +179,11 @@ export function VorgangDetailBlocks({ vm, sight: sightProp, className }: Props) 
               <MetaRow label="E-Mail" value={B.melderEmail} />
             ) : null}
           </div>
-          {!isHv && B.beschreibung && !siteOnly ? (
+          {/* Beschreibung nur hier, wenn kein eigener Details-Block folgt */}
+          {!isHv && !isKunde && B.beschreibung && !siteOnly ? (
             <p className="portal-text-body mt-3 whitespace-pre-wrap text-text-secondary">
               {B.beschreibung}
             </p>
-          ) : null}
-          {!isHv && B.fotos && B.fotos.length > 0 && !safeOnly ? (
-            <div className="mt-3 grid grid-cols-3 gap-2 sm:grid-cols-4">
-              {B.fotos.slice(0, 8).map((src) => (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  key={src}
-                  src={src}
-                  alt=""
-                  className="aspect-square rounded-lg object-cover"
-                />
-              ))}
-            </div>
           ) : null}
         </BlockShell>
       ) : null}
@@ -227,22 +218,12 @@ export function VorgangDetailBlocks({ vm, sight: sightProp, className }: Props) 
               </p>
             </div>
           ) : null}
-          {B.fotos && B.fotos.length > 0 ? (
+          {isHv && B.fotos && B.fotos.length > 0 ? (
             <div className="mt-3">
               <p className="mb-2 text-[12px] font-semibold uppercase tracking-wide text-text-secondary">
                 Fotos
               </p>
-              <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
-                {B.fotos.slice(0, 12).map((src) => (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    key={src}
-                    src={src}
-                    alt=""
-                    className="aspect-square rounded-lg object-cover"
-                  />
-                ))}
-              </div>
+              <PortalPhotoGallery urls={B.fotos} />
             </div>
           ) : null}
         </BlockShell>

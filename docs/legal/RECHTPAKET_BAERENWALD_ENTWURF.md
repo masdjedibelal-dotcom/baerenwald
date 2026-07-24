@@ -2,7 +2,7 @@
 
 > **Status: Entwurf. Kein rechtsverbindliches Dokument.**  
 > Mit **[ANWALT]** markierte Stellen sind offene Rechtsfragen; **[VORSCHLAG]** = Arbeitshypothesen.  
-> **Nicht vor Freigabe live verwenden** (Ausnahme: Entwurfs-Templates mit Banner auf `/melden/*/datenschutz`).
+> Mieter-Impressum/-Datenschutz (Teile D/E, Variante B) sind freigegeben — Banner entfernt. Übrige Teile weiter Entwurf.
 
 Stand: Juli 2026
 
@@ -25,8 +25,8 @@ Stand: Juli 2026
 
 1. **[Belal]** Platzhalter in TOM + Subprozessoren final pflegen (technischer Stand: siehe TOM-Anlage).
 2. **[Belal]** Paket + Fragenkatalog an Anwalt — **Fragen 1–3 zuerst** (Handwerker-Einordnung, AV digital, Bestands-HVs).
-3. **[Anwalt]** Finalprüfung → AVV `av_version` 1.0; Mieter-Templates freigeben.
-4. **[Dev]** Nach Freigabe: Löschjobs aus Teil C; Entwurfs-Banner entfernen.
+3. **[Anwalt]** Finalprüfung → AVV `av_version` 1.0 (Mieter-Templates D/E: erledigt, Variante B).
+4. **[Dev]** Löschjobs aus Teil C nach Fristen-Freigabe.
 
 ## Verwandte Docs
 

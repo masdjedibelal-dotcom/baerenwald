@@ -10,6 +10,7 @@ import { getPartnerRahmenvertragPreview } from "@/app/actions/partner-rahmenvert
 import { PartnerRahmenvertragAcceptBlock } from "@/components/partner/PartnerRahmenvertragAcceptBlock";
 import { PartnerAuthFlowHint } from "@/components/partner/PartnerAuthFlowHint";
 import { PartnerRegisterStepNav } from "@/components/partner/PartnerRegisterStepNav";
+import { PortalAuthBusy } from "@/components/portal/auth/PortalAuthBusy";
 import { PortalResendConfirmation } from "@/components/portal/PortalResendConfirmation";
 import { PARTNER_AUTH_COPY } from "@/lib/partner/partner-auth-copy";
 import { partnerAuthCallbackUrl } from "@/lib/partner/partner-auth-url";
@@ -133,6 +134,19 @@ export function PartnerRegisterForm() {
     setSuccess(true);
   }
 
+  if (loading || previewLoading) {
+    return (
+      <PortalAuthBusy
+        title={previewLoading ? "E-Mail wird geprüft…" : "Konto wird angelegt…"}
+        body={
+          previewLoading
+            ? "Einen Moment — wir prüfen deinen Partner-Zugang."
+            : "Einen Moment — Vertrag und Konto werden eingerichtet."
+        }
+      />
+    );
+  }
+
   if (success) {
     return (
       <div className="space-y-3 text-center portal-text-body text-text-secondary">
@@ -179,10 +193,9 @@ export function PartnerRegisterForm() {
           <button
             type="button"
             onClick={() => void goToStep2()}
-            disabled={previewLoading}
-            className="btn-pill-primary w-full !py-2.5 disabled:opacity-60"
+            className="btn-pill-primary w-full !py-2.5"
           >
-            {previewLoading ? "Wird geprüft…" : "Weiter zu den Bedingungen"}
+            Weiter zu den Bedingungen
           </button>
         </div>
       ) : null}
@@ -278,10 +291,9 @@ export function PartnerRegisterForm() {
             </button>
             <button
               type="submit"
-              disabled={loading}
-              className="btn-pill-primary flex-1 !py-2.5 disabled:opacity-60"
+              className="btn-pill-primary flex-1 !py-2.5"
             >
-              {loading ? "Wird erstellt…" : "Konto anlegen"}
+              Konto anlegen
             </button>
           </div>
         </form>

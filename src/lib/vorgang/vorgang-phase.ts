@@ -23,7 +23,7 @@ export type MieterStatusStufe =
 const MIETER_LABELS: Record<MieterStatusStufe, string> = {
   eingegangen: "Eingegangen",
   in_bearbeitung: "In Bearbeitung",
-  beauftragt: "Beauftragt",
+  beauftragt: "Bestätigung",
   erledigt: "Erledigt",
 };
 
@@ -44,7 +44,13 @@ export function resolveMieterStatusStufe(
 
   const hv = (lead.hv_meldung_status ?? "").trim();
   if (hv === "abgelehnt") return "erledigt";
-  if (hv === "notmassnahme" || hv === "kleinreparatur") return "in_bearbeitung";
+  if (
+    hv === "notmassnahme" ||
+    hv === "kleinreparatur" ||
+    hv === "angebot_eingefordert"
+  ) {
+    return "in_bearbeitung";
+  }
 
   const freigabe = (lead.org_freigabe_status ?? "").trim();
   if (freigabe === "freigegeben") return "in_bearbeitung";

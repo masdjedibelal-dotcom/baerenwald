@@ -10,18 +10,23 @@ import {
   type PortalFlowExtraSignals,
 } from "@/lib/portal2/status-mapping";
 import type { PortalMockStatusId } from "@/lib/portal2/status";
-import { PORTAL_C } from "@/lib/portal2/tokens";
+import { PORTAL_VAR } from "@/lib/portal2/tokens";
 
 export const HV_DASHBOARD_ROLE_LABEL = "Verwaltung" as const;
 export const HV_DASHBOARD_RECENT_TITLE = "Zuletzt" as const;
 export const HV_DASHBOARD_RECENT_ALL = "Alle ansehen" as const;
 export const HV_DASHBOARD_EMPTY_RECENT = "Noch nichts" as const;
 
-/** Mock HV-Tiles: Label, Farb-Tokens. */
+/** Mock HV-Tiles: Label, Farb-Tokens.
+ * D3: `filter` = Listen-Chip (`HV_CHIPS` / OrgVorgangFilter).
+ * KPI „Wartet auf Freigabe“ ≡ Chip „Offen“ (gleiche Zähl-Semantik: gemeldet).
+ */
 export const HV_DASHBOARD_KPI_DEFS = [
   {
     id: "wartet_freigabe" as const,
     label: "Wartet auf Freigabe",
+    /** Listen-Chip-Label (Kurzform) — gleiche Filter-ID `offen`. */
+    chipLabel: "Offen",
     color: "#8A5A06",
     bg: "#fef3c7",
     filter: "offen" as const,
@@ -29,16 +34,18 @@ export const HV_DASHBOARD_KPI_DEFS = [
   {
     id: "in_arbeit" as const,
     label: "In Arbeit",
+    chipLabel: "In Arbeit",
     color: "#0f766e",
     bg: "#ccfbf1",
-    filter: "offen" as const,
+    filter: "in_arbeit" as const,
   },
   {
-    id: "gesamt_offen" as const,
-    label: "Gesamt offen",
-    color: PORTAL_C.primary,
-    bg: PORTAL_C.primarySoft,
-    filter: "offen" as const,
+    id: "erledigt" as const,
+    label: "Erledigt",
+    chipLabel: "Erledigt",
+    color: PORTAL_VAR.primary,
+    bg: PORTAL_VAR.primarySoft,
+    filter: "erledigt" as const,
   },
 ] as const;
 
@@ -66,8 +73,68 @@ export type HvDashboardAngebotSlice = {
   status?: string | null;
   status_einfach?: string | null;
   gesendet_am?: string | null;
+  gesendet_kunde_at?: string | null;
   created_at?: string | null;
 };
+
+/** Angebot ist für Portal sichtbar (gesendet / angenommen). */
+export function isPortalAngebotVorgelegt(angebot?: {
+  status?: string | null;
+  status_einfach?: string | null;
+  gesendet_am?: string | null;
+  gesendet_kunde_at?: string | null;
+} | null): boolean {
+  if (!angebot) return false;
+  if (angebot.gesendet_am?.trim() || angebot.gesendet_kunde_at?.trim()) {
+    return true;
+  }
+  const s = String(angebot.status_einfach ?? angebot.status ?? "")
+    .toLowerCase()
+    .trim();
+  return (
+    s === "gesendet" ||
+    s === "angenommen" ||
+    s === "kunde_akzeptiert" ||
+    s === "gesendet_kunde" ||
+    s === "beauftragt"
+  );
+}
+
+/** Bevorzugtes Angebot für Flow/Status (gesendet vor Entwurf). */
+export function pickPreferredAngebotForPortalFlow<
+  T extends {
+    status?: string | null;
+    status_einfach?: string | null;
+    gesendet_am?: string | null;
+    created_at?: string | null;
+  },
+>(candidates: T[]): T | null {
+  if (!candidates.length) return null;
+  const rank = (a: T): number => {
+    if (isPortalAngebotVorgelegt(a)) {
+      const s = String(a.status_einfach ?? a.status ?? "")
+        .toLowerCase()
+        .trim();
+      if (s === "angenommen" || s === "kunde_akzeptiert" || s === "beauftragt") {
+        return 0;
+      }
+      return 1;
+    }
+    const s = String(a.status_einfach ?? a.status ?? "")
+      .toLowerCase()
+      .trim();
+    if (s === "entwurf") return 3;
+    if (s === "ersetzt" || s === "abgelehnt" || s === "abgelaufen") return 9;
+    return 5;
+  };
+  return [...candidates].sort((a, b) => {
+    const diff = rank(a) - rank(b);
+    if (diff !== 0) return diff;
+    const ta = a.created_at ? new Date(a.created_at).getTime() : 0;
+    const tb = b.created_at ? new Date(b.created_at).getTime() : 0;
+    return tb - ta;
+  })[0]!;
+}
 
 export type HvDashboardAuftragSlice = {
   id: string;
@@ -110,14 +177,7 @@ export function resolveLeadPortalFlowStatus(input: {
     })
   );
   const angebotVorgelegt =
-    input.extra?.angebotVorgelegt ??
-    Boolean(
-      input.angebot &&
-        ["gesendet", "angenommen", "kunde_akzeptiert"].includes(
-          String(input.angebot.status_einfach ?? input.angebot.status ?? "")
-            .toLowerCase()
-        )
-    );
+    input.extra?.angebotVorgelegt ?? isPortalAngebotVorgelegt(input.angebot);
   const hwAngefragt =
     input.extra?.hwAngefragt ??
     Boolean(
@@ -143,12 +203,18 @@ export function countLeadsByPortalFlow(input: {
   angebote?: HvDashboardAngebotSlice[];
   auftraege?: HvDashboardAuftragSlice[];
 }): HvFlowCountMap {
-  const angebotByLead = new Map<string, HvDashboardAngebotSlice>();
+  const angeboteByLead = new Map<string, HvDashboardAngebotSlice[]>();
   for (const a of input.angebote ?? []) {
     const lid = a.lead_id?.trim();
     if (!lid) continue;
-    const prev = angebotByLead.get(lid);
-    if (!prev) angebotByLead.set(lid, a);
+    const list = angeboteByLead.get(lid) ?? [];
+    list.push(a);
+    angeboteByLead.set(lid, list);
+  }
+  const angebotByLead = new Map<string, HvDashboardAngebotSlice>();
+  for (const [lid, list] of Array.from(angeboteByLead.entries())) {
+    const preferred = pickPreferredAngebotForPortalFlow(list);
+    if (preferred) angebotByLead.set(lid, preferred);
   }
   const auftragByLead = new Map<string, HvDashboardAuftragSlice>();
   for (const a of input.auftraege ?? []) {
@@ -174,14 +240,14 @@ export type HvDashboardKpiValues = Record<HvDashboardKpiId, number>;
 /**
  * Mock HV-Tiles aus A4-Counts:
  * - Wartet auf Freigabe = gemeldet
- * - In Arbeit = auftrag + abschluss
- * - Gesamt offen = gemeldet + freigegeben + angefragt + angebot
+ * - In Arbeit = freigegeben + angefragt + angebot + auftrag
+ * - Erledigt = abschluss + rechnung + bezahlt
  */
 export function buildHvDashboardKpis(flow: HvFlowCountMap): HvDashboardKpiValues {
   return {
     wartet_freigabe: flow.gemeldet,
-    in_arbeit: flow.auftrag + flow.abschluss,
-    gesamt_offen:
-      flow.gemeldet + flow.freigegeben + flow.angefragt + flow.angebot,
+    in_arbeit:
+      flow.freigegeben + flow.angefragt + flow.angebot + flow.auftrag,
+    erledigt: flow.abschluss + flow.rechnung + flow.bezahlt,
   };
 }

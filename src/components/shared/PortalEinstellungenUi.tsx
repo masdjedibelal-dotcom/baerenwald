@@ -6,7 +6,7 @@ import {
   formatEinstellungenSchwelle,
   snapEinstellungenSchwelle,
 } from "@/lib/portal2/einstellungen";
-import { PORTAL_C } from "@/lib/portal2/tokens";
+import { PORTAL_VAR } from "@/lib/portal2/tokens";
 import { cn } from "@/lib/utils";
 
 /** Mock `pf(k, val)` — Bezeichnung oben, Wert im Feld darunter. */
@@ -122,7 +122,7 @@ export function EinstellungenChoiceCard({
         </span>
         <span
           className="mt-0.5 block text-[12.5px] leading-snug"
-          style={{ color: PORTAL_C.sub }}
+          style={{ color: PORTAL_VAR.sub }}
         >
           {description}
         </span>
@@ -167,7 +167,7 @@ export function EinstellungenCard({
       {title ? (
         <h3
           className="portal-einstellungen-card-title"
-          style={{ fontFamily: "var(--p2-font-head, " + PORTAL_C.head + ")" }}
+          style={{ fontFamily: "var(--p2-font-head, " + PORTAL_VAR.head + ")" }}
         >
           {title}
         </h3>
@@ -208,7 +208,7 @@ export function EinstellungenSchwelleSlider({
       />
       <span
         className="w-[110px] shrink-0 text-right text-[20px] font-bold text-accent"
-        style={{ fontFamily: "var(--p2-font-head, " + PORTAL_C.head + ")" }}
+        style={{ fontFamily: "var(--p2-font-head, " + PORTAL_VAR.head + ")" }}
       >
         {formatEinstellungenSchwelle(value)}
       </span>
@@ -358,7 +358,7 @@ export function EinstellungenToggle({
         {description ? (
           <span
             className="mt-1 block text-[13px] leading-snug"
-            style={{ color: PORTAL_C.sub }}
+            style={{ color: PORTAL_VAR.sub }}
           >
             {description}
           </span>

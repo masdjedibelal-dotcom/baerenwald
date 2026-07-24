@@ -50,7 +50,7 @@ assert(
 assert("nav hv", portalNavRoleForKundeTyp("hv") === "kunde_hv");
 assert(
   "liste title",
-  portalKundeListeTitle("privat") === "Meine Aufträge" &&
+  portalKundeListeTitle("privat") === "Meine Vorgänge" &&
     portalKundeListeTitle("hv") === "Vorgänge"
 );
 assert(
@@ -67,10 +67,11 @@ const flow = emptyHvFlowCounts();
 flow.gemeldet = 1;
 flow.angebot = 2;
 flow.auftrag = 1;
+flow.abschluss = 2;
 const kpis = buildPrivatDashboardKpis(flow);
 assert("kpi offen", kpis.offen === 3);
 assert("kpi arbeit", kpis.in_arbeit === 1);
-assert("kpi gesamt", kpis.gesamt_offen === 3);
+assert("kpi erledigt", kpis.erledigt === 2);
 
 assert("4 chips", PRIVAT_LISTE_CHIPS.length === 4);
 assert("chip offen gemeldet", privatListeChipMatches("offen", "gemeldet"));

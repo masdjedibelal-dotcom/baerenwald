@@ -1,5 +1,6 @@
 import { writeAuditEvent } from "@/lib/audit/write-audit-event";
 import { notifyMieterStatusChange } from "@/lib/melde/mieter-status-mail";
+import { notifyPortalAngebotGesendet } from "@/lib/portal/notify-portal-angebot-gesendet";
 import type { VorgangPhase } from "@/lib/vorgang/vorgang-phase";
 import { isHvPortalLead } from "@/lib/portal/hv-portal-lead";
 import { supabaseAdmin } from "@/lib/supabase";
@@ -57,6 +58,11 @@ function phaseForEvent(event: CrmLeadSyncEvent): VorgangPhase {
   }
 }
 
+function leadStatusForEvent(event: CrmLeadSyncEvent): string | null {
+  if (event === "angebot_gesendet") return "angebot";
+  return null;
+}
+
 function hvStatusForEvent(
   event: CrmLeadSyncEvent,
   current: string | null
@@ -92,6 +98,9 @@ export async function syncLeadFromCrm(
     updated_at: new Date().toISOString(),
   };
 
+  const leadStatus = leadStatusForEvent(event);
+  if (leadStatus) patch.status = leadStatus;
+
   const hv = hvStatusForEvent(event, (lead as LeadRow).hv_meldung_status);
   if (hv) patch.hv_meldung_status = hv;
 
@@ -109,8 +118,16 @@ export async function syncLeadFromCrm(
     actorId: opts?.actorId ?? null,
     actorRolle: "crm",
     kundeId: (lead as LeadRow).auftraggeber_kunde_id ?? null,
-    payload: { event, phase, hv_meldung_status: hv },
+    payload: { event, phase, hv_meldung_status: hv, status: leadStatus },
   });
+
+  if (event === "angebot_gesendet") {
+    try {
+      await notifyPortalAngebotGesendet(leadId);
+    } catch (e) {
+      console.error("[syncLeadFromCrm] angebot-notification", e);
+    }
+  }
 
   if (!opts?.skipMieterMail) {
     try {
