@@ -111,19 +111,30 @@ export async function ensureVersicherungsakteForAuftrag(
     ? String(lead.kunde_objekt_id)
     : null;
   if (objektId) {
-    let { data: obj, error: objErr } = await supabaseAdmin
+    const firstObj = await supabaseAdmin
       .from("kunden_objekte")
       .select(
         "titel, strasse, hausnummer, plz, versicherer, versicherungs_nr, selbstbehalt_eur"
       )
       .eq("id", objektId)
       .maybeSingle();
+    let obj: {
+      titel?: string | null;
+      strasse?: string | null;
+      hausnummer?: string | null;
+      plz?: string | null;
+      versicherer?: string | null;
+      versicherungs_nr?: string | null;
+      selbstbehalt_eur?: number | null;
+    } | null = firstObj.data;
+    const objErr = firstObj.error;
     if (objErr && /versicherer|versicherungs_nr|selbstbehalt/i.test(objErr.message)) {
-      ({ data: obj } = await supabaseAdmin
+      const fallback = await supabaseAdmin
         .from("kunden_objekte")
         .select("titel, strasse, hausnummer, plz")
         .eq("id", objektId)
-        .maybeSingle());
+        .maybeSingle();
+      obj = fallback.data;
     }
     if (obj?.titel) objektTitel = String(obj.titel);
     objektAdresse =

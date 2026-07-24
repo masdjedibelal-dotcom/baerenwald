@@ -290,7 +290,7 @@ export function OrganisationHvVorgangDetail({
   flowStatus,
   privatkunde,
   melder,
-  prioritaet,
+  prioritaet: _prioritaet,
   handwerkerName,
   leadId,
   auftragId: _auftragId,

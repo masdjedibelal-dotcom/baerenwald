@@ -74,10 +74,10 @@ export async function POST(req: Request) {
     if (isMieterwechselZubuchId(String(z))) zubuch.push(z as MieterwechselZubuchId);
   }
 
-  const module: MieterwechselModulId[] = [];
+  const moduleIds: MieterwechselModulId[] = [];
   if (stufe === 3) {
     for (const m of body.module ?? []) {
-      if (isMieterwechselModulId(String(m))) module.push(m as MieterwechselModulId);
+      if (isMieterwechselModulId(String(m))) moduleIds.push(m as MieterwechselModulId);
     }
   }
 
@@ -102,7 +102,7 @@ export async function POST(req: Request) {
     groesse,
     m2,
     zubuch,
-    module,
+    module: moduleIds,
   });
   const richtwert = mieterwechselRichtwert(preis);
   const modus = preis.isFix && stufe !== 3 ? "direkt" : "angebot";
@@ -110,7 +110,7 @@ export async function POST(req: Request) {
   const zubuchLabels = zubuch.map(
     (id) => MIETERWECHSEL_ZUBUCH.find((z) => z.id === id)?.label ?? id
   );
-  const modulLabels = module.map(
+  const modulLabels = moduleIds.map(
     (id) => MIETERWECHSEL_MODULE.find((m) => m.id === id)?.label ?? id
   );
 
@@ -159,7 +159,7 @@ export async function POST(req: Request) {
         m2,
         zubuch,
         zubuch_labels: zubuchLabels,
-        module,
+        module: moduleIds,
         modul_labels: modulLabels,
         preis_min: preis.min,
         preis_max: preis.max,
@@ -186,7 +186,7 @@ export async function POST(req: Request) {
       groesse,
       m2,
       zubuch,
-      module,
+      module: moduleIds,
       preisMin: preis.min,
       preisMax: preis.max,
       isFix: preis.isFix,

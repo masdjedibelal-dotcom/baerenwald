@@ -11,7 +11,6 @@
 import type { ResolvedVorgang } from "@/lib/crm-vorgang/types";
 import {
   MIETER_STG,
-  PORTAL_FLOW,
   PORTAL_FLOW_TIMELINE,
   PORTAL_STATUS,
   portalFlowTimelineIndex,

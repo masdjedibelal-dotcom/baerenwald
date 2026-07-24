@@ -1,4 +1,4 @@
-import { PORTAL_C, PORTAL_VAR } from "@/lib/portal2/tokens";
+import { PORTAL_VAR } from "@/lib/portal2/tokens";
 
 /**
  * White-Label Brand-Presets — Mock `BRAND_PRESETS` + Default-`ORG`
@@ -127,7 +127,7 @@ export function findBrandPresetByPrimary(
   return BRAND_PRESETS.find((x) => x.primary.toLowerCase() === p) ?? null;
 }
 
-/** Leitet Dk/Soft ab. Ohne primary → Portal-Default (`PORTAL_C`), nicht Steiner-Demo. */
+/** Leitet Dk/Soft ab. Ohne primary → Portal-Default (`PORTAL_VAR`), nicht Steiner-Demo. */
 export function resolveBrandPalette(input: {
   primary?: string | null;
   primaryDk?: string | null;

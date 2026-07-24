@@ -181,7 +181,7 @@ export async function uploadPartnerProfilLogo(
   });
   if (!upload.ok) return upload;
 
-  let { error } = await supabaseAdmin
+  const { error } = await supabaseAdmin
     .from("handwerker")
     .update({ logo_url: upload.path })
     .eq("id", link.handwerkerId);

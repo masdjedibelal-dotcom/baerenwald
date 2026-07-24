@@ -28,7 +28,7 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: "auftragId fehlt." }, { status: 400 });
   }
 
-  let { data: auftrag } = await loadAuftragForOrg(auftragId, session.kunde.id);
+  const { data: auftrag } = await loadAuftragForOrg(auftragId, session.kunde.id);
 
   if (!auftrag) {
     return NextResponse.json({ error: "Auftrag nicht gefunden." }, { status: 404 });

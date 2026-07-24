@@ -40,19 +40,6 @@ import { PORTAL_OBJEKT_COVER_DEFAULT_SRC } from "@/lib/portal2/portal-media";
 import type { PortalMockStatusId } from "@/lib/portal2/status";
 import { portalMieterStatusLabel } from "@/lib/portal2/status";
 
-function sectionText(
-  item: KundePortalDetailItem,
-  headingRe: RegExp
-): string {
-  const s = item.sections.find((sec) => headingRe.test(sec.heading ?? ""));
-  return (
-    s?.text?.trim() ||
-    s?.bullets?.join("\n").trim() ||
-    s?.rows?.map((r) => `${r.label}: ${r.value}`).join("\n").trim() ||
-    ""
-  );
-}
-
 function extractProjektbeschreibung(item: KundePortalDetailItem): string {
   for (const sec of item.sections ?? []) {
     const row = sec.rows?.find((r) =>

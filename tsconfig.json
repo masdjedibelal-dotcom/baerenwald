@@ -21,6 +21,22 @@
       "@/*": ["./src/*"]
     }
   },
-  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
-  "exclude": ["node_modules", "scripts", "e2e", "playwright.config.ts"]
+  "include": [
+    "next-env.d.ts",
+    "middleware.ts",
+    "tailwind.config.ts",
+    "src/**/*.ts",
+    "src/**/*.tsx",
+    ".next/types/**/*.ts"
+  ],
+  "exclude": [
+    "node_modules",
+    "scripts",
+    "e2e",
+    "e2e 2",
+    "playwright.config.ts",
+    "playwright-report",
+    "test-results",
+    "supabase"
+  ]
 }

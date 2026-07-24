@@ -450,7 +450,7 @@ export function openObjEditDraft(
     ort?: string | null;
     freigabe_schwelle_eur?: number | null;
   },
-  defaultHv = ""
+  _defaultHv = ""
 ): ObjWizDraft {
   const meta = decodeObjektMeta(o.notizen_intern);
   const we =

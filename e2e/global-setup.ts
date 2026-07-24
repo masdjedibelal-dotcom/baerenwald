@@ -32,7 +32,10 @@ async function ensureOrgKennung(
   }
 
   if (process.env.E2E_AUTO_SEED === "true") {
-    await admin.from("kunden").update({ org_kennung: kennung }).eq("id", orgId);
+    // Untyped admin client: update payload would be `never` under Database generics.
+    await (admin.from("kunden") as any)
+      .update({ org_kennung: kennung })
+      .eq("id", orgId);
   }
 
   return kennung;

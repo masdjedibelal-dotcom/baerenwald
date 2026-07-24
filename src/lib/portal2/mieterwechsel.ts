@@ -317,7 +317,7 @@ export function berechneMieterwechselPreis(
 ): MieterwechselPreisResult {
   const { stufe, groesse } = input;
   const zubuch = input.zubuch ?? [];
-  const module = input.module ?? [];
+  const moduleIds = input.module ?? [];
   const { m2, exact } = resolveM2ForPreis(groesse, input.m2);
 
   let basisMin = 0;
@@ -344,7 +344,7 @@ export function berechneMieterwechselPreis(
       basisMin = stufe1Preis(groesse) + m2 * STUFE2_BAND.min;
       basisMax = stufe1Preis(groesse) + m2 * STUFE2_BAND.max;
     }
-    for (const mod of module) {
+    for (const mod of moduleIds) {
       const p = modulPreis(mod, m2);
       basisMin += p.min;
       basisMax += p.max;
