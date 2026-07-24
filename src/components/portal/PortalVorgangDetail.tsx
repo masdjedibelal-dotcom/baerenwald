@@ -9,13 +9,11 @@ import { OrgAnlassBadge } from "@/components/org/OrgAnlassBadge";
 import { OrganisationHvVorgangDetail } from "@/components/org/OrganisationHvVorgangDetail";
 import { OrgVorgangFeedbackSection } from "@/components/org/OrgVorgangFeedbackSection";
 import { OrgMelderStatusLinkPanel } from "@/components/org/OrgMelderStatusLinkPanel";
-import { VorgangTimeline } from "@/components/shared/VorgangTimeline";
 import { PortalHvTerminSection } from "@/components/portal/PortalHvTerminSection";
 import { PortalVorgangFeedbackSection } from "@/components/portal/PortalVorgangFeedbackSection";
 import { PartnerPortalDetailSections } from "@/components/partner/PartnerPortalDetailSections";
 import { BautagebuchAccordionList } from "@/components/shared/BautagebuchAccordionList";
 import { DokumenteTabelle } from "@/components/shared/DokumenteTabelle";
-import { PortalAuftragPhasenStrip } from "@/components/shared/PortalAuftragPhasenStrip";
 import {
   PortalAnsprechpartnerCard,
   PortalConfirmDialog,
@@ -235,25 +233,6 @@ export function PortalVorgangDetail({
   const rel = fmtPortalRelativeTime(item.date);
   const metaLine = rel ? `${rel}` : undefined;
   const statusPill = portalDetailStatusPillClass(item.statusPillKey ?? item.status ?? "offen");
-  const hvTimeline =
-    showHvAbnahme && item.isAuftragDetail
-      ? [
-          { id: "beauftragt", label: "Beauftragt", done: true, active: false },
-          { id: "ausfuehrung", label: "Ausführung", done: true, active: false },
-          {
-            id: "abschluss",
-            label: "Abschluss",
-            done: Boolean(hwErledigt),
-            active: !hwErledigt,
-          },
-          {
-            id: "erledigt",
-            label: "Erledigt",
-            done: Boolean(hwErledigt),
-            active: false,
-          },
-        ]
-      : null;
 
   const isAngebotAccept = Boolean(item.isAngebotDetail && item.needsAction);
   const isAuftragAccept = Boolean(item.isAuftragDetail && item.needsAction);
@@ -323,18 +302,6 @@ export function PortalVorgangDetail({
 
         {item.infoHint ? (
           <PortalDetailInfoBox>{item.infoHint}</PortalDetailInfoBox>
-        ) : null}
-
-        {item.isAuftragDetail && item.auftragPhasen && !item.hvMieterView ? (
-          hvTimeline ? (
-            <VorgangTimeline steps={hvTimeline} />
-          ) : (
-            <PortalAuftragPhasenStrip
-              states={item.auftragPhasen.states}
-              aktuellePhase={item.auftragPhasen.aktuellePhase}
-              fortschritt={item.auftragPhasen.fortschritt ?? undefined}
-            />
-          )
         ) : null}
 
         {item.hvMieterView &&

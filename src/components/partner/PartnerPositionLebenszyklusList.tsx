@@ -1,9 +1,10 @@
 "use client";
 
 import { useMemo, useState, useTransition } from "react";
-import { X } from "lucide-react";
+import { ChevronDown, X } from "lucide-react";
 
 import { PartnerDirektKameraSlot } from "@/components/partner/PartnerDirektKameraSlot";
+import { PortalModalShell } from "@/components/shared/PortalModalShell";
 import {
   addPartnerPositionFortschritt,
   completePartnerPosition,
@@ -15,10 +16,10 @@ import {
   lebenszyklusLabel,
 } from "@/lib/partner/position-lebenszyklus";
 import { HW_DOKU_STORY } from "@/lib/portal2/hw-doku-story";
-import { portalToastError, portalToastSuccess } from "@/lib/shared/portal-toast";
-import { cn } from "@/lib/utils";
 import { PORTAL_MODAL_SCRIM } from "@/lib/portal2/modal-shell";
 import { PORTAL_VAR } from "@/lib/portal2/tokens";
+import { portalToastError, portalToastSuccess } from "@/lib/shared/portal-toast";
+import { cn } from "@/lib/utils";
 
 export type LebenszyklusPosition = {
   id: string;
@@ -33,29 +34,39 @@ export type LebenszyklusPosition = {
   zeit_minuten_summe?: number | null;
 };
 
-type SheetMode = "start" | "fortschritt" | "erledigt" | null;
+type SheetMode = "start" | "fortschritt" | "erledigt";
 
 type Props = {
   auftragId: string;
   positionen: LebenszyklusPosition[];
   onDone?: () => void;
+  /** Ohne eigene Section-Chrome — eingebettet in Leistungen & Vergütung. */
+  embedded?: boolean;
 };
 
 export function PartnerPositionLebenszyklusList({
   auftragId,
   positionen,
   onDone,
+  embedded = false,
 }: Props) {
   const [sheet, setSheet] = useState<{
     mode: SheetMode;
     position: LebenszyklusPosition;
   } | null>(null);
   const [weitereOpen, setWeitereOpen] = useState(false);
+  const [weitereTitel, setWeitereTitel] = useState("");
+  const [expandedId, setExpandedId] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
   const [nachreich, setNachreich] = useState(false);
 
   const erledigtCount = useMemo(
     () => positionen.filter((p) => p.leistung_status === "erledigt").length,
+    [positionen]
+  );
+  const firstArbeitId = useMemo(
+    () =>
+      positionen.find((p) => p.leistung_status === "in_arbeit")?.id ?? null,
     [positionen]
   );
 
@@ -89,8 +100,15 @@ export function PartnerPositionLebenszyklusList({
     });
   }
 
-  function submitWeitere(formData: FormData) {
+  function submitWeitere() {
+    const titel = weitereTitel.trim();
+    if (titel.length < 4) {
+      portalToastError("Bitte kurz beschreiben (mind. 4 Zeichen).");
+      return;
+    }
+    const formData = new FormData();
     formData.set("auftragId", auftragId);
+    formData.set("titel", titel);
     startTransition(async () => {
       const res = await createPartnerWeitereArbeit(formData);
       if (!res.ok) {
@@ -99,45 +117,19 @@ export function PartnerPositionLebenszyklusList({
       }
       portalToastSuccess("Weitere Arbeit angelegt — in Prüfung.");
       setWeitereOpen(false);
+      setWeitereTitel("");
       onDone?.();
     });
   }
 
-  return (
-    <section className="space-y-3 border-t border-border-light pt-5">
-      <div className="flex items-baseline justify-between gap-2">
-        <h4 className="portal-text-label text-text-tertiary">
-          {HW_DOKU_STORY.title}
-        </h4>
-        <p className="text-xs text-text-tertiary">
-          {erledigtCount} von {positionen.length} erledigt
-        </p>
-      </div>
+  function closeWeitere() {
+    if (pending) return;
+    setWeitereOpen(false);
+    setWeitereTitel("");
+  }
 
-      <p className="text-[12.5px] leading-relaxed" style={{ color: PORTAL_VAR.sub }}>
-        {HW_DOKU_STORY.lead}
-      </p>
-
-      <ol className="grid gap-2 sm:grid-cols-3">
-        {HW_DOKU_STORY.steps.map((s) => (
-          <li
-            key={s.n}
-            className="rounded-lg px-3 py-2.5"
-            style={{ background: "#F6F7F6" }}
-          >
-            <p
-              className="text-[11px] font-bold uppercase tracking-wide"
-              style={{ color: PORTAL_VAR.faint }}
-            >
-              {s.n}. {s.title}
-            </p>
-            <p className="mt-0.5 text-[11.5px] leading-snug" style={{ color: PORTAL_VAR.sub }}>
-              {s.body}
-            </p>
-          </li>
-        ))}
-      </ol>
-
+  const list = (
+    <>
       {positionen.length === 0 ? (
         <div
           className="rounded-xl border border-dashed px-4 py-5 text-center"
@@ -151,23 +143,32 @@ export function PartnerPositionLebenszyklusList({
             {HW_DOKU_STORY.firstJobTitle}
           </p>
           <p className="mt-1.5 text-[12.5px]" style={{ color: PORTAL_VAR.sub }}>
-            {HW_DOKU_STORY.firstJobEmpty}
+            Noch keine Leistung. Tippen Sie eine Position an, um Startfoto und
+            Dokumentation zu beginnen.
           </p>
         </div>
       ) : null}
 
-      <ul className="space-y-2.5">
+      {positionen.length > 0 ? (
+        <p className="text-[12px]" style={{ color: PORTAL_VAR.faint }}>
+          {erledigtCount} von {positionen.length} dokumentiert · Tippen zum
+          Öffnen
+        </p>
+      ) : null}
+
+      <ul className="space-y-2">
         {positionen.map((p) => {
           const st = p.leistung_status ?? "offen";
           const isArbeit = st === "in_arbeit";
           const isErledigt = st === "erledigt";
           const isAufwand = p.verguetung === "aufwand";
           const isRegie = p.typ === "regie" || isAufwand;
+          const open =
+            expandedId === p.id ||
+            (expandedId === null && p.id === firstArbeitId);
           const meta = [
             lebenszyklusLabel(st),
-            p.einheit && p.menge != null
-              ? `${p.menge} ${p.einheit}`
-              : null,
+            p.einheit && p.menge != null ? `${p.menge} ${p.einheit}` : null,
             p.anerkennung_status === "in_pruefung" ? "in Prüfung" : null,
             isRegie ? "Regie/Aufwand" : null,
           ]
@@ -178,73 +179,103 @@ export function PartnerPositionLebenszyklusList({
             <li
               key={p.id}
               className={cn(
-                "rounded-xl border bg-white p-3.5",
-                isArbeit
-                  ? "border-amber-400 shadow-[0_0_0_1px_rgba(245,158,11,0.25)]"
-                  : "border-border-light"
+                "overflow-hidden rounded-xl border bg-white",
+                open ? "border-[var(--p2-line)]" : "border-border-light"
               )}
             >
-              <div className="flex items-start justify-between gap-2">
+              <button
+                type="button"
+                className="flex w-full items-start justify-between gap-2 px-3.5 py-3 text-left"
+                onClick={() =>
+                  setExpandedId((cur) => (cur === p.id ? null : p.id))
+                }
+                aria-expanded={open}
+              >
                 <div className="min-w-0">
                   <p className="portal-text-card-title">{p.leistung_name}</p>
                   <p className="mt-0.5 text-xs text-text-tertiary">{meta}</p>
                 </div>
-                {p.preis_partner != null ? (
-                  <p className="shrink-0 text-sm font-semibold tabular-nums">
-                    {p.preis_partner.toLocaleString("de-DE", {
-                      style: "currency",
-                      currency: "EUR",
-                    })}
-                  </p>
-                ) : null}
-              </div>
+                <div className="flex shrink-0 items-center gap-2">
+                  {p.preis_partner != null ? (
+                    <p className="text-sm font-semibold tabular-nums">
+                      {p.preis_partner.toLocaleString("de-DE", {
+                        style: "currency",
+                        currency: "EUR",
+                      })}
+                    </p>
+                  ) : null}
+                  <ChevronDown
+                    className={cn(
+                      "h-4 w-4 text-text-tertiary transition-transform",
+                      open && "rotate-180"
+                    )}
+                    aria-hidden
+                  />
+                </div>
+              </button>
 
-              {!isErledigt ? (
-                <div className="mt-3 flex flex-col gap-2">
-                  {isRegie ? (
-                    <p
-                      className="rounded-lg px-2.5 py-2 text-[11.5px] font-medium"
-                      style={{ background: "#FBF1D6", color: "#8A5A06" }}
-                    >
-                      {HW_DOKU_STORY.regieHint}
+              {open ? (
+                <div
+                  className="space-y-2 border-t px-3.5 py-3"
+                  style={{ borderColor: PORTAL_VAR.line2 }}
+                >
+                  {!isErledigt ? (
+                    <>
+                      {isRegie ? (
+                        <p
+                          className="rounded-lg px-2.5 py-2 text-[11.5px] font-medium"
+                          style={{ background: "#F6F7F6", color: PORTAL_VAR.sub }}
+                        >
+                          {HW_DOKU_STORY.regieHint}
+                        </p>
+                      ) : null}
+                      {st === "offen" ? (
+                        <button
+                          type="button"
+                          className="btn-pill-primary w-full"
+                          onClick={() =>
+                            setSheet({ mode: "start", position: p })
+                          }
+                        >
+                          Start — Ankunftsfoto
+                        </button>
+                      ) : null}
+                      {isArbeit ? (
+                        <div className="flex flex-col gap-2 sm:flex-row">
+                          <button
+                            type="button"
+                            className="btn-pill-outline flex-1"
+                            onClick={() =>
+                              setSheet({ mode: "fortschritt", position: p })
+                            }
+                          >
+                            Fortschritt
+                          </button>
+                          <button
+                            type="button"
+                            className="btn-pill-primary flex-1"
+                            onClick={() =>
+                              setSheet({ mode: "erledigt", position: p })
+                            }
+                          >
+                            Ende — Dokumentieren
+                          </button>
+                        </div>
+                      ) : null}
+                      {isAufwand && p.zeit_minuten_summe ? (
+                        <p className="text-xs text-text-tertiary">
+                          Erfasste Zeit: {formatZeitMinuten(p.zeit_minuten_summe)}
+                        </p>
+                      ) : null}
+                    </>
+                  ) : (
+                    <p className="text-[12.5px]" style={{ color: PORTAL_VAR.sub }}>
+                      Dokumentiert
+                      {isAufwand && p.zeit_minuten_summe
+                        ? ` · ${formatZeitMinuten(p.zeit_minuten_summe)}`
+                        : ""}
                     </p>
-                  ) : null}
-                  {st === "offen" ? (
-                    <button
-                      type="button"
-                      className="btn-pill-primary w-full"
-                      onClick={() => setSheet({ mode: "start", position: p })}
-                    >
-                      ▶ 1. Start — Ankunftsfoto
-                    </button>
-                  ) : null}
-                  {isArbeit ? (
-                    <div className="flex flex-col gap-2 sm:flex-row">
-                      <button
-                        type="button"
-                        className="btn-pill-outline flex-1"
-                        onClick={() =>
-                          setSheet({ mode: "fortschritt", position: p })
-                        }
-                      >
-                        2. Fortschritt
-                      </button>
-                      <button
-                        type="button"
-                        className="btn-pill-primary flex-1"
-                        onClick={() =>
-                          setSheet({ mode: "erledigt", position: p })
-                        }
-                      >
-                        3. Ende — Dokumentieren
-                      </button>
-                    </div>
-                  ) : null}
-                  {isAufwand && p.zeit_minuten_summe ? (
-                    <p className="text-xs text-text-tertiary">
-                      Erfasste Zeit: {formatZeitMinuten(p.zeit_minuten_summe)}
-                    </p>
-                  ) : null}
+                  )}
                 </div>
               ) : null}
             </li>
@@ -263,15 +294,40 @@ export function PartnerPositionLebenszyklusList({
         Bis ca. 30 Min direkt dokumentieren; größere Arbeiten vorher als
         Nachtrag melden. Neue Positionen stehen „in Prüfung“.
       </p>
+    </>
+  );
+
+  return (
+    <div className={embedded ? "space-y-3" : "space-y-3 border-t border-border-light pt-5"}>
+      {!embedded ? (
+        <div className="flex items-baseline justify-between gap-2">
+          <h4 className="portal-text-label text-text-tertiary">Leistungen</h4>
+          <p className="text-xs text-text-tertiary">
+            {erledigtCount} von {positionen.length} erledigt
+          </p>
+        </div>
+      ) : null}
+
+      {list}
 
       {sheet ? (
-        <div className="fixed inset-0 z-50 flex items-end justify-center p-0 sm:items-center sm:p-4"
-          style={{ background: PORTAL_MODAL_SCRIM }}>
+        <div
+          className="fixed inset-0 z-50 flex items-end justify-center p-0 sm:items-center sm:p-4"
+          style={{ background: PORTAL_MODAL_SCRIM }}
+          role="presentation"
+          onClick={() => {
+            if (!pending) {
+              setSheet(null);
+              setNachreich(false);
+            }
+          }}
+        >
           <form
             action={submitSheet}
-            className="max-h-[92vh] w-full max-w-lg overflow-y-auto rounded-t-2xl bg-white p-4 shadow-xl sm:rounded-2xl"
+            className="flex max-h-[92vh] w-full max-w-lg flex-col overflow-hidden rounded-t-2xl bg-white shadow-xl sm:rounded-2xl"
+            onClick={(e) => e.stopPropagation()}
           >
-            <div className="mb-3 flex items-start justify-between gap-2">
+            <div className="flex items-start justify-between gap-2 border-b border-border-light px-4 py-3">
               <div>
                 <p className="portal-text-section">
                   {sheet.mode === "start"
@@ -297,84 +353,80 @@ export function PartnerPositionLebenszyklusList({
               </button>
             </div>
 
-            <input type="hidden" name="positionId" value={sheet.position.id} />
+            <div className="min-h-0 flex-1 overflow-y-auto px-4 py-3">
+              <input type="hidden" name="positionId" value={sheet.position.id} />
 
-            <PartnerDirektKameraSlot
-              label={
-                sheet.mode === "start"
-                  ? "Ankunftsfoto — Ort & Zustand"
-                  : sheet.mode === "fortschritt"
-                    ? "Fortschritts-Foto"
-                    : "Ergebnis-Foto — fertige Arbeit"
-              }
-            />
-
-            <button
-              type="button"
-              className="mt-2 text-xs text-text-tertiary underline"
-              onClick={() => setNachreich((v) => !v)}
-            >
-              Foto liegt schon vor?
-            </button>
-            {nachreich ? (
-              <div className="mt-2 space-y-2">
-                <p className="text-xs text-amber-800">
-                  Galerie erlaubt — zählt als nachgereicht, nicht für
-                  Tagesspanne.
-                </p>
-                <input
-                  type="file"
-                  name="foto"
-                  accept="image/*"
-                  required
-                  className="block w-full text-sm"
-                />
-                <input
-                  type="text"
-                  name="nachreichGrund"
-                  required
-                  placeholder="Grund (Pflicht)"
-                  className="input-field w-full"
-                />
-              </div>
-            ) : null}
-
-            <label className="mt-4 block space-y-1">
-              <span className="portal-form-label">
-                {sheet.mode === "start"
-                  ? "Ausgangslage"
-                  : sheet.mode === "fortschritt"
-                    ? "Kurz beschreiben"
-                    : "Ergebnis / Schlussbemerkung"}
-              </span>
-              <textarea
-                name="beschreibung"
-                rows={3}
-                className="portal-input w-full rounded-xl border border-border-default px-3 py-2.5"
-                placeholder={
+              <PartnerDirektKameraSlot
+                label={
                   sheet.mode === "start"
-                    ? "z.B. Leck an Steigleitung, Wand feucht"
+                    ? "Ankunftsfoto — Ort & Zustand"
                     : sheet.mode === "fortschritt"
-                      ? "z.B. Estrich eingebracht, trocknet"
-                      : "Was wurde fertiggestellt?"
+                      ? "Fortschritts-Foto"
+                      : "Ergebnis-Foto — fertige Arbeit"
                 }
               />
-              <span className="text-[11px] text-text-tertiary">
-                Tipp: Mikrofon der Tastatur nutzen und einfach sprechen.
-              </span>
-            </label>
 
-            {sheet.position.verguetung === "aufwand" &&
-            (sheet.mode === "fortschritt" || sheet.mode === "erledigt") ? (
-              <div className="mt-3 space-y-1">
-                <p className="portal-form-label">
-                  {sheet.mode === "erledigt"
-                    ? "Meine Zeit gesamt (Pflicht bei Regie)"
-                    : "Zeitaufwand (Regie)"}
-                </p>
-                <div className="flex gap-2">
-                  <label className="flex-1">
-                    <span className="sr-only">Stunden</span>
+              <button
+                type="button"
+                className="mt-2 text-xs text-text-tertiary underline"
+                onClick={() => setNachreich((v) => !v)}
+              >
+                Foto liegt schon vor?
+              </button>
+              {nachreich ? (
+                <div className="mt-2 space-y-2">
+                  <p className="text-xs text-amber-800">
+                    Galerie erlaubt — zählt als nachgereicht, nicht für
+                    Tagesspanne.
+                  </p>
+                  <input
+                    type="file"
+                    name="foto"
+                    accept="image/*"
+                    required
+                    className="block w-full text-sm"
+                  />
+                  <input
+                    type="text"
+                    name="nachreichGrund"
+                    required
+                    placeholder="Grund (Pflicht)"
+                    className="input-field w-full"
+                  />
+                </div>
+              ) : null}
+
+              <label className="mt-4 block space-y-1">
+                <span className="portal-form-label">
+                  {sheet.mode === "start"
+                    ? "Ausgangslage"
+                    : sheet.mode === "fortschritt"
+                      ? "Kurz beschreiben"
+                      : "Ergebnis / Schlussbemerkung"}
+                </span>
+                <textarea
+                  name="beschreibung"
+                  rows={3}
+                  className="portal-input w-full rounded-xl border border-border-default px-3 py-2.5"
+                  placeholder={
+                    sheet.mode === "start"
+                      ? "z.B. Leck an Steigleitung, Wand feucht"
+                      : sheet.mode === "fortschritt"
+                        ? "z.B. Estrich eingebracht, trocknet"
+                        : "Was wurde fertiggestellt?"
+                  }
+                />
+              </label>
+
+              {sheet.position.verguetung === "aufwand" &&
+              (sheet.mode === "fortschritt" || sheet.mode === "erledigt") ? (
+                <div className="mt-3 space-y-1">
+                  <p className="portal-form-label">
+                    {sheet.mode === "erledigt"
+                      ? "Meine Zeit gesamt (Pflicht bei Regie)"
+                      : "Zeitaufwand (Regie)"}
+                  </p>
+                  <div className="flex gap-2">
                     <input
                       type="number"
                       name="zeitStd"
@@ -390,9 +442,6 @@ export function PartnerPositionLebenszyklusList({
                       className="portal-input w-full rounded-xl border border-border-default px-3 py-2.5"
                       placeholder="Std"
                     />
-                  </label>
-                  <label className="flex-1">
-                    <span className="sr-only">Minuten</span>
                     <input
                       type="number"
                       name="zeitMin"
@@ -409,75 +458,70 @@ export function PartnerPositionLebenszyklusList({
                       className="portal-input w-full rounded-xl border border-border-default px-3 py-2.5"
                       placeholder="Min"
                     />
-                  </label>
+                  </div>
                 </div>
-                <p className="text-[11px] text-amber-800">
-                  Soft-Gate: Ohne Zeitnachweis bleibt die Regie-Position unvollständig.
-                </p>
-              </div>
-            ) : null}
+              ) : null}
+            </div>
 
-            {sheet.mode === "start" ? (
-              <p className="mt-3 rounded-lg bg-muted/40 px-3 py-2 text-xs text-text-secondary">
-                Nur mit Start-Foto wird die Position freigeschaltet. Danach
-                kannst du Fortschritte festhalten und die Arbeit abschließen.
-              </p>
-            ) : null}
-
-            <button
-              type="submit"
-              className="btn-pill-primary mt-4 w-full"
-              disabled={pending}
-            >
-              {pending
-                ? "Speichern…"
-                : sheet.mode === "start"
-                  ? "Position starten"
-                  : sheet.mode === "fortschritt"
-                    ? "Fortschritt speichern"
-                    : "Dokumentieren"}
-            </button>
-          </form>
-        </div>
-      ) : null}
-
-      {weitereOpen ? (
-        <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center sm:p-4"
-          style={{ background: PORTAL_MODAL_SCRIM }}>
-          <form
-            action={submitWeitere}
-            className="w-full max-w-lg rounded-t-2xl bg-white p-4 sm:rounded-2xl"
-          >
-            <p className="portal-text-section">Weitere Arbeit</p>
-            <p className="mt-1 text-xs text-text-tertiary">
-              Neue Regie-Position nach Aufwand — in Prüfung bis CRM anerkennt.
-            </p>
-            <input
-              name="titel"
-              required
-              minLength={4}
-              placeholder="Was wurde zusätzlich gemacht?"
-              className="portal-input mt-3 w-full rounded-xl border border-border-default px-3 py-2.5"
-            />
-            <div className="mt-3 flex gap-2">
-              <button
-                type="button"
-                className="btn-pill-outline flex-1"
-                onClick={() => setWeitereOpen(false)}
-              >
-                Abbrechen
-              </button>
+            <div className="border-t border-border-light px-4 py-3">
               <button
                 type="submit"
-                className="btn-pill-primary flex-1"
+                className="btn-pill-primary w-full"
                 disabled={pending}
               >
-                Anlegen
+                {pending
+                  ? "Speichern…"
+                  : sheet.mode === "start"
+                    ? "Position starten"
+                    : sheet.mode === "fortschritt"
+                      ? "Fortschritt speichern"
+                      : "Dokumentieren"}
               </button>
             </div>
           </form>
         </div>
       ) : null}
-    </section>
+
+      <PortalModalShell
+        open={weitereOpen}
+        title="Weitere Arbeit"
+        subtitle="Neue Regie-Position nach Aufwand — in Prüfung bis CRM anerkennt."
+        onClose={closeWeitere}
+        closeOnBackdrop={!pending}
+      >
+        <label className="flex flex-col gap-1">
+          <span className="text-[11.5px] font-bold tracking-wide text-text-tertiary">
+            Was wurde zusätzlich gemacht?
+          </span>
+          <input
+            value={weitereTitel}
+            onChange={(e) => setWeitereTitel(e.target.value)}
+            required
+            minLength={4}
+            placeholder="Kurz beschreiben…"
+            className="portal-input w-full rounded-xl border border-border-default px-3 py-2.5"
+            autoFocus
+          />
+        </label>
+        <div className="mt-5 flex flex-wrap justify-end gap-2">
+          <button
+            type="button"
+            className="btn-pill-outline portal-btn !px-4 !py-2.5"
+            disabled={pending}
+            onClick={closeWeitere}
+          >
+            Abbrechen
+          </button>
+          <button
+            type="button"
+            className="btn-pill-primary portal-btn !px-4 !py-2.5"
+            disabled={pending || weitereTitel.trim().length < 4}
+            onClick={() => submitWeitere()}
+          >
+            {pending ? "Anlegen…" : "Speichern"}
+          </button>
+        </div>
+      </PortalModalShell>
+    </div>
   );
 }

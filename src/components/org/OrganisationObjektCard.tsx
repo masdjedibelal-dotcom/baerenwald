@@ -9,7 +9,6 @@ import { cn } from "@/lib/utils";
 type Props = {
   card: ObjCardModel;
   selected?: boolean;
-  hasRegeln?: boolean;
   onOpen: () => void;
   onToggleSelect: () => void;
   actions?: ReactNode;
@@ -23,7 +22,6 @@ type Props = {
 export function OrganisationObjektCard({
   card,
   selected = false,
-  hasRegeln = false,
   onOpen,
   onToggleSelect,
   actions,
@@ -41,7 +39,7 @@ export function OrganisationObjektCard({
         }
       }}
       className={cn(
-        "relative cursor-pointer overflow-hidden rounded-xl border bg-white transition-shadow",
+        "relative cursor-pointer rounded-xl border bg-white transition-shadow",
         selected
           ? "border-accent shadow-[0_0_0_1px_var(--color-accent,theme(colors.accent.DEFAULT))]"
           : "border-border-default hover:shadow-md"
@@ -81,11 +79,6 @@ export function OrganisationObjektCard({
           <p className="min-w-0 flex-1 font-[family-name:var(--font-display)] text-[15px] font-bold text-text-primary">
             {card.name}
           </p>
-          {hasRegeln ? (
-            <span title="Regeln aktiv" className="text-[11px] text-text-tertiary">
-              ⚙ Regeln
-            </span>
-          ) : null}
         </div>
         <p className="mb-1 text-[12.5px] text-text-secondary">{card.adresse}</p>
         <p className="mb-2.5 text-[12.5px] text-text-tertiary">{card.typLine}</p>

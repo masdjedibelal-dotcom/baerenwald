@@ -1,19 +1,18 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { PortalKontoSicherheitPanel } from "@/components/shared/PortalKontoSicherheitPanel";
-import { PortalPushPermissionRationale } from "@/components/shared/PortalPushPermissionRationale";
-import { PortalTrackingConsentPanel } from "@/components/shared/PortalTrackingConsentPanel";
 import { PortalEinstellungenShell } from "@/components/shared/PortalEinstellungenShell";
 import {
   EinstellungenEdField,
+  EinstellungenEditModal,
   EinstellungenPfRow,
+  EinstellungenSectionHeader,
 } from "@/components/shared/PortalEinstellungenUi";
 import type { PortalKundeTyp } from "@/lib/portal2/kunde-typ";
 import { portalKundeTypRoleLabel } from "@/lib/portal2/kunde-typ";
-import { PORTAL_VAR } from "@/lib/portal2/tokens";
 import { portalToastError, portalToastSuccess } from "@/lib/shared/portal-toast";
 
 type Props = {
@@ -24,7 +23,7 @@ type Props = {
 };
 
 /**
- * D12 Privat/Gewerbe — Einstellungen inkl. Profil-Edit + Konto-Sicherheit.
+ * D12 Privat/Gewerbe — Profil nur Anzeige; Bearbeiten per Stift → Modal.
  */
 export function PortalEinstellungenPrivat({
   name,
@@ -33,9 +32,28 @@ export function PortalEinstellungenPrivat({
   kundeTyp,
 }: Props) {
   const router = useRouter();
-  const [editName, setEditName] = useState(name?.trim() || "");
-  const [editTel, setEditTel] = useState(telefon?.trim() || "");
+  const [savedName, setSavedName] = useState(name?.trim() || "");
+  const [savedTel, setSavedTel] = useState(telefon?.trim() || "");
+  const [editOpen, setEditOpen] = useState(false);
+  const [editName, setEditName] = useState(savedName);
+  const [editTel, setEditTel] = useState(savedTel);
   const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    setSavedName(name?.trim() || "");
+    setSavedTel(telefon?.trim() || "");
+  }, [name, telefon]);
+
+  function openEdit() {
+    setEditName(savedName);
+    setEditTel(savedTel);
+    setEditOpen(true);
+  }
+
+  function closeEdit() {
+    if (busy) return;
+    setEditOpen(false);
+  }
 
   async function saveProfil() {
     setBusy(true);
@@ -50,6 +68,9 @@ export function PortalEinstellungenPrivat({
         portalToastError(json.error || "Speichern fehlgeschlagen.");
         return;
       }
+      setSavedName(editName.trim());
+      setSavedTel(editTel.trim());
+      setEditOpen(false);
       portalToastSuccess("Profil gespeichert.");
       router.refresh();
     } finally {
@@ -66,48 +87,48 @@ export function PortalEinstellungenPrivat({
         {() => (
           <div className="space-y-4">
             <div className="space-y-2.5">
-              <h3
-                className="text-sm font-bold"
-                style={{
-                  color: PORTAL_VAR.ink,
-                  fontFamily: "var(--p2-font-head, " + PORTAL_VAR.head + ")",
-                }}
-              >
-                Profil
-              </h3>
-              <EinstellungenEdField
-                label="Name"
-                value={editName}
-                onChange={setEditName}
-                autoComplete="name"
+              <EinstellungenSectionHeader
+                title="PROFIL"
+                onEdit={openEdit}
+                editLabel="Profil bearbeiten"
               />
+              <EinstellungenPfRow label="Name" value={savedName || "—"} />
               <EinstellungenPfRow label="E-Mail" value={email?.trim() || "—"} />
+              <EinstellungenPfRow label="Telefon" value={savedTel || "—"} />
               <p className="text-[11.5px] text-text-tertiary">
                 E-Mail-Änderung nur über Support (Verifizierung).
               </p>
-              <EinstellungenEdField
-                label="Telefon"
-                value={editTel}
-                onChange={setEditTel}
-                type="tel"
-                autoComplete="tel"
-              />
-              <button
-                type="button"
-                className="btn-pill-outline portal-btn-compact"
-                disabled={busy || editName.trim().length < 2}
-                onClick={() => void saveProfil()}
-              >
-                {busy ? "Speichern…" : "Profil speichern"}
-              </button>
             </div>
 
             <PortalKontoSicherheitPanel signOutHref="/portal/login" />
-            <PortalPushPermissionRationale role="kunde" embedded />
-            <PortalTrackingConsentPanel />
           </div>
         )}
       </PortalEinstellungenShell>
+
+      <EinstellungenEditModal
+        open={editOpen}
+        title="Profil bearbeiten"
+        subtitle="Änderungen erst nach Speichern übernehmen."
+        onClose={closeEdit}
+        onSave={() => void saveProfil()}
+        saving={busy}
+        saveDisabled={editName.trim().length < 2}
+      >
+        <EinstellungenEdField
+          label="Name"
+          value={editName}
+          onChange={setEditName}
+          autoComplete="name"
+        />
+        <EinstellungenPfRow label="E-Mail" value={email?.trim() || "—"} />
+        <EinstellungenEdField
+          label="Telefon"
+          value={editTel}
+          onChange={setEditTel}
+          type="tel"
+          autoComplete="tel"
+        />
+      </EinstellungenEditModal>
 
       <div className="px-4 lg:px-6">
         <form action="/portal/auth/signout" method="post">

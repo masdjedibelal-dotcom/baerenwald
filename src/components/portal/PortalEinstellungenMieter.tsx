@@ -4,12 +4,12 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
 import { PortalKontoSicherheitPanel } from "@/components/shared/PortalKontoSicherheitPanel";
-import { PortalPushPermissionRationale } from "@/components/shared/PortalPushPermissionRationale";
-import { PortalTrackingConsentPanel } from "@/components/shared/PortalTrackingConsentPanel";
 import { PortalEinstellungenShell } from "@/components/shared/PortalEinstellungenShell";
 import {
   EinstellungenEdField,
+  EinstellungenEditModal,
   EinstellungenPfRow,
+  EinstellungenSectionHeader,
 } from "@/components/shared/PortalEinstellungenUi";
 import { SITE_CONFIG } from "@/lib/config";
 import {
@@ -20,7 +20,6 @@ import {
   mieterKontoZugangHinweis,
   type PortalUiLang,
 } from "@/lib/portal2/einstellungen-ui";
-import { PORTAL_VAR } from "@/lib/portal2/tokens";
 import { portalToastError, portalToastSuccess } from "@/lib/shared/portal-toast";
 import { cn } from "@/lib/utils";
 
@@ -34,7 +33,7 @@ type Props = {
 };
 
 /**
- * D12 Mieter — Einstellungen mit Subnav: Profil · Zugang (+ Sprache).
+ * D12 Mieter — Profil Anzeige; Telefon per Stift → Modal.
  */
 export function PortalEinstellungenMieter({
   name,
@@ -46,7 +45,9 @@ export function PortalEinstellungenMieter({
 }: Props) {
   const router = useRouter();
   const [lang, setLang] = useState<PortalUiLang>("de");
-  const [editTel, setEditTel] = useState(telefon?.trim() || "");
+  const [savedTel, setSavedTel] = useState(telefon?.trim() || "");
+  const [editOpen, setEditOpen] = useState(false);
+  const [editTel, setEditTel] = useState(savedTel);
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
@@ -57,6 +58,10 @@ export function PortalEinstellungenMieter({
       /* ignore */
     }
   }, []);
+
+  useEffect(() => {
+    setSavedTel(telefon?.trim() || "");
+  }, [telefon]);
 
   const setUiLang = (next: PortalUiLang) => {
     setLang(next);
@@ -73,6 +78,16 @@ export function PortalEinstellungenMieter({
   const supportMail = orgMail?.trim() || SITE_CONFIG.email;
   const zugangMail = orgMail?.trim() || supportMail;
 
+  function openEdit() {
+    setEditTel(savedTel);
+    setEditOpen(true);
+  }
+
+  function closeEdit() {
+    if (busy) return;
+    setEditOpen(false);
+  }
+
   async function saveTelefon() {
     setBusy(true);
     try {
@@ -86,6 +101,8 @@ export function PortalEinstellungenMieter({
         portalToastError(json.error || "Speichern fehlgeschlagen.");
         return;
       }
+      setSavedTel(editTel.trim());
+      setEditOpen(false);
       portalToastSuccess("Telefon gespeichert.");
       router.refresh();
     } finally {
@@ -101,16 +118,7 @@ export function PortalEinstellungenMieter({
             return (
               <div className="space-y-4">
                 <div className="space-y-2.5">
-                  <h3
-                    className="text-sm font-bold"
-                    style={{
-                      color: PORTAL_VAR.ink,
-                      fontFamily:
-                        "var(--p2-font-head, " + PORTAL_VAR.head + ")",
-                    }}
-                  >
-                    {MIETER_KONTO_ZUGANG_TITLE}
-                  </h3>
+                  <EinstellungenSectionHeader title={MIETER_KONTO_ZUGANG_TITLE} />
                   <EinstellungenPfRow
                     label="Wohnung"
                     value={wohnung?.trim() || "—"}
@@ -125,16 +133,7 @@ export function PortalEinstellungenMieter({
                 </div>
 
                 <div className="space-y-3 border-t border-border-default pt-4">
-                  <h3
-                    className="text-sm font-bold"
-                    style={{
-                      color: PORTAL_VAR.ink,
-                      fontFamily:
-                        "var(--p2-font-head, " + PORTAL_VAR.head + ")",
-                    }}
-                  >
-                    {MIETER_SPRACHE_TITLE}
-                  </h3>
+                  <EinstellungenSectionHeader title={MIETER_SPRACHE_TITLE} />
                   <p className="text-[13px] leading-relaxed text-text-secondary">
                     {MIETER_SPRACHE_INTRO}
                   </p>
@@ -162,40 +161,20 @@ export function PortalEinstellungenMieter({
                 </div>
 
                 <PortalKontoSicherheitPanel signOutHref="/portal/login" />
-                <PortalPushPermissionRationale role="kunde" embedded />
-                <PortalTrackingConsentPanel />
               </div>
             );
           }
 
           return (
             <div className="space-y-2.5">
-              <h3
-                className="text-sm font-bold"
-                style={{
-                  color: PORTAL_VAR.ink,
-                  fontFamily: "var(--p2-font-head, " + PORTAL_VAR.head + ")",
-                }}
-              >
-                Profil
-              </h3>
+              <EinstellungenSectionHeader
+                title="PROFIL"
+                onEdit={openEdit}
+                editLabel="Telefon bearbeiten"
+              />
               <EinstellungenPfRow label="Name" value={name?.trim() || "—"} />
               <EinstellungenPfRow label="E-Mail" value={email?.trim() || "—"} />
-              <EinstellungenEdField
-                label="Telefon"
-                value={editTel}
-                onChange={setEditTel}
-                type="tel"
-                autoComplete="tel"
-              />
-              <button
-                type="button"
-                className="btn-pill-outline portal-btn-compact"
-                disabled={busy}
-                onClick={() => void saveTelefon()}
-              >
-                {busy ? "Speichern…" : "Telefon speichern"}
-              </button>
+              <EinstellungenPfRow label="Telefon" value={savedTel || "—"} />
               <p className="text-[12.5px] leading-relaxed text-text-secondary">
                 Name oder E-Mail ändern? Schreiben Sie Ihrer Verwaltung:{" "}
                 <a
@@ -209,6 +188,23 @@ export function PortalEinstellungenMieter({
           );
         }}
       </PortalEinstellungenShell>
+
+      <EinstellungenEditModal
+        open={editOpen}
+        title="Telefon bearbeiten"
+        subtitle="Änderungen erst nach Speichern übernehmen."
+        onClose={closeEdit}
+        onSave={() => void saveTelefon()}
+        saving={busy}
+      >
+        <EinstellungenEdField
+          label="Telefon"
+          value={editTel}
+          onChange={setEditTel}
+          type="tel"
+          autoComplete="tel"
+        />
+      </EinstellungenEditModal>
 
       <div className="px-4 lg:px-6">
         <form action="/portal/auth/signout" method="post">

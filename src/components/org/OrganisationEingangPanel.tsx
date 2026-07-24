@@ -4,7 +4,7 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { AlertTriangle, Filter, Mail, Phone, X } from "lucide-react";
-import { PORTAL_MODAL_SCRIM } from "@/lib/portal2/modal-shell";
+import { PORTAL_VAR } from "@/lib/portal2/tokens";
 
 import { OrgFreigabeBanner } from "@/components/org/OrgFreigabeBanner";
 import { OrgMeldungAktionBanner } from "@/components/org/OrgMeldungAktionBanner";
@@ -557,7 +557,7 @@ export function OrganisationEingangPanel({
           type="button"
           onClick={closeDetail}
           className="rounded-full px-3 py-1.5 text-[12.5px] font-semibold text-white"
-          style={{ background: PORTAL_MODAL_SCRIM }}
+          style={{ background: PORTAL_VAR.primary }}
         >
           ‹ Zurück
         </button>

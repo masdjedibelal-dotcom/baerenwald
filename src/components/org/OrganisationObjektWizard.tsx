@@ -36,6 +36,8 @@ type Props = {
   existingNotizen?: string | null;
   editMode?: boolean;
   defaultHv?: string;
+  /** `modal` = Fullscreen wie Neuer Vorgang (PortalModalShell funnel). */
+  variant?: "page" | "modal";
   onCancel: () => void;
   onDone: (payload: ObjWizPayload) => Promise<void>;
 };
@@ -80,9 +82,11 @@ export function OrganisationObjektWizard({
   existingNotizen,
   editMode,
   defaultHv,
+  variant = "page",
   onCancel,
   onDone,
 }: Props) {
+  const isModal = variant === "modal";
   const [stepIndex, setStepIndex] = useState(0);
   const [draft, setDraft] = useState<ObjWizDraft>(() => ({
     we: 1,
@@ -385,54 +389,75 @@ export function OrganisationObjektWizard({
   }
 
   return (
-    <div className="mx-auto flex w-full max-w-[640px] flex-col">
-      <div className="mb-5">
-        <button
-          type="button"
-          className="mb-3 text-[13px] font-semibold text-accent"
-          onClick={() => {
-            if (stepIndex === 0) onCancel();
-            else {
-              setStepIndex((i) => i - 1);
-              setErr("");
-            }
-          }}
-        >
-          ‹ {stepIndex === 0 ? "Abbrechen" : "Zurück"}
-        </button>
-        <div className="mb-2 flex gap-1.5">
-          {OBJ_WIZ_STEPS.map((_, si) => (
-            <div
-              key={si}
-              className={cn(
-                "h-1.5 flex-1 rounded-full",
-                si <= stepIndex ? "bg-accent" : "bg-border-default"
-              )}
-            />
-          ))}
-        </div>
-        <p className="mb-1.5 text-xs font-semibold text-text-tertiary">
-          Schritt {stepIndex + 1} von {OBJ_WIZ_STEPS.length}
-        </p>
-        <h2 className="font-[family-name:var(--font-display)] text-[22px] font-bold leading-tight text-text-primary md:text-[23px]">
-          {titles[step]}
-        </h2>
-      </div>
-
-      <div className="w-full space-y-3">
-        {err ? (
-          <div
-            role="alert"
-            className="portal-danger-soft flex items-center gap-2 rounded-[9px] border px-3 py-2.5 text-[12.5px] font-semibold"
-          >
-            <span aria-hidden>⚠</span>
-            {err}
+    <div
+      className={cn(
+        isModal
+          ? "portal-objekt-wizard--modal flex min-h-0 flex-1 flex-col"
+          : "mx-auto flex w-full max-w-[640px] flex-col"
+      )}
+    >
+      <div
+        className={cn(
+          isModal ? "min-h-0 flex-1 overflow-y-auto px-1 pb-4" : undefined
+        )}
+      >
+        <div className={isModal ? "mb-4" : "mb-5"}>
+          {stepIndex > 0 || !isModal ? (
+            <button
+              type="button"
+              className="mb-3 text-[13px] font-semibold text-accent"
+              onClick={() => {
+                if (stepIndex === 0) onCancel();
+                else {
+                  setStepIndex((i) => i - 1);
+                  setErr("");
+                }
+              }}
+            >
+              ‹ {stepIndex === 0 ? "Abbrechen" : "Zurück"}
+            </button>
+          ) : null}
+          <div className="mb-2 flex gap-1.5">
+            {OBJ_WIZ_STEPS.map((_, si) => (
+              <div
+                key={si}
+                className={cn(
+                  "h-1.5 flex-1 rounded-full",
+                  si <= stepIndex ? "bg-accent" : "bg-border-default"
+                )}
+              />
+            ))}
           </div>
-        ) : null}
-        {content}
+          <p className="mb-1.5 text-xs font-semibold text-text-tertiary">
+            Schritt {stepIndex + 1} von {OBJ_WIZ_STEPS.length}
+          </p>
+          <h2 className="font-[family-name:var(--font-display)] text-[22px] font-bold leading-tight text-text-primary md:text-[23px]">
+            {titles[step]}
+          </h2>
+        </div>
+
+        <div className="w-full space-y-3">
+          {err ? (
+            <div
+              role="alert"
+              className="portal-danger-soft flex items-center gap-2 rounded-[9px] border px-3 py-2.5 text-[12.5px] font-semibold"
+            >
+              <span aria-hidden>⚠</span>
+              {err}
+            </div>
+          ) : null}
+          {content}
+        </div>
       </div>
 
-      <div className="mt-6 border-t border-border-default pt-4">
+      <div
+        className={cn(
+          "border-t border-border-default",
+          isModal
+            ? "shrink-0 bg-white px-1 pb-[max(1rem,env(safe-area-inset-bottom))] pt-3"
+            : "mt-6 pt-4"
+        )}
+      >
         <button
           type="button"
           disabled={busy || (!valid && step !== "fertig")}

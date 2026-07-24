@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import { Plus } from "lucide-react";
 
 import "@/app/funnel-ui.css";
 
@@ -1067,6 +1068,19 @@ export function PortalFunnelHost({
           stepLabel="Objekt"
           question="Welches Objekt?"
           animateKey="objekt"
+          headerAction={
+            cfg.prefix.objektNeu ? (
+              <button
+                type="button"
+                className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-border-default bg-white text-accent shadow-sm transition-colors hover:border-accent hover:bg-accent-light"
+                aria-label="Neues Objekt anlegen"
+                title="Neues Objekt anlegen"
+                onClick={() => setStep("objekt_neu")}
+              >
+                <Plus className="h-5 w-5" strokeWidth={2.25} aria-hidden />
+              </button>
+            ) : null
+          }
         >
           <div className="funnel-step-tiles-card flex flex-col gap-2">
             {objekte.map((o) => (
@@ -1082,18 +1096,14 @@ export function PortalFunnelHost({
                 onChange={(v) => setObjektId(v)}
               />
             ))}
-            {cfg.prefix.objektNeu ? (
-              <button
-                type="button"
-                className="rounded-[9px] border border-dashed border-border-default px-3 py-3 text-left text-[13px] font-semibold text-accent"
-                onClick={() => setStep("objekt_neu")}
-              >
-                + Neues Objekt anlegen
-              </button>
-            ) : null}
             {objekte.length === 0 && !cfg.prefix.objektNeu ? (
               <p className="text-sm text-text-secondary">
                 Keine Objekte verfügbar.
+              </p>
+            ) : null}
+            {objekte.length === 0 && cfg.prefix.objektNeu ? (
+              <p className="text-sm text-text-secondary">
+                Noch kein Objekt — legen Sie eines über + an.
               </p>
             ) : null}
           </div>
@@ -1185,7 +1195,6 @@ export function PortalFunnelHost({
                 option={{
                   value: "ohne",
                   label: "Ohne Mieter",
-                  hint: "Interner Vorgang",
                 }}
                 multi={false}
                 selected={mieterMode === "ohne"}
@@ -1285,14 +1294,6 @@ export function PortalFunnelHost({
                   />
                 </div>
               ) : null}
-              {cfg.prefix.einheit && mieterMode !== "neu" ? (
-                <input
-                  className="funnel-input mt-2 w-full"
-                  placeholder="z. B. 4. Stock li"
-                  value={einheit}
-                  onChange={(e) => setEinheit(e.target.value)}
-                />
-              ) : null}
             </div>
           ) : (
           <div className="funnel-step-tiles-card flex flex-col gap-2">
@@ -1302,7 +1303,6 @@ export function PortalFunnelHost({
                 option={{
                   value: "ohne",
                   label: "Ohne Mieter",
-                  hint: "Interner Vorgang",
                 }}
                 multi={false}
                 selected={ohneMieter}

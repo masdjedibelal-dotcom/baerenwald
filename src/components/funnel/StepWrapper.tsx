@@ -11,6 +11,8 @@ export interface StepWrapperProps {
   subtext?: string;
   /** Kurzes positives Feedback (z. B. nach vorherigem Schritt) */
   banner?: ReactNode;
+  /** Rechts neben Frage / Step-Label (z. B. + neues Objekt) */
+  headerAction?: ReactNode;
   children: ReactNode;
   className?: string;
   animateKey?: string | number;
@@ -28,6 +30,7 @@ export function StepWrapper({
   question,
   subtext,
   banner,
+  headerAction,
   children,
   className,
   animateKey = 0,
@@ -60,14 +63,21 @@ export function StepWrapper({
         className
       )}
     >
-      {stepLabel ? (
-        <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-widest text-text-tertiary">
-          {stepLabel}
-        </p>
-      ) : null}
-      {question ? (
-        <h1 className="funnel-step-question">{question}</h1>
-      ) : null}
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0 flex-1">
+          {stepLabel ? (
+            <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-widest text-text-tertiary">
+              {stepLabel}
+            </p>
+          ) : null}
+          {question ? (
+            <h1 className="funnel-step-question">{question}</h1>
+          ) : null}
+        </div>
+        {headerAction ? (
+          <div className="shrink-0 pt-0.5">{headerAction}</div>
+        ) : null}
+      </div>
       {subtext ? (
         <p className="funnel-step-subtext">{subtext}</p>
       ) : question ? (

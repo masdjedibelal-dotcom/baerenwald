@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 import { EinstellungenEdField } from "@/components/shared/PortalEinstellungenUi";
+import { PortalModalShell } from "@/components/shared/PortalModalShell";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 import { PORTAL_VAR } from "@/lib/portal2/tokens";
 import { portalToastError, portalToastSuccess } from "@/lib/shared/portal-toast";
@@ -17,7 +18,7 @@ type Props = {
 };
 
 /**
- * B1/B3/B4 — Passwort ändern · Datenexport · Konto löschen.
+ * B1/B3 — Passwort ändern · Konto löschen (Modals).
  */
 export function PortalKontoSicherheitPanel({
   signOutHref = "/portal/login",
@@ -25,17 +26,32 @@ export function PortalKontoSicherheitPanel({
   deleteBlockedHint = null,
 }: Props) {
   const router = useRouter();
+
+  const [pwOpen, setPwOpen] = useState(false);
   const [pwCurrent, setPwCurrent] = useState("");
   const [pwNew, setPwNew] = useState("");
   const [pwBusy, setPwBusy] = useState(false);
-
-  const [exportBusy, setExportBusy] = useState(false);
 
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deletePw, setDeletePw] = useState("");
   const [deleteBusy, setDeleteBusy] = useState(false);
   const [forceOpen, setForceOpen] = useState(false);
   const [openHint, setOpenHint] = useState<string | null>(null);
+
+  function closePasswordModal() {
+    if (pwBusy) return;
+    setPwOpen(false);
+    setPwCurrent("");
+    setPwNew("");
+  }
+
+  function closeDeleteModal() {
+    if (deleteBusy) return;
+    setDeleteOpen(false);
+    setDeletePw("");
+    setForceOpen(false);
+    setOpenHint(null);
+  }
 
   async function changePassword() {
     if (pwNew.length < 8) {
@@ -67,33 +83,10 @@ export function PortalKontoSicherheitPanel({
       }
       setPwCurrent("");
       setPwNew("");
+      setPwOpen(false);
       portalToastSuccess("Passwort geändert.");
     } finally {
       setPwBusy(false);
-    }
-  }
-
-  async function exportData() {
-    setExportBusy(true);
-    try {
-      const res = await fetch("/api/account/export");
-      const json = await res.json().catch(() => ({}));
-      if (!res.ok) {
-        portalToastError(json.error || "Export fehlgeschlagen.");
-        return;
-      }
-      const blob = new Blob([JSON.stringify(json, null, 2)], {
-        type: "application/json",
-      });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `baerenwald-datenexport-${new Date().toISOString().slice(0, 10)}.json`;
-      a.click();
-      URL.revokeObjectURL(url);
-      portalToastSuccess("Export heruntergeladen.");
-    } finally {
-      setExportBusy(false);
     }
   }
 
@@ -128,135 +121,127 @@ export function PortalKontoSicherheitPanel({
   }
 
   return (
-    <div className="space-y-5 border-t border-border-default pt-4">
-      <div className="space-y-2.5">
-        <h3
-          className="text-sm font-bold"
-          style={{
-            color: PORTAL_VAR.ink,
-            fontFamily: "var(--p2-font-head, " + PORTAL_VAR.head + ")",
-          }}
+    <>
+      <div className="space-y-3 border-t border-border-default pt-4">
+        <p
+          className="text-[11.5px] font-bold tracking-wide"
+          style={{ color: PORTAL_VAR.faint }}
         >
-          Passwort ändern
-        </h3>
-        <EinstellungenEdField
-          label="Aktuelles Passwort"
-          value={pwCurrent}
-          onChange={setPwCurrent}
-          type="password"
-          autoComplete="current-password"
-        />
-        <EinstellungenEdField
-          label="Neues Passwort"
-          value={pwNew}
-          onChange={setPwNew}
-          type="password"
-          autoComplete="new-password"
-        />
-        <button
-          type="button"
-          className="btn-pill-outline portal-btn-compact"
-          disabled={pwBusy || !pwCurrent || !pwNew}
-          onClick={() => void changePassword()}
-        >
-          {pwBusy ? "Speichern…" : "Passwort speichern"}
-        </button>
-      </div>
-
-      <div className="space-y-2">
-        <h3
-          className="text-sm font-bold"
-          style={{
-            color: PORTAL_VAR.ink,
-            fontFamily: "var(--p2-font-head, " + PORTAL_VAR.head + ")",
-          }}
-        >
-          Meine Daten
-        </h3>
-        <p className="text-[12.5px] leading-relaxed text-text-secondary">
-          Export als JSON (Profil und eigene Vorgänge) — Auskunft nach Art. 15
-          DSGVO.
+          KONTO & SICHERHEIT
         </p>
-        <button
-          type="button"
-          className="btn-pill-outline portal-btn-compact"
-          disabled={exportBusy}
-          onClick={() => void exportData()}
-        >
-          {exportBusy ? "Export…" : "Meine Daten exportieren"}
-        </button>
-      </div>
-
-      <div className="space-y-2">
-        <h3
-          className="text-sm font-bold text-red-700"
-          style={{
-            fontFamily: "var(--p2-font-head, " + PORTAL_VAR.head + ")",
-          }}
-        >
-          Konto löschen
-        </h3>
-        {!allowDelete ? (
-          <p className="text-[12.5px] leading-relaxed text-text-secondary">
-            {deleteBlockedHint ||
-              "Dieses Konto kann nicht selbst gelöscht werden. Bitte Support kontaktieren."}
-          </p>
-        ) : !deleteOpen ? (
-          <>
-            <p className="text-[12.5px] leading-relaxed text-text-secondary">
-              Löscht Ihren Login und anonymisiert Stammdaten. Vorgänge können
-              aus gesetzlichen Gründen erhalten bleiben.
-            </p>
+        <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+          <button
+            type="button"
+            className="btn-pill-outline portal-btn-compact"
+            onClick={() => setPwOpen(true)}
+          >
+            Passwort ändern
+          </button>
+          {allowDelete ? (
             <button
               type="button"
               className="rounded-[9px] border border-red-200 bg-red-50 px-3 py-2 text-[13px] font-semibold text-red-700"
               onClick={() => setDeleteOpen(true)}
             >
-              Konto löschen…
+              Konto löschen
             </button>
-          </>
-        ) : (
-          <div className="space-y-2 rounded-[11px] border border-red-200 bg-red-50/60 p-3">
-            <p className="text-[12.5px] leading-relaxed text-red-900">
-              Wirklich unwiderruflich löschen? Bitte Passwort eingeben.
+          ) : (
+            <p className="text-[12.5px] leading-relaxed text-text-secondary">
+              {deleteBlockedHint ||
+                "Dieses Konto kann nicht selbst gelöscht werden. Bitte Support kontaktieren."}
             </p>
-            {openHint ? (
-              <p className="text-[12.5px] leading-relaxed text-red-800">
-                {openHint} Nochmal tippen, um trotzdem zu löschen.
-              </p>
-            ) : null}
-            <EinstellungenEdField
-              label="Passwort"
-              value={deletePw}
-              onChange={setDeletePw}
-              type="password"
-              autoComplete="current-password"
-            />
-            <div className="flex flex-wrap gap-2">
-              <button
-                type="button"
-                className="rounded-[9px] bg-red-700 px-3 py-2 text-[13px] font-semibold text-white disabled:opacity-60"
-                disabled={deleteBusy || deletePw.length < 6}
-                onClick={() => void deleteAccount()}
-              >
-                {deleteBusy ? "Löschen…" : "Endgültig löschen"}
-              </button>
-              <button
-                type="button"
-                className="btn-pill-outline portal-btn-compact"
-                onClick={() => {
-                  setDeleteOpen(false);
-                  setDeletePw("");
-                  setForceOpen(false);
-                  setOpenHint(null);
-                }}
-              >
-                Abbrechen
-              </button>
-            </div>
-          </div>
-        )}
+          )}
+        </div>
       </div>
-    </div>
+
+      <PortalModalShell
+        open={pwOpen}
+        title="Passwort ändern"
+        subtitle="Aktuelles Passwort bestätigen, dann neues setzen."
+        onClose={closePasswordModal}
+        closeOnBackdrop={!pwBusy}
+      >
+        <div className="flex flex-col gap-3">
+          <EinstellungenEdField
+            label="Aktuelles Passwort"
+            value={pwCurrent}
+            onChange={setPwCurrent}
+            type="password"
+            autoComplete="current-password"
+          />
+          <EinstellungenEdField
+            label="Neues Passwort"
+            value={pwNew}
+            onChange={setPwNew}
+            type="password"
+            autoComplete="new-password"
+          />
+          <div className="mt-2 flex flex-wrap justify-end gap-2">
+            <button
+              type="button"
+              className="btn-pill-outline portal-btn !px-4 !py-2.5"
+              disabled={pwBusy}
+              onClick={closePasswordModal}
+            >
+              Abbrechen
+            </button>
+            <button
+              type="button"
+              className="btn-pill-primary portal-btn !px-4 !py-2.5"
+              disabled={pwBusy || !pwCurrent || pwNew.length < 8}
+              onClick={() => void changePassword()}
+            >
+              {pwBusy ? "Speichern…" : "Passwort speichern"}
+            </button>
+          </div>
+        </div>
+      </PortalModalShell>
+
+      <PortalModalShell
+        open={deleteOpen}
+        title="Konto wirklich löschen?"
+        subtitle="Das kann nicht rückgängig gemacht werden."
+        onClose={closeDeleteModal}
+        closeOnBackdrop={!deleteBusy}
+      >
+        <div className="flex flex-col gap-3">
+          <p className="text-[13px] leading-relaxed text-text-secondary">
+            Login wird gelöscht, Stammdaten anonymisiert. Offene Vorgänge können
+            aus gesetzlichen Gründen erhalten bleiben.
+          </p>
+          {openHint ? (
+            <p className="rounded-[9px] border border-amber-200 bg-amber-50 px-3 py-2 text-[12.5px] leading-relaxed text-amber-950">
+              {openHint} Tippen Sie erneut auf „Endgültig löschen“, um trotzdem
+              fortzufahren.
+            </p>
+          ) : null}
+          <EinstellungenEdField
+            label="Passwort zur Bestätigung"
+            value={deletePw}
+            onChange={setDeletePw}
+            type="password"
+            autoComplete="current-password"
+          />
+          <div className="mt-2 flex flex-wrap justify-end gap-2">
+            <button
+              type="button"
+              className="btn-pill-outline portal-btn !px-4 !py-2.5"
+              disabled={deleteBusy}
+              onClick={closeDeleteModal}
+            >
+              Abbrechen
+            </button>
+            <button
+              type="button"
+              className="rounded-[9px] bg-red-700 px-4 py-2.5 text-[13px] font-semibold text-white disabled:opacity-60"
+              disabled={deleteBusy || deletePw.length < 6}
+              onClick={() => void deleteAccount()}
+            >
+              {deleteBusy ? "Löschen…" : "Endgültig löschen"}
+            </button>
+          </div>
+        </div>
+      </PortalModalShell>
+    </>
   );
 }

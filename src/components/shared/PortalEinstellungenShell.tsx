@@ -151,18 +151,13 @@ export function PortalEinstellungenShell({
         ) : null}
 
         <div className="min-w-0 flex-1">
-          {variant === "hv" && tab === "freigabe" ? (
-            <div className="portal-einstellungen-stack max-w-[560px]">
-              {children(tab)}
-            </div>
-          ) : (
-            <div
-              className="rounded-xl bg-white p-4 sm:p-5"
-              style={{ border: `1px solid ${PORTAL_VAR.line}` }}
-            >
-              {children(tab)}
-            </div>
-          )}
+          {/*
+            Flat wie Listen (Aufträge): kein Outer-Card auf dem Page-BG.
+            Interaktive Inputs behalten eigene Borders — kein doppelter Surface-Wrapper.
+          */}
+          <div className="portal-einstellungen-stack max-w-[560px]">
+            {children(tab)}
+          </div>
         </div>
       </div>
     </div>

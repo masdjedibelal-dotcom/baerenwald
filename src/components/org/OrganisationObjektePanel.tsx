@@ -2,10 +2,14 @@
 
 import { useMemo, useState } from "react";
 
+import "@/app/funnel-ui.css";
+
 import { OrganisationObjektCard } from "@/components/org/OrganisationObjektCard";
+import { OrganisationObjektCardActions } from "@/components/org/OrganisationObjektCardActions";
 import { OrganisationObjektDetail } from "@/components/org/OrganisationObjektDetail";
 import { OrganisationObjektWizard } from "@/components/org/OrganisationObjektWizard";
 import { OrganisationMeldeQrModal } from "@/components/org/OrganisationMeldeQrModal";
+import { PortalModalShell } from "@/components/shared/PortalModalShell";
 import {
   copyMeldeLink,
   openMeldeAushangPdf,
@@ -248,27 +252,36 @@ export function OrganisationObjektePanel({
     const editObj = mode.editId
       ? objekte.find((o) => o.id === mode.editId)
       : null;
+    const closeWizard = () =>
+      setMode(
+        mode.editId
+          ? { kind: "detail", id: mode.editId }
+          : { kind: "list" }
+      );
     return (
-      <OrganisationObjektWizard
-        key={mode.editId ?? "new"}
-        editMode={!!mode.editId}
-        initialDraft={mode.draft}
-        existingNotizen={editObj?.notizen_intern}
-        defaultHv={defaultHv}
-        onCancel={() =>
-          setMode(
-            mode.editId
-              ? { kind: "detail", id: mode.editId }
-              : { kind: "list" }
-          )
-        }
-        onDone={async (payload) => {
-          const id = await persistPayload(payload, mode.editId);
-          onRefresh();
-          if (id) setMode({ kind: "detail", id });
-          else setMode({ kind: "list" });
-        }}
-      />
+      <PortalModalShell
+        open
+        title={mode.editId ? "Objekt bearbeiten" : "Objekt anlegen"}
+        onClose={closeWizard}
+        size="funnel"
+        maxWidth={560}
+      >
+        <OrganisationObjektWizard
+          key={mode.editId ?? "new"}
+          variant="modal"
+          editMode={!!mode.editId}
+          initialDraft={mode.draft}
+          existingNotizen={editObj?.notizen_intern}
+          defaultHv={defaultHv}
+          onCancel={closeWizard}
+          onDone={async (payload) => {
+            const id = await persistPayload(payload, mode.editId);
+            onRefresh();
+            if (id) setMode({ kind: "detail", id });
+            else setMode({ kind: "list" });
+          }}
+        />
+      </PortalModalShell>
     );
   }
 
@@ -402,7 +415,7 @@ export function OrganisationObjektePanel({
       ) : null}
 
       {empty ? (
-        <div className="portal-surface p-6 text-center portal-text-body text-text-secondary">
+        <div className="px-2 py-8 text-center portal-text-body text-text-secondary">
           Noch keine Objekte. Legen Sie Ihr erstes Gebäude an — Link und Aushang
           finden Sie danach im Detail.
         </div>
@@ -418,71 +431,32 @@ export function OrganisationObjektePanel({
               o.melde_aktiv &&
               kunde
             );
-            const hasRegeln =
-              o.freigabe_schwelle_eur != null ||
-              !!resolveObjektTyp(o);
 
             return (
               <OrganisationObjektCard
                 key={o.id}
                 card={card}
                 selected={isSel}
-                hasRegeln={hasRegeln}
                 onOpen={() => setMode({ kind: "detail", id: o.id })}
                 onToggleSelect={() => toggleSel(o.id)}
                 onCoverUploaded={() => onRefresh()}
                 actions={
-                  <>
-                    {canAushang ? (
-                      <>
-                        <button
-                          type="button"
-                          title="Aushang-PDF im Browser öffnen"
-                          className="rounded-full border border-accent bg-accent-light px-2.5 py-1 text-[11.5px] font-semibold text-accent"
-                          onClick={() => openMeldeAushangPdf(o.id)}
-                        >
-                          ▦ Aushang PDF
-                        </button>
-                        <button
-                          type="button"
-                          title="QR-Code anzeigen"
-                          className="rounded-full border border-border-default bg-white px-2.5 py-1 text-[11.5px] font-semibold text-text-secondary hover:border-accent hover:text-accent"
-                          onClick={() =>
-                            setQrModal({ objektId: o.id, label: o.titel })
-                          }
-                        >
-                          QR-Code
-                        </button>
-                      </>
-                    ) : null}
-                    <button
-                      type="button"
-                      className="rounded-full border border-border-default bg-white px-2.5 py-1 text-[11.5px] font-semibold text-text-secondary hover:border-accent hover:text-accent"
-                      onClick={() =>
-                        setMode({
-                          kind: "wizard",
-                          editId: o.id,
-                          draft: draftFromObjekt(o, defaultHv),
-                        })
-                      }
-                    >
-                      ✎ Bearbeiten
-                    </button>
-                    <button
-                      type="button"
-                      className="portal-danger rounded-full border border-border-default bg-white px-2.5 py-1 text-[11.5px] font-semibold hover:border-[var(--p2-danger)] hover:bg-[var(--p2-danger-soft)]"
-                      onClick={() => void deleteObjekt(o)}
-                    >
-                      ✕ Löschen
-                    </button>
-                    <button
-                      type="button"
-                      className="rounded-full border border-border-default bg-white px-2.5 py-1 text-[11.5px] font-semibold text-text-secondary hover:border-accent hover:text-accent"
-                      onClick={() => void copyObjekt(o)}
-                    >
-                      ⧉ Kopieren
-                    </button>
-                  </>
+                  <OrganisationObjektCardActions
+                    canAushang={canAushang}
+                    onAushangPdf={() => openMeldeAushangPdf(o.id)}
+                    onQrCode={() =>
+                      setQrModal({ objektId: o.id, label: o.titel })
+                    }
+                    onBearbeiten={() =>
+                      setMode({
+                        kind: "wizard",
+                        editId: o.id,
+                        draft: draftFromObjekt(o, defaultHv),
+                      })
+                    }
+                    onKopieren={() => void copyObjekt(o)}
+                    onLoeschen={() => void deleteObjekt(o)}
+                  />
                 }
               />
             );

@@ -33,7 +33,9 @@ export function detectPortalDocKind(
 
 export function resolvePortalDocKind(doc: PortalDocView): PortalDocKind {
   if (doc.kind) return doc.kind;
-  return detectPortalDocKind(doc.name || doc.url);
+  const fromName = detectPortalDocKind(doc.name);
+  if (fromName !== "other") return fromName;
+  return detectPortalDocKind(doc.url);
 }
 
 /** Mock: Titel ohne `.pdf`-Suffix. */

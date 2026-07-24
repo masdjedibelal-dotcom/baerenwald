@@ -66,7 +66,7 @@ function StateButton({
 
 /**
  * Globale Fehler-/Leer-Ansicht — Mock `screenState(kind)`.
- * Jeder Portal-Screen soll diese States nutzen.
+ * `compact`: Listen-Empty wie Objekte/Filter — flacher Text, kein Icon-Kasten.
  */
 export function PortalStateView({
   kind,
@@ -126,11 +126,36 @@ export function PortalStateView({
       }
     : null;
 
+  if (compact) {
+    return (
+      <div
+        className={cn(
+          "portal-ui px-2 py-8 text-center",
+          className
+        )}
+        data-portal-state={kind}
+        role="status"
+      >
+        <p className="portal-text-body text-text-secondary">
+          <span className="font-semibold text-text-primary">{copy.title}.</span>{" "}
+          {copy.subtitle}
+        </p>
+        {(primary || secondary) && (
+          <div className="mt-4 flex flex-wrap justify-center gap-2.5">
+            {primary ? <StateButton action={primary} /> : null}
+            {secondary ? <StateButton action={secondary} ghost /> : null}
+          </div>
+        )}
+        {children}
+      </div>
+    );
+  }
+
   return (
     <div
       className={cn(
         "portal-ui flex flex-1 flex-col items-center justify-center text-center",
-        compact ? "min-h-0 px-4 py-10" : "min-h-[320px] px-6 py-14 sm:min-h-[520px] sm:px-10 sm:py-14",
+        "min-h-[320px] px-6 py-14 sm:min-h-[520px] sm:px-10 sm:py-14",
         className
       )}
       data-portal-state={kind}

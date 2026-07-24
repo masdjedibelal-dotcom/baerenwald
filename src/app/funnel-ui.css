@@ -257,6 +257,28 @@
   height: 100%;
 }
 
+/* Objekt-Wizard im Funnel-Modal — gleicher Vollbild-Fill wie Neuer Vorgang */
+.portal-modal-shell-panel:has(.portal-objekt-wizard--modal) {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.portal-modal-shell-panel:has(.portal-objekt-wizard--modal) .portal-modal-shell-body {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  padding-bottom: 0;
+}
+
+.portal-objekt-wizard--modal {
+  flex: 1;
+  min-height: 0;
+  height: 100%;
+}
+
 /* Page-Layout (Melde): Website-Funnel-Footer (sticky) */
 .portal-funnel-host--page {
   min-height: 50vh;

@@ -10,23 +10,22 @@ import {
 } from "@/lib/org/melde-aushang-ui";
 import { buildMeldeUrl } from "@/lib/org/melde-url";
 import type { OrganisationKunde } from "@/lib/org/types";
-import { EinstellungenCard } from "@/components/shared/PortalEinstellungenUi";
+import { EinstellungenSectionHeader } from "@/components/shared/PortalEinstellungenUi";
 import { PORTAL_VAR } from "@/lib/portal2/tokens";
 import { cn } from "@/lib/utils";
 
 type Props = {
   kunde: OrganisationKunde;
   objektCount?: number;
+  /** @deprecated — immer flach wie Partner-Einstellungen */
   nested?: boolean;
 };
 
 export function OrganisationMeldeMaterial({
   kunde,
   objektCount = 0,
-  nested = false,
 }: Props) {
   const orgKennung = kunde.org_kennung?.trim() ?? "";
-  // Öffentlicher Mieter-Link immer Produktions-Domain (nicht Preview/localhost)
   const meldeUrl = orgKennung
     ? buildMeldeUrl(orgKennung, undefined, { forPrint: true })
     : "";
@@ -42,31 +41,23 @@ export function OrganisationMeldeMaterial({
   }
 
   if (!orgKennung) {
-    const missing = (
-      <>
+    return (
+      <div className="space-y-2">
+        <EinstellungenSectionHeader title="Schadensmeldung für Mieter" />
         <p className="text-[13.5px] font-semibold text-text-primary">
           Melde-Link noch nicht verfügbar
         </p>
-        <p className="mt-1 text-[13px] leading-[1.55]" style={{ color: PORTAL_VAR.sub }}>
+        <p className="text-[13px] leading-[1.55]" style={{ color: PORTAL_VAR.sub }}>
           Die Organisations-Kennung fehlt. Bitte Bärenwald kontaktieren — danach
           können Sie den Link kopieren und den Aushang als PDF öffnen.
-        </p>
-      </>
-    );
-    return nested ? (
-      <EinstellungenCard title="Schadensmeldung für Mieter">{missing}</EinstellungenCard>
-    ) : (
-      <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
-        <p className="font-medium">Melde-Link noch nicht verfügbar</p>
-        <p className="mt-1 text-amber-800">
-          Die Organisations-Kennung fehlt. Bitte Bärenwald kontaktieren.
         </p>
       </div>
     );
   }
 
-  const body = (
-    <div className="flex flex-col gap-3">
+  return (
+    <div className="space-y-3">
+      <EinstellungenSectionHeader title="Schadensmeldung für Mieter" />
       <p className="text-[13px] leading-[1.55]" style={{ color: PORTAL_VAR.sub }}>
         Ein Link für alle Objekte — Mieter wählen ihr Gebäude im Formular.
         {objektCount === 0
@@ -126,20 +117,5 @@ export function OrganisationMeldeMaterial({
         />
       ) : null}
     </div>
-  );
-
-  if (nested) {
-    return (
-      <EinstellungenCard title="Schadensmeldung für Mieter">{body}</EinstellungenCard>
-    );
-  }
-
-  return (
-    <section className="portal-surface space-y-4 p-4 sm:p-5">
-      <div>
-        <h3 className="font-semibold text-text-primary">Schadensmeldung für Mieter</h3>
-      </div>
-      {body}
-    </section>
   );
 }

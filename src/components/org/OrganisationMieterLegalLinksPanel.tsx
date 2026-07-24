@@ -3,9 +3,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import {
-  EinstellungenCard,
   EinstellungenEdField,
-  EinstellungenInfoBox,
+  EinstellungenSectionHeader,
 } from "@/components/shared/PortalEinstellungenUi";
 import {
   meldeDatenschutzUrl,
@@ -129,32 +128,16 @@ export function OrganisationMieterLegalLinksPanel({
   }, []);
 
   return (
-    <EinstellungenCard title="Impressum & Datenschutz (Mieter)">
+    <div className="space-y-3">
+      <EinstellungenSectionHeader title="Impressum & Datenschutz (Mieter)" />
       <div className="flex flex-col gap-3">
         <p className="text-[13px] leading-[1.55]" style={{ color: PORTAL_VAR.sub }}>
           Diese Links erscheinen im Footer der Schadensmeldung. Leer lassen,
           wenn die Standardseiten der Melde-Strecke genutzt werden sollen.
+          {fallbackImpressum && fallbackDatenschutz
+            ? ` Fallback: ${fallbackImpressum} und ${fallbackDatenschutz}.`
+            : " Ohne Organisations-Kennung greifen die zentralen Bärenwald-Seiten."}
         </p>
-
-        <EinstellungenInfoBox>
-          {fallbackImpressum && fallbackDatenschutz ? (
-            <>
-              Ohne eigene Links gilt der Fallback:{" "}
-              <span className="break-all font-semibold">{fallbackImpressum}</span>{" "}
-              und{" "}
-              <span className="break-all font-semibold">
-                {fallbackDatenschutz}
-              </span>
-              .
-            </>
-          ) : (
-            <>
-              Ohne eigene Links und ohne Organisations-Kennung greifen die
-              zentralen Bärenwald-Seiten. Bitte Bärenwald kontaktieren, falls
-              die Kennung fehlt.
-            </>
-          )}
-        </EinstellungenInfoBox>
 
         <EinstellungenEdField
           label="Impressum-URL"
@@ -182,6 +165,6 @@ export function OrganisationMieterLegalLinksPanel({
           <p className="text-[11.5px] text-text-tertiary">Speichern…</p>
         ) : null}
       </div>
-    </EinstellungenCard>
+    </div>
   );
 }

@@ -70,6 +70,9 @@ export type PartnerComplianceItem = {
   };
 };
 
+/** Freier Stamm-Upload (Titel/Beschreibung + Datei) aus dem Partnerportal. */
+export const EIGENES_STAMM_DOKUMENT_TYP = "eigenes_dokument";
+
 export type PartnerProjektvertrag = {
   id: string;
   vertrags_nr: string | null;
@@ -245,7 +248,46 @@ export function buildPartnerStammCompliance(opts: {
     })
   );
 
-  return { allgemein, meister };
+  return {
+    allgemein: [...allgemein, ...buildEigeneStammComplianceItems(opts.dokumente)],
+    meister,
+  };
+}
+
+/** Freie Partner-Uploads unter Stammunterlagen (ohne CRM-Typkatalog). */
+export function buildEigeneStammComplianceItems(
+  dokumente: PartnerDokumentRow[]
+): PartnerComplianceItem[] {
+  const EIGENES = EIGENES_STAMM_DOKUMENT_TYP;
+  return dokumente
+    .filter((d) => !d.auftrag_id && d.typ === EIGENES)
+    .sort(
+      (a, b) =>
+        new Date(b.hochgeladen_am).getTime() - new Date(a.hochgeladen_am).getTime()
+    )
+    .map((d) => {
+      const raw = (d.bezeichnung ?? "Dokument").trim();
+      const nl = raw.indexOf("\n");
+      const title = (nl >= 0 ? raw.slice(0, nl) : raw).trim() || "Dokument";
+      const beschreibung = nl >= 0 ? raw.slice(nl + 1).trim() || null : null;
+      return {
+        slug: EIGENES,
+        bezeichnung: title,
+        beschreibung,
+        pflicht: false,
+        kategorie: "eigenes",
+        ebene: "allgemein" as const,
+        scope: "stamm",
+        status: normalizeDocStatus(d.status, d.gueltig_bis),
+        dokument: {
+          id: d.id,
+          gueltig_bis: d.gueltig_bis,
+          hochgeladen_am: d.hochgeladen_am,
+          freigegeben_am: d.freigegeben_am ?? null,
+          ablehnung_grund: d.ablehnung_grund,
+        },
+      };
+    });
 }
 
 export function buildProjektCompliance(opts: {
@@ -345,4 +387,32 @@ export function complianceStatusLabel(status: PartnerComplianceItemStatus): stri
   if (status === "ablauf_warnung") return "Läuft bald ab";
   if (status === "abgelaufen") return "Abgelaufen";
   return "Fehlt";
+}
+
+/**
+ * Stammunterlagen: nur CRM-Prüfstatus —
+ * In Prüfung · Abgelehnt · Erledigt · Abgelaufen.
+ * Ohne Upload kein Pill („offen“ / Ausstehend entfällt).
+ */
+export function stammDokumentStatusLabel(
+  status: PartnerComplianceItemStatus
+): string | null {
+  if (status === "in_pruefung") return "In Prüfung";
+  if (status === "abgelehnt") return "Abgelehnt";
+  if (status === "abgelaufen") return "Abgelaufen";
+  if (status === "erledigt" || status === "ablauf_warnung") return "Erledigt";
+  return null;
+}
+
+export function stammDokumentStatusPillClass(
+  status: PartnerComplianceItemStatus
+): string {
+  if (status === "erledigt" || status === "ablauf_warnung") {
+    return "bg-emerald-100 text-emerald-700";
+  }
+  if (status === "in_pruefung") return "bg-amber-100 text-amber-800";
+  if (status === "abgelehnt" || status === "abgelaufen") {
+    return "bg-red-100 text-red-700";
+  }
+  return "bg-muted text-text-secondary";
 }

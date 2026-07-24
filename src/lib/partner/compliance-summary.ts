@@ -3,16 +3,23 @@ import {
   type ComplianceEbene,
 } from "@/lib/partner/compliance-partner-profile";
 import { mergeNachunternehmerComplianceItems } from "@/lib/partner/nachunternehmervertrag-compliance";
-import type { PartnerComplianceItem } from "@/lib/partner/partner-compliance";
+import {
+  EIGENES_STAMM_DOKUMENT_TYP,
+  type PartnerComplianceItem,
+} from "@/lib/partner/partner-compliance";
 
 export const RAHMENVERTRAG_TYP_SLUG = "rahmenvertrag";
 export const HANDWERKSKARTE_TYP_SLUG = "handwerkskarte";
+export { EIGENES_STAMM_DOKUMENT_TYP };
 
-/** Nur Handwerkskarte — bleibt unter Rahmenvertrag im Profil. */
+/** Handwerkskarte + eigene Uploads — unter Rahmenvertrag im Profil. */
 export function filterProfilStammCompliance(
   items: PartnerComplianceItem[]
 ): PartnerComplianceItem[] {
-  return items.filter((i) => i.slug === HANDWERKSKARTE_TYP_SLUG);
+  return items.filter(
+    (i) =>
+      i.slug === HANDWERKSKARTE_TYP_SLUG || i.slug === EIGENES_STAMM_DOKUMENT_TYP
+  );
 }
 
 /** Stamm-Unterlagen je Bauauftrag (ohne Handwerkskarte & Rahmenvertrag). */

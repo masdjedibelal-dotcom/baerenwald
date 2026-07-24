@@ -2,7 +2,7 @@
 
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { PORTAL_MODAL_SCRIM } from "@/lib/portal2/modal-shell";
+import { PORTAL_VAR } from "@/lib/portal2/tokens";
 
 import { OnboardingTour } from "@/components/onboarding/OnboardingTour";
 import "@/components/onboarding/onboarding.css";
@@ -449,7 +449,7 @@ export function PartnerClient({
             type="button"
             onClick={closeDetail}
             className="rounded-full px-3 py-1.5 text-[12.5px] font-semibold text-white"
-            style={{ background: PORTAL_MODAL_SCRIM }}
+            style={{ background: PORTAL_VAR.primary }}
           >
             ‹ Zurück
           </button>
@@ -479,11 +479,9 @@ export function PartnerClient({
       <div className={portalListStackClass("responsive")}>
         {sectionListEmpty ? (
           showPortalEmptyVorgaenge ? (
-            <div className="rounded-[12px] border border-border-default bg-white p-4">
-              <PortalEmptyState role="handwerker" compact />
-            </div>
+            <PortalEmptyState role="handwerker" compact />
           ) : (
-            <p className="portal-text-body rounded-[12px] border border-border-default bg-white px-4 py-8 text-center text-text-secondary">
+            <p className="portal-text-body px-2 py-8 text-center text-text-secondary">
               {filterEmptyMessage}
             </p>
           )

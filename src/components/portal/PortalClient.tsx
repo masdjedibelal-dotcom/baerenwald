@@ -617,14 +617,14 @@ export function PortalClient({
       >
         {paginatedRows.length === 0 ? (
           vorgaengeItems.length === 0 ? (
-            <div className="rounded-[12px] border border-border-default bg-white p-4">
-              <PortalEmptyState
-                role={hvPortalMode ? "hv" : "kunde"}
-                compact
-              />
-            </div>
+            <PortalEmptyState
+              role={
+                hvPortalMode ? "hv" : isPrivatLike ? "mieter" : "kunde"
+              }
+              compact
+            />
           ) : (
-            <p className="portal-text-body rounded-[12px] border border-border-default bg-white px-4 py-8 text-center text-text-secondary">
+            <p className="portal-text-body px-2 py-8 text-center text-text-secondary">
               {hvPortalMode && controlledHvListeFilter
                 ? controlledHvListeFilter === "alle"
                   ? "Keine Vorgänge."
@@ -748,43 +748,13 @@ export function PortalClient({
             </article>
           ) : null}
 
-          {section === "profil" && isPrivatLike ? (
+          {section === "profil" ? (
             <PortalEinstellungenPrivat
               name={kunde.name}
               email={kunde.email}
               telefon={kunde.telefon}
               kundeTyp={kundeTyp === "gewerbe" ? "gewerbe" : "privat"}
             />
-          ) : null}
-
-          {section === "profil" && !isPrivatLike ? (
-            <article className="portal-surface space-y-4 p-4 sm:p-5">
-              <div>
-                <p className="portal-text-section text-text-primary">Einstellungen</p>
-                <p className="portal-text-body mt-1 text-text-secondary">
-                  Konto und Kontaktdaten für MeinBärenwald.
-                </p>
-              </div>
-              <dl className="space-y-3">
-                <div>
-                  <dt className="portal-text-meta text-text-tertiary">Name</dt>
-                  <dd className="portal-text-body font-medium text-text-primary">
-                    {kunde.name?.trim() || "—"}
-                  </dd>
-                </div>
-                <div>
-                  <dt className="portal-text-meta text-text-tertiary">E-Mail</dt>
-                  <dd className="portal-text-body font-medium text-text-primary">
-                    {kunde.email?.trim() || "—"}
-                  </dd>
-                </div>
-              </dl>
-              <form action="/portal/auth/signout" method="post">
-                <button type="submit" className="btn-pill-outline portal-btn">
-                  Abmelden
-                </button>
-              </form>
-            </article>
           ) : null}
 
           {section === "uebersicht" && isPrivatLike ? (

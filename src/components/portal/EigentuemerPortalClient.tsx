@@ -488,6 +488,7 @@ export function EigentuemerPortalClient({
             {pageRows.length === 0 ? (
               <PortalEmptyState
                 role="eigentuemer"
+                compact
                 createLabel={portalCreateLabel("eigentuemer")}
                 canCreate
                 onPrimary={() => setCreateOpen(true)}

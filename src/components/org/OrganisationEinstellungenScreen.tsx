@@ -5,10 +5,11 @@ import { OrganisationFreigabeRegelnPanel } from "@/components/org/OrganisationFr
 import { OrganisationMeldeMaterial } from "@/components/org/OrganisationMeldeMaterial";
 import { OrganisationMieterLegalLinksPanel } from "@/components/org/OrganisationMieterLegalLinksPanel";
 import { PortalKontoSicherheitPanel } from "@/components/shared/PortalKontoSicherheitPanel";
-import { PortalPushPermissionRationale } from "@/components/shared/PortalPushPermissionRationale";
-import { PortalTrackingConsentPanel } from "@/components/shared/PortalTrackingConsentPanel";
 import { PortalEinstellungenShell } from "@/components/shared/PortalEinstellungenShell";
-import { EinstellungenPfRow } from "@/components/shared/PortalEinstellungenUi";
+import {
+  EinstellungenPfRow,
+  EinstellungenSectionHeader,
+} from "@/components/shared/PortalEinstellungenUi";
 import type { OrganisationKunde } from "@/lib/org/types";
 import { PORTAL_VAR } from "@/lib/portal2/tokens";
 import { SITE_CONFIG } from "@/lib/config";
@@ -42,23 +43,17 @@ export function OrganisationEinstellungenScreen({
       {(tab) => {
         if (tab === "profil") {
           return (
-            <div className="flex flex-col gap-3">
-              <div className="space-y-2.5">
-                <h3
-                  className="text-sm font-bold"
-                  style={{
-                    color: PORTAL_VAR.ink,
-                    fontFamily: "var(--p2-font-head, " + PORTAL_VAR.head + ")",
-                  }}
-                >
-                  Profil
-                </h3>
-                <EinstellungenPfRow label="Name" value={displayName} />
-                <EinstellungenPfRow
-                  label="E-Mail"
-                  value={kunde.email?.trim() || "—"}
-                />
-                <EinstellungenPfRow label="Telefon" value={tel} />
+            <div className="flex flex-col gap-6">
+              <div className="space-y-3">
+                <EinstellungenSectionHeader title="Profil" />
+                <div className="flex flex-col gap-[11px]">
+                  <EinstellungenPfRow label="Name" value={displayName} />
+                  <EinstellungenPfRow
+                    label="E-Mail"
+                    value={kunde.email?.trim() || "—"}
+                  />
+                  <EinstellungenPfRow label="Telefon" value={tel} />
+                </div>
                 <p
                   className="text-[12.5px] leading-relaxed"
                   style={{ color: PORTAL_VAR.sub }}
@@ -71,7 +66,6 @@ export function OrganisationEinstellungenScreen({
               <OrganisationMeldeMaterial
                 kunde={kunde}
                 objektCount={objektCount}
-                nested
               />
 
               <OrganisationMieterLegalLinksPanel
@@ -83,11 +77,8 @@ export function OrganisationEinstellungenScreen({
               <PortalKontoSicherheitPanel
                 signOutHref="/portal/login"
                 allowDelete={false}
-                deleteBlockedHint={`Organisationskonten löschen Sie über den Support (${SITE_CONFIG.email}). Passwort ändern und Datenexport sind möglich.`}
+                deleteBlockedHint={`Organisationskonten löschen Sie über den Support (${SITE_CONFIG.email}).`}
               />
-
-              <PortalPushPermissionRationale role="hv" embedded />
-              <PortalTrackingConsentPanel />
             </div>
           );
         }

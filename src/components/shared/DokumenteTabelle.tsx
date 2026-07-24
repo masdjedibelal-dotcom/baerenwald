@@ -47,7 +47,9 @@ export function DokumenteTabelle({
     if (!href) return;
     const url = normalizeHref(href);
     if (docViewer) {
-      const kind = detectPortalDocKind(doc.name || url);
+      const fromName = detectPortalDocKind(doc.name);
+      const kind =
+        fromName !== "other" ? fromName : detectPortalDocKind(url);
       docViewer.openDoc({
         name: doc.name,
         meta: doc.meta?.trim() || undefined,

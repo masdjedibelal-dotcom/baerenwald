@@ -55,7 +55,6 @@ import type {
   PartnerAuftragItem,
   PartnerBautagebuchItem,
 } from "@/lib/partner/get-partner-data";
-import { PartnerStarRatingDisplay } from "@/components/partner/PartnerStarRatingDisplay";
 import {
   fmtPartnerDate,
   fmtPartnerEuro,
@@ -65,12 +64,6 @@ import {
   resolvePartnerAuftragKonditionZeilen,
 } from "@/lib/partner/partner-portal-display";
 import { summeKonditionNetto } from "@/lib/partner/partner-konditionen";
-import {
-  durchschnittAusBewertung,
-  formatHandwerkerBewertung,
-  HANDWERKER_BEWERTUNG_KATEGORIEN,
-  isAuftragAbgeschlossen,
-} from "@/lib/partner/handwerker-bewertung-display";
 import { resolvePartnerVorgangListenStatus } from "@/lib/partner/partner-vorgang-display";
 import { partnerKannErledigtMelden } from "@/lib/partner/partner-position-erledigt";
 import {
@@ -81,11 +74,10 @@ import { type VorgangState } from "@/lib/partner/vorgang-state";
 import {
   formatHwTerminRange,
   HW_AUFTRAG_COPY,
-  HW_AUFTRAG_TIMELINE,
   hwAuftragStatusLabel,
   hwAuftragStatusStyle,
-  hwAuftragTimelineIndex,
 } from "@/lib/portal2/hw-auftrag-detail";
+import { HW_DOKU_STORY } from "@/lib/portal2/hw-doku-story";
 import { PORTAL_VAR } from "@/lib/portal2/tokens";
 import { partnerPortalToast } from "@/lib/shared/portal-toast";
 import { DokumenteTabelle } from "@/components/shared/DokumenteTabelle";
@@ -581,17 +573,12 @@ export function PartnerAuftragDetail({
   const { label: listenStatusLabel, pillKey: statusPillKey } =
     resolvePartnerVorgangListenStatus(vorgangState, item);
 
-  const idLabel = item.id.slice(0, 8).toUpperCase();
   const titel = resolvePartnerDetailTitelFromAuftrag(item);
   const statusLabel = hwAuftragStatusLabel({
     vorgangState,
     fallback: listenStatusLabel,
   });
   const statusStyle = hwAuftragStatusStyle(statusLabel);
-  const timelineIdx = hwAuftragTimelineIndex({
-    vorgangState,
-    auftragStatus: item.status,
-  });
 
   const lead = item.lead;
   const gewerk =
@@ -611,12 +598,6 @@ export function PartnerAuftragDetail({
   const kontaktTel = lead?.melder_telefon?.trim() || null;
   const terminLabel = formatHwTerminRange(item.start_datum, item.end_datum);
   const sumNetto = summeKonditionNetto(konditionZeilen, true);
-  const verlaufLines = [
-    {
-      text: `Beauftragt${gewerk ? ` · ${gewerk}` : ""}`,
-      meta: "CRM",
-    },
-  ];
 
   const einsatzCard = (
     <PortalDetailCard title={HW_AUFTRAG_COPY.einsatzTitle}>
@@ -654,31 +635,6 @@ export function PartnerAuftragDetail({
     </PortalDetailCard>
   );
 
-  const verlaufCard = (
-    <PortalDetailCard title={HW_AUFTRAG_COPY.verlaufTitle}>
-      <div className="flex flex-col gap-2.5">
-        {verlaufLines.map((e, i) => (
-          <div key={i} className="flex gap-2.5">
-            <div
-              className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full"
-              style={{
-                background: i === 0 ? PORTAL_VAR.primary : "#cfd4da",
-              }}
-            />
-            <div>
-              <p className="text-[12.5px] font-medium" style={{ color: PORTAL_VAR.ink }}>
-                {e.text}
-              </p>
-              <p className="text-[11px]" style={{ color: PORTAL_VAR.faint }}>
-                {e.meta}
-              </p>
-            </div>
-          </div>
-        ))}
-      </div>
-    </PortalDetailCard>
-  );
-
   return (
     <PartnerDetailLayout>
       <div className="min-w-0 space-y-3.5">
@@ -689,14 +645,8 @@ export function PartnerAuftragDetail({
         >
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div className="min-w-0 flex-1">
-              <p
-                className="text-[12px] font-semibold"
-                style={{ color: PORTAL_VAR.faint }}
-              >
-                {idLabel}
-              </p>
               <h1
-                className="mt-1 text-[22px] font-bold leading-snug"
+                className="text-[22px] font-bold leading-snug"
                 style={{
                   color: PORTAL_VAR.ink,
                   fontFamily: "var(--p2-font-head, " + PORTAL_VAR.head + ")",
@@ -735,46 +685,10 @@ export function PartnerAuftragDetail({
               {HW_AUFTRAG_COPY.ausfuehrenHint}
             </p>
           ) : null}
-
-          {/* Timeline */}
-          <div
-            className="mt-4 flex gap-0 overflow-x-auto pb-1"
-            style={{ borderTop: `1px solid ${PORTAL_VAR.line2}` }}
-          >
-            {HW_AUFTRAG_TIMELINE.map((step, i) => {
-              const done = i < timelineIdx;
-              const act = i === timelineIdx;
-              return (
-                <div
-                  key={step.id}
-                  className="flex min-w-[4.5rem] flex-1 flex-col items-center gap-1.5 pt-3"
-                >
-                  <div
-                    className="flex h-7 w-7 items-center justify-center rounded-full text-[12px] font-bold"
-                    style={{
-                      background: done || act ? PORTAL_VAR.primary : "#e8ebe9",
-                      color: done || act ? "#fff" : PORTAL_VAR.faint,
-                    }}
-                  >
-                    {done ? "✓" : i + 1}
-                  </div>
-                  <span
-                    className="text-center text-[10.5px] font-semibold leading-tight"
-                    style={{ color: act ? PORTAL_VAR.ink : PORTAL_VAR.faint }}
-                  >
-                    {step.label}
-                  </span>
-                </div>
-              );
-            })}
-          </div>
         </div>
 
         {/* Mobile: Einsatz zuerst */}
-        <div className="space-y-3.5 sm:hidden">
-          {einsatzCard}
-          {verlaufCard}
-        </div>
+        <div className="space-y-3.5 sm:hidden">{einsatzCard}</div>
 
         <div className="flex flex-col gap-3.5 sm:flex-row sm:items-start">
           <div className="flex min-w-0 flex-1 flex-col gap-3.5">
@@ -793,73 +707,100 @@ export function PartnerAuftragDetail({
               vollstaendig={abschlussVollstaendig}
             />
 
-            <PartnerPositionLebenszyklusList
-              auftragId={item.id}
-              positionen={item.positionen.map((p) => ({
-                id: p.id,
-                leistung_name: p.leistung_name,
-                leistung_status: p.leistung_status,
-                verguetung: p.verguetung,
-                typ: p.typ,
-                anerkennung_status: p.anerkennung_status,
-                preis_partner: p.preis_partner,
-                einheit: p.einheit,
-                menge: p.menge,
-                zeit_minuten_summe: p.zeit_minuten_summe,
-              }))}
-              onDone={() => router.refresh()}
-            />
-
-            {konditionZeilen.length > 0 ? (
-              <PortalDetailCard title={HW_AUFTRAG_COPY.leistungenTitle}>
+            <PortalDetailCard title={HW_AUFTRAG_COPY.leistungenTitle}>
+              {konditionZeilen.length > 0 ? (
                 <PartnerLeistungenKonditionenCard
                   zeilen={konditionZeilen}
                   mode="readonly"
                   variant="plain"
                   gesamtLabel={PARTNER_LEISTUNGEN_GESAMT_LABEL}
                 />
-              </PortalDetailCard>
-            ) : null}
+              ) : null}
 
-            {isAuftragAbgeschlossen(item.status) ? (
-              <PortalDetailCard title="Deine Bewertung">
-                {item.bewertung ? (
-                  <div className="space-y-4">
-                    <ul className="space-y-3">
-                      {HANDWERKER_BEWERTUNG_KATEGORIEN.map((kat) => (
-                        <li
-                          key={kat.key}
-                          className="flex flex-wrap items-center justify-between gap-2"
-                        >
-                          <span className="portal-text-body text-text-primary">
-                            {kat.label}
-                          </span>
-                          <PartnerStarRatingDisplay
-                            value={item.bewertung![kat.key]}
-                            size="sm"
-                          />
-                        </li>
-                      ))}
-                    </ul>
-                    <p className="portal-text-body font-semibold text-text-primary">
-                      Ø{" "}
-                      {formatHandwerkerBewertung(
-                        durchschnittAusBewertung(item.bewertung)
-                      )}
+              <div
+                className={
+                  konditionZeilen.length > 0
+                    ? "mt-5 border-t border-border-light pt-5"
+                    : undefined
+                }
+              >
+                <p className="mb-3 text-[12.5px]" style={{ color: PORTAL_VAR.faint }}>
+                  {HW_DOKU_STORY.lead}
+                </p>
+                <PartnerPositionLebenszyklusList
+                  embedded
+                  auftragId={item.id}
+                  positionen={item.positionen.map((p) => ({
+                    id: p.id,
+                    leistung_name: p.leistung_name,
+                    leistung_status: p.leistung_status,
+                    verguetung: p.verguetung,
+                    typ: p.typ,
+                    anerkennung_status: p.anerkennung_status,
+                    preis_partner: p.preis_partner,
+                    einheit: p.einheit,
+                    menge: p.menge,
+                    zeit_minuten_summe: p.zeit_minuten_summe,
+                  }))}
+                  onDone={() => router.refresh()}
+                />
+              </div>
+
+              <div className="mt-5 border-t border-border-light pt-5">
+                <div className="mb-3 flex items-center justify-between gap-2">
+                  <div>
+                    <h4 className="portal-text-label text-text-tertiary">
+                      {HW_DOKU_STORY.freiesBtTitle}
+                    </h4>
+                    <p className="mt-1 text-[12.5px]" style={{ color: PORTAL_VAR.faint }}>
+                      {HW_DOKU_STORY.freiesBtBody}
                     </p>
-                    {item.bewertung.updated_at ? (
-                      <p className="portal-text-meta text-text-secondary">
-                        Bewertet am {fmtPartnerDate(item.bewertung.updated_at)}
-                      </p>
-                    ) : null}
                   </div>
-                ) : (
-                  <p className="text-[13px]" style={{ color: PORTAL_VAR.sub }}>
-                    Noch keine Bewertung für diesen Auftrag.
+                  {!showNew && !editingEintrag ? (
+                    <button
+                      type="button"
+                      onClick={() => setShowNew(true)}
+                      className="shrink-0 rounded-full border px-3 py-1.5 text-[12px] font-semibold"
+                      style={{
+                        borderColor: PORTAL_VAR.line,
+                        color: PORTAL_VAR.sub,
+                        background: "#fff",
+                      }}
+                    >
+                      + Eintrag
+                    </button>
+                  ) : null}
+                </div>
+                {item.bautagebuchAnfrageOffen ? (
+                  <p className="mb-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm font-semibold text-amber-900">
+                    Bitte Tagebucheintrag erstellen.
+                    {item.bautagebuchAnfrageNotiz?.trim() ? (
+                      <span className="mt-1 block font-normal text-amber-800">
+                        {item.bautagebuchAnfrageNotiz.trim()}
+                      </span>
+                    ) : null}
                   </p>
-                )}
-              </PortalDetailCard>
-            ) : null}
+                ) : null}
+                {showNew ? (
+                  <BautagebuchForm
+                    auftragId={item.id}
+                    onDone={() => setShowNew(false)}
+                  />
+                ) : null}
+                {editingEintrag ? (
+                  <BautagebuchForm
+                    auftragId={item.id}
+                    eintrag={editingEintrag}
+                    onDone={() => setEditId(null)}
+                  />
+                ) : null}
+                <BautagebuchAccordionList
+                  eintraege={accordionEintraege}
+                  className="!border-t-0 !pt-0"
+                  emptyText="Noch keine Zusatznotizen."
+                />
+              </div>
+            </PortalDetailCard>
 
             {zeigtBefundBereich ? (
               <PortalDetailCard title="Schadenbefund">
@@ -888,56 +829,6 @@ export function PartnerAuftragDetail({
                 ) : null}
               </PortalDetailCard>
             ) : null}
-
-            <PortalDetailCard title={HW_AUFTRAG_COPY.bautagebuchTitle}>
-              <div className="mb-3 flex items-center justify-between gap-2">
-                <p className="text-[12.5px]" style={{ color: PORTAL_VAR.faint }}>
-                  {HW_AUFTRAG_COPY.bautagebuchHint}
-                </p>
-                {!showNew && !editingEintrag ? (
-                  <button
-                    type="button"
-                    onClick={() => setShowNew(true)}
-                    className="shrink-0 rounded-full border px-3 py-1.5 text-[12px] font-semibold"
-                    style={{
-                      borderColor: PORTAL_VAR.line,
-                      color: PORTAL_VAR.sub,
-                      background: "#fff",
-                    }}
-                  >
-                    + Eintrag
-                  </button>
-                ) : null}
-              </div>
-              {item.bautagebuchAnfrageOffen ? (
-                <p className="mb-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm font-semibold text-amber-900">
-                  Bitte Tagebucheintrag erstellen.
-                  {item.bautagebuchAnfrageNotiz?.trim() ? (
-                    <span className="mt-1 block font-normal text-amber-800">
-                      {item.bautagebuchAnfrageNotiz.trim()}
-                    </span>
-                  ) : null}
-                </p>
-              ) : null}
-              {showNew ? (
-                <BautagebuchForm
-                  auftragId={item.id}
-                  onDone={() => setShowNew(false)}
-                />
-              ) : null}
-              {editingEintrag ? (
-                <BautagebuchForm
-                  auftragId={item.id}
-                  eintrag={editingEintrag}
-                  onDone={() => setEditId(null)}
-                />
-              ) : null}
-              <BautagebuchAccordionList
-                eintraege={accordionEintraege}
-                className="!border-t-0 !pt-0"
-                emptyText="Noch keine Einträge im Bautagebuch."
-              />
-            </PortalDetailCard>
 
             <PortalDetailCard title={HW_AUFTRAG_COPY.unterlagenTitle}>
               <DokumenteTabelle
@@ -1084,7 +975,6 @@ export function PartnerAuftragDetail({
           {/* Desktop sidebar */}
           <div className="hidden w-full shrink-0 flex-col gap-3.5 sm:flex sm:w-[260px]">
             {einsatzCard}
-            {verlaufCard}
           </div>
         </div>
       </div>

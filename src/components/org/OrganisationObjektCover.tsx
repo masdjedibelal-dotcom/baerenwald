@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState, type DragEvent } from "react";
+import { Pencil } from "lucide-react";
 
 import {
   isPortalDefaultMediaUrl,
@@ -21,7 +22,7 @@ type Props = {
 };
 
 /**
- * Dekoratives Gebäudefoto — Klick oder Drop zum direkten Hochladen / Ersetzen.
+ * Gebäudefoto — Bearbeiten-Icon oben rechts öffnet den Upload; Drop bleibt möglich.
  */
 export function OrganisationObjektCover({
   objektId,
@@ -85,6 +86,9 @@ export function OrganisationObjektCover({
   };
 
   const height = variant === "card" ? "h-[140px]" : "h-[66px] w-24";
+  const editLabel = hasCustom
+    ? "Gebäudefoto ersetzen"
+    : "Gebäudefoto hochladen";
 
   return (
     <div
@@ -112,6 +116,18 @@ export function OrganisationObjektCover({
           !hasCustom && "opacity-90"
         )}
       />
+
+      {canUpload && dragging ? (
+        <div
+          className="pointer-events-none absolute inset-0 flex items-center justify-center bg-black/35"
+          aria-hidden
+        >
+          <span className="rounded-full bg-black/55 px-2.5 py-1 text-[11.5px] font-semibold text-white">
+            Datei ablegen
+          </span>
+        </div>
+      ) : null}
+
       {canUpload ? (
         <>
           <input
@@ -128,29 +144,20 @@ export function OrganisationObjektCover({
           <button
             type="button"
             className={cn(
-              "absolute inset-0 flex flex-col items-center justify-center gap-1 text-center transition-colors",
-              dragging ? "bg-black/40" : "bg-black/20 hover:bg-black/40",
-              "focus-visible:bg-black/40"
+              "absolute right-2 top-2 z-10 inline-flex h-8 w-8 items-center justify-center rounded-full",
+              "border border-white/40 bg-black/55 text-white shadow-sm backdrop-blur-[2px]",
+              "transition-colors hover:bg-black/70 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white",
+              "disabled:opacity-60"
             )}
             onClick={(e) => {
               e.stopPropagation();
               inputRef.current?.click();
             }}
             disabled={busy}
-            title={hasCustom ? "Gebäudefoto ersetzen" : "Gebäudefoto hochladen"}
+            title={busy ? "Wird hochgeladen…" : editLabel}
+            aria-label={busy ? "Wird hochgeladen…" : editLabel}
           >
-            <span className="rounded-full bg-black/55 px-2.5 py-1 text-[11.5px] font-semibold text-white shadow-sm backdrop-blur-[2px]">
-              {busy
-                ? "Wird hochgeladen…"
-                : hasCustom
-                  ? "Foto ersetzen"
-                  : "Foto hochladen"}
-            </span>
-            {variant === "card" ? (
-              <span className="text-[11px] text-white/95">
-                Tippen oder Datei hierher ziehen
-              </span>
-            ) : null}
+            <Pencil className="h-3.5 w-3.5" aria-hidden />
           </button>
         </>
       ) : null}

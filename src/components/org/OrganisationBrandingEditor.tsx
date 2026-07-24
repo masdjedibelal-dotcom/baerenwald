@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { Pencil } from "lucide-react";
 
 import type { OrganisationKunde } from "@/lib/org/types";
 import {
@@ -20,7 +21,10 @@ import {
 import { resolvePortalHeroSrc } from "@/lib/portal2/portal-media";
 import {
   EinstellungenEdField,
+  EinstellungenEditModal,
   EinstellungenGrid2,
+  EinstellungenPfRow,
+  EinstellungenSectionHeader,
 } from "@/components/shared/PortalEinstellungenUi";
 import { orgPortalToast, portalToastError } from "@/lib/shared/portal-toast";
 import { cn } from "@/lib/utils";
@@ -62,8 +66,13 @@ function draftFromKunde(kunde: OrganisationKunde): Draft {
   };
 }
 
+function dash(v: string) {
+  return v.trim() || "—";
+}
+
 /**
- * Mock Branding & White-Label inkl. Presets, Stammdaten und Live-Vorschau.
+ * Branding & White-Label: Anzeige + Stift → Modal.
+ * Logo/Hero-Upload bleiben explizite Aktionen auf der Seite.
  */
 export function OrganisationBrandingEditor({
   kunde,
@@ -71,31 +80,30 @@ export function OrganisationBrandingEditor({
   onSaved,
   nested = false,
 }: Props) {
-  const [draft, setDraft] = useState(() => draftFromKunde(kunde));
+  const [saved, setSaved] = useState(() => draftFromKunde(kunde));
+  const [edit, setEdit] = useState<Draft | null>(null);
+  const [editOpen, setEditOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [logoBusy, setLogoBusy] = useState(false);
   const [heroBusy, setHeroBusy] = useState(false);
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
   const [heroPreview, setHeroPreview] = useState<string | null>(null);
-  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const logoInputRef = useRef<HTMLInputElement>(null);
   const heroInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    setDraft(draftFromKunde(kunde));
+    setSaved(draftFromKunde(kunde));
     setLogoPreview(null);
     setHeroPreview(null);
   }, [kunde]);
 
-  const activeBrand =
-    findBrandPresetByPrimary(draft.primary)?.id ?? null;
-
+  const activeBrand = findBrandPresetByPrimary(saved.primary)?.id ?? null;
   const logoSrc = logoPreview || kunde.org_logo_url;
   const heroSrc = resolvePortalHeroSrc(heroPreview || kunde.org_hero_url);
 
   const persist = useCallback(
     async (next: Draft) => {
-      if (readOnly) return;
+      if (readOnly) return false;
       setSaving(true);
       try {
         const res = await fetch("/api/org/branding", {
@@ -118,10 +126,12 @@ export function OrganisationBrandingEditor({
         const json = (await res.json()) as { error?: string };
         if (!res.ok) {
           portalToastError("Branding nicht gespeichert", json.error);
-          return;
+          return false;
         }
+        setSaved(next);
         orgPortalToast.saved();
         onSaved();
+        return true;
       } finally {
         setSaving(false);
       }
@@ -129,23 +139,22 @@ export function OrganisationBrandingEditor({
     [onSaved, readOnly]
   );
 
-  const scheduleSave = useCallback(
-    (next: Draft) => {
-      setDraft(next);
-      if (readOnly) return;
-      if (timer.current) clearTimeout(timer.current);
-      timer.current = setTimeout(() => {
-        void persist(next);
-      }, 650);
-    },
-    [persist, readOnly]
-  );
+  function openEdit() {
+    setEdit({ ...saved });
+    setEditOpen(true);
+  }
 
-  useEffect(() => {
-    return () => {
-      if (timer.current) clearTimeout(timer.current);
-    };
-  }, []);
+  function closeEdit() {
+    if (saving) return;
+    setEditOpen(false);
+    setEdit(null);
+  }
+
+  async function saveEdit() {
+    if (!edit) return;
+    const ok = await persist(edit);
+    if (ok) closeEdit();
+  }
 
   const uploadMedia = async (kind: "logo" | "hero", file: File) => {
     if (readOnly) return;
@@ -186,40 +195,41 @@ export function OrganisationBrandingEditor({
   };
 
   const applyPreset = (p: BrandPreset) => {
-    const next = {
-      ...draft,
+    if (!edit) return;
+    setEdit({
+      ...edit,
       primary: p.primary,
       primaryDk: p.primaryDk,
       soft: p.soft,
-    };
-    scheduleSave(next);
-  };
-
-  const set = (key: keyof Draft, val: string) => {
-    scheduleSave({ ...draft, [key]: val });
+    });
   };
 
   return (
-    <section
-      className={
-        nested
-          ? "space-y-4"
-          : "portal-surface space-y-4 p-4 sm:p-5"
-      }
-    >
-      <div>
-        <h2 className="font-[family-name:var(--font-display)] text-sm font-bold text-text-primary">
-          {EINSTELLUNGEN_BRANDING_TITLE}
-        </h2>
-        <p className="mt-2 text-[13px] leading-relaxed text-text-secondary">
-          {EINSTELLUNGEN_BRANDING_INTRO}
-        </p>
+    <section className={nested ? "space-y-4" : "portal-surface space-y-4 p-4 sm:p-5"}>
+      <div className="flex items-start justify-between gap-2">
+        <div>
+          <h2 className="font-[family-name:var(--font-display)] text-sm font-bold text-text-primary">
+            {EINSTELLUNGEN_BRANDING_TITLE}
+          </h2>
+          <p className="mt-2 text-[13px] leading-relaxed text-text-secondary">
+            {EINSTELLUNGEN_BRANDING_INTRO}
+          </p>
+        </div>
+        {!readOnly ? (
+          <button
+            type="button"
+            onClick={openEdit}
+            aria-label="Branding bearbeiten"
+            title="Bearbeiten"
+            className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-border-default bg-white text-text-secondary hover:border-accent/40 hover:text-accent"
+          >
+            <Pencil className="h-4 w-4" aria-hidden />
+          </button>
+        ) : null}
       </div>
 
       <div>
-        <p className="mb-1.5 text-[11.5px] font-bold text-text-tertiary">
-          LOGO
-        </p>
+        <EinstellungenSectionHeader title="LOGO" />
         <div className="flex items-center gap-3.5">
           <div className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-border-default bg-muted">
             {logoSrc ? (
@@ -233,14 +243,14 @@ export function OrganisationBrandingEditor({
               />
             ) : (
               <span className="font-[family-name:var(--font-display)] text-sm font-bold text-text-primary">
-                {draft.logo || "HV"}
+                {saved.logo || "HV"}
               </span>
             )}
           </div>
           <div className="min-w-0 flex-1">
             <p className="text-[12.5px] leading-relaxed text-text-secondary">
               {EINSTELLUNGEN_LOGO_HINT}{" "}
-              <b className="text-text-primary">„{draft.logo || "HV"}“</b> als
+              <b className="text-text-primary">„{saved.logo || "HV"}“</b> als
               Platzhalter.
             </p>
             {!readOnly ? (
@@ -275,9 +285,7 @@ export function OrganisationBrandingEditor({
       </div>
 
       <div>
-        <p className="mb-1.5 text-[11.5px] font-bold text-text-tertiary">
-          ÜBERSICHTS-BILD (HERO)
-        </p>
+        <EinstellungenSectionHeader title="ÜBERSICHTS-BILD (HERO)" />
         <div className="overflow-hidden rounded-xl border border-border-default">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
@@ -319,21 +327,12 @@ export function OrganisationBrandingEditor({
       </div>
 
       <div>
-        <p className="mb-1.5 text-[11.5px] font-bold text-text-tertiary">
-          AKZENTFARBE
-        </p>
+        <EinstellungenSectionHeader title="AKZENTFARBE" />
         <div className="flex flex-wrap gap-2.5">
           {BRAND_PRESETS.map((p) => {
             const on = activeBrand === p.id;
             return (
-              <button
-                key={p.id}
-                type="button"
-                title={p.name}
-                disabled={readOnly}
-                onClick={() => applyPreset(p)}
-                className="flex flex-col items-center gap-1.5 bg-transparent p-0 disabled:opacity-50"
-              >
+              <div key={p.id} className="flex flex-col items-center gap-1.5">
                 <span
                   className="h-[38px] w-[38px] rounded-full"
                   style={{
@@ -342,6 +341,7 @@ export function OrganisationBrandingEditor({
                       ? `0 0 0 3px #fff, 0 0 0 5px ${p.primary}`
                       : "inset 0 0 0 1px rgba(0,0,0,.08)",
                   }}
+                  title={p.name}
                 />
                 <span
                   className={cn(
@@ -353,106 +353,71 @@ export function OrganisationBrandingEditor({
                 >
                   {p.name}
                 </span>
-              </button>
+              </div>
             );
           })}
         </div>
       </div>
 
       <div>
-        <p className="mb-2 text-[11.5px] font-bold text-text-tertiary">
-          ANGABEN FÜRS PORTAL
-        </p>
+        <EinstellungenSectionHeader
+          title="ANGABEN FÜRS PORTAL"
+          onEdit={readOnly ? undefined : openEdit}
+        />
         <div className="flex flex-col gap-[11px]">
-          <EinstellungenEdField
-            label="Firmenname"
-            value={draft.name}
-            disabled={readOnly}
-            onChange={(v) => set("name", v)}
-          />
+          <EinstellungenPfRow label="Firmenname" value={dash(saved.name)} />
           <EinstellungenGrid2>
-            <EinstellungenEdField
-              label="Zusatz / Rolle"
-              value={draft.sub}
-              disabled={readOnly}
-              onChange={(v) => set("sub", v)}
-            />
-            <EinstellungenEdField
-              label="Namenskürzel (Logo-Fallback)"
-              value={draft.logo}
-              disabled={readOnly}
-              onChange={(v) => set("logo", v.slice(0, 4).toUpperCase())}
+            <EinstellungenPfRow label="Zusatz / Rolle" value={dash(saved.sub)} />
+            <EinstellungenPfRow
+              label="Namenskürzel"
+              value={dash(saved.logo)}
             />
           </EinstellungenGrid2>
           <EinstellungenGrid2>
-            <EinstellungenEdField
-              label="Telefon"
-              value={draft.tel}
-              disabled={readOnly}
-              onChange={(v) => set("tel", v)}
-            />
-            <EinstellungenEdField
-              label="Service-E-Mail"
-              value={draft.mail}
-              disabled={readOnly}
-              onChange={(v) => set("mail", v)}
-            />
+            <EinstellungenPfRow label="Telefon" value={dash(saved.tel)} />
+            <EinstellungenPfRow label="Service-E-Mail" value={dash(saved.mail)} />
           </EinstellungenGrid2>
           <EinstellungenGrid2>
-            <EinstellungenEdField
-              label="Straße"
-              value={draft.strasse}
-              disabled={readOnly}
-              onChange={(v) => set("strasse", v)}
-            />
-            <EinstellungenEdField
-              label="PLZ / Ort"
-              value={draft.ort}
-              disabled={readOnly}
-              onChange={(v) => set("ort", v)}
-            />
+            <EinstellungenPfRow label="Straße" value={dash(saved.strasse)} />
+            <EinstellungenPfRow label="PLZ / Ort" value={dash(saved.ort)} />
           </EinstellungenGrid2>
         </div>
       </div>
 
       <div>
-        <p className="mb-1.5 text-[11.5px] font-bold text-text-tertiary">
-          VORSCHAU
-        </p>
+        <EinstellungenSectionHeader title="VORSCHAU" />
         <div className="overflow-hidden rounded-xl border border-border-default">
           <div
             className="flex items-center gap-2.5 px-[15px] py-3 text-white"
-            style={{ background: draft.primaryDk }}
+            style={{ background: saved.primaryDk }}
           >
-            <div
-              className="grid h-8 w-8 place-items-center overflow-hidden rounded-lg border border-white/30 bg-white/15 font-[family-name:var(--font-display)] text-[13px] font-bold"
-            >
+            <div className="grid h-8 w-8 place-items-center overflow-hidden rounded-lg border border-white/30 bg-white/15 font-[family-name:var(--font-display)] text-[13px] font-bold">
               {logoSrc ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img src={logoSrc} alt="" className="h-full w-full object-cover" />
               ) : (
-                draft.logo || "HV"
+                saved.logo || "HV"
               )}
             </div>
             <div>
               <p className="font-[family-name:var(--font-display)] text-sm font-bold">
-                {draft.name || "Firmenname"}
+                {saved.name || "Firmenname"}
               </p>
               <p className="text-[10.5px] uppercase tracking-wide opacity-80">
-                {draft.sub || "Verwaltung"}
+                {saved.sub || "Verwaltung"}
               </p>
             </div>
           </div>
           <div className="flex items-center gap-2.5 bg-white px-[15px] py-3">
             <span
               className="rounded-lg px-3.5 py-2 text-[12.5px] font-bold text-white"
-              style={{ background: draft.primary }}
+              style={{ background: saved.primary }}
             >
               Anliegen melden
             </span>
             <span
               className="rounded-full px-3 py-1.5 text-xs font-semibold"
-              style={{ background: draft.soft, color: draft.primaryDk }}
+              style={{ background: saved.soft, color: saved.primaryDk }}
             >
               In Bearbeitung
             </span>
@@ -462,8 +427,99 @@ export function OrganisationBrandingEditor({
 
       <p className="text-[11.5px] leading-relaxed text-text-tertiary">
         {EINSTELLUNGEN_BRANDING_FOOTER}
-        {saving ? " · Speichern…" : ""}
       </p>
+
+      {edit ? (
+        <EinstellungenEditModal
+          open={editOpen}
+          title="Branding bearbeiten"
+          subtitle="Farbe und Angaben — Speichern oder Abbrechen."
+          onClose={closeEdit}
+          onSave={() => void saveEdit()}
+          saving={saving}
+          saveDisabled={edit.name.trim().length < 2}
+        >
+          <p className="text-[11.5px] font-bold text-text-tertiary">AKZENTFARBE</p>
+          <div className="flex flex-wrap gap-2.5">
+            {BRAND_PRESETS.map((p) => {
+              const on =
+                findBrandPresetByPrimary(edit.primary)?.id === p.id;
+              return (
+                <button
+                  key={p.id}
+                  type="button"
+                  title={p.name}
+                  onClick={() => applyPreset(p)}
+                  className="flex flex-col items-center gap-1.5 bg-transparent p-0"
+                >
+                  <span
+                    className="h-[38px] w-[38px] rounded-full"
+                    style={{
+                      background: p.primary,
+                      boxShadow: on
+                        ? `0 0 0 3px #fff, 0 0 0 5px ${p.primary}`
+                        : "inset 0 0 0 1px rgba(0,0,0,.08)",
+                    }}
+                  />
+                  <span
+                    className={cn(
+                      "text-[10.5px]",
+                      on
+                        ? "font-bold text-text-primary"
+                        : "font-semibold text-text-tertiary"
+                    )}
+                  >
+                    {p.name}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+          <EinstellungenEdField
+            label="Firmenname"
+            value={edit.name}
+            onChange={(v) => setEdit({ ...edit, name: v })}
+          />
+          <EinstellungenGrid2>
+            <EinstellungenEdField
+              label="Zusatz / Rolle"
+              value={edit.sub}
+              onChange={(v) => setEdit({ ...edit, sub: v })}
+            />
+            <EinstellungenEdField
+              label="Namenskürzel (Logo-Fallback)"
+              value={edit.logo}
+              onChange={(v) =>
+                setEdit({ ...edit, logo: v.slice(0, 4).toUpperCase() })
+              }
+            />
+          </EinstellungenGrid2>
+          <EinstellungenGrid2>
+            <EinstellungenEdField
+              label="Telefon"
+              value={edit.tel}
+              onChange={(v) => setEdit({ ...edit, tel: v })}
+            />
+            <EinstellungenEdField
+              label="Service-E-Mail"
+              value={edit.mail}
+              onChange={(v) => setEdit({ ...edit, mail: v })}
+            />
+          </EinstellungenGrid2>
+          <EinstellungenGrid2>
+            <EinstellungenEdField
+              label="Straße"
+              value={edit.strasse}
+              onChange={(v) => setEdit({ ...edit, strasse: v })}
+            />
+            <EinstellungenEdField
+              label="PLZ / Ort"
+              value={edit.ort}
+              onChange={(v) => setEdit({ ...edit, ort: v })}
+            />
+          </EinstellungenGrid2>
+        </EinstellungenEditModal>
+      ) : null}
     </section>
   );
 }

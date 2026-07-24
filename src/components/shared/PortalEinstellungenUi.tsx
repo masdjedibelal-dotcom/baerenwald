@@ -1,11 +1,13 @@
 "use client";
 
 import type { ReactNode } from "react";
+import { Pencil } from "lucide-react";
 
 import {
   formatEinstellungenSchwelle,
   snapEinstellungenSchwelle,
 } from "@/lib/portal2/einstellungen";
+import { PortalModalShell } from "@/components/shared/PortalModalShell";
 import { PORTAL_VAR } from "@/lib/portal2/tokens";
 import { cn } from "@/lib/utils";
 
@@ -79,6 +81,92 @@ export function EinstellungenInfoBox({ children }: { children: ReactNode }) {
   );
 }
 
+/** Abschnittskopf: Label + Stift (öffnet Edit-Modal). */
+export function EinstellungenSectionHeader({
+  title,
+  onEdit,
+  editLabel = "Bearbeiten",
+}: {
+  title: string;
+  onEdit?: () => void;
+  editLabel?: string;
+}) {
+  return (
+    <div className="mb-2 flex items-center justify-between gap-2">
+      <p className="text-[11.5px] font-bold text-text-tertiary">{title}</p>
+      {onEdit ? (
+        <button
+          type="button"
+          onClick={onEdit}
+          aria-label={editLabel}
+          title={editLabel}
+          className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-border-default bg-white text-text-secondary transition-colors hover:border-accent/40 hover:text-accent"
+        >
+          <Pencil className="h-4 w-4" aria-hidden />
+        </button>
+      ) : null}
+    </div>
+  );
+}
+
+/** @deprecated Alias — nutze EinstellungenSectionHeader. */
+export function EinstellungenSectionLabel({ children }: { children: string }) {
+  return <EinstellungenSectionHeader title={children} />;
+}
+
+/** Edit-Modal (Mobil = Bottom-Sheet via PortalModalShell). */
+export function EinstellungenEditModal({
+  open,
+  title,
+  subtitle,
+  children,
+  onClose,
+  onSave,
+  saving,
+  saveDisabled,
+  saveLabel = "Speichern",
+}: {
+  open: boolean;
+  title: string;
+  subtitle?: string | null;
+  children: ReactNode;
+  onClose: () => void;
+  onSave: () => void;
+  saving?: boolean;
+  saveDisabled?: boolean;
+  saveLabel?: string;
+}) {
+  return (
+    <PortalModalShell
+      open={open}
+      title={title}
+      subtitle={subtitle}
+      onClose={onClose}
+      closeOnBackdrop={!saving}
+    >
+      <div className="flex flex-col gap-3">{children}</div>
+      <div className="mt-5 flex flex-wrap justify-end gap-2">
+        <button
+          type="button"
+          className="btn-pill-outline portal-btn !px-4 !py-2.5"
+          disabled={saving}
+          onClick={onClose}
+        >
+          Abbrechen
+        </button>
+        <button
+          type="button"
+          className="btn-pill-primary portal-btn !px-4 !py-2.5"
+          disabled={saving || saveDisabled}
+          onClick={onSave}
+        >
+          {saving ? "Speichern…" : saveLabel}
+        </button>
+      </div>
+    </PortalModalShell>
+  );
+}
+
 /** Mock Auswahlkachel (Angebots-Freigabe). */
 export function EinstellungenChoiceCard({
   selected,
@@ -146,31 +234,26 @@ export function EinstellungenGrid2({
   );
 }
 
-export function EinstellungenSectionLabel({ children }: { children: string }) {
-  return (
-    <p className="mb-2 text-[11.5px] font-bold text-text-tertiary">{children}</p>
-  );
-}
-
-/** Mock `card(title, body)` — screenSettings Freigabe-Regeln. */
+/**
+ * Flacher Einstellungs-Block (Handwerker-Contract).
+ * Keine weiße Card — nur SectionHeader + Inhalt.
+ * @deprecated Bevorzugt EinstellungenSectionHeader + children direkt.
+ */
 export function EinstellungenCard({
   title,
   children,
   className,
+  onEdit,
 }: {
   title?: string;
   children: ReactNode;
   className?: string;
+  onEdit?: () => void;
 }) {
   return (
-    <section className={cn("portal-einstellungen-card", className)}>
+    <section className={cn("space-y-3", className)}>
       {title ? (
-        <h3
-          className="portal-einstellungen-card-title"
-          style={{ fontFamily: "var(--p2-font-head, " + PORTAL_VAR.head + ")" }}
-        >
-          {title}
-        </h3>
+        <EinstellungenSectionHeader title={title} onEdit={onEdit} />
       ) : null}
       {children}
     </section>

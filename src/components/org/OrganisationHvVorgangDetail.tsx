@@ -20,7 +20,6 @@ import {
   angebotSummeFromBruttoTotal,
   angebotSummeFromPositionen,
   buildAbschlagsplan,
-  formatHvVerlaufLine,
   hvRoleActionKind,
   moneyEur,
   pickEmpfohlenesAngebot,
@@ -32,7 +31,6 @@ import {
   portalDetailSectionBorderStyle,
   portalDetailSectionClass,
 } from "@/lib/portal2/layout-chrome";
-import { portalFlowTimeline, portalMieterFlowTimeline } from "@/lib/portal2/status-mapping";
 import { PORTAL_STATUS, type PortalMockStatusId } from "@/lib/portal2/status";
 import { PORTAL_VAR } from "@/lib/portal2/tokens";
 import { kundePortalToast, orgPortalToast } from "@/lib/shared/portal-toast";
@@ -304,7 +302,7 @@ export function OrganisationHvVorgangDetail({
   rechnungPdfHref,
   bautagebuch = [],
   dokumente = [],
-  verlauf = [],
+  verlauf: _verlauf = [],
   coverUrl,
   onBack,
   onUpdated,
@@ -348,9 +346,6 @@ export function OrganisationHvVorgangDetail({
     (flowStatus === "angefragt" || flowStatus === "freigegeben")
       ? "angebot"
       : flowStatus;
-  const timeline = mieterStatusMode
-    ? portalMieterFlowTimeline(displayFlowStatus)
-    : portalFlowTimeline(displayFlowStatus);
   const actionKind = hvRoleActionKind(displayFlowStatus, {
     privatkunde,
     angebotVorgelegt,
@@ -776,8 +771,6 @@ export function OrganisationHvVorgangDetail({
 
   const showAngebotSection = !mieterStatusMode && Boolean(rolePanel);
 
-  const showVerlauf = !privatkunde && detailRole !== "kunde";
-
   useEffect(() => {
     if (mieterStatusMode || !showBautagebuch) {
       setBtUnread(0);
@@ -812,9 +805,8 @@ export function OrganisationHvVorgangDetail({
         badge: btUnread > 0 ? btUnread : null,
       },
       { id: "dokumente" as const },
-      { id: "verlauf" as const, hidden: !showVerlauf },
     ],
-    [showAngebotSection, showBautagebuch, showVerlauf, btUnread]
+    [showAngebotSection, showBautagebuch, btUnread]
   );
 
   return (
@@ -837,7 +829,7 @@ export function OrganisationHvVorgangDetail({
             type="button"
             onClick={onBack}
             className="absolute left-3.5 top-3 z-10 inline-flex items-center gap-1 rounded-full px-3 py-1.5 text-[13px] font-semibold text-white shadow-md"
-            style={{ background: "rgba(0,0,0,.55)" }}
+            style={{ background: PORTAL_VAR.primary }}
           >
             ← Zurück zur Liste
           </button>
@@ -850,18 +842,13 @@ export function OrganisationHvVorgangDetail({
       >
         <div className="flex items-start gap-2.5">
           <div className="min-w-0 flex-1">
-            <div className="mb-1 flex flex-wrap items-center gap-2">
-              {idLabel.trim() ? (
-                <span className="text-xs font-semibold" style={{ color: PORTAL_VAR.faint }}>
-                  {idLabel}
-                </span>
-              ) : null}
-              {notfall ? (
+            {notfall ? (
+              <div className="mb-1">
                 <span className="rounded px-1.5 py-0.5 text-[11px] font-bold portal-danger-soft">
                   NOTFALL
                 </span>
-              ) : null}
-            </div>
+              </div>
+            ) : null}
             <h1
               className="text-[20px] font-bold sm:text-[23px]"
               style={{
@@ -946,59 +933,6 @@ export function OrganisationHvVorgangDetail({
         ) : null}
       </div>
 
-      <div
-        className="flex gap-0 overflow-x-auto bg-white px-4 py-3 sm:px-6"
-        style={{ borderBottom: `1px solid ${PORTAL_VAR.line2}` }}
-      >
-        {timeline.map((step, i) => {
-          const done = step.done;
-          const act = step.active;
-          return (
-            <div key={step.id} className="flex shrink-0 items-center">
-              <div className="flex flex-col items-center gap-1">
-                <div
-                  className="grid h-[22px] w-[22px] place-items-center rounded-full text-[11px] font-bold"
-                  style={{
-                    background: done
-                      ? PORTAL_VAR.primary
-                      : act
-                        ? "#fff"
-                        : "#f1f3f5",
-                    color: done
-                      ? "#fff"
-                      : act
-                        ? PORTAL_VAR.primary
-                        : PORTAL_VAR.faint,
-                    border:
-                      "2px solid " +
-                      (done || act
-                        ? PORTAL_VAR.primary
-                        : "#e3e6ea"),
-                  }}
-                >
-                  {done ? "✓" : i + 1}
-                </div>
-                <p
-                  className="max-w-[72px] text-center text-[9.5px] font-semibold leading-tight"
-                  style={{
-                    color: act ? PORTAL_VAR.ink : PORTAL_VAR.faint,
-                    whiteSpace: "nowrap",
-                  }}
-                >
-                  {step.label}
-                </p>
-              </div>
-              {i < timeline.length - 1 ? (
-                <div
-                  className="mx-1 mb-4 h-px w-4 shrink-0 sm:w-6"
-                  style={{ background: "#e3e6ea" }}
-                />
-              ) : null}
-            </div>
-          );
-        })}
-      </div>
-
       <div className="flex flex-col gap-4 px-4 pb-6 pt-3 sm:px-6 sm:pt-4 lg:flex-row lg:items-start lg:gap-6 lg:pt-5">
         <div className="lg:sticky lg:top-3 lg:w-[11rem] lg:shrink-0">
           <VorgangDetailSectionNav items={navItems} />
@@ -1068,34 +1002,6 @@ export function OrganisationHvVorgangDetail({
               }))}
             />
           </DetailCard>
-
-          {showVerlauf ? (
-            <DetailCard id="verlauf" title={HV_DETAIL_COPY.verlaufTitle}>
-              {verlauf.length === 0 ? (
-                <p className="text-[12.5px]" style={{ color: PORTAL_VAR.faint }}>
-                  Noch keine Einträge.
-                </p>
-              ) : (
-                <div className="flex flex-col gap-2.5">
-                  {verlauf.map((e, i) => (
-                    <div key={i} className="flex gap-2.5">
-                      <div
-                        className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full"
-                        style={{
-                          background: i === 0 ? PORTAL_VAR.primary : "#cfd4da",
-                        }}
-                      />
-                      <div>
-                        <p className="text-[12.5px]" style={{ color: PORTAL_VAR.ink }}>
-                          {formatHvVerlaufLine(e)}
-                        </p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </DetailCard>
-          ) : null}
         </div>
       </div>
     </div>

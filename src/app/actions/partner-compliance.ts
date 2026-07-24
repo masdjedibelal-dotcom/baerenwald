@@ -101,7 +101,8 @@ export async function uploadPartnerComplianceDokument(
   if (!link.ok) return { ok: false, error: link.error };
 
   const typ = String(formData.get("typ") ?? "").trim();
-  const bezeichnung = String(formData.get("bezeichnung") ?? "").trim();
+  const bezeichnungRaw = String(formData.get("bezeichnung") ?? "").trim();
+  const beschreibung = String(formData.get("beschreibung") ?? "").trim();
   const auftragIdRaw = String(formData.get("auftragId") ?? "").trim();
   const auftragId = auftragIdRaw || null;
   const gueltigBisRaw = String(formData.get("gueltigBis") ?? "").trim();
@@ -162,7 +163,13 @@ export async function uploadPartnerComplianceDokument(
     handwerker_id: link.handwerkerId,
     auftrag_id: auftragId,
     typ,
-    bezeichnung: bezeichnung || (typRow as { bezeichnung?: string } | null)?.bezeichnung || typ,
+    bezeichnung: (() => {
+      const base =
+        bezeichnungRaw ||
+        (typRow as { bezeichnung?: string } | null)?.bezeichnung ||
+        typ;
+      return beschreibung ? `${base}\n${beschreibung}` : base;
+    })(),
     gueltig_bis: gueltigBis,
     datei_url: up.path,
     status: "in_pruefung",
