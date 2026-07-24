@@ -1,0 +1,35 @@
+{
+  "orgKundeId": "83ab79dc-551b-44cb-beb7-a6a805c6321e",
+  "orgKennung": "muster-hv",
+  "orgBId": "4ad53503-1b9a-4408-8545-dff8b088cfb5",
+  "schwelleEur": 2500,
+  "objektGH12": {
+    "id": "7b2d710a-07ca-4436-939a-07c27fe6d7f0",
+    "slug": "gh12-muster",
+    "kostenstelle": "KS-GH12"
+  },
+  "objektLS7": {
+    "id": "4f35b30f-f08d-46ad-bc54-0c415516adee",
+    "slug": "ls7-muster"
+  },
+  "einheitGH12Id": "7a49a4ff-1330-4635-b84b-f7ed4a628803",
+  "wohnflaecheGH12": 62,
+  "users": {
+    "adminEmail": "e2e-muster-admin@baerenwald-test.local",
+    "sachbearbeiterEmail": "e2e-muster-sb@baerenwald-test.local",
+    "password": "E2eTestPass2026!"
+  },
+  "partners": {
+    "shkEmail": "e2e-muster-shk@baerenwald-test.local",
+    "malerEmail": "e2e-muster-maler@baerenwald-test.local",
+    "shkId": "ff1670b1-ac7a-4891-bebc-d61847f98210",
+    "malerId": "7564feea-5ce8-4cfc-bd94-75fb707aa8ce"
+  },
+  "bestandsLeadId": "a1e14366-d5b3-4690-b44e-35ac36ce3e81",
+  "fixProduktSlug": "fix-verstopfung",
+  "bandProduktSlug": "uebergabe-stufe-2",
+  "aboSlugs": [
+    "abo-garten",
+    "abo-reinigung"
+  ]
+}

@@ -1,0 +1,37 @@
+{
+  "applyBrand": {
+    "source": "applyBrand(p){ ORG.primary=p.primary; ORG.primaryDk=p.primaryDk; ORG.soft=p.soft; this.forceUpdate(); }",
+    "description": "Sets ORG white-label colors from a BRAND_PRESETS entry and re-renders.",
+    "params": {
+      "p": {
+        "primary": "string",
+        "primaryDk": "string",
+        "soft": "string"
+      }
+    }
+  },
+  "canCreate": {
+    "source": "canCreate(){ return this.state.role!=='handwerker'; }",
+    "description": "Returns true for all roles except handwerker.",
+    "returns_by_role": {
+      "kunde": true,
+      "eigentuemer": true,
+      "mieter": true,
+      "handwerker": false
+    }
+  },
+  "createLabel": {
+    "source": "createLabel(){ const r=this.state.role; return r==='mieter'?'Schaden melden':r==='eigentuemer'?'Anfrage erstellen':'Neuer Vorgang'; }",
+    "description": "Primary create-button label per role.",
+    "labels_by_role": {
+      "mieter": "Schaden melden",
+      "eigentuemer": "Anfrage erstellen",
+      "kunde": "Neuer Vorgang",
+      "handwerker": "(canCreate=false, button hidden)"
+    }
+  },
+  "tr": {
+    "source": "tr(de,en){ return this.state.mLang==='en'?en:de; }",
+    "description": "Mieter white-label i18n helper; uses mLang state."
+  }
+}

@@ -1,0 +1,30 @@
+{
+  "source": "Konzept „Details vereinheitlichen konzept.pdf“ — Melde-Aushang PDF",
+  "delivery": "GET /api/org/melde-aushang?objektId=… → generateMeldeAushangPdf",
+  "brandingPlaceholders": {
+    "name": "org_anzeigename / name",
+    "colors": "org_primary_color (+ soft via resolveBrandPalette / orgBrandFromKunde)",
+    "logo": "org_logo_url oder org_logo_kuerzel",
+    "hero": "org_hero_url, sonst /images/portal/header-hero.jpg",
+    "qr": "generateMeldeQrPng(meldeUrl) — lokal, Quiet Zone, https://baerenwaldmuenchen.de",
+    "url": "buildMeldeUrl(org_kennung, melde_slug, { forPrint: true })",
+    "telefon": "mieter_kontakt_telefon → org_telefon → SITE_CONFIG",
+    "email": "mieter_kontakt_email → email → SITE_CONFIG"
+  },
+  "layout": {
+    "hero": "Primärfarbe-Block: Logo · HV-Name · MIETERSERVICE + Headline (weiß/Gold) + Intro — kein separater Seitentitel",
+    "photo": "schmaler Streifen + Tagline-Tab",
+    "columns": "QR (farbiger Rahmen) + Melde-URL | SO FUNKTIONIERT'S (01–03 groß)",
+    "footer": "kompakt: KEIN SMARTPHONE? · Kontakt · Datenschutz"
+  },
+  "steps": [
+    ["01", "Scannen", "Handy-Kamera auf den QR-Code halten — die Meldeseite öffnet sich sofort."],
+    ["02", "Melden", "Bereich wählen, Foto aufnehmen, Schaden kurz beschreiben — fertig."],
+    ["03", "Verfolgen", "Sie bekommen eine Bestätigung und sehen den Status jederzeit."]
+  ],
+  "ui": {
+    "list": "▦ Aushang PDF",
+    "detail": "Aushang PDF",
+    "open": "openMeldeAushangPdf(objektId)"
+  }
+}

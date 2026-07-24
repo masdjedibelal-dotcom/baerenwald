@@ -1,0 +1,100 @@
+.organisation-portal-layout {
+  display: grid;
+  grid-template-columns: 240px 1fr;
+  min-height: 100dvh;
+}
+
+@media (max-width: 1023px) {
+  .organisation-portal-layout {
+    grid-template-columns: 1fr;
+    padding-bottom: 4.5rem;
+  }
+  .organisation-portal-sidebar {
+    display: none;
+  }
+}
+
+.organisation-portal-sidebar {
+  border-right: 1px solid var(--border-light, #e6ebe8);
+  background: #fff;
+  padding: 1rem 0.75rem;
+}
+
+.organisation-portal-nav-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  border-radius: 0.65rem;
+  padding: 0.55rem 0.75rem;
+  font-size: 0.9rem;
+  color: #4a5c54;
+}
+
+.organisation-portal-nav-btn[data-active="true"] {
+  background: #eef3ec;
+  color: #1a3d2b;
+  font-weight: 600;
+}
+
+.organisation-mobile-nav {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 40;
+  display: flex;
+  gap: 0.25rem;
+  padding: 0.35rem;
+  background: #fff;
+  border-top: 1px solid #e6ebe8;
+}
+
+@media (min-width: 1024px) {
+  .organisation-mobile-nav {
+    display: none;
+  }
+}
+
+.org-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+@media (max-width: 640px) {
+  .org-kpi-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.org-kpi-card {
+  border: 1px solid #e6ebe8;
+  border-radius: 0.85rem;
+  padding: 0.85rem 1rem;
+  background: #fff;
+}
+
+.org-hub-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+@media (max-width: 768px) {
+  .org-hub-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.org-hub-card {
+  border: 1px solid #d9e3dd;
+  border-radius: 0.85rem;
+  padding: 1rem;
+  text-align: left;
+  background: #fff;
+}
+
+.org-hub-card:hover {
+  border-color: #2e7d52;
+}

@@ -1,0 +1,20 @@
+[
+  {
+    "id": "sanitaer-nord",
+    "name": "Sanitär Nord GmbH",
+    "trade": "Sanitär · Heizung",
+    "rating": 4.8
+  },
+  {
+    "id": "elektro-witt",
+    "name": "Elektro Wittmann",
+    "trade": "Elektro",
+    "rating": 4.6
+  },
+  {
+    "id": "bautrupp-3",
+    "name": "BauTrupp 3",
+    "trade": "Allgemein · Trocken",
+    "rating": 4.5
+  }
+]
