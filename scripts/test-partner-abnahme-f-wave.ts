@@ -36,6 +36,24 @@ assert.equal(
 
 assert.equal(
   partnerKannErledigtMelden({
+    positionen: [
+      basePos,
+      {
+        ...basePos,
+        id: "p2",
+        leistung_status: "in_arbeit",
+        leistung_name: "Rohr tauschen",
+      },
+    ],
+    vorgangState: "in_bearbeitung",
+    auftragStatus: "offen",
+  }),
+  false,
+  "kein CTA solange nicht alle Leistungen dokumentiert"
+);
+
+assert.equal(
+  partnerKannErledigtMelden({
     positionen: [{ ...basePos, handwerker_status: "erledigt" }],
     vorgangState: "in_bearbeitung",
     auftragStatus: "offen",

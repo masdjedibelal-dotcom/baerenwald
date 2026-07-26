@@ -74,8 +74,9 @@ type Props = {
   /**
    * `boxed` = eigener Rahmen + Ampel-Legende (Legacy).
    * `plain` = Mock-Zeilen ohne äußeren Rahmen (Card-Parent liefert Chrome).
+   * `totalsOnly` = nur Netto/MwSt/Gesamt (Zeilen stehen in Leistungskarten).
    */
-  variant?: "boxed" | "plain";
+  variant?: "boxed" | "plain" | "totalsOnly";
 };
 
 export function PartnerLeistungenKonditionenCard({
@@ -138,6 +139,29 @@ export function PartnerLeistungenKonditionenCard({
   }
 
   const plain = variant === "plain";
+  const totalsOnly = variant === "totalsOnly";
+
+  if (totalsOnly) {
+    if (sumNetto <= 0) return null;
+    return (
+      <div className="space-y-1 border-t border-[var(--p2-line2)] pt-4 text-right">
+        <div className="text-[12.5px] text-text-secondary">
+          Netto{" "}
+          <span className="ml-3 tabular-nums text-text-primary">
+            {fmtPartnerEuro(sumNetto)}
+          </span>
+        </div>
+        <div className="text-[12.5px] text-text-secondary">
+          MwSt. {PARTNER_KONDITION_MWST}%{" "}
+          <span className="ml-3 tabular-nums">{fmtPartnerEuro(sumMwst)}</span>
+        </div>
+        <div className="pt-1 text-[13.5px] font-bold text-text-primary">
+          Gesamt{" "}
+          <span className="ml-3 tabular-nums">{fmtPartnerEuro(sumBrutto)}</span>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <>

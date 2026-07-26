@@ -668,23 +668,8 @@ export function PartnerAuftragDetail({
               >
                 {statusLabel}
               </span>
-              {kannAbschluss ? (
-                <button
-                  type="button"
-                  onClick={() => setAbschlussOpen(true)}
-                  className="rounded-[9px] px-3 py-2 text-[12.5px] font-semibold text-white"
-                  style={{ background: PORTAL_VAR.primary }}
-                >
-                  {HW_AUFTRAG_COPY.ausfuehrenCta}
-                </button>
-              ) : null}
             </div>
           </div>
-          {kannAbschluss ? (
-            <p className="mt-2 text-[12px]" style={{ color: PORTAL_VAR.sub }}>
-              {HW_AUFTRAG_COPY.ausfuehrenHint}
-            </p>
-          ) : null}
         </div>
 
         {/* Mobile: Einsatz zuerst */}
@@ -707,44 +692,48 @@ export function PartnerAuftragDetail({
               vollstaendig={abschlussVollstaendig}
             />
 
-            <PortalDetailCard title={HW_AUFTRAG_COPY.leistungenTitle}>
+            <PortalDetailCard>
+              <PartnerPositionLebenszyklusList
+                auftragId={item.id}
+                positionen={item.positionen.map((p) => ({
+                  id: p.id,
+                  leistung_name: p.leistung_name,
+                  leistung_status: p.leistung_status,
+                  verguetung: p.verguetung,
+                  typ: p.typ,
+                  anerkennung_status: p.anerkennung_status,
+                  preis_partner: p.preis_partner,
+                  einheit: p.einheit,
+                  menge: p.menge,
+                  zeit_minuten_summe: p.zeit_minuten_summe,
+                }))}
+                onDone={() => router.refresh()}
+              />
+
               {konditionZeilen.length > 0 ? (
                 <PartnerLeistungenKonditionenCard
                   zeilen={konditionZeilen}
                   mode="readonly"
-                  variant="plain"
+                  variant="totalsOnly"
                   gesamtLabel={PARTNER_LEISTUNGEN_GESAMT_LABEL}
                 />
               ) : null}
 
-              <div
-                className={
-                  konditionZeilen.length > 0
-                    ? "mt-5 border-t border-border-light pt-5"
-                    : undefined
-                }
-              >
-                <p className="mb-3 text-[12.5px]" style={{ color: PORTAL_VAR.faint }}>
-                  {HW_DOKU_STORY.lead}
-                </p>
-                <PartnerPositionLebenszyklusList
-                  embedded
-                  auftragId={item.id}
-                  positionen={item.positionen.map((p) => ({
-                    id: p.id,
-                    leistung_name: p.leistung_name,
-                    leistung_status: p.leistung_status,
-                    verguetung: p.verguetung,
-                    typ: p.typ,
-                    anerkennung_status: p.anerkennung_status,
-                    preis_partner: p.preis_partner,
-                    einheit: p.einheit,
-                    menge: p.menge,
-                    zeit_minuten_summe: p.zeit_minuten_summe,
-                  }))}
-                  onDone={() => router.refresh()}
-                />
-              </div>
+              {kannAbschluss ? (
+                <div className="mt-5 space-y-2 border-t border-border-light pt-5">
+                  <button
+                    type="button"
+                    onClick={() => setAbschlussOpen(true)}
+                    className="btn-pill-primary w-full"
+                    data-testid="hw-auftrag-abschliessen"
+                  >
+                    {HW_AUFTRAG_COPY.ausfuehrenCta}
+                  </button>
+                  <p className="text-[12px]" style={{ color: PORTAL_VAR.sub }}>
+                    {HW_AUFTRAG_COPY.ausfuehrenHint}
+                  </p>
+                </div>
+              ) : null}
 
               <div className="mt-5 border-t border-border-light pt-5">
                 <div className="mb-3 flex items-center justify-between gap-2">

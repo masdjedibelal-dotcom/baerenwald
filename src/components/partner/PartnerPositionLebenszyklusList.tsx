@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState, useTransition } from "react";
-import { ChevronDown, X } from "lucide-react";
+import { Check, Play, X } from "lucide-react";
 
 import { PartnerDirektKameraSlot } from "@/components/partner/PartnerDirektKameraSlot";
 import { PortalModalShell } from "@/components/shared/PortalModalShell";
@@ -40,15 +40,20 @@ type Props = {
   auftragId: string;
   positionen: LebenszyklusPosition[];
   onDone?: () => void;
-  /** Ohne eigene Section-Chrome — eingebettet in Leistungen & Vergütung. */
-  embedded?: boolean;
 };
 
+function mengeLabel(p: LebenszyklusPosition): string | null {
+  if (p.einheit && p.menge != null) return `${p.menge} ${p.einheit}`;
+  return null;
+}
+
+/**
+ * Mock-Flow: Leistungskarten mit CTA → Bottom Sheet (Foto + Beschreibung).
+ */
 export function PartnerPositionLebenszyklusList({
   auftragId,
   positionen,
   onDone,
-  embedded = false,
 }: Props) {
   const [sheet, setSheet] = useState<{
     mode: SheetMode;
@@ -56,7 +61,6 @@ export function PartnerPositionLebenszyklusList({
   } | null>(null);
   const [weitereOpen, setWeitereOpen] = useState(false);
   const [weitereTitel, setWeitereTitel] = useState("");
-  const [expandedId, setExpandedId] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
   const [nachreich, setNachreich] = useState(false);
 
@@ -64,11 +68,10 @@ export function PartnerPositionLebenszyklusList({
     () => positionen.filter((p) => p.leistung_status === "erledigt").length,
     [positionen]
   );
-  const firstArbeitId = useMemo(
-    () =>
-      positionen.find((p) => p.leistung_status === "in_arbeit")?.id ?? null,
-    [positionen]
-  );
+  const progressPct =
+    positionen.length > 0
+      ? Math.round((erledigtCount / positionen.length) * 100)
+      : 0;
 
   function submitSheet(formData: FormData) {
     if (!sheet?.mode) return;
@@ -128,250 +131,242 @@ export function PartnerPositionLebenszyklusList({
     setWeitereTitel("");
   }
 
-  const list = (
-    <>
+  function closeSheet() {
+    if (pending) return;
+    setSheet(null);
+    setNachreich(false);
+  }
+
+  return (
+    <div className="space-y-4">
+      <div>
+        <h3
+          className="text-[20px] font-bold leading-tight"
+          style={{
+            color: PORTAL_VAR.ink,
+            fontFamily: "var(--p2-font-head, " + PORTAL_VAR.head + ")",
+          }}
+        >
+          Leistungen
+        </h3>
+        <div className="mt-2 flex items-center justify-between gap-2">
+          <p className="text-[12.5px] font-semibold" style={{ color: PORTAL_VAR.sub }}>
+            Fortschritt
+          </p>
+          <p className="text-[12.5px] font-semibold" style={{ color: PORTAL_VAR.sub }}>
+            {erledigtCount} von {positionen.length} erledigt
+          </p>
+        </div>
+        <div
+          className="mt-1.5 h-1.5 overflow-hidden rounded-full"
+          style={{ background: PORTAL_VAR.line2 }}
+          role="progressbar"
+          aria-valuenow={erledigtCount}
+          aria-valuemin={0}
+          aria-valuemax={positionen.length}
+        >
+          <div
+            className="h-full rounded-full transition-all"
+            style={{
+              width: `${progressPct}%`,
+              background: PORTAL_VAR.primary,
+            }}
+          />
+        </div>
+      </div>
+
       {positionen.length === 0 ? (
         <div
           className="rounded-xl border border-dashed px-4 py-5 text-center"
           style={{ borderColor: PORTAL_VAR.line }}
           data-testid="hw-first-job-empty"
         >
-          <p
-            className="text-[14px] font-bold"
-            style={{ color: PORTAL_VAR.ink }}
-          >
+          <p className="text-[14px] font-bold" style={{ color: PORTAL_VAR.ink }}>
             {HW_DOKU_STORY.firstJobTitle}
           </p>
           <p className="mt-1.5 text-[12.5px]" style={{ color: PORTAL_VAR.sub }}>
-            Noch keine Leistung. Tippen Sie eine Position an, um Startfoto und
-            Dokumentation zu beginnen.
+            Noch keine Leistung. Legen Sie weitere Arbeit an oder warten Sie auf
+            die Beauftragung.
           </p>
         </div>
-      ) : null}
+      ) : (
+        <ul className="space-y-2.5">
+          {positionen.map((p) => {
+            const st = p.leistung_status ?? "offen";
+            const isArbeit = st === "in_arbeit";
+            const isErledigt = st === "erledigt";
+            const isAufwand = p.verguetung === "aufwand";
+            const isRegie = p.typ === "regie" || isAufwand;
+            const meta = [
+              lebenszyklusLabel(st),
+              mengeLabel(p),
+              p.anerkennung_status === "in_pruefung" ? "in Prüfung" : null,
+            ]
+              .filter(Boolean)
+              .join(" · ");
 
-      {positionen.length > 0 ? (
-        <p className="text-[12px]" style={{ color: PORTAL_VAR.faint }}>
-          {erledigtCount} von {positionen.length} dokumentiert · Tippen zum
-          Öffnen
-        </p>
-      ) : null}
-
-      <ul className="space-y-2">
-        {positionen.map((p) => {
-          const st = p.leistung_status ?? "offen";
-          const isArbeit = st === "in_arbeit";
-          const isErledigt = st === "erledigt";
-          const isAufwand = p.verguetung === "aufwand";
-          const isRegie = p.typ === "regie" || isAufwand;
-          const open =
-            expandedId === p.id ||
-            (expandedId === null && p.id === firstArbeitId);
-          const meta = [
-            lebenszyklusLabel(st),
-            p.einheit && p.menge != null ? `${p.menge} ${p.einheit}` : null,
-            p.anerkennung_status === "in_pruefung" ? "in Prüfung" : null,
-            isRegie ? "Regie/Aufwand" : null,
-          ]
-            .filter(Boolean)
-            .join(" · ");
-
-          return (
-            <li
-              key={p.id}
-              className={cn(
-                "overflow-hidden rounded-xl border bg-white",
-                open ? "border-[var(--p2-line)]" : "border-border-light"
-              )}
-            >
-              <button
-                type="button"
-                className="flex w-full items-start justify-between gap-2 px-3.5 py-3 text-left"
-                onClick={() =>
-                  setExpandedId((cur) => (cur === p.id ? null : p.id))
-                }
-                aria-expanded={open}
+            return (
+              <li
+                key={p.id}
+                className="rounded-xl border border-border-light bg-white px-3.5 py-3.5 shadow-[0_1px_2px_rgba(22,32,27,0.04)]"
               >
-                <div className="min-w-0">
-                  <p className="portal-text-card-title">{p.leistung_name}</p>
-                  <p className="mt-0.5 text-xs text-text-tertiary">{meta}</p>
-                </div>
-                <div className="flex shrink-0 items-center gap-2">
-                  {p.preis_partner != null ? (
-                    <p className="text-sm font-semibold tabular-nums">
-                      {p.preis_partner.toLocaleString("de-DE", {
-                        style: "currency",
-                        currency: "EUR",
-                      })}
-                    </p>
-                  ) : null}
-                  <ChevronDown
+                <div className="flex items-start gap-2.5">
+                  <div
                     className={cn(
-                      "h-4 w-4 text-text-tertiary transition-transform",
-                      open && "rotate-180"
+                      "mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-md border",
+                      isErledigt
+                        ? "border-accent bg-accent text-white"
+                        : "border-border-default bg-white"
                     )}
                     aria-hidden
-                  />
-                </div>
-              </button>
-
-              {open ? (
-                <div
-                  className="space-y-2 border-t px-3.5 py-3"
-                  style={{ borderColor: PORTAL_VAR.line2 }}
-                >
-                  {!isErledigt ? (
-                    <>
-                      {isRegie ? (
-                        <p
-                          className="rounded-lg px-2.5 py-2 text-[11.5px] font-medium"
-                          style={{ background: "#F6F7F6", color: PORTAL_VAR.sub }}
-                        >
-                          {HW_DOKU_STORY.regieHint}
+                  >
+                    {isErledigt ? <Check className="h-3 w-3" strokeWidth={3} /> : null}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-start justify-between gap-2">
+                      <p className="text-[14.5px] font-bold leading-snug text-text-primary">
+                        {p.leistung_name}
+                      </p>
+                      {p.preis_partner != null ? (
+                        <p className="shrink-0 text-[14.5px] font-bold tabular-nums text-text-primary">
+                          {p.preis_partner.toLocaleString("de-DE", {
+                            style: "currency",
+                            currency: "EUR",
+                          })}
                         </p>
                       ) : null}
-                      {st === "offen" ? (
+                    </div>
+                    <p className="mt-0.5 text-[12.5px] text-text-tertiary">{meta}</p>
+                    {isAufwand && p.zeit_minuten_summe ? (
+                      <p className="mt-0.5 text-[12px] text-text-tertiary">
+                        Erfasste Zeit: {formatZeitMinuten(p.zeit_minuten_summe)}
+                      </p>
+                    ) : null}
+                  </div>
+                </div>
+
+                {!isErledigt ? (
+                  <div className="mt-3 space-y-2">
+                    {isRegie ? (
+                      <p className="text-[11.5px] leading-relaxed text-text-tertiary">
+                        {HW_DOKU_STORY.regieHint}
+                      </p>
+                    ) : null}
+                    {st === "offen" ? (
+                      <button
+                        type="button"
+                        className="btn-pill-primary flex w-full items-center justify-center gap-2"
+                        onClick={() => setSheet({ mode: "start", position: p })}
+                      >
+                        <Play className="h-3.5 w-3.5 fill-current" aria-hidden />
+                        Start — Ankunftsfoto
+                      </button>
+                    ) : null}
+                    {isArbeit ? (
+                      <div className="flex flex-col gap-2 sm:flex-row">
                         <button
                           type="button"
-                          className="btn-pill-primary w-full"
+                          className="btn-pill-outline flex-1"
                           onClick={() =>
-                            setSheet({ mode: "start", position: p })
+                            setSheet({ mode: "fortschritt", position: p })
                           }
                         >
-                          Start — Ankunftsfoto
+                          Fortschritt
                         </button>
-                      ) : null}
-                      {isArbeit ? (
-                        <div className="flex flex-col gap-2 sm:flex-row">
-                          <button
-                            type="button"
-                            className="btn-pill-outline flex-1"
-                            onClick={() =>
-                              setSheet({ mode: "fortschritt", position: p })
-                            }
-                          >
-                            Fortschritt
-                          </button>
-                          <button
-                            type="button"
-                            className="btn-pill-primary flex-1"
-                            onClick={() =>
-                              setSheet({ mode: "erledigt", position: p })
-                            }
-                          >
-                            Ende — Dokumentieren
-                          </button>
-                        </div>
-                      ) : null}
-                      {isAufwand && p.zeit_minuten_summe ? (
-                        <p className="text-xs text-text-tertiary">
-                          Erfasste Zeit: {formatZeitMinuten(p.zeit_minuten_summe)}
-                        </p>
-                      ) : null}
-                    </>
-                  ) : (
-                    <p className="text-[12.5px]" style={{ color: PORTAL_VAR.sub }}>
-                      Dokumentiert
-                      {isAufwand && p.zeit_minuten_summe
-                        ? ` · ${formatZeitMinuten(p.zeit_minuten_summe)}`
-                        : ""}
-                    </p>
-                  )}
-                </div>
-              ) : null}
-            </li>
-          );
-        })}
-      </ul>
+                        <button
+                          type="button"
+                          className="btn-pill-primary flex-1"
+                          onClick={() =>
+                            setSheet({ mode: "erledigt", position: p })
+                          }
+                        >
+                          Ende — Dokumentieren
+                        </button>
+                      </div>
+                    ) : null}
+                  </div>
+                ) : null}
+              </li>
+            );
+          })}
+        </ul>
+      )}
 
-      <button
-        type="button"
-        className="btn-pill-outline w-full"
-        onClick={() => setWeitereOpen(true)}
-      >
-        + Weitere Arbeit
-      </button>
-      <p className="text-[11px] leading-relaxed text-text-tertiary">
-        Bis ca. 30 Min direkt dokumentieren; größere Arbeiten vorher als
-        Nachtrag melden. Neue Positionen stehen „in Prüfung“.
-      </p>
-    </>
-  );
-
-  return (
-    <div className={embedded ? "space-y-3" : "space-y-3 border-t border-border-light pt-5"}>
-      {!embedded ? (
-        <div className="flex items-baseline justify-between gap-2">
-          <h4 className="portal-text-label text-text-tertiary">Leistungen</h4>
-          <p className="text-xs text-text-tertiary">
-            {erledigtCount} von {positionen.length} erledigt
-          </p>
-        </div>
-      ) : null}
-
-      {list}
+      <div>
+        <button
+          type="button"
+          className="w-full rounded-[10px] border border-dashed px-3 py-3 text-[13.5px] font-semibold"
+          style={{
+            borderColor: PORTAL_VAR.primary,
+            background: PORTAL_VAR.primarySoft,
+            color: PORTAL_VAR.primary,
+          }}
+          onClick={() => setWeitereOpen(true)}
+        >
+          + Weitere Arbeit
+        </button>
+        <p className="mt-2 text-[11.5px] leading-relaxed text-text-tertiary">
+          Kleinere Zusatzarbeiten (bis ca. 30 Min) direkt dokumentieren —
+          größere bitte vor Ausführung als Nachtrag melden.
+        </p>
+      </div>
 
       {sheet ? (
         <div
-          className="fixed inset-0 z-50 flex items-end justify-center p-0 sm:items-center sm:p-4"
+          className="fixed inset-0 z-50 flex items-end justify-center sm:items-center sm:p-4"
           style={{ background: PORTAL_MODAL_SCRIM }}
           role="presentation"
-          onClick={() => {
-            if (!pending) {
-              setSheet(null);
-              setNachreich(false);
-            }
-          }}
+          onClick={closeSheet}
         >
           <form
             action={submitSheet}
-            className="flex max-h-[92vh] w-full max-w-lg flex-col overflow-hidden rounded-t-2xl bg-white shadow-xl sm:rounded-2xl"
+            className="flex max-h-[92vh] w-full max-w-lg flex-col overflow-hidden rounded-t-[20px] bg-white shadow-xl sm:rounded-2xl"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-start justify-between gap-2 border-b border-border-light px-4 py-3">
-              <div>
-                <p className="portal-text-section">
+            <div className="flex items-start justify-between gap-2 border-b border-border-light px-4 py-3.5">
+              <div className="min-w-0">
+                <p className="text-[17px] font-bold text-text-primary">
                   {sheet.mode === "start"
                     ? "Position starten"
                     : sheet.mode === "fortschritt"
                       ? "Fortschritt festhalten"
                       : "Position abschließen"}
                 </p>
-                <p className="text-sm text-text-secondary">
+                <p className="mt-0.5 text-[13px] text-text-secondary">
                   {sheet.position.leistung_name}
                 </p>
               </div>
               <button
                 type="button"
                 className="rounded-lg p-1.5 text-text-tertiary hover:bg-muted"
-                onClick={() => {
-                  setSheet(null);
-                  setNachreich(false);
-                }}
+                onClick={closeSheet}
                 aria-label="Schließen"
               >
                 <X className="h-5 w-5" />
               </button>
             </div>
 
-            <div className="min-h-0 flex-1 overflow-y-auto px-4 py-3">
+            <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4">
               <input type="hidden" name="positionId" value={sheet.position.id} />
 
-              <PartnerDirektKameraSlot
-                label={
-                  sheet.mode === "start"
-                    ? "Ankunftsfoto — Ort & Zustand"
-                    : sheet.mode === "fortschritt"
-                      ? "Fortschritts-Foto"
-                      : "Ergebnis-Foto — fertige Arbeit"
-                }
-              />
+              {!nachreich ? (
+                <PartnerDirektKameraSlot
+                  label={
+                    sheet.mode === "start"
+                      ? "Ankunftsfoto — Ort & Zustand"
+                      : sheet.mode === "fortschritt"
+                        ? "Fortschritts-Foto"
+                        : "Ergebnis-Foto — fertige Arbeit"
+                  }
+                />
+              ) : null}
 
               <button
                 type="button"
                 className="mt-2 text-xs text-text-tertiary underline"
                 onClick={() => setNachreich((v) => !v)}
               >
-                Foto liegt schon vor?
+                {nachreich ? "Kamera nutzen" : "Foto liegt schon vor?"}
               </button>
               {nachreich ? (
                 <div className="mt-2 space-y-2">
@@ -396,17 +391,21 @@ export function PartnerPositionLebenszyklusList({
                 </div>
               ) : null}
 
-              <label className="mt-4 block space-y-1">
-                <span className="portal-form-label">
+              <label className="mt-4 block space-y-1.5">
+                <span className="text-[14px] font-bold text-text-primary">
                   {sheet.mode === "start"
                     ? "Ausgangslage"
                     : sheet.mode === "fortschritt"
                       ? "Kurz beschreiben"
                       : "Ergebnis / Schlussbemerkung"}
+                  {sheet.mode !== "fortschritt" ? (
+                    <span className="font-semibold text-red-700"> · Pflicht</span>
+                  ) : null}
                 </span>
                 <textarea
                   name="beschreibung"
                   rows={3}
+                  required={sheet.mode !== "fortschritt"}
                   className="portal-input w-full rounded-xl border border-border-default px-3 py-2.5"
                   placeholder={
                     sheet.mode === "start"
@@ -417,6 +416,19 @@ export function PartnerPositionLebenszyklusList({
                   }
                 />
               </label>
+
+              {sheet.mode === "start" ? (
+                <p
+                  className="mt-3 rounded-[11px] px-3.5 py-3 text-[13px] leading-relaxed"
+                  style={{
+                    background: PORTAL_VAR.primarySoft,
+                    color: PORTAL_VAR.sub,
+                  }}
+                >
+                  Nur mit Start-Foto wird die Position freigeschaltet. Danach
+                  kannst du Fortschritte festhalten und die Arbeit abschließen.
+                </p>
+              ) : null}
 
               {sheet.position.verguetung === "aufwand" &&
               (sheet.mode === "fortschritt" || sheet.mode === "erledigt") ? (
@@ -463,7 +475,7 @@ export function PartnerPositionLebenszyklusList({
               ) : null}
             </div>
 
-            <div className="border-t border-border-light px-4 py-3">
+            <div className="border-t border-border-light px-4 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
               <button
                 type="submit"
                 className="btn-pill-primary w-full"

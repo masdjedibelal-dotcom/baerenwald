@@ -1,7 +1,6 @@
 import type { PartnerAuftragPosition } from "@/lib/partner/get-partner-data";
 import {
   positionBrauchtVorgangAktion,
-  positionHandwerkerAbgeschlossen,
   positionHandwerkerErledigt,
   positionIstHandwerkerZugewiesen,
 } from "@/lib/partner/partner-konditionen";
@@ -46,15 +45,14 @@ export function partnerKannErledigtMelden(input: {
   if (!input.positionen.length) return false;
   if (input.positionen.some(positionBrauchtVorgangAktion)) return false;
 
-  // Mindestens eine zugewiesene Leistung bereit (übernommen/gestartet/dokumentiert)
-  return input.positionen.some((p) => {
-    if (!positionIstHandwerkerZugewiesen(p.handwerker_status)) return false;
-    if (leistungDokumentiert(p)) return true;
-    return (
-      positionHandwerkerAbgeschlossen(p.handwerker_status) &&
-      !positionHandwerkerErledigt(p.handwerker_status)
-    );
-  });
+  // Alle zugewiesenen Positionen müssen dokumentiert sein (Mock: alles abgehakt).
+  const relevant = input.positionen.filter(
+    (p) =>
+      positionIstHandwerkerZugewiesen(p.handwerker_status) &&
+      !positionBrauchtVorgangAktion(p)
+  );
+  if (!relevant.length) return false;
+  return relevant.every((p) => leistungDokumentiert(p));
 }
 
 export function allePartnerPositionenErledigt(

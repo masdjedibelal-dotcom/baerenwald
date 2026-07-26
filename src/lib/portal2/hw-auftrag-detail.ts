@@ -13,7 +13,7 @@ export const HW_AUFTRAG_COPY = {
   ausfuehrenCta: "Auftrag abschließen →",
   ausfuehrenHint:
     "Nach Dokumentation je Leistung: Abnahme mit Signatur. Danach Rechnung prüfen & einreichen.",
-  leistungenTitle: "Leistungen & Vergütung",
+  leistungenTitle: "Leistungen",
   einsatzTitle: "Einsatz",
   verlaufTitle: "Verlauf",
   bautagebuchTitle: "Zusatznotiz für die Verwaltung",
