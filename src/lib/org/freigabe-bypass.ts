@@ -1,0 +1,38 @@
+import type { FreigabeBypassGrund } from "@/lib/org/types";
+
+/** CRM setzt `leads.freigabe_bypass_grund` — Portal zeigt nur Info, rechnet nicht selbst. */
+export function parseFreigabeBypassGrund(
+  raw: unknown
+): FreigabeBypassGrund | null {
+  const s = String(raw ?? "").trim().toLowerCase();
+  if (s === "schwelle" || s === "akut") return s;
+  return null;
+}
+
+/** Info-Banner / Copy: Auto-Pfad ohne HV-Freigabe-Schritt. */
+export function isFreigabeBypassInfo(opts: {
+  orgFreigabeStatus?: string | null;
+  bypassGrund?: FreigabeBypassGrund | null;
+}): boolean {
+  const st = String(opts.orgFreigabeStatus ?? "").trim().toLowerCase();
+  return st === "nicht_noetig" && Boolean(opts.bypassGrund);
+}
+
+export function freigabeBypassInfoCopy(opts: {
+  bypassGrund: FreigabeBypassGrund;
+  schwelleLabel?: string | null;
+}): { title: string; body: string } {
+  if (opts.bypassGrund === "akut") {
+    return {
+      title: "Zur Information — Auftrag läuft (Akut)",
+      body: "Akut-/Notfall-Regel: Keine Freigabe nötig. Angebot zur Information — der Auftrag läuft bereits.",
+    };
+  }
+  const schwelle = opts.schwelleLabel?.trim();
+  return {
+    title: "Zur Information — Auftrag läuft (unter Schwelle)",
+    body: schwelle
+      ? `Unter Ihrer Freigabeschwelle (${schwelle}): Angebot erstellt, Auftrag ohne Ihre Annahme — nur zur Information.`
+      : "Unter Freigabeschwelle: Angebot erstellt, Auftrag ohne Ihre Annahme — nur zur Information.",
+  };
+}

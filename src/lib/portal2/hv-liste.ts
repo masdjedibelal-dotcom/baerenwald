@@ -69,11 +69,6 @@ export const HV_MELDUNG_ACTIONS = [
     variant: "primary" as const,
   },
   {
-    id: "kleinreparatur_freigeben" as const,
-    label: "Sofort beauftragen (Kleinreparatur)",
-    variant: "ghost" as const,
-  },
-  {
     id: "ablehnen" as const,
     label: "Ablehnen",
     variant: "danger" as const,

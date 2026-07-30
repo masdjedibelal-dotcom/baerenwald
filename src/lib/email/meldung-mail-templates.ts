@@ -143,7 +143,7 @@ export function buildOrgNeueMeldungHtml(input: OrgNeueMeldungMailInput): string 
     bodyInnerHtml: `
       <p style="margin:0 0 8px;font-size:15px;color:#374151;line-height:1.6;">${einleitung}</p>
       ${mailSummaryTable(rows)}
-      <p style="margin:8px 0 0;font-size:14px;color:#374151;line-height:1.55;">Bitte prüfen Sie den Vorgang im Auftraggeber-Portal und wählen Sie den nächsten Schritt (z.&nbsp;B. Angebot einfordern oder Sofort beauftragen bei Kleinreparatur).</p>
+      <p style="margin:8px 0 0;font-size:14px;color:#374151;line-height:1.55;">Bitte prüfen Sie den Vorgang im Auftraggeber-Portal und wählen Sie den nächsten Schritt (z.&nbsp;B. Vorgang freigeben).</p>
     `,
     ctaHref: link,
     ctaLabel: "Zum Auftraggeber-Portal →",

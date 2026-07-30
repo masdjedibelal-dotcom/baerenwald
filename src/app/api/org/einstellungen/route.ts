@@ -33,8 +33,14 @@ export async function PATCH(req: Request) {
   if (body.notfall_direkt !== undefined) {
     patch.notfall_direkt = Boolean(body.notfall_direkt);
   }
-  if (body.kleinreparatur_aktiv !== undefined) {
-    patch.kleinreparatur_aktiv = Boolean(body.kleinreparatur_aktiv);
+  // Kleinreparatur-Pfad entfernt — Flag immer aus
+  if (
+    body.kleinreparatur_aktiv !== undefined ||
+    body.freigabe_schwelle_eur !== undefined ||
+    body.freigabe_modus !== undefined ||
+    body.notfall_direkt !== undefined
+  ) {
+    patch.kleinreparatur_aktiv = false;
   }
 
   if (!Object.keys(patch).length) {

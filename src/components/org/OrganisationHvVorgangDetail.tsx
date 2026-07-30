@@ -462,9 +462,7 @@ export function OrganisationHvVorgangDetail({
   const abschlaege = buildAbschlagsplan(sum.brutto, gewerke);
   const unterSchwelle =
     orgFreigabeStatus === "nicht_noetig" &&
-    (freigabeBypassGrund === "schwelle" ||
-      freigabeBypassGrund === "akut" ||
-      freigabeBypassGrund == null);
+    (freigabeBypassGrund === "schwelle" || freigabeBypassGrund === "akut");
 
   const meldungAct = async (
     aktion: "angebot_einfordern" | "ablehnen"
@@ -621,7 +619,7 @@ export function OrganisationHvVorgangDetail({
                 style={{ background: "#DDEEDF", color: "#1F6A3F" }}
               >
                 {freigabeBypassGrund === "akut"
-                  ? "Zur Information — Auftrag läuft (Akut/Notfall)."
+                  ? HV_DETAIL_COPY.unterSchwelleAkut
                   : HV_DETAIL_COPY.unterSchwelle(moneyEur(schwelleEur))}
               </div>
             ) : null}

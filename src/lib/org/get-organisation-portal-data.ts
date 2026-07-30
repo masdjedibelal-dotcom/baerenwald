@@ -23,7 +23,7 @@ import type {
 import { isSupabaseConfigured, supabaseAdmin } from "@/lib/supabase";
 
 const EINGANG_SELECT_FULL =
-  "id, situation, bereiche, status, created_at, plz, strasse, hausnummer, zeitraum, kontakt_name, preis_min, preis_max, preis_unsicher, kontakt_nachricht, funnel_daten, kunde_objekt_id, anlass, erfassung_von, melder_name, melder_einheit, melder_telefon, melder_email, melde_tracking_token, einladung_token, einladung_status, org_freigabe_status, hv_meldung_status, service_modus, auftraggeber_kunde_id, kunde_id, kostentraeger, kostentraeger_vorgeschlagen, versicherungs_nr, vorgang_phase, kanal";
+  "id, situation, bereiche, status, created_at, plz, strasse, hausnummer, zeitraum, kontakt_name, preis_min, preis_max, preis_unsicher, kontakt_nachricht, funnel_daten, kunde_objekt_id, anlass, erfassung_von, melder_name, melder_einheit, melder_telefon, melder_email, melde_tracking_token, einladung_token, einladung_status, org_freigabe_status, freigabe_bypass_grund, hv_meldung_status, service_modus, auftraggeber_kunde_id, kunde_id, kostentraeger, kostentraeger_vorgeschlagen, versicherungs_nr, vorgang_phase, kanal";
 
 const EINGANG_SELECT_BASE =
   "id, situation, bereiche, status, created_at, plz, strasse, hausnummer, zeitraum, kontakt_name, preis_min, preis_max, kontakt_nachricht, funnel_daten, kunde_objekt_id, anlass, erfassung_von, melder_name, melder_einheit, melder_telefon, melder_email, einladung_token, einladung_status, org_freigabe_status, service_modus, auftraggeber_kunde_id, kunde_id";

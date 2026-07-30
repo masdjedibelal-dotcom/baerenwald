@@ -2,10 +2,7 @@
 
 import { useState } from "react";
 
-import {
-  canOfferKleinreparatur,
-  formatPreisspanneDisplay,
-} from "@/lib/org/hv-meldung-workflow";
+import { formatPreisspanneDisplay } from "@/lib/org/hv-meldung-workflow";
 import { isMeldeNotfall } from "@/lib/org/org-eingang-utils";
 import { orgPortalToast } from "@/lib/shared/portal-toast";
 import { HV_MELDUNG_ACTIONS } from "@/lib/portal2/hv-liste";
@@ -19,10 +16,10 @@ type Props = {
 };
 
 /**
- * Detail-Banner: gleiche drei Mock-Aktionen wie Listenzeile.
+ * Detail-Banner: Vorgang freigeben · Ablehnen
  * → POST /api/org/meldung-aktion
  */
-export function OrgMeldungAktionBanner({ lead, kunde, onUpdated }: Props) {
+export function OrgMeldungAktionBanner({ lead, kunde: _kunde, onUpdated }: Props) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -31,16 +28,8 @@ export function OrgMeldungAktionBanner({ lead, kunde, onUpdated }: Props) {
   if (lead.einladung_status === "offen") return null;
 
   const notfall = isMeldeNotfall(lead);
-  const kleinOk =
-    canOfferKleinreparatur(kunde, lead.preis_max) && kunde.kleinreparatur_aktiv;
 
-  const act = async (
-    aktion: "angebot_einfordern" | "ablehnen" | "kleinreparatur_freigeben"
-  ) => {
-    if (aktion === "kleinreparatur_freigeben" && !kleinOk) {
-      setError("Sofort beauftragen ist für diese Meldung nicht verfügbar.");
-      return;
-    }
+  const act = async (aktion: "angebot_einfordern" | "ablehnen") => {
     setBusy(true);
     setError(null);
     try {
@@ -55,8 +44,7 @@ export function OrgMeldungAktionBanner({ lead, kunde, onUpdated }: Props) {
         return;
       }
       if (aktion === "angebot_einfordern") orgPortalToast.angebotEingefordert();
-      else if (aktion === "ablehnen") orgPortalToast.meldungAbgelehnt();
-      else orgPortalToast.kleinreparaturFreigegeben();
+      else orgPortalToast.meldungAbgelehnt();
       onUpdated();
     } finally {
       setBusy(false);
@@ -77,32 +65,26 @@ export function OrgMeldungAktionBanner({ lead, kunde, onUpdated }: Props) {
         </p>
         {notfall ? (
           <p className="mt-1 text-xs font-medium text-red-700">
-            Notfall — bitte Angebot express einfordern (kein Direkt-Start).
+            Akut/Notfall — Vorgang freigeben (Express). Bei aktiver Akut-Regel
+            kann Bärenwald direkt beauftragen.
           </p>
         ) : null}
       </div>
 
       <div className="flex flex-wrap gap-2">
         {HV_MELDUNG_ACTIONS.map((a) => {
-          if (a.id === "kleinreparatur_freigeben" && !kleinOk) return null;
           const style =
-            a.variant === "ghost"
+            a.variant === "danger"
               ? {
-                  border: `1px solid ${PORTAL_VAR.line}`,
-                  background: "#fff",
-                  color: PORTAL_VAR.sub,
+                  border: "none",
+                  background: PORTAL_VAR.dangerSoft,
+                  color: PORTAL_VAR.danger,
                 }
-              : a.variant === "danger"
-                ? {
-                    border: "none",
-                    background: PORTAL_VAR.dangerSoft,
-                    color: PORTAL_VAR.danger,
-                  }
-                : {
-                    border: "none",
-                    background: PORTAL_VAR.primary,
-                    color: "#fff",
-                  };
+              : {
+                  border: "none",
+                  background: PORTAL_VAR.primary,
+                  color: "#fff",
+                };
           return (
             <button
               key={a.id}

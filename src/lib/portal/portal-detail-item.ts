@@ -92,6 +92,8 @@ export type KundePortalDetailItem = {
   versicherungsNr?: string | null;
   meldeFotos?: string[];
   orgFreigabeStatus?: string | null;
+  /** CRM: schwelle | akut — Auto-Auftrag ohne HV-Annahme */
+  freigabeBypassGrund?: string | null;
   hvMeldungStatus?: string | null;
   /** Melde-Adresse (Lead / Objekt) */
   meldeStrasse?: string | null;

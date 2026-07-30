@@ -1,19 +1,13 @@
 import { NextResponse } from "next/server";
 
-import { buildOrgKleinreparaturHtml } from "@/lib/email/meldung-mail-templates";
 import { notifyHvMieterEvent } from "@/lib/org/notify-hv-mieter-event";
 import { MIETER_EMAIL_ENABLED } from "@/lib/melde/mieter-mail-policy";
 import { notifyCrmOrgPortal } from "@/lib/org/notify-crm-org";
-import {
-  canOfferKleinreparatur,
-  type HvMeldungStatus,
-} from "@/lib/org/hv-meldung-workflow";
+import type { HvMeldungStatus } from "@/lib/org/hv-meldung-workflow";
 import { requireOrganisationSession } from "@/lib/org/require-org-session";
-import { isValidEmail } from "@/lib/validation";
 import { supabaseAdmin } from "@/lib/supabase";
-import { Resend } from "resend";
 
-type Aktion = "angebot_einfordern" | "ablehnen" | "kleinreparatur_freigeben";
+type Aktion = "angebot_einfordern" | "ablehnen";
 
 type Body = {
   leadId: string;
@@ -31,12 +25,7 @@ export async function POST(req: Request) {
   const leadId = String(body.leadId ?? "").trim();
   const aktion = body.aktion;
 
-  if (
-    !leadId ||
-    !["angebot_einfordern", "ablehnen", "kleinreparatur_freigeben"].includes(
-      aktion
-    )
-  ) {
+  if (!leadId || !["angebot_einfordern", "ablehnen"].includes(aktion)) {
     return NextResponse.json({ error: "Ungültige Anfrage." }, { status: 400 });
   }
 
@@ -65,24 +54,8 @@ export async function POST(req: Request) {
     );
   }
 
-  if (aktion === "kleinreparatur_freigeben") {
-    if (
-      !canOfferKleinreparatur(session.kunde, lead.preis_max as number | null)
-    ) {
-      return NextResponse.json(
-        {
-          error:
-            "Kleinreparatur ist nicht verfügbar (Einstellung aus oder Betrag über Schwelle).",
-        },
-        { status: 400 }
-      );
-    }
-  }
-
-  let nextStatus: HvMeldungStatus;
-  if (aktion === "angebot_einfordern") nextStatus = "angebot_eingefordert";
-  else if (aktion === "ablehnen") nextStatus = "abgelehnt";
-  else nextStatus = "kleinreparatur";
+  const nextStatus: HvMeldungStatus =
+    aktion === "angebot_einfordern" ? "angebot_eingefordert" : "abgelehnt";
 
   const patch: Record<string, unknown> = {
     hv_meldung_status: nextStatus,
@@ -102,45 +75,12 @@ export async function POST(req: Request) {
     : { data: null };
 
   const objektTitel = String(objekt?.titel ?? "Objekt");
-  const portalPath = `/portal?section=freigabe&id=${leadId}`;
 
-  if (aktion === "angebot_einfordern" || aktion === "kleinreparatur_freigeben") {
+  if (aktion === "angebot_einfordern") {
     void notifyCrmOrgPortal({ leadId, typ: "meldung" });
   }
 
-  const resendKey = process.env.RESEND_API_KEY;
-  const orgEmail = session.kunde.email?.trim() ?? "";
-
-  // Keine Bestätigungsmail bei „Vorgang freigeben“ / Angebot einfordern —
-  // nur noch bei Kleinreparatur.
-  if (
-    aktion === "kleinreparatur_freigeben" &&
-    resendKey &&
-    isValidEmail(orgEmail)
-  ) {
-    const resend = new Resend(resendKey);
-    try {
-      await resend.emails.send({
-        from:
-          process.env.RESEND_FROM_SYSTEM ??
-          "System <system@baerenwaldmuenchen.de>",
-        to: orgEmail,
-        subject: `Kleinreparatur — ${objektTitel}`,
-        html: buildOrgKleinreparaturHtml({
-          objektTitel,
-          melderName: lead.melder_name ?? undefined,
-          portalPath,
-        }),
-      });
-    } catch (e) {
-      console.error("[meldung-aktion] org mail:", e);
-    }
-  }
-
-  if (
-    aktion === "ablehnen" &&
-    !MIETER_EMAIL_ENABLED
-  ) {
+  if (aktion === "ablehnen" && !MIETER_EMAIL_ENABLED) {
     await notifyHvMieterEvent({
       leadId,
       typ: "meldung_abgelehnt",

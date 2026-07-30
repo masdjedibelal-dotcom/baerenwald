@@ -96,9 +96,9 @@ assert(
 );
 assert(
   "meldung actions",
-  HV_MELDUNG_ACTIONS[0]!.label === "Vorgang freigeben" &&
-    HV_MELDUNG_ACTIONS[1]!.label === "Sofort beauftragen (Kleinreparatur)" &&
-    HV_MELDUNG_ACTIONS[2]!.label === "Ablehnen"
+  HV_MELDUNG_ACTIONS.length === 2 &&
+    HV_MELDUNG_ACTIONS[0]!.label === "Vorgang freigeben" &&
+    HV_MELDUNG_ACTIONS[1]!.label === "Ablehnen"
 );
 assert("bulk offener punkt", HV_BULK_DELETE_OFFENER_PUNKT.includes("OFFENE-PUNKTE"));
 

@@ -14,7 +14,6 @@ import type { OrganisationKunde } from "@/lib/org/types";
 import {
   EINSTELLUNGEN_AKUT_INTRO,
   EINSTELLUNGEN_AKUT_TITLE,
-  EINSTELLUNGEN_KLEINREPARATUR_TITLE,
   EINSTELLUNGEN_SCHWELLE_INTRO,
   EINSTELLUNGEN_SCHWELLE_SLIDER_MAX,
   EINSTELLUNGEN_SCHWELLE_SLIDER_MIN,
@@ -34,7 +33,8 @@ type Props = {
 };
 
 /**
- * Freigabe-Regeln: flach wie Partner-Firmendaten (SectionHeader + Stift → Modal).
+ * Freigabe-Regeln: Schwelle + Akut. Kein Kleinreparatur-Pfad.
+ * Beim Speichern wird kleinreparatur_aktiv immer false gesetzt.
  */
 export function OrganisationFreigabeRegelnPanel({
   kunde,
@@ -48,14 +48,10 @@ export function OrganisationFreigabeRegelnPanel({
         : 500
     )
   );
-  const [kleinAktiv, setKleinAktiv] = useState(
-    kunde.kleinreparatur_aktiv === true
-  );
   const [akutDirekt, setAkutDirekt] = useState(kunde.notfall_direkt !== false);
 
   const [editOpen, setEditOpen] = useState(false);
   const [editSchwelle, setEditSchwelle] = useState(schwelle);
-  const [editKlein, setEditKlein] = useState(kleinAktiv);
   const [editAkut, setEditAkut] = useState(akutDirekt);
   const [saving, setSaving] = useState(false);
   const [migratedModus, setMigratedModus] = useState(false);
@@ -68,13 +64,8 @@ export function OrganisationFreigabeRegelnPanel({
           : 500
       )
     );
-    setKleinAktiv(kunde.kleinreparatur_aktiv === true);
     setAkutDirekt(kunde.notfall_direkt !== false);
-  }, [
-    kunde.freigabe_schwelle_eur,
-    kunde.kleinreparatur_aktiv,
-    kunde.notfall_direkt,
-  ]);
+  }, [kunde.freigabe_schwelle_eur, kunde.notfall_direkt]);
 
   useEffect(() => {
     if (!isAdmin || migratedModus) return;
@@ -85,7 +76,10 @@ export function OrganisationFreigabeRegelnPanel({
         const res = await fetch("/api/org/einstellungen", {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ freigabe_modus: "freigabe" }),
+          body: JSON.stringify({
+            freigabe_modus: "freigabe",
+            kleinreparatur_aktiv: false,
+          }),
         });
         if (res.ok) onSaved();
       } catch {
@@ -94,9 +88,26 @@ export function OrganisationFreigabeRegelnPanel({
     })();
   }, [isAdmin, kunde.freigabe_modus, migratedModus, onSaved]);
 
+  /** Einmalig: Legacy-Flag abschalten, falls noch true. */
+  useEffect(() => {
+    if (!isAdmin) return;
+    if (kunde.kleinreparatur_aktiv !== true) return;
+    void (async () => {
+      try {
+        await fetch("/api/org/einstellungen", {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ kleinreparatur_aktiv: false }),
+        });
+        onSaved();
+      } catch {
+        /* ignore */
+      }
+    })();
+  }, [isAdmin, kunde.kleinreparatur_aktiv, onSaved]);
+
   function openEdit() {
     setEditSchwelle(schwelle);
-    setEditKlein(kleinAktiv);
     setEditAkut(akutDirekt);
     setEditOpen(true);
   }
@@ -116,7 +127,7 @@ export function OrganisationFreigabeRegelnPanel({
         body: JSON.stringify({
           freigabe_modus: "freigabe",
           freigabe_schwelle_eur: editSchwelle,
-          kleinreparatur_aktiv: editKlein,
+          kleinreparatur_aktiv: false,
           notfall_direkt: editAkut,
         }),
       });
@@ -126,7 +137,6 @@ export function OrganisationFreigabeRegelnPanel({
         return;
       }
       setSchwelle(editSchwelle);
-      setKleinAktiv(editKlein);
       setAkutDirekt(editAkut);
       setEditOpen(false);
       orgPortalToast.einstellungenGespeichert();
@@ -165,19 +175,11 @@ export function OrganisationFreigabeRegelnPanel({
           {einstellungenSchwelleInfo(schwelle)}
         </EinstellungenInfoBox>
         <EinstellungenPfRow
-          label={EINSTELLUNGEN_KLEINREPARATUR_TITLE}
-          value={
-            kleinAktiv
-              ? `Aktiv bis ${formatEinstellungenSchwelle(schwelle)}`
-              : "Deaktiviert"
-          }
-        />
-        <EinstellungenPfRow
           label={EINSTELLUNGEN_AKUT_TITLE}
           value={
             akutDirekt
-              ? "Ja — akute Schäden sofort beauftragen"
-              : "Nein — auch akute Schäden brauchen Freigabe"
+              ? "Ja — bei Akut Direktauftrag ohne Angebot"
+              : "Nein — auch Akut braucht Freigabe / Angebot"
           }
         />
       </div>
@@ -204,16 +206,6 @@ export function OrganisationFreigabeRegelnPanel({
         <EinstellungenInfoBox>
           {einstellungenSchwelleInfo(editSchwelle)}
         </EinstellungenInfoBox>
-        <EinstellungenToggle
-          checked={editKlein}
-          onChange={setEditKlein}
-          title={EINSTELLUNGEN_KLEINREPARATUR_TITLE}
-          description={
-            editKlein
-              ? `Aktiv bis ${formatEinstellungenSchwelle(editSchwelle)} — ohne Angebot sofort reparieren.`
-              : "Deaktiviert — jede Reparatur braucht ein Angebot."
-          }
-        />
         <p className="text-[13px] leading-[1.55]" style={{ color: PORTAL_VAR.sub }}>
           {EINSTELLUNGEN_AKUT_INTRO}
         </p>
@@ -223,8 +215,8 @@ export function OrganisationFreigabeRegelnPanel({
           title={EINSTELLUNGEN_AKUT_TITLE}
           description={
             editAkut
-              ? "Ja — bei akuten Schäden darf sofort beauftragt werden."
-              : "Nein — auch akute Schäden brauchen Ihre Freigabe, bevor an Bärenwald weitergeleitet wird."
+              ? "Ja — bei akuten Schäden Direktauftrag ohne Angebot möglich."
+              : "Nein — auch akute Schäden laufen über Angebot und Freigabe."
           }
         />
       </EinstellungenEditModal>

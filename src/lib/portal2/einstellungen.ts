@@ -29,19 +29,21 @@ export const EINSTELLUNGEN_HERO_HINT =
 export const EINSTELLUNGEN_SCHWELLE_TITLE = "Freigabebetrag" as const;
 
 export const EINSTELLUNGEN_SCHWELLE_INTRO =
-  "Gilt für alle Objekte ohne eigene Ausnahme. Bis zu diesem Betrag kann automatisch beauftragt werden — darüber ist immer Ihre Freigabe nötig, bevor an Bärenwald weitergeleitet wird." as const;
+  "Gilt für alle Objekte ohne eigene Ausnahme. Unter der Schwelle: Angebot wird erstellt, Auftrag startet ohne Ihre Annahme (nur Info). Darüber: Sie müssen das Angebot freigeben." as const;
 
+/** @deprecated kein Kleinreparatur-Pfad mehr */
 export const EINSTELLUNGEN_KLEINREPARATUR_TITLE =
   "Kleinreparaturen ohne Angebot" as const;
 
+/** @deprecated */
 export const EINSTELLUNGEN_KLEINREPARATUR_INTRO =
-  "Bis zur Freigabeschwelle darf Bärenwald ohne Angebot sofort reparieren — sofern aktiviert." as const;
+  "Entfernt — unter der Schwelle läuft der Auto-Pfad über Angebot + Auftrag." as const;
 
 export const EINSTELLUNGEN_AKUT_TITLE =
   "Freigaberegelung bei akuten Schäden" as const;
 
 export const EINSTELLUNGEN_AKUT_INTRO =
-  "Einzige Ausnahme von der Freigabe-Pflicht: Bei akuten Schäden kann optional sofort beauftragt werden." as const;
+  "Einzige Ausnahme ohne Angebot: Bei Akut/Notfall kann optional direkt beauftragt werden." as const;
 
 export const EINSTELLUNGEN_OBJEKT_SCHWELLE_TITLE =
   "Ausnahmen je Objekt" as const;
@@ -93,5 +95,5 @@ export function formatEinstellungenSchwelle(
 
 export function einstellungenSchwelleInfo(value: number): string {
   const label = formatEinstellungenSchwelle(value);
-  return `Bis ${label} kann automatisch beauftragt werden. Darüber ist immer Ihre Freigabe nötig, bevor an Bärenwald weitergeleitet wird.`;
+  return `Unter ${label}: Angebot + Auftrag ohne Ihre Annahme (Info). Darüber: Freigabe nötig.`;
 }

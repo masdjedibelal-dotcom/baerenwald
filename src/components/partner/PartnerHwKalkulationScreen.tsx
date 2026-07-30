@@ -196,8 +196,8 @@ export function PartnerHwKalkulationScreen({
         </div>
         {unterSchwelle ? (
           <p className="mt-2 text-xs font-semibold text-[#1F6A3F]">
-            ✓ Unter Freigabeschwelle ({formatHwMoney(schwelleEur)}) — Sie können
-            die Durchführung direkt starten, ohne Freigabe der Verwaltung.
+            Unter Freigabeschwelle ({formatHwMoney(schwelleEur)}) — nach
+            Einreichung oft ohne HV-Freigabe-Schritt (CRM Auto-Pfad).
           </p>
         ) : (
           <p className="mt-2 text-xs text-text-secondary">

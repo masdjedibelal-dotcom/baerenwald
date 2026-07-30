@@ -354,10 +354,21 @@ function MeldungDetail({
         </div>
       ) : null}
 
-      {wartetOrgFreigabe ? (
+      {wartetOrgFreigabe ||
+      lead.org_freigabe_status === "nicht_noetig" ? (
         <OrgFreigabeBanner
           leadId={lead.id}
           status={lead.org_freigabe_status ?? ""}
+          bypassGrund={lead.freigabe_bypass_grund}
+          schwelleLabel={
+            kunde.freigabe_schwelle_eur != null
+              ? new Intl.NumberFormat("de-DE", {
+                  style: "currency",
+                  currency: "EUR",
+                  maximumFractionDigits: 0,
+                }).format(Number(kunde.freigabe_schwelle_eur))
+              : undefined
+          }
           onUpdated={onRefresh}
         />
       ) : null}

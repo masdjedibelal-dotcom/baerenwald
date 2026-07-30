@@ -14,6 +14,7 @@ import {
   plattformStatusPillClass,
   resolvePlattformStatus,
 } from "@/lib/vorgang/plattform-status";
+import { parseFreigabeBypassGrund } from "@/lib/org/freigabe-bypass";
 import type {
   OrganisationKunde,
   OrganisationLead,
@@ -235,16 +236,10 @@ export function OrganisationFreigabePanel({
         (selectedAngebotItem as { orgFreigabeStatus?: string }).orgFreigabeStatus ??
         ""
     );
-    const bypassRaw = String(
+    const bypassGrund = parseFreigabeBypassGrund(
       (leadMeta as { freigabe_bypass_grund?: string | null } | undefined)
-        ?.freigabe_bypass_grund ?? ""
-    ).trim();
-    const bypassGrund =
-      bypassRaw === "schwelle" || bypassRaw === "akut"
-        ? (bypassRaw as "schwelle" | "akut")
-        : orgStatus === "nicht_noetig"
-          ? ("schwelle" as const)
-          : null;
+        ?.freigabe_bypass_grund
+    );
     const schwelleEur = Number(kunde.freigabe_schwelle_eur ?? 500);
     const schwelleLabel = new Intl.NumberFormat("de-DE", {
       style: "currency",
@@ -255,7 +250,7 @@ export function OrganisationFreigabePanel({
       <div className="-mx-4 -mt-2 min-w-0 lg:-mx-6">
         <OrgFreigabeBanner
           leadId={leadId}
-          status={orgStatus || (bypassGrund ? "nicht_noetig" : "ausstehend")}
+          status={orgStatus || "ausstehend"}
           bypassGrund={bypassGrund}
           schwelleLabel={schwelleLabel}
           onUpdated={onRefresh}
@@ -265,7 +260,7 @@ export function OrganisationFreigabePanel({
           onAccepted={onRefresh}
           showHvAbnahme
           showAnlassBadge
-          orgFreigabeStatus={orgStatus || (bypassGrund ? "nicht_noetig" : "ausstehend")}
+          orgFreigabeStatus={orgStatus || "ausstehend"}
           schwelleEur={schwelleEur}
           onBack={() => {
             setSelectedAngebotId(null);

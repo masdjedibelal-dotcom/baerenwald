@@ -130,9 +130,11 @@ export const HV_DETAIL_COPY = {
   empfohlenAnnehmen: "Annehmen",
   angebotAnnehmenTitle: "Angebot annehmen",
   angebotAnnehmenNote:
-    "Annahme erstellt den Auftrag — nicht die Meldungs-Freigabe.",
+    "Annahme erstellt den Auftrag — getrennt von der Angebots-Freigabe bei Beträgen über der Schwelle.",
   unterSchwelle: (schwelleLabel: string) =>
-    `Direkt Durchführung — unter Freigabeschwelle (${schwelleLabel}).`,
+    `Zur Information — Auftrag läuft (unter Freigabeschwelle ${schwelleLabel}). Angebot ohne Ihre Annahme.`,
+  unterSchwelleAkut:
+    "Zur Information — Auftrag läuft (Akut/Notfall). Keine Freigabe nötig.",
   abnahmeTitle: "Abschluss",
   abnahmeNote:
     "Abnahme und Signatur macht der Handwerker vor Ort. Danach Feedback hier.",

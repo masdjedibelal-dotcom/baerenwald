@@ -13,7 +13,7 @@ export function hvMeldungStatusLabel(status: string | null | undefined): string 
   if (s === "neu") return "Neu";
   if (s === "notmassnahme") return "Läuft — Notmaßnahme";
   if (s === "angebot_eingefordert") return "Angebot wird erstellt";
-  if (s === "kleinreparatur") return "Kleinreparatur";
+  if (s === "kleinreparatur") return "Sofortpfad (alt)";
   if (s === "abgelehnt") return "Abgelehnt";
   if (s === "abgeschlossen") return "Abgeschlossen";
   return s;
@@ -31,17 +31,14 @@ export function initialHvMeldungState(): {
 }
 
 export function canOfferKleinreparatur(
-  kunde: Pick<
+  _kunde: Pick<
     OrganisationKunde,
     "kleinreparatur_aktiv" | "freigabe_schwelle_eur"
   >,
-  preisMax: number | null | undefined
+  _preisMax: number | null | undefined
 ): boolean {
-  if (!kunde.kleinreparatur_aktiv) return false;
-  // Q7: eine Schwelle = Freigabe-Schwelle
-  const schwelle = Number(kunde.freigabe_schwelle_eur ?? 500);
-  if (preisMax == null || preisMax <= 0) return false;
-  return preisMax <= schwelle;
+  // Kanon: kein Kleinreparatur-Sonderpfad mehr
+  return false;
 }
 
 export function isLeadHavarie(lead: {

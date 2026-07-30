@@ -2,6 +2,11 @@
 
 import { useState } from "react";
 
+import {
+  freigabeBypassInfoCopy,
+  isFreigabeBypassInfo,
+  parseFreigabeBypassGrund,
+} from "@/lib/org/freigabe-bypass";
 import { orgPortalToast } from "@/lib/shared/portal-toast";
 import { track } from "@/lib/analytics";
 
@@ -11,9 +16,9 @@ type Props = {
   onUpdated: () => void;
   /**
    * Persistiertes CRM-Ergebnis (V2): Bypass → Info, kein Freigabe-Schritt.
-   * Portal berechnet die Schwelle nicht selbst.
+   * Portal berechnet die Schwelle nicht selbst — nur lesen.
    */
-  bypassGrund?: "schwelle" | "akut" | null;
+  bypassGrund?: "schwelle" | "akut" | string | null;
   schwelleLabel?: string;
 };
 
@@ -27,26 +32,23 @@ export function OrgFreigabeBanner({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const isInfo =
-    status === "nicht_noetig" &&
-    (bypassGrund === "schwelle" || bypassGrund === "akut");
+  const bypass = parseFreigabeBypassGrund(bypassGrund);
+  const isInfo = isFreigabeBypassInfo({
+    orgFreigabeStatus: status,
+    bypassGrund: bypass,
+  });
 
   if (status !== "ausstehend" && !isInfo) return null;
 
-  if (isInfo) {
-    const akut = bypassGrund === "akut";
+  if (isInfo && bypass) {
+    const copy = freigabeBypassInfoCopy({
+      bypassGrund: bypass,
+      schwelleLabel,
+    });
     return (
       <div className="mb-4 rounded-xl border border-emerald-200 bg-emerald-50 p-4">
-        <p className="text-sm font-medium text-emerald-900">
-          Zur Information — Auftrag läuft
-        </p>
-        <p className="mt-1 text-xs text-emerald-800">
-          {akut
-            ? "Akut-/Notfall-Regel: Keine Freigabe nötig. Das Angebot liegt zur Information vor — der Auftrag läuft bereits."
-            : schwelleLabel
-              ? `Unter Ihrer Freigabeschwelle (${schwelleLabel}): Keine Freigabe nötig. Das Angebot liegt zur Information vor — der Auftrag läuft bereits.`
-              : "Unter Freigabeschwelle: Keine Freigabe nötig. Das Angebot liegt zur Information vor — der Auftrag läuft bereits."}
-        </p>
+        <p className="text-sm font-medium text-emerald-900">{copy.title}</p>
+        <p className="mt-1 text-xs text-emerald-800">{copy.body}</p>
       </div>
     );
   }
@@ -81,9 +83,9 @@ export function OrgFreigabeBanner({
     <div className="mb-4 rounded-xl border border-amber-200 bg-amber-50 p-4">
       <p className="text-sm font-medium text-amber-900">Angebots-Freigabe</p>
       <p className="mt-1 text-xs text-amber-800">
-        Bärenwald hat Angebote erstellt — bitte prüfen und freigeben. Das gibt
-        den Vorgang für die weitere Koordination frei. Es ist kein „Angebot
-        annehmen“ gegenüber dem Handwerker.
+        Bärenwald hat ein Angebot erstellt — bitte prüfen und freigeben. Danach
+        läuft die Koordination weiter. Das ist kein „Angebot annehmen“ gegenüber
+        dem Handwerker.
       </p>
       {error ? (
         <p className="mt-2 text-xs text-red-700" role="alert">

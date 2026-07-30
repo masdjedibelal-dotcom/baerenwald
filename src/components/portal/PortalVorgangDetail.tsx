@@ -207,6 +207,10 @@ export function PortalVorgangDetail({
         meldeFachdetails={item.meldeFachdetails}
         handwerkerName={item.ansprechpartner?.name}
         orgFreigabeStatus={orgFreigabeStatus ?? item.orgFreigabeStatus}
+        freigabeBypassGrund={
+          (item.freigabeBypassGrund as "schwelle" | "akut" | null | undefined) ??
+          null
+        }
         hvMeldungStatus={hvMeldungStatus ?? item.hvMeldungStatus}
         angebotId={item.isAngebotDetail ? item.id : null}
         canAcceptAngebot={Boolean(item.isAngebotDetail && item.needsAction)}

@@ -81,6 +81,7 @@ type PortalLead = PortalAnfrageLeadSource & {
   auftraggeber_kunde_id?: string | null;
   hv_meldung_status?: string | null;
   org_freigabe_status?: string | null;
+  freigabe_bypass_grund?: string | null;
   kontakt_name?: string | null;
   melde_tracking_token?: string | null;
   melder_name?: string | null;
@@ -322,6 +323,7 @@ function buildItemFromLead(
     versicherungsNr: lead.versicherungs_nr ?? null,
     meldeFotos: meldeFotosFromFunnel(lead.funnel_daten),
     orgFreigabeStatus: lead.org_freigabe_status ?? null,
+    freigabeBypassGrund: lead.freigabe_bypass_grund ?? null,
     hvMeldungStatus: lead.hv_meldung_status ?? null,
     meldeStrasse,
     meldeHausnummer: lead.hausnummer?.trim() || null,
