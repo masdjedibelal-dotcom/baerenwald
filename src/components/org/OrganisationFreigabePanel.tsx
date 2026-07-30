@@ -229,9 +229,23 @@ export function OrganisationFreigabePanel({
     const leadId =
       (selectedAngebotItem as { leadId?: string }).leadId ??
       selectedAngebotItem.id;
+    const leadMeta = leads.find((l) => l.id === leadId);
+    const orgStatus = String(
+      leadMeta?.org_freigabe_status ??
+        (selectedAngebotItem as { orgFreigabeStatus?: string }).orgFreigabeStatus ??
+        ""
+    );
+    const bypassRaw = String(
+      (leadMeta as { freigabe_bypass_grund?: string | null } | undefined)
+        ?.freigabe_bypass_grund ?? ""
+    ).trim();
+    const bypassGrund =
+      bypassRaw === "schwelle" || bypassRaw === "akut"
+        ? (bypassRaw as "schwelle" | "akut")
+        : orgStatus === "nicht_noetig"
+          ? ("schwelle" as const)
+          : null;
     const schwelleEur = Number(kunde.freigabe_schwelle_eur ?? 500);
-    const betrag = Number(selectedAngebotItem.gesamtBrutto ?? 0);
-    const unterSchwelle = betrag > 0 && betrag <= schwelleEur;
     const schwelleLabel = new Intl.NumberFormat("de-DE", {
       style: "currency",
       currency: "EUR",
@@ -241,8 +255,8 @@ export function OrganisationFreigabePanel({
       <div className="-mx-4 -mt-2 min-w-0 lg:-mx-6">
         <OrgFreigabeBanner
           leadId={leadId}
-          status={unterSchwelle ? "nicht_noetig" : "ausstehend"}
-          unterSchwelle={unterSchwelle}
+          status={orgStatus || (bypassGrund ? "nicht_noetig" : "ausstehend")}
+          bypassGrund={bypassGrund}
           schwelleLabel={schwelleLabel}
           onUpdated={onRefresh}
         />
@@ -251,7 +265,7 @@ export function OrganisationFreigabePanel({
           onAccepted={onRefresh}
           showHvAbnahme
           showAnlassBadge
-          orgFreigabeStatus={unterSchwelle ? "nicht_noetig" : "ausstehend"}
+          orgFreigabeStatus={orgStatus || (bypassGrund ? "nicht_noetig" : "ausstehend")}
           schwelleEur={schwelleEur}
           onBack={() => {
             setSelectedAngebotId(null);

@@ -18,25 +18,30 @@ export type MieterStatusStufe =
   | "eingegangen"
   | "in_bearbeitung"
   | "beauftragt"
+  | "vor_ort"
   | "erledigt";
 
 const MIETER_LABELS: Record<MieterStatusStufe, string> = {
   eingegangen: "Eingegangen",
   in_bearbeitung: "In Bearbeitung",
   beauftragt: "Bestätigung",
+  vor_ort: "Handwerker vor Ort",
   erledigt: "Erledigt",
 };
 
-/** Mieter-Status aus Lead-Feldern (4 Stufen). */
+/** Mieter-Status aus Lead-Feldern (5 Stufen inkl. Vor Ort). */
 export function resolveMieterStatusStufe(
   lead: {
     hv_meldung_status?: string | null;
     vorgang_phase?: string | null;
     org_freigabe_status?: string | null;
+    mieter_vor_ort_at?: string | null;
   },
   auftrag?: PortalAuftragKontext | null
 ): MieterStatusStufe {
   if (portalErledigtFromLeadAndAuftrag(lead, auftrag)) return "erledigt";
+
+  if (lead.mieter_vor_ort_at?.trim()) return "vor_ort";
 
   const phase = (lead.vorgang_phase ?? "").trim();
   if (phase === "beauftragt" || phase === "abnahme") return "beauftragt";

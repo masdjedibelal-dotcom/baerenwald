@@ -21,6 +21,7 @@ import {
 } from "@/lib/partner/partner-konditionen";
 import { buildPartnerAuftragKonditionZeilen } from "@/lib/partner/partner-leistungen-display";
 import { sendPartnerInternalAnfrageAntwortMail } from "@/lib/partner/partner-mail";
+import { submitCrmPartnerAnnahme } from "@/lib/partner/partner-crm-api";
 import { syncAngebotHandwerkerAfterAuftragAccept } from "@/lib/partner/sync-angebot-handwerker";
 import { positionBrauchtVorgangAktion } from "@/lib/partner/vorgang-state";
 import { stripHtmlToPlainText } from "@/lib/portal/portal-display";
@@ -218,10 +219,19 @@ async function persistAcceptance(opts: {
 }): Promise<PartnerAuftragBestaetigenResult> {
   const now = new Date().toISOString();
 
+  // V1/Q2: Kanonische Annahme nur im CRM
+  const crm = await submitCrmPartnerAnnahme({
+    zuweisungId: opts.anfrageId,
+    handwerkerId: opts.handwerkerId,
+    antwort: "akzeptiert",
+  });
+  if (!crm.ok) return { ok: false, error: crm.error };
+
+  // Bearbeitungsstand (hw_status) + Konditionen bleiben Portal-seitig
   const { error: upErr } = await supabaseAdmin
     .from("angebot_handwerker")
     .update({
-      status: "angenommen",
+      status: "akzeptiert",
       antwort_at: now,
       bestaetigt_at: now,
       hw_status: "uebernommen",
@@ -619,35 +629,16 @@ export async function declinePartnerAnfrage(opts: {
     return { ok: false, error: "Keine Berechtigung." };
   }
 
-  const now = new Date().toISOString();
   const notiz = opts.notiz?.trim() || null;
 
-  const { error: upErr } = await supabaseAdmin
-    .from("angebot_handwerker")
-    .update({
-      status: "abgelehnt",
-      antwort_at: now,
-      antwort_notiz: notiz,
-      ablehnung_grund: grundRaw,
-      hw_status: null,
-    })
-    .eq("id", opts.anfrageId.trim())
-    .eq("handwerker_id", link.handwerkerId);
-
-  if (upErr) return { ok: false, error: upErr.message };
-
-  const hw = one(row.handwerker) as { name: string } | null;
-  const gw = one(row.gewerke) as { name: string } | null;
-
-  await sendPartnerInternalAnfrageAntwortMail({
-    handwerkerName: hw?.name?.trim() || "Partner",
-    gewerkName: gw?.name?.trim() || "Gewerk",
-    angenommen: false,
-    ablehnungGrundLabel: HANDWERKER_ABLEHNUNG_GRUND_LABELS[grundRaw],
+  const crm = await submitCrmPartnerAnnahme({
+    zuweisungId: opts.anfrageId.trim(),
+    handwerkerId: link.handwerkerId,
+    antwort: "abgelehnt",
     notiz,
-    angebotId: String(row.angebot_id),
-    partnerAngebotPortalUrl: null,
+    grund: grundRaw,
   });
+  if (!crm.ok) return { ok: false, error: crm.error };
 
   revalidatePath("/partner");
   return { ok: true };

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 import { MockIcon } from "@/components/shared/MockIcon";
+import { PortalModalShell } from "@/components/shared/PortalModalShell";
 import { PORTAL_VAR } from "@/lib/portal2/tokens";
 import {
   formatPortalNotifTime,
@@ -347,62 +348,30 @@ export function PortalNotificationBell({
         ) : null}
       </button>
 
-      {open && !isMobile ? (
-        <div
-          id={panelId}
-          role="dialog"
-          aria-label="Benachrichtigungen"
-          className="absolute right-0 top-[46px] z-50 flex max-h-[min(480px,70vh)] w-[min(340px,90vw)] flex-col overflow-hidden rounded-[14px]"
-          style={{
-            background: "var(--p2-panel)",
-            border: "0.5px solid var(--p2-line)",
-            boxShadow: "0 18px 44px -10px rgba(0,0,0,.25)",
-          }}
+      {open ? (
+        <PortalModalShell
+          open
+          title="Benachrichtigungen"
+          onClose={() => setOpenSafe(false)}
+          variant="edit"
+          closeOnBackdrop
         >
-          {header}
-          {filterBar}
-          <div className="min-h-0 max-h-[360px] flex-1 overflow-y-auto">
-            <NotifList
-              items={filtered}
-              loading={loading}
-              onItemActivate={onItemActivate}
-              onItem={(n) => void handleItem(n)}
-            />
-          </div>
-          {footer}
-        </div>
-      ) : null}
-
-      {open && isMobile ? (
-        <div
-          className="fixed inset-0 z-[80] flex flex-col justify-end"
-          role="dialog"
-          aria-modal
-          aria-label="Benachrichtigungen"
-        >
-          <button
-            type="button"
-            className="absolute inset-0 bg-black/40"
-            aria-label="Schließen"
-            onClick={() => setOpenSafe(false)}
-          />
-          <div
-            id={panelId}
-            className="relative z-[1] flex max-h-[85vh] flex-col overflow-hidden rounded-t-[18px]"
-            style={{
-              background: "var(--p2-panel)",
-              boxShadow: "0 -8px 40px rgba(0,0,0,.18)",
-            }}
-          >
-            <div className="flex justify-center pb-1 pt-2.5" aria-hidden>
-              <span
-                className="h-1 w-10 rounded-full"
-                style={{ background: "var(--p2-line)" }}
-              />
-            </div>
-            {header}
+          <div id={panelId} className="flex min-h-0 flex-col">
+            {unreadCount > 0 ? (
+              <div className="mb-2 flex justify-end">
+                <button
+                  type="button"
+                  disabled={marking}
+                  onClick={() => void handleMarkAll()}
+                  className="text-[12px] font-semibold disabled:opacity-50"
+                  style={{ color: "var(--org-primary, var(--p2-primary))" }}
+                >
+                  Alle gelesen
+                </button>
+              </div>
+            ) : null}
             {filterBar}
-            <div className="min-h-0 flex-1 overflow-y-auto">
+            <div className="min-h-0 max-h-[min(60vh,420px)] flex-1 overflow-y-auto">
               <NotifList
                 items={filtered}
                 loading={loading}
@@ -411,9 +380,8 @@ export function PortalNotificationBell({
               />
             </div>
             {footer}
-            <div className="h-[env(safe-area-inset-bottom)]" />
           </div>
-        </div>
+        </PortalModalShell>
       ) : null}
     </div>
   );

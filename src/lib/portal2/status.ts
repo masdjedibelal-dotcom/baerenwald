@@ -164,6 +164,13 @@ export const MIETER_STG = [
     subtitle_en: "Your property manager confirmed the work will be carried out.",
   },
   {
+    id: "vor_ort",
+    title_de: "Handwerker vor Ort",
+    title_en: "Craftsperson on site",
+    subtitle_de: "Der Handwerker hat die Ankunft bestätigt und arbeitet vor Ort.",
+    subtitle_en: "The craftsperson confirmed arrival and is working on site.",
+  },
+  {
     id: "erledigt",
     title_de: "Erledigt",
     title_en: "Completed",
@@ -174,8 +181,10 @@ export const MIETER_STG = [
 
 /** FLOW-Status → verdichteter Mieter-STG-Schritt. */
 export function portalFlowToMieterStg(
-  flowId: PortalMockStatusId
+  flowId: PortalMockStatusId,
+  opts?: { vorOrt?: boolean }
 ): (typeof MIETER_STG)[number]["id"] {
+  if (opts?.vorOrt && flowId !== "bezahlt") return "vor_ort";
   switch (flowId) {
     case "gemeldet":
       return "eingegangen";

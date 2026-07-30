@@ -5,7 +5,6 @@ import { loadPortalAuftraegeByLeadIds } from "@/lib/portal/load-auftraege-by-lea
 import { portalErledigtFromLeadAndAuftrag } from "@/lib/portal/vorgang-erledigt";
 import { resolveOrgSubLabel } from "@/lib/portal2/brand-presets";
 import { resolveMieterStatusStufe } from "@/lib/vorgang/vorgang-phase";
-import { resolvePartnerFileUrl } from "@/lib/partner/partner-storage";
 import { supabaseAdmin } from "@/lib/supabase";
 
 type Props = { params: Promise<{ token: string }> };
@@ -18,7 +17,7 @@ export default async function MeldeStatusPage({ params }: Props) {
   const { data: lead } = await supabaseAdmin
     .from("leads")
     .select(
-      "id, melder_name, melder_einheit, created_at, hv_meldung_status, vorgang_phase, org_freigabe_status, kunde_objekt_id, auftraggeber_kunde_id, storniert_am, kontakt_nachricht, anlass"
+      "id, melder_name, melder_einheit, created_at, hv_meldung_status, vorgang_phase, org_freigabe_status, freigabe_bypass_grund, mieter_vor_ort_at, kunde_objekt_id, auftraggeber_kunde_id, storniert_am, kontakt_nachricht, anlass"
     )
     .eq("melde_tracking_token", trimmed)
     .maybeSingle();
@@ -34,14 +33,14 @@ export default async function MeldeStatusPage({ params }: Props) {
   const anhaenge: Array<{ id: string; name: string; datum?: string; href: string }> =
     [];
   if (auftragId) {
+    // V3: kanonische Quelle auftrag_abnahmeprotokolle
     const { data: protokolle } = await supabaseAdmin
-      .from("abnahme_protokolle")
-      .select("id, abnahme_datum, pdf_path, created_at")
+      .from("auftrag_abnahmeprotokolle")
+      .select("id, abnahme_datum, pdf_url, created_at, an_kunde_gesendet_at")
       .eq("auftrag_id", auftragId)
       .order("created_at", { ascending: false });
     for (const p of protokolle ?? []) {
-      const path = String((p as { pdf_path?: string }).pdf_path ?? "").trim();
-      const href = path ? await resolvePartnerFileUrl(path) : null;
+      const href = String((p as { pdf_url?: string }).pdf_url ?? "").trim();
       if (!href) continue;
       anhaenge.push({
         id: String((p as { id: string }).id),

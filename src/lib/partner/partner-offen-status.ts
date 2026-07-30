@@ -50,7 +50,7 @@ export function resolvePartnerPortalStatus(
 
   if (hasPartnerKonditionenNachreichungAusstehend(item)) return "ausstehend";
 
-  if (st === "angenommen" || item.bestaetigt_at || item.projektvertrag_bestaetigt_am) {
+  if (st === "akzeptiert" || st === "angenommen" || item.bestaetigt_at || item.projektvertrag_bestaetigt_am) {
     return "angenommen";
   }
 

@@ -19,10 +19,10 @@ const KUNDE_SELECT_WL =
 const KUNDE_SELECT_WL_HERO =
   `${KUNDE_SELECT_BASE_HERO}, org_primary_color, org_primary_color_dk, org_primary_color_soft, org_logo_kuerzel, org_sub, org_telefon, org_strasse, org_ort, mieter_kontakt_telefon, mieter_kontakt_email, mieter_kontakt_hinweis, av_akzeptiert_am, av_version, av_akzeptiert_von, av_text_snapshot, wl_ansprache_am, impressum_url, datenschutz_url`;
 
-const KUNDE_SELECT_KLEINREPARATUR = `${KUNDE_SELECT_WL_HERO}, kleinreparatur_aktiv, kleinreparatur_schwelle_eur`;
-const KUNDE_SELECT_KLEINREPARATUR_NO_HERO = `${KUNDE_SELECT_WL}, kleinreparatur_aktiv, kleinreparatur_schwelle_eur`;
-const KUNDE_SELECT_KLEINREPARATUR_LEGACY = `${KUNDE_SELECT_WL_LEGACY_HERO}, kleinreparatur_aktiv, kleinreparatur_schwelle_eur`;
-const KUNDE_SELECT_KLEINREPARATUR_LEGACY_NO_HERO = `${KUNDE_SELECT_WL_LEGACY}, kleinreparatur_aktiv, kleinreparatur_schwelle_eur`;
+const KUNDE_SELECT_KLEINREPARATUR = `${KUNDE_SELECT_WL_HERO}, kleinreparatur_aktiv`;
+const KUNDE_SELECT_KLEINREPARATUR_NO_HERO = `${KUNDE_SELECT_WL}, kleinreparatur_aktiv`;
+const KUNDE_SELECT_KLEINREPARATUR_LEGACY = `${KUNDE_SELECT_WL_LEGACY_HERO}, kleinreparatur_aktiv`;
+const KUNDE_SELECT_KLEINREPARATUR_LEGACY_NO_HERO = `${KUNDE_SELECT_WL_LEGACY}, kleinreparatur_aktiv`;
 
 function withKleinreparaturDefaults(
   row: Record<string, unknown>
@@ -30,7 +30,6 @@ function withKleinreparaturDefaults(
   return {
     ...(row as OrganisationKunde),
     kleinreparatur_aktiv: Boolean(row.kleinreparatur_aktiv ?? false),
-    kleinreparatur_schwelle_eur: Number(row.kleinreparatur_schwelle_eur ?? 200),
   };
 }
 

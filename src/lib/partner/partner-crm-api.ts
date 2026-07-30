@@ -88,6 +88,46 @@ function internalSecretHeaders(): HeadersInit | null {
   };
 }
 
+/** Portal → CRM: kanonische HW-Annahme (Q2). */
+export async function submitCrmPartnerAnnahme(input: {
+  zuweisungId: string;
+  handwerkerId: string;
+  antwort: "akzeptiert" | "abgelehnt";
+  notiz?: string | null;
+  grund?: string | null;
+}): Promise<{ ok: true; already?: boolean } | { ok: false; error: string }> {
+  const base = dashboardBase();
+  const headers = internalSecretHeaders();
+  if (!base || !headers) {
+    return { ok: false, error: "CRM-Verbindung nicht konfiguriert." };
+  }
+
+  try {
+    const res = await fetch(`${base}/api/internal/partner-annahme`, {
+      method: "POST",
+      headers,
+      body: JSON.stringify({
+        zuweisungId: input.zuweisungId,
+        handwerkerId: input.handwerkerId,
+        antwort: input.antwort,
+        notiz: input.notiz ?? undefined,
+        grund: input.grund ?? undefined,
+      }),
+    });
+    const body = (await res.json().catch(() => ({}))) as {
+      ok?: boolean;
+      error?: string;
+      already?: boolean;
+    };
+    if (!res.ok || body.ok === false) {
+      return { ok: false, error: body.error || "Annahme fehlgeschlagen." };
+    }
+    return { ok: true, already: body.already === true };
+  } catch {
+    return { ok: false, error: "CRM nicht erreichbar." };
+  }
+}
+
 /** Registrierung (ohne Login): RV-PDF erzeugen + Annahme speichern. */
 export async function acceptCrmRahmenvertragForEmail(
   email: string

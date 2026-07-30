@@ -290,6 +290,14 @@ export async function startPartnerPosition(
     payload: { position_id: positionId, eintrag_id: eintrag.id },
   });
 
+  void import("@/lib/partner/notify-vor-ort-start").then(({ notifyVorOrtStart }) =>
+    notifyVorOrtStart({
+      auftragId: String(pos.auftrag_id),
+      handwerkerId: auth.handwerkerId,
+      leistungName: pos.leistung_name as string | null,
+    })
+  );
+
   revalidatePath("/partner");
   return { ok: true, eintragId: eintrag.id, positionId };
 }

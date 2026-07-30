@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Plus, Trash2, X } from "lucide-react";
+import { Plus, Trash2 } from "lucide-react";
 
 import { submitPartnerAbnahmeNachSignatur } from "@/app/actions/partner-abnahmeprotokoll";
 import { PartnerDetailError } from "@/components/partner/PartnerDetailUi";
@@ -528,27 +528,25 @@ export function PartnerAbnahmeAbschlussSheet({
       </div>
 
       {addMode ? (
-        <div
-          className="fixed inset-0 z-[60] flex items-end justify-center bg-black/40 p-0 sm:items-center sm:p-4"
-          role="dialog"
-          aria-modal
+        <PortalModalShell
+          open
+          title={
+            addMode === "wahl"
+              ? "Leistung hinzufügen"
+              : addMode === "mangel"
+                ? "Mangel hinzufügen"
+                : addMode === "erkannt"
+                  ? "Leistung aus Auftrag"
+                  : "Leere Leistung"
+          }
+          onClose={resetDraft}
+          variant="edit"
+          dirty={
+            draftTitel.trim().length > 0 || draftBeschreibung.trim().length > 0
+          }
+          closeOnBackdrop
         >
-          <div className="max-h-[85vh] w-full max-w-md overflow-y-auto rounded-t-2xl bg-white p-4 shadow-xl sm:rounded-2xl">
-            <div className="mb-3 flex items-center justify-between">
-              <p className="text-[15px] font-bold text-text-primary">
-                {addMode === "wahl"
-                  ? "Leistung hinzufügen"
-                  : addMode === "mangel"
-                    ? "Mangel hinzufügen"
-                    : addMode === "erkannt"
-                      ? "Leistung aus Auftrag"
-                      : "Leere Leistung"}
-              </p>
-              <button type="button" onClick={resetDraft} aria-label="Schließen">
-                <X className="h-5 w-5 text-text-tertiary" />
-              </button>
-            </div>
-
+          <div className="space-y-3">
             {addMode === "wahl" ? (
               <div className="space-y-2">
                 <button
@@ -708,7 +706,7 @@ export function PartnerAbnahmeAbschlussSheet({
               </div>
             ) : null}
           </div>
-        </div>
+        </PortalModalShell>
       ) : null}
     </PortalModalShell>
   );

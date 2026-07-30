@@ -84,7 +84,7 @@ async function main() {
         freigabe_modus: "freigabe",
         freigabe_schwelle_eur: SCHWELLE,
         kleinreparatur_aktiv: true,
-        kleinreparatur_schwelle_eur: 200,
+        freigabe_schwelle_eur: 500,
         auth_user_id: adminUid,
         email: ADMIN_EMAIL,
       })
@@ -100,7 +100,7 @@ async function main() {
         freigabe_modus: "freigabe",
         freigabe_schwelle_eur: SCHWELLE,
         kleinreparatur_aktiv: true,
-        kleinreparatur_schwelle_eur: 200,
+        freigabe_schwelle_eur: 500,
         auth_user_id: adminUid,
         email: ADMIN_EMAIL,
         typ: "gewerbe",

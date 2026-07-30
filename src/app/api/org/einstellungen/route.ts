@@ -10,7 +10,6 @@ type Body = {
   freigabe_schwelle_eur?: number | null;
   notfall_direkt?: boolean;
   kleinreparatur_aktiv?: boolean;
-  kleinreparatur_schwelle_eur?: number;
 };
 
 export async function PATCH(req: Request) {
@@ -37,11 +36,6 @@ export async function PATCH(req: Request) {
   if (body.kleinreparatur_aktiv !== undefined) {
     patch.kleinreparatur_aktiv = Boolean(body.kleinreparatur_aktiv);
   }
-  if (body.kleinreparatur_schwelle_eur !== undefined) {
-    const v = Number(body.kleinreparatur_schwelle_eur);
-    patch.kleinreparatur_schwelle_eur =
-      Number.isFinite(v) && v > 0 ? Math.min(v, 2000) : 200;
-  }
 
   if (!Object.keys(patch).length) {
     return NextResponse.json({ error: "Keine Änderungen." }, { status: 400 });
@@ -52,7 +46,7 @@ export async function PATCH(req: Request) {
     .update(patch)
     .eq("id", session.kunde.id)
     .select(
-      "freigabe_modus, freigabe_schwelle_eur, notfall_direkt, kleinreparatur_aktiv, kleinreparatur_schwelle_eur"
+      "freigabe_modus, freigabe_schwelle_eur, notfall_direkt, kleinreparatur_aktiv"
     )
     .single();
 
@@ -63,12 +57,10 @@ export async function PATCH(req: Request) {
   await writeAuditEvent({
     entityType: "kunde",
     entityId: session.kunde.id,
-    aktion: "einstellungen_geaendert",
-    actorId: session.userId,
-    actorRolle: session.rolle,
-    kundeId: session.kunde.id,
+    aktion: "org_einstellungen_aktualisiert",
+    actorRolle: "kunde",
     payload: patch,
   });
 
-  return NextResponse.json({ ok: true, settings: data });
+  return NextResponse.json({ ok: true, kunde: data });
 }

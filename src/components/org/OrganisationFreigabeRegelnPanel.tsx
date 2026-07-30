@@ -117,7 +117,6 @@ export function OrganisationFreigabeRegelnPanel({
           freigabe_modus: "freigabe",
           freigabe_schwelle_eur: editSchwelle,
           kleinreparatur_aktiv: editKlein,
-          ...(editKlein ? { kleinreparatur_schwelle_eur: editSchwelle } : {}),
           notfall_direkt: editAkut,
         }),
       });

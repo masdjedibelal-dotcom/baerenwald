@@ -18,6 +18,8 @@ export type OrgFreigabeStatus =
   | "freigegeben"
   | "abgelehnt";
 
+export type FreigabeBypassGrund = "schwelle" | "akut";
+
 export type ServiceModus = "paket" | "einzeln";
 
 export type FreigabeModus = "direkt" | "freigabe";
@@ -42,7 +44,6 @@ export type OrganisationKunde = {
   freigabe_schwelle_eur: number | null;
   notfall_direkt: boolean;
   kleinreparatur_aktiv: boolean;
-  kleinreparatur_schwelle_eur: number;
   org_primary_color?: string | null;
   org_primary_color_dk?: string | null;
   org_primary_color_soft?: string | null;
@@ -89,6 +90,8 @@ export type OrganisationObjekt = {
   notizen_intern: string | null;
   kostenstelle_nr?: string | null;
   freigabe_schwelle_eur?: number | null;
+  /** Override Org; null = erbt kunden.notfall_direkt */
+  notfall_direkt?: boolean | null;
   /** Gebäudeversicherer (Stammdaten). */
   versicherer?: string | null;
   /** Policen-Nr. am Objekt. */
@@ -114,6 +117,8 @@ export type OrganisationLead = {
   einladung_token?: string | null;
   einladung_status?: EinladungStatus | null;
   org_freigabe_status?: OrgFreigabeStatus | null;
+  freigabe_bypass_grund?: FreigabeBypassGrund | null;
+  mieter_vor_ort_at?: string | null;
   hv_meldung_status?: HvMeldungStatus | null;
   preis_unsicher?: boolean | null;
   service_modus?: ServiceModus | null;

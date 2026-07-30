@@ -15,7 +15,7 @@ export async function GET() {
   }
 
   const selectCols =
-    "id, titel, strasse, hausnummer, plz, ort, melde_slug, melde_aktiv, einheiten_hinweis, notizen_intern, kostenstelle_nr, freigabe_schwelle_eur, versicherer, versicherungs_nr, selbstbehalt_eur, cover_url, created_at";
+    "id, titel, strasse, hausnummer, plz, ort, melde_slug, melde_aktiv, einheiten_hinweis, notizen_intern, kostenstelle_nr, freigabe_schwelle_eur, notfall_direkt, versicherer, versicherungs_nr, selbstbehalt_eur, cover_url, created_at";
 
   const { data, error } = await supabaseAdmin
     .from("kunden_objekte")
@@ -77,6 +77,7 @@ type ObjektBody = {
   einheiten_hinweis?: string;
   notizen_intern?: string | null;
   freigabe_schwelle_eur?: number | null;
+  notfall_direkt?: boolean | null;
   versicherer?: string | null;
   versicherungs_nr?: string | null;
   selbstbehalt_eur?: number | null;
@@ -226,6 +227,10 @@ export async function PATCH(req: Request) {
   if (body.freigabe_schwelle_eur !== undefined) {
     patch.freigabe_schwelle_eur =
       body.freigabe_schwelle_eur == null ? null : Number(body.freigabe_schwelle_eur);
+  }
+  if (body.notfall_direkt !== undefined) {
+    patch.notfall_direkt =
+      body.notfall_direkt == null ? null : Boolean(body.notfall_direkt);
   }
   if (body.versicherer !== undefined) {
     patch.versicherer = body.versicherer?.trim() || null;

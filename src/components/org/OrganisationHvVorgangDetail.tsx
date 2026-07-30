@@ -79,6 +79,8 @@ export type OrganisationHvVorgangDetailProps = {
   onUpdated: () => void;
   /** org_freigabe_status für Angebots-Freigabe */
   orgFreigabeStatus?: string | null;
+  /** Persistierter Bypass (V2) — Portal rechnet nicht selbst */
+  freigabeBypassGrund?: "schwelle" | "akut" | null;
   hvMeldungStatus?: string | null;
   /** Gesendetes Angebot — Annahme legt Auftrag an */
   angebotId?: string | null;
@@ -307,6 +309,7 @@ export function OrganisationHvVorgangDetail({
   onBack,
   onUpdated,
   orgFreigabeStatus,
+  freigabeBypassGrund = null,
   hvMeldungStatus,
   angebotId,
   canAcceptAngebot = false,
@@ -457,7 +460,11 @@ export function OrganisationHvVorgangDetail({
     new Set(derivedPositionen.map((p) => p.gewerk).filter(Boolean))
   ).join(", ");
   const abschlaege = buildAbschlagsplan(sum.brutto, gewerke);
-  const unterSchwelle = sum.brutto > 0 && sum.brutto <= schwelleEur;
+  const unterSchwelle =
+    orgFreigabeStatus === "nicht_noetig" &&
+    (freigabeBypassGrund === "schwelle" ||
+      freigabeBypassGrund === "akut" ||
+      freigabeBypassGrund == null);
 
   const meldungAct = async (
     aktion: "angebot_einfordern" | "ablehnen"
@@ -613,7 +620,9 @@ export function OrganisationHvVorgangDetail({
                 className="mt-3 rounded-lg px-3 py-2.5 text-[12.5px] font-semibold"
                 style={{ background: "#DDEEDF", color: "#1F6A3F" }}
               >
-                {HV_DETAIL_COPY.unterSchwelle(moneyEur(schwelleEur))}
+                {freigabeBypassGrund === "akut"
+                  ? "Zur Information — Auftrag läuft (Akut/Notfall)."
+                  : HV_DETAIL_COPY.unterSchwelle(moneyEur(schwelleEur))}
               </div>
             ) : null}
             {showAcceptCta ? (

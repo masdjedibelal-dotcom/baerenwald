@@ -11,6 +11,7 @@ import {
   EinstellungenCard,
   EinstellungenEuroSlider,
   EinstellungenInfoBox,
+  EinstellungenToggle,
 } from "@/components/shared/PortalEinstellungenUi";
 import { cn } from "@/lib/utils";
 import { leadBelongsToObjekt } from "@/lib/org/match-lead-objekt";
@@ -163,6 +164,9 @@ export function OrganisationObjektDetail({
         : 500
     )
   );
+  const [akutDirekt, setAkutDirekt] = useState(
+    objekt.notfall_direkt == null ? true : Boolean(objekt.notfall_direkt)
+  );
   const schwelleTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const meta = useMemo(
@@ -195,6 +199,9 @@ export function OrganisationObjektDetail({
           : 500
       )
     );
+    setAkutDirekt(
+      objekt.notfall_direkt == null ? true : Boolean(objekt.notfall_direkt)
+    );
     setVersicherer(objekt.versicherer ?? "");
     setObjVersNr(objekt.versicherungs_nr ?? "");
     setSelbstbehalt(
@@ -202,6 +209,7 @@ export function OrganisationObjektDetail({
     );
   }, [
     objekt.freigabe_schwelle_eur,
+    objekt.notfall_direkt,
     objekt.versicherer,
     objekt.versicherungs_nr,
     objekt.selbstbehalt_eur,
@@ -299,6 +307,29 @@ export function OrganisationObjektDetail({
       onRefresh();
     } catch {
       portalToastError("Schwelle nicht gespeichert");
+    }
+  };
+
+  const saveAkutDirekt = async (value: boolean) => {
+    setAkutDirekt(value);
+    try {
+      const res = await fetch("/api/org/objekte", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id: objekt.id,
+          notfall_direkt: value,
+        }),
+      });
+      const json = (await res.json()) as { error?: string };
+      if (!res.ok) {
+        portalToastError("Akut-Regel nicht gespeichert", json.error);
+        return;
+      }
+      orgPortalToast.objektAktualisiert();
+      onRefresh();
+    } catch {
+      portalToastError("Akut-Regel nicht gespeichert");
     }
   };
 
@@ -526,6 +557,12 @@ export function OrganisationObjektDetail({
           <EinstellungenInfoBox>
             {OBJ_SCHWELLE_INFO(schwelle)}
           </EinstellungenInfoBox>
+          <EinstellungenToggle
+            checked={akutDirekt}
+            onChange={(v) => void saveAkutDirekt(v)}
+            title="Akut/Notfall ohne Freigabe"
+            description="Override der Org-Regel für dieses Objekt. Aus = Freigabe auch bei Notfall nötig."
+          />
           <p
             className="text-[12.5px] leading-relaxed"
             style={{ color: PORTAL_VAR.sub }}

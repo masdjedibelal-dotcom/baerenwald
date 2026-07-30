@@ -10,10 +10,10 @@ type Props = {
   status: string;
   onUpdated: () => void;
   /**
-   * Angebot unter Freigabeschwelle: kein Freigabe-Button,
-   * nur Hinweis auf Direkt-Durchführung.
+   * Persistiertes CRM-Ergebnis (V2): Bypass → Info, kein Freigabe-Schritt.
+   * Portal berechnet die Schwelle nicht selbst.
    */
-  unterSchwelle?: boolean;
+  bypassGrund?: "schwelle" | "akut" | null;
   schwelleLabel?: string;
 };
 
@@ -21,26 +21,31 @@ export function OrgFreigabeBanner({
   leadId,
   status,
   onUpdated,
-  unterSchwelle = false,
+  bypassGrund = null,
   schwelleLabel,
 }: Props) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  if (status !== "ausstehend" && !unterSchwelle) return null;
+  const isInfo =
+    status === "nicht_noetig" &&
+    (bypassGrund === "schwelle" || bypassGrund === "akut");
 
-  if (unterSchwelle) {
+  if (status !== "ausstehend" && !isInfo) return null;
+
+  if (isInfo) {
+    const akut = bypassGrund === "akut";
     return (
       <div className="mb-4 rounded-xl border border-emerald-200 bg-emerald-50 p-4">
         <p className="text-sm font-medium text-emerald-900">
-          Direkt Durchführung — Angebot unter Freigabeschwelle
+          Zur Information — Auftrag läuft
         </p>
         <p className="mt-1 text-xs text-emerald-800">
-          {schwelleLabel
-            ? `Das Angebot liegt unter Ihrer Freigabeschwelle (${schwelleLabel}). `
-            : "Das Angebot liegt unter Ihrer Freigabeschwelle. "}
-          Der Handwerker kann die Durchführung direkt starten — Sie müssen nicht
-          freigeben. Sie erhalten dazu eine E-Mail.
+          {akut
+            ? "Akut-/Notfall-Regel: Keine Freigabe nötig. Das Angebot liegt zur Information vor — der Auftrag läuft bereits."
+            : schwelleLabel
+              ? `Unter Ihrer Freigabeschwelle (${schwelleLabel}): Keine Freigabe nötig. Das Angebot liegt zur Information vor — der Auftrag läuft bereits.`
+              : "Unter Freigabeschwelle: Keine Freigabe nötig. Das Angebot liegt zur Information vor — der Auftrag läuft bereits."}
         </p>
       </div>
     );
@@ -78,23 +83,27 @@ export function OrgFreigabeBanner({
       <p className="mt-1 text-xs text-amber-800">
         Bärenwald hat Angebote erstellt — bitte prüfen und freigeben. Das gibt
         den Vorgang für die weitere Koordination frei. Es ist kein „Angebot
-        annehmen“ (kein Auftrag aus Ihrer Annahme).
+        annehmen“ gegenüber dem Handwerker.
       </p>
-      {error ? <p className="mt-2 text-xs text-red-700">{error}</p> : null}
-      <div className="mt-3 flex gap-2">
+      {error ? (
+        <p className="mt-2 text-xs text-red-700" role="alert">
+          {error}
+        </p>
+      ) : null}
+      <div className="mt-3 flex flex-wrap gap-2">
         <button
           type="button"
-          className="btn-pill-primary !py-1.5 !text-xs"
+          className="btn-pill-primary"
           disabled={busy}
-          onClick={() => act("freigegeben")}
+          onClick={() => void act("freigegeben")}
         >
           Freigeben
         </button>
         <button
           type="button"
-          className="btn-pill-outline !py-1.5 !text-xs"
+          className="btn-pill-outline"
           disabled={busy}
-          onClick={() => act("abgelehnt")}
+          onClick={() => void act("abgelehnt")}
         >
           Ablehnen
         </button>

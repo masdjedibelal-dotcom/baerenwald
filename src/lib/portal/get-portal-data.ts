@@ -353,14 +353,14 @@ export async function getPortalDataForKunde(kundeId: string) {
   const { data: abnahmeProtokolleRows, error: abnahmeErr } =
     auftragIds.length > 0
       ? await supabaseAdmin
-          .from("abnahme_protokolle")
+          .from("auftrag_abnahmeprotokolle")
           .select(
-            "id, auftrag_id, handwerker_id, abnahme_datum, pdf_path, created_at, handwerker:handwerker_id(name, firma)"
+            "id, auftrag_id, abnahme_datum, pdf_url, created_at, an_kunde_gesendet_at"
           )
           .in("auftrag_id", auftragIds)
           .order("created_at", { ascending: false })
       : { data: [] as Record<string, unknown>[], error: null };
-  if (abnahmeErr) console.warn("[portal] abnahme_protokolle:", abnahmeErr.message);
+  if (abnahmeErr) console.warn("[portal] auftrag_abnahmeprotokolle:", abnahmeErr.message);
 
   const abnahmeByAuftrag = new Map<
     string,
@@ -375,18 +375,13 @@ export async function getPortalDataForKunde(kundeId: string) {
 
   for (const row of abnahmeProtokolleRows ?? []) {
     const aid = String((row as { auftrag_id: string }).auftrag_id);
-    const pdfPath = String((row as { pdf_path?: string }).pdf_path ?? "").trim();
-    const pdfHref = pdfPath ? await resolvePartnerFileUrl(pdfPath) : null;
-    const hw = (row as { handwerker?: { name?: string; firma?: string } | null })
-      .handwerker;
-    const handwerkerLabel =
-      hw?.firma?.trim() || hw?.name?.trim() || null;
+    const pdfHref = String((row as { pdf_url?: string }).pdf_url ?? "").trim() || null;
     const entry = {
       id: String((row as { id: string }).id),
       abnahme_datum: (row as { abnahme_datum?: string | null }).abnahme_datum ?? null,
       created_at: (row as { created_at?: string | null }).created_at ?? null,
       pdf_href: pdfHref,
-      handwerker_label: handwerkerLabel,
+      handwerker_label: null as string | null,
     };
     const list = abnahmeByAuftrag.get(aid) ?? [];
     list.push(entry);

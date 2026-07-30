@@ -33,12 +33,13 @@ export function initialHvMeldungState(): {
 export function canOfferKleinreparatur(
   kunde: Pick<
     OrganisationKunde,
-    "kleinreparatur_aktiv" | "kleinreparatur_schwelle_eur"
+    "kleinreparatur_aktiv" | "freigabe_schwelle_eur"
   >,
   preisMax: number | null | undefined
 ): boolean {
   if (!kunde.kleinreparatur_aktiv) return false;
-  const schwelle = Number(kunde.kleinreparatur_schwelle_eur ?? 200);
+  // Q7: eine Schwelle = Freigabe-Schwelle
+  const schwelle = Number(kunde.freigabe_schwelle_eur ?? 500);
   if (preisMax == null || preisMax <= 0) return false;
   return preisMax <= schwelle;
 }

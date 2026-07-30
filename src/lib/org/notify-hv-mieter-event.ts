@@ -7,7 +7,8 @@ export type HvMieterEventTyp =
   | "status_change"
   | "bautagebuch"
   | "meldung_abgelehnt"
-  | "termin_hinweis";
+  | "termin_hinweis"
+  | "vor_ort";
 
 /** Statt Mieter-Mail: Glocke + HV-E-Mail (Bärenwald-Branding ok). */
 export async function notifyHvMieterEvent(input: {
