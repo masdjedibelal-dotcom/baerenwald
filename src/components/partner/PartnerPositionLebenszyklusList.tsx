@@ -1,9 +1,10 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
-import { Check, Play, X } from "lucide-react";
+import { useEffect, useMemo, useRef, useState, useTransition } from "react";
+import { Check, Play } from "lucide-react";
 
 import { PartnerDirektKameraSlot } from "@/components/partner/PartnerDirektKameraSlot";
+import { PartnerKiKorrekturField } from "@/components/partner/PartnerKiKorrekturField";
 import { PortalModalShell } from "@/components/shared/PortalModalShell";
 import {
   addPartnerPositionFortschritt,
@@ -16,7 +17,6 @@ import {
   lebenszyklusLabel,
 } from "@/lib/partner/position-lebenszyklus";
 import { HW_DOKU_STORY } from "@/lib/portal2/hw-doku-story";
-import { PORTAL_MODAL_SCRIM } from "@/lib/portal2/modal-shell";
 import { PORTAL_VAR } from "@/lib/portal2/tokens";
 import { portalToastError, portalToastSuccess } from "@/lib/shared/portal-toast";
 import { cn } from "@/lib/utils";
@@ -40,6 +40,11 @@ type Props = {
   auftragId: string;
   positionen: LebenszyklusPosition[];
   onDone?: () => void;
+  preferredPositionIds?: string[];
+  anfrageId?: string | null;
+  auftragTitel?: string | null;
+  /** Deep-Link: erstes bevorzugtes Sheet öffnen */
+  autoOpenPreferred?: boolean;
 };
 
 function mengeLabel(p: LebenszyklusPosition): string | null {
@@ -54,6 +59,10 @@ export function PartnerPositionLebenszyklusList({
   auftragId,
   positionen,
   onDone,
+  preferredPositionIds = [],
+  anfrageId,
+  auftragTitel,
+  autoOpenPreferred = false,
 }: Props) {
   const [sheet, setSheet] = useState<{
     mode: SheetMode;
@@ -63,21 +72,55 @@ export function PartnerPositionLebenszyklusList({
   const [weitereTitel, setWeitereTitel] = useState("");
   const [pending, startTransition] = useTransition();
   const [nachreich, setNachreich] = useState(false);
+  const [beschreibung, setBeschreibung] = useState("");
+  const autoOpenedRef = useRef(false);
+  const preferredSet = useMemo(
+    () => new Set(preferredPositionIds.map((id) => id.trim()).filter(Boolean)),
+    [preferredPositionIds]
+  );
+
+  const sortedPositionen = useMemo(() => {
+    if (!preferredSet.size) return positionen;
+    return [...positionen].sort((a, b) => {
+      const ap = preferredSet.has(a.id) ? 0 : 1;
+      const bp = preferredSet.has(b.id) ? 0 : 1;
+      return ap - bp;
+    });
+  }, [positionen, preferredSet]);
 
   const erledigtCount = useMemo(
-    () => positionen.filter((p) => p.leistung_status === "erledigt").length,
-    [positionen]
+    () => sortedPositionen.filter((p) => p.leistung_status === "erledigt").length,
+    [sortedPositionen]
   );
   const progressPct =
-    positionen.length > 0
-      ? Math.round((erledigtCount / positionen.length) * 100)
+    sortedPositionen.length > 0
+      ? Math.round((erledigtCount / sortedPositionen.length) * 100)
       : 0;
+
+  useEffect(() => {
+    if (!autoOpenPreferred || autoOpenedRef.current || !preferredSet.size) return;
+    const target = sortedPositionen.find(
+      (p) => preferredSet.has(p.id) && p.leistung_status !== "erledigt"
+    );
+    if (!target) return;
+    autoOpenedRef.current = true;
+    const st = target.leistung_status ?? "offen";
+    setSheet({
+      mode: st === "in_arbeit" ? "fortschritt" : "start",
+      position: target,
+    });
+  }, [autoOpenPreferred, preferredSet, sortedPositionen]);
+
+  useEffect(() => {
+    setBeschreibung("");
+  }, [sheet?.position.id, sheet?.mode]);
 
   function submitSheet(formData: FormData) {
     if (!sheet?.mode) return;
     if (nachreich) {
       formData.set("nachgereicht", "1");
     }
+    if (anfrageId) formData.set("anfrageId", anfrageId);
     startTransition(async () => {
       const action =
         sheet.mode === "start"
@@ -99,6 +142,7 @@ export function PartnerPositionLebenszyklusList({
       );
       setSheet(null);
       setNachreich(false);
+      setBeschreibung("");
       onDone?.();
     });
   }
@@ -135,6 +179,7 @@ export function PartnerPositionLebenszyklusList({
     if (pending) return;
     setSheet(null);
     setNachreich(false);
+    setBeschreibung("");
   }
 
   return (
@@ -154,7 +199,7 @@ export function PartnerPositionLebenszyklusList({
             Fortschritt
           </p>
           <p className="text-[12.5px] font-semibold" style={{ color: PORTAL_VAR.sub }}>
-            {erledigtCount} von {positionen.length} erledigt
+            {erledigtCount} von {sortedPositionen.length} erledigt
           </p>
         </div>
         <div
@@ -163,7 +208,7 @@ export function PartnerPositionLebenszyklusList({
           role="progressbar"
           aria-valuenow={erledigtCount}
           aria-valuemin={0}
-          aria-valuemax={positionen.length}
+          aria-valuemax={sortedPositionen.length}
         >
           <div
             className="h-full rounded-full transition-all"
@@ -175,7 +220,7 @@ export function PartnerPositionLebenszyklusList({
         </div>
       </div>
 
-      {positionen.length === 0 ? (
+      {sortedPositionen.length === 0 ? (
         <div
           className="rounded-xl border border-dashed px-4 py-5 text-center"
           style={{ borderColor: PORTAL_VAR.line }}
@@ -191,16 +236,18 @@ export function PartnerPositionLebenszyklusList({
         </div>
       ) : (
         <ul className="space-y-2.5">
-          {positionen.map((p) => {
+          {sortedPositionen.map((p) => {
             const st = p.leistung_status ?? "offen";
             const isArbeit = st === "in_arbeit";
             const isErledigt = st === "erledigt";
             const isAufwand = p.verguetung === "aufwand";
             const isRegie = p.typ === "regie" || isAufwand;
+            const isPreferred = preferredSet.has(p.id);
             const meta = [
               lebenszyklusLabel(st),
               mengeLabel(p),
               p.anerkennung_status === "in_pruefung" ? "in Prüfung" : null,
+              isPreferred ? "Update angefordert" : null,
             ]
               .filter(Boolean)
               .join(" · ");
@@ -208,7 +255,12 @@ export function PartnerPositionLebenszyklusList({
             return (
               <li
                 key={p.id}
-                className="rounded-xl border border-border-light bg-white px-3.5 py-3.5 shadow-[0_1px_2px_rgba(22,32,27,0.04)]"
+                className={cn(
+                  "rounded-xl border bg-white px-3.5 py-3.5 shadow-[0_1px_2px_rgba(22,32,27,0.04)]",
+                  isPreferred
+                    ? "border-amber-300 ring-1 ring-amber-200"
+                    : "border-border-light"
+                )}
               >
                 <div className="flex items-start gap-2.5">
                   <div
@@ -251,16 +303,33 @@ export function PartnerPositionLebenszyklusList({
                       <p className="text-[11.5px] leading-relaxed text-text-tertiary">
                         {HW_DOKU_STORY.regieHint}
                       </p>
-                    ) : null}
+                    ) : (
+                      <p className="text-[11.5px] leading-relaxed text-text-tertiary">
+                        {HW_DOKU_STORY.lvHint}
+                      </p>
+                    )}
                     {st === "offen" ? (
-                      <button
-                        type="button"
-                        className="btn-pill-primary flex w-full items-center justify-center gap-2"
-                        onClick={() => setSheet({ mode: "start", position: p })}
-                      >
-                        <Play className="h-3.5 w-3.5 fill-current" aria-hidden />
-                        Start — Ankunftsfoto
-                      </button>
+                      <div className="flex flex-col gap-2 sm:flex-row">
+                        <button
+                          type="button"
+                          className="btn-pill-primary flex flex-1 items-center justify-center gap-2"
+                          onClick={() => setSheet({ mode: "start", position: p })}
+                        >
+                          <Play className="h-3.5 w-3.5 fill-current" aria-hidden />
+                          {isRegie ? "Start — Ankunftsfoto" : "Start"}
+                        </button>
+                        {!isRegie ? (
+                          <button
+                            type="button"
+                            className="btn-pill-outline flex-1"
+                            onClick={() =>
+                              setSheet({ mode: "erledigt", position: p })
+                            }
+                          >
+                            Erledigt markieren
+                          </button>
+                        ) : null}
+                      </div>
                     ) : null}
                     {isArbeit ? (
                       <div className="flex flex-col gap-2 sm:flex-row">
@@ -280,7 +349,7 @@ export function PartnerPositionLebenszyklusList({
                             setSheet({ mode: "erledigt", position: p })
                           }
                         >
-                          Ende — Dokumentieren
+                          {isRegie ? "Ende — Dokumentieren" : "Erledigt"}
                         </button>
                       </div>
                     ) : null}
@@ -312,170 +381,167 @@ export function PartnerPositionLebenszyklusList({
       </div>
 
       {sheet ? (
-        <div
-          className="fixed inset-0 z-50 flex items-end justify-center sm:items-center sm:p-4"
-          style={{ background: PORTAL_MODAL_SCRIM }}
-          role="presentation"
-          onClick={closeSheet}
+        <PortalModalShell
+          open
+          title={
+            sheet.mode === "start"
+              ? "Position starten"
+              : sheet.mode === "fortschritt"
+                ? "Fortschritt festhalten"
+                : "Position abschließen"
+          }
+          subtitle={sheet.position.leistung_name}
+          onClose={closeSheet}
+          variant="edit"
+          dirty
+          closeOnBackdrop={!pending}
         >
-          <form
-            action={submitSheet}
-            className="flex max-h-[92vh] w-full max-w-lg flex-col overflow-hidden rounded-t-[20px] bg-white shadow-xl sm:rounded-2xl"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex items-start justify-between gap-2 border-b border-border-light px-4 py-3.5">
-              <div className="min-w-0">
-                <p className="text-[17px] font-bold text-text-primary">
-                  {sheet.mode === "start"
-                    ? "Position starten"
-                    : sheet.mode === "fortschritt"
-                      ? "Fortschritt festhalten"
-                      : "Position abschließen"}
-                </p>
-                <p className="mt-0.5 text-[13px] text-text-secondary">
-                  {sheet.position.leistung_name}
-                </p>
-              </div>
-              <button
-                type="button"
-                className="rounded-lg p-1.5 text-text-tertiary hover:bg-muted"
-                onClick={closeSheet}
-                aria-label="Schließen"
-              >
-                <X className="h-5 w-5" />
-              </button>
-            </div>
+          {(() => {
+            const sheetIsRegie =
+              sheet.position.typ === "regie" ||
+              sheet.position.verguetung === "aufwand";
+            const fotoPflicht =
+              sheetIsRegie &&
+              (sheet.mode === "start" || sheet.mode === "erledigt");
+            const textPflicht = fotoPflicht;
+            return (
+          <form action={submitSheet} className="flex flex-col">
+            <input type="hidden" name="positionId" value={sheet.position.id} />
+            {anfrageId ? (
+              <input type="hidden" name="anfrageId" value={anfrageId} />
+            ) : null}
 
-            <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4">
-              <input type="hidden" name="positionId" value={sheet.position.id} />
-
-              {!nachreich ? (
-                <PartnerDirektKameraSlot
-                  label={
-                    sheet.mode === "start"
+            {!nachreich ? (
+              <PartnerDirektKameraSlot
+                required={fotoPflicht}
+                label={
+                  sheet.mode === "start"
+                    ? sheetIsRegie
                       ? "Ankunftsfoto — Ort & Zustand"
-                      : sheet.mode === "fortschritt"
-                        ? "Fortschritts-Foto"
-                        : "Ergebnis-Foto — fertige Arbeit"
-                  }
+                      : "Ankunftsfoto (optional)"
+                    : sheet.mode === "fortschritt"
+                      ? "Fortschritts-Foto (optional)"
+                      : sheetIsRegie
+                        ? "Ergebnis-Foto — fertige Arbeit"
+                        : "Ergebnis-Foto (optional)"
+                }
+              />
+            ) : null}
+
+            <button
+              type="button"
+              className="mt-2 text-xs text-text-tertiary underline"
+              onClick={() => setNachreich((v) => !v)}
+            >
+              {nachreich ? "Kamera nutzen" : "Foto liegt schon vor?"}
+            </button>
+            {nachreich ? (
+              <div className="mt-2 space-y-2">
+                <p className="text-xs text-amber-800">
+                  Galerie erlaubt — zählt als nachgereicht, nicht für
+                  Tagesspanne.
+                </p>
+                <input
+                  type="file"
+                  name="foto"
+                  accept="image/*"
+                  required={fotoPflicht}
+                  className="block w-full text-sm"
                 />
-              ) : null}
+                <input
+                  type="text"
+                  name="nachreichGrund"
+                  required
+                  placeholder="Grund (Pflicht)"
+                  className="input-field w-full"
+                />
+              </div>
+            ) : null}
 
-              <button
-                type="button"
-                className="mt-2 text-xs text-text-tertiary underline"
-                onClick={() => setNachreich((v) => !v)}
-              >
-                {nachreich ? "Kamera nutzen" : "Foto liegt schon vor?"}
-              </button>
-              {nachreich ? (
-                <div className="mt-2 space-y-2">
-                  <p className="text-xs text-amber-800">
-                    Galerie erlaubt — zählt als nachgereicht, nicht für
-                    Tagesspanne.
-                  </p>
-                  <input
-                    type="file"
-                    name="foto"
-                    accept="image/*"
-                    required
-                    className="block w-full text-sm"
-                  />
-                  <input
-                    type="text"
-                    name="nachreichGrund"
-                    required
-                    placeholder="Grund (Pflicht)"
-                    className="input-field w-full"
-                  />
-                </div>
-              ) : null}
-
-              <label className="mt-4 block space-y-1.5">
-                <span className="text-[14px] font-bold text-text-primary">
-                  {sheet.mode === "start"
+            <div className="mt-4">
+              <PartnerKiKorrekturField
+                scope="bautagebuch"
+                label={
+                  sheet.mode === "start"
                     ? "Ausgangslage"
                     : sheet.mode === "fortschritt"
                       ? "Kurz beschreiben"
-                      : "Ergebnis / Schlussbemerkung"}
-                  {sheet.mode !== "fortschritt" ? (
-                    <span className="font-semibold text-red-700"> · Pflicht</span>
-                  ) : null}
-                </span>
-                <textarea
-                  name="beschreibung"
-                  rows={3}
-                  required={sheet.mode !== "fortschritt"}
-                  className="portal-input w-full rounded-xl border border-border-default px-3 py-2.5"
-                  placeholder={
-                    sheet.mode === "start"
-                      ? "z.B. Leck an Steigleitung, Wand feucht"
-                      : sheet.mode === "fortschritt"
-                        ? "z.B. Estrich eingebracht, trocknet"
-                        : "Was wurde fertiggestellt?"
-                  }
-                />
-              </label>
-
-              {sheet.mode === "start" ? (
-                <p
-                  className="mt-3 rounded-[11px] px-3.5 py-3 text-[13px] leading-relaxed"
-                  style={{
-                    background: PORTAL_VAR.primarySoft,
-                    color: PORTAL_VAR.sub,
-                  }}
-                >
-                  Nur mit Start-Foto wird die Position freigeschaltet. Danach
-                  kannst du Fortschritte festhalten und die Arbeit abschließen.
-                </p>
-              ) : null}
-
-              {sheet.position.verguetung === "aufwand" &&
-              (sheet.mode === "fortschritt" || sheet.mode === "erledigt") ? (
-                <div className="mt-3 space-y-1">
-                  <p className="portal-form-label">
-                    {sheet.mode === "erledigt"
-                      ? "Meine Zeit gesamt (Pflicht bei Regie)"
-                      : "Zeitaufwand (Regie)"}
-                  </p>
-                  <div className="flex gap-2">
-                    <input
-                      type="number"
-                      name="zeitStd"
-                      min={0}
-                      step={1}
-                      required={sheet.mode === "erledigt"}
-                      defaultValue={
-                        sheet.mode === "erledigt" &&
-                        sheet.position.zeit_minuten_summe
-                          ? Math.floor(sheet.position.zeit_minuten_summe / 60)
-                          : 0
-                      }
-                      className="portal-input w-full rounded-xl border border-border-default px-3 py-2.5"
-                      placeholder="Std"
-                    />
-                    <input
-                      type="number"
-                      name="zeitMin"
-                      min={0}
-                      max={59}
-                      step={1}
-                      required={sheet.mode === "erledigt"}
-                      defaultValue={
-                        sheet.mode === "erledigt" &&
-                        sheet.position.zeit_minuten_summe
-                          ? sheet.position.zeit_minuten_summe % 60
-                          : 0
-                      }
-                      className="portal-input w-full rounded-xl border border-border-default px-3 py-2.5"
-                      placeholder="Min"
-                    />
-                  </div>
-                </div>
-              ) : null}
+                      : "Ergebnis / Schlussbemerkung"
+                }
+                value={beschreibung}
+                onChange={setBeschreibung}
+                rows={3}
+                required={textPflicht}
+                leistungName={sheet.position.leistung_name}
+                auftragTitel={auftragTitel}
+                placeholder={
+                  sheet.mode === "start"
+                    ? "Einsprechen oder tippen — KI formuliert kundenfertig"
+                    : sheet.mode === "fortschritt"
+                      ? "z.B. Estrich eingebracht, trocknet"
+                      : "Was wurde fertiggestellt?"
+                }
+              />
             </div>
 
-            <div className="border-t border-border-light px-4 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+            {sheet.mode === "start" && sheetIsRegie ? (
+              <p
+                className="mt-3 rounded-[11px] px-3.5 py-3 text-[13px] leading-relaxed"
+                style={{
+                  background: PORTAL_VAR.primarySoft,
+                  color: PORTAL_VAR.sub,
+                }}
+              >
+                Bei Regie sind Ankunftsfoto und kurze Ausgangslage Pflicht.
+                Danach Fortschritte und Ende mit Ergebnis-Foto.
+              </p>
+            ) : null}
+
+            {sheet.position.verguetung === "aufwand" &&
+            (sheet.mode === "fortschritt" || sheet.mode === "erledigt") ? (
+              <div className="mt-3 space-y-1">
+                <p className="portal-form-label">
+                  {sheet.mode === "erledigt"
+                    ? "Meine Zeit gesamt (Pflicht bei Regie)"
+                    : "Zeitaufwand (Regie)"}
+                </p>
+                <div className="flex gap-2">
+                  <input
+                    type="number"
+                    name="zeitStd"
+                    min={0}
+                    step={1}
+                    required={sheet.mode === "erledigt"}
+                    defaultValue={
+                      sheet.mode === "erledigt" &&
+                      sheet.position.zeit_minuten_summe
+                        ? Math.floor(sheet.position.zeit_minuten_summe / 60)
+                        : 0
+                    }
+                    className="portal-input w-full rounded-xl border border-border-default px-3 py-2.5"
+                    placeholder="Std"
+                  />
+                  <input
+                    type="number"
+                    name="zeitMin"
+                    min={0}
+                    max={59}
+                    step={1}
+                    required={sheet.mode === "erledigt"}
+                    defaultValue={
+                      sheet.mode === "erledigt" &&
+                      sheet.position.zeit_minuten_summe
+                        ? sheet.position.zeit_minuten_summe % 60
+                        : 0
+                    }
+                    className="portal-input w-full rounded-xl border border-border-default px-3 py-2.5"
+                    placeholder="Min"
+                  />
+                </div>
+              </div>
+            ) : null}
+
+            <div className="mt-5">
               <button
                 type="submit"
                 className="btn-pill-primary w-full"
@@ -491,7 +557,9 @@ export function PartnerPositionLebenszyklusList({
               </button>
             </div>
           </form>
-        </div>
+            );
+          })()}
+        </PortalModalShell>
       ) : null}
 
       <PortalModalShell
@@ -499,6 +567,8 @@ export function PartnerPositionLebenszyklusList({
         title="Weitere Arbeit"
         subtitle="Neue Regie-Position nach Aufwand — in Prüfung bis CRM anerkennt."
         onClose={closeWeitere}
+        variant="edit"
+        dirty={weitereTitel.trim().length > 0}
         closeOnBackdrop={!pending}
       >
         <label className="flex flex-col gap-1">

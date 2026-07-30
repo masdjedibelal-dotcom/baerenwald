@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 
-import { acceptKundeAngebot } from "@/app/actions/portal-angebot";
+import { acceptKundeAngebot, rejectKundeAngebot } from "@/app/actions/portal-angebot";
 import { acceptKundeAuftragAenderungen } from "@/app/actions/portal-auftrag";
 import { OrgAnlassBadge } from "@/components/org/OrgAnlassBadge";
 import { OrganisationHvVorgangDetail } from "@/components/org/OrganisationHvVorgangDetail";
@@ -14,6 +14,7 @@ import { PortalVorgangFeedbackSection } from "@/components/portal/PortalVorgangF
 import { PartnerPortalDetailSections } from "@/components/partner/PartnerPortalDetailSections";
 import { BautagebuchAccordionList } from "@/components/shared/BautagebuchAccordionList";
 import { DokumenteTabelle } from "@/components/shared/DokumenteTabelle";
+import { PortalModalShell } from "@/components/shared/PortalModalShell";
 import {
   PortalAnsprechpartnerCard,
   PortalConfirmDialog,
@@ -131,9 +132,12 @@ export function PortalVorgangDetail({
 }) {
   const router = useRouter();
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const [rejectOpen, setRejectOpen] = useState(false);
+  const [rejectGrund, setRejectGrund] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [accepted, setAccepted] = useState(false);
+  const [rejected, setRejected] = useState(false);
 
   const flowStatus = useMemo(
     () =>
@@ -261,13 +265,35 @@ export function PortalVorgangDetail({
     router.refresh();
   }
 
-  const showAcceptCta = (isAngebotAccept || isAuftragAccept) && !accepted;
+  async function handleReject() {
+    if (!isAngebotAccept) return;
+    setLoading(true);
+    setError(null);
+    const res = await rejectKundeAngebot(item.id, rejectGrund);
+    setLoading(false);
+    if (!res.ok) {
+      setError(res.error);
+      return;
+    }
+    setRejectOpen(false);
+    setRejectGrund("");
+    kundePortalToast.angebotAbgelehnt();
+    setRejected(true);
+    onAccepted?.();
+    router.refresh();
+  }
+
+  const showAcceptCta =
+    (isAngebotAccept || isAuftragAccept) && !accepted && !rejected;
 
   const footer = showAcceptCta ? (
     <PortalDetailStickyActions
       primaryLabel={isAuftragAccept ? "Änderungen annehmen" : "Angebot annehmen"}
       onPrimary={() => setConfirmOpen(true)}
       primaryLoading={loading}
+      secondaryLabel={isAngebotAccept ? "Ablehnen" : undefined}
+      onSecondary={isAngebotAccept ? () => setRejectOpen(true) : undefined}
+      secondaryDisabled={loading}
     />
   ) : null;
 
@@ -296,6 +322,15 @@ export function PortalVorgangDetail({
                 : "Wir bereiten den Auftrag vor und melden uns, sobald es weitergeht."}
             </p>
           </PortalDetailSuccessBox>
+        ) : null}
+
+        {rejected ? (
+          <PortalDetailInfoBox>
+            <p className="font-semibold">Angebot abgelehnt</p>
+            <p className="portal-text-meta mt-1">
+              Danke für die Rückmeldung — wir melden uns bei Bedarf.
+            </p>
+          </PortalDetailInfoBox>
         ) : null}
 
         {error ? <PortalDetailError message={error} /> : null}
@@ -405,6 +440,50 @@ export function PortalVorgangDetail({
         onConfirm={handleAccept}
         onCancel={() => setConfirmOpen(false)}
       />
+
+      <PortalModalShell
+        open={rejectOpen}
+        title="Angebot ablehnen?"
+        subtitle="Optional kurz begründen — hilft uns bei der Nacharbeit."
+        onClose={() => {
+          if (loading) return;
+          setRejectOpen(false);
+        }}
+        variant="edit"
+        dirty={rejectGrund.trim().length > 0}
+        closeOnBackdrop={!loading}
+      >
+        <label className="flex flex-col gap-1.5">
+          <span className="portal-form-label">Grund (optional)</span>
+          <textarea
+            value={rejectGrund}
+            onChange={(e) => setRejectGrund(e.target.value)}
+            rows={3}
+            maxLength={500}
+            placeholder="z. B. Preis, Umfang, Zeitpunkt …"
+            className="portal-input w-full rounded-xl border border-border-default px-3 py-2.5"
+            disabled={loading}
+          />
+        </label>
+        <div className="portal-confirm-actions mt-5">
+          <button
+            type="button"
+            disabled={loading}
+            onClick={() => void handleReject()}
+            className="btn-pill-outline portal-btn portal-confirm-actions-primary !border-red-200 !text-red-800"
+          >
+            {loading ? "Wird gesendet…" : "Ablehnen"}
+          </button>
+          <button
+            type="button"
+            disabled={loading}
+            onClick={() => setRejectOpen(false)}
+            className="btn-pill-outline portal-btn portal-confirm-actions-cancel"
+          >
+            Abbrechen
+          </button>
+        </div>
+      </PortalModalShell>
     </>
   );
 }

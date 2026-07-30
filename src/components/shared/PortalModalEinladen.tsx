@@ -155,6 +155,7 @@ export function PortalModalEinladen({
       title={PORTAL_EINLADEN_TITLE}
       subtitle={PORTAL_EINLADEN_SUBTITLE}
       onClose={onClose}
+      variant="edit"
     >
       {!kennung ? (
         <p className="portal-einladen-warn">

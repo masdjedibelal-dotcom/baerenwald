@@ -46,7 +46,7 @@ export function OrganisationAnfrageHub({
       open={open}
       title="Neuer Vorgang"
       onClose={onClose}
-      size="funnel"
+      variant="funnel"
       maxWidth={560}
     >
       {objekte.length === 0 ? (

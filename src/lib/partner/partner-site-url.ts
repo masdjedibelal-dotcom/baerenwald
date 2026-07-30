@@ -34,9 +34,28 @@ export function partnerAnfragePortalUrl(anfrageId: string): string {
 }
 
 /** Tab Vorgänge — eine HW-Anfrage oder ein Auftrag. */
-export function partnerVorgangPortalPath(vorgangId: string): string {
+export function partnerVorgangPortalPath(
+  vorgangId: string,
+  opts?: {
+    focus?: "bautagebuch" | "abnahme";
+    anfrageId?: string | null;
+    protokollId?: string | null;
+  }
+): string {
   const id = vorgangId.trim();
-  return `/partner?section=vorgaenge&id=${encodeURIComponent(id)}`;
+  const params = new URLSearchParams();
+  params.set("section", "vorgaenge");
+  params.set("id", id);
+  if (opts?.focus === "bautagebuch" || opts?.focus === "abnahme") {
+    params.set("focus", opts.focus);
+  }
+  if (opts?.anfrageId?.trim()) {
+    params.set("anfrage", opts.anfrageId.trim());
+  }
+  if (opts?.protokollId?.trim()) {
+    params.set("protokoll", opts.protokollId.trim());
+  }
+  return `/partner?${params.toString()}`;
 }
 
 /**

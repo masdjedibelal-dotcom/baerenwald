@@ -1,5 +1,7 @@
 # Partner-Portal (Bärenwald für Handwerker) — Todos je Phase
 
+**Quer über alle Portale (Alltag + Außen→Innen):** [`PORTAL-ALLTAG-AUDIT.md`](./PORTAL-ALLTAG-AUDIT.md) · [`PORTAL-UMSETZUNGSPLAN.md`](./PORTAL-UMSETZUNGSPLAN.md)
+
 Route: **`/partner`** auf `handwerks-plattform` (wie MeinBärenwald `/portal`).
 
 SQL-Dateien nacheinander in Supabase: siehe [SUPABASE_PARTNER_PORTAL_SQL.md](./SUPABASE_PARTNER_PORTAL_SQL.md).

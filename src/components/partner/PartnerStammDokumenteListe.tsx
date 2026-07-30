@@ -445,6 +445,8 @@ export function PartnerStammDokumenteListe({
         title="Dokument hochladen"
         subtitle="Titel und optional Beschreibung — dann PDF oder Foto wählen."
         onClose={closeUpload}
+        variant="edit"
+        dirty
         closeOnBackdrop={!saving}
       >
         <div className="flex flex-col gap-3">

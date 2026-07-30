@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 
+import { PortalModalShell } from "@/components/shared/PortalModalShell";
 import { cn } from "@/lib/utils";
 
 type Props = {
@@ -14,7 +15,8 @@ type Props = {
 };
 
 /**
- * Listen-Aktionen Objektkarte: Primär „Aushang PDF“, Rest im ⋯-Popover.
+ * Listen-Aktionen Objektkarte: Primär „Aushang PDF“, Rest im ⋯-ActionSheet
+ * (mobil Bottom Sheet, Desktop kompakt — Shell `confirm`).
  */
 export function OrganisationObjektCardActions({
   canAushang = false,
@@ -25,34 +27,22 @@ export function OrganisationObjektCardActions({
   onLoeschen,
 }: Props) {
   const [open, setOpen] = useState(false);
-  const rootRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    if (!open) return;
-    const onDoc = (e: MouseEvent) => {
-      if (!rootRef.current?.contains(e.target as Node)) setOpen(false);
-    };
-    document.addEventListener("mousedown", onDoc);
-    return () => document.removeEventListener("mousedown", onDoc);
-  }, [open]);
+  function run(action: () => void) {
+    setOpen(false);
+    action();
+  }
 
-  const item = (
-    label: string,
-    onClick: () => void,
-    danger?: boolean
-  ) => (
+  const item = (label: string, onClick: () => void, danger?: boolean) => (
     <button
       type="button"
       className={cn(
-        "block w-full px-3.5 py-2.5 text-left text-[13px] font-semibold",
+        "block w-full rounded-[10px] px-3.5 py-3 text-left text-[14px] font-semibold",
         danger
           ? "portal-danger hover:bg-[var(--p2-danger-soft)]"
           : "text-text-primary hover:bg-muted"
       )}
-      onClick={() => {
-        setOpen(false);
-        onClick();
-      }}
+      onClick={() => run(onClick)}
     >
       {label}
     </button>
@@ -60,7 +50,6 @@ export function OrganisationObjektCardActions({
 
   return (
     <div
-      ref={rootRef}
       className="relative flex flex-wrap items-center gap-2"
       onClick={(e) => e.stopPropagation()}
     >
@@ -80,20 +69,26 @@ export function OrganisationObjektCardActions({
         className="flex h-8 w-8 items-center justify-center rounded-lg border border-border-default bg-white text-base text-text-secondary"
         aria-label="Weitere Aktionen"
         aria-expanded={open}
-        onClick={() => setOpen((v) => !v)}
+        onClick={() => setOpen(true)}
       >
         ⋯
       </button>
 
-      {open ? (
-        <div className="absolute right-0 top-full z-20 mt-1 min-w-[180px] overflow-hidden rounded-[10px] border border-border-default bg-white py-1 shadow-lg">
+      <PortalModalShell
+        open={open}
+        title="Aktionen"
+        onClose={() => setOpen(false)}
+        variant="confirm"
+        maxWidth={360}
+      >
+        <div className="flex flex-col gap-0.5">
           {canAushang && onQrCode ? item("QR-Code", onQrCode) : null}
           {item("Bearbeiten", onBearbeiten)}
           {item("Kopieren", onKopieren)}
-          <div className="my-1 border-t border-border-default" />
+          <div className="my-1.5 border-t border-border-default" />
           {item("Löschen", onLoeschen, true)}
         </div>
-      ) : null}
+      </PortalModalShell>
     </div>
   );
 }

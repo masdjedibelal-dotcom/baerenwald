@@ -83,9 +83,11 @@ export function partnerNotificationSubject(
     case "entfernt":
       return `${l || "Leistung"} wurde aus ${p} entfernt`;
     case "erinnerung":
-      return `Erinnerung: Offene Bestätigung für ${p}`;
+      return l
+        ? `${p} — ${l}`
+        : `Erinnerung: Offene Bestätigung für ${p}`;
     case "bautagebuch":
-      return `${p} — Bitte Tagebucheintrag erstellen`;
+      return `${p} — Bitte Update geben`;
     default:
       return p;
   }

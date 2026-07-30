@@ -9,115 +9,158 @@ import {
 import {
   PartnerDetailError,
   PartnerDetailSection,
-  PartnerDetailSuccessBox,
 } from "@/components/partner/PartnerDetailUi";
+import { PortalModalShell } from "@/components/shared/PortalModalShell";
 import { portalToastSuccess } from "@/lib/shared/portal-toast";
 
-/** Partner: Rückfrage + Terminvorschläge */
-export function PartnerTermineRueckfrageSection({ auftragId }: { auftragId: string }) {
+/** Partner: Rückfrage + Terminvorschläge — CTAs öffnen Shell `edit`. */
+export function PartnerTermineRueckfrageSection({
+  auftragId,
+}: {
+  auftragId: string;
+}) {
+  const [mode, setMode] = useState<"frage" | "termin" | null>(null);
   const [rueckfrage, setRueckfrage] = useState("");
   const [slotBeginn, setSlotBeginn] = useState("");
   const [slotEnde, setSlotEnde] = useState("");
-  const [busy, setBusy] = useState<"frage" | "termin" | null>(null);
-  const [done, setDone] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  function closeSheet() {
+    if (busy) return;
+    setMode(null);
+    setError(null);
+  }
 
   async function sendFrage(e: React.FormEvent) {
     e.preventDefault();
-    setBusy("frage");
+    setBusy(true);
     setError(null);
     const res = await createPartnerRueckfrage(auftragId, rueckfrage);
-    setBusy(null);
+    setBusy(false);
     if (!res.ok) {
       setError(res.error);
       return;
     }
-    portalToastSuccess("Rückfrage gesendet");
+    portalToastSuccess("Gesendet", "Rückfrage übermittelt.");
     setRueckfrage("");
-    setDone("frage");
+    setMode(null);
   }
 
   async function sendTermin(e: React.FormEvent) {
     e.preventDefault();
     if (!slotBeginn) return;
-    setBusy("termin");
+    setBusy(true);
     setError(null);
     const res = await createPartnerTerminSlots(auftragId, [
       { beginn: slotBeginn, ende: slotEnde || undefined },
     ]);
-    setBusy(null);
+    setBusy(false);
     if (!res.ok) {
       setError(res.error);
       return;
     }
-    portalToastSuccess("Terminvorschlag gesendet");
+    portalToastSuccess("Gesendet", "Mieter kann den Termin bestätigen.");
     setSlotBeginn("");
     setSlotEnde("");
-    setDone("termin");
+    setMode(null);
   }
 
   return (
     <>
-      <PartnerDetailSection title="Rückfrage an Bärenwald">
-        <form onSubmit={sendFrage} className="space-y-3">
-          <textarea
-            className="input-field w-full min-h-[80px]"
-            placeholder="Frage zum Auftrag (min. 10 Zeichen)"
-            value={rueckfrage}
-            onChange={(e) => setRueckfrage(e.target.value)}
-          />
+      <PartnerDetailSection title="Termin & Rückfrage">
+        <p className="mb-3 text-[13px] leading-relaxed text-text-secondary">
+          Termin vorschlagen oder Rückfrage an Bärenwald stellen.
+        </p>
+        <div className="flex flex-wrap gap-2">
           <button
-            type="submit"
-            className="btn-pill-outline portal-btn !px-4 !py-2.5"
-            disabled={busy === "frage"}
+            type="button"
+            className="btn-pill-primary portal-btn !px-4 !py-2.5"
+            onClick={() => setMode("termin")}
           >
-            {busy === "frage" ? "Senden…" : "Rückfrage senden"}
+            Termin
           </button>
-        </form>
-        {done === "frage" ? (
-          <PartnerDetailSuccessBox>
-            <p className="text-sm">Rückfrage wurde übermittelt.</p>
-          </PartnerDetailSuccessBox>
-        ) : null}
+          <button
+            type="button"
+            className="btn-pill-outline portal-btn !px-4 !py-2.5"
+            onClick={() => setMode("frage")}
+          >
+            Rückfrage
+          </button>
+        </div>
       </PartnerDetailSection>
 
-      <PartnerDetailSection title="Termin vorschlagen">
+      <PortalModalShell
+        open={mode === "frage"}
+        title="Rückfrage"
+        subtitle="An Bärenwald — min. 10 Zeichen"
+        onClose={closeSheet}
+        variant="edit"
+        dirty={rueckfrage.trim().length > 0}
+        closeOnBackdrop={!busy}
+      >
+        <form onSubmit={sendFrage} className="space-y-3">
+          <textarea
+            className="portal-input w-full min-h-[100px] rounded-xl border border-border-default px-3 py-2.5"
+            placeholder="Frage zum Auftrag…"
+            value={rueckfrage}
+            onChange={(e) => setRueckfrage(e.target.value)}
+            required
+            minLength={10}
+            disabled={busy}
+          />
+          {error ? <PartnerDetailError message={error} /> : null}
+          <button
+            type="submit"
+            className="btn-pill-primary portal-btn w-full !px-4 !py-2.5"
+            disabled={busy || rueckfrage.trim().length < 10}
+          >
+            {busy ? "Senden…" : "Senden"}
+          </button>
+        </form>
+      </PortalModalShell>
+
+      <PortalModalShell
+        open={mode === "termin"}
+        title="Termin"
+        subtitle="Vorschlag an Mieter / Kunde"
+        onClose={closeSheet}
+        variant="edit"
+        dirty={Boolean(slotBeginn || slotEnde)}
+        closeOnBackdrop={!busy}
+      >
         <form onSubmit={sendTermin} className="space-y-3">
-          <label className="block space-y-1 text-sm">
-            <span className="text-text-secondary">Beginn</span>
+          <label className="block space-y-1.5">
+            <span className="portal-form-label">Beginn</span>
             <input
               type="datetime-local"
-              className="input-field w-full"
+              className="portal-input w-full rounded-xl border border-border-default px-3 py-2.5"
               value={slotBeginn}
               onChange={(e) => setSlotBeginn(e.target.value)}
               required
+              disabled={busy}
             />
           </label>
-          <label className="block space-y-1 text-sm">
-            <span className="text-text-secondary">Ende (optional)</span>
+          <label className="block space-y-1.5">
+            <span className="portal-form-label">Ende (optional)</span>
             <input
               type="datetime-local"
-              className="input-field w-full"
+              className="portal-input w-full rounded-xl border border-border-default px-3 py-2.5"
               value={slotEnde}
               onChange={(e) => setSlotEnde(e.target.value)}
+              disabled={busy}
             />
           </label>
+          {error ? <PartnerDetailError message={error} /> : null}
           <button
             type="submit"
-            className="btn-pill-outline portal-btn !px-4 !py-2.5"
-            disabled={busy === "termin"}
+            className="btn-pill-primary portal-btn w-full !px-4 !py-2.5"
+            disabled={busy || !slotBeginn}
           >
-            {busy === "termin" ? "Senden…" : "Termin vorschlagen"}
+            {busy ? "Senden…" : "Vorschlagen"}
           </button>
         </form>
-        {done === "termin" ? (
-          <PartnerDetailSuccessBox>
-            <p className="text-sm">Mieter kann den Termin bestätigen.</p>
-          </PartnerDetailSuccessBox>
-        ) : null}
-      </PartnerDetailSection>
-
-      {error ? <PartnerDetailError message={error} /> : null}
+      </PortalModalShell>
     </>
   );
 }

@@ -22,9 +22,9 @@ import {
   PortalListPagination,
 } from "@/components/shared/PortalListPagination";
 import {
-  PortalListeFilterChip,
   PortalListeTitle,
 } from "@/components/shared/PortalListeChrome";
+import { PortalListeFilterBar } from "@/components/shared/PortalListeFilterBar";
 import {
   countUnreadBautagebuch,
   getBautagebuchLastSeenAt,
@@ -124,24 +124,17 @@ function VorgangListFilterBar({
   counts: Record<KundeVorgangFilter, number>;
 }) {
   return (
-    <div className="flex flex-wrap gap-2 border-b border-border-default px-3 py-3 sm:px-4">
-      {(["aktiv", "erledigt"] as const).map((id) => (
-        <button
-          key={id}
-          type="button"
-          onClick={() => onFilterChange(id)}
-          className={cn(
-            "rounded-full px-3 py-1.5 portal-text-meta font-semibold",
-            filter === id
-              ? "bg-accent-light text-accent"
-              : "bg-muted text-text-secondary"
-          )}
-        >
-          {VORGANG_FILTER_LABELS[id]}
-          <span className="ml-1.5 text-text-tertiary">({counts[id]})</span>
-        </button>
-      ))}
-    </div>
+    <PortalListeFilterBar
+      value={filter}
+      onChange={onFilterChange}
+      sheetTitle="Vorgänge"
+      className="border-b border-border-default px-3 sm:px-4"
+      options={(["aktiv", "erledigt"] as const).map((id) => ({
+        id,
+        label: VORGANG_FILTER_LABELS[id],
+        count: counts[id],
+      }))}
+    />
   );
 }
 
@@ -268,7 +261,6 @@ export function PortalClient({
   const [selectedId, setSelectedId] = useState<string | null>(
     searchParams.get("id")?.trim() || null
   );
-  const [_mobileDetailOpen, setMobileDetailOpen] = useState(Boolean(selectedId));
   const [listPage, setListPage] = useState(1);
   const [gptOpen, setGptOpen] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
@@ -451,10 +443,8 @@ export function PortalClient({
       const itemId = searchParams.get("id")?.trim();
       if (itemId && vorgaengeItems.some((v) => v.id === itemId)) {
         setSelectedId(itemId);
-        setMobileDetailOpen(true);
       } else if (!itemId) {
         setSelectedId(null);
-        setMobileDetailOpen(false);
       }
       return;
     }
@@ -466,7 +456,6 @@ export function PortalClient({
         ignoreUrlDetailRef.current = false;
         setSection("vorgaenge");
         setSelectedId(null);
-        setMobileDetailOpen(false);
       }
       return;
     }
@@ -481,11 +470,9 @@ export function PortalClient({
     if (normalized === "vorgaenge" && itemId) {
       if (vorgaengeItems.some((v) => v.id === itemId)) {
         setSelectedId(itemId);
-        setMobileDetailOpen(true);
       }
     } else if (normalized === "vorgaenge") {
       setSelectedId(null);
-      setMobileDetailOpen(false);
     }
   }, [searchParams, vorgaengeItems, embedded, hvPortalMode]);
 
@@ -493,7 +480,6 @@ export function PortalClient({
     ignoreUrlDetailRef.current = true;
     setSection(next);
     setSelectedId(null);
-    setMobileDetailOpen(false);
     if (!embedded) {
       router.replace(`/portal?section=${next}`, { scroll: false });
     }
@@ -508,7 +494,6 @@ export function PortalClient({
 
   function openVorgang(row: PortalCardRow) {
     setSelectedId(row.id);
-    setMobileDetailOpen(true);
     if (embedded && hvPortalMode) {
       const f = hvListeFilterForUrl();
       router.replace(
@@ -526,7 +511,6 @@ export function PortalClient({
   function closeDetail() {
     ignoreUrlDetailRef.current = true;
     setSelectedId(null);
-    setMobileDetailOpen(false);
     onHvDetailOpenChange?.(false);
     if (embedded && hvPortalMode) {
       const f = hvListeFilterForUrl();
@@ -589,17 +573,15 @@ export function PortalClient({
               {portalKundeListeTitle(kundeTyp)}
             </PortalListeTitle>
           </div>
-          <div className="flex flex-wrap gap-2 py-3.5">
-            {PRIVAT_LISTE_CHIPS.map((chip) => (
-              <PortalListeFilterChip
-                key={chip.id}
-                active={privatChip === chip.id}
-                onClick={() => setPrivatChip(chip.id)}
-              >
-                {chip.label}
-              </PortalListeFilterChip>
-            ))}
-          </div>
+          <PortalListeFilterBar
+            value={privatChip}
+            onChange={setPrivatChip}
+            sheetTitle="Liste"
+            options={PRIVAT_LISTE_CHIPS.map((chip) => ({
+              id: chip.id,
+              label: chip.label,
+            }))}
+          />
         </>
       ) : !hideFilterBar ? (
         <VorgangListFilterBar
@@ -710,6 +692,7 @@ export function PortalClient({
         brandSubtitle={kunde.name?.trim() || "Kundenportal"}
         brandKuerzel="B"
         sidebarOwner={kunde.name?.trim() || "MeinBärenwald"}
+        hideMobileChrome={Boolean(selectedId)}
         activeNavId={section === "gpt" ? "uebersicht" : section}
         onNavChange={(id) => {
           switchSection(id as SectionId);
@@ -775,7 +758,6 @@ export function PortalClient({
               }}
               onOpenItem={(id) => {
                 setSelectedId(id);
-                setMobileDetailOpen(true);
                 switchSection("vorgaenge");
                 router.replace(
                   `/portal?section=vorgaenge&id=${encodeURIComponent(id)}`,
@@ -803,7 +785,6 @@ export function PortalClient({
               }}
               onOpenItem={(id) => {
                 setSelectedId(id);
-                setMobileDetailOpen(true);
                 switchSection("vorgaenge");
                 router.replace(
                   `/portal?section=vorgaenge&id=${encodeURIComponent(id)}`,

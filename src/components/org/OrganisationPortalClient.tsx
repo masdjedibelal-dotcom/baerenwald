@@ -336,6 +336,7 @@ export function OrganisationPortalClient({
         brandPrimary={kunde.org_primary_color}
         brandPrimaryDk={kunde.org_primary_color_dk}
         brandSoft={kunde.org_primary_color_soft}
+        hideMobileChrome={Boolean(searchParams.get("id")?.trim())}
         activeNavId={section}
         onNavChange={(id) => switchSection(id as OrgSection)}
         nav={buildPortalShellNav("kunde_hv", "org", {

@@ -8,9 +8,11 @@ export async function notifyPartnerBautagebuchAnfrage(opts: {
   auftragId: string;
   handwerkerId: string;
   notiz?: string | null;
+  positionIds?: string[] | null;
+  anfrageId?: string | null;
   /** Zeile existiert bereits (nur Glocke nachziehen). */
   skipDbInsert?: boolean;
-}): Promise<{ ok: boolean; error?: string }> {
+}): Promise<{ ok: boolean; error?: string; anfrageId?: string }> {
   if (!isSupabaseConfigured()) {
     return { ok: false, error: "Datenbank nicht konfiguriert." };
   }
@@ -20,6 +22,12 @@ export async function notifyPartnerBautagebuchAnfrage(opts: {
   if (!auftragId || !handwerkerId) {
     return { ok: false, error: "auftragId und handwerkerId erforderlich." };
   }
+
+  const positionIds = Array.from(
+    new Set((opts.positionIds ?? []).map((id) => id.trim()).filter(Boolean))
+  );
+
+  let anfrageId = opts.anfrageId?.trim() || null;
 
   if (!opts.skipDbInsert) {
     const { data: existing } = await supabaseAdmin
@@ -31,22 +39,39 @@ export async function notifyPartnerBautagebuchAnfrage(opts: {
       .maybeSingle();
 
     if (existing?.id) {
+      anfrageId = String(existing.id);
+      const updatePayload: Record<string, unknown> = {
+        notiz: opts.notiz?.trim() || null,
+      };
+      if (positionIds.length) updatePayload.position_ids = positionIds;
       await supabaseAdmin
         .from("partner_bautagebuch_anfragen")
-        .update({
-          notiz: opts.notiz?.trim() || null,
-        })
+        .update(updatePayload)
         .eq("id", existing.id);
     } else {
-      const { error: insErr } = await supabaseAdmin
+      const insertPayload: Record<string, unknown> = {
+        auftrag_id: auftragId,
+        handwerker_id: handwerkerId,
+        notiz: opts.notiz?.trim() || null,
+      };
+      if (positionIds.length) insertPayload.position_ids = positionIds;
+      const { data: inserted, error: insErr } = await supabaseAdmin
         .from("partner_bautagebuch_anfragen")
-        .insert({
-          auftrag_id: auftragId,
-          handwerker_id: handwerkerId,
-          notiz: opts.notiz?.trim() || null,
-        });
+        .insert(insertPayload)
+        .select("id")
+        .single();
       if (insErr) return { ok: false, error: insErr.message };
+      anfrageId = inserted?.id ? String(inserted.id) : null;
     }
+  } else if (!anfrageId) {
+    const { data: existing } = await supabaseAdmin
+      .from("partner_bautagebuch_anfragen")
+      .select("id")
+      .eq("auftrag_id", auftragId)
+      .eq("handwerker_id", handwerkerId)
+      .is("erledigt_at", null)
+      .maybeSingle();
+    anfrageId = existing?.id ? String(existing.id) : null;
   }
 
   const { data: auftrag } = await supabaseAdmin
@@ -56,18 +81,22 @@ export async function notifyPartnerBautagebuchAnfrage(opts: {
     .maybeSingle();
 
   const projektName =
-    String((auftrag as { titel?: string } | null)?.titel ?? "").trim() || "Auftrag";
+    String((auftrag as { titel?: string } | null)?.titel ?? "").trim() ||
+    "Auftrag";
 
   const notify = await createPartnerNotification({
     handwerkerId,
-    typ: "bautagebuch",
+    typ: "erinnerung",
     projektName,
-    leistungName: "Bitte Tagebucheintrag erstellen",
-    link: partnerVorgangPortalPath(auftragId),
+    leistungName: "Bitte Update geben — Bautagebuch",
+    link: partnerVorgangPortalPath(auftragId, {
+      focus: "bautagebuch",
+      anfrageId,
+    }),
   });
 
   if (!notify.ok) return notify;
-  return { ok: true };
+  return { ok: true, anfrageId: anfrageId ?? undefined };
 }
 
 /** Einmalige Glocke, wenn CRM nur die DB-Zeile angelegt hat (ohne Notify-API). */
@@ -82,7 +111,10 @@ export async function ensurePartnerBautagebuchNotifications(opts: {
   if (!handwerkerId) return;
 
   for (const bt of opts.anfragen) {
-    const link = partnerVorgangPortalPath(bt.auftrag_id);
+    const link = partnerVorgangPortalPath(bt.auftrag_id, {
+      focus: "bautagebuch",
+      anfrageId: bt.id,
+    });
     const vorgangKey = partnerNotificationVorgangKey(link);
     if (!vorgangKey) continue;
 
@@ -95,24 +127,27 @@ export async function ensurePartnerBautagebuchNotifications(opts: {
       .limit(30);
 
     const hatUngelesen = (unreadRows ?? []).some(
-      (row) => partnerNotificationVorgangKey(String(row.link ?? "")) === vorgangKey
+      (row) =>
+        partnerNotificationVorgangKey(String(row.link ?? "")) === vorgangKey
     );
     if (hatUngelesen) continue;
 
-    const { data: bautagebuchRows } = await supabaseAdmin
+    const { data: existingNotifs } = await supabaseAdmin
       .from("notifications")
       .select("id")
       .eq("handwerker_id", handwerkerId)
-      .eq("typ", "bautagebuch")
+      .in("typ", ["bautagebuch", "erinnerung"])
       .ilike("link", `%id=${vorgangKey}%`)
       .limit(1);
 
-    if ((bautagebuchRows ?? []).length > 0) continue;
+    if ((existingNotifs ?? []).length > 0) continue;
 
     await notifyPartnerBautagebuchAnfrage({
       auftragId: bt.auftrag_id,
       handwerkerId,
       notiz: bt.notiz,
+      anfrageId: bt.id,
+      positionIds: bt.position_ids,
       skipDbInsert: true,
     });
   }

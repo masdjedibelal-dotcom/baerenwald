@@ -15,9 +15,9 @@ import {
 } from "@/components/shared/PortalListPagination";
 import {
   PortalListeEyebrow,
-  PortalListeFilterChip,
   PortalListeTitle,
 } from "@/components/shared/PortalListeChrome";
+import { PortalListeFilterBar } from "@/components/shared/PortalListeFilterBar";
 import { PortalLegalFooter } from "@/components/shared/PortalLegalFooter";
 import { PortalShell } from "@/components/shared/PortalShell";
 import { PortalHeaderSearch } from "@/components/shared/PortalHeaderSearch";
@@ -139,7 +139,6 @@ export function EigentuemerPortalClient({
   const [selectedId, setSelectedId] = useState<string | null>(
     searchParams.get("id")?.trim() || null
   );
-  const [_mobileDetailOpen, setMobileDetailOpen] = useState(Boolean(selectedId));
   const [listPage, setListPage] = useState(1);
   const [objektDetailId, setObjektDetailId] = useState<string | null>(null);
   const [freigabeBusy, setFreigabeBusy] = useState(false);
@@ -151,7 +150,6 @@ export function EigentuemerPortalClient({
     const id = searchParams.get("id")?.trim() || null;
     if (id) {
       setSelectedId(id);
-      setMobileDetailOpen(true);
     }
   }, [searchParams]);
 
@@ -160,7 +158,6 @@ export function EigentuemerPortalClient({
     setObjektDetailId(null);
     if (id !== "vorgaenge") {
       setSelectedId(null);
-      setMobileDetailOpen(false);
     }
     router.replace(`/portal?section=${id}`, { scroll: false });
   };
@@ -334,6 +331,7 @@ export function EigentuemerPortalClient({
       brandSubtitle={kunde.name?.trim() || EIGENTUEMER_PAGE_HEAD}
       brandKuerzel="B"
       sidebarOwner={kunde.name?.trim() || EIGENTUEMER_DASHBOARD_ROLE}
+      hideMobileChrome={Boolean(selectedId)}
       activeNavId={section}
       onNavChange={(id) => switchSection(id as SectionId)}
       nav={buildPortalShellNav("eigentuemer", "eigentuemer", {
@@ -389,7 +387,6 @@ export function EigentuemerPortalClient({
           }}
           onOpenItem={(id) => {
             setSelectedId(id);
-            setMobileDetailOpen(true);
             switchSection("vorgaenge");
             router.replace(
               `/portal?section=vorgaenge&id=${encodeURIComponent(id)}`,
@@ -451,7 +448,6 @@ export function EigentuemerPortalClient({
               orgFreigabeStatus={freigabeStatusOf(selectedLeadId, leads)}
               schwelleEur={schwelleEur}
               onBack={() => {
-                setMobileDetailOpen(false);
                 setSelectedId(null);
                 router.replace("/portal?section=vorgaenge", {
                   scroll: false,
@@ -470,20 +466,18 @@ export function EigentuemerPortalClient({
               </p>
             </div>
 
-            <div className="flex flex-wrap gap-2 py-3.5">
-              {PRIVAT_LISTE_CHIPS.map((chip) => (
-                <PortalListeFilterChip
-                  key={chip.id}
-                  active={listeChip === chip.id}
-                  onClick={() => {
-                    setListeChip(chip.id);
-                    setListPage(1);
-                  }}
-                >
-                  {chip.label}
-                </PortalListeFilterChip>
-              ))}
-            </div>
+            <PortalListeFilterBar
+              value={listeChip}
+              onChange={(id) => {
+                setListeChip(id);
+                setListPage(1);
+              }}
+              sheetTitle="Liste"
+              options={PRIVAT_LISTE_CHIPS.map((chip) => ({
+                id: chip.id,
+                label: chip.label,
+              }))}
+            />
 
             {pageRows.length === 0 ? (
               <PortalEmptyState
@@ -510,7 +504,6 @@ export function EigentuemerPortalClient({
                     showChevron
                     onClick={() => {
                       setSelectedId(row.id);
-                      setMobileDetailOpen(true);
                       router.replace(
                         `/portal?section=vorgaenge&id=${encodeURIComponent(row.id)}`,
                         { scroll: false }

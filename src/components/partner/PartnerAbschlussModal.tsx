@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 
 import { submitPartnerAbnahmeprotokoll } from "@/app/actions/partner-abnahmeprotokoll";
 import { PartnerDetailError } from "@/components/partner/PartnerDetailUi";
+import { PartnerKiKorrekturField } from "@/components/partner/PartnerKiKorrekturField";
 import { PortalModalShell } from "@/components/shared/PortalModalShell";
 import { SignatureCanvas } from "@/components/shared/SignatureCanvas";
 import {
@@ -39,6 +40,7 @@ type LeistungInput = {
 type Props = {
   open: boolean;
   auftragId: string;
+  auftragTitel?: string | null;
   /** @deprecated use leistungItems */
   leistungen?: string[];
   leistungItems?: LeistungInput[];
@@ -50,6 +52,7 @@ type Props = {
 export function PartnerAbschlussModal({
   open,
   auftragId,
+  auftragTitel,
   leistungen = [],
   leistungItems,
   defaultOrt = "",
@@ -202,9 +205,10 @@ export function PartnerAbschlussModal({
       title="Abschlussdokumentation"
       subtitle={`Schritt ${stepIndex + 1} von ${STEPS.length}: ${STEPS[stepIndex].label}`}
       onClose={resetAndClose}
-      size="funnel"
+      variant="funnel"
       maxWidth={560}
       closeOnBackdrop={false}
+      dirty={stepIndex > 0}
     >
       <div className="flex min-h-0 flex-1 flex-col">
         <div className="mb-4 flex items-center gap-2">
@@ -300,22 +304,17 @@ export function PartnerAbschlussModal({
 
           {step === "beschreibung" ? (
             <div className="space-y-4">
-              <label className="block space-y-1.5">
-                <span
-                  className="text-[12px] font-semibold"
-                  style={{ color: PORTAL_VAR.sub }}
-                >
-                  Protokoll / durchgeführte Arbeiten *
-                </span>
-                <textarea
-                  required
-                  rows={5}
-                  value={protokollText}
-                  onChange={(e) => setProtokollText(e.target.value)}
-                  placeholder="Kurz beschreiben, was abgenommen wurde …"
-                  className="portal-input w-full min-h-[120px] resize-y"
-                />
-              </label>
+              <PartnerKiKorrekturField
+                scope="abnahmeprotokoll"
+                label="Protokoll / durchgeführte Arbeiten *"
+                value={protokollText}
+                onChange={setProtokollText}
+                rows={5}
+                required
+                auftragTitel={auftragTitel}
+                placeholder="Kurz beschreiben, was abgenommen wurde …"
+                rohName="protokoll_roh"
+              />
               <label className="block space-y-1.5">
                 <span
                   className="text-[12px] font-semibold"

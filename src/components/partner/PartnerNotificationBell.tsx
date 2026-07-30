@@ -102,10 +102,11 @@ export function PartnerNotificationBell({
       items={items}
       unreadCount={unread}
       loading={loading}
-      allHref="/partner?section=auftraege"
+      allHref="/partner?section=vorgaenge&filter=alle"
       onMarkAllRead={onMarkAll}
       onItemActivate={onItemActivate}
       onRefresh={load}
+      showReadFilter
     />
   );
 }

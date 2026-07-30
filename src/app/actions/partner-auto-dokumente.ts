@@ -10,12 +10,14 @@ import {
   type PartnerDocPosition,
 } from "@/lib/partner/generate-partner-dokument-pdf";
 import { linkPortalHandwerkerToAuthUser } from "@/lib/partner/link-portal-handwerker";
+import {
+  buildPartnerAutoDocPositionen,
+  type AutoDocMissingField,
+  type AutoDocRegieOverride,
+} from "@/lib/partner/partner-auto-doc-positionen";
 import { getPartnerDocEmpfaenger } from "@/lib/partner/partner-doc-empfaenger";
 import { checkPartnerFirmendatenGate } from "@/lib/partner/partner-firmendaten-gate";
-import {
-  parsePartnerHwKonditionen,
-  PARTNER_KONDITION_MWST,
-} from "@/lib/partner/partner-konditionen";
+import { PARTNER_KONDITION_MWST } from "@/lib/partner/partner-konditionen";
 import {
   MAIL_PDF_LINK_TTL_SEC,
   sendPartnerInternalRechnungMail,
@@ -33,10 +35,27 @@ export type PartnerAutoDocPreview = {
   dokumentNr: string;
   betreff: string;
   objektOrt: string;
-  positionen: Array<{ titel: string; netto: number; mwstSatz: number }>;
+  positionen: Array<{
+    titel: string;
+    beschreibung?: string | null;
+    netto: number;
+    mwstSatz: number;
+    menge?: number | null;
+    einheit?: string | null;
+  }>;
   nettoSumme: number;
   missingFirmendaten: string[];
+  missingFields: AutoDocMissingField[];
   canSubmit: boolean;
+  firmendaten: {
+    firma: string;
+    strasse: string;
+    ort: string;
+    telefon: string;
+    steuernummer: string;
+    ustid: string;
+    iban: string;
+  };
 };
 
 export type PartnerAutoDocResult =
@@ -71,6 +90,7 @@ async function loadHandwerkerAbsender(handwerkerId: string): Promise<{
   rechnungsnrSeq: number;
   gateMissingAngebot: string[];
   gateMissingRechnung: string[];
+  firmendaten: PartnerAutoDocPreview["firmendaten"];
 }> {
   let { data, error } = await supabaseAdmin
     .from("handwerker")
@@ -129,6 +149,15 @@ async function loadHandwerkerAbsender(handwerkerId: string): Promise<{
     rechnungsnrSeq: Number(row.rechnungsnr_seq ?? 0) || 0,
     gateMissingAngebot: gate.missingAngebot,
     gateMissingRechnung: gate.missingRechnung,
+    firmendaten: {
+      firma: absender.firma,
+      strasse: String(absender.strasse ?? ""),
+      ort: String(absender.ort ?? ""),
+      telefon: String(absender.telefon ?? ""),
+      steuernummer: String(absender.steuernummer ?? ""),
+      ustid: String(absender.ustid ?? ""),
+      iban: String(absender.iban ?? ""),
+    },
   };
 }
 
@@ -154,15 +183,59 @@ async function loadLogoBytes(path: string | null): Promise<Uint8Array | null> {
   return new Uint8Array(await data.arrayBuffer());
 }
 
-function positionenFromKonditionen(raw: unknown): PartnerDocPosition[] {
-  const hw = parsePartnerHwKonditionen(raw);
-  if (!hw?.positionen?.length) return [];
-  return hw.positionen.map((p) => ({
+async function resolveDocPositionen(opts: {
+  handwerkerId: string;
+  row: Record<string, unknown>;
+  art: "angebot" | "rechnung";
+  overrides?: AutoDocRegieOverride[];
+}) {
+  const angebotId = opts.row.angebot_id
+    ? String(opts.row.angebot_id)
+    : null;
+  const built = await buildPartnerAutoDocPositionen({
+    handwerkerId: opts.handwerkerId,
+    angebotId,
+    hwKonditionen: opts.row.hw_konditionen,
+    art: opts.art,
+    overrides: opts.overrides,
+  });
+  if (built.positionen.length) return built;
+
+  // Fallback: reine Konditionen ohne Auftrag
+  const { parsePartnerHwKonditionen } = await import(
+    "@/lib/partner/partner-konditionen"
+  );
+  const hw = parsePartnerHwKonditionen(opts.row.hw_konditionen);
+  const positionen: PartnerDocPosition[] = (hw?.positionen ?? []).map((p) => ({
     titel: p.leistung,
     beschreibung: p.beschreibung ?? null,
     netto: p.hw_netto,
     mwstSatz: p.mwst_satz || PARTNER_KONDITION_MWST,
   }));
+  return { positionen, regieGaps: [], missingRegie: [] as AutoDocMissingField[] };
+}
+
+function firmendatenMissingFields(
+  labels: string[]
+): AutoDocMissingField[] {
+  const map: Record<string, AutoDocMissingField> = {
+    Firmenname: { key: "firma", label: "Firmenname", scope: "firmendaten", kind: "text" },
+    "Anschrift (Straße + PLZ/Ort)": {
+      key: "anschrift",
+      label: "Anschrift (Straße + PLZ/Ort)",
+      scope: "firmendaten",
+      kind: "text",
+    },
+    Telefon: { key: "telefon", label: "Telefon", scope: "firmendaten", kind: "tel" },
+    "Steuernummer oder USt-IdNr.": {
+      key: "steuer",
+      label: "Steuernummer oder USt-IdNr.",
+      scope: "firmendaten",
+      kind: "text",
+    },
+    IBAN: { key: "iban", label: "IBAN", scope: "firmendaten", kind: "iban" },
+  };
+  return labels.map((l) => map[l] ?? { key: l, label: l, scope: "firmendaten", kind: "text" });
 }
 
 async function loadAnfrageCtx(anfrageId: string, handwerkerId: string) {
@@ -219,6 +292,7 @@ function betreffFromAnfrage(row: Record<string, unknown>): string {
 export async function previewPartnerAutoDokument(input: {
   anfrageId: string;
   art: "angebot" | "rechnung";
+  overrides?: AutoDocRegieOverride[];
 }): Promise<{ ok: true; preview: PartnerAutoDocPreview } | { ok: false; error: string }> {
   const auth = await partnerAuth();
   if (!auth.ok) return auth;
@@ -227,8 +301,13 @@ export async function previewPartnerAutoDokument(input: {
   if (!ctx.ok) return ctx;
 
   const hw = await loadHandwerkerAbsender(auth.handwerkerId);
-  const positionen = positionenFromKonditionen(ctx.row.hw_konditionen);
-  if (!positionen.length) {
+  const built = await resolveDocPositionen({
+    handwerkerId: auth.handwerkerId,
+    row: ctx.row,
+    art: input.art,
+    overrides: input.overrides,
+  });
+  if (!built.positionen.length) {
     return {
       ok: false,
       error: "Keine Konditionen/Positionen für das Dokument vorhanden.",
@@ -241,9 +320,13 @@ export async function previewPartnerAutoDokument(input: {
       ? formatPartnerRechnungsNr(year, hw.rechnungsnrSeq + 1)
       : formatPartnerAngebotsNr(hw.absender.firma, new Date().toISOString());
 
-  const missing =
+  const firmMissing =
     input.art === "rechnung" ? hw.gateMissingRechnung : hw.gateMissingAngebot;
-  const nettoSumme = positionen.reduce((s, p) => s + p.netto, 0);
+  const missingFields = [
+    ...firmendatenMissingFields(firmMissing),
+    ...built.missingRegie,
+  ];
+  const nettoSumme = built.positionen.reduce((s, p) => s + p.netto, 0);
 
   return {
     ok: true,
@@ -253,14 +336,19 @@ export async function previewPartnerAutoDokument(input: {
       dokumentNr,
       betreff: betreffFromAnfrage(ctx.row),
       objektOrt: objektOrtFromAnfrage(ctx.row),
-      positionen: positionen.map((p) => ({
+      positionen: built.positionen.map((p) => ({
         titel: p.titel,
+        beschreibung: p.beschreibung,
         netto: p.netto,
         mwstSatz: p.mwstSatz,
+        menge: p.menge,
+        einheit: p.einheit,
       })),
       nettoSumme,
-      missingFirmendaten: missing,
-      canSubmit: missing.length === 0,
+      missingFirmendaten: firmMissing,
+      missingFields,
+      canSubmit: missingFields.length === 0,
+      firmendaten: hw.firmendaten,
     },
   };
 }
@@ -268,7 +356,7 @@ export async function previewPartnerAutoDokument(input: {
 /** Konzept B: Angebot erzeugen und speichern. */
 export async function submitPartnerAutoAngebot(
   anfrageId: string,
-  opts?: { dokumentNr?: string }
+  opts?: { dokumentNr?: string; overrides?: AutoDocRegieOverride[] }
 ): Promise<PartnerAutoDocResult> {
   const auth = await partnerAuth();
   if (!auth.ok) return auth;
@@ -289,9 +377,20 @@ export async function submitPartnerAutoAngebot(
     };
   }
 
-  const positionen = positionenFromKonditionen(ctx.row.hw_konditionen);
-  if (!positionen.length) {
+  const built = await resolveDocPositionen({
+    handwerkerId: auth.handwerkerId,
+    row: ctx.row,
+    art: "angebot",
+    overrides: opts?.overrides,
+  });
+  if (!built.positionen.length) {
     return { ok: false, error: "Keine Positionen für das Angebot." };
+  }
+  if (built.missingRegie.length) {
+    return {
+      ok: false,
+      error: `Regie-Daten fehlen: ${built.missingRegie.map((m) => m.label).join(", ")}.`,
+    };
   }
 
   const customNr = opts?.dokumentNr?.trim() ?? "";
@@ -310,7 +409,7 @@ export async function submitPartnerAutoAngebot(
     datum: new Date().toISOString(),
     betreff: betreffFromAnfrage(ctx.row),
     objektOrt: objektOrtFromAnfrage(ctx.row),
-    positionen,
+    positionen: built.positionen,
     logoBytes,
     gueltigTage: 30,
   });
@@ -349,6 +448,7 @@ export async function submitPartnerAutoRechnung(input: {
   leistungsZeitraum?: string;
   /** Eigene interne Rechnungsnummer; sonst Vorschlag aus Nummerkreis. */
   dokumentNr?: string;
+  overrides?: AutoDocRegieOverride[];
 }): Promise<PartnerAutoDocResult> {
   const auth = await partnerAuth();
   if (!auth.ok) return auth;
@@ -378,9 +478,20 @@ export async function submitPartnerAutoRechnung(input: {
     };
   }
 
-  const positionen = positionenFromKonditionen(ctx.row.hw_konditionen);
-  if (!positionen.length) {
+  const built = await resolveDocPositionen({
+    handwerkerId: auth.handwerkerId,
+    row: ctx.row,
+    art: "rechnung",
+    overrides: input.overrides,
+  });
+  if (!built.positionen.length) {
     return { ok: false, error: "Keine Positionen für die Rechnung." };
+  }
+  if (built.missingRegie.length) {
+    return {
+      ok: false,
+      error: `Regie-Daten fehlen: ${built.missingRegie.map((m) => m.label).join(", ")}.`,
+    };
   }
 
   const year = new Date().getFullYear();
@@ -403,7 +514,7 @@ export async function submitPartnerAutoRechnung(input: {
     objektOrt: objektOrtFromAnfrage(ctx.row),
     leistungsZeitraum: input.leistungsZeitraum?.trim() || undefined,
     auftragsRef: String(ctx.row.angebot_id ?? id).slice(0, 8).toUpperCase(),
-    positionen,
+    positionen: built.positionen,
     logoBytes,
     abnahmeHinweis: "Leistungen laut Abschlussdokumentation erbracht.",
   });

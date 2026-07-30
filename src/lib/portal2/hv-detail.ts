@@ -115,29 +115,28 @@ export function pickEmpfohlenesAngebot(
 
 export const HV_DETAIL_COPY = {
   freigabeTitle: "Freigabe erforderlich",
-  freigabeNote:
-    "Als Verwaltung geben Sie den Vorgang für Bärenwald frei — erst dann wird ein Angebot angefragt. Das ist kein Annehmen eines Angebots.",
-  freigabeBtn: "Vorgang freigeben",
+  freigabeNote: "Freigabe startet die Angebot-Anfrage — kein Annehmen.",
+  freigabeBtn: "Freigeben",
   /** Kurzer CTA auf schmalen Screens (Sticky-/Stack-Bar). */
-  freigabeBtnMobile: "Vorgang freigeben",
+  freigabeBtnMobile: "Freigeben",
   ablehnen: "Ablehnen",
   privatAuto:
     "Automatisch freigegeben (Privatkunde)",
   angeboteVergleichen: "Angebotdetails",
   angeboteVergleichNote:
-    "Bärenwald hat ein Angebot vorgelegt. Prüfen Sie Preise und Leistungen — danach können Sie verbindlich annehmen.",
+    "Prüfen Sie Preise und Leistungen — danach verbindlich annehmen.",
   empfohlenBadge: "★ Angebot",
   empfohlenDetail: "Leistungen & Preise",
-  empfohlenAnnehmen: "Angebot annehmen",
+  empfohlenAnnehmen: "Annehmen",
   angebotAnnehmenTitle: "Angebot annehmen",
   angebotAnnehmenNote:
-    "Hiermit nehmen Sie das vorliegende Angebot an — der Vorgang wird zum Auftrag. Das ist keine Freigabe einer Meldung.",
+    "Annahme erstellt den Auftrag — nicht die Meldungs-Freigabe.",
   unterSchwelle: (schwelleLabel: string) =>
-    `Direkt Durchführung — Angebot unter Freigabeschwelle (${schwelleLabel}). Der Handwerker kann starten, ohne dass Sie freigeben. Sie erhalten eine E-Mail und sehen diesen Hinweis im Vorgang.`,
+    `Direkt Durchführung — unter Freigabeschwelle (${schwelleLabel}).`,
   abnahmeTitle: "Abschluss",
   abnahmeNote:
-    "Die Abnahme und Signatur erfolgt durch den Handwerker vor Ort. Danach kannst du hier Feedback geben.",
-  abnahmeBtn: "✍ Digital signieren & abnehmen",
+    "Abnahme und Signatur macht der Handwerker vor Ort. Danach Feedback hier.",
+  abnahmeBtn: "Abnehmen",
   dokumenteTitle: "Dokumente",
   dokumenteEmpty: "Noch keine Dokumente.",
   rechnungTitle: "Rechnung",

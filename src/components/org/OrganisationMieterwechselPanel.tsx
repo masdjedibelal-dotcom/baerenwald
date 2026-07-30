@@ -370,6 +370,7 @@ export function OrganisationMieterwechselPanel({
           open
           title={MIETERWECHSEL_OK_TITLE}
           onClose={() => setOkName(null)}
+          variant="confirm"
         >
           <div className="px-1 py-1.5 text-center">
             <div

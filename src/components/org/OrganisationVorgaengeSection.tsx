@@ -6,9 +6,9 @@ import { useSearchParams } from "next/navigation";
 import { PortalClient } from "@/components/portal/PortalClient";
 import {
   PortalListeEyebrow,
-  PortalListeFilterChip,
   PortalListeTitle,
 } from "@/components/shared/PortalListeChrome";
+import { PortalListeFilterBar } from "@/components/shared/PortalListeFilterBar";
 import {
   buildOrgVorgangFilterCounts,
   buildAuftragByLeadId,
@@ -116,22 +116,16 @@ function HvListeChrome({
         <PortalListeEyebrow>{HV_LISTE_PAGE_EYEBROW}</PortalListeEyebrow>
         <PortalListeTitle>{HV_LISTE_PAGE_TITLE}</PortalListeTitle>
       </div>
-      <div className="flex flex-wrap gap-2 py-3.5">
-        {HV_CHIPS.map((chip) => {
-          const on = filter === chip.id;
-          const count = chip.showCount ? offenCount : null;
-          return (
-            <PortalListeFilterChip
-              key={chip.id}
-              active={on}
-              onClick={() => onFilterChange(chip.id)}
-              countBadge={count}
-            >
-              {chip.label}
-            </PortalListeFilterChip>
-          );
-        })}
-      </div>
+      <PortalListeFilterBar
+        value={filter}
+        onChange={onFilterChange}
+        sheetTitle="Vorgänge"
+        options={HV_CHIPS.map((chip) => ({
+          id: chip.id,
+          label: chip.label,
+          countBadge: chip.showCount ? offenCount : null,
+        }))}
+      />
     </div>
   );
 }

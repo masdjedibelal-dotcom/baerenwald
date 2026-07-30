@@ -221,8 +221,11 @@ export type PartnerAuftragItem = {
   vertrag?: PartnerVertragKontext | null;
   /** Offene CRM-Anforderung für Bautagebuch-Eintrag. */
   bautagebuchAnfrageOffen?: boolean;
+  bautagebuchAnfrageId?: string | null;
   /** Optionale Notiz zur offenen Tagebuch-Anforderung. */
   bautagebuchAnfrageNotiz?: string | null;
+  /** Vorausgewählte Positions-IDs aus CRM-Anforderung. */
+  bautagebuchAnfragePositionIds?: string[];
   /** Auftragspositionen, die noch unter Offen bestätigt werden müssen (Nachreichung). */
   nachreichungOpenPositionIds?: string[];
   /** Verknüpftes angebot_handwerker — HW-Unterlagen & Rechnung. */
@@ -289,6 +292,7 @@ export type PartnerBautagebuchAnfrageItem = {
   auftrag_id: string;
   notiz: string | null;
   created_at: string;
+  position_ids?: string[];
 };
 
 export type { PartnerAufgabeItem, PartnerTerminItem, PartnerVorgangItem };
@@ -1003,32 +1007,65 @@ export async function getPartnerDataForHandwerker(handwerkerId: string) {
     offeneLeistungsunterlagen,
   };
 
-  const { data: bautagebuchAnfrageRows } = await supabaseAdmin
-    .from("partner_bautagebuch_anfragen")
-    .select("id, auftrag_id, notiz, created_at")
-    .eq("handwerker_id", id)
-    .is("erledigt_at", null)
-    .order("created_at", { ascending: false });
+  let bautagebuchAnfrageRows: Array<Record<string, unknown>> | null = null;
+  {
+    const full = await supabaseAdmin
+      .from("partner_bautagebuch_anfragen")
+      .select("id, auftrag_id, notiz, created_at, position_ids")
+      .eq("handwerker_id", id)
+      .is("erledigt_at", null)
+      .order("created_at", { ascending: false });
+    if (full.error && /position_ids/i.test(full.error.message)) {
+      const legacy = await supabaseAdmin
+        .from("partner_bautagebuch_anfragen")
+        .select("id, auftrag_id, notiz, created_at")
+        .eq("handwerker_id", id)
+        .is("erledigt_at", null)
+        .order("created_at", { ascending: false });
+      bautagebuchAnfrageRows =
+        (legacy.data as Array<Record<string, unknown>> | null) ?? [];
+    } else {
+      bautagebuchAnfrageRows =
+        (full.data as Array<Record<string, unknown>> | null) ?? [];
+    }
+  }
 
-  const bautagebuchAnfragen: PartnerBautagebuchAnfrageItem[] = (bautagebuchAnfrageRows ?? []).map(
-    (row) => ({
+  const bautagebuchAnfragen: PartnerBautagebuchAnfrageItem[] = (
+    bautagebuchAnfrageRows ?? []
+  ).map((row) => {
+    const rawIds = row.position_ids;
+    const position_ids = Array.isArray(rawIds)
+      ? rawIds.map((x) => String(x).trim()).filter(Boolean)
+      : [];
+    return {
       id: String(row.id),
       auftrag_id: String(row.auftrag_id),
       notiz: (row.notiz as string | null) ?? null,
       created_at: String(row.created_at),
-    })
-  );
+      position_ids,
+    };
+  });
 
-  const bautagebuchAnfrageAuftragIds = new Set(bautagebuchAnfragen.map((r) => r.auftrag_id));
+  const bautagebuchAnfrageAuftragIds = new Set(
+    bautagebuchAnfragen.map((r) => r.auftrag_id)
+  );
   const bautagebuchNotizByAuftragId = new Map(
     bautagebuchAnfragen.map((r) => [r.auftrag_id, r.notiz] as const)
   );
+  const bautagebuchAnfrageByAuftragId = new Map(
+    bautagebuchAnfragen.map((r) => [r.auftrag_id, r] as const)
+  );
 
-  const markBautagebuchAnfrage = (item: PartnerAuftragItem): PartnerAuftragItem => ({
-    ...item,
-    bautagebuchAnfrageOffen: bautagebuchAnfrageAuftragIds.has(item.id),
-    bautagebuchAnfrageNotiz: bautagebuchNotizByAuftragId.get(item.id) ?? null,
-  });
+  const markBautagebuchAnfrage = (item: PartnerAuftragItem): PartnerAuftragItem => {
+    const a = bautagebuchAnfrageByAuftragId.get(item.id);
+    return {
+      ...item,
+      bautagebuchAnfrageOffen: bautagebuchAnfrageAuftragIds.has(item.id),
+      bautagebuchAnfrageId: a?.id ?? null,
+      bautagebuchAnfrageNotiz: bautagebuchNotizByAuftragId.get(item.id) ?? null,
+      bautagebuchAnfragePositionIds: a?.position_ids ?? [],
+    };
+  };
 
   const alleAuftraegeMitMeta = alleAuftraege.map(markBautagebuchAnfrage);
 

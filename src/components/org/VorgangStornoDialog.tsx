@@ -53,7 +53,13 @@ export function VorgangStornoDialog({
       <PortalModalShell
         open={open}
         title="Vorgang zurückziehen?"
-        onClose={() => setOpen(false)}
+        onClose={() => {
+          if (busy) return;
+          setOpen(false);
+        }}
+        variant="edit"
+        dirty={grund.trim().length > 0}
+        closeOnBackdrop={!busy}
       >
         <form onSubmit={submit} className="space-y-4">
           <p className="portal-text-body text-text-secondary">
@@ -68,17 +74,23 @@ export function VorgangStornoDialog({
             onChange={(e) => setGrund(e.target.value)}
             required
             minLength={5}
+            disabled={busy}
           />
-          <div className="flex gap-2">
+          <div className="portal-confirm-actions">
+            <button
+              type="submit"
+              className="btn-pill-outline portal-btn portal-confirm-actions-primary !border-red-200 !text-red-800"
+              disabled={busy}
+            >
+              {busy ? "Wird gespeichert…" : "Zurückziehen"}
+            </button>
             <button
               type="button"
-              className="btn-pill-outline flex-1"
+              className="btn-pill-outline portal-btn portal-confirm-actions-cancel"
               onClick={() => setOpen(false)}
+              disabled={busy}
             >
               Abbrechen
-            </button>
-            <button type="submit" className="btn-pill-primary flex-1" disabled={busy}>
-              {busy ? "Wird gespeichert…" : "Zurückziehen"}
             </button>
           </div>
         </form>

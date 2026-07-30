@@ -91,6 +91,21 @@ export function partnerAuftragKannRechnungHochladen(item: PartnerAuftragItem): b
   );
 }
 
+/** Auto-Angebot-Prompt erneut, solange kein PDF vorliegt. */
+export function partnerNeedsAutoAngebotPrompt(item: PartnerAuftragItem): boolean {
+  if (!item.angebotHandwerkerId) return false;
+  if (item.status.toLowerCase() === "storniert") return false;
+  if (item.hw_angebot_pdf_url?.trim()) return false;
+  const anhang = item.hw_angebot_anhang_urls?.length ?? 0;
+  if (anhang > 0) return false;
+  return true;
+}
+
+/** Auto-Rechnung-Prompt erneut, solange nicht eingereicht. */
+export function partnerNeedsAutoRechnungPrompt(item: PartnerAuftragItem): boolean {
+  return partnerAuftragKannRechnungHochladen(item);
+}
+
 export function partnerAuftragKannUnterlagenHochladen(item: PartnerAuftragItem): boolean {
   if (!item.angebotHandwerkerId) return false;
   if (item.status.toLowerCase() === "storniert") return false;

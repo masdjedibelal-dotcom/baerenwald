@@ -201,6 +201,7 @@ export function OrganisationServicepaketePanel({ onRequested }: Props) {
           open
           title={SERVICEPAKET_OK_TITLE}
           onClose={() => setOkName(null)}
+          variant="confirm"
         >
           <div className="px-1 py-1.5 text-center">
             <div

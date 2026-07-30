@@ -1,40 +1,70 @@
 "use client";
 
-import { useEffect, useId, type CSSProperties, type ReactNode } from "react";
+import {
+  useCallback,
+  useEffect,
+  useId,
+  useRef,
+  useState,
+  type CSSProperties,
+  type ReactNode,
+} from "react";
 
 import {
-  PORTAL_MODAL_DEFAULT_MAX_W,
   PORTAL_MODAL_SCRIM,
   PORTAL_MODAL_Z_INDEX,
+  resolvePortalModalMaxWidth,
+  resolvePortalModalVariant,
+  type PortalModalSizeLegacy,
+  type PortalModalVariant,
 } from "@/lib/portal2/modal-shell";
 import { cn } from "@/lib/utils";
+
+export type { PortalModalVariant };
+
+const HISTORY_KEY = "portalModal";
 
 export type PortalModalShellProps = {
   open?: boolean;
   title: string;
-  /** Mock `sub` — optional Unterzeile */
+  /** Optional Unterzeile */
   subtitle?: string | null;
   children: ReactNode;
   onClose: () => void;
   /**
-   * Mock `maxW` — Default 460.
-   * Zahl = px; String = CSS-Wert (z. B. `min(560px, 100%)`).
+   * Surface-Variante (SoT PORTAL-SURFACE-OPTIMIERUNG):
+   * - `edit` — mobil Sheet, Desktop Side-Over (Default)
+   * - `confirm` — mobil kurzes Sheet, Desktop kompakt center
+   * - `funnel` — Create/Wizard groß / mobil Fullscreen
+   * - `preview` — Docs/QR: mobil Sheet, Desktop Side-Over breiter
+   */
+  variant?: PortalModalVariant;
+  /**
+   * @deprecated Nutze `variant`. `default`→edit, `funnel`→funnel.
+   */
+  size?: PortalModalSizeLegacy;
+  /**
+   * Max-Breite. Zahl = px; String = CSS-Wert.
+   * Default hängt an `variant`.
    */
   maxWidth?: number | string;
-  /**
-   * `funnel` = großes Create-Modal (volle Funnel-Höhe, ~2× Standardbreite).
-   */
-  size?: "default" | "funnel";
-  /** Backdrop-Klick schließt (Mock). Default true. */
+  /** Backdrop-Klick schließt. Default true. */
   closeOnBackdrop?: boolean;
+  /**
+   * Unsaved changes — X / Backdrop / Escape / Browser-Back
+   * öffnen Confirm „Änderungen verwerfen?“ statt sofort zu schließen.
+   */
+  dirty?: boolean;
   className?: string;
   /** Zusätzlicher Inhalt im Header rechts neben × (selten). */
   headerExtra?: ReactNode;
 };
 
 /**
- * Mock `modalShell(title, sub, body, maxW)` — Basis aller Portal-Modals.
- * Mobil: bottom sheet (radius 20 20 0 0); Desktop: zentriert radius 16.
+ * Basis aller Portal-Overlays.
+ * Mobil: Bottom Sheet (funnel = Fullscreen).
+ * Desktop: edit/preview = Side-Over · confirm/funnel = Center.
+ * S8/S10: Dirty-Confirm + History-Back fängt Overlay ab.
  */
 export function PortalModalShell({
   open = true,
@@ -42,19 +72,70 @@ export function PortalModalShell({
   subtitle,
   children,
   onClose,
-  maxWidth = PORTAL_MODAL_DEFAULT_MAX_W,
+  variant: variantProp,
+  maxWidth: maxWidthProp,
   size = "default",
   closeOnBackdrop = true,
+  dirty = false,
   className,
   headerExtra,
 }: PortalModalShellProps) {
   const titleId = useId();
   const subId = useId();
+  const discardTitleId = useId();
+  const variant = resolvePortalModalVariant(variantProp, size);
+  const resolvedMax = resolvePortalModalMaxWidth(variant, maxWidthProp);
+  const maxW =
+    typeof resolvedMax === "number" ? `${resolvedMax}px` : resolvedMax;
+  const isFunnel = variant === "funnel";
 
+  const [discardOpen, setDiscardOpen] = useState(false);
+  const pushedRef = useRef(false);
+  const skipPopRef = useRef(false);
+  const dirtyRef = useRef(dirty);
+  dirtyRef.current = dirty;
+
+  const closeNow = useCallback(
+    (fromPop: boolean) => {
+      setDiscardOpen(false);
+      if (!fromPop && pushedRef.current) {
+        skipPopRef.current = true;
+        pushedRef.current = false;
+        window.history.back();
+      } else {
+        pushedRef.current = false;
+      }
+      onClose();
+    },
+    [onClose]
+  );
+
+  const attemptDismiss = useCallback(
+    (fromPop = false) => {
+      if (dirtyRef.current) {
+        setDiscardOpen(true);
+        // Back hat History schon verlassen — Overlay-Eintrag wiederherstellen
+        if (fromPop) {
+          pushedRef.current = true;
+          window.history.pushState({ [HISTORY_KEY]: true }, "");
+        }
+        return;
+      }
+      closeNow(fromPop);
+    },
+    [closeNow]
+  );
+
+  // Body-Scroll + Escape
   useEffect(() => {
     if (!open) return;
     function onKey(e: KeyboardEvent) {
-      if (e.key === "Escape") onClose();
+      if (e.key !== "Escape") return;
+      if (discardOpen) {
+        setDiscardOpen(false);
+        return;
+      }
+      attemptDismiss(false);
     }
     document.addEventListener("keydown", onKey);
     const prev = document.body.style.overflow;
@@ -63,23 +144,45 @@ export function PortalModalShell({
       document.removeEventListener("keydown", onKey);
       document.body.style.overflow = prev;
     };
-  }, [open, onClose]);
+  }, [open, discardOpen, attemptDismiss]);
+
+  // History-Entry: Browser-/Android-Back schließt Overlay zuerst
+  useEffect(() => {
+    if (!open) {
+      setDiscardOpen(false);
+      if (pushedRef.current) {
+        skipPopRef.current = true;
+        pushedRef.current = false;
+        window.history.back();
+      }
+      return;
+    }
+
+    pushedRef.current = true;
+    window.history.pushState({ [HISTORY_KEY]: true }, "");
+
+    function onPopState() {
+      if (skipPopRef.current) {
+        skipPopRef.current = false;
+        return;
+      }
+      pushedRef.current = false;
+      attemptDismiss(true);
+    }
+
+    window.addEventListener("popstate", onPopState);
+    return () => {
+      window.removeEventListener("popstate", onPopState);
+    };
+  }, [open, attemptDismiss]);
 
   if (!open) return null;
-
-  const isFunnel = size === "funnel";
-  const resolvedMax =
-    isFunnel && maxWidth === PORTAL_MODAL_DEFAULT_MAX_W
-      ? 1360
-      : maxWidth;
-  const maxW =
-    typeof resolvedMax === "number" ? `${resolvedMax}px` : resolvedMax;
 
   return (
     <div
       className={cn(
         "portal-modal-shell",
-        isFunnel && "portal-modal-shell--funnel",
+        `portal-modal-shell--${variant}`,
         className
       )}
       style={{
@@ -87,17 +190,18 @@ export function PortalModalShell({
         background: PORTAL_MODAL_SCRIM,
       }}
       role="presentation"
-      onClick={closeOnBackdrop ? onClose : undefined}
+      onClick={closeOnBackdrop ? () => attemptDismiss(false) : undefined}
     >
       <div
         className={cn(
           "portal-modal-shell-panel",
-          isFunnel && "portal-modal-shell-panel--funnel"
+          `portal-modal-shell-panel--${variant}`
         )}
         style={
           {
             maxWidth: maxW,
-            ["--portal-funnel-modal-max"]: maxW,
+            ["--portal-modal-max"]: maxW,
+            ...(isFunnel ? { ["--portal-funnel-modal-max"]: maxW } : null),
           } as CSSProperties
         }
         role="dialog"
@@ -122,13 +226,45 @@ export function PortalModalShell({
             type="button"
             className="portal-modal-shell-close"
             aria-label="Schließen"
-            onClick={onClose}
+            onClick={() => attemptDismiss(false)}
           >
             ×
           </button>
         </div>
         <div className="portal-modal-shell-body">{children}</div>
       </div>
+
+      {discardOpen ? (
+        <div
+          className="portal-modal-discard"
+          role="alertdialog"
+          aria-modal="true"
+          aria-labelledby={discardTitleId}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div className="portal-modal-discard-panel">
+            <p id={discardTitleId} className="portal-modal-discard-title">
+              Änderungen verwerfen?
+            </p>
+            <div className="portal-modal-discard-actions">
+              <button
+                type="button"
+                className="btn-pill-outline portal-btn !px-4 !py-2.5"
+                onClick={() => setDiscardOpen(false)}
+              >
+                Weiter bearbeiten
+              </button>
+              <button
+                type="button"
+                className="btn-pill-outline portal-btn !border-red-200 !px-4 !py-2.5 !text-red-800"
+                onClick={() => closeNow(false)}
+              >
+                Verwerfen
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }

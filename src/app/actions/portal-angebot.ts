@@ -238,3 +238,132 @@ export async function acceptKundeAngebot(
   revalidatePath("/portal");
   return { ok: true, auftragId: String(auftrag.id) };
 }
+
+export type RejectKundeAngebotResult =
+  | { ok: true }
+  | { ok: false; error: string };
+
+/**
+ * Kunde lehnt gesendetes Angebot im Portal ab (mit optionalem Grund).
+ */
+export async function rejectKundeAngebot(
+  angebotId: string,
+  grund?: string
+): Promise<RejectKundeAngebotResult> {
+  const id = angebotId.trim();
+  if (!id) return { ok: false, error: "Ungültiges Angebot." };
+
+  if (!isSupabaseConfigured()) {
+    return { ok: false, error: "Portal ist nicht konfiguriert." };
+  }
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user?.email) {
+    return { ok: false, error: "Bitte melde dich an." };
+  }
+
+  const link = await linkPortalKundeToAuthUser({
+    userId: user.id,
+    email: user.email,
+  });
+  if (!link.ok) return { ok: false, error: link.error };
+
+  const { data: angebot, error: loadErr } = await supabaseAdmin
+    .from("angebote")
+    .select("id, lead_id, kunde_id, status, status_einfach")
+    .eq("id", id)
+    .maybeSingle();
+
+  if (loadErr || !angebot) {
+    return { ok: false, error: "Angebot wurde nicht gefunden." };
+  }
+
+  const kundeId = link.kundeId;
+  const angebotKundeId =
+    angebot.kunde_id != null ? String(angebot.kunde_id) : null;
+  const leadId = angebot.lead_id != null ? String(angebot.lead_id) : null;
+
+  let belongsToKunde = angebotKundeId === kundeId;
+  if (!belongsToKunde && leadId) {
+    const { data: lead } = await supabaseAdmin
+      .from("leads")
+      .select("kunde_id, auftraggeber_kunde_id")
+      .eq("id", leadId)
+      .maybeSingle();
+    const leadKunde =
+      lead?.auftraggeber_kunde_id != null
+        ? String(lead.auftraggeber_kunde_id)
+        : lead?.kunde_id != null
+          ? String(lead.kunde_id)
+          : null;
+    belongsToKunde = leadKunde === kundeId;
+  }
+
+  if (!belongsToKunde) {
+    return { ok: false, error: "Du hast keinen Zugriff auf dieses Angebot." };
+  }
+
+  const statusEinfach = normalizeStatus(angebot.status_einfach);
+  const statusFein = normalizeStatus(angebot.status);
+  if (statusEinfach === "abgelehnt" || statusFein === "abgelehnt") {
+    return { ok: true };
+  }
+
+  const waitingForAccept =
+    statusEinfach === "gesendet" || statusFein === "gesendet_kunde";
+  if (!waitingForAccept) {
+    return {
+      ok: false,
+      error: "Dieses Angebot kann derzeit nicht abgelehnt werden.",
+    };
+  }
+
+  const { data: existingAuftrag } = await supabaseAdmin
+    .from("auftraege")
+    .select("id")
+    .eq("angebot_id", id)
+    .maybeSingle();
+  if (existingAuftrag?.id) {
+    return {
+      ok: false,
+      error: "Zum Angebot existiert bereits ein Auftrag.",
+    };
+  }
+
+  const now = new Date().toISOString();
+  const grundTrim = (grund ?? "").trim().slice(0, 500);
+
+  const { error: upErr } = await supabaseAdmin
+    .from("angebote")
+    .update({
+      status: "abgelehnt",
+      status_einfach: "abgelehnt",
+      updated_at: now,
+    })
+    .eq("id", id);
+
+  if (upErr) {
+    console.error("[rejectKundeAngebot] angebot", upErr.message);
+    return { ok: false, error: "Ablehnung konnte nicht gespeichert werden." };
+  }
+
+  if (leadId) {
+    await supabaseAdmin.from("lead_timeline").insert({
+      lead_id: leadId,
+      angebot_id: id,
+      typ: "angebot",
+      titel: "Angebot abgelehnt",
+      beschreibung: grundTrim
+        ? `Über das Kundenportal abgelehnt. Grund: ${grundTrim}`
+        : "Über das Kundenportal abgelehnt.",
+      erstellt_von: user.id,
+    });
+  }
+
+  revalidatePath("/portal");
+  return { ok: true };
+}

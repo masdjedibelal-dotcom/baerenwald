@@ -170,12 +170,64 @@ export type CrmAbnahmeprotokollPayload = {
   abschluss_checks?: Record<string, unknown> | null;
 };
 
-/** Abnahmeprotokoll ans CRM (PDF bereits in Storage). */
+/** @deprecated Legacy Freitext-Payload — nutze submitCrmAbnahmeNachSignatur. */
 export async function submitCrmAbnahmeprotokoll(
   auftragId: string,
   payload: CrmAbnahmeprotokollPayload
 ): Promise<
-  | { ok: true; pdf_url?: string | null }
+  | { ok: true; pdf_url?: string | null; protokoll_id?: string | null }
+  | { ok: false; error: string }
+> {
+  return submitCrmAbnahmeNachSignatur(auftragId, {
+    mode: "nach-signatur",
+    abnahme_datum: payload.abnahme_datum,
+    punkte: (payload.leistungen ?? []).map((name, i) => ({
+      id: `legacy_${i}`,
+      leistung_name: name,
+      beschreibung: payload.protokoll_text,
+      status: "ok" as const,
+      gewerk: "Ohne Gewerk",
+    })),
+    maengel: payload.maengel_text?.trim()
+      ? [
+          {
+            punkt_id: "legacy_mangel",
+            beschreibung: payload.maengel_text.trim(),
+            status: "offen" as const,
+            frist: null,
+          },
+        ]
+      : [],
+    notizen: null,
+    meta: {
+      unterschrift_ort_datum_an: `${payload.ort}, ${payload.abnahme_datum}`,
+      unterschrift_ort_datum_ag: `${payload.ort}, ${payload.abnahme_datum}`,
+      abnahme_ergebnis: payload.maengel_text?.trim()
+        ? "mit_vorbehalt"
+        : "abgenommen",
+      hw_unterschrift_name: payload.hw_unterschrift_name,
+      kunde_unterschrift_name: payload.kunde_unterschrift_name,
+      signature_hw_url: payload.hw_signatur_png ?? null,
+      signature_kunde_url: payload.kunde_signatur_png ?? null,
+      uebergabe_ort: payload.ort,
+    },
+  });
+}
+
+export type CrmAbnahmeNachSignaturPayload = {
+  mode?: "nach-signatur";
+  abnahme_datum: string;
+  punkte: Array<Record<string, unknown>>;
+  maengel: Array<Record<string, unknown>>;
+  notizen?: string | null;
+  meta?: Record<string, unknown> | null;
+};
+
+export async function submitCrmAbnahmeNachSignatur(
+  auftragId: string,
+  payload: CrmAbnahmeNachSignaturPayload
+): Promise<
+  | { ok: true; pdf_url?: string | null; protokoll_id?: string | null }
   | { ok: false; error: string }
 > {
   const base = dashboardBase();
@@ -190,17 +242,110 @@ export async function submitCrmAbnahmeprotokoll(
       {
         method: "POST",
         headers,
-        body: JSON.stringify(payload),
+        body: JSON.stringify({ mode: "nach-signatur", ...payload }),
       }
     );
     const body = (await res.json().catch(() => ({}))) as {
       error?: string;
       pdf_url?: string | null;
+      protokoll_id?: string | null;
     };
     if (!res.ok) {
       return { ok: false, error: body.error || "CRM-Abnahme fehlgeschlagen." };
     }
-    return { ok: true, pdf_url: body.pdf_url ?? null };
+    return {
+      ok: true,
+      pdf_url: body.pdf_url ?? null,
+      protokoll_id: body.protokoll_id ?? null,
+    };
+  } catch {
+    return { ok: false, error: "CRM nicht erreichbar." };
+  }
+}
+
+export async function fetchCrmAbnahmeStatus(
+  auftragId: string,
+  protokollId?: string | null
+): Promise<
+  | {
+      ok: true;
+      protokoll_id: string | null;
+      pdf_url: string | null;
+      abnahme_datum: string | null;
+      punkte_count: number;
+      maengel_count: number;
+      an_kunde_gesendet_at: string | null;
+      handwerker_bestaetigt_at: string | null;
+      abnahme_ergebnis: string | null;
+    }
+  | { ok: false; error: string }
+> {
+  const base = dashboardBase();
+  const headers = await partnerAuthHeaders();
+  if (!base || !headers) {
+    return { ok: false, error: "CRM nicht konfiguriert." };
+  }
+
+  try {
+    const q = protokollId?.trim()
+      ? `?protokoll=${encodeURIComponent(protokollId.trim())}`
+      : "";
+    const res = await fetch(
+      `${base}/api/portal/auftraege/${auftragId}/abnahmeprotokoll${q}`,
+      { headers, cache: "no-store" }
+    );
+    const body = (await res.json().catch(() => ({}))) as Record<string, unknown>;
+    if (!res.ok) {
+      return {
+        ok: false,
+        error: String(body.error ?? "Status konnte nicht geladen werden."),
+      };
+    }
+    return {
+      ok: true,
+      protokoll_id: (body.protokoll_id as string | null) ?? null,
+      pdf_url: (body.pdf_url as string | null) ?? null,
+      abnahme_datum: (body.abnahme_datum as string | null) ?? null,
+      punkte_count: Number(body.punkte_count ?? 0),
+      maengel_count: Number(body.maengel_count ?? 0),
+      an_kunde_gesendet_at: (body.an_kunde_gesendet_at as string | null) ?? null,
+      handwerker_bestaetigt_at:
+        (body.handwerker_bestaetigt_at as string | null) ?? null,
+      abnahme_ergebnis: (body.abnahme_ergebnis as string | null) ?? null,
+    };
+  } catch {
+    return { ok: false, error: "CRM nicht erreichbar." };
+  }
+}
+
+export async function postCrmAbnahmeAction(
+  auftragId: string,
+  mode: "bestaetigen" | "versenden",
+  protokollId?: string | null
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  const base = dashboardBase();
+  const headers = await partnerAuthHeaders();
+  if (!base || !headers) {
+    return { ok: false, error: "CRM nicht konfiguriert." };
+  }
+
+  try {
+    const res = await fetch(
+      `${base}/api/portal/auftraege/${auftragId}/abnahmeprotokoll`,
+      {
+        method: "POST",
+        headers,
+        body: JSON.stringify({
+          mode,
+          protokoll_id: protokollId ?? undefined,
+        }),
+      }
+    );
+    const body = (await res.json().catch(() => ({}))) as { error?: string };
+    if (!res.ok) {
+      return { ok: false, error: body.error || "Aktion fehlgeschlagen." };
+    }
+    return { ok: true };
   } catch {
     return { ok: false, error: "CRM nicht erreichbar." };
   }

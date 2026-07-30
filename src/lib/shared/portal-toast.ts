@@ -115,6 +115,9 @@ export const kundePortalToast = {
       "Wir bereiten den Auftrag vor und melden uns, sobald es weitergeht."
     );
   },
+  angebotAbgelehnt() {
+    portalToastSuccess("Angebot abgelehnt", "Danke für deine Rückmeldung.");
+  },
   aenderungenAngenommen() {
     portalToastSuccess(
       "Änderungen angenommen",

@@ -63,13 +63,33 @@ export function partnerNotificationToPortalItem(
   const typ = mapPartnerTypToPortalNotifTyp(n.typ);
   const visual = resolvePortalNotifVisual(typ, "handwerker");
   const leistung = n.leistung_name?.trim();
-  const text = leistung
-    ? `${n.projekt_name.trim() || "Projekt"} — ${leistung}`
-    : n.projekt_name.trim() || visual.title;
+  const isUpdateBitte =
+    n.typ === "bautagebuch" ||
+    Boolean(leistung && /bitte\s+update\s+geben/i.test(leistung));
+  const isAbnahmeBereit = Boolean(
+    leistung && /abnahmeprotokoll\s+bereit/i.test(leistung)
+  );
+  const titel = isAbnahmeBereit
+    ? "Abnahmeprotokoll bereit"
+    : isUpdateBitte
+      ? "Bitte Update geben"
+      : visual.title;
+  const text = isAbnahmeBereit
+    ? n.projekt_name.trim() || "Projekt"
+    : isUpdateBitte
+      ? [
+          n.projekt_name.trim() || "Projekt",
+          leistung?.includes("Bautagebuch") ? "Bautagebuch" : null,
+        ]
+          .filter(Boolean)
+          .join(" — ")
+      : leistung
+        ? `${n.projekt_name.trim() || "Projekt"} — ${leistung}`
+        : n.projekt_name.trim() || visual.title;
   return {
     id: n.id,
     typ,
-    titel: visual.title,
+    titel,
     text,
     timeLabel: formatPortalNotifTime(n.created_at),
     unread: !n.gelesen,

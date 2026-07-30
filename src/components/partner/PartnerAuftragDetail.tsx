@@ -1,7 +1,6 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useMemo, useState } from "react";
 import { Phone } from "lucide-react";
 
 import { submitPartnerAngebotPdf, submitPartnerRechnung } from "@/app/actions/partner-angebote";
@@ -10,11 +9,14 @@ import { createPartnerBautagebuchEintrag,
   updatePartnerBautagebuchEintrag,
 } from "@/app/actions/partner-bautagebuch";
 import { createPartnerBefundEintrag } from "@/app/actions/partner-befund";
-import { PartnerAbschlussModal } from "@/components/partner/PartnerAbschlussModal";
+import { PartnerAbnahmeAbschlussSheet } from "@/components/partner/PartnerAbnahmeAbschlussSheet";
+import { PartnerAbnahmeReviewSection } from "@/components/partner/PartnerAbnahmeReviewSection";
 import { PartnerDokumentPreviewModal } from "@/components/partner/PartnerDokumentPreviewModal";
 import { PartnerAuftragErledigtSection } from "@/components/partner/PartnerAuftragErledigtSection";
+import { PartnerKiKorrekturField } from "@/components/partner/PartnerKiKorrekturField";
 import { PartnerLeistungenKonditionenCard } from "@/components/partner/PartnerLeistungenKonditionenCard";
 import { PartnerPositionLebenszyklusList } from "@/components/partner/PartnerPositionLebenszyklusList";
+import { PartnerTermineRueckfrageSection } from "@/components/partner/PartnerTermineRueckfrageSection";
 import {
   PartnerDetailError,
   PartnerDetailLayout,
@@ -36,6 +38,8 @@ import {
   partnerAuftragKannRechnungHochladen,
   partnerAuftragKannUnterlagenHochladen,
   partnerAuftragZeigtDokumenteUpload,
+  partnerNeedsAutoAngebotPrompt,
+  partnerNeedsAutoRechnungPrompt,
 } from "@/lib/partner/partner-auftrag-dokumente";
 import { HW_ABNAHME_COPY } from "@/lib/partner/hw-abnahme";
 import {
@@ -66,10 +70,6 @@ import {
 import { summeKonditionNetto } from "@/lib/partner/partner-konditionen";
 import { resolvePartnerVorgangListenStatus } from "@/lib/partner/partner-vorgang-display";
 import { partnerKannErledigtMelden } from "@/lib/partner/partner-position-erledigt";
-import {
-  positionHandwerkerAbgeschlossen,
-  positionHandwerkerErledigt,
-} from "@/lib/partner/partner-konditionen";
 import { type VorgangState } from "@/lib/partner/vorgang-state";
 import {
   formatHwTerminRange,
@@ -83,13 +83,18 @@ import { partnerPortalToast } from "@/lib/shared/portal-toast";
 import { DokumenteTabelle } from "@/components/shared/DokumenteTabelle";
 import { FileUploadField } from "@/components/shared/FileUploadField";
 import { cn } from "@/lib/utils";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 function BautagebuchForm({
   auftragId,
+  auftragTitel,
+  anfrageId,
   eintrag,
   onDone,
 }: {
   auftragId: string;
+  auftragTitel?: string | null;
+  anfrageId?: string | null;
   eintrag?: PartnerBautagebuchItem;
   onDone: () => void;
 }) {
@@ -118,18 +123,22 @@ function BautagebuchForm({
     setAnhaenge(list);
   }
 
-  async function onSubmit(e: React.FormEvent) {
+  async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setLoading(true);
     setError(null);
+    const native = new FormData(e.currentTarget);
     const fd = new FormData();
     fd.set("auftragId", auftragId);
+    if (anfrageId) fd.set("anfrageId", anfrageId);
     if (eintrag) {
       fd.set("eintragId", eintrag.id);
       fd.set("keepFotoPaths", eintrag.foto_urls.join(","));
     }
     fd.set("titel", titel);
     fd.set("beschreibung", beschreibung);
+    const roh = String(native.get("beschreibung_roh") ?? "").trim();
+    if (roh) fd.set("beschreibung_roh", roh);
     fd.set("datum", datum);
     for (const f of anhaenge) fd.append("photos", f);
 
@@ -174,15 +183,15 @@ function BautagebuchForm({
           className="mt-1 portal-input w-full rounded-xl border border-border-default bg-surface-card px-3 py-3"
         />
       </label>
-      <label className="block">
-        <span className="portal-text-meta text-text-tertiary">Beschreibung</span>
-        <textarea
-          value={beschreibung}
-          onChange={(e) => setBeschreibung(e.target.value)}
-          rows={3}
-          className="mt-1 portal-input w-full rounded-xl border border-border-default bg-surface-card px-3 py-3"
-        />
-      </label>
+      <PartnerKiKorrekturField
+        scope="bautagebuch"
+        label="Beschreibung"
+        value={beschreibung}
+        onChange={setBeschreibung}
+        rows={3}
+        auftragTitel={auftragTitel}
+        placeholder="Was wurde gemacht? Optional: einsprechen, dann KI korrigieren."
+      />
       <FileUploadField
         label="Fotos & Dokumente"
         hint={
@@ -293,17 +302,16 @@ function PartnerBefundForm({
           className="mt-1 portal-input w-full rounded-xl border border-border-default bg-surface-card px-3 py-3"
         />
       </label>
-      <label className="block">
-        <span className="portal-text-meta text-text-tertiary">Befund</span>
-        <textarea
-          required
-          value={beschreibung}
-          onChange={(e) => setBeschreibung(e.target.value)}
-          rows={4}
-          placeholder="z. B. Leck in Versorgungsleitung Decke Bad, Feuchtigkeit Wand …"
-          className="mt-1 portal-input w-full rounded-xl border border-border-default bg-surface-card px-3 py-3"
-        />
-      </label>
+      <PartnerKiKorrekturField
+        scope="bautagebuch"
+        label="Befund"
+        value={beschreibung}
+        onChange={setBeschreibung}
+        rows={4}
+        required
+        auftragTitel={null}
+        placeholder="Einsprechen oder tippen — z. B. Leck in Versorgungsleitung Decke Bad …"
+      />
       <FileUploadField
         label="Fotos zum Befund"
         hint={`Mindestens 1 Foto (JPG/PNG/WebP, max. ${PARTNER_MAX_PHOTO_MB} MB).`}
@@ -393,11 +401,20 @@ function BautagebuchEintragActions({
 export function PartnerAuftragDetail({
   item,
   vorgangState,
+  focusBautagebuch,
+  deepLinkAnfrageId,
+  focusAbnahme,
+  deepLinkProtokollId,
 }: {
   item: PartnerAuftragItem;
   vorgangState?: VorgangState;
+  focusBautagebuch?: boolean;
+  deepLinkAnfrageId?: string | null;
+  focusAbnahme?: boolean;
+  deepLinkProtokollId?: string | null;
 }) {
   const router = useRouter();
+  const dokuSectionRef = useRef<HTMLDivElement>(null);
   const [showBefund, setShowBefund] = useState(false);
   const [showNew, setShowNew] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
@@ -411,6 +428,67 @@ export function PartnerAuftragDetail({
   const [abschlussDone, setAbschlussDone] = useState(false);
   const [abschlussVollstaendig, setAbschlussVollstaendig] = useState(false);
   const [rechnungDocOpen, setRechnungDocOpen] = useState(false);
+  const [angebotDocOpen, setAngebotDocOpen] = useState(false);
+  const [autoOpenPreferred, setAutoOpenPreferred] = useState(false);
+  const autoDocDismissedRef = useRef<{ angebot?: boolean; rechnung?: boolean }>(
+    {}
+  );
+  const [abnahmePdfUrl, setAbnahmePdfUrl] = useState<string | null>(
+    item.abnahme_protokoll_url ?? null
+  );
+  const [abnahmeProtokollId, setAbnahmeProtokollId] = useState<string | null>(
+    deepLinkProtokollId ?? null
+  );
+
+  const btAnfrageId =
+    deepLinkAnfrageId?.trim() ||
+    item.bautagebuchAnfrageId?.trim() ||
+    null;
+  const preferredPositionIds = item.bautagebuchAnfragePositionIds ?? [];
+
+  useEffect(() => {
+    if (!focusBautagebuch) return;
+    const hasPreferred = preferredPositionIds.length > 0;
+    if (!hasPreferred) setShowNew(true);
+    else setAutoOpenPreferred(true);
+    const t = window.setTimeout(() => {
+      dokuSectionRef.current?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+    }, 80);
+    return () => window.clearTimeout(t);
+  }, [focusBautagebuch, preferredPositionIds.length]);
+
+  /** Jedes Mal beim Öffnen des Vorgangs — nach Nein in dieser Session nicht sofort erneut. */
+  useEffect(() => {
+    autoDocDismissedRef.current = {};
+  }, [item.id]);
+
+  useEffect(() => {
+    if (abschlussOpen || focusAbnahme) return;
+    if (
+      partnerNeedsAutoRechnungPrompt(item) &&
+      !autoDocDismissedRef.current.rechnung
+    ) {
+      setRechnungDocOpen(true);
+      return;
+    }
+    if (
+      partnerNeedsAutoAngebotPrompt(item) &&
+      !autoDocDismissedRef.current.angebot
+    ) {
+      setAngebotDocOpen(true);
+    }
+  }, [
+    item.id,
+    item.hw_angebot_pdf_url,
+    item.hw_rechnung_eingereicht_at,
+    item.hw_abschluss_signiert_am,
+    item.abnahme_protokoll_url,
+    abschlussOpen,
+    focusAbnahme,
+  ]);
 
   const kannUnterlagenHochladen = partnerAuftragKannUnterlagenHochladen(item);
   const kannRechnungHochladen = partnerAuftragKannRechnungHochladen(item);
@@ -508,25 +586,6 @@ export function PartnerAuftragDetail({
     hwAbschlussSigniertAm: item.hw_abschluss_signiert_am,
     abnahmeProtokollUrl: item.abnahme_protokoll_url,
   });
-
-  const offeneAbschlussLeistungen = useMemo(
-    () =>
-      item.positionen
-        .filter((p) => {
-          const ls = String(p.leistung_status ?? "").toLowerCase();
-          if (ls === "erledigt") return true;
-          return (
-            positionHandwerkerAbgeschlossen(p.handwerker_status) &&
-            !positionHandwerkerErledigt(p.handwerker_status)
-          );
-        })
-        .map((p) => ({
-          id: p.id,
-          leistung_name: String(p.leistung_name ?? "Leistung").trim() || "Leistung",
-          leistung_status: p.leistung_status,
-        })),
-    [item.positionen]
-  );
 
   async function onPdfSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -685,6 +744,10 @@ export function PartnerAuftragDetail({
               </PortalDetailCard>
             ) : null}
 
+            {vorgangState !== "erledigt" ? (
+              <PartnerTermineRueckfrageSection auftragId={item.id} />
+            ) : null}
+
             <PartnerAuftragErledigtSection
               positionen={item.positionen}
               layout="cta"
@@ -692,23 +755,41 @@ export function PartnerAuftragDetail({
               vollstaendig={abschlussVollstaendig}
             />
 
-            <PortalDetailCard>
-              <PartnerPositionLebenszyklusList
+            {abnahmePdfUrl ||
+            item.abnahme_protokoll_url ||
+            item.hw_abschluss_signiert_am ||
+            focusAbnahme ? (
+              <PartnerAbnahmeReviewSection
                 auftragId={item.id}
-                positionen={item.positionen.map((p) => ({
-                  id: p.id,
-                  leistung_name: p.leistung_name,
-                  leistung_status: p.leistung_status,
-                  verguetung: p.verguetung,
-                  typ: p.typ,
-                  anerkennung_status: p.anerkennung_status,
-                  preis_partner: p.preis_partner,
-                  einheit: p.einheit,
-                  menge: p.menge,
-                  zeit_minuten_summe: p.zeit_minuten_summe,
-                }))}
-                onDone={() => router.refresh()}
+                protokollId={abnahmeProtokollId}
+                initialPdfUrl={abnahmePdfUrl || item.abnahme_protokoll_url}
+                focus={focusAbnahme}
               />
+            ) : null}
+
+            <PortalDetailCard>
+              <div ref={dokuSectionRef}>
+                <PartnerPositionLebenszyklusList
+                  auftragId={item.id}
+                  auftragTitel={titel}
+                  anfrageId={btAnfrageId}
+                  preferredPositionIds={preferredPositionIds}
+                  autoOpenPreferred={autoOpenPreferred}
+                  positionen={item.positionen.map((p) => ({
+                    id: p.id,
+                    leistung_name: p.leistung_name,
+                    leistung_status: p.leistung_status,
+                    verguetung: p.verguetung,
+                    typ: p.typ,
+                    anerkennung_status: p.anerkennung_status,
+                    preis_partner: p.preis_partner,
+                    einheit: p.einheit,
+                    menge: p.menge,
+                    zeit_minuten_summe: p.zeit_minuten_summe,
+                  }))}
+                  onDone={() => router.refresh()}
+                />
+              </div>
 
               {konditionZeilen.length > 0 ? (
                 <PartnerLeistungenKonditionenCard
@@ -762,7 +843,7 @@ export function PartnerAuftragDetail({
                 </div>
                 {item.bautagebuchAnfrageOffen ? (
                   <p className="mb-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm font-semibold text-amber-900">
-                    Bitte Tagebucheintrag erstellen.
+                    Bitte Update geben — Bautagebuch.
                     {item.bautagebuchAnfrageNotiz?.trim() ? (
                       <span className="mt-1 block font-normal text-amber-800">
                         {item.bautagebuchAnfrageNotiz.trim()}
@@ -773,12 +854,15 @@ export function PartnerAuftragDetail({
                 {showNew ? (
                   <BautagebuchForm
                     auftragId={item.id}
+                    auftragTitel={titel}
+                    anfrageId={btAnfrageId}
                     onDone={() => setShowNew(false)}
                   />
                 ) : null}
                 {editingEintrag ? (
                   <BautagebuchForm
                     auftragId={item.id}
+                    auftragTitel={titel}
                     eintrag={editingEintrag}
                     onDone={() => setEditId(null)}
                   />
@@ -968,23 +1052,45 @@ export function PartnerAuftragDetail({
         </div>
       </div>
 
-      <PartnerAbschlussModal
+      <PartnerAbnahmeAbschlussSheet
         open={abschlussOpen}
         auftragId={item.id}
-        leistungItems={offeneAbschlussLeistungen}
+        auftragTitel={titel}
+        leistungItems={item.positionen.map((p) => ({
+          id: p.id,
+          leistung_name: p.leistung_name,
+          beschreibung: null,
+          gewerk_name: p.gewerk_name,
+        }))}
         defaultOrt={[item.plz, item.ort]
           .filter((v) => v && v !== "—")
           .join(" ")}
         onClose={() => setAbschlussOpen(false)}
-        onSuccess={(voll) => {
-          setAbschlussVollstaendig(voll);
+        onSuccess={(result) => {
+          setAbschlussVollstaendig(result.vollstaendig);
           setAbschlussDone(true);
           setAbschlussOpen(false);
+          if (result.pdf_url) setAbnahmePdfUrl(result.pdf_url);
+          if (result.protokoll_id) setAbnahmeProtokollId(result.protokoll_id);
           if (item.angebotHandwerkerId && !item.hw_rechnung_eingereicht_at) {
             setRechnungDocOpen(true);
           }
         }}
       />
+
+      {item.angebotHandwerkerId ? (
+        <PartnerDokumentPreviewModal
+          open={angebotDocOpen}
+          anfrageId={item.angebotHandwerkerId}
+          art="angebot"
+          onClose={() => {
+            autoDocDismissedRef.current.angebot = true;
+            setAngebotDocOpen(false);
+          }}
+          onSuccess={() => setAngebotDocOpen(false)}
+          allowSkip
+        />
+      ) : null}
 
       {item.angebotHandwerkerId ? (
         <PartnerDokumentPreviewModal
@@ -996,7 +1102,10 @@ export function PartnerAuftragDetail({
               ? new Date().toLocaleDateString("de-DE")
               : undefined
           }
-          onClose={() => setRechnungDocOpen(false)}
+          onClose={() => {
+            autoDocDismissedRef.current.rechnung = true;
+            setRechnungDocOpen(false);
+          }}
           onSuccess={() => setRechnungDocOpen(false)}
           allowSkip
         />

@@ -3,7 +3,7 @@
 Stand: Juli 2026  
 **Design-Referenz:** `Portale-Mockup.dc.html` / `Baerenwald Portale.html` (Claude Design)  
 **Live-Repo:** `handwerks-plattform`  
-**Verwandte Docs:** [VORGANG_STATUS_ROLE_MAPPING.md](./VORGANG_STATUS_ROLE_MAPPING.md) · [WAVE_WHITELABEL_KOMMUNIKATION.md](./WAVE_WHITELABEL_KOMMUNIKATION.md)
+**Verwandte Docs:** [VORGANG_STATUS_ROLE_MAPPING.md](./VORGANG_STATUS_ROLE_MAPPING.md) · [WAVE_WHITELABEL_KOMMUNIKATION.md](./WAVE_WHITELABEL_KOMMUNIKATION.md) · **Alltag-Audit:** [PORTAL-ALLTAG-AUDIT.md](./PORTAL-ALLTAG-AUDIT.md) · **Umsetzung:** [PORTAL-UMSETZUNGSPLAN.md](./PORTAL-UMSETZUNGSPLAN.md)
 
 ---
 

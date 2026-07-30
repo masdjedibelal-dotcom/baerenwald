@@ -500,12 +500,10 @@ export function OrganisationEingangPanel({
   const [selectedId, setSelectedId] = useState<string | null>(
     initialSelectedId ?? null
   );
-  const [_mobileDetailOpen, setMobileDetailOpen] = useState(false);
 
   useEffect(() => {
     if (initialSelectedId) {
       setSelectedId(initialSelectedId);
-      setMobileDetailOpen(true);
     }
   }, [initialSelectedId]);
 
@@ -537,7 +535,6 @@ export function OrganisationEingangPanel({
 
   const openDetail = (id: string) => {
     setSelectedId(id);
-    setMobileDetailOpen(true);
     router.replace(
       `/portal?section=vorgaenge&filter=offen&id=${encodeURIComponent(id)}`,
       { scroll: false }
@@ -546,7 +543,6 @@ export function OrganisationEingangPanel({
 
   const closeDetail = () => {
     setSelectedId(null);
-    setMobileDetailOpen(false);
     router.replace(`/portal?section=vorgaenge&filter=offen`, { scroll: false });
   };
 

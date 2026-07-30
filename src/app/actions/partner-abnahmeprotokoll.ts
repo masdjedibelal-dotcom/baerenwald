@@ -2,44 +2,45 @@
 
 import { revalidatePath } from "next/cache";
 
-import { notifyHvPartnerErledigt } from "@/lib/org/notify-hv-partner-erledigt";
-import { generateAbnahmeprotokollPdf } from "@/lib/partner/generate-abnahmeprotokoll-pdf";
+import {
+  mapMangelToCrm,
+  mapPunktToCrm,
+  type PortalAbnahmeMangel,
+  type PortalAbnahmePunkt,
+} from "@/lib/partner/abnahme-types";
 import { linkPortalHandwerkerToAuthUser } from "@/lib/partner/link-portal-handwerker";
 import { partnerAbnahmeZielPositionen } from "@/lib/partner/partner-position-erledigt";
-import { submitCrmAbnahmeprotokoll } from "@/lib/partner/partner-crm-api";
+import {
+  fetchCrmAbnahmeStatus,
+  postCrmAbnahmeAction,
+  submitCrmAbnahmeNachSignatur,
+} from "@/lib/partner/partner-crm-api";
+import { notifyHvPartnerErledigt } from "@/lib/org/notify-hv-partner-erledigt";
 import { sendPartnerInternalErledigtMail } from "@/lib/partner/partner-mail";
-import { uploadAbnahmeProtokollPdf } from "@/lib/partner/partner-storage";
 import { allePositionenPortalErledigt } from "@/lib/portal/vorgang-erledigt";
 import { createClient } from "@/lib/supabase/server";
 import { isSupabaseConfigured, supabaseAdmin } from "@/lib/supabase";
 
-export type PartnerAbnahmeprotokollInput = {
+export type PartnerAbnahmeNachSignaturInput = {
   auftragId: string;
-  protokollText: string;
-  maengelText?: string;
-  ort: string;
   abnahmeDatum: string;
+  ort: string;
+  notizen?: string | null;
+  punkte: PortalAbnahmePunkt[];
+  maengel: PortalAbnahmeMangel[];
   hwUnterschriftName: string;
   kundeUnterschriftName: string;
-  /** D11 Canvas PNG (data URL). */
-  hwSignaturPng?: string;
-  kundeSignaturPng?: string;
-  /** Legacy flat checks */
-  abschlussChecks?: Record<string, boolean>;
-  /** F3 — strukturierte Checks je Leistung */
-  abschlussChecksPayload?: {
-    global: Record<string, boolean>;
-    leistungen: Array<{
-      id: string;
-      name: string;
-      dokumentiert: boolean;
-      checks: Record<string, boolean>;
-    }>;
-  };
+  hwSignaturPng?: string | null;
+  kundeSignaturPng?: string | null;
 };
 
-export type PartnerAbnahmeprotokollResult =
-  | { ok: true; vollstaendig: boolean }
+export type PartnerAbnahmeNachSignaturResult =
+  | {
+      ok: true;
+      vollstaendig: boolean;
+      pdf_url: string | null;
+      protokoll_id: string | null;
+    }
   | { ok: false; error: string };
 
 async function assertPartnerAuftrag(handwerkerId: string, auftragId: string) {
@@ -88,65 +89,91 @@ async function partnerAuth() {
   return { ok: true as const, handwerkerId: link.handwerkerId };
 }
 
-function validateInput(input: PartnerAbnahmeprotokollInput): string | null {
-  if (!input.protokollText.trim()) return "Protokolltext fehlt.";
-  if (!input.ort.trim()) return "Ort fehlt.";
-  if (!input.abnahmeDatum.trim()) return "Abnahmedatum fehlt.";
-  if (!input.hwUnterschriftName.trim()) return "Unterschrift Handwerker fehlt.";
-  if (!input.kundeUnterschriftName.trim()) return "Unterschrift Kunde fehlt.";
-  if (input.hwUnterschriftName.trim().length < 3) {
-    return "Bitte den vollen Namen des Handwerkers ausschreiben.";
+function validateNachSignatur(
+  input: PartnerAbnahmeNachSignaturInput
+): string | null {
+  if (!input.punkte.length) {
+    return "Mindestens eine abgeschlossene Leistung erforderlich.";
   }
-  if (input.kundeUnterschriftName.trim().length < 3) {
+  if (input.punkte.some((p) => !p.leistung_name.trim())) {
+    return "Jede Leistung braucht einen Titel.";
+  }
+  if (!input.abnahmeDatum.trim()) return "Abnahmedatum fehlt.";
+  if (!input.ort.trim()) return "Ort fehlt.";
+  if (!input.kundeUnterschriftName.trim() || input.kundeUnterschriftName.trim().length < 3) {
     return "Bitte den vollen Namen des Kunden ausschreiben.";
+  }
+  if (!input.kundeSignaturPng?.trim()) {
+    return "Bitte die Kunden-Signatur erfassen.";
+  }
+  if (!input.hwUnterschriftName.trim() || input.hwUnterschriftName.trim().length < 3) {
+    return "Bitte den vollen Namen des Handwerkers ausschreiben.";
   }
   if (!input.hwSignaturPng?.trim()) {
     return "Bitte die Handwerker-Signatur zeichnen.";
   }
-  if (!input.kundeSignaturPng?.trim()) {
-    return "Bitte die Kunden-Gegenzeichnung vor Ort erfassen.";
+  for (const m of input.maengel) {
+    if (!m.titel.trim()) return "Jeder Mangel braucht einen Titel.";
   }
   return null;
 }
 
-/** Abnahmeprotokoll ausfüllen + Leistungen als erledigt melden. */
-export async function submitPartnerAbnahmeprotokoll(
-  input: PartnerAbnahmeprotokollInput
-): Promise<PartnerAbnahmeprotokollResult> {
+/** Nach Kunden-Signatur: CRM erstellt Protokoll + PDF. */
+export async function submitPartnerAbnahmeNachSignatur(
+  input: PartnerAbnahmeNachSignaturInput
+): Promise<PartnerAbnahmeNachSignaturResult> {
   const id = input.auftragId.trim();
   if (!id) return { ok: false, error: "Auftrag fehlt." };
 
-  const validationErr = validateInput(input);
+  const validationErr = validateNachSignatur(input);
   if (validationErr) return { ok: false, error: validationErr };
 
   const auth = await partnerAuth();
   if (!auth.ok) return auth;
 
   const allowed = await assertPartnerAuftrag(auth.handwerkerId, id);
-  if (!allowed) {
-    return { ok: false, error: "Kein Zugriff auf diesen Auftrag." };
-  }
+  if (!allowed) return { ok: false, error: "Kein Zugriff auf diesen Auftrag." };
 
   const { data: auftrag } = await supabaseAdmin
     .from("auftraege")
-    .select("id, titel, status, lead_id, hw_abschluss_signiert_am, abnahme_protokoll_url")
+    .select(
+      "id, titel, status, lead_id, hw_abschluss_signiert_am, abnahme_protokoll_url"
+    )
     .eq("id", id)
     .maybeSingle();
 
   if (!auftrag) return { ok: false, error: "Auftrag nicht gefunden." };
-
-  const st = String(auftrag.status ?? "").toLowerCase();
-  if (st === "abgeschlossen" || st === "storniert" || st === "abgelehnt") {
-    return { ok: false, error: "Auftrag ist bereits abgeschlossen." };
-  }
   if (
-    (auftrag as { hw_abschluss_signiert_am?: string | null }).hw_abschluss_signiert_am ||
-    (auftrag as { abnahme_protokoll_url?: string | null }).abnahme_protokoll_url
+    (auftrag as { hw_abschluss_signiert_am?: string | null })
+      .hw_abschluss_signiert_am
   ) {
-    return { ok: false, error: "Abnahmeprotokoll wurde bereits erstellt." };
+    return { ok: false, error: "Abnahme wurde bereits signiert." };
   }
 
-  const { data: positionen } = await supabaseAdmin
+  const ortDatum = `${input.ort.trim()}, ${input.abnahmeDatum.slice(0, 10)}`;
+  const crm = await submitCrmAbnahmeNachSignatur(id, {
+    abnahme_datum: input.abnahmeDatum.slice(0, 10),
+    punkte: input.punkte.map(mapPunktToCrm),
+    maengel: input.maengel.map(mapMangelToCrm),
+    notizen: input.notizen?.trim() || null,
+    meta: {
+      uebergabe_ort: input.ort.trim(),
+      unterschrift_ort_datum_an: ortDatum,
+      unterschrift_ort_datum_ag: ortDatum,
+      abnahme_ergebnis:
+        input.maengel.length > 0 ? "mit_vorbehalt" : "abgenommen",
+      hw_unterschrift_name: input.hwUnterschriftName.trim(),
+      kunde_unterschrift_name: input.kundeUnterschriftName.trim(),
+      signature_hw_url: input.hwSignaturPng ?? null,
+      signature_kunde_url: input.kundeSignaturPng ?? null,
+      vertreter_an: input.hwUnterschriftName.trim(),
+      ansprechpartner_kunde: input.kundeUnterschriftName.trim(),
+    },
+  });
+
+  if (!crm.ok) return { ok: false, error: crm.error };
+
+  const { data: ownPos } = await supabaseAdmin
     .from("auftrag_positionen")
     .select(
       "id, leistung_name, handwerker_status, leistung_status, aenderung_typ, handwerker_id"
@@ -154,244 +181,148 @@ export async function submitPartnerAbnahmeprotokoll(
     .eq("auftrag_id", id)
     .eq("handwerker_id", auth.handwerkerId);
 
-  const zuErledigen = partnerAbnahmeZielPositionen(positionen ?? []);
-
-  if (!zuErledigen.length) {
-    return {
-      ok: false,
-      error: "Keine offenen Leistungen zum Abschließen vorhanden.",
-    };
+  const ziel = partnerAbnahmeZielPositionen(
+    (ownPos ?? []).map((p) => ({
+      id: String(p.id),
+      leistung_name: String(p.leistung_name ?? "Leistung"),
+      handwerker_status: (p.handwerker_status as string | null) ?? null,
+      leistung_status: (p.leistung_status as string | null) ?? null,
+      aenderung_typ: (["neu", "geaendert", "entfernt"].includes(
+        String(p.aenderung_typ ?? "")
+      )
+        ? (p.aenderung_typ as "neu" | "geaendert" | "entfernt")
+        : null),
+      handwerker_id: (p.handwerker_id as string | null) ?? null,
+    }))
+  );
+  if (ziel.length) {
+    await supabaseAdmin
+      .from("auftrag_positionen")
+      .update({
+        handwerker_status: "erledigt",
+        leistung_status: "erledigt",
+        updated_at: new Date().toISOString(),
+      })
+      .in(
+        "id",
+        ziel.map((p) => p.id)
+      );
   }
-
-  const { data: hw } = await supabaseAdmin
-    .from("handwerker")
-    .select("name, firma")
-    .eq("id", auth.handwerkerId)
-    .maybeSingle();
-
-  const handwerkerName = hw?.firma?.trim() || hw?.name?.trim() || "Handwerker";
-  const leistungen = zuErledigen
-    .map((p) => String(p.leistung_name ?? "Leistung").trim())
-    .filter(Boolean);
 
   const now = new Date().toISOString();
-  const abnahmeDatum = input.abnahmeDatum.trim().slice(0, 10);
-  const checksPayload =
-    input.abschlussChecksPayload ??
-    (input.abschlussChecks
-      ? { global: input.abschlussChecks, leistungen: [] }
-      : null);
-
-  const checkSummaryLines =
-    checksPayload?.leistungen?.map((l) => {
-      const ok = Object.values(l.checks).every(Boolean);
-      return `${l.name}: ${ok ? "OK" : "offen"}`;
-    }) ??
-    (checksPayload?.global
-      ? Object.entries(checksPayload.global).map(
-          ([k, v]) => `${k}: ${v ? "OK" : "offen"}`
-        )
-      : undefined);
-
-  const pdfBytes = await generateAbnahmeprotokollPdf({
-    auftragTitel: String(auftrag.titel ?? "Auftrag"),
-    handwerkerName,
-    leistungen,
-    protokollText: input.protokollText.trim(),
-    maengelText: input.maengelText?.trim() || null,
-    ort: input.ort.trim(),
-    abnahmeDatum,
-    hwUnterschriftName: input.hwUnterschriftName.trim(),
-    kundeUnterschriftName: input.kundeUnterschriftName.trim(),
-    hwSigniertAm: now,
-    kundeSigniertAm: now,
-    hwSignaturPng: input.hwSignaturPng!.trim(),
-    kundeSignaturPng: input.kundeSignaturPng!.trim(),
-    checkSummaryLines,
-  });
-
-  const upload = await uploadAbnahmeProtokollPdf({
-    handwerkerId: auth.handwerkerId,
-    auftragId: id,
-    pdfBytes,
-  });
-
-  if (!upload.ok) return upload;
-
-  const leadId = auftrag.lead_id ? String(auftrag.lead_id) : null;
-
-  const protoBase = {
-    auftrag_id: id,
-    handwerker_id: auth.handwerkerId,
-    lead_id: leadId,
-    protokoll_text: input.protokollText.trim(),
-    maengel_text: input.maengelText?.trim() || null,
-    ort: input.ort.trim(),
-    abnahme_datum: abnahmeDatum,
-    hw_unterschrift_name: input.hwUnterschriftName.trim(),
-    kunde_unterschrift_name: input.kundeUnterschriftName.trim(),
-    pdf_path: upload.path,
-    created_at: now,
-  };
-
-  const protoWithSig = {
-    ...protoBase,
-    hw_signatur_png: input.hwSignaturPng!.trim(),
-    hw_signiert_am: now,
-    kunde_signatur_png: input.kundeSignaturPng!.trim(),
-    kunde_signiert_am: now,
-    abschluss_checks: checksPayload,
-  };
-
-  let protoErr = (
-    await supabaseAdmin.from("abnahme_protokolle").insert(protoWithSig)
-  ).error;
-
-  if (
-    protoErr &&
-    /hw_signatur|kunde_signatur|signiert_am|abschluss_checks/i.test(protoErr.message)
-  ) {
-    // Migration teilweise: ohne neue Spalten speichern
-    const fallback = { ...protoBase } as Record<string, unknown>;
-    if (!/hw_signatur|kunde_signatur|signiert_am/i.test(protoErr.message)) {
-      Object.assign(fallback, {
-        hw_signatur_png: input.hwSignaturPng!.trim(),
-        hw_signiert_am: now,
-        kunde_signatur_png: input.kundeSignaturPng!.trim(),
-        kunde_signiert_am: now,
-      });
-    }
-    protoErr = (await supabaseAdmin.from("abnahme_protokolle").insert(fallback))
-      .error;
-  }
-
-  if (protoErr) {
-    console.error("[submitPartnerAbnahmeprotokoll] insert:", protoErr.message);
-    return { ok: false, error: "Abnahmeprotokoll konnte nicht gespeichert werden." };
-  }
-
-  const ids = zuErledigen.map((p) => String(p.id));
-  let { error: updateErr } = await supabaseAdmin
+  const { data: allPos } = await supabaseAdmin
     .from("auftrag_positionen")
-    .update({
-      handwerker_status: "erledigt",
-      leistung_status: "erledigt",
-    })
-    .in("id", ids);
-
-  if (updateErr && /leistung_status/i.test(updateErr.message)) {
-    ({ error: updateErr } = await supabaseAdmin
-      .from("auftrag_positionen")
-      .update({ handwerker_status: "erledigt" })
-      .in("id", ids));
-  }
-
-  if (updateErr) {
-    console.error("[submitPartnerAbnahmeprotokoll] positionen:", updateErr.message);
-    return { ok: false, error: "Leistungen konnten nicht aktualisiert werden." };
-  }
-
-  const { data: allePositionen } = await supabaseAdmin
-    .from("auftrag_positionen")
-    .select("handwerker_id, handwerker_status, leistung_status, aenderung_typ")
+    .select("id, handwerker_status, leistung_status, handwerker_id")
     .eq("auftrag_id", id);
 
-  const auftragVollstaendigErledigt = allePositionenPortalErledigt(
-    allePositionen ?? []
+  const vollstaendig = allePositionenPortalErledigt(
+    (allPos ?? []) as Array<{
+      handwerker_status?: string | null;
+      leistung_status?: string | null;
+      handwerker_id?: string | null;
+    }>
   );
 
-  const auftragPatchFull: Record<string, unknown> = {
-    abnahme_protokoll_url: upload.path,
-    abnahme_datum: abnahmeDatum,
-    updated_at: now,
-    hw_abschluss_signiert_am: now,
-    ...(auftragVollstaendigErledigt ? { status: "abgeschlossen" } : {}),
-  };
-  let { error: auftragUpdErr } = await supabaseAdmin
+  await supabaseAdmin
     .from("auftraege")
-    .update(auftragPatchFull)
+    .update({
+      hw_abschluss_signiert_am: now,
+      abnahme_datum: input.abnahmeDatum.slice(0, 10),
+      abnahme_protokoll_url: crm.pdf_url ?? null,
+      ...(vollstaendig && input.maengel.length === 0
+        ? { status: "abgeschlossen" }
+        : {}),
+      updated_at: now,
+    })
     .eq("id", id);
 
-  if (
-    auftragUpdErr &&
-    /hw_abschluss_signiert_am/i.test(auftragUpdErr.message)
-  ) {
-    const { hw_abschluss_signiert_am: _s, ...withoutSig } = auftragPatchFull;
-    ({ error: auftragUpdErr } = await supabaseAdmin
-      .from("auftraege")
-      .update(withoutSig)
-      .eq("id", id));
-  }
-  if (auftragUpdErr) {
-    console.warn(
-      "[submitPartnerAbnahmeprotokoll] auftrag update:",
-      auftragUpdErr.message
-    );
-  }
+  const [{ data: hw }, { data: auf }] = await Promise.all([
+    supabaseAdmin
+      .from("handwerker")
+      .select("name, firma")
+      .eq("id", auth.handwerkerId)
+      .maybeSingle(),
+    supabaseAdmin.from("auftraege").select("titel").eq("id", id).maybeSingle(),
+  ]);
 
-  await submitCrmAbnahmeprotokoll(id, {
-    protokoll_text: input.protokollText.trim(),
-    maengel_text: input.maengelText?.trim() || null,
-    ort: input.ort.trim(),
-    abnahme_datum: abnahmeDatum,
-    hw_unterschrift_name: input.hwUnterschriftName.trim(),
-    kunde_unterschrift_name: input.kundeUnterschriftName.trim(),
-    leistungen,
-    pdf_path: upload.path,
-    vollstaendig: auftragVollstaendigErledigt,
-    hw_signiert_am: now,
-    kunde_signiert_am: now,
-    hw_signatur_png: input.hwSignaturPng!.trim(),
-    kunde_signatur_png: input.kundeSignaturPng!.trim(),
-    abschluss_checks: checksPayload,
-  }).then((crm) => {
-    if (!crm.ok) {
-      console.warn("[submitPartnerAbnahmeprotokoll] CRM:", crm.error);
-    }
-  });
+  const handwerkerName = String(hw?.name ?? "Partner");
+  const auftragTitel = String(auf?.titel ?? "Auftrag").trim() || "Auftrag";
 
-  await sendPartnerInternalErledigtMail({
+  void sendPartnerInternalErledigtMail({
     handwerkerName,
-    firma: hw?.firma,
-    auftragTitel: String(auftrag.titel ?? "Auftrag"),
+    firma: (hw?.firma as string | null) ?? null,
+    auftragTitel,
     auftragId: id,
-    leistungen,
+    leistungen: input.punkte.map((p) => p.leistung_name),
   });
 
-  if (leadId) {
-    await notifyHvPartnerErledigt({
-      auftragId: id,
-      leadId,
-      handwerkerName,
-      leistungen,
-      vollstaendig: auftragVollstaendigErledigt,
-    });
-  }
+  void notifyHvPartnerErledigt({
+    auftragId: id,
+    leadId: String((auftrag as { lead_id?: string | null }).lead_id ?? ""),
+    handwerkerName,
+    leistungen: input.punkte.map((p) => p.leistung_name),
+    vollstaendig,
+  });
 
   revalidatePath("/partner");
+  return {
+    ok: true,
+    vollstaendig,
+    pdf_url: crm.pdf_url ?? null,
+    protokoll_id: crm.protokoll_id ?? null,
+  };
+}
 
-  void (async () => {
-    const { data: a } = await supabaseAdmin
-      .from("auftraege")
-      .select("kostentraeger, lead_id")
-      .eq("id", id)
-      .maybeSingle();
-    let kt = a?.kostentraeger;
-    if (!kt && a?.lead_id) {
-      const { data: lead } = await supabaseAdmin
-        .from("leads")
-        .select("kostentraeger")
-        .eq("id", a.lead_id)
-        .maybeSingle();
-      kt = lead?.kostentraeger;
-    }
-    if (kt === "versicherung") {
-      const { ensureVersicherungsakteForAuftrag } = await import(
-        "@/lib/org/ensure-versicherungsakte"
-      );
-      await ensureVersicherungsakteForAuftrag(id, { actorRolle: "partner" });
-    }
-  })();
+export async function getPartnerAbnahmeStatus(
+  auftragId: string,
+  protokollId?: string | null
+) {
+  const auth = await partnerAuth();
+  if (!auth.ok) return auth;
+  const id = auftragId.trim();
+  if (!id) return { ok: false as const, error: "Auftrag fehlt." };
+  const allowed = await assertPartnerAuftrag(auth.handwerkerId, id);
+  if (!allowed) return { ok: false as const, error: "Kein Zugriff." };
+  return fetchCrmAbnahmeStatus(id, protokollId);
+}
 
-  return { ok: true, vollstaendig: auftragVollstaendigErledigt };
+export async function bestaetigePartnerAbnahme(
+  auftragId: string,
+  protokollId?: string | null
+) {
+  const auth = await partnerAuth();
+  if (!auth.ok) return auth;
+  const id = auftragId.trim();
+  if (!id) return { ok: false as const, error: "Auftrag fehlt." };
+  const allowed = await assertPartnerAuftrag(auth.handwerkerId, id);
+  if (!allowed) return { ok: false as const, error: "Kein Zugriff." };
+  const r = await postCrmAbnahmeAction(id, "bestaetigen", protokollId);
+  if (r.ok) revalidatePath("/partner");
+  return r;
+}
+
+export async function versendePartnerAbnahme(
+  auftragId: string,
+  protokollId?: string | null
+) {
+  const auth = await partnerAuth();
+  if (!auth.ok) return auth;
+  const id = auftragId.trim();
+  if (!id) return { ok: false as const, error: "Auftrag fehlt." };
+  const allowed = await assertPartnerAuftrag(auth.handwerkerId, id);
+  if (!allowed) return { ok: false as const, error: "Kein Zugriff." };
+  const r = await postCrmAbnahmeAction(id, "versenden", protokollId);
+  if (r.ok) revalidatePath("/partner");
+  return r;
+}
+
+/** @deprecated — alte Checklisten-Action; nutze submitPartnerAbnahmeNachSignatur */
+export async function submitPartnerAbnahmeprotokoll(
+  _input?: unknown
+): Promise<PartnerAbnahmeNachSignaturResult> {
+  void _input;
+  return {
+    ok: false,
+    error: "Veralteter Abschluss-Flow. Bitte Seite neu laden.",
+  };
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import type { ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { Pencil } from "lucide-react";
 
 import {
@@ -114,7 +114,7 @@ export function EinstellungenSectionLabel({ children }: { children: string }) {
   return <EinstellungenSectionHeader title={children} />;
 }
 
-/** Edit-Modal (Mobil = Bottom-Sheet via PortalModalShell). */
+/** Edit: mobil Bottom-Sheet, Desktop Side-Over (`variant="edit"`). */
 export function EinstellungenEditModal({
   open,
   title,
@@ -125,6 +125,7 @@ export function EinstellungenEditModal({
   saving,
   saveDisabled,
   saveLabel = "Speichern",
+  dirty: dirtyProp,
 }: {
   open: boolean;
   title: string;
@@ -135,16 +136,33 @@ export function EinstellungenEditModal({
   saving?: boolean;
   saveDisabled?: boolean;
   saveLabel?: string;
+  /** Wenn gesetzt: überschreibt Auto-Dirty aus Form-Input. */
+  dirty?: boolean;
 }) {
+  const [touched, setTouched] = useState(false);
+  useEffect(() => {
+    if (!open) setTouched(false);
+  }, [open]);
+
+  const dirty = dirtyProp ?? touched;
+
   return (
     <PortalModalShell
       open={open}
       title={title}
       subtitle={subtitle}
       onClose={onClose}
+      variant="edit"
+      dirty={dirty && !saving}
       closeOnBackdrop={!saving}
     >
-      <div className="flex flex-col gap-3">{children}</div>
+      <div
+        className="flex flex-col gap-3"
+        onInput={() => setTouched(true)}
+        onChange={() => setTouched(true)}
+      >
+        {children}
+      </div>
       <div className="mt-5 flex flex-wrap justify-end gap-2">
         <button
           type="button"

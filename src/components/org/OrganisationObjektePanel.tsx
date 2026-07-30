@@ -263,7 +263,7 @@ export function OrganisationObjektePanel({
         open
         title={mode.editId ? "Objekt bearbeiten" : "Objekt anlegen"}
         onClose={closeWizard}
-        size="funnel"
+        variant="funnel"
         maxWidth={560}
       >
         <OrganisationObjektWizard

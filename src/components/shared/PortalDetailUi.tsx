@@ -30,29 +30,35 @@ export function PortalConfirmDialog({
   onCancel: () => void;
 }) {
   return (
-    <PortalModalShell open={open} title={title} onClose={onCancel}>
+    <PortalModalShell
+      open={open}
+      title={title}
+      onClose={onCancel}
+      variant="confirm"
+    >
       <p className="portal-text-body text-text-secondary">{description}</p>
-      <div className="mt-5 flex flex-wrap justify-end gap-2">
-        <button
-          type="button"
-          onClick={onCancel}
-          disabled={loading}
-          className="btn-pill-outline portal-btn !px-4 !py-2.5"
-        >
-          Abbrechen
-        </button>
+      <div className="portal-confirm-actions mt-5">
         <button
           type="button"
           disabled={loading}
           onClick={onConfirm}
           className={cn(
+            "portal-confirm-actions-primary",
             confirmVariant === "danger"
-              ? "btn-pill-outline portal-btn !border-red-200 !text-red-800 !px-4 !py-2.5"
-              : "btn-pill-primary portal-btn !px-4 !py-2.5",
+              ? "btn-pill-outline portal-btn !border-red-200 !text-red-800"
+              : "btn-pill-primary portal-btn",
             loading && "opacity-60"
           )}
         >
           {loading ? "Wird gesendet…" : confirmLabel}
+        </button>
+        <button
+          type="button"
+          onClick={onCancel}
+          disabled={loading}
+          className="btn-pill-outline portal-btn portal-confirm-actions-cancel"
+        >
+          Abbrechen
         </button>
       </div>
     </PortalModalShell>

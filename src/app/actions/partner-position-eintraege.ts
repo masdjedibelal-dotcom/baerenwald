@@ -9,6 +9,10 @@ import {
   type EintragTyp,
 } from "@/lib/partner/position-lebenszyklus";
 import { uploadPartnerEintragFoto } from "@/lib/partner/partner-storage";
+import {
+  markPartnerBautagebuchAnfrageErledigt,
+  syncPartnerPositionEintragToKundeTimeline,
+} from "@/lib/partner/sync-bautagebuch-kunde-timeline";
 import { createClient } from "@/lib/supabase/server";
 import { isSupabaseConfigured, supabaseAdmin } from "@/lib/supabase";
 
@@ -84,15 +88,21 @@ async function insertEintrag(opts: {
   positionId: string;
   typ: EintragTyp;
   beschreibung: string | null;
+  beschreibungRoh?: string | null;
   zeitMinuten: number | null;
   handwerkerId: string;
+  auftragId: string;
+  leistungName?: string | null;
+  anfrageId?: string | null;
 }): Promise<{ ok: true; id: string } | { ok: false; error: string }> {
+  const roh = opts.beschreibungRoh?.trim() || null;
   const { data, error } = await supabaseAdmin
     .from("position_eintraege")
     .insert({
       position_id: opts.positionId,
       typ: opts.typ,
       beschreibung: opts.beschreibung,
+      beschreibung_roh: roh && roh !== opts.beschreibung ? roh : roh,
       zeit_minuten: opts.zeitMinuten,
       erfasst_von: "partner_app",
       erfasser_akteur: opts.handwerkerId,
@@ -110,7 +120,29 @@ async function insertEintrag(opts: {
           : error.message,
     };
   }
-  return { ok: true, id: String(data.id) };
+
+  const eintragId = String(data.id);
+
+  if (opts.typ === "fortschritt" || opts.typ === "ergebnis" || opts.typ === "start") {
+    void markPartnerBautagebuchAnfrageErledigt({
+      auftragId: opts.auftragId,
+      handwerkerId: opts.handwerkerId,
+      anfrageId: opts.anfrageId,
+    });
+  }
+
+  return { ok: true, id: eintragId };
+}
+
+function readBeschreibungFromForm(formData: FormData): {
+  beschreibung: string | null;
+  beschreibungRoh: string | null;
+  anfrageId: string | null;
+} {
+  const beschreibung = String(formData.get("beschreibung") ?? "").trim() || null;
+  const roh = String(formData.get("beschreibung_roh") ?? "").trim() || null;
+  const anfrageId = String(formData.get("anfrageId") ?? "").trim() || null;
+  return { beschreibung, beschreibungRoh: roh, anfrageId };
 }
 
 async function attachFoto(opts: {
@@ -160,7 +192,7 @@ function parseFotoFromForm(formData: FormData): {
   return { file: photo, captureAt, nachgereicht, nachreichGrund };
 }
 
-/** OFFEN → Start mit Ankunftsfoto (Pflicht). */
+/** OFFEN → Start (bei Regie: Ankunftsfoto + Beschreibung Pflicht). */
 export async function startPartnerPosition(
   formData: FormData
 ): Promise<PartnerPositionEintragResult> {
@@ -168,7 +200,8 @@ export async function startPartnerPosition(
   if (!auth.ok) return auth;
 
   const positionId = String(formData.get("positionId") ?? "").trim();
-  const beschreibung = String(formData.get("beschreibung") ?? "").trim() || null;
+  const { beschreibung, beschreibungRoh, anfrageId } =
+    readBeschreibungFromForm(formData);
   if (!positionId) return { ok: false, error: "Position fehlt." };
 
   const pos = await loadOwnPosition(auth.handwerkerId, positionId);
@@ -187,8 +220,17 @@ export async function startPartnerPosition(
   }
 
   const foto = parseFotoFromForm(formData);
-  if (!foto.file) {
-    return { ok: false, error: "Ankunftsfoto ist Pflicht (Kamera)." };
+  const isRegie =
+    String(pos.typ ?? "").toLowerCase() === "regie" ||
+    String(pos.verguetung ?? "").toLowerCase() === "aufwand";
+
+  if (isRegie) {
+    if (!foto.file) {
+      return { ok: false, error: "Bei Regie ist das Ankunftsfoto Pflicht." };
+    }
+    if (!beschreibung?.trim()) {
+      return { ok: false, error: "Bei Regie bitte die Ausgangslage beschreiben." };
+    }
   }
   if (foto.nachgereicht && !foto.nachreichGrund) {
     return { ok: false, error: "Bitte Grund für nachgereichtes Foto angeben." };
@@ -198,22 +240,37 @@ export async function startPartnerPosition(
     positionId,
     typ: "start",
     beschreibung,
+    beschreibungRoh,
     zeitMinuten: null,
     handwerkerId: auth.handwerkerId,
+    auftragId: String(pos.auftrag_id),
+    leistungName: pos.leistung_name as string | null,
+    anfrageId,
   });
   if (!eintrag.ok) return eintrag;
 
-  const attached = await attachFoto({
+  if (foto.file) {
+    const attached = await attachFoto({
+      eintragId: eintrag.id,
+      handwerkerId: auth.handwerkerId,
+      auftragId: String(pos.auftrag_id),
+      positionId,
+      file: foto.file,
+      captureAt: foto.captureAt,
+      nachgereicht: foto.nachgereicht,
+      nachreichGrund: foto.nachreichGrund,
+    });
+    if (!attached.ok) return attached;
+  }
+
+  void syncPartnerPositionEintragToKundeTimeline({
     eintragId: eintrag.id,
-    handwerkerId: auth.handwerkerId,
     auftragId: String(pos.auftrag_id),
-    positionId,
-    file: foto.file,
-    captureAt: foto.captureAt,
-    nachgereicht: foto.nachgereicht,
-    nachreichGrund: foto.nachreichGrund,
+    typ: "start",
+    beschreibung,
+    leistungName: pos.leistung_name as string | null,
+    handwerkerId: auth.handwerkerId,
   });
-  if (!attached.ok) return attached;
 
   const now = new Date().toISOString();
   await supabaseAdmin
@@ -237,7 +294,7 @@ export async function startPartnerPosition(
   return { ok: true, eintragId: eintrag.id, positionId };
 }
 
-/** IN_ARBEIT → Fortschritt (Foto Pflicht). */
+/** IN_ARBEIT → Fortschritt (Foto/Text optional). */
 export async function addPartnerPositionFortschritt(
   formData: FormData
 ): Promise<PartnerPositionEintragResult> {
@@ -245,7 +302,8 @@ export async function addPartnerPositionFortschritt(
   if (!auth.ok) return auth;
 
   const positionId = String(formData.get("positionId") ?? "").trim();
-  const beschreibung = String(formData.get("beschreibung") ?? "").trim() || null;
+  const { beschreibung, beschreibungRoh, anfrageId } =
+    readBeschreibungFromForm(formData);
   const std = Number(formData.get("zeitStd") ?? 0);
   const min = Number(formData.get("zeitMin") ?? 0);
   if (!positionId) return { ok: false, error: "Position fehlt." };
@@ -267,11 +325,14 @@ export async function addPartnerPositionFortschritt(
   }
 
   const foto = parseFotoFromForm(formData);
-  if (!foto.file) {
-    return { ok: false, error: "Fortschritts-Foto ist Pflicht." };
-  }
   if (foto.nachgereicht && !foto.nachreichGrund) {
     return { ok: false, error: "Bitte Grund für nachgereichtes Foto angeben." };
+  }
+  if (!foto.file && !beschreibung?.trim()) {
+    return {
+      ok: false,
+      error: "Bitte kurz beschreiben oder ein Foto anhängen.",
+    };
   }
 
   const isAufwand = String(pos.verguetung ?? "") === "aufwand";
@@ -281,22 +342,37 @@ export async function addPartnerPositionFortschritt(
     positionId,
     typ: "fortschritt",
     beschreibung,
+    beschreibungRoh,
     zeitMinuten,
     handwerkerId: auth.handwerkerId,
+    auftragId: String(pos.auftrag_id),
+    leistungName: pos.leistung_name as string | null,
+    anfrageId,
   });
   if (!eintrag.ok) return eintrag;
 
-  const attached = await attachFoto({
+  if (foto.file) {
+    const attached = await attachFoto({
+      eintragId: eintrag.id,
+      handwerkerId: auth.handwerkerId,
+      auftragId: String(pos.auftrag_id),
+      positionId,
+      file: foto.file,
+      captureAt: foto.captureAt,
+      nachgereicht: foto.nachgereicht,
+      nachreichGrund: foto.nachreichGrund,
+    });
+    if (!attached.ok) return attached;
+  }
+
+  void syncPartnerPositionEintragToKundeTimeline({
     eintragId: eintrag.id,
-    handwerkerId: auth.handwerkerId,
     auftragId: String(pos.auftrag_id),
-    positionId,
-    file: foto.file,
-    captureAt: foto.captureAt,
-    nachgereicht: foto.nachgereicht,
-    nachreichGrund: foto.nachreichGrund,
+    typ: "fortschritt",
+    beschreibung,
+    leistungName: pos.leistung_name as string | null,
+    handwerkerId: auth.handwerkerId,
   });
-  if (!attached.ok) return attached;
 
   await writeAuditEvent({
     entityType: "auftrag",
@@ -310,7 +386,7 @@ export async function addPartnerPositionFortschritt(
   return { ok: true, eintragId: eintrag.id, positionId };
 }
 
-/** IN_ARBEIT → Erledigt mit Ergebnis-Foto. */
+/** IN_ARBEIT oder OFFEN (LV) → Erledigt; bei Regie: Ergebnis-Foto Pflicht. */
 export async function completePartnerPosition(
   formData: FormData
 ): Promise<PartnerPositionEintragResult> {
@@ -318,7 +394,8 @@ export async function completePartnerPosition(
   if (!auth.ok) return auth;
 
   const positionId = String(formData.get("positionId") ?? "").trim();
-  const beschreibung = String(formData.get("beschreibung") ?? "").trim() || null;
+  const { beschreibung, beschreibungRoh, anfrageId } =
+    readBeschreibungFromForm(formData);
   const std = Number(formData.get("zeitStd") ?? 0);
   const min = Number(formData.get("zeitMin") ?? 0);
   if (!positionId) return { ok: false, error: "Position fehlt." };
@@ -331,20 +408,52 @@ export async function completePartnerPosition(
   }
 
   const status = String(pos.leistung_status ?? "offen");
-  if (status !== "in_arbeit") {
+  const isRegie =
+    String(pos.typ ?? "").toLowerCase() === "regie" ||
+    String(pos.verguetung ?? "").toLowerCase() === "aufwand";
+
+  if (status === "erledigt") {
+    return { ok: false, error: "Position ist bereits erledigt." };
+  }
+  // Regie: erst nach Start. LV/Festpreis: direkt aus offen möglich.
+  if (isRegie && status !== "in_arbeit") {
     return {
       ok: false,
-      error: "Erledigt melden erst nach Start möglich.",
+      error: "Bei Regie erst starten, dann Ende dokumentieren.",
       status: 403,
     };
   }
+  if (!isRegie && status !== "in_arbeit" && status !== "offen") {
+    return { ok: false, error: "Position kann nicht abgeschlossen werden." };
+  }
 
   const foto = parseFotoFromForm(formData);
-  if (!foto.file) {
-    return { ok: false, error: "Ergebnis-Foto ist Pflicht." };
+  if (isRegie) {
+    if (!foto.file) {
+      return { ok: false, error: "Bei Regie ist das Ergebnis-Foto Pflicht." };
+    }
+    if (!beschreibung?.trim()) {
+      return {
+        ok: false,
+        error: "Bei Regie bitte Ergebnis / Schlussbemerkung beschreiben.",
+      };
+    }
   }
   if (foto.nachgereicht && !foto.nachreichGrund) {
     return { ok: false, error: "Bitte Grund für nachgereichtes Foto angeben." };
+  }
+
+  // LV aus offen: stillschweigend als gestartet markieren
+  if (!isRegie && status === "offen") {
+    const nowSoft = new Date().toISOString();
+    await supabaseAdmin
+      .from("auftrag_positionen")
+      .update({
+        leistung_status: "in_arbeit",
+        gestartet_am: nowSoft,
+        handwerker_status: "bestaetigt",
+      })
+      .eq("id", positionId);
   }
 
   const isAufwand = String(pos.verguetung ?? "") === "aufwand";
@@ -371,22 +480,37 @@ export async function completePartnerPosition(
     positionId,
     typ: "ergebnis",
     beschreibung,
+    beschreibungRoh,
     zeitMinuten,
     handwerkerId: auth.handwerkerId,
+    auftragId: String(pos.auftrag_id),
+    leistungName: pos.leistung_name as string | null,
+    anfrageId,
   });
   if (!eintrag.ok) return eintrag;
 
-  const attached = await attachFoto({
+  if (foto.file) {
+    const attached = await attachFoto({
+      eintragId: eintrag.id,
+      handwerkerId: auth.handwerkerId,
+      auftragId: String(pos.auftrag_id),
+      positionId,
+      file: foto.file,
+      captureAt: foto.captureAt,
+      nachgereicht: foto.nachgereicht,
+      nachreichGrund: foto.nachreichGrund,
+    });
+    if (!attached.ok) return attached;
+  }
+
+  void syncPartnerPositionEintragToKundeTimeline({
     eintragId: eintrag.id,
-    handwerkerId: auth.handwerkerId,
     auftragId: String(pos.auftrag_id),
-    positionId,
-    file: foto.file,
-    captureAt: foto.captureAt,
-    nachgereicht: foto.nachgereicht,
-    nachreichGrund: foto.nachreichGrund,
+    typ: "ergebnis",
+    beschreibung,
+    leistungName: pos.leistung_name as string | null,
+    handwerkerId: auth.handwerkerId,
   });
-  if (!attached.ok) return attached;
 
   const now = new Date().toISOString();
   // F1: Nur Dokumentation (leistung_status) — handwerker_status=erledigt erst nach Abnahme-Signatur

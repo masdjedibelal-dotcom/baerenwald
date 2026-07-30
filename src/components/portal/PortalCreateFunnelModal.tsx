@@ -44,7 +44,7 @@ export function PortalCreateFunnelModal({
       open={open}
       title={title}
       onClose={onClose}
-      size="funnel"
+      variant="funnel"
       maxWidth={1360}
     >
       <PortalFunnelHost

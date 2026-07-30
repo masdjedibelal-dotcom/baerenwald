@@ -1,5 +1,7 @@
 # Auftraggeber-Portal (Organisation)
 
+**Alltag-Audit & Umsetzung (alle Portale):** [`PORTAL-ALLTAG-AUDIT.md`](./PORTAL-ALLTAG-AUDIT.md) · [`PORTAL-UMSETZUNGSPLAN.md`](./PORTAL-UMSETZUNGSPLAN.md)
+
 Route: `/portal` mit `kunden.portal_modus = 'organisation'`
 
 ## Öffentlich

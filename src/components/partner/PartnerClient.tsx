@@ -43,9 +43,9 @@ import {
   partnerStatusChipStyle,
   type PartnerCardRow,
 } from "@/lib/partner/partner-list-mappers";
+import { PortalListeFilterBar } from "@/components/shared/PortalListeFilterBar";
 import {
   PortalListeEyebrow,
-  PortalListeFilterChip,
   PortalListeTitle,
 } from "@/components/shared/PortalListeChrome";
 import type { VorgangFilter } from "@/lib/partner/vorgang-state";
@@ -104,18 +104,16 @@ function PartnerVorgangListFilterBar({
   counts: Record<VorgangFilter, number>;
 }) {
   return (
-    <div className="flex flex-wrap gap-2 py-3.5">
-      {VORGANG_FILTER_ORDER.map((id) => (
-        <PortalListeFilterChip
-          key={id}
-          active={filter === id}
-          onClick={() => onFilterChange(id)}
-          count={counts[id]}
-        >
-          {VORGANG_FILTER_LABELS[id]}
-        </PortalListeFilterChip>
-      ))}
-    </div>
+    <PortalListeFilterBar
+      value={filter}
+      onChange={onFilterChange}
+      sheetTitle="Vorgänge"
+      options={VORGANG_FILTER_ORDER.map((id) => ({
+        id,
+        label: VORGANG_FILTER_LABELS[id],
+        count: counts[id],
+      }))}
+    />
   );
 }
 
@@ -162,7 +160,6 @@ export function PartnerClient({
   const [section, setSection] = useState<PartnerSection>("uebersicht");
   const _overviewTab: OverviewTabId = "vorgaenge";
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [_mobileDetailOpen, setMobileDetailOpen] = useState(false);
   /** Tab-Navigation: alte URL-Parameter ignorieren bis Listen-URL ohne id da ist. */
   const ignoreUrlDetailRef = useRef(false);
   const [gptOpen, setGptOpen] = useState(false);
@@ -225,7 +222,6 @@ export function PartnerClient({
       }
     }
     setSelectedId(null);
-    setMobileDetailOpen(false);
   }, [section, sectionCardRows, selectedId]);
 
   const overviewCardRows = useMemo((): PartnerCardRow[] => {
@@ -246,7 +242,6 @@ export function PartnerClient({
         ignoreUrlDetailRef.current = false;
         setSection(normalized);
         setSelectedId(null);
-        setMobileDetailOpen(false);
       }
       return;
     }
@@ -256,13 +251,11 @@ export function PartnerClient({
 
     if (rawSection === "profil" || rawSection === "unterlagen") {
       setSection("profil");
-      setMobileDetailOpen(false);
       return;
     }
 
     if (rawSection === "planer") {
       setSection("planer");
-      setMobileDetailOpen(false);
       return;
     }
 
@@ -293,7 +286,6 @@ export function PartnerClient({
 
       if (!rawId) {
         setSelectedId(null);
-        setMobileDetailOpen(false);
         return;
       }
 
@@ -307,14 +299,28 @@ export function PartnerClient({
 
       if (match) {
         setSelectedId(match.id);
-        setMobileDetailOpen(true);
         return;
       }
 
       setSelectedId(vorgangId);
-      setMobileDetailOpen(true);
     }
   }, [searchParams, vorgaenge, router]);
+
+  /** Deep-Link-Parameter nach einmaligem Öffnen aus der URL entfernen. */
+  useEffect(() => {
+    const focus = searchParams.get("focus")?.trim();
+    if (!focus || !selectedId) return;
+    if (focus !== "bautagebuch" && focus !== "abnahme") return;
+    const t = window.setTimeout(() => {
+      const params = new URLSearchParams(searchParams.toString());
+      params.delete("focus");
+      params.delete("anfrage");
+      params.delete("protokoll");
+      const qs = params.toString();
+      router.replace(qs ? `/partner?${qs}` : "/partner", { scroll: false });
+    }, 800);
+    return () => window.clearTimeout(t);
+  }, [selectedId, searchParams, router]);
 
   const selectedVorgang = useMemo(() => {
     if (!selectedId) return undefined;
@@ -334,7 +340,6 @@ export function PartnerClient({
     if (selectedId) {
       const id = selectedId.replace(/^auftrag:/, "");
       setSelectedId(id);
-      if (target !== "profil") setMobileDetailOpen(true);
     }
   }
 
@@ -348,7 +353,6 @@ export function PartnerClient({
       vorgaenge.find((v) => v.anfrage?.id === vorgangId);
 
     setSelectedId(match?.id ?? vorgangId);
-    setMobileDetailOpen(true);
     router.push(href);
   }
 
@@ -359,7 +363,6 @@ export function PartnerClient({
     setListPage(1);
     setVorgangListFilter("auftrag");
     setSelectedId(null);
-    setMobileDetailOpen(false);
     router.replace(`/partner?section=vorgaenge&filter=auftrag`);
     router.refresh();
   }
@@ -367,7 +370,6 @@ export function PartnerClient({
   function switchSection(id: PartnerSection, filter: VorgangFilter = "alle") {
     setListPage(1);
     setVorgangListFilter(filter);
-    setMobileDetailOpen(false);
     if (id !== "gpt") setGptOpen(false);
     if (id === "uebersicht" || id === "gpt" || id === "profil" || id === "planer") {
       setSection(id);
@@ -390,13 +392,11 @@ export function PartnerClient({
     setVorgangListFilter("alle");
     setSelectedId(id);
     setSection("vorgaenge");
-    setMobileDetailOpen(true);
     router.replace(partnerVorgangPortalPath(id));
   }
 
   function selectRow(id: string) {
     setSelectedId(id);
-    setMobileDetailOpen(true);
     if (section === "vorgaenge") {
       router.replace(partnerVorgangPortalPath(id));
     }
@@ -404,7 +404,6 @@ export function PartnerClient({
 
   function closeDetail() {
     setSelectedId(null);
-    setMobileDetailOpen(false);
     router.replace(partnerSectionListPath("vorgaenge"));
   }
 
@@ -458,6 +457,12 @@ export function PartnerClient({
           <VorgangCard
             vorgang={selectedVorgang}
             onUpdated={refreshVorgangAfterConfirm}
+            focusBautagebuch={
+              searchParams.get("focus")?.trim() === "bautagebuch"
+            }
+            anfrageId={searchParams.get("anfrage")?.trim() || null}
+            focusAbnahme={searchParams.get("focus")?.trim() === "abnahme"}
+            protokollId={searchParams.get("protokoll")?.trim() || null}
           />
         </div>
       </div>
@@ -516,6 +521,7 @@ export function PartnerClient({
         brandSubtitle="Partner-Portal"
         brandKuerzel="B"
         sidebarOwner={partnerFooter}
+        hideMobileChrome={Boolean(selectedId)}
         activeNavId={
           section === "gpt" || section === "planer" ? "uebersicht" : section
         }
@@ -590,6 +596,7 @@ export function PartnerClient({
                 erledigt: vorgaenge.filter((v) => v.state === "erledigt").length,
               }}
               onOpenAll={() => switchSection("vorgaenge", "alle")}
+              onOpenPlaner={() => switchSection("planer")}
               onKpiClick={(id) => {
                 if (id === "erledigt") {
                   switchSection("vorgaenge", "erledigt");

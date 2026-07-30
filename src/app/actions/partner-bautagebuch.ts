@@ -14,6 +14,10 @@ import {
   resolvePartnerFileUrls,
   uploadPartnerBautagebuchAnhaenge,
 } from "@/lib/partner/partner-storage";
+import {
+  markPartnerBautagebuchAnfrageErledigt,
+  syncPartnerFreiesBautagebuchToKundeTimeline,
+} from "@/lib/partner/sync-bautagebuch-kunde-timeline";
 import { createClient } from "@/lib/supabase/server";
 import { isSupabaseConfigured, supabaseAdmin } from "@/lib/supabase";
 
@@ -84,6 +88,9 @@ export async function createPartnerBautagebuchEintrag(
   const auftragId = String(formData.get("auftragId") ?? "").trim();
   const titel = String(formData.get("titel") ?? "").trim();
   const beschreibung = String(formData.get("beschreibung") ?? "").trim() || null;
+  const beschreibungRoh =
+    String(formData.get("beschreibung_roh") ?? "").trim() || null;
+  const anfrageId = String(formData.get("anfrageId") ?? "").trim() || null;
   const datum = String(formData.get("datum") ?? "").trim().slice(0, 10);
 
   if (!auftragId) return { ok: false, error: "Auftrag fehlt." };
@@ -122,24 +129,38 @@ export async function createPartnerBautagebuchEintrag(
   const leadId =
     auftragRow?.lead_id != null ? String(auftragRow.lead_id).trim() : "";
 
-  const { error } = await supabaseAdmin.from("auftrag_bautagebuch_eintraege").insert({
-    auftrag_id: auftragId,
-    handwerker_id: auth.handwerkerId,
-    titel,
-    beschreibung,
-    datum,
-    foto_urls: fotoPaths,
-    fuer_kunde_freigegeben: true,
-  });
+  const { data: inserted, error } = await supabaseAdmin
+    .from("auftrag_bautagebuch_eintraege")
+    .insert({
+      auftrag_id: auftragId,
+      handwerker_id: auth.handwerkerId,
+      titel,
+      beschreibung,
+      datum,
+      foto_urls: fotoPaths,
+      fuer_kunde_freigegeben: true,
+    })
+    .select("id")
+    .single();
 
   if (error) return { ok: false, error: error.message };
 
-  await supabaseAdmin
-    .from("partner_bautagebuch_anfragen")
-    .update({ erledigt_at: new Date().toISOString() })
-    .eq("auftrag_id", auftragId)
-    .eq("handwerker_id", auth.handwerkerId)
-    .is("erledigt_at", null);
+  const eintragId = inserted?.id ? String(inserted.id) : null;
+
+  await markPartnerBautagebuchAnfrageErledigt({
+    auftragId,
+    handwerkerId: auth.handwerkerId,
+    anfrageId,
+  });
+
+  await syncPartnerFreiesBautagebuchToKundeTimeline({
+    auftragId,
+    titel,
+    beschreibung: beschreibung || beschreibungRoh,
+    fotoPaths,
+    handwerkerId: auth.handwerkerId,
+    bautagebuchEintragId: eintragId,
+  });
 
   const [{ data: hw }, { data: auf }] = await Promise.all([
     supabaseAdmin

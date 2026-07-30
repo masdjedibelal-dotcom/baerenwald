@@ -63,9 +63,17 @@ function resolveOffenDetailItem(
 export function VorgangCard({
   vorgang,
   onUpdated,
+  focusBautagebuch,
+  anfrageId,
+  focusAbnahme,
+  protokollId,
 }: {
   vorgang: PartnerVorgangItem;
   onUpdated?: (id: string) => void;
+  focusBautagebuch?: boolean;
+  anfrageId?: string | null;
+  focusAbnahme?: boolean;
+  protokollId?: string | null;
 }) {
   const { state, auftrag } = vorgang;
   const vorgangState = state as VorgangState;
@@ -75,12 +83,25 @@ export function VorgangCard({
       <PartnerAuftragDetail
         item={auftrag}
         vorgangState="in_bearbeitung"
+        focusBautagebuch={focusBautagebuch}
+        deepLinkAnfrageId={anfrageId}
+        focusAbnahme={focusAbnahme}
+        deepLinkProtokollId={protokollId}
       />
     );
   }
 
   if (state === "in_bearbeitung" || state === "erledigt") {
-    return <PartnerAuftragDetail item={auftrag} vorgangState={vorgangState} />;
+    return (
+      <PartnerAuftragDetail
+        item={auftrag}
+        vorgangState={vorgangState}
+        focusBautagebuch={focusBautagebuch}
+        deepLinkAnfrageId={anfrageId}
+        focusAbnahme={focusAbnahme}
+        deepLinkProtokollId={protokollId}
+      />
+    );
   }
 
   const offenItem = resolveOffenDetailItem(vorgang);

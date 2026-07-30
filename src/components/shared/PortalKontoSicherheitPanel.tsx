@@ -158,6 +158,7 @@ export function PortalKontoSicherheitPanel({
         open={pwOpen}
         title="Passwort ändern"
         subtitle="Aktuelles Passwort bestätigen, dann neues setzen."
+        variant="edit"
         onClose={closePasswordModal}
         closeOnBackdrop={!pwBusy}
       >
@@ -201,6 +202,7 @@ export function PortalKontoSicherheitPanel({
         open={deleteOpen}
         title="Konto wirklich löschen?"
         subtitle="Das kann nicht rückgängig gemacht werden."
+        variant="edit"
         onClose={closeDeleteModal}
         closeOnBackdrop={!deleteBusy}
       >

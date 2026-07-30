@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 
+import { PortalModalShell } from "@/components/shared/PortalModalShell";
 import { OBJ_MIETER_MENU } from "@/lib/portal2/objekte";
 import { cn } from "@/lib/utils";
 
@@ -14,7 +15,7 @@ type Props = {
 };
 
 /**
- * Mock `objMieterMenu` — Einladen / Entfernen / Vorgänge.
+ * Mieter-⋯ — ActionSheet via Shell `confirm`.
  */
 export function OrganisationObjektMieterMenu({
   hasEmail,
@@ -24,41 +25,29 @@ export function OrganisationObjektMieterMenu({
   onBearbeiten,
 }: Props) {
   const [open, setOpen] = useState(false);
-  const rootRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    if (!open) return;
-    const onDoc = (e: MouseEvent) => {
-      if (!rootRef.current?.contains(e.target as Node)) setOpen(false);
-    };
-    document.addEventListener("mousedown", onDoc);
-    return () => document.removeEventListener("mousedown", onDoc);
-  }, [open]);
+  function run(action: () => void) {
+    setOpen(false);
+    action();
+  }
 
-  const item = (
-    label: string,
-    onClick: () => void,
-    danger?: boolean
-  ) => (
+  const item = (label: string, onClick: () => void, danger?: boolean) => (
     <button
       type="button"
       className={cn(
-        "block w-full px-3.5 py-2.5 text-left text-[13px] font-semibold",
+        "block w-full rounded-[10px] px-3.5 py-3 text-left text-[14px] font-semibold",
         danger
           ? "portal-danger hover:bg-[var(--p2-danger-soft)]"
           : "text-text-primary hover:bg-muted"
       )}
-      onClick={() => {
-        setOpen(false);
-        onClick();
-      }}
+      onClick={() => run(onClick)}
     >
       {label}
     </button>
   );
 
   return (
-    <div ref={rootRef} className="relative">
+    <div>
       <button
         type="button"
         className="flex h-8 w-8 items-center justify-center rounded-lg border border-border-default bg-white text-base text-text-secondary"
@@ -66,23 +55,30 @@ export function OrganisationObjektMieterMenu({
         aria-expanded={open}
         onClick={(e) => {
           e.stopPropagation();
-          setOpen((v) => !v);
+          setOpen(true);
         }}
       >
         ⋯
       </button>
-      {open ? (
-        <div className="absolute right-0 z-20 mt-1 min-w-[220px] overflow-hidden rounded-[10px] border border-border-default bg-white py-1 shadow-lg">
+
+      <PortalModalShell
+        open={open}
+        title="Mieter"
+        onClose={() => setOpen(false)}
+        variant="confirm"
+        maxWidth={360}
+      >
+        <div className="flex flex-col gap-0.5">
           {item(
             hasEmail ? OBJ_MIETER_MENU.erneut : OBJ_MIETER_MENU.einladen,
             onEinladen
           )}
           {item(OBJ_MIETER_MENU.bearbeiten, () => onBearbeiten?.())}
           {item(OBJ_MIETER_MENU.vorgaenge, onVorgaenge)}
-          <div className="my-1 border-t border-border-default" />
+          <div className="my-1.5 border-t border-border-default" />
           {item(OBJ_MIETER_MENU.entfernen, onEntfernen, true)}
         </div>
-      ) : null}
+      </PortalModalShell>
     </div>
   );
 }
