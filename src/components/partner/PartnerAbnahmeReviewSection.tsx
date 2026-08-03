@@ -2,12 +2,11 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Check, FileText, Send } from "lucide-react";
+import { Check, FileText } from "lucide-react";
 
 import {
   bestaetigePartnerAbnahme,
   getPartnerAbnahmeStatus,
-  versendePartnerAbnahme,
 } from "@/app/actions/partner-abnahmeprotokoll";
 import { PortalDetailCard } from "@/components/shared/PortalDetailCard";
 import { PORTAL_VAR } from "@/lib/portal2/tokens";
@@ -22,45 +21,78 @@ type Status = {
   maengel_count: number;
   an_kunde_gesendet_at: string | null;
   handwerker_bestaetigt_at: string | null;
+  freigabe_status: string | null;
 };
 
 type Props = {
   auftragId: string;
   protokollId?: string | null;
   initialPdfUrl?: string | null;
+  initialFreigabeStatus?: string | null;
   focus?: boolean;
 };
+
+function freigabeBadge(status: string | null, sent: boolean) {
+  if (sent) {
+    return {
+      label: "An Kunden / in Unterlagen",
+      className: "bg-emerald-100 text-emerald-800",
+    };
+  }
+  const s = String(status ?? "").toLowerCase();
+  if (s === "zur_freigabe") {
+    return {
+      label: "Zur Freigabe an CRM",
+      className: "bg-amber-100 text-amber-900",
+    };
+  }
+  if (s === "freigegeben") {
+    return {
+      label: "CRM freigegeben",
+      className: "bg-sky-100 text-sky-800",
+    };
+  }
+  if (s === "abgelehnt") {
+    return {
+      label: "Abgelehnt — Nacharbeit nötig",
+      className: "bg-rose-100 text-rose-800",
+    };
+  }
+  return null;
+}
 
 export function PartnerAbnahmeReviewSection({
   auftragId,
   protokollId,
   initialPdfUrl,
+  initialFreigabeStatus,
   focus,
 }: Props) {
   const router = useRouter();
   const rootRef = useRef<HTMLDivElement>(null);
   const [status, setStatus] = useState<Status | null>(
-    initialPdfUrl
+    initialPdfUrl || initialFreigabeStatus
       ? {
           protokoll_id: protokollId ?? null,
-          pdf_url: initialPdfUrl,
+          pdf_url: initialPdfUrl ?? null,
           abnahme_datum: null,
           punkte_count: 0,
           maengel_count: 0,
           an_kunde_gesendet_at: null,
           handwerker_bestaetigt_at: null,
+          freigabe_status: initialFreigabeStatus ?? null,
         }
       : null
   );
-  const [loading, setLoading] = useState(!initialPdfUrl);
-  const [busy, setBusy] = useState<"bestaetigen" | "versenden" | null>(null);
+  const [loading, setLoading] = useState(!initialPdfUrl && !initialFreigabeStatus);
+  const [busy, setBusy] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
     const r = await getPartnerAbnahmeStatus(auftragId, protokollId);
     setLoading(false);
     if (!r.ok) {
-      if (!initialPdfUrl) setStatus(null);
+      if (!initialPdfUrl && !initialFreigabeStatus) setStatus(null);
       return;
     }
     setStatus({
@@ -71,8 +103,9 @@ export function PartnerAbnahmeReviewSection({
       maengel_count: r.maengel_count,
       an_kunde_gesendet_at: r.an_kunde_gesendet_at,
       handwerker_bestaetigt_at: r.handwerker_bestaetigt_at,
+      freigabe_status: r.freigabe_status ?? initialFreigabeStatus ?? null,
     });
-  }, [auftragId, protokollId, initialPdfUrl]);
+  }, [auftragId, protokollId, initialPdfUrl, initialFreigabeStatus]);
 
   useEffect(() => {
     void load();
@@ -86,7 +119,7 @@ export function PartnerAbnahmeReviewSection({
     return () => window.clearTimeout(t);
   }, [focus]);
 
-  if (loading && !status?.pdf_url) {
+  if (loading && !status?.pdf_url && !status?.freigabe_status) {
     return (
       <PortalDetailCard title="Abnahmeprotokoll">
         <p className="text-[13px]" style={{ color: PORTAL_VAR.sub }}>
@@ -96,16 +129,20 @@ export function PartnerAbnahmeReviewSection({
     );
   }
 
-  if (!status?.pdf_url && !status?.protokoll_id) return null;
+  if (!status?.pdf_url && !status?.protokoll_id && !status?.freigabe_status) {
+    return null;
+  }
 
   const confirmed = Boolean(status.handwerker_bestaetigt_at);
   const sent = Boolean(status.an_kunde_gesendet_at);
-  const done = confirmed || sent;
+  const freigabe = String(status.freigabe_status ?? "").toLowerCase();
+  const showBestaetigen = !confirmed && freigabe !== "abgelehnt";
+  const badge = freigabeBadge(status.freigabe_status, sent);
 
   async function onBestaetigen() {
-    setBusy("bestaetigen");
+    setBusy(true);
     const r = await bestaetigePartnerAbnahme(auftragId, status?.protokoll_id);
-    setBusy(null);
+    setBusy(false);
     if (!r.ok) {
       portalToastError(r.error);
       return;
@@ -115,22 +152,9 @@ export function PartnerAbnahmeReviewSection({
     router.refresh();
   }
 
-  async function onVersenden() {
-    setBusy("versenden");
-    const r = await versendePartnerAbnahme(auftragId, status?.protokoll_id);
-    setBusy(null);
-    if (!r.ok) {
-      portalToastError(r.error);
-      return;
-    }
-    portalToastSuccess("Abnahmeprotokoll an Kunden versendet.");
-    await load();
-    router.refresh();
-  }
-
   return (
     <div ref={rootRef}>
-      <PortalDetailCard title="Abnahmeprotokoll">
+      <PortalDetailCard title="Ihre Teilabnahme">
         <div className="space-y-4">
           <div className="flex items-start gap-3">
             <div
@@ -141,7 +165,7 @@ export function PartnerAbnahmeReviewSection({
             </div>
             <div className="min-w-0 flex-1">
               <p className="text-[14.5px] font-bold text-text-primary">
-                Abnahmeprotokoll bereit
+                Teilabnahme eingereicht
               </p>
               <p className="mt-0.5 text-[12.5px] text-text-tertiary">
                 {[
@@ -156,15 +180,27 @@ export function PartnerAbnahmeReviewSection({
                   .filter(Boolean)
                   .join(" · ")}
               </p>
-              {sent ? (
-                <span className="mt-2 inline-block rounded-full bg-emerald-100 px-2.5 py-0.5 text-[11.5px] font-bold text-emerald-800">
-                  Versendet
+              {badge ? (
+                <span
+                  className={cn(
+                    "mt-2 inline-block rounded-full px-2.5 py-0.5 text-[11.5px] font-bold",
+                    badge.className
+                  )}
+                >
+                  {badge.label}
                 </span>
               ) : confirmed ? (
                 <span className="mt-2 inline-block rounded-full bg-sky-100 px-2.5 py-0.5 text-[11.5px] font-bold text-sky-800">
                   Bestätigt
                 </span>
               ) : null}
+              <p className="mt-2 text-[12.5px] text-text-secondary">
+                {freigabe === "abgelehnt"
+                  ? "CRM hat die Teilabnahme abgelehnt. Bitte Nacharbeit erledigen und erneut abschließen."
+                  : freigabe === "freigegeben" || sent
+                    ? "Freigegeben. Den finalen Versand an den Kunden übernimmt das CRM."
+                    : "Kein automatischer Versand an den Kunden. Das CRM prüft und gibt frei."}
+              </p>
             </div>
           </div>
 
@@ -189,30 +225,19 @@ export function PartnerAbnahmeReviewSection({
             </a>
           ) : null}
 
-          {!done ? (
-            <div className="flex flex-col gap-2 sm:flex-row">
-              <button
-                type="button"
-                className="btn-pill-outline flex flex-1 items-center justify-center gap-2"
-                disabled={busy !== null}
-                onClick={() => void onBestaetigen()}
-              >
-                <Check className="h-4 w-4" aria-hidden />
-                {busy === "bestaetigen" ? "…" : "Bestätigen"}
-              </button>
-              <button
-                type="button"
-                className={cn(
-                  "btn-pill-primary flex flex-1 items-center justify-center gap-2",
-                  busy && "opacity-60"
-                )}
-                disabled={busy !== null}
-                onClick={() => void onVersenden()}
-              >
-                <Send className="h-4 w-4" aria-hidden />
-                {busy === "versenden" ? "…" : "Versenden"}
-              </button>
-            </div>
+          {showBestaetigen ? (
+            <button
+              type="button"
+              className={cn(
+                "btn-pill-primary flex w-full items-center justify-center gap-2",
+                busy && "opacity-60"
+              )}
+              disabled={busy}
+              onClick={() => void onBestaetigen()}
+            >
+              <Check className="h-4 w-4" aria-hidden />
+              {busy ? "…" : "Bestätigen"}
+            </button>
           ) : null}
         </div>
       </PortalDetailCard>

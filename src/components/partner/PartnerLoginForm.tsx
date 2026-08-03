@@ -121,7 +121,7 @@ export function PartnerLoginForm() {
         />
       </label>
 
-      <button type="submit" className="btn-pill-primary portal-btn w-full !py-3">
+      <button type="submit" className="btn-pill-primary portal-btn w-full">
         Anmelden
       </button>
 

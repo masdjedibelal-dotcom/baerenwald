@@ -13,13 +13,9 @@ import { OrganisationObjektePanel } from "@/components/org/OrganisationObjektePa
 import { OrganisationEinstellungenScreen } from "@/components/org/OrganisationEinstellungenScreen";
 import { OrganisationWhitelabelGate } from "@/components/org/OrganisationWhitelabelGate";
 import { OrganisationVorgaengeSection } from "@/components/org/OrganisationVorgaengeSection";
-import { OnboardingTour } from "@/components/onboarding/OnboardingTour";
-import "@/components/onboarding/onboarding.css";
 import { PortalLegalFooter } from "@/components/shared/PortalLegalFooter";
 import { PortalShell } from "@/components/shared/PortalShell";
 import { resolveOrgSubLabel } from "@/lib/portal2/brand-presets";
-import { ORG_ONBOARDING_SLIDES } from "@/lib/onboarding/org-slides";
-import { isOnboardingCompleted } from "@/lib/onboarding/storage";
 import {
   orgWhitelabelGateCanComplete,
   orgWhitelabelGateVisible,
@@ -183,13 +179,12 @@ export function OrganisationPortalClient({
 
   const [section, setSection] = useState<OrgSection>(initialSection ?? "uebersicht");
   const [hubOpen, setHubOpen] = useState(false);
-  const [onboardingOpen, setOnboardingOpen] = useState(false);
 
+  /** Notification / Deep-Link: Section aus URL übernehmen (nicht nur Initial-State). */
   useEffect(() => {
-    if (!isOnboardingCompleted("org")) {
-      setOnboardingOpen(true);
-    }
-  }, []);
+    const s = portalSectionFromParam(searchParams.get("section"));
+    if (s) setSection(s);
+  }, [searchParams]);
 
   const displayName =
     kunde.org_anzeigename?.trim() || kunde.name?.trim() || "Verwaltung";
@@ -230,7 +225,22 @@ export function OrganisationPortalClient({
 
   const vorgaengeBadgeCount = filterCounts.offen;
 
-  const refresh = () => router.refresh();
+  const [pageBusy, setPageBusy] = useState(false);
+
+  function flashPageBusy(ms = 400) {
+    setPageBusy(true);
+    window.setTimeout(() => setPageBusy(false), ms);
+  }
+
+  function openVorgangFromNotification(vorgangId: string, href: string) {
+    setSection("vorgaenge");
+    router.push(href.includes("id=") ? href : `${href}${href.includes("?") ? "&" : "?"}id=${encodeURIComponent(vorgangId)}`);
+  }
+
+  const refresh = () => {
+    flashPageBusy();
+    router.refresh();
+  };
 
   function switchSection(next: OrgSection) {
     setSection(next);
@@ -336,8 +346,10 @@ export function OrganisationPortalClient({
         brandPrimary={kunde.org_primary_color}
         brandPrimaryDk={kunde.org_primary_color_dk}
         brandSoft={kunde.org_primary_color_soft}
-        hideMobileChrome={Boolean(searchParams.get("id")?.trim())}
+        hideMobileChrome={false}
         activeNavId={section}
+        contentKey={`${section}:${searchParams.get("filter") ?? ""}:${searchParams.get("id") ?? ""}`}
+        contentBusy={pageBusy}
         onNavChange={(id) => switchSection(id as OrgSection)}
         nav={buildPortalShellNav("kunde_hv", "org", {
           liste: vorgaengeBadgeCount,
@@ -363,7 +375,9 @@ export function OrganisationPortalClient({
         }
         notifications={
           <>
-            <HvNotificationBell />
+            <HvNotificationBell
+              onOpenVorgang={(id, href) => openVorgangFromNotification(id, href)}
+            />
             <form action="/portal/auth/signout" method="post">
               <button type="submit" className="btn-pill-outline portal-btn-compact">
                 Abmelden
@@ -479,15 +493,6 @@ export function OrganisationPortalClient({
             setHubOpen(false);
             refresh();
           }}
-        />
-      ) : null}
-
-      {onboardingOpen ? (
-        <OnboardingTour
-          open={onboardingOpen}
-          audience="org"
-          slides={ORG_ONBOARDING_SLIDES}
-          onClose={() => setOnboardingOpen(false)}
         />
       ) : null}
 

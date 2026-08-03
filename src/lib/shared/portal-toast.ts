@@ -101,8 +101,8 @@ export const partnerPortalToast = {
   },
   abschlussSigniert() {
     portalToastSuccess(
-      "Abschluss signiert",
-      "Signatur und Protokoll sind am Vorgang gespeichert. Verwaltung und Kunde können gegenzeichnen."
+      "Teilabnahme eingereicht",
+      "Protokoll ist beim CRM zur Freigabe. Kein automatischer Versand an den Kunden."
     );
   },
 };

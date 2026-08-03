@@ -60,11 +60,11 @@ export function OrganisationObjektKalenderPanel({ objektId }: { objektId: string
       <div className="flex flex-wrap items-center justify-between gap-2">
         <p className="text-sm font-semibold text-text-primary">Kalender</p>
         <div className="flex items-center gap-2">
-          <button type="button" className="btn-pill-outline portal-btn-compact !px-2" onClick={() => shiftMonth(-1)}>
+          <button type="button" className="btn-pill-outline portal-btn-compact" onClick={() => shiftMonth(-1)}>
             ←
           </button>
           <span className="text-sm font-medium">{monat}</span>
-          <button type="button" className="btn-pill-outline portal-btn-compact !px-2" onClick={() => shiftMonth(1)}>
+          <button type="button" className="btn-pill-outline portal-btn-compact" onClick={() => shiftMonth(1)}>
             →
           </button>
         </div>

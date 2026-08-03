@@ -72,7 +72,7 @@ export default async function PartnerDashboardPage({
   if (!link.ok) {
     if (link.signOut) {
       clearAdminViewCookie();
-      await supabase.auth.signOut();
+      await supabase.auth.signOut({ scope: "local" });
       const isGesperrt =
         link.error.includes("gesperrt") ||
         link.error === PARTNER_AUTH_COPY.errors.portalGesperrt;

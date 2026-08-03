@@ -5,11 +5,9 @@ import { revalidatePath } from "next/cache";
 import { buildPartnerHwKonditionenFromAuftragEingabe, buildPartnerHwKonditionenFromEingabe } from "@/lib/partner/apply-partner-hw-konditionen";
 import { confirmPartnerProjektvertrag } from "@/app/actions/partner-vertrag";
 import type { PartnerAuftragPosition } from "@/lib/partner/get-partner-data";
-import {
-  HANDWERKER_ABLEHNUNG_GRUND_LABELS,
-  isHandwerkerAblehnungGrund,
-} from "@/lib/partner/handwerker-ablehnung";
+import { isHandwerkerAblehnungGrund } from "@/lib/partner/handwerker-ablehnung";
 import { linkPortalHandwerkerToAuthUser } from "@/lib/partner/link-portal-handwerker";
+import { isPartnerAnfrageOffen } from "@/lib/partner/partner-anfrage-status";
 import { isPartnerAngebotOffenListItem } from "@/lib/partner/partner-offen-status";
 import {
   buildKonditionenEingabeFromZeilen,
@@ -20,7 +18,6 @@ import {
   type PartnerHwKonditionen,
 } from "@/lib/partner/partner-konditionen";
 import { buildPartnerAuftragKonditionZeilen } from "@/lib/partner/partner-leistungen-display";
-import { sendPartnerInternalAnfrageAntwortMail } from "@/lib/partner/partner-mail";
 import { submitCrmPartnerAnnahme } from "@/lib/partner/partner-crm-api";
 import { syncAngebotHandwerkerAfterAuftragAccept } from "@/lib/partner/sync-angebot-handwerker";
 import { positionBrauchtVorgangAktion } from "@/lib/partner/vorgang-state";
@@ -644,6 +641,7 @@ export async function declinePartnerAnfrage(opts: {
   return { ok: true };
 }
 
+/** Ablehnung über Auftrags-Zuweisung — kanonisch wie declinePartnerAnfrage (CRM partner-annahme). */
 export async function declinePartnerAuftragZuweisung(opts: {
   auftragId: string;
   grund: string;
@@ -671,41 +669,23 @@ export async function declinePartnerAuftragZuweisung(opts: {
   if (!link.ok) return { ok: false, error: link.error };
 
   const auftragId = opts.auftragId.trim();
-  const now = new Date().toISOString();
-  const notiz = opts.notiz?.trim() || null;
 
   const { data: zuweisungen } = await supabaseAdmin
     .from("auftrag_handwerker")
-    .select("id, status, gewerke(name)")
+    .select("id")
     .eq("auftrag_id", auftragId)
-    .eq("handwerker_id", link.handwerkerId);
+    .eq("handwerker_id", link.handwerkerId)
+    .limit(1);
 
   const { data: positionen } = await supabaseAdmin
     .from("auftrag_positionen")
-    .select("id, handwerker_status, gewerk_name")
+    .select("id")
     .eq("auftrag_id", auftragId)
-    .eq("handwerker_id", link.handwerkerId);
+    .eq("handwerker_id", link.handwerkerId)
+    .limit(1);
 
   if (!zuweisungen?.length && !positionen?.length) {
     return { ok: false, error: "Keine Zuweisung für diesen Auftrag." };
-  }
-
-  for (const z of zuweisungen ?? []) {
-    const st = String(z.status ?? "").toLowerCase();
-    if (!PENDING_HW.has(st) && st !== "zugewiesen") continue;
-    await supabaseAdmin
-      .from("auftrag_handwerker")
-      .update({ status: "abgelehnt" })
-      .eq("id", z.id);
-  }
-
-  for (const p of positionen ?? []) {
-    const st = String(p.handwerker_status ?? "").toLowerCase();
-    if (!PENDING_HW.has(st) && st !== "zugewiesen") continue;
-    await supabaseAdmin
-      .from("auftrag_positionen")
-      .update({ handwerker_status: "abgelehnt" })
-      .eq("id", p.id);
   }
 
   const { data: auftrag } = await supabaseAdmin
@@ -715,43 +695,33 @@ export async function declinePartnerAuftragZuweisung(opts: {
     .maybeSingle();
 
   const angebotId = auftrag?.angebot_id != null ? String(auftrag.angebot_id) : "";
-  if (angebotId) {
-    await supabaseAdmin
-      .from("angebot_handwerker")
-      .update({
-        status: "abgelehnt",
-        antwort_at: now,
-        antwort_notiz: notiz,
-        ablehnung_grund: grundRaw,
-        hw_status: null,
+  if (!angebotId) {
+    return { ok: false, error: "Kein verknüpftes Angebot für diesen Auftrag." };
+  }
+
+  const { data: ahRows } = await supabaseAdmin
+    .from("angebot_handwerker")
+    .select("id, status, antwort_at, gesendet_at")
+    .eq("angebot_id", angebotId)
+    .eq("handwerker_id", link.handwerkerId)
+    .order("gesendet_at", { ascending: false });
+
+  const offen =
+    (ahRows ?? []).find((row) =>
+      isPartnerAnfrageOffen({
+        status: String(row.status ?? ""),
+        antwort_at: row.antwort_at as string | null | undefined,
+        gesendet_at: (row as { gesendet_at?: string | null }).gesendet_at,
       })
-      .eq("angebot_id", angebotId)
-      .eq("handwerker_id", link.handwerkerId);
+    ) ?? ahRows?.[0];
+
+  if (!offen?.id) {
+    return { ok: false, error: "Keine Anfrage für diesen Auftrag." };
   }
 
-  const gewerkName =
-    positionen?.[0]?.gewerk_name?.trim() ||
-    (one(zuweisungen?.[0]?.gewerke as unknown) as { name?: string } | null)?.name?.trim() ||
-    "Gewerk";
-
-  const { data: hw } = await supabaseAdmin
-    .from("handwerker")
-    .select("name")
-    .eq("id", link.handwerkerId)
-    .maybeSingle();
-
-  if (angebotId) {
-    await sendPartnerInternalAnfrageAntwortMail({
-      handwerkerName: (hw?.name as string)?.trim() || "Partner",
-      gewerkName,
-      angenommen: false,
-      ablehnungGrundLabel: HANDWERKER_ABLEHNUNG_GRUND_LABELS[grundRaw],
-      notiz,
-      angebotId,
-      partnerAngebotPortalUrl: null,
-    });
-  }
-
-  revalidatePath("/partner");
-  return { ok: true };
+  return declinePartnerAnfrage({
+    anfrageId: String(offen.id),
+    grund: opts.grund,
+    notiz: opts.notiz,
+  });
 }

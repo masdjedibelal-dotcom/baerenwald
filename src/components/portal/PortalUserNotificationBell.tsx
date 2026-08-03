@@ -1,10 +1,11 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { PortalNotificationBell } from "@/components/portal/PortalNotificationBell";
 import { portalNotificationRowToItem } from "@/lib/portal2/notif-adapters";
-import type { PortalNotifRole } from "@/lib/portal2/notif-types";
+import type { PortalNotifItem, PortalNotifRole } from "@/lib/portal2/notif-types";
 
 type ApiRow = {
   id: string;
@@ -20,6 +21,20 @@ type ApiRow = {
   icon_glyph?: string | null;
 };
 
+function vorgangIdFromPortalLink(link: string | null | undefined): string | null {
+  if (!link?.trim()) return null;
+  try {
+    const u = link.startsWith("http")
+      ? new URL(link)
+      : new URL(link, "https://local.invalid");
+    const id = u.searchParams.get("id")?.trim();
+    return id || null;
+  } catch {
+    const m = link.match(/[?&]id=([^&]+)/i);
+    return m?.[1] ? decodeURIComponent(m[1]) : null;
+  }
+}
+
 /**
  * Kunde / Eigentümer / Mieter — liest `portal_notifications`.
  * Solange Migration nicht applied: leere Liste (API 200 + items []).
@@ -27,10 +42,14 @@ type ApiRow = {
 export function PortalUserNotificationBell({
   role = "kunde",
   allHref = "/portal?section=vorgaenge",
+  onOpenVorgang,
 }: {
   role?: PortalNotifRole;
   allHref?: string;
+  /** Direkter Absprung in den Vorgang (umgeht ignoreUrlDetailRef). */
+  onOpenVorgang?: (vorgangId: string, href: string) => void;
 }) {
+  const router = useRouter();
   const [rows, setRows] = useState<ApiRow[]>([]);
   const [unread, setUnread] = useState(0);
   const [loading, setLoading] = useState(false);
@@ -74,6 +93,31 @@ export function PortalUserNotificationBell({
     setRows((prev) => prev.map((n) => ({ ...n, gelesen: true })));
   }
 
+  async function onItemActivate(n: PortalNotifItem) {
+    if (n.unread) {
+      await fetch("/api/portal/notifications", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ids: [n.id] }),
+      });
+      setRows((prev) =>
+        prev.map((x) => (x.id === n.id ? { ...x, gelesen: true } : x))
+      );
+      setUnread((c) => Math.max(0, c - 1));
+    }
+
+    const href = n.link?.trim() || null;
+    if (!href) return;
+
+    const vorgangId =
+      n.vorgangRef?.trim() || vorgangIdFromPortalLink(href);
+    if (vorgangId && onOpenVorgang) {
+      onOpenVorgang(vorgangId, href);
+      return;
+    }
+    router.push(href);
+  }
+
   return (
     <PortalNotificationBell
       items={items}
@@ -81,7 +125,9 @@ export function PortalUserNotificationBell({
       loading={loading}
       allHref={allHref}
       onMarkAllRead={markAllRead}
+      onItemActivate={onItemActivate}
       onRefresh={load}
+      showReadFilter
     />
   );
 }

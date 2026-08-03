@@ -65,7 +65,7 @@ export function PartnerRahmenvertragCard({
           type="button"
           disabled={loading || !akzeptiert}
           onClick={() => void onSpeichern()}
-          className="btn-pill-primary portal-btn !px-4 !py-2.5 disabled:opacity-60"
+          className="btn-pill-primary portal-btn disabled:opacity-60"
         >
           {loading ? "Wird gespeichert…" : "Annahme speichern"}
         </button>

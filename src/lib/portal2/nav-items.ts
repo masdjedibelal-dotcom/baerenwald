@@ -52,12 +52,12 @@ export const PORTAL_NAV_ITEMS: Record<PortalNavRole, readonly PortalNavItemDef[]
       { key: "settings", label: "Konto", glyph: "⚙" },
     ],
     /**
-     * Spec-Kurzform „Start · Aufträge“; Mock `navItems` inkl. Firmendaten.
+     * Spec-Kurzform „Start · Vorgänge“; Mock `navItems` inkl. Firmendaten.
      * Firmendaten bleibt (Mock-Wahrheit).
      */
     handwerker: [
       { key: "home", label: "Start", glyph: "◈" },
-      { key: "liste", label: "Aufträge", glyph: "▤" },
+      { key: "liste", label: "Vorgänge", glyph: "▤" },
       { key: "settings", label: "Firmendaten", glyph: "⚙" },
     ],
   } as const;

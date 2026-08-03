@@ -4,8 +4,8 @@
  */
 
 export const PORTAL_C = {
-  bg: "#e6e8e6",
-  bgContent: "#f6f7f6",
+  bg: "#ffffff",
+  bgContent: "#ffffff",
   panel: "#ffffff",
   line: "rgba(0,0,0,0.08)",
   line2: "rgba(0,0,0,0.05)",

@@ -83,14 +83,14 @@ export function PartnerAngebotAuftragAnnehmen({
           type="button"
           disabled={!kannBestaetigen || loading}
           onClick={() => setConfirmOpen(true)}
-          className="btn-pill-primary portal-btn w-full !py-3"
+          className="btn-pill-primary portal-btn w-full"
         >
           {loading ? "Wird gesendet…" : "Auftrag annehmen"}
         </button>
         <PartnerConfirmDialog
           open={confirmOpen}
           title="Auftrag annehmen?"
-          description="Danach unter Aufträge."
+          description="Danach unter Vorgänge."
           confirmLabel="Annehmen"
           loading={loading}
           onConfirm={onConfirm}

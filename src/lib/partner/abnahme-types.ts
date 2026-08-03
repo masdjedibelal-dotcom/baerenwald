@@ -1,4 +1,18 @@
-/** Portal-Spiegel der CRM Abnahme-Typen (punkte / maengel). */
+/** Portal-Spiegel der CRM Abnahme-Typen (punkte / maengel / meta). */
+
+export type PortalAbnahmeErgebnis =
+  | "abgenommen"
+  | "mit_vorbehalt"
+  | "verweigert";
+
+export const PORTAL_ABNAHME_ERGEBNIS_LABEL: Record<
+  PortalAbnahmeErgebnis,
+  string
+> = {
+  abgenommen: "Abgenommen",
+  mit_vorbehalt: "Mit Vorbehalt",
+  verweigert: "Verweigert",
+};
 
 export type PortalAbnahmePunkt = {
   id: string;
@@ -20,6 +34,12 @@ export type PortalAbnahmeMangel = {
   status: "offen";
 };
 
+export type PortalAbnahmeFreigabeStatus =
+  | "entwurf"
+  | "zur_freigabe"
+  | "freigegeben"
+  | "abgelehnt";
+
 export type PortalAbnahmeStatus = {
   ok: true;
   protokoll_id: string | null;
@@ -30,7 +50,31 @@ export type PortalAbnahmeStatus = {
   an_kunde_gesendet_at: string | null;
   handwerker_bestaetigt_at: string | null;
   abnahme_ergebnis: string | null;
+  freigabe_status: string | null;
 };
+
+/** Position → Abnahmepunkt (erledigte Leistungen vorbefüllen). */
+export function mapPositionToAbnahmePunkt(pos: {
+  id: string;
+  leistung_name: string;
+  beschreibung?: string | null;
+  gewerk_name?: string | null;
+}): PortalAbnahmePunkt {
+  return {
+    id: newLocalId("ok"),
+    leistung_id: pos.id,
+    leistung_name: pos.leistung_name.trim() || "Leistung",
+    beschreibung: pos.beschreibung?.trim() || "",
+    status: "ok",
+    gewerk: pos.gewerk_name?.trim() || "Ohne Gewerk",
+  };
+}
+
+export function autoAbnahmeErgebnis(
+  maengelCount: number
+): Exclude<PortalAbnahmeErgebnis, "verweigert"> {
+  return maengelCount > 0 ? "mit_vorbehalt" : "abgenommen";
+}
 
 export function newLocalId(prefix = "p"): string {
   if (typeof crypto !== "undefined" && "randomUUID" in crypto) {

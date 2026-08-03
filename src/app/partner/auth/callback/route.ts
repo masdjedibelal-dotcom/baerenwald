@@ -21,7 +21,7 @@ export async function GET(request: Request) {
           email: user.email,
         });
         if (!link.ok && link.signOut) {
-          await supabase.auth.signOut();
+          await supabase.auth.signOut({ scope: "local" });
           return NextResponse.redirect(
             `${origin}/partner/login?error=link&msg=${encodeURIComponent(link.error.slice(0, 160))}`
           );

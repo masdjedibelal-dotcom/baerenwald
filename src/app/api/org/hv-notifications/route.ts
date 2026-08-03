@@ -3,11 +3,12 @@ import { NextResponse } from "next/server";
 import { requireOrganisationSession } from "@/lib/org/require-org-session";
 import { supabaseAdmin } from "@/lib/supabase";
 
+export const runtime = "nodejs";
+
 const LEAD_ID_IN_LINK =
   /[?&]id=([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})/i;
 
-/** Lead-IDs aus Notif-Links extrahieren. */
-function leadIdsFromLinks(links: Array<string | null | undefined>): string[] {
+function extractLeadIds(links: Array<string | null | undefined>): string[] {
   const ids = new Set<string>();
   for (const link of links) {
     const m = String(link ?? "").match(LEAD_ID_IN_LINK);
@@ -16,7 +17,7 @@ function leadIdsFromLinks(links: Array<string | null | undefined>): string[] {
   return Array.from(ids);
 }
 
-/** HV-Benachrichtigungen (S13). */
+/** HV-Benachrichtigungen laden (ungültige Lead-Links bereinigen). */
 export async function GET() {
   const session = await requireOrganisationSession();
   if (!session.ok) {
@@ -35,47 +36,43 @@ export async function GET() {
   }
 
   const rows = data ?? [];
-  const linkedLeadIds = leadIdsFromLinks(rows.map((n) => n.link));
-  let existingLeadIds = new Set<string>();
-  if (linkedLeadIds.length) {
+  const leadIds = extractLeadIds(rows.map((r) => r.link));
+  const valid = new Set<string>();
+  if (leadIds.length) {
     const { data: leads } = await supabaseAdmin
       .from("leads")
       .select("id")
-      .in("id", linkedLeadIds);
-    existingLeadIds = new Set(
-      (leads ?? []).map((l) => String(l.id).toLowerCase())
-    );
+      .in("id", leadIds);
+    for (const l of leads ?? []) valid.add(String(l.id).toLowerCase());
 
-    // Geister-Notifs (Vorgang schon gelöscht) aufräumen
-    const orphanIds = rows
-      .filter((n) => {
-        const m = String(n.link ?? "").match(LEAD_ID_IN_LINK);
-        if (!m?.[1]) return false;
-        return !existingLeadIds.has(m[1].toLowerCase());
+    const stale = rows
+      .filter((r) => {
+        const m = String(r.link ?? "").match(LEAD_ID_IN_LINK);
+        return Boolean(m?.[1] && !valid.has(m[1].toLowerCase()));
       })
-      .map((n) => String(n.id));
-    if (orphanIds.length) {
-      void supabaseAdmin.from("hv_notifications").delete().in("id", orphanIds);
+      .map((r) => String(r.id));
+    if (stale.length) {
+      void supabaseAdmin.from("hv_notifications").delete().in("id", stale);
     }
   }
 
-  const notifications = rows.filter((n) => {
-    const m = String(n.link ?? "").match(LEAD_ID_IN_LINK);
-    if (!m?.[1]) return true;
-    return existingLeadIds.has(m[1].toLowerCase());
+  const notifications = rows.filter((r) => {
+    const m = String(r.link ?? "").match(LEAD_ID_IN_LINK);
+    return !m?.[1] || valid.has(m[1].toLowerCase());
   });
+  const unread = notifications.filter((r) => !r.gelesen_am).length;
 
-  const unread = notifications.filter((n) => !n.gelesen_am).length;
   return NextResponse.json({ notifications, unread });
 }
 
-export async function PATCH(req: Request) {
+/** Als gelesen markieren (einzeln oder alle). */
+export async function POST(req: Request) {
   const session = await requireOrganisationSession();
   if (!session.ok) {
     return NextResponse.json({ error: session.error }, { status: session.status });
   }
 
-  const body = (await req.json()) as { ids?: string[]; all?: boolean };
+  const body = (await req.json()) as { all?: boolean; ids?: string[] };
   const now = new Date().toISOString();
 
   if (body.all) {

@@ -59,36 +59,37 @@ export function PortalListeFilterBar<T extends string>({
   }
 
   return (
-    <div className={cn("py-3", className)}>
+    <div className={cn("py-2", className)}>
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="inline-flex min-h-11 w-full items-center justify-between gap-2 rounded-[12px] border px-3.5 py-2.5 text-left text-[14px] font-semibold"
+        className="inline-flex min-h-9 items-center gap-2 rounded-[10px] border px-3 py-2 text-left text-[13px] font-semibold"
         style={{
           borderColor: PORTAL_VAR.line,
           background: "#fff",
           color: PORTAL_VAR.ink,
         }}
       >
-        <span className="inline-flex items-center gap-2 min-w-0">
-          <SlidersHorizontal
-            className="h-4 w-4 shrink-0"
-            style={{ color: PORTAL_VAR.faint }}
-            aria-hidden
-          />
-          <span className="truncate">
-            {active?.label ?? sheetTitle}
-            {active?.count != null ? (
-              <span
-                className="ml-1 font-normal"
-                style={{ color: PORTAL_VAR.faint }}
-              >
-                ({active.count})
-              </span>
-            ) : null}
-          </span>
+        <SlidersHorizontal
+          className="h-3.5 w-3.5 shrink-0"
+          style={{ color: PORTAL_VAR.faint }}
+          aria-hidden
+        />
+        <span className="truncate">
+          {active?.label ?? sheetTitle}
+          {active?.count != null ? (
+            <span
+              className="ml-1 font-normal"
+              style={{ color: PORTAL_VAR.faint }}
+            >
+              ({active.count})
+            </span>
+          ) : null}
         </span>
-        <span className="shrink-0 text-[12px] font-semibold" style={{ color: PORTAL_VAR.primary }}>
+        <span
+          className="shrink-0 text-[11.5px] font-semibold"
+          style={{ color: PORTAL_VAR.primary }}
+        >
           Ändern
         </span>
       </button>

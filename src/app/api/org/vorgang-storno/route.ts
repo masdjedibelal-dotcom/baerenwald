@@ -1,23 +1,36 @@
 import { NextResponse } from "next/server";
 
-import { requireOrganisationSession } from "@/lib/org/require-org-session";
-import { supabaseAdmin } from "@/lib/supabase";
 import { writeAuditEvent } from "@/lib/audit/write-audit-event";
+import { requireOrganisationSession } from "@/lib/org/require-org-session";
+import { requireOrgWrite } from "@/lib/org/assert-org-objekt";
+import { supabaseAdmin } from "@/lib/supabase";
 
-type Body = { leadId?: string; grund?: string };
+export const runtime = "nodejs";
 
-/** Vorgang zurückziehen / stornieren */
+type Body = {
+  leadId: string;
+  grund: string;
+};
+
+/** HV zieht Vorgang zurück / storniert. */
 export async function POST(req: Request) {
   const session = await requireOrganisationSession();
   if (!session.ok) {
     return NextResponse.json({ error: session.error }, { status: session.status });
+  }
+  const write = requireOrgWrite(session);
+  if (!write.ok) {
+    return NextResponse.json({ error: write.error }, { status: write.status });
   }
 
   const body = (await req.json()) as Body;
   const leadId = String(body.leadId ?? "").trim();
   const grund = String(body.grund ?? "").trim();
   if (!leadId || grund.length < 5) {
-    return NextResponse.json({ error: "Grund erforderlich (min. 5 Zeichen)." }, { status: 400 });
+    return NextResponse.json(
+      { error: "Grund erforderlich (min. 5 Zeichen)." },
+      { status: 400 }
+    );
   }
 
   const { data: lead } = await supabaseAdmin

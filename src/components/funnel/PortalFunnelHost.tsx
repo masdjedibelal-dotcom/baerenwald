@@ -9,10 +9,12 @@ import "@/app/funnel-ui.css";
 import { FachdetailsStep } from "@/components/funnel/FachdetailsStep";
 import { FunnelFooter } from "@/components/funnel/FunnelFooter";
 import { PhotoUpload } from "@/components/funnel/PhotoUpload";
+import { getMeldeFotoBeispielForFunnelBereich } from "@/lib/funnel/melde-foto-beispiel";
 import { SelectionTile } from "@/components/funnel/SelectionTile";
 import { StepWrapper } from "@/components/funnel/StepWrapper";
 import { MeldeDatenschutzHinweis } from "@/components/melden/MeldeDatenschutzHinweis";
 import { PortalAuthBusy } from "@/components/portal/auth/PortalAuthBusy";
+import { PortalKiAssistField } from "@/components/shared/PortalKiAssistField";
 import {
   buildBwLeadPayload,
   serializeFunnelStateForLead,
@@ -28,7 +30,15 @@ import {
   type FunnelChannel,
 } from "@/lib/funnel/funnel-variant";
 import { kaputtBereichToMeldeId } from "@/lib/funnel/melde-bereich-map";
+import {
+  getMeldeKaputtFachfragen,
+  isMeldeKaputtChannel,
+  meldeDringlichkeitFromBereich,
+  meldeKategorieFromFunnelBereich,
+  MELDE_KAPUTT_BEREICH_OPTIONS,
+} from "@/lib/funnel/melde-kaputt-flow";
 import { calculatePrice } from "@/lib/funnel/price-calc";
+import { mapMeldeToPrice } from "@/lib/org/map-melde-to-price";
 import { BW_FUNNEL_STEP1_OPTIONS } from "@/lib/funnel/situation-options";
 import type {
   FachdetailsState,
@@ -122,7 +132,18 @@ type Props = {
   layout?: "modal" | "page";
 };
 
-function bereicheOptions(situation: Situation): StepOption[] {
+function bereicheOptions(
+  situation: Situation,
+  meldeKaputt: boolean
+): StepOption[] {
+  if (meldeKaputt && situation === "kaputt") {
+    return MELDE_KAPUTT_BEREICH_OPTIONS.map((o) => ({
+      value: o.bereich === "elektro" ? "elektro" : o.bereich,
+      label: o.label,
+      hint: o.hint,
+      icon: o.icon,
+    }));
+  }
   const steps = SITUATIONEN_CONFIG[situation]?.steps ?? [];
   const s = steps.find((x) => x.id.includes("bereiche"));
   return (s?.options ?? []) as StepOption[];
@@ -324,6 +345,9 @@ export function PortalFunnelHost({
 
   const objekt = objekte.find((o) => o.id === objektId) ?? null;
   const isHvIntern = channel === "portal_hv";
+  /** Melde / Mieter / HV-kaputt: kurze Ja/Nein-Fragen, kein Dringlichkeits-Schritt. */
+  const useMeldeKaputtFlow =
+    isMeldeKaputtChannel(channel) && state.situation === "kaputt";
   /** Melde / Mieter / HV: keine Termin-/SLA-Infoboxen unter den Optionen. */
   const stripTerminInfos =
     channel === "melde_anon" ||
@@ -369,11 +393,32 @@ export function PortalFunnelHost({
     };
   }, [isHvIntern, objektId]);
 
-  const fachIds = useMemo(
-    () => getActiveFachdetailQuestionIds(state),
-    [state]
-  );
+  const meldeFachfragen = useMemo(() => {
+    if (!useMeldeKaputtFlow) return [];
+    const b = state.bereiche[0];
+    if (!b) return [];
+    return getMeldeKaputtFachfragen(b);
+  }, [useMeldeKaputtFlow, state.bereiche]);
+
+  const fachIds = useMemo(() => {
+    if (useMeldeKaputtFlow) return meldeFachfragen.map((q) => q.id);
+    return getActiveFachdetailQuestionIds(state);
+  }, [useMeldeKaputtFlow, meldeFachfragen, state]);
   const currentFachId = fachIds[fachIdx] ?? null;
+  const currentMeldeFrage = useMeldeKaputtFlow
+    ? meldeFachfragen.find((q) => q.id === currentFachId) ?? null
+    : null;
+
+  /** Nächster Schritt nach Fachdetails — auch wenn `fachdetail` aus der Order gefallen ist. */
+  const stepAfterFachdetail = useCallback(
+    (order: StepId[]): StepId | null => {
+      const afterFach = order.indexOf("fachdetail");
+      if (afterFach >= 0) return order[afterFach + 1] ?? null;
+      const fallback: StepId[] = ["medien", "beschreibung", "kontakt", "result"];
+      return fallback.find((id) => order.includes(id)) ?? null;
+    },
+    []
+  );
 
   const price = useMemo(() => {
     if (!cfg.showPrice || !state.situation || state.bereiche.length === 0) {
@@ -384,6 +429,25 @@ export function PortalFunnelHost({
       objekt?.plz?.trim() ||
       prefill?.plz?.trim() ||
       "80331";
+
+    if (useMeldeKaputtFlow) {
+      const bereichId = kaputtBereichToMeldeId(state.bereiche[0] ?? "sonstiges");
+      const kategorie = meldeKategorieFromFunnelBereich(state.bereiche[0]);
+      const mapped = mapMeldeToPrice({
+        kategorie,
+        bereichId,
+        plz,
+        fachdetailAnswers: state.fachdetails?.fachdetailAnswers ?? {},
+      });
+      if (mapped.preis_unsicher || mapped.preis_min == null) return null;
+      return {
+        min: mapped.preis_min,
+        max: mapped.preis_max ?? mapped.preis_min,
+        resultModus: "ok" as const,
+        istFallback: false,
+      };
+    }
+
     try {
       return calculatePrice({
         ...state,
@@ -393,7 +457,7 @@ export function PortalFunnelHost({
     } catch {
       return null;
     }
-  }, [cfg.showPrice, state, objekt?.plz, prefill?.plz]);
+  }, [cfg.showPrice, state, objekt?.plz, prefill?.plz, useMeldeKaputtFlow]);
 
   const patchFach = useCallback((patch: Partial<FachdetailsState>) => {
     setState((s) => ({
@@ -422,7 +486,12 @@ export function PortalFunnelHost({
     if (cfg.include.notfallDringlichkeit && state.situation === "kaputt") {
       out.push("dringlichkeit");
     }
-    if (getActiveFachdetailQuestionIds(state).length > 0) {
+    const meldeKaputt =
+      isMeldeKaputtChannel(channel) && state.situation === "kaputt";
+    if (meldeKaputt) {
+      const b = state.bereiche[0];
+      if (b && getMeldeKaputtFachfragen(b).length > 0) out.push("fachdetail");
+    } else if (getActiveFachdetailQuestionIds(state).length > 0) {
       out.push("fachdetail");
     }
     /** Umbau & Modernisierung: keine Fotos. */
@@ -441,6 +510,24 @@ export function PortalFunnelHost({
   }, [cfg, state, channel]);
 
   const steps = buildStepOrder();
+
+  /**
+   * Kaputt + „hinter der Wand“: aktive Fachdetail-Fragen werden absichtlich geleert
+   * (Diagnosepfad). Ohne Auto-Skip bleibt ein leerer Screen; Weiter machte
+   * `indexOf("fachdetail") === -1` → Sprung zurück zu steps[0].
+   */
+  useEffect(() => {
+    if (step !== "fachdetail") return;
+    if (fachIds.length > 0 && currentFachId) return;
+    const next = stepAfterFachdetail(buildStepOrder());
+    if (next) setStep(next);
+  }, [
+    step,
+    fachIds.length,
+    currentFachId,
+    buildStepOrder,
+    stepAfterFachdetail,
+  ]);
 
   const summaryRows = useMemo((): SummaryRow[] => {
     const rows: SummaryRow[] = [];
@@ -514,9 +601,17 @@ export function PortalFunnelHost({
       );
     }
 
-    for (const q of getActiveFachdetailQuestions(state)) {
-      const raw = state.fachdetails?.fachdetailAnswers?.[q.id];
-      push(q.frage, fachAnswerLabel(q.optionen, raw));
+    if (useMeldeKaputtFlow) {
+      for (const q of meldeFachfragen) {
+        const raw = state.fachdetails?.fachdetailAnswers?.[q.id];
+        const s = Array.isArray(raw) ? raw[0] : raw;
+        push(q.frage, s === "ja" ? "Ja" : s === "nein" ? "Nein" : null);
+      }
+    } else {
+      for (const q of getActiveFachdetailQuestions(state)) {
+        const raw = state.fachdetails?.fachdetailAnswers?.[q.id];
+        push(q.frage, fachAnswerLabel(q.optionen, raw));
+      }
     }
 
     if (cfg.include.photos && state.situation !== "erneuern") {
@@ -570,27 +665,43 @@ export function PortalFunnelHost({
     cfg.include.photos,
     stripTerminInfos,
     steps,
+    useMeldeKaputtFlow,
+    meldeFachfragen,
   ]);
 
   const goNext = () => {
     setError(null);
+    const order = buildStepOrder();
+
     if (step === "fachdetail") {
       if (currentFachId) {
         const ans = state.fachdetails?.fachdetailAnswers?.[currentFachId];
         if (ans == null || ans === "") return;
       }
-      if (fachIdx < fachIds.length - 1) {
-        setFachIdx((i) => i + 1);
+      // Fragen weg (z. B. Wand-Diagnose) oder letzte Frage beantwortet → weiter
+      if (fachIds.length === 0 || fachIdx >= fachIds.length - 1) {
+        const next = stepAfterFachdetail(order);
+        if (next) setStep(next);
         return;
       }
+      setFachIdx((i) => i + 1);
+      return;
     }
-    const i = steps.indexOf(step === "objekt_neu" ? "objekt" : step);
-    const next = steps[i + 1];
+
+    const key = step === "objekt_neu" ? "objekt" : step;
+    let i = order.indexOf(key);
+    // Orphan-Step (nicht mehr in Order) — nicht zu steps[0] springen
+    if (i < 0) {
+      const next = stepAfterFachdetail(order);
+      if (next) setStep(next);
+      return;
+    }
+    const next = order[i + 1];
     if (!next) return;
     if (next === "fachdetail") {
       setFachIdx(0);
-      if (getActiveFachdetailQuestionIds(state).length === 0) {
-        const after = steps[i + 2];
+      if (activeFachIds.length === 0) {
+        const after = stepAfterFachdetail(order);
         if (after) setStep(after);
         return;
       }
@@ -608,16 +719,38 @@ export function PortalFunnelHost({
       setFachIdx((i) => i - 1);
       return;
     }
-    const i = steps.indexOf(step);
+    const order = buildStepOrder();
+    let i = order.indexOf(step);
+    if (i < 0) {
+      // Orphan (z. B. fachdetail nach Wand-Shortcut): zurück zur Dringlichkeit/Bereiche
+      if (order.includes("dringlichkeit")) {
+        setStep("dringlichkeit");
+        return;
+      }
+      if (order.includes("bereiche")) {
+        setStep("bereiche");
+        return;
+      }
+      i = 0;
+    }
     if (i <= 0) {
       if (melde?.objektLocked) return;
       onClose();
       return;
     }
-    const prev = steps[i - 1]!;
+    const prev = order[i - 1]!;
     if (prev === "fachdetail") {
-      const ids = getActiveFachdetailQuestionIds(state);
+      const ids = useMeldeKaputtFlow
+        ? fachIds
+        : getActiveFachdetailQuestionIds(state);
+      if (ids.length === 0) {
+        const before = order[i - 2];
+        if (before) setStep(before);
+        return;
+      }
       setFachIdx(Math.max(0, ids.length - 1));
+      setStep("fachdetail");
+      return;
     }
     setStep(prev);
   };
@@ -750,7 +883,8 @@ export function PortalFunnelHost({
       if (channel === "melde_anon" && melde) {
         const bereich = state.bereiche[0] ?? "sonstiges";
         const bereichId = kaputtBereichToMeldeId(bereich);
-        const notfall = state.dringlichkeit === "sofort";
+        const kategorie = meldeKategorieFromFunnelBereich(bereich);
+        const notfall = kategorie === "notfall";
         const fotos = await uploadFotos();
         const isErgaenzen = !!melde.ergaenzenToken;
         const endpoint = isErgaenzen
@@ -766,7 +900,7 @@ export function PortalFunnelHost({
               name: contactName,
               email: state.email.trim() || mieterEmail.trim(),
               telefon: state.telefon.trim() || mieterTel.trim() || undefined,
-              kategorie: notfall ? "notfall" : "reparatur",
+              kategorie,
               bereichId,
               fachdetailAnswers: state.fachdetails?.fachdetailAnswers ?? {},
               notfall,
@@ -779,15 +913,13 @@ export function PortalFunnelHost({
               name: contactName,
               email: state.email.trim() || mieterEmail.trim(),
               telefon: state.telefon.trim() || mieterTel.trim() || undefined,
-              kategorie: notfall ? "notfall" : "reparatur",
+              kategorie,
               bereichId,
               fachdetailAnswers: state.fachdetails?.fachdetailAnswers ?? {},
               notfall,
               beschreibung: state.leadBeschreibung.trim(),
               fotos,
-              ...(state.dringlichkeit
-                ? { dringlichkeit: state.dringlichkeit }
-                : {}),
+              dringlichkeit: meldeDringlichkeitFromBereich(bereichId),
               ...(channel === "melde_anon" || melde.needsAddress
                 ? {
                     plz: state.plz.trim(),
@@ -883,7 +1015,12 @@ export function PortalFunnelHost({
             bereiche: state.bereiche,
             preis_min: price?.min ?? 0,
             preis_max: price?.max ?? 0,
-            zeitraum: state.dringlichkeit || state.zeitraum || null,
+            zeitraum:
+              state.situation === "kaputt" && useMeldeKaputtFlow
+                ? meldeDringlichkeitFromBereich(
+                    kaputtBereichToMeldeId(state.bereiche[0] ?? "sonstiges")
+                  )
+                : state.dringlichkeit || state.zeitraum || null,
             name: contactName,
             email: contactEmail,
             telefon: contactTel,
@@ -928,7 +1065,16 @@ export function PortalFunnelHost({
             funnel_daten: {
               channel,
               fachdetails: state.fachdetails,
-              dringlichkeit: state.dringlichkeit,
+              dringlichkeit:
+                state.situation === "kaputt" && useMeldeKaputtFlow
+                  ? meldeDringlichkeitFromBereich(
+                      kaputtBereichToMeldeId(state.bereiche[0] ?? "sonstiges")
+                    )
+                  : state.dringlichkeit,
+              melde_kategorie:
+                state.situation === "kaputt" && useMeldeKaputtFlow
+                  ? meldeKategorieFromFunnelBereich(state.bereiche[0])
+                  : undefined,
               ohne_mieter: mieterMode === "ohne",
               mieter_neu: mieterMode === "neu",
               fotos_count: state.photos.length,
@@ -1436,10 +1582,15 @@ export function PortalFunnelHost({
           layout={stepLayout}
           stepLabel="Bereich"
           question="Was ist betroffen?"
+          subtext={
+            useMeldeKaputtFlow
+              ? "Wasser, Heizung, Strom & Co. — Dringlichkeit setzen wir automatisch"
+              : undefined
+          }
           animateKey="bereiche"
         >
           <div className="funnel-step-tiles-card grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
-            {bereicheOptions(state.situation).map((o) => {
+            {bereicheOptions(state.situation, useMeldeKaputtFlow).map((o) => {
               const opt = stripTerminInfos
                 ? (() => {
                     const {
@@ -1461,13 +1612,22 @@ export function PortalFunnelHost({
                 option={opt}
                 multi={false}
                 selected={state.bereiche.includes(opt.value)}
-                onChange={(v) =>
+                onChange={(v) => {
+                  const bereichId = kaputtBereichToMeldeId(v);
+                  const akut = meldeDringlichkeitFromBereich(bereichId);
                   setState((s) => ({
                     ...s,
                     bereiche: [v],
                     fachdetails: {},
-                  }))
-                }
+                    ...(useMeldeKaputtFlow
+                      ? {
+                          dringlichkeit: akut,
+                          zeitraum: akut,
+                        }
+                      : {}),
+                  }));
+                  setFachIdx(0);
+                }}
               />
             );
             })}
@@ -1504,7 +1664,39 @@ export function PortalFunnelHost({
         </StepWrapper>
       ) : null}
 
-      {step === "fachdetail" && currentFachId ? (
+      {step === "fachdetail" && currentFachId && useMeldeKaputtFlow && currentMeldeFrage ? (
+        <StepWrapper
+          layout={stepLayout}
+          stepLabel={`Detail ${fachIdx + 1}/${Math.max(1, fachIds.length)}`}
+          question={currentMeldeFrage.frage}
+          animateKey={currentFachId}
+        >
+          <div className="funnel-step-tiles-card flex flex-col gap-2">
+            {currentMeldeFrage.optionen.map((o) => (
+              <SelectionTile
+                key={o.value}
+                option={{ value: o.value, label: o.label }}
+                multi={false}
+                selected={
+                  String(
+                    state.fachdetails?.fachdetailAnswers?.[currentFachId] ?? ""
+                  ) === o.value
+                }
+                onChange={(v) =>
+                  patchFach({
+                    fachdetailAnswers: {
+                      ...(state.fachdetails?.fachdetailAnswers ?? {}),
+                      [currentFachId]: v,
+                    },
+                  })
+                }
+              />
+            ))}
+          </div>
+        </StepWrapper>
+      ) : null}
+
+      {step === "fachdetail" && currentFachId && !useMeldeKaputtFlow ? (
         <FachdetailsStep
           questionId={currentFachId}
           state={state}
@@ -1543,6 +1735,13 @@ export function PortalFunnelHost({
                 : undefined
             }
             showCompareOfferHint={false}
+            example={
+              useMeldeKaputtFlow
+                ? getMeldeFotoBeispielForFunnelBereich(
+                    state.bereiche[0] ?? "sonstiges"
+                  )
+                : null
+            }
           />
         </StepWrapper>
       ) : null}
@@ -1563,18 +1762,35 @@ export function PortalFunnelHost({
           }
           animateKey="beschreibung"
         >
-          <textarea
-            className="funnel-input min-h-[120px] w-full"
+          <PortalKiAssistField
+            scope="funnel_beschreibung"
+            label="Beschreibung"
             value={state.leadBeschreibung}
-            onChange={(e) =>
-              setState((s) => ({ ...s, leadBeschreibung: e.target.value }))
+            onApply={(text) =>
+              setState((s) => ({ ...s, leadBeschreibung: text }))
             }
-            placeholder={
-              state.situation === "erneuern"
-                ? "Optional — z. B. Wunschtermin, Besonderheiten …"
-                : "Beschreiben Sie den Schaden oder das Anliegen …"
-            }
-          />
+            contextHint={[
+              state.situation ? `Situation: ${state.situation}` : null,
+              state.bereiche?.length
+                ? `Bereich: ${state.bereiche.join(", ")}`
+                : null,
+            ]
+              .filter(Boolean)
+              .join("\n")}
+          >
+            <textarea
+              className="funnel-input min-h-[120px] w-full"
+              value={state.leadBeschreibung}
+              onChange={(e) =>
+                setState((s) => ({ ...s, leadBeschreibung: e.target.value }))
+              }
+              placeholder={
+                state.situation === "erneuern"
+                  ? "Optional — z. B. Wunschtermin, Besonderheiten …"
+                  : "Beschreiben Sie den Schaden oder das Anliegen …"
+              }
+            />
+          </PortalKiAssistField>
         </StepWrapper>
       ) : null}
 

@@ -6,6 +6,8 @@ import { VorgangDetailBlocks } from "@/components/shared/vorgang-detail";
 import { buildKundeHvVorgangDetailVm } from "@/lib/vorgang/build-vorgang-detail-vm";
 import { BautagebuchAccordionList } from "@/components/shared/BautagebuchAccordionList";
 import { DokumenteTabelle } from "@/components/shared/DokumenteTabelle";
+import { PortalDetailCover } from "@/components/shared/PortalDetailCover";
+import { PortalDetailHead } from "@/components/shared/PortalDetailUi";
 import { PortalFlowStatusChip } from "@/components/shared/PortalFlowStatusChip";
 import { VorgangDetailSectionNav } from "@/components/shared/VorgangDetailSectionNav";
 import { acceptKundeAngebot } from "@/app/actions/portal-angebot";
@@ -30,6 +32,7 @@ import {
 import {
   portalDetailSectionBorderStyle,
   portalDetailSectionClass,
+  type PortalDetailSectionId,
 } from "@/lib/portal2/layout-chrome";
 import { PORTAL_STATUS, type PortalMockStatusId } from "@/lib/portal2/status";
 import { PORTAL_VAR } from "@/lib/portal2/tokens";
@@ -73,6 +76,11 @@ export type OrganisationHvVorgangDetailProps = {
   bautagebuch?: PortalBautagebuchEntry[];
   /** CRM-/Portal-Unterlagen (bereits rollen-gefiltert). */
   dokumente?: PortalDokument[];
+  /** Abnahme-Checkliste (Leistungen + Mängel) für Abschluss-Card. */
+  abnahmeCheckliste?: {
+    leistungen: Array<{ name: string; ok?: boolean }>;
+    maengel: Array<{ titel: string; status?: string | null }>;
+  } | null;
   verlauf?: HvVerlaufEntry[];
   coverUrl?: string | null;
   onBack?: () => void;
@@ -110,20 +118,22 @@ export type OrganisationHvVorgangDetailProps = {
   mieterStatusMode?: boolean;
   /** C4 — Meta-Zeile „Wartet auf HW · …“ */
   wartetAufHwLabel?: string | null;
+  /** Unverbindliche Preisindikation aus Mieter-Meldung (nur HV). */
+  meldePreisIndikation?: string | null;
   /**
    * D2 (leicht): `detailRole` + `mieterStatusMode` steuern Copy/Sections.
    * Kein BW-Freigabe-/Angebot-Wording bei Mieter (`mieterStatusMode`).
    */
 };
 
-/** C1: Border-Card mobil, flach ab lg. */
+/** C1: Border-Card mobil, flach ab lg. Title optional (Tab = Pill sagt schon den Namen). */
 function DetailCard({
   title,
   children,
   id,
   badge,
 }: {
-  title: string;
+  title?: string;
   children: React.ReactNode;
   id?: string;
   badge?: number | null;
@@ -131,31 +141,25 @@ function DetailCard({
   return (
     <section
       id={id}
-      className={cn(
-        portalDetailSectionClass("responsive"),
-        id && "scroll-mt-16 lg:scroll-mt-4"
-      )}
+      className={cn(portalDetailSectionClass("responsive"))}
       style={portalDetailSectionBorderStyle("responsive")}
     >
-      <div className="mb-3 flex items-center gap-2">
-        <h3
-          className="text-[14px] font-bold"
-          style={{
-            color: PORTAL_VAR.ink,
-            fontFamily: "var(--p2-font-head, " + PORTAL_VAR.head + ")",
-          }}
-        >
-          {title}
-        </h3>
-        {badge && badge > 0 ? (
-          <span
-            className="inline-flex h-5 min-w-[1.25rem] items-center justify-center rounded-full px-1.5 text-[10px] font-bold"
-            style={{ background: PORTAL_VAR.dangerSoft, color: PORTAL_VAR.danger }}
-          >
-            {badge > 9 ? "9+" : badge}
-          </span>
-        ) : null}
-      </div>
+      {title || (badge && badge > 0) ? (
+        <div className="mb-3 flex items-center gap-2">
+          {title ? <h3 className="portal-text-section">{title}</h3> : null}
+          {badge && badge > 0 ? (
+            <span
+              className="inline-flex h-5 min-w-[1.25rem] items-center justify-center rounded-full px-1.5 text-[10px] font-bold"
+              style={{
+                background: PORTAL_VAR.dangerSoft,
+                color: PORTAL_VAR.danger,
+              }}
+            >
+              {badge > 9 ? "9+" : badge}
+            </span>
+          ) : null}
+        </div>
+      ) : null}
       {children}
     </section>
   );
@@ -177,30 +181,20 @@ function ActionBtn({
   disabled?: boolean;
   className?: string;
 }) {
-  const style =
-    kind === "ghost"
-      ? {
-          border: `1px solid ${PORTAL_VAR.line}`,
-          background: "#fff",
-          color: PORTAL_VAR.sub,
-        }
-      : kind === "danger"
-        ? { border: "none", background: PORTAL_VAR.dangerSoft, color: PORTAL_VAR.danger }
-        : {
-            border: "none",
-            background: PORTAL_VAR.primary,
-            color: "#fff",
-          };
   return (
     <button
       type="button"
       disabled={disabled}
       onClick={onClick}
       className={cn(
-        "rounded-[9px] px-[18px] py-[11px] text-[13.5px] font-semibold disabled:opacity-60",
+        "portal-action-btn",
+        kind === "ghost"
+          ? "portal-action-btn--ghost"
+          : kind === "danger"
+            ? "portal-action-btn--danger"
+            : "portal-action-btn--primary",
         className
       )}
-      style={style}
     >
       {mobileLabel ? (
         <>
@@ -245,7 +239,7 @@ function PositionenTable({
           </span>
         </div>
       ))}
-      <div className="flex flex-col gap-1 bg-[#f7f8fa] px-3 py-2.5">
+      <div className="flex flex-col gap-1 bg-[var(--p2-primary-soft,#e7f1e9)]/50 px-3 py-2.5">
         <div
           className="flex justify-between text-xs"
           style={{ color: PORTAL_VAR.sub }}
@@ -304,6 +298,7 @@ export function OrganisationHvVorgangDetail({
   rechnungPdfHref,
   bautagebuch = [],
   dokumente = [],
+  abnahmeCheckliste = null,
   verlauf: _verlauf = [],
   coverUrl,
   onBack,
@@ -327,6 +322,7 @@ export function OrganisationHvVorgangDetail({
   meldeBereich,
   meldeZeitraum,
   meldeFachdetails,
+  meldePreisIndikation,
   detailRole = "hv",
   statusLabelOverride,
   mieterStatusMode = false,
@@ -336,6 +332,8 @@ export function OrganisationHvVorgangDetail({
   const [error, setError] = useState<string | null>(null);
   const [accepted, setAccepted] = useState(false);
   const [btUnread, setBtUnread] = useState(0);
+  const [activeSection, setActiveSection] =
+    useState<PortalDetailSectionId>("uebersicht");
 
   const angebotVorgelegt = Boolean(
     !mieterStatusMode &&
@@ -344,11 +342,28 @@ export function OrganisationHvVorgangDetail({
         (typeof gesamtBrutto === "number" && gesamtBrutto > 0) ||
         canAcceptAngebot)
   );
-  const displayFlowStatus: PortalMockStatusId =
-    angebotVorgelegt &&
-    (flowStatus === "angefragt" || flowStatus === "freigegeben")
-      ? "angebot"
-      : flowStatus;
+  const hasRechnungDoc = Boolean(
+    rechnungPdfHref?.trim() ||
+      dokumente.some((d) => /rechnung/i.test(d.name ?? ""))
+  );
+  /** Rechnung gesendet → Hinweis „Rechnung“ statt „Auftrag“. */
+  const displayFlowStatus: PortalMockStatusId = (() => {
+    if (
+      hasRechnungDoc &&
+      (flowStatus === "auftrag" ||
+        flowStatus === "abschluss" ||
+        flowStatus === "rechnung")
+    ) {
+      return flowStatus === "bezahlt" ? "bezahlt" : "rechnung";
+    }
+    if (
+      angebotVorgelegt &&
+      (flowStatus === "angefragt" || flowStatus === "freigegeben")
+    ) {
+      return "angebot";
+    }
+    return flowStatus;
+  })();
   const actionKind = hvRoleActionKind(displayFlowStatus, {
     privatkunde,
     angebotVorgelegt,
@@ -356,6 +371,81 @@ export function OrganisationHvVorgangDetail({
   const empfohlen = pickEmpfohlenesAngebot(offers);
   const statusLabel =
     statusLabelOverride?.trim() || PORTAL_STATUS[displayFlowStatus].label;
+
+  const abschlussCard = (
+    <DetailCard title={HV_DETAIL_COPY.abnahmeTitle}>
+      {abnahmeCheckliste &&
+      (abnahmeCheckliste.leistungen.length > 0 ||
+        abnahmeCheckliste.maengel.length > 0) ? (
+        <div className="space-y-3">
+          <p className="text-[12.5px] leading-relaxed" style={{ color: PORTAL_VAR.sub }}>
+            {HV_DETAIL_COPY.abnahmeNote}
+          </p>
+          {abnahmeCheckliste.leistungen.length > 0 ? (
+            <div>
+              <p
+                className="mb-1.5 text-[11.5px] font-bold uppercase tracking-wide"
+                style={{ color: PORTAL_VAR.faint }}
+              >
+                {HV_DETAIL_COPY.abnahmeLeistungen}
+              </p>
+              <ul className="space-y-1.5">
+                {abnahmeCheckliste.leistungen.map((l) => (
+                  <li
+                    key={l.name}
+                    className="flex items-start gap-2 text-[13px]"
+                    style={{ color: PORTAL_VAR.ink }}
+                  >
+                    <span
+                      className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[11px] font-bold text-white"
+                      style={{
+                        background:
+                          l.ok === false ? "#8A5A06" : PORTAL_VAR.primary,
+                      }}
+                      aria-hidden
+                    >
+                      {l.ok === false ? "!" : "✓"}
+                    </span>
+                    <span className="font-semibold">{l.name}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
+          {abnahmeCheckliste.maengel.length > 0 ? (
+            <div>
+              <p
+                className="mb-1.5 text-[11.5px] font-bold uppercase tracking-wide"
+                style={{ color: PORTAL_VAR.faint }}
+              >
+                {HV_DETAIL_COPY.abnahmeMaengel}
+              </p>
+              <ul className="space-y-1.5">
+                {abnahmeCheckliste.maengel.map((m) => (
+                  <li
+                    key={m.titel}
+                    className="flex items-start gap-2 rounded-lg px-2.5 py-2 text-[13px]"
+                    style={{ background: "#FBF1D6", color: "#8A5A06" }}
+                  >
+                    <span className="font-semibold">{m.titel}</span>
+                    {m.status ? (
+                      <span className="ml-auto shrink-0 text-[11px] opacity-80">
+                        {m.status}
+                      </span>
+                    ) : null}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
+        </div>
+      ) : (
+        <p className="text-[12.5px]" style={{ color: PORTAL_VAR.faint }}>
+          {HV_DETAIL_COPY.abnahmeEmpty}
+        </p>
+      )}
+    </DetailCard>
+  );
 
   const detailVm = useMemo(
     () =>
@@ -379,6 +469,10 @@ export function OrganisationHvVorgangDetail({
         meldeBereich,
         meldeZeitraum,
         meldeFachdetails,
+        meldePreisIndikation:
+          detailRole === "hv" && !mieterStatusMode
+            ? meldePreisIndikation
+            : null,
         angebotPositionen: positionenBrutto,
         gesamtBrutto:
           typeof gesamtBrutto === "number"
@@ -421,6 +515,7 @@ export function OrganisationHvVorgangDetail({
       meldeBereich,
       meldeZeitraum,
       meldeFachdetails,
+      meldePreisIndikation,
       positionenBrutto,
       gesamtBrutto,
       empfohlen?.betrag,
@@ -432,6 +527,7 @@ export function OrganisationHvVorgangDetail({
       versicherungsNr,
       orgFreigabeStatus,
       hvMeldungStatus,
+      mieterStatusMode,
     ]
   );
 
@@ -646,7 +742,7 @@ export function OrganisationHvVorgangDetail({
             ) : orgFreigabeStatus === "ausstehend" ? (
               <div className="mt-3 flex flex-wrap gap-2">
                 <ActionBtn
-                  label="Freigabe erteilen"
+                  label={HV_DETAIL_COPY.freigabeBtn}
                   disabled={busy}
                   onClick={() => void freigabeAct("freigegeben")}
                 />
@@ -666,57 +762,34 @@ export function OrganisationHvVorgangDetail({
       return null;
     }
     if (actionKind === "abschluss") {
-      return (
-        <DetailCard title={HV_DETAIL_COPY.abnahmeTitle}>
-          <p className="text-[13px] leading-relaxed" style={{ color: PORTAL_VAR.sub }}>
-            {HV_DETAIL_COPY.abnahmeNote}
-          </p>
-        </DetailCard>
-      );
+      return abschlussCard;
     }
     if (actionKind === "rechnung") {
       return (
         <div className="flex flex-col gap-3.5">
+          {abschlussCard}
           <DetailCard title={HV_DETAIL_COPY.rechnungTitle}>
             <p className="mb-3 text-[13px]" style={{ color: PORTAL_VAR.sub }}>
               {HV_DETAIL_COPY.rechnungNote}
             </p>
-            <div
-              className="mb-3 flex justify-between text-lg font-bold"
-              style={{
-                color: PORTAL_VAR.ink,
-                fontFamily: "var(--p2-font-head, " + PORTAL_VAR.head + ")",
-              }}
-            >
-              <span>{HV_DETAIL_COPY.rechnungsbetrag}</span>
-              <span>{moneyEur(sum.brutto)}</span>
-            </div>
+            {sum.brutto > 0 ? (
+              <div
+                className="mb-1 flex justify-between text-lg font-bold"
+                style={{
+                  color: PORTAL_VAR.ink,
+                  fontFamily: "var(--p2-font-head, " + PORTAL_VAR.head + ")",
+                }}
+              >
+                <span>{HV_DETAIL_COPY.rechnungsbetrag}</span>
+                <span>{moneyEur(sum.brutto)}</span>
+              </div>
+            ) : null}
             <p
-              className="mb-3 rounded-lg px-3 py-2 text-[12px] font-semibold"
+              className="rounded-lg px-3 py-2 text-[12px] font-semibold"
               style={{ background: "#FBF1D6", color: "#8A5A06" }}
             >
               {HV_DETAIL_COPY.ueberweisungOffen}
             </p>
-            <div className="flex flex-wrap gap-2">
-              {rechnungPdfHref ? (
-                <a
-                  href={rechnungPdfHref}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="rounded-[9px] border px-[18px] py-[11px] text-[13.5px] font-semibold"
-                  style={{ borderColor: PORTAL_VAR.line, color: PORTAL_VAR.sub }}
-                >
-                  {HV_DETAIL_COPY.paketOeffnen}
-                </a>
-              ) : (
-                <span
-                  className="rounded-[9px] border px-[18px] py-[11px] text-[13.5px] font-semibold opacity-50"
-                  style={{ borderColor: PORTAL_VAR.line, color: PORTAL_VAR.sub }}
-                >
-                  {HV_DETAIL_COPY.paketOeffnen}
-                </span>
-              )}
-            </div>
           </DetailCard>
           <DetailCard title={HV_DETAIL_COPY.abschlagsplanTitle}>
             <p className="mb-2 text-[12.5px]" style={{ color: PORTAL_VAR.sub }}>
@@ -777,6 +850,14 @@ export function OrganisationHvVorgangDetail({
       bautagebuch.length > 0);
 
   const showAngebotSection = !mieterStatusMode && Boolean(rolePanel);
+  const angebotSectionLabel =
+    actionKind === "abschluss" ||
+    actionKind === "rechnung" ||
+    actionKind === "bezahlt"
+      ? HV_DETAIL_COPY.abnahmeTitle
+      : actionKind === "freigabe"
+        ? "Freigabe"
+        : "Angebot";
 
   useEffect(() => {
     if (mieterStatusMode || !showBautagebuch) {
@@ -792,6 +873,7 @@ export function OrganisationHvVorgangDetail({
     if (typeof window === "undefined") return;
     const hash = window.location.hash.replace(/^#/, "");
     if (hash === "bautagebuch") {
+      setActiveSection("bautagebuch");
       markBautagebuchSeen(leadId);
       setBtUnread(0);
     }
@@ -805,7 +887,11 @@ export function OrganisationHvVorgangDetail({
   const navItems = useMemo(
     () => [
       { id: "uebersicht" as const },
-      { id: "angebot" as const, hidden: !showAngebotSection },
+      {
+        id: "angebot" as const,
+        hidden: !showAngebotSection,
+        label: angebotSectionLabel,
+      },
       {
         id: "bautagebuch" as const,
         hidden: !showBautagebuch,
@@ -813,82 +899,81 @@ export function OrganisationHvVorgangDetail({
       },
       { id: "dokumente" as const },
     ],
-    [showAngebotSection, showBautagebuch, btUnread]
+    [showAngebotSection, showBautagebuch, btUnread, angebotSectionLabel]
   );
+
+  useEffect(() => {
+    const visible = navItems.filter((i) => !i.hidden);
+    if (!visible.some((i) => i.id === activeSection) && visible[0]) {
+      setActiveSection(visible[0].id);
+    }
+  }, [navItems, activeSection]);
+
+  function onSectionChange(id: string) {
+    setActiveSection(id as PortalDetailSectionId);
+    if (id === "bautagebuch") onBautagebuchViewed();
+  }
 
   return (
     <div className="flex flex-col">
-      <div className="relative w-full shrink-0 overflow-hidden" style={{ height: 150 }}>
-        {coverUrl ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={coverUrl} alt="" className="absolute inset-0 h-full w-full object-cover" />
-        ) : (
-          <div
-            className="absolute inset-0"
-            style={{
-              background:
-                "linear-gradient(135deg, #1A3D2B 0%, #2E7D52 60%, #0f766e 100%)",
-            }}
-          />
-        )}
-        {onBack ? (
-          <button
-            type="button"
-            onClick={onBack}
-            className="absolute left-3.5 top-3 z-10 inline-flex items-center gap-1 rounded-full px-3 py-1.5 text-[13px] font-semibold text-white shadow-md"
-            style={{ background: PORTAL_VAR.primary }}
-          >
-            ← Zurück zur Liste
-          </button>
-        ) : null}
-      </div>
+      {onBack ? (
+        <PortalDetailCover
+          coverUrl={coverUrl}
+          onBack={onBack}
+          backLabel="← Zurück"
+        />
+      ) : (
+        <div
+          className="relative w-full shrink-0 overflow-hidden"
+          style={{ height: 150 }}
+        >
+          {coverUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={coverUrl}
+              alt=""
+              className="absolute inset-0 h-full w-full object-cover"
+            />
+          ) : (
+            <div
+              className="absolute inset-0"
+              style={{
+                background:
+                  "linear-gradient(135deg, #1A3D2B 0%, #2E7D52 60%, #0f766e 100%)",
+              }}
+            />
+          )}
+        </div>
+      )}
 
       <div
         className="bg-white px-4 py-4 sm:px-6"
         style={{ borderBottom: `1px solid ${PORTAL_VAR.line2}` }}
       >
-        <div className="flex items-start gap-2.5">
-          <div className="min-w-0 flex-1">
-            {notfall ? (
-              <div className="mb-1">
-                <span className="rounded px-1.5 py-0.5 text-[11px] font-bold portal-danger-soft">
-                  NOTFALL
-                </span>
-              </div>
-            ) : null}
-            <h1
-              className="text-[20px] font-bold sm:text-[23px]"
-              style={{
-                color: PORTAL_VAR.ink,
-                fontFamily: "var(--p2-font-head, " + PORTAL_VAR.head + ")",
-              }}
-            >
-              {titel}
-            </h1>
-            <p className="mt-1 text-[13px]" style={{ color: PORTAL_VAR.sub }}>
-              {objekt}
-              {kategorie ? ` · ${kategorie}` : ""}
-            </p>
-            {wartetAufHwLabel ? (
-              <p
-                className="mt-1.5 text-[12px] font-semibold"
-                style={{ color: "#8A5A06" }}
-              >
-                {wartetAufHwLabel}
-              </p>
-            ) : null}
-          </div>
-          <PortalFlowStatusChip
-            statusId={displayFlowStatus}
-            label={statusLabel}
-          />
-        </div>
+        <PortalDetailHead
+          title={titel}
+          metaLine={[objekt, kategorie].filter(Boolean).join(" · ") || undefined}
+          subtitle={wartetAufHwLabel || undefined}
+          titleBadges={
+            notfall ? (
+              <span className="rounded px-1.5 py-0.5 text-[11px] font-bold portal-danger-soft">
+                NOTFALL
+              </span>
+            ) : null
+          }
+          actions={
+            <PortalFlowStatusChip
+              statusId={displayFlowStatus}
+              label={statusLabel}
+            />
+          }
+        />
 
         {actionKind === "freigabe" ||
         (actionKind === "angebot" && showAcceptCta) ? (
           <div
             className={cn(
-              "mt-4 flex flex-col gap-2 sm:flex-row sm:items-stretch",
+              "portal-action-row mt-4 flex-col sm:flex-row",
               "rounded-[12px] p-3 sm:p-0 sm:bg-transparent",
               "bg-[#F6F7F6] sm:shadow-none"
             )}
@@ -911,7 +996,7 @@ export function OrganisationHvVorgangDetail({
                   onClick={() => void meldungAct("angebot_einfordern")}
                 />
                 <ActionBtn
-                  className="w-full sm:w-auto sm:min-w-[7.5rem]"
+                  className="w-full sm:flex-1"
                   label={HV_DETAIL_COPY.ablehnen}
                   kind="ghost"
                   disabled={busy}
@@ -942,16 +1027,37 @@ export function OrganisationHvVorgangDetail({
 
       <div className="flex flex-col gap-4 px-4 pb-6 pt-3 sm:px-6 sm:pt-4 lg:flex-row lg:items-start lg:gap-6 lg:pt-5">
         <div className="lg:sticky lg:top-3 lg:w-[11rem] lg:shrink-0">
-          <VorgangDetailSectionNav items={navItems} />
+          <VorgangDetailSectionNav
+            items={navItems}
+            mode="tabs"
+            activeId={activeSection}
+            onActiveChange={onSectionChange}
+          />
         </div>
 
         <div className="flex min-w-0 flex-1 flex-col gap-3.5 lg:gap-5">
-          <section id="uebersicht" className="scroll-mt-16 lg:scroll-mt-4">
-            <VorgangDetailBlocks vm={detailVm} />
-          </section>
+          {activeSection === "uebersicht" ? (
+            <section
+              id="vorgang-panel-uebersicht"
+              role="tabpanel"
+              className="space-y-3.5"
+            >
+              {(actionKind === "abschluss" ||
+                actionKind === "rechnung" ||
+                actionKind === "bezahlt") &&
+              !showAngebotSection
+                ? abschlussCard
+                : null}
+              <VorgangDetailBlocks vm={detailVm} />
+            </section>
+          ) : null}
 
-          {showAngebotSection ? (
-            <div id="angebot" className="scroll-mt-16 space-y-3.5 lg:scroll-mt-4">
+          {activeSection === "angebot" && showAngebotSection ? (
+            <div
+              id="vorgang-panel-angebot"
+              className="space-y-3.5"
+              role="tabpanel"
+            >
               {rolePanel}
               {error ? (
                 <p className="text-sm font-semibold text-red-700" role="alert">
@@ -959,23 +1065,17 @@ export function OrganisationHvVorgangDetail({
                 </p>
               ) : null}
             </div>
-          ) : error ? (
+          ) : null}
+
+          {activeSection !== "angebot" && error ? (
             <p className="text-sm font-semibold text-red-700" role="alert">
               {error}
             </p>
           ) : null}
 
-          {showBautagebuch ? (
-            <DetailCard
-              id="bautagebuch"
-              title={HV_DETAIL_COPY.bautagebuchTitle}
-              badge={btUnread > 0 ? btUnread : null}
-            >
-              <div
-                className="scroll-mt-16 lg:scroll-mt-4"
-                onFocus={onBautagebuchViewed}
-                onClick={onBautagebuchViewed}
-              >
+          {activeSection === "bautagebuch" && showBautagebuch ? (
+            <DetailCard id="vorgang-panel-bautagebuch" title={HV_DETAIL_COPY.bautagebuchTitle}>
+              <div onFocus={onBautagebuchViewed} onClick={onBautagebuchViewed}>
                 {bautagebuch.length ? (
                   <BautagebuchAccordionList
                     heading=""
@@ -996,19 +1096,21 @@ export function OrganisationHvVorgangDetail({
             </DetailCard>
           ) : null}
 
-          <DetailCard id="dokumente" title={HV_DETAIL_COPY.dokumenteTitle}>
-            <DokumenteTabelle
-              heading=""
-              className="!border-0 !pt-0"
-              emptyText={HV_DETAIL_COPY.dokumenteEmpty}
-              dokumente={dokumente.map((d) => ({
-                id: d.id,
-                name: d.name,
-                datum: d.datum,
-                href: d.href,
-              }))}
-            />
-          </DetailCard>
+          {activeSection === "dokumente" ? (
+            <DetailCard id="vorgang-panel-dokumente" title={HV_DETAIL_COPY.dokumenteTitle}>
+              <DokumenteTabelle
+                heading=""
+                className="!border-0 !pt-0"
+                emptyText={HV_DETAIL_COPY.dokumenteEmpty}
+                dokumente={dokumente.map((d) => ({
+                  id: d.id,
+                  name: d.name,
+                  datum: d.datum,
+                  href: d.href,
+                }))}
+              />
+            </DetailCard>
+          ) : null}
         </div>
       </div>
     </div>

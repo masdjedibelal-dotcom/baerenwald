@@ -43,10 +43,10 @@ export function PortalConfirmDialog({
           disabled={loading}
           onClick={onConfirm}
           className={cn(
-            "portal-confirm-actions-primary",
+            "portal-btn portal-confirm-actions-primary",
             confirmVariant === "danger"
-              ? "btn-pill-outline portal-btn !border-red-200 !text-red-800"
-              : "btn-pill-primary portal-btn",
+              ? "rounded-[9px] border border-red-200 bg-white font-semibold text-red-800"
+              : "rounded-[9px] border-0 bg-[var(--org-primary,var(--p2-primary,#2E7D52))] font-semibold text-white hover:bg-[var(--org-primary-dk,var(--p2-primary-dk,#256642))]",
             loading && "opacity-60"
           )}
         >
@@ -56,7 +56,7 @@ export function PortalConfirmDialog({
           type="button"
           onClick={onCancel}
           disabled={loading}
-          className="btn-pill-outline portal-btn portal-confirm-actions-cancel"
+          className="portal-btn portal-confirm-actions-cancel rounded-[9px] border border-[var(--p2-line,rgba(0,0,0,0.08))] bg-[var(--p2-selected,#f0f2f0)] font-semibold text-[var(--p2-sub,#404a45)] hover:bg-[var(--p2-hover,#f7f8fa)]"
         >
           Abbrechen
         </button>
@@ -65,6 +65,72 @@ export function PortalConfirmDialog({
   );
 }
 
+export function PortalDetailHead({
+  title,
+  metaLine,
+  statusLabel,
+  statusPillClass,
+  statusPillStyle,
+  subtitle,
+  titleBadges,
+  actions,
+}: {
+  title: string;
+  metaLine?: string;
+  statusLabel?: string;
+  statusPillClass?: string;
+  statusPillStyle?: { color: string; backgroundColor: string };
+  /** Meta neben Status-Pill (Legacy Hero). */
+  subtitle?: string;
+  /** Badges/Chips neben dem Titel. */
+  titleBadges?: React.ReactNode;
+  /** CTA-Zeile rechts (Desktop) / unter dem Head (Mobile). */
+  actions?: React.ReactNode;
+}) {
+  const showStatusRow = Boolean(statusLabel?.trim()) || Boolean(subtitle);
+  return (
+    <header className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
+      <div className="min-w-0 flex-1 space-y-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <h3 className="font-display text-xl font-semibold leading-snug text-text-primary sm:text-2xl">
+            {title}
+          </h3>
+          {titleBadges}
+        </div>
+        {metaLine ? (
+          <p className="portal-text-body text-text-secondary">{metaLine}</p>
+        ) : null}
+        {showStatusRow ? (
+          <div className="flex flex-wrap items-center gap-2">
+            {statusLabel?.trim() ? (
+              <span
+                className={cn(
+                  "inline-flex items-center rounded-md px-2 py-0.5 text-[12px] font-semibold",
+                  !statusPillStyle && statusPillClass
+                )}
+                style={statusPillStyle}
+              >
+                {statusLabel}
+              </span>
+            ) : null}
+            {subtitle ? (
+              <span className="portal-text-meta text-text-secondary">
+                {subtitle}
+              </span>
+            ) : null}
+          </div>
+        ) : null}
+      </div>
+      {actions ? (
+        <div className="flex flex-wrap items-center gap-2 sm:shrink-0 sm:justify-end">
+          {actions}
+        </div>
+      ) : null}
+    </header>
+  );
+}
+
+/** @deprecated Nutze PortalDetailHead — bleibt als kompatibler Thin-Wrapper. */
 export function PortalDetailHero({
   title,
   metaLine,
@@ -72,6 +138,8 @@ export function PortalDetailHero({
   statusPillClass,
   statusPillStyle,
   subtitle,
+  titleBadges,
+  actions,
 }: {
   title: string;
   metaLine?: string;
@@ -79,33 +147,20 @@ export function PortalDetailHero({
   statusPillClass?: string;
   statusPillStyle?: { color: string; backgroundColor: string };
   subtitle?: string;
+  titleBadges?: React.ReactNode;
+  actions?: React.ReactNode;
 }) {
-  const showStatusRow = Boolean(statusLabel?.trim());
   return (
-    <header className="space-y-2">
-      <h3 className="font-display text-xl font-semibold leading-snug text-text-primary sm:text-2xl">
-        {title}
-      </h3>
-      {metaLine ? <p className="portal-text-body text-accent">{metaLine}</p> : null}
-      {showStatusRow || subtitle ? (
-        <div className="flex flex-wrap items-center gap-2">
-          {showStatusRow ? (
-            <span
-              className={cn(
-                "inline-flex items-center rounded-md px-2 py-0.5 text-[12px] font-semibold",
-                !statusPillStyle && statusPillClass
-              )}
-              style={statusPillStyle}
-            >
-              {statusLabel}
-            </span>
-          ) : null}
-          {subtitle ? (
-            <span className="portal-text-meta text-text-secondary">{subtitle}</span>
-          ) : null}
-        </div>
-      ) : null}
-    </header>
+    <PortalDetailHead
+      title={title}
+      metaLine={metaLine}
+      statusLabel={statusLabel}
+      statusPillClass={statusPillClass}
+      statusPillStyle={statusPillStyle}
+      subtitle={subtitle}
+      titleBadges={titleBadges}
+      actions={actions}
+    />
   );
 }
 
@@ -331,15 +386,22 @@ export function PortalDetailLayout({
       <div
         className={cn(
           "portal-detail-layout space-y-5",
-          footer ? "pb-4 lg:pb-2" : "pb-2"
+          footer ? "pb-4 max-lg:pb-2 lg:pb-2" : "pb-2"
         )}
       >
         {children}
       </div>
       {footer ? (
-        <div className="z-10 -mx-4 mt-3 border-t border-[var(--p2-line)] bg-[var(--p2-panel)]/95 px-4 py-3.5 shadow-[0_-4px_12px_rgba(16,25,20,0.08)] backdrop-blur-sm max-lg:sticky max-lg:bottom-[calc(4.5rem+env(safe-area-inset-bottom,0px))] lg:sticky lg:bottom-0 lg:mx-0 lg:mt-5">
-          {footer}
-        </div>
+        <>
+          {/* Platzhalter: fixed Action-Bar darf Inhalt nicht verdecken */}
+          <div
+            className="pointer-events-none max-lg:h-[var(--portal-detail-actions-h,6rem)] lg:hidden"
+            aria-hidden
+          />
+          <div className="portal-detail-sticky-actions z-40 border-t border-[var(--p2-line)] bg-[var(--p2-panel)]/95 px-4 py-3 shadow-[0_-4px_12px_rgba(16,25,20,0.08)] backdrop-blur-sm max-lg:fixed max-lg:inset-x-0 max-lg:bottom-[var(--portal-mobile-nav-h)] lg:sticky lg:bottom-0 lg:mt-5">
+            {footer}
+          </div>
+        </>
       ) : null}
     </div>
   );
@@ -355,6 +417,7 @@ export function PortalDetailStickyActions({
   secondaryLabel,
   onSecondary,
   secondaryDisabled,
+  disabledHint,
 }: {
   primaryLabel: string;
   onPrimary?: () => void;
@@ -365,31 +428,35 @@ export function PortalDetailStickyActions({
   secondaryLabel?: string;
   onSecondary?: () => void;
   secondaryDisabled?: boolean;
+  /** Hinweis unter den Buttons, wenn Primary disabled (z. B. fehlende Checkbox). */
+  disabledHint?: string | null;
 }) {
   return (
-    <div className="flex w-full gap-2">
-      {secondaryLabel ? (
+    <div className="w-full space-y-2">
+      <div className="portal-action-row">
+        {secondaryLabel ? (
+          <button
+            type="button"
+            disabled={secondaryDisabled || primaryLoading}
+            onClick={onSecondary}
+            className="portal-action-btn portal-action-btn--secondary"
+          >
+            {secondaryLabel}
+          </button>
+        ) : null}
         <button
-          type="button"
-          disabled={secondaryDisabled || primaryLoading}
-          onClick={onSecondary}
-          className="min-w-0 flex-1 rounded-[9px] border border-border-default bg-white px-[18px] py-[11px] text-[13.5px] font-semibold text-text-secondary disabled:opacity-60"
+          type={primaryType}
+          form={primaryForm}
+          disabled={primaryDisabled || primaryLoading}
+          onClick={primaryType === "button" ? onPrimary : undefined}
+          className="portal-action-btn portal-action-btn--primary"
         >
-          {secondaryLabel}
+          {primaryLoading ? "Wird gesendet…" : primaryLabel}
         </button>
+      </div>
+      {primaryDisabled && disabledHint ? (
+        <p className="text-center text-[12px] text-text-tertiary">{disabledHint}</p>
       ) : null}
-      <button
-        type={primaryType}
-        form={primaryForm}
-        disabled={primaryDisabled || primaryLoading}
-        onClick={primaryType === "button" ? onPrimary : undefined}
-        className={cn(
-          "min-w-0 flex-1 rounded-[9px] border-0 px-[18px] py-[11px] text-[13.5px] font-semibold text-white disabled:opacity-60",
-          "bg-[var(--org-primary,var(--accent,#2E7D52))]"
-        )}
-      >
-        {primaryLoading ? "Wird gesendet…" : primaryLabel}
-      </button>
     </div>
   );
 }
@@ -486,3 +553,16 @@ export function PortalDetailMilestoneList({
     </ul>
   );
 }
+
+/* Shared Detail-Kit Re-Exports */
+export { PortalDetailCover } from "@/components/shared/PortalDetailCover";
+export { PortalDetailTabs } from "@/components/shared/PortalDetailTabs";
+export {
+  PortalActionMenu,
+  PortalActionMenuList,
+  buildAushangActionItems,
+  buildAushangNestedItem,
+} from "@/components/shared/PortalActionMenu";
+export type { PortalActionMenuItem } from "@/components/shared/PortalActionMenu";
+export type { PortalDetailTab } from "@/components/shared/PortalDetailTabs";
+export { PortalDetailCard } from "@/components/shared/PortalDetailCard";

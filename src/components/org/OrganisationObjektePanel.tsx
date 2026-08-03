@@ -10,6 +10,7 @@ import { OrganisationObjektDetail } from "@/components/org/OrganisationObjektDet
 import { OrganisationObjektWizard } from "@/components/org/OrganisationObjektWizard";
 import { OrganisationMeldeQrModal } from "@/components/org/OrganisationMeldeQrModal";
 import { PortalModalShell } from "@/components/shared/PortalModalShell";
+import { PortalListeTitle } from "@/components/shared/PortalListeChrome";
 import {
   copyMeldeLink,
   openMeldeAushangPdf,
@@ -21,6 +22,7 @@ import type {
   OrganisationLead,
   OrganisationObjekt,
 } from "@/lib/org/types";
+import { portalListStackClass } from "@/lib/portal2/layout-chrome";
 import {
   buildObjCardModel,
   countOffeneByObjektId,
@@ -375,7 +377,7 @@ export function OrganisationObjektePanel({
     <div className="space-y-4">
       <div className="relative flex items-end justify-between gap-3">
         <div className="min-w-0 flex-1 space-y-0.5">
-          <h2 className="portal-text-section text-text-primary">Objekte</h2>
+          <PortalListeTitle>Objekte</PortalListeTitle>
         </div>
         <button
           type="button"
@@ -420,7 +422,7 @@ export function OrganisationObjektePanel({
           finden Sie danach im Detail.
         </div>
       ) : (
-        <div className="grid grid-cols-1 gap-3.5 md:grid-cols-2">
+        <div className={portalListStackClass("responsive")}>
           {objekte.map((o) => {
             const isSel = selected.includes(o.id);
             const offen = offenById[o.id] ?? 0;

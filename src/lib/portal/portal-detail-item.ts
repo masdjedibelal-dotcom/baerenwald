@@ -27,6 +27,24 @@ export type PortalMilestoneItem = {
   erledigt: boolean;
 };
 
+/** Deep-Link `?id=` kann Lead-, Angebots- oder Auftrags-ID sein. */
+export function findKundeVorgangByQueryId<
+  T extends { id: string; leadId?: string },
+>(items: readonly T[], queryId: string | null | undefined): T | null {
+  const id = queryId?.trim();
+  if (!id) return null;
+  return (
+    items.find((i) => i.id === id) ??
+    items.find((i) => i.leadId === id) ??
+    null
+  );
+}
+
+export type PortalAbnahmeCheckliste = {
+  leistungen: Array<{ name: string; ok?: boolean }>;
+  maengel: Array<{ titel: string; status?: string | null }>;
+};
+
 export type KundePortalDetailItem = {
   id: string;
   /** Lead-ID falls vom Vorgang abweichend (z. B. Angebot/Auftrag). */
@@ -49,6 +67,8 @@ export type KundePortalDetailItem = {
   /** D11: `angebote.herkunft` (z. B. handwerker → Empfohlenes Angebot). */
   angebotHerkunft?: string | null;
   isAuftragDetail?: boolean;
+  /** HW-Teil-/Gesamtabnahme: Leistungen + Mängel (Abschluss-Ansicht). */
+  abnahmeCheckliste?: PortalAbnahmeCheckliste | null;
   auftragPhasen?: PortalAuftragPhasenInput & {
     states: Record<PortalAuftragPhaseId, PortalAuftragPhaseState>;
     aktuellePhase?: string;
@@ -105,6 +125,11 @@ export type KundePortalDetailItem = {
   meldeZeitraum?: string | null;
   /** Fachfragen (Frage → Antwort) aus dem Melde-Funnel */
   meldeFachdetails?: Array<{ label: string; value: string }>;
+  /**
+   * Unverbindliche Preisindikation aus Mieter-Meldung (preis_min/max).
+   * Nur für HV-Ansicht befüllen / anzeigen — nicht für Mieter.
+   */
+  meldePreisIndikation?: string | null;
   /** C4 — HV Meta „Wartet auf HW · …“ */
   wartetAufHwLabel?: string | null;
 };

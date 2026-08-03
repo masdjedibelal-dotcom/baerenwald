@@ -15,12 +15,12 @@ import { PartnerLeistungenKonditionenCard } from "@/components/partner/PartnerLe
 import {
   PartnerConfirmDialog,
   PartnerDetailError,
-  PartnerDetailHero,
   PartnerDetailInfoBox,
   PartnerDetailLayout,
   PartnerDetailSection,
   PartnerDetailStickyActions,
 } from "@/components/partner/PartnerDetailUi";
+import { PortalEntityDetailLayout } from "@/components/shared/PortalEntityDetailLayout";
 import { PartnerHwKalkulationScreen } from "@/components/partner/PartnerHwKalkulationScreen";
 import { PartnerDokumentPreviewModal } from "@/components/partner/PartnerDokumentPreviewModal";
 import { DokumenteTabelle, type DokumentZeile } from "@/components/shared/DokumenteTabelle";
@@ -65,10 +65,12 @@ export function PartnerOffenDetail({
   item,
   vorgangState,
   onConfirmed,
+  onBack,
 }: {
   item: PartnerOffenAngebotItem;
   vorgangState?: VorgangState;
   onConfirmed?: (anfrageId: string) => void;
+  onBack?: () => void;
 }) {
   const router = useRouter();
   const isNachreichung = item.offen_karten_typ === "nachreichung";
@@ -278,6 +280,14 @@ export function PartnerOffenDetail({
       ? pflichtenGelesen && projektvertragBereit
       : pflichtenGelesen;
 
+  const acceptDisabledHint = !kannBestaetigen
+    ? !pflichtenGelesen
+      ? "Bitte die Pflichten bestätigen."
+      : brauchtProjektvertrag && !projektvertragBereit
+        ? "Bitte den Projektvertrag bestätigen."
+        : null
+    : null;
+
   const actionFooter =
     showKalkulation ? null : !showReject ? (
       <PartnerDetailStickyActions
@@ -285,6 +295,7 @@ export function PartnerOffenDetail({
         onPrimary={() => setConfirmOpen(true)}
         primaryLoading={loading}
         primaryDisabled={!kannBestaetigen}
+        disabledHint={acceptDisabledHint}
         secondaryLabel="Ablehnen"
         onSecondary={() => setShowReject(true)}
         secondaryDisabled={loading}
@@ -308,36 +319,44 @@ export function PartnerOffenDetail({
   if (showKalkulation) {
     return (
       <PartnerDetailLayout footer={null}>
-        <PartnerDetailHero
+        <PortalEntityDetailLayout
+          onBack={onBack ?? (() => router.back())}
+          backLabel="← Zurück"
           title={resolvePartnerDetailTitelFromAnfrage(item)}
           metaLine={heroMeta}
           statusLabel="Angenommen"
           statusPillClass={partnerDetailStatusPillClass("angenommen")}
           statusPillStyle={partnerDetailStatusPillStyle("angenommen")}
-        />
-        <PartnerDetailInfoBox>
-          Als Nächstes: Kalkulation einreichen — Positionen und Summe erscheinen
-          im CRM und bei der Verwaltung als empfohlenes Angebot.
-        </PartnerDetailInfoBox>
-        <PartnerHwKalkulationScreen
-          anfrageId={item.id}
-          onDone={finishAfterKalk}
-          onCancel={finishAfterKalk}
-        />
+        >
+          <div className="space-y-5">
+            <PartnerDetailInfoBox>
+              Als Nächstes: Kalkulation einreichen — Positionen und Summe erscheinen
+              im CRM und bei der Verwaltung als empfohlenes Angebot.
+            </PartnerDetailInfoBox>
+            <PartnerHwKalkulationScreen
+              anfrageId={item.id}
+              onDone={finishAfterKalk}
+              onCancel={finishAfterKalk}
+            />
+          </div>
+        </PortalEntityDetailLayout>
       </PartnerDetailLayout>
     );
   }
 
   return (
     <PartnerDetailLayout footer={actionFooter}>
-      <PartnerDetailHero
+      <PortalEntityDetailLayout
+        coverUrl={item.lead?.objekt?.cover_url}
+        onBack={onBack ?? (() => router.back())}
+        backLabel="← Zurück"
         title={resolvePartnerDetailTitelFromAnfrage(item)}
         metaLine={heroMeta}
         statusLabel={statusLabel}
         statusPillClass={partnerDetailStatusPillClass(statusPillKey)}
         statusPillStyle={partnerDetailStatusPillStyle(statusPillKey)}
-      />
-
+      >
+        <div className="space-y-5">
       <VorgangDetailBlocks
         vm={buildPartnerVorgangDetailVm({
           idLabel: item.id.slice(0, 8).toUpperCase(),
@@ -472,6 +491,8 @@ export function PartnerOffenDetail({
         onSuccess={continueAfterAngebotDoc}
         allowSkip
       />
+        </div>
+      </PortalEntityDetailLayout>
     </PartnerDetailLayout>
   );
 }

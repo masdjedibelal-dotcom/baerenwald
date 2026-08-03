@@ -168,7 +168,7 @@ export function PartnerStammdatenForm({ handwerker }: { handwerker: PartnerHandw
         <button
           type="submit"
           disabled={loading}
-          className="btn-pill-primary portal-btn w-full sm:w-auto !px-6 !py-3"
+          className="btn-pill-primary portal-btn w-full sm:w-auto"
         >
           {loading ? "Wird gespeichert…" : "Stammdaten speichern"}
         </button>

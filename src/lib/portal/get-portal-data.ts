@@ -204,7 +204,7 @@ export async function getPortalDataForKunde(kundeId: string) {
   const { data: leads } = await supabaseAdmin
     .from("leads")
     .select(
-      "id, situation, bereiche, status, vorgang_phase, created_at, plz, strasse, hausnummer, zeitraum, kontakt_name, preis_min, preis_max, budget_ca, kontakt_nachricht, funnel_daten, kunde_objekt_id, anlass, kanal, auftraggeber_kunde_id, hv_meldung_status, org_freigabe_status, freigabe_bypass_grund, melde_tracking_token"
+      "id, situation, bereiche, status, vorgang_phase, created_at, plz, strasse, hausnummer, zeitraum, kontakt_name, preis_min, preis_max, preis_unsicher, budget_ca, kontakt_nachricht, funnel_daten, kunde_objekt_id, anlass, kanal, auftraggeber_kunde_id, hv_meldung_status, org_freigabe_status, freigabe_bypass_grund, melde_tracking_token"
     )
     .eq("kunde_id", kunde.id)
     .order("created_at", { ascending: false });
@@ -355,7 +355,7 @@ export async function getPortalDataForKunde(kundeId: string) {
       ? await supabaseAdmin
           .from("auftrag_abnahmeprotokolle")
           .select(
-            "id, auftrag_id, abnahme_datum, pdf_url, created_at, an_kunde_gesendet_at"
+            "id, auftrag_id, abnahme_datum, pdf_url, created_at, an_kunde_gesendet_at, punkte, maengel, freigabe_status, ebene"
           )
           .in("auftrag_id", auftragIds)
           .order("created_at", { ascending: false })
@@ -370,6 +370,9 @@ export async function getPortalDataForKunde(kundeId: string) {
       created_at?: string | null;
       pdf_href?: string | null;
       handwerker_label?: string | null;
+      punkte?: unknown;
+      maengel?: unknown;
+      freigabe_status?: string | null;
     }>
   >();
 
@@ -382,6 +385,10 @@ export async function getPortalDataForKunde(kundeId: string) {
       created_at: (row as { created_at?: string | null }).created_at ?? null,
       pdf_href: pdfHref,
       handwerker_label: null as string | null,
+      punkte: (row as { punkte?: unknown }).punkte,
+      maengel: (row as { maengel?: unknown }).maengel,
+      freigabe_status:
+        (row as { freigabe_status?: string | null }).freigabe_status ?? null,
     };
     const list = abnahmeByAuftrag.get(aid) ?? [];
     list.push(entry);
@@ -693,6 +700,7 @@ export async function getPortalDataForKunde(kundeId: string) {
           bestaetigt_am: s.bestaetigt_am,
         })),
         rechnungen: auftragRechnungen,
+        abnahmeProtokolle: abnahmeByAuftrag.get(auftragId) ?? [],
       };
     });
 

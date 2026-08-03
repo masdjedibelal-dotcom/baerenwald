@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import {
   mapMangelToCrm,
   mapPunktToCrm,
+  type PortalAbnahmeErgebnis,
   type PortalAbnahmeMangel,
   type PortalAbnahmePunkt,
 } from "@/lib/partner/abnahme-types";
@@ -25,6 +26,12 @@ export type PartnerAbnahmeNachSignaturInput = {
   auftragId: string;
   abnahmeDatum: string;
   ort: string;
+  /** CRM meta.projektbezeichnung — Pflicht */
+  projektbezeichnung: string;
+  /** CRM meta.vertreter_an — Pflicht (Vertreter Auftragnehmer) */
+  vertreter: string;
+  /** CRM meta.abnahme_ergebnis; verweigert erlaubt wenn gewählt */
+  abnahmeErgebnis?: PortalAbnahmeErgebnis | null;
   notizen?: string | null;
   punkte: PortalAbnahmePunkt[];
   maengel: PortalAbnahmeMangel[];
@@ -40,6 +47,7 @@ export type PartnerAbnahmeNachSignaturResult =
       vollstaendig: boolean;
       pdf_url: string | null;
       protokoll_id: string | null;
+      freigabe_status: "zur_freigabe";
     }
   | { ok: false; error: string };
 
@@ -89,6 +97,16 @@ async function partnerAuth() {
   return { ok: true as const, handwerkerId: link.handwerkerId };
 }
 
+function resolveAbnahmeErgebnis(
+  input: PartnerAbnahmeNachSignaturInput
+): PortalAbnahmeErgebnis {
+  const raw = String(input.abnahmeErgebnis ?? "").trim();
+  if (raw === "verweigert" || raw === "mit_vorbehalt" || raw === "abgenommen") {
+    return raw;
+  }
+  return input.maengel.length > 0 ? "mit_vorbehalt" : "abgenommen";
+}
+
 function validateNachSignatur(
   input: PartnerAbnahmeNachSignaturInput
 ): string | null {
@@ -98,8 +116,14 @@ function validateNachSignatur(
   if (input.punkte.some((p) => !p.leistung_name.trim())) {
     return "Jede Leistung braucht einen Titel.";
   }
+  if (!input.projektbezeichnung?.trim()) {
+    return "Projektbezeichnung fehlt.";
+  }
   if (!input.abnahmeDatum.trim()) return "Abnahmedatum fehlt.";
   if (!input.ort.trim()) return "Ort fehlt.";
+  if (!input.vertreter?.trim() || input.vertreter.trim().length < 2) {
+    return "Vertreter (Auftragnehmer) fehlt.";
+  }
   if (!input.kundeUnterschriftName.trim() || input.kundeUnterschriftName.trim().length < 3) {
     return "Bitte den vollen Namen des Kunden ausschreiben.";
   }
@@ -118,7 +142,36 @@ function validateNachSignatur(
   return null;
 }
 
-/** Nach Kunden-Signatur: CRM erstellt Protokoll + PDF. */
+async function loadOwnAbnahmeLink(auftragId: string, handwerkerId: string) {
+  const { data } = await supabaseAdmin
+    .from("auftrag_handwerker")
+    .select("abnahme_signiert_am, abnahme_protokoll_id")
+    .eq("auftrag_id", auftragId)
+    .eq("handwerker_id", handwerkerId)
+    .maybeSingle();
+
+  const signiertAm =
+    (data as { abnahme_signiert_am?: string | null } | null)?.abnahme_signiert_am ??
+    null;
+  const protokollId =
+    (data as { abnahme_protokoll_id?: string | null } | null)?.abnahme_protokoll_id ??
+    null;
+
+  let freigabeStatus: string | null = null;
+  if (protokollId) {
+    const { data: proto } = await supabaseAdmin
+      .from("auftrag_abnahmeprotokolle")
+      .select("freigabe_status")
+      .eq("id", protokollId)
+      .maybeSingle();
+    freigabeStatus =
+      (proto as { freigabe_status?: string | null } | null)?.freigabe_status ?? null;
+  }
+
+  return { signiertAm, protokollId, freigabeStatus };
+}
+
+/** Nach Kunden-Signatur: CRM erstellt Teilabnahme → zur_freigabe (kein Auto-Versand). */
 export async function submitPartnerAbnahmeNachSignatur(
   input: PartnerAbnahmeNachSignaturInput
 ): Promise<PartnerAbnahmeNachSignaturResult> {
@@ -136,37 +189,43 @@ export async function submitPartnerAbnahmeNachSignatur(
 
   const { data: auftrag } = await supabaseAdmin
     .from("auftraege")
-    .select(
-      "id, titel, status, lead_id, hw_abschluss_signiert_am, abnahme_protokoll_url"
-    )
+    .select("id, titel, status, lead_id")
     .eq("id", id)
     .maybeSingle();
 
   if (!auftrag) return { ok: false, error: "Auftrag nicht gefunden." };
-  if (
-    (auftrag as { hw_abschluss_signiert_am?: string | null })
-      .hw_abschluss_signiert_am
-  ) {
-    return { ok: false, error: "Abnahme wurde bereits signiert." };
+
+  const own = await loadOwnAbnahmeLink(id, auth.handwerkerId);
+  const freigabe = String(own.freigabeStatus ?? "").toLowerCase();
+  if (own.signiertAm && freigabe !== "abgelehnt" && freigabe !== "entwurf") {
+    return {
+      ok: false,
+      error:
+        freigabe === "zur_freigabe"
+          ? "Ihre Teilabnahme wartet bereits auf CRM-Freigabe."
+          : "Ihre Teilabnahme wurde bereits signiert.",
+    };
   }
 
   const ortDatum = `${input.ort.trim()}, ${input.abnahmeDatum.slice(0, 10)}`;
+  const abnahmeErgebnis = resolveAbnahmeErgebnis(input);
   const crm = await submitCrmAbnahmeNachSignatur(id, {
     abnahme_datum: input.abnahmeDatum.slice(0, 10),
     punkte: input.punkte.map(mapPunktToCrm),
     maengel: input.maengel.map(mapMangelToCrm),
     notizen: input.notizen?.trim() || null,
+    handwerker_id: auth.handwerkerId,
     meta: {
       uebergabe_ort: input.ort.trim(),
       unterschrift_ort_datum_an: ortDatum,
       unterschrift_ort_datum_ag: ortDatum,
-      abnahme_ergebnis:
-        input.maengel.length > 0 ? "mit_vorbehalt" : "abgenommen",
+      projektbezeichnung: input.projektbezeichnung.trim(),
+      abnahme_ergebnis: abnahmeErgebnis,
       hw_unterschrift_name: input.hwUnterschriftName.trim(),
       kunde_unterschrift_name: input.kundeUnterschriftName.trim(),
       signature_hw_url: input.hwSignaturPng ?? null,
       signature_kunde_url: input.kundeSignaturPng ?? null,
-      vertreter_an: input.hwUnterschriftName.trim(),
+      vertreter_an: input.vertreter.trim(),
       ansprechpartner_kunde: input.kundeUnterschriftName.trim(),
     },
   });
@@ -210,6 +269,36 @@ export async function submitPartnerAbnahmeNachSignatur(
   }
 
   const now = new Date().toISOString();
+  const protokollId = crm.protokoll_id ?? own.protokollId ?? null;
+
+  // Signatur nur pro Handwerker — kein globales auftraege.hw_abschluss_signiert_am,
+  // kein vorzeitiges status=abgeschlossen (CRM Freigabe-Kette).
+  const { data: existingLink } = await supabaseAdmin
+    .from("auftrag_handwerker")
+    .select("auftrag_id")
+    .eq("auftrag_id", id)
+    .eq("handwerker_id", auth.handwerkerId)
+    .maybeSingle();
+
+  if (existingLink) {
+    await supabaseAdmin
+      .from("auftrag_handwerker")
+      .update({
+        abnahme_signiert_am: now,
+        ...(protokollId ? { abnahme_protokoll_id: protokollId } : {}),
+      })
+      .eq("auftrag_id", id)
+      .eq("handwerker_id", auth.handwerkerId);
+  } else {
+    await supabaseAdmin.from("auftrag_handwerker").insert({
+      auftrag_id: id,
+      handwerker_id: auth.handwerkerId,
+      status: "uebernommen",
+      abnahme_signiert_am: now,
+      ...(protokollId ? { abnahme_protokoll_id: protokollId } : {}),
+    });
+  }
+
   const { data: allPos } = await supabaseAdmin
     .from("auftrag_positionen")
     .select("id, handwerker_status, leistung_status, handwerker_id")
@@ -222,19 +311,6 @@ export async function submitPartnerAbnahmeNachSignatur(
       handwerker_id?: string | null;
     }>
   );
-
-  await supabaseAdmin
-    .from("auftraege")
-    .update({
-      hw_abschluss_signiert_am: now,
-      abnahme_datum: input.abnahmeDatum.slice(0, 10),
-      abnahme_protokoll_url: crm.pdf_url ?? null,
-      ...(vollstaendig && input.maengel.length === 0
-        ? { status: "abgeschlossen" }
-        : {}),
-      updated_at: now,
-    })
-    .eq("id", id);
 
   const [{ data: hw }, { data: auf }] = await Promise.all([
     supabaseAdmin
@@ -269,7 +345,8 @@ export async function submitPartnerAbnahmeNachSignatur(
     ok: true,
     vollstaendig,
     pdf_url: crm.pdf_url ?? null,
-    protokoll_id: crm.protokoll_id ?? null,
+    protokoll_id: protokollId,
+    freigabe_status: "zur_freigabe",
   };
 }
 
@@ -301,6 +378,10 @@ export async function bestaetigePartnerAbnahme(
   return r;
 }
 
+/**
+ * Kundenversand nur nach CRM-Freigabe (CRM lehnt sonst ab).
+ * Partner-UI zeigt keinen Versand-CTA vor Freigabe.
+ */
 export async function versendePartnerAbnahme(
   auftragId: string,
   protokollId?: string | null

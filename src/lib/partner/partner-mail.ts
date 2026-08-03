@@ -134,7 +134,7 @@ export async function sendHandwerkerNewAnfrageMail(opts: {
     `<p style="margin:0 0 12px;font-size:15px;line-height:1.6;">Hallo ${escapeHtml(opts.handwerkerName)},</p>
 <p style="margin:0 0 12px;font-size:15px;line-height:1.6;">du hast eine neue Anfrage für <strong>${escapeHtml(opts.gewerkName)}</strong> (PLZ ${escapeHtml(opts.plz)}).</p>
 ${zeitraumBlock}
-<p style="margin:0 0 12px;font-size:14px;color:#444;">Bitte unter <strong>Anfragen</strong> annehmen oder ablehnen (nicht unter Aufträge).</p>
+<p style="margin:0 0 12px;font-size:14px;color:#444;">Bitte unter <strong>Vorgänge</strong> annehmen oder ablehnen.</p>
 ${mailBtn("Zur Anfrage im Portal", portalHref)}
 ${tokenBlock}`,
     `Neue Anfrage: ${opts.gewerkName}`

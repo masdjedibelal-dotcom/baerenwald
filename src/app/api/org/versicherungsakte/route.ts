@@ -6,7 +6,7 @@ import { supabaseAdmin } from "@/lib/supabase";
 
 export const runtime = "nodejs";
 
-async function loadAuftragForOrg(auftragId: string, kundeId: string) {
+async function loadOrgAuftrag(auftragId: string, kundeId: string) {
   return supabaseAdmin
     .from("auftraege")
     .select("id, kunde_id, versicherungsakte_pdf_url, kostentraeger, lead_id")
@@ -15,21 +15,19 @@ async function loadAuftragForOrg(auftragId: string, kundeId: string) {
     .maybeSingle();
 }
 
-/** Download der Schadenakte; erzeugt sie bei Bedarf neu. */
+/** PDF der Schadenakte herunterladen (ggf. zuvor erzeugen). */
 export async function GET(req: Request) {
   const session = await requireOrganisationSession();
   if (!session.ok) {
     return NextResponse.json({ error: session.error }, { status: session.status });
   }
 
-  const url = new URL(req.url);
-  const auftragId = url.searchParams.get("auftragId")?.trim();
+  const auftragId = new URL(req.url).searchParams.get("auftragId")?.trim();
   if (!auftragId) {
     return NextResponse.json({ error: "auftragId fehlt." }, { status: 400 });
   }
 
-  const { data: auftrag } = await loadAuftragForOrg(auftragId, session.kunde.id);
-
+  const { data: auftrag } = await loadOrgAuftrag(auftragId, session.kunde.id);
   if (!auftrag) {
     return NextResponse.json({ error: "Auftrag nicht gefunden." }, { status: 404 });
   }
@@ -39,14 +37,14 @@ export async function GET(req: Request) {
     : "";
 
   if (!pdfUrl) {
-    const created = await ensureVersicherungsakteForAuftrag(auftragId, {
+    const generated = await ensureVersicherungsakteForAuftrag(auftragId, {
       actorId: session.userId,
       actorRolle: session.rolle,
     });
-    if (!created.ok) {
-      return NextResponse.json({ error: created.message }, { status: 404 });
+    if (!generated.ok) {
+      return NextResponse.json({ error: generated.message }, { status: 404 });
     }
-    pdfUrl = created.url;
+    pdfUrl = generated.url;
   }
 
   const pdfRes = await fetch(pdfUrl);
@@ -66,7 +64,7 @@ export async function GET(req: Request) {
   });
 }
 
-/** Explizit Schadenakte erzeugen/aktualisieren. */
+/** Schadenakte neu erzeugen / aktualisieren. */
 export async function POST(req: Request) {
   const session = await requireOrganisationSession();
   if (!session.ok) {
@@ -85,18 +83,18 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "auftragId fehlt." }, { status: 400 });
   }
 
-  const { data: auftrag } = await loadAuftragForOrg(auftragId, session.kunde.id);
+  const { data: auftrag } = await loadOrgAuftrag(auftragId, session.kunde.id);
   if (!auftrag) {
     return NextResponse.json({ error: "Auftrag nicht gefunden." }, { status: 404 });
   }
 
-  const created = await ensureVersicherungsakteForAuftrag(auftragId, {
+  const result = await ensureVersicherungsakteForAuftrag(auftragId, {
     actorId: session.userId,
     actorRolle: session.rolle,
   });
-  if (!created.ok) {
-    return NextResponse.json({ error: created.message }, { status: 400 });
-  }
 
-  return NextResponse.json({ ok: true, url: created.url });
+  if (!result.ok) {
+    return NextResponse.json({ error: result.message }, { status: 400 });
+  }
+  return NextResponse.json({ ok: true, url: result.url });
 }

@@ -139,7 +139,7 @@ export function PortalRegisterForm({ prefill }: Props) {
         </p>
         <Link
           href={loginHref}
-          className="btn-pill-primary portal-btn inline-flex !px-4 !py-2.5"
+          className="btn-pill-primary portal-btn inline-flex"
         >
           Zum Login
         </Link>
@@ -291,7 +291,7 @@ export function PortalRegisterForm({ prefill }: Props) {
       <button
         type="submit"
         disabled={locked && (!name.trim() || !email.trim())}
-        className="btn-pill-primary portal-btn w-full !py-3 disabled:opacity-60"
+        className="btn-pill-primary portal-btn w-full disabled:opacity-60"
       >
         Konto anlegen
       </button>

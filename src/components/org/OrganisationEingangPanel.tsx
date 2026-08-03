@@ -563,8 +563,11 @@ export function OrganisationEingangPanel({
         <button
           type="button"
           onClick={closeDetail}
-          className="rounded-full px-3 py-1.5 text-[12.5px] font-semibold text-white"
-          style={{ background: PORTAL_VAR.primary }}
+          className="rounded-full border border-[var(--p2-line,rgba(0,0,0,0.08))] px-3 py-1.5 text-[12.5px] font-semibold"
+          style={{
+            background: "var(--p2-selected, #f0f2f0)",
+            color: PORTAL_VAR.sub,
+          }}
         >
           ‹ Zurück
         </button>

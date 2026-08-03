@@ -8,6 +8,7 @@ import {
   PartnerDetailError,
   PartnerDetailSection,
 } from "@/components/partner/PartnerDetailUi";
+import { PartnerKiKorrekturField } from "@/components/partner/PartnerKiKorrekturField";
 import { SignatureCanvas } from "@/components/shared/SignatureCanvas";
 import {
   HW_ABSCHLUSS_CHECKS,
@@ -144,32 +145,30 @@ export function PartnerAbnahmeprotokollForm({
           ))}
         </div>
 
-        <label className="block space-y-1.5">
-          <span className="portal-text-meta font-medium text-text-secondary">
-            Protokoll / durchgeführte Arbeiten *
-          </span>
-          <textarea
-            required
-            rows={5}
-            value={protokollText}
-            onChange={(e) => setProtokollText(e.target.value)}
-            placeholder="Kurz beschreiben, was abgenommen wurde …"
-            className="portal-input w-full min-h-[120px] resize-y"
-          />
-        </label>
+        <PartnerKiKorrekturField
+          scope="abnahmeprotokoll"
+          name="protokollText"
+          label="Protokoll / durchgeführte Arbeiten"
+          value={protokollText}
+          onChange={setProtokollText}
+          rows={5}
+          required
+          placeholder="Kurz beschreiben, was abgenommen wurde …"
+          auftragTitel={leistungen.slice(0, 3).join(", ") || null}
+          rohName="protokoll_roh"
+        />
 
-        <label className="block space-y-1.5">
-          <span className="portal-text-meta font-medium text-text-secondary">
-            Mängel / Vorbehalte (optional)
-          </span>
-          <textarea
-            rows={2}
-            value={maengelText}
-            onChange={(e) => setMaengelText(e.target.value)}
-            placeholder="Falls vor Ort Mängel vermerkt wurden …"
-            className="portal-input w-full resize-y"
-          />
-        </label>
+        <PartnerKiKorrekturField
+          scope="abnahmeprotokoll"
+          name="maengelText"
+          label="Mängel / Vorbehalte (optional)"
+          value={maengelText}
+          onChange={setMaengelText}
+          rows={2}
+          placeholder="Falls vor Ort Mängel vermerkt wurden …"
+          auftragTitel={leistungen.slice(0, 3).join(", ") || null}
+          rohName="maengel_roh"
+        />
 
         <div className="grid gap-4 sm:grid-cols-2">
           <label className="block space-y-1.5">

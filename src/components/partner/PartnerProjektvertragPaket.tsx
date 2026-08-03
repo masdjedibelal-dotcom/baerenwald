@@ -130,7 +130,7 @@ export function PartnerProjektvertragPaket({
             href={vertrag.pdf_signed_url ?? vertrag.pdf_url ?? "#"}
             target="_blank"
             rel="noopener noreferrer"
-            className="btn-pill-outline portal-btn mt-3 inline-flex !px-4 !py-2.5"
+            className="btn-pill-outline portal-btn mt-3 inline-flex"
           >
             Vertrag als PDF öffnen
           </a>
@@ -177,7 +177,7 @@ export function PartnerProjektvertragPaket({
           type="button"
           disabled={loading}
           onClick={() => setConfirmOpen(true)}
-          className="btn-pill-primary portal-btn w-full !py-3 sm:w-auto sm:!px-6"
+          className="btn-pill-primary portal-btn w-full sm:w-auto"
         >
           {loading ? "Wird gesendet…" : "Auftrag verbindlich bestätigen"}
         </button>

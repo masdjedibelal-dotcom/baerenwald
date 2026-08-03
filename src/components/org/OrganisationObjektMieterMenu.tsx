@@ -15,7 +15,7 @@ type Props = {
 };
 
 /**
- * Mieter-⋯ — ActionSheet via Shell `confirm`.
+ * Mieter-⋯ — ActionSheet via Shell `edit` (mobil Bottom Sheet, Desktop Side-Over).
  */
 export function OrganisationObjektMieterMenu({
   hasEmail,
@@ -65,7 +65,7 @@ export function OrganisationObjektMieterMenu({
         open={open}
         title="Mieter"
         onClose={() => setOpen(false)}
-        variant="confirm"
+        variant="edit"
         maxWidth={360}
       >
         <div className="flex flex-col gap-0.5">

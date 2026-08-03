@@ -1,7 +1,11 @@
 import { createClient } from "@/lib/supabase/server";
 
 function dashboardBase(): string | null {
-  const base = process.env.NEXT_PUBLIC_DASHBOARD_URL?.replace(/\/$/, "");
+  const raw =
+    process.env.NEXT_PUBLIC_DASHBOARD_URL?.trim() ||
+    process.env.CRM_DASHBOARD_URL?.trim() ||
+    "";
+  const base = raw.replace(/\/$/, "");
   return base || null;
 }
 
@@ -95,11 +99,19 @@ export async function submitCrmPartnerAnnahme(input: {
   antwort: "akzeptiert" | "abgelehnt";
   notiz?: string | null;
   grund?: string | null;
-}): Promise<{ ok: true; already?: boolean } | { ok: false; error: string }> {
+}): Promise<
+  | { ok: true; already?: boolean; skipped?: boolean }
+  | { ok: false; error: string }
+> {
   const base = dashboardBase();
   const headers = internalSecretHeaders();
   if (!base || !headers) {
-    return { ok: false, error: "CRM-Verbindung nicht konfiguriert." };
+    // Shared-DB-Update läuft im Portal weiter — Partner nicht blockieren,
+    // wenn CRM-URL / PARTNER_INTERNAL_API_SECRET in der Umgebung fehlt.
+    console.warn(
+      "[partner-crm] Annahme ohne CRM-Sync (NEXT_PUBLIC_DASHBOARD_URL/CRM_DASHBOARD_URL oder PARTNER_INTERNAL_API_SECRET fehlt)."
+    );
+    return { ok: true, skipped: true };
   }
 
   try {
@@ -260,6 +272,8 @@ export type CrmAbnahmeNachSignaturPayload = {
   punkte: Array<Record<string, unknown>>;
   maengel: Array<Record<string, unknown>>;
   notizen?: string | null;
+  /** Partner-Teilabnahme — CRM speichert handwerker_id + ebene=handwerker */
+  handwerker_id?: string;
   meta?: Record<string, unknown> | null;
 };
 
@@ -267,7 +281,12 @@ export async function submitCrmAbnahmeNachSignatur(
   auftragId: string,
   payload: CrmAbnahmeNachSignaturPayload
 ): Promise<
-  | { ok: true; pdf_url?: string | null; protokoll_id?: string | null }
+  | {
+      ok: true;
+      pdf_url?: string | null;
+      protokoll_id?: string | null;
+      freigabe_status?: string | null;
+    }
   | { ok: false; error: string }
 > {
   const base = dashboardBase();
@@ -289,6 +308,7 @@ export async function submitCrmAbnahmeNachSignatur(
       error?: string;
       pdf_url?: string | null;
       protokoll_id?: string | null;
+      freigabe_status?: string | null;
     };
     if (!res.ok) {
       return { ok: false, error: body.error || "CRM-Abnahme fehlgeschlagen." };
@@ -297,6 +317,7 @@ export async function submitCrmAbnahmeNachSignatur(
       ok: true,
       pdf_url: body.pdf_url ?? null,
       protokoll_id: body.protokoll_id ?? null,
+      freigabe_status: body.freigabe_status ?? "zur_freigabe",
     };
   } catch {
     return { ok: false, error: "CRM nicht erreichbar." };
@@ -317,6 +338,7 @@ export async function fetchCrmAbnahmeStatus(
       an_kunde_gesendet_at: string | null;
       handwerker_bestaetigt_at: string | null;
       abnahme_ergebnis: string | null;
+      freigabe_status: string | null;
     }
   | { ok: false; error: string }
 > {
@@ -352,6 +374,7 @@ export async function fetchCrmAbnahmeStatus(
       handwerker_bestaetigt_at:
         (body.handwerker_bestaetigt_at as string | null) ?? null,
       abnahme_ergebnis: (body.abnahme_ergebnis as string | null) ?? null,
+      freigabe_status: (body.freigabe_status as string | null) ?? null,
     };
   } catch {
     return { ok: false, error: "CRM nicht erreichbar." };

@@ -118,6 +118,7 @@ export function MieterWlBtn({
   disabled,
   type = "button",
   href,
+  className,
 }: {
   children: ReactNode;
   onClick?: () => void;
@@ -125,14 +126,16 @@ export function MieterWlBtn({
   disabled?: boolean;
   type?: "button" | "submit";
   href?: string;
+  className?: string;
 }) {
-  const className = cn(
+  const cls = cn(
     "mieter-wl-btn",
-    kind === "ghost" ? "mieter-wl-btn--ghost" : "mieter-wl-btn--primary"
+    kind === "ghost" ? "mieter-wl-btn--ghost" : "mieter-wl-btn--primary",
+    className
   );
   if (href) {
     return (
-      <a href={href} className={className}>
+      <a href={href} className={cls}>
         {children}
       </a>
     );
@@ -140,7 +143,7 @@ export function MieterWlBtn({
   return (
     <button
       type={type}
-      className={className}
+      className={cls}
       onClick={onClick}
       disabled={disabled}
     >

@@ -76,7 +76,7 @@ export function PartnerRahmenvertragAcceptBlock({
           href={pdfUrl}
           target="_blank"
           rel="noopener noreferrer"
-          className="btn-pill-outline portal-btn inline-flex !px-4 !py-2.5"
+          className="btn-pill-outline portal-btn inline-flex"
         >
           PDF herunterladen (inkl. Anlagen)
         </a>

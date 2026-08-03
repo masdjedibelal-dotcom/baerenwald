@@ -249,14 +249,14 @@ export function PortalModalShell({
             <div className="portal-modal-discard-actions">
               <button
                 type="button"
-                className="btn-pill-outline portal-btn !px-4 !py-2.5"
+                className="btn-pill-outline portal-btn"
                 onClick={() => setDiscardOpen(false)}
               >
                 Weiter bearbeiten
               </button>
               <button
                 type="button"
-                className="btn-pill-outline portal-btn !border-red-200 !px-4 !py-2.5 !text-red-800"
+                className="btn-pill-outline portal-btn !border-red-200 !text-red-800"
                 onClick={() => closeNow(false)}
               >
                 Verwerfen

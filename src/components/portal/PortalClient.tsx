@@ -3,8 +3,6 @@
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 
-import { OnboardingTour } from "@/components/onboarding/OnboardingTour";
-import "@/components/onboarding/onboarding.css";
 import { PortalBaerenwaldGpt } from "@/components/portal/PortalBaerenwaldGpt";
 import { PortalCreateFunnelModal } from "@/components/portal/PortalCreateFunnelModal";
 import { PortalEinstellungenPrivat } from "@/components/portal/PortalEinstellungenPrivat";
@@ -30,9 +28,8 @@ import {
   getBautagebuchLastSeenAt,
 } from "@/lib/portal2/bautagebuch-attention";
 import { portalListStackClass } from "@/lib/portal2/layout-chrome";
-import { isOnboardingCompleted } from "@/lib/onboarding/storage";
-import { PORTAL_ONBOARDING_SLIDES } from "@/lib/onboarding/portal-slides";
 import { buildKundeVorgaenge } from "@/lib/portal/build-kunde-vorgaenge";
+import { findKundeVorgangByQueryId } from "@/lib/portal/portal-detail-item";
 import {
   countKundeVorgaengeFilter,
   countKundeVorgaengeNeedsAction,
@@ -264,7 +261,6 @@ export function PortalClient({
   const [listPage, setListPage] = useState(1);
   const [gptOpen, setGptOpen] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
-  const [onboardingOpen, setOnboardingOpen] = useState(false);
   const ignoreUrlDetailRef = useRef(false);
 
   const auftragIdByLeadId = useMemo(() => {
@@ -413,15 +409,10 @@ export function PortalClient({
   );
 
   const selectedItem = selectedId
-    ? vorgaengeItems.find((i) => i.id === selectedId) ??
-      filteredVorgaenge.find((i) => i.id === selectedId) ??
+    ? findKundeVorgangByQueryId(vorgaengeItems, selectedId) ??
+      findKundeVorgangByQueryId(filteredVorgaenge, selectedId) ??
       null
     : null;
-
-  useEffect(() => {
-    if (embedded || isOnboardingCompleted("portal")) return;
-    setOnboardingOpen(true);
-  }, [embedded]);
 
   useEffect(() => {
     setListPage(1);
@@ -437,44 +428,70 @@ export function PortalClient({
       if (!hvPortalMode) return;
       if (ignoreUrlDetailRef.current) {
         const rawId = searchParams.get("id")?.trim();
-        if (!rawId) ignoreUrlDetailRef.current = false;
-        return;
+        // Deep-Link mit ?id= (Notification) immer anwenden
+        if (rawId) {
+          ignoreUrlDetailRef.current = false;
+        } else {
+          ignoreUrlDetailRef.current = false;
+          setSelectedId(null);
+          return;
+        }
       }
       const itemId = searchParams.get("id")?.trim();
-      if (itemId && vorgaengeItems.some((v) => v.id === itemId)) {
-        setSelectedId(itemId);
+      const matched = findKundeVorgangByQueryId(vorgaengeItems, itemId);
+      if (matched) {
+        setSelectedId(matched.id);
       } else if (!itemId) {
-        setSelectedId(null);
-      }
-      return;
-    }
-    if (ignoreUrlDetailRef.current) {
-      const rawSection = searchParams.get("section")?.trim();
-      const normalized = normalizeSectionFromUrl(rawSection);
-      const rawId = searchParams.get("id")?.trim();
-      if (normalized === "vorgaenge" && !rawId) {
-        ignoreUrlDetailRef.current = false;
-        setSection("vorgaenge");
         setSelectedId(null);
       }
       return;
     }
 
     const rawSection = searchParams.get("section")?.trim();
-    if (!rawSection) return;
     const normalized = normalizeSectionFromUrl(rawSection);
+    const rawId = searchParams.get("id")?.trim();
+
+    if (ignoreUrlDetailRef.current) {
+      // Notification / Deep-Link mit Vorgang-ID: Flag zurücksetzen und öffnen
+      if (normalized === "vorgaenge" && rawId) {
+        ignoreUrlDetailRef.current = false;
+      } else if (normalized === "vorgaenge" && !rawId) {
+        ignoreUrlDetailRef.current = false;
+        setSection("vorgaenge");
+        setSelectedId(null);
+        return;
+      } else {
+        return;
+      }
+    }
+
+    if (!rawSection) return;
     if (!normalized) return;
 
     setSection(normalized);
-    const itemId = searchParams.get("id")?.trim();
-    if (normalized === "vorgaenge" && itemId) {
-      if (vorgaengeItems.some((v) => v.id === itemId)) {
-        setSelectedId(itemId);
-      }
+    if (normalized === "vorgaenge" && rawId) {
+      const matched = findKundeVorgangByQueryId(vorgaengeItems, rawId);
+      if (matched) setSelectedId(matched.id);
+      else setSelectedId(rawId);
     } else if (normalized === "vorgaenge") {
       setSelectedId(null);
     }
   }, [searchParams, vorgaengeItems, embedded, hvPortalMode]);
+
+  /** Notification-Klick: Detail öffnen, auch wenn ignoreUrlDetailRef gesetzt war. */
+  function openVorgangFromNotification(vorgangId: string, href?: string) {
+    ignoreUrlDetailRef.current = false;
+    setSection("vorgaenge");
+    const matched = findKundeVorgangByQueryId(vorgaengeItems, vorgangId);
+    setSelectedId(matched?.id ?? vorgangId);
+    if (href) {
+      router.push(href);
+    } else if (!embedded) {
+      router.push(
+        `/portal?section=vorgaenge&id=${encodeURIComponent(matched?.id ?? vorgangId)}`
+      );
+    }
+  }
 
   function switchSection(next: SectionId) {
     ignoreUrlDetailRef.current = true;
@@ -683,6 +700,12 @@ export function PortalClient({
   }
 
   const navRole = portalNavRoleForKundeTyp(kundeTyp);
+  const [pageBusy, setPageBusy] = useState(false);
+
+  function flashPageBusy(ms = 400) {
+    setPageBusy(true);
+    window.setTimeout(() => setPageBusy(false), ms);
+  }
 
   return (
     <>
@@ -692,8 +715,10 @@ export function PortalClient({
         brandSubtitle={kunde.name?.trim() || "Kundenportal"}
         brandKuerzel="B"
         sidebarOwner={kunde.name?.trim() || "MeinBärenwald"}
-        hideMobileChrome={Boolean(selectedId)}
+        hideMobileChrome={false}
         activeNavId={section === "gpt" ? "uebersicht" : section}
+        contentKey={`${section}:${selectedId ?? ""}:${privatChip ?? ""}:${controlledHvListeFilter ?? controlledVorgangFilter ?? ""}`}
+        contentBusy={pageBusy}
         onNavChange={(id) => {
           switchSection(id as SectionId);
         }}
@@ -716,7 +741,10 @@ export function PortalClient({
         }
         notifications={
           <>
-            <PortalUserNotificationBell role="kunde" />
+            <PortalUserNotificationBell
+              role="kunde"
+              onOpenVorgang={(id, href) => openVorgangFromNotification(id, href)}
+            />
             <form action="/portal/auth/signout" method="post">
               <button type="submit" className="btn-pill-outline portal-btn-compact">
                 Abmelden
@@ -809,18 +837,10 @@ export function PortalClient({
         onClose={() => setCreateOpen(false)}
         onDone={() => {
           setCreateOpen(false);
+          flashPageBusy();
           router.refresh();
         }}
       />
-
-      {onboardingOpen ? (
-        <OnboardingTour
-          open={onboardingOpen}
-          audience="portal"
-          slides={PORTAL_ONBOARDING_SLIDES}
-          onClose={() => setOnboardingOpen(false)}
-        />
-      ) : null}
 
       <div className="mx-auto hidden max-w-[1200px] px-6 lg:block">
         <PortalLegalFooter variant="kunde" className="mt-8" />

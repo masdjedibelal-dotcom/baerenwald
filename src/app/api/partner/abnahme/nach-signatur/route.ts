@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 
 import { submitPartnerAbnahmeNachSignatur } from "@/app/actions/partner-abnahmeprotokoll";
 import type {
+  PortalAbnahmeErgebnis,
   PortalAbnahmeMangel,
   PortalAbnahmePunkt,
 } from "@/lib/partner/abnahme-types";
@@ -18,10 +19,25 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: false, error: "Ungültiger Body." }, { status: 400 });
   }
 
+  const ergebnisRaw = String(
+    body.abnahme_ergebnis ?? body.abnahmeErgebnis ?? ""
+  ).trim();
+  const abnahmeErgebnis =
+    ergebnisRaw === "verweigert" ||
+    ergebnisRaw === "mit_vorbehalt" ||
+    ergebnisRaw === "abgenommen"
+      ? (ergebnisRaw as PortalAbnahmeErgebnis)
+      : null;
+
   const r = await submitPartnerAbnahmeNachSignatur({
     auftragId: String(body.auftragId ?? ""),
     abnahmeDatum: String(body.abnahme_datum ?? body.abnahmeDatum ?? ""),
     ort: String(body.ort ?? ""),
+    projektbezeichnung: String(
+      body.projektbezeichnung ?? body.projektBezeichnung ?? ""
+    ),
+    vertreter: String(body.vertreter ?? body.vertreter_an ?? ""),
+    abnahmeErgebnis,
     notizen: (body.notizen as string | null | undefined) ?? null,
     punkte: (Array.isArray(body.punkte) ? body.punkte : []) as PortalAbnahmePunkt[],
     maengel: (Array.isArray(body.maengel)

@@ -175,7 +175,7 @@ export async function POST(req: Request) {
     );
   }
 
-  await supabase.auth.signOut();
+  await supabase.auth.signOut({ scope: "local" });
 
   return NextResponse.json({ ok: true });
 }

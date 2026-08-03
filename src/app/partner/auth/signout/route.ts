@@ -6,7 +6,7 @@ import { createClient } from "@/lib/supabase/server";
 export async function POST(request: Request) {
   clearAdminViewCookie();
   const supabase = await createClient();
-  await supabase.auth.signOut();
+  await supabase.auth.signOut({ scope: "local" });
   const { origin, searchParams } = new URL(request.url);
   const next = searchParams.get("next");
   const hint = searchParams.get("hint") ?? "signed_out";

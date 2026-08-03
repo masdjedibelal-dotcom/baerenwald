@@ -493,7 +493,7 @@ export function PartnerStammDokumenteListe({
           <div className="mt-2 flex flex-wrap justify-end gap-2">
             <button
               type="button"
-              className="btn-pill-outline portal-btn !px-4 !py-2.5"
+              className="btn-pill-outline portal-btn"
               disabled={saving}
               onClick={closeUpload}
             >
@@ -501,7 +501,7 @@ export function PartnerStammDokumenteListe({
             </button>
             <button
               type="button"
-              className="btn-pill-primary portal-btn !px-4 !py-2.5"
+              className="btn-pill-primary portal-btn"
               disabled={saving}
               onClick={() => void submitUpload()}
             >

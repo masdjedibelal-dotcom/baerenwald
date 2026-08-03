@@ -28,6 +28,8 @@ import {
 } from "@/lib/portal/portal-ansprechpartner";
 import type { PortalDokument } from "@/lib/portal/portal-dokumente";
 import { filterPortalDokumenteForViewer } from "@/lib/portal/portal-dokumente";
+import { buildPortalAbnahmeCheckliste } from "@/lib/portal/abnahme-checkliste";
+import type { PortalAbnahmeCheckliste } from "@/lib/portal/portal-detail-item";
 import {
   type KundePortalDetailItem,
   type PortalBautagebuchEntry,
@@ -49,6 +51,7 @@ import {
   resolvePortalKundeVorgangStatus,
 } from "@/lib/crm-vorgang/portal-resolve";
 import { resolveHvWartetAufHw } from "@/lib/portal2/hv-wartet-auf-hw";
+import { formatPreisspanneDisplay } from "@/lib/org/hv-meldung-workflow";
 
 function meldeOrtFromFunnel(funnelDaten: unknown): string | null {
   if (!funnelDaten || typeof funnelDaten !== "object" || Array.isArray(funnelDaten)) {
@@ -95,6 +98,22 @@ type PortalLead = PortalAnfrageLeadSource & {
   funnel_daten?: unknown;
 };
 
+/** Preisindikation aus Mieter-Meldung — nur für HV, nicht für Mieter-View. */
+function meldePreisIndikationFromLead(
+  lead: Pick<PortalLead, "preis_min" | "preis_max" | "preis_unsicher">,
+  hvMieterView: boolean
+): string | null {
+  if (hvMieterView) return null;
+  const min = lead.preis_min;
+  const max = lead.preis_max;
+  if (lead.preis_unsicher) {
+    return formatPreisspanneDisplay(min, max, true);
+  }
+  if (min == null && max == null) return null;
+  if ((min ?? 0) <= 0 && (max ?? 0) <= 0) return null;
+  return formatPreisspanneDisplay(min, max, false);
+}
+
 function resolveMelderStatusUrl(lead: PortalLead): string | undefined {
   const token = lead.melde_tracking_token?.trim();
   if (!token || !isHvPortalLead(lead)) return undefined;
@@ -140,6 +159,11 @@ type PortalAuftrag = {
   created_at?: string | null;
   bautagebuch?: PortalBautagebuchEntry[];
   dokumente?: PortalDokument[];
+  abnahmeProtokolle?: Array<{
+    punkte?: unknown;
+    maengel?: unknown;
+    freigabe_status?: string | null;
+  }>;
   positionen?: KundeAuftragPositionInput[];
   angebotPositionenRaw?: unknown;
   terminSlots?: PortalTerminSlot[];
@@ -338,6 +362,7 @@ function buildItemFromLead(
       lead.funnel_daten,
       lead.bereiche
     ),
+    meldePreisIndikation: meldePreisIndikationFromLead(lead, hvMieterView),
   };
   const leadId = lead.id;
   const feedbackBereit = vorgangFeedbackBereit({
@@ -390,6 +415,8 @@ function buildItemFromLead(
     );
     const auftragGesamtBrutto = resolveKundeAuftragGesamtBrutto(auftragPositionen);
     const pendingAenderung = hatOffeneKundeAuftragAenderung(auftrag.positionen);
+    const abnahmeCheckliste: PortalAbnahmeCheckliste | null =
+      buildPortalAbnahmeCheckliste(auftrag.abnahmeProtokolle ?? []);
     return {
       id: auftrag.id,
       leadId: lead.id,
@@ -412,6 +439,7 @@ function buildItemFromLead(
       dokumente: filterDocs(auftrag.dokumente ?? lead.dokumente ?? []),
       bautagebuch: hvMieterView ? undefined : auftrag.bautagebuch ?? [],
       auftragPositionen: hvMieterView ? undefined : auftragPositionen,
+      abnahmeCheckliste: hvMieterView ? undefined : abnahmeCheckliste,
       gesamtBrutto: hvMieterView ? undefined : auftragGesamtBrutto,
       hidePreise,
       hvMieterView,

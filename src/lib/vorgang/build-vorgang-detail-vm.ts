@@ -112,6 +112,8 @@ export type BuildKundeHvVmInput = {
   meldeBereich?: string | null;
   meldeZeitraum?: string | null;
   meldeFachdetails?: Array<{ label: string; value: string }>;
+  /** Unverbindliche Preisindikation aus Meldung — nur bei role=hv rendern */
+  meldePreisIndikation?: string | null;
   angebotPositionen?: PortalAngebotPositionDisplay[];
   auftragPositionen?: PortalAuftragPositionDisplay[];
   gesamtBrutto?: number | null;
@@ -183,6 +185,8 @@ export function buildKundeHvVorgangDetailVm(
     bereichLabel: input.meldeBereich ?? null,
     zeitraumLabel: input.meldeZeitraum ?? null,
     fachdetailRows: input.meldeFachdetails ?? [],
+    preisIndikation:
+      input.role === "hv" ? input.meldePreisIndikation?.trim() || null : null,
   };
 
   const ausfuehrung: VorgangDetailAusfuehrung = {

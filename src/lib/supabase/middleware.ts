@@ -4,6 +4,8 @@ import { NextResponse, type NextRequest } from "next/server";
 import {
   AUTH_SESSION_COOKIE_OPTIONS,
   applyAuthSessionCookieOptions,
+  matchAuthCookieNames,
+  supabaseLegacyAuthCookieBaseName,
 } from "@/lib/supabase/auth-session";
 import { isTestAuthBypassEnabled } from "@/lib/dev-auth";
 
@@ -27,6 +29,20 @@ function getAuthArea(path: string): AuthArea | null {
   if (path.startsWith("/portal")) return "portal";
   if (path.startsWith("/partner")) return "partner";
   return null;
+}
+
+function clearLegacyAuthCookies(
+  response: NextResponse,
+  request: NextRequest
+) {
+  const legacyBase = supabaseLegacyAuthCookieBaseName();
+  if (!legacyBase) return;
+  for (const name of matchAuthCookieNames(
+    request.cookies.getAll().map((c) => c.name),
+    legacyBase
+  )) {
+    response.cookies.set(name, "", { path: "/", maxAge: 0 });
+  }
 }
 
 export async function updateSession(request: NextRequest) {
@@ -67,6 +83,9 @@ export async function updateSession(request: NextRequest) {
   const {
     data: { user },
   } = await supabase.auth.getUser();
+
+  // Alte Default-Cookies (teilen sich mit CRM auf localhost) entfernen
+  clearLegacyAuthCookies(supabaseResponse, request);
 
   const path = request.nextUrl.pathname;
   const area = getAuthArea(path);

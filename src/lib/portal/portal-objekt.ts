@@ -6,6 +6,7 @@ export type PortalObjekt = {
   strasse: string | null;
   plz: string | null;
   ort: string | null;
+  cover_url?: string | null;
 };
 
 type KundenObjektRow = {
@@ -14,6 +15,7 @@ type KundenObjektRow = {
   hausnummer?: string | null;
   plz?: string | null;
   ort?: string | null;
+  cover_url?: string | null;
 };
 
 type KundeAdresseRow = {
@@ -38,6 +40,7 @@ export function portalObjektFromKundenObjekt(row: KundenObjektRow): PortalObjekt
     strasse: portalObjektStrasseZeile(row),
     plz: row.plz?.trim() || null,
     ort: row.ort?.trim() || null,
+    cover_url: row.cover_url?.trim() || null,
   };
 }
 

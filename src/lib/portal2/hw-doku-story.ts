@@ -23,13 +23,14 @@ export const HW_DOKU_STORY = {
     },
   ],
   regieHint:
-    "Regie: Start- und Endfoto sowie Beschreibung Pflicht — Zeit bitte miterfassen.",
+    "Regie: Start mit Foto + Text und Ende mit Foto + Text Pflicht — Zeit bitte miterfassen.",
   lvHint: "Festpreis/LV: Fotos und Text sind optional — einfach starten oder direkt erledigen.",
   notfallHint:
     "Notfall: Dokumentation trotzdem direkt nachführen (Fotos + Zeit), sobald die Lage stabil ist.",
-  freiesBtTitle: "Zusatznotiz für die Verwaltung",
+  preferredBanner: "Bitte diese Leistungen dokumentieren",
+  freiesBtTitle: "Zusatznotiz",
   freiesBtBody:
-    "Das freie Bautagebuch ist eine Zusatznotiz an die HV — bei Regie ersetzen Start-/Endfotos je Leistung.",
+    "Optionale Notiz an die Verwaltung — bei Regie ersetzen Start-/Endfotos je Leistung die Dokumentation.",
   firstJobTitle: "Ihr erster Auftrag — so dokumentieren Sie",
   firstJobEmpty:
     "Noch keine Leistung gestartet. Folgen Sie den drei Schritten — danach erscheinen Fortschritt und Abschluss hier.",

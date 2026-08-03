@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { acceptKundeAngebot, rejectKundeAngebot } from "@/app/actions/portal-angebot";
 import { acceptKundeAuftragAenderungen } from "@/app/actions/portal-auftrag";
@@ -14,6 +14,7 @@ import { PortalVorgangFeedbackSection } from "@/components/portal/PortalVorgangF
 import { PartnerPortalDetailSections } from "@/components/partner/PartnerPortalDetailSections";
 import { BautagebuchAccordionList } from "@/components/shared/BautagebuchAccordionList";
 import { DokumenteTabelle } from "@/components/shared/DokumenteTabelle";
+import { PortalDetailTabs } from "@/components/shared/PortalDetailTabs";
 import { PortalModalShell } from "@/components/shared/PortalModalShell";
 import {
   PortalAnsprechpartnerCard,
@@ -138,6 +139,9 @@ export function PortalVorgangDetail({
   const [error, setError] = useState<string | null>(null);
   const [accepted, setAccepted] = useState(false);
   const [rejected, setRejected] = useState(false);
+  const [activeSection, setActiveSection] = useState<
+    "details" | "bautagebuch" | "dokumente" | "feedback"
+  >("details");
 
   const flowStatus = useMemo(
     () =>
@@ -151,6 +155,48 @@ export function PortalVorgangDetail({
       }),
     [flowStatusOverride, item, orgFreigabeStatus, hvMeldungStatus]
   );
+
+  const showBautagebuchTab = Boolean(
+    item.bautagebuch && item.bautagebuch.length > 0 && !item.hvMieterView
+  );
+  const showFeedbackTab = Boolean(item.leadId);
+
+  const sectionTabs = useMemo(
+    () => [
+      { id: "details" as const, label: "Details" },
+      ...(showBautagebuchTab
+        ? [{ id: "bautagebuch" as const, label: "Bautagebuch" }]
+        : []),
+      { id: "dokumente" as const, label: "Dokumente" },
+      ...(showFeedbackTab
+        ? [{ id: "feedback" as const, label: "Feedback" }]
+        : []),
+    ],
+    [showBautagebuchTab, showFeedbackTab]
+  );
+
+  useEffect(() => {
+    if (!sectionTabs.some((t) => t.id === activeSection)) {
+      setActiveSection(sectionTabs[0]?.id ?? "details");
+    }
+  }, [sectionTabs, activeSection]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const hash = window.location.hash.replace(/^#/, "").trim();
+    if (!hash) return;
+    if (!sectionTabs.some((t) => t.id === hash)) return;
+    setActiveSection(
+      hash as "details" | "bautagebuch" | "dokumente" | "feedback"
+    );
+    try {
+      const url = new URL(window.location.href);
+      url.hash = "";
+      window.history.replaceState(null, "", `${url.pathname}${url.search}`);
+    } catch {
+      /* ignore */
+    }
+  }, [sectionTabs]);
 
   if (showHvAbnahme) {
     const beschreibung = extractProjektbeschreibung(item);
@@ -184,6 +230,7 @@ export function PortalVorgangDetail({
         rechnungPdfHref={rechnungPdf}
         bautagebuch={item.hvMieterView ? undefined : item.bautagebuch}
         dokumente={item.dokumente ?? []}
+        abnahmeCheckliste={item.abnahmeCheckliste ?? null}
         verlauf={buildHvVerlaufSeed({
           createdAt: item.date,
           melder,
@@ -205,6 +252,7 @@ export function PortalVorgangDetail({
         meldeBereich={item.meldeBereich}
         meldeZeitraum={item.meldeZeitraum}
         meldeFachdetails={item.meldeFachdetails}
+        meldePreisIndikation={item.meldePreisIndikation}
         handwerkerName={item.ansprechpartner?.name}
         orgFreigabeStatus={orgFreigabeStatus ?? item.orgFreigabeStatus}
         freigabeBypassGrund={
@@ -343,88 +391,103 @@ export function PortalVorgangDetail({
           <PortalDetailInfoBox>{item.infoHint}</PortalDetailInfoBox>
         ) : null}
 
-        {item.hvMieterView &&
-        item.terminAuftragId &&
-        item.terminSlots &&
-        item.terminSlots.length > 0 ? (
-          <PortalHvTerminSection
-            auftragId={item.terminAuftragId}
-            slots={item.terminSlots}
-          />
-        ) : null}
+        <PortalDetailTabs
+          tabs={sectionTabs}
+          activeId={activeSection}
+          onChange={(id) =>
+            setActiveSection(
+              id as "details" | "bautagebuch" | "dokumente" | "feedback"
+            )
+          }
+          navLabel="Vorgang-Abschnitte"
+        >
+          {activeSection === "details" ? (
+            <div className="space-y-4">
+              {item.hvMieterView &&
+              item.terminAuftragId &&
+              item.terminSlots &&
+              item.terminSlots.length > 0 ? (
+                <PortalHvTerminSection
+                  auftragId={item.terminAuftragId}
+                  slots={item.terminSlots}
+                />
+              ) : null}
 
-        {item.melderStatusUrl && !item.hvMieterView ? (
-          <OrgMelderStatusLinkPanel statusUrl={item.melderStatusUrl} />
-        ) : null}
+              {item.melderStatusUrl && !item.hvMieterView ? (
+                <OrgMelderStatusLinkPanel statusUrl={item.melderStatusUrl} />
+              ) : null}
 
-        {!item.hvMieterView ? (
-          <PartnerPortalDetailSections
-            sections={item.sections}
-            angebotPositionen={item.angebotPositionen}
-            auftragPositionen={item.auftragPositionen}
-            gesamtBrutto={item.gesamtBrutto}
-            hidePreise={item.hidePreise}
-          />
-        ) : (
-          <PartnerPortalDetailSections sections={item.sections} />
-        )}
+              {!item.hvMieterView ? (
+                <PartnerPortalDetailSections
+                  sections={item.sections}
+                  angebotPositionen={item.angebotPositionen}
+                  auftragPositionen={item.auftragPositionen}
+                  gesamtBrutto={item.gesamtBrutto}
+                  hidePreise={item.hidePreise}
+                />
+              ) : (
+                <PartnerPortalDetailSections sections={item.sections} />
+              )}
 
-        {item.milestones && item.milestones.length > 0 ? (
-          <PortalDetailMilestoneList items={item.milestones} />
-        ) : null}
+              {item.milestones && item.milestones.length > 0 ? (
+                <PortalDetailMilestoneList items={item.milestones} />
+              ) : null}
 
-        {item.bautagebuch &&
-        item.bautagebuch.length > 0 &&
-        !item.hvMieterView ? (
-          <BautagebuchAccordionList
-            eintraege={item.bautagebuch.map((b) => ({
-              id: b.id ?? `${b.datum}-${b.titel}`,
-              datum: b.datum ?? b.created_at,
-              titel: b.titel ?? "Eintrag",
-              beschreibung: b.notiz,
-              fotos: b.fotos_urls,
-            }))}
-          />
-        ) : null}
+              {item.ansprechpartner ? (
+                <PortalAnsprechpartnerCard
+                  rolleLabel={item.ansprechpartner.rolleLabel}
+                  name={item.ansprechpartner.name}
+                  telefon={item.ansprechpartner.telefon}
+                  telefonHref={item.ansprechpartner.telefonHref}
+                  intro={item.ansprechpartner.intro}
+                />
+              ) : null}
+            </div>
+          ) : null}
 
-        {item.ansprechpartner ? (
-          <PortalAnsprechpartnerCard
-            rolleLabel={item.ansprechpartner.rolleLabel}
-            name={item.ansprechpartner.name}
-            telefon={item.ansprechpartner.telefon}
-            telefonHref={item.ansprechpartner.telefonHref}
-            intro={item.ansprechpartner.intro}
-          />
-        ) : null}
-
-        <DokumenteTabelle
-          heading={item.feedbackBereit ? "Anhänge" : "Dokumente"}
-          emptyText="Noch keine Dokumente."
-          dokumente={(item.dokumente ?? []).map((d) => ({
-            id: d.id,
-            name: d.name,
-            datum: d.datum,
-            href: d.href,
-          }))}
-        />
-
-        {item.leadId ? (
-          showAnlassBadge ? (
-            <OrgVorgangFeedbackSection
-              leadId={item.leadId}
-              feedbackBereit={item.feedbackBereit}
-              handwerkerErledigt={hwErledigt}
-              hvFeedback={hvFeedback}
-              onSubmitted={onHvFeedbackSubmitted}
+          {activeSection === "bautagebuch" && showBautagebuchTab ? (
+            <BautagebuchAccordionList
+              eintraege={(item.bautagebuch ?? []).map((b) => ({
+                id: b.id ?? `${b.datum}-${b.titel}`,
+                datum: b.datum ?? b.created_at,
+                titel: b.titel ?? "Eintrag",
+                beschreibung: b.notiz,
+                fotos: b.fotos_urls,
+              }))}
             />
-          ) : (
-            <PortalVorgangFeedbackSection
-              leadId={item.leadId}
-              feedbackBereit={item.feedbackBereit}
-              mieterFeedback={item.mieterFeedback}
+          ) : null}
+
+          {activeSection === "dokumente" ? (
+            <DokumenteTabelle
+              heading=""
+              emptyText="Noch keine Dokumente."
+              dokumente={(item.dokumente ?? []).map((d) => ({
+                id: d.id,
+                name: d.name,
+                datum: d.datum,
+                href: d.href,
+              }))}
             />
-          )
-        ) : null}
+          ) : null}
+
+          {activeSection === "feedback" && item.leadId ? (
+            showAnlassBadge ? (
+              <OrgVorgangFeedbackSection
+                leadId={item.leadId}
+                feedbackBereit={item.feedbackBereit}
+                handwerkerErledigt={hwErledigt}
+                hvFeedback={hvFeedback}
+                onSubmitted={onHvFeedbackSubmitted}
+              />
+            ) : (
+              <PortalVorgangFeedbackSection
+                leadId={item.leadId}
+                feedbackBereit={item.feedbackBereit}
+                mieterFeedback={item.mieterFeedback}
+              />
+            )
+          ) : null}
+        </PortalDetailTabs>
       </PortalDetailLayout>
 
       <PortalConfirmDialog

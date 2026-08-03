@@ -129,7 +129,7 @@ export function PortalKontoSicherheitPanel({
         >
           KONTO & SICHERHEIT
         </p>
-        <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+        <div className="flex flex-col items-start gap-2">
           <button
             type="button"
             className="btn-pill-outline portal-btn-compact"
@@ -140,7 +140,7 @@ export function PortalKontoSicherheitPanel({
           {allowDelete ? (
             <button
               type="button"
-              className="rounded-[9px] border border-red-200 bg-red-50 px-3 py-2 text-[13px] font-semibold text-red-700"
+              className="btn-pill-outline portal-btn-compact portal-danger"
               onClick={() => setDeleteOpen(true)}
             >
               Konto löschen
@@ -180,7 +180,7 @@ export function PortalKontoSicherheitPanel({
           <div className="mt-2 flex flex-wrap justify-end gap-2">
             <button
               type="button"
-              className="btn-pill-outline portal-btn !px-4 !py-2.5"
+              className="btn-pill-outline portal-btn"
               disabled={pwBusy}
               onClick={closePasswordModal}
             >
@@ -188,7 +188,7 @@ export function PortalKontoSicherheitPanel({
             </button>
             <button
               type="button"
-              className="btn-pill-primary portal-btn !px-4 !py-2.5"
+              className="btn-pill-primary portal-btn"
               disabled={pwBusy || !pwCurrent || pwNew.length < 8}
               onClick={() => void changePassword()}
             >
@@ -227,7 +227,7 @@ export function PortalKontoSicherheitPanel({
           <div className="mt-2 flex flex-wrap justify-end gap-2">
             <button
               type="button"
-              className="btn-pill-outline portal-btn !px-4 !py-2.5"
+              className="btn-pill-outline portal-btn"
               disabled={deleteBusy}
               onClick={closeDeleteModal}
             >

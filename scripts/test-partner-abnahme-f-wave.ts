@@ -70,7 +70,30 @@ assert.equal(
     hwAbschlussSigniertAm: "2026-07-24T10:00:00Z",
   }),
   false,
-  "kein CTA nach Signatur"
+  "kein CTA nach eigener Signatur"
+);
+
+assert.equal(
+  partnerKannErledigtMelden({
+    positionen: [basePos],
+    vorgangState: "in_bearbeitung",
+    auftragStatus: "offen",
+    hwAbschlussSigniertAm: "2026-07-24T10:00:00Z",
+    abnahmeFreigabeStatus: "abgelehnt",
+  }),
+  true,
+  "CTA erneut nach CRM-Ablehnung"
+);
+
+assert.equal(
+  partnerKannErledigtMelden({
+    positionen: [basePos],
+    vorgangState: "in_bearbeitung",
+    auftragStatus: "offen",
+    abnahmeProtokollUrl: "https://example.com/other-hw.pdf",
+  }),
+  true,
+  "fremdes Protokoll blockiert eigenen CTA nicht"
 );
 
 const ziel = partnerAbnahmeZielPositionen([basePos]);

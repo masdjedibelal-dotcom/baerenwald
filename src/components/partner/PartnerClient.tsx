@@ -2,10 +2,7 @@
 
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { PORTAL_VAR } from "@/lib/portal2/tokens";
 
-import { OnboardingTour } from "@/components/onboarding/OnboardingTour";
-import "@/components/onboarding/onboarding.css";
 import { PartnerHwDashboard, partnerDashboardStatusColors } from "@/components/partner/PartnerHwDashboard";
 import { PORTAL_HEADER_HERO_SRC } from "@/lib/portal2/portal-media";
 import { PartnerNotificationBell } from "@/components/partner/PartnerNotificationBell";
@@ -19,12 +16,11 @@ import {
   PartnerListPagination,
 } from "@/components/partner/PartnerListPagination";
 import { PortalBaerenwaldGpt } from "@/components/portal/PortalBaerenwaldGpt";
+import { PortalContentBusy } from "@/components/shared/PortalContentBusy";
 import { PortalLegalFooter } from "@/components/shared/PortalLegalFooter";
 import { PortalShell } from "@/components/shared/PortalShell";
 import { PortalHeaderSearch } from "@/components/shared/PortalHeaderSearch";
 import { PortalEmptyState } from "@/components/shared/PortalStateView";
-import { isOnboardingCompleted } from "@/lib/onboarding/storage";
-import { PARTNER_ONBOARDING_SLIDES } from "@/lib/onboarding/partner-slides";
 import type { PartnerPlanerSection } from "@/lib/partner/build-partner-termine";
 import type {
   PartnerAnfrageItem,
@@ -64,7 +60,7 @@ type OverviewTabId = "vorgaenge";
 const VORGANG_FILTER_LABELS: Record<VorgangFilter, string> = {
   alle: "Alle",
   offen: "Offen",
-  auftrag: "Auftrag",
+  auftrag: "In Ausführung",
   erledigt: "Erledigt",
 };
 
@@ -163,13 +159,6 @@ export function PartnerClient({
   /** Tab-Navigation: alte URL-Parameter ignorieren bis Listen-URL ohne id da ist. */
   const ignoreUrlDetailRef = useRef(false);
   const [gptOpen, setGptOpen] = useState(false);
-  const [onboardingOpen, setOnboardingOpen] = useState(false);
-
-  useEffect(() => {
-    if (!isOnboardingCompleted("partner")) {
-      setOnboardingOpen(true);
-    }
-  }, []);
   const [listPage, setListPage] = useState(1);
 
   const [vorgangListFilter, setVorgangListFilter] =
@@ -221,8 +210,20 @@ export function PartnerClient({
         return;
       }
     }
-    setSelectedId(null);
-  }, [section, sectionCardRows, selectedId]);
+    // Nur löschen, wenn Vorgang überhaupt nicht existiert — nicht nur wegen Filter
+    const existsAnywhere = vorgaenge.some(
+      (v) =>
+        v.id === selectedId ||
+        v.anfrage?.id === selectedId ||
+        `auftrag:${v.id}` === selectedId
+    );
+    if (!existsAnywhere) {
+      setSelectedId(null);
+      return;
+    }
+    // Filter würde Detail verstecken → Filter auf „alle“
+    setVorgangListFilter("alle");
+  }, [section, sectionCardRows, selectedId, vorgaenge]);
 
   const overviewCardRows = useMemo((): PartnerCardRow[] => {
     // Dashboard „Zuletzt“: aktive Vorgänge (Offen + Auftrag), ohne Erledigt
@@ -233,20 +234,24 @@ export function PartnerClient({
   }, [vorgaenge]);
 
   useEffect(() => {
+    const rawSection = searchParams.get("section")?.trim();
+    const normalized = normalizeSectionFromUrl(rawSection);
+    const rawId =
+      searchParams.get("id")?.trim() || searchParams.get("auftrag")?.trim();
+
     if (ignoreUrlDetailRef.current) {
-      const rawSection = searchParams.get("section")?.trim();
-      const normalized = normalizeSectionFromUrl(rawSection);
-      const rawId =
-        searchParams.get("id")?.trim() || searchParams.get("auftrag")?.trim();
-      if (normalized && isPartnerListSection(normalized) && !rawId) {
+      if (normalized && isPartnerListSection(normalized) && rawId) {
+        ignoreUrlDetailRef.current = false;
+      } else if (normalized && isPartnerListSection(normalized) && !rawId) {
         ignoreUrlDetailRef.current = false;
         setSection(normalized);
         setSelectedId(null);
+        return;
+      } else {
+        return;
       }
-      return;
     }
 
-    const rawSection = searchParams.get("section")?.trim();
     if (!rawSection) return;
 
     if (rawSection === "profil" || rawSection === "unterlagen") {
@@ -259,7 +264,6 @@ export function PartnerClient({
       return;
     }
 
-    const normalized = normalizeSectionFromUrl(rawSection);
     if (!normalized) return;
 
     if (normalized === "vorgaenge") {
@@ -271,9 +275,11 @@ export function PartnerClient({
         filterRaw === "alle"
       ) {
         setVorgangListFilter(filterRaw);
+      } else if (rawId) {
+        // Notification ohne Filter → nicht an altem Filter hängen bleiben
+        setVorgangListFilter("alle");
       }
 
-      const rawId = searchParams.get("id")?.trim() || searchParams.get("auftrag")?.trim();
       setSection("vorgaenge");
 
       if (rawSection === "anfragen" || rawSection === "angebote" || rawSection === "offen") {
@@ -347,6 +353,7 @@ export function PartnerClient({
     ignoreUrlDetailRef.current = false;
     setSection("vorgaenge");
     setListPage(1);
+    setVorgangListFilter("alle");
 
     const match =
       vorgaenge.find((v) => v.id === vorgangId) ??
@@ -354,6 +361,13 @@ export function PartnerClient({
 
     setSelectedId(match?.id ?? vorgangId);
     router.push(href);
+  }
+
+  const [pageBusy, setPageBusy] = useState(false);
+
+  function flashPageBusy(ms = 400) {
+    setPageBusy(true);
+    window.setTimeout(() => setPageBusy(false), ms);
   }
 
   function refreshVorgangAfterConfirm(id: string) {
@@ -364,6 +378,7 @@ export function PartnerClient({
     setVorgangListFilter("auftrag");
     setSelectedId(null);
     router.replace(`/partner?section=vorgaenge&filter=auftrag`);
+    flashPageBusy();
     router.refresh();
   }
 
@@ -442,39 +457,31 @@ export function PartnerClient({
 
   const detailScreen =
     section === "vorgaenge" && selectedVorgang ? (
-      <div className="-mx-4 -mt-4 min-w-0 space-y-3 lg:-mx-6 lg:-mt-5">
-        <div className="px-4 pt-3 lg:px-6">
-          <button
-            type="button"
-            onClick={closeDetail}
-            className="rounded-full px-3 py-1.5 text-[12.5px] font-semibold text-white"
-            style={{ background: PORTAL_VAR.primary }}
-          >
-            ‹ Zurück
-          </button>
-        </div>
-        <div className="px-4 pb-4 lg:px-6">
-          <VorgangCard
-            vorgang={selectedVorgang}
-            onUpdated={refreshVorgangAfterConfirm}
-            focusBautagebuch={
-              searchParams.get("focus")?.trim() === "bautagebuch"
-            }
-            anfrageId={searchParams.get("anfrage")?.trim() || null}
-            focusAbnahme={searchParams.get("focus")?.trim() === "abnahme"}
-            protokollId={searchParams.get("protokoll")?.trim() || null}
-          />
-        </div>
+      <div className="-mx-4 -mt-4 min-w-0 pb-4 lg:-mx-6 lg:-mt-5">
+        <VorgangCard
+          vorgang={selectedVorgang}
+          onBack={closeDetail}
+          onUpdated={refreshVorgangAfterConfirm}
+          focusBautagebuch={
+            searchParams.get("focus")?.trim() === "bautagebuch"
+          }
+          anfrageId={searchParams.get("anfrage")?.trim() || null}
+          focusAbnahme={searchParams.get("focus")?.trim() === "abnahme"}
+          protokollId={searchParams.get("protokoll")?.trim() || null}
+        />
       </div>
     ) : section === "vorgaenge" && selectedId ? (
-      <p className="portal-text-body text-text-secondary">Vorgang wird geladen …</p>
+      <PortalContentBusy
+        title="Vorgang wird geladen…"
+        body="Einen Moment — wir öffnen die Details."
+      />
     ) : null;
 
   const listScreen = (
     <div className="flex min-w-0 flex-col">
       <div className="px-0.5 pb-1">
         <PortalListeEyebrow>Handwerker</PortalListeEyebrow>
-        <PortalListeTitle>Anfragen &amp; Aufträge</PortalListeTitle>
+        <PortalListeTitle>Vorgänge</PortalListeTitle>
       </div>
       <PartnerVorgangListFilterBar
         filter={vorgangListFilter}
@@ -521,10 +528,12 @@ export function PartnerClient({
         brandSubtitle="Partner-Portal"
         brandKuerzel="B"
         sidebarOwner={partnerFooter}
-        hideMobileChrome={Boolean(selectedId)}
+        hideMobileChrome={false}
         activeNavId={
           section === "gpt" || section === "planer" ? "uebersicht" : section
         }
+        contentKey={`${section}:${selectedId ?? ""}:${vorgangListFilter}:${searchParams.get("focus") ?? ""}`}
+        contentBusy={pageBusy}
         onNavChange={(id) => switchSection(id as PartnerSection)}
         nav={shellNav}
         footer={partnerFooter}
@@ -542,7 +551,7 @@ export function PartnerClient({
             <form action="/partner/auth/signout" method="post">
               <button
                 type="submit"
-                className="btn-pill-outline portal-btn-compact !px-2.5 sm:!px-3"
+                className="btn-pill-outline portal-btn-compact"
               >
                 Abmelden
               </button>
@@ -638,13 +647,6 @@ export function PartnerClient({
         onClose={() => {
           setGptOpen(false);
         }}
-      />
-
-      <OnboardingTour
-        open={onboardingOpen}
-        audience="partner"
-        slides={PARTNER_ONBOARDING_SLIDES}
-        onClose={() => setOnboardingOpen(false)}
       />
 
       <PortalLegalFooter

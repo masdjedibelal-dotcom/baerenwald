@@ -10,7 +10,11 @@ import { PartnerKiKorrekturField } from "@/components/partner/PartnerKiKorrektur
 import { PortalModalShell } from "@/components/shared/PortalModalShell";
 import { SignatureCanvas } from "@/components/shared/SignatureCanvas";
 import {
+  autoAbnahmeErgebnis,
+  mapPositionToAbnahmePunkt,
   newLocalId,
+  PORTAL_ABNAHME_ERGEBNIS_LABEL,
+  type PortalAbnahmeErgebnis,
   type PortalAbnahmeMangel,
   type PortalAbnahmePunkt,
 } from "@/lib/partner/abnahme-types";
@@ -23,6 +27,8 @@ type LeistungOption = {
   leistung_name: string;
   beschreibung?: string | null;
   gewerk_name?: string | null;
+  /** offen | in_arbeit | erledigt */
+  leistung_status?: string | null;
 };
 
 type Step = "leistungen" | "signatur";
@@ -42,6 +48,12 @@ type Props = {
 };
 
 type AddMode = "wahl" | "leer" | "erkannt" | "mangel" | null;
+
+const ERGEBNIS_OPTIONS: PortalAbnahmeErgebnis[] = [
+  "abgenommen",
+  "mit_vorbehalt",
+  "verweigert",
+];
 
 export function PartnerAbnahmeAbschlussSheet({
   open,
@@ -63,6 +75,12 @@ export function PartnerAbnahmeAbschlussSheet({
   const [abnahmeDatum, setAbnahmeDatum] = useState(
     () => new Date().toISOString().slice(0, 10)
   );
+  const [projektbezeichnung, setProjektbezeichnung] = useState(
+    () => auftragTitel?.trim() || ""
+  );
+  const [vertreter, setVertreter] = useState("");
+  const [ergebnis, setErgebnis] = useState<PortalAbnahmeErgebnis>("abgenommen");
+  const [ergebnisTouched, setErgebnisTouched] = useState(false);
   const [notizen, setNotizen] = useState("");
 
   const [addMode, setAddMode] = useState<AddMode>(null);
@@ -78,14 +96,29 @@ export function PartnerAbnahmeAbschlussSheet({
   const [kundeSig, setKundeSig] = useState<string | null>(null);
   const [kundeHasSig, setKundeHasSig] = useState(false);
 
+  const undokumentiertePositionen = useMemo(
+    () =>
+      leistungItems.filter(
+        (l) => String(l.leistung_status ?? "offen").toLowerCase() !== "erledigt"
+      ),
+    [leistungItems]
+  );
+
   useEffect(() => {
     if (!open) return;
     setStep("leistungen");
     setError(null);
-    setPunkte([]);
+    const erledigt = leistungItems.filter(
+      (l) => String(l.leistung_status ?? "").toLowerCase() === "erledigt"
+    );
+    setPunkte(erledigt.map(mapPositionToAbnahmePunkt));
     setMaengel([]);
     setOrt(defaultOrt);
     setAbnahmeDatum(new Date().toISOString().slice(0, 10));
+    setProjektbezeichnung(auftragTitel?.trim() || "");
+    setVertreter("");
+    setErgebnis(autoAbnahmeErgebnis(0));
+    setErgebnisTouched(false);
     setNotizen("");
     setAddMode(null);
     setHwName("");
@@ -94,7 +127,14 @@ export function PartnerAbnahmeAbschlussSheet({
     setHwHasSig(false);
     setKundeSig(null);
     setKundeHasSig(false);
-  }, [open, defaultOrt]);
+    // Nur beim Öffnen vorbefüllen — nicht bei jedem Parent-Rerender
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- open gate
+  }, [open]);
+
+  useEffect(() => {
+    if (ergebnisTouched) return;
+    setErgebnis(autoAbnahmeErgebnis(maengel.length));
+  }, [maengel.length, ergebnisTouched]);
 
   const usedLeistungIds = useMemo(
     () => new Set(punkte.map((p) => p.leistung_id).filter(Boolean) as string[]),
@@ -198,7 +238,24 @@ export function PartnerAbnahmeAbschlussSheet({
       setError("Mindestens eine abgeschlossene Leistung hinzufügen.");
       return;
     }
+    if (!projektbezeichnung.trim()) {
+      setError("Projektbezeichnung ist Pflicht.");
+      return;
+    }
+    if (!abnahmeDatum.trim()) {
+      setError("Abnahmedatum fehlt.");
+      return;
+    }
+    if (!ort.trim()) {
+      setError("Ort der Abnahme ist Pflicht.");
+      return;
+    }
+    if (!vertreter.trim()) {
+      setError("Vertreter (Auftragnehmer) ist Pflicht.");
+      return;
+    }
     setError(null);
+    if (!hwName.trim()) setHwName(vertreter.trim());
     setStep("signatur");
   }
 
@@ -209,6 +266,9 @@ export function PartnerAbnahmeAbschlussSheet({
       auftragId,
       abnahmeDatum,
       ort,
+      projektbezeichnung: projektbezeichnung.trim(),
+      vertreter: vertreter.trim(),
+      abnahmeErgebnis: ergebnis,
       notizen: notizen.trim() || null,
       punkte,
       maengel,
@@ -235,16 +295,18 @@ export function PartnerAbnahmeAbschlussSheet({
     punkte.length > 0 ||
     maengel.length > 0 ||
     notizen.trim().length > 0 ||
+    projektbezeichnung.trim().length > 0 ||
+    vertreter.trim().length > 0 ||
     hwHasSig ||
     kundeHasSig;
 
   return (
     <PortalModalShell
       open={open}
-      title={step === "leistungen" ? "Auftrag abschließen" : "Kunden-Signatur"}
+      title={step === "leistungen" ? "Teilabnahme abschließen" : "Kunden-Signatur"}
       subtitle={
         step === "leistungen"
-          ? "Abgeschlossene Leistungen und optional Mängel"
+          ? "Ihre Leistungen und optional Mängel — danach CRM-Freigabe"
           : "Kunde und Handwerker unterschreiben vor Ort"
       }
       onClose={onClose}
@@ -257,6 +319,19 @@ export function PartnerAbnahmeAbschlussSheet({
 
         {step === "leistungen" ? (
           <>
+            {undokumentiertePositionen.length > 0 ? (
+              <p
+                className="rounded-xl border border-amber-200 bg-amber-50 px-3.5 py-3 text-[13px] leading-relaxed text-amber-950"
+                role="status"
+              >
+                {undokumentiertePositionen.length === 1
+                  ? "1 Position ist noch nicht erledigt/dokumentiert."
+                  : `${undokumentiertePositionen.length} Positionen sind noch nicht erledigt/dokumentiert.`}{" "}
+                Sie können trotzdem abschließen — bitte prüfen, ob alle Leistungen
+                im Protokoll stehen.
+              </p>
+            ) : null}
+
             <section className="space-y-3">
               <div className="flex items-center justify-between gap-2">
                 <h3
@@ -278,8 +353,8 @@ export function PartnerAbnahmeAbschlussSheet({
 
               {punkte.length === 0 ? (
                 <p className="text-[13px]" style={{ color: PORTAL_VAR.sub }}>
-                  Einsprechen oder tippen → KI formuliert → nacheinander
-                  hinzufügen.
+                  Erledigte Positionen werden vorausgefüllt. Sonst:
+                  einsprechen oder tippen → hinzufügen.
                 </p>
               ) : (
                 <ul className="space-y-2">
@@ -419,30 +494,95 @@ export function PartnerAbnahmeAbschlussSheet({
               )}
             </section>
 
+            <label className="block space-y-1">
+              <span className="text-[12px] font-semibold text-text-tertiary">
+                Projektbezeichnung *
+              </span>
+              <input
+                value={projektbezeichnung}
+                onChange={(e) => setProjektbezeichnung(e.target.value)}
+                placeholder="z. B. Auftrags- oder Objektname"
+                className="portal-input w-full rounded-xl border border-border-default px-3 py-2.5"
+                required
+              />
+            </label>
+
             <div className="grid gap-3 sm:grid-cols-2">
               <label className="block space-y-1">
                 <span className="text-[12px] font-semibold text-text-tertiary">
-                  Abnahmedatum
+                  Abnahmedatum *
                 </span>
                 <input
                   type="date"
                   value={abnahmeDatum}
                   onChange={(e) => setAbnahmeDatum(e.target.value)}
                   className="portal-input w-full rounded-xl border border-border-default px-3 py-2.5"
+                  required
                 />
               </label>
               <label className="block space-y-1">
                 <span className="text-[12px] font-semibold text-text-tertiary">
-                  Ort
+                  Ort *
                 </span>
                 <input
                   value={ort}
                   onChange={(e) => setOrt(e.target.value)}
                   placeholder="Ort der Abnahme"
                   className="portal-input w-full rounded-xl border border-border-default px-3 py-2.5"
+                  required
                 />
               </label>
             </div>
+
+            <label className="block space-y-1">
+              <span className="text-[12px] font-semibold text-text-tertiary">
+                Vertreter (Auftragnehmer) *
+              </span>
+              <input
+                value={vertreter}
+                onChange={(e) => setVertreter(e.target.value)}
+                placeholder="Name des Vertreters vor Ort"
+                className="portal-input w-full rounded-xl border border-border-default px-3 py-2.5"
+                required
+              />
+            </label>
+
+            <fieldset className="space-y-2">
+              <legend className="text-[12px] font-semibold text-text-tertiary">
+                Ergebnis (optional)
+              </legend>
+              <div className="flex flex-wrap gap-2">
+                {ERGEBNIS_OPTIONS.map((key) => (
+                  <label
+                    key={key}
+                    className={cn(
+                      "inline-flex cursor-pointer items-center gap-2 rounded-full border px-3 py-1.5 text-[12.5px] font-semibold",
+                      ergebnis === key
+                        ? "border-accent bg-accent-light text-text-primary"
+                        : "border-border-light bg-white text-text-secondary"
+                    )}
+                  >
+                    <input
+                      type="radio"
+                      name="abnahme_ergebnis"
+                      value={key}
+                      checked={ergebnis === key}
+                      className="sr-only"
+                      onChange={() => {
+                        setErgebnisTouched(true);
+                        setErgebnis(key);
+                      }}
+                    />
+                    {PORTAL_ABNAHME_ERGEBNIS_LABEL[key]}
+                  </label>
+                ))}
+              </div>
+              <p className="text-[12px]" style={{ color: PORTAL_VAR.faint }}>
+                Standard aus Mängeln:{" "}
+                {PORTAL_ABNAHME_ERGEBNIS_LABEL[autoAbnahmeErgebnis(maengel.length)]}
+              </p>
+            </fieldset>
+
             <PartnerKiKorrekturField
               scope="abnahmeprotokoll"
               label="Interne Notiz (optional)"
@@ -657,6 +797,12 @@ export function PartnerAbnahmeAbschlussSheet({
                         }}
                       >
                         {l.leistung_name}
+                        {String(l.leistung_status ?? "").toLowerCase() ===
+                        "erledigt" ? (
+                          <span className="mt-0.5 block text-[11.5px] font-medium text-text-tertiary">
+                            dokumentiert
+                          </span>
+                        ) : null}
                       </button>
                     </li>
                   ))}

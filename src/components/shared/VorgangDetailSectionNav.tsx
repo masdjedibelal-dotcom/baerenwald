@@ -22,6 +22,14 @@ type Props = {
   className?: string;
   /** Mobile: Accordion-ähnliche Chips (Default) */
   mobileMode?: "chips" | "accordion";
+  /**
+   * `tabs` = nur aktiver Abschnitt (Parent show/hide) — kein Scroll/Anker.
+   * `anchors` = Legacy Scroll zu Section-IDs (vermeiden).
+   */
+  mode?: "tabs" | "anchors";
+  /** Controlled active section (tabs). */
+  activeId?: string;
+  onActiveChange?: (id: string) => void;
 };
 
 function scrollToSection(id: string) {
@@ -29,6 +37,9 @@ function scrollToSection(id: string) {
   const el = document.getElementById(id);
   if (!el) return;
   el.scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+function setHash(id: string) {
   try {
     const url = new URL(window.location.href);
     url.hash = id;
@@ -38,48 +49,93 @@ function scrollToSection(id: string) {
   }
 }
 
+function clearHash() {
+  try {
+    const url = new URL(window.location.href);
+    if (!url.hash) return;
+    url.hash = "";
+    const next = `${url.pathname}${url.search}`;
+    window.history.replaceState(null, "", next);
+  } catch {
+    /* ignore */
+  }
+}
+
 /**
- * C2 — Detail Anchor-Nav (Übersicht, Angebot, Bautagebuch, Dokumente, Verlauf).
- * Desktop: sticky Side/Top-Chips · Mobile: Sub-Chips · Deep-Link #section.
+ * C2 — Detail Section-Nav (Details, Angebot, Bautagebuch, Dokumente, …).
+ * Default: Tab-Switch ohne Anker-Scroll.
  */
 export function VorgangDetailSectionNav({
   items,
   className,
   mobileMode = "chips",
+  mode = "tabs",
+  activeId: activeIdProp,
+  onActiveChange,
 }: Props) {
   const visible = useMemo(
     () => items.filter((i) => !i.hidden),
     [items]
   );
-  const [active, setActive] = useState<string>(visible[0]?.id ?? "uebersicht");
-  const [mobileOpen, setMobileOpen] = useState<string | null>(null);
+  const [internalActive, setInternalActive] = useState<string>(
+    visible[0]?.id ?? "uebersicht"
+  );
 
-  const applyHash = useCallback(() => {
+  const controlled = activeIdProp !== undefined;
+  const active = controlled ? activeIdProp : internalActive;
+
+  const select = useCallback(
+    (id: string) => {
+      if (!controlled) setInternalActive(id);
+      onActiveChange?.(id);
+      if (mode === "anchors") {
+        setHash(id);
+        scrollToSection(id);
+      } else {
+        // Tabs: Hash nur für Deep-Link-Einlesen — danach entfernen,
+        // damit der Browser nicht zu #id scrollt.
+        clearHash();
+      }
+    },
+    [controlled, mode, onActiveChange]
+  );
+
+  /** Deep-Link #bautagebuch → einmalig Tab wählen, ohne Scroll-Anker. */
+  useEffect(() => {
     if (typeof window === "undefined") return;
     const hash = window.location.hash.replace(/^#/, "").trim();
     if (!hash) return;
-    if (visible.some((v) => v.id === hash)) {
-      setActive(hash);
-      setMobileOpen(hash);
-      // Nach Layout scrollen
+    if (!visible.some((v) => v.id === hash)) return;
+    if (!controlled) setInternalActive(hash);
+    onActiveChange?.(hash);
+    if (mode === "anchors") {
       requestAnimationFrame(() => scrollToSection(hash));
+    } else {
+      clearHash();
     }
-  }, [visible]);
+    // nur initial / wenn sichtbare Tabs wechseln
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- Deep-Link einmalig
+  }, [visible.map((v) => v.id).join("|")]);
 
   useEffect(() => {
-    applyHash();
-    window.addEventListener("hashchange", applyHash);
-    return () => window.removeEventListener("hashchange", applyHash);
-  }, [applyHash]);
+    if (!visible.some((v) => v.id === active) && visible[0]) {
+      if (!controlled) setInternalActive(visible[0].id);
+      onActiveChange?.(visible[0].id);
+    }
+  }, [visible, active, controlled, onActiveChange]);
 
   useEffect(() => {
+    if (mode !== "anchors") return;
     if (typeof IntersectionObserver === "undefined") return;
     const obs = new IntersectionObserver(
       (entries) => {
         const hit = entries
           .filter((e) => e.isIntersecting)
           .sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
-        if (hit?.target?.id) setActive(hit.target.id);
+        if (hit?.target?.id) {
+          if (!controlled) setInternalActive(hit.target.id);
+          onActiveChange?.(hit.target.id);
+        }
       },
       { rootMargin: "-20% 0px -55% 0px", threshold: [0.1, 0.35, 0.6] }
     );
@@ -88,7 +144,7 @@ export function VorgangDetailSectionNav({
       if (el) obs.observe(el);
     }
     return () => obs.disconnect();
-  }, [visible]);
+  }, [visible, mode, controlled, onActiveChange]);
 
   if (visible.length < 2) return null;
 
@@ -102,35 +158,33 @@ export function VorgangDetailSectionNav({
       )}
       style={{ borderColor: PORTAL_VAR.line2 }}
     >
-      {/* Mobile Sub-Chips */}
       <div
         className={cn(
           "flex gap-1.5 overflow-x-auto pb-0.5 lg:hidden",
           mobileMode === "accordion" && "flex-wrap"
         )}
+        role={mode === "tabs" ? "tablist" : undefined}
       >
         {visible.map((item) => {
-          const on = active === item.id || mobileOpen === item.id;
+          const on = active === item.id;
           const label =
             item.label ?? PORTAL_DETAIL_SECTION_LABELS[item.id] ?? item.id;
           return (
             <button
               key={item.id}
               type="button"
-              onClick={() => {
-                setMobileOpen(item.id);
-                setActive(item.id);
-                scrollToSection(item.id);
-              }}
+              role={mode === "tabs" ? "tab" : undefined}
+              aria-selected={mode === "tabs" ? on : undefined}
+              aria-controls={mode === "tabs" ? `vorgang-panel-${item.id}` : undefined}
+              onClick={() => select(item.id)}
               className={cn(
                 "inline-flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-[12px] font-semibold transition-colors",
-                on ? "text-white" : "bg-[#f1f3f5]"
+                on ? "text-white" : "bg-[var(--p2-primary-soft,#e7f1e9)]"
               )}
               style={
                 on
                   ? {
-                      background:
-                        PORTAL_VAR.primary,
+                      background: PORTAL_VAR.primary,
                     }
                   : { color: PORTAL_VAR.sub }
               }
@@ -154,35 +208,40 @@ export function VorgangDetailSectionNav({
         })}
       </div>
 
-      {/* Desktop Anchor-Menü */}
-      <ul className="hidden flex-col gap-0.5 lg:flex lg:min-w-[9.5rem]">
+      <ul
+        className="hidden flex-col gap-0.5 lg:flex lg:min-w-[9.5rem]"
+        role={mode === "tabs" ? "tablist" : undefined}
+      >
         {visible.map((item) => {
           const on = active === item.id;
           const label =
             item.label ?? PORTAL_DETAIL_SECTION_LABELS[item.id] ?? item.id;
           return (
-            <li key={item.id}>
+            <li key={item.id} role={mode === "tabs" ? "presentation" : undefined}>
               <button
                 type="button"
-                onClick={() => {
-                  setActive(item.id);
-                  scrollToSection(item.id);
-                }}
+                role={mode === "tabs" ? "tab" : undefined}
+                aria-selected={mode === "tabs" ? on : undefined}
+                aria-controls={mode === "tabs" ? `vorgang-panel-${item.id}` : undefined}
+                onClick={() => select(item.id)}
                 className={cn(
                   "flex w-full items-center justify-between gap-2 rounded-lg px-2.5 py-2 text-left text-[12.5px] font-semibold transition-colors",
-                  on ? "bg-[var(--org-primary-soft,#E7F1E9)]" : "hover:bg-[var(--p2-hover)]"
+                  on
+                    ? "bg-[var(--org-primary-soft,#E7F1E9)]"
+                    : "hover:bg-[var(--p2-hover)]"
                 )}
                 style={{
-                  color: on
-                    ? PORTAL_VAR.primary
-                    : PORTAL_VAR.sub,
+                  color: on ? PORTAL_VAR.primary : PORTAL_VAR.sub,
                 }}
               >
                 <span>{label}</span>
                 {item.badge && item.badge > 0 ? (
                   <span
                     className="inline-flex h-4 min-w-[1rem] items-center justify-center rounded-full px-1 text-[10px] font-bold"
-                    style={{ background: PORTAL_VAR.dangerSoft, color: PORTAL_VAR.danger }}
+                    style={{
+                      background: PORTAL_VAR.dangerSoft,
+                      color: PORTAL_VAR.danger,
+                    }}
                   >
                     {item.badge > 9 ? "9+" : item.badge}
                   </span>

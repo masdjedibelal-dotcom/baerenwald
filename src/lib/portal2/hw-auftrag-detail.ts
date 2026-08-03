@@ -10,7 +10,7 @@ export const HW_AUFTRAG_COPY = {
   ausfuehrenTitle: "Auftrag ausführen",
   ausfuehrenBody:
     "Dokumentieren Sie je Leistung: Startfoto → optional Fortschritt → Endfoto. Bei Regie/Aufwand Zeit miterfassen.",
-  ausfuehrenCta: "Auftrag abschließen →",
+  ausfuehrenCta: "Abschließen",
   ausfuehrenHint:
     "Nach Dokumentation je Leistung: Abnahme mit Signatur. Danach Rechnung prüfen & einreichen.",
   leistungenTitle: "Leistungen",
@@ -18,8 +18,8 @@ export const HW_AUFTRAG_COPY = {
   verlaufTitle: "Verlauf",
   bautagebuchTitle: "Zusatznotiz für die Verwaltung",
   bautagebuchHint:
-    "Freies Bautagebuch — Zusatznotiz an die HV, kein Ersatz für Start-/Endfotos je Leistung.",
-  unterlagenTitle: "Unterlagen",
+    "Zusatznotiz an die HV — kein Ersatz für Start-/Endfotos je Leistung.",
+  unterlagenTitle: "Dokumente",
   statusBeauftragt: "Beauftragt",
 } as const;
 

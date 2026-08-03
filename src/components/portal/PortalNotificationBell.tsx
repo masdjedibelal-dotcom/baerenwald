@@ -25,7 +25,7 @@ export type PortalNotificationBellProps = {
   onItemActivate?: (item: PortalNotifItem) => void | Promise<void>;
   onOpenChange?: (open: boolean) => void;
   onRefresh?: () => void | Promise<void>;
-  /** Partner: Filter Offen/Erledigt (Default: an) */
+  /** Filter Offen/Erledigt (ungelesen/gelesen) */
   showReadFilter?: boolean;
 };
 

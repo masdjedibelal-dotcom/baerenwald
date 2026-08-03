@@ -86,6 +86,9 @@ export default async function MeldenBestaetigungPage({ searchParams }: Props) {
       brand={brand}
       statusToken={effectiveToken}
       statusUrl={statusUrl}
+      contactName={searchParams.name?.trim() || null}
+      contactEmail={searchParams.email?.trim() || null}
+      contactTelefon={searchParams.telefon?.trim() || null}
       referenz={referenz}
       objektAuswahlHref={objektHref}
     />

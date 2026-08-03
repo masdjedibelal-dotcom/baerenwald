@@ -464,7 +464,7 @@ export async function completePartnerPosition(
       .eq("id", positionId);
   }
 
-  const isAufwand = String(pos.verguetung ?? "") === "aufwand";
+  const isAufwand = String(pos.verguetung ?? "").toLowerCase() === "aufwand";
   let zeitMinuten: number | null = null;
   if (isAufwand) {
     const fromForm = zeitMinutenFromStdMin(std, min);
@@ -481,6 +481,12 @@ export async function completePartnerPosition(
           (sum, r) => sum + (Number(r.zeit_minuten) || 0),
           0
         ) || null;
+    }
+    if (zeitMinuten == null || zeitMinuten <= 0) {
+      return {
+        ok: false,
+        error: "Zeitaufwand Pflicht bei Regie/Aufwand",
+      };
     }
   }
 
@@ -616,6 +622,34 @@ export async function createPartnerWeitereArbeit(
     actorRolle: "partner",
     payload: { position_id: inserted.id, titel },
   });
+
+  // CRM-Glocke (Staff) — gleiche Pipeline wie Positions-Anfrage
+  try {
+    const base = (
+      process.env.CRM_DASHBOARD_URL?.trim() ||
+      process.env.NEXT_PUBLIC_CRM_URL?.trim() ||
+      ""
+    ).replace(/\/$/, "");
+    const secret = process.env.PARTNER_INTERNAL_API_SECRET?.trim();
+    if (base && secret) {
+      void fetch(`${base}/api/internal/partner-positions-meldung`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${secret}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          auftragId,
+          positionId: String(inserted.id),
+          typ: "weitere_arbeit",
+          titel,
+        }),
+        cache: "no-store",
+      });
+    }
+  } catch {
+    /* non-blocking */
+  }
 
   revalidatePath("/partner");
   return { ok: true, eintragId: "", positionId: String(inserted.id) };

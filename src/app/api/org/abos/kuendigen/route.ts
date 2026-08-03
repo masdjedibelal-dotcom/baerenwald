@@ -6,26 +6,23 @@ import { supabaseAdmin } from "@/lib/supabase";
 
 export const runtime = "nodejs";
 
-type Body = { aboId?: string };
-
-function berechneEndAm(fristWochen: number): string {
+function endAmFromFristWochen(wochen: number): string {
   const now = new Date();
-  const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0);
-  const end = new Date(monthEnd);
-  end.setDate(end.getDate() + fristWochen * 7);
-  return end.toISOString().slice(0, 10);
+  const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+  endOfMonth.setDate(endOfMonth.getDate() + 7 * wochen);
+  return endOfMonth.toISOString().slice(0, 10);
 }
 
-/** Abo-Kündigung: end_am = Monatsende + Kündigungsfrist (Wochen). */
+/** Objekt-Abo kündigen (Ende = Monatsende + Kündigungsfrist). */
 export async function POST(req: Request) {
   const session = await requireOrganisationSession();
   if (!session.ok) {
     return NextResponse.json({ error: session.error }, { status: session.status });
   }
 
-  let body: Body;
+  let body: { aboId?: string };
   try {
-    body = (await req.json()) as Body;
+    body = (await req.json()) as { aboId?: string };
   } catch {
     return NextResponse.json({ error: "Ungültige Anfrage." }, { status: 400 });
   }
@@ -49,8 +46,8 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Abo ist nicht aktiv." }, { status: 400 });
   }
 
-  const frist = Number(abo.kuendigungsfrist_wochen ?? 4);
-  const endAm = berechneEndAm(frist);
+  const fristWochen = Number(abo.kuendigungsfrist_wochen ?? 4);
+  const endAm = endAmFromFristWochen(fristWochen);
   const nowIso = new Date().toISOString();
 
   const { error } = await supabaseAdmin
@@ -73,7 +70,11 @@ export async function POST(req: Request) {
     aktion: "abo_gekuendigt",
     actorId: session.userId,
     kundeId: session.kunde.id,
-    payload: { endAm, fristWochen: frist, produktSlug: abo.produkt_slug },
+    payload: {
+      endAm,
+      fristWochen,
+      produktSlug: abo.produkt_slug,
+    },
   });
 
   return NextResponse.json({ ok: true, endAm, status: "gekuendigt" });

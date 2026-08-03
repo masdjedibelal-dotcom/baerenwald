@@ -48,7 +48,7 @@ assert(
   "handwerker labels (Mock inkl. Firmendaten)",
   getPortalNavItems("handwerker")
     .map((i) => i.label)
-    .join(" · ") === "Start · Aufträge · Firmendaten"
+    .join(" · ") === "Start · Vorgänge · Firmendaten"
 );
 
 assert(
@@ -69,7 +69,7 @@ assert("org ohne Team-Nav", orgNav.every((i) => i.id !== "team"));
 
 const partnerNav = buildPortalShellNav("handwerker", "partner");
 assert("partner 3 items", partnerNav.length === 3);
-assert("partner Aufträge", partnerNav[1]!.label === "Aufträge");
+assert("partner Vorgänge", partnerNav[1]!.label === "Vorgänge");
 
 const eigNav = buildPortalShellNav("eigentuemer", "eigentuemer");
 assert("eigentuemer section map", eigNav.length === 3);

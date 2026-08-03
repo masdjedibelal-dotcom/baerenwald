@@ -103,6 +103,16 @@ export interface PhotoUploadProps {
   buttonHint?: string;
   /** Zusatz-Hinweis zu günstigeren Fremdangeboten (unter dem Upload-Bereich) */
   showCompareOfferHint?: boolean;
+  /**
+   * Optional: Beispielbild + Tipp unter dem Upload
+   * (z. B. Melde-Funnel je Schadensbereich).
+   */
+  example?: {
+    src: string;
+    alt: string;
+    tip: string;
+    label?: string;
+  } | null;
 }
 
 export function PhotoUpload({
@@ -115,6 +125,7 @@ export function PhotoUpload({
   buttonHint =
     "Projektfotos, Skizzen oder bestehende Angebote — damit wir dein Vorhaben vorab gut einordnen und uns vorbereiten können",
   showCompareOfferHint = false,
+  example = null,
 }: PhotoUploadProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [previews, setPreviews] = useState<Record<string, string>>({});
@@ -304,6 +315,27 @@ export function PhotoUpload({
           Sie haben ein günstigeres Angebot? Einfach hier hochladen — wir schauen
           es uns an.
         </p>
+      ) : null}
+      {example ? (
+        <figure className="photo-upload-example mt-3 overflow-hidden rounded-xl border border-border-default bg-muted/40">
+          <div className="relative aspect-[4/3] w-full bg-muted">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={example.src}
+              alt={example.alt}
+              className="size-full object-cover"
+              loading="lazy"
+              decoding="async"
+            />
+            <span className="absolute left-2.5 top-2.5 rounded-md bg-black/55 px-2 py-0.5 text-[11px] font-semibold tracking-wide text-white">
+              So fotografieren
+              {example.label ? ` · ${example.label}` : ""}
+            </span>
+          </div>
+          <figcaption className="px-3 py-2.5 text-[12.5px] leading-snug text-text-secondary">
+            {example.tip}
+          </figcaption>
+        </figure>
       ) : null}
       {isCompressing ? (
         <p className="photo-compressing">

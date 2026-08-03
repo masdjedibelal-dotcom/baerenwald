@@ -32,6 +32,8 @@ export type PortalAnfrageLeadSource = {
   preis_min?: number | null;
   preis_max?: number | null;
   budget_ca?: number | null;
+  /** Melde-Mapping: Spanne unsicher / nach Prüfung */
+  preis_unsicher?: boolean | null;
   kontakt_name?: string | null;
   kontakt_nachricht?: string | null;
   funnel_daten?: unknown;

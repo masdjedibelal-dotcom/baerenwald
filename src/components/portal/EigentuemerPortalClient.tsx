@@ -9,6 +9,7 @@ import { PortalVorgangDetail } from "@/components/portal/PortalVorgangDetail";
 import { PortalKundePrivatDashboard } from "@/components/portal/PortalKundePrivatDashboard";
 import { PORTAL_HEADER_HERO_SRC } from "@/lib/portal2/portal-media";
 import { PortalListCard } from "@/components/shared/PortalListCard";
+import { PortalEntityDetailLayout } from "@/components/shared/PortalEntityDetailLayout";
 import {
   PORTAL_LIST_PAGE_SIZE,
   PortalListPagination,
@@ -23,6 +24,7 @@ import { PortalShell } from "@/components/shared/PortalShell";
 import { PortalHeaderSearch } from "@/components/shared/PortalHeaderSearch";
 import { PortalEmptyState } from "@/components/shared/PortalStateView";
 import { buildKundeVorgaenge } from "@/lib/portal/build-kunde-vorgaenge";
+import { findKundeVorgangByQueryId } from "@/lib/portal/portal-detail-item";
 import {
   countKundeVorgaengeNeedsAction,
 } from "@/lib/portal/kunde-vorgang-filter";
@@ -147,10 +149,6 @@ export function EigentuemerPortalClient({
   useEffect(() => {
     const s = normalizeSection(searchParams.get("section"));
     if (s) setSection(s);
-    const id = searchParams.get("id")?.trim() || null;
-    if (id) {
-      setSelectedId(id);
-    }
   }, [searchParams]);
 
   const switchSection = (id: SectionId) => {
@@ -174,6 +172,13 @@ export function EigentuemerPortalClient({
       }),
     [leads, angebote, auftraege]
   );
+
+  useEffect(() => {
+    const id = searchParams.get("id")?.trim() || null;
+    if (!id) return;
+    const matched = findKundeVorgangByQueryId(vorgaengeItems, id);
+    setSelectedId(matched?.id ?? id);
+  }, [searchParams, vorgaengeItems]);
 
   const needsActionCount = useMemo(
     () => countKundeVorgaengeNeedsAction(vorgaengeItems),
@@ -275,7 +280,7 @@ export function EigentuemerPortalClient({
   }, [vorgaengeItems, leads, angebote, schwelleEur]);
 
   const selectedItem = selectedId
-    ? vorgaengeItems.find((i) => i.id === selectedId) ?? null
+    ? findKundeVorgangByQueryId(vorgaengeItems, selectedId)
     : null;
   const selectedLeadId = selectedItem
     ? selectedItem.leadId ?? selectedItem.id
@@ -313,6 +318,7 @@ export function EigentuemerPortalClient({
           ? "Kosten freigegeben."
           : "Kostenfreigabe abgelehnt."
       );
+      flashPageBusy();
       router.refresh();
     } finally {
       setFreigabeBusy(false);
@@ -323,6 +329,13 @@ export function EigentuemerPortalClient({
     ? objekte.find((o) => o.id === objektDetailId) ?? null
     : null;
 
+  const [pageBusy, setPageBusy] = useState(false);
+
+  function flashPageBusy(ms = 400) {
+    setPageBusy(true);
+    window.setTimeout(() => setPageBusy(false), ms);
+  }
+
   return (
     <>
     <PortalShell
@@ -331,8 +344,10 @@ export function EigentuemerPortalClient({
       brandSubtitle={kunde.name?.trim() || EIGENTUEMER_PAGE_HEAD}
       brandKuerzel="B"
       sidebarOwner={kunde.name?.trim() || EIGENTUEMER_DASHBOARD_ROLE}
-      hideMobileChrome={Boolean(selectedId)}
+      hideMobileChrome={false}
       activeNavId={section}
+      contentKey={`${section}:${selectedId ?? ""}:${objektDetailId ?? ""}`}
+      contentBusy={pageBusy || freigabeBusy}
       onNavChange={(id) => switchSection(id as SectionId)}
       nav={buildPortalShellNav("eigentuemer", "eigentuemer", {
         liste: needsActionCount + pendingFreigabe.length,
@@ -359,6 +374,12 @@ export function EigentuemerPortalClient({
           <PortalUserNotificationBell
             role="eigentuemer"
             allHref="/portal?section=vorgaenge"
+            onOpenVorgang={(id, href) => {
+              setSection("vorgaenge");
+              const matched = findKundeVorgangByQueryId(vorgaengeItems, id);
+              setSelectedId(matched?.id ?? id);
+              router.push(href);
+            }}
           />
           <form action="/portal/auth/signout" method="post">
             <button type="submit" className="btn-pill-outline portal-btn-compact">
@@ -527,55 +548,56 @@ export function EigentuemerPortalClient({
       {section === "objekte" ? (
         <div className="space-y-4">
           {activeObjekt ? (
-            <div className="space-y-4">
-              <button
-                type="button"
-                className="portal-text-meta font-semibold text-accent"
-                onClick={() => setObjektDetailId(null)}
+            <div className="-mx-4 -mt-4 min-w-0 pb-4 lg:-mx-6 lg:-mt-5">
+              <PortalEntityDetailLayout
+                coverUrl={activeObjekt.cover_url}
+                onBack={() => setObjektDetailId(null)}
+                backLabel="← Objekte"
+                title={activeObjekt.titel}
+                metaLine={[
+                  formatObjektTypLine(activeObjekt),
+                  formatObjektPlzOrt(activeObjekt) || null,
+                ]
+                  .filter(Boolean)
+                  .join(" · ")}
+                tabs={[{ id: "stammdaten", label: "Stammdaten" }]}
+                activeTab="stammdaten"
+                onTabChange={() => {}}
+                tabsNavLabel="Objekt-Abschnitte"
               >
-                ‹ Objekte
-              </button>
-              <div>
-                <h2 className="font-[family-name:var(--font-display)] text-[22px] font-bold text-text-primary">
-                  {activeObjekt.titel}
-                </h2>
-                <p className="portal-text-body mt-1 text-text-secondary">
-                  {formatObjektTypLine(activeObjekt)}
-                  {formatObjektPlzOrt(activeObjekt)
-                    ? ` · ${formatObjektPlzOrt(activeObjekt)}`
-                    : ""}
+                <dl className="portal-surface space-y-3 p-4">
+                  <div>
+                    <dt className="portal-text-meta text-text-tertiary">Adresse</dt>
+                    <dd className="portal-text-body font-medium">
+                      {formatObjektStrasse(activeObjekt) || "—"}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt className="portal-text-meta text-text-tertiary">
+                      Einheiten
+                    </dt>
+                    <dd className="portal-text-body font-medium">
+                      {parseEinheitenCount(activeObjekt.einheiten_hinweis) || "—"}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt className="portal-text-meta text-text-tertiary">
+                      Ihre Kostenfreigabe-Schwelle
+                    </dt>
+                    <dd className="portal-text-body font-medium">
+                      {formatEigentuemerSchwelle(schwelleEur)}
+                    </dd>
+                  </div>
+                </dl>
+                <p className="portal-text-meta mt-3 text-text-tertiary">
+                  Lesesicht — Änderungen nimmt die Verwaltung vor.
                 </p>
-              </div>
-              <dl className="portal-surface space-y-3 p-4">
-                <div>
-                  <dt className="portal-text-meta text-text-tertiary">Adresse</dt>
-                  <dd className="portal-text-body font-medium">
-                    {formatObjektStrasse(activeObjekt) || "—"}
-                  </dd>
-                </div>
-                <div>
-                  <dt className="portal-text-meta text-text-tertiary">Einheiten</dt>
-                  <dd className="portal-text-body font-medium">
-                    {parseEinheitenCount(activeObjekt.einheiten_hinweis) || "—"}
-                  </dd>
-                </div>
-                <div>
-                  <dt className="portal-text-meta text-text-tertiary">
-                    Ihre Kostenfreigabe-Schwelle
-                  </dt>
-                  <dd className="portal-text-body font-medium">
-                    {formatEigentuemerSchwelle(schwelleEur)}
-                  </dd>
-                </div>
-              </dl>
-              <p className="portal-text-meta text-text-tertiary">
-                Lesesicht — Änderungen nimmt die Verwaltung vor.
-              </p>
+              </PortalEntityDetailLayout>
             </div>
           ) : (
             <>
               <div className="space-y-0.5">
-                <h2 className="portal-text-section text-text-primary">Objekte</h2>
+                <PortalListeTitle>Objekte</PortalListeTitle>
                 <p className="portal-text-body text-text-secondary">
                   Ihre zugeordneten Gebäude (nur Lesen).
                 </p>
@@ -632,6 +654,7 @@ export function EigentuemerPortalClient({
         onClose={() => setCreateOpen(false)}
         onDone={() => {
           setCreateOpen(false);
+          flashPageBusy();
           router.refresh();
         }}
       />

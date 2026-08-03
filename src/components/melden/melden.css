@@ -359,6 +359,18 @@
   border: 1px solid var(--p2-line, rgba(0, 0, 0, 0.08));
 }
 
+.mieter-wl-btn--lg {
+  padding: 16px 20px;
+  font-size: 16px;
+  border-radius: 12px;
+}
+
+.mieter-wl-bestaetigung-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
 .mieter-wl-btn:disabled {
   opacity: 0.55;
   cursor: not-allowed;

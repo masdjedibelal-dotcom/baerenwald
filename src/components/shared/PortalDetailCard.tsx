@@ -33,15 +33,7 @@ export function PortalDetailCard({
       style={portalDetailSectionBorderStyle(chrome)}
     >
       {title ? (
-        <h3
-          className="mb-3 text-[14px] font-bold"
-          style={{
-            color: PORTAL_VAR.ink,
-            fontFamily: "var(--p2-font-head, " + PORTAL_VAR.head + ")",
-          }}
-        >
-          {title}
-        </h3>
+        <h3 className="portal-text-section mb-3">{title}</h3>
       ) : null}
       <div className={bodyClassName}>{children}</div>
     </section>
@@ -96,10 +88,9 @@ export function PortalDetailPrimaryButton({
       disabled={disabled}
       onClick={onClick}
       className={cn(
-        "w-full rounded-[9px] px-4 py-3 text-[13.5px] font-semibold text-white disabled:opacity-50",
+        "portal-action-btn portal-action-btn--primary portal-action-btn--block",
         className
       )}
-      style={{ background: PORTAL_VAR.primary }}
     >
       {label}
     </button>

@@ -97,7 +97,7 @@ export function portalDetailSectionBorderStyle(
   return { borderColor: PORTAL_VAR.line };
 }
 
-/** C2 — HV-Detail Anchor-Nav (Reihenfolge = Scroll-Reihenfolge). */
+/** C2 — HV-Detail Section-Nav (Reihenfolge = Tab-Reihenfolge). */
 export const PORTAL_DETAIL_SECTION_IDS = [
   "uebersicht",
   "angebot",
@@ -112,7 +112,8 @@ export const PORTAL_DETAIL_SECTION_LABELS: Record<
   PortalDetailSectionId,
   string
 > = {
-  uebersicht: "Übersicht",
+  /** Nicht „Übersicht“ — Shell-Nav nutzt das schon. */
+  uebersicht: "Details",
   angebot: "Angebot",
   bautagebuch: "Bautagebuch",
   dokumente: "Dokumente",

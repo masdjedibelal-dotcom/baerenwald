@@ -60,7 +60,7 @@ export default async function PortalDashboardPage() {
   if (!link.ok) {
     if (link.signOut) {
       clearAdminViewCookie();
-      await supabase.auth.signOut();
+      await supabase.auth.signOut({ scope: "local" });
       redirect("/portal/login?hint=session_mismatch");
     }
     return (

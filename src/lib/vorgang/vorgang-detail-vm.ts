@@ -103,6 +103,8 @@ export type VorgangDetailObjektMelder = {
   zeitraumLabel?: string | null;
   /** Fachfragen aus dem Melde-/Rechner-Funnel */
   fachdetailRows?: Array<{ label: string; value: string }>;
+  /** Unverbindliche Preisindikation (nur HV) */
+  preisIndikation?: string | null;
 };
 
 export type VorgangDetailAusfuehrung = {

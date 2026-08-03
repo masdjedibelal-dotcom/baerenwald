@@ -26,9 +26,7 @@ function BlockShell({
         className
       )}
     >
-      <h3 className="mb-3 font-[family-name:var(--font-display)] text-[14px] font-bold text-text-primary">
-        {title}
-      </h3>
+      <h3 className="portal-text-section mb-3">{title}</h3>
       {children}
     </section>
   );
@@ -144,7 +142,8 @@ export function VorgangDetailBlocks({ vm, sight: sightProp, className }: Props) 
       B.bereichLabel ||
       B.beschreibung ||
       B.zeitraumLabel ||
-      (B.fachdetailRows && B.fachdetailRows.length > 0)
+      (B.fachdetailRows && B.fachdetailRows.length > 0) ||
+      (isHv && B.preisIndikation)
   );
   const showMeldeDetails =
     (isHv || isKunde) &&
@@ -199,6 +198,9 @@ export function VorgangDetailBlocks({ vm, sight: sightProp, className }: Props) 
             ) : null}
             {B.zeitraumLabel ? (
               <MetaRow label="Zeitraum" value={B.zeitraumLabel} />
+            ) : null}
+            {isHv && B.preisIndikation ? (
+              <MetaRow label="Preisindikation" value={B.preisIndikation} />
             ) : null}
             {B.fachdetailRows?.map((row) => (
               <MetaRow

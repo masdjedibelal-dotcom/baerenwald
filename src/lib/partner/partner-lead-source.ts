@@ -30,6 +30,7 @@ export type PartnerKundenObjektRow = {
   hausnummer?: string | null;
   plz?: string | null;
   ort?: string | null;
+  cover_url?: string | null;
 };
 
 export function buildPartnerLeadSource(opts: {

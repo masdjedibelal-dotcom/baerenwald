@@ -7,7 +7,16 @@ import {
 import { requireOrganisationSession } from "@/lib/org/require-org-session";
 import { supabaseAdmin } from "@/lib/supabase";
 
-const ROLLEN = ["hausmeister", "beirat", "dienstleister", "notfall", "sonstiges"] as const;
+export const runtime = "nodejs";
+
+const KONTAKT_ROLLEN = [
+  "hausmeister",
+  "beirat",
+  "dienstleister",
+  "notfall",
+  "makler",
+  "sonstiges",
+] as const;
 
 export async function GET(req: Request) {
   const session = await requireOrganisationSession();
@@ -30,19 +39,11 @@ export async function GET(req: Request) {
     .eq("aktiv", true)
     .order("sort_order", { ascending: true });
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
   return NextResponse.json({ kontakte: data ?? [] });
 }
-
-type Body = {
-  id?: string;
-  objektId?: string;
-  rolle?: string;
-  name?: string;
-  telefon?: string;
-  email?: string;
-  notiz?: string;
-};
 
 export async function POST(req: Request) {
   const session = await requireOrganisationSession();
@@ -50,17 +51,29 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: session.error }, { status: session.status });
   }
   const write = requireOrgWrite(session);
-  if (!write.ok) return NextResponse.json({ error: write.error }, { status: write.status });
+  if (!write.ok) {
+    return NextResponse.json({ error: write.error }, { status: write.status });
+  }
 
-  const body = (await req.json()) as Body;
+  const body = (await req.json()) as {
+    objektId?: string;
+    name?: string;
+    rolle?: string;
+    telefon?: string;
+    email?: string;
+    notiz?: string;
+  };
   const objektId = String(body.objektId ?? "").trim();
   const name = String(body.name ?? "").trim();
   const rolle = String(body.rolle ?? "sonstiges").trim();
 
   if (!objektId || !name) {
-    return NextResponse.json({ error: "Objekt und Name erforderlich." }, { status: 400 });
+    return NextResponse.json(
+      { error: "Objekt und Name erforderlich." },
+      { status: 400 }
+    );
   }
-  if (!ROLLEN.includes(rolle as (typeof ROLLEN)[number])) {
+  if (!(KONTAKT_ROLLEN as readonly string[]).includes(rolle)) {
     return NextResponse.json({ error: "Ungültige Rolle." }, { status: 400 });
   }
   if (!(await assertOrgObjekt(session.kunde.id, objektId))) {
@@ -81,7 +94,9 @@ export async function POST(req: Request) {
     .select("id")
     .single();
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
   return NextResponse.json({ ok: true, id: data.id });
 }
 
@@ -91,30 +106,50 @@ export async function PATCH(req: Request) {
     return NextResponse.json({ error: session.error }, { status: session.status });
   }
   const write = requireOrgWrite(session);
-  if (!write.ok) return NextResponse.json({ error: write.error }, { status: write.status });
+  if (!write.ok) {
+    return NextResponse.json({ error: write.error }, { status: write.status });
+  }
 
-  const body = (await req.json()) as Body;
+  const body = (await req.json()) as {
+    id?: string;
+    name?: string;
+    rolle?: string;
+    telefon?: string;
+    email?: string;
+    notiz?: string;
+  };
   const id = String(body.id ?? "").trim();
-  if (!id) return NextResponse.json({ error: "id fehlt." }, { status: 400 });
+  if (!id) {
+    return NextResponse.json({ error: "id fehlt." }, { status: 400 });
+  }
 
-  const { data: row } = await supabaseAdmin
+  const { data: existing } = await supabaseAdmin
     .from("objekt_kontakte")
     .select("id")
     .eq("id", id)
     .eq("kunde_id", session.kunde.id)
     .maybeSingle();
+  if (!existing) {
+    return NextResponse.json({ error: "Nicht gefunden." }, { status: 404 });
+  }
 
-  if (!row) return NextResponse.json({ error: "Nicht gefunden." }, { status: 404 });
-
-  const patch: Record<string, unknown> = { updated_at: new Date().toISOString() };
+  const patch: Record<string, unknown> = {
+    updated_at: new Date().toISOString(),
+  };
   if (body.name != null) patch.name = String(body.name).trim();
   if (body.rolle != null) patch.rolle = body.rolle;
   if (body.telefon != null) patch.telefon = body.telefon.trim() || null;
   if (body.email != null) patch.email = body.email.trim() || null;
   if (body.notiz != null) patch.notiz = body.notiz.trim() || null;
 
-  const { error } = await supabaseAdmin.from("objekt_kontakte").update(patch).eq("id", id);
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  const { error } = await supabaseAdmin
+    .from("objekt_kontakte")
+    .update(patch)
+    .eq("id", id);
+
+  if (error) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
   return NextResponse.json({ ok: true });
 }
 
@@ -124,10 +159,14 @@ export async function DELETE(req: Request) {
     return NextResponse.json({ error: session.error }, { status: session.status });
   }
   const write = requireOrgWrite(session);
-  if (!write.ok) return NextResponse.json({ error: write.error }, { status: write.status });
+  if (!write.ok) {
+    return NextResponse.json({ error: write.error }, { status: write.status });
+  }
 
   const id = new URL(req.url).searchParams.get("id")?.trim();
-  if (!id) return NextResponse.json({ error: "id fehlt." }, { status: 400 });
+  if (!id) {
+    return NextResponse.json({ error: "id fehlt." }, { status: 400 });
+  }
 
   const { error } = await supabaseAdmin
     .from("objekt_kontakte")
@@ -135,6 +174,8 @@ export async function DELETE(req: Request) {
     .eq("id", id)
     .eq("kunde_id", session.kunde.id);
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
   return NextResponse.json({ ok: true });
 }

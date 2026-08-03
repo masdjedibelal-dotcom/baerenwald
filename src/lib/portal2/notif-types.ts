@@ -147,8 +147,9 @@ export function mapPartnerTypToPortalNotifTyp(
 ): PortalNotifTyp {
   if (typ === "neu") return "auftrag";
   if (typ === "bautagebuch") return "info";
-  if (typ === "erinnerung" || typ === "geaendert") return "status";
-  if (typ === "entfernt") return "status";
+  if (typ === "geaendert" || typ === "entfernt") return "status";
+  // Erinnerung ohne Auftragsänderung (z. B. Follow-up) — nicht wie „Geändert“
+  if (typ === "erinnerung") return "info";
   if (typ === "auftrag" || typ === "termin" || typ === "angebot" || typ === "freigabe" || typ === "info" || typ === "status") {
     return typ;
   }

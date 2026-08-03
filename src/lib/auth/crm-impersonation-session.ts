@@ -2,6 +2,14 @@ import { createClient } from "@supabase/supabase-js";
 import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import { cookies } from "next/headers";
 
+import {
+  AUTH_SESSION_COOKIE_OPTIONS,
+  AUTH_SIGNOUT_OPTS,
+  applyAuthSessionCookieOptions,
+  matchAuthCookieNames,
+  supabaseLegacyAuthCookieBaseName,
+} from "@/lib/supabase/auth-session";
+
 export const BW_ADMIN_VIEW_COOKIE = "bw_admin_view";
 
 function supabaseKeys() {
@@ -17,6 +25,7 @@ function cookieClient() {
   if (!keys) return null;
   const cookieStore = cookies();
   return createServerClient(keys.url, keys.anonKey, {
+    cookieOptions: AUTH_SESSION_COOKIE_OPTIONS,
     cookies: {
       getAll() {
         return cookieStore.getAll();
@@ -25,11 +34,28 @@ function cookieClient() {
         cookiesToSet: { name: string; value: string; options: CookieOptions }[]
       ) {
         cookiesToSet.forEach(({ name, value, options }) =>
-          cookieStore.set({ name, value, ...options })
+          cookieStore.set({
+            name,
+            value,
+            ...applyAuthSessionCookieOptions(options),
+          })
         );
       },
     },
   });
+}
+
+function clearLegacyDefaultAuthCookies() {
+  const legacyBase = supabaseLegacyAuthCookieBaseName();
+  if (!legacyBase) return;
+  const cookieStore = cookies();
+  const names = matchAuthCookieNames(
+    cookieStore.getAll().map((c) => c.name),
+    legacyBase
+  );
+  for (const name of names) {
+    cookieStore.set({ name, value: "", path: "/", maxAge: 0 });
+  }
 }
 
 export function clearAdminViewCookie() {
@@ -78,7 +104,9 @@ export async function establishPortalSessionForEmail(
     return { ok: false, error: "Ungültige E-Mail." };
   }
 
-  await supabase.auth.signOut();
+  // Nur lokale Cookie-Session — global würde CRM-Staff-Tokens killen
+  await supabase.auth.signOut(AUTH_SIGNOUT_OPTS);
+  clearLegacyDefaultAuthCookies();
 
   const admin = createClient(keys.url, keys.serviceKey, {
     auth: { autoRefreshToken: false, persistSession: false },
@@ -123,5 +151,6 @@ export async function establishPortalSessionForEmail(
     return { ok: false, error: sessionErr.message };
   }
 
+  clearLegacyDefaultAuthCookies();
   return { ok: true };
 }

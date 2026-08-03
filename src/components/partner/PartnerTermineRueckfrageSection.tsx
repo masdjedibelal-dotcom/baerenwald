@@ -75,14 +75,14 @@ export function PartnerTermineRueckfrageSection({
         <div className="flex flex-wrap gap-2">
           <button
             type="button"
-            className="btn-pill-primary portal-btn !px-4 !py-2.5"
+            className="btn-pill-primary portal-btn"
             onClick={() => setMode("termin")}
           >
             Termin
           </button>
           <button
             type="button"
-            className="btn-pill-outline portal-btn !px-4 !py-2.5"
+            className="btn-pill-outline portal-btn"
             onClick={() => setMode("frage")}
           >
             Rückfrage
@@ -112,7 +112,7 @@ export function PartnerTermineRueckfrageSection({
           {error ? <PartnerDetailError message={error} /> : null}
           <button
             type="submit"
-            className="btn-pill-primary portal-btn w-full !px-4 !py-2.5"
+            className="btn-pill-primary portal-btn w-full"
             disabled={busy || rueckfrage.trim().length < 10}
           >
             {busy ? "Senden…" : "Senden"}
@@ -154,7 +154,7 @@ export function PartnerTermineRueckfrageSection({
           {error ? <PartnerDetailError message={error} /> : null}
           <button
             type="submit"
-            className="btn-pill-primary portal-btn w-full !px-4 !py-2.5"
+            className="btn-pill-primary portal-btn w-full"
             disabled={busy || !slotBeginn}
           >
             {busy ? "Senden…" : "Vorschlagen"}

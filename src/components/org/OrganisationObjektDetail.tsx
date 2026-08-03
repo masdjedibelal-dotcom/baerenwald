@@ -3,16 +3,22 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { AlertTriangle } from "lucide-react";
 
-import { OrganisationObjektCover } from "@/components/org/OrganisationObjektCover";
 import { OrganisationObjektDokumentePanel } from "@/components/org/OrganisationObjektDokumentePanel";
 import { OrganisationObjektMieterTab } from "@/components/org/OrganisationObjektMieterTab";
-import { PortalListCard } from "@/components/shared/PortalListCard";
+import {
+  buildAushangActionItems,
+  PortalActionMenu,
+} from "@/components/shared/PortalActionMenu";
+import { PortalDetailCover } from "@/components/shared/PortalDetailCover";
+import { PortalDetailHead } from "@/components/shared/PortalDetailUi";
+import { PortalDetailTabs } from "@/components/shared/PortalDetailTabs";
 import {
   EinstellungenCard,
   EinstellungenEuroSlider,
   EinstellungenInfoBox,
   EinstellungenToggle,
 } from "@/components/shared/PortalEinstellungenUi";
+import { PortalListCard } from "@/components/shared/PortalListCard";
 import { cn } from "@/lib/utils";
 import { leadBelongsToObjekt } from "@/lib/org/match-lead-objekt";
 import { meldeKategorieLabel } from "@/lib/org/melde-kategorien";
@@ -31,7 +37,6 @@ import {
 import {
   decodeObjektMeta,
   encodeObjektMeta,
-  formatObjektIdKurz,
   formatObjektPlzOrt,
   formatObjektStrasse,
   formatObjektTypLine,
@@ -88,11 +93,7 @@ function ObjCard({
 }) {
   return (
     <div className="mb-3.5 rounded-xl border border-border-default bg-white p-4">
-      {title ? (
-        <p className="mb-3 font-[family-name:var(--font-display)] text-sm font-bold text-text-primary">
-          {title}
-        </p>
-      ) : null}
+      {title ? <p className="portal-text-section mb-3">{title}</p> : null}
       {children}
     </div>
   );
@@ -227,6 +228,9 @@ export function OrganisationObjektDetail({
   const typLine = formatObjektTypLine(objekt);
   const plzOrt = formatObjektPlzOrt(objekt) || "—";
   const strasse = formatObjektStrasse(objekt) || "—";
+  const adresseLine = [strasse, plzOrt]
+    .filter((x) => x && x !== "—")
+    .join(", ");
   const we =
     typeof objekt.einheitenCount === "number" && objekt.einheitenCount > 0
       ? objekt.einheitenCount
@@ -435,11 +439,6 @@ export function OrganisationObjektDetail({
             label="Einheiten"
             value={we === 1 ? "1 Einheit" : `${we} Einheiten`}
           />
-          <ObjRow label="Objekt-ID" value={formatObjektIdKurz(objekt.id)} />
-          <ObjRow
-            label="Melde-Link"
-            value={objekt.melde_aktiv && objekt.melde_slug ? "Aktiv" : "Inaktiv"}
-          />
         </ObjCard>
         <ObjCard title="Gebäudeversicherung">
           <ObjEditRow
@@ -482,7 +481,7 @@ export function OrganisationObjektDetail({
     body = (
       <div className="space-y-2.5">
         <div className="flex items-baseline justify-between gap-2 px-0.5">
-          <p className="font-[family-name:var(--font-display)] text-sm font-bold text-text-primary">
+          <p className="portal-text-section">
             Vorgänge ({objektLeads.length})
           </p>
           <p className="text-xs text-text-tertiary">{offenCount} offen</p>
@@ -584,118 +583,67 @@ export function OrganisationObjektDetail({
     );
   }
 
+  const ctaClass =
+    "rounded-[9px] border border-border-default bg-white px-3.5 py-2 text-[13px] font-semibold text-text-secondary";
+
   return (
     <div className="space-y-0">
-      <div className="mb-2 flex items-center gap-1.5 text-[12.5px] text-text-tertiary">
-        <button
-          type="button"
-          className="font-semibold text-accent"
-          onClick={onBack}
-        >
-          ‹ Objekte
-        </button>
-        <span>/</span>
-        <span>{objekt.titel}</span>
-      </div>
+      <PortalDetailCover
+        coverUrl={objekt.cover_url}
+        onBack={onBack}
+        backLabel="← Objekte"
+        onEdit={onEdit}
+        className="-mx-4 -mt-5 lg:-mx-6 lg:-mt-7"
+      />
 
-      <div className="mb-3 md:hidden">
-        <OrganisationObjektCover
-          objektId={objekt.id}
-          coverUrl={objekt.cover_url}
-          variant="card"
-          onUploaded={() => onRefresh()}
-        />
-      </div>
-
-      <div className="mb-4 flex flex-col gap-3.5 md:mb-5 md:flex-row md:items-center">
-        <OrganisationObjektCover
-          objektId={objekt.id}
-          coverUrl={objekt.cover_url}
-          variant="detail"
-          className="hidden md:block"
-          onUploaded={() => onRefresh()}
-        />
-        <div className="min-w-0 flex-1">
-          <h2 className="font-[family-name:var(--font-display)] text-[21px] font-bold text-text-primary md:text-[25px]">
-            {objekt.titel}
-          </h2>
-          <p className="mt-0.5 text-[13px] text-text-secondary">
-            {typLine}
-            {plzOrt !== "—" ? ` · ${plzOrt}` : ""}
-          </p>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          {canAushang ? (
+      <div className="mt-4 mb-5 space-y-4">
+        <PortalDetailHead
+          title={objekt.titel}
+          metaLine={adresseLine || undefined}
+          actions={
             <>
+              {canAushang ? (
+                <PortalActionMenu
+                  title="Aushang"
+                  trigger="Aushang"
+                  triggerClassName={cn(
+                    ctaClass,
+                    "!border-accent !bg-accent-light !text-accent"
+                  )}
+                  items={buildAushangActionItems({
+                    onCopyLink: onCopyMeldeLink,
+                    onQr: onOpenQrCode,
+                    onPdf: onOpenAushangPdf,
+                  })}
+                />
+              ) : null}
               <button
                 type="button"
-                className="rounded-[9px] border border-border-default bg-white px-3.5 py-2 text-[13px] font-semibold text-text-secondary"
-                onClick={onCopyMeldeLink}
+                className={ctaClass}
+                onClick={onCopy}
               >
-                Link kopieren
+                Kopieren
               </button>
               <button
                 type="button"
-                className="rounded-[9px] border border-accent bg-accent-light px-3.5 py-2 text-[13px] font-semibold text-accent"
-                onClick={onOpenAushangPdf}
+                className={cn("portal-danger", ctaClass)}
+                onClick={onDelete}
               >
-                Aushang PDF
-              </button>
-              <button
-                type="button"
-                className="rounded-[9px] border border-border-default bg-white px-3.5 py-2 text-[13px] font-semibold text-text-secondary"
-                onClick={onOpenQrCode}
-              >
-                QR-Code
+                Löschen
               </button>
             </>
-          ) : null}
-          <button
-            type="button"
-            className="portal-danger rounded-[9px] border border-border-default bg-white px-3.5 py-2 text-[13px] font-semibold"
-            onClick={onDelete}
-          >
-            Löschen
-          </button>
-          <button
-            type="button"
-            className="rounded-[9px] border border-border-default bg-white px-3.5 py-2 text-[13px] font-semibold text-text-secondary"
-            onClick={onEdit}
-          >
-            Bearbeiten
-          </button>
-          <button
-            type="button"
-            className="rounded-[9px] border border-border-default bg-white px-3.5 py-2 text-[13px] font-semibold text-text-secondary"
-            onClick={onCopy}
-          >
-            Kopieren
-          </button>
-        </div>
-      </div>
+          }
+        />
 
-      <div className="mb-6 flex gap-3.5 overflow-x-auto whitespace-nowrap border-b border-border-default pb-0.5 md:mb-8 md:gap-5">
-        {OBJ_DETAIL_TABS.map((t) => {
-          const on = tab === t.id;
-          return (
-            <button
-              key={t.id}
-              type="button"
-              onClick={() => setTab(t.id)}
-              className={cn(
-                "shrink-0 border-b-2 pb-2.5 text-[13.5px] font-semibold",
-                on
-                  ? "border-accent text-text-primary"
-                  : "border-transparent text-text-secondary"
-              )}
-            >
-              {t.label}
-            </button>
-          );
-        })}
+        <PortalDetailTabs
+          tabs={OBJ_DETAIL_TABS}
+          activeId={tab}
+          onChange={(id) => setTab(id as ObjDetailTabId)}
+          navLabel="Objekt-Abschnitte"
+        >
+          {body}
+        </PortalDetailTabs>
       </div>
-
-      <div className="pt-1">{body}</div>
     </div>
   );
 }

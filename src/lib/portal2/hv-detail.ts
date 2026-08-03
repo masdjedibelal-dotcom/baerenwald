@@ -137,13 +137,16 @@ export const HV_DETAIL_COPY = {
     "Zur Information — Auftrag läuft (Akut/Notfall). Keine Freigabe nötig.",
   abnahmeTitle: "Abschluss",
   abnahmeNote:
-    "Abnahme und Signatur macht der Handwerker vor Ort. Danach Feedback hier.",
+    "Hier sehen Sie die dokumentierten Leistungen und offenen Mängel aus der Abnahme. Das Protokoll zum Download finden Sie unter Dokumente.",
+  abnahmeEmpty: "Noch keine Einträge.",
+  abnahmeLeistungen: "Leistungen",
+  abnahmeMaengel: "Mängel",
   abnahmeBtn: "Abnehmen",
   dokumenteTitle: "Dokumente",
   dokumenteEmpty: "Noch keine Dokumente.",
   rechnungTitle: "Rechnung",
   rechnungNote:
-    "Gesamtpaket von Bärenwald erhalten: Rechnung + Abschlussdokumentation.",
+    "Rechnung liegt vor. Download und Unterlagen finden Sie unter Dokumente.",
   rechnungsbetrag: "Rechnungsbetrag",
   ueberweisungOffen:
     "Überweisung veranlassen ist im Portal noch nicht angebunden. Rechnungsstatus siehe unten.",

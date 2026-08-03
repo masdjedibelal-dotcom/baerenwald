@@ -3,7 +3,9 @@ import { NextResponse } from "next/server";
 import { requireOrganisationSession } from "@/lib/org/require-org-session";
 import { supabaseAdmin } from "@/lib/supabase";
 
-/** S3 Objekt-Dashboard: Kosten aus v_objekt_kosten + Vorgangs-Zähler. */
+export const runtime = "nodejs";
+
+/** KPI-Dashboard für ein Objekt (Kosten, offene Vorgänge, Prüffristen). */
 export async function GET(req: Request) {
   const session = await requireOrganisationSession();
   if (!session.ok) {
@@ -27,18 +29,20 @@ export async function GET(req: Request) {
   }
 
   const jahr = new Date().getFullYear();
+
   const { data: kostenRows } = await supabaseAdmin
     .from("v_objekt_kosten")
     .select("jahr, brutto_gesamt, lohnanteil_gesamt, kostentraeger, anzahl_rechnungen")
     .eq("kunde_id", session.kunde.id)
     .eq("kunde_objekt_id", objektId);
 
-  const jahrRows = (kostenRows ?? []).filter((r) => {
-    const y = new Date(String(r.jahr)).getFullYear();
-    return y === jahr;
-  });
-
-  const bruttoJahr = jahrRows.reduce((s, r) => s + Number(r.brutto_gesamt ?? 0), 0);
+  const jahrRows = (kostenRows ?? []).filter(
+    (r) => new Date(String(r.jahr)).getFullYear() === jahr
+  );
+  const bruttoJahr = jahrRows.reduce(
+    (sum, r) => sum + Number(r.brutto_gesamt ?? 0),
+    0
+  );
   const nachTraeger = jahrRows.reduce<Record<string, number>>((acc, r) => {
     const key = String(r.kostentraeger ?? "sonstiges");
     acc[key] = (acc[key] ?? 0) + Number(r.brutto_gesamt ?? 0);

@@ -1,15 +1,21 @@
 import { NextResponse } from "next/server";
 
-import { supabaseAdmin } from "@/lib/supabase";
 import { vorgangFeedbackBereit } from "@/lib/portal/vorgang-feedback-eligibility";
+import { supabaseAdmin } from "@/lib/supabase";
 
-type Body = { token?: string; sterne?: number; freitext?: string };
+export const runtime = "nodejs";
 
-/** Mieter-Feedback nach abgeschlossenem Vorgang (S11). */
+/**
+ * Öffentliches Mieter-Feedback nach Abschluss (Token aus Melde-Statusseite).
+ */
 export async function POST(req: Request) {
-  let body: Body;
+  let body: { token?: string; sterne?: number; freitext?: string };
   try {
-    body = (await req.json()) as Body;
+    body = (await req.json()) as {
+      token?: string;
+      sterne?: number;
+      freitext?: string;
+    };
   } catch {
     return NextResponse.json({ error: "Ungültige Anfrage." }, { status: 400 });
   }
@@ -19,7 +25,10 @@ export async function POST(req: Request) {
   const freitext = String(body.freitext ?? "").trim() || null;
 
   if (!token || !Number.isFinite(sterne) || sterne < 1 || sterne > 5) {
-    return NextResponse.json({ error: "Bewertung (1–5) erforderlich." }, { status: 400 });
+    return NextResponse.json(
+      { error: "Bewertung (1–5) erforderlich." },
+      { status: 400 }
+    );
   }
 
   const { data: lead } = await supabaseAdmin
@@ -47,15 +56,15 @@ export async function POST(req: Request) {
         .eq("auftrag_id", auftrag.id)
     : { data: [] as Array<{ handwerker_id: string | null; handwerker_status: string | null }> };
 
-  const bereit = vorgangFeedbackBereit({
-    leadVorgangPhase: lead.vorgang_phase,
-    hv_meldung_status: lead.hv_meldung_status,
-    auftragStatus: auftrag?.status,
-    auftragFortschritt: auftrag?.fortschritt,
-    positionen,
-  });
-
-  if (!bereit) {
+  if (
+    !vorgangFeedbackBereit({
+      leadVorgangPhase: lead.vorgang_phase,
+      hv_meldung_status: lead.hv_meldung_status,
+      auftragStatus: auftrag?.status,
+      auftragFortschritt: auftrag?.fortschritt,
+      positionen,
+    })
+  ) {
     return NextResponse.json(
       { error: "Feedback erst nach Abschluss der Arbeiten möglich." },
       { status: 400 }
@@ -75,6 +84,5 @@ export async function POST(req: Request) {
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
-
   return NextResponse.json({ ok: true });
 }

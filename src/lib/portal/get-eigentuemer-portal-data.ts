@@ -20,6 +20,7 @@ export type EigentuemerPortalObjekt = Pick<
   | "notizen_intern"
   | "freigabe_schwelle_eur"
   | "created_at"
+  | "cover_url"
 >;
 
 type PortalData = NonNullable<Awaited<ReturnType<typeof getPortalDataForKunde>>>;
@@ -122,7 +123,7 @@ export async function getEigentuemerPortalData(kundeId: string): Promise<{
     const { data: objRows } = await supabaseAdmin
       .from("kunden_objekte")
       .select(
-        "id, kunde_id, titel, strasse, hausnummer, plz, ort, einheiten_hinweis, notizen_intern, freigabe_schwelle_eur, created_at"
+        "id, kunde_id, titel, strasse, hausnummer, plz, ort, einheiten_hinweis, notizen_intern, freigabe_schwelle_eur, created_at, cover_url"
       )
       .in("id", objektIds)
       .order("titel", { ascending: true });

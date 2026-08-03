@@ -20,6 +20,7 @@ import { PartnerTermineRueckfrageSection } from "@/components/partner/PartnerTer
 import {
   PartnerDetailError,
   PartnerDetailLayout,
+  PartnerDetailSection,
   PartnerDetailSuccessBox,
 } from "@/components/partner/PartnerDetailUi";
 import { PartnerComplianceCheckliste } from "@/components/partner/PartnerComplianceCheckliste";
@@ -28,6 +29,8 @@ import {
   PortalDetailCard,
   PortalDetailMetaField,
 } from "@/components/shared/PortalDetailCard";
+import { PortalEntityDetailLayout } from "@/components/shared/PortalEntityDetailLayout";
+import type { PortalDetailTab } from "@/components/shared/PortalDetailTabs";
 import { resolvePartnerDetailTitelFromAuftrag } from "@/lib/partner/partner-listen-titel";
 import {
   buildBauauftragComplianceItems,
@@ -162,7 +165,7 @@ function BautagebuchForm({
       className="portal-text-body space-y-3 rounded-xl border border-border-light bg-muted/15 p-4"
     >
       <p className="font-semibold text-text-primary">
-        {eintrag ? "Eintrag bearbeiten" : "Neuer Bautagebuch-Eintrag"}
+        {eintrag ? "Eintrag bearbeiten" : "Neue Zusatznotiz"}
       </p>
       <label className="block">
         <span className="portal-text-meta text-text-tertiary">Titel</span>
@@ -219,7 +222,7 @@ function BautagebuchForm({
         <button
           type="submit"
           disabled={loading}
-          className={cn("btn-pill-primary portal-btn !px-4 !py-2.5", loading && "opacity-60")}
+          className={cn("btn-pill-primary portal-btn", loading && "opacity-60")}
         >
           {loading ? "Speichern…" : "Speichern"}
         </button>
@@ -401,6 +404,7 @@ function BautagebuchEintragActions({
 export function PartnerAuftragDetail({
   item,
   vorgangState,
+  onBack,
   focusBautagebuch,
   deepLinkAnfrageId,
   focusAbnahme,
@@ -408,6 +412,7 @@ export function PartnerAuftragDetail({
 }: {
   item: PartnerAuftragItem;
   vorgangState?: VorgangState;
+  onBack?: () => void;
   focusBautagebuch?: boolean;
   deepLinkAnfrageId?: string | null;
   focusAbnahme?: boolean;
@@ -439,6 +444,11 @@ export function PartnerAuftragDetail({
   const [abnahmeProtokollId, setAbnahmeProtokollId] = useState<string | null>(
     deepLinkProtokollId ?? null
   );
+  const [activeTab, setActiveTab] = useState(() => {
+    if (focusAbnahme) return "abnahme";
+    if (focusBautagebuch) return "dokumentation";
+    return "uebersicht";
+  });
 
   const btAnfrageId =
     deepLinkAnfrageId?.trim() ||
@@ -451,14 +461,12 @@ export function PartnerAuftragDetail({
     const hasPreferred = preferredPositionIds.length > 0;
     if (!hasPreferred) setShowNew(true);
     else setAutoOpenPreferred(true);
-    const t = window.setTimeout(() => {
-      dokuSectionRef.current?.scrollIntoView({
-        behavior: "smooth",
-        block: "start",
-      });
-    }, 80);
-    return () => window.clearTimeout(t);
+    setActiveTab("dokumentation");
   }, [focusBautagebuch, preferredPositionIds.length]);
+
+  useEffect(() => {
+    if (focusAbnahme) setActiveTab("abnahme");
+  }, [focusAbnahme]);
 
   /** Jedes Mal beim Öffnen des Vorgangs — nach Nein in dieser Session nicht sofort erneut. */
   useEffect(() => {
@@ -585,6 +593,7 @@ export function PartnerAuftragDetail({
     auftragStatus: item.status,
     hwAbschlussSigniertAm: item.hw_abschluss_signiert_am,
     abnahmeProtokollUrl: item.abnahme_protokoll_url,
+    abnahmeFreigabeStatus: item.abnahme_freigabe_status,
   });
 
   async function onPdfSubmit(e: React.FormEvent) {
@@ -629,7 +638,7 @@ export function PartnerAuftragDetail({
     setRechnungPdf(null);
     router.refresh();
   }
-  const { label: listenStatusLabel, pillKey: statusPillKey } =
+  const { label: listenStatusLabel } =
     resolvePartnerVorgangListenStatus(vorgangState, item);
 
   const titel = resolvePartnerDetailTitelFromAuftrag(item);
@@ -694,79 +703,75 @@ export function PartnerAuftragDetail({
     </PortalDetailCard>
   );
 
+  const coverUrl = lead?.objekt?.cover_url ?? null;
+
+  const DETAIL_TABS: PortalDetailTab[] = [
+    { id: "uebersicht", label: "Übersicht" },
+    { id: "dokumentation", label: "Dokumentation" },
+    { id: "dokumente", label: "Dokumente" },
+    { id: "abnahme", label: "Abnahme" },
+  ];
+
+  const stickyFooter = kannAbschluss ? (
+    <div className="space-y-2">
+      <button
+        type="button"
+        onClick={() => setAbschlussOpen(true)}
+        className="portal-action-btn portal-action-btn--primary portal-action-btn--block"
+        data-testid="hw-auftrag-abschliessen"
+      >
+        {HW_AUFTRAG_COPY.ausfuehrenCta}
+      </button>
+      <p className="text-center text-[12px]" style={{ color: PORTAL_VAR.sub }}>
+        {HW_AUFTRAG_COPY.ausfuehrenHint}
+      </p>
+    </div>
+  ) : undefined;
+
+  const handleBack = onBack ?? (() => router.back());
+
   return (
-    <PartnerDetailLayout>
-      <div className="min-w-0 space-y-3.5">
-        {/* Header */}
-        <div
-          className="rounded-xl bg-white px-4 py-4"
-          style={{ border: `1px solid ${PORTAL_VAR.line}` }}
-        >
-          <div className="flex flex-wrap items-start justify-between gap-3">
-            <div className="min-w-0 flex-1">
-              <h1
-                className="text-[22px] font-bold leading-snug"
-                style={{
-                  color: PORTAL_VAR.ink,
-                  fontFamily: "var(--p2-font-head, " + PORTAL_VAR.head + ")",
-                }}
-              >
-                {titel}
-              </h1>
-              {headerSub ? (
-                <p className="mt-1 text-[13px]" style={{ color: PORTAL_VAR.sub }}>
-                  {headerSub}
-                </p>
-              ) : null}
-            </div>
-            <div className="flex shrink-0 flex-col items-end gap-2">
-              <span
-                className="inline-flex items-center rounded-md px-2 py-0.5 text-[12px] font-semibold"
-                style={statusStyle}
-                data-status-pill={statusPillKey}
-              >
-                {statusLabel}
-              </span>
-            </div>
-          </div>
-        </div>
-
-        {/* Mobile: Einsatz zuerst */}
-        <div className="space-y-3.5 sm:hidden">{einsatzCard}</div>
-
-        <div className="flex flex-col gap-3.5 sm:flex-row sm:items-start">
-          <div className="flex min-w-0 flex-1 flex-col gap-3.5">
+    <PartnerDetailLayout footer={stickyFooter}>
+      <PortalEntityDetailLayout
+        coverUrl={coverUrl}
+        onBack={handleBack}
+        backLabel="← Zurück"
+        title={titel}
+        metaLine={headerSub || undefined}
+        statusLabel={statusLabel}
+        statusPillStyle={statusStyle}
+        tabs={DETAIL_TABS}
+        activeTab={activeTab}
+        onTabChange={setActiveTab}
+        tabsNavLabel="Auftrags-Abschnitte"
+      >
+        {activeTab === "uebersicht" ? (
+          <div className="space-y-3.5">
+            {einsatzCard}
             {beschreibung ? (
               <PortalDetailCard title={HW_AUFTRAG_COPY.beschreibungTitle}>
-                <p className="text-[13px] leading-relaxed" style={{ color: PORTAL_VAR.sub }}>
+                <p
+                  className="text-[13px] leading-relaxed"
+                  style={{ color: PORTAL_VAR.sub }}
+                >
                   {beschreibung}
                 </p>
               </PortalDetailCard>
             ) : null}
-
             {vorgangState !== "erledigt" ? (
               <PartnerTermineRueckfrageSection auftragId={item.id} />
             ) : null}
-
             <PartnerAuftragErledigtSection
               positionen={item.positionen}
               layout="cta"
               done={abschlussDone}
               vollstaendig={abschlussVollstaendig}
             />
+          </div>
+        ) : null}
 
-            {abnahmePdfUrl ||
-            item.abnahme_protokoll_url ||
-            item.hw_abschluss_signiert_am ||
-            focusAbnahme ? (
-              <PartnerAbnahmeReviewSection
-                auftragId={item.id}
-                protokollId={abnahmeProtokollId}
-                initialPdfUrl={abnahmePdfUrl || item.abnahme_protokoll_url}
-                focus={focusAbnahme}
-              />
-            ) : null}
-
+        {activeTab === "dokumentation" ? (
+          <div className="space-y-3.5">
             <PortalDetailCard>
               <div ref={dokuSectionRef}>
                 <PartnerPositionLebenszyklusList
@@ -800,29 +805,16 @@ export function PartnerAuftragDetail({
                 />
               ) : null}
 
-              {kannAbschluss ? (
-                <div className="mt-5 space-y-2 border-t border-border-light pt-5">
-                  <button
-                    type="button"
-                    onClick={() => setAbschlussOpen(true)}
-                    className="btn-pill-primary w-full"
-                    data-testid="hw-auftrag-abschliessen"
-                  >
-                    {HW_AUFTRAG_COPY.ausfuehrenCta}
-                  </button>
-                  <p className="text-[12px]" style={{ color: PORTAL_VAR.sub }}>
-                    {HW_AUFTRAG_COPY.ausfuehrenHint}
-                  </p>
-                </div>
-              ) : null}
-
               <div className="mt-5 border-t border-border-light pt-5">
                 <div className="mb-3 flex items-center justify-between gap-2">
                   <div>
                     <h4 className="portal-text-label text-text-tertiary">
                       {HW_DOKU_STORY.freiesBtTitle}
                     </h4>
-                    <p className="mt-1 text-[12.5px]" style={{ color: PORTAL_VAR.faint }}>
+                    <p
+                      className="mt-1 text-[12.5px]"
+                      style={{ color: PORTAL_VAR.faint }}
+                    >
                       {HW_DOKU_STORY.freiesBtBody}
                     </p>
                   </div>
@@ -843,7 +835,9 @@ export function PartnerAuftragDetail({
                 </div>
                 {item.bautagebuchAnfrageOffen ? (
                   <p className="mb-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm font-semibold text-amber-900">
-                    Bitte Update geben — Bautagebuch.
+                    {preferredPositionIds.length > 0
+                      ? "Bitte diese Leistungen dokumentieren"
+                      : "Bitte Update geben — Zusatznotiz."}
                     {item.bautagebuchAnfrageNotiz?.trim() ? (
                       <span className="mt-1 block font-normal text-amber-800">
                         {item.bautagebuchAnfrageNotiz.trim()}
@@ -902,13 +896,16 @@ export function PartnerAuftragDetail({
                 ) : null}
               </PortalDetailCard>
             ) : null}
+          </div>
+        ) : null}
 
-            <PortalDetailCard title={HW_AUFTRAG_COPY.unterlagenTitle}>
+        {activeTab === "dokumente" ? (
+          <div className="space-y-3.5">
+            <PartnerDetailSection title="Dokumente">
               <DokumenteTabelle
                 dokumente={dokumentZeilen}
                 heading=""
-                emptyText="Noch keine Unterlagen hochgeladen."
-                className="!border-t-0 !pt-0"
+                emptyText="Noch keine Dokumente."
               />
 
               {zeigtDokumenteUpload ? (
@@ -945,7 +942,7 @@ export function PartnerAuftragDetail({
                         <button
                           type="submit"
                           disabled={pdfLoading}
-                          className="btn-pill-outline portal-btn !px-4 !py-2.5"
+                          className="btn-pill-outline portal-btn"
                         >
                           {pdfLoading ? "Wird hochgeladen…" : "Hochladen"}
                         </button>
@@ -967,7 +964,7 @@ export function PartnerAuftragDetail({
                       <button
                         type="button"
                         onClick={() => setRechnungDocOpen(true)}
-                        className="btn-pill portal-btn !px-4 !py-2.5"
+                        className="btn-pill portal-btn"
                       >
                         Rechnung prüfen &amp; einreichen
                       </button>
@@ -1014,7 +1011,7 @@ export function PartnerAuftragDetail({
                       <button
                         type="submit"
                         disabled={rechnungLoading || !rechnungPdf}
-                        className="btn-pill-outline portal-btn !px-4 !py-2.5"
+                        className="btn-pill-outline portal-btn"
                       >
                         {rechnungLoading ? "Wird gesendet…" : "PDF absenden"}
                       </button>
@@ -1033,7 +1030,7 @@ export function PartnerAuftragDetail({
                   </PartnerDetailSuccessBox>
                 </div>
               ) : null}
-            </PortalDetailCard>
+            </PartnerDetailSection>
 
             {bauauftragUnterlagen.length > 0 ? (
               <PartnerComplianceCheckliste
@@ -1044,13 +1041,31 @@ export function PartnerAuftragDetail({
               />
             ) : null}
           </div>
+        ) : null}
 
-          {/* Desktop sidebar */}
-          <div className="hidden w-full shrink-0 flex-col gap-3.5 sm:flex sm:w-[260px]">
-            {einsatzCard}
+        {activeTab === "abnahme" ? (
+          <div className="space-y-3.5">
+            {abnahmePdfUrl ||
+            item.abnahme_protokoll_url ||
+            item.hw_abschluss_signiert_am ||
+            focusAbnahme ||
+            kannAbschluss ? (
+              <PartnerAbnahmeReviewSection
+                auftragId={item.id}
+                protokollId={abnahmeProtokollId || item.abnahme_protokoll_id}
+                initialPdfUrl={abnahmePdfUrl || item.abnahme_protokoll_url}
+                initialFreigabeStatus={item.abnahme_freigabe_status}
+                focus={focusAbnahme}
+              />
+            ) : (
+              <p className="portal-text-body text-text-secondary">
+                Noch kein Abnahmeprotokoll. Schließe den Auftrag ab, sobald alle
+                Leistungen erledigt sind.
+              </p>
+            )}
           </div>
-        </div>
-      </div>
+        ) : null}
+      </PortalEntityDetailLayout>
 
       <PartnerAbnahmeAbschlussSheet
         open={abschlussOpen}
@@ -1059,8 +1074,9 @@ export function PartnerAuftragDetail({
         leistungItems={item.positionen.map((p) => ({
           id: p.id,
           leistung_name: p.leistung_name,
-          beschreibung: null,
+          beschreibung: p.beschreibung,
           gewerk_name: p.gewerk_name,
+          leistung_status: p.leistung_status,
         }))}
         defaultOrt={[item.plz, item.ort]
           .filter((v) => v && v !== "—")

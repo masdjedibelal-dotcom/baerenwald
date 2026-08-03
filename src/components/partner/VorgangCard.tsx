@@ -63,6 +63,7 @@ function resolveOffenDetailItem(
 export function VorgangCard({
   vorgang,
   onUpdated,
+  onBack,
   focusBautagebuch,
   anfrageId,
   focusAbnahme,
@@ -70,6 +71,7 @@ export function VorgangCard({
 }: {
   vorgang: PartnerVorgangItem;
   onUpdated?: (id: string) => void;
+  onBack?: () => void;
   focusBautagebuch?: boolean;
   anfrageId?: string | null;
   focusAbnahme?: boolean;
@@ -83,6 +85,7 @@ export function VorgangCard({
       <PartnerAuftragDetail
         item={auftrag}
         vorgangState="in_bearbeitung"
+        onBack={onBack}
         focusBautagebuch={focusBautagebuch}
         deepLinkAnfrageId={anfrageId}
         focusAbnahme={focusAbnahme}
@@ -96,6 +99,7 @@ export function VorgangCard({
       <PartnerAuftragDetail
         item={auftrag}
         vorgangState={vorgangState}
+        onBack={onBack}
         focusBautagebuch={focusBautagebuch}
         deepLinkAnfrageId={anfrageId}
         focusAbnahme={focusAbnahme}
@@ -110,12 +114,17 @@ export function VorgangCard({
       <PartnerOffenDetail
         item={offenItem}
         vorgangState={vorgangState}
+        onBack={onBack}
         onConfirmed={onUpdated}
       />
     );
   }
 
   return (
-    <PartnerAuftragAnfrageDetail item={auftrag} onAccepted={onUpdated} />
+    <PartnerAuftragAnfrageDetail
+      item={auftrag}
+      onBack={onBack}
+      onAccepted={onUpdated}
+    />
   );
 }

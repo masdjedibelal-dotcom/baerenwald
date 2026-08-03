@@ -15,8 +15,8 @@ type Props = {
 };
 
 /**
- * Listen-Aktionen Objektkarte: Primär „Aushang PDF“, Rest im ⋯-ActionSheet
- * (mobil Bottom Sheet, Desktop kompakt — Shell `confirm`).
+ * Listen-Aktionen Objektkarte: Primär „Aushang PDF“, Rest im ⋯-Menü
+ * (mobil Bottom Sheet, Desktop Side-Over — Shell `edit`).
  */
 export function OrganisationObjektCardActions({
   canAushang = false,
@@ -78,7 +78,7 @@ export function OrganisationObjektCardActions({
         open={open}
         title="Aktionen"
         onClose={() => setOpen(false)}
-        variant="confirm"
+        variant="edit"
         maxWidth={360}
       >
         <div className="flex flex-col gap-0.5">

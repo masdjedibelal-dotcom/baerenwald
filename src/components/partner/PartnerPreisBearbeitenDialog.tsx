@@ -123,7 +123,7 @@ export function PartnerPreisBearbeitenDialog({
         <button
           type="button"
           onClick={onCancel}
-          className="btn-pill-outline portal-btn !px-4 !py-2.5"
+          className="btn-pill-outline portal-btn"
         >
           Abbrechen
         </button>
@@ -131,7 +131,7 @@ export function PartnerPreisBearbeitenDialog({
           type="button"
           disabled={parsed == null}
           onClick={onConfirm}
-          className="btn-pill-primary portal-btn !px-4 !py-2.5 disabled:opacity-50"
+          className="btn-pill-primary portal-btn disabled:opacity-50"
         >
           Übernehmen
         </button>

@@ -212,7 +212,7 @@ export function PartnerFirmendatenScreen({
                 <PartnerDetailInfoBox>
                   Weitere Unterlagen zum Bauauftrag (z. B. Freistellungsbescheinigung,
                   Personalliste) erscheinen, sobald Bärenwald dein Angebot übernommen
-                  hat — unter „Angebote“ und „Aufträge“.
+                  hat — unter „Vorgänge“.
                 </PartnerDetailInfoBox>
               ) : null}
             </div>

@@ -13,12 +13,12 @@ import { PartnerLeistungenKonditionenCard } from "@/components/partner/PartnerLe
 import {
   PartnerConfirmDialog,
   PartnerDetailError,
-  PartnerDetailHero,
   PartnerDetailInfoBox,
   PartnerDetailLayout,
   PartnerDetailSection,
   PartnerDetailStickyActions,
 } from "@/components/partner/PartnerDetailUi";
+import { PortalEntityDetailLayout } from "@/components/shared/PortalEntityDetailLayout";
 import {
   HANDWERKER_ABLEHNUNG_GRUND_LABELS,
   HANDWERKER_ABLEHNUNG_GRUND_VALUES,
@@ -49,9 +49,11 @@ import {
 export function PartnerAuftragAnfrageDetail({
   item,
   onAccepted,
+  onBack,
 }: {
   item: PartnerAuftragItem;
   onAccepted?: (anfrageId: string) => void;
+  onBack?: () => void;
 }) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
@@ -137,13 +139,25 @@ export function PartnerAuftragAnfrageDetail({
   const statusPillClass = partnerDetailStatusPillClass("neu");
   const statusPillStyle = partnerDetailStatusPillStyle("neu");
 
+  const kannBestaetigen =
+    pflichtenGelesen && (!brauchtProjektvertrag || projektvertragBereit);
+
+  const acceptDisabledHint = !kannBestaetigen
+    ? !pflichtenGelesen
+      ? "Bitte die Pflichten bestätigen."
+      : brauchtProjektvertrag && !projektvertragBereit
+        ? "Bitte den Projektvertrag bestätigen."
+        : null
+    : null;
+
   const actionFooter =
     bearbeitbar && !showReject ? (
       <PartnerDetailStickyActions
         primaryLabel="Annehmen"
         onPrimary={() => setConfirmAccept(true)}
         primaryLoading={loading}
-        primaryDisabled={!pflichtenGelesen || (brauchtProjektvertrag && !projektvertragBereit)}
+        primaryDisabled={!kannBestaetigen}
+        disabledHint={acceptDisabledHint}
         secondaryLabel="Ablehnen"
         onSecondary={() => setShowReject(true)}
         secondaryDisabled={loading}
@@ -161,14 +175,16 @@ export function PartnerAuftragAnfrageDetail({
 
   return (
     <PartnerDetailLayout footer={actionFooter}>
-      <PartnerDetailHero
+      <PortalEntityDetailLayout
+        onBack={onBack ?? (() => router.back())}
+        backLabel="← Zurück"
         title={resolvePartnerDetailTitelFromAuftrag(item)}
         metaLine={partnerAuftragDetailMetaLine(item.start_datum, item.end_datum)}
         statusLabel={statusLabel}
         statusPillClass={statusPillClass}
         statusPillStyle={statusPillStyle}
-      />
-
+      >
+        <div className="space-y-5">
       <VorgangDetailBlocks
         vm={buildPartnerVorgangDetailVm({
           idLabel: item.id.slice(0, 8).toUpperCase(),
@@ -282,6 +298,8 @@ export function PartnerAuftragAnfrageDetail({
           allowSkip
         />
       ) : null}
+        </div>
+      </PortalEntityDetailLayout>
     </PartnerDetailLayout>
   );
 }

@@ -24,6 +24,7 @@ import {
 import { SITE_CONFIG } from "@/lib/config";
 import { formatTrackLeistung, track } from "@/lib/analytics";
 import { cn } from "@/lib/utils";
+import { PortalKiAssistField } from "@/components/shared/PortalKiAssistField";
 import {
   buildBwLeadPayload,
   buildFullLeadNotizen,
@@ -727,13 +728,25 @@ function ZuKomplexScreen({
             <p className="field-error">{errors.telefon}</p>
           ) : null}
 
-          <textarea
-            placeholder="Kurze Beschreibung deines Projekts (optional)"
-            className="funnel-textarea"
-            rows={3}
+          <PortalKiAssistField
+            scope="funnel_beschreibung"
+            label="Beschreibung"
             value={beschreibung}
-            onChange={(e) => setBeschreibung(e.target.value)}
-          />
+            onApply={setBeschreibung}
+            contextHint={
+              state.situation
+                ? `Situation: ${state.situation}`
+                : null
+            }
+          >
+            <textarea
+              placeholder="Kurze Beschreibung deines Projekts (optional)"
+              className="funnel-textarea"
+              rows={3}
+              value={beschreibung}
+              onChange={(e) => setBeschreibung(e.target.value)}
+            />
+          </PortalKiAssistField>
 
           <DatenschutzCheckbox
             checked={datenschutz}

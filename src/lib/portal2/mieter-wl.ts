@@ -57,6 +57,15 @@ export const MIETER_WL_BESTAETIGUNG = {
   copy_en: "Copy link",
   copied_de: "Kopiert",
   copied_en: "Copied",
+  /** Primär-CTA: MeinBärenwald-Konto für Status-Tracking */
+  register_de: "Zu Bärenwald registrieren",
+  register_en: "Register with Bärenwald",
+  register_hint_de:
+    "Konto anlegen und den Status Ihrer Meldung jederzeit verfolgen.",
+  register_hint_en:
+    "Create an account to track your report status anytime.",
+  login_de: "Bereits Konto? Anmelden",
+  login_en: "Already have an account? Sign in",
 } as const;
 
 /** Mock `wlStatus` Kopf */

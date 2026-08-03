@@ -52,11 +52,15 @@ function partnerNotifyBodyHtml(opts: {
   handwerkerName: string;
   subjectLine: string;
   portalUrl: string;
+  bautagebuch?: boolean;
 }): string {
+  const ctaHint = opts.bautagebuch
+    ? "Bitte im Partner-Portal einen Bautagebuch-Eintrag erstellen — am Auftrag hat sich nichts geändert."
+    : "Bitte im Partner-Portal prüfen und bestätigen.";
   return `
     <p style="margin:0 0 12px;font-size:15px;color:#374151;line-height:1.6;">${mailBegruessungHtml("du", opts.handwerkerName)}</p>
     <p style="margin:0 0 16px;font-size:15px;color:#374151;line-height:1.6;"><strong>${escapeHtml(opts.subjectLine)}</strong></p>
-    <p style="margin:0 0 8px;font-size:14px;color:#374151;line-height:1.6;">Bitte im Partner-Portal prüfen und bestätigen.</p>
+    <p style="margin:0 0 8px;font-size:14px;color:#374151;line-height:1.6;">${ctaHint}</p>
     ${mailPrimaryButtonHtml("Zum Partner-Portal →", opts.portalUrl)}
     <p style="margin:24px 0 0;font-size:15px;color:#374151;line-height:1.6;">${mailTeamGrussHtml("du")}</p>
   `;
@@ -77,26 +81,45 @@ export async function createPartnerNotification(
   if (!link) return { ok: false, error: "link fehlt." };
 
   const vorgangKey = partnerNotificationVorgangKey(link);
+  const isBautagebuchNotify =
+    input.typ === "bautagebuch" ||
+    (input.typ === "erinnerung" &&
+      /bitte\s+update\s+geben|bautagebuch|focus=bautagebuch/i.test(
+        `${input.leistungName ?? ""} ${link}`
+      ));
+  const notifyTyp: PartnerNotificationTyp = isBautagebuchNotify
+    ? "bautagebuch"
+    : input.typ;
 
   if (vorgangKey) {
     const { data: existingRows } = await supabaseAdmin
       .from("notifications")
-      .select("id, link")
+      .select("id, link, typ")
       .eq("handwerker_id", handwerkerId)
       .eq("gelesen", false)
       .ilike("link", `%id=${vorgangKey}%`)
       .order("created_at", { ascending: false })
       .limit(20);
 
-    const existing = (existingRows ?? []).find(
-      (row) => partnerNotificationVorgangKey(String(row.link ?? "")) === vorgangKey
-    );
+    // Bautagebuch nie mit neu/geaendert vermischen — sonst wirkt Update wie Auftragsänderung.
+    const existing = (existingRows ?? []).find((row) => {
+      if (partnerNotificationVorgangKey(String(row.link ?? "")) !== vorgangKey) {
+        return false;
+      }
+      const rowTyp = String(row.typ ?? "");
+      const rowIsBt =
+        rowTyp === "bautagebuch" ||
+        (rowTyp === "erinnerung" &&
+          /focus=bautagebuch|bitte\s+update/i.test(String(row.link ?? "")));
+      if (isBautagebuchNotify) return rowIsBt;
+      return !rowIsBt;
+    });
 
     if (existing?.id) {
       const { error: updErr } = await supabaseAdmin
         .from("notifications")
         .update({
-          typ: input.typ,
+          typ: notifyTyp,
           projekt_name: input.projektName.trim() || "Projekt",
           leistung_name: input.leistungName?.trim() || null,
           link,
@@ -113,7 +136,7 @@ export async function createPartnerNotification(
     .from("notifications")
     .insert({
       handwerker_id: handwerkerId,
-      typ: input.typ,
+      typ: notifyTyp,
       projekt_name: input.projektName.trim() || "Projekt",
       leistung_name: input.leistungName?.trim() || null,
       link,
@@ -135,7 +158,7 @@ export async function createPartnerNotification(
   const resend = resendClient();
   if (sendMail && to && resend) {
     const subject = partnerNotificationSubject(
-      input.typ,
+      notifyTyp,
       input.projektName,
       input.leistungName
     );
@@ -149,9 +172,12 @@ export async function createPartnerNotification(
         handwerkerName,
         subjectLine: subject,
         portalUrl: portalUrl || partnerLoginUrl(),
+        bautagebuch: notifyTyp === "bautagebuch",
       }),
       disclaimer:
-        "Du erhältst diese Mail, weil dir im Partner-Portal ein Vorgang zugewiesen wurde.",
+        notifyTyp === "bautagebuch"
+          ? "Du erhältst diese Mail, weil Bärenwald dich um einen Bautagebuch-Eintrag gebeten hat."
+          : "Du erhältst diese Mail, weil dir im Partner-Portal ein Vorgang zugewiesen wurde.",
       footerNote: "Bärenwald München · Partner-Portal",
     });
 

@@ -29,7 +29,7 @@ export async function GET(request: Request) {
         if (!link.ok) {
           console.error("[portal/auth/callback] link failed:", link.error);
           if (link.signOut) {
-            await supabase.auth.signOut();
+            await supabase.auth.signOut({ scope: "local" });
           }
           return NextResponse.redirect(
             `${origin}/portal/login?error=link&msg=${encodeURIComponent(link.error.slice(0, 160))}`

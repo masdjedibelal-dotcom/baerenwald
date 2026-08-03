@@ -1,8 +1,13 @@
 "use client";
 
 import type { LucideIcon } from "lucide-react";
-import type { ReactNode } from "react";
+import { useEffect, useRef, type ReactNode } from "react";
 
+import {
+  PortalBusyProvider,
+  usePortalBusy,
+} from "@/components/shared/PortalBusyContext";
+import { PortalContentBusy } from "@/components/shared/PortalContentBusy";
 import { PortalCreateFabIcon } from "@/components/shared/PortalCreateFabIcon";
 import { PortalDocViewerProvider } from "@/components/shared/PortalDocViewerContext";
 import { PortalHeader, type PortalHeaderUser } from "@/components/shared/PortalHeader";
@@ -74,12 +79,21 @@ export type PortalShellProps = {
    */
   createAction?: PortalShellCreateAction | null;
   /**
-   * Mobil: Bottom-Nav + FAB ausblenden (Detail Fullscreen — eine Action-Leiste).
-   * SoT P2-04 / PORTAL-SURFACE-OPTIMIERUNG 4.1
+   * Mobil: Bottom-Nav + FAB ausblenden.
+   * Default false — Bottom-Nav bleibt in Details sticky am Bildschirmrand.
    */
   hideMobileChrome?: boolean;
   children: ReactNode;
   footer?: ReactNode;
+  /**
+   * Wechselt mit Section/Detail/Filter — löst Content-Loading aus.
+   * z. B. `${section}:${selectedId ?? ""}:${filter ?? ""}`
+   */
+  contentKey?: string;
+  /** Externer Ladezustand (Refresh, Submit, …) */
+  contentBusy?: boolean;
+  contentBusyTitle?: string;
+  contentBusyBody?: string;
   /** Org-WL: Primärfarbe (Legacy); bevorzugt brandPrimary/Dk/Soft */
   orgPrimaryColor?: string | null;
   brandPrimary?: string | null;
@@ -119,7 +133,15 @@ function NavGlyph({
 /**
  * Gemeinsame Portal-Shell: Topbar (B1) + Sidebar (B2) + Bottom-Nav (B3) + Mobile-FAB.
  */
-export function PortalShell({
+export function PortalShell(props: PortalShellProps) {
+  return (
+    <PortalBusyProvider>
+      <PortalShellInner {...props} />
+    </PortalBusyProvider>
+  );
+}
+
+function PortalShellInner({
   variant = "org",
   brandTitle,
   brandSubtitle,
@@ -140,12 +162,41 @@ export function PortalShell({
   hideMobileChrome = false,
   children,
   footer,
+  contentKey,
+  contentBusy = false,
+  contentBusyTitle,
+  contentBusyBody,
   orgPrimaryColor,
   brandPrimary,
   brandPrimaryDk,
   brandSoft,
   className,
 }: PortalShellProps) {
+  const { busy: ctxBusy, flash } = usePortalBusy();
+  const prevNavRef = useRef(activeNavId);
+  const prevKeyRef = useRef(contentKey);
+  const bootedRef = useRef(false);
+
+  useEffect(() => {
+    if (!bootedRef.current) {
+      bootedRef.current = true;
+      prevNavRef.current = activeNavId;
+      prevKeyRef.current = contentKey;
+      return;
+    }
+    let changed = false;
+    if (prevNavRef.current !== activeNavId) {
+      prevNavRef.current = activeNavId;
+      changed = true;
+    }
+    if (contentKey !== undefined && prevKeyRef.current !== contentKey) {
+      prevKeyRef.current = contentKey;
+      changed = true;
+    }
+    if (changed) flash(320);
+  }, [activeNavId, contentKey, flash]);
+
+  const showContentBusy = contentBusy || ctxBusy;
   const bottomNav = mobileNav ?? nav;
   const shellStyle = applyBrandStyle({
     primary: brandPrimary ?? orgPrimaryColor,
@@ -240,7 +291,24 @@ export function PortalShell({
                   : "pb-[calc(5.5rem+env(safe-area-inset-bottom,0px))]"
               )}
             >
-              <div className="portal-page-stack">{children}</div>
+              <div className="portal-page-stack relative min-h-[40vh]">
+                <div
+                  className={cn(
+                    showContentBusy && "invisible pointer-events-none select-none"
+                  )}
+                  aria-hidden={showContentBusy || undefined}
+                >
+                  {children}
+                </div>
+                {showContentBusy ? (
+                  <div className="absolute inset-0 z-10 flex items-start justify-center bg-[var(--surface-page,#f7f8fa)]/90 backdrop-blur-[1px]">
+                    <PortalContentBusy
+                      title={contentBusyTitle}
+                      body={contentBusyBody}
+                    />
+                  </div>
+                ) : null}
+              </div>
             </main>
           </div>
         </div>

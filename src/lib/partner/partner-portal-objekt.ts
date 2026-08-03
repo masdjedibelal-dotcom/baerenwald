@@ -14,6 +14,7 @@ type KundenObjektRow = {
   hausnummer?: string | null;
   plz?: string | null;
   ort?: string | null;
+  cover_url?: string | null;
 };
 
 type PartnerLeistungsortLead = Pick<
@@ -46,6 +47,7 @@ export function mergePartnerLeistungsort(
       strasse: objekt.strasse?.trim() || leadStrasse || null,
       plz: objekt.plz || plz,
       ort: objekt.ort || ort,
+      cover_url: objekt.cover_url ?? lead?.objekt?.cover_url ?? null,
     };
   }
 
@@ -55,6 +57,7 @@ export function mergePartnerLeistungsort(
       strasse: leadStrasse ?? null,
       plz,
       ort,
+      cover_url: lead?.objekt?.cover_url ?? null,
     };
   }
 

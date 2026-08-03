@@ -236,10 +236,14 @@ export type PartnerAuftragItem = {
   hw_rechnung_pdf_url?: string | null;
   hw_rechnung_pdf_signed_url?: string | null;
   hw_rechnung_eingereicht_at?: string | null;
-  /** F1/F4 — Abnahme signiert → Rechnung freigeben */
+  /** F1/F4 — Eigene Teilabnahme signiert (auftrag_handwerker.abnahme_signiert_am) */
   hw_abschluss_signiert_am?: string | null;
+  /** Eigenes Teilabnahme-Protokoll (nicht globales Gesamtdokument) */
+  abnahme_protokoll_id?: string | null;
   abnahme_protokoll_url?: string | null;
   abnahme_datum?: string | null;
+  /** CRM-Freigabe der eigenen Teilabnahme */
+  abnahme_freigabe_status?: string | null;
 };
 
 export type PartnerHandwerkerProfil = {
@@ -366,7 +370,7 @@ async function loadPartnerObjektById(
 
   const { data: objekteRows } = await supabaseAdmin
     .from("kunden_objekte")
-    .select("id, titel, strasse, hausnummer, plz, ort")
+    .select("id, titel, strasse, hausnummer, plz, ort, cover_url")
     .in("id", objektIds);
 
   for (const o of objekteRows ?? []) {
@@ -522,7 +526,7 @@ export async function getPartnerDataForHandwerker(handwerkerId: string) {
 
   const { data: hwAuftraege } = await supabaseAdmin
     .from("auftrag_handwerker")
-    .select("auftrag_id, status")
+    .select("auftrag_id, status, abnahme_signiert_am, abnahme_protokoll_id")
     .eq("handwerker_id", id);
 
   const { data: posAuftraege } = await supabaseAdmin
@@ -532,12 +536,26 @@ export async function getPartnerDataForHandwerker(handwerkerId: string) {
 
   const hwStatusByAuftrag = new Map<string, string[]>();
   const posStatusByAuftrag = new Map<string, string[]>();
+  const abnahmeByAuftrag = new Map<
+    string,
+    { signiertAm: string | null; protokollId: string | null }
+  >();
 
   for (const r of hwAuftraege ?? []) {
-    const aid = String((r as { auftrag_id: string }).auftrag_id);
+    const row = r as {
+      auftrag_id: string;
+      status?: string;
+      abnahme_signiert_am?: string | null;
+      abnahme_protokoll_id?: string | null;
+    };
+    const aid = String(row.auftrag_id);
     const list = hwStatusByAuftrag.get(aid) ?? [];
-    list.push(String((r as { status?: string }).status ?? "ausstehend"));
+    list.push(String(row.status ?? "ausstehend"));
     hwStatusByAuftrag.set(aid, list);
+    abnahmeByAuftrag.set(aid, {
+      signiertAm: row.abnahme_signiert_am ?? null,
+      protokollId: row.abnahme_protokoll_id ?? null,
+    });
   }
   for (const r of posAuftraege ?? []) {
     const aid = String((r as { auftrag_id: string }).auftrag_id);
@@ -570,7 +588,6 @@ export async function getPartnerDataForHandwerker(handwerkerId: string) {
         start_datum,
         end_datum,
         handwerker_bestaetigt_at,
-        hw_abschluss_signiert_am,
         abnahme_protokoll_url,
         abnahme_datum,
         kunden(plz, ort, name),
@@ -672,6 +689,35 @@ export async function getPartnerDataForHandwerker(handwerkerId: string) {
       })
     );
     const auftragObjektById = await loadPartnerObjektById(auftragObjektIds);
+
+    const ownProtokollIds = uniqueIds(
+      [...abnahmeByAuftrag.values()]
+        .map((a) => a.protokollId)
+        .filter((x): x is string => Boolean(x?.trim()))
+    );
+    const protoById = new Map<
+      string,
+      { freigabe_status: string | null; pdf_url: string | null; abnahme_datum: string | null }
+    >();
+    if (ownProtokollIds.length) {
+      const { data: protoRows } = await supabaseAdmin
+        .from("auftrag_abnahmeprotokolle")
+        .select("id, freigabe_status, pdf_url, abnahme_datum")
+        .in("id", ownProtokollIds);
+      for (const p of protoRows ?? []) {
+        const row = p as {
+          id: string;
+          freigabe_status?: string | null;
+          pdf_url?: string | null;
+          abnahme_datum?: string | null;
+        };
+        protoById.set(String(row.id), {
+          freigabe_status: row.freigabe_status ?? null,
+          pdf_url: row.pdf_url ?? null,
+          abnahme_datum: row.abnahme_datum ?? null,
+        });
+      }
+    }
 
     alleAuftraege = (aufRows ?? [])
       .filter((row) => {
@@ -794,11 +840,32 @@ export async function getPartnerDataForHandwerker(handwerkerId: string) {
         bewertung: bewertungByAuftragId.get(aid) ?? null,
         handwerker_bestaetigt_at:
           (raw.handwerker_bestaetigt_at as string | null)?.slice(0, 19) ?? null,
-        hw_abschluss_signiert_am:
-          (raw.hw_abschluss_signiert_am as string | null) ?? null,
-        abnahme_protokoll_url:
-          (raw.abnahme_protokoll_url as string | null) ?? null,
-        abnahme_datum: (raw.abnahme_datum as string | null) ?? null,
+        hw_abschluss_signiert_am: (() => {
+          const own = abnahmeByAuftrag.get(aid);
+          return own?.signiertAm ?? null;
+        })(),
+        abnahme_protokoll_id: abnahmeByAuftrag.get(aid)?.protokollId ?? null,
+        abnahme_protokoll_url: (() => {
+          const pid = abnahmeByAuftrag.get(aid)?.protokollId;
+          if (pid) {
+            const proto = protoById.get(pid);
+            if (proto?.pdf_url) return proto.pdf_url;
+          }
+          return (raw.abnahme_protokoll_url as string | null) ?? null;
+        })(),
+        abnahme_datum: (() => {
+          const pid = abnahmeByAuftrag.get(aid)?.protokollId;
+          if (pid) {
+            const proto = protoById.get(pid);
+            if (proto?.abnahme_datum) return proto.abnahme_datum;
+          }
+          return (raw.abnahme_datum as string | null) ?? null;
+        })(),
+        abnahme_freigabe_status: (() => {
+          const pid = abnahmeByAuftrag.get(aid)?.protokollId;
+          if (!pid) return null;
+          return protoById.get(pid)?.freigabe_status ?? null;
+        })(),
       };
     });
   }

@@ -86,13 +86,15 @@ export async function notifyPartnerBautagebuchAnfrage(opts: {
 
   const notify = await createPartnerNotification({
     handwerkerId,
-    typ: "erinnerung",
+    typ: "bautagebuch",
     projektName,
     leistungName: "Bitte Update geben — Bautagebuch",
     link: partnerVorgangPortalPath(auftragId, {
       focus: "bautagebuch",
       anfrageId,
     }),
+    // CRM-Pfad sendet die Mail; dieser Helper oft aus Portal-Sync → Mail ok, aber klar als Update.
+    sendMail: !opts.skipDbInsert,
   });
 
   if (!notify.ok) return notify;

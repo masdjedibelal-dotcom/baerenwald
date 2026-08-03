@@ -6,18 +6,18 @@ import type { PartnerAuftragPosition } from "@/lib/partner/get-partner-data";
 import { HW_ABSCHLUSS_CHECKS, type HwAbschlussCheckId } from "@/lib/portal2/hw-kalkulation";
 
 export const HW_ABNAHME_COPY = {
-  cta: "Auftrag abschließen →",
+  cta: "Teilabnahme abschließen →",
   ctaHint:
-    "Nach der Dokumentation je Leistung: Abnahme mit Signatur — danach Rechnung.",
+    "Nach der Dokumentation Ihrer Leistungen: Teilabnahme mit Signatur — CRM gibt frei, danach Rechnung.",
   positionEndeCta: "3. Ende — Dokumentieren",
   positionEndeToast: "Leistung dokumentiert — bereit für Abnahme.",
   positionEndeBody:
-    "Ergebnis-Foto speichert die Dokumentation. Der Auftrag ist erst nach Signatur abgeschlossen.",
+    "Ergebnis-Foto speichert die Dokumentation. Die Teilabnahme folgt danach mit Signatur.",
   rechnungTitle: "Rechnung prüfen & einreichen",
   rechnungBody:
-    "Nach der Abnahme: Entwurf aus Firmendaten und Konditionen prüfen, dann einreichen. Bei unvollständigen Angaben erscheint ein Hinweis.",
+    "Nach Ihrer Teilabnahme: Entwurf aus Firmendaten und Konditionen prüfen, dann einreichen. Bei unvollständigen Angaben erscheint ein Hinweis.",
   rechnungBlockedOhneAbnahme:
-    "Zuerst Auftrag abschließen (Signatur). Danach können Sie die Rechnung einreichen.",
+    "Zuerst Ihre Teilabnahme abschließen (Signatur). Danach können Sie die Rechnung einreichen.",
   kundeSigHint:
     "Gegenzeichnung vor Ort empfohlen — Name ist Pflicht, Zeichnung bitte mit dem Kunden.",
   kundeSigRequiredSoft: "Bitte den Kunden vor Ort gegenzeichnen lassen.",

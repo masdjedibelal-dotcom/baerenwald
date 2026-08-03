@@ -18,9 +18,12 @@ function leistungDokumentiert(
 }
 
 /**
- * F1 — CTA „Auftrag abschließen“ bleibt bis Signatur.
+ * F1 — CTA „Auftrag abschließen“ bleibt bis eigene Teilabnahme.
  * Position-Ende dokumentiert nur die Leistung (leistung_status), setzt nicht
  * handwerker_status=erledigt. Abnahme setzt den finalen Status.
+ *
+ * Signatur ist pro Handwerker (`auftrag_handwerker.abnahme_signiert_am`).
+ * Nach CRM-Ablehnung darf erneut eingereicht werden.
  */
 export function partnerKannErledigtMelden(input: {
   positionen: Array<
@@ -34,18 +37,25 @@ export function partnerKannErledigtMelden(input: {
   >;
   vorgangState?: VorgangState;
   auftragStatus: string;
-  /** Wenn gesetzt: Abnahme bereits signiert → kein erneuter Abschluss. */
+  /** Eigene HW-Teilabnahme-Signatur (nicht global am Auftrag). */
   hwAbschlussSigniertAm?: string | null;
   abnahmeProtokollUrl?: string | null;
+  /** CRM-Freigabe der eigenen Teilabnahme. */
+  abnahmeFreigabeStatus?: string | null;
 }): boolean {
   if (isVorgangAuftragErledigt(input.auftragStatus)) return false;
-  if (input.hwAbschlussSigniertAm?.trim()) return false;
-  if (input.abnahmeProtokollUrl?.trim()) return false;
+  const freigabe = String(input.abnahmeFreigabeStatus ?? "")
+    .trim()
+    .toLowerCase();
+  const eigeneSigniert = Boolean(input.hwAbschlussSigniertAm?.trim());
+  const erneutNachAblehnung = freigabe === "abgelehnt";
+  if (eigeneSigniert && !erneutNachAblehnung) return false;
+  // Globaler abnahme_protokoll_url darf andere HWs nicht blockieren.
   if (input.vorgangState !== "in_bearbeitung") return false;
   if (!input.positionen.length) return false;
   if (input.positionen.some(positionBrauchtVorgangAktion)) return false;
 
-  // Alle zugewiesenen Positionen müssen dokumentiert sein (Mock: alles abgehakt).
+  // Alle eigenen zugewiesenen Positionen müssen dokumentiert sein.
   const relevant = input.positionen.filter(
     (p) =>
       positionIstHandwerkerZugewiesen(p.handwerker_status) &&

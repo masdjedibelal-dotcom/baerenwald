@@ -8,25 +8,38 @@ import {
   isTestAuthBypassEnabled,
   type DevPortalRole,
 } from "@/lib/dev-auth";
+import {
+  AUTH_SESSION_COOKIE_OPTIONS,
+  applyAuthSessionCookieOptions,
+} from "@/lib/supabase/auth-session";
 import { supabaseAdmin } from "@/lib/supabase";
 
 export const runtime = "nodejs";
 
 async function signInWithPassword(email: string, password: string) {
-  const cookieStore = cookies();
+  const cookieStore = await cookies();
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
+      cookieOptions: AUTH_SESSION_COOKIE_OPTIONS,
       cookies: {
         getAll() {
           return cookieStore.getAll();
         },
         setAll(
-          cookiesToSet: { name: string; value: string; options: CookieOptions }[]
+          cookiesToSet: {
+            name: string;
+            value: string;
+            options: CookieOptions;
+          }[]
         ) {
           cookiesToSet.forEach(({ name, value, options }) =>
-            cookieStore.set({ name, value, ...options })
+            cookieStore.set(
+              name,
+              value,
+              applyAuthSessionCookieOptions(options)
+            )
           );
         },
       },
@@ -115,17 +128,26 @@ async function signInWithServiceOtp(email: string) {
     return { error: verifyErr ?? new Error("OTP-Verifizierung fehlgeschlagen") };
   }
 
-  const cookieStore = cookies();
+  const cookieStore = await cookies();
   const supabase = createServerClient(url, anonKey, {
+    cookieOptions: AUTH_SESSION_COOKIE_OPTIONS,
     cookies: {
       getAll() {
         return cookieStore.getAll();
       },
       setAll(
-        cookiesToSet: { name: string; value: string; options: CookieOptions }[]
+        cookiesToSet: {
+          name: string;
+          value: string;
+          options: CookieOptions;
+        }[]
       ) {
         cookiesToSet.forEach(({ name, value, options }) =>
-          cookieStore.set({ name, value, ...options })
+          cookieStore.set(
+            name,
+            value,
+            applyAuthSessionCookieOptions(options)
+          )
         );
       },
     },
@@ -138,6 +160,10 @@ async function signInWithServiceOtp(email: string) {
   return { error: sessionErr };
 }
 
+/**
+ * Dev/E2E: Session setzen und weiterleiten.
+ * Query: role=org|partner|privat, email=…, next=/portal
+ */
 export async function GET(request: Request) {
   if (!isTestAuthBypassEnabled()) {
     return NextResponse.json(
@@ -149,7 +175,9 @@ export async function GET(request: Request) {
   const url = new URL(request.url);
   const role = (url.searchParams.get("role") ?? "org") as DevPortalRole;
   const forcedEmail = url.searchParams.get("email")?.trim();
-  const next = url.searchParams.get("next") ?? (role === "partner" ? "/partner" : "/portal");
+  const next =
+    url.searchParams.get("next") ??
+    (role === "partner" ? "/partner" : "/portal");
   const target = next.startsWith("/") ? next : "/portal";
 
   let error: { message: string } | null = null;
