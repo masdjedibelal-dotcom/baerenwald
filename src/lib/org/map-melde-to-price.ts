@@ -16,7 +16,7 @@ export type MeldePriceInput = {
   kategorie: MeldeKategorie;
   bereichId: MeldeBereichId;
   plz: string;
-  fachdetailAnswers?: Record<string, string | string[]>;
+  fachdetailAnswers?: Record<string, string | string[] | undefined>;
   dringlichkeit?: string | null;
 };
 
@@ -25,6 +25,17 @@ export type MeldePriceResult = {
   preis_max: number | null;
   preis_unsicher: boolean;
 };
+
+/** Entfernt `undefined`-Einträge für API-/Persist-Payloads. */
+export function compactFachdetailAnswers(
+  answers: Record<string, string | string[] | undefined> | undefined
+): Record<string, string | string[]> {
+  const out: Record<string, string | string[]> = {};
+  for (const [k, v] of Object.entries(answers ?? {})) {
+    if (v !== undefined) out[k] = v;
+  }
+  return out;
+}
 
 /** Grobe Orientierungsbänder € netto (München), wenn Detail-Calc ausfällt. */
 const MELDE_PRICE_BANDS: Record<
@@ -42,7 +53,7 @@ const MELDE_PRICE_BANDS: Record<
 };
 
 function ansJa(
-  answers: Record<string, string | string[]> | undefined,
+  answers: Record<string, string | string[] | undefined> | undefined,
   id: string
 ): boolean {
   const v = answers?.[id];
@@ -52,7 +63,7 @@ function ansJa(
 
 function buildFachdetails(
   bereichId: MeldeBereichId,
-  answers: Record<string, string | string[]> | undefined
+  answers: Record<string, string | string[] | undefined> | undefined
 ): FachdetailsState {
   const fd: FachdetailsState = {
     fachdetailAnswers: answers ?? {},
@@ -99,7 +110,9 @@ function buildFachdetails(
 
 export function buildMeldeFunnelState(input: MeldePriceInput): FunnelState {
   const bereiche = meldeBereichToFunnelBereiche(input.bereichId);
-  let zeitraum = meldeKategorieToZeitraum(input.kategorie);
+  let zeitraum: FunnelState["zeitraum"] = meldeKategorieToZeitraum(
+    input.kategorie
+  ) as FunnelState["zeitraum"];
   if (input.kategorie === "notfall") {
     zeitraum = "sofort";
   } else if (input.dringlichkeit) {

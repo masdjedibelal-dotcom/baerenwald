@@ -266,28 +266,6 @@ export function PortalNotificationBell({
       </div>
     ) : null;
 
-  const header = (
-    <div
-      className="flex items-center justify-between gap-3 px-4 py-[13px]"
-      style={{ borderBottom: "1px solid var(--p2-line)" }}
-    >
-      <span className="text-[14.5px] font-bold" style={{ color: "var(--p2-ink)" }}>
-        Benachrichtigungen
-      </span>
-      {unreadCount > 0 ? (
-        <button
-          type="button"
-          disabled={marking}
-          onClick={() => void handleMarkAll()}
-          className="text-[12px] font-semibold disabled:opacity-50"
-          style={{ color: "var(--org-primary, var(--p2-primary))" }}
-        >
-          Alle gelesen
-        </button>
-      ) : null}
-    </div>
-  );
-
   const footer = (
     <div
       className="px-4 py-[11px] text-center"

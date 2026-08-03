@@ -261,6 +261,7 @@ export function PortalClient({
   const [listPage, setListPage] = useState(1);
   const [gptOpen, setGptOpen] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
+  const [pageBusy, setPageBusy] = useState(false);
   const ignoreUrlDetailRef = useRef(false);
 
   const auftragIdByLeadId = useMemo(() => {
@@ -700,7 +701,6 @@ export function PortalClient({
   }
 
   const navRole = portalNavRoleForKundeTyp(kundeTyp);
-  const [pageBusy, setPageBusy] = useState(false);
 
   function flashPageBusy(ms = 400) {
     setPageBusy(true);

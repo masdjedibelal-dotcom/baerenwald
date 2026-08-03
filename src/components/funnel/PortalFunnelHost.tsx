@@ -38,7 +38,7 @@ import {
   MELDE_KAPUTT_BEREICH_OPTIONS,
 } from "@/lib/funnel/melde-kaputt-flow";
 import { calculatePrice } from "@/lib/funnel/price-calc";
-import { mapMeldeToPrice } from "@/lib/org/map-melde-to-price";
+import { mapMeldeToPrice, compactFachdetailAnswers } from "@/lib/org/map-melde-to-price";
 import { BW_FUNNEL_STEP1_OPTIONS } from "@/lib/funnel/situation-options";
 import type {
   FachdetailsState,
@@ -584,7 +584,7 @@ export function PortalFunnelHost({
     }
 
     if (state.situation && state.bereiche.length > 0) {
-      const opts = bereicheOptions(state.situation);
+      const opts = bereicheOptions(state.situation, useMeldeKaputtFlow);
       push(
         "Bereich",
         state.bereiche.map((b) => optionLabel(opts, b)).join(", ")
@@ -689,7 +689,7 @@ export function PortalFunnelHost({
     }
 
     const key = step === "objekt_neu" ? "objekt" : step;
-    let i = order.indexOf(key);
+    const i = order.indexOf(key);
     // Orphan-Step (nicht mehr in Order) — nicht zu steps[0] springen
     if (i < 0) {
       const next = stepAfterFachdetail(order);
@@ -700,7 +700,7 @@ export function PortalFunnelHost({
     if (!next) return;
     if (next === "fachdetail") {
       setFachIdx(0);
-      if (activeFachIds.length === 0) {
+      if (fachIds.length === 0) {
         const after = stepAfterFachdetail(order);
         if (after) setStep(after);
         return;
@@ -902,7 +902,9 @@ export function PortalFunnelHost({
               telefon: state.telefon.trim() || mieterTel.trim() || undefined,
               kategorie,
               bereichId,
-              fachdetailAnswers: state.fachdetails?.fachdetailAnswers ?? {},
+              fachdetailAnswers: compactFachdetailAnswers(
+                state.fachdetails?.fachdetailAnswers
+              ),
               notfall,
               beschreibung: state.leadBeschreibung.trim(),
               fotos,
@@ -915,7 +917,9 @@ export function PortalFunnelHost({
               telefon: state.telefon.trim() || mieterTel.trim() || undefined,
               kategorie,
               bereichId,
-              fachdetailAnswers: state.fachdetails?.fachdetailAnswers ?? {},
+              fachdetailAnswers: compactFachdetailAnswers(
+                state.fachdetails?.fachdetailAnswers
+              ),
               notfall,
               beschreibung: state.leadBeschreibung.trim(),
               fotos,

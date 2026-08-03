@@ -180,7 +180,7 @@ export async function buildPartnerAutoDocPositionen(opts: {
       const agg = eintragAgg.get(p.id);
       const zeitFromSum = Number(p.zeit_minuten_summe) || 0;
       const zeitFromEin = agg?.zeit ?? 0;
-      let zeitMin = ov?.zeitMinuten ?? Math.max(zeitFromSum, zeitFromEin);
+      const zeitMin = ov?.zeitMinuten ?? Math.max(zeitFromSum, zeitFromEin);
       const rawSatz = Number(ov?.stundensatz ?? p.stundensatz) || 0;
       const stundensatz = rawSatz > 0 ? rawSatz : null;
       const beschreibung =

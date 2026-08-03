@@ -1,4 +1,0 @@
-# Gültiges TOML — ungültige Dateien (z. B. nur „}“) brechen den Deploy vor dem Build ab.
-# Next.js: Netlify nutzt den OpenNext-Adapter; kein `output: "export"` in diesem Projekt.
-[build]
-  command = "npm run build"

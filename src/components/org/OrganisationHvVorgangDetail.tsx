@@ -352,7 +352,8 @@ export function OrganisationHvVorgangDetail({
       hasRechnungDoc &&
       (flowStatus === "auftrag" ||
         flowStatus === "abschluss" ||
-        flowStatus === "rechnung")
+        flowStatus === "rechnung" ||
+        flowStatus === "bezahlt")
     ) {
       return flowStatus === "bezahlt" ? "bezahlt" : "rechnung";
     }

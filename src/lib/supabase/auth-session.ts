@@ -1,4 +1,4 @@
-import type { CookieOptions } from "@supabase/ssr";
+import type { CookieOptions, CookieOptionsWithName } from "@supabase/ssr";
 
 /**
  * Eigener Cookie-Name für Portal/Partner — CRM nutzt `sb-bw-crm-auth`.
@@ -12,7 +12,7 @@ export const PLATFORM_AUTH_COOKIE_NAME = "sb-bw-platform-auth";
 /** Nutzer bleiben standardmäßig 5 Tage eingeloggt (Browser-Cookie). */
 export const AUTH_SESSION_MAX_AGE_SEC = 60 * 60 * 24 * 5;
 
-export const AUTH_SESSION_COOKIE_OPTIONS: CookieOptions = {
+export const AUTH_SESSION_COOKIE_OPTIONS: CookieOptionsWithName = {
   name: PLATFORM_AUTH_COOKIE_NAME,
   maxAge: AUTH_SESSION_MAX_AGE_SEC,
   sameSite: "lax",
@@ -22,18 +22,18 @@ export const AUTH_SESSION_COOKIE_OPTIONS: CookieOptions = {
 /** Beim Logout maxAge 0 beibehalten, sonst Session-Dauer erzwingen. */
 export function applyAuthSessionCookieOptions(
   options: CookieOptions
-): CookieOptions {
+): CookieOptionsWithName {
   if (options.maxAge === 0) {
     return {
       ...options,
-      name: options.name ?? PLATFORM_AUTH_COOKIE_NAME,
+      name: PLATFORM_AUTH_COOKIE_NAME,
       path: options.path ?? "/",
     };
   }
 
   return {
     ...options,
-    name: options.name ?? PLATFORM_AUTH_COOKIE_NAME,
+    name: PLATFORM_AUTH_COOKIE_NAME,
     maxAge: AUTH_SESSION_MAX_AGE_SEC,
     sameSite: options.sameSite ?? "lax",
     path: options.path ?? "/",

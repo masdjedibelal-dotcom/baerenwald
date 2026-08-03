@@ -691,7 +691,7 @@ export async function getPartnerDataForHandwerker(handwerkerId: string) {
     const auftragObjektById = await loadPartnerObjektById(auftragObjektIds);
 
     const ownProtokollIds = uniqueIds(
-      [...abnahmeByAuftrag.values()]
+      Array.from(abnahmeByAuftrag.values())
         .map((a) => a.protokollId)
         .filter((x): x is string => Boolean(x?.trim()))
     );
