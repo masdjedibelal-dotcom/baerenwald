@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>MeinBärenwald — E-Mail-Adresse bestätigen</title>
+</head>
+<body style="margin:0;padding:0;background:#ffffff;font-family:Arial,Helvetica,sans-serif;">
+<div style="display:none;max-height:0;overflow:hidden;">Neue E-Mail-Adresse für MeinBärenwald bestätigen.</div>
+<table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="background:#ffffff;">
+<tr><td align="center" style="padding:32px 16px;background:#ffffff;">
+<table width="580" cellpadding="0" cellspacing="0" role="presentation" style="background:#ffffff;max-width:580px;width:100%;">
+<tr>
+  <td style="padding:0 0 24px;border-bottom:1px solid #E5E7EB;">
+    <table cellpadding="0" cellspacing="0" role="presentation" style="border-collapse:collapse;">
+      <tr>
+        <td valign="middle" style="padding-right:10px;">
+          <img src="https://baerenwaldmuenchen.de/logo-mark-green.png" width="36" height="36" alt="Bärenwald" style="display:block;width:36px;height:36px;border:0;"/>
+        </td>
+        <td valign="middle" style="font-size:20px;font-weight:700;color:#1A3D2B;">
+          <span style="font-style:italic;color:#2E7D52;">Mein</span>Bärenwald
+        </td>
+      </tr>
+    </table>
+  </td>
+</tr>
+<tr>
+  <td style="padding:32px 0 24px;">
+    <h2 style="margin:0 0 16px;color:#2E7D52;font-size:20px;font-weight:700;">E-Mail-Adresse ändern</h2>
+    <p style="margin:0 0 20px;color:#1A3D2B;font-size:15px;line-height:1.6;">
+      bitte bestätige deine neue E-Mail-Adresse <strong>{{ .Email }}</strong> für MeinBärenwald.
+    </p>
+    <p style="margin:0 0 8px;">
+      <a href="{{ .ConfirmationURL }}" style="display:inline-block;background:#2E7D52;color:#ffffff;text-decoration:none;padding:14px 28px;border-radius:8px;font-weight:600;font-size:15px;">
+        E-Mail bestätigen
+      </a>
+    </p>
+    <p style="margin:24px 0 0;font-size:12px;color:#9CA3AF;line-height:1.6;">
+      <a href="{{ .ConfirmationURL }}" style="color:#2E7D52;word-break:break-all;">{{ .ConfirmationURL }}</a>
+    </p>
+  </td>
+</tr>
+<tr>
+  <td style="padding:20px 0 0;border-top:1px solid #E5E7EB;">
+    <p style="font-size:12px;color:#9CA3AF;margin:0;line-height:1.6;">
+      Bärenwald München · baerenwaldmuenchen.de · 089 809 557 26
+    </p>
+  </td>
+</tr>
+</table>
+</td></tr>
+</table>
+</body>
+</html>

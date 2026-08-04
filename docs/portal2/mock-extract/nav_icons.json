@@ -1,0 +1,38 @@
+{
+  "glyphs": [
+    "▤",
+    "▦",
+    "◇",
+    "◈",
+    "⚙"
+  ],
+  "mapping": {
+    "▤": [
+      "kunde_hv",
+      "kunde_privat",
+      "eigentuemer",
+      "mieter",
+      "handwerker"
+    ],
+    "▦": [
+      "kunde_hv",
+      "eigentuemer"
+    ],
+    "◇": [
+      "kunde_hv"
+    ],
+    "◈": [
+      "kunde_hv",
+      "kunde_privat",
+      "eigentuemer",
+      "mieter",
+      "handwerker"
+    ],
+    "⚙": [
+      "kunde_hv",
+      "kunde_privat",
+      "mieter",
+      "handwerker"
+    ]
+  }
+}

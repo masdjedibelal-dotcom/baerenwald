@@ -1,0 +1,37 @@
+{
+  "source": "Baerenwald Portale (5).html — modalShell(title, sub, body, maxW)",
+  "signature": "modalShell(title, sub, body, maxW)",
+  "defaults": {
+    "maxW": 460,
+    "zIndex": 200,
+    "scrim": "rgba(16,25,20,.42)",
+    "maxHeight": "86vh",
+    "shadow": "0 24px 60px rgba(0,0,0,.3)"
+  },
+  "layout": {
+    "mobile": {
+      "alignItems": "flex-end",
+      "padding": 0,
+      "borderRadius": "20px 20px 0 0"
+    },
+    "desktop": {
+      "alignItems": "center",
+      "padding": 20,
+      "borderRadius": 16
+    }
+  },
+  "header": {
+    "padding": "18px 20px 4px",
+    "title": { "fontWeight": 700, "fontSize": 18, "font": "C.head" },
+    "sub": { "fontSize": 12.5, "color": "C.sub", "marginTop": 3 },
+    "close": "×"
+  },
+  "bodyPadding": "14px 20px 22px",
+  "callers": [
+    "modalNeueAnfrage",
+    "modalEinladen",
+    "modalAushang / Paket angefragt",
+    "Bautagebuch-Eintrag"
+  ],
+  "live": "PortalModalShell — Basis für B8–B10 und PortalConfirmDialog / Storno"
+}

@@ -1,0 +1,96 @@
+import { MeldenBestaetigungClient } from "@/components/melden/MeldenBestaetigungClient";
+import { meldeStatusUrl } from "@/lib/melde/melde-tracking";
+import { resolveMeldeKontext } from "@/lib/org/resolve-melde-kontext";
+import { resolveOrgSubLabel } from "@/lib/portal2/brand-presets";
+
+export const metadata = {
+  title: "Meldung eingegangen",
+  robots: { index: false, follow: false },
+};
+
+type Props = {
+  searchParams: {
+    org?: string;
+    kennung?: string;
+    token?: string;
+    statusLink?: string;
+    /** Fallback wenn Token fehlt (Client-Redirect) */
+    name?: string;
+    email?: string;
+    telefon?: string;
+  };
+};
+
+export default async function MeldenBestaetigungPage({ searchParams }: Props) {
+  const kennung = searchParams.kennung?.trim();
+  const orgNameFallback =
+    searchParams.org?.trim() || "Ihre Verwaltung";
+
+  let brand = {
+    name: orgNameFallback,
+    sub: "Verwaltung" as string | null,
+    logoUrl: null as string | null,
+    logoKuerzel: null as string | null,
+    primary: null as string | null,
+    primaryDk: null as string | null,
+    soft: null as string | null,
+    tel: null as string | null,
+    mail: null as string | null,
+  };
+  let objektHref: string | null = null;
+
+  if (kennung) {
+    const resolved = await resolveMeldeKontext(kennung);
+    if (resolved.ok) {
+      const org = resolved.kontext.org;
+      brand = {
+        name:
+          org.org_anzeigename?.trim() ||
+          org.name?.trim() ||
+          orgNameFallback,
+        sub: resolveOrgSubLabel(org.org_sub),
+        logoUrl: org.org_logo_url ?? null,
+        logoKuerzel: org.org_logo_kuerzel ?? null,
+        primary: org.org_primary_color ?? null,
+        primaryDk: org.org_primary_color_dk ?? null,
+        soft: org.org_primary_color_soft ?? null,
+        tel: org.mieter_kontakt_telefon ?? null,
+        mail: org.mieter_kontakt_email ?? null,
+      };
+      objektHref = `/melden/${org.org_kennung}`;
+    }
+  }
+
+  const token = searchParams.token?.trim() || null;
+  // statusLink kann Token enthalten: /melden/status/TOKEN
+  const tokenFromLink = (() => {
+    const link = searchParams.statusLink?.trim();
+    if (!link) return null;
+    const m = link.match(/\/melden\/status\/([^/?#]+)/i);
+    return m?.[1] ? decodeURIComponent(m[1]) : null;
+  })();
+  const effectiveToken = token || tokenFromLink;
+  const statusUrlFromQuery = searchParams.statusLink?.trim() || null;
+  const statusUrl = statusUrlFromQuery
+    ? statusUrlFromQuery
+    : effectiveToken
+      ? meldeStatusUrl(effectiveToken)
+      : null;
+
+  const referenz = effectiveToken
+    ? effectiveToken.slice(0, 8).toUpperCase()
+    : null;
+
+  return (
+    <MeldenBestaetigungClient
+      brand={brand}
+      statusToken={effectiveToken}
+      statusUrl={statusUrl}
+      contactName={searchParams.name?.trim() || null}
+      contactEmail={searchParams.email?.trim() || null}
+      contactTelefon={searchParams.telefon?.trim() || null}
+      referenz={referenz}
+      objektAuswahlHref={objektHref}
+    />
+  );
+}

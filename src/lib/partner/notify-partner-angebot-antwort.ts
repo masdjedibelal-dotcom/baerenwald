@@ -1,67 +1,79 @@
-/**
- * CRM → Website: Partner-Mail nach Rückfrage oder Ablehnung einer Einreichung.
- */
+import { sendHandwerkerAngebotAntwortMail } from "@/lib/partner/partner-mail";
+import { partnerLoginForAnfrageUrl } from "@/lib/partner/partner-site-url";
+import { resolveAngebotTitel } from "@/lib/portal/portal-display";
+import { isSupabaseConfigured, supabaseAdmin } from "@/lib/supabase";
 
-function partnerSiteBaseUrl(): string {
-  return (
-    process.env.NEXT_PUBLIC_SITE_URL?.trim() ||
-    process.env.FRONTEND_URL?.trim() ||
-    process.env.NEXT_PUBLIC_WEBSEITE_URL?.trim() ||
-    'https://baerenwaldmuenchen.de'
-  ).replace(/\/$/, '')
+function one<T>(x: T | T[] | null | undefined): T | null {
+  if (x == null) return null;
+  return Array.isArray(x) ? (x[0] as T) ?? null : x;
 }
 
-export type PartnerAngebotAntwortTyp = 'rueckfrage' | 'abgelehnt'
+export type PartnerAngebotAntwortTyp = "rueckfrage" | "abgelehnt";
 
-export async function notifyPartnerHandwerkerAngebotAntwort(input: {
-  anfrageId: string
-  typ: PartnerAngebotAntwortTyp
-  crmNotiz: string
-  betreff?: string
-  cc?: string[]
-}): Promise<{ ok: true } | { ok: false; error: string }> {
-  const secret = process.env.PARTNER_INTERNAL_API_SECRET?.trim()
-  if (!secret) {
-    return {
-      ok: false,
-      error: 'PARTNER_INTERNAL_API_SECRET fehlt — Partner-Mail kann nicht gesendet werden.',
-    }
+/** Nach CRM-Rückfrage oder -Ablehnung: Mail an Handwerker. */
+export async function notifyHandwerkerAngebotAntwort(input: {
+  anfrageId: string;
+  typ: PartnerAngebotAntwortTyp;
+  crmNotiz: string;
+  betreff?: string;
+  cc?: string[];
+}): Promise<{ ok: boolean; error?: string }> {
+  if (!isSupabaseConfigured()) {
+    return { ok: false, error: "Datenbank nicht konfiguriert." };
   }
 
-  const url = `${partnerSiteBaseUrl()}/api/internal/partner-notify-angebot-antwort`
-  let res: Response
-  try {
-    res = await fetch(url, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${secret}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        anfrageId: input.anfrageId.trim(),
-        typ: input.typ,
-        crmNotiz: input.crmNotiz.trim(),
-        betreff: input.betreff?.trim() || undefined,
-        cc: input.cc?.filter(Boolean),
-      }),
-      cache: 'no-store',
-    })
-  } catch (e) {
-    const msg = e instanceof Error ? e.message : 'Netzwerkfehler'
-    return { ok: false, error: `Partner-Mail: ${msg}` }
+  const id = input.anfrageId.trim();
+  const crmNotiz = input.crmNotiz.trim();
+  if (!id) return { ok: false, error: "anfrageId fehlt." };
+  if (!crmNotiz) return { ok: false, error: "Nachricht fehlt." };
+
+  const { data: row, error } = await supabaseAdmin
+    .from("angebot_handwerker")
+    .select(
+      `
+      id,
+      handwerker(name, email, firma),
+      gewerke(name),
+      angebote(notizen, angebotsnr)
+    `
+    )
+    .eq("id", id)
+    .maybeSingle();
+
+  if (error || !row) {
+    return { ok: false, error: error?.message ?? "Anfrage nicht gefunden." };
   }
 
-  let body: { ok?: boolean; error?: string } = {}
-  try {
-    body = (await res.json()) as { ok?: boolean; error?: string }
-  } catch {
-    body = {}
+  const raw = row as Record<string, unknown>;
+  const hw = one(raw.handwerker) as {
+    name: string;
+    email: string | null;
+    firma: string | null;
+  } | null;
+  const to = hw?.email?.trim();
+  if (!to) {
+    return { ok: false, error: "Handwerker hat keine E-Mail." };
   }
 
-  if (!res.ok || !body.ok) {
-    const detail = body.error?.trim() || `HTTP ${res.status}`
-    return { ok: false, error: `Partner-Mail fehlgeschlagen: ${detail}` }
-  }
+  const gw = one(raw.gewerke) as { name: string } | null;
+  const ang = one(raw.angebote) as {
+    notizen?: string | null;
+    angebotsnr?: string | null;
+  } | null;
+  const titel = resolveAngebotTitel({
+    notizen: ang?.notizen,
+    angebotsnr: ang?.angebotsnr,
+  });
 
-  return { ok: true }
+  return sendHandwerkerAngebotAntwortMail({
+    to,
+    handwerkerName: hw?.name?.trim() || "Partner",
+    gewerkName: gw?.name?.trim() || "Gewerk",
+    angebotTitel: titel,
+    crmNotiz,
+    portalLink: partnerLoginForAnfrageUrl(id),
+    typ: input.typ,
+    betreff: input.betreff,
+    cc: input.cc,
+  });
 }

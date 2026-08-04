@@ -1,64 +1,76 @@
-/**
- * CRM → Website: Partner-Mail „Angebot übernommen“ nach CRM-Bestätigung.
- * @see handwerks-plattform/docs/PARTNER_CRM_NOTIFY_API.md
- */
+import { sendHandwerkerAngebotBestaetigtMail } from "@/lib/partner/partner-mail";
+import { partnerLoginForAngebotUrl } from "@/lib/partner/partner-site-url";
+import { resolveAngebotTitel } from "@/lib/portal/portal-display";
+import { isSupabaseConfigured, supabaseAdmin } from "@/lib/supabase";
 
-function partnerSiteBaseUrl(): string {
-  return (
-    process.env.NEXT_PUBLIC_SITE_URL?.trim() ||
-    process.env.FRONTEND_URL?.trim() ||
-    process.env.NEXT_PUBLIC_WEBSEITE_URL?.trim() ||
-    'https://baerenwaldmuenchen.de'
-  ).replace(/\/$/, '')
+function one<T>(x: T | T[] | null | undefined): T | null {
+  if (x == null) return null;
+  return Array.isArray(x) ? (x[0] as T) ?? null : x;
 }
 
-export async function notifyPartnerHandwerkerAngebotBestaetigt(
+/** Nach CRM-Einigung: Mail an Handwerker (bitte bestätigen oder Angebote). */
+export async function notifyHandwerkerAngebotBestaetigt(
   anfrageId: string,
-  options?: { bitteBestaetigen?: boolean }
-): Promise<{ ok: true } | { ok: false; error: string }> {
-  const id = anfrageId.trim()
-  if (!id) return { ok: false, error: 'anfrageId fehlt' }
-
-  const secret = process.env.PARTNER_INTERNAL_API_SECRET?.trim()
-  if (!secret) {
-    return {
-      ok: false,
-      error:
-        'PARTNER_INTERNAL_API_SECRET fehlt — Bestätigungs-Mail kann nicht gesendet werden.',
-    }
+  opts?: { bitteBestaetigen?: boolean }
+): Promise<{
+  ok: boolean;
+  error?: string;
+}> {
+  if (!isSupabaseConfigured()) {
+    return { ok: false, error: "Datenbank nicht konfiguriert." };
   }
 
-  const url = `${partnerSiteBaseUrl()}/api/internal/partner-notify-angebot-bestaetigt`
-  const payload: { anfrageId: string; bitteBestaetigen?: boolean } = { anfrageId: id }
-  if (options?.bitteBestaetigen) payload.bitteBestaetigen = true
+  const id = anfrageId.trim();
+  if (!id) return { ok: false, error: "anfrageId fehlt." };
 
-  let res: Response
-  try {
-    res = await fetch(url, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${secret}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(payload),
-      cache: 'no-store',
-    })
-  } catch (e) {
-    const msg = e instanceof Error ? e.message : 'Netzwerkfehler'
-    return { ok: false, error: `Partner-Bestätigungs-Mail: ${msg}` }
+  const { data: row, error } = await supabaseAdmin
+    .from("angebot_handwerker")
+    .select(
+      `
+      id,
+      hw_preis_netto,
+      hw_preis_brutto,
+      handwerker(name, email, firma),
+      gewerke(name),
+      angebote(notizen, angebotsnr)
+    `
+    )
+    .eq("id", id)
+    .maybeSingle();
+
+  if (error || !row) {
+    return { ok: false, error: error?.message ?? "Anfrage nicht gefunden." };
   }
 
-  let body: { ok?: boolean; error?: string } = {}
-  try {
-    body = (await res.json()) as { ok?: boolean; error?: string }
-  } catch {
-    body = {}
+  const raw = row as Record<string, unknown>;
+  const hw = one(raw.handwerker) as {
+    name: string;
+    email: string | null;
+    firma: string | null;
+  } | null;
+  const to = hw?.email?.trim();
+  if (!to) {
+    return { ok: false, error: "Handwerker hat keine E-Mail." };
   }
 
-  if (!res.ok || !body.ok) {
-    const detail = body.error?.trim() || `HTTP ${res.status}`
-    return { ok: false, error: `Partner-Bestätigungs-Mail fehlgeschlagen: ${detail}` }
-  }
+  const gw = one(raw.gewerke) as { name: string } | null;
+  const ang = one(raw.angebote) as {
+    notizen?: string | null;
+    angebotsnr?: string | null;
+  } | null;
+  const titel = resolveAngebotTitel({
+    notizen: ang?.notizen,
+    angebotsnr: ang?.angebotsnr,
+  });
 
-  return { ok: true }
+  return sendHandwerkerAngebotBestaetigtMail({
+    to,
+    handwerkerName: hw?.name?.trim() || "Partner",
+    gewerkName: gw?.name?.trim() || "Gewerk",
+    angebotTitel: titel,
+    preisNetto: raw.hw_preis_netto as number | null,
+    preisBrutto: raw.hw_preis_brutto as number | null,
+    portalLink: partnerLoginForAngebotUrl(id),
+    bitteBestaetigen: opts?.bitteBestaetigen,
+  });
 }

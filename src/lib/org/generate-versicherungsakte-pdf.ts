@@ -212,7 +212,7 @@ export async function generateVersicherungsaktePdf(
       "Rechnung folgt bzw. ist als separates Dokument im Vorgang abgelegt."
   );
 
-  page.drawText("Erstellt über Bärenwald Hausverwaltungs-Plattform", {
+  page.drawText("Erstellt über Bärenwald Verwaltungs-Plattform", {
     x: margin,
     y: 52,
     size: 9,

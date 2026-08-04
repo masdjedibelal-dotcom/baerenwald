@@ -1,0 +1,40 @@
+{
+  "wasser": [
+    ["Läuft oder tropft aktuell Wasser?", "Is water still leaking or dripping?"],
+    ["Ist mehr als ein Raum betroffen?", "Are several rooms affected?"],
+    [
+      "Kommt das Wasser von oben oder aus einer anderen Wohnung?",
+      "Is water coming from above or another unit?"
+    ]
+  ],
+  "heizung": [
+    ["Bleiben die Heizkörper / die Wohnung kalt?", "Do radiators / the flat stay cold?"],
+    ["Gibt es auch kein Warmwasser?", "Is there also no hot water?"],
+    ["Ist die Heizungsanlage erreichbar?", "Is the heating system accessible?"]
+  ],
+  "strom": [
+    ["Ist in mehreren Räumen kein Strom?", "Are several rooms without power?"],
+    ["Ist der Sicherungskasten erreichbar?", "Is the fuse box accessible?"],
+    ["Riecht es verschmort oder wird etwas heiß?", "Any burning smell or heat at outlets?"]
+  ],
+  "fenster": [
+    ["Lässt sich Fenster oder Tür noch schließen?", "Can the window/door still close?"],
+    ["Ist die Wohnung dadurch unsicher (nicht abschließbar)?", "Is security affected (cannot lock)?"],
+    ["Ist Glas beschädigt?", "Is glass damaged?"]
+  ],
+  "dach": [
+    ["Tritt aktuell Wasser ein?", "Is water actively entering?"],
+    ["Ist die Wohnung oder der Dachboden innen nass?", "Is the flat or attic wet inside?"],
+    ["Sind Möbel oder Inventar gefährdet?", "Are belongings at risk?"]
+  ],
+  "schimmel": [
+    ["Ist die Fläche größer als etwa eine Handfläche?", "Larger than about a hand?"],
+    ["Riecht es muffig oder modrig?", "Any musty smell?"],
+    ["Gab es vorher einen Wasserschaden?", "Any previous water damage?"]
+  ],
+  "sonstiges": [
+    ["Ist die Nutzung der Wohnung eingeschränkt?", "Is use of the flat restricted?"],
+    ["Sind weitere Wohnungen betroffen?", "Are other units affected?"],
+    ["Betrifft es Gemeinschaftsflächen (Treppenhaus, Keller)?", "Does it affect common areas?"]
+  ]
+}

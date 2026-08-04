@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>MeinBärenwald — E-Mail bestätigen</title>
+</head>
+<body style="margin:0;padding:0;background:#ffffff;font-family:Arial,Helvetica,sans-serif;">
+<div style="display:none;max-height:0;overflow:hidden;">Bitte bestätige deine E-Mail für MeinBärenwald.</div>
+<table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="background:#ffffff;">
+<tr><td align="center" style="padding:32px 16px;background:#ffffff;">
+<table width="580" cellpadding="0" cellspacing="0" role="presentation" style="background:#ffffff;max-width:580px;width:100%;">
+<tr>
+  <td style="padding:0 0 24px;border-bottom:1px solid #E5E7EB;background:#ffffff;">
+    <table cellpadding="0" cellspacing="0" role="presentation" style="border-collapse:collapse;">
+      <tr>
+        <td valign="middle" style="padding-right:10px;">
+          <img src="https://baerenwaldmuenchen.de/logo-mark-green.png" width="36" height="36" alt="Bärenwald" style="display:block;width:36px;height:36px;border:0;"/>
+        </td>
+        <td valign="middle" style="font-size:20px;font-weight:700;color:#1A3D2B;letter-spacing:-0.02em;line-height:1;">
+          <span style="font-style:italic;color:#2E7D52;">Mein</span><span style="color:#1A3D2B;">Bärenwald</span>
+        </td>
+      </tr>
+    </table>
+  </td>
+</tr>
+<tr>
+  <td style="padding:32px 0 24px;background:#ffffff;">
+    <h2 style="margin:0 0 8px;color:#2E7D52;font-size:20px;font-weight:700;">E-Mail bestätigen</h2>
+    <p style="margin:0 0 20px;color:#6B7280;font-size:15px;line-height:1.6;">
+      Hallo,
+    </p>
+    <p style="margin:0 0 20px;color:#1A3D2B;font-size:15px;line-height:1.6;">
+      danke für deine Registrierung bei <strong>MeinBärenwald</strong>. Bitte bestätige deine E-Mail-Adresse
+      <strong>{{ .Email }}</strong>, damit du dich anmelden und deine Anfragen, Angebote und Aufträge sehen kannst.
+    </p>
+    <div style="background:#EAF3DE;border-radius:8px;padding:16px 20px;margin:0 0 24px;">
+      <p style="margin:0;font-size:13px;color:#2E7D52;line-height:1.5;">
+        Der Link ist aus Sicherheitsgründen nur begrenzt gültig. Wenn du dich nicht registriert hast, kannst du diese E-Mail ignorieren.
+      </p>
+    </div>
+    <p style="margin:0 0 8px;">
+      <a href="{{ .ConfirmationURL }}" style="display:inline-block;background:#2E7D52;color:#ffffff;text-decoration:none;padding:14px 28px;border-radius:8px;font-weight:600;font-size:15px;">
+        E-Mail bestätigen
+      </a>
+    </p>
+    <p style="margin:24px 0 0;font-size:12px;color:#9CA3AF;line-height:1.6;">
+      Button funktioniert nicht? Link in den Browser kopieren:<br/>
+      <a href="{{ .ConfirmationURL }}" style="color:#2E7D52;word-break:break-all;">{{ .ConfirmationURL }}</a>
+    </p>
+  </td>
+</tr>
+<tr>
+  <td style="padding:20px 0 0;border-top:1px solid #E5E7EB;background:#ffffff;">
+    <p style="font-size:12px;color:#9CA3AF;margin:0;line-height:1.6;">
+      Bärenwald München · <a href="https://baerenwaldmuenchen.de" style="color:#9CA3AF;text-decoration:none;">baerenwaldmuenchen.de</a> ·
+      <a href="tel:+498980955726" style="color:#9CA3AF;text-decoration:none;">089 809 557 26</a>
+    </p>
+    <p style="font-size:11px;color:#D1D5DB;margin:8px 0 0;line-height:1.5;">
+      Diese Nachricht wurde automatisch versendet. Bitte antworte nicht direkt auf diese E-Mail.
+    </p>
+  </td>
+</tr>
+</table>
+</td></tr>
+</table>
+</body>
+</html>

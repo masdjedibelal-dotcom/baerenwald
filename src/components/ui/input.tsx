@@ -1,64 +1,24 @@
-'use client'
+import * as React from "react";
 
-import { forwardRef, type InputHTMLAttributes } from 'react'
-import { DateInput } from '@/components/ui/DateInput'
-import { TimeInput } from '@/components/ui/TimeInput'
-import { cn } from '@/lib/utils'
+import { cn } from "@/lib/utils";
 
-export type InputProps = Omit<InputHTMLAttributes<HTMLInputElement>, 'size'> & {
-  label?: string
-  error?: string
-  hint?: string
-  /** Nur für native number/text; Date/Time nutzen eigene Kompakt-Größe intern. */
-  size?: number
-}
+export type InputProps = React.InputHTMLAttributes<HTMLInputElement>;
 
-export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
-  { label, error, hint, className = '', id, type, size, ...props },
-  ref
-) {
-  const inputId = id ?? props.name
-  const isDate = type === 'date'
-  const isTime = type === 'time'
+const Input = React.forwardRef<HTMLInputElement, InputProps>(
+  ({ className, type, ...props }, ref) => {
+    return (
+      <input
+        type={type}
+        className={cn(
+          "flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background file:border-0 file:bg-transparent file:text-base file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50",
+          className
+        )}
+        ref={ref}
+        {...props}
+      />
+    );
+  }
+);
+Input.displayName = "Input";
 
-  return (
-    <div className="w-full">
-      {label ? (
-        <label className="input-label" htmlFor={inputId}>
-          {label}
-          {props.required ? (
-            <span className="ml-0.5 text-bw-accent" aria-hidden>
-              *
-            </span>
-          ) : null}
-        </label>
-      ) : null}
-      {isDate ? (
-        <DateInput
-          ref={ref}
-          id={inputId}
-          {...props}
-          className={cn(error && 'input-error', className)}
-        />
-      ) : isTime ? (
-        <TimeInput
-          ref={ref}
-          id={inputId}
-          {...props}
-          className={cn(error && 'input-error', className)}
-        />
-      ) : (
-        <input
-          ref={ref}
-          id={inputId}
-          type={type}
-          size={size}
-          {...props}
-          className={cn('input', error && 'input-error', className)}
-        />
-      )}
-      {hint && !error ? <p className="mt-1 text-xs text-bw-light">{hint}</p> : null}
-      {error ? <p className="input-error-msg">{error}</p> : null}
-    </div>
-  )
-})
+export { Input };

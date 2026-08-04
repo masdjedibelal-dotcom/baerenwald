@@ -1,0 +1,100 @@
+{
+  "wasser": [
+    [
+      "Läuft aktuell Wasser aus?",
+      "Is water still leaking?"
+    ],
+    [
+      "Ist der Haupthahn erreichbar?",
+      "Is the main valve accessible?"
+    ],
+    [
+      "Sind mehrere Räume betroffen?",
+      "Are several rooms affected?"
+    ]
+  ],
+  "heizung": [
+    [
+      "Bleiben alle Heizkörper kalt?",
+      "Do all radiators stay cold?"
+    ],
+    [
+      "Ist die Anlage/Therme zugänglich?",
+      "Is the boiler accessible?"
+    ],
+    [
+      "Zeigt das Gerät eine Fehlermeldung?",
+      "Any error shown on the unit?"
+    ]
+  ],
+  "strom": [
+    [
+      "Ist der Sicherungskasten erreichbar?",
+      "Is the fuse box accessible?"
+    ],
+    [
+      "Sind mehrere Räume ohne Strom?",
+      "Are several rooms without power?"
+    ],
+    [
+      "Riecht es verschmort?",
+      "Any burning smell?"
+    ]
+  ],
+  "fenster": [
+    [
+      "Lässt sich Fenster/Tür schließen?",
+      "Can the window/door still close?"
+    ],
+    [
+      "Ist die Sicherheit betroffen?",
+      "Is security affected?"
+    ],
+    [
+      "Ist Glas beschädigt?",
+      "Is glass damaged?"
+    ]
+  ],
+  "dach": [
+    [
+      "Tritt aktiv Wasser ein?",
+      "Is water actively entering?"
+    ],
+    [
+      "Ist der Dachboden betroffen?",
+      "Is the attic affected?"
+    ],
+    [
+      "Sind Gegenstände in Gefahr?",
+      "Are belongings at risk?"
+    ]
+  ],
+  "schimmel": [
+    [
+      "Größer als etwa 0,5 m²?",
+      "Larger than ~0.5 m²?"
+    ],
+    [
+      "Riecht es modrig?",
+      "Any musty smell?"
+    ],
+    [
+      "Ist ein Wasserschaden bekannt?",
+      "Any known water damage?"
+    ]
+  ],
+  "sonstiges": [
+    [
+      "Ist die Nutzung eingeschränkt?",
+      "Is usage restricted?"
+    ],
+    [
+      "Besteht Dringlichkeit?",
+      "Is it urgent?"
+    ],
+    [
+      "Sind weitere Einheiten betroffen?",
+      "Are other units affected?"
+    ]
+  ]
+}
