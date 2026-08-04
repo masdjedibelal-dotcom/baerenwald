@@ -1,9 +1,5 @@
--- MeinBärenwald: Login per E-Mail (Supabase Auth) statt portal_token
--- Im Supabase SQL Editor ausführen oder via CLI: supabase db push
+-- Gleiche Migration wie handwerks-plattform/supabase/migrations/20260602120000_portal_auth_kunden.sql
 
--- ---------------------------------------------------------------------------
--- 1) Kunden ↔ Auth-User verknüpfen (in kleinen Schritten — robuster im SQL Editor)
--- ---------------------------------------------------------------------------
 alter table public.kunden
   add column if not exists auth_user_id uuid;
 
@@ -44,7 +40,6 @@ begin
   end if;
 end $migration$;
 
--- Altes Token-System entfernen (Policies zuerst — sonst DROP COLUMN fehlgeschlagen)
 drop policy if exists "portal_kunden" on public.kunden;
 
 do $$
@@ -67,9 +62,6 @@ end $$;
 
 alter table public.kunden drop column if exists portal_token;
 
--- ---------------------------------------------------------------------------
--- 2) Hilfsfunktionen (CRM vs. Portal unterscheiden)
--- ---------------------------------------------------------------------------
 create or replace function public.is_crm_staff()
 returns boolean
 language sql
@@ -111,9 +103,6 @@ grant execute on function public.is_crm_staff() to authenticated, service_role;
 grant execute on function public.portal_kunde_id() to authenticated, service_role;
 grant execute on function public.portal_kunde_lead_ids() to authenticated, service_role;
 
--- ---------------------------------------------------------------------------
--- 3) Kunde darf nur eigene Stammdaten lesen (wenn RLS auf kunden aktiv ist)
--- ---------------------------------------------------------------------------
 alter table public.kunden enable row level security;
 
 drop policy if exists "kunden_crm_staff_all" on public.kunden;
@@ -138,12 +127,6 @@ create policy "kunden_portal_update_own"
   using (auth_user_id = auth.uid() and not public.is_crm_staff())
   with check (auth_user_id = auth.uid() and not public.is_crm_staff());
 
--- ---------------------------------------------------------------------------
--- 4) Portal-Lesezugriff (Defense in Depth; Portal lädt primär serverseitig)
---    Nur Tabellen mit bereits aktivem RLS — sonst bricht das CRM nicht.
--- ---------------------------------------------------------------------------
-
--- leads
 alter table public.leads enable row level security;
 
 drop policy if exists "leads_crm_staff_all" on public.leads;
@@ -160,7 +143,6 @@ create policy "leads_portal_select"
     and kunde_id = public.portal_kunde_id()
   );
 
--- auftraege
 alter table public.auftraege enable row level security;
 
 drop policy if exists "auftraege_crm_staff_all" on public.auftraege;
@@ -180,7 +162,6 @@ create policy "auftraege_portal_select"
     )
   );
 
--- angebote
 alter table public.angebote enable row level security;
 
 drop policy if exists "angebote_crm_staff_all" on public.angebote;
@@ -197,7 +178,6 @@ create policy "angebote_portal_select"
     and lead_id in (select public.portal_kunde_lead_ids())
   );
 
--- auftrag_positionen (bereits RLS in älterer Migration)
 drop policy if exists "auftrag_positionen_portal_select" on public.auftrag_positionen;
 create policy "auftrag_positionen_portal_select"
   on public.auftrag_positionen for select to authenticated
@@ -211,7 +191,6 @@ create policy "auftrag_positionen_portal_select"
     )
   );
 
--- bautagebuch (Tabelle kann "bautagebuch" heißen — anpassen falls anders)
 do $$
 begin
   if exists (
@@ -236,7 +215,6 @@ begin
   end if;
 end $$;
 
--- rechnungen (nur gesendet + PDF — Filter in App; Policy: eigener Auftrag)
 drop policy if exists "rechnungen_portal_select" on public.rechnungen;
 create policy "rechnungen_portal_select"
   on public.rechnungen for select to authenticated
@@ -250,7 +228,6 @@ create policy "rechnungen_portal_select"
     )
   );
 
--- auftrag_timeline (freigegebene Einträge)
 drop policy if exists "auftrag_timeline_portal_select" on public.auftrag_timeline;
 create policy "auftrag_timeline_portal_select"
   on public.auftrag_timeline for select to authenticated
@@ -263,14 +240,3 @@ create policy "auftrag_timeline_portal_select"
          or a.lead_id in (select public.portal_kunde_lead_ids())
     )
   );
-
--- ---------------------------------------------------------------------------
--- WICHTIG für CRM:
--- Bestehende Policies mit "auth.role() = 'authenticated'" müssen auf
--- public.is_crm_staff() umgestellt werden, sobald Kunden-Accounts existieren.
--- Sonst könnten Portal-User theoretisch alle Zeilen lesen.
--- Beispiel:
---   drop policy if exists "XYZ_auth_all" on public.XYZ;
---   create policy "XYZ_crm_staff_all" on public.XYZ for all to authenticated
---     using (is_crm_staff()) with check (is_crm_staff());
--- ---------------------------------------------------------------------------

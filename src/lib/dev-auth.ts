@@ -1,22 +1,14 @@
-/** Nur lokal/Preview — niemals in Produktion aktivieren. */
-export function isTestAuthBypassEnabled(): boolean {
+/** Nur lokal/Preview — niemals in Produktion aktivieren (gleiche Logik wie Portal TEST_AUTH_BYPASS). */
+export function isDevAuthSkipEnabled(): boolean {
   return (
-    process.env.NODE_ENV !== "production" &&
-    process.env.TEST_AUTH_BYPASS === "true"
-  );
+    process.env.NODE_ENV !== 'production' &&
+    process.env.CRM_DEV_SKIP_AUTH === 'true'
+  )
 }
 
-export type DevPortalRole = "org" | "partner" | "privat";
-
-export function getDevPortalCredentials(
-  role: DevPortalRole
-): { email: string; password: string } | null {
-  const map: Record<DevPortalRole, [string | undefined, string | undefined]> = {
-    org: [process.env.E2E_ORG_EMAIL, process.env.E2E_ORG_PASSWORD],
-    partner: [process.env.E2E_PARTNER_EMAIL, process.env.E2E_PARTNER_PASSWORD],
-    privat: [process.env.E2E_PRIVAT_EMAIL, process.env.E2E_PRIVAT_PASSWORD],
-  };
-  const [email, password] = map[role];
-  if (!email?.trim() || !password) return null;
-  return { email: email.trim(), password };
+export function getDevCrmCredentials(): { email: string; password: string } | null {
+  const email = process.env.DEV_CRM_EMAIL?.trim()
+  const password = process.env.DEV_CRM_PASSWORD
+  if (!email || !password) return null
+  return { email, password }
 }
