@@ -36,7 +36,6 @@ import {
   buildHvVerlaufSeed,
   inferFlowFromKundeItem,
 } from "@/lib/portal2/hv-detail-adapters";
-import { PORTAL_OBJEKT_COVER_DEFAULT_SRC } from "@/lib/portal2/portal-media";
 import type { PortalMockStatusId } from "@/lib/portal2/status";
 import { portalMieterStatusLabel } from "@/lib/portal2/status";
 
@@ -270,7 +269,7 @@ export function PortalVorgangDetail({
             ? item.status?.trim() || portalMieterStatusLabel(flowStatus)
             : undefined
         }
-        coverUrl={PORTAL_OBJEKT_COVER_DEFAULT_SRC}
+        coverUrl={item.coverUrl ?? null}
         wartetAufHwLabel={
           mieterStatusMode || item.hvMieterView
             ? null

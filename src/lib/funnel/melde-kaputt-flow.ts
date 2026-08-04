@@ -18,12 +18,17 @@ import {
 import type { MeldeKategorie } from "@/lib/org/types";
 import type { MeldeFachfrageUi } from "@/lib/org/melde-fachdetails";
 
-/** Kanäle mit vereinfachtem Melde-kaputt-Flow (kein Dringlichkeits-Schritt). */
+/**
+ * Kanäle mit vereinfachtem Melde-kaputt-Flow (kein Dringlichkeits-Schritt,
+ * dynamische Fachfragen). Website-Rechner (`web`) bleibt unverändert.
+ */
 export function isMeldeKaputtChannel(channel: FunnelChannel): boolean {
   return (
     channel === "melde_anon" ||
     channel === "portal_mieter" ||
-    channel === "portal_hv"
+    channel === "portal_hv" ||
+    channel === "portal_privat" ||
+    channel === "portal_eigentuemer"
   );
 }
 

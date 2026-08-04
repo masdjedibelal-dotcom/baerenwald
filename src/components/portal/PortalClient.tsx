@@ -717,7 +717,7 @@ export function PortalClient({
         sidebarOwner={kunde.name?.trim() || "MeinBärenwald"}
         hideMobileChrome={false}
         activeNavId={section === "gpt" ? "uebersicht" : section}
-        contentKey={`${section}:${selectedId ?? ""}:${privatChip ?? ""}:${controlledHvListeFilter ?? controlledVorgangFilter ?? ""}`}
+        contentKey={`${section}:${privatChip ?? ""}:${controlledHvListeFilter ?? controlledVorgangFilter ?? ""}`}
         contentBusy={pageBusy}
         onNavChange={(id) => {
           switchSection(id as SectionId);

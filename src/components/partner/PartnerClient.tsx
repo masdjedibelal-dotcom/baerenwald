@@ -532,7 +532,7 @@ export function PartnerClient({
         activeNavId={
           section === "gpt" || section === "planer" ? "uebersicht" : section
         }
-        contentKey={`${section}:${selectedId ?? ""}:${vorgangListFilter}:${searchParams.get("focus") ?? ""}`}
+        contentKey={`${section}:${vorgangListFilter}:${searchParams.get("focus") ?? ""}`}
         contentBusy={pageBusy}
         onNavChange={(id) => switchSection(id as PartnerSection)}
         nav={shellNav}

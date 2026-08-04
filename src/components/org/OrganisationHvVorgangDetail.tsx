@@ -34,6 +34,7 @@ import {
   portalDetailSectionClass,
   type PortalDetailSectionId,
 } from "@/lib/portal2/layout-chrome";
+import { resolveObjektCoverSrc } from "@/lib/portal2/portal-media";
 import { PORTAL_STATUS, type PortalMockStatusId } from "@/lib/portal2/status";
 import { PORTAL_VAR } from "@/lib/portal2/tokens";
 import { kundePortalToast, orgPortalToast } from "@/lib/shared/portal-toast";
@@ -928,22 +929,27 @@ export function OrganisationHvVorgangDetail({
           className="relative w-full shrink-0 overflow-hidden"
           style={{ height: 150 }}
         >
-          {coverUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={coverUrl}
-              alt=""
-              className="absolute inset-0 h-full w-full object-cover"
-            />
-          ) : (
-            <div
-              className="absolute inset-0"
-              style={{
-                background:
-                  "linear-gradient(135deg, #1A3D2B 0%, #2E7D52 60%, #0f766e 100%)",
-              }}
-            />
-          )}
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={resolveObjektCoverSrc(coverUrl)}
+            alt=""
+            className="absolute inset-0 h-full w-full object-cover"
+            onError={(e) => {
+              const el = e.currentTarget;
+              el.style.display = "none";
+              const fallback = el.nextElementSibling as HTMLElement | null;
+              if (fallback) fallback.style.display = "block";
+            }}
+          />
+          <div
+            className="absolute inset-0"
+            style={{
+              display: "none",
+              background:
+                "linear-gradient(135deg, #1A3D2B 0%, #2E7D52 60%, #0f766e 100%)",
+            }}
+            aria-hidden
+          />
         </div>
       )}
 

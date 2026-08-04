@@ -178,26 +178,22 @@ export function VorgangDetailSectionNav({
               aria-controls={mode === "tabs" ? `vorgang-panel-${item.id}` : undefined}
               onClick={() => select(item.id)}
               className={cn(
-                "inline-flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-[12px] font-semibold transition-colors",
-                on ? "text-white" : "bg-[var(--p2-primary-soft,#e7f1e9)]"
-              )}
-              style={
+                "inline-flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-[13px] font-semibold transition-colors",
                 on
-                  ? {
-                      background: PORTAL_VAR.primary,
-                    }
-                  : { color: PORTAL_VAR.sub }
-              }
+                  ? "bg-[var(--org-primary-soft,var(--p2-primary-soft,#e7f1e9))]"
+                  : "bg-[var(--p2-selected,#f0f2f0)]"
+              )}
+              style={{
+                color: on ? PORTAL_VAR.primary : PORTAL_VAR.sub,
+              }}
             >
               {label}
               {item.badge && item.badge > 0 ? (
                 <span
                   className="inline-flex h-4 min-w-[1rem] items-center justify-center rounded-full px-1 text-[10px] font-bold"
                   style={{
-                    background: on
-                      ? "rgba(255,255,255,0.25)"
-                      : PORTAL_VAR.dangerSoft,
-                    color: on ? "#fff" : PORTAL_VAR.danger,
+                    background: PORTAL_VAR.dangerSoft,
+                    color: PORTAL_VAR.danger,
                   }}
                 >
                   {item.badge > 9 ? "9+" : item.badge}
@@ -225,9 +221,9 @@ export function VorgangDetailSectionNav({
                 aria-controls={mode === "tabs" ? `vorgang-panel-${item.id}` : undefined}
                 onClick={() => select(item.id)}
                 className={cn(
-                  "flex w-full items-center justify-between gap-2 rounded-lg px-2.5 py-2 text-left text-[12.5px] font-semibold transition-colors",
+                  "flex w-full items-center justify-between gap-2 rounded-lg px-2.5 py-2 text-left text-[13.5px] font-semibold transition-colors",
                   on
-                    ? "bg-[var(--org-primary-soft,#E7F1E9)]"
+                    ? "bg-[var(--org-primary-soft,var(--p2-primary-soft,#E7F1E9))]"
                     : "hover:bg-[var(--p2-hover)]"
                 )}
                 style={{

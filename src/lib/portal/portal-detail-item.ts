@@ -85,6 +85,8 @@ export type KundePortalDetailItem = {
   infoHint?: string;
   /** Kein Ort/Name im Hero — steht bereits unter „Objekt“. */
   suppressLocationInHero?: boolean;
+  /** Gebäudefoto für Detail-Cover (Fallback: Portal-Default). */
+  coverUrl?: string | null;
   sections: PortalDetailSection[];
   /** @deprecated Meilensteine — nutze milestones */
   tags?: string[];

@@ -346,7 +346,7 @@ export function EigentuemerPortalClient({
       sidebarOwner={kunde.name?.trim() || EIGENTUEMER_DASHBOARD_ROLE}
       hideMobileChrome={false}
       activeNavId={section}
-      contentKey={`${section}:${selectedId ?? ""}:${objektDetailId ?? ""}`}
+      contentKey={`${section}:${objektDetailId ?? ""}`}
       contentBusy={pageBusy || freigabeBusy}
       onNavChange={(id) => switchSection(id as SectionId)}
       nav={buildPortalShellNav("eigentuemer", "eigentuemer", {

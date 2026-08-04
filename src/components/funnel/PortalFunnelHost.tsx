@@ -348,10 +348,12 @@ export function PortalFunnelHost({
   /** Melde / Mieter / HV-kaputt: kurze Ja/Nein-Fragen, kein Dringlichkeits-Schritt. */
   const useMeldeKaputtFlow =
     isMeldeKaputtChannel(channel) && state.situation === "kaputt";
-  /** Melde / Mieter / HV: keine Termin-/SLA-Infoboxen unter den Optionen. */
+  /** Melde / Mieter / HV / Privat / Eigentümer: keine Termin-/SLA-Infoboxen. */
   const stripTerminInfos =
     channel === "melde_anon" ||
     channel === "portal_mieter" ||
+    channel === "portal_privat" ||
+    channel === "portal_eigentuemer" ||
     isHvIntern;
 
   useEffect(() => {
@@ -483,11 +485,16 @@ export function PortalFunnelHost({
     }
     if (!cfg.forceKaputt) out.push("situation");
     out.push("bereiche");
-    if (cfg.include.notfallDringlichkeit && state.situation === "kaputt") {
-      out.push("dringlichkeit");
-    }
     const meldeKaputt =
       isMeldeKaputtChannel(channel) && state.situation === "kaputt";
+    /** Kaputt-Melde-Flow: Dringlichkeit entfällt (Auto-Akut je Bereich). */
+    if (
+      cfg.include.notfallDringlichkeit &&
+      state.situation === "kaputt" &&
+      !meldeKaputt
+    ) {
+      out.push("dringlichkeit");
+    }
     if (meldeKaputt) {
       const b = state.bereiche[0];
       if (

@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState, type DragEvent } from "react";
+import { useEffect, useRef, useState, type DragEvent } from "react";
 import { Pencil } from "lucide-react";
 
 import {
@@ -21,6 +21,9 @@ type Props = {
   canUpload?: boolean;
 };
 
+const COVER_FALLBACK_GRADIENT =
+  "linear-gradient(135deg, #1A3D2B 0%, #2E7D52 60%, #0f766e 100%)";
+
 /**
  * Gebäudefoto — Bearbeiten-Icon oben rechts öffnet den Upload; Drop bleibt möglich.
  */
@@ -36,12 +39,17 @@ export function OrganisationObjektCover({
   const [busy, setBusy] = useState(false);
   const [preview, setPreview] = useState<string | null>(null);
   const [dragging, setDragging] = useState(false);
+  const [imgFailed, setImgFailed] = useState(false);
 
   const effectiveCover =
     preview ||
     (coverUrl && !isPortalDefaultMediaUrl(coverUrl) ? coverUrl : null);
   const src = resolveObjektCoverSrc(effectiveCover);
   const hasCustom = Boolean(effectiveCover);
+
+  useEffect(() => {
+    setImgFailed(false);
+  }, [src]);
 
   const upload = async (file: File) => {
     if (!canUpload || busy) return;
@@ -53,6 +61,7 @@ export function OrganisationObjektCover({
     try {
       const local = URL.createObjectURL(file);
       setPreview(local);
+      setImgFailed(false);
       const fd = new FormData();
       fd.set("objektId", objektId);
       fd.set("file", file);
@@ -107,15 +116,25 @@ export function OrganisationObjektCover({
       onDragLeave={() => setDragging(false)}
       onDrop={canUpload ? onDrop : undefined}
     >
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img
-        src={src}
-        alt=""
-        className={cn(
-          "h-full w-full object-cover",
-          !hasCustom && "opacity-90"
-        )}
-      />
+      {!imgFailed ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          key={src}
+          src={src}
+          alt=""
+          className={cn(
+            "h-full w-full object-cover",
+            !hasCustom && "opacity-90"
+          )}
+          onError={() => setImgFailed(true)}
+        />
+      ) : (
+        <div
+          className="absolute inset-0"
+          style={{ background: COVER_FALLBACK_GRADIENT }}
+          aria-hidden
+        />
+      )}
 
       {canUpload && dragging ? (
         <div

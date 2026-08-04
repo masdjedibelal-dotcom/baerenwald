@@ -338,6 +338,11 @@ function buildItemFromLead(
       .filter((b) => b && b !== "—")
       .join(", ") || null;
   const detailKontext = {
+    coverUrl:
+      lead.objekt?.cover_url?.trim() ||
+      auftrag?.objekt?.cover_url?.trim() ||
+      angebot?.objekt?.cover_url?.trim() ||
+      null,
     melderName: lead.melder_name ?? lead.kontakt_name ?? null,
     melderEinheit: lead.melder_einheit ?? null,
     melderTelefon: lead.melder_telefon ?? null,

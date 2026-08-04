@@ -1,9 +1,9 @@
 "use client";
 
 import { Pencil } from "lucide-react";
-import type { ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 
-import { isPortalDefaultMediaUrl } from "@/lib/portal2/portal-media";
+import { resolveObjektCoverSrc } from "@/lib/portal2/portal-media";
 import { PORTAL_VAR } from "@/lib/portal2/tokens";
 import { cn } from "@/lib/utils";
 
@@ -19,9 +19,12 @@ export type PortalDetailCoverProps = {
   editLabel?: string;
 };
 
+const COVER_FALLBACK_GRADIENT =
+  "linear-gradient(135deg, #1A3D2B 0%, #2E7D52 60%, #0f766e 100%)";
+
 /**
  * Full-bleed Detail-Cover — Zurück links, optional Edit (Stift) rechts.
- * Ohne Bild: Gradient/Muted-Fläche mit denselben Overlays.
+ * Zeigt Objektfoto oder Portal-Default; bei Ladefehler Gradient.
  */
 export function PortalDetailCover({
   coverUrl,
@@ -32,10 +35,12 @@ export function PortalDetailCover({
   className,
   editLabel = "Bearbeiten",
 }: PortalDetailCoverProps) {
-  const src =
-    coverUrl?.trim() && !isPortalDefaultMediaUrl(coverUrl)
-      ? coverUrl.trim()
-      : null;
+  const src = resolveObjektCoverSrc(coverUrl);
+  const [failed, setFailed] = useState(false);
+
+  useEffect(() => {
+    setFailed(false);
+  }, [src]);
 
   return (
     <div
@@ -45,20 +50,19 @@ export function PortalDetailCover({
         className
       )}
     >
-      {src ? (
+      {!failed ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img
+          key={src}
           src={src}
           alt=""
           className="absolute inset-0 h-full w-full object-cover"
+          onError={() => setFailed(true)}
         />
       ) : (
         <div
           className="absolute inset-0 bg-muted"
-          style={{
-            background:
-              "linear-gradient(135deg, #1A3D2B 0%, #2E7D52 60%, #0f766e 100%)",
-          }}
+          style={{ background: COVER_FALLBACK_GRADIENT }}
           aria-hidden
         />
       )}
