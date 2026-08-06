@@ -244,6 +244,18 @@ export type PartnerAuftragItem = {
   abnahme_datum?: string | null;
   /** CRM-Freigabe der eigenen Teilabnahme */
   abnahme_freigabe_status?: string | null;
+  /** Fachnachweise (Mess-/Prüfprotokolle) — soft, kein Gate */
+  fachdokuSlots?: Array<{
+    id: string;
+    slot_code: string;
+    label: string;
+    status: string;
+    datei_url?: string | null;
+    datei_name?: string | null;
+    signed_url?: string | null;
+    erledigt_am?: string | null;
+    uploaded_by_role?: string | null;
+  }>;
 };
 
 export type PartnerHandwerkerProfil = {
@@ -1134,15 +1146,75 @@ export async function getPartnerDataForHandwerker(handwerkerId: string) {
     };
   };
 
-  const alleAuftraegeMitMeta = alleAuftraege.map(markBautagebuchAnfrage);
+  // Fachdoku-Slots: bestehende laden (Materialisierung lazy im UI/Actions)
+  const fachdokuByAuftrag = new Map<
+    string,
+    NonNullable<PartnerAuftragItem["fachdokuSlots"]>
+  >();
+  const auftragIdsForFachdoku = alleAuftraege.map((a) => a.id);
+  if (auftragIdsForFachdoku.length) {
+    try {
+      const { data: fachRows, error: fachErr } = await supabaseAdmin
+        .from("auftrag_fachdoku_slots")
+        .select(
+          "id, auftrag_id, slot_code, label, status, datei_url, datei_name, uploaded_by_role, erledigt_am"
+        )
+        .in("auftrag_id", auftragIdsForFachdoku);
+      if (!fachErr) {
+        for (const row of fachRows ?? []) {
+        const r = row as {
+          id: string;
+          auftrag_id: string;
+          slot_code: string;
+          label: string;
+          status: string;
+          datei_url: string | null;
+          datei_name: string | null;
+          uploaded_by_role: string | null;
+          erledigt_am: string | null;
+        };
+        const aid = String(r.auftrag_id);
+        const list = fachdokuByAuftrag.get(aid) ?? [];
+        const signed = r.datei_url
+          ? await resolvePartnerFileUrl(r.datei_url)
+          : null;
+        list.push({
+          id: String(r.id),
+          slot_code: r.slot_code,
+          label: r.label,
+          status: r.status,
+          datei_url: r.datei_url,
+          datei_name: r.datei_name,
+          signed_url: signed,
+          erledigt_am: r.erledigt_am,
+          uploaded_by_role: r.uploaded_by_role,
+        });
+        fachdokuByAuftrag.set(aid, list);
+        }
+      }
+    } catch {
+      /* Tabelle ggf. noch nicht migriert */
+    }
+  }
+
+  const attachFachdoku = (item: PartnerAuftragItem): PartnerAuftragItem => ({
+    ...item,
+    fachdokuSlots: fachdokuByAuftrag.get(item.id) ?? [],
+  });
+
+  const alleAuftraegeMitMeta = alleAuftraege
+    .map(markBautagebuchAnfrage)
+    .map(attachFachdoku);
 
   const vorgaenge = buildPartnerVorgaenge({
     alleAuftraege: alleAuftraegeMitMeta,
     anfragen: anfragenAngebot,
   });
 
-  const auftragAnfragen = auftragAnfragenListe.map(markBautagebuchAnfrage);
-  const auftraege = auftraegeListe.map(markBautagebuchAnfrage);
+  const auftragAnfragen = auftragAnfragenListe
+    .map(markBautagebuchAnfrage)
+    .map(attachFachdoku);
+  const auftraege = auftraegeListe.map(markBautagebuchAnfrage).map(attachFachdoku);
 
   const offen = buildPartnerOffenListe({
     anfragen: anfragenAngebot,

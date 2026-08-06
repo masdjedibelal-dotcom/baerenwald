@@ -162,6 +162,32 @@ export function dokumenteFromBautagebuch(
   return rows;
 }
 
+export function dokumenteFromFachdokuSlots(
+  slots: Array<{
+    id: string;
+    label: string;
+    status: string;
+    erledigt_am?: string | null;
+    href?: string | null;
+  }>
+): PortalDokument[] {
+  const rows: PortalDokument[] = [];
+  for (const s of slots) {
+    if (String(s.status).toLowerCase() !== "erledigt") continue;
+    const href = s.href?.trim();
+    if (!href) continue;
+    rows.push({
+      id: `fachdoku-${s.id}`,
+      name: s.label,
+      subtitle: "Fachnachweis",
+      datum: s.erledigt_am ?? undefined,
+      href,
+      art: "protokoll",
+    });
+  }
+  return rows;
+}
+
 export function dokumenteFromAuftrag(
   auftrag: AuftragDokumentInput,
   opts: {

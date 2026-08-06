@@ -24,6 +24,7 @@ import {
   PartnerDetailSuccessBox,
 } from "@/components/partner/PartnerDetailUi";
 import { PartnerComplianceCheckliste } from "@/components/partner/PartnerComplianceCheckliste";
+import { PartnerFachdokuSlots } from "@/components/partner/PartnerFachdokuSlots";
 import { BautagebuchAccordionList } from "@/components/shared/BautagebuchAccordionList";
 import {
   PortalDetailCard,
@@ -796,6 +797,8 @@ export function PartnerAuftragDetail({
                 />
               </div>
 
+              <PartnerFachdokuSlots auftragId={item.id} className="mt-4" />
+
               {konditionZeilen.length > 0 ? (
                 <PartnerLeistungenKonditionenCard
                   zeilen={konditionZeilen}
@@ -1045,6 +1048,7 @@ export function PartnerAuftragDetail({
 
         {activeTab === "abnahme" ? (
           <div className="space-y-3.5">
+            <PartnerFachdokuSlots auftragId={item.id} variant="hint" />
             {abnahmePdfUrl ||
             item.abnahme_protokoll_url ||
             item.hw_abschluss_signiert_am ||

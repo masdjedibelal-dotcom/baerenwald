@@ -298,6 +298,45 @@ export async function uploadPartnerComplianceDoc(opts: {
   return { ok: true, path };
 }
 
+/** Fachnachweis-Protokoll (PDF/Foto) am Auftrag-Slot. */
+export async function uploadPartnerFachdokuDoc(opts: {
+  handwerkerId: string | null;
+  auftragId: string;
+  slotCode: string;
+  file: File;
+  /** CRM-Upload ohne Partner → Pfad unter crm/ */
+  crm?: boolean;
+}): Promise<{ ok: true; path: string } | { ok: false; error: string }> {
+  if (!isSupabaseConfigured()) {
+    return { ok: false, error: "Storage nicht konfiguriert." };
+  }
+
+  const mime = opts.file.type || "application/pdf";
+  const isPdf =
+    mime === "application/pdf" || opts.file.name.toLowerCase().endsWith(".pdf");
+  const err = isPdf
+    ? validatePartnerPdfFile(opts.file)
+    : validatePartnerBautagebuchFile(opts.file);
+  if (err) return { ok: false, error: err };
+
+  const ext = extFromMime(isPdf ? "application/pdf" : mime);
+  const owner = opts.crm
+    ? "crm"
+    : opts.handwerkerId?.trim() || "crm";
+  const path = `${owner}/fachdoku/${opts.auftragId}/${opts.slotCode}-${randomUUID()}.${ext}`;
+  const buf = Buffer.from(await opts.file.arrayBuffer());
+
+  const { error } = await supabaseAdmin.storage
+    .from(PARTNER_UPLOAD_BUCKET)
+    .upload(path, buf, {
+      contentType: isPdf ? "application/pdf" : mime,
+      upsert: false,
+    });
+
+  if (error) return { ok: false, error: error.message };
+  return { ok: true, path };
+}
+
 export async function resolvePartnerFileUrls(
   stored: string[] | null | undefined
 ): Promise<string[]> {

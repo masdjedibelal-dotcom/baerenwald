@@ -22,6 +22,32 @@ export function sortPartnerDokumentZeilen(rows: DokumentZeile[]): DokumentZeile[
   });
 }
 
+export function fachdokuSlotsToDokumentZeilen(
+  slots: Array<{
+    id: string;
+    label: string;
+    status: string;
+    erledigt_am?: string | null;
+    signed_url?: string | null;
+    datei_url?: string | null;
+  }>
+): DokumentZeile[] {
+  const rows: DokumentZeile[] = [];
+  for (const s of slots) {
+    if (String(s.status).toLowerCase() !== "erledigt") continue;
+    const href = s.signed_url?.trim() || s.datei_url?.trim();
+    if (!href) continue;
+    rows.push({
+      id: `fachdoku-${s.id}`,
+      datum: s.erledigt_am ?? undefined,
+      name: s.label,
+      href,
+      meta: "Fachnachweis",
+    });
+  }
+  return rows;
+}
+
 /** Dokumente im Auftrag: Projektvertrag, HW-Unterlagen/Rechnung, Auftrags-Compliance — keine Stammdaten. */
 export function buildPartnerAuftragDokumentZeilen(
   item: PartnerAuftragItem
@@ -72,6 +98,8 @@ export function buildPartnerAuftragDokumentZeilen(
     if (rows.some((r) => r.id === d.id)) continue;
     rows.push(d);
   }
+
+  rows.push(...fachdokuSlotsToDokumentZeilen(item.fachdokuSlots ?? []));
 
   return sortPartnerDokumentZeilen(rows);
 }
