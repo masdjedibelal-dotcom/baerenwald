@@ -79,7 +79,7 @@ function StatusPill({
   return (
     <span
       className={cn(
-        "rounded-full px-2.5 py-1 text-[11px] font-semibold",
+        "portal-status-pill",
         !statusPillStyle && statusPillClass
       )}
       style={statusPillStyle}
@@ -152,7 +152,7 @@ export function PortalListCard({
           <div className="flex items-start justify-between gap-2">
             <div className="min-w-0 flex-1">
               {idLabel ? (
-                <p className="mb-0.5 text-[11px] font-semibold tracking-wide text-text-tertiary">
+                <p className="portal-text-label mb-0.5 normal-case tracking-wide text-text-tertiary">
                   {idLabel}
                 </p>
               ) : null}
@@ -166,7 +166,7 @@ export function PortalListCard({
             <div className="flex shrink-0 items-center gap-1.5">
               {attentionBadge && attentionBadge > 0 ? (
                 <span
-                  className="inline-flex h-5 min-w-[1.25rem] items-center justify-center rounded-full px-1.5 text-[10px] font-bold"
+                  className="inline-flex h-6 min-w-[1.5rem] items-center justify-center rounded-full px-1.5 text-xs font-bold"
                   style={{
                     background: PORTAL_VAR.dangerSoft,
                     color: PORTAL_VAR.danger,
@@ -183,7 +183,7 @@ export function PortalListCard({
               />
               {showChevron ? (
                 <ChevronRight
-                  className="h-4 w-4 text-text-tertiary"
+                  className="h-5 w-5 text-text-tertiary"
                   aria-hidden
                 />
               ) : null}
@@ -275,21 +275,21 @@ export function PortalListCard({
             <div className="min-w-0 flex-1">
               {idLabel ? (
                 <p
-                  className="mb-0.5 text-[11px] font-semibold tracking-wide"
+                  className="portal-text-label mb-0.5 normal-case tracking-wide"
                   style={{ color: PORTAL_VAR.faint }}
                 >
                   {idLabel}
                 </p>
               ) : null}
               <p
-                className="line-clamp-2 text-[15px] font-bold leading-snug"
+                className="portal-text-card-title line-clamp-2"
                 style={{ color: PORTAL_VAR.ink }}
               >
                 {title}
               </p>
               {subtitle ? (
                 <p
-                  className="mt-1 line-clamp-2 text-[12.5px] leading-snug"
+                  className="portal-text-meta mt-1 line-clamp-2"
                   style={{ color: PORTAL_VAR.sub }}
                 >
                   {subtitle}
@@ -297,7 +297,7 @@ export function PortalListCard({
               ) : null}
               {meta.length > 0 ? (
                 <p
-                  className="mt-1 line-clamp-1 text-[12px]"
+                  className="portal-text-meta mt-1.5 line-clamp-2"
                   style={{ color: PORTAL_VAR.faint }}
                 >
                   {meta.map((m) => m.text).join(" · ")}
@@ -305,7 +305,7 @@ export function PortalListCard({
               ) : null}
               {hint ? (
                 <p
-                  className="mt-1.5 text-[12px]"
+                  className="portal-text-meta mt-1.5"
                   style={{ color: PORTAL_VAR.faint }}
                 >
                   {hint}
@@ -316,7 +316,7 @@ export function PortalListCard({
             <div className="flex shrink-0 items-center gap-1.5 pt-0.5">
               {attentionBadge && attentionBadge > 0 ? (
                 <span
-                  className="inline-flex h-5 min-w-[1.25rem] items-center justify-center rounded-full px-1.5 text-[10px] font-bold"
+                  className="inline-flex h-6 min-w-[1.5rem] items-center justify-center rounded-full px-1.5 text-xs font-bold"
                   style={{
                     background: PORTAL_VAR.dangerSoft,
                     color: PORTAL_VAR.danger,
@@ -333,7 +333,7 @@ export function PortalListCard({
               />
               {showChevron ? (
                 <ChevronRight
-                  className="h-4 w-4 shrink-0"
+                  className="h-5 w-5 shrink-0"
                   style={{ color: PORTAL_VAR.faint2 }}
                   aria-hidden
                 />

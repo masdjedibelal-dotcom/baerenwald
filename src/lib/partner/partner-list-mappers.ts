@@ -25,6 +25,8 @@ import {
   buildPartnerAnfrageCardMeta,
   buildPartnerAuftragCardMeta,
 } from "@/lib/partner/partner-portal-display";
+import { compareVorgangListOrder } from "@/lib/portal/portal-vorgang-sort";
+import type { VorgangState } from "@/lib/partner/vorgang-state";
 
 export type PartnerCardRow = {
   id: string;
@@ -36,7 +38,23 @@ export type PartnerCardRow = {
   meta: PartnerListCardMeta[];
   hint?: string;
   sortDate: number;
+  statusRank: number;
 };
+
+function partnerStateSortRank(state: VorgangState | string): number {
+  switch (String(state)) {
+    case "neu":
+      return 0;
+    case "geaendert":
+      return 1;
+    case "in_bearbeitung":
+      return 2;
+    case "erledigt":
+      return 80;
+    default:
+      return 20;
+  }
+}
 
 function ts(v?: string | null): number {
   if (!v) return 0;
@@ -81,17 +99,18 @@ export function mapAnfrageAuftragToCard(item: PartnerAuftragItem): PartnerCardRo
     statusPillKey: "neu",
     accent: "anfrage",
     meta,
-    hint: "To-do: Leistungen & Vertrag prüfen",
     sortDate: ts(item.start_datum),
+    statusRank: 0,
   };
 }
 
 export function mapAuftragToCard(item: PartnerAuftragItem): PartnerCardRow {
+  const pill = partnerAuftragListenStatusPillKey(item.status);
   return {
     id: item.id,
     title: item.listen_titel,
     statusLabel: partnerAuftragListenStatusLabel(item.status),
-    statusPillKey: partnerAuftragListenStatusPillKey(item.status),
+    statusPillKey: pill,
     accent: "auftrag",
     meta: buildPartnerAuftragCardMeta(
       item.lead?.objekt,
@@ -100,6 +119,9 @@ export function mapAuftragToCard(item: PartnerAuftragItem): PartnerCardRow {
       item.end_datum
     ),
     sortDate: ts(item.start_datum),
+    statusRank: partnerStateSortRank(
+      pill === "abgeschlossen" || pill === "erledigt" ? "erledigt" : "in_bearbeitung"
+    ),
   };
 }
 
@@ -121,8 +143,8 @@ export function mapOffenAngebotToCard(
     statusPillKey: partnerOffenStatusPillKey(typ),
     accent: typ === "nachreichung" ? "anfrage" : "angebot",
     meta,
-    hint: typ === "nachreichung" ? "To-do: Änderungen bestätigen" : "To-do: Leistungen & Vertrag prüfen",
     sortDate: ts(item.gesendet_at ?? item.antwort_at),
+    statusRank: typ === "nachreichung" ? 1 : 0,
   };
 }
 
@@ -148,18 +170,6 @@ export function mapVorgangToCard(vorgang: PartnerVorgangItem): PartnerCardRow {
 
   const listenStatus = resolvePartnerVorgangCardStatus(vorgang);
 
-  const hint =
-    listenStatus.actionHint ??
-    (state === "neu"
-      ? "To-do: Leistungen & Vertrag prüfen"
-      : state === "geaendert"
-        ? offeneAenderungen > 0
-          ? `To-do: ${offeneAenderungen} Leistung${offeneAenderungen === 1 ? "" : "en"} bestätigen`
-          : "To-do: Änderungen bestätigen"
-        : auftrag.bautagebuchAnfrageOffen && state === "in_bearbeitung"
-          ? "To-do: Tagebucheintrag erstellen"
-          : undefined);
-
   return {
     id: vorgang.id,
     title: auftrag.listen_titel,
@@ -173,10 +183,10 @@ export function mapVorgangToCard(vorgang: PartnerVorgangItem): PartnerCardRow {
           : "angebot"
         : "auftrag",
     meta,
-    hint,
     sortDate: partnerVorgangLastActivityAt(vorgang) || ts(
       anfrage?.gesendet_at ?? auftrag.start_datum ?? vorgang.handwerker_bestaetigt_at
     ),
+    statusRank: partnerStateSortRank(state),
   };
 }
 
@@ -187,7 +197,7 @@ export function buildVorgangCardRows(
   const rows = vorgaenge
     .filter((v) => vorgangPasstFilter(v.state, filter))
     .map(mapVorgangToCard);
-  return rows.sort((a, b) => b.sortDate - a.sortDate);
+  return rows.sort(compareVorgangListOrder);
 }
 
 export function buildOffenCardRows(offen: PartnerOffenItem[]): PartnerCardRow[] {
@@ -197,7 +207,7 @@ export function buildOffenCardRows(offen: PartnerOffenItem[]): PartnerCardRow[] 
     }
     return mapAnfrageAuftragToCard(entry.item);
   });
-  return rows.sort((a, b) => b.sortDate - a.sortDate);
+  return rows.sort(compareVorgangListOrder);
 }
 
 export function buildAuftraegeCardRows(
@@ -208,5 +218,5 @@ export function buildAuftraegeCardRows(
   return auftraege
     .filter((a) => (filter === "aktiv" ? isAktiv(a) : !isAktiv(a)))
     .map(mapAuftragToCard)
-    .sort((a, b) => b.sortDate - a.sortDate);
+    .sort(compareVorgangListOrder);
 }

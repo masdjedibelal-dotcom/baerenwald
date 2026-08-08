@@ -7,6 +7,10 @@ import type {
 } from "@/components/shared/PortalListCard";
 import { fmtPortalDate, fmtPortalOrt } from "@/lib/shared/portal-detail-format";
 import type { KundePortalDetailItem } from "@/lib/portal/portal-detail-item";
+import {
+  compareVorgangListOrder,
+  kundePillSortRank,
+} from "@/lib/portal/portal-vorgang-sort";
 
 export type PortalCardRow = {
   id: string;
@@ -19,6 +23,8 @@ export type PortalCardRow = {
   footer?: ReactNode;
   hint?: string;
   sortDate: number;
+  /** Niedrig = weiter oben (offen vor erledigt). */
+  statusRank: number;
   /** HV-Lead im Mieter-Portal: kein Angebots-/HV-Status-Wording. */
   hvMieterView?: boolean;
   /** C4 */
@@ -108,6 +114,9 @@ export function mapKundeDetailToCard(
             : "To-do: Angebot prüfen & annehmen"
           : undefined),
     sortDate: ts(item.date),
+    statusRank: kundePillSortRank(
+      item.statusPillKey || item.status || item.vorgangPhase
+    ),
     hvMieterView: Boolean(item.hvMieterView),
     wartetAufHwLabel: item.wartetAufHwLabel ?? null,
     bautagebuch: item.hvMieterView ? undefined : item.bautagebuch,
@@ -121,7 +130,7 @@ export function buildKundeCardRows(
 ): PortalCardRow[] {
   return items
     .map((item) => mapKundeDetailToCard(item, accent))
-    .sort((a, b) => b.sortDate - a.sortDate);
+    .sort(compareVorgangListOrder);
 }
 
 export function kundeVorgangAccent(item: KundePortalDetailItem): PortalListCardAccent {
@@ -138,5 +147,5 @@ export function buildKundeVorgangCardRows(
     .map((item) =>
       mapKundeDetailToCard(item, kundeVorgangAccent(item), opts)
     )
-    .sort((a, b) => b.sortDate - a.sortDate);
+    .sort(compareVorgangListOrder);
 }

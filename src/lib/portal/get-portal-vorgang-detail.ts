@@ -5,6 +5,53 @@ import { getPortalDataForKunde } from "@/lib/portal/get-portal-data";
 import { loadPartnerBefundeByLeadIds } from "@/lib/org/load-partner-befund";
 import { isSupabaseConfigured, supabaseAdmin } from "@/lib/supabase";
 
+async function resolveLeadIdForVorgang(
+  vorgangId: string,
+  kundeId: string
+): Promise<string | null> {
+  const { data: leadDirect } = await supabaseAdmin
+    .from("leads")
+    .select("id, kunde_id, auftraggeber_kunde_id")
+    .eq("id", vorgangId)
+    .maybeSingle();
+
+  if (leadDirect?.id) {
+    const allowed =
+      String(leadDirect.kunde_id ?? "") === kundeId ||
+      String(leadDirect.auftraggeber_kunde_id ?? "") === kundeId;
+    return allowed ? String(leadDirect.id) : null;
+  }
+
+  const [{ data: ang }, { data: auf }] = await Promise.all([
+    supabaseAdmin
+      .from("angebote")
+      .select("id, lead_id")
+      .eq("id", vorgangId)
+      .maybeSingle(),
+    supabaseAdmin
+      .from("auftraege")
+      .select("id, lead_id")
+      .eq("id", vorgangId)
+      .maybeSingle(),
+  ]);
+
+  const leadId =
+    (ang?.lead_id != null ? String(ang.lead_id) : "") ||
+    (auf?.lead_id != null ? String(auf.lead_id) : "");
+  if (!leadId) return null;
+
+  const { data: lead } = await supabaseAdmin
+    .from("leads")
+    .select("id, kunde_id, auftraggeber_kunde_id")
+    .eq("id", leadId)
+    .maybeSingle();
+  if (!lead) return null;
+  const allowed =
+    String(lead.kunde_id ?? "") === kundeId ||
+    String(lead.auftraggeber_kunde_id ?? "") === kundeId;
+  return allowed ? leadId : null;
+}
+
 /**
  * Lädt einen Vorgang inkl. Medien (Signed URLs) für Detail-Ansicht.
  * Zugriff: kunde_id ODER auftraggeber_kunde_id = sessionKundeId.
@@ -24,54 +71,20 @@ export async function getPortalVorgangDetail(opts: {
   const vorgangId = opts.vorgangId.trim();
   if (!kundeId || !vorgangId) return null;
 
-  let leadId = vorgangId;
+  const leadId = await resolveLeadIdForVorgang(vorgangId, kundeId);
+  if (!leadId) return null;
 
-  const { data: leadDirect } = await supabaseAdmin
-    .from("leads")
-    .select("id, kunde_id, auftraggeber_kunde_id")
-    .eq("id", vorgangId)
-    .maybeSingle();
-
-  if (leadDirect?.id) {
-    leadId = String(leadDirect.id);
-    const allowed =
-      String(leadDirect.kunde_id ?? "") === kundeId ||
-      String(leadDirect.auftraggeber_kunde_id ?? "") === kundeId;
-    if (!allowed) return null;
-  } else {
-    const { data: ang } = await supabaseAdmin
-      .from("angebote")
-      .select("id, lead_id")
-      .eq("id", vorgangId)
-      .maybeSingle();
-    if (ang?.lead_id) {
-      leadId = String(ang.lead_id);
-    } else {
-      const { data: auf } = await supabaseAdmin
-        .from("auftraege")
-        .select("id, lead_id")
-        .eq("id", vorgangId)
-        .maybeSingle();
-      if (auf?.lead_id) leadId = String(auf.lead_id);
-      else return null;
-    }
-
-    const { data: lead } = await supabaseAdmin
-      .from("leads")
-      .select("id, kunde_id, auftraggeber_kunde_id")
-      .eq("id", leadId)
-      .maybeSingle();
-    if (!lead) return null;
-    const allowed =
-      String(lead.kunde_id ?? "") === kundeId ||
-      String(lead.auftraggeber_kunde_id ?? "") === kundeId;
-    if (!allowed) return null;
-  }
-
-  const data = await getPortalDataForKunde(kundeId, {
-    mode: "full",
-    leadIds: [leadId],
-  });
+  const [data, partnerMap] = await Promise.all([
+    getPortalDataForKunde(kundeId, {
+      mode: "full",
+      leadIds: [leadId],
+    }),
+    opts.hvPortalMode
+      ? loadPartnerBefundeByLeadIds([leadId])
+      : Promise.resolve(
+          {} as Awaited<ReturnType<typeof loadPartnerBefundeByLeadIds>>
+        ),
+  ]);
   if (!data) return null;
 
   const items = buildKundeVorgaenge({
@@ -94,13 +107,8 @@ export async function getPortalVorgangDetail(opts: {
     null;
   if (!item) return null;
 
-  let partnerBefund:
-    | Awaited<ReturnType<typeof loadPartnerBefundeByLeadIds>>[string]
-    | undefined;
-  if (opts.hvPortalMode) {
-    const map = await loadPartnerBefundeByLeadIds([leadId]);
-    partnerBefund = map[leadId];
-  }
-
-  return { item, partnerBefund };
+  return {
+    item,
+    partnerBefund: opts.hvPortalMode ? partnerMap[leadId] : undefined,
+  };
 }

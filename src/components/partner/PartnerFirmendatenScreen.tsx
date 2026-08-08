@@ -23,8 +23,6 @@ import type {
 } from "@/lib/partner/get-partner-data";
 import { resolveHandwerkerAnschrift } from "@/lib/partner/handwerker-anschrift";
 import {
-  HW_FIRMEN_FOOTER,
-  HW_FIRMEN_LOGO_HINT,
   HW_FIRMEN_SECTIONS,
 } from "@/lib/portal2/einstellungen-ui";
 import { partnerPortalToast, portalToastError } from "@/lib/shared/portal-toast";
@@ -230,9 +228,6 @@ export function PartnerFirmendatenScreen({
                   value={saved.kleinunternehmer ? "Ja" : "Nein"}
                 />
               </div>
-              <p className="text-[11.5px] leading-relaxed text-text-tertiary">
-                {HW_FIRMEN_FOOTER}
-              </p>
             </div>
           );
         }
@@ -251,9 +246,6 @@ export function PartnerFirmendatenScreen({
                   <EinstellungenPfRow label="Bank" value={dash(saved.bank)} />
                 </EinstellungenGrid2>
               </div>
-              <p className="text-[11.5px] leading-relaxed text-text-tertiary">
-                {HW_FIRMEN_FOOTER}
-              </p>
             </div>
           );
         }
@@ -278,9 +270,6 @@ export function PartnerFirmendatenScreen({
                   )}
                 </div>
                 <div className="min-w-0 flex-1">
-                  <p className="text-[12.5px] leading-relaxed text-text-secondary">
-                    {HW_FIRMEN_LOGO_HINT}
-                  </p>
                   <FileUploadField
                     label="Logo"
                     accept="image/png,image/jpeg,image/webp"
@@ -329,10 +318,6 @@ export function PartnerFirmendatenScreen({
                 </EinstellungenGrid2>
               </div>
             </div>
-
-            <p className="text-[11.5px] leading-relaxed text-text-tertiary">
-              {HW_FIRMEN_FOOTER}
-            </p>
             <PortalKontoSicherheitPanel signOutHref="/partner/login" />
           </div>
         );
@@ -343,7 +328,6 @@ export function PartnerFirmendatenScreen({
       <EinstellungenEditModal
         open
         title={modalTitle}
-        subtitle="Änderungen erst nach Speichern übernehmen."
         onClose={closeEdit}
         onSave={() => void onSaveEdit()}
         saving={saving}

@@ -162,12 +162,7 @@ export function heizungSchadenKurz(answers: MeldeAnswers | undefined): string {
       tropft_hk: "Wasser am Heizkörper",
       sonstiges: "Heizung / Warmwasser",
     }[problem] ?? "Heizung / Warmwasser";
-  const betrifftLabel =
-    {
-      wohnung: "Wohnung",
-      mehrere: "mehrere Wohnungen",
-    }[betrifft] ?? null;
-  if (betrifftLabel) return `${problemLabel} · ${betrifftLabel}`;
+  if (betrifft === "mehrere") return `${problemLabel} — mehrere Wohnungen`;
   return problemLabel;
 }
 

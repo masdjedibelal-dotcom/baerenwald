@@ -130,7 +130,9 @@ export default async function PartnerDashboardPage({
     );
   }
 
-  const data = await getPartnerDataForHandwerker(link.handwerkerId);
+  const data = await getPartnerDataForHandwerker(link.handwerkerId, {
+    mode: "list",
+  });
   if (!data) {
     return (
       <PartnerAuthShell title="Keine Partnerdaten">

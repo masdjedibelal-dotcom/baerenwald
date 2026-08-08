@@ -56,6 +56,10 @@ import {
 } from "@/lib/crm-vorgang/portal-resolve";
 import { resolveHvWartetAufHw } from "@/lib/portal2/hv-wartet-auf-hw";
 import { formatPreisspanneDisplay } from "@/lib/org/hv-meldung-workflow";
+import {
+  buildMeldeVorgangTitel,
+  leadIstMeldeTitelQuelle,
+} from "@/lib/org/melde-vorgang-titel";
 
 function meldeOrtFromFunnel(funnelDaten: unknown): string | null {
   if (!funnelDaten || typeof funnelDaten !== "object" || Array.isArray(funnelDaten)) {
@@ -100,6 +104,8 @@ type PortalLead = PortalAnfrageLeadSource & {
   versicherungs_nr?: string | null;
   erfassung_von?: string | null;
   funnel_daten?: unknown;
+  kontakt_nachricht?: string | null;
+  notizen?: string | null;
 };
 
 /** Preisindikation aus Mieter-Meldung — nur für HV, nicht für Mieter-View. */
@@ -280,7 +286,12 @@ function formatAnfrageGewerk(bereiche?: string[] | null): string | undefined {
   return parts.length ? parts.join(", ") : undefined;
 }
 
-function anfrageTitleFromLead(lead: Pick<PortalLead, "situation" | "bereiche">): {
+function anfrageTitleFromLead(
+  lead: Pick<
+    PortalLead,
+    "situation" | "bereiche" | "anlass" | "kanal" | "funnel_daten" | "kontakt_nachricht"
+  > & { notizen?: string | null }
+): {
   title: string;
   anfrageVorhaben?: string;
   anfrageGewerk?: string;
@@ -288,18 +299,52 @@ function anfrageTitleFromLead(lead: Pick<PortalLead, "situation" | "bereiche">):
   const vorhabenLabel = labelSituation(lead.situation);
   const gewerk = formatAnfrageGewerk(lead.bereiche);
   const vorhaben = vorhabenLabel !== "—" ? vorhabenLabel : undefined;
-  /** Fallback ohne CRM-Angebot: Situation · Vorhaben/Gewerk — nie Kunden-/Meldername. */
+
+  if (
+    leadIstMeldeTitelQuelle({
+      anlass: lead.anlass,
+      kanal: lead.kanal,
+      funnelDaten: lead.funnel_daten,
+    })
+  ) {
+    const title = buildMeldeVorgangTitel({
+      situation: lead.situation,
+      bereiche: lead.bereiche,
+      funnelDaten: lead.funnel_daten,
+      beschreibung:
+        lead.kontakt_nachricht ??
+        (lead as { notizen?: string | null }).notizen ??
+        null,
+    });
+    return { title, anfrageVorhaben: vorhaben, anfrageGewerk: gewerk };
+  }
+
+  /** Nicht-Melde: Situation · Gewerk — nie Kunden-/Meldername. */
   const title = [vorhaben, gewerk].filter(Boolean).join(" · ") || "Vorgang";
   return { title, anfrageVorhaben: vorhaben, anfrageGewerk: gewerk };
 }
 
-/** Card-Titel: CRM-Angebotstitel, sonst Situation · Vorhaben. */
+/** Card-Titel: CRM-Angebotstitel, sonst sprechender Melde-/Anfrage-Titel. */
 function resolveListCardTitle(
   lead: PortalLead,
   angebot: PortalAngebot | null
 ): string {
   const angebotTitel = sanitizeCustomerText(angebot?.titel, 200)?.trim();
-  if (angebotTitel) return angebotTitel;
+  // Generische CRM-Titel („Reparatur · Bad“) durch Melde-Sprache ersetzen
+  const meldeQuelle = leadIstMeldeTitelQuelle({
+    anlass: lead.anlass,
+    kanal: lead.kanal,
+    funnelDaten: lead.funnel_daten,
+  });
+  if (
+    angebotTitel &&
+    !(
+      meldeQuelle &&
+      /^(notfall|reparatur|schaden|sonstiges)\s*[·|—-]/i.test(angebotTitel)
+    )
+  ) {
+    return angebotTitel;
+  }
   return anfrageTitleFromLead(lead).title;
 }
 
@@ -460,9 +505,9 @@ function buildItemFromLead(
       terminSlots: hvMieterView ? auftrag.terminSlots ?? [] : undefined,
       infoHint:
         hvMieterView && vorgangStatus.needsAction
-          ? "Bitte wähle einen Terminvorschlag aus."
+          ? "Terminvorschlag wählen."
           : !hvMieterView && pendingAenderung
-            ? "Bärenwald hat Leistungen ergänzt oder angepasst. Bitte prüfe die Änderungen und nimm sie verbindlich an."
+            ? "Leistungsänderungen prüfen und annehmen."
             : undefined,
       vorgangPhase: vorgangStatus.phase,
       needsAction: vorgangStatus.needsAction,
@@ -498,15 +543,7 @@ function buildItemFromLead(
       statusPillKey: vorgangStatus.pillKey,
       sections: buildAngebotPortalSections({ lead: leadSource, objekt: angebot.objekt }),
       dokumente: filterDocs(angebot.dokumente ?? lead.dokumente ?? []),
-      infoHint:
-        !hvMieterView &&
-        vorgangStatus.phase === "angebot_liegt_vor" &&
-        vorgangStatus.needsAction
-          ? "Bitte prüfen Sie das Angebot und nehmen Sie es an — danach wird der Auftrag im CRM angelegt."
-          : !hvMieterView &&
-              vorgangStatus.phase === "angebot_wird_erstellt"
-            ? "Wir bereiten dein Angebot vor und melden uns, sobald es bereitsteht."
-            : undefined,
+      infoHint: undefined,
       vorgangPhase: vorgangStatus.phase,
       needsAction: vorgangStatus.needsAction,
       actionHint: vorgangStatus.resolverActionHint ?? undefined,

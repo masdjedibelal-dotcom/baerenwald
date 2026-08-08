@@ -167,7 +167,7 @@ export function OrgVorgangFeedbackSection({
               className="input-field w-full min-h-[72px] text-sm"
               placeholder={
                 mode === "maengel"
-                  ? "Beschreiben Sie die Mängel — Bärenwald erhält einen Hinweis zur Nachbearbeitung."
+                  ? "Mängel beschreiben"
                   : "Optional: Anmerkung"
               }
               value={freitext}

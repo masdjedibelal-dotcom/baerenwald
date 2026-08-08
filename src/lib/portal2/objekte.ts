@@ -399,13 +399,9 @@ export const OBJ_REGELN_FALLBACK =
 
 /** Freigabeschwelle — analog Einstellungen (Standard-Regel). */
 export const OBJ_SCHWELLE_WIZARD_TITLE = "Freigabeschwelle" as const;
-export const OBJ_SCHWELLE_WIZARD_DESC =
-  "Gilt nur für dieses Objekt. Angebote bis zu diesem Betrag werden automatisch beauftragt — darüber ist Ihre Freigabe nötig." as const;
+export const OBJ_SCHWELLE_WIZARD_DESC = "" as const;
 
-export const OBJ_SCHWELLE_INFO = (value: number) => {
-  const label = formatSchwelleEur(value);
-  return `Angebote bis ${label} werden automatisch beauftragt. Ab ${label} ist Ihre Freigabe nötig.`;
-};
+export const OBJ_SCHWELLE_INFO = (_value: number) => "";
 
 /** Mock `objMieterMenu` Labels. */
 export const OBJ_MIETER_MENU = {

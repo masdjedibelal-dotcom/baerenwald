@@ -24,15 +24,15 @@ export function freigabeBypassInfoCopy(opts: {
 }): { title: string; body: string } {
   if (opts.bypassGrund === "akut") {
     return {
-      title: "Zur Information — Auftrag läuft (Akut)",
-      body: "Akut-/Notfall-Regel: Keine Freigabe nötig. Angebot zur Information — der Auftrag läuft bereits.",
+      title: "Auftrag läuft (Akut)",
+      body: "",
     };
   }
   const schwelle = opts.schwelleLabel?.trim();
   return {
-    title: "Zur Information — Auftrag läuft (unter Schwelle)",
-    body: schwelle
-      ? `Unter Ihrer Freigabeschwelle (${schwelle}): Angebot erstellt, Auftrag ohne Ihre Annahme — nur zur Information.`
-      : "Unter Freigabeschwelle: Angebot erstellt, Auftrag ohne Ihre Annahme — nur zur Information.",
+    title: schwelle
+      ? `Auftrag läuft (unter ${schwelle})`
+      : "Auftrag läuft (unter Schwelle)",
+    body: "",
   };
 }

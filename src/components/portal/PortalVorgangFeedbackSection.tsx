@@ -73,10 +73,6 @@ export function PortalVorgangFeedbackSection({
       <p className="portal-text-body font-semibold text-text-primary">
         Wie war der Service?
       </p>
-      <p className="portal-text-meta text-text-secondary">
-        Der Handwerker hat die Arbeiten abgeschlossen. Deine Rückmeldung hilft
-        uns, den Service zu verbessern.
-      </p>
       {error ? (
         <p className="portal-text-meta text-red-700" role="alert">
           {error}

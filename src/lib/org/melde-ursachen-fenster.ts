@@ -154,7 +154,7 @@ export function fensterSchadenKurz(answers: MeldeAnswers | undefined): string {
       sonstiges: null,
     }[ort] ?? null;
 
-  if (ortLabel) return `${problemLabel} · ${ortLabel}`;
+  if (ortLabel) return `${problemLabel} — ${ortLabel}`;
   return problemLabel;
 }
 

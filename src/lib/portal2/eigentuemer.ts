@@ -9,8 +9,7 @@ export const EIGENTUEMER_LISTE_TITLE = "Meine Wohnung" as const;
 export const EIGENTUEMER_DASHBOARD_ROLE = "Eigentümer" as const;
 
 export const EIGENTUEMER_DETAIL_STATUS_TITLE = "Status" as const;
-export const EIGENTUEMER_DETAIL_STATUS_NOTE =
-  "Ihre Anfrage wird von der Verwaltung bearbeitet. Als Eigentümer haben Sie Einblick, die Steuerung liegt bei der Verwaltung." as const;
+export const EIGENTUEMER_DETAIL_STATUS_NOTE = "" as const;
 
 export const EIGENTUEMER_KOSTENFREIGABE_TITLE = "Kostenfreigabe nötig" as const;
 export const EIGENTUEMER_KOSTENFREIGABE_BTN = "✓ Kosten freigeben" as const;

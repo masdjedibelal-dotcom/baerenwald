@@ -125,7 +125,14 @@ export function baumSchadenKurz(answers: MeldeAnswers | undefined): string {
       sonstiges: null,
     }[ort] ?? null;
 
-  if (ortLabel) return `${problemLabel} · ${ortLabel}`;
+  if (ortLabel) {
+    const am = ortLabel === "Gehweg" || ortLabel === "Spielplatz";
+    const im = ["Hof", "Garten", "Parkplatz"].includes(ortLabel);
+    if (am) return `${problemLabel} am ${ortLabel}`;
+    if (im) return `${problemLabel} im ${ortLabel}`;
+    if (ortLabel === "Zufahrt") return `${problemLabel} an der Zufahrt`;
+    return `${problemLabel} — ${ortLabel}`;
+  }
   return problemLabel;
 }
 

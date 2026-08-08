@@ -103,6 +103,8 @@ type Props = {
   /** Override; default aus vm.role */
   sight?: VorgangDetailSight;
   className?: string;
+  /** CTAs am Ende der Details-Card (z. B. Freigeben / Ablehnen). */
+  detailsActions?: React.ReactNode;
 };
 
 /**
@@ -111,7 +113,12 @@ type Props = {
  * HV: Objekt & Melder + Details (Situation/Bereich/Beschreibung/Fotos/Zeitraum).
  * Kunde/Mieter: gleiche Melde-Details wie HV, ohne Fotos.
  */
-export function VorgangDetailBlocks({ vm, sight: sightProp, className }: Props) {
+export function VorgangDetailBlocks({
+  vm,
+  sight: sightProp,
+  className,
+  detailsActions,
+}: Props) {
   if (vm.role === "partner") {
     return <PartnerUnifiedDetails vm={vm} className={className} />;
   }
@@ -147,7 +154,9 @@ export function VorgangDetailBlocks({ vm, sight: sightProp, className }: Props) 
   );
   const showMeldeDetails =
     (isHv || isKunde) &&
-    (hasMeldeTextDetails || (isHv && Boolean(B.fotos && B.fotos.length > 0)));
+    (hasMeldeTextDetails ||
+      (isHv && Boolean(B.fotos && B.fotos.length > 0)) ||
+      Boolean(detailsActions));
 
   return (
     <div className={cn("space-y-3.5", className)}>
@@ -226,6 +235,11 @@ export function VorgangDetailBlocks({ vm, sight: sightProp, className }: Props) 
                 Fotos
               </p>
               <PortalPhotoGallery urls={B.fotos} />
+            </div>
+          ) : null}
+          {detailsActions ? (
+            <div className="mt-4 flex flex-row gap-2 border-t border-border-light pt-3">
+              {detailsActions}
             </div>
           ) : null}
         </BlockShell>

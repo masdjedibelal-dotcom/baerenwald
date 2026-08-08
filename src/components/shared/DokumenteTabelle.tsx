@@ -238,7 +238,7 @@ export function DokumenteTabelle({
   return (
     <section className={cn("space-y-2.5 border-t border-border-light pt-5", className)}>
       {heading?.trim() ? (
-        <h4 className="portal-text-label text-text-tertiary">{heading}</h4>
+        <h4 className="portal-text-section">{heading}</h4>
       ) : null}
 
       {dokumente.length === 0 ? (
@@ -283,13 +283,13 @@ export function DokumenteTabelle({
                     {doc.href?.trim() ? (
                       <button
                         type="button"
-                        className="line-clamp-2 text-left text-[14px] font-semibold leading-snug text-text-primary hover:underline"
+                        className="portal-text-body line-clamp-2 text-left font-medium text-text-primary hover:underline"
                         onClick={() => openOrFallback(doc)}
                       >
                         {doc.name}
                       </button>
                     ) : (
-                      <p className="line-clamp-2 text-[14px] font-semibold leading-snug text-text-primary">
+                      <p className="portal-text-body line-clamp-2 font-medium text-text-primary">
                         {doc.name}
                       </p>
                     )}

@@ -8,7 +8,7 @@ import type { ReactNode } from "react";
 export function PortalListeEyebrow({ children }: { children: ReactNode }) {
   return (
     <p
-      className="mb-1 text-[12px] font-semibold uppercase tracking-wide"
+      className="portal-text-label mb-1"
       style={{ color: PORTAL_VAR.faint }}
     >
       {children}
@@ -53,7 +53,7 @@ export function PortalListeFilterChip({
       type="button"
       onClick={onClick}
       className={cn(
-        "inline-flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-[12.5px] font-semibold"
+        "portal-text-meta inline-flex shrink-0 items-center gap-1.5 rounded-full px-3.5 py-2 font-semibold"
       )}
       style={{
         border: `1px solid ${active ? "transparent" : PORTAL_VAR.line}`,

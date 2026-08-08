@@ -251,8 +251,6 @@ export function PortalVorgangDetail({
         meldeBereich={item.meldeBereich}
         meldeZeitraum={item.meldeZeitraum}
         meldeFachdetails={item.meldeFachdetails}
-        meldeFachdetailAnswers={item.meldeFachdetailAnswers}
-        meldeUrsachenCheck={item.meldeUrsachenCheck ?? null}
         meldePreisIndikation={item.meldePreisIndikation}
         handwerkerName={item.ansprechpartner?.name}
         orgFreigabeStatus={orgFreigabeStatus ?? item.orgFreigabeStatus}
@@ -496,12 +494,8 @@ export function PortalVorgangDetail({
         title={isAuftragAccept ? "Änderungen am Auftrag annehmen?" : "Angebot annehmen?"}
         description={
           isAuftragAccept
-            ? item.hidePreise
-              ? "Mit der Annahme bestätigst du die geänderten Leistungen am laufenden Auftrag verbindlich."
-              : "Mit der Annahme bestätigst du die geänderten Leistungen und Preise am laufenden Auftrag verbindlich."
-            : item.hidePreise
-              ? "Mit der Annahme beauftragst du Bärenwald verbindlich mit der Ausführung. Wir melden uns zur weiteren Planung."
-              : "Mit der Annahme beauftragst du Bärenwald verbindlich mit der Ausführung zu den genannten Konditionen. Wir melden uns zur weiteren Planung."
+            ? "Änderungen verbindlich annehmen?"
+            : "Angebot verbindlich annehmen?"
         }
         confirmLabel="Verbindlich annehmen"
         loading={loading}
@@ -512,7 +506,6 @@ export function PortalVorgangDetail({
       <PortalModalShell
         open={rejectOpen}
         title="Angebot ablehnen?"
-        subtitle="Optional kurz begründen — hilft uns bei der Nacharbeit."
         onClose={() => {
           if (loading) return;
           setRejectOpen(false);

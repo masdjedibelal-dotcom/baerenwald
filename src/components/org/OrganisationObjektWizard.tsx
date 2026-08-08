@@ -321,12 +321,6 @@ export function OrganisationObjektWizard({
     content = (
       <EinstellungenCard title={OBJ_SCHWELLE_WIZARD_TITLE}>
         <div className="flex flex-col gap-3">
-          <p
-            className="text-[13px] leading-[1.55]"
-            style={{ color: PORTAL_VAR.sub }}
-          >
-            {OBJ_SCHWELLE_WIZARD_DESC}
-          </p>
           <EinstellungenEuroSlider
             value={snapEinstellungenSchwelle(
               Number.isFinite(schwelle) ? schwelle : 500

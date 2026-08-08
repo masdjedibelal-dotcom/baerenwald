@@ -127,12 +127,8 @@ export function OrgVorgangAbnahmeSection({
 
   return (
     <div className="space-y-4">
-      <div className="rounded-xl bg-[#faf0d8] p-4 text-sm text-[#5c4a10]">
-        <p className="font-semibold text-[#4c3d0c]">Ihre Abnahme wird benötigt.</p>
-        <p className="mt-1">
-          Der Betrieb hat die Arbeiten abgeschlossen. Prüfen Sie die Unterlagen und signieren
-          Sie die Abnahme — danach schließt Bärenwald den Vorgang ab.
-        </p>
+      <div className="rounded-xl bg-[#faf0d8] p-4 text-sm font-semibold text-[#4c3d0c]">
+        Abnahme erforderlich
       </div>
 
       <VorgangTimeline steps={TIMELINE} />

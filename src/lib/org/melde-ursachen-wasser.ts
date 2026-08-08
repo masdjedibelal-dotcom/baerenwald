@@ -193,7 +193,15 @@ export function wasserSchadenKurz(answers: MeldeAnswers | undefined): string {
       flur: "Flur",
       sonstiges: null,
     }[ort] ?? null;
-  if (ortLabel) return `${problemLabel} · ${ortLabel}`;
+  if (ortLabel) {
+    const im = ["Bad", "WC", "Keller", "Flur"].includes(ortLabel);
+    const inDer = ortLabel === "Küche" || ortLabel === "Garage";
+    const am = ortLabel === "Balkon";
+    if (im) return `${problemLabel} im ${ortLabel}`;
+    if (inDer) return `${problemLabel} in der ${ortLabel}`;
+    if (am) return `${problemLabel} am ${ortLabel}`;
+    return `${problemLabel} — ${ortLabel}`;
+  }
   return problemLabel;
 }
 

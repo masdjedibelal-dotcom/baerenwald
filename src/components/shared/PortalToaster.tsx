@@ -12,8 +12,8 @@ export function PortalToaster() {
         classNames: {
           toast:
             "rounded-xl border border-border-default bg-surface-card text-text-primary shadow-lg",
-          title: "font-semibold text-sm",
-          description: "text-xs text-text-secondary",
+          title: "portal-text-body font-semibold",
+          description: "portal-text-meta text-text-secondary",
           success:
             "!border-emerald-600/25 !bg-emerald-600 !text-white [&_[data-description]]:!text-emerald-50",
           error:

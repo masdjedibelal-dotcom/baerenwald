@@ -15,7 +15,6 @@ import { PortalDetailTabs } from "@/components/shared/PortalDetailTabs";
 import {
   EinstellungenCard,
   EinstellungenEuroSlider,
-  EinstellungenInfoBox,
   EinstellungenToggle,
 } from "@/components/shared/PortalEinstellungenUi";
 import { PortalListCard } from "@/components/shared/PortalListCard";
@@ -41,9 +40,6 @@ import {
   formatObjektStrasse,
   formatObjektTypLine,
   OBJ_DETAIL_TABS,
-  OBJ_REGELN_FALLBACK,
-  OBJ_SCHWELLE_INFO,
-  OBJ_SCHWELLE_WIZARD_DESC,
   OBJ_SCHWELLE_WIZARD_TITLE,
   parseEinheitenCount,
   type ObjDetailTabId,
@@ -539,12 +535,6 @@ export function OrganisationObjektDetail({
     body = (
       <EinstellungenCard title={OBJ_SCHWELLE_WIZARD_TITLE}>
         <div className="flex flex-col gap-3">
-          <p
-            className="text-[13px] leading-[1.55]"
-            style={{ color: PORTAL_VAR.sub }}
-          >
-            {OBJ_SCHWELLE_WIZARD_DESC}
-          </p>
           <EinstellungenEuroSlider
             value={schwelle}
             min={EINSTELLUNGEN_SCHWELLE_SLIDER_MIN}
@@ -553,21 +543,11 @@ export function OrganisationObjektDetail({
             formatValue={formatEinstellungenSchwelle}
             onChange={onSchwelleChange}
           />
-          <EinstellungenInfoBox>
-            {OBJ_SCHWELLE_INFO(schwelle)}
-          </EinstellungenInfoBox>
           <EinstellungenToggle
             checked={akutDirekt}
             onChange={(v) => void saveAkutDirekt(v)}
             title="Akut/Notfall ohne Freigabe"
-            description="Override der Org-Regel für dieses Objekt. Aus = Freigabe auch bei Notfall nötig."
           />
-          <p
-            className="text-[12.5px] leading-relaxed"
-            style={{ color: PORTAL_VAR.sub }}
-          >
-            {OBJ_REGELN_FALLBACK}
-          </p>
         </div>
       </EinstellungenCard>
     );

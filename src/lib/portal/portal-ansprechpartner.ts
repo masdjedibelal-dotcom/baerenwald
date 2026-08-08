@@ -37,8 +37,7 @@ export function portalAnsprechpartnerFallback(): PortalAnsprechpartner {
     telefon: formatTelefonAnzeige(SITE_CONFIG.phone),
     telefonHref: SITE_CONFIG.phoneHref,
     rolleLabel: "Bärenwald",
-    intro:
-      "Bei Fragen zu Ihrem Auftrag sind wir persönlich für Sie da — rufen Sie uns gern an.",
+    intro: "",
     isFallback: true,
   };
 }
@@ -57,8 +56,7 @@ export function resolvePortalAnsprechpartner(
     telefon: formatTelefonAnzeige(telefonRaw),
     telefonHref: telefonToHref(telefonRaw),
     rolleLabel: "Projektleitung",
-    intro:
-      "Ich bin Ihr persönlicher Ansprechpartner für dieses Projekt — bei Fragen melden Sie sich gern.",
+    intro: "",
     isFallback: false,
   };
 }

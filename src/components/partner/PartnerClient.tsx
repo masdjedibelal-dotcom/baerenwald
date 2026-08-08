@@ -17,8 +17,16 @@ import {
   PARTNER_LIST_PAGE_SIZE,
   PartnerListPagination,
 } from "@/components/partner/PartnerListPagination";
-import { PortalBaerenwaldGpt } from "@/components/portal/PortalBaerenwaldGpt";
+import dynamic from "next/dynamic";
 import { PortalContentBusy } from "@/components/shared/PortalContentBusy";
+
+const PortalBaerenwaldGpt = dynamic(
+  () =>
+    import("@/components/portal/PortalBaerenwaldGpt").then(
+      (m) => m.PortalBaerenwaldGpt
+    ),
+  { ssr: false, loading: () => null }
+);
 import { PortalLegalFooter } from "@/components/shared/PortalLegalFooter";
 import { PortalShell } from "@/components/shared/PortalShell";
 import { PortalHeaderSearch } from "@/components/shared/PortalHeaderSearch";
@@ -174,20 +182,27 @@ export function PartnerClient({
 
   const [vorgangListFilter, setVorgangListFilter] =
     useState<VorgangFilter>("alle");
+  const [vorgaengeState, setVorgaengeState] = useState(vorgaenge);
+  const hydratedMediaRef = useRef<Set<string>>(new Set());
+
+  useEffect(() => {
+    setVorgaengeState(vorgaenge);
+    hydratedMediaRef.current = new Set();
+  }, [vorgaenge]);
 
   const vorgangFilterEffective: VorgangFilter =
     section === "vorgaenge" ? vorgangListFilter : "alle";
 
   const sectionCardRows = useMemo((): PartnerCardRow[] => {
     if (section === "vorgaenge") {
-      return buildVorgangCardRows(vorgaenge, vorgangFilterEffective);
+      return buildVorgangCardRows(vorgaengeState, vorgangFilterEffective);
     }
     return [];
-  }, [section, vorgangFilterEffective, vorgaenge]);
+  }, [section, vorgangFilterEffective, vorgaengeState]);
 
   const vorgangListFilterCounts = useMemo(
-    () => countPartnerVorgaengeFilter(vorgaenge),
-    [vorgaenge]
+    () => countPartnerVorgaengeFilter(vorgaengeState),
+    [vorgaengeState]
   );
 
   /** Untere Nav: nur offene Vorgänge (Aktion nötig / Nachreichung), nicht Planer-To-dos. */
@@ -196,14 +211,14 @@ export function PartnerClient({
   /** Erledigte Vorgänge → zugehörige Benachrichtigungen automatisch gelesen. */
   const erledigtNotifKeysKey = useMemo(() => {
     const ids: string[] = [];
-    for (const v of vorgaenge) {
+    for (const v of vorgaengeState) {
       if (v.state !== "erledigt") continue;
       ids.push(v.id);
       const anfrageId = v.anfrage?.id;
       if (anfrageId) ids.push(anfrageId);
     }
     return Array.from(new Set(ids)).sort().join(",");
-  }, [vorgaenge]);
+  }, [vorgaengeState]);
 
   useEffect(() => {
     if (!erledigtNotifKeysKey) return;
@@ -243,7 +258,7 @@ export function PartnerClient({
       }
     }
     // Nur löschen, wenn Vorgang überhaupt nicht existiert — nicht nur wegen Filter
-    const existsAnywhere = vorgaenge.some(
+    const existsAnywhere = vorgaengeState.some(
       (v) =>
         v.id === selectedId ||
         v.anfrage?.id === selectedId ||
@@ -255,18 +270,18 @@ export function PartnerClient({
     }
     // Filter würde Detail verstecken → Filter auf „alle“
     setVorgangListFilter("alle");
-  }, [section, sectionCardRows, selectedId, vorgaenge]);
+  }, [section, sectionCardRows, selectedId, vorgaengeState]);
 
   const overviewCardRows = useMemo((): PartnerCardRow[] => {
     // Dashboard „Zuletzt“: 3 Vorgänge mit den neuesten Updates (Status/Anpassung egal)
-    return [...vorgaenge]
+    return [...vorgaengeState]
       .sort(
         (a, b) =>
           partnerVorgangLastActivityAt(b) - partnerVorgangLastActivityAt(a)
       )
       .slice(0, 3)
       .map((v) => mapVorgangToCard(v));
-  }, [vorgaenge]);
+  }, [vorgaengeState]);
 
   useEffect(() => {
     const rawSection = searchParams.get("section")?.trim();
@@ -340,8 +355,8 @@ export function PartnerClient({
       }
 
       const match =
-        vorgaenge.find((v) => v.id === vorgangId) ??
-        vorgaenge.find((v) => v.anfrage?.id === vorgangId);
+        vorgaengeState.find((v) => v.id === vorgangId) ??
+        vorgaengeState.find((v) => v.anfrage?.id === vorgangId);
 
       if (match) {
         if (pending && (pending === match.id || pending === vorgangId)) {
@@ -356,7 +371,7 @@ export function PartnerClient({
       }
       setSelectedId(vorgangId);
     }
-  }, [searchParams, vorgaenge, router]);
+  }, [searchParams, vorgaengeState, router]);
 
   /** Deep-Link-Parameter nach einmaligem Öffnen aus der URL entfernen. */
   useEffect(() => {
@@ -377,10 +392,10 @@ export function PartnerClient({
   const selectedVorgang = useMemo(() => {
     if (!selectedId) return undefined;
     return (
-      vorgaenge.find((v) => v.id === selectedId) ??
-      vorgaenge.find((v) => v.anfrage?.id === selectedId)
+      vorgaengeState.find((v) => v.id === selectedId) ??
+      vorgaengeState.find((v) => v.anfrage?.id === selectedId)
     );
-  }, [vorgaenge, selectedId]);
+  }, [vorgaengeState, selectedId]);
 
   /** Vorgang öffnen = zugehörige Benachrichtigungen gelesen (auch ohne Glocken-Klick). */
   useEffect(() => {
@@ -396,6 +411,85 @@ export function PartnerClient({
       if (res.ok) emitPortalNotificationsChanged();
     });
   }, [selectedId, selectedVorgang]);
+
+  /** Listen-SSR: BT-/Fachdoku-Medien on demand signieren. */
+  useEffect(() => {
+    if (!selectedVorgang) return;
+    const key = selectedVorgang.id;
+    if (hydratedMediaRef.current.has(key)) return;
+
+    const auftrag = selectedVorgang.auftrag;
+    const paths = new Set<string>();
+    for (const e of auftrag.bautagebuch ?? []) {
+      const signed = e.foto_signed_urls ?? [];
+      const raw = e.foto_urls ?? [];
+      if (signed.length >= raw.filter(Boolean).length && raw.length > 0) {
+        const allSigned = raw.every(
+          (p, i) => !p || /^https?:\/\//i.test(p) || Boolean(signed[i])
+        );
+        if (allSigned) continue;
+      }
+      for (const p of raw) {
+        if (p && !/^https?:\/\//i.test(p)) paths.add(p);
+      }
+    }
+    for (const slot of auftrag.fachdokuSlots ?? []) {
+      if (
+        slot.datei_url &&
+        !slot.signed_url &&
+        !/^https?:\/\//i.test(slot.datei_url)
+      ) {
+        paths.add(slot.datei_url);
+      }
+    }
+    if (!paths.size) {
+      hydratedMediaRef.current.add(key);
+      return;
+    }
+
+    let cancelled = false;
+    void fetch("/api/partner/signed-urls", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ paths: Array.from(paths) }),
+    })
+      .then((r) => r.json())
+      .then((json: { ok?: boolean; urls?: Record<string, string> }) => {
+        if (cancelled || !json?.ok || !json.urls) return;
+        const urls = json.urls;
+        hydratedMediaRef.current.add(key);
+        setVorgaengeState((prev) =>
+          prev.map((v) => {
+            if (v.id !== key) return v;
+            return {
+              ...v,
+              auftrag: {
+                ...v.auftrag,
+                bautagebuch: (v.auftrag.bautagebuch ?? []).map((e) => ({
+                  ...e,
+                  foto_signed_urls: (e.foto_urls ?? [])
+                    .map((p) => urls[p] ?? (/^https?:\/\//i.test(p) ? p : ""))
+                    .filter(Boolean),
+                })),
+                fachdokuSlots: (v.auftrag.fachdokuSlots ?? []).map((slot) => ({
+                  ...slot,
+                  signed_url:
+                    slot.signed_url ??
+                    (slot.datei_url ? urls[slot.datei_url] ?? null : null),
+                })),
+              },
+            };
+          })
+        );
+      })
+      .catch(() => {
+        /* Detail bleibt ohne Medien nutzbar */
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedVorgang]);
 
   function navigateFromPlaner(
     target: PartnerPlanerSection,
@@ -417,8 +511,8 @@ export function PartnerClient({
   function openVorgangFromNotification(vorgangId: string, href: string) {
     ignoreUrlDetailRef.current = false;
     const match =
-      vorgaenge.find((v) => v.id === vorgangId) ??
-      vorgaenge.find((v) => v.anfrage?.id === vorgangId);
+      vorgaengeState.find((v) => v.id === vorgangId) ??
+      vorgaengeState.find((v) => v.anfrage?.id === vorgangId);
     const id = match?.id ?? vorgangId;
     pendingDetailIdRef.current = id.replace(/^auftrag:/, "");
     setSection("vorgaenge");
@@ -502,7 +596,7 @@ export function PartnerClient({
   const sectionListEmpty = sectionCardRows.length === 0;
   /** Mock-Leerzustand nur wenn wirklich keine Vorgänge; Filter-Leer = Kurztext. */
   const showPortalEmptyVorgaenge =
-    section === "vorgaenge" && sectionListEmpty && vorgaenge.length === 0;
+    section === "vorgaenge" && sectionListEmpty && vorgaengeState.length === 0;
   const filterEmptyMessage =
     vorgangFilterEffective === "offen"
       ? "Keine offenen Vorgänge."
@@ -673,13 +767,13 @@ export function PartnerClient({
               firmName={partnerFooter}
               heroImageUrl={PORTAL_HEADER_HERO_SRC}
               kpis={{
-                neueAnfragen: vorgaenge.filter(
+                neueAnfragen: vorgaengeState.filter(
                   (v) => v.state === "neu" || v.state === "geaendert"
                 ).length,
-                inAusfuehrung: vorgaenge.filter(
+                inAusfuehrung: vorgaengeState.filter(
                   (v) => v.state === "in_bearbeitung"
                 ).length,
-                erledigt: vorgaenge.filter((v) => v.state === "erledigt").length,
+                erledigt: vorgaengeState.filter((v) => v.state === "erledigt").length,
               }}
               onOpenAll={() => switchSection("vorgaenge", "alle")}
               onKpiClick={(id) => {

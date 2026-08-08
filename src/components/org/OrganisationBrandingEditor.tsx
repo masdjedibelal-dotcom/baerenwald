@@ -212,7 +212,7 @@ export function OrganisationBrandingEditor({
             {EINSTELLUNGEN_BRANDING_TITLE}
           </h2>
           <p className="mt-2 text-[13px] leading-relaxed text-text-secondary">
-            {EINSTELLUNGEN_BRANDING_INTRO}
+            {EINSTELLUNGEN_BRANDING_INTRO ? EINSTELLUNGEN_BRANDING_INTRO : null}
           </p>
         </div>
         {!readOnly ? (
@@ -422,9 +422,7 @@ export function OrganisationBrandingEditor({
         </div>
       </div>
 
-      <p className="text-[11.5px] leading-relaxed text-text-tertiary">
-        {EINSTELLUNGEN_BRANDING_FOOTER}
-      </p>
+      {EINSTELLUNGEN_BRANDING_FOOTER ? <p className="text-[11.5px] leading-relaxed text-text-tertiary">{EINSTELLUNGEN_BRANDING_FOOTER}</p> : null}
 
       {edit ? (
         <EinstellungenEditModal

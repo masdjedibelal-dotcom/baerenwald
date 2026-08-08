@@ -42,10 +42,13 @@ export function hvNotificationToPortalItem(
 ): PortalNotifItem {
   const typ = mapHvTypToPortalNotifTyp(n.typ);
   const visual = resolvePortalNotifVisual(typ, role);
+  const rawTitel = n.titel?.trim() || "";
   return {
     id: n.id,
     typ,
-    titel: n.titel || visual.title,
+    // Immer echten Titel bevorzugen — kein Fallback „Angebot freigabebereit“
+    // bei unscharfem Typ-Mapping nach eigener Freigabe.
+    titel: rawTitel || visual.title,
     text: n.body?.trim() || "",
     timeLabel: formatPortalNotifTime(n.created_at),
     unread: !n.gelesen_am,

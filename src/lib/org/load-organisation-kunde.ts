@@ -33,6 +33,9 @@ function withKleinreparaturDefaults(
   };
 }
 
+/** Erfolgreicher Select aus vorherigem Request — vermeidet Fallback-Kette. */
+let cachedKundeSelect: string | null = null;
+
 /** Lädt Auftraggeber-Stammdaten; fällt bei fehlender HV-Migration auf Defaults zurück. */
 export async function loadOrganisationKunde(
   kundeId: string
@@ -50,7 +53,11 @@ export async function loadOrganisationKunde(
     KUNDE_SELECT_BASE,
   ];
 
-  for (const select of attempts) {
+  const ordered = cachedKundeSelect
+    ? [cachedKundeSelect, ...attempts.filter((s) => s !== cachedKundeSelect)]
+    : attempts;
+
+  for (const select of ordered) {
     const { data, error } = await supabaseAdmin
       .from("kunden")
       .select(select)
@@ -58,12 +65,14 @@ export async function loadOrganisationKunde(
       .maybeSingle();
 
     if (error) {
+      if (cachedKundeSelect === select) cachedKundeSelect = null;
       console.warn("[org-portal] kunde select:", error.message);
       continue;
     }
     if (!data) return null;
     const row = data as unknown as Record<string, unknown>;
     if (row.portal_modus !== "organisation") return null;
+    cachedKundeSelect = select;
     return withKleinreparaturDefaults(row);
   }
 

@@ -98,6 +98,7 @@ import {
   type HvDashboardAngebotSlice,
   type HvDashboardAuftragSlice,
 } from "@/lib/portal2/hv-dashboard";
+import { portalFlowSortRank } from "@/lib/portal/portal-vorgang-sort";
 import { portalCreateLabel } from "@/lib/portal2/create";
 import {
   buildPortalHvMobileNav,
@@ -167,6 +168,8 @@ type Props = {
       signiert_am: string;
     }
   >;
+  /** Server-seitig gebaute List-Items (schlank). */
+  initialVorgaenge?: import("@/lib/portal/portal-detail-item").KundePortalDetailItem[];
 };
 
 function portalSectionFromParam(raw: string | null): OrgSection | null {
@@ -216,6 +219,7 @@ export function OrganisationPortalClient({
   dokumenteByLeadId = {},
   auftragIdByLeadId = {},
   hvAbnahmeByLeadId = {},
+  initialVorgaenge,
 }: Props) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -242,16 +246,15 @@ export function OrganisationPortalClient({
   const displayName =
     kunde.org_anzeigename?.trim() || kunde.name?.trim() || "Verwaltung";
 
-  const vorgaengeItems = useMemo(
-    () =>
-      buildKundeVorgaenge({
-        leads: leads as Parameters<typeof buildKundeVorgaenge>[0]["leads"],
-        angebote: angebote as Parameters<typeof buildKundeVorgaenge>[0]["angebote"],
-        auftraege,
-        hvPortalMode: true,
-      }),
-    [leads, angebote, auftraege]
-  );
+  const vorgaengeItems = useMemo(() => {
+    if (initialVorgaenge?.length) return initialVorgaenge;
+    return buildKundeVorgaenge({
+      leads: leads as Parameters<typeof buildKundeVorgaenge>[0]["leads"],
+      angebote: angebote as Parameters<typeof buildKundeVorgaenge>[0]["angebote"],
+      auftraege,
+      hvPortalMode: true,
+    });
+  }, [initialVorgaenge, leads, angebote, auftraege]);
 
   const auftragByLeadId = useMemo(
     () =>
@@ -357,13 +360,27 @@ export function OrganisationPortalClient({
       ])
     );
     return [...allLeadsForFlow]
+      .map((lead) => {
+        const flow = resolveLeadPortalFlowStatus({
+          lead: lead as Parameters<typeof resolveLeadPortalFlowStatus>[0]["lead"],
+          angebot: (angebotByLead.get(String(lead.id)) ??
+            null) as Parameters<typeof resolveLeadPortalFlowStatus>[0]["angebot"],
+          auftrag: (auftragByLeadMap.get(String(lead.id)) ??
+            null) as Parameters<typeof resolveLeadPortalFlowStatus>[0]["auftrag"],
+        });
+        return {
+          lead,
+          flow,
+          sortDate: new Date(lead.created_at ?? 0).getTime(),
+          statusRank: portalFlowSortRank(flow),
+        };
+      })
       .sort((a, b) => {
-        const ta = new Date(a.created_at ?? 0).getTime();
-        const tb = new Date(b.created_at ?? 0).getTime();
-        return tb - ta;
+        if (a.statusRank !== b.statusRank) return a.statusRank - b.statusRank;
+        return b.sortDate - a.sortDate;
       })
       .slice(0, 4)
-      .map((lead) => {
+      .map(({ lead, flow }) => {
         const kat = meldeKategorieFromLead(lead);
         const titel =
           (kat ? meldeKategorieLabel(kat) : null) ||
@@ -380,11 +397,7 @@ export function OrganisationPortalClient({
           id: lead.id,
           titel,
           objekt: String(obj),
-          flowStatus: resolveLeadPortalFlowStatus({
-            lead,
-            angebot: angebotByLead.get(lead.id) ?? null,
-            auftrag: auftragByLeadMap.get(lead.id) ?? null,
-          }),
+          flowStatus: flow,
           notfall: isMeldeNotfall(lead),
         };
       });
@@ -485,11 +498,10 @@ export function OrganisationPortalClient({
               initialSelectedId={initialItemId}
               onRefresh={refresh}
               onFilterChange={(f) => {
-                const id = searchParams.get("id")?.trim();
-                const q = id
-                  ? `?section=vorgaenge&filter=${f}&id=${encodeURIComponent(id)}`
-                  : `?section=vorgaenge&filter=${f}`;
-                router.replace(`/portal${q}`, { scroll: false });
+                // Filterwechsel = Liste: alte Detail-id nicht mitschleppen (Race mit closeDetail).
+                router.replace(`/portal?section=vorgaenge&filter=${f}`, {
+                  scroll: false,
+                });
               }}
               partnerBefundByLeadId={partnerBefundByLeadId}
               bautagebuchByLeadId={bautagebuchByLeadId}

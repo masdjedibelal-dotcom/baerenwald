@@ -14,11 +14,9 @@ export function einstellungenPageTitle(
 
 export const EINSTELLUNGEN_BRANDING_TITLE = "Branding & White-Label" as const;
 
-export const EINSTELLUNGEN_BRANDING_INTRO =
-  "Diese Angaben erscheinen für Ihre Mieter & Eigentümer im Login, im Portal, auf dem Aushang und in allen automatischen E-Mails – Bärenwald tritt dort nicht in Erscheinung." as const;
+export const EINSTELLUNGEN_BRANDING_INTRO = "" as const;
 
-export const EINSTELLUNGEN_BRANDING_FOOTER =
-  "Änderungen werden automatisch gespeichert und sofort in allen Mieter-Ansichten übernommen." as const;
+export const EINSTELLUNGEN_BRANDING_FOOTER = "" as const;
 
 export const EINSTELLUNGEN_LOGO_HINT =
   "PNG oder JPG, quadratisch, min. 256 px. Ohne Upload nutzen wir Ihr Namenskürzel" as const;
@@ -28,8 +26,7 @@ export const EINSTELLUNGEN_HERO_HINT =
 
 export const EINSTELLUNGEN_SCHWELLE_TITLE = "Freigabebetrag" as const;
 
-export const EINSTELLUNGEN_SCHWELLE_INTRO =
-  "Gilt für alle Objekte ohne eigene Ausnahme. Unter der Schwelle: Angebot wird erstellt, Auftrag startet ohne Ihre Annahme (nur Info). Darüber: Sie müssen das Angebot freigeben." as const;
+export const EINSTELLUNGEN_SCHWELLE_INTRO = "" as const;
 
 /** @deprecated kein Kleinreparatur-Pfad mehr */
 export const EINSTELLUNGEN_KLEINREPARATUR_TITLE =
@@ -42,14 +39,12 @@ export const EINSTELLUNGEN_KLEINREPARATUR_INTRO =
 export const EINSTELLUNGEN_AKUT_TITLE =
   "Freigaberegelung bei akuten Schäden" as const;
 
-export const EINSTELLUNGEN_AKUT_INTRO =
-  "Einzige Ausnahme ohne Angebot: Bei Akut/Notfall kann optional direkt beauftragt werden." as const;
+export const EINSTELLUNGEN_AKUT_INTRO = "" as const;
 
 export const EINSTELLUNGEN_OBJEKT_SCHWELLE_TITLE =
   "Ausnahmen je Objekt" as const;
 
-export const EINSTELLUNGEN_OBJEKT_SCHWELLE_INTRO =
-  "Überschreibt die Standard-Regel für einzelne Objekte." as const;
+export const EINSTELLUNGEN_OBJEKT_SCHWELLE_INTRO = "" as const;
 
 export const EINSTELLUNGEN_PROFIL_EDIT = "Profil bearbeiten" as const;
 
@@ -94,6 +89,5 @@ export function formatEinstellungenSchwelle(
 }
 
 export function einstellungenSchwelleInfo(value: number): string {
-  const label = formatEinstellungenSchwelle(value);
-  return `Unter ${label}: Angebot + Auftrag ohne Ihre Annahme (Info). Darüber: Freigabe nötig.`;
+  return "";
 }

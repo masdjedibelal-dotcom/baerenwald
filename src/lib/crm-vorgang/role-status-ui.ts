@@ -33,7 +33,7 @@ export function rolePillClass(semantic: RolePillSemantic): string {
 export const HV_AUFTRAG_TIMELINE: Array<{ id: RoleTimelineStep; label: string }> = [
   { id: "beauftragt", label: "Beauftragt" },
   { id: "auftrag", label: "Ausführung" },
-  { id: "abschluss", label: "Abschluss" },
+  { id: "abschluss", label: "Erledigt" },
   { id: "erledigt", label: "Erledigt" },
 ];
 

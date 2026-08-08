@@ -108,7 +108,6 @@ export function PortalEinstellungenPrivat({
       <EinstellungenEditModal
         open={editOpen}
         title="Profil bearbeiten"
-        subtitle="Änderungen erst nach Speichern übernehmen."
         onClose={closeEdit}
         onSave={() => void saveProfil()}
         saving={busy}

@@ -18,6 +18,10 @@ import {
 } from "@/lib/portal/portal-objekt";
 import { isHvPortalLead } from "@/lib/portal/hv-portal-lead";
 import { resolvePartnerFileUrl, resolvePartnerFileUrls } from "@/lib/partner/partner-storage";
+import {
+  PORTAL_LIST_AUFTRAG_LIMIT,
+  PORTAL_LIST_LEAD_LIMIT,
+} from "@/lib/portal/portal-list-limits";
 import { isSupabaseConfigured, supabaseAdmin } from "@/lib/supabase";
 
 type PortalPositionRow = {
@@ -220,17 +224,19 @@ export async function getPortalDataForKunde(
       leadPlz,
     });
 
+  const leadSelectList =
+    "id, situation, bereiche, status, vorgang_phase, created_at, plz, strasse, hausnummer, zeitraum, kontakt_name, preis_min, preis_max, budget_ca, kontakt_nachricht, funnel_daten, kunde_objekt_id, anlass, kanal, auftraggeber_kunde_id, hv_meldung_status, org_freigabe_status, freigabe_bypass_grund, melde_tracking_token, melder_name, melder_einheit, melder_telefon, melder_email, kostentraeger, kostentraeger_vorgeschlagen, versicherungs_nr";
+
   let leadsQuery = supabaseAdmin
     .from("leads")
-    .select(
-      "id, situation, bereiche, status, vorgang_phase, created_at, plz, strasse, hausnummer, zeitraum, kontakt_name, preis_min, preis_max, budget_ca, kontakt_nachricht, funnel_daten, kunde_objekt_id, anlass, kanal, auftraggeber_kunde_id, hv_meldung_status, org_freigabe_status, freigabe_bypass_grund, melde_tracking_token, melder_name, melder_einheit, melder_telefon, melder_email, kostentraeger, kostentraeger_vorgeschlagen, versicherungs_nr"
-    )
+    .select(leadSelectList)
     .order("created_at", { ascending: false });
   if (onlyLeadIds.length) {
     // Detail: Lead-IDs sind bereits zugriffsprüft (kunde oder Auftraggeber).
     leadsQuery = leadsQuery.in("id", onlyLeadIds);
   } else {
     leadsQuery = leadsQuery.eq("kunde_id", kunde.id);
+    if (listMode) leadsQuery = leadsQuery.limit(PORTAL_LIST_LEAD_LIMIT);
   }
   const { data: leads } = await leadsQuery;
 
@@ -270,17 +276,25 @@ export async function getPortalDataForKunde(
     await Promise.all([
       onlyLeadIds.length
         ? Promise.resolve({ data: null, error: null })
-        : supabaseAdmin
-            .from("auftraege")
-            .select(auftragSelect)
-            .eq("kunde_id", kunde.id)
-            .order("created_at", { ascending: false }),
+        : (() => {
+            let q = supabaseAdmin
+              .from("auftraege")
+              .select(auftragSelect)
+              .eq("kunde_id", kunde.id)
+              .order("created_at", { ascending: false });
+            if (listMode) q = q.limit(PORTAL_LIST_AUFTRAG_LIMIT);
+            return q;
+          })(),
       leadIds.length > 0
-        ? supabaseAdmin
-            .from("auftraege")
-            .select(auftragSelect)
-            .in("lead_id", leadIds)
-            .order("created_at", { ascending: false })
+        ? (() => {
+            let q = supabaseAdmin
+              .from("auftraege")
+              .select(auftragSelect)
+              .in("lead_id", leadIds)
+              .order("created_at", { ascending: false });
+            if (listMode) q = q.limit(PORTAL_LIST_AUFTRAG_LIMIT);
+            return q;
+          })()
         : Promise.resolve({ data: null, error: null }),
     ]);
   if (aufKundeErr) console.warn("[portal] auftraege kunde_id:", aufKundeErr.message);
@@ -369,7 +383,7 @@ export async function getPortalDataForKunde(
   const auftragIds = auftraege.map((a) => String(a.id));
 
   const emptyChild = { data: [] as never[], error: null as { message: string } | null };
-  const skipMedia = listMode;
+  /** Liste: schwere Children erst im Detail. */
   const [
     { data: positionen, error: posErr },
     { data: bautagebuch, error: btErr },
@@ -386,7 +400,7 @@ export async function getPortalDataForKunde(
             "id, auftrag_id, gewerk_name, leistung_name, beschreibung, leistung_status, handwerker_status, handwerker_id, menge, einheit, lohn_fix, material_fix, aenderung_typ, preis_alt, kunde_akzeptiert_at"
           )
           .in("auftrag_id", auftragIds),
-        skipMedia
+        listMode
           ? Promise.resolve(emptyChild)
           : supabaseAdmin
               .from("auftrag_bautagebuch_eintraege")
@@ -396,32 +410,38 @@ export async function getPortalDataForKunde(
               .in("auftrag_id", auftragIds)
               .neq("eintrag_typ", "befund")
               .order("datum", { ascending: false }),
-        supabaseAdmin
-          .from("auftrag_abnahmeprotokolle")
-          .select(
-            "id, auftrag_id, abnahme_datum, pdf_url, created_at, an_kunde_gesendet_at"
-          )
-          .in("auftrag_id", auftragIds)
-          .order("created_at", { ascending: false }),
-        supabaseAdmin
-          .from("auftrag_milestones")
-          .select("id, auftrag_id, titel, erledigt, fuer_kunden_sichtbar, sort_order")
-          .in("auftrag_id", auftragIds)
-          .eq("fuer_kunden_sichtbar", true)
-          .order("sort_order", { ascending: true }),
+        listMode
+          ? Promise.resolve(emptyChild)
+          : supabaseAdmin
+              .from("auftrag_abnahmeprotokolle")
+              .select(
+                "id, auftrag_id, abnahme_datum, pdf_url, created_at, an_kunde_gesendet_at"
+              )
+              .in("auftrag_id", auftragIds)
+              .order("created_at", { ascending: false }),
+        listMode
+          ? Promise.resolve(emptyChild)
+          : supabaseAdmin
+              .from("auftrag_milestones")
+              .select("id, auftrag_id, titel, erledigt, fuer_kunden_sichtbar, sort_order")
+              .in("auftrag_id", auftragIds)
+              .eq("fuer_kunden_sichtbar", true)
+              .order("sort_order", { ascending: true }),
         supabaseAdmin
           .from("auftrag_terminslots")
           .select("id, auftrag_id, slot_beginn, slot_ende, status, bestaetigt_am")
           .in("auftrag_id", auftragIds)
           .in("status", ["vorgeschlagen", "bestaetigt"])
           .order("slot_beginn", { ascending: true }),
-        supabaseAdmin
-          .from("rechnungen")
-          .select(
-            "id, auftrag_id, rechnungsnummer, pdf_url, status, rechnungsdatum, gesendet_at, faellig_am, created_at, updated_at"
-          )
-          .in("auftrag_id", auftragIds),
-        skipMedia
+        listMode
+          ? Promise.resolve(emptyChild)
+          : supabaseAdmin
+              .from("rechnungen")
+              .select(
+                "id, auftrag_id, rechnungsnummer, pdf_url, status, rechnungsdatum, gesendet_at, faellig_am, created_at, updated_at"
+              )
+              .in("auftrag_id", auftragIds),
+        listMode
           ? Promise.resolve(emptyChild)
           : supabaseAdmin
               .from("auftrag_timeline")
@@ -809,14 +829,16 @@ export async function getPortalDataForKunde(
       return {
         ...lead,
         objekt: resolveObj(raw.kunde_objekt_id, raw.plz),
-        dokumente: dokumenteFromUrls([
-        ...extractUrlsFromUnknown(
-          (lead as { funnel_daten?: unknown }).funnel_daten
-        ),
-        ...extractUrlsFromUnknown(
-          (lead as { kontakt_nachricht?: unknown }).kontakt_nachricht
-        ),
-      ]),
+        dokumente: listMode
+          ? []
+          : dokumenteFromUrls([
+              ...extractUrlsFromUnknown(
+                (lead as { funnel_daten?: unknown }).funnel_daten
+              ),
+              ...extractUrlsFromUnknown(
+                (lead as { kontakt_nachricht?: unknown }).kontakt_nachricht
+              ),
+            ]),
       };
     });
 

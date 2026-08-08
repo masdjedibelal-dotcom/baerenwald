@@ -452,9 +452,6 @@ export function PartnerAuftragDetail({
       >
         {HW_AUFTRAG_COPY.ausfuehrenCta}
       </button>
-      <p className="text-center text-[12px]" style={{ color: PORTAL_VAR.sub }}>
-        {HW_AUFTRAG_COPY.ausfuehrenHint}
-      </p>
     </div>
   ) : undefined;
 

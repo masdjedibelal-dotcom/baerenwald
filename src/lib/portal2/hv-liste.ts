@@ -21,7 +21,7 @@ export const HV_CHIPS: Array<{
 ];
 
 /** Listen-Chip ↔ Portal-Flow (HV).
- * Offen = wartet auf Freigabe · In Arbeit = Angebot angefragt bis Auftrag · Erledigt = Abschluss+.
+ * Offen = wartet auf Freigabe · In Arbeit = Angebot bis Auftrag · Erledigt = Abschluss+.
  * D3: Semantik = KPI-Klick (`HV_DASHBOARD_KPI_DEFS[].filter`).
  */
 export function hvListeChipMatches(
@@ -59,8 +59,7 @@ export const HV_SECTION_ANGEBOTE = "Angebots-Freigabe" as const;
 export const HV_SECTION_EMPTY = "Nichts offen" as const;
 
 /** Gelbes Hinweisbanner (Mock screenListe Angebots-Freigabe). */
-export const HV_ANGEBOT_BANNER =
-  "Bärenwald hat Angebote erstellt — bitte prüfen und freigeben (Freigabe ≠ Angebot annehmen)." as const;
+export const HV_ANGEBOT_BANNER = "Angebote zur Freigabe" as const;
 
 export const HV_MELDUNG_ACTIONS = [
   {

@@ -48,7 +48,6 @@ export function OrgFreigabeBanner({
     return (
       <div className="mb-4 rounded-xl border border-emerald-200 bg-emerald-50 p-4">
         <p className="text-sm font-medium text-emerald-900">{copy.title}</p>
-        <p className="mt-1 text-xs text-emerald-800">{copy.body}</p>
       </div>
     );
   }
@@ -82,11 +81,6 @@ export function OrgFreigabeBanner({
   return (
     <div className="mb-4 rounded-xl border border-amber-200 bg-amber-50 p-4">
       <p className="text-sm font-medium text-amber-900">Angebots-Freigabe</p>
-      <p className="mt-1 text-xs text-amber-800">
-        Bärenwald hat ein Angebot erstellt — bitte prüfen und freigeben. Danach
-        läuft die Koordination weiter. Das ist kein „Angebot annehmen“ gegenüber
-        dem Handwerker.
-      </p>
       {error ? (
         <p className="mt-2 text-xs text-red-700" role="alert">
           {error}

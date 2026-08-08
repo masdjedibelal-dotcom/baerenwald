@@ -158,8 +158,18 @@ export function mapPartnerTypToPortalNotifTyp(
 
 /** HV/CRM-Typ-Strings heuristisch mappen. */
 export function mapHvTypToPortalNotifTyp(typ: string): PortalNotifTyp {
-  const t = typ.toLowerCase();
-  if (t.includes("angebot")) return "angebot";
+  const t = typ.toLowerCase().trim();
+  // Exakt / klar „neues Angebot“ — nicht „angebot_eingefordert“ (HV-eigene Aktion).
+  if (
+    t === "angebot" ||
+    t === "neues_angebot" ||
+    t === "angebot_gesendet" ||
+    (t.startsWith("angebot_") &&
+      !t.includes("eingefordert") &&
+      !t.includes("angefragt"))
+  ) {
+    return "angebot";
+  }
   if (t.includes("freigabe") || t.includes("schwellen")) return "freigabe";
   if (t.includes("termin")) return "termin";
   if (t.includes("auftrag") || t.includes("zuweis")) return "auftrag";

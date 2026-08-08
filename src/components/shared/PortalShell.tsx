@@ -196,6 +196,13 @@ function PortalShellInner({
     if (changed) flash(320);
   }, [activeNavId, contentKey, flash]);
 
+  /** Mobil: Dokument-Scroll → Browser darf die URL-Leiste einklappen (wie CRM). */
+  useEffect(() => {
+    const root = document.documentElement;
+    root.classList.add("portal-doc-scroll");
+    return () => root.classList.remove("portal-doc-scroll");
+  }, []);
+
   const showContentBusy = contentBusy || ctxBusy;
   const bottomNav = mobileNav ?? nav;
   const shellStyle = applyBrandStyle({
@@ -219,7 +226,7 @@ function PortalShellInner({
 
   return (
     <div
-      className={cn("portal-ui portal-shell min-h-screen bg-surface-page", className)}
+      className={cn("portal-ui portal-shell bg-surface-page", className)}
       data-portal-variant={variant}
       style={shellStyle}
     >

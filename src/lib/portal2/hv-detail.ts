@@ -115,29 +115,20 @@ export function pickEmpfohlenesAngebot(
 
 export const HV_DETAIL_COPY = {
   freigabeTitle: "Freigabe erforderlich",
-  freigabeNote: "Freigabe startet die Angebot-Anfrage — kein Annehmen.",
   freigabeBtn: "Freigeben",
-  /** Kurzer CTA auf schmalen Screens (Sticky-/Stack-Bar). */
   freigabeBtnMobile: "Freigeben",
   ablehnen: "Ablehnen",
-  privatAuto:
-    "Automatisch freigegeben (Privatkunde)",
+  privatAuto: "Automatisch freigegeben (Privatkunde)",
   angeboteVergleichen: "Angebotdetails",
-  angeboteVergleichNote:
-    "Prüfen Sie Preise und Leistungen — danach verbindlich annehmen.",
   empfohlenBadge: "★ Angebot",
   empfohlenDetail: "Leistungen & Preise",
   empfohlenAnnehmen: "Annehmen",
   angebotAnnehmenTitle: "Angebot annehmen",
-  angebotAnnehmenNote:
-    "Annahme erstellt den Auftrag — getrennt von der Angebots-Freigabe bei Beträgen über der Schwelle.",
   unterSchwelle: (schwelleLabel: string) =>
-    `Zur Information — Auftrag läuft (unter Freigabeschwelle ${schwelleLabel}). Angebot ohne Ihre Annahme.`,
-  unterSchwelleAkut:
-    "Zur Information — Auftrag läuft (Akut/Notfall). Keine Freigabe nötig.",
+    `Auftrag läuft (unter ${schwelleLabel})`,
+  unterSchwelleAkut: "Auftrag läuft (Akut)",
+  inAusfuehrung: "In Ausführung",
   abnahmeTitle: "Abschluss",
-  abnahmeNote:
-    "Hier sehen Sie die dokumentierten Leistungen und offenen Mängel aus der Abnahme. Das Protokoll zum Download finden Sie unter Dokumente.",
   abnahmeEmpty: "Noch keine Einträge.",
   abnahmeLeistungen: "Leistungen",
   abnahmeMaengel: "Mängel",
@@ -145,17 +136,11 @@ export const HV_DETAIL_COPY = {
   dokumenteTitle: "Dokumente",
   dokumenteEmpty: "Noch keine Dokumente.",
   rechnungTitle: "Rechnung",
-  rechnungNote:
-    "Rechnung liegt vor. Download und Unterlagen finden Sie unter Dokumente.",
   rechnungsbetrag: "Rechnungsbetrag",
-  ueberweisungOffen:
-    "Überweisung veranlassen ist im Portal noch nicht angebunden. Rechnungsstatus siehe unten.",
+  ueberweisungOffen: "Überweisung noch nicht im Portal",
   paketOeffnen: "📄 Paket öffnen",
   abgeschlossenTitle: "Abgeschlossen",
-  abgeschlossenNote: "Vorgang vollständig abgeschlossen und bezahlt.",
   abschlagsplanTitle: "Abschlagsplan · 2 Raten",
-  abschlagsplanNote:
-    "Von Bärenwald auf Basis des Angebots erstellt. Raten und enthaltene Gewerke:",
   bautagebuchTitle: "Bautagebuch",
   bautagebuchEmpty: "Noch keine Einträge.",
   metaTitle: "Details",
@@ -180,7 +165,9 @@ export function hvRoleActionKind(
   if (flow === "gemeldet") {
     return opts?.privatkunde ? "privat_auto" : "freigabe";
   }
-  if (flow === "angebot" || opts?.angebotVorgelegt) return "angebot";
+  if (flow === "angebot" || flow === "angefragt" || flow === "freigegeben") {
+    return opts?.angebotVorgelegt ? "angebot" : "none";
+  }
   if (flow === "auftrag") return "auftrag";
   if (flow === "abschluss") return "abschluss";
   if (flow === "rechnung") return "rechnung";

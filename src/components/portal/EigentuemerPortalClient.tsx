@@ -31,6 +31,10 @@ import {
   countKundeVorgaengeNeedsAction,
 } from "@/lib/portal/kunde-vorgang-filter";
 import { buildKundeVorgangCardRows } from "@/lib/portal/portal-list-mappers";
+import {
+  compareVorgangListOrder,
+  portalFlowSortRank,
+} from "@/lib/portal/portal-vorgang-sort";
 import { portalListStackClass } from "@/lib/portal2/layout-chrome";
 import type { EigentuemerPortalObjekt } from "@/lib/portal/get-eigentuemer-portal-data";
 import { resolveEigentuemerVorgangBetrag } from "@/lib/portal/get-eigentuemer-portal-data";
@@ -48,8 +52,6 @@ import {
 } from "@/lib/portal2/kunde-dashboard";
 import {
   EIGENTUEMER_DASHBOARD_ROLE,
-  EIGENTUEMER_DETAIL_STATUS_NOTE,
-  EIGENTUEMER_DETAIL_STATUS_TITLE,
   EIGENTUEMER_KOSTENFREIGABE_ABLEHNEN,
   EIGENTUEMER_KOSTENFREIGABE_BTN,
   EIGENTUEMER_KOSTENFREIGABE_TITLE,
@@ -296,10 +298,18 @@ export function EigentuemerPortalClient({
     [vorgaengeItems, listeChip, flowByItemId]
   );
 
-  const cardRows = useMemo(
-    () => buildKundeVorgangCardRows(filteredItems, { mockListe: true }),
-    [filteredItems]
-  );
+  const cardRows = useMemo(() => {
+    const rows = buildKundeVorgangCardRows(filteredItems, { mockListe: true });
+    return [...rows]
+      .map((row) => {
+        const flow = flowByItemId.get(row.id);
+        return {
+          ...row,
+          statusRank: flow ? portalFlowSortRank(flow) : row.statusRank,
+        };
+      })
+      .sort(compareVorgangListOrder);
+  }, [filteredItems, flowByItemId]);
 
   const pageCount = Math.max(1, Math.ceil(cardRows.length / PORTAL_LIST_PAGE_SIZE));
   const pageRows = cardRows.slice(
@@ -309,13 +319,25 @@ export function EigentuemerPortalClient({
 
   const recentItems = useMemo(
     () =>
-      vorgaengeItems.slice(0, 4).map((item) => ({
-        id: item.id,
-        titel: item.title,
-        objekt: item.cardSubtitle ?? item.plz ?? "—",
-        flowStatus: flowByItemId.get(item.id) ?? ("gemeldet" as const),
-        notfall: false,
-      })),
+      [...vorgaengeItems]
+        .map((item) => {
+          const flow = flowByItemId.get(item.id) ?? ("gemeldet" as const);
+          return {
+            item,
+            flow,
+            statusRank: portalFlowSortRank(flow),
+            sortDate: item.date ? new Date(item.date).getTime() : 0,
+          };
+        })
+        .sort(compareVorgangListOrder)
+        .slice(0, 4)
+        .map(({ item, flow }) => ({
+          id: item.id,
+          titel: item.title,
+          objekt: item.cardSubtitle ?? item.plz ?? "—",
+          flowStatus: flow,
+          notfall: false,
+        })),
     [vorgaengeItems, flowByItemId]
   );
 
@@ -493,15 +515,6 @@ export function EigentuemerPortalClient({
                 </div>
               </div>
             ) : null}
-
-            <div className="mx-4 rounded-xl border border-border-default bg-muted/40 p-4 lg:mx-6">
-              <p className="portal-text-label text-text-tertiary">
-                {EIGENTUEMER_DETAIL_STATUS_TITLE}
-              </p>
-              <p className="portal-text-body mt-1 text-text-secondary">
-                {EIGENTUEMER_DETAIL_STATUS_NOTE}
-              </p>
-            </div>
 
             <PortalVorgangDetail
               item={selectedItem}

@@ -143,10 +143,18 @@ export function schimmelSchadenKurz(answers: MeldeAnswers | undefined): string {
       gross: "groß",
     }[groesse] ?? null;
 
-  const parts = [problemLabel];
-  if (ortLabel) parts.push(ortLabel);
-  if (groesseLabel) parts.push(groesseLabel);
-  return parts.join(" · ");
+  let core = problemLabel;
+  if (ortLabel) {
+    const im = ["Bad", "WC", "Keller", "Treppenhaus", "Schlafzimmer", "Wohnzimmer"].includes(
+      ortLabel
+    );
+    const inDer = ortLabel === "Küche" || ortLabel === "Garage";
+    if (im) core = `${problemLabel} im ${ortLabel}`;
+    else if (inDer) core = `${problemLabel} in der ${ortLabel}`;
+    else core = `${problemLabel} — ${ortLabel}`;
+  }
+  if (groesseLabel) core = `${core} (${groesseLabel})`;
+  return core;
 }
 
 const SCHIMMEL_PROBLEM_IDS = new Set([

@@ -74,6 +74,10 @@ import {
   buildKundeVorgangCardRows,
   type PortalCardRow,
 } from "@/lib/portal/portal-list-mappers";
+import {
+  compareVorgangListOrder,
+  portalFlowSortRank,
+} from "@/lib/portal/portal-vorgang-sort";
 import { portalCreateChannel, portalCreateLabel } from "@/lib/portal2/create";
 import { buildPortalContactPrefill } from "@/lib/portal/portal-contact-prefill";
 import {
@@ -173,6 +177,7 @@ export function PortalClient({
   leads,
   angebote,
   auftraege,
+  initialVorgaenge,
   layout = "default",
   activeSection,
   showAnlassBadge = false,
@@ -193,6 +198,8 @@ export function PortalClient({
   leads: PortalLead[];
   angebote: PortalAngebot[];
   auftraege: PortalAuftrag[];
+  /** Server-seitig gebaute List-Items (schlank, ohne Medien). */
+  initialVorgaenge?: KundePortalDetailItem[];
   mieterFeedbackByLeadId?: Record<
     string,
     { sterne: number; freitext?: string | null }
@@ -323,18 +330,25 @@ export function PortalClient({
     return map;
   }, [auftragIdByLeadIdProp, auftraege]);
 
-  const vorgaengeItems = useMemo(
-    () =>
-      buildKundeVorgaenge({
-        leads,
-        angebote,
-        auftraege,
-        hvPortalMode: hvPortalMode || isPrivatLike,
-        mieterStatusMode: !hvPortalMode,
-        mieterFeedbackByLeadId,
-      }),
-    [leads, angebote, auftraege, hvPortalMode, isPrivatLike, mieterFeedbackByLeadId]
-  );
+  const vorgaengeItems = useMemo(() => {
+    if (initialVorgaenge?.length) return initialVorgaenge;
+    return buildKundeVorgaenge({
+      leads,
+      angebote,
+      auftraege,
+      hvPortalMode: hvPortalMode || isPrivatLike,
+      mieterStatusMode: !hvPortalMode,
+      mieterFeedbackByLeadId,
+    });
+  }, [
+    initialVorgaenge,
+    leads,
+    angebote,
+    auftraege,
+    hvPortalMode,
+    isPrivatLike,
+    mieterFeedbackByLeadId,
+  ]);
 
   const filterCounts = useMemo(
     () => countKundeVorgaengeFilter(vorgaengeItems),
@@ -426,9 +440,19 @@ export function PortalClient({
   }, [leads, angebote, auftraege]);
 
   const recentItems = useMemo(() => {
-    return vorgaengeItems.slice(0, 4).map((item) => {
-      const flow = flowByItemId.get(item.id) ?? "gemeldet";
-      return {
+    return [...vorgaengeItems]
+      .map((item) => {
+        const flow = flowByItemId.get(item.id) ?? "gemeldet";
+        return {
+          item,
+          flow,
+          statusRank: portalFlowSortRank(flow),
+          sortDate: item.date ? new Date(item.date).getTime() : 0,
+        };
+      })
+      .sort(compareVorgangListOrder)
+      .slice(0, 4)
+      .map(({ item, flow }) => ({
         id: item.id,
         titel: item.title,
         objekt: item.cardSubtitle ?? item.plz ?? "—",
@@ -438,17 +462,24 @@ export function PortalClient({
         statusLabel: item.hvMieterView
           ? item.status || portalMieterStatusLabel(flow)
           : undefined,
-      };
-    });
+      }));
   }, [vorgaengeItems, flowByItemId]);
 
-  const cardRows = useMemo(
-    () =>
-      buildKundeVorgangCardRows(filteredVorgaenge, {
-        mockListe: hvPortalMode || (isPrivatLike && !hvPortalMode),
-      }),
-    [filteredVorgaenge, isPrivatLike, hvPortalMode]
-  );
+  const cardRows = useMemo(() => {
+    const rows = buildKundeVorgangCardRows(filteredVorgaenge, {
+      mockListe: hvPortalMode || (isPrivatLike && !hvPortalMode),
+    });
+    // Flow-Status (HV/Privat-Chips) steuert die Primär-Sortierung, falls vorhanden.
+    return [...rows]
+      .map((row) => {
+        const flow = flowByItemId.get(row.id);
+        return {
+          ...row,
+          statusRank: flow ? portalFlowSortRank(flow) : row.statusRank,
+        };
+      })
+      .sort(compareVorgangListOrder);
+  }, [filteredVorgaenge, isPrivatLike, hvPortalMode, flowByItemId]);
 
   const listTotalPages = Math.max(1, Math.ceil(cardRows.length / PORTAL_LIST_PAGE_SIZE));
   const safeListPage = Math.min(listPage, listTotalPages);
@@ -463,12 +494,14 @@ export function PortalClient({
       null
     : null;
 
-  const selectedItem =
+  const detailMatchesSelection = Boolean(
     detailItem &&
-    selectedId &&
-    (detailItem.id === selectedId || detailItem.leadId === selectedId)
-      ? detailItem
-      : listSelectedItem;
+      selectedId &&
+      (detailItem.id === selectedId || detailItem.leadId === selectedId)
+  );
+  const selectedItem = detailMatchesSelection
+    ? detailItem
+    : listSelectedItem;
 
   useEffect(() => {
     if (!selectedId) {
@@ -499,9 +532,40 @@ export function PortalClient({
     };
   }, [selectedId, hvPortalMode]);
 
+  /** URL-/State-ID ohne Listen-Treffer und ohne Detail → nicht ewig „laden“. */
+  useEffect(() => {
+    if (!selectedId || listSelectedItem || detailMatchesSelection) return;
+    if (detailLoading) return;
+    if (!vorgaengeItems.length) return;
+    pendingDetailIdRef.current = null;
+    setSelectedId(null);
+    setDetailItem(null);
+  }, [
+    selectedId,
+    listSelectedItem,
+    detailMatchesSelection,
+    detailLoading,
+    vorgaengeItems.length,
+  ]);
+
   useEffect(() => {
     setListPage(1);
   }, [section, vorgangFilter, privatChip, controlledHvListeFilter]);
+
+  /** Filterwechsel (nicht Initial-Mount): Detail schließen. */
+  const filterKey = `${vorgangFilter}|${privatChip}|${controlledHvListeFilter ?? ""}`;
+  const prevFilterKeyRef = useRef(filterKey);
+  useEffect(() => {
+    if (prevFilterKeyRef.current === filterKey) return;
+    prevFilterKeyRef.current = filterKey;
+    if (!selectedId) return;
+    ignoreUrlDetailRef.current = true;
+    pendingDetailIdRef.current = null;
+    setDetailItem(null);
+    setDetailLoading(false);
+    setSelectedId(null);
+    onHvDetailOpenChange?.(false);
+  }, [filterKey, selectedId, onHvDetailOpenChange]);
 
   useEffect(() => {
     if (!hvPortalMode || !onHvDetailOpenChange) return;
@@ -534,6 +598,12 @@ export function PortalClient({
         setSelectedId(matched.id);
         return;
       }
+      // Unbekannte id: nicht in Endlos-Ladezustand gehen (Filter-/Race-Reste).
+      if (vorgaengeItems.length > 0) {
+        pendingDetailIdRef.current = null;
+        setSelectedId(null);
+        return;
+      }
       if (pending && pending === rawId) {
         pendingDetailIdRef.current = null;
       }
@@ -544,11 +614,11 @@ export function PortalClient({
       if (!hvPortalMode) return;
       const itemId = searchParams.get("id")?.trim() || null;
       if (ignoreUrlDetailRef.current) {
-        // Warten bis Listen-URL ohne id — stale Detail-id nicht wieder öffnen.
+        // Nach Zurück/Filter: Detail nicht aus veralteter URL wieder öffnen.
+        setSelectedId(null);
         if (!itemId) {
           ignoreUrlDetailRef.current = false;
           pendingDetailIdRef.current = null;
-          setSelectedId(null);
         }
         return;
       }
@@ -561,11 +631,11 @@ export function PortalClient({
     const rawId = searchParams.get("id")?.trim() || null;
 
     if (ignoreUrlDetailRef.current) {
+      setSelectedId(null);
       if (normalized === "vorgaenge" && !rawId) {
         ignoreUrlDetailRef.current = false;
         pendingDetailIdRef.current = null;
         setSection("vorgaenge");
-        setSelectedId(null);
       }
       return;
     }
@@ -631,6 +701,8 @@ export function PortalClient({
   function openVorgang(row: PortalCardRow) {
     ignoreUrlDetailRef.current = false;
     pendingDetailIdRef.current = row.id;
+    setDetailItem(null);
+    setDetailLoading(false);
     setSelectedId(row.id);
     flashNavBusy();
     if (embedded && hvPortalMode) {

@@ -124,7 +124,7 @@ export function PortalKontoSicherheitPanel({
     <>
       <div className="space-y-3 border-t border-border-default pt-4">
         <p
-          className="text-[11.5px] font-bold tracking-wide"
+          className="portal-text-label normal-case tracking-wide"
           style={{ color: PORTAL_VAR.faint }}
         >
           KONTO & SICHERHEIT

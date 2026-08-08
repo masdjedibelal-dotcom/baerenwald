@@ -145,14 +145,9 @@ export function stromSchadenKurz(answers: MeldeAnswers | undefined): string {
       garagentor: "Garagentor öffnet oder schließt nicht",
       sonstiges: "Strom / Elektrik",
     }[problem] ?? "Strom / Elektrik";
-  const betrifftLabel =
-    {
-      wohnung: "Wohnung",
-      treppenhaus: "Treppenhaus",
-      tiefgarage: "Tiefgarage",
-      aussen: "Außenbereich",
-    }[betrifft] ?? null;
-  if (betrifftLabel) return `${problemLabel} · ${betrifftLabel}`;
+  if (betrifft === "treppenhaus") return `${problemLabel} im Treppenhaus`;
+  if (betrifft === "tiefgarage") return `${problemLabel} in der Tiefgarage`;
+  if (betrifft === "aussen") return `${problemLabel} im Außenbereich`;
   return problemLabel;
 }
 

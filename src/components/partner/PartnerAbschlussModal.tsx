@@ -368,15 +368,6 @@ export function PartnerAbschlussModal({
 
           {step === "signatur" ? (
             <div className="space-y-5">
-              <p
-                className="rounded-lg px-3 py-2 text-[12px]"
-                style={{
-                  background: "rgba(31,106,63,0.08)",
-                  color: PORTAL_VAR.sub,
-                }}
-              >
-                {HW_ABNAHME_COPY.mobileSigHint}
-              </p>
               <label className="block space-y-1.5">
                 <span
                   className="text-[12px] font-semibold"

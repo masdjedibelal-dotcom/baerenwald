@@ -21,14 +21,11 @@ export function einstellungenMaxWidthClass(
 export const HW_FIRMEN_CARD_TITLE =
   "Firmendaten für Angebote & Rechnungen" as const;
 
-export const HW_FIRMEN_INTRO =
-  "Diese Stammdaten stehen im Kopf und Fuß jedes Angebots und jeder Rechnung. Pflichtangaben nach §14 UStG (Steuernummer/USt-IdNr., vollständige Anschrift) sind für den Rechnungsversand erforderlich." as const;
+export const HW_FIRMEN_INTRO = "" as const;
 
-export const HW_FIRMEN_LOGO_HINT =
-  "Erscheint oben rechts auf allen Dokumenten." as const;
+export const HW_FIRMEN_LOGO_HINT = "" as const;
 
-export const HW_FIRMEN_FOOTER =
-  "Änderungen werden automatisch gespeichert und für neue Angebote & Rechnungen verwendet." as const;
+export const HW_FIRMEN_FOOTER = "" as const;
 
 export const HW_FIRMEN_SECTIONS = {
   logo: "FIRMENLOGO",
@@ -45,8 +42,7 @@ export function mieterKontoZugangHinweis(orgMail: string): string {
 }
 
 export const MIETER_SPRACHE_TITLE = "Sprache" as const;
-export const MIETER_SPRACHE_INTRO =
-  "Sprache für das Portal und den Melde-Flow (A3)." as const;
+export const MIETER_SPRACHE_INTRO = "" as const;
 
 export type PortalUiLang = "de" | "en";
 

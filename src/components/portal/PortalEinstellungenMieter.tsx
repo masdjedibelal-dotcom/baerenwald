@@ -14,7 +14,6 @@ import {
 import { SITE_CONFIG } from "@/lib/config";
 import {
   MIETER_KONTO_ZUGANG_TITLE,
-  MIETER_SPRACHE_INTRO,
   MIETER_SPRACHE_TITLE,
   PORTAL_UI_LANG_STORAGE_KEY,
   mieterKontoZugangHinweis,
@@ -134,9 +133,6 @@ export function PortalEinstellungenMieter({
 
                 <div className="space-y-3 border-t border-border-default pt-4">
                   <EinstellungenSectionHeader title={MIETER_SPRACHE_TITLE} />
-                  <p className="text-[13px] leading-relaxed text-text-secondary">
-                    {MIETER_SPRACHE_INTRO}
-                  </p>
                   <div
                     className="flex gap-2"
                     role="group"
@@ -192,7 +188,6 @@ export function PortalEinstellungenMieter({
       <EinstellungenEditModal
         open={editOpen}
         title="Telefon bearbeiten"
-        subtitle="Änderungen erst nach Speichern übernehmen."
         onClose={closeEdit}
         onSave={() => void saveTelefon()}
         saving={busy}

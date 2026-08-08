@@ -64,10 +64,7 @@ export function OrgMeldungAktionBanner({ lead, kunde: _kunde, onUpdated }: Props
           )}
         </p>
         {notfall ? (
-          <p className="mt-1 text-xs font-medium text-red-700">
-            Akut/Notfall — Vorgang freigeben (Express). Bei aktiver Akut-Regel
-            kann Bärenwald direkt beauftragen.
-          </p>
+          <p className="mt-1 text-xs font-medium text-red-700">Notfall</p>
         ) : null}
       </div>
 

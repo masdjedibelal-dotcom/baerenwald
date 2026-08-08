@@ -40,7 +40,7 @@ export const PORTAL_STATUS: Record<PortalMockStatusId, PortalMockStatusMeta> = {
   },
   angefragt: {
     id: "angefragt",
-    label: "Angebot angefragt",
+    label: "Angebot",
     color: "#8A5A06",
     bg: "#FBF1D6",
   },
@@ -58,7 +58,7 @@ export const PORTAL_STATUS: Record<PortalMockStatusId, PortalMockStatusMeta> = {
   },
   abschluss: {
     id: "abschluss",
-    label: "Abschluss",
+    label: "Erledigt",
     color: "#1F6A3F",
     bg: "#DDEEDF",
   },

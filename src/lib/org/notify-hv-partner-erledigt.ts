@@ -1,3 +1,8 @@
+import {
+  buildMeldeVorgangTitel,
+  formatMeldeNotifTitel,
+  MELDE_NOTIF_COPY,
+} from "@/lib/org/melde-vorgang-titel";
 import { supabaseAdmin } from "@/lib/supabase";
 
 /** HV-Glocke: Handwerker hat Leistungen als erledigt gemeldet. */
@@ -11,7 +16,9 @@ export async function notifyHvPartnerErledigt(input: {
 }): Promise<void> {
   const { data: lead } = await supabaseAdmin
     .from("leads")
-    .select("auftraggeber_kunde_id")
+    .select(
+      "auftraggeber_kunde_id, situation, bereiche, funnel_daten, kontakt_nachricht, notizen, anlass, kanal"
+    )
     .eq("id", input.leadId)
     .maybeSingle();
 
@@ -25,10 +32,25 @@ export async function notifyHvPartnerErledigt(input: {
       ? input.leistungen[0]
       : `${input.leistungen.length} Leistungen`;
 
+  const vorgangTitel = buildMeldeVorgangTitel({
+    situation: lead?.situation,
+    bereiche: (lead?.bereiche as string[] | null) ?? null,
+    funnelDaten: lead?.funnel_daten,
+    beschreibung:
+      (lead?.kontakt_nachricht as string | null) ??
+      (lead?.notizen as string | null) ??
+      null,
+  });
+  const bezug =
+    vorgangTitel && vorgangTitel !== "Meldung" ? vorgangTitel : leistungText;
+
   const vollstaendig = input.vollstaendig === true;
-  const titel = vollstaendig
-    ? `Auftrag erledigt: ${leistungText}`
-    : `Teilabschluss: ${leistungText}`;
+  const titel = formatMeldeNotifTitel(
+    vollstaendig
+      ? MELDE_NOTIF_COPY.partnerErledigt
+      : MELDE_NOTIF_COPY.partnerTeilabschluss,
+    { titel: bezug }
+  );
   const body = vollstaendig
     ? `${input.handwerkerName} meldet die letzten offenen Leistungen als erledigt. Sie können Feedback geben oder Mängel melden.`
     : `${input.handwerkerName} meldet Leistungen als erledigt. Weitere Positionen am Auftrag sind noch offen.`;

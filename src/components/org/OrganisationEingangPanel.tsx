@@ -44,14 +44,6 @@ import { VersicherungsakteButton } from "@/components/org/VersicherungsakteButto
 import { VorgangKommentareThread } from "@/components/org/VorgangKommentareThread";
 import { VorgangStornoDialog } from "@/components/org/VorgangStornoDialog";
 import { KostentraegerSelector } from "@/components/org/KostentraegerSelector";
-import { MeldeUrsachenWasserPanel } from "@/components/org/MeldeUrsachenWasserPanel";
-import { normalizeFunnelDaten } from "@/lib/lead-funnel-daten";
-import {
-  parseMeldeUrsachenCheck,
-  resolveMeldeUrsachenBereich,
-} from "@/lib/org/melde-ursachen";
-import { labelBereich } from "@/lib/lead-funnel-labels";
-
 type Props = {
   kunde: OrganisationKunde;
   eingang: OrganisationLead[];
@@ -168,21 +160,6 @@ function MeldungDetail({
 
   const fotos = meldeFotosFromLead(lead);
   const kategorie = meldeKategorieFromLead(lead);
-  const funnelNorm = normalizeFunnelDaten(lead.funnel_daten, lead.bereiche);
-  const meldeAnswers = funnelNorm.fachdetails.fachdetailAnswers ?? {};
-  const ursachenCheck = parseMeldeUrsachenCheck(lead.funnel_daten);
-  const meldeBereichLabel =
-    (lead.bereiche ?? [])
-      .map((b) => labelBereich(b))
-      .filter((b) => b && b !== "—")
-      .join(", ") || null;
-  const ursachenBereich = resolveMeldeUrsachenBereich({
-    answers: meldeAnswers,
-    bereichLabel: meldeBereichLabel,
-    bereiche: lead.bereiche,
-    ursachen: ursachenCheck,
-  });
-  const showUrsachenCard = Boolean(ursachenBereich);
 
   const resendEinladung = async () => {
     setResendBusy(true);
@@ -351,17 +328,6 @@ function MeldungDetail({
             ))}
           </div>
         </div>
-      ) : null}
-
-      {showUrsachenCard && ursachenBereich ? (
-        <MeldeUrsachenWasserPanel
-          leadId={lead.id}
-          bereich={ursachenBereich}
-          answers={meldeAnswers}
-          initial={ursachenCheck}
-          mode="edit"
-          onSaved={onRefresh}
-        />
       ) : null}
 
       {angebotPdfZeilen.length > 0 ? (

@@ -165,6 +165,7 @@ export function OrganisationVorgaengeSection({
 
   function changeFilter(next: OrgVorgangFilter) {
     setFilter(next);
+    setDetailOpen(false);
     onFilterChange?.(next);
   }
 

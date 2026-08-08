@@ -33,8 +33,8 @@ import { resolveHandwerkerAnsprechpartner } from "@/lib/partner/handwerker-anspr
 import { parseHwAnhangStoragePaths } from "@/lib/partner/partner-hw-dokument-typen";
 import {
   resolvePartnerFileUrl,
-  resolvePartnerFileUrls,
 } from "@/lib/partner/partner-storage";
+import { createPartnerSignedUrlCache } from "@/lib/partner/partner-signed-url-cache";
 import type { PartnerAuftragBewertung } from "@/lib/partner/handwerker-bewertung-display";
 import type { PartnerHandwerkerBewertungProfil } from "@/lib/partner/handwerker-bewertung-display";
 import type { PartnerComplianceItem } from "@/lib/partner/partner-compliance";
@@ -327,11 +327,14 @@ function parseHwAnhangUrls(raw: unknown, fallbackPath: string | null): string[] 
   return parseHwAnhangStoragePaths(raw, fallbackPath);
 }
 
-async function mapHwAngebotAnhaenge(raw: Record<string, unknown>) {
+async function mapHwAngebotAnhaenge(
+  raw: Record<string, unknown>,
+  resolveFile: (p: string | null | undefined) => Promise<string | null> = resolvePartnerFileUrl
+) {
   const pdfPath = (raw.hw_angebot_pdf_url as string | null) ?? null;
   const anhangPaths = parseHwAnhangUrls(raw.hw_angebot_anhang_urls, pdfPath);
   const signed = (
-    await Promise.all(anhangPaths.map((p) => resolvePartnerFileUrl(p)))
+    await Promise.all(anhangPaths.map((p) => resolveFile(p)))
   ).filter((u): u is string => Boolean(u));
   return {
     hw_angebot_pdf_url: pdfPath,
@@ -419,25 +422,40 @@ function collectObjektIdsFromAngebotHandwerkerRows(
 
 async function mapAngebotHandwerkerRows(
   rows: Array<Record<string, unknown>>,
-  objektById: Map<string, PartnerKundenObjektRow>
+  objektById: Map<string, PartnerKundenObjektRow>,
+  resolveFile: (p: string | null | undefined) => Promise<string | null> = resolvePartnerFileUrl
 ): Promise<PartnerAnfrageItem[]> {
+  const mapAnhaenge = (raw: Record<string, unknown>) =>
+    mapHwAngebotAnhaenge(raw, resolveFile);
   return Promise.all(
     rows.map((row) =>
       mapAngebotHandwerkerRow(
         row,
         objektById,
-        mapHwAngebotAnhaenge,
-        resolvePartnerFileUrl
+        mapAnhaenge,
+        resolveFile
       )
     )
   );
 }
 
-export async function getPartnerDataForHandwerker(handwerkerId: string) {
+export async function getPartnerDataForHandwerker(
+  handwerkerId: string,
+  opts?: { mode?: "list" | "full" }
+) {
   if (!isSupabaseConfigured()) return null;
 
   const id = handwerkerId.trim();
   if (!id) return null;
+  const listMode = (opts?.mode ?? "list") !== "full";
+  const signedCache = createPartnerSignedUrlCache();
+  /** Listen: keine Storage-Roundtrips; Detail hydrated via /api/partner/signed-urls. */
+  const resolveUrlListSafe = (p: string | null | undefined) =>
+    listMode
+      ? Promise.resolve(
+          p && /^https?:\/\//i.test(p.trim()) ? p.trim() : (null as string | null)
+        )
+      : signedCache.resolve(p);
 
   const handwerkerSelectFull = `
       id,
@@ -535,7 +553,7 @@ export async function getPartnerDataForHandwerker(handwerkerId: string) {
     collectObjektIdsFromAngebotHandwerkerRows(rawRows)
   );
   const anfragen: PartnerAnfrageItem[] = (
-    await mapAngebotHandwerkerRows(rawRows, objektById)
+    await mapAngebotHandwerkerRows(rawRows, objektById, signedCache.resolve)
   ).filter((_, i) => {
     const row = rawRows[i]!;
     const gate = extractPartnerLeadGateFromAngebotHandwerkerRow(row);
@@ -674,25 +692,32 @@ export async function getPartnerDataForHandwerker(handwerkerId: string) {
       });
     }
 
-    for (const bt of btRows ?? []) {
-      const r = bt as Record<string, unknown>;
-      const aid = String(r.auftrag_id);
-      const paths = Array.isArray(r.foto_urls)
-        ? (r.foto_urls as string[]).map((s) => String(s).trim()).filter(Boolean)
-        : [];
-      const signed = await resolvePartnerFileUrls(paths);
-      const item: PartnerBautagebuchItem = {
-        id: String(r.id),
-        titel: String(r.titel ?? ""),
-        beschreibung: (r.beschreibung as string | null) ?? null,
-        datum: String(r.datum).slice(0, 10),
-        foto_urls: paths,
-        foto_signed_urls: signed,
-        fuer_kunde_freigegeben: Boolean(r.fuer_kunde_freigegeben),
-        eintrag_typ: (r.eintrag_typ as "tagebuch" | "befund") ?? "tagebuch",
-        own: String(r.handwerker_id ?? "") === id,
-        handwerker_id: (r.handwerker_id as string | null) ?? null,
-      };
+    const btMapped = await Promise.all(
+      (btRows ?? []).map(async (bt) => {
+        const r = bt as Record<string, unknown>;
+        const aid = String(r.auftrag_id);
+        const paths = Array.isArray(r.foto_urls)
+          ? (r.foto_urls as string[]).map((s) => String(s).trim()).filter(Boolean)
+          : [];
+        const signed = listMode
+          ? paths.filter((p) => /^https?:\/\//i.test(p))
+          : await signedCache.resolveMany(paths);
+        const item: PartnerBautagebuchItem = {
+          id: String(r.id),
+          titel: String(r.titel ?? ""),
+          beschreibung: (r.beschreibung as string | null) ?? null,
+          datum: String(r.datum).slice(0, 10),
+          foto_urls: paths,
+          foto_signed_urls: signed,
+          fuer_kunde_freigegeben: Boolean(r.fuer_kunde_freigegeben),
+          eintrag_typ: (r.eintrag_typ as "tagebuch" | "befund") ?? "tagebuch",
+          own: String(r.handwerker_id ?? "") === id,
+          handwerker_id: (r.handwerker_id as string | null) ?? null,
+        };
+        return { aid, item };
+      })
+    );
+    for (const { aid, item } of btMapped) {
       const list = btByAuftrag.get(aid) ?? [];
       list.push(item);
       btByAuftrag.set(aid, list);
@@ -1172,35 +1197,42 @@ export async function getPartnerDataForHandwerker(handwerkerId: string) {
         )
         .in("auftrag_id", auftragIdsForFachdoku);
       if (!fachErr) {
-        for (const row of fachRows ?? []) {
-        const r = row as {
-          id: string;
-          auftrag_id: string;
-          slot_code: string;
-          label: string;
-          status: string;
-          datei_url: string | null;
-          datei_name: string | null;
-          uploaded_by_role: string | null;
-          erledigt_am: string | null;
-        };
-        const aid = String(r.auftrag_id);
-        const list = fachdokuByAuftrag.get(aid) ?? [];
-        const signed = r.datei_url
-          ? await resolvePartnerFileUrl(r.datei_url)
-          : null;
-        list.push({
-          id: String(r.id),
-          slot_code: r.slot_code,
-          label: r.label,
-          status: r.status,
-          datei_url: r.datei_url,
-          datei_name: r.datei_name,
-          signed_url: signed,
-          erledigt_am: r.erledigt_am,
-          uploaded_by_role: r.uploaded_by_role,
-        });
-        fachdokuByAuftrag.set(aid, list);
+        const fachMapped = await Promise.all(
+          (fachRows ?? []).map(async (row) => {
+            const r = row as {
+              id: string;
+              auftrag_id: string;
+              slot_code: string;
+              label: string;
+              status: string;
+              datei_url: string | null;
+              datei_name: string | null;
+              uploaded_by_role: string | null;
+              erledigt_am: string | null;
+            };
+            const signed = r.datei_url
+              ? await resolveUrlListSafe(r.datei_url)
+              : null;
+            return {
+              aid: String(r.auftrag_id),
+              slot: {
+                id: String(r.id),
+                slot_code: r.slot_code,
+                label: r.label,
+                status: r.status,
+                datei_url: r.datei_url,
+                datei_name: r.datei_name,
+                signed_url: signed,
+                erledigt_am: r.erledigt_am,
+                uploaded_by_role: r.uploaded_by_role,
+              },
+            };
+          })
+        );
+        for (const { aid, slot } of fachMapped) {
+          const list = fachdokuByAuftrag.get(aid) ?? [];
+          list.push(slot);
+          fachdokuByAuftrag.set(aid, list);
         }
       }
     } catch {
@@ -1270,7 +1302,7 @@ export async function getPartnerDataForHandwerker(handwerkerId: string) {
         ((handwerker as { logo_url?: string | null }).logo_url as string | null) ??
         null;
       const logoSigned = logoPath
-        ? await resolvePartnerFileUrl(logoPath)
+        ? await signedCache.resolve(logoPath)
         : null;
       return {
       name: ansprechpartner.vollname || "Partner",

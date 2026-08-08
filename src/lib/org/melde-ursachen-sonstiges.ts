@@ -135,10 +135,16 @@ export function sonstigesSchadenKurz(
       stark: "stark",
     }[staerke] ?? null;
 
-  const parts = [problemLabel];
-  if (ortLabel) parts.push(ortLabel);
-  if (staerkeLabel) parts.push(staerkeLabel);
-  return parts.join(" · ");
+  let core = problemLabel;
+  if (ortLabel) {
+    const im = ["Müllraum", "Müllplatz", "Treppenhaus", "Keller"].includes(ortLabel);
+    const am = ortLabel === "Eingangsbereich";
+    if (im) core = `${problemLabel} im ${ortLabel}`;
+    else if (am) core = `${problemLabel} am Eingang`;
+    else core = `${problemLabel} — ${ortLabel}`;
+  }
+  if (staerkeLabel) core = `${core} (${staerkeLabel})`;
+  return core;
 }
 
 /** Nur spezifische IDs — nicht generisches „sonstiges“ (Konflikt mit anderen Bereichen). */

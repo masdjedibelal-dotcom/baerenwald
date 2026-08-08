@@ -3,13 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 
 import { VorgangDetailBlocks } from "@/components/shared/vorgang-detail";
-import { MeldeUrsachenWasserPanel } from "@/components/org/MeldeUrsachenWasserPanel";
 import { buildKundeHvVorgangDetailVm } from "@/lib/vorgang/build-vorgang-detail-vm";
-import {
-  resolveMeldeUrsachenBereich,
-  type MeldeUrsachenCheckState,
-} from "@/lib/org/melde-ursachen";
-import type { MeldeAnswers } from "@/lib/funnel/melde-dynamic-questions";
 import { BautagebuchAccordionList } from "@/components/shared/BautagebuchAccordionList";
 import { DokumenteTabelle } from "@/components/shared/DokumenteTabelle";
 import { PortalDetailCover } from "@/components/shared/PortalDetailCover";
@@ -115,17 +109,15 @@ export type OrganisationHvVorgangDetailProps = {
   meldeBereich?: string | null;
   meldeZeitraum?: string | null;
   meldeFachdetails?: Array<{ label: string; value: string }>;
-  meldeFachdetailAnswers?: MeldeAnswers;
-  meldeUrsachenCheck?: MeldeUrsachenCheckState | null;
   detailRole?: "hv" | "kunde";
   /**
    * Optionaler Status-Chip-/VM-Text (z. B. Mieter: „In Bearbeitung“
-   * statt „Angebot angefragt“).
+   * statt „Angebot“).
    */
   statusLabelOverride?: string | null;
   /** Mieter: Timeline ohne Angebot, „Auftrag“ → „Bestätigung“. */
   mieterStatusMode?: boolean;
-  /** C4 — Meta-Zeile „Wartet auf HW · …“ */
+  /** @deprecated Nicht mehr im Detail-Head (nur Titel + eine Subline). */
   wartetAufHwLabel?: string | null;
   /** Unverbindliche Preisindikation aus Mieter-Meldung (nur HV). */
   meldePreisIndikation?: string | null;
@@ -186,7 +178,7 @@ function ActionBtn({
   /** Optional kürzerer Text nur auf Mobil (&lt; sm). */
   mobileLabel?: string;
   onClick: () => void;
-  kind?: "primary" | "ghost" | "danger";
+  kind?: "primary" | "secondary" | "ghost" | "danger";
   disabled?: boolean;
   className?: string;
 }) {
@@ -199,9 +191,11 @@ function ActionBtn({
         "portal-action-btn",
         kind === "ghost"
           ? "portal-action-btn--ghost"
-          : kind === "danger"
-            ? "portal-action-btn--danger"
-            : "portal-action-btn--primary",
+          : kind === "secondary"
+            ? "portal-action-btn--secondary"
+            : kind === "danger"
+              ? "portal-action-btn--danger"
+              : "portal-action-btn--primary",
         className
       )}
     >
@@ -331,13 +325,10 @@ export function OrganisationHvVorgangDetail({
   meldeBereich,
   meldeZeitraum,
   meldeFachdetails,
-  meldeFachdetailAnswers,
-  meldeUrsachenCheck,
   meldePreisIndikation,
   detailRole = "hv",
   statusLabelOverride,
   mieterStatusMode = false,
-  wartetAufHwLabel = null,
 }: OrganisationHvVorgangDetailProps) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -384,22 +375,12 @@ export function OrganisationHvVorgangDetail({
   const statusLabel =
     statusLabelOverride?.trim() || PORTAL_STATUS[displayFlowStatus].label;
 
-  const ursachenBereich = resolveMeldeUrsachenBereich({
-    answers: meldeFachdetailAnswers,
-    bereichLabel: meldeBereich,
-    ursachen: meldeUrsachenCheck,
-  });
-  const showUrsachenCard = Boolean(ursachenBereich);
-
   const abschlussCard = (
     <DetailCard title={HV_DETAIL_COPY.abnahmeTitle}>
       {abnahmeCheckliste &&
       (abnahmeCheckliste.leistungen.length > 0 ||
         abnahmeCheckliste.maengel.length > 0) ? (
         <div className="space-y-3">
-          <p className="text-[12.5px] leading-relaxed" style={{ color: PORTAL_VAR.sub }}>
-            {HV_DETAIL_COPY.abnahmeNote}
-          </p>
           {abnahmeCheckliste.leistungen.length > 0 ? (
             <div>
               <p
@@ -487,7 +468,7 @@ export function OrganisationHvVorgangDetail({
         meldeSituation,
         meldeBereich,
         meldeZeitraum,
-        meldeFachdetails: showUrsachenCard ? [] : meldeFachdetails,
+        meldeFachdetails,
         meldePreisIndikation:
           detailRole === "hv" && !mieterStatusMode
             ? meldePreisIndikation
@@ -534,7 +515,6 @@ export function OrganisationHvVorgangDetail({
       meldeBereich,
       meldeZeitraum,
       meldeFachdetails,
-      showUrsachenCard,
       meldePreisIndikation,
       positionenBrutto,
       gesamtBrutto,
@@ -599,6 +579,7 @@ export function OrganisationHvVorgangDetail({
       if (aktion === "angebot_einfordern") orgPortalToast.angebotEingefordert();
       else orgPortalToast.meldungAbgelehnt();
       onUpdated();
+      onBack?.();
     } finally {
       setBusy(false);
     }
@@ -622,6 +603,7 @@ export function OrganisationHvVorgangDetail({
       if (aktion === "freigegeben") orgPortalToast.freigegeben();
       else orgPortalToast.freigabeAbgelehnt();
       onUpdated();
+      onBack?.();
     } finally {
       setBusy(false);
     }
@@ -644,6 +626,7 @@ export function OrganisationHvVorgangDetail({
       setAccepted(true);
       kundePortalToast.angebotAngenommen();
       onUpdated();
+      onBack?.();
     } finally {
       setBusy(false);
     }
@@ -657,16 +640,13 @@ export function OrganisationHvVorgangDetail({
       return null;
     }
     if (actionKind === "freigabe") {
-      // CTAs unter dem Kopf (mobil gestapelt) — keine Card hier.
+      // CTAs inline in Details (Übersicht).
       return null;
     }
     if (actionKind === "angebot") {
       return (
         <div className="flex flex-col gap-3.5">
           <DetailCard title={HV_DETAIL_COPY.angeboteVergleichen}>
-            <p className="mb-3 text-[12.5px]" style={{ color: PORTAL_VAR.sub }}>
-              {HV_DETAIL_COPY.angeboteVergleichNote}
-            </p>
             {empfohlen ? (
               <div
                 className="relative rounded-xl p-3.5"
@@ -741,9 +721,6 @@ export function OrganisationHvVorgangDetail({
             ) : null}
             {showAcceptCta ? (
               <div className="mt-3 space-y-2">
-                <p className="text-[12px]" style={{ color: PORTAL_VAR.sub }}>
-                  {HV_DETAIL_COPY.angebotAnnehmenNote}
-                </p>
                 <div className="flex flex-wrap gap-2">
                   <ActionBtn
                     label={HV_DETAIL_COPY.empfohlenAnnehmen}
@@ -760,15 +737,17 @@ export function OrganisationHvVorgangDetail({
                 Angebot angenommen — Auftrag wird vorbereitet.
               </p>
             ) : orgFreigabeStatus === "ausstehend" ? (
-              <div className="mt-3 flex flex-wrap gap-2">
+              <div className="mt-3 flex flex-row gap-2">
                 <ActionBtn
+                  className="min-w-0 flex-1"
                   label={HV_DETAIL_COPY.freigabeBtn}
                   disabled={busy}
                   onClick={() => void freigabeAct("freigegeben")}
                 />
                 <ActionBtn
+                  className="min-w-0 flex-1"
                   label={HV_DETAIL_COPY.ablehnen}
-                  kind="danger"
+                  kind="secondary"
                   disabled={busy}
                   onClick={() => void freigabeAct("abgelehnt")}
                 />
@@ -789,9 +768,6 @@ export function OrganisationHvVorgangDetail({
         <div className="flex flex-col gap-3.5">
           {abschlussCard}
           <DetailCard title={HV_DETAIL_COPY.rechnungTitle}>
-            <p className="mb-3 text-[13px]" style={{ color: PORTAL_VAR.sub }}>
-              {HV_DETAIL_COPY.rechnungNote}
-            </p>
             {sum.brutto > 0 ? (
               <div
                 className="mb-1 flex justify-between text-lg font-bold"
@@ -812,9 +788,6 @@ export function OrganisationHvVorgangDetail({
             </p>
           </DetailCard>
           <DetailCard title={HV_DETAIL_COPY.abschlagsplanTitle}>
-            <p className="mb-2 text-[12.5px]" style={{ color: PORTAL_VAR.sub }}>
-              {HV_DETAIL_COPY.abschlagsplanNote}
-            </p>
             <div className="flex flex-col gap-2">
               {abschlaege.map((r) => (
                 <div
@@ -852,11 +825,7 @@ export function OrganisationHvVorgangDetail({
     }
     if (actionKind === "bezahlt") {
       return (
-        <DetailCard title={HV_DETAIL_COPY.abgeschlossenTitle}>
-          <p className="text-[13px]" style={{ color: PORTAL_VAR.sub }}>
-            {HV_DETAIL_COPY.abgeschlossenNote}
-          </p>
-        </DetailCard>
+        <DetailCard title={HV_DETAIL_COPY.abgeschlossenTitle}>{null}</DetailCard>
       );
     }
     return null;
@@ -978,7 +947,6 @@ export function OrganisationHvVorgangDetail({
         <PortalDetailHead
           title={titel}
           metaLine={[objekt, kategorie].filter(Boolean).join(" · ") || undefined}
-          subtitle={wartetAufHwLabel || undefined}
           titleBadges={
             notfall ? (
               <span className="rounded px-1.5 py-0.5 text-[11px] font-bold portal-danger-soft">
@@ -994,8 +962,7 @@ export function OrganisationHvVorgangDetail({
           }
         />
 
-        {actionKind === "freigabe" ||
-        (actionKind === "angebot" && showAcceptCta) ? (
+        {actionKind === "angebot" && showAcceptCta ? (
           <div
             className={cn(
               "portal-action-row mt-4 flex-col sm:flex-row",
@@ -1004,49 +971,17 @@ export function OrganisationHvVorgangDetail({
               "max-lg:fixed max-lg:inset-x-0 max-lg:bottom-[var(--portal-mobile-nav-h)] max-lg:z-40 max-lg:mt-0 max-lg:rounded-none max-lg:border-t max-lg:bg-[var(--p2-panel)]/95 max-lg:p-3 max-lg:backdrop-blur-sm"
             )}
           >
-            {actionKind === "freigabe" ? (
-              <>
-                <div className="mb-1 w-full sm:hidden">
-                  <p className="text-[12px] font-semibold" style={{ color: PORTAL_VAR.ink }}>
-                    {HV_DETAIL_COPY.freigabeTitle}
-                  </p>
-                  <p className="text-[11.5px]" style={{ color: PORTAL_VAR.sub }}>
-                    {HV_DETAIL_COPY.freigabeNote}
-                  </p>
-                </div>
-                <ActionBtn
-                  className="w-full sm:flex-1"
-                  label={HV_DETAIL_COPY.freigabeBtn}
-                  mobileLabel={HV_DETAIL_COPY.freigabeBtnMobile}
-                  disabled={busy}
-                  onClick={() => void meldungAct("angebot_einfordern")}
-                />
-                <ActionBtn
-                  className="w-full sm:flex-1"
-                  label={HV_DETAIL_COPY.ablehnen}
-                  kind="ghost"
-                  disabled={busy}
-                  onClick={() => void meldungAct("ablehnen")}
-                />
-              </>
-            ) : (
-              <>
-                <div className="mb-1 w-full sm:hidden">
-                  <p className="text-[12px] font-semibold" style={{ color: PORTAL_VAR.ink }}>
-                    {HV_DETAIL_COPY.angebotAnnehmenTitle}
-                  </p>
-                  <p className="text-[11.5px]" style={{ color: PORTAL_VAR.sub }}>
-                    {HV_DETAIL_COPY.angebotAnnehmenNote}
-                  </p>
-                </div>
-                <ActionBtn
-                  className="w-full sm:w-auto"
-                  label={HV_DETAIL_COPY.empfohlenAnnehmen}
-                  disabled={busy}
-                  onClick={() => void acceptAngebotAct()}
-                />
-              </>
-            )}
+            <div className="mb-1 w-full sm:hidden">
+              <p className="text-[12px] font-semibold" style={{ color: PORTAL_VAR.ink }}>
+                {HV_DETAIL_COPY.angebotAnnehmenTitle}
+              </p>
+            </div>
+            <ActionBtn
+              className="w-full sm:w-auto"
+              label={HV_DETAIL_COPY.empfohlenAnnehmen}
+              disabled={busy}
+              onClick={() => void acceptAngebotAct()}
+            />
           </div>
         ) : null}
       </div>
@@ -1054,8 +989,8 @@ export function OrganisationHvVorgangDetail({
       <div
         className={cn(
           "flex flex-col gap-4 px-4 pb-6 pt-3 sm:px-6 sm:pt-4 lg:flex-row lg:items-start lg:gap-6 lg:pt-5",
-          (actionKind === "freigabe" ||
-            (actionKind === "angebot" && showAcceptCta)) &&
+          actionKind === "angebot" &&
+            showAcceptCta &&
             "max-lg:pb-[calc(var(--portal-detail-actions-h,6rem)+0.5rem)]"
         )}
       >
@@ -1081,20 +1016,29 @@ export function OrganisationHvVorgangDetail({
               !showAngebotSection
                 ? abschlussCard
                 : null}
-              {showUrsachenCard && ursachenBereich && leadId ? (
-                <MeldeUrsachenWasserPanel
-                  leadId={leadId}
-                  bereich={ursachenBereich}
-                  answers={meldeFachdetailAnswers ?? {}}
-                  initial={meldeUrsachenCheck ?? null}
-                  mode={
-                    detailRole === "hv" && !mieterStatusMode
-                      ? "edit"
-                      : "summary"
-                  }
-                />
-              ) : null}
-              <VorgangDetailBlocks vm={detailVm} />
+              <VorgangDetailBlocks
+                vm={detailVm}
+                detailsActions={
+                  actionKind === "freigabe" ? (
+                    <>
+                      <ActionBtn
+                        className="min-w-0 flex-1"
+                        label={HV_DETAIL_COPY.freigabeBtn}
+                        mobileLabel={HV_DETAIL_COPY.freigabeBtnMobile}
+                        disabled={busy}
+                        onClick={() => void meldungAct("angebot_einfordern")}
+                      />
+                      <ActionBtn
+                        className="min-w-0 flex-1"
+                        label={HV_DETAIL_COPY.ablehnen}
+                        kind="secondary"
+                        disabled={busy}
+                        onClick={() => void meldungAct("ablehnen")}
+                      />
+                    </>
+                  ) : undefined
+                }
+              />
             </section>
           ) : null}
 

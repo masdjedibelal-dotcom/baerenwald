@@ -98,14 +98,14 @@ export function PortalDetailHead({
           {titleBadges}
         </div>
         {metaLine ? (
-          <p className="portal-text-body text-text-secondary">{metaLine}</p>
+          <p className="portal-text-meta">{metaLine}</p>
         ) : null}
         {showStatusRow ? (
           <div className="flex flex-wrap items-center gap-2">
             {statusLabel?.trim() ? (
               <span
                 className={cn(
-                  "inline-flex items-center rounded-md px-2 py-0.5 text-[12px] font-semibold",
+                  "portal-status-pill",
                   !statusPillStyle && statusPillClass
                 )}
                 style={statusPillStyle}
@@ -513,7 +513,9 @@ export function PortalAnsprechpartnerCard({
           {rolleLabel}
         </p>
         <p className="mt-2 font-display text-lg font-semibold text-text-primary">{name}</p>
-        <p className="mt-3 text-text-secondary">{intro}</p>
+        {intro.trim() ? (
+          <p className="mt-3 text-text-secondary">{intro}</p>
+        ) : null}
         <a
           href={telefonHref}
           className="mt-3 inline-flex font-semibold text-accent underline-offset-2 hover:underline"

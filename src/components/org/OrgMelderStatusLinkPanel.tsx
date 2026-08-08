@@ -20,12 +20,11 @@ export function OrgMelderStatusLinkPanel({ statusUrl, melderName }: Props) {
 
   return (
     <section className="portal-surface space-y-2 p-4">
-      <h3 className="text-sm font-semibold text-text-primary">Mieter-Status-Link</h3>
-      <p className="portal-text-meta text-text-secondary">
+      <h3 className="text-sm font-semibold text-text-primary">
         {melderName?.trim()
-          ? `Link für ${melderName.trim()} — per SMS, WhatsApp oder Anruf weitergeben.`
-          : "Link für den Mieter — per SMS, WhatsApp oder Anruf weitergeben."}
-      </p>
+          ? `Status-Link · ${melderName.trim()}`
+          : "Mieter-Status-Link"}
+      </h3>
       <p className="break-all rounded-lg border border-border-light bg-muted/40 px-3 py-2 font-mono text-xs text-text-primary">
         {statusUrl}
       </p>

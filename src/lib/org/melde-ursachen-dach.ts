@@ -121,7 +121,14 @@ export function dachSchadenKurz(answers: MeldeAnswers | undefined): string {
       sonstiges: null,
     }[ort] ?? null;
 
-  if (ortLabel) return `${problemLabel} · ${ortLabel}`;
+  if (ortLabel) {
+    if (ortLabel === "Fassade") return `${problemLabel} an der Fassade`;
+    if (ortLabel === "Balkon") return `${problemLabel} am Balkon`;
+    if (ortLabel === "Eingangsbereich" || ortLabel === "Eingang / Gehweg") {
+      return `${problemLabel} am Eingang`;
+    }
+    return `${problemLabel} — ${ortLabel}`;
+  }
   return problemLabel;
 }
 

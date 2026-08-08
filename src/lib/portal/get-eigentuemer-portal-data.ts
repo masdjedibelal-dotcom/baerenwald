@@ -163,7 +163,7 @@ export async function getEigentuemerPortalData(kundeId: string): Promise<{
     return empty;
   }
 
-  const base = await getPortalDataForKunde(id);
+  const base = await getPortalDataForKunde(id, { mode: "list" });
 
   let leadsFromObjekte: LeadRow[] = [];
   const { data: extraLeads, error: leadErr } = await supabaseAdmin

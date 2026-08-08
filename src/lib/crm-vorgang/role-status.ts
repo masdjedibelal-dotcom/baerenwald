@@ -76,7 +76,7 @@ function handwerkerTimeline(resolved: ResolvedVorgang): RoleTimelineStep {
 
 function handwerkerListLabel(step: RoleTimelineStep, resolved: ResolvedVorgang): string {
   if (step === "erledigt") return "Erledigt";
-  if (step === "abschluss") return "Abschluss";
+  if (step === "abschluss") return "Erledigt";
   if (step === "auftrag") return "Auftrag";
   if (step === "angebot") return "Angebot";
   if (resolved.needsAction && resolved.actor === "handwerker") return "Aktion nötig";

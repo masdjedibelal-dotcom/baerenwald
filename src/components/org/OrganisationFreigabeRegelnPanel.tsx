@@ -5,21 +5,17 @@ import { useEffect, useState } from "react";
 import {
   EinstellungenEditModal,
   EinstellungenEuroSlider,
-  EinstellungenInfoBox,
   EinstellungenPfRow,
   EinstellungenSectionHeader,
   EinstellungenToggle,
 } from "@/components/shared/PortalEinstellungenUi";
 import type { OrganisationKunde } from "@/lib/org/types";
 import {
-  EINSTELLUNGEN_AKUT_INTRO,
   EINSTELLUNGEN_AKUT_TITLE,
-  EINSTELLUNGEN_SCHWELLE_INTRO,
   EINSTELLUNGEN_SCHWELLE_SLIDER_MAX,
   EINSTELLUNGEN_SCHWELLE_SLIDER_MIN,
   EINSTELLUNGEN_SCHWELLE_SLIDER_STEP,
   EINSTELLUNGEN_SCHWELLE_TITLE,
-  einstellungenSchwelleInfo,
   formatEinstellungenSchwelle,
   snapEinstellungenSchwelle,
 } from "@/lib/portal2/einstellungen";
@@ -163,38 +159,24 @@ export function OrganisationFreigabeRegelnPanel({
         title={EINSTELLUNGEN_SCHWELLE_TITLE}
         onEdit={isAdmin ? openEdit : undefined}
       />
-      <p className="text-[13px] leading-[1.55]" style={{ color: PORTAL_VAR.sub }}>
-        {EINSTELLUNGEN_SCHWELLE_INTRO}
-      </p>
       <div className="flex flex-col gap-[11px]">
         <EinstellungenPfRow
           label="Freigabeschwelle"
           value={formatEinstellungenSchwelle(schwelle)}
         />
-        <EinstellungenInfoBox>
-          {einstellungenSchwelleInfo(schwelle)}
-        </EinstellungenInfoBox>
         <EinstellungenPfRow
           label={EINSTELLUNGEN_AKUT_TITLE}
-          value={
-            akutDirekt
-              ? "Ja — bei Akut Direktauftrag ohne Angebot"
-              : "Nein — auch Akut braucht Freigabe / Angebot"
-          }
+          value={akutDirekt ? "Ja" : "Nein"}
         />
       </div>
 
       <EinstellungenEditModal
         open={editOpen}
         title="Freigabe-Regeln"
-        subtitle="Änderungen erst nach Speichern übernehmen."
         onClose={closeEdit}
         onSave={() => void saveEdit()}
         saving={saving}
       >
-        <p className="text-[13px] leading-[1.55]" style={{ color: PORTAL_VAR.sub }}>
-          {EINSTELLUNGEN_SCHWELLE_INTRO}
-        </p>
         <EinstellungenEuroSlider
           value={editSchwelle}
           min={EINSTELLUNGEN_SCHWELLE_SLIDER_MIN}
@@ -203,12 +185,6 @@ export function OrganisationFreigabeRegelnPanel({
           formatValue={formatEinstellungenSchwelle}
           onChange={(v) => setEditSchwelle(snapEinstellungenSchwelle(v))}
         />
-        <EinstellungenInfoBox>
-          {einstellungenSchwelleInfo(editSchwelle)}
-        </EinstellungenInfoBox>
-        <p className="text-[13px] leading-[1.55]" style={{ color: PORTAL_VAR.sub }}>
-          {EINSTELLUNGEN_AKUT_INTRO}
-        </p>
         <EinstellungenToggle
           checked={editAkut}
           onChange={setEditAkut}

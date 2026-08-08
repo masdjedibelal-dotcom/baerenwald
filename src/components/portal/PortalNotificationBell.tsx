@@ -48,11 +48,13 @@ function NotifList({
   loading,
   onItemActivate,
   onItem,
+  emptyLabel = "Keine Updates.",
 }: {
   items: PortalNotifItem[];
   loading: boolean;
   onItemActivate?: (item: PortalNotifItem) => void | Promise<void>;
   onItem: (n: PortalNotifItem) => void;
+  emptyLabel?: string;
 }) {
   if (loading && items.length === 0) {
     return (
@@ -60,7 +62,7 @@ function NotifList({
         className="px-5 py-[34px] text-center text-[13px]"
         style={{ color: "var(--p2-faint)" }}
       >
-        Laden…
+        Lädt…
       </p>
     );
   }
@@ -70,7 +72,7 @@ function NotifList({
         className="px-5 py-[34px] text-center text-[13px]"
         style={{ color: "var(--p2-faint)" }}
       >
-        Keine Benachrichtigungen
+        {emptyLabel}
       </p>
     );
   }
@@ -80,7 +82,8 @@ function NotifList({
         const time = n.timeLabel || formatPortalNotifTime(n.createdAt);
         const rowStyle = {
           display: "flex" as const,
-          gap: 12,
+          alignItems: "flex-start" as const,
+          gap: 10,
           padding: "13px 16px",
           borderBottom:
             i < items.length - 1 ? "1px solid var(--p2-line)" : "none",
@@ -92,49 +95,40 @@ function NotifList({
           textAlign: "left" as const,
         };
 
+        /* CRM-Stil: Titel + Sub + Ungelesen-Punkt — kein Icon */
         const inner = (
           <>
-            <span
-              className="grid h-[34px] w-[34px] shrink-0 place-items-center rounded-[9px] text-[15px]"
-              style={{ background: n.iconBg, color: n.iconFg }}
-              aria-hidden
-            >
-              <MockIcon
-                ctx="row"
-                glyph={n.glyph}
-                size={16}
-                style={{ color: n.iconFg }}
-              />
-            </span>
             <span className="min-w-0 flex-1">
-              <span className="flex items-center gap-[7px]">
+              <span
+                className="block truncate text-[13.5px] font-semibold"
+                style={{ color: "var(--p2-ink)" }}
+              >
+                {n.titel}
+              </span>
+              {n.text?.trim() ? (
                 <span
-                  className="truncate text-[13.5px] font-semibold"
-                  style={{ color: "var(--p2-ink)" }}
+                  className="mt-0.5 block text-[12.5px] leading-[1.45]"
+                  style={{ color: "var(--p2-sub)" }}
                 >
-                  {n.titel}
+                  {n.text}
                 </span>
-                {n.unread ? (
-                  <span
-                    className="h-[7px] w-[7px] shrink-0 rounded-full"
-                    style={{ background: PORTAL_VAR.primary }}
-                    aria-label="Ungelesen"
-                  />
-                ) : null}
-              </span>
-              <span
-                className="mt-0.5 mb-1 block text-[12.5px] leading-[1.45]"
-                style={{ color: "var(--p2-sub)" }}
-              >
-                {n.text}
-              </span>
-              <span
-                className="block text-[11.5px]"
-                style={{ color: "var(--p2-faint)" }}
-              >
-                {time}
-              </span>
+              ) : null}
+              {time ? (
+                <span
+                  className="mt-1 block text-[11.5px]"
+                  style={{ color: "var(--p2-faint)" }}
+                >
+                  {time}
+                </span>
+              ) : null}
             </span>
+            {n.unread ? (
+              <span
+                className="mt-1.5 h-[8px] w-[8px] shrink-0 rounded-full"
+                style={{ background: PORTAL_VAR.primary }}
+                aria-label="Ungelesen"
+              />
+            ) : null}
           </>
         );
 
@@ -238,8 +232,8 @@ export function PortalNotificationBell({
       <div className="flex gap-2 px-4 pb-2 pt-1">
         {(
           [
-            { id: "offen" as const, label: "Offen" },
-            { id: "erledigt" as const, label: "Erledigt" },
+            { id: "offen" as const, label: "Ungelesen" },
+            { id: "erledigt" as const, label: "Gelesen" },
           ] as const
         ).map((f) => (
           <button
@@ -355,6 +349,13 @@ export function PortalNotificationBell({
                 loading={loading}
                 onItemActivate={onItemActivate}
                 onItem={(n) => void handleItem(n)}
+                emptyLabel={
+                  showReadFilter
+                    ? filter === "offen"
+                      ? "Keine ungelesenen Updates."
+                      : "Noch keine gelesenen Updates."
+                    : "Keine Updates."
+                }
               />
             </div>
             {footer}

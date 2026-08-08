@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
 
-import { notifyHvMieterEvent } from "@/lib/org/notify-hv-mieter-event";
 import { notifyCrmOrgPortal } from "@/lib/org/notify-crm-org";
 import { canOfferKleinreparatur } from "@/lib/org/hv-meldung-workflow";
 import { requireOrganisationSession } from "@/lib/org/require-org-session";
@@ -140,16 +139,8 @@ export async function POST(req: Request) {
     }
   }
 
-  if (aktion === "ablehnen") {
-    await notifyHvMieterEvent({
-      leadId,
-      typ: "meldung_abgelehnt",
-      titel: `Meldung abgelehnt — ${objektTitel}`,
-      body: `Sie haben die Meldung abgelehnt. Bitte informieren Sie ${
-        lead.melder_name ?? "den Mieter"
-      } direkt.`,
-    });
-  }
+  // Keine HV-Glocke für eigene Aktionen (Freigeben/Ablehnen) —
+  // sonst landet z. B. „Angebot“ obwohl noch keines gesendet wurde.
 
   return NextResponse.json({ ok: true, status });
 }

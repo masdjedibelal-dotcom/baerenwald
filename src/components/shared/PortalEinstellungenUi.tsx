@@ -50,7 +50,7 @@ export function EinstellungenEdField({
 }) {
   return (
     <label className="flex flex-col gap-1">
-      <span className="text-[11.5px] font-bold tracking-wide text-text-tertiary">
+      <span className="portal-text-label normal-case tracking-wide text-text-tertiary">
         {label}
       </span>
       <input
@@ -83,7 +83,7 @@ export function EinstellungenSectionHeader({
 }) {
   return (
     <div className="mb-2 flex items-center justify-between gap-2">
-      <p className="text-[11.5px] font-bold text-text-tertiary">{title}</p>
+      <p className="portal-text-label normal-case text-text-tertiary">{title}</p>
       {onEdit ? (
         <button
           type="button"

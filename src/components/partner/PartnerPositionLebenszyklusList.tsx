@@ -242,9 +242,6 @@ export function PartnerPositionLebenszyklusList({
           role="status"
         >
           {HW_DOKU_STORY.preferredBanner}
-          <span className="mt-1 block text-[12.5px] font-medium text-amber-900">
-            Markierte Positionen zuerst — Start-/Endfoto und Text wie gefordert.
-          </span>
         </p>
       ) : null}
 
@@ -255,11 +252,7 @@ export function PartnerPositionLebenszyklusList({
           data-testid="hw-first-job-empty"
         >
           <p className="text-[14px] font-bold" style={{ color: PORTAL_VAR.ink }}>
-            {HW_DOKU_STORY.firstJobTitle}
-          </p>
-          <p className="mt-1.5 text-[12.5px]" style={{ color: PORTAL_VAR.sub }}>
-            Noch keine Leistung. Melden Sie einen Nachtrag / Regie oder warten Sie
-            auf die Beauftragung.
+            Noch keine Leistung
           </p>
         </div>
       ) : (
@@ -327,15 +320,6 @@ export function PartnerPositionLebenszyklusList({
 
                 {!isErledigt ? (
                   <div className="mt-3 space-y-2">
-                    {isRegie ? (
-                      <p className="text-[11.5px] leading-relaxed text-text-tertiary">
-                        {HW_DOKU_STORY.regieHint}
-                      </p>
-                    ) : (
-                      <p className="text-[11.5px] leading-relaxed text-text-tertiary">
-                        {HW_DOKU_STORY.lvHint}
-                      </p>
-                    )}
                     {st === "offen" ? (
                       <div className="flex flex-col gap-2 sm:flex-row">
                         <button

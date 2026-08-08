@@ -11,6 +11,10 @@ import { getOrganisationPortalData } from "@/lib/org/get-organisation-portal-dat
 import { getEigentuemerPortalData } from "@/lib/portal/get-eigentuemer-portal-data";
 import { getPortalDataForKunde } from "@/lib/portal/get-portal-data";
 import { linkPortalKundeToAuthUser } from "@/lib/portal/link-portal-kunde";
+import {
+  buildSlimPortalListPayload,
+  slimFunnelForList,
+} from "@/lib/portal/slim-portal-list-payload";
 import { resolvePortalKundeTyp } from "@/lib/portal2/kunde-typ";
 import { clearAdminViewCookie } from "@/lib/auth/crm-impersonation-session";
 import { createClient } from "@/lib/supabase/server";
@@ -151,15 +155,34 @@ export default async function PortalDashboardPage() {
       );
     }
 
+    const slimOrg = buildSlimPortalListPayload({
+      leads: orgData.leads as Array<Record<string, unknown> & { id: string }>,
+      angebote: orgData.angebote as Array<
+        Record<string, unknown> & { id: string }
+      >,
+      auftraege: orgData.auftraege as Array<
+        Record<string, unknown> & { id: string }
+      >,
+      hvPortalMode: true,
+    });
+    const slimEingang = orgData.eingang.map((l) => ({
+      ...l,
+      funnel_daten: slimFunnelForList(
+        (l as { funnel_daten?: unknown }).funnel_daten
+      ),
+      dokumente: [],
+    }));
+
     return (
       <Suspense fallback={<p className="px-4 py-8 text-center">Portal wird geladen…</p>}>
         <OrganisationPortalClient
           kunde={orgData.kunde}
           objekte={orgData.objekte}
-          eingang={orgData.eingang}
-          leads={orgData.leads}
-          angebote={orgData.angebote}
-          auftraege={orgData.auftraege}
+          eingang={slimEingang as typeof orgData.eingang}
+          leads={slimOrg.leads as typeof orgData.leads}
+          angebote={slimOrg.angebote as typeof orgData.angebote}
+          auftraege={slimOrg.auftraege as typeof orgData.auftraege}
+          initialVorgaenge={slimOrg.initialVorgaenge}
           mitgliedRolle={mitgliedRolle}
           partnerBefundByLeadId={orgData.partnerBefundByLeadId}
           bautagebuchByLeadId={orgData.bautagebuchByLeadId}
@@ -175,7 +198,7 @@ export default async function PortalDashboardPage() {
     );
   }
 
-  const data = await getPortalDataForKunde(link.kundeId);
+  const data = await getPortalDataForKunde(link.kundeId, { mode: "list" });
   if (!data) {
     return (
       <PortalAuthShell title="Keine Kundendaten">
@@ -187,7 +210,14 @@ export default async function PortalDashboardPage() {
     );
   }
 
-  const { kunde, auftraege, angebote, leads, mieterFeedbackByLeadId } = data;
+  const slim = buildSlimPortalListPayload({
+    leads: data.leads as Array<Record<string, unknown> & { id: string }>,
+    angebote: data.angebote as Array<Record<string, unknown> & { id: string }>,
+    auftraege: data.auftraege as Array<Record<string, unknown> & { id: string }>,
+    hvPortalMode: false,
+    mieterStatusMode: true,
+    mieterFeedbackByLeadId: data.mieterFeedbackByLeadId,
+  });
 
   return (
     <Suspense
@@ -198,11 +228,12 @@ export default async function PortalDashboardPage() {
       }
     >
       <PortalClient
-        kunde={kunde}
-        auftraege={auftraege}
-        angebote={angebote}
-        leads={leads}
-        mieterFeedbackByLeadId={mieterFeedbackByLeadId ?? {}}
+        kunde={data.kunde}
+        auftraege={slim.auftraege as typeof data.auftraege}
+        angebote={slim.angebote as typeof data.angebote}
+        leads={slim.leads as typeof data.leads}
+        initialVorgaenge={slim.initialVorgaenge}
+        mieterFeedbackByLeadId={data.mieterFeedbackByLeadId ?? {}}
         kundeTyp={kundeTyp === "gewerbe" ? "gewerbe" : "privat"}
       />
     </Suspense>

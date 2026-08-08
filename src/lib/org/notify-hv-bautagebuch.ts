@@ -1,3 +1,8 @@
+import {
+  buildMeldeVorgangTitel,
+  formatMeldeNotifTitel,
+  MELDE_NOTIF_COPY,
+} from "@/lib/org/melde-vorgang-titel";
 import { supabaseAdmin } from "@/lib/supabase";
 
 /** HV-Glocke: neuer Bautagebuch-Eintrag vom Partner. */
@@ -16,7 +21,9 @@ export async function notifyHvPartnerBautagebuch(input: {
 
   const { data: lead } = await supabaseAdmin
     .from("leads")
-    .select("auftraggeber_kunde_id")
+    .select(
+      "auftraggeber_kunde_id, situation, bereiche, funnel_daten, kontakt_nachricht, notizen"
+    )
     .eq("id", auftrag.lead_id)
     .maybeSingle();
 
@@ -25,8 +32,24 @@ export async function notifyHvPartnerBautagebuch(input: {
     : null;
   if (!kundeId) return;
 
-  const titel = `Bautagebuch: ${input.eintragTitel}`;
-  const body = `${input.handwerkerName} hat einen Eintrag zu „${auftrag.titel ?? "Auftrag"}“ veröffentlicht — direkt im Portal sichtbar.`;
+  const vorgangTitel = buildMeldeVorgangTitel({
+    situation: lead?.situation,
+    bereiche: (lead?.bereiche as string[] | null) ?? null,
+    funnelDaten: lead?.funnel_daten,
+    beschreibung:
+      (lead?.kontakt_nachricht as string | null) ??
+      (lead?.notizen as string | null) ??
+      null,
+  });
+  const bezug =
+    vorgangTitel && vorgangTitel !== "Meldung"
+      ? vorgangTitel
+      : String(auftrag.titel ?? "").trim() || input.eintragTitel;
+
+  const titel = formatMeldeNotifTitel(MELDE_NOTIF_COPY.bautagebuch, {
+    titel: bezug,
+  });
+  const body = `${input.handwerkerName} hat „${input.eintragTitel}“ veröffentlicht — direkt im Portal sichtbar.`;
   const link = `/portal?section=vorgaenge&id=${encodeURIComponent(String(auftrag.lead_id))}#bautagebuch`;
 
   await supabaseAdmin.from("hv_notifications").insert({
