@@ -37,8 +37,8 @@ export function PartnerAuftragErledigtSection({
       <p className="font-semibold">Leistungen als erledigt gemeldet</p>
       <p className="portal-text-meta mt-1 text-text-secondary">
         {vollstaendig
-          ? "Ihre Teilabnahme ist beim CRM zur Freigabe. Kundenversand und Gesamtabnahme folgen nach Freigabe."
-          : "Ihre Teilabnahme ist gespeichert und wartet auf CRM-Freigabe. Weitere Handwerker am Auftrag sind ggf. noch offen."}
+          ? "Ihre Teilabnahme ist bei Bärenwald zur Freigabe. Kundenversand und Gesamtabnahme folgen nach Freigabe."
+          : "Ihre Teilabnahme ist gespeichert und wartet auf Freigabe durch Bärenwald. Weitere Handwerker am Auftrag sind ggf. noch offen."}
       </p>
     </PartnerDetailSuccessBox>
   );

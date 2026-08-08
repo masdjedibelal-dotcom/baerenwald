@@ -99,7 +99,7 @@ export function PartnerProjektvertragPaket({
       <PartnerDetailSection title="Projektvertrag (Leistungsvertrag)">
         <PartnerDetailInfoBox>
           Bärenwald bereitet deinen Projektvertrag für diesen Auftrag vor. Er erscheint hier,
-          sobald er im CRM freigegeben ist — ein Vertrag pro Auftrag, unabhängig vom Gewerk.
+          sobald er bei Bärenwald freigegeben ist — ein Vertrag pro Auftrag, unabhängig vom Gewerk.
         </PartnerDetailInfoBox>
       </PartnerDetailSection>
     );

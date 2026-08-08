@@ -1,4 +1,7 @@
-import { linkPortalKundeToAuthUser } from "@/lib/portal/link-portal-kunde";
+import {
+  linkPortalKundeToAuthUser,
+  resolveLinkedPortalKundeId,
+} from "@/lib/portal/link-portal-kunde";
 import { linkPortalHandwerkerToAuthUser } from "@/lib/partner/link-portal-handwerker";
 import { createClient } from "@/lib/supabase/server";
 import { supabaseAdmin } from "@/lib/supabase";
@@ -28,6 +31,17 @@ export async function requireAccountSession(): Promise<AccountSession> {
     name?: string;
     telefon?: string;
   };
+
+  const linkedKundeId = await resolveLinkedPortalKundeId(user.id);
+  if (linkedKundeId) {
+    return {
+      ok: true,
+      userId: user.id,
+      email: user.email,
+      kind: "kunde",
+      entityId: linkedKundeId,
+    };
+  }
 
   const kundeLink = await linkPortalKundeToAuthUser({
     userId: user.id,

@@ -55,7 +55,11 @@ export async function PATCH(req: Request) {
     return NextResponse.json({ error: "Nicht angemeldet." }, { status: 401 });
   }
 
-  const body = (await req.json()) as { ids?: string[]; all?: boolean };
+  const body = (await req.json()) as {
+    ids?: string[];
+    all?: boolean;
+    vorgangRef?: string | string[];
+  };
   const now = new Date().toISOString();
 
   if (body.all) {
@@ -64,6 +68,51 @@ export async function PATCH(req: Request) {
       .update({ gelesen: true, gelesen_am: now })
       .eq("empfaenger_user_id", user.id)
       .eq("gelesen", false);
+
+    if (error) {
+      if (/portal_notifications|does not exist|schema cache/i.test(error.message)) {
+        return NextResponse.json({ ok: true, pendingMigration: true });
+      }
+      return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+    return NextResponse.json({ ok: true });
+  }
+
+  const vorgangRefRaw = body.vorgangRef;
+  const vorgangRefs = (
+    Array.isArray(vorgangRefRaw)
+      ? vorgangRefRaw
+      : vorgangRefRaw
+        ? [vorgangRefRaw]
+        : []
+  )
+    .map((v) => String(v).trim().replace(/^auftrag:/, ""))
+    .filter(Boolean);
+
+  if (vorgangRefs.length) {
+    const refSet = new Set(vorgangRefs);
+    const { data: unread } = await supabaseAdmin
+      .from("portal_notifications")
+      .select("id, vorgang_ref, link")
+      .eq("empfaenger_user_id", user.id)
+      .eq("gelesen", false);
+
+    const ids = (unread ?? [])
+      .filter((r) => {
+        const ref = String(r.vorgang_ref ?? "").trim();
+        if (ref && refSet.has(ref)) return true;
+        const link = String(r.link ?? "");
+        return Array.from(refSet).some((id) => link.includes(`id=${id}`));
+      })
+      .map((r) => String(r.id));
+
+    if (!ids.length) return NextResponse.json({ ok: true });
+
+    const { error } = await supabaseAdmin
+      .from("portal_notifications")
+      .update({ gelesen: true, gelesen_am: now })
+      .eq("empfaenger_user_id", user.id)
+      .in("id", ids);
 
     if (error) {
       if (/portal_notifications|does not exist|schema cache/i.test(error.message)) {

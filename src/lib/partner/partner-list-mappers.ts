@@ -4,6 +4,7 @@ import type {
   PartnerAuftragItem,
 } from "@/lib/partner/get-partner-data";
 import type { PartnerVorgangItem } from "@/lib/partner/build-partner-vorgaenge";
+import { partnerVorgangLastActivityAt } from "@/lib/partner/build-partner-vorgaenge";
 import {
   type VorgangFilter,
   vorgangPasstFilter,
@@ -142,7 +143,7 @@ export function mapVorgangToCard(vorgang: PartnerVorgangItem): PartnerCardRow {
         ? `Leistungsänderung am laufenden Auftrag (${offeneAenderungen} offen)`
         : "Leistungsänderung am laufenden Auftrag"
       : auftrag.bautagebuchAnfrageOffen && state === "in_bearbeitung"
-        ? "Tagebucheintrag vom CRM angefordert"
+        ? "Tagebucheintrag von Bärenwald angefordert"
         : undefined;
 
   const listenStatus = resolvePartnerVorgangCardStatus(vorgang);
@@ -173,7 +174,7 @@ export function mapVorgangToCard(vorgang: PartnerVorgangItem): PartnerCardRow {
         : "auftrag",
     meta,
     hint,
-    sortDate: ts(
+    sortDate: partnerVorgangLastActivityAt(vorgang) || ts(
       anfrage?.gesendet_at ?? auftrag.start_datum ?? vorgang.handwerker_bestaetigt_at
     ),
   };

@@ -285,10 +285,11 @@ function PortalShellInner({
 
             <main
               className={cn(
-                "portal-shell-main px-4 py-5 lg:px-6 lg:py-7 lg:pb-8",
+                "portal-shell-main",
                 hideMobileChrome
-                  ? "pb-[calc(6rem+env(safe-area-inset-bottom,0px))]"
-                  : "pb-[calc(5.5rem+env(safe-area-inset-bottom,0px))]"
+                  ? // Keine Bottom-Nav → kein Nav-Padding (z. B. GPT-Vollfläche)
+                    "px-0 py-0 lg:px-6 lg:py-7 lg:pb-8"
+                  : "px-4 py-5 lg:px-6 lg:py-7 lg:pb-8 pb-[calc(5.5rem+env(safe-area-inset-bottom,0px))]"
               )}
             >
               <div className="portal-page-stack relative min-h-[40vh]">

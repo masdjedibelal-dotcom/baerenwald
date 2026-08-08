@@ -341,10 +341,6 @@ export async function resolvePartnerFileUrls(
   stored: string[] | null | undefined
 ): Promise<string[]> {
   if (!stored?.length) return [];
-  const out: string[] = [];
-  for (const s of stored) {
-    const url = await resolvePartnerFileUrl(s);
-    if (url) out.push(url);
-  }
-  return out;
+  const urls = await Promise.all(stored.map((s) => resolvePartnerFileUrl(s)));
+  return urls.filter((url): url is string => Boolean(url));
 }

@@ -1,11 +1,12 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 
 import { updatePartnerProfil, uploadPartnerProfilLogo } from "@/app/actions/partner-profil";
 import { PartnerDetailInfoBox } from "@/components/partner/PartnerDetailUi";
 import { PartnerRahmenvertragCard } from "@/components/partner/PartnerRahmenvertragCard";
+import { FileUploadField } from "@/components/shared/FileUploadField";
 import { PortalKontoSicherheitPanel } from "@/components/shared/PortalKontoSicherheitPanel";
 import { PortalEinstellungenShell } from "@/components/shared/PortalEinstellungenShell";
 import {
@@ -20,7 +21,7 @@ import type {
   PartnerHandwerkerProfil,
   PartnerProfilKontext,
 } from "@/lib/partner/get-partner-data";
-import { checkPartnerFirmendatenGate } from "@/lib/partner/partner-firmendaten-gate";
+import { resolveHandwerkerAnschrift } from "@/lib/partner/handwerker-anschrift";
 import {
   HW_FIRMEN_FOOTER,
   HW_FIRMEN_LOGO_HINT,
@@ -32,6 +33,8 @@ type Draft = {
   firma: string;
   inhaber: string;
   strasse: string;
+  hausnummer: string;
+  plz: string;
   ort: string;
   tel: string;
   mail: string;
@@ -50,15 +53,7 @@ type EditTab = "anschrift" | "steuer" | "bank" | null;
 function draftFromProfil(h: PartnerHandwerkerProfil): Draft {
   const inhaber =
     [h.vorname, h.nachname].filter(Boolean).join(" ").trim() || h.name || "";
-  const strasse = h.strasse?.trim() || "";
-  const ort = h.ort?.trim() || "";
-  let fallbackStrasse = strasse;
-  let fallbackOrt = ort;
-  if (!strasse && !ort && h.adresse?.trim()) {
-    const parts = h.adresse.split(",").map((s) => s.trim());
-    fallbackStrasse = parts[0] || "";
-    fallbackOrt = parts.slice(1).join(", ") || "";
-  }
+  const anschrift = resolveHandwerkerAnschrift(h);
   const logo =
     (h.firma || h.name || "HW")
       .replace(/[^a-zA-ZäöüÄÖÜß0-9\s]/g, " ")
@@ -73,8 +68,10 @@ function draftFromProfil(h: PartnerHandwerkerProfil): Draft {
   return {
     firma: h.firma?.trim() || "",
     inhaber,
-    strasse: fallbackStrasse,
-    ort: fallbackOrt,
+    strasse: anschrift.strasse,
+    hausnummer: anschrift.hausnummer,
+    plz: anschrift.plz,
+    ort: anschrift.ort,
     tel: h.telefon?.trim() || "",
     mail: h.email?.trim() || "",
     ustid: h.ustid?.trim() || "",
@@ -108,18 +105,6 @@ export function PartnerFirmendatenScreen({
   const [editTab, setEditTab] = useState<EditTab>(null);
   const [saving, setSaving] = useState(false);
   const [logoBusy, setLogoBusy] = useState(false);
-  const logoInputRef = useRef<HTMLInputElement | null>(null);
-
-  const gate = checkPartnerFirmendatenGate({
-    firma: saved.firma,
-    name: saved.inhaber,
-    strasse: saved.strasse,
-    ort: saved.ort,
-    telefon: saved.tel,
-    steuernummer: saved.steuernr,
-    ustid: saved.ustid,
-    iban: saved.iban,
-  });
 
   useEffect(() => {
     setSaved(draftFromProfil(handwerker));
@@ -142,6 +127,8 @@ export function PartnerFirmendatenScreen({
     fd.set("firma", next.firma);
     fd.set("inhaber", next.inhaber);
     fd.set("strasse", next.strasse);
+    fd.set("hausnummer", next.hausnummer);
+    fd.set("plz", next.plz);
     fd.set("ort", next.ort);
     fd.set("telefon", next.tel);
     fd.set("ustid", next.ustid);
@@ -226,7 +213,7 @@ export function PartnerFirmendatenScreen({
                 title={HW_FIRMEN_SECTIONS.steuer}
                 onEdit={() => openEdit("steuer")}
               />
-              <div className="flex flex-col gap-[11px]">
+              <div className="flex flex-col gap-4">
                 <EinstellungenGrid2>
                   <EinstellungenPfRow label="USt-IdNr." value={dash(saved.ustid)} />
                   <EinstellungenPfRow
@@ -257,7 +244,7 @@ export function PartnerFirmendatenScreen({
                 title={HW_FIRMEN_SECTIONS.bank}
                 onEdit={() => openEdit("bank")}
               />
-              <div className="flex flex-col gap-[11px]">
+              <div className="flex flex-col gap-4">
                 <EinstellungenPfRow label="IBAN" value={dash(saved.iban)} />
                 <EinstellungenGrid2>
                   <EinstellungenPfRow label="BIC" value={dash(saved.bic)} />
@@ -273,13 +260,6 @@ export function PartnerFirmendatenScreen({
 
         return (
           <div className="space-y-4">
-            {!gate.okRechnung ? (
-              <PartnerDetailInfoBox>
-                Für Auto-Angebot & Rechnung fehlen noch:{" "}
-                {gate.missingRechnung.join(", ")}.
-              </PartnerDetailInfoBox>
-            ) : null}
-
             <div>
               <EinstellungenSectionHeader title={HW_FIRMEN_SECTIONS.logo} />
               <div className="flex items-center gap-3.5">
@@ -301,25 +281,14 @@ export function PartnerFirmendatenScreen({
                   <p className="text-[12.5px] leading-relaxed text-text-secondary">
                     {HW_FIRMEN_LOGO_HINT}
                   </p>
-                  <input
-                    ref={logoInputRef}
-                    type="file"
+                  <FileUploadField
+                    label="Logo"
                     accept="image/png,image/jpeg,image/webp"
-                    className="sr-only"
-                    onChange={(e) => {
-                      const f = e.target.files?.[0] ?? null;
-                      void onLogoChange(f);
-                      e.target.value = "";
-                    }}
-                  />
-                  <button
-                    type="button"
+                    size="compact"
                     disabled={logoBusy}
-                    onClick={() => logoInputRef.current?.click()}
-                    className="mt-2 rounded-lg border border-border-default px-3 py-1.5 text-[12.5px] font-semibold text-text-primary disabled:opacity-50"
-                  >
-                    {logoBusy ? "Wird hochgeladen…" : "Logo hochladen"}
-                  </button>
+                    onChange={(files) => void onLogoChange(files[0] ?? null)}
+                    className="mt-2"
+                  />
                 </div>
               </div>
             </div>
@@ -329,7 +298,7 @@ export function PartnerFirmendatenScreen({
                 title={HW_FIRMEN_SECTIONS.anschrift}
                 onEdit={() => openEdit("anschrift")}
               />
-              <div className="flex flex-col gap-[11px]">
+              <div className="flex flex-col gap-4">
                 <EinstellungenGrid2>
                   <EinstellungenPfRow
                     label="Firmenname"
@@ -341,8 +310,18 @@ export function PartnerFirmendatenScreen({
                   />
                 </EinstellungenGrid2>
                 <EinstellungenGrid2>
-                  <EinstellungenPfRow label="Straße" value={dash(saved.strasse)} />
-                  <EinstellungenPfRow label="PLZ / Ort" value={dash(saved.ort)} />
+                  <EinstellungenPfRow
+                    label="Straße"
+                    value={dash(saved.strasse)}
+                  />
+                  <EinstellungenPfRow
+                    label="Hausnummer"
+                    value={dash(saved.hausnummer)}
+                  />
+                </EinstellungenGrid2>
+                <EinstellungenGrid2>
+                  <EinstellungenPfRow label="PLZ" value={dash(saved.plz)} />
+                  <EinstellungenPfRow label="Ort" value={dash(saved.ort)} />
                 </EinstellungenGrid2>
                 <EinstellungenGrid2>
                   <EinstellungenPfRow label="Telefon" value={dash(saved.tel)} />
@@ -390,10 +369,24 @@ export function PartnerFirmendatenScreen({
                 label="Straße"
                 value={edit.strasse}
                 onChange={(v) => setEdit({ ...edit, strasse: v })}
-                autoComplete="street-address"
+                autoComplete="address-line1"
               />
               <EinstellungenEdField
-                label="PLZ / Ort"
+                label="Hausnummer"
+                value={edit.hausnummer}
+                onChange={(v) => setEdit({ ...edit, hausnummer: v })}
+                autoComplete="address-line2"
+              />
+            </EinstellungenGrid2>
+            <EinstellungenGrid2>
+              <EinstellungenEdField
+                label="PLZ"
+                value={edit.plz}
+                onChange={(v) => setEdit({ ...edit, plz: v })}
+                autoComplete="postal-code"
+              />
+              <EinstellungenEdField
+                label="Ort"
                 value={edit.ort}
                 onChange={(v) => setEdit({ ...edit, ort: v })}
                 autoComplete="address-level2"

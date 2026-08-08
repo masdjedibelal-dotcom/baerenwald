@@ -16,17 +16,17 @@ export type TimelineStepView = {
 export function rolePillClass(semantic: RolePillSemantic): string {
   switch (semantic) {
     case "neu":
-      return "role-pill role-pill-neu";
+      return "tag role-pill role-pill-neu";
     case "warten":
-      return "role-pill role-pill-warten";
+      return "tag role-pill role-pill-warten";
     case "aktiv":
-      return "role-pill role-pill-aktiv";
+      return "tag role-pill role-pill-aktiv";
     case "fertig":
-      return "role-pill role-pill-fertig";
+      return "tag role-pill role-pill-fertig";
     case "storniert":
-      return "role-pill role-pill-storniert";
+      return "tag role-pill role-pill-storniert";
     default:
-      return "role-pill role-pill-aktiv";
+      return "tag role-pill role-pill-aktiv";
   }
 }
 

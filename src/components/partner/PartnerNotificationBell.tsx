@@ -20,6 +20,9 @@ import {
   partnerVorgangIdFromNotificationLink,
   resolvePartnerNotificationLink,
 } from "@/lib/partner/partner-site-url";
+import {
+  PORTAL_NOTIFICATIONS_CHANGED_EVENT,
+} from "@/lib/portal2/notif-refresh";
 
 const POLL_MS = 30_000;
 
@@ -50,7 +53,12 @@ export function PartnerNotificationBell({
   useEffect(() => {
     void load();
     const id = window.setInterval(() => void load(), POLL_MS);
-    return () => window.clearInterval(id);
+    const onChanged = () => void load();
+    window.addEventListener(PORTAL_NOTIFICATIONS_CHANGED_EVENT, onChanged);
+    return () => {
+      window.clearInterval(id);
+      window.removeEventListener(PORTAL_NOTIFICATIONS_CHANGED_EVENT, onChanged);
+    };
   }, [load]);
 
   const items = useMemo(

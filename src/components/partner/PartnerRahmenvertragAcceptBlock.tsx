@@ -37,7 +37,7 @@ export function PartnerRahmenvertragAcceptBlock({
   const ariaLabel = isRegister ? "Geschäftsbedingungen" : "Vertragstext";
   const pdfMissingHint = isRegister
     ? "Dein personalisiertes PDF stellt Bärenwald in Kürze bereit. Der obige Text gilt als Grundlage der Annahme."
-    : "Dein personalisiertes PDF stellt Bärenwald bereit, sobald der Rahmenvertrag im CRM erzeugt wurde. Der obige Text gilt als Grundlage der Annahme.";
+    : "Dein personalisiertes PDF stellt Bärenwald bereit, sobald der Rahmenvertrag erzeugt wurde. Der obige Text gilt als Grundlage der Annahme.";
   const checkboxLabel = isRegister ? (
     <>
       Ich habe die <strong>Geschäftsbedingungen</strong> gelesen und akzeptiere sie — inklusive

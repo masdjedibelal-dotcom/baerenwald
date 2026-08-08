@@ -7,11 +7,12 @@ import {
   formatEinstellungenSchwelle,
   snapEinstellungenSchwelle,
 } from "@/lib/portal2/einstellungen";
+import { PortalDetailInfoBox } from "@/components/shared/PortalDetailUi";
 import { PortalModalShell } from "@/components/shared/PortalModalShell";
 import { PORTAL_VAR } from "@/lib/portal2/tokens";
 import { cn } from "@/lib/utils";
 
-/** Mock `pf(k, val)` — Bezeichnung oben, Wert im Feld darunter. */
+/** Read-only Feld: Label oben, Wert als Klartext (kein Box-Fill). */
 export function EinstellungenPfRow({
   label,
   value,
@@ -20,13 +21,11 @@ export function EinstellungenPfRow({
   value: string;
 }) {
   return (
-    <div className="flex flex-col gap-1">
-      <span className="text-[11.5px] font-bold tracking-wide text-text-tertiary">
-        {label}
-      </span>
-      <div className="w-full rounded-[9px] border border-border-default bg-[#f3f4f3] px-3 py-2.5 text-[13.5px] font-semibold text-text-primary">
+    <div className="min-w-0 py-0.5">
+      <p className="text-[12px] font-medium text-text-tertiary">{label}</p>
+      <p className="mt-0.5 text-[14px] leading-snug text-text-primary">
         {value}
-      </div>
+      </p>
     </div>
   );
 }
@@ -67,18 +66,9 @@ export function EinstellungenEdField({
   );
 }
 
+/** Alias — gleiche Info-Box wie Detail-Screens. */
 export function EinstellungenInfoBox({ children }: { children: ReactNode }) {
-  return (
-    <div className="flex gap-2.5 rounded-[11px] border border-accent/20 bg-accent/[0.08] px-3.5 py-3 text-[13px] leading-[1.5] text-text-primary">
-      <span
-        className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-accent text-[11px] font-bold text-white"
-        aria-hidden
-      >
-        i
-      </span>
-      <span>{children}</span>
-    </div>
-  );
+  return <PortalDetailInfoBox>{children}</PortalDetailInfoBox>;
 }
 
 /** Abschnittskopf: Label + Stift (öffnet Edit-Modal). */
@@ -237,7 +227,7 @@ export function EinstellungenChoiceCard({
   );
 }
 
-/** Mock `grid2` — Desktop 2 Spalten, Mobile 1, gap 11. */
+/** Desktop 2 Spalten, Mobile 1 — für Klartext-Felder mit etwas Luft. */
 export function EinstellungenGrid2({
   children,
   className,
@@ -246,7 +236,7 @@ export function EinstellungenGrid2({
   className?: string;
 }) {
   return (
-    <div className={cn("grid grid-cols-1 gap-[11px] sm:grid-cols-2", className)}>
+    <div className={cn("grid grid-cols-1 gap-x-8 gap-y-4 sm:grid-cols-2", className)}>
       {children}
     </div>
   );

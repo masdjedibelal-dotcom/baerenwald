@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { cn } from "@/lib/utils";
 import { orgPortalToast, portalToastError } from "@/lib/shared/portal-toast";
+import { PortalEmptyState } from "@/components/shared/PortalEmptyState";
 
 type Einheit = {
   id: string;
@@ -245,16 +246,16 @@ export function OrganisationObjektEinheitenPanel({
       }
     >
       <p className="portal-text-label text-text-primary">Einheiten &amp; m²</p>
-      <ul className="space-y-1">
+      <ul className="space-y-2">
         {items.length === 0 ? (
-          <li className="portal-text-meta text-text-tertiary">
-            Noch keine Einheiten.
+          <li>
+            <PortalEmptyState title="Noch keine Einheiten." compact />
           </li>
         ) : (
           items.map((u) => (
             <li
               key={u.id}
-              className="flex items-center justify-between gap-2 rounded-lg bg-muted/30 px-3 py-2 text-sm"
+              className="flex items-center justify-between gap-2 rounded-xl border border-border-light bg-white px-3.5 py-3 text-sm sm:rounded-lg sm:border-transparent sm:bg-muted/30 sm:py-2"
             >
               <span>
                 {u.bezeichnung}
@@ -262,7 +263,7 @@ export function OrganisationObjektEinheitenPanel({
               </span>
               <button
                 type="button"
-                className="text-xs text-red-600 hover:underline"
+                className="text-xs font-semibold text-red-600 hover:underline"
                 onClick={() => void remove(u.id)}
               >
                 Entfernen

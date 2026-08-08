@@ -118,43 +118,78 @@ function tipKeysForProblem(
 ): TipKey[] {
   switch (bereichId) {
     case "wasser":
-      if (problem === "laeuft_stark" || problem === "von_oben") {
+      if (
+        problem === "laeuft" ||
+        problem === "laeuft_stark" ||
+        problem === "von_decke" ||
+        problem === "von_oben" ||
+        problem === "ueberschwemmt"
+      ) {
         return ["wasser_nah", "wasser_uebersicht"];
       }
       return ["wasser_nah"];
     case "heizung":
+      if (problem === "tropft_hk" || problem === "wasser_aus") {
+        return ["heizung_hk", "wasser_nah"];
+      }
+      if (problem === "kein_ww") return ["heizung_hk"];
       return ["heizung_hk"];
     case "strom":
       if (problem === "kein_strom" || problem === "fi_sicherung") {
         return ["strom_kasten"];
       }
-      if (
-        problem === "steckdose" ||
-        problem === "licht" ||
-        problem === "schalter"
-      ) {
+      if (problem === "steckdose" || problem === "licht" || problem === "schalter") {
         return ["strom_steckdose"];
       }
+      if (problem === "garagentor") return ["sonstiges"];
       if (problem === "klingel") return ["sonstiges"];
       return ["strom_steckdose", "strom_kasten"];
     case "fenster_tuer":
-      if (problem === "tuer_klemmt") return ["fenster_tuer"];
-      if (problem === "schloss") return ["fenster_schloss"];
-      if (problem === "glas" || problem === "fenster_undicht") {
+      if (
+        problem === "tuer_problem" ||
+        problem === "tuer_klemmt" ||
+        problem === "schloss"
+      ) {
+        return ["fenster_tuer", "fenster_schloss"];
+      }
+      if (problem === "scheibe_kaputt" || problem === "glas") {
         return ["fenster_rahmen"];
       }
       return ["fenster_rahmen"];
     case "dach":
-      if (problem === "rinne" || problem === "fallrohr") {
+      if (
+        problem === "regenrinne_ueber" ||
+        problem === "wasser_fassade" ||
+        problem === "rinne" ||
+        problem === "fallrohr"
+      ) {
         return ["dach_rinne"];
       }
-      return ["dach_decke"];
+      if (problem === "ziegel_boden" || problem === "ziegel") {
+        return ["sonstiges"];
+      }
+      return ["dach_rinne"];
     case "schimmel":
+      if (problem === "fassade" || problem === "graffiti") {
+        return ["schimmel_uebersicht", "schimmel_nah"];
+      }
       if (problem === "grossflaechig") {
         return ["schimmel_nah", "schimmel_uebersicht"];
       }
       return ["schimmel_nah"];
     case "baum_notfall":
+      return ["sonstiges"];
+    case "sonstiges":
+      if (problem === "wespen" || problem === "ungeziefer") {
+        return ["sonstiges"];
+      }
+      if (
+        problem === "muell" ||
+        problem === "treppenhaus_schmutz" ||
+        problem === "gemeinschaft"
+      ) {
+        return ["sonstiges"];
+      }
       return ["sonstiges"];
     default:
       return ["sonstiges"];

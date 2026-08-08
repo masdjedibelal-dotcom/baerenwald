@@ -12,15 +12,12 @@ type Props = {
   className?: string;
 };
 
-/** Status-Chip mit Mock-STATUS-Farben (A4). */
+/** Status-Chip mit Mock-STATUS-Farben — Form wie `.tag`. */
 export function PortalFlowStatusChip({ statusId, label, className }: Props) {
   const style = portalStatusChipStyle(statusId);
   return (
     <span
-      className={cn(
-        "inline-flex items-center rounded-md px-2 py-0.5 text-[12px] font-semibold",
-        className
-      )}
+      className={cn("tag", className)}
       style={style}
       data-portal-flow-status={statusId}
     >

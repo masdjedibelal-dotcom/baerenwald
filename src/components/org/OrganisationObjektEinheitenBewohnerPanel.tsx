@@ -7,6 +7,7 @@ import {
   EinstellungenCard,
   EinstellungenEdField,
 } from "@/components/shared/PortalEinstellungenUi";
+import { PortalConfirmDialog } from "@/components/shared/PortalDetailUi";
 import {
   PortalListTable,
   PortalListTableCell,
@@ -65,6 +66,8 @@ export function OrganisationObjektEinheitenBewohnerPanel({
   const [email, setEmail] = useState("");
   const [busy, setBusy] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [pendingRemoveId, setPendingRemoveId] = useState<string | null>(null);
 
   useEffect(() => {
     if (defaultStrasse?.trim()) setStrasse(defaultStrasse.trim());
@@ -121,7 +124,6 @@ export function OrganisationObjektEinheitenBewohnerPanel({
   }
 
   async function removeBewohner(id: string) {
-    if (!window.confirm("Bewohner wirklich entfernen?")) return;
     setBusy(true);
     try {
       const res = await fetch(
@@ -136,6 +138,8 @@ export function OrganisationObjektEinheitenBewohnerPanel({
       portalToastError(err instanceof Error ? err.message : "Fehler");
     } finally {
       setBusy(false);
+      setConfirmOpen(false);
+      setPendingRemoveId(null);
     }
   }
 
@@ -218,7 +222,10 @@ export function OrganisationObjektEinheitenBewohnerPanel({
                     type="button"
                     className="rounded-[9px] border border-red-200 bg-white px-3 py-1.5 text-[12.5px] font-semibold text-red-700 hover:bg-red-50 disabled:opacity-50"
                     disabled={busy}
-                    onClick={() => void removeBewohner(b.id)}
+                    onClick={() => {
+                      setPendingRemoveId(b.id);
+                      setConfirmOpen(true);
+                    }}
                   >
                     Entfernen
                   </button>
@@ -228,6 +235,23 @@ export function OrganisationObjektEinheitenBewohnerPanel({
           })
         )}
       </PortalListTable>
+
+      <PortalConfirmDialog
+        open={confirmOpen}
+        title="Bewohner entfernen?"
+        description="Bewohner wirklich entfernen?"
+        confirmLabel="Entfernen"
+        confirmVariant="danger"
+        loading={busy}
+        onConfirm={() => {
+          if (pendingRemoveId) void removeBewohner(pendingRemoveId);
+        }}
+        onCancel={() => {
+          if (busy) return;
+          setConfirmOpen(false);
+          setPendingRemoveId(null);
+        }}
+      />
 
       <EinstellungenCard title="Mieter anlegen">
         <form

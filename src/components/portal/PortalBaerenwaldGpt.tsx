@@ -30,26 +30,27 @@ export function PortalBaerenwaldGpt({
 
   if (variant === "embedded") {
     return (
-      <div className="flex min-h-[min(70vh,640px)] flex-col">
+      <div className="portal-gpt-shell portal-gpt-shell--embedded">
         {onClose ? (
-          <div className="flex justify-end border-b border-border-light px-3 py-2">
+          <div className="portal-gpt-shell-bar">
+            <p className="portal-gpt-shell-title">Bärenwald GPT</p>
             <button
               type="button"
               onClick={onClose}
-              className="rounded-full p-2 text-text-secondary hover:bg-muted"
+              className="portal-gpt-shell-close"
               aria-label="Schließen"
             >
               <X className="h-5 w-5" />
             </button>
           </div>
         ) : null}
-        <div className="min-h-0 flex-1">{chat}</div>
+        <div className="portal-gpt-body portal-gpt-chat-active">{chat}</div>
       </div>
     );
   }
 
   return (
-    <div className="fixed inset-0 z-[140] bg-black/45 lg:hidden">
+    <div className="portal-gpt-shell portal-gpt-shell--overlay fixed inset-0 z-[140] bg-black/45 lg:hidden">
       <button
         type="button"
         className="absolute inset-0"
@@ -58,21 +59,23 @@ export function PortalBaerenwaldGpt({
       />
       <article
         className={cn(
-          "absolute inset-x-0 bottom-0 top-[8vh] flex flex-col rounded-t-2xl border border-border-default bg-surface-card shadow-xl"
+          "portal-gpt-shell-panel absolute inset-x-0 bottom-0 top-[8vh] flex flex-col rounded-t-2xl border border-border-default bg-surface-card shadow-xl"
         )}
       >
-        <div className="flex shrink-0 items-center justify-between border-b border-border-light px-4 py-3">
-          <p className="font-semibold text-text-primary">Bärenwald GPT</p>
+        <div className="portal-gpt-shell-bar">
+          <p className="portal-gpt-shell-title">Bärenwald GPT</p>
           <button
             type="button"
             onClick={onClose}
-            className="rounded-full p-2 text-text-secondary hover:bg-muted"
+            className="portal-gpt-shell-close"
             aria-label="Schließen"
           >
             <X className="h-5 w-5" />
           </button>
         </div>
-        <div className="min-h-0 flex-1 overflow-hidden">{chat}</div>
+        <div className="portal-gpt-body portal-gpt-chat-active min-h-0 flex-1 overflow-hidden">
+          {chat}
+        </div>
       </article>
     </div>
   );

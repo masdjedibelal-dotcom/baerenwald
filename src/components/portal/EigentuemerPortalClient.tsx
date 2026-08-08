@@ -1,13 +1,15 @@
 "use client";
 
 import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import { PortalCreateFunnelModal } from "@/components/portal/PortalCreateFunnelModal";
 import { PortalUserNotificationBell } from "@/components/portal/PortalUserNotificationBell";
 import { PortalVorgangDetail } from "@/components/portal/PortalVorgangDetail";
 import { PortalKundePrivatDashboard } from "@/components/portal/PortalKundePrivatDashboard";
 import { PORTAL_HEADER_HERO_SRC } from "@/lib/portal2/portal-media";
+import { emitPortalNotificationsChanged } from "@/lib/portal2/notif-refresh";
+import { PortalContentBusy } from "@/components/shared/PortalContentBusy";
 import { PortalListCard } from "@/components/shared/PortalListCard";
 import { PortalEntityDetailLayout } from "@/components/shared/PortalEntityDetailLayout";
 import {
@@ -144,7 +146,15 @@ export function EigentuemerPortalClient({
   const [listPage, setListPage] = useState(1);
   const [objektDetailId, setObjektDetailId] = useState<string | null>(null);
   const [freigabeBusy, setFreigabeBusy] = useState(false);
+  const [pageBusy, setPageBusy] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
+  const ignoreUrlDetailRef = useRef(false);
+  const pendingDetailIdRef = useRef<string | null>(null);
+
+  function flashPageBusy(ms = 280) {
+    setPageBusy(true);
+    window.setTimeout(() => setPageBusy(false), ms);
+  }
 
   useEffect(() => {
     const s = normalizeSection(searchParams.get("section"));
@@ -152,11 +162,12 @@ export function EigentuemerPortalClient({
   }, [searchParams]);
 
   const switchSection = (id: SectionId) => {
+    ignoreUrlDetailRef.current = true;
+    pendingDetailIdRef.current = null;
     setSection(id);
     setObjektDetailId(null);
-    if (id !== "vorgaenge") {
-      setSelectedId(null);
-    }
+    setSelectedId(null);
+    flashPageBusy();
     router.replace(`/portal?section=${id}`, { scroll: false });
   };
 
@@ -175,10 +186,50 @@ export function EigentuemerPortalClient({
 
   useEffect(() => {
     const id = searchParams.get("id")?.trim() || null;
-    if (!id) return;
+    if (ignoreUrlDetailRef.current) {
+      if (!id) {
+        ignoreUrlDetailRef.current = false;
+        pendingDetailIdRef.current = null;
+        setSelectedId(null);
+      }
+      return;
+    }
+    if (!id) {
+      pendingDetailIdRef.current = null;
+      setSelectedId(null);
+      return;
+    }
+    const pending = pendingDetailIdRef.current;
+    if (pending && pending !== id) {
+      const matchedPending = findKundeVorgangByQueryId(vorgaengeItems, pending);
+      const matchedUrl = findKundeVorgangByQueryId(vorgaengeItems, id);
+      const pendingCanon = matchedPending?.id ?? pending;
+      const urlCanon = matchedUrl?.id ?? id;
+      if (pendingCanon !== urlCanon) return;
+    }
     const matched = findKundeVorgangByQueryId(vorgaengeItems, id);
-    setSelectedId(matched?.id ?? id);
+    if (matched) {
+      if (pending && (pending === matched.id || pending === id)) {
+        pendingDetailIdRef.current = null;
+      }
+      setSelectedId(matched.id);
+      return;
+    }
+    setSelectedId(id);
   }, [searchParams, vorgaengeItems]);
+
+  /** Vorgang öffnen = zugehörige Benachrichtigungen gelesen. */
+  useEffect(() => {
+    if (!selectedId) return;
+    const matched = findKundeVorgangByQueryId(vorgaengeItems, selectedId);
+    const refs = [selectedId.replace(/^auftrag:/, "")];
+    if (matched?.id && matched.id !== refs[0]) refs.push(matched.id);
+    void fetch("/api/portal/notifications", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ vorgangRef: refs }),
+    }).then(() => emitPortalNotificationsChanged());
+  }, [selectedId, vorgaengeItems]);
 
   const needsActionCount = useMemo(
     () => countKundeVorgaengeNeedsAction(vorgaengeItems),
@@ -329,13 +380,6 @@ export function EigentuemerPortalClient({
     ? objekte.find((o) => o.id === objektDetailId) ?? null
     : null;
 
-  const [pageBusy, setPageBusy] = useState(false);
-
-  function flashPageBusy(ms = 400) {
-    setPageBusy(true);
-    window.setTimeout(() => setPageBusy(false), ms);
-  }
-
   return (
     <>
     <PortalShell
@@ -469,13 +513,21 @@ export function EigentuemerPortalClient({
               orgFreigabeStatus={freigabeStatusOf(selectedLeadId, leads)}
               schwelleEur={schwelleEur}
               onBack={() => {
+                ignoreUrlDetailRef.current = true;
+                pendingDetailIdRef.current = null;
                 setSelectedId(null);
+                flashPageBusy();
                 router.replace("/portal?section=vorgaenge", {
                   scroll: false,
                 });
               }}
             />
           </div>
+        ) : selectedId ? (
+          <PortalContentBusy
+            title="Vorgang wird geladen…"
+            body="Einen Moment — wir öffnen die Details."
+          />
         ) : (
           <div className="flex min-w-0 flex-col">
             <div className="px-0.5 pb-1">
@@ -524,7 +576,10 @@ export function EigentuemerPortalClient({
                     meta={row.meta}
                     showChevron
                     onClick={() => {
+                      ignoreUrlDetailRef.current = false;
+                      pendingDetailIdRef.current = row.id;
                       setSelectedId(row.id);
+                      flashPageBusy();
                       router.replace(
                         `/portal?section=vorgaenge&id=${encodeURIComponent(row.id)}`,
                         { scroll: false }

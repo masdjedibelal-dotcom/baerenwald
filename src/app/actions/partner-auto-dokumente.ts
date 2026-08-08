@@ -16,6 +16,11 @@ import {
   type AutoDocRegieOverride,
 } from "@/lib/partner/partner-auto-doc-positionen";
 import { getPartnerDocEmpfaenger } from "@/lib/partner/partner-doc-empfaenger";
+import {
+  formatPlzOrt,
+  formatStrasseNr,
+  resolveHandwerkerAnschrift,
+} from "@/lib/partner/handwerker-anschrift";
 import { checkPartnerFirmendatenGate } from "@/lib/partner/partner-firmendaten-gate";
 import { PARTNER_KONDITION_MWST } from "@/lib/partner/partner-konditionen";
 import {
@@ -50,6 +55,8 @@ export type PartnerAutoDocPreview = {
   firmendaten: {
     firma: string;
     strasse: string;
+    hausnummer: string;
+    plz: string;
     ort: string;
     telefon: string;
     steuernummer: string;
@@ -95,12 +102,17 @@ async function loadHandwerkerAbsender(handwerkerId: string): Promise<{
   let { data, error } = await supabaseAdmin
     .from("handwerker")
     .select(
-      "firma, name, vorname, nachname, strasse, ort, adresse, telefon, email, steuernummer, ustid, handelsregister, iban, bic, bank, logo_url, rechnungsnr_seq, kleinunternehmer"
+      "firma, name, vorname, nachname, strasse, hausnummer, plz, ort, adresse, telefon, email, steuernummer, ustid, handelsregister, iban, bic, bank, logo_url, rechnungsnr_seq, kleinunternehmer"
     )
     .eq("id", handwerkerId)
     .maybeSingle();
 
-  if (error && /logo_url|rechnungsnr_seq|kleinunternehmer|strasse|ort|bic|bank|handelsregister/i.test(error.message)) {
+  if (
+    error &&
+    /logo_url|rechnungsnr_seq|kleinunternehmer|strasse|hausnummer|plz|ort|bic|bank|handelsregister/i.test(
+      error.message
+    )
+  ) {
     ({ data, error } = await supabaseAdmin
       .from("handwerker")
       .select(
@@ -114,12 +126,25 @@ async function loadHandwerkerAbsender(handwerkerId: string): Promise<{
   const inhaber =
     [row.vorname, row.nachname].filter(Boolean).join(" ").trim() ||
     String(row.name ?? "");
+  const anschrift = resolveHandwerkerAnschrift({
+    strasse: (row.strasse as string | null) ?? null,
+    hausnummer: (row.hausnummer as string | null) ?? null,
+    plz: (row.plz as string | null) ?? null,
+    ort: (row.ort as string | null) ?? null,
+    adresse: (row.adresse as string | null) ?? null,
+  });
   const absender: PartnerDocAbsender = {
     firma: String(row.firma ?? row.name ?? "Handwerksbetrieb"),
     inhaber: inhaber || null,
-    strasse: (row.strasse as string | null) ?? null,
-    ort: (row.ort as string | null) ?? null,
-    adresse: (row.adresse as string | null) ?? null,
+    strasse: anschrift.strasse || null,
+    hausnummer: anschrift.hausnummer || null,
+    plz: anschrift.plz || null,
+    ort: anschrift.ort || null,
+    adresse:
+      (row.adresse as string | null) ??
+      ([formatStrasseNr(anschrift.strasse, anschrift.hausnummer), formatPlzOrt(anschrift.plz, anschrift.ort)]
+        .filter(Boolean)
+        .join(", ") || null),
     telefon: (row.telefon as string | null) ?? null,
     email: (row.email as string | null) ?? null,
     steuernummer: (row.steuernummer as string | null) ?? null,
@@ -135,6 +160,8 @@ async function loadHandwerkerAbsender(handwerkerId: string): Promise<{
     firma: absender.firma,
     name: inhaber,
     strasse: absender.strasse,
+    hausnummer: absender.hausnummer,
+    plz: absender.plz,
     ort: absender.ort,
     adresse: absender.adresse,
     telefon: absender.telefon,
@@ -151,8 +178,10 @@ async function loadHandwerkerAbsender(handwerkerId: string): Promise<{
     gateMissingRechnung: gate.missingRechnung,
     firmendaten: {
       firma: absender.firma,
-      strasse: String(absender.strasse ?? ""),
-      ort: String(absender.ort ?? ""),
+      strasse: anschrift.strasse,
+      hausnummer: anschrift.hausnummer,
+      plz: anschrift.plz,
+      ort: anschrift.ort,
       telefon: String(absender.telefon ?? ""),
       steuernummer: String(absender.steuernummer ?? ""),
       ustid: String(absender.ustid ?? ""),

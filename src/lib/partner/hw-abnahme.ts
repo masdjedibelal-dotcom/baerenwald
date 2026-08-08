@@ -8,7 +8,7 @@ import { HW_ABSCHLUSS_CHECKS, type HwAbschlussCheckId } from "@/lib/portal2/hw-k
 export const HW_ABNAHME_COPY = {
   cta: "Teilabnahme abschließen →",
   ctaHint:
-    "Nach der Dokumentation Ihrer Leistungen: Teilabnahme mit Signatur — CRM gibt frei, danach Rechnung.",
+    "Nach der Dokumentation Ihrer Leistungen: Teilabnahme mit Signatur — Bärenwald gibt frei, danach Rechnung.",
   positionEndeCta: "3. Ende — Dokumentieren",
   positionEndeToast: "Leistung dokumentiert — bereit für Abnahme.",
   positionEndeBody:

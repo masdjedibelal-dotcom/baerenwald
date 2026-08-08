@@ -7,6 +7,7 @@ import { Plus, Trash2 } from "lucide-react";
 import { submitPartnerAbnahmeNachSignatur } from "@/app/actions/partner-abnahmeprotokoll";
 import { PartnerDetailError } from "@/components/partner/PartnerDetailUi";
 import { PartnerKiKorrekturField } from "@/components/partner/PartnerKiKorrekturField";
+import { PortalContentBusy } from "@/components/shared/PortalContentBusy";
 import { PortalModalShell } from "@/components/shared/PortalModalShell";
 import { SignatureCanvas } from "@/components/shared/SignatureCanvas";
 import {
@@ -107,6 +108,7 @@ export function PartnerAbnahmeAbschlussSheet({
   useEffect(() => {
     if (!open) return;
     setStep("leistungen");
+    setLoading(false);
     setError(null);
     const erledigt = leistungItems.filter(
       (l) => String(l.leistung_status ?? "").toLowerCase() === "erledigt"
@@ -259,61 +261,108 @@ export function PartnerAbnahmeAbschlussSheet({
     setStep("signatur");
   }
 
+  const hwNameOk = hwName.trim().length >= 3;
+  const kundeNameOk = kundeName.trim().length >= 3;
+  const canSubmit =
+    hwNameOk &&
+    kundeNameOk &&
+    hwHasSig &&
+    kundeHasSig &&
+    Boolean(hwSig?.trim()) &&
+    Boolean(kundeSig?.trim());
+
+  function submitBlockReason(): string | null {
+    if (!hwNameOk) return "Bitte den vollen Namen des Handwerkers ausschreiben (mind. 3 Zeichen).";
+    if (!hwHasSig || !hwSig?.trim()) return "Bitte die Handwerker-Signatur zeichnen.";
+    if (!kundeNameOk) return "Bitte den vollen Namen des Kunden ausschreiben (mind. 3 Zeichen).";
+    if (!kundeHasSig || !kundeSig?.trim()) return "Bitte die Kunden-Signatur erfassen.";
+    return null;
+  }
+
   async function submit() {
-    setLoading(true);
-    setError(null);
-    const res = await submitPartnerAbnahmeNachSignatur({
-      auftragId,
-      abnahmeDatum,
-      ort,
-      projektbezeichnung: projektbezeichnung.trim(),
-      vertreter: vertreter.trim(),
-      abnahmeErgebnis: ergebnis,
-      notizen: notizen.trim() || null,
-      punkte,
-      maengel,
-      hwUnterschriftName: hwName,
-      kundeUnterschriftName: kundeName,
-      hwSignaturPng: hwSig,
-      kundeSignaturPng: kundeSig,
-    });
-    setLoading(false);
-    if (!res.ok) {
-      setError(res.error);
+    const block = submitBlockReason();
+    if (block) {
+      setError(block);
       return;
     }
-    partnerPortalToast.abschlussSigniert();
-    router.refresh();
-    onSuccess({
-      vollstaendig: res.vollstaendig,
-      pdf_url: res.pdf_url,
-      protokoll_id: res.protokoll_id,
-    });
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await submitPartnerAbnahmeNachSignatur({
+        auftragId,
+        abnahmeDatum,
+        ort,
+        projektbezeichnung: projektbezeichnung.trim(),
+        vertreter: vertreter.trim(),
+        abnahmeErgebnis: ergebnis,
+        notizen: notizen.trim() || null,
+        punkte,
+        maengel,
+        hwUnterschriftName: hwName,
+        kundeUnterschriftName: kundeName,
+        hwSignaturPng: hwSig,
+        kundeSignaturPng: kundeSig,
+      });
+      if (!res.ok) {
+        setError(res.error);
+        setLoading(false);
+        return;
+      }
+      partnerPortalToast.abschlussSigniert();
+      router.refresh();
+      onSuccess({
+        vollstaendig: res.vollstaendig,
+        pdf_url: res.pdf_url,
+        protokoll_id: res.protokoll_id,
+      });
+      // Loading bleibt bis Sheet schließt — kein Formular-Flackern.
+    } catch {
+      setError("Abschluss fehlgeschlagen. Bitte erneut versuchen.");
+      setLoading(false);
+    }
   }
 
   const dirty =
-    punkte.length > 0 ||
-    maengel.length > 0 ||
-    notizen.trim().length > 0 ||
-    projektbezeichnung.trim().length > 0 ||
-    vertreter.trim().length > 0 ||
-    hwHasSig ||
-    kundeHasSig;
+    !loading &&
+    (punkte.length > 0 ||
+      maengel.length > 0 ||
+      notizen.trim().length > 0 ||
+      projektbezeichnung.trim().length > 0 ||
+      vertreter.trim().length > 0 ||
+      hwHasSig ||
+      kundeHasSig);
 
   return (
     <PortalModalShell
       open={open}
-      title={step === "leistungen" ? "Teilabnahme abschließen" : "Kunden-Signatur"}
-      subtitle={
-        step === "leistungen"
-          ? "Ihre Leistungen und optional Mängel — danach CRM-Freigabe"
-          : "Kunde und Handwerker unterschreiben vor Ort"
+      title={
+        loading
+          ? "Protokoll wird erstellt"
+          : step === "leistungen"
+            ? "Teilabnahme abschließen"
+            : "Kunden-Signatur"
       }
-      onClose={onClose}
+      subtitle={
+        loading
+          ? "Bitte warten — danach kehren Sie zum Vorgang zurück"
+          : step === "leistungen"
+            ? "Ihre Leistungen und optional Mängel — danach Freigabe durch Bärenwald"
+            : "Kunde und Handwerker unterschreiben vor Ort"
+      }
+      onClose={() => {
+        if (loading) return;
+        onClose();
+      }}
       variant="funnel"
       dirty={dirty}
       closeOnBackdrop={!loading}
     >
+      {loading ? (
+        <PortalContentBusy
+          title="Abnahmedokument wird abgeschlossen…"
+          body="Signaturen werden gespeichert und das Protokoll erstellt. Danach öffnet sich der Vorgang mit dem neuen Status."
+        />
+      ) : (
       <div className="space-y-5 pb-4">
         {error ? <PartnerDetailError message={error} /> : null}
 
@@ -595,7 +644,7 @@ export function PartnerAbnahmeAbschlussSheet({
 
             <button
               type="button"
-              className="btn-pill-primary w-full"
+              className="portal-action-btn portal-action-btn--primary portal-action-btn--block"
               onClick={goSignatur}
             >
               Zur Kunden-Signatur
@@ -657,17 +706,24 @@ export function PartnerAbnahmeAbschlussSheet({
 
             <button
               type="button"
-              className={cn("btn-pill-primary w-full", loading && "opacity-60")}
-              disabled={loading || !hwHasSig || !kundeHasSig}
+              className="portal-action-btn portal-action-btn--primary portal-action-btn--block"
+              disabled={!canSubmit}
               onClick={() => void submit()}
             >
-              {loading ? "Protokoll wird erstellt…" : "Signatur abschließen"}
+              Signatur abschließen
             </button>
+            {!canSubmit ? (
+              <p className="text-center text-[12px]" style={{ color: PORTAL_VAR.faint }}>
+                {submitBlockReason() ??
+                  "Namen und beide Signaturen sind nötig, bevor Sie abschließen können."}
+              </p>
+            ) : null}
           </>
         )}
       </div>
+      )}
 
-      {addMode ? (
+      {addMode && !loading ? (
         <PortalModalShell
           open
           title={
@@ -691,7 +747,7 @@ export function PartnerAbnahmeAbschlussSheet({
               <div className="space-y-2">
                 <button
                   type="button"
-                  className="btn-pill-outline w-full"
+                  className="portal-action-btn portal-action-btn--secondary portal-action-btn--block"
                   onClick={() => {
                     setDraftTitel("");
                     setDraftBeschreibung("");
@@ -702,7 +758,7 @@ export function PartnerAbnahmeAbschlussSheet({
                 </button>
                 <button
                   type="button"
-                  className="btn-pill-primary w-full"
+                  className="portal-action-btn portal-action-btn--primary portal-action-btn--block"
                   disabled={!availableLeistungen.length}
                   onClick={() => setAddMode("erkannt")}
                 >
@@ -726,7 +782,6 @@ export function PartnerAbnahmeAbschlussSheet({
                     value={draftTitel}
                     onChange={(e) => setDraftTitel(e.target.value)}
                     className="portal-input w-full rounded-xl border border-border-default px-3 py-2.5"
-                    autoFocus
                   />
                 </label>
                 <PartnerKiKorrekturField
@@ -755,7 +810,7 @@ export function PartnerAbnahmeAbschlussSheet({
                 <div className="flex flex-col gap-2">
                   <button
                     type="button"
-                    className="btn-pill-primary w-full"
+                    className="portal-action-btn portal-action-btn--primary portal-action-btn--block"
                     onClick={() =>
                       addMode === "mangel" ? addMangel() : addLeerLeistung()
                     }
@@ -764,7 +819,7 @@ export function PartnerAbnahmeAbschlussSheet({
                   </button>
                   <button
                     type="button"
-                    className="btn-pill-outline w-full"
+                    className="portal-action-btn portal-action-btn--secondary portal-action-btn--block"
                     onClick={() => {
                       const ok =
                         addMode === "mangel" ? addMangel() : addLeerLeistung();
@@ -832,14 +887,14 @@ export function PartnerAbnahmeAbschlussSheet({
                     <div className="flex flex-col gap-2">
                       <button
                         type="button"
-                        className="btn-pill-primary w-full"
+                        className="portal-action-btn portal-action-btn--primary portal-action-btn--block"
                         onClick={addErkanntLeistung}
                       >
                         Hinzufügen &amp; nächste
                       </button>
                       <button
                         type="button"
-                        className="btn-pill-outline w-full"
+                        className="portal-action-btn portal-action-btn--secondary portal-action-btn--block"
                         onClick={() => {
                           if (addErkanntLeistung()) resetDraft();
                         }}

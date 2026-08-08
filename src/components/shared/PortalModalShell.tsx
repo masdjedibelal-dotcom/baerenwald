@@ -181,7 +181,7 @@ export function PortalModalShell({
   return (
     <div
       className={cn(
-        "portal-modal-shell",
+        "portal-ui portal-modal-shell",
         `portal-modal-shell--${variant}`,
         className
       )}
@@ -246,17 +246,17 @@ export function PortalModalShell({
             <p id={discardTitleId} className="portal-modal-discard-title">
               Änderungen verwerfen?
             </p>
-            <div className="portal-modal-discard-actions">
+            <div className="portal-modal-discard-actions portal-action-row">
               <button
                 type="button"
-                className="btn-pill-outline portal-btn"
+                className="portal-action-btn portal-action-btn--secondary"
                 onClick={() => setDiscardOpen(false)}
               >
                 Weiter bearbeiten
               </button>
               <button
                 type="button"
-                className="btn-pill-outline portal-btn !border-red-200 !text-red-800"
+                className="portal-action-btn portal-action-btn--danger"
                 onClick={() => closeNow(false)}
               >
                 Verwerfen

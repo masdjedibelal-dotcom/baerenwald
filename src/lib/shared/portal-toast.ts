@@ -96,13 +96,13 @@ export const partnerPortalToast = {
   hwAngebotEingereicht() {
     portalToastSuccess(
       "Angebot eingereicht",
-      "Positionen und Summe sind im CRM und bei der Verwaltung als empfohlenes Angebot sichtbar."
+      "Positionen und Summe sind bei Bärenwald und der Verwaltung als empfohlenes Angebot sichtbar."
     );
   },
   abschlussSigniert() {
     portalToastSuccess(
       "Teilabnahme eingereicht",
-      "Protokoll ist beim CRM zur Freigabe. Kein automatischer Versand an den Kunden."
+      "Protokoll ist bei Bärenwald zur Freigabe. Kein automatischer Versand an den Kunden."
     );
   },
 };

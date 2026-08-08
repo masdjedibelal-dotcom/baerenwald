@@ -12,6 +12,7 @@ import {
 import { PartnerDetailSection } from "@/components/partner/PartnerDetailUi";
 import { FileUploadField } from "@/components/shared/FileUploadField";
 import { PdfFileIcon } from "@/components/shared/PdfFileIcon";
+import { PortalConfirmDialog } from "@/components/shared/PortalDetailUi";
 import { PortalModalShell } from "@/components/shared/PortalModalShell";
 import {
   stammDokumentStatusLabel,
@@ -54,6 +55,7 @@ function DokumentAktionen({
   loading,
   onUploadClick,
   onDelete,
+  className,
 }: {
   href?: string;
   name: string;
@@ -62,9 +64,10 @@ function DokumentAktionen({
   loading?: boolean;
   onUploadClick?: () => void;
   onDelete?: () => void;
+  className?: string;
 }) {
   return (
-    <div className="flex items-center justify-end gap-1">
+    <div className={cn("flex items-center gap-1", className)}>
       {href ? (
         <>
           <a
@@ -115,39 +118,107 @@ function DokumentAktionen({
   );
 }
 
-function ComplianceDokumentRow({
+function StatusPill({
+  label,
+  className,
+}: {
+  label: string | null;
+  className: string;
+}) {
+  if (!label) return null;
+  return (
+    <span className={cn("tag inline-flex text-[11px]", className)}>{label}</span>
+  );
+}
+
+function DokumentCardShell({
+  title,
+  subtitle,
+  datum,
+  status,
+  error,
+  actions,
+}: {
+  title: string;
+  subtitle?: string | null;
+  datum: string;
+  status?: ReactNode;
+  error?: string | null;
+  actions: ReactNode;
+}) {
+  return (
+    <article className="rounded-xl border border-border-light bg-white px-3.5 py-3.5 shadow-[0_1px_2px_rgba(22,32,27,0.04)]">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0 flex-1">
+          <p className="text-[14px] font-semibold leading-snug text-text-primary">
+            {title}
+          </p>
+          {subtitle ? (
+            <p className="portal-text-meta mt-1 text-text-secondary line-clamp-2">
+              {subtitle}
+            </p>
+          ) : null}
+        </div>
+        {status}
+      </div>
+      <div className="mt-3 flex items-center justify-between gap-2 border-t border-border-light pt-3">
+        <p className="portal-text-meta tabular-nums text-text-tertiary">
+          {datum !== "—" ? `Datum · ${datum}` : "Kein Datum"}
+        </p>
+        {actions}
+      </div>
+      {error ? (
+        <p className="portal-text-meta mt-2 text-red-700" role="alert">
+          {error}
+        </p>
+      ) : null}
+    </article>
+  );
+}
+
+function ComplianceDokumentItem({
   item,
-  disabled,
   onUploadClick,
+  variant,
 }: {
   item: PartnerComplianceItem;
-  disabled?: boolean;
   onUploadClick: (item: PartnerComplianceItem) => void;
+  variant: "card" | "row";
 }) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [confirmOpen, setConfirmOpen] = useState(false);
 
   const href = item.dokument?.signed_url?.trim();
   const kannHochladen =
-    !disabled &&
-    (item.status === "offen" ||
-      item.status === "abgelehnt" ||
-      item.status === "abgelaufen" ||
-      item.status === "ablauf_warnung");
+    item.status === "offen" ||
+    item.status === "abgelehnt" ||
+    item.status === "abgelaufen" ||
+    item.status === "ablauf_warnung";
   const kannLoeschen =
-    !disabled &&
     Boolean(item.dokument?.id) &&
     item.status !== "erledigt" &&
     item.status !== "in_pruefung";
+  const datum = fmtDatum(
+    item.dokument?.hochgeladen_am ?? item.dokument?.freigegeben_am
+  );
+  const statusLabel = stammDokumentStatusLabel(item.status);
+  const statusClass = stammDokumentStatusPillClass(item.status);
+  const subtitle =
+    item.status === "abgelehnt" && item.dokument?.ablehnung_grund
+      ? item.dokument.ablehnung_grund
+      : item.beschreibung?.trim() || null;
 
   async function onDelete() {
     if (!item.dokument?.id) return;
-    if (!confirm(`„${item.bezeichnung}“ wirklich entfernen?`)) return;
     setLoading(true);
     setError(null);
-    const res = await deletePartnerComplianceDokument({ dokumentId: item.dokument.id });
+    const res = await deletePartnerComplianceDokument({
+      dokumentId: item.dokument.id,
+    });
     setLoading(false);
+    setConfirmOpen(false);
     if (!res.ok) {
       setError(res.error);
       return;
@@ -156,127 +227,142 @@ function ComplianceDokumentRow({
     router.refresh();
   }
 
-  return (
-    <tr className="border-b border-border-light last:border-b-0">
-      <td className="whitespace-nowrap px-3 py-3 text-text-secondary tabular-nums">
-        {fmtDatum(item.dokument?.hochgeladen_am ?? item.dokument?.freigegeben_am)}
-      </td>
-      <td className="min-w-0 px-3 py-3">
-        <p className="font-medium text-text-primary line-clamp-2">{item.bezeichnung}</p>
-        {item.beschreibung?.trim() ? (
-          <p className="portal-text-meta mt-0.5 text-text-secondary line-clamp-2">
-            {item.beschreibung.trim()}
-          </p>
-        ) : null}
-        {item.status === "abgelehnt" && item.dokument?.ablehnung_grund ? (
-          <p className="portal-text-meta mt-0.5 text-red-700 line-clamp-2">
-            {item.dokument.ablehnung_grund}
-          </p>
-        ) : null}
-        {(() => {
-          const label = stammDokumentStatusLabel(item.status);
-          if (!label) return null;
-          return (
-            <span
-              className={cn(
-                "tag mt-1.5 inline-flex text-[11px] sm:hidden",
-                stammDokumentStatusPillClass(item.status)
-              )}
-            >
-              {label}
-            </span>
-          );
-        })()}
-        {error ? (
-          <p className="portal-text-meta mt-0.5 text-red-700" role="alert">
-            {error}
-          </p>
-        ) : null}
-      </td>
-      <td className="hidden px-3 py-3 sm:table-cell">
-        {(() => {
-          const label = stammDokumentStatusLabel(item.status);
-          if (!label) return <span className="portal-text-meta text-text-tertiary">—</span>;
-          return (
-            <span
-              className={cn(
-                "tag text-[11px]",
-                stammDokumentStatusPillClass(item.status)
-              )}
-            >
-              {label}
-            </span>
-          );
-        })()}
-      </td>
-      <td className="w-[5.5rem] px-2 py-2 text-right">
-        <DokumentAktionen
-          href={href}
-          name={item.bezeichnung}
-          kannHochladen={kannHochladen}
-          kannLoeschen={kannLoeschen}
-          loading={loading}
-          onUploadClick={() => onUploadClick(item)}
-          onDelete={() => void onDelete()}
+  const actions = (
+    <DokumentAktionen
+      href={href}
+      name={item.bezeichnung}
+      kannHochladen={kannHochladen}
+      kannLoeschen={kannLoeschen}
+      loading={loading}
+      onUploadClick={() => onUploadClick(item)}
+      onDelete={() => setConfirmOpen(true)}
+      className={variant === "row" ? "justify-end" : "justify-end"}
+    />
+  );
+
+  const confirmDialog = (
+    <PortalConfirmDialog
+      open={confirmOpen}
+      title="Dokument entfernen?"
+      description={`„${item.bezeichnung}“ wirklich entfernen?`}
+      confirmLabel="Entfernen"
+      confirmVariant="danger"
+      loading={loading}
+      onConfirm={() => void onDelete()}
+      onCancel={() => setConfirmOpen(false)}
+    />
+  );
+
+  if (variant === "card") {
+    return (
+      <>
+        <DokumentCardShell
+          title={item.bezeichnung}
+          subtitle={subtitle}
+          datum={datum}
+          status={<StatusPill label={statusLabel} className={statusClass} />}
+          error={error}
+          actions={actions}
         />
-      </td>
-    </tr>
+        {confirmDialog}
+      </>
+    );
+  }
+
+  return (
+    <>
+      <tr className="border-b border-border-light last:border-b-0">
+        <td className="whitespace-nowrap px-3 py-3 text-text-secondary tabular-nums">
+          {datum}
+        </td>
+        <td className="min-w-0 px-3 py-3">
+          <p className="font-medium text-text-primary line-clamp-2">
+            {item.bezeichnung}
+          </p>
+          {subtitle ? (
+            <p className="portal-text-meta mt-0.5 text-text-secondary line-clamp-2">
+              {subtitle}
+            </p>
+          ) : null}
+          {error ? (
+            <p className="portal-text-meta mt-0.5 text-red-700" role="alert">
+              {error}
+            </p>
+          ) : null}
+        </td>
+        <td className="px-3 py-3">
+          {statusLabel ? (
+            <StatusPill label={statusLabel} className={statusClass} />
+          ) : (
+            <span className="portal-text-meta text-text-tertiary">—</span>
+          )}
+        </td>
+        <td className="w-[5.5rem] px-2 py-2 text-right">{actions}</td>
+      </tr>
+      {confirmDialog}
+    </>
   );
 }
 
-function RahmenvertragDokumentRow({
+function RahmenvertragDokumentItem({
   rahmenvertrag,
   akzeptiert,
   pdfUrl,
+  variant,
 }: {
   rahmenvertrag: PartnerRahmenvertrag | null;
   akzeptiert: boolean;
   pdfUrl?: string | null;
+  variant: "card" | "row";
 }) {
-  const datum =
-    rahmenvertrag?.portal_akzeptiert_am ??
-    rahmenvertrag?.signiert_am ??
-    null;
+  const datum = fmtDatum(
+    rahmenvertrag?.portal_akzeptiert_am ?? rahmenvertrag?.signiert_am ?? null
+  );
+  const subtitle = rahmenvertrag?.vertrags_nr
+    ? `Nr. ${rahmenvertrag.vertrags_nr}`
+    : "Bei Registrierung akzeptiert — PDF folgt von Bärenwald";
+  const actions = pdfUrl ? (
+    <DokumentAktionen
+      href={pdfUrl}
+      name="Partnerschafts-Rahmenvertrag"
+      className="justify-end"
+    />
+  ) : (
+    <span className="portal-text-meta text-text-tertiary">—</span>
+  );
+  const status = akzeptiert ? (
+    <StatusPill label="Erledigt" className={rahmenStatusPillClass(true)} />
+  ) : null;
+
+  if (variant === "card") {
+    return (
+      <DokumentCardShell
+        title="Partnerschafts-Rahmenvertrag"
+        subtitle={subtitle}
+        datum={datum}
+        status={status}
+        actions={actions}
+      />
+    );
+  }
 
   return (
     <tr className="border-b border-border-light last:border-b-0">
       <td className="whitespace-nowrap px-3 py-3 text-text-secondary tabular-nums">
-        {fmtDatum(datum)}
+        {datum}
       </td>
       <td className="min-w-0 px-3 py-3">
-        <p className="font-medium text-text-primary">Partnerschafts-Rahmenvertrag</p>
-        <p className="portal-text-meta mt-0.5 text-text-secondary line-clamp-2">
-          {rahmenvertrag?.vertrags_nr
-            ? `Nr. ${rahmenvertrag.vertrags_nr}`
-            : "Bei Registrierung akzeptiert — PDF folgt vom CRM"}
+        <p className="font-medium text-text-primary">
+          Partnerschafts-Rahmenvertrag
         </p>
-        {akzeptiert ? (
-          <span
-            className={cn(
-              "tag mt-1.5 inline-flex text-[11px] sm:hidden",
-              rahmenStatusPillClass(true)
-            )}
-          >
-            Erledigt
-          </span>
-        ) : null}
+        <p className="portal-text-meta mt-0.5 text-text-secondary line-clamp-2">
+          {subtitle}
+        </p>
       </td>
-      <td className="hidden px-3 py-3 sm:table-cell">
-        {akzeptiert ? (
-          <span className={cn("tag text-[11px]", rahmenStatusPillClass(true))}>
-            Erledigt
-          </span>
-        ) : (
-          <span className="portal-text-meta text-text-tertiary">—</span>
-        )}
+      <td className="px-3 py-3">
+        {status ?? <span className="portal-text-meta text-text-tertiary">—</span>}
       </td>
-      <td className="w-[5.5rem] px-2 py-2 text-right">
-        {pdfUrl ? (
-          <DokumentAktionen href={pdfUrl} name="Partnerschafts-Rahmenvertrag" />
-        ) : (
-          <span className="portal-text-meta text-text-tertiary">—</span>
-        )}
-      </td>
+      <td className="w-[5.5rem] px-2 py-2 text-right">{actions}</td>
     </tr>
   );
 }
@@ -369,8 +455,7 @@ export function PartnerStammDokumenteListe({
       <PartnerDetailSection title="Stammunterlagen">
         <div className="mb-3 flex items-start justify-between gap-3">
           <p className="portal-text-meta text-text-secondary">
-            Rahmenvertrag und Nachweise — Datum, Status und Upload wie bei
-            Vorgangs-Dokumenten.
+            Rahmenvertrag und Nachweise — Datum, Status und Upload.
           </p>
           <button
             type="button"
@@ -384,31 +469,50 @@ export function PartnerStammDokumenteListe({
           </button>
         </div>
 
-        <div className="overflow-x-auto rounded-xl border border-border-light">
-          <table className="portal-text-body w-full min-w-[20rem]">
+        {/* Mobil: Cards */}
+        <div className="space-y-2.5 sm:hidden">
+          <RahmenvertragDokumentItem
+            rahmenvertrag={rahmenvertrag}
+            akzeptiert={akzeptiert}
+            pdfUrl={pdfUrl}
+            variant="card"
+          />
+          {handwerkskarte.map((item) => (
+            <ComplianceDokumentItem
+              key={`${item.ebene}-${item.slug}-${item.dokument?.id ?? "open"}-card`}
+              item={item}
+              onUploadClick={openItemUpload}
+              variant="card"
+            />
+          ))}
+        </div>
+
+        {/* Desktop: Tabelle */}
+        <div className="hidden overflow-hidden rounded-xl border border-border-light sm:block">
+          <table className="portal-text-body w-full">
             <thead>
               <tr className="portal-text-meta border-b border-border-light bg-muted/30 text-left text-text-tertiary">
                 <th className="px-3 py-2.5 font-semibold">Datum</th>
                 <th className="px-3 py-2.5 font-semibold">Dokument</th>
-                <th className="hidden px-3 py-2.5 font-semibold sm:table-cell">
-                  Status
-                </th>
+                <th className="px-3 py-2.5 font-semibold">Status</th>
                 <th className="w-[5.5rem] px-2 py-2.5 text-right font-semibold">
                   Aktionen
                 </th>
               </tr>
             </thead>
             <tbody>
-              <RahmenvertragDokumentRow
+              <RahmenvertragDokumentItem
                 rahmenvertrag={rahmenvertrag}
                 akzeptiert={akzeptiert}
                 pdfUrl={pdfUrl}
+                variant="row"
               />
               {handwerkskarte.map((item) => (
-                <ComplianceDokumentRow
-                  key={`${item.ebene}-${item.slug}-${item.dokument?.id ?? "open"}`}
+                <ComplianceDokumentItem
+                  key={`${item.ebene}-${item.slug}-${item.dokument?.id ?? "open"}-row`}
                   item={item}
                   onUploadClick={openItemUpload}
+                  variant="row"
                 />
               ))}
             </tbody>
@@ -417,8 +521,8 @@ export function PartnerStammDokumenteListe({
 
         {!hatHandwerkskarte ? (
           <p className="portal-text-meta mt-3 text-text-tertiary">
-            Handwerkskarte erscheint hier, sobald sie im CRM hinterlegt ist. Eigene
-            Nachweise kannst du jederzeit über „Hochladen“ ergänzen.
+            Handwerkskarte erscheint hier, sobald sie bei Bärenwald hinterlegt ist.
+            Eigene Nachweise kannst du jederzeit über „Hochladen“ ergänzen.
           </p>
         ) : null}
 

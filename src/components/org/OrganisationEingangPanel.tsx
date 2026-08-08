@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { AlertTriangle, Filter, Mail, Phone, X } from "lucide-react";
 import { PORTAL_VAR } from "@/lib/portal2/tokens";
 
@@ -44,6 +44,13 @@ import { VersicherungsakteButton } from "@/components/org/VersicherungsakteButto
 import { VorgangKommentareThread } from "@/components/org/VorgangKommentareThread";
 import { VorgangStornoDialog } from "@/components/org/VorgangStornoDialog";
 import { KostentraegerSelector } from "@/components/org/KostentraegerSelector";
+import { MeldeUrsachenWasserPanel } from "@/components/org/MeldeUrsachenWasserPanel";
+import { normalizeFunnelDaten } from "@/lib/lead-funnel-daten";
+import {
+  parseMeldeUrsachenCheck,
+  resolveMeldeUrsachenBereich,
+} from "@/lib/org/melde-ursachen";
+import { labelBereich } from "@/lib/lead-funnel-labels";
 
 type Props = {
   kunde: OrganisationKunde;
@@ -161,6 +168,21 @@ function MeldungDetail({
 
   const fotos = meldeFotosFromLead(lead);
   const kategorie = meldeKategorieFromLead(lead);
+  const funnelNorm = normalizeFunnelDaten(lead.funnel_daten, lead.bereiche);
+  const meldeAnswers = funnelNorm.fachdetails.fachdetailAnswers ?? {};
+  const ursachenCheck = parseMeldeUrsachenCheck(lead.funnel_daten);
+  const meldeBereichLabel =
+    (lead.bereiche ?? [])
+      .map((b) => labelBereich(b))
+      .filter((b) => b && b !== "—")
+      .join(", ") || null;
+  const ursachenBereich = resolveMeldeUrsachenBereich({
+    answers: meldeAnswers,
+    bereichLabel: meldeBereichLabel,
+    bereiche: lead.bereiche,
+    ursachen: ursachenCheck,
+  });
+  const showUrsachenCard = Boolean(ursachenBereich);
 
   const resendEinladung = async () => {
     setResendBusy(true);
@@ -329,6 +351,17 @@ function MeldungDetail({
             ))}
           </div>
         </div>
+      ) : null}
+
+      {showUrsachenCard && ursachenBereich ? (
+        <MeldeUrsachenWasserPanel
+          leadId={lead.id}
+          bereich={ursachenBereich}
+          answers={meldeAnswers}
+          initial={ursachenCheck}
+          mode="edit"
+          onSaved={onRefresh}
+        />
       ) : null}
 
       {angebotPdfZeilen.length > 0 ? (
@@ -511,11 +544,22 @@ export function OrganisationEingangPanel({
   const [selectedId, setSelectedId] = useState<string | null>(
     initialSelectedId ?? null
   );
+  /** Nach Zurück: stale URL-id nicht sofort wieder öffnen. */
+  const closingRef = useRef(false);
+  const pendingOpenIdRef = useRef<string | null>(null);
 
   useEffect(() => {
-    if (initialSelectedId) {
-      setSelectedId(initialSelectedId);
+    if (!initialSelectedId) {
+      if (closingRef.current) {
+        closingRef.current = false;
+        pendingOpenIdRef.current = null;
+        setSelectedId(null);
+      }
+      return;
     }
+    if (closingRef.current) return;
+    pendingOpenIdRef.current = initialSelectedId;
+    setSelectedId(initialSelectedId);
   }, [initialSelectedId]);
 
   const filtered = useMemo(() => {
@@ -545,6 +589,8 @@ export function OrganisationEingangPanel({
   const router = useRouter();
 
   const openDetail = (id: string) => {
+    closingRef.current = false;
+    pendingOpenIdRef.current = id;
     setSelectedId(id);
     router.replace(
       `/portal?section=vorgaenge&filter=offen&id=${encodeURIComponent(id)}`,
@@ -553,6 +599,8 @@ export function OrganisationEingangPanel({
   };
 
   const closeDetail = () => {
+    closingRef.current = true;
+    pendingOpenIdRef.current = null;
     setSelectedId(null);
     router.replace(`/portal?section=vorgaenge&filter=offen`, { scroll: false });
   };

@@ -360,10 +360,7 @@ export function OrganisationBrandingEditor({
       </div>
 
       <div>
-        <EinstellungenSectionHeader
-          title="ANGABEN FÜRS PORTAL"
-          onEdit={readOnly ? undefined : openEdit}
-        />
+        <EinstellungenSectionHeader title="ANGABEN FÜRS PORTAL" />
         <div className="flex flex-col gap-[11px]">
           <EinstellungenPfRow label="Firmenname" value={dash(saved.name)} />
           <EinstellungenGrid2>

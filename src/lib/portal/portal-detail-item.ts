@@ -12,6 +12,8 @@ import type { PortalAnsprechpartner } from "@/lib/portal/portal-ansprechpartner"
 import type { PortalDokument } from "@/lib/portal/portal-dokumente";
 import type { PortalTerminSlot } from "@/lib/portal/portal-termin";
 
+import type { MeldeUrsachenCheckState } from "@/lib/org/melde-ursachen";
+
 export type PortalBautagebuchEntry = {
   id?: string;
   datum?: string;
@@ -127,6 +129,10 @@ export type KundePortalDetailItem = {
   meldeZeitraum?: string | null;
   /** Fachfragen (Frage → Antwort) aus dem Melde-Funnel */
   meldeFachdetails?: Array<{ label: string; value: string }>;
+  /** Roh-Antworten für Ursachen-Matching (Wasser …) */
+  meldeFachdetailAnswers?: Record<string, string | string[] | undefined>;
+  /** Gespeicherter Ursachen-Check (funnel_daten.ursachen_check) */
+  meldeUrsachenCheck?: MeldeUrsachenCheckState | null;
   /**
    * Unverbindliche Preisindikation aus Mieter-Meldung (preis_min/max).
    * Nur für HV-Ansicht befüllen / anzeigen — nicht für Mieter.

@@ -72,6 +72,13 @@ export type PartnerComplianceItem = {
 
 /** Freier Stamm-Upload (Titel/Beschreibung + Datei) aus dem Partnerportal. */
 export const EIGENES_STAMM_DOKUMENT_TYP = "eigenes_dokument";
+/** CRM-Altbestand / Quick-Upload vor Angleichung an Portal-Slug. */
+export const EIGENES_STAMM_DOKUMENT_TYP_LEGACY = "individuell";
+
+export function istEigeneStammDokumentTyp(typ: string | null | undefined): boolean {
+  const s = (typ ?? "").trim();
+  return s === EIGENES_STAMM_DOKUMENT_TYP || s === EIGENES_STAMM_DOKUMENT_TYP_LEGACY;
+}
 
 export type PartnerProjektvertrag = {
   id: string;
@@ -258,9 +265,8 @@ export function buildPartnerStammCompliance(opts: {
 export function buildEigeneStammComplianceItems(
   dokumente: PartnerDokumentRow[]
 ): PartnerComplianceItem[] {
-  const EIGENES = EIGENES_STAMM_DOKUMENT_TYP;
   return dokumente
-    .filter((d) => !d.auftrag_id && d.typ === EIGENES)
+    .filter((d) => !d.auftrag_id && istEigeneStammDokumentTyp(d.typ))
     .sort(
       (a, b) =>
         new Date(b.hochgeladen_am).getTime() - new Date(a.hochgeladen_am).getTime()
@@ -269,11 +275,10 @@ export function buildEigeneStammComplianceItems(
       const raw = (d.bezeichnung ?? "Dokument").trim();
       const nl = raw.indexOf("\n");
       const title = (nl >= 0 ? raw.slice(0, nl) : raw).trim() || "Dokument";
-      const beschreibung = nl >= 0 ? raw.slice(nl + 1).trim() || null : null;
       return {
-        slug: EIGENES,
+        slug: EIGENES_STAMM_DOKUMENT_TYP,
         bezeichnung: title,
-        beschreibung,
+        beschreibung: null,
         pflicht: false,
         kategorie: "eigenes",
         ebene: "allgemein" as const,
@@ -408,11 +413,11 @@ export function stammDokumentStatusPillClass(
   status: PartnerComplianceItemStatus
 ): string {
   if (status === "erledigt" || status === "ablauf_warnung") {
-    return "bg-emerald-100 text-emerald-700";
+    return "tag bg-emerald-100 text-emerald-700";
   }
-  if (status === "in_pruefung") return "bg-amber-100 text-amber-800";
+  if (status === "in_pruefung") return "tag bg-amber-100 text-amber-800";
   if (status === "abgelehnt" || status === "abgelaufen") {
-    return "bg-red-100 text-red-700";
+    return "tag bg-red-100 text-red-700";
   }
-  return "bg-muted text-text-secondary";
+  return "tag bg-muted text-text-secondary";
 }

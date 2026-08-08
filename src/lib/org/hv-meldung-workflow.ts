@@ -44,10 +44,17 @@ export function canOfferKleinreparatur(
 export function isLeadHavarie(lead: {
   situation?: string | null;
   funnel_daten?: unknown;
+  freigabe_bypass_grund?: string | null;
 }): boolean {
-  if (lead.situation === "notfall") return true;
-  const fd = lead.funnel_daten as { melde_kategorie?: string; havarie?: boolean } | null;
-  if (fd?.havarie === true) return true;
+  if ((lead.freigabe_bypass_grund ?? "").trim() === "akut") return true;
+  if ((lead.situation ?? "").trim() === "notfall") return true;
+  const fd = lead.funnel_daten as {
+    melde_kategorie?: string;
+    havarie?: boolean;
+    notfall?: boolean;
+  } | null;
+  // Kategorie „Notfall“ ODER Dringlichkeit „Akut“ (`notfall: true` im Melde-Funnel)
+  if (fd?.havarie === true || fd?.notfall === true) return true;
   return fd?.melde_kategorie === "notfall";
 }
 

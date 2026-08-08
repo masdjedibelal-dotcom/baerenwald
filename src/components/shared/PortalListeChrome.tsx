@@ -53,7 +53,7 @@ export function PortalListeFilterChip({
       type="button"
       onClick={onClick}
       className={cn(
-        "inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[12.5px] font-semibold"
+        "inline-flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-[12.5px] font-semibold"
       )}
       style={{
         border: `1px solid ${active ? "transparent" : PORTAL_VAR.line}`,

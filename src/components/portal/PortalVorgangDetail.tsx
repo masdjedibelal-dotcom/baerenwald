@@ -251,6 +251,8 @@ export function PortalVorgangDetail({
         meldeBereich={item.meldeBereich}
         meldeZeitraum={item.meldeZeitraum}
         meldeFachdetails={item.meldeFachdetails}
+        meldeFachdetailAnswers={item.meldeFachdetailAnswers}
+        meldeUrsachenCheck={item.meldeUrsachenCheck ?? null}
         meldePreisIndikation={item.meldePreisIndikation}
         handwerkerName={item.ansprechpartner?.name}
         orgFreigabeStatus={orgFreigabeStatus ?? item.orgFreigabeStatus}

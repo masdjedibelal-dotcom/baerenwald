@@ -9,6 +9,7 @@ import { OrganisationObjektCardActions } from "@/components/org/OrganisationObje
 import { OrganisationObjektDetail } from "@/components/org/OrganisationObjektDetail";
 import { OrganisationObjektWizard } from "@/components/org/OrganisationObjektWizard";
 import { OrganisationMeldeQrModal } from "@/components/org/OrganisationMeldeQrModal";
+import { PortalConfirmDialog } from "@/components/shared/PortalDetailUi";
 import { PortalModalShell } from "@/components/shared/PortalModalShell";
 import { PortalListeTitle } from "@/components/shared/PortalListeChrome";
 import {
@@ -87,6 +88,11 @@ export function OrganisationObjektePanel({
     label: string;
   } | null>(null);
   const [busy, setBusy] = useState(false);
+  const [confirmAction, setConfirmAction] = useState<
+    | { kind: "delete"; objekt: OrganisationObjekt }
+    | { kind: "bulk" }
+    | null
+  >(null);
 
   const defaultHv =
     kunde?.org_anzeigename?.trim() || kunde?.name?.trim() || "";
@@ -144,13 +150,16 @@ export function OrganisationObjektePanel({
     return json.objekt?.id ?? editId ?? null;
   };
 
-  const deleteObjekt = async (o: OrganisationObjekt) => {
+  const requestDeleteObjekt = (o: OrganisationObjekt) => {
     const offen = offenById[o.id] ?? 0;
     if (objektHasActiveVorgaenge(offen)) {
       portalToastError("Löschen nicht möglich", OBJ_DELETE_BLOCKED);
       return;
     }
-    if (!window.confirm(objDeleteConfirm(o.titel))) return;
+    setConfirmAction({ kind: "delete", objekt: o });
+  };
+
+  const deleteObjekt = async (o: OrganisationObjekt) => {
     setBusy(true);
     try {
       const res = await fetch(`/api/org/objekte?id=${encodeURIComponent(o.id)}`, {
@@ -167,6 +176,7 @@ export function OrganisationObjektePanel({
       onRefresh();
     } finally {
       setBusy(false);
+      setConfirmAction(null);
     }
   };
 
@@ -210,15 +220,13 @@ export function OrganisationObjektePanel({
     }
   };
 
+  const requestBulkDelete = () => {
+    if (selected.length === 0) return;
+    setConfirmAction({ kind: "bulk" });
+  };
+
   const bulkDelete = async () => {
     if (selected.length === 0) return;
-    if (
-      !window.confirm(
-        `${selected.length} Objekt(e) wirklich löschen? Zugeordnete Vorgänge bleiben erhalten.`
-      )
-    ) {
-      return;
-    }
     setBusy(true);
     try {
       let blocked = 0;
@@ -247,8 +255,36 @@ export function OrganisationObjektePanel({
       onRefresh();
     } finally {
       setBusy(false);
+      setConfirmAction(null);
     }
   };
+
+  const confirmDialog = (
+    <PortalConfirmDialog
+      open={confirmAction != null}
+      title={
+        confirmAction?.kind === "bulk" ? "Objekte löschen?" : "Objekt löschen?"
+      }
+      description={
+        confirmAction?.kind === "delete"
+          ? objDeleteConfirm(confirmAction.objekt.titel)
+          : `${selected.length} Objekt(e) wirklich löschen? Zugeordnete Vorgänge bleiben erhalten.`
+      }
+      confirmLabel="Löschen"
+      confirmVariant="danger"
+      loading={busy}
+      onConfirm={() => {
+        if (confirmAction?.kind === "delete") {
+          void deleteObjekt(confirmAction.objekt);
+        } else if (confirmAction?.kind === "bulk") {
+          void bulkDelete();
+        }
+      }}
+      onCancel={() => {
+        if (!busy) setConfirmAction(null);
+      }}
+    />
+  );
 
   if (mode.kind === "wizard") {
     const editObj = mode.editId
@@ -341,12 +377,13 @@ export function OrganisationObjektePanel({
             })
           }
           onCopy={() => void copyObjekt(activeObjekt)}
-          onDelete={() => void deleteObjekt(activeObjekt)}
+          onDelete={() => requestDeleteObjekt(activeObjekt)}
           onEinladen={() => setEinladenObjektId(activeObjekt.id)}
           onRefresh={onRefresh}
           onOpenVorgang={onOpenVorgang}
           dokumenteByLeadId={dokumenteByLeadId}
         />
+        {confirmDialog}
         {qrModal ? (
           <OrganisationMeldeQrModal
             open
@@ -402,7 +439,7 @@ export function OrganisationObjektePanel({
             type="button"
             disabled={busy}
             className="portal-danger ml-auto rounded-lg border border-[var(--p2-danger-border)] bg-white px-3 py-1.5 text-[12.5px] font-semibold"
-            onClick={() => void bulkDelete()}
+            onClick={() => requestBulkDelete()}
           >
             ✕ Löschen
           </button>
@@ -457,7 +494,7 @@ export function OrganisationObjektePanel({
                       })
                     }
                     onKopieren={() => void copyObjekt(o)}
-                    onLoeschen={() => void deleteObjekt(o)}
+                    onLoeschen={() => requestDeleteObjekt(o)}
                   />
                 }
               />
@@ -479,6 +516,7 @@ export function OrganisationObjektePanel({
         </button>
       ) : null}
 
+      {confirmDialog}
       {qrModal ? (
         <OrganisationMeldeQrModal
           open

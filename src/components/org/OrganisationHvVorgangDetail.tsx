@@ -3,7 +3,13 @@
 import { useEffect, useMemo, useState } from "react";
 
 import { VorgangDetailBlocks } from "@/components/shared/vorgang-detail";
+import { MeldeUrsachenWasserPanel } from "@/components/org/MeldeUrsachenWasserPanel";
 import { buildKundeHvVorgangDetailVm } from "@/lib/vorgang/build-vorgang-detail-vm";
+import {
+  resolveMeldeUrsachenBereich,
+  type MeldeUrsachenCheckState,
+} from "@/lib/org/melde-ursachen";
+import type { MeldeAnswers } from "@/lib/funnel/melde-dynamic-questions";
 import { BautagebuchAccordionList } from "@/components/shared/BautagebuchAccordionList";
 import { DokumenteTabelle } from "@/components/shared/DokumenteTabelle";
 import { PortalDetailCover } from "@/components/shared/PortalDetailCover";
@@ -109,6 +115,8 @@ export type OrganisationHvVorgangDetailProps = {
   meldeBereich?: string | null;
   meldeZeitraum?: string | null;
   meldeFachdetails?: Array<{ label: string; value: string }>;
+  meldeFachdetailAnswers?: MeldeAnswers;
+  meldeUrsachenCheck?: MeldeUrsachenCheckState | null;
   detailRole?: "hv" | "kunde";
   /**
    * Optionaler Status-Chip-/VM-Text (z. B. Mieter: „In Bearbeitung“
@@ -323,6 +331,8 @@ export function OrganisationHvVorgangDetail({
   meldeBereich,
   meldeZeitraum,
   meldeFachdetails,
+  meldeFachdetailAnswers,
+  meldeUrsachenCheck,
   meldePreisIndikation,
   detailRole = "hv",
   statusLabelOverride,
@@ -373,6 +383,13 @@ export function OrganisationHvVorgangDetail({
   const empfohlen = pickEmpfohlenesAngebot(offers);
   const statusLabel =
     statusLabelOverride?.trim() || PORTAL_STATUS[displayFlowStatus].label;
+
+  const ursachenBereich = resolveMeldeUrsachenBereich({
+    answers: meldeFachdetailAnswers,
+    bereichLabel: meldeBereich,
+    ursachen: meldeUrsachenCheck,
+  });
+  const showUrsachenCard = Boolean(ursachenBereich);
 
   const abschlussCard = (
     <DetailCard title={HV_DETAIL_COPY.abnahmeTitle}>
@@ -470,7 +487,7 @@ export function OrganisationHvVorgangDetail({
         meldeSituation,
         meldeBereich,
         meldeZeitraum,
-        meldeFachdetails,
+        meldeFachdetails: showUrsachenCard ? [] : meldeFachdetails,
         meldePreisIndikation:
           detailRole === "hv" && !mieterStatusMode
             ? meldePreisIndikation
@@ -517,6 +534,7 @@ export function OrganisationHvVorgangDetail({
       meldeBereich,
       meldeZeitraum,
       meldeFachdetails,
+      showUrsachenCard,
       meldePreisIndikation,
       positionenBrutto,
       gesamtBrutto,
@@ -982,7 +1000,8 @@ export function OrganisationHvVorgangDetail({
             className={cn(
               "portal-action-row mt-4 flex-col sm:flex-row",
               "rounded-[12px] p-3 sm:p-0 sm:bg-transparent",
-              "bg-[#F6F7F6] sm:shadow-none"
+              "bg-[#F6F7F6] sm:shadow-none",
+              "max-lg:fixed max-lg:inset-x-0 max-lg:bottom-[var(--portal-mobile-nav-h)] max-lg:z-40 max-lg:mt-0 max-lg:rounded-none max-lg:border-t max-lg:bg-[var(--p2-panel)]/95 max-lg:p-3 max-lg:backdrop-blur-sm"
             )}
           >
             {actionKind === "freigabe" ? (
@@ -1032,7 +1051,14 @@ export function OrganisationHvVorgangDetail({
         ) : null}
       </div>
 
-      <div className="flex flex-col gap-4 px-4 pb-6 pt-3 sm:px-6 sm:pt-4 lg:flex-row lg:items-start lg:gap-6 lg:pt-5">
+      <div
+        className={cn(
+          "flex flex-col gap-4 px-4 pb-6 pt-3 sm:px-6 sm:pt-4 lg:flex-row lg:items-start lg:gap-6 lg:pt-5",
+          (actionKind === "freigabe" ||
+            (actionKind === "angebot" && showAcceptCta)) &&
+            "max-lg:pb-[calc(var(--portal-detail-actions-h,6rem)+0.5rem)]"
+        )}
+      >
         <div className="lg:sticky lg:top-3 lg:w-[11rem] lg:shrink-0">
           <VorgangDetailSectionNav
             items={navItems}
@@ -1055,6 +1081,19 @@ export function OrganisationHvVorgangDetail({
               !showAngebotSection
                 ? abschlussCard
                 : null}
+              {showUrsachenCard && ursachenBereich && leadId ? (
+                <MeldeUrsachenWasserPanel
+                  leadId={leadId}
+                  bereich={ursachenBereich}
+                  answers={meldeFachdetailAnswers ?? {}}
+                  initial={meldeUrsachenCheck ?? null}
+                  mode={
+                    detailRole === "hv" && !mieterStatusMode
+                      ? "edit"
+                      : "summary"
+                  }
+                />
+              ) : null}
               <VorgangDetailBlocks vm={detailVm} />
             </section>
           ) : null}

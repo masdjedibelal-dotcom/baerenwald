@@ -34,8 +34,6 @@ type Props = {
   onOpenAll: () => void;
   onOpenItem: (id: string) => void;
   onKpiClick?: (id: keyof PartnerHwDashboardKpis) => void;
-  /** P2-02: Planer findbar vom Start */
-  onOpenPlaner?: () => void;
   heroImageUrl?: string | null;
 };
 
@@ -47,7 +45,6 @@ export function PartnerHwDashboard({
   onOpenAll,
   onOpenItem,
   onKpiClick,
-  onOpenPlaner,
   heroImageUrl,
 }: Props) {
   return (
@@ -62,7 +59,7 @@ export function PartnerHwDashboard({
         value: kpis[def.id],
         onClick: onKpiClick ? () => onKpiClick(def.id) : undefined,
       }))}
-      recent={recent.slice(0, 4).map((v) => ({
+      recent={recent.slice(0, 3).map((v) => ({
         id: v.id,
         titel: v.titel,
         objekt: v.objekt,
@@ -75,25 +72,6 @@ export function PartnerHwDashboard({
       recentTitle="Zuletzt"
       recentAllLabel="Alle ansehen"
       recentEmpty="Noch nichts"
-      after={
-        onOpenPlaner ? (
-          <button
-            type="button"
-            onClick={onOpenPlaner}
-            className="mt-4 flex w-full items-center justify-between rounded-[12px] border border-border-default bg-white px-4 py-3.5 text-left"
-          >
-            <span>
-              <span className="block text-[14px] font-semibold text-text-primary">
-                Planer
-              </span>
-              <span className="mt-0.5 block text-[12.5px] text-text-secondary">
-                Termine und Aufgaben heute
-              </span>
-            </span>
-            <span className="text-[13px] font-semibold text-accent">Öffnen</span>
-          </button>
-        ) : null
-      }
     />
   );
 }

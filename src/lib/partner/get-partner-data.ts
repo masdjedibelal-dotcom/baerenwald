@@ -198,6 +198,9 @@ export type PartnerAuftragItem = {
   fortschritt: number | null;
   start_datum: string | null;
   end_datum: string | null;
+  /** DB-Zeitstempel — für „Zuletzt“ / Sortierung. */
+  created_at?: string | null;
+  updated_at?: string | null;
   angebot_id: string | null;
   plz: string;
   ort: string;
@@ -268,8 +271,10 @@ export type PartnerHandwerkerProfil = {
   telefon: string | null;
   webseite: string | null;
   adresse: string | null;
-  /** D12 Mock HW_FIRMA — optional bis Migration. */
+  /** Firmensitz — Angebote/Rechnungen. */
   strasse?: string | null;
+  hausnummer?: string | null;
+  plz?: string | null;
   ort?: string | null;
   steuernummer: string | null;
   ustid: string | null;
@@ -445,6 +450,8 @@ export async function getPartnerDataForHandwerker(handwerkerId: string) {
       webseite,
       adresse,
       strasse,
+      hausnummer,
+      plz,
       ort,
       steuernummer,
       ustid,
@@ -494,7 +501,7 @@ export async function getPartnerDataForHandwerker(handwerkerId: string) {
 
   if (
     hwLoadErr &&
-    /strasse|ort|handelsregister|bic|bank|logo_url|kleinunternehmer/i.test(
+    /strasse|hausnummer|plz|ort|handelsregister|bic|bank|logo_url|kleinunternehmer/i.test(
       hwLoadErr.message
     )
   ) {
@@ -602,6 +609,8 @@ export async function getPartnerDataForHandwerker(handwerkerId: string) {
         handwerker_bestaetigt_at,
         abnahme_protokoll_url,
         abnahme_datum,
+        created_at,
+        updated_at,
         kunden(plz, ort, name),
         leads(${PARTNER_LEAD_EMBED}),
         angebote(kunde_objekt_id),
@@ -841,6 +850,8 @@ export async function getPartnerDataForHandwerker(handwerkerId: string) {
             : null,
         start_datum: (raw.start_datum as string | null) ?? null,
         end_datum: (raw.end_datum as string | null) ?? null,
+        created_at: (raw.created_at as string | null) ?? null,
+        updated_at: (raw.updated_at as string | null) ?? null,
         angebot_id: linkedAngebotId || null,
         plz: lead?.objekt?.plz?.trim() || kunde?.plz?.trim() || "—",
         ort: lead?.objekt?.ort?.trim() || kunde?.ort?.trim() || "—",
@@ -1271,6 +1282,10 @@ export async function getPartnerDataForHandwerker(handwerkerId: string) {
       webseite: (handwerker.webseite as string | null) ?? null,
       adresse: (handwerker.adresse as string | null) ?? null,
       strasse: ((handwerker as { strasse?: string | null }).strasse as string | null) ?? null,
+      hausnummer:
+        ((handwerker as { hausnummer?: string | null }).hausnummer as string | null) ??
+        null,
+      plz: ((handwerker as { plz?: string | null }).plz as string | null) ?? null,
       ort: ((handwerker as { ort?: string | null }).ort as string | null) ?? null,
       steuernummer: (handwerker.steuernummer as string | null) ?? null,
       ustid: (handwerker.ustid as string | null) ?? null,

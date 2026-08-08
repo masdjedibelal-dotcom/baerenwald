@@ -3,8 +3,10 @@
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 
+import { markPartnerNotificationsReadForVorgang } from "@/app/actions/partner-notifications";
 import { PartnerHwDashboard, partnerDashboardStatusColors } from "@/components/partner/PartnerHwDashboard";
 import { PORTAL_HEADER_HERO_SRC } from "@/lib/portal2/portal-media";
+import { emitPortalNotificationsChanged } from "@/lib/portal2/notif-refresh";
 import { PartnerNotificationBell } from "@/components/partner/PartnerNotificationBell";
 import { PartnerPlanerPanel } from "@/components/partner/PartnerPlanerPanel";
 import { PartnerProfilPanel } from "@/components/partner/PartnerProfilPanel";
@@ -32,9 +34,13 @@ import type {
   PartnerTodoItem,
   PartnerVorgangItem,
 } from "@/lib/partner/get-partner-data";
-import { countPartnerVorgaengeFilter } from "@/lib/partner/build-partner-vorgaenge";
+import {
+  countPartnerVorgaengeFilter,
+  partnerVorgangLastActivityAt,
+} from "@/lib/partner/build-partner-vorgaenge";
 import {
   buildVorgangCardRows,
+  mapVorgangToCard,
   partnerAngebotStatusPillClass,
   partnerStatusChipStyle,
   type PartnerCardRow,
@@ -156,16 +162,18 @@ export function PartnerClient({
   const [section, setSection] = useState<PartnerSection>("uebersicht");
   const _overviewTab: OverviewTabId = "vorgaenge";
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  /** Tab-Navigation: alte URL-Parameter ignorieren bis Listen-URL ohne id da ist. */
+  /**
+   * Nach „Zurück“ zur Liste: Detail-`id` in der URL ignorieren, bis die Listen-URL
+   * ohne id angekommen ist. Sonst flackert das alte Detail wieder auf.
+   */
   const ignoreUrlDetailRef = useRef(false);
+  /** Beim Öffnen eines neuen Vorgangs: veraltete URL-id (vorheriger Detail) verwerfen. */
+  const pendingDetailIdRef = useRef<string | null>(null);
   const [gptOpen, setGptOpen] = useState(false);
   const [listPage, setListPage] = useState(1);
 
   const [vorgangListFilter, setVorgangListFilter] =
     useState<VorgangFilter>("alle");
-
-  /** Nur echte To-dos (neu, geändert, Bautagebuch, Unterlagen) — nicht „Durchführung“. */
-  const vorgaengeTodoCount = aufgaben.length;
 
   const vorgangFilterEffective: VorgangFilter =
     section === "vorgaenge" ? vorgangListFilter : "alle";
@@ -181,6 +189,30 @@ export function PartnerClient({
     () => countPartnerVorgaengeFilter(vorgaenge),
     [vorgaenge]
   );
+
+  /** Untere Nav: nur offene Vorgänge (Aktion nötig / Nachreichung), nicht Planer-To-dos. */
+  const vorgaengeOffenBadge = vorgangListFilterCounts.offen;
+
+  /** Erledigte Vorgänge → zugehörige Benachrichtigungen automatisch gelesen. */
+  const erledigtNotifKeysKey = useMemo(() => {
+    const ids: string[] = [];
+    for (const v of vorgaenge) {
+      if (v.state !== "erledigt") continue;
+      ids.push(v.id);
+      const anfrageId = v.anfrage?.id;
+      if (anfrageId) ids.push(anfrageId);
+    }
+    return Array.from(new Set(ids)).sort().join(",");
+  }, [vorgaenge]);
+
+  useEffect(() => {
+    if (!erledigtNotifKeysKey) return;
+    void markPartnerNotificationsReadForVorgang(
+      erledigtNotifKeysKey.split(",")
+    ).then((res) => {
+      if (res.ok) emitPortalNotificationsChanged();
+    });
+  }, [erledigtNotifKeysKey]);
 
   const listTotalPages = Math.max(
     1,
@@ -226,11 +258,14 @@ export function PartnerClient({
   }, [section, sectionCardRows, selectedId, vorgaenge]);
 
   const overviewCardRows = useMemo((): PartnerCardRow[] => {
-    // Dashboard „Zuletzt“: aktive Vorgänge (Offen + Auftrag), ohne Erledigt
-    return buildVorgangCardRows(
-      vorgaenge.filter((v) => v.state !== "erledigt"),
-      "alle"
-    );
+    // Dashboard „Zuletzt“: 3 Vorgänge mit den neuesten Updates (Status/Anpassung egal)
+    return [...vorgaenge]
+      .sort(
+        (a, b) =>
+          partnerVorgangLastActivityAt(b) - partnerVorgangLastActivityAt(a)
+      )
+      .slice(0, 3)
+      .map((v) => mapVorgangToCard(v));
   }, [vorgaenge]);
 
   useEffect(() => {
@@ -240,16 +275,14 @@ export function PartnerClient({
       searchParams.get("id")?.trim() || searchParams.get("auftrag")?.trim();
 
     if (ignoreUrlDetailRef.current) {
-      if (normalized && isPartnerListSection(normalized) && rawId) {
+      // Warten bis Listen-URL ohne id — stale Detail-id darf selectedId nicht wieder setzen.
+      if (normalized && isPartnerListSection(normalized) && !rawId) {
         ignoreUrlDetailRef.current = false;
-      } else if (normalized && isPartnerListSection(normalized) && !rawId) {
-        ignoreUrlDetailRef.current = false;
+        pendingDetailIdRef.current = null;
         setSection(normalized);
         setSelectedId(null);
-        return;
-      } else {
-        return;
       }
+      return;
     }
 
     if (!rawSection) return;
@@ -291,6 +324,7 @@ export function PartnerClient({
       }
 
       if (!rawId) {
+        pendingDetailIdRef.current = null;
         setSelectedId(null);
         return;
       }
@@ -299,15 +333,27 @@ export function PartnerClient({
         ? rawId.slice("auftrag:".length)
         : rawId;
 
+      const pending = pendingDetailIdRef.current?.replace(/^auftrag:/, "") ?? null;
+      if (pending && pending !== vorgangId && pending !== rawId) {
+        // Noch alte Detail-URL, neuer Klick ist schon unterwegs — warten.
+        return;
+      }
+
       const match =
         vorgaenge.find((v) => v.id === vorgangId) ??
         vorgaenge.find((v) => v.anfrage?.id === vorgangId);
 
       if (match) {
+        if (pending && (pending === match.id || pending === vorgangId)) {
+          pendingDetailIdRef.current = null;
+        }
         setSelectedId(match.id);
         return;
       }
 
+      if (pending && pending === vorgangId) {
+        pendingDetailIdRef.current = null;
+      }
       setSelectedId(vorgangId);
     }
   }, [searchParams, vorgaenge, router]);
@@ -336,6 +382,21 @@ export function PartnerClient({
     );
   }, [vorgaenge, selectedId]);
 
+  /** Vorgang öffnen = zugehörige Benachrichtigungen gelesen (auch ohne Glocken-Klick). */
+  useEffect(() => {
+    if (!selectedId) return;
+    const cleaned = selectedId.replace(/^auftrag:/, "");
+    const keys = new Set<string>([cleaned]);
+    if (selectedVorgang) {
+      keys.add(selectedVorgang.id);
+      const anfrageId = selectedVorgang.anfrage?.id;
+      if (anfrageId) keys.add(anfrageId);
+    }
+    void markPartnerNotificationsReadForVorgang(Array.from(keys)).then((res) => {
+      if (res.ok) emitPortalNotificationsChanged();
+    });
+  }, [selectedId, selectedVorgang]);
+
   function navigateFromPlaner(
     target: PartnerPlanerSection,
     selectedId?: string
@@ -345,21 +406,25 @@ export function PartnerClient({
     setVorgangListFilter("alle");
     if (selectedId) {
       const id = selectedId.replace(/^auftrag:/, "");
+      ignoreUrlDetailRef.current = false;
+      pendingDetailIdRef.current = id;
       setSelectedId(id);
+    } else {
+      pendingDetailIdRef.current = null;
     }
   }
 
   function openVorgangFromNotification(vorgangId: string, href: string) {
     ignoreUrlDetailRef.current = false;
-    setSection("vorgaenge");
-    setListPage(1);
-    setVorgangListFilter("alle");
-
     const match =
       vorgaenge.find((v) => v.id === vorgangId) ??
       vorgaenge.find((v) => v.anfrage?.id === vorgangId);
-
-    setSelectedId(match?.id ?? vorgangId);
+    const id = match?.id ?? vorgangId;
+    pendingDetailIdRef.current = id.replace(/^auftrag:/, "");
+    setSection("vorgaenge");
+    setListPage(1);
+    setVorgangListFilter("alle");
+    setSelectedId(id);
     router.push(href);
   }
 
@@ -404,22 +469,34 @@ export function PartnerClient({
   }
 
   function openFromOverview(_tab: OverviewTabId, id: string) {
+    ignoreUrlDetailRef.current = false;
+    pendingDetailIdRef.current = id.replace(/^auftrag:/, "");
     setVorgangListFilter("alle");
     setSelectedId(id);
     setSection("vorgaenge");
-    router.replace(partnerVorgangPortalPath(id));
+    router.replace(partnerVorgangPortalPath(id), { scroll: false });
   }
 
   function selectRow(id: string) {
+    ignoreUrlDetailRef.current = false;
+    pendingDetailIdRef.current = id.replace(/^auftrag:/, "");
     setSelectedId(id);
+    flashPageBusy(280);
     if (section === "vorgaenge") {
-      router.replace(partnerVorgangPortalPath(id));
+      router.replace(partnerVorgangPortalPath(id), { scroll: false });
     }
   }
 
   function closeDetail() {
+    ignoreUrlDetailRef.current = true;
+    pendingDetailIdRef.current = null;
     setSelectedId(null);
-    router.replace(partnerSectionListPath("vorgaenge"));
+    flashPageBusy(280);
+    const filterQs =
+      vorgangListFilter === "alle"
+        ? partnerSectionListPath("vorgaenge")
+        : `/partner?section=vorgaenge&filter=${vorgangListFilter}`;
+    router.replace(filterQs, { scroll: false });
   }
 
   const sectionListEmpty = sectionCardRows.length === 0;
@@ -514,7 +591,7 @@ export function PartnerClient({
   );
 
   const shellNav = buildPortalShellNav("handwerker", "partner", {
-    liste: vorgaengeTodoCount,
+    liste: vorgaengeOffenBadge,
   });
 
   const partnerFooter =
@@ -528,7 +605,7 @@ export function PartnerClient({
         brandSubtitle="Partner-Portal"
         brandKuerzel="B"
         sidebarOwner={partnerFooter}
-        hideMobileChrome={false}
+        hideMobileChrome={section === "gpt"}
         activeNavId={
           section === "gpt" || section === "planer" ? "uebersicht" : section
         }
@@ -561,7 +638,7 @@ export function PartnerClient({
       >
         <div className="space-y-5">
           {section === "gpt" ? (
-            <article className="portal-surface hidden overflow-hidden p-0 lg:block">
+            <article className="portal-surface overflow-hidden p-0">
               <PortalBaerenwaldGpt
                 variant="embedded"
                 open
@@ -605,7 +682,6 @@ export function PartnerClient({
                 erledigt: vorgaenge.filter((v) => v.state === "erledigt").length,
               }}
               onOpenAll={() => switchSection("vorgaenge", "alle")}
-              onOpenPlaner={() => switchSection("planer")}
               onKpiClick={(id) => {
                 if (id === "erledigt") {
                   switchSection("vorgaenge", "erledigt");
@@ -616,7 +692,7 @@ export function PartnerClient({
                 }
               }}
               onOpenItem={(id) => openFromOverview("vorgaenge", id)}
-              recent={overviewCardRows.slice(0, 4).map((row) => {
+              recent={overviewCardRows.map((row) => {
                 const colors = partnerDashboardStatusColors(row.statusPillKey);
                 return {
                   id: row.id,
@@ -643,16 +719,18 @@ export function PartnerClient({
 
       <PortalBaerenwaldGpt
         variant="overlay"
-        open={gptOpen}
+        open={gptOpen && section !== "gpt"}
         onClose={() => {
           setGptOpen(false);
         }}
       />
 
-      <PortalLegalFooter
-        variant="partner"
-        className="mx-auto max-w-[1200px] px-4 pb-8 pt-3 lg:px-6"
-      />
+      {section !== "gpt" ? (
+        <PortalLegalFooter
+          variant="partner"
+          className="mx-auto max-w-[1200px] px-4 pb-8 pt-3 lg:px-6"
+        />
+      ) : null}
     </>
   );
 }

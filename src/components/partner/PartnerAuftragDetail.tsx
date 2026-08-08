@@ -4,10 +4,6 @@ import { useRouter } from "next/navigation";
 import { Phone } from "lucide-react";
 
 import { submitPartnerAngebotPdf, submitPartnerRechnung } from "@/app/actions/partner-angebote";
-import { createPartnerBautagebuchEintrag,
-  deletePartnerBautagebuchEintrag,
-  updatePartnerBautagebuchEintrag,
-} from "@/app/actions/partner-bautagebuch";
 import { createPartnerBefundEintrag } from "@/app/actions/partner-befund";
 import { PartnerAbnahmeAbschlussSheet } from "@/components/partner/PartnerAbnahmeAbschlussSheet";
 import { PartnerAbnahmeReviewSection } from "@/components/partner/PartnerAbnahmeReviewSection";
@@ -42,14 +38,10 @@ import {
   partnerAuftragKannRechnungHochladen,
   partnerAuftragKannUnterlagenHochladen,
   partnerAuftragZeigtDokumenteUpload,
-  partnerNeedsAutoAngebotPrompt,
   partnerNeedsAutoRechnungPrompt,
 } from "@/lib/partner/partner-auftrag-dokumente";
 import { HW_ABNAHME_COPY } from "@/lib/partner/hw-abnahme";
-import {
-  PARTNER_HW_DOKUMENT_UPLOAD_LABEL,
-  partnerHwDokumentUploadHint,
-} from "@/lib/partner/partner-hw-dokument-copy";
+import { partnerHwDokumentUploadHint } from "@/lib/partner/partner-hw-dokument-copy";
 import {
   PARTNER_MAX_ANGEBOT_DATEIEN,
   PARTNER_MAX_BAUTAGEBUCH_ANHAENGE,
@@ -59,10 +51,7 @@ import {
   validatePartnerBautagebuchFiles,
   validatePartnerPdfFile,
 } from "@/lib/partner/partner-upload-limits";
-import type {
-  PartnerAuftragItem,
-  PartnerBautagebuchItem,
-} from "@/lib/partner/get-partner-data";
+import type { PartnerAuftragItem } from "@/lib/partner/get-partner-data";
 import {
   fmtPartnerDate,
   fmtPartnerEuro,
@@ -81,163 +70,11 @@ import {
   hwAuftragStatusLabel,
   hwAuftragStatusStyle,
 } from "@/lib/portal2/hw-auftrag-detail";
-import { HW_DOKU_STORY } from "@/lib/portal2/hw-doku-story";
 import { PORTAL_VAR } from "@/lib/portal2/tokens";
 import { partnerPortalToast } from "@/lib/shared/portal-toast";
 import { DokumenteTabelle } from "@/components/shared/DokumenteTabelle";
 import { FileUploadField } from "@/components/shared/FileUploadField";
-import { cn } from "@/lib/utils";
 import { useEffect, useMemo, useRef, useState } from "react";
-
-function BautagebuchForm({
-  auftragId,
-  auftragTitel,
-  anfrageId,
-  eintrag,
-  onDone,
-}: {
-  auftragId: string;
-  auftragTitel?: string | null;
-  anfrageId?: string | null;
-  eintrag?: PartnerBautagebuchItem;
-  onDone: () => void;
-}) {
-  const router = useRouter();
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [titel, setTitel] = useState(eintrag?.titel ?? "");
-  const [beschreibung, setBeschreibung] = useState(eintrag?.beschreibung ?? "");
-  const [datum, setDatum] = useState(
-    eintrag?.datum ?? new Date().toISOString().slice(0, 10)
-  );
-  const [anhaenge, setAnhaenge] = useState<File[]>([]);
-
-  const bestehendeAnzahl = eintrag?.foto_urls.length ?? 0;
-
-  function handleAnhaengeChange(files: File[]) {
-    const maxNeu = Math.max(0, PARTNER_MAX_BAUTAGEBUCH_ANHAENGE - bestehendeAnzahl);
-    const list = files.slice(0, maxNeu);
-    const err = validatePartnerBautagebuchFiles(list, bestehendeAnzahl);
-    if (err) {
-      setError(err);
-      setAnhaenge([]);
-      return;
-    }
-    setError(null);
-    setAnhaenge(list);
-  }
-
-  async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    setLoading(true);
-    setError(null);
-    const native = new FormData(e.currentTarget);
-    const fd = new FormData();
-    fd.set("auftragId", auftragId);
-    if (anfrageId) fd.set("anfrageId", anfrageId);
-    if (eintrag) {
-      fd.set("eintragId", eintrag.id);
-      fd.set("keepFotoPaths", eintrag.foto_urls.join(","));
-    }
-    fd.set("titel", titel);
-    fd.set("beschreibung", beschreibung);
-    const roh = String(native.get("beschreibung_roh") ?? "").trim();
-    if (roh) fd.set("beschreibung_roh", roh);
-    fd.set("datum", datum);
-    for (const f of anhaenge) fd.append("photos", f);
-
-    const res = eintrag
-      ? await updatePartnerBautagebuchEintrag(fd)
-      : await createPartnerBautagebuchEintrag(fd);
-
-    setLoading(false);
-    if (!res.ok) {
-      setError(res.error);
-      return;
-    }
-    partnerPortalToast.bautagebuchGespeichert(!eintrag);
-    router.refresh();
-    onDone();
-  }
-
-  return (
-    <form
-      onSubmit={onSubmit}
-      className="portal-text-body space-y-3 rounded-xl border border-border-light bg-muted/15 p-4"
-    >
-      <p className="font-semibold text-text-primary">
-        {eintrag ? "Eintrag bearbeiten" : "Neue Zusatznotiz"}
-      </p>
-      <label className="block">
-        <span className="portal-text-meta text-text-tertiary">Titel</span>
-        <input
-          required
-          value={titel}
-          onChange={(e) => setTitel(e.target.value)}
-          className="mt-1 portal-input w-full rounded-xl border border-border-default bg-surface-card px-3 py-3"
-        />
-      </label>
-      <label className="block">
-        <span className="portal-text-meta text-text-tertiary">Datum</span>
-        <input
-          type="date"
-          required
-          value={datum}
-          onChange={(e) => setDatum(e.target.value)}
-          className="mt-1 portal-input w-full rounded-xl border border-border-default bg-surface-card px-3 py-3"
-        />
-      </label>
-      <PartnerKiKorrekturField
-        scope="bautagebuch"
-        label="Beschreibung"
-        value={beschreibung}
-        onChange={setBeschreibung}
-        rows={3}
-        auftragTitel={auftragTitel}
-        placeholder="Was wurde gemacht? Optional: einsprechen, dann KI korrigieren."
-      />
-      <FileUploadField
-        label="Fotos & Dokumente"
-        hint={
-          eintrag
-            ? `Neue Dateien werden ergänzt (max. ${PARTNER_MAX_BAUTAGEBUCH_ANHAENGE} gesamt, davon ${bestehendeAnzahl} bereits). Fotos max. ${PARTNER_MAX_PHOTO_MB} MB, PDF max. ${PARTNER_MAX_PDF_MB} MB.`
-            : `Fotos (JPG/PNG/WebP, max. ${PARTNER_MAX_PHOTO_MB} MB) oder PDF (max. ${PARTNER_MAX_PDF_MB} MB), bis ${PARTNER_MAX_BAUTAGEBUCH_ANHAENGE} Dateien.`
-        }
-        accept="image/jpeg,image/png,image/webp,application/pdf,.pdf"
-        multiple
-        selectedName={
-          anhaenge.length > 0
-            ? anhaenge.length === 1
-              ? anhaenge[0].name
-              : `${anhaenge.length} Dateien ausgewählt`
-            : null
-        }
-        onChange={handleAnhaengeChange}
-      />
-      {error ? (
-        <p className="portal-text-body text-red-700" role="alert">
-          {error}
-        </p>
-      ) : null}
-      <div className="flex flex-wrap gap-2">
-        <button
-          type="submit"
-          disabled={loading}
-          className={cn("btn-pill-primary portal-btn", loading && "opacity-60")}
-        >
-          {loading ? "Speichern…" : "Speichern"}
-        </button>
-        <button
-          type="button"
-          onClick={onDone}
-          className="portal-text-body text-text-secondary underline-offset-2 hover:underline"
-        >
-          Abbrechen
-        </button>
-      </div>
-    </form>
-  );
-}
 
 function PartnerBefundForm({
   auftragId,
@@ -348,60 +185,6 @@ function PartnerBefundForm({
   );
 }
 
-function BautagebuchEintragActions({
-  auftragId,
-  eintrag,
-  onEdit,
-}: {
-  auftragId: string;
-  eintrag: PartnerBautagebuchItem;
-  onEdit: () => void;
-}) {
-  const router = useRouter();
-  const [deleting, setDeleting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  async function onDelete() {
-    if (!confirm("Eintrag wirklich löschen?")) return;
-    setDeleting(true);
-    setError(null);
-    const res = await deletePartnerBautagebuchEintrag({
-      auftragId,
-      eintragId: eintrag.id,
-    });
-    setDeleting(false);
-    if (!res.ok) {
-      setError(res.error);
-      return;
-    }
-    partnerPortalToast.bautagebuchGeloescht();
-    router.refresh();
-  }
-
-  if (!eintrag.own || eintrag.fuer_kunde_freigegeben) return null;
-
-  return (
-    <>
-      <button
-        type="button"
-        onClick={onEdit}
-        className="portal-text-meta font-medium text-accent underline-offset-2 hover:underline"
-      >
-        Bearbeiten
-      </button>
-      <button
-        type="button"
-        disabled={deleting}
-        onClick={onDelete}
-        className="portal-text-meta font-medium text-red-700 underline-offset-2 hover:underline"
-      >
-        Löschen
-      </button>
-      {error ? <p className="w-full portal-text-meta text-red-700">{error}</p> : null}
-    </>
-  );
-}
-
 export function PartnerAuftragDetail({
   item,
   vorgangState,
@@ -420,10 +203,7 @@ export function PartnerAuftragDetail({
   deepLinkProtokollId?: string | null;
 }) {
   const router = useRouter();
-  const dokuSectionRef = useRef<HTMLDivElement>(null);
   const [showBefund, setShowBefund] = useState(false);
-  const [showNew, setShowNew] = useState(false);
-  const [editId, setEditId] = useState<string | null>(null);
   const [pdfLoading, setPdfLoading] = useState(false);
   const [rechnungLoading, setRechnungLoading] = useState(false);
   const [pdfError, setPdfError] = useState<string | null>(null);
@@ -434,11 +214,8 @@ export function PartnerAuftragDetail({
   const [abschlussDone, setAbschlussDone] = useState(false);
   const [abschlussVollstaendig, setAbschlussVollstaendig] = useState(false);
   const [rechnungDocOpen, setRechnungDocOpen] = useState(false);
-  const [angebotDocOpen, setAngebotDocOpen] = useState(false);
   const [autoOpenPreferred, setAutoOpenPreferred] = useState(false);
-  const autoDocDismissedRef = useRef<{ angebot?: boolean; rechnung?: boolean }>(
-    {}
-  );
+  const autoDocDismissedRef = useRef<{ rechnung?: boolean }>({});
   const [abnahmePdfUrl, setAbnahmePdfUrl] = useState<string | null>(
     item.abnahme_protokoll_url ?? null
   );
@@ -459,9 +236,7 @@ export function PartnerAuftragDetail({
 
   useEffect(() => {
     if (!focusBautagebuch) return;
-    const hasPreferred = preferredPositionIds.length > 0;
-    if (!hasPreferred) setShowNew(true);
-    else setAutoOpenPreferred(true);
+    if (preferredPositionIds.length > 0) setAutoOpenPreferred(true);
     setActiveTab("dokumentation");
   }, [focusBautagebuch, preferredPositionIds.length]);
 
@@ -481,17 +256,9 @@ export function PartnerAuftragDetail({
       !autoDocDismissedRef.current.rechnung
     ) {
       setRechnungDocOpen(true);
-      return;
-    }
-    if (
-      partnerNeedsAutoAngebotPrompt(item) &&
-      !autoDocDismissedRef.current.angebot
-    ) {
-      setAngebotDocOpen(true);
     }
   }, [
     item.id,
-    item.hw_angebot_pdf_url,
     item.hw_rechnung_eingereicht_at,
     item.hw_abschluss_signiert_am,
     item.abnahme_protokoll_url,
@@ -504,10 +271,6 @@ export function PartnerAuftragDetail({
   const zeigtDokumenteUpload = partnerAuftragZeigtDokumenteUpload(item);
   const rechnungEingereicht = Boolean(item.hw_rechnung_eingereicht_at);
 
-  const tagebuchEintraege = useMemo(
-    () => item.bautagebuch.filter((e) => e.eintrag_typ !== "befund"),
-    [item.bautagebuch]
-  );
   const befundEintraege = useMemo(
     () => item.bautagebuch.filter((e) => e.eintrag_typ === "befund"),
     [item.bautagebuch]
@@ -515,38 +278,6 @@ export function PartnerAuftragDetail({
   const eigenerBefund = befundEintraege.some((e) => e.own);
   const zeigtBefundBereich =
     item.lead?.hv_meldung_status === "notmassnahme" || befundEintraege.length > 0;
-
-  const accordionEintraege = useMemo(
-    () =>
-      tagebuchEintraege.map((e) => ({
-        id: e.id,
-        datum: e.datum,
-        titel: e.titel,
-        beschreibung: e.beschreibung,
-        fotos: e.foto_signed_urls,
-        badges: (
-          <>
-            {e.own ? (
-              <span className="tag bg-accent-light text-accent">Dein Eintrag</span>
-            ) : null}
-            {e.fuer_kunde_freigegeben ? (
-              <span className="tag bg-emerald-100 text-emerald-700">
-                Im Portal sichtbar
-              </span>
-            ) : null}
-          </>
-        ),
-        actions:
-          e.own && !e.fuer_kunde_freigegeben ? (
-            <BautagebuchEintragActions
-              auftragId={item.id}
-              eintrag={e}
-              onEdit={() => setEditId(e.id)}
-            />
-          ) : undefined,
-      })),
-    [tagebuchEintraege, item.id]
-  );
 
   const befundAccordion = useMemo(
     () =>
@@ -559,10 +290,6 @@ export function PartnerAuftragDetail({
       })),
     [befundEintraege]
   );
-
-  const editingEintrag = editId
-    ? item.bautagebuch.find((e) => e.id === editId)
-    : undefined;
 
   const konditionZeilen = useMemo(
     () =>
@@ -588,17 +315,18 @@ export function PartnerAuftragDetail({
   );
   const dokumentZeilen = useMemo(() => buildPartnerAuftragDokumentZeilen(item), [item]);
 
-  const kannAbschluss = partnerKannErledigtMelden({
-    positionen: item.positionen,
-    vorgangState,
-    auftragStatus: item.status,
-    hwAbschlussSigniertAm: item.hw_abschluss_signiert_am,
-    abnahmeProtokollUrl: item.abnahme_protokoll_url,
-    abnahmeFreigabeStatus: item.abnahme_freigabe_status,
-  });
+  const kannAbschluss =
+    !abschlussDone &&
+    partnerKannErledigtMelden({
+      positionen: item.positionen,
+      vorgangState,
+      auftragStatus: item.status,
+      hwAbschlussSigniertAm: item.hw_abschluss_signiert_am,
+      abnahmeProtokollUrl: item.abnahme_protokoll_url,
+      abnahmeFreigabeStatus: item.abnahme_freigabe_status,
+    });
 
-  async function onPdfSubmit(e: React.FormEvent) {
-    e.preventDefault();
+  async function uploadUnterlagen() {
     if (!item.angebotHandwerkerId) return;
     const err = validatePartnerAngebotFiles(angebotPdfs, { required: true });
     if (err) {
@@ -643,10 +371,12 @@ export function PartnerAuftragDetail({
     resolvePartnerVorgangListenStatus(vorgangState, item);
 
   const titel = resolvePartnerDetailTitelFromAuftrag(item);
-  const statusLabel = hwAuftragStatusLabel({
-    vorgangState,
-    fallback: listenStatusLabel,
-  });
+  const statusLabel = abschlussDone
+    ? "Zur Freigabe"
+    : hwAuftragStatusLabel({
+        vorgangState,
+        fallback: listenStatusLabel,
+      });
   const statusStyle = hwAuftragStatusStyle(statusLabel);
 
   const lead = item.lead;
@@ -660,7 +390,6 @@ export function PartnerAuftragDetail({
     null;
   const einheit = lead?.melder_einheit?.trim() || null;
   const objektLine = [strasse, einheit].filter(Boolean).join(" · ") || null;
-  const headerSub = [objektLine, gewerk].filter(Boolean).join(" · ");
   const beschreibung = lead?.kontakt_nachricht?.trim() || null;
   const kontaktName =
     lead?.melder_name?.trim() || lead?.kontakt_name?.trim() || null;
@@ -738,7 +467,6 @@ export function PartnerAuftragDetail({
         onBack={handleBack}
         backLabel="← Zurück"
         title={titel}
-        metaLine={headerSub || undefined}
         statusLabel={statusLabel}
         statusPillStyle={statusStyle}
         tabs={DETAIL_TABS}
@@ -774,28 +502,26 @@ export function PartnerAuftragDetail({
         {activeTab === "dokumentation" ? (
           <div className="space-y-3.5">
             <PortalDetailCard>
-              <div ref={dokuSectionRef}>
-                <PartnerPositionLebenszyklusList
-                  auftragId={item.id}
-                  auftragTitel={titel}
-                  anfrageId={btAnfrageId}
-                  preferredPositionIds={preferredPositionIds}
-                  autoOpenPreferred={autoOpenPreferred}
-                  positionen={item.positionen.map((p) => ({
-                    id: p.id,
-                    leistung_name: p.leistung_name,
-                    leistung_status: p.leistung_status,
-                    verguetung: p.verguetung,
-                    typ: p.typ,
-                    anerkennung_status: p.anerkennung_status,
-                    preis_partner: p.preis_partner,
-                    einheit: p.einheit,
-                    menge: p.menge,
-                    zeit_minuten_summe: p.zeit_minuten_summe,
-                  }))}
-                  onDone={() => router.refresh()}
-                />
-              </div>
+              <PartnerPositionLebenszyklusList
+                auftragId={item.id}
+                auftragTitel={titel}
+                anfrageId={btAnfrageId}
+                preferredPositionIds={preferredPositionIds}
+                autoOpenPreferred={autoOpenPreferred}
+                positionen={item.positionen.map((p) => ({
+                  id: p.id,
+                  leistung_name: p.leistung_name,
+                  leistung_status: p.leistung_status,
+                  verguetung: p.verguetung,
+                  typ: p.typ,
+                  anerkennung_status: p.anerkennung_status,
+                  preis_partner: p.preis_partner,
+                  einheit: p.einheit,
+                  menge: p.menge,
+                  zeit_minuten_summe: p.zeit_minuten_summe,
+                }))}
+                onDone={() => router.refresh()}
+              />
 
               <PartnerFachdokuSlots auftragId={item.id} className="mt-4" />
 
@@ -807,69 +533,6 @@ export function PartnerAuftragDetail({
                   gesamtLabel={PARTNER_LEISTUNGEN_GESAMT_LABEL}
                 />
               ) : null}
-
-              <div className="mt-5 border-t border-border-light pt-5">
-                <div className="mb-3 flex items-center justify-between gap-2">
-                  <div>
-                    <h4 className="portal-text-label text-text-tertiary">
-                      {HW_DOKU_STORY.freiesBtTitle}
-                    </h4>
-                    <p
-                      className="mt-1 text-[12.5px]"
-                      style={{ color: PORTAL_VAR.faint }}
-                    >
-                      {HW_DOKU_STORY.freiesBtBody}
-                    </p>
-                  </div>
-                  {!showNew && !editingEintrag ? (
-                    <button
-                      type="button"
-                      onClick={() => setShowNew(true)}
-                      className="shrink-0 rounded-full border px-3 py-1.5 text-[12px] font-semibold"
-                      style={{
-                        borderColor: PORTAL_VAR.line,
-                        color: PORTAL_VAR.sub,
-                        background: "#fff",
-                      }}
-                    >
-                      + Eintrag
-                    </button>
-                  ) : null}
-                </div>
-                {item.bautagebuchAnfrageOffen ? (
-                  <p className="mb-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm font-semibold text-amber-900">
-                    {preferredPositionIds.length > 0
-                      ? "Bitte diese Leistungen dokumentieren"
-                      : "Bitte Update geben — Zusatznotiz."}
-                    {item.bautagebuchAnfrageNotiz?.trim() ? (
-                      <span className="mt-1 block font-normal text-amber-800">
-                        {item.bautagebuchAnfrageNotiz.trim()}
-                      </span>
-                    ) : null}
-                  </p>
-                ) : null}
-                {showNew ? (
-                  <BautagebuchForm
-                    auftragId={item.id}
-                    auftragTitel={titel}
-                    anfrageId={btAnfrageId}
-                    onDone={() => setShowNew(false)}
-                  />
-                ) : null}
-                {editingEintrag ? (
-                  <BautagebuchForm
-                    auftragId={item.id}
-                    auftragTitel={titel}
-                    eintrag={editingEintrag}
-                    onDone={() => setEditId(null)}
-                  />
-                ) : null}
-                <BautagebuchAccordionList
-                  eintraege={accordionEintraege}
-                  className="!border-t-0 !pt-0"
-                  emptyText="Noch keine Zusatznotizen."
-                />
-              </div>
             </PortalDetailCard>
 
             {zeigtBefundBereich ? (
@@ -908,51 +571,47 @@ export function PartnerAuftragDetail({
               <DokumenteTabelle
                 dokumente={dokumentZeilen}
                 heading=""
-                emptyText="Noch keine Dokumente."
-              />
-
-              {zeigtDokumenteUpload ? (
-                <div className="mt-4 space-y-4">
-                  {kannUnterlagenHochladen ? (
-                    <form
-                      onSubmit={onPdfSubmit}
-                      className="space-y-2 rounded-xl border border-dashed p-4"
-                      style={{ borderColor: PORTAL_VAR.line }}
-                    >
-                      <FileUploadField
-                        label={PARTNER_HW_DOKUMENT_UPLOAD_LABEL}
-                        accept="image/jpeg,image/png,image/webp,application/pdf,.pdf"
-                        multiple
-                        hint={partnerHwDokumentUploadHint()}
-                        selectedName={
+                emptyText={
+                  kannUnterlagenHochladen
+                    ? "Dokumente hier ablegen"
+                    : "Noch keine Dokumente."
+                }
+                className="!border-t-0 !pt-0"
+                upload={
+                  kannUnterlagenHochladen
+                    ? {
+                        accept:
+                          "image/jpeg,image/png,image/webp,application/pdf,.pdf",
+                        multiple: true,
+                        hint: partnerHwDokumentUploadHint(),
+                        disabled: pdfLoading,
+                        selectedLabel:
                           angebotPdfs.length > 0
                             ? angebotPdfs.length === 1
                               ? angebotPdfs[0].name
                               : `${angebotPdfs.length} Dateien`
-                            : null
-                        }
-                        onChange={(files) => {
+                            : null,
+                        error: pdfError,
+                        submitting: pdfLoading,
+                        onFiles: (files) => {
                           const list = files.slice(0, PARTNER_MAX_ANGEBOT_DATEIEN);
                           const err = validatePartnerAngebotFiles(list, {
                             required: false,
                           });
                           setPdfError(err);
                           setAngebotPdfs(err ? [] : list);
-                        }}
-                      />
-                      {pdfError ? <PartnerDetailError message={pdfError} /> : null}
-                      {angebotPdfs.length > 0 ? (
-                        <button
-                          type="submit"
-                          disabled={pdfLoading}
-                          className="btn-pill-outline portal-btn"
-                        >
-                          {pdfLoading ? "Wird hochgeladen…" : "Hochladen"}
-                        </button>
-                      ) : null}
-                    </form>
-                  ) : null}
+                        },
+                        onSubmit: () => {
+                          void uploadUnterlagen();
+                        },
+                        submitLabel: "Hochladen",
+                      }
+                    : undefined
+                }
+              />
 
+              {zeigtDokumenteUpload ? (
+                <div className="mt-4 space-y-4">
                   {kannRechnungHochladen && item.angebotHandwerkerId ? (
                     <div
                       className="space-y-2 rounded-xl border p-4"
@@ -1058,8 +717,12 @@ export function PartnerAuftragDetail({
                 auftragId={item.id}
                 protokollId={abnahmeProtokollId || item.abnahme_protokoll_id}
                 initialPdfUrl={abnahmePdfUrl || item.abnahme_protokoll_url}
-                initialFreigabeStatus={item.abnahme_freigabe_status}
-                focus={focusAbnahme}
+                initialFreigabeStatus={
+                  abschlussDone
+                    ? item.abnahme_freigabe_status || "zur_freigabe"
+                    : item.abnahme_freigabe_status
+                }
+                focus={focusAbnahme || abschlussDone}
               />
             ) : (
               <p className="portal-text-body text-text-secondary">
@@ -1090,27 +753,14 @@ export function PartnerAuftragDetail({
           setAbschlussVollstaendig(result.vollstaendig);
           setAbschlussDone(true);
           setAbschlussOpen(false);
+          setRechnungDocOpen(false);
+          // Kein Auto-Rechnungs-Dialog direkt nach Signatur — erst Vorgang mit neuem Status.
+          autoDocDismissedRef.current.rechnung = true;
           if (result.pdf_url) setAbnahmePdfUrl(result.pdf_url);
           if (result.protokoll_id) setAbnahmeProtokollId(result.protokoll_id);
-          if (item.angebotHandwerkerId && !item.hw_rechnung_eingereicht_at) {
-            setRechnungDocOpen(true);
-          }
+          setActiveTab("abnahme");
         }}
       />
-
-      {item.angebotHandwerkerId ? (
-        <PartnerDokumentPreviewModal
-          open={angebotDocOpen}
-          anfrageId={item.angebotHandwerkerId}
-          art="angebot"
-          onClose={() => {
-            autoDocDismissedRef.current.angebot = true;
-            setAngebotDocOpen(false);
-          }}
-          onSuccess={() => setAngebotDocOpen(false)}
-          allowSkip
-        />
-      ) : null}
 
       {item.angebotHandwerkerId ? (
         <PartnerDokumentPreviewModal

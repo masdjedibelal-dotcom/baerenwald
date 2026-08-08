@@ -15,6 +15,8 @@ export type PartnerDocAbsender = {
   firma: string;
   inhaber?: string | null;
   strasse?: string | null;
+  hausnummer?: string | null;
+  plz?: string | null;
   ort?: string | null;
   adresse?: string | null;
   telefon?: string | null;
@@ -91,6 +93,11 @@ function wrapText(text: string, maxChars: number): string[] {
 }
 
 function absenderAdresse(a: PartnerDocAbsender): string {
+  const strasseNr = [a.strasse?.trim(), a.hausnummer?.trim()]
+    .filter(Boolean)
+    .join(" ");
+  const plzOrt = [a.plz?.trim(), a.ort?.trim()].filter(Boolean).join(" ");
+  if (strasseNr && plzOrt) return `${strasseNr}, ${plzOrt}`;
   if (a.strasse?.trim() && a.ort?.trim()) {
     return `${a.strasse.trim()}, ${a.ort.trim()}`;
   }

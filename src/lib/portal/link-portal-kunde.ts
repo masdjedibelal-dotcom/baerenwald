@@ -151,6 +151,14 @@ export async function linkPortalKundeToAuthUser(opts: {
     .eq("auth_user_id", opts.userId)
     .maybeSingle();
 
+  // Bereits verknüpft + gleiche Login-E-Mail → kein Canonical-Recount (teuer).
+  if (linkedByAuth?.id) {
+    const linkedEmail = normalizeKundenEmail(linkedByAuth.email);
+    if (linkedEmail === email) {
+      return { ok: true, kundeId: String(linkedByAuth.id) };
+    }
+  }
+
   let canonical: (KundeCandidate & { datenAnzahl: number }) | null = null;
   try {
     canonical = await pickCanonicalKundeForLoginEmail(email);
@@ -185,10 +193,6 @@ export async function linkPortalKundeToAuthUser(opts: {
   }
 
   if (linkedByAuth?.id) {
-    const linkedEmail = (linkedByAuth.email ?? "").trim().toLowerCase();
-    if (linkedEmail === email) {
-      return { ok: true, kundeId: String(linkedByAuth.id) };
-    }
     await detachAuthFromKunde(String(linkedByAuth.id), opts.userId);
   }
 
@@ -248,4 +252,30 @@ export async function linkPortalKundeToAuthUser(opts: {
   }
 
   return { ok: true, kundeId: String(neu.id) };
+}
+
+/**
+ * Schneller Lookup für bereits verknüpfte Sessions (APIs/Actions).
+ * Kein Canonical-Recount — bei Miss → null, Caller kann voll linken.
+ */
+export async function resolveLinkedPortalKundeId(
+  userId: string
+): Promise<string | null> {
+  const uid = userId?.trim();
+  if (!uid) return null;
+
+  const { data: mitglied } = await supabaseAdmin
+    .from("kunden_mitglieder")
+    .select("kunde_id")
+    .eq("auth_user_id", uid)
+    .eq("aktiv", true)
+    .maybeSingle();
+  if (mitglied?.kunde_id) return String(mitglied.kunde_id);
+
+  const { data: linked } = await supabaseAdmin
+    .from("kunden")
+    .select("id")
+    .eq("auth_user_id", uid)
+    .maybeSingle();
+  return linked?.id ? String(linked.id) : null;
 }

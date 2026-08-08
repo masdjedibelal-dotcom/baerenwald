@@ -76,7 +76,7 @@ export function PartnerHwKalkulationScreen({
     <PartnerDetailSection title="Kalkulation / Angebot">
       <p className="portal-text-body text-text-secondary mb-3">
         Positionen anlegen, Summen prüfen und einreichen. Das Angebot erscheint
-        im CRM und bei der Verwaltung als empfohlenes Angebot.
+        bei Bärenwald und der Verwaltung als empfohlenes Angebot.
       </p>
 
       <div className="mb-3 flex rounded-[10px] bg-muted p-1">
@@ -197,7 +197,7 @@ export function PartnerHwKalkulationScreen({
         {unterSchwelle ? (
           <p className="mt-2 text-xs font-semibold text-[#1F6A3F]">
             Unter Freigabeschwelle ({formatHwMoney(schwelleEur)}) — nach
-            Einreichung oft ohne HV-Freigabe-Schritt (CRM Auto-Pfad).
+            Einreichung oft ohne HV-Freigabe-Schritt (Bärenwald Auto-Pfad).
           </p>
         ) : (
           <p className="mt-2 text-xs text-text-secondary">

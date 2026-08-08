@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 
+import { PortalConfirmDialog } from "@/components/shared/PortalDetailUi";
 import { portalToastError, portalToastSuccess } from "@/lib/shared/portal-toast";
 
 type Abo = {
@@ -17,6 +18,8 @@ type Abo = {
 export function OrganisationAktiveAbosPanel() {
   const [abos, setAbos] = useState<Abo[]>([]);
   const [busy, setBusy] = useState<string | null>(null);
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [pendingAboId, setPendingAboId] = useState<string | null>(null);
 
   async function load() {
     const res = await fetch("/api/org/abos");
@@ -29,7 +32,6 @@ export function OrganisationAktiveAbosPanel() {
   }, []);
 
   async function kuendigen(aboId: string) {
-    if (!confirm("Abo wirklich kündigen?")) return;
     setBusy(aboId);
     try {
       const res = await fetch("/api/org/abos/kuendigen", {
@@ -45,6 +47,8 @@ export function OrganisationAktiveAbosPanel() {
       portalToastError(e instanceof Error ? e.message : "Fehler");
     } finally {
       setBusy(null);
+      setConfirmOpen(false);
+      setPendingAboId(null);
     }
   }
 
@@ -73,7 +77,10 @@ export function OrganisationAktiveAbosPanel() {
                 type="button"
                 className="btn-pill-outline portal-btn-compact text-red-700 border-red-200"
                 disabled={busy === a.id}
-                onClick={() => void kuendigen(a.id)}
+                onClick={() => {
+                  setPendingAboId(a.id);
+                  setConfirmOpen(true);
+                }}
               >
                 {busy === a.id ? "…" : "Kündigen"}
               </button>
@@ -83,6 +90,23 @@ export function OrganisationAktiveAbosPanel() {
           </li>
         ))}
       </ul>
+
+      <PortalConfirmDialog
+        open={confirmOpen}
+        title="Abo kündigen?"
+        description="Abo wirklich kündigen?"
+        confirmLabel="Kündigen"
+        confirmVariant="danger"
+        loading={busy != null}
+        onConfirm={() => {
+          if (pendingAboId) void kuendigen(pendingAboId);
+        }}
+        onCancel={() => {
+          if (busy) return;
+          setConfirmOpen(false);
+          setPendingAboId(null);
+        }}
+      />
     </section>
   );
 }

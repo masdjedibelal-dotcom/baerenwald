@@ -2511,14 +2511,37 @@ h3 {
   box-sizing: border-box;
 }
 
+/* Marketing-Pills im Portal = gleiche Farben wie portal-action-btn (kein Weiß-auf-Weiß). */
+.portal-ui .btn-pill-primary,
+.portal-ui .btn-pill-filled {
+  background: var(--org-primary, var(--p2-primary, #2e7d52)) !important;
+  color: #fff !important;
+  border: none !important;
+}
+
 .portal-ui .btn-pill-primary:hover,
 .portal-ui .btn-pill-filled:hover {
+  background: var(--org-primary-dk, var(--p2-primary-dk, #256642)) !important;
   transform: none;
   box-shadow: none;
 }
 
+.portal-ui .btn-pill-primary:disabled,
+.portal-ui .btn-pill-filled:disabled {
+  background: var(--p2-selected, #f0f2f0) !important;
+  color: var(--p2-faint2, #9aa39e) !important;
+}
+
 .portal-ui .btn-pill-outline {
   border-width: 1.5px;
+  background: var(--p2-selected, #f0f2f0) !important;
+  color: var(--p2-sub, #404a45) !important;
+  border-color: var(--p2-line, rgba(0, 0, 0, 0.08)) !important;
+}
+
+.portal-ui .btn-pill-outline:hover {
+  background: var(--p2-hover, #f7f8fa) !important;
+  color: var(--p2-sub, #404a45) !important;
 }
 
 .portal-ui .portal-btn {

@@ -5,6 +5,9 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { PortalNotificationBell } from "@/components/portal/PortalNotificationBell";
 import { portalNotificationRowToItem } from "@/lib/portal2/notif-adapters";
+import {
+  PORTAL_NOTIFICATIONS_CHANGED_EVENT,
+} from "@/lib/portal2/notif-refresh";
 import type { PortalNotifItem, PortalNotifRole } from "@/lib/portal2/notif-types";
 
 type ApiRow = {
@@ -76,6 +79,10 @@ export function PortalUserNotificationBell({
 
   useEffect(() => {
     void load();
+    const onChanged = () => void load();
+    window.addEventListener(PORTAL_NOTIFICATIONS_CHANGED_EVENT, onChanged);
+    return () =>
+      window.removeEventListener(PORTAL_NOTIFICATIONS_CHANGED_EVENT, onChanged);
   }, [load]);
 
   const items = useMemo(

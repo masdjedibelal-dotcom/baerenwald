@@ -42,13 +42,13 @@ function freigabeBadge(status: string | null, sent: boolean) {
   const s = String(status ?? "").toLowerCase();
   if (s === "zur_freigabe") {
     return {
-      label: "Zur Freigabe an CRM",
+      label: "Zur Freigabe an Bärenwald",
       className: "bg-amber-100 text-amber-900",
     };
   }
   if (s === "freigegeben") {
     return {
-      label: "CRM freigegeben",
+      label: "Von Bärenwald freigegeben",
       className: "bg-sky-100 text-sky-800",
     };
   }
@@ -110,6 +110,22 @@ export function PartnerAbnahmeReviewSection({
   useEffect(() => {
     void load();
   }, [load]);
+
+  /** Optimistic nach frischem Abschluss, bevor Status-Fetch greift. */
+  useEffect(() => {
+    if (!initialPdfUrl && !initialFreigabeStatus && !protokollId) return;
+    setStatus((prev) => ({
+      protokoll_id: protokollId ?? prev?.protokoll_id ?? null,
+      pdf_url: initialPdfUrl ?? prev?.pdf_url ?? null,
+      abnahme_datum: prev?.abnahme_datum ?? null,
+      punkte_count: prev?.punkte_count ?? 0,
+      maengel_count: prev?.maengel_count ?? 0,
+      an_kunde_gesendet_at: prev?.an_kunde_gesendet_at ?? null,
+      handwerker_bestaetigt_at: prev?.handwerker_bestaetigt_at ?? null,
+      freigabe_status:
+        initialFreigabeStatus ?? prev?.freigabe_status ?? null,
+    }));
+  }, [initialPdfUrl, initialFreigabeStatus, protokollId]);
 
   useEffect(() => {
     if (!focus) return;
@@ -196,10 +212,10 @@ export function PartnerAbnahmeReviewSection({
               ) : null}
               <p className="mt-2 text-[12.5px] text-text-secondary">
                 {freigabe === "abgelehnt"
-                  ? "CRM hat die Teilabnahme abgelehnt. Bitte Nacharbeit erledigen und erneut abschließen."
+                  ? "Bärenwald hat die Teilabnahme abgelehnt. Bitte Nacharbeit erledigen und erneut abschließen."
                   : freigabe === "freigegeben" || sent
-                    ? "Freigegeben. Den finalen Versand an den Kunden übernimmt das CRM."
-                    : "Kein automatischer Versand an den Kunden. Das CRM prüft und gibt frei."}
+                    ? "Freigegeben. Den finalen Versand an den Kunden übernimmt Bärenwald."
+                    : "Kein automatischer Versand an den Kunden. Bärenwald prüft und gibt frei."}
               </p>
             </div>
           </div>
@@ -228,10 +244,7 @@ export function PartnerAbnahmeReviewSection({
           {showBestaetigen ? (
             <button
               type="button"
-              className={cn(
-                "btn-pill-primary flex w-full items-center justify-center gap-2",
-                busy && "opacity-60"
-              )}
+              className="portal-action-btn portal-action-btn--primary portal-action-btn--block gap-2"
               disabled={busy}
               onClick={() => void onBestaetigen()}
             >

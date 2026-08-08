@@ -1,18 +1,71 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { OrganisationHvDashboard } from "@/components/org/OrganisationHvDashboard";
 import { PORTAL_HEADER_HERO_SRC } from "@/lib/portal2/portal-media";
+import { emitPortalNotificationsChanged } from "@/lib/portal2/notif-refresh";
 import { HvNotificationBell } from "@/components/org/HvNotificationBell";
-import { OrganisationAktiveAbosPanel } from "@/components/org/OrganisationAktiveAbosPanel";
-import { OrganisationServicepaketePanel } from "@/components/org/OrganisationServicepaketePanel";
-import { OrganisationMieterwechselPanel } from "@/components/org/OrganisationMieterwechselPanel";
 import { OrganisationSuche } from "@/components/org/OrganisationSuche";
-import { OrganisationAnfrageHub } from "@/components/org/OrganisationAnfrageHub";
 import { OrganisationMehrScreen } from "@/components/org/OrganisationMehrScreen";
-import { OrganisationObjektePanel } from "@/components/org/OrganisationObjektePanel";
-import { OrganisationEinstellungenScreen } from "@/components/org/OrganisationEinstellungenScreen";
 import { OrganisationWhitelabelGate } from "@/components/org/OrganisationWhitelabelGate";
 import { OrganisationVorgaengeSection } from "@/components/org/OrganisationVorgaengeSection";
+
+const OrganisationAktiveAbosPanel = dynamic(
+  () =>
+    import("@/components/org/OrganisationAktiveAbosPanel").then(
+      (m) => m.OrganisationAktiveAbosPanel
+    ),
+  { ssr: false, loading: () => null }
+);
+const OrganisationServicepaketePanel = dynamic(
+  () =>
+    import("@/components/org/OrganisationServicepaketePanel").then(
+      (m) => m.OrganisationServicepaketePanel
+    ),
+  { ssr: false, loading: () => null }
+);
+const OrganisationMieterwechselPanel = dynamic(
+  () =>
+    import("@/components/org/OrganisationMieterwechselPanel").then(
+      (m) => m.OrganisationMieterwechselPanel
+    ),
+  { ssr: false, loading: () => null }
+);
+const OrganisationAnfrageHub = dynamic(
+  () =>
+    import("@/components/org/OrganisationAnfrageHub").then(
+      (m) => m.OrganisationAnfrageHub
+    ),
+  { ssr: false, loading: () => null }
+);
+const OrganisationObjektePanel = dynamic(
+  () =>
+    import("@/components/org/OrganisationObjektePanel").then(
+      (m) => m.OrganisationObjektePanel
+    ),
+  {
+    ssr: false,
+    loading: () => (
+      <p className="px-4 py-8 text-center text-sm text-text-secondary">
+        Objekte werden geladen…
+      </p>
+    ),
+  }
+);
+const OrganisationEinstellungenScreen = dynamic(
+  () =>
+    import("@/components/org/OrganisationEinstellungenScreen").then(
+      (m) => m.OrganisationEinstellungenScreen
+    ),
+  {
+    ssr: false,
+    loading: () => (
+      <p className="px-4 py-8 text-center text-sm text-text-secondary">
+        Einstellungen werden geladen…
+      </p>
+    ),
+  }
+);
 import { PortalLegalFooter } from "@/components/shared/PortalLegalFooter";
 import { PortalShell } from "@/components/shared/PortalShell";
 import { resolveOrgSubLabel } from "@/lib/portal2/brand-presets";
@@ -237,6 +290,17 @@ export function OrganisationPortalClient({
     router.push(href.includes("id=") ? href : `${href}${href.includes("?") ? "&" : "?"}id=${encodeURIComponent(vorgangId)}`);
   }
 
+  /** Vorgang öffnen = zugehörige HV-Benachrichtigungen gelesen. */
+  useEffect(() => {
+    const id = searchParams.get("id")?.trim()?.replace(/^auftrag:/, "");
+    if (!id || section !== "vorgaenge") return;
+    void fetch("/api/org/hv-notifications", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ vorgangId: id }),
+    }).then(() => emitPortalNotificationsChanged());
+  }, [searchParams, section]);
+
   const refresh = () => {
     flashPageBusy();
     router.refresh();
@@ -244,11 +308,13 @@ export function OrganisationPortalClient({
 
   function switchSection(next: OrgSection) {
     setSection(next);
+    flashPageBusy(280);
     router.replace(`/portal?section=${next}`, { scroll: false });
   }
 
   function openVorgaenge(filter?: OrgVorgangFilter) {
     setSection("vorgaenge");
+    flashPageBusy(280);
     const q = filter ? `?section=vorgaenge&filter=${filter}` : "?section=vorgaenge";
     router.replace(`/portal${q}`, { scroll: false });
   }
@@ -367,6 +433,7 @@ export function OrganisationPortalClient({
           <OrganisationSuche
             onSelect={(id) => {
               openVorgaenge("offen");
+              flashPageBusy(280);
               router.replace(`/portal?section=vorgaenge&filter=offen&id=${id}`, {
                 scroll: false,
               });
@@ -396,6 +463,7 @@ export function OrganisationPortalClient({
                 onOpenFilter={openVorgaenge}
                 onOpenItem={(id) => {
                   setSection("vorgaenge");
+                  flashPageBusy(280);
                   router.replace(
                     `/portal?section=vorgaenge&filter=offen&id=${id}`,
                     { scroll: false }
@@ -445,6 +513,7 @@ export function OrganisationPortalClient({
               dokumenteByLeadId={dokumenteByLeadId}
               onOpenVorgang={(id) => {
                 setSection("vorgaenge");
+                flashPageBusy(280);
                 router.replace(
                   `/portal?section=vorgaenge&filter=offen&id=${encodeURIComponent(id)}`,
                   { scroll: false }

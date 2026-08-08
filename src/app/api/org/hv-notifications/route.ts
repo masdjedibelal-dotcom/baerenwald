@@ -72,7 +72,11 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: session.error }, { status: session.status });
   }
 
-  const body = (await req.json()) as { all?: boolean; ids?: string[] };
+  const body = (await req.json()) as {
+    all?: boolean;
+    ids?: string[];
+    vorgangId?: string;
+  };
   const now = new Date().toISOString();
 
   if (body.all) {
@@ -81,6 +85,34 @@ export async function POST(req: Request) {
       .update({ gelesen_am: now })
       .eq("kunde_id", session.kunde.id)
       .is("gelesen_am", null);
+    return NextResponse.json({ ok: true });
+  }
+
+  const vorgangId = body.vorgangId?.trim().replace(/^auftrag:/, "");
+  if (vorgangId) {
+    const { data: unread } = await supabaseAdmin
+      .from("hv_notifications")
+      .select("id, link")
+      .eq("kunde_id", session.kunde.id)
+      .is("gelesen_am", null);
+
+    const ids = (unread ?? [])
+      .filter((r) => {
+        const link = String(r.link ?? "");
+        const m = link.match(LEAD_ID_IN_LINK);
+        if (m?.[1]?.toLowerCase() === vorgangId.toLowerCase()) return true;
+        return link.includes(`id=${vorgangId}`);
+      })
+      .map((r) => String(r.id));
+
+    if (!ids.length) return NextResponse.json({ ok: true });
+
+    await supabaseAdmin
+      .from("hv_notifications")
+      .update({ gelesen_am: now })
+      .eq("kunde_id", session.kunde.id)
+      .in("id", ids);
+
     return NextResponse.json({ ok: true });
   }
 

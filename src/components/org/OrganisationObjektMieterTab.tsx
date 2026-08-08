@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { UserPlus } from "lucide-react";
 
 import { OrganisationObjektMieterMenu } from "@/components/org/OrganisationObjektMieterMenu";
+import { PortalConfirmDialog } from "@/components/shared/PortalDetailUi";
 import type { OrganisationLead } from "@/lib/org/types";
 import {
   OBJ_MIETER_PORTAL_STATUS,
@@ -42,6 +43,11 @@ export function OrganisationObjektMieterTab({
 }: Props) {
   const [bewohner, setBewohner] = useState<Bewohner[]>([]);
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [pendingRemove, setPendingRemove] = useState<{
+    id: string;
+    name: string;
+  } | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [vorname, setVorname] = useState("");
   const [nachname, setNachname] = useState("");
@@ -122,14 +128,7 @@ export function OrganisationObjektMieterTab({
     }
   };
 
-  const entfernen = async (id: string, name: string) => {
-    if (
-      !window.confirm(
-        `Mieter „${name}“ wirklich entfernen? Vorgänge bleiben erhalten.`
-      )
-    ) {
-      return;
-    }
+  const entfernen = async (id: string) => {
     setBusyId(id);
     try {
       const res = await fetch(
@@ -145,6 +144,8 @@ export function OrganisationObjektMieterTab({
       await load();
     } finally {
       setBusyId(null);
+      setConfirmOpen(false);
+      setPendingRemove(null);
     }
   };
 
@@ -291,7 +292,8 @@ export function OrganisationObjektMieterTab({
                   onVorgaenge={onGotoVorgaenge}
                   onEntfernen={() => {
                     if (busyId) return;
-                    void entfernen(b.id, b.name);
+                    setPendingRemove({ id: b.id, name: b.name });
+                    setConfirmOpen(true);
                   }}
                   onBearbeiten={() =>
                     portalToastError(
@@ -305,6 +307,27 @@ export function OrganisationObjektMieterTab({
           })}
         </ul>
       )}
+
+      <PortalConfirmDialog
+        open={confirmOpen}
+        title="Mieter entfernen?"
+        description={
+          pendingRemove
+            ? `Mieter „${pendingRemove.name}“ wirklich entfernen? Vorgänge bleiben erhalten.`
+            : "Mieter wirklich entfernen? Vorgänge bleiben erhalten."
+        }
+        confirmLabel="Entfernen"
+        confirmVariant="danger"
+        loading={busyId != null}
+        onConfirm={() => {
+          if (pendingRemove) void entfernen(pendingRemove.id);
+        }}
+        onCancel={() => {
+          if (busyId) return;
+          setConfirmOpen(false);
+          setPendingRemove(null);
+        }}
+      />
     </div>
   );
 }

@@ -65,8 +65,13 @@ export async function persistMeldungLead(input: PersistMeldungLeadInput) {
 
   const initial = initialHvMeldungState();
   let zeitraum = meldeKategorieToZeitraum(input.kategorie);
-  if (input.kategorie === "notfall") zeitraum = "sofort";
+  if (input.kategorie === "notfall" || input.notfall === true) zeitraum = "sofort";
   else if (input.dringlichkeit) zeitraum = input.dringlichkeit;
+
+  const situation =
+    input.kategorie === "notfall" || input.notfall === true
+      ? "notfall"
+      : meldeKategorieToSituation(input.kategorie);
 
   const result = await persistLead({
     name: input.name,
@@ -76,7 +81,7 @@ export async function persistMeldungLead(input: PersistMeldungLeadInput) {
     strasse: input.strasse ?? undefined,
     hausnummer: input.hausnummer ?? undefined,
     ort: input.ort ?? undefined,
-    situation: meldeKategorieToSituation(input.kategorie),
+    situation,
     bereiche,
     zeitraum,
     kanal: input.kanal,

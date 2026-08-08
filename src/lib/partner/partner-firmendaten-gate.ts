@@ -2,6 +2,8 @@ export type PartnerFirmendatenGateInput = {
   firma?: string | null;
   name?: string | null;
   strasse?: string | null;
+  hausnummer?: string | null;
+  plz?: string | null;
   ort?: string | null;
   adresse?: string | null;
   telefon?: string | null;
@@ -27,6 +29,9 @@ function hasText(v?: string | null): boolean {
 }
 
 function hasAnschrift(input: PartnerFirmendatenGateInput): boolean {
+  if (hasText(input.strasse) && hasText(input.plz) && hasText(input.ort)) {
+    return true;
+  }
   if (hasText(input.strasse) && hasText(input.ort)) return true;
   return hasText(input.adresse);
 }
@@ -43,7 +48,7 @@ export function checkPartnerFirmendatenGate(
   if (!hasText(input.firma) && !hasText(input.name)) {
     missingAngebot.push("Firmenname");
   }
-  if (!hasAnschrift(input)) missingAngebot.push("Anschrift (Straße + PLZ/Ort)");
+  if (!hasAnschrift(input)) missingAngebot.push("Anschrift (Straße, PLZ, Ort)");
   if (!hasText(input.telefon)) missingAngebot.push("Telefon");
   if (!hasSteuer(input)) missingAngebot.push("Steuernummer oder USt-IdNr.");
 

@@ -60,6 +60,8 @@ export function PartnerDokumentPreviewModal({
 
   const [firma, setFirma] = useState("");
   const [strasse, setStrasse] = useState("");
+  const [hausnummer, setHausnummer] = useState("");
+  const [plz, setPlz] = useState("");
   const [ort, setOrt] = useState("");
   const [telefon, setTelefon] = useState("");
   const [steuernummer, setSteuernummer] = useState("");
@@ -112,6 +114,8 @@ export function PartnerDokumentPreviewModal({
     setDokumentNr(res.preview.dokumentNr);
     setFirma(res.preview.firmendaten.firma);
     setStrasse(res.preview.firmendaten.strasse);
+    setHausnummer(res.preview.firmendaten.hausnummer);
+    setPlz(res.preview.firmendaten.plz);
     setOrt(res.preview.firmendaten.ort);
     setTelefon(res.preview.firmendaten.telefon);
     setSteuernummer(res.preview.firmendaten.steuernummer);
@@ -147,6 +151,8 @@ export function PartnerDokumentPreviewModal({
       fd.set("firma", firma.trim());
       fd.set("inhaber", firma.trim() || "Inhaber");
       fd.set("strasse", strasse.trim());
+      fd.set("hausnummer", hausnummer.trim());
+      fd.set("plz", plz.trim());
       fd.set("ort", ort.trim());
       fd.set("telefon", telefon.trim());
       if (steuernummer.trim()) fd.set("steuernummer", steuernummer.trim());
@@ -233,7 +239,7 @@ export function PartnerDokumentPreviewModal({
 
   const subtitle =
     step === "ask"
-      ? "Aus Firmendaten und Leistungen — sichtbar bei dir und im CRM unter Dokumente."
+      ? "Aus Firmendaten und Leistungen — sichtbar bei dir und bei Bärenwald unter Dokumente."
       : step === "fehlend"
         ? "Damit wir das Dokument automatisch erzeugen können."
         : art === "angebot"
@@ -275,7 +281,7 @@ export function PartnerDokumentPreviewModal({
             <div className="space-y-3">
               <p className="text-[14px] leading-relaxed" style={{ color: PORTAL_VAR.sub }}>
                 {art === "angebot"
-                  ? "Wir erstellen automatisch dein Angebot an Bärenwald. Es erscheint unter Dokumente bei dir und im CRM."
+                  ? "Wir erstellen automatisch dein Angebot an Bärenwald. Es erscheint unter Dokumente bei dir und bei Bärenwald."
                   : "Wir erstellen automatisch deine Rechnung. Regiepositionen rechnen wir aus erfasster Zeit × hinterlegtem Stundensatz."}
               </p>
               <p className="text-[12.5px]" style={{ color: PORTAL_VAR.faint }}>
@@ -306,6 +312,7 @@ export function PartnerDokumentPreviewModal({
                     </label>
                   )}
                   {(firmMissingKeys.has("anschrift") ||
+                    firmMissingKeys.has("Anschrift (Straße, PLZ, Ort)") ||
                     firmMissingKeys.has("Anschrift (Straße + PLZ/Ort)")) && (
                     <>
                       <label className="block space-y-1">
@@ -320,7 +327,27 @@ export function PartnerDokumentPreviewModal({
                       </label>
                       <label className="block space-y-1">
                         <span className="text-[12px] font-semibold text-text-tertiary">
-                          PLZ / Ort *
+                          Hausnummer
+                        </span>
+                        <input
+                          value={hausnummer}
+                          onChange={(e) => setHausnummer(e.target.value)}
+                          className="portal-input w-full rounded-xl border border-border-default px-3 py-2.5"
+                        />
+                      </label>
+                      <label className="block space-y-1">
+                        <span className="text-[12px] font-semibold text-text-tertiary">
+                          PLZ *
+                        </span>
+                        <input
+                          value={plz}
+                          onChange={(e) => setPlz(e.target.value)}
+                          className="portal-input w-full rounded-xl border border-border-default px-3 py-2.5"
+                        />
+                      </label>
+                      <label className="block space-y-1">
+                        <span className="text-[12px] font-semibold text-text-tertiary">
+                          Ort *
                         </span>
                         <input
                           value={ort}

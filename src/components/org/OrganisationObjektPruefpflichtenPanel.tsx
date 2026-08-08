@@ -2,6 +2,9 @@
 
 import { useEffect, useState } from "react";
 
+import { PortalDetailCard } from "@/components/shared/PortalDetailCard";
+import { PortalEmptyState } from "@/components/shared/PortalEmptyState";
+
 type Pruefpflicht = {
   id: string;
   typ: string;
@@ -52,17 +55,15 @@ export function OrganisationObjektPruefpflichtenPanel({ objektId }: { objektId: 
   }
 
   return (
-    <div className="space-y-3 rounded-xl border border-border-default p-4">
-      <p className="text-sm font-semibold text-text-primary">Prüfpflichten</p>
-
+    <PortalDetailCard title="Prüfpflichten">
       {items.length === 0 ? (
-        <p className="text-sm text-text-secondary">Noch keine Einträge.</p>
+        <PortalEmptyState title="Noch keine Einträge." compact />
       ) : (
         <ul className="space-y-2 text-sm">
           {items.map((p) => (
             <li
               key={p.id}
-              className="flex flex-wrap justify-between gap-2 rounded-lg bg-muted/50 px-3 py-2"
+              className="flex flex-wrap justify-between gap-2 rounded-xl border border-border-default bg-white px-3 py-3 sm:rounded-lg sm:border-transparent sm:bg-muted/50 sm:py-2"
             >
               <span className="font-medium">{p.typ}</span>
               <span className="text-text-secondary">
@@ -75,9 +76,9 @@ export function OrganisationObjektPruefpflichtenPanel({ objektId }: { objektId: 
         </ul>
       )}
 
-      <form onSubmit={add} className="flex flex-wrap gap-2 pt-2 border-t border-border-light">
+      <form onSubmit={add} className="mt-3 flex flex-wrap gap-2 border-t border-border-light pt-3">
         <input
-          className="input-field flex-1 min-w-[140px]"
+          className="input-field min-w-[140px] flex-1"
           placeholder="z. B. Feuerlöscher"
           value={typ}
           onChange={(e) => setTyp(e.target.value)}
@@ -92,6 +93,6 @@ export function OrganisationObjektPruefpflichtenPanel({ objektId }: { objektId: 
           Hinzufügen
         </button>
       </form>
-    </div>
+    </PortalDetailCard>
   );
 }

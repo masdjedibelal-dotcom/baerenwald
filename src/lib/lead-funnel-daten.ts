@@ -1,4 +1,8 @@
 import { FACHDETAIL_QUESTIONS } from "@/lib/funnel/fachdetail-questions-flat";
+import {
+  meldeAnswerDisplayLabel,
+  meldeQuestionDisplayLabel,
+} from "@/lib/funnel/melde-dynamic-questions";
 import { lineLeistungsLabel } from "@/lib/funnel/breakdown-labels";
 import type {
   FachdetailsState,
@@ -46,11 +50,17 @@ function answerLabel(questionId: string, value: unknown): string {
   if (Array.isArray(value)) {
     const idx = ANSWER_LABEL_INDEX[questionId];
     return value
-      .map((v) => idx?.[String(v)] ?? String(v))
+      .map((v) => {
+        const melde = meldeAnswerDisplayLabel(questionId, String(v));
+        if (melde) return melde;
+        return idx?.[String(v)] ?? String(v);
+      })
       .filter(Boolean)
       .join(", ");
   }
   const s = String(value).trim();
+  const melde = meldeAnswerDisplayLabel(questionId, s);
+  if (melde) return melde;
   return ANSWER_LABEL_INDEX[questionId]?.[s] ?? s.replace(/_/g, " ");
 }
 
@@ -254,7 +264,7 @@ export function buildFachdetailAnswerRows(
     const value = answerLabel(id, v);
     if (!value) continue;
     rows.push({
-      label: id.replace(/_/g, " "),
+      label: meldeQuestionDisplayLabel(id),
       value,
     });
   }

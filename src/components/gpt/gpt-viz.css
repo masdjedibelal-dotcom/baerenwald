@@ -749,6 +749,70 @@
   cursor: not-allowed;
 }
 
+/* ── Portal GPT Shell: Chat füllt Fläche, Bottom-Nav darf Composer nicht überdecken ── */
+.portal-gpt-shell {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  width: 100%;
+  background: #fff;
+}
+
+.portal-gpt-shell--embedded {
+  /* Unter Topbar (56px) — volle Viewport-Höhe im Partner-/Kunden-Portal */
+  height: calc(100dvh - 56px - env(safe-area-inset-bottom, 0px));
+  max-height: calc(100dvh - 56px - env(safe-area-inset-bottom, 0px));
+}
+
+@media (min-width: 1024px) {
+  .portal-gpt-shell--embedded {
+    height: min(78dvh, 720px);
+    max-height: min(78dvh, 720px);
+    border-radius: 12px;
+    border: 0.5px solid rgba(0, 0, 0, 0.08);
+    overflow: hidden;
+  }
+}
+
+.portal-gpt-shell-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-shrink: 0;
+  padding: 10px 14px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+  background: #fff;
+}
+
+.portal-gpt-shell-title {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+  color: #16201b;
+}
+
+.portal-gpt-shell-close {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border: none;
+  border-radius: 999px;
+  background: transparent;
+  color: #6a746f;
+  cursor: pointer;
+}
+
+.portal-gpt-shell-close:hover {
+  background: #f0f2f0;
+  color: #16201b;
+}
+
+.portal-gpt-shell-panel {
+  background: #fff;
+}
+
 /* ── GPT Studio Chat: feste Shell, nur Nachrichten scrollen ── */
 .rechner-gpt-chat,
 .portal-gpt-body.portal-gpt-chat-active {
@@ -761,12 +825,21 @@
 }
 
 .ki-rechner-chat-active .rechner-gpt-chat .ki-rechner-chat,
-.portal-gpt-body.portal-gpt-chat-active .ki-rechner-chat {
+.portal-gpt-body.portal-gpt-chat-active .ki-rechner-chat,
+.portal-gpt-shell .ki-rechner-chat {
   flex: 1;
   min-height: 0;
   height: 100%;
   max-height: none;
   width: 100%;
+  max-width: none;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+/* Composer sitzt in der Shell — Safe-Area, kein Extra-Platz für Portal-Bottom-Nav */
+.portal-gpt-shell .ki-rechner-chat-composer {
+  padding-bottom: max(10px, env(safe-area-inset-bottom, 0px));
 }
 
 .gpt-chat-sticky-top,

@@ -10,6 +10,7 @@ export function kaputtBereichToMeldeId(bereich: string): MeldeBereichId {
     case "heizung":
       return "heizung";
     case "elektro":
+    case "strom":
       return "strom";
     case "fenster_tuer":
     case "fenster":

@@ -22,8 +22,9 @@ import {
 } from "@/components/partner/PartnerDetailUi";
 import { PortalEntityDetailLayout } from "@/components/shared/PortalEntityDetailLayout";
 import { PartnerHwKalkulationScreen } from "@/components/partner/PartnerHwKalkulationScreen";
-import { PartnerDokumentPreviewModal } from "@/components/partner/PartnerDokumentPreviewModal";
+import { PartnerFirmendatenFehlenDialog } from "@/components/partner/PartnerFirmendatenFehlenDialog";
 import { DokumenteTabelle, type DokumentZeile } from "@/components/shared/DokumenteTabelle";
+import { tryCreatePartnerAutoAngebot } from "@/lib/partner/try-partner-auto-angebot";
 import type { PartnerOffenAngebotItem } from "@/lib/partner/partner-offen-status";
 import { resolvePartnerDetailTitelFromAnfrage } from "@/lib/partner/partner-listen-titel";
 import {
@@ -86,7 +87,8 @@ export function PartnerOffenDetail({
   const [grund, setGrund] = useState<string>(HANDWERKER_ABLEHNUNG_GRUND_VALUES[0]);
   const [notiz, setNotiz] = useState("");
   const [showKalkulation, setShowKalkulation] = useState(false);
-  const [angebotDocOpen, setAngebotDocOpen] = useState(false);
+  const [firmendatenFehlenOpen, setFirmendatenFehlenOpen] = useState(false);
+  const [firmendatenMissing, setFirmendatenMissing] = useState<string[]>([]);
   const hatAuftrag = Boolean(item.auftrag_id);
   const istBauprojekt = isPartnerBauprojektAuftrag({
     ist_bauprojekt: item.ist_bauprojekt,
@@ -246,11 +248,25 @@ export function PartnerOffenDetail({
     } else {
       partnerPortalToast.zuweisungAngenommen();
     }
-    setAngebotDocOpen(true);
+
+    setLoading(true);
+    const auto = await tryCreatePartnerAutoAngebot(item.id);
+    setLoading(false);
+    if (auto.status === "created") {
+      partnerPortalToast.unterlagenHochgeladen();
+      setShowKalkulation(true);
+      return;
+    }
+    if (auto.status === "firmendaten_missing") {
+      setFirmendatenMissing(auto.missing);
+      setFirmendatenFehlenOpen(true);
+      return;
+    }
+    setShowKalkulation(true);
   }
 
-  function continueAfterAngebotDoc() {
-    setAngebotDocOpen(false);
+  function continueAfterFirmendatenHinweis() {
+    setFirmendatenFehlenOpen(false);
     setShowKalkulation(true);
   }
 
@@ -331,7 +347,7 @@ export function PartnerOffenDetail({
           <div className="space-y-5">
             <PartnerDetailInfoBox>
               Als Nächstes: Kalkulation einreichen — Positionen und Summe erscheinen
-              im CRM und bei der Verwaltung als empfohlenes Angebot.
+              bei Bärenwald und der Verwaltung als empfohlenes Angebot.
             </PartnerDetailInfoBox>
             <PartnerHwKalkulationScreen
               anfrageId={item.id}
@@ -483,13 +499,14 @@ export function PartnerOffenDetail({
         loading={loading}
       />
 
-      <PartnerDokumentPreviewModal
-        open={angebotDocOpen}
-        anfrageId={item.id}
-        art="angebot"
-        onClose={continueAfterAngebotDoc}
-        onSuccess={continueAfterAngebotDoc}
-        allowSkip
+      <PartnerFirmendatenFehlenDialog
+        open={firmendatenFehlenOpen}
+        missing={firmendatenMissing}
+        onDismiss={continueAfterFirmendatenHinweis}
+        onGoSettings={() => {
+          setFirmendatenFehlenOpen(false);
+          router.refresh();
+        }}
       />
         </div>
       </PortalEntityDetailLayout>

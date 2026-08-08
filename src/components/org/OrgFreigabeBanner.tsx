@@ -95,7 +95,7 @@ export function OrgFreigabeBanner({
       <div className="mt-3 flex flex-wrap gap-2">
         <button
           type="button"
-          className="btn-pill-primary"
+          className="portal-action-btn portal-action-btn--primary"
           disabled={busy}
           onClick={() => void act("freigegeben")}
         >
@@ -103,7 +103,7 @@ export function OrgFreigabeBanner({
         </button>
         <button
           type="button"
-          className="btn-pill-outline"
+          className="portal-action-btn portal-action-btn--secondary"
           disabled={busy}
           onClick={() => void act("abgelehnt")}
         >

@@ -164,11 +164,25 @@ export function PortalDetailHero({
   );
 }
 
-export function PortalDetailInfoBox({ children }: { children: React.ReactNode }) {
+export function PortalDetailInfoBox({
+  children,
+  variant = "info",
+}: {
+  children: React.ReactNode;
+  variant?: "info" | "warning";
+}) {
+  if (variant === "warning") {
+    return (
+      <div className="portal-text-body flex gap-3 rounded-xl border border-amber-200 bg-amber-50 px-3 py-3.5 text-amber-950">
+        <Info className="mt-0.5 h-4 w-4 shrink-0 text-amber-700" aria-hidden />
+        <div className="min-w-0">{children}</div>
+      </div>
+    );
+  }
   return (
     <div className="portal-text-body flex gap-3 rounded-xl border border-border-light bg-muted/30 px-3 py-3.5 text-text-secondary">
       <Info className="mt-0.5 h-4 w-4 shrink-0 text-accent" aria-hidden />
-      <p>{children}</p>
+      <div className="min-w-0">{children}</div>
     </div>
   );
 }
@@ -198,17 +212,18 @@ export function PortalDetailKeyValues({
   const visible = rows.filter((r) => r.value != null && r.value !== "" && r.value !== "—");
   if (!visible.length) return null;
   return (
-    <dl className="portal-text-body overflow-hidden rounded-xl border border-border-light bg-muted/20">
-      {visible.map((row, i) => (
+    <dl className="portal-text-body divide-y divide-border-light">
+      {visible.map((row) => (
         <div
           key={row.label}
-          className={cn(
-            "grid grid-cols-1 gap-1 px-3 py-3 sm:grid-cols-[38%_1fr]",
-            i < visible.length - 1 && "border-b border-border-light"
-          )}
+          className="grid grid-cols-1 gap-0.5 py-2.5 sm:grid-cols-[38%_1fr] sm:items-baseline sm:gap-4"
         >
-          <dt className="portal-text-meta text-text-tertiary">{row.label}</dt>
-          <dd className="font-medium text-text-primary">{row.value}</dd>
+          <dt className="text-[12px] font-medium text-text-tertiary">
+            {row.label}
+          </dt>
+          <dd className="text-[14px] leading-snug text-text-primary">
+            {row.value}
+          </dd>
         </div>
       ))}
     </dl>

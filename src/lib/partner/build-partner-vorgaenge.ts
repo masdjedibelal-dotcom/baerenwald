@@ -50,6 +50,12 @@ export function stubAuftragFromAnfrage(
     fortschritt: null,
     start_datum: null,
     end_datum: null,
+    created_at: anfrage.gesendet_at ?? null,
+    updated_at:
+      anfrage.hw_crm_antwort_at ??
+      anfrage.gesendet_at ??
+      anfrage.bestaetigt_at ??
+      null,
     angebot_id: anfrage.angebot_id,
     plz: anfrage.plz,
     ort: anfrage.ort,
@@ -177,18 +183,46 @@ export function buildPartnerVorgaenge(input: {
   }
 
   return items.sort((a, b) => {
-    const ta =
-      a.anfrage?.gesendet_at ??
-      a.auftrag.start_datum ??
-      a.handwerker_bestaetigt_at ??
-      a.auftrag.id;
-    const tb =
-      b.anfrage?.gesendet_at ??
-      b.auftrag.start_datum ??
-      b.handwerker_bestaetigt_at ??
-      b.auftrag.id;
-    return tb.localeCompare(ta);
+    return partnerVorgangLastActivityAt(b) - partnerVorgangLastActivityAt(a);
   });
+}
+
+/** Neuester Zeitstempel aus Status, Anpassungen, Positionen, Tagebuch usw. */
+export function partnerVorgangLastActivityAt(v: PartnerVorgangItem): number {
+  const candidates: Array<string | null | undefined> = [
+    v.auftrag.updated_at,
+    v.auftrag.created_at,
+    v.anfrage?.gesendet_at,
+    v.anfrage?.antwort_at,
+    v.anfrage?.hw_crm_antwort_at,
+    v.anfrage?.bestaetigt_at,
+    v.anfrage?.hw_eingereicht_at,
+    v.anfrage?.hw_rechnung_eingereicht_at,
+    v.handwerker_bestaetigt_at,
+    v.auftrag.handwerker_bestaetigt_at,
+    v.auftrag.projektvertrag_bestaetigt_am,
+    v.auftrag.hw_rechnung_eingereicht_at,
+    v.auftrag.hw_abschluss_signiert_am,
+    v.auftrag.angebotHwEingereichtAt,
+    v.auftrag.start_datum,
+    v.auftrag.end_datum,
+    v.auftrag.abnahme_datum,
+  ];
+
+  for (const p of v.auftrag.positionen) {
+    candidates.push(p.gestartet_am, p.erledigt_am, p.start_datum, p.end_datum);
+  }
+  for (const bt of v.auftrag.bautagebuch) {
+    candidates.push(bt.datum);
+  }
+
+  let max = 0;
+  for (const c of candidates) {
+    if (!c?.trim()) continue;
+    const t = new Date(c).getTime();
+    if (!Number.isNaN(t) && t > max) max = t;
+  }
+  return max;
 }
 
 export function countPartnerVorgaengeFilter(

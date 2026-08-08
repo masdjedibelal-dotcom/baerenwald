@@ -9,7 +9,6 @@ import { PortalModalShell } from "@/components/shared/PortalModalShell";
 import {
   addPartnerPositionFortschritt,
   completePartnerPosition,
-  createPartnerWeitereArbeit,
   startPartnerPosition,
 } from "@/app/actions/partner-position-eintraege";
 import { createPartnerPositionsAnfrage } from "@/app/actions/partner-positions-anfrage";
@@ -69,13 +68,12 @@ export function PartnerPositionLebenszyklusList({
     mode: SheetMode;
     position: LebenszyklusPosition;
   } | null>(null);
-  const [weitereOpen, setWeitereOpen] = useState(false);
-  const [weitereTitel, setWeitereTitel] = useState("");
   const [nachtragOpen, setNachtragOpen] = useState(false);
   const [nachtragTitel, setNachtragTitel] = useState("");
   const [nachtragBegruendung, setNachtragBegruendung] = useState("");
   const [nachtragEur, setNachtragEur] = useState("");
-  const [nachtragMin, setNachtragMin] = useState("");
+  const [nachtragHours, setNachtragHours] = useState(0);
+  const [nachtragMins, setNachtragMins] = useState(0);
   const [pending, startTransition] = useTransition();
   const [nachreich, setNachreich] = useState(false);
   const [beschreibung, setBeschreibung] = useState("");
@@ -153,41 +151,14 @@ export function PartnerPositionLebenszyklusList({
     });
   }
 
-  function submitWeitere() {
-    const titel = weitereTitel.trim();
-    if (titel.length < 4) {
-      portalToastError("Bitte kurz beschreiben (mind. 4 Zeichen).");
-      return;
-    }
-    const formData = new FormData();
-    formData.set("auftragId", auftragId);
-    formData.set("titel", titel);
-    startTransition(async () => {
-      const res = await createPartnerWeitereArbeit(formData);
-      if (!res.ok) {
-        portalToastError(res.error);
-        return;
-      }
-      portalToastSuccess("Weitere Arbeit angelegt — in Prüfung.");
-      setWeitereOpen(false);
-      setWeitereTitel("");
-      onDone?.();
-    });
-  }
-
-  function closeWeitere() {
-    if (pending) return;
-    setWeitereOpen(false);
-    setWeitereTitel("");
-  }
-
   function closeNachtrag() {
     if (pending) return;
     setNachtragOpen(false);
     setNachtragTitel("");
     setNachtragBegruendung("");
     setNachtragEur("");
-    setNachtragMin("");
+    setNachtragHours(0);
+    setNachtragMins(0);
   }
 
   function submitNachtrag() {
@@ -204,7 +175,8 @@ export function PartnerPositionLebenszyklusList({
     formData.set("titel", nachtragTitel.trim());
     formData.set("begruendung", nachtragBegruendung.trim());
     if (nachtragEur.trim()) formData.set("schaetzungEur", nachtragEur.trim());
-    if (nachtragMin.trim()) formData.set("schaetzungMinuten", nachtragMin.trim());
+    const totalMin = nachtragHours * 60 + nachtragMins;
+    if (totalMin > 0) formData.set("schaetzungMinuten", String(totalMin));
     startTransition(async () => {
       const res = await createPartnerPositionsAnfrage(formData);
       if (!res.ok) {
@@ -286,8 +258,8 @@ export function PartnerPositionLebenszyklusList({
             {HW_DOKU_STORY.firstJobTitle}
           </p>
           <p className="mt-1.5 text-[12.5px]" style={{ color: PORTAL_VAR.sub }}>
-            Noch keine Leistung. Legen Sie weitere Arbeit an oder warten Sie auf
-            die Beauftragung.
+            Noch keine Leistung. Melden Sie einen Nachtrag / Regie oder warten Sie
+            auf die Beauftragung.
           </p>
         </div>
       ) : (
@@ -420,27 +392,15 @@ export function PartnerPositionLebenszyklusList({
       <div className="space-y-2">
         <button
           type="button"
-          className="w-full rounded-[10px] border border-dashed px-3 py-3 text-[13.5px] font-semibold"
-          style={{
-            borderColor: PORTAL_VAR.primary,
-            background: PORTAL_VAR.primarySoft,
-            color: PORTAL_VAR.primary,
-          }}
-          onClick={() => setWeitereOpen(true)}
-        >
-          + Weitere Arbeit (klein / Regie)
-        </button>
-        <button
-          type="button"
           className="w-full rounded-[10px] border border-dashed px-3 py-3 text-[13.5px] font-semibold text-text-primary"
           style={{ borderColor: PORTAL_VAR.line, background: "#fff" }}
           onClick={() => setNachtragOpen(true)}
         >
-          Nachtrag / neue Position melden
+          + Nachtrag / Regie
         </button>
         <p className="text-[11.5px] leading-relaxed text-text-tertiary">
-          Klein (ca. bis 30 Min): Weitere Arbeit — CRM prüft. Größer / festpreiswürdig:
-          zuerst melden, erst nach Freigabe und erneuter Annahme ausführen.
+          Zusätzliche Arbeit zuerst melden — Bärenwald prüft. Erst nach Freigabe und
+          erneuter Annahme ausführen.
         </p>
       </div>
 
@@ -627,57 +587,17 @@ export function PartnerPositionLebenszyklusList({
       ) : null}
 
       <PortalModalShell
-        open={weitereOpen}
-        title="Weitere Arbeit"
-        subtitle="Neue Regie-Position nach Aufwand — in Prüfung bis CRM anerkennt."
-        onClose={closeWeitere}
-        variant="edit"
-        dirty={weitereTitel.trim().length > 0}
-        closeOnBackdrop={!pending}
-      >
-        <label className="flex flex-col gap-1">
-          <span className="text-[11.5px] font-bold tracking-wide text-text-tertiary">
-            Was wurde zusätzlich gemacht?
-          </span>
-          <input
-            value={weitereTitel}
-            onChange={(e) => setWeitereTitel(e.target.value)}
-            required
-            minLength={4}
-            placeholder="Kurz beschreiben…"
-            className="portal-input w-full rounded-xl border border-border-default px-3 py-2.5"
-            autoFocus
-          />
-        </label>
-        <div className="mt-5 flex flex-wrap justify-end gap-2">
-          <button
-            type="button"
-            className="btn-pill-outline portal-btn"
-            disabled={pending}
-            onClick={closeWeitere}
-          >
-            Abbrechen
-          </button>
-          <button
-            type="button"
-            className="btn-pill-primary portal-btn"
-            disabled={pending || weitereTitel.trim().length < 4}
-            onClick={() => submitWeitere()}
-          >
-            {pending ? "Anlegen…" : "Speichern"}
-          </button>
-        </div>
-      </PortalModalShell>
-
-      <PortalModalShell
         open={nachtragOpen}
-        title="Nachtrag / neue Position"
+        title="Nachtrag / Regie"
         subtitle="Noch nicht ausführen — Bärenwald prüft und weist zu."
         onClose={closeNachtrag}
         variant="edit"
         dirty={
           nachtragTitel.trim().length > 0 ||
-          nachtragBegruendung.trim().length > 0
+          nachtragBegruendung.trim().length > 0 ||
+          nachtragEur.trim().length > 0 ||
+          nachtragHours > 0 ||
+          nachtragMins > 0
         }
         closeOnBackdrop={!pending}
       >
@@ -693,7 +613,6 @@ export function PartnerPositionLebenszyklusList({
               minLength={4}
               placeholder="z. B. Zusätzliche Leitung verlegen"
               className="portal-input w-full rounded-xl border border-border-default px-3 py-2.5"
-              autoFocus
             />
           </label>
           <label className="flex flex-col gap-1">
@@ -713,7 +632,7 @@ export function PartnerPositionLebenszyklusList({
           <div className="grid grid-cols-2 gap-2">
             <label className="flex flex-col gap-1">
               <span className="text-[11.5px] font-bold tracking-wide text-text-tertiary">
-                Schätzung € (opt.)
+                Betrag in €
               </span>
               <input
                 type="text"
@@ -724,19 +643,40 @@ export function PartnerPositionLebenszyklusList({
                 className="portal-input w-full rounded-xl border border-border-default px-3 py-2.5"
               />
             </label>
-            <label className="flex flex-col gap-1">
+            <div className="flex flex-col gap-1">
               <span className="text-[11.5px] font-bold tracking-wide text-text-tertiary">
-                Schätzung Min (opt.)
+                Zeit in HH:MM
               </span>
-              <input
-                type="number"
-                min={0}
-                value={nachtragMin}
-                onChange={(e) => setNachtragMin(e.target.value)}
-                placeholder="z. B. 90"
-                className="portal-input w-full rounded-xl border border-border-default px-3 py-2.5"
-              />
-            </label>
+              <div className="flex items-center gap-1.5">
+                <select
+                  value={nachtragHours}
+                  onChange={(e) => setNachtragHours(Number(e.target.value))}
+                  aria-label="Stunden"
+                  className="portal-input min-w-0 flex-1 rounded-xl border border-border-default px-2 py-2.5"
+                >
+                  {Array.from({ length: 49 }, (_, h) => (
+                    <option key={h} value={h}>
+                      {String(h).padStart(2, "0")}
+                    </option>
+                  ))}
+                </select>
+                <span className="text-[14px] font-semibold text-text-tertiary">
+                  :
+                </span>
+                <select
+                  value={nachtragMins}
+                  onChange={(e) => setNachtragMins(Number(e.target.value))}
+                  aria-label="Minuten"
+                  className="portal-input min-w-0 flex-1 rounded-xl border border-border-default px-2 py-2.5"
+                >
+                  {Array.from({ length: 60 }, (_, m) => (
+                    <option key={m} value={m}>
+                      {String(m).padStart(2, "0")}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
           </div>
         </div>
         <div className="mt-5 flex flex-wrap justify-end gap-2">
@@ -758,7 +698,7 @@ export function PartnerPositionLebenszyklusList({
             }
             onClick={() => submitNachtrag()}
           >
-            {pending ? "Senden…" : "An CRM melden"}
+            {pending ? "Senden…" : "Zur Prüfung"}
           </button>
         </div>
       </PortalModalShell>

@@ -106,41 +106,76 @@ function buildFachdetails(
     }
   }
   if (bereichId === "heizung") {
-    if (problem === "nicht_warm" || ansJa(a, "melde_wohnung_kalt")) {
+    if (
+      problem === "nicht_warm" ||
+      problem === "kalt" ||
+      ansVal(a, "melde_heizung_kalt") === "ja" ||
+      ansJa(a, "melde_wohnung_kalt")
+    ) {
       fd.heizung = { ...(fd.heizung ?? {}), typ: "heizkoerper_kalt" };
-    } else if (problem === "kein_ww") {
+    } else if (problem === "kein_ww" || ansVal(a, "melde_warmwasser") === "nein") {
       fd.heizung = { ...(fd.heizung ?? {}), typ: "kein_warmwasser" };
+    } else if (problem === "tropft_hk") {
+      fd.heizung = { ...(fd.heizung ?? {}), typ: "druckverlust_wasser" };
+    } else if (problem === "geraeusche") {
+      fd.heizung = { ...(fd.heizung ?? {}), typ: "heizkoerper_kalt" };
     }
   }
   if (bereichId === "strom") {
     if (
       problem === "kein_strom" ||
       problem === "fi_sicherung" ||
+      ansVal(a, "melde_sicherung_raus") === "ja" ||
       ansJa(a, "melde_fi")
     ) {
       fd.elektro = { ...(fd.elektro ?? {}), problem: "strom_weg" };
-    } else if (problem === "steckdose" || problem === "licht" || problem === "schalter") {
+    } else if (
+      problem === "steckdose" ||
+      problem === "licht" ||
+      problem === "schalter"
+    ) {
+      fd.elektro = { ...(fd.elektro ?? {}), problem: "steckdose_defekt" };
+    } else if (problem === "garagentor") {
+      fd.elektro = { ...(fd.elektro ?? {}), problem: "strom_weg" };
+    } else if (problem === "klingel") {
       fd.elektro = { ...(fd.elektro ?? {}), problem: "steckdose_defekt" };
     }
   }
   if (bereichId === "dach") {
     if (
-      problem === "dach_undicht" ||
-      ansJa(a, "melde_wasser_ein") ||
+      problem === "regenrinne_ueber" ||
+      problem === "wasser_fassade" ||
       problem === "rinne" ||
-      problem === "fallrohr"
+      problem === "fallrohr" ||
+      problem === "dach_undicht" ||
+      ansJa(a, "melde_wasser_ein")
     ) {
       fd.dach = { ...(fd.dach ?? {}), vorhaben: "undicht" };
+    } else if (problem === "ziegel_boden" || problem === "ziegel") {
+      fd.dach = { ...(fd.dach ?? {}), vorhaben: "ziegel" };
     }
   }
   if (bereichId === "fenster_tuer") {
-    if (problem === "glas") {
+    if (problem === "scheibe_kaputt" || problem === "glas") {
       fd.fenster = { ...(fd.fenster ?? {}), defekt: "glas" };
-    } else if (problem === "schloss") {
+    } else if (
+      problem === "tuer_problem" ||
+      problem === "schloss" ||
+      ansVal(a, "melde_tuer_detail") === "schluessel" ||
+      ansVal(a, "melde_tuer_detail") === "absperren"
+    ) {
       fd.fenster = { ...(fd.fenster ?? {}), defekt: "schloss" };
-    } else if (problem === "fenster_undicht" || problem === "dichtung") {
+    } else if (
+      problem === "fenster_geht_nicht" ||
+      problem === "fenster_undicht" ||
+      problem === "dichtung"
+    ) {
       fd.fenster = { ...(fd.fenster ?? {}), defekt: "dichtung" };
-    } else if (problem === "fenster_klemmt" || problem === "tuer_klemmt") {
+    } else if (
+      problem === "fenster_klemmt" ||
+      problem === "tuer_klemmt" ||
+      ansVal(a, "melde_tuer_detail") === "schließt"
+    ) {
       fd.fenster = { ...(fd.fenster ?? {}), defekt: "mechanik" };
     }
   }
@@ -191,7 +226,9 @@ function bandPrice(input: MeldePriceInput): MeldePriceResult {
     ansJa(a, "melde_fi") ||
     ansVal(a, "melde_abschliessbar") === "nein" ||
     problem === "kein_strom" ||
-    problem === "laeuft_stark"
+    problem === "laeuft" ||
+    problem === "laeuft_stark" ||
+    problem === "ueberschwemmt"
   ) {
     min = Math.round(min * 1.15);
     max = Math.round(max * 1.25);

@@ -1,5 +1,9 @@
 import { labelSituation, labelZeitraum, labelBereich } from "@/lib/lead-funnel-labels";
-import { fachdetailRowsFromFunnelDaten } from "@/lib/lead-funnel-daten";
+import {
+  fachdetailRowsFromFunnelDaten,
+  normalizeFunnelDaten,
+} from "@/lib/lead-funnel-daten";
+import { parseMeldeUrsachenCheck } from "@/lib/org/melde-ursachen";
 import {
   buildAnfrageCardMeta,
   buildAnfragePortalSections,
@@ -367,6 +371,10 @@ function buildItemFromLead(
       lead.funnel_daten,
       lead.bereiche
     ),
+    meldeFachdetailAnswers:
+      normalizeFunnelDaten(lead.funnel_daten, lead.bereiche).fachdetails
+        .fachdetailAnswers ?? undefined,
+    meldeUrsachenCheck: parseMeldeUrsachenCheck(lead.funnel_daten),
     meldePreisIndikation: meldePreisIndikationFromLead(lead, hvMieterView),
   };
   const leadId = lead.id;

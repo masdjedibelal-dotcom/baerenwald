@@ -76,10 +76,17 @@ function funnelKategorie(funnelDaten: unknown): string | null {
   return typeof kat === 'string' ? kat : null
 }
 
+function funnelIstAkut(funnelDaten: unknown): boolean {
+  if (!funnelDaten || typeof funnelDaten !== 'object') return false
+  const fd = funnelDaten as { notfall?: unknown; havarie?: unknown }
+  return fd.notfall === true || fd.havarie === true
+}
+
 function isNotfall(input: ResolveVorgangInput): boolean {
   const lead = input.lead
   if ((lead.hv_meldung_status ?? '').trim() === 'notmassnahme') return true
   if (lead.situation === 'notfall') return true
+  if (funnelIstAkut(lead.funnel_daten)) return true
   return funnelKategorie(lead.funnel_daten) === 'notfall'
 }
 

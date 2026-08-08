@@ -89,7 +89,12 @@ export function hwAuftragStatusStyle(label: string): {
   if (s.includes("erledigt") || s.includes("abgeschlossen")) {
     return { color: "#4B5563", backgroundColor: "#EAEDEC" };
   }
-  if (s.includes("aktion") || s.includes("neu") || s.includes("geändert")) {
+  if (
+    s.includes("aktion") ||
+    s.includes("neu") ||
+    s.includes("geändert") ||
+    s.includes("freigabe")
+  ) {
     return { color: "#8A5A06", backgroundColor: "#FBF1D6" };
   }
   return { color: "#1F6A3F", backgroundColor: "#DDEEDF" };

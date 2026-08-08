@@ -62,33 +62,44 @@ export async function loadPartnerBefundeByLeadIds(
     for (const aid of aids) leadIdByAuftrag.set(aid, leadId);
   }
 
-  for (const row of eintraege ?? []) {
-    const aid = String(row.auftrag_id);
-    const leadId = leadIdByAuftrag.get(aid);
-    if (!leadId) continue;
+  const prepared = await Promise.all(
+    (eintraege ?? []).map(async (row) => {
+      const aid = String(row.auftrag_id);
+      const leadId = leadIdByAuftrag.get(aid);
+      if (!leadId) return null;
 
-    const paths = Array.isArray(row.foto_urls)
-      ? (row.foto_urls as string[]).map((s) => String(s).trim()).filter(Boolean)
-      : [];
-    const fotos = await resolvePartnerFileUrls(paths);
+      const paths = Array.isArray(row.foto_urls)
+        ? (row.foto_urls as string[]).map((s) => String(s).trim()).filter(Boolean)
+        : [];
+      const fotos = await resolvePartnerFileUrls(paths);
 
-    const hwRaw = row.handwerker as { name?: string; firma?: string } | { name?: string; firma?: string }[] | null;
-    const hw = Array.isArray(hwRaw) ? hwRaw[0] : hwRaw;
-    const handwerkerName =
-      String(hw?.firma ?? hw?.name ?? "").trim() || null;
+      const hwRaw = row.handwerker as
+        | { name?: string; firma?: string }
+        | { name?: string; firma?: string }[]
+        | null;
+      const hw = Array.isArray(hwRaw) ? hwRaw[0] : hwRaw;
+      const handwerkerName =
+        String(hw?.firma ?? hw?.name ?? "").trim() || null;
 
-    const entry: OrgPartnerBefundEntry = {
-      id: String(row.id),
-      titel: String(row.titel ?? "Schadenbefund"),
-      beschreibung: (row.beschreibung as string | null) ?? null,
-      datum: String(row.datum ?? "").slice(0, 10),
-      fotos,
-      handwerkerName,
-    };
+      return {
+        leadId,
+        entry: {
+          id: String(row.id),
+          titel: String(row.titel ?? "Schadenbefund"),
+          beschreibung: (row.beschreibung as string | null) ?? null,
+          datum: String(row.datum ?? "").slice(0, 10),
+          fotos,
+          handwerkerName,
+        } satisfies OrgPartnerBefundEntry,
+      };
+    })
+  );
 
-    const list = out[leadId] ?? [];
-    list.push(entry);
-    out[leadId] = list;
+  for (const item of prepared) {
+    if (!item) continue;
+    const list = out[item.leadId] ?? [];
+    list.push(item.entry);
+    out[item.leadId] = list;
   }
 
   return out;

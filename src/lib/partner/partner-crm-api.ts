@@ -60,7 +60,7 @@ export async function confirmCrmProjektvertrag(
   const base = dashboardBase();
   const headers = await partnerAuthHeaders();
   if (!base || !headers) {
-    return { ok: false, error: "CRM-Verbindung nicht konfiguriert." };
+    return { ok: false, error: "Bärenwald-Verbindung nicht konfiguriert." };
   }
 
   try {
@@ -79,7 +79,7 @@ export async function confirmCrmProjektvertrag(
     }
     return { ok: true, vertrags_nr: body.vertrags_nr, pdf_url: body.pdf_url };
   } catch {
-    return { ok: false, error: "CRM nicht erreichbar." };
+    return { ok: false, error: "Bärenwald nicht erreichbar." };
   }
 }
 
@@ -136,7 +136,7 @@ export async function submitCrmPartnerAnnahme(input: {
     }
     return { ok: true, already: body.already === true };
   } catch {
-    return { ok: false, error: "CRM nicht erreichbar." };
+    return { ok: false, error: "Bärenwald nicht erreichbar." };
   }
 }
 
@@ -150,7 +150,7 @@ export async function acceptCrmRahmenvertragForEmail(
   const base = dashboardBase();
   const headers = internalSecretHeaders();
   if (!base || !headers) {
-    return { ok: false, error: "CRM-Verbindung nicht konfiguriert." };
+    return { ok: false, error: "Bärenwald-Verbindung nicht konfiguriert." };
   }
 
   try {
@@ -170,7 +170,7 @@ export async function acceptCrmRahmenvertragForEmail(
     }
     return { ok: true, vertrags_nr: body.vertrags_nr, pdf_url: body.pdf_url ?? null };
   } catch {
-    return { ok: false, error: "CRM nicht erreichbar." };
+    return { ok: false, error: "Bärenwald nicht erreichbar." };
   }
 }
 
@@ -182,7 +182,7 @@ export async function acceptCrmRahmenvertragLoggedIn(): Promise<
   const base = dashboardBase();
   const headers = await partnerAuthHeaders();
   if (!base || !headers) {
-    return { ok: false, error: "CRM-Verbindung nicht konfiguriert." };
+    return { ok: false, error: "Bärenwald-Verbindung nicht konfiguriert." };
   }
 
   try {
@@ -200,7 +200,7 @@ export async function acceptCrmRahmenvertragLoggedIn(): Promise<
     }
     return { ok: true, vertrags_nr: body.vertrags_nr, pdf_url: body.pdf_url ?? null };
   } catch {
-    return { ok: false, error: "CRM nicht erreichbar." };
+    return { ok: false, error: "Bärenwald nicht erreichbar." };
   }
 }
 
@@ -292,7 +292,7 @@ export async function submitCrmAbnahmeNachSignatur(
   const base = dashboardBase();
   const headers = await partnerAuthHeaders();
   if (!base || !headers) {
-    return { ok: false, error: "CRM nicht konfiguriert." };
+    return { ok: false, error: "Bärenwald nicht konfiguriert." };
   }
 
   try {
@@ -311,7 +311,7 @@ export async function submitCrmAbnahmeNachSignatur(
       freigabe_status?: string | null;
     };
     if (!res.ok) {
-      return { ok: false, error: body.error || "CRM-Abnahme fehlgeschlagen." };
+      return { ok: false, error: body.error || "Bärenwald-Abnahme fehlgeschlagen." };
     }
     return {
       ok: true,
@@ -320,7 +320,7 @@ export async function submitCrmAbnahmeNachSignatur(
       freigabe_status: body.freigabe_status ?? "zur_freigabe",
     };
   } catch {
-    return { ok: false, error: "CRM nicht erreichbar." };
+    return { ok: false, error: "Bärenwald nicht erreichbar." };
   }
 }
 
@@ -345,7 +345,7 @@ export async function fetchCrmAbnahmeStatus(
   const base = dashboardBase();
   const headers = await partnerAuthHeaders();
   if (!base || !headers) {
-    return { ok: false, error: "CRM nicht konfiguriert." };
+    return { ok: false, error: "Bärenwald nicht konfiguriert." };
   }
 
   try {
@@ -377,7 +377,7 @@ export async function fetchCrmAbnahmeStatus(
       freigabe_status: (body.freigabe_status as string | null) ?? null,
     };
   } catch {
-    return { ok: false, error: "CRM nicht erreichbar." };
+    return { ok: false, error: "Bärenwald nicht erreichbar." };
   }
 }
 
@@ -389,7 +389,7 @@ export async function postCrmAbnahmeAction(
   const base = dashboardBase();
   const headers = await partnerAuthHeaders();
   if (!base || !headers) {
-    return { ok: false, error: "CRM nicht konfiguriert." };
+    return { ok: false, error: "Bärenwald nicht konfiguriert." };
   }
 
   try {
@@ -410,6 +410,6 @@ export async function postCrmAbnahmeAction(
     }
     return { ok: true };
   } catch {
-    return { ok: false, error: "CRM nicht erreichbar." };
+    return { ok: false, error: "Bärenwald nicht erreichbar." };
   }
 }

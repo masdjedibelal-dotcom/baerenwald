@@ -28,14 +28,19 @@ const EINGANG_SELECT_FULL =
 const EINGANG_SELECT_BASE =
   "id, situation, bereiche, status, created_at, plz, strasse, hausnummer, zeitraum, kontakt_name, preis_min, preis_max, kontakt_nachricht, funnel_daten, kunde_objekt_id, anlass, erfassung_von, melder_name, melder_einheit, melder_telefon, melder_email, einladung_token, einladung_status, org_freigabe_status, service_modus, auftraggeber_kunde_id, kunde_id";
 
-export async function getOrganisationPortalData(kundeId: string) {
+export async function getOrganisationPortalData(
+  kundeId: string,
+  opts?: { mode?: "list" | "full" }
+) {
   if (!isSupabaseConfigured()) return null;
 
-  const base = await getPortalDataForKunde(kundeId);
-  if (!base) return null;
+  const mode = opts?.mode ?? "list";
 
-  const kunde = await loadOrganisationKunde(kundeId);
-  if (!kunde) return null;
+  const [base, kunde] = await Promise.all([
+    getPortalDataForKunde(kundeId, { mode }),
+    loadOrganisationKunde(kundeId),
+  ]);
+  if (!base || !kunde) return null;
 
   const { data: objekteRows, error: objErr } = await supabaseAdmin
     .from("kunden_objekte")
@@ -196,9 +201,10 @@ export async function getOrganisationPortalData(kundeId: string) {
     };
   }
 
-  const partnerBefundByLeadId = await loadPartnerBefundeByLeadIds(
-    eingang.map((l) => l.id)
-  );
+  const partnerBefundByLeadId =
+    mode === "full"
+      ? await loadPartnerBefundeByLeadIds(eingang.map((l) => l.id))
+      : {};
 
   const bautagebuchByLeadId: Record<
     string,

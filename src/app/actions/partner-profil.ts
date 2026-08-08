@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 
 import { linkPortalHandwerkerToAuthUser } from "@/lib/partner/link-portal-handwerker";
+import { composeHandwerkerAdresse } from "@/lib/partner/handwerker-anschrift";
 import { uploadPartnerLogo } from "@/lib/partner/partner-storage";
 import { createClient } from "@/lib/supabase/server";
 import { isSupabaseConfigured, supabaseAdmin } from "@/lib/supabase";
@@ -69,10 +70,32 @@ export async function updatePartnerProfil(
     cleanOptional(formData.get("telefon")) ?? cleanOptional(formData.get("tel"));
   const webseite = cleanOptional(formData.get("webseite"));
   const strasse = cleanOptional(formData.get("strasse"));
-  const ort = cleanOptional(formData.get("ort"));
-  const adresseJoined = [strasse, ort].filter(Boolean).join(", ");
+  const hausnummer = cleanOptional(formData.get("hausnummer"));
+  const plz = cleanOptional(formData.get("plz"));
+  const ortRaw = cleanOptional(formData.get("ort"));
+  /** Legacy: ein Feld „PLZ / Ort“. */
+  const plzOrtCombined = cleanOptional(formData.get("plz_ort"));
+  let ort = ortRaw;
+  let plzResolved = plz;
+  if (!plzResolved && !ort && plzOrtCombined) {
+    const m = plzOrtCombined.match(/^(\d{5})\s+(.+)$/);
+    if (m) {
+      plzResolved = m[1]!;
+      ort = m[2]!.trim();
+    } else if (/^\d{5}$/.test(plzOrtCombined)) {
+      plzResolved = plzOrtCombined;
+    } else {
+      ort = plzOrtCombined;
+    }
+  }
+  const adresseJoined = composeHandwerkerAdresse({
+    strasse: strasse ?? "",
+    hausnummer: hausnummer ?? "",
+    plz: plzResolved ?? "",
+    ort: ort ?? "",
+  });
   const adresse =
-    cleanOptional(formData.get("adresse")) ?? (adresseJoined || null);
+    cleanOptional(formData.get("adresse")) ?? adresseJoined;
   const steuernummer =
     cleanOptional(formData.get("steuernummer")) ??
     cleanOptional(formData.get("steuernr"));
@@ -105,6 +128,8 @@ export async function updatePartnerProfil(
     webseite,
     adresse,
     strasse,
+    hausnummer,
+    plz: plzResolved,
     ort,
     steuernummer,
     ustid,
@@ -128,9 +153,11 @@ export async function updatePartnerProfil(
       .eq("id", link.handwerkerId));
   }
 
-  if (error && /strasse|ort|handelsregister|bic|bank/i.test(error.message)) {
+  if (error && /strasse|hausnummer|plz|ort|handelsregister|bic|bank/i.test(error.message)) {
     const {
       strasse: _s,
+      hausnummer: _hn,
+      plz: _plz,
       ort: _o,
       handelsregister: _h,
       bic: _b,

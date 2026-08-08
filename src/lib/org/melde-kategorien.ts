@@ -37,7 +37,7 @@ export function meldeKategorieLabel(id: string | null | undefined): string {
 export function meldeKategorieToSituation(
   kategorie: MeldeKategorie
 ): string {
-  if (kategorie === "notfall") return "kaputt";
+  if (kategorie === "notfall") return "notfall";
   return "kaputt";
 }
 

@@ -32,8 +32,9 @@ import {
 } from "@/lib/partner/partner-detail-format";
 import { PartnerPflichtenCard } from "@/components/partner/PartnerPflichtenCard";
 import { PartnerProjektvertragPaket } from "@/components/partner/PartnerProjektvertragPaket";
-import { PartnerDokumentPreviewModal } from "@/components/partner/PartnerDokumentPreviewModal";
+import { PartnerFirmendatenFehlenDialog } from "@/components/partner/PartnerFirmendatenFehlenDialog";
 import { positionBrauchtHandwerkerAktion } from "@/lib/partner/partner-konditionen";
+import { tryCreatePartnerAutoAngebot } from "@/lib/partner/try-partner-auto-angebot";
 import {
   isPartnerAuftragAnfrageOffen,
   partnerAuftragAnfrageStatusLabel,
@@ -65,7 +66,8 @@ export function PartnerAuftragAnfrageDetail({
   const [pflichtenGelesen, setPflichtenGelesen] = useState(false);
   const [grund, setGrund] = useState<string>(HANDWERKER_ABLEHNUNG_GRUND_VALUES[0]);
   const [notiz, setNotiz] = useState("");
-  const [angebotDocOpen, setAngebotDocOpen] = useState(false);
+  const [firmendatenFehlenOpen, setFirmendatenFehlenOpen] = useState(false);
+  const [firmendatenMissing, setFirmendatenMissing] = useState<string[]>([]);
 
   const bearbeitbar = isPartnerAuftragAnfrageOffen(item);
   const istBauprojekt = isPartnerBauprojektAuftrag({
@@ -97,16 +99,27 @@ export function PartnerAuftragAnfrageDetail({
       return;
     }
     partnerPortalToast.auftragAngenommen();
-    if (item.angebotHandwerkerId) {
-      setAngebotDocOpen(true);
-      return;
+
+    const anfrageId = item.angebotHandwerkerId?.trim();
+    if (anfrageId) {
+      setLoading(true);
+      const auto = await tryCreatePartnerAutoAngebot(anfrageId);
+      setLoading(false);
+      if (auto.status === "created") {
+        partnerPortalToast.unterlagenHochgeladen();
+      } else if (auto.status === "firmendaten_missing") {
+        setFirmendatenMissing(auto.missing);
+        setFirmendatenFehlenOpen(true);
+        return;
+      }
     }
+
     if (onAccepted) onAccepted(item.id);
     else router.refresh();
   }
 
-  function finishAfterAngebotDoc() {
-    setAngebotDocOpen(false);
+  function finishAfterFirmendatenHinweis() {
+    setFirmendatenFehlenOpen(false);
     if (onAccepted) onAccepted(item.id);
     else router.refresh();
   }
@@ -288,16 +301,15 @@ export function PartnerAuftragAnfrageDetail({
         onCancel={() => setConfirmReject(false)}
       />
 
-      {item.angebotHandwerkerId ? (
-        <PartnerDokumentPreviewModal
-          open={angebotDocOpen}
-          anfrageId={item.angebotHandwerkerId}
-          art="angebot"
-          onClose={finishAfterAngebotDoc}
-          onSuccess={finishAfterAngebotDoc}
-          allowSkip
-        />
-      ) : null}
+      <PartnerFirmendatenFehlenDialog
+        open={firmendatenFehlenOpen}
+        missing={firmendatenMissing}
+        onDismiss={finishAfterFirmendatenHinweis}
+        onGoSettings={() => {
+          setFirmendatenFehlenOpen(false);
+          router.refresh();
+        }}
+      />
         </div>
       </PortalEntityDetailLayout>
     </PartnerDetailLayout>

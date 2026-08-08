@@ -202,7 +202,7 @@ export async function submitPartnerAbnahmeNachSignatur(
       ok: false,
       error:
         freigabe === "zur_freigabe"
-          ? "Ihre Teilabnahme wartet bereits auf CRM-Freigabe."
+          ? "Ihre Teilabnahme wartet bereits auf Freigabe durch Bärenwald."
           : "Ihre Teilabnahme wurde bereits signiert.",
     };
   }
@@ -379,7 +379,7 @@ export async function bestaetigePartnerAbnahme(
 }
 
 /**
- * Kundenversand nur nach CRM-Freigabe (CRM lehnt sonst ab).
+ * Kundenversand nur nach Freigabe durch Bärenwald (CRM lehnt sonst ab).
  * Partner-UI zeigt keinen Versand-CTA vor Freigabe.
  */
 export async function versendePartnerAbnahme(
