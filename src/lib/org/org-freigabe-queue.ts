@@ -1,8 +1,14 @@
+import { leadIstMeldeDirektauftrag } from "@/lib/funnel/melde-direktauftrag";
 import type { OrganisationLead } from "@/lib/org/types";
 
 type FreigabeLead = Pick<
   OrganisationLead,
-  "id" | "org_freigabe_status" | "hv_meldung_status" | "vorgang_phase"
+  | "id"
+  | "org_freigabe_status"
+  | "hv_meldung_status"
+  | "vorgang_phase"
+  | "freigabe_bypass_grund"
+  | "funnel_daten"
 >;
 
 /** Lead hat bereits einen CRM-Auftrag — gehört unter „Aktiv“, nicht „Zur Freigabe“. */
@@ -19,6 +25,14 @@ export function isInOrgFreigabeQueue(
   auftragByLeadId: Record<string, string>
 ): boolean {
   if (leadHasOrgAuftrag(lead.id, auftragByLeadId)) return false;
+
+  // Sofortmaßnahme mit Bypass: nur Info, nicht in Freigabe-Queue
+  if (
+    leadIstMeldeDirektauftrag(lead) &&
+    (lead.freigabe_bypass_grund ?? "").trim() === "akut"
+  ) {
+    return false;
+  }
 
   const freigabe = (lead.org_freigabe_status ?? "").trim();
   if (freigabe === "freigegeben" || freigabe === "abgelehnt") return false;

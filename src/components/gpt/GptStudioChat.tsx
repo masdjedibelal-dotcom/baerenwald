@@ -7,6 +7,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 import { GptChatBriefBar } from "@/components/gpt/GptChatBriefBar";
 import { GptChatBubble } from "@/components/gpt/GptChatBubble";
+import { GptChatVoiceRecorder } from "@/components/gpt/GptChatVoiceRecorder";
 import { GptRegistrationGate } from "@/components/gpt/GptRegistrationGate";
 import {
   messagesForClaude,
@@ -120,6 +121,7 @@ export function GptStudioChat({
     mergeChatVerlauf,
   } = useGptProjekt();
   const guidedHybrid = priceHandoff;
+  const [voiceActive, setVoiceActive] = useState(false);
   const [guidedDraft, setGuidedDraft] = useState<GuidedFunnelDraft>(() =>
     emptyGuidedDraft()
   );
@@ -1063,8 +1065,8 @@ export function GptStudioChat({
     ]
   );
 
-  const handleSend = useCallback(async () => {
-    const text = input.trim();
+  const handleSend = useCallback(async (overrideText?: string) => {
+    const text = (overrideText ?? input).trim();
     if (!text || loading || locked || limitReached || registrationGate) return;
 
     const userMsg: GptChatMessage = { id: newChatId(), role: "user", text };
@@ -1260,67 +1262,94 @@ export function GptStudioChat({
       <GptChatBriefBar brief={brief} />
 
       <div className="ki-rechner-chat-composer">
-        <div className={cn("ki-rechner-chat-inputbar gpt-chat-inputbar", limitReached && "ki-rechner-chat-inputbar--disabled")}>
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="image/jpeg,image/png,image/webp,image/*"
-            className="sr-only"
-            onChange={(e) => {
-              const f = e.target.files?.[0];
-              const kind = pendingUpload ?? "raum";
-              if (f) void handleUpload(kind, f);
-              e.target.value = "";
-            }}
-          />
-          {showPhotoUpload ? (
+        <div
+          className={cn(
+            "ki-rechner-chat-inputbar gpt-chat-inputbar",
+            limitReached && "ki-rechner-chat-inputbar--disabled",
+            voiceActive && "gpt-chat-inputbar--voice"
+          )}
+        >
+          {!voiceActive ? (
+            <>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/jpeg,image/png,image/webp,image/*"
+                className="sr-only"
+                onChange={(e) => {
+                  const f = e.target.files?.[0];
+                  const kind = pendingUpload ?? "raum";
+                  if (f) void handleUpload(kind, f);
+                  e.target.value = "";
+                }}
+              />
+              {showPhotoUpload ? (
+                <button
+                  type="button"
+                  className="gpt-chat-attach"
+                  disabled={inputDisabled}
+                  aria-label={
+                    pendingUpload === "inspiration"
+                      ? "Inspirationsbild"
+                      : "Raumfoto hochladen"
+                  }
+                  onClick={() => fileInputRef.current?.click()}
+                >
+                  <ImagePlus className="h-5 w-5" aria-hidden />
+                </button>
+              ) : null}
+              <textarea
+                ref={textareaRef}
+                rows={1}
+                enterKeyHint="send"
+                value={input}
+                onChange={(e) => {
+                  setInput(e.target.value);
+                  requestAnimationFrame(syncTextareaHeight);
+                }}
+                onFocus={handleInputFocus}
+                onBlur={handleInputBlur}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && !e.shiftKey) {
+                    e.preventDefault();
+                    void handleSend();
+                  }
+                }}
+                placeholder={
+                  registrationGate
+                    ? "Registrierung erforderlich"
+                    : limitReached
+                      ? "Nachrichtenlimit erreicht"
+                      : "Nachricht oder Sprachnotiz …"
+                }
+                className="ki-rechner-chat-input ki-rechner-chat-textarea"
+                disabled={inputDisabled}
+                aria-label="Nachricht"
+              />
+            </>
+          ) : null}
+
+          {/* Eine Instanz: Mic idle / volle Waveform während Aufnahme */}
+          {voiceActive || (!input.trim() && !inputDisabled) ? (
+            <GptChatVoiceRecorder
+              disabled={inputDisabled}
+              onActiveChange={setVoiceActive}
+              onTextReady={(text) => {
+                void handleSend(text);
+              }}
+              onError={(message) => setError(message)}
+            />
+          ) : (
             <button
               type="button"
-              className="gpt-chat-attach"
-              disabled={inputDisabled}
-              aria-label={pendingUpload === "inspiration" ? "Inspirationsbild" : "Raumfoto hochladen"}
-              onClick={() => fileInputRef.current?.click()}
+              onClick={() => void handleSend()}
+              disabled={!input.trim() || inputDisabled}
+              className="ki-rechner-chat-send"
+              aria-label="Senden"
             >
-              <ImagePlus className="h-5 w-5" aria-hidden />
+              <SendMessageIcon />
             </button>
-          ) : null}
-          <textarea
-            ref={textareaRef}
-            rows={1}
-            enterKeyHint="send"
-            value={input}
-            onChange={(e) => {
-              setInput(e.target.value);
-              requestAnimationFrame(syncTextareaHeight);
-            }}
-            onFocus={handleInputFocus}
-            onBlur={handleInputBlur}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" && !e.shiftKey) {
-                e.preventDefault();
-                void handleSend();
-              }
-            }}
-            placeholder={
-              registrationGate
-                ? "Registrierung erforderlich"
-                : limitReached
-                  ? "Nachrichtenlimit erreicht"
-                  : "Nachricht eingeben …"
-            }
-            className="ki-rechner-chat-input ki-rechner-chat-textarea"
-            disabled={inputDisabled}
-            aria-label="Nachricht"
-          />
-          <button
-            type="button"
-            onClick={() => void handleSend()}
-            disabled={!input.trim() || inputDisabled}
-            className="ki-rechner-chat-send"
-            aria-label="Senden"
-          >
-            <SendMessageIcon />
-          </button>
+          )}
         </div>
         <p className="ki-rechner-chat-privacy">
           KI-Dienst Anthropic · <Link href="/datenschutz#ki-beratung">Datenschutz</Link>

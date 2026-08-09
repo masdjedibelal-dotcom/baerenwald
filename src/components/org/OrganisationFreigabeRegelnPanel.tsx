@@ -11,6 +11,7 @@ import {
 } from "@/components/shared/PortalEinstellungenUi";
 import type { OrganisationKunde } from "@/lib/org/types";
 import {
+  EINSTELLUNGEN_AKUT_INTRO,
   EINSTELLUNGEN_AKUT_TITLE,
   EINSTELLUNGEN_SCHWELLE_SLIDER_MAX,
   EINSTELLUNGEN_SCHWELLE_SLIDER_MIN,
@@ -191,8 +192,8 @@ export function OrganisationFreigabeRegelnPanel({
           title={EINSTELLUNGEN_AKUT_TITLE}
           description={
             editAkut
-              ? "Ja — bei akuten Schäden Direktauftrag ohne Angebot möglich."
-              : "Nein — auch akute Schäden laufen über Angebot und Freigabe."
+              ? `${EINSTELLUNGEN_AKUT_INTRO} Aktiv: Sofortmaßnahmen ohne Ihre Freigabe, nur Info.`
+              : "Aus: Auch Sofortmaßnahmen laufen über Angebot und Freigabe."
           }
         />
       </EinstellungenEditModal>

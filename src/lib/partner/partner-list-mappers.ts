@@ -183,6 +183,7 @@ export function mapVorgangToCard(vorgang: PartnerVorgangItem): PartnerCardRow {
           : "angebot"
         : "auftrag",
     meta,
+    hint: listenStatus.actionHint ?? undefined,
     sortDate: partnerVorgangLastActivityAt(vorgang) || ts(
       anfrage?.gesendet_at ?? auftrag.start_datum ?? vorgang.handwerker_bestaetigt_at
     ),

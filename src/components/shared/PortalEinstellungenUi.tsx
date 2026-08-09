@@ -22,10 +22,10 @@ export function EinstellungenPfRow({
 }) {
   return (
     <div className="min-w-0 py-0.5">
-      <p className="text-[12px] font-medium text-text-tertiary">{label}</p>
-      <p className="mt-0.5 text-[14px] leading-snug text-text-primary">
-        {value}
+      <p className="portal-text-label normal-case tracking-wide text-text-tertiary">
+        {label}
       </p>
+      <p className="portal-text-card-title mt-0.5 font-semibold">{value}</p>
     </div>
   );
 }
@@ -55,7 +55,7 @@ export function EinstellungenEdField({
       </span>
       <input
         type={type}
-        className="w-full rounded-[9px] border border-border-default bg-white px-3 py-2.5 text-[13.5px] text-text-primary outline-none focus:border-accent disabled:cursor-not-allowed disabled:opacity-70"
+        className="portal-field w-full"
         value={value}
         placeholder={placeholder}
         disabled={disabled}
@@ -213,13 +213,8 @@ export function EinstellungenChoiceCard({
         ) : null}
       </span>
       <span className="min-w-0">
-        <span className="block text-[13.5px] font-semibold text-text-primary">
-          {title}
-        </span>
-        <span
-          className="mt-0.5 block text-[12.5px] leading-snug"
-          style={{ color: PORTAL_VAR.sub }}
-        >
+        <span className="portal-text-card-title block">{title}</span>
+        <span className="portal-text-meta mt-0.5 block" style={{ color: PORTAL_VAR.sub }}>
           {description}
         </span>
       </span>
@@ -298,8 +293,7 @@ export function EinstellungenSchwelleSlider({
         aria-valuetext={formatEinstellungenSchwelle(value)}
       />
       <span
-        className="w-[110px] shrink-0 text-right text-[20px] font-bold text-accent"
-        style={{ fontFamily: "var(--p2-font-head, " + PORTAL_VAR.head + ")" }}
+        className="portal-text-title w-[110px] shrink-0 text-right text-accent tabular-nums"
       >
         {formatEinstellungenSchwelle(value)}
       </span>
@@ -317,12 +311,8 @@ export function EinstellungenObjektSchwelleRow({
 }) {
   return (
     <div className="flex items-center justify-between gap-3 rounded-[9px] border border-border-default px-[13px] py-[11px]">
-      <span className="min-w-0 truncate text-[13.5px] font-semibold text-text-primary">
-        {name}
-      </span>
-      <span className="shrink-0 text-[13.5px] font-semibold text-accent">
-        {value}
-      </span>
+      <span className="portal-text-card-title min-w-0 truncate">{name}</span>
+      <span className="portal-text-card-title shrink-0 text-accent">{value}</span>
     </div>
   );
 }
@@ -369,7 +359,7 @@ export function EinstellungenEuroSlider({
         aria-valuenow={value}
         aria-label="Betrag"
       />
-      <span className="shrink-0 text-right font-[family-name:var(--font-display)] text-lg font-bold text-accent tabular-nums sm:w-[110px]">
+      <span className="portal-text-title shrink-0 text-right text-accent tabular-nums sm:w-[110px]">
         {label}
       </span>
     </div>
@@ -443,12 +433,10 @@ export function EinstellungenToggle({
         />
       </span>
       <span className="min-w-0">
-        <span className="block text-[13.5px] font-semibold text-text-primary">
-          {title}
-        </span>
+        <span className="portal-text-card-title block">{title}</span>
         {description ? (
           <span
-            className="mt-1 block text-[13px] leading-snug"
+            className="portal-text-meta mt-1 block"
             style={{ color: PORTAL_VAR.sub }}
           >
             {description}

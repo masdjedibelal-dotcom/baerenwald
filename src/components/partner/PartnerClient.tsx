@@ -11,13 +11,14 @@ import { PartnerNotificationBell } from "@/components/partner/PartnerNotificatio
 import { PartnerPlanerPanel } from "@/components/partner/PartnerPlanerPanel";
 import { PartnerProfilPanel } from "@/components/partner/PartnerProfilPanel";
 import { VorgangCard } from "@/components/partner/VorgangCard";
-import { PartnerListCard } from "@/components/partner/PartnerListCard";
+import { PortalListCard } from "@/components/shared/PortalListCard";
 import { portalListStackClass } from "@/lib/portal2/layout-chrome";
 import {
   PARTNER_LIST_PAGE_SIZE,
   PartnerListPagination,
 } from "@/components/partner/PartnerListPagination";
 import dynamic from "next/dynamic";
+import { PORTAL_BUSY_MIN_MS } from "@/components/shared/PortalBusyContext";
 import { PortalContentBusy } from "@/components/shared/PortalContentBusy";
 
 const PortalBaerenwaldGpt = dynamic(
@@ -30,6 +31,7 @@ const PortalBaerenwaldGpt = dynamic(
 import { PortalLegalFooter } from "@/components/shared/PortalLegalFooter";
 import { PortalShell } from "@/components/shared/PortalShell";
 import { PortalHeaderSearch } from "@/components/shared/PortalHeaderSearch";
+import { PortalInboxEmpty } from "@/components/shared/PortalEmptyState";
 import { PortalEmptyState } from "@/components/shared/PortalStateView";
 import type { PartnerPlanerSection } from "@/lib/partner/build-partner-termine";
 import type {
@@ -127,11 +129,12 @@ function PartnerVorgangListFilterBar({
   );
 }
 
-/** Listen-Unterzeile wie Kundenportal: Adresse, kein Icon-Stack. */
+/** Listen-Unterzeile: Straße / PLZ Ort aus Card-Meta (buildPartnerAuftragCardMeta). */
 function partnerListSubtitle(row: PartnerCardRow): string | undefined {
   if (row.subtitle?.trim()) return row.subtitle.trim();
-  // buildAuftragCardMeta: zuerst Ort, dann Zeitraum
-  const ort = row.meta[0]?.text?.trim();
+  const ort =
+    row.meta.find((m) => m.icon === "map-pin")?.text?.trim() ||
+    row.meta[0]?.text?.trim();
   return ort && ort !== "—" ? ort : undefined;
 }
 
@@ -524,7 +527,7 @@ export function PartnerClient({
 
   const [pageBusy, setPageBusy] = useState(false);
 
-  function flashPageBusy(ms = 400) {
+  function flashPageBusy(ms = PORTAL_BUSY_MIN_MS) {
     setPageBusy(true);
     window.setTimeout(() => setPageBusy(false), ms);
   }
@@ -575,7 +578,7 @@ export function PartnerClient({
     ignoreUrlDetailRef.current = false;
     pendingDetailIdRef.current = id.replace(/^auftrag:/, "");
     setSelectedId(id);
-    flashPageBusy(280);
+    flashPageBusy();
     if (section === "vorgaenge") {
       router.replace(partnerVorgangPortalPath(id), { scroll: false });
     }
@@ -585,7 +588,7 @@ export function PartnerClient({
     ignoreUrlDetailRef.current = true;
     pendingDetailIdRef.current = null;
     setSelectedId(null);
-    flashPageBusy(280);
+    flashPageBusy();
     const filterQs =
       vorgangListFilter === "alle"
         ? partnerSectionListPath("vorgaenge")
@@ -608,7 +611,7 @@ export function PartnerClient({
 
   function renderSectionCard(row: PartnerCardRow) {
     return (
-      <PartnerListCard
+      <PortalListCard
         key={row.id}
         variant="responsive"
         accent={row.accent}
@@ -619,7 +622,8 @@ export function PartnerClient({
         statusLabel={row.statusLabel}
         statusPillClass={partnerAngebotStatusPillClass(row.statusPillKey)}
         statusPillStyle={partnerStatusChipStyle(row.statusPillKey)}
-        meta={[]}
+        meta={row.meta}
+        hint={row.hint}
         selected={false}
         onClick={() => selectRow(row.id)}
       />
@@ -664,9 +668,7 @@ export function PartnerClient({
           showPortalEmptyVorgaenge ? (
             <PortalEmptyState role="handwerker" compact />
           ) : (
-            <p className="portal-text-body px-2 py-8 text-center text-text-secondary">
-              {filterEmptyMessage}
-            </p>
+            <PortalInboxEmpty title={filterEmptyMessage} compact />
           )
         ) : (
           paginatedCardRows.map(renderSectionCard)
@@ -808,6 +810,13 @@ export function PartnerClient({
               ? detailScreen
               : listScreen
             : null}
+
+          {section !== "gpt" ? (
+            <PortalLegalFooter
+              variant="partner"
+              className="mx-auto max-w-[1200px] px-1 pt-6 lg:px-0"
+            />
+          ) : null}
         </div>
       </PortalShell>
 
@@ -818,13 +827,6 @@ export function PartnerClient({
           setGptOpen(false);
         }}
       />
-
-      {section !== "gpt" ? (
-        <PortalLegalFooter
-          variant="partner"
-          className="mx-auto max-w-[1200px] px-4 pb-8 pt-3 lg:px-6"
-        />
-      ) : null}
     </>
   );
 }

@@ -1,7 +1,7 @@
 "use client";
 
-import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import { acceptKundeAngebot, rejectKundeAngebot } from "@/app/actions/portal-angebot";
 import { acceptKundeAuftragAenderungen } from "@/app/actions/portal-auftrag";
@@ -36,6 +36,11 @@ import {
   buildHvVerlaufSeed,
   inferFlowFromKundeItem,
 } from "@/lib/portal2/hv-detail-adapters";
+import {
+  normalizePortalDeepLinkTab,
+  portalDeepLinkTabForSimpleNav,
+  PORTAL_DETAIL_TAB_QUERY,
+} from "@/lib/portal2/portal-detail-deep-link";
 import type { PortalMockStatusId } from "@/lib/portal2/status";
 import { portalMieterStatusLabel } from "@/lib/portal2/status";
 
@@ -131,6 +136,8 @@ export function PortalVorgangDetail({
   mieterStatusMode?: boolean;
 }) {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const deepLinkAppliedRef = useRef(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [rejectOpen, setRejectOpen] = useState(false);
   const [rejectGrund, setRejectGrund] = useState("");
@@ -164,7 +171,7 @@ export function PortalVorgangDetail({
     () => [
       { id: "details" as const, label: "Details" },
       ...(showBautagebuchTab
-        ? [{ id: "bautagebuch" as const, label: "Bautagebuch" }]
+        ? [{ id: "bautagebuch" as const, label: "Dokumentation" }]
         : []),
       { id: "dokumente" as const, label: "Dokumente" },
       ...(showFeedbackTab
@@ -181,21 +188,34 @@ export function PortalVorgangDetail({
   }, [sectionTabs, activeSection]);
 
   useEffect(() => {
-    if (typeof window === "undefined") return;
-    const hash = window.location.hash.replace(/^#/, "").trim();
-    if (!hash) return;
-    if (!sectionTabs.some((t) => t.id === hash)) return;
-    setActiveSection(
-      hash as "details" | "bautagebuch" | "dokumente" | "feedback"
+    deepLinkAppliedRef.current = false;
+  }, [item.id, item.leadId]);
+
+  useEffect(() => {
+    if (deepLinkAppliedRef.current) return;
+    const fromQuery = normalizePortalDeepLinkTab(
+      searchParams.get(PORTAL_DETAIL_TAB_QUERY)
     );
+    const fromHash =
+      typeof window !== "undefined"
+        ? normalizePortalDeepLinkTab(window.location.hash)
+        : null;
+    const tab = fromQuery || fromHash;
+    if (!tab) return;
+    const target = portalDeepLinkTabForSimpleNav(tab);
+    if (!sectionTabs.some((t) => t.id === target)) return;
+    setActiveSection(target);
+    deepLinkAppliedRef.current = true;
+    if (typeof window === "undefined") return;
     try {
       const url = new URL(window.location.href);
+      url.searchParams.delete(PORTAL_DETAIL_TAB_QUERY);
       url.hash = "";
       window.history.replaceState(null, "", `${url.pathname}${url.search}`);
     } catch {
       /* ignore */
     }
-  }, [sectionTabs]);
+  }, [sectionTabs, searchParams, item.id, item.leadId]);
 
   if (showHvAbnahme) {
     const beschreibung = extractProjektbeschreibung(item);
@@ -219,7 +239,7 @@ export function PortalVorgangDetail({
         beschreibung={beschreibung}
         flowStatus={flowStatus}
         leadId={item.leadId ?? item.id}
-        auftragId={auftragId}
+        auftragId={auftragId ?? item.terminAuftragId}
         hvAbnahme={hvAbnahme}
         hwErledigt={hwErledigt}
         schwelleEur={schwelleEur}
@@ -253,6 +273,9 @@ export function PortalVorgangDetail({
         meldeFachdetails={item.meldeFachdetails}
         meldePreisIndikation={item.meldePreisIndikation}
         handwerkerName={item.ansprechpartner?.name}
+        terminVon={item.isAuftragDetail ? item.date : null}
+        terminBis={item.auftragEndDatum ?? null}
+        terminSlots={item.terminSlots}
         orgFreigabeStatus={orgFreigabeStatus ?? item.orgFreigabeStatus}
         freigabeBypassGrund={
           (item.freigabeBypassGrund as "schwelle" | "akut" | null | undefined) ??
@@ -402,13 +425,13 @@ export function PortalVorgangDetail({
         >
           {activeSection === "details" ? (
             <div className="space-y-4">
-              {item.hvMieterView &&
-              item.terminAuftragId &&
+              {item.terminAuftragId &&
               item.terminSlots &&
               item.terminSlots.length > 0 ? (
                 <PortalHvTerminSection
                   auftragId={item.terminAuftragId}
                   slots={item.terminSlots}
+                  readOnly={!item.hvMieterView}
                 />
               ) : null}
 

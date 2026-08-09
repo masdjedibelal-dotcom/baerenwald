@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 
 import dynamic from "next/dynamic";
 import { PortalKundePrivatDashboard } from "@/components/portal/PortalKundePrivatDashboard";
@@ -34,18 +34,23 @@ const PortalVorgangDetail = dynamic(
   {
     ssr: false,
     loading: () => (
-      <p className="px-4 py-8 text-center text-sm text-text-secondary">
+      <p className="portal-text-meta px-4 py-8 text-center text-text-secondary">
         Vorgang wird geladen…
       </p>
     ),
   }
 );
 import { emitPortalNotificationsChanged } from "@/lib/portal2/notif-refresh";
-import { usePortalBusy } from "@/components/shared/PortalBusyContext";
+import { ensurePortalVorgangNotificationHref } from "@/lib/portal2/portal-detail-deep-link";
+import {
+  PORTAL_BUSY_MIN_MS,
+  usePortalBusy,
+} from "@/components/shared/PortalBusyContext";
 import { PortalContentBusy } from "@/components/shared/PortalContentBusy";
 import { PortalLegalFooter } from "@/components/shared/PortalLegalFooter";
 import { PortalShell } from "@/components/shared/PortalShell";
 import { PortalHeaderSearch } from "@/components/shared/PortalHeaderSearch";
+import { PortalInboxEmpty } from "@/components/shared/PortalEmptyState";
 import { PortalEmptyState } from "@/components/shared/PortalStateView";
 import { PortalListCard } from "@/components/shared/PortalListCard";
 import {
@@ -313,7 +318,7 @@ export function PortalClient({
   const pendingDetailIdRef = useRef<string | null>(null);
   const { flash: flashShellBusy } = usePortalBusy();
 
-  function flashNavBusy(ms = 280) {
+  function flashNavBusy(ms = PORTAL_BUSY_MIN_MS) {
     setPageBusy(true);
     window.setTimeout(() => setPageBusy(false), ms);
     flashShellBusy(ms);
@@ -503,6 +508,21 @@ export function PortalClient({
     ? detailItem
     : listSelectedItem;
 
+  /** Vor Paint: kein Slim-Detail ohne Loader (URL-Deep-Link / Klick). */
+  useLayoutEffect(() => {
+    if (!selectedId) {
+      setDetailLoading(false);
+      return;
+    }
+    if (
+      detailItem &&
+      (detailItem.id === selectedId || detailItem.leadId === selectedId)
+    ) {
+      return;
+    }
+    setDetailLoading(true);
+  }, [selectedId, detailItem]);
+
   useEffect(() => {
     if (!selectedId) {
       setDetailItem(null);
@@ -511,6 +531,7 @@ export function PortalClient({
     }
     let cancelled = false;
     setDetailLoading(true);
+    const started = Date.now();
     const q = hvPortalMode ? "?hv=1" : "";
     void fetch(`/api/portal/vorgaenge/${encodeURIComponent(selectedId)}${q}`)
       .then(async (res) => {
@@ -525,7 +546,10 @@ export function PortalClient({
         /* Liste bleibt Fallback */
       })
       .finally(() => {
-        if (!cancelled) setDetailLoading(false);
+        const wait = Math.max(0, PORTAL_BUSY_MIN_MS - (Date.now() - started));
+        window.setTimeout(() => {
+          if (!cancelled) setDetailLoading(false);
+        }, wait);
       });
     return () => {
       cancelled = true;
@@ -668,15 +692,32 @@ export function PortalClient({
     const matched = findKundeVorgangByQueryId(vorgaengeItems, vorgangId);
     const id = matched?.id ?? vorgangId;
     pendingDetailIdRef.current = id;
+    setDetailItem(null);
+    setDetailLoading(true);
     setSection("vorgaenge");
     setSelectedId(id);
-    flashNavBusy();
-    if (href) {
-      router.push(href);
-    } else if (!embedded) {
-      router.push(
-        `/portal?section=vorgaenge&id=${encodeURIComponent(id)}`
-      );
+    flashNavBusy(PORTAL_BUSY_MIN_MS);
+    const target =
+      ensurePortalVorgangNotificationHref({
+        href: href ?? null,
+        vorgangId: id,
+      }) ||
+      `/portal?section=vorgaenge&id=${encodeURIComponent(id)}`;
+    if (embedded && hvPortalMode) {
+      const f = hvListeFilterForUrl();
+      try {
+        const u = new URL(target, "https://local.invalid");
+        u.searchParams.set("section", "vorgaenge");
+        u.searchParams.set("filter", f);
+        u.searchParams.set("id", id);
+        router.push(`${u.pathname}${u.search}${u.hash}`);
+      } catch {
+        router.push(target);
+      }
+      return;
+    }
+    if (!embedded || href) {
+      router.push(target);
     }
   }
 
@@ -702,9 +743,9 @@ export function PortalClient({
     ignoreUrlDetailRef.current = false;
     pendingDetailIdRef.current = row.id;
     setDetailItem(null);
-    setDetailLoading(false);
+    setDetailLoading(true);
     setSelectedId(row.id);
-    flashNavBusy();
+    flashNavBusy(PORTAL_BUSY_MIN_MS);
     if (embedded && hvPortalMode) {
       const f = hvListeFilterForUrl();
       router.replace(
@@ -760,7 +801,7 @@ export function PortalClient({
     return (
       <PortalListCard
         key={row.id}
-        variant={mockListe ? "responsive" : "row"}
+        variant="responsive"
         selected={false}
         onClick={() => openVorgang(row)}
         title={row.title}
@@ -770,10 +811,10 @@ export function PortalClient({
         statusPillStyle={statusPillStyle}
         accent={row.accent}
         meta={row.meta}
-        hint={mockListe ? undefined : row.hint}
+        hint={hvPortalMode || !mockListe ? row.hint : undefined}
         footer={mockListe ? undefined : row.footer}
         showLeftAccent={false}
-        showChevron={mockListe}
+        showChevron
         attentionBadge={btUnread > 0 ? btUnread : null}
       />
     );
@@ -805,13 +846,7 @@ export function PortalClient({
           counts={filterCounts}
         />
       ) : null}
-      <div
-        className={cn(
-          hvPortalMode || (isPrivatLike && !hvPortalMode)
-            ? portalListStackClass("responsive")
-            : "portal-list-panel portal-list-rows"
-        )}
-      >
+      <div className={portalListStackClass("responsive")}>
         {paginatedRows.length === 0 ? (
           vorgaengeItems.length === 0 ? (
             <PortalEmptyState
@@ -821,23 +856,26 @@ export function PortalClient({
               compact
             />
           ) : (
-            <p className="portal-text-body px-2 py-8 text-center text-text-secondary">
-              {hvPortalMode && controlledHvListeFilter
-                ? controlledHvListeFilter === "alle"
-                  ? "Keine Vorgänge."
-                  : controlledHvListeFilter === "offen"
-                    ? "Keine offenen Vorgänge."
-                    : controlledHvListeFilter === "in_arbeit"
-                      ? "Keine Vorgänge in Arbeit."
-                      : "Keine erledigten Vorgänge."
-                : isPrivatLike
-                  ? "Noch keine Vorgänge"
-                  : vorgangFilter === "alle"
+            <PortalInboxEmpty
+              compact
+              title={
+                hvPortalMode && controlledHvListeFilter
+                  ? controlledHvListeFilter === "alle"
                     ? "Keine Vorgänge."
-                    : vorgangFilter === "aktiv"
-                      ? "Keine aktiven Vorgänge."
-                      : "Keine erledigten Vorgänge."}
-            </p>
+                    : controlledHvListeFilter === "offen"
+                      ? "Keine offenen Vorgänge."
+                      : controlledHvListeFilter === "in_arbeit"
+                        ? "Keine Vorgänge in Arbeit."
+                        : "Keine erledigten Vorgänge."
+                  : isPrivatLike
+                    ? "Noch keine Vorgänge"
+                    : vorgangFilter === "alle"
+                      ? "Keine Vorgänge."
+                      : vorgangFilter === "aktiv"
+                        ? "Keine aktiven Vorgänge."
+                        : "Keine erledigten Vorgänge."
+              }
+            />
           )
         ) : (
           paginatedRows.map(renderListCard)
@@ -857,13 +895,22 @@ export function PortalClient({
 
   const selectedLeadId = selectedItem?.leadId ?? selectedItem?.id ?? "";
 
-  const detailScreen = selectedItem ? (
+  /**
+   * Loader bis das volle Detail da ist (mind. PORTAL_BUSY_MIN_MS).
+   * Kein vorzeitiges Slim-Listen-Detail.
+   */
+  const showDetailBusy = Boolean(
+    selectedId &&
+      (detailLoading || (!detailMatchesSelection && !listSelectedItem))
+  );
+
+  const detailScreen = showDetailBusy ? (
+    <PortalContentBusy
+      title="Vorgang wird geladen…"
+      body="Einen Moment — wir öffnen die Details."
+    />
+  ) : selectedItem ? (
     <div className="-mx-4 -mt-4 min-w-0 lg:-mx-6 lg:-mt-5">
-      {detailLoading && !selectedItem.bautagebuch?.length ? (
-        <p className="px-4 py-2 text-center text-[12px] text-text-secondary">
-          Medien werden geladen…
-        </p>
-      ) : null}
       <PortalVorgangDetail
         item={selectedItem}
         showAnlassBadge={showAnlassBadge}
@@ -902,10 +949,28 @@ export function PortalClient({
 
   /** Mock: Liste und Detail sind getrennte Screens — kein Split-Pane. */
   const vorgaengeScreen =
-    selectedItem || selectedId ? detailScreen : listPanel;
+    selectedItem || selectedId || showDetailBusy ? detailScreen : listPanel;
 
   if (embedded) {
-    return <div className="min-w-0">{vorgaengeScreen}</div>;
+    return (
+      <div className="relative min-h-[40vh] min-w-0">
+        <div
+          className={cn(
+            pageBusy &&
+              !showDetailBusy &&
+              "pointer-events-none invisible select-none"
+          )}
+          aria-hidden={pageBusy && !showDetailBusy ? true : undefined}
+        >
+          {vorgaengeScreen}
+        </div>
+        {pageBusy && !showDetailBusy ? (
+          <div className="absolute inset-0 z-10 flex items-start justify-center bg-[var(--surface-page,#f7f8fa)]/90 backdrop-blur-[1px]">
+            <PortalContentBusy />
+          </div>
+        ) : null}
+      </div>
+    );
   }
 
   const navRole = portalNavRoleForKundeTyp(kundeTyp);
@@ -1030,6 +1095,10 @@ export function PortalClient({
           ) : null}
 
           {section === "vorgaenge" ? vorgaengeScreen : null}
+
+          {section !== "gpt" ? (
+            <PortalLegalFooter variant="kunde" className="mt-8" />
+          ) : null}
       </PortalShell>
 
       {gptOpen && section !== "gpt" ? (
@@ -1044,14 +1113,11 @@ export function PortalClient({
         onClose={() => setCreateOpen(false)}
         onDone={() => {
           setCreateOpen(false);
-          flashNavBusy(400);
+          flashNavBusy();
           router.refresh();
         }}
       />
 
-      <div className="mx-auto hidden max-w-[1200px] px-6 lg:block">
-        <PortalLegalFooter variant="kunde" className="mt-8" />
-      </div>
     </>
   );
 }

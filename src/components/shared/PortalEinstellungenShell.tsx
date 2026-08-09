@@ -13,6 +13,10 @@ import type { EinstellungenVariant } from "@/lib/portal2/einstellungen";
 import { einstellungenPageTitle } from "@/lib/portal2/einstellungen";
 import { usePortalView } from "@/hooks/use-portal-view";
 import { isPortalMobileView } from "@/lib/portal2/viewport";
+import {
+  PortalListeEyebrow,
+  PortalListeTitle,
+} from "@/components/shared/PortalListeChrome";
 import { PORTAL_VAR } from "@/lib/portal2/tokens";
 import { cn } from "@/lib/utils";
 
@@ -66,21 +70,8 @@ export function PortalEinstellungenShell({
   return (
     <div className="-mx-4 -mt-1 flex min-w-0 flex-col lg:-mx-6 lg:px-0">
       <div className="px-4 pb-1 lg:px-6">
-        <p
-          className="mb-1 text-[12px] font-semibold uppercase tracking-wide"
-          style={{ color: PORTAL_VAR.faint }}
-        >
-          {eye}
-        </p>
-        <h1
-          className="text-[25px] font-bold"
-          style={{
-            color: PORTAL_VAR.ink,
-            fontFamily: "var(--p2-font-head, " + PORTAL_VAR.head + ")",
-          }}
-        >
-          {einstellungenPageTitle(variant)}
-        </h1>
+        <PortalListeEyebrow>{eye}</PortalListeEyebrow>
+        <PortalListeTitle>{einstellungenPageTitle(variant)}</PortalListeTitle>
       </div>
 
       <div
@@ -105,7 +96,7 @@ export function PortalEinstellungenShell({
                     role="tab"
                     aria-selected={on}
                     onClick={() => selectTab(item.id)}
-                    className="shrink-0 rounded-full px-3 py-1.5 text-[12.5px] font-semibold"
+                    className="portal-text-meta shrink-0 rounded-full px-3.5 py-2 font-semibold"
                     style={{
                       border: `1px solid ${on ? "transparent" : PORTAL_VAR.line}`,
                       background: on ? PORTAL_VAR.greenDark : "#fff",
@@ -130,7 +121,7 @@ export function PortalEinstellungenShell({
                       <button
                         type="button"
                         onClick={() => selectTab(item.id)}
-                        className="w-full rounded-[9px] px-3 py-2.5 text-left text-[13px] font-semibold transition-colors"
+                        className="portal-text-meta w-full rounded-[9px] px-3 py-2.5 text-left font-semibold transition-colors"
                         style={{
                           background: on
                             ? "var(--org-primary-soft, " +

@@ -13,13 +13,13 @@ import { PartnerPflichtenCard } from "@/components/partner/PartnerPflichtenCard"
 import { PartnerProjektvertragPaket } from "@/components/partner/PartnerProjektvertragPaket";
 import { PartnerLeistungenKonditionenCard } from "@/components/partner/PartnerLeistungenKonditionenCard";
 import {
-  PartnerConfirmDialog,
-  PartnerDetailError,
-  PartnerDetailInfoBox,
-  PartnerDetailLayout,
-  PartnerDetailSection,
-  PartnerDetailStickyActions,
-} from "@/components/partner/PartnerDetailUi";
+  PortalConfirmDialog,
+  PortalDetailError,
+  PortalDetailInfoBox,
+  PortalDetailLayout,
+  PortalDetailSection,
+  PortalDetailStickyActions,
+} from "@/components/shared/PortalDetailUi";
 import { PortalEntityDetailLayout } from "@/components/shared/PortalEntityDetailLayout";
 import { PartnerHwKalkulationScreen } from "@/components/partner/PartnerHwKalkulationScreen";
 import { PartnerFirmendatenFehlenDialog } from "@/components/partner/PartnerFirmendatenFehlenDialog";
@@ -194,6 +194,19 @@ export function PartnerOffenDetail({
 
   const heroMeta = partnerDetailDateMetaLine(item.gesendet_at ?? item.antwort_at);
 
+  const meldeFotos = useMemo(() => {
+    const fd = item.lead?.funnel_daten as { fotos?: unknown } | null | undefined;
+    if (!Array.isArray(fd?.fotos)) return [] as string[];
+    return fd.fotos
+      .filter(
+        (u): u is string => typeof u === "string" && /^https?:\/\//i.test(u)
+      )
+      .slice(0, 12);
+  }, [item.lead?.funnel_daten]);
+
+  const aufgabeOderCrmNotiz =
+    item.aufgabe_notiz?.trim() || item.hw_crm_notiz?.trim() || null;
+
   const infoText = useMemo(() => {
     if (!isNachreichung) {
       return hatAuftrag
@@ -306,7 +319,7 @@ export function PartnerOffenDetail({
 
   const actionFooter =
     showKalkulation ? null : !showReject ? (
-      <PartnerDetailStickyActions
+      <PortalDetailStickyActions
         primaryLabel={primaryLabel}
         onPrimary={() => setConfirmOpen(true)}
         primaryLoading={loading}
@@ -317,7 +330,7 @@ export function PartnerOffenDetail({
         secondaryDisabled={loading}
       />
     ) : (
-      <PartnerDetailStickyActions
+      <PortalDetailStickyActions
         primaryLabel="Ablehnung senden"
         onPrimary={() => setConfirmReject(true)}
         primaryLoading={loading}
@@ -334,7 +347,7 @@ export function PartnerOffenDetail({
 
   if (showKalkulation) {
     return (
-      <PartnerDetailLayout footer={null}>
+      <PortalDetailLayout footer={null}>
         <PortalEntityDetailLayout
           onBack={onBack ?? (() => router.back())}
           backLabel="← Zurück"
@@ -345,10 +358,10 @@ export function PartnerOffenDetail({
           statusPillStyle={partnerDetailStatusPillStyle("angenommen")}
         >
           <div className="space-y-5">
-            <PartnerDetailInfoBox>
+            <PortalDetailInfoBox>
               Als Nächstes: Kalkulation einreichen — Positionen und Summe erscheinen
               bei Bärenwald und der Verwaltung als empfohlenes Angebot.
-            </PartnerDetailInfoBox>
+            </PortalDetailInfoBox>
             <PartnerHwKalkulationScreen
               anfrageId={item.id}
               onDone={finishAfterKalk}
@@ -356,12 +369,12 @@ export function PartnerOffenDetail({
             />
           </div>
         </PortalEntityDetailLayout>
-      </PartnerDetailLayout>
+      </PortalDetailLayout>
     );
   }
 
   return (
-    <PartnerDetailLayout footer={actionFooter}>
+    <PortalDetailLayout footer={actionFooter}>
       <PortalEntityDetailLayout
         coverUrl={item.lead?.objekt?.cover_url}
         onBack={onBack ?? (() => router.back())}
@@ -373,6 +386,13 @@ export function PartnerOffenDetail({
         statusPillStyle={partnerDetailStatusPillStyle(statusPillKey)}
       >
         <div className="space-y-5">
+      {aufgabeOderCrmNotiz ? (
+        <PortalDetailInfoBox>
+          <p className="font-semibold">Hinweis vom Auftraggeber</p>
+          <p className="mt-1 whitespace-pre-wrap">{aufgabeOderCrmNotiz}</p>
+        </PortalDetailInfoBox>
+      ) : null}
+
       <VorgangDetailBlocks
         vm={buildPartnerVorgangDetailVm({
           idLabel: item.id.slice(0, 8).toUpperCase(),
@@ -383,23 +403,24 @@ export function PartnerOffenDetail({
           ort: item.ort,
           zeitraum: item.zeitraum,
           gewerkName: item.gewerk_name,
-          aufgabeNotiz: item.aufgabe_notiz,
+          aufgabeNotiz: item.aufgabe_notiz ?? item.hw_crm_notiz,
           konditionZeilen,
+          fotos: meldeFotos,
         })}
       />
 
-      <PartnerDetailInfoBox>{infoText}</PartnerDetailInfoBox>
+      <PortalDetailInfoBox>{infoText}</PortalDetailInfoBox>
 
       {isNachreichung && konditionZeilen.length === 0 ? (
-        <PartnerDetailInfoBox>
+        <PortalDetailInfoBox>
           Bärenwald hat Leistungen an diesem Auftrag angepasst. Die Details konnten
           gerade nicht geladen werden — bitte Seite neu laden. Bei anhaltendem
           Problem melde dich bei Bärenwald.
-        </PartnerDetailInfoBox>
+        </PortalDetailInfoBox>
       ) : null}
 
       {konditionZeilen.length > 0 ? (
-        <PartnerDetailSection
+        <PortalDetailSection
           title={
             isNachreichung ? "Geänderte Leistungen" : PARTNER_LEISTUNGEN_SECTION_TITLE
           }
@@ -409,7 +430,7 @@ export function PartnerOffenDetail({
             mode="readonly"
             gesamtLabel={PARTNER_LEISTUNGEN_GESAMT_LABEL}
           />
-        </PartnerDetailSection>
+        </PortalDetailSection>
       ) : null}
 
       <PartnerPflichtenCard
@@ -468,9 +489,9 @@ export function PartnerOffenDetail({
         </div>
       ) : null}
 
-      {error ? <PartnerDetailError message={error} /> : null}
+      {error ? <PortalDetailError message={error} /> : null}
 
-      <PartnerConfirmDialog
+      <PortalConfirmDialog
         open={confirmOpen}
         title={primaryLabel}
         description={
@@ -488,7 +509,7 @@ export function PartnerOffenDetail({
         loading={loading}
       />
 
-      <PartnerConfirmDialog
+      <PortalConfirmDialog
         open={confirmReject}
         title="Ablehnen?"
         description="Bärenwald wird informiert."
@@ -510,6 +531,6 @@ export function PartnerOffenDetail({
       />
         </div>
       </PortalEntityDetailLayout>
-    </PartnerDetailLayout>
+    </PortalDetailLayout>
   );
 }

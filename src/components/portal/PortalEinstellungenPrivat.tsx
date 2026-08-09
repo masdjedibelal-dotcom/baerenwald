@@ -95,7 +95,7 @@ export function PortalEinstellungenPrivat({
               <EinstellungenPfRow label="Name" value={savedName || "—"} />
               <EinstellungenPfRow label="E-Mail" value={email?.trim() || "—"} />
               <EinstellungenPfRow label="Telefon" value={savedTel || "—"} />
-              <p className="text-[11.5px] text-text-tertiary">
+              <p className="portal-text-label normal-case tracking-normal text-text-tertiary">
                 E-Mail-Änderung nur über Support (Verifizierung).
               </p>
             </div>

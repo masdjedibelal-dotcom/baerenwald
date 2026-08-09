@@ -126,7 +126,7 @@ export function PortalEinstellungenMieter({
                     label="Portal bereitgestellt von"
                     value={orgName?.trim() || "—"}
                   />
-                  <p className="text-[12.5px] leading-relaxed text-text-secondary">
+                  <p className="portal-text-meta leading-relaxed text-text-secondary">
                     {mieterKontoZugangHinweis(zugangMail)}
                   </p>
                 </div>
@@ -144,7 +144,7 @@ export function PortalEinstellungenMieter({
                         type="button"
                         onClick={() => setUiLang(l)}
                         className={cn(
-                          "min-w-[52px] rounded-[9px] border px-3 py-2 text-[13px] font-bold uppercase",
+                          "portal-text-meta min-w-[52px] rounded-[9px] border px-3 py-2 font-bold uppercase",
                           lang === l
                             ? "border-accent bg-accent text-white"
                             : "border-border-default bg-white text-text-secondary"
@@ -171,7 +171,7 @@ export function PortalEinstellungenMieter({
               <EinstellungenPfRow label="Name" value={name?.trim() || "—"} />
               <EinstellungenPfRow label="E-Mail" value={email?.trim() || "—"} />
               <EinstellungenPfRow label="Telefon" value={savedTel || "—"} />
-              <p className="text-[12.5px] leading-relaxed text-text-secondary">
+              <p className="portal-text-meta leading-relaxed text-text-secondary">
                 Name oder E-Mail ändern? Schreiben Sie Ihrer Verwaltung:{" "}
                 <a
                   href={`mailto:${supportMail}?subject=${encodeURIComponent("Portal Konto")}`}

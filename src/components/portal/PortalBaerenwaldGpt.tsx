@@ -50,7 +50,7 @@ export function PortalBaerenwaldGpt({
   }
 
   return (
-    <div className="portal-gpt-shell portal-gpt-shell--overlay fixed inset-0 z-[140] bg-black/45 lg:hidden">
+    <div className="portal-gpt-shell portal-gpt-shell--overlay fixed inset-0 z-[210] bg-black/45 lg:hidden">
       <button
         type="button"
         className="absolute inset-0"

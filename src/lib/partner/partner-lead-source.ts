@@ -31,6 +31,7 @@ export type PartnerKundenObjektRow = {
   plz?: string | null;
   ort?: string | null;
   cover_url?: string | null;
+  einheiten_hinweis?: string | null;
 };
 
 export function buildPartnerLeadSource(opts: {
@@ -58,8 +59,13 @@ export function buildPartnerLeadSource(opts: {
     return {
       plz: objekt?.plz ?? opts.kundePlz ?? null,
       objekt,
+      einheiten_hinweis: objektId
+        ? opts.objektById.get(objektId)?.einheiten_hinweis?.trim() || null
+        : null,
     };
   }
+
+  const objektRow = objektId ? opts.objektById.get(objektId) : undefined;
 
   return {
     situation: lead.situation,
@@ -80,6 +86,7 @@ export function buildPartnerLeadSource(opts: {
     melder_einheit: lead.melder_einheit,
     melder_telefon: lead.melder_telefon,
     melder_email: lead.melder_email,
+    einheiten_hinweis: objektRow?.einheiten_hinweis?.trim() || null,
     objekt,
   };
 }

@@ -600,6 +600,24 @@ export async function getPortalDataForKunde(
     bautagebuchByAuftrag.set(aid, list);
   }
 
+  // Partner-Dokumentation (Positions-Lebenszyklus) → Accordion für HV/Kunde
+  if (!listMode && auftragIds.length > 0) {
+    const {
+      loadPartnerDokumentationByAuftragIds,
+      mergePortalBautagebuchEntries,
+    } = await import("@/lib/portal/load-partner-dokumentation");
+    const partnerDoku = await loadPartnerDokumentationByAuftragIds(auftragIds);
+    for (const aid of auftragIds) {
+      const legacy = bautagebuchByAuftrag.get(aid) ?? [];
+      const partner = partnerDoku.get(aid) ?? [];
+      if (!legacy.length && !partner.length) continue;
+      bautagebuchByAuftrag.set(
+        aid,
+        mergePortalBautagebuchEntries(legacy, partner)
+      );
+    }
+  }
+
   const betreuerIds = Array.from(
     new Set(
       auftraege

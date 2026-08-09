@@ -84,6 +84,12 @@ function PartnerUnifiedDetails({
           {B.bereichLabel ? (
             <MetaRow label="Bereich" value={B.bereichLabel} />
           ) : null}
+          {B.melderEmail ? (
+            <MetaRow label="E-Mail" value={B.melderEmail} />
+          ) : null}
+          {B.zugangshinweis ? (
+            <MetaRow label="Zugang" value={B.zugangshinweis} />
+          ) : null}
           {C.aufgabeNotiz ? (
             <MetaRow label="Aufgabe" value={C.aufgabeNotiz} />
           ) : null}
@@ -92,6 +98,14 @@ function PartnerUnifiedDetails({
           <p className="mt-3 whitespace-pre-wrap text-[13px] text-text-secondary">
             {B.beschreibung}
           </p>
+        ) : null}
+        {B.fotos && B.fotos.length > 0 ? (
+          <div className="mt-3">
+            <p className="mb-2 text-[12px] font-semibold uppercase tracking-wide text-text-secondary">
+              Fotos
+            </p>
+            <PortalPhotoGallery urls={B.fotos} />
+          </div>
         ) : null}
       </BlockShell>
     </div>

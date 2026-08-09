@@ -53,7 +53,7 @@ export function PortalDetailTabs({
                 type="button"
                 onClick={() => onChange(t.id)}
                 className={cn(
-                  "shrink-0 border-b-2 pb-2.5 text-[14px] font-semibold",
+                  "portal-text-nav shrink-0 border-b-2 pb-2.5",
                   on
                     ? "border-accent text-text-primary"
                     : "border-transparent text-text-secondary"
@@ -75,7 +75,7 @@ export function PortalDetailTabs({
                   type="button"
                   onClick={() => onChange(t.id)}
                   className={cn(
-                    "flex w-full items-center rounded-lg px-2.5 py-2 text-left text-[13.5px] font-semibold transition-colors",
+                    "portal-text-meta flex w-full items-center rounded-lg px-2.5 py-2 text-left font-semibold transition-colors",
                     on
                       ? "bg-[var(--org-primary-soft,#E7F1E9)] text-accent"
                       : "text-text-secondary hover:bg-[var(--p2-hover,#f3f5f4)]"

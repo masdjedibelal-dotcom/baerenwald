@@ -3,23 +3,33 @@
 import { useState } from "react";
 
 import { formatPreisspanneDisplay } from "@/lib/org/hv-meldung-workflow";
-import { isMeldeNotfall } from "@/lib/org/org-eingang-utils";
+import { isHvDirektauftragInfoOnly } from "@/lib/org/org-direktauftrag";
 import { orgPortalToast } from "@/lib/shared/portal-toast";
 import { HV_MELDUNG_ACTIONS } from "@/lib/portal2/hv-liste";
 import { PORTAL_VAR } from "@/lib/portal2/tokens";
-import type { OrganisationKunde, OrganisationLead } from "@/lib/org/types";
+import type {
+  OrganisationKunde,
+  OrganisationLead,
+  OrganisationObjekt,
+} from "@/lib/org/types";
 
 type Props = {
   lead: OrganisationLead;
   kunde: OrganisationKunde;
+  objekte?: OrganisationObjekt[];
   onUpdated: () => void;
 };
 
 /**
  * Detail-Banner: Vorgang freigeben · Ablehnen
- * → POST /api/org/meldung-aktion
+ * Sofortmaßnahme + Direktbeauftragung aktiv → nur Info (keine Buttons).
  */
-export function OrgMeldungAktionBanner({ lead, kunde: _kunde, onUpdated }: Props) {
+export function OrgMeldungAktionBanner({
+  lead,
+  kunde,
+  objekte,
+  onUpdated,
+}: Props) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -27,7 +37,29 @@ export function OrgMeldungAktionBanner({ lead, kunde: _kunde, onUpdated }: Props
   if (status !== "neu") return null;
   if (lead.einladung_status === "offen") return null;
 
-  const notfall = isMeldeNotfall(lead);
+  const infoOnly = isHvDirektauftragInfoOnly(lead, kunde, objekte);
+
+  if (infoOnly) {
+    return (
+      <div className="mb-4 space-y-2 rounded-xl border border-[#dce5df] bg-[#f6f9f7] p-4">
+        <p className="portal-text-card-title">
+          Sofortmaßnahme — wir kümmern uns
+        </p>
+        <p className="portal-text-meta text-text-secondary">
+          Keine Freigabe nötig. Der Vorgang läuft als Direktauftrag bei
+          Bärenwald. Diese Meldung dient nur Ihrer Information.
+        </p>
+        <p className="portal-text-label normal-case tracking-normal text-text-tertiary">
+          Geschätzte Spanne:{" "}
+          {formatPreisspanneDisplay(
+            lead.preis_min,
+            lead.preis_max,
+            lead.preis_unsicher
+          )}
+        </p>
+      </div>
+    );
+  }
 
   const act = async (aktion: "angebot_einfordern" | "ablehnen") => {
     setBusy(true);
@@ -54,8 +86,8 @@ export function OrgMeldungAktionBanner({ lead, kunde: _kunde, onUpdated }: Props
   return (
     <div className="mb-4 space-y-3 rounded-xl border border-[#dce5df] bg-[#f6f9f7] p-4">
       <div>
-        <p className="text-sm font-medium text-text-primary">Neue Meldung</p>
-        <p className="mt-1 text-xs text-text-secondary">
+        <p className="portal-text-card-title">Neue Meldung</p>
+        <p className="portal-text-meta mt-1 text-text-secondary">
           Geschätzte Spanne:{" "}
           {formatPreisspanneDisplay(
             lead.preis_min,
@@ -63,9 +95,6 @@ export function OrgMeldungAktionBanner({ lead, kunde: _kunde, onUpdated }: Props
             lead.preis_unsicher
           )}
         </p>
-        {notfall ? (
-          <p className="mt-1 text-xs font-medium text-red-700">Notfall</p>
-        ) : null}
       </div>
 
       <div className="flex flex-wrap gap-2">
@@ -88,17 +117,17 @@ export function OrgMeldungAktionBanner({ lead, kunde: _kunde, onUpdated }: Props
               type="button"
               disabled={busy}
               onClick={() => void act(a.id)}
-              className="rounded-lg px-3.5 py-2 text-[12.5px] font-semibold disabled:opacity-60"
+              className="portal-text-meta rounded-lg px-3.5 py-2 font-semibold disabled:opacity-60"
               style={style}
             >
-              {a.id === "angebot_einfordern" && notfall
-                ? "Vorgang freigeben (Express)"
-                : a.label}
+              {a.label}
             </button>
           );
         })}
       </div>
-      {error ? <p className="text-xs text-red-700">{error}</p> : null}
+      {error ? (
+        <p className="portal-text-meta text-red-700">{error}</p>
+      ) : null}
     </div>
   );
 }

@@ -4,24 +4,21 @@ import { useRouter } from "next/navigation";
 import { Phone } from "lucide-react";
 
 import { submitPartnerAngebotPdf, submitPartnerRechnung } from "@/app/actions/partner-angebote";
-import { createPartnerBefundEintrag } from "@/app/actions/partner-befund";
 import { PartnerAbnahmeAbschlussSheet } from "@/components/partner/PartnerAbnahmeAbschlussSheet";
 import { PartnerAbnahmeReviewSection } from "@/components/partner/PartnerAbnahmeReviewSection";
 import { PartnerDokumentPreviewModal } from "@/components/partner/PartnerDokumentPreviewModal";
 import { PartnerAuftragErledigtSection } from "@/components/partner/PartnerAuftragErledigtSection";
-import { PartnerKiKorrekturField } from "@/components/partner/PartnerKiKorrekturField";
 import { PartnerLeistungenKonditionenCard } from "@/components/partner/PartnerLeistungenKonditionenCard";
 import { PartnerPositionLebenszyklusList } from "@/components/partner/PartnerPositionLebenszyklusList";
 import { PartnerTermineRueckfrageSection } from "@/components/partner/PartnerTermineRueckfrageSection";
 import {
-  PartnerDetailError,
-  PartnerDetailLayout,
-  PartnerDetailSection,
-  PartnerDetailSuccessBox,
-} from "@/components/partner/PartnerDetailUi";
+  PortalDetailError,
+  PortalDetailLayout,
+  PortalDetailSection,
+  PortalDetailSuccessBox,
+} from "@/components/shared/PortalDetailUi";
 import { PartnerComplianceCheckliste } from "@/components/partner/PartnerComplianceCheckliste";
 import { PartnerFachdokuSlots } from "@/components/partner/PartnerFachdokuSlots";
-import { BautagebuchAccordionList } from "@/components/shared/BautagebuchAccordionList";
 import {
   PortalDetailCard,
   PortalDetailMetaField,
@@ -44,11 +41,8 @@ import { HW_ABNAHME_COPY } from "@/lib/partner/hw-abnahme";
 import { partnerHwDokumentUploadHint } from "@/lib/partner/partner-hw-dokument-copy";
 import {
   PARTNER_MAX_ANGEBOT_DATEIEN,
-  PARTNER_MAX_BAUTAGEBUCH_ANHAENGE,
   PARTNER_MAX_PDF_MB,
-  PARTNER_MAX_PHOTO_MB,
   validatePartnerAngebotFiles,
-  validatePartnerBautagebuchFiles,
   validatePartnerPdfFile,
 } from "@/lib/partner/partner-upload-limits";
 import type { PartnerAuftragItem } from "@/lib/partner/get-partner-data";
@@ -76,115 +70,6 @@ import { DokumenteTabelle } from "@/components/shared/DokumenteTabelle";
 import { FileUploadField } from "@/components/shared/FileUploadField";
 import { useEffect, useMemo, useRef, useState } from "react";
 
-function PartnerBefundForm({
-  auftragId,
-  onDone,
-}: {
-  auftragId: string;
-  onDone: () => void;
-}) {
-  const router = useRouter();
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [beschreibung, setBeschreibung] = useState("");
-  const [datum, setDatum] = useState(new Date().toISOString().slice(0, 10));
-  const [anhaenge, setAnhaenge] = useState<File[]>([]);
-
-  function handleAnhaengeChange(files: File[]) {
-    const list = files.slice(0, PARTNER_MAX_BAUTAGEBUCH_ANHAENGE);
-    const err = validatePartnerBautagebuchFiles(list, 0);
-    if (err) {
-      setError(err);
-      setAnhaenge([]);
-      return;
-    }
-    setError(null);
-    setAnhaenge(list);
-  }
-
-  async function onSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    setLoading(true);
-    setError(null);
-    const fd = new FormData();
-    fd.set("auftragId", auftragId);
-    fd.set("beschreibung", beschreibung);
-    fd.set("datum", datum);
-    for (const f of anhaenge) fd.append("photos", f);
-
-    const res = await createPartnerBefundEintrag(fd);
-    setLoading(false);
-    if (!res.ok) {
-      setError(res.error);
-      return;
-    }
-    partnerPortalToast.bautagebuchGespeichert(true);
-    router.refresh();
-    onDone();
-  }
-
-  return (
-    <form
-      onSubmit={onSubmit}
-      data-testid="partner-befund-form"
-      className="portal-text-body space-y-3 rounded-xl border border-amber-200 bg-amber-50/60 p-4"
-    >
-      <p className="font-semibold text-text-primary">Schadenbefund dokumentieren</p>
-      <p className="portal-text-meta text-text-secondary">
-        Leckortung und Schadenursache mit Fotos — sichtbar für Verwaltung und Versicherungsakte.
-      </p>
-      <label className="block">
-        <span className="portal-text-meta text-text-tertiary">Datum</span>
-        <input
-          type="date"
-          required
-          value={datum}
-          onChange={(e) => setDatum(e.target.value)}
-          className="mt-1 portal-input w-full rounded-xl border border-border-default bg-surface-card px-3 py-3"
-        />
-      </label>
-      <PartnerKiKorrekturField
-        scope="bautagebuch"
-        label="Befund"
-        value={beschreibung}
-        onChange={setBeschreibung}
-        rows={4}
-        required
-        auftragTitel={null}
-        placeholder="Einsprechen oder tippen — z. B. Leck in Versorgungsleitung Decke Bad …"
-      />
-      <FileUploadField
-        label="Fotos zum Befund"
-        hint={`Mindestens 1 Foto (JPG/PNG/WebP, max. ${PARTNER_MAX_PHOTO_MB} MB).`}
-        accept="image/jpeg,image/png,image/webp"
-        multiple
-        selectedName={
-          anhaenge.length > 0
-            ? anhaenge.length === 1
-              ? anhaenge[0].name
-              : `${anhaenge.length} Fotos ausgewählt`
-            : null
-        }
-        onChange={handleAnhaengeChange}
-      />
-      {error ? (
-        <p className="portal-text-body text-red-700" role="alert">
-          {error}
-        </p>
-      ) : null}
-      <div className="flex flex-wrap gap-2">
-        <button
-          type="submit"
-          disabled={loading}
-          className="btn-pill-primary portal-btn-compact disabled:opacity-60"
-        >
-          {loading ? "Wird gespeichert…" : "Befund speichern"}
-        </button>
-      </div>
-    </form>
-  );
-}
-
 export function PartnerAuftragDetail({
   item,
   vorgangState,
@@ -203,7 +88,6 @@ export function PartnerAuftragDetail({
   deepLinkProtokollId?: string | null;
 }) {
   const router = useRouter();
-  const [showBefund, setShowBefund] = useState(false);
   const [pdfLoading, setPdfLoading] = useState(false);
   const [rechnungLoading, setRechnungLoading] = useState(false);
   const [pdfError, setPdfError] = useState<string | null>(null);
@@ -270,26 +154,6 @@ export function PartnerAuftragDetail({
   const kannRechnungHochladen = partnerAuftragKannRechnungHochladen(item);
   const zeigtDokumenteUpload = partnerAuftragZeigtDokumenteUpload(item);
   const rechnungEingereicht = Boolean(item.hw_rechnung_eingereicht_at);
-
-  const befundEintraege = useMemo(
-    () => item.bautagebuch.filter((e) => e.eintrag_typ === "befund"),
-    [item.bautagebuch]
-  );
-  const eigenerBefund = befundEintraege.some((e) => e.own);
-  const zeigtBefundBereich =
-    item.lead?.hv_meldung_status === "notmassnahme" || befundEintraege.length > 0;
-
-  const befundAccordion = useMemo(
-    () =>
-      befundEintraege.map((e) => ({
-        id: e.id,
-        datum: e.datum,
-        titel: e.titel,
-        beschreibung: e.beschreibung,
-        fotos: e.foto_signed_urls,
-      })),
-    [befundEintraege]
-  );
 
   const konditionZeilen = useMemo(
     () =>
@@ -390,10 +254,20 @@ export function PartnerAuftragDetail({
     null;
   const einheit = lead?.melder_einheit?.trim() || null;
   const objektLine = [strasse, einheit].filter(Boolean).join(" · ") || null;
+  const plzOrt =
+    [item.plz, item.ort].filter((v) => v && v !== "—").join(" ") ||
+    [lead?.plz, lead?.ort ?? lead?.objekt?.ort]
+      .filter((v) => v && v !== "—")
+      .join(" ") ||
+    null;
   const beschreibung = lead?.kontakt_nachricht?.trim() || null;
   const kontaktName =
     lead?.melder_name?.trim() || lead?.kontakt_name?.trim() || null;
   const kontaktTel = lead?.melder_telefon?.trim() || null;
+  const kontaktEmail = lead?.melder_email?.trim() || null;
+  const zugangshinweis = lead?.einheiten_hinweis?.trim() || null;
+  const crmNotiz =
+    item.hw_crm_notiz?.trim() || item.aufgabe_notiz?.trim() || null;
   const terminLabel = formatHwTerminRange(item.start_datum, item.end_datum);
   const sumNetto = summeKonditionNetto(konditionZeilen, true);
 
@@ -407,7 +281,10 @@ export function PartnerAuftragDetail({
           {objektLine}
         </PortalDetailMetaField>
       ) : null}
-      {kontaktName || kontaktTel ? (
+      {plzOrt ? (
+        <PortalDetailMetaField label="PLZ / Ort">{plzOrt}</PortalDetailMetaField>
+      ) : null}
+      {kontaktName || kontaktTel || kontaktEmail ? (
         <PortalDetailMetaField label="Kontakt vor Ort">
           {kontaktName ? <span>{kontaktName}</span> : null}
           {kontaktTel ? (
@@ -420,6 +297,20 @@ export function PartnerAuftragDetail({
               {kontaktTel}
             </a>
           ) : null}
+          {kontaktEmail ? (
+            <a
+              href={`mailto:${kontaktEmail}`}
+              className="mt-0.5 block text-[13px] font-semibold"
+              style={{ color: PORTAL_VAR.primary }}
+            >
+              {kontaktEmail}
+            </a>
+          ) : null}
+        </PortalDetailMetaField>
+      ) : null}
+      {zugangshinweis ? (
+        <PortalDetailMetaField label="Zugangshinweis">
+          {zugangshinweis}
         </PortalDetailMetaField>
       ) : null}
       {terminLabel ? (
@@ -458,7 +349,7 @@ export function PartnerAuftragDetail({
   const handleBack = onBack ?? (() => router.back());
 
   return (
-    <PartnerDetailLayout footer={stickyFooter}>
+    <PortalDetailLayout footer={stickyFooter}>
       <PortalEntityDetailLayout
         coverUrl={coverUrl}
         onBack={handleBack}
@@ -474,6 +365,16 @@ export function PartnerAuftragDetail({
         {activeTab === "uebersicht" ? (
           <div className="space-y-3.5">
             {einsatzCard}
+            {crmNotiz ? (
+              <PortalDetailCard title="Hinweis vom Auftraggeber">
+                <p
+                  className="whitespace-pre-wrap text-[13px] font-semibold leading-relaxed"
+                  style={{ color: PORTAL_VAR.ink }}
+                >
+                  {crmNotiz}
+                </p>
+              </PortalDetailCard>
+            ) : null}
             {beschreibung ? (
               <PortalDetailCard title={HW_AUFTRAG_COPY.beschreibungTitle}>
                 <p
@@ -532,39 +433,12 @@ export function PartnerAuftragDetail({
               ) : null}
             </PortalDetailCard>
 
-            {zeigtBefundBereich ? (
-              <PortalDetailCard title="Schadenbefund">
-                {befundAccordion.length > 0 ? (
-                  <BautagebuchAccordionList
-                    heading="Dokumentierter Befund"
-                    className="!border-t-0 !pt-0"
-                    eintraege={befundAccordion}
-                  />
-                ) : null}
-                {!eigenerBefund && !showBefund ? (
-                  <button
-                    type="button"
-                    onClick={() => setShowBefund(true)}
-                    className="btn-pill-primary portal-btn-compact"
-                    data-testid="partner-befund-start"
-                  >
-                    Befund + Fotos hochladen
-                  </button>
-                ) : null}
-                {showBefund && !eigenerBefund ? (
-                  <PartnerBefundForm
-                    auftragId={item.id}
-                    onDone={() => setShowBefund(false)}
-                  />
-                ) : null}
-              </PortalDetailCard>
-            ) : null}
           </div>
         ) : null}
 
         {activeTab === "dokumente" ? (
           <div className="space-y-3.5">
-            <PartnerDetailSection title="Dokumente">
+            <PortalDetailSection title="Dokumente">
               <DokumenteTabelle
                 dokumente={dokumentZeilen}
                 heading=""
@@ -665,7 +539,7 @@ export function PartnerAuftragDetail({
                         }}
                       />
                       {rechnungError ? (
-                        <PartnerDetailError message={rechnungError} />
+                        <PortalDetailError message={rechnungError} />
                       ) : null}
                       <button
                         type="submit"
@@ -681,15 +555,15 @@ export function PartnerAuftragDetail({
 
               {rechnungEingereicht ? (
                 <div className="mt-4">
-                  <PartnerDetailSuccessBox>
+                  <PortalDetailSuccessBox>
                     <p className="font-semibold">Rechnung eingereicht</p>
                     <p className="text-sm">
                       Hochgeladen am {fmtPartnerDate(item.hw_rechnung_eingereicht_at)}
                     </p>
-                  </PartnerDetailSuccessBox>
+                  </PortalDetailSuccessBox>
                 </div>
               ) : null}
-            </PartnerDetailSection>
+            </PortalDetailSection>
 
             {bauauftragUnterlagen.length > 0 ? (
               <PartnerComplianceCheckliste
@@ -777,6 +651,6 @@ export function PartnerAuftragDetail({
           allowSkip
         />
       ) : null}
-    </PartnerDetailLayout>
+    </PortalDetailLayout>
   );
 }

@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { cn } from "@/lib/utils";
 import { orgPortalToast, portalToastError } from "@/lib/shared/portal-toast";
-import { PortalEmptyState } from "@/components/shared/PortalEmptyState";
+import { PortalInboxEmpty } from "@/components/shared/PortalEmptyState";
 
 type Einheit = {
   id: string;
@@ -249,7 +249,7 @@ export function OrganisationObjektEinheitenPanel({
       <ul className="space-y-2">
         {items.length === 0 ? (
           <li>
-            <PortalEmptyState title="Noch keine Einheiten." compact />
+            <PortalInboxEmpty title="Noch keine Einheiten." compact />
           </li>
         ) : (
           items.map((u) => (

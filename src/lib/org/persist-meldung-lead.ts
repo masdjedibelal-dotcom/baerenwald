@@ -35,8 +35,10 @@ export type PersistMeldungLeadInput = {
       answer: boolean;
     }>;
   } | null;
-  /** Mock `notfall` (Akut). */
+  /** @deprecated Prefer `direktauftrag`. */
   notfall?: boolean | null;
+  /** Sofortmaßnahme → Direktauftrag-Pfad (HV nur Info, wenn freigeschaltet). */
+  direktauftrag?: boolean | null;
   terminwunsch?: string | null;
   dringlichkeit?: string | null;
   fotos?: string[];
@@ -63,15 +65,43 @@ export async function persistMeldungLead(input: PersistMeldungLeadInput) {
     dringlichkeit: input.dringlichkeit,
   });
 
+  const direktauftrag =
+    input.direktauftrag === true ||
+    input.notfall === true ||
+    input.kategorie === "notfall";
+
   const initial = initialHvMeldungState();
   let zeitraum = meldeKategorieToZeitraum(input.kategorie);
-  if (input.kategorie === "notfall" || input.notfall === true) zeitraum = "sofort";
+  if (direktauftrag) zeitraum = "sofort";
   else if (input.dringlichkeit) zeitraum = input.dringlichkeit;
 
-  const situation =
-    input.kategorie === "notfall" || input.notfall === true
-      ? "notfall"
-      : meldeKategorieToSituation(input.kategorie);
+  // Situation „notfall“ nur bei Sofortmaßnahme — für CRM/Legacy; HV-Badge nutzt Kategorie nicht mehr.
+  const situation = direktauftrag
+    ? "notfall"
+    : meldeKategorieToSituation(input.kategorie);
+
+  // Effektive Direktbeauftragung-Regel (Org + Objekt-Override)
+  let notfallDirektAktiv = true;
+  {
+    const { data: org } = await supabaseAdmin
+      .from("kunden")
+      .select("notfall_direkt")
+      .eq("id", input.auftraggeber_kunde_id)
+      .maybeSingle();
+    notfallDirektAktiv = org?.notfall_direkt !== false;
+    if (input.kunde_objekt_id) {
+      const { data: obj } = await supabaseAdmin
+        .from("kunden_objekte")
+        .select("notfall_direkt")
+        .eq("id", input.kunde_objekt_id)
+        .maybeSingle();
+      if (obj?.notfall_direkt != null) {
+        notfallDirektAktiv = Boolean(obj.notfall_direkt);
+      }
+    }
+  }
+
+  const bypassAktiv = direktauftrag && notfallDirektAktiv;
 
   const result = await persistLead({
     name: input.name,
@@ -109,7 +139,8 @@ export async function persistMeldungLead(input: PersistMeldungLeadInput) {
       melde_bereich: input.bereichId,
       fachdetailAnswers: input.fachdetailAnswers ?? {},
       ...(input.fachfragen ? { fachfragen: input.fachfragen } : {}),
-      ...(input.notfall != null ? { notfall: input.notfall } : {}),
+      direktauftrag,
+      notfall: direktauftrag,
       ...(input.terminwunsch
         ? { terminwunsch: input.terminwunsch }
         : {}),
@@ -149,6 +180,10 @@ export async function persistMeldungLead(input: PersistMeldungLeadInput) {
     vorgang_phase: "eingegangen",
     duplikat_hinweis: duplikatHinweis,
   };
+  if (bypassAktiv) {
+    patch.freigabe_bypass_grund = "akut";
+    patch.org_freigabe_status = "nicht_noetig";
+  }
   if (vorschlag) {
     patch.kostentraeger = vorschlag;
     patch.kostentraeger_vorgeschlagen = true;

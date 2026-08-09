@@ -21,6 +21,10 @@ const securityHeaders = [
 const nextConfig = {
   experimental: {
     serverComponentsExternalPackages: ["@napi-rs/canvas"],
+    /** Kamera-Fotos (bis 6 MB) + PDFs müssen in Server Actions ankommen. Default ist 1 MB. */
+    serverActions: {
+      bodySizeLimit: "10mb",
+    },
   },
   async headers() {
     return [

@@ -126,7 +126,7 @@ export function PartnerLoginForm() {
           required
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          className="portal-input w-full rounded-xl border border-border-default bg-surface-card px-3 py-3 focus:border-accent"
+          className="portal-field w-full"
         />
       </label>
 
@@ -139,7 +139,7 @@ export function PartnerLoginForm() {
           minLength={8}
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          className="portal-input w-full rounded-xl border border-border-default bg-surface-card px-3 py-3 focus:border-accent"
+          className="portal-field w-full"
         />
       </label>
 

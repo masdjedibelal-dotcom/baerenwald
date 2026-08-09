@@ -12,6 +12,7 @@ import {
   startPartnerPosition,
 } from "@/app/actions/partner-position-eintraege";
 import { createPartnerPositionsAnfrage } from "@/app/actions/partner-positions-anfrage";
+import { normalizePartnerCameraPhoto } from "@/lib/partner/normalize-camera-photo";
 import {
   formatZeitMinuten,
   lebenszyklusLabel,
@@ -126,13 +127,34 @@ export function PartnerPositionLebenszyklusList({
     }
     if (anfrageId) formData.set("anfrageId", anfrageId);
     startTransition(async () => {
+      const rawFoto = formData.get("foto");
+      if (rawFoto instanceof File && rawFoto.size > 0) {
+        try {
+          const normalized = await normalizePartnerCameraPhoto(rawFoto);
+          formData.set("foto", normalized);
+        } catch {
+          portalToastError(
+            "Foto konnte nicht verarbeitet werden. Bitte erneut versuchen."
+          );
+          return;
+        }
+      }
+
       const action =
         sheet.mode === "start"
           ? startPartnerPosition
           : sheet.mode === "fortschritt"
             ? addPartnerPositionFortschritt
             : completePartnerPosition;
-      const res = await action(formData);
+      let res: Awaited<ReturnType<typeof startPartnerPosition>>;
+      try {
+        res = await action(formData);
+      } catch {
+        portalToastError(
+          "Speichern fehlgeschlagen — Foto zu groß oder Verbindung unterbrochen. Bitte erneut versuchen."
+        );
+        return;
+      }
       if (!res.ok) {
         portalToastError(res.error);
         return;
@@ -484,7 +506,7 @@ export function PartnerPositionLebenszyklusList({
                 auftragTitel={auftragTitel}
                 placeholder={
                   sheet.mode === "start"
-                    ? "Einsprechen oder tippen — KI formuliert kundenfertig"
+                    ? "Tippen — oder Sprachnotiz in Bärenwald GPT"
                     : sheet.mode === "fortschritt"
                       ? "z.B. Estrich eingebracht, trocknet"
                       : "Was wurde fertiggestellt?"

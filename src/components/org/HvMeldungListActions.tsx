@@ -3,15 +3,21 @@
 import { useState, type CSSProperties } from "react";
 
 import { HV_MELDUNG_ACTIONS } from "@/lib/portal2/hv-liste";
+import { isHvDirektauftragInfoOnly } from "@/lib/org/org-direktauftrag";
 import { orgPortalToast } from "@/lib/shared/portal-toast";
 import { PORTAL_VAR } from "@/lib/portal2/tokens";
-import type { OrganisationKunde, OrganisationLead } from "@/lib/org/types";
+import type {
+  OrganisationKunde,
+  OrganisationLead,
+  OrganisationObjekt,
+} from "@/lib/org/types";
 
 type Aktion = (typeof HV_MELDUNG_ACTIONS)[number]["id"];
 
 type Props = {
   lead: OrganisationLead;
   kunde: OrganisationKunde;
+  objekte?: OrganisationObjekt[];
   onUpdated: () => void;
 };
 
@@ -41,12 +47,18 @@ function btnStyle(variant: "primary" | "ghost" | "danger"): CSSProperties {
  * Listen-Aktionen Meldungen · Eingang: Vorgang freigeben · Ablehnen
  * → POST /api/org/meldung-aktion
  */
-export function HvMeldungListActions({ lead, kunde: _kunde, onUpdated }: Props) {
+export function HvMeldungListActions({
+  lead,
+  kunde,
+  objekte,
+  onUpdated,
+}: Props) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   if ((lead.hv_meldung_status ?? "neu") !== "neu") return null;
   if (lead.einladung_status === "offen") return null;
+  if (isHvDirektauftragInfoOnly(lead, kunde, objekte)) return null;
 
   const act = async (aktion: Aktion) => {
     setBusy(true);

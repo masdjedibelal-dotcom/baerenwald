@@ -43,6 +43,8 @@ export type PortalAnfrageLeadSource = {
   melder_einheit?: string | null;
   melder_telefon?: string | null;
   melder_email?: string | null;
+  /** Zugangshinweis aus Kundenobjekt */
+  einheiten_hinweis?: string | null;
   anlass?: string | null;
   erfassung_von?: string | null;
 };
@@ -55,6 +57,14 @@ export function formatMockVorgangListSubtitle(
   lead: PortalAnfrageLeadSource
 ): string | undefined {
   const adresse = formatAnfrageStrasseHausnummer(lead);
+  const { plz, ort } = objektPlzOrt(
+    lead.objekt,
+    lead.plz?.trim() || undefined
+  );
+  const ortResolved =
+    ort !== "—" ? ort : lead.ort?.trim() || "—";
+  const plzOrt = fmtPortalOrt(plz, ortResolved);
+  const plzOrtLabel = plzOrt !== "—" ? plzOrt : undefined;
   const weRaw = lead.melder_einheit?.trim();
   const we = weRaw
     ? /^(WE|Whg\.?|Einheit)\b/i.test(weRaw)
@@ -62,7 +72,7 @@ export function formatMockVorgangListSubtitle(
       : `WE ${weRaw}`
     : undefined;
   const melder = lead.melder_name?.trim() || undefined;
-  const parts = [adresse, we, melder].filter(Boolean);
+  const parts = [adresse, plzOrtLabel, we, melder].filter(Boolean);
   return parts.length ? parts.join(" · ") : undefined;
 }
 

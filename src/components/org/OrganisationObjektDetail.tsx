@@ -20,10 +20,7 @@ import { PortalListCard } from "@/components/shared/PortalListCard";
 import { cn } from "@/lib/utils";
 import { leadBelongsToObjekt } from "@/lib/org/match-lead-objekt";
 import { meldeKategorieLabel } from "@/lib/org/melde-kategorien";
-import {
-  isMeldeNotfall,
-  meldeKategorieFromLead,
-} from "@/lib/org/org-eingang-utils";
+import { meldeKategorieFromLead } from "@/lib/org/org-eingang-utils";
 import type { OrganisationLead, OrganisationObjekt } from "@/lib/org/types";
 import {
   EINSTELLUNGEN_SCHWELLE_SLIDER_MAX,
@@ -96,7 +93,7 @@ function ObjCard({
 
 function ObjRow({ label, value }: { label: string; value: string }) {
   return (
-    <div className="flex items-center justify-between gap-3 border-b border-border-default py-2 text-[13.5px] last:border-b-0">
+    <div className="portal-text-meta flex items-center justify-between gap-3 border-b border-border-default py-2 last:border-b-0">
       <span className="shrink-0 text-text-secondary">{label}</span>
       <span className="min-w-0 text-right font-semibold text-text-primary">
         {value}
@@ -121,7 +118,7 @@ function ObjEditRow({
   autoComplete?: string;
 }) {
   return (
-    <div className="flex items-center justify-between gap-3 border-b border-border-default py-1.5 text-[13.5px] last:border-b-0">
+    <div className="portal-text-meta flex items-center justify-between gap-3 border-b border-border-default py-1.5 last:border-b-0">
       <span className="shrink-0 text-text-secondary">{label}</span>
       <input
         type={type}
@@ -454,7 +451,7 @@ export function OrganisationObjektDetail({
             onChange={(v) => scheduleVersicherung({ selbstbehalt: v })}
             placeholder="0"
           />
-          <p className="mt-2 text-[12px] leading-relaxed text-text-tertiary">
+          <p className="portal-text-meta mt-2 leading-relaxed text-text-tertiary">
             Einmal hinterlegt — jede Schadenmeldung übernimmt diese Daten
             automatisch.
           </p>
@@ -479,10 +476,10 @@ export function OrganisationObjektDetail({
           <p className="portal-text-section">
             Vorgänge ({objektLeads.length})
           </p>
-          <p className="text-xs text-text-tertiary">{offenCount} offen</p>
+          <p className="portal-text-meta text-text-tertiary">{offenCount} offen</p>
         </div>
         {objektLeads.length === 0 ? (
-          <div className="rounded-xl border border-border-default bg-white px-4 py-8 text-center text-[13px] text-text-secondary">
+          <div className="portal-text-meta rounded-xl border border-border-default bg-white px-4 py-8 text-center text-text-secondary">
             Keine Vorgänge an diesem Objekt.
           </div>
         ) : (
@@ -490,7 +487,6 @@ export function OrganisationObjektDetail({
             const kat = meldeKategorieLabel(
               meldeKategorieFromLead(l) ?? undefined
             );
-            const notfall = isMeldeNotfall(l);
             const adresse = [l.strasse, l.hausnummer]
               .filter(Boolean)
               .join(" ");
@@ -520,9 +516,7 @@ export function OrganisationObjektDetail({
                   resolvePlattformStatus(l)
                 )}
                 accent="anfrage"
-                meta={
-                  notfall ? [{ icon: "alert-triangle", text: "Notfall" }] : []
-                }
+                meta={[]}
                 showChevron
               />
             );
@@ -545,7 +539,8 @@ export function OrganisationObjektDetail({
           <EinstellungenToggle
             checked={akutDirekt}
             onChange={(v) => void saveAkutDirekt(v)}
-            title="Akut/Notfall ohne Freigabe"
+            title="Direktbeauftragung bei Sofortmaßnahmen"
+            description="Beispiel: Wasser läuft, kein Strom, Heizung komplett aus, Dach undicht. Aktiv = ohne Freigabe, nur Info."
           />
         </div>
       </EinstellungenCard>
@@ -563,7 +558,7 @@ export function OrganisationObjektDetail({
   }
 
   const ctaClass =
-    "rounded-[9px] border border-border-default bg-white px-3.5 py-2 text-[13px] font-semibold text-text-secondary";
+    "portal-text-meta rounded-[9px] border border-border-default bg-white px-3.5 py-2 font-semibold text-text-secondary";
 
   return (
     <div className="space-y-0">

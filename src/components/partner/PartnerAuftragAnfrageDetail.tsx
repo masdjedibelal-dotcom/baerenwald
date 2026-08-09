@@ -76,13 +76,20 @@ export function PartnerAuftragAnfrageDetail({
   });
   const brauchtProjektvertrag = bearbeitbar && istBauprojekt;
 
-  const konditionZeilen = useMemo(
-    () =>
-      resolvePartnerAuftragKonditionZeilen(
-        item.positionen.filter((p) => positionBrauchtHandwerkerAktion(p))
-      ),
-    [item.positionen]
-  );
+  const konditionZeilen = useMemo(() => {
+    const fuerAnnahme = !item.handwerker_bestaetigt_at?.trim();
+    const ziel = fuerAnnahme
+      ? item.positionen.filter(
+          (p) =>
+            Boolean(p.handwerker_id?.trim()) ||
+            Boolean((p.handwerker_status ?? "").trim()) ||
+            positionBrauchtHandwerkerAktion(p)
+        )
+      : item.positionen.filter((p) => positionBrauchtHandwerkerAktion(p));
+    return resolvePartnerAuftragKonditionZeilen(
+      ziel.length ? ziel : item.positionen
+    );
+  }, [item.handwerker_bestaetigt_at, item.positionen]);
 
   async function onAccept() {
     setLoading(true);

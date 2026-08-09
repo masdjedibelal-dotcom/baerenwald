@@ -37,9 +37,10 @@ export const EINSTELLUNGEN_KLEINREPARATUR_INTRO =
   "Entfernt — unter der Schwelle läuft der Auto-Pfad über Angebot + Auftrag." as const;
 
 export const EINSTELLUNGEN_AKUT_TITLE =
-  "Freigaberegelung bei akuten Schäden" as const;
+  "Direktbeauftragung bei Sofortmaßnahmen" as const;
 
-export const EINSTELLUNGEN_AKUT_INTRO = "" as const;
+export const EINSTELLUNGEN_AKUT_INTRO =
+  "Beispiel: Wasser läuft, kein Strom in der Wohnung, Heizung komplett ausgefallen, Dach undicht mit Wassereintritt. Keine Freigabe nötig — nur Info an Sie." as const;
 
 export const EINSTELLUNGEN_OBJEKT_SCHWELLE_TITLE =
   "Ausnahmen je Objekt" as const;

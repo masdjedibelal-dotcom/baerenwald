@@ -20,7 +20,10 @@ type PortalBusyApi = {
 
 const PortalBusyContext = createContext<PortalBusyApi | null>(null);
 
-const DEFAULT_FLASH_MS = 320;
+/** Mindestanzeige für kurze Portal-Übergänge (Nav, Vorgang öffnen, Refresh). */
+export const PORTAL_BUSY_MIN_MS = 400;
+
+const DEFAULT_FLASH_MS = PORTAL_BUSY_MIN_MS;
 
 export function PortalBusyProvider({ children }: { children: ReactNode }) {
   const [busy, setBusy] = useState(false);

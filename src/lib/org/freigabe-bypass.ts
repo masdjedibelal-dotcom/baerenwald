@@ -24,8 +24,8 @@ export function freigabeBypassInfoCopy(opts: {
 }): { title: string; body: string } {
   if (opts.bypassGrund === "akut") {
     return {
-      title: "Auftrag läuft (Akut)",
-      body: "",
+      title: "Sofortmaßnahme — wir kümmern uns",
+      body: "Keine Freigabe nötig. Der Vorgang läuft als Direktauftrag.",
     };
   }
   const schwelle = opts.schwelleLabel?.trim();

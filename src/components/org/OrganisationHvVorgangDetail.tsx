@@ -1,21 +1,35 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import { VorgangDetailBlocks } from "@/components/shared/vorgang-detail";
 import { buildKundeHvVorgangDetailVm } from "@/lib/vorgang/build-vorgang-detail-vm";
 import { BautagebuchAccordionList } from "@/components/shared/BautagebuchAccordionList";
 import { DokumenteTabelle } from "@/components/shared/DokumenteTabelle";
 import { PortalDetailCover } from "@/components/shared/PortalDetailCover";
-import { PortalDetailHead } from "@/components/shared/PortalDetailUi";
+import {
+  PortalDetailHead,
+  PortalDetailStickyActions,
+} from "@/components/shared/PortalDetailUi";
 import { PortalFlowStatusChip } from "@/components/shared/PortalFlowStatusChip";
 import { VorgangDetailSectionNav } from "@/components/shared/VorgangDetailSectionNav";
+import { OrgVorgangAbnahmeSection } from "@/components/org/OrgVorgangAbnahmeSection";
+import { OrganisationVorgangNotizenPanel } from "@/components/org/OrganisationObjektNotizenPanel";
+import { VorgangKommentareThread } from "@/components/org/VorgangKommentareThread";
+import { PortalHvTerminSection } from "@/components/portal/PortalHvTerminSection";
+import type { PortalTerminSlot } from "@/lib/portal/portal-termin";
 import { acceptKundeAngebot } from "@/app/actions/portal-angebot";
 import {
   countUnreadBautagebuch,
   getBautagebuchLastSeenAt,
   markBautagebuchSeen,
 } from "@/lib/portal2/bautagebuch-attention";
+import {
+  normalizePortalDeepLinkTab,
+  portalDeepLinkTabForHvNav,
+  PORTAL_DETAIL_TAB_QUERY,
+} from "@/lib/portal2/portal-detail-deep-link";
 import {
   HV_DEFAULT_SCHWELLE_EUR,
   HV_DETAIL_COPY,
@@ -34,7 +48,6 @@ import {
   portalDetailSectionClass,
   type PortalDetailSectionId,
 } from "@/lib/portal2/layout-chrome";
-import { resolveObjektCoverSrc } from "@/lib/portal2/portal-media";
 import { PORTAL_STATUS, type PortalMockStatusId } from "@/lib/portal2/status";
 import { PORTAL_VAR } from "@/lib/portal2/tokens";
 import { kundePortalToast, orgPortalToast } from "@/lib/shared/portal-toast";
@@ -121,6 +134,11 @@ export type OrganisationHvVorgangDetailProps = {
   wartetAufHwLabel?: string | null;
   /** Unverbindliche Preisindikation aus Mieter-Meldung (nur HV). */
   meldePreisIndikation?: string | null;
+  /** Auftrag-Start/-Ende für Ausführung · Termin */
+  terminVon?: string | null;
+  terminBis?: string | null;
+  /** Mieter-Terminslots — HV sieht nur Status (read-only). */
+  terminSlots?: PortalTerminSlot[];
   /**
    * D2 (leicht): `detailRole` + `mieterStatusMode` steuern Copy/Sections.
    * Kein BW-Freigabe-/Angebot-Wording bei Mieter (`mieterStatusMode`).
@@ -226,14 +244,14 @@ function PositionenTable({
       {positionen.map((p, i) => (
         <div
           key={i}
-          className="flex justify-between px-3 py-2.5 text-[12.5px]"
+          className="portal-text-meta flex justify-between px-3 py-2.5"
           style={{ borderBottom: `1px solid ${PORTAL_VAR.line2}` }}
         >
           <div>
-            <div className="font-medium" style={{ color: PORTAL_VAR.ink }}>
+            <div className="font-semibold" style={{ color: PORTAL_VAR.ink }}>
               {p.pos}
             </div>
-            <div className="text-[11px]" style={{ color: PORTAL_VAR.faint }}>
+            <div className="portal-text-label normal-case tracking-normal" style={{ color: PORTAL_VAR.faint }}>
               {p.menge} · {p.gewerk}
             </div>
           </div>
@@ -244,26 +262,20 @@ function PositionenTable({
       ))}
       <div className="flex flex-col gap-1 bg-[var(--p2-primary-soft,#e7f1e9)]/50 px-3 py-2.5">
         <div
-          className="flex justify-between text-xs"
+          className="portal-text-meta flex justify-between"
           style={{ color: PORTAL_VAR.sub }}
         >
           <span>Netto</span>
           <span>{moneyEur(sum.net)}</span>
         </div>
         <div
-          className="flex justify-between text-xs"
+          className="portal-text-meta flex justify-between"
           style={{ color: PORTAL_VAR.sub }}
         >
           <span>MwSt. 19%</span>
           <span>{moneyEur(sum.mwst)}</span>
         </div>
-        <div
-          className="mt-0.5 flex justify-between text-[15px] font-bold"
-          style={{
-            color: PORTAL_VAR.ink,
-            fontFamily: "var(--p2-font-head, " + PORTAL_VAR.head + ")",
-          }}
-        >
+        <div className="portal-text-section mt-0.5 flex justify-between">
           <span>Gesamt</span>
           <span>{moneyEur(sum.brutto)}</span>
         </div>
@@ -290,8 +302,8 @@ export function OrganisationHvVorgangDetail({
   prioritaet: _prioritaet,
   handwerkerName,
   leadId,
-  auftragId: _auftragId,
-  hvAbnahme: _hvAbnahme,
+  auftragId,
+  hvAbnahme,
   hwErledigt: _hwErledigt,
   schwelleEur = HV_DEFAULT_SCHWELLE_EUR,
   offers = [],
@@ -326,10 +338,15 @@ export function OrganisationHvVorgangDetail({
   meldeZeitraum,
   meldeFachdetails,
   meldePreisIndikation,
+  terminVon,
+  terminBis,
+  terminSlots,
   detailRole = "hv",
   statusLabelOverride,
   mieterStatusMode = false,
 }: OrganisationHvVorgangDetailProps) {
+  const searchParams = useSearchParams();
+  const deepLinkAppliedRef = useRef(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [accepted, setAccepted] = useState(false);
@@ -376,75 +393,87 @@ export function OrganisationHvVorgangDetail({
     statusLabelOverride?.trim() || PORTAL_STATUS[displayFlowStatus].label;
 
   const abschlussCard = (
-    <DetailCard title={HV_DETAIL_COPY.abnahmeTitle}>
-      {abnahmeCheckliste &&
-      (abnahmeCheckliste.leistungen.length > 0 ||
-        abnahmeCheckliste.maengel.length > 0) ? (
-        <div className="space-y-3">
-          {abnahmeCheckliste.leistungen.length > 0 ? (
-            <div>
-              <p
-                className="mb-1.5 text-[11.5px] font-bold uppercase tracking-wide"
-                style={{ color: PORTAL_VAR.faint }}
-              >
-                {HV_DETAIL_COPY.abnahmeLeistungen}
-              </p>
-              <ul className="space-y-1.5">
-                {abnahmeCheckliste.leistungen.map((l) => (
-                  <li
-                    key={l.name}
-                    className="flex items-start gap-2 text-[13px]"
-                    style={{ color: PORTAL_VAR.ink }}
-                  >
-                    <span
-                      className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[11px] font-bold text-white"
-                      style={{
-                        background:
-                          l.ok === false ? "#8A5A06" : PORTAL_VAR.primary,
-                      }}
-                      aria-hidden
+    <div className="space-y-3.5">
+      <DetailCard title={HV_DETAIL_COPY.abnahmeTitle}>
+        {abnahmeCheckliste &&
+        (abnahmeCheckliste.leistungen.length > 0 ||
+          abnahmeCheckliste.maengel.length > 0) ? (
+          <div className="space-y-3">
+            {abnahmeCheckliste.leistungen.length > 0 ? (
+              <div>
+                <p
+                  className="portal-text-label mb-1.5"
+                  style={{ color: PORTAL_VAR.faint }}
+                >
+                  {HV_DETAIL_COPY.abnahmeLeistungen}
+                </p>
+                <ul className="space-y-1.5">
+                  {abnahmeCheckliste.leistungen.map((l) => (
+                    <li
+                      key={l.name}
+                      className="portal-text-meta flex items-start gap-2"
+                      style={{ color: PORTAL_VAR.ink }}
                     >
-                      {l.ok === false ? "!" : "✓"}
-                    </span>
-                    <span className="font-semibold">{l.name}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ) : null}
-          {abnahmeCheckliste.maengel.length > 0 ? (
-            <div>
-              <p
-                className="mb-1.5 text-[11.5px] font-bold uppercase tracking-wide"
-                style={{ color: PORTAL_VAR.faint }}
-              >
-                {HV_DETAIL_COPY.abnahmeMaengel}
-              </p>
-              <ul className="space-y-1.5">
-                {abnahmeCheckliste.maengel.map((m) => (
-                  <li
-                    key={m.titel}
-                    className="flex items-start gap-2 rounded-lg px-2.5 py-2 text-[13px]"
-                    style={{ background: "#FBF1D6", color: "#8A5A06" }}
-                  >
-                    <span className="font-semibold">{m.titel}</span>
-                    {m.status ? (
-                      <span className="ml-auto shrink-0 text-[11px] opacity-80">
-                        {m.status}
+                      <span
+                        className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[11px] font-bold text-white"
+                        style={{
+                          background:
+                            l.ok === false ? "#8A5A06" : PORTAL_VAR.primary,
+                        }}
+                        aria-hidden
+                      >
+                        {l.ok === false ? "!" : "✓"}
                       </span>
-                    ) : null}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ) : null}
-        </div>
-      ) : (
-        <p className="text-[12.5px]" style={{ color: PORTAL_VAR.faint }}>
-          {HV_DETAIL_COPY.abnahmeEmpty}
-        </p>
-      )}
-    </DetailCard>
+                      <span className="font-semibold">{l.name}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ) : null}
+            {abnahmeCheckliste.maengel.length > 0 ? (
+              <div>
+                <p
+                  className="portal-text-label mb-1.5"
+                  style={{ color: PORTAL_VAR.faint }}
+                >
+                  {HV_DETAIL_COPY.abnahmeMaengel}
+                </p>
+                <ul className="space-y-1.5">
+                  {abnahmeCheckliste.maengel.map((m) => (
+                    <li
+                      key={m.titel}
+                      className="portal-text-meta flex items-start gap-2 rounded-lg px-2.5 py-2"
+                      style={{ background: "#FBF1D6", color: "#8A5A06" }}
+                    >
+                      <span className="font-semibold">{m.titel}</span>
+                      {m.status ? (
+                        <span className="portal-text-label ml-auto shrink-0 normal-case tracking-normal opacity-80">
+                          {m.status}
+                        </span>
+                      ) : null}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ) : null}
+          </div>
+        ) : (
+          <p className="portal-text-meta" style={{ color: PORTAL_VAR.faint }}>
+            {HV_DETAIL_COPY.abnahmeEmpty}
+          </p>
+        )}
+      </DetailCard>
+      {!mieterStatusMode && auftragId ? (
+        <OrgVorgangAbnahmeSection
+          leadId={leadId}
+          auftragId={auftragId}
+          objektLabel={objekt}
+          einheitLabel={melderEinheit ?? undefined}
+          existing={hvAbnahme ?? null}
+          onSubmitted={onUpdated}
+        />
+      ) : null}
+    </div>
   );
 
   const detailVm = useMemo(
@@ -479,6 +508,8 @@ export function OrganisationHvVorgangDetail({
             ? gesamtBrutto
             : empfohlen?.betrag ?? null,
         handwerkerName,
+        terminVon,
+        terminBis,
         rechnungsempfaengerHint: null,
         lead: {
           melder_name: melder,
@@ -520,6 +551,8 @@ export function OrganisationHvVorgangDetail({
       gesamtBrutto,
       empfohlen?.betrag,
       handwerkerName,
+      terminVon,
+      terminBis,
       melderTelefon,
       melderEmail,
       kostentraeger,
@@ -656,46 +689,28 @@ export function OrganisationHvVorgangDetail({
                 }}
               >
                 <span
-                  className="absolute -top-2 left-3 rounded-full px-2 py-0.5 text-[10.5px] font-bold text-white"
+                  className="portal-text-label absolute -top-2 left-3 rounded-full px-2 py-0.5 normal-case tracking-normal text-white"
                   style={{ background: PORTAL_VAR.primary }}
                 >
                   {HV_DETAIL_COPY.empfohlenBadge}
                 </span>
-                <p
-                  className="mt-1 text-[13.5px] font-bold"
-                  style={{
-                    color: PORTAL_VAR.ink,
-                    fontFamily: "var(--p2-font-head, " + PORTAL_VAR.head + ")",
-                  }}
-                >
+                <p className="portal-text-card-title mt-1">
                   {empfohlen.name}
                 </p>
-                <p className="text-[11.5px]" style={{ color: PORTAL_VAR.faint }}>
+                <p className="portal-text-label normal-case tracking-normal" style={{ color: PORTAL_VAR.faint }}>
                   {empfohlen.trade}
                   {empfohlen.dauer ? ` · ${empfohlen.dauer}` : ""}
                 </p>
-                <p
-                  className="mt-2 text-xl font-extrabold"
-                  style={{
-                    color: PORTAL_VAR.ink,
-                    fontFamily: "var(--p2-font-head, " + PORTAL_VAR.head + ")",
-                  }}
-                >
+                <p className="portal-text-title mt-2">
                   {moneyEur(empfohlen.betrag || sum.brutto)}
                 </p>
               </div>
             ) : sum.brutto > 0 ? (
-              <p
-                className="text-xl font-extrabold"
-                style={{
-                  color: PORTAL_VAR.ink,
-                  fontFamily: "var(--p2-font-head, " + PORTAL_VAR.head + ")",
-                }}
-              >
+              <p className="portal-text-title">
                 {moneyEur(sum.brutto)}
               </p>
             ) : (
-              <p className="text-[12.5px]" style={{ color: PORTAL_VAR.faint }}>
+              <p className="portal-text-meta" style={{ color: PORTAL_VAR.faint }}>
                 Noch kein Angebot hinterlegt.
               </p>
             )}
@@ -705,13 +720,13 @@ export function OrganisationHvVorgangDetail({
             {derivedPositionen.length ? (
               <PositionenTable positionen={derivedPositionen} sum={sum} />
             ) : (
-              <p className="mb-3 text-[13px]" style={{ color: PORTAL_VAR.sub }}>
+              <p className="portal-text-meta mb-3" style={{ color: PORTAL_VAR.sub }}>
                 Gesamt: {moneyEur(sum.brutto)}
               </p>
             )}
             {unterSchwelle ? (
               <div
-                className="mt-3 rounded-lg px-3 py-2.5 text-[12.5px] font-semibold"
+                className="portal-text-meta mt-3 rounded-lg px-3 py-2.5 font-semibold"
                 style={{ background: "#DDEEDF", color: "#1F6A3F" }}
               >
                 {freigabeBypassGrund === "akut"
@@ -731,7 +746,7 @@ export function OrganisationHvVorgangDetail({
               </div>
             ) : accepted ? (
               <p
-                className="mt-3 text-[12.5px] font-semibold"
+                className="portal-text-meta mt-3 font-semibold"
                 style={{ color: PORTAL_VAR.primary }}
               >
                 Angebot angenommen — Auftrag wird vorbereitet.
@@ -769,19 +784,13 @@ export function OrganisationHvVorgangDetail({
           {abschlussCard}
           <DetailCard title={HV_DETAIL_COPY.rechnungTitle}>
             {sum.brutto > 0 ? (
-              <div
-                className="mb-1 flex justify-between text-lg font-bold"
-                style={{
-                  color: PORTAL_VAR.ink,
-                  fontFamily: "var(--p2-font-head, " + PORTAL_VAR.head + ")",
-                }}
-              >
+              <div className="portal-text-title mb-1 flex justify-between">
                 <span>{HV_DETAIL_COPY.rechnungsbetrag}</span>
                 <span>{moneyEur(sum.brutto)}</span>
               </div>
             ) : null}
             <p
-              className="rounded-lg px-3 py-2 text-[12px] font-semibold"
+              className="portal-text-meta rounded-lg px-3 py-2 font-semibold"
               style={{ background: "#FBF1D6", color: "#8A5A06" }}
             >
               {HV_DETAIL_COPY.ueberweisungOffen}
@@ -796,19 +805,19 @@ export function OrganisationHvVorgangDetail({
                   style={{ border: `1px solid ${PORTAL_VAR.line}` }}
                 >
                   <div className="flex-1">
-                    <p className="text-[13.5px] font-semibold" style={{ color: PORTAL_VAR.ink }}>
+                    <p className="portal-text-meta font-semibold" style={{ color: PORTAL_VAR.ink }}>
                       {r.title}
                     </p>
-                    <p className="text-[11.5px]" style={{ color: PORTAL_VAR.faint }}>
+                    <p className="portal-text-label normal-case tracking-normal" style={{ color: PORTAL_VAR.faint }}>
                       {r.sub}
                     </p>
                   </div>
                   <div className="text-right">
-                    <p className="text-[13.5px] font-bold" style={{ color: PORTAL_VAR.ink }}>
+                    <p className="portal-text-meta font-bold" style={{ color: PORTAL_VAR.ink }}>
                       {moneyEur(r.amount)}
                     </p>
                     <span
-                      className="text-[10.5px] font-semibold"
+                      className="portal-text-label normal-case tracking-normal font-semibold"
                       style={{
                         color: r.status === "bezahlt" ? "#1F6A3F" : "#8A5A06",
                       }}
@@ -858,15 +867,63 @@ export function OrganisationHvVorgangDetail({
   }, [leadId, bautagebuch, mieterStatusMode, showBautagebuch]);
 
   useEffect(() => {
-    if (mieterStatusMode || !showBautagebuch) return;
-    if (typeof window === "undefined") return;
-    const hash = window.location.hash.replace(/^#/, "");
-    if (hash === "bautagebuch") {
-      setActiveSection("bautagebuch");
+    deepLinkAppliedRef.current = false;
+  }, [leadId]);
+
+  /** Notification / Deep-Link: `?tab=` oder `#…` → passenden Detail-Tab öffnen. */
+  useEffect(() => {
+    if (mieterStatusMode || deepLinkAppliedRef.current) return;
+    const fromQuery = normalizePortalDeepLinkTab(
+      searchParams.get(PORTAL_DETAIL_TAB_QUERY)
+    );
+    const fromHash =
+      typeof window !== "undefined"
+        ? normalizePortalDeepLinkTab(window.location.hash)
+        : null;
+    const tab = fromQuery || fromHash;
+    if (!tab) return;
+
+    const target = portalDeepLinkTabForHvNav(tab);
+    if (target === "bautagebuch" && !showBautagebuch) return;
+    if (target === "angebot" && !showAngebotSection) {
+      setActiveSection("uebersicht");
+      deepLinkAppliedRef.current = true;
+      if (typeof window !== "undefined") {
+        try {
+          const u = new URL(window.location.href);
+          u.searchParams.delete(PORTAL_DETAIL_TAB_QUERY);
+          u.hash = "";
+          window.history.replaceState(null, "", `${u.pathname}${u.search}`);
+        } catch {
+          /* ignore */
+        }
+      }
+      return;
+    }
+
+    setActiveSection(target);
+    if (target === "bautagebuch") {
       markBautagebuchSeen(leadId);
       setBtUnread(0);
     }
-  }, [leadId, mieterStatusMode, showBautagebuch]);
+    deepLinkAppliedRef.current = true;
+
+    if (typeof window === "undefined") return;
+    try {
+      const u = new URL(window.location.href);
+      u.searchParams.delete(PORTAL_DETAIL_TAB_QUERY);
+      u.hash = "";
+      window.history.replaceState(null, "", `${u.pathname}${u.search}`);
+    } catch {
+      /* ignore */
+    }
+  }, [
+    leadId,
+    mieterStatusMode,
+    showBautagebuch,
+    showAngebotSection,
+    searchParams,
+  ]);
 
   function onBautagebuchViewed() {
     markBautagebuchSeen(leadId);
@@ -905,40 +962,12 @@ export function OrganisationHvVorgangDetail({
 
   return (
     <div className="flex flex-col">
-      {onBack ? (
-        <PortalDetailCover
-          coverUrl={coverUrl}
-          onBack={onBack}
-          backLabel="← Zurück"
-        />
-      ) : (
-        <div
-          className="relative w-full shrink-0 overflow-hidden"
-          style={{ height: 150 }}
-        >
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={resolveObjektCoverSrc(coverUrl)}
-            alt=""
-            className="absolute inset-0 h-full w-full object-cover"
-            onError={(e) => {
-              const el = e.currentTarget;
-              el.style.display = "none";
-              const fallback = el.nextElementSibling as HTMLElement | null;
-              if (fallback) fallback.style.display = "block";
-            }}
-          />
-          <div
-            className="absolute inset-0"
-            style={{
-              display: "none",
-              background:
-                "linear-gradient(135deg, #1A3D2B 0%, #2E7D52 60%, #0f766e 100%)",
-            }}
-            aria-hidden
-          />
-        </div>
-      )}
+      <PortalDetailCover
+        coverUrl={coverUrl}
+        onBack={onBack}
+        backLabel="← Zurück"
+        className={!onBack ? "h-[150px] sm:h-[150px]" : undefined}
+      />
 
       <div
         className="bg-white px-4 py-4 sm:px-6"
@@ -949,8 +978,8 @@ export function OrganisationHvVorgangDetail({
           metaLine={[objekt, kategorie].filter(Boolean).join(" · ") || undefined}
           titleBadges={
             notfall ? (
-              <span className="rounded px-1.5 py-0.5 text-[11px] font-bold portal-danger-soft">
-                NOTFALL
+              <span className="portal-text-label normal-case tracking-normal rounded px-1.5 py-0.5 bg-[#eef2ef] text-[#1a2e22]">
+                Direktauftrag
               </span>
             ) : null
           }
@@ -965,22 +994,22 @@ export function OrganisationHvVorgangDetail({
         {actionKind === "angebot" && showAcceptCta ? (
           <div
             className={cn(
-              "portal-action-row mt-4 flex-col sm:flex-row",
+              "mt-4 space-y-2",
               "rounded-[12px] p-3 sm:p-0 sm:bg-transparent",
               "bg-[#F6F7F6] sm:shadow-none",
               "max-lg:fixed max-lg:inset-x-0 max-lg:bottom-[var(--portal-mobile-nav-h)] max-lg:z-40 max-lg:mt-0 max-lg:rounded-none max-lg:border-t max-lg:bg-[var(--p2-panel)]/95 max-lg:p-3 max-lg:backdrop-blur-sm"
             )}
           >
-            <div className="mb-1 w-full sm:hidden">
-              <p className="text-[12px] font-semibold" style={{ color: PORTAL_VAR.ink }}>
+            <div className="w-full sm:hidden">
+              <p className="portal-text-meta font-semibold" style={{ color: PORTAL_VAR.ink }}>
                 {HV_DETAIL_COPY.angebotAnnehmenTitle}
               </p>
             </div>
-            <ActionBtn
-              className="w-full sm:w-auto"
-              label={HV_DETAIL_COPY.empfohlenAnnehmen}
-              disabled={busy}
-              onClick={() => void acceptAngebotAct()}
+            <PortalDetailStickyActions
+              primaryLabel={HV_DETAIL_COPY.empfohlenAnnehmen}
+              onPrimary={() => void acceptAngebotAct()}
+              primaryDisabled={busy}
+              primaryLoading={busy}
             />
           </div>
         ) : null}
@@ -1039,6 +1068,24 @@ export function OrganisationHvVorgangDetail({
                   ) : undefined
                 }
               />
+              {!mieterStatusMode &&
+              auftragId &&
+              terminSlots &&
+              terminSlots.length > 0 ? (
+                <PortalHvTerminSection
+                  auftragId={auftragId}
+                  slots={terminSlots}
+                  readOnly
+                />
+              ) : null}
+              {!mieterStatusMode ? (
+                <DetailCard title="Notizen & Kommentare">
+                  <div className="space-y-3">
+                    <VorgangKommentareThread leadId={leadId} />
+                    <OrganisationVorgangNotizenPanel leadId={leadId} />
+                  </div>
+                </DetailCard>
+              ) : null}
             </section>
           ) : null}
 
@@ -1050,7 +1097,7 @@ export function OrganisationHvVorgangDetail({
             >
               {rolePanel}
               {error ? (
-                <p className="text-sm font-semibold text-red-700" role="alert">
+                <p className="portal-text-meta font-semibold text-red-700" role="alert">
                   {error}
                 </p>
               ) : null}
@@ -1058,7 +1105,7 @@ export function OrganisationHvVorgangDetail({
           ) : null}
 
           {activeSection !== "angebot" && error ? (
-            <p className="text-sm font-semibold text-red-700" role="alert">
+            <p className="portal-text-meta font-semibold text-red-700" role="alert">
               {error}
             </p>
           ) : null}
@@ -1078,7 +1125,7 @@ export function OrganisationHvVorgangDetail({
                     }))}
                   />
                 ) : (
-                  <p className="text-[12.5px]" style={{ color: PORTAL_VAR.faint }}>
+                  <p className="portal-text-meta" style={{ color: PORTAL_VAR.faint }}>
                     {HV_DETAIL_COPY.bautagebuchEmpty}
                   </p>
                 )}

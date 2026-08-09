@@ -186,7 +186,7 @@ export function PortalListCard({
             <div className="flex shrink-0 items-center gap-1.5">
               {attentionBadge && attentionBadge > 0 ? (
                 <span
-                  className="inline-flex h-6 min-w-[1.5rem] items-center justify-center rounded-full px-1.5 text-xs font-bold"
+                  className="portal-text-label inline-flex h-6 min-w-[1.5rem] items-center justify-center rounded-full px-1.5 normal-case tracking-normal font-bold"
                   style={{
                     background: PORTAL_VAR.dangerSoft,
                     color: PORTAL_VAR.danger,
@@ -336,7 +336,7 @@ export function PortalListCard({
             <div className="flex shrink-0 items-center gap-1.5 pt-0.5">
               {attentionBadge && attentionBadge > 0 ? (
                 <span
-                  className="inline-flex h-6 min-w-[1.5rem] items-center justify-center rounded-full px-1.5 text-xs font-bold"
+                  className="portal-text-label inline-flex h-6 min-w-[1.5rem] items-center justify-center rounded-full px-1.5 normal-case tracking-normal font-bold"
                   style={{
                     background: PORTAL_VAR.dangerSoft,
                     color: PORTAL_VAR.danger,

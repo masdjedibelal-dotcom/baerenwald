@@ -20,7 +20,6 @@ import type {
   OrganisationLead,
   OrganisationObjekt,
 } from "@/lib/org/types";
-import type { OrgPartnerBefundEntry } from "@/lib/org/load-partner-befund";
 import { HvAngebotListActions } from "@/components/org/HvAngebotListActions";
 import {
   HV_ANGEBOT_BANNER,
@@ -70,7 +69,6 @@ type Props = {
   initialSelectedId?: string | null;
   onRefresh: () => void;
   embedded?: boolean;
-  partnerBefundByLeadId?: Record<string, OrgPartnerBefundEntry[]>;
   bautagebuchByLeadId?: Record<string, BautagebuchEntry[]>;
   hwErledigtByLeadId?: Record<string, boolean>;
   feedbackBereitByLeadId?: Record<string, boolean>;
@@ -143,7 +141,6 @@ export function OrganisationFreigabePanel({
   initialSelectedId,
   onRefresh,
   embedded = false,
-  partnerBefundByLeadId = {},
   bautagebuchByLeadId = {},
   hwErledigtByLeadId = {},
   feedbackBereitByLeadId = {},
@@ -213,7 +210,6 @@ export function OrganisationFreigabePanel({
     angebote: freigabeAngebote,
     initialSelectedId: initialSelectedId ?? urlDetailId,
     onRefresh,
-    partnerBefundByLeadId,
     auftragByLeadId,
     auftragKontextByLeadId,
     bautagebuchByLeadId,
@@ -281,8 +277,8 @@ export function OrganisationFreigabePanel({
     <div className="space-y-6">
       {!embedded ? (
         <div>
-          <h2 className="text-lg font-semibold">Zur Freigabe</h2>
-          <p className="text-sm text-text-secondary">
+          <h2 className="portal-text-section">Zur Freigabe</h2>
+          <p className="portal-text-meta text-text-secondary">
             Meldungen bearbeiten und Angebote freigeben.
           </p>
         </div>
@@ -290,17 +286,9 @@ export function OrganisationFreigabePanel({
 
       <section className="space-y-2">
         <div className="flex items-center gap-2 px-1">
-          <h3
-            className="text-sm font-bold"
-            style={{
-              color: PORTAL_VAR.ink,
-              fontFamily: "var(--p2-font-head, " + PORTAL_VAR.head + ")",
-            }}
-          >
-            {HV_SECTION_MELDUNGEN}
-          </h3>
+          <h3 className="portal-text-section">{HV_SECTION_MELDUNGEN}</h3>
           <span
-            className="rounded-full px-2 py-0.5 text-[11px] font-bold"
+            className="portal-text-label normal-case tracking-normal rounded-full px-2 py-0.5"
             style={{ color: PORTAL_VAR.faint, background: "#eceef0" }}
           >
             {freigabeEingang.length}
@@ -308,7 +296,7 @@ export function OrganisationFreigabePanel({
         </div>
         {freigabeEingang.length === 0 ? (
           <p
-            className="rounded-xl border bg-white py-7 text-center text-[12.5px]"
+            className="portal-text-meta rounded-xl border bg-white py-7 text-center"
             style={{ color: PORTAL_VAR.faint, borderColor: PORTAL_VAR.line }}
           >
             {HV_SECTION_EMPTY}
@@ -320,17 +308,9 @@ export function OrganisationFreigabePanel({
 
       <section className="space-y-2">
         <div className="flex items-center gap-2 px-1">
-          <h3
-            className="text-sm font-bold"
-            style={{
-              color: PORTAL_VAR.ink,
-              fontFamily: "var(--p2-font-head, " + PORTAL_VAR.head + ")",
-            }}
-          >
-            {HV_SECTION_ANGEBOTE}
-          </h3>
+          <h3 className="portal-text-section">{HV_SECTION_ANGEBOTE}</h3>
           <span
-            className="rounded-full px-2 py-0.5 text-[11px] font-bold"
+            className="portal-text-label normal-case tracking-normal rounded-full px-2 py-0.5"
             style={{ color: PORTAL_VAR.faint, background: "#eceef0" }}
           >
             {angebotFreigaben.length}
@@ -338,7 +318,7 @@ export function OrganisationFreigabePanel({
         </div>
         {angebotFreigaben.length > 0 ? (
           <div
-            className="mx-0 mb-2.5 flex items-center gap-2 rounded-[9px] px-3.5 py-2.5 text-[12.5px] font-semibold"
+            className="portal-text-meta mx-0 mb-2.5 flex items-center gap-2 rounded-[9px] px-3.5 py-2.5 font-semibold"
             style={{ background: "#FBF1D6", color: "#8A5A06" }}
           >
             <span aria-hidden>●</span>
@@ -347,7 +327,7 @@ export function OrganisationFreigabePanel({
         ) : null}
         {angebotFreigaben.length === 0 ? (
           <p
-            className="rounded-xl border bg-white py-7 text-center text-[12.5px]"
+            className="portal-text-meta rounded-xl border bg-white py-7 text-center"
             style={{ color: PORTAL_VAR.faint, borderColor: PORTAL_VAR.line }}
           >
             {HV_SECTION_EMPTY}

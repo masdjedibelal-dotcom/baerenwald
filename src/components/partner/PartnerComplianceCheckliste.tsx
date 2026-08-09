@@ -9,7 +9,7 @@ import {
   uploadPartnerComplianceDokument,
 } from "@/app/actions/partner-compliance";
 import { PortalConfirmDialog } from "@/components/shared/PortalDetailUi";
-import { PortalEmptyState } from "@/components/shared/PortalEmptyState";
+import { PortalInboxEmpty } from "@/components/shared/PortalEmptyState";
 import { PortalStatusPill } from "@/components/shared/PortalStatusPill";
 import { partnerPortalToast } from "@/lib/shared/portal-toast";
 import { gruppeComplianceItems } from "@/lib/partner/compliance-summary";
@@ -295,7 +295,7 @@ export function PartnerComplianceCheckliste({
   if (!items.length) {
     return (
       <section className="overflow-hidden rounded-xl border border-border-light bg-surface-card p-3">
-        <PortalEmptyState title={emptyText} compact />
+        <PortalInboxEmpty title={emptyText} compact />
       </section>
     );
   }

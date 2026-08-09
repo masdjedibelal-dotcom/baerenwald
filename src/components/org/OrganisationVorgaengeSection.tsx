@@ -14,7 +14,6 @@ import {
   buildAuftragByLeadId,
   type OrgVorgangFilter,
 } from "@/lib/org/org-vorgang-filter";
-import type { OrgPartnerBefundEntry } from "@/lib/org/load-partner-befund";
 import type {
   OrganisationKunde,
   OrganisationLead,
@@ -42,7 +41,6 @@ type Props = {
   initialSelectedId?: string | null;
   onRefresh: () => void;
   onFilterChange?: (filter: OrgVorgangFilter) => void;
-  partnerBefundByLeadId?: Record<string, OrgPartnerBefundEntry[]>;
   bautagebuchByLeadId?: Record<
     string,
     Array<{
@@ -141,7 +139,6 @@ export function OrganisationVorgaengeSection({
   initialSelectedId: _initialSelectedId,
   onRefresh: _onRefresh,
   onFilterChange,
-  partnerBefundByLeadId: _partnerBefundByLeadId = {},
   bautagebuchByLeadId: _bautagebuchByLeadId = {},
   hwErledigtByLeadId = {},
   feedbackBereitByLeadId: _feedbackBereitByLeadId = {},

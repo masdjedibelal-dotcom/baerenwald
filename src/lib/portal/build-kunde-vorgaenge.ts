@@ -501,8 +501,8 @@ function buildItemFromLead(
       gesamtBrutto: hvMieterView ? undefined : auftragGesamtBrutto,
       hidePreise,
       hvMieterView,
-      terminAuftragId: hvMieterView ? auftrag.id : undefined,
-      terminSlots: hvMieterView ? auftrag.terminSlots ?? [] : undefined,
+      terminAuftragId: auftrag.id,
+      terminSlots: auftrag.terminSlots ?? [],
       infoHint:
         hvMieterView && vorgangStatus.needsAction
           ? "Terminvorschlag wählen."

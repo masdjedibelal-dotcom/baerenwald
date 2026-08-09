@@ -4,6 +4,7 @@ import {
   MELDE_NOTIF_COPY,
 } from "@/lib/org/melde-vorgang-titel";
 import { createPortalNotification } from "@/lib/portal2/create-portal-notification";
+import { withPortalDetailDeepLink } from "@/lib/portal2/portal-detail-deep-link";
 import { supabaseAdmin } from "@/lib/supabase";
 
 /**
@@ -75,7 +76,10 @@ export async function notifyPortalAngebotGesendet(
     vorgangTitel ||
     leistung ||
     "Ihr Vorgang";
-  const portalPath = `/portal?section=vorgaenge&id=${encodeURIComponent(trimmed)}`;
+  const portalPath = withPortalDetailDeepLink(
+    `/portal?section=vorgaenge&id=${encodeURIComponent(trimmed)}`,
+    "angebot"
+  );
   const notifTitel = formatMeldeNotifTitel(MELDE_NOTIF_COPY.neuesAngebot, {
     titel,
   });

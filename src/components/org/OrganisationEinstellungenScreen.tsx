@@ -55,7 +55,7 @@ export function OrganisationEinstellungenScreen({
                   <EinstellungenPfRow label="Telefon" value={tel} />
                 </div>
                 <p
-                  className="text-[12.5px] leading-relaxed"
+                  className="portal-text-meta leading-relaxed"
                   style={{ color: PORTAL_VAR.sub }}
                 >
                   Diese Kontaktdaten gelten auch für die Mieter-Kommunikation

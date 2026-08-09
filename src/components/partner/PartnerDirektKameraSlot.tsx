@@ -3,6 +3,7 @@
 import { useRef, useState } from "react";
 import { Camera, Check, Loader2 } from "lucide-react";
 
+import { normalizePartnerCameraPhoto } from "@/lib/partner/normalize-camera-photo";
 import { cn } from "@/lib/utils";
 
 type Props = {
@@ -29,24 +30,39 @@ export function PartnerDirektKameraSlot({
   const [preview, setPreview] = useState<string | null>(null);
   const [status, setStatus] = useState<"idle" | "uploading" | "done">("idle");
   const [captureAt, setCaptureAt] = useState<string>("");
+  const [error, setError] = useState<string | null>(null);
 
   function openCamera() {
     inputRef.current?.click();
   }
 
-  function onChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (!file) return;
+  async function onChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const raw = e.target.files?.[0];
+    if (!raw) return;
     const iso = new Date().toISOString();
     setCaptureAt(iso);
+    setError(null);
     setStatus("uploading");
-    const url = URL.createObjectURL(file);
-    setPreview(url);
-    // Kurz „wird übertragen…“ dann Haken (echter Upload im Form-Submit)
-    window.setTimeout(() => {
+
+    try {
+      const file = await normalizePartnerCameraPhoto(raw);
+      const input = inputRef.current;
+      if (input) {
+        const dt = new DataTransfer();
+        dt.items.add(file);
+        input.files = dt.files;
+      }
+
+      if (preview) URL.revokeObjectURL(preview);
+      const url = URL.createObjectURL(file);
+      setPreview(url);
       setStatus("done");
       onCaptured?.(file, iso);
-    }, 400);
+    } catch {
+      setStatus("idle");
+      setPreview(null);
+      setError("Foto konnte nicht verarbeitet werden. Bitte erneut aufnehmen.");
+    }
   }
 
   return (
@@ -73,7 +89,7 @@ export function PartnerDirektKameraSlot({
         {status === "uploading" ? (
           <span className="inline-flex items-center gap-1.5 text-sm text-text-secondary">
             <Loader2 className="h-4 w-4 animate-spin" />
-            wird übertragen…
+            wird vorbereitet…
           </span>
         ) : status === "done" ? (
           <span className="inline-flex items-center gap-1.5 text-sm font-medium text-accent">
@@ -103,6 +119,7 @@ export function PartnerDirektKameraSlot({
       {captureAt ? (
         <input type="hidden" name="captureAt" value={captureAt} />
       ) : null}
+      {error ? <p className="text-xs text-red-700">{error}</p> : null}
     </div>
   );
 }

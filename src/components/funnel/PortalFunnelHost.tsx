@@ -33,10 +33,12 @@ import { kaputtBereichToMeldeId } from "@/lib/funnel/melde-bereich-map";
 import {
   getMeldeKaputtFachfragen,
   isMeldeKaputtChannel,
-  meldeDringlichkeitFromBereich,
-  meldeKategorieFromFunnelBereich,
   MELDE_KAPUTT_BEREICH_OPTIONS,
 } from "@/lib/funnel/melde-kaputt-flow";
+import {
+  isMeldeDirektauftrag,
+  meldeKategorieForDirektauftragFlow,
+} from "@/lib/funnel/melde-direktauftrag";
 import { calculatePrice } from "@/lib/funnel/price-calc";
 import { mapMeldeToPrice, compactFachdetailAnswers } from "@/lib/org/map-melde-to-price";
 import { BW_FUNNEL_STEP1_OPTIONS } from "@/lib/funnel/situation-options";
@@ -434,12 +436,18 @@ export function PortalFunnelHost({
 
     if (useMeldeKaputtFlow) {
       const bereichId = kaputtBereichToMeldeId(state.bereiche[0] ?? "sonstiges");
-      const kategorie = meldeKategorieFromFunnelBereich(state.bereiche[0]);
+      const answers = state.fachdetails?.fachdetailAnswers ?? {};
+      const direktauftrag = isMeldeDirektauftrag(bereichId, answers);
+      const kategorie = meldeKategorieForDirektauftragFlow(
+        bereichId,
+        direktauftrag
+      );
       const mapped = mapMeldeToPrice({
         kategorie,
         bereichId,
         plz,
-        fachdetailAnswers: state.fachdetails?.fachdetailAnswers ?? {},
+        fachdetailAnswers: answers,
+        dringlichkeit: direktauftrag ? "sofort" : "diese_woche",
       });
       if (mapped.preis_unsicher || mapped.preis_min == null) return null;
       return {
@@ -901,8 +909,14 @@ export function PortalFunnelHost({
       if (channel === "melde_anon" && melde) {
         const bereich = state.bereiche[0] ?? "sonstiges";
         const bereichId = kaputtBereichToMeldeId(bereich);
-        const kategorie = meldeKategorieFromFunnelBereich(bereich);
-        const notfall = kategorie === "notfall";
+        const fachAnswers = compactFachdetailAnswers(
+          state.fachdetails?.fachdetailAnswers
+        );
+        const direktauftrag = isMeldeDirektauftrag(bereichId, fachAnswers);
+        const kategorie = meldeKategorieForDirektauftragFlow(
+          bereichId,
+          direktauftrag
+        );
         const fotos = await uploadFotos();
         const isErgaenzen = !!melde.ergaenzenToken;
         const endpoint = isErgaenzen
@@ -920,10 +934,9 @@ export function PortalFunnelHost({
               telefon: state.telefon.trim() || mieterTel.trim() || undefined,
               kategorie,
               bereichId,
-              fachdetailAnswers: compactFachdetailAnswers(
-                state.fachdetails?.fachdetailAnswers
-              ),
-              notfall,
+              fachdetailAnswers: fachAnswers,
+              direktauftrag,
+              notfall: direktauftrag,
               beschreibung: state.leadBeschreibung.trim(),
               fotos,
             }
@@ -935,13 +948,12 @@ export function PortalFunnelHost({
               telefon: state.telefon.trim() || mieterTel.trim() || undefined,
               kategorie,
               bereichId,
-              fachdetailAnswers: compactFachdetailAnswers(
-                state.fachdetails?.fachdetailAnswers
-              ),
-              notfall,
+              fachdetailAnswers: fachAnswers,
+              direktauftrag,
+              notfall: direktauftrag,
               beschreibung: state.leadBeschreibung.trim(),
               fotos,
-              dringlichkeit: meldeDringlichkeitFromBereich(bereichId),
+              dringlichkeit: direktauftrag ? "sofort" : "diese_woche",
               ...(channel === "melde_anon" || melde.needsAddress
                 ? {
                     plz: state.plz.trim(),
@@ -967,7 +979,7 @@ export function PortalFunnelHost({
         }
         if (!isErgaenzen) {
           track.meldeAbgeschickt(
-            notfall ? "notfall" : "reparatur",
+            direktauftrag ? "direktauftrag" : kategorie,
             melde.orgKennung
           );
         }
@@ -1039,9 +1051,16 @@ export function PortalFunnelHost({
             preis_max: price?.max ?? 0,
             zeitraum:
               state.situation === "kaputt" && useMeldeKaputtFlow
-                ? meldeDringlichkeitFromBereich(
-                    kaputtBereichToMeldeId(state.bereiche[0] ?? "sonstiges")
-                  )
+                ? (() => {
+                    const bid = kaputtBereichToMeldeId(
+                      state.bereiche[0] ?? "sonstiges"
+                    );
+                    const da = isMeldeDirektauftrag(
+                      bid,
+                      state.fachdetails?.fachdetailAnswers ?? {}
+                    );
+                    return da ? "sofort" : "diese_woche";
+                  })()
                 : state.dringlichkeit || state.zeitraum || null,
             name: contactName,
             email: contactEmail,
@@ -1087,16 +1106,28 @@ export function PortalFunnelHost({
             funnel_daten: {
               channel,
               fachdetails: state.fachdetails,
-              dringlichkeit:
-                state.situation === "kaputt" && useMeldeKaputtFlow
-                  ? meldeDringlichkeitFromBereich(
-                      kaputtBereichToMeldeId(state.bereiche[0] ?? "sonstiges")
-                    )
-                  : state.dringlichkeit,
-              melde_kategorie:
-                state.situation === "kaputt" && useMeldeKaputtFlow
-                  ? meldeKategorieFromFunnelBereich(state.bereiche[0])
-                  : undefined,
+              ...(() => {
+                if (
+                  !(state.situation === "kaputt" && useMeldeKaputtFlow)
+                ) {
+                  return { dringlichkeit: state.dringlichkeit };
+                }
+                const bid = kaputtBereichToMeldeId(
+                  state.bereiche[0] ?? "sonstiges"
+                );
+                const answers =
+                  state.fachdetails?.fachdetailAnswers ?? {};
+                const da = isMeldeDirektauftrag(bid, answers);
+                return {
+                  dringlichkeit: da ? "sofort" : "diese_woche",
+                  melde_kategorie: meldeKategorieForDirektauftragFlow(
+                    bid,
+                    da
+                  ),
+                  direktauftrag: da,
+                  notfall: da,
+                };
+              })(),
               ohne_mieter: mieterMode === "ohne",
               mieter_neu: mieterMode === "neu",
               fotos_count: state.photos.length,
@@ -1635,16 +1666,14 @@ export function PortalFunnelHost({
                 multi={false}
                 selected={state.bereiche.includes(opt.value)}
                 onChange={(v) => {
-                  const bereichId = kaputtBereichToMeldeId(v);
-                  const akut = meldeDringlichkeitFromBereich(bereichId);
                   setState((s) => ({
                     ...s,
                     bereiche: [v],
                     fachdetails: {},
                     ...(useMeldeKaputtFlow
                       ? {
-                          dringlichkeit: akut,
-                          zeitraum: akut,
+                          dringlichkeit: "diese_woche",
+                          zeitraum: "diese_woche",
                         }
                       : {}),
                   }));

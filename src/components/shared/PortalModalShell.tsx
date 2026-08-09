@@ -1,7 +1,9 @@
 "use client";
 
 import {
+  createContext,
   useCallback,
+  useContext,
   useEffect,
   useId,
   useRef,
@@ -9,6 +11,7 @@ import {
   type CSSProperties,
   type ReactNode,
 } from "react";
+import { createPortal } from "react-dom";
 
 import {
   PORTAL_MODAL_SCRIM,
@@ -19,6 +22,9 @@ import {
   type PortalModalVariant,
 } from "@/lib/portal2/modal-shell";
 import { cn } from "@/lib/utils";
+
+/** Verschachtelte Modals (z. B. KI im Sheet) jeweils eine Schicht höher. */
+const PortalModalDepthContext = createContext(0);
 
 export type { PortalModalVariant };
 
@@ -176,95 +182,106 @@ export function PortalModalShell({
     };
   }, [open, attemptDismiss]);
 
-  if (!open) return null;
+  const depth = useContext(PortalModalDepthContext);
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
-  return (
-    <div
-      className={cn(
-        "portal-ui portal-modal-shell",
-        `portal-modal-shell--${variant}`,
-        className
-      )}
-      style={{
-        zIndex: PORTAL_MODAL_Z_INDEX,
-        background: PORTAL_MODAL_SCRIM,
-      }}
-      role="presentation"
-      onClick={closeOnBackdrop ? () => attemptDismiss(false) : undefined}
-    >
+  if (!open || !mounted) return null;
+
+  const shell = (
+    <PortalModalDepthContext.Provider value={depth + 1}>
       <div
         className={cn(
-          "portal-modal-shell-panel",
-          `portal-modal-shell-panel--${variant}`
+          "portal-ui portal-modal-shell",
+          `portal-modal-shell--${variant}`,
+          className
         )}
-        style={
-          {
-            maxWidth: maxW,
-            ["--portal-modal-max"]: maxW,
-            ...(isFunnel ? { ["--portal-funnel-modal-max"]: maxW } : null),
-          } as CSSProperties
-        }
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby={titleId}
-        aria-describedby={subtitle?.trim() ? subId : undefined}
-        onClick={(e) => e.stopPropagation()}
+        style={{
+          // Body-Portal + höhere Schicht bei Nesting (KI/GPT im Sheet nicht von Buttons abschneiden)
+          zIndex: PORTAL_MODAL_Z_INDEX + depth * 10,
+          background: PORTAL_MODAL_SCRIM,
+        }}
+        role="presentation"
+        onClick={closeOnBackdrop ? () => attemptDismiss(false) : undefined}
       >
-        <div className="portal-modal-shell-header">
-          <div className="portal-modal-shell-heading">
-            <h2 id={titleId} className="portal-modal-shell-title">
-              {title}
-            </h2>
-            {subtitle?.trim() ? (
-              <p id={subId} className="portal-modal-shell-sub">
-                {subtitle}
-              </p>
-            ) : null}
-          </div>
-          {headerExtra}
-          <button
-            type="button"
-            className="portal-modal-shell-close"
-            aria-label="Schließen"
-            onClick={() => attemptDismiss(false)}
-          >
-            ×
-          </button>
-        </div>
-        <div className="portal-modal-shell-body">{children}</div>
-      </div>
-
-      {discardOpen ? (
         <div
-          className="portal-modal-discard"
-          role="alertdialog"
+          className={cn(
+            "portal-modal-shell-panel",
+            `portal-modal-shell-panel--${variant}`
+          )}
+          style={
+            {
+              maxWidth: maxW,
+              ["--portal-modal-max"]: maxW,
+              ...(isFunnel ? { ["--portal-funnel-modal-max"]: maxW } : null),
+            } as CSSProperties
+          }
+          role="dialog"
           aria-modal="true"
-          aria-labelledby={discardTitleId}
+          aria-labelledby={titleId}
+          aria-describedby={subtitle?.trim() ? subId : undefined}
           onClick={(e) => e.stopPropagation()}
         >
-          <div className="portal-modal-discard-panel">
-            <p id={discardTitleId} className="portal-modal-discard-title">
-              Änderungen verwerfen?
-            </p>
-            <div className="portal-modal-discard-actions portal-action-row">
-              <button
-                type="button"
-                className="portal-action-btn portal-action-btn--secondary"
-                onClick={() => setDiscardOpen(false)}
-              >
-                Weiter bearbeiten
-              </button>
-              <button
-                type="button"
-                className="portal-action-btn portal-action-btn--danger"
-                onClick={() => closeNow(false)}
-              >
-                Verwerfen
-              </button>
+          <div className="portal-modal-shell-header">
+            <div className="portal-modal-shell-heading">
+              <h2 id={titleId} className="portal-modal-shell-title">
+                {title}
+              </h2>
+              {subtitle?.trim() ? (
+                <p id={subId} className="portal-modal-shell-sub">
+                  {subtitle}
+                </p>
+              ) : null}
+            </div>
+            {headerExtra}
+            <button
+              type="button"
+              className="portal-modal-shell-close"
+              aria-label="Schließen"
+              onClick={() => attemptDismiss(false)}
+            >
+              ×
+            </button>
+          </div>
+          <div className="portal-modal-shell-body">{children}</div>
+        </div>
+
+        {discardOpen ? (
+          <div
+            className="portal-modal-discard"
+            role="alertdialog"
+            aria-modal="true"
+            aria-labelledby={discardTitleId}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="portal-modal-discard-panel">
+              <p id={discardTitleId} className="portal-modal-discard-title">
+                Änderungen verwerfen?
+              </p>
+              <div className="portal-modal-discard-actions portal-action-row">
+                <button
+                  type="button"
+                  className="portal-action-btn portal-action-btn--secondary"
+                  onClick={() => setDiscardOpen(false)}
+                >
+                  Weiter bearbeiten
+                </button>
+                <button
+                  type="button"
+                  className="portal-action-btn portal-action-btn--danger"
+                  onClick={() => closeNow(false)}
+                >
+                  Verwerfen
+                </button>
+              </div>
             </div>
           </div>
-        </div>
-      ) : null}
-    </div>
+        ) : null}
+      </div>
+    </PortalModalDepthContext.Provider>
   );
+
+  return createPortal(shell, document.body);
 }

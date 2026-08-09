@@ -117,24 +117,24 @@ export function OrganisationMieterwechselPanel({
   return (
     <div className="space-y-4">
       <div className="space-y-0.5">
-        <p className="text-[11px] font-bold uppercase tracking-[0.08em] text-accent">
+        <p className="portal-text-label tracking-[0.08em] text-accent">
           {MIETERWECHSEL_PAGE_EYEBROW}
         </p>
         <h2 className="portal-text-section text-text-primary">
           {MIETERWECHSEL_PAGE_TITLE}
         </h2>
-        <p className="max-w-[640px] text-[13.5px] leading-relaxed text-text-secondary">
+        <p className="portal-text-body max-w-[640px] leading-relaxed text-text-secondary">
           {MIETERWECHSEL_INTRO}
         </p>
       </div>
 
       <div className="flex flex-wrap items-end gap-3">
         <label className="flex min-w-[200px] flex-1 flex-col gap-1.5 sm:max-w-[260px]">
-          <span className="text-[12px] font-semibold text-text-secondary">
+          <span className="portal-text-meta font-semibold text-text-secondary">
             Objekt
           </span>
           <select
-            className="h-10 rounded-[10px] border-[1.5px] border-[var(--border-default,#e3e6ea)] bg-white px-3 text-[13.5px] font-medium text-text-primary outline-none focus:border-accent"
+            className="portal-field"
             value={objektId}
             onChange={(e) => setObjektId(e.target.value)}
             aria-label="Objekt"
@@ -152,11 +152,11 @@ export function OrganisationMieterwechselPanel({
         </label>
 
         <label className="flex min-w-[160px] flex-col gap-1.5">
-          <span className="text-[12px] font-semibold text-text-secondary">
+          <span className="portal-text-meta font-semibold text-text-secondary">
             Wohnungsgröße
           </span>
           <select
-            className="h-10 rounded-[10px] border-[1.5px] border-[var(--border-default,#e3e6ea)] bg-white px-3 text-[13.5px] font-medium text-text-primary outline-none focus:border-accent"
+            className="portal-field"
             value={groesse}
             onChange={(e) =>
               setGroesse(e.target.value as MieterwechselGroesseId)
@@ -172,7 +172,7 @@ export function OrganisationMieterwechselPanel({
         </label>
 
         <label className="flex min-w-[120px] flex-col gap-1.5">
-          <span className="text-[12px] font-semibold text-text-secondary">
+          <span className="portal-text-meta font-semibold text-text-secondary">
             Wohnfläche m²
           </span>
           <input
@@ -181,7 +181,7 @@ export function OrganisationMieterwechselPanel({
             placeholder="z. B. 68"
             value={m2Text}
             onChange={(e) => setM2Text(e.target.value)}
-            className="h-10 w-[120px] rounded-[10px] border-[1.5px] border-[var(--border-default,#e3e6ea)] bg-white px-3 text-[13.5px] font-medium text-text-primary outline-none focus:border-accent"
+            className="portal-field w-[120px]"
             aria-label="Wohnfläche in Quadratmetern"
           />
         </label>
@@ -223,13 +223,13 @@ export function OrganisationMieterwechselPanel({
               </div>
 
               <div className="flex flex-1 flex-col px-5 py-[18px]">
-                <p className="text-[11px] font-bold uppercase tracking-wide text-text-tertiary">
+                <p className="portal-text-label tracking-wide text-text-tertiary">
                   Stufe {s.id}
                 </p>
-                <h3 className="font-[family-name:var(--font-display)] text-lg font-extrabold text-text-primary">
+                <h3 className="portal-text-title">
                   {s.name}
                 </h3>
-                <p className="mb-3.5 mt-2 min-h-0 text-[13px] leading-snug text-text-secondary lg:min-h-[58px]">
+                <p className="portal-text-meta mb-3.5 mt-2 min-h-0 leading-snug text-text-secondary lg:min-h-[58px]">
                   {s.desc}
                 </p>
                 <div className="mb-3.5 flex flex-col gap-0.5">
@@ -239,7 +239,7 @@ export function OrganisationMieterwechselPanel({
                   >
                     {formatMieterwechselPreisPrefix(preis)}
                   </span>
-                  <span className="text-[12px] font-semibold text-text-tertiary">
+                  <span className="portal-text-meta font-semibold text-text-tertiary">
                     {preis.isFix ? "Fixpreis netto" : "netto · Angebot"}
                   </span>
                 </div>
@@ -247,7 +247,7 @@ export function OrganisationMieterwechselPanel({
                   {s.feats.map((f) => (
                     <li
                       key={f}
-                      className="flex items-center gap-2.5 text-[13px] text-text-primary"
+                      className="portal-text-meta flex items-center gap-2.5 text-text-primary"
                     >
                       <span
                         className="grid h-[18px] w-[18px] shrink-0 place-items-center rounded-full text-[11px]"
@@ -297,7 +297,7 @@ export function OrganisationMieterwechselPanel({
         <h3 className="font-[family-name:var(--font-display)] text-[15px] font-bold text-text-primary">
           Zubuchbar auf jeder Stufe
         </h3>
-        <p className="mt-1 text-[12.5px] text-text-secondary">
+        <p className="portal-text-meta mt-1 text-text-secondary">
           Optionen werden zur Preisindikation addiert und mit der Anfrage
           mitgeschickt.
         </p>
@@ -310,7 +310,7 @@ export function OrganisationMieterwechselPanel({
                 type="button"
                 onClick={() => setZubuch((prev) => toggleIn(prev, z.id))}
                 className={cn(
-                  "rounded-[10px] border-[1.5px] px-3 py-2 text-left text-[13px] font-semibold transition-colors",
+                  "rounded-[var(--portal-btn-radius,9px)] border-[1.5px] px-3 py-2 text-left portal-text-meta font-semibold transition-colors",
                   on
                     ? "border-accent bg-accent-light text-accent"
                     : "border-[var(--border-default,#e3e6ea)] bg-white text-text-primary hover:border-accent/50"
@@ -318,7 +318,7 @@ export function OrganisationMieterwechselPanel({
                 aria-pressed={on}
               >
                 <span className="block">{z.label}</span>
-                <span className="block text-[11px] font-medium opacity-70">
+                <span className="portal-text-label block normal-case tracking-normal font-medium opacity-70">
                   {z.hint}
                 </span>
               </button>
@@ -330,7 +330,7 @@ export function OrganisationMieterwechselPanel({
           <h3 className="font-[family-name:var(--font-display)] text-[15px] font-bold text-text-primary">
             Module nur Stufe 3 „Renoviert“
           </h3>
-          <p className="mt-1 text-[12.5px] text-text-secondary">
+          <p className="portal-text-meta mt-1 text-text-secondary">
             Zusammenklicken — Indikation aktualisiert sich live auf der
             Renoviert-Karte.
           </p>
@@ -343,7 +343,7 @@ export function OrganisationMieterwechselPanel({
                   type="button"
                   onClick={() => setModule((prev) => toggleIn(prev, m.id))}
                   className={cn(
-                    "rounded-[10px] border-[1.5px] px-3 py-2 text-left text-[13px] font-semibold transition-colors",
+                    "rounded-[var(--portal-btn-radius,9px)] border-[1.5px] px-3 py-2 text-left portal-text-meta font-semibold transition-colors",
                     on
                       ? "border-[#8B6914] bg-[#F5F0E8] text-[#8B6914]"
                       : "border-[var(--border-default,#e3e6ea)] bg-white text-text-primary hover:border-[#8B6914]/50"
@@ -351,7 +351,7 @@ export function OrganisationMieterwechselPanel({
                   aria-pressed={on}
                 >
                   <span className="block">{m.label}</span>
-                  <span className="block text-[11px] font-medium opacity-70">
+                  <span className="portal-text-label block normal-case tracking-normal font-medium opacity-70">
                     {m.hint}
                   </span>
                 </button>
@@ -361,7 +361,7 @@ export function OrganisationMieterwechselPanel({
         </div>
       </div>
 
-      <p className="max-w-[720px] text-[12.5px] leading-relaxed text-text-tertiary">
+      <p className="portal-text-meta max-w-[720px] leading-relaxed text-text-tertiary">
         {MIETERWECHSEL_PREIS_HINWEIS}
       </p>
 
@@ -379,15 +379,15 @@ export function OrganisationMieterwechselPanel({
             >
               ✓
             </div>
-            <p className="mb-2 font-[family-name:var(--font-display)] text-lg font-bold text-text-primary">
+            <p className="portal-text-title mb-2">
               {mieterwechselOkHeadline(okName)}
             </p>
-            <p className="mx-auto mb-[18px] max-w-[320px] text-[13.5px] leading-relaxed text-text-secondary">
+            <p className="portal-text-body mx-auto mb-[18px] max-w-[320px] leading-relaxed text-text-secondary">
               {MIETERWECHSEL_OK_BODY}
             </p>
             <button
               type="button"
-              className="rounded-[10px] bg-accent px-[26px] py-[11px] text-sm font-semibold text-white"
+              className="portal-action-btn portal-action-btn--primary"
               onClick={() => setOkName(null)}
             >
               {MIETERWECHSEL_OK_CLOSE}

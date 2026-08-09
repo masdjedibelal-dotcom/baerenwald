@@ -171,6 +171,65 @@ async function loadOwnAbnahmeLink(auftragId: string, handwerkerId: string) {
   return { signiertAm, protokollId, freigabeStatus };
 }
 
+/** Lokale Teilabnahme in Shared-DB, wenn CRM-HTTP nicht greifbar ist. */
+async function persistLocalTeilabnahme(opts: {
+  auftragId: string;
+  handwerkerId: string;
+  abnahmeDatum: string;
+  notizen: string | null;
+  punkte: Array<Record<string, unknown>>;
+  maengel: Array<Record<string, unknown>>;
+  meta: Record<string, unknown>;
+}): Promise<{ ok: true; protokollId: string } | { ok: false; error: string }> {
+  const row = {
+    auftrag_id: opts.auftragId,
+    handwerker_id: opts.handwerkerId,
+    ebene: "handwerker",
+    freigabe_status: "zur_freigabe",
+    abnahme_datum: opts.abnahmeDatum,
+    notizen: opts.notizen,
+    punkte: opts.punkte,
+    maengel: opts.maengel,
+    meta: opts.meta,
+    updated_at: new Date().toISOString(),
+  };
+
+  const { data, error } = await supabaseAdmin
+    .from("auftrag_abnahmeprotokolle")
+    .insert(row)
+    .select("id")
+    .maybeSingle();
+
+  if (!error && data?.id) {
+    return { ok: true, protokollId: String(data.id) };
+  }
+
+  // meta-Spalte fehlt in älteren Schemas → ohne meta erneut versuchen
+  if (error && /meta|column/i.test(error.message)) {
+    const { meta: _meta, ...withoutMeta } = row;
+    void _meta;
+    const retry = await supabaseAdmin
+      .from("auftrag_abnahmeprotokolle")
+      .insert(withoutMeta)
+      .select("id")
+      .maybeSingle();
+    if (!retry.error && retry.data?.id) {
+      return { ok: true, protokollId: String(retry.data.id) };
+    }
+    console.error("[persistLocalTeilabnahme]", retry.error?.message ?? error.message);
+    return {
+      ok: false,
+      error: retry.error?.message || "Abnahme konnte lokal nicht gespeichert werden.",
+    };
+  }
+
+  console.error("[persistLocalTeilabnahme]", error?.message);
+  return {
+    ok: false,
+    error: error?.message || "Abnahme konnte lokal nicht gespeichert werden.",
+  };
+}
+
 /** Nach Kunden-Signatur: CRM erstellt Teilabnahme → zur_freigabe (kein Auto-Versand). */
 export async function submitPartnerAbnahmeNachSignatur(
   input: PartnerAbnahmeNachSignaturInput
@@ -209,7 +268,7 @@ export async function submitPartnerAbnahmeNachSignatur(
 
   const ortDatum = `${input.ort.trim()}, ${input.abnahmeDatum.slice(0, 10)}`;
   const abnahmeErgebnis = resolveAbnahmeErgebnis(input);
-  const crm = await submitCrmAbnahmeNachSignatur(id, {
+  const crmPayload = {
     abnahme_datum: input.abnahmeDatum.slice(0, 10),
     punkte: input.punkte.map(mapPunktToCrm),
     maengel: input.maengel.map(mapMangelToCrm),
@@ -228,7 +287,32 @@ export async function submitPartnerAbnahmeNachSignatur(
       vertreter_an: input.vertreter.trim(),
       ansprechpartner_kunde: input.kundeUnterschriftName.trim(),
     },
-  });
+  };
+  let crm = await submitCrmAbnahmeNachSignatur(id, crmPayload);
+
+  // Shared-DB-Fallback: Abschluss nicht blockieren, wenn CRM-URL/Session fehlt.
+  if (!crm.ok && /nicht konfiguriert|Verbindung fehlt|Sitzung abgelaufen|nicht erreichbar/i.test(crm.error)) {
+    console.warn(
+      "[partner-abnahme] CRM-Sync übersprungen, lokale Teilabnahme:",
+      crm.error
+    );
+    const local = await persistLocalTeilabnahme({
+      auftragId: id,
+      handwerkerId: auth.handwerkerId,
+      abnahmeDatum: crmPayload.abnahme_datum,
+      notizen: crmPayload.notizen,
+      punkte: crmPayload.punkte,
+      maengel: crmPayload.maengel,
+      meta: crmPayload.meta,
+    });
+    if (!local.ok) return { ok: false, error: local.error };
+    crm = {
+      ok: true,
+      pdf_url: null,
+      protokoll_id: local.protokollId,
+      freigabe_status: "zur_freigabe",
+    };
+  }
 
   if (!crm.ok) return { ok: false, error: crm.error };
 

@@ -43,10 +43,10 @@ export function PortalConfirmDialog({
           disabled={loading}
           onClick={onConfirm}
           className={cn(
-            "portal-btn portal-confirm-actions-primary",
+            "portal-action-btn portal-confirm-actions-primary",
             confirmVariant === "danger"
-              ? "rounded-[9px] border border-red-200 bg-white font-semibold text-red-800"
-              : "rounded-[9px] border-0 bg-[var(--org-primary,var(--p2-primary,#2E7D52))] font-semibold text-white hover:bg-[var(--org-primary-dk,var(--p2-primary-dk,#256642))]",
+              ? "portal-action-btn--ghost !border-red-200 !text-red-800"
+              : "portal-action-btn--primary",
             loading && "opacity-60"
           )}
         >
@@ -56,7 +56,7 @@ export function PortalConfirmDialog({
           type="button"
           onClick={onCancel}
           disabled={loading}
-          className="portal-btn portal-confirm-actions-cancel rounded-[9px] border border-[var(--p2-line,rgba(0,0,0,0.08))] bg-[var(--p2-selected,#f0f2f0)] font-semibold text-[var(--p2-sub,#404a45)] hover:bg-[var(--p2-hover,#f7f8fa)]"
+          className="portal-action-btn portal-action-btn--secondary portal-confirm-actions-cancel"
         >
           Abbrechen
         </button>
@@ -92,9 +92,7 @@ export function PortalDetailHead({
     <header className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
       <div className="min-w-0 flex-1 space-y-2">
         <div className="flex flex-wrap items-center gap-2">
-          <h3 className="font-display text-xl font-semibold leading-snug text-text-primary sm:text-2xl">
-            {title}
-          </h3>
+          <h3 className="portal-text-title">{title}</h3>
           {titleBadges}
         </div>
         {metaLine ? (
@@ -218,12 +216,10 @@ export function PortalDetailKeyValues({
           key={row.label}
           className="grid grid-cols-1 gap-0.5 py-2.5 sm:grid-cols-[38%_1fr] sm:items-baseline sm:gap-4"
         >
-          <dt className="text-[12px] font-medium text-text-tertiary">
+          <dt className="portal-text-label normal-case tracking-wide text-text-tertiary">
             {row.label}
           </dt>
-          <dd className="text-[14px] leading-snug text-text-primary">
-            {row.value}
-          </dd>
+          <dd className="portal-text-meta text-text-primary">{row.value}</dd>
         </div>
       ))}
     </dl>
@@ -251,7 +247,7 @@ export function PortalDetailLeistungenList({
             i < items.length - 1 && "border-b border-border-light"
           )}
         >
-          <p className="font-medium text-text-primary">
+          <p className="portal-text-card-title font-semibold">
             {stripHtmlToPlainText(p.title) || p.title}
           </p>
           {p.beschreibung ? (
@@ -328,7 +324,7 @@ export function PortalDetailLeistungenPreisListe({
                   <div className="min-w-0 flex-1">
                     <p
                       className={cn(
-                        "font-medium text-text-primary",
+                        "portal-text-card-title font-semibold",
                         isEntfernt && "line-through text-text-secondary"
                       )}
                     >
@@ -351,9 +347,9 @@ export function PortalDetailLeistungenPreisListe({
                 <div className="shrink-0 pt-0.5 text-right">
                   <p
                     className={cn(
-                      "font-semibold tabular-nums",
+                      "portal-text-body font-semibold tabular-nums",
                       preisLabel === "Preis folgt"
-                        ? "text-sm font-normal italic text-text-tertiary"
+                        ? "portal-text-meta font-normal italic text-text-tertiary"
                         : isEntfernt
                           ? "text-text-tertiary line-through"
                           : geaendert
@@ -367,7 +363,7 @@ export function PortalDetailLeistungenPreisListe({
                   p.preisBruttoAlt > 0 &&
                   p.preisBrutto > 0 &&
                   Math.abs(p.preisBruttoAlt - p.preisBrutto) > 0.009 ? (
-                    <p className="mt-0.5 text-sm tabular-nums text-text-tertiary line-through">
+                    <p className="portal-text-meta mt-0.5 tabular-nums text-text-tertiary line-through">
                       vorher {formatEuro(p.preisBruttoAlt)}
                     </p>
                   ) : null}
@@ -379,8 +375,8 @@ export function PortalDetailLeistungenPreisListe({
       </ul>
       {showGesamt ? (
         <div className="flex items-center justify-between gap-4 border-t border-border-default bg-muted/40 px-3 py-3 sm:gap-6">
-          <p className="font-semibold text-text-primary">{gesamtLabel}</p>
-          <p className="font-bold tabular-nums text-text-primary">
+          <p className="portal-text-card-title">{gesamtLabel}</p>
+          <p className="portal-text-card-title tabular-nums">
             {formatEuro(gesamtBrutto)}
           </p>
         </div>
@@ -470,7 +466,9 @@ export function PortalDetailStickyActions({
         </button>
       </div>
       {primaryDisabled && disabledHint ? (
-        <p className="text-center text-[12px] text-text-tertiary">{disabledHint}</p>
+        <p className="portal-text-label normal-case tracking-normal text-center text-text-tertiary">
+          {disabledHint}
+        </p>
       ) : null}
     </div>
   );
@@ -512,13 +510,13 @@ export function PortalAnsprechpartnerCard({
         <p className="portal-text-meta font-semibold uppercase tracking-wide text-accent">
           {rolleLabel}
         </p>
-        <p className="mt-2 font-display text-lg font-semibold text-text-primary">{name}</p>
+        <p className="portal-text-title mt-2">{name}</p>
         {intro.trim() ? (
-          <p className="mt-3 text-text-secondary">{intro}</p>
+          <p className="portal-text-body mt-3 text-text-secondary">{intro}</p>
         ) : null}
         <a
           href={telefonHref}
-          className="mt-3 inline-flex font-semibold text-accent underline-offset-2 hover:underline"
+          className="portal-text-body mt-3 inline-flex font-semibold text-accent underline-offset-2 hover:underline"
         >
           {telefon}
         </a>
@@ -558,7 +556,7 @@ export function PortalDetailMilestoneList({
           </span>
           <span
             className={cn(
-              "font-medium text-text-primary",
+              "portal-text-body font-medium text-text-primary",
               m.erledigt && "text-text-secondary line-through decoration-text-tertiary"
             )}
           >

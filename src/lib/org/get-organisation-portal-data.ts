@@ -1,4 +1,3 @@
-import { loadPartnerBefundeByLeadIds } from "@/lib/org/load-partner-befund";
 import { resolveLeadObjektId } from "@/lib/org/match-lead-objekt";
 import { getPortalDataForKunde } from "@/lib/portal/get-portal-data";
 import {
@@ -188,24 +187,18 @@ export async function getOrganisationPortalData(
   const eingangLeadIds = eingang.map((l) => l.id);
   const eingangLeadIdsSet = new Set(eingangLeadIds);
 
-  const [meldungAuftraege, hvFeedbackRows, partnerBefundByLeadId] =
-    await Promise.all([
-      loadPortalAuftraegeByLeadIds(eingangLeadIds),
-      eingangLeadIds.length
-        ? supabaseAdmin
-            .from("hv_vorgang_feedback")
-            .select("lead_id, feedback_typ, sterne, freitext, created_at")
-            .eq("kunde_id", kundeId)
-            .in("lead_id", eingangLeadIds)
-            .order("created_at", { ascending: true })
-            .then((r) => r.data ?? [])
-        : Promise.resolve([] as Array<Record<string, unknown>>),
-      mode === "full"
-        ? loadPartnerBefundeByLeadIds(eingang.map((l) => l.id))
-        : Promise.resolve(
-            {} as Awaited<ReturnType<typeof loadPartnerBefundeByLeadIds>>
-          ),
-    ]);
+  const [meldungAuftraege, hvFeedbackRows] = await Promise.all([
+    loadPortalAuftraegeByLeadIds(eingangLeadIds),
+    eingangLeadIds.length
+      ? supabaseAdmin
+          .from("hv_vorgang_feedback")
+          .select("lead_id, feedback_typ, sterne, freitext, created_at")
+          .eq("kunde_id", kundeId)
+          .in("lead_id", eingangLeadIds)
+          .order("created_at", { ascending: true })
+          .then((r) => r.data ?? [])
+      : Promise.resolve([] as Array<Record<string, unknown>>),
+  ]);
 
   const mergedAuftraege = mergePortalAuftraege(
     base.auftraege as Array<{ id: string } & Record<string, unknown>>,
@@ -240,36 +233,54 @@ export async function getOrganisationPortalData(
     Array<{
       id: string;
       datum?: string;
+      created_at?: string;
       titel: string;
       notiz?: string;
       fotos_urls: string[];
     }>
   > = {};
-  if (!listMode) {
+  {
+    const {
+      loadPartnerDokumentationByAuftragIds,
+      mergePortalBautagebuchEntries,
+    } = await import("@/lib/portal/load-partner-dokumentation");
+    const auftragIds = mergedAuftraege.map((a) => String(a.id));
+    const partnerDoku = await loadPartnerDokumentationByAuftragIds(auftragIds);
+
     for (const a of mergedAuftraege) {
       const leadId =
         (a as { lead_id?: string | null }).lead_id != null
           ? String((a as { lead_id?: string | null }).lead_id)
           : "";
-      const entries = (
-        a as {
-          bautagebuch?: Array<{
-            id: string;
-            datum?: string;
-            titel?: string;
-            notiz?: string;
-            fotos_urls?: string[];
-          }>;
-        }
-      ).bautagebuch;
-      if (!leadId || !entries?.length) continue;
-      bautagebuchByLeadId[leadId] = entries.map((e) => ({
-        id: e.id,
-        datum: e.datum,
-        titel: e.titel ?? "Eintrag",
-        notiz: e.notiz,
-        fotos_urls: e.fotos_urls ?? [],
-      }));
+      if (!leadId) continue;
+      const legacy = !listMode
+        ? (
+            (
+              a as {
+                bautagebuch?: Array<{
+                  id: string;
+                  datum?: string;
+                  created_at?: string;
+                  titel?: string;
+                  notiz?: string;
+                  fotos_urls?: string[];
+                }>;
+              }
+            ).bautagebuch ?? []
+          ).map((e) => ({
+            id: e.id,
+            datum: e.datum,
+            created_at: e.created_at,
+            titel: e.titel ?? "Eintrag",
+            notiz: e.notiz,
+            fotos_urls: e.fotos_urls ?? [],
+          }))
+        : [];
+      const partner = partnerDoku.get(String(a.id)) ?? [];
+      const merged = mergePortalBautagebuchEntries(legacy, partner);
+      if (!merged.length) continue;
+      const prev = bautagebuchByLeadId[leadId] ?? [];
+      bautagebuchByLeadId[leadId] = mergePortalBautagebuchEntries(prev, merged);
     }
   }
 
@@ -417,7 +428,6 @@ export async function getOrganisationPortalData(
     leads: mergedLeads,
     angebote: base.angebote,
     auftraege: mergedAuftraege,
-    partnerBefundByLeadId,
     bautagebuchByLeadId,
     hwErledigtByLeadId,
     feedbackBereitByLeadId,

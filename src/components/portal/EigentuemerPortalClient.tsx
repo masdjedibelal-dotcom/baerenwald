@@ -9,6 +9,7 @@ import { PortalVorgangDetail } from "@/components/portal/PortalVorgangDetail";
 import { PortalKundePrivatDashboard } from "@/components/portal/PortalKundePrivatDashboard";
 import { PORTAL_HEADER_HERO_SRC } from "@/lib/portal2/portal-media";
 import { emitPortalNotificationsChanged } from "@/lib/portal2/notif-refresh";
+import { PORTAL_BUSY_MIN_MS } from "@/components/shared/PortalBusyContext";
 import { PortalContentBusy } from "@/components/shared/PortalContentBusy";
 import { PortalListCard } from "@/components/shared/PortalListCard";
 import { PortalEntityDetailLayout } from "@/components/shared/PortalEntityDetailLayout";
@@ -153,7 +154,7 @@ export function EigentuemerPortalClient({
   const ignoreUrlDetailRef = useRef(false);
   const pendingDetailIdRef = useRef<string | null>(null);
 
-  function flashPageBusy(ms = 280) {
+  function flashPageBusy(ms = PORTAL_BUSY_MIN_MS) {
     setPageBusy(true);
     window.setTimeout(() => setPageBusy(false), ms);
   }
@@ -701,6 +702,8 @@ export function EigentuemerPortalClient({
           )}
         </div>
       ) : null}
+
+      <PortalLegalFooter variant="kunde" className="mt-8" />
     </PortalShell>
 
       <PortalCreateFunnelModal
@@ -726,10 +729,6 @@ export function EigentuemerPortalClient({
           router.refresh();
         }}
       />
-
-      <div className="mx-auto hidden max-w-[1200px] px-6 lg:block">
-        <PortalLegalFooter variant="kunde" className="mt-8" />
-      </div>
     </>
   );
 }

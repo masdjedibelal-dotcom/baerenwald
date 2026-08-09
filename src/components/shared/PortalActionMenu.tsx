@@ -118,7 +118,7 @@ export function PortalActionMenu({
           stack.length > 0 ? (
             <button
               type="button"
-              className="mr-1 rounded-lg px-2 py-1 text-[13px] font-semibold text-accent"
+              className="portal-text-meta mr-1 rounded-lg px-2 py-1 font-semibold text-accent"
               onClick={() => setStack((s) => s.slice(0, -1))}
             >
               ‹ Zurück
@@ -149,7 +149,7 @@ export function PortalActionMenuList({
           <button
             type="button"
             className={cn(
-              "flex w-full items-center justify-between gap-2 rounded-[10px] px-3.5 py-3 text-left text-[14px] font-semibold",
+              "portal-text-meta flex w-full items-center justify-between gap-2 rounded-[10px] px-3.5 py-3 text-left font-semibold",
               item.danger
                 ? "portal-danger hover:bg-[var(--p2-danger-soft)]"
                 : "text-text-primary hover:bg-muted"

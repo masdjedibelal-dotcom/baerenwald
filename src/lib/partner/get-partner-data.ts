@@ -216,6 +216,9 @@ export type PartnerAuftragItem = {
   angebotHwStatus?: string | null;
   angebotHwEingereichtAt?: string | null;
   angebotHwKonditionenArt?: "bestaetigt" | "gegenvorschlag" | null;
+  /** Aufgabe-/CRM-Notiz aus verknüpftem angebot_handwerker. */
+  aufgabe_notiz?: string | null;
+  hw_crm_notiz?: string | null;
   /** CRM-Bewertung nach Abschluss (read-only). */
   bewertung?: PartnerAuftragBewertung | null;
   /** Verbindliche HW-Annahme auf Auftragsebene. */
@@ -390,7 +393,7 @@ async function loadPartnerObjektById(
 
   const { data: objekteRows } = await supabaseAdmin
     .from("kunden_objekte")
-    .select("id, titel, strasse, hausnummer, plz, ort, cover_url")
+    .select("id, titel, strasse, hausnummer, plz, ort, cover_url, einheiten_hinweis")
     .in("id", objektIds);
 
   for (const o of objekteRows ?? []) {
@@ -1030,6 +1033,8 @@ export async function getPartnerDataForHandwerker(
       angebotHwStatus: anfrage?.hw_status ?? null,
       angebotHwEingereichtAt: anfrage?.hw_eingereicht_at ?? null,
       angebotHwKonditionenArt: anfrage?.hw_konditionen?.art ?? null,
+      aufgabe_notiz: anfrage?.aufgabe_notiz ?? null,
+      hw_crm_notiz: anfrage?.hw_crm_notiz ?? null,
       projektvertrag_bestaetigt_am: vertragCtx?.projektvertrag_bestaetigt_am ?? null,
       vertrag: vertragCtx,
       nachreichungOpenPositionIds,

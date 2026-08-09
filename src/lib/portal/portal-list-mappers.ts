@@ -67,28 +67,47 @@ function buildMockSubtitle(item: KundePortalDetailItem): string | undefined {
   return parts.length ? parts.join(" · ") : undefined;
 }
 
+function buildFallbackCardMeta(item: KundePortalDetailItem): PortalListCardMeta[] {
+  const ortLine = fmtPortalOrt(item.plz ?? "—", item.ort ?? "—");
+  const lines: PortalListCardMeta[] = [];
+  if (item.cardSubtitle) {
+    lines.push({ icon: "hammer", text: item.cardSubtitle });
+  }
+  if (ortLine !== "—") {
+    lines.push({ icon: "map-pin", text: ortLine });
+  }
+  lines.push({ icon: "calendar", text: fmtPortalDate(item.date) });
+  return lines;
+}
+
+function resolveCardHint(item: KundePortalDetailItem): string | undefined {
+  if (item.actionHint?.trim()) return item.actionHint.trim();
+  if (item.wartetAufHwLabel?.trim()) return item.wartetAufHwLabel.trim();
+  if (item.needsAction) {
+    return item.isAuftragDetail
+      ? "To-do: Änderungen prüfen & annehmen"
+      : "To-do: Angebot prüfen & annehmen";
+  }
+  return undefined;
+}
+
 export function mapKundeDetailToCard(
   item: KundePortalDetailItem,
   accent: PortalListCardAccent,
   opts?: { mockListe?: boolean }
 ): PortalCardRow {
   const mockListe = opts?.mockListe === true;
-  const meta: PortalListCardMeta[] = mockListe
-    ? []
-    : item.cardMeta?.length
-      ? item.cardMeta
-      : (() => {
-          const ortLine = fmtPortalOrt(item.plz ?? "—", item.ort ?? "—");
-          const lines: PortalListCardMeta[] = [];
-          if (item.cardSubtitle) {
-            lines.push({ icon: "hammer", text: item.cardSubtitle });
-          }
-          if (ortLine !== "—") {
-            lines.push({ icon: "map-pin", text: ortLine });
-          }
-          lines.push({ icon: "calendar", text: fmtPortalDate(item.date) });
-          return lines;
-        })();
+  const meta: PortalListCardMeta[] = item.cardMeta?.length
+    ? item.cardMeta
+    : mockListe
+      ? (() => {
+          // Mock-Liste (HV): Termin/Ort behalten, wenn vorhanden — nicht leeren.
+          const fromFallback = buildFallbackCardMeta(item).filter(
+            (m) => m.icon === "calendar" || m.icon === "map-pin"
+          );
+          return fromFallback;
+        })()
+      : buildFallbackCardMeta(item);
 
   return {
     id: item.id,
@@ -103,14 +122,7 @@ export function mapKundeDetailToCard(
     accent,
     meta,
     footer: mockListe ? undefined : item.listFooter,
-    hint: mockListe
-      ? undefined
-      : item.actionHint ??
-        (item.needsAction
-          ? item.isAuftragDetail
-            ? "To-do: Änderungen prüfen & annehmen"
-            : "To-do: Angebot prüfen & annehmen"
-          : undefined),
+    hint: resolveCardHint(item),
     sortDate: ts(item.date),
     statusRank: kundePillSortRank(
       item.statusPillKey || item.status || item.vorgangPhase

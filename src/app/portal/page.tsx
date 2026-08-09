@@ -184,7 +184,6 @@ export default async function PortalDashboardPage() {
           auftraege={slimOrg.auftraege as typeof orgData.auftraege}
           initialVorgaenge={slimOrg.initialVorgaenge}
           mitgliedRolle={mitgliedRolle}
-          partnerBefundByLeadId={orgData.partnerBefundByLeadId}
           bautagebuchByLeadId={orgData.bautagebuchByLeadId}
           hwErledigtByLeadId={orgData.hwErledigtByLeadId}
           feedbackBereitByLeadId={orgData.feedbackBereitByLeadId}

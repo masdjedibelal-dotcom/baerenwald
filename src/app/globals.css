@@ -118,9 +118,14 @@
   --p2-type-body: 16.5px;
   --p2-type-section: 17px;
   --p2-type-title: 18px;
+  --p2-type-page: 25px;
   --p2-type-nav: 14px;
 
-  /* Einheitliche Portal-Button-Skala */
+  /*
+   * Einheitliche Portal-Control-Skala.
+   * Buttons, Inputs (.portal-field) und Pills: Höhe/Font/Radius aus diesen Vars.
+   * --portal-btn-radius ≈ --p2-radius-sm (9 vs 8) — Controls immer --portal-btn-radius.
+   */
   --portal-btn-h: 44px;
   --portal-btn-h-compact: 38px;
   --portal-btn-px: 16px;
@@ -352,6 +357,15 @@ h3 {
     font-family: var(--p2-font-head);
   }
 
+  /* Seitentitel wie Vorgangsliste (PortalListeTitle) */
+  .portal-text-page {
+    font-size: var(--p2-type-page, 25px);
+    font-weight: 700;
+    line-height: 1.25;
+    color: var(--p2-ink, #142019);
+    font-family: var(--p2-font-head);
+  }
+
   .portal-status-pill {
     display: inline-flex;
     align-items: center;
@@ -475,7 +489,8 @@ h3 {
 
   .portal-kpi-value {
     @apply mt-1 font-semibold tabular-nums;
-    font-size: 1.35rem;
+    font-size: var(--p2-type-title, 18px);
+    line-height: 1.3;
     color: var(--p2-ink, #142019);
     font-family: var(--p2-font-head);
   }
@@ -511,12 +526,48 @@ h3 {
     @apply text-sm font-medium text-text-secondary;
   }
 
+  /**
+   * Einheitliches Form-Control (Input/Select/Textarea).
+   * `.portal-input` bleibt Alias — Prefer `.portal-field` bei neuen Feldern.
+   */
+  .portal-field,
   .portal-input {
-    @apply text-base leading-normal outline-none;
+    box-sizing: border-box;
+    min-height: var(--portal-btn-h, 44px);
+    padding: 0.625rem 0.75rem;
+    border: 1px solid var(--p2-line, rgba(0, 0, 0, 0.08));
+    border-radius: var(--portal-btn-radius, var(--p2-radius-sm, 9px));
+    background: var(--p2-panel, #fff);
+    color: var(--p2-ink, #142019);
     font-size: 16px;
+    line-height: 1.4;
+    outline: none;
+    transition: border-color 0.12s ease, box-shadow 0.12s ease;
+  }
+
+  .portal-field:focus,
+  .portal-field:focus-visible,
+  .portal-input:focus,
+  .portal-input:focus-visible {
+    border-color: var(--org-primary, var(--p2-primary, #2e7d52));
+    box-shadow: 0 0 0 3px var(--org-primary-soft, var(--p2-primary-soft, #e7f1e9));
+  }
+
+  .portal-field:disabled,
+  .portal-input:disabled {
+    cursor: not-allowed;
+    opacity: 0.7;
+    background: var(--p2-selected, #f0f2f0);
+  }
+
+  textarea.portal-field,
+  textarea.portal-input {
+    min-height: 88px;
+    height: auto;
   }
 
   @media (min-width: 640px) {
+    .portal-field,
     .portal-input {
       font-size: 15px;
     }
@@ -533,11 +584,11 @@ h3 {
     align-items: center;
     justify-content: center;
     min-width: 0;
-    min-height: var(--portal-btn-h, 42px);
-    height: var(--portal-btn-h, 42px);
+    min-height: var(--portal-btn-h, 44px);
+    height: var(--portal-btn-h, 44px);
     padding: 0 var(--portal-btn-px, 16px);
     border-radius: var(--portal-btn-radius, 9px);
-    font-size: var(--portal-btn-font, 13.5px);
+    font-size: var(--portal-btn-font, 15px);
     font-weight: 600;
     line-height: 1.2;
     box-sizing: border-box;
@@ -916,9 +967,9 @@ h3 {
 
   .portal-dash-greet {
     margin: 0;
-    font-size: 11px;
+    font-size: var(--p2-type-label, 12.5px);
     font-weight: 600;
-    letter-spacing: 0.06em;
+    letter-spacing: 0.04em;
     text-transform: uppercase;
     color: #8a8378;
   }
@@ -926,9 +977,9 @@ h3 {
   .portal-dash-name {
     margin: 4px 0 0;
     font-family: var(--p2-font-head, -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif);
-    font-size: 22px;
+    font-size: var(--p2-type-title, 18px);
     font-weight: 700;
-    line-height: 1.2;
+    line-height: 1.3;
     color: var(--p2-ink, #16201b);
   }
 
@@ -943,8 +994,9 @@ h3 {
   .portal-dash-tiles-title {
     margin: 0;
     font-family: var(--p2-font-head, -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif);
-    font-size: 15px;
+    font-size: var(--p2-type-section, 17px);
     font-weight: 700;
+    line-height: 1.35;
     color: var(--p2-ink, #16201b);
     grid-column: 1 / -1;
   }
@@ -968,17 +1020,17 @@ h3 {
   .portal-dash-tile-value {
     margin: 0;
     font-family: var(--p2-font-head, -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif);
-    font-size: 24px;
+    font-size: var(--p2-type-title, 18px);
     font-weight: 700;
-    line-height: 1;
+    line-height: 1.2;
     color: var(--p2-ink, #16201b);
   }
 
   .portal-dash-tile-label {
     margin: 6px 0 0;
-    font-size: 11px;
+    font-size: var(--p2-type-label, 12.5px);
     font-weight: 600;
-    line-height: 1.25;
+    line-height: 1.35;
     color: var(--p2-faint, #6a746f);
   }
 
@@ -997,13 +1049,14 @@ h3 {
   .portal-dash-recent-title {
     margin: 0;
     font-family: var(--p2-font-head, -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif);
-    font-size: 15px;
+    font-size: var(--p2-type-section, 17px);
     font-weight: 700;
+    line-height: 1.35;
     color: var(--p2-ink, #16201b);
   }
 
   .portal-dash-recent-all {
-    font-size: 12.5px;
+    font-size: var(--p2-type-meta, 14px);
     font-weight: 600;
     color: var(--org-primary, var(--p2-primary, #2e7d52));
     background: none;
@@ -1052,8 +1105,9 @@ h3 {
 
   .portal-dash-recent-titel {
     margin: 0;
-    font-size: 14px;
-    font-weight: 600;
+    font-size: var(--p2-type-section, 17px);
+    font-weight: 700;
+    line-height: 1.35;
     font-family: var(--p2-font-head, -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif);
     color: var(--p2-ink, #16201b);
     white-space: nowrap;
@@ -1063,15 +1117,16 @@ h3 {
 
   .portal-dash-recent-objekt {
     margin: 2px 0 0;
-    font-size: 12px;
+    font-size: var(--p2-type-meta, 14px);
+    line-height: 1.5;
     color: var(--p2-sub, #404a45);
   }
 
   .portal-dash-recent-pill {
     flex-shrink: 0;
-    font-size: 11px;
+    font-size: 13px;
     font-weight: 600;
-    padding: 3px 9px;
+    padding: 0.25rem 0.65rem;
     border-radius: 99px;
     white-space: nowrap;
   }
@@ -1079,7 +1134,8 @@ h3 {
   .portal-dash-recent-empty {
     padding: 28px 16px;
     text-align: center;
-    font-size: 13px;
+    font-size: var(--p2-type-body, 16.5px);
+    line-height: 1.55;
     color: var(--p2-faint, #6a746f);
     background: #fff;
     border-radius: 14px;
@@ -1399,10 +1455,10 @@ h3 {
   .portal-confirm-actions-primary,
   .portal-confirm-actions-cancel {
     width: 100%;
-    min-height: var(--portal-btn-h, 42px) !important;
-    height: var(--portal-btn-h, 42px) !important;
+    min-height: var(--portal-btn-h, 44px) !important;
+    height: var(--portal-btn-h, 44px) !important;
     padding: 0 var(--portal-btn-px, 16px) !important;
-    font-size: var(--portal-btn-font, 13.5px) !important;
+    font-size: var(--portal-btn-font, 15px) !important;
     font-weight: 600;
     border-radius: var(--portal-btn-radius, 9px);
     display: inline-flex;
@@ -2112,9 +2168,14 @@ h3 {
 
   /* PortalShell — Fullscreen (kein Mock-desktopFrame / Floating Card) */
   .portal-shell {
-    /* Bottom-Nav-Höhe inkl. Safe-Area — Action-Bars kleben direkt darüber */
-    --portal-mobile-nav-h: calc(3.75rem + env(safe-area-inset-bottom, 0px));
-    /* py-3 + 42px-Button (+ optionaler Hinweis) */
+    /*
+     * Bottom-Nav inkl. Safe-Area (Icons + Labels + Padding).
+     * Sticky Action-Bars und Main-Padding müssen dieselbe Var nutzen.
+     */
+    --portal-mobile-nav-h: calc(4.5rem + env(safe-area-inset-bottom, 0px));
+    /* Extra Abstand unter Seiteninhalt / Legal-Footer (über der Nav) */
+    --portal-mobile-nav-pad: calc(var(--portal-mobile-nav-h) + 1.25rem);
+    /* py-3 + Portal-Button-Höhe (+ optionaler Hinweis) */
     --portal-detail-actions-h: 5.25rem;
     min-height: 100dvh;
   }
@@ -2323,8 +2384,7 @@ h3 {
     z-index: 50;
     border-top: 1px solid var(--p2-line, rgba(0, 0, 0, 0.08));
     background: #fff;
-    padding: 6px 4px calc(10px + env(safe-area-inset-bottom, 0px));
-    /* Höhe muss zu --portal-mobile-nav-h passen (ohne Create-FAB) */
+    padding: 8px 4px max(10px, env(safe-area-inset-bottom, 0px));
     min-height: var(--portal-mobile-nav-h);
     box-sizing: border-box;
   }

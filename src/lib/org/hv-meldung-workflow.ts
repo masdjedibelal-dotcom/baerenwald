@@ -47,14 +47,18 @@ export function isLeadHavarie(lead: {
   freigabe_bypass_grund?: string | null;
 }): boolean {
   if ((lead.freigabe_bypass_grund ?? "").trim() === "akut") return true;
-  if ((lead.situation ?? "").trim() === "notfall") return true;
   const fd = lead.funnel_daten as {
     melde_kategorie?: string;
     havarie?: boolean;
     notfall?: boolean;
+    direktauftrag?: boolean;
   } | null;
-  // Kategorie „Notfall“ ODER Dringlichkeit „Akut“ (`notfall: true` im Melde-Funnel)
-  if (fd?.havarie === true || fd?.notfall === true) return true;
+  // Explizite Sofortmaßnahme / Direktauftrag
+  if (fd?.direktauftrag === true || fd?.havarie === true || fd?.notfall === true) {
+    return true;
+  }
+  // Legacy
+  if ((lead.situation ?? "").trim() === "notfall") return true;
   return fd?.melde_kategorie === "notfall";
 }
 

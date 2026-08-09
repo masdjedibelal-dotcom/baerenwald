@@ -54,7 +54,7 @@ export async function notifyHvPartnerErledigt(input: {
   const body = vollstaendig
     ? `${input.handwerkerName} meldet die letzten offenen Leistungen als erledigt. Sie können Feedback geben oder Mängel melden.`
     : `${input.handwerkerName} meldet Leistungen als erledigt. Weitere Positionen am Auftrag sind noch offen.`;
-  const link = `/portal?section=vorgaenge&id=${encodeURIComponent(input.leadId)}`;
+  const link = `/portal?section=vorgaenge&id=${encodeURIComponent(input.leadId)}&tab=uebersicht`;
 
   await supabaseAdmin.from("hv_notifications").insert({
     kunde_id: kundeId,

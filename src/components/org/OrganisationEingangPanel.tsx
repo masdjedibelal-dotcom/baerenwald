@@ -3,7 +3,7 @@
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { AlertTriangle, Filter, Mail, Phone, X } from "lucide-react";
+import { Filter, Mail, Phone, X } from "lucide-react";
 import { PORTAL_VAR } from "@/lib/portal2/tokens";
 
 import { OrgFreigabeBanner } from "@/components/org/OrgFreigabeBanner";
@@ -11,15 +11,14 @@ import { OrgMeldungAktionBanner } from "@/components/org/OrgMeldungAktionBanner"
 import { HvMeldungListActions } from "@/components/org/HvMeldungListActions";
 import { BautagebuchAccordionList } from "@/components/shared/BautagebuchAccordionList";
 import { orgPortalToast } from "@/lib/shared/portal-toast";
-import type { OrgPartnerBefundEntry } from "@/lib/org/load-partner-befund";
 import { PortalListCard } from "@/components/shared/PortalListCard";
 import { formatPreisspanneDisplay } from "@/lib/org/hv-meldung-workflow";
 import { meldeKategorieLabel } from "@/lib/org/melde-kategorien";
 import {
-  isMeldeNotfall,
   meldeFotosFromLead,
   meldeKategorieFromLead,
 } from "@/lib/org/org-eingang-utils";
+import { isHvDirektauftragInfoOnly } from "@/lib/org/org-direktauftrag";
 import { leadBelongsToObjekt } from "@/lib/org/match-lead-objekt";
 import type {
   OrganisationKunde,
@@ -53,7 +52,6 @@ type Props = {
   onRefresh: () => void;
   /** Mock D2: Aktionen unter jeder Listenzeile */
   listActions?: boolean;
-  partnerBefundByLeadId?: Record<string, OrgPartnerBefundEntry[]>;
   auftragByLeadId?: Record<string, string>;
   auftragKontextByLeadId?: Record<
     string,
@@ -106,11 +104,11 @@ type StatusFilter = "alle" | "neu" | "wartet_melder" | "in_bearbeitung";
 function MeldungDetail({
   lead,
   kunde,
+  objekte,
   angebot,
   onRefresh,
   onClose,
   showClose,
-  partnerBefunde,
   auftragId,
   bautagebuchEintraege,
   hwErledigt,
@@ -121,11 +119,11 @@ function MeldungDetail({
 }: {
   lead: OrganisationLead;
   kunde: OrganisationKunde;
+  objekte: OrganisationObjekt[];
   angebot?: OrgFreigabeAngebot | null;
   onRefresh: () => void;
   onClose?: () => void;
   showClose?: boolean;
-  partnerBefunde?: OrgPartnerBefundEntry[];
   auftragId?: string;
   bautagebuchEintraege?: Array<{
     id?: string;
@@ -215,7 +213,12 @@ function MeldungDetail({
       ) : null}
 
       {!wartetOrgFreigabe ? (
-        <OrgMeldungAktionBanner lead={lead} kunde={kunde} onUpdated={onRefresh} />
+        <OrgMeldungAktionBanner
+          lead={lead}
+          kunde={kunde}
+          objekte={objekte}
+          onUpdated={onRefresh}
+        />
       ) : null}
 
       <div className="flex items-start justify-between gap-2">
@@ -233,12 +236,6 @@ function MeldungDetail({
             </p>
           ) : null}
         </div>
-        {kategorie === "notfall" ? (
-          <span className="inline-flex items-center gap-1 rounded-full bg-red-50 px-2 py-0.5 text-xs font-medium text-red-700">
-            <AlertTriangle className="h-3 w-3" />
-            Notfall
-          </span>
-        ) : null}
       </div>
 
       {wartetOrgFreigabe && angebot ? (
@@ -372,30 +369,9 @@ function MeldungDetail({
         />
       ) : null}
 
-      {partnerBefunde && partnerBefunde.length > 0 ? (
-        <div data-testid="hv-partner-befund">
-          <BautagebuchAccordionList
-            heading="Partner-Befund (nur Ansicht)"
-            className="!border-t-0 !pt-0"
-            eintraege={partnerBefunde.map((b) => ({
-              id: b.id,
-              datum: b.datum,
-              titel: b.titel,
-              beschreibung: [
-                b.handwerkerName ? `Partner: ${b.handwerkerName}` : null,
-                b.beschreibung,
-              ]
-                .filter(Boolean)
-                .join("\n\n"),
-              fotos: b.fotos,
-            }))}
-          />
-        </div>
-      ) : null}
-
       {bautagebuchEintraege && bautagebuchEintraege.length > 0 ? (
         <BautagebuchAccordionList
-          heading="Bautagebuch"
+          heading="Dokumentation"
           className="!border-t-0 !pt-0"
           headerAction={
             auftragId && lead.kostentraeger === "versicherung" ? (
@@ -485,7 +461,6 @@ export function OrganisationEingangPanel({
   initialSelectedId,
   onRefresh,
   listActions = false,
-  partnerBefundByLeadId = {},
   auftragByLeadId = {},
   auftragKontextByLeadId = {},
   bautagebuchByLeadId = {},
@@ -506,7 +481,6 @@ export function OrganisationEingangPanel({
 
   const [objektFilter, setObjektFilter] = useState<string>("alle");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("alle");
-  const [onlyNotfall, setOnlyNotfall] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(
     initialSelectedId ?? null
   );
@@ -534,7 +508,6 @@ export function OrganisationEingangPanel({
         const obj = objekte.find((o) => o.id === objektFilter);
         if (!obj || !leadBelongsToObjekt(lead, obj)) return false;
       }
-      if (onlyNotfall && !isMeldeNotfall(lead)) return false;
       const hv = lead.hv_meldung_status ?? "neu";
       if (statusFilter === "neu") return hv === "neu";
       if (statusFilter === "wartet_melder") {
@@ -545,7 +518,7 @@ export function OrganisationEingangPanel({
       }
       return true;
     });
-  }, [eingang, objektFilter, objekte, onlyNotfall, statusFilter]);
+  }, [eingang, objektFilter, objekte, statusFilter]);
 
   const selected =
     filtered.find((l) => l.id === selectedId) ??
@@ -588,9 +561,9 @@ export function OrganisationEingangPanel({
         <MeldungDetail
           lead={selected}
           kunde={kunde}
+          objekte={objekte}
           angebot={angebotByLeadId.get(selected.id) ?? null}
           onRefresh={onRefresh}
-          partnerBefunde={partnerBefundByLeadId[selected.id]}
           auftragId={auftragByLeadId[selected.id]}
           bautagebuchEintraege={bautagebuchByLeadId[selected.id]}
           hwErledigt={hwErledigtByLeadId[selected.id]}
@@ -613,19 +586,19 @@ export function OrganisationEingangPanel({
       {!listActions ? (
         <>
           <div>
-            <h2 className="text-lg font-semibold">Meldungen</h2>
-            <p className="text-sm text-text-secondary">
+            <h2 className="portal-text-section">Meldungen</h2>
+            <p className="portal-text-meta text-text-secondary">
               Mieter-Meldungen und Direkterfassungen — Aktionen für neue Vorgänge.
             </p>
           </div>
 
           <div className="flex flex-wrap items-center gap-2 rounded-xl border border-border-default bg-surface-card p-3">
-            <span className="inline-flex items-center gap-1 text-xs text-text-tertiary">
+            <span className="portal-text-label inline-flex items-center gap-1 normal-case tracking-normal text-text-tertiary">
               <Filter className="h-3.5 w-3.5" />
               Filter
             </span>
             <select
-              className="rounded-lg border border-border-default px-2 py-1.5 text-sm"
+              className="portal-text-meta rounded-lg border border-border-default px-2 py-1.5"
               value={objektFilter}
               onChange={(e) => setObjektFilter(e.target.value)}
             >
@@ -637,7 +610,7 @@ export function OrganisationEingangPanel({
               ))}
             </select>
             <select
-              className="rounded-lg border border-border-default px-2 py-1.5 text-sm"
+              className="portal-text-meta rounded-lg border border-border-default px-2 py-1.5"
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value as StatusFilter)}
             >
@@ -646,14 +619,6 @@ export function OrganisationEingangPanel({
               <option value="wartet_melder">Wartet auf Melder</option>
               <option value="in_bearbeitung">In Bearbeitung</option>
             </select>
-            <label className="inline-flex items-center gap-1.5 text-sm cursor-pointer">
-              <input
-                type="checkbox"
-                checked={onlyNotfall}
-                onChange={(e) => setOnlyNotfall(e.target.checked)}
-              />
-              Nur Notfall
-            </label>
           </div>
         </>
       ) : null}
@@ -668,7 +633,7 @@ export function OrganisationEingangPanel({
             const kat = meldeKategorieLabel(
               meldeKategorieFromLead(lead) ?? undefined
             );
-            const notfall = isMeldeNotfall(lead);
+            const infoOnly = isHvDirektauftragInfoOnly(lead, kunde, objekte);
             const adresse = [
               lead.strasse,
               lead.hausnummer,
@@ -704,17 +669,18 @@ export function OrganisationEingangPanel({
                   )}
                   accent="anfrage"
                   meta={
-                    notfall
-                      ? [{ icon: "alert-triangle", text: "Notfall" }]
+                    infoOnly
+                      ? [{ icon: "hammer", text: "Sofortmaßnahme — Info" }]
                       : []
                   }
                   showChevron
                 />
-                {listActions ? (
+                {listActions && !infoOnly ? (
                   <div className="px-1">
                     <HvMeldungListActions
                       lead={lead}
                       kunde={kunde}
+                      objekte={objekte}
                       onUpdated={onRefresh}
                     />
                   </div>

@@ -12,6 +12,7 @@ import {
 import { labelSituation } from "@/lib/lead-funnel-labels";
 import type { PortalObjekt } from "@/lib/portal/portal-objekt";
 import { normalizeFunnelDaten } from "@/lib/lead-funnel-daten";
+import { formatAuftragDatumSpan } from "@/lib/portal/portal-auftrag-display";
 import {
   kostentraegerLabel,
   type VorgangDetailAusfuehrung,
@@ -189,15 +190,15 @@ export function buildKundeHvVorgangDetailVm(
       input.role === "hv" ? input.meldePreisIndikation?.trim() || null : null,
   };
 
+  const terminLabel =
+    formatAuftragDatumSpan(input.terminVon, input.terminBis) ?? null;
+
   const ausfuehrung: VorgangDetailAusfuehrung = {
     gewerk: input.kategorie ?? null,
     handwerkerName: input.handwerkerName ?? null,
     terminVon: input.terminVon ?? null,
     terminBis: input.terminBis ?? null,
-    terminLabel:
-      input.terminVon || input.terminBis
-        ? [input.terminVon, input.terminBis].filter(Boolean).join(" – ")
-        : null,
+    terminLabel,
     kontaktVorOrtName: objektMelder.melderName,
     kontaktVorOrtTel: objektMelder.melderTelefon,
   };
@@ -289,6 +290,7 @@ export function buildPartnerVorgangDetailVm(
       adresseStrasse: strasse,
       plzOrt,
       einheit: lead?.melder_einheit ?? null,
+      zugangshinweis: lead?.einheiten_hinweis ?? null,
       melderName: lead?.melder_name ?? lead?.kontakt_name ?? null,
       melderTelefon: lead?.melder_telefon ?? null,
       melderEmail: lead?.melder_email ?? null,

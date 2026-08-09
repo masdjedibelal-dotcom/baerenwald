@@ -34,6 +34,12 @@ export type PortalShellCreateAction = {
   onClick: () => void;
 };
 
+/**
+ * Shell-Capabilities je `variant` (typisch):
+ * - `org` / `kunde`: oft `createAction` (Neue Anfrage/Objekt); GPT-Vollfläche mit `hideMobileChrome`.
+ * - `partner` (Handwerker): meist ohne `createAction`; GPT-Section ebenfalls `hideMobileChrome`.
+ * - `hideMobileChrome`: Bottom-Nav + FAB aus — z. B. GPT-Overlay/Embedded oder Fokus-Screens.
+ */
 export type PortalShellProps = {
   variant?: "org" | "partner" | "kunde";
   brandTitle: string;
@@ -75,11 +81,11 @@ export type PortalShellProps = {
   headerRoleBadge?: ReactNode;
   /**
    * Mock `canCreate` + `createLabel`: Sidebar-Button + Mobile-FAB (rechts).
-   * Handwerker: weglassen (`portalCanCreate` = false).
+   * Typisch org/kunde; Handwerker (`partner`) weglassen.
    */
   createAction?: PortalShellCreateAction | null;
   /**
-   * Mobil: Bottom-Nav + FAB ausblenden.
+   * Mobil: Bottom-Nav + FAB ausblenden (GPT-Vollfläche, Fokus-Screens).
    * Default false — Bottom-Nav bleibt in Details sticky am Bildschirmrand.
    */
   hideMobileChrome?: boolean;
@@ -193,7 +199,7 @@ function PortalShellInner({
       prevKeyRef.current = contentKey;
       changed = true;
     }
-    if (changed) flash(320);
+    if (changed) flash();
   }, [activeNavId, contentKey, flash]);
 
   /** Mobil: Dokument-Scroll → Browser darf die URL-Leiste einklappen (wie CRM). */
@@ -296,7 +302,7 @@ function PortalShellInner({
                 hideMobileChrome
                   ? // Keine Bottom-Nav → kein Nav-Padding (z. B. GPT-Vollfläche)
                     "px-0 py-0 lg:px-6 lg:py-7 lg:pb-8"
-                  : "px-4 py-5 lg:px-6 lg:py-7 lg:pb-8 pb-[calc(5.5rem+env(safe-area-inset-bottom,0px))]"
+                  : "px-4 py-5 pb-[var(--portal-mobile-nav-pad)] lg:px-6 lg:py-7 lg:pb-8"
               )}
             >
               <div className="portal-page-stack relative min-h-[40vh]">
