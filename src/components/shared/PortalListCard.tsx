@@ -2,7 +2,13 @@
 
 import type { ReactNode } from "react";
 import type { LucideIcon } from "lucide-react";
-import { Calendar, ChevronRight, Hammer, MapPin } from "lucide-react";
+import {
+  AlertTriangle,
+  Calendar,
+  ChevronRight,
+  Hammer,
+  MapPin,
+} from "lucide-react";
 
 import {
   portalListItemBorderStyle,
@@ -15,7 +21,11 @@ import { cn } from "@/lib/utils";
 export type PortalListCardAccent = "anfrage" | "angebot" | "auftrag";
 
 /** String-Keys — Lucide-Komponenten dürfen nicht Server→Client serialisiert werden. */
-export type PortalListCardMetaIcon = "map-pin" | "calendar" | "hammer";
+export type PortalListCardMetaIcon =
+  | "map-pin"
+  | "calendar"
+  | "hammer"
+  | "alert-triangle";
 
 export type PortalListCardMeta = {
   icon?: PortalListCardMetaIcon;
@@ -26,6 +36,7 @@ const META_ICONS: Record<PortalListCardMetaIcon, LucideIcon> = {
   "map-pin": MapPin,
   calendar: Calendar,
   hammer: Hammer,
+  "alert-triangle": AlertTriangle,
 };
 
 /** @deprecated Prefer PortalListVariant from layout-chrome */

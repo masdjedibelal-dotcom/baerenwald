@@ -705,7 +705,7 @@ export function OrganisationEingangPanel({
                   accent="anfrage"
                   meta={
                     notfall
-                      ? [{ icon: AlertTriangle, text: "Notfall" }]
+                      ? [{ icon: "alert-triangle", text: "Notfall" }]
                       : []
                   }
                   showChevron

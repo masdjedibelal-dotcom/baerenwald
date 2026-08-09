@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { AlertTriangle } from "lucide-react";
 
 import { OrganisationObjektDokumentePanel } from "@/components/org/OrganisationObjektDokumentePanel";
 import { OrganisationObjektMieterTab } from "@/components/org/OrganisationObjektMieterTab";
@@ -522,7 +521,7 @@ export function OrganisationObjektDetail({
                 )}
                 accent="anfrage"
                 meta={
-                  notfall ? [{ icon: AlertTriangle, text: "Notfall" }] : []
+                  notfall ? [{ icon: "alert-triangle", text: "Notfall" }] : []
                 }
                 showChevron
               />
