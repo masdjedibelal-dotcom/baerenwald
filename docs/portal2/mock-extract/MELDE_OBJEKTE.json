@@ -1,0 +1,20 @@
+[
+  {
+    "id": "o1",
+    "name": "Lindenstraße 24",
+    "adr": "10115 Berlin-Mitte",
+    "we": "6 Wohneinheiten"
+  },
+  {
+    "id": "o2",
+    "name": "Parkallee 9",
+    "adr": "10711 Berlin-Wilmersdorf",
+    "we": "12 Wohneinheiten"
+  },
+  {
+    "id": "o3",
+    "name": "Sonnenweg 7",
+    "adr": "12207 Berlin-Lichterfelde",
+    "we": "Einfamilienhaus"
+  }
+]

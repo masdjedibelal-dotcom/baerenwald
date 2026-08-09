@@ -1,0 +1,11 @@
+{
+  "gemeldet": { "l": "Neu gemeldet", "c": "#1F4FA8", "bg": "#E4ECF7" },
+  "freigegeben": { "l": "Freigegeben", "c": "#1F4FA8", "bg": "#E4ECF7" },
+  "angefragt": { "l": "Handwerker angefragt", "c": "#8A5A06", "bg": "#FBF1D6" },
+  "angebot": { "l": "Angebot vorgelegt", "c": "#8A5A06", "bg": "#FBF1D6" },
+  "auftrag": { "l": "Beauftragt", "c": "#1F6A3F", "bg": "#DDEEDF" },
+  "abschluss": { "l": "Abschluss / Signatur", "c": "#1F6A3F", "bg": "#DDEEDF" },
+  "rechnung": { "l": "Rechnung offen", "c": "#8A5A06", "bg": "#FBF1D6" },
+  "bezahlt": { "l": "Abgeschlossen", "c": "#4B5563", "bg": "#EAEDEC" },
+  "_source": "Baerenwald Portale (5).html — const STATUS"
+}

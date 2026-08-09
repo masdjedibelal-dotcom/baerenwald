@@ -512,7 +512,14 @@ h3 {
   }
 
   .portal-input {
-    @apply text-base leading-normal outline-none sm:text-[15px];
+    @apply text-base leading-normal outline-none;
+    font-size: 16px;
+  }
+
+  @media (min-width: 640px) {
+    .portal-input {
+      font-size: 15px;
+    }
   }
 
   /* Größen kommen aus unlayered `.portal-ui .portal-btn*` (nach Marketing-Pills). */
@@ -632,7 +639,8 @@ h3 {
   }
 
   .portal-touch-target {
-    @apply min-h-[44px] min-w-[44px];
+    min-height: 44px;
+    min-width: 44px;
   }
 
   /* Portal 2.0 Topbar — Marken-Hellgrün statt Grau/Weiß */
@@ -2223,11 +2231,15 @@ h3 {
 
   /* Legacy — Topbar/Docs; Sidebar nutzt Owner-Zeile (Mock). */
   .portal-shell-brand-title {
-    @apply text-[15px] font-bold text-white;
+    @apply font-bold text-white;
+    font-size: 15px;
   }
 
   .portal-shell-brand-sub {
-    @apply mt-0.5 text-[10px] font-semibold tracking-[0.14em] text-[#8fae9d];
+    @apply mt-0.5 font-semibold;
+    font-size: 10px;
+    letter-spacing: 0.14em;
+    color: #8fae9d;
   }
 
   .portal-shell-create {
@@ -2293,13 +2305,15 @@ h3 {
   }
 
   .portal-shell-nav-badge {
-    @apply flex h-5 min-w-5 items-center justify-center rounded-full px-1 text-[10px] font-bold;
+    @apply flex h-5 min-w-5 items-center justify-center rounded-full px-1 font-bold;
+    font-size: 10px;
     background: #dc2626;
     color: #fff;
   }
 
   .portal-shell-sidebar-foot {
-    @apply mt-auto px-2 pt-3 text-xs text-[#8fae9d];
+    @apply mt-auto px-2 pt-3 text-xs;
+    color: #8fae9d;
   }
 
   .portal-shell-mobile-nav {
@@ -2352,7 +2366,9 @@ h3 {
   }
 
   .portal-shell-mobile-badge {
-    @apply absolute right-[calc(50%-22px)] top-0 flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[10px] font-bold text-white;
+    @apply absolute top-0 flex h-4 min-w-4 items-center justify-center rounded-full px-1 font-bold text-white;
+    right: calc(50% - 22px);
+    font-size: 10px;
     background: var(--p2-danger, #a1242a);
   }
 
@@ -2389,7 +2405,10 @@ h3 {
   }
 
   .portal-shell-fab {
-    @apply fixed z-[60] flex h-[52px] w-[52px] items-center justify-center rounded-full border-0 text-white;
+    @apply fixed flex items-center justify-center rounded-full border-0 text-white;
+    z-index: 60;
+    height: 52px;
+    width: 52px;
     right: max(16px, env(safe-area-inset-right, 0px));
     bottom: calc(var(--portal-mobile-nav-h) + 12px);
     background: var(--org-primary, var(--p2-primary, #2e7d52));
@@ -2409,15 +2428,25 @@ h3 {
   }
 
   .vorgang-timeline-step {
-    @apply relative min-w-[110px] flex-1 text-center text-xs text-text-tertiary;
+    @apply relative flex-1 text-center text-xs text-text-tertiary;
+    min-width: 110px;
   }
 
   .vorgang-timeline-line {
-    @apply absolute left-0 top-[11px] -z-0 h-0.5 w-full -translate-x-1/2 bg-[#dde2df];
+    @apply absolute left-0 -z-0 h-0.5 w-full -translate-x-1/2;
+    top: 11px;
+    background: #dde2df;
   }
 
   .vorgang-timeline-dot {
-    @apply relative z-[1] mx-auto mb-1.5 flex h-[22px] w-[22px] items-center justify-center rounded-full border-2 border-[#dde2df] bg-[#eceeed] text-[11px] font-bold text-[#5c6661];
+    @apply relative mx-auto mb-1.5 flex items-center justify-center rounded-full border-2 font-bold;
+    z-index: 1;
+    height: 22px;
+    width: 22px;
+    border-color: #dde2df;
+    background: #eceeed;
+    font-size: 11px;
+    color: #5c6661;
   }
 
   .vorgang-timeline-label {

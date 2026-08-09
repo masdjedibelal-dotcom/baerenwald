@@ -1,0 +1,52 @@
+# Error & Empty States (Portal Mock)
+
+## demoState variants
+
+### leer
+icon: ▤
+bg: #E7F1E9 (C.primarySoft)
+tx: #2E7D52 (C.primary)
+title: Noch keine Vorgänge
+subtitle (handwerker): Sobald Ihnen ein Auftrag zugewiesen wird, erscheint er hier.
+subtitle (eigentuemer): Für Ihre Wohnung liegt aktuell keine Meldung vor.
+subtitle (default): Hier erscheinen Ihre Anfragen und Aufträge. Legen Sie den ersten Vorgang an.
+primary_button: + {createLabel()} (nur wenn canCreate())
+
+### e404
+icon: 🔍
+bg: #eef0f2
+tx: #6A746F (C.faint)
+title: Seite nicht gefunden
+subtitle: Der aufgerufene Vorgang existiert nicht mehr oder wurde verschoben.
+primary_button: Zur Übersicht
+
+### zugriff
+icon: 🔒
+bg: #FBF1D6
+tx: #8A5A06
+title: Kein Zugriff
+subtitle: Für diesen Bereich fehlt Ihnen die Berechtigung. Wenden Sie sich an Ihre Hausverwaltung oder Bärenwald.
+primary_button: Zur Übersicht
+secondary_button: Support kontaktieren
+
+### server
+icon: ⚠
+bg: #FCE3E3
+tx: #A1242A
+title: Etwas ist schiefgelaufen
+subtitle: Wir konnten die Daten nicht laden. Bitte versuchen Sie es in einem Moment erneut.
+primary_button: Erneut versuchen
+secondary_button: Support kontaktieren
+
+### offline
+icon: 📡
+bg: #eef0f2
+tx: #6A746F (C.faint)
+title: Keine Verbindung
+subtitle: Sie sind offline. Prüfen Sie Ihre Internetverbindung — Ihre Eingaben bleiben gespeichert.
+primary_button: Erneut versuchen
+
+## Additional empty-state strings
+- Keine Vorgänge
+- Keine Benachrichtigungen
+- Noch keine Vorgänge
