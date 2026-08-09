@@ -12,12 +12,11 @@ import {
   PortalDetailHead,
   PortalDetailStickyActions,
 } from "@/components/shared/PortalDetailUi";
-import { PortalFlowStatusChip } from "@/components/shared/PortalFlowStatusChip";
 import { VorgangDetailSectionNav } from "@/components/shared/VorgangDetailSectionNav";
+import { HvFreigabeInfoBanner } from "@/components/org/HvFreigabeInfoBanner";
 import { OrgVorgangAbnahmeSection } from "@/components/org/OrgVorgangAbnahmeSection";
-import { OrganisationVorgangNotizenPanel } from "@/components/org/OrganisationObjektNotizenPanel";
-import { VorgangKommentareThread } from "@/components/org/VorgangKommentareThread";
 import { PortalHvTerminSection } from "@/components/portal/PortalHvTerminSection";
+import { hvFreigabeEntfaellt } from "@/lib/org/freigabe-bypass";
 import type { PortalTerminSlot } from "@/lib/portal/portal-termin";
 import { acceptKundeAngebot } from "@/app/actions/portal-angebot";
 import {
@@ -384,10 +383,31 @@ export function OrganisationHvVorgangDetail({
     }
     return flowStatus;
   })();
-  const actionKind = hvRoleActionKind(displayFlowStatus, {
+  /** Freigabe entfällt bei Akut / unter Schwelle — Status bleibt Offen/Neu, keine Buttons. */
+  const freigabeEntfaelltKind =
+    !mieterStatusMode && !privatkunde
+      ? hvFreigabeEntfaellt({
+          orgFreigabeStatus,
+          bypassGrund: freigabeBypassGrund,
+          hvMeldungStatus,
+        })
+      : null;
+  const freigabeNichtNoetig = freigabeEntfaelltKind != null;
+
+  const actionKindRaw = hvRoleActionKind(displayFlowStatus, {
     privatkunde,
     angebotVorgelegt,
   });
+  const actionKind =
+    freigabeNichtNoetig && actionKindRaw === "freigabe"
+      ? "none"
+      : actionKindRaw;
+  /** Nie Freigeben/Ablehnen, wenn Bypass greift — auch bei Angebots-Tab. */
+  const showFreigabeButtons =
+    !freigabeNichtNoetig && actionKindRaw === "freigabe";
+  const showAngebotFreigabeButtons =
+    !freigabeNichtNoetig &&
+    String(orgFreigabeStatus ?? "").trim() === "ausstehend";
   const empfohlen = pickEmpfohlenesAngebot(offers);
   const statusLabel =
     statusLabelOverride?.trim() || PORTAL_STATUS[displayFlowStatus].label;
@@ -589,10 +609,6 @@ export function OrganisationHvVorgangDetail({
     new Set(derivedPositionen.map((p) => p.gewerk).filter(Boolean))
   ).join(", ");
   const abschlaege = buildAbschlagsplan(sum.brutto, gewerke);
-  const unterSchwelle =
-    orgFreigabeStatus === "nicht_noetig" &&
-    (freigabeBypassGrund === "schwelle" || freigabeBypassGrund === "akut");
-
   const meldungAct = async (
     aktion: "angebot_einfordern" | "ablehnen"
   ) => {
@@ -724,16 +740,6 @@ export function OrganisationHvVorgangDetail({
                 Gesamt: {moneyEur(sum.brutto)}
               </p>
             )}
-            {unterSchwelle ? (
-              <div
-                className="portal-text-meta mt-3 rounded-lg px-3 py-2.5 font-semibold"
-                style={{ background: "#DDEEDF", color: "#1F6A3F" }}
-              >
-                {freigabeBypassGrund === "akut"
-                  ? HV_DETAIL_COPY.unterSchwelleAkut
-                  : HV_DETAIL_COPY.unterSchwelle(moneyEur(schwelleEur))}
-              </div>
-            ) : null}
             {showAcceptCta ? (
               <div className="mt-3 space-y-2">
                 <div className="flex flex-wrap gap-2">
@@ -751,7 +757,7 @@ export function OrganisationHvVorgangDetail({
               >
                 Angebot angenommen — Auftrag wird vorbereitet.
               </p>
-            ) : orgFreigabeStatus === "ausstehend" ? (
+            ) : showAngebotFreigabeButtons ? (
               <div className="mt-3 flex flex-row gap-2">
                 <ActionBtn
                   className="min-w-0 flex-1"
@@ -975,21 +981,23 @@ export function OrganisationHvVorgangDetail({
       >
         <PortalDetailHead
           title={titel}
-          metaLine={[objekt, kategorie].filter(Boolean).join(" · ") || undefined}
-          titleBadges={
-            notfall ? (
-              <span className="portal-text-label normal-case tracking-normal rounded px-1.5 py-0.5 bg-[#eef2ef] text-[#1a2e22]">
-                Direktauftrag
-              </span>
-            ) : null
-          }
-          actions={
-            <PortalFlowStatusChip
-              statusId={displayFlowStatus}
-              label={statusLabel}
-            />
+          metaLine={
+            [objekt, melder].filter(Boolean).join(" · ") || undefined
           }
         />
+
+        {freigabeEntfaelltKind ? (
+          <div className="mt-3">
+            <HvFreigabeInfoBanner
+              kind={freigabeEntfaelltKind}
+              schwelleLabel={
+                freigabeEntfaelltKind === "schwelle"
+                  ? moneyEur(schwelleEur)
+                  : null
+              }
+            />
+          </div>
+        ) : null}
 
         {actionKind === "angebot" && showAcceptCta ? (
           <div
@@ -1048,7 +1056,7 @@ export function OrganisationHvVorgangDetail({
               <VorgangDetailBlocks
                 vm={detailVm}
                 detailsActions={
-                  actionKind === "freigabe" ? (
+                  showFreigabeButtons ? (
                     <>
                       <ActionBtn
                         className="min-w-0 flex-1"
@@ -1077,14 +1085,6 @@ export function OrganisationHvVorgangDetail({
                   slots={terminSlots}
                   readOnly
                 />
-              ) : null}
-              {!mieterStatusMode ? (
-                <DetailCard title="Notizen & Kommentare">
-                  <div className="space-y-3">
-                    <VorgangKommentareThread leadId={leadId} />
-                    <OrganisationVorgangNotizenPanel leadId={leadId} />
-                  </div>
-                </DetailCard>
               ) : null}
             </section>
           ) : null}

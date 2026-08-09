@@ -14,6 +14,10 @@ import {
 import { createPortal } from "react-dom";
 
 import {
+  lockPortalBodyScroll,
+  unlockPortalBodyScroll,
+} from "@/lib/portal2/lock-portal-body-scroll";
+import {
   PORTAL_MODAL_SCRIM,
   PORTAL_MODAL_Z_INDEX,
   resolvePortalModalMaxWidth,
@@ -132,7 +136,28 @@ export function PortalModalShell({
     [closeNow]
   );
 
-  // Body-Scroll + Escape
+  // Body-Scroll-Lock (mobil): Hintergrund fixieren, Sheet darf scrollen
+  useEffect(() => {
+    if (!open) return;
+    function onTouchMove(e: TouchEvent) {
+      const t = e.target;
+      if (!(t instanceof Element)) {
+        e.preventDefault();
+        return;
+      }
+      if (t.closest(".portal-modal-shell-body, .portal-modal-discard-panel")) {
+        return;
+      }
+      e.preventDefault();
+    }
+    lockPortalBodyScroll();
+    document.addEventListener("touchmove", onTouchMove, { passive: false });
+    return () => {
+      document.removeEventListener("touchmove", onTouchMove);
+      unlockPortalBodyScroll();
+    };
+  }, [open]);
+
   useEffect(() => {
     if (!open) return;
     function onKey(e: KeyboardEvent) {
@@ -144,12 +169,7 @@ export function PortalModalShell({
       attemptDismiss(false);
     }
     document.addEventListener("keydown", onKey);
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    return () => {
-      document.removeEventListener("keydown", onKey);
-      document.body.style.overflow = prev;
-    };
+    return () => document.removeEventListener("keydown", onKey);
   }, [open, discardOpen, attemptDismiss]);
 
   // History-Entry: Browser-/Android-Back schließt Overlay zuerst

@@ -1376,6 +1376,11 @@ h3 {
     align-items: flex-end;
     justify-content: center;
     padding: 0;
+    /* Mobil: Hintergrund weichzeichnen + nicht scrollbar */
+    -webkit-backdrop-filter: blur(10px);
+    backdrop-filter: blur(10px);
+    overscroll-behavior: none;
+    touch-action: none;
   }
 
   .portal-modal-shell-panel {
@@ -1388,6 +1393,8 @@ h3 {
     overflow: hidden;
     box-shadow: var(--p2-shadow), 0 24px 60px rgba(0, 0, 0, 0.18);
     border: 0.5px solid var(--p2-line, rgba(0, 0, 0, 0.08));
+    touch-action: auto;
+    overscroll-behavior: contain;
   }
 
   .portal-modal-shell--confirm .portal-modal-shell-panel {
@@ -1442,7 +1449,10 @@ h3 {
     flex: 1;
     min-height: 0;
     overflow-y: auto;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
     padding: 14px 20px 22px;
+    touch-action: pan-y;
   }
 
   /* Confirm = ActionSheet: Primary zuerst, volle Breite mobil */

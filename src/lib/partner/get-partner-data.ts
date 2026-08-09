@@ -48,6 +48,7 @@ import {
   type PartnerVorgangItem,
 } from "@/lib/partner/build-partner-vorgaenge";
 import { ensurePartnerBautagebuchNotifications } from "@/lib/partner/notify-partner-bautagebuch-anfrage";
+import { ensurePartnerOffenNotifications } from "@/lib/partner/notify-partner-offen";
 import { buildPartnerTermine, type PartnerTerminItem } from "@/lib/partner/build-partner-termine";
 import {
   applyRahmenvertragPortalAkzeptanz,
@@ -1290,6 +1291,14 @@ export async function getPartnerDataForHandwerker(
       handwerkerId: id,
       anfragen: bautagebuchAnfragen,
       titelByAuftragId: auftragTitelById,
+    });
+  }
+
+  if (offen.length > 0 || vorgaenge.some((v) => v.state === "neu")) {
+    void ensurePartnerOffenNotifications({
+      handwerkerId: id,
+      offen,
+      vorgaenge,
     });
   }
 

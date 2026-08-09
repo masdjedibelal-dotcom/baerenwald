@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 
-import { formatPreisspanneDisplay } from "@/lib/org/hv-meldung-workflow";
+import { HvFreigabeInfoBanner } from "@/components/org/HvFreigabeInfoBanner";
+import { hvFreigabeEntfaellt } from "@/lib/org/freigabe-bypass";
 import { isHvDirektauftragInfoOnly } from "@/lib/org/org-direktauftrag";
 import { orgPortalToast } from "@/lib/shared/portal-toast";
 import { HV_MELDUNG_ACTIONS } from "@/lib/portal2/hv-liste";
@@ -22,7 +23,7 @@ type Props = {
 
 /**
  * Detail-Banner: Vorgang freigeben · Ablehnen
- * Sofortmaßnahme + Direktbeauftragung aktiv → nur Info (keine Buttons).
+ * Akut / unter Schwelle → nur Info (keine Buttons).
  */
 export function OrgMeldungAktionBanner({
   lead,
@@ -37,26 +38,34 @@ export function OrgMeldungAktionBanner({
   if (status !== "neu") return null;
   if (lead.einladung_status === "offen") return null;
 
-  const infoOnly = isHvDirektauftragInfoOnly(lead, kunde, objekte);
+  const funnelDa =
+    lead.funnel_daten &&
+    typeof lead.funnel_daten === "object" &&
+    !Array.isArray(lead.funnel_daten)
+      ? (lead.funnel_daten as { direktauftrag?: unknown }).direktauftrag === true
+      : false;
+  const entfaellt = hvFreigabeEntfaellt({
+    orgFreigabeStatus: lead.org_freigabe_status,
+    bypassGrund: lead.freigabe_bypass_grund,
+    funnelDirektauftrag: funnelDa,
+    hvMeldungStatus: lead.hv_meldung_status,
+  });
+  const infoOnly =
+    entfaellt != null || isHvDirektauftragInfoOnly(lead, kunde, objekte);
 
   if (infoOnly) {
+    const kind = entfaellt ?? "akut";
+    const schwelle =
+      kind === "schwelle" && kunde.freigabe_schwelle_eur != null
+        ? new Intl.NumberFormat("de-DE", {
+            style: "currency",
+            currency: "EUR",
+            maximumFractionDigits: 0,
+          }).format(Number(kunde.freigabe_schwelle_eur))
+        : null;
     return (
-      <div className="mb-4 space-y-2 rounded-xl border border-[#dce5df] bg-[#f6f9f7] p-4">
-        <p className="portal-text-card-title">
-          Sofortmaßnahme — wir kümmern uns
-        </p>
-        <p className="portal-text-meta text-text-secondary">
-          Keine Freigabe nötig. Der Vorgang läuft als Direktauftrag bei
-          Bärenwald. Diese Meldung dient nur Ihrer Information.
-        </p>
-        <p className="portal-text-label normal-case tracking-normal text-text-tertiary">
-          Geschätzte Spanne:{" "}
-          {formatPreisspanneDisplay(
-            lead.preis_min,
-            lead.preis_max,
-            lead.preis_unsicher
-          )}
-        </p>
+      <div className="mb-4">
+        <HvFreigabeInfoBanner kind={kind} schwelleLabel={schwelle} />
       </div>
     );
   }
@@ -84,49 +93,38 @@ export function OrgMeldungAktionBanner({
   };
 
   return (
-    <div className="mb-4 space-y-3 rounded-xl border border-[#dce5df] bg-[#f6f9f7] p-4">
-      <div>
-        <p className="portal-text-card-title">Neue Meldung</p>
-        <p className="portal-text-meta mt-1 text-text-secondary">
-          Geschätzte Spanne:{" "}
-          {formatPreisspanneDisplay(
-            lead.preis_min,
-            lead.preis_max,
-            lead.preis_unsicher
-          )}
-        </p>
-      </div>
-
+    <div className="mb-4 space-y-2 rounded-xl border border-border-default bg-white p-4">
+      <p className="portal-text-card-title">Freigabe erforderlich</p>
       <div className="flex flex-wrap gap-2">
-        {HV_MELDUNG_ACTIONS.map((a) => {
-          const style =
-            a.variant === "danger"
-              ? {
-                  border: "none",
-                  background: PORTAL_VAR.dangerSoft,
-                  color: PORTAL_VAR.danger,
-                }
-              : {
-                  border: "none",
-                  background: PORTAL_VAR.primary,
-                  color: "#fff",
-                };
-          return (
-            <button
-              key={a.id}
-              type="button"
-              disabled={busy}
-              onClick={() => void act(a.id)}
-              className="portal-text-meta rounded-lg px-3.5 py-2 font-semibold disabled:opacity-60"
-              style={style}
-            >
-              {a.label}
-            </button>
-          );
-        })}
+        {HV_MELDUNG_ACTIONS.map((a) => (
+          <button
+            key={a.id}
+            type="button"
+            disabled={busy}
+            onClick={() => void act(a.id)}
+            className="rounded-lg px-3.5 py-2 text-[12.5px] font-semibold disabled:opacity-60"
+            style={
+              a.variant === "danger"
+                ? {
+                    border: "none",
+                    background: PORTAL_VAR.dangerSoft,
+                    color: PORTAL_VAR.danger,
+                  }
+                : {
+                    border: "none",
+                    background: PORTAL_VAR.primary,
+                    color: "#fff",
+                  }
+            }
+          >
+            {a.label}
+          </button>
+        ))}
       </div>
       {error ? (
-        <p className="portal-text-meta text-red-700">{error}</p>
+        <p className="portal-text-meta font-semibold text-red-700" role="alert">
+          {error}
+        </p>
       ) : null}
     </div>
   );

@@ -27,9 +27,9 @@ export type VorgangDetailSight = {
 export const VORGANG_DETAIL_SIGHT: Record<VorgangDetailRole, VorgangDetailSight> =
   {
     hv: {
-      auftraggeber: "summary",
+      auftraggeber: "hidden",
       objektMelder: "full",
-      ausfuehrung: "summary",
+      ausfuehrung: "hidden",
       leistungen: "vk",
     },
     mieter: {

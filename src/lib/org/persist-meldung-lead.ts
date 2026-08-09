@@ -202,6 +202,57 @@ export async function persistMeldungLead(input: PersistMeldungLeadInput) {
     });
   }
 
+  // Melder-Link / Einladung → HV-Glocke (nicht bei HV-eigener Anlage)
+  if (input.erfassung_von === "melder") {
+    void import("@/lib/org/notify-hv-neue-meldung").then(
+      ({ notifyHvNeueMeldung }) =>
+        notifyHvNeueMeldung({ leadId: result.id }).catch((e) =>
+          console.error("[persistMeldungLead] hv notify:", e)
+        )
+    );
+    // Verknüpfter Portal-User (kunde_id mit auth) → eigene Glocke
+    void import("@/lib/portal/notify-portal-lead-user").then(
+      async ({ notifyPortalLeadUser }) => {
+        const { MELDE_NOTIF_COPY } = await import(
+          "@/lib/org/melde-vorgang-titel"
+        );
+        await notifyPortalLeadUser({
+          leadId: result.id,
+          typ: "status",
+          titel: MELDE_NOTIF_COPY.meldungEingegangen,
+          text: MELDE_NOTIF_COPY.meldungEingegangenBody,
+          deepLinkTab: "uebersicht",
+          roleOverride: "mieter",
+        }).catch((e) =>
+          console.error("[persistMeldungLead] portal notify:", e)
+        );
+      }
+    );
+  }
+
+  // Eigentümer am Objekt → Glocke „neu“ (Status-only, keine Freigabe)
+  void import("@/lib/portal/notify-portal-eigentuemer").then(
+    async ({ notifyPortalEigentuemer }) => {
+      const { formatMeldeNotifTitel, MELDE_NOTIF_COPY } = await import(
+        "@/lib/org/melde-vorgang-titel"
+      );
+      const titel =
+        String(situation ?? "").trim() ||
+        String(bereiche?.[0] ?? "").trim() ||
+        "Vorgang";
+      await notifyPortalEigentuemer({
+        leadId: result.id,
+        kind: "neu",
+        titel: formatMeldeNotifTitel(MELDE_NOTIF_COPY.neueMeldung, { titel }),
+        text: `Neuer Vorgang „${titel}“ an Ihrem Objekt.`,
+        deepLinkTab: "uebersicht",
+        kundeObjektId: input.kunde_objekt_id ?? null,
+      }).catch((e) =>
+        console.error("[persistMeldungLead] eigentuemer notify:", e)
+      );
+    }
+  );
+
   return { ...result, meldeTrackingToken: token };
 }
 

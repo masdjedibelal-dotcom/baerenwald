@@ -157,7 +157,7 @@ export function OrganisationVorgaengeSection({
   );
 
   useEffect(() => {
-    if (initialFilter) setFilter(initialFilter);
+    setFilter(initialFilter ?? "alle");
   }, [initialFilter]);
 
   function changeFilter(next: OrgVorgangFilter) {

@@ -9,6 +9,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import { flushSync } from "react-dom";
 
 type PortalBusyApi = {
   busy: boolean;
@@ -25,6 +26,18 @@ export const PORTAL_BUSY_MIN_MS = 400;
 
 const DEFAULT_FLASH_MS = PORTAL_BUSY_MIN_MS;
 
+/**
+ * Busy-State sofort painten — vor `router.replace` / schwerem Detail-Mount.
+ * In allen Portalen beim Vorgang-Klick nutzen.
+ */
+export function paintPortalBusyNow(
+  ...setters: Array<(busy: boolean) => void>
+): void {
+  flushSync(() => {
+    for (const set of setters) set(true);
+  });
+}
+
 export function PortalBusyProvider({ children }: { children: ReactNode }) {
   const [busy, setBusy] = useState(false);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -40,7 +53,10 @@ export function PortalBusyProvider({ children }: { children: ReactNode }) {
   const flash = useCallback(
     (ms = DEFAULT_FLASH_MS) => {
       clearTimer();
-      setBusy(true);
+      // Sofort painten — vor router.replace / schwerem Detail-Mount.
+      flushSync(() => {
+        setBusy(true);
+      });
       timerRef.current = setTimeout(() => {
         timerRef.current = null;
         if (holdRef.current === 0) setBusy(false);
@@ -53,7 +69,9 @@ export function PortalBusyProvider({ children }: { children: ReactNode }) {
     async <T,>(fn: () => Promise<T>, msMin = DEFAULT_FLASH_MS): Promise<T> => {
       holdRef.current += 1;
       clearTimer();
-      setBusy(true);
+      flushSync(() => {
+        setBusy(true);
+      });
       const started = Date.now();
       try {
         return await fn();

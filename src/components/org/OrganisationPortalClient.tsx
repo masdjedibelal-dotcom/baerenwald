@@ -1,10 +1,14 @@
 "use client";
 
 import dynamic from "next/dynamic";
+import { flushSync } from "react-dom";
 import { OrganisationHvDashboard } from "@/components/org/OrganisationHvDashboard";
 import { PORTAL_HEADER_HERO_SRC } from "@/lib/portal2/portal-media";
 import { emitPortalNotificationsChanged } from "@/lib/portal2/notif-refresh";
-import { PORTAL_BUSY_MIN_MS } from "@/components/shared/PortalBusyContext";
+import {
+  paintPortalBusyNow,
+  PORTAL_BUSY_MIN_MS,
+} from "@/components/shared/PortalBusyContext";
 import { ensurePortalVorgangNotificationHref } from "@/lib/portal2/portal-detail-deep-link";
 import { HvNotificationBell } from "@/components/org/HvNotificationBell";
 import { OrganisationSuche } from "@/components/org/OrganisationSuche";
@@ -90,8 +94,6 @@ import type {
 import type { OrgMitgliedRolle } from "@/lib/org/org-rbac";
 import { buildKundeVorgaenge } from "@/lib/portal/build-kunde-vorgaenge";
 import { leadIstMeldeDirektauftrag } from "@/lib/funnel/melde-direktauftrag";
-import { meldeKategorieLabel } from "@/lib/org/melde-kategorien";
-import { meldeKategorieFromLead } from "@/lib/org/org-eingang-utils";
 import {
   buildHvDashboardKpis,
   countLeadsByPortalFlow,
@@ -235,6 +237,9 @@ export function OrganisationPortalClient({
 
   const [section, setSection] = useState<OrgSection>(initialSection ?? "uebersicht");
   const [hubOpen, setHubOpen] = useState(false);
+  /** Sofortiger Listen-Filter (ohne auf URL/searchParams zu warten). */
+  const [vorgangFilterIntent, setVorgangFilterIntent] =
+    useState<OrgVorgangFilter | null>(initialVorgangFilter);
 
   /** Notification / Deep-Link: Section aus URL übernehmen (nicht nur Initial-State). */
   useEffect(() => {
@@ -283,12 +288,14 @@ export function OrganisationPortalClient({
   const [pageBusy, setPageBusy] = useState(false);
 
   function flashPageBusy(ms = PORTAL_BUSY_MIN_MS) {
-    setPageBusy(true);
+    paintPortalBusyNow(setPageBusy);
     window.setTimeout(() => setPageBusy(false), ms);
   }
 
   function openVorgangFromNotification(vorgangId: string, href: string) {
-    setSection("vorgaenge");
+    flushSync(() => {
+      setSection("vorgaenge");
+    });
     flashPageBusy(PORTAL_BUSY_MIN_MS);
     const target =
       ensurePortalVorgangNotificationHref({
@@ -316,16 +323,35 @@ export function OrganisationPortalClient({
   };
 
   function switchSection(next: OrgSection) {
+    if (next !== "vorgaenge") setVorgangFilterIntent(null);
     setSection(next);
     flashPageBusy();
     router.replace(`/portal?section=${next}`, { scroll: false });
   }
 
   function openVorgaenge(filter?: OrgVorgangFilter) {
-    setSection("vorgaenge");
+    const f: OrgVorgangFilter = filter ?? "alle";
+    setVorgangFilterIntent(f);
+    flushSync(() => {
+      setSection("vorgaenge");
+    });
     flashPageBusy();
-    const q = filter ? `?section=vorgaenge&filter=${filter}` : "?section=vorgaenge";
-    router.replace(`/portal${q}`, { scroll: false });
+    router.replace(`/portal?section=vorgaenge&filter=${f}`, { scroll: false });
+  }
+
+  /** Dashboard/Suche: Detail öffnen (Filter „alle“, damit der Vorgang sichtbar bleibt). */
+  function openVorgangDetail(id: string) {
+    const trimmed = id.trim();
+    if (!trimmed) return;
+    setVorgangFilterIntent("alle");
+    flushSync(() => {
+      setSection("vorgaenge");
+    });
+    flashPageBusy(PORTAL_BUSY_MIN_MS);
+    router.replace(
+      `/portal?section=vorgaenge&filter=alle&id=${encodeURIComponent(trimmed)}`,
+      { scroll: false }
+    );
   }
 
   const allLeadsForFlow = useMemo(() => {
@@ -365,6 +391,9 @@ export function OrganisationPortalClient({
         a,
       ])
     );
+    const byLeadId = new Map(
+      vorgaengeItems.map((item) => [String(item.leadId ?? item.id), item])
+    );
     return [...allLeadsForFlow]
       .map((lead) => {
         const flow = resolveLeadPortalFlowStatus({
@@ -387,27 +416,28 @@ export function OrganisationPortalClient({
       })
       .slice(0, 4)
       .map(({ lead, flow }) => {
-        const kat = meldeKategorieFromLead(lead);
-        const titel =
-          (kat ? meldeKategorieLabel(kat) : null) ||
-          lead.kontakt_nachricht?.slice(0, 60) ||
-          lead.melder_name ||
-          "Vorgang";
-        const obj =
-          (lead as { objekt?: { titel?: string; name?: string } }).objekt
-            ?.titel ||
-          (lead as { objekt?: { name?: string } }).objekt?.name ||
-          lead.melder_einheit ||
+        const item = byLeadId.get(String(lead.id));
+        // Gleicher Titel wie Liste/Detail; Subline = Anschrift · Melder
+        const titel = item?.title?.trim() || "Vorgang";
+        const objekt =
+          item?.cardSubtitle?.trim() ||
+          [
+            item?.meldeStrasse,
+            [item?.meldePlz, item?.meldeOrt].filter(Boolean).join(" "),
+            item?.melderName,
+          ]
+            .filter(Boolean)
+            .join(" · ") ||
           "Objekt";
         return {
           id: lead.id,
           titel,
-          objekt: String(obj),
+          objekt: String(objekt),
           flowStatus: flow,
           notfall: leadIstMeldeDirektauftrag(lead),
         };
       });
-  }, [allLeadsForFlow, angebote, auftraege]);
+  }, [allLeadsForFlow, angebote, auftraege, vorgaengeItems]);
 
   const showWlGate = orgWhitelabelGateVisible(kunde, mitgliedRolle);
   const canCompleteWlGate = orgWhitelabelGateCanComplete(mitgliedRolle);
@@ -450,13 +480,7 @@ export function OrganisationPortalClient({
         headerUser={{ name: displayName }}
         headerSearch={
           <OrganisationSuche
-            onSelect={(id) => {
-              openVorgaenge("offen");
-              flashPageBusy();
-              router.replace(`/portal?section=vorgaenge&filter=offen&id=${id}`, {
-                scroll: false,
-              });
-            }}
+            onSelect={(id) => openVorgangDetail(id)}
           />
         }
         notifications={
@@ -480,14 +504,7 @@ export function OrganisationPortalClient({
                 recent={recentItems}
                 heroImageUrl={PORTAL_HEADER_HERO_SRC}
                 onOpenFilter={openVorgaenge}
-                onOpenItem={(id) => {
-                  setSection("vorgaenge");
-                  flashPageBusy();
-                  router.replace(
-                    `/portal?section=vorgaenge&filter=offen&id=${id}`,
-                    { scroll: false }
-                  );
-                }}
+                onOpenItem={(id) => openVorgangDetail(id)}
               />
             </>
           ) : null}
@@ -500,10 +517,13 @@ export function OrganisationPortalClient({
               leads={leads}
               angebote={angebote}
               auftraege={auftraege}
-              initialFilter={initialVorgangFilter}
+              initialFilter={
+                vorgangFilterIntent ?? initialVorgangFilter ?? "alle"
+              }
               initialSelectedId={initialItemId}
               onRefresh={refresh}
               onFilterChange={(f) => {
+                setVorgangFilterIntent(f);
                 // Filterwechsel = Liste: alte Detail-id nicht mitschleppen (Race mit closeDetail).
                 router.replace(`/portal?section=vorgaenge&filter=${f}`, {
                   scroll: false,
@@ -528,14 +548,7 @@ export function OrganisationPortalClient({
               kunde={kunde}
               onRefresh={refresh}
               dokumenteByLeadId={dokumenteByLeadId}
-              onOpenVorgang={(id) => {
-                setSection("vorgaenge");
-                flashPageBusy();
-                router.replace(
-                  `/portal?section=vorgaenge&filter=offen&id=${encodeURIComponent(id)}`,
-                  { scroll: false }
-                );
-              }}
+              onOpenVorgang={(id) => openVorgangDetail(id)}
             />
           ) : null}
 

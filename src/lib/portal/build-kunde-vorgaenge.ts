@@ -324,25 +324,46 @@ function anfrageTitleFromLead(
   return { title, anfrageVorhaben: vorhaben, anfrageGewerk: gewerk };
 }
 
-/** Card-Titel: CRM-Angebotstitel, sonst sprechender Melde-/Anfrage-Titel. */
+/** CRM-Angebotstitel nur nutzen, wenn er echt sprechend ist (nicht Name/Kategorie). */
+function isUsableAngebotTitel(
+  angebotTitel: string,
+  lead: PortalLead
+): boolean {
+  const t = angebotTitel.trim();
+  if (!t) return false;
+  if (/^(notfall|reparatur|schaden|sonstiges|meldung|vorgang)\b/i.test(t)) {
+    return false;
+  }
+  if (/^(notfall|reparatur|schaden|sonstiges)\s*[·|—-]/i.test(t)) {
+    return false;
+  }
+  const melder = (lead.melder_name ?? lead.kontakt_name ?? "").trim();
+  if (melder && t.toLowerCase() === melder.toLowerCase()) return false;
+  // Kurzer Buchstabensalat ohne Leerzeichen (Tippfehler-Namen als Titel)
+  if (t.length <= 24 && !/\s/.test(t) && !/[.,;:!?/]/.test(t)) {
+    return false;
+  }
+  return true;
+}
+
+/**
+ * Einheitlicher Vorgangs-Titel für Startseite · Liste · Detail.
+ * Melde-Vorgänge: immer sprechender Melde-Titel (z. B. „Wasser am Heizkörper“).
+ */
 function resolveListCardTitle(
   lead: PortalLead,
   angebot: PortalAngebot | null
 ): string {
-  const angebotTitel = sanitizeCustomerText(angebot?.titel, 200)?.trim();
-  // Generische CRM-Titel („Reparatur · Bad“) durch Melde-Sprache ersetzen
   const meldeQuelle = leadIstMeldeTitelQuelle({
     anlass: lead.anlass,
     kanal: lead.kanal,
     funnelDaten: lead.funnel_daten,
   });
-  if (
-    angebotTitel &&
-    !(
-      meldeQuelle &&
-      /^(notfall|reparatur|schaden|sonstiges)\s*[·|—-]/i.test(angebotTitel)
-    )
-  ) {
+  if (meldeQuelle) {
+    return anfrageTitleFromLead(lead).title;
+  }
+  const angebotTitel = sanitizeCustomerText(angebot?.titel, 200)?.trim();
+  if (angebotTitel && isUsableAngebotTitel(angebotTitel, lead)) {
     return angebotTitel;
   }
   return anfrageTitleFromLead(lead).title;
@@ -503,15 +524,18 @@ function buildItemFromLead(
       hvMieterView,
       terminAuftragId: auftrag.id,
       terminSlots: auftrag.terminSlots ?? [],
-      infoHint:
-        hvMieterView && vorgangStatus.needsAction
+      infoHint: eigentuemerView
+        ? undefined
+        : hvMieterView && vorgangStatus.needsAction
           ? "Terminvorschlag wählen."
           : !hvMieterView && pendingAenderung
             ? "Leistungsänderungen prüfen und annehmen."
             : undefined,
       vorgangPhase: vorgangStatus.phase,
-      needsAction: vorgangStatus.needsAction,
-      actionHint: vorgangStatus.resolverActionHint ?? undefined,
+      needsAction: eigentuemerView ? false : vorgangStatus.needsAction,
+      actionHint: eigentuemerView
+        ? undefined
+        : vorgangStatus.resolverActionHint ?? undefined,
       feedbackBereit,
       mieterFeedback,
       melderStatusUrl: hvMieterView ? undefined : melderStatusUrl,
@@ -545,8 +569,10 @@ function buildItemFromLead(
       dokumente: filterDocs(angebot.dokumente ?? lead.dokumente ?? []),
       infoHint: undefined,
       vorgangPhase: vorgangStatus.phase,
-      needsAction: vorgangStatus.needsAction,
-      actionHint: vorgangStatus.resolverActionHint ?? undefined,
+      needsAction: eigentuemerView ? false : vorgangStatus.needsAction,
+      actionHint: eigentuemerView
+        ? undefined
+        : vorgangStatus.resolverActionHint ?? undefined,
       feedbackBereit,
       mieterFeedback,
       melderStatusUrl: hvMieterView ? undefined : melderStatusUrl,
@@ -571,8 +597,10 @@ function buildItemFromLead(
     sections: buildAnfragePortalSections(lead),
     dokumente: filterDocs(lead.dokumente ?? []),
     vorgangPhase: vorgangStatus.phase,
-    needsAction: vorgangStatus.needsAction,
-    actionHint: vorgangStatus.resolverActionHint ?? undefined,
+    needsAction: eigentuemerView ? false : vorgangStatus.needsAction,
+    actionHint: eigentuemerView
+      ? undefined
+      : vorgangStatus.resolverActionHint ?? undefined,
     hidePreise,
     hvMieterView,
     feedbackBereit,

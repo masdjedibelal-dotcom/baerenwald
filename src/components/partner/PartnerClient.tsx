@@ -2,6 +2,7 @@
 
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { flushSync } from "react-dom";
 
 import { markPartnerNotificationsReadForVorgang } from "@/app/actions/partner-notifications";
 import { PartnerHwDashboard, partnerDashboardStatusColors } from "@/components/partner/PartnerHwDashboard";
@@ -18,7 +19,10 @@ import {
   PartnerListPagination,
 } from "@/components/partner/PartnerListPagination";
 import dynamic from "next/dynamic";
-import { PORTAL_BUSY_MIN_MS } from "@/components/shared/PortalBusyContext";
+import {
+  paintPortalBusyNow,
+  PORTAL_BUSY_MIN_MS,
+} from "@/components/shared/PortalBusyContext";
 import { PortalContentBusy } from "@/components/shared/PortalContentBusy";
 
 const PortalBaerenwaldGpt = dynamic(
@@ -76,7 +80,7 @@ type OverviewTabId = "vorgaenge";
 const VORGANG_FILTER_LABELS: Record<VorgangFilter, string> = {
   alle: "Alle",
   offen: "Offen",
-  auftrag: "In Ausführung",
+  auftrag: "In Arbeit",
   erledigt: "Erledigt",
 };
 
@@ -182,6 +186,26 @@ export function PartnerClient({
   const pendingDetailIdRef = useRef<string | null>(null);
   const [gptOpen, setGptOpen] = useState(false);
   const [listPage, setListPage] = useState(1);
+  const [pageBusy, setPageBusy] = useState(false);
+  const [detailOpening, setDetailOpening] = useState(false);
+  const detailOpeningTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  function flashPageBusy(ms = PORTAL_BUSY_MIN_MS) {
+    paintPortalBusyNow(setPageBusy);
+    window.setTimeout(() => setPageBusy(false), ms);
+  }
+
+  function beginDetailOpening() {
+    paintPortalBusyNow(setDetailOpening, setPageBusy);
+    if (detailOpeningTimerRef.current) {
+      clearTimeout(detailOpeningTimerRef.current);
+    }
+    detailOpeningTimerRef.current = setTimeout(() => {
+      detailOpeningTimerRef.current = null;
+      setDetailOpening(false);
+      setPageBusy(false);
+    }, PORTAL_BUSY_MIN_MS);
+  }
 
   const [vorgangListFilter, setVorgangListFilter] =
     useState<VorgangFilter>("alle");
@@ -364,6 +388,8 @@ export function PartnerClient({
       if (match) {
         if (pending && (pending === match.id || pending === vorgangId)) {
           pendingDetailIdRef.current = null;
+        } else if (!pending && selectedId !== match.id) {
+          beginDetailOpening();
         }
         setSelectedId(match.id);
         return;
@@ -371,10 +397,12 @@ export function PartnerClient({
 
       if (pending && pending === vorgangId) {
         pendingDetailIdRef.current = null;
+      } else if (!pending && selectedId !== vorgangId) {
+        beginDetailOpening();
       }
       setSelectedId(vorgangId);
     }
-  }, [searchParams, vorgaengeState, router]);
+  }, [searchParams, vorgaengeState, router, selectedId]);
 
   /** Deep-Link-Parameter nach einmaligem Öffnen aus der URL entfernen. */
   useEffect(() => {
@@ -498,16 +526,20 @@ export function PartnerClient({
     target: PartnerPlanerSection,
     selectedId?: string
   ) {
-    setSection(target);
     setListPage(1);
     setVorgangListFilter("alle");
     if (selectedId) {
       const id = selectedId.replace(/^auftrag:/, "");
       ignoreUrlDetailRef.current = false;
       pendingDetailIdRef.current = id;
-      setSelectedId(id);
+      beginDetailOpening();
+      flushSync(() => {
+        setSection(target);
+        setSelectedId(id);
+      });
     } else {
       pendingDetailIdRef.current = null;
+      setSection(target);
     }
   }
 
@@ -518,18 +550,14 @@ export function PartnerClient({
       vorgaengeState.find((v) => v.anfrage?.id === vorgangId);
     const id = match?.id ?? vorgangId;
     pendingDetailIdRef.current = id.replace(/^auftrag:/, "");
-    setSection("vorgaenge");
-    setListPage(1);
-    setVorgangListFilter("alle");
-    setSelectedId(id);
+    beginDetailOpening();
+    flushSync(() => {
+      setSection("vorgaenge");
+      setListPage(1);
+      setVorgangListFilter("alle");
+      setSelectedId(id);
+    });
     router.push(href);
-  }
-
-  const [pageBusy, setPageBusy] = useState(false);
-
-  function flashPageBusy(ms = PORTAL_BUSY_MIN_MS) {
-    setPageBusy(true);
-    window.setTimeout(() => setPageBusy(false), ms);
   }
 
   function refreshVorgangAfterConfirm(id: string) {
@@ -568,17 +596,22 @@ export function PartnerClient({
   function openFromOverview(_tab: OverviewTabId, id: string) {
     ignoreUrlDetailRef.current = false;
     pendingDetailIdRef.current = id.replace(/^auftrag:/, "");
-    setVorgangListFilter("alle");
-    setSelectedId(id);
-    setSection("vorgaenge");
+    beginDetailOpening();
+    flushSync(() => {
+      setVorgangListFilter("alle");
+      setSection("vorgaenge");
+      setSelectedId(id);
+    });
     router.replace(partnerVorgangPortalPath(id), { scroll: false });
   }
 
   function selectRow(id: string) {
     ignoreUrlDetailRef.current = false;
     pendingDetailIdRef.current = id.replace(/^auftrag:/, "");
-    setSelectedId(id);
-    flashPageBusy();
+    beginDetailOpening();
+    flushSync(() => {
+      setSelectedId(id);
+    });
     if (section === "vorgaenge") {
       router.replace(partnerVorgangPortalPath(id), { scroll: false });
     }
@@ -587,6 +620,11 @@ export function PartnerClient({
   function closeDetail() {
     ignoreUrlDetailRef.current = true;
     pendingDetailIdRef.current = null;
+    setDetailOpening(false);
+    if (detailOpeningTimerRef.current) {
+      clearTimeout(detailOpeningTimerRef.current);
+      detailOpeningTimerRef.current = null;
+    }
     setSelectedId(null);
     flashPageBusy();
     const filterQs =
@@ -631,7 +669,12 @@ export function PartnerClient({
   }
 
   const detailScreen =
-    section === "vorgaenge" && selectedVorgang ? (
+    section === "vorgaenge" && selectedId && (detailOpening || !selectedVorgang) ? (
+      <PortalContentBusy
+        title="Vorgang wird geladen…"
+        body="Einen Moment — wir öffnen die Details."
+      />
+    ) : section === "vorgaenge" && selectedVorgang ? (
       <div className="-mx-4 -mt-4 min-w-0 pb-4 lg:-mx-6 lg:-mt-5">
         <VorgangCard
           vorgang={selectedVorgang}
@@ -645,11 +688,6 @@ export function PartnerClient({
           protokollId={searchParams.get("protokoll")?.trim() || null}
         />
       </div>
-    ) : section === "vorgaenge" && selectedId ? (
-      <PortalContentBusy
-        title="Vorgang wird geladen…"
-        body="Einen Moment — wir öffnen die Details."
-      />
     ) : null;
 
   const listScreen = (

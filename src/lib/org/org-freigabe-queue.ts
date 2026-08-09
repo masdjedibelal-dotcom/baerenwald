@@ -1,4 +1,4 @@
-import { leadIstMeldeDirektauftrag } from "@/lib/funnel/melde-direktauftrag";
+import { hvFreigabeEntfaellt } from "@/lib/org/freigabe-bypass";
 import type { OrganisationLead } from "@/lib/org/types";
 
 type FreigabeLead = Pick<
@@ -19,6 +19,17 @@ export function leadHasOrgAuftrag(
   return Boolean(auftragByLeadId[leadId]?.trim());
 }
 
+function funnelDirektauftragFlag(
+  funnel: FreigabeLead["funnel_daten"]
+): boolean {
+  return Boolean(
+    funnel &&
+      typeof funnel === "object" &&
+      !Array.isArray(funnel) &&
+      (funnel as { direktauftrag?: unknown }).direktauftrag === true
+  );
+}
+
 /** Wartet auf HV-Aktion (neue Meldung oder Angebotsfreigabe), ohne laufenden Auftrag. */
 export function isInOrgFreigabeQueue(
   lead: FreigabeLead,
@@ -26,16 +37,26 @@ export function isInOrgFreigabeQueue(
 ): boolean {
   if (leadHasOrgAuftrag(lead.id, auftragByLeadId)) return false;
 
-  // Sofortmaßnahme mit Bypass: nur Info, nicht in Freigabe-Queue
+  // Akut / unter Schwelle: nur Info, nie in Freigabe-Queue
   if (
-    leadIstMeldeDirektauftrag(lead) &&
-    (lead.freigabe_bypass_grund ?? "").trim() === "akut"
+    hvFreigabeEntfaellt({
+      orgFreigabeStatus: lead.org_freigabe_status,
+      bypassGrund: lead.freigabe_bypass_grund,
+      funnelDirektauftrag: funnelDirektauftragFlag(lead.funnel_daten),
+      hvMeldungStatus: lead.hv_meldung_status,
+    })
   ) {
     return false;
   }
 
   const freigabe = (lead.org_freigabe_status ?? "").trim();
-  if (freigabe === "freigegeben" || freigabe === "abgelehnt") return false;
+  if (
+    freigabe === "freigegeben" ||
+    freigabe === "abgelehnt" ||
+    freigabe === "nicht_noetig"
+  ) {
+    return false;
+  }
 
   const phase = (lead.vorgang_phase ?? "").trim();
   if (

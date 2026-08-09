@@ -2,9 +2,9 @@
 
 import { useState } from "react";
 
+import { HvFreigabeInfoBanner } from "@/components/org/HvFreigabeInfoBanner";
 import {
-  freigabeBypassInfoCopy,
-  isFreigabeBypassInfo,
+  hvFreigabeEntfaellt,
   parseFreigabeBypassGrund,
 } from "@/lib/org/freigabe-bypass";
 import { orgPortalToast } from "@/lib/shared/portal-toast";
@@ -20,6 +20,8 @@ type Props = {
    */
   bypassGrund?: "schwelle" | "akut" | string | null;
   schwelleLabel?: string;
+  hvMeldungStatus?: string | null;
+  funnelDirektauftrag?: boolean | null;
 };
 
 export function OrgFreigabeBanner({
@@ -28,29 +30,29 @@ export function OrgFreigabeBanner({
   onUpdated,
   bypassGrund = null,
   schwelleLabel,
+  hvMeldungStatus,
+  funnelDirektauftrag,
 }: Props) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const bypass = parseFreigabeBypassGrund(bypassGrund);
-  const isInfo = isFreigabeBypassInfo({
+  const infoKind = hvFreigabeEntfaellt({
     orgFreigabeStatus: status,
     bypassGrund: bypass,
+    funnelDirektauftrag,
+    hvMeldungStatus,
   });
 
-  if (status !== "ausstehend" && !isInfo) return null;
-
-  if (isInfo && bypass) {
-    const copy = freigabeBypassInfoCopy({
-      bypassGrund: bypass,
-      schwelleLabel,
-    });
+  if (infoKind) {
     return (
-      <div className="mb-4 rounded-xl border border-emerald-200 bg-emerald-50 p-4">
-        <p className="text-sm font-medium text-emerald-900">{copy.title}</p>
+      <div className="mb-4">
+        <HvFreigabeInfoBanner kind={infoKind} schwelleLabel={schwelleLabel} />
       </div>
     );
   }
+
+  if (status !== "ausstehend") return null;
 
   const act = async (aktion: "freigegeben" | "abgelehnt") => {
     setBusy(true);

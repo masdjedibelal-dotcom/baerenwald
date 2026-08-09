@@ -1,11 +1,17 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { flushSync } from "react-dom";
 
 import type { OrgFreigabeAngebot } from "@/components/org/OrgAngebotFreigabeInhalt";
 import { OrganisationEingangPanel } from "@/components/org/OrganisationEingangPanel";
 import { OrgFreigabeBanner } from "@/components/org/OrgFreigabeBanner";
+import {
+  paintPortalBusyNow,
+  PORTAL_BUSY_MIN_MS,
+} from "@/components/shared/PortalBusyContext";
+import { PortalContentBusy } from "@/components/shared/PortalContentBusy";
 import { PortalListCard } from "@/components/shared/PortalListCard";
 import { buildKundeVorgaenge } from "@/lib/portal/build-kunde-vorgaenge";
 import { PortalVorgangDetail } from "@/components/portal/PortalVorgangDetail";
@@ -153,6 +159,21 @@ export function OrganisationFreigabePanel({
   const searchParams = useSearchParams();
   const urlDetailId = searchParams.get("id")?.trim() || null;
   const [selectedAngebotId, setSelectedAngebotId] = useState<string | null>(null);
+  const [detailOpening, setDetailOpening] = useState(false);
+  const detailOpeningTimerRef = useRef<ReturnType<typeof setTimeout> | null>(
+    null
+  );
+
+  function beginDetailOpening() {
+    paintPortalBusyNow(setDetailOpening);
+    if (detailOpeningTimerRef.current) {
+      clearTimeout(detailOpeningTimerRef.current);
+    }
+    detailOpeningTimerRef.current = setTimeout(() => {
+      detailOpeningTimerRef.current = null;
+      setDetailOpening(false);
+    }, PORTAL_BUSY_MIN_MS);
+  }
   const auftragByLeadId = useMemo(
     () => buildAuftragByLeadId(auftraege as Array<{ id: string; lead_id?: string | null }>),
     [auftraege]
@@ -222,6 +243,15 @@ export function OrganisationFreigabePanel({
   };
 
   /** Mock: Detail ist eigener Screen — kein Split / Inline-Expand. */
+  if (selectedAngebotId && (detailOpening || !selectedAngebotItem)) {
+    return (
+      <PortalContentBusy
+        title="Vorgang wird geladen…"
+        body="Einen Moment — wir öffnen die Details."
+      />
+    );
+  }
+
   if (selectedAngebotItem) {
     const leadId =
       (selectedAngebotItem as { leadId?: string }).leadId ??
@@ -244,19 +274,25 @@ export function OrganisationFreigabePanel({
     }).format(schwelleEur);
     return (
       <div className="-mx-4 -mt-2 min-w-0 lg:-mx-6">
-        <OrgFreigabeBanner
-          leadId={leadId}
-          status={orgStatus || "ausstehend"}
-          bypassGrund={bypassGrund}
-          schwelleLabel={schwelleLabel}
-          onUpdated={onRefresh}
-        />
+        {/* Bypass-Banner kommt aus dem Detail; hier nur CTAs wenn Freigabe offen. */}
+        {!bypassGrund && orgStatus === "ausstehend" ? (
+          <OrgFreigabeBanner
+            leadId={leadId}
+            status={orgStatus}
+            bypassGrund={bypassGrund}
+            hvMeldungStatus={leadMeta?.hv_meldung_status}
+            schwelleLabel={schwelleLabel}
+            onUpdated={onRefresh}
+          />
+        ) : null}
         <PortalVorgangDetail
           item={selectedAngebotItem}
           onAccepted={onRefresh}
           showHvAbnahme
           showAnlassBadge
           orgFreigabeStatus={orgStatus || "ausstehend"}
+          freigabeBypassGrund={bypassGrund}
+          hvMeldungStatus={leadMeta?.hv_meldung_status}
           schwelleEur={schwelleEur}
           onBack={() => {
             setSelectedAngebotId(null);
@@ -371,7 +407,10 @@ export function OrganisationFreigabePanel({
                     )}
                     meta={[]}
                     onClick={() => {
-                      setSelectedAngebotId(a.id);
+                      beginDetailOpening();
+                      flushSync(() => {
+                        setSelectedAngebotId(a.id);
+                      });
                       router.replace(
                         `/portal?section=vorgaenge&filter=offen&id=${encodeURIComponent(a.leadId)}`,
                         { scroll: false }

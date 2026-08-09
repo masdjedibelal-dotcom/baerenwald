@@ -21,7 +21,7 @@ export const HV_CHIPS: Array<{
 ];
 
 /** Listen-Chip ↔ Portal-Flow (HV).
- * Offen = wartet auf Freigabe · In Arbeit = Angebot bis Auftrag · Erledigt = Abschluss+.
+ * Offen · In Arbeit · Erledigt (+ Alle vorne).
  * D3: Semantik = KPI-Klick (`HV_DASHBOARD_KPI_DEFS[].filter`).
  */
 export function hvListeChipMatches(
@@ -47,9 +47,9 @@ export function hvListeChipMatches(
 
 /** D3 — KPI-ID → Listen-Filter (identisch zu `HV_DASHBOARD_KPI_DEFS[].filter`). */
 export function hvKpiToListeFilter(
-  kpiId: "wartet_freigabe" | "in_arbeit" | "erledigt"
+  kpiId: "offen" | "in_arbeit" | "erledigt" | "wartet_freigabe"
 ): OrgVorgangFilter {
-  if (kpiId === "wartet_freigabe") return "offen";
+  if (kpiId === "offen" || kpiId === "wartet_freigabe") return "offen";
   if (kpiId === "in_arbeit") return "in_arbeit";
   return "erledigt";
 }

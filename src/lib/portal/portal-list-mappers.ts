@@ -39,31 +39,11 @@ function ts(v?: string | null): number {
 }
 
 function buildMockSubtitle(item: KundePortalDetailItem): string | undefined {
-  if (item.cardSubtitle?.trim()) {
-    const base = item.cardSubtitle.trim();
-    if (item.wartetAufHwLabel?.trim()) {
-      return `${base} · ${item.wartetAufHwLabel.trim()}`;
-    }
-    return base;
-  }
-  const metaTexts = item.cardMeta?.map((m) => m.text) ?? [];
+  // Mock-Liste: nur Straße · PLZ Ort · Meldername (cardSubtitle bereits so gebaut).
+  if (item.cardSubtitle?.trim()) return item.cardSubtitle.trim();
   const ortParts = [item.plz, item.ort].filter(Boolean).join(" ");
-  const adresse =
-    metaTexts.find((t) =>
-      /str|weg|allee|platz|gasse|\d{5}|plz|ort/i.test(t)
-    ) ??
-    (ortParts || undefined);
-  const we = metaTexts.find((t) => /\bWE\b|Einheit|Whg/i.test(t));
-  const person = metaTexts.find((t) =>
-    /Melder|Mieter|\(/i.test(t)
-  );
-  const kategorie = item.anfrageGewerk?.trim();
-  const parts = [
-    adresse,
-    we,
-    person ?? kategorie,
-    item.wartetAufHwLabel?.trim() || null,
-  ].filter(Boolean);
+  const melder = item.melderName?.trim() || undefined;
+  const parts = [ortParts || undefined, melder].filter(Boolean);
   return parts.length ? parts.join(" · ") : undefined;
 }
 
@@ -97,16 +77,12 @@ export function mapKundeDetailToCard(
   opts?: { mockListe?: boolean }
 ): PortalCardRow {
   const mockListe = opts?.mockListe === true;
-  const meta: PortalListCardMeta[] = item.cardMeta?.length
-    ? item.cardMeta
-    : mockListe
-      ? (() => {
-          // Mock-Liste (HV): Termin/Ort behalten, wenn vorhanden — nicht leeren.
-          const fromFallback = buildFallbackCardMeta(item).filter(
-            (m) => m.icon === "calendar" || m.icon === "map-pin"
-          );
-          return fromFallback;
-        })()
+  // Mock-Liste: Meta (Titel nochmal, Anschrift, „ab sofort“, Handwerker) weglassen —
+  // Adresse + Melder stehen nur im Subtitle.
+  const meta: PortalListCardMeta[] = mockListe
+    ? []
+    : item.cardMeta?.length
+      ? item.cardMeta
       : buildFallbackCardMeta(item);
 
   return {
@@ -122,13 +98,13 @@ export function mapKundeDetailToCard(
     accent,
     meta,
     footer: mockListe ? undefined : item.listFooter,
-    hint: resolveCardHint(item),
+    hint: mockListe ? undefined : resolveCardHint(item),
     sortDate: ts(item.date),
     statusRank: kundePillSortRank(
       item.statusPillKey || item.status || item.vorgangPhase
     ),
     hvMieterView: Boolean(item.hvMieterView),
-    wartetAufHwLabel: item.wartetAufHwLabel ?? null,
+    wartetAufHwLabel: mockListe ? null : item.wartetAufHwLabel ?? null,
     bautagebuch: item.hvMieterView ? undefined : item.bautagebuch,
     leadId: item.leadId ?? item.id,
   };

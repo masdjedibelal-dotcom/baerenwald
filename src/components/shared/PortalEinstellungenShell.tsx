@@ -1,5 +1,6 @@
 "use client";
 
+import { useSearchParams } from "next/navigation";
 import { useEffect, useState, type ReactNode } from "react";
 
 import {
@@ -39,12 +40,23 @@ export function PortalEinstellungenShell({
   const view = usePortalView();
   const mobile = isPortalMobileView(view);
   const showNav = nav.length > 1;
+  const searchParams = useSearchParams();
 
   const [tab, setTab] = useState<EinstellungenTabId>(() =>
     einstellungenDefaultTab(variant)
   );
 
   useEffect(() => {
+    const fromUrl = searchParams.get("tab")?.trim();
+    if (fromUrl && nav.some((n) => n.id === fromUrl)) {
+      setTab(fromUrl as EinstellungenTabId);
+      try {
+        sessionStorage.setItem(einstellungenNavStorageKey(variant), fromUrl);
+      } catch {
+        /* ignore */
+      }
+      return;
+    }
     try {
       const raw = sessionStorage.getItem(einstellungenNavStorageKey(variant));
       if (raw && nav.some((n) => n.id === raw)) {
@@ -53,8 +65,7 @@ export function PortalEinstellungenShell({
     } catch {
       /* ignore */
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- nur Variant-Wechsel
-  }, [variant]);
+  }, [variant, nav, searchParams]);
 
   const selectTab = (id: EinstellungenTabId) => {
     setTab(id);

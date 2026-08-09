@@ -3,8 +3,14 @@
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { flushSync } from "react-dom";
 import { Filter, Mail, Phone, X } from "lucide-react";
 import { PORTAL_VAR } from "@/lib/portal2/tokens";
+import {
+  paintPortalBusyNow,
+  PORTAL_BUSY_MIN_MS,
+} from "@/components/shared/PortalBusyContext";
+import { PortalContentBusy } from "@/components/shared/PortalContentBusy";
 
 import { OrgFreigabeBanner } from "@/components/org/OrgFreigabeBanner";
 import { OrgMeldungAktionBanner } from "@/components/org/OrgMeldungAktionBanner";
@@ -350,12 +356,12 @@ function MeldungDetail({
         </div>
       ) : null}
 
-      {wartetOrgFreigabe ||
-      lead.org_freigabe_status === "nicht_noetig" ? (
+      {wartetOrgFreigabe ? (
         <OrgFreigabeBanner
           leadId={lead.id}
           status={lead.org_freigabe_status ?? ""}
           bypassGrund={lead.freigabe_bypass_grund}
+          hvMeldungStatus={lead.hv_meldung_status}
           schwelleLabel={
             kunde.freigabe_schwelle_eur != null
               ? new Intl.NumberFormat("de-DE", {
@@ -484,9 +490,26 @@ export function OrganisationEingangPanel({
   const [selectedId, setSelectedId] = useState<string | null>(
     initialSelectedId ?? null
   );
+  const [detailOpening, setDetailOpening] = useState(() =>
+    Boolean(initialSelectedId)
+  );
+  const detailOpeningTimerRef = useRef<ReturnType<typeof setTimeout> | null>(
+    null
+  );
   /** Nach Zurück: stale URL-id nicht sofort wieder öffnen. */
   const closingRef = useRef(false);
   const pendingOpenIdRef = useRef<string | null>(null);
+
+  function beginDetailOpening() {
+    paintPortalBusyNow(setDetailOpening);
+    if (detailOpeningTimerRef.current) {
+      clearTimeout(detailOpeningTimerRef.current);
+    }
+    detailOpeningTimerRef.current = setTimeout(() => {
+      detailOpeningTimerRef.current = null;
+      setDetailOpening(false);
+    }, PORTAL_BUSY_MIN_MS);
+  }
 
   useEffect(() => {
     if (!initialSelectedId) {
@@ -494,12 +517,22 @@ export function OrganisationEingangPanel({
         closingRef.current = false;
         pendingOpenIdRef.current = null;
         setSelectedId(null);
+        setDetailOpening(false);
       }
       return;
     }
     if (closingRef.current) return;
+    if (pendingOpenIdRef.current === initialSelectedId) {
+      flushSync(() => {
+        setSelectedId(initialSelectedId);
+      });
+      return;
+    }
     pendingOpenIdRef.current = initialSelectedId;
-    setSelectedId(initialSelectedId);
+    beginDetailOpening();
+    flushSync(() => {
+      setSelectedId(initialSelectedId);
+    });
   }, [initialSelectedId]);
 
   const filtered = useMemo(() => {
@@ -530,7 +563,10 @@ export function OrganisationEingangPanel({
   const openDetail = (id: string) => {
     closingRef.current = false;
     pendingOpenIdRef.current = id;
-    setSelectedId(id);
+    beginDetailOpening();
+    flushSync(() => {
+      setSelectedId(id);
+    });
     router.replace(
       `/portal?section=vorgaenge&filter=offen&id=${encodeURIComponent(id)}`,
       { scroll: false }
@@ -540,9 +576,21 @@ export function OrganisationEingangPanel({
   const closeDetail = () => {
     closingRef.current = true;
     pendingOpenIdRef.current = null;
-    setSelectedId(null);
+    setDetailOpening(false);
+    flushSync(() => {
+      setSelectedId(null);
+    });
     router.replace(`/portal?section=vorgaenge&filter=offen`, { scroll: false });
   };
+
+  if (selectedId && (detailOpening || !selected)) {
+    return (
+      <PortalContentBusy
+        title="Vorgang wird geladen…"
+        body="Einen Moment — wir öffnen die Details."
+      />
+    );
+  }
 
   if (selected) {
     return (

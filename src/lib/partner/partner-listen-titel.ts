@@ -7,6 +7,10 @@ import { objektPlzOrt } from "@/lib/portal/portal-detail-item";
 import type { PortalObjekt } from "@/lib/portal/portal-objekt";
 import { isPrivatPortalKontext } from "@/lib/portal/portal-titel";
 import { labelSituation } from "@/lib/lead-funnel-labels";
+import {
+  buildMeldeVorgangTitel,
+  leadIstMeldeTitelQuelle,
+} from "@/lib/org/melde-vorgang-titel";
 
 export type PartnerListenTitelInput = {
   gewerk_name?: string | null;
@@ -69,9 +73,33 @@ function resolveSituationLabel(lead?: PortalAnfrageLeadSource | null): string | 
   return labeled !== "—" ? labeled : undefined;
 }
 
-/** Einheitlicher Listen-/Detail-Titel: „Situation — Gewerk — PLZ Ort“. */
+/** Einheitlicher Listen-/Detail-Titel — Melde: sprechender Schadenstitel. */
 export function resolvePartnerListenTitel(opts: PartnerListenTitelInput): string {
-  const situation = resolveSituationLabel(opts.lead);
+  const lead = opts.lead;
+  const leadExtra = lead as
+    | (PortalAnfrageLeadSource & {
+        kanal?: string | null;
+        notizen?: string | null;
+      })
+    | null
+    | undefined;
+  if (
+    leadExtra &&
+    leadIstMeldeTitelQuelle({
+      anlass: leadExtra.anlass,
+      kanal: leadExtra.kanal,
+      funnelDaten: leadExtra.funnel_daten,
+    })
+  ) {
+    return buildMeldeVorgangTitel({
+      situation: leadExtra.situation,
+      bereiche: leadExtra.bereiche,
+      funnelDaten: leadExtra.funnel_daten,
+      beschreibung: leadExtra.kontakt_nachricht ?? leadExtra.notizen ?? null,
+    });
+  }
+
+  const situation = resolveSituationLabel(lead);
   const gewerk = resolveGewerkLabel(opts.gewerk_name, opts.gewerk_names);
   const ort = resolveOrtLabel(opts);
   const fallback = opts.fallbackTitel?.trim();

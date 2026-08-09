@@ -50,8 +50,8 @@ export type PortalAnfrageLeadSource = {
 };
 
 /**
- * Listen-Untertitel: „Lindenstr. 24 · WE 1 · Max Mustermann“
- * (Meldername ohne Rollen-Suffix wie „Eigentümer“.)
+ * Listen-Untertitel: „Lindenstr. 24 · 80331 München · Max Mustermann“
+ * (nur Straße, PLZ/Ort, Meldername — ohne WE, Zeitraum, Handwerker.)
  */
 export function formatMockVorgangListSubtitle(
   lead: PortalAnfrageLeadSource
@@ -65,14 +65,9 @@ export function formatMockVorgangListSubtitle(
     ort !== "—" ? ort : lead.ort?.trim() || "—";
   const plzOrt = fmtPortalOrt(plz, ortResolved);
   const plzOrtLabel = plzOrt !== "—" ? plzOrt : undefined;
-  const weRaw = lead.melder_einheit?.trim();
-  const we = weRaw
-    ? /^(WE|Whg\.?|Einheit)\b/i.test(weRaw)
-      ? weRaw
-      : `WE ${weRaw}`
-    : undefined;
-  const melder = lead.melder_name?.trim() || undefined;
-  const parts = [adresse, plzOrtLabel, we, melder].filter(Boolean);
+  const melder =
+    lead.melder_name?.trim() || lead.kontakt_name?.trim() || undefined;
+  const parts = [adresse, plzOrtLabel, melder].filter(Boolean);
   return parts.length ? parts.join(" · ") : undefined;
 }
 

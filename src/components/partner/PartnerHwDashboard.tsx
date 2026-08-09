@@ -22,8 +22,8 @@ const KPI_DEFS: Array<{
   id: keyof PartnerHwDashboardKpis;
   label: string;
 }> = [
-  { id: "neueAnfragen", label: "Neue Anfragen" },
-  { id: "inAusfuehrung", label: "In Ausführung" },
+  { id: "neueAnfragen", label: "Offen" },
+  { id: "inAusfuehrung", label: "In Arbeit" },
   { id: "erledigt", label: "Erledigt" },
 ];
 

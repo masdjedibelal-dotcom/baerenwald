@@ -55,6 +55,8 @@ function extractProjektbeschreibung(item: KundePortalDetailItem): string {
 }
 
 function extractMelderName(item: KundePortalDetailItem): string | undefined {
+  const fromLead = item.melderName?.trim();
+  if (fromLead) return fromLead;
   const person = item.sections.find((s) =>
     /persönlich|kontakt|angaben/i.test(s.heading ?? "")
   );
@@ -100,6 +102,7 @@ export function PortalVorgangDetail({
   hvAbnahme,
   showHvAbnahme,
   orgFreigabeStatus,
+  freigabeBypassGrund,
   hvMeldungStatus,
   schwelleEur,
   onBack,
@@ -127,6 +130,7 @@ export function PortalVorgangDetail({
   /** D7: Privat/Gewerbe — kein Freigabe-Schritt, Hinweis „Automatisch freigegeben“ */
   privatkunde?: boolean;
   orgFreigabeStatus?: string | null;
+  freigabeBypassGrund?: "schwelle" | "akut" | null;
   hvMeldungStatus?: string | null;
   schwelleEur?: number;
   onBack?: () => void;
@@ -224,18 +228,12 @@ export function PortalVorgangDetail({
     const rechnungPdf =
       item.dokumente?.find((d) => /rechnung/i.test(d.name ?? "") && d.href)
         ?.href ?? null;
-    const kategorie = privatkunde
-      ? undefined
-      : item.anfrageGewerk?.trim() ||
-        item.cardSubtitle?.trim() ||
-        undefined;
-
     return (
       <OrganisationHvVorgangDetail
         idLabel=""
         titel={item.title}
         objekt={String(objektRaw).slice(0, 160)}
-        kategorie={kategorie}
+        kategorie={undefined}
         beschreibung={beschreibung}
         flowStatus={flowStatus}
         leadId={item.leadId ?? item.id}
@@ -278,12 +276,16 @@ export function PortalVorgangDetail({
         terminSlots={item.terminSlots}
         orgFreigabeStatus={orgFreigabeStatus ?? item.orgFreigabeStatus}
         freigabeBypassGrund={
+          freigabeBypassGrund ??
           (item.freigabeBypassGrund as "schwelle" | "akut" | null | undefined) ??
           null
         }
         hvMeldungStatus={hvMeldungStatus ?? item.hvMeldungStatus}
         angebotId={item.isAngebotDetail ? item.id : null}
-        canAcceptAngebot={Boolean(item.isAngebotDetail && item.needsAction)}
+        canAcceptAngebot={
+          !mieterStatusMode &&
+          Boolean(item.isAngebotDetail && item.needsAction)
+        }
         privatkunde={privatkunde}
         detailRole={privatkunde ? "kunde" : "hv"}
         mieterStatusMode={mieterStatusMode || Boolean(item.hvMieterView)}

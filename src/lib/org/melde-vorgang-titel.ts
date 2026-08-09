@@ -111,6 +111,10 @@ function firstMeaningfulLine(text: string | null | undefined): string | null {
     .trim();
   if (!line || line.length < 4) return null;
   if (GENERIC_TITEL.has(line.toLowerCase())) return null;
+  // Einzelwort ohne Leerzeichen / Interpunktion → oft Tippfehler-Name, kein Titel
+  if (line.length <= 24 && !/\s/.test(line) && !/[.,;:!?/]/.test(line)) {
+    return null;
+  }
   return line.length > 72 ? `${line.slice(0, 69).trimEnd()}…` : line;
 }
 
@@ -211,9 +215,15 @@ export function formatMeldeNotifTitel(
 }
 
 export const MELDE_NOTIF_COPY = {
+  neueMeldung: "Neue Meldung: {titel}",
+  meldungEingegangen: "Ihre Meldung ist eingegangen",
+  meldungEingegangenBody:
+    "Wir haben Ihre Meldung erhalten und kümmern uns darum.",
+  statusWechsel: "Status: {titel}",
   neuesAngebot: "Angebot bereit: {titel}",
   neuesAngebotBody: "„{titel}“ liegt im Portal zur Prüfung bereit.",
   partnerErledigt: "Erledigt: {titel}",
   partnerTeilabschluss: "Teilabschluss: {titel}",
   bautagebuch: "Update: {titel}",
+  kostenfreigabe: "Kostenfreigabe nötig",
 } as const;

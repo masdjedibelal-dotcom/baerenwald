@@ -19,13 +19,12 @@ export const HV_DASHBOARD_EMPTY_RECENT = "Noch nichts" as const;
 
 /** Mock HV-Tiles: Label, Farb-Tokens.
  * D3: `filter` = Listen-Chip (`HV_CHIPS` / OrgVorgangFilter).
- * KPI „Wartet auf Freigabe“ ≡ Chip „Offen“ (gleiche Zähl-Semantik: gemeldet).
+ * Kacheln = Chip-Labels: Offen · In Arbeit · Erledigt.
  */
 export const HV_DASHBOARD_KPI_DEFS = [
   {
-    id: "wartet_freigabe" as const,
-    label: "Wartet auf Freigabe",
-    /** Listen-Chip-Label (Kurzform) — gleiche Filter-ID `offen`. */
+    id: "offen" as const,
+    label: "Offen",
     chipLabel: "Offen",
     color: "#8A5A06",
     bg: "#fef3c7",
@@ -239,13 +238,13 @@ export type HvDashboardKpiValues = Record<HvDashboardKpiId, number>;
 
 /**
  * Mock HV-Tiles aus A4-Counts:
- * - Wartet auf Freigabe = gemeldet
+ * - Offen = gemeldet
  * - In Arbeit = freigegeben + angefragt + angebot + auftrag
  * - Erledigt = abschluss + rechnung + bezahlt
  */
 export function buildHvDashboardKpis(flow: HvFlowCountMap): HvDashboardKpiValues {
   return {
-    wartet_freigabe: flow.gemeldet,
+    offen: flow.gemeldet,
     in_arbeit:
       flow.freigegeben + flow.angefragt + flow.angebot + flow.auftrag,
     erledigt: flow.abschluss + flow.rechnung + flow.bezahlt,

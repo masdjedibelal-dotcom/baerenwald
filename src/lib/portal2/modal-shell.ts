@@ -32,8 +32,8 @@ export const PORTAL_MODAL_CONFIRM_MAX_W = 420;
  */
 export const PORTAL_MODAL_Z_INDEX = 200;
 
-/** Scrim-Farbe Mock. */
-export const PORTAL_MODAL_SCRIM = "rgba(16,25,20,.42)";
+/** Scrim über Blur — etwas leichter, damit Backdrop-Blur sichtbar bleibt. */
+export const PORTAL_MODAL_SCRIM = "rgba(16,25,20,.38)";
 
 export function resolvePortalModalVariant(
   variant: PortalModalVariant | undefined,
