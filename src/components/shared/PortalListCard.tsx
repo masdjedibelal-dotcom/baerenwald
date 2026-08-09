@@ -2,7 +2,7 @@
 
 import type { ReactNode } from "react";
 import type { LucideIcon } from "lucide-react";
-import { ChevronRight } from "lucide-react";
+import { Calendar, ChevronRight, Hammer, MapPin } from "lucide-react";
 
 import {
   portalListItemBorderStyle,
@@ -14,9 +14,18 @@ import { cn } from "@/lib/utils";
 
 export type PortalListCardAccent = "anfrage" | "angebot" | "auftrag";
 
+/** String-Keys — Lucide-Komponenten dürfen nicht Server→Client serialisiert werden. */
+export type PortalListCardMetaIcon = "map-pin" | "calendar" | "hammer";
+
 export type PortalListCardMeta = {
-  icon?: LucideIcon;
+  icon?: PortalListCardMetaIcon;
   text: string;
+};
+
+const META_ICONS: Record<PortalListCardMetaIcon, LucideIcon> = {
+  "map-pin": MapPin,
+  calendar: Calendar,
+  hammer: Hammer,
 };
 
 /** @deprecated Prefer PortalListVariant from layout-chrome */
@@ -193,7 +202,7 @@ export function PortalListCard({
           {meta.length > 0 ? (
             <ul className="mt-2 space-y-1">
               {meta.map((m, i) => {
-                const Icon = m.icon;
+                const Icon = m.icon ? META_ICONS[m.icon] : null;
                 return (
                   <li
                     key={`${m.text}-${i}`}

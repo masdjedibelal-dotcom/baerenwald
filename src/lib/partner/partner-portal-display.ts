@@ -1,5 +1,3 @@
-import { Calendar, Hammer, MapPin } from "lucide-react";
-
 import type { PortalListCardMeta } from "@/components/shared/PortalListCard";
 import {
   buildAnfrageCardMeta,
@@ -55,17 +53,17 @@ export function buildPartnerAnfrageCardMeta(
       .filter(Boolean)
       .join(" · ") ||
     extras?.gewerk_name;
-  if (was) meta.push({ icon: Hammer, text: was });
+  if (was) meta.push({ icon: "hammer", text: was });
 
   const ortLine = lead
     ? formatAnfrageListOrtLine(lead)
     : extras
       ? "—"
       : "—";
-  if (ortLine !== "—") meta.push({ icon: MapPin, text: ortLine });
+  if (ortLine !== "—") meta.push({ icon: "map-pin", text: ortLine });
 
   const zeitraum = lead ? formatAnfrageZeitraum(lead) : undefined;
-  if (zeitraum) meta.push({ icon: Calendar, text: zeitraum });
+  if (zeitraum) meta.push({ icon: "calendar", text: zeitraum });
 
   return meta;
 }
@@ -80,10 +78,10 @@ export function buildPartnerAngebotCardMeta(
   const ortLine = lead
     ? formatAnfrageListOrtLine(lead)
     : [fallbackOrt?.plz?.trim(), fallbackOrt?.ort?.trim()].filter(Boolean).join(" ") || "—";
-  if (ortLine !== "—") meta.push({ icon: MapPin, text: ortLine });
+  if (ortLine !== "—") meta.push({ icon: "map-pin", text: ortLine });
 
   const dateLabel = fmtPortalDate(date);
-  if (dateLabel !== "—") meta.push({ icon: Calendar, text: dateLabel });
+  if (dateLabel !== "—") meta.push({ icon: "calendar", text: dateLabel });
 
   return meta;
 }

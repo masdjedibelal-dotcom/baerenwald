@@ -1,6 +1,4 @@
 import type { ReactNode } from "react";
-import { Calendar, Hammer, MapPin } from "lucide-react";
-
 import type {
   PortalListCardAccent,
   PortalListCardMeta,
@@ -83,12 +81,12 @@ export function mapKundeDetailToCard(
           const ortLine = fmtPortalOrt(item.plz ?? "—", item.ort ?? "—");
           const lines: PortalListCardMeta[] = [];
           if (item.cardSubtitle) {
-            lines.push({ icon: Hammer, text: item.cardSubtitle });
+            lines.push({ icon: "hammer", text: item.cardSubtitle });
           }
           if (ortLine !== "—") {
-            lines.push({ icon: MapPin, text: ortLine });
+            lines.push({ icon: "map-pin", text: ortLine });
           }
-          lines.push({ icon: Calendar, text: fmtPortalDate(item.date) });
+          lines.push({ icon: "calendar", text: fmtPortalDate(item.date) });
           return lines;
         })();
 

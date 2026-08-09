@@ -1,5 +1,3 @@
-import { Calendar, Hammer, MapPin } from "lucide-react";
-
 import type { PortalListCardMeta } from "@/components/shared/PortalListCard";
 import {
   buildGroessenRows,
@@ -198,11 +196,11 @@ export function buildAnfrageCardMeta(
 ): PortalListCardMeta[] {
   const meta: PortalListCardMeta[] = [];
   const was = formatAnfrageWasGemacht(lead);
-  if (was) meta.push({ icon: Hammer, text: was });
+  if (was) meta.push({ icon: "hammer", text: was });
   const ortLine = formatAnfrageListOrtLine(lead);
-  if (ortLine !== "—") meta.push({ icon: MapPin, text: ortLine });
+  if (ortLine !== "—") meta.push({ icon: "map-pin", text: ortLine });
   const zeitraum = formatAnfrageZeitraum(lead);
-  if (zeitraum) meta.push({ icon: Calendar, text: zeitraum });
+  if (zeitraum) meta.push({ icon: "calendar", text: zeitraum });
   return meta;
 }
 
