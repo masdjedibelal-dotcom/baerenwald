@@ -1,0 +1,69 @@
+# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+
+# dependencies
+/node_modules
+/.pnp
+.pnp.js
+.yarn/install-state.gz
+
+# testing
+/coverage
+/playwright-report/
+/test-results/
+/e2e/.auth/
+/e2e/.cache/
+
+# Design-Audit / Screenshots / PDFs (nicht committen)
+/docs/design-audit/
+*.pdf
+
+# Handoff-/Audit-Markdown außerhalb portal2 (lokal; nicht mit Code committen)
+/docs/*.md
+/docs/GPT_*/
+/docs/PORTAL-*.md
+/docs/PORTAL_*.md
+/docs/CRM_*.md
+/docs/DATENSCHUTZ_*.md
+/docs/ORGANISATION_*.md
+/docs/PARTNER_*.md
+/docs/SUPABASE_*.md
+/docs/BACKEND_*.md
+/docs/KONDITIONEN_*.md
+/docs/WAVE_*.md
+/docs/design-audit/
+
+# Marketing-Assets oft zu groß für Git-UI — bewusst lokal / CDN
+/public/images/
+
+# macOS Finder-Duplikate (z. B. „e2e 2“) — würden sonst Next typecheck killen
+/e2e 2/
+/**/* 2/
+/**/* 2.*
+
+# next.js
+/.next/
+/out/
+*.tsbuildinfo
+
+# production
+/build
+
+# misc
+.DS_Store
+*.pem
+posthog-setup-report.md
+
+# debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# local env files
+.env*.local
+
+# vercel
+.vercel
+
+# typescript
+*.tsbuildinfo
+next-env.d.ts
