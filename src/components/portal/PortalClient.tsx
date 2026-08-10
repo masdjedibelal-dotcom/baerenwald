@@ -9,6 +9,7 @@ import { PortalKundePrivatDashboard } from "@/components/portal/PortalKundePriva
 import { PORTAL_HEADER_HERO_SRC } from "@/lib/portal2/portal-media";
 import { PortalUserNotificationBell } from "@/components/portal/PortalUserNotificationBell";
 import type { KundePortalDetailItem } from "@/lib/portal/portal-detail-item";
+import type { PortalBautagebuchEntry } from "@/lib/portal/portal-detail-item";
 import { emitPortalNotificationsChanged } from "@/lib/portal2/notif-refresh";
 import { ensurePortalVorgangNotificationHref } from "@/lib/portal2/portal-detail-deep-link";
 import {
@@ -137,6 +138,51 @@ type PortalLead = Parameters<typeof buildKundeVorgaenge>[0]["leads"][number];
 type PortalAngebot = Parameters<typeof buildKundeVorgaenge>[0]["angebote"][number];
 type PortalAuftrag = Parameters<typeof buildKundeVorgaenge>[0]["auftraege"][number];
 
+function mergeBautagebuchOntoItem(
+  item: KundePortalDetailItem,
+  byLeadId: Record<string, PortalBautagebuchEntry[]>
+): KundePortalDetailItem {
+  if (item.hvMieterView) return item;
+  const leadKey = item.leadId ?? item.id;
+  const fromMap = byLeadId[leadKey] ?? [];
+  if (!fromMap.length) return item;
+  const byId = new Map<string, PortalBautagebuchEntry>();
+  for (const e of item.bautagebuch ?? []) {
+    const id = e.id?.trim();
+    if (id) byId.set(id, e);
+  }
+  for (const e of fromMap) {
+    const id = e.id?.trim();
+    if (id) byId.set(id, e);
+  }
+  const merged = Array.from(byId.values()).sort((a, b) => {
+    const da = a.created_at || a.datum || "";
+    const db = b.created_at || b.datum || "";
+    return db.localeCompare(da);
+  });
+  return { ...item, bautagebuch: merged };
+}
+
+function mergeBautagebuchForListRow(
+  row: PortalCardRow,
+  byLeadId: Record<string, PortalBautagebuchEntry[]>
+): PortalBautagebuchEntry[] | undefined {
+  const leadKey = row.leadId ?? row.id;
+  const fromMap = byLeadId[leadKey] ?? [];
+  if (!fromMap.length) return row.bautagebuch;
+  if (!row.bautagebuch?.length) return fromMap;
+  const byId = new Map<string, PortalBautagebuchEntry>();
+  for (const e of row.bautagebuch) {
+    const id = e.id?.trim();
+    if (id) byId.set(id, e);
+  }
+  for (const e of fromMap) {
+    const id = e.id?.trim();
+    if (id) byId.set(id, e);
+  }
+  return Array.from(byId.values());
+}
+
 type SectionId = "uebersicht" | "vorgaenge" | "gpt" | "profil";
 
 const VORGANG_FILTER_LABELS: Record<KundeVorgangFilter, string> = {
@@ -206,6 +252,7 @@ export function PortalClient({
   hvFeedbackByLeadId = {},
   auftragIdByLeadId: auftragIdByLeadIdProp = {},
   hvAbnahmeByLeadId = {},
+  bautagebuchByLeadId = {},
 }: {
   kunde: PortalKunde;
   leads: PortalLead[];
@@ -235,6 +282,8 @@ export function PortalClient({
       signiert_am: string;
     }
   >;
+  /** HV: Partner-/HW-Updates je Lead (Listen-Payload strippt bautagebuch). */
+  bautagebuchByLeadId?: Record<string, PortalBautagebuchEntry[]>;
   layout?: "default" | "embedded";
   activeSection?: "uebersicht" | "vorgaenge" | "auftraege";
   showProductPicker?: boolean;
@@ -321,6 +370,10 @@ export function PortalClient({
     () => forceDetailId?.trim() || searchParams.get("id")?.trim() || null
   );
   const [detailItem, setDetailItem] = useState<KundePortalDetailItem | null>(null);
+  /** Detail-Titel (voller Funnel) → Liste, alle Filter/Phasen. */
+  const [listTitleByKey, setListTitleByKey] = useState<Record<string, string>>(
+    {}
+  );
   /** Deep-Link mit `id`: sofort Loading, kein kurzer Flicker der Liste. */
   const [detailLoading, setDetailLoading] = useState(
     () =>
@@ -375,14 +428,23 @@ export function PortalClient({
   }, [auftragIdByLeadIdProp, auftraege]);
 
   const vorgaengeItems = useMemo(() => {
-    if (initialVorgaenge?.length) return initialVorgaenge;
-    return buildKundeVorgaenge({
-      leads,
-      angebote,
-      auftraege,
-      hvPortalMode: hvPortalMode || isPrivatLike,
-      mieterStatusMode: !hvPortalMode,
-      mieterFeedbackByLeadId,
+    const base = initialVorgaenge?.length
+      ? initialVorgaenge
+      : buildKundeVorgaenge({
+          leads,
+          angebote,
+          auftraege,
+          hvPortalMode: hvPortalMode || isPrivatLike,
+          mieterStatusMode: !hvPortalMode,
+          mieterFeedbackByLeadId,
+        });
+    if (!Object.keys(listTitleByKey).length) return base;
+    return base.map((item) => {
+      const override =
+        listTitleByKey[item.id] ??
+        (item.leadId ? listTitleByKey[item.leadId] : undefined);
+      if (!override || override === item.title) return item;
+      return { ...item, title: override };
     });
   }, [
     initialVorgaenge,
@@ -392,6 +454,7 @@ export function PortalClient({
     hvPortalMode,
     isPrivatLike,
     mieterFeedbackByLeadId,
+    listTitleByKey,
   ]);
 
   const filterCounts = useMemo(
@@ -540,14 +603,24 @@ export function PortalClient({
   const detailMatchesSelection = Boolean(
     detailItem &&
       selectedId &&
-      (detailItem.id === selectedId || detailItem.leadId === selectedId)
+      (detailItem.id === selectedId ||
+        detailItem.leadId === selectedId ||
+        (listSelectedItem &&
+          (detailItem.id === listSelectedItem.id ||
+            (Boolean(detailItem.leadId) &&
+              detailItem.leadId === listSelectedItem.leadId))))
   );
   /** Während Fetch kein Slim-Listen-Detail — sonst wirkt der Loader „zu spät“. */
-  const selectedItem = detailMatchesSelection
+  const selectedItemRaw = detailMatchesSelection
     ? detailItem
     : detailLoading
       ? null
       : listSelectedItem;
+
+  const selectedItem = useMemo(() => {
+    if (!selectedItemRaw) return null;
+    return mergeBautagebuchOntoItem(selectedItemRaw, bautagebuchByLeadId);
+  }, [selectedItemRaw, bautagebuchByLeadId]);
 
   /** Parent (Startseite) setzt forceDetailId sofort — nicht auf URL warten. */
   useLayoutEffect(() => {
@@ -601,7 +674,19 @@ export function PortalClient({
       })
       .then((json) => {
         if (cancelled) return;
-        if (json?.item) setDetailItem(json.item);
+        if (json?.item) {
+          setDetailItem(json.item);
+          const t = json.item.title?.trim();
+          if (t) {
+            setListTitleByKey((prev) => {
+              const next = { ...prev };
+              next[json.item!.id] = t;
+              const lid = json.item!.leadId?.trim();
+              if (lid) next[lid] = t;
+              return next;
+            });
+          }
+        }
       })
       .catch(() => {
         /* Liste bleibt Fallback */
@@ -891,12 +976,10 @@ export function PortalClient({
       mockListe && flow ? portalStatusChipStyle(flow) : undefined;
 
     const leadKey = row.leadId ?? row.id;
+    const rowBt = mergeBautagebuchForListRow(row, bautagebuchByLeadId);
     const btUnread =
-      clientReady && hvPortalMode && !mieterStatus && row.bautagebuch?.length
-        ? countUnreadBautagebuch(
-            row.bautagebuch,
-            getBautagebuchLastSeenAt(leadKey)
-          )
+      clientReady && hvPortalMode && !mieterStatus && rowBt?.length
+        ? countUnreadBautagebuch(rowBt, getBautagebuchLastSeenAt(leadKey))
         : 0;
 
     return (

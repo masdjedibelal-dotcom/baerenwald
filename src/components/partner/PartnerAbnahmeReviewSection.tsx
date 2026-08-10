@@ -27,9 +27,19 @@ type Props = {
   initialPunkteCount?: number | null;
   initialMaengelCount?: number | null;
   focus?: boolean;
+  /**
+   * Erledigter Vorgang (nach Bärenwald-Bestätigung):
+   * keine Freigabe-/Versand-/Prüf-Hinweise mehr.
+   */
+  erledigt?: boolean;
 };
 
-function freigabeBadge(status: string | null, sent: boolean) {
+function freigabeBadge(
+  status: string | null,
+  sent: boolean,
+  erledigt: boolean
+) {
+  if (erledigt) return null;
   if (sent) {
     return {
       label: "An Kunden / in Unterlagen",
@@ -45,7 +55,7 @@ function freigabeBadge(status: string | null, sent: boolean) {
   }
   if (s === "freigegeben") {
     return {
-      label: "Von Bärenwald freigegeben",
+      label: "Freigegeben",
       className: "bg-sky-100 text-sky-800",
     };
   }
@@ -66,6 +76,7 @@ export function PartnerAbnahmeReviewSection({
   initialPunkteCount,
   initialMaengelCount,
   focus,
+  erledigt = false,
 }: Props) {
   const rootRef = useRef<HTMLDivElement>(null);
   const [status, setStatus] = useState<Status | null>(
@@ -149,7 +160,7 @@ export function PartnerAbnahmeReviewSection({
 
   if (loading && !status?.pdf_url && !status?.freigabe_status) {
     return (
-      <PortalDetailCard title="Ihr Abschluss">
+      <PortalDetailCard title="Abschluss">
         <p className="text-[13px]" style={{ color: PORTAL_VAR.sub }}>
           Protokoll wird geladen …
         </p>
@@ -161,14 +172,13 @@ export function PartnerAbnahmeReviewSection({
     return null;
   }
 
-  const confirmed = Boolean(status.handwerker_bestaetigt_at);
   const sent = Boolean(status.an_kunde_gesendet_at);
   const freigabe = String(status.freigabe_status ?? "").toLowerCase();
-  const badge = freigabeBadge(status.freigabe_status, sent);
+  const badge = freigabeBadge(status.freigabe_status, sent, erledigt);
 
   return (
     <div ref={rootRef}>
-      <PortalDetailCard title="Ihr Abschluss">
+      <PortalDetailCard title="Abschluss">
         <div className="space-y-4">
           <div className="flex items-start gap-3">
             <div
@@ -203,15 +213,11 @@ export function PartnerAbnahmeReviewSection({
                 >
                   {badge.label}
                 </span>
-              ) : confirmed ? (
-                <span className="mt-2 inline-block rounded-full bg-sky-100 px-2.5 py-0.5 text-[11.5px] font-bold text-sky-800">
-                  Bestätigt
-                </span>
               ) : null}
-              {freigabe === "abgelehnt" ? (
+              {!erledigt && freigabe === "abgelehnt" ? (
                 <p className="mt-2 text-[12.5px] text-text-secondary">
-                  Bärenwald hat den Abschluss abgelehnt. Bitte Nacharbeit
-                  erledigen und erneut abschließen.
+                  Der Abschluss wurde abgelehnt. Bitte Nacharbeit erledigen und
+                  erneut abschließen.
                 </p>
               ) : null}
             </div>
@@ -225,7 +231,7 @@ export function PartnerAbnahmeReviewSection({
               className="block overflow-hidden rounded-xl border border-border-light bg-muted/20"
             >
               <iframe
-                title="Abnahmeprotokoll PDF"
+                title="Abschlussprotokoll PDF"
                 src={status.pdf_url}
                 className="h-[280px] w-full border-0"
               />

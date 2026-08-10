@@ -178,7 +178,7 @@ export function PortalVorgangDetail({
     () => [
       { id: "details" as const, label: "Details" },
       ...(showBautagebuchTab
-        ? [{ id: "bautagebuch" as const, label: "Dokumentation" }]
+        ? [{ id: "bautagebuch" as const, label: "Updates" }]
         : []),
       { id: "dokumente" as const, label: "Dokumente" },
       ...(showFeedbackTab

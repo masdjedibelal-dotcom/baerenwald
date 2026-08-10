@@ -7,6 +7,7 @@ import type { PortalAuftragPositionDisplay } from "@/lib/portal/kunde-auftrag-ae
 import type { PartnerKonditionZeile } from "@/lib/partner/partner-konditionen";
 import {
   formatAnfrageBereiche,
+  formatAnfrageZeitraum,
   type PortalAnfrageLeadSource,
 } from "@/lib/portal/portal-anfrage-display";
 import { labelSituation } from "@/lib/lead-funnel-labels";
@@ -280,6 +281,10 @@ export function buildPartnerVorgangDetailVm(
   const fachdetailRows = lead?.funnel_daten
     ? fachdetailRowsFromFunnelDaten(lead.funnel_daten, lead.bereiche)
     : [];
+  const zeitraumLabel =
+    input.zeitraum?.trim() ||
+    (lead ? formatAnfrageZeitraum(lead) : null) ||
+    null;
 
   return {
     role: "partner",
@@ -304,7 +309,7 @@ export function buildPartnerVorgangDetailVm(
       fotos: input.fotos ?? [],
       situationLabel,
       bereichLabel,
-      zeitraumLabel: input.zeitraum?.trim() || null,
+      zeitraumLabel,
       fachdetailRows,
     },
     ausfuehrung: {
@@ -313,7 +318,7 @@ export function buildPartnerVorgangDetailVm(
       terminVon: input.startDatum ?? null,
       terminBis: input.endDatum ?? null,
       terminLabel:
-        input.zeitraum?.trim() ||
+        zeitraumLabel ||
         ([input.startDatum, input.endDatum].filter(Boolean).join(" – ") ||
           null),
       kontaktVorOrtName: lead?.melder_name ?? lead?.kontakt_name ?? null,

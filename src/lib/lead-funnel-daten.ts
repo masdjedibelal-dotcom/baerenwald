@@ -88,13 +88,15 @@ export function normalizeFunnelDaten(
       ? { ...(fdRaw as FachdetailsState) }
       : {};
 
-  /** Melde-API legt Antworten top-level ab (`funnel_daten.fachdetailAnswers`). */
-  const topAnswers = d.fachdetailAnswers;
-  if (topAnswers && typeof topAnswers === "object" && !Array.isArray(topAnswers)) {
-    fachdetails.fachdetailAnswers = {
-      ...(fachdetails.fachdetailAnswers ?? {}),
-      ...(topAnswers as Record<string, string | string[] | undefined>),
-    };
+  /** Melde-API: `fachdetailAnswers`; ältere/slim Payloads: `answers` / `antworten`. */
+  for (const key of ["fachdetailAnswers", "answers", "antworten"] as const) {
+    const raw = d[key];
+    if (raw && typeof raw === "object" && !Array.isArray(raw)) {
+      fachdetails.fachdetailAnswers = {
+        ...(fachdetails.fachdetailAnswers ?? {}),
+        ...(raw as Record<string, string | string[] | undefined>),
+      };
+    }
   }
 
   const breakdown = Array.isArray(d.breakdown)

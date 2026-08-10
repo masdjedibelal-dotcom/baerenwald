@@ -191,11 +191,13 @@ export function PartnerClient({
   const [pageBusy, setPageBusy] = useState(false);
   const [detailOpening, setDetailOpening] = useState(false);
   const detailOpeningTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const detailOpenedAtRef = useRef(0);
 
-  const { hold, release, flash } = usePortalBusy();
+  const { hold, release, flash, busy: ctxBusy } = usePortalBusy();
   const { refreshFlash } = usePortalRefresh();
   const detailHoldRef = useRef(false);
 
+  /** Wie HV: kurze Nav-/Filter-Übergänge. */
   function flashPageBusy(ms = PORTAL_BUSY_MIN_MS) {
     flash(ms);
     paintPortalBusyNow(setPageBusy);
@@ -207,6 +209,7 @@ export function PartnerClient({
       detailHoldRef.current = true;
       hold();
     }
+    detailOpenedAtRef.current = Date.now();
     paintPortalBusyNow(setDetailOpening, setPageBusy);
     if (detailOpeningTimerRef.current) {
       clearTimeout(detailOpeningTimerRef.current);
@@ -443,12 +446,14 @@ export function PartnerClient({
     );
   }, [vorgaengeState, selectedId]);
 
-  /** Busy halten bis Detail da ist (kein Zwischen-Flash der Liste). */
+  /** Busy halten bis Detail da ist (min. PORTAL_BUSY_MIN_MS, analog HV). */
   useEffect(() => {
     if (!detailOpening || !selectedId || !selectedVorgang) return;
+    const elapsed = Date.now() - detailOpenedAtRef.current;
+    const wait = Math.max(0, PORTAL_BUSY_MIN_MS - elapsed);
     const t = window.setTimeout(() => {
       endDetailOpening();
-    }, PORTAL_BUSY_MIN_MS);
+    }, wait);
     return () => window.clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [detailOpening, selectedId, selectedVorgang]);
@@ -562,9 +567,18 @@ export function PartnerClient({
         setSection(target);
         setSelectedId(id);
       });
+      router.replace(partnerVorgangPortalPath(id), { scroll: false });
     } else {
       pendingDetailIdRef.current = null;
-      setSection(target);
+      endDetailOpening();
+      flushSync(() => {
+        setSelectedId(null);
+        setSection(target);
+      });
+      flashPageBusy();
+      if (target === "vorgaenge") {
+        router.replace(partnerSectionListPath("vorgaenge"), { scroll: false });
+      }
     }
   }
 
@@ -601,20 +615,54 @@ export function PartnerClient({
     setVorgangListFilter(filter);
     if (id !== "gpt") setGptOpen(false);
     if (id === "uebersicht" || id === "gpt" || id === "profil" || id === "planer") {
-      setSection(id);
+      ignoreUrlDetailRef.current = true;
+      pendingDetailIdRef.current = null;
+      endDetailOpening();
+      flushSync(() => {
+        setSelectedId(null);
+        setSection(id);
+      });
+      flashPageBusy();
       if (id === "uebersicht") router.replace("/partner");
+      else if (id === "planer") router.replace("/partner?section=planer", { scroll: false });
+      else if (id === "profil") router.replace("/partner?section=profil", { scroll: false });
       return;
     }
-    setSection(id);
-    if (id === "vorgaenge") {
-      ignoreUrlDetailRef.current = true;
+    ignoreUrlDetailRef.current = true;
+    pendingDetailIdRef.current = null;
+    endDetailOpening();
+    flushSync(() => {
       setSelectedId(null);
+      setSection(id);
+    });
+    flashPageBusy();
+    if (id === "vorgaenge") {
       router.replace(
         filter === "alle"
           ? partnerSectionListPath("vorgaenge")
-          : `/partner?section=vorgaenge&filter=${filter}`
+          : `/partner?section=vorgaenge&filter=${filter}`,
+        { scroll: false }
       );
     }
+  }
+
+  function changeVorgangFilter(filter: VorgangFilter) {
+    if (filter === vorgangListFilter && !selectedId) return;
+    ignoreUrlDetailRef.current = true;
+    pendingDetailIdRef.current = null;
+    endDetailOpening();
+    flushSync(() => {
+      setSelectedId(null);
+      setVorgangListFilter(filter);
+      setListPage(1);
+    });
+    flashPageBusy();
+    router.replace(
+      filter === "alle"
+        ? partnerSectionListPath("vorgaenge")
+        : `/partner?section=vorgaenge&filter=${filter}`,
+      { scroll: false }
+    );
   }
 
   function openFromOverview(_tab: OverviewTabId, id: string) {
@@ -649,7 +697,9 @@ export function PartnerClient({
       clearTimeout(detailOpeningTimerRef.current);
       detailOpeningTimerRef.current = null;
     }
-    setSelectedId(null);
+    flushSync(() => {
+      setSelectedId(null);
+    });
     flashPageBusy();
     const filterQs =
       vorgangListFilter === "alle"
@@ -685,7 +735,6 @@ export function PartnerClient({
         statusPillClass={partnerAngebotStatusPillClass(row.statusPillKey)}
         statusPillStyle={partnerStatusChipStyle(row.statusPillKey)}
         meta={[]}
-        hint={row.hint}
         selected={false}
         onClick={() => selectRow(row.id)}
       />
@@ -693,7 +742,9 @@ export function PartnerClient({
   }
 
   const detailScreen =
-    section === "vorgaenge" && selectedId && (detailOpening || !selectedVorgang) ? (
+    section === "vorgaenge" &&
+    selectedId &&
+    (detailOpening || !selectedVorgang) ? (
       <PortalContentBusy
         title="Vorgang wird geladen…"
         body="Einen Moment — wir öffnen die Details."
@@ -722,7 +773,7 @@ export function PartnerClient({
       </div>
       <PartnerVorgangListFilterBar
         filter={vorgangListFilter}
-        onFilterChange={setVorgangListFilter}
+        onFilterChange={changeVorgangFilter}
         counts={vorgangListFilterCounts}
       />
       <div className={portalListStackClass("responsive")}>
@@ -767,8 +818,16 @@ export function PartnerClient({
         activeNavId={
           section === "gpt" || section === "planer" ? "uebersicht" : section
         }
-        contentKey={`${section}:${vorgangListFilter}:${searchParams.get("focus") ?? ""}`}
-        contentBusy={pageBusy || detailOpening}
+        contentKey={`${section}:${vorgangListFilter}:${selectedId ? "detail" : "list"}:${searchParams.get("focus") ?? ""}`}
+        contentBusy={ctxBusy || pageBusy || detailOpening}
+        contentBusyTitle={
+          detailOpening ? "Vorgang wird geladen…" : undefined
+        }
+        contentBusyBody={
+          detailOpening
+            ? "Einen Moment — wir öffnen die Details."
+            : undefined
+        }
         onNavChange={(id) => switchSection(id as PartnerSection)}
         nav={shellNav}
         footer={partnerFooter}

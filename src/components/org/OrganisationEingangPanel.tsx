@@ -16,6 +16,11 @@ import { OrgFreigabeBanner } from "@/components/org/OrgFreigabeBanner";
 import { OrgMeldungAktionBanner } from "@/components/org/OrgMeldungAktionBanner";
 import { HvMeldungListActions } from "@/components/org/HvMeldungListActions";
 import { BautagebuchAccordionList } from "@/components/shared/BautagebuchAccordionList";
+import { DokumenteTabelle } from "@/components/shared/DokumenteTabelle";
+import {
+  isAbnahmePortalDokument,
+  type PortalDokument,
+} from "@/lib/portal/portal-dokumente";
 import { orgPortalToast } from "@/lib/shared/portal-toast";
 import { PortalListCard } from "@/components/shared/PortalListCard";
 import { formatPreisspanneDisplay } from "@/lib/org/hv-meldung-workflow";
@@ -44,7 +49,6 @@ import {
   orgAngebotPdfZeilen,
   type OrgFreigabeAngebot,
 } from "@/components/org/OrgAngebotFreigabeInhalt";
-import { DokumenteTabelle } from "@/components/shared/DokumenteTabelle";
 import { VersicherungsakteButton } from "@/components/org/VersicherungsakteButton";
 import { VorgangKommentareThread } from "@/components/org/VorgangKommentareThread";
 import { VorgangStornoDialog } from "@/components/org/VorgangStornoDialog";
@@ -377,7 +381,7 @@ function MeldungDetail({
 
       {bautagebuchEintraege && bautagebuchEintraege.length > 0 ? (
         <BautagebuchAccordionList
-          heading="Dokumentation"
+          heading="Updates"
           className="!border-t-0 !pt-0"
           headerAction={
             auftragId && lead.kostentraeger === "versicherung" ? (
@@ -401,17 +405,23 @@ function MeldungDetail({
         />
       ) : null}
 
-      {vorgangUnterlagen && vorgangUnterlagen.length > 0 ? (
-        <DokumenteTabelle
-          heading="Anhänge"
-          dokumente={vorgangUnterlagen.map((d) => ({
-            id: d.id,
-            name: d.subtitle ? `${d.name} — ${d.subtitle}` : d.name,
-            datum: d.datum,
-            href: d.href,
-          }))}
-        />
-      ) : null}
+      {(() => {
+        const unterlagen = (vorgangUnterlagen ?? []).filter(
+          (d) => !isAbnahmePortalDokument(d as PortalDokument)
+        );
+        if (!unterlagen.length) return null;
+        return (
+          <DokumenteTabelle
+            heading="Anhänge"
+            dokumente={unterlagen.map((d) => ({
+              id: d.id,
+              name: d.subtitle ? `${d.name} — ${d.subtitle}` : d.name,
+              datum: d.datum,
+              href: d.href,
+            }))}
+          />
+        );
+      })()}
 
       <OrgVorgangFeedbackSection
         leadId={lead.id}

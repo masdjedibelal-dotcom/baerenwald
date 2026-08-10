@@ -16,7 +16,7 @@ import type { VorgangState } from "@/lib/partner/vorgang-state";
 export function PartnerAuftragErledigtSection({
   positionen,
   done,
-  vollstaendig,
+  vollstaendig: _vollstaendig,
   layout = "section",
 }: {
   auftragId?: string;
@@ -35,11 +35,6 @@ export function PartnerAuftragErledigtSection({
   const success = (
     <PartnerDetailSuccessBox>
       <p className="font-semibold">Auftrag abgeschlossen</p>
-      <p className="portal-text-meta mt-1 text-text-secondary">
-        {vollstaendig
-          ? "Die Details liegen Bärenwald zur weiteren Prüfung vor."
-          : "Die Details liegen Bärenwald zur weiteren Prüfung vor. Weitere Handwerker am Auftrag sind ggf. noch offen."}
-      </p>
     </PartnerDetailSuccessBox>
   );
 

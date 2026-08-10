@@ -10,17 +10,17 @@ import { PartnerDokumentPreviewModal } from "@/components/partner/PartnerDokumen
 import { PartnerAuftragErledigtSection } from "@/components/partner/PartnerAuftragErledigtSection";
 import { PartnerLeistungenKonditionenCard } from "@/components/partner/PartnerLeistungenKonditionenCard";
 import { PartnerPositionLebenszyklusList } from "@/components/partner/PartnerPositionLebenszyklusList";
+import { PartnerComplianceCheckliste } from "@/components/partner/PartnerComplianceCheckliste";
+import { PartnerFachdokuSlots } from "@/components/partner/PartnerFachdokuSlots";
+import { PortalDetailCard } from "@/components/shared/PortalDetailCard";
+import { PortalEntityDetailLayout } from "@/components/shared/PortalEntityDetailLayout";
+import type { PortalDetailTab } from "@/components/shared/PortalDetailTabs";
 import {
   PortalDetailError,
   PortalDetailLayout,
   PortalDetailSection,
   PortalDetailSuccessBox,
 } from "@/components/shared/PortalDetailUi";
-import { PartnerComplianceCheckliste } from "@/components/partner/PartnerComplianceCheckliste";
-import { PartnerFachdokuSlots } from "@/components/partner/PartnerFachdokuSlots";
-import { PortalDetailCard } from "@/components/shared/PortalDetailCard";
-import { PortalEntityDetailLayout } from "@/components/shared/PortalEntityDetailLayout";
-import type { PortalDetailTab } from "@/components/shared/PortalDetailTabs";
 import { VorgangDetailBlocks } from "@/components/shared/vorgang-detail";
 import { resolvePartnerDetailTitelFromAuftrag } from "@/lib/partner/partner-listen-titel";
 import {
@@ -105,7 +105,7 @@ export function PartnerAuftragDetail({
   const [abnahmeMaengelCount, setAbnahmeMaengelCount] = useState<number | null>(null);
   const [activeTab, setActiveTab] = useState(() => {
     if (focusAbnahme) return "abnahme";
-    if (focusBautagebuch) return "dokumentation";
+    if (focusBautagebuch && vorgangState !== "erledigt") return "dokumentation";
     return "uebersicht";
   });
 
@@ -117,9 +117,10 @@ export function PartnerAuftragDetail({
 
   useEffect(() => {
     if (!focusBautagebuch) return;
+    if (vorgangState === "erledigt") return;
     if (preferredPositionIds.length > 0) setAutoOpenPreferred(true);
     setActiveTab("dokumentation");
-  }, [focusBautagebuch, preferredPositionIds.length]);
+  }, [focusBautagebuch, preferredPositionIds.length, vorgangState]);
 
   useEffect(() => {
     if (focusAbnahme) setActiveTab("abnahme");
@@ -236,7 +237,7 @@ export function PartnerAuftragDetail({
 
   const titel = resolvePartnerDetailTitelFromAuftrag(item);
   const statusLabel = abschlussDone
-    ? "Zur Freigabe"
+    ? "Abgeschlossen"
     : hwAuftragStatusLabel({
         vorgangState,
         fallback: listenStatusLabel,
@@ -282,12 +283,15 @@ export function PartnerAuftragDetail({
   );
 
   const coverUrl = item.lead?.objekt?.cover_url ?? null;
+  const isErledigt = vorgangState === "erledigt";
 
   const DETAIL_TABS: PortalDetailTab[] = [
     { id: "uebersicht", label: "Übersicht" },
-    { id: "dokumentation", label: "Dokumentation" },
+    ...(!isErledigt
+      ? [{ id: "dokumentation", label: "Updates" } satisfies PortalDetailTab]
+      : []),
     { id: "dokumente", label: "Dokumente" },
-    { id: "abnahme", label: "Abnahme" },
+    { id: "abnahme", label: "Abschluss" },
   ];
 
   const actionFooter = kannAbschluss ? (
@@ -305,16 +309,22 @@ export function PartnerAuftragDetail({
 
   const handleBack = onBack ?? (() => router.back());
 
+  useEffect(() => {
+    if (!isErledigt) return;
+    if (activeTab === "dokumentation") setActiveTab("uebersicht");
+  }, [isErledigt, activeTab]);
+
   return (
-    <PortalDetailLayout footer={actionFooter}>
+    <PortalDetailLayout footer={isErledigt ? undefined : actionFooter}>
       <PortalEntityDetailLayout
+        layout={isErledigt ? "hv" : "default"}
         coverUrl={coverUrl}
         onBack={handleBack}
         backLabel="← Zurück"
         title={titel}
         metaLine={partnerDetailOrtMetaLine(item.lead)}
-        statusLabel={statusLabel}
-        statusPillStyle={statusStyle}
+        statusLabel={isErledigt ? undefined : statusLabel}
+        statusPillStyle={isErledigt ? undefined : statusStyle}
         tabs={DETAIL_TABS}
         activeTab={activeTab}
         onTabChange={setActiveTab}
@@ -329,13 +339,18 @@ export function PartnerAuftragDetail({
                 </p>
               </PortalDetailCard>
             ) : null}
-            <VorgangDetailBlocks vm={detailVm} />
-            <PartnerAuftragErledigtSection
-              positionen={item.positionen}
-              layout="cta"
-              done={abschlussDone}
-              vollstaendig={abschlussVollstaendig}
+            <VorgangDetailBlocks
+              vm={detailVm}
+              partnerHideZeitraumAndKontakt
             />
+            {!isErledigt ? (
+              <PartnerAuftragErledigtSection
+                positionen={item.positionen}
+                layout="cta"
+                done={abschlussDone}
+                vollstaendig={abschlussVollstaendig}
+              />
+            ) : null}
           </div>
         ) : null}
 
@@ -363,7 +378,9 @@ export function PartnerAuftragDetail({
                 onDone={() => refresh()}
               />
 
-              <PartnerFachdokuSlots auftragId={item.id} className="mt-4" />
+              {!isErledigt ? (
+                <PartnerFachdokuSlots auftragId={item.id} className="mt-4" />
+              ) : null}
 
               {konditionZeilen.length > 0 ? (
                 <PartnerLeistungenKonditionenCard
@@ -507,6 +524,10 @@ export function PartnerAuftragDetail({
               ) : null}
             </PortalDetailSection>
 
+            {isErledigt ? (
+              <PartnerFachdokuSlots auftragId={item.id} />
+            ) : null}
+
             {bauauftragUnterlagen.length > 0 ? (
               <PartnerComplianceCheckliste
                 title="Nachweise laut Projektvertrag (Anlage 1)"
@@ -538,10 +559,11 @@ export function PartnerAuftragDetail({
                 initialPunkteCount={abnahmePunkteCount}
                 initialMaengelCount={abnahmeMaengelCount}
                 focus={focusAbnahme || abschlussDone}
+                erledigt={isErledigt}
               />
             ) : (
               <p className="portal-text-body text-text-secondary">
-                Noch kein Abnahmeprotokoll. Schließe den Auftrag ab, sobald alle
+                Noch kein Abschlussprotokoll. Schließe den Auftrag ab, sobald alle
                 Leistungen erledigt sind.
               </p>
             )}

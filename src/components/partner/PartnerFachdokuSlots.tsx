@@ -97,8 +97,7 @@ export function PartnerFachdokuSlots({
             Noch {offen} Fachnachweis{offen === 1 ? "" : "e"} offen
           </p>
           <p className="mt-0.5 text-[12.5px]">
-            Abnahme ist trotzdem möglich — Protokoll bitte nachreichen (Tab
-            Dokumentation).
+            Abschluss ist trotzdem möglich — Fachnachweise bitte nachreichen.
           </p>
         </PortalDetailInfoBox>
       </div>

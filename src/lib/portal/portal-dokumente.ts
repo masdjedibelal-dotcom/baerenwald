@@ -311,7 +311,8 @@ export function isBautagebuchPortalDokument(d: PortalDokument): boolean {
 
 /**
  * Sichtbarkeit je Rolle:
- * - Kunde/HV: alle CRM-Unterlagen (ohne Bautagebuch — eigene Section)
+ * - Kunde: alle CRM-Unterlagen (ohne Bautagebuch — eigene Section)
+ * - HV: wie Kunde, aber Abnahmeprotokoll nur unter Abschluss (nicht Dokumente)
  * - Mieter: nur Abnahmedokumentation (Signatur)
  * - Eigentümer: alles außer Rechnung
  */
@@ -332,6 +333,8 @@ export function filterPortalDokumenteForViewer(
 
   if (viewer === "mieter") {
     rows = rows.filter(isAbnahmePortalDokument);
+  } else if (viewer === "hv") {
+    rows = rows.filter((d) => !isAbnahmePortalDokument(d));
   } else if (viewer === "eigentuemer") {
     rows = rows.filter(
       (d) => d.art !== "rechnung" && !/^Rechnung\b/i.test(d.name ?? "")

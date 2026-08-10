@@ -100,10 +100,7 @@ export const partnerPortalToast = {
     );
   },
   abschlussSigniert() {
-    portalToastSuccess(
-      "Auftrag abgeschlossen",
-      "Die Details liegen Bärenwald zur weiteren Prüfung vor."
-    );
+    portalToastSuccess("Auftrag abgeschlossen");
   },
 };
 

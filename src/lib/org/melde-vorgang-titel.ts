@@ -209,6 +209,12 @@ export function leadIstMeldeTitelQuelle(lead: {
   if (lead.funnelDaten && typeof lead.funnelDaten === "object") {
     const f = lead.funnelDaten as Record<string, unknown>;
     if (f.melde_bereich || f.melde_kategorie || f.fachdetailAnswers) return true;
+    if (f.answers || f.antworten) return true;
+    const fd = f.fachdetails;
+    if (fd && typeof fd === "object" && !Array.isArray(fd)) {
+      const nested = (fd as { fachdetailAnswers?: unknown }).fachdetailAnswers;
+      if (nested && typeof nested === "object") return true;
+    }
   }
   return false;
 }

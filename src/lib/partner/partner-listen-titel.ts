@@ -165,8 +165,7 @@ export function resolvePartnerListenTitelFromAuftrag(
 }
 
 /**
- * Detail-Überschrift Auftrag: Listen-/Melde-Titel bevorzugen
- * (nicht nackter CRM-/Gewerk-Slug).
+ * Detail-Überschrift Auftrag: gleicher Titel wie die Vorgangs-Liste (`listen_titel`).
  */
 export function resolvePartnerDetailTitelFromAuftrag(
   item: Pick<
@@ -174,20 +173,22 @@ export function resolvePartnerDetailTitelFromAuftrag(
     "titel" | "listen_titel" | "plz" | "ort" | "lead" | "positionen"
   >
 ): string {
-  const melde = meldeTitelFromLead(item.lead);
-  if (melde) return melde;
-  const fromLead = resolvePartnerListenTitelFromAuftrag(item);
-  if (fromLead && !isBareGewerkSlug(fromLead)) return fromLead;
   const listen = item.listen_titel?.trim();
   if (listen && !isBareGewerkSlug(listen)) return listen;
+
+  const melde = meldeTitelFromLead(item.lead);
+  if (melde) return melde;
+
+  const fromLead = resolvePartnerListenTitelFromAuftrag(item);
+  if (fromLead && !isBareGewerkSlug(fromLead)) return fromLead;
+
   const titel = item.titel?.trim();
   if (titel && !isBareGewerkSlug(titel)) return titel;
   return fromLead !== "Projekt" ? fromLead : listen || "Auftrag";
 }
 
 /**
- * Detail-Überschrift für Anfragen: wie Listen-Titel (Melde = sprechender Schadenstitel).
- * CRM-Gewerk-Slug (z. B. „sanitaer“) nicht als Hero-Titel.
+ * Detail-Überschrift für Anfragen: gleicher Titel wie die Liste (`listen_titel`).
  */
 export function resolvePartnerDetailTitelFromAnfrage(
   item: Pick<
@@ -195,12 +196,15 @@ export function resolvePartnerDetailTitelFromAnfrage(
     "angebot_titel" | "listen_titel" | "gewerk_name" | "plz" | "ort" | "lead"
   >
 ): string {
-  const melde = meldeTitelFromLead(item.lead);
-  if (melde) return melde;
-  const fromLead = resolvePartnerListenTitelFromAnfrage(item);
-  if (fromLead && !isBareGewerkSlug(fromLead)) return fromLead;
   const listen = item.listen_titel?.trim();
   if (listen && !isBareGewerkSlug(listen)) return listen;
+
+  const melde = meldeTitelFromLead(item.lead);
+  if (melde) return melde;
+
+  const fromLead = resolvePartnerListenTitelFromAnfrage(item);
+  if (fromLead && !isBareGewerkSlug(fromLead)) return fromLead;
+
   const titel = item.angebot_titel?.trim();
   if (titel && !isBareGewerkSlug(titel)) return titel;
   return fromLead !== "Projekt" ? fromLead : listen || "Projekt";

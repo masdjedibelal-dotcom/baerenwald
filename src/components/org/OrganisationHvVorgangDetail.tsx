@@ -15,7 +15,6 @@ import {
 } from "@/components/shared/PortalDetailUi";
 import { VorgangDetailSectionNav } from "@/components/shared/VorgangDetailSectionNav";
 import { HvFreigabeInfoBanner } from "@/components/org/HvFreigabeInfoBanner";
-import { OrgVorgangAbnahmeSection } from "@/components/org/OrgVorgangAbnahmeSection";
 import { hvFreigabeEntfaellt } from "@/lib/org/freigabe-bypass";
 import { acceptKundeAngebot } from "@/app/actions/portal-angebot";
 import {
@@ -52,7 +51,10 @@ import { kundePortalToast, orgPortalToast } from "@/lib/shared/portal-toast";
 import { track } from "@/lib/analytics";
 import type { PortalBautagebuchEntry } from "@/lib/portal/portal-detail-item";
 import type { PortalAngebotPositionDisplay } from "@/lib/portal/portal-angebot-display";
-import type { PortalDokument } from "@/lib/portal/portal-dokumente";
+import {
+  isAbnahmePortalDokument,
+  type PortalDokument,
+} from "@/lib/portal/portal-dokumente";
 import { cn } from "@/lib/utils";
 
 export type OrganisationHvVorgangDetailProps = {
@@ -299,7 +301,7 @@ export function OrganisationHvVorgangDetail({
   handwerkerName,
   leadId,
   auftragId,
-  hvAbnahme,
+  hvAbnahme: _hvAbnahme,
   hwErledigt: _hwErledigt,
   schwelleEur = HV_DEFAULT_SCHWELLE_EUR,
   offers = [],
@@ -409,12 +411,108 @@ export function OrganisationHvVorgangDetail({
   const statusLabel =
     statusLabelOverride?.trim() || PORTAL_STATUS[displayFlowStatus].label;
 
+  const abnahmeProtokolle = useMemo(
+    () => dokumente.filter((d) => isAbnahmePortalDokument(d) && Boolean(d.href?.trim())),
+    [dokumente]
+  );
+  const dokumenteOhneAbnahme = useMemo(
+    () => dokumente.filter((d) => !isAbnahmePortalDokument(d)),
+    [dokumente]
+  );
+
   const abschlussCard = (
     <div className="space-y-3.5">
       <DetailCard title={HV_DETAIL_COPY.abnahmeTitle}>
-        {abnahmeCheckliste &&
-        (abnahmeCheckliste.leistungen.length > 0 ||
-          abnahmeCheckliste.maengel.length > 0) ? (
+        {abnahmeProtokolle.length > 0 ? (
+          <div className="space-y-3">
+            {abnahmeProtokolle.map((doc) => (
+              <a
+                key={doc.id}
+                href={doc.href}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="block overflow-hidden rounded-xl border border-border-light bg-muted/20"
+              >
+                <iframe
+                  title={doc.name}
+                  src={doc.href}
+                  className="h-[280px] w-full border-0"
+                />
+                <p
+                  className="border-t border-border-light px-3 py-2 text-center text-[12.5px] font-semibold"
+                  style={{ color: PORTAL_VAR.primary }}
+                >
+                  {doc.name} — PDF öffnen
+                </p>
+              </a>
+            ))}
+            {abnahmeCheckliste &&
+            (abnahmeCheckliste.leistungen.length > 0 ||
+              abnahmeCheckliste.maengel.length > 0) ? (
+              <div className="space-y-3 pt-1">
+                {abnahmeCheckliste.leistungen.length > 0 ? (
+                  <div>
+                    <p
+                      className="portal-text-label mb-1.5"
+                      style={{ color: PORTAL_VAR.faint }}
+                    >
+                      {HV_DETAIL_COPY.abnahmeLeistungen}
+                    </p>
+                    <ul className="space-y-1.5">
+                      {abnahmeCheckliste.leistungen.map((l) => (
+                        <li
+                          key={l.name}
+                          className="portal-text-meta flex items-start gap-2"
+                          style={{ color: PORTAL_VAR.ink }}
+                        >
+                          <span
+                            className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[11px] font-bold text-white"
+                            style={{
+                              background:
+                                l.ok === false ? "#8A5A06" : PORTAL_VAR.primary,
+                            }}
+                            aria-hidden
+                          >
+                            {l.ok === false ? "!" : "✓"}
+                          </span>
+                          <span className="font-semibold">{l.name}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                ) : null}
+                {abnahmeCheckliste.maengel.length > 0 ? (
+                  <div>
+                    <p
+                      className="portal-text-label mb-1.5"
+                      style={{ color: PORTAL_VAR.faint }}
+                    >
+                      {HV_DETAIL_COPY.abnahmeMaengel}
+                    </p>
+                    <ul className="space-y-1.5">
+                      {abnahmeCheckliste.maengel.map((m) => (
+                        <li
+                          key={m.titel}
+                          className="portal-text-meta flex items-start gap-2 rounded-lg px-2.5 py-2"
+                          style={{ background: "#FBF1D6", color: "#8A5A06" }}
+                        >
+                          <span className="font-semibold">{m.titel}</span>
+                          {m.status ? (
+                            <span className="portal-text-label ml-auto shrink-0 normal-case tracking-normal opacity-80">
+                              {m.status}
+                            </span>
+                          ) : null}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                ) : null}
+              </div>
+            ) : null}
+          </div>
+        ) : abnahmeCheckliste &&
+          (abnahmeCheckliste.leistungen.length > 0 ||
+            abnahmeCheckliste.maengel.length > 0) ? (
           <div className="space-y-3">
             {abnahmeCheckliste.leistungen.length > 0 ? (
               <div>
@@ -480,16 +578,6 @@ export function OrganisationHvVorgangDetail({
           </p>
         )}
       </DetailCard>
-      {!mieterStatusMode && auftragId ? (
-        <OrgVorgangAbnahmeSection
-          leadId={leadId}
-          auftragId={auftragId}
-          objektLabel={objekt}
-          einheitLabel={melderEinheit ?? undefined}
-          existing={hvAbnahme ?? null}
-          onSubmitted={onUpdated}
-        />
-      ) : null}
     </div>
   );
 
@@ -784,12 +872,12 @@ export function OrganisationHvVorgangDetail({
       return null;
     }
     if (actionKind === "abschluss") {
-      return abschlussCard;
+      return mieterStatusMode ? null : abschlussCard;
     }
     if (actionKind === "rechnung") {
       return (
         <div className="flex flex-col gap-3.5">
-          {abschlussCard}
+          {mieterStatusMode ? null : abschlussCard}
           <DetailCard title={HV_DETAIL_COPY.rechnungTitle}>
             {sum.brutto > 0 ? (
               <div className="portal-text-title mb-1 flex justify-between">
@@ -1018,7 +1106,8 @@ export function OrganisationHvVorgangDetail({
               role="tabpanel"
               className="space-y-3.5"
             >
-              {(actionKind === "abschluss" ||
+              {!mieterStatusMode &&
+              (actionKind === "abschluss" ||
                 actionKind === "rechnung" ||
                 actionKind === "bezahlt") &&
               !showAngebotSection
@@ -1100,7 +1189,7 @@ export function OrganisationHvVorgangDetail({
                 heading=""
                 className="!border-0 !pt-0"
                 emptyText={HV_DETAIL_COPY.dokumenteEmpty}
-                dokumente={dokumente.map((d) => ({
+                dokumente={dokumenteOhneAbnahme.map((d) => ({
                   id: d.id,
                   name: d.name,
                   datum: d.datum,

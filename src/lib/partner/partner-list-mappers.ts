@@ -136,10 +136,6 @@ export function mapOffenAngebotToCard(
     statusPillKey: partnerOffenStatusPillKey(typ),
     accent: typ === "nachreichung" ? "anfrage" : "angebot",
     meta: [],
-    hint:
-      typ === "nachreichung"
-        ? "Leistungsänderung am laufenden Auftrag"
-        : undefined,
     sortDate: ts(item.gesendet_at ?? item.antwort_at),
     statusRank: typ === "nachreichung" ? 1 : 0,
   };
@@ -148,17 +144,6 @@ export function mapOffenAngebotToCard(
 export function mapVorgangToCard(vorgang: PartnerVorgangItem): PartnerCardRow {
   const { auftrag, state, anfrage } = vorgang;
   const subtitle = partnerOrtSubtitle(auftrag.lead);
-
-  const offeneAenderungen = vorgang.auftrag.nachreichungOpenPositionIds?.length ?? 0;
-
-  const actionHint =
-    state === "geaendert"
-      ? offeneAenderungen > 0
-        ? `Leistungsänderung am laufenden Auftrag (${offeneAenderungen} offen)`
-        : "Leistungsänderung am laufenden Auftrag"
-      : auftrag.bautagebuchAnfrageOffen && state === "in_bearbeitung"
-        ? "Tagebucheintrag von Bärenwald angefordert"
-        : undefined;
 
   const listenStatus = resolvePartnerVorgangCardStatus(vorgang);
 
@@ -175,7 +160,7 @@ export function mapVorgangToCard(vorgang: PartnerVorgangItem): PartnerCardRow {
           : "angebot"
         : "auftrag",
     meta: [],
-    hint: listenStatus.actionHint ?? actionHint ?? undefined,
+    hint: undefined,
     sortDate: partnerVorgangLastActivityAt(vorgang) || ts(
       anfrage?.gesendet_at ?? auftrag.start_datum ?? vorgang.handwerker_bestaetigt_at
     ),

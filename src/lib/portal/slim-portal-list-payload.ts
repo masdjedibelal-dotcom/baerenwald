@@ -28,12 +28,13 @@ export function slimFunnelForList(funnel: unknown): Record<string, unknown> | nu
   ]) {
     if (f[key] !== undefined) out[key] = f[key];
   }
-  // Nested: nur Answers, keine Fotos/Rohpayload
+  // Nested: nur Answers, keine Fotos/Rohpayload — zusätzlich top-level spiegeln
   const fd = f.fachdetails;
   if (fd && typeof fd === "object" && !Array.isArray(fd)) {
     const answers = (fd as { fachdetailAnswers?: unknown }).fachdetailAnswers;
     if (answers && typeof answers === "object") {
       out.fachdetails = { fachdetailAnswers: answers };
+      if (out.fachdetailAnswers === undefined) out.fachdetailAnswers = answers;
     }
   }
   return Object.keys(out).length ? out : null;
@@ -117,18 +118,26 @@ export function buildSlimPortalListPayload(opts: {
     { sterne: number; freitext?: string | null }
   >;
 }) {
-  const leads = opts.leads.map(slimLead);
-  const angebote = opts.angebote.map(slimAngebot);
-  const auftraege = opts.auftraege.map(slimAuftrag);
-
+  /**
+   * Titel zuerst aus vollem Funnel (z. B. „Wasser am Heizkörper“),
+   * danach Payload slimmen — sonst weichen Liste und Detail auseinander.
+   */
   const initialVorgaenge = buildKundeVorgaenge({
-    leads: leads as Parameters<typeof buildKundeVorgaenge>[0]["leads"],
-    angebote: angebote as Parameters<typeof buildKundeVorgaenge>[0]["angebote"],
-    auftraege: auftraege as Parameters<typeof buildKundeVorgaenge>[0]["auftraege"],
+    leads: opts.leads as Parameters<typeof buildKundeVorgaenge>[0]["leads"],
+    angebote: opts.angebote as Parameters<
+      typeof buildKundeVorgaenge
+    >[0]["angebote"],
+    auftraege: opts.auftraege as Parameters<
+      typeof buildKundeVorgaenge
+    >[0]["auftraege"],
     hvPortalMode: opts.hvPortalMode,
     mieterStatusMode: opts.mieterStatusMode,
     mieterFeedbackByLeadId: opts.mieterFeedbackByLeadId,
   }).map(slimVorgangListItem);
+
+  const leads = opts.leads.map(slimLead);
+  const angebote = opts.angebote.map(slimAngebot);
+  const auftraege = opts.auftraege.map(slimAuftrag);
 
   return { leads, angebote, auftraege, initialVorgaenge };
 }

@@ -8,11 +8,11 @@ import { HW_ABSCHLUSS_CHECKS, type HwAbschlussCheckId } from "@/lib/portal2/hw-k
 export const HW_ABNAHME_COPY = {
   cta: "Auftrag abschließen →",
   ctaHint:
-    "Nach der Dokumentation Ihrer Leistungen: Abschluss mit Signatur — Bärenwald prüft und gibt frei, danach Rechnung.",
+    "Nach den Updates zu Ihren Leistungen: Abschluss mit Signatur, danach Rechnung.",
   positionEndeCta: "3. Ende — Dokumentieren",
-  positionEndeToast: "Leistung dokumentiert — bereit für Abnahme.",
+  positionEndeToast: "Leistung dokumentiert — bereit für den Abschluss.",
   positionEndeBody:
-    "Ergebnis-Foto speichert die Dokumentation. Der Abschluss folgt danach mit Signatur.",
+    "Ergebnis-Foto speichert das Update. Der Abschluss folgt danach mit Signatur.",
   rechnungTitle: "Rechnung prüfen & einreichen",
   rechnungBody:
     "Nach Ihrem Abschluss: Entwurf aus Firmendaten und Konditionen prüfen, dann einreichen. Bei unvollständigen Angaben erscheint ein Hinweis.",

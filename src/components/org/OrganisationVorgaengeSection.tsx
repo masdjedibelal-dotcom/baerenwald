@@ -144,7 +144,7 @@ export function OrganisationVorgaengeSection({
   onDetailReady,
   onRefresh: _onRefresh,
   onFilterChange,
-  bautagebuchByLeadId: _bautagebuchByLeadId = {},
+  bautagebuchByLeadId = {},
   hwErledigtByLeadId = {},
   feedbackBereitByLeadId: _feedbackBereitByLeadId = {},
   hvFeedbackByLeadId = {},
@@ -236,6 +236,7 @@ export function OrganisationVorgaengeSection({
         leads={allLeads as Parameters<typeof PortalClient>[0]["leads"]}
         angebote={angebote}
         auftraege={auftraege}
+        bautagebuchByLeadId={bautagebuchByLeadId}
         hwErledigtByLeadId={hwErledigtByLeadId}
         hvFeedbackByLeadId={hvFeedbackByLeadId}
         auftragIdByLeadId={auftragIdByLeadId}

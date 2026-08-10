@@ -1021,15 +1021,6 @@ export async function getPartnerDataForHandwerker(
 
     return {
       ...a,
-      listen_titel: anfrage?.gewerk_name
-        ? resolvePartnerListenTitel({
-            gewerk_name: anfrage.gewerk_name,
-            plz: a.plz,
-            ort: a.ort,
-            lead: a.lead,
-            fallbackTitel: a.titel,
-          })
-        : a.listen_titel,
       angebotHandwerkerId: anfrage?.id ?? null,
       angebotHwStatus: anfrage?.hw_status ?? null,
       angebotHwEingereichtAt: anfrage?.hw_eingereicht_at ?? null,

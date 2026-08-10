@@ -277,6 +277,32 @@ export function OrganisationFreigabePanel({
       currency: "EUR",
       maximumFractionDigits: 0,
     }).format(schwelleEur);
+    const fromMap = bautagebuchByLeadId[leadId] ?? [];
+    const detailItem =
+      fromMap.length > 0
+        ? {
+            ...selectedAngebotItem,
+            bautagebuch: (() => {
+              const byId = new Map<
+                string,
+                NonNullable<(typeof selectedAngebotItem)["bautagebuch"]>[number]
+              >();
+              for (const e of selectedAngebotItem.bautagebuch ?? []) {
+                const id = e.id?.trim();
+                if (id) byId.set(id, e);
+              }
+              for (const e of fromMap) {
+                const id = e.id?.trim();
+                if (id) byId.set(id, e);
+              }
+              return Array.from(byId.values()).sort((a, b) => {
+                const da = a.created_at || a.datum || "";
+                const db = b.created_at || b.datum || "";
+                return db.localeCompare(da);
+              });
+            })(),
+          }
+        : selectedAngebotItem;
     return (
       <div className="-mx-4 -mt-2 min-w-0 lg:-mx-6">
         {/* Bypass-Banner kommt aus dem Detail; hier nur CTAs wenn Freigabe offen. */}
@@ -291,7 +317,7 @@ export function OrganisationFreigabePanel({
           />
         ) : null}
         <PortalVorgangDetail
-          item={selectedAngebotItem}
+          item={detailItem}
           onAccepted={onRefresh}
           showHvAbnahme
           showAnlassBadge

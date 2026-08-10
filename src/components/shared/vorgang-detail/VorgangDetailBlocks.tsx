@@ -55,15 +55,19 @@ function formatPartnerEuro(n: number): string {
 }
 
 /**
- * Partner: eine Details-Card analog HV-Meldung.
- * Objekt → PLZ/Ort → Funnel → Beschreibung → … → Kontakt vor Ort.
+ * Partner: eine Details-Card analog HV-Meldung / anderen Vorgangsphasen.
+ * Objekt → PLZ/Ort → Funnel → (optional Zeitraum) → Beschreibung → …
+ * Bei angenommenem Auftrag: ohne Zeitraum und Kontakt vor Ort.
  */
 function PartnerUnifiedDetails({
   vm,
   className,
+  hideZeitraumAndKontakt = false,
 }: {
   vm: VorgangDetailVM;
   className?: string;
+  /** Angenommener / verbundener Auftrag — wie Übersicht ohne Melde-Zeiten & Kontakt. */
+  hideZeitraumAndKontakt?: boolean;
 }) {
   const { objektMelder: B, ausfuehrung: C } = vm;
   const kontaktName =
@@ -75,6 +79,8 @@ function PartnerUnifiedDetails({
     typeof C.summeEkNetto === "number" && C.summeEkNetto > 0
       ? formatPartnerEuro(C.summeEkNetto)
       : null;
+  const showZeitraum = !hideZeitraumAndKontakt && Boolean(B.zeitraumLabel);
+  const showKontakt = !hideZeitraumAndKontakt && Boolean(kontaktValue);
 
   return (
     <div className={cn(className)}>
@@ -90,8 +96,8 @@ function PartnerUnifiedDetails({
           {B.bereichLabel ? (
             <MetaRow label="Bereich" value={B.bereichLabel} />
           ) : null}
-          {B.zeitraumLabel ? (
-            <MetaRow label="Zeitraum" value={B.zeitraumLabel} />
+          {showZeitraum ? (
+            <MetaRow label="Zeitraum" value={B.zeitraumLabel!} />
           ) : null}
           {B.fachdetailRows?.map((row) => (
             <MetaRow
@@ -100,9 +106,6 @@ function PartnerUnifiedDetails({
               value={row.value}
             />
           ))}
-          {B.beschreibung ? (
-            <MetaRow label="Beschreibung Kunde" value={B.beschreibung} />
-          ) : null}
           {C.gewerk ? <MetaRow label="Gewerk" value={C.gewerk} /> : null}
           {verguetung ? (
             <MetaRow label="Vergütung (Netto)" value={verguetung} />
@@ -110,10 +113,20 @@ function PartnerUnifiedDetails({
           {C.aufgabeNotiz ? (
             <MetaRow label="Aufgabe" value={C.aufgabeNotiz} />
           ) : null}
-          {kontaktValue ? (
-            <MetaRow label="Kontakt vor Ort" value={kontaktValue} />
+          {showKontakt ? (
+            <MetaRow label="Kontakt vor Ort" value={kontaktValue!} />
           ) : null}
         </div>
+        {B.beschreibung ? (
+          <div className="mt-3">
+            <p className="mb-1 text-[12px] font-semibold uppercase tracking-wide text-text-secondary">
+              Beschreibung
+            </p>
+            <p className="portal-text-body whitespace-pre-wrap text-text-secondary">
+              {B.beschreibung}
+            </p>
+          </div>
+        ) : null}
         {B.fotos && B.fotos.length > 0 ? (
           <div className="mt-3">
             <p className="mb-2 text-[12px] font-semibold uppercase tracking-wide text-text-secondary">
@@ -134,6 +147,10 @@ type Props = {
   className?: string;
   /** CTAs am Ende der Details-Card (z. B. Freigeben / Ablehnen). */
   detailsActions?: React.ReactNode;
+  /**
+   * Partner, angenommener Auftrag: Zeitraum (Melde-Zeiten) und Kontakt vor Ort ausblenden.
+   */
+  partnerHideZeitraumAndKontakt?: boolean;
 };
 
 /**
@@ -147,9 +164,16 @@ export function VorgangDetailBlocks({
   sight: sightProp,
   className,
   detailsActions,
+  partnerHideZeitraumAndKontakt = false,
 }: Props) {
   if (vm.role === "partner") {
-    return <PartnerUnifiedDetails vm={vm} className={className} />;
+    return (
+      <PartnerUnifiedDetails
+        vm={vm}
+        className={className}
+        hideZeitraumAndKontakt={partnerHideZeitraumAndKontakt}
+      />
+    );
   }
 
   const sight = sightProp ?? sightForRole(vm.role);
