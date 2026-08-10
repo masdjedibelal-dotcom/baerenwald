@@ -156,7 +156,7 @@ export function KatalogLeadForm({
     return (
       <div className="konverter-lead-done">
         <strong>Danke — wir melden uns werktags zeitnah.</strong>
-        <p>Ihr Preisrahmen ist bei uns eingegangen. Unverbindlich, Festpreis nach Besichtigung.</p>
+        <p>Dein Preisrahmen ist bei uns eingegangen. Unverbindlich, Festpreis nach Besichtigung.</p>
       </div>
     );
   }

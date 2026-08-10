@@ -147,8 +147,8 @@ export async function POST(req: Request) {
     situation:
       body.situation ?? (anlass === "servicepaket" ? "betreuung" : "erneuern"),
     bereiche: body.bereiche ?? [],
-    preis_min: body.preis_min != null ? body.preis_min : undefined,
-    preis_max: body.preis_max != null ? body.preis_max : undefined,
+    preis_min: body.preis_min ?? 0,
+    preis_max: body.preis_max ?? 0,
     zeitraum: body.zeitraum ?? null,
     kanal,
     anlass,

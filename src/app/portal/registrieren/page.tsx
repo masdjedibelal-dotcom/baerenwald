@@ -36,8 +36,8 @@ export default async function PortalRegisterPage({ searchParams }: Props) {
   };
 
   const subtitle = locked
-    ? "Angaben aus Ihrer Schadenmeldung — bitte vergeben Sie ein Passwort und stimmen Sie zu."
-    : "Nutzen Sie dieselbe E-Mail wie bei Ihrer Anfrage — wir verknüpfen Ihre Daten automatisch.";
+    ? "Angaben aus Ihrer Schadenmeldung — bitte Passwort vergeben und zustimmen."
+    : "Nutze dieselbe E-Mail wie bei deiner Anfrage — wir verknüpfen deine Daten automatisch.";
 
   return (
     <PortalAuthShell title="Konto anlegen" subtitle={subtitle}>

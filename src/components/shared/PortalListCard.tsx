@@ -2,13 +2,7 @@
 
 import type { ReactNode } from "react";
 import type { LucideIcon } from "lucide-react";
-import {
-  AlertTriangle,
-  Calendar,
-  ChevronRight,
-  Hammer,
-  MapPin,
-} from "lucide-react";
+import { ChevronRight } from "lucide-react";
 
 import {
   portalListItemBorderStyle,
@@ -20,23 +14,9 @@ import { cn } from "@/lib/utils";
 
 export type PortalListCardAccent = "anfrage" | "angebot" | "auftrag";
 
-/** String-Keys — Lucide-Komponenten dürfen nicht Server→Client serialisiert werden. */
-export type PortalListCardMetaIcon =
-  | "map-pin"
-  | "calendar"
-  | "hammer"
-  | "alert-triangle";
-
 export type PortalListCardMeta = {
-  icon?: PortalListCardMetaIcon;
+  icon?: LucideIcon;
   text: string;
-};
-
-const META_ICONS: Record<PortalListCardMetaIcon, LucideIcon> = {
-  "map-pin": MapPin,
-  calendar: Calendar,
-  hammer: Hammer,
-  "alert-triangle": AlertTriangle,
 };
 
 /** @deprecated Prefer PortalListVariant from layout-chrome */
@@ -186,7 +166,7 @@ export function PortalListCard({
             <div className="flex shrink-0 items-center gap-1.5">
               {attentionBadge && attentionBadge > 0 ? (
                 <span
-                  className="portal-text-label inline-flex h-6 min-w-[1.5rem] items-center justify-center rounded-full px-1.5 normal-case tracking-normal font-bold"
+                  className="inline-flex h-6 min-w-[1.5rem] items-center justify-center rounded-full px-1.5 text-xs font-bold"
                   style={{
                     background: PORTAL_VAR.dangerSoft,
                     color: PORTAL_VAR.danger,
@@ -213,7 +193,7 @@ export function PortalListCard({
           {meta.length > 0 ? (
             <ul className="mt-2 space-y-1">
               {meta.map((m, i) => {
-                const Icon = m.icon ? META_ICONS[m.icon] : null;
+                const Icon = m.icon;
                 return (
                   <li
                     key={`${m.text}-${i}`}
@@ -336,7 +316,7 @@ export function PortalListCard({
             <div className="flex shrink-0 items-center gap-1.5 pt-0.5">
               {attentionBadge && attentionBadge > 0 ? (
                 <span
-                  className="portal-text-label inline-flex h-6 min-w-[1.5rem] items-center justify-center rounded-full px-1.5 normal-case tracking-normal font-bold"
+                  className="inline-flex h-6 min-w-[1.5rem] items-center justify-center rounded-full px-1.5 text-xs font-bold"
                   style={{
                     background: PORTAL_VAR.dangerSoft,
                     color: PORTAL_VAR.danger,

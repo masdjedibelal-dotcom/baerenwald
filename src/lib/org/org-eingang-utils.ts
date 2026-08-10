@@ -23,9 +23,8 @@ export function meldeBereichFromLead(lead: OrganisationLead): string | null {
   return fd?.melde_bereich?.trim() || null;
 }
 
-/** @deprecated Badge „Notfall“ entfernt — nutze leadIstMeldeDirektauftrag. */
-export function isMeldeNotfall(_lead: OrganisationLead): boolean {
-  return false;
+export function isMeldeNotfall(lead: OrganisationLead): boolean {
+  return meldeKategorieFromLead(lead) === "notfall";
 }
 
 export function eingangStatusLabel(lead: OrganisationLead): string {

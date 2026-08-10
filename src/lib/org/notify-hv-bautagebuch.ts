@@ -3,7 +3,6 @@ import {
   formatMeldeNotifTitel,
   MELDE_NOTIF_COPY,
 } from "@/lib/org/melde-vorgang-titel";
-import { withPortalDetailDeepLink } from "@/lib/portal2/portal-detail-deep-link";
 import { supabaseAdmin } from "@/lib/supabase";
 
 /** HV-Glocke: neuer Bautagebuch-Eintrag vom Partner. */
@@ -51,10 +50,7 @@ export async function notifyHvPartnerBautagebuch(input: {
     titel: bezug,
   });
   const body = `${input.handwerkerName} hat „${input.eintragTitel}“ veröffentlicht — direkt im Portal sichtbar.`;
-  const link = withPortalDetailDeepLink(
-    `/portal?section=vorgaenge&id=${encodeURIComponent(String(auftrag.lead_id))}`,
-    "bautagebuch"
-  );
+  const link = `/portal?section=vorgaenge&id=${encodeURIComponent(String(auftrag.lead_id))}#bautagebuch`;
 
   await supabaseAdmin.from("hv_notifications").insert({
     kunde_id: kundeId,

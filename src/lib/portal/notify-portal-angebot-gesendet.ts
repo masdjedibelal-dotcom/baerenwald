@@ -4,13 +4,11 @@ import {
   MELDE_NOTIF_COPY,
 } from "@/lib/org/melde-vorgang-titel";
 import { createPortalNotification } from "@/lib/portal2/create-portal-notification";
-import { withPortalDetailDeepLink } from "@/lib/portal2/portal-detail-deep-link";
-import { notifyPortalEigentuemer } from "@/lib/portal/notify-portal-eigentuemer";
 import { supabaseAdmin } from "@/lib/supabase";
 
 /**
- * Nach CRM „Angebot gesendet“: In-App-Notification für HV (hv_notifications),
- * Privatkunde/Mieter (portal_notifications) und Eigentümer (Status-Update).
+ * Nach CRM „Angebot gesendet“: In-App-Notification für HV (hv_notifications)
+ * und/oder Privatkunde (portal_notifications).
  */
 export async function notifyPortalAngebotGesendet(
   leadId: string
@@ -21,7 +19,7 @@ export async function notifyPortalAngebotGesendet(
   const { data: lead } = await supabaseAdmin
     .from("leads")
     .select(
-      "id, kunde_id, auftraggeber_kunde_id, kunde_objekt_id, situation, bereiche, kontakt_name, melder_name, kontakt_nachricht, notizen, funnel_daten, anlass, kanal, preis_max, budget_ca"
+      "id, kunde_id, auftraggeber_kunde_id, situation, bereiche, kontakt_name, melder_name, kontakt_nachricht, notizen, funnel_daten, anlass, kanal"
     )
     .eq("id", trimmed)
     .maybeSingle();
@@ -30,21 +28,16 @@ export async function notifyPortalAngebotGesendet(
 
   const { data: angebot } = await supabaseAdmin
     .from("angebote")
-    .select(
-      "id, angebotsnr, leistungsumfang, status_einfach, status, gesendet_am, gesendet_kunde_at, pdf_url, titel, gesamt_preis, gesamt_max"
-    )
+    .select("id, angebotsnr, leistungsumfang, status_einfach, status, gesendet_am, titel")
     .eq("lead_id", trimmed)
     .order("gesendet_am", { ascending: false, nullsFirst: false })
     .order("created_at", { ascending: false })
     .limit(1)
     .maybeSingle();
 
-  /** Nach CRM-Event „Angebot gesendet“ — inkl. PDF auch wenn Status noch nachzieht. */
+  /** Nur nach echtem Versand — nicht nach HV-Freigabe / „Angebot einfordern“. */
   const gesendetAm = angebot?.gesendet_am
     ? String(angebot.gesendet_am).trim()
-    : "";
-  const gesendetKundeAt = angebot?.gesendet_kunde_at
-    ? String(angebot.gesendet_kunde_at).trim()
     : "";
   const statusEinfach = String(angebot?.status_einfach ?? "")
     .trim()
@@ -52,15 +45,11 @@ export async function notifyPortalAngebotGesendet(
   const statusRaw = String(angebot?.status ?? "")
     .trim()
     .toLowerCase();
-  const hasPdf = Boolean(String(angebot?.pdf_url ?? "").trim());
   const wirklichGesendet =
     Boolean(gesendetAm) ||
-    Boolean(gesendetKundeAt) ||
     statusEinfach === "gesendet" ||
-    statusEinfach === "gesendet_kunde" ||
     statusRaw === "gesendet" ||
-    statusRaw.includes("gesendet") ||
-    hasPdf;
+    statusRaw.includes("gesendet");
   if (!angebot?.id || !wirklichGesendet) return;
 
   const nr =
@@ -68,7 +57,7 @@ export async function notifyPortalAngebotGesendet(
     String(angebot.id ?? "").slice(0, 8).toUpperCase() ||
     "—";
   const vorgangTitel = buildMeldeVorgangTitel({
-    situation: lead.situation as string | null,
+    situation: lead.situation,
     bereiche: lead.bereiche as string[] | null,
     funnelDaten: lead.funnel_daten,
     beschreibung:
@@ -86,10 +75,7 @@ export async function notifyPortalAngebotGesendet(
     vorgangTitel ||
     leistung ||
     "Ihr Vorgang";
-  const portalPath = withPortalDetailDeepLink(
-    `/portal?section=vorgaenge&id=${encodeURIComponent(trimmed)}`,
-    "angebot"
-  );
+  const portalPath = `/portal?section=vorgaenge&id=${encodeURIComponent(trimmed)}`;
   const notifTitel = formatMeldeNotifTitel(MELDE_NOTIF_COPY.neuesAngebot, {
     titel,
   });
@@ -106,28 +92,6 @@ export async function notifyPortalAngebotGesendet(
       body,
       link: portalPath,
     });
-
-    void import("@/lib/push/resolve-recipients")
-      .then(async ({ resolveOrgAuthUserIds }) => {
-        const { buildPushPayloadFromNotif } = await import("@/lib/push/payload");
-        const { scheduleWebPushToUsers } = await import(
-          "@/lib/push/send-web-push"
-        );
-        const userIds = await resolveOrgAuthUserIds(orgKundeId);
-        scheduleWebPushToUsers(
-          userIds,
-          buildPushPayloadFromNotif({
-            typ: "angebot",
-            titel: notifTitel,
-            body,
-            link: portalPath,
-            defaultUrl: "/portal",
-          })
-        );
-      })
-      .catch((e) =>
-        console.error("[notifyPortalAngebotGesendet] hv push:", e)
-      );
   }
 
   const portalKundeId = String(lead.kunde_id ?? "").trim();
@@ -176,14 +140,4 @@ export async function notifyPortalAngebotGesendet(
       });
     }
   }
-
-  // Eigentümer: nur Status-Update (keine Freigabe über Schwelle)
-  await notifyPortalEigentuemer({
-    leadId: trimmed,
-    kind: "update",
-    titel: notifTitel,
-    text: `Update zu „${titel}“: Angebot liegt vor.`,
-    deepLinkTab: "uebersicht",
-    kundeObjektId: String(lead.kunde_objekt_id ?? "").trim() || null,
-  });
 }

@@ -54,21 +54,9 @@ export function positionBrauchtVorgangAktion(
   position: Pick<
     PartnerAuftragPosition,
     "aenderung_typ" | "handwerker_status" | "handwerker_id"
-  > & {
-    anerkennung_status?: string | null;
-  }
+  >
 ): boolean {
   if (!positionIstHandwerkerZugewiesen(position.handwerker_status)) return false;
-
-  // HW-Nacharbeit / Regie: Freigabe bei Bärenwald — keine erneute Portal-Annahme
-  const anerkennung = (position.anerkennung_status ?? "").trim().toLowerCase();
-  if (
-    anerkennung === "anerkannt" ||
-    anerkennung === "in_pruefung" ||
-    anerkennung === "abgelehnt"
-  ) {
-    return false;
-  }
 
   const typ = (position.aenderung_typ ?? "").trim().toLowerCase();
   const hwAbgeschlossen = positionHandwerkerAbgeschlossen(position.handwerker_status);

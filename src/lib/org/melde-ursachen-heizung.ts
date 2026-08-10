@@ -50,8 +50,7 @@ function ans(a: MeldeAnswers, id: string): string {
 
 function normalizeProblem(raw: string): string {
   if (raw === "nicht_warm") return "kalt";
-  // „tropft“ = Wasser-Funnel; Heizung nutzt explizit tropft_hk / wasser_aus
-  if (raw === "wasser_aus") return "tropft_hk";
+  if (raw === "wasser_aus" || raw === "tropft") return "tropft_hk";
   return raw;
 }
 

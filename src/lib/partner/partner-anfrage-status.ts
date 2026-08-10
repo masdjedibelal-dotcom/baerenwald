@@ -164,12 +164,11 @@ export function isPartnerVorgangAusgeblendet(input: {
 export function isPartnerAuftragAnfrageOffen(
   item: Pick<
     PartnerAuftragItem,
-    "status" | "hwStatus" | "start_datum" | "handwerker_bestaetigt_at"
+    "status" | "hwStatus" | "start_datum"
   > & {
     positionen: Array<{
       start_datum?: string | null;
       handwerker_status?: string | null;
-      handwerker_id?: string | null;
     }>;
   }
 ): boolean {
@@ -183,18 +182,6 @@ export function isPartnerAuftragAnfrageOffen(
   /** Noch offene Leistungen — immer in Offen, auch nach Projektstart. */
   if (hatOffenePosition) return true;
 
-  /** Portal-Annahme fehlt — auch bei CRM-Status „bestaetigt“ (Direktauftrag). */
-  if (!item.handwerker_bestaetigt_at?.trim()) {
-    const hatZuweisung = item.positionen.some(
-      (p) =>
-        Boolean(p.handwerker_id?.trim()) ||
-        Boolean((p.handwerker_status ?? "").trim())
-    );
-    if (hatZuweisung || PENDING_STATUS.has(hw) || hw === "zugewiesen") {
-      return !isPartnerAuftragAnfrageAntwortAbgelaufen(item);
-    }
-  }
-
   if (hw === "akzeptiert") return false;
   if (isPartnerAuftragAnfrageAntwortAbgelaufen(item)) return false;
 
@@ -207,16 +194,11 @@ export function isPartnerAuftragAnfrageOffen(
 
 type PartnerAuftragAnfrageAktionFields = Pick<
   PartnerAuftragItem,
-  | "status"
-  | "hwStatus"
-  | "start_datum"
-  | "angebotHandwerkerId"
-  | "handwerker_bestaetigt_at"
+  "status" | "hwStatus" | "start_datum" | "angebotHandwerkerId"
 > & {
   positionen: Array<{
     start_datum?: string | null;
     handwerker_status?: string | null;
-    handwerker_id?: string | null;
   }>;
 };
 
@@ -229,14 +211,10 @@ export function isPartnerAuftragAnfrageAktionErforderlich(
 }
 
 export function partnerAuftragAnfrageStatusLabel(
-  item: Pick<
-    PartnerAuftragItem,
-    "hwStatus" | "start_datum" | "status" | "handwerker_bestaetigt_at"
-  > & {
+  item: Pick<PartnerAuftragItem, "hwStatus" | "start_datum" | "status"> & {
     positionen: Array<{
       start_datum?: string | null;
       handwerker_status?: string | null;
-      handwerker_id?: string | null;
     }>;
   }
 ): string {

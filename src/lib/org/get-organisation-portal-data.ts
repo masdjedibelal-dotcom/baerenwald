@@ -1,3 +1,4 @@
+import { loadPartnerBefundeByLeadIds } from "@/lib/org/load-partner-befund";
 import { resolveLeadObjektId } from "@/lib/org/match-lead-objekt";
 import { getPortalDataForKunde } from "@/lib/portal/get-portal-data";
 import {
@@ -145,7 +146,7 @@ export async function getOrganisationPortalData(
     if (!objektId) return null;
     const o = objektById.get(objektId);
     if (!o) return null;
-    const portal = resolvePortalObjekt({
+    return resolvePortalObjekt({
       objektId,
       objektById: objektById as Map<
         string,
@@ -156,19 +157,11 @@ export async function getOrganisationPortalData(
           hausnummer: string | null;
           plz: string | null;
           ort: string | null;
-          cover_url?: string | null;
         }
       >,
       kunde: { name: kunde.name, adresse: null, plz: null, ort: null },
       leadPlz: o.plz,
     });
-    if (!portal) return null;
-    return {
-      ...portal,
-      titel: portal.name,
-      adresseZeile: portal.strasse ?? undefined,
-      plzOrt: [portal.plz, portal.ort].filter(Boolean).join(" ") || undefined,
-    };
   };
 
   const eingang = eingangSource.map((row) => {
@@ -187,34 +180,32 @@ export async function getOrganisationPortalData(
     };
   }) as OrganisationLead[];
 
-  const orgLeads: OrganisationLead[] = base.leads.map((l) => {
-    const lead = l as OrganisationLead & {
-      kunde_objekt_id?: string | null;
-      objekt?: OrganisationLead["objekt"];
-    };
-    const fromOrg = resolveObj(lead.kunde_objekt_id ?? null);
-    return {
-      ...lead,
-      // Org-Objekt inkl. aktueller cover_url — nicht den Portal-Base-Snapshot ohne Cover
-      objekt: fromOrg ?? lead.objekt ?? null,
-    };
-  });
+  const orgLeads: OrganisationLead[] = base.leads.map((l) => ({
+    ...(l as OrganisationLead),
+    objekt: (l as { objekt?: OrganisationLead["objekt"] }).objekt ?? null,
+  }));
 
   const eingangLeadIds = eingang.map((l) => l.id);
   const eingangLeadIdsSet = new Set(eingangLeadIds);
 
-  const [meldungAuftraege, hvFeedbackRows] = await Promise.all([
-    loadPortalAuftraegeByLeadIds(eingangLeadIds),
-    eingangLeadIds.length
-      ? supabaseAdmin
-          .from("hv_vorgang_feedback")
-          .select("lead_id, feedback_typ, sterne, freitext, created_at")
-          .eq("kunde_id", kundeId)
-          .in("lead_id", eingangLeadIds)
-          .order("created_at", { ascending: true })
-          .then((r) => r.data ?? [])
-      : Promise.resolve([] as Array<Record<string, unknown>>),
-  ]);
+  const [meldungAuftraege, hvFeedbackRows, partnerBefundByLeadId] =
+    await Promise.all([
+      loadPortalAuftraegeByLeadIds(eingangLeadIds),
+      eingangLeadIds.length
+        ? supabaseAdmin
+            .from("hv_vorgang_feedback")
+            .select("lead_id, feedback_typ, sterne, freitext, created_at")
+            .eq("kunde_id", kundeId)
+            .in("lead_id", eingangLeadIds)
+            .order("created_at", { ascending: true })
+            .then((r) => r.data ?? [])
+        : Promise.resolve([] as Array<Record<string, unknown>>),
+      mode === "full"
+        ? loadPartnerBefundeByLeadIds(eingang.map((l) => l.id))
+        : Promise.resolve(
+            {} as Awaited<ReturnType<typeof loadPartnerBefundeByLeadIds>>
+          ),
+    ]);
 
   const mergedAuftraege = mergePortalAuftraege(
     base.auftraege as Array<{ id: string } & Record<string, unknown>>,
@@ -249,54 +240,36 @@ export async function getOrganisationPortalData(
     Array<{
       id: string;
       datum?: string;
-      created_at?: string;
       titel: string;
       notiz?: string;
       fotos_urls: string[];
     }>
   > = {};
-  {
-    const {
-      loadPartnerDokumentationByAuftragIds,
-      mergePortalBautagebuchEntries,
-    } = await import("@/lib/portal/load-partner-dokumentation");
-    const auftragIds = mergedAuftraege.map((a) => String(a.id));
-    const partnerDoku = await loadPartnerDokumentationByAuftragIds(auftragIds);
-
+  if (!listMode) {
     for (const a of mergedAuftraege) {
       const leadId =
         (a as { lead_id?: string | null }).lead_id != null
           ? String((a as { lead_id?: string | null }).lead_id)
           : "";
-      if (!leadId) continue;
-      const legacy = !listMode
-        ? (
-            (
-              a as {
-                bautagebuch?: Array<{
-                  id: string;
-                  datum?: string;
-                  created_at?: string;
-                  titel?: string;
-                  notiz?: string;
-                  fotos_urls?: string[];
-                }>;
-              }
-            ).bautagebuch ?? []
-          ).map((e) => ({
-            id: e.id,
-            datum: e.datum,
-            created_at: e.created_at,
-            titel: e.titel ?? "Eintrag",
-            notiz: e.notiz,
-            fotos_urls: e.fotos_urls ?? [],
-          }))
-        : [];
-      const partner = partnerDoku.get(String(a.id)) ?? [];
-      const merged = mergePortalBautagebuchEntries(legacy, partner);
-      if (!merged.length) continue;
-      const prev = bautagebuchByLeadId[leadId] ?? [];
-      bautagebuchByLeadId[leadId] = mergePortalBautagebuchEntries(prev, merged);
+      const entries = (
+        a as {
+          bautagebuch?: Array<{
+            id: string;
+            datum?: string;
+            titel?: string;
+            notiz?: string;
+            fotos_urls?: string[];
+          }>;
+        }
+      ).bautagebuch;
+      if (!leadId || !entries?.length) continue;
+      bautagebuchByLeadId[leadId] = entries.map((e) => ({
+        id: e.id,
+        datum: e.datum,
+        titel: e.titel ?? "Eintrag",
+        notiz: e.notiz,
+        fotos_urls: e.fotos_urls ?? [],
+      }));
     }
   }
 
@@ -368,17 +341,6 @@ export async function getOrganisationPortalData(
 
   const dokumenteByLeadId: Record<string, PortalDokument[]> = {};
   if (!listMode) {
-    for (const lead of base.leads) {
-      const leadId = String((lead as { id: string }).id);
-      const leadDocs =
-        (lead as { dokumente?: PortalDokument[] }).dokumente ?? [];
-      if (leadId && leadDocs.length) {
-        dokumenteByLeadId[leadId] = mergeDokumente(
-          dokumenteByLeadId[leadId] ?? [],
-          leadDocs
-        );
-      }
-    }
     for (const a of mergedAuftraege) {
       const leadId =
         (a as { lead_id?: string | null }).lead_id != null
@@ -455,6 +417,7 @@ export async function getOrganisationPortalData(
     leads: mergedLeads,
     angebote: base.angebote,
     auftraege: mergedAuftraege,
+    partnerBefundByLeadId,
     bautagebuchByLeadId,
     hwErledigtByLeadId,
     feedbackBereitByLeadId,

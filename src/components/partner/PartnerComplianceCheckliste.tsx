@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
 import { Eye, Trash2, Upload } from "lucide-react";
 
@@ -7,11 +8,9 @@ import {
   deletePartnerComplianceDokument,
   uploadPartnerComplianceDokument,
 } from "@/app/actions/partner-compliance";
-import { usePortalBusy } from "@/components/shared/PortalBusyContext";
 import { PortalConfirmDialog } from "@/components/shared/PortalDetailUi";
-import { PortalInboxEmpty } from "@/components/shared/PortalEmptyState";
+import { PortalEmptyState } from "@/components/shared/PortalEmptyState";
 import { PortalStatusPill } from "@/components/shared/PortalStatusPill";
-import { usePortalRefresh } from "@/components/shared/usePortalRefresh";
 import { partnerPortalToast } from "@/lib/shared/portal-toast";
 import { gruppeComplianceItems } from "@/lib/partner/compliance-summary";
 import {
@@ -44,8 +43,7 @@ function KompaktComplianceRow({
   auftragId?: string | null;
   disabled?: boolean;
 }) {
-  const { refresh } = usePortalRefresh();
-  const { runBusy } = usePortalBusy();
+  const router = useRouter();
   const inputRef = useRef<HTMLInputElement>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -71,49 +69,38 @@ function KompaktComplianceRow({
   async function onUpload(file: File) {
     setLoading(true);
     setError(null);
-    try {
-      await runBusy(async () => {
-        const fd = new FormData();
-        fd.set("typ", item.slug);
-        fd.set("bezeichnung", item.bezeichnung);
-        if (auftragId) fd.set("auftragId", uploadAuftragIdForItem(item, auftragId) ?? "");
-        if (item.erneuerung_monate) fd.set("erneuerungMonate", String(item.erneuerung_monate));
-        fd.set("file", file);
-        const res = await uploadPartnerComplianceDokument(fd);
-        if (!res.ok) {
-          setError(res.error);
-          return;
-        }
-        partnerPortalToast.complianceHochgeladen(item.bezeichnung);
-        await refresh();
-      });
-    } finally {
-      setLoading(false);
+    const fd = new FormData();
+    fd.set("typ", item.slug);
+    fd.set("bezeichnung", item.bezeichnung);
+    if (auftragId) fd.set("auftragId", uploadAuftragIdForItem(item, auftragId) ?? "");
+    if (item.erneuerung_monate) fd.set("erneuerungMonate", String(item.erneuerung_monate));
+    fd.set("file", file);
+    const res = await uploadPartnerComplianceDokument(fd);
+    setLoading(false);
+    if (!res.ok) {
+      setError(res.error);
+      return;
     }
+    partnerPortalToast.complianceHochgeladen(item.bezeichnung);
+    router.refresh();
   }
 
   async function onDelete() {
-    const dokumentId = item.dokument?.id;
-    if (!dokumentId) return;
+    if (!item.dokument?.id) return;
     setLoading(true);
     setError(null);
-    try {
-      await runBusy(async () => {
-        const res = await deletePartnerComplianceDokument({
-          dokumentId,
-          auftragId: uploadAuftragIdForItem(item, auftragId),
-        });
-        setConfirmDelete(false);
-        if (!res.ok) {
-          setError(res.error);
-          return;
-        }
-        partnerPortalToast.complianceGeloescht(item.bezeichnung);
-        await refresh();
-      });
-    } finally {
-      setLoading(false);
+    const res = await deletePartnerComplianceDokument({
+      dokumentId: item.dokument.id,
+      auftragId: uploadAuftragIdForItem(item, auftragId),
+    });
+    setLoading(false);
+    setConfirmDelete(false);
+    if (!res.ok) {
+      setError(res.error);
+      return;
     }
+    partnerPortalToast.complianceGeloescht(item.bezeichnung);
+    router.refresh();
   }
 
   const actions = (
@@ -308,7 +295,7 @@ export function PartnerComplianceCheckliste({
   if (!items.length) {
     return (
       <section className="overflow-hidden rounded-xl border border-border-light bg-surface-card p-3">
-        <PortalInboxEmpty title={emptyText} compact />
+        <PortalEmptyState title={emptyText} compact />
       </section>
     );
   }

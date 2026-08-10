@@ -232,7 +232,7 @@ function buildKundenBestaetigungSubject(raw: {
     const plzPart = plz.trim() || "—";
     return `[GU-PROJEKT] - ${projekt} - ${plzPart}`;
   }
-  return "Ihre Anfrage ist bei uns eingegangen";
+  return "Deine Anfrage ist bei uns eingegangen";
 }
 
 function mergeFunnelDaten(

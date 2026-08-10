@@ -13,11 +13,8 @@ type Props = {
   className?: string;
 };
 
-/**
- * Gestrichelter Inbox-Leerzustand für Panels/Listen-Abschnitte.
- * Für Seiten-/Rollen-Empty: `PortalEmptyState` aus PortalStateView.
- */
-export function PortalInboxEmpty({
+/** Einheitlicher Leerzustand für Listen und Panels. */
+export function PortalEmptyState({
   title,
   description,
   compact,
@@ -42,7 +39,7 @@ export function PortalInboxEmpty({
       <p
         className={cn(
           "font-semibold text-text-primary",
-          compact ? "portal-text-meta" : "portal-text-section"
+          compact ? "text-[13.5px]" : "text-[15px]"
         )}
       >
         {title}

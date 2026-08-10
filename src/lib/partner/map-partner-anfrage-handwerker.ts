@@ -21,8 +21,6 @@ export const PARTNER_LEAD_EMBED = `
   hausnummer,
   zeitraum,
   funnel_daten,
-  anlass,
-  kanal,
   preis_min,
   preis_max,
   budget_ca,

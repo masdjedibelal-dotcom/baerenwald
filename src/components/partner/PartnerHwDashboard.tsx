@@ -22,8 +22,8 @@ const KPI_DEFS: Array<{
   id: keyof PartnerHwDashboardKpis;
   label: string;
 }> = [
-  { id: "neueAnfragen", label: "Offen" },
-  { id: "inAusfuehrung", label: "In Arbeit" },
+  { id: "neueAnfragen", label: "Neue Anfragen" },
+  { id: "inAusfuehrung", label: "In Ausführung" },
   { id: "erledigt", label: "Erledigt" },
 ];
 
@@ -59,7 +59,7 @@ export function PartnerHwDashboard({
         value: kpis[def.id],
         onClick: onKpiClick ? () => onKpiClick(def.id) : undefined,
       }))}
-      recent={recent.slice(0, 4).map((v) => ({
+      recent={recent.slice(0, 3).map((v) => ({
         id: v.id,
         titel: v.titel,
         objekt: v.objekt,

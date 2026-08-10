@@ -3,19 +3,18 @@
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 
-import { HvObjektFilterPopover } from "@/components/org/HvObjektFilterPopover";
 import { PortalClient } from "@/components/portal/PortalClient";
 import {
   PortalListeEyebrow,
-  PortalListeFilterChip,
   PortalListeTitle,
 } from "@/components/shared/PortalListeChrome";
-import { filterOrgLeadsByObjektIds } from "@/lib/org/filter-leads-by-objekt";
+import { PortalListeFilterBar } from "@/components/shared/PortalListeFilterBar";
 import {
   buildOrgVorgangFilterCounts,
   buildAuftragByLeadId,
   type OrgVorgangFilter,
 } from "@/lib/org/org-vorgang-filter";
+import type { OrgPartnerBefundEntry } from "@/lib/org/load-partner-befund";
 import type {
   OrganisationKunde,
   OrganisationLead,
@@ -41,11 +40,9 @@ type Props = {
   auftraege: Parameters<typeof PortalClient>[0]["auftraege"];
   initialFilter?: OrgVorgangFilter | null;
   initialSelectedId?: string | null;
-  /** Sofortige Detail-ID vom Parent (vor URL-Update). */
-  forceDetailId?: string | null;
-  onDetailReady?: () => void;
   onRefresh: () => void;
   onFilterChange?: (filter: OrgVorgangFilter) => void;
+  partnerBefundByLeadId?: Record<string, OrgPartnerBefundEntry[]>;
   bautagebuchByLeadId?: Record<
     string,
     Array<{
@@ -103,29 +100,15 @@ function mergeOrgLeads(
   return Array.from(byId.values());
 }
 
-function parseObjektIdsParam(raw: string | null): string[] {
-  if (!raw?.trim()) return [];
-  return raw
-    .split(",")
-    .map((s) => s.trim())
-    .filter(Boolean);
-}
-
-/** Mock `pageHead` + `hvChips` + Objekt-Filter. */
+/** Mock `pageHead` + `hvChips`. */
 function HvListeChrome({
   filter,
   onFilterChange,
   offenCount,
-  objekte,
-  selectedObjektIds,
-  onObjektIdsChange,
 }: {
   filter: OrgVorgangFilter;
   onFilterChange: (filter: OrgVorgangFilter) => void;
   offenCount: number;
-  objekte: OrganisationObjekt[];
-  selectedObjektIds: string[];
-  onObjektIdsChange: (ids: string[]) => void;
 }) {
   return (
     <div>
@@ -133,26 +116,16 @@ function HvListeChrome({
         <PortalListeEyebrow>{HV_LISTE_PAGE_EYEBROW}</PortalListeEyebrow>
         <PortalListeTitle>{HV_LISTE_PAGE_TITLE}</PortalListeTitle>
       </div>
-      <div className="-mx-1 flex items-center gap-2 overflow-x-auto px-1 py-3.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-        {HV_CHIPS.map((chip) => (
-          <PortalListeFilterChip
-            key={chip.id}
-            active={chip.id === filter}
-            onClick={() => onFilterChange(chip.id)}
-            countBadge={chip.showCount ? offenCount : null}
-          >
-            {chip.label}
-          </PortalListeFilterChip>
-        ))}
-        <HvObjektFilterPopover
-          objekte={objekte.map((o) => ({
-            id: o.id,
-            titel: o.titel,
-          }))}
-          selectedIds={selectedObjektIds}
-          onChange={onObjektIdsChange}
-        />
-      </div>
+      <PortalListeFilterBar
+        value={filter}
+        onChange={onFilterChange}
+        sheetTitle="Vorgänge"
+        options={HV_CHIPS.map((chip) => ({
+          id: chip.id,
+          label: chip.label,
+          countBadge: chip.showCount ? offenCount : null,
+        }))}
+      />
     </div>
   );
 }
@@ -160,17 +133,16 @@ function HvListeChrome({
 export function OrganisationVorgaengeSection({
   kunde,
   eingang,
-  objekte,
+  objekte: _objekte,
   leads,
   angebote,
   auftraege,
   initialFilter,
   initialSelectedId: _initialSelectedId,
-  forceDetailId = null,
-  onDetailReady,
   onRefresh: _onRefresh,
   onFilterChange,
-  bautagebuchByLeadId = {},
+  partnerBefundByLeadId: _partnerBefundByLeadId = {},
+  bautagebuchByLeadId: _bautagebuchByLeadId = {},
   hwErledigtByLeadId = {},
   feedbackBereitByLeadId: _feedbackBereitByLeadId = {},
   hvFeedbackByLeadId = {},
@@ -186,12 +158,9 @@ export function OrganisationVorgaengeSection({
   const [filter, setFilter] = useState<OrgVorgangFilter>(
     initialFilter ?? "alle"
   );
-  const [selectedObjektIds, setSelectedObjektIds] = useState<string[]>(() =>
-    parseObjektIdsParam(searchParams.get("objekte"))
-  );
 
   useEffect(() => {
-    setFilter(initialFilter ?? "alle");
+    if (initialFilter) setFilter(initialFilter);
   }, [initialFilter]);
 
   function changeFilter(next: OrgVorgangFilter) {
@@ -200,47 +169,20 @@ export function OrganisationVorgaengeSection({
     onFilterChange?.(next);
   }
 
-  function changeObjektIds(ids: string[]) {
-    setSelectedObjektIds(ids);
-    setDetailOpen(false);
-    if (typeof window === "undefined") return;
-    const u = new URL(window.location.href);
-    if (ids.length === 0 || ids.length >= objekte.length) {
-      u.searchParams.delete("objekte");
-    } else {
-      u.searchParams.set("objekte", ids.join(","));
-    }
-    window.history.replaceState(null, "", u.toString());
-  }
-
   const allLeads = useMemo(
     () => mergeOrgLeads(leads, eingang),
     [leads, eingang]
   );
 
-  const filteredLeads = useMemo(
-    () => filterOrgLeadsByObjektIds(allLeads, objekte, selectedObjektIds),
-    [allLeads, objekte, selectedObjektIds]
-  );
-
-  const filteredEingang = useMemo(
-    () => filterOrgLeadsByObjektIds(eingang, objekte, selectedObjektIds),
-    [eingang, objekte, selectedObjektIds]
-  );
-
   const vorgaengeItems = useMemo(
     () =>
       buildKundeVorgaenge({
-        leads: filteredLeads as Parameters<
-          typeof buildKundeVorgaenge
-        >[0]["leads"],
-        angebote: angebote as Parameters<
-          typeof buildKundeVorgaenge
-        >[0]["angebote"],
+        leads: allLeads as Parameters<typeof buildKundeVorgaenge>[0]["leads"],
+        angebote: angebote as Parameters<typeof buildKundeVorgaenge>[0]["angebote"],
         auftraege,
         hvPortalMode: true,
       }),
-    [filteredLeads, angebote, auftraege]
+    [allLeads, angebote, auftraege]
   );
 
   const auftragByLeadId = useMemo(
@@ -254,8 +196,8 @@ export function OrganisationVorgaengeSection({
   const counts = useMemo(
     () =>
       buildOrgVorgangFilterCounts(
-        filteredEingang,
-        filteredLeads,
+        eingang,
+        allLeads,
         vorgaengeItems,
         auftragByLeadId,
         {
@@ -263,14 +205,7 @@ export function OrganisationVorgaengeSection({
           auftraege: auftraege as HvDashboardAuftragSlice[],
         }
       ),
-    [
-      filteredEingang,
-      filteredLeads,
-      vorgaengeItems,
-      auftragByLeadId,
-      angebote,
-      auftraege,
-    ]
+    [eingang, allLeads, vorgaengeItems, auftragByLeadId, angebote, auftraege]
   );
 
   return (
@@ -280,9 +215,6 @@ export function OrganisationVorgaengeSection({
           filter={filter}
           onFilterChange={changeFilter}
           offenCount={counts.offen}
-          objekte={objekte}
-          selectedObjektIds={selectedObjektIds}
-          onObjektIdsChange={changeObjektIds}
         />
       ) : null}
 
@@ -291,18 +223,15 @@ export function OrganisationVorgaengeSection({
         hideFilterBar
         hvPortalMode
         controlledHvListeFilter={filter}
-        forceDetailId={forceDetailId}
-        onDetailReady={onDetailReady}
         onHvDetailOpenChange={setDetailOpen}
         kunde={{
           name: kunde.org_anzeigename ?? kunde.name,
           email: kunde.email,
           freigabe_schwelle_eur: kunde.freigabe_schwelle_eur,
         }}
-        leads={filteredLeads as Parameters<typeof PortalClient>[0]["leads"]}
+        leads={allLeads as Parameters<typeof PortalClient>[0]["leads"]}
         angebote={angebote}
         auftraege={auftraege}
-        bautagebuchByLeadId={bautagebuchByLeadId}
         hwErledigtByLeadId={hwErledigtByLeadId}
         hvFeedbackByLeadId={hvFeedbackByLeadId}
         auftragIdByLeadId={auftragIdByLeadId}

@@ -187,16 +187,6 @@ export function buildPartnerVorgaenge(input: {
   });
 }
 
-/** Erstellzeitpunkt des Vorgangs (Auftrag bzw. Anfrage) — für Dashboard „Zuletzt“. */
-export function partnerVorgangCreatedAt(v: PartnerVorgangItem): number {
-  const raw =
-    v.auftrag.created_at?.trim() ||
-    v.anfrage?.gesendet_at?.trim() ||
-    "";
-  const t = raw ? new Date(raw).getTime() : 0;
-  return Number.isFinite(t) ? t : 0;
-}
-
 /** Neuester Zeitstempel aus Status, Anpassungen, Positionen, Tagebuch usw. */
 export function partnerVorgangLastActivityAt(v: PartnerVorgangItem): number {
   const candidates: Array<string | null | undefined> = [

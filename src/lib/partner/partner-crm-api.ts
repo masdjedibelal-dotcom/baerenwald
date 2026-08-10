@@ -11,31 +11,14 @@ function dashboardBase(): string | null {
 
 async function partnerAuthHeaders(): Promise<HeadersInit | null> {
   const supabase = await createClient();
-  // getUser() lädt/validiert die Cookie-Session; getSession() allein kann in
-  // Server Actions leer sein → fälschlich „Bärenwald nicht konfiguriert“.
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return null;
   const {
     data: { session },
   } = await supabase.auth.getSession();
-  const token = session?.access_token?.trim();
-  if (!token) return null;
+  if (!session?.access_token) return null;
   return {
-    Authorization: `Bearer ${token}`,
+    Authorization: `Bearer ${session.access_token}`,
     "Content-Type": "application/json",
   };
-}
-
-function crmMissingConfigError(base: string | null, headers: HeadersInit | null): string {
-  if (!base) {
-    return "Bärenwald-Verbindung fehlt (NEXT_PUBLIC_DASHBOARD_URL).";
-  }
-  if (!headers) {
-    return "Sitzung abgelaufen — bitte neu anmelden und erneut abschließen.";
-  }
-  return "Bärenwald nicht konfiguriert.";
 }
 
 export type CrmProjektvertragPreview = {
@@ -77,7 +60,7 @@ export async function confirmCrmProjektvertrag(
   const base = dashboardBase();
   const headers = await partnerAuthHeaders();
   if (!base || !headers) {
-    return { ok: false, error: crmMissingConfigError(base, headers) };
+    return { ok: false, error: "Bärenwald-Verbindung nicht konfiguriert." };
   }
 
   try {
@@ -199,7 +182,7 @@ export async function acceptCrmRahmenvertragLoggedIn(): Promise<
   const base = dashboardBase();
   const headers = await partnerAuthHeaders();
   if (!base || !headers) {
-    return { ok: false, error: crmMissingConfigError(base, headers) };
+    return { ok: false, error: "Bärenwald-Verbindung nicht konfiguriert." };
   }
 
   try {
@@ -309,7 +292,7 @@ export async function submitCrmAbnahmeNachSignatur(
   const base = dashboardBase();
   const headers = await partnerAuthHeaders();
   if (!base || !headers) {
-    return { ok: false, error: crmMissingConfigError(base, headers) };
+    return { ok: false, error: "Bärenwald nicht konfiguriert." };
   }
 
   try {
@@ -362,7 +345,7 @@ export async function fetchCrmAbnahmeStatus(
   const base = dashboardBase();
   const headers = await partnerAuthHeaders();
   if (!base || !headers) {
-    return { ok: false, error: crmMissingConfigError(base, headers) };
+    return { ok: false, error: "Bärenwald nicht konfiguriert." };
   }
 
   try {
@@ -385,14 +368,8 @@ export async function fetchCrmAbnahmeStatus(
       protokoll_id: (body.protokoll_id as string | null) ?? null,
       pdf_url: (body.pdf_url as string | null) ?? null,
       abnahme_datum: (body.abnahme_datum as string | null) ?? null,
-      punkte_count: Number(
-        body.punkte_count ??
-          (Array.isArray(body.punkte) ? body.punkte.length : 0)
-      ),
-      maengel_count: Number(
-        body.maengel_count ??
-          (Array.isArray(body.maengel) ? body.maengel.length : 0)
-      ),
+      punkte_count: Number(body.punkte_count ?? 0),
+      maengel_count: Number(body.maengel_count ?? 0),
       an_kunde_gesendet_at: (body.an_kunde_gesendet_at as string | null) ?? null,
       handwerker_bestaetigt_at:
         (body.handwerker_bestaetigt_at as string | null) ?? null,
@@ -412,7 +389,7 @@ export async function postCrmAbnahmeAction(
   const base = dashboardBase();
   const headers = await partnerAuthHeaders();
   if (!base || !headers) {
-    return { ok: false, error: crmMissingConfigError(base, headers) };
+    return { ok: false, error: "Bärenwald nicht konfiguriert." };
   }
 
   try {

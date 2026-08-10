@@ -111,7 +111,7 @@ export function ConversionCheckoutModal({
           <div>
             <p className="conversion-checkout-eyebrow">Kostenrahmen anfragen</p>
             <h2 id="conversion-checkout-title" className="conversion-checkout-title">
-              {produkt?.titel ?? "Ihr Paket"}
+              {produkt?.titel ?? "Dein Paket"}
             </h2>
             {produkt?.kurz ? (
               <p className="conversion-checkout-sub">{produkt.kurz}</p>
@@ -130,7 +130,7 @@ export function ConversionCheckoutModal({
         <div className="conversion-checkout-form">{leadForm}</div>
 
         <div className="conversion-checkout-summary conversion-checkout-summary--footer">
-          <span className="conversion-checkout-summary-label">Ihr Preisrahmen</span>
+          <span className="conversion-checkout-summary-label">Dein Preisrahmen</span>
           <span className="conversion-checkout-summary-price">{preisLabel}</span>
           <span className="conversion-checkout-summary-hint">
             unverbindlich · Festpreis nach Besichtigung

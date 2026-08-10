@@ -58,7 +58,7 @@ export function PartnerPortalDetailSections({
             />
           ) : null}
           {section.text ? (
-            <p className="portal-text-body px-0 py-1 text-text-primary">
+            <p className="portal-text-body rounded-xl border border-border-light bg-muted/20 px-3 py-3 text-text-primary">
               {section.text}
             </p>
           ) : null}

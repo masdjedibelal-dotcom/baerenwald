@@ -1,10 +1,7 @@
 import { PORTAL_FLOW, type PortalMockStatusId } from "@/lib/portal2/status";
 
-/** Startseite „Zuletzt“ — überall maximal so viele Einträge. */
-export const PORTAL_DASHBOARD_RECENT_LIMIT = 4;
-
 /**
- * Standard-Vorgangs-Sortierung (Listen):
+ * Standard-Vorgangs-Sortierung (alle Portale):
  * 1) Status: neu/offen → … → erledigt
  * 2) Datum: neueste zuerst
  */
@@ -14,25 +11,6 @@ export function compareVorgangListOrder(
 ): number {
   if (a.statusRank !== b.statusRank) return a.statusRank - b.statusRank;
   return b.sortDate - a.sortDate;
-}
-
-/** Dashboard „Zuletzt“: nur Erstelldatum, neueste zuerst. */
-export function compareByNewestCreated(
-  a: { sortDate: number },
-  b: { sortDate: number }
-): number {
-  return b.sortDate - a.sortDate;
-}
-
-/** Neueste zuerst, dann auf Dashboard-Limit kürzen. */
-export function takeNewestCreated<T>(
-  items: T[],
-  getCreatedAtMs: (item: T) => number,
-  limit = PORTAL_DASHBOARD_RECENT_LIMIT
-): T[] {
-  return [...items]
-    .sort((a, b) => getCreatedAtMs(b) - getCreatedAtMs(a))
-    .slice(0, limit);
 }
 
 /** Portal-Flow (HV/Privat-Chips): Index in PORTAL_FLOW. */

@@ -1,18 +1,8 @@
 "use client";
 
-import {
-  useCallback,
-  useEffect,
-  useId,
-  useRef,
-  useState,
-  type ReactNode,
-} from "react";
-import { Loader2, Sparkles } from "lucide-react";
+import { useEffect, useId, useRef, useState, type ReactNode } from "react";
+import { Loader2, Sparkles, X } from "lucide-react";
 
-import { GptChatVoiceRecorder } from "@/components/gpt/GptChatVoiceRecorder";
-import "@/components/gpt/gpt-viz.css";
-import "@/components/shared/portal-ki-gpt-chat.css";
 import { PortalModalShell } from "@/components/shared/PortalModalShell";
 import {
   PORTAL_KI_ASSIST_SCOPES,
@@ -39,36 +29,12 @@ type Props = {
   labelExtra?: ReactNode;
 };
 
-const TEXTAREA_MAX_LINES = 5;
-const TEXTAREA_LINE_PX = 22;
-
 function newId() {
   return `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 }
 
-function SendMessageIcon() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden>
-      <path
-        d="m22 2-7 20-4-9-9-4 20-7Z"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-      <path
-        d="M22 2 11 13"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-}
-
 /**
- * Label + Sparkles → GPT-Chat-Sheet → Übernehmen schreibt in das Feld.
+ * Label + Sparkles → Chat-Sheet → Übernehmen schreibt in das Feld (CRM-Pattern).
  */
 export function PortalKiAssistField({
   scope,
@@ -91,17 +57,8 @@ export function PortalKiAssistField({
   const [error, setError] = useState<string | null>(null);
   const [messages, setMessages] = useState<ChatMsg[]>([]);
   const [draftText, setDraftText] = useState<string | null>(null);
-  const [voiceActive, setVoiceActive] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
-
-  const syncTextareaHeight = useCallback(() => {
-    const el = inputRef.current;
-    if (!el) return;
-    el.style.height = "auto";
-    const max = TEXTAREA_LINE_PX * TEXTAREA_MAX_LINES + 16;
-    el.style.height = `${Math.min(el.scrollHeight, max)}px`;
-  }, []);
 
   useEffect(() => {
     if (!open) return;
@@ -110,18 +67,14 @@ export function PortalKiAssistField({
 
   useEffect(() => {
     if (!open) return;
-    const t = window.setTimeout(() => {
-      inputRef.current?.focus();
-      syncTextareaHeight();
-    }, 80);
+    const t = window.setTimeout(() => inputRef.current?.focus(), 80);
     return () => window.clearTimeout(t);
-  }, [open, syncTextareaHeight]);
+  }, [open]);
 
   function closeChat() {
     if (pending) return;
     setOpen(false);
     setError(null);
-    setVoiceActive(false);
   }
 
   function openChat() {
@@ -131,14 +84,12 @@ export function PortalKiAssistField({
     setDraftText(null);
     setMessages([]);
     setInput("");
-    setVoiceActive(false);
   }
 
   async function send(prompt?: string) {
     const userMessage = (prompt ?? input).trim();
     if (!userMessage || pending) return;
     setInput("");
-    requestAnimationFrame(syncTextareaHeight);
     setError(null);
     setPending(true);
     const nextHistory: ChatMsg[] = [
@@ -194,7 +145,6 @@ export function PortalKiAssistField({
     setDraftText(null);
     setMessages([]);
     setInput("");
-    setVoiceActive(false);
   }
 
   return (
@@ -214,8 +164,8 @@ export function PortalKiAssistField({
             type="button"
             disabled={disabled}
             onClick={openChat}
-            title="BärenwaldGPT öffnen"
-            aria-label="BärenwaldGPT öffnen"
+            title={`KI: ${labelText} umschreiben`}
+            aria-label={`KI: ${labelText} umschreiben`}
             className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-border-default bg-white text-[var(--org-primary,var(--p2-primary,#2e7d52))] transition-colors hover:bg-[var(--org-primary-soft,var(--p2-primary-soft,#e7f1e9))] disabled:opacity-50"
           >
             <Sparkles className="h-3.5 w-3.5" aria-hidden />
@@ -229,24 +179,24 @@ export function PortalKiAssistField({
       <PortalModalShell
         open={open}
         onClose={closeChat}
-        title="BärenwaldGPT"
-        variant="funnel"
+        title={`KI · ${cfg.label}`}
+        subtitle={cfg.intro}
+        variant="edit"
         closeOnBackdrop={!pending}
-        busy={false}
-        className="portal-ki-gpt-shell"
       >
-        <div className="portal-ki-gpt-chat">
-          <div className="portal-ki-gpt-messages">
+        <div className="flex min-h-[min(52vh,420px)] flex-col gap-3">
+          <div className="flex min-h-0 flex-1 flex-col gap-2.5 overflow-y-auto rounded-xl border border-border-light bg-[#fafbfa] p-3">
             {messages.length === 0 && !pending ? (
-              <div className="portal-ki-gpt-empty">
-                <div className="portal-ki-gpt-chips">
+              <div className="space-y-3 py-2">
+                <p className="text-[13px] text-text-secondary">{cfg.intro}</p>
+                <div className="flex flex-wrap gap-1.5">
                   {cfg.quickPrompts.map((q) => (
                     <button
                       key={q.label}
                       type="button"
                       disabled={pending}
                       onClick={() => void send(q.prompt)}
-                      className="portal-ki-gpt-chip"
+                      className="rounded-full border border-border-default bg-white px-2.5 py-1 text-[12px] font-semibold text-text-primary"
                     >
                       {q.label}
                     </button>
@@ -264,10 +214,10 @@ export function PortalKiAssistField({
                 <div
                   key={m.id}
                   className={cn(
-                    "portal-ki-gpt-bubble",
+                    "max-w-[92%] rounded-2xl px-3 py-2 text-[13px] leading-relaxed",
                     m.role === "user"
-                      ? "portal-ki-gpt-bubble--user"
-                      : "portal-ki-gpt-bubble--assistant"
+                      ? "ml-auto bg-[var(--org-primary,var(--p2-primary,#2e7d52))] text-white"
+                      : "mr-auto border border-border-light bg-white text-text-primary"
                   )}
                 >
                   <p className="whitespace-pre-wrap">{display}</p>
@@ -277,7 +227,7 @@ export function PortalKiAssistField({
 
             {pending ? (
               <div
-                className="portal-ki-gpt-bubble portal-ki-gpt-bubble--assistant portal-ki-gpt-typing"
+                className="mr-auto inline-flex items-center gap-2 rounded-2xl border border-border-light bg-white px-3 py-2 text-[12px] text-text-secondary"
                 role="status"
               >
                 <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />
@@ -288,9 +238,13 @@ export function PortalKiAssistField({
           </div>
 
           {draftText ? (
-            <div className="portal-ki-gpt-draft">
-              <p className="portal-ki-gpt-draft-label">Vorschlag zum Übernehmen</p>
-              <p className="portal-ki-gpt-draft-text">{draftText}</p>
+            <div className="rounded-xl border border-[var(--org-primary,var(--p2-primary,#2e7d52))]/25 bg-[var(--org-primary-soft,var(--p2-primary-soft,#e7f1e9))]/60 p-3">
+              <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-wide text-text-secondary">
+                Vorschlag zum Übernehmen
+              </p>
+              <p className="mb-2.5 whitespace-pre-wrap text-[13px] text-text-primary">
+                {draftText}
+              </p>
               <button
                 type="button"
                 disabled={pending}
@@ -303,72 +257,46 @@ export function PortalKiAssistField({
           ) : null}
 
           {error ? (
-            <p className="portal-ki-gpt-error" role="alert">
+            <p className="text-[12px] font-semibold text-red-700" role="alert">
               {error}
             </p>
           ) : null}
 
-          <div className="portal-ki-gpt-composer">
-            <div
-              className={cn(
-                "portal-ki-gpt-inputbar gpt-chat-inputbar",
-                voiceActive && "gpt-chat-inputbar--voice"
-              )}
+          <div className="flex gap-2">
+            <textarea
+              ref={inputRef}
+              rows={2}
+              value={input}
+              disabled={pending}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && !e.shiftKey) {
+                  e.preventDefault();
+                  void send();
+                }
+              }}
+              placeholder={cfg.placeholder}
+              className="portal-input min-h-[44px] flex-1 resize-none rounded-xl border border-border-default px-3 py-2.5 text-[13px]"
+            />
+            <button
+              type="button"
+              disabled={pending || !input.trim()}
+              onClick={() => void send()}
+              className="btn-pill-filled portal-btn shrink-0 self-end disabled:opacity-50"
             >
-              {!voiceActive ? (
-                <textarea
-                  ref={inputRef}
-                  rows={1}
-                  enterKeyHint="send"
-                  value={input}
-                  disabled={pending}
-                  onChange={(e) => {
-                    setInput(e.target.value);
-                    requestAnimationFrame(syncTextareaHeight);
-                  }}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" && !e.shiftKey) {
-                      e.preventDefault();
-                      void send();
-                    }
-                  }}
-                  placeholder={cfg.placeholder}
-                  className="portal-ki-gpt-textarea"
-                  aria-label="Nachricht"
-                />
-              ) : null}
-
-              {/* Eine Instanz: Mic links idle / Waveform während Aufnahme */}
-              <div
-                className={cn(
-                  "portal-ki-gpt-voice-slot",
-                  voiceActive && "portal-ki-gpt-voice-slot--active",
-                  !voiceActive && "order-first"
-                )}
-              >
-                <GptChatVoiceRecorder
-                  disabled={pending}
-                  onActiveChange={setVoiceActive}
-                  onTextReady={(text) => {
-                    void send(text);
-                  }}
-                  onError={(message) => setError(message)}
-                />
-              </div>
-
-              {!voiceActive ? (
-                <button
-                  type="button"
-                  disabled={pending || !input.trim()}
-                  onClick={() => void send()}
-                  className="portal-ki-gpt-send"
-                  aria-label="Senden"
-                >
-                  <SendMessageIcon />
-                </button>
-              ) : null}
-            </div>
+              Senden
+            </button>
           </div>
+
+          <button
+            type="button"
+            disabled={pending}
+            onClick={closeChat}
+            className="inline-flex items-center justify-center gap-1.5 text-[12.5px] font-semibold text-text-secondary"
+          >
+            <X className="h-3.5 w-3.5" aria-hidden />
+            Schließen
+          </button>
         </div>
       </PortalModalShell>
     </div>

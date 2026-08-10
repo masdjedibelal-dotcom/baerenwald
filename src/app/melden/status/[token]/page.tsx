@@ -1,15 +1,6 @@
 import { notFound } from "next/navigation";
 
 import { MeldeStatusClient } from "@/components/melden/MeldeStatusClient";
-import {
-  fachdetailRowsFromFunnelDaten,
-  normalizeFunnelDaten,
-} from "@/lib/lead-funnel-daten";
-import { labelSituation } from "@/lib/lead-funnel-labels";
-import {
-  formatAnfrageBereiche,
-  formatAnfrageZeitraum,
-} from "@/lib/portal/portal-anfrage-display";
 import { loadPortalAuftraegeByLeadIds } from "@/lib/portal/load-auftraege-by-lead-ids";
 import { portalErledigtFromLeadAndAuftrag } from "@/lib/portal/vorgang-erledigt";
 import { resolveOrgSubLabel } from "@/lib/portal2/brand-presets";
@@ -26,7 +17,7 @@ export default async function MeldeStatusPage({ params }: Props) {
   const { data: lead } = await supabaseAdmin
     .from("leads")
     .select(
-      "id, melder_name, melder_einheit, created_at, hv_meldung_status, vorgang_phase, org_freigabe_status, freigabe_bypass_grund, mieter_vor_ort_at, kunde_objekt_id, auftraggeber_kunde_id, storniert_am, kontakt_nachricht, anlass, funnel_daten, situation, bereiche, zeitraum, plz, strasse, hausnummer"
+      "id, melder_name, melder_einheit, created_at, hv_meldung_status, vorgang_phase, org_freigabe_status, freigabe_bypass_grund, mieter_vor_ort_at, kunde_objekt_id, auftraggeber_kunde_id, storniert_am, kontakt_nachricht, anlass"
     )
     .eq("melde_tracking_token", trimmed)
     .maybeSingle();
@@ -42,6 +33,7 @@ export default async function MeldeStatusPage({ params }: Props) {
   const anhaenge: Array<{ id: string; name: string; datum?: string; href: string }> =
     [];
   if (auftragId) {
+    // V3: kanonische Quelle auftrag_abnahmeprotokolle
     const { data: protokolle } = await supabaseAdmin
       .from("auftrag_abnahmeprotokolle")
       .select("id, abnahme_datum, pdf_url, created_at, an_kunde_gesendet_at")
@@ -63,20 +55,13 @@ export default async function MeldeStatusPage({ params }: Props) {
   }
 
   let objektTitel = "Objekt";
-  let objektOrt: string | null = null;
-  let objektPlz: string | null =
-    typeof lead.plz === "string" ? lead.plz.trim() || null : null;
   if (lead.kunde_objekt_id) {
     const { data: obj } = await supabaseAdmin
       .from("kunden_objekte")
-      .select("titel, ort, plz")
+      .select("titel")
       .eq("id", lead.kunde_objekt_id)
       .maybeSingle();
     objektTitel = String(obj?.titel ?? "Objekt");
-    objektOrt = (obj?.ort as string | null)?.trim() || null;
-    if (!objektPlz && obj?.plz) {
-      objektPlz = String(obj.plz).trim() || null;
-    }
   }
 
   let brand = {
@@ -137,41 +122,6 @@ export default async function MeldeStatusPage({ params }: Props) {
       ? lead.kontakt_nachricht.trim() || null
       : null;
 
-  const bereiche = Array.isArray(lead.bereiche)
-    ? (lead.bereiche as string[])
-    : null;
-  const anfrageSource = {
-    situation: lead.situation as string | null,
-    bereiche,
-    funnel_daten: lead.funnel_daten,
-    zeitraum: lead.zeitraum as string | null,
-    plz: objektPlz,
-    strasse: lead.strasse as string | null,
-    hausnummer: lead.hausnummer as string | null,
-    ort: objektOrt,
-  };
-  const norm = normalizeFunnelDaten(lead.funnel_daten, bereiche);
-  const situationSlug =
-    norm.situation || (lead.situation as string | null) || undefined;
-  const meldeSituation =
-    situationSlug && labelSituation(situationSlug) !== "—"
-      ? labelSituation(situationSlug)
-      : null;
-  const meldeBereich = formatAnfrageBereiche(anfrageSource) ?? null;
-  const meldeZeitraum = formatAnfrageZeitraum(anfrageSource) ?? null;
-  const meldeFachdetails = fachdetailRowsFromFunnelDaten(
-    lead.funnel_daten,
-    bereiche
-  );
-  const fd = lead.funnel_daten as { fotos?: unknown } | null | undefined;
-  const fotos = Array.isArray(fd?.fotos)
-    ? fd.fotos.filter(
-        (u): u is string => typeof u === "string" && /^https?:\/\//i.test(u)
-      )
-    : [];
-  const meldeStrasse =
-    [lead.strasse, lead.hausnummer].filter(Boolean).join(" ").trim() || null;
-
   return (
     <MeldeStatusClient
       brand={brand}
@@ -184,16 +134,6 @@ export default async function MeldeStatusPage({ params }: Props) {
       erledigt={erledigt}
       anhaenge={anhaenge}
       beschreibung={beschreibung}
-      meldeDetail={{
-        meldeStrasse,
-        meldePlz: objektPlz,
-        meldeOrt: objektOrt,
-        meldeSituation,
-        meldeBereich,
-        meldeZeitraum,
-        meldeFachdetails,
-        fotos,
-      }}
     />
   );
 }

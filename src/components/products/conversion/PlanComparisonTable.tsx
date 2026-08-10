@@ -148,7 +148,7 @@ export function PlanComparisonTable({
   selectedColumnId,
   onSelectColumn,
   onCta,
-  asideHeading = "Ihr Objekt & Leistungen",
+  asideHeading = "Dein Objekt & Leistungen",
   priceHint,
 }: Props) {
   const [infoRowId, setInfoRowId] = useState<string | null>(null);

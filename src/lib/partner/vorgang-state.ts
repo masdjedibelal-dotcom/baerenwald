@@ -53,10 +53,10 @@ export function ableitenVorgangState(input: {
     offeneNachreichung ||
     Boolean(input.anfrageAktionNoetig && !bestaetigt);
 
-  // Ohne Portal-Annahme kein laufender Auftrag — auch wenn CRM Positionen
-  // schon auf „bestaetigt“ gesetzt hat (häufig bei Direktauftrag/Notfall).
-  if (!bestaetigt) return "neu";
-  if (offeneAktion) return "geaendert";
+  if (!bestaetigt && offeneAktion) return "neu";
+  if (bestaetigt && offeneAktion) return "geaendert";
+  if (bestaetigt) return "in_bearbeitung";
+  if (offeneAktion) return "neu";
   return "in_bearbeitung";
 }
 

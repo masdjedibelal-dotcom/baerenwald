@@ -13,8 +13,8 @@ function crmNotifyBaseUrl(): string | null {
 
 export async function notifyCrmOrgPortal(input: {
   leadId: string
-  typ?: 'meldung' | 'freigabe_ergebnis' | 'angebot_entscheidung'
-  aktion?: 'freigegeben' | 'abgelehnt' | 'angenommen'
+  typ?: 'meldung' | 'freigabe_ergebnis'
+  aktion?: 'freigegeben' | 'abgelehnt'
   notiz?: string | null
 }): Promise<void> {
   const base = crmNotifyBaseUrl()
@@ -30,12 +30,7 @@ export async function notifyCrmOrgPortal(input: {
       },
       body: JSON.stringify({
         leadId: input.leadId,
-        typ:
-          input.typ === 'freigabe_ergebnis'
-            ? 'freigabe_ergebnis'
-            : input.typ === 'angebot_entscheidung'
-              ? 'angebot_entscheidung'
-              : undefined,
+        typ: input.typ === 'freigabe_ergebnis' ? 'freigabe_ergebnis' : undefined,
         aktion: input.aktion,
         notiz: input.notiz,
       }),

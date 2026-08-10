@@ -41,24 +41,24 @@ function validateForm(data: LeadData): FieldErrors {
   const e: FieldErrors = {};
 
   if (!data.vorname.trim()) {
-    e.vorname = "Bitte geben Sie Ihren Vornamen ein.";
+    e.vorname = "Bitte gib deinen Vornamen ein.";
   }
   if (!data.nachname.trim()) {
-    e.nachname = "Bitte geben Sie Ihren Nachnamen ein.";
+    e.nachname = "Bitte gib deinen Nachnamen ein.";
   }
 
   const tel = data.telefon.replace(/[\s\-]/g, "");
   if (!tel) {
     e.telefon = "Telefonnummer wird benötigt.";
   } else if (!/^(\+49|0)[1-9]\d{6,13}$/.test(tel)) {
-    e.telefon = "Bitte geben Sie eine gültige Telefonnummer ein.";
+    e.telefon = "Bitte gib eine gültige Telefonnummer ein.";
   }
 
   if (
     data.email &&
     !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email.trim())
   ) {
-    e.email = "Bitte geben Sie eine gültige E-Mail-Adresse ein.";
+    e.email = "Bitte gib eine gültige E-Mail-Adresse ein.";
   }
 
   return e;
@@ -157,11 +157,11 @@ export function LeadForm({
     } catch (err) {
       if (err instanceof Error && err.name === "TimeoutError") {
         setErrorMessage(
-          "Die Verbindung hat zu lange gedauert. Bitte versuchen Sie es erneut."
+          "Die Verbindung hat zu lange gedauert. Bitte versuche es erneut."
         );
       } else {
         setErrorMessage(
-          "Etwas ist schiefgelaufen. Bitte versuchen Sie es erneut oder rufen Sie uns direkt an."
+          "Etwas ist schiefgelaufen. Bitte versuche es erneut oder ruf uns direkt an."
         );
       }
       setSubmitStatus("error");

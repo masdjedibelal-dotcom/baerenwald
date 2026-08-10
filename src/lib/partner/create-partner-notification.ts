@@ -147,28 +147,6 @@ export async function createPartnerNotification(
 
   if (insErr) return { ok: false, error: insErr.message };
 
-  void import("@/lib/push/resolve-recipients")
-    .then(async ({ resolveHandwerkerAuthUserId }) => {
-      const { buildPushPayloadFromNotif } = await import("@/lib/push/payload");
-      const { scheduleWebPushToUsers } = await import(
-        "@/lib/push/send-web-push"
-      );
-      const { PUSH_COPY } = await import("@/lib/push/types");
-      const uid = await resolveHandwerkerAuthUserId(handwerkerId);
-      if (!uid) return;
-      scheduleWebPushToUsers(
-        [uid],
-        buildPushPayloadFromNotif({
-          typ: notifyTyp,
-          titel: PUSH_COPY.neuerAuftrag.title,
-          body: PUSH_COPY.neuerAuftrag.body,
-          link,
-          defaultUrl: "/partner",
-        })
-      );
-    })
-    .catch((e) => console.error("[createPartnerNotification] push:", e));
-
   const { data: hw } = await supabaseAdmin
     .from("handwerker")
     .select("email, name")

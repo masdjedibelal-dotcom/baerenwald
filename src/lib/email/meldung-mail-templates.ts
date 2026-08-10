@@ -174,13 +174,13 @@ export function buildMelderBestaetigungHtml(input: {
   return buildStandardMailHtml({
     preheader: `Meldung eingegangen — ${kat}`,
     bodyHtml: `
-      <p style="margin:0 0 12px;font-size:15px;color:#374151;line-height:1.6;">${mailBegruessungHtml("sie", input.melderName)}</p>
-      <p style="margin:0 0 12px;font-size:15px;color:#374151;line-height:1.6;">wir haben Ihre <strong>${esc(kat)}</strong>-Meldung für <strong>${esc(input.objektTitel)}</strong> erhalten.</p>
+      <p style="margin:0 0 12px;font-size:15px;color:#374151;line-height:1.6;">${mailBegruessungHtml("du", input.melderName)}</p>
+      <p style="margin:0 0 12px;font-size:15px;color:#374151;line-height:1.6;">wir haben deine <strong>${esc(kat)}</strong>-Meldung für <strong>${esc(input.objektTitel)}</strong> erhalten.</p>
       <p style="margin:0 0 12px;font-size:15px;color:#374151;line-height:1.6;">${intro}</p>
       ${statusBlock}
       ${input.referenz ? `<p style="margin:12px 0 0;font-size:13px;color:#6B7280;">Referenz: ${esc(input.referenz)}</p>` : ""}
       <p style="margin:16px 0 0;font-size:13px;color:#6B7280;">${footer}</p>
-      <p style="margin:24px 0 0;font-size:15px;color:#374151;line-height:1.6;">${mailTeamGrussHtml("sie")}</p>
+      <p style="margin:24px 0 0;font-size:15px;color:#374151;line-height:1.6;">${mailTeamGrussHtml("du")}</p>
     `,
   });
 }
@@ -217,11 +217,11 @@ export function buildMelderEinladungHtml(input: {
   return buildStandardMailHtml({
     preheader: `Meldung ergänzen — ${input.objektTitel}`,
     bodyHtml: `
-      <p style="margin:0 0 12px;font-size:15px;color:#374151;line-height:1.6;">${mailBegruessungHtml("sie", input.melderName)}</p>
-      <p style="margin:0 0 12px;font-size:15px;color:#374151;line-height:1.6;">${esc(input.orgName)} hat eine Meldung für <strong>${esc(input.objektTitel)}</strong> vorgemerkt. Bitte ergänzen Sie kurz Details und Fotos:</p>
+      <p style="margin:0 0 12px;font-size:15px;color:#374151;line-height:1.6;">${mailBegruessungHtml("du", input.melderName)}</p>
+      <p style="margin:0 0 12px;font-size:15px;color:#374151;line-height:1.6;">${esc(input.orgName)} hat eine Meldung für <strong>${esc(input.objektTitel)}</strong> vorgemerkt. Bitte ergänze kurz Details und Fotos:</p>
       ${mailPrimaryButtonHtml("Meldung ergänzen", input.link)}
       <p style="margin:12px 0 0;font-size:13px;color:#6B7280;word-break:break-all;">Link: ${esc(input.link)}</p>
-      <p style="margin:24px 0 0;font-size:15px;color:#374151;line-height:1.6;">${mailTeamGrussHtml("sie")}</p>
+      <p style="margin:24px 0 0;font-size:15px;color:#374151;line-height:1.6;">${mailTeamGrussHtml("du")}</p>
     `,
   });
 }
@@ -235,10 +235,10 @@ export function buildMelderAbgelehntHtml(input: {
   return buildStandardMailHtml({
     preheader: `Meldung abgeschlossen — ${input.objektTitel}`,
     bodyHtml: `
-      <p style="margin:0 0 12px;font-size:15px;color:#374151;line-height:1.6;">${mailBegruessungHtml("sie", input.melderName)}</p>
-      <p style="margin:0 0 12px;font-size:15px;color:#374151;line-height:1.6;">${esc(input.orgName)} hat Ihre Meldung für <strong>${esc(input.objektTitel)}</strong> ohne Beauftragung abgeschlossen.</p>
-      <p style="margin:0;font-size:15px;color:#374151;line-height:1.6;">Bei Rückfragen wenden Sie sich bitte direkt an Ihre Verwaltung.</p>
-      <p style="margin:24px 0 0;font-size:15px;color:#374151;line-height:1.6;">${mailTeamGrussHtml("sie")}</p>
+      <p style="margin:0 0 12px;font-size:15px;color:#374151;line-height:1.6;">${mailBegruessungHtml("du", input.melderName)}</p>
+      <p style="margin:0 0 12px;font-size:15px;color:#374151;line-height:1.6;">${esc(input.orgName)} hat deine Meldung für <strong>${esc(input.objektTitel)}</strong> ohne Beauftragung abgeschlossen.</p>
+      <p style="margin:0;font-size:15px;color:#374151;line-height:1.6;">Bei Rückfragen wende dich bitte direkt an deine Verwaltung.</p>
+      <p style="margin:24px 0 0;font-size:15px;color:#374151;line-height:1.6;">${mailTeamGrussHtml("du")}</p>
     `,
   });
 }
@@ -260,7 +260,7 @@ export function buildOrgKleinreparaturHtml(input: {
   });
 }
 
-/** M8 — HV/Endkunde: Angebot annehmen oder ablehnen (kein Freigabe-Flow) */
+/** M8 — HV: Angebot zur Freigabe (über Schwelle) */
 export function buildOrgAngebotFreigabeHtml(input: {
   objektTitel: string;
   betrag?: string;
@@ -268,16 +268,16 @@ export function buildOrgAngebotFreigabeHtml(input: {
 }): string {
   const link = orgPortalDeepLink(input.portalPath);
   return wrapOrgMail({
-    preheader: `Angebot entscheiden — ${input.objektTitel}`,
+    preheader: `Freigabe erforderlich — ${input.objektTitel}`,
     bodyInnerHtml: `
-      <p style="margin:0;font-size:15px;color:#374151;line-height:1.6;">Für <strong>${esc(input.objektTitel)}</strong>${input.betrag ? ` (${esc(input.betrag)})` : ""} liegt ein Angebot vor. Bitte im Portal annehmen oder ablehnen.</p>
+      <p style="margin:0;font-size:15px;color:#374151;line-height:1.6;">Für <strong>${esc(input.objektTitel)}</strong>${input.betrag ? ` (${esc(input.betrag)})` : ""} liegt ein Angebot vor. Bitte im Portal freigeben oder ablehnen.</p>
     `,
     ctaHref: link,
     ctaLabel: "Zum Auftraggeber-Portal →",
   });
 }
 
-/** HV: Angebot unter Freigabeschwelle — trotzdem Annehmen/Ablehnen, kein Kosten-Freigabe-Button. */
+/** HV: Angebot unter Freigabeschwelle — Direkt Durchführung, kein Freigabe-Button. */
 export function buildOrgAngebotUnterSchwelleHtml(input: {
   objektTitel: string;
   betrag?: string;
@@ -293,7 +293,7 @@ export function buildOrgAngebotUnterSchwelleHtml(input: {
     preheader: `Angebot unter Freigabeschwelle — ${input.objektTitel}`,
     bodyInnerHtml: `
       <p style="margin:0 0 12px;font-size:15px;color:#374151;line-height:1.6;">Für <strong>${esc(input.objektTitel)}</strong>${input.betrag ? ` liegt ein Angebot (${esc(input.betrag)})` : " liegt ein Angebot"} unter Ihrer Freigabeschwelle${schwelle}.</p>
-      <p style="margin:0;font-size:15px;color:#374151;line-height:1.6;"><strong>Bitte entscheiden:</strong> Nehmen Sie das Angebot im Portal an oder lehnen Sie es ab. Eine separate Kostenfreigabe ist nicht nötig — mit der Annahme startet der Auftrag direkt.</p>
+      <p style="margin:0;font-size:15px;color:#374151;line-height:1.6;"><strong>Direkt Durchführung:</strong> Der Handwerker kann ohne Ihre Freigabe starten. Im Portal sehen Sie den Hinweis — einen Freigabe-Button gibt es nicht.</p>
     `,
     ctaHref: link,
     ctaLabel: "Zum Auftraggeber-Portal →",

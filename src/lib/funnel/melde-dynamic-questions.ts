@@ -457,7 +457,7 @@ const TREES: Record<MeldeBereichId, MeldeQDef[]> = {
     },
     {
       id: "melde_ort",
-      frage: "Wo merken Sie das?",
+      frage: "Wo merkst du das?",
       optionen: [
         { value: "fassade", label: "An der Hausfassade" },
         { value: "eingang", label: "Eingangsbereich" },
@@ -478,7 +478,7 @@ const TREES: Record<MeldeBereichId, MeldeQDef[]> = {
     },
     {
       id: "melde_ort_ziegel",
-      frage: "Wo merken Sie das?",
+      frage: "Wo merkst du das?",
       optionen: [
         { value: "gehweg", label: "Eingangsbereich / Gehweg" },
         { value: "aussen", label: "Hof / Außenbereich" },

@@ -35,9 +35,7 @@ export async function POST(req: Request) {
   const orgId = session.kunde.id;
   const { data: lead } = await supabaseAdmin
     .from("leads")
-    .select(
-      "id, auftraggeber_kunde_id, kunde_id, org_freigabe_status, freigabe_bypass_grund, hv_meldung_status, funnel_daten"
-    )
+    .select("id, auftraggeber_kunde_id, kunde_id, org_freigabe_status")
     .eq("id", leadId)
     .maybeSingle();
 
@@ -46,36 +44,6 @@ export async function POST(req: Request) {
     (lead.auftraggeber_kunde_id !== orgId && lead.kunde_id !== orgId)
   ) {
     return NextResponse.json({ error: "Lead nicht gefunden." }, { status: 404 });
-  }
-
-  const { hvFreigabeEntfaellt } = await import("@/lib/org/freigabe-bypass");
-  const funnelDa =
-    lead.funnel_daten &&
-    typeof lead.funnel_daten === "object" &&
-    !Array.isArray(lead.funnel_daten)
-      ? (lead.funnel_daten as { direktauftrag?: unknown }).direktauftrag === true
-      : false;
-  if (
-    hvFreigabeEntfaellt({
-      orgFreigabeStatus: lead.org_freigabe_status,
-      bypassGrund: lead.freigabe_bypass_grund,
-      funnelDirektauftrag: funnelDa,
-      hvMeldungStatus: lead.hv_meldung_status,
-      // Freigabe-API nur bei ausstehendem Angebot
-      angebotZugestellt: true,
-    })
-  ) {
-    return NextResponse.json(
-      { error: "Keine Freigabe notwendig (Akut oder unter Schwelle)." },
-      { status: 409 }
-    );
-  }
-
-  if ((lead.org_freigabe_status ?? "").trim() !== "ausstehend") {
-    return NextResponse.json(
-      { error: "Freigabe ist für diesen Vorgang nicht offen." },
-      { status: 409 }
-    );
   }
 
   const { error: updErr } = await supabaseAdmin

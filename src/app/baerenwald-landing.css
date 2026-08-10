@@ -5784,16 +5784,14 @@ html.js .hero-picker-chips-wrap {
   .ki-rechner-chat-active .ki-rechner-chat-composer {
     position: relative;
     flex-shrink: 0;
-    z-index: 6;
+    z-index: 2;
     margin-top: 0;
     box-shadow: 0 -4px 16px rgba(26, 61, 43, 0.08);
     padding-bottom: max(12px, env(safe-area-inset-bottom, 0px));
   }
 
   .ki-rechner-chat-active .ki-rechner-chat-send,
-  .ki-rechner-chat-active .gpt-chat-attach,
-  .ki-rechner-chat-active .gpt-chat-voice-mic,
-  .ki-rechner-chat-active .gpt-chat-voice-stop {
+  .ki-rechner-chat-active .gpt-chat-attach {
     width: 44px;
     height: 44px;
   }
@@ -6149,14 +6147,10 @@ html.js .hero-picker-chips-wrap {
 }
 
 .ki-rechner-chat-header,
-.ki-rechner-chat-messages {
-  position: relative;
-  z-index: 1;
-}
-
+.ki-rechner-chat-messages,
 .ki-rechner-chat-composer {
   position: relative;
-  z-index: 6;
+  z-index: 1;
 }
 
 .ki-rechner-chat-header {

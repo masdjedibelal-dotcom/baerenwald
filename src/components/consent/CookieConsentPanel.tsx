@@ -43,13 +43,13 @@ export function CookieConsentPanel({
           <p id="cookie-consent-desc" className="cookie-consent-text">
             {isSettings ? (
               <>
-                Passen Sie Ihre Auswahl an. Technisch notwendige Speicher sind für Login und
+                Passe deine Auswahl an. Technisch notwendige Speicher sind für Login und
                 den Rechner-Betrieb erforderlich und können nicht abgewählt werden.
               </>
             ) : (
               <>
                 Wir verwenden <strong>technisch notwendige</strong> Speicher (z. B. für
-                Login im Kunden- und Partner-Portal). Mit Ihrer Einwilligung nutzen wir
+                Login im Kunden- und Partner-Portal). Mit deiner Einwilligung nutzen wir
                 zusätzlich <strong>Statistik</strong> (PostHog, EU), um unsere Website zu
                 verbessern.
               </>

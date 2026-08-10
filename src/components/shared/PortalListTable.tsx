@@ -39,7 +39,7 @@ export function PortalListTable({
     <div className={cn("portal-list-panel", className)}>
       <div
         className={cn(
-          "portal-text-label grid gap-3 bg-[#f7f8f7] px-3.5 py-2.5 text-text-tertiary",
+          "grid gap-3 bg-[#f7f8f7] px-3.5 py-2.5 text-[11.5px] font-bold uppercase tracking-wide text-text-tertiary",
           hideHeaderOnMobile && "max-sm:hidden",
           gridColsClass(columns.length)
         )}
@@ -106,7 +106,7 @@ export function PortalListTableCell({
   return (
     <div className={cn("min-w-0", className)} role="cell">
       {label ? (
-        <span className="portal-text-label mb-0.5 block text-text-tertiary sm:hidden">
+        <span className="mb-0.5 block text-[11px] font-bold uppercase tracking-wide text-text-tertiary sm:hidden">
           {label}
         </span>
       ) : null}

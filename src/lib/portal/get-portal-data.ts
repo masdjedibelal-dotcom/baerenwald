@@ -59,7 +59,6 @@ type PortalKundenObjektRow = {
   hausnummer: string | null;
   plz: string | null;
   ort: string | null;
-  cover_url?: string | null;
 };
 
 type PortalAngebotRow = {
@@ -203,28 +202,15 @@ export async function getPortalDataForKunde(
 
   const kunde = kundeRow;
 
-  let objekteRows: PortalKundenObjektRow[] | null = null;
-  {
-    const primary = await supabaseAdmin
-      .from("kunden_objekte")
-      .select("id, titel, strasse, hausnummer, plz, ort, cover_url")
-      .eq("kunde_id", kundeRow.id)
-      .order("titel", { ascending: true });
-    if (primary.error && /cover_url/i.test(primary.error.message)) {
-      const fallback = await supabaseAdmin
-        .from("kunden_objekte")
-        .select("id, titel, strasse, hausnummer, plz, ort")
-        .eq("kunde_id", kundeRow.id)
-        .order("titel", { ascending: true });
-      objekteRows = (fallback.data ?? []) as PortalKundenObjektRow[];
-    } else {
-      objekteRows = (primary.data ?? []) as PortalKundenObjektRow[];
-    }
-  }
+  const { data: objekteRows } = await supabaseAdmin
+    .from("kunden_objekte")
+    .select("id, titel, strasse, hausnummer, plz, ort")
+    .eq("kunde_id", kundeRow.id)
+    .order("titel", { ascending: true });
 
   const objektById = new Map<string, PortalKundenObjektRow>();
   for (const o of objekteRows ?? []) {
-    objektById.set(String(o.id), o);
+    objektById.set(String((o as { id: string }).id), o as PortalKundenObjektRow);
   }
 
   const resolveObj = (
@@ -612,24 +598,6 @@ export async function getPortalDataForKunde(
     const list = bautagebuchByAuftrag.get(aid) ?? [];
     list.push(entry);
     bautagebuchByAuftrag.set(aid, list);
-  }
-
-  // Partner-Dokumentation (Positions-Lebenszyklus) → Accordion für HV/Kunde
-  if (!listMode && auftragIds.length > 0) {
-    const {
-      loadPartnerDokumentationByAuftragIds,
-      mergePortalBautagebuchEntries,
-    } = await import("@/lib/portal/load-partner-dokumentation");
-    const partnerDoku = await loadPartnerDokumentationByAuftragIds(auftragIds);
-    for (const aid of auftragIds) {
-      const legacy = bautagebuchByAuftrag.get(aid) ?? [];
-      const partner = partnerDoku.get(aid) ?? [];
-      if (!legacy.length && !partner.length) continue;
-      bautagebuchByAuftrag.set(
-        aid,
-        mergePortalBautagebuchEntries(legacy, partner)
-      );
-    }
   }
 
   const betreuerIds = Array.from(

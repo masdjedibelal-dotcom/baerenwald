@@ -2,11 +2,9 @@
 
 import { useState } from "react";
 
-import { HvFreigabeInfoBanner } from "@/components/org/HvFreigabeInfoBanner";
-import { usePortalBusy } from "@/components/shared/PortalBusyContext";
 import {
-  hvFreigabeEntfaellt,
-  orgFreigabeStatusImpliesAngebot,
+  freigabeBypassInfoCopy,
+  isFreigabeBypassInfo,
   parseFreigabeBypassGrund,
 } from "@/lib/org/freigabe-bypass";
 import { orgPortalToast } from "@/lib/shared/portal-toast";
@@ -22,8 +20,6 @@ type Props = {
    */
   bypassGrund?: "schwelle" | "akut" | string | null;
   schwelleLabel?: string;
-  hvMeldungStatus?: string | null;
-  funnelDirektauftrag?: boolean | null;
 };
 
 export function OrgFreigabeBanner({
@@ -32,56 +28,51 @@ export function OrgFreigabeBanner({
   onUpdated,
   bypassGrund = null,
   schwelleLabel,
-  hvMeldungStatus,
-  funnelDirektauftrag,
 }: Props) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const { runBusy } = usePortalBusy();
 
   const bypass = parseFreigabeBypassGrund(bypassGrund);
-  const infoKind = hvFreigabeEntfaellt({
+  const isInfo = isFreigabeBypassInfo({
     orgFreigabeStatus: status,
     bypassGrund: bypass,
-    funnelDirektauftrag,
-    hvMeldungStatus,
-    // Dieser Banner hängt am Angebots-Freigabe-Flow → Angebot ist zugestellt
-    angebotZugestellt: orgFreigabeStatusImpliesAngebot(status),
   });
 
-  if (infoKind) {
+  if (status !== "ausstehend" && !isInfo) return null;
+
+  if (isInfo && bypass) {
+    const copy = freigabeBypassInfoCopy({
+      bypassGrund: bypass,
+      schwelleLabel,
+    });
     return (
-      <div className="mb-4">
-        <HvFreigabeInfoBanner kind={infoKind} schwelleLabel={schwelleLabel} />
+      <div className="mb-4 rounded-xl border border-emerald-200 bg-emerald-50 p-4">
+        <p className="text-sm font-medium text-emerald-900">{copy.title}</p>
       </div>
     );
   }
-
-  if (status !== "ausstehend") return null;
 
   const act = async (aktion: "freigegeben" | "abgelehnt") => {
     setBusy(true);
     setError(null);
     try {
-      await runBusy(async () => {
-        const res = await fetch("/api/org/freigabe", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ leadId, aktion }),
-        });
-        const json = (await res.json().catch(() => ({}))) as { error?: string };
-        if (!res.ok) {
-          setError(json.error ?? "Freigabe fehlgeschlagen.");
-          return;
-        }
-        track.orgFreigabe(aktion);
-        if (aktion === "freigegeben") {
-          orgPortalToast.freigegeben();
-        } else {
-          orgPortalToast.freigabeAbgelehnt();
-        }
-        onUpdated();
+      const res = await fetch("/api/org/freigabe", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ leadId, aktion }),
       });
+      const json = (await res.json().catch(() => ({}))) as { error?: string };
+      if (!res.ok) {
+        setError(json.error ?? "Freigabe fehlgeschlagen.");
+        return;
+      }
+      track.orgFreigabe(aktion);
+      if (aktion === "freigegeben") {
+        orgPortalToast.freigegeben();
+      } else {
+        orgPortalToast.freigabeAbgelehnt();
+      }
+      onUpdated();
     } finally {
       setBusy(false);
     }

@@ -17,11 +17,11 @@ export type KiRechnerStarterProps = {
 export function KiRechnerStarter({ selected, onSelect }: KiRechnerStarterProps) {
   return (
     <div className="ki-rechner-starter">
-      <p className="ki-rechner-starter-eyebrow">Ihr Vorhaben</p>
-      <h2 className="ki-rechner-starter-h2">Wie möchten Sie starten?</h2>
+      <p className="ki-rechner-starter-eyebrow">Dein Vorhaben</p>
+      <h2 className="ki-rechner-starter-h2">Wie willst du starten?</h2>
       <p className="ki-rechner-starter-sub">
-        Nur den Preisrahmen — oder Beratung, Visualisierung und Anfrage? Wählen Sie,
-        was zu Ihnen passt.
+        Nur den Preisrahmen — oder Beratung, Visualisierung und Anfrage? Wähle,
+        was zu dir passt.
       </p>
 
       <ul className="ki-rechner-starter-trust" aria-label="Vorteile">
@@ -45,7 +45,7 @@ export function KiRechnerStarter({ selected, onSelect }: KiRechnerStarterProps) 
         <span className="ki-rechner-starter-card-title">Preisrahmen ermitteln</span>
         <span className="ki-rechner-starter-card-hint">
           Situation, Gewerk, Größe, PLZ — Schritt für Schritt, der schnellste Weg,
-          wenn Ihnen nur der Preis wichtig ist.
+          wenn dir nur der Preis wichtig ist.
         </span>
       </button>
 
@@ -70,7 +70,7 @@ export function KiRechnerStarter({ selected, onSelect }: KiRechnerStarterProps) 
         <span className="ki-rechner-starter-card-title">Frag einfach los</span>
         <span className="ki-rechner-starter-card-hint">
           Beraten, Räume visualisieren, Preis besprechen oder Anfrage senden —
-          wenn Sie mehr wollen als nur eine Zahl.
+          wenn du mehr willst als nur eine Zahl.
         </span>
       </button>
     </div>

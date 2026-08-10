@@ -7,21 +7,19 @@ import {
   confirmPartnerAuftrag,
   declinePartnerAnfrage,
 } from "@/app/actions/partner-auftrag-bestaetigen";
-import { usePortalBusy } from "@/components/shared/PortalBusyContext";
-import { usePortalRefresh } from "@/components/shared/usePortalRefresh";
 import { VorgangDetailBlocks } from "@/components/shared/vorgang-detail";
 import { buildPartnerVorgangDetailVm } from "@/lib/vorgang/build-vorgang-detail-vm";
 import { PartnerPflichtenCard } from "@/components/partner/PartnerPflichtenCard";
 import { PartnerProjektvertragPaket } from "@/components/partner/PartnerProjektvertragPaket";
 import { PartnerLeistungenKonditionenCard } from "@/components/partner/PartnerLeistungenKonditionenCard";
 import {
-  PortalConfirmDialog,
-  PortalDetailError,
-  PortalDetailInfoBox,
-  PortalDetailLayout,
-  PortalDetailSection,
-  PortalDetailStickyActions,
-} from "@/components/shared/PortalDetailUi";
+  PartnerConfirmDialog,
+  PartnerDetailError,
+  PartnerDetailInfoBox,
+  PartnerDetailLayout,
+  PartnerDetailSection,
+  PartnerDetailStickyActions,
+} from "@/components/partner/PartnerDetailUi";
 import { PortalEntityDetailLayout } from "@/components/shared/PortalEntityDetailLayout";
 import { PartnerHwKalkulationScreen } from "@/components/partner/PartnerHwKalkulationScreen";
 import { PartnerFirmendatenFehlenDialog } from "@/components/partner/PartnerFirmendatenFehlenDialog";
@@ -60,7 +58,7 @@ import {
 import {
   PARTNER_LEISTUNGEN_GESAMT_LABEL,
   PARTNER_LEISTUNGEN_SECTION_TITLE,
-  partnerDetailOrtMetaLine,
+  partnerDetailDateMetaLine,
   resolvePartnerKonditionZeilen,
 } from "@/lib/partner/partner-portal-display";
 
@@ -76,8 +74,6 @@ export function PartnerOffenDetail({
   onBack?: () => void;
 }) {
   const router = useRouter();
-  const { refresh } = usePortalRefresh();
-  const { runBusy } = usePortalBusy();
   const isNachreichung = item.offen_karten_typ === "nachreichung";
   const [projektvertragBereit, setProjektvertragBereit] = useState(
     Boolean(item.projektvertrag_bestaetigt_am)
@@ -196,73 +192,77 @@ export function PartnerOffenDetail({
     return sortPartnerDokumentZeilen(rows);
   }, [item.projektvertrag, brauchtProjektvertrag]);
 
-  const heroMeta = partnerDetailOrtMetaLine(item.lead);
+  const heroMeta = partnerDetailDateMetaLine(item.gesendet_at ?? item.antwort_at);
 
-  const meldeFotos = useMemo(() => {
-    const fd = item.lead?.funnel_daten as { fotos?: unknown } | null | undefined;
-    if (!Array.isArray(fd?.fotos)) return [] as string[];
-    return fd.fotos
-      .filter(
-        (u): u is string => typeof u === "string" && /^https?:\/\//i.test(u)
-      )
-      .slice(0, 12);
-  }, [item.lead?.funnel_daten]);
-
-  const aufgabeOderCrmNotiz =
-    item.aufgabe_notiz?.trim() || item.hw_crm_notiz?.trim() || null;
+  const infoText = useMemo(() => {
+    if (!isNachreichung) {
+      return hatAuftrag
+        ? brauchtProjektvertrag
+          ? "Prüfe die Pflichten, Leistungen und den Projektvertrag. Mit „Annehmen“ bestätigst du den Auftrag verbindlich."
+          : "Prüfe die Leistungen und Konditionen. Mit „Annehmen“ nimmst du den Auftrag verbindlich an."
+        : "Prüfe die Leistungen und Konditionen. Mit „Annehmen“ nimmst du die Zuweisung verbindlich an.";
+    }
+    const openIds = openPositionIds ?? [];
+    const openPos =
+      item.crm_auftrag_positionen?.filter((p) => openIds.includes(p.id)) ?? [];
+    if (openPos.some((p) => p.aenderung_typ === "entfernt")) {
+      return "Bärenwald hat Leistungen entfernt — bitte die Änderungen prüfen und bestätigen.";
+    }
+    if (openPos.some((p) => p.aenderung_typ === "geaendert")) {
+      return "Bärenwald hat Leistungen oder Preise angepasst — bitte prüfen und bestätigen.";
+    }
+    return "Bärenwald hat Leistungen angepasst — markierte Zeilen unten prüfen und bestätigen.";
+  }, [isNachreichung, hatAuftrag, brauchtProjektvertrag, openPositionIds, item.crm_auftrag_positionen]);
 
   const primaryLabel = isNachreichung ? "Änderungen bestätigen" : "Annehmen";
 
   async function onConfirm() {
     setLoading(true);
     setError(null);
-    try {
-      await runBusy(async () => {
-        const gelesen = isNachreichung
-          ? pflichtenGelesen
-          : brauchtProjektvertrag
-            ? pflichtenGelesen && projektvertragBereit
-            : pflichtenGelesen;
-        const verbindlich = gelesen;
-        const res = await confirmPartnerAuftrag({
-          anfrageId: item.id,
-          gelesen,
-          verbindlich,
-        });
-        setConfirmOpen(false);
-        if (!res.ok) {
-          setError(res.error);
-          portalToastError("Annahme fehlgeschlagen", res.error);
-          return;
-        }
-        if (isNachreichung) {
-          partnerPortalToast.aenderungenBestaetigt();
-          if (onConfirmed) onConfirmed(item.id);
-          else await refresh();
-          return;
-        }
-        if (hatAuftrag) {
-          partnerPortalToast.auftragAngenommen();
-        } else {
-          partnerPortalToast.zuweisungAngenommen();
-        }
-
-        const auto = await tryCreatePartnerAutoAngebot(item.id);
-        if (auto.status === "created") {
-          partnerPortalToast.unterlagenHochgeladen();
-          setShowKalkulation(true);
-          return;
-        }
-        if (auto.status === "firmendaten_missing") {
-          setFirmendatenMissing(auto.missing);
-          setFirmendatenFehlenOpen(true);
-          return;
-        }
-        setShowKalkulation(true);
-      });
-    } finally {
-      setLoading(false);
+    const gelesen = isNachreichung
+      ? pflichtenGelesen
+      : brauchtProjektvertrag
+        ? pflichtenGelesen && projektvertragBereit
+        : pflichtenGelesen;
+    const verbindlich = gelesen;
+    const res = await confirmPartnerAuftrag({
+      anfrageId: item.id,
+      gelesen,
+      verbindlich,
+    });
+    setLoading(false);
+    setConfirmOpen(false);
+    if (!res.ok) {
+      setError(res.error);
+      portalToastError("Annahme fehlgeschlagen", res.error);
+      return;
     }
+    if (isNachreichung) {
+      partnerPortalToast.aenderungenBestaetigt();
+      if (onConfirmed) onConfirmed(item.id);
+      else router.refresh();
+      return;
+    }
+    if (hatAuftrag) {
+      partnerPortalToast.auftragAngenommen();
+    } else {
+      partnerPortalToast.zuweisungAngenommen();
+    }
+
+    setLoading(true);
+    const auto = await tryCreatePartnerAutoAngebot(item.id);
+    setLoading(false);
+    if (auto.status === "created") {
+      partnerPortalToast.unterlagenHochgeladen();
+      setShowKalkulation(true);
+      return;
+    }
+    if (auto.status === "firmendaten_missing") {
+      setFirmendatenMissing(auto.missing);
+      setFirmendatenFehlenOpen(true);
+      return;
+    }
+    setShowKalkulation(true);
   }
 
   function continueAfterFirmendatenHinweis() {
@@ -273,26 +273,21 @@ export function PartnerOffenDetail({
   async function onDecline() {
     setLoading(true);
     setError(null);
-    try {
-      await runBusy(async () => {
-        const res = await declinePartnerAnfrage({
-          anfrageId: item.id,
-          grund,
-          notiz: notiz.trim() || undefined,
-        });
-        setConfirmReject(false);
-        setShowReject(false);
-        if (!res.ok) {
-          setError(res.error);
-          return;
-        }
-        partnerPortalToast.abgelehnt();
-        if (onConfirmed) onConfirmed(item.id);
-        else await refresh();
-      });
-    } finally {
-      setLoading(false);
+    const res = await declinePartnerAnfrage({
+      anfrageId: item.id,
+      grund,
+      notiz: notiz.trim() || undefined,
+    });
+    setLoading(false);
+    setConfirmReject(false);
+    setShowReject(false);
+    if (!res.ok) {
+      setError(res.error);
+      return;
     }
+    partnerPortalToast.abgelehnt();
+    if (onConfirmed) onConfirmed(item.id);
+    else router.refresh();
   }
 
   const kannBestaetigen = isNachreichung
@@ -311,7 +306,7 @@ export function PartnerOffenDetail({
 
   const actionFooter =
     showKalkulation ? null : !showReject ? (
-      <PortalDetailStickyActions
+      <PartnerDetailStickyActions
         primaryLabel={primaryLabel}
         onPrimary={() => setConfirmOpen(true)}
         primaryLoading={loading}
@@ -322,7 +317,7 @@ export function PartnerOffenDetail({
         secondaryDisabled={loading}
       />
     ) : (
-      <PortalDetailStickyActions
+      <PartnerDetailStickyActions
         primaryLabel="Ablehnung senden"
         onPrimary={() => setConfirmReject(true)}
         primaryLoading={loading}
@@ -334,12 +329,12 @@ export function PartnerOffenDetail({
 
   function finishAfterKalk() {
     if (onConfirmed) onConfirmed(item.id);
-    else void refresh();
+    else router.refresh();
   }
 
   if (showKalkulation) {
     return (
-      <PortalDetailLayout footer={null}>
+      <PartnerDetailLayout footer={null}>
         <PortalEntityDetailLayout
           onBack={onBack ?? (() => router.back())}
           backLabel="← Zurück"
@@ -350,10 +345,10 @@ export function PartnerOffenDetail({
           statusPillStyle={partnerDetailStatusPillStyle("angenommen")}
         >
           <div className="space-y-5">
-            <PortalDetailInfoBox>
+            <PartnerDetailInfoBox>
               Als Nächstes: Kalkulation einreichen — Positionen und Summe erscheinen
               bei Bärenwald und der Verwaltung als empfohlenes Angebot.
-            </PortalDetailInfoBox>
+            </PartnerDetailInfoBox>
             <PartnerHwKalkulationScreen
               anfrageId={item.id}
               onDone={finishAfterKalk}
@@ -361,12 +356,12 @@ export function PartnerOffenDetail({
             />
           </div>
         </PortalEntityDetailLayout>
-      </PortalDetailLayout>
+      </PartnerDetailLayout>
     );
   }
 
   return (
-    <PortalDetailLayout footer={actionFooter}>
+    <PartnerDetailLayout footer={actionFooter}>
       <PortalEntityDetailLayout
         coverUrl={item.lead?.objekt?.cover_url}
         onBack={onBack ?? (() => router.back())}
@@ -378,13 +373,6 @@ export function PartnerOffenDetail({
         statusPillStyle={partnerDetailStatusPillStyle(statusPillKey)}
       >
         <div className="space-y-5">
-      {aufgabeOderCrmNotiz ? (
-        <PortalDetailInfoBox>
-          <p className="font-semibold">Hinweis vom Auftraggeber</p>
-          <p className="mt-1 whitespace-pre-wrap">{aufgabeOderCrmNotiz}</p>
-        </PortalDetailInfoBox>
-      ) : null}
-
       <VorgangDetailBlocks
         vm={buildPartnerVorgangDetailVm({
           idLabel: item.id.slice(0, 8).toUpperCase(),
@@ -395,22 +383,23 @@ export function PartnerOffenDetail({
           ort: item.ort,
           zeitraum: item.zeitraum,
           gewerkName: item.gewerk_name,
-          aufgabeNotiz: item.aufgabe_notiz ?? item.hw_crm_notiz,
+          aufgabeNotiz: item.aufgabe_notiz,
           konditionZeilen,
-          fotos: meldeFotos,
         })}
       />
 
+      <PartnerDetailInfoBox>{infoText}</PartnerDetailInfoBox>
+
       {isNachreichung && konditionZeilen.length === 0 ? (
-        <PortalDetailInfoBox>
+        <PartnerDetailInfoBox>
           Bärenwald hat Leistungen an diesem Auftrag angepasst. Die Details konnten
           gerade nicht geladen werden — bitte Seite neu laden. Bei anhaltendem
           Problem melde dich bei Bärenwald.
-        </PortalDetailInfoBox>
+        </PartnerDetailInfoBox>
       ) : null}
 
       {konditionZeilen.length > 0 ? (
-        <PortalDetailSection
+        <PartnerDetailSection
           title={
             isNachreichung ? "Geänderte Leistungen" : PARTNER_LEISTUNGEN_SECTION_TITLE
           }
@@ -420,8 +409,21 @@ export function PartnerOffenDetail({
             mode="readonly"
             gesamtLabel={PARTNER_LEISTUNGEN_GESAMT_LABEL}
           />
-        </PortalDetailSection>
+        </PartnerDetailSection>
       ) : null}
+
+      <PartnerPflichtenCard
+        compliance_stamm={item.compliance_stamm}
+        compliance_projekt={item.compliance_projekt}
+        compliance_bauauftrag={item.compliance_bauauftrag}
+        ist_bauprojekt={item.ist_bauprojekt}
+        auftragId={item.auftrag_id}
+        includeProjektvertrag={brauchtProjektvertrag}
+        acknowledgment={{
+          checked: pflichtenGelesen,
+          onChange: setPflichtenGelesen,
+        }}
+      />
 
       {brauchtProjektvertrag ? (
         <PartnerProjektvertragPaket
@@ -441,7 +443,7 @@ export function PartnerOffenDetail({
       />
 
       {showReject ? (
-        <div className="space-y-3 border-t border-border-light pt-4">
+        <div className="space-y-3 rounded-xl border border-border-light bg-muted/30 p-4">
           <label className="block space-y-1">
             <span className="portal-form-label">Ablehnungsgrund</span>
             <select
@@ -466,24 +468,9 @@ export function PartnerOffenDetail({
         </div>
       ) : null}
 
-      {error ? <PortalDetailError message={error} /> : null}
+      {error ? <PartnerDetailError message={error} /> : null}
 
-      {!showReject ? (
-        <PartnerPflichtenCard
-          compliance_stamm={item.compliance_stamm}
-          compliance_projekt={item.compliance_projekt}
-          compliance_bauauftrag={item.compliance_bauauftrag}
-          ist_bauprojekt={item.ist_bauprojekt}
-          auftragId={item.auftrag_id}
-          includeProjektvertrag={brauchtProjektvertrag}
-          acknowledgment={{
-            checked: pflichtenGelesen,
-            onChange: setPflichtenGelesen,
-          }}
-        />
-      ) : null}
-
-      <PortalConfirmDialog
+      <PartnerConfirmDialog
         open={confirmOpen}
         title={primaryLabel}
         description={
@@ -501,13 +488,12 @@ export function PartnerOffenDetail({
         loading={loading}
       />
 
-      <PortalConfirmDialog
+      <PartnerConfirmDialog
         open={confirmReject}
         title="Ablehnen?"
         description="Bärenwald wird informiert."
         confirmLabel="Ablehnen"
         confirmVariant="danger"
-        cancelLabel="Weiter bearbeiten"
         onConfirm={onDecline}
         onCancel={() => setConfirmReject(false)}
         loading={loading}
@@ -519,11 +505,11 @@ export function PartnerOffenDetail({
         onDismiss={continueAfterFirmendatenHinweis}
         onGoSettings={() => {
           setFirmendatenFehlenOpen(false);
-          void refresh();
+          router.refresh();
         }}
       />
         </div>
       </PortalEntityDetailLayout>
-    </PortalDetailLayout>
+    </PartnerDetailLayout>
   );
 }

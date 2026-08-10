@@ -2,6 +2,7 @@ import { buildKundeVorgaenge } from "@/lib/portal/build-kunde-vorgaenge";
 import type { KundePortalDetailItem } from "@/lib/portal/portal-detail-item";
 import { findKundeVorgangByQueryId } from "@/lib/portal/portal-detail-item";
 import { getPortalDataForKunde } from "@/lib/portal/get-portal-data";
+import { loadPartnerBefundeByLeadIds } from "@/lib/org/load-partner-befund";
 import { isSupabaseConfigured, supabaseAdmin } from "@/lib/supabase";
 
 async function resolveLeadIdForVorgang(
@@ -61,6 +62,9 @@ export async function getPortalVorgangDetail(opts: {
   hvPortalMode?: boolean;
 }): Promise<{
   item: KundePortalDetailItem;
+  partnerBefund?: Awaited<
+    ReturnType<typeof loadPartnerBefundeByLeadIds>
+  >[string];
 } | null> {
   if (!isSupabaseConfigured()) return null;
   const kundeId = opts.sessionKundeId.trim();
@@ -70,10 +74,17 @@ export async function getPortalVorgangDetail(opts: {
   const leadId = await resolveLeadIdForVorgang(vorgangId, kundeId);
   if (!leadId) return null;
 
-  const data = await getPortalDataForKunde(kundeId, {
-    mode: "full",
-    leadIds: [leadId],
-  });
+  const [data, partnerMap] = await Promise.all([
+    getPortalDataForKunde(kundeId, {
+      mode: "full",
+      leadIds: [leadId],
+    }),
+    opts.hvPortalMode
+      ? loadPartnerBefundeByLeadIds([leadId])
+      : Promise.resolve(
+          {} as Awaited<ReturnType<typeof loadPartnerBefundeByLeadIds>>
+        ),
+  ]);
   if (!data) return null;
 
   const items = buildKundeVorgaenge({
@@ -96,5 +107,8 @@ export async function getPortalVorgangDetail(opts: {
     null;
   if (!item) return null;
 
-  return { item };
+  return {
+    item,
+    partnerBefund: opts.hvPortalMode ? partnerMap[leadId] : undefined,
+  };
 }

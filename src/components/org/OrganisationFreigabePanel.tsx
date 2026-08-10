@@ -1,18 +1,11 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { flushSync } from "react-dom";
 
 import type { OrgFreigabeAngebot } from "@/components/org/OrgAngebotFreigabeInhalt";
 import { OrganisationEingangPanel } from "@/components/org/OrganisationEingangPanel";
 import { OrgFreigabeBanner } from "@/components/org/OrgFreigabeBanner";
-import {
-  paintPortalBusyNow,
-  PORTAL_BUSY_MIN_MS,
-  usePortalBusy,
-} from "@/components/shared/PortalBusyContext";
-import { PortalContentBusy } from "@/components/shared/PortalContentBusy";
 import { PortalListCard } from "@/components/shared/PortalListCard";
 import { buildKundeVorgaenge } from "@/lib/portal/build-kunde-vorgaenge";
 import { PortalVorgangDetail } from "@/components/portal/PortalVorgangDetail";
@@ -21,12 +14,13 @@ import {
   plattformStatusPillClass,
   resolvePlattformStatus,
 } from "@/lib/vorgang/plattform-status";
-import { parseFreigabeBypassGrund, funnelDirektauftragFromDaten } from "@/lib/org/freigabe-bypass";
+import { parseFreigabeBypassGrund } from "@/lib/org/freigabe-bypass";
 import type {
   OrganisationKunde,
   OrganisationLead,
   OrganisationObjekt,
 } from "@/lib/org/types";
+import type { OrgPartnerBefundEntry } from "@/lib/org/load-partner-befund";
 import { HvAngebotListActions } from "@/components/org/HvAngebotListActions";
 import {
   HV_ANGEBOT_BANNER,
@@ -76,6 +70,7 @@ type Props = {
   initialSelectedId?: string | null;
   onRefresh: () => void;
   embedded?: boolean;
+  partnerBefundByLeadId?: Record<string, OrgPartnerBefundEntry[]>;
   bautagebuchByLeadId?: Record<string, BautagebuchEntry[]>;
   hwErledigtByLeadId?: Record<string, boolean>;
   feedbackBereitByLeadId?: Record<string, boolean>;
@@ -148,6 +143,7 @@ export function OrganisationFreigabePanel({
   initialSelectedId,
   onRefresh,
   embedded = false,
+  partnerBefundByLeadId = {},
   bautagebuchByLeadId = {},
   hwErledigtByLeadId = {},
   feedbackBereitByLeadId = {},
@@ -160,32 +156,6 @@ export function OrganisationFreigabePanel({
   const searchParams = useSearchParams();
   const urlDetailId = searchParams.get("id")?.trim() || null;
   const [selectedAngebotId, setSelectedAngebotId] = useState<string | null>(null);
-  const [detailOpening, setDetailOpening] = useState(false);
-  const detailOpeningTimerRef = useRef<ReturnType<typeof setTimeout> | null>(
-    null
-  );
-  const { hold, release } = usePortalBusy();
-  const detailHoldRef = useRef(false);
-
-  function beginDetailOpening() {
-    if (!detailHoldRef.current) {
-      detailHoldRef.current = true;
-      hold();
-    }
-    paintPortalBusyNow(setDetailOpening);
-    if (detailOpeningTimerRef.current) {
-      clearTimeout(detailOpeningTimerRef.current);
-      detailOpeningTimerRef.current = null;
-    }
-  }
-
-  function endDetailOpening() {
-    setDetailOpening(false);
-    if (detailHoldRef.current) {
-      detailHoldRef.current = false;
-      release();
-    }
-  }
   const auftragByLeadId = useMemo(
     () => buildAuftragByLeadId(auftraege as Array<{ id: string; lead_id?: string | null }>),
     [auftraege]
@@ -236,14 +206,6 @@ export function OrganisationFreigabePanel({
       )
     : null;
 
-  useEffect(() => {
-    if (!detailOpening || !selectedAngebotId || !selectedAngebotItem) return;
-    const t = window.setTimeout(() => {
-      endDetailOpening();
-    }, PORTAL_BUSY_MIN_MS);
-    return () => window.clearTimeout(t);
-  }, [detailOpening, selectedAngebotId, selectedAngebotItem]);
-
   const eingangDetailProps = {
     kunde,
     eingang: freigabeEingang,
@@ -251,6 +213,7 @@ export function OrganisationFreigabePanel({
     angebote: freigabeAngebote,
     initialSelectedId: initialSelectedId ?? urlDetailId,
     onRefresh,
+    partnerBefundByLeadId,
     auftragByLeadId,
     auftragKontextByLeadId,
     bautagebuchByLeadId,
@@ -263,15 +226,6 @@ export function OrganisationFreigabePanel({
   };
 
   /** Mock: Detail ist eigener Screen — kein Split / Inline-Expand. */
-  if (selectedAngebotId && (detailOpening || !selectedAngebotItem)) {
-    return (
-      <PortalContentBusy
-        title="Vorgang wird geladen…"
-        body="Einen Moment — wir öffnen die Details."
-      />
-    );
-  }
-
   if (selectedAngebotItem) {
     const leadId =
       (selectedAngebotItem as { leadId?: string }).leadId ??
@@ -292,56 +246,21 @@ export function OrganisationFreigabePanel({
       currency: "EUR",
       maximumFractionDigits: 0,
     }).format(schwelleEur);
-    const fromMap = bautagebuchByLeadId[leadId] ?? [];
-    const detailItem =
-      fromMap.length > 0
-        ? {
-            ...selectedAngebotItem,
-            bautagebuch: (() => {
-              const byId = new Map<
-                string,
-                NonNullable<(typeof selectedAngebotItem)["bautagebuch"]>[number]
-              >();
-              for (const e of selectedAngebotItem.bautagebuch ?? []) {
-                const id = e.id?.trim();
-                if (id) byId.set(id, e);
-              }
-              for (const e of fromMap) {
-                const id = e.id?.trim();
-                if (id) byId.set(id, e);
-              }
-              return Array.from(byId.values()).sort((a, b) => {
-                const da = a.created_at || a.datum || "";
-                const db = b.created_at || b.datum || "";
-                return db.localeCompare(da);
-              });
-            })(),
-          }
-        : selectedAngebotItem;
     return (
       <div className="-mx-4 -mt-2 min-w-0 lg:-mx-6">
-        {/* Bypass-Banner kommt aus dem Detail; hier nur CTAs wenn Freigabe offen. */}
-        {!bypassGrund && orgStatus === "ausstehend" ? (
-          <OrgFreigabeBanner
-            leadId={leadId}
-            status={orgStatus}
-            bypassGrund={bypassGrund}
-            hvMeldungStatus={leadMeta?.hv_meldung_status}
-            funnelDirektauftrag={funnelDirektauftragFromDaten(
-              leadMeta?.funnel_daten
-            )}
-            schwelleLabel={schwelleLabel}
-            onUpdated={onRefresh}
-          />
-        ) : null}
+        <OrgFreigabeBanner
+          leadId={leadId}
+          status={orgStatus || "ausstehend"}
+          bypassGrund={bypassGrund}
+          schwelleLabel={schwelleLabel}
+          onUpdated={onRefresh}
+        />
         <PortalVorgangDetail
-          item={detailItem}
+          item={selectedAngebotItem}
           onAccepted={onRefresh}
           showHvAbnahme
           showAnlassBadge
           orgFreigabeStatus={orgStatus || "ausstehend"}
-          freigabeBypassGrund={bypassGrund}
-          hvMeldungStatus={leadMeta?.hv_meldung_status}
           schwelleEur={schwelleEur}
           onBack={() => {
             setSelectedAngebotId(null);
@@ -362,8 +281,8 @@ export function OrganisationFreigabePanel({
     <div className="space-y-6">
       {!embedded ? (
         <div>
-          <h2 className="portal-text-section">Zur Freigabe</h2>
-          <p className="portal-text-meta text-text-secondary">
+          <h2 className="text-lg font-semibold">Zur Freigabe</h2>
+          <p className="text-sm text-text-secondary">
             Meldungen bearbeiten und Angebote freigeben.
           </p>
         </div>
@@ -371,9 +290,17 @@ export function OrganisationFreigabePanel({
 
       <section className="space-y-2">
         <div className="flex items-center gap-2 px-1">
-          <h3 className="portal-text-section">{HV_SECTION_MELDUNGEN}</h3>
+          <h3
+            className="text-sm font-bold"
+            style={{
+              color: PORTAL_VAR.ink,
+              fontFamily: "var(--p2-font-head, " + PORTAL_VAR.head + ")",
+            }}
+          >
+            {HV_SECTION_MELDUNGEN}
+          </h3>
           <span
-            className="portal-text-label normal-case tracking-normal rounded-full px-2 py-0.5"
+            className="rounded-full px-2 py-0.5 text-[11px] font-bold"
             style={{ color: PORTAL_VAR.faint, background: "#eceef0" }}
           >
             {freigabeEingang.length}
@@ -381,7 +308,7 @@ export function OrganisationFreigabePanel({
         </div>
         {freigabeEingang.length === 0 ? (
           <p
-            className="portal-text-meta rounded-xl border bg-white py-7 text-center"
+            className="rounded-xl border bg-white py-7 text-center text-[12.5px]"
             style={{ color: PORTAL_VAR.faint, borderColor: PORTAL_VAR.line }}
           >
             {HV_SECTION_EMPTY}
@@ -393,9 +320,17 @@ export function OrganisationFreigabePanel({
 
       <section className="space-y-2">
         <div className="flex items-center gap-2 px-1">
-          <h3 className="portal-text-section">{HV_SECTION_ANGEBOTE}</h3>
+          <h3
+            className="text-sm font-bold"
+            style={{
+              color: PORTAL_VAR.ink,
+              fontFamily: "var(--p2-font-head, " + PORTAL_VAR.head + ")",
+            }}
+          >
+            {HV_SECTION_ANGEBOTE}
+          </h3>
           <span
-            className="portal-text-label normal-case tracking-normal rounded-full px-2 py-0.5"
+            className="rounded-full px-2 py-0.5 text-[11px] font-bold"
             style={{ color: PORTAL_VAR.faint, background: "#eceef0" }}
           >
             {angebotFreigaben.length}
@@ -403,7 +338,7 @@ export function OrganisationFreigabePanel({
         </div>
         {angebotFreigaben.length > 0 ? (
           <div
-            className="portal-text-meta mx-0 mb-2.5 flex items-center gap-2 rounded-[9px] px-3.5 py-2.5 font-semibold"
+            className="mx-0 mb-2.5 flex items-center gap-2 rounded-[9px] px-3.5 py-2.5 text-[12.5px] font-semibold"
             style={{ background: "#FBF1D6", color: "#8A5A06" }}
           >
             <span aria-hidden>●</span>
@@ -412,7 +347,7 @@ export function OrganisationFreigabePanel({
         ) : null}
         {angebotFreigaben.length === 0 ? (
           <p
-            className="portal-text-meta rounded-xl border bg-white py-7 text-center"
+            className="rounded-xl border bg-white py-7 text-center text-[12.5px]"
             style={{ color: PORTAL_VAR.faint, borderColor: PORTAL_VAR.line }}
           >
             {HV_SECTION_EMPTY}
@@ -456,10 +391,7 @@ export function OrganisationFreigabePanel({
                     )}
                     meta={[]}
                     onClick={() => {
-                      beginDetailOpening();
-                      flushSync(() => {
-                        setSelectedAngebotId(a.id);
-                      });
+                      setSelectedAngebotId(a.id);
                       router.replace(
                         `/portal?section=vorgaenge&filter=offen&id=${encodeURIComponent(a.leadId)}`,
                         { scroll: false }

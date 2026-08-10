@@ -51,7 +51,7 @@ export function getKiAssistantDisplayText(
     return KI_OFF_TOPIC_REPLY;
   }
 
-  return stripped || "Was möchten Sie am Haus oder in der Wohnung machen?";
+  return stripped || "Was möchtest du am Haus oder in der Wohnung machen?";
 }
 
 /** JSON aus Claude-Antwort extrahieren (auch in Markdown-Codeblöcken). */

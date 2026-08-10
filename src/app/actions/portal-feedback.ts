@@ -20,7 +20,7 @@ async function assertKundeLead(leadId: string) {
   } = await supabase.auth.getUser();
 
   if (!user?.email) {
-    return { ok: false as const, error: "Bitte melden Sie sich an." };
+    return { ok: false as const, error: "Bitte melde dich an." };
   }
 
   const link = await linkPortalKundeToAuthUser({

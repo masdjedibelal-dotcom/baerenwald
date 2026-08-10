@@ -147,7 +147,7 @@ function DokumentCardShell({
   actions: ReactNode;
 }) {
   return (
-    <article className="px-0 py-3.5">
+    <article className="rounded-xl border border-border-light bg-white px-3.5 py-3.5 shadow-[0_1px_2px_rgba(22,32,27,0.04)]">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
           <p className="text-[14px] font-semibold leading-snug text-text-primary">
@@ -161,7 +161,7 @@ function DokumentCardShell({
         </div>
         {status}
       </div>
-      <div className="mt-3 flex items-center justify-between gap-2 pt-1">
+      <div className="mt-3 flex items-center justify-between gap-2 border-t border-border-light pt-3">
         <p className="portal-text-meta tabular-nums text-text-tertiary">
           {datum !== "—" ? `Datum · ${datum}` : "Kein Datum"}
         </p>
@@ -469,8 +469,8 @@ export function PartnerStammDokumenteListe({
           </button>
         </div>
 
-        {/* Mobil: flache Zeilen */}
-        <div className="divide-y divide-border-light sm:hidden">
+        {/* Mobil: Cards */}
+        <div className="space-y-2.5 sm:hidden">
           <RahmenvertragDokumentItem
             rahmenvertrag={rahmenvertrag}
             akzeptiert={akzeptiert}
@@ -487,8 +487,8 @@ export function PartnerStammDokumenteListe({
           ))}
         </div>
 
-        {/* Desktop: Tabelle ohne Rahmen */}
-        <div className="hidden overflow-hidden sm:block">
+        {/* Desktop: Tabelle */}
+        <div className="hidden overflow-hidden rounded-xl border border-border-light sm:block">
           <table className="portal-text-body w-full">
             <thead>
               <tr className="portal-text-meta border-b border-border-light bg-muted/30 text-left text-text-tertiary">
@@ -552,10 +552,6 @@ export function PartnerStammDokumenteListe({
         variant="edit"
         dirty
         closeOnBackdrop={!saving}
-        busy={saving}
-        onConfirm={() => void submitUpload()}
-        confirmDisabled={saving}
-        confirmLabel="Hochladen"
       >
         <div className="flex flex-col gap-3">
           <label className="flex flex-col gap-1">

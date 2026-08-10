@@ -11,7 +11,7 @@
 .gpt-viz-step-title {
   font-size: 1.05rem;
   font-weight: 600;
-  color: var(--org-primary-dk, var(--p2-green-dark, #1a3d2b));
+  color: #1a3d2b;
   margin: 0;
 }
 
@@ -45,7 +45,7 @@
 .gpt-viz-card h3 {
   margin: 0 0 0.35rem;
   font-size: 0.95rem;
-  color: var(--org-primary-dk, var(--p2-green-dark, #1a3d2b));
+  color: #1a3d2b;
 }
 
 .gpt-viz-card p {
@@ -73,7 +73,7 @@
   cursor: pointer;
   font-size: 0.9rem;
   font-weight: 500;
-  color: var(--org-primary, var(--p2-primary, #2e7d52));
+  color: #2e7d52;
 }
 
 .gpt-viz-preview {
@@ -140,7 +140,7 @@
 .gpt-viz-chip {
   border: 1px solid rgba(46, 125, 82, 0.3);
   background: #f5faf7;
-  color: var(--org-primary-dk, var(--p2-green-dark, #1a3d2b));
+  color: #1a3d2b;
   border-radius: 999px;
   padding: 0.35rem 0.75rem;
   font-size: 0.78rem;
@@ -148,9 +148,9 @@
 }
 
 .gpt-viz-chip--active {
-  background: var(--org-primary, var(--p2-primary, #2e7d52));
+  background: #2e7d52;
   color: #fff;
-  border-color: var(--org-primary, var(--p2-primary, #2e7d52));
+  border-color: #2e7d52;
 }
 
 .gpt-viz-stil-grid {
@@ -170,7 +170,7 @@
 .gpt-viz-stil strong {
   display: block;
   font-size: 0.85rem;
-  color: var(--org-primary-dk, var(--p2-green-dark, #1a3d2b));
+  color: #1a3d2b;
 }
 
 .gpt-viz-stil span {
@@ -224,7 +224,7 @@
   font-size: 0.95rem;
   font-weight: 700;
   letter-spacing: -0.02em;
-  color: var(--org-primary-dk, var(--p2-green-dark, #1a3d2b));
+  color: #1a3d2b;
 }
 
 .gpt-zielbild-card-hint {
@@ -307,7 +307,7 @@
 .gpt-chat-compare-details summary {
   cursor: pointer;
   font-weight: 600;
-  color: var(--org-primary, var(--p2-primary, #2e7d52));
+  color: #2e7d52;
   margin-bottom: 0.35rem;
 }
 
@@ -349,7 +349,7 @@
 }
 
 .gpt-viz-version-btn--active {
-  background: var(--org-primary, var(--p2-primary, #2e7d52));
+  background: #2e7d52;
   color: #fff;
 }
 
@@ -363,7 +363,7 @@
 .gpt-viz-erklaerung h4 {
   margin: 0 0 0.5rem;
   font-size: 0.95rem;
-  color: var(--org-primary-dk, var(--p2-green-dark, #1a3d2b));
+  color: #1a3d2b;
 }
 
 .gpt-viz-erklaerung ul {
@@ -403,14 +403,14 @@
 }
 
 .gpt-viz-btn--primary {
-  background: var(--org-primary, var(--p2-primary, #2e7d52));
+  background: #2e7d52;
   color: #fff;
 }
 
 .gpt-viz-btn--outline {
   background: transparent;
   border: 1px solid rgba(46, 125, 82, 0.45);
-  color: var(--org-primary-dk, var(--p2-green-dark, #1a3d2b));
+  color: #1a3d2b;
 }
 
 .gpt-viz-btn:disabled {
@@ -425,7 +425,7 @@
 }
 
 .gpt-viz-success {
-  color: var(--org-primary-dk, var(--p2-green-dark, #1a3d2b));
+  color: #1a3d2b;
   font-size: 0.88rem;
   background: #e8f5ec;
   border-radius: 10px;
@@ -458,7 +458,7 @@
 .gpt-projekt-section p {
   margin: 0;
   font-size: 0.88rem;
-  color: var(--org-primary-dk, var(--p2-green-dark, #1a3d2b));
+  color: #1a3d2b;
   line-height: 1.45;
 }
 
@@ -484,8 +484,8 @@
 }
 
 .portal-gpt-tab--active {
-  color: var(--org-primary-dk, var(--p2-green-dark, #1a3d2b));
-  border-bottom-color: var(--org-primary, var(--p2-primary, #2e7d52));
+  color: #1a3d2b;
+  border-bottom-color: #2e7d52;
 }
 
 .portal-gpt-viz-cta {
@@ -495,7 +495,7 @@
   background: #e8f5ec;
   border: 1px solid rgba(46, 125, 82, 0.2);
   font-size: 0.82rem;
-  color: var(--org-primary-dk, var(--p2-green-dark, #1a3d2b));
+  color: #1a3d2b;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -504,7 +504,7 @@
 
 .portal-gpt-viz-cta button {
   border: none;
-  background: var(--org-primary, var(--p2-primary, #2e7d52));
+  background: #2e7d52;
   color: #fff;
   border-radius: 999px;
   padding: 0.35rem 0.65rem;
@@ -572,7 +572,7 @@
   border: 1px solid rgba(46, 125, 82, 0.35);
   border-radius: 999px;
   background: #f5faf7;
-  color: var(--org-primary-dk, var(--p2-green-dark, #1a3d2b));
+  color: #1a3d2b;
   font-size: 0.72rem;
   font-weight: 600;
   cursor: pointer;
@@ -618,7 +618,7 @@
   background: transparent;
   font-size: 0.8rem;
   font-weight: 600;
-  color: var(--org-primary-dk, var(--p2-green-dark, #1a3d2b));
+  color: #1a3d2b;
   cursor: pointer;
 }
 
@@ -641,108 +641,6 @@
   margin-top: 0.65rem;
 }
 
-/* Sprachnotiz im Composer (ChatGPT-ähnlich) */
-.gpt-chat-inputbar--voice {
-  min-height: 52px;
-  align-items: center;
-  gap: 10px;
-}
-
-.gpt-chat-voice-mic {
-  width: 40px;
-  height: 40px;
-  margin: 0;
-  padding: 0;
-  border: none;
-  border-radius: 50%;
-  background: var(--org-primary, var(--p2-primary, #2e7d52));
-  color: #fff;
-  flex-shrink: 0;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  transition: background 0.15s ease, transform 0.15s ease;
-}
-
-.gpt-chat-voice-mic:hover:not(:disabled) {
-  background: var(--org-primary-dk, var(--p2-primary-dk, #256642));
-}
-
-.gpt-chat-voice-mic:active:not(:disabled) {
-  transform: scale(0.94);
-}
-
-.gpt-chat-voice-mic:disabled {
-  background: #e5e7eb;
-  color: #9ca3af;
-  cursor: default;
-}
-
-.gpt-chat-voice-bar {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  width: 100%;
-  min-width: 0;
-  padding: 4px 2px;
-}
-
-.gpt-chat-voice-stop {
-  width: 40px;
-  height: 40px;
-  flex-shrink: 0;
-  border: none;
-  border-radius: 50%;
-  background: #b42318;
-  color: #fff;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.gpt-chat-voice-stop:disabled {
-  opacity: 0.7;
-  cursor: default;
-}
-
-.gpt-chat-voice-wave {
-  flex: 1;
-  min-width: 0;
-  height: 36px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 2px;
-  padding: 0 4px;
-}
-
-.gpt-chat-voice-bar-seg {
-  flex: 1;
-  max-width: 4px;
-  height: 100%;
-  border-radius: 999px;
-  background: var(--org-primary, var(--p2-primary, #2e7d52));
-  transform-origin: center;
-  opacity: 0.85;
-  transition: transform 0.05s linear;
-}
-
-.gpt-chat-voice-bar--processing .gpt-chat-voice-bar-seg {
-  opacity: 0.35;
-}
-
-.gpt-chat-voice-timer {
-  flex-shrink: 0;
-  font-size: 12px;
-  font-weight: 600;
-  font-variant-numeric: tabular-nums;
-  color: #404a45;
-  min-width: 5.5rem;
-  text-align: right;
-}
-
 .gpt-chat-cta-row {
   display: flex;
   flex-wrap: wrap;
@@ -755,7 +653,7 @@
 .gpt-chat-cta-btn {
   border: 1px solid rgba(46, 125, 82, 0.35);
   background: #f5faf7;
-  color: var(--org-primary-dk, var(--p2-green-dark, #1a3d2b));
+  color: #1a3d2b;
   border-radius: 999px;
   padding: 0.32rem 0.7rem;
   font-size: 0.72rem;
@@ -781,7 +679,7 @@
   padding: 0;
   font-size: 0.82rem;
   font-weight: 600;
-  color: var(--org-primary, var(--p2-primary, #2e7d52));
+  color: #2e7d52;
   text-decoration: underline;
   text-underline-offset: 2px;
   cursor: pointer;
@@ -843,7 +741,7 @@
 
 .gpt-chat-attach:hover:not(:disabled) {
   background: rgba(46, 125, 82, 0.08);
-  color: var(--org-primary, var(--p2-primary, #2e7d52));
+  color: #2e7d52;
 }
 
 .gpt-chat-attach:disabled {
@@ -879,8 +777,8 @@
 .portal-gpt-shell-bar {
   display: flex;
   align-items: center;
-  justify-content: flex-start;
-  gap: 8px;
+  justify-content: space-between;
+  gap: 10px;
   flex-shrink: 0;
   padding: 10px 14px;
   border-bottom: 1px solid rgba(0, 0, 0, 0.06);
@@ -889,8 +787,6 @@
 
 .portal-gpt-shell-title {
   margin: 0;
-  flex: 1;
-  min-width: 0;
   font-size: 15px;
   font-weight: 700;
   color: #16201b;
@@ -955,25 +851,16 @@
   flex-shrink: 0;
 }
 
-/* Chat-Chrome über Nachrichten + Deko-Layern — nicht von Sticky-Buttons verdecken */
 .gpt-chat-sticky-top {
   position: sticky;
   top: 0;
-  z-index: 6;
+  z-index: 4;
   background: rgba(255, 255, 255, 0.88);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
 }
 
-.ki-rechner-chat-composer,
-.gpt-chat-brief-bar {
-  position: relative;
-  z-index: 6;
-}
-
 .ki-rechner-chat-messages {
-  position: relative;
-  z-index: 1;
   flex: 1 1 auto;
   min-height: 0;
   overflow-y: auto;
@@ -1025,7 +912,7 @@
   font-weight: 700;
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: var(--org-primary, var(--p2-primary, #2e7d52));
+  color: #2e7d52;
 }
 
 .gpt-registration-gate-text {
@@ -1055,7 +942,7 @@
   font-size: 20px;
   font-weight: 700;
   letter-spacing: -0.02em;
-  color: var(--org-primary-dk, var(--p2-green-dark, #1a3d2b));
+  color: #1a3d2b;
   font-variant-numeric: tabular-nums;
 }
 
@@ -1074,7 +961,7 @@
   min-height: 52px;
   padding: 0 20px;
   border-radius: 999px;
-  background: var(--org-primary, var(--p2-primary, #2e7d52));
+  background: #2e7d52;
   color: #ffffff;
   font-size: 15px;
   font-weight: 600;

@@ -12,9 +12,9 @@ export const HW_AUFTRAG_COPY = {
     "Dokumentieren Sie je Leistung: Startfoto → optional Fortschritt → Endfoto. Bei Regie/Aufwand Zeit miterfassen.",
   ausfuehrenCta: "Abschließen",
   ausfuehrenHint:
-    "Nach Updates je Leistung: Abnahme mit Signatur. Danach Rechnung prüfen & einreichen.",
+    "Nach Dokumentation je Leistung: Abnahme mit Signatur. Danach Rechnung prüfen & einreichen.",
   leistungenTitle: "Leistungen",
-  einsatzTitle: "Details",
+  einsatzTitle: "Einsatz",
   verlaufTitle: "Verlauf",
   bautagebuchTitle: "Zusatznotiz für die Verwaltung",
   bautagebuchHint:

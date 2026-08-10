@@ -184,6 +184,7 @@ export default async function PortalDashboardPage() {
           auftraege={slimOrg.auftraege as typeof orgData.auftraege}
           initialVorgaenge={slimOrg.initialVorgaenge}
           mitgliedRolle={mitgliedRolle}
+          partnerBefundByLeadId={orgData.partnerBefundByLeadId}
           bautagebuchByLeadId={orgData.bautagebuchByLeadId}
           hwErledigtByLeadId={orgData.hwErledigtByLeadId}
           feedbackBereitByLeadId={orgData.feedbackBereitByLeadId}
@@ -202,8 +203,8 @@ export default async function PortalDashboardPage() {
     return (
       <PortalAuthShell title="Keine Kundendaten">
         <p className="portal-text-body text-text-secondary">
-          Ihr Konto ist aktiv, aber es wurden keine Daten gefunden. Bitte wenden
-          Sie sich an uns.
+          Dein Konto ist aktiv, aber es wurden keine Daten gefunden. Bitte wende
+          dich an uns.
         </p>
       </PortalAuthShell>
     );

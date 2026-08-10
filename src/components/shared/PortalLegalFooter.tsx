@@ -21,8 +21,6 @@ export function PortalLegalFooter({
     <footer
       className={cn(
         "portal-text-meta text-center text-text-tertiary",
-        /* Innerhalb der Shell: Abstand zur Bottom-Nav; Desktop normal */
-        "pb-2 lg:pb-0",
         className
       )}
       aria-label="Rechtliches"

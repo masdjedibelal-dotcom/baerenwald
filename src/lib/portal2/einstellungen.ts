@@ -24,14 +24,9 @@ export const EINSTELLUNGEN_LOGO_HINT =
 export const EINSTELLUNGEN_HERO_HINT =
   "Breites Foto für die Übersicht (ca. 1600×400 px). Ohne Upload bleibt das Standardbild." as const;
 
-export const EINSTELLUNGEN_SCHWELLE_TITLE = "Freigabe-Regeln" as const;
+export const EINSTELLUNGEN_SCHWELLE_TITLE = "Freigabebetrag" as const;
 
 export const EINSTELLUNGEN_SCHWELLE_INTRO = "" as const;
-
-export const EINSTELLUNGEN_SCHWELLE_BETRAG_TITLE = "Freigabeschwelle" as const;
-
-export const EINSTELLUNGEN_SCHWELLE_BETRAG_INTRO =
-  "Angebote bis zu diesem Betrag ohne Ihre Freigabe — Sie erhalten nur eine Info." as const;
 
 /** @deprecated kein Kleinreparatur-Pfad mehr */
 export const EINSTELLUNGEN_KLEINREPARATUR_TITLE =
@@ -42,16 +37,9 @@ export const EINSTELLUNGEN_KLEINREPARATUR_INTRO =
   "Entfernt — unter der Schwelle läuft der Auto-Pfad über Angebot + Auftrag." as const;
 
 export const EINSTELLUNGEN_AKUT_TITLE =
-  "Direktbeauftragung bei Sofortmaßnahme" as const;
+  "Freigaberegelung bei akuten Schäden" as const;
 
-export const EINSTELLUNGEN_AKUT_INTRO =
-  "Beispiel: Wasser läuft, kein Strom, Heizung ausgefallen, Dach undicht. Keine Freigabe nötig — nur Info an Sie." as const;
-
-export const EINSTELLUNGEN_UNTER_SCHWELLE_TITLE =
-  "Direktbeauftragung wenn unter Schwelle" as const;
-
-export const EINSTELLUNGEN_UNTER_SCHWELLE_INTRO =
-  "Liegt das Angebot unter Ihrer Freigabeschwelle, entfällt die Freigabe — nur Benachrichtigung." as const;
+export const EINSTELLUNGEN_AKUT_INTRO = "" as const;
 
 export const EINSTELLUNGEN_OBJEKT_SCHWELLE_TITLE =
   "Ausnahmen je Objekt" as const;

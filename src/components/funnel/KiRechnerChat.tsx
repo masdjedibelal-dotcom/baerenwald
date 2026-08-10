@@ -51,14 +51,14 @@ export interface KiRechnerChatProps {
   onRaumVisualisieren?: () => void;
 }
 
-const INITIAL_MESSAGE = `Hi! Ich bin Ihr Handwerks-Assistent von Bärenwald — für Renovierung, Reparatur und Umbau in München.
+const INITIAL_MESSAGE = `Hi! Ich bin dein Handwerks-Assistent von Bärenwald — für Renovierung, Reparatur und Umbau in München.
 
-Ob erste Idee oder konkretes Projekt: Hier klären Sie alles Handwerkliche. Ich helfe Ihnen z. B.:
-• zu verstehen, **was Sie wirklich brauchen** (Gewerke, Ablauf, Stolpersteine)
-• bei **Fragen zu Ihrem Vorhaben** — auch wenn noch vieles offen ist
+Ob erste Idee oder konkretes Projekt: Hier klärst du alles Handwerkliche. Ich helfe dir z. B.:
+• zu verstehen, **was du wirklich brauchst** (Gewerke, Ablauf, Stolpersteine)
+• bei **Fragen zu deinem Vorhaben** — auch wenn noch vieles offen ist
 • zu sehen, **was als Nächstes Sinn macht**
 
-Sind die wichtigsten Punkte da, tippen Sie unten auf **Zum Preis** für einen unverbindlichen Rahmen. Nicht alles müssen Sie sofort wissen.
+Sind die wichtigsten Punkte da, tippst du unten auf **Zum Preis** für einen unverbindlichen Rahmen. Nicht alles musst du sofort wissen.
 
 Womit sollen wir starten?`;
 
@@ -319,11 +319,11 @@ export function KiRechnerChat({
         if (res.status === 429) {
           if (data.typ === "limit_reached") {
             appendAssistant(
-              `Sie haben die maximale Anzahl von **${KI_MAX_USER_MESSAGES} Nachrichten** erreicht. Bitte nutzen Sie **Zum Preis** oder **Zur Beratung** unten.`
+              `Du hast die maximale Anzahl von **${KI_MAX_USER_MESSAGES} Nachrichten** erreicht. Bitte nutze **Zum Preis** oder **Zur Beratung** unten.`
             );
           } else {
             appendAssistant(
-              "Gerade sind viele Anfragen unterwegs. Bitte versuchen Sie es in etwa einer Stunde erneut — oder nutzen Sie **Option für Option** auf der Auswahlseite."
+              "Gerade sind viele Anfragen unterwegs. Bitte versuche es in etwa einer Stunde erneut — oder nutze **Option für Option** auf der Auswahlseite."
             );
           }
           setError(null);
@@ -336,7 +336,7 @@ export function KiRechnerChat({
 
       const displayText =
         data.displayText?.trim() ||
-        "Antwort konnte nicht geladen werden. Bitte versuchen Sie es noch einmal.";
+        "Antwort konnte nicht geladen werden. Bitte noch einmal versuchen.";
 
       if (data.typ === "off_topic") {
         appendAssistant(displayText);
@@ -351,7 +351,7 @@ export function KiRechnerChat({
           {
             role: "assistant",
             content:
-              "Super — ich habe ein klares Bild von Ihrem Vorhaben.\n\nTippen Sie unten auf **Zum Preis**, dann sehen Sie Ihren unverbindlichen Preisrahmen.",
+              "Super — ich habe ein klares Bild von deinem Vorhaben.\n\nTippe unten auf **Zum Preis**, dann siehst du deinen unverbindlichen Preisrahmen.",
           },
         ]);
         setLoading(false);
@@ -377,7 +377,7 @@ export function KiRechnerChat({
           ...prev,
           {
             role: "assistant",
-            content: `${displayText}\n\nTippen Sie unten auf **Zur Beratung**, dann können Sie uns Ihre Kontaktdaten hinterlassen.`,
+            content: `${displayText}\n\nTippe unten auf **Zur Beratung**, dann kannst du uns deine Kontaktdaten hinterlassen.`,
           },
         ]);
         setLoading(false);
@@ -387,7 +387,7 @@ export function KiRechnerChat({
 
       appendAssistant(displayText);
     } catch {
-      setError("Verbindungsfehler — bitte versuchen Sie es erneut.");
+      setError("Verbindungsfehler — bitte erneut versuchen.");
     } finally {
       setLoading(false);
     }
@@ -487,7 +487,7 @@ export function KiRechnerChat({
 
       {onRaumVisualisieren && countUserMessages(messages) >= 1 ? (
         <div className="portal-gpt-viz-cta" style={{ margin: "0 0.75rem" }}>
-          <span>Zeigen Sie uns Ihren Raum — für eine Visualisierung.</span>
+          <span>Zeig uns deinen Raum — für eine Visualisierung.</span>
           <button type="button" onClick={onRaumVisualisieren}>
             Raum zeigen
           </button>

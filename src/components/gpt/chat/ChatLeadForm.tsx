@@ -43,7 +43,7 @@ export function ChatLeadForm({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim()) {
-      setError("Bitte Ihren Namen eintragen.");
+      setError("Bitte deinen Namen eintragen.");
       return;
     }
     if (!strasse.trim()) {

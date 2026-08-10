@@ -36,7 +36,7 @@ export async function acceptKundeAuftragAenderungen(
   } = await supabase.auth.getUser();
 
   if (!user?.email) {
-    return { ok: false, error: "Bitte melden Sie sich an." };
+    return { ok: false, error: "Bitte melde dich an." };
   }
 
   const link = await linkPortalKundeToAuthUser({
@@ -47,7 +47,7 @@ export async function acceptKundeAuftragAenderungen(
 
   const gehoert = await auftragGehoertKunde(id, link.kundeId);
   if (!gehoert) {
-    return { ok: false, error: "Sie haben keinen Zugriff auf diesen Auftrag." };
+    return { ok: false, error: "Du hast keinen Zugriff auf diesen Auftrag." };
   }
 
   const { data: rows, error: loadErr } = await supabaseAdmin

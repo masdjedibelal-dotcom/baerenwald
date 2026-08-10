@@ -112,7 +112,7 @@ export const ZEITRAUM_FRAGEN: Record<
   { question: string; hint: string }
 > = {
   erneuern: {
-    question: "Wann planen Sie den Start?",
+    question: "Wann planst du den Start?",
     hint: "Größere Arbeiten brauchen etwas Vorlauf für Planung und Material",
   },
   kaputt: {
@@ -452,7 +452,7 @@ export const SITUATIONEN_CONFIG: Record<
             direktKomplex: true,
             triggerGewerke: ["bau", "elektro"],
             infoText:
-              "Großprojekte wie Anbau oder Garage erfordern eine individuelle statische Prüfung und Architektenplanung. Unser GU-Team kontaktiert Sie für ein persönliches Beratungsgespräch und eine Vor-Ort-Analyse.",
+              "Großprojekte wie Anbau oder Garage erfordern eine individuelle statische Prüfung und Architektenplanung. Unser GU-Team kontaktiert dich für ein persönliches Beratungsgespräch und eine Vor-Ort-Analyse.",
           },
         ],
       },
@@ -550,7 +550,7 @@ export const SITUATIONEN_CONFIG: Record<
             hint: "Es wird schlimmer — sofort handeln",
             faktor: 1.8,
             warnText:
-              "Bitte rufen Sie uns direkt an — bei akuten Schäden ist der Rechner zu langsam.",
+              "Bitte ruf uns direkt an — bei akuten Schäden ist der Rechner zu langsam.",
           },
           {
             value: "heute",
@@ -706,7 +706,7 @@ export const BW_FUNNEL_STEP_FACHDETAILS: FunnelStep = {
 /** Nach Bad-Größe: Ausstattungsstufe für die Preiskalkulation */
 export const BW_FUNNEL_STEP_BAD_AUSSTATTUNG: FunnelStep = {
   id: "bad_ausstattung",
-  question: "Welchen Standard planen Sie?",
+  question: "Welchen Standard planst du?",
   subtext: "Materialien und Ausstattung — wir rechnen danach den Preisrahmen",
   inputType: "tiles-single",
   options: [

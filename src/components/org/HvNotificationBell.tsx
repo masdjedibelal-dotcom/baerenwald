@@ -9,7 +9,6 @@ import {
   PORTAL_NOTIFICATIONS_CHANGED_EVENT,
 } from "@/lib/portal2/notif-refresh";
 import type { PortalNotifItem } from "@/lib/portal2/notif-types";
-import { vorgangIdFromPortalHref } from "@/lib/portal2/portal-detail-deep-link";
 
 type Notification = {
   id: string;
@@ -20,6 +19,20 @@ type Notification = {
   gelesen_am?: string | null;
   created_at: string;
 };
+
+function vorgangIdFromPortalLink(link: string | null | undefined): string | null {
+  if (!link?.trim()) return null;
+  try {
+    const u = link.startsWith("http")
+      ? new URL(link)
+      : new URL(link, "https://local.invalid");
+    const id = u.searchParams.get("id")?.trim();
+    return id || null;
+  } catch {
+    const m = link.match(/[?&]id=([^&]+)/i);
+    return m?.[1] ? decodeURIComponent(m[1]) : null;
+  }
+}
 
 /** HV-Glocke — Daten aus `hv_notifications`, UI = Mock bell/notifPanel. */
 export function HvNotificationBell({
@@ -91,7 +104,7 @@ export function HvNotificationBell({
     if (!href) return;
 
     const vorgangId =
-      n.vorgangRef?.trim() || vorgangIdFromPortalHref(href);
+      n.vorgangRef?.trim() || vorgangIdFromPortalLink(href);
     if (vorgangId && onOpenVorgang) {
       onOpenVorgang(vorgangId, href);
       return;

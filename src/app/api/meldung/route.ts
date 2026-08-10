@@ -44,7 +44,6 @@ type MeldungBody = {
     }>;
   } | null;
   notfall?: boolean | null;
-  direktauftrag?: boolean | null;
   terminwunsch?: string | null;
   dringlichkeit?: string | null;
   beschreibung?: string;
@@ -206,7 +205,6 @@ export async function POST(req: Request) {
     fachdetailAnswers: body.fachdetailAnswers,
     fachfragen: body.fachfragen ?? null,
     notfall: body.notfall ?? null,
-    direktauftrag: body.direktauftrag ?? body.notfall ?? null,
     terminwunsch: body.terminwunsch?.trim() || null,
     dringlichkeit: body.dringlichkeit,
     fotos,

@@ -18,7 +18,17 @@ export function PortalListeEyebrow({ children }: { children: ReactNode }) {
 
 /** Listen-Seitentitel im HV-Stil (PORTAL_C). */
 export function PortalListeTitle({ children }: { children: ReactNode }) {
-  return <h1 className="portal-text-page">{children}</h1>;
+  return (
+    <h1
+      className="text-[25px] font-bold"
+      style={{
+        color: PORTAL_VAR.ink,
+        fontFamily: "var(--p2-font-head, " + PORTAL_VAR.head + ")",
+      }}
+    >
+      {children}
+    </h1>
+  );
 }
 
 /** Filter-Chip im HV-Stil (PORTAL_VAR.greenDark aktiv). */

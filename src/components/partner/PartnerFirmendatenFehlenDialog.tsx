@@ -53,8 +53,6 @@ export function PartnerFirmendatenFehlenDialog({
       onClose={onDismiss}
       variant="confirm"
       maxWidth={440}
-      onConfirm={onDismiss}
-      confirmLabel="Alles klar"
     >
       <p className="portal-text-body text-text-secondary">
         Kein automatisches Angebot — Firmendaten fehlen

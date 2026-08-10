@@ -27,7 +27,7 @@ export function GptVizRaumAnalysePanel({
       </p>
 
       <div className="gpt-viz-field">
-        <label htmlFor="gpt-ist">So sehen wir Ihren Raum</label>
+        <label htmlFor="gpt-ist">So sehen wir deinen Raum</label>
         <textarea
           id="gpt-ist"
           value={istBeschreibung}
@@ -57,7 +57,7 @@ export function GptVizRaumAnalysePanel({
       ) : null}
 
       <div className="gpt-viz-field">
-        <label htmlFor="gpt-wunsch">Ihr Visualisierungswunsch</label>
+        <label htmlFor="gpt-wunsch">Dein Visualisierungswunsch</label>
         <textarea
           id="gpt-wunsch"
           value={wunschText}
