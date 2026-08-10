@@ -80,6 +80,8 @@ export async function POST(req: Request) {
       bypassGrund: lead.freigabe_bypass_grund,
       funnelDirektauftrag: funnelDa,
       hvMeldungStatus: lead.hv_meldung_status,
+      // Aktion vor Angebotszustellung — Schwelle greift nicht
+      angebotZugestellt: false,
     })
   ) {
     return NextResponse.json(

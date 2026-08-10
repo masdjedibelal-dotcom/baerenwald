@@ -130,7 +130,7 @@ export function PhotoUpload({
   uploadHasError = false,
   buttonTitle = "Fotos oder Vergleichsangebote hochladen",
   buttonHint =
-    "Projektfotos, Skizzen oder bestehende Angebote — damit wir dein Vorhaben vorab gut einordnen und uns vorbereiten können",
+    "Projektfotos, Skizzen oder bestehende Angebote — damit wir Ihr Vorhaben vorab gut einordnen und uns vorbereiten können",
   showCompareOfferHint = false,
   examples = null,
   example = null,

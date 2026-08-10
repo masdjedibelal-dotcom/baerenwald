@@ -5,6 +5,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { flushSync } from "react-dom";
 
 import { PortalUserNotificationBell } from "@/components/portal/PortalUserNotificationBell";
+import { PortalPushOptInBanner } from "@/components/shared/PortalPushOptInBanner";
 import { PortalVorgangDetail } from "@/components/portal/PortalVorgangDetail";
 import { PortalKundePrivatDashboard } from "@/components/portal/PortalKundePrivatDashboard";
 import { PORTAL_HEADER_HERO_SRC } from "@/lib/portal2/portal-media";
@@ -214,7 +215,8 @@ export function EigentuemerPortalClient({
       return;
     }
     if (!id) {
-      pendingDetailIdRef.current = null;
+      // Klick schon unterwegs, URL noch ohne id — Selection behalten.
+      if (pendingDetailIdRef.current) return;
       setSelectedId(null);
       return;
     }
@@ -378,6 +380,7 @@ export function EigentuemerPortalClient({
     : null;
 
   return (
+    <>
     <PortalShell
       variant="kunde"
       brandTitle="MeinBärenwald"
@@ -388,6 +391,14 @@ export function EigentuemerPortalClient({
       activeNavId={section}
       contentKey={`${section}:${objektDetailId ?? ""}`}
       contentBusy={pageBusy || detailOpening}
+      contentBusyTitle={
+        detailOpening ? "Vorgang wird geladen…" : undefined
+      }
+      contentBusyBody={
+        detailOpening
+          ? "Einen Moment — wir öffnen die Details."
+          : undefined
+      }
       onNavChange={(id) => switchSection(id as SectionId)}
       nav={buildPortalShellNav("eigentuemer", "eigentuemer")}
       headerUser={{ name: kunde.name?.trim() || EIGENTUEMER_DASHBOARD_ROLE }}
@@ -626,5 +637,7 @@ export function EigentuemerPortalClient({
 
       <PortalLegalFooter variant="kunde" className="mt-8" />
     </PortalShell>
+    <PortalPushOptInBanner portal="portal" />
+    </>
   );
 }

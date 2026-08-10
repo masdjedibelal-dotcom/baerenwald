@@ -19,7 +19,11 @@ export function hvMeldungStatusLabel(status: string | null | undefined): string 
   return s;
 }
 
-/** Neue Meldung: wartet auf HV, CRM noch nicht. */
+/**
+ * Neue Meldung: wartet auf HV.
+ * `nicht_noetig` = noch keine Angebots-Freigabe fällig (nicht automatisch Akut).
+ * Echter Akut setzt zusätzlich `freigabe_bypass_grund = "akut"`.
+ */
 export function initialHvMeldungState(): {
   hv_meldung_status: HvMeldungStatus;
   org_freigabe_status: "nicht_noetig";

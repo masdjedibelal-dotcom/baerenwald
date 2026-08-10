@@ -15,8 +15,11 @@ import {
 } from "@/components/shared/PortalDetailUi";
 import { VorgangDetailSectionNav } from "@/components/shared/VorgangDetailSectionNav";
 import { HvFreigabeInfoBanner } from "@/components/org/HvFreigabeInfoBanner";
-import { hvFreigabeEntfaellt } from "@/lib/org/freigabe-bypass";
-import { acceptKundeAngebot } from "@/app/actions/portal-angebot";
+import {
+  hvFreigabeEntfaellt,
+  orgFreigabeStatusImpliesAngebot,
+} from "@/lib/org/freigabe-bypass";
+import { acceptKundeAngebot, rejectKundeAngebot } from "@/app/actions/portal-angebot";
 import {
   countUnreadBautagebuch,
   getBautagebuchLastSeenAt,
@@ -103,6 +106,8 @@ export type OrganisationHvVorgangDetailProps = {
   orgFreigabeStatus?: string | null;
   /** Persistierter Bypass (V2) — Portal rechnet nicht selbst */
   freigabeBypassGrund?: "schwelle" | "akut" | null;
+  /** Funnel Sofortmaßnahme — unabhängig von org_freigabe_status */
+  funnelDirektauftrag?: boolean | null;
   hvMeldungStatus?: string | null;
   /** Gesendetes Angebot — Annahme legt Auftrag an */
   angebotId?: string | null;
@@ -318,6 +323,7 @@ export function OrganisationHvVorgangDetail({
   onUpdated,
   orgFreigabeStatus,
   freigabeBypassGrund = null,
+  funnelDirektauftrag = null,
   hvMeldungStatus,
   angebotId,
   canAcceptAngebot = false,
@@ -357,7 +363,8 @@ export function OrganisationHvVorgangDetail({
       (offers?.length ||
         positionenBrutto?.length ||
         (typeof gesamtBrutto === "number" && gesamtBrutto > 0) ||
-        canAcceptAngebot)
+        canAcceptAngebot ||
+        dokumente.some((d) => d.art === "angebot"))
   );
   const hasRechnungDoc = Boolean(
     rechnungPdfHref?.trim() ||
@@ -382,13 +389,16 @@ export function OrganisationHvVorgangDetail({
     }
     return flowStatus;
   })();
-  /** Freigabe entfällt bei Akut / unter Schwelle — Status bleibt Offen/Neu, keine Buttons. */
+  /** Freigabe entfällt bei Akut / unter Schwelle — erst nach echtem Angebot, nie Preisindikation. */
   const freigabeEntfaelltKind =
     !mieterStatusMode && !privatkunde
       ? hvFreigabeEntfaellt({
           orgFreigabeStatus,
           bypassGrund: freigabeBypassGrund,
+          funnelDirektauftrag,
           hvMeldungStatus,
+          // Nur Freigabe-Status nach Angebotszustellung — nicht gesamtBrutto/offers-Heuristik
+          angebotZugestellt: orgFreigabeStatusImpliesAngebot(orgFreigabeStatus),
         })
       : null;
   const freigabeNichtNoetig = freigabeEntfaelltKind != null;
@@ -401,12 +411,11 @@ export function OrganisationHvVorgangDetail({
     freigabeNichtNoetig && actionKindRaw === "freigabe"
       ? "none"
       : actionKindRaw;
-  /** Nie Freigeben/Ablehnen, wenn Bypass greift — auch bei Angebots-Tab. */
+  /** Nie Freigeben/Ablehnen (Kostenfreigabe), wenn Bypass greift — auch bei Angebots-Tab. */
   const showFreigabeButtons =
     !freigabeNichtNoetig && actionKindRaw === "freigabe";
-  const showAngebotFreigabeButtons =
-    !freigabeNichtNoetig &&
-    String(orgFreigabeStatus ?? "").trim() === "ausstehend";
+  /** Angebot-Entscheidung ≠ Kostenfreigabe — nie Freigabe-Buttons im Angebots-Panel. */
+  const showAngebotFreigabeButtons = false;
   const empfohlen = pickEmpfohlenesAngebot(offers);
   const statusLabel =
     statusLabelOverride?.trim() || PORTAL_STATUS[displayFlowStatus].label;
@@ -431,7 +440,7 @@ export function OrganisationHvVorgangDetail({
                 href={doc.href}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="block overflow-hidden rounded-xl border border-border-light bg-muted/20"
+                className="block overflow-hidden bg-muted/20"
               >
                 <iframe
                   title={doc.name}
@@ -771,7 +780,36 @@ export function OrganisationHvVorgangDetail({
     }
   };
 
-  const showAcceptCta = Boolean(canAcceptAngebot && !accepted);
+  const rejectAngebotAct = async () => {
+    const id = (angebotId ?? empfohlen?.id ?? "").trim();
+    if (!id) {
+      setError("Kein Angebot zum Ablehnen hinterlegt.");
+      return;
+    }
+    setBusy(true);
+    setError(null);
+    try {
+      await runBusy(async () => {
+        const res = await rejectKundeAngebot(id);
+        if (!res.ok) {
+          setError(res.error);
+          return;
+        }
+        kundePortalToast.angebotAbgelehnt();
+        onUpdated();
+        onBack?.();
+      });
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const resolvedAngebotId = (angebotId ?? empfohlen?.id ?? "").trim();
+  const showAcceptCta = Boolean(
+    !accepted &&
+      (canAcceptAngebot ||
+        (actionKind === "angebot" && Boolean(resolvedAngebotId)))
+  );
 
   const rolePanel = (() => {
     if (actionKind === "privat_auto") {
@@ -834,9 +872,17 @@ export function OrganisationHvVorgangDetail({
               <div className="mt-3 space-y-2">
                 <div className="flex flex-wrap gap-2">
                   <ActionBtn
+                    className="min-w-0 flex-1"
                     label={HV_DETAIL_COPY.empfohlenAnnehmen}
                     disabled={busy}
                     onClick={() => void acceptAngebotAct()}
+                  />
+                  <ActionBtn
+                    className="min-w-0 flex-1"
+                    label={HV_DETAIL_COPY.ablehnen}
+                    kind="secondary"
+                    disabled={busy}
+                    onClick={() => void rejectAngebotAct()}
                   />
                 </div>
               </div>
@@ -1166,6 +1212,7 @@ export function OrganisationHvVorgangDetail({
                 {bautagebuch.length ? (
                   <BautagebuchAccordionList
                     heading=""
+                    className="!border-t-0 !pt-0"
                     eintraege={bautagebuch.map((e, i) => ({
                       id: e.id ?? `tb-${i}`,
                       datum: e.datum ?? e.created_at,
@@ -1215,6 +1262,9 @@ export function OrganisationHvVorgangDetail({
                 onPrimary={() => void acceptAngebotAct()}
                 primaryDisabled={busy}
                 primaryLoading={busy}
+                secondaryLabel={HV_DETAIL_COPY.ablehnen}
+                onSecondary={() => void rejectAngebotAct()}
+                secondaryDisabled={busy}
               />
             </div>
           ) : null}

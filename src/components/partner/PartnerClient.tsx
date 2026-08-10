@@ -9,6 +9,7 @@ import { PartnerHwDashboard, partnerDashboardStatusColors } from "@/components/p
 import { PORTAL_HEADER_HERO_SRC } from "@/lib/portal2/portal-media";
 import { emitPortalNotificationsChanged } from "@/lib/portal2/notif-refresh";
 import { PartnerNotificationBell } from "@/components/partner/PartnerNotificationBell";
+import { PortalPushOptInBanner } from "@/components/shared/PortalPushOptInBanner";
 import { PartnerPlanerPanel } from "@/components/partner/PartnerPlanerPanel";
 import { PartnerProfilPanel } from "@/components/partner/PartnerProfilPanel";
 import { VorgangCard } from "@/components/partner/VorgangCard";
@@ -384,7 +385,8 @@ export function PartnerClient({
       }
 
       if (!rawId) {
-        pendingDetailIdRef.current = null;
+        // Klick schon unterwegs, URL noch ohne id — Selection behalten.
+        if (pendingDetailIdRef.current) return;
         setSelectedId(null);
         return;
       }
@@ -948,6 +950,7 @@ export function PartnerClient({
           setGptOpen(false);
         }}
       />
+      <PortalPushOptInBanner portal="partner" />
     </>
   );
 }

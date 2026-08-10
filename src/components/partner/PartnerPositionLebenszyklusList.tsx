@@ -51,6 +51,8 @@ type Props = {
   auftragTitel?: string | null;
   /** Deep-Link: erstes bevorzugtes Sheet öffnen */
   autoOpenPreferred?: boolean;
+  /** Erledigter Auftrag: nur lesen, keine Start-/Update-/Nachtrag-Aktionen. */
+  readOnly?: boolean;
 };
 
 function mengeLabel(p: LebenszyklusPosition): string | null {
@@ -69,6 +71,7 @@ export function PartnerPositionLebenszyklusList({
   anfrageId,
   auftragTitel,
   autoOpenPreferred = false,
+  readOnly = false,
 }: Props) {
   const [sheet, setSheet] = useState<{
     mode: SheetMode;
@@ -381,17 +384,13 @@ export function PartnerPositionLebenszyklusList({
       ) : null}
 
       {sortedPositionen.length === 0 ? (
-        <div
-          className="rounded-xl border border-dashed px-4 py-5 text-center"
-          style={{ borderColor: PORTAL_VAR.line }}
-          data-testid="hw-first-job-empty"
-        >
+        <div className="px-0 py-5 text-center" data-testid="hw-first-job-empty">
           <p className="text-[14px] font-bold" style={{ color: PORTAL_VAR.ink }}>
             Noch keine Leistung
           </p>
         </div>
       ) : (
-        <ul className="space-y-2.5">
+        <ul className="divide-y divide-border-light">
           {sortedPositionen.map((p) => {
             const st = p.leistung_status ?? "offen";
             const isArbeit = st === "in_arbeit";
@@ -418,12 +417,9 @@ export function PartnerPositionLebenszyklusList({
               <li
                 key={p.id}
                 className={cn(
-                  "rounded-xl border px-3.5 py-3.5 shadow-[0_1px_2px_rgba(22,32,27,0.04)]",
-                  isBlocked
-                    ? "border-border-light bg-[var(--p2-selected,#f0f2f0)] opacity-70"
-                    : isPreferred
-                      ? "border-amber-300 bg-white ring-1 ring-amber-200"
-                      : "border-border-light bg-white"
+                  "px-0 py-3.5",
+                  isBlocked && "opacity-70",
+                  isPreferred && !isBlocked && "bg-amber-50/60"
                 )}
               >
                 <div className="flex items-start gap-2.5">
@@ -481,7 +477,7 @@ export function PartnerPositionLebenszyklusList({
                   </div>
                 </div>
 
-                {!isBlocked && !isErledigt ? (
+                {!readOnly && !isBlocked && !isErledigt ? (
                   <div className="mt-3 space-y-2">
                     {st === "offen" ? (
                       <div className="flex flex-col gap-2 sm:flex-row">
@@ -535,6 +531,7 @@ export function PartnerPositionLebenszyklusList({
         </ul>
       )}
 
+      {!readOnly ? (
       <div className="space-y-2">
         <button
           type="button"
@@ -550,6 +547,7 @@ export function PartnerPositionLebenszyklusList({
           sich automatisch.
         </p>
       </div>
+      ) : null}
 
       {sheet ? (
         <PortalModalShell

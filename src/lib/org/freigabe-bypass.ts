@@ -2,6 +2,18 @@ import type { FreigabeBypassGrund } from "@/lib/org/types";
 
 export type FreigabeBypassInfoKind = "akut" | "schwelle";
 
+/** Funnel-Flag Sofortmaßnahme — einheitlich für Banner, Queue, APIs. */
+export function funnelDirektauftragFromDaten(
+  funnel: unknown
+): boolean {
+  return Boolean(
+    funnel &&
+      typeof funnel === "object" &&
+      !Array.isArray(funnel) &&
+      (funnel as { direktauftrag?: unknown }).direktauftrag === true
+  );
+}
+
 /** CRM setzt `leads.freigabe_bypass_grund` — Portal zeigt nur Info, rechnet nicht selbst. */
 export function parseFreigabeBypassGrund(
   raw: unknown
@@ -11,37 +23,56 @@ export function parseFreigabeBypassGrund(
   return null;
 }
 
-/**
- * HV muss nicht freigeben (Akut-Direktauftrag oder Preis unter Schwelle).
- * Primär: `freigabe_bypass_grund` — zuverlässig, unabhängig vom Flow-Status.
- */
-export function hvFreigabeEntfaellt(opts: {
+export type HvFreigabeEntfaelltOpts = {
   orgFreigabeStatus?: string | null;
   bypassGrund?: string | null;
   /** Funnel-Flag Sofortmaßnahme */
   funnelDirektauftrag?: boolean | null;
-  /** Hilft bei Legacy ohne Bypass-Spalte */
+  /** @deprecated nicht mehr für Schwellen-Fallback genutzt */
   hvMeldungStatus?: string | null;
-}): FreigabeBypassInfoKind | null {
+  /**
+   * Angebot an die HV zugestellt (nicht nur Preisindikation aus der Meldung).
+   * Schwellen-Bypass / „Preis unter Schwelle“ gilt erst dann.
+   */
+  angebotZugestellt?: boolean | null;
+};
+
+/**
+ * HV muss nicht freigeben (Akut-Direktauftrag oder Preis unter Schwelle).
+ *
+ * Akut-Banner NUR bei:
+ * - `freigabe_bypass_grund === "akut"` (CRM), oder
+ * - explizitem Funnel-Flag `direktauftrag === true`
+ *
+ * Schwelle-Banner NUR bei:
+ * - `freigabe_bypass_grund === "schwelle"` **und**
+ * - zugestelltem Angebot (`angebotZugestellt`)
+ *
+ * Nie aus Melde-Preisindikation, nie allein aus `nicht_noetig` / Status `neu`.
+ */
+export function hvFreigabeEntfaellt(
+  opts: HvFreigabeEntfaelltOpts
+): FreigabeBypassInfoKind | null {
+  // Legacy-Fallback „neu/nicht_noetig → Banner“ entfernt
+  void opts.hvMeldungStatus;
+  void opts.orgFreigabeStatus;
+
   const bypass = parseFreigabeBypassGrund(opts.bypassGrund);
-  if (bypass === "akut" || bypass === "schwelle") return bypass;
+  const angebotDa = opts.angebotZugestellt === true;
 
-  const st = String(opts.orgFreigabeStatus ?? "").trim().toLowerCase();
-  if (st !== "nicht_noetig") return null;
+  if (bypass === "akut" || opts.funnelDirektauftrag === true) {
+    return "akut";
+  }
 
-  // Legacy-Fallback: Status gesetzt, Spalte fehlt
-  if (opts.funnelDirektauftrag === true) return "akut";
-  if ((opts.hvMeldungStatus ?? "").trim() === "neu") return "akut";
-  return "schwelle";
+  if (bypass === "schwelle" && angebotDa) {
+    return "schwelle";
+  }
+
+  return null;
 }
 
 /** Keine Freigeben-/Ablehnen-CTAs. */
-export function hvMussNichtFreigeben(opts: {
-  orgFreigabeStatus?: string | null;
-  bypassGrund?: string | null;
-  funnelDirektauftrag?: boolean | null;
-  hvMeldungStatus?: string | null;
-}): boolean {
+export function hvMussNichtFreigeben(opts: HvFreigabeEntfaelltOpts): boolean {
   return hvFreigabeEntfaellt(opts) != null;
 }
 
@@ -49,6 +80,7 @@ export function hvMussNichtFreigeben(opts: {
 export function isFreigabeBypassInfo(opts: {
   orgFreigabeStatus?: string | null;
   bypassGrund?: FreigabeBypassGrund | null;
+  angebotZugestellt?: boolean | null;
 }): boolean {
   return hvFreigabeEntfaellt(opts) != null;
 }
@@ -70,4 +102,20 @@ export function freigabeBypassInfoCopy(opts: {
       : "Preis unter Schwelle",
     body: "Keine Freigabe notwendig",
   };
+}
+
+/**
+ * Heuristik: Freigabe-Status nach Angebotszustellung
+ * (ausstehend / entschieden) — nicht „nicht_noetig“ am Melde-Start.
+ */
+export function orgFreigabeStatusImpliesAngebot(
+  orgFreigabeStatus?: string | null
+): boolean {
+  const st = String(orgFreigabeStatus ?? "").trim().toLowerCase();
+  return (
+    st === "ausstehend" ||
+    st === "angefordert" ||
+    st === "freigegeben" ||
+    st === "abgelehnt"
+  );
 }

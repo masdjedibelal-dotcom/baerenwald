@@ -225,15 +225,9 @@ export function PortalDetailLeistungenList({
 }) {
   if (!items.length) return null;
   return (
-    <ul className="portal-text-body overflow-hidden rounded-xl border border-border-light bg-muted/20">
-      {items.map((p, i) => (
-        <li
-          key={p.id}
-          className={cn(
-            "px-3 py-3",
-            i < items.length - 1 && "border-b border-border-light"
-          )}
-        >
+    <ul className="portal-text-body divide-y divide-border-light">
+      {items.map((p) => (
+        <li key={p.id} className="px-0 py-3">
           <p className="portal-text-card-title font-semibold">
             {stripHtmlToPlainText(p.title) || p.title}
           </p>
@@ -282,9 +276,9 @@ export function PortalDetailLeistungenPreisListe({
     !hidePreise && typeof gesamtBrutto === "number" && gesamtBrutto > 0;
 
   return (
-    <div className="portal-text-body overflow-hidden rounded-xl border border-border-light bg-muted/20">
-      <ul>
-        {items.map((p, i) => {
+    <div className="portal-text-body">
+      <ul className="divide-y divide-border-light">
+        {items.map((p) => {
           const isEntfernt = Boolean(p.entfernt || p.aenderungBadge === "entfernt");
           const geaendert = p.aenderungBadge === "geaendert";
           const preisLabel =
@@ -298,9 +292,8 @@ export function PortalDetailLeistungenPreisListe({
             <li
               key={p.id}
               className={cn(
-                "flex items-start gap-4 px-3 py-3 sm:gap-6",
+                "flex items-start gap-4 px-0 py-3 sm:gap-6",
                 !hidePreise && "justify-between",
-                i < items.length - 1 && "border-b border-border-light",
                 isEntfernt && "bg-red-50/70",
                 geaendert && "bg-amber-50/60"
               )}
@@ -361,7 +354,7 @@ export function PortalDetailLeistungenPreisListe({
         })}
       </ul>
       {showGesamt ? (
-        <div className="flex items-center justify-between gap-4 border-t border-border-default bg-muted/40 px-3 py-3 sm:gap-6">
+        <div className="flex items-center justify-between gap-4 border-t border-border-default px-0 py-3 sm:gap-6">
           <p className="portal-text-card-title">{gesamtLabel}</p>
           <p className="portal-text-card-title tabular-nums">
             {formatEuro(gesamtBrutto)}
@@ -481,7 +474,7 @@ export function PortalAnsprechpartnerCard({
   return (
     <section className="space-y-2.5 border-t border-border-light pt-5">
       <h4 className="portal-text-section">Ansprechpartner</h4>
-      <div className="portal-text-body rounded-xl border border-border-light bg-gradient-to-br from-emerald-50/80 to-surface-card px-4 py-4">
+      <div className="portal-text-body px-0 py-1">
         <p className="portal-text-meta font-semibold uppercase tracking-wide text-accent">
           {rolleLabel}
         </p>
@@ -507,15 +500,13 @@ export function PortalDetailMilestoneList({
 }) {
   if (!items.length) return null;
   return (
-    <ul className="space-y-2">
+    <ul className="divide-y divide-border-light">
       {items.map((m) => (
         <li
           key={m.id}
           className={cn(
-            "portal-text-body flex items-start gap-3 rounded-lg border px-3 py-3",
-            m.erledigt
-              ? "border-emerald-200 bg-emerald-50/80"
-              : "border-border-light bg-surface-card"
+            "portal-text-body flex items-start gap-3 px-0 py-3",
+            m.erledigt ? "text-text-primary" : "text-text-secondary"
           )}
         >
           <span

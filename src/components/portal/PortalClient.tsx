@@ -8,6 +8,7 @@ import dynamic from "next/dynamic";
 import { PortalKundePrivatDashboard } from "@/components/portal/PortalKundePrivatDashboard";
 import { PORTAL_HEADER_HERO_SRC } from "@/lib/portal2/portal-media";
 import { PortalUserNotificationBell } from "@/components/portal/PortalUserNotificationBell";
+import { PortalPushOptInBanner } from "@/components/shared/PortalPushOptInBanner";
 import type { KundePortalDetailItem } from "@/lib/portal/portal-detail-item";
 import type { PortalBautagebuchEntry } from "@/lib/portal/portal-detail-item";
 import { emitPortalNotificationsChanged } from "@/lib/portal2/notif-refresh";
@@ -396,8 +397,11 @@ export function PortalClient({
       detailHoldRef.current = true;
       hold();
     }
-    paintPortalBusyNow(setPageBusy);
-    setDetailLoading(true);
+    // Sofort painten — vor router.replace und vor URL-Sync-Effekt.
+    flushSync(() => {
+      setPageBusy(true);
+      setDetailLoading(true);
+    });
   }
 
   function endDetailBusy() {
@@ -747,7 +751,9 @@ export function PortalClient({
   useEffect(() => {
     const applyDetailFromUrl = (rawId: string | null | undefined) => {
       if (!rawId) {
-        pendingDetailIdRef.current = null;
+        // Klick hat Detail schon gesetzt, router.replace noch unterwegs —
+        // pending nicht verwerfen und Selection nicht zurücksetzen.
+        if (pendingDetailIdRef.current) return;
         setSelectedId(null);
         return;
       }
@@ -829,7 +835,9 @@ export function PortalClient({
     if (normalized === "vorgaenge") {
       applyDetailFromUrl(rawId);
     }
-  }, [searchParams, vorgaengeItems, embedded, hvPortalMode, detailItem]);
+    // detailItem bewusst nicht in deps: setDetailItem(null) beim Öffnen
+    // darf den URL-Sync nicht mit alter URL ohne id neu anstoßen.
+  }, [searchParams, vorgaengeItems, embedded, hvPortalMode]);
 
   /** Vorgang öffnen = zugehörige Portal-Benachrichtigungen gelesen. */
   useEffect(() => {
@@ -1148,21 +1156,23 @@ export function PortalClient({
     selectedItem || selectedId || showDetailBusy ? detailScreen : listPanel;
 
   if (embedded) {
+    const showEmbeddedBusy = Boolean(pageBusy || showDetailBusy);
     return (
       <div className="relative min-h-[40vh] min-w-0">
         <div
           className={cn(
-            pageBusy &&
-              !showDetailBusy &&
-              "pointer-events-none invisible select-none"
+            showEmbeddedBusy && "pointer-events-none invisible select-none"
           )}
-          aria-hidden={pageBusy && !showDetailBusy ? true : undefined}
+          aria-hidden={showEmbeddedBusy || undefined}
         >
           {vorgaengeScreen}
         </div>
-        {pageBusy && !showDetailBusy ? (
+        {showEmbeddedBusy ? (
           <div className="absolute inset-0 z-10 flex items-start justify-center bg-[var(--surface-page,#f7f8fa)]/90 backdrop-blur-[1px]">
-            <PortalContentBusy />
+            <PortalContentBusy
+              title="Vorgang wird geladen…"
+              body="Einen Moment — wir öffnen die Details."
+            />
           </div>
         ) : null}
       </div>
@@ -1183,6 +1193,14 @@ export function PortalClient({
         activeNavId={section === "gpt" ? "uebersicht" : section}
         contentKey={`${section}:${privatChip ?? ""}:${controlledHvListeFilter ?? controlledVorgangFilter ?? ""}`}
         contentBusy={pageBusy || detailLoading}
+        contentBusyTitle={
+          detailLoading || pageBusy ? "Vorgang wird geladen…" : undefined
+        }
+        contentBusyBody={
+          detailLoading || pageBusy
+            ? "Einen Moment — wir öffnen die Details."
+            : undefined
+        }
         onNavChange={(id) => {
           switchSection(id as SectionId);
         }}
@@ -1317,6 +1335,7 @@ export function PortalClient({
         }}
       />
 
+      <PortalPushOptInBanner portal="portal" />
     </>
   );
 }

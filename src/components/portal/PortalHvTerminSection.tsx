@@ -62,7 +62,7 @@ export function PortalHvTerminSection({
       <PortalDetailSection title="Termin">
         <div className="portal-text-body rounded-xl border border-border-light bg-muted/20 px-3 py-3">
           <p className="font-semibold text-text-primary">
-            {readOnly ? "Bestätigter Termin" : "Dein Termin"}
+            {readOnly ? "Bestätigter Termin" : "Ihr Termin"}
           </p>
           <p className="mt-1 text-accent">
             {formatMeldeSlotLine(bestaetigt)}

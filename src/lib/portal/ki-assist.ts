@@ -46,11 +46,11 @@ export const PORTAL_KI_ASSIST_SCOPES: Record<
     id: "funnel_beschreibung",
     label: "Beschreibung",
     intro:
-      "Ich helfe dir, dein Anliegen klar zu beschreiben — sag mir, was passiert ist oder was du ändern willst.",
+      "Ich helfe Ihnen, Ihr Anliegen klar zu beschreiben — sagen Sie mir, was passiert ist oder was Sie ändern möchten.",
     placeholder: "z. B. „Kürzer und klarer“ oder „Wasser tropft unter der Spüle“…",
     systemHint: `Modus: Schaden-/Anliegen-Beschreibung im Melde-Funnel (Mieter oder Kunde).
 Schreib einen verständlichen, sachlichen Freitext für die Hausverwaltung / Bärenwald.
-Keine erfundenen Fakten. Du/Sie: du, wenn der Nutzer duzt, sonst klar und höflich.
+Keine erfundenen Fakten. Immer höfliche Sie-Form.
 ${BW_APPLY_HINT}`,
     quickPrompts: [
       {
@@ -73,7 +73,7 @@ ${BW_APPLY_HINT}`,
     id: "bautagebuch",
     label: "Bautagebuch",
     intro:
-      "Ich formuliere den **Tagebuch-Eintrag**. Beschreib kurz, was gemacht wurde — danach kannst du den Text übernehmen.",
+      "Ich formuliere den Tagebuch-Eintrag. Beschreiben Sie kurz, was gemacht wurde — danach können Sie den Text übernehmen.",
     placeholder: "z. B. „Sauberer, kundensichtbar“ oder Stichworte zum Tag…",
     systemHint: `Modus: Bautagebuch-Eintrag (Handwerker-Dokumentation, kundensichtbar möglich).
 Klar, sachlich, deutsch, kurz. Keine erfundenen Fakten oder Mengen.
@@ -98,7 +98,7 @@ ${BW_APPLY_HINT}`,
     id: "abnahmeprotokoll",
     label: "Abnahme",
     intro:
-      "Ich helfe bei **Protokoll- oder Mängeltext**. Sag, was rein soll — danach Übernehmen.",
+      "Ich helfe bei Protokoll- oder Mängeltext. Sagen Sie, was rein soll — danach übernehmen.",
     placeholder: "z. B. „Arbeiten zusammenfassen“ oder „Mängel klarer“…",
     systemHint: `Modus: Abnahmeprotokoll / Vorbehalte / Mängelbeschreibung (Handwerker).
 Sachlich, konkret, deutsch. Keine erfundenen Mängel.

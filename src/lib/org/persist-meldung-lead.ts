@@ -191,6 +191,52 @@ export async function persistMeldungLead(input: PersistMeldungLeadInput) {
 
   await supabaseAdmin.from("leads").update(patch).eq("id", result.id);
 
+  // Mieter am Objekt (einheit_bewohner) — erscheint in CRM-Objektakte „Mieter“
+  if (input.kunde_objekt_id?.trim() && input.name.trim()) {
+    try {
+      const { ensureObjektBewohner } = await import(
+        "@/lib/org/ensure-objekt-bewohner"
+      );
+      const emailNorm = (input.email ?? "").trim().toLowerCase();
+      let already = false;
+      if (emailNorm) {
+        const { data: units } = await supabaseAdmin
+          .from("objekt_einheiten")
+          .select("id")
+          .eq("kunde_objekt_id", input.kunde_objekt_id)
+          .eq("aktiv", true);
+        const unitIds = (units ?? []).map((u) => u.id as string);
+        if (unitIds.length) {
+          const { data: existing } = await supabaseAdmin
+            .from("einheit_bewohner")
+            .select("id, email")
+            .eq("kunde_id", input.auftraggeber_kunde_id)
+            .in("objekt_einheit_id", unitIds)
+            .eq("aktiv", true)
+            .is("anonymisiert_am", null);
+          already = (existing ?? []).some(
+            (b) => (b.email ?? "").trim().toLowerCase() === emailNorm
+          );
+        }
+      }
+      if (!already) {
+        const bew = await ensureObjektBewohner({
+          kundeId: input.auftraggeber_kunde_id,
+          objektId: input.kunde_objekt_id,
+          name: input.name,
+          wohnung: input.einheit || null,
+          email: input.email || null,
+          telefon: input.telefon || null,
+        });
+        if (!bew.ok) {
+          console.warn("[persistMeldungLead] ensureObjektBewohner:", bew.error);
+        }
+      }
+    } catch (e) {
+      console.warn("[persistMeldungLead] ensureObjektBewohner:", e);
+    }
+  }
+
   if (duplikatHinweis) {
     const { writeAuditEvent } = await import("@/lib/audit/write-audit-event");
     await writeAuditEvent({

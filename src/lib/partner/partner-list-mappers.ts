@@ -74,7 +74,13 @@ export function partnerAngebotStatusPillClass(statusKey: string): string {
   const s = statusKey.toLowerCase();
   if (s === "neu") return "bg-orange-100 text-orange-800";
   if (s === "geaendert" || s === "ergaenzung") return "bg-violet-100 text-violet-800";
-  if (s === "in_arbeit" || s === "abnahme" || s === "durchfuehrung") {
+  if (
+    s === "in_arbeit" ||
+    s === "abnahme" ||
+    s === "durchfuehrung" ||
+    s === "auftrag" ||
+    s === "beauftragt"
+  ) {
     return "bg-[#E4ECF7] text-[#1F4FA8]";
   }
   if (s === "abgeschlossen" || s === "erledigt") return "bg-[#DDEEDF] text-[#1F6A3F]";

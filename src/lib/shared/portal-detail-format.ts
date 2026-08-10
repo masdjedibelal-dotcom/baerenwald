@@ -73,7 +73,16 @@ export function portalDetailStatusPillClass(status: string): string {
   if (s === "bautagebuch" || s.includes("tagebuch")) {
     return "tag bg-amber-100 text-amber-900";
   }
-  if (s === "in_arbeit" || s === "abnahme" || s === "termin" || s.includes("arbeit") || s.includes("aktiv")) {
+  if (
+    s === "in_arbeit" ||
+    s === "abnahme" ||
+    s === "termin" ||
+    s === "auftrag" ||
+    s === "beauftragt" ||
+    s === "durchfuehrung" ||
+    s.includes("arbeit") ||
+    s.includes("aktiv")
+  ) {
     return "tag bg-blue-100 text-blue-800";
   }
   if (s.includes("angebot") || s.includes("gesendet") || s.includes("entwurf")) {
@@ -116,11 +125,13 @@ export function portalDetailStatusPillStyle(status: string): {
     s === "in_arbeit" ||
     s === "abnahme" ||
     s === "termin" ||
+    s === "auftrag" ||
+    s === "beauftragt" ||
     s === "durchfuehrung" ||
     s.includes("arbeit") ||
     s.includes("aktiv")
   ) {
-    return { color: "#1F6A3F", backgroundColor: "#DDEEDF" };
+    return { color: "#1F4FA8", backgroundColor: "#E4ECF7" };
   }
   if (s.includes("angebot") || s.includes("gesendet") || s.includes("entwurf")) {
     return { color: "#8A5A06", backgroundColor: "#FBF1D6" };

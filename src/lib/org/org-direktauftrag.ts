@@ -3,7 +3,10 @@
  */
 
 import { leadIstMeldeDirektauftrag } from "@/lib/funnel/melde-direktauftrag";
-import { hvFreigabeEntfaellt } from "@/lib/org/freigabe-bypass";
+import {
+  funnelDirektauftragFromDaten,
+  hvFreigabeEntfaellt,
+} from "@/lib/org/freigabe-bypass";
 import type { OrganisationKunde, OrganisationLead, OrganisationObjekt } from "@/lib/org/types";
 
 export function effektiveNotfallDirekt(
@@ -29,18 +32,15 @@ export function isHvDirektauftragInfoOnly(
   kunde: Pick<OrganisationKunde, "notfall_direkt">,
   objekte?: Array<Pick<OrganisationObjekt, "id" | "notfall_direkt">>
 ): boolean {
-  const funnelDa =
-    lead.funnel_daten &&
-    typeof lead.funnel_daten === "object" &&
-    !Array.isArray(lead.funnel_daten)
-      ? (lead.funnel_daten as { direktauftrag?: unknown }).direktauftrag === true
-      : false;
+  const funnelDa = funnelDirektauftragFromDaten(lead.funnel_daten);
 
   if (
     hvFreigabeEntfaellt({
       orgFreigabeStatus: lead.org_freigabe_status,
       bypassGrund: lead.freigabe_bypass_grund,
       funnelDirektauftrag: funnelDa,
+      // Liste ohne Angebots-Kontext: Schwelle nicht über Preisindikation
+      angebotZugestellt: false,
     })
   ) {
     return true;

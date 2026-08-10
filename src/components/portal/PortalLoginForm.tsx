@@ -108,7 +108,7 @@ export function PortalLoginForm({
           );
         } else if (msg.includes("banned") || msg.includes("user is banned")) {
           setError(
-            "Diese Kontaktadresse ist gesperrt. Bitte wende dich an uns, wenn du Hilfe brauchst."
+            "Diese Kontaktadresse ist gesperrt. Bitte wenden Sie sich an uns, wenn Sie Hilfe brauchen."
           );
         } else {
           setError("E-Mail oder Passwort ist ungültig.");

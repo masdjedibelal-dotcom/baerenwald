@@ -31,7 +31,7 @@ export async function notifyPortalAngebotGesendet(
   const { data: angebot } = await supabaseAdmin
     .from("angebote")
     .select(
-      "id, angebotsnr, leistungsumfang, status_einfach, status, gesendet_am, titel, gesamt_preis, gesamt_max"
+      "id, angebotsnr, leistungsumfang, status_einfach, status, gesendet_am, gesendet_kunde_at, pdf_url, titel, gesamt_preis, gesamt_max"
     )
     .eq("lead_id", trimmed)
     .order("gesendet_am", { ascending: false, nullsFirst: false })
@@ -39,9 +39,12 @@ export async function notifyPortalAngebotGesendet(
     .limit(1)
     .maybeSingle();
 
-  /** Nur nach echtem Versand — nicht nach HV-Freigabe / „Angebot einfordern“. */
+  /** Nach CRM-Event „Angebot gesendet“ — inkl. PDF auch wenn Status noch nachzieht. */
   const gesendetAm = angebot?.gesendet_am
     ? String(angebot.gesendet_am).trim()
+    : "";
+  const gesendetKundeAt = angebot?.gesendet_kunde_at
+    ? String(angebot.gesendet_kunde_at).trim()
     : "";
   const statusEinfach = String(angebot?.status_einfach ?? "")
     .trim()
@@ -49,11 +52,15 @@ export async function notifyPortalAngebotGesendet(
   const statusRaw = String(angebot?.status ?? "")
     .trim()
     .toLowerCase();
+  const hasPdf = Boolean(String(angebot?.pdf_url ?? "").trim());
   const wirklichGesendet =
     Boolean(gesendetAm) ||
+    Boolean(gesendetKundeAt) ||
     statusEinfach === "gesendet" ||
+    statusEinfach === "gesendet_kunde" ||
     statusRaw === "gesendet" ||
-    statusRaw.includes("gesendet");
+    statusRaw.includes("gesendet") ||
+    hasPdf;
   if (!angebot?.id || !wirklichGesendet) return;
 
   const nr =
@@ -99,6 +106,28 @@ export async function notifyPortalAngebotGesendet(
       body,
       link: portalPath,
     });
+
+    void import("@/lib/push/resolve-recipients")
+      .then(async ({ resolveOrgAuthUserIds }) => {
+        const { buildPushPayloadFromNotif } = await import("@/lib/push/payload");
+        const { scheduleWebPushToUsers } = await import(
+          "@/lib/push/send-web-push"
+        );
+        const userIds = await resolveOrgAuthUserIds(orgKundeId);
+        scheduleWebPushToUsers(
+          userIds,
+          buildPushPayloadFromNotif({
+            typ: "angebot",
+            titel: notifTitel,
+            body,
+            link: portalPath,
+            defaultUrl: "/portal",
+          })
+        );
+      })
+      .catch((e) =>
+        console.error("[notifyPortalAngebotGesendet] hv push:", e)
+      );
   }
 
   const portalKundeId = String(lead.kunde_id ?? "").trim();

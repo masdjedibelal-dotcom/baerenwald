@@ -145,7 +145,7 @@ export async function getOrganisationPortalData(
     if (!objektId) return null;
     const o = objektById.get(objektId);
     if (!o) return null;
-    return resolvePortalObjekt({
+    const portal = resolvePortalObjekt({
       objektId,
       objektById: objektById as Map<
         string,
@@ -156,11 +156,19 @@ export async function getOrganisationPortalData(
           hausnummer: string | null;
           plz: string | null;
           ort: string | null;
+          cover_url?: string | null;
         }
       >,
       kunde: { name: kunde.name, adresse: null, plz: null, ort: null },
       leadPlz: o.plz,
     });
+    if (!portal) return null;
+    return {
+      ...portal,
+      titel: portal.name,
+      adresseZeile: portal.strasse ?? undefined,
+      plzOrt: [portal.plz, portal.ort].filter(Boolean).join(" ") || undefined,
+    };
   };
 
   const eingang = eingangSource.map((row) => {
@@ -179,10 +187,18 @@ export async function getOrganisationPortalData(
     };
   }) as OrganisationLead[];
 
-  const orgLeads: OrganisationLead[] = base.leads.map((l) => ({
-    ...(l as OrganisationLead),
-    objekt: (l as { objekt?: OrganisationLead["objekt"] }).objekt ?? null,
-  }));
+  const orgLeads: OrganisationLead[] = base.leads.map((l) => {
+    const lead = l as OrganisationLead & {
+      kunde_objekt_id?: string | null;
+      objekt?: OrganisationLead["objekt"];
+    };
+    const fromOrg = resolveObj(lead.kunde_objekt_id ?? null);
+    return {
+      ...lead,
+      // Org-Objekt inkl. aktueller cover_url — nicht den Portal-Base-Snapshot ohne Cover
+      objekt: fromOrg ?? lead.objekt ?? null,
+    };
+  });
 
   const eingangLeadIds = eingang.map((l) => l.id);
   const eingangLeadIdsSet = new Set(eingangLeadIds);
@@ -352,6 +368,17 @@ export async function getOrganisationPortalData(
 
   const dokumenteByLeadId: Record<string, PortalDokument[]> = {};
   if (!listMode) {
+    for (const lead of base.leads) {
+      const leadId = String((lead as { id: string }).id);
+      const leadDocs =
+        (lead as { dokumente?: PortalDokument[] }).dokumente ?? [];
+      if (leadId && leadDocs.length) {
+        dokumenteByLeadId[leadId] = mergeDokumente(
+          dokumenteByLeadId[leadId] ?? [],
+          leadDocs
+        );
+      }
+    }
     for (const a of mergedAuftraege) {
       const leadId =
         (a as { lead_id?: string | null }).lead_id != null

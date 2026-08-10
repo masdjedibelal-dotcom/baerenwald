@@ -17,7 +17,7 @@ export type PlattformStatusKey =
 
 export const PLATTFORM_STATUS_LABELS: Record<PlattformStatusKey, string> = {
   neu: "Neu",
-  wartet_freigabe: "Wartet Freigabe",
+  wartet_freigabe: "Gesendet",
   in_ausfuehrung: "In Ausführung",
   erledigt: "Erledigt",
   notfall: "Notfall",

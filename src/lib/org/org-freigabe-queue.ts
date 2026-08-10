@@ -1,4 +1,4 @@
-import { hvFreigabeEntfaellt } from "@/lib/org/freigabe-bypass";
+import { hvFreigabeEntfaellt, funnelDirektauftragFromDaten } from "@/lib/org/freigabe-bypass";
 import type { OrganisationLead } from "@/lib/org/types";
 
 type FreigabeLead = Pick<
@@ -22,28 +22,33 @@ export function leadHasOrgAuftrag(
 function funnelDirektauftragFlag(
   funnel: FreigabeLead["funnel_daten"]
 ): boolean {
-  return Boolean(
-    funnel &&
-      typeof funnel === "object" &&
-      !Array.isArray(funnel) &&
-      (funnel as { direktauftrag?: unknown }).direktauftrag === true
-  );
+  return funnelDirektauftragFromDaten(funnel);
 }
 
 /** Wartet auf HV-Aktion (neue Meldung oder Angebotsfreigabe), ohne laufenden Auftrag. */
 export function isInOrgFreigabeQueue(
   lead: FreigabeLead,
-  auftragByLeadId: Record<string, string>
+  auftragByLeadId: Record<string, string>,
+  /** Lead-IDs mit zugestelltem Angebot (optional). */
+  angebotByLeadId?: Record<string, string>
 ): boolean {
   if (leadHasOrgAuftrag(lead.id, auftragByLeadId)) return false;
 
-  // Akut / unter Schwelle: nur Info, nie in Freigabe-Queue
+  const angebotZugestellt = Boolean(
+    angebotByLeadId?.[lead.id]?.trim() ||
+      ["ausstehend", "angefordert", "freigegeben", "abgelehnt"].includes(
+        String(lead.org_freigabe_status ?? "").trim()
+      )
+  );
+
+  // Akut: nie in Freigabe-Queue. Schwelle: erst nach Angebotszustellung.
   if (
     hvFreigabeEntfaellt({
       orgFreigabeStatus: lead.org_freigabe_status,
       bypassGrund: lead.freigabe_bypass_grund,
       funnelDirektauftrag: funnelDirektauftragFlag(lead.funnel_daten),
       hvMeldungStatus: lead.hv_meldung_status,
+      angebotZugestellt,
     })
   ) {
     return false;

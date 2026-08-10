@@ -113,7 +113,6 @@ export function PortalActionMenu({
         title={current.title}
         onClose={close}
         variant="edit"
-        maxWidth={360}
         headerExtra={
           stack.length > 0 ? (
             <button
@@ -149,7 +148,7 @@ export function PortalActionMenuList({
           <button
             type="button"
             className={cn(
-              "portal-text-meta flex w-full items-center justify-between gap-2 rounded-[10px] px-3.5 py-3 text-left font-semibold",
+              "portal-text-body flex w-full items-center justify-between gap-2 rounded-[10px] px-3.5 py-3.5 text-left font-semibold",
               item.danger
                 ? "portal-danger hover:bg-[var(--p2-danger-soft)]"
                 : "text-text-primary hover:bg-muted"

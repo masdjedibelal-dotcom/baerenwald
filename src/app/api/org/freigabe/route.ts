@@ -61,6 +61,8 @@ export async function POST(req: Request) {
       bypassGrund: lead.freigabe_bypass_grund,
       funnelDirektauftrag: funnelDa,
       hvMeldungStatus: lead.hv_meldung_status,
+      // Freigabe-API nur bei ausstehendem Angebot
+      angebotZugestellt: true,
     })
   ) {
     return NextResponse.json(

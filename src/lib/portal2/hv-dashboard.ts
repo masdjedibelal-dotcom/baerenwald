@@ -73,17 +73,20 @@ export type HvDashboardAngebotSlice = {
   status_einfach?: string | null;
   gesendet_am?: string | null;
   gesendet_kunde_at?: string | null;
+  pdf_url?: string | null;
   created_at?: string | null;
 };
 
-/** Angebot ist für Portal sichtbar (gesendet / angenommen). */
+/** Angebot ist für Portal sichtbar (PDF / gesendet / angenommen). */
 export function isPortalAngebotVorgelegt(angebot?: {
   status?: string | null;
   status_einfach?: string | null;
   gesendet_am?: string | null;
   gesendet_kunde_at?: string | null;
+  pdf_url?: string | null;
 } | null): boolean {
   if (!angebot) return false;
+  if (angebot.pdf_url?.trim()) return true;
   if (angebot.gesendet_am?.trim() || angebot.gesendet_kunde_at?.trim()) {
     return true;
   }

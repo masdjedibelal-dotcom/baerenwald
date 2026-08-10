@@ -287,6 +287,7 @@ export function PortalVorgangDetail({
           (item.freigabeBypassGrund as "schwelle" | "akut" | null | undefined) ??
           null
         }
+        funnelDirektauftrag={item.funnelDirektauftrag ?? null}
         hvMeldungStatus={hvMeldungStatus ?? item.hvMeldungStatus}
         angebotId={item.isAngebotDetail ? item.id : null}
         canAcceptAngebot={

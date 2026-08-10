@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 
 import { PortalKontoSicherheitPanel } from "@/components/shared/PortalKontoSicherheitPanel";
 import { PortalEinstellungenShell } from "@/components/shared/PortalEinstellungenShell";
+import { PortalPushSettingsPanel } from "@/components/shared/PortalPushSettingsPanel";
 import {
   EinstellungenEdField,
   EinstellungenEditModal,
@@ -113,6 +114,10 @@ export function PortalEinstellungenMieter({
     <div className="space-y-4">
       <PortalEinstellungenShell variant="mieter">
         {(tab) => {
+          if (tab === "benachrichtigungen") {
+            return <PortalPushSettingsPanel portal="portal" />;
+          }
+
           if (tab === "zugang") {
             return (
               <div className="space-y-4">

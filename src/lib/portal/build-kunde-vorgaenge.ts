@@ -1,4 +1,4 @@
-import { labelSituation, labelZeitraum, labelBereich } from "@/lib/lead-funnel-labels";
+import { labelSituation, labelBereich } from "@/lib/lead-funnel-labels";
 import {
   fachdetailRowsFromFunnelDaten,
   normalizeFunnelDaten,
@@ -8,7 +8,10 @@ import {
   buildAnfrageCardMeta,
   buildAnfragePortalSections,
   formatAnfrageStrasseHausnummer,
+  formatAnfrageZeitraum,
   formatMockVorgangListSubtitle,
+  resolveAnfrageAdresse,
+  resolveAnfrageMelder,
   type PortalAnfrageLeadSource,
 } from "@/lib/portal/portal-anfrage-display";
 import {
@@ -31,13 +34,15 @@ import {
   type PortalAnsprechpartner,
 } from "@/lib/portal/portal-ansprechpartner";
 import type { PortalDokument } from "@/lib/portal/portal-dokumente";
-import { filterPortalDokumenteForViewer } from "@/lib/portal/portal-dokumente";
+import {
+  collectVorgangDokumente,
+  filterPortalDokumenteForViewer,
+} from "@/lib/portal/portal-dokumente";
 import { buildPortalAbnahmeCheckliste } from "@/lib/portal/abnahme-checkliste";
 import type { PortalAbnahmeCheckliste } from "@/lib/portal/portal-detail-item";
 import {
   type KundePortalDetailItem,
   type PortalBautagebuchEntry,
-  objektPlzOrt,
 } from "@/lib/portal/portal-detail-item";
 import { sanitizeCustomerText } from "@/lib/portal/portal-display";
 import { vorgangFeedbackBereit } from "@/lib/portal/vorgang-feedback-eligibility";
@@ -60,14 +65,6 @@ import {
   buildMeldeVorgangTitel,
   leadIstMeldeTitelQuelle,
 } from "@/lib/org/melde-vorgang-titel";
-
-function meldeOrtFromFunnel(funnelDaten: unknown): string | null {
-  if (!funnelDaten || typeof funnelDaten !== "object" || Array.isArray(funnelDaten)) {
-    return null;
-  }
-  const ort = (funnelDaten as Record<string, unknown>).ort;
-  return typeof ort === "string" && ort.trim() ? ort.trim() : null;
-}
 
 function meldeFotosFromFunnel(funnelDaten: unknown): string[] {
   const fd = funnelDaten as { fotos?: unknown } | null | undefined;
@@ -149,6 +146,7 @@ type PortalAngebot = {
   created_at?: string | null;
   gesendet_am?: string | null;
   gesendet_kunde_at?: string | null;
+  pdf_url?: string | null;
   dokumente?: PortalDokument[];
   /** D11: angebote.herkunft */
   herkunft?: string | null;
@@ -225,12 +223,30 @@ function resolveVorgangStatusForLead(
     hvPortalMode: opts.hvPortalMode,
   });
   const terminSlots = auftrag?.terminSlots ?? [];
+  const angebotStatus = angebot?.status_einfach ?? angebot?.status;
+  const angebotSt = String(angebotStatus ?? "")
+    .toLowerCase()
+    .replace(/[\s-]+/g, "_");
+  const angebotTerminal =
+    angebotSt === "abgelehnt" ||
+    angebotSt === "ersetzt" ||
+    angebotSt === "abgelaufen" ||
+    angebotSt === "angenommen" ||
+    angebotSt === "kunde_akzeptiert" ||
+    angebotSt === "beauftragt";
+  const angebotEntscheidbar = Boolean(
+    angebot &&
+      !auftrag &&
+      !angebotTerminal &&
+      Boolean(angebot.pdf_url?.trim())
+  );
   const legacy = resolveKundeVorgangStatus({
     leadStatus: lead.status,
     leadVorgangPhase: lead.vorgang_phase,
     hv_meldung_status: lead.hv_meldung_status,
     org_freigabe_status: lead.org_freigabe_status,
-    angebotStatus: angebot?.status_einfach ?? angebot?.status,
+    angebotStatus,
+    angebotEntscheidbar,
     auftragStatus: auftrag?.status,
     auftragFortschritt: auftrag?.fortschritt,
     hasAngebotRecord: Boolean(angebot),
@@ -289,7 +305,13 @@ function formatAnfrageGewerk(bereiche?: string[] | null): string | undefined {
 function anfrageTitleFromLead(
   lead: Pick<
     PortalLead,
-    "situation" | "bereiche" | "anlass" | "kanal" | "funnel_daten" | "kontakt_nachricht"
+    | "situation"
+    | "bereiche"
+    | "anlass"
+    | "kanal"
+    | "funnel_daten"
+    | "kontakt_nachricht"
+    | "erfassung_von"
   > & { notizen?: string | null }
 ): {
   title: string;
@@ -305,6 +327,7 @@ function anfrageTitleFromLead(
       anlass: lead.anlass,
       kanal: lead.kanal,
       funnelDaten: lead.funnel_daten,
+      erfassung_von: lead.erfassung_von,
     })
   ) {
     const title = buildMeldeVorgangTitel({
@@ -319,7 +342,7 @@ function anfrageTitleFromLead(
     return { title, anfrageVorhaben: vorhaben, anfrageGewerk: gewerk };
   }
 
-  /** Nicht-Melde: Situation · Gewerk — nie Kunden-/Meldername. */
+  /** HV-selbst / normale Anfrage: Situation · Gewerk — nie „Meldung“. */
   const title = [vorhaben, gewerk].filter(Boolean).join(" · ") || "Vorgang";
   return { title, anfrageVorhaben: vorhaben, anfrageGewerk: gewerk };
 }
@@ -358,6 +381,7 @@ function resolveListCardTitle(
     anlass: lead.anlass,
     kanal: lead.kanal,
     funnelDaten: lead.funnel_daten,
+    erfassung_von: lead.erfassung_von,
   });
   if (meldeQuelle) {
     return anfrageTitleFromLead(lead).title;
@@ -383,27 +407,22 @@ function buildItemFromLead(
 ): KundePortalDetailItem {
   const { anfrageVorhaben, anfrageGewerk } = anfrageTitleFromLead(lead);
   const title = resolveListCardTitle(lead, angebot);
-  const { plz, ort } = objektPlzOrt(lead.objekt, lead.plz);
+  const addr = resolveAnfrageAdresse(lead);
+  const melder = resolveAnfrageMelder(lead);
   const hidePreise = Boolean(mieterStatusMode && isHvPortalLead(lead));
   const hvMieterView = Boolean(mieterStatusMode && isHvPortalLead(lead));
   const melderStatusUrl = resolveMelderStatusUrl(lead);
-  const meldeStrasse =
-    formatAnfrageStrasseHausnummer(lead) ||
-    lead.objekt?.strasse?.trim() ||
-    null;
-  const meldePlz =
-    lead.plz?.trim() ||
-    lead.objekt?.plz?.trim() ||
-    (plz !== "—" ? plz : null) ||
-    null;
-  const meldeOrt =
-    lead.ort?.trim() ||
-    lead.objekt?.ort?.trim() ||
-    meldeOrtFromFunnel(lead.funnel_daten) ||
-    (ort !== "—" ? ort : null) ||
-    null;
+  const meldeStrasse = addr.strasseZeile || null;
+  const meldePlz = addr.plz || null;
+  const meldeOrt = addr.ort || null;
+  const norm = normalizeFunnelDaten(lead.funnel_daten, lead.bereiche);
+  const situationSlug = norm.situation || lead.situation || undefined;
+  const situationLabel =
+    situationSlug && labelSituation(situationSlug) !== "—"
+      ? labelSituation(situationSlug)
+      : null;
   const meldeBereich =
-    (lead.bereiche ?? [])
+    (lead.bereiche ?? norm.bereiche ?? [])
       .map((b) => labelBereich(b))
       .filter((b) => b && b !== "—")
       .join(", ") || null;
@@ -413,33 +432,37 @@ function buildItemFromLead(
       auftrag?.objekt?.cover_url?.trim() ||
       angebot?.objekt?.cover_url?.trim() ||
       null,
-    melderName: lead.melder_name ?? lead.kontakt_name ?? null,
-    melderEinheit: lead.melder_einheit ?? null,
-    melderTelefon: lead.melder_telefon ?? null,
-    melderEmail: lead.melder_email ?? null,
+    melderName: melder.name ?? lead.kontakt_name ?? null,
+    melderEinheit: melder.einheit ?? null,
+    melderTelefon: melder.telefon ?? null,
+    melderEmail: melder.email ?? null,
     kostentraeger: lead.kostentraeger ?? null,
     kostentraegerVorgeschlagen: Boolean(lead.kostentraeger_vorgeschlagen),
     versicherungsNr: lead.versicherungs_nr ?? null,
     meldeFotos: meldeFotosFromFunnel(lead.funnel_daten),
     orgFreigabeStatus: lead.org_freigabe_status ?? null,
     freigabeBypassGrund: lead.freigabe_bypass_grund ?? null,
+    funnelDirektauftrag:
+      lead.funnel_daten &&
+      typeof lead.funnel_daten === "object" &&
+      !Array.isArray(lead.funnel_daten) &&
+      (lead.funnel_daten as { direktauftrag?: unknown }).direktauftrag === true
+        ? true
+        : false,
     hvMeldungStatus: lead.hv_meldung_status ?? null,
     meldeStrasse,
-    meldeHausnummer: lead.hausnummer?.trim() || null,
+    meldeHausnummer: addr.hausnummer || null,
     meldePlz,
     meldeOrt,
-    meldeSituation: lead.situation
-      ? labelSituation(lead.situation)
-      : null,
+    meldeSituation: situationLabel,
     meldeBereich,
-    meldeZeitraum: lead.zeitraum ? labelZeitraum(lead.zeitraum) : null,
+    meldeZeitraum: formatAnfrageZeitraum(lead) ?? null,
     meldeFachdetails: fachdetailRowsFromFunnelDaten(
       lead.funnel_daten,
       lead.bereiche
     ),
     meldeFachdetailAnswers:
-      normalizeFunnelDaten(lead.funnel_daten, lead.bereiche).fachdetails
-        .fachdetailAnswers ?? undefined,
+      norm.fachdetails.fachdetailAnswers ?? undefined,
     meldeUrsachenCheck: parseMeldeUrsachenCheck(lead.funnel_daten),
     meldePreisIndikation: meldePreisIndikationFromLead(lead, hvMieterView),
   };
@@ -508,7 +531,13 @@ function buildItemFromLead(
       statusPillKey: vorgangStatus.pillKey,
       sections: buildAuftragPortalSections({ lead: leadSource, objekt: auftrag.objekt }),
       ansprechpartner: auftrag.ansprechpartner ?? portalAnsprechpartnerFallback(),
-      dokumente: filterDocs(auftrag.dokumente ?? lead.dokumente ?? []),
+      dokumente: filterDocs(
+        collectVorgangDokumente({
+          leadDocs: lead.dokumente,
+          angebotDocs: angebot?.dokumente,
+          auftragDocs: auftrag.dokumente,
+        })
+      ),
       bautagebuch: hvMieterView ? undefined : auftrag.bautagebuch ?? [],
       auftragPositionen: hvMieterView ? undefined : auftragPositionen,
       abnahmeCheckliste: hvMieterView ? undefined : abnahmeCheckliste,
@@ -557,7 +586,12 @@ function buildItemFromLead(
       status: vorgangStatus.label,
       statusPillKey: vorgangStatus.pillKey,
       sections: buildAngebotPortalSections({ lead: leadSource, objekt: angebot.objekt }),
-      dokumente: filterDocs(angebot.dokumente ?? lead.dokumente ?? []),
+      dokumente: filterDocs(
+        collectVorgangDokumente({
+          leadDocs: lead.dokumente,
+          angebotDocs: angebot.dokumente,
+        })
+      ),
       infoHint: undefined,
       vorgangPhase: vorgangStatus.phase,
       needsAction: eigentuemerView ? false : vorgangStatus.needsAction,
@@ -579,14 +613,18 @@ function buildItemFromLead(
     title,
     anfrageGewerk,
     anfrageVorhaben,
-    plz,
-    ort,
+    plz: addr.plz,
+    ort: addr.ort,
     cardSubtitle,
     cardMeta: buildAnfrageCardMeta(lead),
     status: vorgangStatus.label,
     statusPillKey: vorgangStatus.pillKey,
     sections: buildAnfragePortalSections(lead),
-    dokumente: filterDocs(lead.dokumente ?? []),
+    dokumente: filterDocs(
+      collectVorgangDokumente({
+        leadDocs: lead.dokumente,
+      })
+    ),
     vorgangPhase: vorgangStatus.phase,
     needsAction: eigentuemerView ? false : vorgangStatus.needsAction,
     actionHint: eigentuemerView

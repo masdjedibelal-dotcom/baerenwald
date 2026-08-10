@@ -1,14 +1,14 @@
 "use client";
 
-import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { flushSync } from "react-dom";
-import { Filter, Mail, Phone, X } from "lucide-react";
+import { Filter, X } from "lucide-react";
 import { PORTAL_VAR } from "@/lib/portal2/tokens";
 import {
   paintPortalBusyNow,
   PORTAL_BUSY_MIN_MS,
+  usePortalBusy,
 } from "@/components/shared/PortalBusyContext";
 import { PortalContentBusy } from "@/components/shared/PortalContentBusy";
 
@@ -17,19 +17,17 @@ import { OrgMeldungAktionBanner } from "@/components/org/OrgMeldungAktionBanner"
 import { HvMeldungListActions } from "@/components/org/HvMeldungListActions";
 import { BautagebuchAccordionList } from "@/components/shared/BautagebuchAccordionList";
 import { DokumenteTabelle } from "@/components/shared/DokumenteTabelle";
+import { VorgangDetailBlocks } from "@/components/shared/vorgang-detail";
 import {
   isAbnahmePortalDokument,
   type PortalDokument,
 } from "@/lib/portal/portal-dokumente";
 import { orgPortalToast } from "@/lib/shared/portal-toast";
 import { PortalListCard } from "@/components/shared/PortalListCard";
-import { formatPreisspanneDisplay } from "@/lib/org/hv-meldung-workflow";
 import { meldeKategorieLabel } from "@/lib/org/melde-kategorien";
-import {
-  meldeFotosFromLead,
-  meldeKategorieFromLead,
-} from "@/lib/org/org-eingang-utils";
+import { meldeKategorieFromLead } from "@/lib/org/org-eingang-utils";
 import { isHvDirektauftragInfoOnly } from "@/lib/org/org-direktauftrag";
+import { funnelDirektauftragFromDaten } from "@/lib/org/freigabe-bypass";
 import { leadBelongsToObjekt } from "@/lib/org/match-lead-objekt";
 import type {
   OrganisationKunde,
@@ -41,6 +39,12 @@ import {
   plattformStatusPillClass,
   resolvePlattformStatus,
 } from "@/lib/vorgang/plattform-status";
+import { buildOrgEingangVorgangDetailVm } from "@/lib/vorgang/build-org-lead-detail-vm";
+import {
+  formatMockVorgangListSubtitle,
+  resolveAnfrageMelder,
+} from "@/lib/portal/portal-anfrage-display";
+import type { PortalObjekt } from "@/lib/portal/portal-objekt";
 import { cn } from "@/lib/utils";
 import { OrgVorgangFeedbackSection } from "@/components/org/OrgVorgangFeedbackSection";
 import { OrganisationVorgangNotizenPanel } from "@/components/org/OrganisationObjektNotizenPanel";
@@ -166,7 +170,6 @@ function MeldungDetail({
   const [resendBusy, setResendBusy] = useState(false);
   const [resendMsg, setResendMsg] = useState<string | null>(null);
 
-  const fotos = meldeFotosFromLead(lead);
   const kategorie = meldeKategorieFromLead(lead);
 
   const resendEinladung = async () => {
@@ -207,6 +210,18 @@ function MeldungDetail({
   const angebotPdfZeilen =
     wartetOrgFreigabe && angebot ? orgAngebotPdfZeilen(angebot) : [];
 
+  const detailVm = useMemo(() => {
+    const vm = buildOrgEingangVorgangDetailVm(lead);
+    // Bei vorhandenem Angebot: Preisindikation nicht doppelt zur Angebotssumme.
+    if (wartetOrgFreigabe && hatAngebotsdaten) {
+      return {
+        ...vm,
+        objektMelder: { ...vm.objektMelder, preisIndikation: null },
+      };
+    }
+    return vm;
+  }, [lead, wartetOrgFreigabe, hatAngebotsdaten]);
+
   return (
     <>
       {showClose && onClose ? (
@@ -239,12 +254,6 @@ function MeldungDetail({
           <p className="text-sm text-text-secondary">
             {lead.objekt?.titel ?? "Objekt"}
           </p>
-          {lead.objekt?.adresseZeile ? (
-            <p className="text-xs text-text-tertiary mt-0.5">
-              {lead.objekt.adresseZeile}
-              {lead.objekt.plzOrt ? ` · ${lead.objekt.plzOrt}` : ""}
-            </p>
-          ) : null}
         </div>
       </div>
 
@@ -252,41 +261,7 @@ function MeldungDetail({
         <OrgAngebotFreigabeInhalt angebot={angebot} />
       ) : null}
 
-      {lead.kontakt_nachricht ? (
-        <div>
-          <p className="text-xs font-medium text-text-tertiary mb-1">
-            Beschreibung
-          </p>
-          <p className="text-sm whitespace-pre-wrap">{lead.kontakt_nachricht}</p>
-        </div>
-      ) : null}
-
-      {(lead.melder_name ||
-        lead.melder_einheit ||
-        lead.melder_email ||
-        lead.melder_telefon) && (
-        <div className="rounded-lg bg-muted/50 p-3 text-sm space-y-1">
-          <p className="text-xs font-medium text-text-tertiary">Melder</p>
-          {lead.melder_name ? (
-            <p>
-              <strong>{lead.melder_name}</strong>
-              {lead.melder_einheit ? ` · ${lead.melder_einheit}` : ""}
-            </p>
-          ) : null}
-          {lead.melder_email ? (
-            <p className="inline-flex items-center gap-1 text-text-secondary">
-              <Mail className="h-3.5 w-3.5" />
-              {lead.melder_email}
-            </p>
-          ) : null}
-          {lead.melder_telefon ? (
-            <p className="inline-flex items-center gap-1 text-text-secondary">
-              <Phone className="h-3.5 w-3.5" />
-              {lead.melder_telefon}
-            </p>
-          ) : null}
-        </div>
-      )}
+      <VorgangDetailBlocks vm={detailVm} />
 
       {lead.einladung_status === "offen" ? (
         <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm">
@@ -310,33 +285,6 @@ function MeldungDetail({
         </div>
       ) : null}
 
-      {fotos.length > 0 ? (
-        <div>
-          <p className="text-xs font-medium text-text-tertiary mb-2">
-            Fotos ({fotos.length})
-          </p>
-          <div className="grid grid-cols-3 gap-2">
-            {fotos.map((url) => (
-              <a
-                key={url}
-                href={url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="relative aspect-square overflow-hidden rounded-lg border border-border-default"
-              >
-                <Image
-                  src={url}
-                  alt=""
-                  fill
-                  className="object-cover"
-                  unoptimized
-                />
-              </a>
-            ))}
-          </div>
-        </div>
-      ) : null}
-
       {angebotPdfZeilen.length > 0 ? (
         <DokumenteTabelle
           heading="Angebot (PDF)"
@@ -345,27 +293,13 @@ function MeldungDetail({
         />
       ) : null}
 
-      {!wartetOrgFreigabe || !hatAngebotsdaten ? (
-        <div className="rounded-lg bg-muted/40 p-3 text-sm">
-          <p className="text-xs font-medium text-text-tertiary mb-1">
-            {wartetOrgFreigabe ? "Vorläufige Einschätzung" : "Geschätzte Preisspanne"}
-          </p>
-          <p>
-            {formatPreisspanneDisplay(
-              lead.preis_min,
-              lead.preis_max,
-              lead.preis_unsicher
-            )}
-          </p>
-        </div>
-      ) : null}
-
       {wartetOrgFreigabe ? (
         <OrgFreigabeBanner
           leadId={lead.id}
           status={lead.org_freigabe_status ?? ""}
           bypassGrund={lead.freigabe_bypass_grund}
           hvMeldungStatus={lead.hv_meldung_status}
+          funnelDirektauftrag={funnelDirektauftragFromDaten(lead.funnel_daten)}
           schwelleLabel={
             kunde.freigabe_schwelle_eur != null
               ? new Intl.NumberFormat("de-DE", {
@@ -509,12 +443,26 @@ export function OrganisationEingangPanel({
   /** Nach Zurück: stale URL-id nicht sofort wieder öffnen. */
   const closingRef = useRef(false);
   const pendingOpenIdRef = useRef<string | null>(null);
+  const { hold, release } = usePortalBusy();
+  const detailHoldRef = useRef(false);
 
   function beginDetailOpening() {
+    if (!detailHoldRef.current) {
+      detailHoldRef.current = true;
+      hold();
+    }
     paintPortalBusyNow(setDetailOpening);
     if (detailOpeningTimerRef.current) {
       clearTimeout(detailOpeningTimerRef.current);
       detailOpeningTimerRef.current = null;
+    }
+  }
+
+  function endDetailOpening() {
+    setDetailOpening(false);
+    if (detailHoldRef.current) {
+      detailHoldRef.current = false;
+      release();
     }
   }
 
@@ -524,7 +472,7 @@ export function OrganisationEingangPanel({
         closingRef.current = false;
         pendingOpenIdRef.current = null;
         setSelectedId(null);
-        setDetailOpening(false);
+        endDetailOpening();
       }
       return;
     }
@@ -568,7 +516,7 @@ export function OrganisationEingangPanel({
   useEffect(() => {
     if (!detailOpening || !selectedId || !selected) return;
     const t = window.setTimeout(() => {
-      setDetailOpening(false);
+      endDetailOpening();
     }, PORTAL_BUSY_MIN_MS);
     return () => window.clearTimeout(t);
   }, [detailOpening, selectedId, selected]);
@@ -591,7 +539,7 @@ export function OrganisationEingangPanel({
   const closeDetail = () => {
     closingRef.current = true;
     pendingOpenIdRef.current = null;
-    setDetailOpening(false);
+    endDetailOpening();
     flushSync(() => {
       setSelectedId(null);
     });
@@ -633,12 +581,7 @@ export function OrganisationEingangPanel({
           feedbackBereit={feedbackBereitByLeadId[selected.id]}
           hvFeedback={hvFeedbackByLeadId[selected.id]}
           hvAbnahme={hvAbnahmeByLeadId[selected.id] ?? null}
-          vorgangUnterlagen={
-            hwErledigtByLeadId[selected.id] ||
-            feedbackBereitByLeadId[selected.id]
-              ? dokumenteByLeadId[selected.id]
-              : undefined
-          }
+          vorgangUnterlagen={dokumenteByLeadId[selected.id]}
         />
       </div>
     );
@@ -697,20 +640,39 @@ export function OrganisationEingangPanel({
               meldeKategorieFromLead(lead) ?? undefined
             );
             const infoOnly = isHvDirektauftragInfoOnly(lead, kunde, objekte);
-            const adresse = [
-              lead.strasse,
-              lead.hausnummer,
-            ]
-              .filter(Boolean)
-              .join(" ");
-            const we = lead.melder_einheit?.trim()
-              ? /^(WE|Whg)/i.test(lead.melder_einheit.trim())
-                ? lead.melder_einheit.trim()
-                : `WE ${lead.melder_einheit.trim()}`
+            const rawObj = lead.objekt;
+            const objekt: PortalObjekt | null = rawObj
+              ? {
+                  name: rawObj.name?.trim() || rawObj.titel?.trim() || "Objekt",
+                  strasse: rawObj.strasse ?? rawObj.adresseZeile ?? null,
+                  plz: rawObj.plz ?? null,
+                  ort: rawObj.ort ?? null,
+                  cover_url: rawObj.cover_url ?? null,
+                }
+              : null;
+            const source = {
+              strasse: lead.strasse,
+              hausnummer: lead.hausnummer,
+              plz: lead.plz,
+              funnel_daten: lead.funnel_daten,
+              melder_name: lead.melder_name,
+              melder_einheit: lead.melder_einheit,
+              melder_telefon: lead.melder_telefon,
+              melder_email: lead.melder_email,
+              kontakt_name: lead.kontakt_name,
+              objekt,
+            };
+            const melder = resolveAnfrageMelder(source);
+            const we = melder.einheit?.trim()
+              ? /^(WE|Whg)/i.test(melder.einheit.trim())
+                ? melder.einheit.trim()
+                : `WE ${melder.einheit.trim()}`
               : undefined;
-            const person = lead.melder_name?.trim() || undefined;
+            const person = melder.name?.trim() || undefined;
             const subtitle = [
-              adresse || lead.objekt?.titel || "Objekt",
+              formatMockVorgangListSubtitle(source) ||
+                objekt?.name ||
+                "Objekt",
               we,
               person,
             ]

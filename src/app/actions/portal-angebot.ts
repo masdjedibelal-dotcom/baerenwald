@@ -4,6 +4,7 @@ import { randomBytes } from "crypto";
 import { revalidatePath } from "next/cache";
 
 import { linkPortalKundeToAuthUser } from "@/lib/portal/link-portal-kunde";
+import { notifyCrmOrgPortal } from "@/lib/org/notify-crm-org";
 import { createClient } from "@/lib/supabase/server";
 import { isSupabaseConfigured, supabaseAdmin } from "@/lib/supabase";
 
@@ -46,7 +47,7 @@ export async function acceptKundeAngebot(
   } = await supabase.auth.getUser();
 
   if (!user?.email) {
-    return { ok: false, error: "Bitte melde dich an." };
+    return { ok: false, error: "Bitte melden Sie sich an." };
   }
 
   const link = await linkPortalKundeToAuthUser({
@@ -57,7 +58,9 @@ export async function acceptKundeAngebot(
 
   const { data: angebot, error: loadErr } = await supabaseAdmin
     .from("angebote")
-    .select("id, lead_id, kunde_id, status, status_einfach")
+    .select(
+      "id, lead_id, kunde_id, status, status_einfach, gesendet_am, gesendet_kunde_at, pdf_url"
+    )
     .eq("id", id)
     .maybeSingle();
 
@@ -87,7 +90,7 @@ export async function acceptKundeAngebot(
   }
 
   if (!belongsToKunde) {
-    return { ok: false, error: "Du hast keinen Zugriff auf dieses Angebot." };
+    return { ok: false, error: "Sie haben keinen Zugriff auf dieses Angebot." };
   }
 
   const statusEinfach = normalizeStatus(angebot.status_einfach);
@@ -96,8 +99,20 @@ export async function acceptKundeAngebot(
     statusEinfach === "angenommen" ||
     statusEinfach === "kunde_akzeptiert" ||
     statusFein === "kunde_akzeptiert";
-  const waitingForAccept =
-    statusEinfach === "gesendet" || statusFein === "gesendet_kunde";
+  const terminalBlocked =
+    statusEinfach === "abgelehnt" ||
+    statusEinfach === "ersetzt" ||
+    statusEinfach === "abgelaufen" ||
+    statusFein === "abgelehnt";
+  const hasPdf = Boolean(String(angebot.pdf_url ?? "").trim());
+  if (!hasPdf) {
+    return {
+      ok: false,
+      error: "Zum Angebot liegt noch kein PDF vor.",
+    };
+  }
+  // PDF im CRM gespeichert = vorgelegt; E-Mail-Versand ist optional.
+  const waitingForAccept = !terminalBlocked;
 
   const { data: existingAuftrag } = await supabaseAdmin
     .from("auftraege")
@@ -233,6 +248,13 @@ export async function acceptKundeAngebot(
       beschreibung: "Über das Kunden-/HV-Portal angenommen.",
       erstellt_von: user.id,
     });
+
+    void notifyCrmOrgPortal({
+      leadId,
+      typ: "angebot_entscheidung",
+      aktion: "angenommen",
+      notiz: "Angebot im Portal angenommen — Auftrag erstellt.",
+    }).catch((e) => console.error("[acceptKundeAngebot] crm notify", e));
   }
 
   revalidatePath("/portal");
@@ -263,7 +285,7 @@ export async function rejectKundeAngebot(
   } = await supabase.auth.getUser();
 
   if (!user?.email) {
-    return { ok: false, error: "Bitte melde dich an." };
+    return { ok: false, error: "Bitte melden Sie sich an." };
   }
 
   const link = await linkPortalKundeToAuthUser({
@@ -274,7 +296,9 @@ export async function rejectKundeAngebot(
 
   const { data: angebot, error: loadErr } = await supabaseAdmin
     .from("angebote")
-    .select("id, lead_id, kunde_id, status, status_einfach")
+    .select(
+      "id, lead_id, kunde_id, status, status_einfach, gesendet_am, gesendet_kunde_at, pdf_url"
+    )
     .eq("id", id)
     .maybeSingle();
 
@@ -304,7 +328,7 @@ export async function rejectKundeAngebot(
   }
 
   if (!belongsToKunde) {
-    return { ok: false, error: "Du hast keinen Zugriff auf dieses Angebot." };
+    return { ok: false, error: "Sie haben keinen Zugriff auf dieses Angebot." };
   }
 
   const statusEinfach = normalizeStatus(angebot.status_einfach);
@@ -313,8 +337,23 @@ export async function rejectKundeAngebot(
     return { ok: true };
   }
 
-  const waitingForAccept =
-    statusEinfach === "gesendet" || statusFein === "gesendet_kunde";
+  const terminalBlocked =
+    statusEinfach === "ersetzt" ||
+    statusEinfach === "abgelaufen" ||
+    statusEinfach === "angenommen" ||
+    statusEinfach === "kunde_akzeptiert" ||
+    statusFein === "kunde_akzeptiert" ||
+    statusEinfach === "beauftragt";
+  const hasPdf = Boolean(String(angebot.pdf_url ?? "").trim());
+  if (!hasPdf) {
+    return {
+      ok: false,
+      error: "Zum Angebot liegt noch kein PDF vor.",
+    };
+  }
+  // PDF im CRM gespeichert = vorgelegt; E-Mail-Versand ist optional.
+  const waitingForAccept = !terminalBlocked;
+
   if (!waitingForAccept) {
     return {
       ok: false,
@@ -362,6 +401,15 @@ export async function rejectKundeAngebot(
         : "Über das Kundenportal abgelehnt.",
       erstellt_von: user.id,
     });
+
+    void notifyCrmOrgPortal({
+      leadId,
+      typ: "angebot_entscheidung",
+      aktion: "abgelehnt",
+      notiz: grundTrim
+        ? `Angebot im Portal abgelehnt. Grund: ${grundTrim}`
+        : "Angebot im Portal abgelehnt.",
+    }).catch((e) => console.error("[rejectKundeAngebot] crm notify", e));
   }
 
   revalidatePath("/portal");

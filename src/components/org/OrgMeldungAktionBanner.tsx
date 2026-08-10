@@ -4,7 +4,10 @@ import { useState } from "react";
 
 import { HvFreigabeInfoBanner } from "@/components/org/HvFreigabeInfoBanner";
 import { usePortalBusy } from "@/components/shared/PortalBusyContext";
-import { hvFreigabeEntfaellt } from "@/lib/org/freigabe-bypass";
+import {
+  funnelDirektauftragFromDaten,
+  hvFreigabeEntfaellt,
+} from "@/lib/org/freigabe-bypass";
 import { isHvDirektauftragInfoOnly } from "@/lib/org/org-direktauftrag";
 import { orgPortalToast } from "@/lib/shared/portal-toast";
 import { HV_MELDUNG_ACTIONS } from "@/lib/portal2/hv-liste";
@@ -40,25 +43,21 @@ export function OrgMeldungAktionBanner({
   if (status !== "neu") return null;
   if (lead.einladung_status === "offen") return null;
 
-  const funnelDa =
-    lead.funnel_daten &&
-    typeof lead.funnel_daten === "object" &&
-    !Array.isArray(lead.funnel_daten)
-      ? (lead.funnel_daten as { direktauftrag?: unknown }).direktauftrag === true
-      : false;
+  const funnelDa = funnelDirektauftragFromDaten(lead.funnel_daten);
   const entfaellt = hvFreigabeEntfaellt({
     orgFreigabeStatus: lead.org_freigabe_status,
     bypassGrund: lead.freigabe_bypass_grund,
     funnelDirektauftrag: funnelDa,
     hvMeldungStatus: lead.hv_meldung_status,
+    // Neu-Meldung: noch kein Angebot — Schwelle gilt nicht über Preisindikation
+    angebotZugestellt: false,
   });
   const infoOnly =
     entfaellt != null || isHvDirektauftragInfoOnly(lead, kunde, objekte);
 
-  if (infoOnly) {
-    const kind = entfaellt ?? "akut";
+  if (infoOnly && entfaellt) {
     const schwelle =
-      kind === "schwelle" && kunde.freigabe_schwelle_eur != null
+      entfaellt === "schwelle" && kunde.freigabe_schwelle_eur != null
         ? new Intl.NumberFormat("de-DE", {
             style: "currency",
             currency: "EUR",
@@ -67,7 +66,16 @@ export function OrgMeldungAktionBanner({
         : null;
     return (
       <div className="mb-4">
-        <HvFreigabeInfoBanner kind={kind} schwelleLabel={schwelle} />
+        <HvFreigabeInfoBanner kind={entfaellt} schwelleLabel={schwelle} />
+      </div>
+    );
+  }
+
+  // Echter Direktauftrag ohne gesetzten Bypass-Kind: nur dann Akut-Info
+  if (infoOnly) {
+    return (
+      <div className="mb-4">
+        <HvFreigabeInfoBanner kind="akut" schwelleLabel={null} />
       </div>
     );
   }

@@ -160,12 +160,7 @@ export function PartnerLeistungenKonditionenCard({
 
   return (
     <>
-      <div
-        className={cn(
-          "portal-text-body overflow-hidden",
-          plain ? "" : "rounded-xl border border-border-light bg-muted/20"
-        )}
-      >
+      <div className="portal-text-body overflow-hidden">
         {!plain ? (
           <>
             <div

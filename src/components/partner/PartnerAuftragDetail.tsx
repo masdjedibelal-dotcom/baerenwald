@@ -105,7 +105,7 @@ export function PartnerAuftragDetail({
   const [abnahmeMaengelCount, setAbnahmeMaengelCount] = useState<number | null>(null);
   const [activeTab, setActiveTab] = useState(() => {
     if (focusAbnahme) return "abnahme";
-    if (focusBautagebuch && vorgangState !== "erledigt") return "dokumentation";
+    if (focusBautagebuch) return "dokumentation";
     return "uebersicht";
   });
 
@@ -117,8 +117,9 @@ export function PartnerAuftragDetail({
 
   useEffect(() => {
     if (!focusBautagebuch) return;
-    if (vorgangState === "erledigt") return;
-    if (preferredPositionIds.length > 0) setAutoOpenPreferred(true);
+    if (preferredPositionIds.length > 0 && vorgangState !== "erledigt") {
+      setAutoOpenPreferred(true);
+    }
     setActiveTab("dokumentation");
   }, [focusBautagebuch, preferredPositionIds.length, vorgangState]);
 
@@ -287,9 +288,7 @@ export function PartnerAuftragDetail({
 
   const DETAIL_TABS: PortalDetailTab[] = [
     { id: "uebersicht", label: "Übersicht" },
-    ...(!isErledigt
-      ? [{ id: "dokumentation", label: "Updates" } satisfies PortalDetailTab]
-      : []),
+    { id: "dokumentation", label: "Updates" },
     { id: "dokumente", label: "Dokumente" },
     { id: "abnahme", label: "Abschluss" },
   ];
@@ -308,11 +307,6 @@ export function PartnerAuftragDetail({
   ) : undefined;
 
   const handleBack = onBack ?? (() => router.back());
-
-  useEffect(() => {
-    if (!isErledigt) return;
-    if (activeTab === "dokumentation") setActiveTab("uebersicht");
-  }, [isErledigt, activeTab]);
 
   return (
     <PortalDetailLayout footer={isErledigt ? undefined : actionFooter}>
@@ -339,10 +333,7 @@ export function PartnerAuftragDetail({
                 </p>
               </PortalDetailCard>
             ) : null}
-            <VorgangDetailBlocks
-              vm={detailVm}
-              partnerHideZeitraumAndKontakt
-            />
+            <VorgangDetailBlocks vm={detailVm} />
             {!isErledigt ? (
               <PartnerAuftragErledigtSection
                 positionen={item.positionen}
@@ -362,7 +353,8 @@ export function PartnerAuftragDetail({
                 auftragTitel={titel}
                 anfrageId={btAnfrageId}
                 preferredPositionIds={preferredPositionIds}
-                autoOpenPreferred={autoOpenPreferred}
+                autoOpenPreferred={autoOpenPreferred && !isErledigt}
+                readOnly={isErledigt}
                 positionen={item.positionen.map((p) => ({
                   id: p.id,
                   leistung_name: p.leistung_name,
@@ -443,10 +435,7 @@ export function PartnerAuftragDetail({
               {zeigtDokumenteUpload ? (
                 <div className="mt-4 space-y-4">
                   {kannRechnungHochladen && item.angebotHandwerkerId ? (
-                    <div
-                      className="space-y-2 rounded-xl border p-4"
-                      style={{ borderColor: PORTAL_VAR.line }}
-                    >
+                    <div className="space-y-2 border-t border-border-light pt-4">
                       <p className="portal-text-body font-semibold text-text-primary">
                         {HW_ABNAHME_COPY.rechnungTitle}
                       </p>
@@ -467,7 +456,7 @@ export function PartnerAuftragDetail({
                     item.projektvertrag_bestaetigt_am &&
                     !item.hw_abschluss_signiert_am &&
                     !item.abnahme_protokoll_url ? (
-                    <p className="rounded-xl border border-dashed px-3 py-3 text-[12.5px] text-text-secondary">
+                    <p className="border-t border-dashed border-border-light px-0 py-3 text-[12.5px] text-text-secondary">
                       {HW_ABNAHME_COPY.rechnungBlockedOhneAbnahme}
                     </p>
                   ) : null}
@@ -475,8 +464,7 @@ export function PartnerAuftragDetail({
                   {kannRechnungHochladen ? (
                     <form
                       onSubmit={onRechnungSubmit}
-                      className="space-y-2 rounded-xl border border-dashed p-4"
-                      style={{ borderColor: PORTAL_VAR.line }}
+                      className="space-y-2 border-t border-dashed border-border-light pt-4"
                     >
                       <p className="portal-text-body font-semibold text-text-primary">
                         Eigenes Rechnungs-PDF (optional)

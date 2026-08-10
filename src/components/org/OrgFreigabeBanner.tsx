@@ -6,6 +6,7 @@ import { HvFreigabeInfoBanner } from "@/components/org/HvFreigabeInfoBanner";
 import { usePortalBusy } from "@/components/shared/PortalBusyContext";
 import {
   hvFreigabeEntfaellt,
+  orgFreigabeStatusImpliesAngebot,
   parseFreigabeBypassGrund,
 } from "@/lib/org/freigabe-bypass";
 import { orgPortalToast } from "@/lib/shared/portal-toast";
@@ -44,6 +45,8 @@ export function OrgFreigabeBanner({
     bypassGrund: bypass,
     funnelDirektauftrag,
     hvMeldungStatus,
+    // Dieser Banner hängt am Angebots-Freigabe-Flow → Angebot ist zugestellt
+    angebotZugestellt: orgFreigabeStatusImpliesAngebot(status),
   });
 
   if (infoKind) {

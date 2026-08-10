@@ -255,7 +255,7 @@ export function PortalModalShell({
           )}
           style={
             {
-              maxWidth: maxW,
+              /* Nur CSS-Var — mobil volle Breite; Desktop nutzt var in @media */
               ["--portal-modal-max"]: maxW,
               ...(isFunnel ? { ["--portal-funnel-modal-max"]: maxW } : null),
             } as CSSProperties

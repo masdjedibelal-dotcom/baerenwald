@@ -3,12 +3,14 @@
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 
+import { HvObjektFilterPopover } from "@/components/org/HvObjektFilterPopover";
 import { PortalClient } from "@/components/portal/PortalClient";
 import {
   PortalListeEyebrow,
+  PortalListeFilterChip,
   PortalListeTitle,
 } from "@/components/shared/PortalListeChrome";
-import { PortalListeFilterBar } from "@/components/shared/PortalListeFilterBar";
+import { filterOrgLeadsByObjektIds } from "@/lib/org/filter-leads-by-objekt";
 import {
   buildOrgVorgangFilterCounts,
   buildAuftragByLeadId,
@@ -101,15 +103,29 @@ function mergeOrgLeads(
   return Array.from(byId.values());
 }
 
-/** Mock `pageHead` + `hvChips`. */
+function parseObjektIdsParam(raw: string | null): string[] {
+  if (!raw?.trim()) return [];
+  return raw
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
+}
+
+/** Mock `pageHead` + `hvChips` + Objekt-Filter. */
 function HvListeChrome({
   filter,
   onFilterChange,
   offenCount,
+  objekte,
+  selectedObjektIds,
+  onObjektIdsChange,
 }: {
   filter: OrgVorgangFilter;
   onFilterChange: (filter: OrgVorgangFilter) => void;
   offenCount: number;
+  objekte: OrganisationObjekt[];
+  selectedObjektIds: string[];
+  onObjektIdsChange: (ids: string[]) => void;
 }) {
   return (
     <div>
@@ -117,16 +133,26 @@ function HvListeChrome({
         <PortalListeEyebrow>{HV_LISTE_PAGE_EYEBROW}</PortalListeEyebrow>
         <PortalListeTitle>{HV_LISTE_PAGE_TITLE}</PortalListeTitle>
       </div>
-      <PortalListeFilterBar
-        value={filter}
-        onChange={onFilterChange}
-        sheetTitle="Vorgänge"
-        options={HV_CHIPS.map((chip) => ({
-          id: chip.id,
-          label: chip.label,
-          countBadge: chip.showCount ? offenCount : null,
-        }))}
-      />
+      <div className="-mx-1 flex items-center gap-2 overflow-x-auto px-1 py-3.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        {HV_CHIPS.map((chip) => (
+          <PortalListeFilterChip
+            key={chip.id}
+            active={chip.id === filter}
+            onClick={() => onFilterChange(chip.id)}
+            countBadge={chip.showCount ? offenCount : null}
+          >
+            {chip.label}
+          </PortalListeFilterChip>
+        ))}
+        <HvObjektFilterPopover
+          objekte={objekte.map((o) => ({
+            id: o.id,
+            titel: o.titel,
+          }))}
+          selectedIds={selectedObjektIds}
+          onChange={onObjektIdsChange}
+        />
+      </div>
     </div>
   );
 }
@@ -134,7 +160,7 @@ function HvListeChrome({
 export function OrganisationVorgaengeSection({
   kunde,
   eingang,
-  objekte: _objekte,
+  objekte,
   leads,
   angebote,
   auftraege,
@@ -160,6 +186,9 @@ export function OrganisationVorgaengeSection({
   const [filter, setFilter] = useState<OrgVorgangFilter>(
     initialFilter ?? "alle"
   );
+  const [selectedObjektIds, setSelectedObjektIds] = useState<string[]>(() =>
+    parseObjektIdsParam(searchParams.get("objekte"))
+  );
 
   useEffect(() => {
     setFilter(initialFilter ?? "alle");
@@ -171,20 +200,47 @@ export function OrganisationVorgaengeSection({
     onFilterChange?.(next);
   }
 
+  function changeObjektIds(ids: string[]) {
+    setSelectedObjektIds(ids);
+    setDetailOpen(false);
+    if (typeof window === "undefined") return;
+    const u = new URL(window.location.href);
+    if (ids.length === 0 || ids.length >= objekte.length) {
+      u.searchParams.delete("objekte");
+    } else {
+      u.searchParams.set("objekte", ids.join(","));
+    }
+    window.history.replaceState(null, "", u.toString());
+  }
+
   const allLeads = useMemo(
     () => mergeOrgLeads(leads, eingang),
     [leads, eingang]
   );
 
+  const filteredLeads = useMemo(
+    () => filterOrgLeadsByObjektIds(allLeads, objekte, selectedObjektIds),
+    [allLeads, objekte, selectedObjektIds]
+  );
+
+  const filteredEingang = useMemo(
+    () => filterOrgLeadsByObjektIds(eingang, objekte, selectedObjektIds),
+    [eingang, objekte, selectedObjektIds]
+  );
+
   const vorgaengeItems = useMemo(
     () =>
       buildKundeVorgaenge({
-        leads: allLeads as Parameters<typeof buildKundeVorgaenge>[0]["leads"],
-        angebote: angebote as Parameters<typeof buildKundeVorgaenge>[0]["angebote"],
+        leads: filteredLeads as Parameters<
+          typeof buildKundeVorgaenge
+        >[0]["leads"],
+        angebote: angebote as Parameters<
+          typeof buildKundeVorgaenge
+        >[0]["angebote"],
         auftraege,
         hvPortalMode: true,
       }),
-    [allLeads, angebote, auftraege]
+    [filteredLeads, angebote, auftraege]
   );
 
   const auftragByLeadId = useMemo(
@@ -198,8 +254,8 @@ export function OrganisationVorgaengeSection({
   const counts = useMemo(
     () =>
       buildOrgVorgangFilterCounts(
-        eingang,
-        allLeads,
+        filteredEingang,
+        filteredLeads,
         vorgaengeItems,
         auftragByLeadId,
         {
@@ -207,7 +263,14 @@ export function OrganisationVorgaengeSection({
           auftraege: auftraege as HvDashboardAuftragSlice[],
         }
       ),
-    [eingang, allLeads, vorgaengeItems, auftragByLeadId, angebote, auftraege]
+    [
+      filteredEingang,
+      filteredLeads,
+      vorgaengeItems,
+      auftragByLeadId,
+      angebote,
+      auftraege,
+    ]
   );
 
   return (
@@ -217,6 +280,9 @@ export function OrganisationVorgaengeSection({
           filter={filter}
           onFilterChange={changeFilter}
           offenCount={counts.offen}
+          objekte={objekte}
+          selectedObjektIds={selectedObjektIds}
+          onObjektIdsChange={changeObjektIds}
         />
       ) : null}
 
@@ -233,7 +299,7 @@ export function OrganisationVorgaengeSection({
           email: kunde.email,
           freigabe_schwelle_eur: kunde.freigabe_schwelle_eur,
         }}
-        leads={allLeads as Parameters<typeof PortalClient>[0]["leads"]}
+        leads={filteredLeads as Parameters<typeof PortalClient>[0]["leads"]}
         angebote={angebote}
         auftraege={auftraege}
         bautagebuchByLeadId={bautagebuchByLeadId}

@@ -13,6 +13,7 @@ type AngebotDokumentInput = {
   angebotstitel?: string | null;
   pdf_url?: string | null;
   gesendet_am?: string | null;
+  gesendet_kunde_at?: string | null;
   status_einfach?: string | null;
   created_at?: string | null;
 };
@@ -48,14 +49,15 @@ type AuftragDokumentInput = {
   created_at?: string | null;
 };
 
+/**
+ * Angebot für Portal-Dokumente (HV + Endkunde):
+ * sobald ein PDF existiert — außer ersetzt.
+ * Nicht an Freigabe/Schwelle gekoppelt.
+ */
 function isKundenAngebotSichtbar(a: AngebotDokumentInput): boolean {
-  const st = (a.status_einfach || "").toLowerCase();
-  return (
-    Boolean(a.gesendet_am) ||
-    st === "gesendet" ||
-    st === "angenommen" ||
-    st === "kunde_akzeptiert"
-  );
+  const st = (a.status_einfach || "").toLowerCase().replace(/[\s-]+/g, "_");
+  if (st === "ersetzt") return false;
+  return Boolean(a.pdf_url?.trim());
 }
 
 export function dokumenteFromAngebot(a: AngebotDokumentInput): PortalDokument[] {
@@ -67,7 +69,11 @@ export function dokumenteFromAngebot(a: AngebotDokumentInput): PortalDokument[] 
       id: `angebot-pdf-${a.id}`,
       name: "Angebot",
       subtitle: titel || undefined,
-      datum: a.gesendet_am ?? a.created_at ?? undefined,
+      datum:
+        a.gesendet_am ??
+        a.gesendet_kunde_at ??
+        a.created_at ??
+        undefined,
       href,
       art: "angebot",
     },
@@ -79,7 +85,8 @@ export function dokumenteFromRechnungen(
 ): PortalDokument[] {
   const rows: PortalDokument[] = [];
   for (const r of rechnungen) {
-    if ((r.status || "").toLowerCase() !== "gesendet") continue;
+    const st = (r.status || "").toLowerCase().replace(/[\s-]+/g, "_");
+    if (st === "entwurf" || st === "storniert") continue;
     const href = r.pdf_url?.trim();
     if (!href) continue;
     rows.push({
@@ -372,4 +379,24 @@ export function mergeDokumente(
     }
   }
   return Array.from(byId.values());
+}
+
+/**
+ * Phasenunabhängige Dokumentliste am Vorgang:
+ * Lead-Anhänge + Angebot + Auftrag (inkl. Rechnung/Timeline/Abnahme) — dedupliziert.
+ */
+export function collectVorgangDokumente(opts: {
+  leadDocs?: PortalDokument[] | null;
+  angebotDocs?: PortalDokument[] | null;
+  auftragDocs?: PortalDokument[] | null;
+}): PortalDokument[] {
+  return mergeDokumente(
+    opts.leadDocs ?? [],
+    opts.angebotDocs ?? [],
+    opts.auftragDocs ?? []
+  ).sort((a, b) => {
+    const ta = new Date(a.datum || 0).getTime();
+    const tb = new Date(b.datum || 0).getTime();
+    return tb - ta;
+  });
 }

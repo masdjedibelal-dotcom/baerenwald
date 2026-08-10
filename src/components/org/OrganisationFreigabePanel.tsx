@@ -10,6 +10,7 @@ import { OrgFreigabeBanner } from "@/components/org/OrgFreigabeBanner";
 import {
   paintPortalBusyNow,
   PORTAL_BUSY_MIN_MS,
+  usePortalBusy,
 } from "@/components/shared/PortalBusyContext";
 import { PortalContentBusy } from "@/components/shared/PortalContentBusy";
 import { PortalListCard } from "@/components/shared/PortalListCard";
@@ -20,7 +21,7 @@ import {
   plattformStatusPillClass,
   resolvePlattformStatus,
 } from "@/lib/vorgang/plattform-status";
-import { parseFreigabeBypassGrund } from "@/lib/org/freigabe-bypass";
+import { parseFreigabeBypassGrund, funnelDirektauftragFromDaten } from "@/lib/org/freigabe-bypass";
 import type {
   OrganisationKunde,
   OrganisationLead,
@@ -163,12 +164,26 @@ export function OrganisationFreigabePanel({
   const detailOpeningTimerRef = useRef<ReturnType<typeof setTimeout> | null>(
     null
   );
+  const { hold, release } = usePortalBusy();
+  const detailHoldRef = useRef(false);
 
   function beginDetailOpening() {
+    if (!detailHoldRef.current) {
+      detailHoldRef.current = true;
+      hold();
+    }
     paintPortalBusyNow(setDetailOpening);
     if (detailOpeningTimerRef.current) {
       clearTimeout(detailOpeningTimerRef.current);
       detailOpeningTimerRef.current = null;
+    }
+  }
+
+  function endDetailOpening() {
+    setDetailOpening(false);
+    if (detailHoldRef.current) {
+      detailHoldRef.current = false;
+      release();
     }
   }
   const auftragByLeadId = useMemo(
@@ -224,7 +239,7 @@ export function OrganisationFreigabePanel({
   useEffect(() => {
     if (!detailOpening || !selectedAngebotId || !selectedAngebotItem) return;
     const t = window.setTimeout(() => {
-      setDetailOpening(false);
+      endDetailOpening();
     }, PORTAL_BUSY_MIN_MS);
     return () => window.clearTimeout(t);
   }, [detailOpening, selectedAngebotId, selectedAngebotItem]);
@@ -312,6 +327,9 @@ export function OrganisationFreigabePanel({
             status={orgStatus}
             bypassGrund={bypassGrund}
             hvMeldungStatus={leadMeta?.hv_meldung_status}
+            funnelDirektauftrag={funnelDirektauftragFromDaten(
+              leadMeta?.funnel_daten
+            )}
             schwelleLabel={schwelleLabel}
             onUpdated={onRefresh}
           />

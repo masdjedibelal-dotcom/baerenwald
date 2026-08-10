@@ -12,8 +12,25 @@ export function slimFunnelForList(funnel: unknown): Record<string, unknown> | nu
   const out: Record<string, unknown> = {};
   for (const key of [
     "ort",
+    "strasse",
+    "hausnummer",
+    "plz",
+    "mieter",
+    "ohne_mieter",
     "answers",
     "antworten",
+    "situation",
+    "bereiche",
+    "zeitraum",
+    "dringlichkeit",
+    "kundentyp",
+    "zugaenglichkeit",
+    "groesse",
+    "groesseEinheit",
+    "badAusstattung",
+    "breakdown",
+    "freitext",
+    "leadBeschreibung",
     /** Melde-Titel (Startseite/Liste) braucht Bereich + Fachantworten */
     "melde_bereich",
     "melde_kategorie",
@@ -22,20 +39,34 @@ export function slimFunnelForList(funnel: unknown): Record<string, unknown> | nu
     "notfall",
     "havarie",
     "als_akut",
-    "dringlichkeit",
     "quelle",
-    "bereiche",
   ]) {
     if (f[key] !== undefined) out[key] = f[key];
   }
-  // Nested: nur Answers, keine Fotos/Rohpayload — zusätzlich top-level spiegeln
+  // Nested: fachdetails inkl. Answers + verschachtelte Gewerk-States
   const fd = f.fachdetails;
   if (fd && typeof fd === "object" && !Array.isArray(fd)) {
-    const answers = (fd as { fachdetailAnswers?: unknown }).fachdetailAnswers;
+    const nested = fd as Record<string, unknown>;
+    const answers = nested.fachdetailAnswers;
+    const slimFd: Record<string, unknown> = {};
     if (answers && typeof answers === "object") {
-      out.fachdetails = { fachdetailAnswers: answers };
+      slimFd.fachdetailAnswers = answers;
       if (out.fachdetailAnswers === undefined) out.fachdetailAnswers = answers;
     }
+    for (const k of [
+      "sanitaer",
+      "maler",
+      "heizung",
+      "elektro",
+      "boden",
+      "dach",
+      "garten",
+      "fassade",
+      "fenster",
+    ]) {
+      if (nested[k] != null) slimFd[k] = nested[k];
+    }
+    if (Object.keys(slimFd).length) out.fachdetails = slimFd;
   }
   return Object.keys(out).length ? out : null;
 }

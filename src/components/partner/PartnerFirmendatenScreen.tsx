@@ -9,6 +9,7 @@ import { PartnerRahmenvertragCard } from "@/components/partner/PartnerRahmenvert
 import { FileUploadField } from "@/components/shared/FileUploadField";
 import { PortalKontoSicherheitPanel } from "@/components/shared/PortalKontoSicherheitPanel";
 import { PortalEinstellungenShell } from "@/components/shared/PortalEinstellungenShell";
+import { PortalPushSettingsPanel } from "@/components/shared/PortalPushSettingsPanel";
 import {
   EinstellungenEdField,
   EinstellungenEditModal,
@@ -248,6 +249,10 @@ export function PartnerFirmendatenScreen({
               </div>
             </div>
           );
+        }
+
+        if (tab === "benachrichtigungen") {
+          return <PortalPushSettingsPanel portal="partner" />;
         }
 
         return (

@@ -15,7 +15,6 @@ import { lineLeistungsLabel } from "@/lib/funnel/breakdown-labels";
 import { isB2B, type Situation } from "@/lib/funnel/types";
 import type { PortalDetailSection } from "@/lib/portal/portal-display";
 import { sanitizeCustomerText, stripHtmlToPlainText } from "@/lib/portal/portal-display";
-import { objektPlzOrt } from "@/lib/portal/portal-detail-item";
 import type { PortalObjekt } from "@/lib/portal/portal-objekt";
 import { fmtPortalOrt } from "@/lib/shared/portal-detail-format";
 
@@ -67,6 +66,168 @@ function asRecord(v: unknown): Record<string, unknown> {
   return {};
 }
 
+function strField(v: unknown): string | undefined {
+  if (typeof v !== "string") return undefined;
+  const t = v.trim();
+  return t || undefined;
+}
+
+/** CRM/HV speichert Adresse oft unter funnel_daten.mieter. */
+export function funnelMieterRecord(
+  funnelDaten: unknown
+): Record<string, unknown> | null {
+  const d = asRecord(funnelDaten);
+  if (d.ohne_mieter === true) return null;
+  const m = d.mieter;
+  if (!m || typeof m !== "object" || Array.isArray(m)) return null;
+  return m as Record<string, unknown>;
+}
+
+export type ResolvedAnfrageAdresse = {
+  strasse?: string;
+  hausnummer?: string;
+  /** „Lindenstr. 24“ */
+  strasseZeile?: string;
+  plz?: string;
+  ort?: string;
+  /** „Lindenstr. 24 · 80331 München“ */
+  listOrtLine: string;
+};
+
+/**
+ * Einheitliche Anschrift — Lead-Spalten, Funnel (inkl. mieter), Objekt.
+ * Quelle CRM / HV / Mieter-Meldung → gleiche Portal-Struktur.
+ */
+export function resolveAnfrageAdresse(
+  lead: PortalAnfrageLeadSource
+): ResolvedAnfrageAdresse {
+  const d = asRecord(lead.funnel_daten);
+  const mieter = funnelMieterRecord(lead.funnel_daten);
+  const obj = lead.objekt as
+    | (PortalObjekt & {
+        titel?: string;
+        adresseZeile?: string;
+        plzOrt?: string;
+      })
+    | null
+    | undefined;
+
+  const strasse =
+    strField(lead.strasse) ||
+    strField(d.strasse) ||
+    strField(mieter?.strasse) ||
+    undefined;
+  const hausnummer =
+    strField(lead.hausnummer) ||
+    strField(d.hausnummer) ||
+    strField(mieter?.hausnummer) ||
+    undefined;
+
+  let strasseZeile =
+    [strasse, hausnummer].filter(Boolean).join(" ").trim() || undefined;
+  if (!strasseZeile) {
+    strasseZeile =
+      strField(obj?.strasse) ||
+      strField(obj?.adresseZeile) ||
+      undefined;
+  }
+
+  const plzOrtFromObj = strField(obj?.plzOrt);
+  const plzOrtMatch = plzOrtFromObj?.match(/^(\d{4,5})\s+(.*)$/);
+
+  const plz =
+    strField(lead.plz) ||
+    strField(d.plz) ||
+    strField(mieter?.plz) ||
+    strField(obj?.plz) ||
+    plzOrtMatch?.[1] ||
+    undefined;
+
+  const ort =
+    strField(lead.ort) ||
+    strField(d.ort) ||
+    strField(mieter?.ort) ||
+    strField(obj?.ort) ||
+    plzOrtMatch?.[2]?.trim() ||
+    undefined;
+
+  const plzOrt = fmtPortalOrt(plz ?? "—", ort ?? "—");
+  const parts = [
+    strasseZeile,
+    plzOrt !== "—" ? plzOrt : undefined,
+  ].filter(Boolean);
+  return {
+    strasse,
+    hausnummer,
+    strasseZeile,
+    plz,
+    ort,
+    listOrtLine: parts.join(" · ") || "—",
+  };
+}
+
+export type ResolvedAnfrageMelder = {
+  name?: string;
+  vorname?: string;
+  nachname?: string;
+  telefon?: string;
+  email?: string;
+  einheit?: string;
+};
+
+/**
+ * Melder/Mieter-Kontakt — Lead-Spalten oder funnel_daten.mieter (wenn gewählt).
+ */
+export function resolveAnfrageMelder(
+  lead: PortalAnfrageLeadSource
+): ResolvedAnfrageMelder {
+  const d = asRecord(lead.funnel_daten);
+  if (d.ohne_mieter === true) {
+    return {};
+  }
+  const mieter = funnelMieterRecord(lead.funnel_daten);
+  const mieterName =
+    strField(mieter?.name) ||
+    [strField(mieter?.vorname), strField(mieter?.nachname)]
+      .filter(Boolean)
+      .join(" ")
+      .trim() ||
+    undefined;
+
+  const name =
+    strField(lead.melder_name) ||
+    mieterName ||
+    undefined;
+
+  const vorname =
+    strField(mieter?.vorname) ||
+    strField(d.vorname) ||
+    splitKontaktName(name ?? lead.kontakt_name).vorname;
+
+  const nachname =
+    strField(mieter?.nachname) ||
+    strField(d.nachname) ||
+    splitKontaktName(name ?? lead.kontakt_name).nachname;
+
+  return {
+    name,
+    vorname,
+    nachname,
+    telefon:
+      strField(lead.melder_telefon) ||
+      strField(mieter?.telefon) ||
+      undefined,
+    email:
+      strField(lead.melder_email) ||
+      strField(mieter?.email) ||
+      undefined,
+    einheit:
+      strField(lead.melder_einheit) ||
+      strField(mieter?.einheit) ||
+      undefined,
+  };
+}
+
 function detailValue(v?: string | null): string | undefined {
   const t = v?.trim();
   return t && t !== "—" ? t : undefined;
@@ -95,38 +256,17 @@ function splitKontaktName(name?: string | null): {
 }
 
 export function resolveAnfrageVorname(lead: PortalAnfrageLeadSource): string | undefined {
-  const d = asRecord(lead.funnel_daten);
-  const fromFunnel =
-    typeof d.vorname === "string" ? d.vorname.trim() : "";
-  if (fromFunnel) return fromFunnel;
-  return splitKontaktName(lead.kontakt_name).vorname;
+  return resolveAnfrageMelder(lead).vorname;
 }
 
 export function resolveAnfrageNachname(lead: PortalAnfrageLeadSource): string | undefined {
-  const d = asRecord(lead.funnel_daten);
-  const fromFunnel =
-    typeof d.nachname === "string" ? d.nachname.trim() : "";
-  if (fromFunnel) return fromFunnel;
-  return splitKontaktName(lead.kontakt_name).nachname;
+  return resolveAnfrageMelder(lead).nachname;
 }
 
 export function formatAnfrageStrasseHausnummer(
   lead: PortalAnfrageLeadSource
 ): string | undefined {
-  const d = asRecord(lead.funnel_daten);
-  const strasse =
-    lead.strasse?.trim() ||
-    (typeof d.strasse === "string" ? d.strasse.trim() : "") ||
-    undefined;
-  const hausnummer =
-    lead.hausnummer?.trim() ||
-    (typeof d.hausnummer === "string" ? d.hausnummer.trim() : "") ||
-    undefined;
-  if (strasse || hausnummer) {
-    return [strasse, hausnummer].filter(Boolean).join(" ");
-  }
-  const fromObjekt = lead.objekt?.strasse?.trim();
-  return fromObjekt || undefined;
+  return resolveAnfrageAdresse(lead).strasseZeile;
 }
 
 export function formatAnfrageBereiche(lead: PortalAnfrageLeadSource): string | undefined {
@@ -178,11 +318,7 @@ export function formatAnfrageGroesse(lead: PortalAnfrageLeadSource): string | un
 }
 
 export function formatAnfrageListOrtLine(lead: PortalAnfrageLeadSource): string {
-  const { plz, ort } = objektPlzOrt(lead.objekt, lead.plz);
-  const strasse = formatAnfrageStrasseHausnummer(lead);
-  const plzOrt = fmtPortalOrt(plz, ort);
-  const parts = [strasse, plzOrt !== "—" ? plzOrt : undefined].filter(Boolean);
-  return parts.join(" · ") || "—";
+  return resolveAnfrageAdresse(lead).listOrtLine;
 }
 
 export function buildAnfrageCardMeta(
@@ -201,13 +337,14 @@ export function buildAnfrageCardMeta(
 export function buildAnfragePersonalSection(
   lead: PortalAnfrageLeadSource
 ): PortalDetailSection | null {
-  const { plz, ort } = objektPlzOrt(lead.objekt, lead.plz);
+  const addr = resolveAnfrageAdresse(lead);
+  const melder = resolveAnfrageMelder(lead);
   const personalRows = detailRows([
-    { label: "Vorname", value: resolveAnfrageVorname(lead) },
-    { label: "Nachname", value: resolveAnfrageNachname(lead) },
-    { label: "Straße Hausnummer", value: formatAnfrageStrasseHausnummer(lead) },
-    { label: "PLZ", value: plz !== "—" ? plz : undefined },
-    { label: "Ort", value: ort !== "—" ? ort : undefined },
+    { label: "Vorname", value: melder.vorname },
+    { label: "Nachname", value: melder.nachname },
+    { label: "Straße Hausnummer", value: addr.strasseZeile },
+    { label: "PLZ", value: addr.plz },
+    { label: "Ort", value: addr.ort },
   ]);
   if (!personalRows.length) return null;
   return { heading: "Persönliche Angaben", rows: personalRows };

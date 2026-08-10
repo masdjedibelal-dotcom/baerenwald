@@ -33,6 +33,7 @@ function meldeTitelFromLead(
     anlass: leadExtra.anlass,
     kanal: leadExtra.kanal,
     funnelDaten: leadExtra.funnel_daten,
+    erfassung_von: leadExtra.erfassung_von,
   });
   if (!isMelde && !leadExtra.funnel_daten) return null;
 

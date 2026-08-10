@@ -6,6 +6,7 @@ import { OrganisationMeldeMaterial } from "@/components/org/OrganisationMeldeMat
 import { OrganisationMieterLegalLinksPanel } from "@/components/org/OrganisationMieterLegalLinksPanel";
 import { PortalKontoSicherheitPanel } from "@/components/shared/PortalKontoSicherheitPanel";
 import { PortalEinstellungenShell } from "@/components/shared/PortalEinstellungenShell";
+import { PortalPushSettingsPanel } from "@/components/shared/PortalPushSettingsPanel";
 import {
   EinstellungenPfRow,
   EinstellungenSectionHeader,
@@ -92,6 +93,10 @@ export function OrganisationEinstellungenScreen({
               nested
             />
           );
+        }
+
+        if (tab === "benachrichtigungen") {
+          return <PortalPushSettingsPanel portal="portal" />;
         }
 
         return (

@@ -49,9 +49,14 @@ function isAngebotBereit(status?: string | null): boolean {
   );
 }
 
-/** Kunde kann im Portal annehmen — nur bei „gesendet“, nicht nach Annahme. */
+/** Kunde/HV kann im Portal annehmen — gesendet inkl. gesendet_kunde. */
 function isAngebotWartetAufKunde(status?: string | null): boolean {
-  return normalizeStatus(status) === "gesendet";
+  const s = normalizeStatus(status);
+  return (
+    s === "gesendet" ||
+    s === "gesendet_kunde" ||
+    s.includes("gesendet")
+  );
 }
 
 function isAngebotVomKundenAngenommen(status?: string | null): boolean {
@@ -206,6 +211,8 @@ export function resolveKundeVorgangStatus(input: {
   hv_meldung_status?: string | null;
   org_freigabe_status?: string | null;
   angebotStatus?: string | null;
+  /** Angebot hat PDF / ist zugestellt — Annehmen/Ablehnen möglich (auch Entwurf mit PDF). */
+  angebotEntscheidbar?: boolean;
   auftragStatus?: string | null;
   auftragFortschritt?: number | null;
   hasAngebotRecord?: boolean;
@@ -301,7 +308,12 @@ export function resolveKundeVorgangStatus(input: {
     };
   }
 
-  if (input.hasAngebotRecord && isAngebotWartetAufKunde(input.angebotStatus)) {
+  if (
+    input.hasAngebotRecord &&
+    !isAngebotVomKundenAngenommen(input.angebotStatus) &&
+    (isAngebotWartetAufKunde(input.angebotStatus) ||
+      input.angebotEntscheidbar)
+  ) {
     return {
       phase: "angebot_liegt_vor",
       label: LABELS.angebot_liegt_vor,

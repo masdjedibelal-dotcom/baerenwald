@@ -100,6 +100,26 @@ export async function notifyHvNeueMeldung(input: {
     link,
   });
 
+  void import("@/lib/push/resolve-recipients")
+    .then(async ({ resolveOrgAuthUserIds }) => {
+      const { buildPushPayloadFromNotif } = await import("@/lib/push/payload");
+      const { scheduleWebPushToUsers } = await import(
+        "@/lib/push/send-web-push"
+      );
+      const userIds = await resolveOrgAuthUserIds(kundeId);
+      scheduleWebPushToUsers(
+        userIds,
+        buildPushPayloadFromNotif({
+          typ: "neue_meldung",
+          titel,
+          body,
+          link,
+          defaultUrl: "/portal",
+        })
+      );
+    })
+    .catch((e) => console.error("[notifyHvNeueMeldung] push:", e));
+
   const resendKey = process.env.RESEND_API_KEY;
   if (!resendKey) return;
 

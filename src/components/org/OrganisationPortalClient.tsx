@@ -12,6 +12,7 @@ import {
 import { usePortalRefresh } from "@/components/shared/usePortalRefresh";
 import { ensurePortalVorgangNotificationHref } from "@/lib/portal2/portal-detail-deep-link";
 import { HvNotificationBell } from "@/components/org/HvNotificationBell";
+import { PortalPushOptInBanner } from "@/components/shared/PortalPushOptInBanner";
 import { OrganisationSuche } from "@/components/org/OrganisationSuche";
 import { OrganisationMehrScreen } from "@/components/org/OrganisationMehrScreen";
 import { OrganisationWhitelabelGate } from "@/components/org/OrganisationWhitelabelGate";
@@ -495,7 +496,15 @@ export function OrganisationPortalClient({
         hideMobileChrome={false}
         activeNavId={section}
         contentKey={`${section}:${searchParams.get("filter") ?? ""}`}
-        contentBusy={ctxBusy}
+        contentBusy={ctxBusy || Boolean(pendingDetailId)}
+        contentBusyTitle={
+          pendingDetailId ? "Vorgang wird geladen…" : undefined
+        }
+        contentBusyBody={
+          pendingDetailId
+            ? "Einen Moment — wir öffnen die Details."
+            : undefined
+        }
         onNavChange={(id) => switchSection(id as OrgSection)}
         nav={buildPortalShellNav("kunde_hv", "org", {
           liste: vorgaengeBadgeCount,
@@ -633,6 +642,7 @@ export function OrganisationPortalClient({
           }}
         />
       ) : null}
+      <PortalPushOptInBanner portal="portal" />
     </>
   );
 }

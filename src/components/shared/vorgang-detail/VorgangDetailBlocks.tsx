@@ -56,18 +56,14 @@ function formatPartnerEuro(n: number): string {
 
 /**
  * Partner: eine Details-Card analog HV-Meldung / anderen Vorgangsphasen.
- * Objekt → PLZ/Ort → Funnel → (optional Zeitraum) → Beschreibung → …
- * Bei angenommenem Auftrag: ohne Zeitraum und Kontakt vor Ort.
+ * Objekt → PLZ/Ort → Funnel → Zeitraum → Beschreibung → Kontakt — stabil über Phasen.
  */
 function PartnerUnifiedDetails({
   vm,
   className,
-  hideZeitraumAndKontakt = false,
 }: {
   vm: VorgangDetailVM;
   className?: string;
-  /** Angenommener / verbundener Auftrag — wie Übersicht ohne Melde-Zeiten & Kontakt. */
-  hideZeitraumAndKontakt?: boolean;
 }) {
   const { objektMelder: B, ausfuehrung: C } = vm;
   const kontaktName =
@@ -79,8 +75,6 @@ function PartnerUnifiedDetails({
     typeof C.summeEkNetto === "number" && C.summeEkNetto > 0
       ? formatPartnerEuro(C.summeEkNetto)
       : null;
-  const showZeitraum = !hideZeitraumAndKontakt && Boolean(B.zeitraumLabel);
-  const showKontakt = !hideZeitraumAndKontakt && Boolean(kontaktValue);
 
   return (
     <div className={cn(className)}>
@@ -96,8 +90,8 @@ function PartnerUnifiedDetails({
           {B.bereichLabel ? (
             <MetaRow label="Bereich" value={B.bereichLabel} />
           ) : null}
-          {showZeitraum ? (
-            <MetaRow label="Zeitraum" value={B.zeitraumLabel!} />
+          {B.zeitraumLabel ? (
+            <MetaRow label="Zeitraum" value={B.zeitraumLabel} />
           ) : null}
           {B.fachdetailRows?.map((row) => (
             <MetaRow
@@ -113,8 +107,8 @@ function PartnerUnifiedDetails({
           {C.aufgabeNotiz ? (
             <MetaRow label="Aufgabe" value={C.aufgabeNotiz} />
           ) : null}
-          {showKontakt ? (
-            <MetaRow label="Kontakt vor Ort" value={kontaktValue!} />
+          {kontaktValue ? (
+            <MetaRow label="Kontakt vor Ort" value={kontaktValue} />
           ) : null}
         </div>
         {B.beschreibung ? (
@@ -147,10 +141,6 @@ type Props = {
   className?: string;
   /** CTAs am Ende der Details-Card (z. B. Freigeben / Ablehnen). */
   detailsActions?: React.ReactNode;
-  /**
-   * Partner, angenommener Auftrag: Zeitraum (Melde-Zeiten) und Kontakt vor Ort ausblenden.
-   */
-  partnerHideZeitraumAndKontakt?: boolean;
 };
 
 /**
@@ -164,16 +154,9 @@ export function VorgangDetailBlocks({
   sight: sightProp,
   className,
   detailsActions,
-  partnerHideZeitraumAndKontakt = false,
 }: Props) {
   if (vm.role === "partner") {
-    return (
-      <PartnerUnifiedDetails
-        vm={vm}
-        className={className}
-        hideZeitraumAndKontakt={partnerHideZeitraumAndKontakt}
-      />
-    );
+    return <PartnerUnifiedDetails vm={vm} className={className} />;
   }
 
   const sight = sightProp ?? sightForRole(vm.role);

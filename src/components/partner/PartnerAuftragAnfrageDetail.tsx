@@ -250,7 +250,7 @@ export function PartnerAuftragAnfrageDetail({
       ) : null}
 
       {bearbeitbar && showReject ? (
-        <div className="space-y-3 rounded-xl border border-border-light bg-muted/30 p-4">
+        <div className="space-y-3 border-t border-border-light pt-4">
           <label className="block space-y-1">
             <span className="portal-form-label">Ablehnungsgrund</span>
             <select

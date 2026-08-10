@@ -34,7 +34,7 @@ export type PortalNotifVisual = {
 export const PORTAL_NOTIF_VISUAL: Record<PortalNotifTyp, PortalNotifVisual> = {
   angebot: {
     typ: "angebot",
-    title: "Angebot freigabebereit",
+    title: "Angebot zur Entscheidung",
     iconBg: "#E4ECF7",
     iconFg: "#1F4FA8",
     glyph: "📄",
@@ -112,7 +112,7 @@ export const PORTAL_NOTIF_ROLE_GLYPHS: Partial<
  */
 export const PORTAL_NOTIF_TEMPLATES = {
   kunde: {
-    angebot: 'Angebot {nr} „{titel}" wartet auf Ihre Freigabe.',
+    angebot: 'Angebot {nr} „{titel}" — bitte annehmen oder ablehnen.',
     termin: "{Betrieb} kommt am {Datum} zwischen {Zeitfenster}.",
     status: '{vg} „{titel}" wurde als erledigt markiert.',
   },
