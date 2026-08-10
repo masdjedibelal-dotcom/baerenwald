@@ -73,7 +73,6 @@ import { stripHtmlToPlainText } from "@/lib/portal/portal-display";
 import type { PartnerHwKonditionen } from "@/lib/partner/partner-konditionen";
 import {
   filterOffeneNachreichungPositionIds,
-  positionIstHandwerkerZugewiesen,
   resolveNachreichungOpenZeilenIds,
   resolveOffeneAuftragPositionIdsByStatus,
 } from "@/lib/partner/partner-konditionen";
@@ -162,6 +161,8 @@ export type PartnerAuftragPosition = {
   preis_partner?: number | null;
   lohn_fix?: number | null;
   material_fix?: number | null;
+  /** Regie: €/h netto — nicht mit preis_partner (Zeile) verwechseln. */
+  stundensatz?: number | null;
   /** CRM-Zuweisungsstatus dieser Leistung (z. B. angefragt nach Nachreichung). */
   handwerker_status?: string | null;
   handwerker_id?: string | null;
@@ -657,7 +658,9 @@ export async function getPartnerDataForHandwerker(
           lohn_fix,
           material_fix,
           aenderung_typ,
-          preis_alt
+          preis_alt,
+          zeit_minuten_summe,
+          stundensatz
         )
       `
       )
@@ -798,11 +801,15 @@ export async function getPartnerDataForHandwerker(
         objektById: auftragObjektById,
       });
       const allPos = (raw.auftrag_positionen ?? []) as Array<Record<string, unknown>>;
-      const ownPos = allPos.filter(
-        (p) =>
-          String(p.handwerker_id ?? "") === id &&
-          positionIstHandwerkerZugewiesen(p.handwerker_status as string | null)
-      );
+      // handwerker_id reicht — Status kann nach CRM-Sync kurz leer sein.
+      // Abgelehnte Positionen ausblenden; Rest inkl. Regie „in_pruefung“.
+      const ownPos = allPos.filter((p) => {
+        if (String(p.handwerker_id ?? "") !== id) return false;
+        const st = String(p.handwerker_status ?? "")
+          .trim()
+          .toLowerCase();
+        return st !== "abgelehnt";
+      });
       const positionen = ownPos.map((p) => ({
         id: String(p.id),
         gewerk_name: String(p.gewerk_name ?? "Gewerk"),
@@ -819,6 +826,8 @@ export async function getPartnerDataForHandwerker(
         end_datum: (p.end_datum as string | null)?.slice(0, 10) ?? null,
         preis_partner:
           p.preis_partner != null ? Number(p.preis_partner) : null,
+        stundensatz:
+          p.stundensatz != null ? Number(p.stundensatz) : null,
         lohn_fix: p.lohn_fix != null ? Number(p.lohn_fix) : null,
         material_fix: p.material_fix != null ? Number(p.material_fix) : null,
         handwerker_status: (p.handwerker_status as string | null) ?? null,
@@ -830,6 +839,8 @@ export async function getPartnerDataForHandwerker(
           (p.anerkennung_status as string | null) ?? "nicht_noetig",
         gestartet_am: (p.gestartet_am as string | null) ?? null,
         erledigt_am: (p.erledigt_am as string | null) ?? null,
+        zeit_minuten_summe:
+          p.zeit_minuten_summe != null ? Number(p.zeit_minuten_summe) : null,
         aenderung_typ: (() => {
           const raw = (p.aenderung_typ as string | null)?.trim().toLowerCase();
           if (raw === "neu" || raw === "geaendert" || raw === "entfernt") {

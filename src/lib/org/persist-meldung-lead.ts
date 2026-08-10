@@ -248,7 +248,8 @@ export async function persistMeldungLead(input: PersistMeldungLeadInput) {
     });
   }
 
-  // Melder-Link / Einladung → HV-Glocke (nicht bei HV-eigener Anlage)
+  // Melder-Link / Einladung → HV-Glocke (CRM erst nach HV „Vorgang freigeben“,
+  // außer Akut-Direktauftrag: dann sofort BW informieren)
   if (input.erfassung_von === "melder") {
     void import("@/lib/org/notify-hv-neue-meldung").then(
       ({ notifyHvNeueMeldung }) =>
@@ -256,6 +257,18 @@ export async function persistMeldungLead(input: PersistMeldungLeadInput) {
           console.error("[persistMeldungLead] hv notify:", e)
         )
     );
+    if (bypassAktiv) {
+      void import("@/lib/org/notify-crm-org").then(({ notifyCrmOrgPortal }) =>
+        notifyCrmOrgPortal({ leadId: result.id, typ: "meldung" }).then((r) => {
+          if (!r.ok) {
+            console.warn("[persistMeldungLead] CRM-Notify (Akut):", r.error, {
+              leadId: result.id,
+              skipped: r.skipped === true,
+            });
+          }
+        })
+      );
+    }
     // Verknüpfter Portal-User (kunde_id mit auth) → eigene Glocke
     void import("@/lib/portal/notify-portal-lead-user").then(
       async ({ notifyPortalLeadUser }) => {

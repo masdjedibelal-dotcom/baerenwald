@@ -39,7 +39,7 @@ export const EINSTELLUNGEN_KLEINREPARATUR_TITLE =
 
 /** @deprecated */
 export const EINSTELLUNGEN_KLEINREPARATUR_INTRO =
-  "Entfernt — unter der Schwelle läuft der Auto-Pfad über Angebot + Auftrag." as const;
+  "Entfernt — unter der Schwelle: CRM „Direkt Auftrag“ ohne Ihre Freigabe (nur Info)." as const;
 
 export const EINSTELLUNGEN_AKUT_TITLE =
   "Direktbeauftragung bei Sofortmaßnahme" as const;

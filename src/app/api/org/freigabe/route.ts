@@ -122,12 +122,40 @@ export async function POST(req: Request) {
     });
   }
 
-  void notifyCrmOrgPortal({
+  // Await: sonst bricht Serverless den Fetch ab, bevor CRM die Notification speichert.
+  const crmNotify = await notifyCrmOrgPortal({
     leadId,
     typ: "freigabe_ergebnis",
     aktion,
     notiz: body.notiz,
   });
+  if (!crmNotify.ok) {
+    console.warn("[org/freigabe] CRM-Notify fehlgeschlagen:", crmNotify.error, {
+      leadId,
+      aktion,
+      skipped: crmNotify.skipped === true,
+    });
+  }
 
-  return NextResponse.json({ ok: true, status: aktion });
+  // Timeline in shared DB — CRM-Glocke liest daraus auch ohne erfolgreichen HTTP-Notify.
+  await supabaseAdmin.from("lead_timeline").insert({
+    lead_id: leadId,
+    typ: "org_freigabe",
+    titel:
+      aktion === "freigegeben"
+        ? "HV-Freigabe erteilt"
+        : "HV-Freigabe abgelehnt",
+    beschreibung:
+      body.notiz?.trim() ||
+      (aktion === "freigegeben"
+        ? "Hausverwaltung hat den Vorgang freigegeben."
+        : "Hausverwaltung hat die Freigabe abgelehnt."),
+    erstellt_von: session.userId,
+  });
+
+  return NextResponse.json({
+    ok: true,
+    status: aktion,
+    crmNotifyOk: crmNotify.ok,
+  });
 }

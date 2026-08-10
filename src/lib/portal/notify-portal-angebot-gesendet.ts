@@ -8,6 +8,37 @@ import { withPortalDetailDeepLink } from "@/lib/portal2/portal-detail-deep-link"
 import { notifyPortalEigentuemer } from "@/lib/portal/notify-portal-eigentuemer";
 import { supabaseAdmin } from "@/lib/supabase";
 
+async function hasRecentHvAngebotNotif(opts: {
+  kundeId: string;
+  leadId: string;
+}): Promise<boolean> {
+  const since = new Date(Date.now() - 15 * 60 * 1000).toISOString();
+  const { data } = await supabaseAdmin
+    .from("hv_notifications")
+    .select("id")
+    .eq("kunde_id", opts.kundeId)
+    .eq("typ", "angebot")
+    .ilike("link", `%${opts.leadId}%`)
+    .gte("created_at", since)
+    .limit(1);
+  return (data ?? []).length > 0;
+}
+
+async function hasUnreadPortalAngebotNotif(opts: {
+  empfaengerUserId: string;
+  leadId: string;
+}): Promise<boolean> {
+  const { data } = await supabaseAdmin
+    .from("portal_notifications")
+    .select("id")
+    .eq("empfaenger_user_id", opts.empfaengerUserId)
+    .eq("vorgang_ref", opts.leadId)
+    .eq("typ", "angebot")
+    .eq("gelesen", false)
+    .limit(1);
+  return (data ?? []).length > 0;
+}
+
 /**
  * Nach CRM „Angebot gesendet“: In-App-Notification für HV (hv_notifications),
  * Privatkunde/Mieter (portal_notifications) und Eigentümer (Status-Update).
@@ -97,10 +128,10 @@ export async function notifyPortalAngebotGesendet(
     titel: nr !== "—" ? `${titel} (${nr})` : titel,
   });
 
-  const orgKundeId = String(lead.auftraggeber_kunde_id ?? "").trim();
-  if (orgKundeId) {
+  const insertHv = async (kundeId: string) => {
+    if (await hasRecentHvAngebotNotif({ kundeId, leadId: trimmed })) return;
     await supabaseAdmin.from("hv_notifications").insert({
-      kunde_id: orgKundeId,
+      kunde_id: kundeId,
       typ: "angebot",
       titel: notifTitel,
       body,
@@ -113,7 +144,7 @@ export async function notifyPortalAngebotGesendet(
         const { scheduleWebPushToUsers } = await import(
           "@/lib/push/send-web-push"
         );
-        const userIds = await resolveOrgAuthUserIds(orgKundeId);
+        const userIds = await resolveOrgAuthUserIds(kundeId);
         scheduleWebPushToUsers(
           userIds,
           buildPushPayloadFromNotif({
@@ -128,10 +159,36 @@ export async function notifyPortalAngebotGesendet(
       .catch((e) =>
         console.error("[notifyPortalAngebotGesendet] hv push:", e)
       );
+  };
+
+  const insertPortalUser = async (authUserId: string) => {
+    if (
+      await hasUnreadPortalAngebotNotif({
+        empfaengerUserId: authUserId,
+        leadId: trimmed,
+      })
+    ) {
+      return;
+    }
+    await createPortalNotification({
+      empfaengerUserId: authUserId,
+      typ: "angebot",
+      role: "kunde",
+      titel: notifTitel,
+      text: body,
+      templateVars: { nr, titel },
+      vorgangRef: trimmed,
+      link: portalPath,
+    });
+  };
+
+  const orgKundeId = String(lead.auftraggeber_kunde_id ?? "").trim();
+  if (orgKundeId) {
+    await insertHv(orgKundeId);
   }
 
   const portalKundeId = String(lead.kunde_id ?? "").trim();
-  if (portalKundeId && portalKundeId !== orgKundeId) {
+  if (portalKundeId) {
     const { data: kunde } = await supabaseAdmin
       .from("kunden")
       .select("auth_user_id, portal_modus")
@@ -140,40 +197,15 @@ export async function notifyPortalAngebotGesendet(
 
     const authUserId = String(kunde?.auth_user_id ?? "").trim();
     const modus = String(kunde?.portal_modus ?? "").trim().toLowerCase();
-    if (authUserId && modus !== "organisation") {
-      await createPortalNotification({
-        empfaengerUserId: authUserId,
-        typ: "angebot",
-        role: "kunde",
-        titel: notifTitel,
-        text: body,
-        templateVars: { nr, titel },
-        vorgangRef: trimmed,
-        link: portalPath,
-      });
-    }
-  }
 
-  // Privatkunde ohne separates Auftraggeber-Org-Konto
-  if (!orgKundeId && portalKundeId) {
-    const { data: kunde } = await supabaseAdmin
-      .from("kunden")
-      .select("auth_user_id, portal_modus")
-      .eq("id", portalKundeId)
-      .maybeSingle();
-
-    const authUserId = String(kunde?.auth_user_id ?? "").trim();
-    if (authUserId) {
-      await createPortalNotification({
-        empfaengerUserId: authUserId,
-        typ: "angebot",
-        role: "kunde",
-        titel: notifTitel,
-        text: body,
-        templateVars: { nr, titel },
-        vorgangRef: trimmed,
-        link: portalPath,
-      });
+    if (modus === "organisation") {
+      if (!orgKundeId || orgKundeId === portalKundeId) {
+        await insertHv(portalKundeId);
+      }
+    } else if (authUserId && portalKundeId !== orgKundeId) {
+      await insertPortalUser(authUserId);
+    } else if (authUserId && !orgKundeId) {
+      await insertPortalUser(authUserId);
     }
   }
 

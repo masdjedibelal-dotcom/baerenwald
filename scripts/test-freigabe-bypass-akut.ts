@@ -4,7 +4,10 @@
  */
 
 import assert from "node:assert/strict";
-import { hvFreigabeEntfaellt } from "../src/lib/org/freigabe-bypass";
+import {
+  hvFreigabeEntfaellt,
+  resolveAngebotZugestelltForHvFreigabe,
+} from "../src/lib/org/freigabe-bypass";
 import { isMeldeDirektauftrag } from "../src/lib/funnel/melde-direktauftrag";
 
 function check(name: string, actual: unknown, expected: unknown): void {
@@ -45,7 +48,7 @@ check(
 );
 
 check(
-  "Schwelle-Bypass ohne Angebot → kein Banner",
+  "Schwelle-Bypass ohne Angebot-Flag → kein Banner (Caller muss Flag setzen)",
   hvFreigabeEntfaellt({
     orgFreigabeStatus: "nicht_noetig",
     bypassGrund: "schwelle",
@@ -60,6 +63,19 @@ check(
     orgFreigabeStatus: "ausstehend",
     bypassGrund: "schwelle",
     angebotZugestellt: true,
+  }),
+  "schwelle"
+);
+
+check(
+  "nicht_noetig + Bypass schwelle + resolveAngebotZugestellt → schwelle",
+  hvFreigabeEntfaellt({
+    orgFreigabeStatus: "nicht_noetig",
+    bypassGrund: "schwelle",
+    angebotZugestellt: resolveAngebotZugestelltForHvFreigabe({
+      orgFreigabeStatus: "nicht_noetig",
+      bypassGrund: "schwelle",
+    }),
   }),
   "schwelle"
 );

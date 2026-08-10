@@ -125,6 +125,19 @@ export async function submitPartnerAngebotPdf(
 
   if (upErr) return { ok: false, error: upErr.message };
 
+  void import("@/lib/partner/notify-crm-partner-dokument").then(
+    ({ notifyCrmPartnerDokumentUpload }) =>
+      notifyCrmPartnerDokumentUpload({
+        typ: "unterlage",
+        handwerkerId: link.handwerkerId,
+        anfrageId,
+        titel:
+          pdfs.length === 1
+            ? pdfs[0]!.name.slice(0, 120)
+            : `${pdfs.length} Unterlagen`,
+      })
+  );
+
   revalidatePath("/partner");
   return { ok: true };
 }

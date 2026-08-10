@@ -148,17 +148,61 @@ export async function acceptKundeAngebot(
     return { ok: false, error: "Annahme konnte nicht gespeichert werden." };
   }
 
-  // Andere Angebote am Lead als abgelehnt markieren (wie CRM)
+  // Andere Angebote am Lead entwerten (inkl. frühere Annahmen) — eine aktive Version.
   if (leadId) {
-    await supabaseAdmin
+    const { data: siblings } = await supabaseAdmin
       .from("angebote")
-      .update({
-        status_einfach: "abgelehnt",
-        updated_at: now,
-      })
+      .select("id, status, status_einfach")
       .eq("lead_id", leadId)
-      .neq("id", id)
-      .in("status_einfach", ["gesendet", "entwurf"]);
+      .neq("id", id);
+
+    for (const row of siblings ?? []) {
+      const st = String(row.status_einfach ?? "")
+        .trim()
+        .toLowerCase();
+      const statusFein = String(row.status ?? "")
+        .trim()
+        .toLowerCase();
+      // Mehrere Angebote ok — bei Annahme nur konkurrierende entwerten.
+      // Bereits abgelehnt/ersetzt bleiben; angenommen/gesendet/entwurf → ersetzt.
+      if (st === "ersetzt" || st === "abgelehnt") continue;
+      if (statusFein === "abgelehnt" && !st) continue;
+
+      const patch: Record<string, unknown> = {
+        status_einfach: "ersetzt",
+        status: "abgelehnt",
+        ersetzt_durch: id,
+        updated_at: now,
+      };
+      const { error: sibErr } = await supabaseAdmin
+        .from("angebote")
+        .update(patch)
+        .eq("id", row.id as string);
+      if (sibErr && /ersetzt_durch|column|schema cache/i.test(sibErr.message)) {
+        delete patch.ersetzt_durch;
+        await supabaseAdmin.from("angebote").update(patch).eq("id", row.id as string);
+      }
+    }
+  }
+
+  // Bereits Auftrag zu anderem Angebot am Lead? → kein zweiter Auftrag.
+  if (leadId) {
+    const { data: leadAuftraege } = await supabaseAdmin
+      .from("auftraege")
+      .select("id, angebot_id, status")
+      .eq("lead_id", leadId)
+      .neq("status", "storniert")
+      .limit(10);
+    const anderer = (leadAuftraege ?? []).find(
+      (a) => String(a.angebot_id ?? "") !== id
+    );
+    if (anderer?.id) {
+      return {
+        ok: false,
+        error:
+          "Zu diesem Vorgang existiert bereits ein Auftrag. Bitte den bestehenden Auftrag nutzen.",
+      };
+    }
   }
 
   let resolvedKundeId = angebotKundeId ?? kundeId;
@@ -249,12 +293,19 @@ export async function acceptKundeAngebot(
       erstellt_von: user.id,
     });
 
-    void notifyCrmOrgPortal({
+    const crmNotify = await notifyCrmOrgPortal({
       leadId,
       typ: "angebot_entscheidung",
       aktion: "angenommen",
       notiz: "Angebot im Portal angenommen — Auftrag erstellt.",
-    }).catch((e) => console.error("[acceptKundeAngebot] crm notify", e));
+    });
+    if (!crmNotify.ok) {
+      console.warn(
+        "[acceptKundeAngebot] CRM-Notify fehlgeschlagen:",
+        crmNotify.error,
+        { leadId, skipped: crmNotify.skipped === true }
+      );
+    }
   }
 
   revalidatePath("/portal");
@@ -402,14 +453,21 @@ export async function rejectKundeAngebot(
       erstellt_von: user.id,
     });
 
-    void notifyCrmOrgPortal({
+    const crmNotify = await notifyCrmOrgPortal({
       leadId,
       typ: "angebot_entscheidung",
       aktion: "abgelehnt",
       notiz: grundTrim
         ? `Angebot im Portal abgelehnt. Grund: ${grundTrim}`
         : "Angebot im Portal abgelehnt.",
-    }).catch((e) => console.error("[rejectKundeAngebot] crm notify", e));
+    });
+    if (!crmNotify.ok) {
+      console.warn(
+        "[rejectKundeAngebot] CRM-Notify fehlgeschlagen:",
+        crmNotify.error,
+        { leadId, skipped: crmNotify.skipped === true }
+      );
+    }
   }
 
   revalidatePath("/portal");

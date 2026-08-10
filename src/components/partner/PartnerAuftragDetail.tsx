@@ -106,6 +106,8 @@ export function PartnerAuftragDetail({
   const [activeTab, setActiveTab] = useState(() => {
     if (focusAbnahme) return "abnahme";
     if (focusBautagebuch) return "dokumentation";
+    // Laufender Auftrag: direkt Leistungen (Update / Erledigt / Regie)
+    if (vorgangState === "in_bearbeitung") return "dokumentation";
     return "uebersicht";
   });
 
@@ -288,7 +290,7 @@ export function PartnerAuftragDetail({
 
   const DETAIL_TABS: PortalDetailTab[] = [
     { id: "uebersicht", label: "Übersicht" },
-    { id: "dokumentation", label: "Updates" },
+    { id: "dokumentation", label: "Leistungen" },
     { id: "dokumente", label: "Dokumente" },
     { id: "abnahme", label: "Abschluss" },
   ];
@@ -363,6 +365,7 @@ export function PartnerAuftragDetail({
                   typ: p.typ,
                   anerkennung_status: p.anerkennung_status,
                   preis_partner: p.preis_partner,
+                  stundensatz: p.stundensatz,
                   einheit: p.einheit,
                   menge: p.menge,
                   zeit_minuten_summe: p.zeit_minuten_summe,

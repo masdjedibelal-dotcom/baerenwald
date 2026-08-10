@@ -538,7 +538,7 @@ function buildItemFromLead(
           auftragDocs: auftrag.dokumente,
         })
       ),
-      bautagebuch: hvMieterView ? undefined : auftrag.bautagebuch ?? [],
+      bautagebuch: auftrag.bautagebuch ?? [],
       auftragPositionen: hvMieterView ? undefined : auftragPositionen,
       abnahmeCheckliste: hvMieterView ? undefined : abnahmeCheckliste,
       gesamtBrutto: hvMieterView ? undefined : auftragGesamtBrutto,

@@ -14,6 +14,7 @@ import { PortalContentBusy } from "@/components/shared/PortalContentBusy";
 
 import { OrgFreigabeBanner } from "@/components/org/OrgFreigabeBanner";
 import { OrgMeldungAktionBanner } from "@/components/org/OrgMeldungAktionBanner";
+import { HvFreigabeInfoBanner } from "@/components/org/HvFreigabeInfoBanner";
 import { HvMeldungListActions } from "@/components/org/HvMeldungListActions";
 import { BautagebuchAccordionList } from "@/components/shared/BautagebuchAccordionList";
 import { DokumenteTabelle } from "@/components/shared/DokumenteTabelle";
@@ -27,7 +28,11 @@ import { PortalListCard } from "@/components/shared/PortalListCard";
 import { meldeKategorieLabel } from "@/lib/org/melde-kategorien";
 import { meldeKategorieFromLead } from "@/lib/org/org-eingang-utils";
 import { isHvDirektauftragInfoOnly } from "@/lib/org/org-direktauftrag";
-import { funnelDirektauftragFromDaten } from "@/lib/org/freigabe-bypass";
+import {
+  funnelDirektauftragFromDaten,
+  hvFreigabeEntfaellt,
+  resolveAngebotZugestelltForHvFreigabe,
+} from "@/lib/org/freigabe-bypass";
 import { leadBelongsToObjekt } from "@/lib/org/match-lead-objekt";
 import type {
   OrganisationKunde,
@@ -199,7 +204,6 @@ function MeldungDetail({
     }
   };
 
-  const wartetOrgFreigabe = lead.org_freigabe_status === "ausstehend";
   const hatAngebotsdaten = Boolean(
     angebot &&
       ((angebot.positionenDisplay?.length ?? 0) > 0 ||
@@ -207,20 +211,59 @@ function MeldungDetail({
         angebot.pdf_url?.trim() ||
         angebot.dokumente?.some((d) => d.href?.trim()))
   );
+  const wartetOrgFreigabe = lead.org_freigabe_status === "ausstehend";
+  const freigabeInfoKind = hvFreigabeEntfaellt({
+    orgFreigabeStatus: lead.org_freigabe_status,
+    bypassGrund: lead.freigabe_bypass_grund,
+    funnelDirektauftrag: funnelDirektauftragFromDaten(lead.funnel_daten),
+    hvMeldungStatus: lead.hv_meldung_status,
+    angebotZugestellt: resolveAngebotZugestelltForHvFreigabe({
+      orgFreigabeStatus: lead.org_freigabe_status,
+      bypassGrund: lead.freigabe_bypass_grund,
+      hasAngebot: hatAngebotsdaten,
+    }),
+  });
   const angebotPdfZeilen =
-    wartetOrgFreigabe && angebot ? orgAngebotPdfZeilen(angebot) : [];
+    (wartetOrgFreigabe || freigabeInfoKind === "schwelle") && angebot
+      ? orgAngebotPdfZeilen(angebot)
+      : [];
 
   const detailVm = useMemo(() => {
     const vm = buildOrgEingangVorgangDetailVm(lead);
-    // Bei vorhandenem Angebot: Preisindikation nicht doppelt zur Angebotssumme.
-    if (wartetOrgFreigabe && hatAngebotsdaten) {
-      return {
-        ...vm,
-        objektMelder: { ...vm.objektMelder, preisIndikation: null },
-      };
+    const showAngebotBlock =
+      hatAngebotsdaten &&
+      angebot &&
+      (wartetOrgFreigabe || freigabeInfoKind === "schwelle");
+    if (!showAngebotBlock) {
+      return vm;
     }
-    return vm;
-  }, [lead, wartetOrgFreigabe, hatAngebotsdaten]);
+    const positionen = angebot.positionenDisplay ?? [];
+    const leistungen = positionen.map((p) => ({
+      id: p.id,
+      title: p.title,
+      beschreibung: p.beschreibung,
+      gewerk: p.gewerk,
+      menge: p.mengeLabel ?? (p.menge != null ? String(p.menge) : undefined),
+      einheit: p.mengeLabel ? undefined : p.einheit,
+      preisBrutto: p.preisBrutto > 0 ? p.preisBrutto : null,
+    }));
+    return {
+      ...vm,
+      objektMelder: { ...vm.objektMelder, preisIndikation: null },
+      leistungen,
+      detailsLeistungen:
+        leistungen.length > 0
+          ? { title: "Angebot", mode: "vk" as const }
+          : null,
+      auftraggeber: {
+        ...vm.auftraggeber,
+        summeBrutto:
+          typeof angebot.gesamtBrutto === "number" && angebot.gesamtBrutto > 0
+            ? angebot.gesamtBrutto
+            : vm.auftraggeber.summeBrutto,
+      },
+    };
+  }, [lead, wartetOrgFreigabe, hatAngebotsdaten, angebot, freigabeInfoKind]);
 
   return (
     <>
@@ -234,6 +277,23 @@ function MeldungDetail({
           >
             <X className="h-5 w-5" />
           </button>
+        </div>
+      ) : null}
+
+      {!wartetOrgFreigabe && freigabeInfoKind === "schwelle" ? (
+        <div className="mb-4">
+          <HvFreigabeInfoBanner
+            kind="schwelle"
+            schwelleLabel={
+              kunde.freigabe_schwelle_eur != null
+                ? new Intl.NumberFormat("de-DE", {
+                    style: "currency",
+                    currency: "EUR",
+                    maximumFractionDigits: 0,
+                  }).format(Number(kunde.freigabe_schwelle_eur))
+                : null
+            }
+          />
         </div>
       ) : null}
 
@@ -257,8 +317,8 @@ function MeldungDetail({
         </div>
       </div>
 
-      {wartetOrgFreigabe && angebot ? (
-        <OrgAngebotFreigabeInhalt angebot={angebot} />
+      {wartetOrgFreigabe || freigabeInfoKind === "schwelle" ? (
+        angebot ? <OrgAngebotFreigabeInhalt angebot={angebot} /> : null
       ) : null}
 
       <VorgangDetailBlocks vm={detailVm} />

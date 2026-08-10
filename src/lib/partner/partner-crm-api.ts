@@ -111,7 +111,8 @@ function internalSecretHeaders(): HeadersInit | null {
 
 /** Portal → CRM: kanonische HW-Annahme (Q2). */
 export async function submitCrmPartnerAnnahme(input: {
-  zuweisungId: string;
+  zuweisungId?: string;
+  auftragId?: string;
   handwerkerId: string;
   antwort: "akzeptiert" | "abgelehnt";
   notiz?: string | null;
@@ -131,12 +132,19 @@ export async function submitCrmPartnerAnnahme(input: {
     return { ok: true, skipped: true };
   }
 
+  const zuweisungId = input.zuweisungId?.trim() || "";
+  const auftragId = input.auftragId?.trim() || "";
+  if (!zuweisungId && !auftragId) {
+    return { ok: false, error: "zuweisungId oder auftragId fehlt." };
+  }
+
   try {
     const res = await fetch(`${base}/api/internal/partner-annahme`, {
       method: "POST",
       headers,
       body: JSON.stringify({
-        zuweisungId: input.zuweisungId,
+        ...(zuweisungId ? { zuweisungId } : {}),
+        ...(auftragId ? { auftragId } : {}),
         handwerkerId: input.handwerkerId,
         antwort: input.antwort,
         notiz: input.notiz ?? undefined,
@@ -149,10 +157,18 @@ export async function submitCrmPartnerAnnahme(input: {
       already?: boolean;
     };
     if (!res.ok || body.ok === false) {
-      return { ok: false, error: body.error || "Annahme fehlgeschlagen." };
+      const msg = body.error || `HTTP ${res.status}`;
+      console.error("[partner-crm] partner-annahme fehlgeschlagen:", msg, {
+        zuweisungId: zuweisungId || undefined,
+        auftragId: auftragId || undefined,
+        antwort: input.antwort,
+        status: res.status,
+      });
+      return { ok: false, error: msg };
     }
     return { ok: true, already: body.already === true };
-  } catch {
+  } catch (e) {
+    console.error("[partner-crm] partner-annahme unreachable:", e);
     return { ok: false, error: "Bärenwald nicht erreichbar." };
   }
 }

@@ -10,6 +10,7 @@ import { PORTAL_HEADER_HERO_SRC } from "@/lib/portal2/portal-media";
 import { emitPortalNotificationsChanged } from "@/lib/portal2/notif-refresh";
 import { PartnerNotificationBell } from "@/components/partner/PartnerNotificationBell";
 import { PortalPushOptInBanner } from "@/components/shared/PortalPushOptInBanner";
+import { PartnerOnboardingReminderBanner } from "@/components/partner/PartnerOnboardingReminderBanner";
 import { PartnerPlanerPanel } from "@/components/partner/PartnerPlanerPanel";
 import { PartnerProfilPanel } from "@/components/partner/PartnerProfilPanel";
 import { VorgangCard } from "@/components/partner/VorgangCard";
@@ -856,6 +857,12 @@ export function PartnerClient({
         }
       >
         <div className="space-y-5">
+          <PartnerOnboardingReminderBanner
+            handwerker={handwerker}
+            profil={profil}
+            hidden={section === "profil"}
+          />
+
           {section === "gpt" ? (
             <article className="portal-surface overflow-hidden p-0">
               <PortalBaerenwaldGpt

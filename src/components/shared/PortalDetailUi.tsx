@@ -262,6 +262,10 @@ export function PortalDetailLeistungenPreisListe({
     id: string;
     title: string;
     beschreibung?: string;
+    gewerk?: string;
+    menge?: number;
+    einheit?: string;
+    mengeLabel?: string;
     preisBrutto: number;
     preisBruttoAlt?: number;
     aenderungBadge?: "neu" | "geaendert" | "entfernt";
@@ -287,6 +291,11 @@ export function PortalDetailLeistungenPreisListe({
             aenderungBadge: p.aenderungBadge,
             entfernt: isEntfernt,
           });
+          const mengeLine =
+            p.mengeLabel?.trim() ||
+            [p.menge, p.einheit].filter(Boolean).join(" ").trim() ||
+            "";
+          const subline = [p.gewerk?.trim(), mengeLine].filter(Boolean).join(" · ");
 
           return (
             <li
@@ -310,6 +319,11 @@ export function PortalDetailLeistungenPreisListe({
                     >
                       {stripHtmlToPlainText(p.title) || p.title}
                     </p>
+                    {subline ? (
+                      <p className="portal-text-meta mt-0.5 text-text-secondary">
+                        {subline}
+                      </p>
+                    ) : null}
                     {p.beschreibung ? (
                       <p className="portal-text-meta mt-0.5 text-text-secondary">
                         {stripHtmlToPlainText(p.beschreibung)}

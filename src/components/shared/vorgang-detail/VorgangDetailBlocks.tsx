@@ -187,7 +187,8 @@ export function VorgangDetailBlocks({
       B.beschreibung ||
       B.zeitraumLabel ||
       (B.fachdetailRows && B.fachdetailRows.length > 0) ||
-      (isHv && B.preisIndikation)
+      (isHv && B.preisIndikation) ||
+      (vm.detailsLeistungen && vm.leistungen.length > 0)
   );
   const showMeldeDetails =
     (isHv || isKunde || isMieter) &&
@@ -272,6 +273,18 @@ export function VorgangDetailBlocks({
                 Fotos
               </p>
               <PortalPhotoGallery urls={B.fotos} />
+            </div>
+          ) : null}
+          {vm.detailsLeistungen && vm.leistungen.length > 0 ? (
+            <div className="mt-3 border-t border-border-light pt-3">
+              <p className="mb-2 text-[12px] font-semibold uppercase tracking-wide text-text-secondary">
+                {vm.detailsLeistungen.title}
+              </p>
+              <VorgangLeistungenListe
+                items={vm.leistungen}
+                mode={vm.detailsLeistungen.mode}
+                summeBrutto={A.summeBrutto}
+              />
             </div>
           ) : null}
           {detailsActions ? (

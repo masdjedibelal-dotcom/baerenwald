@@ -177,6 +177,7 @@ export function mapHvTypToPortalNotifTyp(typ: string): PortalNotifTyp {
   }
   if (t.includes("freigabe") || t.includes("schwellen")) return "freigabe";
   if (t.includes("termin")) return "termin";
+  if (t === "rechnung" || t.includes("rechnung")) return "status";
   // Neue Melder-Meldung / Zuweisung — blaue „Neu“-Visualität
   if (
     t === "neue_meldung" ||

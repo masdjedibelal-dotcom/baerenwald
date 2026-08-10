@@ -134,7 +134,13 @@ export async function POST(req: Request) {
   }
 
   if (aktion === "angebot_einfordern" || aktion === "kleinreparatur_freigeben") {
-    void notifyCrmOrgPortal({ leadId, typ: "meldung" });
+    const crmNotify = await notifyCrmOrgPortal({ leadId, typ: "meldung" });
+    if (!crmNotify.ok) {
+      console.warn("[meldung-aktion] CRM-Notify fehlgeschlagen:", crmNotify.error, {
+        leadId,
+        skipped: crmNotify.skipped === true,
+      });
+    }
   }
 
   const resendKey = process.env.RESEND_API_KEY;

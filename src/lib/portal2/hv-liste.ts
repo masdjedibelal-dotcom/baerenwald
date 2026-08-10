@@ -22,6 +22,7 @@ export const HV_CHIPS: Array<{
 
 /** Listen-Chip ↔ Portal-Flow (HV).
  * Offen · In Arbeit · Erledigt (+ Alle vorne).
+ * Offen = wartet auf HV (Meldung oder Angebotsfreigabe).
  * D3: Semantik = KPI-Klick (`HV_DASHBOARD_KPI_DEFS[].filter`).
  */
 export function hvListeChipMatches(
@@ -30,13 +31,12 @@ export function hvListeChipMatches(
 ): boolean {
   if (filter === "alle") return true;
   if (filter === "offen") {
-    return flow === "gemeldet";
+    return flow === "gemeldet" || flow === "angebot";
   }
   if (filter === "in_arbeit") {
     return (
       flow === "freigegeben" ||
       flow === "angefragt" ||
-      flow === "angebot" ||
       flow === "auftrag"
     );
   }

@@ -42,6 +42,8 @@ export function OrgMeldungAktionBanner({
   const status = lead.hv_meldung_status ?? "neu";
   if (status !== "neu") return null;
   if (lead.einladung_status === "offen") return null;
+  // HV-Selbstanlage: keine Start-Freigabe (läuft direkt als Angebot eingefordert)
+  if ((lead.erfassung_von ?? "").toLowerCase() === "organisation") return null;
 
   const funnelDa = funnelDirektauftragFromDaten(lead.funnel_daten);
   const entfaellt = hvFreigabeEntfaellt({

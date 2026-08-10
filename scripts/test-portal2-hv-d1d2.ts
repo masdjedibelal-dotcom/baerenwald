@@ -17,6 +17,7 @@ import {
   HV_SECTION_ANGEBOTE,
   HV_SECTION_MELDUNGEN,
   HV_BULK_DELETE_OFFENER_PUNKT,
+  hvListeChipMatches,
 } from "../src/lib/portal2/hv-liste";
 
 let failed = 0;
@@ -67,7 +68,14 @@ const flow = countLeadsByPortalFlow({
 
 assert("has gemeldet", flow.gemeldet >= 1);
 const kpis = buildHvDashboardKpis(flow);
-assert("offen = gemeldet", kpis.offen === flow.gemeldet);
+assert(
+  "offen = gemeldet + angebot",
+  kpis.offen === flow.gemeldet + flow.angebot
+);
+assert(
+  "in_arbeit ohne angebot",
+  kpis.in_arbeit === flow.freigegeben + flow.angefragt + flow.auftrag
+);
 assert(
   "erledigt formula",
   kpis.erledigt === flow.abschluss + flow.rechnung + flow.bezahlt
@@ -87,13 +95,16 @@ assert("page title", HV_LISTE_PAGE_TITLE === "Vorgänge");
 assert("chips 4", HV_CHIPS.length === 4);
 assert("chip freigabe", HV_CHIPS[0]!.label === "Alle");
 assert("chip in arbeit", HV_CHIPS[2]!.label === "In Arbeit");
+assert("chip offen gemeldet", hvListeChipMatches("offen", "gemeldet"));
+assert("chip offen angebot", hvListeChipMatches("offen", "angebot"));
+assert(
+  "chip in_arbeit ohne angebot",
+  !hvListeChipMatches("in_arbeit", "angebot") &&
+    hvListeChipMatches("in_arbeit", "auftrag")
+);
 assert("section meldungen", HV_SECTION_MELDUNGEN === "Meldungen · Eingang");
 assert("section angebote", HV_SECTION_ANGEBOTE === "Angebots-Freigabe");
-assert(
-  "banner",
-  HV_ANGEBOT_BANNER ===
-    "Bärenwald hat Angebote erstellt — bitte prüfen und freigeben (Freigabe ≠ Angebot annehmen)."
-);
+assert("banner", HV_ANGEBOT_BANNER === "Angebote zur Freigabe");
 assert(
   "meldung actions",
   HV_MELDUNG_ACTIONS.length === 2 &&

@@ -3,7 +3,7 @@
  */
 
 export const HW_DOKU_STORY = {
-  title: "Updates je Leistung",
+  title: "Leistungen & Updates",
   lead: "LV optional aktualisieren. Bei Regie: Start- und Endfoto plus kurze Beschreibung Pflicht.",
   steps: [
     {

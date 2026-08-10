@@ -1,4 +1,4 @@
-import { hvFreigabeEntfaellt, funnelDirektauftragFromDaten } from "@/lib/org/freigabe-bypass";
+import { hvFreigabeEntfaellt, funnelDirektauftragFromDaten, resolveAngebotZugestelltForHvFreigabe } from "@/lib/org/freigabe-bypass";
 import type { OrganisationLead } from "@/lib/org/types";
 
 type FreigabeLead = Pick<
@@ -9,6 +9,7 @@ type FreigabeLead = Pick<
   | "vorgang_phase"
   | "freigabe_bypass_grund"
   | "funnel_daten"
+  | "erfassung_von"
 >;
 
 /** Lead hat bereits einen CRM-Auftrag — gehört unter „Aktiv“, nicht „Zur Freigabe“. */
@@ -34,12 +35,11 @@ export function isInOrgFreigabeQueue(
 ): boolean {
   if (leadHasOrgAuftrag(lead.id, auftragByLeadId)) return false;
 
-  const angebotZugestellt = Boolean(
-    angebotByLeadId?.[lead.id]?.trim() ||
-      ["ausstehend", "angefordert", "freigegeben", "abgelehnt"].includes(
-        String(lead.org_freigabe_status ?? "").trim()
-      )
-  );
+  const angebotZugestellt = resolveAngebotZugestelltForHvFreigabe({
+    orgFreigabeStatus: lead.org_freigabe_status,
+    bypassGrund: lead.freigabe_bypass_grund,
+    hasAngebot: Boolean(angebotByLeadId?.[lead.id]?.trim()),
+  });
 
   // Akut: nie in Freigabe-Queue. Schwelle: erst nach Angebotszustellung.
   if (
@@ -73,7 +73,14 @@ export function isInOrgFreigabeQueue(
     return false;
   }
 
-  if ((lead.hv_meldung_status ?? "neu") === "neu") return true;
+  // HV-Selbstanlage: nie Start-Freigabe-Queue (auch Legacy mit status=neu)
+  const erfassung = String(lead.erfassung_von ?? "").toLowerCase();
+  if (
+    (lead.hv_meldung_status ?? "neu") === "neu" &&
+    erfassung !== "organisation"
+  ) {
+    return true;
+  }
   if (freigabe === "ausstehend" || freigabe === "angefordert") return true;
 
   return false;

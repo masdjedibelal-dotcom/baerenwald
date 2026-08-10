@@ -170,7 +170,11 @@ export function PortalVorgangDetail({
   );
 
   const showBautagebuchTab = Boolean(
-    item.bautagebuch && item.bautagebuch.length > 0 && !item.hvMieterView
+    Boolean(item.bautagebuch && item.bautagebuch.length > 0) ||
+      flowStatus === "auftrag" ||
+      flowStatus === "abschluss" ||
+      flowStatus === "rechnung" ||
+      flowStatus === "bezahlt"
   );
   const showFeedbackTab = Boolean(item.leadId);
 
@@ -250,10 +254,11 @@ export function PortalVorgangDetail({
         hwErledigt={hwErledigt}
         schwelleEur={schwelleEur}
         offers={buildHvOffersFromItem(item, item.ansprechpartner?.name)}
-        positionenBrutto={item.auftragPositionen ?? item.angebotPositionen}
+        positionenBrutto={item.angebotPositionen}
+        auftragPositionen={item.auftragPositionen}
         gesamtBrutto={item.gesamtBrutto}
         rechnungPdfHref={rechnungPdf}
-        bautagebuch={item.hvMieterView ? undefined : item.bautagebuch}
+        bautagebuch={item.bautagebuch}
         dokumente={item.dokumente ?? []}
         abnahmeCheckliste={item.abnahmeCheckliste ?? null}
         verlauf={buildHvVerlaufSeed({
@@ -486,15 +491,21 @@ export function PortalVorgangDetail({
           ) : null}
 
           {activeSection === "bautagebuch" && showBautagebuchTab ? (
-            <BautagebuchAccordionList
-              eintraege={(item.bautagebuch ?? []).map((b) => ({
-                id: b.id ?? `${b.datum}-${b.titel}`,
-                datum: b.datum ?? b.created_at,
-                titel: b.titel ?? "Eintrag",
-                beschreibung: b.notiz,
-                fotos: b.fotos_urls,
-              }))}
-            />
+            (item.bautagebuch?.length ?? 0) > 0 ? (
+              <BautagebuchAccordionList
+                eintraege={(item.bautagebuch ?? []).map((b) => ({
+                  id: b.id ?? `${b.datum}-${b.titel}`,
+                  datum: b.datum ?? b.created_at,
+                  titel: b.titel ?? "Eintrag",
+                  beschreibung: b.notiz,
+                  fotos: b.fotos_urls,
+                }))}
+              />
+            ) : (
+              <p className="text-sm text-[var(--portal-muted,#5B6470)]">
+                Noch keine Updates vom Handwerker.
+              </p>
+            )
           ) : null}
 
           {activeSection === "dokumente" ? (

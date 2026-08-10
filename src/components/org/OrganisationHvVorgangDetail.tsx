@@ -17,7 +17,7 @@ import { VorgangDetailSectionNav } from "@/components/shared/VorgangDetailSectio
 import { HvFreigabeInfoBanner } from "@/components/org/HvFreigabeInfoBanner";
 import {
   hvFreigabeEntfaellt,
-  orgFreigabeStatusImpliesAngebot,
+  resolveAngebotZugestelltForHvFreigabe,
 } from "@/lib/org/freigabe-bypass";
 import { acceptKundeAngebot, rejectKundeAngebot } from "@/app/actions/portal-angebot";
 import {
@@ -54,6 +54,7 @@ import { kundePortalToast, orgPortalToast } from "@/lib/shared/portal-toast";
 import { track } from "@/lib/analytics";
 import type { PortalBautagebuchEntry } from "@/lib/portal/portal-detail-item";
 import type { PortalAngebotPositionDisplay } from "@/lib/portal/portal-angebot-display";
+import type { PortalAuftragPositionDisplay } from "@/lib/portal/kunde-auftrag-aenderung";
 import {
   isAbnahmePortalDokument,
   type PortalDokument,
@@ -88,6 +89,8 @@ export type OrganisationHvVorgangDetailProps = {
   positionen?: HvDetailPosition[];
   /** Alternative: Portal-Display-Positionen (Brutto-Zeilen). */
   positionenBrutto?: PortalAngebotPositionDisplay[];
+  /** Auftrags-Leistungen aus CRM (bevorzugt ab Auftrag/Abschluss). */
+  auftragPositionen?: PortalAuftragPositionDisplay[];
   gesamtBrutto?: number;
   rechnungPdfHref?: string | null;
   bautagebuch?: PortalBautagebuchEntry[];
@@ -312,6 +315,7 @@ export function OrganisationHvVorgangDetail({
   offers = [],
   positionen = [],
   positionenBrutto = [],
+  auftragPositionen = [],
   gesamtBrutto,
   rechnungPdfHref,
   bautagebuch = [],
@@ -397,8 +401,11 @@ export function OrganisationHvVorgangDetail({
           bypassGrund: freigabeBypassGrund,
           funnelDirektauftrag,
           hvMeldungStatus,
-          // Nur Freigabe-Status nach Angebotszustellung — nicht gesamtBrutto/offers-Heuristik
-          angebotZugestellt: orgFreigabeStatusImpliesAngebot(orgFreigabeStatus),
+          // Bypass „schwelle“ zählt (CRM setzt nur nach Angebot; Status oft nicht_noetig)
+          angebotZugestellt: resolveAngebotZugestelltForHvFreigabe({
+            orgFreigabeStatus,
+            bypassGrund: freigabeBypassGrund,
+          }),
         })
       : null;
   const freigabeNichtNoetig = freigabeEntfaelltKind != null;
@@ -615,7 +622,18 @@ export function OrganisationHvVorgangDetail({
           detailRole === "hv" && !mieterStatusMode
             ? meldePreisIndikation
             : null,
+        portalFlow: displayFlowStatus,
         angebotPositionen: positionenBrutto,
+        auftragPositionen:
+          auftragPositionen.length > 0
+            ? auftragPositionen
+            : positionenBrutto.length > 0 &&
+                (displayFlowStatus === "auftrag" ||
+                  displayFlowStatus === "abschluss" ||
+                  displayFlowStatus === "rechnung" ||
+                  displayFlowStatus === "bezahlt")
+              ? (positionenBrutto as PortalAuftragPositionDisplay[])
+              : undefined,
         gesamtBrutto:
           typeof gesamtBrutto === "number"
             ? gesamtBrutto
@@ -661,6 +679,7 @@ export function OrganisationHvVorgangDetail({
       meldeFachdetails,
       meldePreisIndikation,
       positionenBrutto,
+      auftragPositionen,
       gesamtBrutto,
       empfohlen?.betrag,
       handwerkerName,
@@ -679,12 +698,21 @@ export function OrganisationHvVorgangDetail({
 
   const derivedPositionen: HvDetailPosition[] = useMemo(() => {
     if (positionen.length) return positionen;
-    return positionenBrutto.map((p) => ({
-      pos: p.title,
-      menge: "1",
-      gewerk: p.beschreibung?.slice(0, 40) || "Leistung",
-      einzel: p.preisBrutto / 1.19,
-    }));
+    return positionenBrutto.map((p) => {
+      const netto =
+        typeof p.preisNetto === "number" && p.preisNetto > 0
+          ? p.preisNetto
+          : p.preisBrutto > 0
+            ? p.preisBrutto / 1.19
+            : 0;
+      const mengeNum = p.menge != null && p.menge > 0 ? p.menge : 1;
+      return {
+        pos: p.title,
+        menge: p.mengeLabel?.trim() || String(mengeNum).replace(".", ","),
+        gewerk: p.gewerk?.trim() || "Leistung",
+        einzel: mengeNum > 0 ? netto / mengeNum : netto,
+      };
+    });
   }, [positionen, positionenBrutto]);
 
   const sum = useMemo(() => {
@@ -983,11 +1011,8 @@ export function OrganisationHvVorgangDetail({
   })();
 
   const showBautagebuch =
-    !mieterStatusMode &&
-    (["auftrag", "abschluss", "rechnung", "bezahlt"].includes(
-      displayFlowStatus
-    ) ||
-      bautagebuch.length > 0);
+    ["auftrag", "abschluss", "rechnung", "bezahlt"].includes(displayFlowStatus) ||
+    bautagebuch.length > 0;
 
   const showAngebotSection = !mieterStatusMode && Boolean(rolePanel);
   const angebotSectionLabel =
@@ -1000,13 +1025,13 @@ export function OrganisationHvVorgangDetail({
         : "Angebot";
 
   useEffect(() => {
-    if (mieterStatusMode || !showBautagebuch) {
+    if (!showBautagebuch) {
       setBtUnread(0);
       return;
     }
     const seen = getBautagebuchLastSeenAt(leadId);
     setBtUnread(countUnreadBautagebuch(bautagebuch, seen));
-  }, [leadId, bautagebuch, mieterStatusMode, showBautagebuch]);
+  }, [leadId, bautagebuch, showBautagebuch]);
 
   useEffect(() => {
     deepLinkAppliedRef.current = false;
@@ -1014,7 +1039,7 @@ export function OrganisationHvVorgangDetail({
 
   /** Notification / Deep-Link: `?tab=` oder `#…` → passenden Detail-Tab öffnen. */
   useEffect(() => {
-    if (mieterStatusMode || deepLinkAppliedRef.current) return;
+    if (deepLinkAppliedRef.current) return;
     const fromQuery = normalizePortalDeepLinkTab(
       searchParams.get(PORTAL_DETAIL_TAB_QUERY)
     );
@@ -1027,6 +1052,21 @@ export function OrganisationHvVorgangDetail({
 
     const target = portalDeepLinkTabForHvNav(tab);
     if (target === "bautagebuch" && !showBautagebuch) return;
+    if (mieterStatusMode && target === "angebot") {
+      setActiveSection("uebersicht");
+      deepLinkAppliedRef.current = true;
+      if (typeof window !== "undefined") {
+        try {
+          const u = new URL(window.location.href);
+          u.searchParams.delete(PORTAL_DETAIL_TAB_QUERY);
+          u.hash = "";
+          window.history.replaceState(null, "", `${u.pathname}${u.search}`);
+        } catch {
+          /* ignore */
+        }
+      }
+      return;
+    }
     if (target === "angebot" && !showAngebotSection) {
       setActiveSection("uebersicht");
       deepLinkAppliedRef.current = true;

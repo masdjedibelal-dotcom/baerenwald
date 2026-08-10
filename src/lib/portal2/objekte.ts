@@ -510,7 +510,7 @@ export function leadIsAktivAmObjekt(lead: {
 }
 
 /**
- * Badge „offen“ = Portal-Flow `gemeldet` (wie Vorgänge-KPI Offen).
+ * Badge „offen“ = Portal-Flow `gemeldet` | `angebot` (wie Vorgänge-KPI Offen).
  * Ohne Angebot/Auftrag fällt resolve auf Lead-Signale zurück.
  */
 export function leadIsOffenAmObjekt(
@@ -543,7 +543,7 @@ export function leadIsOffenAmObjekt(
     angebot: opts?.angebot ?? null,
     auftrag: opts?.auftrag ?? null,
   });
-  return flow === "gemeldet";
+  return flow === "gemeldet" || flow === "angebot";
 }
 
 function dedupeLeadsById<T extends { id?: string }>(leads: T[]): T[] {

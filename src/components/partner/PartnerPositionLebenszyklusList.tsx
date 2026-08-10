@@ -35,6 +35,7 @@ export type LebenszyklusPosition = {
   typ?: string | null;
   anerkennung_status?: string | null;
   preis_partner?: number | null;
+  stundensatz?: number | null;
   einheit?: string | null;
   menge?: number | null;
   zeit_minuten_summe?: number | null;
@@ -54,6 +55,22 @@ type Props = {
   /** Erledigter Auftrag: nur lesen, keine Start-/Update-/Nachtrag-Aktionen. */
   readOnly?: boolean;
 };
+
+function formatPartnerPreisLabel(p: LebenszyklusPosition): string | null {
+  const isRegie =
+    p.typ === "regie" || String(p.verguetung ?? "").toLowerCase() === "aufwand";
+  const fmt = (n: number) =>
+    n.toLocaleString("de-DE", { style: "currency", currency: "EUR" });
+  if (isRegie && p.stundensatz != null && p.stundensatz > 0) {
+    return `${fmt(p.stundensatz)}/Std`;
+  }
+  if (p.preis_partner != null && p.preis_partner > 0) {
+    return isRegie && (p.einheit === "h" || p.einheit === "Std")
+      ? `${fmt(p.preis_partner)}/Std`
+      : fmt(p.preis_partner);
+  }
+  return null;
+}
 
 function mengeLabel(p: LebenszyklusPosition): string | null {
   if (p.einheit && p.menge != null) return `${p.menge} ${p.einheit}`;
@@ -448,19 +465,20 @@ export function PartnerPositionLebenszyklusList({
                       >
                         {p.leistung_name}
                       </p>
-                      {p.preis_partner != null ? (
+                      {(() => {
+                        const preisLabel = formatPartnerPreisLabel(p);
+                        if (!preisLabel) return null;
+                        return (
                         <p
                           className={cn(
                             "shrink-0 text-[14.5px] font-bold tabular-nums",
                             isBlocked ? "text-text-tertiary" : "text-text-primary"
                           )}
                         >
-                          {p.preis_partner.toLocaleString("de-DE", {
-                            style: "currency",
-                            currency: "EUR",
-                          })}
+                          {preisLabel}
                         </p>
-                      ) : null}
+                        );
+                      })()}
                     </div>
                     <p className="mt-0.5 text-[12.5px] text-text-tertiary">{meta}</p>
                     {inPruefung ? (

@@ -216,13 +216,21 @@ async function persistAcceptance(opts: {
 }): Promise<PartnerAuftragBestaetigenResult> {
   const now = new Date().toISOString();
 
-  // V1/Q2: Kanonische Annahme nur im CRM
+  // Kanonische CRM-Annahme zuerst (Timeline + Push). Bei Fehler: Portal trotzdem speichern.
   const crm = await submitCrmPartnerAnnahme({
     zuweisungId: opts.anfrageId,
     handwerkerId: opts.handwerkerId,
     antwort: "akzeptiert",
   });
-  if (!crm.ok) return { ok: false, error: crm.error };
+  if (!crm.ok) {
+    console.warn("[partner] Annahme CRM-Notify fehlgeschlagen:", crm.error, {
+      anfrageId: opts.anfrageId,
+    });
+  } else if (crm.skipped) {
+    console.warn("[partner] Annahme ohne CRM-Sync (Env fehlt).", {
+      anfrageId: opts.anfrageId,
+    });
+  }
 
   // Bearbeitungsstand (hw_status) + Konditionen bleiben Portal-seitig
   const { error: upErr } = await supabaseAdmin
@@ -548,9 +556,9 @@ async function persistDirektauftragZuweisungAntwort(opts: {
     return { ok: false, error: "Keine Zuweisung für diesen Auftrag." };
   }
 
-  // CRM erwartet oft angebot_handwerker-ID — bei Direktauftrag ohne Angebot überspringen.
+  // CRM: Direktauftrag-Notify (Push + Timeline) — nicht angebot_handwerker-ID fälschen.
   const crm = await submitCrmPartnerAnnahme({
-    zuweisungId: opts.auftragId,
+    auftragId: opts.auftragId,
     handwerkerId: opts.handwerkerId,
     antwort: opts.antwort,
     notiz: opts.notiz,
@@ -786,7 +794,24 @@ export async function declinePartnerAnfrage(opts: {
     notiz,
     grund: grundRaw,
   });
-  if (!crm.ok) return { ok: false, error: crm.error };
+  if (!crm.ok) {
+    console.warn("[partner] Ablehnung CRM-Notify fehlgeschlagen:", crm.error, {
+      anfrageId: opts.anfrageId,
+    });
+  }
+
+  const now = new Date().toISOString();
+  const { error: upErr } = await supabaseAdmin
+    .from("angebot_handwerker")
+    .update({
+      status: "abgelehnt",
+      antwort_at: now,
+      antwort_notiz: notiz,
+      ablehnung_grund: grundRaw,
+    })
+    .eq("id", opts.anfrageId.trim())
+    .eq("handwerker_id", link.handwerkerId);
+  if (upErr) return { ok: false, error: upErr.message };
 
   revalidatePath("/partner");
   return { ok: true };

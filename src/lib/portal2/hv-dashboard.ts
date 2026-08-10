@@ -241,15 +241,14 @@ export type HvDashboardKpiValues = Record<HvDashboardKpiId, number>;
 
 /**
  * Mock HV-Tiles aus A4-Counts:
- * - Offen = gemeldet
- * - In Arbeit = freigegeben + angefragt + angebot + auftrag
+ * - Offen = gemeldet + angebot (HV-Aktion: Meldung / Angebotsfreigabe)
+ * - In Arbeit = freigegeben + angefragt + auftrag
  * - Erledigt = abschluss + rechnung + bezahlt
  */
 export function buildHvDashboardKpis(flow: HvFlowCountMap): HvDashboardKpiValues {
   return {
-    offen: flow.gemeldet,
-    in_arbeit:
-      flow.freigegeben + flow.angefragt + flow.angebot + flow.auftrag,
+    offen: flow.gemeldet + flow.angebot,
+    in_arbeit: flow.freigegeben + flow.angefragt + flow.auftrag,
     erledigt: flow.abschluss + flow.rechnung + flow.bezahlt,
   };
 }

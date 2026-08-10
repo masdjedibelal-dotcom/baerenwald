@@ -119,3 +119,18 @@ export function orgFreigabeStatusImpliesAngebot(
     st === "abgelehnt"
   );
 }
+
+/**
+ * Für HV-Banner/CTAs: Angebot gilt als zugestellt, wenn
+ * - Freigabe-Status nach Zustellung, oder
+ * - CRM Bypass „schwelle“ (wird nur nach Angebot gesetzt, Status oft `nicht_noetig`).
+ */
+export function resolveAngebotZugestelltForHvFreigabe(opts: {
+  orgFreigabeStatus?: string | null;
+  bypassGrund?: string | null;
+  hasAngebot?: boolean | null;
+}): boolean {
+  if (opts.hasAngebot === true) return true;
+  if (parseFreigabeBypassGrund(opts.bypassGrund) === "schwelle") return true;
+  return orgFreigabeStatusImpliesAngebot(opts.orgFreigabeStatus);
+}

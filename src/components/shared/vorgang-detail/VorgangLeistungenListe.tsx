@@ -71,17 +71,18 @@ export function VorgangLeistungenListe({
                     removed && "text-text-secondary line-through"
                   )}
                 >
-                  {p.gewerk ? `${p.gewerk} — ` : ""}
                   {p.title}
                 </p>
+                {(p.gewerk || p.menge || p.einheit) && !showPlain ? (
+                  <p className="portal-text-meta mt-0.5 text-text-secondary">
+                    {[p.gewerk, [p.menge, p.einheit].filter(Boolean).join(" ")]
+                      .filter(Boolean)
+                      .join(" · ")}
+                  </p>
+                ) : null}
                 {p.beschreibung ? (
                   <p className="portal-text-meta mt-0.5 text-text-secondary">
                     {p.beschreibung}
-                  </p>
-                ) : null}
-                {(p.menge || p.einheit) && !showPlain ? (
-                  <p className="portal-text-meta mt-0.5 text-text-secondary">
-                    {[p.menge, p.einheit].filter(Boolean).join(" ")}
                   </p>
                 ) : null}
                 {p.aenderungBadge && p.aenderungBadge !== "entfernt" ? (

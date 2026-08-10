@@ -102,7 +102,7 @@ export function mapKundeDetailToCard(
     ),
     hvMieterView: Boolean(item.hvMieterView),
     wartetAufHwLabel: mockListe ? null : item.wartetAufHwLabel ?? null,
-    bautagebuch: item.hvMieterView ? undefined : item.bautagebuch,
+    bautagebuch: item.bautagebuch,
     leadId: item.leadId ?? item.id,
   };
 }

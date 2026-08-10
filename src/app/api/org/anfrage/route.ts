@@ -183,6 +183,11 @@ export async function POST(req: Request) {
     );
   }
 
+  const { finalizeOrgSelfCreatedLead } = await import(
+    "@/lib/org/finalize-org-self-created-lead"
+  );
+  await finalizeOrgSelfCreatedLead(result.id);
+
   let bewohnerId: string | null = null;
   if (createBewohner && melderName) {
     const einheitLabel =

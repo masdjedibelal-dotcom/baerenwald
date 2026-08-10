@@ -25,9 +25,55 @@ import {
   type VorgangDetailKopf,
   type VorgangDetailObjektMelder,
   type VorgangDetailRole,
+  type VorgangDetailsLeistungen,
   type VorgangDetailVM,
   type VorgangLeistungZeile,
 } from "@/lib/vorgang/vorgang-detail-vm";
+
+/** Portal-Flow grob für Details-Card (Preisindikation vs. Leistungen). */
+export type VorgangDetailPortalFlow =
+  | "gemeldet"
+  | "freigegeben"
+  | "angefragt"
+  | "angebot"
+  | "auftrag"
+  | "abschluss"
+  | "rechnung"
+  | "bezahlt";
+
+const FLOW_RECHNUNG = new Set<VorgangDetailPortalFlow>([
+  "abschluss",
+  "rechnung",
+  "bezahlt",
+]);
+
+const FLOW_PAST_ANFRAGE = new Set<VorgangDetailPortalFlow>([
+  "angebot",
+  "auftrag",
+  "abschluss",
+  "rechnung",
+  "bezahlt",
+]);
+
+function resolveDetailsLeistungen(opts: {
+  role: VorgangDetailRole;
+  flow: VorgangDetailPortalFlow | null | undefined;
+  hasLeistungen: boolean;
+}): VorgangDetailsLeistungen | null {
+  if (!opts.hasLeistungen) return null;
+  const flow = opts.flow;
+
+  if (opts.role === "mieter") {
+    return { title: "Leistungen", mode: "plain" };
+  }
+  if (flow && FLOW_RECHNUNG.has(flow)) {
+    return { title: "Rechnung", mode: "vk" };
+  }
+  if (flow === "auftrag") {
+    return { title: "Leistungen", mode: "vk" };
+  }
+  return { title: "Angebot", mode: "vk" };
+}
 
 function leistungenFromAngebotDisplay(
   items: PortalAngebotPositionDisplay[] | undefined
@@ -37,7 +83,10 @@ function leistungenFromAngebotDisplay(
     id: p.id,
     title: p.title,
     beschreibung: p.beschreibung,
-    preisBrutto: p.preisBrutto,
+    gewerk: p.gewerk,
+    menge: p.mengeLabel ?? (p.menge != null ? String(p.menge) : undefined),
+    einheit: p.mengeLabel ? undefined : p.einheit,
+    preisBrutto: p.preisBrutto > 0 ? p.preisBrutto : null,
   }));
 }
 
@@ -49,7 +98,10 @@ function leistungenFromAuftragDisplay(
     id: p.id,
     title: p.title,
     beschreibung: p.beschreibung,
-    preisBrutto: p.preisBrutto,
+    gewerk: p.gewerk,
+    menge: p.mengeLabel ?? (p.menge != null ? String(p.menge) : undefined),
+    einheit: p.mengeLabel ? undefined : p.einheit,
+    preisBrutto: p.preisBrutto > 0 ? p.preisBrutto : null,
     aenderungBadge: p.aenderungBadge,
   }));
 }
@@ -98,8 +150,10 @@ export type BuildKundeHvVmInput = {
   meldeBereich?: string | null;
   meldeZeitraum?: string | null;
   meldeFachdetails?: Array<{ label: string; value: string }>;
-  /** Unverbindliche Preisindikation aus Meldung — nur bei role=hv rendern */
+  /** Unverbindliche Preisindikation aus Meldung — nur bei role=hv in Anfrage-Phase */
   meldePreisIndikation?: string | null;
+  /** Aktueller Portal-Flow (steuert Preisindikation / Angebots- vs. Rechnungs-Block) */
+  portalFlow?: VorgangDetailPortalFlow | null;
   angebotPositionen?: PortalAngebotPositionDisplay[];
   auftragPositionen?: PortalAuftragPositionDisplay[];
   gesamtBrutto?: number | null;
@@ -141,10 +195,26 @@ export function buildKundeHvVorgangDetailVm(
     input.objektZeile?.trim() ||
     null;
 
-  const leistungen =
-    leistungenFromAuftragDisplay(input.auftragPositionen).length > 0
-      ? leistungenFromAuftragDisplay(input.auftragPositionen)
-      : leistungenFromAngebotDisplay(input.angebotPositionen);
+  const flow = input.portalFlow ?? null;
+  const angebotLeistungen = leistungenFromAngebotDisplay(input.angebotPositionen);
+  const auftragLeistungen = leistungenFromAuftragDisplay(input.auftragPositionen);
+  const preferAuftrag =
+    flow != null &&
+    (FLOW_RECHNUNG.has(flow) || flow === "auftrag") &&
+    auftragLeistungen.length > 0;
+  const leistungen = preferAuftrag
+    ? auftragLeistungen
+    : angebotLeistungen.length > 0
+      ? angebotLeistungen
+      : auftragLeistungen;
+
+  const pastAnfrage =
+    (flow != null && FLOW_PAST_ANFRAGE.has(flow)) || leistungen.length > 0;
+  const detailsLeistungen = resolveDetailsLeistungen({
+    role: input.role,
+    flow,
+    hasLeistungen: leistungen.length > 0,
+  });
 
   const funnelRows =
     input.meldeFachdetails && input.meldeFachdetails.length > 0
@@ -205,7 +275,9 @@ export function buildKundeHvVorgangDetailVm(
     zeitraumLabel: zeitraumFromLead,
     fachdetailRows: funnelRows,
     preisIndikation:
-      input.role === "hv" ? input.meldePreisIndikation?.trim() || null : null,
+      input.role === "hv" && !pastAnfrage
+        ? input.meldePreisIndikation?.trim() || null
+        : null,
   };
 
   const terminLabel =
@@ -236,6 +308,7 @@ export function buildKundeHvVorgangDetailVm(
     objektMelder,
     ausfuehrung,
     leistungen,
+    detailsLeistungen,
   };
 }
 
@@ -382,6 +455,10 @@ export function buildMieterVorgangDetailVm(
       kontaktVorOrtName: null,
     },
     leistungen,
+    detailsLeistungen:
+      leistungen.length > 0
+        ? { title: "Leistungen", mode: "plain" as const }
+        : null,
   };
 }
 
@@ -396,5 +473,6 @@ export function emptyVorgangDetailVm(
     objektMelder: {},
     ausfuehrung: {},
     leistungen: [],
+    detailsLeistungen: null,
   };
 }

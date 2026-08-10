@@ -16,7 +16,6 @@ import {
   postCrmAbnahmeAction,
   submitCrmAbnahmeNachSignatur,
 } from "@/lib/partner/partner-crm-api";
-import { notifyHvPartnerErledigt } from "@/lib/org/notify-hv-partner-erledigt";
 import { sendPartnerInternalErledigtMail } from "@/lib/partner/partner-mail";
 import { allePositionenPortalErledigt } from "@/lib/portal/vorgang-erledigt";
 import { createClient } from "@/lib/supabase/server";
@@ -463,13 +462,7 @@ export async function submitPartnerAbnahmeNachSignatur(
     leistungen: input.punkte.map((p) => p.leistung_name),
   });
 
-  void notifyHvPartnerErledigt({
-    auftragId: id,
-    leadId: String((auftrag as { lead_id?: string | null }).lead_id ?? ""),
-    handwerkerName,
-    leistungen: input.punkte.map((p) => p.leistung_name),
-    vollstaendig,
-  });
+  // HV-Notify erst nach CRM-Freigabe des Abnahmeprotokolls (Shared-DB).
 
   revalidatePath("/partner");
   return {
