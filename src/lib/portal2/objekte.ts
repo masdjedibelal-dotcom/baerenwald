@@ -557,7 +557,7 @@ function dedupeLeadsById<T extends { id?: string }>(leads: T[]): T[] {
     }
     byId.set(id, lead);
   }
-  return [...byId.values(), ...withoutId];
+  return [...Array.from(byId.values()), ...withoutId];
 }
 
 type ObjektCountLead = {
