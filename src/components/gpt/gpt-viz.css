@@ -642,10 +642,39 @@
 }
 
 /* Sprachnotiz im Composer (ChatGPT-ähnlich) */
-.gpt-chat-inputbar--voice {
-  min-height: 52px;
+.gpt-chat-inputbar {
   align-items: center;
-  gap: 10px;
+}
+
+.gpt-chat-inputbar--voice {
+  min-height: 44px;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.gpt-chat-attach {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  margin: 0;
+  border: none;
+  border-radius: 999px;
+  background: transparent;
+  color: #5c6b62;
+  cursor: pointer;
+}
+
+.gpt-chat-attach:hover:not(:disabled) {
+  background: rgba(46, 125, 82, 0.08);
+  color: var(--org-primary, var(--p2-primary, #2e7d52));
+}
+
+.gpt-chat-attach:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
 }
 
 .gpt-chat-voice-mic {
@@ -681,11 +710,20 @@
 
 .gpt-chat-voice-bar {
   display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
+  width: 100%;
+  min-width: 0;
+  padding: 4px 2px 2px;
+}
+
+.gpt-chat-voice-bar-row {
+  display: flex;
   align-items: center;
   gap: 10px;
   width: 100%;
   min-width: 0;
-  padding: 4px 2px;
 }
 
 .gpt-chat-voice-stop {
@@ -741,6 +779,29 @@
   color: #404a45;
   min-width: 5.5rem;
   text-align: right;
+}
+
+.gpt-chat-voice-transcript {
+  margin: 0;
+  padding: 0 4px 2px 50px;
+  max-height: 4.8em;
+  overflow-y: auto;
+  font-size: 14.5px;
+  line-height: 1.35;
+  font-weight: 500;
+  color: #142019;
+  word-break: break-word;
+  white-space: pre-wrap;
+}
+
+.gpt-chat-voice-transcript--empty {
+  color: #7a857f;
+  font-weight: 450;
+  font-style: italic;
+}
+
+.gpt-chat-voice-bar--processing .gpt-chat-voice-transcript {
+  color: #55615b;
 }
 
 .gpt-chat-cta-row {
@@ -820,35 +881,6 @@
   max-height: min(420px, 70vh);
   object-fit: contain;
   background: #f4f6f5;
-}
-
-.gpt-chat-inputbar {
-  align-items: flex-end;
-}
-
-.gpt-chat-attach {
-  flex-shrink: 0;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 2.25rem;
-  height: 2.25rem;
-  margin-right: 0.15rem;
-  border: none;
-  border-radius: 999px;
-  background: transparent;
-  color: #5c6b62;
-  cursor: pointer;
-}
-
-.gpt-chat-attach:hover:not(:disabled) {
-  background: rgba(46, 125, 82, 0.08);
-  color: var(--org-primary, var(--p2-primary, #2e7d52));
-}
-
-.gpt-chat-attach:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
 }
 
 /* ── Portal GPT Shell: Chat füllt Fläche, Bottom-Nav darf Composer nicht überdecken ── */

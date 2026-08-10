@@ -244,6 +244,7 @@ export async function getPortalDataForKunde(
   let leadsQuery = supabaseAdmin
     .from("leads")
     .select(leadSelectList)
+    .is("geloescht_am", null)
     .order("created_at", { ascending: false });
   if (onlyLeadIds.length) {
     // Detail: Lead-IDs sind bereits zugriffsprüft (kunde oder Auftraggeber).
@@ -252,7 +253,22 @@ export async function getPortalDataForKunde(
     leadsQuery = leadsQuery.eq("kunde_id", kunde.id);
     if (listMode) leadsQuery = leadsQuery.limit(PORTAL_LIST_LEAD_LIMIT);
   }
-  const { data: leads } = await leadsQuery;
+  let { data: leads, error: leadsErr } = await leadsQuery;
+  if (leadsErr && /geloescht_am/i.test(leadsErr.message)) {
+    let fb = supabaseAdmin
+      .from("leads")
+      .select(leadSelectList)
+      .order("created_at", { ascending: false });
+    if (onlyLeadIds.length) fb = fb.in("id", onlyLeadIds);
+    else {
+      fb = fb.eq("kunde_id", kunde.id);
+      if (listMode) fb = fb.limit(PORTAL_LIST_LEAD_LIMIT);
+    }
+    const retry = await fb;
+    leads = retry.data;
+    leadsErr = retry.error;
+  }
+  if (leadsErr) console.warn("[portal] leads:", leadsErr.message);
 
   const leadIds = (leads ?? []).map((l) => l.id);
 
@@ -386,6 +402,33 @@ export async function getPortalDataForKunde(
       .order("created_at", { ascending: false });
     if (aufAngErr) console.warn("[portal] auftraege angebot_id:", aufAngErr.message);
     mergeAuftraege(auftraegeByAngebot as Record<string, unknown>[] | null);
+  }
+
+  // Soft-gelöschte CRM-Vorgänge: Aufträge/Angebote mit gelöschtem Lead ausblenden
+  {
+    const { filterActiveLeadIds } = await import("@/lib/portal/lead-not-deleted");
+    const childLeadIds: string[] = [];
+    for (const row of Array.from(auftraegeById.values())) {
+      const lid = String(row.lead_id ?? "").trim();
+      if (lid) childLeadIds.push(lid);
+    }
+    for (const row of Array.from(angeboteByIdEarly.values())) {
+      const lid = String((row as { lead_id?: string | null }).lead_id ?? "").trim();
+      if (lid) childLeadIds.push(lid);
+    }
+    const activeChild = await filterActiveLeadIds(childLeadIds);
+    const allowedLeads = new Set<string>([
+      ...leadIds.map((id) => String(id)),
+      ...Array.from(activeChild),
+    ]);
+    for (const [aid, row] of Array.from(auftraegeById.entries())) {
+      const lid = String(row.lead_id ?? "").trim();
+      if (lid && !allowedLeads.has(lid)) auftraegeById.delete(aid);
+    }
+    for (const [aid, row] of Array.from(angeboteByIdEarly.entries())) {
+      const lid = String((row as { lead_id?: string | null }).lead_id ?? "").trim();
+      if (lid && !allowedLeads.has(lid)) angeboteByIdEarly.delete(aid);
+    }
   }
 
   const auftraege = Array.from(auftraegeById.values()).sort((a, b) => {

@@ -1,6 +1,6 @@
 {
   "name": "Bärenwald Partner",
-  "short_name": "BW Partner",
+  "short_name": "Bärenwald",
   "description": "Partner-Portal — Aufträge und Termine",
   "start_url": "/partner",
   "scope": "/",

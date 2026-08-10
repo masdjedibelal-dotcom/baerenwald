@@ -21,13 +21,14 @@ export function PortalListeTitle({ children }: { children: ReactNode }) {
   return <h1 className="portal-text-page">{children}</h1>;
 }
 
-/** Filter-Chip im HV-Stil (PORTAL_VAR.greenDark aktiv). */
+/** Filter-Chip im HV-Stil (PORTAL_VAR.greenDark aktiv; „Offen“ = Amber). */
 export function PortalListeFilterChip({
   active,
   onClick,
   children,
   count,
   countBadge,
+  tone = "default",
 }: {
   active: boolean;
   onClick: () => void;
@@ -36,8 +37,16 @@ export function PortalListeFilterChip({
   count?: number;
   /** HV-Stil: runder Count-Badge statt Klammer. */
   countBadge?: number | null;
+  /** „offen“ = warmer Amber, übrige Filter = Grün. */
+  tone?: "default" | "offen";
 }) {
   const showBadge = countBadge != null && countBadge > 0;
+  const isOffen = tone === "offen";
+  const activeBg = isOffen ? "#C2410C" : PORTAL_VAR.greenDark;
+  const inactiveBorder = isOffen ? "rgba(194, 65, 12, 0.35)" : PORTAL_VAR.line;
+  const inactiveBg = isOffen ? "#FFF7ED" : "#fff";
+  const inactiveFg = isOffen ? "#C2410C" : PORTAL_VAR.sub;
+
   return (
     <button
       type="button"
@@ -46,14 +55,22 @@ export function PortalListeFilterChip({
         "portal-text-meta inline-flex shrink-0 items-center gap-1.5 rounded-full px-3.5 py-2 font-semibold"
       )}
       style={{
-        border: `1px solid ${active ? "transparent" : PORTAL_VAR.line}`,
-        background: active ? PORTAL_VAR.greenDark : "#fff",
-        color: active ? "#fff" : PORTAL_VAR.sub,
+        border: `1px solid ${active ? "transparent" : inactiveBorder}`,
+        background: active ? activeBg : inactiveBg,
+        color: active ? "#fff" : inactiveFg,
       }}
     >
       {children}
       {count != null ? (
-        <span style={{ color: active ? "rgba(255,255,255,0.7)" : PORTAL_VAR.faint }}>
+        <span
+          style={{
+            color: active
+              ? "rgba(255,255,255,0.7)"
+              : isOffen
+                ? "rgba(194, 65, 12, 0.7)"
+                : PORTAL_VAR.faint,
+          }}
+        >
           ({count})
         </span>
       ) : null}
@@ -61,8 +78,8 @@ export function PortalListeFilterChip({
         <span
           className="rounded-full px-1.5 py-px text-[10.5px] font-bold"
           style={{
-            color: active ? PORTAL_VAR.greenDark : "#fff",
-            background: active ? "#fff" : PORTAL_VAR.primary,
+            color: active ? activeBg : "#fff",
+            background: active ? "#fff" : isOffen ? "#C2410C" : PORTAL_VAR.primary,
           }}
         >
           {countBadge}

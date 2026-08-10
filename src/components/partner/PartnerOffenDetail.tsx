@@ -248,7 +248,7 @@ export function PartnerOffenDetail({
         }
 
         const auto = await tryCreatePartnerAutoAngebot(item.id);
-        if (auto.status === "created") {
+        if (auto.status === "created" || auto.status === "already") {
           partnerPortalToast.unterlagenHochgeladen();
           setShowKalkulation(true);
           return;
@@ -257,6 +257,9 @@ export function PartnerOffenDetail({
           setFirmendatenMissing(auto.missing);
           setFirmendatenFehlenOpen(true);
           return;
+        }
+        if (auto.status === "skipped" && auto.error) {
+          portalToastError("Angebot nicht automatisch erstellt", auto.error);
         }
         setShowKalkulation(true);
       });

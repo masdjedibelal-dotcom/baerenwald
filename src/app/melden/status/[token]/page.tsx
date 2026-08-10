@@ -26,12 +26,13 @@ export default async function MeldeStatusPage({ params }: Props) {
   const { data: lead } = await supabaseAdmin
     .from("leads")
     .select(
-      "id, melder_name, melder_einheit, created_at, hv_meldung_status, vorgang_phase, org_freigabe_status, freigabe_bypass_grund, mieter_vor_ort_at, kunde_objekt_id, auftraggeber_kunde_id, storniert_am, kontakt_nachricht, anlass, funnel_daten, situation, bereiche, zeitraum, plz, strasse, hausnummer"
+      "id, melder_name, melder_einheit, created_at, hv_meldung_status, vorgang_phase, org_freigabe_status, freigabe_bypass_grund, mieter_vor_ort_at, kunde_objekt_id, auftraggeber_kunde_id, storniert_am, kontakt_nachricht, anlass, funnel_daten, situation, bereiche, zeitraum, plz, strasse, hausnummer, geloescht_am"
     )
     .eq("melde_tracking_token", trimmed)
     .maybeSingle();
 
   if (!lead) notFound();
+  if ((lead as { geloescht_am?: string | null }).geloescht_am) notFound();
 
   const { kontextByLeadId, auftragIdByLeadId } = await loadPortalAuftraegeByLeadIds([
     String(lead.id),

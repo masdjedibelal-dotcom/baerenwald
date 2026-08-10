@@ -16,7 +16,11 @@ type SpeechRec = {
   stop: () => void;
   onresult:
     | ((ev: {
-        results: ArrayLike<{ 0: { transcript: string }; isFinal?: boolean }>;
+        results: ArrayLike<{
+          0: { transcript: string };
+          isFinal?: boolean;
+          length: number;
+        }>;
       }) => void)
     | null;
   onerror: ((ev?: { error?: string }) => void) | null;
@@ -71,6 +75,7 @@ export function GptChatVoiceRecorder({
   const [phase, setPhase] = useState<"idle" | "recording" | "processing">("idle");
   const [seconds, setSeconds] = useState(0);
   const [levels, setLevels] = useState<number[]>(() => Array(BAR_COUNT).fill(0.12));
+  const [liveText, setLiveText] = useState("");
 
   const streamRef = useRef<MediaStream | null>(null);
   const recorderRef = useRef<MediaRecorder | null>(null);
@@ -131,6 +136,7 @@ export function GptChatVoiceRecorder({
         setPhase("idle");
         setSeconds(0);
         setLevels(Array(BAR_COUNT).fill(0.12));
+        setLiveText("");
         return;
       }
       onTextReady(polished);
@@ -142,6 +148,7 @@ export function GptChatVoiceRecorder({
       setPhase("idle");
       setSeconds(0);
       setLevels(Array(BAR_COUNT).fill(0.12));
+      setLiveText("");
       transcriptRef.current = "";
       chunksRef.current = [];
     }
@@ -187,12 +194,15 @@ export function GptChatVoiceRecorder({
     rec.continuous = true;
     rec.interimResults = true;
     transcriptRef.current = "";
+    setLiveText("");
     rec.onresult = (ev) => {
       let spoken = "";
       for (let i = 0; i < ev.results.length; i++) {
         spoken += ev.results[i][0].transcript;
       }
-      transcriptRef.current = spoken.trim();
+      const next = spoken.replace(/\s+/g, " ").trim();
+      transcriptRef.current = next;
+      setLiveText(next);
     };
     rec.onerror = () => {
       /* Aufnahme läuft weiter */
@@ -239,6 +249,7 @@ export function GptChatVoiceRecorder({
       streamRef.current = stream;
       chunksRef.current = [];
       transcriptRef.current = "";
+      setLiveText("");
 
       const mime = MediaRecorder.isTypeSupported("audio/webm;codecs=opus")
         ? "audio/webm;codecs=opus"
@@ -291,33 +302,45 @@ export function GptChatVoiceRecorder({
         role="status"
         aria-live="polite"
       >
-        <button
-          type="button"
-          className="gpt-chat-voice-stop"
-          disabled={phase === "processing"}
-          onClick={() => void finishRecording()}
-          aria-label="Aufnahme beenden"
-        >
-          {phase === "processing" ? (
-            <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
-          ) : (
-            <Square className="h-3.5 w-3.5 fill-current" aria-hidden />
-          )}
-        </button>
-        <div className="gpt-chat-voice-wave" aria-hidden>
-          {levels.map((level, i) => (
-            <span
-              key={i}
-              className="gpt-chat-voice-bar-seg"
-              style={{ transform: `scaleY(${level})` }}
-            />
-          ))}
+        <div className="gpt-chat-voice-bar-row">
+          <button
+            type="button"
+            className="gpt-chat-voice-stop"
+            disabled={phase === "processing"}
+            onClick={() => void finishRecording()}
+            aria-label="Aufnahme beenden"
+          >
+            {phase === "processing" ? (
+              <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+            ) : (
+              <Square className="h-3.5 w-3.5 fill-current" aria-hidden />
+            )}
+          </button>
+          <div className="gpt-chat-voice-wave" aria-hidden>
+            {levels.map((level, i) => (
+              <span
+                key={i}
+                className="gpt-chat-voice-bar-seg"
+                style={{ transform: `scaleY(${level})` }}
+              />
+            ))}
+          </div>
+          <span className="gpt-chat-voice-timer">
+            {phase === "processing"
+              ? "Schreibe um …"
+              : `0:${String(Math.min(seconds, MAX_SECONDS)).padStart(2, "0")} / 0:${String(MAX_SECONDS).padStart(2, "0")}`}
+          </span>
         </div>
-        <span className="gpt-chat-voice-timer">
+        <p
+          className={cn(
+            "gpt-chat-voice-transcript",
+            !liveText && phase === "recording" && "gpt-chat-voice-transcript--empty"
+          )}
+        >
           {phase === "processing"
-            ? "Schreibe um …"
-            : `0:${String(Math.min(seconds, MAX_SECONDS)).padStart(2, "0")} / 0:${String(MAX_SECONDS).padStart(2, "0")}`}
-        </span>
+            ? liveText || "Wird umgeschrieben …"
+            : liveText || "Sprechen Sie — der Text erscheint hier …"}
+        </p>
         {phase === "recording" ? (
           <span className="sr-only">Noch {remaining} Sekunden</span>
         ) : null}

@@ -8,7 +8,6 @@ import dynamic from "next/dynamic";
 import { PortalKundePrivatDashboard } from "@/components/portal/PortalKundePrivatDashboard";
 import { PORTAL_HEADER_HERO_SRC } from "@/lib/portal2/portal-media";
 import { PortalUserNotificationBell } from "@/components/portal/PortalUserNotificationBell";
-import { PortalPushOptInBanner } from "@/components/shared/PortalPushOptInBanner";
 import type { KundePortalDetailItem } from "@/lib/portal/portal-detail-item";
 import type { PortalBautagebuchEntry } from "@/lib/portal/portal-detail-item";
 import { emitPortalNotificationsChanged } from "@/lib/portal2/notif-refresh";
@@ -75,7 +74,6 @@ import { portalListStackClass } from "@/lib/portal2/layout-chrome";
 import { buildKundeVorgaenge } from "@/lib/portal/build-kunde-vorgaenge";
 import { findKundeVorgangByQueryId } from "@/lib/portal/portal-detail-item";
 import {
-  countKundeVorgaengeFilter,
   countKundeVorgaengeNeedsAction,
   filterKundeVorgaenge,
   type KundeVorgangFilter,
@@ -209,11 +207,9 @@ function normalizeSectionFromUrl(raw: string | undefined): SectionId | null {
 function VorgangListFilterBar({
   filter,
   onFilterChange,
-  counts,
 }: {
   filter: KundeVorgangFilter;
   onFilterChange: (filter: KundeVorgangFilter) => void;
-  counts: Record<KundeVorgangFilter, number>;
 }) {
   return (
     <PortalListeFilterBar
@@ -224,7 +220,6 @@ function VorgangListFilterBar({
       options={(["aktiv", "erledigt"] as const).map((id) => ({
         id,
         label: VORGANG_FILTER_LABELS[id],
-        count: counts[id],
       }))}
     />
   );
@@ -460,11 +455,6 @@ export function PortalClient({
     mieterFeedbackByLeadId,
     listTitleByKey,
   ]);
-
-  const filterCounts = useMemo(
-    () => countKundeVorgaengeFilter(vorgaengeItems),
-    [vorgaengeItems]
-  );
 
   const needsActionCount = useMemo(
     () => countKundeVorgaengeNeedsAction(vorgaengeItems),
@@ -1035,7 +1025,6 @@ export function PortalClient({
         <VorgangListFilterBar
           filter={vorgangFilter}
           onFilterChange={setVorgangFilter}
-          counts={filterCounts}
         />
       ) : null}
       <div className={portalListStackClass("responsive")}>
@@ -1335,7 +1324,6 @@ export function PortalClient({
         }}
       />
 
-      <PortalPushOptInBanner portal="portal" />
     </>
   );
 }

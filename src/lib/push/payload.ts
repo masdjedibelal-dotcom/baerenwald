@@ -1,4 +1,4 @@
-import { PUSH_COPY, type PushPayload } from "@/lib/push/types";
+import { PUSH_APP_TITLE, PUSH_COPY, type PushPayload } from "@/lib/push/types";
 
 /** Entfernt Preishinweise aus Push-Bodies (Fallback). */
 export function stripPricesFromPushText(text: string): string {
@@ -13,9 +13,23 @@ export function stripPricesFromPushText(text: string): string {
     .trim();
 }
 
+function composePushBody(
+  titel: string | null | undefined,
+  body: string | null | undefined,
+  fallback: string
+): string {
+  const t = stripPricesFromPushText(String(titel ?? "").trim());
+  const b = stripPricesFromPushText(String(body ?? "").trim());
+  if (t && b) {
+    if (b.toLowerCase().startsWith(t.toLowerCase())) return b;
+    return `${t} — ${b}`;
+  }
+  return t || b || fallback;
+}
+
 /**
- * OS-Push-Payload aus In-App-Notification.
- * Angebot: feste Copy ohne Preise.
+ * OS-Push: Titel immer „Bärenwald“ (PWA short_name / Absender).
+ * Inhalt nur im Body — nie Preise bei Angeboten.
  */
 export function buildPushPayloadFromNotif(input: {
   typ?: string | null;
@@ -33,7 +47,7 @@ export function buildPushPayloadFromNotif(input: {
     /angebot/i.test(String(input.titel ?? ""))
   ) {
     return {
-      title: PUSH_COPY.angebotLiegtVor.title,
+      title: PUSH_APP_TITLE,
       body: PUSH_COPY.angebotLiegtVor.body,
       url,
       tag: "angebot",
@@ -42,40 +56,43 @@ export function buildPushPayloadFromNotif(input: {
 
   if (typ === "freigabe" || typ.includes("freigabe")) {
     return {
-      title: PUSH_COPY.freigabeNoetig.title,
-      body: PUSH_COPY.freigabeNoetig.body,
+      title: PUSH_APP_TITLE,
+      body: composePushBody(
+        input.titel,
+        input.body,
+        PUSH_COPY.freigabeNoetig.body
+      ),
       url,
       tag: "freigabe",
     };
   }
 
   if (
-    typ === "neue_meldung" ||
-    typ === "auftrag" ||
-    typ.includes("meldung") ||
-    typ.includes("zuweisung")
+    typ === "neu" ||
+    typ === "geaendert" ||
+    typ === "zuweisung" ||
+    typ === "bautagebuch" ||
+    typ === "erinnerung"
   ) {
-    const title = stripPricesFromPushText(
-      input.titel?.trim() || PUSH_COPY.neuerVorgang.title
-    );
-    const body = stripPricesFromPushText(
-      input.body?.trim() || PUSH_COPY.neuerVorgang.body
-    );
     return {
-      title: title || PUSH_COPY.neuerVorgang.title,
-      body: body || PUSH_COPY.neuerVorgang.body,
+      title: PUSH_APP_TITLE,
+      body: composePushBody(
+        input.titel,
+        input.body,
+        PUSH_COPY.neuerAuftrag.body
+      ),
       url,
-      tag: typ || "vorgang",
+      tag: typ || "partner",
     };
   }
 
   return {
-    title: stripPricesFromPushText(
-      input.titel?.trim() || PUSH_COPY.neuerVorgang.title
-    ) || PUSH_COPY.neuerVorgang.title,
-    body: stripPricesFromPushText(
-      input.body?.trim() || PUSH_COPY.neuerVorgang.body
-    ) || PUSH_COPY.neuerVorgang.body,
+    title: PUSH_APP_TITLE,
+    body: composePushBody(
+      input.titel,
+      input.body,
+      PUSH_COPY.neuerVorgang.body
+    ),
     url,
     tag: typ || "info",
   };

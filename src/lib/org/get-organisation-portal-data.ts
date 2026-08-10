@@ -93,6 +93,7 @@ async function loadEingangLeads(
     .select(EINGANG_SELECT_FULL)
     .eq("auftraggeber_kunde_id", kundeId)
     .eq("anlass", "meldung")
+    .is("geloescht_am", null)
     .order("created_at", { ascending: false });
   if (listMode) q = q.limit(PORTAL_LIST_LEAD_LIMIT);
 
@@ -102,6 +103,7 @@ async function loadEingangLeads(
     return (eingangRows ?? []) as Record<string, unknown>[];
   }
 
+  const geloeschtMissing = /geloescht_am/i.test(eingangErr.message);
   console.warn("[org-portal] eingang (voll):", eingangErr.message);
   let fb = supabaseAdmin
     .from("leads")
@@ -109,6 +111,7 @@ async function loadEingangLeads(
     .eq("auftraggeber_kunde_id", kundeId)
     .eq("anlass", "meldung")
     .order("created_at", { ascending: false });
+  if (!geloeschtMissing) fb = fb.is("geloescht_am", null);
   if (listMode) fb = fb.limit(PORTAL_LIST_LEAD_LIMIT);
   const fallback = await fb;
   if (fallback.error) {

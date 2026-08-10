@@ -15,7 +15,9 @@ function crmDashboardBase(): string | null {
 export type PartnerDokumentUploadTyp =
   | "compliance"
   | "unterlage"
-  | "fachdoku";
+  | "fachdoku"
+  | "angebot"
+  | "rechnung";
 
 export async function notifyCrmPartnerDokumentUpload(input: {
   typ: PartnerDokumentUploadTyp;

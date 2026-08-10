@@ -5,7 +5,6 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { flushSync } from "react-dom";
 
 import { PortalUserNotificationBell } from "@/components/portal/PortalUserNotificationBell";
-import { PortalPushOptInBanner } from "@/components/shared/PortalPushOptInBanner";
 import { PortalVorgangDetail } from "@/components/portal/PortalVorgangDetail";
 import { PortalKundePrivatDashboard } from "@/components/portal/PortalKundePrivatDashboard";
 import { PORTAL_HEADER_HERO_SRC } from "@/lib/portal2/portal-media";
@@ -637,7 +636,6 @@ export function EigentuemerPortalClient({
 
       <PortalLegalFooter variant="kunde" className="mt-8" />
     </PortalShell>
-    <PortalPushOptInBanner portal="portal" />
     </>
   );
 }

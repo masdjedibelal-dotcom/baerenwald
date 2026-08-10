@@ -12,8 +12,6 @@ import {
 } from "@/components/shared/PortalListeChrome";
 import { filterOrgLeadsByObjektIds } from "@/lib/org/filter-leads-by-objekt";
 import {
-  buildOrgVorgangFilterCounts,
-  buildAuftragByLeadId,
   type OrgVorgangFilter,
 } from "@/lib/org/org-vorgang-filter";
 import type {
@@ -27,10 +25,6 @@ import {
   HV_LISTE_PAGE_EYEBROW,
   HV_LISTE_PAGE_TITLE,
 } from "@/lib/portal2/hv-liste";
-import type {
-  HvDashboardAngebotSlice,
-  HvDashboardAuftragSlice,
-} from "@/lib/portal2/hv-dashboard";
 
 type Props = {
   kunde: OrganisationKunde;
@@ -115,14 +109,12 @@ function parseObjektIdsParam(raw: string | null): string[] {
 function HvListeChrome({
   filter,
   onFilterChange,
-  offenCount,
   objekte,
   selectedObjektIds,
   onObjektIdsChange,
 }: {
   filter: OrgVorgangFilter;
   onFilterChange: (filter: OrgVorgangFilter) => void;
-  offenCount: number;
   objekte: OrganisationObjekt[];
   selectedObjektIds: string[];
   onObjektIdsChange: (ids: string[]) => void;
@@ -139,7 +131,7 @@ function HvListeChrome({
             key={chip.id}
             active={chip.id === filter}
             onClick={() => onFilterChange(chip.id)}
-            countBadge={chip.showCount ? offenCount : null}
+            tone={chip.id === "offen" ? "offen" : "default"}
           >
             {chip.label}
           </PortalListeFilterChip>
@@ -243,43 +235,12 @@ export function OrganisationVorgaengeSection({
     [filteredLeads, angebote, auftraege]
   );
 
-  const auftragByLeadId = useMemo(
-    () =>
-      buildAuftragByLeadId(
-        auftraege as Array<{ id: string; lead_id?: string | null }>
-      ),
-    [auftraege]
-  );
-
-  const counts = useMemo(
-    () =>
-      buildOrgVorgangFilterCounts(
-        filteredEingang,
-        filteredLeads,
-        vorgaengeItems,
-        auftragByLeadId,
-        {
-          angebote: angebote as HvDashboardAngebotSlice[],
-          auftraege: auftraege as HvDashboardAuftragSlice[],
-        }
-      ),
-    [
-      filteredEingang,
-      filteredLeads,
-      vorgaengeItems,
-      auftragByLeadId,
-      angebote,
-      auftraege,
-    ]
-  );
-
   return (
     <div className="space-y-3">
       {!detailOpen ? (
         <HvListeChrome
           filter={filter}
           onFilterChange={changeFilter}
-          offenCount={counts.offen}
           objekte={objekte}
           selectedObjektIds={selectedObjektIds}
           onObjektIdsChange={changeObjektIds}

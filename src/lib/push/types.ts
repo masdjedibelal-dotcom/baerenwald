@@ -17,26 +17,29 @@ export type PushSubscriptionJSON = {
   };
 };
 
-/** Feste Copy — nie Preise im OS-Banner. */
+/** OS-Notification-Titel — immer Marke (iOS/Android PWA). */
+export const PUSH_APP_TITLE = "Bärenwald" as const;
+
+/** Feste Copy — nie Preise im OS-Banner. Titel immer PUSH_APP_TITLE. */
 export const PUSH_COPY = {
   angebotLiegtVor: {
-    title: "Angebot liegt vor",
-    body: "Bitte im Portal ansehen und entscheiden.",
+    title: PUSH_APP_TITLE,
+    body: "Angebot liegt vor — bitte im Portal ansehen und entscheiden.",
   },
   neuerVorgang: {
-    title: "Neuer Vorgang",
+    title: PUSH_APP_TITLE,
     body: "Es gibt eine neue Meldung in Ihrem Portal.",
   },
   freigabeNoetig: {
-    title: "Freigabe nötig",
-    body: "Bitte im Portal prüfen und freigeben.",
+    title: PUSH_APP_TITLE,
+    body: "Freigabe nötig — bitte im Portal prüfen und freigeben.",
   },
   neuerAuftrag: {
-    title: "Neuer Auftrag",
-    body: "Bitte im Partner-Portal prüfen.",
+    title: PUSH_APP_TITLE,
+    body: "Neuer Auftrag — bitte im Partner-Portal prüfen.",
   },
   test: {
-    title: "Bärenwald Push",
+    title: PUSH_APP_TITLE,
     body: "Test erfolgreich — Benachrichtigungen sind aktiv.",
   },
 } as const;

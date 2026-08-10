@@ -77,11 +77,7 @@ export function PortalDetailTabs({
                 {t.label}
                 {t.badge && t.badge > 0 ? (
                   <span
-                    className="inline-flex h-4 min-w-[1rem] items-center justify-center rounded-full px-1 text-[10px] font-bold"
-                    style={{
-                      background: PORTAL_VAR.dangerSoft,
-                      color: PORTAL_VAR.danger,
-                    }}
+                    className="inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold leading-none text-white"
                   >
                     {t.badge > 9 ? "9+" : t.badge}
                   </span>
@@ -115,11 +111,7 @@ export function PortalDetailTabs({
                   <span>{t.label}</span>
                   {t.badge && t.badge > 0 ? (
                     <span
-                      className="inline-flex h-4 min-w-[1rem] items-center justify-center rounded-full px-1 text-[10px] font-bold"
-                      style={{
-                        background: PORTAL_VAR.dangerSoft,
-                        color: PORTAL_VAR.danger,
-                      }}
+                      className="inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold leading-none text-white"
                     >
                       {t.badge > 9 ? "9+" : t.badge}
                     </span>

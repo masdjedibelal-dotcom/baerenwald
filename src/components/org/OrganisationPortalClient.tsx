@@ -12,7 +12,6 @@ import {
 import { usePortalRefresh } from "@/components/shared/usePortalRefresh";
 import { ensurePortalVorgangNotificationHref } from "@/lib/portal2/portal-detail-deep-link";
 import { HvNotificationBell } from "@/components/org/HvNotificationBell";
-import { PortalPushOptInBanner } from "@/components/shared/PortalPushOptInBanner";
 import { OrganisationSuche } from "@/components/org/OrganisationSuche";
 import { OrganisationMehrScreen } from "@/components/org/OrganisationMehrScreen";
 import { OrganisationWhitelabelGate } from "@/components/org/OrganisationWhitelabelGate";
@@ -642,7 +641,6 @@ export function OrganisationPortalClient({
           }}
         />
       ) : null}
-      <PortalPushOptInBanner portal="portal" />
     </>
   );
 }

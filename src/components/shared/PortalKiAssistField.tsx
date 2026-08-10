@@ -11,6 +11,7 @@ import {
 import { Loader2, Sparkles } from "lucide-react";
 
 import { GptChatVoiceRecorder } from "@/components/gpt/GptChatVoiceRecorder";
+import { renderChatMarkdown } from "@/components/gpt/gpt-chat-markdown";
 import "@/components/gpt/gpt-viz.css";
 import "@/components/shared/portal-ki-gpt-chat.css";
 import { PortalModalShell } from "@/components/shared/PortalModalShell";
@@ -270,7 +271,7 @@ export function PortalKiAssistField({
                       : "portal-ki-gpt-bubble--assistant"
                   )}
                 >
-                  <p className="whitespace-pre-wrap">{display}</p>
+                  {renderChatMarkdown(display)}
                 </div>
               );
             })}
@@ -290,7 +291,7 @@ export function PortalKiAssistField({
           {draftText ? (
             <div className="portal-ki-gpt-draft">
               <p className="portal-ki-gpt-draft-label">Vorschlag zum Übernehmen</p>
-              <p className="portal-ki-gpt-draft-text">{draftText}</p>
+              <div className="portal-ki-gpt-draft-text">{renderChatMarkdown(draftText)}</div>
               <button
                 type="button"
                 disabled={pending}

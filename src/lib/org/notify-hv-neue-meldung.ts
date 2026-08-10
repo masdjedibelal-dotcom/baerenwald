@@ -1,4 +1,5 @@
 import { buildOrgHvMieterEventHtml } from "@/lib/email/meldung-mail-templates";
+import { createHvNotification } from "@/lib/org/create-hv-notification";
 import {
   buildMeldeVorgangTitel,
   formatMeldeNotifTitel,
@@ -92,33 +93,13 @@ export async function notifyHvNeueMeldung(input: {
     .maybeSingle();
   if (existing?.id) return;
 
-  await supabaseAdmin.from("hv_notifications").insert({
-    kunde_id: kundeId,
+  await createHvNotification({
+    kundeId,
     typ: "neue_meldung",
     titel,
     body,
     link,
   });
-
-  void import("@/lib/push/resolve-recipients")
-    .then(async ({ resolveOrgAuthUserIds }) => {
-      const { buildPushPayloadFromNotif } = await import("@/lib/push/payload");
-      const { scheduleWebPushToUsers } = await import(
-        "@/lib/push/send-web-push"
-      );
-      const userIds = await resolveOrgAuthUserIds(kundeId);
-      scheduleWebPushToUsers(
-        userIds,
-        buildPushPayloadFromNotif({
-          typ: "neue_meldung",
-          titel,
-          body,
-          link,
-          defaultUrl: "/portal",
-        })
-      );
-    })
-    .catch((e) => console.error("[notifyHvNeueMeldung] push:", e));
 
   const resendKey = process.env.RESEND_API_KEY;
   if (!resendKey) return;

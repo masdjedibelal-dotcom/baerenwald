@@ -3,6 +3,7 @@ import {
   formatMeldeNotifTitel,
   MELDE_NOTIF_COPY,
 } from "@/lib/org/melde-vorgang-titel";
+import { createHvNotification } from "@/lib/org/create-hv-notification";
 import { createPortalNotification } from "@/lib/portal2/create-portal-notification";
 import { withPortalDetailDeepLink } from "@/lib/portal2/portal-detail-deep-link";
 import { notifyPortalEigentuemer } from "@/lib/portal/notify-portal-eigentuemer";
@@ -130,35 +131,13 @@ export async function notifyPortalAngebotGesendet(
 
   const insertHv = async (kundeId: string) => {
     if (await hasRecentHvAngebotNotif({ kundeId, leadId: trimmed })) return;
-    await supabaseAdmin.from("hv_notifications").insert({
-      kunde_id: kundeId,
+    await createHvNotification({
+      kundeId,
       typ: "angebot",
       titel: notifTitel,
       body,
       link: portalPath,
     });
-
-    void import("@/lib/push/resolve-recipients")
-      .then(async ({ resolveOrgAuthUserIds }) => {
-        const { buildPushPayloadFromNotif } = await import("@/lib/push/payload");
-        const { scheduleWebPushToUsers } = await import(
-          "@/lib/push/send-web-push"
-        );
-        const userIds = await resolveOrgAuthUserIds(kundeId);
-        scheduleWebPushToUsers(
-          userIds,
-          buildPushPayloadFromNotif({
-            typ: "angebot",
-            titel: notifTitel,
-            body,
-            link: portalPath,
-            defaultUrl: "/portal",
-          })
-        );
-      })
-      .catch((e) =>
-        console.error("[notifyPortalAngebotGesendet] hv push:", e)
-      );
   };
 
   const insertPortalUser = async (authUserId: string) => {

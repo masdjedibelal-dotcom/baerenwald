@@ -9,7 +9,6 @@ import { PartnerHwDashboard, partnerDashboardStatusColors } from "@/components/p
 import { PORTAL_HEADER_HERO_SRC } from "@/lib/portal2/portal-media";
 import { emitPortalNotificationsChanged } from "@/lib/portal2/notif-refresh";
 import { PartnerNotificationBell } from "@/components/partner/PartnerNotificationBell";
-import { PortalPushOptInBanner } from "@/components/shared/PortalPushOptInBanner";
 import { PartnerOnboardingReminderBanner } from "@/components/partner/PartnerOnboardingReminderBanner";
 import { PartnerPlanerPanel } from "@/components/partner/PartnerPlanerPanel";
 import { PartnerProfilPanel } from "@/components/partner/PartnerProfilPanel";
@@ -117,11 +116,9 @@ function isPartnerListSection(section: PartnerSection): boolean {
 function PartnerVorgangListFilterBar({
   filter,
   onFilterChange,
-  counts,
 }: {
   filter: VorgangFilter;
   onFilterChange: (filter: VorgangFilter) => void;
-  counts: Record<VorgangFilter, number>;
 }) {
   return (
     <PortalListeFilterBar
@@ -131,7 +128,6 @@ function PartnerVorgangListFilterBar({
       options={VORGANG_FILTER_ORDER.map((id) => ({
         id,
         label: VORGANG_FILTER_LABELS[id],
-        count: counts[id],
       }))}
     />
   );
@@ -777,7 +773,6 @@ export function PartnerClient({
       <PartnerVorgangListFilterBar
         filter={vorgangListFilter}
         onFilterChange={changeVorgangFilter}
-        counts={vorgangListFilterCounts}
       />
       <div className={portalListStackClass("responsive")}>
         {sectionListEmpty ? (
@@ -957,7 +952,6 @@ export function PartnerClient({
           setGptOpen(false);
         }}
       />
-      <PortalPushOptInBanner portal="partner" />
     </>
   );
 }

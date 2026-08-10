@@ -561,6 +561,20 @@ export async function getPartnerDataForHandwerker(
     await mapAngebotHandwerkerRows(rawRows, objektById, signedCache.resolve)
   ).filter((_, i) => {
     const row = rawRows[i]!;
+    const ang = Array.isArray(row.angebote) ? row.angebote[0] : row.angebote;
+    const leadRaw =
+      ang && typeof ang === "object"
+        ? Array.isArray((ang as { leads?: unknown }).leads)
+          ? (ang as { leads: unknown[] }).leads[0]
+          : (ang as { leads?: unknown }).leads
+        : null;
+    if (
+      leadRaw &&
+      typeof leadRaw === "object" &&
+      (leadRaw as { geloescht_am?: string | null }).geloescht_am
+    ) {
+      return false;
+    }
     const gate = extractPartnerLeadGateFromAngebotHandwerkerRow(row);
     if (!isPartnerBlockedByOrgFreigabe(gate)) return true;
     return Boolean((row.gesendet_at as string | null | undefined)?.trim());
@@ -775,6 +789,10 @@ export async function getPartnerDataForHandwerker(
     alleAuftraege = (aufRows ?? [])
       .filter((row) => {
         const raw = row as Record<string, unknown>;
+        const leadRow = one(raw.leads) as
+          | (PartnerLeadDbRow & { geloescht_am?: string | null })
+          | null;
+        if (leadRow?.geloescht_am) return false;
         const gate = extractPartnerLeadGateFromAuftragRow(raw);
         if (!isPartnerBlockedByOrgFreigabe(gate)) return true;
         const aid = String(raw.id);

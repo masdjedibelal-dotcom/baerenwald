@@ -1,3 +1,4 @@
+import { createHvNotification } from "@/lib/org/create-hv-notification";
 import {
   buildMeldeVorgangTitel,
   formatMeldeNotifTitel,
@@ -56,8 +57,8 @@ export async function notifyHvPartnerErledigt(input: {
     : `${input.handwerkerName} meldet Leistungen als erledigt. Weitere Positionen am Auftrag sind noch offen.`;
   const link = `/portal?section=vorgaenge&id=${encodeURIComponent(input.leadId)}&tab=uebersicht`;
 
-  await supabaseAdmin.from("hv_notifications").insert({
-    kunde_id: kundeId,
+  await createHvNotification({
+    kundeId,
     typ: "handwerker_erledigt",
     titel,
     body,

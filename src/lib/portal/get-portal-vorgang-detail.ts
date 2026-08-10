@@ -10,11 +10,12 @@ async function resolveLeadIdForVorgang(
 ): Promise<string | null> {
   const { data: leadDirect } = await supabaseAdmin
     .from("leads")
-    .select("id, kunde_id, auftraggeber_kunde_id")
+    .select("id, kunde_id, auftraggeber_kunde_id, geloescht_am")
     .eq("id", vorgangId)
     .maybeSingle();
 
   if (leadDirect?.id) {
+    if ((leadDirect as { geloescht_am?: string | null }).geloescht_am) return null;
     const allowed =
       String(leadDirect.kunde_id ?? "") === kundeId ||
       String(leadDirect.auftraggeber_kunde_id ?? "") === kundeId;
@@ -41,10 +42,11 @@ async function resolveLeadIdForVorgang(
 
   const { data: lead } = await supabaseAdmin
     .from("leads")
-    .select("id, kunde_id, auftraggeber_kunde_id")
+    .select("id, kunde_id, auftraggeber_kunde_id, geloescht_am")
     .eq("id", leadId)
     .maybeSingle();
   if (!lead) return null;
+  if ((lead as { geloescht_am?: string | null }).geloescht_am) return null;
   const allowed =
     String(lead.kunde_id ?? "") === kundeId ||
     String(lead.auftraggeber_kunde_id ?? "") === kundeId;

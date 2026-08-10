@@ -28,14 +28,18 @@ self.addEventListener("push", (event) => {
     }
   }
 
+  const title = String(data.title || "Bärenwald").trim() || "Bärenwald";
+  const body = String(data.body || "").trim() || "Neue Benachrichtigung";
+
   event.waitUntil(
-    self.registration.showNotification(data.title || "Bärenwald", {
-      body: data.body || "",
+    self.registration.showNotification(title, {
+      body,
       icon: "/logo-mark-green.png",
       badge: "/logo-mark-green.png",
       tag: data.tag || "baerenwald",
       data: { url: data.url || "/portal" },
       renotify: true,
+      lang: "de",
     })
   );
 });

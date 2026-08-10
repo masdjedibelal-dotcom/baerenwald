@@ -1,4 +1,5 @@
 import { buildOrgHvMieterEventHtml } from "@/lib/email/meldung-mail-templates";
+import { createHvNotification } from "@/lib/org/create-hv-notification";
 import {
   portalDeepLinkTabFromNotifTyp,
   withPortalDetailDeepLink,
@@ -35,8 +36,8 @@ export async function notifyHvMieterEvent(input: {
     portalDeepLinkTabFromNotifTyp(input.typ)
   );
 
-  await supabaseAdmin.from("hv_notifications").insert({
-    kunde_id: kundeId,
+  await createHvNotification({
+    kundeId,
     typ: input.typ,
     titel: input.titel,
     body: input.body,

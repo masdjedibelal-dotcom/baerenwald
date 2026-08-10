@@ -10,6 +10,7 @@ export type PortalListeFilterOption<T extends string> = {
   label: string;
   count?: number;
   countBadge?: number | null;
+  tone?: "default" | "offen";
 };
 
 type Props<T extends string> = {
@@ -44,6 +45,7 @@ export function PortalListeFilterBar<T extends string>({
           onClick={() => onChange(opt.id)}
           count={opt.count}
           countBadge={opt.countBadge}
+          tone={opt.tone ?? (opt.id === "offen" ? "offen" : "default")}
         >
           {opt.label}
         </PortalListeFilterChip>

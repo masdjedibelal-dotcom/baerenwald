@@ -11,13 +11,11 @@ export const HV_LISTE_PAGE_TITLE = "Vorgänge" as const;
 export const HV_CHIPS: Array<{
   id: OrgVorgangFilter;
   label: string;
-  /** Badge bei „Offen“. */
-  showCount: boolean;
 }> = [
-  { id: "alle", label: "Alle", showCount: false },
-  { id: "offen", label: "Offen", showCount: true },
-  { id: "in_arbeit", label: "In Arbeit", showCount: false },
-  { id: "erledigt", label: "Erledigt", showCount: false },
+  { id: "alle", label: "Alle" },
+  { id: "offen", label: "Offen" },
+  { id: "in_arbeit", label: "In Arbeit" },
+  { id: "erledigt", label: "Erledigt" },
 ];
 
 /** Listen-Chip ↔ Portal-Flow (HV).

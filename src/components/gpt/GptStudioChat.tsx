@@ -1320,7 +1320,7 @@ export function GptStudioChat({
                     ? "Registrierung erforderlich"
                     : limitReached
                       ? "Nachrichtenlimit erreicht"
-                      : "Nachricht oder Sprachnotiz …"
+                      : "Nachricht schreiben…"
                 }
                 className="ki-rechner-chat-input ki-rechner-chat-textarea"
                 disabled={inputDisabled}

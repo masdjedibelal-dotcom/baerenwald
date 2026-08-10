@@ -1,3 +1,4 @@
+import { createHvNotification } from "@/lib/org/create-hv-notification";
 import {
   buildMeldeVorgangTitel,
   formatMeldeNotifTitel,
@@ -56,8 +57,8 @@ export async function notifyHvPartnerBautagebuch(input: {
     "bautagebuch"
   );
 
-  await supabaseAdmin.from("hv_notifications").insert({
-    kunde_id: kundeId,
+  await createHvNotification({
+    kundeId,
     typ: "bautagebuch",
     titel,
     body,

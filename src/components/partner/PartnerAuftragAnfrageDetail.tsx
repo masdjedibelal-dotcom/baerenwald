@@ -24,7 +24,7 @@ import {
   HANDWERKER_ABLEHNUNG_GRUND_LABELS,
   HANDWERKER_ABLEHNUNG_GRUND_VALUES,
 } from "@/lib/partner/handwerker-ablehnung";
-import { partnerPortalToast } from "@/lib/shared/portal-toast";
+import { partnerPortalToast, portalToastError } from "@/lib/shared/portal-toast";
 import type { PartnerAuftragItem } from "@/lib/partner/get-partner-data";
 import { resolvePartnerDetailTitelFromAuftrag } from "@/lib/partner/partner-listen-titel";
 import {
@@ -114,12 +114,14 @@ export function PartnerAuftragAnfrageDetail({
         const anfrageId = item.angebotHandwerkerId?.trim();
         if (anfrageId) {
           const auto = await tryCreatePartnerAutoAngebot(anfrageId);
-          if (auto.status === "created") {
+          if (auto.status === "created" || auto.status === "already") {
             partnerPortalToast.unterlagenHochgeladen();
           } else if (auto.status === "firmendaten_missing") {
             setFirmendatenMissing(auto.missing);
             setFirmendatenFehlenOpen(true);
             return;
+          } else if (auto.status === "skipped" && auto.error) {
+            portalToastError("Angebot nicht automatisch erstellt", auto.error);
           }
         }
 
