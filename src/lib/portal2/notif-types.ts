@@ -34,7 +34,7 @@ export type PortalNotifVisual = {
 export const PORTAL_NOTIF_VISUAL: Record<PortalNotifTyp, PortalNotifVisual> = {
   angebot: {
     typ: "angebot",
-    title: "Angebot freigabebereit",
+    title: "Angebot zur Entscheidung",
     iconBg: "#E4ECF7",
     iconFg: "#1F4FA8",
     glyph: "📄",
@@ -81,11 +81,15 @@ export const PORTAL_NOTIF_ROLE_TITLES: Partial<
   Record<PortalNotifRole, Partial<Record<PortalNotifTyp, string>>>
 > = {
   eigentuemer: {
-    status: "Angebot angenommen",
+    auftrag: "Neuer Vorgang",
+    info: "Update zu Ihrem Objekt",
+    status: "Vorgang abgeschlossen",
   },
   mieter: {
     termin: "Termin steht fest",
     status: "Meldung in Bearbeitung",
+    info: "Neues Update zu Ihrer Meldung",
+    auftrag: "Ihre Meldung ist eingegangen",
   },
   handwerker: {
     termin: "Termin morgen",
@@ -108,13 +112,14 @@ export const PORTAL_NOTIF_ROLE_GLYPHS: Partial<
  */
 export const PORTAL_NOTIF_TEMPLATES = {
   kunde: {
-    angebot: 'Angebot {nr} „{titel}" wartet auf Ihre Freigabe.',
+    angebot: 'Angebot {nr} „{titel}" — bitte annehmen oder ablehnen.',
     termin: "{Betrieb} kommt am {Datum} zwischen {Zeitfenster}.",
     status: '{vg} „{titel}" wurde als erledigt markiert.',
   },
   eigentuemer: {
-    freigabe: "{vg} überschreitet Ihren Schwellenwert ({betrag}).",
-    status: "Ihre Verwaltung hat {nr} freigegeben.",
+    auftrag: "Neuer Vorgang „{titel}\" an Ihrem Objekt.",
+    info: "Update zu „{titel}\".",
+    status: "„{titel}\" wurde abgeschlossen.",
   },
   mieter: {
     termin:
@@ -172,8 +177,24 @@ export function mapHvTypToPortalNotifTyp(typ: string): PortalNotifTyp {
   }
   if (t.includes("freigabe") || t.includes("schwellen")) return "freigabe";
   if (t.includes("termin")) return "termin";
-  if (t.includes("auftrag") || t.includes("zuweis")) return "auftrag";
-  if (t.includes("feedback") || t.includes("info") || t.includes("tagebuch")) return "info";
+  // Neue Melder-Meldung / Zuweisung — blaue „Neu“-Visualität
+  if (
+    t === "neue_meldung" ||
+    t === "meldung_neu" ||
+    t.includes("neue_meldung") ||
+    t.includes("auftrag") ||
+    t.includes("zuweis")
+  ) {
+    return "auftrag";
+  }
+  if (
+    t.includes("feedback") ||
+    t.includes("info") ||
+    t.includes("tagebuch") ||
+    t.includes("bautagebuch")
+  ) {
+    return "info";
+  }
   return "status";
 }
 

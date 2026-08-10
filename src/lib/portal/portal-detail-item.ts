@@ -118,6 +118,8 @@ export type KundePortalDetailItem = {
   orgFreigabeStatus?: string | null;
   /** CRM: schwelle | akut — Auto-Auftrag ohne HV-Annahme */
   freigabeBypassGrund?: string | null;
+  /** Funnel Sofortmaßnahme (direktauftrag) */
+  funnelDirektauftrag?: boolean | null;
   hvMeldungStatus?: string | null;
   /** Melde-Adresse (Lead / Objekt) */
   meldeStrasse?: string | null;

@@ -1,7 +1,9 @@
 "use client";
 
 import {
+  createContext,
   useCallback,
+  useContext,
   useEffect,
   useId,
   useRef,
@@ -9,7 +11,15 @@ import {
   type CSSProperties,
   type ReactNode,
 } from "react";
+import { createPortal } from "react-dom";
+import { Check } from "lucide-react";
 
+import {
+  lockPortalBodyScroll,
+  unlockPortalBodyScroll,
+} from "@/lib/portal2/lock-portal-body-scroll";
+import { PortalContentBusy } from "@/components/shared/PortalContentBusy";
+import { PortalSheetConfirm } from "@/components/shared/PortalSheetConfirm";
 import {
   PORTAL_MODAL_SCRIM,
   PORTAL_MODAL_Z_INDEX,
@@ -19,6 +29,9 @@ import {
   type PortalModalVariant,
 } from "@/lib/portal2/modal-shell";
 import { cn } from "@/lib/utils";
+
+/** Verschachtelte Modals (z. B. KI im Sheet) jeweils eine Schicht höher. */
+const PortalModalDepthContext = createContext(0);
 
 export type { PortalModalVariant };
 
@@ -56,8 +69,21 @@ export type PortalModalShellProps = {
    */
   dirty?: boolean;
   className?: string;
-  /** Zusätzlicher Inhalt im Header rechts neben × (selten). */
+  /** Zusätzlicher Inhalt im Header rechts (Titel links neben ×). */
   headerExtra?: ReactNode;
+  /**
+   * Check rechts oben — Speichern/Bestätigen und schließen.
+   * × links = nur schließen (ohne Speichern).
+   */
+  onConfirm?: () => void;
+  /** Check deaktivieren (Validierung / Busy). */
+  confirmDisabled?: boolean;
+  /** aria-label für den Check. Default „Bestätigen“. */
+  confirmLabel?: string;
+  /** Speichern / Upload — Overlay im Sheet (über dem Inhalt). */
+  busy?: boolean;
+  busyTitle?: string;
+  busyBody?: string;
 };
 
 /**
@@ -79,10 +105,15 @@ export function PortalModalShell({
   dirty = false,
   className,
   headerExtra,
+  onConfirm,
+  confirmDisabled = false,
+  confirmLabel = "Bestätigen",
+  busy = false,
+  busyTitle = "Wird gespeichert…",
+  busyBody = "Einen Moment bitte.",
 }: PortalModalShellProps) {
   const titleId = useId();
   const subId = useId();
-  const discardTitleId = useId();
   const variant = resolvePortalModalVariant(variantProp, size);
   const resolvedMax = resolvePortalModalMaxWidth(variant, maxWidthProp);
   const maxW =
@@ -112,6 +143,7 @@ export function PortalModalShell({
 
   const attemptDismiss = useCallback(
     (fromPop = false) => {
+      if (busy) return;
       if (dirtyRef.current) {
         setDiscardOpen(true);
         // Back hat History schon verlassen — Overlay-Eintrag wiederherstellen
@@ -123,10 +155,31 @@ export function PortalModalShell({
       }
       closeNow(fromPop);
     },
-    [closeNow]
+    [busy, closeNow]
   );
 
-  // Body-Scroll + Escape
+  // Body-Scroll-Lock (mobil): Hintergrund fixieren, Sheet darf scrollen
+  useEffect(() => {
+    if (!open) return;
+    function onTouchMove(e: TouchEvent) {
+      const t = e.target;
+      if (!(t instanceof Element)) {
+        e.preventDefault();
+        return;
+      }
+      if (t.closest(".portal-modal-shell-body, .portal-modal-discard-panel")) {
+        return;
+      }
+      e.preventDefault();
+    }
+    lockPortalBodyScroll();
+    document.addEventListener("touchmove", onTouchMove, { passive: false });
+    return () => {
+      document.removeEventListener("touchmove", onTouchMove);
+      unlockPortalBodyScroll();
+    };
+  }, [open]);
+
   useEffect(() => {
     if (!open) return;
     function onKey(e: KeyboardEvent) {
@@ -138,12 +191,7 @@ export function PortalModalShell({
       attemptDismiss(false);
     }
     document.addEventListener("keydown", onKey);
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    return () => {
-      document.removeEventListener("keydown", onKey);
-      document.body.style.overflow = prev;
-    };
+    return () => document.removeEventListener("keydown", onKey);
   }, [open, discardOpen, attemptDismiss]);
 
   // History-Entry: Browser-/Android-Back schließt Overlay zuerst
@@ -176,95 +224,120 @@ export function PortalModalShell({
     };
   }, [open, attemptDismiss]);
 
-  if (!open) return null;
+  const depth = useContext(PortalModalDepthContext);
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
-  return (
-    <div
-      className={cn(
-        "portal-ui portal-modal-shell",
-        `portal-modal-shell--${variant}`,
-        className
-      )}
-      style={{
-        zIndex: PORTAL_MODAL_Z_INDEX,
-        background: PORTAL_MODAL_SCRIM,
-      }}
-      role="presentation"
-      onClick={closeOnBackdrop ? () => attemptDismiss(false) : undefined}
-    >
+  if (!open || !mounted) return null;
+
+  const shell = (
+    <PortalModalDepthContext.Provider value={depth + 1}>
       <div
         className={cn(
-          "portal-modal-shell-panel",
-          `portal-modal-shell-panel--${variant}`
+          "portal-ui portal-modal-shell",
+          `portal-modal-shell--${variant}`,
+          className
         )}
-        style={
-          {
-            maxWidth: maxW,
-            ["--portal-modal-max"]: maxW,
-            ...(isFunnel ? { ["--portal-funnel-modal-max"]: maxW } : null),
-          } as CSSProperties
-        }
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby={titleId}
-        aria-describedby={subtitle?.trim() ? subId : undefined}
-        onClick={(e) => e.stopPropagation()}
+        style={{
+          // Body-Portal + höhere Schicht bei Nesting (KI/GPT im Sheet nicht von Buttons abschneiden)
+          zIndex: PORTAL_MODAL_Z_INDEX + depth * 10,
+          background: PORTAL_MODAL_SCRIM,
+        }}
+        role="presentation"
+        onClick={closeOnBackdrop ? () => attemptDismiss(false) : undefined}
       >
-        <div className="portal-modal-shell-header">
-          <div className="portal-modal-shell-heading">
-            <h2 id={titleId} className="portal-modal-shell-title">
-              {title}
-            </h2>
-            {subtitle?.trim() ? (
-              <p id={subId} className="portal-modal-shell-sub">
-                {subtitle}
-              </p>
-            ) : null}
-          </div>
-          {headerExtra}
-          <button
-            type="button"
-            className="portal-modal-shell-close"
-            aria-label="Schließen"
-            onClick={() => attemptDismiss(false)}
-          >
-            ×
-          </button>
-        </div>
-        <div className="portal-modal-shell-body">{children}</div>
-      </div>
-
-      {discardOpen ? (
         <div
-          className="portal-modal-discard"
-          role="alertdialog"
+          className={cn(
+            "portal-modal-shell-panel",
+            `portal-modal-shell-panel--${variant}`
+          )}
+          style={
+            {
+              /* Nur CSS-Var — mobil volle Breite; Desktop nutzt var in @media */
+              ["--portal-modal-max"]: maxW,
+              ...(isFunnel ? { ["--portal-funnel-modal-max"]: maxW } : null),
+            } as CSSProperties
+          }
+          role="dialog"
           aria-modal="true"
-          aria-labelledby={discardTitleId}
+          aria-labelledby={titleId}
+          aria-describedby={subtitle?.trim() ? subId : undefined}
           onClick={(e) => e.stopPropagation()}
         >
-          <div className="portal-modal-discard-panel">
-            <p id={discardTitleId} className="portal-modal-discard-title">
-              Änderungen verwerfen?
-            </p>
-            <div className="portal-modal-discard-actions portal-action-row">
-              <button
-                type="button"
-                className="portal-action-btn portal-action-btn--secondary"
-                onClick={() => setDiscardOpen(false)}
-              >
-                Weiter bearbeiten
-              </button>
-              <button
-                type="button"
-                className="portal-action-btn portal-action-btn--danger"
-                onClick={() => closeNow(false)}
-              >
-                Verwerfen
-              </button>
+          <div className="portal-modal-shell-header">
+            <button
+              type="button"
+              className="portal-modal-shell-close"
+              aria-label="Schließen"
+              disabled={busy}
+              onClick={() => attemptDismiss(false)}
+            >
+              ×
+            </button>
+            <div className="portal-modal-shell-heading">
+              <h2 id={titleId} className="portal-modal-shell-title">
+                {title}
+              </h2>
+              {subtitle?.trim() ? (
+                <p id={subId} className="portal-modal-shell-sub">
+                  {subtitle}
+                </p>
+              ) : null}
             </div>
+            {headerExtra || onConfirm ? (
+              <div className="portal-modal-shell-header-extra">
+                {headerExtra}
+                {onConfirm ? (
+                  <button
+                    type="button"
+                    className="portal-modal-shell-confirm"
+                    aria-label={confirmLabel}
+                    disabled={busy || confirmDisabled}
+                    onClick={() => {
+                      if (busy || confirmDisabled) return;
+                      onConfirm();
+                    }}
+                  >
+                    <Check strokeWidth={2.5} aria-hidden />
+                  </button>
+                ) : null}
+              </div>
+            ) : null}
+          </div>
+          <div className="portal-modal-shell-body relative">
+            {children}
+            {busy ? (
+              <div
+                className="portal-modal-shell-busy"
+                role="status"
+                aria-live="polite"
+                aria-busy="true"
+              >
+                <PortalContentBusy
+                  title={busyTitle}
+                  body={busyBody}
+                  className="!min-h-0 !py-10"
+                />
+              </div>
+            ) : null}
           </div>
         </div>
-      ) : null}
-    </div>
+
+        <PortalSheetConfirm
+          open={discardOpen && !busy}
+          placement="nested"
+          title="Änderungen verwerfen?"
+          cancelLabel="Weiter bearbeiten"
+          confirmLabel="Verwerfen"
+          confirmVariant="danger"
+          onCancel={() => setDiscardOpen(false)}
+          onConfirm={() => closeNow(false)}
+        />
+      </div>
+    </PortalModalDepthContext.Provider>
   );
+
+  return createPortal(shell, document.body);
 }

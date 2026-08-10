@@ -12,15 +12,14 @@ type Props = {
 };
 
 /** Canvas-Unterschrift — TEIL G4 gemeinsames Signatur-Modul (D3/D7 Kunde/HV, D11 HW). */
-export function SignatureCanvas({ onChange, className, large = false }: Props) {
+export function SignatureCanvas({ onChange, className, large = true }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const drawingRef = useRef(false);
   const onChangeRef = useRef(onChange);
   onChangeRef.current = onChange;
   const [hasSig, setHasSig] = useState(false);
-  const [expanded, setExpanded] = useState(false);
 
-  const height = expanded || large ? 220 : 150;
+  const height = large ? 220 : 150;
 
   useEffect(() => {
     const cv = canvasRef.current;
@@ -118,13 +117,6 @@ export function SignatureCanvas({ onChange, className, large = false }: Props) {
           className="text-xs text-text-tertiary underline"
         >
           Unterschrift löschen
-        </button>
-        <button
-          type="button"
-          onClick={() => setExpanded((v) => !v)}
-          className="text-xs font-semibold text-accent underline sm:hidden"
-        >
-          {expanded ? "Feld verkleinern" : "Feld vergrößern"}
         </button>
       </div>
     </div>

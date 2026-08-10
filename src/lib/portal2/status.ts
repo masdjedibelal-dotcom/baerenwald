@@ -53,8 +53,8 @@ export const PORTAL_STATUS: Record<PortalMockStatusId, PortalMockStatusMeta> = {
   auftrag: {
     id: "auftrag",
     label: "Auftrag",
-    color: "#1F6A3F",
-    bg: "#DDEEDF",
+    color: "#1F4FA8",
+    bg: "#E4ECF7",
   },
   abschluss: {
     id: "abschluss",

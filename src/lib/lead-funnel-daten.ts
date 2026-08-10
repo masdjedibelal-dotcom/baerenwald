@@ -88,13 +88,15 @@ export function normalizeFunnelDaten(
       ? { ...(fdRaw as FachdetailsState) }
       : {};
 
-  /** Melde-API legt Antworten top-level ab (`funnel_daten.fachdetailAnswers`). */
-  const topAnswers = d.fachdetailAnswers;
-  if (topAnswers && typeof topAnswers === "object" && !Array.isArray(topAnswers)) {
-    fachdetails.fachdetailAnswers = {
-      ...(fachdetails.fachdetailAnswers ?? {}),
-      ...(topAnswers as Record<string, string | string[] | undefined>),
-    };
+  /** Melde-API: `fachdetailAnswers`; ältere/slim Payloads: `answers` / `antworten`. */
+  for (const key of ["fachdetailAnswers", "answers", "antworten"] as const) {
+    const raw = d[key];
+    if (raw && typeof raw === "object" && !Array.isArray(raw)) {
+      fachdetails.fachdetailAnswers = {
+        ...(fachdetails.fachdetailAnswers ?? {}),
+        ...(raw as Record<string, string | string[] | undefined>),
+      };
+    }
   }
 
   const breakdown = Array.isArray(d.breakdown)
@@ -277,9 +279,72 @@ export function fachdetailRowsFromFunnelDaten(
   funnel_daten: unknown,
   bereicheFallback?: string[] | null
 ): MailTableRow[] {
-  return buildFachdetailAnswerRows(
+  return buildFunnelPortalDetailRows(
     normalizeFunnelDaten(funnel_daten, bereicheFallback)
   );
+}
+
+/**
+ * Alle Funnel-Angaben für Portal-Details (Staff/CRM/Mieter) —
+ * ohne Situation/Bereich (die stehen separat als MetaRows).
+ */
+export function buildFunnelPortalDetailRows(
+  norm: NormalizedFunnelDaten
+): MailTableRow[] {
+  const rows: MailTableRow[] = [];
+  const seen = new Set<string>();
+
+  const push = (label: string, value?: string | null) => {
+    const v = (value ?? "").trim();
+    if (!v || v === "—") return;
+    const key = `${label.toLowerCase()}::${v.toLowerCase()}`;
+    if (seen.has(key)) return;
+    seen.add(key);
+    rows.push({ label, value: v });
+  };
+
+  if (norm.dringlichkeit) {
+    const l = labelDringlichkeit(norm.dringlichkeit);
+    if (l && l !== "—") push("Dringlichkeit", l);
+  }
+  if (norm.kundentyp) {
+    const l = labelKundentyp(norm.kundentyp);
+    if (l && l !== "—") push("Kundentyp", l);
+  }
+  if (norm.zugaenglichkeit) {
+    const l = labelZugaenglichkeit(norm.zugaenglichkeit);
+    if (l && l !== "—") push("Zugänglichkeit", l);
+  }
+
+  for (const r of buildGroessenRows(norm)) {
+    push(r.label, r.value);
+  }
+
+  const fachRows = buildFachdetailAnswerRows(norm);
+  for (const r of fachRows) {
+    push(r.label, r.value);
+  }
+
+  // Nested Fachdetails (Staff/CRM) ohne flache Answers → pro Bereich
+  if (fachRows.length === 0) {
+    for (const r of buildLeistungenRows(norm)) {
+      push(r.label, r.value);
+    }
+  }
+
+  // Rechner-Breakdown, falls noch keine Fachzeilen
+  if (fachRows.length === 0) {
+    for (const r of buildBreakdownRows(norm)) {
+      push(r.label, r.value);
+    }
+  }
+
+  if (norm.badAusstattung) {
+    const a = labelBadAusstattung(norm.badAusstattung);
+    if (a) push("Ausstattung", a);
+  }
+
+  return rows;
 }
 
 export function buildBreakdownRows(

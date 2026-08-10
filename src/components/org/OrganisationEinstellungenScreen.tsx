@@ -6,6 +6,7 @@ import { OrganisationMeldeMaterial } from "@/components/org/OrganisationMeldeMat
 import { OrganisationMieterLegalLinksPanel } from "@/components/org/OrganisationMieterLegalLinksPanel";
 import { PortalKontoSicherheitPanel } from "@/components/shared/PortalKontoSicherheitPanel";
 import { PortalEinstellungenShell } from "@/components/shared/PortalEinstellungenShell";
+import { PortalPushSettingsPanel } from "@/components/shared/PortalPushSettingsPanel";
 import {
   EinstellungenPfRow,
   EinstellungenSectionHeader,
@@ -55,7 +56,7 @@ export function OrganisationEinstellungenScreen({
                   <EinstellungenPfRow label="Telefon" value={tel} />
                 </div>
                 <p
-                  className="text-[12.5px] leading-relaxed"
+                  className="portal-text-meta leading-relaxed"
                   style={{ color: PORTAL_VAR.sub }}
                 >
                   Diese Kontaktdaten gelten auch für die Mieter-Kommunikation
@@ -92,6 +93,10 @@ export function OrganisationEinstellungenScreen({
               nested
             />
           );
+        }
+
+        if (tab === "benachrichtigungen") {
+          return <PortalPushSettingsPanel portal="portal" />;
         }
 
         return (

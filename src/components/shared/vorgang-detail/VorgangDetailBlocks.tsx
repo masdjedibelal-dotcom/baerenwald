@@ -36,7 +36,9 @@ function MetaRow({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex justify-between gap-3 border-b border-border-light py-2 text-[13px] last:border-b-0">
       <span className="shrink-0 text-text-secondary">{label}</span>
-      <span className="text-right font-semibold text-text-primary">{value}</span>
+      <span className="min-w-0 whitespace-pre-wrap break-words text-right font-semibold text-text-primary">
+        {value}
+      </span>
     </div>
   );
 }
@@ -45,7 +47,17 @@ function visible(sight: BlockSight): boolean {
   return sight !== "hidden";
 }
 
-/** Partner: eine Details-Card (HV-Stil), keine gestapelten Teil-Cards. */
+function formatPartnerEuro(n: number): string {
+  return new Intl.NumberFormat("de-DE", {
+    style: "currency",
+    currency: "EUR",
+  }).format(n);
+}
+
+/**
+ * Partner: eine Details-Card analog HV-Meldung / anderen Vorgangsphasen.
+ * Objekt → PLZ/Ort → Funnel → Zeitraum → Beschreibung → Kontakt — stabil über Phasen.
+ */
 function PartnerUnifiedDetails({
   vm,
   className,
@@ -54,44 +66,68 @@ function PartnerUnifiedDetails({
   className?: string;
 }) {
   const { objektMelder: B, ausfuehrung: C } = vm;
-  const adresse =
-    B.adresseStrasse?.trim() || B.adresseZeile?.trim() || null;
-  const kontakt =
-    [C.kontaktVorOrtName, C.kontaktVorOrtTel].filter(Boolean).join(" · ") ||
-    [B.melderName, B.melderTelefon].filter(Boolean).join(" · ") ||
-    null;
+  const kontaktName =
+    C.kontaktVorOrtName?.trim() || B.melderName?.trim() || null;
+  const telefon =
+    C.kontaktVorOrtTel?.trim() || B.melderTelefon?.trim() || null;
+  const kontaktValue = [kontaktName, telefon].filter(Boolean).join("\n") || null;
+  const verguetung =
+    typeof C.summeEkNetto === "number" && C.summeEkNetto > 0
+      ? formatPartnerEuro(C.summeEkNetto)
+      : null;
 
   return (
     <div className={cn(className)}>
       <BlockShell title="Details">
         <div className="space-y-0">
-          {adresse ? <MetaRow label="Adresse" value={adresse} /> : null}
-          {B.melderTelefon ? (
-            <MetaRow label="Telefon" value={B.melderTelefon} />
-          ) : null}
-          {C.gewerk ? <MetaRow label="Gewerk" value={C.gewerk} /> : null}
-          {C.terminLabel ? (
-            <MetaRow label="Termin" value={C.terminLabel} />
-          ) : null}
-          {kontakt ? <MetaRow label="Kontakt vor Ort" value={kontakt} /> : null}
-          {B.plzOrt ? <MetaRow label="PLZ / Ort" value={B.plzOrt} /> : null}
           {B.objektTitel ? (
             <MetaRow label="Objekt" value={B.objektTitel} />
           ) : null}
+          {B.plzOrt ? <MetaRow label="PLZ / Ort" value={B.plzOrt} /> : null}
           {B.situationLabel ? (
             <MetaRow label="Situation" value={B.situationLabel} />
           ) : null}
           {B.bereichLabel ? (
             <MetaRow label="Bereich" value={B.bereichLabel} />
           ) : null}
+          {B.zeitraumLabel ? (
+            <MetaRow label="Zeitraum" value={B.zeitraumLabel} />
+          ) : null}
+          {B.fachdetailRows?.map((row) => (
+            <MetaRow
+              key={`${row.label}:${row.value}`}
+              label={row.label}
+              value={row.value}
+            />
+          ))}
+          {C.gewerk ? <MetaRow label="Gewerk" value={C.gewerk} /> : null}
+          {verguetung ? (
+            <MetaRow label="Vergütung (Netto)" value={verguetung} />
+          ) : null}
           {C.aufgabeNotiz ? (
             <MetaRow label="Aufgabe" value={C.aufgabeNotiz} />
           ) : null}
+          {kontaktValue ? (
+            <MetaRow label="Kontakt vor Ort" value={kontaktValue} />
+          ) : null}
         </div>
         {B.beschreibung ? (
-          <p className="mt-3 whitespace-pre-wrap text-[13px] text-text-secondary">
-            {B.beschreibung}
-          </p>
+          <div className="mt-3">
+            <p className="mb-1 text-[12px] font-semibold uppercase tracking-wide text-text-secondary">
+              Beschreibung
+            </p>
+            <p className="portal-text-body whitespace-pre-wrap text-text-secondary">
+              {B.beschreibung}
+            </p>
+          </div>
+        ) : null}
+        {B.fotos && B.fotos.length > 0 ? (
+          <div className="mt-3">
+            <p className="mb-2 text-[12px] font-semibold uppercase tracking-wide text-text-secondary">
+              Fotos
+            </p>
+            <PortalPhotoGallery urls={B.fotos} />
+          </div>
         ) : null}
       </BlockShell>
     </div>
@@ -111,7 +147,7 @@ type Props = {
  * Einheitliche Blöcke für alle Portale — Sichtbarkeit über Sight-Matrix.
  * Partner: eine Details-Card (kein Card-Stack).
  * HV: Objekt & Melder + Details (Situation/Bereich/Beschreibung/Fotos/Zeitraum).
- * Kunde/Mieter: gleiche Melde-Details wie HV, ohne Fotos.
+ * Kunde/Mieter: gleiche Melde-Details inkl. Fotos; Mieter ohne eigenen Namen.
  */
 export function VorgangDetailBlocks({
   vm,
@@ -144,6 +180,7 @@ export function VorgangDetailBlocks({
   const plzOrtDisplay = B.plzOrt?.trim() || null;
 
   const isKunde = vm.role === "kunde";
+  const isMieter = vm.role === "mieter";
   const hasMeldeTextDetails = Boolean(
     B.situationLabel ||
       B.bereichLabel ||
@@ -153,17 +190,17 @@ export function VorgangDetailBlocks({
       (isHv && B.preisIndikation)
   );
   const showMeldeDetails =
-    (isHv || isKunde) &&
+    (isHv || isKunde || isMieter) &&
     (hasMeldeTextDetails ||
-      (isHv && Boolean(B.fotos && B.fotos.length > 0)) ||
+      ((isHv || isKunde || isMieter) && Boolean(B.fotos && B.fotos.length > 0)) ||
       Boolean(detailsActions));
 
   return (
     <div className={cn("space-y-3.5", className)}>
       {showObjekt ? (
-        <BlockShell title="Objekt & Melder">
+        <BlockShell title={isMieter ? "Objekt" : "Objekt & Melder"}>
           <div className="space-y-0">
-            {B.melderName ? (
+            {!isMieter && B.melderName ? (
               <MetaRow
                 label={siteOnly ? "Kontakt vor Ort" : "Melder"}
                 value={B.melderName}
@@ -188,7 +225,7 @@ export function VorgangDetailBlocks({
             ) : null}
           </div>
           {/* Beschreibung nur hier, wenn kein eigener Details-Block folgt */}
-          {!isHv && !isKunde && B.beschreibung && !siteOnly ? (
+          {!isHv && !isKunde && !isMieter && B.beschreibung && !siteOnly ? (
             <p className="portal-text-body mt-3 whitespace-pre-wrap text-text-secondary">
               {B.beschreibung}
             </p>
@@ -229,7 +266,7 @@ export function VorgangDetailBlocks({
               </p>
             </div>
           ) : null}
-          {isHv && B.fotos && B.fotos.length > 0 ? (
+          {(isHv || isKunde || isMieter) && B.fotos && B.fotos.length > 0 ? (
             <div className="mt-3">
               <p className="mb-2 text-[12px] font-semibold uppercase tracking-wide text-text-secondary">
                 Fotos

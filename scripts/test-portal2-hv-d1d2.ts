@@ -35,7 +35,7 @@ assert("role label", HV_DASHBOARD_ROLE_LABEL === "Verwaltung");
 assert("3 kpi defs", HV_DASHBOARD_KPI_DEFS.length === 3);
 assert(
   "kpi labels",
-  HV_DASHBOARD_KPI_DEFS[0]!.label === "Wartet auf Freigabe" &&
+  HV_DASHBOARD_KPI_DEFS[0]!.label === "Offen" &&
     HV_DASHBOARD_KPI_DEFS[1]!.label === "In Arbeit" &&
     HV_DASHBOARD_KPI_DEFS[2]!.label === "Erledigt"
 );
@@ -67,7 +67,7 @@ const flow = countLeadsByPortalFlow({
 
 assert("has gemeldet", flow.gemeldet >= 1);
 const kpis = buildHvDashboardKpis(flow);
-assert("wartet = gemeldet", kpis.wartet_freigabe === flow.gemeldet);
+assert("offen = gemeldet", kpis.offen === flow.gemeldet);
 assert(
   "erledigt formula",
   kpis.erledigt === flow.abschluss + flow.rechnung + flow.bezahlt

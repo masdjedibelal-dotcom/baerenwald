@@ -209,6 +209,18 @@ export function PartnerAbschlussModal({
       maxWidth={560}
       closeOnBackdrop={false}
       dirty={stepIndex > 0}
+      busy={loading}
+      onConfirm={() => {
+        if (step === "signatur") void onSubmit();
+        else goNext();
+      }}
+      confirmDisabled={
+        loading ||
+        (step === "checkliste" && !allChecks) ||
+        (step === "signatur" &&
+          (!hwHasSig || !kundeHasSig || !hwName.trim() || !kundeName.trim()))
+      }
+      confirmLabel={primaryLabel}
     >
       <div className="flex min-h-0 flex-1 flex-col">
         <div className="mb-4 flex items-center gap-2">

@@ -176,7 +176,7 @@ export function GroesseStep({
                 </>
               ) : (
                 <>
-                  Hinweis: Dein Wert liegt unter der üblichen Auswahl — die
+                  Hinweis: Ihr Wert liegt unter der üblichen Auswahl — die
                   Schätzung kann ungenauer werden.
                 </>
               )}
@@ -220,7 +220,7 @@ export function GroesseStep({
             </>
           ) : (
             <>
-              Hinweis: Dein Wert liegt unter der üblichen Auswahl — die Schätzung
+              Hinweis: Ihr Wert liegt unter der üblichen Auswahl — die Schätzung
               kann ungenauer werden.
             </>
           )}

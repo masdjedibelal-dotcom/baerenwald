@@ -1,10 +1,18 @@
 "use client";
 
 import dynamic from "next/dynamic";
+import { flushSync } from "react-dom";
 import { OrganisationHvDashboard } from "@/components/org/OrganisationHvDashboard";
 import { PORTAL_HEADER_HERO_SRC } from "@/lib/portal2/portal-media";
 import { emitPortalNotificationsChanged } from "@/lib/portal2/notif-refresh";
+import {
+  PORTAL_BUSY_MIN_MS,
+  usePortalBusy,
+} from "@/components/shared/PortalBusyContext";
+import { usePortalRefresh } from "@/components/shared/usePortalRefresh";
+import { ensurePortalVorgangNotificationHref } from "@/lib/portal2/portal-detail-deep-link";
 import { HvNotificationBell } from "@/components/org/HvNotificationBell";
+import { PortalPushOptInBanner } from "@/components/shared/PortalPushOptInBanner";
 import { OrganisationSuche } from "@/components/org/OrganisationSuche";
 import { OrganisationMehrScreen } from "@/components/org/OrganisationMehrScreen";
 import { OrganisationWhitelabelGate } from "@/components/org/OrganisationWhitelabelGate";
@@ -85,12 +93,9 @@ import type {
   OrganisationLead,
   OrganisationObjekt,
 } from "@/lib/org/types";
-import type { OrgPartnerBefundEntry } from "@/lib/org/load-partner-befund";
 import type { OrgMitgliedRolle } from "@/lib/org/org-rbac";
 import { buildKundeVorgaenge } from "@/lib/portal/build-kunde-vorgaenge";
-import { isMeldeNotfall } from "@/lib/org/org-eingang-utils";
-import { meldeKategorieLabel } from "@/lib/org/melde-kategorien";
-import { meldeKategorieFromLead } from "@/lib/org/org-eingang-utils";
+import { leadIstMeldeDirektauftrag } from "@/lib/funnel/melde-direktauftrag";
 import {
   buildHvDashboardKpis,
   countLeadsByPortalFlow,
@@ -98,13 +103,16 @@ import {
   type HvDashboardAngebotSlice,
   type HvDashboardAuftragSlice,
 } from "@/lib/portal2/hv-dashboard";
-import { portalFlowSortRank } from "@/lib/portal/portal-vorgang-sort";
+import {
+  compareByNewestCreated,
+  PORTAL_DASHBOARD_RECENT_LIMIT,
+} from "@/lib/portal/portal-vorgang-sort";
 import { portalCreateLabel } from "@/lib/portal2/create";
 import {
   buildPortalHvMobileNav,
   buildPortalShellNav,
 } from "@/lib/portal2/nav-items";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 type OrgSection =
   | "uebersicht"
@@ -123,7 +131,6 @@ type Props = {
   auftraege: Parameters<typeof OrganisationVorgaengeSection>[0]["auftraege"];
   katalogProdukte?: KatalogProdukt[];
   mitgliedRolle?: OrgMitgliedRolle;
-  partnerBefundByLeadId?: Record<string, OrgPartnerBefundEntry[]>;
   bautagebuchByLeadId?: Record<
     string,
     Array<{
@@ -210,7 +217,6 @@ export function OrganisationPortalClient({
   auftraege,
   katalogProdukte: _katalogProdukte = [],
   mitgliedRolle = "admin",
-  partnerBefundByLeadId = {},
   bautagebuchByLeadId = {},
   hwErledigtByLeadId = {},
   feedbackBereitByLeadId = {},
@@ -236,6 +242,27 @@ export function OrganisationPortalClient({
 
   const [section, setSection] = useState<OrgSection>(initialSection ?? "uebersicht");
   const [hubOpen, setHubOpen] = useState(false);
+  /** Sofortiger Listen-Filter (ohne auf URL/searchParams zu warten). */
+  const [vorgangFilterIntent, setVorgangFilterIntent] =
+    useState<OrgVorgangFilter | null>(initialVorgangFilter);
+  /** Detail-ID sofort nach Klick (vor searchParams). */
+  const [pendingDetailId, setPendingDetailId] = useState<string | null>(null);
+  const { hold, release, flash, busy: ctxBusy } = usePortalBusy();
+  const { refresh: refreshPortal } = usePortalRefresh();
+  const navHoldRef = useRef(false);
+
+  function beginNavHold() {
+    if (!navHoldRef.current) {
+      navHoldRef.current = true;
+      hold();
+    }
+  }
+
+  function endNavHold() {
+    if (!navHoldRef.current) return;
+    navHoldRef.current = false;
+    release();
+  }
 
   /** Notification / Deep-Link: Section aus URL übernehmen (nicht nur Initial-State). */
   useEffect(() => {
@@ -281,16 +308,25 @@ export function OrganisationPortalClient({
 
   const vorgaengeBadgeCount = filterCounts.offen;
 
-  const [pageBusy, setPageBusy] = useState(false);
-
-  function flashPageBusy(ms = 400) {
-    setPageBusy(true);
-    window.setTimeout(() => setPageBusy(false), ms);
+  function flashPageBusy(ms = PORTAL_BUSY_MIN_MS) {
+    flash(ms);
   }
 
   function openVorgangFromNotification(vorgangId: string, href: string) {
-    setSection("vorgaenge");
-    router.push(href.includes("id=") ? href : `${href}${href.includes("?") ? "&" : "?"}id=${encodeURIComponent(vorgangId)}`);
+    const id = vorgangId.trim();
+    beginNavHold();
+    flushSync(() => {
+      setPendingDetailId(id);
+      setSection("vorgaenge");
+      setVorgangFilterIntent("alle");
+    });
+    const target =
+      ensurePortalVorgangNotificationHref({
+        href,
+        vorgangId: id,
+      }) ||
+      `/portal?section=vorgaenge&filter=alle&id=${encodeURIComponent(id)}`;
+    router.push(target);
   }
 
   /** Vorgang öffnen = zugehörige HV-Benachrichtigungen gelesen. */
@@ -305,21 +341,53 @@ export function OrganisationPortalClient({
   }, [searchParams, section]);
 
   const refresh = () => {
-    flashPageBusy();
-    router.refresh();
+    void refreshPortal();
   };
 
   function switchSection(next: OrgSection) {
-    setSection(next);
-    flashPageBusy(280);
+    if (next !== "vorgaenge") {
+      setVorgangFilterIntent(null);
+      setPendingDetailId(null);
+      endNavHold();
+    }
+    flushSync(() => {
+      setSection(next);
+    });
+    flashPageBusy();
     router.replace(`/portal?section=${next}`, { scroll: false });
   }
 
   function openVorgaenge(filter?: OrgVorgangFilter) {
-    setSection("vorgaenge");
-    flashPageBusy(280);
-    const q = filter ? `?section=vorgaenge&filter=${filter}` : "?section=vorgaenge";
-    router.replace(`/portal${q}`, { scroll: false });
+    const f: OrgVorgangFilter = filter ?? "alle";
+    setPendingDetailId(null);
+    endNavHold();
+    setVorgangFilterIntent(f);
+    flushSync(() => {
+      setSection("vorgaenge");
+    });
+    flashPageBusy();
+    router.replace(`/portal?section=vorgaenge&filter=${f}`, { scroll: false });
+  }
+
+  /** Dashboard/Suche: Detail öffnen (Filter „alle“, damit der Vorgang sichtbar bleibt). */
+  function openVorgangDetail(id: string) {
+    const trimmed = id.trim();
+    if (!trimmed) return;
+    beginNavHold();
+    flushSync(() => {
+      setPendingDetailId(trimmed);
+      setVorgangFilterIntent("alle");
+      setSection("vorgaenge");
+    });
+    router.replace(
+      `/portal?section=vorgaenge&filter=alle&id=${encodeURIComponent(trimmed)}`,
+      { scroll: false }
+    );
+  }
+
+  function onVorgangDetailReady() {
+    setPendingDetailId(null);
+    endNavHold();
   }
 
   const allLeadsForFlow = useMemo(() => {
@@ -359,6 +427,9 @@ export function OrganisationPortalClient({
         a,
       ])
     );
+    const byLeadId = new Map(
+      vorgaengeItems.map((item) => [String(item.leadId ?? item.id), item])
+    );
     return [...allLeadsForFlow]
       .map((lead) => {
         const flow = resolveLeadPortalFlowStatus({
@@ -372,36 +443,33 @@ export function OrganisationPortalClient({
           lead,
           flow,
           sortDate: new Date(lead.created_at ?? 0).getTime(),
-          statusRank: portalFlowSortRank(flow),
         };
       })
-      .sort((a, b) => {
-        if (a.statusRank !== b.statusRank) return a.statusRank - b.statusRank;
-        return b.sortDate - a.sortDate;
-      })
-      .slice(0, 4)
+      .sort(compareByNewestCreated)
+      .slice(0, PORTAL_DASHBOARD_RECENT_LIMIT)
       .map(({ lead, flow }) => {
-        const kat = meldeKategorieFromLead(lead);
-        const titel =
-          (kat ? meldeKategorieLabel(kat) : null) ||
-          lead.kontakt_nachricht?.slice(0, 60) ||
-          lead.melder_name ||
-          "Vorgang";
-        const obj =
-          (lead as { objekt?: { titel?: string; name?: string } }).objekt
-            ?.titel ||
-          (lead as { objekt?: { name?: string } }).objekt?.name ||
-          lead.melder_einheit ||
+        const item = byLeadId.get(String(lead.id));
+        // Gleicher Titel wie Liste/Detail; Subline = Anschrift · Melder
+        const titel = item?.title?.trim() || "Vorgang";
+        const objekt =
+          item?.cardSubtitle?.trim() ||
+          [
+            item?.meldeStrasse,
+            [item?.meldePlz, item?.meldeOrt].filter(Boolean).join(" "),
+            item?.melderName,
+          ]
+            .filter(Boolean)
+            .join(" · ") ||
           "Objekt";
         return {
           id: lead.id,
           titel,
-          objekt: String(obj),
+          objekt: String(objekt),
           flowStatus: flow,
-          notfall: isMeldeNotfall(lead),
+          notfall: leadIstMeldeDirektauftrag(lead),
         };
       });
-  }, [allLeadsForFlow, angebote, auftraege]);
+  }, [allLeadsForFlow, angebote, auftraege, vorgaengeItems]);
 
   const showWlGate = orgWhitelabelGateVisible(kunde, mitgliedRolle);
   const canCompleteWlGate = orgWhitelabelGateCanComplete(mitgliedRolle);
@@ -428,7 +496,15 @@ export function OrganisationPortalClient({
         hideMobileChrome={false}
         activeNavId={section}
         contentKey={`${section}:${searchParams.get("filter") ?? ""}`}
-        contentBusy={pageBusy}
+        contentBusy={ctxBusy || Boolean(pendingDetailId)}
+        contentBusyTitle={
+          pendingDetailId ? "Vorgang wird geladen…" : undefined
+        }
+        contentBusyBody={
+          pendingDetailId
+            ? "Einen Moment — wir öffnen die Details."
+            : undefined
+        }
         onNavChange={(id) => switchSection(id as OrgSection)}
         nav={buildPortalShellNav("kunde_hv", "org", {
           liste: vorgaengeBadgeCount,
@@ -444,13 +520,7 @@ export function OrganisationPortalClient({
         headerUser={{ name: displayName }}
         headerSearch={
           <OrganisationSuche
-            onSelect={(id) => {
-              openVorgaenge("offen");
-              flashPageBusy(280);
-              router.replace(`/portal?section=vorgaenge&filter=offen&id=${id}`, {
-                scroll: false,
-              });
-            }}
+            onSelect={(id) => openVorgangDetail(id)}
           />
         }
         notifications={
@@ -474,14 +544,7 @@ export function OrganisationPortalClient({
                 recent={recentItems}
                 heroImageUrl={PORTAL_HEADER_HERO_SRC}
                 onOpenFilter={openVorgaenge}
-                onOpenItem={(id) => {
-                  setSection("vorgaenge");
-                  flashPageBusy(280);
-                  router.replace(
-                    `/portal?section=vorgaenge&filter=offen&id=${id}`,
-                    { scroll: false }
-                  );
-                }}
+                onOpenItem={(id) => openVorgangDetail(id)}
               />
             </>
           ) : null}
@@ -494,16 +557,22 @@ export function OrganisationPortalClient({
               leads={leads}
               angebote={angebote}
               auftraege={auftraege}
-              initialFilter={initialVorgangFilter}
+              initialFilter={
+                vorgangFilterIntent ?? initialVorgangFilter ?? "alle"
+              }
               initialSelectedId={initialItemId}
+              forceDetailId={pendingDetailId ?? initialItemId}
+              onDetailReady={onVorgangDetailReady}
               onRefresh={refresh}
               onFilterChange={(f) => {
+                setPendingDetailId(null);
+                endNavHold();
+                setVorgangFilterIntent(f);
                 // Filterwechsel = Liste: alte Detail-id nicht mitschleppen (Race mit closeDetail).
                 router.replace(`/portal?section=vorgaenge&filter=${f}`, {
                   scroll: false,
                 });
               }}
-              partnerBefundByLeadId={partnerBefundByLeadId}
               bautagebuchByLeadId={bautagebuchByLeadId}
               hwErledigtByLeadId={hwErledigtByLeadId}
               feedbackBereitByLeadId={feedbackBereitByLeadId}
@@ -518,19 +587,14 @@ export function OrganisationPortalClient({
           {section === "objekte" ? (
             <OrganisationObjektePanel
               objekte={objekte}
-              leads={[...leads, ...eingang]}
+              leads={allLeadsForFlow}
+              angebote={angebote}
+              auftraege={auftraege}
               orgKennung={kunde.org_kennung}
               kunde={kunde}
               onRefresh={refresh}
               dokumenteByLeadId={dokumenteByLeadId}
-              onOpenVorgang={(id) => {
-                setSection("vorgaenge");
-                flashPageBusy(280);
-                router.replace(
-                  `/portal?section=vorgaenge&filter=offen&id=${encodeURIComponent(id)}`,
-                  { scroll: false }
-                );
-              }}
+              onOpenVorgang={(id) => openVorgangDetail(id)}
             />
           ) : null}
 
@@ -559,6 +623,8 @@ export function OrganisationPortalClient({
               isAdmin={mitgliedRolle === "admin"}
             />
           ) : null}
+
+          <PortalLegalFooter variant="org" className="mt-8" />
       </PortalShell>
 
       {hubOpen ? (
@@ -576,10 +642,7 @@ export function OrganisationPortalClient({
           }}
         />
       ) : null}
-
-      <div className="mx-auto hidden max-w-[1200px] px-6 lg:block">
-        <PortalLegalFooter variant="org" className="mt-8" />
-      </div>
+      <PortalPushOptInBanner portal="portal" />
     </>
   );
 }

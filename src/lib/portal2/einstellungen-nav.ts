@@ -9,6 +9,7 @@ export type EinstellungenTabId =
   | "profil"
   | "branding"
   | "freigabe"
+  | "benachrichtigungen"
   | "anschrift"
   | "steuer"
   | "bank"
@@ -24,6 +25,7 @@ export const EINSTELLUNGEN_NAV_HV: EinstellungenNavItem[] = [
   { id: "profil", label: "Profil" },
   { id: "branding", label: "Branding & White-Label" },
   { id: "freigabe", label: "Freigabe-Regeln" },
+  { id: "benachrichtigungen", label: "Benachrichtigungen" },
 ];
 
 export const EINSTELLUNGEN_NAV_HW: EinstellungenNavItem[] = [
@@ -31,15 +33,18 @@ export const EINSTELLUNGEN_NAV_HW: EinstellungenNavItem[] = [
   { id: "steuer", label: "Steuer & Register" },
   { id: "bank", label: "Bankverbindung" },
   { id: "stamm", label: "Stammunterlagen" },
+  { id: "benachrichtigungen", label: "Benachrichtigungen" },
 ];
 
 export const EINSTELLUNGEN_NAV_MIETER: EinstellungenNavItem[] = [
   { id: "profil", label: "Profil" },
   { id: "zugang", label: "Zugang" },
+  { id: "benachrichtigungen", label: "Benachrichtigungen" },
 ];
 
 export const EINSTELLUNGEN_NAV_PRIVAT: EinstellungenNavItem[] = [
   { id: "profil", label: "Profil" },
+  { id: "benachrichtigungen", label: "Benachrichtigungen" },
 ];
 
 export function einstellungenNavFor(

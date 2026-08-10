@@ -17,7 +17,7 @@ export type PlattformStatusKey =
 
 export const PLATTFORM_STATUS_LABELS: Record<PlattformStatusKey, string> = {
   neu: "Neu",
-  wartet_freigabe: "Wartet Freigabe",
+  wartet_freigabe: "Gesendet",
   in_ausfuehrung: "In Ausführung",
   erledigt: "Erledigt",
   notfall: "Notfall",
@@ -38,8 +38,8 @@ export function resolvePlattformStatus(
 
   if (portalErledigtFromLeadAndAuftrag(lead, auftrag)) return "erledigt";
 
-  const fd = lead.funnel_daten as { melde_kategorie?: string } | null;
-  if (fd?.melde_kategorie === "notfall" || lead.hv_meldung_status === "notmassnahme") {
+  // Status „Notfall“ nur noch bei laufender Notmaßnahme / CRM-Direktauftrag — nicht pauschal aus Melde-Kategorie
+  if (lead.hv_meldung_status === "notmassnahme") {
     return "notfall";
   }
 

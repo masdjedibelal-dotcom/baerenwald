@@ -21,6 +21,7 @@ function pickNewest<T>(items: T[], ts: (x: T) => string): T | null {
 
 function mapAngebotStatusEinfach(angebot: VorgangAngebotInput): string {
   const einfach = angebot.status_einfach?.trim().toLowerCase()
+  if (einfach === 'gesendet_kunde') return 'gesendet'
   if (einfach) return einfach
   const legacy = (angebot.status ?? '').trim().toLowerCase()
   switch (legacy) {
@@ -101,40 +102,35 @@ function isUeberfaellig(faellig: string | null | undefined, now = new Date()): b
 }
 
 function resolveActor(
-  input: ResolveVorgangInput,
+  _input: ResolveVorgangInput,
   phase: VorgangPhase,
   unterstatus: string,
   angebotAktiv: VorgangAngebotInput | null,
   auftragAktiv: VorgangAuftragInput | null,
   badges: ResolvedVorgangBadges
 ): { actor: VorgangActor | null; needsAction: boolean } {
+  void _input
   if (unterstatus === 'storniert') {
     return { actor: null, needsAction: false }
   }
 
-  const lead = input.lead
   const candidates: { actor: VorgangActor; rank: number }[] = []
 
-  if ((lead.org_freigabe_status ?? '').trim() === 'ausstehend') {
-    candidates.push({ actor: 'freigabe', rank: 4 })
-  }
-
-  if (
-    phase === 'auftrag' &&
-    auftragAktiv &&
-    (auftragAktiv.handwerkerAktionOffen ||
-      auftragAktiv.status === 'offen' ||
-      auftragAktiv.status === 'in_arbeit')
-  ) {
-    if (auftragAktiv.handwerkerAktionOffen) {
-      candidates.push({ actor: 'handwerker', rank: 3 })
-    }
+  if (phase === 'auftrag' && auftragAktiv?.handwerkerAktionOffen) {
+    candidates.push({ actor: 'handwerker', rank: 3 })
   }
 
   if (phase === 'angebot' && angebotAktiv) {
     const st = mapAngebotStatusEinfach(angebotAktiv)
-    if (st === 'gesendet') {
+    if (
+      st === 'gesendet' ||
+      st === 'gesendet_kunde' ||
+      st === 'entwurf' ||
+      st === 'abgelaufen'
+    ) {
       candidates.push({ actor: 'kunde', rank: 2 })
+    } else if (st === 'gesendet_handwerker') {
+      candidates.push({ actor: 'handwerker', rank: 3 })
     }
   }
 
@@ -273,9 +269,6 @@ export function resolveVorgang(input: ResolveVorgangInput): ResolvedVorgang {
 
   const badges: ResolvedVorgangBadges = {}
   if (isNotfall(input)) badges.notfall = true
-  if ((lead.org_freigabe_status ?? '').trim() === 'ausstehend') {
-    badges.wartet_freigabe = true
-  }
 
   const { actor, needsAction } = resolveActor(
     input,

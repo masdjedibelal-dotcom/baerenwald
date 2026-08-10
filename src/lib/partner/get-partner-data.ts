@@ -48,6 +48,7 @@ import {
   type PartnerVorgangItem,
 } from "@/lib/partner/build-partner-vorgaenge";
 import { ensurePartnerBautagebuchNotifications } from "@/lib/partner/notify-partner-bautagebuch-anfrage";
+import { ensurePartnerOffenNotifications } from "@/lib/partner/notify-partner-offen";
 import { buildPartnerTermine, type PartnerTerminItem } from "@/lib/partner/build-partner-termine";
 import {
   applyRahmenvertragPortalAkzeptanz,
@@ -216,6 +217,9 @@ export type PartnerAuftragItem = {
   angebotHwStatus?: string | null;
   angebotHwEingereichtAt?: string | null;
   angebotHwKonditionenArt?: "bestaetigt" | "gegenvorschlag" | null;
+  /** Aufgabe-/CRM-Notiz aus verknüpftem angebot_handwerker. */
+  aufgabe_notiz?: string | null;
+  hw_crm_notiz?: string | null;
   /** CRM-Bewertung nach Abschluss (read-only). */
   bewertung?: PartnerAuftragBewertung | null;
   /** Verbindliche HW-Annahme auf Auftragsebene. */
@@ -390,7 +394,7 @@ async function loadPartnerObjektById(
 
   const { data: objekteRows } = await supabaseAdmin
     .from("kunden_objekte")
-    .select("id, titel, strasse, hausnummer, plz, ort, cover_url")
+    .select("id, titel, strasse, hausnummer, plz, ort, cover_url, einheiten_hinweis")
     .in("id", objektIds);
 
   for (const o of objekteRows ?? []) {
@@ -1017,19 +1021,12 @@ export async function getPartnerDataForHandwerker(
 
     return {
       ...a,
-      listen_titel: anfrage?.gewerk_name
-        ? resolvePartnerListenTitel({
-            gewerk_name: anfrage.gewerk_name,
-            plz: a.plz,
-            ort: a.ort,
-            lead: a.lead,
-            fallbackTitel: a.titel,
-          })
-        : a.listen_titel,
       angebotHandwerkerId: anfrage?.id ?? null,
       angebotHwStatus: anfrage?.hw_status ?? null,
       angebotHwEingereichtAt: anfrage?.hw_eingereicht_at ?? null,
       angebotHwKonditionenArt: anfrage?.hw_konditionen?.art ?? null,
+      aufgabe_notiz: anfrage?.aufgabe_notiz ?? null,
+      hw_crm_notiz: anfrage?.hw_crm_notiz ?? null,
       projektvertrag_bestaetigt_am: vertragCtx?.projektvertrag_bestaetigt_am ?? null,
       vertrag: vertragCtx,
       nachreichungOpenPositionIds,
@@ -1285,6 +1282,14 @@ export async function getPartnerDataForHandwerker(
       handwerkerId: id,
       anfragen: bautagebuchAnfragen,
       titelByAuftragId: auftragTitelById,
+    });
+  }
+
+  if (offen.length > 0 || vorgaenge.some((v) => v.state === "neu")) {
+    void ensurePartnerOffenNotifications({
+      handwerkerId: id,
+      offen,
+      vorgaenge,
     });
   }
 

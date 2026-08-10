@@ -49,7 +49,7 @@ export async function POST(req: Request) {
   const { data: lead } = await supabaseAdmin
     .from("leads")
     .select(
-      "id, auftraggeber_kunde_id, kunde_objekt_id, hv_meldung_status, anlass, preis_max, preis_unsicher, melder_name, melder_email, funnel_daten"
+      "id, auftraggeber_kunde_id, kunde_objekt_id, hv_meldung_status, anlass, preis_max, preis_unsicher, melder_name, melder_email, funnel_daten, org_freigabe_status, freigabe_bypass_grund"
     )
     .eq("id", leadId)
     .maybeSingle();
@@ -63,6 +63,29 @@ export async function POST(req: Request) {
   if ((lead.hv_meldung_status ?? "neu") !== "neu") {
     return NextResponse.json(
       { error: "Für diese Meldung ist die Aktion nicht mehr möglich." },
+      { status: 409 }
+    );
+  }
+
+  const { hvFreigabeEntfaellt } = await import("@/lib/org/freigabe-bypass");
+  const funnelDa =
+    lead.funnel_daten &&
+    typeof lead.funnel_daten === "object" &&
+    !Array.isArray(lead.funnel_daten)
+      ? (lead.funnel_daten as { direktauftrag?: unknown }).direktauftrag === true
+      : false;
+  if (
+    hvFreigabeEntfaellt({
+      orgFreigabeStatus: lead.org_freigabe_status,
+      bypassGrund: lead.freigabe_bypass_grund,
+      funnelDirektauftrag: funnelDa,
+      hvMeldungStatus: lead.hv_meldung_status,
+      // Aktion vor Angebotszustellung — Schwelle greift nicht
+      angebotZugestellt: false,
+    })
+  ) {
+    return NextResponse.json(
+      { error: "Keine Freigabe notwendig (Akut oder unter Schwelle)." },
       { status: 409 }
     );
   }

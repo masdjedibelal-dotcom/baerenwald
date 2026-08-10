@@ -61,6 +61,14 @@ export function PortalDocViewer({ doc, onClose }: PortalDocViewerProps) {
         className="portal-doc-viewer-bar"
         onClick={(e) => e.stopPropagation()}
       >
+        <button
+          type="button"
+          className="portal-doc-viewer-close"
+          aria-label="Schließen"
+          onClick={onClose}
+        >
+          ×
+        </button>
         <div
           className={cn(
             "portal-doc-viewer-badge",
@@ -91,14 +99,6 @@ export function PortalDocViewer({ doc, onClose }: PortalDocViewerProps) {
         >
           ↓ Herunterladen
         </a>
-        <button
-          type="button"
-          className="portal-doc-viewer-close"
-          aria-label="Schließen"
-          onClick={onClose}
-        >
-          ×
-        </button>
       </div>
 
       <div className="portal-doc-viewer-body" onClick={onClose}>

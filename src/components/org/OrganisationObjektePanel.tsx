@@ -26,6 +26,7 @@ import type {
 import { portalListStackClass } from "@/lib/portal2/layout-chrome";
 import {
   buildObjCardModel,
+  countAktiveByObjektId,
   countOffeneByObjektId,
   nextObjektKopieName,
   objDeleteConfirm,
@@ -41,6 +42,25 @@ import { orgPortalToast, portalToastError } from "@/lib/shared/portal-toast";
 type Props = {
   objekte: OrganisationObjekt[];
   leads?: OrganisationLead[];
+  angebote?: Array<{
+    id: string;
+    lead_id?: string | null;
+    status?: string | null;
+    status_einfach?: string | null;
+    gesendet_am?: string | null;
+    gesendet_kunde_at?: string | null;
+    created_at?: string | null;
+  }>;
+  auftraege?: Array<{
+    id: string;
+    lead_id?: string | null;
+    status?: string | null;
+    created_at?: string | null;
+    positionen?: Array<{
+      handwerker_id?: string | null;
+      handwerker_status?: string | null;
+    }> | null;
+  }>;
   orgKennung?: string | null;
   /** Für Aushang-Branding (A2 / E3) */
   kunde?: OrganisationKunde | null;
@@ -74,6 +94,8 @@ function draftFromObjekt(
 export function OrganisationObjektePanel({
   objekte,
   leads = [],
+  angebote = [],
+  auftraege = [],
   orgKennung,
   kunde,
   onRefresh,
@@ -98,9 +120,26 @@ export function OrganisationObjektePanel({
     kunde?.org_anzeigename?.trim() || kunde?.name?.trim() || "";
 
   const offenById = useMemo(
-    () => countOffeneByObjektId(leads, objekte),
+    () => countOffeneByObjektId(leads, objekte, { angebote, auftraege }),
+    [leads, objekte, angebote, auftraege]
+  );
+
+  const aktiveById = useMemo(
+    () => countAktiveByObjektId(leads, objekte),
     [leads, objekte]
   );
+
+  const copyObjektMeldeLink = async (o: OrganisationObjekt) => {
+    if (!orgKennung) return;
+    const ok = await copyMeldeLink(
+      aushangUrl(orgKennung, {
+        melde_slug: o.melde_slug,
+        titel: o.titel,
+      })
+    );
+    if (ok) orgPortalToast.linkKopiert();
+    else portalToastError("Kopieren fehlgeschlagen", "Bitte den Link manuell kopieren.");
+  };
 
   const activeObjekt =
     mode.kind === "detail"
@@ -151,8 +190,7 @@ export function OrganisationObjektePanel({
   };
 
   const requestDeleteObjekt = (o: OrganisationObjekt) => {
-    const offen = offenById[o.id] ?? 0;
-    if (objektHasActiveVorgaenge(offen)) {
+    if (objektHasActiveVorgaenge(aktiveById[o.id] ?? 0)) {
       portalToastError("Löschen nicht möglich", OBJ_DELETE_BLOCKED);
       return;
     }
@@ -233,7 +271,7 @@ export function OrganisationObjektePanel({
       for (const id of selected) {
         const o = objekte.find((x) => x.id === id);
         if (!o) continue;
-        if (objektHasActiveVorgaenge(offenById[id] ?? 0)) {
+        if (objektHasActiveVorgaenge(aktiveById[id] ?? 0)) {
           blocked += 1;
           continue;
         }
@@ -340,35 +378,13 @@ export function OrganisationObjektePanel({
         </div>
       );
     }
-    const canAushang = !!(
-      orgKennung &&
-      activeObjekt.melde_slug &&
-      activeObjekt.melde_aktiv &&
-      kunde
-    );
     return (
       <>
         <OrganisationObjektDetail
           objekt={activeObjekt}
           leads={leads}
           offenCount={offenById[activeObjekt.id] ?? 0}
-          canAushang={canAushang}
           onBack={() => setMode({ kind: "list" })}
-          onCopyMeldeLink={() =>
-            void copyMeldeLink(
-              aushangUrl(orgKennung!, {
-                melde_slug: activeObjekt.melde_slug,
-                titel: activeObjekt.titel,
-              })
-            )
-          }
-          onOpenAushangPdf={() => openMeldeAushangPdf(activeObjekt.id)}
-          onOpenQrCode={() =>
-            setQrModal({
-              objektId: activeObjekt.id,
-              label: activeObjekt.titel,
-            })
-          }
           onEdit={() =>
             setMode({
               kind: "wizard",
@@ -376,22 +392,12 @@ export function OrganisationObjektePanel({
               draft: draftFromObjekt(activeObjekt, defaultHv),
             })
           }
-          onCopy={() => void copyObjekt(activeObjekt)}
-          onDelete={() => requestDeleteObjekt(activeObjekt)}
           onEinladen={() => setEinladenObjektId(activeObjekt.id)}
           onRefresh={onRefresh}
           onOpenVorgang={onOpenVorgang}
           dokumenteByLeadId={dokumenteByLeadId}
         />
         {confirmDialog}
-        {qrModal ? (
-          <OrganisationMeldeQrModal
-            open
-            onClose={() => setQrModal(null)}
-            objektId={qrModal.objektId}
-            label={qrModal.label}
-          />
-        ) : null}
         {einladenObjektId && orgKennung ? (
           <PortalModalEinladen
             open
@@ -486,6 +492,7 @@ export function OrganisationObjektePanel({
                     onQrCode={() =>
                       setQrModal({ objektId: o.id, label: o.titel })
                     }
+                    onLinkKopieren={() => void copyObjektMeldeLink(o)}
                     onBearbeiten={() =>
                       setMode({
                         kind: "wizard",

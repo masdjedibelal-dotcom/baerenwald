@@ -1,23 +1,29 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState, useTransition } from "react";
-import { Check, Play } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Check } from "lucide-react";
 
 import { PartnerDirektKameraSlot } from "@/components/partner/PartnerDirektKameraSlot";
 import { PartnerKiKorrekturField } from "@/components/partner/PartnerKiKorrekturField";
+import { PartnerMultiFotoSlot } from "@/components/partner/PartnerMultiFotoSlot";
+import {
+  PORTAL_BUSY_MIN_MS,
+  usePortalBusy,
+} from "@/components/shared/PortalBusyContext";
 import { PortalModalShell } from "@/components/shared/PortalModalShell";
 import {
   addPartnerPositionFortschritt,
   completePartnerPosition,
+  createPartnerWeitereArbeit,
   startPartnerPosition,
 } from "@/app/actions/partner-position-eintraege";
-import { createPartnerPositionsAnfrage } from "@/app/actions/partner-positions-anfrage";
+import { normalizePartnerCameraPhoto } from "@/lib/partner/normalize-camera-photo";
 import {
   formatZeitMinuten,
   lebenszyklusLabel,
 } from "@/lib/partner/position-lebenszyklus";
 import { HW_DOKU_STORY } from "@/lib/portal2/hw-doku-story";
-import { PORTAL_VAR } from "@/lib/portal2/tokens";
+import { PORTAL_C, PORTAL_VAR } from "@/lib/portal2/tokens";
 import { portalToastError, portalToastSuccess } from "@/lib/shared/portal-toast";
 import { cn } from "@/lib/utils";
 
@@ -39,12 +45,14 @@ type SheetMode = "start" | "fortschritt" | "erledigt";
 type Props = {
   auftragId: string;
   positionen: LebenszyklusPosition[];
-  onDone?: () => void;
+  onDone?: () => void | Promise<void>;
   preferredPositionIds?: string[];
   anfrageId?: string | null;
   auftragTitel?: string | null;
   /** Deep-Link: erstes bevorzugtes Sheet öffnen */
   autoOpenPreferred?: boolean;
+  /** Erledigter Auftrag: nur lesen, keine Start-/Update-/Nachtrag-Aktionen. */
+  readOnly?: boolean;
 };
 
 function mengeLabel(p: LebenszyklusPosition): string | null {
@@ -63,6 +71,7 @@ export function PartnerPositionLebenszyklusList({
   anfrageId,
   auftragTitel,
   autoOpenPreferred = false,
+  readOnly = false,
 }: Props) {
   const [sheet, setSheet] = useState<{
     mode: SheetMode;
@@ -74,10 +83,12 @@ export function PartnerPositionLebenszyklusList({
   const [nachtragEur, setNachtragEur] = useState("");
   const [nachtragHours, setNachtragHours] = useState(0);
   const [nachtragMins, setNachtragMins] = useState(0);
-  const [pending, startTransition] = useTransition();
-  const [nachreich, setNachreich] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   const [beschreibung, setBeschreibung] = useState("");
+  const [erledigtFotos, setErledigtFotos] = useState<File[]>([]);
   const autoOpenedRef = useRef(false);
+  const sheetFormRef = useRef<HTMLFormElement>(null);
+  const { runBusy } = usePortalBusy();
   const preferredSet = useMemo(
     () => new Set(preferredPositionIds.map((id) => id.trim()).filter(Boolean)),
     [preferredPositionIds]
@@ -92,13 +103,23 @@ export function PartnerPositionLebenszyklusList({
     });
   }, [positionen, preferredSet]);
 
-  const erledigtCount = useMemo(
-    () => sortedPositionen.filter((p) => p.leistung_status === "erledigt").length,
+  const actionablePositionen = useMemo(
+    () =>
+      sortedPositionen.filter(
+        (p) =>
+          p.anerkennung_status !== "in_pruefung" &&
+          p.anerkennung_status !== "abgelehnt"
+      ),
     [sortedPositionen]
   );
+  const erledigtCount = useMemo(
+    () =>
+      actionablePositionen.filter((p) => p.leistung_status === "erledigt").length,
+    [actionablePositionen]
+  );
   const progressPct =
-    sortedPositionen.length > 0
-      ? Math.round((erledigtCount / sortedPositionen.length) * 100)
+    actionablePositionen.length > 0
+      ? Math.round((erledigtCount / actionablePositionen.length) * 100)
       : 0;
 
   useEffect(() => {
@@ -117,42 +138,145 @@ export function PartnerPositionLebenszyklusList({
 
   useEffect(() => {
     setBeschreibung("");
+    setErledigtFotos([]);
   }, [sheet?.position.id, sheet?.mode]);
 
-  function submitSheet(formData: FormData) {
-    if (!sheet?.mode) return;
-    if (nachreich) {
-      formData.set("nachgereicht", "1");
-    }
-    if (anfrageId) formData.set("anfrageId", anfrageId);
-    startTransition(async () => {
-      const action =
-        sheet.mode === "start"
-          ? startPartnerPosition
-          : sheet.mode === "fortschritt"
-            ? addPartnerPositionFortschritt
-            : completePartnerPosition;
-      const res = await action(formData);
-      if (!res.ok) {
-        portalToastError(res.error);
-        return;
-      }
-      portalToastSuccess(
-        sheet.mode === "start"
-          ? "Position gestartet."
-          : sheet.mode === "fortschritt"
-            ? "Fortschritt gespeichert."
-            : HW_DOKU_STORY.positionEndeToast
+  async function normalizeFotoField(
+    formData: FormData,
+    field: string
+  ): Promise<boolean> {
+    const raw = formData.get(field);
+    if (!(raw instanceof File) || raw.size <= 0) return true;
+    try {
+      formData.set(field, await normalizePartnerCameraPhoto(raw));
+      return true;
+    } catch {
+      portalToastError(
+        "Foto konnte nicht verarbeitet werden. Bitte erneut versuchen."
       );
-      setSheet(null);
-      setNachreich(false);
-      setBeschreibung("");
-      onDone?.();
-    });
+      return false;
+    }
+  }
+
+  function submitSheet(formData: FormData) {
+    if (!sheet?.mode || submitting) return;
+    if (anfrageId) formData.set("anfrageId", anfrageId);
+    const sheetIsRegie =
+      sheet.position.typ === "regie" ||
+      sheet.position.verguetung === "aufwand";
+    const mode = sheet.mode;
+    const positionId = sheet.position.id;
+
+    setSubmitting(true);
+    void (async () => {
+      let ok = false;
+      try {
+        await runBusy(async () => {
+          // Regie: Start-/Ende-Slots → einheitlich als foto / foto_ende
+          const startSlot = formData.get("foto_start");
+          if (startSlot instanceof File && startSlot.size > 0) {
+            formData.set("foto", startSlot);
+          }
+          if (!(await normalizeFotoField(formData, "foto"))) return;
+          if (!(await normalizeFotoField(formData, "foto_ende"))) return;
+
+          const captureStart =
+            String(formData.get("captureAt_start") ?? "").trim() ||
+            String(formData.get("captureAt") ?? "").trim();
+          if (captureStart) formData.set("captureAt", captureStart);
+
+          const endeFoto = formData.get("foto_ende");
+          const hasEnde =
+            endeFoto instanceof File && endeFoto.size > 0 && sheetIsRegie;
+
+          if (mode === "erledigt" && !sheetIsRegie && erledigtFotos.length) {
+            formData.delete("fotos");
+            formData.delete("foto");
+            for (const f of erledigtFotos.slice(0, 5)) {
+              formData.append("fotos", f);
+            }
+          }
+
+          try {
+            if (mode === "start") {
+              const startRes = await startPartnerPosition(formData);
+              if (!startRes.ok) {
+                portalToastError(startRes.error);
+                return;
+              }
+              if (hasEnde) {
+                const endeFd = new FormData();
+                endeFd.set("positionId", positionId);
+                if (anfrageId) endeFd.set("anfrageId", anfrageId);
+                endeFd.set("foto", endeFoto);
+                const captureEnde = String(
+                  formData.get("captureAt_ende") ?? ""
+                ).trim();
+                if (captureEnde) endeFd.set("captureAt", captureEnde);
+                const beschr = String(formData.get("beschreibung") ?? "").trim();
+                if (beschr) endeFd.set("beschreibung", beschr);
+                const zeitStd = formData.get("zeitStd");
+                const zeitMin = formData.get("zeitMin");
+                if (zeitStd != null) endeFd.set("zeitStd", String(zeitStd));
+                if (zeitMin != null) endeFd.set("zeitMin", String(zeitMin));
+                const endeRes = await completePartnerPosition(endeFd);
+                if (!endeRes.ok) {
+                  portalToastError(endeRes.error);
+                  await onDone?.();
+                  return;
+                }
+              }
+              portalToastSuccess(
+                hasEnde ? HW_DOKU_STORY.positionEndeToast : "Start gespeichert."
+              );
+            } else if (mode === "fortschritt") {
+              const res = await addPartnerPositionFortschritt(formData);
+              if (!res.ok) {
+                portalToastError(res.error);
+                return;
+              }
+              portalToastSuccess("Update gespeichert.");
+            } else {
+              if (
+                hasEnde &&
+                (!(formData.get("foto") instanceof File) ||
+                  (formData.get("foto") instanceof File &&
+                    (formData.get("foto") as File).size <= 0))
+              ) {
+                formData.set("foto", endeFoto);
+                const captureEnde = String(
+                  formData.get("captureAt_ende") ?? ""
+                ).trim();
+                if (captureEnde) formData.set("captureAt", captureEnde);
+              }
+              const res = await completePartnerPosition(formData);
+              if (!res.ok) {
+                portalToastError(res.error);
+                return;
+              }
+              portalToastSuccess(HW_DOKU_STORY.positionEndeToast);
+            }
+          } catch {
+            portalToastError(
+              "Speichern fehlgeschlagen — Foto zu groß oder Verbindung unterbrochen. Bitte erneut versuchen."
+            );
+            return;
+          }
+
+          ok = true;
+          await onDone?.();
+          setSheet(null);
+          setBeschreibung("");
+          setErledigtFotos([]);
+        }, Math.max(PORTAL_BUSY_MIN_MS, 600));
+      } finally {
+        setSubmitting(false);
+      }
+    })();
   }
 
   function closeNachtrag() {
-    if (pending) return;
+    if (submitting) return;
     setNachtragOpen(false);
     setNachtragTitel("");
     setNachtragBegruendung("");
@@ -177,25 +301,38 @@ export function PartnerPositionLebenszyklusList({
     if (nachtragEur.trim()) formData.set("schaetzungEur", nachtragEur.trim());
     const totalMin = nachtragHours * 60 + nachtragMins;
     if (totalMin > 0) formData.set("schaetzungMinuten", String(totalMin));
-    startTransition(async () => {
-      const res = await createPartnerPositionsAnfrage(formData);
-      if (!res.ok) {
-        portalToastError(res.error);
-        return;
+    if (submitting) return;
+    setSubmitting(true);
+    void (async () => {
+      try {
+        await runBusy(async () => {
+          const res = await createPartnerWeitereArbeit(formData);
+          if (!res.ok) {
+            portalToastError(res.error);
+            return;
+          }
+          portalToastSuccess(
+            "Nachtrag eingereicht — noch zur Prüfung durch Bärenwald."
+          );
+          await onDone?.();
+          setNachtragOpen(false);
+          setNachtragTitel("");
+          setNachtragBegruendung("");
+          setNachtragEur("");
+          setNachtragHours(0);
+          setNachtragMins(0);
+        }, Math.max(PORTAL_BUSY_MIN_MS, 600));
+      } finally {
+        setSubmitting(false);
       }
-      portalToastSuccess(
-        "Meldung gesendet — Bärenwald prüft und meldet sich."
-      );
-      closeNachtrag();
-      onDone?.();
-    });
+    })();
   }
 
   function closeSheet() {
-    if (pending) return;
+    if (submitting) return;
     setSheet(null);
-    setNachreich(false);
     setBeschreibung("");
+    setErledigtFotos([]);
   }
 
   return (
@@ -215,22 +352,23 @@ export function PartnerPositionLebenszyklusList({
             Fortschritt
           </p>
           <p className="text-[12.5px] font-semibold" style={{ color: PORTAL_VAR.sub }}>
-            {erledigtCount} von {sortedPositionen.length} erledigt
+            {erledigtCount} von {actionablePositionen.length} erledigt
           </p>
         </div>
         <div
-          className="mt-1.5 h-1.5 overflow-hidden rounded-full"
-          style={{ background: PORTAL_VAR.line2 }}
+          className="mt-1.5 h-2 overflow-hidden rounded-full"
+          style={{ background: PORTAL_C.line2 }}
           role="progressbar"
           aria-valuenow={erledigtCount}
           aria-valuemin={0}
-          aria-valuemax={sortedPositionen.length}
+          aria-valuemax={actionablePositionen.length}
+          aria-valuetext={`${progressPct} Prozent`}
         >
           <div
-            className="h-full rounded-full transition-all"
+            className="h-full rounded-full transition-[width] duration-300 ease-out"
             style={{
-              width: `${progressPct}%`,
-              background: PORTAL_VAR.primary,
+              width: `${Math.max(0, Math.min(100, progressPct))}%`,
+              backgroundColor: PORTAL_C.primary,
             }}
           />
         </div>
@@ -246,17 +384,13 @@ export function PartnerPositionLebenszyklusList({
       ) : null}
 
       {sortedPositionen.length === 0 ? (
-        <div
-          className="rounded-xl border border-dashed px-4 py-5 text-center"
-          style={{ borderColor: PORTAL_VAR.line }}
-          data-testid="hw-first-job-empty"
-        >
+        <div className="px-0 py-5 text-center" data-testid="hw-first-job-empty">
           <p className="text-[14px] font-bold" style={{ color: PORTAL_VAR.ink }}>
             Noch keine Leistung
           </p>
         </div>
       ) : (
-        <ul className="space-y-2.5">
+        <ul className="divide-y divide-border-light">
           {sortedPositionen.map((p) => {
             const st = p.leistung_status ?? "offen";
             const isArbeit = st === "in_arbeit";
@@ -264,11 +398,17 @@ export function PartnerPositionLebenszyklusList({
             const isAufwand = p.verguetung === "aufwand";
             const isRegie = p.typ === "regie" || isAufwand;
             const isPreferred = preferredSet.has(p.id);
+            const inPruefung = p.anerkennung_status === "in_pruefung";
+            const isAbgelehnt = p.anerkennung_status === "abgelehnt";
+            const isBlocked = inPruefung || isAbgelehnt;
             const meta = [
-              lebenszyklusLabel(st),
+              inPruefung
+                ? "Noch zur Prüfung"
+                : isAbgelehnt
+                  ? "Abgelehnt"
+                  : lebenszyklusLabel(st),
               mengeLabel(p),
-              p.anerkennung_status === "in_pruefung" ? "in Prüfung" : null,
-              isPreferred ? "Update angefordert" : null,
+              isPreferred && !isBlocked ? "Update angefordert" : null,
             ]
               .filter(Boolean)
               .join(" · ");
@@ -277,31 +417,44 @@ export function PartnerPositionLebenszyklusList({
               <li
                 key={p.id}
                 className={cn(
-                  "rounded-xl border bg-white px-3.5 py-3.5 shadow-[0_1px_2px_rgba(22,32,27,0.04)]",
-                  isPreferred
-                    ? "border-amber-300 ring-1 ring-amber-200"
-                    : "border-border-light"
+                  "px-0 py-3.5",
+                  isBlocked && "opacity-70",
+                  isPreferred && !isBlocked && "bg-amber-50/60"
                 )}
               >
                 <div className="flex items-start gap-2.5">
                   <div
                     className={cn(
                       "mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-md border",
-                      isErledigt
-                        ? "border-accent bg-accent text-white"
-                        : "border-border-default bg-white"
+                      isBlocked
+                        ? "border-border-default bg-[var(--p2-line2,#e8ebe9)]"
+                        : isErledigt
+                          ? "border-accent bg-accent text-white"
+                          : "border-border-default bg-white"
                     )}
                     aria-hidden
                   >
-                    {isErledigt ? <Check className="h-3 w-3" strokeWidth={3} /> : null}
+                    {!isBlocked && isErledigt ? (
+                      <Check className="h-3 w-3" strokeWidth={3} />
+                    ) : null}
                   </div>
                   <div className="min-w-0 flex-1">
                     <div className="flex items-start justify-between gap-2">
-                      <p className="text-[14.5px] font-bold leading-snug text-text-primary">
+                      <p
+                        className={cn(
+                          "text-[14.5px] font-bold leading-snug",
+                          isBlocked ? "text-text-secondary" : "text-text-primary"
+                        )}
+                      >
                         {p.leistung_name}
                       </p>
                       {p.preis_partner != null ? (
-                        <p className="shrink-0 text-[14.5px] font-bold tabular-nums text-text-primary">
+                        <p
+                          className={cn(
+                            "shrink-0 text-[14.5px] font-bold tabular-nums",
+                            isBlocked ? "text-text-tertiary" : "text-text-primary"
+                          )}
+                        >
                           {p.preis_partner.toLocaleString("de-DE", {
                             style: "currency",
                             currency: "EUR",
@@ -310,7 +463,13 @@ export function PartnerPositionLebenszyklusList({
                       ) : null}
                     </div>
                     <p className="mt-0.5 text-[12.5px] text-text-tertiary">{meta}</p>
-                    {isAufwand && p.zeit_minuten_summe ? (
+                    {inPruefung ? (
+                      <p className="mt-1 text-[12.5px] font-semibold text-amber-800">
+                        Eingereicht — noch zur Prüfung. Nach Freigabe wie üblich
+                        starten und abschließen.
+                      </p>
+                    ) : null}
+                    {!isBlocked && isAufwand && p.zeit_minuten_summe ? (
                       <p className="mt-0.5 text-[12px] text-text-tertiary">
                         Erfasste Zeit: {formatZeitMinuten(p.zeit_minuten_summe)}
                       </p>
@@ -318,17 +477,16 @@ export function PartnerPositionLebenszyklusList({
                   </div>
                 </div>
 
-                {!isErledigt ? (
+                {!readOnly && !isBlocked && !isErledigt ? (
                   <div className="mt-3 space-y-2">
                     {st === "offen" ? (
                       <div className="flex flex-col gap-2 sm:flex-row">
                         <button
                           type="button"
-                          className="btn-pill-primary flex flex-1 items-center justify-center gap-2"
+                          className="btn-pill-primary flex-1"
                           onClick={() => setSheet({ mode: "start", position: p })}
                         >
-                          <Play className="h-3.5 w-3.5 fill-current" aria-hidden />
-                          {isRegie ? "Start — Ankunftsfoto" : "Start"}
+                          Start
                         </button>
                         {!isRegie ? (
                           <button
@@ -347,21 +505,21 @@ export function PartnerPositionLebenszyklusList({
                       <div className="flex flex-col gap-2 sm:flex-row">
                         <button
                           type="button"
-                          className="btn-pill-outline flex-1"
+                          className="btn-pill-primary flex-1"
                           onClick={() =>
                             setSheet({ mode: "fortschritt", position: p })
                           }
                         >
-                          Fortschritt
+                          Update
                         </button>
                         <button
                           type="button"
-                          className="btn-pill-primary flex-1"
+                          className="btn-pill-outline flex-1"
                           onClick={() =>
                             setSheet({ mode: "erledigt", position: p })
                           }
                         >
-                          {isRegie ? "Ende — Dokumentieren" : "Erledigt"}
+                          Erledigt markieren
                         </button>
                       </div>
                     ) : null}
@@ -373,6 +531,7 @@ export function PartnerPositionLebenszyklusList({
         </ul>
       )}
 
+      {!readOnly ? (
       <div className="space-y-2">
         <button
           type="button"
@@ -383,26 +542,49 @@ export function PartnerPositionLebenszyklusList({
           + Nachtrag / Regie
         </button>
         <p className="text-[11.5px] leading-relaxed text-text-tertiary">
-          Zusätzliche Arbeit zuerst melden — Bärenwald prüft. Erst nach Freigabe und
-          erneuter Annahme ausführen.
+          Nachtrag erscheint ausgegraut mit „Noch zur Prüfung“. Nach Freigabe wie
+          die übrigen Leistungen starten, abschließen — der Gesamtpreis aktualisiert
+          sich automatisch.
         </p>
       </div>
+      ) : null}
 
       {sheet ? (
         <PortalModalShell
           open
           title={
-            sheet.mode === "start"
-              ? "Position starten"
+            sheet.mode === "erledigt"
+              ? "Erledigt"
               : sheet.mode === "fortschritt"
-                ? "Fortschritt festhalten"
-                : "Position abschließen"
+                ? "Update"
+                : "Start"
           }
           subtitle={sheet.position.leistung_name}
           onClose={closeSheet}
           variant="edit"
-          dirty
-          closeOnBackdrop={!pending}
+          dirty={
+            !submitting &&
+            (beschreibung.trim().length > 0 ||
+              erledigtFotos.length > 0 ||
+              sheet.mode !== "erledigt")
+          }
+          closeOnBackdrop={!submitting}
+          busy={submitting}
+          busyTitle={
+            sheet.mode === "erledigt"
+              ? "Wird abgeschlossen…"
+              : "Wird gespeichert…"
+          }
+          busyBody="Fotos und Daten werden übertragen."
+          onConfirm={() => sheetFormRef.current?.requestSubmit()}
+          confirmDisabled={submitting}
+          confirmLabel={
+            sheet.mode === "erledigt"
+              ? "Erledigt speichern"
+              : sheet.mode === "fortschritt"
+                ? "Update speichern"
+                : "Start speichern"
+          }
         >
           {(() => {
             const sheetIsRegie =
@@ -412,106 +594,70 @@ export function PartnerPositionLebenszyklusList({
               sheetIsRegie &&
               (sheet.mode === "start" || sheet.mode === "erledigt");
             const textPflicht = fotoPflicht;
+            const erledigtMulti = sheet.mode === "erledigt" && !sheetIsRegie;
             return (
-          <form action={submitSheet} className="flex flex-col">
+          <form
+            ref={sheetFormRef}
+            action={submitSheet}
+            className="flex flex-col"
+          >
             <input type="hidden" name="positionId" value={sheet.position.id} />
             {anfrageId ? (
               <input type="hidden" name="anfrageId" value={anfrageId} />
             ) : null}
 
-            {!nachreich ? (
-              <PartnerDirektKameraSlot
-                required={fotoPflicht}
-                label={
-                  sheet.mode === "start"
-                    ? sheetIsRegie
-                      ? "Ankunftsfoto — Ort & Zustand"
-                      : "Ankunftsfoto (optional)"
-                    : sheet.mode === "fortschritt"
-                      ? "Fortschritts-Foto (optional)"
-                      : sheetIsRegie
-                        ? "Ergebnis-Foto — fertige Arbeit"
-                        : "Ergebnis-Foto (optional)"
-                }
-              />
-            ) : null}
-
-            <button
-              type="button"
-              className="mt-2 text-xs text-text-tertiary underline"
-              onClick={() => setNachreich((v) => !v)}
-            >
-              {nachreich ? "Kamera nutzen" : "Foto liegt schon vor?"}
-            </button>
-            {nachreich ? (
-              <div className="mt-2 space-y-2">
-                <p className="text-xs text-amber-800">
-                  Galerie erlaubt — zählt als nachgereicht, nicht für
-                  Tagesspanne.
-                </p>
-                <input
-                  type="file"
-                  name="foto"
-                  accept="image/*"
-                  required={fotoPflicht}
-                  className="block w-full text-sm"
+            {sheetIsRegie &&
+            (sheet.mode === "start" || sheet.mode === "erledigt") ? (
+              <div className="grid grid-cols-2 gap-2.5">
+                <PartnerDirektKameraSlot
+                  name="foto_start"
+                  captureAtName="captureAt_start"
+                  label="Start"
+                  required={sheet.mode === "start"}
+                  compact
                 />
-                <input
-                  type="text"
-                  name="nachreichGrund"
-                  required
-                  placeholder="Grund (Pflicht)"
-                  className="input-field w-full"
+                <PartnerDirektKameraSlot
+                  name="foto_ende"
+                  captureAtName="captureAt_ende"
+                  label="Ende"
+                  required={sheet.mode === "start" || sheet.mode === "erledigt"}
+                  compact
                 />
               </div>
-            ) : null}
+            ) : erledigtMulti ? (
+              <PartnerMultiFotoSlot
+                label="Ergebnis-Foto"
+                required={false}
+                value={erledigtFotos}
+                onChange={setErledigtFotos}
+              />
+            ) : (
+              <PartnerDirektKameraSlot required={false} label="Foto" />
+            )}
 
             <div className="mt-4">
               <PartnerKiKorrekturField
                 scope="bautagebuch"
-                label={
-                  sheet.mode === "start"
-                    ? "Ausgangslage"
-                    : sheet.mode === "fortschritt"
-                      ? "Kurz beschreiben"
-                      : "Ergebnis / Schlussbemerkung"
-                }
+                label="Beschreibung"
                 value={beschreibung}
                 onChange={setBeschreibung}
                 rows={3}
                 required={textPflicht}
                 leistungName={sheet.position.leistung_name}
                 auftragTitel={auftragTitel}
-                placeholder={
-                  sheet.mode === "start"
-                    ? "Einsprechen oder tippen — KI formuliert kundenfertig"
-                    : sheet.mode === "fortschritt"
-                      ? "z.B. Estrich eingebracht, trocknet"
-                      : "Was wurde fertiggestellt?"
-                }
+                placeholder="Kurz beschreiben…"
               />
             </div>
 
-            {sheet.mode === "start" && sheetIsRegie ? (
-              <p
-                className="mt-3 rounded-[11px] px-3.5 py-3 text-[13px] leading-relaxed"
-                style={{
-                  background: PORTAL_VAR.primarySoft,
-                  color: PORTAL_VAR.sub,
-                }}
-              >
-                Bei Regie sind Ankunftsfoto und kurze Ausgangslage Pflicht.
-                Danach Fortschritte und Ende mit Ergebnis-Foto.
-              </p>
-            ) : null}
-
-            {sheet.position.verguetung === "aufwand" &&
-            (sheet.mode === "fortschritt" || sheet.mode === "erledigt") ? (
+            {sheetIsRegie &&
+            (sheet.mode === "start" ||
+              sheet.mode === "fortschritt" ||
+              sheet.mode === "erledigt") ? (
               <div className="mt-3 space-y-1">
                 <p className="portal-form-label">
-                  {sheet.mode === "erledigt"
-                    ? "Meine Zeit gesamt (Pflicht bei Regie)"
-                    : "Zeitaufwand (Regie)"}
+                  {sheet.mode === "erledigt" || sheet.mode === "start"
+                    ? "Meine Zeit gesamt"
+                    : "Zeitaufwand"}
                 </p>
                 <div className="flex gap-2">
                   <input
@@ -519,9 +665,8 @@ export function PartnerPositionLebenszyklusList({
                     name="zeitStd"
                     min={0}
                     step={1}
-                    required={sheet.mode === "erledigt"}
+                    required={sheet.mode === "erledigt" || sheet.mode === "start"}
                     defaultValue={
-                      sheet.mode === "erledigt" &&
                       sheet.position.zeit_minuten_summe
                         ? Math.floor(sheet.position.zeit_minuten_summe / 60)
                         : 0
@@ -535,9 +680,8 @@ export function PartnerPositionLebenszyklusList({
                     min={0}
                     max={59}
                     step={1}
-                    required={sheet.mode === "erledigt"}
+                    required={sheet.mode === "erledigt" || sheet.mode === "start"}
                     defaultValue={
-                      sheet.mode === "erledigt" &&
                       sheet.position.zeit_minuten_summe
                         ? sheet.position.zeit_minuten_summe % 60
                         : 0
@@ -553,15 +697,15 @@ export function PartnerPositionLebenszyklusList({
               <button
                 type="submit"
                 className="btn-pill-primary w-full"
-                disabled={pending}
+                disabled={submitting}
               >
-                {pending
+                {submitting
                   ? "Speichern…"
-                  : sheet.mode === "start"
-                    ? "Position starten"
+                  : sheet.mode === "erledigt"
+                    ? "Erledigt speichern"
                     : sheet.mode === "fortschritt"
-                      ? "Fortschritt speichern"
-                      : "Dokumentieren"}
+                      ? "Update speichern"
+                      : "Start speichern"}
               </button>
             </div>
           </form>
@@ -577,13 +721,24 @@ export function PartnerPositionLebenszyklusList({
         onClose={closeNachtrag}
         variant="edit"
         dirty={
-          nachtragTitel.trim().length > 0 ||
-          nachtragBegruendung.trim().length > 0 ||
-          nachtragEur.trim().length > 0 ||
-          nachtragHours > 0 ||
-          nachtragMins > 0
+          !submitting &&
+          (nachtragTitel.trim().length > 0 ||
+            nachtragBegruendung.trim().length > 0 ||
+            nachtragEur.trim().length > 0 ||
+            nachtragHours > 0 ||
+            nachtragMins > 0)
         }
-        closeOnBackdrop={!pending}
+        closeOnBackdrop={!submitting}
+        busy={submitting && nachtragOpen}
+        busyTitle="Nachtrag wird eingereicht…"
+        busyBody="Einen Moment — Bärenwald erhält die Meldung."
+        onConfirm={() => submitNachtrag()}
+        confirmDisabled={
+          submitting ||
+          nachtragTitel.trim().length < 4 ||
+          nachtragBegruendung.trim().length < 8
+        }
+        confirmLabel="Zur Prüfung senden"
       >
         <div className="flex flex-col gap-3">
           <label className="flex flex-col gap-1">
@@ -667,7 +822,7 @@ export function PartnerPositionLebenszyklusList({
           <button
             type="button"
             className="btn-pill-outline portal-btn"
-            disabled={pending}
+            disabled={submitting}
             onClick={closeNachtrag}
           >
             Abbrechen
@@ -676,13 +831,13 @@ export function PartnerPositionLebenszyklusList({
             type="button"
             className="btn-pill-primary portal-btn"
             disabled={
-              pending ||
+              submitting ||
               nachtragTitel.trim().length < 4 ||
               nachtragBegruendung.trim().length < 8
             }
             onClick={() => submitNachtrag()}
           >
-            {pending ? "Senden…" : "Zur Prüfung"}
+            {submitting ? "Senden…" : "Zur Prüfung"}
           </button>
         </div>
       </PortalModalShell>

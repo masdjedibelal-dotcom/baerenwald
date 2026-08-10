@@ -153,7 +153,7 @@ export function OrganisationObjektWizard({
             Bezeichnung
           </span>
           <input
-            className="portal-input w-full rounded-[10px] border border-border-default px-3 py-3 text-sm"
+            className="portal-field w-full"
             placeholder="WEG Mustermannstraße 1"
             value={draft.name ?? ""}
             onChange={(e) => set("name", e.target.value)}
@@ -180,7 +180,7 @@ export function OrganisationObjektWizard({
               Straße
             </span>
             <input
-              className="portal-input w-full rounded-[10px] border border-border-default px-3 py-3 text-sm"
+              className="portal-field w-full"
               placeholder="Mustermannstraße"
               value={draft.strasse ?? ""}
               onChange={(e) => set("strasse", e.target.value)}
@@ -191,7 +191,7 @@ export function OrganisationObjektWizard({
               Nr.
             </span>
             <input
-              className="portal-input w-full rounded-[10px] border border-border-default px-3 py-3 text-sm"
+              className="portal-field w-full"
               placeholder="1"
               value={draft.hausnummer ?? ""}
               onChange={(e) => set("hausnummer", e.target.value)}
@@ -204,7 +204,7 @@ export function OrganisationObjektWizard({
               PLZ
             </span>
             <input
-              className="portal-input w-full rounded-[10px] border border-border-default px-3 py-3 text-sm"
+              className="portal-field w-full"
               placeholder="80331"
               inputMode="numeric"
               autoComplete="postal-code"
@@ -217,7 +217,7 @@ export function OrganisationObjektWizard({
               Ort
             </span>
             <input
-              className="portal-input w-full rounded-[10px] border border-border-default px-3 py-3 text-sm"
+              className="portal-field w-full"
               placeholder="München"
               autoComplete="address-level2"
               value={draft.ort ?? ""}
@@ -282,7 +282,7 @@ export function OrganisationObjektWizard({
             Ansprechpartner
           </span>
           <input
-            className="portal-input w-full rounded-[10px] border border-border-default px-3 py-3 text-sm"
+            className="portal-field w-full"
             placeholder="Name"
             value={draft.kontakt ?? ""}
             onChange={(e) => set("kontakt", e.target.value)}
@@ -295,7 +295,7 @@ export function OrganisationObjektWizard({
           </span>
           <input
             type="email"
-            className="portal-input w-full rounded-[10px] border border-border-default px-3 py-3 text-sm"
+            className="portal-field w-full"
             placeholder="name@firma.de"
             value={draft.email ?? ""}
             onChange={(e) => set("email", e.target.value)}
@@ -308,7 +308,7 @@ export function OrganisationObjektWizard({
           </span>
           <input
             type="tel"
-            className="portal-input w-full rounded-[10px] border border-border-default px-3 py-3 text-sm"
+            className="portal-field w-full"
             placeholder="089 / …"
             value={draft.tel ?? ""}
             onChange={(e) => set("tel", e.target.value)}

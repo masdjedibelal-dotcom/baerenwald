@@ -97,8 +97,7 @@ export function PartnerFachdokuSlots({
             Noch {offen} Fachnachweis{offen === 1 ? "" : "e"} offen
           </p>
           <p className="mt-0.5 text-[12.5px]">
-            Abnahme ist trotzdem möglich — Protokoll bitte nachreichen (Tab
-            Dokumentation).
+            Abschluss ist trotzdem möglich — Fachnachweise bitte nachreichen.
           </p>
         </PortalDetailInfoBox>
       </div>
@@ -106,11 +105,8 @@ export function PartnerFachdokuSlots({
   }
 
   return (
-    <section
-      className={cn("rounded-[12px] border bg-white", className)}
-      style={{ borderColor: PORTAL_VAR.line }}
-    >
-      <div className="border-b px-3.5 py-3" style={{ borderColor: PORTAL_VAR.line2 }}>
+    <section className={cn(className)}>
+      <div className="border-b border-border-light pb-3">
         <h3 className="portal-text-title text-[15px]">Fachnachweise</h3>
         <p className="portal-text-meta mt-0.5">
           {offen > 0
@@ -119,15 +115,14 @@ export function PartnerFachdokuSlots({
         </p>
       </div>
 
-      {/* Mobil: Cards */}
-      <ul className="space-y-2.5 p-3 sm:hidden">
+      {/* Mobil: flache Zeilen */}
+      <ul className="divide-y divide-border-light sm:hidden">
         {slots.map((s) => {
           const done = String(s.status).toLowerCase() === "erledigt";
           const href = s.signed_url?.trim();
           return (
-            <li key={s.id}>
-              <article className="rounded-xl border border-border-light bg-white px-3.5 py-3.5">
-                <div className="flex items-start justify-between gap-3">
+            <li key={s.id} className="py-3.5">
+              <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0 flex-1">
                     <p className="text-[14px] font-semibold text-text-primary">
                       {s.label}
@@ -143,7 +138,7 @@ export function PartnerFachdokuSlots({
                     tone={done ? "fertig" : "warn"}
                   />
                 </div>
-                <div className="mt-3 flex items-center justify-end gap-1 border-t border-border-light pt-3">
+                <div className="mt-3 flex items-center justify-end gap-1 pt-1">
                   {href ? (
                     <a
                       href={href}
@@ -178,7 +173,6 @@ export function PartnerFachdokuSlots({
                     {busyId === s.id ? "…" : done ? "Ersetzen" : "Upload"}
                   </button>
                 </div>
-              </article>
             </li>
           );
         })}
@@ -192,8 +186,7 @@ export function PartnerFachdokuSlots({
           return (
             <li
               key={s.id}
-              className="flex items-center gap-2 border-b px-3.5 py-2.5 last:border-b-0"
-              style={{ borderColor: PORTAL_VAR.line2 }}
+              className="flex items-center gap-2 border-b border-border-light px-0 py-2.5 last:border-b-0"
             >
               <div className="min-w-0 flex-1">
                 <p className="text-[13.5px] font-semibold text-text-primary">

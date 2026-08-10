@@ -33,7 +33,7 @@ export async function POST(req: Request) {
       return Response.json(
         {
           error:
-            "Du hast bereits mehrere KI-Projekte gestartet. Registriere dich kostenlos im Portal — dort kannst du weiter visualisieren und Projekte speichern.",
+            "Sie haben bereits mehrere KI-Projekte gestartet. Registrieren Sie sich kostenlos im Portal — dort können Sie weiter visualisieren und Projekte speichern.",
           limit_code: "visitor_sessions",
           portal_register_url: portalRegisterForGptUrl(),
           retry_after: retryAfter,

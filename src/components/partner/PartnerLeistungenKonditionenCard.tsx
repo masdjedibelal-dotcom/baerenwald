@@ -4,14 +4,9 @@ import { Pencil } from "lucide-react";
 import { useState } from "react";
 
 import { PartnerPreisBearbeitenDialog } from "@/components/partner/PartnerPreisBearbeitenDialog";
-import {
-  LeistungStatusDot,
-  type LeistungStatusAmpel,
-} from "@/components/shared/LeistungStatusDot";
 import { fmtPartnerEuro } from "@/lib/partner/partner-detail-format";
 import {
   PARTNER_KONDITION_MWST,
-  resolvePartnerLeistungStatusAmpel,
   summeKonditionBrutto,
   summeKonditionNetto,
   type PartnerKonditionZeile,
@@ -72,7 +67,7 @@ type Props = {
   onHwNotizChange?: (id: string, value: string) => void;
   gesamtLabel?: string;
   /**
-   * `boxed` = eigener Rahmen + Ampel-Legende (Legacy).
+   * `boxed` = eigener Rahmen (Listen-Card).
    * `plain` = Mock-Zeilen ohne äußeren Rahmen (Card-Parent liefert Chrome).
    * `totalsOnly` = nur Netto/MwSt/Gesamt (Zeilen stehen in Leistungskarten).
    */
@@ -165,12 +160,7 @@ export function PartnerLeistungenKonditionenCard({
 
   return (
     <>
-      <div
-        className={cn(
-          "portal-text-body overflow-hidden",
-          plain ? "" : "rounded-xl border border-border-light bg-muted/20"
-        )}
-      >
+      <div className="portal-text-body overflow-hidden">
         {!plain ? (
           <>
             <div
@@ -181,21 +171,6 @@ export function PartnerLeistungenKonditionenCard({
             >
               <span>Leistung</span>
               <span className="text-right">{PARTNER_LEISTUNGEN_ANGEBOTSPREIS_LABEL}</span>
-            </div>
-
-            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 border-b border-border-light px-4 py-2 text-xs text-text-tertiary">
-              <span className="inline-flex items-center gap-1.5">
-                <LeistungStatusDot status="gruen" className="mt-0.5" />
-                Angenommen
-              </span>
-              <span className="inline-flex items-center gap-1.5">
-                <LeistungStatusDot status="gelb" className="mt-0.5" />
-                Aktion nötig
-              </span>
-              <span className="inline-flex items-center gap-1.5">
-                <LeistungStatusDot status="rot" className="mt-0.5" />
-                Entfernt
-              </span>
             </div>
           </>
         ) : null}
@@ -212,10 +187,6 @@ export function PartnerLeistungenKonditionenCard({
             const preis = angebotspreis(z, mode, hwValues);
             const notiz = zeilenNotiz(z, mode, hwNotizen);
             const preisFolgt = preis === "Preis folgt";
-            const ampel: LeistungStatusAmpel = resolvePartnerLeistungStatusAmpel(z, {
-              mode,
-              hwValue: hwValues?.[z.id],
-            });
             const metaLine =
               z.meta?.trim() ||
               (z.beschreibung ? stripHtmlToPlainText(z.beschreibung) : "");
@@ -242,41 +213,36 @@ export function PartnerLeistungenKonditionenCard({
                   )}
                 >
                   <div className="min-w-0">
-                    <div className={cn("flex items-start gap-2", plain && "gap-0")}>
-                      {!plain ? (
-                        <LeistungStatusDot status={ampel} className="mt-1.5" />
-                      ) : null}
-                      <div className="min-w-0 flex-1">
+                    <div className="min-w-0 flex-1">
+                      <p
+                        className={cn(
+                          "font-semibold text-text-primary",
+                          plain && "text-[13.5px]",
+                          isEntfernt && "line-through text-text-secondary"
+                        )}
+                      >
+                        {title}
+                      </p>
+                      {metaLine ? (
                         <p
                           className={cn(
-                            "font-semibold text-text-primary",
-                            plain && "text-[13.5px]",
-                            isEntfernt && "line-through text-text-secondary"
+                            "mt-0.5 text-text-secondary",
+                            plain ? "text-[12px]" : "portal-text-meta"
                           )}
                         >
-                          {title}
+                          {metaLine}
                         </p>
-                        {metaLine ? (
-                          <p
-                            className={cn(
-                              "mt-0.5 text-text-secondary",
-                              plain ? "text-[12px]" : "portal-text-meta"
-                            )}
-                          >
-                            {metaLine}
-                          </p>
-                        ) : null}
-                        {!plain && z.beschreibung && z.meta ? (
-                          <p className="portal-text-meta mt-0.5 text-text-secondary">
-                            {stripHtmlToPlainText(z.beschreibung)}
-                          </p>
-                        ) : null}
-                        {isEntfernt ? (
-                          <p className="portal-text-meta mt-1 text-red-700">
-                            Bärenwald entfernt diese Leistung — bitte bestätigen.
-                          </p>
-                        ) : null}
-                      </div>
+                      ) : null}
+                      {!plain && z.beschreibung && z.meta ? (
+                        <p className="portal-text-meta mt-0.5 text-text-secondary">
+                          {stripHtmlToPlainText(z.beschreibung)}
+                        </p>
+                      ) : null}
+                      {isEntfernt ? (
+                        <p className="portal-text-meta mt-1 text-red-700">
+                          Bärenwald entfernt diese Leistung — bitte bestätigen.
+                        </p>
+                      ) : null}
                     </div>
                   </div>
 

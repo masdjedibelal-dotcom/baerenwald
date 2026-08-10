@@ -31,7 +31,7 @@ export function PortalVorgangFeedbackSection({
     return (
       <article className="portal-surface space-y-2 p-4">
         <PortalDetailSuccessBox>
-          <p className="font-semibold">Danke für dein Feedback!</p>
+          <p className="font-semibold">Danke für Ihr Feedback!</p>
           {s > 0 ? (
             <p className="portal-text-meta mt-1 text-amber-600">
               {"★".repeat(s)}
