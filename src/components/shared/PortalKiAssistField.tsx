@@ -183,6 +183,16 @@ export function PortalKiAssistField({
         subtitle={cfg.intro}
         variant="edit"
         closeOnBackdrop={!pending}
+        busy={pending}
+        onConfirm={
+          draftText
+            ? () => applyDraft(draftText)
+            : () => {
+                if (input.trim()) void send();
+              }
+        }
+        confirmDisabled={pending || (!draftText && !input.trim())}
+        confirmLabel={draftText ? "Übernehmen" : "Senden"}
       >
         <div className="flex min-h-[min(52vh,420px)] flex-col gap-3">
           <div className="flex min-h-0 flex-1 flex-col gap-2.5 overflow-y-auto rounded-xl border border-border-light bg-[#fafbfa] p-3">

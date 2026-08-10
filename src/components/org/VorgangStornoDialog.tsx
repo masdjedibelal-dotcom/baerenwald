@@ -60,8 +60,17 @@ export function VorgangStornoDialog({
         variant="edit"
         dirty={grund.trim().length > 0}
         closeOnBackdrop={!busy}
+        busy={busy}
+        onConfirm={() => {
+          const form = document.getElementById(
+            "vorgang-storno-form"
+          ) as HTMLFormElement | null;
+          form?.requestSubmit();
+        }}
+        confirmDisabled={busy || grund.trim().length < 5}
+        confirmLabel="Zurückziehen"
       >
-        <form onSubmit={submit} className="space-y-4">
+        <form id="vorgang-storno-form" onSubmit={submit} className="space-y-4">
           <p className="portal-text-body text-text-secondary">
             {inAusfuehrung
               ? "Die Ausführung hat bereits begonnen. Bärenwald prüft mögliche Abbruchkosten."

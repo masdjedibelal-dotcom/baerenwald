@@ -39,12 +39,10 @@ function ts(v?: string | null): number {
 }
 
 function buildMockSubtitle(item: KundePortalDetailItem): string | undefined {
-  // Mock-Liste: nur Straße · PLZ Ort · Meldername (cardSubtitle bereits so gebaut).
+  // Mock-Liste: nur Anschrift (cardSubtitle bereits so gebaut).
   if (item.cardSubtitle?.trim()) return item.cardSubtitle.trim();
   const ortParts = [item.plz, item.ort].filter(Boolean).join(" ");
-  const melder = item.melderName?.trim() || undefined;
-  const parts = [ortParts || undefined, melder].filter(Boolean);
-  return parts.length ? parts.join(" · ") : undefined;
+  return ortParts || undefined;
 }
 
 function buildFallbackCardMeta(item: KundePortalDetailItem): PortalListCardMeta[] {
@@ -77,8 +75,7 @@ export function mapKundeDetailToCard(
   opts?: { mockListe?: boolean }
 ): PortalCardRow {
   const mockListe = opts?.mockListe === true;
-  // Mock-Liste: Meta (Titel nochmal, Anschrift, „ab sofort“, Handwerker) weglassen —
-  // Adresse + Melder stehen nur im Subtitle.
+  // Mock-Liste: Meta weglassen — Anschrift steht nur im Subtitle.
   const meta: PortalListCardMeta[] = mockListe
     ? []
     : item.cardMeta?.length

@@ -452,17 +452,10 @@ function buildItemFromLead(
     positionen: auftrag?.positionen,
   });
   const mieterFeedback = mieterFeedbackByLeadId?.get(leadId) ?? null;
-  const hvListMeta = Boolean(
-    lead.melder_name || lead.melder_einheit || lead.hv_meldung_status
-  );
-  const cardSubtitle = hvListMeta
-    ? formatMockVorgangListSubtitle(lead)
-    : [
-        formatAnfrageStrasseHausnummer(lead),
-        anfrageGewerk,
-      ]
-        .filter(Boolean)
-        .join(" · ") || formatMockVorgangListSubtitle(lead);
+  const cardSubtitle =
+    formatMockVorgangListSubtitle(lead) ||
+    formatAnfrageStrasseHausnummer(lead) ||
+    undefined;
 
   const wartetAufHw =
     !hvMieterView && !eigentuemerView
@@ -526,11 +519,9 @@ function buildItemFromLead(
       terminSlots: auftrag.terminSlots ?? [],
       infoHint: eigentuemerView
         ? undefined
-        : hvMieterView && vorgangStatus.needsAction
-          ? "Terminvorschlag wählen."
-          : !hvMieterView && pendingAenderung
-            ? "Leistungsänderungen prüfen und annehmen."
-            : undefined,
+        : !hvMieterView && pendingAenderung
+          ? "Leistungsänderungen prüfen und annehmen."
+          : undefined,
       vorgangPhase: vorgangStatus.phase,
       needsAction: eigentuemerView ? false : vorgangStatus.needsAction,
       actionHint: eigentuemerView

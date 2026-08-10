@@ -1409,9 +1409,18 @@ h3 {
     flex-shrink: 0;
   }
 
+  /* × immer links — Titel daneben, Extras ganz rechts */
   .portal-modal-shell-heading {
     flex: 1;
     min-width: 0;
+  }
+
+  .portal-modal-shell-header-extra {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-left: auto;
   }
 
   .portal-modal-shell-title {
@@ -1431,18 +1440,62 @@ h3 {
   }
 
   .portal-modal-shell-close {
-    font-size: 20px;
+    font-size: 22px;
     color: var(--p2-faint, #6a746f);
     cursor: pointer;
     line-height: 1;
-    padding: 0 2px;
+    padding: 0;
+    width: 32px;
+    height: 32px;
+    margin-top: 1px;
+    display: grid;
+    place-items: center;
     background: none;
     border: none;
     flex-shrink: 0;
+    border-radius: 8px;
   }
 
   .portal-modal-shell-close:hover {
     color: var(--p2-ink, #16201b);
+    background: var(--p2-hover, #eef1ef);
+  }
+
+  .portal-modal-shell-close:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+  }
+
+  /* ✓ rechts — Speichern/Bestätigen (Gegenstück zu × links) */
+  .portal-modal-shell-confirm {
+    width: 32px;
+    height: 32px;
+    margin-top: 1px;
+    padding: 0;
+    display: grid;
+    place-items: center;
+    flex-shrink: 0;
+    border: none;
+    border-radius: 8px;
+    background: none;
+    color: var(--org-primary, var(--color-accent, #2e7d52));
+    cursor: pointer;
+    line-height: 1;
+  }
+
+  .portal-modal-shell-confirm svg {
+    width: 20px;
+    height: 20px;
+  }
+
+  .portal-modal-shell-confirm:hover:not(:disabled) {
+    background: var(--p2-soft, #e8f2ec);
+    color: var(--org-primary-dk, var(--color-accent, #1f5c3c));
+  }
+
+  .portal-modal-shell-confirm:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
   }
 
   .portal-modal-shell-body {
@@ -1453,6 +1506,18 @@ h3 {
     -webkit-overflow-scrolling: touch;
     padding: 14px 20px 22px;
     touch-action: pan-y;
+  }
+
+  .portal-modal-shell-busy {
+    position: absolute;
+    inset: 0;
+    z-index: 5;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.88);
+    backdrop-filter: blur(2px);
+    padding: 16px;
   }
 
   /* Confirm = ActionSheet: Primary zuerst, volle Breite mobil */
@@ -1502,8 +1567,9 @@ h3 {
     }
   }
 
-  /* Dirty-Confirm (S8) — über dem Panel */
-  .portal-modal-discard {
+  /* Dirty-/Sheet-Confirm — unten (mobil), zentriert (Desktop) */
+  .portal-modal-discard,
+  .portal-sheet-confirm {
     position: absolute;
     inset: 0;
     z-index: 2;
@@ -1512,6 +1578,11 @@ h3 {
     justify-content: center;
     background: rgba(16, 25, 20, 0.35);
     padding: 0;
+  }
+
+  .portal-sheet-confirm {
+    position: fixed;
+    z-index: 120;
   }
 
   .portal-modal-discard-panel {
@@ -1530,6 +1601,13 @@ h3 {
     color: var(--p2-ink, #16201b);
   }
 
+  .portal-sheet-confirm-desc {
+    margin: -6px 0 14px;
+    font-size: 14px;
+    line-height: 1.45;
+    color: var(--p2-sub, #2e3833);
+  }
+
   .portal-modal-discard-actions {
     display: flex;
     flex-wrap: wrap;
@@ -1537,8 +1615,14 @@ h3 {
     gap: 8px;
   }
 
+  .portal-modal-discard-actions .portal-action-btn {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
   @media (min-width: 1024px) {
-    .portal-modal-discard {
+    .portal-modal-discard,
+    .portal-sheet-confirm {
       align-items: center;
       padding: 20px;
     }
@@ -1547,6 +1631,10 @@ h3 {
       width: min(100%, 380px);
       border-radius: 14px;
       padding: 18px 20px;
+    }
+
+    .portal-modal-discard-actions .portal-action-btn {
+      flex: 0 1 auto;
     }
   }
 

@@ -9,7 +9,6 @@ import { OrgAnlassBadge } from "@/components/org/OrgAnlassBadge";
 import { OrganisationHvVorgangDetail } from "@/components/org/OrganisationHvVorgangDetail";
 import { OrgVorgangFeedbackSection } from "@/components/org/OrgVorgangFeedbackSection";
 import { OrgMelderStatusLinkPanel } from "@/components/org/OrgMelderStatusLinkPanel";
-import { PortalHvTerminSection } from "@/components/portal/PortalHvTerminSection";
 import { PortalVorgangFeedbackSection } from "@/components/portal/PortalVorgangFeedbackSection";
 import { PartnerPortalDetailSections } from "@/components/partner/PartnerPortalDetailSections";
 import { BautagebuchAccordionList } from "@/components/shared/BautagebuchAccordionList";
@@ -27,6 +26,8 @@ import {
   PortalDetailStickyActions,
   PortalDetailSuccessBox,
 } from "@/components/shared/PortalDetailUi";
+import { usePortalBusy } from "@/components/shared/PortalBusyContext";
+import { usePortalRefresh } from "@/components/shared/usePortalRefresh";
 import { kundePortalToast } from "@/lib/shared/portal-toast";
 import type { KundePortalDetailItem } from "@/lib/portal/portal-detail-item";
 import { fmtPortalRelativeTime } from "@/lib/shared/portal-detail-format";
@@ -140,6 +141,8 @@ export function PortalVorgangDetail({
   mieterStatusMode?: boolean;
 }) {
   const router = useRouter();
+  const { refresh } = usePortalRefresh();
+  const { runBusy } = usePortalBusy();
   const searchParams = useSearchParams();
   const deepLinkAppliedRef = useRef(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
@@ -223,8 +226,13 @@ export function PortalVorgangDetail({
 
   if (showHvAbnahme) {
     const beschreibung = extractProjektbeschreibung(item);
-    const objektRaw = extractObjektLine(item);
-    const melder = extractMelderName(item);
+    const anschrift =
+      item.cardSubtitle?.trim() ||
+      String(extractObjektLine(item)).slice(0, 160);
+    const melder =
+      mieterStatusMode || item.hvMieterView
+        ? undefined
+        : extractMelderName(item);
     const rechnungPdf =
       item.dokumente?.find((d) => /rechnung/i.test(d.name ?? "") && d.href)
         ?.href ?? null;
@@ -232,7 +240,7 @@ export function PortalVorgangDetail({
       <OrganisationHvVorgangDetail
         idLabel=""
         titel={item.title}
-        objekt={String(objektRaw).slice(0, 160)}
+        objekt={anschrift}
         kategorie={undefined}
         beschreibung={beschreibung}
         flowStatus={flowStatus}
@@ -273,7 +281,6 @@ export function PortalVorgangDetail({
         handwerkerName={item.ansprechpartner?.name}
         terminVon={item.isAuftragDetail ? item.date : null}
         terminBis={item.auftragEndDatum ?? null}
-        terminSlots={item.terminSlots}
         orgFreigabeStatus={orgFreigabeStatus ?? item.orgFreigabeStatus}
         freigabeBypassGrund={
           freigabeBypassGrund ??
@@ -287,7 +294,13 @@ export function PortalVorgangDetail({
           Boolean(item.isAngebotDetail && item.needsAction)
         }
         privatkunde={privatkunde}
-        detailRole={privatkunde ? "kunde" : "hv"}
+        detailRole={
+          mieterStatusMode || item.hvMieterView
+            ? "mieter"
+            : privatkunde
+              ? "kunde"
+              : "hv"
+        }
         mieterStatusMode={mieterStatusMode || Boolean(item.hvMieterView)}
         statusLabelOverride={
           mieterStatusMode || item.hvMieterView
@@ -304,14 +317,16 @@ export function PortalVorgangDetail({
         onUpdated={() => {
           onAccepted?.();
           onHvFeedbackSubmitted?.();
-          router.refresh();
+          void refresh();
         }}
       />
     );
   }
 
-  const rel = fmtPortalRelativeTime(item.date);
-  const metaLine = rel ? `${rel}` : undefined;
+  const metaLine =
+    item.cardSubtitle?.trim() ||
+    String(extractObjektLine(item)).slice(0, 160) ||
+    undefined;
   const statusPill = portalDetailStatusPillClass(item.statusPillKey ?? item.status ?? "offen");
 
   const isAngebotAccept = Boolean(item.isAngebotDetail && item.needsAction);
@@ -320,43 +335,53 @@ export function PortalVorgangDetail({
   async function handleAccept() {
     setLoading(true);
     setError(null);
-    const res = isAngebotAccept
-      ? await acceptKundeAngebot(item.id)
-      : isAuftragAccept
-        ? await acceptKundeAuftragAenderungen(item.id)
-        : { ok: false as const, error: "Keine Annahme möglich." };
-    setLoading(false);
-    setConfirmOpen(false);
-    if (!res.ok) {
-      setError(res.error);
-      return;
+    try {
+      await runBusy(async () => {
+        const res = isAngebotAccept
+          ? await acceptKundeAngebot(item.id)
+          : isAuftragAccept
+            ? await acceptKundeAuftragAenderungen(item.id)
+            : { ok: false as const, error: "Keine Annahme möglich." };
+        setConfirmOpen(false);
+        if (!res.ok) {
+          setError(res.error);
+          return;
+        }
+        if (isAuftragAccept) {
+          kundePortalToast.aenderungenAngenommen();
+        } else {
+          kundePortalToast.angebotAngenommen();
+        }
+        setAccepted(true);
+        onAccepted?.();
+        await refresh();
+      });
+    } finally {
+      setLoading(false);
     }
-    if (isAuftragAccept) {
-      kundePortalToast.aenderungenAngenommen();
-    } else {
-      kundePortalToast.angebotAngenommen();
-    }
-    setAccepted(true);
-    onAccepted?.();
-    router.refresh();
   }
 
   async function handleReject() {
     if (!isAngebotAccept) return;
     setLoading(true);
     setError(null);
-    const res = await rejectKundeAngebot(item.id, rejectGrund);
-    setLoading(false);
-    if (!res.ok) {
-      setError(res.error);
-      return;
+    try {
+      await runBusy(async () => {
+        const res = await rejectKundeAngebot(item.id, rejectGrund);
+        if (!res.ok) {
+          setError(res.error);
+          return;
+        }
+        setRejectOpen(false);
+        setRejectGrund("");
+        kundePortalToast.angebotAbgelehnt();
+        setRejected(true);
+        onAccepted?.();
+        await refresh();
+      });
+    } finally {
+      setLoading(false);
     }
-    setRejectOpen(false);
-    setRejectGrund("");
-    kundePortalToast.angebotAbgelehnt();
-    setRejected(true);
-    onAccepted?.();
-    router.refresh();
   }
 
   const showAcceptCta =
@@ -427,16 +452,6 @@ export function PortalVorgangDetail({
         >
           {activeSection === "details" ? (
             <div className="space-y-4">
-              {item.terminAuftragId &&
-              item.terminSlots &&
-              item.terminSlots.length > 0 ? (
-                <PortalHvTerminSection
-                  auftragId={item.terminAuftragId}
-                  slots={item.terminSlots}
-                  readOnly={!item.hvMieterView}
-                />
-              ) : null}
-
               {item.melderStatusUrl && !item.hvMieterView ? (
                 <OrgMelderStatusLinkPanel statusUrl={item.melderStatusUrl} />
               ) : null}
@@ -538,6 +553,10 @@ export function PortalVorgangDetail({
         variant="edit"
         dirty={rejectGrund.trim().length > 0}
         closeOnBackdrop={!loading}
+        busy={loading}
+        onConfirm={() => void handleReject()}
+        confirmDisabled={loading}
+        confirmLabel="Ablehnen"
       >
         <label className="flex flex-col gap-1.5">
           <span className="portal-form-label">Grund (optional)</span>
@@ -551,22 +570,22 @@ export function PortalVorgangDetail({
             disabled={loading}
           />
         </label>
-        <div className="portal-confirm-actions mt-5">
-          <button
-            type="button"
-            disabled={loading}
-            onClick={() => void handleReject()}
-            className="btn-pill-outline portal-btn portal-confirm-actions-primary !border-red-200 !text-red-800"
-          >
-            {loading ? "Wird gesendet…" : "Ablehnen"}
-          </button>
+        <div className="portal-modal-discard-actions portal-action-row mt-5">
           <button
             type="button"
             disabled={loading}
             onClick={() => setRejectOpen(false)}
-            className="btn-pill-outline portal-btn portal-confirm-actions-cancel"
+            className="portal-action-btn portal-action-btn--secondary"
           >
-            Abbrechen
+            Weiter bearbeiten
+          </button>
+          <button
+            type="button"
+            disabled={loading}
+            onClick={() => void handleReject()}
+            className="portal-action-btn portal-action-btn--danger"
+          >
+            {loading ? "Bitte warten…" : "Ablehnen"}
           </button>
         </div>
       </PortalModalShell>

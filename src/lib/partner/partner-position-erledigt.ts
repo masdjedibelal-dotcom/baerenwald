@@ -33,6 +33,7 @@ export function partnerKannErledigtMelden(input: {
       | "aenderung_typ"
       | "leistung_status"
       | "handwerker_id"
+      | "anerkennung_status"
     >
   >;
   vorgangState?: VorgangState;
@@ -56,11 +57,15 @@ export function partnerKannErledigtMelden(input: {
   if (input.positionen.some(positionBrauchtVorgangAktion)) return false;
 
   // Alle eigenen zugewiesenen Positionen müssen dokumentiert sein.
-  const relevant = input.positionen.filter(
-    (p) =>
+  // Nacharbeit in Prüfung / abgelehnt zählt nicht (liegt bei Bärenwald).
+  const relevant = input.positionen.filter((p) => {
+    const a = String(p.anerkennung_status ?? "nicht_noetig").toLowerCase();
+    if (a === "in_pruefung" || a === "abgelehnt") return false;
+    return (
       positionIstHandwerkerZugewiesen(p.handwerker_status) &&
       !positionBrauchtVorgangAktion(p)
-  );
+    );
+  });
   if (!relevant.length) return false;
   return relevant.every((p) => leistungDokumentiert(p));
 }

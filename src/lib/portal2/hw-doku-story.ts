@@ -13,7 +13,7 @@ export const HW_DOKU_STORY = {
     },
     {
       n: 2,
-      title: "Fortschritt",
+      title: "Update",
       body: "Zwischenschritte optional (Foto oder Text), bei Aufwand die Zeit notieren.",
     },
     {

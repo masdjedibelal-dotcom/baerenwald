@@ -59,7 +59,7 @@ export function PartnerHwDashboard({
         value: kpis[def.id],
         onClick: onKpiClick ? () => onKpiClick(def.id) : undefined,
       }))}
-      recent={recent.slice(0, 3).map((v) => ({
+      recent={recent.slice(0, 4).map((v) => ({
         id: v.id,
         titel: v.titel,
         objekt: v.objekt,

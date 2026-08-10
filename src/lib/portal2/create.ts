@@ -20,7 +20,10 @@ export function portalCreateLabel(role: PortalNavRole): string {
   return "Neuer Vorgang";
 }
 
-/** FAB/Create-Funnel-Channel — nicht mit Label vermischen. */
+/**
+ * FAB/Create-Funnel-Channel — nicht mit Label vermischen.
+ * Mieter: `portal_mieter` (forceKaputt → nur Reparatur & Notfall, kein Umbau/Betreuung).
+ */
 export function portalCreateChannel(
   role: PortalNavRole
 ): Extract<
@@ -31,4 +34,23 @@ export function portalCreateChannel(
   if (role === "mieter") return "portal_mieter";
   if (role === "kunde_privat") return "portal_privat";
   return "portal_privat";
+}
+
+/**
+ * Create-Kanal für MeinBärenwald-PortalClient (ohne HV-Embedded).
+ * Privat/Mieter-Stamm → immer Melde-Flow (Reparatur & Notfall).
+ * Gewerbe behält den vollen Privat-Funnel.
+ */
+export function portalClientCreateChannel(opts: {
+  hvPortalMode?: boolean;
+  kundeTyp: "hv" | "privat" | "gewerbe";
+  navRole: PortalNavRole;
+}): Extract<
+  FunnelChannel,
+  "portal_privat" | "portal_eigentuemer" | "portal_mieter"
+> {
+  if (!opts.hvPortalMode && opts.kundeTyp === "privat") {
+    return "portal_mieter";
+  }
+  return portalCreateChannel(opts.navRole);
 }

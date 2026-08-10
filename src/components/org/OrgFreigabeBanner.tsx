@@ -3,6 +3,7 @@
 import { useState } from "react";
 
 import { HvFreigabeInfoBanner } from "@/components/org/HvFreigabeInfoBanner";
+import { usePortalBusy } from "@/components/shared/PortalBusyContext";
 import {
   hvFreigabeEntfaellt,
   parseFreigabeBypassGrund,
@@ -35,6 +36,7 @@ export function OrgFreigabeBanner({
 }: Props) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { runBusy } = usePortalBusy();
 
   const bypass = parseFreigabeBypassGrund(bypassGrund);
   const infoKind = hvFreigabeEntfaellt({
@@ -58,23 +60,25 @@ export function OrgFreigabeBanner({
     setBusy(true);
     setError(null);
     try {
-      const res = await fetch("/api/org/freigabe", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ leadId, aktion }),
+      await runBusy(async () => {
+        const res = await fetch("/api/org/freigabe", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ leadId, aktion }),
+        });
+        const json = (await res.json().catch(() => ({}))) as { error?: string };
+        if (!res.ok) {
+          setError(json.error ?? "Freigabe fehlgeschlagen.");
+          return;
+        }
+        track.orgFreigabe(aktion);
+        if (aktion === "freigegeben") {
+          orgPortalToast.freigegeben();
+        } else {
+          orgPortalToast.freigabeAbgelehnt();
+        }
+        onUpdated();
       });
-      const json = (await res.json().catch(() => ({}))) as { error?: string };
-      if (!res.ok) {
-        setError(json.error ?? "Freigabe fehlgeschlagen.");
-        return;
-      }
-      track.orgFreigabe(aktion);
-      if (aktion === "freigegeben") {
-        orgPortalToast.freigegeben();
-      } else {
-        orgPortalToast.freigabeAbgelehnt();
-      }
-      onUpdated();
     } finally {
       setBusy(false);
     }

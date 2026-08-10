@@ -3,6 +3,7 @@
 import { useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 
+import { usePortalBusy } from "@/components/shared/PortalBusyContext";
 import { VorgangDetailBlocks } from "@/components/shared/vorgang-detail";
 import { buildKundeHvVorgangDetailVm } from "@/lib/vorgang/build-vorgang-detail-vm";
 import { BautagebuchAccordionList } from "@/components/shared/BautagebuchAccordionList";
@@ -15,9 +16,7 @@ import {
 import { VorgangDetailSectionNav } from "@/components/shared/VorgangDetailSectionNav";
 import { HvFreigabeInfoBanner } from "@/components/org/HvFreigabeInfoBanner";
 import { OrgVorgangAbnahmeSection } from "@/components/org/OrgVorgangAbnahmeSection";
-import { PortalHvTerminSection } from "@/components/portal/PortalHvTerminSection";
 import { hvFreigabeEntfaellt } from "@/lib/org/freigabe-bypass";
-import type { PortalTerminSlot } from "@/lib/portal/portal-termin";
 import { acceptKundeAngebot } from "@/app/actions/portal-angebot";
 import {
   countUnreadBautagebuch,
@@ -121,7 +120,7 @@ export type OrganisationHvVorgangDetailProps = {
   meldeBereich?: string | null;
   meldeZeitraum?: string | null;
   meldeFachdetails?: Array<{ label: string; value: string }>;
-  detailRole?: "hv" | "kunde";
+  detailRole?: "hv" | "kunde" | "mieter";
   /**
    * Optionaler Status-Chip-/VM-Text (z. B. Mieter: „In Bearbeitung“
    * statt „Angebot“).
@@ -136,8 +135,6 @@ export type OrganisationHvVorgangDetailProps = {
   /** Auftrag-Start/-Ende für Ausführung · Termin */
   terminVon?: string | null;
   terminBis?: string | null;
-  /** Mieter-Terminslots — HV sieht nur Status (read-only). */
-  terminSlots?: PortalTerminSlot[];
   /**
    * D2 (leicht): `detailRole` + `mieterStatusMode` steuern Copy/Sections.
    * Kein BW-Freigabe-/Angebot-Wording bei Mieter (`mieterStatusMode`).
@@ -339,12 +336,12 @@ export function OrganisationHvVorgangDetail({
   meldePreisIndikation,
   terminVon,
   terminBis,
-  terminSlots,
   detailRole = "hv",
   statusLabelOverride,
   mieterStatusMode = false,
 }: OrganisationHvVorgangDetailProps) {
   const searchParams = useSearchParams();
+  const { runBusy } = usePortalBusy();
   const deepLinkAppliedRef = useRef(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -507,10 +504,9 @@ export function OrganisationHvVorgangDetail({
         kategorie,
         beschreibung,
         objektZeile: objekt,
-        melderName: melder,
+        melderName: mieterStatusMode ? null : melder,
         einheit: melderEinheit,
-        fotos:
-          detailRole === "kunde" || privatkunde ? [] : meldeFotos,
+        fotos: meldeFotos ?? [],
         meldeStrasse,
         meldePlz,
         meldeOrt,
@@ -615,20 +611,22 @@ export function OrganisationHvVorgangDetail({
     setBusy(true);
     setError(null);
     try {
-      const res = await fetch("/api/org/meldung-aktion", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ leadId, aktion }),
+      await runBusy(async () => {
+        const res = await fetch("/api/org/meldung-aktion", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ leadId, aktion }),
+        });
+        const json = (await res.json()) as { error?: string };
+        if (!res.ok) {
+          setError(json.error ?? "Aktion fehlgeschlagen.");
+          return;
+        }
+        if (aktion === "angebot_einfordern") orgPortalToast.angebotEingefordert();
+        else orgPortalToast.meldungAbgelehnt();
+        onUpdated();
+        onBack?.();
       });
-      const json = (await res.json()) as { error?: string };
-      if (!res.ok) {
-        setError(json.error ?? "Aktion fehlgeschlagen.");
-        return;
-      }
-      if (aktion === "angebot_einfordern") orgPortalToast.angebotEingefordert();
-      else orgPortalToast.meldungAbgelehnt();
-      onUpdated();
-      onBack?.();
     } finally {
       setBusy(false);
     }
@@ -638,21 +636,23 @@ export function OrganisationHvVorgangDetail({
     setBusy(true);
     setError(null);
     try {
-      const res = await fetch("/api/org/freigabe", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ leadId, aktion }),
+      await runBusy(async () => {
+        const res = await fetch("/api/org/freigabe", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ leadId, aktion }),
+        });
+        const json = (await res.json().catch(() => ({}))) as { error?: string };
+        if (!res.ok) {
+          setError(json.error ?? "Aktion fehlgeschlagen.");
+          return;
+        }
+        track.orgFreigabe(aktion);
+        if (aktion === "freigegeben") orgPortalToast.freigegeben();
+        else orgPortalToast.freigabeAbgelehnt();
+        onUpdated();
+        onBack?.();
       });
-      const json = (await res.json().catch(() => ({}))) as { error?: string };
-      if (!res.ok) {
-        setError(json.error ?? "Aktion fehlgeschlagen.");
-        return;
-      }
-      track.orgFreigabe(aktion);
-      if (aktion === "freigegeben") orgPortalToast.freigegeben();
-      else orgPortalToast.freigabeAbgelehnt();
-      onUpdated();
-      onBack?.();
     } finally {
       setBusy(false);
     }
@@ -667,15 +667,17 @@ export function OrganisationHvVorgangDetail({
     setBusy(true);
     setError(null);
     try {
-      const res = await acceptKundeAngebot(id);
-      if (!res.ok) {
-        setError(res.error);
-        return;
-      }
-      setAccepted(true);
-      kundePortalToast.angebotAngenommen();
-      onUpdated();
-      onBack?.();
+      await runBusy(async () => {
+        const res = await acceptKundeAngebot(id);
+        if (!res.ok) {
+          setError(res.error);
+          return;
+        }
+        setAccepted(true);
+        kundePortalToast.angebotAngenommen();
+        onUpdated();
+        onBack?.();
+      });
     } finally {
       setBusy(false);
     }
@@ -981,9 +983,7 @@ export function OrganisationHvVorgangDetail({
       >
         <PortalDetailHead
           title={titel}
-          metaLine={
-            [objekt, melder].filter(Boolean).join(" · ") || undefined
-          }
+          metaLine={objekt?.trim() || undefined}
         />
 
         {freigabeEntfaelltKind ? (
@@ -999,38 +999,9 @@ export function OrganisationHvVorgangDetail({
           </div>
         ) : null}
 
-        {actionKind === "angebot" && showAcceptCta ? (
-          <div
-            className={cn(
-              "mt-4 space-y-2",
-              "rounded-[12px] p-3 sm:p-0 sm:bg-transparent",
-              "bg-[#F6F7F6] sm:shadow-none",
-              "max-lg:fixed max-lg:inset-x-0 max-lg:bottom-[var(--portal-mobile-nav-h)] max-lg:z-40 max-lg:mt-0 max-lg:rounded-none max-lg:border-t max-lg:bg-[var(--p2-panel)]/95 max-lg:p-3 max-lg:backdrop-blur-sm"
-            )}
-          >
-            <div className="w-full sm:hidden">
-              <p className="portal-text-meta font-semibold" style={{ color: PORTAL_VAR.ink }}>
-                {HV_DETAIL_COPY.angebotAnnehmenTitle}
-              </p>
-            </div>
-            <PortalDetailStickyActions
-              primaryLabel={HV_DETAIL_COPY.empfohlenAnnehmen}
-              onPrimary={() => void acceptAngebotAct()}
-              primaryDisabled={busy}
-              primaryLoading={busy}
-            />
-          </div>
-        ) : null}
       </div>
 
-      <div
-        className={cn(
-          "flex flex-col gap-4 px-4 pb-6 pt-3 sm:px-6 sm:pt-4 lg:flex-row lg:items-start lg:gap-6 lg:pt-5",
-          actionKind === "angebot" &&
-            showAcceptCta &&
-            "max-lg:pb-[calc(var(--portal-detail-actions-h,6rem)+0.5rem)]"
-        )}
-      >
+      <div className="flex flex-col gap-4 px-4 pb-6 pt-3 sm:px-6 sm:pt-4 lg:flex-row lg:items-start lg:gap-6 lg:pt-5">
         <div className="lg:sticky lg:top-3 lg:w-[11rem] lg:shrink-0">
           <VorgangDetailSectionNav
             items={navItems}
@@ -1076,16 +1047,6 @@ export function OrganisationHvVorgangDetail({
                   ) : undefined
                 }
               />
-              {!mieterStatusMode &&
-              auftragId &&
-              terminSlots &&
-              terminSlots.length > 0 ? (
-                <PortalHvTerminSection
-                  auftragId={auftragId}
-                  slots={terminSlots}
-                  readOnly
-                />
-              ) : null}
             </section>
           ) : null}
 
@@ -1147,6 +1108,26 @@ export function OrganisationHvVorgangDetail({
                 }))}
               />
             </DetailCard>
+          ) : null}
+
+          {actionKind === "angebot" && showAcceptCta ? (
+            <div
+              className="mt-1 space-y-2 border-t pt-4"
+              style={{ borderColor: PORTAL_VAR.line2 }}
+            >
+              <p
+                className="portal-text-meta font-semibold sm:hidden"
+                style={{ color: PORTAL_VAR.ink }}
+              >
+                {HV_DETAIL_COPY.angebotAnnehmenTitle}
+              </p>
+              <PortalDetailStickyActions
+                primaryLabel={HV_DETAIL_COPY.empfohlenAnnehmen}
+                onPrimary={() => void acceptAngebotAct()}
+                primaryDisabled={busy}
+                primaryLoading={busy}
+              />
+            </div>
           ) : null}
         </div>
       </div>

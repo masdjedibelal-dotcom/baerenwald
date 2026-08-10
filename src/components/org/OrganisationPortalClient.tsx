@@ -6,9 +6,10 @@ import { OrganisationHvDashboard } from "@/components/org/OrganisationHvDashboar
 import { PORTAL_HEADER_HERO_SRC } from "@/lib/portal2/portal-media";
 import { emitPortalNotificationsChanged } from "@/lib/portal2/notif-refresh";
 import {
-  paintPortalBusyNow,
   PORTAL_BUSY_MIN_MS,
+  usePortalBusy,
 } from "@/components/shared/PortalBusyContext";
+import { usePortalRefresh } from "@/components/shared/usePortalRefresh";
 import { ensurePortalVorgangNotificationHref } from "@/lib/portal2/portal-detail-deep-link";
 import { HvNotificationBell } from "@/components/org/HvNotificationBell";
 import { OrganisationSuche } from "@/components/org/OrganisationSuche";
@@ -101,13 +102,16 @@ import {
   type HvDashboardAngebotSlice,
   type HvDashboardAuftragSlice,
 } from "@/lib/portal2/hv-dashboard";
-import { portalFlowSortRank } from "@/lib/portal/portal-vorgang-sort";
+import {
+  compareByNewestCreated,
+  PORTAL_DASHBOARD_RECENT_LIMIT,
+} from "@/lib/portal/portal-vorgang-sort";
 import { portalCreateLabel } from "@/lib/portal2/create";
 import {
   buildPortalHvMobileNav,
   buildPortalShellNav,
 } from "@/lib/portal2/nav-items";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 type OrgSection =
   | "uebersicht"
@@ -240,6 +244,24 @@ export function OrganisationPortalClient({
   /** Sofortiger Listen-Filter (ohne auf URL/searchParams zu warten). */
   const [vorgangFilterIntent, setVorgangFilterIntent] =
     useState<OrgVorgangFilter | null>(initialVorgangFilter);
+  /** Detail-ID sofort nach Klick (vor searchParams). */
+  const [pendingDetailId, setPendingDetailId] = useState<string | null>(null);
+  const { hold, release, flash, busy: ctxBusy } = usePortalBusy();
+  const { refresh: refreshPortal } = usePortalRefresh();
+  const navHoldRef = useRef(false);
+
+  function beginNavHold() {
+    if (!navHoldRef.current) {
+      navHoldRef.current = true;
+      hold();
+    }
+  }
+
+  function endNavHold() {
+    if (!navHoldRef.current) return;
+    navHoldRef.current = false;
+    release();
+  }
 
   /** Notification / Deep-Link: Section aus URL übernehmen (nicht nur Initial-State). */
   useEffect(() => {
@@ -285,24 +307,24 @@ export function OrganisationPortalClient({
 
   const vorgaengeBadgeCount = filterCounts.offen;
 
-  const [pageBusy, setPageBusy] = useState(false);
-
   function flashPageBusy(ms = PORTAL_BUSY_MIN_MS) {
-    paintPortalBusyNow(setPageBusy);
-    window.setTimeout(() => setPageBusy(false), ms);
+    flash(ms);
   }
 
   function openVorgangFromNotification(vorgangId: string, href: string) {
+    const id = vorgangId.trim();
+    beginNavHold();
     flushSync(() => {
+      setPendingDetailId(id);
       setSection("vorgaenge");
+      setVorgangFilterIntent("alle");
     });
-    flashPageBusy(PORTAL_BUSY_MIN_MS);
     const target =
       ensurePortalVorgangNotificationHref({
         href,
-        vorgangId,
+        vorgangId: id,
       }) ||
-      `/portal?section=vorgaenge&id=${encodeURIComponent(vorgangId)}`;
+      `/portal?section=vorgaenge&filter=alle&id=${encodeURIComponent(id)}`;
     router.push(target);
   }
 
@@ -318,19 +340,26 @@ export function OrganisationPortalClient({
   }, [searchParams, section]);
 
   const refresh = () => {
-    flashPageBusy();
-    router.refresh();
+    void refreshPortal();
   };
 
   function switchSection(next: OrgSection) {
-    if (next !== "vorgaenge") setVorgangFilterIntent(null);
-    setSection(next);
+    if (next !== "vorgaenge") {
+      setVorgangFilterIntent(null);
+      setPendingDetailId(null);
+      endNavHold();
+    }
+    flushSync(() => {
+      setSection(next);
+    });
     flashPageBusy();
     router.replace(`/portal?section=${next}`, { scroll: false });
   }
 
   function openVorgaenge(filter?: OrgVorgangFilter) {
     const f: OrgVorgangFilter = filter ?? "alle";
+    setPendingDetailId(null);
+    endNavHold();
     setVorgangFilterIntent(f);
     flushSync(() => {
       setSection("vorgaenge");
@@ -343,15 +372,21 @@ export function OrganisationPortalClient({
   function openVorgangDetail(id: string) {
     const trimmed = id.trim();
     if (!trimmed) return;
-    setVorgangFilterIntent("alle");
+    beginNavHold();
     flushSync(() => {
+      setPendingDetailId(trimmed);
+      setVorgangFilterIntent("alle");
       setSection("vorgaenge");
     });
-    flashPageBusy(PORTAL_BUSY_MIN_MS);
     router.replace(
       `/portal?section=vorgaenge&filter=alle&id=${encodeURIComponent(trimmed)}`,
       { scroll: false }
     );
+  }
+
+  function onVorgangDetailReady() {
+    setPendingDetailId(null);
+    endNavHold();
   }
 
   const allLeadsForFlow = useMemo(() => {
@@ -407,14 +442,10 @@ export function OrganisationPortalClient({
           lead,
           flow,
           sortDate: new Date(lead.created_at ?? 0).getTime(),
-          statusRank: portalFlowSortRank(flow),
         };
       })
-      .sort((a, b) => {
-        if (a.statusRank !== b.statusRank) return a.statusRank - b.statusRank;
-        return b.sortDate - a.sortDate;
-      })
-      .slice(0, 4)
+      .sort(compareByNewestCreated)
+      .slice(0, PORTAL_DASHBOARD_RECENT_LIMIT)
       .map(({ lead, flow }) => {
         const item = byLeadId.get(String(lead.id));
         // Gleicher Titel wie Liste/Detail; Subline = Anschrift · Melder
@@ -464,7 +495,7 @@ export function OrganisationPortalClient({
         hideMobileChrome={false}
         activeNavId={section}
         contentKey={`${section}:${searchParams.get("filter") ?? ""}`}
-        contentBusy={pageBusy}
+        contentBusy={ctxBusy}
         onNavChange={(id) => switchSection(id as OrgSection)}
         nav={buildPortalShellNav("kunde_hv", "org", {
           liste: vorgaengeBadgeCount,
@@ -521,8 +552,12 @@ export function OrganisationPortalClient({
                 vorgangFilterIntent ?? initialVorgangFilter ?? "alle"
               }
               initialSelectedId={initialItemId}
+              forceDetailId={pendingDetailId ?? initialItemId}
+              onDetailReady={onVorgangDetailReady}
               onRefresh={refresh}
               onFilterChange={(f) => {
+                setPendingDetailId(null);
+                endNavHold();
                 setVorgangFilterIntent(f);
                 // Filterwechsel = Liste: alte Detail-id nicht mitschleppen (Race mit closeDetail).
                 router.replace(`/portal?section=vorgaenge&filter=${f}`, {
@@ -543,7 +578,9 @@ export function OrganisationPortalClient({
           {section === "objekte" ? (
             <OrganisationObjektePanel
               objekte={objekte}
-              leads={[...leads, ...eingang]}
+              leads={allLeadsForFlow}
+              angebote={angebote}
+              auftraege={auftraege}
               orgKennung={kunde.org_kennung}
               kunde={kunde}
               onRefresh={refresh}

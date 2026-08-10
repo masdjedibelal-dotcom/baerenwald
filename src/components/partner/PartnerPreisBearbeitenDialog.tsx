@@ -59,6 +59,9 @@ export function PartnerPreisBearbeitenDialog({
       onClose={onCancel}
       variant="edit"
       dirty={dirty}
+      onConfirm={onConfirm}
+      confirmDisabled={parsed == null}
+      confirmLabel="Übernehmen"
     >
       {vorschlagNetto != null && vorschlagNetto > 0 ? (
         <p className="portal-text-meta text-text-tertiary">

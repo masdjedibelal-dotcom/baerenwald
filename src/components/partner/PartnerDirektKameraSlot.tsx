@@ -11,19 +11,24 @@ type Props = {
   required?: boolean;
   /** Name des File-Inputs im Formular */
   name?: string;
+  /** Hidden-Feld für Capture-Zeitstempel (bei mehreren Slots unterscheiden). */
+  captureAtName?: string;
   className?: string;
+  /** Kompakter Slot (z. B. zwei Spalten Start/Ende). */
+  compact?: boolean;
   onCaptured?: (file: File, captureAtIso: string) => void;
 };
 
 /**
- * Direkt-Kamera laut Spec: capture=environment, kein Galerie-Default.
- * Ventil „Foto liegt schon vor?“ separat im Parent.
+ * Direkt-Kamera: capture=environment, kein Galerie-Default.
  */
 export function PartnerDirektKameraSlot({
   label,
   required = true,
   name = "foto",
+  captureAtName = "captureAt",
   className,
+  compact = false,
   onCaptured,
 }: Props) {
   const inputRef = useRef<HTMLInputElement>(null);
@@ -66,44 +71,51 @@ export function PartnerDirektKameraSlot({
   }
 
   return (
-    <div className={cn("space-y-2", className)}>
-      <p className="text-[11px] font-semibold uppercase tracking-wide text-red-700">
+    <div className={cn("space-y-1.5", className)}>
+      <p className="text-[12px] font-semibold text-text-secondary">
         {label}
-        {required ? " · Pflicht" : ""}
+        {required ? (
+          <span className="font-medium text-text-tertiary"> · Pflicht</span>
+        ) : null}
       </p>
       <button
         type="button"
         onClick={openCamera}
-        className="flex w-full flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-accent/40 bg-accent-light/40 px-4 py-8 text-center transition-colors hover:bg-accent-light/70"
+        className={cn(
+          "flex w-full flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-border-default bg-[var(--p2-selected,#f0f2f0)] text-center transition-colors hover:bg-[var(--p2-hover,#eef1ef)]",
+          compact ? "px-2 py-5" : "px-4 py-8"
+        )}
       >
         {preview ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
             src={preview}
             alt="Aufnahme"
-            className="max-h-40 rounded-lg object-contain"
+            className={cn(
+              "rounded-lg object-contain",
+              compact ? "max-h-24" : "max-h-40"
+            )}
           />
         ) : (
-          <Camera className="h-8 w-8 text-accent" aria-hidden />
+          <Camera
+            className={cn(compact ? "h-6 w-6" : "h-8 w-8", "text-text-secondary")}
+            aria-hidden
+          />
         )}
         {status === "uploading" ? (
-          <span className="inline-flex items-center gap-1.5 text-sm text-text-secondary">
-            <Loader2 className="h-4 w-4 animate-spin" />
+          <span className="inline-flex items-center gap-1.5 text-[12px] text-text-secondary">
+            <Loader2 className="h-3.5 w-3.5 animate-spin" />
             wird vorbereitet…
           </span>
         ) : status === "done" ? (
-          <span className="inline-flex items-center gap-1.5 text-sm font-medium text-accent">
-            <Check className="h-4 w-4" />
-            Foto erfasst
-            {captureAt
-              ? ` · ${new Date(captureAt).toLocaleTimeString("de-DE", {
-                  hour: "2-digit",
-                  minute: "2-digit",
-                })}`
-              : ""}
+          <span className="inline-flex items-center gap-1.5 text-[12px] font-medium text-text-primary">
+            <Check className="h-3.5 w-3.5" />
+            Erfasst
           </span>
         ) : (
-          <span className="text-sm font-semibold text-accent">Kamera öffnen</span>
+          <span className="text-[12px] font-semibold text-text-primary">
+            Kamera öffnen
+          </span>
         )}
       </button>
       <input
@@ -117,9 +129,9 @@ export function PartnerDirektKameraSlot({
         onChange={onChange}
       />
       {captureAt ? (
-        <input type="hidden" name="captureAt" value={captureAt} />
+        <input type="hidden" name={captureAtName} value={captureAt} />
       ) : null}
-      {error ? <p className="text-xs text-red-700">{error}</p> : null}
+      {error ? <p className="text-xs text-text-secondary">{error}</p> : null}
     </div>
   );
 }

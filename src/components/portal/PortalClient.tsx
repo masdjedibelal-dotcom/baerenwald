@@ -17,6 +17,7 @@ import {
   usePortalBusy,
 } from "@/components/shared/PortalBusyContext";
 import { PortalContentBusy } from "@/components/shared/PortalContentBusy";
+import { usePortalRefresh } from "@/components/shared/usePortalRefresh";
 
 const PortalBaerenwaldGpt = dynamic(
   () =>
@@ -83,10 +84,12 @@ import {
   type PortalCardRow,
 } from "@/lib/portal/portal-list-mappers";
 import {
+  compareByNewestCreated,
   compareVorgangListOrder,
+  PORTAL_DASHBOARD_RECENT_LIMIT,
   portalFlowSortRank,
 } from "@/lib/portal/portal-vorgang-sort";
-import { portalCreateChannel, portalCreateLabel } from "@/lib/portal2/create";
+import { portalClientCreateChannel, portalCreateLabel } from "@/lib/portal2/create";
 import { buildPortalContactPrefill } from "@/lib/portal/portal-contact-prefill";
 import {
   countLeadsByPortalFlow,
@@ -194,6 +197,8 @@ export function PortalClient({
   controlledHvListeFilter,
   onVorgangFilterChange,
   onHvDetailOpenChange,
+  onDetailReady,
+  forceDetailId = null,
   hvPortalMode = false,
   kundeTyp: kundeTypProp,
   mieterFeedbackByLeadId = {},
@@ -240,6 +245,12 @@ export function PortalClient({
   controlledHvListeFilter?: OrgVorgangFilter;
   /** Embedded HV: Parent blendet Listen-Chrome aus, sobald Detail offen ist. */
   onHvDetailOpenChange?: (open: boolean) => void;
+  /** Detail fertig (Fetch) — Parent kann Nav-Hold lösen. */
+  onDetailReady?: () => void;
+  /**
+   * Sofortige Detail-ID (z. B. Klick Startseite), ohne auf URL-searchParams zu warten.
+   */
+  forceDetailId?: string | null;
   onVorgangFilterChange?: (filter: KundeVorgangFilter) => void;
   /** Hausverwaltungs-Portal: CRM-Resolver mit role „hv“ (kein Mieter-Status). */
   hvPortalMode?: boolean;
@@ -249,6 +260,9 @@ export function PortalClient({
   const router = useRouter();
   const searchParams = useSearchParams();
   const embedded = layout === "embedded";
+  const { hold, release, flash: flashShellBusy } = usePortalBusy();
+  const { refreshFlash } = usePortalRefresh();
+  const detailHoldRef = useRef(false);
 
   const kundeTyp =
     kundeTypProp ??
@@ -304,12 +318,13 @@ export function PortalClient({
   const setVorgangFilter = onVorgangFilterChange ?? setInternalVorgangFilter;
   const [privatChip, setPrivatChip] = useState<PrivatListeChip>("alle");
   const [selectedId, setSelectedId] = useState<string | null>(
-    searchParams.get("id")?.trim() || null
+    () => forceDetailId?.trim() || searchParams.get("id")?.trim() || null
   );
   const [detailItem, setDetailItem] = useState<KundePortalDetailItem | null>(null);
   /** Deep-Link mit `id`: sofort Loading, kein kurzer Flicker der Liste. */
   const [detailLoading, setDetailLoading] = useState(
-    () => Boolean(searchParams.get("id")?.trim())
+    () =>
+      Boolean(forceDetailId?.trim() || searchParams.get("id")?.trim())
   );
   const [listPage, setListPage] = useState(1);
   const [gptOpen, setGptOpen] = useState(false);
@@ -322,12 +337,30 @@ export function PortalClient({
   const ignoreUrlDetailRef = useRef(false);
   /** Beim Öffnen: veraltete URL-id vom vorherigen Detail verwerfen. */
   const pendingDetailIdRef = useRef<string | null>(null);
-  const { flash: flashShellBusy } = usePortalBusy();
+
+  function beginDetailBusy() {
+    if (!detailHoldRef.current) {
+      detailHoldRef.current = true;
+      hold();
+    }
+    paintPortalBusyNow(setPageBusy);
+    setDetailLoading(true);
+  }
+
+  function endDetailBusy() {
+    setDetailLoading(false);
+    setPageBusy(false);
+    if (detailHoldRef.current) {
+      detailHoldRef.current = false;
+      release();
+    }
+    onDetailReady?.();
+  }
 
   function flashNavBusy(ms = PORTAL_BUSY_MIN_MS) {
+    flashShellBusy(ms);
     paintPortalBusyNow(setPageBusy);
     window.setTimeout(() => setPageBusy(false), ms);
-    flashShellBusy(ms);
   }
 
   const auftragIdByLeadId = useMemo(() => {
@@ -457,12 +490,11 @@ export function PortalClient({
         return {
           item,
           flow,
-          statusRank: portalFlowSortRank(flow),
           sortDate: item.date ? new Date(item.date).getTime() : 0,
         };
       })
-      .sort(compareVorgangListOrder)
-      .slice(0, 4)
+      .sort(compareByNewestCreated)
+      .slice(0, PORTAL_DASHBOARD_RECENT_LIMIT)
       .map(({ item, flow }) => ({
         id: item.id,
         titel: item.title,
@@ -517,6 +549,21 @@ export function PortalClient({
       ? null
       : listSelectedItem;
 
+  /** Parent (Startseite) setzt forceDetailId sofort — nicht auf URL warten. */
+  useLayoutEffect(() => {
+    const forced = forceDetailId?.trim() || null;
+    if (!forced) return;
+    if (selectedId === forced) return;
+    ignoreUrlDetailRef.current = false;
+    pendingDetailIdRef.current = forced;
+    beginDetailBusy();
+    flushSync(() => {
+      setDetailItem(null);
+      setSelectedId(forced);
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- nur bei forceDetailId
+  }, [forceDetailId]);
+
   /** Vor Paint: kein Slim-Detail ohne Loader (URL-Deep-Link / Klick). */
   useLayoutEffect(() => {
     if (!selectedId) {
@@ -536,10 +583,15 @@ export function PortalClient({
     if (!selectedId) {
       setDetailItem(null);
       setDetailLoading(false);
+      setPageBusy(false);
+      if (detailHoldRef.current) {
+        detailHoldRef.current = false;
+        release();
+      }
       return;
     }
     let cancelled = false;
-    setDetailLoading(true);
+    beginDetailBusy();
     const started = Date.now();
     const q = hvPortalMode ? "?hv=1" : "";
     void fetch(`/api/portal/vorgaenge/${encodeURIComponent(selectedId)}${q}`)
@@ -557,12 +609,14 @@ export function PortalClient({
       .finally(() => {
         const wait = Math.max(0, PORTAL_BUSY_MIN_MS - (Date.now() - started));
         window.setTimeout(() => {
-          if (!cancelled) setDetailLoading(false);
+          if (!cancelled) endDetailBusy();
         }, wait);
       });
     return () => {
       cancelled = true;
     };
+    // begin/endDetailBusy stabil über Refs
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedId, hvPortalMode]);
 
   /** URL-/State-ID ohne Listen-Treffer und ohne Detail → nicht ewig „laden“. */
@@ -711,14 +765,13 @@ export function PortalClient({
     const matched = findKundeVorgangByQueryId(vorgaengeItems, vorgangId);
     const id = matched?.id ?? vorgangId;
     pendingDetailIdRef.current = id;
+    beginDetailBusy();
     flushSync(() => {
       setDetailItem(null);
-      setDetailLoading(true);
       setSection("vorgaenge");
       setSelectedId(id);
     });
     onHvDetailOpenChange?.(true);
-    flashNavBusy(PORTAL_BUSY_MIN_MS);
     const target =
       ensurePortalVorgangNotificationHref({
         href: href ?? null,
@@ -746,8 +799,17 @@ export function PortalClient({
   function switchSection(next: SectionId) {
     ignoreUrlDetailRef.current = true;
     pendingDetailIdRef.current = null;
-    setSection(next);
-    setSelectedId(null);
+    if (detailHoldRef.current) {
+      detailHoldRef.current = false;
+      release();
+    }
+    setDetailLoading(false);
+    setDetailItem(null);
+    setPageBusy(false);
+    flushSync(() => {
+      setSection(next);
+      setSelectedId(null);
+    });
     flashNavBusy();
     if (!embedded) {
       router.replace(`/portal?section=${next}`, { scroll: false });
@@ -769,14 +831,13 @@ export function PortalClient({
     if (!id) return;
     pendingDetailIdRef.current = id;
     // Loading muss vor router.replace sichtbar sein (sonst Sekunden ohne Feedback).
+    beginDetailBusy();
     flushSync(() => {
       setDetailItem(null);
-      setDetailLoading(true);
       setSection("vorgaenge");
       setSelectedId(id);
     });
     onHvDetailOpenChange?.(true);
-    flashNavBusy(PORTAL_BUSY_MIN_MS);
     if (embedded && hvPortalMode) {
       const f = hvListeFilterForUrl();
       router.replace(
@@ -798,8 +859,13 @@ export function PortalClient({
   function closeDetail() {
     ignoreUrlDetailRef.current = true;
     pendingDetailIdRef.current = null;
+    if (detailHoldRef.current) {
+      detailHoldRef.current = false;
+      release();
+    }
     setDetailItem(null);
     setDetailLoading(false);
+    setPageBusy(false);
     setSelectedId(null);
     flashNavBusy();
     onHvDetailOpenChange?.(false);
@@ -946,7 +1012,7 @@ export function PortalClient({
       <PortalVorgangDetail
         item={selectedItem}
         showAnlassBadge={showAnlassBadge}
-        onAccepted={() => router.refresh()}
+        onAccepted={() => refreshFlash()}
         hwErledigt={hwErledigtByLeadId[selectedLeadId]}
         hvFeedback={hvFeedbackByLeadId[selectedLeadId]}
         auftragId={auftragIdByLeadId[selectedLeadId]}
@@ -983,7 +1049,7 @@ export function PortalClient({
           )?.hv_meldung_status ?? null
         }
         schwelleEur={kunde.freigabe_schwelle_eur ?? undefined}
-        onHvFeedbackSubmitted={() => router.refresh()}
+        onHvFeedbackSubmitted={() => refreshFlash()}
         onBack={closeDetail}
       />
     </div>
@@ -1033,7 +1099,7 @@ export function PortalClient({
         hideMobileChrome={section === "gpt"}
         activeNavId={section === "gpt" ? "uebersicht" : section}
         contentKey={`${section}:${privatChip ?? ""}:${controlledHvListeFilter ?? controlledVorgangFilter ?? ""}`}
-        contentBusy={pageBusy}
+        contentBusy={pageBusy || detailLoading}
         onNavChange={(id) => {
           switchSection(id as SectionId);
         }}
@@ -1154,14 +1220,17 @@ export function PortalClient({
 
       <PortalCreateFunnelModal
         open={createOpen}
-        channel={portalCreateChannel(navRole)}
+        channel={portalClientCreateChannel({
+          hvPortalMode,
+          kundeTyp,
+          navRole,
+        })}
         title={portalCreateLabel(navRole)}
         prefill={fabContactPrefill}
         onClose={() => setCreateOpen(false)}
         onDone={() => {
           setCreateOpen(false);
-          flashNavBusy();
-          router.refresh();
+          refreshFlash();
         }}
       />
 

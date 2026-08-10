@@ -129,6 +129,15 @@ function isGenericTitel(t: string): boolean {
   return false;
 }
 
+/** Bereichs-Labels wie „Wasser / Rohr / WC“ sind kein Vorgangs-Titel. */
+function isMeldeBereichFallbackTitel(t: string): boolean {
+  const n = t.trim().toLowerCase();
+  if (!n) return false;
+  if (n.includes(" / ")) return true;
+  if (n === "wasser / rohr / wc" || n.includes("rohr / wc")) return true;
+  return false;
+}
+
 export type MeldeVorgangTitelInput = {
   situation?: string | null;
   bereiche?: string[] | null;
@@ -149,21 +158,26 @@ export function buildMeldeVorgangTitel(input: MeldeVorgangTitelInput): string {
     ? meldeBereichLabel(bereichId)
     : formatAnfrageGewerk(input.bereiche);
 
-  const ursachenBereich = resolveMeldeUrsachenBereich({
-    answers,
-    bereichLabel,
-    bereiche: input.bereiche,
-  });
+  // Expliziter Melde-Bereich hat Vorrang (vermeidet tropft→Heizung-Kollision)
+  const ursachenBereich =
+    bereichId ??
+    resolveMeldeUrsachenBereich({
+      answers,
+      bereichLabel,
+      bereiche: input.bereiche,
+    });
 
   let core = "";
   if (ursachenBereich) {
     core = meldeSchadenKurz(ursachenBereich, answers).trim();
   }
 
-  if (!core || isGenericTitel(core)) {
+  if (!core || isGenericTitel(core) || isMeldeBereichFallbackTitel(core)) {
     core =
       firstMeaningfulLine(input.beschreibung) ||
-      bereichLabel ||
+      (bereichLabel && !isMeldeBereichFallbackTitel(bereichLabel)
+        ? bereichLabel
+        : null) ||
       "Meldung";
   }
 

@@ -20,7 +20,7 @@ function typLabel(typ: string): string {
     case "start":
       return "Start";
     case "fortschritt":
-      return "Fortschritt";
+      return "Update";
     case "ergebnis":
       return "Ergebnis";
     case "weitere_arbeit":

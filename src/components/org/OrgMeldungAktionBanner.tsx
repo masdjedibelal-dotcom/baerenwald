@@ -3,6 +3,7 @@
 import { useState } from "react";
 
 import { HvFreigabeInfoBanner } from "@/components/org/HvFreigabeInfoBanner";
+import { usePortalBusy } from "@/components/shared/PortalBusyContext";
 import { hvFreigabeEntfaellt } from "@/lib/org/freigabe-bypass";
 import { isHvDirektauftragInfoOnly } from "@/lib/org/org-direktauftrag";
 import { orgPortalToast } from "@/lib/shared/portal-toast";
@@ -33,6 +34,7 @@ export function OrgMeldungAktionBanner({
 }: Props) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { runBusy } = usePortalBusy();
 
   const status = lead.hv_meldung_status ?? "neu";
   if (status !== "neu") return null;
@@ -74,19 +76,21 @@ export function OrgMeldungAktionBanner({
     setBusy(true);
     setError(null);
     try {
-      const res = await fetch("/api/org/meldung-aktion", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ leadId: lead.id, aktion }),
+      await runBusy(async () => {
+        const res = await fetch("/api/org/meldung-aktion", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ leadId: lead.id, aktion }),
+        });
+        const json = (await res.json()) as { error?: string };
+        if (!res.ok) {
+          setError(json.error ?? "Aktion fehlgeschlagen.");
+          return;
+        }
+        if (aktion === "angebot_einfordern") orgPortalToast.angebotEingefordert();
+        else orgPortalToast.meldungAbgelehnt();
+        onUpdated();
       });
-      const json = (await res.json()) as { error?: string };
-      if (!res.ok) {
-        setError(json.error ?? "Aktion fehlgeschlagen.");
-        return;
-      }
-      if (aktion === "angebot_einfordern") orgPortalToast.angebotEingefordert();
-      else orgPortalToast.meldungAbgelehnt();
-      onUpdated();
     } finally {
       setBusy(false);
     }

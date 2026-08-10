@@ -385,8 +385,14 @@ export async function fetchCrmAbnahmeStatus(
       protokoll_id: (body.protokoll_id as string | null) ?? null,
       pdf_url: (body.pdf_url as string | null) ?? null,
       abnahme_datum: (body.abnahme_datum as string | null) ?? null,
-      punkte_count: Number(body.punkte_count ?? 0),
-      maengel_count: Number(body.maengel_count ?? 0),
+      punkte_count: Number(
+        body.punkte_count ??
+          (Array.isArray(body.punkte) ? body.punkte.length : 0)
+      ),
+      maengel_count: Number(
+        body.maengel_count ??
+          (Array.isArray(body.maengel) ? body.maengel.length : 0)
+      ),
       an_kunde_gesendet_at: (body.an_kunde_gesendet_at as string | null) ?? null,
       handwerker_bestaetigt_at:
         (body.handwerker_bestaetigt_at as string | null) ?? null,

@@ -39,6 +39,9 @@ type Props = {
   auftraege: Parameters<typeof PortalClient>[0]["auftraege"];
   initialFilter?: OrgVorgangFilter | null;
   initialSelectedId?: string | null;
+  /** Sofortige Detail-ID vom Parent (vor URL-Update). */
+  forceDetailId?: string | null;
+  onDetailReady?: () => void;
   onRefresh: () => void;
   onFilterChange?: (filter: OrgVorgangFilter) => void;
   bautagebuchByLeadId?: Record<
@@ -137,6 +140,8 @@ export function OrganisationVorgaengeSection({
   auftraege,
   initialFilter,
   initialSelectedId: _initialSelectedId,
+  forceDetailId = null,
+  onDetailReady,
   onRefresh: _onRefresh,
   onFilterChange,
   bautagebuchByLeadId: _bautagebuchByLeadId = {},
@@ -220,6 +225,8 @@ export function OrganisationVorgaengeSection({
         hideFilterBar
         hvPortalMode
         controlledHvListeFilter={filter}
+        forceDetailId={forceDetailId}
+        onDetailReady={onDetailReady}
         onHvDetailOpenChange={setDetailOpen}
         kunde={{
           name: kunde.org_anzeigename ?? kunde.name,

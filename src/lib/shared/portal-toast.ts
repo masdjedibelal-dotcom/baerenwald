@@ -101,8 +101,8 @@ export const partnerPortalToast = {
   },
   abschlussSigniert() {
     portalToastSuccess(
-      "Teilabnahme eingereicht",
-      "Protokoll ist bei Bärenwald zur Freigabe. Kein automatischer Versand an den Kunden."
+      "Auftrag abgeschlossen",
+      "Die Details liegen Bärenwald zur weiteren Prüfung vor."
     );
   },
 };

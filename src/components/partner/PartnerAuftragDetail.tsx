@@ -1,16 +1,15 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { Phone } from "lucide-react";
 
 import { submitPartnerAngebotPdf, submitPartnerRechnung } from "@/app/actions/partner-angebote";
+import { usePortalRefresh } from "@/components/shared/usePortalRefresh";
 import { PartnerAbnahmeAbschlussSheet } from "@/components/partner/PartnerAbnahmeAbschlussSheet";
 import { PartnerAbnahmeReviewSection } from "@/components/partner/PartnerAbnahmeReviewSection";
 import { PartnerDokumentPreviewModal } from "@/components/partner/PartnerDokumentPreviewModal";
 import { PartnerAuftragErledigtSection } from "@/components/partner/PartnerAuftragErledigtSection";
 import { PartnerLeistungenKonditionenCard } from "@/components/partner/PartnerLeistungenKonditionenCard";
 import { PartnerPositionLebenszyklusList } from "@/components/partner/PartnerPositionLebenszyklusList";
-import { PartnerTermineRueckfrageSection } from "@/components/partner/PartnerTermineRueckfrageSection";
 import {
   PortalDetailError,
   PortalDetailLayout,
@@ -19,12 +18,10 @@ import {
 } from "@/components/shared/PortalDetailUi";
 import { PartnerComplianceCheckliste } from "@/components/partner/PartnerComplianceCheckliste";
 import { PartnerFachdokuSlots } from "@/components/partner/PartnerFachdokuSlots";
-import {
-  PortalDetailCard,
-  PortalDetailMetaField,
-} from "@/components/shared/PortalDetailCard";
+import { PortalDetailCard } from "@/components/shared/PortalDetailCard";
 import { PortalEntityDetailLayout } from "@/components/shared/PortalEntityDetailLayout";
 import type { PortalDetailTab } from "@/components/shared/PortalDetailTabs";
+import { VorgangDetailBlocks } from "@/components/shared/vorgang-detail";
 import { resolvePartnerDetailTitelFromAuftrag } from "@/lib/partner/partner-listen-titel";
 import {
   buildBauauftragComplianceItems,
@@ -46,25 +43,22 @@ import {
   validatePartnerPdfFile,
 } from "@/lib/partner/partner-upload-limits";
 import type { PartnerAuftragItem } from "@/lib/partner/get-partner-data";
-import {
-  fmtPartnerDate,
-  fmtPartnerEuro,
-} from "@/lib/partner/partner-detail-format";
+import { fmtPartnerDate } from "@/lib/partner/partner-detail-format";
 import {
   PARTNER_LEISTUNGEN_GESAMT_LABEL,
+  partnerDetailOrtMetaLine,
   resolvePartnerAuftragKonditionZeilen,
 } from "@/lib/partner/partner-portal-display";
-import { summeKonditionNetto } from "@/lib/partner/partner-konditionen";
 import { resolvePartnerVorgangListenStatus } from "@/lib/partner/partner-vorgang-display";
 import { partnerKannErledigtMelden } from "@/lib/partner/partner-position-erledigt";
 import { type VorgangState } from "@/lib/partner/vorgang-state";
 import {
-  formatHwTerminRange,
   HW_AUFTRAG_COPY,
   hwAuftragStatusLabel,
   hwAuftragStatusStyle,
 } from "@/lib/portal2/hw-auftrag-detail";
 import { PORTAL_VAR } from "@/lib/portal2/tokens";
+import { buildPartnerVorgangDetailVm } from "@/lib/vorgang/build-vorgang-detail-vm";
 import { partnerPortalToast } from "@/lib/shared/portal-toast";
 import { DokumenteTabelle } from "@/components/shared/DokumenteTabelle";
 import { FileUploadField } from "@/components/shared/FileUploadField";
@@ -88,6 +82,7 @@ export function PartnerAuftragDetail({
   deepLinkProtokollId?: string | null;
 }) {
   const router = useRouter();
+  const { refresh } = usePortalRefresh();
   const [pdfLoading, setPdfLoading] = useState(false);
   const [rechnungLoading, setRechnungLoading] = useState(false);
   const [pdfError, setPdfError] = useState<string | null>(null);
@@ -106,6 +101,8 @@ export function PartnerAuftragDetail({
   const [abnahmeProtokollId, setAbnahmeProtokollId] = useState<string | null>(
     deepLinkProtokollId ?? null
   );
+  const [abnahmePunkteCount, setAbnahmePunkteCount] = useState<number | null>(null);
+  const [abnahmeMaengelCount, setAbnahmeMaengelCount] = useState<number | null>(null);
   const [activeTab, setActiveTab] = useState(() => {
     if (focusAbnahme) return "abnahme";
     if (focusBautagebuch) return "dokumentation";
@@ -155,13 +152,16 @@ export function PartnerAuftragDetail({
   const zeigtDokumenteUpload = partnerAuftragZeigtDokumenteUpload(item);
   const rechnungEingereicht = Boolean(item.hw_rechnung_eingereicht_at);
 
-  const konditionZeilen = useMemo(
-    () =>
-      resolvePartnerAuftragKonditionZeilen(item.positionen, {
-        excludePositionIds: item.nachreichungOpenPositionIds,
-      }),
-    [item.positionen, item.nachreichungOpenPositionIds]
-  );
+  const konditionZeilen = useMemo(() => {
+    // Nachtrag/Regie in Prüfung oder abgelehnt nicht in die Vergütung einrechnen
+    const freigegebene = item.positionen.filter((p) => {
+      const a = (p.anerkennung_status ?? "nicht_noetig").toLowerCase();
+      return a !== "in_pruefung" && a !== "abgelehnt";
+    });
+    return resolvePartnerAuftragKonditionZeilen(freigegebene, {
+      excludePositionIds: item.nachreichungOpenPositionIds,
+    });
+  }, [item.positionen, item.nachreichungOpenPositionIds]);
   const bauauftragUnterlagen = useMemo(
     () =>
       item.vertrag &&
@@ -210,7 +210,7 @@ export function PartnerAuftragDetail({
     }
     partnerPortalToast.unterlagenHochgeladen();
     setAngebotPdfs([]);
-    router.refresh();
+    await refresh();
   }
 
   async function onRechnungSubmit(e: React.FormEvent) {
@@ -229,7 +229,7 @@ export function PartnerAuftragDetail({
     }
     partnerPortalToast.rechnungEingereicht();
     setRechnungPdf(null);
-    router.refresh();
+    await refresh();
   }
   const { label: listenStatusLabel } =
     resolvePartnerVorgangListenStatus(vorgangState, item);
@@ -243,88 +243,45 @@ export function PartnerAuftragDetail({
       });
   const statusStyle = hwAuftragStatusStyle(statusLabel);
 
-  const lead = item.lead;
-  const gewerk =
-    item.positionen?.[0]?.gewerk_name?.trim() ||
-    lead?.bereiche?.[0] ||
-    null;
-  const strasse =
-    lead?.objekt?.strasse?.trim() ||
-    [lead?.strasse, lead?.hausnummer].filter(Boolean).join(" ").trim() ||
-    null;
-  const einheit = lead?.melder_einheit?.trim() || null;
-  const objektLine = [strasse, einheit].filter(Boolean).join(" · ") || null;
-  const plzOrt =
-    [item.plz, item.ort].filter((v) => v && v !== "—").join(" ") ||
-    [lead?.plz, lead?.ort ?? lead?.objekt?.ort]
-      .filter((v) => v && v !== "—")
-      .join(" ") ||
-    null;
-  const beschreibung = lead?.kontakt_nachricht?.trim() || null;
-  const kontaktName =
-    lead?.melder_name?.trim() || lead?.kontakt_name?.trim() || null;
-  const kontaktTel = lead?.melder_telefon?.trim() || null;
-  const kontaktEmail = lead?.melder_email?.trim() || null;
-  const zugangshinweis = lead?.einheiten_hinweis?.trim() || null;
   const crmNotiz =
     item.hw_crm_notiz?.trim() || item.aufgabe_notiz?.trim() || null;
-  const terminLabel = formatHwTerminRange(item.start_datum, item.end_datum);
-  const sumNetto = summeKonditionNetto(konditionZeilen, true);
+  const meldeFotos = useMemo(() => {
+    const fd = item.lead?.funnel_daten as { fotos?: unknown } | null | undefined;
+    if (!Array.isArray(fd?.fotos)) return [] as string[];
+    return fd.fotos
+      .filter(
+        (u): u is string => typeof u === "string" && /^https?:\/\//i.test(u)
+      )
+      .slice(0, 12);
+  }, [item.lead?.funnel_daten]);
 
-  const einsatzCard = (
-    <PortalDetailCard title={HW_AUFTRAG_COPY.einsatzTitle}>
-      {gewerk ? (
-        <PortalDetailMetaField label="Gewerk">{gewerk}</PortalDetailMetaField>
-      ) : null}
-      {objektLine ? (
-        <PortalDetailMetaField label="Objekt / Leistungsort">
-          {objektLine}
-        </PortalDetailMetaField>
-      ) : null}
-      {plzOrt ? (
-        <PortalDetailMetaField label="PLZ / Ort">{plzOrt}</PortalDetailMetaField>
-      ) : null}
-      {kontaktName || kontaktTel || kontaktEmail ? (
-        <PortalDetailMetaField label="Kontakt vor Ort">
-          {kontaktName ? <span>{kontaktName}</span> : null}
-          {kontaktTel ? (
-            <a
-              href={`tel:${kontaktTel.replace(/\s+/g, "")}`}
-              className="mt-0.5 flex items-center gap-1.5 text-[13px] font-semibold"
-              style={{ color: PORTAL_VAR.primary }}
-            >
-              <Phone className="h-3.5 w-3.5 shrink-0" aria-hidden />
-              {kontaktTel}
-            </a>
-          ) : null}
-          {kontaktEmail ? (
-            <a
-              href={`mailto:${kontaktEmail}`}
-              className="mt-0.5 block text-[13px] font-semibold"
-              style={{ color: PORTAL_VAR.primary }}
-            >
-              {kontaktEmail}
-            </a>
-          ) : null}
-        </PortalDetailMetaField>
-      ) : null}
-      {zugangshinweis ? (
-        <PortalDetailMetaField label="Zugangshinweis">
-          {zugangshinweis}
-        </PortalDetailMetaField>
-      ) : null}
-      {terminLabel ? (
-        <PortalDetailMetaField label="Termin">{terminLabel}</PortalDetailMetaField>
-      ) : null}
-      {sumNetto > 0 ? (
-        <PortalDetailMetaField label="Vergütung (Netto)">
-          {fmtPartnerEuro(sumNetto)}
-        </PortalDetailMetaField>
-      ) : null}
-    </PortalDetailCard>
+  const detailVm = useMemo(
+    () =>
+      buildPartnerVorgangDetailVm({
+        idLabel: item.id.slice(0, 8).toUpperCase(),
+        titel,
+        statusLabel,
+        lead: item.lead,
+        plz: item.plz ?? undefined,
+        ort: item.ort ?? undefined,
+        gewerkName: item.positionen?.[0]?.gewerk_name ?? null,
+        konditionZeilen,
+        fotos: meldeFotos,
+      }),
+    [
+      item.id,
+      item.lead,
+      item.plz,
+      item.ort,
+      item.positionen,
+      titel,
+      statusLabel,
+      konditionZeilen,
+      meldeFotos,
+    ]
   );
 
-  const coverUrl = lead?.objekt?.cover_url ?? null;
+  const coverUrl = item.lead?.objekt?.cover_url ?? null;
 
   const DETAIL_TABS: PortalDetailTab[] = [
     { id: "uebersicht", label: "Übersicht" },
@@ -333,7 +290,7 @@ export function PartnerAuftragDetail({
     { id: "abnahme", label: "Abnahme" },
   ];
 
-  const stickyFooter = kannAbschluss ? (
+  const actionFooter = kannAbschluss ? (
     <div className="space-y-2">
       <button
         type="button"
@@ -349,12 +306,13 @@ export function PartnerAuftragDetail({
   const handleBack = onBack ?? (() => router.back());
 
   return (
-    <PortalDetailLayout footer={stickyFooter}>
+    <PortalDetailLayout footer={actionFooter}>
       <PortalEntityDetailLayout
         coverUrl={coverUrl}
         onBack={handleBack}
         backLabel="← Zurück"
         title={titel}
+        metaLine={partnerDetailOrtMetaLine(item.lead)}
         statusLabel={statusLabel}
         statusPillStyle={statusStyle}
         tabs={DETAIL_TABS}
@@ -364,30 +322,14 @@ export function PartnerAuftragDetail({
       >
         {activeTab === "uebersicht" ? (
           <div className="space-y-3.5">
-            {einsatzCard}
             {crmNotiz ? (
               <PortalDetailCard title="Hinweis vom Auftraggeber">
-                <p
-                  className="whitespace-pre-wrap text-[13px] font-semibold leading-relaxed"
-                  style={{ color: PORTAL_VAR.ink }}
-                >
+                <p className="whitespace-pre-wrap text-[13px] font-semibold leading-relaxed text-text-primary">
                   {crmNotiz}
                 </p>
               </PortalDetailCard>
             ) : null}
-            {beschreibung ? (
-              <PortalDetailCard title={HW_AUFTRAG_COPY.beschreibungTitle}>
-                <p
-                  className="text-[13px] leading-relaxed"
-                  style={{ color: PORTAL_VAR.sub }}
-                >
-                  {beschreibung}
-                </p>
-              </PortalDetailCard>
-            ) : null}
-            {vorgangState !== "erledigt" ? (
-              <PartnerTermineRueckfrageSection auftragId={item.id} />
-            ) : null}
+            <VorgangDetailBlocks vm={detailVm} />
             <PartnerAuftragErledigtSection
               positionen={item.positionen}
               layout="cta"
@@ -418,7 +360,7 @@ export function PartnerAuftragDetail({
                   menge: p.menge,
                   zeit_minuten_summe: p.zeit_minuten_summe,
                 }))}
-                onDone={() => router.refresh()}
+                onDone={() => refresh()}
               />
 
               <PartnerFachdokuSlots auftragId={item.id} className="mt-4" />
@@ -593,6 +535,8 @@ export function PartnerAuftragDetail({
                     ? item.abnahme_freigabe_status || "zur_freigabe"
                     : item.abnahme_freigabe_status
                 }
+                initialPunkteCount={abnahmePunkteCount}
+                initialMaengelCount={abnahmeMaengelCount}
                 focus={focusAbnahme || abschlussDone}
               />
             ) : (
@@ -629,6 +573,8 @@ export function PartnerAuftragDetail({
           autoDocDismissedRef.current.rechnung = true;
           if (result.pdf_url) setAbnahmePdfUrl(result.pdf_url);
           if (result.protokoll_id) setAbnahmeProtokollId(result.protokoll_id);
+          setAbnahmePunkteCount(result.punkte_count);
+          setAbnahmeMaengelCount(result.maengel_count);
           setActiveTab("abnahme");
         }}
       />

@@ -12,6 +12,7 @@ import { emitPortalNotificationsChanged } from "@/lib/portal2/notif-refresh";
 import {
   paintPortalBusyNow,
   PORTAL_BUSY_MIN_MS,
+  usePortalBusy,
 } from "@/components/shared/PortalBusyContext";
 import { PortalContentBusy } from "@/components/shared/PortalContentBusy";
 import { PortalListCard } from "@/components/shared/PortalListCard";
@@ -33,7 +34,9 @@ import { buildKundeVorgaenge } from "@/lib/portal/build-kunde-vorgaenge";
 import { findKundeVorgangByQueryId } from "@/lib/portal/portal-detail-item";
 import { buildKundeVorgangCardRows } from "@/lib/portal/portal-list-mappers";
 import {
+  compareByNewestCreated,
   compareVorgangListOrder,
+  PORTAL_DASHBOARD_RECENT_LIMIT,
   portalFlowSortRank,
 } from "@/lib/portal/portal-vorgang-sort";
 import { portalListStackClass } from "@/lib/portal2/layout-chrome";
@@ -122,21 +125,34 @@ export function EigentuemerPortalClient({
   const ignoreUrlDetailRef = useRef(false);
   const pendingDetailIdRef = useRef<string | null>(null);
 
+  const { hold, release, flash } = usePortalBusy();
+  const detailHoldRef = useRef(false);
+
   function flashPageBusy(ms = PORTAL_BUSY_MIN_MS) {
+    flash(ms);
     paintPortalBusyNow(setPageBusy);
     window.setTimeout(() => setPageBusy(false), ms);
   }
 
   function beginDetailOpening() {
+    if (!detailHoldRef.current) {
+      detailHoldRef.current = true;
+      hold();
+    }
     paintPortalBusyNow(setDetailOpening, setPageBusy);
     if (detailOpeningTimerRef.current) {
       clearTimeout(detailOpeningTimerRef.current);
-    }
-    detailOpeningTimerRef.current = setTimeout(() => {
       detailOpeningTimerRef.current = null;
-      setDetailOpening(false);
-      setPageBusy(false);
-    }, PORTAL_BUSY_MIN_MS);
+    }
+  }
+
+  function endDetailOpening() {
+    setDetailOpening(false);
+    setPageBusy(false);
+    if (detailHoldRef.current) {
+      detailHoldRef.current = false;
+      release();
+    }
   }
 
   useEffect(() => {
@@ -321,12 +337,11 @@ export function EigentuemerPortalClient({
           return {
             item,
             flow,
-            statusRank: portalFlowSortRank(flow),
             sortDate: item.date ? new Date(item.date).getTime() : 0,
           };
         })
-        .sort(compareVorgangListOrder)
-        .slice(0, 4)
+        .sort(compareByNewestCreated)
+        .slice(0, PORTAL_DASHBOARD_RECENT_LIMIT)
         .map(({ item, flow }) => ({
           id: item.id,
           titel: item.title,
@@ -343,6 +358,15 @@ export function EigentuemerPortalClient({
   const selectedLeadId = selectedItem
     ? selectedItem.leadId ?? selectedItem.id
     : null;
+
+  useEffect(() => {
+    if (!detailOpening || !selectedId || !selectedItem) return;
+    const t = window.setTimeout(() => {
+      endDetailOpening();
+    }, PORTAL_BUSY_MIN_MS);
+    return () => window.clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [detailOpening, selectedId, selectedItem]);
 
   const helloName =
     kunde.name?.trim().split(/\s+/)[0] ||
@@ -363,7 +387,7 @@ export function EigentuemerPortalClient({
       hideMobileChrome={false}
       activeNavId={section}
       contentKey={`${section}:${objektDetailId ?? ""}`}
-      contentBusy={pageBusy}
+      contentBusy={pageBusy || detailOpening}
       onNavChange={(id) => switchSection(id as SectionId)}
       nav={buildPortalShellNav("eigentuemer", "eigentuemer")}
       headerUser={{ name: kunde.name?.trim() || EIGENTUEMER_DASHBOARD_ROLE }}

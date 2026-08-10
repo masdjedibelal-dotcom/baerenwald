@@ -118,7 +118,7 @@ export function PortalActionMenu({
           stack.length > 0 ? (
             <button
               type="button"
-              className="portal-text-meta mr-1 rounded-lg px-2 py-1 font-semibold text-accent"
+              className="portal-text-meta rounded-lg px-2 py-1 font-semibold text-accent"
               onClick={() => setStack((s) => s.slice(0, -1))}
             >
               ‹ Zurück

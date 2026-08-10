@@ -232,6 +232,15 @@ export function partnerDetailDateMetaLine(date?: string | null): string | undefi
   return parts.length ? parts.join(" · ") : undefined;
 }
 
+/** Detail-Subline: Anschrift (wie HV/Kunde-Karten). */
+export function partnerDetailOrtMetaLine(
+  lead?: PortalAnfrageLeadSource | null
+): string | undefined {
+  if (!lead) return undefined;
+  const line = formatAnfrageListOrtLine(lead);
+  return line !== "—" ? line : undefined;
+}
+
 export function partnerAuftragDetailMetaLine(
   start?: string | null,
   end?: string | null

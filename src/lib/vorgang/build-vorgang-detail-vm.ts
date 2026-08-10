@@ -11,7 +11,10 @@ import {
 } from "@/lib/portal/portal-anfrage-display";
 import { labelSituation } from "@/lib/lead-funnel-labels";
 import type { PortalObjekt } from "@/lib/portal/portal-objekt";
-import { normalizeFunnelDaten } from "@/lib/lead-funnel-daten";
+import {
+  fachdetailRowsFromFunnelDaten,
+  normalizeFunnelDaten,
+} from "@/lib/lead-funnel-daten";
 import { formatAuftragDatumSpan } from "@/lib/portal/portal-auftrag-display";
 import {
   kostentraegerLabel,
@@ -84,7 +87,7 @@ function leistungenFromPartnerKonditionen(
 }
 
 export type BuildKundeHvVmInput = {
-  role: "hv" | "kunde";
+  role: "hv" | "kunde" | "mieter";
   idLabel: string;
   titel: string;
   statusLabel?: string;
@@ -274,6 +277,9 @@ export function buildPartnerVorgangDetailVm(
       ? labelSituation(situationSlug)
       : null;
   const bereichLabel = lead ? formatAnfrageBereiche(lead) ?? null : null;
+  const fachdetailRows = lead?.funnel_daten
+    ? fachdetailRowsFromFunnelDaten(lead.funnel_daten, lead.bereiche)
+    : [];
 
   return {
     role: "partner",
@@ -285,20 +291,21 @@ export function buildPartnerVorgangDetailVm(
     },
     auftraggeber: {},
     objektMelder: {
-      objektTitel: lead?.objekt?.name ?? null,
+      objektTitel: lead?.objekt?.name?.trim() || strasse || null,
       adresseZeile: adresse,
       adresseStrasse: strasse,
       plzOrt,
       einheit: lead?.melder_einheit ?? null,
-      zugangshinweis: lead?.einheiten_hinweis ?? null,
+      zugangshinweis: null,
       melderName: lead?.melder_name ?? lead?.kontakt_name ?? null,
       melderTelefon: lead?.melder_telefon ?? null,
-      melderEmail: lead?.melder_email ?? null,
+      melderEmail: null,
       beschreibung: lead?.kontakt_nachricht ?? null,
       fotos: input.fotos ?? [],
       situationLabel,
       bereichLabel,
       zeitraumLabel: input.zeitraum?.trim() || null,
+      fachdetailRows,
     },
     ausfuehrung: {
       gewerk: input.gewerkName ?? null,

@@ -206,10 +206,10 @@ function MeldungDetail({
   return (
     <>
       {showClose && onClose ? (
-        <div className="flex justify-end lg:hidden mb-2">
+        <div className="mb-2 flex justify-start lg:hidden">
           <button
             type="button"
-            className="p-2 rounded-full hover:bg-muted"
+            className="grid h-8 w-8 place-items-center rounded-lg hover:bg-muted"
             aria-label="Schließen"
             onClick={onClose}
           >
@@ -504,11 +504,8 @@ export function OrganisationEingangPanel({
     paintPortalBusyNow(setDetailOpening);
     if (detailOpeningTimerRef.current) {
       clearTimeout(detailOpeningTimerRef.current);
-    }
-    detailOpeningTimerRef.current = setTimeout(() => {
       detailOpeningTimerRef.current = null;
-      setDetailOpening(false);
-    }, PORTAL_BUSY_MIN_MS);
+    }
   }
 
   useEffect(() => {
@@ -557,6 +554,14 @@ export function OrganisationEingangPanel({
     filtered.find((l) => l.id === selectedId) ??
     eingang.find((l) => l.id === selectedId) ??
     null;
+
+  useEffect(() => {
+    if (!detailOpening || !selectedId || !selected) return;
+    const t = window.setTimeout(() => {
+      setDetailOpening(false);
+    }, PORTAL_BUSY_MIN_MS);
+    return () => window.clearTimeout(t);
+  }, [detailOpening, selectedId, selected]);
 
   const router = useRouter();
 

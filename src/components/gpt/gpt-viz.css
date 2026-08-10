@@ -879,8 +879,8 @@
 .portal-gpt-shell-bar {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 10px;
+  justify-content: flex-start;
+  gap: 8px;
   flex-shrink: 0;
   padding: 10px 14px;
   border-bottom: 1px solid rgba(0, 0, 0, 0.06);
@@ -889,6 +889,8 @@
 
 .portal-gpt-shell-title {
   margin: 0;
+  flex: 1;
+  min-width: 0;
   font-size: 15px;
   font-weight: 700;
   color: #16201b;

@@ -7,15 +7,20 @@ import {
   resolvePortalLeistungStatusAmpel,
 } from "@/components/shared/LeistungStatusDot";
 import { PortalModalShell } from "@/components/shared/PortalModalShell";
+import { PortalSheetConfirm } from "@/components/shared/PortalSheetConfirm";
 import { cn } from "@/lib/utils";
 import { stripHtmlToPlainText } from "@/lib/portal/portal-display";
 
+/**
+ * Einheitliches Bottom-Confirm — gleiches Pattern wie Dirty „Verwerfen / Weiter bearbeiten“.
+ */
 export function PortalConfirmDialog({
   open,
   title,
   description,
   confirmLabel,
   confirmVariant = "primary",
+  cancelLabel = "Abbrechen",
   loading,
   onConfirm,
   onCancel,
@@ -25,43 +30,25 @@ export function PortalConfirmDialog({
   description: string;
   confirmLabel: string;
   confirmVariant?: "primary" | "danger";
+  /** Cancel-Label — bei Dirty-Close oft „Weiter bearbeiten“. */
+  cancelLabel?: string;
   loading: boolean;
   onConfirm: () => void;
   onCancel: () => void;
 }) {
   return (
-    <PortalModalShell
+    <PortalSheetConfirm
       open={open}
+      placement="standalone"
       title={title}
-      onClose={onCancel}
-      variant="confirm"
-    >
-      <p className="portal-text-body text-text-secondary">{description}</p>
-      <div className="portal-confirm-actions mt-5">
-        <button
-          type="button"
-          disabled={loading}
-          onClick={onConfirm}
-          className={cn(
-            "portal-action-btn portal-confirm-actions-primary",
-            confirmVariant === "danger"
-              ? "portal-action-btn--ghost !border-red-200 !text-red-800"
-              : "portal-action-btn--primary",
-            loading && "opacity-60"
-          )}
-        >
-          {loading ? "Wird gesendet…" : confirmLabel}
-        </button>
-        <button
-          type="button"
-          onClick={onCancel}
-          disabled={loading}
-          className="portal-action-btn portal-action-btn--secondary portal-confirm-actions-cancel"
-        >
-          Abbrechen
-        </button>
-      </div>
-    </PortalModalShell>
+      description={description}
+      cancelLabel={cancelLabel}
+      confirmLabel={confirmLabel}
+      confirmVariant={confirmVariant}
+      loading={loading}
+      onCancel={onCancel}
+      onConfirm={onConfirm}
+    />
   );
 }
 
@@ -394,25 +381,13 @@ export function PortalDetailLayout({
 }) {
   return (
     <div className="flex min-h-0 flex-col">
-      <div
-        className={cn(
-          "portal-detail-layout space-y-5",
-          footer ? "pb-4 max-lg:pb-2 lg:pb-2" : "pb-2"
-        )}
-      >
+      <div className={cn("portal-detail-layout space-y-5", "pb-2")}>
         {children}
       </div>
       {footer ? (
-        <>
-          {/* Platzhalter: fixed Action-Bar darf Inhalt nicht verdecken */}
-          <div
-            className="pointer-events-none max-lg:h-[var(--portal-detail-actions-h,6rem)] lg:hidden"
-            aria-hidden
-          />
-          <div className="portal-detail-sticky-actions z-40 border-t border-[var(--p2-line)] bg-[var(--p2-panel)]/95 px-4 py-3 shadow-[0_-4px_12px_rgba(16,25,20,0.08)] backdrop-blur-sm max-lg:fixed max-lg:inset-x-0 max-lg:bottom-[var(--portal-mobile-nav-h)] lg:sticky lg:bottom-0 lg:mt-5">
-            {footer}
-          </div>
-        </>
+        <div className="mt-5 border-t border-[var(--p2-line)] px-0 py-4">
+          {footer}
+        </div>
       ) : null}
     </div>
   );

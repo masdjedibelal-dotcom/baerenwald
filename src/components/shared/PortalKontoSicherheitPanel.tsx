@@ -161,6 +161,10 @@ export function PortalKontoSicherheitPanel({
         variant="edit"
         onClose={closePasswordModal}
         closeOnBackdrop={!pwBusy}
+        busy={pwBusy}
+        onConfirm={() => void changePassword()}
+        confirmDisabled={pwBusy || !pwCurrent || pwNew.length < 8}
+        confirmLabel="Passwort speichern"
       >
         <div className="flex flex-col gap-3">
           <EinstellungenEdField
@@ -205,6 +209,10 @@ export function PortalKontoSicherheitPanel({
         variant="edit"
         onClose={closeDeleteModal}
         closeOnBackdrop={!deleteBusy}
+        busy={deleteBusy}
+        onConfirm={() => void deleteAccount()}
+        confirmDisabled={deleteBusy || deletePw.length < 6}
+        confirmLabel="Endgültig löschen"
       >
         <div className="flex flex-col gap-3">
           <p className="portal-text-meta leading-relaxed text-text-secondary">

@@ -371,6 +371,8 @@ export function OrganisationMieterwechselPanel({
           title={MIETERWECHSEL_OK_TITLE}
           onClose={() => setOkName(null)}
           variant="confirm"
+          onConfirm={() => setOkName(null)}
+          confirmLabel="Schließen"
         >
           <div className="px-1 py-1.5 text-center">
             <div

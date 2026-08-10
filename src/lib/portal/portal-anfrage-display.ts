@@ -50,25 +50,14 @@ export type PortalAnfrageLeadSource = {
 };
 
 /**
- * Listen-Untertitel: „Lindenstr. 24 · 80331 München · Max Mustermann“
- * (nur Straße, PLZ/Ort, Meldername — ohne WE, Zeitraum, Handwerker.)
+ * Listen-Untertitel: „Lindenstr. 24 · 80331 München“
+ * (nur Anschrift — ohne Melder, WE, Zeitraum.)
  */
 export function formatMockVorgangListSubtitle(
   lead: PortalAnfrageLeadSource
 ): string | undefined {
-  const adresse = formatAnfrageStrasseHausnummer(lead);
-  const { plz, ort } = objektPlzOrt(
-    lead.objekt,
-    lead.plz?.trim() || undefined
-  );
-  const ortResolved =
-    ort !== "—" ? ort : lead.ort?.trim() || "—";
-  const plzOrt = fmtPortalOrt(plz, ortResolved);
-  const plzOrtLabel = plzOrt !== "—" ? plzOrt : undefined;
-  const melder =
-    lead.melder_name?.trim() || lead.kontakt_name?.trim() || undefined;
-  const parts = [adresse, plzOrtLabel, melder].filter(Boolean);
-  return parts.length ? parts.join(" · ") : undefined;
+  const line = formatAnfrageListOrtLine(lead);
+  return line !== "—" ? line : undefined;
 }
 
 function asRecord(v: unknown): Record<string, unknown> {

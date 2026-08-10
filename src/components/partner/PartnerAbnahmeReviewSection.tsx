@@ -1,16 +1,11 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
-import { Check, FileText } from "lucide-react";
+import { FileText } from "lucide-react";
 
-import {
-  bestaetigePartnerAbnahme,
-  getPartnerAbnahmeStatus,
-} from "@/app/actions/partner-abnahmeprotokoll";
+import { getPartnerAbnahmeStatus } from "@/app/actions/partner-abnahmeprotokoll";
 import { PortalDetailCard } from "@/components/shared/PortalDetailCard";
 import { PORTAL_VAR } from "@/lib/portal2/tokens";
-import { portalToastError, portalToastSuccess } from "@/lib/shared/portal-toast";
 import { cn } from "@/lib/utils";
 
 type Status = {
@@ -29,6 +24,8 @@ type Props = {
   protokollId?: string | null;
   initialPdfUrl?: string | null;
   initialFreigabeStatus?: string | null;
+  initialPunkteCount?: number | null;
+  initialMaengelCount?: number | null;
   focus?: boolean;
 };
 
@@ -66,9 +63,10 @@ export function PartnerAbnahmeReviewSection({
   protokollId,
   initialPdfUrl,
   initialFreigabeStatus,
+  initialPunkteCount,
+  initialMaengelCount,
   focus,
 }: Props) {
-  const router = useRouter();
   const rootRef = useRef<HTMLDivElement>(null);
   const [status, setStatus] = useState<Status | null>(
     initialPdfUrl || initialFreigabeStatus
@@ -76,8 +74,8 @@ export function PartnerAbnahmeReviewSection({
           protokoll_id: protokollId ?? null,
           pdf_url: initialPdfUrl ?? null,
           abnahme_datum: null,
-          punkte_count: 0,
-          maengel_count: 0,
+          punkte_count: initialPunkteCount ?? 0,
+          maengel_count: initialMaengelCount ?? 0,
           an_kunde_gesendet_at: null,
           handwerker_bestaetigt_at: null,
           freigabe_status: initialFreigabeStatus ?? null,
@@ -85,7 +83,6 @@ export function PartnerAbnahmeReviewSection({
       : null
   );
   const [loading, setLoading] = useState(!initialPdfUrl && !initialFreigabeStatus);
-  const [busy, setBusy] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -99,13 +96,20 @@ export function PartnerAbnahmeReviewSection({
       protokoll_id: r.protokoll_id,
       pdf_url: r.pdf_url ?? initialPdfUrl ?? null,
       abnahme_datum: r.abnahme_datum,
-      punkte_count: r.punkte_count,
-      maengel_count: r.maengel_count,
+      punkte_count: Math.max(r.punkte_count, initialPunkteCount ?? 0),
+      maengel_count: Math.max(r.maengel_count, initialMaengelCount ?? 0),
       an_kunde_gesendet_at: r.an_kunde_gesendet_at,
       handwerker_bestaetigt_at: r.handwerker_bestaetigt_at,
       freigabe_status: r.freigabe_status ?? initialFreigabeStatus ?? null,
     });
-  }, [auftragId, protokollId, initialPdfUrl, initialFreigabeStatus]);
+  }, [
+    auftragId,
+    protokollId,
+    initialPdfUrl,
+    initialFreigabeStatus,
+    initialPunkteCount,
+    initialMaengelCount,
+  ]);
 
   useEffect(() => {
     void load();
@@ -118,14 +122,22 @@ export function PartnerAbnahmeReviewSection({
       protokoll_id: protokollId ?? prev?.protokoll_id ?? null,
       pdf_url: initialPdfUrl ?? prev?.pdf_url ?? null,
       abnahme_datum: prev?.abnahme_datum ?? null,
-      punkte_count: prev?.punkte_count ?? 0,
-      maengel_count: prev?.maengel_count ?? 0,
+      punkte_count:
+        initialPunkteCount ?? prev?.punkte_count ?? 0,
+      maengel_count:
+        initialMaengelCount ?? prev?.maengel_count ?? 0,
       an_kunde_gesendet_at: prev?.an_kunde_gesendet_at ?? null,
       handwerker_bestaetigt_at: prev?.handwerker_bestaetigt_at ?? null,
       freigabe_status:
         initialFreigabeStatus ?? prev?.freigabe_status ?? null,
     }));
-  }, [initialPdfUrl, initialFreigabeStatus, protokollId]);
+  }, [
+    initialPdfUrl,
+    initialFreigabeStatus,
+    protokollId,
+    initialPunkteCount,
+    initialMaengelCount,
+  ]);
 
   useEffect(() => {
     if (!focus) return;
@@ -137,7 +149,7 @@ export function PartnerAbnahmeReviewSection({
 
   if (loading && !status?.pdf_url && !status?.freigabe_status) {
     return (
-      <PortalDetailCard title="Abnahmeprotokoll">
+      <PortalDetailCard title="Ihr Abschluss">
         <p className="text-[13px]" style={{ color: PORTAL_VAR.sub }}>
           Protokoll wird geladen …
         </p>
@@ -152,25 +164,11 @@ export function PartnerAbnahmeReviewSection({
   const confirmed = Boolean(status.handwerker_bestaetigt_at);
   const sent = Boolean(status.an_kunde_gesendet_at);
   const freigabe = String(status.freigabe_status ?? "").toLowerCase();
-  const showBestaetigen = !confirmed && freigabe !== "abgelehnt";
   const badge = freigabeBadge(status.freigabe_status, sent);
-
-  async function onBestaetigen() {
-    setBusy(true);
-    const r = await bestaetigePartnerAbnahme(auftragId, status?.protokoll_id);
-    setBusy(false);
-    if (!r.ok) {
-      portalToastError(r.error);
-      return;
-    }
-    portalToastSuccess("Abnahmeprotokoll bestätigt.");
-    await load();
-    router.refresh();
-  }
 
   return (
     <div ref={rootRef}>
-      <PortalDetailCard title="Ihre Teilabnahme">
+      <PortalDetailCard title="Ihr Abschluss">
         <div className="space-y-4">
           <div className="flex items-start gap-3">
             <div
@@ -181,7 +179,7 @@ export function PartnerAbnahmeReviewSection({
             </div>
             <div className="min-w-0 flex-1">
               <p className="text-[14.5px] font-bold text-text-primary">
-                Teilabnahme eingereicht
+                Auftrag abgeschlossen
               </p>
               <p className="mt-0.5 text-[12.5px] text-text-tertiary">
                 {[
@@ -191,7 +189,7 @@ export function PartnerAbnahmeReviewSection({
                   `${status.punkte_count} Leistung${status.punkte_count === 1 ? "" : "en"}`,
                   status.maengel_count
                     ? `${status.maengel_count} Mangel${status.maengel_count === 1 ? "" : "e"}`
-                    : "ohne Mangel",
+                    : "ohne Mängel",
                 ]
                   .filter(Boolean)
                   .join(" · ")}
@@ -210,13 +208,12 @@ export function PartnerAbnahmeReviewSection({
                   Bestätigt
                 </span>
               ) : null}
-              <p className="mt-2 text-[12.5px] text-text-secondary">
-                {freigabe === "abgelehnt"
-                  ? "Bärenwald hat die Teilabnahme abgelehnt. Bitte Nacharbeit erledigen und erneut abschließen."
-                  : freigabe === "freigegeben" || sent
-                    ? "Freigegeben. Den finalen Versand an den Kunden übernimmt Bärenwald."
-                    : "Kein automatischer Versand an den Kunden. Bärenwald prüft und gibt frei."}
-              </p>
+              {freigabe === "abgelehnt" ? (
+                <p className="mt-2 text-[12.5px] text-text-secondary">
+                  Bärenwald hat den Abschluss abgelehnt. Bitte Nacharbeit
+                  erledigen und erneut abschließen.
+                </p>
+              ) : null}
             </div>
           </div>
 
@@ -239,18 +236,6 @@ export function PartnerAbnahmeReviewSection({
                 PDF öffnen
               </p>
             </a>
-          ) : null}
-
-          {showBestaetigen ? (
-            <button
-              type="button"
-              className="portal-action-btn portal-action-btn--primary portal-action-btn--block gap-2"
-              disabled={busy}
-              onClick={() => void onBestaetigen()}
-            >
-              <Check className="h-4 w-4" aria-hidden />
-              {busy ? "…" : "Bestätigen"}
-            </button>
           ) : null}
         </div>
       </PortalDetailCard>

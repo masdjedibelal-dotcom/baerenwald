@@ -145,6 +145,10 @@ export function EinstellungenEditModal({
       variant="edit"
       dirty={dirty && !saving}
       closeOnBackdrop={!saving}
+      onConfirm={onSave}
+      confirmDisabled={saving || saveDisabled}
+      confirmLabel={saveLabel}
+      busy={Boolean(saving)}
     >
       <div
         className="flex flex-col gap-3"
@@ -153,10 +157,10 @@ export function EinstellungenEditModal({
       >
         {children}
       </div>
-      <div className="mt-5 flex flex-wrap justify-end gap-2">
+      <div className="portal-action-row mt-5">
         <button
           type="button"
-          className="btn-pill-outline portal-btn"
+          className="portal-action-btn portal-action-btn--secondary"
           disabled={saving}
           onClick={onClose}
         >
@@ -164,7 +168,7 @@ export function EinstellungenEditModal({
         </button>
         <button
           type="button"
-          className="btn-pill-primary portal-btn"
+          className="portal-action-btn portal-action-btn--primary"
           disabled={saving || saveDisabled}
           onClick={onSave}
         >
@@ -344,7 +348,15 @@ export function EinstellungenEuroSlider({
     }).format(value);
 
   return (
-    <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-4">
+    <div className="flex flex-col gap-2.5">
+      <div className="flex items-baseline justify-between gap-2">
+        <span className="portal-text-meta" style={{ color: PORTAL_VAR.sub }}>
+          Schwellenwert
+        </span>
+        <span className="portal-text-card-title tabular-nums text-accent">
+          {label}
+        </span>
+      </div>
       <input
         type="range"
         min={min}
@@ -353,15 +365,38 @@ export function EinstellungenEuroSlider({
         disabled={disabled}
         value={Number.isFinite(value) ? value : min}
         onChange={(e) => onChange(Number(e.target.value))}
-        className="h-2 w-full flex-1 cursor-pointer appearance-none rounded-full bg-border-default accent-[var(--accent,#2F5D50)] disabled:cursor-not-allowed disabled:opacity-60"
+        className="h-2 w-full cursor-pointer appearance-none rounded-full bg-border-default accent-[var(--accent,#2F5D50)] disabled:cursor-not-allowed disabled:opacity-60"
         aria-valuemin={min}
         aria-valuemax={max}
         aria-valuenow={value}
-        aria-label="Betrag"
+        aria-label="Freigabeschwelle"
       />
-      <span className="portal-text-title shrink-0 text-right text-accent tabular-nums sm:w-[110px]">
-        {label}
-      </span>
+    </div>
+  );
+}
+
+/** Toggle-Karte + optionaler Inhalt darunter (gleicher Sheet-Card-Stil). */
+export function EinstellungenSheetCard({
+  title,
+  description,
+  children,
+}: {
+  title: string;
+  description?: string;
+  children?: ReactNode;
+}) {
+  return (
+    <div className="rounded-[11px] border border-border-default bg-white px-3.5 py-[13px]">
+      <p className="portal-text-card-title">{title}</p>
+      {description ? (
+        <p
+          className="portal-text-meta mt-1"
+          style={{ color: PORTAL_VAR.sub }}
+        >
+          {description}
+        </p>
+      ) : null}
+      {children ? <div className="mt-3">{children}</div> : null}
     </div>
   );
 }

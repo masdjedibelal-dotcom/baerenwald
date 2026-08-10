@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { flushSync } from "react-dom";
 
@@ -168,11 +168,8 @@ export function OrganisationFreigabePanel({
     paintPortalBusyNow(setDetailOpening);
     if (detailOpeningTimerRef.current) {
       clearTimeout(detailOpeningTimerRef.current);
-    }
-    detailOpeningTimerRef.current = setTimeout(() => {
       detailOpeningTimerRef.current = null;
-      setDetailOpening(false);
-    }, PORTAL_BUSY_MIN_MS);
+    }
   }
   const auftragByLeadId = useMemo(
     () => buildAuftragByLeadId(auftraege as Array<{ id: string; lead_id?: string | null }>),
@@ -223,6 +220,14 @@ export function OrganisationFreigabePanel({
           (v as { angebotId?: string }).angebotId === selectedAngebotId
       )
     : null;
+
+  useEffect(() => {
+    if (!detailOpening || !selectedAngebotId || !selectedAngebotItem) return;
+    const t = window.setTimeout(() => {
+      setDetailOpening(false);
+    }, PORTAL_BUSY_MIN_MS);
+    return () => window.clearTimeout(t);
+  }, [detailOpening, selectedAngebotId, selectedAngebotItem]);
 
   const eingangDetailProps = {
     kunde,

@@ -552,6 +552,10 @@ export function PartnerStammDokumenteListe({
         variant="edit"
         dirty
         closeOnBackdrop={!saving}
+        busy={saving}
+        onConfirm={() => void submitUpload()}
+        confirmDisabled={saving}
+        confirmLabel="Hochladen"
       >
         <div className="flex flex-col gap-3">
           <label className="flex flex-col gap-1">

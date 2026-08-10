@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
 import { ChevronLeft, Plus, Trash2 } from "lucide-react";
 
 import { submitPartnerAbnahmeNachSignatur } from "@/app/actions/partner-abnahmeprotokoll";
@@ -9,6 +8,7 @@ import { PortalDetailError } from "@/components/shared/PortalDetailUi";
 import { PartnerKiKorrekturField } from "@/components/partner/PartnerKiKorrekturField";
 import { PortalContentBusy } from "@/components/shared/PortalContentBusy";
 import { PortalModalShell } from "@/components/shared/PortalModalShell";
+import { usePortalRefresh } from "@/components/shared/usePortalRefresh";
 import { SignatureCanvas } from "@/components/shared/SignatureCanvas";
 import {
   autoAbnahmeErgebnis,
@@ -53,6 +53,8 @@ type Props = {
     vollstaendig: boolean;
     pdf_url: string | null;
     protokoll_id: string | null;
+    punkte_count: number;
+    maengel_count: number;
   }) => void;
 };
 
@@ -100,7 +102,7 @@ export function PartnerAbnahmeAbschlussSheet({
   onClose,
   onSuccess,
 }: Props) {
-  const router = useRouter();
+  const { refresh } = usePortalRefresh();
   const [step, setStep] = useState<Step>("leistungen");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -383,11 +385,13 @@ export function PartnerAbnahmeAbschlussSheet({
         return;
       }
       partnerPortalToast.abschlussSigniert();
-      router.refresh();
+      await refresh();
       onSuccess({
         vollstaendig: res.vollstaendig,
         pdf_url: res.pdf_url,
         protokoll_id: res.protokoll_id,
+        punkte_count: res.punkte_count,
+        maengel_count: res.maengel_count,
       });
       // Loading bleibt bis Sheet schließt — kein Formular-Flackern.
     } catch {
@@ -434,6 +438,21 @@ export function PartnerAbnahmeAbschlussSheet({
       variant="funnel"
       dirty={dirty}
       closeOnBackdrop={!loading}
+      busy={loading}
+      busyTitle="Abnahmedokument wird abgeschlossen…"
+      busyBody="Signaturen werden gespeichert und das Protokoll erstellt."
+      onConfirm={() => {
+        if (step === "sig_kunde") void submit();
+        else goNext();
+      }}
+      confirmDisabled={loading || (step === "sig_kunde" && !canSubmit)}
+      confirmLabel={
+        step === "sig_kunde"
+          ? "Protokoll abschließen"
+          : step === "maengel" && maengel.length === 0
+            ? "Keine Mängel — weiter"
+            : "Weiter"
+      }
     >
       {loading ? (
         <PortalContentBusy
@@ -822,49 +841,49 @@ export function PartnerAbnahmeAbschlussSheet({
           </div>
 
           <div
-            className="sticky bottom-0 -mx-1 mt-3 space-y-2 border-t bg-[var(--portal-surface,#fff)] px-1 pt-3"
+            className="-mx-1 mt-3 border-t bg-[var(--portal-surface,#fff)] px-1 pt-3"
             style={{ borderColor: PORTAL_VAR.line }}
           >
-            {step === "sig_kunde" ? (
-              <>
+            <div className="flex items-stretch gap-2">
+              {stepIndex > 0 ? (
                 <button
                   type="button"
-                  className="portal-action-btn portal-action-btn--primary portal-action-btn--block"
+                  className="portal-action-btn portal-action-btn--secondary inline-flex min-w-0 flex-1 items-center justify-center gap-1"
+                  onClick={goBack}
+                >
+                  <ChevronLeft className="h-4 w-4 shrink-0" aria-hidden />
+                  Zurück
+                </button>
+              ) : null}
+              {step === "sig_kunde" ? (
+                <button
+                  type="button"
+                  className="portal-action-btn portal-action-btn--primary min-w-0 flex-1"
                   disabled={!canSubmit}
                   onClick={() => void submit()}
                 >
                   Protokoll abschließen
                 </button>
-                {!canSubmit ? (
-                  <p
-                    className="text-center text-[12px]"
-                    style={{ color: PORTAL_VAR.faint }}
-                  >
-                    {submitBlockReason() ??
-                      "Name und Signatur des Kunden fehlen noch."}
-                  </p>
-                ) : null}
-              </>
-            ) : (
-              <button
-                type="button"
-                className="portal-action-btn portal-action-btn--primary portal-action-btn--block"
-                onClick={goNext}
+              ) : (
+                <button
+                  type="button"
+                  className="portal-action-btn portal-action-btn--primary min-w-0 flex-1"
+                  onClick={goNext}
+                >
+                  {step === "maengel" && maengel.length === 0
+                    ? "Keine Mängel — weiter"
+                    : "Weiter"}
+                </button>
+              )}
+            </div>
+            {step === "sig_kunde" && !canSubmit ? (
+              <p
+                className="mt-2 text-center text-[12px]"
+                style={{ color: PORTAL_VAR.faint }}
               >
-                {step === "maengel" && maengel.length === 0
-                  ? "Keine Mängel — weiter"
-                  : "Weiter"}
-              </button>
-            )}
-            {stepIndex > 0 ? (
-              <button
-                type="button"
-                className="inline-flex w-full items-center justify-center gap-1 py-2 text-[13px] font-semibold text-text-secondary"
-                onClick={goBack}
-              >
-                <ChevronLeft className="h-4 w-4" aria-hidden />
-                Zurück
-              </button>
+                {submitBlockReason() ??
+                  "Name und Signatur des Kunden fehlen noch."}
+              </p>
             ) : null}
           </div>
         </div>
@@ -888,6 +907,26 @@ export function PartnerAbnahmeAbschlussSheet({
             draftTitel.trim().length > 0 || draftBeschreibung.trim().length > 0
           }
           closeOnBackdrop
+          onConfirm={
+            addMode === "wahl"
+              ? undefined
+              : () => {
+                  const ok =
+                    addMode === "mangel"
+                      ? addMangel()
+                      : addMode === "erkannt"
+                        ? addErkanntLeistung()
+                        : addLeerLeistung();
+                  if (ok) resetDraft();
+                }
+          }
+          confirmDisabled={
+            addMode === "wahl" ||
+            (addMode === "erkannt"
+              ? !draftLeistungId || draftTitel.trim().length < 2
+              : draftTitel.trim().length < 2)
+          }
+          confirmLabel="Hinzufügen"
         >
           <div className="space-y-3">
             {addMode === "wahl" ? (
@@ -958,22 +997,21 @@ export function PartnerAbnahmeAbschlussSheet({
                   <button
                     type="button"
                     className="portal-action-btn portal-action-btn--primary portal-action-btn--block"
-                    onClick={() =>
-                      addMode === "mangel" ? addMangel() : addLeerLeistung()
-                    }
-                  >
-                    Hinzufügen &amp; nächste
-                  </button>
-                  <button
-                    type="button"
-                    className="portal-action-btn portal-action-btn--secondary portal-action-btn--block"
+                    disabled={draftTitel.trim().length < 2}
                     onClick={() => {
                       const ok =
                         addMode === "mangel" ? addMangel() : addLeerLeistung();
                       if (ok) resetDraft();
                     }}
                   >
-                    Hinzufügen &amp; fertig
+                    Hinzufügen
+                  </button>
+                  <button
+                    type="button"
+                    className="portal-action-btn portal-action-btn--secondary portal-action-btn--block"
+                    onClick={resetDraft}
+                  >
+                    Abbrechen
                   </button>
                 </div>
               </div>
@@ -1035,18 +1073,19 @@ export function PartnerAbnahmeAbschlussSheet({
                       <button
                         type="button"
                         className="portal-action-btn portal-action-btn--primary portal-action-btn--block"
-                        onClick={addErkanntLeistung}
-                      >
-                        Hinzufügen &amp; nächste
-                      </button>
-                      <button
-                        type="button"
-                        className="portal-action-btn portal-action-btn--secondary portal-action-btn--block"
+                        disabled={draftTitel.trim().length < 2}
                         onClick={() => {
                           if (addErkanntLeistung()) resetDraft();
                         }}
                       >
-                        Hinzufügen &amp; fertig
+                        Hinzufügen
+                      </button>
+                      <button
+                        type="button"
+                        className="portal-action-btn portal-action-btn--secondary portal-action-btn--block"
+                        onClick={resetDraft}
+                      >
+                        Abbrechen
                       </button>
                     </div>
                   </>

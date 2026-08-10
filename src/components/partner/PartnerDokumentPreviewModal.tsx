@@ -274,6 +274,29 @@ export function PartnerDokumentPreviewModal({
       variant={step === "fehlend" ? "edit" : "preview"}
       maxWidth={560}
       closeOnBackdrop={false}
+      busy={loading || previewLoading}
+      onConfirm={() => {
+        if (step === "ask") void handleJa();
+        else if (step === "fehlend") void saveFehlendAndContinue();
+        else void onSubmit();
+      }}
+      confirmDisabled={
+        loading ||
+        previewLoading ||
+        (step === "preview" &&
+          (!preview ||
+            preview.missingFields.length > 0 ||
+            !dokumentNr.trim()))
+      }
+      confirmLabel={
+        step === "ask"
+          ? "Ja, erstellen"
+          : step === "fehlend"
+            ? "Weiter zur Vorschau"
+            : art === "angebot"
+              ? "Angebot bestätigen"
+              : "Rechnung einreichen"
+      }
     >
       <div className="flex min-h-0 flex-1 flex-col">
         <div className="min-h-0 flex-1 space-y-4 overflow-y-auto pb-4">

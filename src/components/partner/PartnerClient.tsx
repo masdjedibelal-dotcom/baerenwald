@@ -22,8 +22,10 @@ import dynamic from "next/dynamic";
 import {
   paintPortalBusyNow,
   PORTAL_BUSY_MIN_MS,
+  usePortalBusy,
 } from "@/components/shared/PortalBusyContext";
 import { PortalContentBusy } from "@/components/shared/PortalContentBusy";
+import { usePortalRefresh } from "@/components/shared/usePortalRefresh";
 
 const PortalBaerenwaldGpt = dynamic(
   () =>
@@ -50,7 +52,7 @@ import type {
 } from "@/lib/partner/get-partner-data";
 import {
   countPartnerVorgaengeFilter,
-  partnerVorgangLastActivityAt,
+  partnerVorgangCreatedAt,
 } from "@/lib/partner/build-partner-vorgaenge";
 import {
   buildVorgangCardRows,
@@ -190,21 +192,35 @@ export function PartnerClient({
   const [detailOpening, setDetailOpening] = useState(false);
   const detailOpeningTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  const { hold, release, flash } = usePortalBusy();
+  const { refreshFlash } = usePortalRefresh();
+  const detailHoldRef = useRef(false);
+
   function flashPageBusy(ms = PORTAL_BUSY_MIN_MS) {
+    flash(ms);
     paintPortalBusyNow(setPageBusy);
     window.setTimeout(() => setPageBusy(false), ms);
   }
 
   function beginDetailOpening() {
+    if (!detailHoldRef.current) {
+      detailHoldRef.current = true;
+      hold();
+    }
     paintPortalBusyNow(setDetailOpening, setPageBusy);
     if (detailOpeningTimerRef.current) {
       clearTimeout(detailOpeningTimerRef.current);
-    }
-    detailOpeningTimerRef.current = setTimeout(() => {
       detailOpeningTimerRef.current = null;
-      setDetailOpening(false);
-      setPageBusy(false);
-    }, PORTAL_BUSY_MIN_MS);
+    }
+  }
+
+  function endDetailOpening() {
+    setDetailOpening(false);
+    setPageBusy(false);
+    if (detailHoldRef.current) {
+      detailHoldRef.current = false;
+      release();
+    }
   }
 
   const [vorgangListFilter, setVorgangListFilter] =
@@ -300,13 +316,12 @@ export function PartnerClient({
   }, [section, sectionCardRows, selectedId, vorgaengeState]);
 
   const overviewCardRows = useMemo((): PartnerCardRow[] => {
-    // Dashboard „Zuletzt“: 3 Vorgänge mit den neuesten Updates (Status/Anpassung egal)
+    // Dashboard „Zuletzt“: neueste Erstellung zuerst, max. 4
     return [...vorgaengeState]
       .sort(
-        (a, b) =>
-          partnerVorgangLastActivityAt(b) - partnerVorgangLastActivityAt(a)
+        (a, b) => partnerVorgangCreatedAt(b) - partnerVorgangCreatedAt(a)
       )
-      .slice(0, 3)
+      .slice(0, 4)
       .map((v) => mapVorgangToCard(v));
   }, [vorgaengeState]);
 
@@ -427,6 +442,16 @@ export function PartnerClient({
       vorgaengeState.find((v) => v.anfrage?.id === selectedId)
     );
   }, [vorgaengeState, selectedId]);
+
+  /** Busy halten bis Detail da ist (kein Zwischen-Flash der Liste). */
+  useEffect(() => {
+    if (!detailOpening || !selectedId || !selectedVorgang) return;
+    const t = window.setTimeout(() => {
+      endDetailOpening();
+    }, PORTAL_BUSY_MIN_MS);
+    return () => window.clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [detailOpening, selectedId, selectedVorgang]);
 
   /** Vorgang öffnen = zugehörige Benachrichtigungen gelesen (auch ohne Glocken-Klick). */
   useEffect(() => {
@@ -568,8 +593,7 @@ export function PartnerClient({
     setVorgangListFilter("auftrag");
     setSelectedId(null);
     router.replace(`/partner?section=vorgaenge&filter=auftrag`);
-    flashPageBusy();
-    router.refresh();
+    refreshFlash();
   }
 
   function switchSection(id: PartnerSection, filter: VorgangFilter = "alle") {
@@ -620,7 +644,7 @@ export function PartnerClient({
   function closeDetail() {
     ignoreUrlDetailRef.current = true;
     pendingDetailIdRef.current = null;
-    setDetailOpening(false);
+    endDetailOpening();
     if (detailOpeningTimerRef.current) {
       clearTimeout(detailOpeningTimerRef.current);
       detailOpeningTimerRef.current = null;
@@ -660,7 +684,7 @@ export function PartnerClient({
         statusLabel={row.statusLabel}
         statusPillClass={partnerAngebotStatusPillClass(row.statusPillKey)}
         statusPillStyle={partnerStatusChipStyle(row.statusPillKey)}
-        meta={row.meta}
+        meta={[]}
         hint={row.hint}
         selected={false}
         onClick={() => selectRow(row.id)}
@@ -744,7 +768,7 @@ export function PartnerClient({
           section === "gpt" || section === "planer" ? "uebersicht" : section
         }
         contentKey={`${section}:${vorgangListFilter}:${searchParams.get("focus") ?? ""}`}
-        contentBusy={pageBusy}
+        contentBusy={pageBusy || detailOpening}
         onNavChange={(id) => switchSection(id as PartnerSection)}
         nav={shellNav}
         footer={partnerFooter}

@@ -3,10 +3,7 @@
 import type { LucideIcon } from "lucide-react";
 import { useEffect, useRef, type ReactNode } from "react";
 
-import {
-  PortalBusyProvider,
-  usePortalBusy,
-} from "@/components/shared/PortalBusyContext";
+import { usePortalBusy } from "@/components/shared/PortalBusyContext";
 import { PortalContentBusy } from "@/components/shared/PortalContentBusy";
 import { PortalCreateFabIcon } from "@/components/shared/PortalCreateFabIcon";
 import { PortalDocViewerProvider } from "@/components/shared/PortalDocViewerContext";
@@ -138,16 +135,9 @@ function NavGlyph({
 
 /**
  * Gemeinsame Portal-Shell: Topbar (B1) + Sidebar (B2) + Bottom-Nav (B3) + Mobile-FAB.
+ * Busy-Provider liegt im Portal-/Partner-Layout (Hold über Section-Wechsel).
  */
-export function PortalShell(props: PortalShellProps) {
-  return (
-    <PortalBusyProvider>
-      <PortalShellInner {...props} />
-    </PortalBusyProvider>
-  );
-}
-
-function PortalShellInner({
+export function PortalShell({
   variant = "org",
   brandTitle,
   brandSubtitle,

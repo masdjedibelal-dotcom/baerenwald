@@ -14,7 +14,10 @@ export function slimFunnelForList(funnel: unknown): Record<string, unknown> | nu
     "ort",
     "answers",
     "antworten",
+    /** Melde-Titel (Startseite/Liste) braucht Bereich + Fachantworten */
+    "melde_bereich",
     "melde_kategorie",
+    "fachdetailAnswers",
     "kategorie",
     "notfall",
     "havarie",
@@ -24,6 +27,14 @@ export function slimFunnelForList(funnel: unknown): Record<string, unknown> | nu
     "bereiche",
   ]) {
     if (f[key] !== undefined) out[key] = f[key];
+  }
+  // Nested: nur Answers, keine Fotos/Rohpayload
+  const fd = f.fachdetails;
+  if (fd && typeof fd === "object" && !Array.isArray(fd)) {
+    const answers = (fd as { fachdetailAnswers?: unknown }).fachdetailAnswers;
+    if (answers && typeof answers === "object") {
+      out.fachdetails = { fachdetailAnswers: answers };
+    }
   }
   return Object.keys(out).length ? out : null;
 }

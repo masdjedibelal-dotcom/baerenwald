@@ -34,11 +34,11 @@ export function PartnerAuftragErledigtSection({
 
   const success = (
     <PartnerDetailSuccessBox>
-      <p className="font-semibold">Leistungen als erledigt gemeldet</p>
+      <p className="font-semibold">Auftrag abgeschlossen</p>
       <p className="portal-text-meta mt-1 text-text-secondary">
         {vollstaendig
-          ? "Ihre Teilabnahme ist bei Bärenwald zur Freigabe. Kundenversand und Gesamtabnahme folgen nach Freigabe."
-          : "Ihre Teilabnahme ist gespeichert und wartet auf Freigabe durch Bärenwald. Weitere Handwerker am Auftrag sind ggf. noch offen."}
+          ? "Die Details liegen Bärenwald zur weiteren Prüfung vor."
+          : "Die Details liegen Bärenwald zur weiteren Prüfung vor. Weitere Handwerker am Auftrag sind ggf. noch offen."}
       </p>
     </PartnerDetailSuccessBox>
   );

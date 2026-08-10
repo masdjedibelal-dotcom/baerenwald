@@ -1267,19 +1267,6 @@ export function PortalFunnelHost({
           stepLabel="Objekt"
           question="Welches Objekt?"
           animateKey="objekt"
-          headerAction={
-            cfg.prefix.objektNeu ? (
-              <button
-                type="button"
-                className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-border-default bg-white text-accent shadow-sm transition-colors hover:border-accent hover:bg-accent-light"
-                aria-label="Neues Objekt anlegen"
-                title="Neues Objekt anlegen"
-                onClick={() => setStep("objekt_neu")}
-              >
-                <Plus className="h-5 w-5" strokeWidth={2.25} aria-hidden />
-              </button>
-            ) : null
-          }
         >
           <div className="funnel-step-tiles-card flex flex-col gap-2">
             {objekte.map((o) => (
@@ -1302,7 +1289,7 @@ export function PortalFunnelHost({
             ) : null}
             {objekte.length === 0 && cfg.prefix.objektNeu ? (
               <p className="text-sm text-text-secondary">
-                Noch kein Objekt — legen Sie eines über + an.
+                Noch kein Objekt — legen Sie eines an.
               </p>
             ) : null}
           </div>
@@ -2070,6 +2057,18 @@ export function PortalFunnelHost({
       ) : null}
 
       </div>
+
+      {step === "objekt" && cfg.prefix.objektNeu ? (
+        <button
+          type="button"
+          className="portal-funnel-objekt-fab"
+          aria-label="Neues Objekt anlegen"
+          title="Neues Objekt anlegen"
+          onClick={() => setStep("objekt_neu")}
+        >
+          <Plus className="h-6 w-6" strokeWidth={2.5} aria-hidden />
+        </button>
+      ) : null}
 
       <FunnelFooter
         className={
