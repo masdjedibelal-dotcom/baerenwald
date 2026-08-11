@@ -116,7 +116,11 @@ type PartnerAuftragAnfrageTiming = Pick<
   PartnerAuftragItem,
   "hwStatus" | "start_datum"
 > & {
-  positionen: Array<{ start_datum?: string | null }>;
+  positionen: Array<{
+    start_datum?: string | null;
+    handwerker_status?: string | null;
+    handwerker_id?: string | null;
+  }>;
 };
 
 export function isPartnerAuftragAnfrageAntwortAbgelaufen(
@@ -132,7 +136,38 @@ export function isPartnerAuftragAnfrageAntwortAbgelaufen(
   return isProjektStartDatumErreicht(start);
 }
 
-/** Abgelaufene Zuweisung ohne HW-Antwort — nicht in Vorgängen listen. */
+/** Noch keine HW-Antwort — trotz verstrichenem Startdatum in der Liste behalten. */
+function partnerZuweisungNochAusstehend(input: {
+  anfrage?: PartnerAnfrageTimingFields | null;
+  auftrag: PartnerAuftragAnfrageTiming & { hwStatus: string };
+}): boolean {
+  const hw = input.auftrag.hwStatus.toLowerCase();
+  if (PENDING_STATUS.has(hw) || hw === "zugewiesen") return true;
+
+  if (
+    input.auftrag.positionen.some((p) => positionBrauchtHandwerkerAktion(p))
+  ) {
+    return true;
+  }
+
+  const anfrage = input.anfrage;
+  if (!anfrage) return false;
+  if (anfrage.antwort_at || anfrage.bestaetigt_at) return false;
+  const st = anfrage.status.toLowerCase();
+  if (st === "angenommen" || st === "abgelehnt" || st === "akzeptiert") {
+    return false;
+  }
+  return (
+    Boolean(anfrage.gesendet_at) ||
+    PENDING_STATUS.has(st) ||
+    (anfrage.hw_status ?? "").toLowerCase() === "angefragt"
+  );
+}
+
+/**
+ * Abgelaufene Zuweisung ohne HW-Antwort — nicht in Vorgängen listen.
+ * Ausnahme: noch `angefragt` / ausstehend → trotzdem anzeigen (Startdatum egal).
+ */
 export function isPartnerVorgangAusgeblendet(input: {
   handwerker_bestaetigt_at: string | null;
   anfrage?: PartnerAnfrageTimingFields | null;
@@ -146,6 +181,8 @@ export function isPartnerVorgangAusgeblendet(input: {
   const hw = input.auftrag.hwStatus.toLowerCase();
   const anfrageSt = (input.anfrage?.status ?? "").toLowerCase();
   if (hw === "abgelehnt" || anfrageSt === "abgelehnt") return false;
+
+  if (partnerZuweisungNochAusstehend(input)) return false;
 
   if (input.anfrage && isPartnerAnfrageAntwortAbgelaufen(input.anfrage)) {
     return true;
