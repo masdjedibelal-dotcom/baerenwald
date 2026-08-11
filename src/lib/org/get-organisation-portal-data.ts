@@ -370,6 +370,20 @@ export async function getOrganisationPortalData(
   }
 
   const dokumenteByLeadId: Record<string, PortalDokument[]> = {};
+  // Angebot-PDFs auch im List-Mode (Slim behält sie für Dokumente-Tab / Flow).
+  for (const ang of base.angebote) {
+    const leadId =
+      (ang as { lead_id?: string | null }).lead_id != null
+        ? String((ang as { lead_id?: string | null }).lead_id)
+        : "";
+    const angDocs = (ang as { dokumente?: PortalDokument[] }).dokumente ?? [];
+    if (leadId && angDocs.length) {
+      dokumenteByLeadId[leadId] = mergeDokumente(
+        dokumenteByLeadId[leadId] ?? [],
+        angDocs
+      );
+    }
+  }
   if (!listMode) {
     for (const lead of base.leads) {
       const leadId = String((lead as { id: string }).id);
@@ -392,19 +406,6 @@ export async function getOrganisationPortalData(
         dokumenteByLeadId[leadId] = mergeDokumente(
           dokumenteByLeadId[leadId] ?? [],
           docs
-        );
-      }
-    }
-    for (const ang of base.angebote) {
-      const leadId =
-        (ang as { lead_id?: string | null }).lead_id != null
-          ? String((ang as { lead_id?: string | null }).lead_id)
-          : "";
-      const angDocs = (ang as { dokumente?: PortalDokument[] }).dokumente ?? [];
-      if (leadId && angDocs.length) {
-        dokumenteByLeadId[leadId] = mergeDokumente(
-          dokumenteByLeadId[leadId] ?? [],
-          angDocs
         );
       }
     }

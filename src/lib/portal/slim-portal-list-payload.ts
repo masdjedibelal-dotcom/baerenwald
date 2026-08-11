@@ -84,13 +84,21 @@ function slimLead(l: LeadLike): LeadLike {
 }
 
 function slimAngebot(a: AngebotLike): AngebotLike {
+  const docs = Array.isArray(a.dokumente) ? a.dokumente : [];
+  const angebotDocs = docs.filter((d) => {
+    const art = String((d as { art?: string }).art ?? "").toLowerCase();
+    return art === "angebot" || Boolean((d as { href?: string }).href);
+  });
   return {
     ...a,
+    // Roh-JSON nicht in die Client-Hydration schicken — Display behalten.
     positionen: undefined,
-    positionenDisplay: [],
-    leistungsumfang: null,
+    positionenDisplay: Array.isArray(a.positionenDisplay)
+      ? a.positionenDisplay
+      : [],
+    leistungsumfang: a.leistungsumfang ?? null,
     notizen: null,
-    dokumente: [],
+    dokumente: angebotDocs,
   };
 }
 
@@ -123,12 +131,19 @@ function slimAuftrag(a: AuftragLike): AuftragLike {
 export function slimVorgangListItem(
   item: KundePortalDetailItem
 ): KundePortalDetailItem {
+  const docs = Array.isArray(item.dokumente) ? item.dokumente : [];
+  const angebotDocs = docs.filter((d) => {
+    const art = String((d as { art?: string }).art ?? "").toLowerCase();
+    const name = String((d as { name?: string }).name ?? "").toLowerCase();
+    return art === "angebot" || name.includes("angebot");
+  });
   return {
     ...item,
     meldeFotos: [],
     bautagebuch: [],
-    dokumente: [],
-    angebotPositionen: undefined,
+    // Angebot-PDF + Leistungen müssen in der Liste/Detail-Fallback sichtbar bleiben.
+    dokumente: angebotDocs,
+    angebotPositionen: item.angebotPositionen,
     auftragPositionen: undefined,
     abnahmeCheckliste: null,
     meldeFachdetails: undefined,

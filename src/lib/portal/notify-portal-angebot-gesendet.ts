@@ -63,7 +63,7 @@ export async function notifyPortalAngebotGesendet(
   const { data: angebot } = await supabaseAdmin
     .from("angebote")
     .select(
-      "id, angebotsnr, leistungsumfang, status_einfach, status, gesendet_am, gesendet_kunde_at, pdf_url, titel, gesamt_preis, gesamt_max"
+      "id, angebotsnr, leistungsumfang, status_einfach, status, gesendet_am, gesendet_kunde_at, pdf_url, gesamt_fix, gesamt_max, notizen"
     )
     .eq("lead_id", trimmed)
     .order("gesendet_am", { ascending: false, nullsFirst: false })
@@ -108,7 +108,20 @@ export async function notifyPortalAngebotGesendet(
       (lead.notizen as string | null) ??
       null,
   });
-  const angebotTitel = String(angebot.titel ?? "").trim();
+  let angebotTitel = "";
+  try {
+    const rawNotizen = String(
+      (angebot as { notizen?: string | null }).notizen ?? ""
+    ).trim();
+    if (rawNotizen.startsWith("{")) {
+      const parsed = JSON.parse(rawNotizen) as {
+        wizard_meta?: { titel?: string };
+      };
+      angebotTitel = String(parsed.wizard_meta?.titel ?? "").trim();
+    }
+  } catch {
+    /* ignore */
+  }
   const leistung = String(angebot.leistungsumfang ?? "").trim();
   const titel =
     (angebotTitel &&

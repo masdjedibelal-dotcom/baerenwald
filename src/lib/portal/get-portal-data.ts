@@ -69,6 +69,7 @@ type PortalAngebotRow = {
   kunde_objekt_id: string | null;
   status_einfach: string | null;
   status?: string | null;
+  /** DB-Spalte `gesamt_fix` — im Mapper als gesamt_preis. */
   gesamt_preis: number | null;
   gesamt_min: number | null;
   gesamt_max: number | null;
@@ -336,9 +337,10 @@ export async function getPortalDataForKunde(
 
   const angeboteByIdEarly = new Map<string, PortalAngebotRow>();
 
-  const angebotSelectBase = listMode
-    ? "id, angebotsnr, lead_id, kunde_id, kunde_objekt_id, status_einfach, status, gesamt_preis, gesamt_min, gesamt_max, gueltig_bis, leistungsumfang, notizen, created_at, gesendet_am, gesendet_kunde_at, pdf_url"
-    : "id, angebotsnr, lead_id, kunde_id, kunde_objekt_id, status_einfach, status, gesamt_preis, gesamt_min, gesamt_max, gueltig_bis, leistungsumfang, notizen, positionen, created_at, gesendet_am, gesendet_kunde_at, pdf_url";
+  // Positionen liegen als JSONB auf der Zeile — auch in der Liste laden,
+  // damit HV Details/Leistungen + Preisindikation-Ablösung ohne Detail-Race greifen.
+  const angebotSelectBase =
+    "id, angebotsnr, lead_id, kunde_id, kunde_objekt_id, status_einfach, status, gesamt_fix, gesamt_min, gesamt_max, gueltig_bis, leistungsumfang, notizen, positionen, created_at, gesendet_am, gesendet_kunde_at, pdf_url";
   const angebotSelectWithHerkunft = `${angebotSelectBase}, herkunft`;
 
   async function loadAngeboteRows(filter: {
@@ -360,18 +362,31 @@ export async function getPortalDataForKunde(
     }
     if (
       error &&
-      /gesendet_kunde_at|column.*status/i.test(error.message)
+      /gesamt_fix|gesamt_preis|gesendet_kunde_at|column.*status/i.test(
+        error.message
+      )
     ) {
-      const legacy = listMode
-        ? "id, angebotsnr, lead_id, kunde_id, kunde_objekt_id, status_einfach, gesamt_preis, gesamt_min, gesamt_max, gueltig_bis, leistungsumfang, notizen, created_at, gesendet_am, pdf_url"
-        : "id, angebotsnr, lead_id, kunde_id, kunde_objekt_id, status_einfach, gesamt_preis, gesamt_min, gesamt_max, gueltig_bis, leistungsumfang, notizen, positionen, created_at, gesendet_am, pdf_url";
+      const legacy =
+        "id, angebotsnr, lead_id, kunde_id, kunde_objekt_id, status_einfach, gesamt_min, gesamt_max, gueltig_bis, leistungsumfang, notizen, positionen, created_at, gesendet_am, pdf_url";
       ({ data, error } = await run(legacy));
     }
     if (error) {
       console.warn("[portal] angebote:", error.message);
       return [];
     }
-    return (data ?? []) as unknown as PortalAngebotRow[];
+    return ((data ?? []) as unknown as Array<Record<string, unknown>>).map(
+      (row) => {
+        const summe =
+          row.gesamt_fix ?? row.gesamt_preis ?? null;
+        return {
+          ...(row as unknown as PortalAngebotRow),
+          gesamt_preis:
+            summe == null || summe === ""
+              ? null
+              : Number(summe),
+        };
+      }
+    );
   }
 
   if (leadIds.length > 0) {
@@ -857,11 +872,9 @@ export async function getPortalDataForKunde(
         a.kunde_objekt_id ??
         (leadId ? leadObjektIdByLeadId.get(leadId) : null);
       const leadPlz = leadId ? leadPlzByLeadId.get(leadId) : null;
-      const positionenDisplay = listMode
-        ? []
-        : parseAngebotPositionenMitPreis(a.positionen);
+      const positionenDisplay = parseAngebotPositionenMitPreis(a.positionen);
       const gesamtBrutto = resolveAngebotGesamtBrutto({
-        positionen: listMode ? null : a.positionen,
+        positionen: a.positionen,
         gesamt_fix: a.gesamt_preis,
         gesamt_min: a.gesamt_min,
         gesamt_max: a.gesamt_max,

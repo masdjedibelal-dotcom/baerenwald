@@ -267,19 +267,21 @@ export async function getEigentuemerPortalData(kundeId: string): Promise<{
     const { data: angExtra } = await supabaseAdmin
       .from("angebote")
       .select(
-        "id, angebotsnr, lead_id, kunde_objekt_id, status_einfach, gesamt_preis, gesamt_min, gesamt_max, gueltig_bis, leistungsumfang, notizen, positionen, created_at, gesendet_am, pdf_url"
+        "id, angebotsnr, lead_id, kunde_objekt_id, status_einfach, gesamt_fix, gesamt_min, gesamt_max, gueltig_bis, leistungsumfang, notizen, positionen, created_at, gesendet_am, pdf_url"
       )
       .in("lead_id", missingLeadIds);
     for (const a of angExtra ?? []) {
       const lid = String((a as { lead_id: string }).lead_id);
       const lead = byId.get(lid);
+      const summe =
+        (a as { gesamt_fix?: number | null }).gesamt_fix ??
+        (a as { gesamt_preis?: number | null }).gesamt_preis;
       angebote.push({
         ...(a as unknown as (typeof angebote)[number]),
         titel: (a as { angebotsnr?: string | null }).angebotsnr ?? "Angebot",
         objekt: lead?.objekt ?? null,
         linkedLead: lead ?? null,
-        gesamtBrutto:
-          Number((a as { gesamt_preis?: number | null }).gesamt_preis) || 0,
+        gesamtBrutto: Number(summe) || 0,
         positionenDisplay: [],
         dokumente: [],
         leistungen: [],

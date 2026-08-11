@@ -19,7 +19,6 @@ import type {
   OrganisationLead,
   OrganisationObjekt,
 } from "@/lib/org/types";
-import { buildKundeVorgaenge } from "@/lib/portal/build-kunde-vorgaenge";
 import {
   HV_CHIPS,
   HV_LISTE_PAGE_EYEBROW,
@@ -33,6 +32,7 @@ type Props = {
   leads: OrganisationLead[];
   angebote: Parameters<typeof PortalClient>[0]["angebote"];
   auftraege: Parameters<typeof PortalClient>[0]["auftraege"];
+  initialVorgaenge?: import("@/lib/portal/portal-detail-item").KundePortalDetailItem[];
   initialFilter?: OrgVorgangFilter | null;
   initialSelectedId?: string | null;
   /** Sofortige Detail-ID vom Parent (vor URL-Update). */
@@ -156,6 +156,7 @@ export function OrganisationVorgaengeSection({
   leads,
   angebote,
   auftraege,
+  initialVorgaenge,
   initialFilter,
   initialSelectedId: _initialSelectedId,
   forceDetailId = null,
@@ -220,21 +221,6 @@ export function OrganisationVorgaengeSection({
     [eingang, objekte, selectedObjektIds]
   );
 
-  const vorgaengeItems = useMemo(
-    () =>
-      buildKundeVorgaenge({
-        leads: filteredLeads as Parameters<
-          typeof buildKundeVorgaenge
-        >[0]["leads"],
-        angebote: angebote as Parameters<
-          typeof buildKundeVorgaenge
-        >[0]["angebote"],
-        auftraege,
-        hvPortalMode: true,
-      }),
-    [filteredLeads, angebote, auftraege]
-  );
-
   return (
     <div className="space-y-3">
       {!detailOpen ? (
@@ -263,6 +249,7 @@ export function OrganisationVorgaengeSection({
         leads={filteredLeads as Parameters<typeof PortalClient>[0]["leads"]}
         angebote={angebote}
         auftraege={auftraege}
+        initialVorgaenge={initialVorgaenge}
         bautagebuchByLeadId={bautagebuchByLeadId}
         hwErledigtByLeadId={hwErledigtByLeadId}
         hvFeedbackByLeadId={hvFeedbackByLeadId}

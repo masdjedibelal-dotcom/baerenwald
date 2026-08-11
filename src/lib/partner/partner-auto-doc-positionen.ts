@@ -124,13 +124,16 @@ export async function buildPartnerAutoDocPositionen(opts: {
 
   let auftragPos: PosRow[] = [];
   if (auftragId) {
-    const { data } = await supabaseAdmin
+    const { data, error: posErr } = await supabaseAdmin
       .from("auftrag_positionen")
       .select(
-        "id, leistung_name, typ, verguetung, stundensatz, preis_partner, menge, einheit, zeit_minuten_summe"
+        "id, leistung_name, typ, verguetung, stundensatz, preis_partner, menge, einheit"
       )
       .eq("auftrag_id", auftragId)
       .eq("handwerker_id", opts.handwerkerId);
+    if (posErr) {
+      console.warn("[partner] auto-doc positionen:", posErr.message);
+    }
     auftragPos = ((data ?? []) as Array<Record<string, unknown>>).map((p) => ({
       id: String(p.id),
       leistung_name: (p.leistung_name as string | null) ?? null,
@@ -141,8 +144,8 @@ export async function buildPartnerAutoDocPositionen(opts: {
       preis_partner: p.preis_partner != null ? Number(p.preis_partner) : null,
       menge: p.menge != null ? Number(p.menge) : null,
       einheit: (p.einheit as string | null) ?? null,
-      zeit_minuten_summe:
-        p.zeit_minuten_summe != null ? Number(p.zeit_minuten_summe) : null,
+      // Spalte zeit_minuten_summe existiert nicht überall — Zeit kommt aus position_eintraege.
+      zeit_minuten_summe: null,
     }));
   }
 

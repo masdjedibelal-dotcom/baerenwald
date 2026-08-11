@@ -631,7 +631,7 @@ export async function getPartnerDataForHandwerker(
   const auftragAngebotIdByAuftragId = new Map<string, string>();
 
   if (auftragIds.length) {
-    const { data: aufRows } = await supabaseAdmin
+    const { data: aufRows, error: aufErr } = await supabaseAdmin
       .from("auftraege")
       .select(
         `
@@ -673,13 +673,16 @@ export async function getPartnerDataForHandwerker(
           material_fix,
           aenderung_typ,
           preis_alt,
-          zeit_minuten_summe,
           stundensatz
         )
       `
       )
       .in("id", auftragIds)
       .order("created_at", { ascending: false });
+
+    if (aufErr) {
+      console.error("[partner] auftraege laden fehlgeschlagen:", aufErr.message);
+    }
 
     const { data: btRows } = await supabaseAdmin
       .from("auftrag_bautagebuch_eintraege")

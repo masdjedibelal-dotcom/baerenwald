@@ -556,6 +556,7 @@ export function OrganisationPortalClient({
               leads={leads}
               angebote={angebote}
               auftraege={auftraege}
+              initialVorgaenge={initialVorgaenge}
               initialFilter={
                 vorgangFilterIntent ?? initialVorgangFilter ?? "alle"
               }
