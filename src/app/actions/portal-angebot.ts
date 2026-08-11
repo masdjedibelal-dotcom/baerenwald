@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 
 import { linkPortalKundeToAuthUser } from "@/lib/portal/link-portal-kunde";
 import { notifyCrmOrgPortal } from "@/lib/org/notify-crm-org";
+import { angebotPositionenJsonToAuftragRows } from "@/lib/portal/copy-angebot-positionen-to-auftrag";
 import { createClient } from "@/lib/supabase/server";
 import { isSupabaseConfigured, supabaseAdmin } from "@/lib/supabase";
 
@@ -59,7 +60,7 @@ export async function acceptKundeAngebot(
   const { data: angebot, error: loadErr } = await supabaseAdmin
     .from("angebote")
     .select(
-      "id, lead_id, kunde_id, status, status_einfach, gesendet_am, gesendet_kunde_at, pdf_url"
+      "id, lead_id, kunde_id, status, status_einfach, gesendet_am, gesendet_kunde_at, pdf_url, positionen"
     )
     .eq("id", id)
     .maybeSingle();
@@ -121,7 +122,30 @@ export async function acceptKundeAngebot(
     .maybeSingle();
 
   if (existingAuftrag?.id) {
-    return { ok: true, auftragId: String(existingAuftrag.id) };
+    const existingId = String(existingAuftrag.id);
+    /* Nachziehen, falls Portal früher ohne Positionen angelegt hat. */
+    const { count } = await supabaseAdmin
+      .from("auftrag_positionen")
+      .select("id", { count: "exact", head: true })
+      .eq("auftrag_id", existingId);
+    if (!count) {
+      const posRows = angebotPositionenJsonToAuftragRows(
+        existingId,
+        angebot.positionen
+      );
+      if (posRows.length) {
+        const { error: posErr } = await supabaseAdmin
+          .from("auftrag_positionen")
+          .insert(posRows);
+        if (posErr) {
+          console.error(
+            "[acceptKundeAngebot] auftrag_positionen nachziehen",
+            posErr.message
+          );
+        }
+      }
+    }
+    return { ok: true, auftragId: existingId };
   }
 
   if (alreadyAccepted) {
@@ -274,12 +298,25 @@ export async function acceptKundeAngebot(
     };
   }
 
+  const auftragId = String(auftrag.id);
+  const posRows = angebotPositionenJsonToAuftragRows(auftragId, angebot.positionen);
+  if (posRows.length) {
+    const { error: posErr } = await supabaseAdmin
+      .from("auftrag_positionen")
+      .insert(posRows);
+    if (posErr) {
+      console.error("[acceptKundeAngebot] auftrag_positionen", posErr.message);
+    }
+  }
+
   if (leadId) {
     await supabaseAdmin
       .from("leads")
       .update({
         status: "auftrag",
         vorgang_phase: "beauftragt",
+        /* Annahme im Portal = Freigabe erledigt — sonst bleibt CRM auf „wartet auf Freigabe“. */
+        org_freigabe_status: "freigegeben",
         updated_at: now,
       })
       .eq("id", leadId);
@@ -309,7 +346,7 @@ export async function acceptKundeAngebot(
   }
 
   revalidatePath("/portal");
-  return { ok: true, auftragId: String(auftrag.id) };
+  return { ok: true, auftragId };
 }
 
 export type RejectKundeAngebotResult =
