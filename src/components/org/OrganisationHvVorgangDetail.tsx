@@ -405,6 +405,7 @@ export function OrganisationHvVorgangDetail({
           angebotZugestellt: resolveAngebotZugestelltForHvFreigabe({
             orgFreigabeStatus,
             bypassGrund: freigabeBypassGrund,
+            hasAngebot: angebotVorgelegt,
           }),
         })
       : null;
@@ -421,8 +422,6 @@ export function OrganisationHvVorgangDetail({
   /** Nie Freigeben/Ablehnen (Kostenfreigabe), wenn Bypass greift — auch bei Angebots-Tab. */
   const showFreigabeButtons =
     !freigabeNichtNoetig && actionKindRaw === "freigabe";
-  /** Angebot-Entscheidung ≠ Kostenfreigabe — nie Freigabe-Buttons im Angebots-Panel. */
-  const showAngebotFreigabeButtons = false;
   const empfohlen = pickEmpfohlenesAngebot(offers);
   const statusLabel =
     statusLabelOverride?.trim() || PORTAL_STATUS[displayFlowStatus].label;
@@ -696,6 +695,15 @@ export function OrganisationHvVorgangDetail({
     ]
   );
 
+  /** Angebot-Tab zeigt Leistungen & Preise — in Details nicht doppelt. */
+  const uebersichtVm = useMemo(
+    () =>
+      actionKind === "angebot"
+        ? { ...detailVm, detailsLeistungen: null }
+        : detailVm,
+    [actionKind, detailVm]
+  );
+
   const derivedPositionen: HvDetailPosition[] = useMemo(() => {
     if (positionen.length) return positionen;
     return positionenBrutto.map((p) => {
@@ -833,8 +841,10 @@ export function OrganisationHvVorgangDetail({
   };
 
   const resolvedAngebotId = (angebotId ?? empfohlen?.id ?? "").trim();
+  /** Unter Schwelle / Akut: nur Info-Banner — kein Annehmen/Ablehnen (CRM macht Direkt Auftrag). */
   const showAcceptCta = Boolean(
     !accepted &&
+      !freigabeNichtNoetig &&
       (canAcceptAngebot ||
         (actionKind === "angebot" && Boolean(resolvedAngebotId)))
   );
@@ -849,97 +859,30 @@ export function OrganisationHvVorgangDetail({
       return null;
     }
     if (actionKind === "angebot") {
+      // Nur Leistungen & Preise — kein „Empfohlenes Angebot“ (es gibt nur eins).
+      // Annehmen/Ablehnen nur oberhalb der Schwelle (Sticky-Footer + ggf. hier).
       return (
-        <div className="flex flex-col gap-3.5">
-          <DetailCard title={HV_DETAIL_COPY.angeboteVergleichen}>
-            {empfohlen ? (
-              <div
-                className="relative rounded-xl p-3.5"
-                style={{
-                  border: `1.5px solid ${PORTAL_VAR.primary}`,
-                  background: "#fff",
-                }}
-              >
-                <span
-                  className="portal-text-label absolute -top-2 left-3 rounded-full px-2 py-0.5 normal-case tracking-normal text-white"
-                  style={{ background: PORTAL_VAR.primary }}
-                >
-                  {HV_DETAIL_COPY.empfohlenBadge}
-                </span>
-                <p className="portal-text-card-title mt-1">
-                  {empfohlen.name}
-                </p>
-                <p className="portal-text-label normal-case tracking-normal" style={{ color: PORTAL_VAR.faint }}>
-                  {empfohlen.trade}
-                  {empfohlen.dauer ? ` · ${empfohlen.dauer}` : ""}
-                </p>
-                <p className="portal-text-title mt-2">
-                  {moneyEur(empfohlen.betrag || sum.brutto)}
-                </p>
-              </div>
-            ) : sum.brutto > 0 ? (
-              <p className="portal-text-title">
-                {moneyEur(sum.brutto)}
-              </p>
-            ) : (
-              <p className="portal-text-meta" style={{ color: PORTAL_VAR.faint }}>
-                Noch kein Angebot hinterlegt.
-              </p>
-            )}
-          </DetailCard>
-
-          <DetailCard title={HV_DETAIL_COPY.empfohlenDetail}>
-            {derivedPositionen.length ? (
-              <PositionenTable positionen={derivedPositionen} sum={sum} />
-            ) : (
-              <p className="portal-text-meta mb-3" style={{ color: PORTAL_VAR.sub }}>
-                Gesamt: {moneyEur(sum.brutto)}
-              </p>
-            )}
-            {showAcceptCta ? (
-              <div className="mt-3 space-y-2">
-                <div className="flex flex-wrap gap-2">
-                  <ActionBtn
-                    className="min-w-0 flex-1"
-                    label={HV_DETAIL_COPY.empfohlenAnnehmen}
-                    disabled={busy}
-                    onClick={() => void acceptAngebotAct()}
-                  />
-                  <ActionBtn
-                    className="min-w-0 flex-1"
-                    label={HV_DETAIL_COPY.ablehnen}
-                    kind="secondary"
-                    disabled={busy}
-                    onClick={() => void rejectAngebotAct()}
-                  />
-                </div>
-              </div>
-            ) : accepted ? (
-              <p
-                className="portal-text-meta mt-3 font-semibold"
-                style={{ color: PORTAL_VAR.primary }}
-              >
-                Angebot angenommen — Auftrag wird vorbereitet.
-              </p>
-            ) : showAngebotFreigabeButtons ? (
-              <div className="mt-3 flex flex-row gap-2">
-                <ActionBtn
-                  className="min-w-0 flex-1"
-                  label={HV_DETAIL_COPY.freigabeBtn}
-                  disabled={busy}
-                  onClick={() => void freigabeAct("freigegeben")}
-                />
-                <ActionBtn
-                  className="min-w-0 flex-1"
-                  label={HV_DETAIL_COPY.ablehnen}
-                  kind="secondary"
-                  disabled={busy}
-                  onClick={() => void freigabeAct("abgelehnt")}
-                />
-              </div>
-            ) : null}
-          </DetailCard>
-        </div>
+        <DetailCard title={HV_DETAIL_COPY.empfohlenDetail}>
+          {derivedPositionen.length ? (
+            <PositionenTable positionen={derivedPositionen} sum={sum} />
+          ) : sum.brutto > 0 ? (
+            <p className="portal-text-meta mb-3" style={{ color: PORTAL_VAR.sub }}>
+              Gesamt: {moneyEur(sum.brutto)}
+            </p>
+          ) : (
+            <p className="portal-text-meta" style={{ color: PORTAL_VAR.faint }}>
+              Noch kein Angebot hinterlegt.
+            </p>
+          )}
+          {accepted ? (
+            <p
+              className="portal-text-meta mt-3 font-semibold"
+              style={{ color: PORTAL_VAR.primary }}
+            >
+              Angebot angenommen — Auftrag wird vorbereitet.
+            </p>
+          ) : null}
+        </DetailCard>
       );
     }
     if (actionKind === "auftrag") {
@@ -1200,7 +1143,7 @@ export function OrganisationHvVorgangDetail({
                 ? abschlussCard
                 : null}
               <VorgangDetailBlocks
-                vm={detailVm}
+                vm={uebersichtVm}
                 detailsActions={
                   showFreigabeButtons ? (
                     <>

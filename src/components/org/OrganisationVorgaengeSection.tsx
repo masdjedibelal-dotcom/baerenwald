@@ -131,7 +131,6 @@ function HvListeChrome({
             key={chip.id}
             active={chip.id === filter}
             onClick={() => onFilterChange(chip.id)}
-            tone={chip.id === "offen" ? "offen" : "default"}
           >
             {chip.label}
           </PortalListeFilterChip>
