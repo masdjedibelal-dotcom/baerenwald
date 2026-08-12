@@ -59,11 +59,7 @@ export function buildPrivatDashboardKpis(
 export type PrivatListeChip =
   | "alle"
   | "offen"
-  | "in_arbeit"
-  | "erledigt"
-  /** @deprecated Alias — gleich `in_arbeit`. */
   | "arbeit"
-  /** @deprecated Alias — gleich `erledigt`. */
   | "abgeschlossen";
 
 export const PRIVAT_LISTE_CHIPS: Array<{
@@ -72,8 +68,8 @@ export const PRIVAT_LISTE_CHIPS: Array<{
 }> = [
   { id: "alle", label: "Alle" },
   { id: "offen", label: "Offen" },
-  { id: "in_arbeit", label: "In Arbeit" },
-  { id: "erledigt", label: "Erledigt" },
+  { id: "arbeit", label: "In Arbeit" },
+  { id: "abgeschlossen", label: "Erledigt" },
 ];
 
 export function privatListeChipMatches(
@@ -89,10 +85,10 @@ export function privatListeChipMatches(
       flow === "angebot"
     );
   }
-  if (chip === "in_arbeit" || chip === "arbeit") {
+  if (chip === "arbeit") {
     return flow === "auftrag";
   }
-  // Abschluss / Rechnung / bezahlt → Erledigt
+  // Abschluss / Rechnung / bezahlt → Erledigt (nicht mehr „In Arbeit“)
   return (
     flow === "abschluss" || flow === "rechnung" || flow === "bezahlt"
   );
@@ -102,7 +98,7 @@ export function privatListeChipMatches(
 export function privatKpiToListeChip(
   kpi: PrivatDashboardKpiId
 ): PrivatListeChip {
-  if (kpi === "in_arbeit") return "in_arbeit";
-  if (kpi === "erledigt") return "erledigt";
+  if (kpi === "in_arbeit") return "arbeit";
+  if (kpi === "erledigt") return "abgeschlossen";
   return "offen";
 }

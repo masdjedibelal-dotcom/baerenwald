@@ -12,11 +12,11 @@ Nach einer Raum-Visualisierung schreibst du Texte für ein share-taugliches Ziel
 Antwort NUR als JSON:
 {
   "titel": "Interner Projekttitel",
-  "chat_kurz": "2–3 Sätze Sie-Form für den Chat nach dem Bild — warm, konkret.",
+  "chat_kurz": "2–3 Sätze Du-Form für den Chat nach dem Bild — warm, konkret.",
   "zielbild_kicker": "2–4 Wörter, editorial, z. B. BADNEU · MÜNCHEN",
   "zielbild_headline": "Magazin-Headline, emotional, max. 7 Wörter",
   "zielbild_teaser": "Ein aspirativer Satz, max. 75 Zeichen",
-  "zusammenfassung": "2–3 Sätze Sie-Form fürs Zielbild: Was wird gemacht + wie das Vorhaben mit Bärenwald läuft. Keine Pills, fließende Prosa.",
+  "zusammenfassung": "2–3 Sätze Du-Form fürs Zielbild: Was wird gemacht + wie das Vorhaben mit Bärenwald läuft. Keine Pills, fließende Prosa.",
   "gewerke": [{ "name": "Gewerk", "beschreibung": "max. 4 Wörter" }],
   "ablauf": ["Schritt …"],
   "naechste_schritte": ["Anfrage stellen", "Beratung vor Ort", "Umsetzung aus einer Hand"],
@@ -27,13 +27,13 @@ Antwort NUR als JSON:
 
 ZIELBILD-COPY:
 - zielbild_headline: bildhaft, editorial — nicht technisch.
-- zusammenfassung: Satz 1 = Was wir für Ihren Raum tun. Satz 2–3 = Wie Bärenwald als GU das begleitet.
+- zusammenfassung: Satz 1 = Was wir für deinen Raum tun. Satz 2–3 = Wie Bärenwald als GU das begleitet.
 - naechste_schritte: genau 3 kurze Schritte (je 2–4 Wörter), vertikal im Layout.
 - cta_text: aktiv, z. B. „Projekt anfragen“
 - Gewerke nur für internen Chat-Kontext, nicht als Liste fürs Bild.
 
 REGELN:
-- Sie-Form, ehrlich — nie Kundenwunsch copy-pasten.
+- Du-Form, ehrlich — nie Kundenwunsch copy-pasten.
 - KEINE Zeitangaben, keine Preise, keine URLs.
 - Kein JSON außerhalb des Blocks.`;
 
@@ -42,7 +42,7 @@ function validate(raw: unknown): GptVizBauErklaerung {
   const gewerke = Array.isArray(o.gewerke) ? o.gewerke : [];
   const ablauf = Array.isArray(o.ablauf) ? o.ablauf : [];
   const schritte = Array.isArray(o.naechste_schritte) ? o.naechste_schritte : ablauf;
-  const titel = String(o.titel ?? "So könnte Bärenwald Ihr Projekt umsetzen");
+  const titel = String(o.titel ?? "So könnte Bärenwald dein Projekt umsetzen");
   const zusammenfassung = String(o.zusammenfassung ?? "");
 
   return {
@@ -50,14 +50,14 @@ function validate(raw: unknown): GptVizBauErklaerung {
     chat_kurz: String(
       o.chat_kurz ??
         (zusammenfassung.slice(0, 280) ||
-          "So könnte Ihr Raum aussehen — wir begleiten Sie von der Idee bis zur Umsetzung.")
+          "So könnte dein Raum aussehen — wir begleiten dich von der Idee bis zur Umsetzung.")
     ),
     zielbild_kicker: o.zielbild_kicker ? String(o.zielbild_kicker).slice(0, 48) : undefined,
     zielbild_headline: String(o.zielbild_headline ?? titel).slice(0, 80),
     zielbild_teaser: String(
       o.zielbild_teaser ??
         (zusammenfassung.split(/[.!?]/)[0]?.trim().slice(0, 90) ||
-          "Ihr Wunschraum — umgesetzt aus einer Hand.")
+          "Dein Wunschraum — umgesetzt aus einer Hand.")
     ).slice(0, 100),
     zusammenfassung,
     gewerke: gewerke.slice(0, 6).map((g) => {

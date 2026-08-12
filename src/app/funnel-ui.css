@@ -177,35 +177,10 @@
 }
 
 .portal-funnel-host--modal {
-  position: relative;
   flex: 1;
   min-height: 0;
   height: 100%;
   background: #fff;
-}
-
-/* FAB: neues Objekt am Objekt-Schritt (unten rechts über Footer) */
-.portal-funnel-objekt-fab {
-  position: absolute;
-  z-index: 5;
-  right: max(16px, env(safe-area-inset-right, 0px));
-  bottom: calc(5.75rem + env(safe-area-inset-bottom, 0px));
-  display: flex;
-  height: 52px;
-  width: 52px;
-  align-items: center;
-  justify-content: center;
-  border: 0;
-  border-radius: 9999px;
-  background: var(--org-primary, var(--p2-primary, #2e7d52));
-  color: #fff;
-  box-shadow: 0 6px 18px rgba(46, 125, 82, 0.4);
-  cursor: pointer;
-  transition: transform 0.15s ease;
-}
-
-.portal-funnel-objekt-fab:active {
-  transform: scale(0.96);
 }
 
 .portal-funnel-host--modal .funnel-input,
@@ -306,7 +281,6 @@
 
 /* Page-Layout (Melde): Website-Funnel-Footer (sticky) */
 .portal-funnel-host--page {
-  position: relative;
   min-height: 50vh;
   background: #fff;
   display: flex;

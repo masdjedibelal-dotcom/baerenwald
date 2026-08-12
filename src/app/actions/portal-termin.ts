@@ -20,7 +20,7 @@ async function assertKundeAuftrag(auftragId: string) {
   } = await supabase.auth.getUser();
 
   if (!user?.email) {
-    return { ok: false as const, error: "Bitte melden Sie sich an." };
+    return { ok: false as const, error: "Bitte melde dich an." };
   }
 
   const link = await linkPortalKundeToAuthUser({
@@ -31,7 +31,7 @@ async function assertKundeAuftrag(auftragId: string) {
 
   const gehoert = await auftragGehoertKunde(auftragId, link.kundeId);
   if (!gehoert) {
-    return { ok: false as const, error: "Sie haben keinen Zugriff auf diesen Vorgang." };
+    return { ok: false as const, error: "Du hast keinen Zugriff auf diesen Vorgang." };
   }
 
   return { ok: true as const };

@@ -3,7 +3,6 @@
 import { useMemo, useState } from "react";
 
 import { DokumenteTabelle } from "@/components/shared/DokumenteTabelle";
-import { PortalInboxEmpty } from "@/components/shared/PortalEmptyState";
 import {
   PORTAL_LIST_PAGE_SIZE,
   PortalListPagination,
@@ -95,7 +94,20 @@ export function OrganisationObjektDokumentePanel({
   );
 
   if (gruppen.length === 0) {
-    return <PortalInboxEmpty title="Noch keine Daten" compact />;
+    return (
+      <div className="rounded-xl border border-dashed border-border-light bg-muted/20 px-4 py-10 text-center">
+        <p className="portal-text-body text-text-secondary">
+          Noch keine Dokumente zu Vorgängen an diesem Objekt.
+        </p>
+        <p
+          className="mt-1.5 text-[12.5px] leading-snug"
+          style={{ color: PORTAL_VAR.sub }}
+        >
+          Angebote, Protokolle und Unterlagen erscheinen hier, sobald sie im
+          Vorgang vorliegen.
+        </p>
+      </div>
+    );
   }
 
   return (

@@ -52,4 +52,4 @@ export function isObviousOffTopic(text: string): boolean {
 }
 
 export const KI_OFF_TOPIC_REPLY =
-  "Ich bin Ihr Handwerks-Assistent für München — Beratung zu Renovierung, Reparatur und Umbau (Bad, Heizung, Maler, Garten …). Was möchten Sie am Haus oder in der Wohnung klären?";
+  "Ich bin dein Handwerks-Assistent für München — Beratung zu Renovierung, Reparatur und Umbau (Bad, Heizung, Maler, Garten …). Was möchtest du am Haus oder in der Wohnung klären?";

@@ -1,15 +1,14 @@
 "use client";
 
-import {
-  PortalActionMenu,
-  type PortalActionMenuItem,
-} from "@/components/shared/PortalActionMenu";
+import { useState } from "react";
+
+import { PortalModalShell } from "@/components/shared/PortalModalShell";
+import { cn } from "@/lib/utils";
 
 type Props = {
   canAushang?: boolean;
   onAushangPdf?: () => void;
   onQrCode?: () => void;
-  onLinkKopieren?: () => void;
   onBearbeiten: () => void;
   onKopieren: () => void;
   onLoeschen: () => void;
@@ -17,33 +16,37 @@ type Props = {
 
 /**
  * Listen-Aktionen Objektkarte: Primär „Aushang PDF“, Rest im ⋯-Menü
- * (`PortalActionMenu` → globale Bottom-Sheet-/Side-Over-Shell).
+ * (mobil Bottom Sheet, Desktop Side-Over — Shell `edit`).
  */
 export function OrganisationObjektCardActions({
   canAushang = false,
   onAushangPdf,
   onQrCode,
-  onLinkKopieren,
   onBearbeiten,
   onKopieren,
   onLoeschen,
 }: Props) {
-  const items: PortalActionMenuItem[] = [
-    ...(canAushang && onLinkKopieren
-      ? [{ label: "Link kopieren", onClick: onLinkKopieren }]
-      : []),
-    ...(canAushang && onQrCode
-      ? [{ label: "QR-Code", onClick: onQrCode }]
-      : []),
-    { label: "Bearbeiten", onClick: onBearbeiten },
-    { label: "Kopieren", onClick: onKopieren },
-    {
-      label: "Löschen",
-      onClick: onLoeschen,
-      danger: true,
-      dividerBefore: true,
-    },
-  ];
+  const [open, setOpen] = useState(false);
+
+  function run(action: () => void) {
+    setOpen(false);
+    action();
+  }
+
+  const item = (label: string, onClick: () => void, danger?: boolean) => (
+    <button
+      type="button"
+      className={cn(
+        "block w-full rounded-[10px] px-3.5 py-3 text-left text-[14px] font-semibold",
+        danger
+          ? "portal-danger hover:bg-[var(--p2-danger-soft)]"
+          : "text-text-primary hover:bg-muted"
+      )}
+      onClick={() => run(onClick)}
+    >
+      {label}
+    </button>
+  );
 
   return (
     <div
@@ -61,7 +64,31 @@ export function OrganisationObjektCardActions({
         </button>
       ) : null}
 
-      <PortalActionMenu title="Aktionen" items={items} />
+      <button
+        type="button"
+        className="flex h-8 w-8 items-center justify-center rounded-lg border border-border-default bg-white text-base text-text-secondary"
+        aria-label="Weitere Aktionen"
+        aria-expanded={open}
+        onClick={() => setOpen(true)}
+      >
+        ⋯
+      </button>
+
+      <PortalModalShell
+        open={open}
+        title="Aktionen"
+        onClose={() => setOpen(false)}
+        variant="edit"
+        maxWidth={360}
+      >
+        <div className="flex flex-col gap-0.5">
+          {canAushang && onQrCode ? item("QR-Code", onQrCode) : null}
+          {item("Bearbeiten", onBearbeiten)}
+          {item("Kopieren", onKopieren)}
+          <div className="my-1.5 border-t border-border-default" />
+          {item("Löschen", onLoeschen, true)}
+        </div>
+      </PortalModalShell>
     </div>
   );
 }

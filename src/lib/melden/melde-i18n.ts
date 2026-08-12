@@ -13,7 +13,7 @@ const STRINGS = {
     fotos: "Fotos vom Schaden",
     video: "Video aufnehmen (max. 60 Sek.)",
     videoHint: "Kurzes Video hilft bei der Einschätzung.",
-    name: "Ihr Name",
+    name: "Dein Name",
     einheit: "Wohnung / Einheit",
     einheitPh: "z. B. Whg. 12, 2. OG links",
     email: "E-Mail",

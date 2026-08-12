@@ -189,8 +189,8 @@ export function FunnelHeader({
               id={dialogDescId}
               className="mt-2 text-sm leading-relaxed text-text-secondary"
             >
-              Sie können den Rechner neu starten und von vorn beginnen — oder zur
-              Startseite wechseln. Was möchten Sie tun?
+              Du kannst den Rechner neu starten und von vorn beginnen — oder zur
+              Startseite wechseln. Was möchtest du tun?
             </p>
             <div className="mt-5 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
               {onFunnelReset ? (

@@ -1,4 +1,6 @@
 import type { ReactNode } from "react";
+import { Calendar, Hammer, MapPin } from "lucide-react";
+
 import type {
   PortalListCardAccent,
   PortalListCardMeta,
@@ -39,34 +41,32 @@ function ts(v?: string | null): number {
 }
 
 function buildMockSubtitle(item: KundePortalDetailItem): string | undefined {
-  // Mock-Liste: nur Anschrift (cardSubtitle bereits so gebaut).
-  if (item.cardSubtitle?.trim()) return item.cardSubtitle.trim();
+  if (item.cardSubtitle?.trim()) {
+    const base = item.cardSubtitle.trim();
+    if (item.wartetAufHwLabel?.trim()) {
+      return `${base} · ${item.wartetAufHwLabel.trim()}`;
+    }
+    return base;
+  }
+  const metaTexts = item.cardMeta?.map((m) => m.text) ?? [];
   const ortParts = [item.plz, item.ort].filter(Boolean).join(" ");
-  return ortParts || undefined;
-}
-
-function buildFallbackCardMeta(item: KundePortalDetailItem): PortalListCardMeta[] {
-  const ortLine = fmtPortalOrt(item.plz ?? "—", item.ort ?? "—");
-  const lines: PortalListCardMeta[] = [];
-  if (item.cardSubtitle) {
-    lines.push({ icon: "hammer", text: item.cardSubtitle });
-  }
-  if (ortLine !== "—") {
-    lines.push({ icon: "map-pin", text: ortLine });
-  }
-  lines.push({ icon: "calendar", text: fmtPortalDate(item.date) });
-  return lines;
-}
-
-function resolveCardHint(item: KundePortalDetailItem): string | undefined {
-  if (item.actionHint?.trim()) return item.actionHint.trim();
-  if (item.wartetAufHwLabel?.trim()) return item.wartetAufHwLabel.trim();
-  if (item.needsAction) {
-    return item.isAuftragDetail
-      ? "To-do: Änderungen prüfen & annehmen"
-      : "To-do: Angebot prüfen & annehmen";
-  }
-  return undefined;
+  const adresse =
+    metaTexts.find((t) =>
+      /str|weg|allee|platz|gasse|\d{5}|plz|ort/i.test(t)
+    ) ??
+    (ortParts || undefined);
+  const we = metaTexts.find((t) => /\bWE\b|Einheit|Whg/i.test(t));
+  const person = metaTexts.find((t) =>
+    /Melder|Mieter|\(/i.test(t)
+  );
+  const kategorie = item.anfrageGewerk?.trim();
+  const parts = [
+    adresse,
+    we,
+    person ?? kategorie,
+    item.wartetAufHwLabel?.trim() || null,
+  ].filter(Boolean);
+  return parts.length ? parts.join(" · ") : undefined;
 }
 
 export function mapKundeDetailToCard(
@@ -75,12 +75,22 @@ export function mapKundeDetailToCard(
   opts?: { mockListe?: boolean }
 ): PortalCardRow {
   const mockListe = opts?.mockListe === true;
-  // Mock-Liste: Meta weglassen — Anschrift steht nur im Subtitle.
   const meta: PortalListCardMeta[] = mockListe
     ? []
     : item.cardMeta?.length
       ? item.cardMeta
-      : buildFallbackCardMeta(item);
+      : (() => {
+          const ortLine = fmtPortalOrt(item.plz ?? "—", item.ort ?? "—");
+          const lines: PortalListCardMeta[] = [];
+          if (item.cardSubtitle) {
+            lines.push({ icon: Hammer, text: item.cardSubtitle });
+          }
+          if (ortLine !== "—") {
+            lines.push({ icon: MapPin, text: ortLine });
+          }
+          lines.push({ icon: Calendar, text: fmtPortalDate(item.date) });
+          return lines;
+        })();
 
   return {
     id: item.id,
@@ -95,14 +105,21 @@ export function mapKundeDetailToCard(
     accent,
     meta,
     footer: mockListe ? undefined : item.listFooter,
-    hint: mockListe ? undefined : resolveCardHint(item),
+    hint: mockListe
+      ? undefined
+      : item.actionHint ??
+        (item.needsAction
+          ? item.isAuftragDetail
+            ? "To-do: Änderungen prüfen & annehmen"
+            : "To-do: Angebot prüfen & annehmen"
+          : undefined),
     sortDate: ts(item.date),
     statusRank: kundePillSortRank(
       item.statusPillKey || item.status || item.vorgangPhase
     ),
     hvMieterView: Boolean(item.hvMieterView),
-    wartetAufHwLabel: mockListe ? null : item.wartetAufHwLabel ?? null,
-    bautagebuch: item.bautagebuch,
+    wartetAufHwLabel: item.wartetAufHwLabel ?? null,
+    bautagebuch: item.hvMieterView ? undefined : item.bautagebuch,
     leadId: item.leadId ?? item.id,
   };
 }

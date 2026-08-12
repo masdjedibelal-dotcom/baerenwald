@@ -54,21 +54,9 @@ export function positionBrauchtVorgangAktion(
   position: Pick<
     PartnerAuftragPosition,
     "aenderung_typ" | "handwerker_status" | "handwerker_id"
-  > & {
-    anerkennung_status?: string | null;
-  }
+  >
 ): boolean {
   if (!positionIstHandwerkerZugewiesen(position.handwerker_status)) return false;
-
-  // HW-Nacharbeit / Regie: Freigabe bei Bärenwald — keine erneute Portal-Annahme
-  const anerkennung = (position.anerkennung_status ?? "").trim().toLowerCase();
-  if (
-    anerkennung === "anerkannt" ||
-    anerkennung === "in_pruefung" ||
-    anerkennung === "abgelehnt"
-  ) {
-    return false;
-  }
 
   const typ = (position.aenderung_typ ?? "").trim().toLowerCase();
   const hwAbgeschlossen = positionHandwerkerAbgeschlossen(position.handwerker_status);
@@ -166,11 +154,14 @@ function agreedHwPositionForZeile(
 function konditionZeileFromAuftragPosition(
   p: PartnerAuftragPosition
 ): PartnerKonditionZeile {
-  // Nur Partner-EK (preis_partner = Netto-Zeile). Kein VK-Fallback über Lohn/Material.
-  const vorschlagNetto =
-    p.preis_partner != null && p.preis_partner > 0
-      ? round2(p.preis_partner)
-      : null;
+  const menge = Math.max(p.menge ?? 1, 0.0001);
+  let vorschlagNetto: number | null = null;
+  if (p.preis_partner != null && p.preis_partner > 0) {
+    vorschlagNetto = round2(p.preis_partner);
+  } else {
+    const parts = (num(p.lohn_fix) + num(p.material_fix)) * menge;
+    if (parts > 0) vorschlagNetto = round2(parts);
+  }
   return {
     id: p.id,
     title: p.leistung_name,
@@ -244,9 +235,11 @@ function positionBeschreibung(raw: Record<string, unknown>, title: string): stri
 function vorschlagNettoFromRow(raw: Record<string, unknown>): number | null {
   const menge = Math.max(num(raw.menge) || 1, 0.0001);
   const ek = num(raw.einkaufspreis);
-  // Nur Einkaufspreis (Partner-EK/Einheit) × Menge = Netto-Zeile.
-  // Lohn/Material sind Kunden-VK — nicht als HW-Vergütung anzeigen.
   if (ek > 0) return round2(ek * menge);
+  const lohn = num(raw.lohn_netto);
+  const mat = num(raw.material_netto);
+  const fromParts = (lohn + mat) * menge;
+  if (fromParts > 0) return round2(fromParts);
   return null;
 }
 

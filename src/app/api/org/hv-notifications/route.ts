@@ -31,14 +31,10 @@ function leadIdFromLink(link: string | null | undefined): string | null {
 
 function angebotWirklichGesendet(row: {
   gesendet_am?: string | null;
-  gesendet_kunde_at?: string | null;
   status_einfach?: string | null;
   status?: string | null;
-  pdf_url?: string | null;
 }): boolean {
   if (row.gesendet_am && String(row.gesendet_am).trim()) return true;
-  if (row.gesendet_kunde_at && String(row.gesendet_kunde_at).trim()) return true;
-  if (row.pdf_url && String(row.pdf_url).trim()) return true;
   const s = `${row.status_einfach ?? ""} ${row.status ?? ""}`.toLowerCase();
   return s.includes("gesendet");
 }
@@ -75,7 +71,7 @@ export async function GET() {
 
     const { data: angebote } = await supabaseAdmin
       .from("angebote")
-      .select("lead_id, gesendet_am, gesendet_kunde_at, status_einfach, status, pdf_url")
+      .select("lead_id, gesendet_am, status_einfach, status")
       .in("lead_id", leadIds);
     for (const a of angebote ?? []) {
       const lid = String(a.lead_id ?? "").toLowerCase();

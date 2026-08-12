@@ -66,7 +66,7 @@ export type PartnerAutoDocPreview = {
 };
 
 export type PartnerAutoDocResult =
-  | { ok: true; path: string; dokumentNr: string; already?: boolean }
+  | { ok: true; path: string; dokumentNr: string }
   | { ok: false; error: string };
 
 async function partnerAuth() {
@@ -398,16 +398,6 @@ export async function submitPartnerAutoAngebot(
     return { ok: false, error: "Nur nach Annahme möglich." };
   }
 
-  const existingPdf = String(ctx.row.hw_angebot_pdf_url ?? "").trim();
-  if (existingPdf) {
-    return {
-      ok: true,
-      path: existingPdf,
-      dokumentNr: opts?.dokumentNr?.trim() || "bereits vorhanden",
-      already: true,
-    };
-  }
-
   const hw = await loadHandwerkerAbsender(auth.handwerkerId);
   if (hw.gateMissingAngebot.length) {
     return {
@@ -466,30 +456,16 @@ export async function submitPartnerAutoAngebot(
     : [];
   const merged = Array.from(new Set([upload.path, ...existingAnhang]));
 
-  const { data: updatedRows, error: upErr } = await supabaseAdmin
+  const { error: upErr } = await supabaseAdmin
     .from("angebot_handwerker")
     .update({
       hw_angebot_pdf_url: upload.path,
       hw_angebot_anhang_urls: merged,
     })
     .eq("id", id)
-    .eq("handwerker_id", auth.handwerkerId)
-    .select("id");
+    .eq("handwerker_id", auth.handwerkerId);
 
   if (upErr) return { ok: false, error: upErr.message };
-  if (!updatedRows?.length) {
-    return { ok: false, error: "Angebot konnte nicht gespeichert werden." };
-  }
-
-  void import("@/lib/partner/notify-crm-partner-dokument").then(
-    ({ notifyCrmPartnerDokumentUpload }) =>
-      notifyCrmPartnerDokumentUpload({
-        typ: "angebot",
-        handwerkerId: auth.handwerkerId,
-        anfrageId: id,
-        titel: `Angebot ${dokumentNr}`,
-      })
-  );
 
   revalidatePath("/partner");
   return { ok: true, path: upload.path, dokumentNr };
@@ -581,7 +557,7 @@ export async function submitPartnerAutoRechnung(input: {
   if (!upload.ok) return upload;
 
   const now = new Date().toISOString();
-  const { data: updatedRows, error: upErr } = await supabaseAdmin
+  const { error: upErr } = await supabaseAdmin
     .from("angebot_handwerker")
     .update({
       hw_rechnung_pdf_url: upload.path,
@@ -589,13 +565,9 @@ export async function submitPartnerAutoRechnung(input: {
     })
     .eq("id", id)
     .eq("handwerker_id", auth.handwerkerId)
-    .is("hw_rechnung_eingereicht_at", null)
-    .select("id");
+    .is("hw_rechnung_eingereicht_at", null);
 
   if (upErr) return { ok: false, error: upErr.message };
-  if (!updatedRows?.length) {
-    return { ok: false, error: "Rechnung wurde bereits eingereicht." };
-  }
 
   // Nummerkreis nur weiterschalten, wenn der Vorschlag genutzt wurde
   if (!customNr || customNr === suggestedNr) {
@@ -619,81 +591,6 @@ export async function submitPartnerAutoRechnung(input: {
     rechnungPdfUrl,
   });
 
-  void import("@/lib/partner/notify-crm-partner-dokument").then(
-    ({ notifyCrmPartnerDokumentUpload }) =>
-      notifyCrmPartnerDokumentUpload({
-        typ: "rechnung",
-        handwerkerId: auth.handwerkerId,
-        anfrageId: id,
-        titel: `Rechnung ${dokumentNr}`,
-      })
-  );
-
   revalidatePath("/partner");
   return { ok: true, path: upload.path, dokumentNr };
-}
-
-/**
- * Nach Firmendaten-Save: offene angenommene Vorgänge ohne Angebot-PDF nachziehen.
- */
-export async function retryPendingPartnerAutoAngebote(): Promise<{
-  ok: true;
-  created: number;
-  skipped: number;
-  missingFirmendaten: boolean;
-  errors: string[];
-}> {
-  const auth = await partnerAuth();
-  if (!auth.ok) {
-    return {
-      ok: true,
-      created: 0,
-      skipped: 0,
-      missingFirmendaten: false,
-      errors: [auth.error],
-    };
-  }
-
-  const hw = await loadHandwerkerAbsender(auth.handwerkerId);
-  if (hw.gateMissingAngebot.length) {
-    return {
-      ok: true,
-      created: 0,
-      skipped: 0,
-      missingFirmendaten: true,
-      errors: [],
-    };
-  }
-
-  const { data: rows } = await supabaseAdmin
-    .from("angebot_handwerker")
-    .select("id, status, hw_angebot_pdf_url")
-    .eq("handwerker_id", auth.handwerkerId)
-    .in("status", ["akzeptiert", "angenommen"])
-    .order("updated_at", { ascending: false })
-    .limit(20);
-
-  let created = 0;
-  let skipped = 0;
-  const errors: string[] = [];
-
-  for (const row of rows ?? []) {
-    const id = String(row.id ?? "").trim();
-    if (!id) continue;
-    if (String(row.hw_angebot_pdf_url ?? "").trim()) {
-      skipped += 1;
-      continue;
-    }
-    const res = await submitPartnerAutoAngebot(id);
-    if (res.ok) {
-      if (!res.already) created += 1;
-      else skipped += 1;
-    } else {
-      errors.push(res.error);
-      skipped += 1;
-    }
-  }
-
-  if (created > 0) revalidatePath("/partner");
-  return { ok: true, created, skipped, missingFirmendaten: false, errors };
 }

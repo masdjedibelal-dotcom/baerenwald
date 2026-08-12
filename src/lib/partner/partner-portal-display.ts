@@ -1,3 +1,5 @@
+import { Calendar, Hammer, MapPin } from "lucide-react";
+
 import type { PortalListCardMeta } from "@/components/shared/PortalListCard";
 import {
   buildAnfrageCardMeta,
@@ -53,17 +55,17 @@ export function buildPartnerAnfrageCardMeta(
       .filter(Boolean)
       .join(" · ") ||
     extras?.gewerk_name;
-  if (was) meta.push({ icon: "hammer", text: was });
+  if (was) meta.push({ icon: Hammer, text: was });
 
   const ortLine = lead
     ? formatAnfrageListOrtLine(lead)
     : extras
       ? "—"
       : "—";
-  if (ortLine !== "—") meta.push({ icon: "map-pin", text: ortLine });
+  if (ortLine !== "—") meta.push({ icon: MapPin, text: ortLine });
 
   const zeitraum = lead ? formatAnfrageZeitraum(lead) : undefined;
-  if (zeitraum) meta.push({ icon: "calendar", text: zeitraum });
+  if (zeitraum) meta.push({ icon: Calendar, text: zeitraum });
 
   return meta;
 }
@@ -78,10 +80,10 @@ export function buildPartnerAngebotCardMeta(
   const ortLine = lead
     ? formatAnfrageListOrtLine(lead)
     : [fallbackOrt?.plz?.trim(), fallbackOrt?.ort?.trim()].filter(Boolean).join(" ") || "—";
-  if (ortLine !== "—") meta.push({ icon: "map-pin", text: ortLine });
+  if (ortLine !== "—") meta.push({ icon: MapPin, text: ortLine });
 
   const dateLabel = fmtPortalDate(date);
-  if (dateLabel !== "—") meta.push({ icon: "calendar", text: dateLabel });
+  if (dateLabel !== "—") meta.push({ icon: Calendar, text: dateLabel });
 
   return meta;
 }
@@ -230,15 +232,6 @@ export function partnerDetailDateMetaLine(date?: string | null): string | undefi
   const rel = fmtPortalRelativeTime(date);
   const parts = [formatted !== "—" ? formatted : null, rel].filter(Boolean);
   return parts.length ? parts.join(" · ") : undefined;
-}
-
-/** Detail-Subline: Anschrift (wie HV/Kunde-Karten). */
-export function partnerDetailOrtMetaLine(
-  lead?: PortalAnfrageLeadSource | null
-): string | undefined {
-  if (!lead) return undefined;
-  const line = formatAnfrageListOrtLine(lead);
-  return line !== "—" ? line : undefined;
 }
 
 export function partnerAuftragDetailMetaLine(

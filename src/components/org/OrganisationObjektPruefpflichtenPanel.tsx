@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 
 import { PortalDetailCard } from "@/components/shared/PortalDetailCard";
-import { PortalInboxEmpty } from "@/components/shared/PortalEmptyState";
+import { PortalEmptyState } from "@/components/shared/PortalEmptyState";
 
 type Pruefpflicht = {
   id: string;
@@ -57,7 +57,7 @@ export function OrganisationObjektPruefpflichtenPanel({ objektId }: { objektId: 
   return (
     <PortalDetailCard title="Prüfpflichten">
       {items.length === 0 ? (
-        <PortalInboxEmpty title="Noch keine Einträge." compact />
+        <PortalEmptyState title="Noch keine Einträge." compact />
       ) : (
         <ul className="space-y-2 text-sm">
           {items.map((p) => (

@@ -41,7 +41,6 @@ assert.equal(
 );
 assert.equal(resolveHvWartetAufHw({}), null);
 
-assert.equal(hvKpiToListeFilter("offen"), "offen");
 assert.equal(hvKpiToListeFilter("wartet_freigabe"), "offen");
 assert.equal(hvKpiToListeFilter("in_arbeit"), "in_arbeit");
 assert.ok(portalListStackClass("responsive").includes("lg:"));

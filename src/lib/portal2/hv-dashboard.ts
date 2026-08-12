@@ -19,12 +19,13 @@ export const HV_DASHBOARD_EMPTY_RECENT = "Noch nichts" as const;
 
 /** Mock HV-Tiles: Label, Farb-Tokens.
  * D3: `filter` = Listen-Chip (`HV_CHIPS` / OrgVorgangFilter).
- * Kacheln = Chip-Labels: Offen · In Arbeit · Erledigt.
+ * KPI „Wartet auf Freigabe“ ≡ Chip „Offen“ (gleiche Zähl-Semantik: gemeldet).
  */
 export const HV_DASHBOARD_KPI_DEFS = [
   {
-    id: "offen" as const,
-    label: "Offen",
+    id: "wartet_freigabe" as const,
+    label: "Wartet auf Freigabe",
+    /** Listen-Chip-Label (Kurzform) — gleiche Filter-ID `offen`. */
     chipLabel: "Offen",
     color: "#8A5A06",
     bg: "#fef3c7",
@@ -73,20 +74,17 @@ export type HvDashboardAngebotSlice = {
   status_einfach?: string | null;
   gesendet_am?: string | null;
   gesendet_kunde_at?: string | null;
-  pdf_url?: string | null;
   created_at?: string | null;
 };
 
-/** Angebot ist für Portal sichtbar (PDF / gesendet / angenommen). */
+/** Angebot ist für Portal sichtbar (gesendet / angenommen). */
 export function isPortalAngebotVorgelegt(angebot?: {
   status?: string | null;
   status_einfach?: string | null;
   gesendet_am?: string | null;
   gesendet_kunde_at?: string | null;
-  pdf_url?: string | null;
 } | null): boolean {
   if (!angebot) return false;
-  if (angebot.pdf_url?.trim()) return true;
   if (angebot.gesendet_am?.trim() || angebot.gesendet_kunde_at?.trim()) {
     return true;
   }
@@ -241,14 +239,15 @@ export type HvDashboardKpiValues = Record<HvDashboardKpiId, number>;
 
 /**
  * Mock HV-Tiles aus A4-Counts:
- * - Offen = gemeldet + angebot (HV-Aktion: Meldung / Angebotsfreigabe)
- * - In Arbeit = freigegeben + angefragt + auftrag
+ * - Wartet auf Freigabe = gemeldet
+ * - In Arbeit = freigegeben + angefragt + angebot + auftrag
  * - Erledigt = abschluss + rechnung + bezahlt
  */
 export function buildHvDashboardKpis(flow: HvFlowCountMap): HvDashboardKpiValues {
   return {
-    offen: flow.gemeldet + flow.angebot,
-    in_arbeit: flow.freigegeben + flow.angefragt + flow.auftrag,
+    wartet_freigabe: flow.gemeldet,
+    in_arbeit:
+      flow.freigegeben + flow.angefragt + flow.angebot + flow.auftrag,
     erledigt: flow.abschluss + flow.rechnung + flow.bezahlt,
   };
 }

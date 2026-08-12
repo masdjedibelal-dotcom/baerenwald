@@ -3,7 +3,10 @@
 import type { LucideIcon } from "lucide-react";
 import { useEffect, useRef, type ReactNode } from "react";
 
-import { usePortalBusy } from "@/components/shared/PortalBusyContext";
+import {
+  PortalBusyProvider,
+  usePortalBusy,
+} from "@/components/shared/PortalBusyContext";
 import { PortalContentBusy } from "@/components/shared/PortalContentBusy";
 import { PortalCreateFabIcon } from "@/components/shared/PortalCreateFabIcon";
 import { PortalDocViewerProvider } from "@/components/shared/PortalDocViewerContext";
@@ -31,12 +34,6 @@ export type PortalShellCreateAction = {
   onClick: () => void;
 };
 
-/**
- * Shell-Capabilities je `variant` (typisch):
- * - `org` / `kunde`: oft `createAction` (Neue Anfrage/Objekt); GPT-Vollfläche mit `hideMobileChrome`.
- * - `partner` (Handwerker): meist ohne `createAction`; GPT-Section ebenfalls `hideMobileChrome`.
- * - `hideMobileChrome`: Bottom-Nav + FAB aus — z. B. GPT-Overlay/Embedded oder Fokus-Screens.
- */
 export type PortalShellProps = {
   variant?: "org" | "partner" | "kunde";
   brandTitle: string;
@@ -78,11 +75,11 @@ export type PortalShellProps = {
   headerRoleBadge?: ReactNode;
   /**
    * Mock `canCreate` + `createLabel`: Sidebar-Button + Mobile-FAB (rechts).
-   * Typisch org/kunde; Handwerker (`partner`) weglassen.
+   * Handwerker: weglassen (`portalCanCreate` = false).
    */
   createAction?: PortalShellCreateAction | null;
   /**
-   * Mobil: Bottom-Nav + FAB ausblenden (GPT-Vollfläche, Fokus-Screens).
+   * Mobil: Bottom-Nav + FAB ausblenden.
    * Default false — Bottom-Nav bleibt in Details sticky am Bildschirmrand.
    */
   hideMobileChrome?: boolean;
@@ -135,9 +132,16 @@ function NavGlyph({
 
 /**
  * Gemeinsame Portal-Shell: Topbar (B1) + Sidebar (B2) + Bottom-Nav (B3) + Mobile-FAB.
- * Busy-Provider liegt im Portal-/Partner-Layout (Hold über Section-Wechsel).
  */
-export function PortalShell({
+export function PortalShell(props: PortalShellProps) {
+  return (
+    <PortalBusyProvider>
+      <PortalShellInner {...props} />
+    </PortalBusyProvider>
+  );
+}
+
+function PortalShellInner({
   variant = "org",
   brandTitle,
   brandSubtitle,
@@ -189,7 +193,7 @@ export function PortalShell({
       prevKeyRef.current = contentKey;
       changed = true;
     }
-    if (changed) flash();
+    if (changed) flash(320);
   }, [activeNavId, contentKey, flash]);
 
   /** Mobil: Dokument-Scroll → Browser darf die URL-Leiste einklappen (wie CRM). */
@@ -292,7 +296,7 @@ export function PortalShell({
                 hideMobileChrome
                   ? // Keine Bottom-Nav → kein Nav-Padding (z. B. GPT-Vollfläche)
                     "px-0 py-0 lg:px-6 lg:py-7 lg:pb-8"
-                  : "px-4 py-5 pb-[var(--portal-mobile-nav-pad)] lg:px-6 lg:py-7 lg:pb-8"
+                  : "px-4 py-5 lg:px-6 lg:py-7 lg:pb-8 pb-[calc(5.5rem+env(safe-area-inset-bottom,0px))]"
               )}
             >
               <div className="portal-page-stack relative min-h-[40vh]">

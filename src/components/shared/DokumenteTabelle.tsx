@@ -145,7 +145,7 @@ function UploadStrip({ upload }: { upload: DokumenteTabelleUpload }) {
   return (
     <UploadZone
       upload={upload}
-      className="border-t border-dashed border-border-light bg-muted/10 px-0 py-3"
+      className="rounded-xl border border-dashed border-border-light bg-muted/10 px-3 py-3 sm:rounded-none sm:border-x-0 sm:border-b-0 sm:border-t"
     >
       <div className="flex items-center gap-2 text-text-secondary">
         <Upload className="h-4 w-4 shrink-0 text-accent" aria-hidden />
@@ -170,7 +170,7 @@ function UploadFooter({ upload }: { upload: DokumenteTabelleUpload }) {
   if (!(upload.selectedLabel || upload.error || upload.onSubmit)) return null;
   return (
     <div
-      className="space-y-2 border-t border-border-light bg-muted/15 px-0 py-3"
+      className="space-y-2 rounded-xl border border-border-light bg-muted/15 px-3 py-3 sm:rounded-none sm:border-x-0 sm:border-b-0 sm:border-t"
       onClick={(e) => e.stopPropagation()}
       onKeyDown={(e) => e.stopPropagation()}
     >
@@ -242,9 +242,9 @@ export function DokumenteTabelle({
       ) : null}
 
       {dokumente.length === 0 ? (
-        <div>
+        <div className="overflow-hidden rounded-xl border border-dashed border-border-light">
           {upload ? (
-            <UploadZone upload={upload} className="bg-muted/20 px-0 py-8 text-center">
+            <UploadZone upload={upload} className="bg-muted/20 px-3 py-8 text-center">
               <Upload
                 className="mx-auto mb-2 h-6 w-6 text-text-tertiary"
                 aria-hidden
@@ -262,7 +262,7 @@ export function DokumenteTabelle({
               ) : null}
             </UploadZone>
           ) : (
-            <p className="portal-text-body px-0 py-5 text-center text-text-secondary">
+            <p className="portal-text-body bg-muted/20 px-3 py-5 text-center text-text-secondary">
               {emptyText}
             </p>
           )}
@@ -270,12 +270,15 @@ export function DokumenteTabelle({
         </div>
       ) : (
         <>
-          {/* Mobil: flache Zeilen (kein Card-in-Card) */}
-          <div className="divide-y divide-border-light sm:hidden">
+          {/* Mobil: Cards */}
+          <div className="space-y-2.5 sm:hidden">
             {dokumente.map((doc) => {
               const datum = fmtDatum(doc.datum);
               return (
-                <article key={doc.id} className="px-0 py-3.5">
+                <article
+                  key={doc.id}
+                  className="rounded-xl border border-border-light bg-white px-3.5 py-3.5 shadow-[0_1px_2px_rgba(22,32,27,0.04)]"
+                >
                   <div className="min-w-0">
                     {doc.href?.trim() ? (
                       <button
@@ -296,7 +299,7 @@ export function DokumenteTabelle({
                       </p>
                     ) : null}
                   </div>
-                  <div className="mt-3 flex items-center justify-between gap-2 pt-1">
+                  <div className="mt-3 flex items-center justify-between gap-2 border-t border-border-light pt-3">
                     <p className="portal-text-meta tabular-nums text-text-tertiary">
                       {datum !== "—" ? `Datum · ${datum}` : "Kein Datum"}
                     </p>
@@ -313,8 +316,8 @@ export function DokumenteTabelle({
             ) : null}
           </div>
 
-          {/* Desktop: Tabelle ohne äußeren Rahmen */}
-          <div className="hidden overflow-hidden sm:block">
+          {/* Desktop: Tabelle */}
+          <div className="hidden overflow-hidden rounded-xl border border-border-light sm:block">
             <table className="portal-text-body w-full">
               <thead>
                 <tr className="portal-text-meta border-b border-border-light bg-muted/30 text-left text-text-tertiary">

@@ -11,7 +11,7 @@ function eintragTypLabel(typ: string): string {
     case "start":
       return "Start";
     case "fortschritt":
-      return "Update";
+      return "Fortschritt";
     case "ergebnis":
       return "Ergebnis";
     case "weitere_arbeit":

@@ -20,7 +20,7 @@ export function PortalResendConfirmation({
   async function resend() {
     const trimmed = email.trim();
     if (!trimmed.includes("@")) {
-      setError("Bitte geben Sie Ihre E-Mail ein.");
+      setError("Bitte gib deine E-Mail ein.");
       return;
     }
     setLoading(true);

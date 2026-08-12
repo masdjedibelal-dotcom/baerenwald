@@ -4,13 +4,11 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
 import { updatePartnerProfil, uploadPartnerProfilLogo } from "@/app/actions/partner-profil";
-import { retryPendingPartnerAutoAngebote } from "@/app/actions/partner-auto-dokumente";
 import { PartnerDetailInfoBox } from "@/components/partner/PartnerDetailUi";
 import { PartnerRahmenvertragCard } from "@/components/partner/PartnerRahmenvertragCard";
 import { FileUploadField } from "@/components/shared/FileUploadField";
 import { PortalKontoSicherheitPanel } from "@/components/shared/PortalKontoSicherheitPanel";
 import { PortalEinstellungenShell } from "@/components/shared/PortalEinstellungenShell";
-import { PortalPushSettingsPanel } from "@/components/shared/PortalPushSettingsPanel";
 import {
   EinstellungenEdField,
   EinstellungenEditModal,
@@ -146,16 +144,6 @@ export function PartnerFirmendatenScreen({
     }
     setSaved(next);
     partnerPortalToast.stammdatenGespeichert();
-    try {
-      const retry = await retryPendingPartnerAutoAngebote();
-      if (retry.created > 0) {
-        partnerPortalToast.unterlagenHochgeladen();
-      } else if (retry.errors[0]) {
-        portalToastError("Angebot nachziehen fehlgeschlagen", retry.errors[0]);
-      }
-    } catch {
-      /* ignore */
-    }
     router.refresh();
     return true;
   }
@@ -260,10 +248,6 @@ export function PartnerFirmendatenScreen({
               </div>
             </div>
           );
-        }
-
-        if (tab === "benachrichtigungen") {
-          return <PortalPushSettingsPanel portal="partner" />;
         }
 
         return (

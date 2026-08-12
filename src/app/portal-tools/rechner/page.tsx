@@ -2035,7 +2035,7 @@ function FunnelRechnerInner() {
         return (
           <StepWrapper
             stepLabel="Vorhaben"
-            question="Was planen Sie?"
+            question="Was planst du?"
             subtext="Beantworte unsere Fragen, um eine erste Preisindikation zu erhalten."
             animateKey={screen}
             tilesCard
@@ -2472,7 +2472,7 @@ function FunnelRechnerInner() {
         return (
           <StepWrapper
             stepLabel="Fast fertig"
-            question="Wo ist Ihr Projekt?"
+            question="Wo ist dein Projekt?"
             subtext="Wir arbeiten in München und Umgebung"
             banner={microBannerFor("ort")}
             animateKey={screen}
@@ -2698,8 +2698,8 @@ function FunnelRechnerInner() {
             }
             subtext={
               portalAuthReady
-                ? "Danach zeigen wir Ihnen den Preisrahmen."
-                : "Login oder einmalige Registrierung — danach sehen Sie den Preis."
+                ? "Danach zeigen wir dir den Preisrahmen."
+                : "Login oder einmalige Registrierung — danach siehst du den Preis."
             }
             animateKey={portalAuthReady ? "lead-contact" : "lead-auth"}
           >
@@ -2798,8 +2798,8 @@ function FunnelRechnerInner() {
         return (
           <StepWrapper
             stepLabel="Anfrage"
-            question="Wir melden uns bei Ihnen."
-            subtext={`Unser Einsatzgebiet ist aktuell München und Umgebung bis ca. 70 km. Hinterlassen Sie Ihre Kontaktdaten — wir schauen, was wir für Sie tun können.`}
+            question="Wir melden uns bei dir."
+            subtext={`Unser Einsatzgebiet ist aktuell München und Umgebung bis ca. 70 km. Hinterlasse deine Kontaktdaten — wir schauen was wir für dich tun können.`}
             animateKey="ausserhalb"
           >
             <div className="funnel-step-tiles-card">
@@ -2863,7 +2863,7 @@ function FunnelRechnerInner() {
                 autoCapitalize="sentences"
                 autoCorrect="on"
                 className="funnel-textarea resize-y"
-                placeholder="Kurze Beschreibung Ihres Vorhabens (optional)"
+                placeholder="Kurze Beschreibung deines Vorhabens (optional)"
                 rows={3}
                 value={ausserhalbBeschreibung}
                 onChange={(e) => setAusserhalbBeschreibung(e.target.value)}
@@ -2898,7 +2898,7 @@ function FunnelRechnerInner() {
             <ThankYou
               variant="beratung"
               beratungHeadline="Wir melden uns persönlich."
-              beratungSubline={`Wir rufen Sie ${SITE_CONFIG.responseSlaWithin} zurück — ohne Verpflichtung.`}
+              beratungSubline={`Wir rufen dich ${SITE_CONFIG.responseSlaWithin} zurück — ohne Verpflichtung.`}
               showTimeline={false}
               onReset={handleReset}
             />
@@ -2909,7 +2909,7 @@ function FunnelRechnerInner() {
             <ThankYou
               variant="beratung"
               beratungHeadline="Anfrage eingegangen"
-              beratungSubline={`Wir prüfen, ob wir in Ihrer Region helfen können, und melden uns ${SITE_CONFIG.responseSlaWithin} persönlich.`}
+              beratungSubline={`Wir prüfen ob wir in deiner Region helfen können und melden uns ${SITE_CONFIG.responseSlaWithin} persönlich.`}
               onReset={handleReset}
             />
           );
@@ -2919,7 +2919,7 @@ function FunnelRechnerInner() {
             <ThankYou
               variant="beratung"
               beratungHeadline="Anfrage eingegangen."
-              beratungSubline={`Wir melden uns ${SITE_CONFIG.responseSlaWithin} persönlich bei Ihnen — ohne Verpflichtung.`}
+              beratungSubline={`Wir melden uns ${SITE_CONFIG.responseSlaWithin} persönlich bei dir — ohne Verpflichtung.`}
               showTimeline={false}
               showCalendar={false}
               onReset={handleReset}
@@ -2962,7 +2962,7 @@ function FunnelRechnerInner() {
           role="status"
         >
           <span>
-            Zu Ihrer Eingabe gibt es keinen festen Eintrag — Sie starten hier
+            Zu deiner Eingabe gibt es keinen festen Eintrag — du startest hier
             regulär im Rechner.
           </span>
           <button
@@ -3072,7 +3072,7 @@ function FunnelRechnerInner() {
                 className="text-xs text-text-tertiary text-center"
                 style={{ marginTop: "8px" }}
               >
-                Wir erstellen Ihnen nach dem Termin ein verbindliches
+                Wir erstellen dir nach dem Termin ein verbindliches
                 Festpreisangebot.
               </p>
             ) : null

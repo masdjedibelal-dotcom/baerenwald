@@ -5,7 +5,6 @@ import {
 
 export type TryPartnerAutoAngebotResult =
   | { status: "created"; dokumentNr: string }
-  | { status: "already"; dokumentNr: string }
   | { status: "firmendaten_missing"; missing: string[] }
   | { status: "skipped"; error: string };
 
@@ -52,10 +51,6 @@ export async function tryCreatePartnerAutoAngebot(
       };
     }
     return { status: "skipped", error: res.error };
-  }
-
-  if (res.already) {
-    return { status: "already", dokumentNr: res.dokumentNr };
   }
 
   return { status: "created", dokumentNr: res.dokumentNr };

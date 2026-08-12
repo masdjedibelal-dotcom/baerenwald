@@ -31,8 +31,8 @@ export function MeldeDatenschutzHinweis({
         </p>
       ))}
       <p className="melden-privacy-text">
-        Weitere Informationen zu Ihren Rechten (Auskunft, Löschung, Widerspruch,
-        Beschwerde) finden Sie in der{" "}
+        Weitere Informationen zu deinen Rechten (Auskunft, Löschung, Widerspruch,
+        Beschwerde) findest du in der{" "}
         <Link href={datenschutzHref} className="underline">
           Datenschutzerklärung
         </Link>{" "}
@@ -40,7 +40,7 @@ export function MeldeDatenschutzHinweis({
         <Link href={impressumHref} className="underline">
           Impressum
         </Link>{" "}
-        Ihrer Verwaltung.
+        deiner Verwaltung.
       </p>
     </div>
   );

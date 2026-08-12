@@ -19,11 +19,7 @@ export function hvMeldungStatusLabel(status: string | null | undefined): string 
   return s;
 }
 
-/**
- * Neue Meldung: wartet auf HV.
- * `nicht_noetig` = noch keine Angebots-Freigabe fällig (nicht automatisch Akut).
- * Echter Akut setzt zusätzlich `freigabe_bypass_grund = "akut"`.
- */
+/** Neue Meldung: wartet auf HV, CRM noch nicht. */
 export function initialHvMeldungState(): {
   hv_meldung_status: HvMeldungStatus;
   org_freigabe_status: "nicht_noetig";
@@ -51,18 +47,14 @@ export function isLeadHavarie(lead: {
   freigabe_bypass_grund?: string | null;
 }): boolean {
   if ((lead.freigabe_bypass_grund ?? "").trim() === "akut") return true;
+  if ((lead.situation ?? "").trim() === "notfall") return true;
   const fd = lead.funnel_daten as {
     melde_kategorie?: string;
     havarie?: boolean;
     notfall?: boolean;
-    direktauftrag?: boolean;
   } | null;
-  // Explizite Sofortmaßnahme / Direktauftrag
-  if (fd?.direktauftrag === true || fd?.havarie === true || fd?.notfall === true) {
-    return true;
-  }
-  // Legacy
-  if ((lead.situation ?? "").trim() === "notfall") return true;
+  // Kategorie „Notfall“ ODER Dringlichkeit „Akut“ (`notfall: true` im Melde-Funnel)
+  if (fd?.havarie === true || fd?.notfall === true) return true;
   return fd?.melde_kategorie === "notfall";
 }
 

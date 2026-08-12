@@ -59,7 +59,6 @@ type PortalKundenObjektRow = {
   hausnummer: string | null;
   plz: string | null;
   ort: string | null;
-  cover_url?: string | null;
 };
 
 type PortalAngebotRow = {
@@ -69,7 +68,6 @@ type PortalAngebotRow = {
   kunde_objekt_id: string | null;
   status_einfach: string | null;
   status?: string | null;
-  /** DB-Spalte `gesamt_fix` — im Mapper als gesamt_preis. */
   gesamt_preis: number | null;
   gesamt_min: number | null;
   gesamt_max: number | null;
@@ -204,28 +202,15 @@ export async function getPortalDataForKunde(
 
   const kunde = kundeRow;
 
-  let objekteRows: PortalKundenObjektRow[] | null = null;
-  {
-    const primary = await supabaseAdmin
-      .from("kunden_objekte")
-      .select("id, titel, strasse, hausnummer, plz, ort, cover_url")
-      .eq("kunde_id", kundeRow.id)
-      .order("titel", { ascending: true });
-    if (primary.error && /cover_url/i.test(primary.error.message)) {
-      const fallback = await supabaseAdmin
-        .from("kunden_objekte")
-        .select("id, titel, strasse, hausnummer, plz, ort")
-        .eq("kunde_id", kundeRow.id)
-        .order("titel", { ascending: true });
-      objekteRows = (fallback.data ?? []) as PortalKundenObjektRow[];
-    } else {
-      objekteRows = (primary.data ?? []) as PortalKundenObjektRow[];
-    }
-  }
+  const { data: objekteRows } = await supabaseAdmin
+    .from("kunden_objekte")
+    .select("id, titel, strasse, hausnummer, plz, ort")
+    .eq("kunde_id", kundeRow.id)
+    .order("titel", { ascending: true });
 
   const objektById = new Map<string, PortalKundenObjektRow>();
   for (const o of objekteRows ?? []) {
-    objektById.set(String(o.id), o);
+    objektById.set(String((o as { id: string }).id), o as PortalKundenObjektRow);
   }
 
   const resolveObj = (
@@ -245,7 +230,6 @@ export async function getPortalDataForKunde(
   let leadsQuery = supabaseAdmin
     .from("leads")
     .select(leadSelectList)
-    .is("geloescht_am", null)
     .order("created_at", { ascending: false });
   if (onlyLeadIds.length) {
     // Detail: Lead-IDs sind bereits zugriffsprüft (kunde oder Auftraggeber).
@@ -254,22 +238,7 @@ export async function getPortalDataForKunde(
     leadsQuery = leadsQuery.eq("kunde_id", kunde.id);
     if (listMode) leadsQuery = leadsQuery.limit(PORTAL_LIST_LEAD_LIMIT);
   }
-  let { data: leads, error: leadsErr } = await leadsQuery;
-  if (leadsErr && /geloescht_am/i.test(leadsErr.message)) {
-    let fb = supabaseAdmin
-      .from("leads")
-      .select(leadSelectList)
-      .order("created_at", { ascending: false });
-    if (onlyLeadIds.length) fb = fb.in("id", onlyLeadIds);
-    else {
-      fb = fb.eq("kunde_id", kunde.id);
-      if (listMode) fb = fb.limit(PORTAL_LIST_LEAD_LIMIT);
-    }
-    const retry = await fb;
-    leads = retry.data;
-    leadsErr = retry.error;
-  }
-  if (leadsErr) console.warn("[portal] leads:", leadsErr.message);
+  const { data: leads } = await leadsQuery;
 
   const leadIds = (leads ?? []).map((l) => l.id);
 
@@ -337,10 +306,9 @@ export async function getPortalDataForKunde(
 
   const angeboteByIdEarly = new Map<string, PortalAngebotRow>();
 
-  // Positionen liegen als JSONB auf der Zeile — auch in der Liste laden,
-  // damit HV Details/Leistungen + Preisindikation-Ablösung ohne Detail-Race greifen.
-  const angebotSelectBase =
-    "id, angebotsnr, lead_id, kunde_id, kunde_objekt_id, status_einfach, status, gesamt_fix, gesamt_min, gesamt_max, gueltig_bis, leistungsumfang, notizen, positionen, created_at, gesendet_am, gesendet_kunde_at, pdf_url";
+  const angebotSelectBase = listMode
+    ? "id, angebotsnr, lead_id, kunde_id, kunde_objekt_id, status_einfach, status, gesamt_preis, gesamt_min, gesamt_max, gueltig_bis, leistungsumfang, notizen, created_at, gesendet_am, gesendet_kunde_at, pdf_url"
+    : "id, angebotsnr, lead_id, kunde_id, kunde_objekt_id, status_einfach, status, gesamt_preis, gesamt_min, gesamt_max, gueltig_bis, leistungsumfang, notizen, positionen, created_at, gesendet_am, gesendet_kunde_at, pdf_url";
   const angebotSelectWithHerkunft = `${angebotSelectBase}, herkunft`;
 
   async function loadAngeboteRows(filter: {
@@ -362,31 +330,18 @@ export async function getPortalDataForKunde(
     }
     if (
       error &&
-      /gesamt_fix|gesamt_preis|gesendet_kunde_at|column.*status/i.test(
-        error.message
-      )
+      /gesendet_kunde_at|column.*status/i.test(error.message)
     ) {
-      const legacy =
-        "id, angebotsnr, lead_id, kunde_id, kunde_objekt_id, status_einfach, gesamt_min, gesamt_max, gueltig_bis, leistungsumfang, notizen, positionen, created_at, gesendet_am, pdf_url";
+      const legacy = listMode
+        ? "id, angebotsnr, lead_id, kunde_id, kunde_objekt_id, status_einfach, gesamt_preis, gesamt_min, gesamt_max, gueltig_bis, leistungsumfang, notizen, created_at, gesendet_am, pdf_url"
+        : "id, angebotsnr, lead_id, kunde_id, kunde_objekt_id, status_einfach, gesamt_preis, gesamt_min, gesamt_max, gueltig_bis, leistungsumfang, notizen, positionen, created_at, gesendet_am, pdf_url";
       ({ data, error } = await run(legacy));
     }
     if (error) {
       console.warn("[portal] angebote:", error.message);
       return [];
     }
-    return ((data ?? []) as unknown as Array<Record<string, unknown>>).map(
-      (row) => {
-        const summe =
-          row.gesamt_fix ?? row.gesamt_preis ?? null;
-        return {
-          ...(row as unknown as PortalAngebotRow),
-          gesamt_preis:
-            summe == null || summe === ""
-              ? null
-              : Number(summe),
-        };
-      }
-    );
+    return (data ?? []) as unknown as PortalAngebotRow[];
   }
 
   if (leadIds.length > 0) {
@@ -417,33 +372,6 @@ export async function getPortalDataForKunde(
       .order("created_at", { ascending: false });
     if (aufAngErr) console.warn("[portal] auftraege angebot_id:", aufAngErr.message);
     mergeAuftraege(auftraegeByAngebot as Record<string, unknown>[] | null);
-  }
-
-  // Soft-gelöschte CRM-Vorgänge: Aufträge/Angebote mit gelöschtem Lead ausblenden
-  {
-    const { filterActiveLeadIds } = await import("@/lib/portal/lead-not-deleted");
-    const childLeadIds: string[] = [];
-    for (const row of Array.from(auftraegeById.values())) {
-      const lid = String(row.lead_id ?? "").trim();
-      if (lid) childLeadIds.push(lid);
-    }
-    for (const row of Array.from(angeboteByIdEarly.values())) {
-      const lid = String((row as { lead_id?: string | null }).lead_id ?? "").trim();
-      if (lid) childLeadIds.push(lid);
-    }
-    const activeChild = await filterActiveLeadIds(childLeadIds);
-    const allowedLeads = new Set<string>([
-      ...leadIds.map((id) => String(id)),
-      ...Array.from(activeChild),
-    ]);
-    for (const [aid, row] of Array.from(auftraegeById.entries())) {
-      const lid = String(row.lead_id ?? "").trim();
-      if (lid && !allowedLeads.has(lid)) auftraegeById.delete(aid);
-    }
-    for (const [aid, row] of Array.from(angeboteByIdEarly.entries())) {
-      const lid = String((row as { lead_id?: string | null }).lead_id ?? "").trim();
-      if (lid && !allowedLeads.has(lid)) angeboteByIdEarly.delete(aid);
-    }
   }
 
   const auftraege = Array.from(auftraegeById.values()).sort((a, b) => {
@@ -672,24 +600,6 @@ export async function getPortalDataForKunde(
     bautagebuchByAuftrag.set(aid, list);
   }
 
-  // Partner-Dokumentation (Positions-Lebenszyklus) → Accordion für HV/Kunde
-  if (!listMode && auftragIds.length > 0) {
-    const {
-      loadPartnerDokumentationByAuftragIds,
-      mergePortalBautagebuchEntries,
-    } = await import("@/lib/portal/load-partner-dokumentation");
-    const partnerDoku = await loadPartnerDokumentationByAuftragIds(auftragIds);
-    for (const aid of auftragIds) {
-      const legacy = bautagebuchByAuftrag.get(aid) ?? [];
-      const partner = partnerDoku.get(aid) ?? [];
-      if (!legacy.length && !partner.length) continue;
-      bautagebuchByAuftrag.set(
-        aid,
-        mergePortalBautagebuchEntries(legacy, partner)
-      );
-    }
-  }
-
   const betreuerIds = Array.from(
     new Set(
       auftraege
@@ -872,9 +782,11 @@ export async function getPortalDataForKunde(
         a.kunde_objekt_id ??
         (leadId ? leadObjektIdByLeadId.get(leadId) : null);
       const leadPlz = leadId ? leadPlzByLeadId.get(leadId) : null;
-      const positionenDisplay = parseAngebotPositionenMitPreis(a.positionen);
+      const positionenDisplay = listMode
+        ? []
+        : parseAngebotPositionenMitPreis(a.positionen);
       const gesamtBrutto = resolveAngebotGesamtBrutto({
-        positionen: a.positionen,
+        positionen: listMode ? null : a.positionen,
         gesamt_fix: a.gesamt_preis,
         gesamt_min: a.gesamt_min,
         gesamt_max: a.gesamt_max,

@@ -59,7 +59,7 @@ function NotifList({
   if (loading && items.length === 0) {
     return (
       <p
-        className="portal-text-meta px-5 py-[34px] text-center"
+        className="px-5 py-[34px] text-center text-[13px]"
         style={{ color: "var(--p2-faint)" }}
       >
         Lädt…
@@ -69,7 +69,7 @@ function NotifList({
   if (items.length === 0) {
     return (
       <p
-        className="portal-text-meta px-5 py-[34px] text-center"
+        className="px-5 py-[34px] text-center text-[13px]"
         style={{ color: "var(--p2-faint)" }}
       >
         {emptyLabel}
@@ -100,14 +100,14 @@ function NotifList({
           <>
             <span className="min-w-0 flex-1">
               <span
-                className="portal-text-meta block truncate font-semibold"
+                className="block truncate text-[13.5px] font-semibold"
                 style={{ color: "var(--p2-ink)" }}
               >
                 {n.titel}
               </span>
               {n.text?.trim() ? (
                 <span
-                  className="portal-text-label mt-0.5 block normal-case tracking-normal leading-[1.45]"
+                  className="mt-0.5 block text-[12.5px] leading-[1.45]"
                   style={{ color: "var(--p2-sub)" }}
                 >
                   {n.text}
@@ -115,7 +115,7 @@ function NotifList({
               ) : null}
               {time ? (
                 <span
-                  className="portal-text-label mt-1 block normal-case tracking-normal"
+                  className="mt-1 block text-[11.5px]"
                   style={{ color: "var(--p2-faint)" }}
                 >
                   {time}
@@ -241,7 +241,7 @@ export function PortalNotificationBell({
             type="button"
             onClick={() => setFilter(f.id)}
             className={cn(
-              "portal-text-meta rounded-full px-3 py-1.5 font-semibold",
+              "rounded-full px-3 py-1.5 text-[12.5px] font-semibold",
               filter === f.id ? "text-white" : "border"
             )}
             style={
@@ -269,7 +269,7 @@ export function PortalNotificationBell({
         <Link
           href={allHref}
           onClick={() => setOpenSafe(false)}
-          className="portal-text-meta font-semibold"
+          className="text-[12.5px] font-semibold"
           style={{ color: "var(--org-primary, var(--p2-primary))" }}
         >
           Alle Vorgänge
@@ -278,7 +278,7 @@ export function PortalNotificationBell({
         <button
           type="button"
           onClick={() => setOpenSafe(false)}
-          className="portal-text-meta font-semibold"
+          className="text-[12.5px] font-semibold"
           style={{ color: "var(--org-primary, var(--p2-primary))" }}
         >
           Schließen
@@ -335,7 +335,7 @@ export function PortalNotificationBell({
                   type="button"
                   disabled={marking}
                   onClick={() => void handleMarkAll()}
-                  className="portal-text-meta font-semibold disabled:opacity-50"
+                  className="text-[12px] font-semibold disabled:opacity-50"
                   style={{ color: "var(--org-primary, var(--p2-primary))" }}
                 >
                   Alle gelesen

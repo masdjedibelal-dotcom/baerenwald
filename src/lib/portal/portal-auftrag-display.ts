@@ -1,3 +1,5 @@
+import { Calendar, MapPin } from "lucide-react";
+
 import type { PortalListCardMeta } from "@/components/shared/PortalListCard";
 import {
   buildAnfragePersonalSection,
@@ -52,9 +54,9 @@ export function buildAuftragCardMeta(
 ): PortalListCardMeta[] {
   const meta: PortalListCardMeta[] = [];
   const ortLine = formatAuftragListOrtLine(objekt, lead);
-  if (ortLine !== "—") meta.push({ icon: "map-pin", text: ortLine });
+  if (ortLine !== "—") meta.push({ icon: MapPin, text: ortLine });
   const zeitraum = formatAuftragDatumSpan(start, end);
-  if (zeitraum) meta.push({ icon: "calendar", text: zeitraum });
+  if (zeitraum) meta.push({ icon: Calendar, text: zeitraum });
   return meta;
 }
 

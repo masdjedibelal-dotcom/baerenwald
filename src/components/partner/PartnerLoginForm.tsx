@@ -87,28 +87,6 @@ export function PartnerLoginForm() {
           Dein Passwort wurde gespeichert. Du kannst dich jetzt anmelden.
         </p>
       ) : null}
-      {hint === "crm_enter_invalid" ? (
-        <p className="rounded-lg bg-red-50 px-3 py-3 portal-text-body text-red-800">
-          Der CRM-Portal-Link ist ungültig oder abgelaufen. Bitte im CRM erneut
-          „Login“ klicken. Lokal muss PARTNER_INTERNAL_API_SECRET in CRM und
-          Portal identisch sein.
-        </p>
-      ) : null}
-      {hint === "crm_enter_failed" ? (
-        <p className="rounded-lg bg-red-50 px-3 py-3 portal-text-body text-red-800">
-          Automatische Anmeldung aus dem CRM ist fehlgeschlagen
-          {searchParams.get("msg")
-            ? `: ${decodeURIComponent(searchParams.get("msg") || "")}`
-            : "."}{" "}
-          Bitte erneut versuchen oder manuell anmelden.
-        </p>
-      ) : null}
-      {hint === "session_mismatch" ? (
-        <p className="rounded-lg bg-amber-50 px-3 py-3 portal-text-body text-amber-900">
-          Die Sitzung passt nicht zu einem Partner-Konto. Bitte mit der im CRM
-          hinterlegten Betriebs-E-Mail anmelden.
-        </p>
-      ) : null}
       {authError ? (
         <p className="rounded-lg bg-red-50 px-3 py-2 portal-text-body text-red-800">
           Anmeldung fehlgeschlagen. Bitte versuche es erneut.
@@ -126,7 +104,7 @@ export function PartnerLoginForm() {
           required
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          className="portal-field w-full"
+          className="portal-input w-full rounded-xl border border-border-default bg-surface-card px-3 py-3 focus:border-accent"
         />
       </label>
 
@@ -139,7 +117,7 @@ export function PartnerLoginForm() {
           minLength={8}
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          className="portal-field w-full"
+          className="portal-input w-full rounded-xl border border-border-default bg-surface-card px-3 py-3 focus:border-accent"
         />
       </label>
 

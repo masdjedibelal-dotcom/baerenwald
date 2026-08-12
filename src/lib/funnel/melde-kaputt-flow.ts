@@ -33,34 +33,32 @@ export function isMeldeKaputtChannel(channel: FunnelChannel): boolean {
 }
 
 /**
- * @deprecated Bereich allein entscheidet nicht mehr über Sofortmaßnahmen.
- * Nutze `isMeldeDirektauftrag` (Fachfragen). Liste leer gehalten für Imports.
+ * Akut automatisch (Schadenminderung / Wohnungsnotlage) —
+ * ohne Nutzer-Frage zur Dringlichkeit.
  */
-export const MELDE_AKUT_BEREICH_IDS: readonly MeldeBereichId[] = [] as const;
+export const MELDE_AKUT_BEREICH_IDS: readonly MeldeBereichId[] = [
+  "wasser",
+  "schimmel",
+  "heizung",
+  "strom",
+  "dach",
+] as const;
 
-export function isMeldeAkutBereich(_id: MeldeBereichId): boolean {
-  return false;
+export function isMeldeAkutBereich(id: MeldeBereichId): boolean {
+  return (MELDE_AKUT_BEREICH_IDS as readonly string[]).includes(id);
 }
 
 /** Melde-Bereiche ohne untypische Outdoor-Fälle (Baum/Sturm → Sonstiges/HV-Freitext). */
 export const MELDE_KAPUTT_BEREICH_OPTIONS: MeldeBereichOption[] =
   MELDE_BEREICHE.filter((o) => o.id !== "baum_notfall");
 
-/** @deprecated Nutze meldeKategorieForDirektauftragFlow + isMeldeDirektauftrag. */
 export function meldeKategorieForBereich(
   bereichId: MeldeBereichId
 ): MeldeKategorie {
-  if (
-    bereichId === "wasser" ||
-    bereichId === "dach" ||
-    bereichId === "schimmel"
-  ) {
-    return "schaden";
-  }
-  return "reparatur";
+  return isMeldeAkutBereich(bereichId) ? "notfall" : "reparatur";
 }
 
-/** Funnel-Bereichswert → Kategorie für Persistenz (ohne Auto-Notfall). */
+/** Funnel-Bereichswert → Kategorie für Persistenz. */
 export function meldeKategorieFromFunnelBereich(
   bereich: string | null | undefined
 ): MeldeKategorie {
@@ -70,9 +68,9 @@ export function meldeKategorieFromFunnelBereich(
 }
 
 export function meldeDringlichkeitFromBereich(
-  _bereichId: MeldeBereichId
+  bereichId: MeldeBereichId
 ): "sofort" | "diese_woche" {
-  return "diese_woche";
+  return isMeldeAkutBereich(bereichId) ? "sofort" : "diese_woche";
 }
 
 /** Dynamische Fachfragen — Folgefragen nur wenn nötig. */

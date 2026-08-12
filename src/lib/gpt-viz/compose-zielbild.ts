@@ -98,14 +98,14 @@ export function downloadZielbildBlob(blob: Blob, filename = "baerenwald-gpt-ziel
 
 export function fallbackErklaerung(): GptVizBauErklaerung {
   return {
-    titel: "Ihr Raumprojekt",
+    titel: "Dein Raumprojekt",
     chat_kurz:
-      "So könnte Ihr Raum aussehen — wir begleiten Sie von der Idee bis zur Umsetzung mit allen nötigen Gewerken aus einer Hand.",
+      "So könnte dein Raum aussehen — wir begleiten dich von der Idee bis zur Umsetzung mit allen nötigen Gewerken aus einer Hand.",
     zielbild_kicker: "RAUMVISION · MÜNCHEN",
-    zielbild_headline: "Hell, klar, endlich Ihres",
+    zielbild_headline: "Hell, klar, endlich deins",
     zielbild_teaser: "Visualisiert mit Bärenwald GPT — umgesetzt als Generalunternehmer.",
     zusammenfassung:
-      "Auf Basis Ihrer Visualisierung planen wir die nötigen Gewerke und koordinieren alles als Generalunternehmer in München.",
+      "Auf Basis deiner Visualisierung planen wir die nötigen Gewerke und koordinieren alles als Generalunternehmer in München.",
     gewerke: [
       { name: "Fliesen", beschreibung: "Wand & Boden" },
       { name: "Sanitär", beschreibung: "Armaturen & WC" },

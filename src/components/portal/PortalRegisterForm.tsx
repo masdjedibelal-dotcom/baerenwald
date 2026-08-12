@@ -110,7 +110,7 @@ export function PortalRegisterForm({ prefill }: Props) {
     if (signUpError) {
       setLoading(false);
       if (signUpError.message.toLowerCase().includes("already registered")) {
-        setError("Diese E-Mail ist bereits registriert. Bitte melden Sie sich an.");
+        setError("Diese E-Mail ist bereits registriert. Bitte melde dich an.");
       } else {
         setError(signUpError.message);
       }
@@ -134,8 +134,8 @@ export function PortalRegisterForm({ prefill }: Props) {
       <div className="space-y-3 text-center">
         <p className="portal-text-section">Fast geschafft — bitte E-Mail bestätigen</p>
         <p className="portal-text-body leading-relaxed text-text-secondary">
-          Wir haben Ihnen eine Nachricht an <strong>{email.trim()}</strong> geschickt.
-          Klicken Sie auf den Bestätigungslink, danach können Sie sich anmelden.
+          Wir haben dir eine Nachricht an <strong>{email.trim()}</strong> geschickt.
+          Klicke auf den Bestätigungslink, danach kannst du dich anmelden.
         </p>
         <Link
           href={loginHref}
@@ -256,7 +256,7 @@ export function PortalRegisterForm({ prefill }: Props) {
       </label>
       {datenschutzError ? (
         <p className="portal-text-body -mt-2 text-red-700">
-          Bitte stimmen Sie der Datenschutzerklärung zu.
+          Bitte stimme der Datenschutzerklärung zu.
         </p>
       ) : null}
 
@@ -285,7 +285,7 @@ export function PortalRegisterForm({ prefill }: Props) {
         </span>
       </label>
       {agbError ? (
-        <p className="portal-text-body -mt-2 text-red-700">Bitte akzeptieren Sie die AGB.</p>
+        <p className="portal-text-body -mt-2 text-red-700">Bitte akzeptiere die AGB.</p>
       ) : null}
 
       <button

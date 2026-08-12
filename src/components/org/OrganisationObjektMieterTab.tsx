@@ -1,11 +1,10 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { UserPlus } from "lucide-react";
 
 import { OrganisationObjektMieterMenu } from "@/components/org/OrganisationObjektMieterMenu";
 import { PortalConfirmDialog } from "@/components/shared/PortalDetailUi";
-import { PortalInboxEmpty } from "@/components/shared/PortalEmptyState";
-import { EinstellungenEditModal } from "@/components/shared/PortalEinstellungenUi";
 import type { OrganisationLead } from "@/lib/org/types";
 import {
   OBJ_MIETER_PORTAL_STATUS,
@@ -93,23 +92,8 @@ export function OrganisationObjektMieterTab({
     strasse.trim().length > 1 &&
     hausnummer.trim().length > 0;
 
-  function openForm() {
-    setVorname("");
-    setNachname("");
-    setStrasse(defaultStrasse?.trim() || "");
-    setHausnummer(defaultHausnummer?.trim() || "");
-    setEinheit("");
-    setEmail("");
-    setTelefon("");
-    setShowForm(true);
-  }
-
-  function closeForm() {
-    if (busy) return;
-    setShowForm(false);
-  }
-
-  const addMieter = async () => {
+  const addMieter = async (e: React.FormEvent) => {
+    e.preventDefault();
     const name = [vorname, nachname].map((s) => s.trim()).filter(Boolean).join(" ");
     if (!canSubmit || !name) return;
     setBusy(true);
@@ -131,6 +115,11 @@ export function OrganisationObjektMieterTab({
         portalToastError("Anlegen fehlgeschlagen", json.error);
         return;
       }
+      setVorname("");
+      setNachname("");
+      setEinheit("");
+      setEmail("");
+      setTelefon("");
       setShowForm(false);
       orgPortalToast.objektAktualisiert();
       await load();
@@ -170,9 +159,9 @@ export function OrganisationObjektMieterTab({
           <button
             type="button"
             className="rounded-[9px] border border-border-default bg-white px-3 py-1.5 text-[12.5px] font-semibold text-text-secondary"
-            onClick={openForm}
+            onClick={() => setShowForm((v) => !v)}
           >
-            ＋ Mieter anlegen
+            {showForm ? "Abbrechen" : "＋ Mieter anlegen"}
           </button>
           <button
             type="button"
@@ -184,75 +173,83 @@ export function OrganisationObjektMieterTab({
         </div>
       </div>
 
-      <EinstellungenEditModal
-        open={showForm}
-        title="Mieter anlegen"
-        onClose={closeForm}
-        onSave={() => void addMieter()}
-        saving={busy}
-        saveDisabled={!canSubmit}
-        saveLabel="Anlegen"
-      >
-        <div className="grid grid-cols-2 gap-2">
+      {showForm ? (
+        <form
+          onSubmit={(e) => void addMieter(e)}
+          className="space-y-2 rounded-xl border border-border-default bg-white p-4"
+        >
+          <div className="grid grid-cols-2 gap-2">
+            <input
+              className="funnel-input w-full"
+              placeholder="Vorname"
+              value={vorname}
+              onChange={(e) => setVorname(e.target.value)}
+              autoComplete="given-name"
+            />
+            <input
+              className="funnel-input w-full"
+              placeholder="Nachname"
+              value={nachname}
+              onChange={(e) => setNachname(e.target.value)}
+              autoComplete="family-name"
+            />
+          </div>
+          <div className="grid grid-cols-[1fr_88px] gap-2">
+            <input
+              className="funnel-input"
+              placeholder="Straße"
+              value={strasse}
+              onChange={(e) => setStrasse(e.target.value)}
+              autoComplete="address-line1"
+            />
+            <input
+              className="funnel-input"
+              placeholder="Nr."
+              value={hausnummer}
+              onChange={(e) => setHausnummer(e.target.value)}
+            />
+          </div>
           <input
             className="funnel-input w-full"
-            placeholder="Vorname"
-            value={vorname}
-            onChange={(e) => setVorname(e.target.value)}
-            autoComplete="given-name"
+            placeholder="z. B. 4. Stock li"
+            value={einheit}
+            onChange={(e) => setEinheit(e.target.value)}
+            aria-label="Wohnung / Etage (optional)"
           />
-          <input
-            className="funnel-input w-full"
-            placeholder="Nachname"
-            value={nachname}
-            onChange={(e) => setNachname(e.target.value)}
-            autoComplete="family-name"
-          />
-        </div>
-        <div className="grid grid-cols-[1fr_88px] gap-2">
-          <input
-            className="funnel-input"
-            placeholder="Straße"
-            value={strasse}
-            onChange={(e) => setStrasse(e.target.value)}
-            autoComplete="address-line1"
-          />
-          <input
-            className="funnel-input"
-            placeholder="Nr."
-            value={hausnummer}
-            onChange={(e) => setHausnummer(e.target.value)}
-          />
-        </div>
-        <input
-          className="funnel-input w-full"
-          placeholder="z. B. 4. Stock li"
-          value={einheit}
-          onChange={(e) => setEinheit(e.target.value)}
-          aria-label="Wohnung / Etage (optional)"
-        />
-        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-          <input
-            className="funnel-input w-full"
-            type="email"
-            placeholder="E-Mail (optional)"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            autoComplete="email"
-          />
-          <input
-            className="funnel-input w-full"
-            type="tel"
-            placeholder="Telefon (optional)"
-            value={telefon}
-            onChange={(e) => setTelefon(e.target.value)}
-            autoComplete="tel"
-          />
-        </div>
-      </EinstellungenEditModal>
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+            <input
+              className="funnel-input w-full"
+              type="email"
+              placeholder="E-Mail (optional)"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              autoComplete="email"
+            />
+            <input
+              className="funnel-input w-full"
+              type="tel"
+              placeholder="Telefon (optional)"
+              value={telefon}
+              onChange={(e) => setTelefon(e.target.value)}
+              autoComplete="tel"
+            />
+          </div>
+          <button
+            type="submit"
+            className="btn-pill-primary inline-flex w-full items-center justify-center gap-2"
+            disabled={busy || !canSubmit}
+          >
+            <UserPlus className="h-4 w-4" aria-hidden />
+            {busy ? "Speichern…" : "Mieter am Objekt anlegen"}
+          </button>
+        </form>
+      ) : null}
 
       {bewohner.length === 0 ? (
-        <PortalInboxEmpty title="Noch keine Daten" compact />
+        <p className="rounded-xl border border-border-default bg-white p-4 text-[13px] text-text-secondary">
+          Noch keine Mieter erfasst. Legen Sie einen Mieter an oder teilen Sie
+          den Melde-Link.
+        </p>
       ) : (
         <ul className="space-y-2">
           {bewohner.map((b) => {

@@ -14,7 +14,7 @@ import {
   mieterStgActiveCopy,
   type MieterWlBrand,
 } from "@/lib/portal2/mieter-wl";
-import { buildMeldeStatusVorgangDetailVm } from "@/lib/vorgang/build-org-lead-detail-vm";
+import { buildMieterVorgangDetailVm } from "@/lib/vorgang/build-vorgang-detail-vm";
 import type { MieterStatusStufe } from "@/lib/vorgang/vorgang-phase";
 import { cn } from "@/lib/utils";
 import "./melden.css";
@@ -24,17 +24,6 @@ type Slot = {
   slot_beginn: string;
   slot_ende?: string | null;
   status: string;
-};
-
-type MeldeDetailExtras = {
-  meldeStrasse?: string | null;
-  meldePlz?: string | null;
-  meldeOrt?: string | null;
-  meldeSituation?: string | null;
-  meldeBereich?: string | null;
-  meldeZeitraum?: string | null;
-  meldeFachdetails?: Array<{ label: string; value: string }>;
-  fotos?: string[];
 };
 
 type Props = {
@@ -50,7 +39,6 @@ type Props = {
   /** Kurzbeschreibung der Meldung (ohne Preise) */
   beschreibung?: string | null;
   statusLabel?: string;
-  meldeDetail?: MeldeDetailExtras;
 };
 
 function fmtSlot(iso: string) {
@@ -79,7 +67,6 @@ export function MeldeStatusClient({
   anhaenge = [],
   beschreibung = null,
   statusLabel,
-  meldeDetail,
 }: Props) {
   const lang = "de" as const;
   const [stufe] = useState(initialStufe);
@@ -98,21 +85,14 @@ export function MeldeStatusClient({
 
   const detailVm = useMemo(
     () =>
-      buildMeldeStatusVorgangDetailVm({
+      buildMieterVorgangDetailVm({
         idLabel: referenz,
         titel: active.title,
         statusLabel: statusLabel ?? active.subtitle,
         objektTitel,
         einheit,
-        beschreibung,
-        meldeStrasse: meldeDetail?.meldeStrasse,
-        meldePlz: meldeDetail?.meldePlz,
-        meldeOrt: meldeDetail?.meldeOrt,
-        meldeSituation: meldeDetail?.meldeSituation,
-        meldeBereich: meldeDetail?.meldeBereich,
-        meldeZeitraum: meldeDetail?.meldeZeitraum,
-        meldeFachdetails: meldeDetail?.meldeFachdetails,
-        fotos: meldeDetail?.fotos,
+        melderName,
+        beschreibungPlain: beschreibung,
       }),
     [
       referenz,
@@ -121,8 +101,8 @@ export function MeldeStatusClient({
       statusLabel,
       objektTitel,
       einheit,
+      melderName,
       beschreibung,
-      meldeDetail,
     ]
   );
 

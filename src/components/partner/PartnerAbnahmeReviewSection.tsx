@@ -1,11 +1,16 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { FileText } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { Check, FileText } from "lucide-react";
 
-import { getPartnerAbnahmeStatus } from "@/app/actions/partner-abnahmeprotokoll";
+import {
+  bestaetigePartnerAbnahme,
+  getPartnerAbnahmeStatus,
+} from "@/app/actions/partner-abnahmeprotokoll";
 import { PortalDetailCard } from "@/components/shared/PortalDetailCard";
 import { PORTAL_VAR } from "@/lib/portal2/tokens";
+import { portalToastError, portalToastSuccess } from "@/lib/shared/portal-toast";
 import { cn } from "@/lib/utils";
 
 type Status = {
@@ -24,22 +29,10 @@ type Props = {
   protokollId?: string | null;
   initialPdfUrl?: string | null;
   initialFreigabeStatus?: string | null;
-  initialPunkteCount?: number | null;
-  initialMaengelCount?: number | null;
   focus?: boolean;
-  /**
-   * Erledigter Vorgang (nach Bärenwald-Bestätigung):
-   * keine Freigabe-/Versand-/Prüf-Hinweise mehr.
-   */
-  erledigt?: boolean;
 };
 
-function freigabeBadge(
-  status: string | null,
-  sent: boolean,
-  erledigt: boolean
-) {
-  if (erledigt) return null;
+function freigabeBadge(status: string | null, sent: boolean) {
   if (sent) {
     return {
       label: "An Kunden / in Unterlagen",
@@ -55,7 +48,7 @@ function freigabeBadge(
   }
   if (s === "freigegeben") {
     return {
-      label: "Freigegeben",
+      label: "Von Bärenwald freigegeben",
       className: "bg-sky-100 text-sky-800",
     };
   }
@@ -73,11 +66,9 @@ export function PartnerAbnahmeReviewSection({
   protokollId,
   initialPdfUrl,
   initialFreigabeStatus,
-  initialPunkteCount,
-  initialMaengelCount,
   focus,
-  erledigt = false,
 }: Props) {
+  const router = useRouter();
   const rootRef = useRef<HTMLDivElement>(null);
   const [status, setStatus] = useState<Status | null>(
     initialPdfUrl || initialFreigabeStatus
@@ -85,8 +76,8 @@ export function PartnerAbnahmeReviewSection({
           protokoll_id: protokollId ?? null,
           pdf_url: initialPdfUrl ?? null,
           abnahme_datum: null,
-          punkte_count: initialPunkteCount ?? 0,
-          maengel_count: initialMaengelCount ?? 0,
+          punkte_count: 0,
+          maengel_count: 0,
           an_kunde_gesendet_at: null,
           handwerker_bestaetigt_at: null,
           freigabe_status: initialFreigabeStatus ?? null,
@@ -94,6 +85,7 @@ export function PartnerAbnahmeReviewSection({
       : null
   );
   const [loading, setLoading] = useState(!initialPdfUrl && !initialFreigabeStatus);
+  const [busy, setBusy] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -107,20 +99,13 @@ export function PartnerAbnahmeReviewSection({
       protokoll_id: r.protokoll_id,
       pdf_url: r.pdf_url ?? initialPdfUrl ?? null,
       abnahme_datum: r.abnahme_datum,
-      punkte_count: Math.max(r.punkte_count, initialPunkteCount ?? 0),
-      maengel_count: Math.max(r.maengel_count, initialMaengelCount ?? 0),
+      punkte_count: r.punkte_count,
+      maengel_count: r.maengel_count,
       an_kunde_gesendet_at: r.an_kunde_gesendet_at,
       handwerker_bestaetigt_at: r.handwerker_bestaetigt_at,
       freigabe_status: r.freigabe_status ?? initialFreigabeStatus ?? null,
     });
-  }, [
-    auftragId,
-    protokollId,
-    initialPdfUrl,
-    initialFreigabeStatus,
-    initialPunkteCount,
-    initialMaengelCount,
-  ]);
+  }, [auftragId, protokollId, initialPdfUrl, initialFreigabeStatus]);
 
   useEffect(() => {
     void load();
@@ -133,22 +118,14 @@ export function PartnerAbnahmeReviewSection({
       protokoll_id: protokollId ?? prev?.protokoll_id ?? null,
       pdf_url: initialPdfUrl ?? prev?.pdf_url ?? null,
       abnahme_datum: prev?.abnahme_datum ?? null,
-      punkte_count:
-        initialPunkteCount ?? prev?.punkte_count ?? 0,
-      maengel_count:
-        initialMaengelCount ?? prev?.maengel_count ?? 0,
+      punkte_count: prev?.punkte_count ?? 0,
+      maengel_count: prev?.maengel_count ?? 0,
       an_kunde_gesendet_at: prev?.an_kunde_gesendet_at ?? null,
       handwerker_bestaetigt_at: prev?.handwerker_bestaetigt_at ?? null,
       freigabe_status:
         initialFreigabeStatus ?? prev?.freigabe_status ?? null,
     }));
-  }, [
-    initialPdfUrl,
-    initialFreigabeStatus,
-    protokollId,
-    initialPunkteCount,
-    initialMaengelCount,
-  ]);
+  }, [initialPdfUrl, initialFreigabeStatus, protokollId]);
 
   useEffect(() => {
     if (!focus) return;
@@ -160,7 +137,7 @@ export function PartnerAbnahmeReviewSection({
 
   if (loading && !status?.pdf_url && !status?.freigabe_status) {
     return (
-      <PortalDetailCard title="Abschluss">
+      <PortalDetailCard title="Abnahmeprotokoll">
         <p className="text-[13px]" style={{ color: PORTAL_VAR.sub }}>
           Protokoll wird geladen …
         </p>
@@ -172,13 +149,28 @@ export function PartnerAbnahmeReviewSection({
     return null;
   }
 
+  const confirmed = Boolean(status.handwerker_bestaetigt_at);
   const sent = Boolean(status.an_kunde_gesendet_at);
   const freigabe = String(status.freigabe_status ?? "").toLowerCase();
-  const badge = freigabeBadge(status.freigabe_status, sent, erledigt);
+  const showBestaetigen = !confirmed && freigabe !== "abgelehnt";
+  const badge = freigabeBadge(status.freigabe_status, sent);
+
+  async function onBestaetigen() {
+    setBusy(true);
+    const r = await bestaetigePartnerAbnahme(auftragId, status?.protokoll_id);
+    setBusy(false);
+    if (!r.ok) {
+      portalToastError(r.error);
+      return;
+    }
+    portalToastSuccess("Abnahmeprotokoll bestätigt.");
+    await load();
+    router.refresh();
+  }
 
   return (
     <div ref={rootRef}>
-      <PortalDetailCard title="Abschluss">
+      <PortalDetailCard title="Ihre Teilabnahme">
         <div className="space-y-4">
           <div className="flex items-start gap-3">
             <div
@@ -189,7 +181,7 @@ export function PartnerAbnahmeReviewSection({
             </div>
             <div className="min-w-0 flex-1">
               <p className="text-[14.5px] font-bold text-text-primary">
-                Auftrag abgeschlossen
+                Teilabnahme eingereicht
               </p>
               <p className="mt-0.5 text-[12.5px] text-text-tertiary">
                 {[
@@ -199,7 +191,7 @@ export function PartnerAbnahmeReviewSection({
                   `${status.punkte_count} Leistung${status.punkte_count === 1 ? "" : "en"}`,
                   status.maengel_count
                     ? `${status.maengel_count} Mangel${status.maengel_count === 1 ? "" : "e"}`
-                    : "ohne Mängel",
+                    : "ohne Mangel",
                 ]
                   .filter(Boolean)
                   .join(" · ")}
@@ -213,13 +205,18 @@ export function PartnerAbnahmeReviewSection({
                 >
                   {badge.label}
                 </span>
+              ) : confirmed ? (
+                <span className="mt-2 inline-block rounded-full bg-sky-100 px-2.5 py-0.5 text-[11.5px] font-bold text-sky-800">
+                  Bestätigt
+                </span>
               ) : null}
-              {!erledigt && freigabe === "abgelehnt" ? (
-                <p className="mt-2 text-[12.5px] text-text-secondary">
-                  Der Abschluss wurde abgelehnt. Bitte Nacharbeit erledigen und
-                  erneut abschließen.
-                </p>
-              ) : null}
+              <p className="mt-2 text-[12.5px] text-text-secondary">
+                {freigabe === "abgelehnt"
+                  ? "Bärenwald hat die Teilabnahme abgelehnt. Bitte Nacharbeit erledigen und erneut abschließen."
+                  : freigabe === "freigegeben" || sent
+                    ? "Freigegeben. Den finalen Versand an den Kunden übernimmt Bärenwald."
+                    : "Kein automatischer Versand an den Kunden. Bärenwald prüft und gibt frei."}
+              </p>
             </div>
           </div>
 
@@ -231,7 +228,7 @@ export function PartnerAbnahmeReviewSection({
               className="block overflow-hidden rounded-xl border border-border-light bg-muted/20"
             >
               <iframe
-                title="Abschlussprotokoll PDF"
+                title="Abnahmeprotokoll PDF"
                 src={status.pdf_url}
                 className="h-[280px] w-full border-0"
               />
@@ -242,6 +239,18 @@ export function PartnerAbnahmeReviewSection({
                 PDF öffnen
               </p>
             </a>
+          ) : null}
+
+          {showBestaetigen ? (
+            <button
+              type="button"
+              className="portal-action-btn portal-action-btn--primary portal-action-btn--block gap-2"
+              disabled={busy}
+              onClick={() => void onBestaetigen()}
+            >
+              <Check className="h-4 w-4" aria-hidden />
+              {busy ? "…" : "Bestätigen"}
+            </button>
           ) : null}
         </div>
       </PortalDetailCard>

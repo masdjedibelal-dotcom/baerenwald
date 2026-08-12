@@ -56,7 +56,7 @@ export type GptVizBauErklaerung = {
   titel: string;
   /** 2–3 Sätze für die Chat-Bubble direkt nach dem Render. */
   chat_kurz: string;
-  /** Headline im Zielbild-PNG (z. B. „Ihr Weg zum Traumbad“). */
+  /** Headline im Zielbild-PNG (z. B. „Dein Weg zum Traumbad“). */
   zielbild_headline: string;
   /** Ein editorialer Satz fürs Zielbild — kurz, share-tauglich. */
   zielbild_teaser?: string;

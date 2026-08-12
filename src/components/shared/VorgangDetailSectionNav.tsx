@@ -190,7 +190,11 @@ export function VorgangDetailSectionNav({
               {label}
               {item.badge && item.badge > 0 ? (
                 <span
-                  className="inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold leading-none text-white"
+                  className="inline-flex h-4 min-w-[1rem] items-center justify-center rounded-full px-1 text-[10px] font-bold"
+                  style={{
+                    background: PORTAL_VAR.dangerSoft,
+                    color: PORTAL_VAR.danger,
+                  }}
                 >
                   {item.badge > 9 ? "9+" : item.badge}
                 </span>
@@ -229,7 +233,11 @@ export function VorgangDetailSectionNav({
                 <span>{label}</span>
                 {item.badge && item.badge > 0 ? (
                   <span
-                    className="inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold leading-none text-white"
+                    className="inline-flex h-4 min-w-[1rem] items-center justify-center rounded-full px-1 text-[10px] font-bold"
+                    style={{
+                      background: PORTAL_VAR.dangerSoft,
+                      color: PORTAL_VAR.danger,
+                    }}
                   >
                     {item.badge > 9 ? "9+" : item.badge}
                   </span>
