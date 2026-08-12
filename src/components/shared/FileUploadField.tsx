@@ -44,11 +44,6 @@ export function FileUploadField({
   return (
     <div className={cn("block portal-text-body", className)}>
       <span className="text-text-tertiary">{label}</span>
-      {hint ? (
-        <span className="mt-0.5 block portal-text-meta text-text-secondary">
-          {hint}
-        </span>
-      ) : null}
       <input
         ref={inputRef}
         type="file"
@@ -76,20 +71,25 @@ export function FileUploadField({
           takeFiles(e.dataTransfer.files);
         }}
         className={cn(
-          "mt-2 flex w-full flex-col items-center gap-1 rounded-xl border border-dashed border-border-default bg-surface-card text-center transition-colors",
-          compact ? "px-3 py-3" : "gap-1.5 px-3 py-5",
-          dragOver && "border-accent bg-accent-light/30",
+          "mt-2 flex w-full flex-col items-center gap-1 rounded-xl border-2 border-dashed text-center transition-colors",
+          compact ? "gap-1 px-3 py-4" : "gap-1.5 px-4 py-7",
+          dragOver
+            ? "border-accent bg-accent-light/40"
+            : "border-border-default bg-[var(--p2-selected,#f0f2f0)] hover:bg-[var(--p2-hover,#eef1ef)]",
           disabled && "cursor-not-allowed opacity-60"
         )}
       >
         <Upload
-          className={cn("text-text-tertiary", compact ? "h-4 w-4" : "h-5 w-5")}
+          className={cn(
+            "text-text-secondary",
+            compact ? "h-5 w-5" : "h-6 w-6"
+          )}
           aria-hidden
         />
         <span
           className={cn(
             "font-semibold text-text-primary",
-            compact ? "text-[12.5px]" : "text-[13px]"
+            compact ? "text-[12.5px]" : "text-[13.5px]"
           )}
         >
           {selectedName
@@ -102,7 +102,11 @@ export function FileUploadField({
           <span className="portal-text-meta font-medium text-text-primary">
             Ausgewählt: {selectedName}
           </span>
-        ) : null}
+        ) : (
+          <span className="portal-text-meta text-text-tertiary">
+            {hint?.trim() || "PDF, Foto oder Dokument"}
+          </span>
+        )}
       </button>
     </div>
   );

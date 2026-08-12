@@ -216,15 +216,7 @@ async function persistAcceptance(opts: {
 }): Promise<PartnerAuftragBestaetigenResult> {
   const now = new Date().toISOString();
 
-  // V1/Q2: Kanonische Annahme nur im CRM
-  const crm = await submitCrmPartnerAnnahme({
-    zuweisungId: opts.anfrageId,
-    handwerkerId: opts.handwerkerId,
-    antwort: "akzeptiert",
-  });
-  if (!crm.ok) return { ok: false, error: crm.error };
-
-  // Bearbeitungsstand (hw_status) + Konditionen bleiben Portal-seitig
+  // Portal-DB zuerst — CRM-Notify danach best effort (Timeout in submitCrmPartnerAnnahme).
   const { error: upErr } = await supabaseAdmin
     .from("angebot_handwerker")
     .update({
@@ -294,6 +286,21 @@ async function persistAcceptance(opts: {
       });
       if (!vertragRes.ok) return { ok: false, error: vertragRes.error };
     }
+  }
+
+  const crm = await submitCrmPartnerAnnahme({
+    zuweisungId: opts.anfrageId,
+    handwerkerId: opts.handwerkerId,
+    antwort: "akzeptiert",
+  });
+  if (!crm.ok) {
+    console.warn("[partner] Annahme CRM-Notify fehlgeschlagen:", crm.error, {
+      anfrageId: opts.anfrageId,
+    });
+  } else if (crm.skipped) {
+    console.warn("[partner] Annahme ohne CRM-Sync (Env fehlt).", {
+      anfrageId: opts.anfrageId,
+    });
   }
 
   revalidatePath("/partner");
@@ -521,6 +528,149 @@ export async function confirmPartnerAuftrag(opts: {
   });
 }
 
+/**
+ * Direktauftrag / Notfall: Zuweisung oft nur über auftrag_positionen, ohne angebot_id.
+ * Portal speichert die Annahme kanonisch in Shared-DB; CRM-Sync best effort.
+ */
+async function persistDirektauftragZuweisungAntwort(opts: {
+  auftragId: string;
+  handwerkerId: string;
+  antwort: "akzeptiert" | "abgelehnt";
+  notiz?: string | null;
+  grund?: string | null;
+  projektvertragNoetig?: boolean;
+  gelesen?: boolean;
+  verbindlich?: boolean;
+}): Promise<PartnerAuftragBestaetigenResult> {
+  const now = new Date().toISOString();
+  const positionen = await loadAuftragPositionen(opts.auftragId, opts.handwerkerId);
+
+  const { data: zuweisungen } = await supabaseAdmin
+    .from("auftrag_handwerker")
+    .select("id, status, gewerk_id")
+    .eq("auftrag_id", opts.auftragId)
+    .eq("handwerker_id", opts.handwerkerId);
+
+  if (!positionen.length && !zuweisungen?.length) {
+    return { ok: false, error: "Keine Zuweisung für diesen Auftrag." };
+  }
+
+  if (opts.antwort === "akzeptiert") {
+    await supabaseAdmin
+      .from("auftraege")
+      .update({ handwerker_bestaetigt_at: now })
+      .eq("id", opts.auftragId);
+
+    for (const pos of positionen) {
+      await supabaseAdmin
+        .from("auftrag_positionen")
+        .update({
+          handwerker_status: "akzeptiert",
+          handwerker_angefragt_at: now,
+          aenderung_typ: null,
+          preis_alt: null,
+        })
+        .eq("id", pos.id)
+        .eq("handwerker_id", opts.handwerkerId);
+    }
+
+    for (const z of zuweisungen ?? []) {
+      const st = String(z.status ?? "").toLowerCase();
+      if (!PENDING_HW.has(st) && st !== "zugewiesen" && st !== "bestaetigt") {
+        continue;
+      }
+      await supabaseAdmin
+        .from("auftrag_handwerker")
+        .update({ status: "akzeptiert" })
+        .eq("id", z.id);
+    }
+
+    if (!zuweisungen?.length) {
+      const gewerkId = await resolveGewerkIdForDirektauftrag(
+        opts.auftragId,
+        opts.handwerkerId
+      );
+      await supabaseAdmin.from("auftrag_handwerker").insert({
+        auftrag_id: opts.auftragId,
+        handwerker_id: opts.handwerkerId,
+        ...(gewerkId ? { gewerk_id: gewerkId } : {}),
+        status: "akzeptiert",
+      });
+    }
+
+    if (opts.projektvertragNoetig) {
+      const vertragRes = await confirmPartnerProjektvertrag({
+        auftragId: opts.auftragId,
+        gelesen: Boolean(opts.gelesen),
+        verbindlich: Boolean(opts.verbindlich),
+      });
+      if (!vertragRes.ok) return { ok: false, error: vertragRes.error };
+    }
+  } else {
+    for (const pos of positionen) {
+      await supabaseAdmin
+        .from("auftrag_positionen")
+        .update({ handwerker_status: "abgelehnt" })
+        .eq("id", pos.id)
+        .eq("handwerker_id", opts.handwerkerId);
+    }
+
+    for (const z of zuweisungen ?? []) {
+      await supabaseAdmin
+        .from("auftrag_handwerker")
+        .update({ status: "abgelehnt" })
+        .eq("id", z.id);
+    }
+
+    if (!zuweisungen?.length) {
+      const gewerkId = await resolveGewerkIdForDirektauftrag(
+        opts.auftragId,
+        opts.handwerkerId
+      );
+      await supabaseAdmin.from("auftrag_handwerker").insert({
+        auftrag_id: opts.auftragId,
+        handwerker_id: opts.handwerkerId,
+        ...(gewerkId ? { gewerk_id: gewerkId } : {}),
+        status: "abgelehnt",
+      });
+    }
+  }
+
+  // CRM-Notify nach Portal-DB (Timeout — blockiert Annahme nicht endlos)
+  const crm = await submitCrmPartnerAnnahme({
+    auftragId: opts.auftragId,
+    handwerkerId: opts.handwerkerId,
+    antwort: opts.antwort,
+    notiz: opts.notiz,
+    grund: opts.grund,
+  });
+  if (!crm.ok) {
+    console.warn(
+      "[partner] Direktauftrag-Annahme ohne CRM-Sync:",
+      crm.error,
+      opts.auftragId
+    );
+  }
+
+  revalidatePath("/partner");
+  return { ok: true };
+}
+
+async function resolveGewerkIdForDirektauftrag(
+  auftragId: string,
+  handwerkerId: string
+): Promise<string | null> {
+  const { data: zuw } = await supabaseAdmin
+    .from("auftrag_handwerker")
+    .select("gewerk_id")
+    .eq("auftrag_id", auftragId)
+    .eq("handwerker_id", handwerkerId)
+    .not("gewerk_id", "is", null)
+    .limit(1)
+    .maybeSingle();
+  return zuw?.gewerk_id ? String(zuw.gewerk_id) : null;
+}
+
 /** Annahme über Auftrags-Zuweisung (ohne parallele angebot_handwerker-Karte). */
 export async function confirmPartnerAuftragZuweisung(opts: {
   auftragId: string;
@@ -562,7 +712,15 @@ export async function confirmPartnerAuftragZuweisung(opts: {
 
   const angebotId = auftrag.angebot_id != null ? String(auftrag.angebot_id) : "";
   if (!angebotId) {
-    return { ok: false, error: "Kein verknüpftes Angebot für diesen Auftrag." };
+    const istBauprojekt = await resolveAuftragIstBauprojekt(auftragId);
+    return persistDirektauftragZuweisungAntwort({
+      auftragId,
+      handwerkerId: link.handwerkerId,
+      antwort: "akzeptiert",
+      projektvertragNoetig: istBauprojekt,
+      gelesen: opts.gelesen,
+      verbindlich: opts.verbindlich,
+    });
   }
 
   const synced = await syncAngebotHandwerkerAfterAuftragAccept({
@@ -628,6 +786,19 @@ export async function declinePartnerAnfrage(opts: {
 
   const notiz = opts.notiz?.trim() || null;
 
+  const now = new Date().toISOString();
+  const { error: upErr } = await supabaseAdmin
+    .from("angebot_handwerker")
+    .update({
+      status: "abgelehnt",
+      antwort_at: now,
+      antwort_notiz: notiz,
+      ablehnung_grund: grundRaw,
+    })
+    .eq("id", opts.anfrageId.trim())
+    .eq("handwerker_id", link.handwerkerId);
+  if (upErr) return { ok: false, error: upErr.message };
+
   const crm = await submitCrmPartnerAnnahme({
     zuweisungId: opts.anfrageId.trim(),
     handwerkerId: link.handwerkerId,
@@ -635,7 +806,11 @@ export async function declinePartnerAnfrage(opts: {
     notiz,
     grund: grundRaw,
   });
-  if (!crm.ok) return { ok: false, error: crm.error };
+  if (!crm.ok) {
+    console.warn("[partner] Ablehnung CRM-Notify fehlgeschlagen:", crm.error, {
+      anfrageId: opts.anfrageId,
+    });
+  }
 
   revalidatePath("/partner");
   return { ok: true };
@@ -696,7 +871,13 @@ export async function declinePartnerAuftragZuweisung(opts: {
 
   const angebotId = auftrag?.angebot_id != null ? String(auftrag.angebot_id) : "";
   if (!angebotId) {
-    return { ok: false, error: "Kein verknüpftes Angebot für diesen Auftrag." };
+    return persistDirektauftragZuweisungAntwort({
+      auftragId,
+      handwerkerId: link.handwerkerId,
+      antwort: "abgelehnt",
+      notiz: opts.notiz?.trim() || null,
+      grund: grundRaw,
+    });
   }
 
   const { data: ahRows } = await supabaseAdmin
@@ -716,7 +897,13 @@ export async function declinePartnerAuftragZuweisung(opts: {
     ) ?? ahRows?.[0];
 
   if (!offen?.id) {
-    return { ok: false, error: "Keine Anfrage für diesen Auftrag." };
+    return persistDirektauftragZuweisungAntwort({
+      auftragId,
+      handwerkerId: link.handwerkerId,
+      antwort: "abgelehnt",
+      notiz: opts.notiz?.trim() || null,
+      grund: grundRaw,
+    });
   }
 
   return declinePartnerAnfrage({

@@ -172,6 +172,7 @@ export async function getEigentuemerPortalData(kundeId: string): Promise<{
       "id, situation, bereiche, status, vorgang_phase, created_at, plz, strasse, hausnummer, zeitraum, kontakt_name, preis_min, preis_max, budget_ca, kontakt_nachricht, funnel_daten, kunde_objekt_id, anlass, kanal, auftraggeber_kunde_id, hv_meldung_status, org_freigabe_status, eigentuemer_freigabe_status, melde_tracking_token"
     )
     .in("kunde_objekt_id", objektIds)
+    .is("geloescht_am", null)
     .order("created_at", { ascending: false });
 
   const mapLead = (raw: LeadRow, freigabe: string | null): LeadRow => ({
@@ -191,13 +192,17 @@ export async function getEigentuemerPortalData(kundeId: string): Promise<{
       "[eigentuemer-portal] leads (freigabe-Spalte?):",
       leadErr.message
     );
-    const { data: fallbackLeads } = await supabaseAdmin
+    let fb = supabaseAdmin
       .from("leads")
       .select(
         "id, situation, bereiche, status, vorgang_phase, created_at, plz, strasse, hausnummer, zeitraum, kontakt_name, preis_min, preis_max, budget_ca, kontakt_nachricht, funnel_daten, kunde_objekt_id, anlass, kanal, auftraggeber_kunde_id, hv_meldung_status, org_freigabe_status, melde_tracking_token"
       )
       .in("kunde_objekt_id", objektIds)
       .order("created_at", { ascending: false });
+    if (!/geloescht_am/i.test(leadErr.message)) {
+      fb = fb.is("geloescht_am", null);
+    }
+    const { data: fallbackLeads } = await fb;
     leadsFromObjekte = (fallbackLeads ?? []).map((l) =>
       mapLead(l as LeadRow, null)
     );
@@ -262,19 +267,21 @@ export async function getEigentuemerPortalData(kundeId: string): Promise<{
     const { data: angExtra } = await supabaseAdmin
       .from("angebote")
       .select(
-        "id, angebotsnr, lead_id, kunde_objekt_id, status_einfach, gesamt_preis, gesamt_min, gesamt_max, gueltig_bis, leistungsumfang, notizen, positionen, created_at, gesendet_am, pdf_url"
+        "id, angebotsnr, lead_id, kunde_objekt_id, status_einfach, gesamt_fix, gesamt_min, gesamt_max, gueltig_bis, leistungsumfang, notizen, positionen, created_at, gesendet_am, pdf_url"
       )
       .in("lead_id", missingLeadIds);
     for (const a of angExtra ?? []) {
       const lid = String((a as { lead_id: string }).lead_id);
       const lead = byId.get(lid);
+      const summe =
+        (a as { gesamt_fix?: number | null }).gesamt_fix ??
+        (a as { gesamt_preis?: number | null }).gesamt_preis;
       angebote.push({
         ...(a as unknown as (typeof angebote)[number]),
         titel: (a as { angebotsnr?: string | null }).angebotsnr ?? "Angebot",
         objekt: lead?.objekt ?? null,
         linkedLead: lead ?? null,
-        gesamtBrutto:
-          Number((a as { gesamt_preis?: number | null }).gesamt_preis) || 0,
+        gesamtBrutto: Number(summe) || 0,
         positionenDisplay: [],
         dokumente: [],
         leistungen: [],

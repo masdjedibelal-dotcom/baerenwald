@@ -35,7 +35,9 @@ export async function POST(req: Request) {
   const orgId = session.kunde.id;
   const { data: lead } = await supabaseAdmin
     .from("leads")
-    .select("id, auftraggeber_kunde_id, kunde_id, org_freigabe_status")
+    .select(
+      "id, auftraggeber_kunde_id, kunde_id, org_freigabe_status, freigabe_bypass_grund, hv_meldung_status, funnel_daten"
+    )
     .eq("id", leadId)
     .maybeSingle();
 
@@ -44,6 +46,36 @@ export async function POST(req: Request) {
     (lead.auftraggeber_kunde_id !== orgId && lead.kunde_id !== orgId)
   ) {
     return NextResponse.json({ error: "Lead nicht gefunden." }, { status: 404 });
+  }
+
+  const { hvFreigabeEntfaellt } = await import("@/lib/org/freigabe-bypass");
+  const funnelDa =
+    lead.funnel_daten &&
+    typeof lead.funnel_daten === "object" &&
+    !Array.isArray(lead.funnel_daten)
+      ? (lead.funnel_daten as { direktauftrag?: unknown }).direktauftrag === true
+      : false;
+  if (
+    hvFreigabeEntfaellt({
+      orgFreigabeStatus: lead.org_freigabe_status,
+      bypassGrund: lead.freigabe_bypass_grund,
+      funnelDirektauftrag: funnelDa,
+      hvMeldungStatus: lead.hv_meldung_status,
+      // Freigabe-API nur bei ausstehendem Angebot
+      angebotZugestellt: true,
+    })
+  ) {
+    return NextResponse.json(
+      { error: "Keine Freigabe notwendig (Akut oder unter Schwelle)." },
+      { status: 409 }
+    );
+  }
+
+  if ((lead.org_freigabe_status ?? "").trim() !== "ausstehend") {
+    return NextResponse.json(
+      { error: "Freigabe ist für diesen Vorgang nicht offen." },
+      { status: 409 }
+    );
   }
 
   const { error: updErr } = await supabaseAdmin
@@ -90,12 +122,40 @@ export async function POST(req: Request) {
     });
   }
 
-  void notifyCrmOrgPortal({
+  // Await: sonst bricht Serverless den Fetch ab, bevor CRM die Notification speichert.
+  const crmNotify = await notifyCrmOrgPortal({
     leadId,
     typ: "freigabe_ergebnis",
     aktion,
     notiz: body.notiz,
   });
+  if (!crmNotify.ok) {
+    console.warn("[org/freigabe] CRM-Notify fehlgeschlagen:", crmNotify.error, {
+      leadId,
+      aktion,
+      skipped: crmNotify.skipped === true,
+    });
+  }
 
-  return NextResponse.json({ ok: true, status: aktion });
+  // Timeline in shared DB — CRM-Glocke liest daraus auch ohne erfolgreichen HTTP-Notify.
+  await supabaseAdmin.from("lead_timeline").insert({
+    lead_id: leadId,
+    typ: "org_freigabe",
+    titel:
+      aktion === "freigegeben"
+        ? "HV-Freigabe erteilt"
+        : "HV-Freigabe abgelehnt",
+    beschreibung:
+      body.notiz?.trim() ||
+      (aktion === "freigegeben"
+        ? "Hausverwaltung hat den Vorgang freigegeben."
+        : "Hausverwaltung hat die Freigabe abgelehnt."),
+    erstellt_von: session.userId,
+  });
+
+  return NextResponse.json({
+    ok: true,
+    status: aktion,
+    crmNotifyOk: crmNotify.ok,
+  });
 }

@@ -12,6 +12,8 @@ import {
 import { PartnerDetailSection } from "@/components/partner/PartnerDetailUi";
 import { FileUploadField } from "@/components/shared/FileUploadField";
 import { PdfFileIcon } from "@/components/shared/PdfFileIcon";
+import { PortalDokumentCard } from "@/components/shared/PortalDokumentCard";
+import { PortalDocOpenButton } from "@/components/shared/PortalDocOpenButton";
 import { PortalConfirmDialog } from "@/components/shared/PortalDetailUi";
 import { PortalModalShell } from "@/components/shared/PortalModalShell";
 import {
@@ -70,23 +72,24 @@ function DokumentAktionen({
     <div className={cn("flex items-center gap-1", className)}>
       {href ? (
         <>
-          <a
+          <PortalDocOpenButton
             href={normalizeHref(href)}
-            target="_blank"
-            rel="noopener noreferrer"
+            name={name}
+            kind="pdf"
             className="portal-touch-target inline-grid place-items-center rounded-lg border border-border-light bg-white text-[#c62828] transition-colors hover:bg-red-50"
-            aria-label={`${name} ansehen`}
           >
             <PdfFileIcon className="h-5 w-5" />
-          </a>
-          <a
+            <span className="sr-only">{`${name} ansehen`}</span>
+          </PortalDocOpenButton>
+          <PortalDocOpenButton
             href={normalizeHref(href)}
-            download
+            name={name}
+            kind="pdf"
             className="portal-touch-target inline-grid place-items-center rounded-lg border border-border-light bg-white text-text-secondary transition-colors hover:bg-muted/40"
-            aria-label={`${name} herunterladen`}
           >
             <Download className="h-4 w-4" />
-          </a>
+            <span className="sr-only">{`${name} herunterladen`}</span>
+          </PortalDocOpenButton>
         </>
       ) : null}
       {kannHochladen ? (
@@ -131,59 +134,12 @@ function StatusPill({
   );
 }
 
-function DokumentCardShell({
-  title,
-  subtitle,
-  datum,
-  status,
-  error,
-  actions,
-}: {
-  title: string;
-  subtitle?: string | null;
-  datum: string;
-  status?: ReactNode;
-  error?: string | null;
-  actions: ReactNode;
-}) {
-  return (
-    <article className="rounded-xl border border-border-light bg-white px-3.5 py-3.5 shadow-[0_1px_2px_rgba(22,32,27,0.04)]">
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0 flex-1">
-          <p className="text-[14px] font-semibold leading-snug text-text-primary">
-            {title}
-          </p>
-          {subtitle ? (
-            <p className="portal-text-meta mt-1 text-text-secondary line-clamp-2">
-              {subtitle}
-            </p>
-          ) : null}
-        </div>
-        {status}
-      </div>
-      <div className="mt-3 flex items-center justify-between gap-2 border-t border-border-light pt-3">
-        <p className="portal-text-meta tabular-nums text-text-tertiary">
-          {datum !== "—" ? `Datum · ${datum}` : "Kein Datum"}
-        </p>
-        {actions}
-      </div>
-      {error ? (
-        <p className="portal-text-meta mt-2 text-red-700" role="alert">
-          {error}
-        </p>
-      ) : null}
-    </article>
-  );
-}
-
 function ComplianceDokumentItem({
   item,
   onUploadClick,
-  variant,
 }: {
   item: PartnerComplianceItem;
   onUploadClick: (item: PartnerComplianceItem) => void;
-  variant: "card" | "row";
 }) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
@@ -205,7 +161,7 @@ function ComplianceDokumentItem({
   );
   const statusLabel = stammDokumentStatusLabel(item.status);
   const statusClass = stammDokumentStatusPillClass(item.status);
-  const subtitle =
+  const description =
     item.status === "abgelehnt" && item.dokument?.ablehnung_grund
       ? item.dokument.ablehnung_grund
       : item.beschreibung?.trim() || null;
@@ -227,79 +183,42 @@ function ComplianceDokumentItem({
     router.refresh();
   }
 
-  const actions = (
-    <DokumentAktionen
-      href={href}
-      name={item.bezeichnung}
-      kannHochladen={kannHochladen}
-      kannLoeschen={kannLoeschen}
-      loading={loading}
-      onUploadClick={() => onUploadClick(item)}
-      onDelete={() => setConfirmOpen(true)}
-      className={variant === "row" ? "justify-end" : "justify-end"}
-    />
-  );
-
-  const confirmDialog = (
-    <PortalConfirmDialog
-      open={confirmOpen}
-      title="Dokument entfernen?"
-      description={`„${item.bezeichnung}“ wirklich entfernen?`}
-      confirmLabel="Entfernen"
-      confirmVariant="danger"
-      loading={loading}
-      onConfirm={() => void onDelete()}
-      onCancel={() => setConfirmOpen(false)}
-    />
-  );
-
-  if (variant === "card") {
-    return (
-      <>
-        <DokumentCardShell
-          title={item.bezeichnung}
-          subtitle={subtitle}
-          datum={datum}
-          status={<StatusPill label={statusLabel} className={statusClass} />}
-          error={error}
-          actions={actions}
-        />
-        {confirmDialog}
-      </>
-    );
-  }
-
   return (
     <>
-      <tr className="border-b border-border-light last:border-b-0">
-        <td className="whitespace-nowrap px-3 py-3 text-text-secondary tabular-nums">
-          {datum}
-        </td>
-        <td className="min-w-0 px-3 py-3">
-          <p className="font-medium text-text-primary line-clamp-2">
-            {item.bezeichnung}
-          </p>
-          {subtitle ? (
-            <p className="portal-text-meta mt-0.5 text-text-secondary line-clamp-2">
-              {subtitle}
-            </p>
-          ) : null}
-          {error ? (
-            <p className="portal-text-meta mt-0.5 text-red-700" role="alert">
-              {error}
-            </p>
-          ) : null}
-        </td>
-        <td className="px-3 py-3">
-          {statusLabel ? (
+      <PortalDokumentCard
+        title={item.bezeichnung}
+        description={description}
+        meta={
+          <>
+            <span className="portal-text-meta tabular-nums text-text-tertiary">
+              {datum !== "—" ? `Datum · ${datum}` : "Kein Datum"}
+            </span>
             <StatusPill label={statusLabel} className={statusClass} />
-          ) : (
-            <span className="portal-text-meta text-text-tertiary">—</span>
-          )}
-        </td>
-        <td className="w-[5.5rem] px-2 py-2 text-right">{actions}</td>
-      </tr>
-      {confirmDialog}
+          </>
+        }
+        error={error}
+        actions={
+          <DokumentAktionen
+            href={href}
+            name={item.bezeichnung}
+            kannHochladen={kannHochladen}
+            kannLoeschen={kannLoeschen}
+            loading={loading}
+            onUploadClick={() => onUploadClick(item)}
+            onDelete={() => setConfirmOpen(true)}
+          />
+        }
+      />
+      <PortalConfirmDialog
+        open={confirmOpen}
+        title="Dokument entfernen?"
+        description={`„${item.bezeichnung}“ wirklich entfernen?`}
+        confirmLabel="Entfernen"
+        confirmVariant="danger"
+        loading={loading}
+        onConfirm={() => void onDelete()}
+        onCancel={() => setConfirmOpen(false)}
+      />
     </>
   );
 }
@@ -308,62 +227,40 @@ function RahmenvertragDokumentItem({
   rahmenvertrag,
   akzeptiert,
   pdfUrl,
-  variant,
 }: {
   rahmenvertrag: PartnerRahmenvertrag | null;
   akzeptiert: boolean;
   pdfUrl?: string | null;
-  variant: "card" | "row";
 }) {
   const datum = fmtDatum(
     rahmenvertrag?.portal_akzeptiert_am ?? rahmenvertrag?.signiert_am ?? null
   );
-  const subtitle = rahmenvertrag?.vertrags_nr
+  const description = rahmenvertrag?.vertrags_nr
     ? `Nr. ${rahmenvertrag.vertrags_nr}`
     : "Bei Registrierung akzeptiert — PDF folgt von Bärenwald";
-  const actions = pdfUrl ? (
-    <DokumentAktionen
-      href={pdfUrl}
-      name="Partnerschafts-Rahmenvertrag"
-      className="justify-end"
-    />
-  ) : (
-    <span className="portal-text-meta text-text-tertiary">—</span>
-  );
-  const status = akzeptiert ? (
-    <StatusPill label="Erledigt" className={rahmenStatusPillClass(true)} />
-  ) : null;
-
-  if (variant === "card") {
-    return (
-      <DokumentCardShell
-        title="Partnerschafts-Rahmenvertrag"
-        subtitle={subtitle}
-        datum={datum}
-        status={status}
-        actions={actions}
-      />
-    );
-  }
 
   return (
-    <tr className="border-b border-border-light last:border-b-0">
-      <td className="whitespace-nowrap px-3 py-3 text-text-secondary tabular-nums">
-        {datum}
-      </td>
-      <td className="min-w-0 px-3 py-3">
-        <p className="font-medium text-text-primary">
-          Partnerschafts-Rahmenvertrag
-        </p>
-        <p className="portal-text-meta mt-0.5 text-text-secondary line-clamp-2">
-          {subtitle}
-        </p>
-      </td>
-      <td className="px-3 py-3">
-        {status ?? <span className="portal-text-meta text-text-tertiary">—</span>}
-      </td>
-      <td className="w-[5.5rem] px-2 py-2 text-right">{actions}</td>
-    </tr>
+    <PortalDokumentCard
+      title="Partnerschafts-Rahmenvertrag"
+      description={description}
+      meta={
+        <>
+          <span className="portal-text-meta tabular-nums text-text-tertiary">
+            {datum !== "—" ? `Datum · ${datum}` : "Kein Datum"}
+          </span>
+          {akzeptiert ? (
+            <StatusPill label="Erledigt" className={rahmenStatusPillClass(true)} />
+          ) : null}
+        </>
+      }
+      actions={
+        pdfUrl ? (
+          <DokumentAktionen href={pdfUrl} name="Partnerschafts-Rahmenvertrag" />
+        ) : (
+          <span className="portal-text-meta text-text-tertiary">—</span>
+        )
+      }
+    />
   );
 }
 
@@ -453,76 +350,44 @@ export function PartnerStammDokumenteListe({
   return (
     <>
       <PartnerDetailSection title="Stammunterlagen">
-        <div className="mb-3 flex items-start justify-between gap-3">
-          <p className="portal-text-meta text-text-secondary">
-            Rahmenvertrag und Nachweise — Datum, Status und Upload.
-          </p>
-          <button
-            type="button"
-            onClick={openNewUpload}
-            className="portal-touch-target inline-flex shrink-0 items-center justify-center gap-1.5 rounded-full border border-border-default bg-white px-3 text-[12.5px] font-semibold text-accent transition-colors hover:border-accent/40 hover:bg-accent-light/20"
-            aria-label="Dokument hochladen"
-            title="Dokument hochladen"
-          >
-            <Upload className="h-4 w-4" aria-hidden />
-            <span className="hidden sm:inline">Hochladen</span>
-          </button>
-        </div>
+        <p className="portal-text-meta mb-3 text-text-secondary">
+          Rahmenvertrag und Nachweise — Datum, Status und Upload.
+        </p>
 
-        {/* Mobil: Cards */}
-        <div className="space-y-2.5 sm:hidden">
+        <div className="space-y-2.5">
           <RahmenvertragDokumentItem
             rahmenvertrag={rahmenvertrag}
             akzeptiert={akzeptiert}
             pdfUrl={pdfUrl}
-            variant="card"
           />
           {handwerkskarte.map((item) => (
             <ComplianceDokumentItem
-              key={`${item.ebene}-${item.slug}-${item.dokument?.id ?? "open"}-card`}
+              key={`${item.ebene}-${item.slug}-${item.dokument?.id ?? "open"}`}
               item={item}
               onUploadClick={openItemUpload}
-              variant="card"
             />
           ))}
         </div>
 
-        {/* Desktop: Tabelle */}
-        <div className="hidden overflow-hidden rounded-xl border border-border-light sm:block">
-          <table className="portal-text-body w-full">
-            <thead>
-              <tr className="portal-text-meta border-b border-border-light bg-muted/30 text-left text-text-tertiary">
-                <th className="px-3 py-2.5 font-semibold">Datum</th>
-                <th className="px-3 py-2.5 font-semibold">Dokument</th>
-                <th className="px-3 py-2.5 font-semibold">Status</th>
-                <th className="w-[5.5rem] px-2 py-2.5 text-right font-semibold">
-                  Aktionen
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              <RahmenvertragDokumentItem
-                rahmenvertrag={rahmenvertrag}
-                akzeptiert={akzeptiert}
-                pdfUrl={pdfUrl}
-                variant="row"
-              />
-              {handwerkskarte.map((item) => (
-                <ComplianceDokumentItem
-                  key={`${item.ebene}-${item.slug}-${item.dokument?.id ?? "open"}-row`}
-                  item={item}
-                  onUploadClick={openItemUpload}
-                  variant="row"
-                />
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <button
+          type="button"
+          onClick={openNewUpload}
+          className="mt-4 flex w-full flex-col items-center justify-center gap-1.5 rounded-xl border-2 border-dashed border-border-default bg-[var(--p2-selected,#f0f2f0)] px-4 py-7 text-center transition-colors hover:bg-[var(--p2-hover,#eef1ef)]"
+          aria-label="Dokument hochladen"
+        >
+          <Upload className="h-6 w-6 text-text-secondary" aria-hidden />
+          <span className="text-[13.5px] font-semibold text-text-primary">
+            Dokument hochladen
+          </span>
+          <span className="portal-text-meta text-text-tertiary">
+            Tippen oder Datei hier ablegen — PDF, JPG, PNG oder WebP
+          </span>
+        </button>
 
         {!hatHandwerkskarte ? (
           <p className="portal-text-meta mt-3 text-text-tertiary">
             Handwerkskarte erscheint hier, sobald sie bei Bärenwald hinterlegt ist.
-            Eigene Nachweise kannst du jederzeit über „Hochladen“ ergänzen.
+            Eigene Nachweise kannst du jederzeit über den Upload-Kasten ergänzen.
           </p>
         ) : null}
 
@@ -552,6 +417,10 @@ export function PartnerStammDokumenteListe({
         variant="edit"
         dirty
         closeOnBackdrop={!saving}
+        busy={saving}
+        onConfirm={() => void submitUpload()}
+        confirmDisabled={saving}
+        confirmLabel="Hochladen"
       >
         <div className="flex flex-col gap-3">
           <label className="flex flex-col gap-1">

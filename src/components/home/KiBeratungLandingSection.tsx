@@ -8,7 +8,7 @@ const STEPS = [
   {
     n: "1",
     title: "Vorhaben schildern",
-    desc: "Bad, Heizung, Umbau — erzähl einfach, was ansteht.",
+    desc: "Bad, Heizung, Umbau — schildern Sie einfach, was ansteht.",
   },
   {
     n: "2",
@@ -35,7 +35,7 @@ export function KiBeratungLandingSection() {
           Von der Idee bis zur Anfrage — in einem Durchgang
         </h2>
         <p className="ki-beratung-landing-sub">
-          Beschreib dein Projekt, lass dir optional deinen Raum zeigen und hol dir
+          Beschreiben Sie Ihr Projekt, lassen Sie sich optional Ihren Raum zeigen und holen Sie sich
           einen Preisrahmen — ohne zwischen Masken zu springen. Mit einem
           Ansprechpartner in München.
         </p>

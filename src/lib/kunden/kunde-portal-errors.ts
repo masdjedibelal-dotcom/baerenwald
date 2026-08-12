@@ -19,7 +19,7 @@ export function mapKundenPortalError(
   error: { code?: string; message?: string } | string | null | undefined
 ): string {
   if (!error) {
-    return "Dein Konto konnte noch nicht automatisch zugeordnet werden. Bitte kontaktiere uns — wir helfen dir weiter.";
+    return "Ihr Konto konnte noch nicht automatisch zugeordnet werden. Bitte kontaktieren Sie uns — wir helfen Ihnen weiter.";
   }
 
   const payload =
@@ -27,14 +27,14 @@ export function mapKundenPortalError(
   const message = payload.message ?? "";
 
   if (isKundenEmailUniqueViolation(payload)) {
-    return "Diese E-Mail ist bereits mit einem anderen Portal-Konto verknüpft. Bitte wende dich an uns.";
+    return "Diese E-Mail ist bereits mit einem anderen Portal-Konto verknüpft. Bitte wenden Sie sich an uns.";
   }
 
   if (isTechnicalMessage(message)) {
-    return "Dein Konto konnte noch nicht automatisch zugeordnet werden. Bitte kontaktiere uns — wir helfen dir weiter.";
+    return "Ihr Konto konnte noch nicht automatisch zugeordnet werden. Bitte kontaktieren Sie uns — wir helfen Ihnen weiter.";
   }
 
   if (message.trim()) return message.trim();
 
-  return "Dein Konto konnte noch nicht automatisch zugeordnet werden. Bitte kontaktiere uns — wir helfen dir weiter.";
+  return "Ihr Konto konnte noch nicht automatisch zugeordnet werden. Bitte kontaktieren Sie uns — wir helfen Ihnen weiter.";
 }

@@ -35,11 +35,13 @@ type Props = {
   onSuccess: () => void;
   /** Optional: ohne Dokument weiter (Nein). */
   allowSkip?: boolean;
+  /** Direkt Preview/fehlende Daten laden (ohne Ja/Nein). Default: true bei Rechnung. */
+  skipAsk?: boolean;
 };
 
 /**
- * Auto-Dokument: Ja/Nein → ggf. fehlende Daten (Sheet) → Preview → Submit.
- * Erscheint jedes Mal, solange kein Dokument vorliegt (Parent steuert `open`).
+ * Auto-Dokument: optional Ja/Nein → ggf. fehlende Daten → Preview → Submit.
+ * Parent steuert `open` (z. B. Sticky-CTA Rechnung).
  */
 export function PartnerDokumentPreviewModal({
   open,
@@ -49,9 +51,11 @@ export function PartnerDokumentPreviewModal({
   onClose,
   onSuccess,
   allowSkip = true,
+  skipAsk,
 }: Props) {
   const router = useRouter();
-  const [step, setStep] = useState<Step>("ask");
+  const autoSkipAsk = skipAsk ?? art === "rechnung";
+  const [step, setStep] = useState<Step>(autoSkipAsk ? "preview" : "ask");
   const [loading, setLoading] = useState(false);
   const [previewLoading, setPreviewLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -82,33 +86,22 @@ export function PartnerDokumentPreviewModal({
     }));
   }, [regieDraft]);
 
-  useEffect(() => {
-    if (!open) {
-      setStep("ask");
-      setError(null);
-      setPreview(null);
-      setDokumentNr("");
-      setRegieDraft({});
-      return;
-    }
-    setStep("ask");
-    setError(null);
-  }, [open, anfrageId, art]);
+  const cancelLabel = art === "rechnung" ? "Abbrechen" : "Nein, ohne Dokument";
 
-  async function handleJa() {
+  async function loadPreview(withOverrides: AutoDocRegieOverride[] = []) {
     setLoading(true);
     setError(null);
     setPreviewLoading(true);
     const res = await previewPartnerAutoDokument({
       anfrageId,
       art,
-      overrides: [],
+      overrides: withOverrides,
     });
     setPreviewLoading(false);
     setLoading(false);
     if (!res.ok) {
       setError(res.error);
-      return;
+      return false;
     }
     setPreview(res.preview);
     setDokumentNr(res.preview.dokumentNr);
@@ -139,6 +132,32 @@ export function PartnerDokumentPreviewModal({
     } else {
       setStep("preview");
     }
+    return true;
+  }
+
+  useEffect(() => {
+    if (!open) {
+      setStep(autoSkipAsk ? "preview" : "ask");
+      setError(null);
+      setPreview(null);
+      setDokumentNr("");
+      setRegieDraft({});
+      setPreviewLoading(false);
+      setLoading(false);
+      return;
+    }
+    setError(null);
+    if (autoSkipAsk) {
+      void loadPreview([]);
+    } else {
+      setStep("ask");
+    }
+    // Nur bei Öffnen / Kontextwechsel laden — nicht bei jedem Render.
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- intentional open gate
+  }, [open, anfrageId, art, autoSkipAsk]);
+
+  async function handleJa() {
+    await loadPreview([]);
   }
 
   async function saveFehlendAndContinue() {
@@ -241,10 +260,10 @@ export function PartnerDokumentPreviewModal({
     step === "ask"
       ? "Aus Firmendaten und Leistungen — sichtbar bei dir und bei Bärenwald unter Dokumente."
       : step === "fehlend"
-        ? "Damit wir das Dokument automatisch erzeugen können."
+        ? "Angaben werden in deinen Firmendaten gespeichert."
         : art === "angebot"
           ? "Aus Firmendaten und bestätigten Konditionen"
-          : "Aus Firmendaten und erledigten Leistungen (Regie = Zeit × Stundensatz)";
+          : "Rechnungsnummer frei wählbar — Vorschlag aus deinem Nummerkreis.";
 
   const firmMissingKeys = new Set(
     (preview?.missingFields ?? [])
@@ -274,6 +293,29 @@ export function PartnerDokumentPreviewModal({
       variant={step === "fehlend" ? "edit" : "preview"}
       maxWidth={560}
       closeOnBackdrop={false}
+      busy={loading || previewLoading}
+      onConfirm={() => {
+        if (step === "ask") void handleJa();
+        else if (step === "fehlend") void saveFehlendAndContinue();
+        else void onSubmit();
+      }}
+      confirmDisabled={
+        loading ||
+        previewLoading ||
+        (step === "preview" &&
+          (!preview ||
+            preview.missingFields.length > 0 ||
+            !dokumentNr.trim()))
+      }
+      confirmLabel={
+        step === "ask"
+          ? "Ja, erstellen"
+          : step === "fehlend"
+            ? "Weiter zur Vorschau"
+            : art === "angebot"
+              ? "Angebot bestätigen"
+              : "Rechnung einreichen"
+      }
     >
       <div className="flex min-h-0 flex-1 flex-col">
         <div className="min-h-0 flex-1 space-y-4 overflow-y-auto pb-4">
@@ -613,7 +655,7 @@ export function PartnerDokumentPreviewModal({
                     background: "#fff",
                   }}
                 >
-                  Nein, ohne Dokument
+                  {cancelLabel}
                 </button>
               ) : null}
               <button
@@ -643,7 +685,7 @@ export function PartnerDokumentPreviewModal({
                   background: "#fff",
                 }}
               >
-                Nein, ohne Dokument
+                {cancelLabel}
               </button>
               <button
                 type="button"
@@ -663,7 +705,7 @@ export function PartnerDokumentPreviewModal({
             <>
               <button
                 type="button"
-                disabled={loading}
+                disabled={loading || previewLoading}
                 onClick={onClose}
                 className="rounded-[9px] border px-4 py-2.5 text-[13px] font-semibold"
                 style={{
@@ -672,7 +714,7 @@ export function PartnerDokumentPreviewModal({
                   background: "#fff",
                 }}
               >
-                Nein, ohne Dokument
+                {cancelLabel}
               </button>
               <button
                 type="button"

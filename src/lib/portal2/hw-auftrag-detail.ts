@@ -9,16 +9,16 @@ export const HW_AUFTRAG_COPY = {
   beschreibungTitle: "Beschreibung",
   ausfuehrenTitle: "Auftrag ausführen",
   ausfuehrenBody:
-    "Dokumentieren Sie je Leistung: Startfoto → optional Fortschritt → Endfoto. Bei Regie/Aufwand Zeit miterfassen.",
+    "Dokumentieren Sie je Leistung: Update-Foto → optional weiteres Update → Endfoto. Bei Regie/Aufwand Zeit miterfassen.",
   ausfuehrenCta: "Abschließen",
   ausfuehrenHint:
-    "Nach Dokumentation je Leistung: Abnahme mit Signatur. Danach Rechnung prüfen & einreichen.",
+    "Nach Updates je Leistung: Abnahme mit Signatur. Danach Rechnung prüfen & einreichen.",
   leistungenTitle: "Leistungen",
-  einsatzTitle: "Einsatz",
+  einsatzTitle: "Details",
   verlaufTitle: "Verlauf",
   bautagebuchTitle: "Zusatznotiz für die Verwaltung",
   bautagebuchHint:
-    "Zusatznotiz an die HV — kein Ersatz für Start-/Endfotos je Leistung.",
+    "Zusatznotiz an die HV — kein Ersatz für Update-/Endfotos je Leistung.",
   unterlagenTitle: "Dokumente",
   statusBeauftragt: "Beauftragt",
 } as const;

@@ -120,7 +120,7 @@ export function FachdetailsStep({
     >
       {showOmitHint ? (
         <p className="mb-3 rounded-lg border border-border-default bg-surface-muted px-3 py-2 text-sm text-text-secondary">
-          Du hast viele Bereiche gewählt — wir gehen die wichtigsten Schritte
+          Sie haben viele Bereiche gewählt — wir gehen die wichtigsten Schritte
           nacheinander durch.
         </p>
       ) : null}

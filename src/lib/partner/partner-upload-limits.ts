@@ -39,6 +39,9 @@ export function validatePartnerPdfFile(
 export function validatePartnerPhotoFile(file: File): string | null {
   const allowed = new Set(["image/jpeg", "image/jpg", "image/png", "image/webp"]);
   const mime = (file.type || "image/jpeg").toLowerCase();
+  if (mime.includes("heic") || mime.includes("heif")) {
+    return "HEIC wird nicht unterstützt — bitte erneut mit Kamera aufnehmen (wird als JPG gespeichert).";
+  }
   if (!allowed.has(mime)) {
     return "Nur JPG, PNG oder WebP erlaubt.";
   }

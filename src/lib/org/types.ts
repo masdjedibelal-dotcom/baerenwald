@@ -139,8 +139,14 @@ export type OrganisationLead = {
   zeitraum?: string | null;
   kontakt_name?: string | null;
   objekt?: {
-    titel: string;
+    /** PortalObjekt.name oder Legacy-Titel */
+    name?: string;
+    titel?: string;
+    strasse?: string | null;
     adresseZeile?: string;
+    plz?: string | null;
+    ort?: string | null;
     plzOrt?: string;
+    cover_url?: string | null;
   } | null;
 };

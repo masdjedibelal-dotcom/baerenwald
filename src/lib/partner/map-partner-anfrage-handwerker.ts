@@ -14,6 +14,7 @@ import { parseWizardMetaFromNotizen, resolveAngebotTitel } from "@/lib/portal/po
 import { parsePartnerHwKonditionen } from "@/lib/partner/partner-konditionen";
 
 export const PARTNER_LEAD_EMBED = `
+  id,
   situation,
   bereiche,
   plz,
@@ -21,6 +22,8 @@ export const PARTNER_LEAD_EMBED = `
   hausnummer,
   zeitraum,
   funnel_daten,
+  anlass,
+  kanal,
   preis_min,
   preis_max,
   budget_ca,
@@ -33,7 +36,8 @@ export const PARTNER_LEAD_EMBED = `
   melder_name,
   melder_einheit,
   melder_telefon,
-  melder_email
+  melder_email,
+  geloescht_am
 `;
 
 export const PARTNER_ANGEBOT_EMBED = `

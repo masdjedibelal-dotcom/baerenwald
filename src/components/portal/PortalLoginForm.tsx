@@ -108,7 +108,7 @@ export function PortalLoginForm({
           );
         } else if (msg.includes("banned") || msg.includes("user is banned")) {
           setError(
-            "Diese Kontaktadresse ist gesperrt. Bitte wende dich an uns, wenn du Hilfe brauchst."
+            "Diese Kontaktadresse ist gesperrt. Bitte wenden Sie sich an uns, wenn Sie Hilfe brauchen."
           );
         } else {
           setError("E-Mail oder Passwort ist ungültig.");
@@ -162,6 +162,28 @@ export function PortalLoginForm({
       {hint === "password-updated" ? (
         <p className="mb-4 rounded-lg bg-accent-light/60 px-3 py-3 text-sm text-accent">
           Ihr Passwort wurde gespeichert. Sie können sich jetzt anmelden.
+        </p>
+      ) : null}
+      {hint === "crm_enter_invalid" ? (
+        <p className="mb-4 rounded-lg bg-red-50 px-3 py-3 text-sm text-red-800">
+          Der CRM-Portal-Link ist ungültig oder abgelaufen. Bitte im CRM erneut
+          „Login“ / „Portal öffnen“ klicken. Prüfen Sie lokal, dass
+          PARTNER_INTERNAL_API_SECRET in CRM und Portal identisch gesetzt ist.
+        </p>
+      ) : null}
+      {hint === "crm_enter_failed" ? (
+        <p className="mb-4 rounded-lg bg-red-50 px-3 py-3 text-sm text-red-800">
+          Automatische Anmeldung aus dem CRM ist fehlgeschlagen
+          {searchParams.get("msg")
+            ? `: ${decodeURIComponent(searchParams.get("msg") || "")}`
+            : "."}{" "}
+          Bitte erneut versuchen oder manuell anmelden.
+        </p>
+      ) : null}
+      {hint === "session_mismatch" ? (
+        <p className="mb-4 rounded-lg bg-amber-50 px-3 py-3 text-sm text-amber-900">
+          Die Sitzung passt nicht zu einem Kundenkonto. Bitte mit der im CRM
+          hinterlegten E-Mail anmelden.
         </p>
       ) : null}
       {authError ? (

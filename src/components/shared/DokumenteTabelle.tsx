@@ -4,16 +4,22 @@ import { useRef, useState, type ReactNode } from "react";
 import { Download, Upload } from "lucide-react";
 
 import { PdfFileIcon } from "@/components/shared/PdfFileIcon";
+import { PortalDokumentCard } from "@/components/shared/PortalDokumentCard";
 import { useOptionalPortalDocViewer } from "@/components/shared/PortalDocViewerContext";
-import { detectPortalDocKind } from "@/lib/portal2/doc-viewer";
+import {
+  detectPortalDocKind,
+  shouldAvoidNativePdfNavigation,
+} from "@/lib/portal2/doc-viewer";
 import { cn } from "@/lib/utils";
 
 export type DokumentZeile = {
   id: string;
   datum?: string | null;
   name: string;
+  /** Beschreibung unter dem Titel */
+  beschreibung?: string | null;
   href?: string;
-  /** Optional Meta für docViewer (z. B. „PDF · 214 KB“) */
+  /** Zusatzinfo (z. B. „PDF · 214 KB“) */
   meta?: string | null;
 };
 
@@ -67,7 +73,7 @@ function UploadZone({
       tabIndex={upload.disabled ? -1 : 0}
       className={cn(
         "cursor-pointer outline-none transition-colors",
-        dragOver && "bg-accent-light/25",
+        dragOver && "border-accent bg-accent-light/25",
         upload.disabled && "cursor-not-allowed opacity-60",
         className
       )}
@@ -120,7 +126,7 @@ function DocActions({
     return <span className="portal-text-meta text-text-tertiary">—</span>;
   }
   return (
-    <div className="flex items-center justify-end gap-1">
+    <>
       <button
         type="button"
         onClick={() => onOpen(doc)}
@@ -137,32 +143,7 @@ function DocActions({
       >
         <Download className="h-4 w-4" />
       </a>
-    </div>
-  );
-}
-
-function UploadStrip({ upload }: { upload: DokumenteTabelleUpload }) {
-  return (
-    <UploadZone
-      upload={upload}
-      className="rounded-xl border border-dashed border-border-light bg-muted/10 px-3 py-3 sm:rounded-none sm:border-x-0 sm:border-b-0 sm:border-t"
-    >
-      <div className="flex items-center gap-2 text-text-secondary">
-        <Upload className="h-4 w-4 shrink-0 text-accent" aria-hidden />
-        <div className="min-w-0">
-          <p className="portal-text-body font-medium text-text-primary">
-            Weitere Dokumente hinzufügen
-          </p>
-          {upload.hint ? (
-            <p className="portal-text-meta text-text-tertiary">{upload.hint}</p>
-          ) : (
-            <p className="portal-text-meta text-text-tertiary">
-              Tippen oder Datei hier ablegen
-            </p>
-          )}
-        </div>
-      </div>
-    </UploadZone>
+    </>
   );
 }
 
@@ -170,7 +151,7 @@ function UploadFooter({ upload }: { upload: DokumenteTabelleUpload }) {
   if (!(upload.selectedLabel || upload.error || upload.onSubmit)) return null;
   return (
     <div
-      className="space-y-2 rounded-xl border border-border-light bg-muted/15 px-3 py-3 sm:rounded-none sm:border-x-0 sm:border-b-0 sm:border-t"
+      className="space-y-2 rounded-xl border border-border-default bg-muted/15 px-3.5 py-3"
       onClick={(e) => e.stopPropagation()}
       onKeyDown={(e) => e.stopPropagation()}
     >
@@ -232,24 +213,50 @@ export function DokumenteTabelle({
       });
       return;
     }
+    if (
+      detectPortalDocKind(doc.name) === "pdf" ||
+      detectPortalDocKind(url) === "pdf"
+    ) {
+      if (shouldAvoidNativePdfNavigation()) {
+        void (async () => {
+          try {
+            const {
+              fetchPortalDocBlob,
+              downloadPortalBlob,
+              portalDocDownloadName,
+            } = await import("@/lib/portal2/doc-viewer");
+            const blob = await fetchPortalDocBlob(url);
+            downloadPortalBlob(blob, portalDocDownloadName(doc.name, "pdf"));
+          } catch {
+            /* ignore */
+          }
+        })();
+        return;
+      }
+    }
     window.open(url, "_blank", "noopener,noreferrer");
   }
 
   return (
-    <section className={cn("space-y-2.5 border-t border-border-light pt-5", className)}>
+    <section
+      className={cn("space-y-2.5 border-t border-border-light pt-5", className)}
+    >
       {heading?.trim() ? (
         <h4 className="portal-text-section">{heading}</h4>
       ) : null}
 
       {dokumente.length === 0 ? (
-        <div className="overflow-hidden rounded-xl border border-dashed border-border-light">
+        <div className="space-y-3">
           {upload ? (
-            <UploadZone upload={upload} className="bg-muted/20 px-3 py-8 text-center">
+            <UploadZone
+              upload={upload}
+              className="rounded-xl border-2 border-dashed border-border-default bg-[var(--p2-selected,#f0f2f0)] px-4 py-8 text-center hover:bg-[var(--p2-hover,#eef1ef)]"
+            >
               <Upload
-                className="mx-auto mb-2 h-6 w-6 text-text-tertiary"
+                className="mx-auto mb-2 h-6 w-6 text-text-secondary"
                 aria-hidden
               />
-              <p className="portal-text-body font-medium text-text-primary">
+              <p className="portal-text-body font-semibold text-text-primary">
                 {emptyText}
               </p>
               <p className="portal-text-meta mt-1 text-text-secondary">
@@ -262,105 +269,73 @@ export function DokumenteTabelle({
               ) : null}
             </UploadZone>
           ) : (
-            <p className="portal-text-body bg-muted/20 px-3 py-5 text-center text-text-secondary">
+            <p className="portal-text-body rounded-xl border border-dashed border-border-light bg-muted/15 px-4 py-8 text-center text-text-secondary">
               {emptyText}
             </p>
           )}
           {upload ? <UploadFooter upload={upload} /> : null}
         </div>
       ) : (
-        <>
-          {/* Mobil: Cards */}
-          <div className="space-y-2.5 sm:hidden">
-            {dokumente.map((doc) => {
-              const datum = fmtDatum(doc.datum);
-              return (
-                <article
-                  key={doc.id}
-                  className="rounded-xl border border-border-light bg-white px-3.5 py-3.5 shadow-[0_1px_2px_rgba(22,32,27,0.04)]"
-                >
-                  <div className="min-w-0">
-                    {doc.href?.trim() ? (
-                      <button
-                        type="button"
-                        className="portal-text-body line-clamp-2 text-left font-medium text-text-primary hover:underline"
-                        onClick={() => openOrFallback(doc)}
-                      >
-                        {doc.name}
-                      </button>
-                    ) : (
-                      <p className="portal-text-body line-clamp-2 font-medium text-text-primary">
-                        {doc.name}
-                      </p>
-                    )}
-                    {doc.meta?.trim() ? (
-                      <p className="portal-text-meta mt-1 text-text-secondary">
-                        {doc.meta.trim()}
-                      </p>
-                    ) : null}
-                  </div>
-                  <div className="mt-3 flex items-center justify-between gap-2 border-t border-border-light pt-3">
-                    <p className="portal-text-meta tabular-nums text-text-tertiary">
-                      {datum !== "—" ? `Datum · ${datum}` : "Kein Datum"}
-                    </p>
-                    <DocActions doc={doc} onOpen={openOrFallback} />
-                  </div>
-                </article>
-              );
-            })}
-            {upload ? (
-              <div className="space-y-2">
-                <UploadStrip upload={upload} />
-                <UploadFooter upload={upload} />
-              </div>
-            ) : null}
-          </div>
+        <div className="space-y-2.5">
+          {dokumente.map((doc) => {
+            const datum = fmtDatum(doc.datum);
+            const description = doc.beschreibung?.trim() || null;
+            const metaBits = [
+              datum !== "—" ? `Datum · ${datum}` : null,
+              doc.meta?.trim() || null,
+            ].filter(Boolean) as string[];
 
-          {/* Desktop: Tabelle */}
-          <div className="hidden overflow-hidden rounded-xl border border-border-light sm:block">
-            <table className="portal-text-body w-full">
-              <thead>
-                <tr className="portal-text-meta border-b border-border-light bg-muted/30 text-left text-text-tertiary">
-                  <th className="px-3 py-2.5 font-semibold">Datum</th>
-                  <th className="px-3 py-2.5 font-semibold">Dateiname</th>
-                  <th className="w-[5.5rem] px-2 py-2.5 text-right font-semibold">
-                    Aktionen
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {dokumente.map((doc) => (
-                  <tr
-                    key={doc.id}
-                    className="border-b border-border-light last:border-b-0"
-                  >
-                    <td className="whitespace-nowrap px-3 py-3 text-text-secondary tabular-nums">
-                      {fmtDatum(doc.datum)}
-                    </td>
-                    <td className="min-w-0 px-3 py-3 font-medium text-text-primary">
-                      {doc.href?.trim() ? (
-                        <button
-                          type="button"
-                          className="line-clamp-2 text-left hover:underline"
-                          onClick={() => openOrFallback(doc)}
+            return (
+              <PortalDokumentCard
+                key={doc.id}
+                title={doc.name}
+                description={description}
+                meta={
+                  metaBits.length > 0 ? (
+                    <>
+                      {metaBits.map((bit) => (
+                        <span
+                          key={bit}
+                          className="portal-text-meta text-text-tertiary"
                         >
-                          {doc.name}
-                        </button>
-                      ) : (
-                        <span className="line-clamp-2">{doc.name}</span>
-                      )}
-                    </td>
-                    <td className="px-2 py-2 text-right">
-                      <DocActions doc={doc} onOpen={openOrFallback} />
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-            {upload ? <UploadStrip upload={upload} /> : null}
-            {upload ? <UploadFooter upload={upload} /> : null}
-          </div>
-        </>
+                          {bit}
+                        </span>
+                      ))}
+                    </>
+                  ) : (
+                    <span className="portal-text-meta text-text-tertiary">
+                      Kein Datum
+                    </span>
+                  )
+                }
+                actions={<DocActions doc={doc} onOpen={openOrFallback} />}
+              />
+            );
+          })}
+
+          {upload ? (
+            <div className="space-y-2.5 pt-1">
+              <UploadZone
+                upload={upload}
+                className="flex items-center gap-2 rounded-xl border-2 border-dashed border-border-default bg-[var(--p2-selected,#f0f2f0)] px-3.5 py-4 hover:bg-[var(--p2-hover,#eef1ef)]"
+              >
+                <Upload
+                  className="h-5 w-5 shrink-0 text-accent"
+                  aria-hidden
+                />
+                <div className="min-w-0">
+                  <p className="portal-text-body font-semibold text-text-primary">
+                    Weitere Dokumente hinzufügen
+                  </p>
+                  <p className="portal-text-meta text-text-tertiary">
+                    {upload.hint?.trim() || "Tippen oder Datei hier ablegen"}
+                  </p>
+                </div>
+              </UploadZone>
+              <UploadFooter upload={upload} />
+            </div>
+          ) : null}
+        </div>
       )}
     </section>
   );
@@ -379,7 +354,8 @@ export function portalDokumenteToZeilen(
   return docs.map((d) => ({
     id: d.id,
     datum: d.datum,
-    name: d.subtitle ? `${d.name} — ${d.subtitle}` : d.name,
+    name: d.name,
+    beschreibung: d.subtitle?.trim() || undefined,
     href: d.href?.trim() || undefined,
     meta: d.meta?.trim() || undefined,
   }));

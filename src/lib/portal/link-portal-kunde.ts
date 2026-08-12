@@ -27,7 +27,7 @@ function fail(
 }
 
 const PORTAL_ACCOUNT_CONFLICT =
-  "Diese E-Mail ist bereits mit einem anderen Portal-Konto verknüpft. Bitte wende dich an uns.";
+  "Diese E-Mail ist bereits mit einem anderen Portal-Konto verknüpft. Bitte wenden Sie sich an uns.";
 
 export type LinkPortalKundeResult =
   | { ok: true; kundeId: string }

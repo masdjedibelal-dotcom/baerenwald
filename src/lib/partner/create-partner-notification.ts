@@ -35,6 +35,40 @@ function systemFrom(): string {
   );
 }
 
+function schedulePartnerPush(input: {
+  handwerkerId: string;
+  typ: PartnerNotificationTyp;
+  projektName: string;
+  leistungName?: string | null;
+  link: string;
+}): void {
+  void import("@/lib/push/resolve-recipients")
+    .then(async ({ resolveHandwerkerAuthUserId }) => {
+      const { buildPushPayloadFromNotif } = await import("@/lib/push/payload");
+      const { scheduleWebPushToUsers } = await import(
+        "@/lib/push/send-web-push"
+      );
+      const uid = await resolveHandwerkerAuthUserId(input.handwerkerId);
+      if (!uid) return;
+      const subject = partnerNotificationSubject(
+        input.typ,
+        input.projektName,
+        input.leistungName
+      );
+      scheduleWebPushToUsers(
+        [uid],
+        buildPushPayloadFromNotif({
+          typ: input.typ,
+          titel: subject,
+          body: "Bitte im Partner-Portal prüfen.",
+          link: input.link,
+          defaultUrl: "/partner",
+        })
+      );
+    })
+    .catch((e) => console.error("[createPartnerNotification] push:", e));
+}
+
 export type PartnerNotifyInput = {
   handwerkerId: string;
   typ: PartnerNotificationTyp;
@@ -128,6 +162,15 @@ export async function createPartnerNotification(
         .eq("id", existing.id);
 
       if (updErr) return { ok: false, error: updErr.message };
+
+      void schedulePartnerPush({
+        handwerkerId,
+        typ: notifyTyp,
+        projektName: input.projektName,
+        leistungName: input.leistungName,
+        link,
+      });
+
       return { ok: true, notificationId: String(existing.id), deduplicated: true };
     }
   }
@@ -146,6 +189,14 @@ export async function createPartnerNotification(
     .single();
 
   if (insErr) return { ok: false, error: insErr.message };
+
+  void schedulePartnerPush({
+    handwerkerId,
+    typ: notifyTyp,
+    projektName: input.projektName,
+    leistungName: input.leistungName,
+    link,
+  });
 
   const { data: hw } = await supabaseAdmin
     .from("handwerker")

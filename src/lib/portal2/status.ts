@@ -29,8 +29,9 @@ export const PORTAL_STATUS: Record<PortalMockStatusId, PortalMockStatusMeta> = {
   gemeldet: {
     id: "gemeldet",
     label: "Neu",
-    color: "#1F4FA8",
-    bg: "#E4ECF7",
+    /** Offen/Eingang — Orange, damit nicht wie Angebot/Auftrag (Blau) wirkt. */
+    color: "#C2410C",
+    bg: "#FFF7ED",
   },
   freigegeben: {
     id: "freigegeben",
@@ -53,8 +54,8 @@ export const PORTAL_STATUS: Record<PortalMockStatusId, PortalMockStatusMeta> = {
   auftrag: {
     id: "auftrag",
     label: "Auftrag",
-    color: "#1F6A3F",
-    bg: "#DDEEDF",
+    color: "#1F4FA8",
+    bg: "#E4ECF7",
   },
   abschluss: {
     id: "abschluss",

@@ -9,7 +9,7 @@ export const runtime = "nodejs";
 type Ctx = { params: Promise<{ id: string }> };
 
 /**
- * Detail on demand inkl. Signed URLs (Bautagebuch, Abnahme, Befund).
+ * Detail on demand inkl. Signed URLs (Dokumentation, Abnahme).
  * Query: ?hv=1 für Organisations-Portal.
  */
 export async function GET(req: Request, ctx: Ctx) {
@@ -55,6 +55,5 @@ export async function GET(req: Request, ctx: Ctx) {
   return NextResponse.json({
     ok: true,
     item: detail.item,
-    partnerBefund: detail.partnerBefund ?? null,
   });
 }

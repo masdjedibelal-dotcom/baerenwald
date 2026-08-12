@@ -54,12 +54,22 @@ export function leadAddressFromFunnel(
     !Array.isArray(lead.funnel_daten)
       ? (lead.funnel_daten as Record<string, unknown>)
       : null;
+  const mieter =
+    fd?.mieter &&
+    typeof fd.mieter === "object" &&
+    !Array.isArray(fd.mieter) &&
+    fd.ohne_mieter !== true
+      ? (fd.mieter as Record<string, unknown>)
+      : null;
+  const str = (v: unknown) =>
+    typeof v === "string" && v.trim() ? v.trim() : null;
   const ortFromFunnel =
-    typeof fd?.ort === "string" && fd.ort.trim() ? fd.ort.trim() : null;
+    str(fd?.ort) || str(mieter?.ort) || null;
   return {
-    strasse: lead.strasse,
-    hausnummer: lead.hausnummer,
-    plz: lead.plz,
+    strasse: str(lead.strasse) || str(fd?.strasse) || str(mieter?.strasse),
+    hausnummer:
+      str(lead.hausnummer) || str(fd?.hausnummer) || str(mieter?.hausnummer),
+    plz: str(lead.plz) || str(fd?.plz) || str(mieter?.plz),
     ort: ortFromFunnel,
   };
 }

@@ -52,7 +52,7 @@ export function PortalSetPasswordForm({
     return (
       <PortalAuthBusy
         title="Passwort wird gespeichert…"
-        body="Einen Moment — danach kannst du dich mit dem neuen Passwort anmelden."
+        body="Einen Moment — danach können Sie sich mit dem neuen Passwort anmelden."
       />
     );
   }

@@ -17,15 +17,15 @@ export function EinstellungenPfRow({
   label,
   value,
 }: {
-  label: string;
+  label: ReactNode;
   value: string;
 }) {
   return (
     <div className="min-w-0 py-0.5">
-      <p className="text-[12px] font-medium text-text-tertiary">{label}</p>
-      <p className="mt-0.5 text-[14px] leading-snug text-text-primary">
-        {value}
-      </p>
+      <div className="portal-text-label normal-case tracking-wide text-text-tertiary">
+        {label}
+      </div>
+      <p className="portal-text-card-title mt-0.5 font-semibold">{value}</p>
     </div>
   );
 }
@@ -55,7 +55,7 @@ export function EinstellungenEdField({
       </span>
       <input
         type={type}
-        className="w-full rounded-[9px] border border-border-default bg-white px-3 py-2.5 text-[13.5px] text-text-primary outline-none focus:border-accent disabled:cursor-not-allowed disabled:opacity-70"
+        className="portal-field w-full"
         value={value}
         placeholder={placeholder}
         disabled={disabled}
@@ -145,6 +145,10 @@ export function EinstellungenEditModal({
       variant="edit"
       dirty={dirty && !saving}
       closeOnBackdrop={!saving}
+      onConfirm={onSave}
+      confirmDisabled={saving || saveDisabled}
+      confirmLabel={saveLabel}
+      busy={Boolean(saving)}
     >
       <div
         className="flex flex-col gap-3"
@@ -153,10 +157,10 @@ export function EinstellungenEditModal({
       >
         {children}
       </div>
-      <div className="mt-5 flex flex-wrap justify-end gap-2">
+      <div className="portal-action-row mt-5">
         <button
           type="button"
-          className="btn-pill-outline portal-btn"
+          className="portal-action-btn portal-action-btn--secondary"
           disabled={saving}
           onClick={onClose}
         >
@@ -164,7 +168,7 @@ export function EinstellungenEditModal({
         </button>
         <button
           type="button"
-          className="btn-pill-primary portal-btn"
+          className="portal-action-btn portal-action-btn--primary"
           disabled={saving || saveDisabled}
           onClick={onSave}
         >
@@ -213,13 +217,8 @@ export function EinstellungenChoiceCard({
         ) : null}
       </span>
       <span className="min-w-0">
-        <span className="block text-[13.5px] font-semibold text-text-primary">
-          {title}
-        </span>
-        <span
-          className="mt-0.5 block text-[12.5px] leading-snug"
-          style={{ color: PORTAL_VAR.sub }}
-        >
+        <span className="portal-text-card-title block">{title}</span>
+        <span className="portal-text-meta mt-0.5 block" style={{ color: PORTAL_VAR.sub }}>
           {description}
         </span>
       </span>
@@ -298,8 +297,7 @@ export function EinstellungenSchwelleSlider({
         aria-valuetext={formatEinstellungenSchwelle(value)}
       />
       <span
-        className="w-[110px] shrink-0 text-right text-[20px] font-bold text-accent"
-        style={{ fontFamily: "var(--p2-font-head, " + PORTAL_VAR.head + ")" }}
+        className="portal-text-title w-[110px] shrink-0 text-right text-accent tabular-nums"
       >
         {formatEinstellungenSchwelle(value)}
       </span>
@@ -317,12 +315,8 @@ export function EinstellungenObjektSchwelleRow({
 }) {
   return (
     <div className="flex items-center justify-between gap-3 rounded-[9px] border border-border-default px-[13px] py-[11px]">
-      <span className="min-w-0 truncate text-[13.5px] font-semibold text-text-primary">
-        {name}
-      </span>
-      <span className="shrink-0 text-[13.5px] font-semibold text-accent">
-        {value}
-      </span>
+      <span className="portal-text-card-title min-w-0 truncate">{name}</span>
+      <span className="portal-text-card-title shrink-0 text-accent">{value}</span>
     </div>
   );
 }
@@ -354,7 +348,15 @@ export function EinstellungenEuroSlider({
     }).format(value);
 
   return (
-    <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-4">
+    <div className="flex flex-col gap-2.5">
+      <div className="flex items-baseline justify-between gap-2">
+        <span className="portal-text-meta" style={{ color: PORTAL_VAR.sub }}>
+          Schwellenwert
+        </span>
+        <span className="portal-text-card-title tabular-nums text-accent">
+          {label}
+        </span>
+      </div>
       <input
         type="range"
         min={min}
@@ -363,15 +365,38 @@ export function EinstellungenEuroSlider({
         disabled={disabled}
         value={Number.isFinite(value) ? value : min}
         onChange={(e) => onChange(Number(e.target.value))}
-        className="h-2 w-full flex-1 cursor-pointer appearance-none rounded-full bg-border-default accent-[var(--accent,#2F5D50)] disabled:cursor-not-allowed disabled:opacity-60"
+        className="h-2 w-full cursor-pointer appearance-none rounded-full bg-border-default accent-[var(--accent,#2F5D50)] disabled:cursor-not-allowed disabled:opacity-60"
         aria-valuemin={min}
         aria-valuemax={max}
         aria-valuenow={value}
-        aria-label="Betrag"
+        aria-label="Freigabeschwelle"
       />
-      <span className="shrink-0 text-right font-[family-name:var(--font-display)] text-lg font-bold text-accent tabular-nums sm:w-[110px]">
-        {label}
-      </span>
+    </div>
+  );
+}
+
+/** Toggle-Karte + optionaler Inhalt darunter (gleicher Sheet-Card-Stil). */
+export function EinstellungenSheetCard({
+  title,
+  description,
+  children,
+}: {
+  title: string;
+  description?: string;
+  children?: ReactNode;
+}) {
+  return (
+    <div className="rounded-[11px] border border-border-default bg-white px-3.5 py-[13px]">
+      <p className="portal-text-card-title">{title}</p>
+      {description ? (
+        <p
+          className="portal-text-meta mt-1"
+          style={{ color: PORTAL_VAR.sub }}
+        >
+          {description}
+        </p>
+      ) : null}
+      {children ? <div className="mt-3">{children}</div> : null}
     </div>
   );
 }
@@ -418,43 +443,45 @@ export function EinstellungenToggle({
   checked: boolean;
   onChange: (checked: boolean) => void;
   disabled?: boolean;
-  title: string;
-  description?: string;
+  title: ReactNode;
+  description?: ReactNode;
 }) {
   return (
-    <button
-      type="button"
-      disabled={disabled}
-      onClick={() => onChange(!checked)}
-      className="flex w-full items-start gap-3 rounded-[11px] border border-border-default px-3.5 py-[13px] text-left disabled:opacity-60"
+    <div
+      className={cn(
+        "flex w-full items-start gap-3 rounded-[11px] border border-border-default px-3.5 py-[13px]",
+        disabled && "opacity-60"
+      )}
     >
-      <span
+      <button
+        type="button"
+        disabled={disabled}
+        aria-pressed={checked}
+        onClick={() => onChange(!checked)}
         className={cn(
-          "relative mt-0.5 h-[26px] w-11 shrink-0 rounded-full transition-colors",
+          "relative mt-0.5 h-[26px] w-11 shrink-0 rounded-full transition-colors disabled:cursor-not-allowed",
           checked ? "bg-accent" : "bg-[#cfd4d2]"
         )}
-        aria-hidden
       >
         <span
           className={cn(
             "absolute top-[3px] h-5 w-5 rounded-full bg-white shadow transition-[left]",
             checked ? "left-[21px]" : "left-[3px]"
           )}
+          aria-hidden
         />
-      </span>
-      <span className="min-w-0">
-        <span className="block text-[13.5px] font-semibold text-text-primary">
-          {title}
-        </span>
+      </button>
+      <div className="min-w-0 flex-1">
+        <div className="portal-text-card-title">{title}</div>
         {description ? (
-          <span
-            className="mt-1 block text-[13px] leading-snug"
+          <div
+            className="portal-text-meta mt-1"
             style={{ color: PORTAL_VAR.sub }}
           >
             {description}
-          </span>
+          </div>
         ) : null}
-      </span>
-    </button>
+      </div>
+    </div>
   );
 }

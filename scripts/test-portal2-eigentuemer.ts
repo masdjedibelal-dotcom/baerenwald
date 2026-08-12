@@ -1,21 +1,12 @@
 /**
- * Portal 2.0 D8 — Eigentümer-Rolle + Kostenfreigabe.
+ * Portal 2.0 D8 — Eigentümer-Rolle (Status-only: neu / updates / abgeschlossen).
  */
-import {
-  EIGENTUEMER_DEFAULT_SCHWELLE_EUR,
-  EIGENTUEMER_KOSTENFREIGABE_TITLE,
-  eigentuemerNeedsKostenfreigabe,
-  filterLeadsByEigentuemerObjekte,
-  formatEigentuemerKostenfreigabeBody,
-  formatEigentuemerKostenfreigabeNotif,
-  formatEigentuemerSchwelle,
-} from "../src/lib/portal2/eigentuemer";
-import { portalCreateLabel as createLabelFromCreate } from "../src/lib/portal2/create";
+import { filterLeadsByEigentuemerObjekte } from "../src/lib/portal2/eigentuemer";
 import { buildPortalShellNav, getPortalNavItems } from "../src/lib/portal2/nav-items";
 import {
   formatPortalNotifTemplate,
+  PORTAL_NOTIF_ROLE_TITLES,
   PORTAL_NOTIF_TEMPLATES,
-  PORTAL_NOTIF_VISUAL,
 } from "../src/lib/portal2/notif-types";
 import { resolveEigentuemerVorgangBetrag } from "../src/lib/portal/get-eigentuemer-portal-data";
 
@@ -43,62 +34,29 @@ assert("shell 3 items", shell.length === 3);
 assert("shell objekte", shell[2]!.id === "objekte" && shell[2]!.label === "Objekte");
 
 assert(
-  "create label",
-  createLabelFromCreate("eigentuemer") === "Anfrage erstellen"
-);
-
-assert("default schwelle", EIGENTUEMER_DEFAULT_SCHWELLE_EUR === 500);
-assert(
-  "schwelle format",
-  formatEigentuemerSchwelle(500).includes("500")
+  "role titles status-only",
+  PORTAL_NOTIF_ROLE_TITLES.eigentuemer?.auftrag === "Neuer Vorgang" &&
+    PORTAL_NOTIF_ROLE_TITLES.eigentuemer?.info === "Update zu Ihrem Objekt" &&
+    PORTAL_NOTIF_ROLE_TITLES.eigentuemer?.status === "Vorgang abgeschlossen"
 );
 
 assert(
-  "needs freigabe über Schwelle",
-  eigentuemerNeedsKostenfreigabe({
-    betragEur: 750,
-    schwelleEur: 500,
-    freigabeStatus: "ausstehend",
-  })
+  "template neu",
+  formatPortalNotifTemplate(PORTAL_NOTIF_TEMPLATES.eigentuemer.auftrag, {
+    titel: "Wasserschaden",
+  }) === 'Neuer Vorgang „Wasserschaden" an Ihrem Objekt.'
 );
 assert(
-  "needs freigabe unter Schwelle",
-  !eigentuemerNeedsKostenfreigabe({
-    betragEur: 400,
-    schwelleEur: 500,
-  })
+  "template update",
+  formatPortalNotifTemplate(PORTAL_NOTIF_TEMPLATES.eigentuemer.info, {
+    titel: "Wasserschaden",
+  }) === 'Update zu „Wasserschaden".'
 );
 assert(
-  "needs freigabe schon freigegeben",
-  !eigentuemerNeedsKostenfreigabe({
-    betragEur: 900,
-    schwelleEur: 500,
-    freigabeStatus: "freigegeben",
-  })
-);
-
-const notif = formatEigentuemerKostenfreigabeNotif({
-  vg: "V-1042",
-  schwelleEur: 500,
-});
-assert("notif title", notif.title === EIGENTUEMER_KOSTENFREIGABE_TITLE);
-assert(
-  "notif body",
-  notif.body === formatEigentuemerKostenfreigabeBody("V-1042", 500) &&
-    notif.body.includes("V-1042") &&
-    notif.body.includes("Schwellenwert")
-);
-
-assert(
-  "visual freigabe title",
-  PORTAL_NOTIF_VISUAL.freigabe.title === "Kostenfreigabe nötig"
-);
-assert(
-  "template body",
-  formatPortalNotifTemplate(PORTAL_NOTIF_TEMPLATES.eigentuemer.freigabe, {
-    vg: "V-1042",
-    betrag: "500 €",
-  }) === "V-1042 überschreitet Ihren Schwellenwert (500 €)."
+  "template abgeschlossen",
+  formatPortalNotifTemplate(PORTAL_NOTIF_TEMPLATES.eigentuemer.status, {
+    titel: "Wasserschaden",
+  }) === '„Wasserschaden" wurde abgeschlossen.'
 );
 
 const filtered = filterLeadsByEigentuemerObjekte(

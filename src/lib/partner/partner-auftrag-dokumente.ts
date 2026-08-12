@@ -119,7 +119,7 @@ export function partnerAuftragKannRechnungHochladen(item: PartnerAuftragItem): b
   );
 }
 
-/** Auto-Rechnung-Prompt erneut, solange nicht eingereicht. */
+/** @deprecated Sticky-CTA nutzt `partnerAuftragKannRechnungHochladen`. */
 export function partnerNeedsAutoRechnungPrompt(item: PartnerAuftragItem): boolean {
   return partnerAuftragKannRechnungHochladen(item);
 }

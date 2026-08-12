@@ -10,7 +10,7 @@ type Props = {
 export function ConversionServiceInputs({ value, onChange }: Props) {
   return (
     <div className="conversion-service-inputs">
-      <p className="conversion-groesse-toggle-label">Dein Objekt</p>
+      <p className="conversion-groesse-toggle-label">Ihr Objekt</p>
       <div className="conversion-service-inputs-grid">
         <label className="conversion-service-input">
           <span className="conversion-service-input-label">Wohnfläche</span>

@@ -9,9 +9,7 @@ import {
 } from "@/lib/portal2/einstellungen-nav";
 import { cn } from "@/lib/utils";
 
-function tabForMissing(missing: string[]): EinstellungenTabId {
-  if (missing.some((m) => /Steuer|USt/i.test(m))) return "steuer";
-  if (missing.some((m) => /IBAN|Bank/i.test(m))) return "bank";
+function tabForMissing(_missing: string[]): EinstellungenTabId {
   return "anschrift";
 }
 
@@ -53,6 +51,8 @@ export function PartnerFirmendatenFehlenDialog({
       onClose={onDismiss}
       variant="confirm"
       maxWidth={440}
+      onConfirm={onDismiss}
+      confirmLabel="Alles klar"
     >
       <p className="portal-text-body text-text-secondary">
         Kein automatisches Angebot — Firmendaten fehlen

@@ -6,18 +6,22 @@ import type { PartnerAuftragPosition } from "@/lib/partner/get-partner-data";
 import { HW_ABSCHLUSS_CHECKS, type HwAbschlussCheckId } from "@/lib/portal2/hw-kalkulation";
 
 export const HW_ABNAHME_COPY = {
-  cta: "Teilabnahme abschließen →",
+  cta: "Auftrag abschließen →",
   ctaHint:
-    "Nach der Dokumentation Ihrer Leistungen: Teilabnahme mit Signatur — Bärenwald gibt frei, danach Rechnung.",
+    "Nach den Updates zu Ihren Leistungen: Abschluss mit Signatur, danach Rechnung.",
   positionEndeCta: "3. Ende — Dokumentieren",
-  positionEndeToast: "Leistung dokumentiert — bereit für Abnahme.",
+  positionEndeToast: "Leistung dokumentiert — bereit für den Abschluss.",
   positionEndeBody:
-    "Ergebnis-Foto speichert die Dokumentation. Die Teilabnahme folgt danach mit Signatur.",
+    "Ergebnis-Foto speichert das Update. Der Abschluss folgt danach mit Signatur.",
   rechnungTitle: "Rechnung prüfen & einreichen",
+  rechnungCta: "Rechnung prüfen & einreichen",
+  rechnungSecondaryCta: "Eigenes PDF",
   rechnungBody:
-    "Nach Ihrer Teilabnahme: Entwurf aus Firmendaten und Konditionen prüfen, dann einreichen. Bei unvollständigen Angaben erscheint ein Hinweis.",
+    "Entwurf aus Firmendaten und Konditionen prüfen, dann einreichen. Fehlende Angaben kannst du im nächsten Schritt ergänzen — sie werden in deinen Einstellungen gespeichert.",
+  rechnungDocsHint:
+    "Rechnung über den Button unten einreichen. Optional eigenes PDF hier hochladen.",
   rechnungBlockedOhneAbnahme:
-    "Zuerst Ihre Teilabnahme abschließen (Signatur). Danach können Sie die Rechnung einreichen.",
+    "Zuerst Ihren Abschluss mit Signatur erledigen. Danach können Sie die Rechnung einreichen.",
   kundeSigHint:
     "Gegenzeichnung vor Ort empfohlen — Name ist Pflicht, Zeichnung bitte mit dem Kunden.",
   kundeSigRequiredSoft: "Bitte den Kunden vor Ort gegenzeichnen lassen.",

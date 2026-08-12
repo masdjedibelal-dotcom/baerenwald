@@ -148,14 +148,14 @@ export function generateConfirmationEmail(
 <body style="margin:0;padding:24px;background:#ffffff;">
   <div style="max-width:560px;margin:0 auto;">
     <p style="margin:0 0 12px;font-family:Arial,Helvetica,sans-serif;font-size:16px;line-height:1.55;color:#1e1c1a;">
-      Hallo ${escHtml(vorname)},
+      Guten Tag ${escHtml(vorname)},
     </p>
     <p style="margin:0 0 16px;font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:1.6;color:#1e1c1a;">
-      vielen Dank für deine Anfrage. Wir haben alles erhalten und melden uns ${SITE_CONFIG.responseSlaWithin} zur Terminbestätigung.
+      vielen Dank für Ihre Anfrage. Wir haben alles erhalten und melden uns ${SITE_CONFIG.responseSlaWithin} zur Terminbestätigung.
     </p>
     <hr style="${hRule}"/>
     <p style="margin:0 0 10px;font-family:Arial,Helvetica,sans-serif;font-size:13px;font-weight:bold;letter-spacing:0.02em;color:#2e7d52;text-transform:uppercase;">
-      Deine Angaben im Überblick
+      Ihre Angaben im Überblick
     </p>
     <div style="${box}">
       <p style="margin:0 0 6px;"><strong>Vorhaben:</strong> ${escHtml(situation)}</p>
@@ -176,7 +176,7 @@ export function generateConfirmationEmail(
       <li style="${li}">Festpreisangebot nach Termin</li>
     </ol>
     <p style="margin:18px 0 6px;font-family:Arial,Helvetica,sans-serif;font-size:14px;line-height:1.55;color:#1e1c1a;">
-      Bei Fragen erreichst du uns:
+      Bei Fragen erreichen Sie uns:
     </p>
     <p style="margin:0;font-family:Arial,Helvetica,sans-serif;font-size:14px;line-height:1.65;color:#1e1c1a;">
       Telefon: <a href="${escHtml(SITE_CONFIG.phoneHref)}" style="color:#2e7d52;">${escHtml(SITE_CONFIG.phone)}</a><br/>

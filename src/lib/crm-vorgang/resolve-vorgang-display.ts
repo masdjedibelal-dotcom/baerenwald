@@ -25,8 +25,13 @@ const HV_PHASE: Record<string, string> = {
 
 function pillKind(resolved: ResolvedVorgang): VorgangDisplayStatus['pillKind'] {
   if (resolved.unterstatus === 'storniert' || resolved.unterstatus === 'abgebrochen') return 'storniert'
-  if (resolved.badges.wartet_freigabe) return 'warten'
   if (resolved.phase === 'anfrage') return 'neu'
+  if (
+    resolved.phase === 'angebot' &&
+    (resolved.unterstatus === 'gesendet' || resolved.unterstatus === 'entwurf')
+  ) {
+    return 'warten'
+  }
   if (resolved.phase === 'rechnung' && resolved.unterstatus === 'bezahlt') return 'fertig'
   if (resolved.phase === 'auftrag' && resolved.unterstatus === 'abgeschlossen') return 'fertig'
   return 'aktiv'
@@ -36,8 +41,8 @@ function actionHint(resolved: ResolvedVorgang, role: PortalRole): string | null 
   if (!resolved.needsAction || !resolved.actor) return null
   if (role === 'mieter') return null
   if (role === 'handwerker' && resolved.actor === 'handwerker') return 'Aktion nötig'
-  if (role === 'hv' && resolved.actor === 'freigabe') return 'Freigabe ausstehend'
   if (role === 'kunde' && resolved.actor === 'kunde') return 'Angebot liegt vor'
+  if (role === 'hv' && resolved.actor === 'kunde') return 'Angebot liegt vor'
   if (role === 'crm' || role === 'hv') return ACTOR_LABELS[resolved.actor] ?? null
   return ACTOR_LABELS[resolved.actor] ?? null
 }

@@ -48,6 +48,7 @@ import {
   type PartnerVorgangItem,
 } from "@/lib/partner/build-partner-vorgaenge";
 import { ensurePartnerBautagebuchNotifications } from "@/lib/partner/notify-partner-bautagebuch-anfrage";
+import { ensurePartnerOffenNotifications } from "@/lib/partner/notify-partner-offen";
 import { buildPartnerTermine, type PartnerTerminItem } from "@/lib/partner/build-partner-termine";
 import {
   applyRahmenvertragPortalAkzeptanz,
@@ -72,7 +73,6 @@ import { stripHtmlToPlainText } from "@/lib/portal/portal-display";
 import type { PartnerHwKonditionen } from "@/lib/partner/partner-konditionen";
 import {
   filterOffeneNachreichungPositionIds,
-  positionIstHandwerkerZugewiesen,
   resolveNachreichungOpenZeilenIds,
   resolveOffeneAuftragPositionIdsByStatus,
 } from "@/lib/partner/partner-konditionen";
@@ -161,6 +161,8 @@ export type PartnerAuftragPosition = {
   preis_partner?: number | null;
   lohn_fix?: number | null;
   material_fix?: number | null;
+  /** Regie: €/h netto — nicht mit preis_partner (Zeile) verwechseln. */
+  stundensatz?: number | null;
   /** CRM-Zuweisungsstatus dieser Leistung (z. B. angefragt nach Nachreichung). */
   handwerker_status?: string | null;
   handwerker_id?: string | null;
@@ -216,6 +218,9 @@ export type PartnerAuftragItem = {
   angebotHwStatus?: string | null;
   angebotHwEingereichtAt?: string | null;
   angebotHwKonditionenArt?: "bestaetigt" | "gegenvorschlag" | null;
+  /** Aufgabe-/CRM-Notiz aus verknüpftem angebot_handwerker. */
+  aufgabe_notiz?: string | null;
+  hw_crm_notiz?: string | null;
   /** CRM-Bewertung nach Abschluss (read-only). */
   bewertung?: PartnerAuftragBewertung | null;
   /** Verbindliche HW-Annahme auf Auftragsebene. */
@@ -390,7 +395,7 @@ async function loadPartnerObjektById(
 
   const { data: objekteRows } = await supabaseAdmin
     .from("kunden_objekte")
-    .select("id, titel, strasse, hausnummer, plz, ort, cover_url")
+    .select("id, titel, strasse, hausnummer, plz, ort, cover_url, einheiten_hinweis")
     .in("id", objektIds);
 
   for (const o of objekteRows ?? []) {
@@ -556,6 +561,20 @@ export async function getPartnerDataForHandwerker(
     await mapAngebotHandwerkerRows(rawRows, objektById, signedCache.resolve)
   ).filter((_, i) => {
     const row = rawRows[i]!;
+    const ang = Array.isArray(row.angebote) ? row.angebote[0] : row.angebote;
+    const leadRaw =
+      ang && typeof ang === "object"
+        ? Array.isArray((ang as { leads?: unknown }).leads)
+          ? (ang as { leads: unknown[] }).leads[0]
+          : (ang as { leads?: unknown }).leads
+        : null;
+    if (
+      leadRaw &&
+      typeof leadRaw === "object" &&
+      (leadRaw as { geloescht_am?: string | null }).geloescht_am
+    ) {
+      return false;
+    }
     const gate = extractPartnerLeadGateFromAngebotHandwerkerRow(row);
     if (!isPartnerBlockedByOrgFreigabe(gate)) return true;
     return Boolean((row.gesendet_at as string | null | undefined)?.trim());
@@ -612,7 +631,7 @@ export async function getPartnerDataForHandwerker(
   const auftragAngebotIdByAuftragId = new Map<string, string>();
 
   if (auftragIds.length) {
-    const { data: aufRows } = await supabaseAdmin
+    const { data: aufRows, error: aufErr } = await supabaseAdmin
       .from("auftraege")
       .select(
         `
@@ -653,12 +672,17 @@ export async function getPartnerDataForHandwerker(
           lohn_fix,
           material_fix,
           aenderung_typ,
-          preis_alt
+          preis_alt,
+          stundensatz
         )
       `
       )
       .in("id", auftragIds)
       .order("created_at", { ascending: false });
+
+    if (aufErr) {
+      console.error("[partner] auftraege laden fehlgeschlagen:", aufErr.message);
+    }
 
     const { data: btRows } = await supabaseAdmin
       .from("auftrag_bautagebuch_eintraege")
@@ -768,6 +792,10 @@ export async function getPartnerDataForHandwerker(
     alleAuftraege = (aufRows ?? [])
       .filter((row) => {
         const raw = row as Record<string, unknown>;
+        const leadRow = one(raw.leads) as
+          | (PartnerLeadDbRow & { geloescht_am?: string | null })
+          | null;
+        if (leadRow?.geloescht_am) return false;
         const gate = extractPartnerLeadGateFromAuftragRow(raw);
         if (!isPartnerBlockedByOrgFreigabe(gate)) return true;
         const aid = String(raw.id);
@@ -794,11 +822,15 @@ export async function getPartnerDataForHandwerker(
         objektById: auftragObjektById,
       });
       const allPos = (raw.auftrag_positionen ?? []) as Array<Record<string, unknown>>;
-      const ownPos = allPos.filter(
-        (p) =>
-          String(p.handwerker_id ?? "") === id &&
-          positionIstHandwerkerZugewiesen(p.handwerker_status as string | null)
-      );
+      // handwerker_id reicht — Status kann nach CRM-Sync kurz leer sein.
+      // Abgelehnte Positionen ausblenden; Rest inkl. Regie „in_pruefung“.
+      const ownPos = allPos.filter((p) => {
+        if (String(p.handwerker_id ?? "") !== id) return false;
+        const st = String(p.handwerker_status ?? "")
+          .trim()
+          .toLowerCase();
+        return st !== "abgelehnt";
+      });
       const positionen = ownPos.map((p) => ({
         id: String(p.id),
         gewerk_name: String(p.gewerk_name ?? "Gewerk"),
@@ -815,6 +847,8 @@ export async function getPartnerDataForHandwerker(
         end_datum: (p.end_datum as string | null)?.slice(0, 10) ?? null,
         preis_partner:
           p.preis_partner != null ? Number(p.preis_partner) : null,
+        stundensatz:
+          p.stundensatz != null ? Number(p.stundensatz) : null,
         lohn_fix: p.lohn_fix != null ? Number(p.lohn_fix) : null,
         material_fix: p.material_fix != null ? Number(p.material_fix) : null,
         handwerker_status: (p.handwerker_status as string | null) ?? null,
@@ -826,6 +860,8 @@ export async function getPartnerDataForHandwerker(
           (p.anerkennung_status as string | null) ?? "nicht_noetig",
         gestartet_am: (p.gestartet_am as string | null) ?? null,
         erledigt_am: (p.erledigt_am as string | null) ?? null,
+        zeit_minuten_summe:
+          p.zeit_minuten_summe != null ? Number(p.zeit_minuten_summe) : null,
         aenderung_typ: (() => {
           const raw = (p.aenderung_typ as string | null)?.trim().toLowerCase();
           if (raw === "neu" || raw === "geaendert" || raw === "entfernt") {
@@ -1017,19 +1053,12 @@ export async function getPartnerDataForHandwerker(
 
     return {
       ...a,
-      listen_titel: anfrage?.gewerk_name
-        ? resolvePartnerListenTitel({
-            gewerk_name: anfrage.gewerk_name,
-            plz: a.plz,
-            ort: a.ort,
-            lead: a.lead,
-            fallbackTitel: a.titel,
-          })
-        : a.listen_titel,
       angebotHandwerkerId: anfrage?.id ?? null,
       angebotHwStatus: anfrage?.hw_status ?? null,
       angebotHwEingereichtAt: anfrage?.hw_eingereicht_at ?? null,
       angebotHwKonditionenArt: anfrage?.hw_konditionen?.art ?? null,
+      aufgabe_notiz: anfrage?.aufgabe_notiz ?? null,
+      hw_crm_notiz: anfrage?.hw_crm_notiz ?? null,
       projektvertrag_bestaetigt_am: vertragCtx?.projektvertrag_bestaetigt_am ?? null,
       vertrag: vertragCtx,
       nachreichungOpenPositionIds,
@@ -1285,6 +1314,14 @@ export async function getPartnerDataForHandwerker(
       handwerkerId: id,
       anfragen: bautagebuchAnfragen,
       titelByAuftragId: auftragTitelById,
+    });
+  }
+
+  if (offen.length > 0 || vorgaenge.some((v) => v.state === "neu")) {
+    void ensurePartnerOffenNotifications({
+      handwerkerId: id,
+      offen,
+      vorgaenge,
     });
   }
 
