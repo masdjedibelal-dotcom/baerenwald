@@ -87,7 +87,7 @@ export async function submitPartnerAngebotPdf(
   }
 
   if (!pdfs.length) {
-    return { ok: false, error: "Bitte mindestens ein PDF auswählen." };
+    return { ok: false, error: "Bitte mindestens eine Datei (Foto oder PDF) auswählen." };
   }
 
   const pdfErr = validatePartnerAngebotFiles(pdfs, { required: true });

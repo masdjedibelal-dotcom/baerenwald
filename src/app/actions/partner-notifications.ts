@@ -9,6 +9,7 @@ import {
   partnerNotificationVorgangKey,
   type PartnerNotificationRow,
 } from "@/lib/partner/partner-notifications";
+import { limitReadNotifications } from "@/lib/portal2/notif-types";
 import { createClient } from "@/lib/supabase/server";
 import { isSupabaseConfigured, supabaseAdmin } from "@/lib/supabase";
 
@@ -39,16 +40,17 @@ export async function fetchPartnerNotifications(): Promise<{
     .select("id, handwerker_id, typ, projekt_name, leistung_name, gelesen, link, created_at")
     .eq("handwerker_id", link.handwerkerId)
     .order("created_at", { ascending: false })
-    .limit(50);
+    .limit(120);
 
   if (error) return { ok: false, items: [], unread: 0, error: error.message };
 
-  const items = dedupePartnerNotificationsByVorgang(
-    (data ?? []) as PartnerNotificationRow[]
+  const items = limitReadNotifications(
+    dedupePartnerNotificationsByVorgang(
+      (data ?? []) as PartnerNotificationRow[]
+    ),
+    (n) => !n.gelesen
   );
-  const unread = countUnreadPartnerNotificationsByVorgang(
-    (data ?? []) as PartnerNotificationRow[]
-  );
+  const unread = countUnreadPartnerNotificationsByVorgang(items);
   return { ok: true, items, unread };
 }
 

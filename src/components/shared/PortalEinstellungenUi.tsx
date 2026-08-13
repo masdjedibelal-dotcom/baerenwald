@@ -145,9 +145,6 @@ export function EinstellungenEditModal({
       variant="edit"
       dirty={dirty && !saving}
       closeOnBackdrop={!saving}
-      onConfirm={onSave}
-      confirmDisabled={saving || saveDisabled}
-      confirmLabel={saveLabel}
       busy={Boolean(saving)}
     >
       <div

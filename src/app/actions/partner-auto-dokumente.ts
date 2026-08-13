@@ -619,15 +619,19 @@ export async function submitPartnerAutoRechnung(input: {
     rechnungPdfUrl,
   });
 
-  void import("@/lib/partner/notify-crm-partner-dokument").then(
-    ({ notifyCrmPartnerDokumentUpload }) =>
-      notifyCrmPartnerDokumentUpload({
-        typ: "rechnung",
-        handwerkerId: auth.handwerkerId,
-        anfrageId: id,
-        titel: `Rechnung ${dokumentNr}`,
-      })
-  );
+  try {
+    const { notifyCrmPartnerDokumentUpload } = await import(
+      "@/lib/partner/notify-crm-partner-dokument"
+    );
+    await notifyCrmPartnerDokumentUpload({
+      typ: "rechnung",
+      handwerkerId: auth.handwerkerId,
+      anfrageId: id,
+      titel: `Rechnung ${dokumentNr}`,
+    });
+  } catch (e) {
+    console.warn("[submitPartnerAutoRechnung] CRM-Notify:", e);
+  }
 
   revalidatePath("/partner");
   return { ok: true, path: upload.path, dokumentNr };

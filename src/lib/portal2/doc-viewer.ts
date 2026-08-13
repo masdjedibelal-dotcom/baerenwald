@@ -88,8 +88,8 @@ export function isPortalIosWebkit(): boolean {
 }
 
 /**
- * iOS + Standalone: natives PDF in iframe/`_blank` ersetzt die ganze PWA
- * ohne Schließen/Zurück. Dann nur In-App-Overlay + Blob-Download/Share.
+ * iOS + Standalone: natives PDF in `_blank` ersetzt die ganze PWA
+ * ohne Schließen/Zurück. In-App-Overlay + Blob/PDF.js nutzen.
  */
 export function shouldAvoidNativePdfNavigation(): boolean {
   return isPortalIosWebkit() || isPortalStandaloneDisplay();

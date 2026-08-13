@@ -8,20 +8,20 @@ import { HW_ABSCHLUSS_CHECKS, type HwAbschlussCheckId } from "@/lib/portal2/hw-k
 export const HW_ABNAHME_COPY = {
   cta: "Auftrag abschließen →",
   ctaHint:
-    "Nach den Updates zu Ihren Leistungen: Abschluss mit Signatur, danach Rechnung.",
+    "Nach den Updates zu Ihren Leistungen: Abschluss mit Signatur. Rechnung ist unabhängig davon möglich.",
   positionEndeCta: "3. Ende — Dokumentieren",
   positionEndeToast: "Leistung dokumentiert — bereit für den Abschluss.",
   positionEndeBody:
     "Ergebnis-Foto speichert das Update. Der Abschluss folgt danach mit Signatur.",
-  rechnungTitle: "Rechnung prüfen & einreichen",
-  rechnungCta: "Rechnung prüfen & einreichen",
+  rechnungTitle: "Rechnung erstellen",
+  rechnungCta: "Rechnung erstellen",
   rechnungSecondaryCta: "Eigenes PDF",
+  rechnungAbschlussCta: "Auftrag abschließen",
   rechnungBody:
-    "Entwurf aus Firmendaten und Konditionen prüfen, dann einreichen. Fehlende Angaben kannst du im nächsten Schritt ergänzen — sie werden in deinen Einstellungen gespeichert.",
+    "Rechnung aus Firmendaten und Leistungen erstellen. Rechnungsnummer kannst du in der Vorschau anpassen.",
   rechnungDocsHint:
-    "Rechnung über den Button unten einreichen. Optional eigenes PDF hier hochladen.",
-  rechnungBlockedOhneAbnahme:
-    "Zuerst Ihren Abschluss mit Signatur erledigen. Danach können Sie die Rechnung einreichen.",
+    "Rechnung unten erstellen. Abschlussprotokoll und Compliance-Uploads sind optional. Optional eigenes PDF hier hochladen.",
+  rechnungFirmendatenBusy: "Firmendaten werden geprüft…",
   kundeSigHint:
     "Gegenzeichnung vor Ort empfohlen — Name ist Pflicht, Zeichnung bitte mit dem Kunden.",
   kundeSigRequiredSoft: "Bitte den Kunden vor Ort gegenzeichnen lassen.",

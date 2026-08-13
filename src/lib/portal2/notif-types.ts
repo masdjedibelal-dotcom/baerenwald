@@ -244,3 +244,29 @@ export type PortalNotifItem = {
   vorgangRef?: string | null;
   createdAt: string;
 };
+
+/** Max. gelesene Einträge in der Glocke (ungelesene bleiben vollständig). */
+export const PORTAL_NOTIF_READ_LIMIT = 20;
+
+/**
+ * Liste bereits nach `created_at` desc: alle Ungelesenen behalten,
+ * gelesene auf die neuesten `maxRead` begrenzen.
+ */
+export function limitReadNotifications<T>(
+  rows: T[],
+  isUnread: (row: T) => boolean,
+  maxRead: number = PORTAL_NOTIF_READ_LIMIT
+): T[] {
+  let readKept = 0;
+  const out: T[] = [];
+  for (const row of rows) {
+    if (isUnread(row)) {
+      out.push(row);
+      continue;
+    }
+    if (readKept >= maxRead) continue;
+    out.push(row);
+    readKept += 1;
+  }
+  return out;
+}

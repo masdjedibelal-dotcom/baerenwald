@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { createClient } from "@/lib/supabase/server";
+import { limitReadNotifications } from "@/lib/portal2/notif-types";
 import { isSupabaseConfigured, supabaseAdmin } from "@/lib/supabase";
 
 /**
@@ -27,7 +28,7 @@ export async function GET() {
     )
     .eq("empfaenger_user_id", user.id)
     .order("created_at", { ascending: false })
-    .limit(40);
+    .limit(120);
 
   if (error) {
     // Relation fehlt vor Migration
@@ -37,7 +38,41 @@ export async function GET() {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  const rows = data ?? [];
+  let rows = data ?? [];
+
+  // Mieter: keine Angebots-Glocken (auch Alt-Einträge ausblenden)
+  const angebotRefs = Array.from(
+    new Set(
+      rows
+        .filter((n) => String(n.typ ?? "").toLowerCase() === "angebot")
+        .map((n) => String(n.vorgang_ref ?? "").trim())
+        .filter(Boolean)
+    )
+  );
+  if (angebotRefs.length) {
+    const { data: leads } = await supabaseAdmin
+      .from("leads")
+      .select("id, auftraggeber_kunde_id")
+      .in("id", angebotRefs);
+    const mieterLeadIds = new Set(
+      (leads ?? [])
+        .filter((l) =>
+          String(
+            (l as { auftraggeber_kunde_id?: string | null }).auftraggeber_kunde_id ??
+              ""
+          ).trim()
+        )
+        .map((l) => String((l as { id: string }).id))
+    );
+    rows = rows.filter((n) => {
+      if (String(n.typ ?? "").toLowerCase() !== "angebot") return true;
+      const ref = String(n.vorgang_ref ?? "").trim();
+      if (ref && mieterLeadIds.has(ref)) return false;
+      return true;
+    });
+  }
+
+  rows = limitReadNotifications(rows, (n) => !n.gelesen);
   const unread = rows.filter((n) => !n.gelesen).length;
   return NextResponse.json({ notifications: rows, unread });
 }

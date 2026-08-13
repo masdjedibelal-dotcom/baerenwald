@@ -22,6 +22,7 @@ import {
   PORTAL_LIST_AUFTRAG_LIMIT,
   PORTAL_LIST_LEAD_LIMIT,
 } from "@/lib/portal/portal-list-limits";
+import { handwerkerFirmenLabel } from "@/lib/portal2/handwerker-display";
 import { isSupabaseConfigured, supabaseAdmin } from "@/lib/supabase";
 
 type PortalPositionRow = {
@@ -537,6 +538,50 @@ export async function getPortalDataForKunde(
   if (btErr) console.warn("[portal] bautagebuch:", btErr.message);
   if (abnahmeErr) console.warn("[portal] auftrag_abnahmeprotokolle:", abnahmeErr.message);
 
+  const handwerkerIds = Array.from(
+    new Set(
+      (positionen ?? [])
+        .map((p) => String((p as { handwerker_id?: string | null }).handwerker_id ?? "").trim())
+        .filter(Boolean)
+    )
+  );
+  const handwerkerLabelById = new Map<string, string>();
+  if (handwerkerIds.length > 0) {
+    const { data: hwRows, error: hwErr } = await supabaseAdmin
+      .from("handwerker")
+      .select("id, firma, name")
+      .in("id", handwerkerIds);
+    if (hwErr) {
+      console.warn("[portal] handwerker labels:", hwErr.message);
+    } else {
+      for (const row of hwRows ?? []) {
+        const id = String((row as { id: string }).id);
+        const label = handwerkerFirmenLabel({
+          firma: (row as { firma?: string | null }).firma,
+          name: (row as { name?: string | null }).name,
+        });
+        if (label) handwerkerLabelById.set(id, label);
+      }
+    }
+  }
+
+  function handwerkerLabelForAuftrag(auftragId: string): string | null {
+    const labels: string[] = [];
+    const seen = new Set<string>();
+    for (const p of positionen ?? []) {
+      if (String((p as { auftrag_id: string }).auftrag_id) !== auftragId) continue;
+      const hid = String(
+        (p as { handwerker_id?: string | null }).handwerker_id ?? ""
+      ).trim();
+      if (!hid) continue;
+      const label = handwerkerLabelById.get(hid);
+      if (!label || seen.has(label)) continue;
+      seen.add(label);
+      labels.push(label);
+    }
+    return labels.length ? labels.join(" · ") : null;
+  }
+
   const abnahmeByAuftrag = new Map<
     string,
     Array<{
@@ -790,6 +835,7 @@ export async function getPortalDataForKunde(
         angebot_id: angebotId,
         linkedLead,
         ansprechpartner: resolvePortalAnsprechpartner(betreuer),
+        handwerkerLabel: handwerkerLabelForAuftrag(auftragId),
         titel,
         status: typeof a.status === "string" ? a.status : undefined,
         fortschritt:

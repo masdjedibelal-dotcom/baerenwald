@@ -99,14 +99,6 @@ export function PartnerTermineRueckfrageSection({
         dirty={rueckfrage.trim().length > 0}
         closeOnBackdrop={!busy}
         busy={busy}
-        onConfirm={() => {
-          const form = document.getElementById(
-            "partner-rueckfrage-form"
-          ) as HTMLFormElement | null;
-          form?.requestSubmit();
-        }}
-        confirmDisabled={busy || rueckfrage.trim().length < 10}
-        confirmLabel="Senden"
       >
         <form
           id="partner-rueckfrage-form"
@@ -142,14 +134,6 @@ export function PartnerTermineRueckfrageSection({
         dirty={Boolean(slotBeginn || slotEnde)}
         closeOnBackdrop={!busy}
         busy={busy}
-        onConfirm={() => {
-          const form = document.getElementById(
-            "partner-termin-form"
-          ) as HTMLFormElement | null;
-          form?.requestSubmit();
-        }}
-        confirmDisabled={busy || !slotBeginn}
-        confirmLabel="Vorschlagen"
       >
         <form
           id="partner-termin-form"

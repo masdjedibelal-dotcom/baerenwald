@@ -41,8 +41,9 @@ async function hasUnreadPortalAngebotNotif(opts: {
 }
 
 /**
- * Nach CRM „Angebot gesendet“: In-App-Notification für HV (hv_notifications),
- * Privatkunde/Mieter (portal_notifications) und Eigentümer (Status-Update).
+ * Nach CRM „Angebot gesendet“: In-App-Notification für HV (hv_notifications)
+ * und Privatkunden (portal_notifications).
+ * Mieter bekommen keine Angebots-Meldung (keine Annahme/Ablehnung im Portal).
  */
 export async function notifyPortalAngebotGesendet(
   leadId: string
@@ -194,9 +195,8 @@ export async function notifyPortalAngebotGesendet(
       if (!orgKundeId || orgKundeId === portalKundeId) {
         await insertHv(portalKundeId);
       }
-    } else if (authUserId && portalKundeId !== orgKundeId) {
-      await insertPortalUser(authUserId);
     } else if (authUserId && !orgKundeId) {
+      // Nur Privatkunde ohne HV — Mieter (kunde_id + auftraggeber) nie.
       await insertPortalUser(authUserId);
     }
   }

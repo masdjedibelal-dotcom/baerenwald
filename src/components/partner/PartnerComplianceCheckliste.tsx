@@ -7,7 +7,7 @@ import {
   deletePartnerComplianceDokument,
   uploadPartnerComplianceDokument,
 } from "@/app/actions/partner-compliance";
-import { usePortalBusy } from "@/components/shared/PortalBusyContext";
+import { usePortalUploadBusy } from "@/components/shared/usePortalUploadBusy";
 import { PortalConfirmDialog } from "@/components/shared/PortalDetailUi";
 import { PortalDokumentCard } from "@/components/shared/PortalDokumentCard";
 import { PortalInboxEmpty } from "@/components/shared/PortalEmptyState";
@@ -46,9 +46,8 @@ function KompaktComplianceRow({
   disabled?: boolean;
 }) {
   const { refresh } = usePortalRefresh();
-  const { runBusy } = usePortalBusy();
+  const { uploadBusy: loading, runUpload } = usePortalUploadBusy();
   const inputRef = useRef<HTMLInputElement>(null);
-  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
 
@@ -70,51 +69,41 @@ function KompaktComplianceRow({
       : null;
 
   async function onUpload(file: File) {
-    setLoading(true);
     setError(null);
-    try {
-      await runBusy(async () => {
-        const fd = new FormData();
-        fd.set("typ", item.slug);
-        fd.set("bezeichnung", item.bezeichnung);
-        if (auftragId) fd.set("auftragId", uploadAuftragIdForItem(item, auftragId) ?? "");
-        if (item.erneuerung_monate) fd.set("erneuerungMonate", String(item.erneuerung_monate));
-        fd.set("file", file);
-        const res = await uploadPartnerComplianceDokument(fd);
-        if (!res.ok) {
-          setError(res.error);
-          return;
-        }
-        partnerPortalToast.complianceHochgeladen(item.bezeichnung);
-        await refresh();
-      });
-    } finally {
-      setLoading(false);
-    }
+    await runUpload(async () => {
+      const fd = new FormData();
+      fd.set("typ", item.slug);
+      fd.set("bezeichnung", item.bezeichnung);
+      if (auftragId) fd.set("auftragId", uploadAuftragIdForItem(item, auftragId) ?? "");
+      if (item.erneuerung_monate) fd.set("erneuerungMonate", String(item.erneuerung_monate));
+      fd.set("file", file);
+      const res = await uploadPartnerComplianceDokument(fd);
+      if (!res.ok) {
+        setError(res.error);
+        return;
+      }
+      partnerPortalToast.complianceHochgeladen(item.bezeichnung);
+      await refresh();
+    });
   }
 
   async function onDelete() {
     const dokumentId = item.dokument?.id;
     if (!dokumentId) return;
-    setLoading(true);
     setError(null);
-    try {
-      await runBusy(async () => {
-        const res = await deletePartnerComplianceDokument({
-          dokumentId,
-          auftragId: uploadAuftragIdForItem(item, auftragId),
-        });
-        setConfirmDelete(false);
-        if (!res.ok) {
-          setError(res.error);
-          return;
-        }
-        partnerPortalToast.complianceGeloescht(item.bezeichnung);
-        await refresh();
+    await runUpload(async () => {
+      const res = await deletePartnerComplianceDokument({
+        dokumentId,
+        auftragId: uploadAuftragIdForItem(item, auftragId),
       });
-    } finally {
-      setLoading(false);
-    }
+      setConfirmDelete(false);
+      if (!res.ok) {
+        setError(res.error);
+        return;
+      }
+      partnerPortalToast.complianceGeloescht(item.bezeichnung);
+      await refresh();
+    });
   }
 
   const actions = (

@@ -41,6 +41,12 @@ export function OrganisationEinstellungenScreen({
         if (tab === "profil") {
           return (
             <div className="flex flex-col gap-6">
+              <OrganisationPortalAngabenPanel
+                kunde={kunde}
+                readOnly={!isAdmin}
+                onSaved={onSaved}
+              />
+
               <div className="space-y-3">
                 <EinstellungenSectionHeader title="Profil" />
                 <div className="flex flex-col gap-[11px]">
@@ -52,12 +58,6 @@ export function OrganisationEinstellungenScreen({
                   <EinstellungenPfRow label="Telefon" value={tel} />
                 </div>
               </div>
-
-              <OrganisationPortalAngabenPanel
-                kunde={kunde}
-                readOnly={!isAdmin}
-                onSaved={onSaved}
-              />
 
               <OrganisationMieterLegalLinksPanel
                 kunde={kunde}

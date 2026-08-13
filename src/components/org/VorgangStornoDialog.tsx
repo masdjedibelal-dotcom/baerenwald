@@ -61,14 +61,6 @@ export function VorgangStornoDialog({
         dirty={grund.trim().length > 0}
         closeOnBackdrop={!busy}
         busy={busy}
-        onConfirm={() => {
-          const form = document.getElementById(
-            "vorgang-storno-form"
-          ) as HTMLFormElement | null;
-          form?.requestSubmit();
-        }}
-        confirmDisabled={busy || grund.trim().length < 5}
-        confirmLabel="Zurückziehen"
       >
         <form id="vorgang-storno-form" onSubmit={submit} className="space-y-4">
           <p className="portal-text-body text-text-secondary">
@@ -85,21 +77,21 @@ export function VorgangStornoDialog({
             minLength={5}
             disabled={busy}
           />
-          <div className="portal-confirm-actions">
-            <button
-              type="submit"
-              className="btn-pill-outline portal-btn portal-confirm-actions-primary !border-red-200 !text-red-800"
-              disabled={busy}
-            >
-              {busy ? "Wird gespeichert…" : "Zurückziehen"}
-            </button>
+          <div className="portal-action-row">
             <button
               type="button"
-              className="btn-pill-outline portal-btn portal-confirm-actions-cancel"
+              className="portal-action-btn portal-action-btn--secondary"
               onClick={() => setOpen(false)}
               disabled={busy}
             >
               Abbrechen
+            </button>
+            <button
+              type="submit"
+              className="portal-action-btn portal-action-btn--danger"
+              disabled={busy}
+            >
+              {busy ? "Wird gespeichert…" : "Zurückziehen"}
             </button>
           </div>
         </form>

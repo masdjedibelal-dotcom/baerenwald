@@ -7,23 +7,27 @@ import {
   einstellungenNavStorageKey,
   type EinstellungenTabId,
 } from "@/lib/portal2/einstellungen-nav";
-import { cn } from "@/lib/utils";
 
 function tabForMissing(_missing: string[]): EinstellungenTabId {
   return "anschrift";
 }
 
+type Purpose = "angebot" | "rechnung";
+
 /**
- * Kurzer Hinweis nach Annahme: kein Auto-Angebot ohne Firmendaten.
+ * Hinweis: Auto-Dokument geht nicht ohne vollständige Firmendaten.
+ * CTA führt zu den Einstellungen — kein Direkt-Redirect ohne Aktion.
  */
 export function PartnerFirmendatenFehlenDialog({
   open,
   missing = [],
+  purpose = "angebot",
   onDismiss,
   onGoSettings,
 }: {
   open: boolean;
   missing?: string[];
+  purpose?: Purpose;
   /** „Alles klar“ / Schließen — Vorgang fortsetzen. */
   onDismiss: () => void;
   /** Vor Navigation zu Firmeneinstellungen (ohne Fortsetzen). */
@@ -44,37 +48,43 @@ export function PartnerFirmendatenFehlenDialog({
     router.push("/partner?section=profil");
   }
 
+  const title =
+    purpose === "rechnung"
+      ? "Firmendaten unvollständig"
+      : "Kein automatisches Angebot";
+
+  const body =
+    purpose === "rechnung"
+      ? `Um die Rechnung über das Portal zu erstellen, müssen alle Firmendaten vollständig sein${
+          missing.length > 0 ? ` (fehlt: ${missing.join(", ")})` : ""
+        }. Bitte ergänze sie in den Einstellungen und versuche es danach erneut.`
+      : `Kein automatisches Angebot — Firmendaten fehlen${
+          missing.length > 0 ? ` (${missing.join(", ")})` : ""
+        }.`;
+
   return (
     <PortalModalShell
       open={open}
-      title="Kein automatisches Angebot"
+      title={title}
       onClose={onDismiss}
       variant="confirm"
       maxWidth={440}
-      onConfirm={onDismiss}
-      confirmLabel="Alles klar"
     >
-      <p className="portal-text-body text-text-secondary">
-        Kein automatisches Angebot — Firmendaten fehlen
-        {missing.length > 0 ? ` (${missing.join(", ")})` : ""}.
-      </p>
-      <div className="portal-confirm-actions mt-5">
-        <button
-          type="button"
-          onClick={goFirmeneinstellungen}
-          className={cn(
-            "portal-btn portal-confirm-actions-primary",
-            "rounded-[9px] border-0 bg-[var(--org-primary,var(--p2-primary,#2E7D52))] font-semibold text-white hover:bg-[var(--org-primary-dk,var(--p2-primary-dk,#256642))]"
-          )}
-        >
-          Zu Firmeneinstellungen
-        </button>
+      <p className="portal-text-body text-text-secondary">{body}</p>
+      <div className="portal-action-row mt-5">
         <button
           type="button"
           onClick={onDismiss}
-          className="portal-btn portal-confirm-actions-cancel rounded-[9px] border border-[var(--p2-line,rgba(0,0,0,0.08))] bg-[var(--p2-selected,#f0f2f0)] font-semibold text-[var(--p2-sub,#404a45)] hover:bg-[var(--p2-hover,#f7f8fa)]"
+          className="portal-action-btn portal-action-btn--secondary"
         >
           Alles klar
+        </button>
+        <button
+          type="button"
+          onClick={goFirmeneinstellungen}
+          className="portal-action-btn portal-action-btn--primary"
+        >
+          Zu Firmeneinstellungen
         </button>
       </div>
     </PortalModalShell>

@@ -387,7 +387,7 @@ export function buildPartnerVorgangDetailVm(
       adresseStrasse: strasse,
       plzOrt,
       einheit: melder.einheit ?? lead?.melder_einheit ?? null,
-      zugangshinweis: null,
+      zugangshinweis: lead?.einheiten_hinweis ?? null,
       melderName: melder.name ?? lead?.kontakt_name ?? null,
       melderTelefon: melder.telefon ?? lead?.melder_telefon ?? null,
       melderEmail: melder.email ?? null,
@@ -405,8 +405,8 @@ export function buildPartnerVorgangDetailVm(
       terminBis: input.endDatum ?? null,
       terminLabel:
         zeitraumLabel ||
-        ([input.startDatum, input.endDatum].filter(Boolean).join(" – ") ||
-          null),
+        formatAuftragDatumSpan(input.startDatum, input.endDatum) ||
+        null,
       kontaktVorOrtName: melder.name ?? lead?.kontakt_name ?? null,
       kontaktVorOrtTel: melder.telefon ?? lead?.melder_telefon ?? null,
       summeEkNetto: summeEk > 0 ? summeEk : null,

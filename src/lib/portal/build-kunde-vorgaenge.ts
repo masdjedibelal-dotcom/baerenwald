@@ -159,6 +159,8 @@ type PortalAuftrag = {
   angebot_id?: string | null;
   linkedLead?: PortalAnfrageLeadSource | null;
   ansprechpartner?: PortalAnsprechpartner;
+  /** Zugewiesene Partner-Firma(n) für Ausführung · Handwerker. */
+  handwerkerLabel?: string | null;
   objekt?: PortalObjekt | null;
   status?: string | null;
   fortschritt?: number | null;
@@ -531,6 +533,7 @@ function buildItemFromLead(
       statusPillKey: vorgangStatus.pillKey,
       sections: buildAuftragPortalSections({ lead: leadSource, objekt: auftrag.objekt }),
       ansprechpartner: auftrag.ansprechpartner ?? portalAnsprechpartnerFallback(),
+      handwerkerName: auftrag.handwerkerLabel?.trim() || null,
       dokumente: filterDocs(
         collectVorgangDokumente({
           leadDocs: lead.dokumente,

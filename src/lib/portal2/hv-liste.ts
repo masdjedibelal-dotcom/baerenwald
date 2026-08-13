@@ -61,27 +61,27 @@ export const HV_ANGEBOT_BANNER = "Angebote zur Freigabe" as const;
 
 export const HV_MELDUNG_ACTIONS = [
   {
-    id: "angebot_einfordern" as const,
-    label: "Vorgang freigeben",
-    variant: "primary" as const,
-  },
-  {
     id: "ablehnen" as const,
     label: "Ablehnen",
     variant: "danger" as const,
+  },
+  {
+    id: "angebot_einfordern" as const,
+    label: "Vorgang freigeben",
+    variant: "primary" as const,
   },
 ] as const;
 
 export const HV_ANGEBOT_ACTIONS = [
   {
-    id: "freigegeben" as const,
-    label: "Freigeben",
-    variant: "primary" as const,
-  },
-  {
     id: "abgelehnt" as const,
     label: "Ablehnen",
     variant: "danger" as const,
+  },
+  {
+    id: "freigegeben" as const,
+    label: "Freigeben",
+    variant: "primary" as const,
   },
 ] as const;
 

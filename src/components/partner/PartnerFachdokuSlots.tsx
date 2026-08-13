@@ -9,6 +9,7 @@ import {
 } from "@/app/actions/partner-fachdoku";
 import { PortalDetailInfoBox } from "@/components/shared/PortalDetailUi";
 import { PortalStatusPill } from "@/components/shared/PortalStatusPill";
+import { usePortalUploadBusy } from "@/components/shared/usePortalUploadBusy";
 import type { FachdokuSlotView } from "@/lib/partner/fachdoku-slots";
 import { fachdokuOffenCount } from "@/lib/partner/fachdoku-slots";
 import { portalToastError, portalToastSuccess } from "@/lib/shared/portal-toast";
@@ -32,6 +33,7 @@ export function PartnerFachdokuSlots({
   const [slots, setSlots] = useState<FachdokuSlotView[]>([]);
   const [loading, setLoading] = useState(true);
   const [busyId, setBusyId] = useState<string | null>(null);
+  const { runUpload } = usePortalUploadBusy();
   const inputRefs = useRef<Record<string, HTMLInputElement | null>>({});
 
   const apply = useCallback(
@@ -61,18 +63,23 @@ export function PartnerFachdokuSlots({
 
   async function onUpload(slotId: string, file: File) {
     setBusyId(slotId);
-    const fd = new FormData();
-    fd.set("auftragId", auftragId);
-    fd.set("slotId", slotId);
-    fd.set("file", file);
-    const res = await uploadPartnerFachdokuSlot(fd);
-    setBusyId(null);
-    if (!res.ok) {
-      portalToastError("Upload fehlgeschlagen", res.error);
-      return;
+    try {
+      await runUpload(async () => {
+        const fd = new FormData();
+        fd.set("auftragId", auftragId);
+        fd.set("slotId", slotId);
+        fd.set("file", file);
+        const res = await uploadPartnerFachdokuSlot(fd);
+        if (!res.ok) {
+          portalToastError("Upload fehlgeschlagen", res.error);
+          return;
+        }
+        portalToastSuccess("Fachnachweis hochgeladen", "Der Slot ist erledigt.");
+        apply(res.slots);
+      });
+    } finally {
+      setBusyId(null);
     }
-    portalToastSuccess("Fachnachweis hochgeladen", "Der Slot ist erledigt.");
-    apply(res.slots);
   }
 
   if (loading) {
@@ -108,11 +115,6 @@ export function PartnerFachdokuSlots({
     <section className={cn(className)}>
       <div className="border-b border-border-light pb-3">
         <h3 className="portal-text-title text-[15px]">Fachnachweise</h3>
-        <p className="portal-text-meta mt-0.5">
-          {offen > 0
-            ? `${offen} offen — Abnahme wird nicht blockiert`
-            : "Alle Nachweise hochgeladen"}
-        </p>
       </div>
 
       {/* Mobil: flache Zeilen */}

@@ -1,16 +1,16 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { updatePartnerProfil, uploadPartnerProfilLogo } from "@/app/actions/partner-profil";
 import { retryPendingPartnerAutoAngebote } from "@/app/actions/partner-auto-dokumente";
 import { PartnerDetailInfoBox } from "@/components/partner/PartnerDetailUi";
 import { PartnerRahmenvertragCard } from "@/components/partner/PartnerRahmenvertragCard";
-import { FileUploadField } from "@/components/shared/FileUploadField";
 import { PortalKontoSicherheitPanel } from "@/components/shared/PortalKontoSicherheitPanel";
 import { PortalEinstellungenShell } from "@/components/shared/PortalEinstellungenShell";
 import { PortalPushSettingsPanel } from "@/components/shared/PortalPushSettingsPanel";
+import { usePortalUploadBusy } from "@/components/shared/usePortalUploadBusy";
 import {
   EinstellungenEdField,
   EinstellungenEditModal,
@@ -24,6 +24,7 @@ import type {
   PartnerProfilKontext,
 } from "@/lib/partner/get-partner-data";
 import { resolveHandwerkerAnschrift } from "@/lib/partner/handwerker-anschrift";
+import { EINSTELLUNGEN_LOGO_HINT } from "@/lib/portal2/einstellungen";
 import { HW_FIRMEN_SECTIONS } from "@/lib/portal2/einstellungen-ui";
 import { partnerPortalToast, portalToastError } from "@/lib/shared/portal-toast";
 
@@ -96,15 +97,19 @@ export function PartnerFirmendatenScreen({
   profil: PartnerProfilKontext;
 }) {
   const router = useRouter();
+  const { uploadBusy: saving, runUpload } = usePortalUploadBusy();
   const [saved, setSaved] = useState(() => draftFromProfil(handwerker));
   const [edit, setEdit] = useState<Draft | null>(null);
   const [editOpen, setEditOpen] = useState(false);
-  const [saving, setSaving] = useState(false);
-  const [logoBusy, setLogoBusy] = useState(false);
+  const [logoPreview, setLogoPreview] = useState<string | null>(null);
+  const logoInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     setSaved(draftFromProfil(handwerker));
+    setLogoPreview(null);
   }, [handwerker]);
+
+  const logoSrc = logoPreview || handwerker.logo_signed_url;
 
   function openEdit() {
     setEdit({ ...saved });
@@ -118,42 +123,42 @@ export function PartnerFirmendatenScreen({
   }
 
   async function persist(next: Draft) {
-    setSaving(true);
-    const fd = new FormData();
-    fd.set("firma", next.firma);
-    fd.set("inhaber", next.inhaber);
-    fd.set("strasse", next.strasse);
-    fd.set("hausnummer", next.hausnummer);
-    fd.set("plz", next.plz);
-    fd.set("ort", next.ort);
-    fd.set("telefon", next.tel);
-    fd.set("ustid", next.ustid);
-    fd.set("steuernummer", next.steuernr);
-    fd.set("handelsregister", next.hrb);
-    fd.set("iban", next.iban);
-    fd.set("bic", next.bic);
-    fd.set("bank", next.bank);
-    fd.set("kleinunternehmer", next.kleinunternehmer ? "1" : "0");
-    const res = await updatePartnerProfil(fd);
-    setSaving(false);
-    if (!res.ok) {
-      portalToastError("Daten nicht gespeichert", res.error);
-      return false;
-    }
-    setSaved(next);
-    partnerPortalToast.stammdatenGespeichert();
-    try {
-      const retry = await retryPendingPartnerAutoAngebote();
-      if (retry.created > 0) {
-        partnerPortalToast.unterlagenHochgeladen();
-      } else if (retry.errors[0]) {
-        portalToastError("Angebot nachziehen fehlgeschlagen", retry.errors[0]);
+    return runUpload(async () => {
+      const fd = new FormData();
+      fd.set("firma", next.firma);
+      fd.set("inhaber", next.inhaber);
+      fd.set("strasse", next.strasse);
+      fd.set("hausnummer", next.hausnummer);
+      fd.set("plz", next.plz);
+      fd.set("ort", next.ort);
+      fd.set("telefon", next.tel);
+      fd.set("ustid", next.ustid);
+      fd.set("steuernummer", next.steuernr);
+      fd.set("handelsregister", next.hrb);
+      fd.set("iban", next.iban);
+      fd.set("bic", next.bic);
+      fd.set("bank", next.bank);
+      fd.set("kleinunternehmer", next.kleinunternehmer ? "1" : "0");
+      const res = await updatePartnerProfil(fd);
+      if (!res.ok) {
+        portalToastError("Daten nicht gespeichert", res.error);
+        return false;
       }
-    } catch {
-      /* ignore */
-    }
-    router.refresh();
-    return true;
+      setSaved(next);
+      partnerPortalToast.stammdatenGespeichert();
+      try {
+        const retry = await retryPendingPartnerAutoAngebote();
+        if (retry.created > 0) {
+          partnerPortalToast.unterlagenHochgeladen();
+        } else if (retry.errors[0]) {
+          portalToastError("Angebot nachziehen fehlgeschlagen", retry.errors[0]);
+        }
+      } catch {
+        /* ignore */
+      }
+      router.refresh();
+      return true;
+    });
   }
 
   async function onSaveEdit() {
@@ -164,17 +169,24 @@ export function PartnerFirmendatenScreen({
 
   async function onLogoChange(file: File | null) {
     if (!file) return;
-    setLogoBusy(true);
-    const fd = new FormData();
-    fd.set("logo", file);
-    const res = await uploadPartnerProfilLogo(fd);
-    setLogoBusy(false);
-    if (!res.ok) {
-      portalToastError("Logo nicht gespeichert", res.error);
+    if (!file.type.startsWith("image/")) {
+      portalToastError("Nur Bilder erlaubt");
       return;
     }
-    partnerPortalToast.stammdatenGespeichert();
-    router.refresh();
+    const localPreview = URL.createObjectURL(file);
+    setLogoPreview(localPreview);
+    const fd = new FormData();
+    fd.set("logo", file);
+    await runUpload(async () => {
+      const res = await uploadPartnerProfilLogo(fd);
+      if (!res.ok) {
+        setLogoPreview(null);
+        portalToastError("Logo nicht gespeichert", res.error);
+        return;
+      }
+      partnerPortalToast.stammdatenGespeichert();
+      router.refresh();
+    });
   }
 
   const handwerkskarte = filterProfilStammCompliance([
@@ -224,14 +236,14 @@ export function PartnerFirmendatenScreen({
                 </button>
               </div>
 
-              <div>
+              <div className="space-y-3">
                 <EinstellungenSectionHeader title={HW_FIRMEN_SECTIONS.logo} />
-                <div className="mt-2 flex flex-col gap-3 sm:flex-row sm:items-start sm:gap-4">
-                  <div className="flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-border-default bg-muted">
-                    {handwerker.logo_signed_url ? (
+                <div className="flex items-center gap-3.5">
+                  <div className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-border-default bg-muted">
+                    {logoSrc ? (
                       // eslint-disable-next-line @next/next/no-img-element
                       <img
-                        src={handwerker.logo_signed_url}
+                        src={logoSrc}
                         alt="Firmenlogo"
                         className="h-full w-full object-contain"
                       />
@@ -242,13 +254,34 @@ export function PartnerFirmendatenScreen({
                     )}
                   </div>
                   <div className="min-w-0 flex-1">
-                    <FileUploadField
-                      label="Logo hochladen"
-                      hint="PNG, JPG oder WebP — quadratisch, min. 256 px"
-                      accept="image/png,image/jpeg,image/webp"
-                      disabled={logoBusy}
-                      onChange={(files) => void onLogoChange(files[0] ?? null)}
+                    <p className="text-[12.5px] leading-relaxed text-text-secondary">
+                      {EINSTELLUNGEN_LOGO_HINT}{" "}
+                      <b className="text-text-primary">„{saved.logo}“</b> als
+                      Platzhalter.
+                    </p>
+                    <input
+                      ref={logoInputRef}
+                      type="file"
+                      accept="image/jpeg,image/png,image/webp"
+                      className="hidden"
+                      onChange={(e) => {
+                        const f = e.target.files?.[0] ?? null;
+                        e.target.value = "";
+                        void onLogoChange(f);
+                      }}
                     />
+                    <button
+                      type="button"
+                      disabled={saving}
+                      onClick={() => logoInputRef.current?.click()}
+                      className="mt-2 rounded-lg border border-border-default bg-white px-3 py-1.5 text-[12.5px] font-semibold text-text-primary disabled:opacity-50"
+                    >
+                      {saving
+                        ? "Wird hochgeladen…"
+                        : logoSrc
+                          ? "Logo ersetzen"
+                          : "Logo hochladen"}
+                    </button>
                   </div>
                 </div>
               </div>

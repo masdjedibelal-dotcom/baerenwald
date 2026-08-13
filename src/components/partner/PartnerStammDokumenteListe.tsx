@@ -16,6 +16,7 @@ import { PortalDokumentCard } from "@/components/shared/PortalDokumentCard";
 import { PortalDocOpenButton } from "@/components/shared/PortalDocOpenButton";
 import { PortalConfirmDialog } from "@/components/shared/PortalDetailUi";
 import { PortalModalShell } from "@/components/shared/PortalModalShell";
+import { usePortalUploadBusy } from "@/components/shared/usePortalUploadBusy";
 import {
   stammDokumentStatusLabel,
   stammDokumentStatusPillClass,
@@ -278,6 +279,7 @@ export function PartnerStammDokumenteListe({
   footer?: ReactNode;
 }) {
   const router = useRouter();
+  const { uploadBusy: saving, runUpload } = usePortalUploadBusy();
   const hatHandwerkskarte = handwerkskarte.length > 0;
   const [uploadOpen, setUploadOpen] = useState(false);
   const [draft, setDraft] = useState<UploadDraft>({
@@ -286,7 +288,6 @@ export function PartnerStammDokumenteListe({
     beschreibung: "",
     file: null,
   });
-  const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
 
   function openNewUpload() {
@@ -327,7 +328,6 @@ export function PartnerStammDokumenteListe({
       setFormError("Bitte Dokument oder Foto wählen.");
       return;
     }
-    setSaving(true);
     setFormError(null);
     const fd = new FormData();
     fd.set("typ", draft.typ || EIGENES_STAMM_DOKUMENT_TYP);
@@ -336,15 +336,16 @@ export function PartnerStammDokumenteListe({
       fd.set("beschreibung", draft.beschreibung.trim());
     }
     fd.set("file", draft.file);
-    const res = await uploadPartnerComplianceDokument(fd);
-    setSaving(false);
-    if (!res.ok) {
-      setFormError(res.error);
-      return;
-    }
-    partnerPortalToast.complianceHochgeladen(titel);
-    setUploadOpen(false);
-    router.refresh();
+    await runUpload(async () => {
+      const res = await uploadPartnerComplianceDokument(fd);
+      if (!res.ok) {
+        setFormError(res.error);
+        return;
+      }
+      partnerPortalToast.complianceHochgeladen(titel);
+      setUploadOpen(false);
+      router.refresh();
+    });
   }
 
   return (
@@ -418,9 +419,8 @@ export function PartnerStammDokumenteListe({
         dirty
         closeOnBackdrop={!saving}
         busy={saving}
-        onConfirm={() => void submitUpload()}
-        confirmDisabled={saving}
-        confirmLabel="Hochladen"
+        busyTitle="Wird hochgeladen…"
+        busyBody="Dokument wird gespeichert."
       >
         <div className="flex flex-col gap-3">
           <label className="flex flex-col gap-1">
@@ -453,6 +453,7 @@ export function PartnerStammDokumenteListe({
             label="Dokument oder Foto"
             accept="application/pdf,.pdf,image/jpeg,image/png,image/webp"
             hint="PDF, JPG, PNG oder WebP"
+            selectedFile={draft.file}
             selectedName={draft.file?.name ?? null}
             onChange={(files) =>
               setDraft({ ...draft, file: files[0] ?? null })
@@ -463,10 +464,10 @@ export function PartnerStammDokumenteListe({
               {formError}
             </p>
           ) : null}
-          <div className="mt-2 flex flex-wrap justify-end gap-2">
+          <div className="portal-action-row mt-2">
             <button
               type="button"
-              className="btn-pill-outline portal-btn"
+              className="portal-action-btn portal-action-btn--secondary"
               disabled={saving}
               onClick={closeUpload}
             >
@@ -474,7 +475,7 @@ export function PartnerStammDokumenteListe({
             </button>
             <button
               type="button"
-              className="btn-pill-primary portal-btn"
+              className="portal-action-btn portal-action-btn--primary"
               disabled={saving}
               onClick={() => void submitUpload()}
             >

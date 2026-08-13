@@ -9,7 +9,6 @@ import {
   SOFORTMASSNAHME_FAELLE_INTRO,
   SOFORTMASSNAHME_FAELLE_POPUP_TITLE,
 } from "@/lib/org/sofortmassnahme-faelle";
-import { PORTAL_VAR } from "@/lib/portal2/tokens";
 import { cn } from "@/lib/utils";
 
 type Props = {
@@ -28,10 +27,13 @@ export function SofortmassnahmeFaelleLink({ className }: Props) {
       <button
         type="button"
         className={cn(
-          "portal-text-label inline font-semibold normal-case tracking-normal underline-offset-2 hover:underline",
+          "inline-flex items-center rounded-md px-1.5 py-0.5 text-[13px] font-bold underline underline-offset-2",
+          "text-[var(--org-primary,var(--p2-primary,#2e7d52))]",
+          "bg-[var(--org-primary-soft,var(--p2-primary-soft,#e7f1e9))]",
+          "hover:bg-[var(--org-primary,var(--p2-primary,#2e7d52))] hover:text-white",
+          "transition-colors",
           className
         )}
-        style={{ color: PORTAL_VAR.primary }}
         onClick={(e) => {
           e.preventDefault();
           e.stopPropagation();

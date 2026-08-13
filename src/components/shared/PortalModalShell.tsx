@@ -73,6 +73,7 @@ export type PortalModalShellProps = {
   headerExtra?: ReactNode;
   /**
    * Check rechts oben — Speichern/Bestätigen und schließen.
+   * Nur nutzen, wenn es keinen Footer-CTA gibt (sonst doppelte Aktion).
    * × links = nur schließen (ohne Speichern).
    */
   onConfirm?: () => void;

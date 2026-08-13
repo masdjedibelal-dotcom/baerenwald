@@ -53,6 +53,8 @@ export function PortalDocOpenButton({
     }
 
     if (kind === "pdf" && shouldAvoidNativePdfNavigation()) {
+      // Ohne Provider: trotzdem nicht top-level navigieren — Blob speichern
+      // ist Fallback; mit PortalDocViewerProvider öffnet sich die Vorschau.
       try {
         const blob = await fetchPortalDocBlob(url);
         downloadPortalBlob(blob, portalDocDownloadName(name, kind));

@@ -130,7 +130,7 @@ export function FachdetailsStep({
         </p>
       ) : null}
 
-      <div className="space-y-3">
+      <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
         {question.optionen.map((opt) => {
           const libOpt = asLibOpt(opt, stripInfoBoxes);
           const selected = multi

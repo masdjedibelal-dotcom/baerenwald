@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useId, useState, type MouseEvent } from "react";
 
+import { PortalDocPdfCanvas } from "@/components/shared/PortalDocPdfCanvas";
 import {
   downloadPortalBlob,
   fetchPortalDocBlob,
@@ -11,8 +12,6 @@ import {
   portalDocMetaLine,
   portalDocTitle,
   resolvePortalDocKind,
-  sharePortalBlob,
-  shouldAvoidNativePdfNavigation,
   type PortalDocView,
 } from "@/lib/portal2/doc-viewer";
 import { cn } from "@/lib/utils";
@@ -23,9 +22,8 @@ export type PortalDocViewerProps = {
 };
 
 /**
- * Mock `docViewer()` — Vollbild-Overlay, dunkle Leiste, echte Preview.
- * PDF in PWA/iOS: kein natives Embed/`_blank` (sonst weg ohne Zurück) —
- * Blob laden, Overlay behalten, Download/Share.
+ * Vollbild-Vorschau in der PWA: PDF/Bild im Overlay, Schließen oben.
+ * PDFs per PDF.js (Canvas) — kein System-Download, kein Verlassen der App.
  */
 export function PortalDocViewer({ doc, onClose }: PortalDocViewerProps) {
   const titleId = useId();
@@ -35,7 +33,6 @@ export function PortalDocViewer({ doc, onClose }: PortalDocViewerProps) {
   const meta = portalDocMetaLine(doc, kind);
   const badge = portalDocBadgeLabel(kind);
   const downloadName = portalDocDownloadName(doc.name, kind);
-  const avoidNativePdf = kind === "pdf" && shouldAvoidNativePdfNavigation();
 
   const [loadError, setLoadError] = useState(false);
   const [loading, setLoading] = useState(kind === "pdf");
@@ -43,14 +40,12 @@ export function PortalDocViewer({ doc, onClose }: PortalDocViewerProps) {
   const [previewUrl, setPreviewUrl] = useState<string | null>(
     kind === "pdf" ? null : url
   );
-  const [busyAction, setBusyAction] = useState<"download" | "share" | null>(
-    null
-  );
+  const [busyDownload, setBusyDownload] = useState(false);
 
   useEffect(() => {
     setLoadError(false);
     setBlob(null);
-    setBusyAction(null);
+    setBusyDownload(false);
 
     if (kind !== "pdf") {
       setLoading(false);
@@ -67,8 +62,12 @@ export function PortalDocViewer({ doc, onClose }: PortalDocViewerProps) {
       try {
         const next = await fetchPortalDocBlob(url);
         if (cancelled) return;
-        setBlob(next);
-        objectUrl = URL.createObjectURL(next);
+        const typed =
+          next.type === "application/pdf"
+            ? next
+            : new Blob([next], { type: "application/pdf" });
+        setBlob(typed);
+        objectUrl = URL.createObjectURL(typed);
         setPreviewUrl(objectUrl);
         setLoadError(false);
       } catch {
@@ -111,40 +110,22 @@ export function PortalDocViewer({ doc, onClose }: PortalDocViewerProps) {
     async (e: MouseEvent) => {
       e.preventDefault();
       e.stopPropagation();
-      setBusyAction("download");
+      setBusyDownload(true);
       try {
         const file = await ensureBlob();
         downloadPortalBlob(file, downloadName);
       } catch {
         setLoadError(true);
       } finally {
-        setBusyAction(null);
+        setBusyDownload(false);
       }
     },
     [downloadName, ensureBlob]
   );
 
-  const onShare = useCallback(
-    async (e: MouseEvent) => {
-      e.preventDefault();
-      e.stopPropagation();
-      setBusyAction("share");
-      try {
-        const file = await ensureBlob();
-        const ok = await sharePortalBlob(file, downloadName);
-        if (!ok) downloadPortalBlob(file, downloadName);
-      } catch {
-        setLoadError(true);
-      } finally {
-        setBusyAction(null);
-      }
-    },
-    [downloadName, ensureBlob]
-  );
+  const onPdfRenderError = useCallback(() => setLoadError(true), []);
 
-  const showPdfSafeUi = kind === "pdf" && (avoidNativePdf || loadError);
-  const showPdfIframe =
-    kind === "pdf" && !avoidNativePdf && !loadError && Boolean(previewUrl);
+  const showPdfPreview = kind === "pdf" && !loadError && Boolean(previewUrl);
 
   return (
     <div
@@ -183,16 +164,18 @@ export function PortalDocViewer({ doc, onClose }: PortalDocViewerProps) {
           </div>
           <div className="portal-doc-viewer-bar-sub">
             {meta}
-            {kind === "pdf" && !avoidNativePdf ? " · Vorschau" : null}
+            {kind === "pdf" ? " · Vorschau" : null}
           </div>
         </div>
         <button
           type="button"
           className="portal-doc-viewer-download"
           onClick={onDownload}
-          disabled={busyAction != null}
+          disabled={busyDownload || loading}
+          aria-label="Herunterladen"
+          title="Herunterladen"
         >
-          {busyAction === "download" ? "…" : "↓ Herunterladen"}
+          {busyDownload ? "…" : "↓"}
         </button>
       </div>
 
@@ -200,39 +183,40 @@ export function PortalDocViewer({ doc, onClose }: PortalDocViewerProps) {
         <div
           className={cn(
             "portal-doc-viewer-stage",
-            kind === "image" && "portal-doc-viewer-stage--image"
+            kind === "image" && "portal-doc-viewer-stage--image",
+            kind === "pdf" && "portal-doc-viewer-stage--pdf"
           )}
           onClick={(e) => e.stopPropagation()}
         >
           {loading ? (
             <div className="portal-doc-viewer-fallback">
               <p className="portal-doc-viewer-fallback-title">{title}</p>
-              <p className="portal-doc-viewer-fallback-text">Dokument wird geladen…</p>
+              <p className="portal-doc-viewer-fallback-text">
+                Vorschau wird geladen…
+              </p>
             </div>
-          ) : showPdfSafeUi ? (
+          ) : loadError ? (
             <div className="portal-doc-viewer-fallback">
               <p className="portal-doc-viewer-fallback-title">{title}</p>
               <p className="portal-doc-viewer-fallback-text">
-                {loadError
-                  ? "Vorschau nicht verfügbar. Du kannst die Datei speichern oder teilen — ohne die App zu verlassen."
-                  : "In der App-Ansicht öffnen wir PDFs nicht systemweit (sonst fehlt Zurück). Speichern oder teilen — Schließen bleibt oben."}
+                Vorschau nicht verfügbar. Du kannst die Datei speichern oder
+                schließen.
               </p>
               <div className="portal-doc-viewer-fallback-actions">
                 <button
                   type="button"
                   className="portal-doc-viewer-fallback-btn"
                   onClick={onDownload}
-                  disabled={busyAction != null}
+                  disabled={busyDownload}
                 >
-                  {busyAction === "download" ? "…" : "↓ Speichern"}
+                  {busyDownload ? "…" : "↓ Speichern"}
                 </button>
                 <button
                   type="button"
                   className="portal-doc-viewer-fallback-btn portal-doc-viewer-fallback-btn--ghost"
-                  onClick={onShare}
-                  disabled={busyAction != null}
+                  onClick={onClose}
                 >
-                  {busyAction === "share" ? "…" : "Teilen"}
+                  Schließen
                 </button>
               </div>
             </div>
@@ -244,11 +228,12 @@ export function PortalDocViewer({ doc, onClose }: PortalDocViewerProps) {
               className="portal-doc-viewer-img"
               onError={() => setLoadError(true)}
             />
-          ) : showPdfIframe ? (
-            <iframe
+          ) : showPdfPreview ? (
+            <PortalDocPdfCanvas
+              src={previewUrl!}
               title={title}
-              src={previewUrl ?? undefined}
-              className="portal-doc-viewer-iframe"
+              className="portal-doc-viewer-pdf-pages"
+              onError={onPdfRenderError}
             />
           ) : (
             <div className="portal-doc-viewer-fallback">
@@ -261,9 +246,16 @@ export function PortalDocViewer({ doc, onClose }: PortalDocViewerProps) {
                   type="button"
                   className="portal-doc-viewer-fallback-btn"
                   onClick={onDownload}
-                  disabled={busyAction != null}
+                  disabled={busyDownload}
                 >
                   ↓ Speichern
+                </button>
+                <button
+                  type="button"
+                  className="portal-doc-viewer-fallback-btn portal-doc-viewer-fallback-btn--ghost"
+                  onClick={onClose}
+                >
+                  Schließen
                 </button>
               </div>
             </div>

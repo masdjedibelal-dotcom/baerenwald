@@ -75,6 +75,13 @@ function PartnerUnifiedDetails({
     typeof C.summeEkNetto === "number" && C.summeEkNetto > 0
       ? formatPartnerEuro(C.summeEkNetto)
       : null;
+  const adresse =
+    B.adresseStrasse?.trim() || B.adresseZeile?.trim() || null;
+  const termin =
+    C.terminLabel?.trim() &&
+    C.terminLabel.trim() !== (B.zeitraumLabel?.trim() || "")
+      ? C.terminLabel.trim()
+      : null;
 
   return (
     <div className={cn(className)}>
@@ -83,7 +90,14 @@ function PartnerUnifiedDetails({
           {B.objektTitel ? (
             <MetaRow label="Objekt" value={B.objektTitel} />
           ) : null}
+          {adresse && adresse !== (B.objektTitel?.trim() || "") ? (
+            <MetaRow label="Adresse" value={adresse} />
+          ) : null}
           {B.plzOrt ? <MetaRow label="PLZ / Ort" value={B.plzOrt} /> : null}
+          {B.einheit ? <MetaRow label="Einheit" value={B.einheit} /> : null}
+          {B.zugangshinweis ? (
+            <MetaRow label="Zugang" value={B.zugangshinweis} />
+          ) : null}
           {B.situationLabel ? (
             <MetaRow label="Situation" value={B.situationLabel} />
           ) : null}
@@ -93,6 +107,7 @@ function PartnerUnifiedDetails({
           {B.zeitraumLabel ? (
             <MetaRow label="Zeitraum" value={B.zeitraumLabel} />
           ) : null}
+          {termin ? <MetaRow label="Termin" value={termin} /> : null}
           {B.fachdetailRows?.map((row) => (
             <MetaRow
               key={`${row.label}:${row.value}`}
@@ -100,6 +115,9 @@ function PartnerUnifiedDetails({
               value={row.value}
             />
           ))}
+          {B.beschreibung ? (
+            <MetaRow label="Beschreibung" value={B.beschreibung} />
+          ) : null}
           {C.gewerk ? <MetaRow label="Gewerk" value={C.gewerk} /> : null}
           {verguetung ? (
             <MetaRow label="Vergütung (Netto)" value={verguetung} />
@@ -110,17 +128,10 @@ function PartnerUnifiedDetails({
           {kontaktValue ? (
             <MetaRow label="Kontakt vor Ort" value={kontaktValue} />
           ) : null}
+          {B.melderEmail?.trim() ? (
+            <MetaRow label="E-Mail" value={B.melderEmail.trim()} />
+          ) : null}
         </div>
-        {B.beschreibung ? (
-          <div className="mt-3">
-            <p className="mb-1 text-[12px] font-semibold uppercase tracking-wide text-text-secondary">
-              Beschreibung
-            </p>
-            <p className="portal-text-body whitespace-pre-wrap text-text-secondary">
-              {B.beschreibung}
-            </p>
-          </div>
-        ) : null}
         {B.fotos && B.fotos.length > 0 ? (
           <div className="mt-3">
             <p className="mb-2 text-[12px] font-semibold uppercase tracking-wide text-text-secondary">

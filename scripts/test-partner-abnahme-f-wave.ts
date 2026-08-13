@@ -120,8 +120,8 @@ const item = {
 
 assert.equal(
   partnerAuftragKannRechnungHochladen(item),
-  false,
-  "Rechnung ohne Abnahme"
+  true,
+  "Rechnung ohne Abnahme/Protokoll möglich"
 );
 
 assert.equal(
@@ -130,7 +130,7 @@ assert.equal(
     hw_abschluss_signiert_am: "2026-07-24T10:00:00Z",
   }),
   true,
-  "Rechnung nach Abnahme"
+  "Rechnung mit Abnahme weiterhin möglich"
 );
 
 console.log("audit F-wave abnahme checks passed.");

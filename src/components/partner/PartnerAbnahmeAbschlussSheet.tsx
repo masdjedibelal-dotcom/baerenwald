@@ -8,6 +8,7 @@ import { PortalDetailError } from "@/components/shared/PortalDetailUi";
 import { PartnerKiKorrekturField } from "@/components/partner/PartnerKiKorrekturField";
 import { PortalContentBusy } from "@/components/shared/PortalContentBusy";
 import { PortalModalShell } from "@/components/shared/PortalModalShell";
+import { usePortalBusy } from "@/components/shared/PortalBusyContext";
 import { usePortalRefresh } from "@/components/shared/usePortalRefresh";
 import { SignatureCanvas } from "@/components/shared/SignatureCanvas";
 import {
@@ -103,6 +104,7 @@ export function PartnerAbnahmeAbschlussSheet({
   onSuccess,
 }: Props) {
   const { refresh } = usePortalRefresh();
+  const { runBusy } = usePortalBusy();
   const [step, setStep] = useState<Step>("leistungen");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -364,36 +366,38 @@ export function PartnerAbnahmeAbschlussSheet({
     setLoading(true);
     setError(null);
     try {
-      const res = await submitPartnerAbnahmeNachSignatur({
-        auftragId,
-        abnahmeDatum,
-        ort,
-        projektbezeichnung: projektbezeichnung.trim(),
-        vertreter: vertreter.trim(),
-        abnahmeErgebnis: ergebnis,
-        notizen: notizen.trim() || null,
-        punkte,
-        maengel,
-        hwUnterschriftName: hwName,
-        kundeUnterschriftName: kundeName,
-        hwSignaturPng: hwSig,
-        kundeSignaturPng: kundeSig,
+      await runBusy(async () => {
+        const res = await submitPartnerAbnahmeNachSignatur({
+          auftragId,
+          abnahmeDatum,
+          ort,
+          projektbezeichnung: projektbezeichnung.trim(),
+          vertreter: vertreter.trim(),
+          abnahmeErgebnis: ergebnis,
+          notizen: notizen.trim() || null,
+          punkte,
+          maengel,
+          hwUnterschriftName: hwName,
+          kundeUnterschriftName: kundeName,
+          hwSignaturPng: hwSig,
+          kundeSignaturPng: kundeSig,
+        });
+        if (!res.ok) {
+          setError(res.error);
+          setLoading(false);
+          return;
+        }
+        partnerPortalToast.abschlussSigniert();
+        await refresh();
+        onSuccess({
+          vollstaendig: res.vollstaendig,
+          pdf_url: res.pdf_url,
+          protokoll_id: res.protokoll_id,
+          punkte_count: res.punkte_count,
+          maengel_count: res.maengel_count,
+        });
+        // Loading bleibt bis Sheet schließt — kein Formular-Flackern.
       });
-      if (!res.ok) {
-        setError(res.error);
-        setLoading(false);
-        return;
-      }
-      partnerPortalToast.abschlussSigniert();
-      await refresh();
-      onSuccess({
-        vollstaendig: res.vollstaendig,
-        pdf_url: res.pdf_url,
-        protokoll_id: res.protokoll_id,
-        punkte_count: res.punkte_count,
-        maengel_count: res.maengel_count,
-      });
-      // Loading bleibt bis Sheet schließt — kein Formular-Flackern.
     } catch {
       setError("Abschluss fehlgeschlagen. Bitte erneut versuchen.");
       setLoading(false);
@@ -441,18 +445,6 @@ export function PartnerAbnahmeAbschlussSheet({
       busy={loading}
       busyTitle="Abnahmedokument wird abgeschlossen…"
       busyBody="Signaturen werden gespeichert und das Protokoll erstellt."
-      onConfirm={() => {
-        if (step === "sig_kunde") void submit();
-        else goNext();
-      }}
-      confirmDisabled={loading || (step === "sig_kunde" && !canSubmit)}
-      confirmLabel={
-        step === "sig_kunde"
-          ? "Protokoll abschließen"
-          : step === "maengel" && maengel.length === 0
-            ? "Keine Mängel — weiter"
-            : "Weiter"
-      }
     >
       {loading ? (
         <PortalContentBusy
@@ -844,11 +836,11 @@ export function PartnerAbnahmeAbschlussSheet({
             className="-mx-1 mt-3 border-t bg-[var(--portal-surface,#fff)] px-1 pt-3"
             style={{ borderColor: PORTAL_VAR.line }}
           >
-            <div className="flex items-stretch gap-2">
+            <div className="portal-action-row">
               {stepIndex > 0 ? (
                 <button
                   type="button"
-                  className="portal-action-btn portal-action-btn--secondary inline-flex min-w-0 flex-1 items-center justify-center gap-1"
+                  className="portal-action-btn portal-action-btn--secondary"
                   onClick={goBack}
                 >
                   <ChevronLeft className="h-4 w-4 shrink-0" aria-hidden />
@@ -858,7 +850,7 @@ export function PartnerAbnahmeAbschlussSheet({
               {step === "sig_kunde" ? (
                 <button
                   type="button"
-                  className="portal-action-btn portal-action-btn--primary min-w-0 flex-1"
+                  className="portal-action-btn portal-action-btn--primary"
                   disabled={!canSubmit}
                   onClick={() => void submit()}
                 >
@@ -867,7 +859,7 @@ export function PartnerAbnahmeAbschlussSheet({
               ) : (
                 <button
                   type="button"
-                  className="portal-action-btn portal-action-btn--primary min-w-0 flex-1"
+                  className="portal-action-btn portal-action-btn--primary"
                   onClick={goNext}
                 >
                   {step === "maengel" && maengel.length === 0
@@ -907,33 +899,13 @@ export function PartnerAbnahmeAbschlussSheet({
             draftTitel.trim().length > 0 || draftBeschreibung.trim().length > 0
           }
           closeOnBackdrop
-          onConfirm={
-            addMode === "wahl"
-              ? undefined
-              : () => {
-                  const ok =
-                    addMode === "mangel"
-                      ? addMangel()
-                      : addMode === "erkannt"
-                        ? addErkanntLeistung()
-                        : addLeerLeistung();
-                  if (ok) resetDraft();
-                }
-          }
-          confirmDisabled={
-            addMode === "wahl" ||
-            (addMode === "erkannt"
-              ? !draftLeistungId || draftTitel.trim().length < 2
-              : draftTitel.trim().length < 2)
-          }
-          confirmLabel="Hinzufügen"
         >
           <div className="space-y-3">
             {addMode === "wahl" ? (
-              <div className="space-y-2">
+              <div className="portal-action-row">
                 <button
                   type="button"
-                  className="portal-action-btn portal-action-btn--secondary portal-action-btn--block"
+                  className="portal-action-btn portal-action-btn--secondary"
                   onClick={() => {
                     setDraftTitel("");
                     setDraftBeschreibung("");
@@ -944,18 +916,18 @@ export function PartnerAbnahmeAbschlussSheet({
                 </button>
                 <button
                   type="button"
-                  className="portal-action-btn portal-action-btn--primary portal-action-btn--block"
+                  className="portal-action-btn portal-action-btn--primary"
                   disabled={!availableLeistungen.length}
                   onClick={() => setAddMode("erkannt")}
                 >
                   Erkannt — aus Auftrag
                 </button>
-                {!availableLeistungen.length ? (
-                  <p className="text-[12px] text-text-tertiary">
-                    Alle zugewiesenen Leistungen sind bereits hinzugefügt.
-                  </p>
-                ) : null}
               </div>
+            ) : null}
+            {addMode === "wahl" && !availableLeistungen.length ? (
+              <p className="text-[12px] text-text-tertiary">
+                Alle zugewiesenen Leistungen sind bereits hinzugefügt.
+              </p>
             ) : null}
 
             {addMode === "leer" || addMode === "mangel" ? (
@@ -993,10 +965,17 @@ export function PartnerAbnahmeAbschlussSheet({
                     />
                   </label>
                 ) : null}
-                <div className="flex flex-col gap-2">
+                <div className="portal-action-row">
                   <button
                     type="button"
-                    className="portal-action-btn portal-action-btn--primary portal-action-btn--block"
+                    className="portal-action-btn portal-action-btn--secondary"
+                    onClick={resetDraft}
+                  >
+                    Abbrechen
+                  </button>
+                  <button
+                    type="button"
+                    className="portal-action-btn portal-action-btn--primary"
                     disabled={draftTitel.trim().length < 2}
                     onClick={() => {
                       const ok =
@@ -1005,13 +984,6 @@ export function PartnerAbnahmeAbschlussSheet({
                     }}
                   >
                     Hinzufügen
-                  </button>
-                  <button
-                    type="button"
-                    className="portal-action-btn portal-action-btn--secondary portal-action-btn--block"
-                    onClick={resetDraft}
-                  >
-                    Abbrechen
                   </button>
                 </div>
               </div>
@@ -1069,23 +1041,23 @@ export function PartnerAbnahmeAbschlussSheet({
                       leistungName={draftTitel}
                       placeholder="Tippen — KI formuliert kundenfertig"
                     />
-                    <div className="flex flex-col gap-2">
+                    <div className="portal-action-row">
                       <button
                         type="button"
-                        className="portal-action-btn portal-action-btn--primary portal-action-btn--block"
+                        className="portal-action-btn portal-action-btn--secondary"
+                        onClick={resetDraft}
+                      >
+                        Abbrechen
+                      </button>
+                      <button
+                        type="button"
+                        className="portal-action-btn portal-action-btn--primary"
                         disabled={draftTitel.trim().length < 2}
                         onClick={() => {
                           if (addErkanntLeistung()) resetDraft();
                         }}
                       >
                         Hinzufügen
-                      </button>
-                      <button
-                        type="button"
-                        className="portal-action-btn portal-action-btn--secondary portal-action-btn--block"
-                        onClick={resetDraft}
-                      >
-                        Abbrechen
                       </button>
                     </div>
                   </>

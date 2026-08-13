@@ -26,7 +26,7 @@ type Props = {
 };
 
 /**
- * Detail-Banner: Vorgang freigeben · Ablehnen
+ * Detail-Banner: Ablehnen · Vorgang freigeben (links negativ, rechts positiv)
  * Akut / unter Schwelle → nur Info (keine Buttons).
  */
 export function OrgMeldungAktionBanner({

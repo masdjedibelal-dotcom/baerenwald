@@ -44,7 +44,8 @@ function btnStyle(variant: "primary" | "ghost" | "danger"): CSSProperties {
 }
 
 /**
- * Listen-Aktionen Meldungen · Eingang: Vorgang freigeben · Ablehnen
+ * Listen-Aktionen Meldungen · Eingang: Ablehnen · Vorgang freigeben
+ * (links negativ, rechts positiv)
  * → POST /api/org/meldung-aktion
  */
 export function HvMeldungListActions({

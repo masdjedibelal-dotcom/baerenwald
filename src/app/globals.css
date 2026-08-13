@@ -112,14 +112,14 @@
     "SF Pro Display", "Segoe UI", system-ui, Roboto, "Helvetica Neue", Arial,
     sans-serif;
 
-  /* Typo-Skala (Lesbarkeit) — Komponenten nutzen portal-text-* */
-  --p2-type-label: 12.5px;
-  --p2-type-meta: 14px;
-  --p2-type-body: 16.5px;
-  --p2-type-section: 17px;
-  --p2-type-title: 18px;
-  --p2-type-page: 25px;
-  --p2-type-nav: 14px;
+  /* Typo-Skala (Lesbarkeit) — +10 % gegenüber Basis; Komponenten nutzen portal-text-* */
+  --p2-type-label: 13.75px;
+  --p2-type-meta: 15.5px;
+  --p2-type-body: 18px;
+  --p2-type-section: 18.5px;
+  --p2-type-title: 20px;
+  --p2-type-page: 27.5px;
+  --p2-type-nav: 15.5px;
 
   /*
    * Einheitliche Portal-Control-Skala.
@@ -130,8 +130,8 @@
   --portal-btn-h-compact: 38px;
   --portal-btn-px: 20px;
   --portal-btn-px-compact: 12px;
-  --portal-btn-font: 15px;
-  --portal-btn-font-compact: 14px;
+  --portal-btn-font: 16.5px;
+  --portal-btn-font-compact: 15.5px;
   --portal-btn-radius: 9px;
 
   /* Bridge auf bestehende Portal-Utility-Klassen */
@@ -319,7 +319,7 @@ h3 {
 }
 
 @layer components {
-  /* Portal type scale — label 12.5 · meta 14 · body 16.5 · section 17 · title 18 */
+  /* Portal type scale — label 13.75 · meta 15.5 · body 18 · section 18.5 · title 20 */
   .portal-text-body {
     font-size: var(--p2-type-body, 16.5px);
     line-height: 1.55;
@@ -644,6 +644,8 @@ h3 {
 
   .portal-action-row {
     display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
     width: 100%;
     align-items: stretch;
     gap: 10px;
@@ -1311,18 +1313,40 @@ h3 {
     }
   }
 
-  .portal-doc-viewer-iframe {
-    display: block;
-    width: 100%;
-    height: min(78vh, 860px);
-    border: 0;
-    background: #fff;
+  .portal-doc-viewer-stage--pdf {
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    background: #e8ebe9;
+    max-height: min(82vh, 900px);
+    max-width: min(860px, 96vw);
+    min-height: 0;
   }
 
   @media (min-width: 1024px) {
-    .portal-doc-viewer-iframe {
-      height: 720px;
+    .portal-doc-viewer-stage--pdf {
+      min-height: 0;
+      max-height: 780px;
     }
+  }
+
+  .portal-doc-viewer-pdf-pages {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    padding: 12px 10px 24px;
+    box-sizing: border-box;
+  }
+
+  .portal-doc-viewer-pdf-page {
+    display: block;
+    width: 100%;
+    max-width: 860px;
+    height: auto;
+    background: #fff;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.12);
+    border-radius: 2px;
   }
 
   .portal-doc-viewer-img {
@@ -1468,8 +1492,9 @@ h3 {
     margin-top: 1px;
     display: grid;
     place-items: center;
-    background: none;
-    border: none;
+    background: #fff;
+    border: 1px solid var(--p2-line, rgba(0, 0, 0, 0.1));
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
     flex-shrink: 0;
     border-radius: 8px;
   }
@@ -1477,6 +1502,7 @@ h3 {
   .portal-modal-shell-close:hover {
     color: var(--p2-ink, #16201b);
     background: var(--p2-hover, #eef1ef);
+    border-color: rgba(0, 0, 0, 0.14);
   }
 
   .portal-modal-shell-close:disabled {
@@ -1484,7 +1510,7 @@ h3 {
     cursor: not-allowed;
   }
 
-  /* ✓ rechts — Speichern/Bestätigen (Gegenstück zu × links) */
+  /* ✓ rechts — Speichern/Bestätigen (Gegenstück zu × links); nur wenn kein Footer-CTA */
   .portal-modal-shell-confirm {
     width: 32px;
     height: 32px;
@@ -1493,22 +1519,24 @@ h3 {
     display: grid;
     place-items: center;
     flex-shrink: 0;
-    border: none;
+    border: 1px solid color-mix(in srgb, var(--org-primary, #2e7d52) 28%, transparent);
     border-radius: 8px;
-    background: none;
+    background: #fff;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
     color: var(--org-primary, var(--color-accent, #2e7d52));
     cursor: pointer;
     line-height: 1;
   }
 
   .portal-modal-shell-confirm svg {
-    width: 20px;
-    height: 20px;
+    width: 18px;
+    height: 18px;
   }
 
   .portal-modal-shell-confirm:hover:not(:disabled) {
     background: var(--p2-soft, #e8f2ec);
     color: var(--org-primary-dk, var(--color-accent, #1f5c3c));
+    border-color: color-mix(in srgb, var(--org-primary, #2e7d52) 42%, transparent);
   }
 
   .portal-modal-shell-confirm:disabled {
@@ -1538,16 +1566,18 @@ h3 {
     padding: 16px;
   }
 
-  /* Confirm = ActionSheet: Primary zuerst, volle Breite mobil */
+  /* Confirm-Actions: immer nebeneinander — Cancel links, Primary rechts */
   .portal-confirm-actions {
     display: flex;
-    flex-direction: column-reverse;
-    gap: 8px;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    width: 100%;
+    align-items: stretch;
+    gap: 10px;
   }
 
   .portal-confirm-actions-primary,
   .portal-confirm-actions-cancel {
-    width: 100%;
     min-height: var(--portal-btn-h, 44px) !important;
     height: var(--portal-btn-h, 44px) !important;
     padding: 0 var(--portal-btn-px, 16px) !important;
@@ -1561,6 +1591,16 @@ h3 {
     line-height: 1.2;
   }
 
+  .portal-confirm-actions > .portal-confirm-actions-primary {
+    flex: 1 1 0;
+    min-width: 0;
+  }
+
+  .portal-confirm-actions > .portal-confirm-actions-cancel {
+    flex: 0 1 auto;
+    min-width: 7.5rem;
+  }
+
   /* Primär-CTA muss immer lesbar sein (kein weiß-auf-weiß über --accent). */
   .portal-ui .portal-confirm-actions-primary:not([class*="text-red"]) {
     background: var(--org-primary, var(--p2-primary, #2e7d52)) !important;
@@ -1570,19 +1610,6 @@ h3 {
 
   .portal-ui .portal-confirm-actions-primary:not([class*="text-red"]):hover:not(:disabled) {
     background: var(--org-primary-dk, var(--p2-primary-dk, #256642)) !important;
-  }
-
-  @media (min-width: 1024px) {
-    .portal-confirm-actions {
-      flex-direction: row;
-      justify-content: flex-end;
-      flex-wrap: wrap;
-    }
-
-    .portal-confirm-actions-primary,
-    .portal-confirm-actions-cancel {
-      width: auto;
-    }
   }
 
   /* Dirty-/Sheet-Confirm — unten (mobil), zentriert (Desktop) */
@@ -1628,13 +1655,14 @@ h3 {
 
   .portal-modal-discard-actions {
     display: flex;
-    flex-wrap: wrap;
+    flex-direction: row;
+    flex-wrap: nowrap;
     justify-content: flex-end;
-    gap: 8px;
+    gap: 10px;
   }
 
   .portal-modal-discard-actions .portal-action-btn {
-    flex: 1 1 auto;
+    flex: 1 1 0;
     min-width: 0;
   }
 

@@ -59,9 +59,6 @@ export function PartnerPreisBearbeitenDialog({
       onClose={onCancel}
       variant="edit"
       dirty={dirty}
-      onConfirm={onConfirm}
-      confirmDisabled={parsed == null}
-      confirmLabel="Übernehmen"
     >
       {vorschlagNetto != null && vorschlagNetto > 0 ? (
         <p className="portal-text-meta text-text-tertiary">
@@ -122,11 +119,11 @@ export function PartnerPreisBearbeitenDialog({
         />
       </label>
 
-      <div className="mt-6 flex flex-wrap justify-end gap-2">
+      <div className="portal-action-row mt-6">
         <button
           type="button"
           onClick={onCancel}
-          className="btn-pill-outline portal-btn"
+          className="portal-action-btn portal-action-btn--secondary"
         >
           Abbrechen
         </button>
@@ -134,7 +131,7 @@ export function PartnerPreisBearbeitenDialog({
           type="button"
           disabled={parsed == null}
           onClick={onConfirm}
-          className="btn-pill-primary portal-btn disabled:opacity-50"
+          className="portal-action-btn portal-action-btn--primary disabled:opacity-50"
         >
           Übernehmen
         </button>

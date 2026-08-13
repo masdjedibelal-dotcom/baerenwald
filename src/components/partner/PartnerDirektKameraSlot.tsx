@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { Camera, Check, Loader2 } from "lucide-react";
+import { Camera, Check, ImageIcon, Loader2 } from "lucide-react";
 
 import { normalizePartnerCameraPhoto } from "@/lib/partner/normalize-camera-photo";
 import { cn } from "@/lib/utils";
@@ -20,7 +20,8 @@ type Props = {
 };
 
 /**
- * Direkt-Kamera: capture=environment, kein Galerie-Default.
+ * Foto-Slot: Kamera oder Mediathek — eine Datei fürs Formular.
+ * Kein HTML-`required` auf versteckten Inputs (sonst hängt der Submit ohne Feedback).
  */
 export function PartnerDirektKameraSlot({
   label,
@@ -31,18 +32,17 @@ export function PartnerDirektKameraSlot({
   compact = false,
   onCaptured,
 }: Props) {
-  const inputRef = useRef<HTMLInputElement>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
+  const cameraRef = useRef<HTMLInputElement>(null);
+  const galleryRef = useRef<HTMLInputElement>(null);
   const [preview, setPreview] = useState<string | null>(null);
   const [status, setStatus] = useState<"idle" | "uploading" | "done">("idle");
   const [captureAt, setCaptureAt] = useState<string>("");
   const [error, setError] = useState<string | null>(null);
 
-  function openCamera() {
-    inputRef.current?.click();
-  }
-
-  async function onChange(e: React.ChangeEvent<HTMLInputElement>) {
+  async function onPick(e: React.ChangeEvent<HTMLInputElement>) {
     const raw = e.target.files?.[0];
+    e.target.value = "";
     if (!raw) return;
     const iso = new Date().toISOString();
     setCaptureAt(iso);
@@ -51,7 +51,7 @@ export function PartnerDirektKameraSlot({
 
     try {
       const file = await normalizePartnerCameraPhoto(raw);
-      const input = inputRef.current;
+      const input = fileRef.current;
       if (input) {
         const dt = new DataTransfer();
         dt.items.add(file);
@@ -66,7 +66,7 @@ export function PartnerDirektKameraSlot({
     } catch {
       setStatus("idle");
       setPreview(null);
-      setError("Foto konnte nicht verarbeitet werden. Bitte erneut aufnehmen.");
+      setError("Foto konnte nicht verarbeitet werden. Bitte erneut versuchen.");
     }
   }
 
@@ -78,12 +78,10 @@ export function PartnerDirektKameraSlot({
           <span className="font-medium text-text-tertiary"> · Pflicht</span>
         ) : null}
       </p>
-      <button
-        type="button"
-        onClick={openCamera}
+      <div
         className={cn(
-          "flex w-full flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-border-default bg-[var(--p2-selected,#f0f2f0)] text-center transition-colors hover:bg-[var(--p2-hover,#eef1ef)]",
-          compact ? "px-2 py-5" : "px-4 py-8"
+          "flex w-full flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-border-default bg-[var(--p2-selected,#f0f2f0)] text-center",
+          compact ? "px-2 py-4" : "px-4 py-6"
         )}
       >
         {preview ? (
@@ -114,19 +112,58 @@ export function PartnerDirektKameraSlot({
           </span>
         ) : (
           <span className="text-[12px] font-semibold text-text-primary">
-            Kamera öffnen
+            Foto hinzufügen
           </span>
         )}
-      </button>
+        <div
+          className={cn(
+            "flex w-full gap-1.5",
+            compact ? "flex-col" : "flex-row justify-center"
+          )}
+        >
+          <button
+            type="button"
+            onClick={() => cameraRef.current?.click()}
+            disabled={status === "uploading"}
+            className="inline-flex flex-1 items-center justify-center gap-1 rounded-lg border border-border-default bg-white px-2 py-2 text-[11.5px] font-semibold text-text-primary hover:bg-[var(--p2-hover,#eef1ef)] disabled:opacity-50"
+          >
+            <Camera className="h-3.5 w-3.5 shrink-0" aria-hidden />
+            Kamera
+          </button>
+          <button
+            type="button"
+            onClick={() => galleryRef.current?.click()}
+            disabled={status === "uploading"}
+            className="inline-flex flex-1 items-center justify-center gap-1 rounded-lg border border-border-default bg-white px-2 py-2 text-[11.5px] font-semibold text-text-primary hover:bg-[var(--p2-hover,#eef1ef)] disabled:opacity-50"
+          >
+            <ImageIcon className="h-3.5 w-3.5 shrink-0" aria-hidden />
+            Mediathek
+          </button>
+        </div>
+      </div>
       <input
-        ref={inputRef}
+        ref={fileRef}
         type="file"
         name={name}
         accept="image/*"
-        capture="environment"
-        required={required && !preview}
         className="sr-only"
-        onChange={onChange}
+        tabIndex={-1}
+        onChange={() => undefined}
+      />
+      <input
+        ref={cameraRef}
+        type="file"
+        accept="image/*"
+        capture="environment"
+        className="sr-only"
+        onChange={onPick}
+      />
+      <input
+        ref={galleryRef}
+        type="file"
+        accept="image/*"
+        className="sr-only"
+        onChange={onPick}
       />
       {captureAt ? (
         <input type="hidden" name={captureAtName} value={captureAt} />

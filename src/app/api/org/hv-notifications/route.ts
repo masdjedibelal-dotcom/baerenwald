@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { requireOrganisationSession } from "@/lib/org/require-org-session";
+import { limitReadNotifications } from "@/lib/portal2/notif-types";
 import { supabaseAdmin } from "@/lib/supabase";
 
 export const runtime = "nodejs";
@@ -55,7 +56,7 @@ export async function GET() {
     .select("id, typ, titel, body, link, gelesen_am, created_at")
     .eq("kunde_id", session.kunde.id)
     .order("created_at", { ascending: false })
-    .limit(40);
+    .limit(120);
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
@@ -106,20 +107,23 @@ export async function GET() {
     }
   }
 
-  const notifications = rows.filter((r) => {
-    const typ = String(r.typ ?? "").toLowerCase();
-    if (SELF_ACTION_TYPS.has(typ)) return false;
-    const lid = leadIdFromLink(r.link);
-    if (lid && !valid.has(lid)) return false;
-    if (
-      (typ === "angebot" || /neues\s+angebot/i.test(String(r.titel ?? ""))) &&
-      lid &&
-      !leadsWithGesendetAngebot.has(lid)
-    ) {
-      return false;
-    }
-    return true;
-  });
+  const notifications = limitReadNotifications(
+    rows.filter((r) => {
+      const typ = String(r.typ ?? "").toLowerCase();
+      if (SELF_ACTION_TYPS.has(typ)) return false;
+      const lid = leadIdFromLink(r.link);
+      if (lid && !valid.has(lid)) return false;
+      if (
+        (typ === "angebot" || /neues\s+angebot/i.test(String(r.titel ?? ""))) &&
+        lid &&
+        !leadsWithGesendetAngebot.has(lid)
+      ) {
+        return false;
+      }
+      return true;
+    }),
+    (r) => !r.gelesen_am
+  );
   const unread = notifications.filter((r) => !r.gelesen_am).length;
 
   return NextResponse.json({ notifications, unread });

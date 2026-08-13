@@ -7,6 +7,7 @@ import { PartnerDirektKameraSlot } from "@/components/partner/PartnerDirektKamer
 import { PartnerKiKorrekturField } from "@/components/partner/PartnerKiKorrekturField";
 import { PartnerMultiFotoSlot } from "@/components/partner/PartnerMultiFotoSlot";
 import {
+  paintPortalBusyNow,
   PORTAL_BUSY_MIN_MS,
   usePortalBusy,
 } from "@/components/shared/PortalBusyContext";
@@ -56,23 +57,77 @@ type Props = {
   readOnly?: boolean;
 };
 
+function formatEuro(n: number): string {
+  return n.toLocaleString("de-DE", { style: "currency", currency: "EUR" });
+}
+
+function isRegiePosition(p: LebenszyklusPosition): boolean {
+  return (
+    p.typ === "regie" ||
+    String(p.verguetung ?? "").toLowerCase() === "aufwand"
+  );
+}
+
+function regieStundensatz(p: LebenszyklusPosition): number | null {
+  if (p.stundensatz != null && p.stundensatz > 0) return p.stundensatz;
+  const einheit = String(p.einheit ?? "").toLowerCase();
+  if (
+    (einheit === "h" || einheit === "std") &&
+    p.preis_partner != null &&
+    p.preis_partner > 0
+  ) {
+    return p.preis_partner;
+  }
+  return null;
+}
+
+/** Erfasste Minuten — Zeitbuchung, sonst Menge in Stunden. */
+function regieArbeitsminuten(p: LebenszyklusPosition): number {
+  if (p.zeit_minuten_summe != null && p.zeit_minuten_summe > 0) {
+    return Math.round(p.zeit_minuten_summe);
+  }
+  const einheit = String(p.einheit ?? "").toLowerCase();
+  if (
+    (einheit === "h" || einheit === "std") &&
+    p.menge != null &&
+    p.menge > 0
+  ) {
+    return Math.round(p.menge * 60);
+  }
+  return 0;
+}
+
+function regieGesamtpreis(p: LebenszyklusPosition): number | null {
+  const min = regieArbeitsminuten(p);
+  const satz = regieStundensatz(p);
+  if (min > 0 && satz != null) {
+    return Math.round((min / 60) * satz * 100) / 100;
+  }
+  const einheit = String(p.einheit ?? "").toLowerCase();
+  if (
+    p.preis_partner != null &&
+    p.preis_partner > 0 &&
+    einheit !== "h" &&
+    einheit !== "std"
+  ) {
+    return p.preis_partner;
+  }
+  return null;
+}
+
 function formatPartnerPreisLabel(p: LebenszyklusPosition): string | null {
-  const isRegie =
-    p.typ === "regie" || String(p.verguetung ?? "").toLowerCase() === "aufwand";
-  const fmt = (n: number) =>
-    n.toLocaleString("de-DE", { style: "currency", currency: "EUR" });
-  if (isRegie && p.stundensatz != null && p.stundensatz > 0) {
-    return `${fmt(p.stundensatz)}/Std`;
+  if (isRegiePosition(p)) {
+    const gesamt = regieGesamtpreis(p);
+    return gesamt != null ? formatEuro(gesamt) : null;
   }
   if (p.preis_partner != null && p.preis_partner > 0) {
-    return isRegie && (p.einheit === "h" || p.einheit === "Std")
-      ? `${fmt(p.preis_partner)}/Std`
-      : fmt(p.preis_partner);
+    return formatEuro(p.preis_partner);
   }
   return null;
 }
 
 function mengeLabel(p: LebenszyklusPosition): string | null {
+  if (isRegiePosition(p)) return null;
   if (p.einheit && p.menge != null) return `${p.menge} ${p.einheit}`;
   return null;
 }
@@ -175,6 +230,11 @@ export function PartnerPositionLebenszyklusList({
     }
   }
 
+  function hasFoto(formData: FormData, field: string): boolean {
+    const f = formData.get(field);
+    return f instanceof File && f.size > 0;
+  }
+
   function submitSheet(formData: FormData) {
     if (!sheet?.mode || submitting) return;
     if (anfrageId) formData.set("anfrageId", anfrageId);
@@ -184,16 +244,43 @@ export function PartnerPositionLebenszyklusList({
     const mode = sheet.mode;
     const positionId = sheet.position.id;
 
-    setSubmitting(true);
+    // Regie: Start-/Ende-Slots → einheitlich als foto / foto_ende
+    const startSlot = formData.get("foto_start");
+    if (startSlot instanceof File && startSlot.size > 0) {
+      formData.set("foto", startSlot);
+    }
+
+    if (sheetIsRegie && (mode === "start" || mode === "erledigt")) {
+      const needStart = mode === "start";
+      const needEnde = mode === "start" || mode === "erledigt";
+      if (needStart && !hasFoto(formData, "foto") && !hasFoto(formData, "foto_start")) {
+        portalToastError("Bitte ein Start-Foto hinzufügen (Kamera oder Mediathek).");
+        return;
+      }
+      if (needEnde && !hasFoto(formData, "foto_ende")) {
+        portalToastError("Bitte ein Ende-Foto hinzufügen (Kamera oder Mediathek).");
+        return;
+      }
+      const beschr = String(formData.get("beschreibung") ?? "").trim();
+      if (!beschr) {
+        portalToastError("Bitte eine kurze Beschreibung angeben.");
+        return;
+      }
+      if (mode === "start" || mode === "erledigt") {
+        const std = Number(formData.get("zeitStd") ?? 0);
+        const min = Number(formData.get("zeitMin") ?? 0);
+        if (!Number.isFinite(std) || !Number.isFinite(min) || std * 60 + min <= 0) {
+          portalToastError("Bitte die Gesamtzeit Aufwand auswählen.");
+          return;
+        }
+      }
+    }
+
+    paintPortalBusyNow(setSubmitting);
     void (async () => {
       let ok = false;
       try {
         await runBusy(async () => {
-          // Regie: Start-/Ende-Slots → einheitlich als foto / foto_ende
-          const startSlot = formData.get("foto_start");
-          if (startSlot instanceof File && startSlot.size > 0) {
-            formData.set("foto", startSlot);
-          }
           if (!(await normalizeFotoField(formData, "foto"))) return;
           if (!(await normalizeFotoField(formData, "foto_ende"))) return;
 
@@ -286,9 +373,12 @@ export function PartnerPositionLebenszyklusList({
           setBeschreibung("");
           setErledigtFotos([]);
         }, Math.max(PORTAL_BUSY_MIN_MS, 600));
+      } catch {
+        portalToastError("Speichern fehlgeschlagen. Bitte erneut versuchen.");
       } finally {
         setSubmitting(false);
       }
+      void ok;
     })();
   }
 
@@ -418,13 +508,15 @@ export function PartnerPositionLebenszyklusList({
             const inPruefung = p.anerkennung_status === "in_pruefung";
             const isAbgelehnt = p.anerkennung_status === "abgelehnt";
             const isBlocked = inPruefung || isAbgelehnt;
+            const arbeitsMin = isRegie ? regieArbeitsminuten(p) : 0;
+            const gesamtPreis = isRegie ? regieGesamtpreis(p) : null;
             const meta = [
               inPruefung
                 ? "Noch zur Prüfung"
                 : isAbgelehnt
                   ? "Abgelehnt"
                   : lebenszyklusLabel(st),
-              mengeLabel(p),
+              isRegie ? "Regie" : mengeLabel(p),
               isPreferred && !isBlocked ? "Update angefordert" : null,
             ]
               .filter(Boolean)
@@ -465,31 +557,54 @@ export function PartnerPositionLebenszyklusList({
                       >
                         {p.leistung_name}
                       </p>
-                      {(() => {
-                        const preisLabel = formatPartnerPreisLabel(p);
-                        if (!preisLabel) return null;
-                        return (
-                        <p
-                          className={cn(
-                            "shrink-0 text-[14.5px] font-bold tabular-nums",
-                            isBlocked ? "text-text-tertiary" : "text-text-primary"
-                          )}
-                        >
-                          {preisLabel}
-                        </p>
-                        );
-                      })()}
+                      {!isRegie
+                        ? (() => {
+                            const preisLabel = formatPartnerPreisLabel(p);
+                            if (!preisLabel) return null;
+                            return (
+                              <p
+                                className={cn(
+                                  "shrink-0 text-[14.5px] font-bold tabular-nums",
+                                  isBlocked
+                                    ? "text-text-tertiary"
+                                    : "text-text-primary"
+                                )}
+                              >
+                                {preisLabel}
+                              </p>
+                            );
+                          })()
+                        : null}
                     </div>
-                    <p className="mt-0.5 text-[12.5px] text-text-tertiary">{meta}</p>
+                    <p className="mt-0.5 text-[12.5px] text-text-tertiary">
+                      {meta}
+                    </p>
+                    {isRegie ? (
+                      <div className="mt-1.5 space-y-0.5 text-[12.5px] text-text-secondary">
+                        <p className="flex justify-between gap-3">
+                          <span className="shrink-0 text-text-tertiary">
+                            Arbeitsstunden
+                          </span>
+                          <span className="min-w-0 text-right font-semibold tabular-nums text-text-primary">
+                            {arbeitsMin > 0
+                              ? formatZeitMinuten(arbeitsMin)
+                              : "—"}
+                          </span>
+                        </p>
+                        <p className="flex justify-between gap-3">
+                          <span className="shrink-0 text-text-tertiary">
+                            Gesamtpreis
+                          </span>
+                          <span className="min-w-0 text-right font-semibold tabular-nums text-text-primary">
+                            {gesamtPreis != null ? formatEuro(gesamtPreis) : "—"}
+                          </span>
+                        </p>
+                      </div>
+                    ) : null}
                     {inPruefung ? (
                       <p className="mt-1 text-[12.5px] font-semibold text-amber-800">
                         Eingereicht — noch zur Prüfung. Nach Freigabe wie üblich
                         starten und abschließen.
-                      </p>
-                    ) : null}
-                    {!isBlocked && isAufwand && p.zeit_minuten_summe ? (
-                      <p className="mt-0.5 text-[12px] text-text-tertiary">
-                        Erfasste Zeit: {formatZeitMinuten(p.zeit_minuten_summe)}
                       </p>
                     ) : null}
                   </div>
@@ -550,7 +665,6 @@ export function PartnerPositionLebenszyklusList({
       )}
 
       {!readOnly ? (
-      <div className="space-y-2">
         <button
           type="button"
           className="w-full rounded-[10px] border border-dashed px-3 py-3 text-[13.5px] font-semibold text-text-primary"
@@ -559,12 +673,6 @@ export function PartnerPositionLebenszyklusList({
         >
           + Nachtrag / Regie
         </button>
-        <p className="text-[11.5px] leading-relaxed text-text-tertiary">
-          Nachtrag erscheint ausgegraut mit „Noch zur Prüfung“. Nach Freigabe wie
-          die übrigen Leistungen starten, abschließen — der Gesamtpreis aktualisiert
-          sich automatisch.
-        </p>
-      </div>
       ) : null}
 
       {sheet ? (
@@ -590,11 +698,6 @@ export function PartnerPositionLebenszyklusList({
               : "Wird gespeichert…"
           }
           busyBody="Fotos und Daten werden übertragen."
-          onConfirm={() => sheetFormRef.current?.requestSubmit()}
-          confirmDisabled={submitting}
-          confirmLabel={
-            sheet.mode === "erledigt" ? "Erledigt speichern" : "Update speichern"
-          }
         >
           {(() => {
             const sheetIsRegie =
@@ -608,8 +711,13 @@ export function PartnerPositionLebenszyklusList({
             return (
           <form
             ref={sheetFormRef}
-            action={submitSheet}
             className="flex flex-col"
+            noValidate
+            onSubmit={(e) => {
+              e.preventDefault();
+              if (submitting) return;
+              submitSheet(new FormData(e.currentTarget));
+            }}
           >
             <input type="hidden" name="positionId" value={sheet.position.id} />
             {anfrageId ? (
@@ -622,7 +730,7 @@ export function PartnerPositionLebenszyklusList({
                 <PartnerDirektKameraSlot
                   name="foto_start"
                   captureAtName="captureAt_start"
-                  label="Update"
+                  label="Start"
                   required={sheet.mode === "start"}
                   compact
                 />
@@ -664,41 +772,43 @@ export function PartnerPositionLebenszyklusList({
               sheet.mode === "fortschritt" ||
               sheet.mode === "erledigt") ? (
               <div className="mt-3 space-y-1">
-                <p className="portal-form-label">
-                  {sheet.mode === "erledigt" || sheet.mode === "start"
-                    ? "Meine Zeit gesamt"
-                    : "Zeitaufwand"}
-                </p>
-                <div className="flex gap-2">
-                  <input
-                    type="number"
+                <p className="portal-form-label">Gesamtzeit Aufwand</p>
+                <div className="flex items-center gap-1.5">
+                  <select
                     name="zeitStd"
-                    min={0}
-                    step={1}
-                    required={sheet.mode === "erledigt" || sheet.mode === "start"}
                     defaultValue={
                       sheet.position.zeit_minuten_summe
                         ? Math.floor(sheet.position.zeit_minuten_summe / 60)
                         : 0
                     }
-                    className="portal-input w-full rounded-xl border border-border-default px-3 py-2.5"
-                    placeholder="Std"
-                  />
-                  <input
-                    type="number"
+                    aria-label="Stunden"
+                    className="portal-input min-w-0 flex-1 rounded-xl border border-border-default px-2 py-2.5"
+                  >
+                    {Array.from({ length: 49 }, (_, h) => (
+                      <option key={h} value={h}>
+                        {String(h).padStart(2, "0")} Std
+                      </option>
+                    ))}
+                  </select>
+                  <span className="text-[14px] font-semibold text-text-tertiary">
+                    :
+                  </span>
+                  <select
                     name="zeitMin"
-                    min={0}
-                    max={59}
-                    step={1}
-                    required={sheet.mode === "erledigt" || sheet.mode === "start"}
                     defaultValue={
                       sheet.position.zeit_minuten_summe
                         ? sheet.position.zeit_minuten_summe % 60
                         : 0
                     }
-                    className="portal-input w-full rounded-xl border border-border-default px-3 py-2.5"
-                    placeholder="Min"
-                  />
+                    aria-label="Minuten"
+                    className="portal-input min-w-0 flex-1 rounded-xl border border-border-default px-2 py-2.5"
+                  >
+                    {Array.from({ length: 60 }, (_, m) => (
+                      <option key={m} value={m}>
+                        {String(m).padStart(2, "0")} Min
+                      </option>
+                    ))}
+                  </select>
                 </div>
               </div>
             ) : null}
@@ -740,13 +850,6 @@ export function PartnerPositionLebenszyklusList({
         busy={submitting && nachtragOpen}
         busyTitle="Nachtrag wird eingereicht…"
         busyBody="Einen Moment — Bärenwald erhält die Meldung."
-        onConfirm={() => submitNachtrag()}
-        confirmDisabled={
-          submitting ||
-          nachtragTitel.trim().length < 4 ||
-          nachtragBegruendung.trim().length < 8
-        }
-        confirmLabel="Zur Prüfung senden"
       >
         <div className="flex flex-col gap-3">
           <label className="flex flex-col gap-1">
@@ -826,10 +929,10 @@ export function PartnerPositionLebenszyklusList({
             </div>
           </div>
         </div>
-        <div className="mt-5 flex flex-wrap justify-end gap-2">
+        <div className="portal-action-row mt-5">
           <button
             type="button"
-            className="btn-pill-outline portal-btn"
+            className="portal-action-btn portal-action-btn--secondary"
             disabled={submitting}
             onClick={closeNachtrag}
           >
@@ -837,7 +940,7 @@ export function PartnerPositionLebenszyklusList({
           </button>
           <button
             type="button"
-            className="btn-pill-primary portal-btn"
+            className="portal-action-btn portal-action-btn--primary"
             disabled={
               submitting ||
               nachtragTitel.trim().length < 4 ||

@@ -26,6 +26,7 @@ const nextConfig = {
       bodySizeLimit: "10mb",
     },
   },
+  transpilePackages: ["pdfjs-dist"],
   async headers() {
     return [
       {

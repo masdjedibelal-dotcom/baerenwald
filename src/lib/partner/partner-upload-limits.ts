@@ -38,11 +38,13 @@ export function validatePartnerPdfFile(
 
 export function validatePartnerPhotoFile(file: File): string | null {
   const allowed = new Set(["image/jpeg", "image/jpg", "image/png", "image/webp"]);
-  const mime = (file.type || "image/jpeg").toLowerCase();
+  const mime = (file.type || "").toLowerCase();
   if (mime.includes("heic") || mime.includes("heif")) {
     return "HEIC wird nicht unterstützt — bitte erneut mit Kamera aufnehmen (wird als JPG gespeichert).";
   }
-  if (!allowed.has(mime)) {
+  const byExt = /\.(jpe?g|png|webp)$/i.test(file.name);
+  const effective = mime || (byExt ? "image/jpeg" : "");
+  if (!allowed.has(effective) && !byExt) {
     return "Nur JPG, PNG oder WebP erlaubt.";
   }
   if (file.size > PARTNER_MAX_PHOTO_BYTES) {
@@ -56,12 +58,21 @@ function isPdfFile(file: File): boolean {
   return mime === "application/pdf" || file.name.toLowerCase().endsWith(".pdf");
 }
 
+function isImageFile(file: File): boolean {
+  const mime = (file.type || "").toLowerCase();
+  if (mime.startsWith("image/")) return true;
+  return /\.(jpe?g|png|webp)$/i.test(file.name);
+}
+
 /** Foto oder PDF für Bautagebuch. */
 export function validatePartnerBautagebuchFile(file: File): string | null {
   if (isPdfFile(file)) {
     return validatePartnerPdfFile(file);
   }
-  return validatePartnerPhotoFile(file);
+  if (isImageFile(file)) {
+    return validatePartnerPhotoFile(file);
+  }
+  return "Nur JPG, PNG, WebP oder PDF erlaubt.";
 }
 
 export function validatePartnerBautagebuchFiles(
@@ -82,6 +93,10 @@ export function validatePartnerBautagebuchFiles(
   return null;
 }
 
+/**
+ * Unterlagen am Auftrag: Fotos (JPG/PNG/WebP) oder PDF —
+ * gleiche Typen wie in der Dokumente-UI.
+ */
 export function validatePartnerAngebotFiles(
   files: File[],
   opts?: { required?: boolean }
@@ -89,13 +104,13 @@ export function validatePartnerAngebotFiles(
   const list = files.filter((f) => f.size > 0);
   if (!list.length) {
     if (opts?.required === false) return null;
-    return "Bitte mindestens ein PDF hochladen.";
+    return "Bitte mindestens eine Datei (Foto oder PDF) hochladen.";
   }
   if (list.length > PARTNER_MAX_ANGEBOT_DATEIEN) {
-    return `Maximal ${PARTNER_MAX_ANGEBOT_DATEIEN} PDF-Dateien pro Angebot.`;
+    return `Maximal ${PARTNER_MAX_ANGEBOT_DATEIEN} Dateien pro Upload.`;
   }
   for (const file of list) {
-    const err = validatePartnerPdfFile(file);
+    const err = validatePartnerBautagebuchFile(file);
     if (err) return err;
   }
   return null;

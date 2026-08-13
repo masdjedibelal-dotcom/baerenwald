@@ -2039,7 +2039,7 @@ export function PortalFunnelHost({
           question={currentMeldeFrage.frage}
           animateKey={currentFachId}
         >
-          <div className="funnel-step-tiles-card flex flex-col gap-2">
+          <div className="funnel-step-tiles-card grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
             {currentMeldeFrage.optionen.map((o) => (
               <SelectionTile
                 key={o.value}
@@ -2389,7 +2389,10 @@ export function PortalFunnelHost({
       {step === "beschreibung" ? (
         <StepWrapper
           layout={stepLayout}
-          className="funnel-step--fill"
+          className={cn(
+            "funnel-step--fill",
+            stepLayout === "page" && "w-full"
+          )}
           stepLabel="Beschreibung"
           question={
             state.situation === "erneuern"

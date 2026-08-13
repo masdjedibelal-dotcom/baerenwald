@@ -253,7 +253,7 @@ export function PortalVorgangDetail({
         hvAbnahme={hvAbnahme}
         hwErledigt={hwErledigt}
         schwelleEur={schwelleEur}
-        offers={buildHvOffersFromItem(item, item.ansprechpartner?.name)}
+        offers={buildHvOffersFromItem(item, item.handwerkerName)}
         positionenBrutto={item.angebotPositionen}
         auftragPositionen={item.auftragPositionen}
         gesamtBrutto={item.gesamtBrutto}
@@ -283,7 +283,7 @@ export function PortalVorgangDetail({
         meldeZeitraum={item.meldeZeitraum}
         meldeFachdetails={item.meldeFachdetails}
         meldePreisIndikation={item.meldePreisIndikation}
-        handwerkerName={item.ansprechpartner?.name}
+        handwerkerName={item.handwerkerName ?? null}
         terminVon={item.isAuftragDetail ? item.date : null}
         terminBis={item.auftragEndDatum ?? null}
         orgFreigabeStatus={orgFreigabeStatus ?? item.orgFreigabeStatus}

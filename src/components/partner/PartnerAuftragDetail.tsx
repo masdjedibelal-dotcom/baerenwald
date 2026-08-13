@@ -3,10 +3,13 @@
 import { useRouter } from "next/navigation";
 
 import { submitPartnerAngebotPdf, submitPartnerRechnung } from "@/app/actions/partner-angebote";
+import { previewPartnerAutoDokument } from "@/app/actions/partner-auto-dokumente";
 import { usePortalRefresh } from "@/components/shared/usePortalRefresh";
+import { usePortalUploadBusy } from "@/components/shared/usePortalUploadBusy";
 import { PartnerAbnahmeAbschlussSheet } from "@/components/partner/PartnerAbnahmeAbschlussSheet";
 import { PartnerAbnahmeReviewSection } from "@/components/partner/PartnerAbnahmeReviewSection";
 import { PartnerDokumentPreviewModal } from "@/components/partner/PartnerDokumentPreviewModal";
+import { PartnerFirmendatenFehlenDialog } from "@/components/partner/PartnerFirmendatenFehlenDialog";
 import { PartnerAuftragErledigtSection } from "@/components/partner/PartnerAuftragErledigtSection";
 import { PartnerLeistungenKonditionenCard } from "@/components/partner/PartnerLeistungenKonditionenCard";
 import { PartnerPositionLebenszyklusList } from "@/components/partner/PartnerPositionLebenszyklusList";
@@ -58,7 +61,7 @@ import {
   hwAuftragStatusStyle,
 } from "@/lib/portal2/hw-auftrag-detail";
 import { buildPartnerVorgangDetailVm } from "@/lib/vorgang/build-vorgang-detail-vm";
-import { partnerPortalToast } from "@/lib/shared/portal-toast";
+import { partnerPortalToast, portalToastError } from "@/lib/shared/portal-toast";
 import { DokumenteTabelle } from "@/components/shared/DokumenteTabelle";
 import { FileUploadField } from "@/components/shared/FileUploadField";
 import { useEffect, useMemo, useState } from "react";
@@ -82,8 +85,7 @@ export function PartnerAuftragDetail({
 }) {
   const router = useRouter();
   const { refresh } = usePortalRefresh();
-  const [pdfLoading, setPdfLoading] = useState(false);
-  const [rechnungLoading, setRechnungLoading] = useState(false);
+  const { uploadBusy, runUpload } = usePortalUploadBusy();
   const [pdfError, setPdfError] = useState<string | null>(null);
   const [rechnungError, setRechnungError] = useState<string | null>(null);
   const [angebotPdfs, setAngebotPdfs] = useState<File[]>([]);
@@ -92,6 +94,9 @@ export function PartnerAuftragDetail({
   const [abschlussDone, setAbschlussDone] = useState(false);
   const [abschlussVollstaendig, setAbschlussVollstaendig] = useState(false);
   const [rechnungDocOpen, setRechnungDocOpen] = useState(false);
+  const [rechnungGateBusy, setRechnungGateBusy] = useState(false);
+  const [firmendatenFehlenOpen, setFirmendatenFehlenOpen] = useState(false);
+  const [firmendatenMissing, setFirmendatenMissing] = useState<string[]>([]);
   const [autoOpenPreferred, setAutoOpenPreferred] = useState(false);
   const [abnahmePdfUrl, setAbnahmePdfUrl] = useState<string | null>(
     item.abnahme_protokoll_url ?? null
@@ -170,6 +175,34 @@ export function PartnerAuftragDetail({
       abnahmeFreigabeStatus: item.abnahme_freigabe_status,
     });
 
+  async function onRechnungErstellen() {
+    if (!item.angebotHandwerkerId || uploadBusy || rechnungGateBusy) return;
+    setRechnungGateBusy(true);
+    try {
+      await runUpload(async () => {
+        const res = await previewPartnerAutoDokument({
+          anfrageId: item.angebotHandwerkerId!,
+          art: "rechnung",
+        });
+        if (!res.ok) {
+          portalToastError("Rechnung nicht möglich", res.error);
+          return;
+        }
+        const firmMissing = res.preview.missingFields
+          .filter((f) => f.scope === "firmendaten")
+          .map((f) => f.label);
+        if (firmMissing.length > 0) {
+          setFirmendatenMissing(firmMissing);
+          setFirmendatenFehlenOpen(true);
+          return;
+        }
+        setRechnungDocOpen(true);
+      });
+    } finally {
+      setRechnungGateBusy(false);
+    }
+  }
+
   async function uploadUnterlagen() {
     if (!item.angebotHandwerkerId) return;
     const err = validatePartnerAngebotFiles(angebotPdfs, { required: true });
@@ -177,39 +210,39 @@ export function PartnerAuftragDetail({
       setPdfError(err);
       return;
     }
-    setPdfLoading(true);
     setPdfError(null);
     const fd = new FormData();
     fd.set("anfrageId", item.angebotHandwerkerId);
     for (const f of angebotPdfs) fd.append("pdfs", f);
-    const res = await submitPartnerAngebotPdf(fd);
-    setPdfLoading(false);
-    if (!res.ok) {
-      setPdfError(res.error);
-      return;
-    }
-    partnerPortalToast.unterlagenHochgeladen();
-    setAngebotPdfs([]);
-    await refresh();
+    await runUpload(async () => {
+      const res = await submitPartnerAngebotPdf(fd);
+      if (!res.ok) {
+        setPdfError(res.error);
+        return;
+      }
+      partnerPortalToast.unterlagenHochgeladen();
+      setAngebotPdfs([]);
+      await refresh();
+    });
   }
 
   async function onRechnungSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!item.angebotHandwerkerId || !rechnungPdf) return;
-    setRechnungLoading(true);
     setRechnungError(null);
     const fd = new FormData();
     fd.set("anfrageId", item.angebotHandwerkerId);
     fd.set("pdf", rechnungPdf);
-    const res = await submitPartnerRechnung(fd);
-    setRechnungLoading(false);
-    if (!res.ok) {
-      setRechnungError(res.error);
-      return;
-    }
-    partnerPortalToast.rechnungEingereicht();
-    setRechnungPdf(null);
-    await refresh();
+    await runUpload(async () => {
+      const res = await submitPartnerRechnung(fd);
+      if (!res.ok) {
+        setRechnungError(res.error);
+        return;
+      }
+      partnerPortalToast.rechnungEingereicht();
+      setRechnungPdf(null);
+      await refresh();
+    });
   }
   const { label: listenStatusLabel } =
     resolvePartnerVorgangListenStatus(vorgangState, item);
@@ -223,8 +256,7 @@ export function PartnerAuftragDetail({
       });
   const statusStyle = hwAuftragStatusStyle(statusLabel);
 
-  const crmNotiz =
-    item.hw_crm_notiz?.trim() || item.aufgabe_notiz?.trim() || null;
+  const crmNotiz = item.hw_crm_notiz?.trim() || null;
   const meldeFotos = useMemo(() => {
     const fd = item.lead?.funnel_daten as { fotos?: unknown } | null | undefined;
     if (!Array.isArray(fd?.fotos)) return [] as string[];
@@ -245,7 +277,10 @@ export function PartnerAuftragDetail({
         plz: item.plz ?? undefined,
         ort: item.ort ?? undefined,
         gewerkName: item.positionen?.[0]?.gewerk_name ?? null,
+        aufgabeNotiz: item.aufgabe_notiz?.trim() || null,
         konditionZeilen,
+        startDatum: item.start_datum,
+        endDatum: item.end_datum,
         fotos: meldeFotos,
       }),
     [
@@ -254,6 +289,10 @@ export function PartnerAuftragDetail({
       item.plz,
       item.ort,
       item.positionen,
+      item.aufgabe_notiz,
+      item.hw_crm_notiz,
+      item.start_datum,
+      item.end_datum,
       titel,
       statusLabel,
       konditionZeilen,
@@ -271,7 +310,34 @@ export function PartnerAuftragDetail({
     { id: "abnahme", label: "Abschluss" },
   ];
 
-  const actionFooter = kannAbschluss ? (
+  const actionFooter = kannRechnungHochladen ? (
+    <PortalDetailStickyActions
+      primaryLabel={
+        rechnungGateBusy
+          ? HW_ABNAHME_COPY.rechnungFirmendatenBusy
+          : HW_ABNAHME_COPY.rechnungCta
+      }
+      onPrimary={() => void onRechnungErstellen()}
+      primaryDisabled={rechnungGateBusy}
+      secondaryLabel={
+        kannAbschluss
+          ? HW_ABNAHME_COPY.rechnungAbschlussCta
+          : HW_ABNAHME_COPY.rechnungSecondaryCta
+      }
+      onSecondary={() => {
+        if (kannAbschluss) {
+          setAbschlussOpen(true);
+          return;
+        }
+        setActiveTab("dokumente");
+        window.setTimeout(() => {
+          document
+            .getElementById("partner-rechnung-eigenes-pdf")
+            ?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+        }, 80);
+      }}
+    />
+  ) : kannAbschluss ? (
     <div className="space-y-2">
       <button
         type="button"
@@ -282,20 +348,6 @@ export function PartnerAuftragDetail({
         {HW_AUFTRAG_COPY.ausfuehrenCta}
       </button>
     </div>
-  ) : kannRechnungHochladen ? (
-    <PortalDetailStickyActions
-      primaryLabel={HW_ABNAHME_COPY.rechnungCta}
-      onPrimary={() => setRechnungDocOpen(true)}
-      secondaryLabel={HW_ABNAHME_COPY.rechnungSecondaryCta}
-      onSecondary={() => {
-        setActiveTab("dokumente");
-        window.setTimeout(() => {
-          document
-            .getElementById("partner-rechnung-eigenes-pdf")
-            ?.scrollIntoView({ behavior: "smooth", block: "nearest" });
-        }, 80);
-      }}
-    />
   ) : undefined;
 
   const handleBack = onBack ?? (() => router.back());
@@ -303,14 +355,14 @@ export function PartnerAuftragDetail({
   return (
     <PortalDetailLayout footer={actionFooter}>
       <PortalEntityDetailLayout
-        layout={isErledigt ? "hv" : "default"}
+        layout="default"
         coverUrl={coverUrl}
         onBack={handleBack}
         backLabel="← Zurück"
         title={titel}
         metaLine={partnerDetailOrtMetaLine(item.lead)}
-        statusLabel={isErledigt ? undefined : statusLabel}
-        statusPillStyle={isErledigt ? undefined : statusStyle}
+        statusLabel={statusLabel}
+        statusPillStyle={statusStyle}
         tabs={DETAIL_TABS}
         activeTab={activeTab}
         onTabChange={setActiveTab}
@@ -363,9 +415,7 @@ export function PartnerAuftragDetail({
                 onDone={() => refresh()}
               />
 
-              {!isErledigt ? (
-                <PartnerFachdokuSlots auftragId={item.id} className="mt-4" />
-              ) : null}
+              <PartnerFachdokuSlots auftragId={item.id} className="mt-4" />
 
               {konditionZeilen.length > 0 ? (
                 <PartnerLeistungenKonditionenCard
@@ -399,7 +449,7 @@ export function PartnerAuftragDetail({
                           "image/jpeg,image/png,image/webp,application/pdf,.pdf",
                         multiple: true,
                         hint: partnerHwDokumentUploadHint(),
-                        disabled: pdfLoading,
+                        disabled: uploadBusy,
                         selectedLabel:
                           angebotPdfs.length > 0
                             ? angebotPdfs.length === 1
@@ -407,7 +457,7 @@ export function PartnerAuftragDetail({
                               : `${angebotPdfs.length} Dateien`
                             : null,
                         error: pdfError,
-                        submitting: pdfLoading,
+                        submitting: uploadBusy,
                         onFiles: (files) => {
                           const list = files.slice(0, PARTNER_MAX_ANGEBOT_DATEIEN);
                           const err = validatePartnerAngebotFiles(list, {
@@ -430,15 +480,6 @@ export function PartnerAuftragDetail({
                   {kannRechnungHochladen ? (
                     <p className="border-t border-border-light pt-4 text-[12.5px] text-text-secondary">
                       {HW_ABNAHME_COPY.rechnungDocsHint}
-                    </p>
-                  ) : item.angebotHandwerkerId &&
-                    !item.hw_rechnung_eingereicht_at &&
-                    (item.angebotHwStatus ?? "").toLowerCase() === "uebernommen" &&
-                    item.projektvertrag_bestaetigt_am &&
-                    !item.hw_abschluss_signiert_am &&
-                    !item.abnahme_protokoll_url ? (
-                    <p className="border-t border-dashed border-border-light px-0 py-3 text-[12.5px] text-text-secondary">
-                      {HW_ABNAHME_COPY.rechnungBlockedOhneAbnahme}
                     </p>
                   ) : null}
 
@@ -472,10 +513,10 @@ export function PartnerAuftragDetail({
                       ) : null}
                       <button
                         type="submit"
-                        disabled={rechnungLoading || !rechnungPdf}
+                        disabled={uploadBusy || !rechnungPdf}
                         className="btn-pill-outline portal-btn"
                       >
-                        {rechnungLoading ? "Wird gesendet…" : "PDF absenden"}
+                        {uploadBusy ? "Wird gesendet…" : "PDF absenden"}
                       </button>
                     </form>
                   ) : null}
@@ -493,10 +534,6 @@ export function PartnerAuftragDetail({
                 </div>
               ) : null}
             </PortalDetailSection>
-
-            {isErledigt ? (
-              <PartnerFachdokuSlots auftragId={item.id} />
-            ) : null}
 
             {bauauftragUnterlagen.length > 0 ? (
               <PartnerComplianceCheckliste
@@ -584,9 +621,22 @@ export function PartnerAuftragDetail({
             setRechnungDocOpen(false);
             void refresh();
           }}
+          onFirmendatenMissing={(labels) => {
+            setRechnungDocOpen(false);
+            setFirmendatenMissing(labels);
+            setFirmendatenFehlenOpen(true);
+          }}
           allowSkip={false}
         />
       ) : null}
+
+      <PartnerFirmendatenFehlenDialog
+        open={firmendatenFehlenOpen}
+        purpose="rechnung"
+        missing={firmendatenMissing}
+        onDismiss={() => setFirmendatenFehlenOpen(false)}
+        onGoSettings={() => setFirmendatenFehlenOpen(false)}
+      />
     </PortalDetailLayout>
   );
 }
