@@ -108,6 +108,7 @@ export function PartnerAuftragAnfrageDetail({
         setConfirmAccept(false);
         if (!res.ok) {
           setError(res.error);
+          portalToastError("Annahme fehlgeschlagen", res.error);
           return;
         }
         partnerPortalToast.auftragAngenommen();
@@ -137,6 +138,13 @@ export function PartnerAuftragAnfrageDetail({
           }
         });
       }
+    } catch (e) {
+      const msg =
+        e instanceof Error && e.message.trim()
+          ? e.message
+          : "Annahme fehlgeschlagen. Bitte erneut versuchen.";
+      setError(msg);
+      portalToastError("Annahme fehlgeschlagen", msg);
     } finally {
       setLoading(false);
     }

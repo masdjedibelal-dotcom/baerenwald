@@ -479,6 +479,14 @@ export async function rejectKundeAngebot(
   }
 
   if (leadId) {
+    await supabaseAdmin
+      .from("leads")
+      .update({
+        vorgang_phase: "abgelehnt",
+        updated_at: now,
+      })
+      .eq("id", leadId);
+
     await supabaseAdmin.from("lead_timeline").insert({
       lead_id: leadId,
       angebot_id: id,

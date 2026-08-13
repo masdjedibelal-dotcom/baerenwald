@@ -11,7 +11,6 @@ import {
 import { isHvDirektauftragInfoOnly } from "@/lib/org/org-direktauftrag";
 import { orgPortalToast } from "@/lib/shared/portal-toast";
 import { HV_MELDUNG_ACTIONS } from "@/lib/portal2/hv-liste";
-import { PORTAL_VAR } from "@/lib/portal2/tokens";
 import type {
   OrganisationKunde,
   OrganisationLead,
@@ -109,26 +108,17 @@ export function OrgMeldungAktionBanner({
   return (
     <div className="mb-4 space-y-2 rounded-xl border border-border-default bg-white p-4">
       <p className="portal-text-card-title">Freigabe erforderlich</p>
-      <div className="flex flex-wrap gap-2">
+      <div className="portal-action-row">
         {HV_MELDUNG_ACTIONS.map((a) => (
           <button
             key={a.id}
             type="button"
             disabled={busy}
             onClick={() => void act(a.id)}
-            className="rounded-lg px-3.5 py-2 text-[12.5px] font-semibold disabled:opacity-60"
-            style={
+            className={
               a.variant === "danger"
-                ? {
-                    border: "none",
-                    background: PORTAL_VAR.dangerSoft,
-                    color: PORTAL_VAR.danger,
-                  }
-                : {
-                    border: "none",
-                    background: PORTAL_VAR.primary,
-                    color: "#fff",
-                  }
+                ? "portal-action-btn portal-action-btn--secondary"
+                : "portal-action-btn portal-action-btn--primary"
             }
           >
             {a.label}

@@ -36,6 +36,7 @@ import {
 import type { PortalDokument } from "@/lib/portal/portal-dokumente";
 import {
   collectVorgangDokumente,
+  excludeMeldeFunnelFotosFromDokumente,
   filterPortalDokumenteForViewer,
 } from "@/lib/portal/portal-dokumente";
 import { buildPortalAbnahmeCheckliste } from "@/lib/portal/abnahme-checkliste";
@@ -186,6 +187,10 @@ type PortalAuftrag = {
     created_at?: string | null;
     updated_at?: string | null;
     gesendet_at?: string | null;
+    brutto?: number | null;
+    rechnung_art?: string | null;
+    abschlag_index?: number | null;
+    bezahlt_at?: string | null;
   }>;
 };
 
@@ -428,6 +433,7 @@ function buildItemFromLead(
       .map((b) => labelBereich(b))
       .filter((b) => b && b !== "—")
       .join(", ") || null;
+  const meldeFotos = meldeFotosFromFunnel(lead.funnel_daten);
   const detailKontext = {
     coverUrl:
       lead.objekt?.cover_url?.trim() ||
@@ -441,7 +447,7 @@ function buildItemFromLead(
     kostentraeger: lead.kostentraeger ?? null,
     kostentraegerVorgeschlagen: Boolean(lead.kostentraeger_vorgeschlagen),
     versicherungsNr: lead.versicherungs_nr ?? null,
-    meldeFotos: meldeFotosFromFunnel(lead.funnel_daten),
+    meldeFotos,
     orgFreigabeStatus: lead.org_freigabe_status ?? null,
     freigabeBypassGrund: lead.freigabe_bypass_grund ?? null,
     funnelDirektauftrag:
@@ -494,12 +500,15 @@ function buildItemFromLead(
   const wartetAufHwLabel = wartetAufHw?.label ?? null;
 
   const filterDocs = (docs: PortalDokument[]) =>
-    filterVorgangDokumente(docs, {
-      /** Dokumente: Mieter bei HV-Lead — nur Abnahme. */
-      hvMieterView,
-      eigentuemerView,
-      erledigt: vorgangStatus.phase === "abgeschlossen",
-    });
+    excludeMeldeFunnelFotosFromDokumente(
+      filterVorgangDokumente(docs, {
+        /** Dokumente: Mieter bei HV-Lead — nur Abnahme. */
+        hvMieterView,
+        eigentuemerView,
+        erledigt: vorgangStatus.phase === "abgeschlossen",
+      }),
+      meldeFotos
+    );
 
   if (auftrag) {
     const leadSource: PortalAnfrageLeadSource = {
@@ -545,6 +554,7 @@ function buildItemFromLead(
       auftragPositionen: hvMieterView ? undefined : auftragPositionen,
       abnahmeCheckliste: hvMieterView ? undefined : abnahmeCheckliste,
       gesamtBrutto: hvMieterView ? undefined : auftragGesamtBrutto,
+      rechnungen: hvMieterView ? undefined : auftrag.rechnungen ?? [],
       hidePreise,
       hvMieterView,
       terminAuftragId: auftrag.id,

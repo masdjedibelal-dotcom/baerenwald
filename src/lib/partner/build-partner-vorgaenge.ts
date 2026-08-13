@@ -120,6 +120,8 @@ export function buildPartnerVorgaenge(input: {
       positionen: auftrag.positionen,
       offeneNachreichungPositionIds: auftrag.nachreichungOpenPositionIds,
       anfrageAktionNoetig,
+      hwStatus: auftrag.hwStatus,
+      anfrageStatus: anfrage?.status ?? null,
     });
 
     items.push({
@@ -146,7 +148,12 @@ export function buildPartnerVorgaenge(input: {
       continue;
     }
 
-    if (!isPartnerAnfrageAktionErforderlich(anfrage)) continue;
+    const anfrageAbgelehnt =
+      String(anfrage.status ?? "").trim().toLowerCase() === "abgelehnt";
+    // Offene Aktionen ODER abgelehnte Anfragen (unter Erledigt / Status Abgelehnt)
+    if (!isPartnerAnfrageAktionErforderlich(anfrage) && !anfrageAbgelehnt) {
+      continue;
+    }
 
     const auftrag = stubAuftragFromAnfrage(anfrage);
     const handwerker_bestaetigt_at = resolveHandwerkerBestaetigtAt({
@@ -170,7 +177,9 @@ export function buildPartnerVorgaenge(input: {
       handwerkerBestaetigtAt: handwerker_bestaetigt_at,
       positionen: auftrag.positionen,
       offeneNachreichungPositionIds: auftrag.nachreichungOpenPositionIds,
-      anfrageAktionNoetig: true,
+      anfrageAktionNoetig: !anfrageAbgelehnt,
+      hwStatus: auftrag.hwStatus,
+      anfrageStatus: anfrage.status,
     });
 
     items.push({

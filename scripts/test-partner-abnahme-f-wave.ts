@@ -11,6 +11,7 @@ import {
 import {
   partnerAbnahmeZielPositionen,
   partnerKannErledigtMelden,
+  partnerZeigtAbschlussCta,
 } from "../src/lib/partner/partner-position-erledigt";
 import { partnerAuftragKannRechnungHochladen } from "../src/lib/partner/partner-auftrag-dokumente";
 import type { PartnerAuftragItem } from "../src/lib/partner/get-partner-data";
@@ -49,7 +50,25 @@ assert.equal(
     auftragStatus: "offen",
   }),
   false,
-  "kein CTA solange nicht alle Leistungen dokumentiert"
+  "CTA disabled solange nicht alle Leistungen dokumentiert"
+);
+
+assert.equal(
+  partnerZeigtAbschlussCta({
+    positionen: [
+      basePos,
+      {
+        ...basePos,
+        id: "p2",
+        leistung_status: "in_arbeit",
+        leistung_name: "Rohr tauschen",
+      },
+    ],
+    vorgangState: "in_bearbeitung",
+    auftragStatus: "offen",
+  }),
+  true,
+  "CTA sichtbar (ausgegraut) solange Leistungen offen"
 );
 
 assert.equal(
@@ -112,7 +131,7 @@ const item = {
   angebotHandwerkerId: "a1",
   status: "offen",
   angebotHwStatus: "uebernommen",
-  projektvertrag_bestaetigt_am: "2026-07-01",
+  projektvertrag_bestaetigt_am: null,
   hw_rechnung_eingereicht_at: null,
   hw_abschluss_signiert_am: null,
   abnahme_protokoll_url: null,
@@ -121,7 +140,16 @@ const item = {
 assert.equal(
   partnerAuftragKannRechnungHochladen(item),
   true,
-  "Rechnung ohne Abnahme/Protokoll möglich"
+  "Rechnung ohne Projektvertrag/Abnahme möglich"
+);
+
+assert.equal(
+  partnerAuftragKannRechnungHochladen({
+    ...item,
+    angebotHwStatus: "bestaetigt",
+  }),
+  false,
+  "Rechnung erst nach hw_status=uebernommen"
 );
 
 assert.equal(
@@ -131,6 +159,15 @@ assert.equal(
   }),
   true,
   "Rechnung mit Abnahme weiterhin möglich"
+);
+
+assert.equal(
+  partnerAuftragKannRechnungHochladen({
+    ...item,
+    status: "abgeschlossen",
+  }),
+  true,
+  "Rechnung auch bei erledigtem Auftrag"
 );
 
 console.log("audit F-wave abnahme checks passed.");

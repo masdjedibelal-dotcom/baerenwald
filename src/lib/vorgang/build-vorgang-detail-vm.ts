@@ -39,7 +39,8 @@ export type VorgangDetailPortalFlow =
   | "auftrag"
   | "abschluss"
   | "rechnung"
-  | "bezahlt";
+  | "bezahlt"
+  | "abgelehnt";
 
 const FLOW_RECHNUNG = new Set<VorgangDetailPortalFlow>([
   "abschluss",
@@ -53,6 +54,7 @@ const FLOW_PAST_ANFRAGE = new Set<VorgangDetailPortalFlow>([
   "abschluss",
   "rechnung",
   "bezahlt",
+  "abgelehnt",
 ]);
 
 function resolveDetailsLeistungen(opts: {

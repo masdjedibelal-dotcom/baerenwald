@@ -36,7 +36,9 @@ import {
   HV_DETAIL_COPY,
   angebotSummeFromBruttoTotal,
   angebotSummeFromPositionen,
+  abschlagsplanCardTitle,
   buildAbschlagsplan,
+  type AbschlagRechnungInput,
   hvRoleActionKind,
   moneyEur,
   pickEmpfohlenesAngebot,
@@ -57,6 +59,7 @@ import type { PortalBautagebuchEntry } from "@/lib/portal/portal-detail-item";
 import type { PortalAngebotPositionDisplay } from "@/lib/portal/portal-angebot-display";
 import type { PortalAuftragPositionDisplay } from "@/lib/portal/kunde-auftrag-aenderung";
 import {
+  excludeMeldeFunnelFotosFromDokumente,
   isAbnahmePortalDokument,
   type PortalDokument,
 } from "@/lib/portal/portal-dokumente";
@@ -93,6 +96,8 @@ export type OrganisationHvVorgangDetailProps = {
   /** Auftrags-Leistungen aus CRM (bevorzugt ab Auftrag/Abschluss). */
   auftragPositionen?: PortalAuftragPositionDisplay[];
   gesamtBrutto?: number;
+  /** CRM-Rechnungen für Abschlagsplan-Beträge. */
+  rechnungen?: AbschlagRechnungInput[];
   rechnungPdfHref?: string | null;
   bautagebuch?: PortalBautagebuchEntry[];
   /** CRM-/Portal-Unterlagen (bereits rollen-gefiltert). */
@@ -318,6 +323,7 @@ export function OrganisationHvVorgangDetail({
   positionenBrutto = [],
   auftragPositionen = [],
   gesamtBrutto,
+  rechnungen = [],
   rechnungPdfHref,
   bautagebuch = [],
   dokumente = [],
@@ -359,12 +365,15 @@ export function OrganisationHvVorgangDetail({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [accepted, setAccepted] = useState(false);
+  const [rejected, setRejected] = useState(false);
   const [btUnread, setBtUnread] = useState(0);
   const [activeSection, setActiveSection] =
     useState<PortalDetailSectionId>("uebersicht");
 
   const angebotVorgelegt = Boolean(
     !mieterStatusMode &&
+      !rejected &&
+      flowStatus !== "abgelehnt" &&
       (offers?.length ||
         positionenBrutto?.length ||
         (typeof gesamtBrutto === "number" && gesamtBrutto > 0) ||
@@ -377,6 +386,9 @@ export function OrganisationHvVorgangDetail({
   );
   /** Rechnung gesendet → Hinweis „Rechnung“ statt „Auftrag“. */
   const displayFlowStatus: PortalMockStatusId = (() => {
+    if (rejected || flowStatus === "abgelehnt") {
+      return "abgelehnt";
+    }
     if (
       hasRechnungDoc &&
       (flowStatus === "auftrag" ||
@@ -432,8 +444,12 @@ export function OrganisationHvVorgangDetail({
     [dokumente]
   );
   const dokumenteOhneAbnahme = useMemo(
-    () => dokumente.filter((d) => !isAbnahmePortalDokument(d)),
-    [dokumente]
+    () =>
+      excludeMeldeFunnelFotosFromDokumente(
+        dokumente.filter((d) => !isAbnahmePortalDokument(d)),
+        meldeFotos
+      ),
+    [dokumente, meldeFotos]
   );
 
   const abschlussCard = (
@@ -733,7 +749,8 @@ export function OrganisationHvVorgangDetail({
   const gewerke = Array.from(
     new Set(derivedPositionen.map((p) => p.gewerk).filter(Boolean))
   ).join(", ");
-  const abschlaege = buildAbschlagsplan(sum.brutto, gewerke);
+  const abschlaege = buildAbschlagsplan(sum.brutto, gewerke, rechnungen);
+  const abschlagsplanTitle = abschlagsplanCardTitle(abschlaege.length);
   const meldungAct = async (
     aktion: "angebot_einfordern" | "ablehnen"
   ) => {
@@ -827,6 +844,7 @@ export function OrganisationHvVorgangDetail({
           setError(res.error);
           return;
         }
+        setRejected(true);
         kundePortalToast.angebotAbgelehnt();
         onUpdated();
         onBack?.();
@@ -840,6 +858,8 @@ export function OrganisationHvVorgangDetail({
   /** Unter Schwelle / Akut: nur Info-Banner — kein Annehmen/Ablehnen (CRM macht Direkt Auftrag). */
   const showAcceptCta = Boolean(
     !accepted &&
+      !rejected &&
+      displayFlowStatus !== "abgelehnt" &&
       !freigabeNichtNoetig &&
       (canAcceptAngebot ||
         (actionKind === "angebot" && Boolean(resolvedAngebotId)))
@@ -877,6 +897,13 @@ export function OrganisationHvVorgangDetail({
             >
               Angebot angenommen — Auftrag wird vorbereitet.
             </p>
+          ) : rejected || displayFlowStatus === "abgelehnt" ? (
+            <p
+              className="portal-text-meta mt-3 font-semibold"
+              style={{ color: PORTAL_STATUS.abgelehnt.color }}
+            >
+              Angebot abgelehnt.
+            </p>
           ) : null}
         </DetailCard>
       );
@@ -891,25 +918,11 @@ export function OrganisationHvVorgangDetail({
       return (
         <div className="flex flex-col gap-3.5">
           {mieterStatusMode ? null : abschlussCard}
-          <DetailCard title={HV_DETAIL_COPY.rechnungTitle}>
-            {sum.brutto > 0 ? (
-              <div className="portal-text-title mb-1 flex justify-between">
-                <span>{HV_DETAIL_COPY.rechnungsbetrag}</span>
-                <span>{moneyEur(sum.brutto)}</span>
-              </div>
-            ) : null}
-            <p
-              className="portal-text-meta rounded-lg px-3 py-2 font-semibold"
-              style={{ background: "#FBF1D6", color: "#8A5A06" }}
-            >
-              {HV_DETAIL_COPY.ueberweisungOffen}
-            </p>
-          </DetailCard>
-          <DetailCard title={HV_DETAIL_COPY.abschlagsplanTitle}>
+          <DetailCard title={abschlagsplanTitle}>
             <div className="flex flex-col gap-2">
               {abschlaege.map((r) => (
                 <div
-                  key={r.title}
+                  key={`${r.title}-${r.amount}-${r.status}`}
                   className="flex items-center gap-2.5 rounded-[9px] px-3 py-2.5"
                   style={{ border: `1px solid ${PORTAL_VAR.line}` }}
                 >
@@ -1145,17 +1158,17 @@ export function OrganisationHvVorgangDetail({
                     <>
                       <ActionBtn
                         className="min-w-0 flex-1"
-                        label={HV_DETAIL_COPY.freigabeBtn}
-                        mobileLabel={HV_DETAIL_COPY.freigabeBtnMobile}
-                        disabled={busy}
-                        onClick={() => void meldungAct("angebot_einfordern")}
-                      />
-                      <ActionBtn
-                        className="min-w-0 flex-1"
                         label={HV_DETAIL_COPY.ablehnen}
                         kind="secondary"
                         disabled={busy}
                         onClick={() => void meldungAct("ablehnen")}
+                      />
+                      <ActionBtn
+                        className="min-w-0 flex-1"
+                        label={HV_DETAIL_COPY.freigabeBtn}
+                        mobileLabel={HV_DETAIL_COPY.freigabeBtnMobile}
+                        disabled={busy}
+                        onClick={() => void meldungAct("angebot_einfordern")}
                       />
                     </>
                   ) : undefined

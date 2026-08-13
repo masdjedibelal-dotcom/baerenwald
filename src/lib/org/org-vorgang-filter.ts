@@ -43,7 +43,8 @@ export function buildOrgVorgangFilterCountsFromFlow(
     offen: flow.gemeldet + flow.angebot,
     /** Freigegeben / HW angefragt / aktiver Auftrag. */
     in_arbeit: flow.freigegeben + flow.angefragt + flow.auftrag,
-    erledigt: flow.abschluss + flow.rechnung + flow.bezahlt,
+    erledigt:
+      flow.abschluss + flow.rechnung + flow.bezahlt + flow.abgelehnt,
   };
 }
 

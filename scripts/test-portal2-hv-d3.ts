@@ -6,7 +6,9 @@ import {
   HV_DETAIL_COPY,
   angebotSumme,
   angebotSummeFromPositionen,
+  abschlagsplanCardTitle,
   buildAbschlagsplan,
+  buildAbschlagsplanFromRechnungen,
   formatHvVerlaufLine,
   hvRoleActionKind,
   moneyEur,
@@ -44,6 +46,42 @@ assert("pos netto 100", Math.abs(fromPos.net - 100) < 0.001);
 const plan = buildAbschlagsplan(200, "Sanitär");
 assert("2 raten", plan.length === 2);
 assert("50%", Math.abs(plan[0]!.amount - 100) < 0.001);
+
+const fromRe = buildAbschlagsplanFromRechnungen(
+  [
+    {
+      brutto: 5950,
+      rechnung_art: "abschlag",
+      abschlag_index: 1,
+      status: "bezahlt",
+      bezahlt_at: "2026-08-13",
+    },
+    {
+      brutto: 5950,
+      rechnung_art: "schluss",
+      abschlag_index: 2,
+      status: "entwurf",
+    },
+  ],
+  "Sanitär"
+);
+assert("rechnungen 2 raten", fromRe.length === 2);
+assert("abschlag 5950", Math.abs(fromRe[0]!.amount - 5950) < 0.001);
+assert("schluss 5950", Math.abs(fromRe[1]!.amount - 5950) < 0.001);
+assert("abschlag bezahlt", fromRe[0]!.status === "bezahlt");
+assert("schluss offen", fromRe[1]!.status === "offen");
+assert(
+  "title 2 raten",
+  abschlagsplanCardTitle(2) === "Abschlagsplan · 2 Raten"
+);
+assert(
+  "prefer rechnungen over 50%",
+  Math.abs(
+    buildAbschlagsplan(0, "Sanitär", [
+      { brutto: 100, rechnung_art: "voll", status: "gesendet" },
+    ])[0]!.amount - 100
+  ) < 0.001
+);
 
 assert(
   "verlauf format",

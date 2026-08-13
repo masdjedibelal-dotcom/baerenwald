@@ -53,7 +53,10 @@ import {
   resolvePartnerAuftragKonditionZeilen,
 } from "@/lib/partner/partner-portal-display";
 import { resolvePartnerVorgangListenStatus } from "@/lib/partner/partner-vorgang-display";
-import { partnerKannErledigtMelden } from "@/lib/partner/partner-position-erledigt";
+import {
+  partnerKannErledigtMelden,
+  partnerZeigtAbschlussCta,
+} from "@/lib/partner/partner-position-erledigt";
 import { type VorgangState } from "@/lib/partner/vorgang-state";
 import {
   HW_AUFTRAG_COPY,
@@ -122,7 +125,7 @@ export function PartnerAuftragDetail({
 
   useEffect(() => {
     if (!focusBautagebuch) return;
-    if (preferredPositionIds.length > 0 && vorgangState !== "erledigt") {
+    if (preferredPositionIds.length > 0 && vorgangState !== "erledigt" && vorgangState !== "abgelehnt") {
       setAutoOpenPreferred(true);
     }
     setActiveTab("dokumentation");
@@ -164,16 +167,17 @@ export function PartnerAuftragDetail({
   );
   const dokumentZeilen = useMemo(() => buildPartnerAuftragDokumentZeilen(item), [item]);
 
+  const abschlussCtaInput = {
+    positionen: item.positionen,
+    vorgangState,
+    auftragStatus: item.status,
+    hwAbschlussSigniertAm: item.hw_abschluss_signiert_am,
+    abnahmeProtokollUrl: item.abnahme_protokoll_url,
+    abnahmeFreigabeStatus: item.abnahme_freigabe_status,
+  };
+  const zeigtAbschluss = !abschlussDone && partnerZeigtAbschlussCta(abschlussCtaInput);
   const kannAbschluss =
-    !abschlussDone &&
-    partnerKannErledigtMelden({
-      positionen: item.positionen,
-      vorgangState,
-      auftragStatus: item.status,
-      hwAbschlussSigniertAm: item.hw_abschluss_signiert_am,
-      abnahmeProtokollUrl: item.abnahme_protokoll_url,
-      abnahmeFreigabeStatus: item.abnahme_freigabe_status,
-    });
+    zeigtAbschluss && partnerKannErledigtMelden(abschlussCtaInput);
 
   async function onRechnungErstellen() {
     if (!item.angebotHandwerkerId || uploadBusy || rechnungGateBusy) return;
@@ -301,7 +305,8 @@ export function PartnerAuftragDetail({
   );
 
   const coverUrl = item.lead?.objekt?.cover_url ?? null;
-  const isErledigt = vorgangState === "erledigt";
+  const isErledigt =
+    vorgangState === "erledigt" || vorgangState === "abgelehnt";
 
   const DETAIL_TABS: PortalDetailTab[] = [
     { id: "uebersicht", label: "Übersicht" },
@@ -320,12 +325,19 @@ export function PartnerAuftragDetail({
       onPrimary={() => void onRechnungErstellen()}
       primaryDisabled={rechnungGateBusy}
       secondaryLabel={
-        kannAbschluss
+        zeigtAbschluss
           ? HW_ABNAHME_COPY.rechnungAbschlussCta
           : HW_ABNAHME_COPY.rechnungSecondaryCta
       }
+      secondaryDisabled={zeigtAbschluss && !kannAbschluss}
+      disabledHint={
+        zeigtAbschluss && !kannAbschluss
+          ? HW_AUFTRAG_COPY.ausfuehrenDisabledHint
+          : null
+      }
       onSecondary={() => {
-        if (kannAbschluss) {
+        if (zeigtAbschluss) {
+          if (!kannAbschluss) return;
           setAbschlussOpen(true);
           return;
         }
@@ -337,16 +349,22 @@ export function PartnerAuftragDetail({
         }, 80);
       }}
     />
-  ) : kannAbschluss ? (
+  ) : zeigtAbschluss ? (
     <div className="space-y-2">
       <button
         type="button"
         onClick={() => setAbschlussOpen(true)}
+        disabled={!kannAbschluss}
         className="portal-action-btn portal-action-btn--primary portal-action-btn--block"
         data-testid="hw-auftrag-abschliessen"
       >
         {HW_AUFTRAG_COPY.ausfuehrenCta}
       </button>
+      {!kannAbschluss ? (
+        <p className="portal-text-label normal-case tracking-normal text-center text-text-secondary">
+          {HW_AUFTRAG_COPY.ausfuehrenDisabledHint}
+        </p>
+      ) : null}
     </div>
   ) : undefined;
 

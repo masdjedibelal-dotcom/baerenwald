@@ -118,12 +118,31 @@
   white-space: pre-line;
 }
 
+/* Text-only wie Bereich-Cards: gleiche Präsenz, volle Breite */
+.funnel-tile--text-only {
+  min-height: 64px;
+  justify-content: center;
+  padding-top: 18px;
+  padding-bottom: 18px;
+}
+
 .funnel-step-tiles-card {
   background: transparent;
   border-radius: 0;
   padding: 2px; /* Platz für Schatten der Kacheln */
   border: none;
   overflow-anchor: none;
+  width: 100%;
+}
+
+/* Melde/Page: Step-Padding = Footer (16px), Cards nicht schmaler als Zurück/Weiter */
+.portal-funnel-host--page .funnel-step-page {
+  box-sizing: border-box;
+}
+
+.portal-funnel-host--page .funnel-footer {
+  padding-left: 16px;
+  padding-right: 16px;
 }
 
 .funnel-input {

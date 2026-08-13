@@ -1920,7 +1920,7 @@ export function PortalFunnelHost({
           question="Worum geht es?"
           animateKey="situation"
         >
-          <div className="funnel-step-tiles-card grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
+          <div className="funnel-step-tiles-card flex flex-col gap-2">
             {situations.map((o) => (
               <SelectionTile
                 key={o.id}
@@ -1959,7 +1959,7 @@ export function PortalFunnelHost({
           }
           animateKey="bereiche"
         >
-          <div className="funnel-step-tiles-card grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
+          <div className="funnel-step-tiles-card flex flex-col gap-2">
             {bereicheOptions(state.situation, useMeldeKaputtFlow).map((o) => {
               const opt = stripTerminInfos
                 ? (() => {
@@ -2039,11 +2039,16 @@ export function PortalFunnelHost({
           question={currentMeldeFrage.frage}
           animateKey={currentFachId}
         >
-          <div className="funnel-step-tiles-card grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
+          <div className="funnel-step-tiles-card flex flex-col gap-2">
             {currentMeldeFrage.optionen.map((o) => (
               <SelectionTile
                 key={o.value}
-                option={{ value: o.value, label: o.label }}
+                option={{
+                  value: o.value,
+                  label: o.label,
+                  hint: o.hint,
+                  icon: o.icon,
+                }}
                 multi={false}
                 selected={
                   String(
@@ -2075,6 +2080,7 @@ export function PortalFunnelHost({
           detailTotal={Math.max(1, fachIds.length)}
           animateKey={currentFachId}
           stripInfoBoxes={stripTerminInfos}
+          layout={stepLayout}
         />
       ) : null}
 

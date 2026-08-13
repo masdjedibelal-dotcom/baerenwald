@@ -256,7 +256,7 @@ export function PartnerClient({
   const erledigtNotifKeysKey = useMemo(() => {
     const ids: string[] = [];
     for (const v of vorgaengeState) {
-      if (v.state !== "erledigt") continue;
+      if (v.state !== "erledigt" && v.state !== "abgelehnt") continue;
       ids.push(v.id);
       const anfrageId = v.anfrage?.id;
       if (anfrageId) ids.push(anfrageId);
@@ -920,7 +920,9 @@ export function PartnerClient({
                 inAusfuehrung: vorgaengeState.filter(
                   (v) => v.state === "in_bearbeitung"
                 ).length,
-                erledigt: vorgaengeState.filter((v) => v.state === "erledigt").length,
+                erledigt: vorgaengeState.filter(
+                  (v) => v.state === "erledigt" || v.state === "abgelehnt"
+                ).length,
               }}
               onOpenAll={() => switchSection("vorgaenge", "alle")}
               onKpiClick={(id) => {

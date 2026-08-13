@@ -5,6 +5,7 @@ import { useMemo, useState } from "react";
 
 import {
   confirmPartnerAuftrag,
+  confirmPartnerAuftragZuweisung,
   declinePartnerAnfrage,
 } from "@/app/actions/partner-auftrag-bestaetigen";
 import { usePortalBusy } from "@/components/shared/PortalBusyContext";
@@ -225,11 +226,29 @@ export function PartnerOffenDetail({
             ? pflichtenGelesen && projektvertragBereit
             : pflichtenGelesen;
         const verbindlich = gelesen;
-        const res = await confirmPartnerAuftrag({
-          anfrageId: item.id,
-          gelesen,
-          verbindlich,
-        });
+        const syntheticAuftragId = item.id.startsWith("auftrag:")
+          ? item.id.slice("auftrag:".length)
+          : null;
+        const auftragId = (item.auftrag_id ?? syntheticAuftragId)?.trim() || null;
+        const anfrageId = syntheticAuftragId ? "" : item.id.trim();
+
+        const res =
+          anfrageId && !syntheticAuftragId
+            ? await confirmPartnerAuftrag({
+                anfrageId,
+                gelesen,
+                verbindlich,
+              })
+            : auftragId
+              ? await confirmPartnerAuftragZuweisung({
+                  auftragId,
+                  gelesen,
+                  verbindlich,
+                })
+              : {
+                  ok: false as const,
+                  error: "Vorgang nicht gefunden.",
+                };
         setConfirmOpen(false);
         if (!res.ok) {
           setError(res.error);
@@ -268,6 +287,13 @@ export function PartnerOffenDetail({
           }
         });
       }
+    } catch (e) {
+      const msg =
+        e instanceof Error && e.message.trim()
+          ? e.message
+          : "Annahme fehlgeschlagen. Bitte erneut versuchen.";
+      setError(msg);
+      portalToastError("Annahme fehlgeschlagen", msg);
     } finally {
       setLoading(false);
     }

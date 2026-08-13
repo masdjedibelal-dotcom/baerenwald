@@ -98,7 +98,7 @@ export function OrgFreigabeBanner({
           {error}
         </p>
       ) : null}
-      <div className="mt-3 flex flex-wrap gap-2">
+      <div className="portal-action-row mt-3">
         <button
           type="button"
           className="portal-action-btn portal-action-btn--secondary"

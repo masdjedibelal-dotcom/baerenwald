@@ -14,7 +14,12 @@ type ShowWhen = (a: MeldeAnswers) => boolean;
 type MeldeQDef = {
   id: string;
   frage: string;
-  optionen: Array<{ value: string; label: string }>;
+  optionen: Array<{
+    value: string;
+    label: string;
+    hint?: string;
+    icon?: string;
+  }>;
   /** Wenn gesetzt: Frage nur zeigen, wenn true. */
   showWhen?: ShowWhen;
 };
@@ -250,20 +255,33 @@ const TREES: Record<MeldeBereichId, MeldeQDef[]> = {
         {
           value: "wasser_austritt",
           label: "Wasser tritt aus / läuft / tropft",
+          hint: "Leck, tropfender Hahn, nasse Stelle",
+          icon: "08-bad",
         },
         {
           value: "von_decke_wand",
           label: "Wasser aus Decke oder Wand",
+          hint: "von oben, Flecken, tropft herunter",
+          icon: "08-bad",
         },
         {
           value: "verstopfung",
           label: "WC oder Abfluss verstopft",
+          hint: "läuft nicht ab, steht, stinkt",
+          icon: "08-bad",
         },
         {
           value: "feucht_ohne_lauf",
           label: "Nur feucht — kein laufendes Wasser",
+          hint: "Feuchtigkeit, Schimmelgefahr",
+          icon: "02-reparatur",
         },
-        { value: "sonstiges", label: "Etwas anderes" },
+        {
+          value: "sonstiges",
+          label: "Etwas anderes",
+          hint: "kurz beschreiben im nächsten Schritt",
+          icon: "02-reparatur",
+        },
       ],
     },
     {
@@ -327,20 +345,33 @@ const TREES: Record<MeldeBereichId, MeldeQDef[]> = {
         {
           value: "wohnung_kalt",
           label: "Wohnung / Heizung bleibt kalt",
+          hint: "Heizkörper oder ganze Wohnung",
+          icon: "05-heizung",
         },
         {
           value: "kein_warmwasser",
           label: "Kein Warmwasser (Dusche/Hahn kalt)",
+          hint: "Warmwasser geht nicht",
+          icon: "05-heizung",
         },
         {
           value: "wasser_am_hk",
           label: "Wasser tropft oder läuft am Heizkörper",
+          hint: "Leck am Heizkörper oder Ventil",
+          icon: "05-heizung",
         },
         {
           value: "geraeusche",
           label: "Knacken / Gluckern / laute Geräusche",
+          hint: "ungewöhnliche Geräusche",
+          icon: "05-heizung",
         },
-        { value: "sonstiges", label: "Etwas anderes" },
+        {
+          value: "sonstiges",
+          label: "Etwas anderes",
+          hint: "kurz beschreiben im nächsten Schritt",
+          icon: "02-reparatur",
+        },
       ],
     },
     {
@@ -370,24 +401,39 @@ const TREES: Record<MeldeBereichId, MeldeQDef[]> = {
         {
           value: "kein_strom",
           label: "Kein Strom in der Wohnung / im Bereich",
+          hint: "dunkel, nichts geht",
+          icon: "06-elektrik",
         },
         {
           value: "fi_sicherung",
           label: "Sicherung oder FI fliegt raus",
+          hint: "springt raus, bleibt nicht an",
+          icon: "06-elektrik",
         },
         {
           value: "einzelner_punkt",
           label: "Nur Steckdose, Licht oder Schalter defekt",
+          hint: "einzelner Punkt betroffen",
+          icon: "06-elektrik",
         },
         {
           value: "klingel",
           label: "Klingel / Türsprecher",
+          hint: "klingelt nicht, keine Verbindung",
+          icon: "06-elektrik",
         },
         {
           value: "garagentor",
           label: "Garagentor öffnet oder schließt nicht",
+          hint: "Tor, Antrieb, Fernbedienung",
+          icon: "06-elektrik",
         },
-        { value: "sonstiges", label: "Etwas anderes" },
+        {
+          value: "sonstiges",
+          label: "Etwas anderes",
+          hint: "kurz beschreiben im nächsten Schritt",
+          icon: "02-reparatur",
+        },
       ],
     },
     {
@@ -423,16 +469,27 @@ const TREES: Record<MeldeBereichId, MeldeQDef[]> = {
         {
           value: "fenster_klemmt_undicht",
           label: "Fenster klemmt oder schließt nicht dicht",
+          hint: "schließt nicht, zieht, klemmt",
+          icon: "11-fenster",
         },
         {
           value: "scheibe_kaputt",
           label: "Fensterscheibe ist kaputt oder gesprungen",
+          hint: "Riss, Bruch, Scheibe",
+          icon: "11-fenster",
         },
         {
           value: "tuer_schloss",
           label: "Tür, Schloss oder Schlüssel-Problem",
+          hint: "Schloss, Klinke, schließt nicht",
+          icon: "11-fenster",
         },
-        { value: "sonstiges", label: "Etwas anderes" },
+        {
+          value: "sonstiges",
+          label: "Etwas anderes",
+          hint: "kurz beschreiben im nächsten Schritt",
+          icon: "02-reparatur",
+        },
       ],
     },
     {
@@ -484,16 +541,27 @@ const TREES: Record<MeldeBereichId, MeldeQDef[]> = {
         {
           value: "regenrinne_ueber",
           label: "Die Regenrinne läuft über",
+          hint: "überläuft, verstopft",
+          icon: "12-dach",
         },
         {
           value: "wasser_fassade",
           label: "Bei Regen kommt Wasser falsch an der Fassade runter",
+          hint: "Wasser an der Wand / Fassade",
+          icon: "12-dach",
         },
         {
           value: "ziegel_boden",
           label: "Dachziegel liegen am Boden oder fehlen",
+          hint: "Ziegel, Dachschaden",
+          icon: "12-dach",
         },
-        { value: "sonstiges", label: "Etwas anderes" },
+        {
+          value: "sonstiges",
+          label: "Etwas anderes",
+          hint: "kurz beschreiben im nächsten Schritt",
+          icon: "02-reparatur",
+        },
       ],
     },
     {
@@ -511,8 +579,15 @@ const TREES: Record<MeldeBereichId, MeldeQDef[]> = {
         {
           value: "schimmel_feucht",
           label: "Schimmel oder feuchte Stellen an Wand / Decke",
+          hint: "Flecken, muffig, feucht",
+          icon: "02-reparatur",
         },
-        { value: "sonstiges", label: "Etwas anderes (Feuchte)" },
+        {
+          value: "sonstiges",
+          label: "Etwas anderes (Feuchte)",
+          hint: "kurz beschreiben im nächsten Schritt",
+          icon: "02-reparatur",
+        },
       ],
     },
     {
@@ -537,20 +612,33 @@ const TREES: Record<MeldeBereichId, MeldeQDef[]> = {
         {
           value: "muell",
           label: "Mülltonnen voll oder Müll liegt daneben",
+          hint: "Müllplatz, Überfüllung",
+          icon: "17-gebauedereinigung",
         },
         {
           value: "treppenhaus_schmutz",
           label: "Treppenhaus / Gemeinschaftsbereich schmutzig",
+          hint: "Reinigung, Gemeinschaftsfläche",
+          icon: "17-gebauedereinigung",
         },
         {
           value: "wespen",
           label: "Wespennest oder Insektennest",
+          hint: "Wespen, Insekten",
+          icon: "19-notfall",
         },
         {
           value: "weg_aussen",
           label: "Ast, Baum oder Weg draußen blockiert / beschädigt",
+          hint: "Außenanlage, Weg, Ast",
+          icon: "15-gartenpflege",
         },
-        { value: "sonstiges", label: "Etwas anderes" },
+        {
+          value: "sonstiges",
+          label: "Etwas anderes",
+          hint: "kurz beschreiben im nächsten Schritt",
+          icon: "02-reparatur",
+        },
       ],
     },
     {

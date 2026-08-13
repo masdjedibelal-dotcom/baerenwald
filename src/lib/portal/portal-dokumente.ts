@@ -316,6 +316,32 @@ export function isBautagebuchPortalDokument(d: PortalDokument): boolean {
   return /^Bautagebuch\b/i.test(d.name ?? "");
 }
 
+function normalizeDokumentHref(href: string): string {
+  return href.trim().split("?")[0]!.split("#")[0]!;
+}
+
+/**
+ * Melde-Funnel-Fotos gehören in Details — nicht unter Dokumente.
+ * Filter gegen URLs aus `funnel_daten.fotos`.
+ */
+export function excludeMeldeFunnelFotosFromDokumente(
+  docs: PortalDokument[],
+  meldeFotoUrls: string[] | null | undefined
+): PortalDokument[] {
+  if (!docs.length || !meldeFotoUrls?.length) return docs;
+  const fotoSet = new Set(
+    meldeFotoUrls
+      .map((u) => (typeof u === "string" ? normalizeDokumentHref(u) : ""))
+      .filter(Boolean)
+  );
+  if (!fotoSet.size) return docs;
+  return docs.filter((d) => {
+    const href = d.href?.trim();
+    if (!href) return true;
+    return !fotoSet.has(normalizeDokumentHref(href));
+  });
+}
+
 /**
  * Sichtbarkeit je Rolle:
  * - Kunde: alle CRM-Unterlagen (ohne Bautagebuch — eigene Section)

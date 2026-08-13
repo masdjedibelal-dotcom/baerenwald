@@ -66,6 +66,15 @@ export type KundePortalDetailItem = {
   angebotPositionen?: PortalAngebotPositionDisplay[];
   auftragPositionen?: PortalAuftragPositionDisplay[];
   gesamtBrutto?: number;
+  /** Rechnungen (Brutto/Status) für Abschlagsplan im Abschluss-Tab. */
+  rechnungen?: Array<{
+    id: string;
+    status?: string | null;
+    brutto?: number | null;
+    rechnung_art?: string | null;
+    abschlag_index?: number | null;
+    bezahlt_at?: string | null;
+  }>;
   /** D11: `angebote.herkunft` (z. B. handwerker → Empfohlenes Angebot). */
   angebotHerkunft?: string | null;
   isAuftragDetail?: boolean;

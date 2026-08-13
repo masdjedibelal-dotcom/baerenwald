@@ -12,10 +12,12 @@ import {
 } from "@/lib/portal/load-auftraege-by-lead-ids";
 import type { PortalAuftragKontext } from "@/lib/portal/vorgang-erledigt";
 import {
+  excludeMeldeFunnelFotosFromDokumente,
   mergeDokumente,
   type PortalDokument,
 } from "@/lib/portal/portal-dokumente";
 import { PORTAL_LIST_LEAD_LIMIT } from "@/lib/portal/portal-list-limits";
+import { meldeFotosFromLead } from "@/lib/org/org-eingang-utils";
 import type {
   OrganisationLead,
   OrganisationObjekt,
@@ -392,7 +394,10 @@ export async function getOrganisationPortalData(
       if (leadId && leadDocs.length) {
         dokumenteByLeadId[leadId] = mergeDokumente(
           dokumenteByLeadId[leadId] ?? [],
-          leadDocs
+          excludeMeldeFunnelFotosFromDokumente(
+            leadDocs,
+            meldeFotosFromLead(lead as OrganisationLead)
+          )
         );
       }
     }

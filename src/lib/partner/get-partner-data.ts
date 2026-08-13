@@ -166,6 +166,8 @@ export type PartnerAuftragPosition = {
   /** CRM-Zuweisungsstatus dieser Leistung (z. B. angefragt nach Nachreichung). */
   handwerker_status?: string | null;
   handwerker_id?: string | null;
+  /** Zeitpunkt der HW-Zuweisung / Anfrage an diese Position. */
+  handwerker_angefragt_at?: string | null;
   /** Lebenszyklus: offen | in_arbeit | erledigt (= leistung_status). */
   leistung_status?: string | null;
   typ?: string | null;
@@ -660,6 +662,7 @@ export async function getPartnerDataForHandwerker(
           einheit,
           handwerker_id,
           handwerker_status,
+          handwerker_angefragt_at,
           leistung_status,
           typ,
           verguetung,
@@ -853,6 +856,8 @@ export async function getPartnerDataForHandwerker(
         material_fix: p.material_fix != null ? Number(p.material_fix) : null,
         handwerker_status: (p.handwerker_status as string | null) ?? null,
         handwerker_id: (p.handwerker_id as string | null) ?? null,
+        handwerker_angefragt_at:
+          (p.handwerker_angefragt_at as string | null) ?? null,
         leistung_status: (p.leistung_status as string | null) ?? "offen",
         typ: (p.typ as string | null) ?? "lv",
         verguetung: (p.verguetung as string | null) ?? "festpreis",

@@ -50,11 +50,86 @@ export type AbschlagRow = {
   status: "bezahlt" | "offen";
 };
 
-/** Mock `abschlagsplan` — 2 Raten à 50 %. */
-export function buildAbschlagsplan(
-  brutto: number,
+export type AbschlagRechnungInput = {
+  brutto?: number | null;
+  status?: string | null;
+  bezahlt_at?: string | null;
+  rechnung_art?: string | null;
+  abschlag_index?: number | null;
+};
+
+function rechnungIstBezahlt(r: AbschlagRechnungInput): boolean {
+  if (r.bezahlt_at?.trim()) return true;
+  return String(r.status ?? "").toLowerCase() === "bezahlt";
+}
+
+function abschlagTitle(r: AbschlagRechnungInput): string {
+  const art = String(r.rechnung_art ?? "").toLowerCase();
+  if (art === "schluss") return "Schlussrechnung";
+  if (art === "voll") return "Rechnung";
+  const idx =
+    typeof r.abschlag_index === "number" && r.abschlag_index > 0
+      ? r.abschlag_index
+      : 1;
+  if (art === "abschlag" || art === "") return `${idx}. Abschlag`;
+  return `${idx}. Abschlag`;
+}
+
+function abschlagSub(r: AbschlagRechnungInput, gewerk: string): string {
+  const g = gewerk.trim() || "Gewerk";
+  const art = String(r.rechnung_art ?? "").toLowerCase();
+  if (art === "schluss") return `Nach digitaler Abnahme · ${g}`;
+  if (art === "voll") return g;
+  return `Bei Beauftragung · ${g}`;
+}
+
+function sortKeyRechnung(r: AbschlagRechnungInput): number {
+  if (typeof r.abschlag_index === "number" && Number.isFinite(r.abschlag_index)) {
+    return r.abschlag_index;
+  }
+  const art = String(r.rechnung_art ?? "").toLowerCase();
+  if (art === "abschlag") return 1;
+  if (art === "schluss") return 90;
+  if (art === "voll") return 50;
+  return 99;
+}
+
+/** Abschlagsplan aus echten Rechnungszeilen (Brutto + Bezahlt-Status). */
+export function buildAbschlagsplanFromRechnungen(
+  rechnungen: AbschlagRechnungInput[] | null | undefined,
   gewerke: string
 ): AbschlagRow[] {
+  const rows = (rechnungen ?? [])
+    .map((r) => ({
+      r,
+      amount: Number(r.brutto),
+    }))
+    .filter((x) => Number.isFinite(x.amount) && x.amount > 0)
+    .sort((a, b) => sortKeyRechnung(a.r) - sortKeyRechnung(b.r));
+
+  return rows.map(({ r, amount }) => ({
+    title: abschlagTitle(r),
+    sub: abschlagSub(r, gewerke),
+    amount,
+    status: rechnungIstBezahlt(r) ? "bezahlt" : "offen",
+  }));
+}
+
+export function abschlagsplanCardTitle(raten: number): string {
+  if (raten <= 0) return "Abschlagsplan";
+  if (raten === 1) return "Abschlagsplan · 1 Rate";
+  return `Abschlagsplan · ${raten} Raten`;
+}
+
+/** Abschlagsplan: bevorzugt Rechnungsbeträge, sonst Fallback 2×50 %. */
+export function buildAbschlagsplan(
+  brutto: number,
+  gewerke: string,
+  rechnungen?: AbschlagRechnungInput[] | null
+): AbschlagRow[] {
+  const fromRechnungen = buildAbschlagsplanFromRechnungen(rechnungen, gewerke);
+  if (fromRechnungen.length > 0) return fromRechnungen;
+
   const g = gewerke.trim() || "Gewerk";
   return [
     {
@@ -173,6 +248,7 @@ export function hvRoleActionKind(
   if (flow === "abschluss") return "abschluss";
   if (flow === "rechnung") return "rechnung";
   if (flow === "bezahlt") return "bezahlt";
+  if (flow === "abgelehnt") return "none";
   return "none";
 }
 

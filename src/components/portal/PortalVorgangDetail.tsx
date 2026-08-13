@@ -257,6 +257,7 @@ export function PortalVorgangDetail({
         positionenBrutto={item.angebotPositionen}
         auftragPositionen={item.auftragPositionen}
         gesamtBrutto={item.gesamtBrutto}
+        rechnungen={item.rechnungen}
         rechnungPdfHref={rechnungPdf}
         bautagebuch={item.bautagebuch}
         dokumente={item.dokumente ?? []}

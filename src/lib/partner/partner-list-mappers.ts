@@ -59,6 +59,8 @@ function partnerStateSortRank(state: VorgangState | string): number {
       return 2;
     case "erledigt":
       return 80;
+    case "abgelehnt":
+      return 90;
     default:
       return 20;
   }

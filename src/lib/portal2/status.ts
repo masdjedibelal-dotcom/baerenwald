@@ -13,7 +13,9 @@ export type PortalMockStatusId =
   | "auftrag"
   | "abschluss"
   | "rechnung"
-  | "bezahlt";
+  | "bezahlt"
+  /** Terminal: Angebot/Freigabe abgelehnt — zählt zu Erledigt, nicht in FLOW-Timeline. */
+  | "abgelehnt";
 
 export type PortalMockStatusMeta = {
   id: PortalMockStatusId;
@@ -75,6 +77,12 @@ export const PORTAL_STATUS: Record<PortalMockStatusId, PortalMockStatusMeta> = {
     color: "#4B5563",
     bg: "#EAEDEC",
   },
+  abgelehnt: {
+    id: "abgelehnt",
+    label: "Abgelehnt",
+    color: "#B91C1C",
+    bg: "#FEE2E2",
+  },
 };
 
 /**
@@ -125,7 +133,8 @@ export function portalFlowTimelineIndex(id: PortalMockStatusId): number {
     case "rechnung":
       return 4;
     case "bezahlt":
-      return 5; // alle Schritte erledigt
+    case "abgelehnt":
+      return 5; // alle Schritte erledigt / terminal
   }
 }
 
@@ -198,6 +207,7 @@ export function portalFlowToMieterStg(
     case "rechnung":
       return "beauftragt";
     case "bezahlt":
+    case "abgelehnt":
       return "erledigt";
   }
 }

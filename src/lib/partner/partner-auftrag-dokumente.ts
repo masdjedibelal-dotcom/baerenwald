@@ -107,13 +107,10 @@ export function buildPartnerAuftragDokumentZeilen(
 export function partnerAuftragKannRechnungHochladen(item: PartnerAuftragItem): boolean {
   if (!item.angebotHandwerkerId) return false;
   if (item.status.toLowerCase() === "storniert") return false;
-  // Abschlussprotokoll / Compliance-Uploads sind optional — kein Gate für Auto-Rechnung.
+  // Projektvertrag nur bei Bauprojekt nötig — kein Gate für Auto-Rechnung.
+  // Abschlussprotokoll / Compliance-Uploads sind ebenfalls optional.
   const hwSt = (item.angebotHwStatus ?? "").toLowerCase();
-  return (
-    hwSt === "uebernommen" &&
-    Boolean(item.projektvertrag_bestaetigt_am) &&
-    !item.hw_rechnung_eingereicht_at
-  );
+  return hwSt === "uebernommen" && !item.hw_rechnung_eingereicht_at;
 }
 
 /** @deprecated Sticky-CTA nutzt `partnerAuftragKannRechnungHochladen`. */

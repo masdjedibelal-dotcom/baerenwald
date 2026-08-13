@@ -132,6 +132,22 @@ function extractUrlsFromUnknown(value: unknown): string[] {
   return Array.from(out);
 }
 
+/** Lead-Anhänge für Dokumente — ohne Melde-Funnel-Fotos (die gehören in Details). */
+function extractLeadDokumentUrls(lead: {
+  funnel_daten?: unknown;
+  kontakt_nachricht?: unknown;
+}): string[] {
+  const urls: string[] = [
+    ...extractUrlsFromUnknown(lead.kontakt_nachricht),
+  ];
+  const fd = lead.funnel_daten;
+  if (fd && typeof fd === "object" && !Array.isArray(fd)) {
+    const { fotos: _fotos, ...rest } = fd as Record<string, unknown>;
+    urls.push(...extractUrlsFromUnknown(rest));
+  }
+  return urls;
+}
+
 export type PortalDataLoadMode = "list" | "full";
 
 export type PortalDataLoadOpts = {
@@ -511,7 +527,7 @@ export async function getPortalDataForKunde(
           : supabaseAdmin
               .from("rechnungen")
               .select(
-                "id, auftrag_id, rechnungsnummer, pdf_url, status, rechnungsdatum, gesendet_at, faellig_am, created_at, updated_at"
+                "id, auftrag_id, rechnungsnummer, pdf_url, status, rechnungsdatum, gesendet_at, faellig_am, created_at, updated_at, brutto, netto, rechnung_art, abschlag_index, bezahlt_at"
               )
               .in("auftrag_id", auftragIds),
         listMode
@@ -814,7 +830,33 @@ export async function getPortalDataForKunde(
 
       const auftragRechnungen = (rechnungen ?? [])
         .filter((r) => String(r.auftrag_id) === auftragId)
-        .map((r) => mapPortalRechnungForResolver(r));
+        .map((r) => {
+          const base = mapPortalRechnungForResolver(r);
+          const bruttoRaw = (r as { brutto?: number | null }).brutto;
+          const brutto =
+            typeof bruttoRaw === "number"
+              ? bruttoRaw
+              : Number(bruttoRaw);
+          return {
+            ...base,
+            brutto: Number.isFinite(brutto) ? brutto : undefined,
+            rechnung_art:
+              typeof (r as { rechnung_art?: string | null }).rechnung_art ===
+              "string"
+                ? (r as { rechnung_art: string }).rechnung_art
+                : null,
+            abschlag_index:
+              typeof (r as { abschlag_index?: number | null }).abschlag_index ===
+              "number"
+                ? (r as { abschlag_index: number }).abschlag_index
+                : null,
+            bezahlt_at:
+              typeof (r as { bezahlt_at?: string | null }).bezahlt_at ===
+              "string"
+                ? (r as { bezahlt_at: string }).bezahlt_at
+                : null,
+          };
+        });
       const linkedLead = leadId ? leadPortalById.get(leadId) ?? null : null;
       const betreuerId =
         typeof a.betreuer_id === "string" ? a.betreuer_id.trim() : "";
@@ -965,14 +1007,11 @@ export async function getPortalDataForKunde(
         objekt: resolveObj(raw.kunde_objekt_id, raw.plz),
         dokumente: listMode
           ? []
-          : dokumenteFromUrls([
-              ...extractUrlsFromUnknown(
-                (lead as { funnel_daten?: unknown }).funnel_daten
-              ),
-              ...extractUrlsFromUnknown(
-                (lead as { kontakt_nachricht?: unknown }).kontakt_nachricht
-              ),
-            ]),
+          : dokumenteFromUrls(
+              extractLeadDokumentUrls(
+                lead as { funnel_daten?: unknown; kontakt_nachricht?: unknown }
+              )
+            ),
       };
     });
 

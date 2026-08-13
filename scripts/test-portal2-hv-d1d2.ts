@@ -78,7 +78,8 @@ assert(
 );
 assert(
   "erledigt formula",
-  kpis.erledigt === flow.abschluss + flow.rechnung + flow.bezahlt
+  kpis.erledigt ===
+    flow.abschluss + flow.rechnung + flow.bezahlt + flow.abgelehnt
 );
 
 const st = resolveLeadPortalFlowStatus({
@@ -89,6 +90,27 @@ const st = resolveLeadPortalFlowStatus({
   },
 });
 assert("neu → gemeldet", st === "gemeldet");
+
+const stAbgelehnt = resolveLeadPortalFlowStatus({
+  lead: {
+    id: "y",
+    hv_meldung_status: "angebot_eingefordert",
+    org_freigabe_status: "freigegeben",
+  },
+  angebot: {
+    id: "ang1",
+    lead_id: "y",
+    status: "abgelehnt",
+    status_einfach: "abgelehnt",
+    pdf_url: "https://example.com/a.pdf",
+  },
+});
+assert("abgelehntes Angebot → abgelehnt", stAbgelehnt === "abgelehnt");
+assert(
+  "chip erledigt abgelehnt",
+  hvListeChipMatches("erledigt", "abgelehnt") &&
+    !hvListeChipMatches("offen", "abgelehnt")
+);
 
 assert("pageHead", HV_LISTE_PAGE_EYEBROW === "Verwaltung");
 assert("page title", HV_LISTE_PAGE_TITLE === "Vorgänge");
@@ -108,8 +130,8 @@ assert("banner", HV_ANGEBOT_BANNER === "Angebote zur Freigabe");
 assert(
   "meldung actions",
   HV_MELDUNG_ACTIONS.length === 2 &&
-    HV_MELDUNG_ACTIONS[0]!.label === "Vorgang freigeben" &&
-    HV_MELDUNG_ACTIONS[1]!.label === "Ablehnen"
+    HV_MELDUNG_ACTIONS[0]!.label === "Ablehnen" &&
+    HV_MELDUNG_ACTIONS[1]!.label === "Vorgang freigeben"
 );
 assert("bulk offener punkt", HV_BULK_DELETE_OFFENER_PUNKT.includes("OFFENE-PUNKTE"));
 

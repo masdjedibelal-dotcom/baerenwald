@@ -447,7 +447,7 @@ export function PortalDetailStickyActions({
           {primaryLoading ? "Wird gesendet…" : primaryLabel}
         </button>
       </div>
-      {primaryDisabled && disabledHint ? (
+      {disabledHint && (primaryDisabled || secondaryDisabled) ? (
         <p className="portal-text-label normal-case tracking-normal text-center text-text-tertiary">
           {disabledHint}
         </p>

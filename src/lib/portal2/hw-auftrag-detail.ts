@@ -11,6 +11,8 @@ export const HW_AUFTRAG_COPY = {
   ausfuehrenBody:
     "Dokumentieren Sie je Leistung: Update-Foto → optional weiteres Update → Endfoto. Bei Regie/Aufwand Zeit miterfassen.",
   ausfuehrenCta: "Abschließen",
+  ausfuehrenDisabledHint:
+    "Alles als erledigt markieren. Bei Regie auch die Updates.",
   ausfuehrenHint:
     "Nach Updates je Leistung: Abnahme mit Signatur. Danach Rechnung prüfen & einreichen.",
   leistungenTitle: "Leistungen",
@@ -50,7 +52,8 @@ export function hwAuftragTimelineIndex(input: {
   if (
     st === "abgeschlossen" ||
     st === "storniert" ||
-    input.vorgangState === "erledigt"
+    input.vorgangState === "erledigt" ||
+    input.vorgangState === "abgelehnt"
   ) {
     return 4;
   }
@@ -76,6 +79,7 @@ export function hwAuftragStatusLabel(input: {
   fallback?: string;
 }): string {
   if (input.vorgangState === "erledigt") return "Erledigt";
+  if (input.vorgangState === "abgelehnt") return "Abgelehnt";
   if (input.vorgangState === "neu") return "Aktion nötig";
   if (input.vorgangState === "geaendert") return "Geändert";
   return input.fallback?.trim() || HW_AUFTRAG_COPY.statusBeauftragt;

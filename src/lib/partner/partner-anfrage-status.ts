@@ -3,7 +3,7 @@ import type {
   PartnerAuftragItem,
 } from "@/lib/partner/get-partner-data";
 import {
-  isProjektStartDatumErreicht,
+  isPartnerAntwortfristAbgelaufen,
   resolvePartnerAnfrageProjektStartIso,
 } from "@/lib/partner/partner-anfrage-projekt-start";
 import {
@@ -41,7 +41,10 @@ export function isPartnerAnfrageAntwortAbgelaufen(
     zeitraum: item.zeitraum,
     lead: item.lead,
   });
-  return isProjektStartDatumErreicht(start);
+  return isPartnerAntwortfristAbgelaufen({
+    projektStartIso: start,
+    zugewiesenAmIso: item.gesendet_at,
+  });
 }
 
 /** Erstzuweisung — noch keine verbindliche Annahme. */
@@ -114,12 +117,13 @@ export function partnerAnfrageStatusLabel(
 
 type PartnerAuftragAnfrageTiming = Pick<
   PartnerAuftragItem,
-  "hwStatus" | "start_datum"
+  "hwStatus" | "start_datum" | "created_at" | "updated_at"
 > & {
   positionen: Array<{
     start_datum?: string | null;
     handwerker_status?: string | null;
     handwerker_id?: string | null;
+    handwerker_angefragt_at?: string | null;
   }>;
 };
 
@@ -133,7 +137,19 @@ export function isPartnerAuftragAnfrageAntwortAbgelaufen(
     start_datum: item.start_datum,
     position_start_daten: item.positionen.map((p) => p.start_datum),
   });
-  return isProjektStartDatumErreicht(start);
+  const zugewiesenAm =
+    item.positionen
+      .map((p) => p.handwerker_angefragt_at?.trim())
+      .filter((d): d is string => Boolean(d))
+      .sort()
+      .at(-1) ??
+    item.updated_at ??
+    item.created_at ??
+    null;
+  return isPartnerAntwortfristAbgelaufen({
+    projektStartIso: start,
+    zugewiesenAmIso: zugewiesenAm,
+  });
 }
 
 /** Noch keine HW-Antwort — trotz verstrichenem Startdatum in der Liste behalten. */
@@ -201,12 +217,18 @@ export function isPartnerVorgangAusgeblendet(input: {
 export function isPartnerAuftragAnfrageOffen(
   item: Pick<
     PartnerAuftragItem,
-    "status" | "hwStatus" | "start_datum" | "handwerker_bestaetigt_at"
+    | "status"
+    | "hwStatus"
+    | "start_datum"
+    | "handwerker_bestaetigt_at"
+    | "created_at"
+    | "updated_at"
   > & {
     positionen: Array<{
       start_datum?: string | null;
       handwerker_status?: string | null;
       handwerker_id?: string | null;
+      handwerker_angefragt_at?: string | null;
     }>;
   }
 ): boolean {
@@ -249,11 +271,14 @@ type PartnerAuftragAnfrageAktionFields = Pick<
   | "start_datum"
   | "angebotHandwerkerId"
   | "handwerker_bestaetigt_at"
+  | "created_at"
+  | "updated_at"
 > & {
   positionen: Array<{
     start_datum?: string | null;
     handwerker_status?: string | null;
     handwerker_id?: string | null;
+    handwerker_angefragt_at?: string | null;
   }>;
 };
 
@@ -268,12 +293,18 @@ export function isPartnerAuftragAnfrageAktionErforderlich(
 export function partnerAuftragAnfrageStatusLabel(
   item: Pick<
     PartnerAuftragItem,
-    "hwStatus" | "start_datum" | "status" | "handwerker_bestaetigt_at"
+    | "hwStatus"
+    | "start_datum"
+    | "status"
+    | "handwerker_bestaetigt_at"
+    | "created_at"
+    | "updated_at"
   > & {
     positionen: Array<{
       start_datum?: string | null;
       handwerker_status?: string | null;
       handwerker_id?: string | null;
+      handwerker_angefragt_at?: string | null;
     }>;
   }
 ): string {

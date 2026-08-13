@@ -20,13 +20,14 @@ import { BautagebuchAccordionList } from "@/components/shared/BautagebuchAccordi
 import { DokumenteTabelle } from "@/components/shared/DokumenteTabelle";
 import { VorgangDetailBlocks } from "@/components/shared/vorgang-detail";
 import {
+  excludeMeldeFunnelFotosFromDokumente,
   isAbnahmePortalDokument,
   type PortalDokument,
 } from "@/lib/portal/portal-dokumente";
 import { orgPortalToast } from "@/lib/shared/portal-toast";
 import { PortalListCard } from "@/components/shared/PortalListCard";
 import { meldeKategorieLabel } from "@/lib/org/melde-kategorien";
-import { meldeKategorieFromLead } from "@/lib/org/org-eingang-utils";
+import { meldeFotosFromLead, meldeKategorieFromLead } from "@/lib/org/org-eingang-utils";
 import { isHvDirektauftragInfoOnly } from "@/lib/org/org-direktauftrag";
 import {
   funnelDirektauftragFromDaten,
@@ -400,8 +401,20 @@ function MeldungDetail({
       ) : null}
 
       {(() => {
-        const unterlagen = (vorgangUnterlagen ?? []).filter(
-          (d) => !isAbnahmePortalDokument(d as PortalDokument)
+        const unterlagen = excludeMeldeFunnelFotosFromDokumente(
+          (vorgangUnterlagen ?? [])
+            .filter((d) => !isAbnahmePortalDokument(d as PortalDokument))
+            .map(
+              (d): PortalDokument => ({
+                id: d.id,
+                name: d.name,
+                subtitle: d.subtitle,
+                datum: d.datum,
+                href: d.href,
+                art: (d as PortalDokument).art ?? "dokument",
+              })
+            ),
+          meldeFotosFromLead(lead)
         );
         if (!unterlagen.length) return null;
         return (

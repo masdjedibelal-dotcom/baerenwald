@@ -39,7 +39,10 @@ export function hvListeChipMatches(
     );
   }
   return (
-    flow === "abschluss" || flow === "rechnung" || flow === "bezahlt"
+    flow === "abschluss" ||
+    flow === "rechnung" ||
+    flow === "bezahlt" ||
+    flow === "abgelehnt"
   );
 }
 

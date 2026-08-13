@@ -40,14 +40,15 @@ export const PRIVAT_DASHBOARD_KPI_DEFS = [
  * Mock privat-Tiles:
  * - Offen = gemeldet+freigegeben+angefragt+angebot
  * - In Arbeit = nur aktiver Auftrag
- * - Erledigt = abschluss+rechnung+bezahlt
+ * - Erledigt = abschluss+rechnung+bezahlt+abgelehnt
  */
 export function buildPrivatDashboardKpis(
   flow: HvFlowCountMap
 ): Record<PrivatDashboardKpiId, number> {
   const offen =
     flow.gemeldet + flow.freigegeben + flow.angefragt + flow.angebot;
-  const erledigt = flow.abschluss + flow.rechnung + flow.bezahlt;
+  const erledigt =
+    flow.abschluss + flow.rechnung + flow.bezahlt + flow.abgelehnt;
   return {
     offen,
     in_arbeit: flow.auftrag,
@@ -92,9 +93,12 @@ export function privatListeChipMatches(
   if (chip === "in_arbeit" || chip === "arbeit") {
     return flow === "auftrag";
   }
-  // Abschluss / Rechnung / bezahlt → Erledigt
+  // Abschluss / Rechnung / bezahlt / abgelehnt → Erledigt
   return (
-    flow === "abschluss" || flow === "rechnung" || flow === "bezahlt"
+    flow === "abschluss" ||
+    flow === "rechnung" ||
+    flow === "bezahlt" ||
+    flow === "abgelehnt"
   );
 }
 

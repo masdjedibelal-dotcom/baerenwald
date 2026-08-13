@@ -555,9 +555,6 @@ export function resolveAuftragNachreichungOpenIds(
   auftragPositionen: PartnerAuftragPosition[],
   anfragen: Array<{ hw_konditionen?: PartnerHwKonditionen | null }>
 ): string[] {
-  const fromStatus = resolveOffeneAuftragPositionIdsByStatus(auftragPositionen);
-  if (fromStatus.length) return fromStatus;
-
   const agreedIds = new Set<string>();
   const agreedTitles = new Set<string>();
   let hasPriorAgreement = false;
@@ -570,12 +567,27 @@ export function resolveAuftragNachreichungOpenIds(
     }
   }
 
-  /** Laufender Auftrag mit bereits bearbeiteten Leistungen, aber ohne hw_konditionen-JSON. */
-  if (!hasPriorAgreement) {
-    const settled = auftragPositionen.some(
-      (p) => !positionBrauchtHandwerkerAktion(p)
+  /** Laufender Auftrag mit bereits angenommenen Leistungen, aber ohne hw_konditionen-JSON. */
+  const hadAcceptedPosition = auftragPositionen.some((p) => {
+    const s = String(p.handwerker_status ?? "")
+      .trim()
+      .toLowerCase();
+    return (
+      s === "akzeptiert" ||
+      s === "bestaetigt" ||
+      s === "uebernommen" ||
+      s === "erledigt"
     );
-    if (!settled) return [];
+  });
+
+  // Reine Erstzuweisung (noch nichts angenommen) ist keine Nachreichung —
+  // sonst greift der „Änderungen bestätigen“-Pfad und scheitert.
+  if (!hasPriorAgreement && !hadAcceptedPosition) {
+    return [];
+  }
+
+  if (!hasPriorAgreement) {
+    hasPriorAgreement = true;
   }
 
   const open: string[] = [];
@@ -602,16 +614,35 @@ export function resolveNachreichungOpenZeilenIds(input: {
   );
   const zugewieseneIds = new Set(zugewiesenePositionen.map((p) => p.id));
 
-  const ausStatus = zugewiesenePositionen.length
-    ? resolveOffeneAuftragPositionIdsByStatus(
-        zugewiesenePositionen,
-        input.filter
-      )
-    : [];
-
   const anfragen = (input.alle_hw_konditionen ?? [input.hw_konditionen]).map(
     (hw) => ({ hw_konditionen: hw })
   );
+
+  const hasPriorAgreement =
+    anfragen.some((a) => (a.hw_konditionen?.positionen.length ?? 0) > 0) ||
+    String(input.hw_status ?? "")
+      .trim()
+      .toLowerCase() === "uebernommen" ||
+    zugewiesenePositionen.some((p) => {
+      const s = String(p.handwerker_status ?? "")
+        .trim()
+        .toLowerCase();
+      return (
+        s === "akzeptiert" ||
+        s === "bestaetigt" ||
+        s === "uebernommen" ||
+        s === "erledigt"
+      );
+    });
+
+  /** Erst nach vorheriger Annahme: offene Positions-Statuses zählen als Nachreichung. */
+  const ausStatus =
+    hasPriorAgreement && zugewiesenePositionen.length
+      ? resolveOffeneAuftragPositionIdsByStatus(
+          zugewiesenePositionen,
+          input.filter
+        )
+      : [];
 
   const ausAuftrag = zugewiesenePositionen.length
     ? resolveAuftragNachreichungOpenIds(zugewiesenePositionen, anfragen)

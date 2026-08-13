@@ -385,9 +385,10 @@ export async function confirmPartnerAuftrag(opts: {
     alle_hw_konditionen,
   };
 
-  const isNachreichung = hasPartnerKonditionenNachreichungAusstehend(
-    nachreichungKontext
-  );
+  /** Nachreichung nur nach bereits bestätigter Erstannahme. */
+  const isNachreichung =
+    Boolean((row as { bestaetigt_at?: string | null }).bestaetigt_at?.trim()) &&
+    hasPartnerKonditionenNachreichungAusstehend(nachreichungKontext);
 
   if (!isNachreichung) {
     if (

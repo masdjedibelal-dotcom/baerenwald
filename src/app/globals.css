@@ -651,19 +651,10 @@ h3 {
     gap: 10px;
   }
 
-  /* Sekundär (Ablehnen) schmaler, Primary (Annehmen) nimmt den Rest — nicht 50/50. */
+  /* Positiv & Negativ gleich breit (50/50). */
   .portal-action-row > .portal-action-btn {
     flex: 1 1 0;
     min-width: 0;
-  }
-
-  .portal-action-row > .portal-action-btn--secondary,
-  .portal-action-row > .portal-action-btn--ghost,
-  .portal-action-row > .portal-action-btn--danger {
-    flex: 0 1 auto;
-    min-width: 7.5rem;
-    padding-left: max(var(--portal-btn-px, 20px), 1.25rem);
-    padding-right: max(var(--portal-btn-px, 20px), 1.25rem);
   }
 
   /**

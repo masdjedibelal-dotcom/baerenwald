@@ -150,7 +150,7 @@ type Props = {
   /** Override; default aus vm.role */
   sight?: VorgangDetailSight;
   className?: string;
-  /** CTAs am Ende der Details-Card (z. B. Freigeben / Ablehnen). */
+  /** CTAs unter allen Cards (z. B. Freigeben / Ablehnen unter Ausführung). */
   detailsActions?: React.ReactNode;
 };
 
@@ -204,8 +204,7 @@ export function VorgangDetailBlocks({
   const showMeldeDetails =
     (isHv || isKunde || isMieter) &&
     (hasMeldeTextDetails ||
-      ((isHv || isKunde || isMieter) && Boolean(B.fotos && B.fotos.length > 0)) ||
-      Boolean(detailsActions));
+      ((isHv || isKunde || isMieter) && Boolean(B.fotos && B.fotos.length > 0)));
 
   return (
     <div className={cn("space-y-3.5", className)}>
@@ -296,11 +295,6 @@ export function VorgangDetailBlocks({
                 mode={vm.detailsLeistungen.mode}
                 summeBrutto={A.summeBrutto}
               />
-            </div>
-          ) : null}
-          {detailsActions ? (
-            <div className="mt-4 flex flex-row gap-2 border-t border-border-light pt-3">
-              {detailsActions}
             </div>
           ) : null}
         </BlockShell>
@@ -407,6 +401,10 @@ export function VorgangDetailBlocks({
             </p>
           ) : null}
         </BlockShell>
+      ) : null}
+
+      {detailsActions ? (
+        <div className="portal-action-row">{detailsActions}</div>
       ) : null}
     </div>
   );
