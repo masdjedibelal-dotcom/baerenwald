@@ -164,27 +164,26 @@
   line-height: 1.55;
 
   /*
-   * Hardcodierte Mikro-Typo (text-[11px] etc.) anheben —
-   * ohne jedes Component anzupassen. Bewusst ohne text-sm/base,
-   * damit Layout-Dichte nicht explodiert.
+   * Hardcodierte Mikro-Typo auf die Portal-Skala heben
+   * (HV/Mieter/Handwerker identisch — Mobil und Desktop).
    */
   .text-\[10px\],
   .text-\[10\.5px\],
   .text-\[11px\],
   .text-\[11\.5px\] {
-    font-size: var(--p2-type-label, 12.5px) !important;
+    font-size: var(--p2-type-label, 13.75px) !important;
     line-height: 1.4;
   }
   .text-\[12px\],
-  .text-\[12\.5px\] {
-    font-size: var(--p2-type-meta, 14px) !important;
-    line-height: 1.5;
-  }
+  .text-\[12\.5px\],
   .text-\[13px\],
   .text-\[13\.5px\],
-  .text-xs {
-    font-size: 13.5px !important;
-    line-height: 1.45;
+  .text-\[14px\],
+  .text-\[14\.5px\],
+  .text-xs,
+  .text-sm {
+    font-size: var(--p2-type-meta, 15.5px) !important;
+    line-height: 1.5;
   }
 
   /* A5 Icon-Tokens (CRM `--icon-*`, Portal-Scope) */
@@ -371,7 +370,7 @@ h3 {
     align-items: center;
     border-radius: 9999px;
     padding: 0.25rem 0.65rem;
-    font-size: 13px;
+    font-size: var(--p2-type-label, 13.75px);
     font-weight: 600;
     line-height: 1.25;
   }
@@ -478,6 +477,45 @@ h3 {
     display: flex;
     flex-direction: column;
     gap: 1.25rem;
+    flex: 1 0 auto;
+  }
+
+  .portal-page-stack-inner {
+    display: flex;
+    flex: 1 0 auto;
+    flex-direction: column;
+    min-height: 100%;
+  }
+
+  /* Einheitlicher Zähler: Glocke, Sidebar, Mobile-Nav, Tabs */
+  .portal-count-badge {
+    display: grid;
+    place-items: center;
+    box-sizing: border-box;
+    height: 18px;
+    min-width: 18px;
+    padding: 0 4px;
+    border-radius: 999px;
+    border: 2px solid #fff;
+    background: #d93b3b;
+    color: #fff;
+    font-size: 11px;
+    font-weight: 700;
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .portal-count-badge--corner {
+    position: absolute;
+    right: -5px;
+    top: -5px;
+    pointer-events: none;
+  }
+
+  /* Kurzer Inhalt: Footer am Viewport-Boden; langer Inhalt: danach mitscrollen. */
+  .portal-shell .portal-legal-footer {
+    margin-top: auto;
+    padding-top: 2rem;
   }
 
   .portal-kpi-label {
@@ -684,7 +722,7 @@ h3 {
   }
 
   .portal-ui .tag {
-    font-size: 13px;
+    font-size: var(--p2-type-label, 13.75px);
     padding: 0.25rem 0.65rem;
     line-height: 1.25;
   }
@@ -731,7 +769,7 @@ h3 {
     background: var(--org-primary, var(--p2-primary, #2e7d52));
     color: #fff;
     font-weight: 600;
-    font-size: 13px;
+    font-size: var(--p2-type-label, 13.75px);
     font-family: var(--p2-font-head, -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif);
     display: grid;
     place-items: center;
@@ -750,7 +788,7 @@ h3 {
   .portal-topbar-title {
     font-family: var(--p2-font-head, -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif);
     font-weight: 700;
-    font-size: 15px;
+    font-size: var(--p2-type-nav, 15.5px);
     color: var(--p2-ink, #16201b);
     line-height: 1.2;
     white-space: nowrap;
@@ -759,7 +797,7 @@ h3 {
   }
 
   .portal-topbar-sub {
-    font-size: 11px;
+    font-size: var(--p2-type-label, 13.75px);
     color: var(--p2-faint, #6a746f);
     font-weight: 600;
     letter-spacing: 0.4px;
@@ -785,6 +823,7 @@ h3 {
     align-items: center;
     gap: 6px;
     margin-left: auto;
+    overflow: visible;
   }
 
   /* Portal 2.0 B5 — Mock portalHeader() Cluster */
@@ -807,6 +846,7 @@ h3 {
     align-items: center;
     gap: 6px;
     flex-shrink: 0;
+    overflow: visible;
   }
 
   /* Abmelden nur Desktop — Mobil: Suche · Glocke · Avatar */
@@ -841,7 +881,7 @@ h3 {
     background: var(--p2-primary-soft, #e7f1e9);
     color: var(--org-primary, var(--p2-primary, #2e7d52));
     font-weight: 700;
-    font-size: 13px;
+    font-size: var(--p2-type-label, 13.75px);
     display: grid;
     place-items: center;
     flex-shrink: 0;
@@ -854,7 +894,7 @@ h3 {
 
   .portal-header-user-name {
     display: none;
-    font-size: 13px;
+    font-size: var(--p2-type-meta, 15.5px);
     font-weight: 600;
     color: var(--p2-ink, #16201b);
     white-space: nowrap;
@@ -2313,6 +2353,8 @@ h3 {
     /* py-3 + Portal-Button-Höhe (+ optionaler Hinweis) */
     --portal-detail-actions-h: 5.25rem;
     min-height: 100dvh;
+    display: flex;
+    flex-direction: column;
   }
 
   .portal-shell-header {
@@ -2323,6 +2365,9 @@ h3 {
     width: 100%;
     max-width: none;
     margin-inline: 0;
+    flex: 1 0 auto;
+    display: flex;
+    flex-direction: column;
   }
 
   .portal-shell-frame {
@@ -2331,6 +2376,7 @@ h3 {
     min-width: 0;
     width: 100%;
     background: #fff;
+    flex: 1 0 auto;
     min-height: calc(100dvh - 56px);
   }
 
@@ -2407,6 +2453,8 @@ h3 {
   .portal-shell-main {
     flex: 1;
     min-width: 0;
+    display: flex;
+    flex-direction: column;
     background: #ffffff;
   }
 
@@ -2415,7 +2463,7 @@ h3 {
   }
 
   .portal-shell-brand-owner {
-    font-size: 11px;
+    font-size: var(--p2-type-label, 13.75px);
     font-weight: 700;
     letter-spacing: 0.06em;
     text-transform: uppercase;
@@ -2428,12 +2476,12 @@ h3 {
   /* Legacy — Topbar/Docs; Sidebar nutzt Owner-Zeile (Mock). */
   .portal-shell-brand-title {
     @apply font-bold text-white;
-    font-size: 15px;
+    font-size: var(--p2-type-nav, 15.5px);
   }
 
   .portal-shell-brand-sub {
     @apply mt-0.5 font-semibold;
-    font-size: 10px;
+    font-size: var(--p2-type-label, 13.75px);
     letter-spacing: 0.14em;
     color: #8fae9d;
   }
@@ -2447,7 +2495,7 @@ h3 {
     background: var(--org-primary, var(--p2-primary, #2e7d52));
     color: #fff;
     font-weight: 600;
-    font-size: 13.5px;
+    font-size: var(--p2-type-nav, 15.5px);
     cursor: pointer;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.22);
     text-align: center;
@@ -2470,7 +2518,7 @@ h3 {
     background: transparent;
     cursor: pointer;
     text-align: left;
-    font-size: 13.5px;
+    font-size: var(--p2-type-nav, 15.5px);
     font-weight: 500;
     color: rgba(255, 255, 255, 0.62);
   }
@@ -2501,10 +2549,8 @@ h3 {
   }
 
   .portal-shell-nav-badge {
-    @apply flex h-5 min-w-5 items-center justify-center rounded-full px-1 font-bold;
-    font-size: 10px;
-    background: #dc2626;
-    color: #fff;
+    /* gleiches Badge wie Glocke — inline rechts im Nav-Item */
+    margin-left: auto;
   }
 
   .portal-shell-sidebar-foot {
@@ -2544,7 +2590,7 @@ h3 {
     border: none;
     background: transparent;
     cursor: pointer;
-    font-size: 12px;
+    font-size: var(--p2-type-label, 13.75px);
     font-weight: 600;
     color: var(--p2-faint, #6a746f);
     min-width: 0;
@@ -2563,10 +2609,9 @@ h3 {
   }
 
   .portal-shell-mobile-badge {
-    @apply absolute top-0 flex h-4 min-w-4 items-center justify-center rounded-full px-1 font-bold text-white;
+    top: 0;
     right: calc(50% - 22px);
-    font-size: 10px;
-    background: var(--p2-danger, #a1242a);
+    left: auto;
   }
 
   .portal-shell-mobile-create {
@@ -2596,7 +2641,7 @@ h3 {
   }
 
   .portal-shell-mobile-create-label {
-    font-size: 10.5px;
+    font-size: var(--p2-type-label, 13.75px);
     font-weight: 700;
     color: var(--org-primary, var(--p2-primary, #2e7d52));
   }

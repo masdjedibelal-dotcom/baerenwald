@@ -16,6 +16,7 @@ import {
   type PortalListVariant,
 } from "@/lib/portal2/layout-chrome";
 import { PORTAL_VAR } from "@/lib/portal2/tokens";
+import { PortalCountBadge } from "@/components/shared/PortalNavCountBadge";
 import { cn } from "@/lib/utils";
 
 export type PortalListCardAccent = "anfrage" | "angebot" | "auftrag";
@@ -123,15 +124,7 @@ function TrailingActionsSlot({ children }: { children: ReactNode }) {
 
 /** Klassische Notif-Badge: oben rechts, rot mit weißer Zahl. */
 function AttentionCornerBadge({ count }: { count: number }) {
-  return (
-    <span
-      className="pointer-events-none absolute -right-1.5 -top-1.5 z-10 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold leading-none text-white ring-2 ring-white"
-      title="Neue Updates"
-      aria-label={`${count > 9 ? "9+" : count} neue Updates`}
-    >
-      {count > 9 ? "9+" : count}
-    </span>
-  );
+  return <PortalCountBadge count={count} variant="corner" className="z-10" />;
 }
 
 /**

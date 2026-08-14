@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 
 import { createClient } from "@/lib/supabase/server";
 import { limitReadNotifications } from "@/lib/portal2/notif-types";
+import { filterActiveVorgangEntityIds, normalizeVorgangRef } from "@/lib/portal/lead-not-deleted";
 import { isSupabaseConfigured, supabaseAdmin } from "@/lib/supabase";
 
 /**
@@ -39,6 +40,26 @@ export async function GET() {
   }
 
   let rows = data ?? [];
+
+  const notifRefs = rows.flatMap((n) => {
+    const fromRef = normalizeVorgangRef(n.vorgang_ref);
+    const fromLink = String(n.link ?? "").match(
+      /[?&]id=([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})/i
+    );
+    return [fromRef, fromLink?.[1] ?? null].filter(Boolean) as string[];
+  });
+  if (notifRefs.length) {
+    const active = await filterActiveVorgangEntityIds(notifRefs);
+    rows = rows.filter((n) => {
+      const fromRef = normalizeVorgangRef(n.vorgang_ref);
+      const fromLink = String(n.link ?? "").match(
+        /[?&]id=([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})/i
+      )?.[1];
+      const ref = fromRef || fromLink || null;
+      if (!ref) return true;
+      return active.has(ref);
+    });
+  }
 
   // Mieter: keine Angebots-Glocken (auch Alt-Einträge ausblenden)
   const angebotRefs = Array.from(

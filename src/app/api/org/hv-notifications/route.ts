@@ -68,10 +68,15 @@ export async function GET() {
   const leadsWithGesendetAngebot = new Set<string>();
 
   if (leadIds.length) {
-    const { data: leads } = await supabaseAdmin
+    let { data: leads, error: leadSelErr } = await supabaseAdmin
       .from("leads")
       .select("id")
-      .in("id", leadIds);
+      .in("id", leadIds)
+      .is("geloescht_am", null);
+    if (leadSelErr && /geloescht_am/i.test(leadSelErr.message)) {
+      const fb = await supabaseAdmin.from("leads").select("id").in("id", leadIds);
+      leads = fb.data;
+    }
     for (const l of leads ?? []) valid.add(String(l.id).toLowerCase());
 
     const { data: angebote } = await supabaseAdmin

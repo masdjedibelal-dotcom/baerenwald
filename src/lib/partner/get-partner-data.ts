@@ -571,8 +571,8 @@ export async function getPartnerDataForHandwerker(
           : (ang as { leads?: unknown }).leads
         : null;
     if (
-      leadRaw &&
-      typeof leadRaw === "object" &&
+      !leadRaw ||
+      typeof leadRaw !== "object" ||
       (leadRaw as { geloescht_am?: string | null }).geloescht_am
     ) {
       return false;
@@ -798,7 +798,8 @@ export async function getPartnerDataForHandwerker(
         const leadRow = one(raw.leads) as
           | (PartnerLeadDbRow & { geloescht_am?: string | null })
           | null;
-        if (leadRow?.geloescht_am) return false;
+        const leadId = String(raw.lead_id ?? "").trim();
+        if (!leadId || !leadRow || leadRow.geloescht_am) return false;
         const gate = extractPartnerLeadGateFromAuftragRow(raw);
         if (!isPartnerBlockedByOrgFreigabe(gate)) return true;
         const aid = String(raw.id);

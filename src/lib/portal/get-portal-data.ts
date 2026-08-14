@@ -17,6 +17,7 @@ import {
   type PortalObjekt,
 } from "@/lib/portal/portal-objekt";
 import { isHvPortalLead } from "@/lib/portal/hv-portal-lead";
+import { loadMieterHvBrand } from "@/lib/portal/load-mieter-hv-brand";
 import { resolvePartnerFileUrl, resolvePartnerFileUrls } from "@/lib/partner/partner-storage";
 import {
   PORTAL_LIST_AUFTRAG_LIMIT,
@@ -288,6 +289,17 @@ export async function getPortalDataForKunde(
   }
   if (leadsErr) console.warn("[portal] leads:", leadsErr.message);
 
+  const hausverwaltungBrandPromise =
+    (kunde.portal_modus ?? "") === "organisation"
+      ? Promise.resolve(null)
+      : loadMieterHvBrand({
+          portalKundeId: kunde.id,
+          portalKundeEmail: kunde.email,
+          leads: (leads ?? []) as Array<{
+            auftraggeber_kunde_id?: string | null;
+          }>,
+        });
+
   const leadIds = (leads ?? []).map((l) => l.id);
 
   const leadObjektIdByLeadId = new Map<string, string | null>();
@@ -449,17 +461,13 @@ export async function getPortalDataForKunde(
       if (lid) childLeadIds.push(lid);
     }
     const activeChild = await filterActiveLeadIds(childLeadIds);
-    const allowedLeads = new Set<string>([
-      ...leadIds.map((id) => String(id)),
-      ...Array.from(activeChild),
-    ]);
     for (const [aid, row] of Array.from(auftraegeById.entries())) {
       const lid = String(row.lead_id ?? "").trim();
-      if (lid && !allowedLeads.has(lid)) auftraegeById.delete(aid);
+      if (!lid || !activeChild.has(lid)) auftraegeById.delete(aid);
     }
     for (const [aid, row] of Array.from(angeboteByIdEarly.entries())) {
       const lid = String((row as { lead_id?: string | null }).lead_id ?? "").trim();
-      if (lid && !allowedLeads.has(lid)) angeboteByIdEarly.delete(aid);
+      if (!lid || !activeChild.has(lid)) angeboteByIdEarly.delete(aid);
     }
   }
 
@@ -1055,12 +1063,15 @@ export async function getPortalDataForKunde(
     }
   }
 
+  const hausverwaltungBrand = await hausverwaltungBrandPromise;
+
   return {
     kunde,
     leads: mappedLeads,
     angebote: mappedAngebote,
     auftraege: mappedAuftraege,
     mieterFeedbackByLeadId,
+    hausverwaltungBrand,
     /** @deprecated Nur für Abwärtskompatibilität — Pipeline-Split clientseitig. */
     splitPipeline: split,
   };

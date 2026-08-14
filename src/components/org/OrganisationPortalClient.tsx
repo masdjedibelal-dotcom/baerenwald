@@ -623,7 +623,7 @@ export function OrganisationPortalClient({
             />
           ) : null}
 
-          <PortalLegalFooter variant="org" className="mt-8" />
+          <PortalLegalFooter variant="org" />
       </PortalShell>
 
       {hubOpen ? (

@@ -9,6 +9,7 @@ import { PortalCreateFabIcon } from "@/components/shared/PortalCreateFabIcon";
 import { PortalDocViewerProvider } from "@/components/shared/PortalDocViewerContext";
 import { PortalHeader, type PortalHeaderUser } from "@/components/shared/PortalHeader";
 import { PortalNavIcon } from "@/components/shared/PortalNavIcon";
+import { PortalCountBadge } from "@/components/shared/PortalNavCountBadge";
 import { PortalOfflineGate } from "@/components/shared/PortalOfflineGate";
 import { PortalTopbar } from "@/components/shared/PortalTopbar";
 import { applyBrandStyle } from "@/lib/portal2/apply-brand";
@@ -278,7 +279,10 @@ export function PortalShell({
                         {item.label}
                       </span>
                       {item.badge != null && item.badge > 0 ? (
-                        <span className="portal-shell-nav-badge">{item.badge}</span>
+                        <PortalCountBadge
+                          count={item.badge}
+                          className="portal-shell-nav-badge"
+                        />
                       ) : null}
                     </button>
                   );
@@ -298,6 +302,7 @@ export function PortalShell({
               <div className="portal-page-stack relative min-h-[40vh]">
                 <div
                   className={cn(
+                    "portal-page-stack-inner",
                     showContentBusy && "invisible pointer-events-none select-none"
                   )}
                   aria-hidden={showContentBusy || undefined}
@@ -347,9 +352,11 @@ export function PortalShell({
                           />
                           <span>{item.label}</span>
                           {item.badge != null && item.badge > 0 ? (
-                            <span className="portal-shell-mobile-badge">
-                              {item.badge}
-                            </span>
+                            <PortalCountBadge
+                              count={item.badge}
+                              variant="corner"
+                              className="portal-shell-mobile-badge"
+                            />
                           ) : null}
                         </button>
                       );
@@ -392,9 +399,11 @@ export function PortalShell({
                           />
                           <span>{item.label}</span>
                           {item.badge != null && item.badge > 0 ? (
-                            <span className="portal-shell-mobile-badge">
-                              {item.badge}
-                            </span>
+                            <PortalCountBadge
+                              count={item.badge}
+                              variant="corner"
+                              className="portal-shell-mobile-badge"
+                            />
                           ) : null}
                         </button>
                       );
@@ -422,9 +431,11 @@ export function PortalShell({
                         />
                         <span>{item.label}</span>
                         {item.badge != null && item.badge > 0 ? (
-                          <span className="portal-shell-mobile-badge">
-                            {item.badge}
-                          </span>
+                          <PortalCountBadge
+                            count={item.badge}
+                            variant="corner"
+                            className="portal-shell-mobile-badge"
+                          />
                         ) : null}
                       </button>
                     );

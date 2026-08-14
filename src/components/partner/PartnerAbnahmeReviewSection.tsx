@@ -5,6 +5,7 @@ import { FileText } from "lucide-react";
 
 import { getPartnerAbnahmeStatus } from "@/app/actions/partner-abnahmeprotokoll";
 import { PortalDetailCard } from "@/components/shared/PortalDetailCard";
+import { PortalDocInlinePreview } from "@/components/shared/PortalDocInlinePreview";
 import { PortalDocOpenButton } from "@/components/shared/PortalDocOpenButton";
 import { PORTAL_VAR } from "@/lib/portal2/tokens";
 import { cn } from "@/lib/utils";
@@ -225,19 +226,37 @@ export function PartnerAbnahmeReviewSection({
           </div>
 
           {status.pdf_url ? (
-            <PortalDocOpenButton
-              href={status.pdf_url}
-              name="Abschlussprotokoll"
-              kind="pdf"
-              className="block w-full overflow-hidden rounded-xl border border-border-light bg-muted/20 text-left"
-            >
-              <p
-                className="px-3 py-4 text-center text-[12.5px] font-semibold"
-                style={{ color: PORTAL_VAR.primary }}
+            <>
+              <div className="hidden lg:block">
+                <PortalDocInlinePreview
+                  url={status.pdf_url}
+                  title="Abschlussprotokoll"
+                />
+                <PortalDocOpenButton
+                  href={status.pdf_url}
+                  name="Abschlussprotokoll"
+                  kind="pdf"
+                  className="mt-2 portal-text-meta font-semibold"
+                >
+                  <span style={{ color: PORTAL_VAR.primary }}>
+                    Vollbild öffnen
+                  </span>
+                </PortalDocOpenButton>
+              </div>
+              <PortalDocOpenButton
+                href={status.pdf_url}
+                name="Abschlussprotokoll"
+                kind="pdf"
+                className="block w-full overflow-hidden rounded-xl border border-border-light bg-muted/20 text-left lg:hidden"
               >
-                PDF öffnen
-              </p>
-            </PortalDocOpenButton>
+                <p
+                  className="px-3 py-4 text-center text-[12.5px] font-semibold"
+                  style={{ color: PORTAL_VAR.primary }}
+                >
+                  PDF öffnen
+                </p>
+              </PortalDocOpenButton>
+            </>
           ) : null}
         </div>
       </PortalDetailCard>

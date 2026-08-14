@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 import { MockIcon } from "@/components/shared/MockIcon";
+import { PortalCountBadge } from "@/components/shared/PortalNavCountBadge";
 import { PortalModalShell } from "@/components/shared/PortalModalShell";
 import { PORTAL_VAR } from "@/lib/portal2/tokens";
 import {
@@ -10,9 +11,6 @@ import {
   type PortalNotifItem,
 } from "@/lib/portal2/notif-types";
 import { cn } from "@/lib/utils";
-
-/** Mock badge `#D93B3B` */
-const NOTIF_BADGE = "#D93B3B";
 
 export type PortalNotificationBellProps = {
   items: PortalNotifItem[];
@@ -309,15 +307,7 @@ export function PortalNotificationBell({
         onClick={() => setOpenSafe(!open)}
       >
         <MockIcon ctx="emphasis" n="bell" size={18} />
-        {unreadCount > 0 ? (
-          <span
-            className="absolute -right-[5px] -top-[5px] grid h-[18px] min-w-[18px] place-items-center rounded-full border-2 border-white px-1 text-[11px] font-bold leading-none text-white"
-            style={{ background: NOTIF_BADGE, boxSizing: "border-box" }}
-            aria-hidden
-          >
-            {unreadCount > 99 ? "99+" : unreadCount}
-          </span>
-        ) : null}
+        <PortalCountBadge count={unreadCount} variant="corner" />
       </button>
 
       {open ? (

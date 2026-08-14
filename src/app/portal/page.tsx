@@ -233,6 +233,7 @@ export default async function PortalDashboardPage() {
         leads={slim.leads as typeof data.leads}
         initialVorgaenge={slim.initialVorgaenge}
         mieterFeedbackByLeadId={data.mieterFeedbackByLeadId ?? {}}
+        hausverwaltungBrand={data.hausverwaltungBrand}
         kundeTyp={kundeTyp === "gewerbe" ? "gewerbe" : "privat"}
       />
     </Suspense>

@@ -871,7 +871,7 @@ export function PartnerClient({
           </>
         }
       >
-        <div className="space-y-5">
+        <div className="flex min-h-full flex-1 flex-col gap-5">
           <PartnerOnboardingReminderBanner
             handwerker={handwerker}
             profil={profil}
@@ -961,7 +961,7 @@ export function PartnerClient({
           {section !== "gpt" ? (
             <PortalLegalFooter
               variant="partner"
-              className="mx-auto max-w-[1200px] px-1 pt-6 lg:px-0"
+              className="mx-auto max-w-[1200px] px-1 lg:px-0"
             />
           ) : null}
         </div>

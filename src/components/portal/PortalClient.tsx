@@ -39,6 +39,13 @@ const PortalEinstellungenPrivat = dynamic(
     ),
   { ssr: false, loading: () => null }
 );
+const PortalEinstellungenMieter = dynamic(
+  () =>
+    import("@/components/portal/PortalEinstellungenMieter").then(
+      (m) => m.PortalEinstellungenMieter
+    ),
+  { ssr: false, loading: () => null }
+);
 const PortalVorgangDetail = dynamic(
   () =>
     import("@/components/portal/PortalVorgangDetail").then((m) => m.PortalVorgangDetail),
@@ -119,6 +126,7 @@ import {
   portalStatusChipStyle,
   type PortalMockStatusId,
 } from "@/lib/portal2/status";
+import type { MieterHvBrand } from "@/lib/portal/load-mieter-hv-brand";
 import { cn } from "@/lib/utils";
 
 type PortalKunde = {
@@ -243,6 +251,7 @@ export function PortalClient({
   forceDetailId = null,
   hvPortalMode = false,
   kundeTyp: kundeTypProp,
+  hausverwaltungBrand = null,
   mieterFeedbackByLeadId = {},
   hwErledigtByLeadId = {},
   hvFeedbackByLeadId = {},
@@ -301,6 +310,8 @@ export function PortalClient({
   hvPortalMode?: boolean;
   /** D7 / ENTSCHEIDUNG 2 — Kennung aus Stamm; Default aus portal_modus/typ. */
   kundeTyp?: PortalKundeTyp;
+  /** Mieter-Portal: White-Label der Hausverwaltung (Desktop-Topbar). */
+  hausverwaltungBrand?: MieterHvBrand | null;
 }) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -1169,15 +1180,24 @@ export function PortalClient({
   }
 
   const navRole = portalNavRoleForKundeTyp(kundeTyp);
+  const hvBrand = !hvPortalMode ? hausverwaltungBrand : null;
+  const brandTitle = hvBrand?.name?.trim() || "MeinBärenwald";
+  const brandSubtitle = hvBrand
+    ? hvBrand.sub?.trim() || "Verwaltung"
+    : kunde.name?.trim() || "Kundenportal";
 
   return (
     <>
       <PortalShell
         variant="kunde"
-        brandTitle="MeinBärenwald"
-        brandSubtitle={kunde.name?.trim() || "Kundenportal"}
-        brandKuerzel="B"
-        sidebarOwner={kunde.name?.trim() || "MeinBärenwald"}
+        brandTitle={brandTitle}
+        brandSubtitle={brandSubtitle}
+        brandLogoUrl={hvBrand?.logoUrl}
+        brandKuerzel={hvBrand?.logoKuerzel ?? (hvBrand ? null : "B")}
+        brandPrimary={hvBrand?.primary}
+        brandPrimaryDk={hvBrand?.primaryDk}
+        brandSoft={hvBrand?.soft}
+        sidebarOwner={hvBrand?.name?.trim() || kunde.name?.trim() || "MeinBärenwald"}
         hideMobileChrome={section === "gpt"}
         activeNavId={section === "gpt" ? "uebersicht" : section}
         contentKey={`${section}:${privatChip ?? ""}:${controlledHvListeFilter ?? controlledVorgangFilter ?? ""}`}
@@ -1235,12 +1255,22 @@ export function PortalClient({
           ) : null}
 
           {section === "profil" ? (
-            <PortalEinstellungenPrivat
-              name={kunde.name}
-              email={kunde.email}
-              telefon={kunde.telefon}
-              kundeTyp={kundeTyp === "gewerbe" ? "gewerbe" : "privat"}
-            />
+            hvBrand ? (
+              <PortalEinstellungenMieter
+                name={kunde.name}
+                email={kunde.email}
+                telefon={kunde.telefon}
+                orgName={hvBrand.name}
+                orgMail={hvBrand.mail}
+              />
+            ) : (
+              <PortalEinstellungenPrivat
+                name={kunde.name}
+                email={kunde.email}
+                telefon={kunde.telefon}
+                kundeTyp={kundeTyp === "gewerbe" ? "gewerbe" : "privat"}
+              />
+            )
           ) : null}
 
           {section === "uebersicht" && isPrivatLike ? (
@@ -1300,7 +1330,7 @@ export function PortalClient({
           {section === "vorgaenge" ? vorgaengeScreen : null}
 
           {section !== "gpt" ? (
-            <PortalLegalFooter variant="kunde" className="mt-8" />
+            <PortalLegalFooter variant="kunde" />
           ) : null}
       </PortalShell>
 

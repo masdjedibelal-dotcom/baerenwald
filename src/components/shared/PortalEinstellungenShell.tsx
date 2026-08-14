@@ -135,14 +135,15 @@ export function PortalEinstellungenShell({
                       <button
                         type="button"
                         onClick={() => selectTab(item.id)}
-                        className="portal-text-meta w-full rounded-[9px] px-3 py-2.5 text-left font-semibold transition-colors"
+                        aria-current={on ? "page" : undefined}
+                        className={cn(
+                          "portal-text-meta w-full rounded-[9px] px-3 py-2.5 text-left font-semibold transition-colors",
+                          on
+                            ? "bg-[var(--org-primary-soft,var(--p2-primary-soft,#E7F1E9))]"
+                            : "hover:bg-[var(--p2-hover,#eef1ef)]"
+                        )}
                         style={{
-                          background: on
-                            ? "var(--org-primary-soft, " +
-                              PORTAL_VAR.primarySoft +
-                              ")"
-                            : "transparent",
-                          color: on ? PORTAL_VAR.ink : PORTAL_VAR.sub,
+                          color: on ? PORTAL_VAR.primary : PORTAL_VAR.sub,
                         }}
                       >
                         {item.label}

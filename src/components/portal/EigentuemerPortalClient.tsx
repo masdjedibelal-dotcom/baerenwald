@@ -634,7 +634,7 @@ export function EigentuemerPortalClient({
         </div>
       ) : null}
 
-      <PortalLegalFooter variant="kunde" className="mt-8" />
+      <PortalLegalFooter variant="kunde" />
     </PortalShell>
     </>
   );

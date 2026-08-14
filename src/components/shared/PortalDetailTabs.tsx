@@ -2,6 +2,7 @@
 
 import type { ReactNode } from "react";
 
+import { PortalCountBadge } from "@/components/shared/PortalNavCountBadge";
 import { PORTAL_VAR } from "@/lib/portal2/tokens";
 import { cn } from "@/lib/utils";
 
@@ -75,13 +76,7 @@ export function PortalDetailTabs({
                 }}
               >
                 {t.label}
-                {t.badge && t.badge > 0 ? (
-                  <span
-                    className="inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold leading-none text-white"
-                  >
-                    {t.badge > 9 ? "9+" : t.badge}
-                  </span>
-                ) : null}
+                <PortalCountBadge count={t.badge ?? 0} />
               </button>
             );
           })}
@@ -109,13 +104,7 @@ export function PortalDetailTabs({
                   }}
                 >
                   <span>{t.label}</span>
-                  {t.badge && t.badge > 0 ? (
-                    <span
-                      className="inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold leading-none text-white"
-                    >
-                      {t.badge > 9 ? "9+" : t.badge}
-                    </span>
-                  ) : null}
+                  <PortalCountBadge count={t.badge ?? 0} />
                 </button>
               </li>
             );

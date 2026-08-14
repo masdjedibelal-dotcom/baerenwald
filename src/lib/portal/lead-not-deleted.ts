@@ -1,9 +1,19 @@
 /**
  * Shared-DB: Soft-gelöschte Leads aus Portal-Queries ausblenden.
- * CRM setzt `leads.geloescht_am` — Portal und CRM teilen dieselbe Tabelle.
+ * CRM setzt `leads.geloescht_am` oder löscht den Lead (Kinder können als Geister bleiben).
  */
 
 import { supabaseAdmin } from "@/lib/supabase";
+
+const UUID_RE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+export function normalizeVorgangRef(raw: string | null | undefined): string | null {
+  const id = String(raw ?? "")
+    .trim()
+    .replace(/^auftrag:/i, "");
+  return UUID_RE.test(id) ? id : null;
+}
 
 /** Query-Builder: nur nicht gelöschte Leads (mit Fallback, falls Spalte fehlt). */
 export function withLeadNotDeleted<T extends { is: (col: string, val: null) => T }>(
@@ -53,4 +63,71 @@ export async function isLeadSoftDeleted(leadId: string): Promise<boolean> {
   }
   if (!data?.id) return true;
   return Boolean((data as { geloescht_am?: string | null }).geloescht_am);
+}
+
+/**
+ * IDs, die in Portalen noch sichtbar sein dürfen:
+ * Lead (nicht geloescht_am) oder Auftrag / angebot_handwerker mit aktivem Lead.
+ * Hard-gelöschte CRM-Vorgänge (Lead weg, lead_id NULL) fallen raus.
+ */
+export async function filterActiveVorgangEntityIds(
+  refs: string[]
+): Promise<Set<string>> {
+  const unique = Array.from(
+    new Set(
+      refs.map((r) => normalizeVorgangRef(r)).filter((id): id is string => Boolean(id))
+    )
+  );
+  if (!unique.length) return new Set();
+
+  const active = await filterActiveLeadIds(unique);
+  const rest = unique.filter((id) => !active.has(id));
+  if (!rest.length) return active;
+
+  const [{ data: aufs }, { data: ahs }] = await Promise.all([
+    supabaseAdmin.from("auftraege").select("id, lead_id").in("id", rest),
+    supabaseAdmin.from("angebot_handwerker").select("id, angebot_id").in("id", rest),
+  ]);
+
+  const extraLeadIds: string[] = [];
+  const auftragToLead = new Map<string, string>();
+  for (const a of aufs ?? []) {
+    const lid = String((a as { lead_id?: string | null }).lead_id ?? "").trim();
+    if (!lid) continue;
+    extraLeadIds.push(lid);
+    auftragToLead.set(String((a as { id: string }).id), lid);
+  }
+
+  const ahToAngebot = new Map<string, string>();
+  const angebotIds: string[] = [];
+  for (const ah of ahs ?? []) {
+    const angId = String((ah as { angebot_id?: string | null }).angebot_id ?? "").trim();
+    if (!angId) continue;
+    angebotIds.push(angId);
+    ahToAngebot.set(String((ah as { id: string }).id), angId);
+  }
+
+  const angebotToLead = new Map<string, string>();
+  if (angebotIds.length) {
+    const { data: angs } = await supabaseAdmin
+      .from("angebote")
+      .select("id, lead_id")
+      .in("id", angebotIds);
+    for (const a of angs ?? []) {
+      const lid = String((a as { lead_id?: string | null }).lead_id ?? "").trim();
+      if (!lid) continue;
+      extraLeadIds.push(lid);
+      angebotToLead.set(String((a as { id: string }).id), lid);
+    }
+  }
+
+  const activeLeads = await filterActiveLeadIds(extraLeadIds);
+  for (const [aid, lid] of Array.from(auftragToLead.entries())) {
+    if (activeLeads.has(lid)) active.add(aid);
+  }
+  for (const [ahId, angId] of Array.from(ahToAngebot.entries())) {
+    const lid = angebotToLead.get(angId);
+    if (lid && activeLeads.has(lid)) active.add(ahId);
+  }
+  return active;
 }
