@@ -1,4 +1,8 @@
-import { orgBrandFromKunde, type OrgBrand } from "@/lib/portal2/brand-presets";
+import {
+  orgBrandFromKunde,
+  type OrgBrand,
+  type OrgBrandSource,
+} from "@/lib/portal2/brand-presets";
 import { supabaseAdmin } from "@/lib/supabase";
 
 export type MieterHvBrand = {
@@ -31,7 +35,7 @@ function mostFrequentAuftraggeberId(
   }
   let best: string | null = null;
   let bestCount = 0;
-  for (const [id, count] of counts) {
+  for (const [id, count] of Array.from(counts)) {
     if (count > bestCount) {
       best = id;
       bestCount = count;
@@ -66,15 +70,15 @@ async function hvIdFromBewohner(email: string): Promise<string | null> {
   return id || null;
 }
 
-async function loadOrgKunde(hvId: string) {
+async function loadOrgKunde(hvId: string): Promise<OrgBrandSource | null> {
   for (const select of ORG_SELECTS) {
     const { data, error } = await supabaseAdmin
       .from("kunden")
-      .select(select)
+      .select(select as string)
       .eq("id", hvId)
       .maybeSingle();
     if (error) continue;
-    if (data) return data;
+    if (data) return data as OrgBrandSource;
   }
   return null;
 }
