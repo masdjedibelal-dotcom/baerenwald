@@ -104,22 +104,40 @@ export function buildPartnerAuftragDokumentZeilen(
   return sortPartnerDokumentZeilen(rows);
 }
 
-export function partnerAuftragKannRechnungHochladen(item: PartnerAuftragItem): boolean {
-  if (!item.angebotHandwerkerId) return false;
-  if (item.status.toLowerCase() === "storniert") return false;
-  // F4: Rechnung erst nach Abnahme-Signatur
-  if (!item.hw_abschluss_signiert_am?.trim() && !item.abnahme_protokoll_url?.trim()) {
-    return false;
-  }
-  const hwSt = (item.angebotHwStatus ?? "").toLowerCase();
-  return (
-    hwSt === "uebernommen" &&
-    Boolean(item.projektvertrag_bestaetigt_am) &&
-    !item.hw_rechnung_eingereicht_at
-  );
+export function partnerAuftragHatAbschluss(
+  item: Pick<
+    PartnerAuftragItem,
+    "hw_abschluss_signiert_am" | "abnahme_freigabe_status"
+  >
+): boolean {
+  if (item.hw_abschluss_signiert_am?.trim()) return true;
+  const freigabe = String(item.abnahme_freigabe_status ?? "")
+    .trim()
+    .toLowerCase();
+  // Eigener Abschluss eingereicht (warte auf Freigabe oder freigegeben)
+  return Boolean(freigabe) && freigabe !== "abgelehnt";
 }
 
-/** Auto-Rechnung-Prompt erneut, solange nicht eingereicht. */
+/**
+ * Auto-Rechnung / Upload erst nach eigenem Abschluss.
+ * Optional: `abschlussDoneLocal` direkt nach Signatur im Sheet.
+ */
+export function partnerAuftragKannRechnungHochladen(
+  item: PartnerAuftragItem,
+  opts?: { abschlussDoneLocal?: boolean }
+): boolean {
+  if (!item.angebotHandwerkerId) return false;
+  if (item.status.toLowerCase() === "storniert") return false;
+  if (item.hw_rechnung_eingereicht_at) return false;
+  const hwSt = (item.angebotHwStatus ?? "").toLowerCase();
+  if (hwSt !== "uebernommen") return false;
+  if (!opts?.abschlussDoneLocal && !partnerAuftragHatAbschluss(item)) {
+    return false;
+  }
+  return true;
+}
+
+/** @deprecated Sticky-CTA nutzt `partnerAuftragKannRechnungHochladen`. */
 export function partnerNeedsAutoRechnungPrompt(item: PartnerAuftragItem): boolean {
   return partnerAuftragKannRechnungHochladen(item);
 }
@@ -135,10 +153,11 @@ export function partnerAuftragKannUnterlagenHochladen(item: PartnerAuftragItem):
 }
 
 export function partnerAuftragZeigtDokumenteUpload(
-  item: PartnerAuftragItem
+  item: PartnerAuftragItem,
+  opts?: { abschlussDoneLocal?: boolean }
 ): boolean {
   return (
     partnerAuftragKannUnterlagenHochladen(item) ||
-    partnerAuftragKannRechnungHochladen(item)
+    partnerAuftragKannRechnungHochladen(item, opts)
   );
 }

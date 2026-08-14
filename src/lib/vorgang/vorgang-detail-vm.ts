@@ -29,19 +29,19 @@ export const VORGANG_DETAIL_SIGHT: Record<VorgangDetailRole, VorgangDetailSight>
     hv: {
       auftraggeber: "hidden",
       objektMelder: "full",
-      ausfuehrung: "hidden",
+      ausfuehrung: "summary",
       leistungen: "vk",
     },
     mieter: {
       auftraggeber: "hidden",
       objektMelder: "safe",
-      ausfuehrung: "hidden",
+      ausfuehrung: "plain",
       leistungen: "plain",
     },
     kunde: {
       auftraggeber: "hidden",
       objektMelder: "safe",
-      ausfuehrung: "hidden",
+      ausfuehrung: "summary",
       leistungen: "vk",
     },
     partner: {
@@ -103,8 +103,14 @@ export type VorgangDetailObjektMelder = {
   zeitraumLabel?: string | null;
   /** Fachfragen aus dem Melde-/Rechner-Funnel */
   fachdetailRows?: Array<{ label: string; value: string }>;
-  /** Unverbindliche Preisindikation (nur HV) */
+  /** Unverbindliche Preisindikation (nur HV, nur Anfrage-Phase) */
   preisIndikation?: string | null;
+};
+
+export type VorgangDetailsLeistungen = {
+  /** Abschnitts-Titel unter Details */
+  title: string;
+  mode: LeistungenMode;
 };
 
 export type VorgangDetailAusfuehrung = {
@@ -126,6 +132,11 @@ export type VorgangDetailVM = {
   objektMelder: VorgangDetailObjektMelder;
   ausfuehrung: VorgangDetailAusfuehrung;
   leistungen: VorgangLeistungZeile[];
+  /**
+   * Leistungen unter der Details-Card (Angebot / Rechnung).
+   * null = nicht anzeigen (noch Anfrage / keine Positionen).
+   */
+  detailsLeistungen?: VorgangDetailsLeistungen | null;
 };
 
 export function sightForRole(role: VorgangDetailRole): VorgangDetailSight {

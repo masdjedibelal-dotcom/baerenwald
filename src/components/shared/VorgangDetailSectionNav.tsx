@@ -8,6 +8,7 @@ import {
 } from "@/lib/portal2/layout-chrome";
 import { PORTAL_VAR } from "@/lib/portal2/tokens";
 import { cn } from "@/lib/utils";
+import { PortalCountBadge } from "@/components/shared/PortalNavCountBadge";
 
 export type VorgangDetailNavItem = {
   id: PortalDetailSectionId;
@@ -188,17 +189,7 @@ export function VorgangDetailSectionNav({
               }}
             >
               {label}
-              {item.badge && item.badge > 0 ? (
-                <span
-                  className="inline-flex h-4 min-w-[1rem] items-center justify-center rounded-full px-1 text-[10px] font-bold"
-                  style={{
-                    background: PORTAL_VAR.dangerSoft,
-                    color: PORTAL_VAR.danger,
-                  }}
-                >
-                  {item.badge > 9 ? "9+" : item.badge}
-                </span>
-              ) : null}
+              <PortalCountBadge count={item.badge ?? 0} />
             </button>
           );
         })}
@@ -231,17 +222,7 @@ export function VorgangDetailSectionNav({
                 }}
               >
                 <span>{label}</span>
-                {item.badge && item.badge > 0 ? (
-                  <span
-                    className="inline-flex h-4 min-w-[1rem] items-center justify-center rounded-full px-1 text-[10px] font-bold"
-                    style={{
-                      background: PORTAL_VAR.dangerSoft,
-                      color: PORTAL_VAR.danger,
-                    }}
-                  >
-                    {item.badge > 9 ? "9+" : item.badge}
-                  </span>
-                ) : null}
+                <PortalCountBadge count={item.badge ?? 0} />
               </button>
             </li>
           );

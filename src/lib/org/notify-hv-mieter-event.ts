@@ -1,4 +1,9 @@
 import { buildOrgHvMieterEventHtml } from "@/lib/email/meldung-mail-templates";
+import { createHvNotification } from "@/lib/org/create-hv-notification";
+import {
+  portalDeepLinkTabFromNotifTyp,
+  withPortalDetailDeepLink,
+} from "@/lib/portal2/portal-detail-deep-link";
 import { supabaseAdmin } from "@/lib/supabase";
 import { isValidEmail } from "@/lib/validation";
 import { Resend } from "resend";
@@ -26,10 +31,13 @@ export async function notifyHvMieterEvent(input: {
   if (!lead?.auftraggeber_kunde_id) return;
 
   const kundeId = String(lead.auftraggeber_kunde_id);
-  const portalPath = `/portal?section=vorgaenge&id=${encodeURIComponent(input.leadId)}`;
+  const portalPath = withPortalDetailDeepLink(
+    `/portal?section=vorgaenge&id=${encodeURIComponent(input.leadId)}`,
+    portalDeepLinkTabFromNotifTyp(input.typ)
+  );
 
-  await supabaseAdmin.from("hv_notifications").insert({
-    kunde_id: kundeId,
+  await createHvNotification({
+    kundeId,
     typ: input.typ,
     titel: input.titel,
     body: input.body,

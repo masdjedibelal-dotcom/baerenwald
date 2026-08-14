@@ -30,11 +30,11 @@ export const PORTAL_C = {
   radiusMd: "12px",
   radiusLg: "16px",
   radiusSheet: "20px",
-  /** Lesbare Skala — Body ≥16px, Meta ≥14px */
-  typeMeta: "14px",
-  typeBody: "16.5px",
-  typeTitle: "18px",
-  typeLabel: "12.5px",
+  /** Lesbare Skala — identisch zu --p2-type-* in globals.css */
+  typeMeta: "15.5px",
+  typeBody: "18px",
+  typeTitle: "20px",
+  typeLabel: "13.75px",
   head: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', system-ui, Roboto, sans-serif",
   body: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', 'SF Pro Display', 'Segoe UI', system-ui, Roboto, 'Helvetica Neue', Arial, sans-serif",
 } as const;

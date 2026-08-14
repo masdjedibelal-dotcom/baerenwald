@@ -1,7 +1,7 @@
 "use client";
 
-import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import { acceptKundeAngebot, rejectKundeAngebot } from "@/app/actions/portal-angebot";
 import { acceptKundeAuftragAenderungen } from "@/app/actions/portal-auftrag";
@@ -9,7 +9,6 @@ import { OrgAnlassBadge } from "@/components/org/OrgAnlassBadge";
 import { OrganisationHvVorgangDetail } from "@/components/org/OrganisationHvVorgangDetail";
 import { OrgVorgangFeedbackSection } from "@/components/org/OrgVorgangFeedbackSection";
 import { OrgMelderStatusLinkPanel } from "@/components/org/OrgMelderStatusLinkPanel";
-import { PortalHvTerminSection } from "@/components/portal/PortalHvTerminSection";
 import { PortalVorgangFeedbackSection } from "@/components/portal/PortalVorgangFeedbackSection";
 import { PartnerPortalDetailSections } from "@/components/partner/PartnerPortalDetailSections";
 import { BautagebuchAccordionList } from "@/components/shared/BautagebuchAccordionList";
@@ -27,6 +26,8 @@ import {
   PortalDetailStickyActions,
   PortalDetailSuccessBox,
 } from "@/components/shared/PortalDetailUi";
+import { usePortalBusy } from "@/components/shared/PortalBusyContext";
+import { usePortalRefresh } from "@/components/shared/usePortalRefresh";
 import { kundePortalToast } from "@/lib/shared/portal-toast";
 import type { KundePortalDetailItem } from "@/lib/portal/portal-detail-item";
 import { fmtPortalRelativeTime } from "@/lib/shared/portal-detail-format";
@@ -36,6 +37,11 @@ import {
   buildHvVerlaufSeed,
   inferFlowFromKundeItem,
 } from "@/lib/portal2/hv-detail-adapters";
+import {
+  normalizePortalDeepLinkTab,
+  portalDeepLinkTabForSimpleNav,
+  PORTAL_DETAIL_TAB_QUERY,
+} from "@/lib/portal2/portal-detail-deep-link";
 import type { PortalMockStatusId } from "@/lib/portal2/status";
 import { portalMieterStatusLabel } from "@/lib/portal2/status";
 
@@ -50,6 +56,8 @@ function extractProjektbeschreibung(item: KundePortalDetailItem): string {
 }
 
 function extractMelderName(item: KundePortalDetailItem): string | undefined {
+  const fromLead = item.melderName?.trim();
+  if (fromLead) return fromLead;
   const person = item.sections.find((s) =>
     /persönlich|kontakt|angaben/i.test(s.heading ?? "")
   );
@@ -95,6 +103,7 @@ export function PortalVorgangDetail({
   hvAbnahme,
   showHvAbnahme,
   orgFreigabeStatus,
+  freigabeBypassGrund,
   hvMeldungStatus,
   schwelleEur,
   onBack,
@@ -122,6 +131,7 @@ export function PortalVorgangDetail({
   /** D7: Privat/Gewerbe — kein Freigabe-Schritt, Hinweis „Automatisch freigegeben“ */
   privatkunde?: boolean;
   orgFreigabeStatus?: string | null;
+  freigabeBypassGrund?: "schwelle" | "akut" | null;
   hvMeldungStatus?: string | null;
   schwelleEur?: number;
   onBack?: () => void;
@@ -131,6 +141,10 @@ export function PortalVorgangDetail({
   mieterStatusMode?: boolean;
 }) {
   const router = useRouter();
+  const { refresh } = usePortalRefresh();
+  const { runBusy } = usePortalBusy();
+  const searchParams = useSearchParams();
+  const deepLinkAppliedRef = useRef(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [rejectOpen, setRejectOpen] = useState(false);
   const [rejectGrund, setRejectGrund] = useState("");
@@ -156,7 +170,11 @@ export function PortalVorgangDetail({
   );
 
   const showBautagebuchTab = Boolean(
-    item.bautagebuch && item.bautagebuch.length > 0 && !item.hvMieterView
+    Boolean(item.bautagebuch && item.bautagebuch.length > 0) ||
+      flowStatus === "auftrag" ||
+      flowStatus === "abschluss" ||
+      flowStatus === "rechnung" ||
+      flowStatus === "bezahlt"
   );
   const showFeedbackTab = Boolean(item.leadId);
 
@@ -164,7 +182,7 @@ export function PortalVorgangDetail({
     () => [
       { id: "details" as const, label: "Details" },
       ...(showBautagebuchTab
-        ? [{ id: "bautagebuch" as const, label: "Bautagebuch" }]
+        ? [{ id: "bautagebuch" as const, label: "Updates" }]
         : []),
       { id: "dokumente" as const, label: "Dokumente" },
       ...(showFeedbackTab
@@ -181,53 +199,67 @@ export function PortalVorgangDetail({
   }, [sectionTabs, activeSection]);
 
   useEffect(() => {
-    if (typeof window === "undefined") return;
-    const hash = window.location.hash.replace(/^#/, "").trim();
-    if (!hash) return;
-    if (!sectionTabs.some((t) => t.id === hash)) return;
-    setActiveSection(
-      hash as "details" | "bautagebuch" | "dokumente" | "feedback"
+    deepLinkAppliedRef.current = false;
+  }, [item.id, item.leadId]);
+
+  useEffect(() => {
+    if (deepLinkAppliedRef.current) return;
+    const fromQuery = normalizePortalDeepLinkTab(
+      searchParams.get(PORTAL_DETAIL_TAB_QUERY)
     );
+    const fromHash =
+      typeof window !== "undefined"
+        ? normalizePortalDeepLinkTab(window.location.hash)
+        : null;
+    const tab = fromQuery || fromHash;
+    if (!tab) return;
+    const target = portalDeepLinkTabForSimpleNav(tab);
+    if (!sectionTabs.some((t) => t.id === target)) return;
+    setActiveSection(target);
+    deepLinkAppliedRef.current = true;
+    if (typeof window === "undefined") return;
     try {
       const url = new URL(window.location.href);
+      url.searchParams.delete(PORTAL_DETAIL_TAB_QUERY);
       url.hash = "";
       window.history.replaceState(null, "", `${url.pathname}${url.search}`);
     } catch {
       /* ignore */
     }
-  }, [sectionTabs]);
+  }, [sectionTabs, searchParams, item.id, item.leadId]);
 
   if (showHvAbnahme) {
     const beschreibung = extractProjektbeschreibung(item);
-    const objektRaw = extractObjektLine(item);
-    const melder = extractMelderName(item);
+    const anschrift =
+      item.cardSubtitle?.trim() ||
+      String(extractObjektLine(item)).slice(0, 160);
+    const melder =
+      mieterStatusMode || item.hvMieterView
+        ? undefined
+        : extractMelderName(item);
     const rechnungPdf =
       item.dokumente?.find((d) => /rechnung/i.test(d.name ?? "") && d.href)
         ?.href ?? null;
-    const kategorie = privatkunde
-      ? undefined
-      : item.anfrageGewerk?.trim() ||
-        item.cardSubtitle?.trim() ||
-        undefined;
-
     return (
       <OrganisationHvVorgangDetail
         idLabel=""
         titel={item.title}
-        objekt={String(objektRaw).slice(0, 160)}
-        kategorie={kategorie}
+        objekt={anschrift}
+        kategorie={undefined}
         beschreibung={beschreibung}
         flowStatus={flowStatus}
         leadId={item.leadId ?? item.id}
-        auftragId={auftragId}
+        auftragId={auftragId ?? item.terminAuftragId}
         hvAbnahme={hvAbnahme}
         hwErledigt={hwErledigt}
         schwelleEur={schwelleEur}
-        offers={buildHvOffersFromItem(item, item.ansprechpartner?.name)}
-        positionenBrutto={item.auftragPositionen ?? item.angebotPositionen}
+        offers={buildHvOffersFromItem(item, item.handwerkerName)}
+        positionenBrutto={item.angebotPositionen}
+        auftragPositionen={item.auftragPositionen}
         gesamtBrutto={item.gesamtBrutto}
+        rechnungen={item.rechnungen}
         rechnungPdfHref={rechnungPdf}
-        bautagebuch={item.hvMieterView ? undefined : item.bautagebuch}
+        bautagebuch={item.bautagebuch}
         dokumente={item.dokumente ?? []}
         abnahmeCheckliste={item.abnahmeCheckliste ?? null}
         verlauf={buildHvVerlaufSeed({
@@ -252,17 +284,30 @@ export function PortalVorgangDetail({
         meldeZeitraum={item.meldeZeitraum}
         meldeFachdetails={item.meldeFachdetails}
         meldePreisIndikation={item.meldePreisIndikation}
-        handwerkerName={item.ansprechpartner?.name}
+        handwerkerName={item.handwerkerName ?? null}
+        terminVon={item.isAuftragDetail ? item.date : null}
+        terminBis={item.auftragEndDatum ?? null}
         orgFreigabeStatus={orgFreigabeStatus ?? item.orgFreigabeStatus}
         freigabeBypassGrund={
+          freigabeBypassGrund ??
           (item.freigabeBypassGrund as "schwelle" | "akut" | null | undefined) ??
           null
         }
+        funnelDirektauftrag={item.funnelDirektauftrag ?? null}
         hvMeldungStatus={hvMeldungStatus ?? item.hvMeldungStatus}
         angebotId={item.isAngebotDetail ? item.id : null}
-        canAcceptAngebot={Boolean(item.isAngebotDetail && item.needsAction)}
+        canAcceptAngebot={
+          !mieterStatusMode &&
+          Boolean(item.isAngebotDetail && item.needsAction)
+        }
         privatkunde={privatkunde}
-        detailRole={privatkunde ? "kunde" : "hv"}
+        detailRole={
+          mieterStatusMode || item.hvMieterView
+            ? "mieter"
+            : privatkunde
+              ? "kunde"
+              : "hv"
+        }
         mieterStatusMode={mieterStatusMode || Boolean(item.hvMieterView)}
         statusLabelOverride={
           mieterStatusMode || item.hvMieterView
@@ -279,14 +324,16 @@ export function PortalVorgangDetail({
         onUpdated={() => {
           onAccepted?.();
           onHvFeedbackSubmitted?.();
-          router.refresh();
+          void refresh();
         }}
       />
     );
   }
 
-  const rel = fmtPortalRelativeTime(item.date);
-  const metaLine = rel ? `${rel}` : undefined;
+  const metaLine =
+    item.cardSubtitle?.trim() ||
+    String(extractObjektLine(item)).slice(0, 160) ||
+    undefined;
   const statusPill = portalDetailStatusPillClass(item.statusPillKey ?? item.status ?? "offen");
 
   const isAngebotAccept = Boolean(item.isAngebotDetail && item.needsAction);
@@ -295,43 +342,53 @@ export function PortalVorgangDetail({
   async function handleAccept() {
     setLoading(true);
     setError(null);
-    const res = isAngebotAccept
-      ? await acceptKundeAngebot(item.id)
-      : isAuftragAccept
-        ? await acceptKundeAuftragAenderungen(item.id)
-        : { ok: false as const, error: "Keine Annahme möglich." };
-    setLoading(false);
-    setConfirmOpen(false);
-    if (!res.ok) {
-      setError(res.error);
-      return;
+    try {
+      await runBusy(async () => {
+        const res = isAngebotAccept
+          ? await acceptKundeAngebot(item.id)
+          : isAuftragAccept
+            ? await acceptKundeAuftragAenderungen(item.id)
+            : { ok: false as const, error: "Keine Annahme möglich." };
+        setConfirmOpen(false);
+        if (!res.ok) {
+          setError(res.error);
+          return;
+        }
+        if (isAuftragAccept) {
+          kundePortalToast.aenderungenAngenommen();
+        } else {
+          kundePortalToast.angebotAngenommen();
+        }
+        setAccepted(true);
+        onAccepted?.();
+        await refresh();
+      });
+    } finally {
+      setLoading(false);
     }
-    if (isAuftragAccept) {
-      kundePortalToast.aenderungenAngenommen();
-    } else {
-      kundePortalToast.angebotAngenommen();
-    }
-    setAccepted(true);
-    onAccepted?.();
-    router.refresh();
   }
 
   async function handleReject() {
     if (!isAngebotAccept) return;
     setLoading(true);
     setError(null);
-    const res = await rejectKundeAngebot(item.id, rejectGrund);
-    setLoading(false);
-    if (!res.ok) {
-      setError(res.error);
-      return;
+    try {
+      await runBusy(async () => {
+        const res = await rejectKundeAngebot(item.id, rejectGrund);
+        if (!res.ok) {
+          setError(res.error);
+          return;
+        }
+        setRejectOpen(false);
+        setRejectGrund("");
+        kundePortalToast.angebotAbgelehnt();
+        setRejected(true);
+        onAccepted?.();
+        await refresh();
+      });
+    } finally {
+      setLoading(false);
     }
-    setRejectOpen(false);
-    setRejectGrund("");
-    kundePortalToast.angebotAbgelehnt();
-    setRejected(true);
-    onAccepted?.();
-    router.refresh();
   }
 
   const showAcceptCta =
@@ -402,16 +459,6 @@ export function PortalVorgangDetail({
         >
           {activeSection === "details" ? (
             <div className="space-y-4">
-              {item.hvMieterView &&
-              item.terminAuftragId &&
-              item.terminSlots &&
-              item.terminSlots.length > 0 ? (
-                <PortalHvTerminSection
-                  auftragId={item.terminAuftragId}
-                  slots={item.terminSlots}
-                />
-              ) : null}
-
               {item.melderStatusUrl && !item.hvMieterView ? (
                 <OrgMelderStatusLinkPanel statusUrl={item.melderStatusUrl} />
               ) : null}
@@ -445,15 +492,21 @@ export function PortalVorgangDetail({
           ) : null}
 
           {activeSection === "bautagebuch" && showBautagebuchTab ? (
-            <BautagebuchAccordionList
-              eintraege={(item.bautagebuch ?? []).map((b) => ({
-                id: b.id ?? `${b.datum}-${b.titel}`,
-                datum: b.datum ?? b.created_at,
-                titel: b.titel ?? "Eintrag",
-                beschreibung: b.notiz,
-                fotos: b.fotos_urls,
-              }))}
-            />
+            (item.bautagebuch?.length ?? 0) > 0 ? (
+              <BautagebuchAccordionList
+                eintraege={(item.bautagebuch ?? []).map((b) => ({
+                  id: b.id ?? `${b.datum}-${b.titel}`,
+                  datum: b.datum ?? b.created_at,
+                  titel: b.titel ?? "Eintrag",
+                  beschreibung: b.notiz,
+                  fotos: b.fotos_urls,
+                }))}
+              />
+            ) : (
+              <p className="text-sm text-[var(--portal-muted,#5B6470)]">
+                Noch keine Updates vom Handwerker.
+              </p>
+            )
           ) : null}
 
           {activeSection === "dokumente" ? (
@@ -513,6 +566,10 @@ export function PortalVorgangDetail({
         variant="edit"
         dirty={rejectGrund.trim().length > 0}
         closeOnBackdrop={!loading}
+        busy={loading}
+        onConfirm={() => void handleReject()}
+        confirmDisabled={loading}
+        confirmLabel="Ablehnen"
       >
         <label className="flex flex-col gap-1.5">
           <span className="portal-form-label">Grund (optional)</span>
@@ -526,22 +583,22 @@ export function PortalVorgangDetail({
             disabled={loading}
           />
         </label>
-        <div className="portal-confirm-actions mt-5">
-          <button
-            type="button"
-            disabled={loading}
-            onClick={() => void handleReject()}
-            className="btn-pill-outline portal-btn portal-confirm-actions-primary !border-red-200 !text-red-800"
-          >
-            {loading ? "Wird gesendet…" : "Ablehnen"}
-          </button>
+        <div className="portal-modal-discard-actions portal-action-row mt-5">
           <button
             type="button"
             disabled={loading}
             onClick={() => setRejectOpen(false)}
-            className="btn-pill-outline portal-btn portal-confirm-actions-cancel"
+            className="portal-action-btn portal-action-btn--secondary"
           >
-            Abbrechen
+            Weiter bearbeiten
+          </button>
+          <button
+            type="button"
+            disabled={loading}
+            onClick={() => void handleReject()}
+            className="portal-action-btn portal-action-btn--danger"
+          >
+            {loading ? "Bitte warten…" : "Ablehnen"}
           </button>
         </div>
       </PortalModalShell>

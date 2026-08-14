@@ -183,10 +183,10 @@ function GuidedBlock({
         <div className="gpt-guided-viz-limit">
           <p className="gpt-guided-viz-limit-text">
             {block.reason === "needs_lead"
-              ? "Deine kostenlose Visualisierung ist genutzt. Sende dein Projekt — dann kannst du noch zweimal anpassen."
+              ? "Ihre kostenlose Visualisierung ist genutzt. Senden Sie Ihr Projekt — dann können Sie noch zweimal anpassen."
               : block.reason === "portal_monthly"
-                ? "Dein monatliches Visualisierungs-Kontingent im Portal ist aufgebraucht."
-                : "Für weitere Visualisierungen registriere dich kostenlos im Portal."}
+                ? "Ihr monatliches Visualisierungs-Kontingent im Portal ist aufgebraucht."
+                : "Für weitere Visualisierungen registrieren Sie sich kostenlos im Portal."}
           </p>
           <div className="gpt-guided-viz-limit-actions">
             {block.reason === "needs_lead" ? (

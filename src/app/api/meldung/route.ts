@@ -44,6 +44,7 @@ type MeldungBody = {
     }>;
   } | null;
   notfall?: boolean | null;
+  direktauftrag?: boolean | null;
   terminwunsch?: string | null;
   dringlichkeit?: string | null;
   beschreibung?: string;
@@ -169,30 +170,8 @@ export async function POST(req: Request) {
     orgRow.name?.trim() ||
     "Objekt";
 
-  if (matchedObjektId) {
-    const since = new Date(Date.now() - 15 * 60 * 1000).toISOString();
-    const { data: recent } = await supabaseAdmin
-      .from("leads")
-      .select("id, melde_tracking_token")
-      .eq("kunde_objekt_id", matchedObjektId)
-      .eq("auftraggeber_kunde_id", orgRow.id)
-      .gte("created_at", since)
-      .in("kanal", ["hv_melder_link", "hv_direkt"])
-      .order("created_at", { ascending: false })
-      .limit(1);
-    if (recent?.[0]?.id) {
-      return NextResponse.json({
-        ok: true,
-        id: recent[0].id,
-        duplicateWarning:
-          "Eine ähnliche Meldung wurde in den letzten 15 Minuten bereits erfasst.",
-        statusLink: recent[0].melde_tracking_token
-          ? meldeStatusUrl(String(recent[0].melde_tracking_token))
-          : undefined,
-        reused: true,
-      });
-    }
-  }
+  // Kein 15-Min-Lead-Reuse für Melde (Mieter/HV) — jeder Submit = neuer Lead.
+  // Website-Funnel kann separat deduplizieren; CRM/Staff (org/anfrage) hatte das nie.
 
   const result = await persistMeldungLead({
     name,
@@ -205,6 +184,7 @@ export async function POST(req: Request) {
     fachdetailAnswers: body.fachdetailAnswers,
     fachfragen: body.fachfragen ?? null,
     notfall: body.notfall ?? null,
+    direktauftrag: body.direktauftrag ?? body.notfall ?? null,
     terminwunsch: body.terminwunsch?.trim() || null,
     dringlichkeit: body.dringlichkeit,
     fotos,

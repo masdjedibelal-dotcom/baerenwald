@@ -3,15 +3,13 @@
 import type { LucideIcon } from "lucide-react";
 import { useEffect, useRef, type ReactNode } from "react";
 
-import {
-  PortalBusyProvider,
-  usePortalBusy,
-} from "@/components/shared/PortalBusyContext";
+import { usePortalBusy } from "@/components/shared/PortalBusyContext";
 import { PortalContentBusy } from "@/components/shared/PortalContentBusy";
 import { PortalCreateFabIcon } from "@/components/shared/PortalCreateFabIcon";
 import { PortalDocViewerProvider } from "@/components/shared/PortalDocViewerContext";
 import { PortalHeader, type PortalHeaderUser } from "@/components/shared/PortalHeader";
 import { PortalNavIcon } from "@/components/shared/PortalNavIcon";
+import { PortalCountBadge } from "@/components/shared/PortalNavCountBadge";
 import { PortalOfflineGate } from "@/components/shared/PortalOfflineGate";
 import { PortalTopbar } from "@/components/shared/PortalTopbar";
 import { applyBrandStyle } from "@/lib/portal2/apply-brand";
@@ -34,6 +32,12 @@ export type PortalShellCreateAction = {
   onClick: () => void;
 };
 
+/**
+ * Shell-Capabilities je `variant` (typisch):
+ * - `org` / `kunde`: oft `createAction` (Neue Anfrage/Objekt); GPT-Vollfläche mit `hideMobileChrome`.
+ * - `partner` (Handwerker): meist ohne `createAction`; GPT-Section ebenfalls `hideMobileChrome`.
+ * - `hideMobileChrome`: Bottom-Nav + FAB aus — z. B. GPT-Overlay/Embedded oder Fokus-Screens.
+ */
 export type PortalShellProps = {
   variant?: "org" | "partner" | "kunde";
   brandTitle: string;
@@ -75,11 +79,11 @@ export type PortalShellProps = {
   headerRoleBadge?: ReactNode;
   /**
    * Mock `canCreate` + `createLabel`: Sidebar-Button + Mobile-FAB (rechts).
-   * Handwerker: weglassen (`portalCanCreate` = false).
+   * Typisch org/kunde; Handwerker (`partner`) weglassen.
    */
   createAction?: PortalShellCreateAction | null;
   /**
-   * Mobil: Bottom-Nav + FAB ausblenden.
+   * Mobil: Bottom-Nav + FAB ausblenden (GPT-Vollfläche, Fokus-Screens).
    * Default false — Bottom-Nav bleibt in Details sticky am Bildschirmrand.
    */
   hideMobileChrome?: boolean;
@@ -132,16 +136,9 @@ function NavGlyph({
 
 /**
  * Gemeinsame Portal-Shell: Topbar (B1) + Sidebar (B2) + Bottom-Nav (B3) + Mobile-FAB.
+ * Busy-Provider liegt im Portal-/Partner-Layout (Hold über Section-Wechsel).
  */
-export function PortalShell(props: PortalShellProps) {
-  return (
-    <PortalBusyProvider>
-      <PortalShellInner {...props} />
-    </PortalBusyProvider>
-  );
-}
-
-function PortalShellInner({
+export function PortalShell({
   variant = "org",
   brandTitle,
   brandSubtitle,
@@ -193,7 +190,7 @@ function PortalShellInner({
       prevKeyRef.current = contentKey;
       changed = true;
     }
-    if (changed) flash(320);
+    if (changed) flash();
   }, [activeNavId, contentKey, flash]);
 
   /** Mobil: Dokument-Scroll → Browser darf die URL-Leiste einklappen (wie CRM). */
@@ -282,7 +279,10 @@ function PortalShellInner({
                         {item.label}
                       </span>
                       {item.badge != null && item.badge > 0 ? (
-                        <span className="portal-shell-nav-badge">{item.badge}</span>
+                        <PortalCountBadge
+                          count={item.badge}
+                          className="portal-shell-nav-badge"
+                        />
                       ) : null}
                     </button>
                   );
@@ -296,12 +296,13 @@ function PortalShellInner({
                 hideMobileChrome
                   ? // Keine Bottom-Nav → kein Nav-Padding (z. B. GPT-Vollfläche)
                     "px-0 py-0 lg:px-6 lg:py-7 lg:pb-8"
-                  : "px-4 py-5 lg:px-6 lg:py-7 lg:pb-8 pb-[calc(5.5rem+env(safe-area-inset-bottom,0px))]"
+                  : "px-4 py-5 pb-[var(--portal-mobile-nav-pad)] lg:px-6 lg:py-7 lg:pb-8"
               )}
             >
               <div className="portal-page-stack relative min-h-[40vh]">
                 <div
                   className={cn(
+                    "portal-page-stack-inner",
                     showContentBusy && "invisible pointer-events-none select-none"
                   )}
                   aria-hidden={showContentBusy || undefined}
@@ -351,9 +352,11 @@ function PortalShellInner({
                           />
                           <span>{item.label}</span>
                           {item.badge != null && item.badge > 0 ? (
-                            <span className="portal-shell-mobile-badge">
-                              {item.badge}
-                            </span>
+                            <PortalCountBadge
+                              count={item.badge}
+                              variant="corner"
+                              className="portal-shell-mobile-badge"
+                            />
                           ) : null}
                         </button>
                       );
@@ -396,9 +399,11 @@ function PortalShellInner({
                           />
                           <span>{item.label}</span>
                           {item.badge != null && item.badge > 0 ? (
-                            <span className="portal-shell-mobile-badge">
-                              {item.badge}
-                            </span>
+                            <PortalCountBadge
+                              count={item.badge}
+                              variant="corner"
+                              className="portal-shell-mobile-badge"
+                            />
                           ) : null}
                         </button>
                       );
@@ -426,9 +431,11 @@ function PortalShellInner({
                         />
                         <span>{item.label}</span>
                         {item.badge != null && item.badge > 0 ? (
-                          <span className="portal-shell-mobile-badge">
-                            {item.badge}
-                          </span>
+                          <PortalCountBadge
+                            count={item.badge}
+                            variant="corner"
+                            className="portal-shell-mobile-badge"
+                          />
                         ) : null}
                       </button>
                     );

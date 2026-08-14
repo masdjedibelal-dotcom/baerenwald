@@ -1,4 +1,4 @@
-import { PORTAL_VAR } from "@/lib/portal2/tokens";
+import { PORTAL_C } from "@/lib/portal2/tokens";
 
 /**
  * White-Label Brand-Presets — Mock `BRAND_PRESETS` + Default-`ORG`
@@ -127,7 +127,7 @@ export function findBrandPresetByPrimary(
   return BRAND_PRESETS.find((x) => x.primary.toLowerCase() === p) ?? null;
 }
 
-/** Leitet Dk/Soft ab. Ohne primary → Portal-Default (`PORTAL_VAR`), nicht Steiner-Demo. */
+/** Leitet Dk/Soft ab. Ohne primary → Portal-Default-Hex, nicht selbstreferenzierende CSS-Vars. */
 export function resolveBrandPalette(input: {
   primary?: string | null;
   primaryDk?: string | null;
@@ -136,17 +136,17 @@ export function resolveBrandPalette(input: {
   const raw = input.primary?.trim();
   if (!raw) {
     return {
-      primary: PORTAL_VAR.primary,
-      primaryDk: PORTAL_VAR.primaryDk,
-      soft: PORTAL_VAR.primarySoft,
+      primary: PORTAL_C.primary,
+      primaryDk: PORTAL_C.primaryDk,
+      soft: PORTAL_C.primarySoft,
     };
   }
   const preset = findBrandPresetByPrimary(raw);
   return {
     primary: raw,
     primaryDk:
-      input.primaryDk?.trim() || preset?.primaryDk || PORTAL_VAR.primaryDk,
-    soft: input.soft?.trim() || preset?.soft || PORTAL_VAR.primarySoft,
+      input.primaryDk?.trim() || preset?.primaryDk || PORTAL_C.primaryDk,
+    soft: input.soft?.trim() || preset?.soft || PORTAL_C.primarySoft,
   };
 }
 

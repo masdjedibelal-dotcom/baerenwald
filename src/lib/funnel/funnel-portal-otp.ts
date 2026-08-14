@@ -149,17 +149,18 @@ export async function sendFunnelOtpEmail(opts: {
   const from =
     process.env.RESEND_FROM_SYSTEM ??
     "MeinBärenwald <system@baerenwaldmuenchen.de>";
-  const name = (opts.vorname ?? "").trim() || "du";
+  const vorname = (opts.vorname ?? "").trim();
+  const greeting = vorname ? `Hallo ${escapeHtml(vorname)}` : "Guten Tag";
   const resend = new Resend(resendKey);
 
   try {
     const { error } = await resend.emails.send({
       from,
       to: opts.email.trim().toLowerCase(),
-      subject: `${opts.code} — dein MeinBärenwald Bestätigungscode`,
+      subject: `${opts.code} — Ihr MeinBärenwald Bestätigungscode`,
       html: `
-        <p>Hallo ${escapeHtml(name)},</p>
-        <p>dein Bestätigungscode für MeinBärenwald:</p>
+        <p>${greeting},</p>
+        <p>Ihr Bestätigungscode für MeinBärenwald:</p>
         <p style="font-size:28px;font-weight:700;letter-spacing:6px;color:#2E7D52;">${escapeHtml(opts.code)}</p>
         <p>Der Code ist 15 Minuten gültig.</p>
         <p style="color:#6b7280;font-size:13px;">${escapeHtml(SITE_CONFIG.companyName)} · ${escapeHtml(SITE_CONFIG.addressLine)}</p>

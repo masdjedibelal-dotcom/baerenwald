@@ -99,6 +99,11 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: result.error }, { status: result.status });
   }
 
+  const { finalizeOrgSelfCreatedLead } = await import(
+    "@/lib/org/finalize-org-self-created-lead"
+  );
+  await finalizeOrgSelfCreatedLead(result.id);
+
   if (body.versicherung) {
     const versNr = String(body.versicherungsNr ?? "").trim() || null;
     await supabaseAdmin

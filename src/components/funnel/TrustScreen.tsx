@@ -19,7 +19,7 @@ const TRUST_CONTENT = {
     imageAlt: "Handwerker zeigt Kunden transparentes Angebot auf Tablet",
     eyebrow: "Keine Überraschungen",
     headline: "Der Preis steht\nbevor wir anfangen.",
-    text: "Unser Rechner zeigt dir einen unverbindlichen Preisrahmen — eine ehrliche Preisindikation auf Basis unserer Projekterfahrung in München, noch bevor du anrufst. Nach dem Vor-Ort-Termin bekommst du ein verbindliches Festpreisangebot. Kein Nachtrag ohne deine Zustimmung.",
+    text: "Unser Rechner zeigt Ihnen einen unverbindlichen Preisrahmen — eine ehrliche Preisindikation auf Basis unserer Projekterfahrung in München, noch bevor Sie anrufen. Nach dem Vor-Ort-Termin bekommen Sie ein verbindliches Festpreisangebot. Kein Nachtrag ohne Ihre Zustimmung.",
   },
   qualitaet: {
     image: "/images/trust-qualitaet.jpg",
@@ -27,7 +27,7 @@ const TRUST_CONTENT = {
       "Handwerker und Kunde bei digitaler Abnahme in frisch renoviertem Raum",
     eyebrow: "Unser Versprechen",
     headline: "Sauber übergeben.\nDigital dokumentiert.",
-    text: "Wir hinterlassen dein Zuhause so wie wir es vorgefunden haben — nur besser. Jedes Projekt wird mit einem digitalen Abnahmeprotokoll abgeschlossen. Damit du weißt was gemacht wurde und alles zur Aufbewahrung hast.",
+    text: "Wir hinterlassen Ihr Zuhause so wie wir es vorgefunden haben — nur besser. Jedes Projekt wird mit einem digitalen Abnahmeprotokoll abgeschlossen. Damit Sie wissen, was gemacht wurde und alles zur Aufbewahrung haben.",
   },
 } as const;
 

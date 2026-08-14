@@ -35,8 +35,10 @@ export type PersistMeldungLeadInput = {
       answer: boolean;
     }>;
   } | null;
-  /** Mock `notfall` (Akut). */
+  /** @deprecated Prefer `direktauftrag`. */
   notfall?: boolean | null;
+  /** Sofortmaßnahme → Direktauftrag-Pfad (HV nur Info, wenn freigeschaltet). */
+  direktauftrag?: boolean | null;
   terminwunsch?: string | null;
   dringlichkeit?: string | null;
   fotos?: string[];
@@ -63,15 +65,43 @@ export async function persistMeldungLead(input: PersistMeldungLeadInput) {
     dringlichkeit: input.dringlichkeit,
   });
 
+  const direktauftrag =
+    input.direktauftrag === true ||
+    input.notfall === true ||
+    input.kategorie === "notfall";
+
   const initial = initialHvMeldungState();
   let zeitraum = meldeKategorieToZeitraum(input.kategorie);
-  if (input.kategorie === "notfall" || input.notfall === true) zeitraum = "sofort";
+  if (direktauftrag) zeitraum = "sofort";
   else if (input.dringlichkeit) zeitraum = input.dringlichkeit;
 
-  const situation =
-    input.kategorie === "notfall" || input.notfall === true
-      ? "notfall"
-      : meldeKategorieToSituation(input.kategorie);
+  // Situation „notfall“ nur bei Sofortmaßnahme — für CRM/Legacy; HV-Badge nutzt Kategorie nicht mehr.
+  const situation = direktauftrag
+    ? "notfall"
+    : meldeKategorieToSituation(input.kategorie);
+
+  // Effektive Direktbeauftragung-Regel (Org + Objekt-Override)
+  let notfallDirektAktiv = true;
+  {
+    const { data: org } = await supabaseAdmin
+      .from("kunden")
+      .select("notfall_direkt")
+      .eq("id", input.auftraggeber_kunde_id)
+      .maybeSingle();
+    notfallDirektAktiv = org?.notfall_direkt !== false;
+    if (input.kunde_objekt_id) {
+      const { data: obj } = await supabaseAdmin
+        .from("kunden_objekte")
+        .select("notfall_direkt")
+        .eq("id", input.kunde_objekt_id)
+        .maybeSingle();
+      if (obj?.notfall_direkt != null) {
+        notfallDirektAktiv = Boolean(obj.notfall_direkt);
+      }
+    }
+  }
+
+  const bypassAktiv = direktauftrag && notfallDirektAktiv;
 
   const result = await persistLead({
     name: input.name,
@@ -109,7 +139,8 @@ export async function persistMeldungLead(input: PersistMeldungLeadInput) {
       melde_bereich: input.bereichId,
       fachdetailAnswers: input.fachdetailAnswers ?? {},
       ...(input.fachfragen ? { fachfragen: input.fachfragen } : {}),
-      ...(input.notfall != null ? { notfall: input.notfall } : {}),
+      direktauftrag,
+      notfall: direktauftrag,
       ...(input.terminwunsch
         ? { terminwunsch: input.terminwunsch }
         : {}),
@@ -149,12 +180,62 @@ export async function persistMeldungLead(input: PersistMeldungLeadInput) {
     vorgang_phase: "eingegangen",
     duplikat_hinweis: duplikatHinweis,
   };
+  if (bypassAktiv) {
+    patch.freigabe_bypass_grund = "akut";
+    patch.org_freigabe_status = "nicht_noetig";
+  }
   if (vorschlag) {
     patch.kostentraeger = vorschlag;
     patch.kostentraeger_vorgeschlagen = true;
   }
 
   await supabaseAdmin.from("leads").update(patch).eq("id", result.id);
+
+  // Mieter am Objekt (einheit_bewohner) — erscheint in CRM-Objektakte „Mieter“
+  if (input.kunde_objekt_id?.trim() && input.name.trim()) {
+    try {
+      const { ensureObjektBewohner } = await import(
+        "@/lib/org/ensure-objekt-bewohner"
+      );
+      const emailNorm = (input.email ?? "").trim().toLowerCase();
+      let already = false;
+      if (emailNorm) {
+        const { data: units } = await supabaseAdmin
+          .from("objekt_einheiten")
+          .select("id")
+          .eq("kunde_objekt_id", input.kunde_objekt_id)
+          .eq("aktiv", true);
+        const unitIds = (units ?? []).map((u) => u.id as string);
+        if (unitIds.length) {
+          const { data: existing } = await supabaseAdmin
+            .from("einheit_bewohner")
+            .select("id, email")
+            .eq("kunde_id", input.auftraggeber_kunde_id)
+            .in("objekt_einheit_id", unitIds)
+            .eq("aktiv", true)
+            .is("anonymisiert_am", null);
+          already = (existing ?? []).some(
+            (b) => (b.email ?? "").trim().toLowerCase() === emailNorm
+          );
+        }
+      }
+      if (!already) {
+        const bew = await ensureObjektBewohner({
+          kundeId: input.auftraggeber_kunde_id,
+          objektId: input.kunde_objekt_id,
+          name: input.name,
+          wohnung: input.einheit || null,
+          email: input.email || null,
+          telefon: input.telefon || null,
+        });
+        if (!bew.ok) {
+          console.warn("[persistMeldungLead] ensureObjektBewohner:", bew.error);
+        }
+      }
+    } catch (e) {
+      console.warn("[persistMeldungLead] ensureObjektBewohner:", e);
+    }
+  }
 
   if (duplikatHinweis) {
     const { writeAuditEvent } = await import("@/lib/audit/write-audit-event");
@@ -166,6 +247,70 @@ export async function persistMeldungLead(input: PersistMeldungLeadInput) {
       payload: { einheit: input.einheit, fenster_h: 24 },
     });
   }
+
+  // Melder-Link / Einladung → HV-Glocke (CRM erst nach HV „Vorgang freigeben“,
+  // außer Akut-Direktauftrag: dann sofort BW informieren)
+  if (input.erfassung_von === "melder") {
+    void import("@/lib/org/notify-hv-neue-meldung").then(
+      ({ notifyHvNeueMeldung }) =>
+        notifyHvNeueMeldung({ leadId: result.id }).catch((e) =>
+          console.error("[persistMeldungLead] hv notify:", e)
+        )
+    );
+    if (bypassAktiv) {
+      void import("@/lib/org/notify-crm-org").then(({ notifyCrmOrgPortal }) =>
+        notifyCrmOrgPortal({ leadId: result.id, typ: "meldung" }).then((r) => {
+          if (!r.ok) {
+            console.warn("[persistMeldungLead] CRM-Notify (Akut):", r.error, {
+              leadId: result.id,
+              skipped: r.skipped === true,
+            });
+          }
+        })
+      );
+    }
+    // Verknüpfter Portal-User (kunde_id mit auth) → eigene Glocke
+    void import("@/lib/portal/notify-portal-lead-user").then(
+      async ({ notifyPortalLeadUser }) => {
+        const { MELDE_NOTIF_COPY } = await import(
+          "@/lib/org/melde-vorgang-titel"
+        );
+        await notifyPortalLeadUser({
+          leadId: result.id,
+          typ: "status",
+          titel: MELDE_NOTIF_COPY.meldungEingegangen,
+          text: MELDE_NOTIF_COPY.meldungEingegangenBody,
+          deepLinkTab: "uebersicht",
+          roleOverride: "mieter",
+        }).catch((e) =>
+          console.error("[persistMeldungLead] portal notify:", e)
+        );
+      }
+    );
+  }
+
+  // Eigentümer am Objekt → Glocke „neu“ (Status-only, keine Freigabe)
+  void import("@/lib/portal/notify-portal-eigentuemer").then(
+    async ({ notifyPortalEigentuemer }) => {
+      const { formatMeldeNotifTitel, MELDE_NOTIF_COPY } = await import(
+        "@/lib/org/melde-vorgang-titel"
+      );
+      const titel =
+        String(situation ?? "").trim() ||
+        String(bereiche?.[0] ?? "").trim() ||
+        "Vorgang";
+      await notifyPortalEigentuemer({
+        leadId: result.id,
+        kind: "neu",
+        titel: formatMeldeNotifTitel(MELDE_NOTIF_COPY.neueMeldung, { titel }),
+        text: `Neuer Vorgang „${titel}“ an Ihrem Objekt.`,
+        deepLinkTab: "uebersicht",
+        kundeObjektId: input.kunde_objekt_id ?? null,
+      }).catch((e) =>
+        console.error("[persistMeldungLead] eigentuemer notify:", e)
+      );
+    }
+  );
 
   return { ...result, meldeTrackingToken: token };
 }

@@ -1,33 +1,30 @@
 "use client";
 
-import { OrganisationBrandingEditor } from "@/components/org/OrganisationBrandingEditor";
 import { OrganisationFreigabeRegelnPanel } from "@/components/org/OrganisationFreigabeRegelnPanel";
 import { OrganisationMeldeMaterial } from "@/components/org/OrganisationMeldeMaterial";
 import { OrganisationMieterLegalLinksPanel } from "@/components/org/OrganisationMieterLegalLinksPanel";
+import { OrganisationPortalAngabenPanel } from "@/components/org/OrganisationPortalAngabenPanel";
 import { PortalKontoSicherheitPanel } from "@/components/shared/PortalKontoSicherheitPanel";
 import { PortalEinstellungenShell } from "@/components/shared/PortalEinstellungenShell";
+import { PortalPushSettingsPanel } from "@/components/shared/PortalPushSettingsPanel";
 import {
   EinstellungenPfRow,
   EinstellungenSectionHeader,
 } from "@/components/shared/PortalEinstellungenUi";
 import type { OrganisationKunde } from "@/lib/org/types";
-import { PORTAL_VAR } from "@/lib/portal2/tokens";
 import { SITE_CONFIG } from "@/lib/config";
 
 type Props = {
   kunde: OrganisationKunde;
-  objektCount: number;
   onSaved: () => void;
   isAdmin?: boolean;
 };
 
 /**
- * D6 / D12 HV — Mock Einstellungen mit Subnav:
- * Profil · Branding & White-Label · Freigabe-Regeln
+ * HV-Einstellungen: Profil (inkl. Logo & Portal-Angaben) · Freigabe · Benachrichtigungen.
  */
 export function OrganisationEinstellungenScreen({
   kunde,
-  objektCount,
   onSaved,
   isAdmin = true,
 }: Props) {
@@ -44,6 +41,12 @@ export function OrganisationEinstellungenScreen({
         if (tab === "profil") {
           return (
             <div className="flex flex-col gap-6">
+              <OrganisationPortalAngabenPanel
+                kunde={kunde}
+                readOnly={!isAdmin}
+                onSaved={onSaved}
+              />
+
               <div className="space-y-3">
                 <EinstellungenSectionHeader title="Profil" />
                 <div className="flex flex-col gap-[11px]">
@@ -54,25 +57,15 @@ export function OrganisationEinstellungenScreen({
                   />
                   <EinstellungenPfRow label="Telefon" value={tel} />
                 </div>
-                <p
-                  className="text-[12.5px] leading-relaxed"
-                  style={{ color: PORTAL_VAR.sub }}
-                >
-                  Diese Kontaktdaten gelten auch für die Mieter-Kommunikation
-                  (Melde-Flow, Status und E-Mails).
-                </p>
               </div>
-
-              <OrganisationMeldeMaterial
-                kunde={kunde}
-                objektCount={objektCount}
-              />
 
               <OrganisationMieterLegalLinksPanel
                 kunde={kunde}
                 readOnly={!isAdmin}
                 onSaved={onSaved}
               />
+
+              <OrganisationMeldeMaterial kunde={kunde} />
 
               <PortalKontoSicherheitPanel
                 signOutHref="/portal/login"
@@ -83,15 +76,8 @@ export function OrganisationEinstellungenScreen({
           );
         }
 
-        if (tab === "branding") {
-          return (
-            <OrganisationBrandingEditor
-              kunde={kunde}
-              readOnly={!isAdmin}
-              onSaved={onSaved}
-              nested
-            />
-          );
+        if (tab === "benachrichtigungen") {
+          return <PortalPushSettingsPanel portal="portal" />;
         }
 
         return (

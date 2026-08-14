@@ -5,6 +5,7 @@
  */
 
 import type { MeldeAnswers } from "@/lib/funnel/melde-dynamic-questions";
+import { normalizeMeldeWasserProblem } from "@/lib/funnel/melde-dynamic-questions";
 
 export type WasserUrsacheId =
   | "eckventil"
@@ -51,9 +52,7 @@ function ans(a: MeldeAnswers, id: string): string {
 }
 
 function normalizeProblem(raw: string): string {
-  if (raw === "laeuft_stark") return "laeuft";
-  if (raw === "von_oben") return "von_decke";
-  return raw;
+  return normalizeMeldeWasserProblem(raw);
 }
 
 function orderIds(ids: WasserUrsacheId[]): WasserUrsacheOption[] {
@@ -69,6 +68,7 @@ export function wasserUrsachenForAnswers(
   const a = answers ?? {};
   const problem = normalizeProblem(ans(a, "melde_problem"));
   const ort = ans(a, "melde_ort");
+  const laeuft = ans(a, "melde_laeuft_noch");
 
   const withKueche = (base: WasserUrsacheId[]): WasserUrsacheId[] => {
     if (ort !== "kueche") return [...base, "sonstiges"];
@@ -80,8 +80,7 @@ export function wasserUrsachenForAnswers(
   };
 
   switch (problem) {
-    case "tropft":
-    case "laeuft":
+    case "wasser_austritt":
       if (ort === "bad") {
         return orderIds(["eckventil", "siphon", "armatur", "flexschlauch", "sonstiges"]);
       }
@@ -91,14 +90,16 @@ export function wasserUrsachenForAnswers(
       if (ort === "keller") {
         return orderIds(["wand_decke", "eckventil", "sonstiges"]);
       }
+      if (laeuft === "ja" || laeuft === "weiss_nicht") {
+        return orderIds(
+          withKueche(["eckventil", "flexschlauch", "siphon", "armatur", "wand_decke"])
+        );
+      }
       return orderIds(
         withKueche(["eckventil", "siphon", "flexschlauch", "armatur"])
       );
 
-    case "wc_verstopft":
-      return orderIds(["ablauf", "eckventil", "sonstiges"]);
-
-    case "waschbecken_verstopft":
+    case "verstopfung":
       if (ort === "kueche") {
         return orderIds([
           "ablauf",
@@ -108,29 +109,12 @@ export function wasserUrsachenForAnswers(
           "sonstiges",
         ]);
       }
+      if (ort === "wc") return orderIds(["ablauf", "eckventil", "sonstiges"]);
       return orderIds(["ablauf", "siphon", "sonstiges"]);
 
-    case "von_decke":
-    case "feuchte_wand":
+    case "von_decke_wand":
+    case "feucht_ohne_lauf":
       return orderIds(["wand_decke", "sonstiges"]);
-
-    case "ueberschwemmt":
-      if (ort === "keller") {
-        return orderIds(["wand_decke", "eckventil", "sonstiges"]);
-      }
-      if (ort === "kueche") {
-        return orderIds(
-          withKueche(["eckventil", "siphon", "flexschlauch", "armatur", "wand_decke"])
-        );
-      }
-      return orderIds([
-        "eckventil",
-        "siphon",
-        "flexschlauch",
-        "armatur",
-        "wand_decke",
-        "sonstiges",
-      ]);
 
     default:
       if (ort === "kueche") {
@@ -173,6 +157,10 @@ export function wasserSchadenKurz(answers: MeldeAnswers | undefined): string {
   const ort = ans(a, "melde_ort");
   const problemLabel =
     {
+      wasser_austritt: "Wasser tritt aus",
+      von_decke_wand: "Wasser aus Decke oder Wand",
+      verstopfung: "Abfluss verstopft",
+      feucht_ohne_lauf: "Feuchtigkeit ohne laufendes Wasser",
       tropft: "Wasser tropft",
       laeuft: "Wasser läuft",
       wc_verstopft: "WC verstopft",
@@ -206,6 +194,10 @@ export function wasserSchadenKurz(answers: MeldeAnswers | undefined): string {
 }
 
 const WASSER_PROBLEM_IDS = new Set([
+  "wasser_austritt",
+  "von_decke_wand",
+  "verstopfung",
+  "feucht_ohne_lauf",
   "tropft",
   "laeuft",
   "laeuft_stark",
@@ -215,6 +207,7 @@ const WASSER_PROBLEM_IDS = new Set([
   "von_oben",
   "feuchte_wand",
   "ueberschwemmt",
+  "sonstiges",
 ]);
 
 /** True wenn Wasser-Meldung (Antworten, Bereich oder gespeicherter Check). */

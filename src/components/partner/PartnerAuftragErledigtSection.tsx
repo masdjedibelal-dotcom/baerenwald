@@ -5,41 +5,34 @@ import {
   PartnerDetailSuccessBox,
 } from "@/components/partner/PartnerDetailUi";
 import { PortalDetailCard } from "@/components/shared/PortalDetailCard";
-import { allePartnerPositionenErledigt } from "@/lib/partner/partner-position-erledigt";
-import type { PartnerAuftragPosition } from "@/lib/partner/get-partner-data";
-import type { VorgangState } from "@/lib/partner/vorgang-state";
 
 /**
- * Nur Erfolgszustand nach Abschluss.
- * CTA + Multi-Step-Formular: Header-Button → PartnerAbnahmeAbschlussSheet.
+ * Nur Erfolgszustand nach echtem Abschluss (Signatur / Freigabe),
+ * nicht schon wenn Positionen nur dokumentiert sind.
  */
 export function PartnerAuftragErledigtSection({
-  positionen,
   done,
-  vollstaendig,
+  hatAbschluss,
   layout = "section",
 }: {
   auftragId?: string;
-  auftragStatus?: string;
-  positionen: PartnerAuftragPosition[];
-  vorgangState?: VorgangState;
-  defaultOrt?: string;
-  layout?: "section" | "cta";
   /** Lokal nach Modal-Submit, bis Router-Refresh greift. */
   done?: boolean;
+  /** Server: Signatur oder Freigabe-Status gesetzt. */
+  hatAbschluss?: boolean;
+  layout?: "section" | "cta";
+  /** @deprecated ungenutzt — Positionen allein gelten nicht als Abschluss. */
+  positionen?: unknown;
   vollstaendig?: boolean;
+  vorgangState?: unknown;
+  auftragStatus?: string;
+  defaultOrt?: string;
 }) {
-  const alleErledigt = allePartnerPositionenErledigt(positionen);
-  if (!alleErledigt && !done) return null;
+  if (!done && !hatAbschluss) return null;
 
   const success = (
     <PartnerDetailSuccessBox>
-      <p className="font-semibold">Leistungen als erledigt gemeldet</p>
-      <p className="portal-text-meta mt-1 text-text-secondary">
-        {vollstaendig
-          ? "Ihre Teilabnahme ist bei Bärenwald zur Freigabe. Kundenversand und Gesamtabnahme folgen nach Freigabe."
-          : "Ihre Teilabnahme ist gespeichert und wartet auf Freigabe durch Bärenwald. Weitere Handwerker am Auftrag sind ggf. noch offen."}
-      </p>
+      <p className="font-semibold">Auftrag abgeschlossen</p>
     </PartnerDetailSuccessBox>
   );
 

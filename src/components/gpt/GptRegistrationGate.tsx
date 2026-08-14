@@ -63,7 +63,7 @@ export function GptRegistrationGate({ gate, onExpired }: GptRegistrationGateProp
           </div>
         ) : (
           <p className="gpt-registration-gate-hint">
-            Ohne Registrierung kannst du hier leider nicht weitermachen.
+            Ohne Registrierung können Sie hier leider nicht weitermachen.
           </p>
         )}
 

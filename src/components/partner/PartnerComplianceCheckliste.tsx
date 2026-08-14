@@ -1,6 +1,5 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
 import { Eye, Trash2, Upload } from "lucide-react";
 
@@ -8,9 +7,12 @@ import {
   deletePartnerComplianceDokument,
   uploadPartnerComplianceDokument,
 } from "@/app/actions/partner-compliance";
+import { usePortalUploadBusy } from "@/components/shared/usePortalUploadBusy";
 import { PortalConfirmDialog } from "@/components/shared/PortalDetailUi";
-import { PortalEmptyState } from "@/components/shared/PortalEmptyState";
+import { PortalDokumentCard } from "@/components/shared/PortalDokumentCard";
+import { PortalInboxEmpty } from "@/components/shared/PortalEmptyState";
 import { PortalStatusPill } from "@/components/shared/PortalStatusPill";
+import { usePortalRefresh } from "@/components/shared/usePortalRefresh";
 import { partnerPortalToast } from "@/lib/shared/portal-toast";
 import { gruppeComplianceItems } from "@/lib/partner/compliance-summary";
 import {
@@ -43,9 +45,9 @@ function KompaktComplianceRow({
   auftragId?: string | null;
   disabled?: boolean;
 }) {
-  const router = useRouter();
+  const { refresh } = usePortalRefresh();
+  const { uploadBusy: loading, runUpload } = usePortalUploadBusy();
   const inputRef = useRef<HTMLInputElement>(null);
-  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
 
@@ -67,50 +69,51 @@ function KompaktComplianceRow({
       : null;
 
   async function onUpload(file: File) {
-    setLoading(true);
     setError(null);
-    const fd = new FormData();
-    fd.set("typ", item.slug);
-    fd.set("bezeichnung", item.bezeichnung);
-    if (auftragId) fd.set("auftragId", uploadAuftragIdForItem(item, auftragId) ?? "");
-    if (item.erneuerung_monate) fd.set("erneuerungMonate", String(item.erneuerung_monate));
-    fd.set("file", file);
-    const res = await uploadPartnerComplianceDokument(fd);
-    setLoading(false);
-    if (!res.ok) {
-      setError(res.error);
-      return;
-    }
-    partnerPortalToast.complianceHochgeladen(item.bezeichnung);
-    router.refresh();
+    await runUpload(async () => {
+      const fd = new FormData();
+      fd.set("typ", item.slug);
+      fd.set("bezeichnung", item.bezeichnung);
+      if (auftragId) fd.set("auftragId", uploadAuftragIdForItem(item, auftragId) ?? "");
+      if (item.erneuerung_monate) fd.set("erneuerungMonate", String(item.erneuerung_monate));
+      fd.set("file", file);
+      const res = await uploadPartnerComplianceDokument(fd);
+      if (!res.ok) {
+        setError(res.error);
+        return;
+      }
+      partnerPortalToast.complianceHochgeladen(item.bezeichnung);
+      await refresh();
+    });
   }
 
   async function onDelete() {
-    if (!item.dokument?.id) return;
-    setLoading(true);
+    const dokumentId = item.dokument?.id;
+    if (!dokumentId) return;
     setError(null);
-    const res = await deletePartnerComplianceDokument({
-      dokumentId: item.dokument.id,
-      auftragId: uploadAuftragIdForItem(item, auftragId),
+    await runUpload(async () => {
+      const res = await deletePartnerComplianceDokument({
+        dokumentId,
+        auftragId: uploadAuftragIdForItem(item, auftragId),
+      });
+      setConfirmDelete(false);
+      if (!res.ok) {
+        setError(res.error);
+        return;
+      }
+      partnerPortalToast.complianceGeloescht(item.bezeichnung);
+      await refresh();
     });
-    setLoading(false);
-    setConfirmDelete(false);
-    if (!res.ok) {
-      setError(res.error);
-      return;
-    }
-    partnerPortalToast.complianceGeloescht(item.bezeichnung);
-    router.refresh();
   }
 
   const actions = (
-    <div className="flex shrink-0 items-center gap-0.5">
+    <>
       {href ? (
         <a
           href={href}
           target="_blank"
           rel="noopener noreferrer"
-          className="portal-touch-target inline-grid place-items-center rounded-lg text-accent hover:bg-accent-light/30"
+          className="portal-touch-target inline-grid place-items-center rounded-lg border border-border-light bg-white text-accent transition-colors hover:bg-accent-light/30"
           aria-label={`${item.bezeichnung} ansehen`}
         >
           <Eye className="h-4 w-4" />
@@ -134,7 +137,7 @@ function KompaktComplianceRow({
             type="button"
             disabled={loading}
             onClick={() => inputRef.current?.click()}
-            className="portal-touch-target inline-grid place-items-center rounded-lg text-accent hover:bg-accent-light/30 disabled:opacity-50"
+            className="portal-touch-target inline-grid place-items-center rounded-lg border border-border-light bg-white text-accent transition-colors hover:bg-accent-light/30 disabled:opacity-50"
             aria-label={`${item.bezeichnung} hochladen`}
           >
             <Upload className="h-4 w-4" />
@@ -146,72 +149,30 @@ function KompaktComplianceRow({
           type="button"
           disabled={loading}
           onClick={() => setConfirmDelete(true)}
-          className="portal-touch-target inline-grid place-items-center rounded-lg text-red-700 hover:bg-red-50 disabled:opacity-50"
+          className="portal-touch-target inline-grid place-items-center rounded-lg border border-border-light bg-white text-red-700 transition-colors hover:bg-red-50 disabled:opacity-50"
           aria-label={`${item.bezeichnung} löschen`}
         >
           <Trash2 className="h-4 w-4" />
         </button>
       ) : null}
-    </div>
-  );
-
-  const pill = (
-    <PortalStatusPill
-      label={complianceStatusLabel(item.status)}
-      tone={statusTone(item.status)}
-    />
+    </>
   );
 
   return (
     <>
-      {/* Mobil: Card */}
-      <li className="sm:hidden">
-        <article className="rounded-xl border border-border-light bg-white px-3.5 py-3.5 shadow-[0_1px_2px_rgba(22,32,27,0.04)]">
-          <div className="flex items-start justify-between gap-3">
-            <div className="min-w-0 flex-1">
-              <p className="text-[14px] font-semibold leading-snug text-text-primary">
-                {item.bezeichnung}
-              </p>
-              {ablehnung ? (
-                <p className="portal-text-meta mt-1 text-red-700 line-clamp-2">
-                  {ablehnung}
-                </p>
-              ) : null}
-            </div>
-            {pill}
-          </div>
-          <div className="mt-3 flex items-center justify-end border-t border-border-light pt-3">
-            {actions}
-          </div>
-          {error ? (
-            <p className="portal-text-meta mt-2 text-red-700" role="alert">
-              {error}
-            </p>
-          ) : null}
-        </article>
-      </li>
-
-      {/* Desktop: Zeile */}
-      <li className="hidden border-b border-border-light last:border-b-0 sm:list-item">
-        <div className="flex items-center gap-2 px-3 py-2.5">
-          <div className="min-w-0 flex-1">
-            <p className="portal-text-body font-medium text-text-primary line-clamp-2">
-              {item.bezeichnung}
-            </p>
-            {ablehnung ? (
-              <p className="portal-text-meta mt-0.5 text-red-700 line-clamp-2">
-                {ablehnung}
-              </p>
-            ) : null}
-          </div>
-          {pill}
-          {actions}
-        </div>
-        {error ? (
-          <p className="portal-text-meta px-3 pb-2 text-red-700" role="alert">
-            {error}
-          </p>
-        ) : null}
+      <li>
+        <PortalDokumentCard
+          title={item.bezeichnung}
+          description={ablehnung}
+          meta={
+            <PortalStatusPill
+              label={complianceStatusLabel(item.status)}
+              tone={statusTone(item.status)}
+            />
+          }
+          error={error}
+          actions={actions}
+        />
       </li>
 
       <PortalConfirmDialog
@@ -241,13 +202,13 @@ function KompaktListe({
 }) {
   if (gruppiert) {
     return (
-      <div className="space-y-3 sm:space-y-0 sm:divide-y sm:divide-border-light">
+      <div className="space-y-4">
         {gruppeComplianceItems(items).map((gruppe) => (
-          <div key={gruppe.kategorie}>
-            <p className="portal-text-meta px-1 py-1.5 font-semibold uppercase tracking-wide text-text-tertiary sm:bg-muted/30 sm:px-3 sm:py-2">
+          <div key={gruppe.kategorie} className="space-y-2">
+            <p className="portal-text-meta px-0.5 font-semibold uppercase tracking-wide text-text-tertiary">
               {gruppe.kategorie}
             </p>
-            <ul className="space-y-2.5 sm:space-y-0">
+            <ul className="space-y-2.5">
               {gruppe.items.map((item) => (
                 <KompaktComplianceRow
                   key={`${item.ebene}-${item.slug}`}
@@ -264,7 +225,7 @@ function KompaktListe({
   }
 
   return (
-    <ul className="space-y-2.5 sm:space-y-0">
+    <ul className="space-y-2.5">
       {items.map((item) => (
         <KompaktComplianceRow
           key={`${item.ebene}-${item.slug}`}
@@ -295,7 +256,7 @@ export function PartnerComplianceCheckliste({
   if (!items.length) {
     return (
       <section className="overflow-hidden rounded-xl border border-border-light bg-surface-card p-3">
-        <PortalEmptyState title={emptyText} compact />
+        <PortalInboxEmpty title={emptyText} compact />
       </section>
     );
   }

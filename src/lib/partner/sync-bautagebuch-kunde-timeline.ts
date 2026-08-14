@@ -9,9 +9,9 @@ import { isSupabaseConfigured, supabaseAdmin } from "@/lib/supabase";
 function eintragTypLabel(typ: string): string {
   switch (typ) {
     case "start":
-      return "Start";
+      return "Update";
     case "fortschritt":
-      return "Fortschritt";
+      return "Update";
     case "ergebnis":
       return "Ergebnis";
     case "weitere_arbeit":

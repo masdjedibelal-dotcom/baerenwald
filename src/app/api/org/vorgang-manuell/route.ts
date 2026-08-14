@@ -63,16 +63,12 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Objekt nicht gefunden." }, { status: 404 });
   }
 
-  const schwelle =
-    objekt.freigabe_schwelle_eur != null
-      ? Number(objekt.freigabe_schwelle_eur)
-      : session.kunde.freigabe_schwelle_eur ?? 2500;
   const freigabeModus = session.kunde.freigabe_modus ?? "freigabe";
   const initial = initialHvMeldungState();
+  // Keine Schwellen-Entscheidung über Manuell-Preisindikation —
+  // Bypass „schwelle“ setzt erst das CRM nach zugestelltem Angebot.
   const orgFreigabe =
-    freigabeModus !== "freigabe" || preisNetto <= schwelle
-      ? "nicht_noetig"
-      : "ausstehend";
+    freigabeModus !== "freigabe" ? "nicht_noetig" : initial.org_freigabe_status;
 
   const result = await persistLead({
     kunde_id: session.kunde.id,
@@ -120,6 +116,11 @@ export async function POST(req: Request) {
   }
 
   await supabaseAdmin.from("leads").update(leadPatch).eq("id", result.id);
+
+  const { finalizeOrgSelfCreatedLead } = await import(
+    "@/lib/org/finalize-org-self-created-lead"
+  );
+  await finalizeOrgSelfCreatedLead(result.id);
 
   await writeAuditEvent({
     entityType: "lead",

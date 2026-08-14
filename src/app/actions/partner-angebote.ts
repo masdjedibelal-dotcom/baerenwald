@@ -87,7 +87,7 @@ export async function submitPartnerAngebotPdf(
   }
 
   if (!pdfs.length) {
-    return { ok: false, error: "Bitte mindestens ein PDF auswählen." };
+    return { ok: false, error: "Bitte mindestens eine Datei (Foto oder PDF) auswählen." };
   }
 
   const pdfErr = validatePartnerAngebotFiles(pdfs, { required: true });
@@ -124,6 +124,19 @@ export async function submitPartnerAngebotPdf(
     .eq("handwerker_id", link.handwerkerId);
 
   if (upErr) return { ok: false, error: upErr.message };
+
+  void import("@/lib/partner/notify-crm-partner-dokument").then(
+    ({ notifyCrmPartnerDokumentUpload }) =>
+      notifyCrmPartnerDokumentUpload({
+        typ: "unterlage",
+        handwerkerId: link.handwerkerId,
+        anfrageId,
+        titel:
+          pdfs.length === 1
+            ? pdfs[0]!.name.slice(0, 120)
+            : `${pdfs.length} Unterlagen`,
+      })
+  );
 
   revalidatePath("/partner");
   return { ok: true };
@@ -234,7 +247,7 @@ export async function submitPartnerRechnung(
   }
 
   const now = new Date().toISOString();
-  const { error: upErr } = await supabaseAdmin
+  const { data: updatedRows, error: upErr } = await supabaseAdmin
     .from("angebot_handwerker")
     .update({
       hw_rechnung_pdf_url: upload.path,
@@ -242,10 +255,14 @@ export async function submitPartnerRechnung(
     })
     .eq("id", anfrageId)
     .eq("handwerker_id", link.handwerkerId)
-    .is("hw_rechnung_eingereicht_at", null);
+    .is("hw_rechnung_eingereicht_at", null)
+    .select("id");
 
   if (upErr) {
     return { ok: false, error: upErr.message };
+  }
+  if (!updatedRows?.length) {
+    return { ok: false, error: "Rechnung wurde bereits eingereicht." };
   }
 
   const { data: mailCtx } = await supabaseAdmin
@@ -292,6 +309,16 @@ export async function submitPartnerRechnung(
       rechnungPdfUrl,
     });
   }
+
+  void import("@/lib/partner/notify-crm-partner-dokument").then(
+    ({ notifyCrmPartnerDokumentUpload }) =>
+      notifyCrmPartnerDokumentUpload({
+        typ: "rechnung",
+        handwerkerId: link.handwerkerId,
+        anfrageId,
+        titel: "Partner-Rechnung",
+      })
+  );
 
   revalidatePath("/partner");
   return { ok: true };

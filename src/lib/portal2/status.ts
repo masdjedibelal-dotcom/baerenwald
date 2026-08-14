@@ -13,7 +13,9 @@ export type PortalMockStatusId =
   | "auftrag"
   | "abschluss"
   | "rechnung"
-  | "bezahlt";
+  | "bezahlt"
+  /** Terminal: Angebot/Freigabe abgelehnt — zählt zu Erledigt, nicht in FLOW-Timeline. */
+  | "abgelehnt";
 
 export type PortalMockStatusMeta = {
   id: PortalMockStatusId;
@@ -29,8 +31,9 @@ export const PORTAL_STATUS: Record<PortalMockStatusId, PortalMockStatusMeta> = {
   gemeldet: {
     id: "gemeldet",
     label: "Neu",
-    color: "#1F4FA8",
-    bg: "#E4ECF7",
+    /** Offen/Eingang — Orange, damit nicht wie Angebot/Auftrag (Blau) wirkt. */
+    color: "#C2410C",
+    bg: "#FFF7ED",
   },
   freigegeben: {
     id: "freigegeben",
@@ -53,8 +56,8 @@ export const PORTAL_STATUS: Record<PortalMockStatusId, PortalMockStatusMeta> = {
   auftrag: {
     id: "auftrag",
     label: "Auftrag",
-    color: "#1F6A3F",
-    bg: "#DDEEDF",
+    color: "#1F4FA8",
+    bg: "#E4ECF7",
   },
   abschluss: {
     id: "abschluss",
@@ -73,6 +76,12 @@ export const PORTAL_STATUS: Record<PortalMockStatusId, PortalMockStatusMeta> = {
     label: "Abgeschlossen",
     color: "#4B5563",
     bg: "#EAEDEC",
+  },
+  abgelehnt: {
+    id: "abgelehnt",
+    label: "Abgelehnt",
+    color: "#B91C1C",
+    bg: "#FEE2E2",
   },
 };
 
@@ -124,7 +133,8 @@ export function portalFlowTimelineIndex(id: PortalMockStatusId): number {
     case "rechnung":
       return 4;
     case "bezahlt":
-      return 5; // alle Schritte erledigt
+    case "abgelehnt":
+      return 5; // alle Schritte erledigt / terminal
   }
 }
 
@@ -197,6 +207,7 @@ export function portalFlowToMieterStg(
     case "rechnung":
       return "beauftragt";
     case "bezahlt":
+    case "abgelehnt":
       return "erledigt";
   }
 }

@@ -5,6 +5,10 @@ import { NextResponse } from "next/server";
 
 import { SITE_CONFIG } from "@/lib/config";
 import { generateMeldeAushangPdf } from "@/lib/org/generate-melde-aushang-pdf";
+import {
+  ORG_MELDE_LEGAL_REQUIRED_ERROR,
+  orgMeldeLegalUrlsReady,
+} from "@/lib/org/melde-legal-urls";
 import { buildMeldeUrl, generateMeldeQrPng } from "@/lib/org/melde-url";
 import { requireOrganisationSession } from "@/lib/org/require-org-session";
 import { orgBrandFromKunde } from "@/lib/portal2/brand-presets";
@@ -76,6 +80,13 @@ async function handleMeldeAushangGet(req: Request) {
   if (!orgKennung) {
     return NextResponse.json(
       { error: "Organisations-Kennung fehlt. Bitte Bärenwald kontaktieren." },
+      { status: 400 }
+    );
+  }
+
+  if (!orgMeldeLegalUrlsReady(org)) {
+    return NextResponse.json(
+      { error: ORG_MELDE_LEGAL_REQUIRED_ERROR },
       { status: 400 }
     );
   }
@@ -177,6 +188,8 @@ async function handleMeldeAushangGet(req: Request) {
     heroImageBytes,
     hvTelefon,
     hvEmail,
+    impressumUrl: org.impressum_url?.trim() || null,
+    datenschutzUrl: org.datenschutz_url?.trim() || null,
   });
 
   const safeName = (objektTitel || orgKennung)
