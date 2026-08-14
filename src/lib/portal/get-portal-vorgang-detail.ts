@@ -2,6 +2,7 @@ import { buildKundeVorgaenge } from "@/lib/portal/build-kunde-vorgaenge";
 import type { KundePortalDetailItem } from "@/lib/portal/portal-detail-item";
 import { findKundeVorgangByQueryId } from "@/lib/portal/portal-detail-item";
 import { getPortalDataForKunde } from "@/lib/portal/get-portal-data";
+import { loadPartnerBefundeByLeadIds } from "@/lib/org/load-partner-befund";
 import { isSupabaseConfigured, supabaseAdmin } from "@/lib/supabase";
 
 async function resolveLeadIdForVorgang(
@@ -10,12 +11,11 @@ async function resolveLeadIdForVorgang(
 ): Promise<string | null> {
   const { data: leadDirect } = await supabaseAdmin
     .from("leads")
-    .select("id, kunde_id, auftraggeber_kunde_id, geloescht_am")
+    .select("id, kunde_id, auftraggeber_kunde_id")
     .eq("id", vorgangId)
     .maybeSingle();
 
   if (leadDirect?.id) {
-    if ((leadDirect as { geloescht_am?: string | null }).geloescht_am) return null;
     const allowed =
       String(leadDirect.kunde_id ?? "") === kundeId ||
       String(leadDirect.auftraggeber_kunde_id ?? "") === kundeId;
@@ -42,11 +42,10 @@ async function resolveLeadIdForVorgang(
 
   const { data: lead } = await supabaseAdmin
     .from("leads")
-    .select("id, kunde_id, auftraggeber_kunde_id, geloescht_am")
+    .select("id, kunde_id, auftraggeber_kunde_id")
     .eq("id", leadId)
     .maybeSingle();
   if (!lead) return null;
-  if ((lead as { geloescht_am?: string | null }).geloescht_am) return null;
   const allowed =
     String(lead.kunde_id ?? "") === kundeId ||
     String(lead.auftraggeber_kunde_id ?? "") === kundeId;
@@ -63,6 +62,9 @@ export async function getPortalVorgangDetail(opts: {
   hvPortalMode?: boolean;
 }): Promise<{
   item: KundePortalDetailItem;
+  partnerBefund?: Awaited<
+    ReturnType<typeof loadPartnerBefundeByLeadIds>
+  >[string];
 } | null> {
   if (!isSupabaseConfigured()) return null;
   const kundeId = opts.sessionKundeId.trim();
@@ -72,10 +74,17 @@ export async function getPortalVorgangDetail(opts: {
   const leadId = await resolveLeadIdForVorgang(vorgangId, kundeId);
   if (!leadId) return null;
 
-  const data = await getPortalDataForKunde(kundeId, {
-    mode: "full",
-    leadIds: [leadId],
-  });
+  const [data, partnerMap] = await Promise.all([
+    getPortalDataForKunde(kundeId, {
+      mode: "full",
+      leadIds: [leadId],
+    }),
+    opts.hvPortalMode
+      ? loadPartnerBefundeByLeadIds([leadId])
+      : Promise.resolve(
+          {} as Awaited<ReturnType<typeof loadPartnerBefundeByLeadIds>>
+        ),
+  ]);
   if (!data) return null;
 
   const items = buildKundeVorgaenge({
@@ -98,5 +107,8 @@ export async function getPortalVorgangDetail(opts: {
     null;
   if (!item) return null;
 
-  return { item };
+  return {
+    item,
+    partnerBefund: opts.hvPortalMode ? partnerMap[leadId] : undefined,
+  };
 }

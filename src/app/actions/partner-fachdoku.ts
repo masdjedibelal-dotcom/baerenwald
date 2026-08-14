@@ -145,17 +145,6 @@ export async function uploadPartnerFachdokuSlot(formData: FormData): Promise<
 
   if (error) return { ok: false, error: error.message };
 
-  void import("@/lib/partner/notify-crm-partner-dokument").then(
-    ({ notifyCrmPartnerDokumentUpload }) =>
-      notifyCrmPartnerDokumentUpload({
-        typ: "fachdoku",
-        handwerkerId: link.handwerkerId,
-        auftragId,
-        slotId,
-        titel: String(slot.label ?? slot.slot_code ?? "Fachnachweis").trim(),
-      })
-  );
-
   revalidatePath("/partner");
   const gewerke = await gewerkeForAuftrag(auftragId);
   const slots = await loadAuftragFachdokuSlotsWithUrls(

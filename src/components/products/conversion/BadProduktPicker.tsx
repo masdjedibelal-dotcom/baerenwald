@@ -75,7 +75,7 @@ export function BadProduktPicker({
   return (
     <div className="conversion-plans conversion-plans--bad">
       <PlanComparisonTable
-        asideHeading="Ihr Bad"
+        asideHeading="Dein Bad"
         priceHint="Endgültiger Preis nach Besichtigung"
         columns={columns}
         rows={rows}

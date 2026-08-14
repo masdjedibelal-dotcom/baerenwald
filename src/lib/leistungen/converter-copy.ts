@@ -16,8 +16,8 @@ export type KonverterCopy = {
 };
 
 const DEFAULT_COPY: KonverterCopy = {
-  eyebrow: "Preisrahmen für Ihr Projekt",
-  h2: "Was kostet Ihr Vorhaben?",
+  eyebrow: "Preisrahmen für dein Projekt",
+  h2: "Was kostet dein Vorhaben?",
   sub: "In unter einer Minute zum unverbindlichen Rahmen — Festpreisangebot nach Besichtigung.",
   ctaPrimary: "Kostenrahmen anfragen →",
   ctaSecondary: "Im Detailrechner anpassen",
@@ -26,16 +26,16 @@ const DEFAULT_COPY: KonverterCopy = {
 
 export const KONVERTER_COPY: Record<string, KonverterCopy> = {
   "badezimmer-sanierung": {
-    eyebrow: "Preisrahmen für Ihr Bad",
-    h2: "Welches Bad passt zu Ihnen?",
-    sub: "Größe und Ausstattung wählen — Sie sehen sofort einen realistischen Rahmen. Unverbindlich, Festpreis nach Besichtigung.",
+    eyebrow: "Preisrahmen für dein Bad",
+    h2: "Welches Bad passt zu dir?",
+    sub: "Größe und Ausstattung wählen — du siehst sofort einen realistischen Rahmen. Unverbindlich, Festpreis nach Besichtigung.",
     ctaPrimary: "Preisrahmen anfragen →",
     ctaSecondary: "Im Detailrechner anpassen",
     trust: "Meisterbetriebe · Koordination aller Gewerke · ca. 2 Min.",
   },
   gartenpflege: {
     eyebrow: "Gartenpflege-Abo",
-    h2: "Welche Gartengröße haben Sie?",
+    h2: "Welche Gartengröße hast du?",
     sub: "Größe wählen — Preis pro Besuch als Orientierung. Rhythmus und Details klären wir im Angebot.",
     ctaPrimary: "Kostenrahmen anfragen →",
     ctaSecondary: "Im Detailrechner anpassen",
@@ -44,7 +44,7 @@ export const KONVERTER_COPY: Record<string, KonverterCopy> = {
   "heizung-sanitaer": {
     eyebrow: "Schnelle Hilfe",
     h2: "Was ist passiert?",
-    sub: "Akuter Notfall? Rufen Sie uns an — online sehen Sie einen ersten Einsatz-Rahmen.",
+    sub: "Akuter Notfall? Ruf uns an — online siehst du einen ersten Einsatz-Rahmen.",
     ctaPrimary: "Rückruf anfordern →",
     ctaSecondary: "Zum Detailrechner",
     trust: "Mo–Sa 7–20 Uhr · Sanitär-Fachbetriebe",

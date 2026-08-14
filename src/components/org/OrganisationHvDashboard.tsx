@@ -62,7 +62,7 @@ export function OrganisationHvDashboard({
           notfall: v.notfall,
         };
       })}
-      onOpenAll={() => onOpenFilter("alle")}
+      onOpenAll={() => onOpenFilter("offen")}
       onOpenItem={onOpenItem}
       recentTitle={HV_DASHBOARD_RECENT_TITLE}
       recentAllLabel={HV_DASHBOARD_RECENT_ALL}

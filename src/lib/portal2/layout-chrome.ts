@@ -115,7 +115,7 @@ export const PORTAL_DETAIL_SECTION_LABELS: Record<
   /** Nicht „Übersicht“ — Shell-Nav nutzt das schon. */
   uebersicht: "Details",
   angebot: "Angebot",
-  bautagebuch: "Updates",
+  bautagebuch: "Bautagebuch",
   dokumente: "Dokumente",
   verlauf: "Verlauf",
 };

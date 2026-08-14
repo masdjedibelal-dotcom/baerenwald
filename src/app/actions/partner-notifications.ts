@@ -9,9 +9,6 @@ import {
   partnerNotificationVorgangKey,
   type PartnerNotificationRow,
 } from "@/lib/partner/partner-notifications";
-import { partnerVorgangIdFromNotificationLink } from "@/lib/partner/partner-site-url";
-import { filterActiveVorgangEntityIds } from "@/lib/portal/lead-not-deleted";
-import { limitReadNotifications } from "@/lib/portal2/notif-types";
 import { createClient } from "@/lib/supabase/server";
 import { isSupabaseConfigured, supabaseAdmin } from "@/lib/supabase";
 
@@ -42,28 +39,16 @@ export async function fetchPartnerNotifications(): Promise<{
     .select("id, handwerker_id, typ, projekt_name, leistung_name, gelesen, link, created_at")
     .eq("handwerker_id", link.handwerkerId)
     .order("created_at", { ascending: false })
-    .limit(120);
+    .limit(50);
 
   if (error) return { ok: false, items: [], unread: 0, error: error.message };
 
-  const rawItems = (data ?? []) as PartnerNotificationRow[];
-  const linkedIds = rawItems
-    .map((n) => partnerVorgangIdFromNotificationLink(n.link))
-    .filter((id): id is string => Boolean(id));
-  const activeIds = linkedIds.length
-    ? await filterActiveVorgangEntityIds(linkedIds)
-    : new Set<string>();
-  const visible = rawItems.filter((n) => {
-    const id = partnerVorgangIdFromNotificationLink(n.link);
-    if (!id) return true;
-    return activeIds.has(id);
-  });
-
-  const items = limitReadNotifications(
-    dedupePartnerNotificationsByVorgang(visible),
-    (n) => !n.gelesen
+  const items = dedupePartnerNotificationsByVorgang(
+    (data ?? []) as PartnerNotificationRow[]
   );
-  const unread = countUnreadPartnerNotificationsByVorgang(items);
+  const unread = countUnreadPartnerNotificationsByVorgang(
+    (data ?? []) as PartnerNotificationRow[]
+  );
   return { ok: true, items, unread };
 }
 

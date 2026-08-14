@@ -17,7 +17,6 @@ export type PortalActionMenuItem = {
   submenu?: PortalActionMenuItem[];
   /** Visueller Trenner vor diesem Eintrag. */
   dividerBefore?: boolean;
-  disabled?: boolean;
 };
 
 export type PortalActionMenuProps = {
@@ -75,7 +74,6 @@ export function PortalActionMenu({
   }
 
   function run(item: PortalActionMenuItem) {
-    if (item.disabled) return;
     if (item.submenu?.length) {
       setStack((s) => [
         ...s,
@@ -115,11 +113,12 @@ export function PortalActionMenu({
         title={current.title}
         onClose={close}
         variant="edit"
+        maxWidth={360}
         headerExtra={
           stack.length > 0 ? (
             <button
               type="button"
-              className="portal-text-meta rounded-lg px-2 py-1 font-semibold text-accent"
+              className="mr-1 rounded-lg px-2 py-1 text-[13px] font-semibold text-accent"
               onClick={() => setStack((s) => s.slice(0, -1))}
             >
               ‹ Zurück
@@ -149,14 +148,11 @@ export function PortalActionMenuList({
           ) : null}
           <button
             type="button"
-            disabled={item.disabled}
             className={cn(
-              "portal-text-body flex w-full items-center justify-between gap-2 rounded-[10px] px-3.5 py-3.5 text-left font-semibold",
-              item.disabled && "cursor-not-allowed opacity-45",
+              "flex w-full items-center justify-between gap-2 rounded-[10px] px-3.5 py-3 text-left text-[14px] font-semibold",
               item.danger
                 ? "portal-danger hover:bg-[var(--p2-danger-soft)]"
-                : "text-text-primary hover:bg-muted",
-              item.disabled && !item.danger && "hover:bg-transparent"
+                : "text-text-primary hover:bg-muted"
             )}
             onClick={() => onSelect(item)}
           >

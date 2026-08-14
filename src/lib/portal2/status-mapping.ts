@@ -137,15 +137,6 @@ export const PORTAL_FLOW_MAPPING: Record<
     ],
     notes: "Mock-Label „Abgeschlossen“; intern Key bezahlt.",
   },
-  abgelehnt: {
-    label: PORTAL_STATUS.abgelehnt.label,
-    realFields: [
-      "angebote.status_einfach/status = abgelehnt (oder ersetzt/abgelaufen)",
-      "kein aktiver Auftrag",
-    ],
-    notes:
-      "Terminal nach Ablehnung im Portal/CRM. Listen-Chip „Erledigt“, keine Annehmen/Ablehnen-CTAs.",
-  },
 };
 
 function norm(s: string | null | undefined): string {

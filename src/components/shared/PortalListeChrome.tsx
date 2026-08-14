@@ -18,7 +18,17 @@ export function PortalListeEyebrow({ children }: { children: ReactNode }) {
 
 /** Listen-Seitentitel im HV-Stil (PORTAL_C). */
 export function PortalListeTitle({ children }: { children: ReactNode }) {
-  return <h1 className="portal-text-page">{children}</h1>;
+  return (
+    <h1
+      className="text-[25px] font-bold"
+      style={{
+        color: PORTAL_VAR.ink,
+        fontFamily: "var(--p2-font-head, " + PORTAL_VAR.head + ")",
+      }}
+    >
+      {children}
+    </h1>
+  );
 }
 
 /** Filter-Chip im HV-Stil (PORTAL_VAR.greenDark aktiv). */
@@ -38,7 +48,6 @@ export function PortalListeFilterChip({
   countBadge?: number | null;
 }) {
   const showBadge = countBadge != null && countBadge > 0;
-
   return (
     <button
       type="button"
@@ -54,11 +63,7 @@ export function PortalListeFilterChip({
     >
       {children}
       {count != null ? (
-        <span
-          style={{
-            color: active ? "rgba(255,255,255,0.7)" : PORTAL_VAR.faint,
-          }}
-        >
+        <span style={{ color: active ? "rgba(255,255,255,0.7)" : PORTAL_VAR.faint }}>
           ({count})
         </span>
       ) : null}

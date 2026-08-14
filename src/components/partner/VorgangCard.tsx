@@ -80,14 +80,21 @@ export function VorgangCard({
   const { state, auftrag } = vorgang;
   const vorgangState = state as VorgangState;
 
-  // Direktauftrag / Notmaßnahme: HV braucht keine Freigabe — Handwerker muss
-  // trotzdem annehmen/ablehnen (wie jeder andere Vorgang).
+  if (auftrag.lead?.hv_meldung_status === "notmassnahme") {
+    return (
+      <PartnerAuftragDetail
+        item={auftrag}
+        vorgangState="in_bearbeitung"
+        onBack={onBack}
+        focusBautagebuch={focusBautagebuch}
+        deepLinkAnfrageId={anfrageId}
+        focusAbnahme={focusAbnahme}
+        deepLinkProtokollId={protokollId}
+      />
+    );
+  }
 
-  if (
-    state === "in_bearbeitung" ||
-    state === "erledigt" ||
-    state === "abgelehnt"
-  ) {
+  if (state === "in_bearbeitung" || state === "erledigt") {
     return (
       <PartnerAuftragDetail
         item={auftrag}

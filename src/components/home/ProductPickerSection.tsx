@@ -47,7 +47,7 @@ export function ProductPickerSection({ embedded = false }: Props) {
         id="produkte"
         eyebrow="Standardpakete"
         h2="Preisrahmen in 30 Sekunden"
-        sub="Wählen Sie Ihr Projekt — Größe und Paket im nächsten Schritt."
+        sub="Wähle dein Projekt — Größe und Paket im nächsten Schritt."
       >
         <div
           className="conversion-picker-panel conversion-picker-panel--open"

@@ -2,13 +2,7 @@
 
 import type { ReactNode } from "react";
 import type { LucideIcon } from "lucide-react";
-import {
-  AlertTriangle,
-  Calendar,
-  ChevronRight,
-  Hammer,
-  MapPin,
-} from "lucide-react";
+import { ChevronRight } from "lucide-react";
 
 import {
   portalListItemBorderStyle,
@@ -16,28 +10,13 @@ import {
   type PortalListVariant,
 } from "@/lib/portal2/layout-chrome";
 import { PORTAL_VAR } from "@/lib/portal2/tokens";
-import { PortalCountBadge } from "@/components/shared/PortalNavCountBadge";
 import { cn } from "@/lib/utils";
 
 export type PortalListCardAccent = "anfrage" | "angebot" | "auftrag";
 
-/** String-Keys — Lucide-Komponenten dürfen nicht Server→Client serialisiert werden. */
-export type PortalListCardMetaIcon =
-  | "map-pin"
-  | "calendar"
-  | "hammer"
-  | "alert-triangle";
-
 export type PortalListCardMeta = {
-  icon?: PortalListCardMetaIcon;
+  icon?: LucideIcon;
   text: string;
-};
-
-const META_ICONS: Record<PortalListCardMetaIcon, LucideIcon> = {
-  "map-pin": MapPin,
-  calendar: Calendar,
-  hammer: Hammer,
-  "alert-triangle": AlertTriangle,
 };
 
 /** @deprecated Prefer PortalListVariant from layout-chrome */
@@ -78,7 +57,7 @@ export type PortalListCardProps = {
   showCheckbox?: boolean;
   checked?: boolean;
   onCheckedChange?: (checked: boolean) => void;
-  /** Attention-Badge (z. B. ungelesene Updates) — oben rechts, rot/weiß */
+  /** Attention-Badge (z. B. ungelesenes Bautagebuch) */
   attentionBadge?: number | null;
 };
 
@@ -122,11 +101,6 @@ function TrailingActionsSlot({ children }: { children: ReactNode }) {
   );
 }
 
-/** Klassische Notif-Badge: oben rechts, rot mit weißer Zahl. */
-function AttentionCornerBadge({ count }: { count: number }) {
-  return <PortalCountBadge count={count} variant="corner" className="z-10" />;
-}
-
 /**
  * Vorgangs-Listenzeile — C1: mobile card / lg+ flat bei `responsive`.
  */
@@ -153,24 +127,18 @@ export function PortalListCard({
   onCheckedChange,
   attentionBadge,
 }: PortalListCardProps) {
-  const showAttention = Boolean(attentionBadge && attentionBadge > 0);
-
   if (variant === "row") {
     return (
       <button
         type="button"
         onClick={onClick}
         className={cn(
-          "relative",
           portalListItemClass("row", { selected }),
           showLeftAccent ? "border-l-4 pl-3 sm:pl-4" : "px-4",
           showLeftAccent && ACCENT_CLASS[accent],
           media && "flex items-start gap-3"
         )}
       >
-        {showAttention ? (
-          <AttentionCornerBadge count={attentionBadge!} />
-        ) : null}
         {media ? (
           <div
             className="w-20 shrink-0 overflow-hidden rounded-lg"
@@ -196,6 +164,18 @@ export function PortalListCard({
               ) : null}
             </div>
             <div className="flex shrink-0 items-center gap-1.5">
+              {attentionBadge && attentionBadge > 0 ? (
+                <span
+                  className="inline-flex h-6 min-w-[1.5rem] items-center justify-center rounded-full px-1.5 text-xs font-bold"
+                  style={{
+                    background: PORTAL_VAR.dangerSoft,
+                    color: PORTAL_VAR.danger,
+                  }}
+                  title="Neues Bautagebuch"
+                >
+                  {attentionBadge > 9 ? "9+" : attentionBadge}
+                </span>
+              ) : null}
               <StatusPill
                 statusLabel={statusLabel}
                 statusPillClass={statusPillClass}
@@ -213,7 +193,7 @@ export function PortalListCard({
           {meta.length > 0 ? (
             <ul className="mt-2 space-y-1">
               {meta.map((m, i) => {
-                const Icon = m.icon ? META_ICONS[m.icon] : null;
+                const Icon = m.icon;
                 return (
                   <li
                     key={`${m.text}-${i}`}
@@ -251,15 +231,11 @@ export function PortalListCard({
   return (
     <div
       className={cn(
-        "relative",
         portalListItemClass(variant, { selected }),
         hasMedia && "flex-col !gap-0 overflow-hidden !p-0"
       )}
       style={isCardShell ? portalListItemBorderStyle(variant) : undefined}
     >
-      {showAttention ? (
-        <AttentionCornerBadge count={attentionBadge!} />
-      ) : null}
       {hasMedia ? (
         <div
           className="w-full shrink-0"
@@ -338,6 +314,18 @@ export function PortalListCard({
             </div>
 
             <div className="flex shrink-0 items-center gap-1.5 pt-0.5">
+              {attentionBadge && attentionBadge > 0 ? (
+                <span
+                  className="inline-flex h-6 min-w-[1.5rem] items-center justify-center rounded-full px-1.5 text-xs font-bold"
+                  style={{
+                    background: PORTAL_VAR.dangerSoft,
+                    color: PORTAL_VAR.danger,
+                  }}
+                  title="Neues Bautagebuch"
+                >
+                  {attentionBadge > 9 ? "9+" : attentionBadge}
+                </span>
+              ) : null}
               <StatusPill
                 statusLabel={statusLabel}
                 statusPillClass={statusPillClass}

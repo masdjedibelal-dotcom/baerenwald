@@ -5,7 +5,7 @@ export default function PortalLoading() {
     <PortalContentBusy
       variant="page"
       title="Portal wird geladen…"
-      body="Einen Moment — wir bereiten Ihre Übersicht vor."
+      body="Einen Moment — wir bereiten deine Übersicht vor."
     />
   );
 }

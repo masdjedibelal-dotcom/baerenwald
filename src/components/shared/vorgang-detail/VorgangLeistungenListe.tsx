@@ -43,9 +43,14 @@ export function VorgangLeistungenListe({
             : 0;
 
   return (
-    <div className={cn("overflow-hidden", className)}>
-      <ul className="divide-y divide-border-light">
-        {items.map((p) => {
+    <div
+      className={cn(
+        "overflow-hidden rounded-xl border border-border-light bg-muted/20",
+        className
+      )}
+    >
+      <ul>
+        {items.map((p, i) => {
           const removed = p.aenderungBadge === "entfernt";
           const price =
             showVk && typeof p.preisBrutto === "number" && p.preisBrutto > 0
@@ -60,7 +65,8 @@ export function VorgangLeistungenListe({
             <li
               key={p.id}
               className={cn(
-                "flex items-start gap-4 px-0 py-3",
+                "flex items-start gap-4 px-3 py-3",
+                i < items.length - 1 && "border-b border-border-light",
                 removed && "bg-red-50/70"
               )}
             >
@@ -71,18 +77,17 @@ export function VorgangLeistungenListe({
                     removed && "text-text-secondary line-through"
                   )}
                 >
+                  {p.gewerk ? `${p.gewerk} — ` : ""}
                   {p.title}
                 </p>
-                {(p.gewerk || p.menge || p.einheit) && !showPlain ? (
-                  <p className="portal-text-meta mt-0.5 text-text-secondary">
-                    {[p.gewerk, [p.menge, p.einheit].filter(Boolean).join(" ")]
-                      .filter(Boolean)
-                      .join(" · ")}
-                  </p>
-                ) : null}
                 {p.beschreibung ? (
                   <p className="portal-text-meta mt-0.5 text-text-secondary">
                     {p.beschreibung}
+                  </p>
+                ) : null}
+                {(p.menge || p.einheit) && !showPlain ? (
+                  <p className="portal-text-meta mt-0.5 text-text-secondary">
+                    {[p.menge, p.einheit].filter(Boolean).join(" ")}
                   </p>
                 ) : null}
                 {p.aenderungBadge && p.aenderungBadge !== "entfernt" ? (
@@ -101,7 +106,7 @@ export function VorgangLeistungenListe({
         })}
       </ul>
       {gesamt > 0 && (showVk || showEk) ? (
-        <div className="flex items-center justify-between border-t border-border-light px-0 py-2.5">
+        <div className="flex items-center justify-between border-t border-border-light bg-white/60 px-3 py-2.5">
           <span className="text-[12.5px] font-semibold text-text-secondary">
             {showEk ? "Summe netto (Ihre Vergütung)" : "Gesamt brutto"}
           </span>

@@ -1,37 +1,35 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { AlertTriangle } from "lucide-react";
 
 import { OrganisationObjektDokumentePanel } from "@/components/org/OrganisationObjektDokumentePanel";
 import { OrganisationObjektMieterTab } from "@/components/org/OrganisationObjektMieterTab";
+import {
+  buildAushangActionItems,
+  PortalActionMenu,
+} from "@/components/shared/PortalActionMenu";
 import { PortalDetailCover } from "@/components/shared/PortalDetailCover";
 import { PortalDetailHead } from "@/components/shared/PortalDetailUi";
 import { PortalDetailTabs } from "@/components/shared/PortalDetailTabs";
-import { PortalInboxEmpty } from "@/components/shared/PortalEmptyState";
 import {
-  EinstellungenEditModal,
+  EinstellungenCard,
   EinstellungenEuroSlider,
-  EinstellungenPfRow,
-  EinstellungenSectionHeader,
-  EinstellungenSheetCard,
   EinstellungenToggle,
 } from "@/components/shared/PortalEinstellungenUi";
-import { SofortmassnahmeAkutTitleWithFaelle } from "@/components/org/SofortmassnahmeFaelleLink";
 import { PortalListCard } from "@/components/shared/PortalListCard";
+import { cn } from "@/lib/utils";
 import { leadBelongsToObjekt } from "@/lib/org/match-lead-objekt";
 import { meldeKategorieLabel } from "@/lib/org/melde-kategorien";
-import { meldeKategorieFromLead } from "@/lib/org/org-eingang-utils";
+import {
+  isMeldeNotfall,
+  meldeKategorieFromLead,
+} from "@/lib/org/org-eingang-utils";
 import type { OrganisationLead, OrganisationObjekt } from "@/lib/org/types";
 import {
-  EINSTELLUNGEN_AKUT_INTRO,
-  EINSTELLUNGEN_SCHWELLE_BETRAG_INTRO,
-  EINSTELLUNGEN_SCHWELLE_BETRAG_TITLE,
   EINSTELLUNGEN_SCHWELLE_SLIDER_MAX,
   EINSTELLUNGEN_SCHWELLE_SLIDER_MIN,
   EINSTELLUNGEN_SCHWELLE_SLIDER_STEP,
-  EINSTELLUNGEN_SCHWELLE_TITLE,
-  EINSTELLUNGEN_UNTER_SCHWELLE_INTRO,
-  EINSTELLUNGEN_UNTER_SCHWELLE_TITLE,
   formatEinstellungenSchwelle,
   snapEinstellungenSchwelle,
 } from "@/lib/portal2/einstellungen";
@@ -42,9 +40,11 @@ import {
   formatObjektStrasse,
   formatObjektTypLine,
   OBJ_DETAIL_TABS,
+  OBJ_SCHWELLE_WIZARD_TITLE,
   parseEinheitenCount,
   type ObjDetailTabId,
 } from "@/lib/portal2/objekte";
+import { PORTAL_VAR } from "@/lib/portal2/tokens";
 import { orgPortalToast, portalToastError } from "@/lib/shared/portal-toast";
 import {
   plattformStatusLabel,
@@ -56,8 +56,14 @@ type Props = {
   objekt: OrganisationObjekt;
   leads: OrganisationLead[];
   offenCount: number;
+  canAushang: boolean;
   onBack: () => void;
+  onCopyMeldeLink: () => void;
+  onOpenAushangPdf: () => void;
+  onOpenQrCode: () => void;
   onEdit: () => void;
+  onCopy: () => void;
+  onDelete: () => void;
   onEinladen: () => void;
   onRefresh: () => void;
   /** Öffnet den Vorgang in der Listenansicht (Vorgänge). */
@@ -91,7 +97,7 @@ function ObjCard({
 
 function ObjRow({ label, value }: { label: string; value: string }) {
   return (
-    <div className="portal-text-meta flex items-center justify-between gap-3 border-b border-border-default py-2 last:border-b-0">
+    <div className="flex items-center justify-between gap-3 border-b border-border-default py-2 text-[13.5px] last:border-b-0">
       <span className="shrink-0 text-text-secondary">{label}</span>
       <span className="min-w-0 text-right font-semibold text-text-primary">
         {value}
@@ -116,7 +122,7 @@ function ObjEditRow({
   autoComplete?: string;
 }) {
   return (
-    <div className="portal-text-meta flex items-center justify-between gap-3 border-b border-border-default py-1.5 last:border-b-0">
+    <div className="flex items-center justify-between gap-3 border-b border-border-default py-1.5 text-[13.5px] last:border-b-0">
       <span className="shrink-0 text-text-secondary">{label}</span>
       <input
         type={type}
@@ -134,23 +140,23 @@ export function OrganisationObjektDetail({
   objekt,
   leads,
   offenCount,
+  canAushang,
   onBack,
+  onCopyMeldeLink,
+  onOpenAushangPdf,
+  onOpenQrCode,
   onEdit,
+  onCopy,
+  onDelete,
   onEinladen,
   onRefresh,
   onOpenVorgang,
   dokumenteByLeadId = {},
 }: Props) {
   const [tab, setTab] = useState<ObjDetailTabId>("stamm");
-  const [schwelleAktiv, setSchwelleAktiv] = useState(
-    () =>
-      objekt.freigabe_schwelle_eur != null &&
-      Number(objekt.freigabe_schwelle_eur) > 0
-  );
   const [schwelle, setSchwelle] = useState(() =>
     snapEinstellungenSchwelle(
-      objekt.freigabe_schwelle_eur != null &&
-        Number(objekt.freigabe_schwelle_eur) > 0
+      objekt.freigabe_schwelle_eur != null
         ? Number(objekt.freigabe_schwelle_eur)
         : 500
     )
@@ -158,11 +164,7 @@ export function OrganisationObjektDetail({
   const [akutDirekt, setAkutDirekt] = useState(
     objekt.notfall_direkt == null ? true : Boolean(objekt.notfall_direkt)
   );
-  const [freigabeEditOpen, setFreigabeEditOpen] = useState(false);
-  const [editSchwelle, setEditSchwelle] = useState(schwelle);
-  const [editSchwelleAktiv, setEditSchwelleAktiv] = useState(schwelleAktiv);
-  const [editAkut, setEditAkut] = useState(akutDirekt);
-  const [freigabeSaving, setFreigabeSaving] = useState(false);
+  const schwelleTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const meta = useMemo(
     () => decodeObjektMeta(objekt.notizen_intern),
@@ -187,13 +189,9 @@ export function OrganisationObjektDetail({
   }, [meta.kontakt, meta.tel, meta.email, objekt.id]);
 
   useEffect(() => {
-    const aktiv =
-      objekt.freigabe_schwelle_eur != null &&
-      Number(objekt.freigabe_schwelle_eur) > 0;
-    setSchwelleAktiv(aktiv);
     setSchwelle(
       snapEinstellungenSchwelle(
-        aktiv && objekt.freigabe_schwelle_eur != null
+        objekt.freigabe_schwelle_eur != null
           ? Number(objekt.freigabe_schwelle_eur)
           : 500
       )
@@ -218,6 +216,7 @@ export function OrganisationObjektDetail({
   useEffect(() => {
     return () => {
       if (kontaktTimer.current) clearTimeout(kontaktTimer.current);
+      if (schwelleTimer.current) clearTimeout(schwelleTimer.current);
       if (versTimer.current) clearTimeout(versTimer.current);
     };
   }, []);
@@ -289,57 +288,50 @@ export function OrganisationObjektDetail({
     }, 550);
   };
 
-  function openFreigabeEdit() {
-    setEditSchwelle(schwelle);
-    setEditSchwelleAktiv(schwelleAktiv);
-    setEditAkut(akutDirekt);
-    setFreigabeEditOpen(true);
-  }
-
-  function closeFreigabeEdit() {
-    if (freigabeSaving) return;
-    setFreigabeEditOpen(false);
-  }
-
-  function onToggleUnterSchwelle(next: boolean) {
-    setEditSchwelleAktiv(next);
-    if (next && editSchwelle <= 0) {
-      setEditSchwelle(500);
-    }
-  }
-
-  async function saveFreigabeEdit() {
-    setFreigabeSaving(true);
+  const saveSchwelle = async (value: number) => {
     try {
-      const nextSchwelle = editSchwelleAktiv
-        ? snapEinstellungenSchwelle(Math.max(editSchwelle, 500))
-        : null;
       const res = await fetch("/api/org/objekte", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           id: objekt.id,
-          freigabe_schwelle_eur: nextSchwelle,
-          notfall_direkt: editAkut,
+          freigabe_schwelle_eur: value,
         }),
       });
       const json = (await res.json()) as { error?: string };
       if (!res.ok) {
-        portalToastError("Freigabe-Regeln nicht gespeichert", json.error);
+        portalToastError("Schwelle nicht gespeichert", json.error);
         return;
       }
-      setSchwelleAktiv(editSchwelleAktiv);
-      if (editSchwelleAktiv && nextSchwelle != null) setSchwelle(nextSchwelle);
-      setAkutDirekt(editAkut);
-      setFreigabeEditOpen(false);
       orgPortalToast.objektAktualisiert();
       onRefresh();
     } catch {
-      portalToastError("Freigabe-Regeln nicht gespeichert");
-    } finally {
-      setFreigabeSaving(false);
+      portalToastError("Schwelle nicht gespeichert");
     }
-  }
+  };
+
+  const saveAkutDirekt = async (value: boolean) => {
+    setAkutDirekt(value);
+    try {
+      const res = await fetch("/api/org/objekte", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id: objekt.id,
+          notfall_direkt: value,
+        }),
+      });
+      const json = (await res.json()) as { error?: string };
+      if (!res.ok) {
+        portalToastError("Akut-Regel nicht gespeichert", json.error);
+        return;
+      }
+      orgPortalToast.objektAktualisiert();
+      onRefresh();
+    } catch {
+      portalToastError("Akut-Regel nicht gespeichert");
+    }
+  };
 
   const saveVersicherung = async (next: {
     versicherer: string;
@@ -389,6 +381,15 @@ export function OrganisationObjektDetail({
     versTimer.current = setTimeout(() => {
       void saveVersicherung(next);
     }, 550);
+  };
+
+  const onSchwelleChange = (raw: number) => {
+    const value = snapEinstellungenSchwelle(raw);
+    setSchwelle(value);
+    if (schwelleTimer.current) clearTimeout(schwelleTimer.current);
+    schwelleTimer.current = setTimeout(() => {
+      void saveSchwelle(value);
+    }, 450);
   };
 
   let body: React.ReactNode = null;
@@ -454,7 +455,7 @@ export function OrganisationObjektDetail({
             onChange={(v) => scheduleVersicherung({ selbstbehalt: v })}
             placeholder="0"
           />
-          <p className="portal-text-meta mt-2 leading-relaxed text-text-tertiary">
+          <p className="mt-2 text-[12px] leading-relaxed text-text-tertiary">
             Einmal hinterlegt — jede Schadenmeldung übernimmt diese Daten
             automatisch.
           </p>
@@ -479,15 +480,18 @@ export function OrganisationObjektDetail({
           <p className="portal-text-section">
             Vorgänge ({objektLeads.length})
           </p>
-          <p className="portal-text-meta text-text-tertiary">{offenCount} offen</p>
+          <p className="text-xs text-text-tertiary">{offenCount} offen</p>
         </div>
         {objektLeads.length === 0 ? (
-          <PortalInboxEmpty title="Noch keine Daten" compact />
+          <div className="rounded-xl border border-border-default bg-white px-4 py-8 text-center text-[13px] text-text-secondary">
+            Keine Vorgänge an diesem Objekt.
+          </div>
         ) : (
           objektLeads.map((l) => {
             const kat = meldeKategorieLabel(
               meldeKategorieFromLead(l) ?? undefined
             );
+            const notfall = isMeldeNotfall(l);
             const adresse = [l.strasse, l.hausnummer]
               .filter(Boolean)
               .join(" ");
@@ -517,7 +521,9 @@ export function OrganisationObjektDetail({
                   resolvePlattformStatus(l)
                 )}
                 accent="anfrage"
-                meta={[]}
+                meta={
+                  notfall ? [{ icon: AlertTriangle, text: "Notfall" }] : []
+                }
                 showChevron
               />
             );
@@ -527,74 +533,23 @@ export function OrganisationObjektDetail({
     );
   } else if (tab === "regeln") {
     body = (
-      <div className="space-y-3">
-        <EinstellungenSectionHeader
-          title={EINSTELLUNGEN_SCHWELLE_TITLE}
-          onEdit={openFreigabeEdit}
-        />
-        <div className="flex flex-col gap-[11px]">
-          <EinstellungenPfRow
-            label={<SofortmassnahmeAkutTitleWithFaelle />}
-            value={akutDirekt ? "Ja" : "Nein"}
+      <EinstellungenCard title={OBJ_SCHWELLE_WIZARD_TITLE}>
+        <div className="flex flex-col gap-3">
+          <EinstellungenEuroSlider
+            value={schwelle}
+            min={EINSTELLUNGEN_SCHWELLE_SLIDER_MIN}
+            max={EINSTELLUNGEN_SCHWELLE_SLIDER_MAX}
+            step={EINSTELLUNGEN_SCHWELLE_SLIDER_STEP}
+            formatValue={formatEinstellungenSchwelle}
+            onChange={onSchwelleChange}
           />
-          <EinstellungenPfRow
-            label={EINSTELLUNGEN_UNTER_SCHWELLE_TITLE}
-            value={schwelleAktiv ? "Ja" : "Nein"}
+          <EinstellungenToggle
+            checked={akutDirekt}
+            onChange={(v) => void saveAkutDirekt(v)}
+            title="Akut/Notfall ohne Freigabe"
           />
-          {schwelleAktiv ? (
-            <EinstellungenPfRow
-              label={EINSTELLUNGEN_SCHWELLE_BETRAG_TITLE}
-              value={formatEinstellungenSchwelle(schwelle)}
-            />
-          ) : null}
         </div>
-
-        <EinstellungenEditModal
-          open={freigabeEditOpen}
-          title={EINSTELLUNGEN_SCHWELLE_TITLE}
-          onClose={closeFreigabeEdit}
-          onSave={() => void saveFreigabeEdit()}
-          saving={freigabeSaving}
-        >
-          <EinstellungenToggle
-            checked={editAkut}
-            onChange={setEditAkut}
-            title={<SofortmassnahmeAkutTitleWithFaelle />}
-            description={
-              editAkut
-                ? `${EINSTELLUNGEN_AKUT_INTRO} Aktiv: Sofortmaßnahmen ohne Ihre Freigabe, nur Info.`
-                : "Aus: Auch Sofortmaßnahmen laufen über Angebot und Freigabe."
-            }
-          />
-          <EinstellungenToggle
-            checked={editSchwelleAktiv}
-            onChange={onToggleUnterSchwelle}
-            title={EINSTELLUNGEN_UNTER_SCHWELLE_TITLE}
-            description={
-              editSchwelleAktiv
-                ? EINSTELLUNGEN_UNTER_SCHWELLE_INTRO
-                : "Aus: Jedes Angebot braucht Ihre Freigabe, unabhängig vom Betrag."
-            }
-          />
-          {editSchwelleAktiv ? (
-            <EinstellungenSheetCard
-              title={EINSTELLUNGEN_SCHWELLE_BETRAG_TITLE}
-              description={EINSTELLUNGEN_SCHWELLE_BETRAG_INTRO}
-            >
-              <EinstellungenEuroSlider
-                value={editSchwelle}
-                min={Math.max(EINSTELLUNGEN_SCHWELLE_SLIDER_MIN, 500)}
-                max={EINSTELLUNGEN_SCHWELLE_SLIDER_MAX}
-                step={EINSTELLUNGEN_SCHWELLE_SLIDER_STEP}
-                formatValue={formatEinstellungenSchwelle}
-                onChange={(v) =>
-                  setEditSchwelle(snapEinstellungenSchwelle(Math.max(v, 500)))
-                }
-              />
-            </EinstellungenSheetCard>
-          ) : null}
-        </EinstellungenEditModal>
-      </div>
+      </EinstellungenCard>
     );
   } else {
     body = (
@@ -608,19 +563,56 @@ export function OrganisationObjektDetail({
     );
   }
 
+  const ctaClass =
+    "rounded-[9px] border border-border-default bg-white px-3.5 py-2 text-[13px] font-semibold text-text-secondary";
+
   return (
-    <div className="-mx-4 -mt-5 min-w-0 lg:-mx-6 lg:-mt-7">
+    <div className="space-y-0">
       <PortalDetailCover
         coverUrl={objekt.cover_url}
         onBack={onBack}
         backLabel="← Objekte"
         onEdit={onEdit}
+        className="-mx-4 -mt-5 lg:-mx-6 lg:-mt-7"
       />
 
-      <div className="mt-4 mb-5 space-y-4 px-4 lg:px-6">
+      <div className="mt-4 mb-5 space-y-4">
         <PortalDetailHead
           title={objekt.titel}
           metaLine={adresseLine || undefined}
+          actions={
+            <>
+              {canAushang ? (
+                <PortalActionMenu
+                  title="Aushang"
+                  trigger="Aushang"
+                  triggerClassName={cn(
+                    ctaClass,
+                    "!border-accent !bg-accent-light !text-accent"
+                  )}
+                  items={buildAushangActionItems({
+                    onCopyLink: onCopyMeldeLink,
+                    onQr: onOpenQrCode,
+                    onPdf: onOpenAushangPdf,
+                  })}
+                />
+              ) : null}
+              <button
+                type="button"
+                className={ctaClass}
+                onClick={onCopy}
+              >
+                Kopieren
+              </button>
+              <button
+                type="button"
+                className={cn("portal-danger", ctaClass)}
+                onClick={onDelete}
+              >
+                Löschen
+              </button>
+            </>
+          }
         />
 
         <PortalDetailTabs

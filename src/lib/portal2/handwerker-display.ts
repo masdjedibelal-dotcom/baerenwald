@@ -61,16 +61,6 @@ export function toHandwerkerDisplay(
   return out;
 }
 
-/** Anzeige in Vorgang „Ausführung · Handwerker“ — Firma vor Personenname. */
-export function handwerkerFirmenLabel(src: {
-  firma?: string | null;
-  name?: string | null;
-}): string | null {
-  const firma = src.firma?.trim() || "";
-  const name = src.name?.trim() || "";
-  return firma || name || null;
-}
-
 export function toHandwerkerDisplayList(
   rows: HandwerkerDisplaySource[]
 ): HandwerkerDisplay[] {

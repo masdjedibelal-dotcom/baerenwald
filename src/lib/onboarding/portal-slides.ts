@@ -12,12 +12,12 @@ export const PORTAL_ONBOARDING_SLIDES: OnboardingSlide[] = [
   {
     id: "uebersicht",
     imageBase: "01-uebersicht",
-    eyebrow: "IHR ÜBERBLICK",
-    title: "Alles für Ihr Projekt an einem Ort",
+    eyebrow: "DEIN ÜBERBLICK",
+    title: "Alles für dein Projekt an einem Ort",
     body: "Anfragen, Angebote und Aufträge — übersichtlich gebündelt. Kein E-Mail-Pingpong, kein Suchen in Ordnern.",
     highlights: [
       "Offene Anfragen und laufende Aufträge auf einen Blick",
-      "Neues Projekt direkt starten — mit Ihren gespeicherten Kontaktdaten",
+      "Neues Projekt direkt starten — mit deinen gespeicherten Kontaktdaten",
       "Bärenwald GPT für Beratung, Visualisierung und Preisrechner",
     ],
   },
@@ -25,12 +25,12 @@ export const PORTAL_ONBOARDING_SLIDES: OnboardingSlide[] = [
     id: "anfragen",
     imageBase: "02-anfragen",
     eyebrow: "TRANSPARENZ",
-    title: "Immer wissen, wo Ihr Projekt steht",
-    body: "Sie sehen den aktuellen Bearbeitungsstand — mit Verlauf und Unterlagen, wann immer Sie möchten.",
+    title: "Immer wissen, wo dein Projekt steht",
+    body: "Du siehst den aktuellen Bearbeitungsstand — mit Verlauf und Unterlagen, wann immer du möchtest.",
     highlights: [
       "Status und Verlauf ohne Nachfragen per E-Mail",
       "Hochgeladene Fotos und Dokumente jederzeit einsehen",
-      "Bei Fragen erreichen Sie uns direkt per Telefon oder WhatsApp",
+      "Bei Fragen erreichst du uns direkt per Telefon oder WhatsApp",
     ],
   },
   {
@@ -42,7 +42,7 @@ export const PORTAL_ONBOARDING_SLIDES: OnboardingSlide[] = [
     highlights: [
       "Angebot digital öffnen und PDF durchlesen",
       "Positionen und Preise klar auf einen Blick",
-      "In Ruhe entscheiden — wir sind Ihr Ansprechpartner",
+      "In Ruhe entscheiden — wir sind dein Ansprechpartner",
     ],
   },
   {
@@ -50,9 +50,9 @@ export const PORTAL_ONBOARDING_SLIDES: OnboardingSlide[] = [
     imageBase: "04-auftraege",
     eyebrow: "FORTSCHRITT",
     title: "Baustelle transparent mitverfolgen",
-    body: "Termine, Bautagebuch-Einträge und Dokumente — so bleiben Sie informiert, auch ohne Vor-Ort-Termin.",
+    body: "Termine, Bautagebuch-Einträge und Dokumente — so bleibst du informiert, auch ohne Vor-Ort-Termin.",
     highlights: [
-      "Fortschritt Ihres Auftrags live verfolgen",
+      "Fortschritt deines Auftrags live verfolgen",
       "Bautagebuch mit Fotos vom Handwerker-Team lesen",
       "Rechnungen und Unterlagen jederzeit herunterladen",
     ],

@@ -1,7 +1,7 @@
 "use client";
 
 import { PartnerComplianceCheckliste } from "@/components/partner/PartnerComplianceCheckliste";
-import { PortalDetailInfoBox } from "@/components/shared/PortalDetailUi";
+import { PartnerDetailInfoBox } from "@/components/partner/PartnerDetailUi";
 import type { PartnerComplianceItem } from "@/lib/partner/partner-compliance";
 
 export function PartnerUnterlagenPanel({
@@ -15,10 +15,10 @@ export function PartnerUnterlagenPanel({
 }) {
   return (
     <div className="space-y-6">
-      <PortalDetailInfoBox>
+      <PartnerDetailInfoBox>
         Hier pflegst du deine Unterlagen zentral. Pro Auftrag findest du zusätzliche
         Leistungsunterlagen im jeweiligen Projektvertrag.
-      </PortalDetailInfoBox>
+      </PartnerDetailInfoBox>
 
       {profil ? (
         <p className="portal-text-meta text-text-secondary">

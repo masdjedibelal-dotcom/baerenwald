@@ -8,10 +8,6 @@ import {
   copyMeldeLink,
   openMeldeAushangPdf,
 } from "@/lib/org/melde-aushang-ui";
-import {
-  orgMeldeLegalUrlsReady,
-  ORG_MELDE_LEGAL_REQUIRED_HINT,
-} from "@/lib/org/melde-legal-urls";
 import { buildMeldeUrl } from "@/lib/org/melde-url";
 import type { OrganisationKunde } from "@/lib/org/types";
 import { EinstellungenSectionHeader } from "@/components/shared/PortalEinstellungenUi";
@@ -20,22 +16,24 @@ import { cn } from "@/lib/utils";
 
 type Props = {
   kunde: OrganisationKunde;
+  objektCount?: number;
   /** @deprecated — immer flach wie Partner-Einstellungen */
   nested?: boolean;
 };
 
-export function OrganisationMeldeMaterial({ kunde }: Props) {
+export function OrganisationMeldeMaterial({
+  kunde,
+  objektCount = 0,
+}: Props) {
   const orgKennung = kunde.org_kennung?.trim() ?? "";
   const meldeUrl = orgKennung
     ? buildMeldeUrl(orgKennung, undefined, { forPrint: true })
     : "";
-  const legalReady = orgMeldeLegalUrlsReady(kunde);
-  const actionsEnabled = Boolean(orgKennung && legalReady);
   const [copied, setCopied] = useState(false);
   const [qrOpen, setQrOpen] = useState(false);
 
   async function copyLink() {
-    if (!actionsEnabled || !meldeUrl) return;
+    if (!meldeUrl) return;
     const ok = await copyMeldeLink(meldeUrl);
     if (!ok) return;
     setCopied(true);
@@ -60,45 +58,30 @@ export function OrganisationMeldeMaterial({ kunde }: Props) {
   return (
     <div className="space-y-3">
       <EinstellungenSectionHeader title="Schadensmeldung für Mieter" />
+      <p className="text-[13px] leading-[1.55]" style={{ color: PORTAL_VAR.sub }}>
+        Ein Link für alle Objekte — Mieter wählen ihr Gebäude im Formular.
+        {objektCount === 0
+          ? " Legen Sie zuerst unter Objekte mindestens ein Gebäude an."
+          : " Objekt-spezifische Aushänge finden Sie im Objekt-Detail."}
+      </p>
 
       <div className="flex flex-col gap-1">
         <span className="text-[11.5px] font-bold tracking-wide text-text-tertiary">
           Melde-Link
         </span>
-        <div
-          className={cn(
-            "flex items-center gap-2 rounded-[9px] border border-border-default px-3 py-2",
-            actionsEnabled ? "bg-[#f3f4f3]" : "bg-[#f3f4f3] opacity-55"
-          )}
-        >
+        <div className="flex items-center gap-2 rounded-[9px] border border-border-default bg-[#f3f4f3] px-3 py-2">
           <p className="min-w-0 flex-1 break-all text-[13.5px] font-semibold text-text-primary">
             {meldeUrl}
           </p>
           <button
             type="button"
-            disabled={!actionsEnabled}
             className={cn(
-              "grid h-8 w-8 shrink-0 place-items-center rounded-lg text-text-secondary transition-colors",
-              actionsEnabled &&
-                "hover:bg-white hover:text-accent",
-              copied && "text-accent",
-              !actionsEnabled && "cursor-not-allowed opacity-50"
+              "grid h-8 w-8 shrink-0 place-items-center rounded-lg text-text-secondary transition-colors hover:bg-white hover:text-accent",
+              copied && "text-accent"
             )}
             onClick={() => void copyLink()}
-            aria-label={
-              !actionsEnabled
-                ? "Kopieren gesperrt — Legal-Links fehlen"
-                : copied
-                  ? "Kopiert"
-                  : "Link kopieren"
-            }
-            title={
-              !actionsEnabled
-                ? ORG_MELDE_LEGAL_REQUIRED_HINT
-                : copied
-                  ? "Kopiert"
-                  : "Link kopieren"
-            }
+            aria-label={copied ? "Kopiert" : "Link kopieren"}
+            title={copied ? "Kopiert" : "Link kopieren"}
           >
             {copied ? (
               <Check className="h-4 w-4" strokeWidth={2.25} />
@@ -109,34 +92,24 @@ export function OrganisationMeldeMaterial({ kunde }: Props) {
         </div>
       </div>
 
-      {!legalReady ? (
-        <p className="text-[12.5px] leading-relaxed text-text-secondary">
-          {ORG_MELDE_LEGAL_REQUIRED_HINT}
-        </p>
-      ) : null}
-
       <div className="flex flex-wrap gap-2">
         <button
           type="button"
-          disabled={!actionsEnabled}
-          title={!actionsEnabled ? ORG_MELDE_LEGAL_REQUIRED_HINT : undefined}
-          className="btn-pill-primary !py-2 disabled:cursor-not-allowed disabled:opacity-45"
+          className="btn-pill-primary !py-2"
           onClick={() => openMeldeAushangPdf()}
         >
           Aushang PDF
         </button>
         <button
           type="button"
-          disabled={!actionsEnabled}
-          title={!actionsEnabled ? ORG_MELDE_LEGAL_REQUIRED_HINT : undefined}
-          className="rounded-full border border-border-default bg-white px-4 py-2 text-[13px] font-semibold text-text-secondary disabled:cursor-not-allowed disabled:opacity-45 enabled:hover:border-accent enabled:hover:text-accent"
+          className="rounded-full border border-border-default bg-white px-4 py-2 text-[13px] font-semibold text-text-secondary hover:border-accent hover:text-accent"
           onClick={() => setQrOpen(true)}
         >
           QR-Code
         </button>
       </div>
 
-      {qrOpen && actionsEnabled ? (
+      {qrOpen ? (
         <OrganisationMeldeQrModal
           open
           onClose={() => setQrOpen(false)}

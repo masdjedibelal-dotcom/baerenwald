@@ -7,14 +7,13 @@ import {
   confirmPartnerAuftragZuweisung,
   declinePartnerAuftragZuweisung,
 } from "@/app/actions/partner-auftrag-bestaetigen";
-import { usePortalBusy } from "@/components/shared/PortalBusyContext";
-import { usePortalRefresh } from "@/components/shared/usePortalRefresh";
 import { VorgangDetailBlocks } from "@/components/shared/vorgang-detail";
 import { buildPartnerVorgangDetailVm } from "@/lib/vorgang/build-vorgang-detail-vm";
 import { PartnerLeistungenKonditionenCard } from "@/components/partner/PartnerLeistungenKonditionenCard";
 import {
   PartnerConfirmDialog,
   PartnerDetailError,
+  PartnerDetailInfoBox,
   PartnerDetailLayout,
   PartnerDetailSection,
   PartnerDetailStickyActions,
@@ -24,7 +23,7 @@ import {
   HANDWERKER_ABLEHNUNG_GRUND_LABELS,
   HANDWERKER_ABLEHNUNG_GRUND_VALUES,
 } from "@/lib/partner/handwerker-ablehnung";
-import { partnerPortalToast, portalToastError } from "@/lib/shared/portal-toast";
+import { partnerPortalToast } from "@/lib/shared/portal-toast";
 import type { PartnerAuftragItem } from "@/lib/partner/get-partner-data";
 import { resolvePartnerDetailTitelFromAuftrag } from "@/lib/partner/partner-listen-titel";
 import {
@@ -44,7 +43,7 @@ import { isPartnerBauprojektAuftrag } from "@/lib/partner/compliance-summary";
 import {
   PARTNER_LEISTUNGEN_GESAMT_LABEL,
   PARTNER_LEISTUNGEN_SECTION_TITLE,
-  partnerDetailOrtMetaLine,
+  partnerAuftragDetailMetaLine,
   resolvePartnerAuftragKonditionZeilen,
 } from "@/lib/partner/partner-portal-display";
 
@@ -58,8 +57,6 @@ export function PartnerAuftragAnfrageDetail({
   onBack?: () => void;
 }) {
   const router = useRouter();
-  const { refresh } = usePortalRefresh();
-  const { runBusy } = usePortalBusy();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showReject, setShowReject] = useState(false);
@@ -79,109 +76,78 @@ export function PartnerAuftragAnfrageDetail({
   });
   const brauchtProjektvertrag = bearbeitbar && istBauprojekt;
 
-  const konditionZeilen = useMemo(() => {
-    const fuerAnnahme = !item.handwerker_bestaetigt_at?.trim();
-    const ziel = fuerAnnahme
-      ? item.positionen.filter(
-          (p) =>
-            Boolean(p.handwerker_id?.trim()) ||
-            Boolean((p.handwerker_status ?? "").trim()) ||
-            positionBrauchtHandwerkerAktion(p)
-        )
-      : item.positionen.filter((p) => positionBrauchtHandwerkerAktion(p));
-    return resolvePartnerAuftragKonditionZeilen(
-      ziel.length ? ziel : item.positionen
-    );
-  }, [item.handwerker_bestaetigt_at, item.positionen]);
+  const konditionZeilen = useMemo(
+    () =>
+      resolvePartnerAuftragKonditionZeilen(
+        item.positionen.filter((p) => positionBrauchtHandwerkerAktion(p))
+      ),
+    [item.positionen]
+  );
 
   async function onAccept() {
     setLoading(true);
     setError(null);
-    let acceptedForAuto = false;
-    try {
-      await runBusy(async () => {
-        const res = await confirmPartnerAuftragZuweisung({
-          auftragId: item.id,
-          gelesen: pflichtenGelesen,
-          verbindlich: pflichtenGelesen,
-        });
-        setConfirmAccept(false);
-        if (!res.ok) {
-          setError(res.error);
-          portalToastError("Annahme fehlgeschlagen", res.error);
-          return;
-        }
-        partnerPortalToast.auftragAngenommen();
-        acceptedForAuto = true;
-        // Navigation/Refresh sofort — Auto-Angebot danach best-effort.
-        if (onAccepted) onAccepted(item.id);
-        else await refresh();
-      });
-
-      const anfrageId = item.angebotHandwerkerId?.trim();
-      if (acceptedForAuto && anfrageId) {
-        void tryCreatePartnerAutoAngebot(anfrageId).then((auto) => {
-          if (auto.status === "created" || auto.status === "already") {
-            partnerPortalToast.unterlagenHochgeladen();
-            return;
-          }
-          if (auto.status === "firmendaten_missing") {
-            portalToastError(
-              "Firmendaten unvollständig",
-              auto.missing.join(", ") ||
-                "Bitte unter Firmendaten ergänzen — sonst kein Auto-Angebot."
-            );
-            return;
-          }
-          if (auto.status === "skipped" && auto.error) {
-            portalToastError("Angebot nicht automatisch erstellt", auto.error);
-          }
-        });
-      }
-    } catch (e) {
-      const msg =
-        e instanceof Error && e.message.trim()
-          ? e.message
-          : "Annahme fehlgeschlagen. Bitte erneut versuchen.";
-      setError(msg);
-      portalToastError("Annahme fehlgeschlagen", msg);
-    } finally {
-      setLoading(false);
+    const res = await confirmPartnerAuftragZuweisung({
+      auftragId: item.id,
+      gelesen: pflichtenGelesen,
+      verbindlich: pflichtenGelesen,
+    });
+    setLoading(false);
+    setConfirmAccept(false);
+    if (!res.ok) {
+      setError(res.error);
+      return;
     }
+    partnerPortalToast.auftragAngenommen();
+
+    const anfrageId = item.angebotHandwerkerId?.trim();
+    if (anfrageId) {
+      setLoading(true);
+      const auto = await tryCreatePartnerAutoAngebot(anfrageId);
+      setLoading(false);
+      if (auto.status === "created") {
+        partnerPortalToast.unterlagenHochgeladen();
+      } else if (auto.status === "firmendaten_missing") {
+        setFirmendatenMissing(auto.missing);
+        setFirmendatenFehlenOpen(true);
+        return;
+      }
+    }
+
+    if (onAccepted) onAccepted(item.id);
+    else router.refresh();
   }
 
   function finishAfterFirmendatenHinweis() {
     setFirmendatenFehlenOpen(false);
     if (onAccepted) onAccepted(item.id);
-    else void refresh();
+    else router.refresh();
   }
 
   async function onDecline() {
     setLoading(true);
     setError(null);
-    try {
-      await runBusy(async () => {
-        const res = await declinePartnerAuftragZuweisung({
-          auftragId: item.id,
-          grund,
-          notiz: notiz.trim() || undefined,
-        });
-        setConfirmReject(false);
-        setShowReject(false);
-        if (!res.ok) {
-          setError(res.error);
-          return;
-        }
-        partnerPortalToast.abgelehnt();
-        if (onAccepted) onAccepted(item.id);
-        else await refresh();
-      });
-    } finally {
-      setLoading(false);
+    const res = await declinePartnerAuftragZuweisung({
+      auftragId: item.id,
+      grund,
+      notiz: notiz.trim() || undefined,
+    });
+    setLoading(false);
+    setConfirmReject(false);
+    setShowReject(false);
+    if (!res.ok) {
+      setError(res.error);
+      return;
     }
+    partnerPortalToast.abgelehnt();
+    if (onAccepted) onAccepted(item.id);
+    else router.refresh();
   }
 
   const statusLabel = partnerAuftragAnfrageStatusLabel(item);
+
+  const infoText =
+    "Prüfe die Leistungen und den Projektvertrag. Mit „Annehmen“ bestätigst du den Auftrag verbindlich.";
 
   const statusPillClass = partnerDetailStatusPillClass("neu");
   const statusPillStyle = partnerDetailStatusPillStyle("neu");
@@ -226,7 +192,7 @@ export function PartnerAuftragAnfrageDetail({
         onBack={onBack ?? (() => router.back())}
         backLabel="← Zurück"
         title={resolvePartnerDetailTitelFromAuftrag(item)}
-        metaLine={partnerDetailOrtMetaLine(item.lead)}
+        metaLine={partnerAuftragDetailMetaLine(item.start_datum, item.end_datum)}
         statusLabel={statusLabel}
         statusPillClass={statusPillClass}
         statusPillStyle={statusPillStyle}
@@ -247,15 +213,20 @@ export function PartnerAuftragAnfrageDetail({
         })}
       />
 
-      {konditionZeilen.length > 0 ? (
-        <PartnerDetailSection title={PARTNER_LEISTUNGEN_SECTION_TITLE}>
-          <PartnerLeistungenKonditionenCard
-            zeilen={konditionZeilen}
-            mode="readonly"
-            gesamtLabel={PARTNER_LEISTUNGEN_GESAMT_LABEL}
-          />
-        </PartnerDetailSection>
-      ) : null}
+      <PartnerDetailInfoBox>{infoText}</PartnerDetailInfoBox>
+
+      <PartnerPflichtenCard
+        compliance_stamm={item.vertrag?.compliance_stamm}
+        compliance_projekt={item.vertrag?.compliance_projekt}
+        compliance_bauauftrag={item.vertrag?.compliance_bauauftrag}
+        ist_bauprojekt={item.vertrag?.ist_bauprojekt}
+        auftragId={item.id}
+        includeProjektvertrag={brauchtProjektvertrag}
+        acknowledgment={{
+          checked: pflichtenGelesen,
+          onChange: setPflichtenGelesen,
+        }}
+      />
 
       {brauchtProjektvertrag ? (
         <PartnerProjektvertragPaket
@@ -268,8 +239,18 @@ export function PartnerAuftragAnfrageDetail({
         />
       ) : null}
 
+      {konditionZeilen.length > 0 ? (
+        <PartnerDetailSection title={PARTNER_LEISTUNGEN_SECTION_TITLE}>
+          <PartnerLeistungenKonditionenCard
+            zeilen={konditionZeilen}
+            mode="readonly"
+            gesamtLabel={PARTNER_LEISTUNGEN_GESAMT_LABEL}
+          />
+        </PartnerDetailSection>
+      ) : null}
+
       {bearbeitbar && showReject ? (
-        <div className="space-y-3 border-t border-border-light pt-4">
+        <div className="space-y-3 rounded-xl border border-border-light bg-muted/30 p-4">
           <label className="block space-y-1">
             <span className="portal-form-label">Ablehnungsgrund</span>
             <select
@@ -296,21 +277,6 @@ export function PartnerAuftragAnfrageDetail({
 
       {error ? <PartnerDetailError message={error} /> : null}
 
-      {bearbeitbar && !showReject ? (
-        <PartnerPflichtenCard
-          compliance_stamm={item.vertrag?.compliance_stamm}
-          compliance_projekt={item.vertrag?.compliance_projekt}
-          compliance_bauauftrag={item.vertrag?.compliance_bauauftrag}
-          ist_bauprojekt={item.vertrag?.ist_bauprojekt}
-          auftragId={item.id}
-          includeProjektvertrag={brauchtProjektvertrag}
-          acknowledgment={{
-            checked: pflichtenGelesen,
-            onChange: setPflichtenGelesen,
-          }}
-        />
-      ) : null}
-
       <PartnerConfirmDialog
         open={confirmAccept}
         title="Annehmen?"
@@ -330,7 +296,6 @@ export function PartnerAuftragAnfrageDetail({
         description="Bärenwald wird informiert."
         confirmLabel="Ablehnen"
         confirmVariant="danger"
-        cancelLabel="Weiter bearbeiten"
         loading={loading}
         onConfirm={onDecline}
         onCancel={() => setConfirmReject(false)}
@@ -342,7 +307,7 @@ export function PartnerAuftragAnfrageDetail({
         onDismiss={finishAfterFirmendatenHinweis}
         onGoSettings={() => {
           setFirmendatenFehlenOpen(false);
-          void refresh();
+          router.refresh();
         }}
       />
         </div>

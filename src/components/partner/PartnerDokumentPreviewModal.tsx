@@ -12,10 +12,10 @@ import {
 import { updatePartnerProfil } from "@/app/actions/partner-profil";
 import { PartnerDetailError } from "@/components/partner/PartnerDetailUi";
 import { PortalModalShell } from "@/components/shared/PortalModalShell";
-import { usePortalUploadBusy } from "@/components/shared/usePortalUploadBusy";
 import type { AutoDocRegieOverride } from "@/lib/partner/partner-auto-doc-positionen";
 import { PORTAL_VAR } from "@/lib/portal2/tokens";
 import { partnerPortalToast } from "@/lib/shared/portal-toast";
+import { cn } from "@/lib/utils";
 
 function fmtEur(n: number): string {
   return new Intl.NumberFormat("de-DE", {
@@ -35,18 +35,11 @@ type Props = {
   onSuccess: () => void;
   /** Optional: ohne Dokument weiter (Nein). */
   allowSkip?: boolean;
-  /** Direkt Preview/fehlende Daten laden (ohne Ja/Nein). Default: true bei Rechnung. */
-  skipAsk?: boolean;
-  /**
-   * Rechnung: bei fehlenden Firmendaten nicht inline nachtragen,
-   * sondern Popup mit CTA zu den Einstellungen.
-   */
-  onFirmendatenMissing?: (missingLabels: string[]) => void;
 };
 
 /**
- * Auto-Dokument: optional Ja/Nein → ggf. fehlende Daten → Preview → Submit.
- * Parent steuert `open` (z. B. Sticky-CTA Rechnung).
+ * Auto-Dokument: Ja/Nein → ggf. fehlende Daten (Sheet) → Preview → Submit.
+ * Erscheint jedes Mal, solange kein Dokument vorliegt (Parent steuert `open`).
  */
 export function PartnerDokumentPreviewModal({
   open,
@@ -56,13 +49,11 @@ export function PartnerDokumentPreviewModal({
   onClose,
   onSuccess,
   allowSkip = true,
-  skipAsk,
-  onFirmendatenMissing,
 }: Props) {
   const router = useRouter();
-  const { uploadBusy: loading, runUpload } = usePortalUploadBusy();
-  const autoSkipAsk = skipAsk ?? art === "rechnung";
-  const [step, setStep] = useState<Step>(autoSkipAsk ? "preview" : "ask");
+  const [step, setStep] = useState<Step>("ask");
+  const [loading, setLoading] = useState(false);
+  const [previewLoading, setPreviewLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [preview, setPreview] = useState<PartnerAutoDocPreview | null>(null);
   const [dokumentNr, setDokumentNr] = useState("");
@@ -91,140 +82,109 @@ export function PartnerDokumentPreviewModal({
     }));
   }, [regieDraft]);
 
-  const cancelLabel = art === "rechnung" ? "Abbrechen" : "Nein, ohne Dokument";
-  const previewSubmitLabel =
-    art === "rechnung"
-      ? loading
-        ? "Wird gesendet…"
-        : "Absenden"
-      : loading
-        ? "Wird erstellt…"
-        : "Angebot erstellen & bestätigen";
-
-  async function loadPreview(withOverrides: AutoDocRegieOverride[] = []) {
-    setError(null);
-    return runUpload(async () => {
-      const res = await previewPartnerAutoDokument({
-        anfrageId,
-        art,
-        overrides: withOverrides,
-      });
-      if (!res.ok) {
-        setError(res.error);
-        return false;
-      }
-      setPreview(res.preview);
-      setDokumentNr(res.preview.dokumentNr);
-      setFirma(res.preview.firmendaten.firma);
-      setStrasse(res.preview.firmendaten.strasse);
-      setHausnummer(res.preview.firmendaten.hausnummer);
-      setPlz(res.preview.firmendaten.plz);
-      setOrt(res.preview.firmendaten.ort);
-      setTelefon(res.preview.firmendaten.telefon);
-      setSteuernummer(res.preview.firmendaten.steuernummer);
-      setUstid(res.preview.firmendaten.ustid);
-      setIban(res.preview.firmendaten.iban);
-
-      const nextDraft: typeof regieDraft = {};
-      for (const f of res.preview.missingFields) {
-        if (f.scope !== "regie" || !f.positionId) continue;
-        nextDraft[f.positionId] = nextDraft[f.positionId] ?? {
-          titel: "",
-          beschreibung: "",
-          zeitMin: "",
-          satz: "",
-        };
-      }
-      setRegieDraft(nextDraft);
-
-      const firmMissing = res.preview.missingFields.filter(
-        (f) => f.scope === "firmendaten"
-      );
-      if (
-        art === "rechnung" &&
-        firmMissing.length > 0 &&
-        onFirmendatenMissing
-      ) {
-        onFirmendatenMissing(firmMissing.map((f) => f.label));
-        onClose();
-        return false;
-      }
-
-      if (res.preview.missingFields.length > 0) {
-        setStep("fehlend");
-      } else {
-        setStep("preview");
-      }
-      return true;
-    });
-  }
-
   useEffect(() => {
     if (!open) {
-      setStep(autoSkipAsk ? "preview" : "ask");
+      setStep("ask");
       setError(null);
       setPreview(null);
       setDokumentNr("");
       setRegieDraft({});
       return;
     }
+    setStep("ask");
     setError(null);
-    if (autoSkipAsk) {
-      void loadPreview([]);
-    } else {
-      setStep("ask");
-    }
-    // Nur bei Öffnen / Kontextwechsel laden — nicht bei jedem Render.
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- intentional open gate
-  }, [open, anfrageId, art, autoSkipAsk]);
+  }, [open, anfrageId, art]);
 
   async function handleJa() {
-    await loadPreview([]);
+    setLoading(true);
+    setError(null);
+    setPreviewLoading(true);
+    const res = await previewPartnerAutoDokument({
+      anfrageId,
+      art,
+      overrides: [],
+    });
+    setPreviewLoading(false);
+    setLoading(false);
+    if (!res.ok) {
+      setError(res.error);
+      return;
+    }
+    setPreview(res.preview);
+    setDokumentNr(res.preview.dokumentNr);
+    setFirma(res.preview.firmendaten.firma);
+    setStrasse(res.preview.firmendaten.strasse);
+    setHausnummer(res.preview.firmendaten.hausnummer);
+    setPlz(res.preview.firmendaten.plz);
+    setOrt(res.preview.firmendaten.ort);
+    setTelefon(res.preview.firmendaten.telefon);
+    setSteuernummer(res.preview.firmendaten.steuernummer);
+    setUstid(res.preview.firmendaten.ustid);
+    setIban(res.preview.firmendaten.iban);
+
+    const nextDraft: typeof regieDraft = {};
+    for (const f of res.preview.missingFields) {
+      if (f.scope !== "regie" || !f.positionId) continue;
+      nextDraft[f.positionId] = nextDraft[f.positionId] ?? {
+        titel: "",
+        beschreibung: "",
+        zeitMin: "",
+        satz: "",
+      };
+    }
+    setRegieDraft(nextDraft);
+
+    if (res.preview.missingFields.length > 0) {
+      setStep("fehlend");
+    } else {
+      setStep("preview");
+    }
   }
 
   async function saveFehlendAndContinue() {
+    setLoading(true);
     setError(null);
 
-    await runUpload(async () => {
-      const needsFirma = preview?.missingFields.some((f) => f.scope === "firmendaten");
-      if (needsFirma) {
-        const fd = new FormData();
-        fd.set("firma", firma.trim());
-        fd.set("inhaber", firma.trim() || "Inhaber");
-        fd.set("strasse", strasse.trim());
-        fd.set("hausnummer", hausnummer.trim());
-        fd.set("plz", plz.trim());
-        fd.set("ort", ort.trim());
-        fd.set("telefon", telefon.trim());
-        if (steuernummer.trim()) fd.set("steuernummer", steuernummer.trim());
-        if (ustid.trim()) fd.set("ustid", ustid.trim());
-        if (iban.trim()) fd.set("iban", iban.trim());
-        const saved = await updatePartnerProfil(fd);
-        if (!saved.ok) {
-          setError(saved.error);
-          return;
-        }
+    const needsFirma = preview?.missingFields.some((f) => f.scope === "firmendaten");
+    if (needsFirma) {
+      const fd = new FormData();
+      fd.set("firma", firma.trim());
+      fd.set("inhaber", firma.trim() || "Inhaber");
+      fd.set("strasse", strasse.trim());
+      fd.set("hausnummer", hausnummer.trim());
+      fd.set("plz", plz.trim());
+      fd.set("ort", ort.trim());
+      fd.set("telefon", telefon.trim());
+      if (steuernummer.trim()) fd.set("steuernummer", steuernummer.trim());
+      if (ustid.trim()) fd.set("ustid", ustid.trim());
+      if (iban.trim()) fd.set("iban", iban.trim());
+      const saved = await updatePartnerProfil(fd);
+      if (!saved.ok) {
+        setLoading(false);
+        setError(saved.error);
+        return;
       }
+    }
 
-      const res = await previewPartnerAutoDokument({
-        anfrageId,
-        art,
-        overrides,
-      });
-      if (!res.ok) {
-        setError(res.error);
-        return;
-      }
-      setPreview(res.preview);
-      setDokumentNr(res.preview.dokumentNr);
-      if (res.preview.missingFields.length > 0) {
-        setError(
-          `Noch fehlend: ${res.preview.missingFields.map((m) => m.label).join(", ")}.`
-        );
-        return;
-      }
-      setStep("preview");
+    const res = await previewPartnerAutoDokument({
+      anfrageId,
+      art,
+      overrides,
     });
+    setLoading(false);
+    if (!res.ok) {
+      setError(res.error);
+      return;
+    }
+    setPreview(res.preview);
+    setDokumentNr(res.preview.dokumentNr);
+    if (res.preview.missingFields.length > 0) {
+      setError(
+        `Noch fehlend: ${res.preview.missingFields.map((m) => m.label).join(", ")}.`
+      );
+      return;
+    }
+    setStep("preview");
   }
 
   async function onSubmit() {
@@ -238,32 +198,32 @@ export function PartnerDokumentPreviewModal({
       );
       return;
     }
+    setLoading(true);
     setError(null);
-    await runUpload(async () => {
-      const res =
-        art === "angebot"
-          ? await submitPartnerAutoAngebot(anfrageId, {
-              dokumentNr: nr,
-              overrides,
-            })
-          : await submitPartnerAutoRechnung({
-              anfrageId,
-              leistungsZeitraum,
-              dokumentNr: nr,
-              overrides,
-            });
-      if (!res.ok) {
-        setError(res.error);
-        return;
-      }
-      if (art === "angebot") {
-        partnerPortalToast.unterlagenHochgeladen();
-      } else {
-        partnerPortalToast.rechnungEingereicht();
-      }
-      router.refresh();
-      onSuccess();
-    });
+    const res =
+      art === "angebot"
+        ? await submitPartnerAutoAngebot(anfrageId, {
+            dokumentNr: nr,
+            overrides,
+          })
+        : await submitPartnerAutoRechnung({
+            anfrageId,
+            leistungsZeitraum,
+            dokumentNr: nr,
+            overrides,
+          });
+    setLoading(false);
+    if (!res.ok) {
+      setError(res.error);
+      return;
+    }
+    if (art === "angebot") {
+      partnerPortalToast.unterlagenHochgeladen();
+    } else {
+      partnerPortalToast.rechnungEingereicht();
+    }
+    router.refresh();
+    onSuccess();
   }
 
   const title =
@@ -275,16 +235,16 @@ export function PartnerDokumentPreviewModal({
         ? "Fehlende Daten ergänzen"
         : art === "angebot"
           ? "Angebot prüfen"
-          : "Rechnung absenden";
+          : "Rechnung prüfen";
 
   const subtitle =
     step === "ask"
       ? "Aus Firmendaten und Leistungen — sichtbar bei dir und bei Bärenwald unter Dokumente."
       : step === "fehlend"
-        ? "Angaben werden in deinen Firmendaten gespeichert."
+        ? "Damit wir das Dokument automatisch erzeugen können."
         : art === "angebot"
           ? "Aus Firmendaten und bestätigten Konditionen"
-          : "Nummer oben anpassen, dann Absenden — Bärenwald erhält die Rechnung im CRM.";
+          : "Aus Firmendaten und erledigten Leistungen (Regie = Zeit × Stundensatz)";
 
   const firmMissingKeys = new Set(
     (preview?.missingFields ?? [])
@@ -314,11 +274,6 @@ export function PartnerDokumentPreviewModal({
       variant={step === "fehlend" ? "edit" : "preview"}
       maxWidth={560}
       closeOnBackdrop={false}
-      busy={loading}
-      busyTitle={
-        art === "rechnung" ? "Rechnung wird verarbeitet…" : "Dokument wird verarbeitet…"
-      }
-      busyBody="Einen Moment bitte."
     >
       <div className="flex min-h-0 flex-1 flex-col">
         <div className="min-h-0 flex-1 space-y-4 overflow-y-auto pb-4">
@@ -550,6 +505,12 @@ export function PartnerDokumentPreviewModal({
 
           {step === "preview" ? (
             <>
+              {previewLoading ? (
+                <p className="text-[13px]" style={{ color: PORTAL_VAR.sub }}>
+                  Vorschau wird geladen…
+                </p>
+              ) : null}
+
               {preview ? (
                 <>
                   <div
@@ -563,7 +524,7 @@ export function PartnerDokumentPreviewModal({
                       >
                         {art === "angebot"
                           ? "Angebotsnummer *"
-                          : "Rechnungsnummer *"}
+                          : "Deine Rechnungsnummer *"}
                       </span>
                       <input
                         type="text"
@@ -571,7 +532,6 @@ export function PartnerDokumentPreviewModal({
                         onChange={(e) => setDokumentNr(e.target.value)}
                         className="portal-input w-full font-semibold"
                         autoComplete="off"
-                        autoFocus={art === "rechnung"}
                       />
                     </label>
                     <p className="text-[13px]" style={{ color: PORTAL_VAR.sub }}>
@@ -636,7 +596,7 @@ export function PartnerDokumentPreviewModal({
         </div>
 
         <div
-          className="portal-action-row shrink-0 border-t pt-3"
+          className="flex shrink-0 flex-wrap gap-2 border-t pt-3"
           style={{ borderColor: PORTAL_VAR.line2 }}
         >
           {step === "ask" ? (
@@ -646,18 +606,26 @@ export function PartnerDokumentPreviewModal({
                   type="button"
                   disabled={loading}
                   onClick={onClose}
-                  className="portal-action-btn portal-action-btn--secondary"
+                  className="rounded-[9px] border px-4 py-2.5 text-[13px] font-semibold"
+                  style={{
+                    borderColor: PORTAL_VAR.line,
+                    color: PORTAL_VAR.sub,
+                    background: "#fff",
+                  }}
                 >
-                  {cancelLabel}
+                  Nein, ohne Dokument
                 </button>
               ) : null}
               <button
                 type="button"
-                disabled={loading}
+                disabled={loading || previewLoading}
                 onClick={() => void handleJa()}
-                className="portal-action-btn portal-action-btn--primary"
+                className={cn(
+                  "ml-auto flex-1 rounded-[9px] px-4 py-2.5 text-[13.5px] font-semibold text-white disabled:opacity-50 sm:flex-none"
+                )}
+                style={{ background: PORTAL_VAR.primary }}
               >
-                {loading ? "Prüfe…" : "Ja, erstellen"}
+                {loading || previewLoading ? "Prüfe…" : "Ja, erstellen"}
               </button>
             </>
           ) : null}
@@ -668,15 +636,23 @@ export function PartnerDokumentPreviewModal({
                 type="button"
                 disabled={loading}
                 onClick={onClose}
-                className="portal-action-btn portal-action-btn--secondary"
+                className="rounded-[9px] border px-4 py-2.5 text-[13px] font-semibold"
+                style={{
+                  borderColor: PORTAL_VAR.line,
+                  color: PORTAL_VAR.sub,
+                  background: "#fff",
+                }}
               >
-                {cancelLabel}
+                Nein, ohne Dokument
               </button>
               <button
                 type="button"
                 disabled={loading}
                 onClick={() => void saveFehlendAndContinue()}
-                className="portal-action-btn portal-action-btn--primary"
+                className={cn(
+                  "ml-auto flex-1 rounded-[9px] px-4 py-2.5 text-[13.5px] font-semibold text-white disabled:opacity-50 sm:flex-none"
+                )}
+                style={{ background: PORTAL_VAR.primary }}
               >
                 {loading ? "Speichern…" : "Weiter zur Vorschau"}
               </button>
@@ -689,22 +665,37 @@ export function PartnerDokumentPreviewModal({
                 type="button"
                 disabled={loading}
                 onClick={onClose}
-                className="portal-action-btn portal-action-btn--secondary"
+                className="rounded-[9px] border px-4 py-2.5 text-[13px] font-semibold"
+                style={{
+                  borderColor: PORTAL_VAR.line,
+                  color: PORTAL_VAR.sub,
+                  background: "#fff",
+                }}
               >
-                Abbrechen
+                Nein, ohne Dokument
               </button>
               <button
                 type="button"
                 disabled={
                   loading ||
+                  previewLoading ||
                   !preview ||
                   preview.missingFields.length > 0 ||
                   !dokumentNr.trim()
                 }
                 onClick={() => void onSubmit()}
-                className="portal-action-btn portal-action-btn--primary"
+                className={cn(
+                  "ml-auto flex-1 rounded-[9px] px-4 py-2.5 text-[13.5px] font-semibold text-white disabled:opacity-50 sm:flex-none"
+                )}
+                style={{ background: PORTAL_VAR.primary }}
               >
-                {previewSubmitLabel}
+                {loading
+                  ? art === "angebot"
+                    ? "Wird erstellt…"
+                    : "Wird eingereicht…"
+                  : art === "angebot"
+                    ? "Angebot erstellen & bestätigen"
+                    : "Rechnung einreichen"}
               </button>
             </>
           ) : null}

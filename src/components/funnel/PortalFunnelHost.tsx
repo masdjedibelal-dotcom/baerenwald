@@ -20,14 +20,7 @@ import {
   serializeFunnelStateForLead,
   submitBwLead,
 } from "@/components/funnel/LeadStep";
-import {
-  BW_FUNNEL_PREIS_HINWEIS_ZUG_ZUSTAND,
-  BW_FUNNEL_STEP_BAD_AUSSTATTUNG,
-  BW_FUNNEL_STEP_ZUGAENGLICHKEIT,
-  buildZustandStepForBereiche,
-  getZustandDisplayLabel,
-  SITUATIONEN_CONFIG,
-} from "@/lib/funnel/config";
+import { SITUATIONEN_CONFIG } from "@/lib/funnel/config";
 import {
   getActiveFachdetailQuestionIds,
   getActiveFachdetailQuestions,
@@ -40,39 +33,17 @@ import { kaputtBereichToMeldeId } from "@/lib/funnel/melde-bereich-map";
 import {
   getMeldeKaputtFachfragen,
   isMeldeKaputtChannel,
+  meldeDringlichkeitFromBereich,
+  meldeKategorieFromFunnelBereich,
   MELDE_KAPUTT_BEREICH_OPTIONS,
 } from "@/lib/funnel/melde-kaputt-flow";
-import {
-  isMeldeDirektauftrag,
-  meldeKategorieForDirektauftragFlow,
-} from "@/lib/funnel/melde-direktauftrag";
-import { calculatePrice, isBwZuKomplexErgebnis } from "@/lib/funnel/price-calc";
-import {
-  applyGroesseStepCopy,
-  getGroesseConfig,
-  groesseEinheitFromConfig,
-} from "@/lib/funnel/groesse-config";
-import { skipGroesseForSanierenDachKleinjob } from "@/lib/funnel/dach-step-order";
-import {
-  findResolvedGroesseStep,
-  findResolvedStepDef,
-  getPortalResolvedFunnelSteps,
-  isPortalFunnelMidStepId,
-  mapResolvedStepsToPortalMid,
-  portalMidStepLabel,
-  portalProjektStepAnswered,
-  shouldUseWebsiteMidSteps,
-  type PortalFunnelMidStepId,
-} from "@/lib/funnel/portal-funnel-mid-steps";
-import { GroesseStep } from "@/components/funnel/GroesseStep";
+import { calculatePrice } from "@/lib/funnel/price-calc";
 import { mapMeldeToPrice, compactFachdetailAnswers } from "@/lib/org/map-melde-to-price";
 import { BW_FUNNEL_STEP1_OPTIONS } from "@/lib/funnel/situation-options";
 import type {
   FachdetailsState,
   FunnelState,
-  ObjektZustand,
   Situation,
-  Zugaenglichkeit,
 } from "@/lib/funnel/types";
 import { BW_FUNNEL_INITIAL_STATE } from "@/hooks/funnel/useFunnelState";
 import { track } from "@/lib/analytics";
@@ -134,46 +105,14 @@ type StepId =
   | "objekt"
   | "objekt_neu"
   | "mieter"
-  | "mieter_neu"
   | "situation"
   | "bereiche"
   | "dringlichkeit"
   | "fachdetail"
-  | "groesse"
-  | PortalFunnelMidStepId
   | "medien"
   | "beschreibung"
   | "kontakt"
   | "result";
-
-function asLibOpt(opt: {
-  value: string;
-  label: string;
-  hint?: string;
-  icon?: string;
-}): StepOption {
-  return {
-    value: opt.value,
-    label: opt.label,
-    hint: opt.hint,
-    icon: opt.icon,
-  };
-}
-
-function portalPriceIsReliable(
-  price: {
-    min: number;
-    max: number;
-    resultModus?: string;
-    komplexReason?: string | null;
-  } | null
-): boolean {
-  if (!price) return false;
-  if (price.min <= 0 && price.max <= 0) return false;
-  if (price.resultModus === "zu_komplex") return false;
-  if (price.komplexReason === "no_mapping_found") return false;
-  return true;
-}
 
 type Props = {
   channel: FunnelChannel;
@@ -342,28 +281,6 @@ export function PortalFunnelHost({
     []
   );
 
-  const loadHvMieterListe = useCallback(async (oid: string) => {
-    const res = await fetch(
-      `/api/org/einheit-bewohner?objektId=${encodeURIComponent(oid)}`
-    );
-    const json = (await res.json()) as {
-      bewohner?: Array<{
-        id: string;
-        name: string;
-        email?: string | null;
-        telefon?: string | null;
-        objekt_einheiten?: { bezeichnung?: string | null } | null;
-      }>;
-    };
-    return (json.bewohner ?? []).map((b) => ({
-      id: b.id,
-      name: b.name,
-      email: b.email,
-      telefon: b.telefon,
-      einheitLabel: b.objekt_einheiten?.bezeichnung ?? null,
-    })) satisfies HvMieterOption[];
-  }, []);
-
   const mieterKontaktOk = useCallback(() => {
     const nameOk =
       mieterVollname.length > 1 ||
@@ -447,8 +364,28 @@ export function PortalFunnelHost({
     let cancelled = false;
     void (async () => {
       try {
-        const list = await loadHvMieterListe(objektId);
-        if (!cancelled) setHvMieterListe(list);
+        const res = await fetch(
+          `/api/org/einheit-bewohner?objektId=${encodeURIComponent(objektId)}`
+        );
+        const json = (await res.json()) as {
+          bewohner?: Array<{
+            id: string;
+            name: string;
+            email?: string | null;
+            telefon?: string | null;
+            objekt_einheiten?: { bezeichnung?: string | null } | null;
+          }>;
+        };
+        if (cancelled) return;
+        setHvMieterListe(
+          (json.bewohner ?? []).map((b) => ({
+            id: b.id,
+            name: b.name,
+            email: b.email,
+            telefon: b.telefon,
+            einheitLabel: b.objekt_einheiten?.bezeichnung ?? null,
+          }))
+        );
       } catch {
         if (!cancelled) setHvMieterListe([]);
       }
@@ -456,7 +393,7 @@ export function PortalFunnelHost({
     return () => {
       cancelled = true;
     };
-  }, [isHvIntern, objektId, loadHvMieterListe]);
+  }, [isHvIntern, objektId]);
 
   const meldeFachfragen = useMemo(() => {
     if (!useMeldeKaputtFlow) return [];
@@ -479,62 +416,11 @@ export function PortalFunnelHost({
     (order: StepId[]): StepId | null => {
       const afterFach = order.indexOf("fachdetail");
       if (afterFach >= 0) return order[afterFach + 1] ?? null;
-      const fallback: StepId[] = [
-        "groesse",
-        "bad_ausstattung",
-        "zugaenglichkeit",
-        "zustand",
-        "medien",
-        "beschreibung",
-        "kontakt",
-        "result",
-      ];
+      const fallback: StepId[] = ["medien", "beschreibung", "kontakt", "result"];
       return fallback.find((id) => order.includes(id)) ?? null;
     },
     []
   );
-
-  const resolvedWebsiteSteps = useMemo(
-    () => getPortalResolvedFunnelSteps(state),
-    [state]
-  );
-
-  const groesseConfig = useMemo(() => {
-    if (!state.situation || state.bereiche.length === 0) return null;
-    if (useMeldeKaputtFlow) return null;
-    if (skipGroesseForSanierenDachKleinjob(state.fachdetails)) return null;
-    /** Nur wenn Website-Sequenz einen Größen-Schritt enthält. */
-    if (
-      shouldUseWebsiteMidSteps(state.situation, useMeldeKaputtFlow) &&
-      !findResolvedGroesseStep(resolvedWebsiteSteps)
-    ) {
-      return null;
-    }
-    return getGroesseConfig(state);
-  }, [state, useMeldeKaputtFlow, resolvedWebsiteSteps]);
-
-  const groesseStepCopy = useMemo(() => {
-    if (!state.situation || !groesseConfig) return null;
-    const raw =
-      findResolvedGroesseStep(resolvedWebsiteSteps) ??
-      ({
-        id: "groesse",
-        question: "Wie groß ist die Fläche ungefähr?",
-        subtext: groesseConfig.einheit,
-        inputType: "tiles-single" as const,
-      });
-    return applyGroesseStepCopy(
-      raw,
-      state.situation,
-      state.bereiche,
-      state.fachdetails
-    );
-  }, [state, groesseConfig, resolvedWebsiteSteps]);
-
-  const zustandStepDef = useMemo(() => {
-    if (!state.situation || state.bereiche.length === 0) return null;
-    return buildZustandStepForBereiche(state.bereiche);
-  }, [state.situation, state.bereiche]);
 
   const price = useMemo(() => {
     if (!cfg.showPrice || !state.situation || state.bereiche.length === 0) {
@@ -548,18 +434,12 @@ export function PortalFunnelHost({
 
     if (useMeldeKaputtFlow) {
       const bereichId = kaputtBereichToMeldeId(state.bereiche[0] ?? "sonstiges");
-      const answers = state.fachdetails?.fachdetailAnswers ?? {};
-      const direktauftrag = isMeldeDirektauftrag(bereichId, answers);
-      const kategorie = meldeKategorieForDirektauftragFlow(
-        bereichId,
-        direktauftrag
-      );
+      const kategorie = meldeKategorieFromFunnelBereich(state.bereiche[0]);
       const mapped = mapMeldeToPrice({
         kategorie,
         bereichId,
         plz,
-        fachdetailAnswers: answers,
-        dringlichkeit: direktauftrag ? "sofort" : "diese_woche",
+        fachdetailAnswers: state.fachdetails?.fachdetailAnswers ?? {},
       });
       if (mapped.preis_unsicher || mapped.preis_min == null) return null;
       return {
@@ -567,45 +447,19 @@ export function PortalFunnelHost({
         max: mapped.preis_max ?? mapped.preis_min,
         resultModus: "ok" as const,
         istFallback: false,
-        komplexReason: null as string | null,
       };
     }
 
-    // Ohne benötigte Größe keinen Fake-Preis aus groesse??1
-    if (groesseConfig && (state.groesse == null || state.groesse <= 0)) {
-      return null;
-    }
-
     try {
-      const calculated = calculatePrice({
+      return calculatePrice({
         ...state,
         plz,
         zeitraum: state.zeitraum ?? state.dringlichkeit ?? "flexibel",
       });
-      if (
-        isBwZuKomplexErgebnis(state, calculated.resultModus) ||
-        !portalPriceIsReliable(calculated)
-      ) {
-        return {
-          ...calculated,
-          min: 0,
-          max: 0,
-        };
-      }
-      return calculated;
     } catch {
       return null;
     }
-  }, [
-    cfg.showPrice,
-    state,
-    objekt?.plz,
-    prefill?.plz,
-    useMeldeKaputtFlow,
-    groesseConfig,
-  ]);
-
-  const reliablePrice = portalPriceIsReliable(price);
+  }, [cfg.showPrice, state, objekt?.plz, prefill?.plz, useMeldeKaputtFlow]);
 
   const patchFach = useCallback((patch: Partial<FachdetailsState>) => {
     setState((s) => ({
@@ -613,19 +467,6 @@ export function PortalFunnelHost({
       fachdetails: { ...s.fachdetails, ...patch },
     }));
   }, []);
-
-  const patchProjekt = useCallback(
-    (patch: Partial<NonNullable<FachdetailsState["projekt"]>>) => {
-      setState((s) => ({
-        ...s,
-        fachdetails: {
-          ...s.fachdetails,
-          projekt: { ...s.fachdetails?.projekt, ...patch },
-        },
-      }));
-    },
-    []
-  );
 
   const buildStepOrder = useCallback((): StepId[] => {
     const out: StepId[] = [];
@@ -663,14 +504,8 @@ export function PortalFunnelHost({
       ) {
         out.push("fachdetail");
       }
-    } else if (shouldUseWebsiteMidSteps(state.situation, false)) {
-      const mid = mapResolvedStepsToPortalMid(resolvedWebsiteSteps, state, {
-        skipDringlichkeit: out.includes("dringlichkeit"),
-      });
-      for (const id of mid) {
-        if (id === "groesse" && !groesseConfig) continue;
-        out.push(id);
-      }
+    } else if (getActiveFachdetailQuestionIds(state).length > 0) {
+      out.push("fachdetail");
     }
     /** Umbau & Modernisierung: keine Fotos. */
     if (cfg.include.photos && state.situation !== "erneuern") {
@@ -685,7 +520,7 @@ export function PortalFunnelHost({
     }
     out.push("result");
     return out;
-  }, [cfg, state, channel, resolvedWebsiteSteps, groesseConfig]);
+  }, [cfg, state, channel]);
 
   const steps = buildStepOrder();
 
@@ -706,28 +541,6 @@ export function PortalFunnelHost({
     buildStepOrder,
     stepAfterFachdetail,
   ]);
-
-  /** Projekt-/Zustand-Steps können nach Antwort aus der Order fallen (z. B. Rohbau nein). */
-  useEffect(() => {
-    if (
-      step === "objekt_neu" ||
-      step === "mieter_neu" ||
-      step === "fachdetail"
-    ) {
-      return;
-    }
-    const order = buildStepOrder();
-    if (order.includes(step)) return;
-    const fallback =
-      order.find(
-        (id) =>
-          id === "medien" ||
-          id === "beschreibung" ||
-          id === "kontakt" ||
-          id === "result"
-      ) ?? order[order.length - 1];
-    if (fallback) setStep(fallback);
-  }, [step, buildStepOrder]);
 
   const summaryRows = useMemo((): SummaryRow[] => {
     const rows: SummaryRow[] = [];
@@ -791,16 +604,6 @@ export function PortalFunnelHost({
       );
     }
 
-    if (state.groesse != null && state.groesse > 0) {
-      const einheitLabel =
-        state.groesseEinheit === "stueck"
-          ? "Stück"
-          : state.groesseEinheit === "meter"
-            ? "m"
-            : "m²";
-      push("Umfang", `${state.groesse} ${einheitLabel}`);
-    }
-
     if (state.dringlichkeit) {
       push(
         "Dringlichkeit",
@@ -808,88 +611,6 @@ export function PortalFunnelHost({
           dringlichkeitOptions({ stripSlaCopy: stripTerminInfos }),
           state.dringlichkeit
         )
-      );
-    }
-
-    const pj = state.fachdetails?.projekt;
-    if (pj?.ausbauRohbau) {
-      push(
-        "Rohbau",
-        pj.ausbauRohbau === "ja" ? "Vorhanden" : "Muss erstellt werden"
-      );
-    }
-    if (pj?.ausbauDeckenhoehe) {
-      const labels: Record<string, string> = {
-        niedrig: "Unter 2,00 m",
-        mittel: "2,00–2,40 m",
-        hoch: "Über 2,40 m",
-      };
-      push("Deckenhöhe", labels[pj.ausbauDeckenhoehe] ?? pj.ausbauDeckenhoehe);
-    }
-    if (pj?.gartenLeistung) {
-      const gl = findResolvedStepDef(
-        resolvedWebsiteSteps,
-        "projekt_garten_leistung"
-      );
-      push(
-        "Garten-Leistung",
-        optionLabel((gl?.options ?? []) as StepOption[], pj.gartenLeistung)
-      );
-    }
-    if (pj?.gartenTerrasseMaterial) {
-      const labels: Record<string, string> = {
-        holz_wpc: "Holz / WPC",
-        naturstein: "Naturstein / Platten",
-        noch_offen: "Noch offen",
-      };
-      push(
-        "Terrassen-Material",
-        labels[pj.gartenTerrasseMaterial] ?? pj.gartenTerrasseMaterial
-      );
-    }
-    if (pj?.gartenZaun) {
-      push("Zaunbau", pj.gartenZaun === "ja" ? "Ja" : "Nein");
-    }
-    if (pj?.gartenZugaenglichkeit) {
-      push(
-        "Garten-Zugang",
-        pj.gartenZugaenglichkeit === "einfach" ? "Einfach" : "Schwer"
-      );
-    }
-    if (pj?.durchbruchAnzahl != null) {
-      push(
-        "Durchbrüche",
-        pj.durchbruchAnzahl >= 3 ? "Drei oder mehr" : String(pj.durchbruchAnzahl)
-      );
-    }
-    if (pj?.durchbruchTragend !== undefined) {
-      push(
-        "Tragende Wände",
-        pj.durchbruchTragend ? "Ja, tragend" : "Nein, nicht tragend"
-      );
-    }
-    if (state.badAusstattung) {
-      push(
-        "Bad-Ausstattung",
-        optionLabel(
-          (BW_FUNNEL_STEP_BAD_AUSSTATTUNG.options ?? []) as StepOption[],
-          state.badAusstattung
-        )
-      );
-    }
-    if (state.zugaenglichkeit) {
-      push(
-        "Zugänglichkeit",
-        optionLabel(
-          (BW_FUNNEL_STEP_ZUGAENGLICHKEIT.options ?? []) as StepOption[],
-          state.zugaenglichkeit
-        )
-      );
-    }
-    if (state.zustand) {
-      push(
-        "Zustand",
-        getZustandDisplayLabel(state.zustand, state.bereiche)
       );
     }
 
@@ -964,7 +685,6 @@ export function PortalFunnelHost({
     steps,
     useMeldeKaputtFlow,
     meldeFachfragen,
-    resolvedWebsiteSteps,
   ]);
 
   const goNext = () => {
@@ -986,8 +706,7 @@ export function PortalFunnelHost({
       return;
     }
 
-    const key =
-      step === "objekt_neu" ? "objekt" : step === "mieter_neu" ? "mieter" : step;
+    const key = step === "objekt_neu" ? "objekt" : step;
     const i = order.indexOf(key);
     // Orphan-Step (nicht mehr in Order) — nicht zu steps[0] springen
     if (i < 0) {
@@ -1012,11 +731,6 @@ export function PortalFunnelHost({
     setError(null);
     if (step === "objekt_neu") {
       setStep("objekt");
-      return;
-    }
-    if (step === "mieter_neu") {
-      setStep("mieter");
-      setMieterMode("ohne");
       return;
     }
     if (step === "fachdetail" && fachIdx > 0) {
@@ -1070,11 +784,6 @@ export function PortalFunnelHost({
         neuOrt.trim().length > 1
       );
     }
-    if (step === "mieter_neu") {
-      return (
-        mieterVorname.trim().length > 0 && mieterNachname.trim().length > 0
-      );
-    }
     if (step === "mieter") {
       if (isHvIntern) {
         if (mieterMode === "ohne") return true;
@@ -1092,21 +801,6 @@ export function PortalFunnelHost({
       if (!currentFachId) return true;
       const ans = state.fachdetails?.fachdetailAnswers?.[currentFachId];
       return ans != null && String(ans).length > 0;
-    }
-    if (step === "groesse") {
-      return state.groesse != null && state.groesse > 0;
-    }
-    if (step === "zugaenglichkeit") {
-      return Boolean(state.zugaenglichkeit);
-    }
-    if (step === "zustand") {
-      return Boolean(state.zustand);
-    }
-    if (step === "bad_ausstattung") {
-      return Boolean(state.badAusstattung);
-    }
-    if (isPortalFunnelMidStepId(step) && step.startsWith("projekt_")) {
-      return portalProjektStepAnswered(step, state.fachdetails?.projekt);
     }
     if (step === "medien") return true;
     if (step === "beschreibung") {
@@ -1181,52 +875,6 @@ export function PortalFunnelHost({
     }
   };
 
-  const createMieter = async () => {
-    const oid = objektId.trim();
-    const name = [mieterVorname, mieterNachname]
-      .map((s) => s.trim())
-      .filter(Boolean)
-      .join(" ");
-    if (!oid || !name) {
-      setError("Bitte Vor- und Nachname angeben.");
-      return;
-    }
-    setNeuBusy(true);
-    setError(null);
-    try {
-      const res = await fetch("/api/org/einheit-bewohner", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          objektId: oid,
-          name,
-          wohnung: einheit.trim() || undefined,
-          etage: einheit.trim() || undefined,
-          email: mieterEmail.trim() || undefined,
-          telefon: mieterTel.trim() || undefined,
-        }),
-      });
-      const json = (await res.json()) as { error?: string; id?: string };
-      if (!res.ok || !json.id) {
-        setError(json.error ?? "Mieter nicht angelegt.");
-        return;
-      }
-      const list = await loadHvMieterListe(oid);
-      setHvMieterListe(list);
-      const createdId = String(json.id);
-      setSelectedMieterId(createdId);
-      setMieterMode("liste");
-      setOhneMieter(false);
-      setMieterName(name);
-      const created = list.find((m) => m.id === createdId);
-      if (created?.einheitLabel) setEinheit(created.einheitLabel);
-      setStep("mieter");
-      portalToastSuccess("Mieter angelegt");
-    } finally {
-      setNeuBusy(false);
-    }
-  };
-
   const uploadFotos = async (): Promise<string[]> => {
     if (!melde || state.photos.length === 0) return [];
     const urls: string[] = [];
@@ -1253,14 +901,8 @@ export function PortalFunnelHost({
       if (channel === "melde_anon" && melde) {
         const bereich = state.bereiche[0] ?? "sonstiges";
         const bereichId = kaputtBereichToMeldeId(bereich);
-        const fachAnswers = compactFachdetailAnswers(
-          state.fachdetails?.fachdetailAnswers
-        );
-        const direktauftrag = isMeldeDirektauftrag(bereichId, fachAnswers);
-        const kategorie = meldeKategorieForDirektauftragFlow(
-          bereichId,
-          direktauftrag
-        );
+        const kategorie = meldeKategorieFromFunnelBereich(bereich);
+        const notfall = kategorie === "notfall";
         const fotos = await uploadFotos();
         const isErgaenzen = !!melde.ergaenzenToken;
         const endpoint = isErgaenzen
@@ -1278,9 +920,10 @@ export function PortalFunnelHost({
               telefon: state.telefon.trim() || mieterTel.trim() || undefined,
               kategorie,
               bereichId,
-              fachdetailAnswers: fachAnswers,
-              direktauftrag,
-              notfall: direktauftrag,
+              fachdetailAnswers: compactFachdetailAnswers(
+                state.fachdetails?.fachdetailAnswers
+              ),
+              notfall,
               beschreibung: state.leadBeschreibung.trim(),
               fotos,
             }
@@ -1292,12 +935,13 @@ export function PortalFunnelHost({
               telefon: state.telefon.trim() || mieterTel.trim() || undefined,
               kategorie,
               bereichId,
-              fachdetailAnswers: fachAnswers,
-              direktauftrag,
-              notfall: direktauftrag,
+              fachdetailAnswers: compactFachdetailAnswers(
+                state.fachdetails?.fachdetailAnswers
+              ),
+              notfall,
               beschreibung: state.leadBeschreibung.trim(),
               fotos,
-              dringlichkeit: direktauftrag ? "sofort" : "diese_woche",
+              dringlichkeit: meldeDringlichkeitFromBereich(bereichId),
               ...(channel === "melde_anon" || melde.needsAddress
                 ? {
                     plz: state.plz.trim(),
@@ -1323,7 +967,7 @@ export function PortalFunnelHost({
         }
         if (!isErgaenzen) {
           track.meldeAbgeschickt(
-            direktauftrag ? "direktauftrag" : kategorie,
+            notfall ? "notfall" : "reparatur",
             melde.orgKennung
           );
         }
@@ -1391,20 +1035,13 @@ export function PortalFunnelHost({
             objektId,
             situation: state.situation,
             bereiche: state.bereiche,
-            preis_min: reliablePrice && price ? price.min : null,
-            preis_max: reliablePrice && price ? price.max : null,
+            preis_min: price?.min ?? 0,
+            preis_max: price?.max ?? 0,
             zeitraum:
               state.situation === "kaputt" && useMeldeKaputtFlow
-                ? (() => {
-                    const bid = kaputtBereichToMeldeId(
-                      state.bereiche[0] ?? "sonstiges"
-                    );
-                    const da = isMeldeDirektauftrag(
-                      bid,
-                      state.fachdetails?.fachdetailAnswers ?? {}
-                    );
-                    return da ? "sofort" : "diese_woche";
-                  })()
+                ? meldeDringlichkeitFromBereich(
+                    kaputtBereichToMeldeId(state.bereiche[0] ?? "sonstiges")
+                  )
                 : state.dringlichkeit || state.zeitraum || null,
             name: contactName,
             email: contactEmail,
@@ -1450,28 +1087,16 @@ export function PortalFunnelHost({
             funnel_daten: {
               channel,
               fachdetails: state.fachdetails,
-              ...(() => {
-                if (
-                  !(state.situation === "kaputt" && useMeldeKaputtFlow)
-                ) {
-                  return { dringlichkeit: state.dringlichkeit };
-                }
-                const bid = kaputtBereichToMeldeId(
-                  state.bereiche[0] ?? "sonstiges"
-                );
-                const answers =
-                  state.fachdetails?.fachdetailAnswers ?? {};
-                const da = isMeldeDirektauftrag(bid, answers);
-                return {
-                  dringlichkeit: da ? "sofort" : "diese_woche",
-                  melde_kategorie: meldeKategorieForDirektauftragFlow(
-                    bid,
-                    da
-                  ),
-                  direktauftrag: da,
-                  notfall: da,
-                };
-              })(),
+              dringlichkeit:
+                state.situation === "kaputt" && useMeldeKaputtFlow
+                  ? meldeDringlichkeitFromBereich(
+                      kaputtBereichToMeldeId(state.bereiche[0] ?? "sonstiges")
+                    )
+                  : state.dringlichkeit,
+              melde_kategorie:
+                state.situation === "kaputt" && useMeldeKaputtFlow
+                  ? meldeKategorieFromFunnelBereich(state.bereiche[0])
+                  : undefined,
               ohne_mieter: mieterMode === "ohne",
               mieter_neu: mieterMode === "neu",
               fotos_count: state.photos.length,
@@ -1529,8 +1154,8 @@ export function PortalFunnelHost({
             .join("\n"),
           situation: state.situation,
           bereiche: state.bereiche,
-          preis_min: reliablePrice && price ? price.min : undefined,
-          preis_max: reliablePrice && price ? price.max : undefined,
+          preis_min: price?.min ?? 0,
+          preis_max: price?.max ?? 0,
           plz,
           strasse:
             state.strasse.trim() ||
@@ -1611,6 +1236,19 @@ export function PortalFunnelHost({
           stepLabel="Objekt"
           question="Welches Objekt?"
           animateKey="objekt"
+          headerAction={
+            cfg.prefix.objektNeu ? (
+              <button
+                type="button"
+                className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-border-default bg-white text-accent shadow-sm transition-colors hover:border-accent hover:bg-accent-light"
+                aria-label="Neues Objekt anlegen"
+                title="Neues Objekt anlegen"
+                onClick={() => setStep("objekt_neu")}
+              >
+                <Plus className="h-5 w-5" strokeWidth={2.25} aria-hidden />
+              </button>
+            ) : null
+          }
         >
           <div className="funnel-step-tiles-card flex flex-col gap-2">
             {objekte.map((o) => (
@@ -1633,7 +1271,7 @@ export function PortalFunnelHost({
             ) : null}
             {objekte.length === 0 && cfg.prefix.objektNeu ? (
               <p className="text-sm text-text-secondary">
-                Noch kein Objekt — legen Sie eines an.
+                Noch kein Objekt — legen Sie eines über + an.
               </p>
             ) : null}
           </div>
@@ -1706,6 +1344,20 @@ export function PortalFunnelHost({
                 <span className="text-[12px] font-semibold uppercase tracking-wide text-text-tertiary">
                   Auswahl
                 </span>
+                {cfg.prefix.mieterNeu ? (
+                  <button
+                    type="button"
+                    className="rounded-full border border-border-default bg-white px-3 py-1 text-[12px] font-semibold text-accent"
+                    onClick={() => {
+                      setMieterMode("neu");
+                      setOhneMieter(false);
+                      setSelectedMieterId(null);
+                      resetMieterNeuForm(objekt);
+                    }}
+                  >
+                    + Neu
+                  </button>
+                ) : null}
               </div>
               <SelectionTile
                 option={{
@@ -1725,7 +1377,7 @@ export function PortalFunnelHost({
                   key={m.id}
                   option={{
                     value: m.id,
-                    label: [m.name, objekt?.titel].filter(Boolean).join(" · "),
+                    label: m.name,
                     hint: [m.einheitLabel, m.email, m.telefon]
                       .filter(Boolean)
                       .join(" · "),
@@ -1749,10 +1401,66 @@ export function PortalFunnelHost({
                   }}
                 />
               ))}
-              {hvMieterListe.length === 0 && cfg.prefix.mieterNeu ? (
-                <p className="text-sm text-text-secondary">
-                  Noch kein Mieter — legen Sie einen an.
-                </p>
+              {mieterMode === "neu" ? (
+                <div className="mt-2 space-y-2 border-t border-border-light pt-3">
+                  <p className="text-[13px] font-semibold text-text-primary">
+                    Neuer Mieter
+                  </p>
+                  <div className="grid grid-cols-2 gap-2">
+                    <input
+                      className="funnel-input w-full"
+                      placeholder="Vorname"
+                      value={mieterVorname}
+                      onChange={(e) => setMieterVorname(e.target.value)}
+                      autoComplete="given-name"
+                    />
+                    <input
+                      className="funnel-input w-full"
+                      placeholder="Nachname"
+                      value={mieterNachname}
+                      onChange={(e) => setMieterNachname(e.target.value)}
+                      autoComplete="family-name"
+                    />
+                  </div>
+                  <div className="grid grid-cols-[1fr_88px] gap-2">
+                    <input
+                      className="funnel-input"
+                      placeholder="Straße"
+                      value={mieterStrasse}
+                      onChange={(e) => setMieterStrasse(e.target.value)}
+                      autoComplete="address-line1"
+                    />
+                    <input
+                      className="funnel-input"
+                      placeholder="Nr."
+                      value={mieterHausnummer}
+                      onChange={(e) => setMieterHausnummer(e.target.value)}
+                    />
+                  </div>
+                  <input
+                    className="funnel-input w-full"
+                    placeholder="z. B. 4. Stock li"
+                    value={einheit}
+                    onChange={(e) => setEinheit(e.target.value)}
+                    aria-label="Wohnung / Etage (optional)"
+                  />
+                  <input
+                    className="funnel-input w-full"
+                    type="email"
+                    placeholder="E-Mail (optional)"
+                    value={mieterEmail}
+                    onChange={(e) => setMieterEmail(e.target.value)}
+                    autoComplete="email"
+                  />
+                  <input
+                    className="funnel-input w-full"
+                    type="tel"
+                    placeholder="Telefon (optional)"
+                    value={mieterTel}
+                    onChange={(e) => setMieterTel(e.target.value)}
+                    autoComplete="tel"
+                  />
+                </div>
               ) : null}
             </div>
           ) : (
@@ -1857,62 +1565,6 @@ export function PortalFunnelHost({
         </StepWrapper>
       ) : null}
 
-      {step === "mieter_neu" ? (
-        <StepWrapper
-          layout={stepLayout}
-          stepLabel="Mieter"
-          question="Neuer Mieter"
-          subtext={
-            objekt?.titel
-              ? `Wird dem Objekt „${objekt.titel}“ zugeordnet`
-              : undefined
-          }
-          animateKey="mieter_neu"
-        >
-          <div className="space-y-2">
-            <div className="grid grid-cols-2 gap-2">
-              <input
-                className="funnel-input w-full"
-                placeholder="Vorname"
-                value={mieterVorname}
-                onChange={(e) => setMieterVorname(e.target.value)}
-                autoComplete="given-name"
-              />
-              <input
-                className="funnel-input w-full"
-                placeholder="Nachname"
-                value={mieterNachname}
-                onChange={(e) => setMieterNachname(e.target.value)}
-                autoComplete="family-name"
-              />
-            </div>
-            <input
-              className="funnel-input w-full"
-              placeholder="z. B. 4. Stock li"
-              value={einheit}
-              onChange={(e) => setEinheit(e.target.value)}
-              aria-label="Wohnung / Etage (optional)"
-            />
-            <input
-              className="funnel-input w-full"
-              type="email"
-              placeholder="E-Mail (optional)"
-              value={mieterEmail}
-              onChange={(e) => setMieterEmail(e.target.value)}
-              autoComplete="email"
-            />
-            <input
-              className="funnel-input w-full"
-              type="tel"
-              placeholder="Telefon (optional)"
-              value={mieterTel}
-              onChange={(e) => setMieterTel(e.target.value)}
-              autoComplete="tel"
-            />
-          </div>
-        </StepWrapper>
-      ) : null}
-
       {step === "situation" ? (
         <StepWrapper
           layout={stepLayout}
@@ -1920,7 +1572,7 @@ export function PortalFunnelHost({
           question="Worum geht es?"
           animateKey="situation"
         >
-          <div className="funnel-step-tiles-card flex flex-col gap-2">
+          <div className="funnel-step-tiles-card grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
             {situations.map((o) => (
               <SelectionTile
                 key={o.id}
@@ -1959,7 +1611,7 @@ export function PortalFunnelHost({
           }
           animateKey="bereiche"
         >
-          <div className="funnel-step-tiles-card flex flex-col gap-2">
+          <div className="funnel-step-tiles-card grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
             {bereicheOptions(state.situation, useMeldeKaputtFlow).map((o) => {
               const opt = stripTerminInfos
                 ? (() => {
@@ -1983,14 +1635,16 @@ export function PortalFunnelHost({
                 multi={false}
                 selected={state.bereiche.includes(opt.value)}
                 onChange={(v) => {
+                  const bereichId = kaputtBereichToMeldeId(v);
+                  const akut = meldeDringlichkeitFromBereich(bereichId);
                   setState((s) => ({
                     ...s,
                     bereiche: [v],
                     fachdetails: {},
                     ...(useMeldeKaputtFlow
                       ? {
-                          dringlichkeit: "diese_woche",
-                          zeitraum: "diese_woche",
+                          dringlichkeit: akut,
+                          zeitraum: akut,
                         }
                       : {}),
                   }));
@@ -2043,12 +1697,7 @@ export function PortalFunnelHost({
             {currentMeldeFrage.optionen.map((o) => (
               <SelectionTile
                 key={o.value}
-                option={{
-                  value: o.value,
-                  label: o.label,
-                  hint: o.hint,
-                  icon: o.icon,
-                }}
+                option={{ value: o.value, label: o.label }}
                 multi={false}
                 selected={
                   String(
@@ -2080,278 +1729,7 @@ export function PortalFunnelHost({
           detailTotal={Math.max(1, fachIds.length)}
           animateKey={currentFachId}
           stripInfoBoxes={stripTerminInfos}
-          layout={stepLayout}
         />
-      ) : null}
-
-      {step === "groesse" && groesseConfig ? (
-        <StepWrapper
-          layout={stepLayout}
-          stepLabel="Umfang"
-          question={groesseStepCopy?.question ?? "Wie groß ist die Fläche ungefähr?"}
-          subtext={groesseStepCopy?.subtext ?? groesseConfig.einheit}
-          animateKey="groesse"
-        >
-          <GroesseStep
-            config={groesseConfig}
-            groesse={state.groesse}
-            onGroesseChange={(value) =>
-              setState((s) => ({
-                ...s,
-                groesse: value,
-                groesseEinheit: groesseEinheitFromConfig(groesseConfig),
-              }))
-            }
-          />
-        </StepWrapper>
-      ) : null}
-
-      {step === "zugaenglichkeit" ? (
-        <StepWrapper
-          layout={stepLayout}
-          stepLabel={portalMidStepLabel("zugaenglichkeit")}
-          question={BW_FUNNEL_STEP_ZUGAENGLICHKEIT.question}
-          subtext={BW_FUNNEL_STEP_ZUGAENGLICHKEIT.subtext}
-          animateKey="zugaenglichkeit"
-          tilesCard
-        >
-          <div className="space-y-3">
-            {(BW_FUNNEL_STEP_ZUGAENGLICHKEIT.options ?? []).map((opt) => {
-              const libOpt = asLibOpt(opt);
-              const selected = state.zugaenglichkeit === opt.value;
-              return (
-                <SelectionTile
-                  key={opt.value}
-                  option={libOpt}
-                  selected={selected}
-                  multi={false}
-                  onChange={(value, sel) => {
-                    setState((s) => ({
-                      ...s,
-                      zugaenglichkeit: sel
-                        ? (value as Zugaenglichkeit)
-                        : null,
-                    }));
-                  }}
-                />
-              );
-            })}
-            <p className="mt-1 text-center text-[12px] leading-snug text-text-tertiary">
-              {BW_FUNNEL_PREIS_HINWEIS_ZUG_ZUSTAND}
-            </p>
-          </div>
-        </StepWrapper>
-      ) : null}
-
-      {step === "zustand" && zustandStepDef ? (
-        <StepWrapper
-          layout={stepLayout}
-          stepLabel={portalMidStepLabel("zustand")}
-          question={zustandStepDef.question}
-          subtext={zustandStepDef.subtext}
-          animateKey="zustand"
-          tilesCard
-        >
-          <div className="space-y-3">
-            {(zustandStepDef.options ?? []).map((opt) => {
-              const libOpt = asLibOpt(opt);
-              const selected = state.zustand === opt.value;
-              return (
-                <SelectionTile
-                  key={opt.value}
-                  option={libOpt}
-                  selected={selected}
-                  multi={false}
-                  onChange={(value, sel) => {
-                    setState((s) => ({
-                      ...s,
-                      zustand: sel ? (value as ObjektZustand) : null,
-                    }));
-                  }}
-                />
-              );
-            })}
-            <p className="mt-1 text-center text-[12px] leading-snug text-text-tertiary">
-              {BW_FUNNEL_PREIS_HINWEIS_ZUG_ZUSTAND}
-            </p>
-          </div>
-        </StepWrapper>
-      ) : null}
-
-      {step === "bad_ausstattung" ? (
-        <StepWrapper
-          layout={stepLayout}
-          stepLabel={portalMidStepLabel("bad_ausstattung")}
-          question={BW_FUNNEL_STEP_BAD_AUSSTATTUNG.question}
-          subtext={BW_FUNNEL_STEP_BAD_AUSSTATTUNG.subtext}
-          animateKey="bad_ausstattung"
-          tilesCard
-        >
-          <div className="space-y-3">
-            {(BW_FUNNEL_STEP_BAD_AUSSTATTUNG.options ?? []).map((opt) => {
-              const libOpt = asLibOpt(opt);
-              const selected = (state.badAusstattung ?? null) === opt.value;
-              return (
-                <SelectionTile
-                  key={opt.value}
-                  option={libOpt}
-                  selected={selected}
-                  multi={false}
-                  onChange={(value, sel) => {
-                    setState((s) => ({
-                      ...s,
-                      badAusstattung: sel
-                        ? (value as "standard" | "komfort" | "gehoben")
-                        : null,
-                    }));
-                  }}
-                />
-              );
-            })}
-          </div>
-        </StepWrapper>
-      ) : null}
-
-      {isPortalFunnelMidStepId(step) &&
-      step.startsWith("projekt_") &&
-      findResolvedStepDef(resolvedWebsiteSteps, step)?.options?.length ? (
-        <StepWrapper
-          layout={stepLayout}
-          stepLabel={portalMidStepLabel(step)}
-          question={
-            findResolvedStepDef(resolvedWebsiteSteps, step)!.question
-          }
-          subtext={findResolvedStepDef(resolvedWebsiteSteps, step)!.subtext}
-          animateKey={step}
-          tilesCard
-        >
-          <div className="space-y-3">
-            {findResolvedStepDef(resolvedWebsiteSteps, step)!.options!.map(
-              (opt) => {
-                const def = findResolvedStepDef(resolvedWebsiteSteps, step)!;
-                const libOpt = asLibOpt(opt);
-                const pj = state.fachdetails?.projekt;
-                let selected = false;
-                if (step === "projekt_terrasse_material") {
-                  selected = pj?.terrasseMaterial === opt.value;
-                } else if (step === "projekt_terrasse_unterbau") {
-                  selected = pj?.terrasseUnterbau === opt.value;
-                } else if (step === "projekt_garten_leistung") {
-                  selected = pj?.gartenLeistung === opt.value;
-                } else if (step === "projekt_garten_terrasse_material") {
-                  selected = pj?.gartenTerrasseMaterial === opt.value;
-                } else if (step === "projekt_garten_zaun") {
-                  selected = pj?.gartenZaun === opt.value;
-                } else if (step === "projekt_garten_zugang") {
-                  selected = pj?.gartenZugaenglichkeit === opt.value;
-                } else if (step === "projekt_ausbau_rohbau") {
-                  selected = pj?.ausbauRohbau === opt.value;
-                } else if (step === "projekt_ausbau_deckenhoehe") {
-                  selected = pj?.ausbauDeckenhoehe === opt.value;
-                } else if (step === "projekt_durchbruch_anzahl") {
-                  const n = pj?.durchbruchAnzahl;
-                  if (opt.value === "1") selected = n === 1;
-                  else if (opt.value === "2") selected = n === 2;
-                  else if (opt.value === "3_plus") selected = n === 3;
-                } else if (step === "projekt_durchbruch_statik") {
-                  selected =
-                    opt.value === "tragend"
-                      ? pj?.durchbruchTragend === true
-                      : pj?.durchbruchTragend === false;
-                }
-                return (
-                  <SelectionTile
-                    key={opt.value}
-                    option={libOpt}
-                    selected={selected}
-                    multi={false}
-                    onChange={(value, sel) => {
-                      if (step === "projekt_terrasse_material") {
-                        patchProjekt({
-                          terrasseMaterial: sel
-                            ? (value as "holz" | "stein")
-                            : undefined,
-                        });
-                      } else if (step === "projekt_terrasse_unterbau") {
-                        patchProjekt({
-                          terrasseUnterbau: sel
-                            ? (value as "ja" | "nein")
-                            : undefined,
-                        });
-                      } else if (step === "projekt_garten_leistung") {
-                        const nextLeistung = sel
-                          ? (value as NonNullable<
-                              FachdetailsState["projekt"]
-                            >["gartenLeistung"])
-                          : undefined;
-                        patchProjekt({
-                          gartenLeistung: nextLeistung,
-                          gartenTerrasseMaterial:
-                            nextLeistung === "terrasse"
-                              ? state.fachdetails?.projekt
-                                  ?.gartenTerrasseMaterial
-                              : undefined,
-                          gartenZaun:
-                            nextLeistung === "rollrasen" ||
-                            nextLeistung === "auffrischung"
-                              ? undefined
-                              : state.fachdetails?.projekt?.gartenZaun,
-                        });
-                      } else if (step === "projekt_garten_terrasse_material") {
-                        patchProjekt({
-                          gartenTerrasseMaterial: sel
-                            ? (value as
-                                | "holz_wpc"
-                                | "naturstein"
-                                | "noch_offen")
-                            : undefined,
-                        });
-                      } else if (step === "projekt_garten_zaun") {
-                        patchProjekt({
-                          gartenZaun: sel
-                            ? (value as "ja" | "nein")
-                            : undefined,
-                        });
-                      } else if (step === "projekt_garten_zugang") {
-                        patchProjekt({
-                          gartenZugaenglichkeit: sel
-                            ? (value as "einfach" | "schwer")
-                            : undefined,
-                        });
-                      } else if (step === "projekt_ausbau_rohbau") {
-                        patchProjekt({
-                          ausbauRohbau: sel
-                            ? (value as "ja" | "nein")
-                            : undefined,
-                          ausbauDeckenhoehe: undefined,
-                        });
-                      } else if (step === "projekt_ausbau_deckenhoehe") {
-                        patchProjekt({
-                          ausbauDeckenhoehe: sel
-                            ? (value as "niedrig" | "mittel" | "hoch")
-                            : undefined,
-                        });
-                      } else if (step === "projekt_durchbruch_anzahl") {
-                        const raw = def.options?.find((o) => o.value === value);
-                        const g =
-                          typeof raw?.groesse === "number" ? raw.groesse : 1;
-                        patchProjekt({
-                          durchbruchAnzahl: sel ? g : undefined,
-                        });
-                      } else if (step === "projekt_durchbruch_statik") {
-                        patchProjekt({
-                          durchbruchTragend: sel
-                            ? value === "tragend"
-                            : undefined,
-                        });
-                      }
-                    }}
-                  />
-                );
-              }
-            )}
-          </div>
-        </StepWrapper>
       ) : null}
 
       {step === "medien" ? (
@@ -2395,10 +1773,6 @@ export function PortalFunnelHost({
       {step === "beschreibung" ? (
         <StepWrapper
           layout={stepLayout}
-          className={cn(
-            "funnel-step--fill",
-            stepLayout === "page" && "w-full"
-          )}
           stepLabel="Beschreibung"
           question={
             state.situation === "erneuern"
@@ -2407,14 +1781,13 @@ export function PortalFunnelHost({
           }
           subtext={
             state.situation === "erneuern"
-              ? "Möchten Sie uns noch etwas mitteilen?"
+              ? "Willst du uns noch was mitteilen?"
               : "Mindestens 10 Zeichen"
           }
           animateKey="beschreibung"
         >
           <PortalKiAssistField
             scope="funnel_beschreibung"
-            className="funnel-ki-fill"
             label="Beschreibung"
             value={state.leadBeschreibung}
             onApply={(text) =>
@@ -2429,20 +1802,18 @@ export function PortalFunnelHost({
               .filter(Boolean)
               .join("\n")}
           >
-            <div className="funnel-textarea-fill-wrap">
-              <textarea
-                className="funnel-input w-full"
-                value={state.leadBeschreibung}
-                onChange={(e) =>
-                  setState((s) => ({ ...s, leadBeschreibung: e.target.value }))
-                }
-                placeholder={
-                  state.situation === "erneuern"
-                    ? "Optional — z. B. Wunschtermin, Besonderheiten …"
-                    : "Beschreiben Sie den Schaden oder das Anliegen …"
-                }
-              />
-            </div>
+            <textarea
+              className="funnel-input min-h-[120px] w-full"
+              value={state.leadBeschreibung}
+              onChange={(e) =>
+                setState((s) => ({ ...s, leadBeschreibung: e.target.value }))
+              }
+              placeholder={
+                state.situation === "erneuern"
+                  ? "Optional — z. B. Wunschtermin, Besonderheiten …"
+                  : "Beschreiben Sie den Schaden oder das Anliegen …"
+              }
+            />
           </PortalKiAssistField>
         </StepWrapper>
       ) : null}
@@ -2618,21 +1989,15 @@ export function PortalFunnelHost({
           <div className="space-y-3">
             {cfg.showPrice ? (
               <div className="funnel-card-float p-4">
-                {reliablePrice && price ? (
+                {price ? (
                   <p className="font-[family-name:var(--font-display)] text-2xl font-bold text-accent">
                     {formatCurrencyEUR(price.min)} –{" "}
                     {formatCurrencyEUR(price.max)}
                   </p>
                 ) : (
-                  <div className="space-y-1">
-                    <p className="font-[family-name:var(--font-display)] text-lg font-bold text-text-primary">
-                      Individuelle Beratung
-                    </p>
-                    <p className="text-sm text-text-secondary">
-                      Für dieses Vorhaben gibt es keinen Sofort-Preisrahmen —
-                      Bärenwald meldet sich mit einer Einschätzung nach Prüfung.
-                    </p>
-                  </div>
+                  <p className="text-sm text-text-secondary">
+                    Preisrahmen wird nach Prüfung mitgeteilt.
+                  </p>
                 )}
               </div>
             ) : null}
@@ -2677,36 +2042,6 @@ export function PortalFunnelHost({
 
       </div>
 
-      {step === "objekt" && cfg.prefix.objektNeu ? (
-        <button
-          type="button"
-          className="portal-funnel-objekt-fab"
-          aria-label="Neues Objekt anlegen"
-          title="Neues Objekt anlegen"
-          onClick={() => setStep("objekt_neu")}
-        >
-          <Plus className="h-6 w-6" strokeWidth={2.5} aria-hidden />
-        </button>
-      ) : null}
-
-      {step === "mieter" && isHvIntern && cfg.prefix.mieterNeu ? (
-        <button
-          type="button"
-          className="portal-funnel-objekt-fab"
-          aria-label="Neuen Mieter anlegen"
-          title="Neuen Mieter anlegen"
-          onClick={() => {
-            resetMieterNeuForm(objekt);
-            setMieterMode("neu");
-            setOhneMieter(false);
-            setSelectedMieterId(null);
-            setStep("mieter_neu");
-          }}
-        >
-          <Plus className="h-6 w-6" strokeWidth={2.5} aria-hidden />
-        </button>
-      ) : null}
-
       <FunnelFooter
         className={
           layout === "modal" ? "portal-funnel-host__footer" : undefined
@@ -2721,14 +2056,12 @@ export function PortalFunnelHost({
         onNext={
           step === "objekt_neu"
             ? () => void createObjekt()
-            : step === "mieter_neu"
-              ? () => void createMieter()
-              : step === "result"
-                ? () => void submit()
-                : goNext
+            : step === "result"
+              ? () => void submit()
+              : goNext
         }
         nextDisabled={
-          step === "objekt_neu" || step === "mieter_neu"
+          step === "objekt_neu"
             ? !canNext() || neuBusy
             : step === "result"
               ? busy
@@ -2739,13 +2072,9 @@ export function PortalFunnelHost({
             ? neuBusy
               ? "Speichern…"
               : "Objekt speichern →"
-            : step === "mieter_neu"
-              ? neuBusy
-                ? "Speichern…"
-                : "Mieter speichern →"
-              : step === "result"
-                ? "Absenden →"
-                : "Weiter →"
+            : step === "result"
+              ? "Absenden →"
+              : "Weiter →"
         }
       />
         </>

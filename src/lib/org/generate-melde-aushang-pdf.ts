@@ -1,6 +1,5 @@
 import {
   PDFDocument,
-  PDFString,
   StandardFonts,
   rgb,
   type PDFFont,
@@ -15,6 +14,7 @@ import {
 } from "@/lib/org/aushang-image-png";
 import {
   AUSHANG_FOOTER_CONTACT,
+  AUSHANG_FOOTER_DATENSCHUTZ,
   AUSHANG_FOOTER_NO_PHONE,
   AUSHANG_FOOTER_PARTNER,
   AUSHANG_HERO_BODY,
@@ -42,9 +42,6 @@ export type MeldeAushangInput = {
   heroImageBytes?: Uint8Array | null;
   hvTelefon?: string | null;
   hvEmail?: string | null;
-  /** Klickbare Footer-Links (Pflicht vor Generierung). */
-  impressumUrl?: string | null;
-  datenschutzUrl?: string | null;
 };
 
 /** StandardFonts = WinAnsi: problematische Unicode-Zeichen ersetzen. */
@@ -135,47 +132,6 @@ function drawTextSafe(
   }
 ) {
   page.drawText(pdfSafe(text), opts);
-}
-
-function fitLabel(
-  label: string,
-  font: PDFFont,
-  size: number,
-  maxWidth: number
-): string {
-  const safe = pdfSafe(label);
-  if (font.widthOfTextAtSize(safe, size) <= maxWidth) return safe;
-  const ellipsis = "...";
-  let cut = safe;
-  while (cut.length > 8) {
-    cut = cut.slice(0, -1);
-    const candidate = `${cut}${ellipsis}`;
-    if (font.widthOfTextAtSize(candidate, size) <= maxWidth) return candidate;
-  }
-  return ellipsis;
-}
-
-/** Klickbarer URI-Link über dem gezeichneten Text. */
-function addUriLink(
-  pdf: PDFDocument,
-  page: PDFPage,
-  url: string,
-  rect: { x: number; y: number; width: number; height: number }
-) {
-  const href = url.trim();
-  if (!href) return;
-  const annot = pdf.context.obj({
-    Type: "Annot",
-    Subtype: "Link",
-    Rect: [rect.x, rect.y, rect.x + rect.width, rect.y + rect.height],
-    Border: [0, 0, 0],
-    A: {
-      Type: "Action",
-      S: "URI",
-      URI: PDFString.of(href),
-    },
-  });
-  page.node.addAnnot(pdf.context.register(annot));
 }
 
 function drawDashedRect(
@@ -423,7 +379,7 @@ export async function generateMeldeAushangPdf(
   );
 
   // —— 4) Zwei Spalten: QR und Schritte weiter unten ——
-  const footerH = 92;
+  const footerH = 68;
   const colTop = y - 44;
   const colBottom = footerH + 18;
 
@@ -615,63 +571,13 @@ export async function generateMeldeAushangPdf(
     color: lighten(primary, 0.68),
   });
 
-  const legalColor = lighten(primary, 0.55);
-  const legalSize = 7.5;
-  const legalMaxW = contentW;
-  const impressumHref = input.impressumUrl?.trim() || "";
-  const datenschutzHref = input.datenschutzUrl?.trim() || "";
-
-  if (impressumHref) {
-    const impressumLine = fitLabel(
-      `Impressum: ${impressumHref}`,
-      font,
-      legalSize,
-      legalMaxW
-    );
-    const impressumY = 22;
-    drawTextSafe(page, impressumLine, {
-      x: margin,
-      y: impressumY,
-      size: legalSize,
-      font,
-      color: legalColor,
-    });
-    addUriLink(pdf, page, impressumHref, {
-      x: margin - 2,
-      y: impressumY - 2,
-      width: Math.min(
-        legalMaxW + 4,
-        font.widthOfTextAtSize(impressumLine, legalSize) + 4
-      ),
-      height: legalSize + 4,
-    });
-  }
-
-  if (datenschutzHref) {
-    const datenschutzLine = fitLabel(
-      `Datenschutz: ${datenschutzHref}`,
-      font,
-      legalSize,
-      legalMaxW
-    );
-    const datenschutzY = 10;
-    drawTextSafe(page, datenschutzLine, {
-      x: margin,
-      y: datenschutzY,
-      size: legalSize,
-      font,
-      color: legalColor,
-    });
-    addUriLink(pdf, page, datenschutzHref, {
-      x: margin - 2,
-      y: datenschutzY - 2,
-      width: Math.min(
-        legalMaxW + 4,
-        font.widthOfTextAtSize(datenschutzLine, legalSize) + 4
-      ),
-      height: legalSize + 4,
-    });
-  }
+  drawTextSafe(page, AUSHANG_FOOTER_DATENSCHUTZ, {
+    x: margin,
+    y: 10,
+    size: 8,
+    font,
+    color: lighten(primary, 0.55),
+  });
 
   // Object Streams aus: bessere Kompatibilität Chrome-Viewer vs. gespeicherte Datei
   return pdf.save({ useObjectStreams: false });

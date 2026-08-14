@@ -19,12 +19,13 @@ export const HV_DASHBOARD_EMPTY_RECENT = "Noch nichts" as const;
 
 /** Mock HV-Tiles: Label, Farb-Tokens.
  * D3: `filter` = Listen-Chip (`HV_CHIPS` / OrgVorgangFilter).
- * Kacheln = Chip-Labels: Offen · In Arbeit · Erledigt.
+ * KPI „Wartet auf Freigabe“ ≡ Chip „Offen“ (gleiche Zähl-Semantik: gemeldet).
  */
 export const HV_DASHBOARD_KPI_DEFS = [
   {
-    id: "offen" as const,
-    label: "Offen",
+    id: "wartet_freigabe" as const,
+    label: "Wartet auf Freigabe",
+    /** Listen-Chip-Label (Kurzform) — gleiche Filter-ID `offen`. */
     chipLabel: "Offen",
     color: "#8A5A06",
     bg: "#fef3c7",
@@ -73,39 +74,17 @@ export type HvDashboardAngebotSlice = {
   status_einfach?: string | null;
   gesendet_am?: string | null;
   gesendet_kunde_at?: string | null;
-  pdf_url?: string | null;
   created_at?: string | null;
 };
 
-/** Angebot terminal abgelehnt/ersetzt/abgelaufen — keine Entscheidung mehr. */
-export function isPortalAngebotAbgelehnt(angebot?: {
-  status?: string | null;
-  status_einfach?: string | null;
-} | null): boolean {
-  if (!angebot) return false;
-  const s = String(angebot.status_einfach ?? angebot.status ?? "")
-    .toLowerCase()
-    .trim()
-    .replace(/[\s-]+/g, "_");
-  return (
-    s === "abgelehnt" ||
-    s === "ersetzt" ||
-    s === "abgelaufen" ||
-    s.includes("abgelehnt")
-  );
-}
-
-/** Angebot ist für Portal sichtbar (PDF / gesendet / angenommen) — nicht terminal abgelehnt. */
+/** Angebot ist für Portal sichtbar (gesendet / angenommen). */
 export function isPortalAngebotVorgelegt(angebot?: {
   status?: string | null;
   status_einfach?: string | null;
   gesendet_am?: string | null;
   gesendet_kunde_at?: string | null;
-  pdf_url?: string | null;
 } | null): boolean {
   if (!angebot) return false;
-  if (isPortalAngebotAbgelehnt(angebot)) return false;
-  if (angebot.pdf_url?.trim()) return true;
   if (angebot.gesendet_am?.trim() || angebot.gesendet_kunde_at?.trim()) {
     return true;
   }
@@ -127,8 +106,6 @@ export function pickPreferredAngebotForPortalFlow<
     status?: string | null;
     status_einfach?: string | null;
     gesendet_am?: string | null;
-    gesendet_kunde_at?: string | null;
-    pdf_url?: string | null;
     created_at?: string | null;
   },
 >(candidates: T[]): T | null {
@@ -146,13 +123,6 @@ export function pickPreferredAngebotForPortalFlow<
     const s = String(a.status_einfach ?? a.status ?? "")
       .toLowerCase()
       .trim();
-    // Abgelehntes Kundenangebot (hatte PDF/Zustellung) vor reinem Entwurf
-    if (
-      (s === "ersetzt" || s === "abgelehnt" || s === "abgelaufen") &&
-      Boolean(a.pdf_url?.trim() || a.gesendet_am?.trim() || a.gesendet_kunde_at?.trim())
-    ) {
-      return 2;
-    }
     if (s === "entwurf") return 3;
     if (s === "ersetzt" || s === "abgelehnt" || s === "abgelaufen") return 9;
     return 5;
@@ -189,7 +159,6 @@ export function emptyHvFlowCounts(): HvFlowCountMap {
     abschluss: 0,
     rechnung: 0,
     bezahlt: 0,
-    abgelehnt: 0,
   };
 }
 
@@ -200,20 +169,6 @@ export function resolveLeadPortalFlowStatus(input: {
   auftrag?: HvDashboardAuftragSlice | null;
   extra?: PortalFlowExtraSignals;
 }): PortalMockStatusId {
-  const auftragSt = String(input.auftrag?.status ?? "")
-    .toLowerCase()
-    .trim();
-  const hasAktiverAuftrag =
-    Boolean(input.auftrag?.id) &&
-    auftragSt !== "storniert" &&
-    auftragSt !== "abgelehnt";
-  if (
-    !hasAktiverAuftrag &&
-    isPortalAngebotAbgelehnt(input.angebot)
-  ) {
-    return "abgelehnt";
-  }
-
   const resolved = resolveVorgang(
     buildPortalResolveInput({
       lead: input.lead,
@@ -284,15 +239,15 @@ export type HvDashboardKpiValues = Record<HvDashboardKpiId, number>;
 
 /**
  * Mock HV-Tiles aus A4-Counts:
- * - Offen = gemeldet + angebot (HV-Aktion: Meldung / Angebotsfreigabe)
- * - In Arbeit = freigegeben + angefragt + auftrag
- * - Erledigt = abschluss + rechnung + bezahlt + abgelehnt
+ * - Wartet auf Freigabe = gemeldet
+ * - In Arbeit = freigegeben + angefragt + angebot + auftrag
+ * - Erledigt = abschluss + rechnung + bezahlt
  */
 export function buildHvDashboardKpis(flow: HvFlowCountMap): HvDashboardKpiValues {
   return {
-    offen: flow.gemeldet + flow.angebot,
-    in_arbeit: flow.freigegeben + flow.angefragt + flow.auftrag,
-    erledigt:
-      flow.abschluss + flow.rechnung + flow.bezahlt + flow.abgelehnt,
+    wartet_freigabe: flow.gemeldet,
+    in_arbeit:
+      flow.freigegeben + flow.angefragt + flow.angebot + flow.auftrag,
+    erledigt: flow.abschluss + flow.rechnung + flow.bezahlt,
   };
 }

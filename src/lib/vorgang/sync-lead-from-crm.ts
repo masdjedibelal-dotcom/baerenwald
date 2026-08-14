@@ -88,20 +88,7 @@ export async function syncLeadFromCrm(
 
   if (error) return { ok: false, error: error.message };
   if (!lead?.id) return { ok: false, error: "Lead nicht gefunden" };
-
-  const shouldSync = await shouldSyncPortalLead(
-    lead as LeadRow & { kunde_id?: string | null }
-  );
-
-  // Privatkunden: Phase-Sync optional, Angebot-Notify trotzdem (Portal-Glocke).
-  if (!shouldSync) {
-    if (event === "angebot_gesendet") {
-      try {
-        await notifyPortalAngebotGesendet(leadId);
-      } catch (e) {
-        console.error("[syncLeadFromCrm] angebot-notification (privat)", e);
-      }
-    }
+  if (!(await shouldSyncPortalLead(lead as LeadRow & { kunde_id?: string | null }))) {
     return { ok: true };
   }
 

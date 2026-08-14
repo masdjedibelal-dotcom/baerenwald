@@ -13,7 +13,6 @@ type AngebotDokumentInput = {
   angebotstitel?: string | null;
   pdf_url?: string | null;
   gesendet_am?: string | null;
-  gesendet_kunde_at?: string | null;
   status_einfach?: string | null;
   created_at?: string | null;
 };
@@ -49,15 +48,14 @@ type AuftragDokumentInput = {
   created_at?: string | null;
 };
 
-/**
- * Angebot für Portal-Dokumente (HV + Endkunde):
- * sobald ein PDF existiert — außer ersetzt.
- * Nicht an Freigabe/Schwelle gekoppelt.
- */
 function isKundenAngebotSichtbar(a: AngebotDokumentInput): boolean {
-  const st = (a.status_einfach || "").toLowerCase().replace(/[\s-]+/g, "_");
-  if (st === "ersetzt") return false;
-  return Boolean(a.pdf_url?.trim());
+  const st = (a.status_einfach || "").toLowerCase();
+  return (
+    Boolean(a.gesendet_am) ||
+    st === "gesendet" ||
+    st === "angenommen" ||
+    st === "kunde_akzeptiert"
+  );
 }
 
 export function dokumenteFromAngebot(a: AngebotDokumentInput): PortalDokument[] {
@@ -69,11 +67,7 @@ export function dokumenteFromAngebot(a: AngebotDokumentInput): PortalDokument[] 
       id: `angebot-pdf-${a.id}`,
       name: "Angebot",
       subtitle: titel || undefined,
-      datum:
-        a.gesendet_am ??
-        a.gesendet_kunde_at ??
-        a.created_at ??
-        undefined,
+      datum: a.gesendet_am ?? a.created_at ?? undefined,
       href,
       art: "angebot",
     },
@@ -85,8 +79,7 @@ export function dokumenteFromRechnungen(
 ): PortalDokument[] {
   const rows: PortalDokument[] = [];
   for (const r of rechnungen) {
-    const st = (r.status || "").toLowerCase().replace(/[\s-]+/g, "_");
-    if (st === "entwurf" || st === "storniert") continue;
+    if ((r.status || "").toLowerCase() !== "gesendet") continue;
     const href = r.pdf_url?.trim();
     if (!href) continue;
     rows.push({
@@ -316,36 +309,9 @@ export function isBautagebuchPortalDokument(d: PortalDokument): boolean {
   return /^Bautagebuch\b/i.test(d.name ?? "");
 }
 
-function normalizeDokumentHref(href: string): string {
-  return href.trim().split("?")[0]!.split("#")[0]!;
-}
-
-/**
- * Melde-Funnel-Fotos gehören in Details — nicht unter Dokumente.
- * Filter gegen URLs aus `funnel_daten.fotos`.
- */
-export function excludeMeldeFunnelFotosFromDokumente(
-  docs: PortalDokument[],
-  meldeFotoUrls: string[] | null | undefined
-): PortalDokument[] {
-  if (!docs.length || !meldeFotoUrls?.length) return docs;
-  const fotoSet = new Set(
-    meldeFotoUrls
-      .map((u) => (typeof u === "string" ? normalizeDokumentHref(u) : ""))
-      .filter(Boolean)
-  );
-  if (!fotoSet.size) return docs;
-  return docs.filter((d) => {
-    const href = d.href?.trim();
-    if (!href) return true;
-    return !fotoSet.has(normalizeDokumentHref(href));
-  });
-}
-
 /**
  * Sichtbarkeit je Rolle:
- * - Kunde: alle CRM-Unterlagen (ohne Bautagebuch — eigene Section)
- * - HV: wie Kunde, aber Abnahmeprotokoll nur unter Abschluss (nicht Dokumente)
+ * - Kunde/HV: alle CRM-Unterlagen (ohne Bautagebuch — eigene Section)
  * - Mieter: nur Abnahmedokumentation (Signatur)
  * - Eigentümer: alles außer Rechnung
  */
@@ -366,8 +332,6 @@ export function filterPortalDokumenteForViewer(
 
   if (viewer === "mieter") {
     rows = rows.filter(isAbnahmePortalDokument);
-  } else if (viewer === "hv") {
-    rows = rows.filter((d) => !isAbnahmePortalDokument(d));
   } else if (viewer === "eigentuemer") {
     rows = rows.filter(
       (d) => d.art !== "rechnung" && !/^Rechnung\b/i.test(d.name ?? "")
@@ -405,24 +369,4 @@ export function mergeDokumente(
     }
   }
   return Array.from(byId.values());
-}
-
-/**
- * Phasenunabhängige Dokumentliste am Vorgang:
- * Lead-Anhänge + Angebot + Auftrag (inkl. Rechnung/Timeline/Abnahme) — dedupliziert.
- */
-export function collectVorgangDokumente(opts: {
-  leadDocs?: PortalDokument[] | null;
-  angebotDocs?: PortalDokument[] | null;
-  auftragDocs?: PortalDokument[] | null;
-}): PortalDokument[] {
-  return mergeDokumente(
-    opts.leadDocs ?? [],
-    opts.angebotDocs ?? [],
-    opts.auftragDocs ?? []
-  ).sort((a, b) => {
-    const ta = new Date(a.datum || 0).getTime();
-    const tb = new Date(b.datum || 0).getTime();
-    return tb - ta;
-  });
 }

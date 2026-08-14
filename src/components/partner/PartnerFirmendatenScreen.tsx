@@ -1,16 +1,14 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 
 import { updatePartnerProfil, uploadPartnerProfilLogo } from "@/app/actions/partner-profil";
-import { retryPendingPartnerAutoAngebote } from "@/app/actions/partner-auto-dokumente";
 import { PartnerDetailInfoBox } from "@/components/partner/PartnerDetailUi";
 import { PartnerRahmenvertragCard } from "@/components/partner/PartnerRahmenvertragCard";
+import { FileUploadField } from "@/components/shared/FileUploadField";
 import { PortalKontoSicherheitPanel } from "@/components/shared/PortalKontoSicherheitPanel";
 import { PortalEinstellungenShell } from "@/components/shared/PortalEinstellungenShell";
-import { PortalPushSettingsPanel } from "@/components/shared/PortalPushSettingsPanel";
-import { usePortalUploadBusy } from "@/components/shared/usePortalUploadBusy";
 import {
   EinstellungenEdField,
   EinstellungenEditModal,
@@ -24,8 +22,9 @@ import type {
   PartnerProfilKontext,
 } from "@/lib/partner/get-partner-data";
 import { resolveHandwerkerAnschrift } from "@/lib/partner/handwerker-anschrift";
-import { EINSTELLUNGEN_LOGO_HINT } from "@/lib/portal2/einstellungen";
-import { HW_FIRMEN_SECTIONS } from "@/lib/portal2/einstellungen-ui";
+import {
+  HW_FIRMEN_SECTIONS,
+} from "@/lib/portal2/einstellungen-ui";
 import { partnerPortalToast, portalToastError } from "@/lib/shared/portal-toast";
 
 type Draft = {
@@ -46,6 +45,8 @@ type Draft = {
   logo: string;
   kleinunternehmer: boolean;
 };
+
+type EditTab = "anschrift" | "steuer" | "bank" | null;
 
 function draftFromProfil(h: PartnerHandwerkerProfil): Draft {
   const inhaber =
@@ -87,7 +88,7 @@ function dash(v: string) {
 }
 
 /**
- * Handwerker — Tab „Daten“: Anschrift, Steuer, Bank in einem Bearbeiten/Speichern.
+ * D12 Handwerker — Firmendaten nur Anzeige; Bearbeiten per Stift → Modal.
  */
 export function PartnerFirmendatenScreen({
   handwerker,
@@ -97,68 +98,54 @@ export function PartnerFirmendatenScreen({
   profil: PartnerProfilKontext;
 }) {
   const router = useRouter();
-  const { uploadBusy: saving, runUpload } = usePortalUploadBusy();
   const [saved, setSaved] = useState(() => draftFromProfil(handwerker));
   const [edit, setEdit] = useState<Draft | null>(null);
-  const [editOpen, setEditOpen] = useState(false);
-  const [logoPreview, setLogoPreview] = useState<string | null>(null);
-  const logoInputRef = useRef<HTMLInputElement>(null);
+  const [editTab, setEditTab] = useState<EditTab>(null);
+  const [saving, setSaving] = useState(false);
+  const [logoBusy, setLogoBusy] = useState(false);
 
   useEffect(() => {
     setSaved(draftFromProfil(handwerker));
-    setLogoPreview(null);
   }, [handwerker]);
 
-  const logoSrc = logoPreview || handwerker.logo_signed_url;
-
-  function openEdit() {
+  function openEdit(tab: Exclude<EditTab, null>) {
     setEdit({ ...saved });
-    setEditOpen(true);
+    setEditTab(tab);
   }
 
   function closeEdit() {
     if (saving) return;
-    setEditOpen(false);
+    setEditTab(null);
     setEdit(null);
   }
 
   async function persist(next: Draft) {
-    return runUpload(async () => {
-      const fd = new FormData();
-      fd.set("firma", next.firma);
-      fd.set("inhaber", next.inhaber);
-      fd.set("strasse", next.strasse);
-      fd.set("hausnummer", next.hausnummer);
-      fd.set("plz", next.plz);
-      fd.set("ort", next.ort);
-      fd.set("telefon", next.tel);
-      fd.set("ustid", next.ustid);
-      fd.set("steuernummer", next.steuernr);
-      fd.set("handelsregister", next.hrb);
-      fd.set("iban", next.iban);
-      fd.set("bic", next.bic);
-      fd.set("bank", next.bank);
-      fd.set("kleinunternehmer", next.kleinunternehmer ? "1" : "0");
-      const res = await updatePartnerProfil(fd);
-      if (!res.ok) {
-        portalToastError("Daten nicht gespeichert", res.error);
-        return false;
-      }
-      setSaved(next);
-      partnerPortalToast.stammdatenGespeichert();
-      try {
-        const retry = await retryPendingPartnerAutoAngebote();
-        if (retry.created > 0) {
-          partnerPortalToast.unterlagenHochgeladen();
-        } else if (retry.errors[0]) {
-          portalToastError("Angebot nachziehen fehlgeschlagen", retry.errors[0]);
-        }
-      } catch {
-        /* ignore */
-      }
-      router.refresh();
-      return true;
-    });
+    setSaving(true);
+    const fd = new FormData();
+    fd.set("firma", next.firma);
+    fd.set("inhaber", next.inhaber);
+    fd.set("strasse", next.strasse);
+    fd.set("hausnummer", next.hausnummer);
+    fd.set("plz", next.plz);
+    fd.set("ort", next.ort);
+    fd.set("telefon", next.tel);
+    fd.set("ustid", next.ustid);
+    fd.set("steuernummer", next.steuernr);
+    fd.set("handelsregister", next.hrb);
+    fd.set("iban", next.iban);
+    fd.set("bic", next.bic);
+    fd.set("bank", next.bank);
+    fd.set("kleinunternehmer", next.kleinunternehmer ? "1" : "0");
+    const res = await updatePartnerProfil(fd);
+    setSaving(false);
+    if (!res.ok) {
+      portalToastError("Firmendaten nicht gespeichert", res.error);
+      return false;
+    }
+    setSaved(next);
+    partnerPortalToast.stammdatenGespeichert();
+    router.refresh();
+    return true;
   }
 
   async function onSaveEdit() {
@@ -169,24 +156,17 @@ export function PartnerFirmendatenScreen({
 
   async function onLogoChange(file: File | null) {
     if (!file) return;
-    if (!file.type.startsWith("image/")) {
-      portalToastError("Nur Bilder erlaubt");
-      return;
-    }
-    const localPreview = URL.createObjectURL(file);
-    setLogoPreview(localPreview);
+    setLogoBusy(true);
     const fd = new FormData();
     fd.set("logo", file);
-    await runUpload(async () => {
-      const res = await uploadPartnerProfilLogo(fd);
-      if (!res.ok) {
-        setLogoPreview(null);
-        portalToastError("Logo nicht gespeichert", res.error);
-        return;
-      }
-      partnerPortalToast.stammdatenGespeichert();
-      router.refresh();
-    });
+    const res = await uploadPartnerProfilLogo(fd);
+    setLogoBusy(false);
+    if (!res.ok) {
+      portalToastError("Logo nicht gespeichert", res.error);
+      return;
+    }
+    partnerPortalToast.stammdatenGespeichert();
+    router.refresh();
   }
 
   const handwerkskarte = filterProfilStammCompliance([
@@ -194,309 +174,286 @@ export function PartnerFirmendatenScreen({
     ...profil.meister,
   ]);
 
+  const modalTitle =
+    editTab === "steuer"
+      ? HW_FIRMEN_SECTIONS.steuer
+      : editTab === "bank"
+        ? HW_FIRMEN_SECTIONS.bank
+        : HW_FIRMEN_SECTIONS.anschrift;
+
   return (
     <>
-      <PortalEinstellungenShell variant="handwerker">
-        {(tab) => {
-          if (tab === "stamm") {
-            return (
-              <div className="space-y-6">
-                <PartnerRahmenvertragCard
-                  rahmenvertrag={profil.rahmenvertrag}
-                  stammItems={profil.stamm}
-                  handwerkskarte={handwerkskarte}
-                />
-                {handwerkskarte.length === 0 ? (
-                  <PartnerDetailInfoBox>
-                    Weitere Unterlagen zum Bauauftrag (z. B.
-                    Freistellungsbescheinigung, Personalliste) erscheinen, sobald
-                    Bärenwald dein Angebot übernommen hat — unter „Vorgänge“.
-                  </PartnerDetailInfoBox>
-                ) : null}
-              </div>
-            );
-          }
-
-          if (tab === "benachrichtigungen") {
-            return <PortalPushSettingsPanel portal="partner" />;
-          }
-
+    <PortalEinstellungenShell variant="handwerker">
+      {(tab) => {
+        if (tab === "stamm") {
           return (
             <div className="space-y-6">
-              <div className="flex items-start justify-between gap-2">
-                <EinstellungenSectionHeader title="Daten" />
-                <button
-                  type="button"
-                  onClick={openEdit}
-                  aria-label="Daten bearbeiten"
-                  title="Bearbeiten"
-                  className="inline-flex h-9 shrink-0 items-center justify-center rounded-full border border-border-default bg-white px-3.5 text-[12.5px] font-semibold text-text-secondary hover:border-accent/40 hover:text-accent"
-                >
-                  Bearbeiten
-                </button>
-              </div>
-
-              <div className="space-y-3">
-                <EinstellungenSectionHeader title={HW_FIRMEN_SECTIONS.logo} />
-                <div className="flex items-center gap-3.5">
-                  <div className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-border-default bg-muted">
-                    {logoSrc ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img
-                        src={logoSrc}
-                        alt="Firmenlogo"
-                        className="h-full w-full object-contain"
-                      />
-                    ) : (
-                      <span className="font-[family-name:var(--font-display)] text-sm font-bold text-text-primary">
-                        {saved.logo}
-                      </span>
-                    )}
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="text-[12.5px] leading-relaxed text-text-secondary">
-                      {EINSTELLUNGEN_LOGO_HINT}{" "}
-                      <b className="text-text-primary">„{saved.logo}“</b> als
-                      Platzhalter.
-                    </p>
-                    <input
-                      ref={logoInputRef}
-                      type="file"
-                      accept="image/jpeg,image/png,image/webp"
-                      className="hidden"
-                      onChange={(e) => {
-                        const f = e.target.files?.[0] ?? null;
-                        e.target.value = "";
-                        void onLogoChange(f);
-                      }}
-                    />
-                    <button
-                      type="button"
-                      disabled={saving}
-                      onClick={() => logoInputRef.current?.click()}
-                      className="mt-2 rounded-lg border border-border-default bg-white px-3 py-1.5 text-[12.5px] font-semibold text-text-primary disabled:opacity-50"
-                    >
-                      {saving
-                        ? "Wird hochgeladen…"
-                        : logoSrc
-                          ? "Logo ersetzen"
-                          : "Logo hochladen"}
-                    </button>
-                  </div>
-                </div>
-              </div>
-
-              <div className="space-y-3">
-                <EinstellungenSectionHeader
-                  title={HW_FIRMEN_SECTIONS.anschrift}
-                />
-                <div className="flex flex-col gap-4">
-                  <EinstellungenGrid2>
-                    <EinstellungenPfRow
-                      label="Firmenname"
-                      value={dash(saved.firma)}
-                    />
-                    <EinstellungenPfRow
-                      label="Inhaber / Geschäftsführung"
-                      value={dash(saved.inhaber)}
-                    />
-                  </EinstellungenGrid2>
-                  <EinstellungenGrid2>
-                    <EinstellungenPfRow
-                      label="Straße"
-                      value={dash(saved.strasse)}
-                    />
-                    <EinstellungenPfRow
-                      label="Hausnummer"
-                      value={dash(saved.hausnummer)}
-                    />
-                  </EinstellungenGrid2>
-                  <EinstellungenGrid2>
-                    <EinstellungenPfRow label="PLZ" value={dash(saved.plz)} />
-                    <EinstellungenPfRow label="Ort" value={dash(saved.ort)} />
-                  </EinstellungenGrid2>
-                  <EinstellungenGrid2>
-                    <EinstellungenPfRow
-                      label="Telefon"
-                      value={dash(saved.tel)}
-                    />
-                    <EinstellungenPfRow
-                      label="E-Mail"
-                      value={dash(saved.mail)}
-                    />
-                  </EinstellungenGrid2>
-                </div>
-              </div>
-
-              <div className="space-y-3">
-                <EinstellungenSectionHeader title={HW_FIRMEN_SECTIONS.steuer} />
-                <div className="flex flex-col gap-4">
-                  <EinstellungenGrid2>
-                    <EinstellungenPfRow
-                      label="USt-IdNr."
-                      value={dash(saved.ustid)}
-                    />
-                    <EinstellungenPfRow
-                      label="Steuernummer"
-                      value={dash(saved.steuernr)}
-                    />
-                  </EinstellungenGrid2>
-                  <EinstellungenPfRow
-                    label="Handelsregister"
-                    value={dash(saved.hrb)}
-                  />
-                  <EinstellungenPfRow
-                    label="Kleinunternehmer §19 UStG"
-                    value={saved.kleinunternehmer ? "Ja" : "Nein"}
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-3">
-                <EinstellungenSectionHeader title={HW_FIRMEN_SECTIONS.bank} />
-                <div className="flex flex-col gap-4">
-                  <EinstellungenPfRow label="IBAN" value={dash(saved.iban)} />
-                  <EinstellungenGrid2>
-                    <EinstellungenPfRow label="BIC" value={dash(saved.bic)} />
-                    <EinstellungenPfRow label="Bank" value={dash(saved.bank)} />
-                  </EinstellungenGrid2>
-                </div>
-              </div>
-
-              <PortalKontoSicherheitPanel signOutHref="/partner/login" />
+              <PartnerRahmenvertragCard
+                rahmenvertrag={profil.rahmenvertrag}
+                stammItems={profil.stamm}
+                handwerkskarte={handwerkskarte}
+              />
+              {handwerkskarte.length === 0 ? (
+                <PartnerDetailInfoBox>
+                  Weitere Unterlagen zum Bauauftrag (z. B. Freistellungsbescheinigung,
+                  Personalliste) erscheinen, sobald Bärenwald dein Angebot übernommen
+                  hat — unter „Vorgänge“.
+                </PartnerDetailInfoBox>
+              ) : null}
             </div>
           );
-        }}
-      </PortalEinstellungenShell>
+        }
 
-      {edit && editOpen ? (
-        <EinstellungenEditModal
-          open
-          title="Daten bearbeiten"
-          subtitle="Anschrift, Steuer und Bank — Speichern oder Abbrechen."
-          onClose={closeEdit}
-          onSave={() => void onSaveEdit()}
-          saving={saving}
-        >
-          <p className="text-[11.5px] font-bold text-text-tertiary">
-            {HW_FIRMEN_SECTIONS.anschrift}
-          </p>
-          <EinstellungenGrid2>
-            <EinstellungenEdField
-              label="Firmenname"
-              value={edit.firma}
-              onChange={(v) => setEdit({ ...edit, firma: v })}
-              autoComplete="organization"
-            />
-            <EinstellungenEdField
-              label="Inhaber / Geschäftsführung"
-              value={edit.inhaber}
-              onChange={(v) => setEdit({ ...edit, inhaber: v })}
-              autoComplete="name"
-            />
-          </EinstellungenGrid2>
-          <EinstellungenGrid2>
-            <EinstellungenEdField
-              label="Straße"
-              value={edit.strasse}
-              onChange={(v) => setEdit({ ...edit, strasse: v })}
-              autoComplete="address-line1"
-            />
-            <EinstellungenEdField
-              label="Hausnummer"
-              value={edit.hausnummer}
-              onChange={(v) => setEdit({ ...edit, hausnummer: v })}
-              autoComplete="address-line2"
-            />
-          </EinstellungenGrid2>
-          <EinstellungenGrid2>
-            <EinstellungenEdField
-              label="PLZ"
-              value={edit.plz}
-              onChange={(v) => setEdit({ ...edit, plz: v })}
-              autoComplete="postal-code"
-            />
-            <EinstellungenEdField
-              label="Ort"
-              value={edit.ort}
-              onChange={(v) => setEdit({ ...edit, ort: v })}
-              autoComplete="address-level2"
-            />
-          </EinstellungenGrid2>
-          <EinstellungenEdField
-            label="Telefon"
-            value={edit.tel}
-            onChange={(v) => setEdit({ ...edit, tel: v })}
-            type="tel"
-            autoComplete="tel"
-          />
-          <EinstellungenPfRow label="E-Mail" value={dash(edit.mail)} />
-          <p className="text-[11.5px] text-text-tertiary">
-            E-Mail-Änderung nur über Support.
-          </p>
+        if (tab === "steuer") {
+          return (
+            <div className="space-y-3">
+              <EinstellungenSectionHeader
+                title={HW_FIRMEN_SECTIONS.steuer}
+                onEdit={() => openEdit("steuer")}
+              />
+              <div className="flex flex-col gap-4">
+                <EinstellungenGrid2>
+                  <EinstellungenPfRow label="USt-IdNr." value={dash(saved.ustid)} />
+                  <EinstellungenPfRow
+                    label="Steuernummer"
+                    value={dash(saved.steuernr)}
+                  />
+                </EinstellungenGrid2>
+                <EinstellungenPfRow
+                  label="Handelsregister"
+                  value={dash(saved.hrb)}
+                />
+                <EinstellungenPfRow
+                  label="Kleinunternehmer §19 UStG"
+                  value={saved.kleinunternehmer ? "Ja" : "Nein"}
+                />
+              </div>
+            </div>
+          );
+        }
 
-          <p className="pt-2 text-[11.5px] font-bold text-text-tertiary">
-            {HW_FIRMEN_SECTIONS.steuer}
-          </p>
-          <EinstellungenGrid2>
+        if (tab === "bank") {
+          return (
+            <div className="space-y-3">
+              <EinstellungenSectionHeader
+                title={HW_FIRMEN_SECTIONS.bank}
+                onEdit={() => openEdit("bank")}
+              />
+              <div className="flex flex-col gap-4">
+                <EinstellungenPfRow label="IBAN" value={dash(saved.iban)} />
+                <EinstellungenGrid2>
+                  <EinstellungenPfRow label="BIC" value={dash(saved.bic)} />
+                  <EinstellungenPfRow label="Bank" value={dash(saved.bank)} />
+                </EinstellungenGrid2>
+              </div>
+            </div>
+          );
+        }
+
+        return (
+          <div className="space-y-4">
+            <div>
+              <EinstellungenSectionHeader title={HW_FIRMEN_SECTIONS.logo} />
+              <div className="flex items-center gap-3.5">
+                <div className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-border-default bg-muted">
+                  {handwerker.logo_signed_url ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={handwerker.logo_signed_url}
+                      alt="Firmenlogo"
+                      className="h-full w-full object-contain"
+                    />
+                  ) : (
+                    <span className="font-[family-name:var(--font-display)] text-sm font-bold text-text-primary">
+                      {saved.logo}
+                    </span>
+                  )}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <FileUploadField
+                    label="Logo"
+                    accept="image/png,image/jpeg,image/webp"
+                    size="compact"
+                    disabled={logoBusy}
+                    onChange={(files) => void onLogoChange(files[0] ?? null)}
+                    className="mt-2"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <EinstellungenSectionHeader
+                title={HW_FIRMEN_SECTIONS.anschrift}
+                onEdit={() => openEdit("anschrift")}
+              />
+              <div className="flex flex-col gap-4">
+                <EinstellungenGrid2>
+                  <EinstellungenPfRow
+                    label="Firmenname"
+                    value={dash(saved.firma)}
+                  />
+                  <EinstellungenPfRow
+                    label="Inhaber / Geschäftsführung"
+                    value={dash(saved.inhaber)}
+                  />
+                </EinstellungenGrid2>
+                <EinstellungenGrid2>
+                  <EinstellungenPfRow
+                    label="Straße"
+                    value={dash(saved.strasse)}
+                  />
+                  <EinstellungenPfRow
+                    label="Hausnummer"
+                    value={dash(saved.hausnummer)}
+                  />
+                </EinstellungenGrid2>
+                <EinstellungenGrid2>
+                  <EinstellungenPfRow label="PLZ" value={dash(saved.plz)} />
+                  <EinstellungenPfRow label="Ort" value={dash(saved.ort)} />
+                </EinstellungenGrid2>
+                <EinstellungenGrid2>
+                  <EinstellungenPfRow label="Telefon" value={dash(saved.tel)} />
+                  <EinstellungenPfRow label="E-Mail" value={dash(saved.mail)} />
+                </EinstellungenGrid2>
+              </div>
+            </div>
+            <PortalKontoSicherheitPanel signOutHref="/partner/login" />
+          </div>
+        );
+      }}
+    </PortalEinstellungenShell>
+
+    {edit && editTab ? (
+      <EinstellungenEditModal
+        open
+        title={modalTitle}
+        onClose={closeEdit}
+        onSave={() => void onSaveEdit()}
+        saving={saving}
+      >
+        {editTab === "anschrift" ? (
+          <>
+            <EinstellungenGrid2>
+              <EinstellungenEdField
+                label="Firmenname"
+                value={edit.firma}
+                onChange={(v) => setEdit({ ...edit, firma: v })}
+                autoComplete="organization"
+              />
+              <EinstellungenEdField
+                label="Inhaber / Geschäftsführung"
+                value={edit.inhaber}
+                onChange={(v) => setEdit({ ...edit, inhaber: v })}
+                autoComplete="name"
+              />
+            </EinstellungenGrid2>
+            <EinstellungenGrid2>
+              <EinstellungenEdField
+                label="Straße"
+                value={edit.strasse}
+                onChange={(v) => setEdit({ ...edit, strasse: v })}
+                autoComplete="address-line1"
+              />
+              <EinstellungenEdField
+                label="Hausnummer"
+                value={edit.hausnummer}
+                onChange={(v) => setEdit({ ...edit, hausnummer: v })}
+                autoComplete="address-line2"
+              />
+            </EinstellungenGrid2>
+            <EinstellungenGrid2>
+              <EinstellungenEdField
+                label="PLZ"
+                value={edit.plz}
+                onChange={(v) => setEdit({ ...edit, plz: v })}
+                autoComplete="postal-code"
+              />
+              <EinstellungenEdField
+                label="Ort"
+                value={edit.ort}
+                onChange={(v) => setEdit({ ...edit, ort: v })}
+                autoComplete="address-level2"
+              />
+            </EinstellungenGrid2>
             <EinstellungenEdField
-              label="USt-IdNr."
-              value={edit.ustid}
-              onChange={(v) => setEdit({ ...edit, ustid: v })}
+              label="Telefon"
+              value={edit.tel}
+              onChange={(v) => setEdit({ ...edit, tel: v })}
+              type="tel"
+              autoComplete="tel"
             />
+            <EinstellungenPfRow label="E-Mail" value={dash(edit.mail)} />
+            <p className="text-[11.5px] text-text-tertiary">
+              E-Mail-Änderung nur über Support.
+            </p>
+          </>
+        ) : null}
+
+        {editTab === "steuer" ? (
+          <>
+            <EinstellungenGrid2>
+              <EinstellungenEdField
+                label="USt-IdNr."
+                value={edit.ustid}
+                onChange={(v) => setEdit({ ...edit, ustid: v })}
+              />
+              <EinstellungenEdField
+                label="Steuernummer"
+                value={edit.steuernr}
+                onChange={(v) => setEdit({ ...edit, steuernr: v })}
+              />
+            </EinstellungenGrid2>
             <EinstellungenEdField
-              label="Steuernummer"
-              value={edit.steuernr}
-              onChange={(v) => setEdit({ ...edit, steuernr: v })}
+              label="Handelsregister"
+              value={edit.hrb}
+              onChange={(v) => setEdit({ ...edit, hrb: v })}
             />
-          </EinstellungenGrid2>
-          <EinstellungenEdField
-            label="Handelsregister"
-            value={edit.hrb}
-            onChange={(v) => setEdit({ ...edit, hrb: v })}
-          />
-          <label className="flex cursor-pointer items-start gap-2.5 rounded-xl border border-border-default px-3 py-2.5">
-            <input
-              type="checkbox"
-              className="mt-0.5"
-              checked={edit.kleinunternehmer}
-              onChange={(e) =>
-                setEdit({ ...edit, kleinunternehmer: e.target.checked })
-              }
-            />
-            <span className="text-[13px] leading-snug text-text-secondary">
-              <span className="font-semibold text-text-primary">
-                Kleinunternehmer §19 UStG
+            <label className="flex cursor-pointer items-start gap-2.5 rounded-xl border border-border-default px-3 py-2.5">
+              <input
+                type="checkbox"
+                className="mt-0.5"
+                checked={edit.kleinunternehmer}
+                onChange={(e) =>
+                  setEdit({ ...edit, kleinunternehmer: e.target.checked })
+                }
+              />
+              <span className="text-[13px] leading-snug text-text-secondary">
+                <span className="font-semibold text-text-primary">
+                  Kleinunternehmer §19 UStG
+                </span>
+                <span className="mt-0.5 block text-[12px]">
+                  Rechnungen ohne MwSt-Ausweis, mit gesetzlichem Hinweis.
+                </span>
               </span>
-              <span className="mt-0.5 block text-[12px]">
-                Rechnungen ohne MwSt-Ausweis, mit gesetzlichem Hinweis.
-              </span>
-            </span>
-          </label>
+            </label>
+          </>
+        ) : null}
 
-          <p className="pt-2 text-[11.5px] font-bold text-text-tertiary">
-            {HW_FIRMEN_SECTIONS.bank}
-          </p>
-          <EinstellungenEdField
-            label="IBAN"
-            value={edit.iban}
-            onChange={(v) => setEdit({ ...edit, iban: v })}
-            autoComplete="off"
-          />
-          <EinstellungenGrid2>
+        {editTab === "bank" ? (
+          <>
             <EinstellungenEdField
-              label="BIC"
-              value={edit.bic}
-              onChange={(v) => setEdit({ ...edit, bic: v })}
+              label="IBAN"
+              value={edit.iban}
+              onChange={(v) => setEdit({ ...edit, iban: v })}
+              autoComplete="off"
             />
-            <EinstellungenEdField
-              label="Bank"
-              value={edit.bank}
-              onChange={(v) => setEdit({ ...edit, bank: v })}
-            />
-          </EinstellungenGrid2>
-        </EinstellungenEditModal>
-      ) : null}
+            <EinstellungenGrid2>
+              <EinstellungenEdField
+                label="BIC"
+                value={edit.bic}
+                onChange={(v) => setEdit({ ...edit, bic: v })}
+              />
+              <EinstellungenEdField
+                label="Bank"
+                value={edit.bank}
+                onChange={(v) => setEdit({ ...edit, bank: v })}
+              />
+            </EinstellungenGrid2>
+          </>
+        ) : null}
+      </EinstellungenEditModal>
+    ) : null}
     </>
   );
 }

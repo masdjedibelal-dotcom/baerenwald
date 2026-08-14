@@ -67,18 +67,18 @@ export function OrganisationServicepaketePanel({ onRequested }: Props) {
         <h2 className="portal-text-section text-text-primary">
           {SERVICEPAKETE_PAGE_TITLE}
         </h2>
-        <p className="portal-text-body max-w-[640px] leading-relaxed text-text-secondary">
+        <p className="max-w-[640px] text-[13.5px] leading-relaxed text-text-secondary">
           {SERVICEPAKETE_INTRO}
         </p>
       </div>
 
       <div className="flex flex-wrap items-end gap-3">
         <label className="flex min-w-[200px] flex-col gap-1.5">
-          <span className="portal-text-meta font-semibold text-text-secondary">
+          <span className="text-[12px] font-semibold text-text-secondary">
             {SERVICEPAKET_GROESSE_LABEL}
           </span>
           <select
-            className="portal-field"
+            className="h-10 rounded-[10px] border-[1.5px] border-[var(--border-default,#e3e6ea)] bg-white px-3 text-[13.5px] font-medium text-text-primary outline-none focus:border-accent"
             value={groesse}
             onChange={(e) =>
               setGroesse(e.target.value as ServicepaketGroesseId)
@@ -129,10 +129,10 @@ export function OrganisationServicepaketePanel({ onRequested }: Props) {
               </div>
 
               <div className="flex flex-1 flex-col px-5 py-[18px]">
-                <h3 className="portal-text-title">
+                <h3 className="font-[family-name:var(--font-display)] text-lg font-extrabold text-text-primary">
                   {p.name}
                 </h3>
-                <p className="portal-text-meta mb-3.5 mt-2 min-h-0 leading-snug text-text-secondary lg:min-h-[58px]">
+                <p className="mb-3.5 mt-2 min-h-0 text-[13px] leading-snug text-text-secondary lg:min-h-[58px]">
                   {p.desc}
                 </p>
                 <div className="mb-3.5 flex items-baseline gap-1">
@@ -142,7 +142,7 @@ export function OrganisationServicepaketePanel({ onRequested }: Props) {
                   >
                     {formatServicepaketPreisAb(preisAb)}
                   </span>
-                  <span className="portal-text-meta font-semibold text-text-tertiary">
+                  <span className="text-[13px] font-semibold text-text-tertiary">
                     {p.zyklus}
                   </span>
                 </div>
@@ -150,7 +150,7 @@ export function OrganisationServicepaketePanel({ onRequested }: Props) {
                   {p.feats.map((f) => (
                     <li
                       key={f}
-                      className="portal-text-meta flex items-center gap-2.5 text-text-primary"
+                      className="flex items-center gap-2.5 text-[13px] text-text-primary"
                     >
                       <span
                         className="grid h-[18px] w-[18px] shrink-0 place-items-center rounded-full text-[11px]"
@@ -192,7 +192,7 @@ export function OrganisationServicepaketePanel({ onRequested }: Props) {
         })}
       </div>
 
-      <p className="portal-text-meta max-w-[640px] leading-relaxed text-text-tertiary">
+      <p className="max-w-[640px] text-[12.5px] leading-relaxed text-text-tertiary">
         {SERVICEPAKET_PREIS_HINWEIS}
       </p>
 
@@ -202,8 +202,6 @@ export function OrganisationServicepaketePanel({ onRequested }: Props) {
           title={SERVICEPAKET_OK_TITLE}
           onClose={() => setOkName(null)}
           variant="confirm"
-          onConfirm={() => setOkName(null)}
-          confirmLabel="Schließen"
         >
           <div className="px-1 py-1.5 text-center">
             <div
@@ -212,15 +210,15 @@ export function OrganisationServicepaketePanel({ onRequested }: Props) {
             >
               ✓
             </div>
-            <p className="portal-text-title mb-2">
+            <p className="mb-2 font-[family-name:var(--font-display)] text-lg font-bold text-text-primary">
               {servicepaketOkHeadline(okName)}
             </p>
-            <p className="portal-text-body mx-auto mb-[18px] max-w-[320px] leading-relaxed text-text-secondary">
+            <p className="mx-auto mb-[18px] max-w-[320px] text-[13.5px] leading-relaxed text-text-secondary">
               {SERVICEPAKET_OK_BODY}
             </p>
             <button
               type="button"
-              className="portal-action-btn portal-action-btn--primary"
+              className="rounded-[10px] bg-accent px-[26px] py-[11px] text-sm font-semibold text-white"
               onClick={() => setOkName(null)}
             >
               {SERVICEPAKET_OK_CLOSE}

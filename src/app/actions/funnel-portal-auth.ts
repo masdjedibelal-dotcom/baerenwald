@@ -100,7 +100,7 @@ export async function registerFunnelPortalAccount(
   if (already) {
     return {
       ok: false,
-      error: "Diese E-Mail ist bereits registriert. Bitte melden Sie sich an.",
+      error: "Diese E-Mail ist bereits registriert. Bitte melde dich an.",
     };
   }
 
@@ -133,7 +133,7 @@ export async function registerFunnelPortalAccount(
     if (msg.includes("already") || msg.includes("registered")) {
       return {
         ok: false,
-        error: "Diese E-Mail ist bereits registriert. Bitte melden Sie sich an.",
+        error: "Diese E-Mail ist bereits registriert. Bitte melde dich an.",
       };
     }
     console.error("[registerFunnelPortalAccount]", createErr);

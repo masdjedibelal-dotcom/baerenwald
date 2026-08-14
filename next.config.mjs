@@ -20,37 +20,13 @@ const securityHeaders = [
 
 const nextConfig = {
   experimental: {
-    serverComponentsExternalPackages: ["@napi-rs/canvas", "web-push"],
-    /** Kamera-Fotos (bis 6 MB) + PDFs müssen in Server Actions ankommen. Default ist 1 MB. */
-    serverActions: {
-      bodySizeLimit: "10mb",
-    },
+    serverComponentsExternalPackages: ["@napi-rs/canvas"],
   },
-  transpilePackages: ["pdfjs-dist"],
   async headers() {
     return [
       {
         source: "/(.*)",
         headers: securityHeaders,
-      },
-      {
-        source: "/sw.js",
-        headers: [
-          { key: "Cache-Control", value: "no-cache, no-store, must-revalidate" },
-          { key: "Service-Worker-Allowed", value: "/" },
-        ],
-      },
-      {
-        source: "/manifest.webmanifest",
-        headers: [
-          { key: "Content-Type", value: "application/manifest+json" },
-        ],
-      },
-      {
-        source: "/manifest-partner.webmanifest",
-        headers: [
-          { key: "Content-Type", value: "application/manifest+json" },
-        ],
       },
     ];
   },

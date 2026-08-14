@@ -33,11 +33,6 @@ export function inferFlowFromKundeItem(
     return "auftrag";
   }
   if (item.isAngebotDetail) {
-    const phase = String(item.vorgangPhase ?? "").toLowerCase();
-    const pill = String(item.statusPillKey ?? "").toLowerCase();
-    if (phase === "abgelehnt" || pill === "abgelehnt") {
-      return "abgelehnt";
-    }
     return "angebot";
   }
   const hv = (extras?.hvMeldungStatus ?? "").toLowerCase();

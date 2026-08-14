@@ -55,10 +55,16 @@ export function PortalDetailMetaField({
       className={cn("border-b py-2.5 last:border-b-0", className)}
       style={{ borderColor: PORTAL_VAR.line2 }}
     >
-      <p className="portal-text-label" style={{ color: PORTAL_VAR.faint }}>
+      <p
+        className="text-[10.5px] font-semibold uppercase tracking-wide"
+        style={{ color: PORTAL_VAR.faint }}
+      >
         {label}
       </p>
-      <div className="portal-text-meta mt-0.5 font-semibold" style={{ color: PORTAL_VAR.ink }}>
+      <div
+        className="mt-0.5 text-[13.5px] font-semibold"
+        style={{ color: PORTAL_VAR.ink }}
+      >
         {children}
       </div>
     </div>

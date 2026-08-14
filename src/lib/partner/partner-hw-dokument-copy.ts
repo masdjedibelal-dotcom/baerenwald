@@ -25,5 +25,5 @@ export function partnerHwDokumentUploadHint(opts?: {
 }): string {
   const maxBatch = opts?.maxDateien ?? PARTNER_MAX_ANGEBOT_DATEIEN;
   const maxGesamt = opts?.maxGesamt ?? PARTNER_MAX_HW_UNTERLAGEN_GESAMT;
-  return `${PARTNER_HW_DOKUMENT_TYPEN_KURZ} — max. ${maxBatch} Dateien pro Upload, insgesamt ${maxGesamt}, je ${PARTNER_MAX_PDF_MB} MB.`;
+  return `${PARTNER_HW_DOKUMENT_TYPEN_KURZ} — max. ${maxBatch} PDFs pro Upload, insgesamt ${maxGesamt}, je ${PARTNER_MAX_PDF_MB} MB.`;
 }

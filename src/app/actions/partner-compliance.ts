@@ -159,40 +159,23 @@ export async function uploadPartnerComplianceDokument(
     }
   }
 
-  const { data: inserted, error } = await supabaseAdmin
-    .from("partner_dokumente")
-    .insert({
-      handwerker_id: link.handwerkerId,
-      auftrag_id: auftragId,
-      typ,
-      bezeichnung: (() => {
-        const base =
-          bezeichnungRaw ||
-          (typRow as { bezeichnung?: string } | null)?.bezeichnung ||
-          typ;
-        return beschreibung ? `${base}\n${beschreibung}` : base;
-      })(),
-      gueltig_bis: gueltigBis,
-      datei_url: up.path,
-      status: "in_pruefung",
-    })
-    .select("id, bezeichnung")
-    .maybeSingle();
+  const { error } = await supabaseAdmin.from("partner_dokumente").insert({
+    handwerker_id: link.handwerkerId,
+    auftrag_id: auftragId,
+    typ,
+    bezeichnung: (() => {
+      const base =
+        bezeichnungRaw ||
+        (typRow as { bezeichnung?: string } | null)?.bezeichnung ||
+        typ;
+      return beschreibung ? `${base}\n${beschreibung}` : base;
+    })(),
+    gueltig_bis: gueltigBis,
+    datei_url: up.path,
+    status: "in_pruefung",
+  });
 
   if (error) return { ok: false, error: error.message };
-
-  void import("@/lib/partner/notify-crm-partner-dokument").then(
-    ({ notifyCrmPartnerDokumentUpload }) =>
-      notifyCrmPartnerDokumentUpload({
-        typ: "compliance",
-        handwerkerId: link.handwerkerId,
-        auftragId,
-        dokumentId: inserted?.id ? String(inserted.id) : null,
-        titel: String(
-          inserted?.bezeichnung ?? (bezeichnungRaw || typ)
-        ).trim() || typ,
-      })
-  );
 
   revalidatePath("/partner");
   return { ok: true };

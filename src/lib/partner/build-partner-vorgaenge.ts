@@ -120,8 +120,6 @@ export function buildPartnerVorgaenge(input: {
       positionen: auftrag.positionen,
       offeneNachreichungPositionIds: auftrag.nachreichungOpenPositionIds,
       anfrageAktionNoetig,
-      hwStatus: auftrag.hwStatus,
-      anfrageStatus: anfrage?.status ?? null,
     });
 
     items.push({
@@ -148,12 +146,7 @@ export function buildPartnerVorgaenge(input: {
       continue;
     }
 
-    const anfrageAbgelehnt =
-      String(anfrage.status ?? "").trim().toLowerCase() === "abgelehnt";
-    // Offene Aktionen ODER abgelehnte Anfragen (unter Erledigt / Status Abgelehnt)
-    if (!isPartnerAnfrageAktionErforderlich(anfrage) && !anfrageAbgelehnt) {
-      continue;
-    }
+    if (!isPartnerAnfrageAktionErforderlich(anfrage)) continue;
 
     const auftrag = stubAuftragFromAnfrage(anfrage);
     const handwerker_bestaetigt_at = resolveHandwerkerBestaetigtAt({
@@ -177,9 +170,7 @@ export function buildPartnerVorgaenge(input: {
       handwerkerBestaetigtAt: handwerker_bestaetigt_at,
       positionen: auftrag.positionen,
       offeneNachreichungPositionIds: auftrag.nachreichungOpenPositionIds,
-      anfrageAktionNoetig: !anfrageAbgelehnt,
-      hwStatus: auftrag.hwStatus,
-      anfrageStatus: anfrage.status,
+      anfrageAktionNoetig: true,
     });
 
     items.push({
@@ -194,16 +185,6 @@ export function buildPartnerVorgaenge(input: {
   return items.sort((a, b) => {
     return partnerVorgangLastActivityAt(b) - partnerVorgangLastActivityAt(a);
   });
-}
-
-/** Erstellzeitpunkt des Vorgangs (Auftrag bzw. Anfrage) — für Dashboard „Zuletzt“. */
-export function partnerVorgangCreatedAt(v: PartnerVorgangItem): number {
-  const raw =
-    v.auftrag.created_at?.trim() ||
-    v.anfrage?.gesendet_at?.trim() ||
-    "";
-  const t = raw ? new Date(raw).getTime() : 0;
-  return Number.isFinite(t) ? t : 0;
 }
 
 /** Neuester Zeitstempel aus Status, Anpassungen, Positionen, Tagebuch usw. */

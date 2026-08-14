@@ -4,7 +4,6 @@
  */
 
 import type { MeldeAnswers } from "@/lib/funnel/melde-dynamic-questions";
-import { normalizeMeldeDachProblem } from "@/lib/funnel/melde-dynamic-questions";
 
 export type DachUrsacheId =
   | "rinne_verstopft"
@@ -41,7 +40,11 @@ function ans(a: MeldeAnswers, id: string): string {
 }
 
 function normalizeProblem(raw: string): string {
-  return normalizeMeldeDachProblem(raw);
+  if (raw === "rinne" || raw === "dachrinne") return "regenrinne_ueber";
+  if (raw === "fallrohr") return "wasser_fassade";
+  if (raw === "ziegel") return "ziegel_boden";
+  if (raw === "dach_undicht") return "sonstiges";
+  return raw;
 }
 
 function orderIds(ids: DachUrsacheId[]): DachUrsacheOption[] {

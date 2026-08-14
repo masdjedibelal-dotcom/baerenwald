@@ -126,7 +126,7 @@ export function buildGuidedBlock(
       return {
         type: "decision",
         field: "situation",
-        question: "Was trifft auf Ihr Vorhaben zu?",
+        question: "Was trifft auf dein Vorhaben zu?",
         options: BW_FUNNEL_STEP1_OPTIONS.map((o) => ({
           value: o.id,
           label: o.label,

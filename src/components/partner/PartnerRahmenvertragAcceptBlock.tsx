@@ -1,7 +1,6 @@
 "use client";
 
 import { PARTNER_RAHMENVERTRAG_REGISTER_TEXT } from "@/lib/partner/partner-rahmenvertrag-text";
-import { PortalDocOpenButton } from "@/components/shared/PortalDocOpenButton";
 import { cn } from "@/lib/utils";
 
 export function PartnerRahmenvertragAcceptBlock({
@@ -73,14 +72,14 @@ export function PartnerRahmenvertragAcceptBlock({
       </div>
 
       {pdfUrl ? (
-        <PortalDocOpenButton
+        <a
           href={pdfUrl}
-          name="Partnerschafts-Rahmenvertrag"
-          kind="pdf"
+          target="_blank"
+          rel="noopener noreferrer"
           className="btn-pill-outline portal-btn inline-flex"
         >
-          PDF öffnen (inkl. Anlagen)
-        </PortalDocOpenButton>
+          PDF herunterladen (inkl. Anlagen)
+        </a>
       ) : (
         <p className="portal-text-meta text-text-tertiary">{pdfMissingHint}</p>
       )}

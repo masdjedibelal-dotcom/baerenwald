@@ -34,7 +34,7 @@ const HERO_FOCUS_TILES: {
   },
   {
     title: "Pflegen & Betreuen",
-    hint: "Regelmäßige Pflege — weniger Aufwand für Sie.",
+    hint: "Regelmäßige Pflege — weniger Aufwand für dich.",
   },
 ];
 
@@ -167,7 +167,7 @@ export function HomeLanding() {
             </p>
             <p className="mt-2 text-xs text-white/60">{CTA.heroSub}</p>
             <p className="mt-5 max-w-md text-base leading-relaxed text-white/60">
-              Beschreiben Sie einfach was Sie brauchen — wir zeigen Ihnen was es kostet und
+              Beschreib einfach was du brauchst — wir zeigen dir was es kostet und
               organisieren alles weitere.
             </p>
 
@@ -249,7 +249,7 @@ export function HomeLanding() {
               </p>
               <ol className="space-y-4">
                 {[
-                  ["1", "Beschreiben Sie was Sie brauchen"],
+                  ["1", "Beschreib was du brauchst"],
                   ["2", "Wir berechnen den Preisrahmen"],
                   ["3", "Kostenloser Termin vor Ort"],
                 ].map(([num, text]) => (
@@ -330,17 +330,17 @@ export function HomeLanding() {
             {
               n: "01",
               title: "Preisrechner ausfüllen",
-              text: "In 2 Minuten Ihr Vorhaben beschreiben und einen realistischen Preisrahmen erhalten. Kostenlos und unverbindlich.",
+              text: "In 2 Minuten dein Vorhaben beschreiben und einen realistischen Preisrahmen erhalten. Kostenlos und unverbindlich.",
             },
             {
               n: "02",
               title: "Kostenloser Vor-Ort-Termin",
-              text: "Wir kommen zu Ihnen, schauen uns alles an und erstellen ein genaues Angebot. Kein Auftragszwang.",
+              text: "Wir kommen zu dir, schauen uns alles an und erstellen ein genaues Angebot. Kein Auftragszwang.",
             },
             {
               n: "03",
               title: "Wir koordinieren alles",
-              text: "Sie lehnen sich zurück. Wir koordinieren Termine, Handwerker und Materialien. Sie bekommen am Ende eine Rechnung.",
+              text: "Du lehnst dich zurück. Wir koordinieren Termine, Handwerker und Materialien. Du bekommst am Ende eine Rechnung.",
             },
           ].map((s) => (
             <div key={s.n} className="relative text-center lg:text-left">
@@ -465,7 +465,7 @@ export function HomeLanding() {
               {
                 Icon: IconNetwork,
                 title: "Koordination inklusive",
-                text: "Wir kümmern uns um alle Handwerker. Sie brauchen nur einen Ansprechpartner.",
+                text: "Wir kümmern uns um alle Handwerker. Du brauchst nur einen Ansprechpartner.",
               },
             ].map((u) => (
               <div
@@ -484,10 +484,10 @@ export function HomeLanding() {
       {/* Section 7 */}
       <SectionWrapper bg="white" className="bg-surface-page py-24">
         <h2 className="text-center font-display text-3xl font-bold text-text-primary">
-          Was planen Sie?
+          Was planst du?
         </h2>
         <p className="mx-auto mt-3 max-w-xl text-center text-text-secondary">
-          Wählen Sie den Kontaktweg und starten Sie direkt Ihre Anfrage.
+          Wähle den Kontaktweg und starte direkt deine Anfrage.
         </p>
         <ul className="mx-auto mt-12 grid max-w-[900px] grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           <li>
@@ -497,7 +497,7 @@ export function HomeLanding() {
             >
               <span className="font-semibold text-text-primary">Anrufen</span>
               <span className="mt-1 text-sm text-text-secondary">
-                Direkte Rücksprache zu Ihrem Vorhaben
+                Direkte Rücksprache zu deinem Vorhaben
               </span>
               <span className="mt-4 font-bold text-funnel-accent">→</span>
             </a>
@@ -566,10 +566,10 @@ export function HomeLanding() {
       <section className="bg-funnel-accent py-24 text-center text-white">
         <div className="mx-auto max-w-2xl px-6">
           <h2 className="font-display text-4xl font-bold tracking-tight text-white">
-            Bereit für Ihr Projekt?
+            Bereit für dein Projekt?
           </h2>
           <p className="mt-4 text-lg text-white/70">
-            Schreiben Sie uns Ihr Vorhaben — unverbindlich und ohne Anmeldung.
+            Schreib uns dein Vorhaben — unverbindlich und ohne Anmeldung.
           </p>
           <Link
             href="/kontakt"

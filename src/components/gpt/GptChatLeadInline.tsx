@@ -44,7 +44,7 @@ export function GptChatLeadInline({ sessionId, onSuccess }: GptChatLeadInlinePro
   if (done) {
     return (
       <p className="gpt-viz-success" style={{ marginTop: "0.5rem" }}>
-        Danke! Ihr Projekt ist bei Bärenwald eingegangen.
+        Danke! Dein Projekt ist bei Bärenwald eingegangen.
       </p>
     );
   }

@@ -7,74 +7,40 @@ import type { PortalAuftragPositionDisplay } from "@/lib/portal/kunde-auftrag-ae
 import type { PartnerKonditionZeile } from "@/lib/partner/partner-konditionen";
 import {
   formatAnfrageBereiche,
-  formatAnfrageZeitraum,
-  resolveAnfrageAdresse,
-  resolveAnfrageMelder,
   type PortalAnfrageLeadSource,
 } from "@/lib/portal/portal-anfrage-display";
 import { labelSituation } from "@/lib/lead-funnel-labels";
 import type { PortalObjekt } from "@/lib/portal/portal-objekt";
-import {
-  fachdetailRowsFromFunnelDaten,
-  normalizeFunnelDaten,
-} from "@/lib/lead-funnel-daten";
-import { formatAuftragDatumSpan } from "@/lib/portal/portal-auftrag-display";
+import { normalizeFunnelDaten } from "@/lib/lead-funnel-daten";
 import {
   kostentraegerLabel,
   type VorgangDetailAusfuehrung,
   type VorgangDetailKopf,
   type VorgangDetailObjektMelder,
   type VorgangDetailRole,
-  type VorgangDetailsLeistungen,
   type VorgangDetailVM,
   type VorgangLeistungZeile,
 } from "@/lib/vorgang/vorgang-detail-vm";
 
-/** Portal-Flow grob für Details-Card (Preisindikation vs. Leistungen). */
-export type VorgangDetailPortalFlow =
-  | "gemeldet"
-  | "freigegeben"
-  | "angefragt"
-  | "angebot"
-  | "auftrag"
-  | "abschluss"
-  | "rechnung"
-  | "bezahlt"
-  | "abgelehnt";
-
-const FLOW_RECHNUNG = new Set<VorgangDetailPortalFlow>([
-  "abschluss",
-  "rechnung",
-  "bezahlt",
-]);
-
-const FLOW_PAST_ANFRAGE = new Set<VorgangDetailPortalFlow>([
-  "angebot",
-  "auftrag",
-  "abschluss",
-  "rechnung",
-  "bezahlt",
-  "abgelehnt",
-]);
-
-function resolveDetailsLeistungen(opts: {
-  role: VorgangDetailRole;
-  flow: VorgangDetailPortalFlow | null | undefined;
-  hasLeistungen: boolean;
-}): VorgangDetailsLeistungen | null {
-  if (!opts.hasLeistungen) return null;
-  const flow = opts.flow;
-
-  if (opts.role === "mieter") {
-    return { title: "Leistungen", mode: "plain" };
-  }
-  if (flow && FLOW_RECHNUNG.has(flow)) {
-    return { title: "Rechnung", mode: "vk" };
-  }
-  if (flow === "auftrag") {
-    return { title: "Leistungen", mode: "vk" };
-  }
-  return { title: "Angebot", mode: "vk" };
+function formatAdresse(
+  objekt?: PortalObjekt | null,
+  lead?: {
+    strasse?: string | null;
+    hausnummer?: string | null;
+    plz?: string | null;
+    ort?: string | null;
+  } | null
+): string | null {
+  const strasse =
+    objekt?.strasse?.trim() ||
+    [lead?.strasse, lead?.hausnummer].filter(Boolean).join(" ").trim();
+  const plzOrt =
+    [objekt?.plz ?? lead?.plz, objekt?.ort ?? lead?.ort]
+      .filter(Boolean)
+      .join(" ")
+      .trim() || "";
+  const line = [strasse, plzOrt].filter(Boolean).join(", ");
+  return line || null;
 }
 
 function leistungenFromAngebotDisplay(
@@ -85,10 +51,7 @@ function leistungenFromAngebotDisplay(
     id: p.id,
     title: p.title,
     beschreibung: p.beschreibung,
-    gewerk: p.gewerk,
-    menge: p.mengeLabel ?? (p.menge != null ? String(p.menge) : undefined),
-    einheit: p.mengeLabel ? undefined : p.einheit,
-    preisBrutto: p.preisBrutto > 0 ? p.preisBrutto : null,
+    preisBrutto: p.preisBrutto,
   }));
 }
 
@@ -100,10 +63,7 @@ function leistungenFromAuftragDisplay(
     id: p.id,
     title: p.title,
     beschreibung: p.beschreibung,
-    gewerk: p.gewerk,
-    menge: p.mengeLabel ?? (p.menge != null ? String(p.menge) : undefined),
-    einheit: p.mengeLabel ? undefined : p.einheit,
-    preisBrutto: p.preisBrutto > 0 ? p.preisBrutto : null,
+    preisBrutto: p.preisBrutto,
     aenderungBadge: p.aenderungBadge,
   }));
 }
@@ -123,7 +83,7 @@ function leistungenFromPartnerKonditionen(
 }
 
 export type BuildKundeHvVmInput = {
-  role: "hv" | "kunde" | "mieter";
+  role: "hv" | "kunde";
   idLabel: string;
   titel: string;
   statusLabel?: string;
@@ -152,10 +112,8 @@ export type BuildKundeHvVmInput = {
   meldeBereich?: string | null;
   meldeZeitraum?: string | null;
   meldeFachdetails?: Array<{ label: string; value: string }>;
-  /** Unverbindliche Preisindikation aus Meldung — nur bei role=hv in Anfrage-Phase */
+  /** Unverbindliche Preisindikation aus Meldung — nur bei role=hv rendern */
   meldePreisIndikation?: string | null;
-  /** Aktueller Portal-Flow (steuert Preisindikation / Angebots- vs. Rechnungs-Block) */
-  portalFlow?: VorgangDetailPortalFlow | null;
   angebotPositionen?: PortalAngebotPositionDisplay[];
   auftragPositionen?: PortalAuftragPositionDisplay[];
   gesamtBrutto?: number | null;
@@ -169,81 +127,38 @@ export function buildKundeHvVorgangDetailVm(
   input: BuildKundeHvVmInput
 ): VorgangDetailVM {
   const lead = input.lead;
-  const addr = resolveAnfrageAdresse({
-    ...(lead ?? {}),
-    strasse: input.meldeStrasse ? undefined : lead?.strasse,
-    hausnummer: input.meldeStrasse ? undefined : lead?.hausnummer,
+  const adresseFromLead = formatAdresse(input.objekt ?? lead?.objekt, {
+    strasse: input.meldeStrasse
+      ? input.meldeStrasse
+      : lead?.strasse,
+    hausnummer: input.meldeStrasse ? null : lead?.hausnummer,
     plz: input.meldePlz ?? lead?.plz,
     ort: input.meldeOrt ?? lead?.ort,
-    objekt: input.objekt ?? lead?.objekt,
-    funnel_daten: lead?.funnel_daten,
   });
-  const melder = resolveAnfrageMelder(lead ?? {});
+  const adresse =
+    adresseFromLead ||
+    input.meldeStrasse?.trim() ||
+    input.objektZeile?.trim() ||
+    null;
 
   const adresseStrasse =
     input.meldeStrasse?.trim() ||
-    addr.strasseZeile ||
+    [lead?.strasse, lead?.hausnummer].filter(Boolean).join(" ").trim() ||
+    input.objekt?.strasse?.trim() ||
+    lead?.objekt?.strasse?.trim() ||
     null;
 
   const plzOrt =
-    [input.meldePlz ?? addr.plz, input.meldeOrt ?? addr.ort]
+    [input.meldePlz ?? lead?.plz ?? input.objekt?.plz ?? lead?.objekt?.plz,
+      input.meldeOrt ?? lead?.ort ?? input.objekt?.ort ?? lead?.objekt?.ort]
       .filter(Boolean)
       .join(" ")
       .trim() || null;
 
-  const adresse =
-    [adresseStrasse, plzOrt].filter(Boolean).join(", ") ||
-    (addr.listOrtLine !== "—" ? addr.listOrtLine : null) ||
-    input.objektZeile?.trim() ||
-    null;
-
-  const flow = input.portalFlow ?? null;
-  const angebotLeistungen = leistungenFromAngebotDisplay(input.angebotPositionen);
-  const auftragLeistungen = leistungenFromAuftragDisplay(input.auftragPositionen);
-  const preferAuftrag =
-    flow != null &&
-    (FLOW_RECHNUNG.has(flow) || flow === "auftrag") &&
-    auftragLeistungen.length > 0;
-  const leistungen = preferAuftrag
-    ? auftragLeistungen
-    : angebotLeistungen.length > 0
-      ? angebotLeistungen
-      : auftragLeistungen;
-
-  const pastAnfrage =
-    (flow != null && FLOW_PAST_ANFRAGE.has(flow)) || leistungen.length > 0;
-  const detailsLeistungen = resolveDetailsLeistungen({
-    role: input.role,
-    flow,
-    hasLeistungen: leistungen.length > 0,
-  });
-
-  const funnelRows =
-    input.meldeFachdetails && input.meldeFachdetails.length > 0
-      ? input.meldeFachdetails
-      : lead?.funnel_daten
-        ? fachdetailRowsFromFunnelDaten(lead.funnel_daten, lead.bereiche)
-        : [];
-
-  const situationFromLead = (() => {
-    if (input.meldeSituation?.trim()) return input.meldeSituation.trim();
-    if (!lead) return null;
-    const norm = normalizeFunnelDaten(lead.funnel_daten, lead.bereiche);
-    const slug = norm.situation || lead.situation;
-    if (!slug) return null;
-    const l = labelSituation(slug);
-    return l && l !== "—" ? l : null;
-  })();
-
-  const bereichFromLead =
-    input.meldeBereich?.trim() ||
-    (lead ? formatAnfrageBereiche(lead) : null) ||
-    null;
-
-  const zeitraumFromLead =
-    input.meldeZeitraum?.trim() ||
-    (lead ? formatAnfrageZeitraum(lead) : null) ||
-    null;
+  const leistungen =
+    leistungenFromAuftragDisplay(input.auftragPositionen).length > 0
+      ? leistungenFromAuftragDisplay(input.auftragPositionen)
+      : leistungenFromAngebotDisplay(input.angebotPositionen);
 
   const kopf: VorgangDetailKopf = {
     idLabel: input.idLabel,
@@ -253,44 +168,36 @@ export function buildKundeHvVorgangDetailVm(
     kategorie: input.kategorie,
   };
 
-  const melderName =
-    input.melderName ?? melder.name ?? lead?.kontakt_name ?? null;
-
   const objektMelder: VorgangDetailObjektMelder = {
-    objektTitel:
-      input.objekt?.name ??
-      lead?.objekt?.name ??
-      (lead?.objekt as { titel?: string } | null | undefined)?.titel ??
-      null,
+    objektTitel: input.objekt?.name ?? lead?.objekt?.name ?? null,
     adresseZeile: adresse,
     adresseStrasse,
     plzOrt,
-    einheit: input.einheit ?? melder.einheit ?? lead?.melder_einheit ?? null,
+    einheit: input.einheit ?? lead?.melder_einheit ?? null,
     zugangshinweis: input.lead?.einheiten_hinweis ?? null,
-    melderName,
-    melderTelefon: melder.telefon ?? lead?.melder_telefon ?? null,
-    melderEmail: melder.email ?? lead?.melder_email ?? null,
+    melderName:
+      input.melderName ?? lead?.melder_name ?? lead?.kontakt_name ?? null,
+    melderTelefon: lead?.melder_telefon ?? null,
+    melderEmail: lead?.melder_email ?? null,
     beschreibung: input.beschreibung ?? null,
     fotos: input.fotos ?? [],
-    situationLabel: situationFromLead,
-    bereichLabel: bereichFromLead,
-    zeitraumLabel: zeitraumFromLead,
-    fachdetailRows: funnelRows,
+    situationLabel: input.meldeSituation ?? null,
+    bereichLabel: input.meldeBereich ?? null,
+    zeitraumLabel: input.meldeZeitraum ?? null,
+    fachdetailRows: input.meldeFachdetails ?? [],
     preisIndikation:
-      input.role === "hv" && !pastAnfrage
-        ? input.meldePreisIndikation?.trim() || null
-        : null,
+      input.role === "hv" ? input.meldePreisIndikation?.trim() || null : null,
   };
-
-  const terminLabel =
-    formatAuftragDatumSpan(input.terminVon, input.terminBis) ?? null;
 
   const ausfuehrung: VorgangDetailAusfuehrung = {
     gewerk: input.kategorie ?? null,
     handwerkerName: input.handwerkerName ?? null,
     terminVon: input.terminVon ?? null,
     terminBis: input.terminBis ?? null,
-    terminLabel,
+    terminLabel:
+      input.terminVon || input.terminBis
+        ? [input.terminVon, input.terminBis].filter(Boolean).join(" – ")
+        : null,
     kontaktVorOrtName: objektMelder.melderName,
     kontaktVorOrtTel: objektMelder.melderTelefon,
   };
@@ -310,7 +217,6 @@ export function buildKundeHvVorgangDetailVm(
     objektMelder,
     ausfuehrung,
     leistungen,
-    detailsLeistungen,
   };
 }
 
@@ -334,20 +240,21 @@ export function buildPartnerVorgangDetailVm(
   input: BuildPartnerVmInput
 ): VorgangDetailVM {
   const lead = input.lead;
-  const addr = resolveAnfrageAdresse({
-    ...(lead ?? {}),
-    plz: lead?.plz ?? input.plz,
-    ort: lead?.ort ?? input.ort,
-  });
-  const melder = resolveAnfrageMelder(lead ?? {});
-  const strasse = addr.strasseZeile || null;
+  const plz = lead?.objekt?.plz ?? lead?.plz ?? input.plz ?? null;
+  const ort = lead?.objekt?.ort ?? lead?.ort ?? input.ort ?? null;
+  const strasse =
+    lead?.objekt?.strasse?.trim() ||
+    [lead?.strasse, lead?.hausnummer].filter(Boolean).join(" ").trim() ||
+    null;
   const plzOrt =
-    [addr.plz ?? input.plz, addr.ort ?? input.ort]
-      .filter(Boolean)
-      .join(" ")
-      .trim() || null;
+    [plz, ort].filter(Boolean).join(" ").trim() || null;
   const adresse =
-    (addr.listOrtLine !== "—" ? addr.listOrtLine : null) ||
+    formatAdresse(lead?.objekt, {
+      strasse: lead?.strasse,
+      hausnummer: lead?.hausnummer,
+      plz: lead?.plz ?? input.plz,
+      ort: lead?.ort ?? input.ort,
+    }) ||
     [input.plz, input.ort].filter(Boolean).join(" ") ||
     null;
 
@@ -366,13 +273,6 @@ export function buildPartnerVorgangDetailVm(
       ? labelSituation(situationSlug)
       : null;
   const bereichLabel = lead ? formatAnfrageBereiche(lead) ?? null : null;
-  const fachdetailRows = lead?.funnel_daten
-    ? fachdetailRowsFromFunnelDaten(lead.funnel_daten, lead.bereiche)
-    : [];
-  const zeitraumLabel =
-    input.zeitraum?.trim() ||
-    (lead ? formatAnfrageZeitraum(lead) : null) ||
-    null;
 
   return {
     role: "partner",
@@ -384,21 +284,19 @@ export function buildPartnerVorgangDetailVm(
     },
     auftraggeber: {},
     objektMelder: {
-      objektTitel: lead?.objekt?.name?.trim() || strasse || null,
+      objektTitel: lead?.objekt?.name ?? null,
       adresseZeile: adresse,
       adresseStrasse: strasse,
       plzOrt,
-      einheit: melder.einheit ?? lead?.melder_einheit ?? null,
-      zugangshinweis: lead?.einheiten_hinweis ?? null,
-      melderName: melder.name ?? lead?.kontakt_name ?? null,
-      melderTelefon: melder.telefon ?? lead?.melder_telefon ?? null,
-      melderEmail: melder.email ?? null,
+      einheit: lead?.melder_einheit ?? null,
+      melderName: lead?.melder_name ?? lead?.kontakt_name ?? null,
+      melderTelefon: lead?.melder_telefon ?? null,
+      melderEmail: lead?.melder_email ?? null,
       beschreibung: lead?.kontakt_nachricht ?? null,
       fotos: input.fotos ?? [],
       situationLabel,
       bereichLabel,
-      zeitraumLabel,
-      fachdetailRows,
+      zeitraumLabel: input.zeitraum?.trim() || null,
     },
     ausfuehrung: {
       gewerk: input.gewerkName ?? null,
@@ -406,11 +304,11 @@ export function buildPartnerVorgangDetailVm(
       terminVon: input.startDatum ?? null,
       terminBis: input.endDatum ?? null,
       terminLabel:
-        zeitraumLabel ||
-        formatAuftragDatumSpan(input.startDatum, input.endDatum) ||
-        null,
-      kontaktVorOrtName: melder.name ?? lead?.kontakt_name ?? null,
-      kontaktVorOrtTel: melder.telefon ?? lead?.melder_telefon ?? null,
+        input.zeitraum?.trim() ||
+        ([input.startDatum, input.endDatum].filter(Boolean).join(" – ") ||
+          null),
+      kontaktVorOrtName: lead?.melder_name ?? lead?.kontakt_name ?? null,
+      kontaktVorOrtTel: lead?.melder_telefon ?? null,
       summeEkNetto: summeEk > 0 ? summeEk : null,
     },
     leistungen,
@@ -457,10 +355,6 @@ export function buildMieterVorgangDetailVm(
       kontaktVorOrtName: null,
     },
     leistungen,
-    detailsLeistungen:
-      leistungen.length > 0
-        ? { title: "Leistungen", mode: "plain" as const }
-        : null,
   };
 }
 
@@ -475,6 +369,5 @@ export function emptyVorgangDetailVm(
     objektMelder: {},
     ausfuehrung: {},
     leistungen: [],
-    detailsLeistungen: null,
   };
 }

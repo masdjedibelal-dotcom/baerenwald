@@ -189,7 +189,7 @@ export async function ensureVersicherungsakteForAuftrag(
       const typ = String(e.typ ?? "");
       const label =
         typ === "start"
-          ? "Update"
+          ? "Start"
           : typ === "fortschritt"
             ? "Fortschritt"
             : typ === "ergebnis"

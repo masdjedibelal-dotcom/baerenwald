@@ -26,7 +26,7 @@ export function GptChatBriefBar({ brief }: GptChatBriefBarProps) {
   return (
     <div className="gpt-chat-brief-bar">
       <button type="button" className="gpt-chat-brief-toggle" onClick={() => setOpen((v) => !v)}>
-        <span>Ihr Projekt-Brief</span>
+        <span>Dein Projekt-Brief</span>
         {open ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
       </button>
       {open ? (
@@ -51,7 +51,7 @@ export function GptChatBriefBar({ brief }: GptChatBriefBarProps) {
               <GptChatImageCard
                 image={{
                   url: brief.ist_bilder_urls[0],
-                  label: "Ihr Raum",
+                  label: "Dein Raum",
                   downloadName: "baerenwald-raum-ist.jpg",
                 }}
                 compact

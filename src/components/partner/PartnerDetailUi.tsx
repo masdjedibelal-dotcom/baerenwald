@@ -1,4 +1,3 @@
-/** @deprecated Prefer direct imports from `@/components/shared/PortalDetailUi`. */
 export {
   PortalConfirmDialog as PartnerConfirmDialog,
   PortalDetailHero as PartnerDetailHero,
