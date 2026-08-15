@@ -15,6 +15,11 @@ type Props = {
   /** Org: Konto-Löschen ausblenden / Hinweis */
   allowDelete?: boolean;
   deleteBlockedHint?: string | null;
+  /**
+   * Wenn `allowDelete` false: „Konto löschen“ als mailto-Button
+   * (z. B. Organisationskonten über Support).
+   */
+  deleteMailto?: string | null;
 };
 
 /**
@@ -24,6 +29,7 @@ export function PortalKontoSicherheitPanel({
   signOutHref = "/portal/login",
   allowDelete = true,
   deleteBlockedHint = null,
+  deleteMailto = null,
 }: Props) {
   const router = useRouter();
 
@@ -145,6 +151,13 @@ export function PortalKontoSicherheitPanel({
             >
               Konto löschen
             </button>
+          ) : deleteMailto ? (
+            <a
+              href={`mailto:${deleteMailto}?subject=${encodeURIComponent("Konto löschen")}`}
+              className="btn-pill-outline portal-btn-compact portal-danger"
+            >
+              Konto löschen
+            </a>
           ) : (
             <p className="portal-text-meta leading-relaxed text-text-secondary">
               {deleteBlockedHint ||

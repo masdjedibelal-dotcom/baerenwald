@@ -12,7 +12,6 @@ import {
   EinstellungenSectionHeader,
 } from "@/components/shared/PortalEinstellungenUi";
 import type { OrganisationKunde } from "@/lib/org/types";
-import { SITE_CONFIG } from "@/lib/config";
 
 type Props = {
   kunde: OrganisationKunde;
@@ -70,7 +69,7 @@ export function OrganisationEinstellungenScreen({
               <PortalKontoSicherheitPanel
                 signOutHref="/portal/login"
                 allowDelete={false}
-                deleteBlockedHint={`Organisationskonten löschen Sie über den Support (${SITE_CONFIG.email}).`}
+                deleteMailto="info@baerenwald-muenchen.de"
               />
             </div>
           );

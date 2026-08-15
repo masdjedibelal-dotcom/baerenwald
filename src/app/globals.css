@@ -853,8 +853,9 @@ h3 {
     overflow: visible;
   }
 
-  /* Abmelden nur Desktop — Mobil: Suche · Glocke · Avatar */
-  .portal-header-notifications form {
+  /* Abmelden nur Desktop — Mobil: Suche · Glocke */
+  .portal-header-notifications form,
+  .portal-header-actions form {
     display: none;
   }
 
@@ -865,7 +866,8 @@ h3 {
     .portal-header-search {
       flex: 0 0 auto;
     }
-    .portal-header-notifications form {
+    .portal-header-notifications form,
+    .portal-header-actions form {
       display: block;
     }
   }
@@ -2542,6 +2544,7 @@ h3 {
     font-size: var(--p2-type-nav, 15.5px);
     font-weight: 500;
     color: rgba(255, 255, 255, 0.62);
+    overflow: visible;
   }
 
   .portal-shell-nav-item-main {
@@ -2549,6 +2552,39 @@ h3 {
     align-items: center;
     gap: 12px;
     min-width: 0;
+  }
+
+  /* Schräger „In Kürze“-Störer über dem Nav-Label (rechts) */
+  .portal-nav-stoerer {
+    position: absolute;
+    top: -0.55em;
+    right: -0.35em;
+    z-index: 1;
+    transform: rotate(12deg);
+    transform-origin: center;
+    padding: 0.12em 0.4em;
+    border-radius: 3px;
+    background: #c4a35a;
+    color: #1a2e1f;
+    font-size: 8.5px;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    line-height: 1.15;
+    text-transform: uppercase;
+    white-space: nowrap;
+    pointer-events: none;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.18);
+  }
+
+  .portal-nav-stoerer--on-light {
+    background: #c4a35a;
+    color: #1a2e1f;
+  }
+
+  .portal-nav-stoerer--tile {
+    top: -0.4em;
+    right: -0.55em;
+    font-size: 9px;
   }
 
   .portal-shell-nav-item:hover:not(.portal-shell-nav-item--active) {

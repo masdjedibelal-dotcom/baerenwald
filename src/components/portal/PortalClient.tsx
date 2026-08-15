@@ -1199,6 +1199,9 @@ export function PortalClient({
         brandSoft={hvBrand?.soft}
         sidebarOwner={hvBrand?.name?.trim() || kunde.name?.trim() || "MeinBärenwald"}
         hideMobileChrome={section === "gpt"}
+        contentFullBleed={
+          section === "uebersicht" || Boolean(selectedId)
+        }
         activeNavId={section === "gpt" ? "uebersicht" : section}
         contentKey={`${section}:${privatChip ?? ""}:${controlledHvListeFilter ?? controlledVorgangFilter ?? ""}`}
         contentBusy={pageBusy || detailLoading}
@@ -1220,9 +1223,6 @@ export function PortalClient({
           label: portalCreateLabel(navRole),
           onClick: () => setCreateOpen(true),
         }}
-        headerUser={{
-          name: kunde.name?.trim() || "MeinBärenwald",
-        }}
         headerSearch={
           <PortalHeaderSearch
             onSubmit={() => {
@@ -1231,17 +1231,17 @@ export function PortalClient({
           />
         }
         notifications={
-          <>
-            <PortalUserNotificationBell
-              role="kunde"
-              onOpenVorgang={(id, href) => openVorgangFromNotification(id, href)}
-            />
-            <form action="/portal/auth/signout" method="post">
-              <button type="submit" className="btn-pill-outline portal-btn-compact">
-                Abmelden
-              </button>
-            </form>
-          </>
+          <PortalUserNotificationBell
+            role="kunde"
+            onOpenVorgang={(id, href) => openVorgangFromNotification(id, href)}
+          />
+        }
+        headerRoleBadge={
+          <form action="/portal/auth/signout" method="post">
+            <button type="submit" className="btn-pill-outline portal-btn-compact">
+              Abmelden
+            </button>
+          </form>
         }
       >
           {section === "gpt" ? (

@@ -80,7 +80,7 @@ export function OrganisationServicepaketePanel() {
               color: "var(--org-primary, var(--accent, #2E7D52))",
             }}
           >
-            Kommt bald
+            In Kürze
           </span>
         </div>
         <p className="portal-text-body max-w-[40rem] leading-relaxed text-text-secondary">

@@ -228,6 +228,7 @@ export function PortalScreenDashboard({
         </div>
       </div>
 
+      <div className="portal-dash-body mx-auto w-full max-w-[var(--portal-content-max,48rem)]">
       {tilesTitle ? (
         <p
           className="portal-text-section"
@@ -358,6 +359,7 @@ export function PortalScreenDashboard({
       </div>
 
       {after}
+      </div>
     </div>
   );
 }

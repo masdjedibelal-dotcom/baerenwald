@@ -39,13 +39,13 @@ export const PORTAL_NAV_ITEMS: Record<PortalNavRole, readonly PortalNavItemDef[]
         key: "servicepakete",
         label: "Serviceabos",
         glyph: "◇",
-        tag: "Kommt bald",
+        tag: "In Kürze",
       },
       {
         key: "marktplatz",
         label: "Marktplatz",
         glyph: "▣",
-        tag: "Kommt bald",
+        tag: "In Kürze",
       },
       { key: "settings", label: "Einstellungen", glyph: "⚙" },
     ],
@@ -93,13 +93,13 @@ export const PORTAL_HV_MEHR_TILES: readonly {
     key: "servicepakete",
     label: "Serviceabos",
     glyph: "◇",
-    tag: "Kommt bald",
+    tag: "In Kürze",
   },
   {
     key: "marktplatz",
     label: "Marktplatz",
     glyph: "▣",
-    tag: "Kommt bald",
+    tag: "In Kürze",
   },
   { key: "settings", label: "Einstellungen", glyph: "⚙" },
 ] as const;
@@ -159,7 +159,7 @@ export type PortalShellNavBuilt = {
   navKey: PortalNavKey;
   glyph: string;
   badge?: number;
-  /** z. B. „Kommt bald“ neben dem Label */
+  /** z. B. „In Kürze“ als schräger Störer am Label */
   tag?: string;
 };
 

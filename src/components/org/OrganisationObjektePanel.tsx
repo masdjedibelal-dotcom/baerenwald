@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import "@/app/funnel-ui.css";
 
@@ -71,6 +71,8 @@ type Props = {
   onRefresh: () => void;
   /** Öffnet einen Vorgang in der Vorgänge-Liste. */
   onOpenVorgang?: (leadId: string) => void;
+  /** Detail/Wizard offen → Parent kann Content volle Breite nutzen. */
+  onDetailOpenChange?: (open: boolean) => void;
   dokumenteByLeadId?: Record<
     string,
     Array<{
@@ -104,6 +106,7 @@ export function OrganisationObjektePanel({
   kunde,
   onRefresh,
   onOpenVorgang,
+  onDetailOpenChange,
   dokumenteByLeadId = {},
 }: Props) {
   const [mode, setMode] = useState<Mode>({ kind: "list" });
@@ -119,6 +122,10 @@ export function OrganisationObjektePanel({
     | { kind: "bulk" }
     | null
   >(null);
+
+  useEffect(() => {
+    onDetailOpenChange?.(mode.kind !== "list");
+  }, [mode.kind, onDetailOpenChange]);
 
   const defaultHv =
     kunde?.org_anzeigename?.trim() || kunde?.name?.trim() || "";
@@ -417,8 +424,6 @@ export function OrganisationObjektePanel({
   }
 
   const empty = objekte.length === 0;
-  const allSelected =
-    objekte.length > 0 && objekte.every((o) => selected.includes(o.id));
 
   return (
     <div className="space-y-4">
@@ -469,7 +474,7 @@ export function OrganisationObjektePanel({
           finden Sie danach im Detail.
         </div>
       ) : (
-        <div className={portalListStackClass("responsive")}>
+        <div className={portalListStackClass("card")}>
           {objekte.map((o) => {
             const isSel = selected.includes(o.id);
             const offen = offenById[o.id] ?? 0;
@@ -521,19 +526,6 @@ export function OrganisationObjektePanel({
           })}
         </div>
       )}
-
-      {objekte.length > 0 ? (
-        <button
-          type="button"
-          className="portal-text-meta text-accent underline"
-          onClick={() => {
-            if (allSelected) setSelected([]);
-            else setSelected(objekte.map((o) => o.id));
-          }}
-        >
-          {allSelected ? "Auswahl aufheben" : "Alle auswählen"}
-        </button>
-      ) : null}
 
       {confirmDialog}
       {qrModal ? (

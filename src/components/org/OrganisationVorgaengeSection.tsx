@@ -40,6 +40,8 @@ type Props = {
   onDetailReady?: () => void;
   onRefresh: () => void;
   onFilterChange?: (filter: OrgVorgangFilter) => void;
+  /** Vorgang-Detail offen → Parent kann Content volle Breite nutzen. */
+  onDetailOpenChange?: (open: boolean) => void;
   bautagebuchByLeadId?: Record<
     string,
     Array<{
@@ -162,6 +164,7 @@ export function OrganisationVorgaengeSection({
   onDetailReady,
   onRefresh: _onRefresh,
   onFilterChange,
+  onDetailOpenChange,
   bautagebuchByLeadId = {},
   hwErledigtByLeadId = {},
   feedbackBereitByLeadId: _feedbackBereitByLeadId = {},
@@ -181,6 +184,10 @@ export function OrganisationVorgaengeSection({
   const [selectedObjektIds, setSelectedObjektIds] = useState<string[]>(() =>
     parseObjektIdsParam(searchParams.get("objekte"))
   );
+
+  useEffect(() => {
+    onDetailOpenChange?.(detailOpen);
+  }, [detailOpen, onDetailOpenChange]);
 
   useEffect(() => {
     setFilter(initialFilter ?? "alle");

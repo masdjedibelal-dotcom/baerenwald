@@ -24,7 +24,7 @@ export type PortalShellNavItem = {
   /** Fallback Lucide, wenn kein navKey. */
   icon?: LucideIcon;
   badge?: number;
-  /** z. B. „Kommt bald“ neben dem Label */
+  /** z. B. „In Kürze“ als schräger Störer am Label */
   tag?: string;
 };
 
@@ -89,6 +89,10 @@ export type PortalShellProps = {
    * Default false — Bottom-Nav bleibt in Details sticky am Bildschirmrand.
    */
   hideMobileChrome?: boolean;
+  /**
+   * Desktop: Content-Stack ohne max-width (z. B. Dashboard-Hero über volle Main-Breite).
+   */
+  contentFullBleed?: boolean;
   children: ReactNode;
   footer?: ReactNode;
   /**
@@ -159,6 +163,7 @@ export function PortalShell({
   headerRoleBadge,
   createAction,
   hideMobileChrome = false,
+  contentFullBleed = false,
   children,
   footer,
   contentKey,
@@ -278,19 +283,20 @@ export function PortalShell({
                           surface="sidebar"
                           size={16}
                         />
-                        {item.label}
-                        {item.tag ? (
-                          <span
-                            className={cn(
-                              "ml-1.5 shrink-0 rounded-full px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide",
-                              active
-                                ? "bg-[var(--accent-light,#E7F1E9)] text-[var(--org-primary,var(--accent,#2E7D52))]"
-                                : "bg-white/15 text-white/85"
-                            )}
-                          >
-                            {item.tag}
-                          </span>
-                        ) : null}
+                        <span className="relative min-w-0">
+                          {item.label}
+                          {item.tag ? (
+                            <span
+                              className={cn(
+                                "portal-nav-stoerer",
+                                active && "portal-nav-stoerer--on-light"
+                              )}
+                              aria-label={item.tag}
+                            >
+                              {item.tag}
+                            </span>
+                          ) : null}
+                        </span>
                       </span>
                       {item.badge != null && item.badge > 0 ? (
                         <PortalCountBadge
@@ -316,7 +322,8 @@ export function PortalShell({
               <div
                 className={cn(
                   "portal-page-stack relative min-h-[40vh]",
-                  hideMobileChrome && "portal-page-stack--wide"
+                  (hideMobileChrome || contentFullBleed) &&
+                    "portal-page-stack--wide"
                 )}
               >
                 <div

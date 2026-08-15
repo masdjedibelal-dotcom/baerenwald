@@ -38,14 +38,14 @@ export function PortalDetailTabs({
   return (
     <div
       className={cn(
-        "flex flex-col gap-4 lg:flex-row lg:items-start lg:gap-6",
+        "flex flex-col gap-4 lg:flex-row lg:items-start lg:gap-8",
         className
       )}
     >
       <nav
         aria-label={navLabel}
         className={cn(
-          "shrink-0 lg:w-[190px]",
+          "shrink-0 lg:w-[160px]",
           "sticky top-0 z-20 -mx-4 bg-white/95 px-4 py-2.5 backdrop-blur",
           "border-b lg:static lg:mx-0 lg:border-0 lg:bg-transparent lg:px-0 lg:py-0 lg:backdrop-blur-none"
         )}

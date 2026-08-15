@@ -31,13 +31,6 @@ const OrganisationMarktplatzPanel = dynamic(
     ),
   { ssr: false, loading: () => null }
 );
-const OrganisationMieterwechselPanel = dynamic(
-  () =>
-    import("@/components/org/OrganisationMieterwechselPanel").then(
-      (m) => m.OrganisationMieterwechselPanel
-    ),
-  { ssr: false, loading: () => null }
-);
 const OrganisationAnfrageHub = dynamic(
   () =>
     import("@/components/org/OrganisationAnfrageHub").then(
@@ -248,6 +241,8 @@ export function OrganisationPortalClient({
     useState<OrgVorgangFilter | null>(initialVorgangFilter);
   /** Detail-ID sofort nach Klick (vor searchParams). */
   const [pendingDetailId, setPendingDetailId] = useState<string | null>(null);
+  const [vorgangDetailOpen, setVorgangDetailOpen] = useState(false);
+  const [objektDetailOpen, setObjektDetailOpen] = useState(false);
   const { hold, release, flash, busy: ctxBusy } = usePortalBusy();
   const { refresh: refreshPortal } = usePortalRefresh();
   const navHoldRef = useRef(false);
@@ -517,6 +512,11 @@ export function OrganisationPortalClient({
         brandPrimaryDk={kunde.org_primary_color_dk}
         brandSoft={kunde.org_primary_color_soft}
         hideMobileChrome={false}
+        contentFullBleed={
+          section === "uebersicht" ||
+          (section === "vorgaenge" && vorgangDetailOpen) ||
+          (section === "objekte" && objektDetailOpen)
+        }
         activeNavId={section}
         contentKey={`${section}:${searchParams.get("filter") ?? ""}`}
         contentBusy={ctxBusy || Boolean(pendingDetailId)}
@@ -540,23 +540,22 @@ export function OrganisationPortalClient({
           label: portalCreateLabel("kunde_hv"),
           onClick: () => setHubOpen(true),
         }}
-        headerUser={{ name: displayName }}
         headerSearch={
           <OrganisationSuche
             onSelect={(id) => openVorgangDetail(id)}
           />
         }
         notifications={
-          <>
-            <HvNotificationBell
-              onOpenVorgang={(id, href) => openVorgangFromNotification(id, href)}
-            />
-            <form action="/portal/auth/signout" method="post">
-              <button type="submit" className="btn-pill-outline portal-btn-compact">
-                Abmelden
-              </button>
-            </form>
-          </>
+          <HvNotificationBell
+            onOpenVorgang={(id, href) => openVorgangFromNotification(id, href)}
+          />
+        }
+        headerRoleBadge={
+          <form action="/portal/auth/signout" method="post">
+            <button type="submit" className="btn-pill-outline portal-btn-compact">
+              Abmelden
+            </button>
+          </form>
         }
       >
           {section === "uebersicht" ? (
@@ -587,6 +586,7 @@ export function OrganisationPortalClient({
               initialSelectedId={initialItemId}
               forceDetailId={pendingDetailId ?? initialItemId}
               onDetailReady={onVorgangDetailReady}
+              onDetailOpenChange={setVorgangDetailOpen}
               onRefresh={refresh}
               onFilterChange={(f) => {
                 setPendingDetailId(null);
@@ -619,6 +619,7 @@ export function OrganisationPortalClient({
               onRefresh={refresh}
               dokumenteByLeadId={dokumenteByLeadId}
               onOpenVorgang={(id) => openVorgangDetail(id)}
+              onDetailOpenChange={setObjektDetailOpen}
             />
           ) : null}
 
@@ -628,15 +629,7 @@ export function OrganisationPortalClient({
             />
           ) : null}
 
-          {section === "leistungen" ? (
-            <div className="space-y-10">
-              <OrganisationServicepaketePanel />
-              <OrganisationMieterwechselPanel
-                objekte={objekte}
-                onRequested={refresh}
-              />
-            </div>
-          ) : null}
+          {section === "leistungen" ? <OrganisationServicepaketePanel /> : null}
 
           {section === "marktplatz" ? <OrganisationMarktplatzPanel /> : null}
 

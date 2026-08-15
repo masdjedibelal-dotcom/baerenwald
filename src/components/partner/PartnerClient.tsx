@@ -834,6 +834,9 @@ export function PartnerClient({
         brandKuerzel="B"
         sidebarOwner={partnerFooter}
         hideMobileChrome={section === "gpt"}
+        contentFullBleed={
+          section === "uebersicht" || Boolean(selectedId)
+        }
         activeNavId={
           section === "gpt" || section === "planer" ? "uebersicht" : section
         }
@@ -850,7 +853,6 @@ export function PartnerClient({
         onNavChange={(id) => switchSection(id as PartnerSection)}
         nav={shellNav}
         footer={partnerFooter}
-        headerUser={{ name: partnerFooter }}
         headerSearch={
           <PortalHeaderSearch
             onSubmit={() => {
@@ -859,17 +861,17 @@ export function PartnerClient({
           />
         }
         notifications={
-          <>
-            <PartnerNotificationBell onOpenVorgang={openVorgangFromNotification} />
-            <form action="/partner/auth/signout" method="post">
-              <button
-                type="submit"
-                className="btn-pill-outline portal-btn-compact"
-              >
-                Abmelden
-              </button>
-            </form>
-          </>
+          <PartnerNotificationBell onOpenVorgang={openVorgangFromNotification} />
+        }
+        headerRoleBadge={
+          <form action="/partner/auth/signout" method="post">
+            <button
+              type="submit"
+              className="btn-pill-outline portal-btn-compact"
+            >
+              Abmelden
+            </button>
+          </form>
         }
       >
         <div className="flex min-h-full flex-1 flex-col gap-5">

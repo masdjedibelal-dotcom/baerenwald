@@ -387,6 +387,11 @@ export function EigentuemerPortalClient({
       brandKuerzel="B"
       sidebarOwner={kunde.name?.trim() || EIGENTUEMER_DASHBOARD_ROLE}
       hideMobileChrome={false}
+      contentFullBleed={
+        section === "uebersicht" ||
+        Boolean(selectedId) ||
+        Boolean(objektDetailId)
+      }
       activeNavId={section}
       contentKey={`${section}:${objektDetailId ?? ""}`}
       contentBusy={pageBusy || detailOpening}
@@ -400,7 +405,6 @@ export function EigentuemerPortalClient({
       }
       onNavChange={(id) => switchSection(id as SectionId)}
       nav={buildPortalShellNav("eigentuemer", "eigentuemer")}
-      headerUser={{ name: kunde.name?.trim() || EIGENTUEMER_DASHBOARD_ROLE }}
       headerSearch={
         <PortalHeaderSearch
           onSubmit={() => {
@@ -409,34 +413,34 @@ export function EigentuemerPortalClient({
         />
       }
       headerRoleBadge={
-        <span className="rounded-full bg-muted px-2 py-0.5 portal-text-meta font-semibold text-text-secondary">
-          {EIGENTUEMER_DASHBOARD_ROLE}
-        </span>
-      }
-      notifications={
         <>
-          <PortalUserNotificationBell
-            role="eigentuemer"
-            allHref="/portal?section=vorgaenge"
-            onOpenVorgang={(id, href) => {
-              const matched = findKundeVorgangByQueryId(vorgaengeItems, id);
-              const nextId = matched?.id ?? id;
-              ignoreUrlDetailRef.current = false;
-              pendingDetailIdRef.current = nextId;
-              beginDetailOpening();
-              flushSync(() => {
-                setSection("vorgaenge");
-                setSelectedId(nextId);
-              });
-              router.push(href);
-            }}
-          />
+          <span className="rounded-full bg-muted px-2 py-0.5 portal-text-meta font-semibold text-text-secondary">
+            {EIGENTUEMER_DASHBOARD_ROLE}
+          </span>
           <form action="/portal/auth/signout" method="post">
             <button type="submit" className="btn-pill-outline portal-btn-compact">
               Abmelden
             </button>
           </form>
         </>
+      }
+      notifications={
+        <PortalUserNotificationBell
+          role="eigentuemer"
+          allHref="/portal?section=vorgaenge"
+          onOpenVorgang={(id, href) => {
+            const matched = findKundeVorgangByQueryId(vorgaengeItems, id);
+            const nextId = matched?.id ?? id;
+            ignoreUrlDetailRef.current = false;
+            pendingDetailIdRef.current = nextId;
+            beginDetailOpening();
+            flushSync(() => {
+              setSection("vorgaenge");
+              setSelectedId(nextId);
+            });
+            router.push(href);
+          }}
+        />
       }
     >
       {section === "uebersicht" ? (

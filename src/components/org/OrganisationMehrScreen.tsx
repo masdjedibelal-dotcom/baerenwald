@@ -55,20 +55,17 @@ export function OrganisationMehrScreen({ onOpen }: Props) {
                   size={22}
                 />
               </span>
-              <span className="text-[13px] font-bold text-text-primary">
+              <span className="relative text-[13px] font-bold text-text-primary">
                 {tile.label}
+                {tile.tag ? (
+                  <span
+                    className="portal-nav-stoerer portal-nav-stoerer--tile"
+                    aria-label={tile.tag}
+                  >
+                    {tile.tag}
+                  </span>
+                ) : null}
               </span>
-              {tile.tag ? (
-                <span
-                  className="rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide"
-                  style={{
-                    background: "var(--accent-light, #E7F1E9)",
-                    color: "var(--org-primary, var(--accent, #2E7D52))",
-                  }}
-                >
-                  {tile.tag}
-                </span>
-              ) : null}
             </button>
           );
         })}

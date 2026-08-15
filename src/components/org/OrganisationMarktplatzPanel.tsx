@@ -69,7 +69,7 @@ export function OrganisationMarktplatzPanel() {
               color: "var(--org-primary, var(--accent, #2E7D52))",
             }}
           >
-            Kommt bald
+            In Kürze
           </span>
         </div>
         <p className="portal-text-body max-w-[40rem] leading-relaxed text-text-secondary">
@@ -134,24 +134,6 @@ export function OrganisationMarktplatzPanel() {
             </li>
           ))}
         </ul>
-      </div>
-
-      <div
-        className="flex items-start gap-3 rounded-2xl border px-4 py-3.5"
-        style={{
-          borderColor: "var(--border-default, #e3e6ea)",
-          background: "var(--muted, #f6f7f8)",
-        }}
-      >
-        <Store
-          className="mt-0.5 h-5 w-5 shrink-0"
-          style={{ color: "var(--org-primary, var(--accent, #2E7D52))" }}
-          aria-hidden
-        />
-        <p className="portal-text-body leading-relaxed text-text-secondary">
-          Ausschreibung und Angebotsvergleich folgen in einem nächsten Release.
-          Bis dahin laufen Anfragen und Angebote wie gewohnt über Ihre Vorgänge.
-        </p>
       </div>
     </div>
   );
