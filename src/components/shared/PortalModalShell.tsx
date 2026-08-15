@@ -21,7 +21,6 @@ import {
 import { PortalContentBusy } from "@/components/shared/PortalContentBusy";
 import { PortalSheetConfirm } from "@/components/shared/PortalSheetConfirm";
 import {
-  PORTAL_MODAL_SCRIM,
   PORTAL_MODAL_Z_INDEX,
   resolvePortalModalMaxWidth,
   resolvePortalModalVariant,
@@ -270,7 +269,7 @@ export function PortalModalShell({
         style={{
           // Body-Portal + höhere Schicht bei Nesting (KI/GPT im Sheet nicht von Buttons abschneiden)
           zIndex: PORTAL_MODAL_Z_INDEX + depth * 10,
-          background: PORTAL_MODAL_SCRIM,
+          background: "var(--p2-scrim, rgba(16,25,20,.52))",
         }}
         role="presentation"
         onClick={closeOnBackdrop ? () => attemptDismiss(false) : undefined}

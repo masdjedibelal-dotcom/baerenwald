@@ -82,7 +82,7 @@ function ObjCard({
   children: React.ReactNode;
 }) {
   return (
-    <div className="mb-3.5 rounded-xl border border-border-default bg-white p-4">
+    <div className="mb-3.5 rounded-xl border border-border-default bg-[var(--p2-panel,#fff)] p-4 shadow-sm">
       {title ? <p className="portal-text-section mb-3">{title}</p> : null}
       {children}
     </div>

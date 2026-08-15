@@ -82,8 +82,8 @@
  * Keine Rundung der Hex-/RGBA-Werte.
  */
 .portal-ui {
-  --p2-bg: #f3f5f4;
-  --p2-bg-content: #f3f5f4;
+  --p2-bg: #e8ecea;
+  --p2-bg-content: #e8ecea;
   --p2-panel: #ffffff;
   --p2-line: rgba(0, 0, 0, 0.09);
   --p2-line2: rgba(0, 0, 0, 0.06);
@@ -102,6 +102,7 @@
   --p2-danger-soft: #fce3e3;
   --p2-danger-border: #f5c2c0;
   --p2-shadow: 0 1px 3px rgba(0, 0, 0, 0.04), 0 0 0 0.5px rgba(0, 0, 0, 0.05);
+  --p2-scrim: rgba(16, 25, 20, 0.52);
   --p2-radius-sm: 8px;
   --p2-radius-md: 12px;
   --p2-radius-lg: 16px;
@@ -465,12 +466,12 @@ h3 {
     border-top: 0.5px solid var(--p2-line2, rgba(0, 0, 0, 0.05));
   }
 
-  /* Inhalt ohne Card-Chrome — fließt auf Content-BG */
+  /* Weiße Cards auf Content-BG — klare Ebenen */
   .portal-surface {
-    background: transparent;
-    border: none;
-    border-radius: 0;
-    box-shadow: none;
+    background: var(--p2-panel, #fff);
+    border: 0.5px solid var(--p2-line, rgba(0, 0, 0, 0.09));
+    border-radius: var(--p2-radius-md, 12px);
+    box-shadow: var(--p2-shadow);
   }
 
   .portal-page-stack {
@@ -949,7 +950,7 @@ h3 {
 
   /* Mobil-Dashboard: Header-Bild + Kurve + Avatar */
   .portal-dash {
-    background: #ffffff;
+    background: var(--p2-bg, #e8ecea);
     padding-bottom: 8px;
   }
 
@@ -1038,7 +1039,7 @@ h3 {
     grid-template-columns: repeat(3, 1fr);
     gap: 10px;
     padding: 16px 16px 18px;
-    background: #ffffff;
+    background: transparent;
   }
 
   .portal-dash-tiles-title {
@@ -1086,7 +1087,7 @@ h3 {
 
   .portal-dash-recent {
     padding: 4px 16px 20px;
-    background: #ffffff;
+    background: transparent;
   }
 
   .portal-dash-recent-head {
@@ -1470,7 +1471,7 @@ h3 {
     max-width: none; /* Mobil: volle Breite — kein eingeengtes Center-Card */
     max-height: 86vh;
     overflow: hidden;
-    box-shadow: var(--p2-shadow), 0 24px 60px rgba(0, 0, 0, 0.18);
+    box-shadow: var(--p2-shadow), 0 24px 60px rgba(0, 0, 0, 0.22);
     border: 0.5px solid var(--p2-line, rgba(0, 0, 0, 0.08));
     touch-action: auto;
     overscroll-behavior: contain;
@@ -1486,6 +1487,7 @@ h3 {
     align-items: flex-start;
     gap: 10px;
     flex-shrink: 0;
+    background: var(--p2-panel, #fff);
   }
 
   /* × immer links — Titel daneben, Extras ganz rechts */
@@ -1589,6 +1591,8 @@ h3 {
     -webkit-overflow-scrolling: touch;
     padding: 10px 16px calc(18px + env(safe-area-inset-bottom, 0px));
     touch-action: pan-y;
+    /* Getönter Boden — weiße SheetCards/Inputs liegen darüber */
+    background: var(--p2-bg-content, #e8ecea);
   }
 
   .portal-modal-shell-busy {
@@ -1658,7 +1662,7 @@ h3 {
     display: flex;
     align-items: flex-end;
     justify-content: center;
-    background: rgba(16, 25, 20, 0.35);
+    background: var(--p2-scrim, rgba(16, 25, 20, 0.52));
     padding: 0;
   }
 
@@ -2439,7 +2443,7 @@ h3 {
       border-radius: 0;
       border: none;
       box-shadow: none;
-      background: #fff;
+      background: var(--p2-bg, #e8ecea);
     }
 
     .portal-shell-main > .portal-page-stack {
@@ -2478,7 +2482,7 @@ h3 {
     min-width: 0;
     display: flex;
     flex-direction: column;
-    background: #ffffff;
+    background: var(--p2-bg, #e8ecea);
   }
 
   .portal-shell-brand {

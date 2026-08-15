@@ -518,12 +518,11 @@
   display: flex;
   flex-direction: column;
   width: min(100%, var(--portal-funnel-modal-max, 1360px));
-  background: #fff;
+  background: var(--p2-panel, #fff);
 }
 
-.portal-modal-shell-panel--funnel .portal-modal-shell-header,
-.portal-modal-shell-panel--funnel .portal-modal-shell-body {
-  background: #fff;
+.portal-modal-shell-panel--funnel .portal-modal-shell-header {
+  background: var(--p2-panel, #fff);
 }
 
 .portal-modal-shell-panel--funnel .portal-modal-shell-body {
@@ -534,6 +533,7 @@
   flex-direction: column;
   padding-top: 8px;
   padding-bottom: 8px;
+  background: var(--p2-bg-content, #e8ecea);
 }
 
 /* Mobil: Funnel-Create (Neuer Vorgang) = Vollbild */
@@ -542,7 +542,7 @@
     align-items: stretch;
     justify-content: stretch;
     padding: 0;
-    background: #fff;
+    background: var(--p2-bg, #e8ecea);
   }
 
   .portal-modal-shell--funnel .portal-modal-shell-panel--funnel {

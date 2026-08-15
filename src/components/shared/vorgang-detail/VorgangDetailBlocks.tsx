@@ -22,7 +22,7 @@ function BlockShell({
   return (
     <section
       className={cn(
-        "rounded-xl border border-border-default bg-white p-4",
+        "rounded-xl border border-border-default bg-[var(--p2-panel,#fff)] p-4 shadow-sm",
         className
       )}
     >

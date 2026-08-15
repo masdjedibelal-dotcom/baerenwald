@@ -4,9 +4,9 @@
  */
 
 export const PORTAL_C = {
-  /** Seitenhintergrund — leicht abgesetzt für Ruhe vs. weiße Panels */
-  bg: "#F3F5F4",
-  bgContent: "#F3F5F4",
+  /** Seitenhintergrund — klar abgesetzt von weißen Panels/Cards */
+  bg: "#E8ECEA",
+  bgContent: "#E8ECEA",
   panel: "#ffffff",
   line: "rgba(0,0,0,0.09)",
   line2: "rgba(0,0,0,0.06)",
@@ -30,6 +30,8 @@ export const PORTAL_C = {
   radiusMd: "12px",
   radiusLg: "16px",
   radiusSheet: "20px",
+  /** Overlay hinter Modals / Slide-overs */
+  scrim: "rgba(16,25,20,0.52)",
   /** Lesbare Skala — identisch zu --p2-type-* in globals.css */
   typeMeta: "15.5px",
   typeBody: "18px",
@@ -70,6 +72,7 @@ export const PORTAL_VAR = {
   radiusMd: "var(--p2-radius-md)",
   radiusLg: "var(--p2-radius-lg)",
   radiusSheet: "var(--p2-radius-sheet)",
+  scrim: "var(--p2-scrim)",
   head: "var(--p2-font-head)",
   body: "var(--p2-font-body)",
 } as const;
@@ -100,6 +103,7 @@ export const PORTAL_CSS_VARS = {
   radiusMd: "--p2-radius-md",
   radiusLg: "--p2-radius-lg",
   radiusSheet: "--p2-radius-sheet",
+  scrim: "--p2-scrim",
   head: "--p2-font-head",
   body: "--p2-font-body",
   brandPrimary: "--org-primary",
@@ -134,6 +138,7 @@ export function portalTokenStyle(): Record<string, string> {
     [PORTAL_CSS_VARS.radiusMd]: PORTAL_C.radiusMd,
     [PORTAL_CSS_VARS.radiusLg]: PORTAL_C.radiusLg,
     [PORTAL_CSS_VARS.radiusSheet]: PORTAL_C.radiusSheet,
+    [PORTAL_CSS_VARS.scrim]: PORTAL_C.scrim,
     [PORTAL_CSS_VARS.head]: PORTAL_C.head,
     [PORTAL_CSS_VARS.body]: PORTAL_C.body,
   };

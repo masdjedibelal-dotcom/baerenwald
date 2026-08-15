@@ -383,7 +383,7 @@ export function EinstellungenSheetCard({
   children?: ReactNode;
 }) {
   return (
-    <div className="rounded-[11px] border border-border-default bg-white px-3.5 py-[13px]">
+    <div className="rounded-[11px] border border-border-default bg-[var(--p2-panel,#fff)] px-3.5 py-[13px] shadow-sm">
       <p className="portal-text-card-title">{title}</p>
       {description ? (
         <p
@@ -446,7 +446,7 @@ export function EinstellungenToggle({
   return (
     <div
       className={cn(
-        "flex w-full items-start gap-3 rounded-[11px] border border-border-default px-3.5 py-[13px]",
+        "flex w-full items-start gap-3 rounded-[11px] border border-border-default bg-[var(--p2-panel,#fff)] px-3.5 py-[13px] shadow-sm",
         disabled && "opacity-60"
       )}
     >
