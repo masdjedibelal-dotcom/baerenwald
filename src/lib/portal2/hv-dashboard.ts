@@ -15,7 +15,8 @@ import { PORTAL_VAR } from "@/lib/portal2/tokens";
 export const HV_DASHBOARD_ROLE_LABEL = "Verwaltung" as const;
 export const HV_DASHBOARD_RECENT_TITLE = "Zuletzt" as const;
 export const HV_DASHBOARD_RECENT_ALL = "Alle ansehen" as const;
-export const HV_DASHBOARD_EMPTY_RECENT = "Noch nichts" as const;
+export const HV_DASHBOARD_EMPTY_RECENT =
+  "Noch keine Vorgänge — aktuelle Meldungen erscheinen hier." as const;
 
 /** Mock HV-Tiles: Label, Farb-Tokens.
  * D3: `filter` = Listen-Chip (`HV_CHIPS` / OrgVorgangFilter).

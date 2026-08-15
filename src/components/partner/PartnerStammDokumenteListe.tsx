@@ -24,7 +24,6 @@ import {
   type PartnerComplianceItem,
 } from "@/lib/partner/partner-compliance";
 import type { PartnerRahmenvertrag } from "@/lib/partner/compliance-summary";
-import { fmtPartnerDate } from "@/lib/partner/partner-detail-format";
 import { partnerPortalToast } from "@/lib/shared/portal-toast";
 import { cn } from "@/lib/utils";
 
@@ -238,7 +237,9 @@ function RahmenvertragDokumentItem({
   );
   const description = rahmenvertrag?.vertrags_nr
     ? `Nr. ${rahmenvertrag.vertrags_nr}`
-    : "Bei Registrierung akzeptiert — PDF folgt von Bärenwald";
+    : akzeptiert
+      ? "Akzeptiert"
+      : undefined;
 
   return (
     <PortalDokumentCard
@@ -280,7 +281,6 @@ export function PartnerStammDokumenteListe({
 }) {
   const router = useRouter();
   const { uploadBusy: saving, runUpload } = usePortalUploadBusy();
-  const hatHandwerkskarte = handwerkskarte.length > 0;
   const [uploadOpen, setUploadOpen] = useState(false);
   const [draft, setDraft] = useState<UploadDraft>({
     typ: EIGENES_STAMM_DOKUMENT_TYP,
@@ -351,10 +351,6 @@ export function PartnerStammDokumenteListe({
   return (
     <>
       <PartnerDetailSection title="Stammunterlagen">
-        <p className="portal-text-meta mb-3 text-text-secondary">
-          Rahmenvertrag und Nachweise — Datum, Status und Upload.
-        </p>
-
         <div className="space-y-2.5">
           <RahmenvertragDokumentItem
             rahmenvertrag={rahmenvertrag}
@@ -384,26 +380,6 @@ export function PartnerStammDokumenteListe({
             Tippen oder Datei hier ablegen — PDF, JPG, PNG oder WebP
           </span>
         </button>
-
-        {!hatHandwerkskarte ? (
-          <p className="portal-text-meta mt-3 text-text-tertiary">
-            Handwerkskarte erscheint hier, sobald sie bei Bärenwald hinterlegt ist.
-            Eigene Nachweise kannst du jederzeit über den Upload-Kasten ergänzen.
-          </p>
-        ) : null}
-
-        {akzeptiert && !pdfUrl ? (
-          <p className="portal-text-meta mt-3 text-emerald-800">
-            Rahmenvertrag bei Registrierung akzeptiert — personalisiertes PDF stellt
-            Bärenwald bereit.
-            {rahmenvertrag?.portal_akzeptiert_am ? (
-              <>
-                {" "}
-                (Akzeptiert am {fmtPartnerDate(rahmenvertrag.portal_akzeptiert_am)})
-              </>
-            ) : null}
-          </p>
-        ) : null}
 
         {footer ? (
           <div className="mt-4 border-t border-border-light pt-4">{footer}</div>

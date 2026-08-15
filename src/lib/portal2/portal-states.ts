@@ -37,7 +37,7 @@ const BTN = {
 
 export function portalEmptySubtitle(role: PortalStateRole = "kunde"): string {
   if (role === "handwerker") {
-    return "Sobald Ihnen ein Auftrag zugewiesen wird, erscheint er hier. Tipp: Prüfen Sie auch den Filter „Offen“.";
+    return "Sobald Ihnen ein Auftrag zugewiesen wird, erscheint er hier.";
   }
   if (role === "eigentuemer" || role === "mieter") {
     return "Für Ihre Wohnung liegt aktuell keine Meldung vor. Bei Schäden nutzen Sie den Melde-Link Ihrer Verwaltung.";

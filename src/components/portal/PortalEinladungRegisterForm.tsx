@@ -4,14 +4,15 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
+import { registerMeinBaerenwaldWithOtp } from "@/app/actions/portal-signup-otp";
 import {
   MieterWlBtn,
   MieterWlCard,
   MieterWlFrame,
 } from "@/components/melden/MieterWlFrame";
 import { PortalAuthBusy } from "@/components/portal/auth/PortalAuthBusy";
+import { PortalSignupOtpStep } from "@/components/portal/PortalSignupOtpStep";
 import type { MieterWlBrand } from "@/lib/portal2/mieter-wl";
-import { portalAuthCallbackUrl } from "@/lib/portal/portal-auth-url";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 
 type Props = {
@@ -24,7 +25,7 @@ type Props = {
 };
 
 /**
- * E4 — Konto anlegen im HV-Branding; nach Confirm Einlösung → /portal (D10).
+ * E4 — Konto anlegen im HV-Branding; Bestätigung per E-Mail-OTP, dann Einlösung.
  */
 export function PortalEinladungRegisterForm({
   token,
@@ -43,7 +44,7 @@ export function PortalEinladungRegisterForm({
   const [agb, setAgb] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState(false);
+  const [awaitingOtp, setAwaitingOtp] = useState(false);
 
   async function redeemIfLoggedIn() {
     const res = await fetch(
@@ -67,46 +68,33 @@ export function PortalEinladungRegisterForm({
     }
     setLoading(true);
     setError(null);
-    try {
-      const supabase = getSupabaseBrowserClient();
-      const now = new Date().toISOString();
-      const { data, error: signUpError } = await supabase.auth.signUp({
-        email: email.trim(),
-        password,
-        options: {
-          emailRedirectTo: portalAuthCallbackUrl(
-            `/portal/einladung/${encodeURIComponent(token)}`
-          ),
-          data: {
-            name: name.trim(),
-            telefon: telefon.trim() || null,
-            datenschutz_akzeptiert_at: now,
-            agb_akzeptiert_at: now,
-            portal_einladung_token: token,
-          },
-        },
-      });
-      if (signUpError) {
-        if (signUpError.message.toLowerCase().includes("already registered")) {
-          setError("E-Mail bereits registriert — bitte anmelden und Link erneut öffnen.");
-        } else {
-          setError(signUpError.message);
-        }
-        setLoading(false);
-        return;
-      }
-
-      // Session sofort verfügbar (wenn Confirm aus) → einlösen
-      if (data.session) {
-        await redeemIfLoggedIn();
-        return;
-      }
-      setSuccess(true);
-      setLoading(false);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Fehler");
-      setLoading(false);
+    const result = await registerMeinBaerenwaldWithOtp({
+      name,
+      email,
+      telefon,
+      password,
+      einladungToken: token,
+    });
+    setLoading(false);
+    if (!result.ok) {
+      setError(result.error);
+      return;
     }
+    setAwaitingOtp(true);
+  }
+
+  async function afterOtpVerified() {
+    const supabase = getSupabaseBrowserClient();
+    const { error: signErr } = await supabase.auth.signInWithPassword({
+      email: email.trim(),
+      password,
+    });
+    if (signErr) {
+      throw new Error(
+        "Konto bestätigt — bitte anmelden und den Einladungslink erneut öffnen."
+      );
+    }
+    await redeemIfLoggedIn();
   }
 
   return (
@@ -124,7 +112,7 @@ export function PortalEinladungRegisterForm({
           <div className="mt-4">
             <PortalAuthBusy
               title="Konto wird angelegt…"
-              body="Einen Moment — wir richten Ihren Zugang ein und ordnen die Wohnung zu."
+              body="Einen Moment — wir richten Ihren Zugang ein und senden den Code."
             />
           </div>
         ) : !canRegister ? (
@@ -132,12 +120,13 @@ export function PortalEinladungRegisterForm({
             <p className="text-sm text-text-secondary">{statusHint}</p>
             <MieterWlBtn href="/portal/login">Zum Login</MieterWlBtn>
           </div>
-        ) : success ? (
-          <div className="mt-4 space-y-3 text-[13.5px] text-text-secondary">
-            <p>
-              Bitte E-Mail bestätigen. Danach öffnen Sie den Einladungslink erneut
-              oder melden sich an — die Wohnung wird zugeordnet.
-            </p>
+        ) : awaitingOtp ? (
+          <div className="mt-4 space-y-3">
+            <PortalSignupOtpStep
+              email={email.trim()}
+              brand="meinbaerenwald"
+              onVerified={afterOtpVerified}
+            />
             <MieterWlBtn href="/portal/login">Zum Login</MieterWlBtn>
           </div>
         ) : (

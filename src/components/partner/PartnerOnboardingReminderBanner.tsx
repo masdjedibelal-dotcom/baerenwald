@@ -20,16 +20,22 @@ type Props = {
   profil: PartnerProfilKontext;
   /** Auf Einstellungen-Seite ausblenden. */
   hidden?: boolean;
+  /**
+   * `chip` — eine Zeile, unter Hero/Begrüßung.
+   * `banner` — etwas mehr Text (andere Sektionen ohne Hero).
+   */
+  variant?: "chip" | "banner";
 };
 
 /**
- * Reminder oben im Partner-Portal: Handwerkskarte + Firmendaten.
+ * Reminder: Handwerkskarte + Firmendaten.
  * Wegklickbar → wieder nach 3 Tagen, bis beides erledigt.
  */
 export function PartnerOnboardingReminderBanner({
   handwerker,
   profil,
   hidden = false,
+  variant = "chip",
 }: Props) {
   const router = useRouter();
   const gaps = useMemo(
@@ -49,14 +55,14 @@ export function PartnerOnboardingReminderBanner({
   if (!visible || !gaps.show) return null;
 
   const parts: string[] = [];
-  if (gaps.handwerkskarteFehlt) parts.push("Handwerkskarte hochladen");
+  if (gaps.handwerkskarteFehlt) parts.push("Handwerkskarte");
   if (gaps.firmendatenFehlen) {
     parts.push(
       gaps.missingFirmendaten.length
-        ? `Firmendaten ergänzen (${gaps.missingFirmendaten.slice(0, 3).join(", ")}${
-            gaps.missingFirmendaten.length > 3 ? " …" : ""
+        ? `Firmendaten (${gaps.missingFirmendaten.slice(0, 2).join(", ")}${
+            gaps.missingFirmendaten.length > 2 ? " …" : ""
           })`
-        : "Firmendaten für Angebot & Rechnung ergänzen"
+        : "Firmendaten"
     );
   }
 
@@ -78,12 +84,17 @@ export function PartnerOnboardingReminderBanner({
     setVisible(false);
   }
 
+  const isChip = variant === "chip";
+
   return (
     <div
       role="status"
       className={cn(
-        "flex items-stretch gap-2 rounded-[10px] border px-3 py-2.5 sm:px-4",
-        "border-[rgba(138,90,6,0.22)] bg-[#FBF1D6] text-[#5C4408]"
+        "flex items-center gap-1.5 border",
+        "border-[rgba(138,90,6,0.2)] bg-[#FBF1D6] text-[#5C4408]",
+        isChip
+          ? "rounded-full px-2.5 py-1.5"
+          : "rounded-[10px] px-3 py-2"
       )}
     >
       <button
@@ -91,19 +102,27 @@ export function PartnerOnboardingReminderBanner({
         onClick={goSettings}
         className="min-w-0 flex-1 text-left"
       >
-        <p className="text-[13px] font-semibold leading-snug tracking-tight">
-          Noch offen für Angebot & Rechnung
-        </p>
-        <p className="mt-0.5 text-[12px] leading-snug opacity-90">
-          {parts.join(" · ")}. Tippen für Einstellungen.
-        </p>
+        {isChip ? (
+          <p className="truncate text-[12px] font-medium leading-snug tracking-tight">
+            Offen: {parts.join(" · ")}
+          </p>
+        ) : (
+          <>
+            <p className="text-[13px] font-semibold leading-snug tracking-tight">
+              Noch offen für Angebot & Rechnung
+            </p>
+            <p className="mt-0.5 text-[12px] leading-snug opacity-90">
+              {parts.join(" · ")}. Tippen für Einstellungen.
+            </p>
+          </>
+        )}
       </button>
       <button
         type="button"
         onClick={onDismiss}
         aria-label="Hinweis ausblenden"
         className={cn(
-          "shrink-0 self-start rounded-md px-2 py-1 text-[18px] leading-none",
+          "shrink-0 rounded-full px-1.5 py-0.5 text-[16px] leading-none",
           "text-[#8A5A06]/70 hover:bg-[rgba(138,90,6,0.1)] hover:text-[#8A5A06]"
         )}
       >

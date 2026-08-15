@@ -28,7 +28,12 @@ export function PortalLegalFooter({
       aria-label="Rechtliches"
     >
       <nav className="inline-flex flex-wrap items-center justify-center gap-x-2 gap-y-1">
-        <Link href="/impressum" className="underline-offset-2 hover:text-text-secondary hover:underline">
+        <Link
+          href="/impressum"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="underline-offset-2 hover:text-text-secondary hover:underline"
+        >
           Impressum
         </Link>
         <span aria-hidden className="text-text-tertiary/60">
@@ -36,6 +41,8 @@ export function PortalLegalFooter({
         </span>
         <Link
           href={datenschutzHref}
+          target="_blank"
+          rel="noopener noreferrer"
           className="underline-offset-2 hover:text-text-secondary hover:underline"
         >
           Datenschutz

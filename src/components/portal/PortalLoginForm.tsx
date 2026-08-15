@@ -11,7 +11,7 @@ import {
   AuthLink,
 } from "@/components/portal/auth/AuthPrimitives";
 import { PortalAuthBusy } from "@/components/portal/auth/PortalAuthBusy";
-import { PortalResendConfirmation } from "@/components/portal/PortalResendConfirmation";
+import { PortalSignupOtpStep } from "@/components/portal/PortalSignupOtpStep";
 import { assertPortalEmailAllowed } from "@/app/actions/assert-portal-email-allowed";
 import { AUTH_LOGIN, type AuthPortalRole } from "@/lib/portal2/auth";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
@@ -52,6 +52,8 @@ export function PortalLoginForm({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [hashBusy, setHashBusy] = useState(true);
+  const [awaitingOtp, setAwaitingOtp] = useState(false);
+  const [otpConfirmed, setOtpConfirmed] = useState(false);
 
   useEffect(() => {
     const prefillEmail = searchParams.get("email")?.trim();
@@ -103,9 +105,9 @@ export function PortalLoginForm({
       if (signInError) {
         const msg = signInError.message.toLowerCase();
         if (msg.includes("email not confirmed")) {
-          setError(
-            "Bitte bestätigen Sie zuerst Ihre E-Mail — wir haben Ihnen einen Link geschickt."
-          );
+          setAwaitingOtp(true);
+          setLoading(false);
+          return;
         } else if (msg.includes("banned") || msg.includes("user is banned")) {
           setError(
             "Diese Kontaktadresse ist gesperrt. Bitte wenden Sie sich an uns, wenn Sie Hilfe brauchen."
@@ -143,21 +145,49 @@ export function PortalLoginForm({
     );
   }
 
+  if (awaitingOtp || (hint === "confirm" && !otpConfirmed)) {
+    return (
+      <div className="space-y-4">
+        <PortalSignupOtpStep
+          email={email.trim()}
+          brand="meinbaerenwald"
+          onVerified={async () => {
+            if (password.length >= 8) {
+              const supabase = getSupabaseBrowserClient();
+              const { error: signErr } = await supabase.auth.signInWithPassword({
+                email: email.trim(),
+                password,
+              });
+              if (signErr) {
+                setAwaitingOtp(false);
+                setOtpConfirmed(true);
+                throw new Error(
+                  "Konto bestätigt — bitte erneut mit Passwort anmelden."
+                );
+              }
+              router.replace(next);
+              router.refresh();
+              return;
+            }
+            setAwaitingOtp(false);
+            setOtpConfirmed(true);
+          }}
+        />
+      </div>
+    );
+  }
+
   return (
     <form onSubmit={(e) => void onSubmit(e)} className="space-y-0">
+      {otpConfirmed ? (
+        <p className="mb-4 rounded-lg bg-accent-light/60 px-3 py-3 text-sm text-accent">
+          E-Mail bestätigt. Sie können sich jetzt anmelden.
+        </p>
+      ) : null}
       {hint === "signed_out" ? (
         <p className="mb-4 rounded-lg bg-accent-light/60 px-3 py-3 text-sm text-accent">
           Sie sind abgemeldet.
         </p>
-      ) : null}
-      {hint === "confirm" ? (
-        <div className="mb-4 space-y-3 rounded-lg bg-amber-50 px-3 py-3 text-sm text-amber-900">
-          <p>
-            Bitte bestätigen Sie Ihre E-Mail über den Link in unserer Nachricht,
-            danach können Sie sich anmelden.
-          </p>
-          <PortalResendConfirmation defaultEmail={email} className="text-left" />
-        </div>
       ) : null}
       {hint === "password-updated" ? (
         <p className="mb-4 rounded-lg bg-accent-light/60 px-3 py-3 text-sm text-accent">

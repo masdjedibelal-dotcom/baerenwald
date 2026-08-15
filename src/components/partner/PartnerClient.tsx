@@ -875,11 +875,13 @@ export function PartnerClient({
         }
       >
         <div className="flex min-h-full flex-1 flex-col gap-5">
-          <PartnerOnboardingReminderBanner
-            handwerker={handwerker}
-            profil={profil}
-            hidden={section === "profil"}
-          />
+          {section !== "uebersicht" && section !== "profil" ? (
+            <PartnerOnboardingReminderBanner
+              handwerker={handwerker}
+              profil={profil}
+              variant="chip"
+            />
+          ) : null}
 
           {section === "gpt" ? (
             <article className="portal-surface overflow-hidden p-0">
@@ -916,6 +918,13 @@ export function PartnerClient({
             <PartnerHwDashboard
               firmName={partnerFooter}
               heroImageUrl={portalHeaderHeroSrc("handwerker")}
+              beforeTiles={
+                <PartnerOnboardingReminderBanner
+                  handwerker={handwerker}
+                  profil={profil}
+                  variant="chip"
+                />
+              }
               kpis={{
                 neueAnfragen: vorgaengeState.filter(
                   (v) => v.state === "neu" || v.state === "geaendert"

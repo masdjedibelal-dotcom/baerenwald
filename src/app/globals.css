@@ -82,8 +82,8 @@
  * Keine Rundung der Hex-/RGBA-Werte.
  */
 .portal-ui {
-  --p2-bg: #e8ecea;
-  --p2-bg-content: #e8ecea;
+  --p2-bg: #ebe9e5;
+  --p2-bg-content: #ebe9e5;
   --p2-panel: #ffffff;
   --p2-line: rgba(0, 0, 0, 0.09);
   --p2-line2: rgba(0, 0, 0, 0.06);
@@ -950,7 +950,7 @@ h3 {
 
   /* Mobil-Dashboard: Header-Bild + Kurve + Avatar */
   .portal-dash {
-    background: var(--p2-bg, #e8ecea);
+    background: var(--p2-bg, #ebe9e5);
     padding-bottom: 8px;
   }
 
@@ -995,7 +995,7 @@ h3 {
   .portal-dash-curve-body {
     background: #fff;
     text-align: center;
-    padding: 0 20px 24px;
+    padding: 0 20px 16px;
     margin-top: -1px;
   }
 
@@ -1034,11 +1034,20 @@ h3 {
     color: var(--p2-ink, #16201b);
   }
 
+  .portal-dash-before-tiles {
+    padding: 4px 16px 0;
+  }
+
+  .portal-dash-before-tiles--in-hero {
+    padding: 12px 0 4px;
+    text-align: left;
+  }
+
   .portal-dash-tiles {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
     gap: 10px;
-    padding: 16px 16px 18px;
+    padding: 12px 16px 18px;
     background: transparent;
   }
 
@@ -1466,7 +1475,7 @@ h3 {
     display: flex;
     flex-direction: column;
     /* Getönte Fläche — weiße Cards/Inputs liegen darauf (nicht Weiß-auf-Weiß) */
-    background: var(--p2-bg-content, #e8ecea);
+    background: var(--p2-bg-content, #ebe9e5);
     border-radius: 20px 20px 0 0;
     width: 100%;
     max-width: none; /* Mobil: volle Breite — kein eingeengtes Center-Card */
@@ -1488,7 +1497,7 @@ h3 {
     align-items: flex-start;
     gap: 10px;
     flex-shrink: 0;
-    background: var(--p2-bg-content, #e8ecea);
+    background: var(--p2-bg-content, #ebe9e5);
     border-bottom: 0.5px solid var(--p2-line2, rgba(0, 0, 0, 0.06));
   }
 
@@ -1675,7 +1684,7 @@ h3 {
 
   .portal-modal-discard-panel {
     width: 100%;
-    background: var(--p2-bg-content, #e8ecea);
+    background: var(--p2-bg-content, #ebe9e5);
     border-radius: 16px 16px 0 0;
     padding: 18px 20px calc(18px + env(safe-area-inset-bottom, 0px));
     box-shadow: 0 -8px 32px rgba(0, 0, 0, 0.2);
@@ -1744,7 +1753,7 @@ h3 {
       width: min(100%, var(--portal-modal-max, 460px));
       max-width: var(--portal-modal-max, 460px);
       box-shadow: -16px 0 48px rgba(0, 0, 0, 0.28);
-      background: var(--p2-bg-content, #e8ecea);
+      background: var(--p2-bg-content, #ebe9e5);
     }
 
     .portal-modal-shell--preview .portal-modal-shell-panel {
@@ -2446,7 +2455,7 @@ h3 {
       border-radius: 0;
       border: none;
       box-shadow: none;
-      background: var(--p2-bg, #e8ecea);
+      background: var(--p2-bg, #ebe9e5);
     }
 
     .portal-shell-main > .portal-page-stack {
@@ -2485,7 +2494,7 @@ h3 {
     min-width: 0;
     display: flex;
     flex-direction: column;
-    background: var(--p2-bg, #e8ecea);
+    background: var(--p2-bg, #ebe9e5);
   }
 
   .portal-shell-brand {

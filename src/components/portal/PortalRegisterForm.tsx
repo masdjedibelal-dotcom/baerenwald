@@ -1,12 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useMemo, useState } from "react";
 
-import { assertPortalEmailAllowed } from "@/app/actions/assert-portal-email-allowed";
+import { registerMeinBaerenwaldWithOtp } from "@/app/actions/portal-signup-otp";
 import { PortalAuthBusy } from "@/components/portal/auth/PortalAuthBusy";
-import { portalAuthCallbackUrl } from "@/lib/portal/portal-auth-url";
+import { PortalSignupOtpStep } from "@/components/portal/PortalSignupOtpStep";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 
 export type PortalRegisterPrefill = {
@@ -23,10 +23,10 @@ type Props = {
 };
 
 /**
- * MeinBärenwald-Registrierung.
- * Melde-Flow: Daten vorausgefüllt & gesperrt, nur Passwort + Checkboxen.
+ * MeinBärenwald-Registrierung mit E-Mail-OTP statt Bestätigungslink.
  */
 export function PortalRegisterForm({ prefill }: Props) {
+  const router = useRouter();
   const searchParams = useSearchParams();
 
   const fromQuery = useMemo((): PortalRegisterPrefill => {
@@ -57,7 +57,7 @@ export function PortalRegisterForm({ prefill }: Props) {
   const [agbError, setAgbError] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState(false);
+  const [awaitingOtp, setAwaitingOtp] = useState(false);
 
   const nextPath = searchParams.get("next") || "/portal";
   const loginHref = `/portal/login?next=${encodeURIComponent(nextPath)}${
@@ -83,66 +83,63 @@ export function PortalRegisterForm({ prefill }: Props) {
 
     setLoading(true);
     setError(null);
-    const trimmedEmail = email.trim();
-    const allowed = await assertPortalEmailAllowed(trimmedEmail);
-    if (!allowed.ok) {
-      setLoading(false);
-      setError(allowed.error);
-      return;
-    }
-    const supabase = getSupabaseBrowserClient();
-    const now = new Date().toISOString();
-    const { error: signUpError } = await supabase.auth.signUp({
-      email: trimmedEmail,
+    const result = await registerMeinBaerenwaldWithOtp({
+      name,
+      email,
+      telefon,
       password,
-      options: {
-        emailRedirectTo: portalAuthCallbackUrl(
-          typeof nextPath === "string" ? nextPath : undefined
-        ),
-        data: {
-          name: name.trim(),
-          telefon: telefon.trim() || null,
-          datenschutz_akzeptiert_at: now,
-          agb_akzeptiert_at: now,
-        },
-      },
     });
-    if (signUpError) {
-      setLoading(false);
-      if (signUpError.message.toLowerCase().includes("already registered")) {
-        setError("Diese E-Mail ist bereits registriert. Bitte melden Sie sich an.");
-      } else {
-        setError(signUpError.message);
-      }
+    setLoading(false);
+    if (!result.ok) {
+      setError(result.error);
       return;
     }
-    setLoading(false);
-    setSuccess(true);
+    setAwaitingOtp(true);
+  }
+
+  async function afterOtpVerified() {
+    const supabase = getSupabaseBrowserClient();
+    const { error: signErr } = await supabase.auth.signInWithPassword({
+      email: email.trim(),
+      password,
+    });
+    if (signErr) {
+      throw new Error(
+        "Konto bestätigt — bitte mit Passwort anmelden."
+      );
+    }
+    const safeNext =
+      typeof nextPath === "string" && nextPath.startsWith("/portal")
+        ? nextPath
+        : "/portal";
+    router.replace(safeNext);
   }
 
   if (loading) {
     return (
       <PortalAuthBusy
         title="Konto wird angelegt…"
-        body="Einen Moment — wir richten Ihren Zugang ein."
+        body="Einen Moment — wir richten Ihren Zugang ein und senden den Code."
       />
     );
   }
 
-  if (success) {
+  if (awaitingOtp) {
     return (
-      <div className="space-y-3 text-center">
-        <p className="portal-text-section">Fast geschafft — bitte E-Mail bestätigen</p>
-        <p className="portal-text-body leading-relaxed text-text-secondary">
-          Wir haben Ihnen eine Nachricht an <strong>{email.trim()}</strong> geschickt.
-          Klicken Sie auf den Bestätigungslink, danach können Sie sich anmelden.
+      <div className="space-y-4">
+        <PortalSignupOtpStep
+          email={email.trim()}
+          brand="meinbaerenwald"
+          onVerified={afterOtpVerified}
+        />
+        <p className="text-center portal-text-body text-text-secondary">
+          <Link
+            href={loginHref}
+            className="font-semibold text-accent underline-offset-2 hover:underline"
+          >
+            Zum Login
+          </Link>
         </p>
-        <Link
-          href={loginHref}
-          className="btn-pill-primary portal-btn inline-flex"
-        >
-          Zum Login
-        </Link>
       </div>
     );
   }

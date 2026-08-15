@@ -8,13 +8,10 @@ import {
 } from "@/components/shared/PortalEinstellungenUi";
 import {
   canRequestPushPermission,
-  isIosDevice,
   isPushClientSupported,
-  isStandaloneDisplay,
   setPushEnabled,
 } from "@/lib/push/client";
 import type { PushPortalScope } from "@/lib/push/types";
-import { PORTAL_VAR } from "@/lib/portal2/tokens";
 import { portalToastError, portalToastSuccess } from "@/lib/shared/portal-toast";
 
 type Props = {
@@ -48,13 +45,7 @@ export function PortalPushSettingsPanel({ portal }: Props) {
       );
       return;
     }
-    if (isStandaloneDisplay()) {
-      setStatusHint("Als App auf dem Home-Bildschirm — Push möglich.");
-      return;
-    }
-    setStatusHint(
-      "Funktioniert im Browser und als Home-Bildschirm-App (iOS nur als App)."
-    );
+    setStatusHint("");
   }, []);
 
   useEffect(() => {
@@ -130,33 +121,14 @@ export function PortalPushSettingsPanel({ portal }: Props) {
   return (
     <div className="space-y-4">
       <EinstellungenSectionHeader title="Benachrichtigungen" />
-      <p className="portal-text-meta" style={{ color: PORTAL_VAR.sub }}>
-        Push auf dem Sperrbildschirm bei neuen Vorgängen und wenn ein Angebot
-        vorliegt. Die In-App-Glocke bleibt immer aktiv. Keine Preise in den
-        Push-Texten.
-      </p>
 
       <EinstellungenToggle
         checked={enabled}
         onChange={onToggle}
         disabled={disableToggle}
         title="Push-Benachrichtigungen"
-        description={loading ? "Lade Status…" : statusHint}
+        description={loading ? "Lade Status…" : statusHint || undefined}
       />
-
-      {isIosDevice() && !isStandaloneDisplay() ? (
-        <div className="rounded-[11px] border border-border-default px-3.5 py-3">
-          <p className="portal-text-card-title">Zum Home-Bildschirm</p>
-          <ol
-            className="portal-text-meta mt-2 list-decimal space-y-1 pl-4"
-            style={{ color: PORTAL_VAR.sub }}
-          >
-            <li>Safari: Teilen-Symbol tippen</li>
-            <li>„Zum Home-Bildschirm“ wählen</li>
-            <li>App öffnen und Push hier aktivieren</li>
-          </ol>
-        </div>
-      ) : null}
 
       {enabled ? (
         <button

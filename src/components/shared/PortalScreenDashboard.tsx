@@ -42,6 +42,8 @@ type Props = {
   recentTitle?: string;
   recentAllLabel?: string;
   recentEmpty?: string;
+  /** Zwischen Hero/Begrüßung und KPI-Kacheln (z. B. kompakter Hinweis). */
+  beforeTiles?: ReactNode;
   /** Optional content strictly below mock body (avoid on start if possible). */
   after?: ReactNode;
 };
@@ -63,7 +65,8 @@ export function PortalScreenDashboard({
   onOpenItem,
   recentTitle = "Zuletzt",
   recentAllLabel = "Alle ansehen",
-  recentEmpty = "Noch nichts",
+  recentEmpty = "Noch keine Vorgänge — sie erscheinen hier, sobald etwas losgeht.",
+  beforeTiles,
   after,
 }: Props) {
   const view = usePortalView();
@@ -106,6 +109,11 @@ export function PortalScreenDashboard({
               </div>
               <p className="portal-dash-greet">{greet}</p>
               <h1 className="portal-dash-name">{profileLabel}</h1>
+              {beforeTiles ? (
+                <div className="portal-dash-before-tiles portal-dash-before-tiles--in-hero">
+                  {beforeTiles}
+                </div>
+              ) : null}
             </div>
           </div>
         </div>
@@ -229,6 +237,9 @@ export function PortalScreenDashboard({
       </div>
 
       <div className="portal-dash-body mx-auto w-full max-w-[var(--portal-content-max,48rem)]">
+      {beforeTiles ? (
+        <div className="px-6 pt-4">{beforeTiles}</div>
+      ) : null}
       {tilesTitle ? (
         <p
           className="portal-text-section"

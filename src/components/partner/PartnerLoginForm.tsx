@@ -6,7 +6,7 @@ import { useState } from "react";
 
 import { assertPartnerEmailAllowed } from "@/app/actions/assert-partner-email-allowed";
 import { PortalAuthBusy } from "@/components/portal/auth/PortalAuthBusy";
-import { PortalResendConfirmation } from "@/components/portal/PortalResendConfirmation";
+import { PortalSignupOtpStep } from "@/components/portal/PortalSignupOtpStep";
 import { PartnerAuthFlowHint } from "@/components/partner/PartnerAuthFlowHint";
 import { PARTNER_AUTH_COPY } from "@/lib/partner/partner-auth-copy";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
@@ -22,6 +22,8 @@ export function PartnerLoginForm() {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [awaitingOtp, setAwaitingOtp] = useState(false);
+  const [otpConfirmed, setOtpConfirmed] = useState(false);
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -42,9 +44,9 @@ export function PartnerLoginForm() {
       if (signInError) {
         const msg = signInError.message.toLowerCase();
         if (msg.includes("email not confirmed")) {
-          setError(
-            "Bitte bestätige zuerst deine E-Mail — wir haben dir einen Link geschickt."
-          );
+          setAwaitingOtp(true);
+          setLoading(false);
+          return;
         } else if (msg.includes("banned") || msg.includes("user is banned")) {
           setError(PARTNER_AUTH_COPY.errors.portalGesperrt);
         } else {
@@ -70,17 +72,46 @@ export function PartnerLoginForm() {
     );
   }
 
+  if (awaitingOtp || (hint === "confirm" && !otpConfirmed)) {
+    return (
+      <div className="space-y-4">
+        <PortalSignupOtpStep
+          email={email.trim()}
+          brand="partner"
+          informal
+          onVerified={async () => {
+            if (password.length >= 8) {
+              const supabase = getSupabaseBrowserClient();
+              const { error: signErr } = await supabase.auth.signInWithPassword({
+                email: email.trim(),
+                password,
+              });
+              if (signErr) {
+                setAwaitingOtp(false);
+                setOtpConfirmed(true);
+                throw new Error(
+                  "Konto bestätigt — bitte erneut mit Passwort anmelden."
+                );
+              }
+              router.replace(next);
+              router.refresh();
+              return;
+            }
+            setAwaitingOtp(false);
+            setOtpConfirmed(true);
+          }}
+        />
+      </div>
+    );
+  }
+
   return (
     <form onSubmit={onSubmit} className="space-y-4">
       <PartnerAuthFlowHint variant="login" />
-      {hint === "confirm" ? (
-        <div className="space-y-3 rounded-lg bg-amber-50 px-3 py-3 portal-text-body text-amber-900">
-          <p>
-            Bitte bestätige deine E-Mail über den Link in unserer Nachricht, danach
-            kannst du dich anmelden.
-          </p>
-          <PortalResendConfirmation defaultEmail={email} className="text-left" />
-        </div>
+      {otpConfirmed ? (
+        <p className="rounded-lg bg-accent-light/60 px-3 py-3 portal-text-body text-accent">
+          E-Mail bestätigt. Du kannst dich jetzt anmelden.
+        </p>
       ) : null}
       {hint === "password-updated" ? (
         <p className="rounded-lg bg-accent-light/60 px-3 py-3 portal-text-body text-accent">

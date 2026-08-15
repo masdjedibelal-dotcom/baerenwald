@@ -10,7 +10,8 @@ export const GEWERBE_DASHBOARD_ROLE_LABEL = "Gewerbe" as const;
 
 export const PRIVAT_DASHBOARD_RECENT_TITLE = "Zuletzt" as const;
 export const PRIVAT_DASHBOARD_RECENT_ALL = "Alle ansehen" as const;
-export const PRIVAT_DASHBOARD_EMPTY_RECENT = "Noch nichts" as const;
+export const PRIVAT_DASHBOARD_EMPTY_RECENT =
+  "Noch keine Vorgänge — deine Anfragen erscheinen hier." as const;
 export const PRIVAT_DASHBOARD_KPI_SECTION = "Vorgänge" as const;
 
 export type PrivatDashboardKpiId = "offen" | "in_arbeit" | "erledigt";

@@ -1,5 +1,7 @@
 "use client";
 
+import type { ReactNode } from "react";
+
 import { PortalScreenDashboard } from "@/components/shared/PortalScreenDashboard";
 import { partnerStatusChipStyle } from "@/lib/partner/partner-list-mappers";
 
@@ -35,6 +37,8 @@ type Props = {
   onOpenItem: (id: string) => void;
   onKpiClick?: (id: keyof PartnerHwDashboardKpis) => void;
   heroImageUrl?: string | null;
+  /** Unter Begrüßung, vor den KPI-Kacheln. */
+  beforeTiles?: ReactNode;
 };
 
 /** Mock `screenDashboard` Handwerker — 1:1. */
@@ -46,6 +50,7 @@ export function PartnerHwDashboard({
   onOpenItem,
   onKpiClick,
   heroImageUrl,
+  beforeTiles,
 }: Props) {
   return (
     <PortalScreenDashboard
@@ -53,6 +58,7 @@ export function PartnerHwDashboard({
       hello={firmName}
       avatarName={firmName}
       heroImageUrl={heroImageUrl}
+      beforeTiles={beforeTiles}
       tiles={KPI_DEFS.map((def) => ({
         id: def.id,
         label: def.label,
@@ -71,7 +77,7 @@ export function PartnerHwDashboard({
       onOpenItem={onOpenItem}
       recentTitle="Zuletzt"
       recentAllLabel="Alle ansehen"
-      recentEmpty="Noch nichts"
+      recentEmpty="Noch keine Vorgänge — neue Anfragen erscheinen hier."
     />
   );
 }
