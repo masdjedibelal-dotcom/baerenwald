@@ -6,7 +6,9 @@ export type HvMeldungStatus =
   | "angebot_eingefordert"
   | "kleinreparatur"
   | "abgelehnt"
-  | "abgeschlossen";
+  | "abgeschlossen"
+  | "hm_pruefung"
+  | "hm_erledigt";
 
 export function hvMeldungStatusLabel(status: string | null | undefined): string {
   const s = (status ?? "neu").toLowerCase();
@@ -16,6 +18,8 @@ export function hvMeldungStatusLabel(status: string | null | undefined): string 
   if (s === "kleinreparatur") return "Sofortpfad (alt)";
   if (s === "abgelehnt") return "Abgelehnt";
   if (s === "abgeschlossen") return "Abgeschlossen";
+  if (s === "hm_pruefung") return "Hausmeister-Prüfung";
+  if (s === "hm_erledigt") return "Vom Hausmeister erledigt";
   return s;
 }
 

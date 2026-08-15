@@ -72,6 +72,10 @@ export function buildPartnerAuftragDokumentZeilen(
       : item.hw_angebot_pdf_signed_url
         ? [item.hw_angebot_pdf_signed_url]
         : [];
+  const kannHwDocsLoeschen =
+    String(item.status ?? "").toLowerCase() !== "storniert" &&
+    String(item.angebotHwStatus ?? "").toLowerCase() !== "abgelehnt";
+
   anhangSigned.forEach((href, i) => {
     rows.push({
       id: `hw-unterlage-${i}`,
@@ -81,6 +85,7 @@ export function buildPartnerAuftragDokumentZeilen(
         total: anhangSigned.length,
       }),
       href,
+      canDelete: kannHwDocsLoeschen,
     });
   });
 
@@ -90,6 +95,7 @@ export function buildPartnerAuftragDokumentZeilen(
       datum: item.hw_rechnung_eingereicht_at,
       name: partnerHwDokumentListenName("rechnung"),
       href: item.hw_rechnung_pdf_signed_url,
+      canDelete: kannHwDocsLoeschen,
     });
   }
 

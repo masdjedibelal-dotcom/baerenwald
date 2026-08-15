@@ -42,6 +42,10 @@ export function OrganisationObjektMieterMenu({
   ];
 
   return (
-    <PortalActionMenu title="Mieter" items={items} triggerLabel="Mieter-Menü" />
+    <PortalActionMenu
+      title="Person"
+      items={items}
+      triggerLabel="Personen-Menü"
+    />
   );
 }

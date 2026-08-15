@@ -1,78 +1,67 @@
 "use client";
 
 import {
-  CalendarCheck2,
-  ClipboardList,
-  Eye,
-  Flower2,
+  ArrowLeftRight,
+  FileSearch,
+  Handshake,
+  Scale,
   Shield,
-  Snowflake,
-  Sparkles,
-  Wrench,
+  Store,
 } from "lucide-react";
 
 import { PORTAL_VAR } from "@/lib/portal2/tokens";
 
-const MODULES = [
-  {
-    id: "hausmeister",
-    label: "Hausmeister",
-    hint: "Objektbegehung, Kleinstreparaturen, Meldungen vor Ort",
-    Icon: Wrench,
-  },
-  {
-    id: "reinigung",
-    label: "Reinigung",
-    hint: "Treppenhaus, Gemeinschaftsflächen, dokumentiertes Putzprotokoll",
-    Icon: Sparkles,
-  },
-  {
-    id: "garten",
-    label: "Gartenpflege",
-    hint: "Außenanlage, Schnitt, saisonale Pflege",
-    Icon: Flower2,
-  },
-  {
-    id: "winter",
-    label: "Winterdienst",
-    hint: "Räumen, Streuen, Nachweis je Einsatztag",
-    Icon: Snowflake,
-  },
-] as const;
-
 const STEPS = [
   {
     n: "01",
-    title: "Module buchen",
-    body: "Hausmeister, Reinigung, Gartenpflege und Winterdienst einzeln fürs Objekt zuschalten — wie im Katalog, ohne Paketzwang.",
-    Icon: ClipboardList,
+    title: "Bedarf ausschreiben",
+    body: "Sie stellen ein Gesuch mit einheitlichen Leistungsdaten ein — einmal beschrieben, für alle Partner im Netzwerk sichtbar.",
+    Icon: FileSearch,
   },
   {
     n: "02",
-    title: "Routinen abarbeiten",
-    body: "Tägliche oder wöchentliche Checklisten auf der Startseite. Vorlagen nutzen, anpassen, Punkt für Punkt erledigen.",
-    Icon: CalendarCheck2,
+    title: "Partner bieten",
+    body: "Qualifizierte Partner aus dem Bärenwald-Netzwerk schreiben sich auf Ihr Gesuch und reichen Angebote ein — My-Hammer-Prinzip, aber im geprüften Netzwerk.",
+    Icon: Handshake,
   },
   {
     n: "03",
-    title: "Protokoll für alle",
-    body: "Erledigte Checklisten als Protokoll am Objekt — einsehbar für Verwaltung, Mieter und Eigentümer.",
-    Icon: Eye,
+    title: "Vergleichen & wählen",
+    body: "Wir bereiten die Angebote so auf, dass Preis, Leistung und Konditionen nebeneinander vergleichbar sind — Sie entscheiden auf einer klaren Basis.",
+    Icon: ArrowLeftRight,
+  },
+] as const;
+
+const BENEFITS = [
+  {
+    id: "vergleichbar",
+    label: "Echt vergleichbar",
+    hint: "Gleiche Struktur, gleiche Kriterien — statt PDF-Chaos aus Einzelanfragen.",
+    Icon: Scale,
+  },
+  {
+    id: "netzwerk",
+    label: "Direkt aus dem Partnernetzwerk",
+    hint: "Kein freies Internet-Portal: Angebote von Partnern, die bereits auf der Plattform arbeiten.",
+    Icon: Store,
+  },
+  {
+    id: "plattform",
+    label: "Eine Plattform für den Prozess",
+    hint: "Ausschreibung, Eingang und Vergleich bleiben im HV-Portal — nachvollziehbar für Verwaltung und Eigentümer.",
+    Icon: Shield,
   },
 ] as const;
 
 /**
- * Teaser: Objekt-Service-Module (kommt bald).
- * Ersetzt die bisherige Abo-/Paket-Buchungs-UI.
+ * Teaser: Vergleichsangebote über Partnernetzwerk (kommt bald).
  */
-export function OrganisationServicepaketePanel() {
+export function OrganisationMarktplatzPanel() {
   return (
     <div className="space-y-8">
       <div className="space-y-3">
         <div className="flex flex-wrap items-center gap-2">
-          <h2 className="portal-text-section text-text-primary">
-            Objekt-Services
-          </h2>
+          <h2 className="portal-text-section text-text-primary">Marktplatz</h2>
           <span
             className="rounded-full px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-wide"
             style={{
@@ -84,18 +73,16 @@ export function OrganisationServicepaketePanel() {
           </span>
         </div>
         <p className="portal-text-body max-w-[40rem] leading-relaxed text-text-secondary">
-          Bald buchen Sie laufende Dienste modulweise — mit Routinen,
-          Checklisten und Protokollen, die Mieter und Eigentümer am Objekt
-          mitlesen können.
+          Bald holen Sie Vergleichsangebote direkt über unser Partnernetzwerk
+          ein. Bärenwald schafft die Voraussetzungen, damit Partner auf Ihre
+          Gesuche antworten können — und bereitet die Angebote so auf, dass Sie
+          sie fair vergleichen können.
         </p>
       </div>
 
       <ol className="grid gap-4 lg:grid-cols-3">
         {STEPS.map((s) => (
-          <li
-            key={s.n}
-            className="portal-surface flex flex-col gap-3 p-5"
-          >
+          <li key={s.n} className="portal-surface flex flex-col gap-3 p-5">
             <div className="flex items-center gap-3">
               <span
                 className="grid h-11 w-11 place-items-center rounded-xl"
@@ -122,11 +109,11 @@ export function OrganisationServicepaketePanel() {
       </ol>
 
       <div className="space-y-3">
-        <p className="portal-text-label text-text-tertiary">Geplante Module</p>
-        <ul className="grid gap-3 sm:grid-cols-2">
-          {MODULES.map((m) => (
+        <p className="portal-text-label text-text-tertiary">Ihr Vorteil</p>
+        <ul className="grid gap-3 sm:grid-cols-3">
+          {BENEFITS.map((b) => (
             <li
-              key={m.id}
+              key={b.id}
               className="flex items-start gap-3 rounded-2xl border border-border-default bg-white p-4"
             >
               <span
@@ -136,12 +123,12 @@ export function OrganisationServicepaketePanel() {
                   color: "var(--org-primary, var(--accent, #2E7D52))",
                 }}
               >
-                <m.Icon className="h-5 w-5" aria-hidden />
+                <b.Icon className="h-5 w-5" aria-hidden />
               </span>
               <div className="min-w-0">
-                <p className="font-semibold text-text-primary">{m.label}</p>
+                <p className="font-semibold text-text-primary">{b.label}</p>
                 <p className="portal-text-meta mt-0.5 leading-snug text-text-secondary">
-                  {m.hint}
+                  {b.hint}
                 </p>
               </div>
             </li>
@@ -156,15 +143,14 @@ export function OrganisationServicepaketePanel() {
           background: "var(--muted, #f6f7f8)",
         }}
       >
-        <Shield
+        <Store
           className="mt-0.5 h-5 w-5 shrink-0"
           style={{ color: "var(--org-primary, var(--accent, #2E7D52))" }}
           aria-hidden
         />
         <p className="portal-text-body leading-relaxed text-text-secondary">
-          Buchung und Live-Routinen folgen in einem nächsten Release. Bestehende
-          Service-Anfragen aus der Vergangenheit bleiben in Ihren Vorgängen
-          sichtbar.
+          Ausschreibung und Angebotsvergleich folgen in einem nächsten Release.
+          Bis dahin laufen Anfragen und Angebote wie gewohnt über Ihre Vorgänge.
         </p>
       </div>
     </div>

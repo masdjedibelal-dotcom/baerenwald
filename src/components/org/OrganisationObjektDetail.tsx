@@ -107,6 +107,8 @@ function ObjEditRow({
   placeholder,
   type = "text",
   autoComplete,
+  /** Soft-Kachel wie Stammdaten-Felder (p2-selected). */
+  variant = "plain",
 }: {
   label: string;
   value: string;
@@ -114,7 +116,26 @@ function ObjEditRow({
   placeholder?: string;
   type?: string;
   autoComplete?: string;
+  variant?: "plain" | "tile";
 }) {
+  if (variant === "tile") {
+    return (
+      <label className="block rounded-[11px] border border-[var(--p2-line,rgba(0,0,0,0.08))] bg-[var(--p2-selected,#e8ece9)] px-3.5 py-2.5">
+        <span className="portal-text-label block normal-case tracking-wide text-text-tertiary">
+          {label}
+        </span>
+        <input
+          type={type}
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder={placeholder}
+          autoComplete={autoComplete}
+          className="portal-text-card-title mt-0.5 w-full border-0 bg-transparent p-0 font-semibold text-text-primary outline-none placeholder:font-normal placeholder:text-text-tertiary"
+        />
+      </label>
+    );
+  }
+
   return (
     <div className="portal-text-meta flex items-center justify-between gap-3 border-b border-border-default py-1.5 last:border-b-0">
       <span className="shrink-0 text-text-secondary">{label}</span>
@@ -178,6 +199,10 @@ export function OrganisationObjektDetail({
   const [selbstbehalt, setSelbstbehalt] = useState(
     objekt.selbstbehalt_eur != null ? String(objekt.selbstbehalt_eur) : ""
   );
+  const [autoSchadenakte, setAutoSchadenakte] = useState(
+    Boolean(objekt.automatische_schadenakte)
+  );
+  const [autoSchadenakteSaving, setAutoSchadenakteSaving] = useState(false);
   const versTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
@@ -206,12 +231,14 @@ export function OrganisationObjektDetail({
     setSelbstbehalt(
       objekt.selbstbehalt_eur != null ? String(objekt.selbstbehalt_eur) : ""
     );
+    setAutoSchadenakte(Boolean(objekt.automatische_schadenakte));
   }, [
     objekt.freigabe_schwelle_eur,
     objekt.notfall_direkt,
     objekt.versicherer,
     objekt.versicherungs_nr,
     objekt.selbstbehalt_eur,
+    objekt.automatische_schadenakte,
     objekt.id,
   ]);
 
@@ -391,74 +418,125 @@ export function OrganisationObjektDetail({
     }, 550);
   };
 
+  async function saveAutoSchadenakte(next: boolean) {
+    setAutoSchadenakte(next);
+    setAutoSchadenakteSaving(true);
+    try {
+      const res = await fetch("/api/org/objekte", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id: objekt.id,
+          automatische_schadenakte: next,
+        }),
+      });
+      const json = (await res.json()) as { error?: string };
+      if (!res.ok) {
+        setAutoSchadenakte(!next);
+        portalToastError("Einstellung nicht gespeichert", json.error);
+        return;
+      }
+      orgPortalToast.objektAktualisiert();
+      onRefresh();
+    } catch {
+      setAutoSchadenakte(!next);
+      portalToastError("Einstellung nicht gespeichert");
+    } finally {
+      setAutoSchadenakteSaving(false);
+    }
+  }
+
   let body: React.ReactNode = null;
 
   if (tab === "stamm") {
     body = (
-      <div className="grid gap-3.5 md:grid-cols-2">
+      <div className="space-y-3.5">
         <ObjCard title="Ansprechpartner">
-          <ObjEditRow
-            label="Name"
-            value={kontaktName}
-            onChange={(v) => scheduleAnsprechpartner({ kontakt: v })}
-            placeholder="Max Mustermann"
-            autoComplete="name"
-          />
-          <ObjEditRow
-            label="Telefon"
-            type="tel"
-            value={kontaktTel}
-            onChange={(v) => scheduleAnsprechpartner({ tel: v })}
-            placeholder="089 / …"
-            autoComplete="tel"
-          />
-          <ObjEditRow
-            label="E-Mail"
-            type="email"
-            value={kontaktEmail}
-            onChange={(v) => scheduleAnsprechpartner({ email: v })}
-            placeholder="name@firma.de"
-            autoComplete="email"
-          />
+          <div className="flex flex-col gap-2">
+            <ObjEditRow
+              variant="tile"
+              label="Name"
+              value={kontaktName}
+              onChange={(v) => scheduleAnsprechpartner({ kontakt: v })}
+              placeholder="Max Mustermann"
+              autoComplete="name"
+            />
+            <ObjEditRow
+              variant="tile"
+              label="Telefon"
+              type="tel"
+              value={kontaktTel}
+              onChange={(v) => scheduleAnsprechpartner({ tel: v })}
+              placeholder="089 / …"
+              autoComplete="tel"
+            />
+            <ObjEditRow
+              variant="tile"
+              label="E-Mail"
+              type="email"
+              value={kontaktEmail}
+              onChange={(v) => scheduleAnsprechpartner({ email: v })}
+              placeholder="name@firma.de"
+              autoComplete="email"
+            />
+          </div>
         </ObjCard>
-        <ObjCard title="Objektdaten">
-          <ObjRow label="Bezeichnung" value={objekt.titel} />
-          <ObjRow label="Typ" value={typLine} />
-          <ObjRow
-            label="Adresse"
-            value={
-              [strasse, plzOrt].filter((x) => x && x !== "—").join(", ") || "—"
-            }
-          />
-          <ObjRow
-            label="Einheiten"
-            value={we === 1 ? "1 Einheit" : `${we} Einheiten`}
-          />
-        </ObjCard>
-        <ObjCard title="Gebäudeversicherung">
-          <ObjEditRow
-            label="Versicherer"
-            value={versicherer}
-            onChange={(v) => scheduleVersicherung({ versicherer: v })}
-            placeholder="z. B. Allianz"
-          />
-          <ObjEditRow
-            label="Policen-Nr."
-            value={objVersNr}
-            onChange={(v) => scheduleVersicherung({ versicherungs_nr: v })}
-            placeholder="Police / Vertragsnummer"
-          />
-          <ObjEditRow
-            label="Selbstbehalt (€)"
-            value={selbstbehalt}
-            onChange={(v) => scheduleVersicherung({ selbstbehalt: v })}
-            placeholder="0"
-          />
-          <p className="portal-text-meta mt-2 leading-relaxed text-text-tertiary">
-            Einmal hinterlegt — jede Schadenmeldung übernimmt diese Daten
-            automatisch.
-          </p>
-        </ObjCard>
+
+        <div className="grid gap-3.5 md:grid-cols-2">
+          <ObjCard title="Objektdaten">
+            <ObjRow label="Bezeichnung" value={objekt.titel} />
+            <ObjRow label="Typ" value={typLine} />
+            <ObjRow
+              label="Adresse"
+              value={
+                [strasse, plzOrt].filter((x) => x && x !== "—").join(", ") || "—"
+              }
+            />
+            <ObjRow
+              label="Einheiten"
+              value={we === 1 ? "1 Einheit" : `${we} Einheiten`}
+            />
+          </ObjCard>
+          <ObjCard title="Gebäudeversicherung">
+            <ObjEditRow
+              label="Versicherer"
+              value={versicherer}
+              onChange={(v) => scheduleVersicherung({ versicherer: v })}
+              placeholder="z. B. Allianz"
+            />
+            <ObjEditRow
+              label="Policen-Nr."
+              value={objVersNr}
+              onChange={(v) => scheduleVersicherung({ versicherungs_nr: v })}
+              placeholder="Police / Vertragsnummer"
+            />
+            <ObjEditRow
+              label="Selbstbehalt (€)"
+              value={selbstbehalt}
+              onChange={(v) => scheduleVersicherung({ selbstbehalt: v })}
+              placeholder="0"
+            />
+            <div className="mt-3 border-t border-border-light pt-3">
+              <EinstellungenToggle
+                checked={autoSchadenakte}
+                onChange={(v) => {
+                  if (autoSchadenakteSaving) return;
+                  void saveAutoSchadenakte(v);
+                }}
+                title="Automatische Schadenakte"
+                description={
+                  autoSchadenakte
+                    ? "Ein: Bei jeder Schadenmeldung an diesem Objekt wird die Akte erzeugt und unter Dokumente abgelegt."
+                    : "Aus: Keine automatische Schadenakte. Stammdaten unten bleiben für manuelle Nutzung."
+                }
+              />
+            </div>
+            <p className="portal-text-meta mt-2 leading-relaxed text-text-tertiary">
+              Einmal hinterlegt — Policen-Daten fließen in die Schadenakte.
+              Fertige PDFs findest du im Vorgang unter Dokumente.
+            </p>
+          </ObjCard>
+        </div>
       </div>
     );
   } else if (tab === "mieter") {

@@ -191,6 +191,13 @@ export async function persistMeldungLead(input: PersistMeldungLeadInput) {
 
   await supabaseAdmin.from("leads").update(patch).eq("id", result.id);
 
+  void import("@/lib/org/ensure-versicherungsakte").then(
+    ({ applyAutomatischeSchadenakteIfEnabled }) =>
+      applyAutomatischeSchadenakteIfEnabled(result.id).catch((e) =>
+        console.warn("[persistMeldungLead] schadenakte:", e)
+      )
+  );
+
   // Mieter am Objekt (einheit_bewohner) — erscheint in CRM-Objektakte „Mieter“
   if (input.kunde_objekt_id?.trim() && input.name.trim()) {
     try {

@@ -13,7 +13,7 @@ type Props = {
 };
 
 /**
- * Mobile „Mehr“ — Kacheln für Serviceabos und Einstellungen.
+ * Mobile „Mehr“ — Kacheln für Serviceabos, Marktplatz und Einstellungen.
  */
 export function OrganisationMehrScreen({ onOpen }: Props) {
   return (
@@ -26,7 +26,7 @@ export function OrganisationMehrScreen({ onOpen }: Props) {
           Mehr
         </h2>
         <p className="mt-1 text-[13px] text-text-secondary">
-          Service und Einstellungen
+          Service, Marktplatz und Einstellungen
         </p>
       </div>
 
@@ -39,7 +39,7 @@ export function OrganisationMehrScreen({ onOpen }: Props) {
               key={tile.key}
               type="button"
               onClick={() => onOpen(sectionId)}
-              className="flex aspect-square flex-col items-center justify-center gap-3 rounded-2xl border border-border-default bg-white p-4 text-center shadow-sm transition-colors hover:border-accent hover:bg-accent-light/40 active:scale-[0.98]"
+              className="flex aspect-square flex-col items-center justify-center gap-2 rounded-2xl border border-border-default bg-white p-4 text-center shadow-sm transition-colors hover:border-accent hover:bg-accent-light/40 active:scale-[0.98]"
             >
               <span
                 className="grid h-12 w-12 place-items-center rounded-xl"
@@ -58,6 +58,17 @@ export function OrganisationMehrScreen({ onOpen }: Props) {
               <span className="text-[13px] font-bold text-text-primary">
                 {tile.label}
               </span>
+              {tile.tag ? (
+                <span
+                  className="rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide"
+                  style={{
+                    background: "var(--accent-light, #E7F1E9)",
+                    color: "var(--org-primary, var(--accent, #2E7D52))",
+                  }}
+                >
+                  {tile.tag}
+                </span>
+              ) : null}
             </button>
           );
         })}

@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 
-import { submitPartnerAngebotPdf, submitPartnerRechnung } from "@/app/actions/partner-angebote";
+import { submitPartnerAngebotPdf, submitPartnerRechnung, deletePartnerHwAuftragDokument } from "@/app/actions/partner-angebote";
 import { previewPartnerAutoDokument } from "@/app/actions/partner-auto-dokumente";
 import { usePortalRefresh } from "@/components/shared/usePortalRefresh";
 import { usePortalUploadBusy } from "@/components/shared/usePortalUploadBusy";
@@ -24,6 +24,7 @@ import {
   PortalDetailSection,
   PortalDetailStickyActions,
   PortalDetailSuccessBox,
+  PortalConfirmDialog,
 } from "@/components/shared/PortalDetailUi";
 import { VorgangDetailBlocks } from "@/components/shared/vorgang-detail";
 import { resolvePartnerDetailTitelFromAuftrag } from "@/lib/partner/partner-listen-titel";
@@ -70,7 +71,7 @@ import {
 } from "@/lib/portal2/hw-auftrag-detail";
 import { buildPartnerVorgangDetailVm } from "@/lib/vorgang/build-vorgang-detail-vm";
 import { partnerPortalToast, portalToastError } from "@/lib/shared/portal-toast";
-import { DokumenteTabelle } from "@/components/shared/DokumenteTabelle";
+import { DokumenteTabelle, type DokumentZeile } from "@/components/shared/DokumenteTabelle";
 import { FileUploadField } from "@/components/shared/FileUploadField";
 import { useEffect, useMemo, useState } from "react";
 
@@ -130,6 +131,8 @@ export function PartnerAuftragDetail({
   );
   const [abnahmePunkteCount, setAbnahmePunkteCount] = useState<number | null>(null);
   const [abnahmeMaengelCount, setAbnahmeMaengelCount] = useState<number | null>(null);
+  const [deleteDoc, setDeleteDoc] = useState<DokumentZeile | null>(null);
+  const [deleteBusy, setDeleteBusy] = useState(false);
   const [activeTab, setActiveTab] = useState(() => {
     if (focusAbnahme) return "abnahme";
     if (focusBautagebuch) return "dokumentation";
@@ -219,6 +222,47 @@ export function PartnerAuftragDetail({
   const zeigtAbschluss = !abschlussDone && partnerZeigtAbschlussCta(abschlussCtaInput);
   const kannAbschluss =
     zeigtAbschluss && partnerKannErledigtMelden(abschlussCtaInput);
+
+  async function confirmDeleteDoc() {
+    if (!deleteDoc || !item.angebotHandwerkerId || deleteBusy) return;
+    setDeleteBusy(true);
+    try {
+      const id = deleteDoc.id;
+      if (id === "hw-rechnung") {
+        const res = await deletePartnerHwAuftragDokument({
+          anfrageId: item.angebotHandwerkerId,
+          art: "rechnung",
+        });
+        if (!res.ok) {
+          portalToastError(res.error);
+          return;
+        }
+      } else if (id.startsWith("hw-unterlage-")) {
+        const index = Number(id.replace("hw-unterlage-", ""));
+        if (!Number.isFinite(index)) {
+          portalToastError("Unterlage nicht gefunden.");
+          return;
+        }
+        const res = await deletePartnerHwAuftragDokument({
+          anfrageId: item.angebotHandwerkerId,
+          art: "unterlage",
+          index,
+        });
+        if (!res.ok) {
+          portalToastError(res.error);
+          return;
+        }
+      } else {
+        portalToastError("Dieses Dokument kann hier nicht gelöscht werden.");
+        return;
+      }
+      partnerPortalToast.complianceGeloescht(deleteDoc.name);
+      setDeleteDoc(null);
+      await refresh();
+    } finally {
+      setDeleteBusy(false);
+    }
+  }
 
   async function onRechnungErstellen() {
     if (!item.angebotHandwerkerId || uploadBusy || rechnungGateBusy) return;
@@ -483,6 +527,55 @@ export function PartnerAuftragDetail({
                 onDone={() => refresh()}
               />
 
+              {(item.bautagebuch ?? []).some(
+                (e) => String(e.eintrag_typ ?? "") === "befund"
+              ) ? (
+                <div className="mt-4 space-y-2 border-t border-border-light pt-4">
+                  <h4 className="portal-text-label text-text-tertiary">
+                    Hausmeister-Vorbefund
+                  </h4>
+                  <ul className="space-y-2.5">
+                    {(item.bautagebuch ?? [])
+                      .filter((e) => String(e.eintrag_typ ?? "") === "befund")
+                      .map((e) => (
+                        <li key={e.id} className="space-y-1">
+                          <p className="portal-text-card-title">{e.titel}</p>
+                          {e.beschreibung ? (
+                            <p className="portal-text-body whitespace-pre-wrap text-text-secondary">
+                              {e.beschreibung}
+                            </p>
+                          ) : null}
+                          {(e.foto_signed_urls?.length || e.foto_urls?.length) ? (
+                            <div className="flex flex-wrap gap-2">
+                              {(e.foto_signed_urls?.length
+                                ? e.foto_signed_urls
+                                : e.foto_urls ?? []
+                              ).map((url) =>
+                                url ? (
+                                  <a
+                                    key={url}
+                                    href={url}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="block h-14 w-14 overflow-hidden rounded-md border border-border-light"
+                                  >
+                                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                                    <img
+                                      src={url}
+                                      alt=""
+                                      className="h-full w-full object-cover"
+                                    />
+                                  </a>
+                                ) : null
+                              )}
+                            </div>
+                          ) : null}
+                        </li>
+                      ))}
+                  </ul>
+                </div>
+              ) : null}
+
               <PartnerFachdokuSlots auftragId={item.id} className="mt-4" />
 
               {konditionZeilen.length > 0 ? (
@@ -510,6 +603,7 @@ export function PartnerAuftragDetail({
                     : "Noch keine Dokumente."
                 }
                 className="!border-t-0 !pt-0"
+                onDeleteDoc={(doc) => setDeleteDoc(doc)}
                 upload={
                   kannUnterlagenHochladen
                     ? {
@@ -703,6 +797,23 @@ export function PartnerAuftragDetail({
         missing={firmendatenMissing}
         onDismiss={() => setFirmendatenFehlenOpen(false)}
         onGoSettings={() => setFirmendatenFehlenOpen(false)}
+      />
+
+      <PortalConfirmDialog
+        open={Boolean(deleteDoc)}
+        title="Dokument entfernen?"
+        description={
+          deleteDoc
+            ? `„${deleteDoc.name}“ wirklich entfernen?`
+            : "Dokument wirklich entfernen?"
+        }
+        confirmLabel="Löschen"
+        confirmVariant="danger"
+        loading={deleteBusy}
+        onConfirm={() => void confirmDeleteDoc()}
+        onCancel={() => {
+          if (!deleteBusy) setDeleteDoc(null);
+        }}
       />
     </PortalDetailLayout>
   );

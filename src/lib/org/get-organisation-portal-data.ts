@@ -25,26 +25,31 @@ import type {
 import { isSupabaseConfigured, supabaseAdmin } from "@/lib/supabase";
 
 const EINGANG_SELECT_FULL =
-  "id, situation, bereiche, status, created_at, plz, strasse, hausnummer, zeitraum, kontakt_name, preis_min, preis_max, preis_unsicher, kontakt_nachricht, funnel_daten, kunde_objekt_id, anlass, erfassung_von, melder_name, melder_einheit, melder_telefon, melder_email, melde_tracking_token, einladung_token, einladung_status, org_freigabe_status, freigabe_bypass_grund, hv_meldung_status, service_modus, auftraggeber_kunde_id, kunde_id, kostentraeger, kostentraeger_vorgeschlagen, versicherungs_nr, vorgang_phase, kanal";
+  "id, situation, bereiche, status, created_at, plz, strasse, hausnummer, zeitraum, kontakt_name, preis_min, preis_max, preis_unsicher, kontakt_nachricht, funnel_daten, kunde_objekt_id, anlass, erfassung_von, melder_name, melder_einheit, melder_telefon, melder_email, melde_tracking_token, einladung_token, einladung_status, org_freigabe_status, freigabe_bypass_grund, hv_meldung_status, service_modus, auftraggeber_kunde_id, kunde_id, kostentraeger, kostentraeger_vorgeschlagen, versicherungs_nr, versicherungsakte_pdf_url, vorgang_phase, kanal";
 
 const EINGANG_SELECT_BASE =
   "id, situation, bereiche, status, created_at, plz, strasse, hausnummer, zeitraum, kontakt_name, preis_min, preis_max, kontakt_nachricht, funnel_daten, kunde_objekt_id, anlass, erfassung_von, melder_name, melder_einheit, melder_telefon, melder_email, einladung_token, einladung_status, org_freigabe_status, service_modus, auftraggeber_kunde_id, kunde_id";
 
 async function loadOrgObjekte(kundeId: string): Promise<OrganisationObjekt[]> {
+  const selectFull =
+    "id, kunde_id, titel, strasse, hausnummer, plz, ort, typ, melde_slug, melde_aktiv, einheiten_hinweis, notizen_intern, kostenstelle_nr, freigabe_schwelle_eur, notfall_direkt, versicherer, versicherungs_nr, selbstbehalt_eur, automatische_schadenakte, cover_url, created_at";
   const { data: objekteRows, error: objErr } = await supabaseAdmin
     .from("kunden_objekte")
-    .select(
-      "id, kunde_id, titel, strasse, hausnummer, plz, ort, typ, melde_slug, melde_aktiv, einheiten_hinweis, notizen_intern, kostenstelle_nr, freigabe_schwelle_eur, cover_url, created_at"
-    )
+    .select(selectFull)
     .eq("kunde_id", kundeId)
     .order("titel", { ascending: true });
 
   let rawObjekte = (objekteRows ?? []) as OrganisationObjekt[];
-  if (objErr && /cover_url/i.test(objErr.message)) {
+  if (
+    objErr &&
+    /automatische_schadenakte|versicherer|versicherungs_nr|selbstbehalt|notfall_direkt|cover_url/i.test(
+      objErr.message
+    )
+  ) {
     const { data: fallback } = await supabaseAdmin
       .from("kunden_objekte")
       .select(
-        "id, kunde_id, titel, strasse, hausnummer, plz, ort, typ, melde_slug, melde_aktiv, einheiten_hinweis, notizen_intern, kostenstelle_nr, freigabe_schwelle_eur, created_at"
+        "id, kunde_id, titel, strasse, hausnummer, plz, ort, typ, melde_slug, melde_aktiv, einheiten_hinweis, notizen_intern, kostenstelle_nr, freigabe_schwelle_eur, cover_url, created_at"
       )
       .eq("kunde_id", kundeId)
       .order("titel", { ascending: true });
@@ -103,6 +108,23 @@ async function loadEingangLeads(
 
   if (!eingangErr) {
     return (eingangRows ?? []) as Record<string, unknown>[];
+  }
+
+  if (/versicherungsakte_pdf_url/i.test(eingangErr.message)) {
+    const withoutVers = EINGANG_SELECT_FULL.replace(
+      ", versicherungsakte_pdf_url",
+      ""
+    );
+    let q2 = supabaseAdmin
+      .from("leads")
+      .select(withoutVers)
+      .eq("auftraggeber_kunde_id", kundeId)
+      .eq("anlass", "meldung")
+      .is("geloescht_am", null)
+      .order("created_at", { ascending: false });
+    if (listMode) q2 = q2.limit(PORTAL_LIST_LEAD_LIMIT);
+    const retry = await q2;
+    if (!retry.error) return (retry.data ?? []) as Record<string, unknown>[];
   }
 
   const geloeschtMissing = /geloescht_am/i.test(eingangErr.message);
@@ -384,6 +406,28 @@ export async function getOrganisationPortalData(
         dokumenteByLeadId[leadId] ?? [],
         angDocs
       );
+    }
+  }
+  // Schadenakte am Lead (auch ohne Auftrag)
+  {
+    const { dokumentFromVersicherungsakte } = await import(
+      "@/lib/portal/portal-dokumente"
+    );
+    for (const lead of [...eingang, ...orgLeads]) {
+      const leadId = String(lead.id ?? "");
+      if (!leadId) continue;
+      const versDoc = dokumentFromVersicherungsakte({
+        leadId,
+        url: (lead as { versicherungsakte_pdf_url?: string | null })
+          .versicherungsakte_pdf_url,
+        datum: lead.created_at,
+      });
+      if (versDoc) {
+        dokumenteByLeadId[leadId] = mergeDokumente(
+          dokumenteByLeadId[leadId] ?? [],
+          [versDoc]
+        );
+      }
     }
   }
   if (!listMode) {

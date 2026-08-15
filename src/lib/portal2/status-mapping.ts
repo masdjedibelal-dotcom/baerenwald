@@ -164,6 +164,13 @@ export function resolvePortalFlowStatus(
   const hv = norm(extra.hv_meldung_status);
   const u = norm(resolved.unterstatus);
 
+  if (hv === "hm_erledigt") {
+    return "abschluss";
+  }
+  if (hv === "hm_pruefung") {
+    return "gemeldet";
+  }
+
   if (resolved.phase === "rechnung" && u === "bezahlt") {
     return "bezahlt";
   }

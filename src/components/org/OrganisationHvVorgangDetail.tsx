@@ -16,6 +16,7 @@ import {
 } from "@/components/shared/PortalDetailUi";
 import { VorgangDetailSectionNav } from "@/components/shared/VorgangDetailSectionNav";
 import { HvFreigabeInfoBanner } from "@/components/org/HvFreigabeInfoBanner";
+import { OrgHmBefundPanel } from "@/components/org/OrgHmBefundPanel";
 import {
   hvFreigabeEntfaellt,
   resolveAngebotZugestelltForHvFreigabe,
@@ -118,6 +119,8 @@ export type OrganisationHvVorgangDetailProps = {
   /** Funnel Sofortmaßnahme — unabhängig von org_freigabe_status */
   funnelDirektauftrag?: boolean | null;
   hvMeldungStatus?: string | null;
+  /** Für HM-CTA: Objekt-Kontakt rolle=hausmeister */
+  kundeObjektId?: string | null;
   /** Gesendetes Angebot — Annahme legt Auftrag an */
   angebotId?: string | null;
   canAcceptAngebot?: boolean;
@@ -336,6 +339,7 @@ export function OrganisationHvVorgangDetail({
   freigabeBypassGrund = null,
   funnelDirektauftrag = null,
   hvMeldungStatus,
+  kundeObjektId = null,
   angebotId,
   canAcceptAngebot = false,
   melderEinheit,
@@ -367,8 +371,33 @@ export function OrganisationHvVorgangDetail({
   const [accepted, setAccepted] = useState(false);
   const [rejected, setRejected] = useState(false);
   const [btUnread, setBtUnread] = useState(0);
+  const [hasHmKontakt, setHasHmKontakt] = useState(false);
   const [activeSection, setActiveSection] =
     useState<PortalDetailSectionId>("uebersicht");
+
+  const hvStatusNorm = (hvMeldungStatus ?? "").trim().toLowerCase();
+  const showHmTab =
+    !mieterStatusMode &&
+    (hvStatusNorm === "hm_pruefung" || hvStatusNorm === "hm_erledigt");
+
+  useEffect(() => {
+    if (mieterStatusMode) {
+      setHasHmKontakt(false);
+      return;
+    }
+    let cancelled = false;
+    void (async () => {
+      const { getLeadHausmeisterMetaAction } = await import(
+        "@/app/actions/lead-befund"
+      );
+      const res = await getLeadHausmeisterMetaAction({ leadId });
+      if (cancelled || !res.ok) return;
+      setHasHmKontakt(res.hasHausmeister);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [leadId, mieterStatusMode, kundeObjektId]);
 
   const angebotVorgelegt = Boolean(
     !mieterStatusMode &&
@@ -752,7 +781,11 @@ export function OrganisationHvVorgangDetail({
   const abschlaege = buildAbschlagsplan(sum.brutto, gewerke, rechnungen);
   const abschlagsplanTitle = abschlagsplanCardTitle(abschlaege.length);
   const meldungAct = async (
-    aktion: "angebot_einfordern" | "ablehnen"
+    aktion:
+      | "angebot_einfordern"
+      | "direkt_baerenwald"
+      | "hm_begutachten"
+      | "ablehnen"
   ) => {
     setBusy(true);
     setError(null);
@@ -768,10 +801,19 @@ export function OrganisationHvVorgangDetail({
           setError(json.error ?? "Aktion fehlgeschlagen.");
           return;
         }
-        if (aktion === "angebot_einfordern") orgPortalToast.angebotEingefordert();
-        else orgPortalToast.meldungAbgelehnt();
+        if (aktion === "hm_begutachten") {
+          orgPortalToast.hmBegutachten();
+          setActiveSection("hm_pruefung");
+        } else if (
+          aktion === "angebot_einfordern" ||
+          aktion === "direkt_baerenwald"
+        ) {
+          orgPortalToast.angebotEingefordert();
+        } else {
+          orgPortalToast.meldungAbgelehnt();
+        }
         onUpdated();
-        onBack?.();
+        if (aktion !== "hm_begutachten") onBack?.();
       });
     } finally {
       setBusy(false);
@@ -1073,13 +1115,24 @@ export function OrganisationHvVorgangDetail({
         label: angebotSectionLabel,
       },
       {
+        id: "hm_pruefung" as const,
+        hidden: !showHmTab,
+        label: "Hausmeister",
+      },
+      {
         id: "bautagebuch" as const,
         hidden: !showBautagebuch,
         badge: btUnread > 0 ? btUnread : null,
       },
       { id: "dokumente" as const },
     ],
-    [showAngebotSection, showBautagebuch, btUnread, angebotSectionLabel]
+    [
+      showAngebotSection,
+      showBautagebuch,
+      showHmTab,
+      btUnread,
+      angebotSectionLabel,
+    ]
   );
 
   useEffect(() => {
@@ -1163,14 +1216,31 @@ export function OrganisationHvVorgangDetail({
                         disabled={busy}
                         onClick={() => void meldungAct("ablehnen")}
                       />
+                      {hasHmKontakt ? (
+                        <ActionBtn
+                          className="min-w-0 flex-1"
+                          label="Hausmeister"
+                          kind="secondary"
+                          disabled={busy}
+                          onClick={() => void meldungAct("hm_begutachten")}
+                        />
+                      ) : null}
                       <ActionBtn
                         className="min-w-0 flex-1"
-                        label={HV_DETAIL_COPY.freigabeBtn}
-                        mobileLabel={HV_DETAIL_COPY.freigabeBtnMobile}
+                        label="Direkt Bärenwald"
+                        mobileLabel="Bärenwald"
                         disabled={busy}
-                        onClick={() => void meldungAct("angebot_einfordern")}
+                        onClick={() => void meldungAct("direkt_baerenwald")}
                       />
                     </>
+                  ) : hvStatusNorm === "hm_pruefung" && !mieterStatusMode ? (
+                    <ActionBtn
+                      className="min-w-0 flex-1"
+                      label="Direkt Bärenwald beauftragen"
+                      mobileLabel="Bärenwald"
+                      disabled={busy}
+                      onClick={() => void meldungAct("direkt_baerenwald")}
+                    />
                   ) : undefined
                 }
               />
@@ -1190,6 +1260,16 @@ export function OrganisationHvVorgangDetail({
                 </p>
               ) : null}
             </div>
+          ) : null}
+
+          {activeSection === "hm_pruefung" && showHmTab ? (
+            <DetailCard id="vorgang-panel-hm" title="Hausmeister-Prüfung">
+              <OrgHmBefundPanel
+                leadId={leadId}
+                hvMeldungStatus={hvMeldungStatus}
+                onUpdated={onUpdated}
+              />
+            </DetailCard>
           ) : null}
 
           {activeSection !== "angebot" && error ? (

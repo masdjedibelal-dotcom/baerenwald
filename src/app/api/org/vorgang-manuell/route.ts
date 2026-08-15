@@ -122,6 +122,28 @@ export async function POST(req: Request) {
   );
   await finalizeOrgSelfCreatedLead(result.id);
 
+  if (kostentraeger === "versicherung") {
+    void import("@/lib/org/ensure-versicherungsakte").then(
+      ({ ensureVersicherungsakteForLead }) =>
+        ensureVersicherungsakteForLead(result.id, {
+          actorId: session.userId,
+          actorRolle: session.rolle,
+        }).catch((e) =>
+          console.warn("[vorgang-manuell] schadenakte:", e)
+        )
+    );
+  } else {
+    void import("@/lib/org/ensure-versicherungsakte").then(
+      ({ applyAutomatischeSchadenakteIfEnabled }) =>
+        applyAutomatischeSchadenakteIfEnabled(result.id, {
+          actorId: session.userId,
+          actorRolle: session.rolle,
+        }).catch((e) =>
+          console.warn("[vorgang-manuell] auto-schadenakte:", e)
+        )
+    );
+  }
+
   await writeAuditEvent({
     entityType: "lead",
     entityId: result.id,

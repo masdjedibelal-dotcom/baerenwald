@@ -1,8 +1,7 @@
 "use client";
 
-import { useState, type CSSProperties } from "react";
+import { useEffect, useState, type CSSProperties } from "react";
 
-import { HV_MELDUNG_ACTIONS } from "@/lib/portal2/hv-liste";
 import { isHvDirektauftragInfoOnly } from "@/lib/org/org-direktauftrag";
 import { orgPortalToast } from "@/lib/shared/portal-toast";
 import { PORTAL_VAR } from "@/lib/portal2/tokens";
@@ -12,7 +11,11 @@ import type {
   OrganisationObjekt,
 } from "@/lib/org/types";
 
-type Aktion = (typeof HV_MELDUNG_ACTIONS)[number]["id"];
+type Aktion =
+  | "ablehnen"
+  | "hm_begutachten"
+  | "direkt_baerenwald"
+  | "angebot_einfordern";
 
 type Props = {
   lead: OrganisationLead;
@@ -44,8 +47,7 @@ function btnStyle(variant: "primary" | "ghost" | "danger"): CSSProperties {
 }
 
 /**
- * Listen-Aktionen Meldungen · Eingang: Ablehnen · Vorgang freigeben
- * (links negativ, rechts positiv)
+ * Listen-Aktionen Meldungen · Eingang
  * → POST /api/org/meldung-aktion
  */
 export function HvMeldungListActions({
@@ -56,10 +58,88 @@ export function HvMeldungListActions({
 }: Props) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [hasHm, setHasHm] = useState(false);
 
-  if ((lead.hv_meldung_status ?? "neu") !== "neu") return null;
+  const status = (lead.hv_meldung_status ?? "neu").trim().toLowerCase();
+  const isNeu = status === "neu";
+  const isHmPruefung = status === "hm_pruefung";
+
+  useEffect(() => {
+    const oid = lead.kunde_objekt_id?.trim();
+    if (!oid || !isNeu) {
+      setHasHm(false);
+      return;
+    }
+    let cancelled = false;
+    void fetch(
+      `/api/org/objekte/kontakte?objektId=${encodeURIComponent(oid)}`
+    )
+      .then((r) => r.json())
+      .then((j: { kontakte?: Array<{ rolle?: string }> }) => {
+        if (cancelled) return;
+        setHasHm(
+          (j.kontakte ?? []).some(
+            (k) => String(k.rolle ?? "").toLowerCase() === "hausmeister"
+          )
+        );
+      })
+      .catch(() => {
+        if (!cancelled) setHasHm(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [lead.kunde_objekt_id, isNeu]);
+
   if (lead.einladung_status === "offen") return null;
   if (isHvDirektauftragInfoOnly(lead, kunde, objekte)) return null;
+
+  if (isHmPruefung) {
+    const act = async () => {
+      setBusy(true);
+      setError(null);
+      try {
+        const res = await fetch("/api/org/meldung-aktion", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            leadId: lead.id,
+            aktion: "direkt_baerenwald",
+          }),
+        });
+        const json = (await res.json()) as { error?: string };
+        if (!res.ok) {
+          setError(json.error ?? "Aktion fehlgeschlagen.");
+          return;
+        }
+        orgPortalToast.angebotEingefordert();
+        onUpdated();
+      } finally {
+        setBusy(false);
+      }
+    };
+    return (
+      <div className="space-y-1.5">
+        <button
+          type="button"
+          disabled={busy}
+          onClick={(e) => {
+            e.stopPropagation();
+            void act();
+          }}
+          className="rounded-lg px-3.5 py-2 text-[12.5px] font-semibold disabled:opacity-60"
+          style={btnStyle("primary")}
+        >
+          Direkt Bärenwald
+        </button>
+        {error ? (
+          <p className="text-xs font-semibold text-red-700">{error}</p>
+        ) : null}
+      </div>
+    );
+  }
+
+  if (!isNeu) return null;
 
   const act = async (aktion: Aktion) => {
     setBusy(true);
@@ -75,8 +155,9 @@ export function HvMeldungListActions({
         setError(json.error ?? "Aktion fehlgeschlagen.");
         return;
       }
-      if (aktion === "angebot_einfordern") orgPortalToast.angebotEingefordert();
-      else orgPortalToast.meldungAbgelehnt();
+      if (aktion === "hm_begutachten") orgPortalToast.hmBegutachten();
+      else if (aktion === "ablehnen") orgPortalToast.meldungAbgelehnt();
+      else orgPortalToast.angebotEingefordert();
       onUpdated();
     } finally {
       setBusy(false);
@@ -86,21 +167,44 @@ export function HvMeldungListActions({
   return (
     <div className="space-y-1.5">
       <div className="flex flex-wrap gap-2">
-        {HV_MELDUNG_ACTIONS.map((a) => (
+        <button
+          type="button"
+          disabled={busy}
+          onClick={(e) => {
+            e.stopPropagation();
+            void act("ablehnen");
+          }}
+          className="rounded-lg px-3.5 py-2 text-[12.5px] font-semibold disabled:opacity-60"
+          style={btnStyle("danger")}
+        >
+          Ablehnen
+        </button>
+        {hasHm ? (
           <button
-            key={a.id}
             type="button"
             disabled={busy}
             onClick={(e) => {
               e.stopPropagation();
-              void act(a.id);
+              void act("hm_begutachten");
             }}
             className="rounded-lg px-3.5 py-2 text-[12.5px] font-semibold disabled:opacity-60"
-            style={btnStyle(a.variant)}
+            style={btnStyle("ghost")}
           >
-            {a.label}
+            Hausmeister
           </button>
-        ))}
+        ) : null}
+        <button
+          type="button"
+          disabled={busy}
+          onClick={(e) => {
+            e.stopPropagation();
+            void act("direkt_baerenwald");
+          }}
+          className="rounded-lg px-3.5 py-2 text-[12.5px] font-semibold disabled:opacity-60"
+          style={btnStyle("primary")}
+        >
+          Direkt Bärenwald
+        </button>
       </div>
       {error ? (
         <p className="text-xs font-semibold text-red-700">{error}</p>

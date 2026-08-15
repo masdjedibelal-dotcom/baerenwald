@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useState, type ReactNode } from "react";
-import { Download, Upload } from "lucide-react";
+import { Download, Trash2, Upload } from "lucide-react";
 
 import { PdfFileIcon } from "@/components/shared/PdfFileIcon";
 import { PortalDokumentCard } from "@/components/shared/PortalDokumentCard";
@@ -21,6 +21,8 @@ export type DokumentZeile = {
   href?: string;
   /** Zusatzinfo (z. B. „PDF · 214 KB“) */
   meta?: string | null;
+  /** Partner: Löschen erlauben (UI zeigt Trash). */
+  canDelete?: boolean;
 };
 
 export type DokumenteTabelleUpload = {
@@ -118,31 +120,47 @@ function UploadZone({
 function DocActions({
   doc,
   onOpen,
+  onDelete,
 }: {
   doc: DokumentZeile;
   onOpen: (doc: DokumentZeile) => void;
+  onDelete?: (doc: DokumentZeile) => void;
 }) {
-  if (!doc.href?.trim()) {
+  if (!doc.href?.trim() && !doc.canDelete) {
     return <span className="portal-text-meta text-text-tertiary">—</span>;
   }
   return (
     <>
-      <button
-        type="button"
-        onClick={() => onOpen(doc)}
-        className="portal-touch-target inline-grid place-items-center rounded-lg border border-border-light bg-white text-[#c62828] transition-colors hover:bg-red-50"
-        aria-label={`${doc.name} ansehen`}
-      >
-        <PdfFileIcon className="h-5 w-5" />
-      </button>
-      <a
-        href={normalizeHref(doc.href)}
-        download
-        className="portal-touch-target inline-grid place-items-center rounded-lg border border-border-light bg-white text-text-secondary transition-colors hover:bg-muted/40"
-        aria-label={`${doc.name} herunterladen`}
-      >
-        <Download className="h-4 w-4" />
-      </a>
+      {doc.href?.trim() ? (
+        <>
+          <button
+            type="button"
+            onClick={() => onOpen(doc)}
+            className="portal-touch-target inline-grid place-items-center rounded-lg border border-border-light bg-white text-[#c62828] transition-colors hover:bg-red-50"
+            aria-label={`${doc.name} ansehen`}
+          >
+            <PdfFileIcon className="h-5 w-5" />
+          </button>
+          <a
+            href={normalizeHref(doc.href)}
+            download
+            className="portal-touch-target inline-grid place-items-center rounded-lg border border-border-light bg-white text-text-secondary transition-colors hover:bg-muted/40"
+            aria-label={`${doc.name} herunterladen`}
+          >
+            <Download className="h-4 w-4" />
+          </a>
+        </>
+      ) : null}
+      {doc.canDelete && onDelete ? (
+        <button
+          type="button"
+          onClick={() => onDelete(doc)}
+          className="portal-touch-target inline-grid place-items-center rounded-lg border border-border-light bg-white text-[var(--p2-danger,#a1242a)] transition-colors hover:bg-[var(--p2-danger-soft,#fce3e3)]"
+          aria-label={`${doc.name} löschen`}
+        >
+          <Trash2 className="h-4 w-4" />
+        </button>
+      ) : null}
     </>
   );
 }
@@ -187,6 +205,7 @@ export function DokumenteTabelle({
   emptyText = "Noch keine Dokumente.",
   className,
   upload,
+  onDeleteDoc,
 }: {
   dokumente: DokumentZeile[];
   heading?: string;
@@ -194,6 +213,8 @@ export function DokumenteTabelle({
   className?: string;
   /** Upload direkt im Dokumente-Feld (kein separates Datei-Input darunter). */
   upload?: DokumenteTabelleUpload;
+  /** Optional: Löschen für Zeilen mit `canDelete`. */
+  onDeleteDoc?: (doc: DokumentZeile) => void;
 }) {
   const docViewer = useOptionalPortalDocViewer();
 
@@ -308,7 +329,13 @@ export function DokumenteTabelle({
                     </span>
                   )
                 }
-                actions={<DocActions doc={doc} onOpen={openOrFallback} />}
+                actions={
+                  <DocActions
+                    doc={doc}
+                    onOpen={openOrFallback}
+                    onDelete={onDeleteDoc}
+                  />
+                }
               />
             );
           })}

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { HvFreigabeInfoBanner } from "@/components/org/HvFreigabeInfoBanner";
 import { usePortalBusy } from "@/components/shared/PortalBusyContext";
@@ -10,7 +10,6 @@ import {
 } from "@/lib/org/freigabe-bypass";
 import { isHvDirektauftragInfoOnly } from "@/lib/org/org-direktauftrag";
 import { orgPortalToast } from "@/lib/shared/portal-toast";
-import { HV_MELDUNG_ACTIONS } from "@/lib/portal2/hv-liste";
 import type {
   OrganisationKunde,
   OrganisationLead,
@@ -24,9 +23,16 @@ type Props = {
   onUpdated: () => void;
 };
 
+type Aktion =
+  | "ablehnen"
+  | "hm_begutachten"
+  | "direkt_baerenwald"
+  | "angebot_einfordern";
+
 /**
- * Detail-Banner: Ablehnen · Vorgang freigeben (links negativ, rechts positiv)
- * Akut / unter Schwelle → nur Info (keine Buttons).
+ * Detail-Banner: Ablehnen · (optional) Selbst begutachten · Direkt Bärenwald
+ * Akut / unter Schwelle → nur Info.
+ * Override aus hm_pruefung: nur Direkt Bärenwald.
  */
 export function OrgMeldungAktionBanner({
   lead,
@@ -36,13 +42,97 @@ export function OrgMeldungAktionBanner({
 }: Props) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [hasHm, setHasHm] = useState(false);
   const { runBusy } = usePortalBusy();
 
-  const status = lead.hv_meldung_status ?? "neu";
-  if (status !== "neu") return null;
+  const status = (lead.hv_meldung_status ?? "neu").trim().toLowerCase();
+  const isNeu = status === "neu";
+  const isHmPruefung = status === "hm_pruefung";
+
+  useEffect(() => {
+    const oid = lead.kunde_objekt_id?.trim();
+    if (!oid || (!isNeu && !isHmPruefung)) {
+      setHasHm(false);
+      return;
+    }
+    let cancelled = false;
+    void fetch(
+      `/api/org/objekte/kontakte?objektId=${encodeURIComponent(oid)}`
+    )
+      .then((r) => r.json())
+      .then((j: { kontakte?: Array<{ rolle?: string }> }) => {
+        if (cancelled) return;
+        setHasHm(
+          (j.kontakte ?? []).some(
+            (k) => String(k.rolle ?? "").toLowerCase() === "hausmeister"
+          )
+        );
+      })
+      .catch(() => {
+        if (!cancelled) setHasHm(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [lead.kunde_objekt_id, isNeu, isHmPruefung]);
+
   if (lead.einladung_status === "offen") return null;
-  // HV-Selbstanlage: keine Start-Freigabe (läuft direkt als Angebot eingefordert)
   if ((lead.erfassung_von ?? "").toLowerCase() === "organisation") return null;
+
+  if (isHmPruefung) {
+    const actOverride = async () => {
+      setBusy(true);
+      setError(null);
+      try {
+        await runBusy(async () => {
+          const res = await fetch("/api/org/meldung-aktion", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              leadId: lead.id,
+              aktion: "direkt_baerenwald",
+            }),
+          });
+          const json = (await res.json()) as { error?: string };
+          if (!res.ok) {
+            setError(json.error ?? "Aktion fehlgeschlagen.");
+            return;
+          }
+          orgPortalToast.angebotEingefordert();
+          onUpdated();
+        });
+      } finally {
+        setBusy(false);
+      }
+    };
+
+    return (
+      <div className="mb-4 space-y-2 rounded-xl border border-border-default bg-white p-4">
+        <p className="portal-text-card-title">Hausmeister-Prüfung läuft</p>
+        <p className="portal-text-body text-text-secondary">
+          Checkliste unter Tab „Hausmeister“. Sie können jederzeit an Bärenwald
+          übergeben.
+        </p>
+        <div className="portal-action-row">
+          <button
+            type="button"
+            disabled={busy}
+            onClick={() => void actOverride()}
+            className="portal-action-btn portal-action-btn--primary"
+          >
+            Direkt Bärenwald beauftragen
+          </button>
+        </div>
+        {error ? (
+          <p className="portal-text-meta font-semibold text-red-700" role="alert">
+            {error}
+          </p>
+        ) : null}
+      </div>
+    );
+  }
+
+  if (!isNeu) return null;
 
   const funnelDa = funnelDirektauftragFromDaten(lead.funnel_daten);
   const entfaellt = hvFreigabeEntfaellt({
@@ -50,7 +140,6 @@ export function OrgMeldungAktionBanner({
     bypassGrund: lead.freigabe_bypass_grund,
     funnelDirektauftrag: funnelDa,
     hvMeldungStatus: lead.hv_meldung_status,
-    // Neu-Meldung: noch kein Angebot — Schwelle gilt nicht über Preisindikation
     angebotZugestellt: false,
   });
   const infoOnly =
@@ -72,7 +161,6 @@ export function OrgMeldungAktionBanner({
     );
   }
 
-  // Echter Direktauftrag ohne gesetzten Bypass-Kind: nur dann Akut-Info
   if (infoOnly) {
     return (
       <div className="mb-4">
@@ -81,7 +169,7 @@ export function OrgMeldungAktionBanner({
     );
   }
 
-  const act = async (aktion: "angebot_einfordern" | "ablehnen") => {
+  const act = async (aktion: Aktion) => {
     setBusy(true);
     setError(null);
     try {
@@ -96,8 +184,9 @@ export function OrgMeldungAktionBanner({
           setError(json.error ?? "Aktion fehlgeschlagen.");
           return;
         }
-        if (aktion === "angebot_einfordern") orgPortalToast.angebotEingefordert();
-        else orgPortalToast.meldungAbgelehnt();
+        if (aktion === "hm_begutachten") orgPortalToast.hmBegutachten();
+        else if (aktion === "ablehnen") orgPortalToast.meldungAbgelehnt();
+        else orgPortalToast.angebotEingefordert();
         onUpdated();
       });
     } finally {
@@ -108,22 +197,33 @@ export function OrgMeldungAktionBanner({
   return (
     <div className="mb-4 space-y-2 rounded-xl border border-border-default bg-white p-4">
       <p className="portal-text-card-title">Freigabe erforderlich</p>
-      <div className="portal-action-row">
-        {HV_MELDUNG_ACTIONS.map((a) => (
+      <div className="portal-action-row flex-wrap">
+        <button
+          type="button"
+          disabled={busy}
+          onClick={() => void act("ablehnen")}
+          className="portal-action-btn portal-action-btn--secondary"
+        >
+          Ablehnen
+        </button>
+        {hasHm ? (
           <button
-            key={a.id}
             type="button"
             disabled={busy}
-            onClick={() => void act(a.id)}
-            className={
-              a.variant === "danger"
-                ? "portal-action-btn portal-action-btn--secondary"
-                : "portal-action-btn portal-action-btn--primary"
-            }
+            onClick={() => void act("hm_begutachten")}
+            className="portal-action-btn portal-action-btn--secondary"
           >
-            {a.label}
+            Selbst begutachten (Hausmeister)
           </button>
-        ))}
+        ) : null}
+        <button
+          type="button"
+          disabled={busy}
+          onClick={() => void act("direkt_baerenwald")}
+          className="portal-action-btn portal-action-btn--primary"
+        >
+          Direkt Bärenwald beauftragen
+        </button>
       </div>
       {error ? (
         <p className="portal-text-meta font-semibold text-red-700" role="alert">

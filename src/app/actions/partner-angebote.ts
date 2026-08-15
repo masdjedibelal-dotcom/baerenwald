@@ -323,3 +323,102 @@ export async function submitPartnerRechnung(
   revalidatePath("/partner");
   return { ok: true };
 }
+
+/**
+ * Partner löscht eigene Auftrags-Unterlage oder Rechnung
+ * (`angebot_handwerker.hw_angebot_anhang_urls` / `hw_rechnung_*`).
+ */
+export async function deletePartnerHwAuftragDokument(input: {
+  anfrageId: string;
+  art: "unterlage" | "rechnung";
+  /** Index in der aktuellen Anhänge-Liste (0-basiert). */
+  index?: number;
+}): Promise<PartnerAngebotSubmitResult> {
+  if (!isSupabaseConfigured()) {
+    return { ok: false, error: "Datenbank nicht konfiguriert." };
+  }
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user?.email) {
+    return { ok: false, error: "Nicht angemeldet." };
+  }
+
+  const link = await linkPortalHandwerkerToAuthUser({
+    userId: user.id,
+    email: user.email,
+  });
+  if (!link.ok) return { ok: false, error: link.error };
+
+  const anfrageId = input.anfrageId.trim();
+  if (!anfrageId) return { ok: false, error: "Anfrage fehlt." };
+
+  const { data: row, error } = await supabaseAdmin
+    .from("angebot_handwerker")
+    .select(
+      "id, handwerker_id, status, hw_status, hw_angebot_pdf_url, hw_angebot_anhang_urls, hw_rechnung_pdf_url, hw_rechnung_eingereicht_at"
+    )
+    .eq("id", anfrageId)
+    .maybeSingle();
+
+  if (error || !row) {
+    return { ok: false, error: "Anfrage nicht gefunden." };
+  }
+  if (String(row.handwerker_id) !== link.handwerkerId) {
+    return { ok: false, error: "Keine Berechtigung." };
+  }
+
+  const st = String(row.status ?? "").toLowerCase();
+  if (st === "storniert" || st === "abgelehnt") {
+    return {
+      ok: false,
+      error: "Dokument kann in diesem Status nicht gelöscht werden.",
+    };
+  }
+
+  if (input.art === "rechnung") {
+    if (!row.hw_rechnung_pdf_url && !row.hw_rechnung_eingereicht_at) {
+      return { ok: false, error: "Keine Rechnung vorhanden." };
+    }
+    const { error: upErr } = await supabaseAdmin
+      .from("angebot_handwerker")
+      .update({
+        hw_rechnung_pdf_url: null,
+        hw_rechnung_eingereicht_at: null,
+      })
+      .eq("id", anfrageId)
+      .eq("handwerker_id", link.handwerkerId);
+    if (upErr) return { ok: false, error: upErr.message };
+    revalidatePath("/partner");
+    return { ok: true };
+  }
+
+  const paths = parseHwAnhangStoragePaths(
+    row.hw_angebot_anhang_urls,
+    (row.hw_angebot_pdf_url as string | null) ?? null
+  );
+  if (!paths.length) {
+    return { ok: false, error: "Keine Unterlage vorhanden." };
+  }
+  const index = typeof input.index === "number" ? input.index : -1;
+  if (index < 0 || index >= paths.length) {
+    return { ok: false, error: "Unterlage nicht gefunden." };
+  }
+
+  const next = paths.filter((_, i) => i !== index);
+  const { error: upErr } = await supabaseAdmin
+    .from("angebot_handwerker")
+    .update({
+      hw_angebot_pdf_url: next[0] ?? null,
+      hw_angebot_anhang_urls: next.length ? next : null,
+    })
+    .eq("id", anfrageId)
+    .eq("handwerker_id", link.handwerkerId);
+
+  if (upErr) return { ok: false, error: upErr.message };
+
+  revalidatePath("/partner");
+  return { ok: true };
+}

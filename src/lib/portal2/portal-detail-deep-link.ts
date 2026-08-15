@@ -10,7 +10,8 @@ export type PortalDeepLinkTab =
   | "angebot"
   | "bautagebuch"
   | "dokumente"
-  | "feedback";
+  | "feedback"
+  | "hm_pruefung";
 
 const TAB_ALIASES: Record<string, PortalDeepLinkTab> = {
   uebersicht: "uebersicht",
@@ -23,6 +24,9 @@ const TAB_ALIASES: Record<string, PortalDeepLinkTab> = {
   doku: "bautagebuch",
   dokumente: "dokumente",
   feedback: "feedback",
+  hm_pruefung: "hm_pruefung",
+  hausmeister: "hm_pruefung",
+  befund: "hm_pruefung",
 };
 
 export function normalizePortalDeepLinkTab(
@@ -182,7 +186,7 @@ export function ensurePortalVorgangNotificationHref(opts: {
 /** HV Section-Nav Ids vs. einfache PortalVorgangDetail-Tabs. */
 export function portalDeepLinkTabForHvNav(
   tab: PortalDeepLinkTab
-): "uebersicht" | "angebot" | "bautagebuch" | "dokumente" {
+): "uebersicht" | "angebot" | "bautagebuch" | "dokumente" | "hm_pruefung" {
   if (tab === "feedback") return "uebersicht";
   return tab;
 }

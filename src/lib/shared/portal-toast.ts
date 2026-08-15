@@ -166,6 +166,30 @@ export const orgPortalToast = {
       "Bärenwald erstellt ein Angebot. Sie werden informiert, sobald es zur Freigabe bereit ist."
     );
   },
+  hmBegutachten() {
+    portalToastSuccess(
+      "Hausmeister-Prüfung gestartet",
+      "Checkliste ist im Tab „Hausmeister“ bereit. Optional wurde der Kontakt per E-Mail informiert."
+    );
+  },
+  hmErledigt() {
+    portalToastSuccess(
+      "Vom Hausmeister erledigt",
+      "Der Vorgang ist abgeschlossen — ohne Beauftragung an Bärenwald."
+    );
+  },
+  hmFachfirmaAngebot() {
+    portalToastSuccess(
+      "An Bärenwald übergeben",
+      "Vorbefund liegt vor. Bärenwald erstellt ein Angebot."
+    );
+  },
+  hmFachfirmaAkut() {
+    portalToastSuccess(
+      "Akut an Bärenwald",
+      "Soforteinsatz angefordert. Vorbefund liegt für Disposition bereit."
+    );
+  },
   meldungAbgelehnt() {
     portalToastWarning(
       "Meldung abgelehnt",

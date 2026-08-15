@@ -15,7 +15,7 @@ export async function GET() {
   }
 
   const selectCols =
-    "id, titel, strasse, hausnummer, plz, ort, melde_slug, melde_aktiv, einheiten_hinweis, notizen_intern, kostenstelle_nr, freigabe_schwelle_eur, notfall_direkt, versicherer, versicherungs_nr, selbstbehalt_eur, cover_url, created_at";
+    "id, titel, strasse, hausnummer, plz, ort, melde_slug, melde_aktiv, einheiten_hinweis, notizen_intern, kostenstelle_nr, freigabe_schwelle_eur, notfall_direkt, versicherer, versicherungs_nr, selbstbehalt_eur, automatische_schadenakte, cover_url, created_at";
 
   const { data, error } = await supabaseAdmin
     .from("kunden_objekte")
@@ -23,7 +23,12 @@ export async function GET() {
     .eq("kunde_id", session.kunde.id)
     .order("titel", { ascending: true });
 
-  if (error && /cover_url|versicherer|versicherungs_nr|selbstbehalt/i.test(error.message)) {
+  if (
+    error &&
+    /cover_url|versicherer|versicherungs_nr|selbstbehalt|automatische_schadenakte/i.test(
+      error.message
+    )
+  ) {
     const fallbackCols =
       "id, titel, strasse, hausnummer, plz, ort, melde_slug, melde_aktiv, einheiten_hinweis, notizen_intern, kostenstelle_nr, freigabe_schwelle_eur, created_at";
     const { data: healed, error: reloadErr } = await supabaseAdmin
@@ -81,6 +86,7 @@ type ObjektBody = {
   versicherer?: string | null;
   versicherungs_nr?: string | null;
   selbstbehalt_eur?: number | null;
+  automatische_schadenakte?: boolean | null;
 };
 
 /** Spec E2: aktive Vorgänge blockieren Löschen. */
@@ -243,6 +249,9 @@ export async function PATCH(req: Request) {
       body.selbstbehalt_eur == null ? NaN : Number(body.selbstbehalt_eur);
     patch.selbstbehalt_eur = Number.isFinite(n) ? n : null;
   }
+  if (body.automatische_schadenakte !== undefined) {
+    patch.automatische_schadenakte = Boolean(body.automatische_schadenakte);
+  }
   if (body.typ !== undefined) {
     patch.typ = body.typ?.trim() || null;
   }
@@ -282,12 +291,15 @@ export async function PATCH(req: Request) {
 
   if (
     error &&
-    /versicherer|versicherungs_nr|selbstbehalt/i.test(error.message)
+    /versicherer|versicherungs_nr|selbstbehalt|automatische_schadenakte/i.test(
+      error.message
+    )
   ) {
     const {
       versicherer: _v,
       versicherungs_nr: _vn,
       selbstbehalt_eur: _s,
+      automatische_schadenakte: _a,
       ...withoutVers
     } = patch;
     ({ data, error } = await supabaseAdmin

@@ -24,6 +24,8 @@ export type PortalShellNavItem = {
   /** Fallback Lucide, wenn kein navKey. */
   icon?: LucideIcon;
   badge?: number;
+  /** z. B. „Kommt bald“ neben dem Label */
+  tag?: string;
 };
 
 export type PortalShellCreateAction = {
@@ -277,6 +279,18 @@ export function PortalShell({
                           size={16}
                         />
                         {item.label}
+                        {item.tag ? (
+                          <span
+                            className={cn(
+                              "ml-1.5 shrink-0 rounded-full px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide",
+                              active
+                                ? "bg-[var(--accent-light,#E7F1E9)] text-[var(--org-primary,var(--accent,#2E7D52))]"
+                                : "bg-white/15 text-white/85"
+                            )}
+                          >
+                            {item.tag}
+                          </span>
+                        ) : null}
                       </span>
                       {item.badge != null && item.badge > 0 ? (
                         <PortalCountBadge
@@ -384,7 +398,9 @@ export function PortalShell({
                       const active =
                         activeNavId === item.id ||
                         (item.id === "mehr" &&
-                          ["leistungen", "profil"].includes(activeNavId));
+                          ["leistungen", "marktplatz", "profil"].includes(
+                            activeNavId
+                          ));
                       return (
                         <button
                           key={item.id}

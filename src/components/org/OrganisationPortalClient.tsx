@@ -17,17 +17,17 @@ import { OrganisationMehrScreen } from "@/components/org/OrganisationMehrScreen"
 import { OrganisationWhitelabelGate } from "@/components/org/OrganisationWhitelabelGate";
 import { OrganisationVorgaengeSection } from "@/components/org/OrganisationVorgaengeSection";
 
-const OrganisationAktiveAbosPanel = dynamic(
-  () =>
-    import("@/components/org/OrganisationAktiveAbosPanel").then(
-      (m) => m.OrganisationAktiveAbosPanel
-    ),
-  { ssr: false, loading: () => null }
-);
 const OrganisationServicepaketePanel = dynamic(
   () =>
     import("@/components/org/OrganisationServicepaketePanel").then(
       (m) => m.OrganisationServicepaketePanel
+    ),
+  { ssr: false, loading: () => null }
+);
+const OrganisationMarktplatzPanel = dynamic(
+  () =>
+    import("@/components/org/OrganisationMarktplatzPanel").then(
+      (m) => m.OrganisationMarktplatzPanel
     ),
   { ssr: false, loading: () => null }
 );
@@ -118,6 +118,7 @@ type OrgSection =
   | "vorgaenge"
   | "objekte"
   | "leistungen"
+  | "marktplatz"
   | "profil"
   | "mehr";
 
@@ -184,6 +185,7 @@ function portalSectionFromParam(raw: string | null): OrgSection | null {
     raw === "objekte" ||
     raw === "profil" ||
     raw === "leistungen" ||
+    raw === "marktplatz" ||
     raw === "mehr"
   ) {
     return raw;
@@ -273,14 +275,30 @@ export function OrganisationPortalClient({
     kunde.org_anzeigename?.trim() || kunde.name?.trim() || "Verwaltung";
 
   const vorgaengeItems = useMemo(() => {
-    if (initialVorgaenge?.length) return initialVorgaenge;
-    return buildKundeVorgaenge({
-      leads: leads as Parameters<typeof buildKundeVorgaenge>[0]["leads"],
-      angebote: angebote as Parameters<typeof buildKundeVorgaenge>[0]["angebote"],
-      auftraege,
-      hvPortalMode: true,
+    const base = initialVorgaenge?.length
+      ? initialVorgaenge
+      : buildKundeVorgaenge({
+          leads: leads as Parameters<typeof buildKundeVorgaenge>[0]["leads"],
+          angebote: angebote as Parameters<
+            typeof buildKundeVorgaenge
+          >[0]["angebote"],
+          auftraege,
+          hvPortalMode: true,
+        });
+    if (!Object.keys(dokumenteByLeadId).length) return base;
+    return base.map((item) => {
+      const leadId = item.leadId ?? item.id;
+      const extra = dokumenteByLeadId[leadId];
+      if (!extra?.length) return item;
+      const existing = item.dokumente ?? [];
+      const seen = new Set(existing.map((d) => d.href));
+      const merged = [
+        ...existing,
+        ...extra.filter((d) => d.href && !seen.has(d.href)),
+      ];
+      return { ...item, dokumente: merged };
     });
-  }, [initialVorgaenge, leads, angebote, auftraege]);
+  }, [initialVorgaenge, leads, angebote, auftraege, dokumenteByLeadId]);
 
   const auftragByLeadId = useMemo(
     () =>
@@ -556,7 +574,7 @@ export function OrganisationPortalClient({
               leads={leads}
               angebote={angebote}
               auftraege={auftraege}
-              initialVorgaenge={initialVorgaenge}
+              initialVorgaenge={vorgaengeItems}
               initialFilter={
                 vorgangFilterIntent ?? initialVorgangFilter ?? "alle"
               }
@@ -606,14 +624,15 @@ export function OrganisationPortalClient({
 
           {section === "leistungen" ? (
             <div className="space-y-10">
-              <OrganisationServicepaketePanel onRequested={refresh} />
+              <OrganisationServicepaketePanel />
               <OrganisationMieterwechselPanel
                 objekte={objekte}
                 onRequested={refresh}
               />
-              <OrganisationAktiveAbosPanel />
             </div>
           ) : null}
+
+          {section === "marktplatz" ? <OrganisationMarktplatzPanel /> : null}
 
           {section === "profil" ? (
             <OrganisationEinstellungenScreen

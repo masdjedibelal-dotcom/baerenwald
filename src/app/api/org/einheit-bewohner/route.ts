@@ -107,6 +107,10 @@ async function createBewohnerWithWohnung(input: {
   etage?: string;
   email?: string;
   telefon?: string;
+  rolle?: "mieter" | "eigentuemer";
+  sondereigentum_verwaltung?: boolean;
+  miete_hinweis?: string | null;
+  notiz?: string | null;
 }): Promise<
   | { ok: true; bewohnerId: string; einheitId: string }
   | { ok: false; error: string }
@@ -127,6 +131,7 @@ async function createBewohnerWithWohnung(input: {
 
   const bezeichnung = input.wohnung?.trim() || "Allgemein";
   const etage = input.etage?.trim() || null;
+  const rolle = input.rolle === "eigentuemer" ? "eigentuemer" : "mieter";
 
   const { data: existing } = await supabaseAdmin
     .from("objekt_einheiten")
@@ -175,22 +180,51 @@ async function createBewohnerWithWohnung(input: {
     }
   }
 
-  const { data: bewohner, error: bewErr } = await supabaseAdmin
+  const insertRow: Record<string, unknown> = {
+    kunde_id: input.kundeId,
+    objekt_einheit_id: einheitId,
+    name,
+    telefon: input.telefon?.trim() || null,
+    email: input.email?.trim() || null,
+    rolle,
+    sondereigentum_verwaltung:
+      rolle === "eigentuemer"
+        ? Boolean(input.sondereigentum_verwaltung)
+        : false,
+    miete_hinweis:
+      rolle === "mieter" ? input.miete_hinweis?.trim() || null : null,
+    notiz: input.notiz?.trim() || null,
+  };
+
+  let { data: bewohner, error: bewErr } = await supabaseAdmin
     .from("einheit_bewohner")
-    .insert({
-      kunde_id: input.kundeId,
-      objekt_einheit_id: einheitId,
-      name,
-      telefon: input.telefon?.trim() || null,
-      email: input.email?.trim() || null,
-    })
+    .insert(insertRow)
     .select("id")
     .single();
+
+  if (
+    bewErr &&
+    /rolle|sondereigentum|miete_hinweis|notiz/i.test(bewErr.message)
+  ) {
+    const legacy = await supabaseAdmin
+      .from("einheit_bewohner")
+      .insert({
+        kunde_id: input.kundeId,
+        objekt_einheit_id: einheitId,
+        name,
+        telefon: input.telefon?.trim() || null,
+        email: input.email?.trim() || null,
+      })
+      .select("id")
+      .single();
+    bewohner = legacy.data;
+    bewErr = legacy.error;
+  }
 
   if (bewErr || !bewohner?.id) {
     return {
       ok: false,
-      error: bewErr?.message ?? "Mieter konnte nicht angelegt werden.",
+      error: bewErr?.message ?? "Person konnte nicht angelegt werden.",
     };
   }
   return { ok: true, bewohnerId: bewohner.id, einheitId };
@@ -288,12 +322,17 @@ export async function POST(req: Request) {
     etage?: string;
     email?: string;
     telefon?: string;
+    rolle?: "mieter" | "eigentuemer";
+    sondereigentum_verwaltung?: boolean;
+    miete_hinweis?: string;
+    notiz?: string;
   };
   const name = String(body.name ?? "").trim();
   if (!name) {
     return NextResponse.json({ error: "Name erforderlich." }, { status: 400 });
   }
 
+  const rolle = body.rolle === "eigentuemer" ? "eigentuemer" : "mieter";
   const objektId = String(body.objektId ?? "").trim();
   const einheitId = String(body.einheitId ?? "").trim();
 
@@ -306,6 +345,10 @@ export async function POST(req: Request) {
       etage: body.etage,
       email: body.email,
       telefon: body.telefon,
+      rolle,
+      sondereigentum_verwaltung: body.sondereigentum_verwaltung,
+      miete_hinweis: body.miete_hinweis,
+      notiz: body.notiz,
     });
     if (!created.ok) {
       return NextResponse.json({ error: created.error }, { status: 400 });
@@ -328,17 +371,38 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: einheit.error }, { status: einheit.status });
   }
 
-  const { data, error } = await supabaseAdmin
+  const insertRow: Record<string, unknown> = {
+    kunde_id: session.kunde.id,
+    objekt_einheit_id: einheit.id,
+    name,
+    telefon: body.telefon?.trim() || null,
+    email: body.email?.trim() || null,
+    rolle,
+    sondereigentum_verwaltung:
+      rolle === "eigentuemer" ? Boolean(body.sondereigentum_verwaltung) : false,
+    miete_hinweis: rolle === "mieter" ? body.miete_hinweis?.trim() || null : null,
+    notiz: body.notiz?.trim() || null,
+  };
+
+  let { data, error } = await supabaseAdmin
     .from("einheit_bewohner")
-    .insert({
-      kunde_id: session.kunde.id,
-      objekt_einheit_id: einheit.id,
-      name,
-      telefon: body.telefon?.trim() || null,
-      email: body.email?.trim() || null,
-    })
+    .insert(insertRow)
     .select("id")
     .single();
+
+  if (error && /rolle|sondereigentum|miete_hinweis|notiz/i.test(error.message)) {
+    ({ data, error } = await supabaseAdmin
+      .from("einheit_bewohner")
+      .insert({
+        kunde_id: session.kunde.id,
+        objekt_einheit_id: einheit.id,
+        name,
+        telefon: body.telefon?.trim() || null,
+        email: body.email?.trim() || null,
+      })
+      .select("id")
+      .single());
+  }
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
@@ -361,6 +425,10 @@ export async function PATCH(req: Request) {
     name?: string;
     telefon?: string;
     email?: string;
+    rolle?: "mieter" | "eigentuemer";
+    sondereigentum_verwaltung?: boolean;
+    miete_hinweis?: string | null;
+    notiz?: string | null;
   };
   const id = String(body.id ?? "").trim();
   if (!id) {
@@ -373,6 +441,18 @@ export async function PATCH(req: Request) {
   if (body.name != null) patch.name = String(body.name).trim();
   if (body.telefon != null) patch.telefon = body.telefon.trim() || null;
   if (body.email != null) patch.email = body.email.trim() || null;
+  if (body.rolle === "mieter" || body.rolle === "eigentuemer") {
+    patch.rolle = body.rolle;
+  }
+  if (body.sondereigentum_verwaltung !== undefined) {
+    patch.sondereigentum_verwaltung = Boolean(body.sondereigentum_verwaltung);
+  }
+  if (body.miete_hinweis !== undefined) {
+    patch.miete_hinweis = body.miete_hinweis?.trim() || null;
+  }
+  if (body.notiz !== undefined) {
+    patch.notiz = body.notiz?.trim() || null;
+  }
 
   const { error } = await supabaseAdmin
     .from("einheit_bewohner")

@@ -224,7 +224,20 @@ export async function redeemPortalEinladung(opts: {
   }
 
   const email = opts.email.trim().toLowerCase();
-  const name = opts.name?.trim() || email.split("@")[0] || "Mieter";
+  const name = opts.name?.trim() || email.split("@")[0] || "Nutzer";
+
+  let inviteRolle: "mieter" | "eigentuemer" = "mieter";
+  if (row.bewohner_id) {
+    const { data: bew } = await supabaseAdmin
+      .from("einheit_bewohner")
+      .select("rolle")
+      .eq("id", row.bewohner_id)
+      .maybeSingle();
+    if (String(bew?.rolle ?? "") === "eigentuemer") {
+      inviteRolle = "eigentuemer";
+    }
+  }
+  const portalModus = inviteRolle === "eigentuemer" ? "eigentuemer" : "privat";
 
   // Bestehenden Kundenstamm zur E-Mail nutzen oder anlegen (kein Org-Stamm).
   let portalKundeId: string | null = null;
@@ -250,7 +263,7 @@ export async function redeemPortalEinladung(opts: {
           auth_user_id: opts.authUserId,
           name,
           email,
-          portal_modus: "privat",
+          portal_modus: portalModus,
         })
         .eq("id", portalKundeId);
     } else {
@@ -260,7 +273,7 @@ export async function redeemPortalEinladung(opts: {
           name,
           email,
           auth_user_id: opts.authUserId,
-          portal_modus: "privat",
+          portal_modus: portalModus,
           typ: "privat",
         })
         .select("id")
@@ -286,6 +299,7 @@ export async function redeemPortalEinladung(opts: {
           name,
           telefon: opts.telefon?.trim() || null,
           aktiv: true,
+          portal_kunde_id: portalKundeId,
         })
         .eq("id", row.bewohner_id)
         .eq("kunde_id", row.kunde_id);
@@ -307,8 +321,31 @@ export async function redeemPortalEinladung(opts: {
           email,
           telefon: opts.telefon?.trim() || null,
           aktiv: true,
+          rolle: inviteRolle,
+          portal_kunde_id: portalKundeId,
         });
+      } else {
+        await supabaseAdmin
+          .from("einheit_bewohner")
+          .update({ portal_kunde_id: portalKundeId })
+          .eq("id", existingB.id);
       }
+    }
+  }
+
+  // Eigentümer-Sicht: Objekt zuordnen
+  if (inviteRolle === "eigentuemer" && row.objekt_id && portalKundeId) {
+    const { data: existingLink } = await supabaseAdmin
+      .from("eigentuemer_objekte")
+      .select("id")
+      .eq("kunde_id", portalKundeId)
+      .eq("kunde_objekt_id", row.objekt_id)
+      .maybeSingle();
+    if (!existingLink) {
+      await supabaseAdmin.from("eigentuemer_objekte").insert({
+        kunde_id: portalKundeId,
+        kunde_objekt_id: row.objekt_id,
+      });
     }
   }
 

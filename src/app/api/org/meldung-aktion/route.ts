@@ -1,7 +1,10 @@
 import { NextResponse } from "next/server";
 
-import { notifyCrmOrgPortal } from "@/lib/org/notify-crm-org";
+import { createLeadBefundAction } from "@/app/actions/lead-befund";
 import { canOfferKleinreparatur } from "@/lib/org/hv-meldung-workflow";
+import { notifyCrmOrgPortal } from "@/lib/org/notify-crm-org";
+import { notifyHausmeisterPruefung } from "@/lib/org/notify-hausmeister-pruefung";
+import { loadObjektHausmeisterKontakt } from "@/lib/org/objekt-hausmeister";
 import { requireOrganisationSession } from "@/lib/org/require-org-session";
 import { requireOrgWrite } from "@/lib/org/assert-org-objekt";
 import { supabaseAdmin } from "@/lib/supabase";
@@ -12,6 +15,8 @@ export const runtime = "nodejs";
 
 type Aktion =
   | "angebot_einfordern"
+  | "direkt_baerenwald"
+  | "hm_begutachten"
   | "ablehnen"
   | "kleinreparatur_freigeben";
 
@@ -21,7 +26,10 @@ type Body = {
 };
 
 /**
- * HV-Aktion auf neuer Meldung: Angebot einfordern / Ablehnen / (Legacy) Kleinreparatur.
+ * HV-Aktion auf Meldung:
+ * - hm_begutachten (neu → hm_pruefung, nur mit HM-Kontakt)
+ * - direkt_baerenwald / angebot_einfordern (neu|hm_pruefung → angebot_eingefordert)
+ * - ablehnen / kleinreparatur (Legacy)
  */
 export async function POST(req: Request) {
   const session = await requireOrganisationSession();
@@ -36,12 +44,14 @@ export async function POST(req: Request) {
   const body = (await req.json()) as Body;
   const leadId = String(body.leadId ?? "").trim();
   const aktion = body.aktion;
-  if (
-    !leadId ||
-    !["angebot_einfordern", "ablehnen", "kleinreparatur_freigeben"].includes(
-      aktion
-    )
-  ) {
+  const allowed: Aktion[] = [
+    "angebot_einfordern",
+    "direkt_baerenwald",
+    "hm_begutachten",
+    "ablehnen",
+    "kleinreparatur_freigeben",
+  ];
+  if (!leadId || !allowed.includes(aktion)) {
     return NextResponse.json({ error: "Ungültige Anfrage." }, { status: 400 });
   }
 
@@ -60,7 +70,143 @@ export async function POST(req: Request) {
   if (lead.anlass !== "meldung") {
     return NextResponse.json({ error: "Kein Meldungs-Vorgang." }, { status: 400 });
   }
-  if ((lead.hv_meldung_status ?? "neu") !== "neu") {
+
+  const hvStatus = (lead.hv_meldung_status ?? "neu").trim().toLowerCase();
+
+  // --- hm_begutachten -------------------------------------------------------
+  if (aktion === "hm_begutachten") {
+    if (hvStatus !== "neu") {
+      return NextResponse.json(
+        { error: "Hausmeister-Prüfung nur aus Status „Neu“ möglich." },
+        { status: 409 }
+      );
+    }
+
+    const { hvFreigabeEntfaellt } = await import("@/lib/org/freigabe-bypass");
+    const funnelDa =
+      lead.funnel_daten &&
+      typeof lead.funnel_daten === "object" &&
+      !Array.isArray(lead.funnel_daten)
+        ? (lead.funnel_daten as { direktauftrag?: unknown }).direktauftrag ===
+          true
+        : false;
+    if (
+      hvFreigabeEntfaellt({
+        orgFreigabeStatus: lead.org_freigabe_status,
+        bypassGrund: lead.freigabe_bypass_grund,
+        funnelDirektauftrag: funnelDa,
+        hvMeldungStatus: lead.hv_meldung_status,
+        angebotZugestellt: false,
+      })
+    ) {
+      return NextResponse.json(
+        { error: "Akut-Pfad — Hausmeister-Prüfung entfällt." },
+        { status: 409 }
+      );
+    }
+
+    const hm = await loadObjektHausmeisterKontakt(lead.kunde_objekt_id);
+    if (!hm) {
+      return NextResponse.json(
+        {
+          error:
+            "Kein Hausmeister-Kontakt am Objekt. Bitte unter Objektakte anlegen.",
+        },
+        { status: 400 }
+      );
+    }
+
+    const { error: updErr } = await supabaseAdmin
+      .from("leads")
+      .update({ hv_meldung_status: "hm_pruefung" })
+      .eq("id", leadId);
+    if (updErr) {
+      return NextResponse.json({ error: updErr.message }, { status: 500 });
+    }
+
+    const befundRes = await createLeadBefundAction({
+      leadId,
+      durchgefuehrtVon: hm.name,
+      objektKontaktId: hm.id,
+    });
+    if (!befundRes.ok) {
+      console.warn("[meldung-aktion] befund:", befundRes.error);
+    }
+
+    if (hm.email) {
+      void notifyHausmeisterPruefung({
+        leadId,
+        toEmail: hm.email,
+        kontaktName: hm.name,
+      }).then((r) => {
+        if (!r.ok && !r.skipped) {
+          console.warn("[meldung-aktion] HM-Mail:", r.error);
+        }
+      });
+    }
+
+    return NextResponse.json({
+      ok: true,
+      status: "hm_pruefung",
+      befundId: befundRes.ok ? befundRes.befund.id : null,
+    });
+  }
+
+  // --- direkt_baerenwald / angebot_einfordern (Override aus hm_pruefung) ----
+  if (aktion === "direkt_baerenwald" || aktion === "angebot_einfordern") {
+    if (hvStatus !== "neu" && hvStatus !== "hm_pruefung") {
+      return NextResponse.json(
+        { error: "Für diese Meldung ist die Aktion nicht mehr möglich." },
+        { status: 409 }
+      );
+    }
+
+    if (hvStatus === "neu") {
+      const { hvFreigabeEntfaellt } = await import("@/lib/org/freigabe-bypass");
+      const funnelDa =
+        lead.funnel_daten &&
+        typeof lead.funnel_daten === "object" &&
+        !Array.isArray(lead.funnel_daten)
+          ? (lead.funnel_daten as { direktauftrag?: unknown }).direktauftrag ===
+            true
+          : false;
+      if (
+        hvFreigabeEntfaellt({
+          orgFreigabeStatus: lead.org_freigabe_status,
+          bypassGrund: lead.freigabe_bypass_grund,
+          funnelDirektauftrag: funnelDa,
+          hvMeldungStatus: lead.hv_meldung_status,
+          angebotZugestellt: false,
+        })
+      ) {
+        return NextResponse.json(
+          { error: "Keine Freigabe notwendig (Akut oder unter Schwelle)." },
+          { status: 409 }
+        );
+      }
+    }
+
+    const { error: updErr } = await supabaseAdmin
+      .from("leads")
+      .update({ hv_meldung_status: "angebot_eingefordert" })
+      .eq("id", leadId);
+    if (updErr) {
+      return NextResponse.json({ error: updErr.message }, { status: 500 });
+    }
+
+    const crmNotify = await notifyCrmOrgPortal({ leadId, typ: "meldung" });
+    if (!crmNotify.ok) {
+      console.warn("[meldung-aktion] CRM-Notify:", crmNotify.error, {
+        leadId,
+        skipped: crmNotify.skipped === true,
+      });
+    }
+
+    return NextResponse.json({ ok: true, status: "angebot_eingefordert" });
+  }
+
+  // --- ablehnen / kleinreparatur (nur aus neu) ------------------------------
+  if (hvStatus !== "neu") {
     return NextResponse.json(
       { error: "Für diese Meldung ist die Aktion nicht mehr möglich." },
       { status: 409 }
@@ -80,7 +226,6 @@ export async function POST(req: Request) {
       bypassGrund: lead.freigabe_bypass_grund,
       funnelDirektauftrag: funnelDa,
       hvMeldungStatus: lead.hv_meldung_status,
-      // Aktion vor Angebotszustellung — Schwelle greift nicht
       angebotZugestellt: false,
     })
   ) {
@@ -103,13 +248,7 @@ export async function POST(req: Request) {
     );
   }
 
-  const status =
-    aktion === "angebot_einfordern"
-      ? "angebot_eingefordert"
-      : aktion === "ablehnen"
-        ? "abgelehnt"
-        : "kleinreparatur";
-
+  const status = aktion === "ablehnen" ? "abgelehnt" : "kleinreparatur";
   const patch: Record<string, string> = { hv_meldung_status: status };
   if (aktion === "ablehnen") {
     patch.org_freigabe_status = "abgelehnt";
@@ -133,13 +272,10 @@ export async function POST(req: Request) {
     objektTitel = String(obj?.titel ?? "Objekt");
   }
 
-  if (aktion === "angebot_einfordern" || aktion === "kleinreparatur_freigeben") {
+  if (aktion === "kleinreparatur_freigeben") {
     const crmNotify = await notifyCrmOrgPortal({ leadId, typ: "meldung" });
     if (!crmNotify.ok) {
-      console.warn("[meldung-aktion] CRM-Notify fehlgeschlagen:", crmNotify.error, {
-        leadId,
-        skipped: crmNotify.skipped === true,
-      });
+      console.warn("[meldung-aktion] CRM-Notify:", crmNotify.error);
     }
   }
 
@@ -167,9 +303,6 @@ export async function POST(req: Request) {
       console.error("[meldung-aktion] org mail:", e);
     }
   }
-
-  // Keine HV-Glocke für eigene Aktionen (Freigeben/Ablehnen) —
-  // sonst landet z. B. „Angebot“ obwohl noch keines gesendet wurde.
 
   return NextResponse.json({ ok: true, status });
 }

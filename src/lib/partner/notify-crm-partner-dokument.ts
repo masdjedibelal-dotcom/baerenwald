@@ -14,6 +14,7 @@ function crmDashboardBase(): string | null {
 
 export type PartnerDokumentUploadTyp =
   | "compliance"
+  | "compliance_delete"
   | "unterlage"
   | "fachdoku"
   | "angebot"

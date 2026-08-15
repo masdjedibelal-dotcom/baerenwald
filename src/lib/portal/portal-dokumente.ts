@@ -195,6 +195,23 @@ export function dokumenteFromFachdokuSlots(
   return rows;
 }
 
+export function dokumentFromVersicherungsakte(input: {
+  leadId: string;
+  url?: string | null;
+  datum?: string | null;
+}): PortalDokument | null {
+  const href = input.url?.trim();
+  if (!href) return null;
+  return {
+    id: `versicherungsakte-lead-${input.leadId}`,
+    name: "Schadenakte Versicherung",
+    subtitle: "Versicherung",
+    datum: input.datum ?? undefined,
+    href,
+    art: "protokoll",
+  };
+}
+
 export function dokumenteFromAuftrag(
   auftrag: AuftragDokumentInput,
   opts: {

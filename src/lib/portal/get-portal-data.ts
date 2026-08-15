@@ -7,6 +7,7 @@ import { buildAngebotPortalDisplay } from "@/lib/portal/portal-display";
 import { resolvePrivatPortalTitel } from "@/lib/portal/portal-titel";
 import { splitKundePortalPipeline } from "@/lib/portal/portal-pipeline";
 import {
+  dokumentFromVersicherungsakte,
   dokumenteFromAngebot,
   dokumenteFromAuftrag,
   dokumenteFromUrls,
@@ -258,7 +259,7 @@ export async function getPortalDataForKunde(
     });
 
   const leadSelectList =
-    "id, situation, bereiche, status, vorgang_phase, created_at, plz, strasse, hausnummer, zeitraum, kontakt_name, preis_min, preis_max, budget_ca, kontakt_nachricht, funnel_daten, kunde_objekt_id, anlass, kanal, auftraggeber_kunde_id, hv_meldung_status, org_freigabe_status, freigabe_bypass_grund, melde_tracking_token, melder_name, melder_einheit, melder_telefon, melder_email, kostentraeger, kostentraeger_vorgeschlagen, versicherungs_nr";
+    "id, situation, bereiche, status, vorgang_phase, created_at, plz, strasse, hausnummer, zeitraum, kontakt_name, preis_min, preis_max, budget_ca, kontakt_nachricht, funnel_daten, kunde_objekt_id, anlass, kanal, auftraggeber_kunde_id, hv_meldung_status, org_freigabe_status, freigabe_bypass_grund, melde_tracking_token, melder_name, melder_einheit, melder_telefon, melder_email, kostentraeger, kostentraeger_vorgeschlagen, versicherungs_nr, versicherungsakte_pdf_url";
 
   let leadsQuery = supabaseAdmin
     .from("leads")
@@ -277,6 +278,25 @@ export async function getPortalDataForKunde(
     let fb = supabaseAdmin
       .from("leads")
       .select(leadSelectList)
+      .order("created_at", { ascending: false });
+    if (onlyLeadIds.length) fb = fb.in("id", onlyLeadIds);
+    else {
+      fb = fb.eq("kunde_id", kunde.id);
+      if (listMode) fb = fb.limit(PORTAL_LIST_LEAD_LIMIT);
+    }
+    const retry = await fb;
+    leads = retry.data;
+    leadsErr = retry.error;
+  }
+  if (leadsErr && /versicherungsakte_pdf_url/i.test(leadsErr.message)) {
+    const leadSelectWithoutVers = leadSelectList.replace(
+      ", versicherungsakte_pdf_url",
+      ""
+    );
+    let fb = supabaseAdmin
+      .from("leads")
+      .select(leadSelectWithoutVers)
+      .is("geloescht_am", null)
       .order("created_at", { ascending: false });
     if (onlyLeadIds.length) fb = fb.in("id", onlyLeadIds);
     else {
@@ -1007,19 +1027,35 @@ export async function getPortalDataForKunde(
 
   const mappedLeads = (leads ?? []).map((lead) => {
       const raw = lead as {
+        id?: string;
         kunde_objekt_id?: string | null;
         plz?: string | null;
+        created_at?: string | null;
+        versicherungsakte_pdf_url?: string | null;
+        funnel_daten?: unknown;
+        kontakt_nachricht?: unknown;
       };
+      const leadId = String(raw.id ?? "");
+      const baseDocs = listMode
+        ? []
+        : dokumenteFromUrls(
+            extractLeadDokumentUrls({
+              funnel_daten: raw.funnel_daten,
+              kontakt_nachricht: raw.kontakt_nachricht,
+            })
+          );
+      const versDoc =
+        !listMode && leadId
+          ? dokumentFromVersicherungsakte({
+              leadId,
+              url: raw.versicherungsakte_pdf_url,
+              datum: raw.created_at,
+            })
+          : null;
       return {
         ...lead,
         objekt: resolveObj(raw.kunde_objekt_id, raw.plz),
-        dokumente: listMode
-          ? []
-          : dokumenteFromUrls(
-              extractLeadDokumentUrls(
-                lead as { funnel_daten?: unknown; kontakt_nachricht?: unknown }
-              )
-            ),
+        dokumente: versDoc ? [versDoc, ...baseDocs] : baseDocs,
       };
     });
 

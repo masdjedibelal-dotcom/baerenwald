@@ -97,6 +97,8 @@ export type OrganisationObjekt = {
   /** Policen-Nr. am Objekt. */
   versicherungs_nr?: string | null;
   selbstbehalt_eur?: number | null;
+  /** Bei Meldungen: Kostenträger Versicherung + Schadenakte automatisch. */
+  automatische_schadenakte?: boolean | null;
   /** Dekoratives Gebäudefoto (öffentlich). */
   cover_url?: string | null;
   created_at?: string | null;
@@ -132,6 +134,7 @@ export type OrganisationLead = {
   kostentraeger?: string | null;
   kostentraeger_vorgeschlagen?: boolean | null;
   versicherungs_nr?: string | null;
+  versicherungsakte_pdf_url?: string | null;
   vorgang_phase?: string | null;
   plz?: string | null;
   strasse?: string | null;

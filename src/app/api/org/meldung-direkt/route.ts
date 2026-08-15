@@ -114,6 +114,25 @@ export async function POST(req: Request) {
         ...(versNr ? { versicherungs_nr: versNr } : {}),
       })
       .eq("id", result.id);
+    void import("@/lib/org/ensure-versicherungsakte").then(
+      ({ ensureVersicherungsakteForLead }) =>
+        ensureVersicherungsakteForLead(result.id, {
+          actorId: session.userId,
+          actorRolle: session.rolle,
+        }).catch((e) =>
+          console.warn("[meldung-direkt] schadenakte:", e)
+        )
+    );
+  } else {
+    void import("@/lib/org/ensure-versicherungsakte").then(
+      ({ applyAutomatischeSchadenakteIfEnabled }) =>
+        applyAutomatischeSchadenakteIfEnabled(result.id, {
+          actorId: session.userId,
+          actorRolle: session.rolle,
+        }).catch((e) =>
+          console.warn("[meldung-direkt] auto-schadenakte:", e)
+        )
+    );
   }
 
   const orgEmail = session.kunde.email?.trim() ?? "";
