@@ -292,11 +292,17 @@ export function OrganisationPortalClient({
       if (!extra?.length) return item;
       const existing = item.dokumente ?? [];
       const seen = new Set(existing.map((d) => d.href));
-      const merged = [
-        ...existing,
-        ...extra.filter((d) => d.href && !seen.has(d.href)),
-      ];
-      return { ...item, dokumente: merged };
+      const extraAsPortal = extra
+        .filter((d) => d.href && !seen.has(d.href))
+        .map((d) => ({
+          id: d.id,
+          name: d.name,
+          subtitle: d.subtitle,
+          datum: d.datum,
+          href: d.href,
+          art: "protokoll" as const,
+        }));
+      return { ...item, dokumente: [...existing, ...extraAsPortal] };
     });
   }, [initialVorgaenge, leads, angebote, auftraege, dokumenteByLeadId]);
 

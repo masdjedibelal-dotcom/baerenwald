@@ -304,7 +304,7 @@ export async function getPortalDataForKunde(
       if (listMode) fb = fb.limit(PORTAL_LIST_LEAD_LIMIT);
     }
     const retry = await fb;
-    leads = retry.data;
+    leads = retry.data as typeof leads;
     leadsErr = retry.error;
   }
   if (leadsErr) console.warn("[portal] leads:", leadsErr.message);

@@ -124,7 +124,9 @@ async function loadEingangLeads(
       .order("created_at", { ascending: false });
     if (listMode) q2 = q2.limit(PORTAL_LIST_LEAD_LIMIT);
     const retry = await q2;
-    if (!retry.error) return (retry.data ?? []) as Record<string, unknown>[];
+    if (!retry.error) {
+      return (retry.data ?? []) as unknown as Record<string, unknown>[];
+    }
   }
 
   const geloeschtMissing = /geloescht_am/i.test(eingangErr.message);

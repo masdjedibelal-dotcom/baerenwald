@@ -194,6 +194,8 @@ export function portalDeepLinkTabForHvNav(
 export function portalDeepLinkTabForSimpleNav(
   tab: PortalDeepLinkTab
 ): "details" | "bautagebuch" | "dokumente" | "feedback" {
-  if (tab === "uebersicht" || tab === "angebot") return "details";
+  if (tab === "uebersicht" || tab === "angebot" || tab === "hm_pruefung") {
+    return "details";
+  }
   return tab;
 }

@@ -613,6 +613,11 @@ export async function getLeadHausmeisterMetaAction(input: {
   };
 }
 
+/** Foto an einen Befund-Punkt anhängen. */
+export async function uploadLeadBefundFotoAction(input: {
+  punktId: string;
+  formData: FormData;
+}): Promise<ActionResult<{ punkt: LeadBefundPunktRow }>> {
   const session = await requireOrganisationSession();
   if (!session.ok) return { ok: false, error: session.error };
   const write = requireOrgWrite(session);
