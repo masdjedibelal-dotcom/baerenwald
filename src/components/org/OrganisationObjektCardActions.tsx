@@ -20,8 +20,7 @@ type Props = {
 };
 
 /**
- * Listen-Aktionen Objektkarte: Primär „Aushang PDF“, Rest im ⋯-Menü
- * (`PortalActionMenu` → globale Bottom-Sheet-/Side-Over-Shell).
+ * Listen-Aktionen Objektkarte: Primär „Aushang PDF“, Rest im ⋯-Menü (Popover).
  */
 export function OrganisationObjektCardActions({
   canAushang = false,
@@ -95,7 +94,7 @@ export function OrganisationObjektCardActions({
         </button>
       ) : null}
 
-      <PortalActionMenu title="Aktionen" items={items} />
+      <PortalActionMenu title="Aktionen" items={items} variant="popover" />
     </div>
   );
 }

@@ -299,7 +299,12 @@ export function PortalShell({
                   : "px-4 py-5 pb-[var(--portal-mobile-nav-pad)] lg:px-6 lg:py-7 lg:pb-8"
               )}
             >
-              <div className="portal-page-stack relative min-h-[40vh]">
+              <div
+                className={cn(
+                  "portal-page-stack relative min-h-[40vh]",
+                  hideMobileChrome && "portal-page-stack--wide"
+                )}
+              >
                 <div
                   className={cn(
                     "portal-page-stack-inner",
