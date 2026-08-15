@@ -269,7 +269,7 @@ export function PortalModalShell({
         style={{
           // Body-Portal + höhere Schicht bei Nesting (KI/GPT im Sheet nicht von Buttons abschneiden)
           zIndex: PORTAL_MODAL_Z_INDEX + depth * 10,
-          background: "var(--p2-scrim, rgba(16,25,20,.52))",
+          background: "var(--p2-scrim, rgba(16,25,20,.58))",
         }}
         role="presentation"
         onClick={closeOnBackdrop ? () => attemptDismiss(false) : undefined}

@@ -102,7 +102,7 @@
   --p2-danger-soft: #fce3e3;
   --p2-danger-border: #f5c2c0;
   --p2-shadow: 0 1px 3px rgba(0, 0, 0, 0.04), 0 0 0 0.5px rgba(0, 0, 0, 0.05);
-  --p2-scrim: rgba(16, 25, 20, 0.52);
+  --p2-scrim: rgba(16, 25, 20, 0.58);
   --p2-radius-sm: 8px;
   --p2-radius-md: 12px;
   --p2-radius-lg: 16px;
@@ -1465,13 +1465,14 @@ h3 {
   .portal-modal-shell-panel {
     display: flex;
     flex-direction: column;
-    background: var(--p2-panel, #fff);
+    /* Getönte Fläche — weiße Cards/Inputs liegen darauf (nicht Weiß-auf-Weiß) */
+    background: var(--p2-bg-content, #e8ecea);
     border-radius: 20px 20px 0 0;
     width: 100%;
     max-width: none; /* Mobil: volle Breite — kein eingeengtes Center-Card */
     max-height: 86vh;
     overflow: hidden;
-    box-shadow: var(--p2-shadow), 0 24px 60px rgba(0, 0, 0, 0.22);
+    box-shadow: var(--p2-shadow), 0 24px 60px rgba(0, 0, 0, 0.28);
     border: 0.5px solid var(--p2-line, rgba(0, 0, 0, 0.08));
     touch-action: auto;
     overscroll-behavior: contain;
@@ -1482,12 +1483,13 @@ h3 {
   }
 
   .portal-modal-shell-header {
-    padding: 18px 20px 4px;
+    padding: 18px 20px 12px;
     display: flex;
     align-items: flex-start;
     gap: 10px;
     flex-shrink: 0;
-    background: var(--p2-panel, #fff);
+    background: var(--p2-bg-content, #e8ecea);
+    border-bottom: 0.5px solid var(--p2-line2, rgba(0, 0, 0, 0.06));
   }
 
   /* × immer links — Titel daneben, Extras ganz rechts */
@@ -1592,7 +1594,7 @@ h3 {
     padding: 10px 16px calc(18px + env(safe-area-inset-bottom, 0px));
     touch-action: pan-y;
     /* Getönter Boden — weiße SheetCards/Inputs liegen darüber */
-    background: var(--p2-bg-content, #e8ecea);
+    background: transparent;
   }
 
   .portal-modal-shell-busy {
@@ -1673,10 +1675,10 @@ h3 {
 
   .portal-modal-discard-panel {
     width: 100%;
-    background: var(--p2-panel, #fff);
+    background: var(--p2-bg-content, #e8ecea);
     border-radius: 16px 16px 0 0;
     padding: 18px 20px calc(18px + env(safe-area-inset-bottom, 0px));
-    box-shadow: 0 -8px 32px rgba(0, 0, 0, 0.15);
+    box-shadow: 0 -8px 32px rgba(0, 0, 0, 0.2);
   }
 
   .portal-modal-discard-title {
@@ -1741,7 +1743,8 @@ h3 {
       max-height: 100%;
       width: min(100%, var(--portal-modal-max, 460px));
       max-width: var(--portal-modal-max, 460px);
-      box-shadow: -12px 0 40px rgba(0, 0, 0, 0.18);
+      box-shadow: -16px 0 48px rgba(0, 0, 0, 0.28);
+      background: var(--p2-bg-content, #e8ecea);
     }
 
     .portal-modal-shell--preview .portal-modal-shell-panel {

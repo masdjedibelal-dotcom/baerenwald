@@ -31,7 +31,7 @@ export const PORTAL_C = {
   radiusLg: "16px",
   radiusSheet: "20px",
   /** Overlay hinter Modals / Slide-overs */
-  scrim: "rgba(16,25,20,0.52)",
+  scrim: "rgba(16,25,20,0.58)",
   /** Lesbare Skala — identisch zu --p2-type-* in globals.css */
   typeMeta: "15.5px",
   typeBody: "18px",

@@ -448,7 +448,7 @@ export function OrganisationObjektWizard({
         className={cn(
           "border-t border-border-default",
           isModal
-            ? "shrink-0 bg-white px-1 pb-[max(1rem,env(safe-area-inset-bottom))] pt-3"
+            ? "shrink-0 bg-[var(--p2-bg-content,#e8ecea)] px-1 pb-[max(1rem,env(safe-area-inset-bottom))] pt-3"
             : "mt-6 pt-4"
         )}
       >

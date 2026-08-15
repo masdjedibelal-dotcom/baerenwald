@@ -33,7 +33,7 @@ export const PORTAL_MODAL_CONFIRM_MAX_W = 420;
 export const PORTAL_MODAL_Z_INDEX = 200;
 
 /** Scrim hinter Modal / Slide-over — klarer Kontrast zur Seite. */
-export const PORTAL_MODAL_SCRIM = "rgba(16,25,20,.52)";
+export const PORTAL_MODAL_SCRIM = "rgba(16,25,20,.58)";
 
 export function resolvePortalModalVariant(
   variant: PortalModalVariant | undefined,
