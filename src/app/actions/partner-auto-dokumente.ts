@@ -62,6 +62,12 @@ export type PartnerAutoDocPreview = {
     steuernummer: string;
     ustid: string;
     iban: string;
+    kleinunternehmer: boolean;
+  };
+  empfaenger: {
+    firma: string;
+    strasse: string;
+    plzOrt: string;
   };
 };
 
@@ -186,6 +192,7 @@ async function loadHandwerkerAbsender(handwerkerId: string): Promise<{
       steuernummer: String(absender.steuernummer ?? ""),
       ustid: String(absender.ustid ?? ""),
       iban: String(absender.iban ?? ""),
+      kleinunternehmer: Boolean(absender.kleinunternehmer),
     },
   };
 }
@@ -505,6 +512,7 @@ export async function previewPartnerAutoDokument(input: {
     ...built.missingRegie,
   ];
   const nettoSumme = built.positionen.reduce((s, p) => s + p.netto, 0);
+  const empfaenger = getPartnerDocEmpfaenger();
 
   return {
     ok: true,
@@ -527,6 +535,11 @@ export async function previewPartnerAutoDokument(input: {
       missingFields,
       canSubmit: missingFields.length === 0,
       firmendaten: hw.firmendaten,
+      empfaenger: {
+        firma: empfaenger.firma,
+        strasse: empfaenger.strasse,
+        plzOrt: empfaenger.plzOrt,
+      },
     },
   };
 }
@@ -751,11 +764,27 @@ export async function submitPartnerAutoRechnung(input: {
   if (!upload.ok) return upload;
 
   const now = new Date().toISOString();
+  const nettoSum = built.positionen.reduce(
+    (s, p) => s + (Number.isFinite(p.netto) ? p.netto : 0),
+    0
+  );
+  const ku = Boolean(hw.absender.kleinunternehmer);
+  const mwstSum = ku
+    ? 0
+    : built.positionen.reduce((s, p) => {
+        const netto = Number.isFinite(p.netto) ? p.netto : 0;
+        const satz = p.mwstSatz || 19;
+        return s + (netto * satz) / 100;
+      }, 0);
+  const bruttoSum = Math.round((nettoSum + mwstSum) * 100) / 100;
+
   const { data: updatedRows, error: upErr } = await supabaseAdmin
     .from("angebot_handwerker")
     .update({
       hw_rechnung_pdf_url: upload.path,
       hw_rechnung_eingereicht_at: now,
+      hw_rechnung_status: "eingereicht",
+      hw_rechnung_betrag_brutto: bruttoSum,
     })
     .eq("id", id)
     .eq("handwerker_id", auth.handwerkerId)
@@ -779,28 +808,33 @@ export async function submitPartnerAutoRechnung(input: {
     upload.path,
     MAIL_PDF_LINK_TTL_SEC
   );
+
+  let ensuredRechnungId: string | null = null;
+  try {
+    const { notifyCrmPartnerDokumentUpload } = await import(
+      "@/lib/partner/notify-crm-partner-dokument"
+    );
+    const crmRes = await notifyCrmPartnerDokumentUpload({
+      typ: "rechnung",
+      handwerkerId: auth.handwerkerId,
+      anfrageId: id,
+      auftragId: ctx.auftragId ?? null,
+      titel: `Rechnung ${dokumentNr}`,
+    });
+    ensuredRechnungId = crmRes.rechnungId?.trim() || null;
+  } catch (e) {
+    console.warn("[submitPartnerAutoRechnung] CRM-Notify:", e);
+  }
+
   void sendPartnerInternalRechnungMail({
     handwerkerName: hw.absender.inhaber || hw.absender.firma,
     firma: hw.absender.firma,
     gewerkName: ctx.betreff,
     plz: ctx.objektOrt.split(/\s+/)[0] || "—",
     angebotId: String(ctx.row.angebot_id ?? id),
+    rechnungId: ensuredRechnungId,
     rechnungPdfUrl,
   });
-
-  try {
-    const { notifyCrmPartnerDokumentUpload } = await import(
-      "@/lib/partner/notify-crm-partner-dokument"
-    );
-    await notifyCrmPartnerDokumentUpload({
-      typ: "rechnung",
-      handwerkerId: auth.handwerkerId,
-      anfrageId: id,
-      titel: `Rechnung ${dokumentNr}`,
-    });
-  } catch (e) {
-    console.warn("[submitPartnerAutoRechnung] CRM-Notify:", e);
-  }
 
   revalidatePath("/partner");
   return { ok: true, path: upload.path, dokumentNr };

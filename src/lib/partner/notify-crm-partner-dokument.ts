@@ -28,7 +28,7 @@ export async function notifyCrmPartnerDokumentUpload(input: {
   dokumentId?: string | null;
   anfrageId?: string | null;
   slotId?: string | null;
-}): Promise<void> {
+}): Promise<{ rechnungId?: string | null }> {
   const base = crmDashboardBase();
   const secret = process.env.PARTNER_INTERNAL_API_SECRET?.trim();
   if (!base || !secret) {
@@ -36,7 +36,7 @@ export async function notifyCrmPartnerDokumentUpload(input: {
       "[notifyCrmPartnerDokumentUpload] übersprungen — CRM-URL oder Secret fehlt.",
       { typ: input.typ, handwerkerId: input.handwerkerId }
     );
-    return;
+    return {};
   }
 
   try {
@@ -57,14 +57,20 @@ export async function notifyCrmPartnerDokumentUpload(input: {
       }),
       cache: "no-store",
     });
+    const body = (await res.json().catch(() => ({}))) as {
+      error?: string;
+      rechnungId?: string | null;
+    };
     if (!res.ok) {
-      const body = (await res.json().catch(() => ({}))) as { error?: string };
       console.warn(
         "[notifyCrmPartnerDokumentUpload] CRM-Fehler:",
         body.error || `HTTP ${res.status}`
       );
+      return {};
     }
+    return { rechnungId: body.rechnungId ?? null };
   } catch (e) {
     console.warn("[notifyCrmPartnerDokumentUpload]", e);
+    return {};
   }
 }

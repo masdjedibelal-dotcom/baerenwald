@@ -60,7 +60,9 @@ function schedulePartnerPush(input: {
         buildPushPayloadFromNotif({
           typ: input.typ,
           titel: subject,
-          body: "Bitte im Partner-Portal prüfen.",
+          body: /rechnung\s+wurde\s+überwiesen/i.test(String(input.leistungName ?? ""))
+            ? "Deine Rechnung wurde überwiesen."
+            : "Bitte im Partner-Portal prüfen.",
           link: input.link,
           defaultUrl: "/partner",
         })
@@ -87,17 +89,33 @@ function partnerNotifyBodyHtml(opts: {
   subjectLine: string;
   portalUrl: string;
   bautagebuch?: boolean;
+  rechnungUeberwiesen?: boolean;
 }): string {
-  const ctaHint = opts.bautagebuch
-    ? "Bitte im Partner-Portal einen Bautagebuch-Eintrag erstellen — am Auftrag hat sich nichts geändert."
-    : "Bitte im Partner-Portal prüfen und bestätigen.";
+  const ctaHint = opts.rechnungUeberwiesen
+    ? "Deine eingereichte Rechnung wurde von Bärenwald überwiesen."
+    : opts.bautagebuch
+      ? "Bitte im Partner-Portal einen Bautagebuch-Eintrag erstellen — am Auftrag hat sich nichts geändert."
+      : "Bitte im Partner-Portal prüfen und bestätigen.";
+  const ctaLabel = opts.rechnungUeberwiesen
+    ? "Zum Vorgang im Partner-Portal →"
+    : "Zum Partner-Portal →";
   return `
     <p style="margin:0 0 12px;font-size:15px;color:#374151;line-height:1.6;">${mailBegruessungHtml("du", opts.handwerkerName)}</p>
     <p style="margin:0 0 16px;font-size:15px;color:#374151;line-height:1.6;"><strong>${escapeHtml(opts.subjectLine)}</strong></p>
     <p style="margin:0 0 8px;font-size:14px;color:#374151;line-height:1.6;">${ctaHint}</p>
-    ${mailPrimaryButtonHtml("Zum Partner-Portal →", opts.portalUrl)}
+    ${mailPrimaryButtonHtml(ctaLabel, opts.portalUrl)}
     <p style="margin:24px 0 0;font-size:15px;color:#374151;line-height:1.6;">${mailTeamGrussHtml("du")}</p>
   `;
+}
+
+function isRechnungUeberwiesenNotify(
+  typ: PartnerNotificationTyp,
+  leistungName?: string | null
+): boolean {
+  return (
+    typ === "erinnerung" &&
+    /rechnung\s+wurde\s+überwiesen/i.test(String(leistungName ?? ""))
+  );
 }
 
 /** INSERT notification + optional Resend-Mail an Handwerker. */
@@ -125,15 +143,21 @@ export async function createPartnerNotification(
     ? "bautagebuch"
     : input.typ;
 
+  const rechnungUeberwiesen = isRechnungUeberwiesenNotify(
+    notifyTyp,
+    input.leistungName
+  );
+
   /**
-   * Partner-Glocke/Push nur bei neuem Vorgang mit Aktion (Annehmen/Ablehnen).
+   * Partner-Glocke/Push: neue Zuweisung (Annehmen/Ablehnen) +
+   * Zahlungsmeldung „Rechnung wurde überwiesen“.
    * Andere Typen (geaendert, bautagebuch, …) erzeugen keine Notification mehr.
    */
-  if (notifyTyp !== "neu") {
+  if (notifyTyp !== "neu" && !rechnungUeberwiesen) {
     return { ok: true, deduplicated: true };
   }
 
-  if (vorgangKey) {
+  if (vorgangKey && notifyTyp === "neu") {
     // Einmalig je Vorgang — auch wenn bereits gelesen (kein Spam bei erneutem Login)
     const { data: existingAny } = await supabaseAdmin
       .from("notifications")
@@ -206,6 +230,7 @@ export async function createPartnerNotification(
         handwerkerName,
         subjectLine: subject,
         portalUrl: portalUrl || partnerLoginUrl(),
+        rechnungUeberwiesen,
       }),
       disclaimer:
         "Du erhältst diese Mail, weil dir im Partner-Portal ein Vorgang zugewiesen wurde.",

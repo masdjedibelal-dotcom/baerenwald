@@ -256,6 +256,7 @@ export async function submitPartnerRechnung(
     .update({
       hw_rechnung_pdf_url: upload.path,
       hw_rechnung_eingereicht_at: now,
+      hw_rechnung_status: "eingereicht",
     })
     .eq("id", anfrageId)
     .eq("handwerker_id", link.handwerkerId)
@@ -301,6 +302,23 @@ export async function submitPartnerRechnung(
       upload.path,
       MAIL_PDF_LINK_TTL_SEC
     );
+
+    let ensuredRechnungId: string | null = null;
+    try {
+      const { notifyCrmPartnerDokumentUpload } = await import(
+        "@/lib/partner/notify-crm-partner-dokument"
+      );
+      const crmRes = await notifyCrmPartnerDokumentUpload({
+        typ: "rechnung",
+        handwerkerId: link.handwerkerId,
+        anfrageId,
+        titel: "Partner-Rechnung",
+      });
+      ensuredRechnungId = crmRes.rechnungId?.trim() || null;
+    } catch (e) {
+      console.warn("[submitPartnerRechnung] CRM-Notify:", e);
+    }
+
     void sendPartnerInternalRechnungMail({
       handwerkerName: String((hw as { name?: string })?.name ?? "Partner"),
       firma: (hw as { firma?: string | null })?.firma ?? null,
@@ -310,19 +328,20 @@ export async function submitPartnerRechnung(
         (lead as { plz?: string | null })?.plz?.trim() ||
         "—",
       angebotId: String(m.angebot_id),
+      rechnungId: ensuredRechnungId,
       rechnungPdfUrl,
     });
+  } else {
+    void import("@/lib/partner/notify-crm-partner-dokument").then(
+      ({ notifyCrmPartnerDokumentUpload }) =>
+        notifyCrmPartnerDokumentUpload({
+          typ: "rechnung",
+          handwerkerId: link.handwerkerId,
+          anfrageId,
+          titel: "Partner-Rechnung",
+        })
+    );
   }
-
-  void import("@/lib/partner/notify-crm-partner-dokument").then(
-    ({ notifyCrmPartnerDokumentUpload }) =>
-      notifyCrmPartnerDokumentUpload({
-        typ: "rechnung",
-        handwerkerId: link.handwerkerId,
-        anfrageId,
-        titel: "Partner-Rechnung",
-      })
-  );
 
   revalidatePath("/partner");
   return { ok: true };

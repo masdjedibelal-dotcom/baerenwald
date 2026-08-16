@@ -71,7 +71,7 @@ export const partnerPortalToast = {
   rechnungEingereicht() {
     portalToastSuccess(
       "Rechnung gesendet",
-      "Bärenwald hat die Rechnung im CRM erhalten."
+      "Bärenwald hat deine Rechnung erhalten."
     );
   },
   rahmenvertragAkzeptiert() {

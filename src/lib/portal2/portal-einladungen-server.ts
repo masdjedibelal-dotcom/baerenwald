@@ -511,3 +511,56 @@ export async function tryRedeemOpenHausmeisterInvitesForAuthUser(opts: {
 
   return { redeemed: false };
 }
+
+/**
+ * Offene Bewohner-Einladungen (Mieter/Eigentümer) zur Login-E-Mail einlösen.
+ * Verhindert „Login ohne Link → Privatkunde in CRM-Liste“.
+ */
+export async function tryRedeemOpenBewohnerInvitesForAuthUser(opts: {
+  authUserId: string;
+  email: string;
+  name?: string | null;
+  telefon?: string | null;
+}): Promise<{ redeemed: boolean; portalKundeId?: string }> {
+  const email = opts.email.trim().toLowerCase();
+  if (!email || !opts.authUserId) return { redeemed: false };
+
+  const { data: bewohner, error: bewErr } = await supabaseAdmin
+    .from("einheit_bewohner")
+    .select("id")
+    .ilike("email", email)
+    .eq("aktiv", true)
+    .is("anonymisiert_am", null)
+    .limit(40);
+
+  if (bewErr || !bewohner?.length) return { redeemed: false };
+
+  const bewIds = bewohner.map((r) => String(r.id)).filter(Boolean);
+  if (!bewIds.length) return { redeemed: false };
+
+  const { data: invites, error: invErr } = await supabaseAdmin
+    .from("portal_einladungen")
+    .select("token, created_at")
+    .eq("status", "offen")
+    .in("bewohner_id", bewIds)
+    .order("created_at", { ascending: false });
+
+  if (invErr || !invites?.length) return { redeemed: false };
+
+  for (const inv of invites) {
+    const token = String(inv.token ?? "").trim();
+    if (!token) continue;
+    const result = await redeemPortalEinladung({
+      token,
+      authUserId: opts.authUserId,
+      email,
+      name: opts.name,
+      telefon: opts.telefon,
+    });
+    if (result.ok) {
+      return { redeemed: true, portalKundeId: result.portalKundeId };
+    }
+  }
+
+  return { redeemed: false };
+}

@@ -2,6 +2,7 @@ export type PortalModus =
   | "privat"
   | "organisation"
   | "eigentuemer"
+  | "mieter"
   | "hausmeister";
 
 export type LeadAnlass =

@@ -89,17 +89,27 @@ export default async function PortalDashboardPage() {
     );
   }
 
-  // Offene HM-Einladungen zur Login-E-Mail (Auth existiert schon → ohne Redeem nur privat)
-  const { tryRedeemOpenHausmeisterInvitesForAuthUser } = await import(
-    "@/lib/portal2/portal-einladungen-server"
-  );
+  // Offene HM-/Bewohner-Einladungen zur Login-E-Mail (Auth existiert schon → ohne Redeem nur privat)
+  const {
+    tryRedeemOpenHausmeisterInvitesForAuthUser,
+    tryRedeemOpenBewohnerInvitesForAuthUser,
+  } = await import("@/lib/portal2/portal-einladungen-server");
   const hmRedeem = await tryRedeemOpenHausmeisterInvitesForAuthUser({
     authUserId: user.id,
     email: user.email,
     name: meta?.name,
     telefon: meta?.telefon,
   });
-  const portalKundeId = hmRedeem.portalKundeId ?? link.kundeId;
+  const bewRedeem = hmRedeem.redeemed
+    ? { redeemed: false as const }
+    : await tryRedeemOpenBewohnerInvitesForAuthUser({
+        authUserId: user.id,
+        email: user.email,
+        name: meta?.name,
+        telefon: meta?.telefon,
+      });
+  const portalKundeId =
+    hmRedeem.portalKundeId ?? bewRedeem.portalKundeId ?? link.kundeId;
 
   const { data: kundeMeta } = await supabaseAdmin
     .from("kunden")

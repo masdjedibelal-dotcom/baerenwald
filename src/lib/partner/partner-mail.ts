@@ -47,6 +47,12 @@ function crmAngebotUrl(angebotId: string): string | undefined {
   return `${base}/angebote/${encodeURIComponent(angebotId)}#handwerker-partner`;
 }
 
+function crmRechnungUrl(rechnungId: string): string | undefined {
+  const base = process.env.NEXT_PUBLIC_DASHBOARD_URL?.replace(/\/$/, "");
+  if (!base) return undefined;
+  return `${base}/rechnungen/${encodeURIComponent(rechnungId)}`;
+}
+
 function crmAuftragUrl(auftragId: string): string | undefined {
   const base = process.env.NEXT_PUBLIC_DASHBOARD_URL?.replace(/\/$/, "");
   if (!base) return undefined;
@@ -466,6 +472,7 @@ export async function sendPartnerInternalRechnungMail(opts: {
   gewerkName: string;
   plz: string;
   angebotId: string;
+  rechnungId?: string | null;
   rechnungPdfUrl?: string | null;
 }): Promise<void> {
   const to = internTo();
@@ -473,17 +480,22 @@ export async function sendPartnerInternalRechnungMail(opts: {
   if (!to || !resend) return;
 
   const hw = opts.firma?.trim() || opts.handwerkerName;
-  const crm = crmAngebotUrl(opts.angebotId);
+  const crm =
+    (opts.rechnungId?.trim() && crmRechnungUrl(opts.rechnungId.trim())) ||
+    crmAngebotUrl(opts.angebotId);
 
   const html = mailShell(
-    "Handwerker-Rechnung eingegangen",
-    `<p><strong>${escapeHtml(hw)}</strong> hat eine Rechnung hochgeladen.</p>
+    "Eingehende Rechnung vom Handwerk",
+    `<p>Die eingehende Rechnung von <strong>${escapeHtml(hw)}</strong> ist eingegangen.</p>
 <p>Gewerk: ${escapeHtml(opts.gewerkName)} · PLZ ${escapeHtml(opts.plz)}</p>
+<p>Bitte prüfen und im CRM als überwiesen markieren, sobald überwiesen.</p>
 ${mailActionButtons({
   pdfUrl: opts.rechnungPdfUrl ?? undefined,
   pdfLabel: "Rechnungs-PDF öffnen",
   crmUrl: crm,
-  crmLabel: "Im CRM (Handwerker-Bereich)",
+  crmLabel: opts.rechnungId?.trim()
+    ? "Eingangsrechnung im CRM öffnen"
+    : "Im CRM öffnen",
 })}`
   );
 
@@ -491,7 +503,7 @@ ${mailActionButtons({
     await resend.emails.send({
       from: systemFrom(),
       to,
-      subject: `HW-Rechnung: ${opts.gewerkName} — ${hw}`,
+      subject: `Eingehende Rechnung: ${hw} — ${opts.gewerkName}`,
       html,
     });
   } catch (e) {

@@ -47,6 +47,286 @@ type Props = {
   onFirmendatenMissing?: (missingLabels: string[]) => void;
 };
 
+type DokumentVorschauProps = {
+  art: "angebot" | "rechnung";
+  preview: PartnerAutoDocPreview;
+  dokumentNr: string;
+  onDokumentNrChange: (v: string) => void;
+  leistungsZeitraum?: string;
+};
+
+/** Inline-Dokumentvorschau — entspricht dem PDF; nur die Nummer ist editierbar. */
+function RechnungDokumentVorschau({
+  art,
+  preview,
+  dokumentNr,
+  onDokumentNrChange,
+  leistungsZeitraum,
+}: DokumentVorschauProps) {
+  const fd = preview.firmendaten;
+  const emp = preview.empfaenger;
+  const ku = Boolean(fd.kleinunternehmer);
+  const mwstSumme = ku
+    ? 0
+    : preview.positionen.reduce(
+        (s, p) => s + p.netto * (Number(p.mwstSatz) || 0) / 100,
+        0
+      );
+  const brutto = preview.nettoSumme + mwstSumme;
+  const absenderZeile = [
+    [fd.strasse, fd.hausnummer].filter(Boolean).join(" "),
+    [fd.plz, fd.ort].filter(Boolean).join(" "),
+  ]
+    .filter(Boolean)
+    .join(", ");
+  const heute = new Intl.DateTimeFormat("de-DE", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  }).format(new Date());
+
+  return (
+    <div className="space-y-3">
+      <p className="text-[12.5px]" style={{ color: PORTAL_VAR.sub }}>
+        Vorschau dessen, was du absendest. Nur die{" "}
+        {art === "angebot" ? "Angebotsnummer" : "Rechnungsnummer"} kannst du
+        noch ändern — der Rest entspricht dem PDF.
+      </p>
+
+      <div
+        className="overflow-hidden rounded-xl bg-white shadow-sm"
+        style={{ border: `1px solid ${PORTAL_VAR.line}` }}
+      >
+        <div className="space-y-5 p-4 sm:p-5">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div className="min-w-0 space-y-0.5">
+              <p
+                className="text-[15px] font-bold"
+                style={{ color: PORTAL_VAR.ink }}
+              >
+                {fd.firma || "Dein Betrieb"}
+              </p>
+              {absenderZeile ? (
+                <p className="text-[12px]" style={{ color: PORTAL_VAR.sub }}>
+                  {absenderZeile}
+                </p>
+              ) : null}
+              {fd.telefon ? (
+                <p className="text-[12px]" style={{ color: PORTAL_VAR.sub }}>
+                  Tel. {fd.telefon}
+                </p>
+              ) : null}
+            </div>
+            <div className="text-right">
+              <p
+                className="text-[15px] font-bold tracking-wide"
+                style={{ color: PORTAL_VAR.ink }}
+              >
+                {art === "rechnung" ? "RECHNUNG" : "ANGEBOT"}
+              </p>
+              <p className="text-[12px]" style={{ color: PORTAL_VAR.sub }}>
+                Datum {heute}
+              </p>
+              {art === "rechnung" && leistungsZeitraum?.trim() ? (
+                <p className="text-[12px]" style={{ color: PORTAL_VAR.sub }}>
+                  Leistungszeitraum {leistungsZeitraum.trim()}
+                </p>
+              ) : null}
+            </div>
+          </div>
+
+          <div
+            className="grid gap-3 sm:grid-cols-2"
+            style={{ borderTop: `1px solid ${PORTAL_VAR.line2}` }}
+          >
+            <div className="pt-3">
+              <p
+                className="mb-1 text-[10px] font-semibold uppercase tracking-wide"
+                style={{ color: PORTAL_VAR.faint }}
+              >
+                Empfänger
+              </p>
+              <p
+                className="text-[13px] font-semibold"
+                style={{ color: PORTAL_VAR.ink }}
+              >
+                {emp.firma}
+              </p>
+              <p className="text-[12px]" style={{ color: PORTAL_VAR.sub }}>
+                {emp.strasse}
+              </p>
+              <p className="text-[12px]" style={{ color: PORTAL_VAR.sub }}>
+                {emp.plzOrt}
+              </p>
+            </div>
+            <div className="pt-3 sm:text-right">
+              <label className="inline-block space-y-1 sm:ml-auto sm:text-left">
+                <span
+                  className="block text-[10px] font-semibold uppercase tracking-wide"
+                  style={{ color: PORTAL_VAR.faint }}
+                >
+                  {art === "angebot" ? "Angebotsnummer *" : "Rechnungsnummer *"}
+                </span>
+                <input
+                  type="text"
+                  value={dokumentNr}
+                  onChange={(e) => onDokumentNrChange(e.target.value)}
+                  className="portal-input w-full min-w-[11rem] font-semibold sm:w-auto"
+                  autoComplete="off"
+                  autoFocus={art === "rechnung"}
+                />
+              </label>
+            </div>
+          </div>
+
+          {(preview.betreff || preview.objektOrt) && (
+            <div>
+              {preview.betreff ? (
+                <p
+                  className="text-[13px] font-semibold"
+                  style={{ color: PORTAL_VAR.ink }}
+                >
+                  {preview.betreff}
+                </p>
+              ) : null}
+              {preview.objektOrt ? (
+                <p className="text-[12px]" style={{ color: PORTAL_VAR.sub }}>
+                  Objekt: {preview.objektOrt}
+                </p>
+              ) : null}
+            </div>
+          )}
+
+          <div className="space-y-0">
+            <div
+              className="grid grid-cols-[1fr_auto] gap-2 pb-1.5 text-[10px] font-semibold uppercase tracking-wide"
+              style={{
+                color: PORTAL_VAR.faint,
+                borderBottom: `1px solid ${PORTAL_VAR.line2}`,
+              }}
+            >
+              <span>Position</span>
+              <span>Netto</span>
+            </div>
+            {preview.positionen.map((p, i) => (
+              <div
+                key={`${p.titel}-${i}`}
+                className="grid grid-cols-[1fr_auto] gap-2 py-2.5"
+                style={{
+                  borderBottom: `1px solid ${PORTAL_VAR.line2}`,
+                }}
+              >
+                <div className="min-w-0">
+                  <p
+                    className="text-[13px] font-semibold"
+                    style={{ color: PORTAL_VAR.ink }}
+                  >
+                    {p.titel}
+                    {p.menge != null && p.einheit
+                      ? ` · ${p.menge} ${p.einheit}`
+                      : ""}
+                  </p>
+                  {p.beschreibung ? (
+                    <p
+                      className="mt-0.5 whitespace-pre-wrap text-[12px]"
+                      style={{ color: PORTAL_VAR.sub }}
+                    >
+                      {p.beschreibung}
+                    </p>
+                  ) : null}
+                  {!ku && p.mwstSatz > 0 ? (
+                    <p
+                      className="mt-0.5 text-[11px]"
+                      style={{ color: PORTAL_VAR.faint }}
+                    >
+                      zzgl. {p.mwstSatz}&nbsp;% MwSt.
+                    </p>
+                  ) : null}
+                </div>
+                <span
+                  className="shrink-0 text-[13px] font-semibold tabular-nums"
+                  style={{ color: PORTAL_VAR.ink }}
+                >
+                  {fmtEur(p.netto)}
+                </span>
+              </div>
+            ))}
+          </div>
+
+          <div className="ml-auto w-full max-w-[16rem] space-y-1 text-[13px]">
+            <div className="flex justify-between gap-4">
+              <span style={{ color: PORTAL_VAR.sub }}>Summe netto</span>
+              <span
+                className="font-semibold tabular-nums"
+                style={{ color: PORTAL_VAR.ink }}
+              >
+                {fmtEur(preview.nettoSumme)}
+              </span>
+            </div>
+            {ku ? (
+              <p className="text-[11px]" style={{ color: PORTAL_VAR.faint }}>
+                MwSt. 0,00 € (Kleinunternehmer §19 UStG)
+              </p>
+            ) : (
+              <div className="flex justify-between gap-4">
+                <span style={{ color: PORTAL_VAR.sub }}>MwSt.</span>
+                <span
+                  className="tabular-nums"
+                  style={{ color: PORTAL_VAR.ink }}
+                >
+                  {fmtEur(mwstSumme)}
+                </span>
+              </div>
+            )}
+            <div
+              className="flex justify-between gap-4 border-t pt-1.5 text-[14px] font-bold"
+              style={{ borderColor: PORTAL_VAR.line2, color: PORTAL_VAR.ink }}
+            >
+              <span>{ku ? "Gesamt" : "Brutto"}</span>
+              <span className="tabular-nums">{fmtEur(brutto)}</span>
+            </div>
+          </div>
+
+          {art === "rechnung" && fd.iban ? (
+            <div
+              className="space-y-0.5 pt-1 text-[12px]"
+              style={{
+                borderTop: `1px solid ${PORTAL_VAR.line2}`,
+                color: PORTAL_VAR.sub,
+              }}
+            >
+              <p
+                className="text-[10px] font-semibold uppercase tracking-wide"
+                style={{ color: PORTAL_VAR.faint }}
+              >
+                Zahlung
+              </p>
+              <p>IBAN: {fd.iban}</p>
+              {dokumentNr.trim() ? (
+                <p>Verwendungszweck: {dokumentNr.trim()}</p>
+              ) : null}
+            </div>
+          ) : null}
+
+          {(fd.steuernummer || fd.ustid || ku) && (
+            <p className="text-[11px]" style={{ color: PORTAL_VAR.faint }}>
+              {[
+                fd.steuernummer ? `Steuernr.: ${fd.steuernummer}` : null,
+                fd.ustid ? `USt-IdNr.: ${fd.ustid}` : null,
+                ku
+                  ? "Gemäß §19 UStG wird keine Umsatzsteuer berechnet."
+                  : null,
+              ]
+                .filter(Boolean)
+                .join(" · ")}
+            </p>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /**
  * Auto-Dokument: optional Ja/Nein → ggf. fehlende Daten → Preview → Submit.
  */
@@ -289,8 +569,8 @@ export function PartnerDokumentPreviewModal({
       : step === "fehlend"
         ? "Angaben werden in deinen Firmendaten gespeichert."
         : art === "angebot"
-          ? "Aus Firmendaten und bestätigten Konditionen"
-          : "Nummer oben anpassen, dann Absenden — Bärenwald erhält die Rechnung im CRM.";
+          ? "So sieht dein Angebot aus — Nummer kannst du noch anpassen."
+          : "So sieht deine Rechnung aus — nur die Nummer kannst du noch anpassen, dann Absenden.";
 
   const firmMissingKeys = new Set(
     (preview?.missingFields ?? [])
@@ -318,7 +598,7 @@ export function PartnerDokumentPreviewModal({
       subtitle={subtitle}
       onClose={onClose}
       variant={step === "fehlend" ? "edit" : "preview"}
-      maxWidth={560}
+      maxWidth={step === "preview" ? 640 : 560}
       closeOnBackdrop={false}
       busy={loading}
       busyTitle={
@@ -557,83 +837,13 @@ export function PartnerDokumentPreviewModal({
           {step === "preview" ? (
             <>
               {preview ? (
-                <>
-                  <div
-                    className="space-y-3 rounded-xl p-3"
-                    style={{ border: `1px solid ${PORTAL_VAR.line}` }}
-                  >
-                    <label className="block space-y-1.5">
-                      <span
-                        className="text-[12px] font-semibold"
-                        style={{ color: PORTAL_VAR.faint }}
-                      >
-                        {art === "angebot"
-                          ? "Angebotsnummer *"
-                          : "Rechnungsnummer *"}
-                      </span>
-                      <input
-                        type="text"
-                        value={dokumentNr}
-                        onChange={(e) => setDokumentNr(e.target.value)}
-                        className="portal-input w-full font-semibold"
-                        autoComplete="off"
-                        autoFocus={art === "rechnung"}
-                      />
-                    </label>
-                    <p className="text-[13px]" style={{ color: PORTAL_VAR.sub }}>
-                      {preview.betreff}
-                      {preview.objektOrt ? ` · ${preview.objektOrt}` : ""}
-                    </p>
-                  </div>
-
-                  <div className="space-y-2">
-                    <p
-                      className="text-[11px] font-semibold uppercase tracking-wide"
-                      style={{ color: PORTAL_VAR.faint }}
-                    >
-                      Positionen
-                    </p>
-                    {preview.positionen.map((p, i) => (
-                      <div
-                        key={`${p.titel}-${i}`}
-                        className="rounded-lg px-3 py-2"
-                        style={{ border: `1px solid ${PORTAL_VAR.line2}` }}
-                      >
-                        <div className="flex justify-between gap-3">
-                          <span
-                            className="text-[13px] font-semibold"
-                            style={{ color: PORTAL_VAR.ink }}
-                          >
-                            {p.titel}
-                            {p.menge != null && p.einheit
-                              ? ` · ${p.menge} ${p.einheit}`
-                              : ""}
-                          </span>
-                          <span
-                            className="shrink-0 text-[13px] font-semibold"
-                            style={{ color: PORTAL_VAR.ink }}
-                          >
-                            {fmtEur(p.netto)}
-                          </span>
-                        </div>
-                        {p.beschreibung ? (
-                          <p
-                            className="mt-1 whitespace-pre-wrap text-[12px]"
-                            style={{ color: PORTAL_VAR.sub }}
-                          >
-                            {p.beschreibung}
-                          </p>
-                        ) : null}
-                      </div>
-                    ))}
-                    <p
-                      className="pt-1 text-right text-[14px] font-semibold"
-                      style={{ color: PORTAL_VAR.ink }}
-                    >
-                      Netto {fmtEur(preview.nettoSumme)}
-                    </p>
-                  </div>
-                </>
+                <RechnungDokumentVorschau
+                  art={art}
+                  preview={preview}
+                  dokumentNr={dokumentNr}
+                  onDokumentNrChange={setDokumentNr}
+                  leistungsZeitraum={leistungsZeitraum}
+                />
               ) : null}
             </>
           ) : null}
