@@ -5,7 +5,10 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Pencil } from "lucide-react";
 
 import type { OrganisationKunde } from "@/lib/org/types";
-import { orgBrandFromKunde } from "@/lib/portal2/brand-presets";
+import {
+  orgAddressDraftFromKunde,
+  orgBrandFromKunde,
+} from "@/lib/portal2/brand-presets";
 import { EINSTELLUNGEN_LOGO_HINT } from "@/lib/portal2/einstellungen";
 import {
   EinstellungenEdField,
@@ -26,16 +29,21 @@ type Draft = {
   sub: string;
   logo: string;
   strasse: string;
+  hausnummer: string;
+  plz: string;
   ort: string;
 };
 
 function draftFromKunde(kunde: OrganisationKunde): Draft {
   const b = orgBrandFromKunde(kunde);
+  const addr = orgAddressDraftFromKunde(kunde);
   return {
     sub: b.sub,
     logo: b.logo,
-    strasse: b.strasse,
-    ort: b.ort,
+    strasse: addr.strasse,
+    hausnummer: addr.hausnummer,
+    plz: addr.plz,
+    ort: addr.ort,
   };
 }
 
@@ -78,6 +86,8 @@ export function OrganisationPortalAngabenPanel({
             org_sub: next.sub,
             org_logo_kuerzel: next.logo,
             org_strasse: next.strasse,
+            org_hausnummer: next.hausnummer,
+            org_plz: next.plz,
             org_ort: next.ort,
           }),
         });
@@ -228,7 +238,14 @@ export function OrganisationPortalAngabenPanel({
           />
           <EinstellungenGrid2>
             <EinstellungenPfRow label="Straße" value={dash(saved.strasse)} />
-            <EinstellungenPfRow label="PLZ / Ort" value={dash(saved.ort)} />
+            <EinstellungenPfRow
+              label="Hausnummer"
+              value={dash(saved.hausnummer)}
+            />
+          </EinstellungenGrid2>
+          <EinstellungenGrid2>
+            <EinstellungenPfRow label="PLZ" value={dash(saved.plz)} />
+            <EinstellungenPfRow label="Ort" value={dash(saved.ort)} />
           </EinstellungenGrid2>
         </div>
       </div>
@@ -261,7 +278,19 @@ export function OrganisationPortalAngabenPanel({
               onChange={(v) => setEdit({ ...edit, strasse: v })}
             />
             <EinstellungenEdField
-              label="PLZ / Ort"
+              label="Hausnummer"
+              value={edit.hausnummer}
+              onChange={(v) => setEdit({ ...edit, hausnummer: v })}
+            />
+          </EinstellungenGrid2>
+          <EinstellungenGrid2>
+            <EinstellungenEdField
+              label="PLZ"
+              value={edit.plz}
+              onChange={(v) => setEdit({ ...edit, plz: v })}
+            />
+            <EinstellungenEdField
+              label="Ort"
               value={edit.ort}
               onChange={(v) => setEdit({ ...edit, ort: v })}
             />

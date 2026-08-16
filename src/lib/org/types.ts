@@ -51,7 +51,14 @@ export type OrganisationKunde = {
   org_sub?: string | null;
   org_telefon?: string | null;
   org_strasse?: string | null;
+  org_hausnummer?: string | null;
+  org_plz?: string | null;
   org_ort?: string | null;
+  /** Fallback aus CRM-Registrierung (kunden.strasse …). */
+  strasse?: string | null;
+  hausnummer?: string | null;
+  plz?: string | null;
+  ort?: string | null;
   mieter_kontakt_telefon?: string | null;
   mieter_kontakt_email?: string | null;
   mieter_kontakt_hinweis?: string | null;

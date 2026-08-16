@@ -5,7 +5,6 @@ import { useState } from "react";
 import {
   EinstellungenCard,
   EinstellungenEuroSlider,
-  EinstellungenInfoBox,
 } from "@/components/shared/PortalEinstellungenUi";
 import {
   EINSTELLUNGEN_SCHWELLE_SLIDER_MAX,
@@ -17,8 +16,6 @@ import {
 import { PORTAL_VAR } from "@/lib/portal2/tokens";
 import {
   formatObjRegelnReview,
-  OBJ_SCHWELLE_INFO,
-  OBJ_SCHWELLE_WIZARD_DESC,
   OBJ_SCHWELLE_WIZARD_TITLE,
   OBJ_TYP_OPTIONS,
   OBJ_WIZ_STEPS,
@@ -265,8 +262,8 @@ export function OrganisationObjektWizard({
           ) : null}
         </div>
         <p className="rounded-[10px] bg-muted px-3.5 py-2.5 text-[12.5px] leading-relaxed text-text-secondary">
-          Wohneinheiten und Mieter können nach dem Anlegen im Objekt-Detail
-          ergänzt werden.
+          Einzelne Einheiten sowie Mieter und Eigentümer legen Sie danach im
+          Objekt unter „Einheiten“ an.
         </p>
       </div>
     );
@@ -331,11 +328,6 @@ export function OrganisationObjektWizard({
             formatValue={formatEinstellungenSchwelle}
             onChange={(v) => set("schwelle", snapEinstellungenSchwelle(v))}
           />
-          <EinstellungenInfoBox>
-            {OBJ_SCHWELLE_INFO(
-              snapEinstellungenSchwelle(Number.isFinite(schwelle) ? schwelle : 500)
-            )}
-          </EinstellungenInfoBox>
         </div>
       </EinstellungenCard>
     );
@@ -448,7 +440,7 @@ export function OrganisationObjektWizard({
         className={cn(
           "border-t border-border-default",
           isModal
-            ? "shrink-0 bg-[var(--p2-bg-content,#ebe9e5)] px-1 pb-[max(1rem,env(safe-area-inset-bottom))] pt-3"
+            ? "shrink-0 bg-[var(--p2-bg-content,#f6f5f3)] px-1 pb-[max(1rem,env(safe-area-inset-bottom))] pt-3"
             : "mt-6 pt-4"
         )}
       >

@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 
 import { writeAuditEvent } from "@/lib/audit/write-audit-event";
+import { ensureOrgKennung } from "@/lib/org/ensure-org-kennung";
+import { orgMeldeLegalUrlsReady } from "@/lib/org/melde-legal-urls";
 import { requireOrgAdminSession } from "@/lib/org/require-org-session";
 import {
   findBrandPresetByPrimary,
@@ -20,6 +22,8 @@ type Body = {
   org_primary_color_soft?: string | null;
   org_telefon?: string | null;
   org_strasse?: string | null;
+  org_hausnummer?: string | null;
+  org_plz?: string | null;
   org_ort?: string | null;
   /** Service-E-Mail für Mieter (= mieter_kontakt_email) */
   mieter_kontakt_email?: string | null;
@@ -81,9 +85,19 @@ export async function PATCH(req: Request) {
   }
   if (body.org_strasse !== undefined) {
     patch.org_strasse = trimOrNull(body.org_strasse);
+    patch.strasse = trimOrNull(body.org_strasse);
+  }
+  if (body.org_hausnummer !== undefined) {
+    patch.org_hausnummer = trimOrNull(body.org_hausnummer);
+    patch.hausnummer = trimOrNull(body.org_hausnummer);
+  }
+  if (body.org_plz !== undefined) {
+    patch.org_plz = trimOrNull(body.org_plz);
+    patch.plz = trimOrNull(body.org_plz);
   }
   if (body.org_ort !== undefined) {
     patch.org_ort = trimOrNull(body.org_ort);
+    patch.ort = trimOrNull(body.org_ort);
   }
   if (body.mieter_kontakt_email !== undefined) {
     patch.mieter_kontakt_email = trimOrNull(body.mieter_kontakt_email);
@@ -151,17 +165,79 @@ export async function PATCH(req: Request) {
     .update(patch)
     .eq("id", session.kunde.id)
     .select(
-      "org_anzeigename, org_sub, org_logo_kuerzel, org_primary_color, org_primary_color_dk, org_primary_color_soft, org_telefon, org_strasse, org_ort, mieter_kontakt_email, mieter_kontakt_telefon, org_logo_url, impressum_url, datenschutz_url"
+      "org_anzeigename, org_sub, org_logo_kuerzel, org_primary_color, org_primary_color_dk, org_primary_color_soft, org_telefon, org_strasse, org_hausnummer, org_plz, org_ort, mieter_kontakt_email, mieter_kontakt_telefon, org_logo_url, impressum_url, datenschutz_url, org_kennung"
     )
     .single();
 
   if (error) {
     const msg = error.message || "Speichern fehlgeschlagen.";
+    const missingSplit =
+      /org_hausnummer|org_plz/i.test(msg) &&
+      (patch.org_hausnummer !== undefined || patch.org_plz !== undefined);
+
+    if (missingSplit) {
+      const fallback = { ...patch };
+      delete fallback.org_hausnummer;
+      delete fallback.org_plz;
+      // Legacy: Straße+Nr / PLZ+Ort kombiniert in org_*
+      if (body.org_strasse !== undefined || body.org_hausnummer !== undefined) {
+        fallback.org_strasse = [trimOrNull(body.org_strasse), trimOrNull(body.org_hausnummer)]
+          .filter(Boolean)
+          .join(" ") || null;
+      }
+      if (body.org_plz !== undefined || body.org_ort !== undefined) {
+        fallback.org_ort = [trimOrNull(body.org_plz), trimOrNull(body.org_ort)]
+          .filter(Boolean)
+          .join(" ") || null;
+      }
+      const retry = await supabaseAdmin
+        .from("kunden")
+        .update(fallback)
+        .eq("id", session.kunde.id)
+        .select(
+          "org_anzeigename, org_sub, org_logo_kuerzel, org_primary_color, org_primary_color_dk, org_primary_color_soft, org_telefon, org_strasse, org_ort, mieter_kontakt_email, mieter_kontakt_telefon, org_logo_url, impressum_url, datenschutz_url"
+        )
+        .single();
+      if (!retry.error) {
+        await writeAuditEvent({
+          entityType: "kunde",
+          entityId: session.kunde.id,
+          aktion: "branding_geaendert",
+          actorId: session.userId,
+          actorRolle: session.rolle,
+          kundeId: session.kunde.id,
+          payload: fallback,
+        });
+        let branding = retry.data as Record<string, unknown>;
+        if (
+          orgMeldeLegalUrlsReady({
+            impressum_url:
+              (branding.impressum_url as string | null | undefined) ??
+              session.kunde.impressum_url,
+            datenschutz_url:
+              (branding.datenschutz_url as string | null | undefined) ??
+              session.kunde.datenschutz_url,
+          }) &&
+          !String(branding.org_kennung ?? "").trim()
+        ) {
+          const kennung = await ensureOrgKennung({
+            id: session.kunde.id,
+            org_anzeigename:
+              (branding.org_anzeigename as string | null | undefined) ??
+              session.kunde.org_anzeigename,
+            name: session.kunde.name,
+          });
+          if (kennung) branding = { ...branding, org_kennung: kennung };
+        }
+        return NextResponse.json({ ok: true, branding });
+      }
+    }
+
     const migrationHint =
-      /org_primary_color_dk|org_sub|org_logo_kuerzel|org_telefon|org_strasse|org_ort/i.test(
+      /org_primary_color_dk|org_sub|org_logo_kuerzel|org_telefon|org_strasse|org_ort|org_hausnummer|org_plz/i.test(
         msg
       )
-        ? " Branding-Spalten fehlen ggf. — Migration 20260818120000_org_branding_palette.sql anwenden."
+        ? " Branding-Spalten fehlen ggf. — Migration org_branding_palette / org_address_split anwenden."
         : "";
     return NextResponse.json(
       { error: `${msg}${migrationHint}` },
@@ -179,5 +255,27 @@ export async function PATCH(req: Request) {
     payload: patch,
   });
 
-  return NextResponse.json({ ok: true, branding: data });
+  let branding = data;
+  const legalReadyAfter = orgMeldeLegalUrlsReady({
+    impressum_url:
+      (data?.impressum_url as string | null | undefined) ??
+      session.kunde.impressum_url,
+    datenschutz_url:
+      (data?.datenschutz_url as string | null | undefined) ??
+      session.kunde.datenschutz_url,
+  });
+  if (legalReadyAfter && !String(data?.org_kennung ?? "").trim()) {
+    const kennung = await ensureOrgKennung({
+      id: session.kunde.id,
+      org_anzeigename:
+        (data?.org_anzeigename as string | null | undefined) ??
+        session.kunde.org_anzeigename,
+      name: session.kunde.name,
+    });
+    if (kennung) {
+      branding = { ...data, org_kennung: kennung };
+    }
+  }
+
+  return NextResponse.json({ ok: true, branding });
 }

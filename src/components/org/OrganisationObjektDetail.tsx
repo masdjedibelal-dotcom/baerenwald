@@ -1,14 +1,15 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { OrganisationObjektDokumentePanel } from "@/components/org/OrganisationObjektDokumentePanel";
-import { OrganisationObjektMieterTab } from "@/components/org/OrganisationObjektMieterTab";
+import { OrganisationObjektEinheitenTab } from "@/components/org/OrganisationObjektEinheitenTab";
 import { PortalDetailCover } from "@/components/shared/PortalDetailCover";
 import { PortalDetailHead } from "@/components/shared/PortalDetailUi";
 import { PortalDetailTabs } from "@/components/shared/PortalDetailTabs";
 import { PortalInboxEmpty } from "@/components/shared/PortalEmptyState";
 import {
+  EinstellungenEdField,
   EinstellungenEditModal,
   EinstellungenEuroSlider,
   EinstellungenPfRow,
@@ -58,7 +59,6 @@ type Props = {
   offenCount: number;
   onBack: () => void;
   onEdit: () => void;
-  onEinladen: () => void;
   onRefresh: () => void;
   /** Öffnet den Vorgang in der Listenansicht (Vorgänge). */
   onOpenVorgang?: (leadId: string) => void;
@@ -74,81 +74,8 @@ type Props = {
   >;
 };
 
-function ObjCard({
-  title,
-  children,
-}: {
-  title?: string | null;
-  children: React.ReactNode;
-}) {
-  return (
-    <div className="mb-3.5 rounded-xl border border-border-default bg-[var(--p2-panel,#fff)] p-4 shadow-sm">
-      {title ? <p className="portal-text-section mb-3">{title}</p> : null}
-      {children}
-    </div>
-  );
-}
-
-function ObjRow({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="portal-text-meta flex items-center justify-between gap-3 border-b border-border-default py-2 last:border-b-0">
-      <span className="shrink-0 text-text-secondary">{label}</span>
-      <span className="min-w-0 text-right font-semibold text-text-primary">
-        {value}
-      </span>
-    </div>
-  );
-}
-
-function ObjEditRow({
-  label,
-  value,
-  onChange,
-  placeholder,
-  type = "text",
-  autoComplete,
-  /** Soft-Kachel wie Stammdaten-Felder (p2-selected). */
-  variant = "plain",
-}: {
-  label: string;
-  value: string;
-  onChange: (v: string) => void;
-  placeholder?: string;
-  type?: string;
-  autoComplete?: string;
-  variant?: "plain" | "tile";
-}) {
-  if (variant === "tile") {
-    return (
-      <label className="block rounded-[11px] border border-[var(--p2-line,rgba(0,0,0,0.08))] bg-[var(--p2-selected,#e8ece9)] px-3.5 py-2.5">
-        <span className="portal-text-label block normal-case tracking-wide text-text-tertiary">
-          {label}
-        </span>
-        <input
-          type={type}
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          placeholder={placeholder}
-          autoComplete={autoComplete}
-          className="portal-text-card-title mt-0.5 w-full border-0 bg-transparent p-0 font-semibold text-text-primary outline-none placeholder:font-normal placeholder:text-text-tertiary"
-        />
-      </label>
-    );
-  }
-
-  return (
-    <div className="portal-text-meta flex items-center justify-between gap-3 border-b border-border-default py-1.5 last:border-b-0">
-      <span className="shrink-0 text-text-secondary">{label}</span>
-      <input
-        type={type}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        placeholder={placeholder}
-        autoComplete={autoComplete}
-        className="min-w-0 max-w-[65%] flex-1 rounded-lg border border-transparent bg-transparent px-2 py-1.5 text-right font-semibold text-text-primary outline-none placeholder:font-normal placeholder:text-text-tertiary focus:border-border-default focus:bg-white"
-      />
-    </div>
-  );
+function dash(v: string) {
+  return v.trim() || "—";
 }
 
 export function OrganisationObjektDetail({
@@ -157,7 +84,6 @@ export function OrganisationObjektDetail({
   offenCount,
   onBack,
   onEdit,
-  onEinladen,
   onRefresh,
   onOpenVorgang,
   dokumenteByLeadId = {},
@@ -193,7 +119,12 @@ export function OrganisationObjektDetail({
   const [kontaktName, setKontaktName] = useState(meta.kontakt ?? "");
   const [kontaktTel, setKontaktTel] = useState(meta.tel ?? "");
   const [kontaktEmail, setKontaktEmail] = useState(meta.email ?? "");
-  const kontaktTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [kontaktEditOpen, setKontaktEditOpen] = useState(false);
+  const [editKontaktName, setEditKontaktName] = useState("");
+  const [editKontaktTel, setEditKontaktTel] = useState("");
+  const [editKontaktEmail, setEditKontaktEmail] = useState("");
+  const [kontaktSaving, setKontaktSaving] = useState(false);
+
   const [versicherer, setVersicherer] = useState(objekt.versicherer ?? "");
   const [objVersNr, setObjVersNr] = useState(objekt.versicherungs_nr ?? "");
   const [selbstbehalt, setSelbstbehalt] = useState(
@@ -202,8 +133,12 @@ export function OrganisationObjektDetail({
   const [autoSchadenakte, setAutoSchadenakte] = useState(
     Boolean(objekt.automatische_schadenakte)
   );
-  const [autoSchadenakteSaving, setAutoSchadenakteSaving] = useState(false);
-  const versTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [versEditOpen, setVersEditOpen] = useState(false);
+  const [editVersicherer, setEditVersicherer] = useState("");
+  const [editVersNr, setEditVersNr] = useState("");
+  const [editSelbstbehalt, setEditSelbstbehalt] = useState("");
+  const [editAutoSchadenakte, setEditAutoSchadenakte] = useState(false);
+  const [versSaving, setVersSaving] = useState(false);
 
   useEffect(() => {
     setKontaktName(meta.kontakt ?? "");
@@ -242,13 +177,6 @@ export function OrganisationObjektDetail({
     objekt.id,
   ]);
 
-  useEffect(() => {
-    return () => {
-      if (kontaktTimer.current) clearTimeout(kontaktTimer.current);
-      if (versTimer.current) clearTimeout(versTimer.current);
-    };
-  }, []);
-
   const typLine = formatObjektTypLine(objekt);
   const plzOrt = formatObjektPlzOrt(objekt) || "—";
   const strasse = formatObjektStrasse(objekt) || "—";
@@ -265,18 +193,32 @@ export function OrganisationObjektDetail({
     [leads, objekt]
   );
 
-  const saveAnsprechpartner = async (next: {
-    kontakt: string;
-    tel: string;
-    email: string;
-  }) => {
+  function openKontaktEdit() {
+    setEditKontaktName(kontaktName);
+    setEditKontaktTel(kontaktTel);
+    setEditKontaktEmail(kontaktEmail);
+    setKontaktEditOpen(true);
+  }
+
+  function closeKontaktEdit() {
+    if (kontaktSaving) return;
+    setKontaktEditOpen(false);
+  }
+
+  async function saveKontaktEdit() {
+    setKontaktSaving(true);
     try {
+      const next = {
+        kontakt: editKontaktName.trim(),
+        tel: editKontaktTel.trim(),
+        email: editKontaktEmail.trim(),
+      };
       const notizen_intern = encodeObjektMeta(
         {
           typ: meta.typ,
-          kontakt: next.kontakt.trim() || undefined,
-          tel: next.tel.trim() || undefined,
-          email: next.email.trim() || undefined,
+          kontakt: next.kontakt || undefined,
+          tel: next.tel || undefined,
+          email: next.email || undefined,
         },
         objekt.notizen_intern
       );
@@ -290,31 +232,69 @@ export function OrganisationObjektDetail({
         portalToastError("Ansprechpartner nicht gespeichert", json.error);
         return;
       }
+      setKontaktName(next.kontakt);
+      setKontaktTel(next.tel);
+      setKontaktEmail(next.email);
+      setKontaktEditOpen(false);
       orgPortalToast.objektAktualisiert();
       onRefresh();
     } catch {
       portalToastError("Ansprechpartner nicht gespeichert");
+    } finally {
+      setKontaktSaving(false);
     }
-  };
+  }
 
-  const scheduleAnsprechpartner = (patch: {
-    kontakt?: string;
-    tel?: string;
-    email?: string;
-  }) => {
-    const next = {
-      kontakt: patch.kontakt ?? kontaktName,
-      tel: patch.tel ?? kontaktTel,
-      email: patch.email ?? kontaktEmail,
-    };
-    if (patch.kontakt !== undefined) setKontaktName(patch.kontakt);
-    if (patch.tel !== undefined) setKontaktTel(patch.tel);
-    if (patch.email !== undefined) setKontaktEmail(patch.email);
-    if (kontaktTimer.current) clearTimeout(kontaktTimer.current);
-    kontaktTimer.current = setTimeout(() => {
-      void saveAnsprechpartner(next);
-    }, 550);
-  };
+  function openVersEdit() {
+    setEditVersicherer(versicherer);
+    setEditVersNr(objVersNr);
+    setEditSelbstbehalt(selbstbehalt);
+    setEditAutoSchadenakte(autoSchadenakte);
+    setVersEditOpen(true);
+  }
+
+  function closeVersEdit() {
+    if (versSaving) return;
+    setVersEditOpen(false);
+  }
+
+  async function saveVersEdit() {
+    setVersSaving(true);
+    try {
+      const sb = editSelbstbehalt.trim()
+        ? Number(editSelbstbehalt.replace(",", "."))
+        : null;
+      const res = await fetch("/api/org/objekte", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id: objekt.id,
+          versicherer: editVersicherer.trim() || null,
+          versicherungs_nr: editVersNr.trim() || null,
+          selbstbehalt_eur: Number.isFinite(sb as number) ? sb : null,
+          automatische_schadenakte: editAutoSchadenakte,
+        }),
+      });
+      const json = (await res.json()) as { error?: string };
+      if (!res.ok) {
+        portalToastError("Versicherung nicht gespeichert", json.error);
+        return;
+      }
+      setVersicherer(editVersicherer.trim());
+      setObjVersNr(editVersNr.trim());
+      setSelbstbehalt(
+        Number.isFinite(sb as number) && sb != null ? String(sb) : ""
+      );
+      setAutoSchadenakte(editAutoSchadenakte);
+      setVersEditOpen(false);
+      orgPortalToast.objektAktualisiert();
+      onRefresh();
+    } catch {
+      portalToastError("Versicherung nicht gespeichert");
+    } finally {
+      setVersSaving(false);
+    }
+  }
 
   function openFreigabeEdit() {
     setEditSchwelle(schwelle);
@@ -368,186 +348,139 @@ export function OrganisationObjektDetail({
     }
   }
 
-  const saveVersicherung = async (next: {
-    versicherer: string;
-    versicherungs_nr: string;
-    selbstbehalt: string;
-  }) => {
-    try {
-      const sb = next.selbstbehalt.trim()
-        ? Number(next.selbstbehalt.replace(",", "."))
-        : null;
-      const res = await fetch("/api/org/objekte", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          id: objekt.id,
-          versicherer: next.versicherer.trim() || null,
-          versicherungs_nr: next.versicherungs_nr.trim() || null,
-          selbstbehalt_eur: Number.isFinite(sb as number) ? sb : null,
-        }),
-      });
-      const json = (await res.json()) as { error?: string };
-      if (!res.ok) {
-        portalToastError("Versicherung nicht gespeichert", json.error);
-        return;
-      }
-      orgPortalToast.objektAktualisiert();
-      onRefresh();
-    } catch {
-      portalToastError("Versicherung nicht gespeichert");
-    }
-  };
-
-  const scheduleVersicherung = (patch: {
-    versicherer?: string;
-    versicherungs_nr?: string;
-    selbstbehalt?: string;
-  }) => {
-    const next = {
-      versicherer: patch.versicherer ?? versicherer,
-      versicherungs_nr: patch.versicherungs_nr ?? objVersNr,
-      selbstbehalt: patch.selbstbehalt ?? selbstbehalt,
-    };
-    if (patch.versicherer !== undefined) setVersicherer(patch.versicherer);
-    if (patch.versicherungs_nr !== undefined) setObjVersNr(patch.versicherungs_nr);
-    if (patch.selbstbehalt !== undefined) setSelbstbehalt(patch.selbstbehalt);
-    if (versTimer.current) clearTimeout(versTimer.current);
-    versTimer.current = setTimeout(() => {
-      void saveVersicherung(next);
-    }, 550);
-  };
-
-  async function saveAutoSchadenakte(next: boolean) {
-    setAutoSchadenakte(next);
-    setAutoSchadenakteSaving(true);
-    try {
-      const res = await fetch("/api/org/objekte", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          id: objekt.id,
-          automatische_schadenakte: next,
-        }),
-      });
-      const json = (await res.json()) as { error?: string };
-      if (!res.ok) {
-        setAutoSchadenakte(!next);
-        portalToastError("Einstellung nicht gespeichert", json.error);
-        return;
-      }
-      orgPortalToast.objektAktualisiert();
-      onRefresh();
-    } catch {
-      setAutoSchadenakte(!next);
-      portalToastError("Einstellung nicht gespeichert");
-    } finally {
-      setAutoSchadenakteSaving(false);
-    }
-  }
-
   let body: React.ReactNode = null;
 
   if (tab === "stamm") {
     body = (
-      <div className="space-y-3.5">
-        <ObjCard title="Ansprechpartner">
-          <div className="flex flex-col gap-2">
-            <ObjEditRow
-              variant="tile"
-              label="Name"
-              value={kontaktName}
-              onChange={(v) => scheduleAnsprechpartner({ kontakt: v })}
-              placeholder="Max Mustermann"
-              autoComplete="name"
-            />
-            <ObjEditRow
-              variant="tile"
-              label="Telefon"
-              type="tel"
-              value={kontaktTel}
-              onChange={(v) => scheduleAnsprechpartner({ tel: v })}
-              placeholder="089 / …"
-              autoComplete="tel"
-            />
-            <ObjEditRow
-              variant="tile"
-              label="E-Mail"
-              type="email"
-              value={kontaktEmail}
-              onChange={(v) => scheduleAnsprechpartner({ email: v })}
-              placeholder="name@firma.de"
-              autoComplete="email"
-            />
-          </div>
-        </ObjCard>
-
-        <div className="grid gap-3.5 md:grid-cols-2">
-          <ObjCard title="Objektdaten">
-            <ObjRow label="Bezeichnung" value={objekt.titel} />
-            <ObjRow label="Typ" value={typLine} />
-            <ObjRow
+      <div className="space-y-6">
+        <div className="space-y-3">
+          <EinstellungenSectionHeader title="Objektdaten" onEdit={onEdit} />
+          <div className="flex flex-col gap-[11px]">
+            <EinstellungenPfRow label="Bezeichnung" value={dash(objekt.titel)} />
+            <EinstellungenPfRow label="Typ" value={dash(typLine)} />
+            <EinstellungenPfRow
               label="Adresse"
               value={
                 [strasse, plzOrt].filter((x) => x && x !== "—").join(", ") || "—"
               }
             />
-            <ObjRow
+            <EinstellungenPfRow
               label="Einheiten"
               value={we === 1 ? "1 Einheit" : `${we} Einheiten`}
             />
-          </ObjCard>
-          <ObjCard title="Gebäudeversicherung">
-            <ObjEditRow
+          </div>
+        </div>
+
+        <div className="space-y-3">
+          <EinstellungenSectionHeader
+            title="Ansprechpartner"
+            onEdit={openKontaktEdit}
+          />
+          <div className="flex flex-col gap-[11px]">
+            <EinstellungenPfRow label="Name" value={dash(kontaktName)} />
+            <EinstellungenPfRow label="Telefon" value={dash(kontaktTel)} />
+            <EinstellungenPfRow label="E-Mail" value={dash(kontaktEmail)} />
+          </div>
+          <EinstellungenEditModal
+            open={kontaktEditOpen}
+            title="Ansprechpartner bearbeiten"
+            onClose={closeKontaktEdit}
+            onSave={() => void saveKontaktEdit()}
+            saving={kontaktSaving}
+          >
+            <EinstellungenEdField
+              label="Name"
+              value={editKontaktName}
+              onChange={setEditKontaktName}
+              placeholder="Max Mustermann"
+              autoComplete="name"
+            />
+            <EinstellungenEdField
+              label="Telefon"
+              type="tel"
+              value={editKontaktTel}
+              onChange={setEditKontaktTel}
+              placeholder="089 / …"
+              autoComplete="tel"
+            />
+            <EinstellungenEdField
+              label="E-Mail"
+              type="email"
+              value={editKontaktEmail}
+              onChange={setEditKontaktEmail}
+              placeholder="name@firma.de"
+              autoComplete="email"
+            />
+          </EinstellungenEditModal>
+        </div>
+
+        <div className="space-y-3">
+          <EinstellungenSectionHeader
+            title="Gebäudeversicherung"
+            onEdit={openVersEdit}
+          />
+          <div className="flex flex-col gap-[11px]">
+            <EinstellungenPfRow label="Versicherer" value={dash(versicherer)} />
+            <EinstellungenPfRow label="Policen-Nr." value={dash(objVersNr)} />
+            <EinstellungenPfRow
+              label="Selbstbehalt"
+              value={
+                selbstbehalt.trim()
+                  ? `${selbstbehalt.trim().replace(".", ",")} €`
+                  : "—"
+              }
+            />
+            <EinstellungenPfRow
+              label="Automatische Schadenakte"
+              value={autoSchadenakte ? "Ein" : "Aus"}
+            />
+          </div>
+          <EinstellungenEditModal
+            open={versEditOpen}
+            title="Gebäudeversicherung bearbeiten"
+            onClose={closeVersEdit}
+            onSave={() => void saveVersEdit()}
+            saving={versSaving}
+          >
+            <EinstellungenEdField
               label="Versicherer"
-              value={versicherer}
-              onChange={(v) => scheduleVersicherung({ versicherer: v })}
+              value={editVersicherer}
+              onChange={setEditVersicherer}
               placeholder="z. B. Allianz"
             />
-            <ObjEditRow
+            <EinstellungenEdField
               label="Policen-Nr."
-              value={objVersNr}
-              onChange={(v) => scheduleVersicherung({ versicherungs_nr: v })}
+              value={editVersNr}
+              onChange={setEditVersNr}
               placeholder="Police / Vertragsnummer"
             />
-            <ObjEditRow
+            <EinstellungenEdField
               label="Selbstbehalt (€)"
-              value={selbstbehalt}
-              onChange={(v) => scheduleVersicherung({ selbstbehalt: v })}
+              value={editSelbstbehalt}
+              onChange={setEditSelbstbehalt}
               placeholder="0"
             />
-            <div className="mt-3 border-t border-border-light pt-3">
-              <EinstellungenToggle
-                checked={autoSchadenakte}
-                onChange={(v) => {
-                  if (autoSchadenakteSaving) return;
-                  void saveAutoSchadenakte(v);
-                }}
-                title="Automatische Schadenakte"
-                description={
-                  autoSchadenakte
-                    ? "Ein: Bei jeder Schadenmeldung an diesem Objekt wird die Akte erzeugt und unter Dokumente abgelegt."
-                    : "Aus: Keine automatische Schadenakte. Stammdaten unten bleiben für manuelle Nutzung."
-                }
-              />
-            </div>
-            <p className="portal-text-meta mt-2 leading-relaxed text-text-tertiary">
-              Einmal hinterlegt — Policen-Daten fließen in die Schadenakte.
-              Fertige PDFs findest du im Vorgang unter Dokumente.
-            </p>
-          </ObjCard>
+            <EinstellungenToggle
+              checked={editAutoSchadenakte}
+              onChange={setEditAutoSchadenakte}
+              title="Automatische Schadenakte"
+              description={
+                editAutoSchadenakte
+                  ? "Ein: Bei jeder Schadenmeldung an diesem Objekt wird die Akte erzeugt und unter Dokumente abgelegt."
+                  : "Aus: Keine automatische Schadenakte."
+              }
+            />
+          </EinstellungenEditModal>
         </div>
       </div>
     );
-  } else if (tab === "mieter") {
+  } else if (tab === "einheiten") {
     body = (
-      <OrganisationObjektMieterTab
+      <OrganisationObjektEinheitenTab
         objektId={objekt.id}
-        leads={objektLeads}
-        defaultStrasse={objekt.strasse}
-        defaultHausnummer={objekt.hausnummer}
-        onEinladen={onEinladen}
+        orgAnzeigename={undefined}
         onGotoVorgaenge={() => setTab("vorgaenge")}
+        onEinheitenChange={onRefresh}
       />
     );
   } else if (tab === "vorgaenge") {
@@ -569,7 +502,7 @@ export function OrganisationObjektDetail({
             const adresse = [l.strasse, l.hausnummer]
               .filter(Boolean)
               .join(" ");
-            const we = l.melder_einheit?.trim()
+            const weLabel = l.melder_einheit?.trim()
               ? /^(WE|Whg)/i.test(l.melder_einheit.trim())
                 ? l.melder_einheit.trim()
                 : `WE ${l.melder_einheit.trim()}`
@@ -577,7 +510,7 @@ export function OrganisationObjektDetail({
             const person = l.melder_name?.trim() || undefined;
             const subtitle = [
               adresse || objekt.titel || "Objekt",
-              we,
+              weLabel,
               person,
             ]
               .filter(Boolean)

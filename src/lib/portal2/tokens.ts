@@ -5,8 +5,8 @@
 
 export const PORTAL_C = {
   /** Seitenhintergrund — klar abgesetzt von weißen Panels/Cards */
-  bg: "#EBE9E5",
-  bgContent: "#EBE9E5",
+  bg: "#F6F5F3",
+  bgContent: "#F6F5F3",
   panel: "#ffffff",
   line: "rgba(0,0,0,0.09)",
   line2: "rgba(0,0,0,0.06)",

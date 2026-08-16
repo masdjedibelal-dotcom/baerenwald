@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
+import { PortalModalShell } from "@/components/shared/PortalModalShell";
 import { getOrgAvTextForVersion } from "@/lib/org/org-av-text";
 import {
   ORG_AV_VERSION_CURRENT,
@@ -15,6 +16,10 @@ import {
   orgWhitelabelGateHardEnforced,
 } from "@/lib/org/org-whitelabel-gate";
 import type { OrganisationKunde } from "@/lib/org/types";
+import {
+  lockPortalBodyScroll,
+  unlockPortalBodyScroll,
+} from "@/lib/portal2/lock-portal-body-scroll";
 import { orgPortalToast } from "@/lib/shared/portal-toast";
 
 type Props = {
@@ -28,11 +33,19 @@ export function OrganisationWhitelabelGate({ kunde, canComplete, onComplete }: P
   const [mail, setMail] = useState(orgEffectiveMieterMail(kunde));
   const [hint, setHint] = useState(kunde.mieter_kontakt_hinweis ?? "");
   const [avOk, setAvOk] = useState(Boolean(kunde.av_akzeptiert_am));
-  const [avExpanded, setAvExpanded] = useState(false);
+  const [avOpen, setAvOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  if (orgWhitelabelReady(kunde)) return null;
+  const ready = orgWhitelabelReady(kunde);
+
+  useEffect(() => {
+    if (ready) return;
+    lockPortalBodyScroll();
+    return () => unlockPortalBodyScroll();
+  }, [ready]);
+
+  if (ready) return null;
 
   const hardEnforced = orgWhitelabelGateHardEnforced(kunde);
   const daysLeft = orgWhitelabelGateDaysRemaining(kunde);
@@ -140,20 +153,6 @@ export function OrganisationWhitelabelGate({ kunde, canComplete, onComplete }: P
               onChange={(e) => setHint(e.target.value)}
             />
           </div>
-          <div className="rounded-lg border border-border-default bg-surface-page p-3">
-            <button
-              type="button"
-              className="text-sm font-medium text-text-primary underline"
-              onClick={() => setAvExpanded((v) => !v)}
-            >
-              {avExpanded ? "AV-Text einklappen" : "AV-Text anzeigen (Entwurf)"}
-            </button>
-            {avExpanded ? (
-              <pre className="mt-2 max-h-40 overflow-y-auto whitespace-pre-wrap text-xs text-text-secondary">
-                {avText}
-              </pre>
-            ) : null}
-          </div>
           <label className="flex items-start gap-2 text-sm text-text-secondary">
             <input
               type="checkbox"
@@ -162,8 +161,19 @@ export function OrganisationWhitelabelGate({ kunde, canComplete, onComplete }: P
               className="mt-1"
             />
             <span>
-              Ich akzeptiere den Auftragsverarbeitungsvertrag (AV) gemäß Art. 28 DSGVO
-              für die Mieter-Kommunikation über die Plattform.
+              Ich akzeptiere den{" "}
+              <button
+                type="button"
+                className="font-medium text-accent underline-offset-2 hover:underline"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setAvOpen(true);
+                }}
+              >
+                Auftragsverarbeitungsvertrag
+              </button>{" "}
+              (AV) gemäß Art. 28 DSGVO für die Mieter-Kommunikation über die Plattform.
             </span>
           </label>
         </div>
@@ -190,14 +200,47 @@ export function OrganisationWhitelabelGate({ kunde, canComplete, onComplete }: P
   );
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-[#16201B]/50 p-4">
-      {canComplete ? (
-        <form onSubmit={save} className={panelClass}>
-          {inner}
-        </form>
-      ) : (
-        <div className={panelClass}>{inner}</div>
-      )}
-    </div>
+    <>
+      <div
+        className="fixed inset-0 z-[100] flex items-center justify-center bg-[#16201B]/50 p-4 overscroll-none touch-none"
+        role="presentation"
+        onWheel={(e) => {
+          if (e.target === e.currentTarget) e.preventDefault();
+        }}
+        onTouchMove={(e) => {
+          if (e.target === e.currentTarget) e.preventDefault();
+        }}
+      >
+        {canComplete ? (
+          <form
+            onSubmit={save}
+            className={`${panelClass} touch-auto overscroll-contain`}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {inner}
+          </form>
+        ) : (
+          <div
+            className={`${panelClass} touch-auto overscroll-contain`}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {inner}
+          </div>
+        )}
+      </div>
+
+      <PortalModalShell
+        open={avOpen}
+        onClose={() => setAvOpen(false)}
+        title="Auftragsverarbeitungsvertrag"
+        subtitle={`Version ${ORG_AV_VERSION_CURRENT}`}
+        variant="preview"
+        closeOnBackdrop
+      >
+        <pre className="max-h-[min(60vh,28rem)] overflow-y-auto whitespace-pre-wrap font-sans portal-text-body text-text-primary">
+          {avText}
+        </pre>
+      </PortalModalShell>
+    </>
   );
 }

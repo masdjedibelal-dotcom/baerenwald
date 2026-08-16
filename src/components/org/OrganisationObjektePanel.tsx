@@ -21,7 +21,6 @@ import {
   ORG_MELDE_LEGAL_REQUIRED_HINT,
 } from "@/lib/org/melde-legal-urls";
 import { aushangUrl } from "@/lib/portal2/aushang";
-import { PortalModalEinladen } from "@/components/shared/PortalModalEinladen";
 import type {
   OrganisationKunde,
   OrganisationLead,
@@ -111,7 +110,6 @@ export function OrganisationObjektePanel({
 }: Props) {
   const [mode, setMode] = useState<Mode>({ kind: "list" });
   const [selected, setSelected] = useState<string[]>([]);
-  const [einladenObjektId, setEinladenObjektId] = useState<string | null>(null);
   const [qrModal, setQrModal] = useState<{
     objektId?: string;
     label: string;
@@ -403,22 +401,11 @@ export function OrganisationObjektePanel({
               draft: draftFromObjekt(activeObjekt, defaultHv),
             })
           }
-          onEinladen={() => setEinladenObjektId(activeObjekt.id)}
           onRefresh={onRefresh}
           onOpenVorgang={onOpenVorgang}
           dokumenteByLeadId={dokumenteByLeadId}
         />
         {confirmDialog}
-        {einladenObjektId && orgKennung ? (
-          <PortalModalEinladen
-            open
-            onClose={() => setEinladenObjektId(null)}
-            orgKennung={orgKennung}
-            objekte={objekte}
-            initialObjektId={einladenObjektId}
-            orgAnzeigename={kunde?.org_anzeigename ?? kunde?.name}
-          />
-        ) : null}
       </>
     );
   }

@@ -1,4 +1,10 @@
 import { PORTAL_C } from "@/lib/portal2/tokens";
+import {
+  formatPlzOrt,
+  formatStrasseNr,
+  splitPlzOrt,
+  splitStrasseHausnummer,
+} from "@/lib/partner/handwerker-anschrift";
 
 /**
  * White-Label Brand-Presets — Mock `BRAND_PRESETS` + Default-`ORG`
@@ -103,7 +109,13 @@ export type OrgBrandSource = {
   org_primary_color_soft?: string | null;
   org_telefon?: string | null;
   org_strasse?: string | null;
+  org_hausnummer?: string | null;
+  org_plz?: string | null;
   org_ort?: string | null;
+  strasse?: string | null;
+  hausnummer?: string | null;
+  plz?: string | null;
+  ort?: string | null;
   mieter_kontakt_telefon?: string | null;
   mieter_kontakt_email?: string | null;
 };
@@ -185,11 +197,47 @@ export function orgBrandFromKunde(
       src.email?.trim() ||
       (opts?.useDemoFallback ? ORG_BRAND_DEFAULT.mail : ""),
     strasse:
-      src.org_strasse?.trim() ||
+      formatStrasseNr(
+        src.org_strasse?.trim() || src.strasse,
+        src.org_hausnummer?.trim() || src.hausnummer
+      ) ||
       (opts?.useDemoFallback ? ORG_BRAND_DEFAULT.strasse : ""),
     ort:
-      src.org_ort?.trim() ||
+      formatPlzOrt(
+        src.org_plz?.trim() || src.plz,
+        (() => {
+          const rawOrt = src.org_ort?.trim() || src.ort?.trim() || "";
+          if (src.org_plz?.trim() || src.plz?.trim()) return rawOrt;
+          return splitPlzOrt(rawOrt).ort || rawOrt;
+        })()
+      ) ||
       (opts?.useDemoFallback ? ORG_BRAND_DEFAULT.ort : ""),
     logoUrl: src.org_logo_url ?? null,
   };
+}
+
+/** Adresse für HV-Profil-Editor — org_* mit Fallback auf CRM-Registrierung. */
+export function orgAddressDraftFromKunde(src: OrgBrandSource): {
+  strasse: string;
+  hausnummer: string;
+  plz: string;
+  ort: string;
+} {
+  let strasse = src.org_strasse?.trim() || src.strasse?.trim() || "";
+  let hausnummer = src.org_hausnummer?.trim() || src.hausnummer?.trim() || "";
+  let plz = src.org_plz?.trim() || src.plz?.trim() || "";
+  let ort = src.org_ort?.trim() || src.ort?.trim() || "";
+
+  if (!hausnummer && strasse) {
+    const split = splitStrasseHausnummer(strasse);
+    strasse = split.strasse;
+    hausnummer = split.hausnummer;
+  }
+  if (!plz && ort) {
+    const split = splitPlzOrt(ort);
+    plz = split.plz;
+    ort = split.ort;
+  }
+
+  return { strasse, hausnummer, plz, ort };
 }
