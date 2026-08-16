@@ -86,8 +86,7 @@ export async function ensurePartnerOffenNotifications(opts: {
     .from("notifications")
     .select("id, link, typ")
     .eq("handwerker_id", handwerkerId)
-    .eq("gelesen", false)
-    .in("typ", ["neu", "geaendert"])
+    .eq("typ", "neu")
     .order("created_at", { ascending: false })
     .limit(80);
 
@@ -98,13 +97,14 @@ export async function ensurePartnerOffenNotifications(opts: {
   );
 
   for (const target of targets) {
+    if (target.typ !== "neu") continue;
     const link = partnerVorgangPortalPath(target.vorgangId);
     const vorgangKey = partnerNotificationVorgangKey(link);
     if (!vorgangKey || unreadKeys.has(vorgangKey)) continue;
 
     const result = await createPartnerNotification({
       handwerkerId,
-      typ: target.typ,
+      typ: "neu",
       projektName: target.projektName,
       leistungName: target.leistungName,
       link,

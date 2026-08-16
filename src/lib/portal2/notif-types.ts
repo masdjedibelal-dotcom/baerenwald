@@ -6,6 +6,7 @@
 export type PortalNotifRole =
   | "kunde"
   | "eigentuemer"
+  | "hausmeister"
   | "mieter"
   | "handwerker";
 
@@ -85,6 +86,11 @@ export const PORTAL_NOTIF_ROLE_TITLES: Partial<
     info: "Update zu Ihrem Objekt",
     status: "Vorgang abgeschlossen",
   },
+  hausmeister: {
+    auftrag: "Prüfung angefordert",
+    info: "Update zu Ihrem Objekt",
+    status: "Vorgang aktualisiert",
+  },
   mieter: {
     termin: "Termin steht fest",
     status: "Meldung in Bearbeitung",
@@ -120,6 +126,11 @@ export const PORTAL_NOTIF_TEMPLATES = {
     auftrag: "Neuer Vorgang „{titel}\" an Ihrem Objekt.",
     info: "Update zu „{titel}\".",
     status: "„{titel}\" wurde abgeschlossen.",
+  },
+  hausmeister: {
+    auftrag: "Prüfung angefordert für „{titel}\".",
+    info: "Update zu „{titel}\".",
+    status: "„{titel}\" wurde aktualisiert.",
   },
   mieter: {
     termin:

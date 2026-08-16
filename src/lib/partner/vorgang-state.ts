@@ -150,11 +150,25 @@ export function resolveHandwerkerBestaetigtAt(input: {
   handwerker_bestaetigt_at?: string | null;
   projektvertrag_bestaetigt_am?: string | null;
   angebot_bestaetigt_at?: string | null;
+  /** CRM-Übernahme an angebot_handwerker — reicht ohne Projektvertrag. */
+  angebotHwStatus?: string | null;
+  /** Zuweisung am Auftrag. */
+  hwStatus?: string | null;
 }): string | null {
-  return (
+  const explicit =
     input.handwerker_bestaetigt_at?.trim() ||
-    input.projektvertrag_bestaetigt_am?.trim() ||
     input.angebot_bestaetigt_at?.trim() ||
-    null
-  );
+    input.projektvertrag_bestaetigt_am?.trim() ||
+    null;
+  if (explicit) return explicit;
+
+  const ah = (input.angebotHwStatus ?? "").trim().toLowerCase();
+  if (ah === "uebernommen" || ah === "bestaetigt") {
+    return "crm-freigegeben";
+  }
+  const hw = (input.hwStatus ?? "").trim().toLowerCase();
+  if (hw === "akzeptiert" || hw === "uebernommen") {
+    return "crm-angenommen";
+  }
+  return null;
 }

@@ -34,6 +34,7 @@ export type LeadBefundPunktRow = {
   status: LeadBefundPunktStatus | null;
   notiz: string;
   foto_refs: string[];
+  updated_at: string | null;
 };
 
 export type LeadBefundRow = {
@@ -76,6 +77,8 @@ function mapPunkt(row: Record<string, unknown>): LeadBefundPunktRow {
     status: (row.status as LeadBefundPunktStatus | null) ?? null,
     notiz: String(row.notiz ?? ""),
     foto_refs: parseFotoRefs(row.foto_refs),
+    updated_at:
+      row.updated_at != null ? String(row.updated_at) : null,
   };
 }
 
@@ -95,7 +98,7 @@ async function loadBefundWithPunkte(
   const { data: punkte } = await supabaseAdmin
     .from("lead_befund_punkte")
     .select(
-      "id, befund_id, sort_order, titel, quelle, vorlage_key, status, notiz, foto_refs"
+      "id, befund_id, sort_order, titel, quelle, vorlage_key, status, notiz, foto_refs, updated_at"
     )
     .eq("befund_id", befundId)
     .order("sort_order", { ascending: true });
@@ -286,7 +289,7 @@ export async function updateLeadBefundPunktAction(input: {
     .update(patch)
     .eq("id", punktId)
     .select(
-      "id, befund_id, sort_order, titel, quelle, vorlage_key, status, notiz, foto_refs"
+      "id, befund_id, sort_order, titel, quelle, vorlage_key, status, notiz, foto_refs, updated_at"
     )
     .single();
 
@@ -433,8 +436,8 @@ export async function completeLeadBefundAction(input: {
   if (!befund) return { ok: false, error: "Befund laden fehlgeschlagen." };
 
   void import("@/lib/org/ensure-versicherungsakte").then(
-    ({ ensureVersicherungsakteForLead }) =>
-      ensureVersicherungsakteForLead(owned.leadId).catch((e) =>
+    ({ applyAutomatischeSchadenakteIfEnabled }) =>
+      applyAutomatischeSchadenakteIfEnabled(owned.leadId).catch((e) =>
         console.warn("[completeLeadBefund] schadenakte:", e)
       )
   );
@@ -451,6 +454,65 @@ export async function completeLeadBefundAction(input: {
 
   revalidatePath("/portal");
   return { ok: true, befund, hvStatus };
+}
+
+/**
+ * HM lehnt ab → zurück an HV (Status neu), wie vor der Hausmeister-Prüfung.
+ */
+export async function rejectLeadBefundToHvAction(input: {
+  befundId: string;
+}): Promise<ActionResult<{ hvStatus: string }>> {
+  const actorRes = await requireBefundActor();
+  if (!actorRes.ok) return { ok: false, error: actorRes.error };
+  const write = requireBefundWrite(actorRes.actor);
+  if (!write.ok) return { ok: false, error: write.error };
+
+  const befundId = String(input.befundId ?? "").trim();
+  if (!befundId) return { ok: false, error: "Befund fehlt." };
+
+  const owned = await assertBefundForActor(actorRes.actor, befundId);
+  if (!owned) return { ok: false, error: "Befund nicht gefunden." };
+
+  const { data: lead } = await supabaseAdmin
+    .from("leads")
+    .select("id, hv_meldung_status")
+    .eq("id", owned.leadId)
+    .maybeSingle();
+
+  if (!lead) return { ok: false, error: "Vorgang nicht gefunden." };
+  const hv = String(lead.hv_meldung_status ?? "").trim().toLowerCase();
+  if (hv !== "hm_pruefung") {
+    return {
+      ok: false,
+      error: "Zurückgeben nur während Hausmeister-Prüfung möglich.",
+    };
+  }
+
+  const nowIso = new Date().toISOString();
+  const { error: leadErr } = await supabaseAdmin
+    .from("leads")
+    .update({ hv_meldung_status: "neu" })
+    .eq("id", owned.leadId);
+  if (leadErr) return { ok: false, error: leadErr.message };
+
+  await supabaseAdmin
+    .from("lead_befunde")
+    .update({
+      ergebnis: null,
+      abgeschlossen_at: null,
+      updated_at: nowIso,
+    })
+    .eq("id", befundId);
+
+  void import("@/lib/org/notify-hv-hm-befund").then(
+    ({ notifyHvHausmeisterBefundZurueck }) =>
+      notifyHvHausmeisterBefundZurueck({ leadId: owned.leadId }).catch((e) =>
+        console.warn("[rejectLeadBefundToHv] HV-Notify:", e)
+      )
+  );
+
+  revalidatePath("/portal");
+  return { ok: true, hvStatus: "neu" };
 }
 
 /** Freipunkt am Ende der Liste hinzufügen. */
@@ -496,7 +558,7 @@ export async function addLeadBefundFreipunktAction(input: {
       foto_refs: [],
     })
     .select(
-      "id, befund_id, sort_order, titel, quelle, vorlage_key, status, notiz, foto_refs"
+      "id, befund_id, sort_order, titel, quelle, vorlage_key, status, notiz, foto_refs, updated_at"
     )
     .single();
 
@@ -591,7 +653,7 @@ export async function uploadLeadBefundFotoAction(input: {
     })
     .eq("id", punktId)
     .select(
-      "id, befund_id, sort_order, titel, quelle, vorlage_key, status, notiz, foto_refs"
+      "id, befund_id, sort_order, titel, quelle, vorlage_key, status, notiz, foto_refs, updated_at"
     )
     .single();
 

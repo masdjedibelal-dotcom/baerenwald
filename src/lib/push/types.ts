@@ -17,10 +17,10 @@ export type PushSubscriptionJSON = {
   };
 };
 
-/** OS-Notification-Titel — immer Marke (iOS/Android PWA). */
-export const PUSH_APP_TITLE = "Bärenwald" as const;
+/** OS-Notification: Titel leer lassen — PWA-Name kommt vom Manifest. */
+export const PUSH_APP_TITLE = "" as const;
 
-/** Feste Copy — nie Preise im OS-Banner. Titel immer PUSH_APP_TITLE. */
+/** Feste Copy — nie Preise im OS-Banner. Titel immer leer (PWA-Name). */
 export const PUSH_COPY = {
   angebotLiegtVor: {
     title: PUSH_APP_TITLE,

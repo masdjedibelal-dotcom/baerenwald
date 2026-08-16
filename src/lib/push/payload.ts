@@ -1,4 +1,4 @@
-import { PUSH_APP_TITLE, PUSH_COPY, type PushPayload } from "@/lib/push/types";
+import { PUSH_COPY, type PushPayload } from "@/lib/push/types";
 
 /** Entfernt Preishinweise aus Push-Bodies (Fallback). */
 export function stripPricesFromPushText(text: string): string {
@@ -28,7 +28,8 @@ function composePushBody(
 }
 
 /**
- * OS-Push: Titel immer „Bärenwald“ (PWA short_name / Absender).
+ * OS-Push: Titel leer — Manifest/PWA liefert den App-Namen.
+ * (Sonst Safari/iOS: „Bärenwald from Bärenwald“.)
  * Inhalt nur im Body — nie Preise bei Angeboten.
  */
 export function buildPushPayloadFromNotif(input: {
@@ -47,7 +48,7 @@ export function buildPushPayloadFromNotif(input: {
     /angebot/i.test(String(input.titel ?? ""))
   ) {
     return {
-      title: PUSH_APP_TITLE,
+      title: "",
       body: PUSH_COPY.angebotLiegtVor.body,
       url,
       tag: "angebot",
@@ -56,7 +57,7 @@ export function buildPushPayloadFromNotif(input: {
 
   if (typ === "freigabe" || typ.includes("freigabe")) {
     return {
-      title: PUSH_APP_TITLE,
+      title: "",
       body: composePushBody(
         input.titel,
         input.body,
@@ -75,7 +76,7 @@ export function buildPushPayloadFromNotif(input: {
     typ === "erinnerung"
   ) {
     return {
-      title: PUSH_APP_TITLE,
+      title: "",
       body: composePushBody(
         input.titel,
         input.body,
@@ -87,7 +88,7 @@ export function buildPushPayloadFromNotif(input: {
   }
 
   return {
-    title: PUSH_APP_TITLE,
+    title: "",
     body: composePushBody(
       input.titel,
       input.body,

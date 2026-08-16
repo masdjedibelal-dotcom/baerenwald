@@ -1,5 +1,4 @@
 import { SITE_CONFIG } from "@/lib/config";
-import { meldeBereichLabel } from "@/lib/org/melde-bereiche";
 import { meldeKategorieLabel } from "@/lib/org/melde-kategorien";
 import {
   buildStandardMailHtml,
@@ -21,38 +20,6 @@ function orgPortalDeepLink(portalPath?: string): string {
   const path =
     portalPath?.startsWith("/") ? portalPath : "/portal?section=freigabe";
   return `${base}${path}`;
-}
-
-const ZEITRAUM_LABELS: Record<string, string> = {
-  sofort: "So bald wie möglich",
-  diese_woche: "Diese Woche",
-  flexibel: "Flexibel",
-};
-
-function zeitraumLabel(raw: string | null | undefined): string | undefined {
-  const v = (raw ?? "").trim();
-  if (!v) return undefined;
-  return ZEITRAUM_LABELS[v] ?? v.replace(/_/g, " ");
-}
-
-function mailDataRow(label: string, value: string | undefined | null): string {
-  const v = value?.trim();
-  if (!v) return "";
-  return `<tr>
-  <td style="padding:8px 0;font-size:13px;color:#6B7280;vertical-align:top;width:36%;">${esc(label)}</td>
-  <td style="padding:8px 0;font-size:14px;font-weight:600;color:#1F2937;vertical-align:top;">${esc(v).replace(/\n/g, "<br/>")}</td>
-</tr>`;
-}
-
-function mailSummaryTable(rows: string): string {
-  if (!rows.trim()) return "";
-  return `<table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="margin:16px 0;border:1px solid #E5E7EB;border-radius:8px;overflow:hidden;">
-<tr><td style="padding:16px 20px;background:#ffffff;">
-<table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="font-size:14px;">
-${rows}
-</table>
-</td></tr>
-</table>`;
 }
 
 /** Org-/HV-Mails: Standard-Hülle + Sie-Anrede + Team-Gruß + optional CTA. */
@@ -79,74 +46,6 @@ function wrapOrgMail(opts: {
     disclaimer:
       opts.disclaimer ??
       "Sie erhalten diese Mail, weil für Ihr Objekt ein Vorgang im Auftraggeber-Portal angelegt wurde.",
-  });
-}
-
-export type OrgNeueMeldungMailInput = {
-  objektTitel: string;
-  melderName: string;
-  melderEinheit?: string;
-  melderTelefon?: string;
-  melderEmail?: string;
-  kategorie: string;
-  bereichId?: string;
-  beschreibung?: string;
-  fotoCount?: number;
-  dringlichkeit?: string | null;
-  /** mieter = Meldeformular · hausverwaltung = HV hat selbst erfasst */
-  quelle?: "mieter" | "hausverwaltung";
-  portalPath?: string;
-};
-
-export function buildOrgNeueMeldungSubject(objektTitel: string): string {
-  const obj = objektTitel.trim() || "Objekt";
-  return `Neuer Vorgang — ${obj}`;
-}
-
-/** M2 — HV: neuer Vorgang (Mieter-Meldung oder HV-Direkt) */
-export function buildOrgNeueMeldungHtml(input: OrgNeueMeldungMailInput): string {
-  const kat = meldeKategorieLabel(input.kategorie);
-  const bereich = meldeBereichLabel(input.bereichId);
-  const link = orgPortalDeepLink(input.portalPath);
-  const quelle = input.quelle ?? "mieter";
-  const einleitung =
-    quelle === "hausverwaltung"
-      ? `Für <strong>${esc(input.objektTitel)}</strong> wurde ein neuer Vorgang von Ihrer Verwaltung erfasst.`
-      : `Für <strong>${esc(input.objektTitel)}</strong> wurde ein neuer Vorgang durch eine <strong>Mieter-Meldung</strong> erstellt.`;
-
-  const kontakt = [input.melderEmail?.trim(), input.melderTelefon?.trim()]
-    .filter(Boolean)
-    .join(" · ");
-
-  const rows = [
-    mailDataRow("Art", kat),
-    mailDataRow("Bereich", bereich),
-    mailDataRow(
-      "Melder",
-      input.melderEinheit?.trim()
-        ? `${input.melderName} (${input.melderEinheit.trim()})`
-        : input.melderName
-    ),
-    mailDataRow("Kontakt", kontakt || undefined),
-    mailDataRow("Dringlichkeit", zeitraumLabel(input.dringlichkeit)),
-    mailDataRow(
-      "Fotos",
-      input.fotoCount != null && input.fotoCount > 0
-        ? `${input.fotoCount} Bild${input.fotoCount === 1 ? "" : "er"}`
-        : undefined
-    ),
-    mailDataRow("Beschreibung", input.beschreibung),
-  ].join("");
-
-  return wrapOrgMail({
-    preheader: `Neuer Vorgang — ${input.objektTitel}`,
-    bodyInnerHtml: `
-      <p style="margin:0 0 8px;font-size:15px;color:#374151;line-height:1.6;">${einleitung}</p>
-      ${mailSummaryTable(rows)}
-      <p style="margin:8px 0 0;font-size:14px;color:#374151;line-height:1.55;">Bitte prüfen Sie den Vorgang im Auftraggeber-Portal und wählen Sie den nächsten Schritt (z.&nbsp;B. Vorgang freigeben).</p>
-    `,
-    ctaHref: link,
-    ctaLabel: "Zum Auftraggeber-Portal →",
   });
 }
 
@@ -317,6 +216,23 @@ export function buildOrgHvMieterEventHtml(input: {
     bodyInnerHtml: `
       <p style="margin:0 0 12px;font-size:15px;color:#374151;line-height:1.6;"><strong>${esc(input.eventTitel)}</strong> — <strong>${esc(input.objektTitel)}</strong>${melder}</p>
       <p style="margin:0;font-size:15px;color:#374151;line-height:1.6;">${esc(input.eventBody)}</p>
+    `,
+    ctaHref: link,
+    ctaLabel: "Zum Auftraggeber-Portal →",
+  });
+}
+
+/** HV nach Klick „Direkt Bärenwald“ / „Hausmeister“ — nicht die informative Direktauftrag-Mail. */
+export function buildOrgWirKuemmernUnsHtml(input: {
+  objektTitel: string;
+  portalPath?: string;
+}): string {
+  const link = orgPortalDeepLink(input.portalPath);
+  return wrapOrgMail({
+    preheader: `Wir kümmern uns um Ihren Vorgang — ${input.objektTitel}`,
+    bodyInnerHtml: `
+      <p style="margin:0 0 12px;font-size:15px;color:#374151;line-height:1.6;"><strong>Wir kümmern uns um Ihren Vorgang</strong> — <strong>${esc(input.objektTitel)}</strong>.</p>
+      <p style="margin:0;font-size:15px;color:#374151;line-height:1.6;">Den aktuellen Stand sehen Sie jederzeit im Auftraggeber-Portal.</p>
     `,
     ctaHref: link,
     ctaLabel: "Zum Auftraggeber-Portal →",

@@ -8,6 +8,7 @@ import { VorgangDetailBlocks } from "@/components/shared/vorgang-detail";
 import { buildKundeHvVorgangDetailVm } from "@/lib/vorgang/build-vorgang-detail-vm";
 import { BautagebuchAccordionList } from "@/components/shared/BautagebuchAccordionList";
 import { DokumenteTabelle } from "@/components/shared/DokumenteTabelle";
+import { PortalDocInlinePreview } from "@/components/shared/PortalDocInlinePreview";
 import { PortalDocOpenButton } from "@/components/shared/PortalDocOpenButton";
 import { PortalDetailCover } from "@/components/shared/PortalDetailCover";
 import {
@@ -37,9 +38,6 @@ import {
   HV_DETAIL_COPY,
   angebotSummeFromBruttoTotal,
   angebotSummeFromPositionen,
-  abschlagsplanCardTitle,
-  buildAbschlagsplan,
-  type AbschlagRechnungInput,
   hvRoleActionKind,
   moneyEur,
   pickEmpfohlenesAngebot,
@@ -97,8 +95,8 @@ export type OrganisationHvVorgangDetailProps = {
   /** Auftrags-Leistungen aus CRM (bevorzugt ab Auftrag/Abschluss). */
   auftragPositionen?: PortalAuftragPositionDisplay[];
   gesamtBrutto?: number;
-  /** CRM-Rechnungen für Abschlagsplan-Beträge. */
-  rechnungen?: AbschlagRechnungInput[];
+  /** @deprecated Abschlagsplan entfernt — Rechnungen nur unter Dokumente. */
+  rechnungen?: unknown[];
   rechnungPdfHref?: string | null;
   bautagebuch?: PortalBautagebuchEntry[];
   /** CRM-/Portal-Unterlagen (bereits rollen-gefiltert). */
@@ -140,6 +138,8 @@ export type OrganisationHvVorgangDetailProps = {
   meldeZeitraum?: string | null;
   meldeFachdetails?: Array<{ label: string; value: string }>;
   detailRole?: "hv" | "kunde" | "mieter";
+  /** Hausmeister-Portal: Befund im Tab editierbar, ohne HV-only CTAs. */
+  hausmeisterActor?: boolean;
   /**
    * Optionaler Status-Chip-/VM-Text (z. B. Mieter: „In Bearbeitung“
    * statt „Angebot“).
@@ -326,7 +326,7 @@ export function OrganisationHvVorgangDetail({
   positionenBrutto = [],
   auftragPositionen = [],
   gesamtBrutto,
-  rechnungen = [],
+  rechnungen: _rechnungen = [],
   rechnungPdfHref,
   bautagebuch = [],
   dokumente = [],
@@ -360,6 +360,7 @@ export function OrganisationHvVorgangDetail({
   terminVon,
   terminBis,
   detailRole = "hv",
+  hausmeisterActor = false,
   statusLabelOverride,
   mieterStatusMode = false,
 }: OrganisationHvVorgangDetailProps) {
@@ -373,13 +374,38 @@ export function OrganisationHvVorgangDetail({
   const [btUnread, setBtUnread] = useState(0);
   const [hasHmKontakt, setHasHmKontakt] = useState(true);
   const [hmPortalZugang, setHmPortalZugang] = useState(false);
+  const [hasBefund, setHasBefund] = useState(false);
   const [activeSection, setActiveSection] =
     useState<PortalDetailSectionId>("uebersicht");
 
   const hvStatusNorm = (hvMeldungStatus ?? "").trim().toLowerCase();
   const showHmTab =
     !mieterStatusMode &&
-    (hvStatusNorm === "hm_pruefung" || hvStatusNorm === "hm_erledigt");
+    (hvStatusNorm === "hm_pruefung" ||
+      hvStatusNorm === "hm_erledigt" ||
+      hasBefund);
+
+  useEffect(() => {
+    if (!hausmeisterActor || !showHmTab) return;
+    setActiveSection("hm_pruefung");
+  }, [hausmeisterActor, showHmTab, leadId]);
+
+  useEffect(() => {
+    if (mieterStatusMode) {
+      setHasBefund(false);
+      return;
+    }
+    let cancelled = false;
+    void (async () => {
+      const { getLeadBefundAction } = await import("@/app/actions/lead-befund");
+      const res = await getLeadBefundAction({ leadId });
+      if (cancelled) return;
+      setHasBefund(Boolean(res.ok && res.befund?.id));
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [leadId, mieterStatusMode, hvMeldungStatus]);
 
   useEffect(() => {
     if (mieterStatusMode) {
@@ -507,20 +533,22 @@ export function OrganisationHvVorgangDetail({
         {abnahmeProtokolle.length > 0 ? (
           <div className="space-y-3">
             {abnahmeProtokolle.map((doc) => (
-              <PortalDocOpenButton
-                key={doc.id}
-                href={doc.href!}
-                name={doc.name}
-                kind="pdf"
-                className="block w-full overflow-hidden bg-muted/20 text-left"
-              >
-                <p
-                  className="px-3 py-4 text-center text-[12.5px] font-semibold"
-                  style={{ color: PORTAL_VAR.primary }}
+              <div key={doc.id} className="space-y-2">
+                <PortalDocOpenButton
+                  href={doc.href!}
+                  name={doc.name}
+                  kind="pdf"
+                  className="block w-full overflow-hidden bg-muted/20 text-left"
                 >
-                  {doc.name} — PDF öffnen
-                </p>
-              </PortalDocOpenButton>
+                  <p
+                    className="px-3 py-4 text-center text-[12.5px] font-semibold"
+                    style={{ color: PORTAL_VAR.primary }}
+                  >
+                    {doc.name} — PDF öffnen
+                  </p>
+                </PortalDocOpenButton>
+                <PortalDocInlinePreview url={doc.href!} title={doc.name} />
+              </div>
             ))}
             {abnahmeCheckliste &&
             (abnahmeCheckliste.leistungen.length > 0 ||
@@ -795,11 +823,6 @@ export function OrganisationHvVorgangDetail({
     return angebotSummeFromBruttoTotal(0);
   }, [derivedPositionen, gesamtBrutto, empfohlen]);
 
-  const gewerke = Array.from(
-    new Set(derivedPositionen.map((p) => p.gewerk).filter(Boolean))
-  ).join(", ");
-  const abschlaege = buildAbschlagsplan(sum.brutto, gewerke, rechnungen);
-  const abschlagsplanTitle = abschlagsplanCardTitle(abschlaege.length);
   const meldungAct = async (
     aktion:
       | "angebot_einfordern"
@@ -977,44 +1000,7 @@ export function OrganisationHvVorgangDetail({
       return mieterStatusMode ? null : abschlussCard;
     }
     if (actionKind === "rechnung") {
-      return (
-        <div className="flex flex-col gap-3.5">
-          {mieterStatusMode ? null : abschlussCard}
-          <DetailCard title={abschlagsplanTitle}>
-            <div className="flex flex-col gap-2">
-              {abschlaege.map((r) => (
-                <div
-                  key={`${r.title}-${r.amount}-${r.status}`}
-                  className="flex items-center gap-2.5 rounded-[9px] px-3 py-2.5"
-                  style={{ border: `1px solid ${PORTAL_VAR.line}` }}
-                >
-                  <div className="flex-1">
-                    <p className="portal-text-meta font-semibold" style={{ color: PORTAL_VAR.ink }}>
-                      {r.title}
-                    </p>
-                    <p className="portal-text-label normal-case tracking-normal" style={{ color: PORTAL_VAR.faint }}>
-                      {r.sub}
-                    </p>
-                  </div>
-                  <div className="text-right">
-                    <p className="portal-text-meta font-bold" style={{ color: PORTAL_VAR.ink }}>
-                      {moneyEur(r.amount)}
-                    </p>
-                    <span
-                      className="portal-text-label normal-case tracking-normal font-semibold"
-                      style={{
-                        color: r.status === "bezahlt" ? "#1F6A3F" : "#8A5A06",
-                      }}
-                    >
-                      {r.status === "bezahlt" ? "✓ bezahlt" : "offen"}
-                    </span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </DetailCard>
-        </div>
-      );
+      return mieterStatusMode ? null : abschlussCard;
     }
     if (actionKind === "bezahlt") {
       return (
@@ -1137,7 +1123,6 @@ export function OrganisationHvVorgangDetail({
       {
         id: "hm_pruefung" as const,
         hidden: !showHmTab,
-        label: "Hausmeister",
       },
       {
         id: "bautagebuch" as const,
@@ -1230,7 +1215,6 @@ export function OrganisationHvVorgangDetail({
                   showFreigabeButtons ? (
                     <>
                       <ActionBtn
-                        className="min-w-0 flex-1"
                         label={HV_DETAIL_COPY.ablehnen}
                         kind="secondary"
                         disabled={busy}
@@ -1238,7 +1222,6 @@ export function OrganisationHvVorgangDetail({
                       />
                       {hasHmKontakt ? (
                         <ActionBtn
-                          className="min-w-0 flex-1"
                           label="Hausmeister"
                           kind="secondary"
                           disabled={busy}
@@ -1246,21 +1229,12 @@ export function OrganisationHvVorgangDetail({
                         />
                       ) : null}
                       <ActionBtn
-                        className="min-w-0 flex-1"
                         label="Direkt Bärenwald"
                         mobileLabel="Bärenwald"
                         disabled={busy}
                         onClick={() => void meldungAct("direkt_baerenwald")}
                       />
                     </>
-                  ) : hvStatusNorm === "hm_pruefung" && !mieterStatusMode ? (
-                    <ActionBtn
-                      className="min-w-0 flex-1"
-                      label="Direkt Bärenwald beauftragen"
-                      mobileLabel="Bärenwald"
-                      disabled={busy}
-                      onClick={() => void meldungAct("direkt_baerenwald")}
-                    />
                   ) : undefined
                 }
               />
@@ -1283,11 +1257,16 @@ export function OrganisationHvVorgangDetail({
           ) : null}
 
           {activeSection === "hm_pruefung" && showHmTab ? (
-            <DetailCard id="vorgang-panel-hm" title="Hausmeister-Prüfung">
+            <DetailCard id="vorgang-panel-hm" title="Befund">
               <OrgHmBefundPanel
                 leadId={leadId}
                 hvMeldungStatus={hvMeldungStatus}
-                readOnly={hmPortalZugang}
+                readOnly={
+                  hausmeisterActor
+                    ? hvStatusNorm !== "hm_pruefung"
+                    : hmPortalZugang || hvStatusNorm !== "hm_pruefung"
+                }
+                onBefundPresence={setHasBefund}
                 onUpdated={onUpdated}
               />
             </DetailCard>

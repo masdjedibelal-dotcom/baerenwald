@@ -109,11 +109,33 @@ export async function POST(req: Request) {
 
     const { error: updErr } = await supabaseAdmin
       .from("leads")
-      .update({ hv_meldung_status: "hm_pruefung" })
+      .update({
+        hv_meldung_status: "hm_pruefung",
+        // Vorzeitige Akte verwerfen — neu nach Befund
+        versicherungsakte_pdf_url: null,
+      })
       .eq("id", leadId);
     if (updErr) {
-      return NextResponse.json({ error: updErr.message }, { status: 500 });
+      if (/versicherungsakte_pdf_url/i.test(updErr.message)) {
+        const { error: retryErr } = await supabaseAdmin
+          .from("leads")
+          .update({ hv_meldung_status: "hm_pruefung" })
+          .eq("id", leadId);
+        if (retryErr) {
+          return NextResponse.json({ error: retryErr.message }, { status: 500 });
+        }
+      } else {
+        return NextResponse.json({ error: updErr.message }, { status: 500 });
+      }
     }
+
+    // Kostenträger Versicherung vormerken (PDF erst nach Befund)
+    void import("@/lib/org/ensure-versicherungsakte").then(
+      ({ applyAutomatischeSchadenakteIfEnabled }) =>
+        applyAutomatischeSchadenakteIfEnabled(leadId).catch((e) =>
+          console.warn("[meldung-aktion] schadenakte-kt:", e)
+        )
+    );
 
     const { insertLeadBefundIfMissing } = await import(
       "@/lib/org/lead-befund-create"
@@ -142,6 +164,23 @@ export async function POST(req: Request) {
         }
       });
     }
+
+    void import("@/lib/portal/notify-portal-hausmeister").then(
+      ({ notifyPortalHausmeisterNeuerVorgang }) =>
+        notifyPortalHausmeisterNeuerVorgang({
+          leadId,
+          kundeObjektId: lead.kunde_objekt_id,
+        }).catch((e) =>
+          console.warn("[meldung-aktion] hm portal notify:", e)
+        )
+    );
+
+    void import("@/lib/org/notify-hv-wir-kuemmern").then(
+      ({ notifyHvWirKuemmernUns }) =>
+        notifyHvWirKuemmernUns({ leadId }).catch((e) =>
+          console.warn("[meldung-aktion] hv wir-kuemmern:", e)
+        )
+    );
 
     return NextResponse.json({
       ok: true,
@@ -192,12 +231,29 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: updErr.message }, { status: 500 });
     }
 
+    // HM übersprungen → Schadenakte ohne Befund (wie Direktweg ohne HM)
+    void import("@/lib/org/ensure-versicherungsakte").then(
+      ({ applyAutomatischeSchadenakteIfEnabled }) =>
+        applyAutomatischeSchadenakteIfEnabled(leadId).catch((e) =>
+          console.warn("[meldung-aktion] schadenakte:", e)
+        )
+    );
+
     const crmNotify = await notifyCrmOrgPortal({ leadId, typ: "meldung" });
     if (!crmNotify.ok) {
       console.warn("[meldung-aktion] CRM-Notify:", crmNotify.error, {
         leadId,
         skipped: crmNotify.skipped === true,
       });
+    }
+
+    if (aktion === "direkt_baerenwald") {
+      void import("@/lib/org/notify-hv-wir-kuemmern").then(
+        ({ notifyHvWirKuemmernUns }) =>
+          notifyHvWirKuemmernUns({ leadId }).catch((e) =>
+            console.warn("[meldung-aktion] hv wir-kuemmern:", e)
+          )
+      );
     }
 
     return NextResponse.json({ ok: true, status: "angebot_eingefordert" });

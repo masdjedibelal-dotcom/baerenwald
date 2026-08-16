@@ -274,7 +274,7 @@ async function loadAnfrageCtx(anfrageId: string, handwerkerId: string) {
       `
       id, handwerker_id, status, hw_status, hw_konditionen, hw_preis_netto,
       hw_angebot_pdf_url, hw_angebot_anhang_urls, hw_rechnung_eingereicht_at,
-      angebot_id,
+      hw_eingereicht_at, bestaetigt_at, angebot_id,
       gewerke(name),
       angebote(titel, kunden(plz, ort), leads(plz, ort, strasse))
     `
@@ -517,10 +517,20 @@ export async function submitPartnerAutoRechnung(input: {
     return { ok: false, error: "Rechnung wurde bereits eingereicht." };
   }
   if (String(ctx.row.hw_status ?? "").toLowerCase() !== "uebernommen") {
-    return {
-      ok: false,
-      error: "Rechnung erst nach Übernahme der Konditionen durch Bärenwald möglich.",
-    };
+    const hwSt = String(ctx.row.hw_status ?? "").toLowerCase();
+    const st = String(ctx.row.status ?? "").toLowerCase();
+    const crmOk =
+      hwSt === "bestaetigt" ||
+      st === "akzeptiert" ||
+      st === "angenommen" ||
+      Boolean(ctx.row.bestaetigt_at) ||
+      Boolean(ctx.row.hw_eingereicht_at);
+    if (!crmOk) {
+      return {
+        ok: false,
+        error: "Rechnung erst nach Freigabe/Annahme durch Bärenwald möglich.",
+      };
+    }
   }
 
   const hw = await loadHandwerkerAbsender(auth.handwerkerId);

@@ -8,7 +8,6 @@ import { PortalDetailError } from "@/components/shared/PortalDetailUi";
 import { PartnerKiKorrekturField } from "@/components/partner/PartnerKiKorrekturField";
 import { PortalContentBusy } from "@/components/shared/PortalContentBusy";
 import { PortalModalShell } from "@/components/shared/PortalModalShell";
-import { usePortalBusy } from "@/components/shared/PortalBusyContext";
 import { usePortalRefresh } from "@/components/shared/usePortalRefresh";
 import { SignatureCanvas } from "@/components/shared/SignatureCanvas";
 import {
@@ -104,7 +103,6 @@ export function PartnerAbnahmeAbschlussSheet({
   onSuccess,
 }: Props) {
   const { refresh } = usePortalRefresh();
-  const { runBusy } = usePortalBusy();
   const [step, setStep] = useState<Step>("leistungen");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -150,7 +148,11 @@ export function PartnerAbnahmeAbschlussSheet({
   );
 
   useEffect(() => {
-    if (!open) return;
+    if (!open) {
+      setLoading(false);
+      setError(null);
+      return;
+    }
     setStep("leistungen");
     setLoading(false);
     setError(null);
@@ -366,38 +368,38 @@ export function PartnerAbnahmeAbschlussSheet({
     setLoading(true);
     setError(null);
     try {
-      await runBusy(async () => {
-        const res = await submitPartnerAbnahmeNachSignatur({
-          auftragId,
-          abnahmeDatum,
-          ort,
-          projektbezeichnung: projektbezeichnung.trim(),
-          vertreter: vertreter.trim(),
-          abnahmeErgebnis: ergebnis,
-          notizen: notizen.trim() || null,
-          punkte,
-          maengel,
-          hwUnterschriftName: hwName,
-          kundeUnterschriftName: kundeName,
-          hwSignaturPng: hwSig,
-          kundeSignaturPng: kundeSig,
-        });
-        if (!res.ok) {
-          setError(res.error);
-          setLoading(false);
-          return;
-        }
-        partnerPortalToast.abschlussSigniert();
-        await refresh();
-        onSuccess({
-          vollstaendig: res.vollstaendig,
-          pdf_url: res.pdf_url,
-          protokoll_id: res.protokoll_id,
-          punkte_count: res.punkte_count,
-          maengel_count: res.maengel_count,
-        });
-        // Loading bleibt bis Sheet schließt — kein Formular-Flackern.
+      const res = await submitPartnerAbnahmeNachSignatur({
+        auftragId,
+        abnahmeDatum,
+        ort,
+        projektbezeichnung: projektbezeichnung.trim(),
+        vertreter: vertreter.trim(),
+        abnahmeErgebnis: ergebnis,
+        notizen: notizen.trim() || null,
+        punkte,
+        maengel,
+        hwUnterschriftName: hwName,
+        kundeUnterschriftName: kundeName,
+        hwSignaturPng: hwSig,
+        kundeSignaturPng: kundeSig,
       });
+      if (!res.ok) {
+        setError(res.error);
+        setLoading(false);
+        return;
+      }
+      partnerPortalToast.abschlussSigniert();
+      // Busy vom Modal sofort lösen — sonst hält PortalModalShell den
+      // globalen Shell-Busy fest, wenn open=false und loading noch true.
+      setLoading(false);
+      onSuccess({
+        vollstaendig: res.vollstaendig,
+        pdf_url: res.pdf_url,
+        protokoll_id: res.protokoll_id,
+        punkte_count: res.punkte_count,
+        maengel_count: res.maengel_count,
+      });
+      void refresh();
     } catch {
       setError("Abschluss fehlgeschlagen. Bitte erneut versuchen.");
       setLoading(false);

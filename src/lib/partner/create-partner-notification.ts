@@ -125,53 +125,36 @@ export async function createPartnerNotification(
     ? "bautagebuch"
     : input.typ;
 
+  /**
+   * Partner-Glocke/Push nur bei neuem Vorgang mit Aktion (Annehmen/Ablehnen).
+   * Andere Typen (geaendert, bautagebuch, …) erzeugen keine Notification mehr.
+   */
+  if (notifyTyp !== "neu") {
+    return { ok: true, deduplicated: true };
+  }
+
   if (vorgangKey) {
-    const { data: existingRows } = await supabaseAdmin
+    // Einmalig je Vorgang — auch wenn bereits gelesen (kein Spam bei erneutem Login)
+    const { data: existingAny } = await supabaseAdmin
       .from("notifications")
       .select("id, link, typ")
       .eq("handwerker_id", handwerkerId)
-      .eq("gelesen", false)
+      .eq("typ", "neu")
       .ilike("link", `%id=${vorgangKey}%`)
       .order("created_at", { ascending: false })
       .limit(20);
 
-    // Bautagebuch nie mit neu/geaendert vermischen — sonst wirkt Update wie Auftragsänderung.
-    const existing = (existingRows ?? []).find((row) => {
-      if (partnerNotificationVorgangKey(String(row.link ?? "")) !== vorgangKey) {
-        return false;
-      }
-      const rowTyp = String(row.typ ?? "");
-      const rowIsBt =
-        rowTyp === "bautagebuch" ||
-        (rowTyp === "erinnerung" &&
-          /focus=bautagebuch|bitte\s+update/i.test(String(row.link ?? "")));
-      if (isBautagebuchNotify) return rowIsBt;
-      return !rowIsBt;
-    });
+    const existingNeu = (existingAny ?? []).find(
+      (row) =>
+        partnerNotificationVorgangKey(String(row.link ?? "")) === vorgangKey
+    );
 
-    if (existing?.id) {
-      const { error: updErr } = await supabaseAdmin
-        .from("notifications")
-        .update({
-          typ: notifyTyp,
-          projekt_name: input.projektName.trim() || "Projekt",
-          leistung_name: input.leistungName?.trim() || null,
-          link,
-          created_at: new Date().toISOString(),
-        })
-        .eq("id", existing.id);
-
-      if (updErr) return { ok: false, error: updErr.message };
-
-      void schedulePartnerPush({
-        handwerkerId,
-        typ: notifyTyp,
-        projektName: input.projektName,
-        leistungName: input.leistungName,
-        link,
-      });
-
-      return { ok: true, notificationId: String(existing.id), deduplicated: true };
+    if (existingNeu?.id) {
+      return {
+        ok: true,
+        notificationId: String(existingNeu.id),
+        deduplicated: true,
+      };
     }
   }
 

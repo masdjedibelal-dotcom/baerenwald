@@ -206,7 +206,7 @@ export function PortalDetailKeyValues({
           key={row.label}
           className="flex min-w-0 items-baseline justify-between gap-3 py-2.5"
         >
-          <dt className="max-w-[44%] shrink-0 text-[13px] font-semibold leading-snug text-text-primary">
+          <dt className="max-w-[44%] min-w-0 text-[13px] font-semibold leading-snug text-text-primary [overflow-wrap:anywhere]">
             {row.label}
           </dt>
           <dd className="min-w-0 flex-1 text-right text-[14.5px] font-semibold leading-snug text-text-primary [overflow-wrap:anywhere]">

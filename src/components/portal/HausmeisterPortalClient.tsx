@@ -4,16 +4,19 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { flushSync } from "react-dom";
 
-import { OrgHmBefundPanel } from "@/components/org/OrgHmBefundPanel";
 import { PortalUserNotificationBell } from "@/components/portal/PortalUserNotificationBell";
 import { PortalVorgangDetail } from "@/components/portal/PortalVorgangDetail";
 import { PortalKundePrivatDashboard } from "@/components/portal/PortalKundePrivatDashboard";
-import { portalHeaderHeroSrc } from "@/lib/portal2/portal-media";
+import {
+  portalHeaderHeroSrc,
+  resolveObjektCoverSrc,
+} from "@/lib/portal2/portal-media";
 import {
   paintPortalBusyNow,
   PORTAL_BUSY_MIN_MS,
   usePortalBusy,
 } from "@/components/shared/PortalBusyContext";
+import { PortalContentBusy } from "@/components/shared/PortalContentBusy";
 import { PortalListCard } from "@/components/shared/PortalListCard";
 import { PortalEntityDetailLayout } from "@/components/shared/PortalEntityDetailLayout";
 import {
@@ -26,6 +29,7 @@ import {
 } from "@/components/shared/PortalListeChrome";
 import { PortalListeFilterBar } from "@/components/shared/PortalListeFilterBar";
 import { PortalLegalFooter } from "@/components/shared/PortalLegalFooter";
+import { PortalRoleBadge } from "@/components/shared/PortalRoleBadge";
 import { PortalShell } from "@/components/shared/PortalShell";
 import { PortalHeaderSearch } from "@/components/shared/PortalHeaderSearch";
 import { PortalEmptyState } from "@/components/shared/PortalStateView";
@@ -53,9 +57,17 @@ import {
   type PrivatDashboardKpiId,
   type PrivatListeChip,
 } from "@/lib/portal2/kunde-dashboard";
+import {
+  HAUSMEISTER_DASHBOARD_ROLE,
+  HAUSMEISTER_LISTE_TITLE,
+  HAUSMEISTER_OBJEKTE_EMPTY,
+  HAUSMEISTER_OBJEKTE_TITLE,
+  HAUSMEISTER_PAGE_HEAD,
+} from "@/lib/portal2/hausmeister";
 import { buildPortalShellNav } from "@/lib/portal2/nav-items";
 import type { PortalMockStatusId } from "@/lib/portal2/status";
 import {
+  formatObjektAdresse,
   formatObjektPlzOrt,
   formatObjektStrasse,
   resolveObjektTyp,
@@ -82,6 +94,9 @@ function normalizeSection(raw: string | null | undefined): SectionId | null {
   return null;
 }
 
+/**
+ * Hausmeister-Portal — Dashboard · Vorgänge · Objekte (Parity zu Eigentümer).
+ */
 export function HausmeisterPortalClient({
   kunde,
   objekte,
@@ -107,6 +122,8 @@ export function HausmeisterPortalClient({
     Boolean(searchParams.get("id")?.trim())
   );
   const ignoreUrlDetailRef = useRef(false);
+  const pendingDetailIdRef = useRef<string | null>(null);
+  const detailOpeningTimerRef = useRef<number | null>(null);
   const { hold, release, flash } = usePortalBusy();
   const detailHoldRef = useRef(false);
 
@@ -116,10 +133,42 @@ export function HausmeisterPortalClient({
     window.setTimeout(() => setPageBusy(false), ms);
   }
 
+  function beginDetailOpening() {
+    if (!detailHoldRef.current) {
+      detailHoldRef.current = true;
+      hold();
+    }
+    paintPortalBusyNow(setDetailOpening, setPageBusy);
+    if (detailOpeningTimerRef.current != null) {
+      window.clearTimeout(detailOpeningTimerRef.current);
+      detailOpeningTimerRef.current = null;
+    }
+  }
+
+  function endDetailOpening() {
+    setDetailOpening(false);
+    setPageBusy(false);
+    if (detailHoldRef.current) {
+      detailHoldRef.current = false;
+      release();
+    }
+  }
+
+  useEffect(() => {
+    const s = normalizeSection(searchParams.get("section"));
+    if (s) setSection(s);
+  }, [searchParams]);
+
   function switchSection(next: SectionId) {
-    setObjektDetailId(null);
-    setSelectedId(null);
-    setSection(next);
+    ignoreUrlDetailRef.current = true;
+    pendingDetailIdRef.current = null;
+    setDetailOpening(false);
+    flushSync(() => {
+      setObjektDetailId(null);
+      setSelectedId(null);
+      setListPage(1);
+      setSection(next);
+    });
     flashPageBusy();
     router.replace(`/portal?section=${next}`, { scroll: false });
   }
@@ -251,46 +300,84 @@ export function HausmeisterPortalClient({
     [vorgaengeItems, selectedId]
   );
 
-  const selectedLead = useMemo(() => {
-    if (!selectedItem) return null;
-    const lid = String(selectedItem.leadId ?? selectedItem.id);
-    return leads.find((l) => String(l.id) === lid) ?? null;
-  }, [selectedItem, leads]);
-
-  const hvStatus = String(
-    (selectedLead as { hv_meldung_status?: string } | null)?.hv_meldung_status ??
-      ""
-  )
-    .trim()
-    .toLowerCase();
-
   function openVorgangById(id: string) {
+    const matched = findKundeVorgangByQueryId(vorgaengeItems, id);
+    const nextId = matched?.id ?? id.trim();
+    if (!nextId) return;
     ignoreUrlDetailRef.current = false;
-    setDetailOpening(true);
-    setSelectedId(id);
-    if (!detailHoldRef.current) {
-      hold();
-      detailHoldRef.current = true;
-    }
-    router.replace(`/portal?section=vorgaenge&id=${encodeURIComponent(id)}`, {
-      scroll: false,
+    pendingDetailIdRef.current = nextId;
+    beginDetailOpening();
+    flushSync(() => {
+      setObjektDetailId(null);
+      setSection("vorgaenge");
+      setSelectedId(nextId);
     });
+    router.replace(
+      `/portal?section=vorgaenge&id=${encodeURIComponent(nextId)}`,
+      { scroll: false }
+    );
   }
+
+  useEffect(() => {
+    const id = searchParams.get("id")?.trim() || null;
+    if (ignoreUrlDetailRef.current) {
+      if (!id) {
+        ignoreUrlDetailRef.current = false;
+        pendingDetailIdRef.current = null;
+        setSelectedId(null);
+      }
+      return;
+    }
+    if (!id) {
+      if (pendingDetailIdRef.current) return;
+      setSelectedId(null);
+      return;
+    }
+    const pending = pendingDetailIdRef.current;
+    if (pending && pending !== id) {
+      const matchedPending = findKundeVorgangByQueryId(vorgaengeItems, pending);
+      const matchedUrl = findKundeVorgangByQueryId(vorgaengeItems, id);
+      const pendingCanon = matchedPending?.id ?? pending;
+      const urlCanon = matchedUrl?.id ?? id;
+      if (pendingCanon !== urlCanon) return;
+    }
+    const matched = findKundeVorgangByQueryId(vorgaengeItems, id);
+    if (matched) {
+      if (pending && (pending === matched.id || pending === id)) {
+        pendingDetailIdRef.current = null;
+      }
+      setSelectedId(matched.id);
+      setSection("vorgaenge");
+    } else {
+      setSelectedId(id);
+      setSection("vorgaenge");
+    }
+  }, [searchParams, vorgaengeItems]);
 
   useEffect(() => {
     if (!detailOpening || !selectedId || !selectedItem) return;
     const t = window.setTimeout(() => {
-      setDetailOpening(false);
-      if (detailHoldRef.current) {
-        release();
-        detailHoldRef.current = false;
-      }
+      endDetailOpening();
     }, PORTAL_BUSY_MIN_MS);
-    return () => window.clearTimeout(t);
-  }, [detailOpening, selectedId, selectedItem, release]);
+    detailOpeningTimerRef.current = t;
+    return () => {
+      window.clearTimeout(t);
+      if (detailOpeningTimerRef.current === t) {
+        detailOpeningTimerRef.current = null;
+      }
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [detailOpening, selectedId, selectedItem]);
+
+  const helloName =
+    kunde.name?.trim().split(/\s+/)[0] ||
+    kunde.email?.split("@")[0] ||
+    "dort";
 
   const hvBrand = hausverwaltungBrand;
   const brandTitle = hvBrand?.name?.trim() || "Verwaltung";
+  const brandSubtitle =
+    hvBrand?.sub?.trim() || kunde.name?.trim() || HAUSMEISTER_PAGE_HEAD;
   const activeObjekt = objektDetailId
     ? objekte.find((o) => o.id === objektDetailId) ?? null
     : null;
@@ -300,21 +387,30 @@ export function HausmeisterPortalClient({
       <PortalShell
         variant="kunde"
         brandTitle={brandTitle}
-        brandSubtitle={kunde.name?.trim() || "Hausmeister"}
+        brandSubtitle={brandSubtitle}
         brandLogoUrl={hvBrand?.logoUrl}
         brandKuerzel={hvBrand?.logoKuerzel ?? null}
         brandPrimary={hvBrand?.primary}
         brandPrimaryDk={hvBrand?.primaryDk}
         brandSoft={hvBrand?.soft}
         sidebarOwner={brandTitle}
+        hideMobileChrome={false}
         contentFullBleed={
           section === "uebersicht" ||
           Boolean(selectedId) ||
           Boolean(objektDetailId)
         }
         activeNavId={section}
-        contentKey={`${section}:${objektDetailId ?? ""}`}
+        contentKey={`${section}:${objektDetailId ?? ""}:${selectedId ?? ""}`}
         contentBusy={pageBusy || detailOpening}
+        contentBusyTitle={
+          detailOpening ? "Vorgang wird geladen…" : undefined
+        }
+        contentBusyBody={
+          detailOpening
+            ? "Einen Moment — wir öffnen die Details."
+            : undefined
+        }
         onNavChange={(id) => switchSection(id as SectionId)}
         nav={buildPortalShellNav("eigentuemer", "eigentuemer")}
         headerSearch={
@@ -322,30 +418,55 @@ export function HausmeisterPortalClient({
         }
         notifications={
           <PortalUserNotificationBell
-            role="kunde"
-            onOpenVorgang={(id) => openVorgangById(id)}
+            role="hausmeister"
+            allHref="/portal?section=vorgaenge"
+            onOpenVorgang={(id, href) => {
+              const matched = findKundeVorgangByQueryId(vorgaengeItems, id);
+              const nextId = matched?.id ?? id;
+              ignoreUrlDetailRef.current = false;
+              pendingDetailIdRef.current = nextId;
+              beginDetailOpening();
+              flushSync(() => {
+                setSection("vorgaenge");
+                setSelectedId(nextId);
+              });
+              router.push(href);
+            }}
           />
         }
         headerRoleBadge={
-          <form action="/portal/auth/signout" method="post">
-            <button type="submit" className="btn-pill-outline portal-btn-compact">
-              Abmelden
-            </button>
-          </form>
+          <>
+            <PortalRoleBadge role="hausmeister" />
+            <form action="/portal/auth/signout" method="post">
+              <button
+                type="submit"
+                className="btn-pill-outline portal-btn-compact"
+              >
+                Abmelden
+              </button>
+            </form>
+          </>
         }
       >
         {section === "uebersicht" ? (
           <PortalKundePrivatDashboard
-            hello={`Hallo ${kunde.name?.trim().split(/\s+/)[0] || "dort"}`}
-            profileName={kunde.name?.trim() || "Hausmeister"}
-            roleLabel="Hausmeister"
+            hello={`Hallo ${helloName}`}
+            profileName={kunde.name?.trim() || helloName}
+            roleLabel={HAUSMEISTER_DASHBOARD_ROLE}
             kundeTyp="privat"
             kpis={privatKpis}
             recent={recentItems}
-            heroImageUrl={portalHeaderHeroSrc("mieter")}
+            heroImageUrl={portalHeaderHeroSrc("hausmeister")}
             onOpenAll={() => {
               setListeChip("alle");
-              switchSection("vorgaenge");
+              flushSync(() => {
+                setSection("vorgaenge");
+                setSelectedId(null);
+              });
+              flashPageBusy();
+              router.replace("/portal?section=vorgaenge&filter=alle", {
+                scroll: false,
+              });
             }}
             onKpiClick={(kpi: PrivatDashboardKpiId) => {
               setListeChip(privatKpiToListeChip(kpi));
@@ -356,40 +477,37 @@ export function HausmeisterPortalClient({
         ) : null}
 
         {section === "vorgaenge" ? (
-          selectedItem && selectedId ? (
+          selectedId && (detailOpening || !selectedItem) ? (
+            <PortalContentBusy
+              title="Vorgang wird geladen…"
+              body="Einen Moment — wir öffnen die Details."
+            />
+          ) : selectedItem && selectedId ? (
             <div className="-mx-4 -mt-4 min-w-0 space-y-4 lg:-mx-6 lg:-mt-5">
               <PortalVorgangDetail
                 item={selectedItem}
                 privatkunde
                 showHvAbnahme
+                hausmeisterActor
                 mieterStatusMode={false}
                 flowStatusOverride={
                   flowByItemId.get(selectedItem.id) ?? "gemeldet"
                 }
                 onBack={() => {
                   ignoreUrlDetailRef.current = true;
+                  pendingDetailIdRef.current = null;
+                  setDetailOpening(false);
                   flushSync(() => setSelectedId(null));
                   flashPageBusy();
                   router.replace("/portal?section=vorgaenge", { scroll: false });
                 }}
               />
-              {hvStatus === "hm_pruefung" || hvStatus === "hm_erledigt" ? (
-                <div className="px-4 lg:px-6">
-                  <OrgHmBefundPanel
-                    leadId={String(selectedItem.leadId ?? selectedItem.id)}
-                    hvMeldungStatus={hvStatus}
-                    readOnly={hvStatus === "hm_erledigt"}
-                    hideOrgOnlyActions
-                    onUpdated={() => router.refresh()}
-                  />
-                </div>
-              ) : null}
             </div>
           ) : (
             <div className="flex min-w-0 flex-col">
               <div className="px-0.5 pb-1">
-                <PortalListeEyebrow>Hausmeister</PortalListeEyebrow>
-                <PortalListeTitle>Meine Vorgänge</PortalListeTitle>
+                <PortalListeEyebrow>{HAUSMEISTER_DASHBOARD_ROLE}</PortalListeEyebrow>
+                <PortalListeTitle>{HAUSMEISTER_LISTE_TITLE}</PortalListeTitle>
               </div>
               <PortalListeFilterBar
                 value={listeChip}
@@ -404,7 +522,7 @@ export function HausmeisterPortalClient({
                 }))}
               />
               {pageRows.length === 0 ? (
-                <PortalEmptyState role="eigentuemer" compact canCreate={false} />
+                <PortalEmptyState role="hausmeister" compact canCreate={false} />
               ) : (
                 <div className={portalListStackClass("responsive")}>
                   {pageRows.map((row) => (
@@ -444,7 +562,10 @@ export function HausmeisterPortalClient({
               <div className="-mx-4 -mt-4 min-w-0 pb-4 lg:-mx-6 lg:-mt-5">
                 <PortalEntityDetailLayout
                   coverUrl={activeObjekt.cover_url}
-                  onBack={() => setObjektDetailId(null)}
+                  onBack={() => {
+                    setObjektDetailId(null);
+                    flashPageBusy();
+                  }}
                   backLabel="← Objekte"
                   title={activeObjekt.titel}
                   metaLine={[
@@ -464,7 +585,17 @@ export function HausmeisterPortalClient({
                         Adresse
                       </dt>
                       <dd className="portal-text-body font-medium">
-                        {formatObjektStrasse(activeObjekt) || "—"}
+                        {formatObjektAdresse(activeObjekt) ||
+                          formatObjektStrasse(activeObjekt) ||
+                          "—"}
+                      </dd>
+                    </div>
+                    <div>
+                      <dt className="portal-text-meta text-text-tertiary">
+                        Objekttyp
+                      </dt>
+                      <dd className="portal-text-body font-medium">
+                        {resolveObjektTyp(activeObjekt)}
                       </dd>
                     </div>
                   </dl>
@@ -472,27 +603,47 @@ export function HausmeisterPortalClient({
               </div>
             ) : (
               <>
-                <PortalListeTitle>Meine Objekte</PortalListeTitle>
+                <div className="px-0.5 pb-1">
+                  <PortalListeEyebrow>{HAUSMEISTER_DASHBOARD_ROLE}</PortalListeEyebrow>
+                  <PortalListeTitle>{HAUSMEISTER_OBJEKTE_TITLE}</PortalListeTitle>
+                </div>
                 {objekte.length === 0 ? (
                   <div className="portal-surface p-6 text-center portal-text-body text-text-secondary">
-                    Noch keine Objekte zugewiesen.
+                    {HAUSMEISTER_OBJEKTE_EMPTY}
                   </div>
                 ) : (
-                  <div className="portal-list-panel portal-list-rows">
+                  <div className={portalListStackClass("responsive")}>
                     {objekte.map((o) => (
-                      <button
+                      <PortalListCard
                         key={o.id}
-                        type="button"
-                        className="w-full px-4 py-3.5 text-left transition-colors hover:bg-[#f7f8fa]"
-                        onClick={() => setObjektDetailId(o.id)}
-                      >
-                        <p className="portal-text-body font-semibold text-text-primary">
-                          {o.titel}
-                        </p>
-                        <p className="portal-text-meta mt-1 text-text-secondary">
-                          {formatObjektStrasse(o) || "—"}
-                        </p>
-                      </button>
+                        variant="responsive"
+                        selected={false}
+                        accent="auftrag"
+                        showLeftAccent={false}
+                        media={
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img
+                            src={resolveObjektCoverSrc(o.cover_url)}
+                            alt=""
+                            className="h-full w-full object-cover"
+                          />
+                        }
+                        title={o.titel}
+                        subtitle={formatObjektAdresse(o) || "—"}
+                        meta={[
+                          {
+                            text: resolveObjektTyp(o),
+                            icon: "map-pin" as const,
+                          },
+                        ]}
+                        statusLabel="Objekt"
+                        statusPillClass="bg-[#eceef0] text-text-tertiary"
+                        showChevron
+                        onClick={() => {
+                          flashPageBusy();
+                          setObjektDetailId(o.id);
+                        }}
+                      />
                     ))}
                   </div>
                 )}

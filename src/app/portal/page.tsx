@@ -5,6 +5,7 @@ import { OrganisationPortalClient } from "@/components/org/OrganisationPortalCli
 import { EigentuemerPortalClient } from "@/components/portal/EigentuemerPortalClient";
 import { PortalClient } from "@/components/portal/PortalClient";
 import { PortalAuthShell } from "@/components/portal/PortalAuthShell";
+import { PortalContentBusy } from "@/components/shared/PortalContentBusy";
 import { SITE_CONFIG } from "@/lib/config";
 import { resolveOrgMitgliedRolle } from "@/lib/org/org-rbac";
 import { getOrganisationPortalData } from "@/lib/org/get-organisation-portal-data";
@@ -88,10 +89,22 @@ export default async function PortalDashboardPage() {
     );
   }
 
+  // Offene HM-Einladungen zur Login-E-Mail (Auth existiert schon → ohne Redeem nur privat)
+  const { tryRedeemOpenHausmeisterInvitesForAuthUser } = await import(
+    "@/lib/portal2/portal-einladungen-server"
+  );
+  const hmRedeem = await tryRedeemOpenHausmeisterInvitesForAuthUser({
+    authUserId: user.id,
+    email: user.email,
+    name: meta?.name,
+    telefon: meta?.telefon,
+  });
+  const portalKundeId = hmRedeem.portalKundeId ?? link.kundeId;
+
   const { data: kundeMeta } = await supabaseAdmin
     .from("kunden")
     .select("portal_modus, typ")
-    .eq("id", link.kundeId)
+    .eq("id", portalKundeId)
     .maybeSingle();
 
   let portalModus =
@@ -103,7 +116,7 @@ export default async function PortalDashboardPage() {
     const { data: fallback } = await supabaseAdmin
       .from("kunden")
       .select("portal_modus")
-      .eq("id", link.kundeId)
+      .eq("id", portalKundeId)
       .maybeSingle();
     portalModus = (fallback?.portal_modus as string | undefined) ?? "privat";
     kundeTypField = null;
@@ -111,7 +124,7 @@ export default async function PortalDashboardPage() {
 
   /** D8 — eigene Rolle / Client */
   if (portalModus === "eigentuemer") {
-    const eigData = await getEigentuemerPortalData(link.kundeId);
+    const eigData = await getEigentuemerPortalData(portalKundeId);
     if (!eigData) {
       return (
         <PortalAuthShell title="Keine Kundendaten">
@@ -122,7 +135,15 @@ export default async function PortalDashboardPage() {
       );
     }
     return (
-      <Suspense fallback={<p className="px-4 py-8 text-center">Portal wird geladen…</p>}>
+      <Suspense
+        fallback={
+          <PortalContentBusy
+            variant="page"
+            title="Portal wird geladen…"
+            body="Einen Moment — wir bereiten Ihre Übersicht vor."
+          />
+        }
+      >
         <EigentuemerPortalClient
           kunde={eigData.kunde}
           schwelleEur={eigData.schwelleEur}
@@ -145,7 +166,7 @@ export default async function PortalDashboardPage() {
     const { HausmeisterPortalClient } = await import(
       "@/components/portal/HausmeisterPortalClient"
     );
-    const hmData = await getHausmeisterPortalData(link.kundeId);
+    const hmData = await getHausmeisterPortalData(portalKundeId);
     if (!hmData) {
       return (
         <PortalAuthShell title="Keine Kundendaten">
@@ -156,7 +177,15 @@ export default async function PortalDashboardPage() {
       );
     }
     return (
-      <Suspense fallback={<p className="px-4 py-8 text-center">Portal wird geladen…</p>}>
+      <Suspense
+        fallback={
+          <PortalContentBusy
+            variant="page"
+            title="Portal wird geladen…"
+            body="Einen Moment — wir bereiten Ihre Übersicht vor."
+          />
+        }
+      >
         <HausmeisterPortalClient
           kunde={hmData.kunde}
           objekte={hmData.objekte}
@@ -176,8 +205,8 @@ export default async function PortalDashboardPage() {
 
   if (kundeTyp === "hv" || portalModus === "organisation") {
     const [orgData, mitgliedRolle] = await Promise.all([
-      getOrganisationPortalData(link.kundeId),
-      resolveOrgMitgliedRolle(user.id, link.kundeId),
+      getOrganisationPortalData(portalKundeId),
+      resolveOrgMitgliedRolle(user.id, portalKundeId),
     ]);
     if (!orgData) {
       return (
@@ -208,7 +237,15 @@ export default async function PortalDashboardPage() {
     }));
 
     return (
-      <Suspense fallback={<p className="px-4 py-8 text-center">Portal wird geladen…</p>}>
+      <Suspense
+        fallback={
+          <PortalContentBusy
+            variant="page"
+            title="Portal wird geladen…"
+            body="Einen Moment — wir bereiten Ihre Übersicht vor."
+          />
+        }
+      >
         <OrganisationPortalClient
           kunde={orgData.kunde}
           objekte={orgData.objekte}
@@ -231,7 +268,7 @@ export default async function PortalDashboardPage() {
     );
   }
 
-  const data = await getPortalDataForKunde(link.kundeId, { mode: "list" });
+  const data = await getPortalDataForKunde(portalKundeId, { mode: "list" });
   if (!data) {
     return (
       <PortalAuthShell title="Keine Kundendaten">
@@ -255,9 +292,11 @@ export default async function PortalDashboardPage() {
   return (
     <Suspense
       fallback={
-        <p className="px-4 py-8 text-center portal-text-body text-text-secondary">
-          Portal wird geladen…
-        </p>
+        <PortalContentBusy
+          variant="page"
+          title="Portal wird geladen…"
+          body="Einen Moment — wir bereiten Ihre Übersicht vor."
+        />
       }
     >
       <PortalClient

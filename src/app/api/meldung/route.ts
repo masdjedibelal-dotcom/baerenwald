@@ -1,9 +1,5 @@
 import { NextResponse } from "next/server";
 
-import {
-  buildOrgNeueMeldungHtml,
-  buildOrgNeueMeldungSubject,
-} from "@/lib/email/meldung-mail-templates";
 import { parseMeldeBereichId, persistMeldungLead } from "@/lib/org/persist-meldung-lead";
 import { addressesMatch } from "@/lib/org/match-lead-objekt";
 import { MELDE_ALLGEMEIN_SLUG } from "@/lib/org/melde-url";
@@ -14,7 +10,6 @@ import { checkRateLimit } from "@/lib/rate-limit";
 import { isValidEmail, isValidName } from "@/lib/validation";
 import { meldeStatusUrl } from "@/lib/melde/melde-tracking";
 import { supabaseAdmin } from "@/lib/supabase";
-import { Resend } from "resend";
 import { randomUUID } from "crypto";
 
 export const runtime = "nodejs";
@@ -141,7 +136,6 @@ export async function POST(req: Request) {
 
   /** Ohne Objekt-Link: gleiche Anschrift wie bestehendes Objekt → zuordnen. */
   let matchedObjektId = objekt?.id ?? null;
-  let matchedObjektTitel = objekt?.titel?.trim() || null;
   if (!matchedObjektId && leadStrasse && leadHausnummer) {
     const { data: orgObjekte } = await supabaseAdmin
       .from("kunden_objekte")
@@ -160,15 +154,8 @@ export async function POST(req: Request) {
     );
     if (hit) {
       matchedObjektId = hit.id;
-      matchedObjektTitel = hit.titel?.trim() || matchedObjektTitel;
     }
   }
-
-  const objektTitel =
-    matchedObjektTitel ||
-    orgRow.org_anzeigename?.trim() ||
-    orgRow.name?.trim() ||
-    "Objekt";
 
   // Kein 15-Min-Lead-Reuse für Melde (Mieter/HV) — jeder Submit = neuer Lead.
   // Website-Funnel kann separat deduplizieren; CRM/Staff (org/anfrage) hatte das nie.
@@ -209,43 +196,8 @@ export async function POST(req: Request) {
       : undefined;
   const statusLink = trackingToken ? meldeStatusUrl(trackingToken) : undefined;
 
-  const resendKey = process.env.RESEND_API_KEY;
-  if (resendKey) {
-    const { data: orgKunde } = await supabaseAdmin
-      .from("kunden")
-      .select("email")
-      .eq("id", orgRow.id)
-      .maybeSingle();
-    const orgEmail = String(orgKunde?.email ?? "").trim();
-    if (orgEmail && isValidEmail(orgEmail)) {
-      const resend = new Resend(resendKey);
-      try {
-        await resend.emails.send({
-          from:
-            process.env.RESEND_FROM_SYSTEM ??
-            "System <system@baerenwaldmuenchen.de>",
-          to: orgEmail,
-          subject: buildOrgNeueMeldungSubject(objektTitel),
-          html: buildOrgNeueMeldungHtml({
-            objektTitel,
-            melderName: name,
-            melderEinheit: einheit,
-            melderTelefon: telefon || undefined,
-            melderEmail: isValidEmail(email) ? email : undefined,
-            kategorie,
-            bereichId,
-            beschreibung,
-            fotoCount: fotos.length,
-            dringlichkeit: body.dringlichkeit,
-            quelle: "mieter",
-            portalPath: `/portal?section=freigabe&id=${result.id}`,
-          }),
-        });
-      } catch (e) {
-        console.error("[meldung] org mail:", e);
-      }
-    }
-  }
+  // HV-Mail nur über notifyHvNeueMeldung (persistMeldungLead) —
+  // kein zweites „Neuer Vorgang“-Template mit Summary-Tabelle.
 
   return NextResponse.json({
     ok: true,

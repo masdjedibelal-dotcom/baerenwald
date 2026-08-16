@@ -74,7 +74,10 @@ async function hasUnreadPortalNotif(opts: {
   return (data ?? []).length > 0;
 }
 
-/** In-App-Glocke für Mieter/Privatkunde am Lead (dedupliziert pro Typ+Vorgang). */
+/** In-App-Glocke für Portal-User am Lead (dedupliziert pro Typ+Vorgang).
+ * Mieter und Eigentümer: keine Notifications.
+ * Hausmeister: nur über dedizierten Pfad (neuer Vorgang).
+ */
 export async function notifyPortalLeadUser(input: {
   leadId: string;
   typ: PortalNotifTyp;
@@ -86,6 +89,17 @@ export async function notifyPortalLeadUser(input: {
 }): Promise<{ ok: boolean; skipped?: boolean; error?: string }> {
   const empfaenger = await resolvePortalLeadEmpfaenger(input.leadId);
   if (!empfaenger) return { ok: true, skipped: true };
+
+  const role = input.roleOverride ?? empfaenger.role;
+  const modus = empfaenger.portalModus;
+  if (
+    role === "mieter" ||
+    modus === "mieter" ||
+    modus === "eigentuemer" ||
+    modus === "hausmeister"
+  ) {
+    return { ok: true, skipped: true };
+  }
 
   const leadId = input.leadId.trim();
   if (
@@ -106,7 +120,7 @@ export async function notifyPortalLeadUser(input: {
   const result = await createPortalNotification({
     empfaengerUserId: empfaenger.authUserId,
     typ: input.typ,
-    role: input.roleOverride ?? empfaenger.role,
+    role,
     titel: input.titel,
     text: input.text,
     vorgangRef: leadId,

@@ -699,7 +699,7 @@ export function OrganisationObjektDetail({
               title="Automatische Schadenakte"
               description={
                 editAutoSchadenakte
-                  ? "Ein: Bei jeder Schadenmeldung an diesem Objekt wird die Akte erzeugt und unter Dokumente abgelegt."
+                  ? "Ein: Bei jeder Schadenmeldung an diesem Objekt wird die Akte erzeugt und unter Dokumente abgelegt. Mit Hausmeister-Prüfung erst nach Befund."
                   : "Aus: Keine automatische Schadenakte."
               }
             />

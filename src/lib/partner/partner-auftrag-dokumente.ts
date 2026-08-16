@@ -113,10 +113,16 @@ export function buildPartnerAuftragDokumentZeilen(
 export function partnerAuftragHatAbschluss(
   item: Pick<
     PartnerAuftragItem,
-    "hw_abschluss_signiert_am" | "abnahme_freigabe_status"
+    | "hw_abschluss_signiert_am"
+    | "abnahme_freigabe_status"
+    | "abnahme_protokoll_id"
+    | "abnahme_protokoll_url"
   >
 ): boolean {
   if (item.hw_abschluss_signiert_am?.trim()) return true;
+  if (item.abnahme_protokoll_id?.trim() || item.abnahme_protokoll_url?.trim()) {
+    return true;
+  }
   const freigabe = String(item.abnahme_freigabe_status ?? "")
     .trim()
     .toLowerCase();
@@ -125,8 +131,27 @@ export function partnerAuftragHatAbschluss(
 }
 
 /**
- * Auto-Rechnung / Upload erst nach eigenem Abschluss.
- * Optional: `abschlussDoneLocal` direkt nach Signatur im Sheet.
+ * CRM hat die Zuweisung freigegeben / angenommen —
+ * unabhängig vom Projektvertrag.
+ */
+export function partnerHwRechnungCrmFreigegeben(
+  item: Pick<
+    PartnerAuftragItem,
+    "angebotHwStatus" | "hwStatus" | "handwerker_bestaetigt_at"
+  >
+): boolean {
+  const ah = (item.angebotHwStatus ?? "").toLowerCase();
+  if (ah === "uebernommen" || ah === "bestaetigt") return true;
+
+  const zuweisung = (item.hwStatus ?? "").toLowerCase();
+  if (zuweisung === "akzeptiert" || zuweisung === "uebernommen") return true;
+
+  return Boolean(item.handwerker_bestaetigt_at?.trim());
+}
+
+/**
+ * Auto-Rechnung / Upload nach Abschluss + CRM-Freigabe/Annahme.
+ * Kein Projektvertrag nötig. Optional: `abschlussDoneLocal` direkt nach Signatur.
  */
 export function partnerAuftragKannRechnungHochladen(
   item: PartnerAuftragItem,
@@ -135,8 +160,7 @@ export function partnerAuftragKannRechnungHochladen(
   if (!item.angebotHandwerkerId) return false;
   if (item.status.toLowerCase() === "storniert") return false;
   if (item.hw_rechnung_eingereicht_at) return false;
-  const hwSt = (item.angebotHwStatus ?? "").toLowerCase();
-  if (hwSt !== "uebernommen") return false;
+  if (!partnerHwRechnungCrmFreigegeben(item)) return false;
   if (!opts?.abschlussDoneLocal && !partnerAuftragHatAbschluss(item)) {
     return false;
   }

@@ -46,20 +46,17 @@ export async function notifyHvPartnerErledigt(input: {
     vorgangTitel && vorgangTitel !== "Meldung" ? vorgangTitel : leistungText;
 
   const vollstaendig = input.vollstaendig === true;
-  const titel = formatMeldeNotifTitel(
-    vollstaendig
-      ? MELDE_NOTIF_COPY.partnerErledigt
-      : MELDE_NOTIF_COPY.partnerTeilabschluss,
-    { titel: bezug }
-  );
-  const body = vollstaendig
-    ? `${input.handwerkerName} meldet die letzten offenen Leistungen als erledigt. Sie können Feedback geben oder Mängel melden.`
-    : `${input.handwerkerName} meldet Leistungen als erledigt. Weitere Positionen am Auftrag sind noch offen.`;
+  if (!vollstaendig) return;
+
+  const titel = formatMeldeNotifTitel(MELDE_NOTIF_COPY.partnerErledigt, {
+    titel: bezug,
+  });
+  const body = `${input.handwerkerName} meldet die Leistungen als erledigt. Der Vorgang ist abgeschlossen.`;
   const link = `/portal?section=vorgaenge&id=${encodeURIComponent(input.leadId)}&tab=uebersicht`;
 
   await createHvNotification({
     kundeId,
-    typ: "handwerker_erledigt",
+    typ: "abgeschlossen",
     titel,
     body,
     link,

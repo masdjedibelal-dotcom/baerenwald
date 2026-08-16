@@ -15,6 +15,7 @@ export type PortalStateRole =
   | "handwerker"
   | "eigentuemer"
   | "mieter"
+  | "hausmeister"
   | "hv";
 
 export type PortalStateCopy = {
@@ -38,6 +39,9 @@ const BTN = {
 export function portalEmptySubtitle(role: PortalStateRole = "kunde"): string {
   if (role === "handwerker") {
     return "Sobald Ihnen ein Auftrag zugewiesen wird, erscheint er hier.";
+  }
+  if (role === "hausmeister") {
+    return "Sobald an Ihren Objekten Vorgänge zur Prüfung anstehen, erscheinen sie hier.";
   }
   if (role === "eigentuemer" || role === "mieter") {
     return "Für Ihre Wohnung liegt aktuell keine Meldung vor. Bei Schäden nutzen Sie den Melde-Link Ihrer Verwaltung.";

@@ -98,6 +98,8 @@ export function buildPartnerVorgaenge(input: {
       handwerker_bestaetigt_at: auftrag.handwerker_bestaetigt_at,
       projektvertrag_bestaetigt_am: auftrag.projektvertrag_bestaetigt_am,
       angebot_bestaetigt_at: anfrage?.bestaetigt_at ?? null,
+      angebotHwStatus: auftrag.angebotHwStatus ?? anfrage?.hw_status ?? null,
+      hwStatus: auftrag.hwStatus,
     });
 
     if (
@@ -160,6 +162,8 @@ export function buildPartnerVorgaenge(input: {
       handwerker_bestaetigt_at: auftrag.handwerker_bestaetigt_at,
       projektvertrag_bestaetigt_am: auftrag.projektvertrag_bestaetigt_am,
       angebot_bestaetigt_at: anfrage.bestaetigt_at ?? null,
+      angebotHwStatus: anfrage.hw_status ?? null,
+      hwStatus: auftrag.hwStatus,
     });
 
     if (

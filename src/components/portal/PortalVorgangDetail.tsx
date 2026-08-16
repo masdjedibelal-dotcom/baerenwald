@@ -102,6 +102,7 @@ export function PortalVorgangDetail({
   auftragId,
   hvAbnahme,
   showHvAbnahme,
+  hausmeisterActor = false,
   orgFreigabeStatus,
   freigabeBypassGrund,
   hvMeldungStatus,
@@ -128,6 +129,8 @@ export function PortalVorgangDetail({
     signiert_am: string;
   } | null;
   showHvAbnahme?: boolean;
+  /** Hausmeister-Portal: Befund im Tab bearbeitbar (nicht unter allen Menüpunkten). */
+  hausmeisterActor?: boolean;
   /** D7: Privat/Gewerbe — kein Freigabe-Schritt, Hinweis „Automatisch freigegeben“ */
   privatkunde?: boolean;
   orgFreigabeStatus?: string | null;
@@ -304,10 +307,13 @@ export function PortalVorgangDetail({
         detailRole={
           mieterStatusMode || item.hvMieterView
             ? "mieter"
-            : privatkunde
+            : hausmeisterActor
               ? "kunde"
-              : "hv"
+              : privatkunde
+                ? "kunde"
+                : "hv"
         }
+        hausmeisterActor={hausmeisterActor}
         mieterStatusMode={mieterStatusMode || Boolean(item.hvMieterView)}
         statusLabelOverride={
           mieterStatusMode || item.hvMieterView

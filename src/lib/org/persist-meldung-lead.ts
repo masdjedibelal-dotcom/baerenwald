@@ -226,12 +226,23 @@ export async function persistMeldungLead(input: PersistMeldungLeadInput) {
             kontaktName: hm.name,
           });
         }
+        void import("@/lib/portal/notify-portal-hausmeister").then(
+          ({ notifyPortalHausmeisterNeuerVorgang }) =>
+            notifyPortalHausmeisterNeuerVorgang({
+              leadId: result.id,
+              kundeObjektId: input.kunde_objekt_id,
+            }).catch((e) =>
+              console.warn("[persistMeldungLead] hm portal notify:", e)
+            )
+        );
       }
     } catch (e) {
       console.warn("[persistMeldungLead] hm_auto:", e);
     }
   }
 
+  // Ohne HM: Schadenakte sofort aus der Meldung.
+  // Mit HM (hm_pruefung): nur Kostenträger vormerken, PDF nach Befund-Abschluss.
   void import("@/lib/org/ensure-versicherungsakte").then(
     ({ applyAutomatischeSchadenakteIfEnabled }) =>
       applyAutomatischeSchadenakteIfEnabled(result.id).catch((e) =>

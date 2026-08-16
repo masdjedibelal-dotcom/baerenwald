@@ -15,6 +15,7 @@ import { PartnerLeistungenKonditionenCard } from "@/components/partner/PartnerLe
 import { PartnerPositionLebenszyklusList } from "@/components/partner/PartnerPositionLebenszyklusList";
 import { PartnerComplianceCheckliste } from "@/components/partner/PartnerComplianceCheckliste";
 import { PartnerFachdokuSlots } from "@/components/partner/PartnerFachdokuSlots";
+import { PartnerHausmeisterVorbefundCard } from "@/components/partner/PartnerHausmeisterVorbefundCard";
 import { PortalDetailCard } from "@/components/shared/PortalDetailCard";
 import { PortalEntityDetailLayout } from "@/components/shared/PortalEntityDetailLayout";
 import type { PortalDetailTab } from "@/components/shared/PortalDetailTabs";
@@ -441,24 +442,27 @@ export function PartnerAuftragDetail({
         </button>
       ) : null}
     </div>
-  ) : zeigtAbschluss ? (
-    <div className="space-y-2">
-      <button
-        type="button"
-        onClick={() => setAbschlussOpen(true)}
-        disabled={!kannAbschluss}
-        className="portal-action-btn portal-action-btn--primary portal-action-btn--block"
-        data-testid="hw-auftrag-abschliessen"
-      >
-        {HW_AUFTRAG_COPY.ausfuehrenCta}
-      </button>
-      {!kannAbschluss ? (
-        <p className="portal-text-label normal-case tracking-normal text-center text-text-secondary">
-          {HW_AUFTRAG_COPY.ausfuehrenDisabledHint}
-        </p>
-      ) : null}
-    </div>
   ) : undefined;
+
+  const abschlussInline =
+    zeigtAbschluss && !kannRechnungHochladen ? (
+      <div className="space-y-2 pt-1">
+        <button
+          type="button"
+          onClick={() => setAbschlussOpen(true)}
+          disabled={!kannAbschluss}
+          className="portal-action-btn portal-action-btn--primary portal-action-btn--block"
+          data-testid="hw-auftrag-abschliessen"
+        >
+          {HW_AUFTRAG_COPY.ausfuehrenCta}
+        </button>
+        {!kannAbschluss ? (
+          <p className="portal-text-label normal-case tracking-normal text-center text-text-secondary">
+            {HW_AUFTRAG_COPY.ausfuehrenDisabledHint}
+          </p>
+        ) : null}
+      </div>
+    ) : null;
 
   const handleBack = onBack ?? (() => router.back());
 
@@ -491,6 +495,9 @@ export function PartnerAuftragDetail({
               </PortalDetailCard>
             ) : null}
             <VorgangDetailBlocks vm={detailVm} />
+            <PartnerHausmeisterVorbefundCard
+              eintraege={item.bautagebuch ?? []}
+            />
             {!isErledigt ? (
               <PartnerAuftragErledigtSection
                 layout="cta"
@@ -527,55 +534,6 @@ export function PartnerAuftragDetail({
                 onDone={() => refresh()}
               />
 
-              {(item.bautagebuch ?? []).some(
-                (e) => String(e.eintrag_typ ?? "") === "befund"
-              ) ? (
-                <div className="mt-4 space-y-2 border-t border-border-light pt-4">
-                  <h4 className="portal-text-label text-text-tertiary">
-                    Hausmeister-Vorbefund
-                  </h4>
-                  <ul className="space-y-2.5">
-                    {(item.bautagebuch ?? [])
-                      .filter((e) => String(e.eintrag_typ ?? "") === "befund")
-                      .map((e) => (
-                        <li key={e.id} className="space-y-1">
-                          <p className="portal-text-card-title">{e.titel}</p>
-                          {e.beschreibung ? (
-                            <p className="portal-text-body whitespace-pre-wrap text-text-secondary">
-                              {e.beschreibung}
-                            </p>
-                          ) : null}
-                          {(e.foto_signed_urls?.length || e.foto_urls?.length) ? (
-                            <div className="flex flex-wrap gap-2">
-                              {(e.foto_signed_urls?.length
-                                ? e.foto_signed_urls
-                                : e.foto_urls ?? []
-                              ).map((url) =>
-                                url ? (
-                                  <a
-                                    key={url}
-                                    href={url}
-                                    target="_blank"
-                                    rel="noreferrer"
-                                    className="block h-14 w-14 overflow-hidden rounded-md border border-border-light"
-                                  >
-                                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                                    <img
-                                      src={url}
-                                      alt=""
-                                      className="h-full w-full object-cover"
-                                    />
-                                  </a>
-                                ) : null
-                              )}
-                            </div>
-                          ) : null}
-                        </li>
-                      ))}
-                  </ul>
-                </div>
-              ) : null}
-
               <PartnerFachdokuSlots auftragId={item.id} className="mt-4" />
 
               {konditionZeilen.length > 0 ? (
@@ -588,6 +546,7 @@ export function PartnerAuftragDetail({
               ) : null}
             </PortalDetailCard>
 
+            {abschlussInline}
           </div>
         ) : null}
 

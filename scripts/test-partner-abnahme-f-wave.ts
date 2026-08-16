@@ -147,9 +147,19 @@ assert.equal(
   partnerAuftragKannRechnungHochladen({
     ...item,
     angebotHwStatus: "bestaetigt",
+    hw_abschluss_signiert_am: "2026-07-24T10:00:00Z",
+  }),
+  true,
+  "Rechnung nach CRM-Freigabe (bestaetigt) + Abschluss"
+);
+
+assert.equal(
+  partnerAuftragKannRechnungHochladen({
+    ...item,
+    angebotHwStatus: "offen",
   }),
   false,
-  "Rechnung erst nach hw_status=uebernommen"
+  "Rechnung ohne CRM-Freigabe/Abschluss nicht möglich"
 );
 
 assert.equal(

@@ -10,7 +10,8 @@ export type PortalHeroKind =
   | "mieter"
   | "privat"
   | "handwerker"
-  | "eigentuemer";
+  | "eigentuemer"
+  | "hausmeister";
 
 /** Legacy / HV-Verwaltung (Innenhof). */
 export const PORTAL_HEADER_HERO_SRC = "/images/portal/header-hero.jpg";
@@ -22,6 +23,8 @@ export const PORTAL_HEADER_HERO_BY_KIND: Record<PortalHeroKind, string> = {
   /** Eigentümer teilt Privatkunden-Hero (Eigenheim). */
   eigentuemer: "/images/portal/header-hero-privat.jpg",
   handwerker: "/images/portal/header-hero-handwerker.jpg",
+  /** Hausmeister teilt Handwerker-Hero (Vor-Ort). */
+  hausmeister: "/images/portal/header-hero-handwerker.jpg",
 };
 
 /** @deprecated Alias — bitte `portalHeaderHeroSrc(kind)` nutzen. */

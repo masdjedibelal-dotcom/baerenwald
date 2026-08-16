@@ -224,11 +224,15 @@ export async function submitPartnerRechnung(
     };
   }
 
-  if (String(row.hw_status ?? "").toLowerCase() !== "uebernommen") {
-    return {
-      ok: false,
-      error: "Rechnung erst nach Übernahme der Konditionen durch Bärenwald möglich.",
-    };
+  const hwSt = String(row.hw_status ?? "").toLowerCase();
+  if (hwSt !== "uebernommen" && hwSt !== "bestaetigt") {
+    const stOk = st === "akzeptiert" || st === "angenommen";
+    if (!stOk || !row.hw_eingereicht_at) {
+      return {
+        ok: false,
+        error: "Rechnung erst nach Freigabe/Annahme durch Bärenwald möglich.",
+      };
+    }
   }
 
   if (row.hw_rechnung_eingereicht_at) {

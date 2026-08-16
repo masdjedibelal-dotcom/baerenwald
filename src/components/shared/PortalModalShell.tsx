@@ -183,6 +183,13 @@ export function PortalModalShell({
 
   /** Speichern/Upload im Sheet → gleiches Portal-Loading wie Nav/Refresh. */
   useEffect(() => {
+    if (!open) {
+      if (busyHoldRef.current) {
+        busyHoldRef.current = false;
+        release();
+      }
+      return;
+    }
     if (busy) {
       if (!busyHoldRef.current) {
         busyHoldRef.current = true;
@@ -194,7 +201,7 @@ export function PortalModalShell({
       busyHoldRef.current = false;
       release();
     }
-  }, [busy, hold, release]);
+  }, [open, busy, hold, release]);
 
   useEffect(() => {
     return () => {

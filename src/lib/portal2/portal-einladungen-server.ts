@@ -459,3 +459,55 @@ export async function redeemPortalEinladung(opts: {
 
   return { ok: true, portalKundeId };
 }
+
+/**
+ * Offene Hausmeister-Einladungen zur Login-E-Mail einlösen.
+ * Deckt: Auth-Konto existiert schon → „Konto aktivieren“ scheitert → Login ohne
+ * Einladungslink legt nur privat an und setzt portal_kunde_id nicht.
+ */
+export async function tryRedeemOpenHausmeisterInvitesForAuthUser(opts: {
+  authUserId: string;
+  email: string;
+  name?: string | null;
+  telefon?: string | null;
+}): Promise<{ redeemed: boolean; portalKundeId?: string }> {
+  const email = opts.email.trim().toLowerCase();
+  if (!email || !opts.authUserId) return { redeemed: false };
+
+  const { data: hmRows, error: hmErr } = await supabaseAdmin
+    .from("org_hausmeister")
+    .select("id")
+    .ilike("email", email)
+    .eq("portal_zugang", true);
+
+  if (hmErr || !hmRows?.length) return { redeemed: false };
+
+  const hmIds = hmRows.map((r) => String(r.id)).filter(Boolean);
+  if (!hmIds.length) return { redeemed: false };
+
+  const { data: invites, error: invErr } = await supabaseAdmin
+    .from("portal_einladungen")
+    .select("token, created_at")
+    .eq("status", "offen")
+    .in("org_hausmeister_id", hmIds)
+    .order("created_at", { ascending: false });
+
+  if (invErr || !invites?.length) return { redeemed: false };
+
+  for (const inv of invites) {
+    const token = String(inv.token ?? "").trim();
+    if (!token) continue;
+    const result = await redeemPortalEinladung({
+      token,
+      authUserId: opts.authUserId,
+      email,
+      name: opts.name,
+      telefon: opts.telefon,
+    });
+    if (result.ok) {
+      return { redeemed: true, portalKundeId: result.portalKundeId };
+    }
+  }
+
+  return { redeemed: false };
+}

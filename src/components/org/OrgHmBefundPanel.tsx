@@ -1,12 +1,14 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { Pencil, Plus } from "lucide-react";
 
 import {
   addLeadBefundFreipunktAction,
   completeLeadBefundAction,
   createLeadBefundAction,
   getLeadBefundAction,
+  rejectLeadBefundToHvAction,
   updateLeadBefundKopfAction,
   updateLeadBefundPunktAction,
   uploadLeadBefundFotoAction,
@@ -15,6 +17,8 @@ import {
   type LeadBefundPunktStatus,
   type LeadBefundRow,
 } from "@/app/actions/lead-befund";
+import { PortalContentBusy } from "@/components/shared/PortalContentBusy";
+import { PortalKiAssistField } from "@/components/shared/PortalKiAssistField";
 import { PortalModalShell } from "@/components/shared/PortalModalShell";
 import { FileUploadField } from "@/components/shared/FileUploadField";
 import { usePortalBusy } from "@/components/shared/PortalBusyContext";
@@ -44,10 +48,47 @@ type Props = {
   leadId: string;
   hvMeldungStatus: string | null | undefined;
   readOnly?: boolean;
-  /** Versteckt HV-only Aktionen (z. B. Direkt Bärenwald). */
-  hideOrgOnlyActions?: boolean;
   onUpdated?: () => void;
+  /** Meldet dem Parent, ob ein Befund existiert (Tab bleibt nach BW-Übergabe). */
+  onBefundPresence?: (has: boolean) => void;
 };
+
+function statusLabel(status: LeadBefundPunktStatus | null): string | null {
+  if (!status) return null;
+  return STATUS_OPTS.find((o) => o.id === status)?.label ?? status;
+}
+
+function statusTone(status: LeadBefundPunktStatus | null): {
+  bg: string;
+  color: string;
+} {
+  if (status === "auffaellig") {
+    return { bg: "var(--p2-danger-soft, #fce3e3)", color: "var(--p2-danger, #a1242a)" };
+  }
+  if (status === "unauffaellig") {
+    return { bg: "var(--p2-primary-soft, #e7f1e9)", color: "var(--p2-primary, #2e7d52)" };
+  }
+  if (status === "nicht_pruefbar") {
+    return { bg: "var(--p2-selected, #f0f2f0)", color: "var(--p2-sub, #404a45)" };
+  }
+  return { bg: "transparent", color: PORTAL_VAR.faint };
+}
+
+function fmtDatum(iso: string | null | undefined): string | null {
+  if (!iso) return null;
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return iso.slice(0, 10);
+  return d.toLocaleDateString("de-DE", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  });
+}
+
+function isBasisPunkt(p: LeadBefundPunktRow): boolean {
+  const key = (p.vorlage_key ?? "").trim();
+  return key.startsWith("basis_");
+}
 
 function StepChrome({ stepIndex }: { stepIndex: number }) {
   return (
@@ -104,32 +145,114 @@ function StatusChip({
   );
 }
 
+function BefundPunktCard({
+  punkt,
+  onOpen,
+}: {
+  punkt: LeadBefundPunktRow;
+  onOpen: () => void;
+}) {
+  const st = statusLabel(punkt.status);
+  const tone = statusTone(punkt.status);
+  const datum = fmtDatum(punkt.updated_at);
+  const notiz = punkt.notiz.trim();
+
+  return (
+    <button
+      type="button"
+      onClick={onOpen}
+      className="portal-surface flex w-full flex-col gap-2.5 p-3.5 text-left transition-colors hover:bg-[var(--p2-hover,#eef1ef)]"
+    >
+      <div className="flex items-start gap-3">
+        <div className="min-w-0 flex-1">
+          <p className="portal-text-body font-semibold text-text-primary">
+            {punkt.titel}
+          </p>
+          {notiz ? (
+            <p className="portal-text-meta mt-1 line-clamp-2 text-text-secondary">
+              {notiz}
+            </p>
+          ) : null}
+        </div>
+        {st ? (
+          <span
+            className="shrink-0 rounded-full px-2.5 py-1 text-[11px] font-semibold"
+            style={{ background: tone.bg, color: tone.color }}
+          >
+            {st}
+          </span>
+        ) : null}
+      </div>
+      <div className="flex items-center justify-between gap-2">
+        <span className="portal-text-meta text-text-tertiary">
+          {datum ?? "Noch offen"}
+        </span>
+        {punkt.foto_refs.length > 0 ? (
+          <div className="flex -space-x-1.5">
+            {punkt.foto_refs.slice(0, 4).map((url) => (
+              <span
+                key={url}
+                className="relative h-8 w-8 overflow-hidden rounded-md border border-white bg-muted"
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={url} alt="" className="h-full w-full object-cover" />
+              </span>
+            ))}
+            {punkt.foto_refs.length > 4 ? (
+              <span className="flex h-8 w-8 items-center justify-center rounded-md border border-white bg-muted text-[10px] font-semibold text-text-secondary">
+                +{punkt.foto_refs.length - 4}
+              </span>
+            ) : null}
+          </div>
+        ) : null}
+      </div>
+    </button>
+  );
+}
+
 export function OrgHmBefundPanel({
   leadId,
   hvMeldungStatus,
   readOnly: readOnlyProp,
-  hideOrgOnlyActions = false,
   onUpdated,
+  onBefundPresence,
 }: Props) {
   const hv = (hvMeldungStatus ?? "").trim().toLowerCase();
   const editable = hv === "hm_pruefung" && !readOnlyProp;
-  const visible = hv === "hm_pruefung" || hv === "hm_erledigt";
+  /** Panel wird nur gemountet, wenn der Tab sichtbar ist — immer laden. */
+  const canAutoCreate = editable;
 
   const { runBusy } = usePortalBusy();
   const [befund, setBefund] = useState<LeadBefundRow | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [freiTitel, setFreiTitel] = useState("");
   const [sheetOpen, setSheetOpen] = useState(false);
   const [sheetStep, setSheetStep] = useState<SheetStep>("wahl");
   const [pendingErgebnis, setPendingErgebnis] =
     useState<LeadBefundErgebnis | null>(null);
+
+  const [editPunkt, setEditPunkt] = useState<LeadBefundPunktRow | null>(null);
+  const [draftStatus, setDraftStatus] = useState<LeadBefundPunktStatus | null>(
+    null
+  );
+  const [draftNotiz, setDraftNotiz] = useState("");
+  const [draftDirty, setDraftDirty] = useState(false);
+  const [addOpen, setAddOpen] = useState(false);
+  const [addTitel, setAddTitel] = useState("");
 
   const hinweis = useMemo(() => {
     const key = befund?.vorlage_key;
     if (!key || !isBefundVorlageKey(key)) return null;
     return getBefundVorlage(key).hinweis ?? null;
   }, [befund?.vorlage_key]);
+
+  const { allgemein, ursache } = useMemo(() => {
+    const punkte = befund?.punkte ?? [];
+    return {
+      allgemein: punkte.filter(isBasisPunkt),
+      ursache: punkte.filter((p) => !isBasisPunkt(p)),
+    };
+  }, [befund?.punkte]);
 
   async function reload() {
     setLoading(true);
@@ -138,65 +261,52 @@ export function OrgHmBefundPanel({
     if (!res.ok) {
       setError(res.error);
       setBefund(null);
+      onBefundPresence?.(false);
     } else {
       setBefund(res.befund);
+      onBefundPresence?.(Boolean(res.befund?.id));
     }
     setLoading(false);
   }
 
   useEffect(() => {
-    if (!visible) return;
     void reload();
     // eslint-disable-next-line react-hooks/exhaustive-deps -- leadId/hv
   }, [leadId, hv]);
 
   useEffect(() => {
-    if (!visible || !editable || loading || befund) return;
+    if (!canAutoCreate || loading || befund) return;
     void (async () => {
       const res = await createLeadBefundAction({ leadId });
-      if (res.ok) setBefund(res.befund);
-      else setError(res.error);
+      if (res.ok) {
+        setBefund(res.befund);
+        onBefundPresence?.(true);
+      } else setError(res.error);
     })();
-  }, [visible, editable, loading, befund, leadId]);
+  }, [canAutoCreate, loading, befund, leadId, onBefundPresence]);
 
-  if (!visible) return null;
-
-  async function patchPunkt(
-    punktId: string,
-    patch: {
-      status?: LeadBefundPunktStatus | null;
-      notiz?: string;
-      fotoRefs?: string[];
-    }
-  ) {
-    await runBusy(async () => {
-      const res = await updateLeadBefundPunktAction({ punktId, ...patch });
-      if (!res.ok) {
-        setError(res.error);
-        return;
-      }
-      setBefund((prev) =>
-        prev
-          ? {
-              ...prev,
-              punkte: prev.punkte.map((p) =>
-                p.id === punktId ? res.punkt : p
-              ),
-            }
-          : prev
-      );
-    });
+  function openPunkt(p: LeadBefundPunktRow) {
+    setEditPunkt(p);
+    setDraftStatus(p.status);
+    setDraftNotiz(p.notiz);
+    setDraftDirty(false);
   }
 
-  async function onFoto(punkt: LeadBefundPunktRow, files: File[]) {
-    const file = files[0];
-    if (!file || !editable) return;
+  function closePunkt() {
+    setEditPunkt(null);
+    setDraftDirty(false);
+  }
+
+  async function savePunkt() {
+    if (!editPunkt || !editable) {
+      closePunkt();
+      return;
+    }
     await runBusy(async () => {
-      const fd = new FormData();
-      fd.set("foto", file);
-      const res = await uploadLeadBefundFotoAction({
-        punktId: punkt.id,
-        formData: fd,
+      const res = await updateLeadBefundPunktAction({
+        punktId: editPunkt.id,
+        status: draftStatus,
+        notiz: draftNotiz,
       });
       if (!res.ok) {
         setError(res.error);
@@ -206,8 +316,37 @@ export function OrgHmBefundPanel({
         prev
           ? {
               ...prev,
-              punkte: prev.punkte.map((p) =>
-                p.id === punkt.id ? res.punkt : p
+              punkte: prev.punkte.map((x) =>
+                x.id === editPunkt.id ? res.punkt : x
+              ),
+            }
+          : prev
+      );
+      closePunkt();
+    });
+  }
+
+  async function onFoto(files: File[]) {
+    const file = files[0];
+    if (!file || !editPunkt || !editable) return;
+    await runBusy(async () => {
+      const fd = new FormData();
+      fd.set("foto", file);
+      const res = await uploadLeadBefundFotoAction({
+        punktId: editPunkt.id,
+        formData: fd,
+      });
+      if (!res.ok) {
+        setError(res.error);
+        return;
+      }
+      setEditPunkt(res.punkt);
+      setBefund((prev) =>
+        prev
+          ? {
+              ...prev,
+              punkte: prev.punkte.map((x) =>
+                x.id === editPunkt.id ? res.punkt : x
               ),
             }
           : prev
@@ -216,27 +355,42 @@ export function OrgHmBefundPanel({
   }
 
   async function addFrei() {
-    if (!befund || !freiTitel.trim()) return;
+    if (!befund || !addTitel.trim()) return;
     await runBusy(async () => {
       const res = await addLeadBefundFreipunktAction({
         befundId: befund.id,
-        titel: freiTitel,
+        titel: addTitel.trim(),
       });
       if (!res.ok) {
         setError(res.error);
         return;
       }
-      setFreiTitel("");
       setBefund((prev) =>
         prev ? { ...prev, punkte: [...prev.punkte, res.punkt] } : prev
       );
+      setAddTitel("");
+      setAddOpen(false);
+      openPunkt(res.punkt);
     });
   }
 
-  function openSheet() {
+  function openAbschlussSheet() {
     setPendingErgebnis(null);
     setSheetStep("wahl");
     setSheetOpen(true);
+  }
+
+  async function ablehnenAnHv() {
+    if (!befund) return;
+    await runBusy(async () => {
+      const res = await rejectLeadBefundToHvAction({ befundId: befund.id });
+      if (!res.ok) {
+        setError(res.error);
+        return;
+      }
+      orgPortalToast.hmZurueckAnHv();
+      onUpdated?.();
+    });
   }
 
   async function confirmAbschluss() {
@@ -251,15 +405,12 @@ export function OrgHmBefundPanel({
         setError(res.error);
         return;
       }
-      setBefund(res.befund);
-      setSheetOpen(false);
-      if (pendingErgebnis === "selbst_erledigt") {
-        orgPortalToast.hmErledigt();
-      } else if (pendingErgebnis === "fachfirma_akut") {
+      if (pendingErgebnis === "selbst_erledigt") orgPortalToast.hmErledigt();
+      else if (pendingErgebnis === "fachfirma_akut")
         orgPortalToast.hmFachfirmaAkut();
-      } else {
-        orgPortalToast.hmFachfirmaAngebot();
-      }
+      else orgPortalToast.hmFachfirmaAngebot();
+      setSheetOpen(false);
+      setBefund(res.befund);
       onUpdated?.();
     });
   }
@@ -267,10 +418,32 @@ export function OrgHmBefundPanel({
   const stepIndex =
     sheetStep === "wahl" ? 0 : sheetStep === "fachfirma" ? 1 : 2;
 
+  function renderPunktList(items: LeadBefundPunktRow[], emptyHint?: string) {
+    if (items.length === 0) {
+      return emptyHint ? (
+        <p className="portal-text-meta px-1 text-text-tertiary">{emptyHint}</p>
+      ) : null;
+    }
+    return (
+      <div className="space-y-2.5">
+        {items.map((p) => (
+          <BefundPunktCard
+            key={p.id}
+            punkt={p}
+            onOpen={() => openPunkt(p)}
+          />
+        ))}
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-3.5">
       {loading ? (
-        <p className="portal-text-body text-text-secondary">Befund wird geladen…</p>
+        <PortalContentBusy
+          title="Befund wird geladen…"
+          body="Einen Moment — wir laden die Prüfpunkte."
+        />
       ) : null}
       {error ? (
         <p className="portal-text-meta font-semibold text-red-700" role="alert">
@@ -278,50 +451,69 @@ export function OrgHmBefundPanel({
         </p>
       ) : null}
 
-      {befund ? (
+      {!loading && befund ? (
         <>
-          <div className="flex flex-wrap gap-3">
-            <label className="block min-w-[12rem] flex-1">
-              <span className="portal-text-label text-text-tertiary">
-                Durchgeführt von
-              </span>
-              <input
-                className="mt-1 w-full rounded-lg border px-3 py-2 text-[13px]"
-                style={{ borderColor: PORTAL_VAR.line }}
-                value={befund.durchgefuehrt_von}
-                disabled={!editable}
-                onChange={(e) =>
-                  setBefund({ ...befund, durchgefuehrt_von: e.target.value })
-                }
-                onBlur={() => {
-                  if (!editable) return;
-                  void updateLeadBefundKopfAction({
-                    befundId: befund.id,
-                    durchgefuehrtVon: befund.durchgefuehrt_von,
-                  });
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0 flex-1 space-y-2">
+              <div className="flex flex-wrap gap-3">
+                <label className="block min-w-[10rem] flex-1">
+                  <span className="portal-text-label text-text-tertiary">
+                    Durchgeführt von
+                  </span>
+                  <input
+                    className="mt-1 w-full rounded-lg border px-3 py-2 text-[13px]"
+                    style={{ borderColor: PORTAL_VAR.line }}
+                    value={befund.durchgefuehrt_von}
+                    disabled={!editable}
+                    onChange={(e) =>
+                      setBefund({ ...befund, durchgefuehrt_von: e.target.value })
+                    }
+                    onBlur={() => {
+                      if (!editable) return;
+                      void updateLeadBefundKopfAction({
+                        befundId: befund.id,
+                        durchgefuehrtVon: befund.durchgefuehrt_von,
+                      });
+                    }}
+                  />
+                </label>
+                <label className="block w-[9.5rem]">
+                  <span className="portal-text-label text-text-tertiary">
+                    Datum
+                  </span>
+                  <input
+                    type="date"
+                    className="mt-1 w-full rounded-lg border px-3 py-2 text-[13px]"
+                    style={{ borderColor: PORTAL_VAR.line }}
+                    value={befund.durchgefuehrt_am.slice(0, 10)}
+                    disabled={!editable}
+                    onChange={(e) =>
+                      setBefund({ ...befund, durchgefuehrt_am: e.target.value })
+                    }
+                    onBlur={() => {
+                      if (!editable) return;
+                      void updateLeadBefundKopfAction({
+                        befundId: befund.id,
+                        durchgefuehrtAm: befund.durchgefuehrt_am,
+                      });
+                    }}
+                  />
+                </label>
+              </div>
+            </div>
+            {editable ? (
+              <button
+                type="button"
+                className="portal-action-btn portal-action-btn--secondary shrink-0"
+                onClick={() => {
+                  setAddTitel("");
+                  setAddOpen(true);
                 }}
-              />
-            </label>
-            <label className="block w-[10rem]">
-              <span className="portal-text-label text-text-tertiary">Datum</span>
-              <input
-                type="date"
-                className="mt-1 w-full rounded-lg border px-3 py-2 text-[13px]"
-                style={{ borderColor: PORTAL_VAR.line }}
-                value={befund.durchgefuehrt_am.slice(0, 10)}
-                disabled={!editable}
-                onChange={(e) =>
-                  setBefund({ ...befund, durchgefuehrt_am: e.target.value })
-                }
-                onBlur={() => {
-                  if (!editable) return;
-                  void updateLeadBefundKopfAction({
-                    befundId: befund.id,
-                    durchgefuehrtAm: befund.durchgefuehrt_am,
-                  });
-                }}
-              />
-            </label>
+              >
+                <Plus className="mr-1.5 h-4 w-4" aria-hidden />
+                Hinzufügen
+              </button>
+            ) : null}
           </div>
 
           {hinweis ? (
@@ -337,137 +529,43 @@ export function OrgHmBefundPanel({
             </p>
           ) : null}
 
-          <ul className="divide-y divide-border-light">
-            {befund.punkte.map((p) => (
-              <li key={p.id} className="space-y-2.5 py-3.5">
-                <p className="portal-text-card-title">{p.titel}</p>
-                <div className="flex flex-wrap gap-1.5">
-                  {STATUS_OPTS.map((o) => (
-                    <StatusChip
-                      key={o.id}
-                      label={o.label}
-                      active={p.status === o.id}
-                      disabled={!editable}
-                      onClick={() => void patchPunkt(p.id, { status: o.id })}
-                    />
-                  ))}
-                </div>
-                <textarea
-                  className="w-full rounded-lg border px-3 py-2 text-[13px]"
-                  style={{ borderColor: PORTAL_VAR.line }}
-                  rows={2}
-                  placeholder="Notiz"
-                  value={p.notiz}
-                  disabled={!editable}
-                  onChange={(e) => {
-                    const v = e.target.value;
-                    setBefund((prev) =>
-                      prev
-                        ? {
-                            ...prev,
-                            punkte: prev.punkte.map((x) =>
-                              x.id === p.id ? { ...x, notiz: v } : x
-                            ),
-                          }
-                        : prev
-                    );
-                  }}
-                  onBlur={() => void patchPunkt(p.id, { notiz: p.notiz })}
-                />
-                {editable ? (
-                  <FileUploadField
-                    label="Foto"
-                    accept="image/jpeg,image/png,image/webp"
-                    size="compact"
-                    onChange={(files) => void onFoto(p, files)}
-                  />
-                ) : null}
-                {p.foto_refs.length > 0 ? (
-                  <div className="flex flex-wrap gap-2">
-                    {p.foto_refs.map((url) => (
-                      <a
-                        key={url}
-                        href={url}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="block h-16 w-16 overflow-hidden rounded-md border"
-                        style={{ borderColor: PORTAL_VAR.line }}
-                      >
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img
-                          src={url}
-                          alt=""
-                          className="h-full w-full object-cover"
-                        />
-                      </a>
-                    ))}
-                  </div>
-                ) : null}
-              </li>
-            ))}
-          </ul>
-
-          {editable ? (
-            <div className="flex flex-wrap items-end gap-2">
-              <label className="min-w-[12rem] flex-1">
-                <span className="portal-text-label text-text-tertiary">
-                  Freipunkt
-                </span>
-                <input
-                  className="mt-1 w-full rounded-lg border px-3 py-2 text-[13px]"
-                  style={{ borderColor: PORTAL_VAR.line }}
-                  value={freiTitel}
-                  onChange={(e) => setFreiTitel(e.target.value)}
-                  placeholder="Weiteren Prüfpunkt hinzufügen"
-                />
-              </label>
-              <button
-                type="button"
-                className="portal-action-btn portal-action-btn--secondary"
-                disabled={!freiTitel.trim()}
-                onClick={() => void addFrei()}
-              >
-                Hinzufügen
-              </button>
-            </div>
+          {allgemein.length > 0 ? (
+            <section className="space-y-2">
+              <h3 className="portal-text-label text-text-tertiary">Allgemein</h3>
+              {renderPunktList(allgemein)}
+            </section>
           ) : null}
+
+          <section className="space-y-2">
+            <h3 className="portal-text-label text-text-tertiary">
+              {befund.vorlage_key && isBefundVorlageKey(befund.vorlage_key)
+                ? `Zur Ursache · ${getBefundVorlage(befund.vorlage_key).label}`
+                : "Zur Ursache"}
+            </h3>
+            {renderPunktList(
+              ursache,
+              allgemein.length > 0
+                ? "Noch keine ursachenspezifischen Punkte."
+                : undefined
+            )}
+          </section>
 
           {editable ? (
             <div className="portal-action-row pt-1">
               <button
                 type="button"
-                className="portal-action-btn portal-action-btn--primary"
-                onClick={openSheet}
+                className="portal-action-btn portal-action-btn--secondary"
+                onClick={() => void ablehnenAnHv()}
               >
-                Prüfung abschließen
+                Ablehnen
               </button>
-              {!hideOrgOnlyActions ? (
-                <button
-                  type="button"
-                  className="portal-action-btn portal-action-btn--secondary"
-                  onClick={() => {
-                    void (async () => {
-                      const res = await fetch("/api/org/meldung-aktion", {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({
-                          leadId,
-                          aktion: "direkt_baerenwald",
-                        }),
-                      });
-                      if (!res.ok) {
-                        const j = (await res.json()) as { error?: string };
-                        setError(j.error ?? "Aktion fehlgeschlagen.");
-                        return;
-                      }
-                      orgPortalToast.angebotEingefordert();
-                      onUpdated?.();
-                    })();
-                  }}
-                >
-                  Direkt Bärenwald beauftragen
-                </button>
-              ) : null}
+              <button
+                type="button"
+                className="portal-action-btn portal-action-btn--primary"
+                onClick={openAbschlussSheet}
+              >
+                Abschließen
+              </button>
             </div>
           ) : null}
 
@@ -485,10 +583,144 @@ export function OrgHmBefundPanel({
       ) : null}
 
       <PortalModalShell
+        open={Boolean(editPunkt)}
+        onClose={closePunkt}
+        variant="edit"
+        title={editPunkt?.titel ?? "Prüfpunkt"}
+        subtitle={editable ? "Status, Notiz und Fotos" : "Nur Ansicht"}
+        dirty={draftDirty}
+        headerExtra={
+          editable ? (
+            <span className="inline-flex items-center gap-1 text-[12px] font-semibold text-text-tertiary">
+              <Pencil className="h-3.5 w-3.5" aria-hidden />
+              Bearbeiten
+            </span>
+          ) : null
+        }
+        onConfirm={editable ? () => void savePunkt() : undefined}
+        confirmLabel="Speichern"
+      >
+        {editPunkt ? (
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <p className="portal-text-label text-text-tertiary">Status</p>
+              <div className="flex flex-wrap gap-1.5">
+                {STATUS_OPTS.map((o) => (
+                  <StatusChip
+                    key={o.id}
+                    label={o.label}
+                    active={draftStatus === o.id}
+                    disabled={!editable}
+                    onClick={() => {
+                      if (!editable) return;
+                      setDraftStatus(o.id);
+                      setDraftDirty(true);
+                    }}
+                  />
+                ))}
+              </div>
+            </div>
+
+            {editable ? (
+              <PortalKiAssistField
+                scope="hm_befund_notiz"
+                label="Notiz"
+                value={draftNotiz}
+                onApply={(text) => {
+                  setDraftNotiz(text);
+                  setDraftDirty(true);
+                }}
+                contextHint={[
+                  `Prüfpunkt: ${editPunkt.titel}`,
+                  befund?.vorlage_key
+                    ? `Vorlage: ${befund.vorlage_key}`
+                    : null,
+                ]
+                  .filter(Boolean)
+                  .join("\n")}
+              >
+                <textarea
+                  className="portal-input w-full rounded-xl border border-border-default px-3 py-2.5"
+                  rows={4}
+                  placeholder="Kurz notieren, was Sie gesehen haben…"
+                  value={draftNotiz}
+                  onChange={(e) => {
+                    setDraftNotiz(e.target.value);
+                    setDraftDirty(true);
+                  }}
+                />
+              </PortalKiAssistField>
+            ) : draftNotiz.trim() ? (
+              <div className="space-y-1">
+                <p className="portal-text-label text-text-tertiary">Notiz</p>
+                <p className="portal-text-body whitespace-pre-wrap text-text-secondary">
+                  {draftNotiz}
+                </p>
+              </div>
+            ) : null}
+
+            {editable ? (
+              <FileUploadField
+                label="Foto hinzufügen"
+                accept="image/jpeg,image/png,image/webp"
+                size="compact"
+                onChange={(files) => void onFoto(files)}
+              />
+            ) : null}
+
+            {editPunkt.foto_refs.length > 0 ? (
+              <div className="flex flex-wrap gap-2">
+                {editPunkt.foto_refs.map((url) => (
+                  <a
+                    key={url}
+                    href={url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="block h-16 w-16 overflow-hidden rounded-md border"
+                    style={{ borderColor: PORTAL_VAR.line }}
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={url}
+                      alt=""
+                      className="h-full w-full object-cover"
+                    />
+                  </a>
+                ))}
+              </div>
+            ) : null}
+          </div>
+        ) : null}
+      </PortalModalShell>
+
+      <PortalModalShell
+        open={addOpen}
+        onClose={() => setAddOpen(false)}
+        variant="edit"
+        title="Prüfpunkt hinzufügen"
+        subtitle="Eigener Punkt für diese Prüfung"
+        onConfirm={() => void addFrei()}
+        confirmDisabled={!addTitel.trim()}
+        confirmLabel="Anlegen"
+      >
+        <label className="block space-y-1.5">
+          <span className="portal-text-label text-text-tertiary">Titel</span>
+          <input
+            className="portal-input w-full rounded-xl border border-border-default px-3 py-2.5"
+            value={addTitel}
+            onChange={(e) => setAddTitel(e.target.value)}
+            placeholder="z. B. Kellerraum zusätzlich geprüft"
+            autoFocus
+          />
+        </label>
+      </PortalModalShell>
+
+      <PortalModalShell
         open={sheetOpen}
         onClose={() => setSheetOpen(false)}
-        title="Hausmeister-Prüfung abschließen"
-        subtitle="Ergebnis wählen — ohne Signatur"
+        title="Prüfung abschließen"
+        subtitle="Selbst erledigt oder Fachfirma nötig"
       >
         <StepChrome stepIndex={stepIndex} />
 
@@ -502,7 +734,7 @@ export function OrgHmBefundPanel({
               className={cn(
                 "w-full rounded-xl border px-4 py-3 text-left text-[13px] font-semibold"
               )}
-              style={{ borderColor: PORTAL_VAR.line, color: PORTAL_VAR.ink }}
+              style={{ borderColor: PORTAL_VAR.line }}
               onClick={() => {
                 setPendingErgebnis("selbst_erledigt");
                 setSheetStep("bestaetigen");
@@ -513,25 +745,16 @@ export function OrgHmBefundPanel({
                 className="mt-0.5 block text-[12px] font-normal"
                 style={{ color: PORTAL_VAR.sub }}
               >
-                Vorgang endet hier — ohne Bärenwald-Koordination.
+                Kein Auftrag an Bärenwald.
               </span>
             </button>
             <button
               type="button"
               className="w-full rounded-xl border px-4 py-3 text-left text-[13px] font-semibold"
-              style={{ borderColor: PORTAL_VAR.line, color: PORTAL_VAR.ink }}
-              onClick={() => {
-                setPendingErgebnis(null);
-                setSheetStep("fachfirma");
-              }}
+              style={{ borderColor: PORTAL_VAR.line }}
+              onClick={() => setSheetStep("fachfirma")}
             >
-              Fachfirma beauftragen
-              <span
-                className="mt-0.5 block text-[12px] font-normal"
-                style={{ color: PORTAL_VAR.sub }}
-              >
-                Vorbefund geht an Bärenwald / Handwerker.
-              </span>
+              Fachfirma nötig
             </button>
           </div>
         ) : null}
@@ -556,6 +779,12 @@ export function OrgHmBefundPanel({
               }}
             >
               Angebot einholen
+              <span
+                className="mt-0.5 block text-[12px] font-normal"
+                style={{ color: PORTAL_VAR.sub }}
+              >
+                Vorbefund geht an Bärenwald / Handwerker.
+              </span>
             </button>
             <button
               type="button"
@@ -592,13 +821,15 @@ export function OrgHmBefundPanel({
                   ? "Als Akut an Bärenwald übergeben (Soforteinsatz)?"
                   : "An Bärenwald übergeben — Angebot wird erstellt?"}
             </p>
-            <button
-              type="button"
-              className="portal-action-btn portal-action-btn--primary w-full"
-              onClick={() => void confirmAbschluss()}
-            >
-              Bestätigen
-            </button>
+            <div className="portal-action-row">
+              <button
+                type="button"
+                className="portal-action-btn portal-action-btn--primary"
+                onClick={() => void confirmAbschluss()}
+              >
+                Bestätigen
+              </button>
+            </div>
           </div>
         ) : null}
       </PortalModalShell>

@@ -178,6 +178,12 @@ export const orgPortalToast = {
       "Der Vorgang ist abgeschlossen — ohne Beauftragung an Bärenwald."
     );
   },
+  hmZurueckAnHv() {
+    portalToastSuccess(
+      "An die Verwaltung zurückgegeben",
+      "Die Hausmeister-Prüfung wurde abgelehnt. Der Vorgang liegt wieder bei der HV."
+    );
+  },
   hmFachfirmaAngebot() {
     portalToastSuccess(
       "An Bärenwald übergeben",

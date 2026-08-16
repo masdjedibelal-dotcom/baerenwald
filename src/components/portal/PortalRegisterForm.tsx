@@ -134,7 +134,14 @@ export function PortalRegisterForm({
     });
     setLoading(false);
     if (!result.ok) {
-      setError(result.error);
+      const already =
+        result.error.toLowerCase().includes("bereits registriert") &&
+        Boolean(inviteToken);
+      setError(
+        already
+          ? "Diese E-Mail ist bereits registriert. Bitte unten auf „Anmelden“ tippen — danach wird die Einladung automatisch eingelöst."
+          : result.error
+      );
       return;
     }
     setAwaitingOtp(true);

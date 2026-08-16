@@ -32,7 +32,7 @@ type Aktion =
 /**
  * Detail-Banner: Ablehnen · (optional) Selbst begutachten · Direkt Bärenwald
  * Akut / unter Schwelle → nur Info.
- * Override aus hm_pruefung: nur Direkt Bärenwald.
+ * Während hm_pruefung: nur Hinweis (Auftrag liegt beim Hausmeister).
  */
 export function OrgMeldungAktionBanner({
   lead,
@@ -58,54 +58,13 @@ export function OrgMeldungAktionBanner({
   if ((lead.erfassung_von ?? "").toLowerCase() === "organisation") return null;
 
   if (isHmPruefung) {
-    const actOverride = async () => {
-      setBusy(true);
-      setError(null);
-      try {
-        await runBusy(async () => {
-          const res = await fetch("/api/org/meldung-aktion", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              leadId: lead.id,
-              aktion: "direkt_baerenwald",
-            }),
-          });
-          const json = (await res.json()) as { error?: string };
-          if (!res.ok) {
-            setError(json.error ?? "Aktion fehlgeschlagen.");
-            return;
-          }
-          orgPortalToast.angebotEingefordert();
-          onUpdated();
-        });
-      } finally {
-        setBusy(false);
-      }
-    };
-
     return (
       <div className="mb-4 space-y-2 rounded-xl border border-border-default bg-white p-4">
         <p className="portal-text-card-title">Hausmeister-Prüfung läuft</p>
         <p className="portal-text-body text-text-secondary">
-          Checkliste unter Tab „Hausmeister“. Sie können jederzeit an Bärenwald
-          übergeben.
+          Der Vorgang liegt beim Hausmeister. Fortschritt und Checkliste unter
+          Tab „Hausmeister“.
         </p>
-        <div className="portal-action-row">
-          <button
-            type="button"
-            disabled={busy}
-            onClick={() => void actOverride()}
-            className="portal-action-btn portal-action-btn--primary"
-          >
-            Direkt Bärenwald beauftragen
-          </button>
-        </div>
-        {error ? (
-          <p className="portal-text-meta font-semibold text-red-700" role="alert">
-            {error}
-          </p>
-        ) : null}
       </div>
     );
   }

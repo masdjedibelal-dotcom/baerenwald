@@ -9,7 +9,7 @@ self.addEventListener("activate", (event) => {
 
 self.addEventListener("push", (event) => {
   let data = {
-    title: "Bärenwald",
+    title: "",
     body: "Neue Benachrichtigung",
     url: "/portal",
     tag: "baerenwald",
@@ -28,7 +28,12 @@ self.addEventListener("push", (event) => {
     }
   }
 
-  const title = String(data.title || "Bärenwald").trim() || "Bärenwald";
+  // Gleicher Text wie Manifest-Name → Safari: „Bärenwald from Bärenwald“.
+  // Leer = nur der PWA-Name (wie beim Hinzufügen zur Startseite).
+  let title = String(data.title || "").trim();
+  if (!title || /^bärenwald$/i.test(title) || /^bw partner$/i.test(title)) {
+    title = "";
+  }
   const body = String(data.body || "").trim() || "Neue Benachrichtigung";
 
   event.waitUntil(

@@ -42,9 +42,28 @@ function hergangFromLead(lead: {
 
 type EnsureOpts = { actorId?: string | null; actorRolle?: string | null };
 
+/** Während HM-Prüfung: keine Schadenakte — erst nach abgeschlossenem Befund. */
+export async function isVersicherungsakteBlockedByHmBefund(
+  leadId: string
+): Promise<boolean> {
+  const id = leadId?.trim();
+  if (!id) return false;
+  const { data: lead } = await supabaseAdmin
+    .from("leads")
+    .select("hv_meldung_status")
+    .eq("id", id)
+    .maybeSingle();
+  return (
+    String(lead?.hv_meldung_status ?? "")
+      .trim()
+      .toLowerCase() === "hm_pruefung"
+  );
+}
+
 /**
  * Erzeugt/aktualisiert die Schadenakte am Lead (+ sync auf Aufträge).
  * No-op wenn Kostenträger nicht Versicherung.
+ * Blockiert während hv_meldung_status = hm_pruefung (Befund noch offen).
  */
 export async function ensureVersicherungsakteForLead(
   leadId: string,
@@ -52,6 +71,14 @@ export async function ensureVersicherungsakteForLead(
 ): Promise<{ ok: true; url: string } | { ok: false; message: string }> {
   const id = leadId?.trim();
   if (!id) return { ok: false, message: "Lead fehlt." };
+
+  if (await isVersicherungsakteBlockedByHmBefund(id)) {
+    return {
+      ok: false,
+      message:
+        "Schadenakte Versicherung erst nach abgeschlossenem Hausmeister-Befund.",
+    };
+  }
 
   const { data: lead, error } = await supabaseAdmin
     .from("leads")
@@ -394,6 +421,7 @@ export async function ensureVersicherungsakteForAuftrag(
 /**
  * Objekt-Schalter: Kostenträger Versicherung setzen + Akte erzeugen.
  * Nur bei anlass=meldung und automatische_schadenakte=true.
+ * Mit Hausmeister-Prüfung: Kostenträger ggf. setzen, PDF erst nach Befund.
  */
 export async function applyAutomatischeSchadenakteIfEnabled(
   leadId: string,
@@ -404,7 +432,7 @@ export async function applyAutomatischeSchadenakteIfEnabled(
 
   const { data: lead } = await supabaseAdmin
     .from("leads")
-    .select("id, anlass, kunde_objekt_id, kostentraeger")
+    .select("id, anlass, kunde_objekt_id, kostentraeger, hv_meldung_status")
     .eq("id", id)
     .maybeSingle();
 
@@ -432,6 +460,15 @@ export async function applyAutomatischeSchadenakteIfEnabled(
   if (versNr) patch.versicherungs_nr = versNr;
 
   await supabaseAdmin.from("leads").update(patch).eq("id", id);
+
+  // HM-Prüfung läuft: nur Kostenträger, Akte nach Befund-Abschluss
+  if (
+    String(lead.hv_meldung_status ?? "")
+      .trim()
+      .toLowerCase() === "hm_pruefung"
+  ) {
+    return;
+  }
 
   const result = await ensureVersicherungsakteForLead(id, opts);
   if (!result.ok) {

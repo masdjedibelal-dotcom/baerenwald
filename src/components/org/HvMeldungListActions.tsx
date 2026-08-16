@@ -72,48 +72,8 @@ export function HvMeldungListActions({
   if (isHvDirektauftragInfoOnly(lead, kunde, objekte)) return null;
 
   if (isHmPruefung) {
-    const act = async () => {
-      setBusy(true);
-      setError(null);
-      try {
-        const res = await fetch("/api/org/meldung-aktion", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            leadId: lead.id,
-            aktion: "direkt_baerenwald",
-          }),
-        });
-        const json = (await res.json()) as { error?: string };
-        if (!res.ok) {
-          setError(json.error ?? "Aktion fehlgeschlagen.");
-          return;
-        }
-        orgPortalToast.angebotEingefordert();
-        onUpdated();
-      } finally {
-        setBusy(false);
-      }
-    };
-    return (
-      <div className="space-y-1.5">
-        <button
-          type="button"
-          disabled={busy}
-          onClick={(e) => {
-            e.stopPropagation();
-            void act();
-          }}
-          className="rounded-lg px-3.5 py-2 text-[12.5px] font-semibold disabled:opacity-60"
-          style={btnStyle("primary")}
-        >
-          Direkt Bärenwald
-        </button>
-        {error ? (
-          <p className="text-xs font-semibold text-red-700">{error}</p>
-        ) : null}
-      </div>
-    );
+    // Auftrag liegt beim HM — keine HV-Override-Buttons
+    return null;
   }
 
   if (!isNeu) return null;

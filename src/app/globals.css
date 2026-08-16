@@ -694,10 +694,25 @@ h3 {
     gap: 10px;
   }
 
-  /* Positiv & Negativ gleich breit (50/50). */
+  /* Positiv & Negativ gleich breit (50/50) — mobil. */
   .portal-action-row > .portal-action-btn {
     flex: 1 1 0;
     min-width: 0;
+  }
+
+  /* Desktop: Inhaltbreite, nicht über die ganze Card gezogen. */
+  @media (min-width: 1024px) {
+    .portal-action-row {
+      width: auto;
+      max-width: 100%;
+      flex-wrap: wrap;
+      justify-content: flex-start;
+    }
+
+    .portal-action-row > .portal-action-btn {
+      flex: 0 1 auto;
+      min-width: 0;
+    }
   }
 
   /**

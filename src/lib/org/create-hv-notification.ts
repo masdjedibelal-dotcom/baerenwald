@@ -12,12 +12,24 @@ export type CreateHvNotificationInput = {
 };
 
 /**
+ * HV-Glocke nur für:
+ * - neuer Vorgang (`neue_meldung`)
+ * - neues Angebot (`angebot`)
+ * - abgeschlossen (`abgeschlossen` / vollständiger Partner-Abschluss)
+ */
+export const HV_NOTIFICATION_ALLOWED_TYPES = new Set([
+  "neue_meldung",
+  "angebot",
+  "abgeschlossen",
+]);
+
+/**
  * HV-Glocke + Web-Push an alle Org-Auth-User (Haupt + Mitglieder).
- * Fail-soft beim Push.
+ * Fail-soft beim Push. Andere Typen werden still verworfen.
  */
 export async function createHvNotification(
   input: CreateHvNotificationInput
-): Promise<{ ok: true } | { ok: false; error: string }> {
+): Promise<{ ok: true } | { ok: false; error: string } | { ok: true; skipped: true }> {
   const kundeId = input.kundeId.trim();
   if (!kundeId) return { ok: false, error: "kundeId fehlt." };
 
@@ -25,6 +37,10 @@ export async function createHvNotification(
   const body = input.body.trim();
   const link = input.link.trim();
   const typ = input.typ.trim() || "info";
+
+  if (!HV_NOTIFICATION_ALLOWED_TYPES.has(typ)) {
+    return { ok: true, skipped: true };
+  }
 
   const { error } = await supabaseAdmin.from("hv_notifications").insert({
     kunde_id: kundeId,
