@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { ChevronRight } from "lucide-react";
 
 import { OrganisationObjektMieterMenu } from "@/components/org/OrganisationObjektMieterMenu";
 import { PortalConfirmDialog } from "@/components/shared/PortalDetailUi";
@@ -29,6 +28,8 @@ import {
   portalToastError,
   portalToastSuccess,
 } from "@/lib/shared/portal-toast";
+import { usePortalBusy } from "@/components/shared/PortalBusyContext";
+import { PortalContentBusy } from "@/components/shared/PortalContentBusy";
 
 type Einheit = {
   id: string;
@@ -101,6 +102,7 @@ export function OrganisationObjektEinheitenTab({
   const [personBusy, setPersonBusy] = useState(false);
 
   const [busyId, setBusyId] = useState<string | null>(null);
+  const { runBusy } = usePortalBusy();
   const [confirm, setConfirm] = useState<
     | { kind: "einheit"; id: string; label: string }
     | { kind: "person"; id: string; label: string }
@@ -173,43 +175,45 @@ export function OrganisationObjektEinheitenTab({
     if (!label || !einheitForm) return;
     setEinheitBusy(true);
     try {
-      const body =
-        einheitForm.mode === "create"
-          ? {
-              objektId,
-              bezeichnung: label,
-              etage: etage.trim() || null,
-              wohnflaeche_m2: m2.trim()
-                ? Number(m2.replace(",", "."))
-                : null,
-            }
-          : {
-              id: einheitForm.id,
-              bezeichnung: label,
-              etage: etage.trim() || null,
-              wohnflaeche_m2: m2.trim()
-                ? Number(m2.replace(",", "."))
-                : null,
-            };
-      const res = await fetch("/api/org/objekte/einheiten", {
-        method: einheitForm.mode === "create" ? "POST" : "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
-      });
-      const json = (await res.json()) as { error?: string };
-      if (!res.ok) {
-        portalToastError(
+      await runBusy(async () => {
+        const body =
           einheitForm.mode === "create"
-            ? "Einheit nicht angelegt"
-            : "Einheit nicht gespeichert",
-          json.error
-        );
-        return;
-      }
-      setEinheitForm(null);
-      orgPortalToast.objektAktualisiert();
-      await load();
-      onEinheitenChange?.();
+            ? {
+                objektId,
+                bezeichnung: label,
+                etage: etage.trim() || null,
+                wohnflaeche_m2: m2.trim()
+                  ? Number(m2.replace(",", "."))
+                  : null,
+              }
+            : {
+                id: einheitForm.id,
+                bezeichnung: label,
+                etage: etage.trim() || null,
+                wohnflaeche_m2: m2.trim()
+                  ? Number(m2.replace(",", "."))
+                  : null,
+              };
+        const res = await fetch("/api/org/objekte/einheiten", {
+          method: einheitForm.mode === "create" ? "POST" : "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body),
+        });
+        const json = (await res.json()) as { error?: string };
+        if (!res.ok) {
+          portalToastError(
+            einheitForm.mode === "create"
+              ? "Einheit nicht angelegt"
+              : "Einheit nicht gespeichert",
+            json.error
+          );
+          return;
+        }
+        setEinheitForm(null);
+        orgPortalToast.objektAktualisiert();
+        await load();
+        onEinheitenChange?.();
+      });
     } finally {
       setEinheitBusy(false);
     }
@@ -256,52 +260,54 @@ export function OrganisationObjektEinheitenTab({
       .join(" ");
     setPersonBusy(true);
     try {
-      const isEdit = Boolean(personForm.editId);
-      const res = await fetch("/api/org/einheit-bewohner", {
-        method: isEdit ? "PATCH" : "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(
-          isEdit
-            ? {
-                id: personForm.editId,
-                name,
-                email: email.trim() || "",
-                telefon: telefon.trim() || "",
-                rolle: personForm.rolle,
-                sondereigentum_verwaltung:
-                  personForm.rolle === "eigentuemer" ? seVerwaltung : false,
-                miete_hinweis:
-                  personForm.rolle === "mieter"
-                    ? mieteHinweis.trim() || null
-                    : null,
-              }
-            : {
-                objektId,
-                einheitId: personForm.einheitId,
-                name,
-                email: email.trim() || undefined,
-                telefon: telefon.trim() || undefined,
-                rolle: personForm.rolle,
-                sondereigentum_verwaltung:
-                  personForm.rolle === "eigentuemer" ? seVerwaltung : false,
-                miete_hinweis:
-                  personForm.rolle === "mieter"
-                    ? mieteHinweis.trim() || undefined
-                    : undefined,
-              }
-        ),
+      await runBusy(async () => {
+        const isEdit = Boolean(personForm.editId);
+        const res = await fetch("/api/org/einheit-bewohner", {
+          method: isEdit ? "PATCH" : "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(
+            isEdit
+              ? {
+                  id: personForm.editId,
+                  name,
+                  email: email.trim() || "",
+                  telefon: telefon.trim() || "",
+                  rolle: personForm.rolle,
+                  sondereigentum_verwaltung:
+                    personForm.rolle === "eigentuemer" ? seVerwaltung : false,
+                  miete_hinweis:
+                    personForm.rolle === "mieter"
+                      ? mieteHinweis.trim() || null
+                      : null,
+                }
+              : {
+                  objektId,
+                  einheitId: personForm.einheitId,
+                  name,
+                  email: email.trim() || undefined,
+                  telefon: telefon.trim() || undefined,
+                  rolle: personForm.rolle,
+                  sondereigentum_verwaltung:
+                    personForm.rolle === "eigentuemer" ? seVerwaltung : false,
+                  miete_hinweis:
+                    personForm.rolle === "mieter"
+                      ? mieteHinweis.trim() || undefined
+                      : undefined,
+                }
+          ),
+        });
+        const json = (await res.json()) as { error?: string };
+        if (!res.ok) {
+          portalToastError(
+            isEdit ? "Speichern fehlgeschlagen" : "Anlegen fehlgeschlagen",
+            json.error
+          );
+          return;
+        }
+        setPersonForm(null);
+        orgPortalToast.objektAktualisiert();
+        await load();
       });
-      const json = (await res.json()) as { error?: string };
-      if (!res.ok) {
-        portalToastError(
-          isEdit ? "Speichern fehlgeschlagen" : "Anlegen fehlgeschlagen",
-          json.error
-        );
-        return;
-      }
-      setPersonForm(null);
-      orgPortalToast.objektAktualisiert();
-      await load();
     } finally {
       setPersonBusy(false);
     }
@@ -310,27 +316,29 @@ export function OrganisationObjektEinheitenTab({
   async function removeEinheit(id: string) {
     setBusyId(id);
     try {
-      const people = byEinheit.get(id) ?? [];
-      await Promise.all(
-        people.map((p) =>
-          fetch(`/api/org/einheit-bewohner?id=${encodeURIComponent(p.id)}`, {
-            method: "DELETE",
-          })
-        )
-      );
-      const res = await fetch(
-        `/api/org/objekte/einheiten?id=${encodeURIComponent(id)}`,
-        { method: "DELETE" }
-      );
-      const json = (await res.json()) as { error?: string };
-      if (!res.ok) {
-        portalToastError("Einheit nicht entfernt", json.error);
-        return;
-      }
-      if (detailId === id) setDetailId(null);
-      orgPortalToast.objektAktualisiert();
-      await load();
-      onEinheitenChange?.();
+      await runBusy(async () => {
+        const people = byEinheit.get(id) ?? [];
+        await Promise.all(
+          people.map((p) =>
+            fetch(`/api/org/einheit-bewohner?id=${encodeURIComponent(p.id)}`, {
+              method: "DELETE",
+            })
+          )
+        );
+        const res = await fetch(
+          `/api/org/objekte/einheiten?id=${encodeURIComponent(id)}`,
+          { method: "DELETE" }
+        );
+        const json = (await res.json()) as { error?: string };
+        if (!res.ok) {
+          portalToastError("Einheit nicht entfernt", json.error);
+          return;
+        }
+        if (detailId === id) setDetailId(null);
+        orgPortalToast.objektAktualisiert();
+        await load();
+        onEinheitenChange?.();
+      });
     } finally {
       setBusyId(null);
       setConfirm(null);
@@ -340,17 +348,19 @@ export function OrganisationObjektEinheitenTab({
   async function removePerson(id: string) {
     setBusyId(id);
     try {
-      const res = await fetch(
-        `/api/org/einheit-bewohner?id=${encodeURIComponent(id)}`,
-        { method: "DELETE" }
-      );
-      const json = (await res.json()) as { error?: string };
-      if (!res.ok) {
-        portalToastError("Entfernen fehlgeschlagen", json.error);
-        return;
-      }
-      orgPortalToast.objektAktualisiert();
-      await load();
+      await runBusy(async () => {
+        const res = await fetch(
+          `/api/org/einheit-bewohner?id=${encodeURIComponent(id)}`,
+          { method: "DELETE" }
+        );
+        const json = (await res.json()) as { error?: string };
+        if (!res.ok) {
+          portalToastError("Entfernen fehlgeschlagen", json.error);
+          return;
+        }
+        orgPortalToast.objektAktualisiert();
+        await load();
+      });
     } finally {
       setBusyId(null);
       setConfirm(null);
@@ -533,9 +543,11 @@ export function OrganisationObjektEinheitenTab({
       </div>
 
       {loading ? (
-        <p className="py-6 text-center text-[13px] text-text-secondary">
-          Wird geladen…
-        </p>
+        <PortalContentBusy
+          title="Einheiten werden geladen…"
+          body="Einen Moment bitte."
+          className="!min-h-[12rem] !py-8"
+        />
       ) : einheiten.length === 0 ? (
         <PortalInboxEmpty
           title="Noch keine Einheiten"
@@ -585,12 +597,8 @@ export function OrganisationObjektEinheitenTab({
                   >
                     {badge}
                   </span>
-                  <ChevronRight
-                    className="h-4 w-4 shrink-0 text-text-tertiary"
-                    aria-hidden
-                  />
                 </button>
-                <div className="flex items-center border-l border-border-light px-1.5">
+                <div className="flex items-center pr-2">
                   <PortalActionMenu
                     title={u.bezeichnung}
                     items={einheitMenuItems(u)}
@@ -671,25 +679,115 @@ export function OrganisationObjektEinheitenTab({
             )}
           </div>
         ) : null}
+
+        {/* Nested: Schließen nur eine Ebene → zurück zur Einheit-Card */}
+        <EinstellungenEditModal
+          open={Boolean(personForm)}
+          title={
+            personForm?.rolle === "eigentuemer"
+              ? personEditing
+                ? "Eigentümer bearbeiten"
+                : "Eigentümer hinzufügen"
+              : personEditing
+                ? "Mieter bearbeiten"
+                : "Mieter hinzufügen"
+          }
+          subtitle={
+            personEinheitLabel ? `Einheit: ${personEinheitLabel}` : undefined
+          }
+          onClose={closePersonForm}
+          onSave={() => void savePerson()}
+          saving={personBusy}
+          saveDisabled={!canSubmitPerson}
+          saveLabel={personEditing ? "Speichern" : "Hinzufügen"}
+        >
+          <div className="grid grid-cols-2 gap-2">
+            <EinstellungenEdField
+              label="Vorname"
+              value={vorname}
+              onChange={setVorname}
+              autoComplete="given-name"
+            />
+            <EinstellungenEdField
+              label="Nachname"
+              value={nachname}
+              onChange={setNachname}
+              autoComplete="family-name"
+            />
+          </div>
+          <EinstellungenEdField
+            label="E-Mail (optional)"
+            type="email"
+            value={email}
+            onChange={setEmail}
+            autoComplete="email"
+          />
+          <EinstellungenEdField
+            label="Telefon (optional)"
+            type="tel"
+            value={telefon}
+            onChange={setTelefon}
+            autoComplete="tel"
+          />
+          {personForm?.rolle === "eigentuemer" ? (
+            <EinstellungenToggle
+              checked={seVerwaltung}
+              onChange={setSeVerwaltung}
+              title="Sondereigentumsverwaltung durch HV"
+              description="Ja = HV führt SE-Aufträge; Freigabe über Schwelle beim Eigentümer."
+            />
+          ) : (
+            <EinstellungenEdField
+              label="Miet-Hinweis (optional)"
+              value={mieteHinweis}
+              onChange={setMieteHinweis}
+              placeholder="z. B. seit 2022"
+            />
+          )}
+        </EinstellungenEditModal>
+
+        {einheitForm?.mode === "edit" ? (
+          <EinstellungenEditModal
+            open
+            title="Einheit bearbeiten"
+            subtitle="Bezeichnung, Etage und Fläche."
+            onClose={closeEinheitForm}
+            onSave={() => void saveEinheit()}
+            saving={einheitBusy}
+            saveDisabled={!bezeichnung.trim()}
+            saveLabel="Speichern"
+          >
+            <EinstellungenEdField
+              label="Bezeichnung"
+              value={bezeichnung}
+              onChange={setBezeichnung}
+              placeholder="z. B. WE 12"
+            />
+            <EinstellungenEdField
+              label="Etage (optional)"
+              value={etage}
+              onChange={setEtage}
+              placeholder="z. B. 3. OG"
+            />
+            <EinstellungenEdField
+              label="Wohnfläche m² (optional)"
+              value={m2}
+              onChange={setM2}
+              placeholder="z. B. 68"
+            />
+          </EinstellungenEditModal>
+        ) : null}
       </PortalModalShell>
 
       <EinstellungenEditModal
-        open={Boolean(einheitForm)}
-        title={
-          einheitForm?.mode === "edit"
-            ? "Einheit bearbeiten"
-            : "Einheit anlegen"
-        }
-        subtitle={
-          einheitForm?.mode === "edit"
-            ? "Bezeichnung, Etage und Fläche."
-            : "Danach Mieter und Eigentümer zuordnen."
-        }
+        open={einheitForm?.mode === "create"}
+        title="Einheit anlegen"
+        subtitle="Danach Mieter und Eigentümer zuordnen."
         onClose={closeEinheitForm}
         onSave={() => void saveEinheit()}
         saving={einheitBusy}
         saveDisabled={!bezeichnung.trim()}
-        saveLabel={einheitForm?.mode === "edit" ? "Speichern" : "Anlegen"}
+        saveLabel="Anlegen"
       >
         <EinstellungenEdField
           label="Bezeichnung"
@@ -711,70 +809,38 @@ export function OrganisationObjektEinheitenTab({
         />
       </EinstellungenEditModal>
 
-      <EinstellungenEditModal
-        open={Boolean(personForm)}
-        title={
-          personForm?.rolle === "eigentuemer"
-            ? personEditing
-              ? "Eigentümer bearbeiten"
-              : "Eigentümer hinzufügen"
-            : personEditing
-              ? "Mieter bearbeiten"
-              : "Mieter hinzufügen"
-        }
-        subtitle={
-          personEinheitLabel ? `Einheit: ${personEinheitLabel}` : undefined
-        }
-        onClose={closePersonForm}
-        onSave={() => void savePerson()}
-        saving={personBusy}
-        saveDisabled={!canSubmitPerson}
-        saveLabel={personEditing ? "Speichern" : "Hinzufügen"}
-      >
-        <div className="grid grid-cols-2 gap-2">
+      {/* Edit ohne offenes Detail (⋯ in der Liste) */}
+      {detailId == null && einheitForm?.mode === "edit" ? (
+        <EinstellungenEditModal
+          open
+          title="Einheit bearbeiten"
+          subtitle="Bezeichnung, Etage und Fläche."
+          onClose={closeEinheitForm}
+          onSave={() => void saveEinheit()}
+          saving={einheitBusy}
+          saveDisabled={!bezeichnung.trim()}
+          saveLabel="Speichern"
+        >
           <EinstellungenEdField
-            label="Vorname"
-            value={vorname}
-            onChange={setVorname}
-            autoComplete="given-name"
+            label="Bezeichnung"
+            value={bezeichnung}
+            onChange={setBezeichnung}
+            placeholder="z. B. WE 12"
           />
           <EinstellungenEdField
-            label="Nachname"
-            value={nachname}
-            onChange={setNachname}
-            autoComplete="family-name"
+            label="Etage (optional)"
+            value={etage}
+            onChange={setEtage}
+            placeholder="z. B. 3. OG"
           />
-        </div>
-        <EinstellungenEdField
-          label="E-Mail (optional)"
-          type="email"
-          value={email}
-          onChange={setEmail}
-          autoComplete="email"
-        />
-        <EinstellungenEdField
-          label="Telefon (optional)"
-          type="tel"
-          value={telefon}
-          onChange={setTelefon}
-          autoComplete="tel"
-        />
-        {personForm?.rolle === "eigentuemer" ? (
-          <EinstellungenToggle
-            checked={seVerwaltung}
-            onChange={setSeVerwaltung}
-            title="Sondereigentumsverwaltung durch HV"
-            description="Ja = HV führt SE-Aufträge; Freigabe über Schwelle beim Eigentümer."
-          />
-        ) : (
           <EinstellungenEdField
-            label="Miet-Hinweis (optional)"
-            value={mieteHinweis}
-            onChange={setMieteHinweis}
-            placeholder="z. B. seit 2022"
+            label="Wohnfläche m² (optional)"
+            value={m2}
+            onChange={setM2}
+            placeholder="z. B. 68"
           />
-        )}
-      </EinstellungenEditModal>
+        </EinstellungenEditModal>
+      ) : null}
 
       <PortalConfirmDialog
         open={Boolean(confirm)}

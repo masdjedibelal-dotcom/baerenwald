@@ -107,6 +107,9 @@
   --p2-radius-md: 12px;
   --p2-radius-lg: 16px;
   --p2-radius-sheet: 20px;
+  /* Einheitliches unteres Padding inkl. Home-Indicator (Nav, Sheets, Sticky-CTAs) */
+  --portal-safe-pad-bottom: calc(14px + env(safe-area-inset-bottom, 0px));
+  --portal-safe-pad-bottom-nav: calc(12px + env(safe-area-inset-bottom, 0px));
   --p2-font-head: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI",
     system-ui, Roboto, sans-serif;
   --p2-font-body: -apple-system, BlinkMacSystemFont, "SF Pro Text",
@@ -1600,7 +1603,7 @@ h3 {
     overflow-y: auto;
     overscroll-behavior: contain;
     -webkit-overflow-scrolling: touch;
-    padding: 10px 16px calc(18px + env(safe-area-inset-bottom, 0px));
+    padding: 10px 16px var(--portal-safe-pad-bottom, calc(14px + env(safe-area-inset-bottom, 0px)));
     touch-action: pan-y;
     /* Getönter Boden — weiße SheetCards/Inputs liegen darüber */
     background: transparent;
@@ -1686,7 +1689,7 @@ h3 {
     width: 100%;
     background: var(--p2-bg-content, #f6f5f3);
     border-radius: 16px 16px 0 0;
-    padding: 18px 20px calc(18px + env(safe-area-inset-bottom, 0px));
+    padding: 18px 20px var(--portal-safe-pad-bottom, calc(14px + env(safe-area-inset-bottom, 0px)));
     box-shadow: 0 -8px 32px rgba(0, 0, 0, 0.2);
   }
 
@@ -2369,7 +2372,7 @@ h3 {
      * Bottom-Nav inkl. Safe-Area (Icons + Labels + Padding).
      * Sticky Action-Bars und Main-Padding müssen dieselbe Var nutzen.
      */
-    --portal-mobile-nav-h: calc(4.5rem + env(safe-area-inset-bottom, 0px));
+    --portal-mobile-nav-h: calc(4.75rem + env(safe-area-inset-bottom, 0px));
     /* Extra Abstand unter Seiteninhalt / Legal-Footer (über der Nav) */
     --portal-mobile-nav-pad: calc(var(--portal-mobile-nav-h) + 1.25rem);
     /* py-3 + Portal-Button-Höhe (+ optionaler Hinweis) */
@@ -2640,7 +2643,8 @@ h3 {
     z-index: 50;
     border-top: 1px solid var(--p2-line, rgba(0, 0, 0, 0.08));
     background: #fff;
-    padding: 8px 4px max(10px, env(safe-area-inset-bottom, 0px));
+    /* Immer etwas Luft + Safe-Area (Home-Indicator), wie Handwerker/CRM */
+    padding: 10px 4px var(--portal-safe-pad-bottom-nav, calc(12px + env(safe-area-inset-bottom, 0px)));
     min-height: var(--portal-mobile-nav-h);
     box-sizing: border-box;
   }
@@ -3122,7 +3126,7 @@ h3 {
 }
 
 .pb-footer-safe {
-  padding-bottom: max(0.75rem, env(safe-area-inset-bottom));
+  padding-bottom: var(--portal-safe-pad-bottom, calc(14px + env(safe-area-inset-bottom, 0px)));
 }
 
 input[type="range"].funnel-range {

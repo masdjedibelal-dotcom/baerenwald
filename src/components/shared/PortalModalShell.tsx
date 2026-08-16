@@ -18,6 +18,7 @@ import {
   lockPortalBodyScroll,
   unlockPortalBodyScroll,
 } from "@/lib/portal2/lock-portal-body-scroll";
+import { usePortalBusy } from "@/components/shared/PortalBusyContext";
 import { PortalContentBusy } from "@/components/shared/PortalContentBusy";
 import { PortalSheetConfirm } from "@/components/shared/PortalSheetConfirm";
 import {
@@ -38,9 +39,54 @@ const PortalModalDepthContext = createContext(0);
  */
 const portalModalEscapeStack: Array<() => void> = [];
 
-export type { PortalModalVariant };
-
 const HISTORY_KEY = "portalModal";
+
+/**
+ * Browser-Back / history: nur die oberste Card schließen
+ * (Card-in-Card → zurück zur darunterliegenden, nicht alles zu).
+ */
+type PortalModalHistoryLayer = {
+  id: symbol;
+  onPop: () => void;
+};
+
+const portalModalHistoryStack: PortalModalHistoryLayer[] = [];
+let portalModalHistoryListening = false;
+let portalModalHistorySuppress = 0;
+
+function ensurePortalModalHistoryListener() {
+  if (portalModalHistoryListening) return;
+  portalModalHistoryListening = true;
+  window.addEventListener("popstate", () => {
+    if (portalModalHistorySuppress > 0) {
+      portalModalHistorySuppress -= 1;
+      return;
+    }
+    const top = portalModalHistoryStack[portalModalHistoryStack.length - 1];
+    if (!top) return;
+    top.onPop();
+  });
+}
+
+function pushPortalModalHistoryLayer(layer: PortalModalHistoryLayer) {
+  ensurePortalModalHistoryListener();
+  portalModalHistoryStack.push(layer);
+  window.history.pushState({ [HISTORY_KEY]: true }, "");
+}
+
+function removePortalModalHistoryLayer(
+  id: symbol,
+  consumeHistoryEntry: boolean
+) {
+  const i = portalModalHistoryStack.findIndex((l) => l.id === id);
+  if (i >= 0) portalModalHistoryStack.splice(i, 1);
+  if (consumeHistoryEntry) {
+    portalModalHistorySuppress += 1;
+    window.history.back();
+  }
+}
+
+export type { PortalModalVariant };
 
 export type PortalModalShellProps = {
   open?: boolean;
@@ -127,23 +173,46 @@ export function PortalModalShell({
   const isFunnel = variant === "funnel";
 
   const [discardOpen, setDiscardOpen] = useState(false);
-  const pushedRef = useRef(false);
-  const skipPopRef = useRef(false);
+  const layerIdRef = useRef(Symbol("portal-modal"));
+  const inHistoryStackRef = useRef(false);
+  const busyHoldRef = useRef(false);
   const dirtyRef = useRef(dirty);
   dirtyRef.current = dirty;
   const depth = useContext(PortalModalDepthContext);
-  /** Nested (KI im FAB) darf keinen History-Eintrag pushen — sonst schließt Übernehmen/X den Parent. */
-  const isNested = depth > 0;
+  const { hold, release } = usePortalBusy();
+
+  /** Speichern/Upload im Sheet → gleiches Portal-Loading wie Nav/Refresh. */
+  useEffect(() => {
+    if (busy) {
+      if (!busyHoldRef.current) {
+        busyHoldRef.current = true;
+        hold();
+      }
+      return;
+    }
+    if (busyHoldRef.current) {
+      busyHoldRef.current = false;
+      release();
+    }
+  }, [busy, hold, release]);
+
+  useEffect(() => {
+    return () => {
+      if (busyHoldRef.current) {
+        busyHoldRef.current = false;
+        release();
+      }
+    };
+  }, [release]);
 
   const closeNow = useCallback(
     (fromPop: boolean) => {
       setDiscardOpen(false);
-      if (!fromPop && pushedRef.current) {
-        skipPopRef.current = true;
-        pushedRef.current = false;
-        window.history.back();
-      } else {
-        pushedRef.current = false;
+      if (inHistoryStackRef.current) {
+        inHistoryStackRef.current = false;
+        // fromPop: Eintrag schon durch Back konsumiert — nur Stack bereinigen.
+        // UI-Close (X/Backdrop): History-Eintrag mitnehmen, ohne Parent zu triggern.
+        removePortalModalHistoryLayer(layerIdRef.current, !fromPop);
       }
       onClose();
     },
@@ -156,16 +225,18 @@ export function PortalModalShell({
       if (dirtyRef.current) {
         setDiscardOpen(true);
         // Back hat History schon verlassen — Overlay-Eintrag wiederherstellen
-        if (fromPop && !isNested) {
-          pushedRef.current = true;
+        if (fromPop) {
           window.history.pushState({ [HISTORY_KEY]: true }, "");
         }
         return;
       }
       closeNow(fromPop);
     },
-    [busy, closeNow, isNested]
+    [busy, closeNow]
   );
+
+  const attemptDismissRef = useRef(attemptDismiss);
+  attemptDismissRef.current = attemptDismiss;
 
   // Body-Scroll-Lock (mobil): Hintergrund fixieren, Sheet darf scrollen
   useEffect(() => {
@@ -197,7 +268,7 @@ export function PortalModalShell({
         setDiscardOpen(false);
         return;
       }
-      attemptDismiss(false);
+      attemptDismissRef.current(false);
     };
     portalModalEscapeStack.push(dismissTop);
     function onKey(e: KeyboardEvent) {
@@ -214,42 +285,38 @@ export function PortalModalShell({
       const i = portalModalEscapeStack.lastIndexOf(dismissTop);
       if (i >= 0) portalModalEscapeStack.splice(i, 1);
     };
-  }, [open, discardOpen, attemptDismiss]);
+  }, [open, discardOpen]);
 
-  // History-Entry: nur Root-Overlay (nicht nested KI/GPT)
+  // History: jede offene Card eine Ebene — Back/X schließt nur die oberste
   useEffect(() => {
     if (!open) {
       setDiscardOpen(false);
-      if (pushedRef.current) {
-        skipPopRef.current = true;
-        pushedRef.current = false;
-        window.history.back();
+      if (inHistoryStackRef.current) {
+        inHistoryStackRef.current = false;
+        removePortalModalHistoryLayer(layerIdRef.current, true);
       }
       return;
     }
 
-    if (isNested) {
-      pushedRef.current = false;
-      return;
-    }
-
-    pushedRef.current = true;
-    window.history.pushState({ [HISTORY_KEY]: true }, "");
-
-    function onPopState() {
-      if (skipPopRef.current) {
-        skipPopRef.current = false;
-        return;
-      }
-      pushedRef.current = false;
-      attemptDismiss(true);
-    }
-
-    window.addEventListener("popstate", onPopState);
-    return () => {
-      window.removeEventListener("popstate", onPopState);
+    const id = layerIdRef.current;
+    const layer: PortalModalHistoryLayer = {
+      id,
+      onPop: () => {
+        const top = portalModalHistoryStack[portalModalHistoryStack.length - 1];
+        if (top?.id !== id) return;
+        attemptDismissRef.current(true);
+      },
     };
-  }, [open, attemptDismiss, isNested]);
+    inHistoryStackRef.current = true;
+    pushPortalModalHistoryLayer(layer);
+
+    return () => {
+      if (inHistoryStackRef.current) {
+        inHistoryStackRef.current = false;
+        removePortalModalHistoryLayer(id, true);
+      }
+    };
+  }, [open]);
 
   const [mounted, setMounted] = useState(false);
   useEffect(() => {

@@ -6,6 +6,7 @@ import {
   EinstellungenCard,
   EinstellungenEuroSlider,
 } from "@/components/shared/PortalEinstellungenUi";
+import { usePortalBusy } from "@/components/shared/PortalBusyContext";
 import {
   EINSTELLUNGEN_SCHWELLE_SLIDER_MAX,
   EINSTELLUNGEN_SCHWELLE_SLIDER_MIN,
@@ -94,6 +95,7 @@ export function OrganisationObjektWizard({
   }));
   const [err, setErr] = useState("");
   const [busy, setBusy] = useState(false);
+  const { runBusy } = usePortalBusy();
 
   const step = OBJ_WIZ_STEPS[stepIndex]?.[0] ?? "stamm";
   const set = (k: keyof ObjWizDraft, val: string | number | boolean) => {
@@ -134,7 +136,9 @@ export function OrganisationObjektWizard({
     }
     setBusy(true);
     try {
-      await onDone(result.payload);
+      await runBusy(async () => {
+        await onDone(result.payload);
+      });
     } finally {
       setBusy(false);
     }
@@ -440,7 +444,7 @@ export function OrganisationObjektWizard({
         className={cn(
           "border-t border-border-default",
           isModal
-            ? "shrink-0 bg-[var(--p2-bg-content,#f6f5f3)] px-1 pb-[max(1rem,env(safe-area-inset-bottom))] pt-3"
+            ? "shrink-0 bg-[var(--p2-bg-content,#f6f5f3)] px-1 pb-[var(--portal-safe-pad-bottom)] pt-3"
             : "mt-6 pt-4"
         )}
       >

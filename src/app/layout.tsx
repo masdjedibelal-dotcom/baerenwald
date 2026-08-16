@@ -73,9 +73,15 @@ export const metadata: Metadata = {
   },
 
   icons: {
-    icon: "/favicon.ico?v=20260428b",
-    shortcut: "/favicon.ico?v=20260428b",
-    apple: "/favicon.ico?v=20260428b",
+    icon: [
+      { url: "/favicon.ico?v=20260816", sizes: "any" },
+      { url: "/icons/pwa-192.png", sizes: "192x192", type: "image/png" },
+      { url: "/icons/pwa-512.png", sizes: "512x512", type: "image/png" },
+    ],
+    shortcut: "/favicon.ico?v=20260816",
+    apple: [
+      { url: "/icons/apple-touch-icon.png", sizes: "180x180", type: "image/png" },
+    ],
   },
 
   alternates: {
@@ -87,6 +93,8 @@ export const viewport: Viewport = {
   themeColor: SITE_CONFIG.accentColor,
   width: "device-width",
   initialScale: 1,
+  /** Pflicht für env(safe-area-inset-*) — Home-Screen-PWA / Notch. */
+  viewportFit: "cover",
   /** Tastatur verkleinert Layout — Eingabezeile bleibt sichtbar (KI-Chat). */
   interactiveWidget: "resizes-content",
 };

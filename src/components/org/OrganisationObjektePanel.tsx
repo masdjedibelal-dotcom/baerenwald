@@ -41,6 +41,7 @@ import {
   type ObjWizPayload,
 } from "@/lib/portal2/objekte";
 import { orgPortalToast, portalToastError } from "@/lib/shared/portal-toast";
+import { usePortalBusy } from "@/components/shared/PortalBusyContext";
 
 type Props = {
   objekte: OrganisationObjekt[];
@@ -115,6 +116,8 @@ export function OrganisationObjektePanel({
     label: string;
   } | null>(null);
   const [busy, setBusy] = useState(false);
+  const [wizardBusy, setWizardBusy] = useState(false);
+  const { runBusy } = usePortalBusy();
   const [confirmAction, setConfirmAction] = useState<
     | { kind: "delete"; objekt: OrganisationObjekt }
     | { kind: "bulk" }
@@ -209,18 +212,21 @@ export function OrganisationObjektePanel({
   const deleteObjekt = async (o: OrganisationObjekt) => {
     setBusy(true);
     try {
-      const res = await fetch(`/api/org/objekte?id=${encodeURIComponent(o.id)}`, {
-        method: "DELETE",
+      await runBusy(async () => {
+        const res = await fetch(
+          `/api/org/objekte?id=${encodeURIComponent(o.id)}`,
+          { method: "DELETE" }
+        );
+        const json = (await res.json()) as { error?: string };
+        if (!res.ok) {
+          portalToastError("Löschen fehlgeschlagen", json.error);
+          return;
+        }
+        orgPortalToast.objektGeloescht();
+        setSelected((s) => s.filter((x) => x !== o.id));
+        setMode({ kind: "list" });
+        onRefresh();
       });
-      const json = (await res.json()) as { error?: string };
-      if (!res.ok) {
-        portalToastError("Löschen fehlgeschlagen", json.error);
-        return;
-      }
-      orgPortalToast.objektGeloescht();
-      setSelected((s) => s.filter((x) => x !== o.id));
-      setMode({ kind: "list" });
-      onRefresh();
     } finally {
       setBusy(false);
       setConfirmAction(null);
@@ -230,38 +236,40 @@ export function OrganisationObjektePanel({
   const copyObjekt = async (o: OrganisationObjekt) => {
     setBusy(true);
     try {
-      const name = nextObjektKopieName(
-        o.titel,
-        objekte.map((x) => x.titel)
-      );
-      const res = await fetch("/api/org/objekte", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          titel: name,
-          strasse: o.strasse,
-          hausnummer: o.hausnummer,
-          plz: o.plz,
-          ort: o.ort,
-          typ: resolveObjektTyp(o),
-          einheiten_hinweis: o.einheiten_hinweis,
-          freigabe_schwelle_eur: o.freigabe_schwelle_eur ?? null,
-          notizen_intern: o.notizen_intern,
-        }),
+      await runBusy(async () => {
+        const name = nextObjektKopieName(
+          o.titel,
+          objekte.map((x) => x.titel)
+        );
+        const res = await fetch("/api/org/objekte", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            titel: name,
+            strasse: o.strasse,
+            hausnummer: o.hausnummer,
+            plz: o.plz,
+            ort: o.ort,
+            typ: resolveObjektTyp(o),
+            einheiten_hinweis: o.einheiten_hinweis,
+            freigabe_schwelle_eur: o.freigabe_schwelle_eur ?? null,
+            notizen_intern: o.notizen_intern,
+          }),
+        });
+        const json = (await res.json()) as {
+          error?: string;
+          objekt?: { id?: string };
+        };
+        if (!res.ok) {
+          portalToastError("Kopieren fehlgeschlagen", json.error);
+          return;
+        }
+        orgPortalToast.objektAngelegt();
+        onRefresh();
+        if (json.objekt?.id) {
+          setMode({ kind: "detail", id: json.objekt.id });
+        }
       });
-      const json = (await res.json()) as {
-        error?: string;
-        objekt?: { id?: string };
-      };
-      if (!res.ok) {
-        portalToastError("Kopieren fehlgeschlagen", json.error);
-        return;
-      }
-      orgPortalToast.objektAngelegt();
-      onRefresh();
-      if (json.objekt?.id) {
-        setMode({ kind: "detail", id: json.objekt.id });
-      }
     } finally {
       setBusy(false);
     }
@@ -276,30 +284,32 @@ export function OrganisationObjektePanel({
     if (selected.length === 0) return;
     setBusy(true);
     try {
-      let blocked = 0;
-      for (const id of selected) {
-        const o = objekte.find((x) => x.id === id);
-        if (!o) continue;
-        if (objektHasActiveVorgaenge(aktiveById[id] ?? 0)) {
-          blocked += 1;
-          continue;
+      await runBusy(async () => {
+        let blocked = 0;
+        for (const id of selected) {
+          const o = objekte.find((x) => x.id === id);
+          if (!o) continue;
+          if (objektHasActiveVorgaenge(aktiveById[id] ?? 0)) {
+            blocked += 1;
+            continue;
+          }
+          const res = await fetch(
+            `/api/org/objekte?id=${encodeURIComponent(id)}`,
+            { method: "DELETE" }
+          );
+          if (!res.ok) blocked += 1;
         }
-        const res = await fetch(
-          `/api/org/objekte?id=${encodeURIComponent(id)}`,
-          { method: "DELETE" }
-        );
-        if (!res.ok) blocked += 1;
-      }
-      if (blocked > 0) {
-        portalToastError(
-          "Teilweise nicht gelöscht",
-          `${blocked} Objekt(e) hatten offene Vorgänge oder einen Fehler.`
-        );
-      } else {
-        orgPortalToast.objektGeloescht();
-      }
-      setSelected([]);
-      onRefresh();
+        if (blocked > 0) {
+          portalToastError(
+            "Teilweise nicht gelöscht",
+            `${blocked} Objekt(e) hatten offene Vorgänge oder einen Fehler.`
+          );
+        } else {
+          orgPortalToast.objektGeloescht();
+        }
+        setSelected([]);
+        onRefresh();
+      });
     } finally {
       setBusy(false);
       setConfirmAction(null);
@@ -350,6 +360,10 @@ export function OrganisationObjektePanel({
         onClose={closeWizard}
         variant="funnel"
         maxWidth={560}
+        busy={wizardBusy}
+        busyTitle="Wird gespeichert…"
+        busyBody="Objekt wird angelegt bzw. aktualisiert."
+        closeOnBackdrop={!wizardBusy}
       >
         <OrganisationObjektWizard
           key={mode.editId ?? "new"}
@@ -360,10 +374,17 @@ export function OrganisationObjektePanel({
           defaultHv={defaultHv}
           onCancel={closeWizard}
           onDone={async (payload) => {
-            const id = await persistPayload(payload, mode.editId);
-            onRefresh();
-            if (id) setMode({ kind: "detail", id });
-            else setMode({ kind: "list" });
+            setWizardBusy(true);
+            try {
+              await runBusy(async () => {
+                const id = await persistPayload(payload, mode.editId);
+                onRefresh();
+                if (id) setMode({ kind: "detail", id });
+                else setMode({ kind: "list" });
+              });
+            } finally {
+              setWizardBusy(false);
+            }
           }}
         />
       </PortalModalShell>
