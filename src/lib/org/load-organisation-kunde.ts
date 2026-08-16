@@ -35,12 +35,18 @@ const KUNDE_SELECT_KLEINREPARATUR_NO_SPLIT_NO_HERO = `${KUNDE_SELECT_WL_NO_SPLIT
 const KUNDE_SELECT_KLEINREPARATUR_LEGACY = `${KUNDE_SELECT_WL_LEGACY_HERO}, kleinreparatur_aktiv`;
 const KUNDE_SELECT_KLEINREPARATUR_LEGACY_NO_HERO = `${KUNDE_SELECT_WL_LEGACY}, kleinreparatur_aktiv`;
 
+const KUNDE_SELECT_HM =
+  `${KUNDE_SELECT_KLEINREPARATUR}, hm_auto_zuweisen`;
+const KUNDE_SELECT_HM_NO_HERO =
+  `${KUNDE_SELECT_KLEINREPARATUR_NO_HERO}, hm_auto_zuweisen`;
+
 function withKleinreparaturDefaults(
   row: Record<string, unknown>
 ): OrganisationKunde {
   return {
     ...(row as OrganisationKunde),
     kleinreparatur_aktiv: Boolean(row.kleinreparatur_aktiv ?? false),
+    hm_auto_zuweisen: Boolean(row.hm_auto_zuweisen ?? false),
   };
 }
 
@@ -52,6 +58,8 @@ export async function loadOrganisationKunde(
   kundeId: string
 ): Promise<OrganisationKunde | null> {
   const attempts = [
+    KUNDE_SELECT_HM,
+    KUNDE_SELECT_HM_NO_HERO,
     KUNDE_SELECT_KLEINREPARATUR,
     KUNDE_SELECT_KLEINREPARATUR_NO_HERO,
     KUNDE_SELECT_KLEINREPARATUR_NO_SPLIT,

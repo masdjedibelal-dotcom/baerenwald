@@ -371,7 +371,8 @@ export function OrganisationHvVorgangDetail({
   const [accepted, setAccepted] = useState(false);
   const [rejected, setRejected] = useState(false);
   const [btUnread, setBtUnread] = useState(0);
-  const [hasHmKontakt, setHasHmKontakt] = useState(false);
+  const [hasHmKontakt, setHasHmKontakt] = useState(true);
+  const [hmPortalZugang, setHmPortalZugang] = useState(false);
   const [activeSection, setActiveSection] =
     useState<PortalDetailSectionId>("uebersicht");
 
@@ -382,17 +383,30 @@ export function OrganisationHvVorgangDetail({
 
   useEffect(() => {
     if (mieterStatusMode) {
-      setHasHmKontakt(false);
+      setHasHmKontakt(true);
+      setHmPortalZugang(false);
       return;
     }
     let cancelled = false;
     void (async () => {
-      const { getLeadHausmeisterMetaAction } = await import(
-        "@/app/actions/lead-befund"
-      );
-      const res = await getLeadHausmeisterMetaAction({ leadId });
-      if (cancelled || !res.ok) return;
-      setHasHmKontakt(res.hasHausmeister);
+      setHasHmKontakt(true);
+      if (!kundeObjektId) {
+        setHmPortalZugang(false);
+        return;
+      }
+      try {
+        const res = await fetch(
+          `/api/org/hausmeister?objektId=${encodeURIComponent(kundeObjektId)}`
+        );
+        const json = (await res.json()) as {
+          amObjekt?: { portal_zugang?: boolean } | null;
+        };
+        if (!cancelled) {
+          setHmPortalZugang(Boolean(json.amObjekt?.portal_zugang));
+        }
+      } catch {
+        if (!cancelled) setHmPortalZugang(false);
+      }
     })();
     return () => {
       cancelled = true;
@@ -1267,6 +1281,7 @@ export function OrganisationHvVorgangDetail({
               <OrgHmBefundPanel
                 leadId={leadId}
                 hvMeldungStatus={hvMeldungStatus}
+                readOnly={hmPortalZugang}
                 onUpdated={onUpdated}
               />
             </DetailCard>

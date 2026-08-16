@@ -4,6 +4,11 @@ import {
   assertOrgEinheit,
   requireOrgWrite,
 } from "@/lib/org/assert-org-objekt";
+import {
+  assignExistingEigentuemerToEinheit,
+  listOrgEigentuemer,
+  syncEigentuemerObjekteForPortalKunde,
+} from "@/lib/org/org-eigentuemer";
 import { requireOrganisationSession } from "@/lib/org/require-org-session";
 import { supabaseAdmin } from "@/lib/supabase";
 
@@ -239,6 +244,13 @@ export async function GET(req: Request) {
   const url = new URL(req.url);
   const objektId = url.searchParams.get("objektId")?.trim();
   const einheitId = url.searchParams.get("einheitId")?.trim();
+  const scope = url.searchParams.get("scope")?.trim();
+  const rolleFilter = url.searchParams.get("rolle")?.trim();
+
+  if (scope === "org" && rolleFilter === "eigentuemer") {
+    const eigentuemer = await listOrgEigentuemer(session.kunde.id);
+    return NextResponse.json({ eigentuemer });
+  }
 
   if (einheitId) {
     if (!(await assertOrgEinheit(session.kunde.id, einheitId))) {
@@ -326,7 +338,37 @@ export async function POST(req: Request) {
     sondereigentum_verwaltung?: boolean;
     miete_hinweis?: string;
     notiz?: string;
+    /** Bestehenden Eigentümer an diese Einheit hängen. */
+    existingBewohnerId?: string;
   };
+
+  const existingBewohnerId = String(body.existingBewohnerId ?? "").trim();
+  if (existingBewohnerId) {
+    const einheitId = String(body.einheitId ?? "").trim();
+    if (!einheitId) {
+      return NextResponse.json(
+        { error: "einheitId erforderlich." },
+        { status: 400 }
+      );
+    }
+    if (!(await assertOrgEinheit(session.kunde.id, einheitId))) {
+      return NextResponse.json(
+        { error: "Einheit nicht gefunden." },
+        { status: 404 }
+      );
+    }
+    const assigned = await assignExistingEigentuemerToEinheit({
+      orgKundeId: session.kunde.id,
+      einheitId,
+      sourceBewohnerId: existingBewohnerId,
+      sondereigentumVerwaltung: body.sondereigentum_verwaltung,
+    });
+    if (!assigned.ok) {
+      return NextResponse.json({ error: assigned.error }, { status: 400 });
+    }
+    return NextResponse.json({ ok: true, id: assigned.bewohnerId });
+  }
+
   const name = String(body.name ?? "").trim();
   if (!name) {
     return NextResponse.json({ error: "Name erforderlich." }, { status: 400 });
@@ -410,6 +452,33 @@ export async function POST(req: Request) {
       { status: 500 }
     );
   }
+
+  // Gleiche E-Mail wie bestehender Portal-Eigentümer → Portal-Link + Objekt-Sync
+  if (rolle === "eigentuemer" && body.email?.trim()) {
+    const emailNorm = body.email.trim().toLowerCase();
+    const { data: sibling } = await supabaseAdmin
+      .from("einheit_bewohner")
+      .select("portal_kunde_id")
+      .eq("kunde_id", session.kunde.id)
+      .eq("rolle", "eigentuemer")
+      .eq("aktiv", true)
+      .not("portal_kunde_id", "is", null)
+      .ilike("email", emailNorm)
+      .neq("id", data.id)
+      .limit(1)
+      .maybeSingle();
+    const portalId = sibling?.portal_kunde_id
+      ? String(sibling.portal_kunde_id)
+      : "";
+    if (portalId) {
+      await supabaseAdmin
+        .from("einheit_bewohner")
+        .update({ portal_kunde_id: portalId })
+        .eq("id", data.id);
+      await syncEigentuemerObjekteForPortalKunde(portalId);
+    }
+  }
+
   return NextResponse.json({ ok: true, id: data.id });
 }
 

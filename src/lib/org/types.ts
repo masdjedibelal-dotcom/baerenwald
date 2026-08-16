@@ -1,4 +1,8 @@
-export type PortalModus = "privat" | "organisation" | "eigentuemer";
+export type PortalModus =
+  | "privat"
+  | "organisation"
+  | "eigentuemer"
+  | "hausmeister";
 
 export type LeadAnlass =
   | "meldung"
@@ -44,6 +48,8 @@ export type OrganisationKunde = {
   freigabe_schwelle_eur: number | null;
   notfall_direkt: boolean;
   kleinreparatur_aktiv: boolean;
+  /** Neue Meldungen automatisch an Objekt-Hausmeister (hm_pruefung). */
+  hm_auto_zuweisen?: boolean;
   org_primary_color?: string | null;
   org_primary_color_dk?: string | null;
   org_primary_color_soft?: string | null;

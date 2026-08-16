@@ -70,6 +70,45 @@ async function hvIdFromBewohner(email: string): Promise<string | null> {
   return id || null;
 }
 
+/** Eigentümer: HV = Eigentümer der zugeordneten `kunden_objekte`. */
+async function hvIdFromEigentuemerObjekte(
+  portalKundeId: string
+): Promise<string | null> {
+  const { data: zuordnung, error } = await supabaseAdmin
+    .from("eigentuemer_objekte")
+    .select("kunde_objekt_id")
+    .eq("kunde_id", portalKundeId)
+    .limit(20);
+  if (error || !zuordnung?.length) return null;
+  const objektIds = zuordnung
+    .map((r) =>
+      String((r as { kunde_objekt_id?: string }).kunde_objekt_id ?? "").trim()
+    )
+    .filter(Boolean);
+  if (!objektIds.length) return null;
+  const { data: objs, error: objErr } = await supabaseAdmin
+    .from("kunden_objekte")
+    .select("kunde_id")
+    .in("id", objektIds)
+    .limit(5);
+  if (objErr || !objs?.length) return null;
+  const counts = new Map<string, number>();
+  for (const row of objs) {
+    const id = String((row as { kunde_id?: string }).kunde_id ?? "").trim();
+    if (!id) continue;
+    counts.set(id, (counts.get(id) ?? 0) + 1);
+  }
+  let best: string | null = null;
+  let bestCount = 0;
+  for (const [id, count] of Array.from(counts)) {
+    if (count > bestCount) {
+      best = id;
+      bestCount = count;
+    }
+  }
+  return best;
+}
+
 async function loadOrgKunde(hvId: string): Promise<OrgBrandSource | null> {
   for (const select of ORG_SELECTS) {
     const { data, error } = await supabaseAdmin
@@ -96,8 +135,24 @@ function toMieterHvBrand(org: OrgBrand): MieterHvBrand {
   };
 }
 
+async function hvIdFromHausmeisterPortal(
+  portalKundeId: string
+): Promise<string | null> {
+  const { data, error } = await supabaseAdmin
+    .from("org_hausmeister")
+    .select("org_kunde_id")
+    .eq("portal_kunde_id", portalKundeId)
+    .limit(1)
+    .maybeSingle();
+  if (error) return null;
+  const id = String(
+    (data as { org_kunde_id?: string } | null)?.org_kunde_id ?? ""
+  ).trim();
+  return id || null;
+}
+
 /**
- * White-Label der Hausverwaltung für das Mieter-Portal
+ * White-Label der Hausverwaltung für Mieter- und Eigentümer-Portal
  * (Topbar/Sidebar statt „MeinBärenwald“).
  */
 export async function loadMieterHvBrand(opts: {
@@ -111,6 +166,12 @@ export async function loadMieterHvBrand(opts: {
   let hvId = mostFrequentAuftraggeberId(opts.leads, portalKundeId);
   if (!hvId) {
     hvId = await hvIdFromEinladung(portalKundeId);
+  }
+  if (!hvId) {
+    hvId = await hvIdFromEigentuemerObjekte(portalKundeId);
+  }
+  if (!hvId) {
+    hvId = await hvIdFromHausmeisterPortal(portalKundeId);
   }
   const email = opts.portalKundeEmail?.trim();
   if (!hvId && email) {

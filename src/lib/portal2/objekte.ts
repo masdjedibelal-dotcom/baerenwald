@@ -13,7 +13,7 @@ import {
 export const OBJ_WIZ_STEPS = [
   ["stamm", "Stammdaten"],
   ["einheiten", "Einheiten"],
-  ["verwaltung", "Kontakt"],
+  ["verwaltung", "Hausmeister"],
   ["regeln", "Freigabe"],
   ["fertig", "Prüfen"],
 ] as const;
@@ -38,9 +38,17 @@ export type ObjWizDraft = {
   we?: number | string;
   /** @deprecated Nicht mehr im Wizard — HV ist die eingeloggte Organisation */
   hv?: string;
+  /** @deprecated → Hausmeister-Felder */
   kontakt?: string;
   email?: string;
   tel?: string;
+  /** Bestehender org_hausmeister.id */
+  hmId?: string | null;
+  hmName?: string;
+  hmEmail?: string;
+  hmPortalZugang?: boolean;
+  /** existing = Select, new = Name eingeben */
+  hmMode?: "existing" | "new";
   schwelle?: number | string | null;
   /** UI only — Persistenz objektbezogen = OFFENE-PUNKTE (kein DB-Feld). */
   autopass?: boolean;
@@ -49,12 +57,13 @@ export type ObjWizDraft = {
 export const OBJ_WIZ_ERRORS: Record<string, string> = {
   stamm: "Bitte Bezeichnung, Typ, Straße, Hausnummer, PLZ und Ort ausfüllen.",
   einheiten: "Bitte mindestens 1 Einheit angeben.",
+  verwaltung: "Bitte einen Hausmeister wählen oder neu anlegen (Name).",
 };
 
 export const OBJ_WIZ_TITLES: Record<ObjWizStepId, string> = {
   stamm: "Stammdaten",
   einheiten: "Wie viele Einheiten?",
-  verwaltung: "Ansprechpartner (optional)",
+  verwaltung: "Hausmeister",
   regeln: "Freigabeschwelle",
   fertig: "Prüfen & anlegen",
 };
@@ -265,7 +274,14 @@ export function objWizValid(step: ObjWizStepId, d: ObjWizDraft): boolean {
     return Number.isFinite(we) && we >= 1;
   }
   if (step === "verwaltung") {
-    // Alles optional — Ansprechpartner nur bei Bedarf
+    if (d.hmMode === "existing" || d.hmId) {
+      return Boolean(d.hmId?.trim());
+    }
+    const nameOk = Boolean(d.hmName?.trim() || d.kontakt?.trim());
+    if (!nameOk) return false;
+    if (d.hmPortalZugang) {
+      return Boolean(d.hmEmail?.trim() || d.email?.trim());
+    }
     return true;
   }
   return true;
@@ -411,11 +427,12 @@ export const OBJ_SCHWELLE_INFO = (_value: number) => "";
 
 /** Mock `objMieterMenu` Labels. */
 export const OBJ_MIETER_MENU = {
-  einladen: "Zum Portal einladen",
-  erneut: "Portal-Link erneut senden",
+  einladen: "Portal-Link senden",
+  /** @deprecated Alias — immer „Portal-Link senden“. */
+  erneut: "Portal-Link senden",
   bearbeiten: "Bearbeiten",
   vorgaenge: "Vorgänge ansehen",
-  entfernen: "Mieter entfernen",
+  entfernen: "Entfernen",
 } as const;
 
 export const OBJ_MIETER_PORTAL_STATUS = {

@@ -379,6 +379,13 @@ export async function DELETE(req: Request) {
     );
   }
 
+  const {
+    collectPortalKundeIdsForObjekt,
+    cleanupOrphanHvPortalKunden,
+  } = await import("@/lib/org/cleanup-orphan-portal-kunden");
+
+  const portalKundeIds = await collectPortalKundeIdsForObjekt(supabaseAdmin, id);
+
   const { error } = await supabaseAdmin
     .from("kunden_objekte")
     .delete()
@@ -388,6 +395,8 @@ export async function DELETE(req: Request) {
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
+
+  await cleanupOrphanHvPortalKunden(supabaseAdmin, portalKundeIds);
 
   return NextResponse.json({ ok: true, id });
 }

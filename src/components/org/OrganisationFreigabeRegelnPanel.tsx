@@ -61,11 +61,13 @@ export function OrganisationFreigabeRegelnPanel({
     schwelleAktivFromKunde(kunde.freigabe_schwelle_eur)
   );
   const [akutDirekt, setAkutDirekt] = useState(kunde.notfall_direkt !== false);
+  const [hmAuto, setHmAuto] = useState(Boolean(kunde.hm_auto_zuweisen));
 
   const [editOpen, setEditOpen] = useState(false);
   const [editSchwelle, setEditSchwelle] = useState(schwelle);
   const [editSchwelleAktiv, setEditSchwelleAktiv] = useState(schwelleAktiv);
   const [editAkut, setEditAkut] = useState(akutDirekt);
+  const [editHmAuto, setEditHmAuto] = useState(hmAuto);
   const [saving, setSaving] = useState(false);
   const [migratedModus, setMigratedModus] = useState(false);
 
@@ -80,7 +82,8 @@ export function OrganisationFreigabeRegelnPanel({
       )
     );
     setAkutDirekt(kunde.notfall_direkt !== false);
-  }, [kunde.freigabe_schwelle_eur, kunde.notfall_direkt]);
+    setHmAuto(Boolean(kunde.hm_auto_zuweisen));
+  }, [kunde.freigabe_schwelle_eur, kunde.notfall_direkt, kunde.hm_auto_zuweisen]);
 
   useEffect(() => {
     if (!isAdmin || migratedModus) return;
@@ -125,6 +128,7 @@ export function OrganisationFreigabeRegelnPanel({
     setEditSchwelle(schwelle);
     setEditSchwelleAktiv(schwelleAktiv);
     setEditAkut(akutDirekt);
+    setEditHmAuto(hmAuto);
     setEditOpen(true);
   }
 
@@ -154,6 +158,7 @@ export function OrganisationFreigabeRegelnPanel({
             : null,
           kleinreparatur_aktiv: false,
           notfall_direkt: editAkut,
+          hm_auto_zuweisen: editHmAuto,
         }),
       });
       const json = (await res.json()) as { error?: string };
@@ -167,6 +172,7 @@ export function OrganisationFreigabeRegelnPanel({
       setSchwelle(nextSchwelle);
       setSchwelleAktiv(editSchwelleAktiv);
       setAkutDirekt(editAkut);
+      setHmAuto(editHmAuto);
       setEditOpen(false);
       orgPortalToast.einstellungenGespeichert();
       onSaved();
@@ -207,6 +213,10 @@ export function OrganisationFreigabeRegelnPanel({
             value={formatEinstellungenSchwelle(schwelle)}
           />
         ) : null}
+        <EinstellungenPfRow
+          label="Automatisch an Hausmeister"
+          value={hmAuto ? "Ja" : "Nein"}
+        />
       </EinstellungenPfList>
 
       <EinstellungenEditModal
@@ -253,6 +263,16 @@ export function OrganisationFreigabeRegelnPanel({
             />
           </EinstellungenSheetCard>
         ) : null}
+        <EinstellungenToggle
+          checked={editHmAuto}
+          onChange={setEditHmAuto}
+          title="Automatisch an Hausmeister"
+          description={
+            editHmAuto
+              ? "Aktiv: Neue Meldungen (nicht Sofortmaßnahme) gehen direkt in die Hausmeister-Prüfung."
+              : "Aus: Sie starten den Hausmeister-Pfad manuell am Vorgang."
+          }
+        />
       </EinstellungenEditModal>
     </div>
   );

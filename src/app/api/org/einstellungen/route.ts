@@ -10,6 +10,7 @@ type Body = {
   freigabe_schwelle_eur?: number | null;
   notfall_direkt?: boolean;
   kleinreparatur_aktiv?: boolean;
+  hm_auto_zuweisen?: boolean;
 };
 
 export async function PATCH(req: Request) {
@@ -33,12 +34,16 @@ export async function PATCH(req: Request) {
   if (body.notfall_direkt !== undefined) {
     patch.notfall_direkt = Boolean(body.notfall_direkt);
   }
+  if (body.hm_auto_zuweisen !== undefined) {
+    patch.hm_auto_zuweisen = Boolean(body.hm_auto_zuweisen);
+  }
   // Kleinreparatur-Pfad entfernt — Flag immer aus
   if (
     body.kleinreparatur_aktiv !== undefined ||
     body.freigabe_schwelle_eur !== undefined ||
     body.freigabe_modus !== undefined ||
-    body.notfall_direkt !== undefined
+    body.notfall_direkt !== undefined ||
+    body.hm_auto_zuweisen !== undefined
   ) {
     patch.kleinreparatur_aktiv = false;
   }
@@ -52,7 +57,7 @@ export async function PATCH(req: Request) {
     .update(patch)
     .eq("id", session.kunde.id)
     .select(
-      "freigabe_modus, freigabe_schwelle_eur, notfall_direkt, kleinreparatur_aktiv"
+      "freigabe_modus, freigabe_schwelle_eur, notfall_direkt, kleinreparatur_aktiv, hm_auto_zuweisen"
     )
     .single();
 

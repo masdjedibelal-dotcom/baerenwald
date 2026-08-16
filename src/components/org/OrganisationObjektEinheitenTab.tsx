@@ -22,6 +22,7 @@ import {
   resolveObjMieterPortalStatus,
 } from "@/lib/portal2/objekte";
 import { buildPortalEinladungMailto } from "@/lib/portal2/portal-einladungen";
+import type { PortalEinladungHvBlock } from "@/lib/portal2/portal-einladungen";
 import { cn } from "@/lib/utils";
 import {
   orgPortalToast,
@@ -54,7 +55,9 @@ type Bewohner = {
 
 type Props = {
   objektId: string;
+  objektLabel: string;
   orgAnzeigename?: string | null;
+  hv?: PortalEinladungHvBlock | null;
   onGotoVorgaenge: () => void;
   onEinheitenChange?: () => void;
 };
@@ -71,7 +74,9 @@ function splitName(full: string): { vorname: string; nachname: string } {
  */
 export function OrganisationObjektEinheitenTab({
   objektId,
+  objektLabel,
   orgAnzeigename,
+  hv,
   onGotoVorgaenge,
   onEinheitenChange,
 }: Props) {
@@ -93,6 +98,21 @@ export function OrganisationObjektEinheitenTab({
     rolle: PersonRolle;
     editId?: string;
   } | null>(null);
+  const [eigentuemerMode, setEigentuemerMode] = useState<"existing" | "new">(
+    "new"
+  );
+  const [existingEigentuemerId, setExistingEigentuemerId] = useState("");
+  const [orgEigentuemer, setOrgEigentuemer] = useState<
+    Array<{
+      key: string;
+      name: string;
+      email: string | null;
+      telefon: string | null;
+      sourceBewohnerId: string;
+      sondereigentum_verwaltung: boolean;
+      objektLabels: string[];
+    }>
+  >([]);
   const [vorname, setVorname] = useState("");
   const [nachname, setNachname] = useState("");
   const [email, setEmail] = useState("");
@@ -226,7 +246,38 @@ export function OrganisationObjektEinheitenTab({
     setTelefon("");
     setSeVerwaltung(false);
     setMieteHinweis("");
+    setExistingEigentuemerId("");
+    setEigentuemerMode(rolle === "eigentuemer" ? "existing" : "new");
     setPersonForm({ einheitId, rolle });
+    if (rolle === "eigentuemer") {
+      void fetch(
+        "/api/org/einheit-bewohner?scope=org&rolle=eigentuemer"
+      )
+        .then((r) => r.json())
+        .then(
+          (j: {
+            eigentuemer?: Array<{
+              key: string;
+              name: string;
+              email: string | null;
+              telefon: string | null;
+              sourceBewohnerId: string;
+              sondereigentum_verwaltung: boolean;
+              objektLabels: string[];
+            }>;
+          }) => {
+            const list = j.eigentuemer ?? [];
+            setOrgEigentuemer(list);
+            setEigentuemerMode(list.length > 0 ? "existing" : "new");
+          }
+        )
+        .catch(() => {
+          setOrgEigentuemer([]);
+          setEigentuemerMode("new");
+        });
+    } else {
+      setOrgEigentuemer([]);
+    }
   }
 
   function openPersonEdit(b: Bewohner) {
@@ -237,6 +288,8 @@ export function OrganisationObjektEinheitenTab({
     setTelefon(b.telefon?.trim() || "");
     setSeVerwaltung(Boolean(b.sondereigentum_verwaltung));
     setMieteHinweis(b.miete_hinweis?.trim() || "");
+    setEigentuemerMode("new");
+    setExistingEigentuemerId("");
     setPersonForm({
       einheitId: b.objekt_einheit_id,
       rolle: b.rolle === "eigentuemer" ? "eigentuemer" : "mieter",
@@ -249,19 +302,49 @@ export function OrganisationObjektEinheitenTab({
     setPersonForm(null);
   }
 
-  const canSubmitPerson =
-    vorname.trim().length > 0 && nachname.trim().length > 0;
+  const personEditing = Boolean(personForm?.editId);
+  const assigningExistingEigentuemer =
+    Boolean(personForm) &&
+    !personEditing &&
+    personForm?.rolle === "eigentuemer" &&
+    eigentuemerMode === "existing";
+
+  const canSubmitPerson = assigningExistingEigentuemer
+    ? Boolean(existingEigentuemerId.trim())
+    : vorname.trim().length > 0 && nachname.trim().length > 0;
 
   async function savePerson() {
     if (!personForm || !canSubmitPerson) return;
-    const name = [vorname, nachname]
-      .map((s) => s.trim())
-      .filter(Boolean)
-      .join(" ");
     setPersonBusy(true);
     try {
       await runBusy(async () => {
         const isEdit = Boolean(personForm.editId);
+
+        if (assigningExistingEigentuemer) {
+          const res = await fetch("/api/org/einheit-bewohner", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              einheitId: personForm.einheitId,
+              existingBewohnerId: existingEigentuemerId,
+              sondereigentum_verwaltung: seVerwaltung,
+            }),
+          });
+          const json = (await res.json()) as { error?: string };
+          if (!res.ok) {
+            portalToastError("Zuordnung fehlgeschlagen", json.error);
+            return;
+          }
+          setPersonForm(null);
+          orgPortalToast.objektAktualisiert();
+          await load();
+          return;
+        }
+
+        const name = [vorname, nachname]
+          .map((s) => s.trim())
+          .filter(Boolean)
+          .join(" ");
         const res = await fetch("/api/org/einheit-bewohner", {
           method: isEdit ? "PATCH" : "POST",
           headers: { "Content-Type": "application/json" },
@@ -370,41 +453,59 @@ export function OrganisationObjektEinheitenTab({
   async function einladenPerson(b: Bewohner, einheitLabel: string) {
     setBusyId(b.id);
     try {
-      const res = await fetch("/api/org/portal-einladungen", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          objektId,
-          einheitId: b.objekt_einheit_id,
-          bewohnerId: b.id,
-        }),
-      });
-      const json = (await res.json()) as { url?: string; error?: string };
-      if (!res.ok || !json.url) {
-        portalToastError("Einladung fehlgeschlagen", json.error);
-        return;
-      }
-      const rolleLabel =
-        b.rolle === "eigentuemer" ? "Eigentümer" : "Mieter";
-      const hv = orgAnzeigename?.trim() || "Ihre Verwaltung";
-      const mailto = buildPortalEinladungMailto({
-        link: json.url,
-        hvName: hv,
-        objektLabel: "Objekt",
-        einheitRef: einheitLabel,
-      });
-      if (b.email?.trim()) {
+      await runBusy(async () => {
+        const res = await fetch("/api/org/portal-einladungen", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            objektId,
+            einheitId: b.objekt_einheit_id,
+            bewohnerId: b.id,
+          }),
+        });
+        const json = (await res.json()) as { url?: string; error?: string };
+        if (!res.ok || !json.url) {
+          portalToastError("Einladung fehlgeschlagen", json.error);
+          return;
+        }
+        const rolle =
+          b.rolle === "eigentuemer" ? "eigentuemer" : "mieter";
+        const rolleLabel =
+          rolle === "eigentuemer" ? "Eigentümer" : "Mieter";
+        const hvName =
+          orgAnzeigename?.trim() || hv?.name?.trim() || "Ihre Verwaltung";
+        const toEmail = b.email?.trim() || "";
+        const mailto = buildPortalEinladungMailto({
+          link: json.url,
+          hvName,
+          objektLabel: objektLabel.trim() || "Objekt",
+          einheitRef: einheitLabel,
+          toEmail: toEmail || null,
+          rolle,
+          hv: {
+            name: hvName,
+            strasse: hv?.strasse,
+            hausnummer: hv?.hausnummer,
+            plz: hv?.plz,
+            ort: hv?.ort,
+            telefon: hv?.telefon,
+            email: hv?.email,
+          },
+        });
+        try {
+          await navigator.clipboard.writeText(json.url);
+          portalToastSuccess(
+            "Link kopiert",
+            toEmail
+              ? `${rolleLabel}-Einladung: Mail öffnet sich mit Empfänger.`
+              : `${rolleLabel}-Einladung in die Zwischenablage gelegt.`
+          );
+        } catch {
+          window.prompt("Einladungs-Link:", json.url);
+        }
+        // Mail-App öffnen (mit An-Feld, falls E-Mail hinterlegt)
         window.location.href = mailto;
-      }
-      try {
-        await navigator.clipboard.writeText(json.url);
-        portalToastSuccess(
-          "Link kopiert",
-          `${rolleLabel}-Einladung in die Zwischenablage gelegt.`
-        );
-      } catch {
-        window.prompt("Einladungs-Link:", json.url);
-      }
+      });
     } finally {
       setBusyId(null);
     }
@@ -522,8 +623,6 @@ export function OrganisationObjektEinheitenTab({
   const personEinheitLabel =
     personForm &&
     einheiten.find((e) => e.id === personForm.einheitId)?.bezeichnung;
-
-  const personEditing = Boolean(personForm?.editId);
 
   return (
     <div className="space-y-3">
@@ -699,36 +798,134 @@ export function OrganisationObjektEinheitenTab({
           onSave={() => void savePerson()}
           saving={personBusy}
           saveDisabled={!canSubmitPerson}
-          saveLabel={personEditing ? "Speichern" : "Hinzufügen"}
+          saveLabel={
+            personEditing
+              ? "Speichern"
+              : assigningExistingEigentuemer
+                ? "Zuordnen"
+                : "Hinzufügen"
+          }
         >
-          <div className="grid grid-cols-2 gap-2">
-            <EinstellungenEdField
-              label="Vorname"
-              value={vorname}
-              onChange={setVorname}
-              autoComplete="given-name"
-            />
-            <EinstellungenEdField
-              label="Nachname"
-              value={nachname}
-              onChange={setNachname}
-              autoComplete="family-name"
-            />
-          </div>
-          <EinstellungenEdField
-            label="E-Mail (optional)"
-            type="email"
-            value={email}
-            onChange={setEmail}
-            autoComplete="email"
-          />
-          <EinstellungenEdField
-            label="Telefon (optional)"
-            type="tel"
-            value={telefon}
-            onChange={setTelefon}
-            autoComplete="tel"
-          />
+          {!personEditing && personForm?.rolle === "eigentuemer" ? (
+            <>
+              <p className="rounded-[10px] bg-muted px-3.5 py-2.5 text-[12.5px] leading-relaxed text-text-secondary">
+                Bestehenden Eigentümer einer weiteren Einheit zuordnen oder
+                neu anlegen.
+              </p>
+              {orgEigentuemer.length > 0 ? (
+                <label className="block">
+                  <span className="portal-text-label mb-1.5 block text-text-secondary">
+                    Eigentümer
+                  </span>
+                  <select
+                    className="portal-field w-full"
+                    value={
+                      eigentuemerMode === "new"
+                        ? "__new__"
+                        : existingEigentuemerId
+                    }
+                    onChange={(e) => {
+                      const v = e.target.value;
+                      if (v === "__new__") {
+                        setEigentuemerMode("new");
+                        setExistingEigentuemerId("");
+                        setVorname("");
+                        setNachname("");
+                        setEmail("");
+                        setTelefon("");
+                        setSeVerwaltung(false);
+                        return;
+                      }
+                      setEigentuemerMode("existing");
+                      setExistingEigentuemerId(v);
+                      const found = orgEigentuemer.find(
+                        (x) => x.sourceBewohnerId === v
+                      );
+                      if (found) {
+                        const parts = splitName(found.name);
+                        setVorname(parts.vorname);
+                        setNachname(parts.nachname);
+                        setEmail(found.email ?? "");
+                        setTelefon(found.telefon ?? "");
+                        setSeVerwaltung(found.sondereigentum_verwaltung);
+                      }
+                    }}
+                  >
+                    <option value="">Bitte wählen…</option>
+                    {orgEigentuemer.map((p) => (
+                      <option key={p.key} value={p.sourceBewohnerId}>
+                        {p.name}
+                        {p.objektLabels.length
+                          ? ` (${p.objektLabels.slice(0, 2).join(", ")}${
+                              p.objektLabels.length > 2 ? "…" : ""
+                            })`
+                          : ""}
+                      </option>
+                    ))}
+                    <option value="__new__">＋ Neu anlegen</option>
+                  </select>
+                </label>
+              ) : null}
+            </>
+          ) : null}
+
+          {!assigningExistingEigentuemer ? (
+            <>
+              <div className="grid grid-cols-2 gap-2">
+                <EinstellungenEdField
+                  label="Vorname"
+                  value={vorname}
+                  onChange={setVorname}
+                  autoComplete="given-name"
+                />
+                <EinstellungenEdField
+                  label="Nachname"
+                  value={nachname}
+                  onChange={setNachname}
+                  autoComplete="family-name"
+                />
+              </div>
+              <EinstellungenEdField
+                label="E-Mail (optional)"
+                type="email"
+                value={email}
+                onChange={setEmail}
+                autoComplete="email"
+              />
+              <EinstellungenEdField
+                label="Telefon (optional)"
+                type="tel"
+                value={telefon}
+                onChange={setTelefon}
+                autoComplete="tel"
+              />
+            </>
+          ) : (
+            <div className="rounded-[10px] border border-border-light bg-white px-3.5 py-3 text-[13px] text-text-secondary">
+              {(() => {
+                const sel = orgEigentuemer.find(
+                  (x) => x.sourceBewohnerId === existingEigentuemerId
+                );
+                if (!sel) {
+                  return "Bitte einen bestehenden Eigentümer wählen.";
+                }
+                return (
+                  <>
+                    <p className="font-semibold text-text-primary">{sel.name}</p>
+                    {sel.email ? (
+                      <p className="mt-0.5">{sel.email}</p>
+                    ) : null}
+                    {sel.objektLabels.length ? (
+                      <p className="mt-1 text-[12px]">
+                        Bereits: {sel.objektLabels.join(" · ")}
+                      </p>
+                    ) : null}
+                  </>
+                );
+              })()}
+            </div>
+          )}
+
           {personForm?.rolle === "eigentuemer" ? (
             <EinstellungenToggle
               checked={seVerwaltung}
@@ -736,14 +933,14 @@ export function OrganisationObjektEinheitenTab({
               title="Sondereigentumsverwaltung durch HV"
               description="Ja = HV führt SE-Aufträge; Freigabe über Schwelle beim Eigentümer."
             />
-          ) : (
+          ) : !assigningExistingEigentuemer ? (
             <EinstellungenEdField
               label="Miet-Hinweis (optional)"
               value={mieteHinweis}
               onChange={setMieteHinweis}
               placeholder="z. B. seit 2022"
             />
-          )}
+          ) : null}
         </EinstellungenEditModal>
 
         {einheitForm?.mode === "edit" ? (

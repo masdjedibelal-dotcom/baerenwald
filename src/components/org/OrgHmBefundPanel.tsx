@@ -44,6 +44,8 @@ type Props = {
   leadId: string;
   hvMeldungStatus: string | null | undefined;
   readOnly?: boolean;
+  /** Versteckt HV-only Aktionen (z. B. Direkt Bärenwald). */
+  hideOrgOnlyActions?: boolean;
   onUpdated?: () => void;
 };
 
@@ -106,6 +108,7 @@ export function OrgHmBefundPanel({
   leadId,
   hvMeldungStatus,
   readOnly: readOnlyProp,
+  hideOrgOnlyActions = false,
   onUpdated,
 }: Props) {
   const hv = (hvMeldungStatus ?? "").trim().toLowerCase();
@@ -438,31 +441,33 @@ export function OrgHmBefundPanel({
               >
                 Prüfung abschließen
               </button>
-              <button
-                type="button"
-                className="portal-action-btn portal-action-btn--secondary"
-                onClick={() => {
-                  void (async () => {
-                    const res = await fetch("/api/org/meldung-aktion", {
-                      method: "POST",
-                      headers: { "Content-Type": "application/json" },
-                      body: JSON.stringify({
-                        leadId,
-                        aktion: "direkt_baerenwald",
-                      }),
-                    });
-                    if (!res.ok) {
-                      const j = (await res.json()) as { error?: string };
-                      setError(j.error ?? "Aktion fehlgeschlagen.");
-                      return;
-                    }
-                    orgPortalToast.angebotEingefordert();
-                    onUpdated?.();
-                  })();
-                }}
-              >
-                Direkt Bärenwald beauftragen
-              </button>
+              {!hideOrgOnlyActions ? (
+                <button
+                  type="button"
+                  className="portal-action-btn portal-action-btn--secondary"
+                  onClick={() => {
+                    void (async () => {
+                      const res = await fetch("/api/org/meldung-aktion", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                          leadId,
+                          aktion: "direkt_baerenwald",
+                        }),
+                      });
+                      if (!res.ok) {
+                        const j = (await res.json()) as { error?: string };
+                        setError(j.error ?? "Aktion fehlgeschlagen.");
+                        return;
+                      }
+                      orgPortalToast.angebotEingefordert();
+                      onUpdated?.();
+                    })();
+                  }}
+                >
+                  Direkt Bärenwald beauftragen
+                </button>
+              ) : null}
             </div>
           ) : null}
 

@@ -7,6 +7,7 @@ import { useMemo, useState } from "react";
 import { registerMeinBaerenwaldWithOtp } from "@/app/actions/portal-signup-otp";
 import { PortalAuthBusy } from "@/components/portal/auth/PortalAuthBusy";
 import { PortalSignupOtpStep } from "@/components/portal/PortalSignupOtpStep";
+import { AUTH_INVITE } from "@/lib/portal2/auth";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 
 export type PortalRegisterPrefill = {
@@ -18,14 +19,26 @@ export type PortalRegisterPrefill = {
 };
 
 type Props = {
-  /** Server-Prefill (Melde-Flow); Query-Params greifen zusätzlich */
+  /** Server-Prefill (Melde-Flow / Einladung); Query-Params greifen zusätzlich */
   prefill?: PortalRegisterPrefill;
+  /** E4: Einladungs-Token — nach OTP einlösen */
+  einladungToken?: string | null;
+  /** Hinweis über den locked Prefill-Feldern */
+  lockedHint?: string | null;
+  /** Submit-Label (Einladung: „Konto aktivieren“) */
+  submitLabel?: string;
 };
 
 /**
  * MeinBärenwald-Registrierung mit E-Mail-OTP statt Bestätigungslink.
+ * Auch Einladung Mieter/Eigentümer (gleiche Schritte & Design).
  */
-export function PortalRegisterForm({ prefill }: Props) {
+export function PortalRegisterForm({
+  prefill,
+  einladungToken,
+  lockedHint,
+  submitLabel = "Konto anlegen",
+}: Props) {
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -59,10 +72,39 @@ export function PortalRegisterForm({ prefill }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [awaitingOtp, setAwaitingOtp] = useState(false);
 
-  const nextPath = searchParams.get("next") || "/portal";
+  const inviteToken = einladungToken?.trim() || "";
+  const nextPath =
+    searchParams.get("next") ||
+    (inviteToken
+      ? `/portal/einladung/${encodeURIComponent(inviteToken)}`
+      : "/portal");
   const loginHref = `/portal/login?next=${encodeURIComponent(nextPath)}${
     email.trim() ? `&email=${encodeURIComponent(email.trim())}` : ""
   }`;
+
+  const hintText =
+    lockedHint?.trim() ||
+    (inviteToken
+      ? AUTH_INVITE.lockedHint
+      : locked
+        ? "Ihre Angaben aus der Schadenmeldung sind übernommen. Bitte nur noch ein Passwort vergeben und die Zustimmung erteilen."
+        : null);
+
+  async function redeemInviteIfNeeded() {
+    if (!inviteToken) return;
+    const res = await fetch(
+      `/api/portal/einladung/${encodeURIComponent(inviteToken)}`,
+      { method: "POST" }
+    );
+    const json = (await res.json()) as {
+      error?: string;
+      redirectTo?: string;
+    };
+    if (!res.ok) {
+      throw new Error(json.error ?? "Einladung konnte nicht eingelöst werden.");
+    }
+    router.replace(json.redirectTo || "/portal");
+  }
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -88,6 +130,7 @@ export function PortalRegisterForm({ prefill }: Props) {
       email,
       telefon,
       password,
+      einladungToken: inviteToken || undefined,
     });
     setLoading(false);
     if (!result.ok) {
@@ -105,8 +148,14 @@ export function PortalRegisterForm({ prefill }: Props) {
     });
     if (signErr) {
       throw new Error(
-        "Konto bestätigt — bitte mit Passwort anmelden."
+        inviteToken
+          ? "Konto bestätigt — bitte anmelden und den Einladungslink erneut öffnen."
+          : "Konto bestätigt — bitte mit Passwort anmelden."
       );
+    }
+    if (inviteToken) {
+      await redeemInviteIfNeeded();
+      return;
     }
     const safeNext =
       typeof nextPath === "string" && nextPath.startsWith("/portal")
@@ -150,15 +199,16 @@ export function PortalRegisterForm({ prefill }: Props) {
 
   return (
     <form onSubmit={onSubmit} className="space-y-4">
-      {locked ? (
+      {hintText ? (
         <p className="rounded-lg border border-border-light bg-muted/30 px-3 py-2.5 text-[13px] leading-relaxed text-text-secondary">
-          Ihre Angaben aus der Schadenmeldung sind übernommen. Bitte nur noch
-          ein Passwort vergeben und die Zustimmung erteilen.
+          {hintText}
         </p>
       ) : null}
 
       {error ? (
-        <p className="rounded-lg bg-red-50 px-3 py-2 portal-text-body text-red-800">{error}</p>
+        <p className="rounded-lg bg-red-50 px-3 py-2 portal-text-body text-red-800">
+          {error}
+        </p>
       ) : null}
 
       <label className="block space-y-1.5">
@@ -282,7 +332,9 @@ export function PortalRegisterForm({ prefill }: Props) {
         </span>
       </label>
       {agbError ? (
-        <p className="portal-text-body -mt-2 text-red-700">Bitte akzeptieren Sie die AGB.</p>
+        <p className="portal-text-body -mt-2 text-red-700">
+          Bitte akzeptieren Sie die AGB.
+        </p>
       ) : null}
 
       <button
@@ -290,7 +342,7 @@ export function PortalRegisterForm({ prefill }: Props) {
         disabled={locked && (!name.trim() || !email.trim())}
         className="btn-pill-primary portal-btn w-full disabled:opacity-60"
       >
-        Konto anlegen
+        {submitLabel}
       </button>
 
       <p className="border-t border-border-light pt-4 text-center portal-text-body text-text-secondary">

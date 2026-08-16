@@ -1,34 +1,34 @@
-import { supabaseAdmin } from "@/lib/supabase";
+import {
+  loadHausmeisterForObjekt,
+  type HausmeisterAmObjekt,
+} from "@/lib/org/org-hausmeister";
 
 export type HausmeisterKontakt = {
   id: string;
   name: string;
   email: string | null;
   telefon: string | null;
+  portalZugang?: boolean;
+  portalKundeId?: string | null;
 };
 
-/** Erster aktiver Hausmeister-Kontakt am Objekt (oder null). */
+/** Erster / zugewiesener Hausmeister am Objekt (org_hausmeister oder Legacy-Kontakt). */
 export async function loadObjektHausmeisterKontakt(
   kundeObjektId: string | null | undefined
 ): Promise<HausmeisterKontakt | null> {
-  const oid = String(kundeObjektId ?? "").trim();
-  if (!oid) return null;
+  const hm = await loadHausmeisterForObjekt(kundeObjektId);
+  if (!hm) return null;
+  return toKontakt(hm);
+}
 
-  const { data } = await supabaseAdmin
-    .from("objekt_kontakte")
-    .select("id, name, email, telefon, rolle")
-    .eq("kunde_objekt_id", oid)
-    .eq("rolle", "hausmeister")
-    .order("sort_order", { ascending: true })
-    .limit(1)
-    .maybeSingle();
-
-  if (!data?.id) return null;
+function toKontakt(hm: HausmeisterAmObjekt): HausmeisterKontakt {
   return {
-    id: String(data.id),
-    name: String(data.name ?? "").trim() || "Hausmeister",
-    email: data.email != null ? String(data.email).trim() || null : null,
-    telefon: data.telefon != null ? String(data.telefon).trim() || null : null,
+    id: hm.id,
+    name: hm.name,
+    email: hm.email,
+    telefon: null,
+    portalZugang: hm.portal_zugang,
+    portalKundeId: hm.portal_kunde_id,
   };
 }
 

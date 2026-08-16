@@ -34,10 +34,18 @@ type Props = {
   existingNotizen?: string | null;
   editMode?: boolean;
   defaultHv?: string;
+  /** Hausmeister der Org für Select */
+  hausmeisterOptions?: Array<{ id: string; name: string; email?: string | null }>;
   /** `modal` = Fullscreen wie Neuer Vorgang (PortalModalShell funnel). */
   variant?: "page" | "modal";
   onCancel: () => void;
-  onDone: (payload: ObjWizPayload) => Promise<void>;
+  onDone: (payload: ObjWizPayload & {
+    hmId?: string | null;
+    hmName?: string;
+    hmEmail?: string;
+    hmPortalZugang?: boolean;
+    hmMode?: "existing" | "new";
+  }) => Promise<void>;
 };
 
 function OptRow({
@@ -80,6 +88,7 @@ export function OrganisationObjektWizard({
   existingNotizen,
   editMode,
   defaultHv,
+  hausmeisterOptions = [],
   variant = "page",
   onCancel,
   onDone,
@@ -98,7 +107,10 @@ export function OrganisationObjektWizard({
   const { runBusy } = usePortalBusy();
 
   const step = OBJ_WIZ_STEPS[stepIndex]?.[0] ?? "stamm";
-  const set = (k: keyof ObjWizDraft, val: string | number | boolean) => {
+  const set = (
+    k: keyof ObjWizDraft,
+    val: string | number | boolean | null
+  ) => {
     setDraft((d) => ({ ...d, [k]: val }));
     setErr("");
   };
@@ -137,7 +149,14 @@ export function OrganisationObjektWizard({
     setBusy(true);
     try {
       await runBusy(async () => {
-        await onDone(result.payload);
+        await onDone({
+          ...result.payload,
+          hmId: draft.hmId,
+          hmName: draft.hmName ?? draft.kontakt,
+          hmEmail: draft.hmEmail ?? draft.email,
+          hmPortalZugang: draft.hmPortalZugang,
+          hmMode: draft.hmMode,
+        });
       });
     } finally {
       setBusy(false);
@@ -275,47 +294,89 @@ export function OrganisationObjektWizard({
     content = (
       <div className="flex flex-col gap-3.5">
         <p className="rounded-[10px] bg-muted px-3.5 py-2.5 text-[12.5px] leading-relaxed text-text-secondary">
-          Optional — nur wenn für dieses Objekt ein eigener Ansprechpartner
-          hinterlegt werden soll.
+          Pflicht — jeder Objekt braucht einen Hausmeister. Bestehenden wählen
+          oder neu anlegen.
         </p>
         <label className="block">
           <span className="portal-text-label mb-1.5 block text-text-secondary">
-            Ansprechpartner
+            Hausmeister
           </span>
-          <input
+          <select
             className="portal-field w-full"
-            placeholder="Name"
-            value={draft.kontakt ?? ""}
-            onChange={(e) => set("kontakt", e.target.value)}
-            autoComplete="name"
-          />
+            value={
+              draft.hmMode === "new"
+                ? "__new__"
+                : draft.hmId?.trim() || ""
+            }
+            onChange={(e) => {
+              const v = e.target.value;
+              if (v === "__new__") {
+                set("hmMode", "new");
+                set("hmId", null);
+              } else {
+                set("hmMode", "existing");
+                set("hmId", v);
+              }
+            }}
+          >
+            <option value="">Bitte wählen…</option>
+            {(hausmeisterOptions ?? []).map((h) => (
+                <option key={h.id} value={h.id}>
+                  {h.name}
+                </option>
+              ))}
+            <option value="__new__">＋ Neu anlegen</option>
+          </select>
         </label>
-        <label className="block">
-          <span className="portal-text-label mb-1.5 block text-text-secondary">
-            E-Mail
-          </span>
-          <input
-            type="email"
-            className="portal-field w-full"
-            placeholder="name@firma.de"
-            value={draft.email ?? ""}
-            onChange={(e) => set("email", e.target.value)}
-            autoComplete="email"
-          />
-        </label>
-        <label className="block">
-          <span className="portal-text-label mb-1.5 block text-text-secondary">
-            Telefon
-          </span>
-          <input
-            type="tel"
-            className="portal-field w-full"
-            placeholder="089 / …"
-            value={draft.tel ?? ""}
-            onChange={(e) => set("tel", e.target.value)}
-            autoComplete="tel"
-          />
-        </label>
+        {draft.hmMode === "new" ||
+        (!draft.hmId && Boolean(draft.hmName?.trim())) ? (
+          <>
+            <label className="block">
+              <span className="portal-text-label mb-1.5 block text-text-secondary">
+                Name
+              </span>
+              <input
+                className="portal-field w-full"
+                placeholder="Name"
+                value={draft.hmName ?? draft.kontakt ?? ""}
+                onChange={(e) => {
+                  set("hmName", e.target.value);
+                  set("hmMode", "new");
+                }}
+                required
+                autoComplete="name"
+              />
+            </label>
+            <label className="flex items-start gap-3 rounded-[10px] border border-border-light bg-white p-3">
+              <input
+                type="checkbox"
+                className="mt-0.5"
+                checked={Boolean(draft.hmPortalZugang)}
+                onChange={(e) => set("hmPortalZugang", e.target.checked)}
+              />
+              <span className="text-[13px] text-text-secondary">
+                Portal-Zugang — sieht nur eigene Objekte und erhält eine
+                Einladung per E-Mail
+              </span>
+            </label>
+            {draft.hmPortalZugang ? (
+              <label className="block">
+                <span className="portal-text-label mb-1.5 block text-text-secondary">
+                  E-Mail
+                </span>
+                <input
+                  type="email"
+                  className="portal-field w-full"
+                  placeholder="name@firma.de"
+                  value={draft.hmEmail ?? draft.email ?? ""}
+                  onChange={(e) => set("hmEmail", e.target.value)}
+                  required
+                  autoComplete="email"
+                />
+              </label>
+            ) : null}
+          </>
+        ) : null}
       </div>
     );
   } else if (step === "regeln") {
@@ -366,9 +427,14 @@ export function OrganisationObjektWizard({
             "Einheiten",
             draft.typ === "Einfamilienhaus (B2C)" ? 1 : we
           )}
-          {row("Ansprechpartner", draft.kontakt)}
-          {row("E-Mail", draft.email)}
-          {row("Telefon", draft.tel)}
+          {row(
+            "Hausmeister",
+            draft.hmMode === "existing" && draft.hmId
+              ? hausmeisterOptions.find((h) => h.id === draft.hmId)?.name ??
+                  "Gewählt"
+              : draft.hmName || draft.kontakt || "—"
+          )}
+          {row("Portal-Zugang", draft.hmPortalZugang ? "Ja" : "Nein")}
           {row(
             "Regeln",
             formatObjRegelnReview(!!draft.autopass, schwelle)

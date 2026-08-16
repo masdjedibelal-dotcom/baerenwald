@@ -127,9 +127,43 @@ export default async function PortalDashboardPage() {
           kunde={eigData.kunde}
           schwelleEur={eigData.schwelleEur}
           objekte={eigData.objekte}
+          einheiten={eigData.einheiten}
+          mieterByObjektId={eigData.mieterByObjektId}
+          hausverwaltungBrand={eigData.hausverwaltungBrand}
           leads={eigData.leads}
           angebote={eigData.angebote}
           auftraege={eigData.auftraege}
+        />
+      </Suspense>
+    );
+  }
+
+  if (portalModus === "hausmeister") {
+    const { getHausmeisterPortalData } = await import(
+      "@/lib/portal/get-hausmeister-portal-data"
+    );
+    const { HausmeisterPortalClient } = await import(
+      "@/components/portal/HausmeisterPortalClient"
+    );
+    const hmData = await getHausmeisterPortalData(link.kundeId);
+    if (!hmData) {
+      return (
+        <PortalAuthShell title="Keine Kundendaten">
+          <p className="portal-text-body text-text-secondary">
+            Hausmeister-Daten konnten nicht geladen werden.
+          </p>
+        </PortalAuthShell>
+      );
+    }
+    return (
+      <Suspense fallback={<p className="px-4 py-8 text-center">Portal wird geladen…</p>}>
+        <HausmeisterPortalClient
+          kunde={hmData.kunde}
+          objekte={hmData.objekte}
+          hausverwaltungBrand={hmData.hausverwaltungBrand}
+          leads={hmData.leads}
+          angebote={hmData.angebote}
+          auftraege={hmData.auftraege}
         />
       </Suspense>
     );

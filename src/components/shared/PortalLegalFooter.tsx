@@ -1,14 +1,18 @@
 import Link from "next/link";
 
 import { CookieSettingsLink } from "@/components/consent/CookieSettingsLink";
+import { MeldeServiceByLine } from "@/components/melden/MeldeServiceByLine";
 import { cn } from "@/lib/utils";
 
 export function PortalLegalFooter({
   variant,
   className,
+  /** Mieter/Eigentümer: Hinweis, dass die HV Bärenwald als Technik nutzt. */
+  showServiceBy = false,
 }: {
   variant: "partner" | "kunde" | "org";
   className?: string;
+  showServiceBy?: boolean;
 }) {
   const datenschutzHref =
     variant === "partner"
@@ -52,6 +56,9 @@ export function PortalLegalFooter({
         </span>
         <CookieSettingsLink className="underline-offset-2 hover:text-text-secondary hover:underline" />
       </nav>
+      {showServiceBy ? (
+        <MeldeServiceByLine className="mt-2 block" />
+      ) : null}
     </footer>
   );
 }

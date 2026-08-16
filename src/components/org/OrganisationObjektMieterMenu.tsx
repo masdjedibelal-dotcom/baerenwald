@@ -15,10 +15,9 @@ type Props = {
 };
 
 /**
- * Mieter-⋯ — globales PortalActionMenu (volle Breite Bottom Sheet).
+ * Mieter/Eigentümer-⋯ — globales PortalActionMenu (volle Breite Bottom Sheet).
  */
 export function OrganisationObjektMieterMenu({
-  hasEmail,
   onEinladen,
   onVorgaenge,
   onEntfernen,
@@ -26,7 +25,7 @@ export function OrganisationObjektMieterMenu({
 }: Props) {
   const items: PortalActionMenuItem[] = [
     {
-      label: hasEmail ? OBJ_MIETER_MENU.erneut : OBJ_MIETER_MENU.einladen,
+      label: OBJ_MIETER_MENU.einladen,
       onClick: onEinladen,
     },
     ...(onBearbeiten

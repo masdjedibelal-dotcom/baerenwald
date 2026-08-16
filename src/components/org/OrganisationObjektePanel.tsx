@@ -42,6 +42,7 @@ import {
 } from "@/lib/portal2/objekte";
 import { orgPortalToast, portalToastError } from "@/lib/shared/portal-toast";
 import { usePortalBusy } from "@/components/shared/PortalBusyContext";
+import { portalEinladungHvFromKunde } from "@/lib/portal2/portal-einladungen";
 
 type Props = {
   objekte: OrganisationObjekt[];
@@ -131,6 +132,11 @@ export function OrganisationObjektePanel({
   const defaultHv =
     kunde?.org_anzeigename?.trim() || kunde?.name?.trim() || "";
 
+  const einladungHv = useMemo(
+    () => portalEinladungHvFromKunde(kunde),
+    [kunde]
+  );
+
   const offenById = useMemo(
     () => countOffeneByObjektId(leads, objekte, { angebote, auftraege }),
     [leads, objekte, angebote, auftraege]
@@ -164,8 +170,27 @@ export function OrganisationObjektePanel({
     );
   };
 
+  const [hmOptions, setHmOptions] = useState<
+    Array<{ id: string; name: string; email?: string | null }>
+  >([]);
+
+  useEffect(() => {
+    void fetch("/api/org/hausmeister")
+      .then((r) => r.json())
+      .then((j: { hausmeister?: Array<{ id: string; name: string; email?: string | null }> }) => {
+        setHmOptions(j.hausmeister ?? []);
+      })
+      .catch(() => setHmOptions([]));
+  }, [mode.kind]);
+
   const persistPayload = async (
-    payload: ObjWizPayload,
+    payload: ObjWizPayload & {
+      hmId?: string | null;
+      hmName?: string;
+      hmEmail?: string;
+      hmPortalZugang?: boolean;
+      hmMode?: "existing" | "new";
+    },
     editId?: string
   ): Promise<string | null> => {
     const body = {
@@ -196,9 +221,37 @@ export function OrganisationObjektePanel({
       );
       return null;
     }
+    const objektId = json.objekt?.id ?? editId ?? null;
+    if (objektId) {
+      const hmRes = await fetch("/api/org/hausmeister", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          objektId,
+          hausmeisterId:
+            payload.hmMode === "existing" ? payload.hmId : undefined,
+          name:
+            payload.hmMode === "new" || !payload.hmId
+              ? payload.hmName
+              : undefined,
+          email: payload.hmPortalZugang ? payload.hmEmail : null,
+          portalZugang: Boolean(payload.hmPortalZugang),
+          invite: Boolean(payload.hmPortalZugang),
+        }),
+      });
+      const hmJson = (await hmRes.json()) as {
+        error?: string;
+        inviteMailto?: string | null;
+      };
+      if (!hmRes.ok) {
+        portalToastError("Hausmeister nicht gespeichert", hmJson.error);
+      } else if (hmJson.inviteMailto) {
+        window.location.href = hmJson.inviteMailto;
+      }
+    }
     if (editId) orgPortalToast.objektAktualisiert();
     else orgPortalToast.objektAngelegt();
-    return json.objekt?.id ?? editId ?? null;
+    return objektId;
   };
 
   const requestDeleteObjekt = (o: OrganisationObjekt) => {
@@ -372,6 +425,7 @@ export function OrganisationObjektePanel({
           initialDraft={mode.draft}
           existingNotizen={editObj?.notizen_intern}
           defaultHv={defaultHv}
+          hausmeisterOptions={hmOptions}
           onCancel={closeWizard}
           onDone={async (payload) => {
             setWizardBusy(true);
@@ -424,6 +478,8 @@ export function OrganisationObjektePanel({
           }
           onRefresh={onRefresh}
           onOpenVorgang={onOpenVorgang}
+          orgAnzeigename={defaultHv || null}
+          hv={einladungHv}
           dokumenteByLeadId={dokumenteByLeadId}
         />
         {confirmDialog}

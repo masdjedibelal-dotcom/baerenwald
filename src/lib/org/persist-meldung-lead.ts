@@ -191,6 +191,47 @@ export async function persistMeldungLead(input: PersistMeldungLeadInput) {
 
   await supabaseAdmin.from("leads").update(patch).eq("id", result.id);
 
+  // Auto an Hausmeister (Freigabe-Toggle), wenn nicht Akut-Bypass
+  if (!bypassAktiv && input.kunde_objekt_id?.trim()) {
+    try {
+      const { data: orgHm } = await supabaseAdmin
+        .from("kunden")
+        .select("hm_auto_zuweisen")
+        .eq("id", input.auftraggeber_kunde_id)
+        .maybeSingle();
+      if (orgHm?.hm_auto_zuweisen === true) {
+        const { loadObjektHausmeisterKontakt } = await import(
+          "@/lib/org/objekt-hausmeister"
+        );
+        const { insertLeadBefundIfMissing } = await import(
+          "@/lib/org/lead-befund-create"
+        );
+        const hm = await loadObjektHausmeisterKontakt(input.kunde_objekt_id);
+        await supabaseAdmin
+          .from("leads")
+          .update({ hv_meldung_status: "hm_pruefung" })
+          .eq("id", result.id);
+        await insertLeadBefundIfMissing({
+          leadId: result.id,
+          durchgefuehrtVon: hm?.name ?? "Hausmeister",
+          createdByKundeId: input.auftraggeber_kunde_id,
+        });
+        if (hm?.email && hm.portalZugang) {
+          const { notifyHausmeisterPruefung } = await import(
+            "@/lib/org/notify-hausmeister-pruefung"
+          );
+          void notifyHausmeisterPruefung({
+            leadId: result.id,
+            toEmail: hm.email,
+            kontaktName: hm.name,
+          });
+        }
+      }
+    } catch (e) {
+      console.warn("[persistMeldungLead] hm_auto:", e);
+    }
+  }
+
   void import("@/lib/org/ensure-versicherungsakte").then(
     ({ applyAutomatischeSchadenakteIfEnabled }) =>
       applyAutomatischeSchadenakteIfEnabled(result.id).catch((e) =>

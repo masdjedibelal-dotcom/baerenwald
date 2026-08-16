@@ -40,7 +40,12 @@ import {
   portalFlowSortRank,
 } from "@/lib/portal/portal-vorgang-sort";
 import { portalListStackClass } from "@/lib/portal2/layout-chrome";
-import type { EigentuemerPortalObjekt } from "@/lib/portal/get-eigentuemer-portal-data";
+import type {
+  EigentuemerPortalEinheit,
+  EigentuemerPortalMieter,
+  EigentuemerPortalObjekt,
+} from "@/lib/portal/get-eigentuemer-portal-data";
+import type { MieterHvBrand } from "@/lib/portal/load-mieter-hv-brand";
 import {
   countLeadsByPortalFlow,
   resolveLeadPortalFlowStatus,
@@ -58,12 +63,6 @@ import {
 } from "@/lib/portal2/eigentuemer";
 import { buildPortalShellNav } from "@/lib/portal2/nav-items";
 import type { PortalMockStatusId } from "@/lib/portal2/status";
-import {
-  formatObjektPlzOrt,
-  formatObjektStrasse,
-  formatObjektTypLine,
-  parseEinheitenCount,
-} from "@/lib/portal2/objekte";
 import { portalDetailStatusPillStyle } from "@/lib/shared/portal-detail-format";
 
 type SectionId = "uebersicht" | "vorgaenge" | "objekte";
@@ -78,6 +77,10 @@ type Props = {
   /** @deprecated Freigabe-Schwelle — Eigentümer gibt nichts mehr frei. */
   schwelleEur?: number;
   objekte: EigentuemerPortalObjekt[];
+  /** Zugeordnete Einheiten — primäre Liste unter „Objekte“. */
+  einheiten?: EigentuemerPortalEinheit[];
+  mieterByObjektId?: Record<string, EigentuemerPortalMieter[]>;
+  hausverwaltungBrand?: MieterHvBrand | null;
   leads: Parameters<typeof buildKundeVorgaenge>[0]["leads"];
   angebote: Parameters<typeof buildKundeVorgaenge>[0]["angebote"];
   auftraege: Parameters<typeof buildKundeVorgaenge>[0]["auftraege"];
@@ -94,11 +97,13 @@ function normalizeSection(raw: string | null | undefined): SectionId | null {
 
 /**
  * D8 Eigentümer-Portal — Dashboard · Vorgänge · Objekte.
- * Nur Status-Ansicht (keine Freigabe, kein Create, keine Aktionen).
  */
 export function EigentuemerPortalClient({
   kunde,
   objekte,
+  einheiten = [],
+  mieterByObjektId = {},
+  hausverwaltungBrand = null,
   leads,
   angebote,
   auftraege,
@@ -114,7 +119,7 @@ export function EigentuemerPortalClient({
     searchParams.get("id")?.trim() || null
   );
   const [listPage, setListPage] = useState(1);
-  const [objektDetailId, setObjektDetailId] = useState<string | null>(null);
+  const [einheitDetailId, setEinheitDetailId] = useState<string | null>(null);
   const [pageBusy, setPageBusy] = useState(false);
   const [detailOpening, setDetailOpening] = useState(() =>
     Boolean(searchParams.get("id")?.trim())
@@ -166,7 +171,7 @@ export function EigentuemerPortalClient({
     setDetailOpening(false);
     flushSync(() => {
       setSection(id);
-      setObjektDetailId(null);
+      setEinheitDetailId(null);
       setSelectedId(null);
     });
     flashPageBusy();
@@ -374,26 +379,45 @@ export function EigentuemerPortalClient({
     kunde.email?.split("@")[0] ||
     "dort";
 
-  const activeObjekt = objektDetailId
-    ? objekte.find((o) => o.id === objektDetailId) ?? null
+  const activeEinheit = einheitDetailId
+    ? einheiten.find((e) => e.id === einheitDetailId) ?? null
     : null;
+  const activeObjekt = activeEinheit
+    ? objekte.find((o) => o.id === activeEinheit.kunde_objekt_id) ?? null
+    : null;
+  const mieterAnEinheit = activeEinheit
+    ? (mieterByObjektId[activeEinheit.kunde_objekt_id] ?? []).filter(
+        (m) =>
+          !m.einheitBezeichnung ||
+          m.einheitBezeichnung === activeEinheit.bezeichnung
+      )
+    : [];
+
+  const hvBrand = hausverwaltungBrand;
+  const brandTitle = hvBrand?.name?.trim() || "Verwaltung";
+  const brandSubtitle =
+    hvBrand?.sub?.trim() || kunde.name?.trim() || EIGENTUEMER_PAGE_HEAD;
 
   return (
     <>
     <PortalShell
       variant="kunde"
-      brandTitle="MeinBärenwald"
-      brandSubtitle={kunde.name?.trim() || EIGENTUEMER_PAGE_HEAD}
-      brandKuerzel="B"
-      sidebarOwner={kunde.name?.trim() || EIGENTUEMER_DASHBOARD_ROLE}
+      brandTitle={brandTitle}
+      brandSubtitle={brandSubtitle}
+      brandLogoUrl={hvBrand?.logoUrl}
+      brandKuerzel={hvBrand?.logoKuerzel ?? null}
+      brandPrimary={hvBrand?.primary}
+      brandPrimaryDk={hvBrand?.primaryDk}
+      brandSoft={hvBrand?.soft}
+      sidebarOwner={brandTitle}
       hideMobileChrome={false}
-      contentFullBleed={
-        section === "uebersicht" ||
-        Boolean(selectedId) ||
-        Boolean(objektDetailId)
-      }
-      activeNavId={section}
-      contentKey={`${section}:${objektDetailId ?? ""}`}
+        contentFullBleed={
+          section === "uebersicht" ||
+          Boolean(selectedId) ||
+          Boolean(einheitDetailId)
+        }
+        activeNavId={section}
+        contentKey={`${section}:${einheitDetailId ?? ""}`}
       contentBusy={pageBusy || detailOpening}
       contentBusyTitle={
         detailOpening ? "Vorgang wird geladen…" : undefined
@@ -506,9 +530,6 @@ export function EigentuemerPortalClient({
             <div className="px-0.5 pb-1">
               <PortalListeEyebrow>Eigentümer</PortalListeEyebrow>
               <PortalListeTitle>Meine Wohnung</PortalListeTitle>
-              <p className="portal-text-body mt-1 text-text-secondary">
-                Status Ihrer Vorgänge — nur Ansicht, keine Freigabe nötig.
-              </p>
             </div>
 
             <PortalListeFilterBar
@@ -559,75 +580,106 @@ export function EigentuemerPortalClient({
 
       {section === "objekte" ? (
         <div className="space-y-4">
-          {activeObjekt ? (
+          {activeEinheit ? (
             <div className="-mx-4 -mt-4 min-w-0 pb-4 lg:-mx-6 lg:-mt-5">
               <PortalEntityDetailLayout
-                coverUrl={activeObjekt.cover_url}
-                onBack={() => setObjektDetailId(null)}
-                backLabel="← Objekte"
-                title={activeObjekt.titel}
+                coverUrl={activeObjekt?.cover_url}
+                onBack={() => setEinheitDetailId(null)}
+                backLabel="← Einheiten"
+                title={activeEinheit.bezeichnung}
                 metaLine={[
-                  formatObjektTypLine(activeObjekt),
-                  formatObjektPlzOrt(activeObjekt) || null,
+                  activeEinheit.objektTitel,
+                  activeEinheit.etage ? `Etage ${activeEinheit.etage}` : null,
+                  activeEinheit.wohnflaeche_m2 != null
+                    ? `${activeEinheit.wohnflaeche_m2} m²`
+                    : null,
                 ]
                   .filter(Boolean)
                   .join(" · ")}
                 tabs={[{ id: "stammdaten", label: "Stammdaten" }]}
                 activeTab="stammdaten"
                 onTabChange={() => {}}
-                tabsNavLabel="Objekt-Abschnitte"
+                tabsNavLabel="Einheit-Abschnitte"
               >
                 <dl className="portal-surface space-y-3 p-4">
                   <div>
-                    <dt className="portal-text-meta text-text-tertiary">Adresse</dt>
+                    <dt className="portal-text-meta text-text-tertiary">
+                      Objekt / Adresse
+                    </dt>
                     <dd className="portal-text-body font-medium">
-                      {formatObjektStrasse(activeObjekt) || "—"}
+                      {activeEinheit.objektTitel}
+                      {activeEinheit.objektStrasse
+                        ? ` · ${activeEinheit.objektStrasse}`
+                        : ""}
+                      {activeEinheit.objektPlzOrt
+                        ? `, ${activeEinheit.objektPlzOrt}`
+                        : ""}
                     </dd>
                   </div>
                   <div>
                     <dt className="portal-text-meta text-text-tertiary">
-                      Einheiten
+                      Mieter
                     </dt>
                     <dd className="portal-text-body font-medium">
-                      {parseEinheitenCount(activeObjekt.einheiten_hinweis) || "—"}
+                      {mieterAnEinheit.length === 0 ? (
+                        <span className="font-normal text-text-secondary">
+                          Keine Mieter hinterlegt
+                        </span>
+                      ) : (
+                        <ul className="mt-1 space-y-3 font-normal">
+                          {mieterAnEinheit.map((m) => (
+                            <li key={m.id} className="space-y-0.5">
+                              <p className="font-medium text-text-primary">
+                                {m.name}
+                              </p>
+                              {m.email ? (
+                                <p className="portal-text-meta text-text-secondary">
+                                  {m.email}
+                                </p>
+                              ) : null}
+                              {m.telefon ? (
+                                <p className="portal-text-meta text-text-secondary">
+                                  {m.telefon}
+                                </p>
+                              ) : null}
+                            </li>
+                          ))}
+                        </ul>
+                      )}
                     </dd>
                   </div>
                 </dl>
-                <p className="portal-text-meta mt-3 text-text-tertiary">
-                  Lesesicht — Änderungen nimmt die Verwaltung vor.
-                </p>
               </PortalEntityDetailLayout>
             </div>
           ) : (
             <>
               <div className="space-y-0.5">
-                <PortalListeTitle>Objekte</PortalListeTitle>
-                <p className="portal-text-body text-text-secondary">
-                  Ihre zugeordneten Gebäude (nur Lesen).
-                </p>
+                <PortalListeTitle>Meine Einheiten</PortalListeTitle>
               </div>
-              {objekte.length === 0 ? (
+              {einheiten.length === 0 ? (
                 <div className="portal-surface p-6 text-center portal-text-body text-text-secondary">
-                  Noch keine Objekte zugeordnet. Die Verwaltung legt die
-                  Zuordnung fest.
+                  Noch keine Einheiten zugeordnet.
                 </div>
               ) : (
                 <div className="portal-list-panel portal-list-rows">
-                  {objekte.map((o) => (
+                  {einheiten.map((e) => (
                     <button
-                      key={o.id}
+                      key={e.id}
                       type="button"
                       className="w-full px-4 py-3.5 text-left transition-colors hover:bg-[#f7f8fa]"
-                      onClick={() => setObjektDetailId(o.id)}
+                      onClick={() => setEinheitDetailId(e.id)}
                     >
                       <p className="portal-text-body font-semibold text-text-primary">
-                        {o.titel}
+                        {e.bezeichnung}
                       </p>
                       <p className="portal-text-meta mt-1 text-text-secondary">
-                        {formatObjektStrasse(o) || "—"}
-                        {formatObjektPlzOrt(o) !== "—"
-                          ? ` · ${formatObjektPlzOrt(o)}`
-                          : ""}
+                        {[
+                          e.objektTitel,
+                          e.objektStrasse || null,
+                          e.objektPlzOrt || null,
+                        ]
+                          .filter(Boolean)
+                          .join(" · ")}
                       </p>
                     </button>
                   ))}
@@ -638,7 +690,7 @@ export function EigentuemerPortalClient({
         </div>
       ) : null}
 
-      <PortalLegalFooter variant="kunde" />
+      <PortalLegalFooter variant="kunde" showServiceBy />
     </PortalShell>
     </>
   );

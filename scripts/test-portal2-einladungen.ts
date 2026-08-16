@@ -5,6 +5,7 @@ import {
   buildPortalEinladungMailto,
   buildPortalEinladungUrl,
   createPortalEinladungToken,
+  formatPortalEinladungHvSignature,
   isPortalEinladungExpired,
   portalEinladungExpiresAt,
   PORTAL_EINLADUNG_EXPIRES_DAYS,
@@ -64,10 +65,54 @@ const mail = buildPortalEinladungMailto({
   hvName: "Steiner GmbH",
   objektLabel: "Parkallee 9",
   einheitRef: "WE 1",
+  rolle: "mieter",
+  hv: {
+    name: "Steiner GmbH",
+    strasse: "Hauptstr.",
+    hausnummer: "1",
+    plz: "10115",
+    ort: "Berlin",
+    telefon: "030 123",
+    email: "hv@steiner.example",
+  },
 });
-assert("mailto scheme", mail.startsWith("mailto:?"));
+assert("mailto scheme ohne An", mail.startsWith("mailto:?"));
 assert("mailto hv branding", mail.includes(encodeURIComponent("Steiner GmbH")));
+assert("mailto objekt", mail.includes(encodeURIComponent("Parkallee 9")));
+assert("mailto mieter copy", mail.includes(encodeURIComponent("Mieter-Konto")));
+assert(
+  "mailto signature address",
+  mail.includes(encodeURIComponent("Hauptstr. 1"))
+);
 assert("mailto no baerenwald sender", !mail.toLowerCase().includes("baerenwald@"));
+
+const mailTo = buildPortalEinladungMailto({
+  link: "https://example.com/portal/einladung/abc",
+  hvName: "Steiner GmbH",
+  objektLabel: "Parkallee 9",
+  toEmail: "mieter@example.com",
+  rolle: "eigentuemer",
+});
+assert(
+  "mailto mit An",
+  mailTo.startsWith(`mailto:${encodeURIComponent("mieter@example.com")}?`)
+);
+assert(
+  "mailto eigentuemer copy",
+  mailTo.includes(encodeURIComponent("Eigentümer-Konto"))
+);
+
+const sig = formatPortalEinladungHvSignature({
+  name: "Steiner GmbH",
+  strasse: "Hauptstr.",
+  hausnummer: "1",
+  plz: "10115",
+  ort: "Berlin",
+  telefon: "030 123",
+  email: "hv@steiner.example",
+});
+assert("signature has name", sig.includes("Steiner GmbH"));
+assert("signature has tel", sig.includes("Tel. 030 123"));
 
 if (failed > 0) {
   console.error(`\n${failed} assertion(s) failed`);

@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
 
-import { createLeadBefundAction } from "@/app/actions/lead-befund";
 import { canOfferKleinreparatur } from "@/lib/org/hv-meldung-workflow";
 import { notifyCrmOrgPortal } from "@/lib/org/notify-crm-org";
 import { notifyHausmeisterPruefung } from "@/lib/org/notify-hausmeister-pruefung";
@@ -106,15 +105,7 @@ export async function POST(req: Request) {
     }
 
     const hm = await loadObjektHausmeisterKontakt(lead.kunde_objekt_id);
-    if (!hm) {
-      return NextResponse.json(
-        {
-          error:
-            "Kein Hausmeister-Kontakt am Objekt. Bitte unter Objektakte anlegen.",
-        },
-        { status: 400 }
-      );
-    }
+    // HM-Pfad immer möglich (Name am Befund optional aus Zuordnung)
 
     const { error: updErr } = await supabaseAdmin
       .from("leads")
@@ -124,16 +115,19 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: updErr.message }, { status: 500 });
     }
 
-    const befundRes = await createLeadBefundAction({
+    const { insertLeadBefundIfMissing } = await import(
+      "@/lib/org/lead-befund-create"
+    );
+    const befundRes = await insertLeadBefundIfMissing({
       leadId,
-      durchgefuehrtVon: hm.name,
-      objektKontaktId: hm.id,
+      durchgefuehrtVon: hm?.name ?? "Hausmeister",
+      createdByKundeId: session.kunde.id,
     });
     if (!befundRes.ok) {
       console.warn("[meldung-aktion] befund:", befundRes.error);
     }
 
-    if (hm.email) {
+    if (hm?.email && hm.portalZugang) {
       void notifyHausmeisterPruefung({
         leadId,
         toEmail: hm.email,
@@ -148,7 +142,7 @@ export async function POST(req: Request) {
     return NextResponse.json({
       ok: true,
       status: "hm_pruefung",
-      befundId: befundRes.ok ? befundRes.befund.id : null,
+      befundId: befundRes.ok ? befundRes.befundId : null,
     });
   }
 

@@ -1181,9 +1181,13 @@ export function PortalClient({
 
   const navRole = portalNavRoleForKundeTyp(kundeTyp);
   const hvBrand = !hvPortalMode ? hausverwaltungBrand : null;
-  const brandTitle = hvBrand?.name?.trim() || "MeinBärenwald";
-  const brandSubtitle = hvBrand
-    ? hvBrand.sub?.trim() || "Verwaltung"
+  /** White-Label (Mieter an HV): nie MeinBärenwald — nur direkte Kunden / HV / HW. */
+  const whiteLabelPortal = Boolean(hvBrand);
+  const brandTitle = whiteLabelPortal
+    ? hvBrand!.name.trim() || "Verwaltung"
+    : "MeinBärenwald";
+  const brandSubtitle = whiteLabelPortal
+    ? hvBrand!.sub?.trim() || "Verwaltung"
     : kunde.name?.trim() || "Kundenportal";
 
   return (
@@ -1193,11 +1197,15 @@ export function PortalClient({
         brandTitle={brandTitle}
         brandSubtitle={brandSubtitle}
         brandLogoUrl={hvBrand?.logoUrl}
-        brandKuerzel={hvBrand?.logoKuerzel ?? (hvBrand ? null : "B")}
+        brandKuerzel={hvBrand?.logoKuerzel ?? (whiteLabelPortal ? null : "B")}
         brandPrimary={hvBrand?.primary}
         brandPrimaryDk={hvBrand?.primaryDk}
         brandSoft={hvBrand?.soft}
-        sidebarOwner={hvBrand?.name?.trim() || kunde.name?.trim() || "MeinBärenwald"}
+        sidebarOwner={
+          whiteLabelPortal
+            ? brandTitle
+            : kunde.name?.trim() || "MeinBärenwald"
+        }
         hideMobileChrome={section === "gpt"}
         contentFullBleed={
           section === "uebersicht" || Boolean(selectedId)
@@ -1330,7 +1338,10 @@ export function PortalClient({
           {section === "vorgaenge" ? vorgaengeScreen : null}
 
           {section !== "gpt" ? (
-            <PortalLegalFooter variant="kunde" />
+            <PortalLegalFooter
+              variant="kunde"
+              showServiceBy={whiteLabelPortal}
+            />
           ) : null}
       </PortalShell>
 

@@ -57,7 +57,7 @@ export const PORTAL_NAV_ITEMS: Record<PortalNavRole, readonly PortalNavItemDef[]
     eigentuemer: [
       { key: "home", label: "Dashboard", glyph: "◈" },
       { key: "liste", label: "Vorgänge", glyph: "▤" },
-      { key: "objekte", label: "Objekte", glyph: "▦" },
+      { key: "objekte", label: "Einheiten", glyph: "▦" },
     ],
     mieter: [
       { key: "home", label: "Start", glyph: "◈" },

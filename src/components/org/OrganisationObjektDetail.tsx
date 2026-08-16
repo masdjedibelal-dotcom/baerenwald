@@ -24,6 +24,7 @@ import { leadBelongsToObjekt } from "@/lib/org/match-lead-objekt";
 import { meldeKategorieLabel } from "@/lib/org/melde-kategorien";
 import { meldeKategorieFromLead } from "@/lib/org/org-eingang-utils";
 import type { OrganisationLead, OrganisationObjekt } from "@/lib/org/types";
+import type { PortalEinladungHvBlock } from "@/lib/portal2/portal-einladungen";
 import {
   EINSTELLUNGEN_AKUT_INTRO,
   EINSTELLUNGEN_SCHWELLE_BETRAG_INTRO,
@@ -39,7 +40,6 @@ import {
 } from "@/lib/portal2/einstellungen";
 import {
   decodeObjektMeta,
-  encodeObjektMeta,
   formatObjektPlzOrt,
   formatObjektStrasse,
   formatObjektTypLine,
@@ -63,6 +63,8 @@ type Props = {
   onRefresh: () => void;
   /** Öffnet den Vorgang in der Listenansicht (Vorgänge). */
   onOpenVorgang?: (leadId: string) => void;
+  orgAnzeigename?: string | null;
+  hv?: PortalEinladungHvBlock | null;
   dokumenteByLeadId?: Record<
     string,
     Array<{
@@ -87,6 +89,8 @@ export function OrganisationObjektDetail({
   onEdit,
   onRefresh,
   onOpenVorgang,
+  orgAnzeigename,
+  hv,
   dokumenteByLeadId = {},
 }: Props) {
   const [tab, setTab] = useState<ObjDetailTabId>("stamm");
@@ -117,14 +121,27 @@ export function OrganisationObjektDetail({
     [objekt.notizen_intern]
   );
 
-  const [kontaktName, setKontaktName] = useState(meta.kontakt ?? "");
-  const [kontaktTel, setKontaktTel] = useState(meta.tel ?? "");
-  const [kontaktEmail, setKontaktEmail] = useState(meta.email ?? "");
-  const [kontaktEditOpen, setKontaktEditOpen] = useState(false);
-  const [editKontaktName, setEditKontaktName] = useState("");
-  const [editKontaktTel, setEditKontaktTel] = useState("");
-  const [editKontaktEmail, setEditKontaktEmail] = useState("");
-  const [kontaktSaving, setKontaktSaving] = useState(false);
+  const [hmOptions, setHmOptions] = useState<
+    Array<{
+      id: string;
+      name: string;
+      email?: string | null;
+      portal_zugang?: boolean;
+    }>
+  >([]);
+  const [hmAmObjekt, setHmAmObjekt] = useState<{
+    id: string;
+    name: string;
+    email?: string | null;
+    portal_zugang?: boolean;
+  } | null>(null);
+  const [hmEditOpen, setHmEditOpen] = useState(false);
+  const [hmMode, setHmMode] = useState<"existing" | "new">("existing");
+  const [editHmId, setEditHmId] = useState("");
+  const [editHmName, setEditHmName] = useState("");
+  const [editHmEmail, setEditHmEmail] = useState("");
+  const [editHmPortal, setEditHmPortal] = useState(false);
+  const [hmSaving, setHmSaving] = useState(false);
 
   const [versicherer, setVersicherer] = useState(objekt.versicherer ?? "");
   const [objVersNr, setObjVersNr] = useState(objekt.versicherungs_nr ?? "");
@@ -142,10 +159,41 @@ export function OrganisationObjektDetail({
   const [versSaving, setVersSaving] = useState(false);
 
   useEffect(() => {
-    setKontaktName(meta.kontakt ?? "");
-    setKontaktTel(meta.tel ?? "");
-    setKontaktEmail(meta.email ?? "");
-  }, [meta.kontakt, meta.tel, meta.email, objekt.id]);
+    let cancelled = false;
+    void fetch(
+      `/api/org/hausmeister?objektId=${encodeURIComponent(objekt.id)}`
+    )
+      .then((r) => r.json())
+      .then(
+        (j: {
+          hausmeister?: Array<{
+            id: string;
+            name: string;
+            email?: string | null;
+            portal_zugang?: boolean;
+          }>;
+          amObjekt?: {
+            id: string;
+            name: string;
+            email?: string | null;
+            portal_zugang?: boolean;
+          } | null;
+        }) => {
+          if (cancelled) return;
+          setHmOptions(j.hausmeister ?? []);
+          setHmAmObjekt(j.amObjekt ?? null);
+        }
+      )
+      .catch(() => {
+        if (!cancelled) {
+          setHmOptions([]);
+          setHmAmObjekt(null);
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [objekt.id]);
 
   useEffect(() => {
     const aktiv =
@@ -194,55 +242,77 @@ export function OrganisationObjektDetail({
     [leads, objekt]
   );
 
-  function openKontaktEdit() {
-    setEditKontaktName(kontaktName);
-    setEditKontaktTel(kontaktTel);
-    setEditKontaktEmail(kontaktEmail);
-    setKontaktEditOpen(true);
+  function openHmEdit() {
+    if (hmAmObjekt?.id) {
+      setHmMode("existing");
+      setEditHmId(hmAmObjekt.id);
+      setEditHmName(hmAmObjekt.name);
+      setEditHmEmail(hmAmObjekt.email ?? "");
+      setEditHmPortal(Boolean(hmAmObjekt.portal_zugang));
+    } else {
+      setHmMode("new");
+      setEditHmId("");
+      setEditHmName("");
+      setEditHmEmail("");
+      setEditHmPortal(false);
+    }
+    setHmEditOpen(true);
   }
 
-  function closeKontaktEdit() {
-    if (kontaktSaving) return;
-    setKontaktEditOpen(false);
+  function closeHmEdit() {
+    if (hmSaving) return;
+    setHmEditOpen(false);
   }
 
-  async function saveKontaktEdit() {
-    setKontaktSaving(true);
+  async function saveHmEdit() {
+    setHmSaving(true);
     try {
-      const next = {
-        kontakt: editKontaktName.trim(),
-        tel: editKontaktTel.trim(),
-        email: editKontaktEmail.trim(),
-      };
-      const notizen_intern = encodeObjektMeta(
-        {
-          typ: meta.typ,
-          kontakt: next.kontakt || undefined,
-          tel: next.tel || undefined,
-          email: next.email || undefined,
-        },
-        objekt.notizen_intern
-      );
-      const res = await fetch("/api/org/objekte", {
-        method: "PATCH",
+      const body =
+        hmMode === "existing" && editHmId
+          ? {
+              objektId: objekt.id,
+              hausmeisterId: editHmId,
+              invite: false,
+            }
+          : {
+              objektId: objekt.id,
+              name: editHmName.trim(),
+              email: editHmPortal ? editHmEmail.trim() : null,
+              portalZugang: editHmPortal,
+              invite: editHmPortal,
+            };
+      const res = await fetch("/api/org/hausmeister", {
+        method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id: objekt.id, notizen_intern }),
+        body: JSON.stringify(body),
       });
-      const json = (await res.json()) as { error?: string };
+      const json = (await res.json()) as {
+        error?: string;
+        inviteMailto?: string | null;
+      };
       if (!res.ok) {
-        portalToastError("Ansprechpartner nicht gespeichert", json.error);
+        portalToastError("Hausmeister nicht gespeichert", json.error);
         return;
       }
-      setKontaktName(next.kontakt);
-      setKontaktTel(next.tel);
-      setKontaktEmail(next.email);
-      setKontaktEditOpen(false);
+      setHmEditOpen(false);
       orgPortalToast.objektAktualisiert();
+      if (json.inviteMailto) {
+        window.location.href = json.inviteMailto;
+      }
       onRefresh();
+      const reload = await fetch(
+        `/api/org/hausmeister?objektId=${encodeURIComponent(objekt.id)}`
+      );
+      const j = (await reload.json()) as {
+        hausmeister?: typeof hmOptions;
+        amObjekt?: typeof hmAmObjekt;
+      };
+      setHmOptions(j.hausmeister ?? []);
+      setHmAmObjekt(j.amObjekt ?? null);
     } catch {
-      portalToastError("Ansprechpartner nicht gespeichert");
+      portalToastError("Hausmeister nicht gespeichert");
     } finally {
-      setKontaktSaving(false);
+      setHmSaving(false);
     }
   }
 
@@ -374,44 +444,104 @@ export function OrganisationObjektDetail({
 
         <div className="space-y-3">
           <EinstellungenSectionHeader
-            title="Ansprechpartner"
-            onEdit={openKontaktEdit}
+            title="Hausmeister"
+            onEdit={openHmEdit}
           />
           <EinstellungenPfList>
-            <EinstellungenPfRow label="Name" value={dash(kontaktName)} />
-            <EinstellungenPfRow label="Telefon" value={dash(kontaktTel)} />
-            <EinstellungenPfRow label="E-Mail" value={dash(kontaktEmail)} />
+            <EinstellungenPfRow
+              label="Name"
+              value={dash(hmAmObjekt?.name ?? "")}
+            />
+            <EinstellungenPfRow
+              label="Portal-Zugang"
+              value={
+                hmAmObjekt
+                  ? hmAmObjekt.portal_zugang
+                    ? "Ja"
+                    : "Nein"
+                  : "—"
+              }
+            />
+            <EinstellungenPfRow
+              label="E-Mail"
+              value={dash(hmAmObjekt?.email ?? "")}
+            />
           </EinstellungenPfList>
           <EinstellungenEditModal
-            open={kontaktEditOpen}
-            title="Ansprechpartner bearbeiten"
-            onClose={closeKontaktEdit}
-            onSave={() => void saveKontaktEdit()}
-            saving={kontaktSaving}
+            open={hmEditOpen}
+            title="Hausmeister bearbeiten"
+            onClose={closeHmEdit}
+            onSave={() => void saveHmEdit()}
+            saving={hmSaving}
           >
-            <EinstellungenEdField
-              label="Name"
-              value={editKontaktName}
-              onChange={setEditKontaktName}
-              placeholder="Max Mustermann"
-              autoComplete="name"
-            />
-            <EinstellungenEdField
-              label="Telefon"
-              type="tel"
-              value={editKontaktTel}
-              onChange={setEditKontaktTel}
-              placeholder="089 / …"
-              autoComplete="tel"
-            />
-            <EinstellungenEdField
-              label="E-Mail"
-              type="email"
-              value={editKontaktEmail}
-              onChange={setEditKontaktEmail}
-              placeholder="name@firma.de"
-              autoComplete="email"
-            />
+            <label className="block">
+              <span className="portal-text-label mb-1.5 block text-text-secondary">
+                Hausmeister
+              </span>
+              <select
+                className="portal-field w-full"
+                value={hmMode === "new" ? "__new__" : editHmId}
+                onChange={(e) => {
+                  const v = e.target.value;
+                  if (v === "__new__") {
+                    setHmMode("new");
+                    setEditHmId("");
+                    setEditHmName("");
+                    setEditHmEmail("");
+                    setEditHmPortal(false);
+                  } else {
+                    setHmMode("existing");
+                    setEditHmId(v);
+                    const found = hmOptions.find((h) => h.id === v);
+                    if (found) {
+                      setEditHmName(found.name);
+                      setEditHmEmail(found.email ?? "");
+                      setEditHmPortal(Boolean(found.portal_zugang));
+                    }
+                  }
+                }}
+              >
+                <option value="">Bitte wählen…</option>
+                {hmOptions.map((h) => (
+                  <option key={h.id} value={h.id}>
+                    {h.name}
+                  </option>
+                ))}
+                <option value="__new__">＋ Neu anlegen</option>
+              </select>
+            </label>
+            {hmMode === "new" ? (
+              <>
+                <EinstellungenEdField
+                  label="Name"
+                  value={editHmName}
+                  onChange={setEditHmName}
+                  placeholder="Max Mustermann"
+                  autoComplete="name"
+                />
+                <label className="flex items-start gap-3 rounded-[10px] border border-border-light bg-white p-3">
+                  <input
+                    type="checkbox"
+                    className="mt-0.5"
+                    checked={editHmPortal}
+                    onChange={(e) => setEditHmPortal(e.target.checked)}
+                  />
+                  <span className="text-[13px] text-text-secondary">
+                    Portal-Zugang — Einladung per E-Mail
+                  </span>
+                </label>
+                {editHmPortal ? (
+                  <EinstellungenEdField
+                    label="E-Mail"
+                    type="email"
+                    value={editHmEmail}
+                    onChange={setEditHmEmail}
+                    placeholder="name@firma.de"
+                    autoComplete="email"
+                  />
+                ) : null}
+              </>
+            ) : null}
           </EinstellungenEditModal>
         </div>
 
@@ -479,7 +609,9 @@ export function OrganisationObjektDetail({
     body = (
       <OrganisationObjektEinheitenTab
         objektId={objekt.id}
-        orgAnzeigename={undefined}
+        objektLabel={objekt.titel?.trim() || "Objekt"}
+        orgAnzeigename={orgAnzeigename}
+        hv={hv}
         onGotoVorgaenge={() => setTab("vorgaenge")}
         onEinheitenChange={onRefresh}
       />

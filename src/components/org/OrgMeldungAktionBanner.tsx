@@ -50,30 +50,8 @@ export function OrgMeldungAktionBanner({
   const isHmPruefung = status === "hm_pruefung";
 
   useEffect(() => {
-    const oid = lead.kunde_objekt_id?.trim();
-    if (!oid || (!isNeu && !isHmPruefung)) {
-      setHasHm(false);
-      return;
-    }
-    let cancelled = false;
-    void fetch(
-      `/api/org/objekte/kontakte?objektId=${encodeURIComponent(oid)}`
-    )
-      .then((r) => r.json())
-      .then((j: { kontakte?: Array<{ rolle?: string }> }) => {
-        if (cancelled) return;
-        setHasHm(
-          (j.kontakte ?? []).some(
-            (k) => String(k.rolle ?? "").toLowerCase() === "hausmeister"
-          )
-        );
-      })
-      .catch(() => {
-        if (!cancelled) setHasHm(false);
-      });
-    return () => {
-      cancelled = true;
-    };
+    // HM-Pfad immer verfügbar (Zuordnung optional für Name/Mail)
+    setHasHm(true);
   }, [lead.kunde_objekt_id, isNeu, isHmPruefung]);
 
   if (lead.einladung_status === "offen") return null;

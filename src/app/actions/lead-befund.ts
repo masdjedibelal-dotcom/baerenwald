@@ -2,12 +2,15 @@
 
 import { revalidatePath } from "next/cache";
 
-import { assertOrgLead, requireOrgWrite } from "@/lib/org/assert-org-objekt";
+import { assertOrgLead } from "@/lib/org/assert-org-objekt";
+import { insertLeadBefundIfMissing } from "@/lib/org/lead-befund-create";
+import type { BefundVorlageKey } from "@/lib/org/lead-befund-vorlagen";
 import {
-  materializeVorlagePunkte,
-  resolveBefundVorlageKey,
-  type BefundVorlageKey,
-} from "@/lib/org/lead-befund-vorlagen";
+  assertBefundForActor,
+  assertLeadForBefundActor,
+  requireBefundActor,
+  requireBefundWrite,
+} from "@/lib/org/require-befund-actor";
 import { requireOrganisationSession } from "@/lib/org/require-org-session";
 import { supabaseAdmin } from "@/lib/supabase";
 
@@ -123,32 +126,17 @@ async function loadBefundWithPunkte(
   };
 }
 
-async function assertBefundForOrg(
-  orgId: string,
-  befundId: string
-): Promise<{ befundId: string; leadId: string } | null> {
-  const { data } = await supabaseAdmin
-    .from("lead_befunde")
-    .select("id, lead_id")
-    .eq("id", befundId)
-    .maybeSingle();
-  if (!data?.lead_id) return null;
-  const lead = await assertOrgLead(orgId, String(data.lead_id));
-  if (!lead) return null;
-  return { befundId: String(data.id), leadId: String(data.lead_id) };
-}
-
 /** Bestehenden Befund inkl. Punkte laden (oder null). */
 export async function getLeadBefundAction(input: {
   leadId: string;
 }): Promise<ActionResult<{ befund: LeadBefundRow | null }>> {
-  const session = await requireOrganisationSession();
-  if (!session.ok) return { ok: false, error: session.error };
+  const actorRes = await requireBefundActor();
+  if (!actorRes.ok) return { ok: false, error: actorRes.error };
 
   const leadId = String(input.leadId ?? "").trim();
   if (!leadId) return { ok: false, error: "Lead fehlt." };
 
-  const lead = await assertOrgLead(session.kunde.id, leadId);
+  const lead = await assertLeadForBefundActor(actorRes.actor, leadId);
   if (!lead) return { ok: false, error: "Vorgang nicht gefunden." };
 
   const { data: existing } = await supabaseAdmin
@@ -175,94 +163,28 @@ export async function createLeadBefundAction(input: {
   /** Optional Override; sonst aus funnel_daten. */
   vorlageKey?: BefundVorlageKey;
 }): Promise<ActionResult<{ befund: LeadBefundRow }>> {
-  const session = await requireOrganisationSession();
-  if (!session.ok) return { ok: false, error: session.error };
-  const write = requireOrgWrite(session);
+  const actorRes = await requireBefundActor();
+  if (!actorRes.ok) return { ok: false, error: actorRes.error };
+  const write = requireBefundWrite(actorRes.actor);
   if (!write.ok) return { ok: false, error: write.error };
 
   const leadId = String(input.leadId ?? "").trim();
   if (!leadId) return { ok: false, error: "Lead fehlt." };
 
-  const lead = await assertOrgLead(session.kunde.id, leadId);
+  const lead = await assertLeadForBefundActor(actorRes.actor, leadId);
   if (!lead) return { ok: false, error: "Vorgang nicht gefunden." };
 
-  const { data: existing } = await supabaseAdmin
-    .from("lead_befunde")
-    .select("id")
-    .eq("lead_id", leadId)
-    .maybeSingle();
+  const created = await insertLeadBefundIfMissing({
+    leadId,
+    durchgefuehrtVon: input.durchgefuehrtVon,
+    durchgefuehrtAm: input.durchgefuehrtAm,
+    objektKontaktId: input.objektKontaktId,
+    vorlageKey: input.vorlageKey,
+    createdByKundeId: actorRes.actor.orgKundeId,
+  });
+  if (!created.ok) return { ok: false, error: created.error };
 
-  if (existing?.id) {
-    const befund = await loadBefundWithPunkte(String(existing.id));
-    if (!befund) return { ok: false, error: "Befund laden fehlgeschlagen." };
-    return { ok: true, befund };
-  }
-
-  const { data: leadRow } = await supabaseAdmin
-    .from("leads")
-    .select("funnel_daten")
-    .eq("id", leadId)
-    .maybeSingle();
-
-  const funnel = leadRow?.funnel_daten;
-  const vorlageKey =
-    input.vorlageKey ?? resolveBefundVorlageKey(funnel);
-  const meldeKategorie =
-    funnel &&
-    typeof funnel === "object" &&
-    !Array.isArray(funnel) &&
-    typeof (funnel as { melde_kategorie?: unknown }).melde_kategorie ===
-      "string"
-      ? String((funnel as { melde_kategorie: string }).melde_kategorie)
-      : null;
-
-  const durchgefuehrtAm =
-    input.durchgefuehrtAm?.trim().slice(0, 10) ||
-    new Date().toISOString().slice(0, 10);
-
-  const { data: inserted, error: insErr } = await supabaseAdmin
-    .from("lead_befunde")
-    .insert({
-      lead_id: leadId,
-      durchgefuehrt_von: input.durchgefuehrtVon?.trim() ?? "",
-      durchgefuehrt_am: durchgefuehrtAm,
-      melde_kategorie: meldeKategorie,
-      vorlage_key: vorlageKey,
-      objekt_kontakt_id: input.objektKontaktId?.trim() || null,
-      created_by_kunde_id: session.kunde.id,
-    })
-    .select("id")
-    .single();
-
-  if (insErr || !inserted?.id) {
-    return {
-      ok: false,
-      error: insErr?.message ?? "Befund anlegen fehlgeschlagen.",
-    };
-  }
-
-  const punkte = materializeVorlagePunkte(vorlageKey);
-  if (punkte.length) {
-    const { error: pErr } = await supabaseAdmin
-      .from("lead_befund_punkte")
-      .insert(
-        punkte.map((p) => ({
-          befund_id: inserted.id,
-          sort_order: p.sort_order,
-          titel: p.titel,
-          quelle: p.quelle,
-          vorlage_key: p.vorlage_key,
-          notiz: "",
-          foto_refs: [],
-        }))
-      );
-    if (pErr) {
-      await supabaseAdmin.from("lead_befunde").delete().eq("id", inserted.id);
-      return { ok: false, error: pErr.message };
-    }
-  }
-
-  const befund = await loadBefundWithPunkte(String(inserted.id));
+  const befund = await loadBefundWithPunkte(created.befundId);
   if (!befund) return { ok: false, error: "Befund laden fehlgeschlagen." };
 
   revalidatePath("/portal");
@@ -275,15 +197,15 @@ export async function updateLeadBefundKopfAction(input: {
   durchgefuehrtVon?: string;
   durchgefuehrtAm?: string;
 }): Promise<ActionResult<{ befund: LeadBefundRow }>> {
-  const session = await requireOrganisationSession();
-  if (!session.ok) return { ok: false, error: session.error };
-  const write = requireOrgWrite(session);
+  const actorRes = await requireBefundActor();
+  if (!actorRes.ok) return { ok: false, error: actorRes.error };
+  const write = requireBefundWrite(actorRes.actor);
   if (!write.ok) return { ok: false, error: write.error };
 
   const befundId = String(input.befundId ?? "").trim();
   if (!befundId) return { ok: false, error: "Befund fehlt." };
 
-  const owned = await assertBefundForOrg(session.kunde.id, befundId);
+  const owned = await assertBefundForActor(actorRes.actor, befundId);
   if (!owned) return { ok: false, error: "Befund nicht gefunden." };
 
   const patch: Record<string, unknown> = {
@@ -317,9 +239,9 @@ export async function updateLeadBefundPunktAction(input: {
   notiz?: string;
   fotoRefs?: string[];
 }): Promise<ActionResult<{ punkt: LeadBefundPunktRow }>> {
-  const session = await requireOrganisationSession();
-  if (!session.ok) return { ok: false, error: session.error };
-  const write = requireOrgWrite(session);
+  const actorRes = await requireBefundActor();
+  if (!actorRes.ok) return { ok: false, error: actorRes.error };
+  const write = requireBefundWrite(actorRes.actor);
   if (!write.ok) return { ok: false, error: write.error };
 
   const punktId = String(input.punktId ?? "").trim();
@@ -332,8 +254,8 @@ export async function updateLeadBefundPunktAction(input: {
     .maybeSingle();
   if (!punkt?.befund_id) return { ok: false, error: "Punkt nicht gefunden." };
 
-  const owned = await assertBefundForOrg(
-    session.kunde.id,
+  const owned = await assertBefundForActor(
+    actorRes.actor,
     String(punkt.befund_id)
   );
   if (!owned) return { ok: false, error: "Punkt nicht gefunden." };
@@ -392,9 +314,9 @@ export async function completeLeadBefundAction(input: {
   ergebnis: LeadBefundErgebnis;
   durchgefuehrtVon?: string;
 }): Promise<ActionResult<{ befund: LeadBefundRow; hvStatus: string }>> {
-  const session = await requireOrganisationSession();
-  if (!session.ok) return { ok: false, error: session.error };
-  const write = requireOrgWrite(session);
+  const actorRes = await requireBefundActor();
+  if (!actorRes.ok) return { ok: false, error: actorRes.error };
+  const write = requireBefundWrite(actorRes.actor);
   if (!write.ok) return { ok: false, error: write.error };
 
   const befundId = String(input.befundId ?? "").trim();
@@ -408,7 +330,7 @@ export async function completeLeadBefundAction(input: {
     return { ok: false, error: "Ergebnis ungültig." };
   }
 
-  const owned = await assertBefundForOrg(session.kunde.id, befundId);
+  const owned = await assertBefundForActor(actorRes.actor, befundId);
   if (!owned) return { ok: false, error: "Befund nicht gefunden." };
 
   const { data: lead } = await supabaseAdmin
@@ -517,6 +439,16 @@ export async function completeLeadBefundAction(input: {
       )
   );
 
+  void import("@/lib/org/notify-hv-hm-befund").then(
+    ({ notifyHvHausmeisterBefundFertig }) =>
+      notifyHvHausmeisterBefundFertig({
+        leadId: owned.leadId,
+        ergebnis,
+      }).catch((e) =>
+        console.warn("[completeLeadBefund] HV-Notify:", e)
+      )
+  );
+
   revalidatePath("/portal");
   return { ok: true, befund, hvStatus };
 }
@@ -526,9 +458,9 @@ export async function addLeadBefundFreipunktAction(input: {
   befundId: string;
   titel: string;
 }): Promise<ActionResult<{ punkt: LeadBefundPunktRow }>> {
-  const session = await requireOrganisationSession();
-  if (!session.ok) return { ok: false, error: session.error };
-  const write = requireOrgWrite(session);
+  const actorRes = await requireBefundActor();
+  if (!actorRes.ok) return { ok: false, error: actorRes.error };
+  const write = requireBefundWrite(actorRes.actor);
   if (!write.ok) return { ok: false, error: write.error };
 
   const befundId = String(input.befundId ?? "").trim();
@@ -536,7 +468,7 @@ export async function addLeadBefundFreipunktAction(input: {
   if (!befundId) return { ok: false, error: "Befund fehlt." };
   if (titel.length < 2) return { ok: false, error: "Titel zu kurz." };
 
-  const owned = await assertBefundForOrg(session.kunde.id, befundId);
+  const owned = await assertBefundForActor(actorRes.actor, befundId);
   if (!owned) return { ok: false, error: "Befund nicht gefunden." };
 
   const { data: maxRow } = await supabaseAdmin
@@ -618,9 +550,9 @@ export async function uploadLeadBefundFotoAction(input: {
   punktId: string;
   formData: FormData;
 }): Promise<ActionResult<{ punkt: LeadBefundPunktRow }>> {
-  const session = await requireOrganisationSession();
-  if (!session.ok) return { ok: false, error: session.error };
-  const write = requireOrgWrite(session);
+  const actorRes = await requireBefundActor();
+  if (!actorRes.ok) return { ok: false, error: actorRes.error };
+  const write = requireBefundWrite(actorRes.actor);
   if (!write.ok) return { ok: false, error: write.error };
 
   const punktId = String(input.punktId ?? "").trim();
@@ -638,8 +570,8 @@ export async function uploadLeadBefundFotoAction(input: {
     .maybeSingle();
   if (!punkt?.befund_id) return { ok: false, error: "Punkt nicht gefunden." };
 
-  const owned = await assertBefundForOrg(
-    session.kunde.id,
+  const owned = await assertBefundForActor(
+    actorRes.actor,
     String(punkt.befund_id)
   );
   if (!owned) return { ok: false, error: "Punkt nicht gefunden." };

@@ -1,4 +1,8 @@
 import { getPortalDataForKunde } from "@/lib/portal/get-portal-data";
+import {
+  loadMieterHvBrand,
+  type MieterHvBrand,
+} from "@/lib/portal/load-mieter-hv-brand";
 import { resolvePortalObjekt } from "@/lib/portal/portal-objekt";
 import {
   EIGENTUEMER_DEFAULT_SCHWELLE_EUR,
@@ -23,7 +27,222 @@ export type EigentuemerPortalObjekt = Pick<
   | "cover_url"
 >;
 
+/** Mieter am Objekt (für Eigentümer-Stammdaten). */
+export type EigentuemerPortalMieter = {
+  id: string;
+  kunde_objekt_id: string;
+  name: string;
+  email: string | null;
+  telefon: string | null;
+  einheitBezeichnung: string | null;
+};
+
+/** Zugeordnete Einheit des Eigentümers (Portal-Liste). */
+export type EigentuemerPortalEinheit = {
+  id: string;
+  bezeichnung: string;
+  etage: string | null;
+  wohnflaeche_m2: number | null;
+  kunde_objekt_id: string;
+  objektTitel: string;
+  objektStrasse: string;
+  objektPlzOrt: string;
+};
+
 type PortalData = NonNullable<Awaited<ReturnType<typeof getPortalDataForKunde>>>;
+
+async function loadMieterByObjektIds(
+  objektIds: string[]
+): Promise<Record<string, EigentuemerPortalMieter[]>> {
+  const empty: Record<string, EigentuemerPortalMieter[]> = {};
+  if (!objektIds.length) return empty;
+
+  const { data: einheiten, error: ehErr } = await supabaseAdmin
+    .from("objekt_einheiten")
+    .select("id, bezeichnung, kunde_objekt_id")
+    .in("kunde_objekt_id", objektIds);
+
+  if (ehErr || !einheiten?.length) {
+    if (ehErr) {
+      console.warn("[eigentuemer-portal] objekt_einheiten:", ehErr.message);
+    }
+    return empty;
+  }
+
+  const einheitById = new Map(
+    einheiten.map((e) => [
+      String((e as { id: string }).id),
+      e as {
+        id: string;
+        bezeichnung?: string | null;
+        kunde_objekt_id: string;
+      },
+    ])
+  );
+  const einheitIds = Array.from(einheitById.keys());
+
+  type BewohnerRow = {
+    id: string;
+    name?: string | null;
+    email?: string | null;
+    telefon?: string | null;
+    rolle?: string | null;
+    objekt_einheit_id: string;
+  };
+
+  let bewohner: BewohnerRow[] | null = null;
+  let bewErr: { message: string } | null = null;
+
+  {
+    const res = await supabaseAdmin
+      .from("einheit_bewohner")
+      .select("id, name, email, telefon, rolle, objekt_einheit_id")
+      .in("objekt_einheit_id", einheitIds)
+      .eq("aktiv", true)
+      .is("anonymisiert_am", null)
+      .order("created_at", { ascending: true });
+    bewohner = (res.data as BewohnerRow[] | null) ?? null;
+    bewErr = res.error;
+  }
+
+  if (bewErr && /rolle/i.test(bewErr.message)) {
+    const fb = await supabaseAdmin
+      .from("einheit_bewohner")
+      .select("id, name, email, telefon, objekt_einheit_id")
+      .in("objekt_einheit_id", einheitIds)
+      .eq("aktiv", true)
+      .is("anonymisiert_am", null)
+      .order("created_at", { ascending: true });
+    bewohner = (fb.data as BewohnerRow[] | null) ?? null;
+    bewErr = fb.error;
+  }
+
+  if (bewErr) {
+    console.warn("[eigentuemer-portal] einheit_bewohner:", bewErr.message);
+    return empty;
+  }
+
+  const byObjekt: Record<string, EigentuemerPortalMieter[]> = {};
+  for (const row of bewohner ?? []) {
+    if (row.rolle === "eigentuemer") continue;
+    const einheit = einheitById.get(String(row.objekt_einheit_id));
+    if (!einheit) continue;
+    const oid = String(einheit.kunde_objekt_id);
+    const name = String(row.name ?? "").trim();
+    if (!name) continue;
+    if (!byObjekt[oid]) byObjekt[oid] = [];
+    byObjekt[oid]!.push({
+      id: String(row.id),
+      kunde_objekt_id: oid,
+      name,
+      email: row.email?.trim() || null,
+      telefon: row.telefon?.trim() || null,
+      einheitBezeichnung: einheit.bezeichnung?.trim() || null,
+    });
+  }
+  return byObjekt;
+}
+
+async function loadEinheitenForEigentuemerPortal(
+  portalKundeId: string
+): Promise<{
+  einheiten: EigentuemerPortalEinheit[];
+  objektIdsFromEinheiten: string[];
+}> {
+  const { data: bewRows, error } = await supabaseAdmin
+    .from("einheit_bewohner")
+    .select("objekt_einheit_id")
+    .eq("portal_kunde_id", portalKundeId)
+    .eq("rolle", "eigentuemer")
+    .eq("aktiv", true)
+    .is("anonymisiert_am", null);
+
+  if (error) {
+    console.warn("[eigentuemer-portal] einheiten bewohner:", error.message);
+    return { einheiten: [], objektIdsFromEinheiten: [] };
+  }
+
+  const einheitIds = Array.from(
+    new Set(
+      (bewRows ?? [])
+        .map((r) => String((r as { objekt_einheit_id?: string }).objekt_einheit_id ?? "").trim())
+        .filter(Boolean)
+    )
+  );
+  if (!einheitIds.length) {
+    return { einheiten: [], objektIdsFromEinheiten: [] };
+  }
+
+  const { data: einheitRows } = await supabaseAdmin
+    .from("objekt_einheiten")
+    .select("id, bezeichnung, etage, wohnflaeche_m2, kunde_objekt_id")
+    .in("id", einheitIds)
+    .eq("aktiv", true);
+
+  const objektIds = Array.from(
+    new Set(
+      (einheitRows ?? [])
+        .map((e) => String(e.kunde_objekt_id ?? "").trim())
+        .filter(Boolean)
+    )
+  );
+
+  const objektById = new Map<
+    string,
+    {
+      titel: string;
+      strasse: string;
+      plzOrt: string;
+    }
+  >();
+  if (objektIds.length) {
+    const { data: objs } = await supabaseAdmin
+      .from("kunden_objekte")
+      .select("id, titel, strasse, hausnummer, plz, ort")
+      .in("id", objektIds);
+    for (const o of objs ?? []) {
+      const strasse = [o.strasse, o.hausnummer]
+        .map((x) => String(x ?? "").trim())
+        .filter(Boolean)
+        .join(" ");
+      const plzOrt = [o.plz, o.ort]
+        .map((x) => String(x ?? "").trim())
+        .filter(Boolean)
+        .join(" ");
+      objektById.set(String(o.id), {
+        titel: String(o.titel ?? "").trim() || "Objekt",
+        strasse,
+        plzOrt,
+      });
+    }
+  }
+
+  const einheiten: EigentuemerPortalEinheit[] = (einheitRows ?? [])
+    .map((e) => {
+      const oid = String(e.kunde_objekt_id ?? "");
+      const obj = objektById.get(oid);
+      return {
+        id: String(e.id),
+        bezeichnung: String(e.bezeichnung ?? "").trim() || "Einheit",
+        etage: e.etage != null ? String(e.etage).trim() || null : null,
+        wohnflaeche_m2:
+          e.wohnflaeche_m2 != null && Number.isFinite(Number(e.wohnflaeche_m2))
+            ? Number(e.wohnflaeche_m2)
+            : null,
+        kunde_objekt_id: oid,
+        objektTitel: obj?.titel ?? "Objekt",
+        objektStrasse: obj?.strasse ?? "",
+        objektPlzOrt: obj?.plzOrt ?? "",
+      };
+    })
+    .sort((a, b) => {
+      const o = a.objektTitel.localeCompare(b.objektTitel, "de");
+      if (o !== 0) return o;
+      return a.bezeichnung.localeCompare(b.bezeichnung, "de");
+    });
+
+  return { einheiten, objektIdsFromEinheiten: objektIds };
+}
 
 type LeadRow = PortalData["leads"][number] & {
   kunde_objekt_id?: string | null;
@@ -33,21 +252,25 @@ type LeadRow = PortalData["leads"][number] & {
 };
 
 /**
- * D8: Eigentümer-Portal-Daten.
- * Sichtbarkeit: nur Objekte aus `eigentuemer_objekte` + zugehörige Vorgänge.
- * Ohne Migration: leere Zuordnung (kein Datenleck).
+ * Eigentümer-Portal-Daten.
+ * Sichtbarkeit: zugeordnete Einheiten (+ Objekte daraus) und Vorgänge.
  */
 export async function getEigentuemerPortalData(kundeId: string): Promise<{
   kunde: PortalData["kunde"] & {
     eigentuemer_freigabe_schwelle_eur: number;
   };
   objekte: EigentuemerPortalObjekt[];
+  /** Zugeordnete Einheiten (primäre Portal-Liste). */
+  einheiten: EigentuemerPortalEinheit[];
   objektIds: string[];
   schwelleEur: number;
   leads: LeadRow[];
   angebote: PortalData["angebote"];
   auftraege: PortalData["auftraege"];
   mieterFeedbackByLeadId: PortalData["mieterFeedbackByLeadId"];
+  mieterByObjektId: Record<string, EigentuemerPortalMieter[]>;
+  /** White-Label der Hausverwaltung — nie MeinBärenwald im Header. */
+  hausverwaltungBrand: MieterHvBrand | null;
 } | null> {
   if (!isSupabaseConfigured()) return null;
 
@@ -118,6 +341,20 @@ export async function getEigentuemerPortalData(kundeId: string): Promise<{
       .filter(Boolean);
   }
 
+  const { einheiten, objektIdsFromEinheiten } =
+    await loadEinheitenForEigentuemerPortal(id);
+  for (const oid of objektIdsFromEinheiten) {
+    if (!objektIds.includes(oid)) objektIds.push(oid);
+  }
+
+  // Soft-sync: fehlende Objekt-Links aus Einheiten nachziehen
+  if (objektIdsFromEinheiten.length) {
+    void import("@/lib/org/org-eigentuemer").then(
+      ({ syncEigentuemerObjekteForPortalKunde }) =>
+        syncEigentuemerObjekteForPortalKunde(id).catch(() => {})
+    );
+  }
+
   let objekte: EigentuemerPortalObjekt[] = [];
   if (objektIds.length) {
     const { data: objRows } = await supabaseAdmin
@@ -129,6 +366,14 @@ export async function getEigentuemerPortalData(kundeId: string): Promise<{
       .order("titel", { ascending: true });
     objekte = (objRows ?? []) as EigentuemerPortalObjekt[];
   }
+
+  const mieterByObjektId = await loadMieterByObjektIds(objektIds);
+
+  const hausverwaltungBrandPromise = loadMieterHvBrand({
+    portalKundeId: id,
+    portalKundeEmail: kundeRow.email,
+    leads: [],
+  });
 
   const objektById = new Map(
     objekte.map((o) => [
@@ -151,16 +396,21 @@ export async function getEigentuemerPortalData(kundeId: string): Promise<{
       freigabe_schwelle_eur: schwelleEur,
     },
     objekte,
+    einheiten,
     objektIds,
     schwelleEur,
     leads: [] as LeadRow[],
     angebote: [] as PortalData["angebote"],
     auftraege: [] as PortalData["auftraege"],
     mieterFeedbackByLeadId: {} as PortalData["mieterFeedbackByLeadId"],
+    mieterByObjektId,
   };
 
   if (objektIds.length === 0) {
-    return empty;
+    return {
+      ...empty,
+      hausverwaltungBrand: await hausverwaltungBrandPromise,
+    };
   }
 
   const base = await getPortalDataForKunde(id, { mode: "list" });
@@ -325,12 +575,15 @@ export async function getEigentuemerPortalData(kundeId: string): Promise<{
       freigabe_schwelle_eur: schwelleEur,
     },
     objekte,
+    einheiten,
     objektIds,
     schwelleEur,
     leads,
     angebote,
     auftraege,
     mieterFeedbackByLeadId: base?.mieterFeedbackByLeadId ?? {},
+    mieterByObjektId,
+    hausverwaltungBrand: await hausverwaltungBrandPromise,
   };
 }
 
