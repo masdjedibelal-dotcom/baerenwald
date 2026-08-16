@@ -16,6 +16,7 @@ import {
   type AutoDocRegieOverride,
 } from "@/lib/partner/partner-auto-doc-positionen";
 import { getPartnerDocEmpfaenger } from "@/lib/partner/partner-doc-empfaenger";
+import { resolvePartnerDocBetreff } from "@/lib/partner/partner-doc-betreff";
 import {
   formatPlzOrt,
   formatStrasseNr,
@@ -310,7 +311,11 @@ async function loadAnfrageCtx(
   }
 
   const angebotId = row.angebot_id ? String(row.angebot_id) : null;
-  let betreff = "Partnerleistung";
+  let auftragTitel: string | null = null;
+  let projektbeschreibung: string | null = null;
+  let gewerkName: string | null = null;
+  let bereiche: string[] | null = null;
+  let situation: string | null = null;
   let objektOrt = "";
   let auftragId: string | null = null;
 
@@ -320,8 +325,7 @@ async function loadAnfrageCtx(
       .select("projektbeschreibung, kunde_id, lead_id")
       .eq("id", angebotId)
       .maybeSingle();
-    const projekt = String(ang?.projektbeschreibung ?? "").trim();
-    if (projekt) betreff = projekt;
+    projektbeschreibung = String(ang?.projektbeschreibung ?? "").trim() || null;
 
     const { data: auf } = await supabaseAdmin
       .from("auftraege")
@@ -332,8 +336,25 @@ async function loadAnfrageCtx(
       .maybeSingle();
     if (auf?.id) {
       auftragId = String(auf.id);
-      const t = String(auf.titel ?? "").trim();
-      if (t) betreff = t;
+      auftragTitel = String(auf.titel ?? "").trim() || null;
+    }
+
+    const leadId = (auf?.lead_id ?? ang?.lead_id)
+      ? String(auf?.lead_id ?? ang?.lead_id)
+      : "";
+    if (leadId) {
+      const { data: lead } = await supabaseAdmin
+        .from("leads")
+        .select("bereiche, situation, plz")
+        .eq("id", leadId)
+        .maybeSingle();
+      if (Array.isArray(lead?.bereiche)) {
+        bereiche = lead.bereiche.map((b) => String(b));
+      }
+      situation = String(lead?.situation ?? "").trim() || null;
+      if (!objektOrt && lead?.plz) {
+        objektOrt = String(lead.plz).trim();
+      }
     }
 
     const kundeId = (auf?.kunde_id ?? ang?.kunde_id)
@@ -345,19 +366,27 @@ async function loadAnfrageCtx(
         .select("plz, ort")
         .eq("id", kundeId)
         .maybeSingle();
-      objektOrt = [kunde?.plz, kunde?.ort].filter(Boolean).join(" ").trim();
+      const fromKunde = [kunde?.plz, kunde?.ort].filter(Boolean).join(" ").trim();
+      if (fromKunde) objektOrt = fromKunde;
     }
   }
 
-  if (row.gewerk_id && betreff === "Partnerleistung") {
+  if (row.gewerk_id) {
     const { data: gw } = await supabaseAdmin
       .from("gewerke")
       .select("name")
       .eq("id", row.gewerk_id)
       .maybeSingle();
-    const name = String(gw?.name ?? "").trim();
-    if (name) betreff = name;
+    gewerkName = String(gw?.name ?? "").trim() || null;
   }
+
+  const betreff = resolvePartnerDocBetreff({
+    auftragTitel,
+    projektbeschreibung,
+    gewerkName,
+    bereiche,
+    situation,
+  });
 
   return {
     ok: true,
@@ -437,7 +466,10 @@ async function loadAuftragRechnungCtx(
     ctx: {
       ...ah.ctx,
       auftragId: id,
-      betreff: String(auftrag.titel ?? "").trim() || ah.ctx.betreff,
+      betreff: resolvePartnerDocBetreff({
+        auftragTitel: String(auftrag.titel ?? "").trim() || null,
+        fallback: ah.ctx.betreff,
+      }),
       objektOrt,
     },
   };
@@ -747,9 +779,7 @@ export async function submitPartnerAutoRechnung(input: {
     betreff: ctx.betreff,
     objektOrt: ctx.objektOrt,
     leistungsZeitraum: input.leistungsZeitraum?.trim() || undefined,
-    auftragsRef: String(ctx.auftragId ?? ctx.row.angebot_id ?? id)
-      .slice(0, 8)
-      .toUpperCase(),
+    auftragsRef: undefined,
     positionen: built.positionen,
     logoBytes,
     abnahmeHinweis: "Leistungen laut Abschlussdokumentation erbracht.",
