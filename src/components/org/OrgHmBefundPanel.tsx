@@ -161,7 +161,7 @@ function BefundPunktCard({
     <button
       type="button"
       onClick={onOpen}
-      className="portal-surface flex w-full flex-col gap-2.5 p-3.5 text-left transition-colors hover:bg-[var(--p2-hover,#eef1ef)]"
+      className="flex w-full flex-col gap-1.5 px-0 py-3 text-left transition-colors hover:bg-[var(--p2-hover,#eef1ef)]"
     >
       <div className="flex items-start gap-3">
         <div className="min-w-0 flex-1">
@@ -169,7 +169,7 @@ function BefundPunktCard({
             {punkt.titel}
           </p>
           {notiz ? (
-            <p className="portal-text-meta mt-1 line-clamp-2 text-text-secondary">
+            <p className="portal-text-meta mt-0.5 line-clamp-2 text-text-secondary">
               {notiz}
             </p>
           ) : null}
@@ -425,7 +425,7 @@ export function OrgHmBefundPanel({
       ) : null;
     }
     return (
-      <div className="space-y-2.5">
+      <div className="divide-y divide-border-light border-t border-border-light">
         {items.map((p) => (
           <BefundPunktCard
             key={p.id}
@@ -530,14 +530,16 @@ export function OrgHmBefundPanel({
           ) : null}
 
           {allgemein.length > 0 ? (
-            <section className="space-y-2">
-              <h3 className="portal-text-label text-text-tertiary">Allgemein</h3>
+            <section>
+              <h3 className="portal-text-label mb-1 text-text-tertiary">
+                Allgemein
+              </h3>
               {renderPunktList(allgemein)}
             </section>
           ) : null}
 
-          <section className="space-y-2">
-            <h3 className="portal-text-label text-text-tertiary">
+          <section>
+            <h3 className="portal-text-label mb-1 text-text-tertiary">
               {befund.vorlage_key && isBefundVorlageKey(befund.vorlage_key)
                 ? `Zur Ursache · ${getBefundVorlage(befund.vorlage_key).label}`
                 : "Zur Ursache"}

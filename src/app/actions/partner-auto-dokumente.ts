@@ -276,13 +276,16 @@ async function loadAnfrageCtx(anfrageId: string, handwerkerId: string) {
       hw_angebot_pdf_url, hw_angebot_anhang_urls, hw_rechnung_eingereicht_at,
       hw_eingereicht_at, bestaetigt_at, angebot_id,
       gewerke(name),
-      angebote(titel, kunden(plz, ort), leads(plz, ort, strasse))
+      angebote(projektbeschreibung, notizen, kunden(plz, ort), leads(plz, ort, strasse))
     `
     )
     .eq("id", anfrageId)
     .maybeSingle();
 
-  if (error || !row) return { ok: false as const, error: "Anfrage nicht gefunden." };
+  if (error || !row) {
+    console.warn("[partner] loadAnfrageCtx:", error?.message ?? "no row", anfrageId);
+    return { ok: false as const, error: "Anfrage nicht gefunden." };
+  }
   if (String(row.handwerker_id) !== handwerkerId) {
     return { ok: false as const, error: "Keine Berechtigung." };
   }
@@ -308,13 +311,16 @@ function objektOrtFromAnfrage(row: Record<string, unknown>): string {
 
 function betreffFromAnfrage(row: Record<string, unknown>): string {
   const ang = Array.isArray(row.angebote) ? row.angebote[0] : row.angebote;
-  const titel =
+  const projekt =
     ang && typeof ang === "object"
-      ? String((ang as { titel?: string }).titel ?? "").trim()
+      ? String(
+          (ang as { projektbeschreibung?: string | null }).projektbeschreibung ??
+            ""
+        ).trim()
       : "";
   const gw = Array.isArray(row.gewerke) ? row.gewerke[0] : row.gewerke;
   const gewerk = gw ? String((gw as { name?: string }).name ?? "").trim() : "";
-  return titel || gewerk || "Partnerleistung";
+  return projekt || gewerk || "Partnerleistung";
 }
 
 /** Preview-Daten für Auto-Angebot / Auto-Rechnung. */

@@ -19,6 +19,7 @@ import {
 } from "@/lib/partner/partner-konditionen";
 import { buildPartnerAuftragKonditionZeilen } from "@/lib/partner/partner-leistungen-display";
 import { submitCrmPartnerAnnahme } from "@/lib/partner/partner-crm-api";
+import { ensurePartnerAngebotHandwerkerForAuftrag } from "@/lib/partner/ensure-partner-angebot-handwerker-for-auftrag";
 import { syncAngebotHandwerkerAfterAuftragAccept } from "@/lib/partner/sync-angebot-handwerker";
 import { positionBrauchtVorgangAktion } from "@/lib/partner/vorgang-state";
 import { stripHtmlToPlainText } from "@/lib/portal/portal-display";
@@ -634,6 +635,21 @@ async function persistDirektauftragZuweisungAntwort(opts: {
         ...(gewerkId ? { gewerk_id: gewerkId } : {}),
         status: "abgelehnt",
       });
+    }
+  }
+
+  if (opts.antwort === "akzeptiert") {
+    const ensured = await ensurePartnerAngebotHandwerkerForAuftrag({
+      auftragId: opts.auftragId,
+      handwerkerId: opts.handwerkerId,
+      markAccepted: true,
+    });
+    if (!ensured.ok) {
+      console.warn(
+        "[partner] Direktauftrag Schatten-AH:",
+        ensured.error,
+        opts.auftragId
+      );
     }
   }
 

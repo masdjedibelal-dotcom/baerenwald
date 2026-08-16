@@ -23,7 +23,6 @@ import {
   PortalDetailError,
   PortalDetailLayout,
   PortalDetailSection,
-  PortalDetailStickyActions,
   PortalDetailSuccessBox,
   PortalConfirmDialog,
 } from "@/components/shared/PortalDetailUi";
@@ -401,15 +400,11 @@ export function PartnerAuftragDetail({
     { id: "abnahme", label: "Abschluss" },
   ];
 
-  const actionFooter = kannRechnungHochladen ? (
-    <div className="space-y-2">
-      <PortalDetailStickyActions
-        primaryLabel={
-          rechnungGateBusy
-            ? HW_ABNAHME_COPY.rechnungFirmendatenBusy
-            : HW_ABNAHME_COPY.rechnungCta
-        }
-        onPrimary={() => {
+  const rechnungInline = kannRechnungHochladen ? (
+    <div className="space-y-2 pt-1">
+      <button
+        type="button"
+        onClick={() => {
           if (!firmendatenOkRechnung) {
             setFirmendatenMissing(firmGate?.missingRechnung ?? []);
             setFirmendatenFehlenOpen(true);
@@ -417,9 +412,16 @@ export function PartnerAuftragDetail({
           }
           void onRechnungErstellen();
         }}
-        primaryDisabled={rechnungPrimaryDisabled}
-        secondaryLabel={HW_ABNAHME_COPY.rechnungSecondaryCta}
-        onSecondary={() => {
+        disabled={rechnungPrimaryDisabled}
+        className="portal-action-btn portal-action-btn--primary portal-action-btn--block"
+      >
+        {rechnungGateBusy
+          ? HW_ABNAHME_COPY.rechnungFirmendatenBusy
+          : HW_ABNAHME_COPY.rechnungCta}
+      </button>
+      <button
+        type="button"
+        onClick={() => {
           setActiveTab("dokumente");
           window.setTimeout(() => {
             document
@@ -427,8 +429,15 @@ export function PartnerAuftragDetail({
               ?.scrollIntoView({ behavior: "smooth", block: "nearest" });
           }, 80);
         }}
-        disabledHint={rechnungDisabledHint}
-      />
+        className="portal-action-btn portal-action-btn--secondary portal-action-btn--block"
+      >
+        {HW_ABNAHME_COPY.rechnungSecondaryCta}
+      </button>
+      {rechnungDisabledHint ? (
+        <p className="portal-text-label normal-case tracking-normal text-center text-text-secondary">
+          {rechnungDisabledHint}
+        </p>
+      ) : null}
       {!firmendatenOkRechnung ? (
         <button
           type="button"
@@ -442,7 +451,7 @@ export function PartnerAuftragDetail({
         </button>
       ) : null}
     </div>
-  ) : undefined;
+  ) : null;
 
   const abschlussInline =
     zeigtAbschluss && !kannRechnungHochladen ? (
@@ -467,10 +476,7 @@ export function PartnerAuftragDetail({
   const handleBack = onBack ?? (() => router.back());
 
   return (
-    <PortalDetailLayout
-      footer={actionFooter}
-      footerStickyMobile={Boolean(actionFooter)}
-    >
+    <PortalDetailLayout>
       <PortalEntityDetailLayout
         layout="default"
         coverUrl={coverUrl}
@@ -505,6 +511,8 @@ export function PartnerAuftragDetail({
                 hatAbschluss={hatAbschluss}
               />
             ) : null}
+            {rechnungInline}
+            {abschlussInline}
           </div>
         ) : null}
 
@@ -545,8 +553,6 @@ export function PartnerAuftragDetail({
                 />
               ) : null}
             </PortalDetailCard>
-
-            {abschlussInline}
           </div>
         ) : null}
 

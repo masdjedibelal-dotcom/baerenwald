@@ -111,7 +111,7 @@ function buildChecklist(eintraege: PartnerBefundEintrag[]): {
 }
 
 /**
- * Partner Details: HM-Vorbefund als Card — nur Checkliste (Titel, Notiz, Fotos).
+ * Partner Details: HM-Vorbefund als Card — Checkliste mit Divider (wie Leistungen).
  */
 export function PartnerHausmeisterVorbefundCard({
   eintraege,
@@ -124,23 +124,27 @@ export function PartnerHausmeisterVorbefundCard({
 
   return (
     <PortalDetailCard title="Hausmeister-Vorbefund">
-      <ul className="space-y-3.5">
+      <ul className="portal-text-body divide-y divide-border-light">
         {items.map((item) => (
-          <li key={item.key} className="space-y-1.5">
-            <p className="portal-text-card-title">{item.titel}</p>
+          <li key={item.key} className="px-0 py-3 first:pt-0 last:pb-0">
+            <p className="portal-text-body font-semibold text-text-primary">
+              {item.titel}
+            </p>
             {item.notiz ? (
-              <p className="portal-text-body whitespace-pre-wrap text-text-secondary">
+              <p className="portal-text-meta mt-0.5 whitespace-pre-wrap text-text-secondary">
                 {item.notiz}
               </p>
             ) : null}
             {item.fotos.length > 0 ? (
-              <PortalPhotoGallery urls={item.fotos} className="mt-1" />
+              <PortalPhotoGallery urls={item.fotos} className="mt-2" />
             ) : null}
           </li>
         ))}
       </ul>
       {sharedFotos.length > 0 ? (
-        <PortalPhotoGallery urls={sharedFotos} className="mt-3" />
+        <div className="mt-3 border-t border-border-light pt-3">
+          <PortalPhotoGallery urls={sharedFotos} />
+        </div>
       ) : null}
     </PortalDetailCard>
   );

@@ -1,3 +1,4 @@
+import { ensurePartnerAngebotHandwerkerForAuftrag } from "@/lib/partner/ensure-partner-angebot-handwerker-for-auftrag";
 import { isPartnerAuftragAnfrageAktionErforderlich } from "@/lib/partner/partner-anfrage-status";
 import {
   buildPartnerOffenListe,
@@ -29,6 +30,7 @@ import {
   isPrivatPortalKontext,
   resolvePrivatPortalTitel,
 } from "@/lib/portal/portal-titel";
+import { isVorgangAuftragErledigt } from "@/lib/partner/vorgang-state";
 import { resolveHandwerkerAnsprechpartner } from "@/lib/partner/handwerker-ansprechpartner";
 import { parseHwAnhangStoragePaths } from "@/lib/partner/partner-hw-dokument-typen";
 import {
@@ -1026,12 +1028,76 @@ export async function getPartnerDataForHandwerker(
     anfragenByAngebotId.set(a.angebot_id, list);
   }
 
-  alleAuftraege = alleAuftraege.map((a) => {
-    const angebotId = auftragAngebotIdByAuftragId.get(a.id);
-    const anfragenForAngebot = angebotId
+  const auftraegeMitAnfrage: PartnerAuftragItem[] = [];
+  for (const a of alleAuftraege) {
+    let angebotId = auftragAngebotIdByAuftragId.get(a.id);
+    let anfragenForAngebot = angebotId
       ? anfragenByAngebotId.get(angebotId) ?? []
       : [];
-    const anfrage = pickPrimaryAngebotHandwerkerAnfrage(anfragenForAngebot);
+    let anfrage = pickPrimaryAngebotHandwerkerAnfrage(anfragenForAngebot);
+
+    let angebotHandwerkerId: string | null = anfrage?.id ?? null;
+    let angebotHwStatus: string | null = anfrage?.hw_status ?? null;
+    let angebotHwEingereichtAt: string | null =
+      anfrage?.hw_eingereicht_at ?? null;
+    let hwRechnungPdfUrl: string | null = anfrage?.hw_rechnung_pdf_url ?? null;
+    let hwRechnungEingereichtAt: string | null =
+      anfrage?.hw_rechnung_eingereicht_at ?? null;
+    let hwAngebotPdfUrl: string | null = anfrage?.hw_angebot_pdf_url ?? null;
+    let hwAngebotAnhangUrls = anfrage?.hw_angebot_anhang_urls;
+    let hwAngebotPdfSignedUrl: string | null =
+      anfrage?.hw_angebot_pdf_signed_url ?? null;
+    let hwAngebotAnhangSignedUrls = anfrage?.hw_angebot_anhang_signed_urls;
+    let hwRechnungPdfSignedUrl: string | null =
+      anfrage?.hw_rechnung_pdf_signed_url ?? null;
+
+    // Direktauftrag ohne AH: Schatten-Angebot + AH, sonst kein Rechnung-CTA.
+    if (
+      !angebotHandwerkerId &&
+      (Boolean(a.handwerker_bestaetigt_at?.trim()) ||
+        Boolean(a.hw_abschluss_signiert_am?.trim()) ||
+        isVorgangAuftragErledigt(a.status))
+    ) {
+      const ensured = await ensurePartnerAngebotHandwerkerForAuftrag({
+        auftragId: a.id,
+        handwerkerId: id,
+        markAccepted: true,
+      });
+      if (ensured.ok) {
+        const { data: ahRow } = await supabaseAdmin
+          .from("angebot_handwerker")
+          .select(
+            "id, angebot_id, hw_status, hw_eingereicht_at, hw_rechnung_pdf_url, hw_rechnung_eingereicht_at, hw_angebot_pdf_url, hw_angebot_anhang_urls"
+          )
+          .eq("id", ensured.anfrageId)
+          .maybeSingle();
+        if (ahRow?.id) {
+          const linkedAng =
+            ahRow.angebot_id != null ? String(ahRow.angebot_id).trim() : "";
+          if (linkedAng) {
+            angebotId = linkedAng;
+            auftragAngebotIdByAuftragId.set(a.id, linkedAng);
+            a.angebot_id = linkedAng;
+          }
+          angebotHandwerkerId = String(ahRow.id);
+          angebotHwStatus =
+            (ahRow.hw_status as string | null) ?? "uebernommen";
+          angebotHwEingereichtAt =
+            (ahRow.hw_eingereicht_at as string | null) ?? null;
+          hwRechnungPdfUrl =
+            (ahRow.hw_rechnung_pdf_url as string | null) ?? null;
+          hwRechnungEingereichtAt =
+            (ahRow.hw_rechnung_eingereicht_at as string | null) ?? null;
+          hwAngebotPdfUrl =
+            (ahRow.hw_angebot_pdf_url as string | null) ?? null;
+          hwAngebotAnhangUrls = parseHwAnhangStoragePaths(
+            ahRow.hw_angebot_anhang_urls,
+            ahRow.hw_angebot_pdf_url as string | null
+          );
+        }
+      }
+    }
+
     const vertragCtx = complianceBundle.vertragByAuftragId.get(a.id) ?? null;
 
     const nachreichungOpenPositionIds = filterOffeneNachreichungPositionIds(
@@ -1057,26 +1123,28 @@ export async function getPartnerDataForHandwerker(
       )
     );
 
-    return {
+    auftraegeMitAnfrage.push({
       ...a,
-      angebotHandwerkerId: anfrage?.id ?? null,
-      angebotHwStatus: anfrage?.hw_status ?? null,
-      angebotHwEingereichtAt: anfrage?.hw_eingereicht_at ?? null,
+      angebot_id: angebotId ?? a.angebot_id,
+      angebotHandwerkerId,
+      angebotHwStatus,
+      angebotHwEingereichtAt,
       angebotHwKonditionenArt: anfrage?.hw_konditionen?.art ?? null,
       aufgabe_notiz: anfrage?.aufgabe_notiz ?? null,
       hw_crm_notiz: anfrage?.hw_crm_notiz ?? null,
       projektvertrag_bestaetigt_am: vertragCtx?.projektvertrag_bestaetigt_am ?? null,
       vertrag: vertragCtx,
       nachreichungOpenPositionIds,
-      hw_angebot_pdf_url: anfrage?.hw_angebot_pdf_url ?? null,
-      hw_angebot_pdf_signed_url: anfrage?.hw_angebot_pdf_signed_url ?? null,
-      hw_angebot_anhang_urls: anfrage?.hw_angebot_anhang_urls,
-      hw_angebot_anhang_signed_urls: anfrage?.hw_angebot_anhang_signed_urls,
-      hw_rechnung_pdf_url: anfrage?.hw_rechnung_pdf_url ?? null,
-      hw_rechnung_pdf_signed_url: anfrage?.hw_rechnung_pdf_signed_url ?? null,
-      hw_rechnung_eingereicht_at: anfrage?.hw_rechnung_eingereicht_at ?? null,
-    };
-  });
+      hw_angebot_pdf_url: hwAngebotPdfUrl,
+      hw_angebot_pdf_signed_url: hwAngebotPdfSignedUrl,
+      hw_angebot_anhang_urls: hwAngebotAnhangUrls,
+      hw_angebot_anhang_signed_urls: hwAngebotAnhangSignedUrls,
+      hw_rechnung_pdf_url: hwRechnungPdfUrl,
+      hw_rechnung_pdf_signed_url: hwRechnungPdfSignedUrl,
+      hw_rechnung_eingereicht_at: hwRechnungEingereichtAt,
+    });
+  }
+  alleAuftraege = auftraegeMitAnfrage;
 
   const nachreichungAnfrageIds = new Set<string>();
   for (const a of alleAuftraege) {
