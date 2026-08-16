@@ -262,8 +262,8 @@ export function OrganisationObjektWizard({
           ) : null}
         </div>
         <p className="rounded-[10px] bg-muted px-3.5 py-2.5 text-[12.5px] leading-relaxed text-text-secondary">
-          Einzelne Einheiten sowie Mieter und Eigentümer legen Sie danach im
-          Objekt unter „Einheiten“ an.
+          Beim Anlegen entstehen automatisch WE 1, WE 2, … — danach unter
+          „Einheiten“ nur noch bearbeiten und Mieter/Eigentümer zuordnen.
         </p>
       </div>
     );

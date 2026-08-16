@@ -3,7 +3,6 @@
 import type { ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { Download, Trash2, Upload } from "lucide-react";
 
 import {
   deletePartnerComplianceDokument,
@@ -11,9 +10,12 @@ import {
 } from "@/app/actions/partner-compliance";
 import { PartnerDetailSection } from "@/components/partner/PartnerDetailUi";
 import { FileUploadField } from "@/components/shared/FileUploadField";
-import { PdfFileIcon } from "@/components/shared/PdfFileIcon";
 import { PortalDokumentCard } from "@/components/shared/PortalDokumentCard";
-import { PortalDocOpenButton } from "@/components/shared/PortalDocOpenButton";
+import {
+  PortalDokumentActions,
+  PortalDokumentMetaLine,
+  PortalDokumentUploadZone,
+} from "@/components/shared/PortalDokumentUi";
 import { PortalConfirmDialog } from "@/components/shared/PortalDetailUi";
 import { PortalModalShell } from "@/components/shared/PortalModalShell";
 import { usePortalUploadBusy } from "@/components/shared/usePortalUploadBusy";
@@ -34,93 +36,6 @@ function fmtDatum(v?: string | null): string {
   return d.toLocaleDateString("de-DE");
 }
 
-function normalizeHref(url: string): string {
-  return /^https?:\/\//i.test(url) ? url : `https://${url}`;
-}
-
-function rahmenStatusPillClass(akzeptiert: boolean): string {
-  return akzeptiert ? "bg-emerald-100 text-emerald-700" : "bg-muted text-text-secondary";
-}
-
-type UploadDraft = {
-  typ: string;
-  titel: string;
-  beschreibung: string;
-  file: File | null;
-};
-
-function DokumentAktionen({
-  href,
-  name,
-  kannHochladen,
-  kannLoeschen,
-  loading,
-  onUploadClick,
-  onDelete,
-  className,
-}: {
-  href?: string;
-  name: string;
-  kannHochladen?: boolean;
-  kannLoeschen?: boolean;
-  loading?: boolean;
-  onUploadClick?: () => void;
-  onDelete?: () => void;
-  className?: string;
-}) {
-  return (
-    <div className={cn("flex items-center gap-1", className)}>
-      {href ? (
-        <>
-          <PortalDocOpenButton
-            href={normalizeHref(href)}
-            name={name}
-            kind="pdf"
-            className="portal-touch-target inline-grid place-items-center rounded-lg border border-border-light bg-white text-[#c62828] transition-colors hover:bg-red-50"
-          >
-            <PdfFileIcon className="h-5 w-5" />
-            <span className="sr-only">{`${name} ansehen`}</span>
-          </PortalDocOpenButton>
-          <PortalDocOpenButton
-            href={normalizeHref(href)}
-            name={name}
-            kind="pdf"
-            className="portal-touch-target inline-grid place-items-center rounded-lg border border-border-light bg-white text-text-secondary transition-colors hover:bg-muted/40"
-          >
-            <Download className="h-4 w-4" />
-            <span className="sr-only">{`${name} herunterladen`}</span>
-          </PortalDocOpenButton>
-        </>
-      ) : null}
-      {kannHochladen ? (
-        <button
-          type="button"
-          disabled={loading}
-          onClick={onUploadClick}
-          className="portal-touch-target inline-grid place-items-center rounded-lg border border-border-light bg-white text-accent transition-colors hover:bg-accent-light/30 disabled:opacity-50"
-          aria-label={`${name} hochladen`}
-        >
-          <Upload className="h-4 w-4" />
-        </button>
-      ) : null}
-      {kannLoeschen ? (
-        <button
-          type="button"
-          disabled={loading}
-          onClick={onDelete}
-          className="portal-touch-target inline-grid place-items-center rounded-lg border border-border-light bg-white text-red-700 transition-colors hover:bg-red-50 disabled:opacity-50"
-          aria-label={`${name} löschen`}
-        >
-          <Trash2 className="h-4 w-4" />
-        </button>
-      ) : null}
-      {!href && !kannHochladen && !kannLoeschen ? (
-        <span className="portal-text-meta px-1 text-text-tertiary">—</span>
-      ) : null}
-    </div>
-  );
-}
-
 function StatusPill({
   label,
   className,
@@ -133,6 +48,17 @@ function StatusPill({
     <span className={cn("tag inline-flex text-[11px]", className)}>{label}</span>
   );
 }
+
+function rahmenStatusPillClass(akzeptiert: boolean): string {
+  return akzeptiert ? "bg-emerald-100 text-emerald-700" : "bg-muted text-text-secondary";
+}
+
+type UploadDraft = {
+  typ: string;
+  titel: string;
+  beschreibung: string;
+  file: File | null;
+};
 
 function ComplianceDokumentItem({
   item,
@@ -189,16 +115,16 @@ function ComplianceDokumentItem({
         title={item.bezeichnung}
         description={description}
         meta={
-          <>
-            <span className="portal-text-meta tabular-nums text-text-tertiary">
-              {datum !== "—" ? `Datum · ${datum}` : "Kein Datum"}
-            </span>
-            <StatusPill label={statusLabel} className={statusClass} />
-          </>
+          <PortalDokumentMetaLine
+            datum={datum !== "—" ? datum : null}
+            status={
+              <StatusPill label={statusLabel} className={statusClass} />
+            }
+          />
         }
         error={error}
         actions={
-          <DokumentAktionen
+          <PortalDokumentActions
             href={href}
             name={item.bezeichnung}
             kannHochladen={kannHochladen}
@@ -246,21 +172,23 @@ function RahmenvertragDokumentItem({
       title="Partnerschafts-Rahmenvertrag"
       description={description}
       meta={
-        <>
-          <span className="portal-text-meta tabular-nums text-text-tertiary">
-            {datum !== "—" ? `Datum · ${datum}` : "Kein Datum"}
-          </span>
-          {akzeptiert ? (
-            <StatusPill label="Erledigt" className={rahmenStatusPillClass(true)} />
-          ) : null}
-        </>
+        <PortalDokumentMetaLine
+          datum={datum !== "—" ? datum : null}
+          status={
+            akzeptiert ? (
+              <StatusPill
+                label="Erledigt"
+                className={rahmenStatusPillClass(true)}
+              />
+            ) : null
+          }
+        />
       }
       actions={
-        pdfUrl ? (
-          <DokumentAktionen href={pdfUrl} name="Partnerschafts-Rahmenvertrag" />
-        ) : (
-          <span className="portal-text-meta text-text-tertiary">—</span>
-        )
+        <PortalDokumentActions
+          href={pdfUrl}
+          name="Partnerschafts-Rahmenvertrag"
+        />
       }
     />
   );
@@ -350,7 +278,8 @@ export function PartnerStammDokumenteListe({
 
   return (
     <>
-      <PartnerDetailSection title="Stammunterlagen">
+      {/* Kein Section-Titel — Tab heißt schon „Stammunterlagen“. */}
+      <PartnerDetailSection>
         <div className="space-y-2.5">
           <RahmenvertragDokumentItem
             rahmenvertrag={rahmenvertrag}
@@ -366,20 +295,13 @@ export function PartnerStammDokumenteListe({
           ))}
         </div>
 
-        <button
-          type="button"
+        <PortalDokumentUploadZone
+          className="mt-3"
+          variant="stack"
+          label="Dokument hochladen"
+          hint="PDF, JPG, PNG oder WebP"
           onClick={openNewUpload}
-          className="mt-4 flex w-full flex-col items-center justify-center gap-1.5 rounded-xl border-2 border-dashed border-border-default bg-[var(--p2-selected,#f0f2f0)] px-4 py-7 text-center transition-colors hover:bg-[var(--p2-hover,#eef1ef)]"
-          aria-label="Dokument hochladen"
-        >
-          <Upload className="h-6 w-6 text-text-secondary" aria-hidden />
-          <span className="text-[13.5px] font-semibold text-text-primary">
-            Dokument hochladen
-          </span>
-          <span className="portal-text-meta text-text-tertiary">
-            Tippen oder Datei hier ablegen — PDF, JPG, PNG oder WebP
-          </span>
-        </button>
+        />
 
         {footer ? (
           <div className="mt-4 border-t border-border-light pt-4">{footer}</div>
@@ -397,68 +319,54 @@ export function PartnerStammDokumenteListe({
         busy={saving}
         busyTitle="Wird hochgeladen…"
         busyBody="Dokument wird gespeichert."
+        onConfirm={() => void submitUpload()}
+        confirmDisabled={saving}
+        confirmLabel="Hochladen"
       >
-        <div className="flex flex-col gap-3">
-          <label className="flex flex-col gap-1">
-            <span className="text-[11.5px] font-bold tracking-wide text-text-tertiary">
-              Titel
-            </span>
-            <input
-              type="text"
-              className="w-full rounded-[9px] border border-border-default bg-white px-3 py-2.5 text-[13.5px] text-text-primary outline-none focus:border-accent"
-              value={draft.titel}
-              onChange={(e) => setDraft({ ...draft, titel: e.target.value })}
-              placeholder="z. B. Handwerkskarte, Freistellung…"
-              autoComplete="off"
-            />
-          </label>
-          <label className="flex flex-col gap-1">
-            <span className="text-[11.5px] font-bold tracking-wide text-text-tertiary">
-              Beschreibung (optional)
-            </span>
-            <textarea
-              className="min-h-[88px] w-full rounded-[9px] border border-border-default bg-white px-3 py-2.5 text-[13.5px] text-text-primary outline-none focus:border-accent"
-              value={draft.beschreibung}
-              onChange={(e) =>
-                setDraft({ ...draft, beschreibung: e.target.value })
-              }
-              placeholder="Kurzbeschreibung für Bärenwald / Prüfung"
-            />
-          </label>
-          <FileUploadField
-            label="Dokument oder Foto"
-            accept="application/pdf,.pdf,image/jpeg,image/png,image/webp"
-            hint="PDF, JPG, PNG oder WebP"
-            selectedFile={draft.file}
-            selectedName={draft.file?.name ?? null}
-            onChange={(files) =>
-              setDraft({ ...draft, file: files[0] ?? null })
+        <label className="block space-y-1">
+          <span className="portal-text-label normal-case text-text-tertiary">
+            Titel
+          </span>
+          <input
+            className="portal-field w-full"
+            value={draft.titel}
+            onChange={(e) =>
+              setDraft((d) => ({ ...d, titel: e.target.value }))
             }
+            placeholder="z. B. Gewerbeanmeldung"
+            disabled={saving}
           />
-          {formError ? (
-            <p className="portal-text-meta text-red-700" role="alert">
-              {formError}
-            </p>
-          ) : null}
-          <div className="portal-action-row mt-2">
-            <button
-              type="button"
-              className="portal-action-btn portal-action-btn--secondary"
-              disabled={saving}
-              onClick={closeUpload}
-            >
-              Abbrechen
-            </button>
-            <button
-              type="button"
-              className="portal-action-btn portal-action-btn--primary"
-              disabled={saving}
-              onClick={() => void submitUpload()}
-            >
-              {saving ? "Wird hochgeladen…" : "Hochladen"}
-            </button>
-          </div>
-        </div>
+        </label>
+        <label className="block space-y-1">
+          <span className="portal-text-label normal-case text-text-tertiary">
+            Beschreibung (optional)
+          </span>
+          <textarea
+            className="portal-field w-full min-h-[72px] resize-y"
+            value={draft.beschreibung}
+            onChange={(e) =>
+              setDraft((d) => ({ ...d, beschreibung: e.target.value }))
+            }
+            disabled={saving}
+          />
+        </label>
+        <FileUploadField
+          label="Datei"
+          hint="PDF oder Foto"
+          accept="application/pdf,image/jpeg,image/png,image/webp"
+          size="compact"
+          disabled={saving}
+          selectedFile={draft.file}
+          selectedName={draft.file?.name ?? null}
+          onChange={(files) =>
+            setDraft((d) => ({ ...d, file: files[0] ?? null }))
+          }
+        />
+        {formError ? (
+          <p className="portal-text-meta text-red-700" role="alert">
+            {formError}
+          </p>
+        ) : null}
       </PortalModalShell>
     </>
   );

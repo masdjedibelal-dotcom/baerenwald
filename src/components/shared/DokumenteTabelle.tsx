@@ -1,10 +1,11 @@
 "use client";
 
-import { useRef, useState, type ReactNode } from "react";
-import { Download, Trash2, Upload } from "lucide-react";
-
-import { PdfFileIcon } from "@/components/shared/PdfFileIcon";
 import { PortalDokumentCard } from "@/components/shared/PortalDokumentCard";
+import {
+  PortalDokumentActions,
+  PortalDokumentMetaLine,
+  PortalDokumentUploadZone,
+} from "@/components/shared/PortalDokumentUi";
 import { useOptionalPortalDocViewer } from "@/components/shared/PortalDocViewerContext";
 import {
   detectPortalDocKind,
@@ -51,120 +52,6 @@ function normalizeHref(url: string): string {
     : `https://${url}`;
 }
 
-function UploadZone({
-  upload,
-  children,
-  className,
-}: {
-  upload: DokumenteTabelleUpload;
-  children: ReactNode;
-  className?: string;
-}) {
-  const inputRef = useRef<HTMLInputElement>(null);
-  const [dragOver, setDragOver] = useState(false);
-
-  function takeFiles(list: FileList | File[] | null) {
-    if (!list || upload.disabled) return;
-    const files = Array.from(list);
-    if (files.length) upload.onFiles(files);
-  }
-
-  return (
-    <div
-      role="button"
-      tabIndex={upload.disabled ? -1 : 0}
-      className={cn(
-        "cursor-pointer outline-none transition-colors",
-        dragOver && "border-accent bg-accent-light/25",
-        upload.disabled && "cursor-not-allowed opacity-60",
-        className
-      )}
-      onClick={() => {
-        if (!upload.disabled) inputRef.current?.click();
-      }}
-      onKeyDown={(e) => {
-        if (upload.disabled) return;
-        if (e.key === "Enter" || e.key === " ") {
-          e.preventDefault();
-          inputRef.current?.click();
-        }
-      }}
-      onDragOver={(e) => {
-        e.preventDefault();
-        if (!upload.disabled) setDragOver(true);
-      }}
-      onDragLeave={() => setDragOver(false)}
-      onDrop={(e) => {
-        e.preventDefault();
-        setDragOver(false);
-        takeFiles(e.dataTransfer.files);
-      }}
-    >
-      <input
-        ref={inputRef}
-        type="file"
-        accept={upload.accept}
-        multiple={upload.multiple}
-        disabled={upload.disabled}
-        className="sr-only"
-        onChange={(e) => {
-          takeFiles(e.target.files);
-          e.target.value = "";
-        }}
-      />
-      {children}
-    </div>
-  );
-}
-
-function DocActions({
-  doc,
-  onOpen,
-  onDelete,
-}: {
-  doc: DokumentZeile;
-  onOpen: (doc: DokumentZeile) => void;
-  onDelete?: (doc: DokumentZeile) => void;
-}) {
-  if (!doc.href?.trim() && !doc.canDelete) {
-    return <span className="portal-text-meta text-text-tertiary">—</span>;
-  }
-  return (
-    <>
-      {doc.href?.trim() ? (
-        <>
-          <button
-            type="button"
-            onClick={() => onOpen(doc)}
-            className="portal-touch-target inline-grid place-items-center rounded-lg border border-border-light bg-white text-[#c62828] transition-colors hover:bg-red-50"
-            aria-label={`${doc.name} ansehen`}
-          >
-            <PdfFileIcon className="h-5 w-5" />
-          </button>
-          <a
-            href={normalizeHref(doc.href)}
-            download
-            className="portal-touch-target inline-grid place-items-center rounded-lg border border-border-light bg-white text-text-secondary transition-colors hover:bg-muted/40"
-            aria-label={`${doc.name} herunterladen`}
-          >
-            <Download className="h-4 w-4" />
-          </a>
-        </>
-      ) : null}
-      {doc.canDelete && onDelete ? (
-        <button
-          type="button"
-          onClick={() => onDelete(doc)}
-          className="portal-touch-target inline-grid place-items-center rounded-lg border border-border-light bg-white text-[var(--p2-danger,#a1242a)] transition-colors hover:bg-[var(--p2-danger-soft,#fce3e3)]"
-          aria-label={`${doc.name} löschen`}
-        >
-          <Trash2 className="h-4 w-4" />
-        </button>
-      ) : null}
-    </>
-  );
-}
-
 function UploadFooter({ upload }: { upload: DokumenteTabelleUpload }) {
   if (!(upload.selectedLabel || upload.error || upload.onSubmit)) return null;
   return (
@@ -199,6 +86,9 @@ function UploadFooter({ upload }: { upload: DokumenteTabelleUpload }) {
   );
 }
 
+/**
+ * Dokumentliste + optionale Upload-Zone — Partner/HV/Kunde Vorgänge & Stammunterlagen-Stil.
+ */
 export function DokumenteTabelle({
   dokumente,
   heading = "Dokumente",
@@ -258,53 +148,47 @@ export function DokumenteTabelle({
     window.open(url, "_blank", "noopener,noreferrer");
   }
 
+  const uploadZone = upload ? (
+    <div className="space-y-2.5">
+      <PortalDokumentUploadZone
+        variant={dokumente.length === 0 ? "empty" : "stack"}
+        label={
+          dokumente.length === 0 ? emptyText : "Weitere Dokumente hinzufügen"
+        }
+        hint={
+          upload.hint?.trim() ||
+          (dokumente.length === 0
+            ? "Tippen oder Datei hier ablegen"
+            : "Tippen oder Datei hier ablegen")
+        }
+        disabled={upload.disabled}
+        accept={upload.accept}
+        multiple={upload.multiple}
+        onFiles={upload.onFiles}
+      />
+      <UploadFooter upload={upload} />
+    </div>
+  ) : null;
+
   return (
     <section
       className={cn("space-y-2.5 border-t border-border-light pt-5", className)}
     >
       {heading?.trim() ? (
-        <h4 className="portal-text-section">{heading}</h4>
+        <h4 className="portal-text-section">{heading.trim()}</h4>
       ) : null}
 
       {dokumente.length === 0 ? (
-        <div className="space-y-3">
-          {upload ? (
-            <UploadZone
-              upload={upload}
-              className="rounded-xl border-2 border-dashed border-border-default bg-[var(--p2-selected,#f0f2f0)] px-4 py-8 text-center hover:bg-[var(--p2-hover,#eef1ef)]"
-            >
-              <Upload
-                className="mx-auto mb-2 h-6 w-6 text-text-secondary"
-                aria-hidden
-              />
-              <p className="portal-text-body font-semibold text-text-primary">
-                {emptyText}
-              </p>
-              <p className="portal-text-meta mt-1 text-text-secondary">
-                Tippen oder Datei hier ablegen
-              </p>
-              {upload.hint ? (
-                <p className="portal-text-meta mt-1 text-text-tertiary">
-                  {upload.hint}
-                </p>
-              ) : null}
-            </UploadZone>
-          ) : (
-            <p className="portal-text-body rounded-xl border border-dashed border-border-light bg-muted/15 px-4 py-8 text-center text-text-secondary">
-              {emptyText}
-            </p>
-          )}
-          {upload ? <UploadFooter upload={upload} /> : null}
-        </div>
+        uploadZone ?? (
+          <p className="portal-text-body rounded-xl border border-dashed border-border-light bg-muted/15 px-4 py-5 text-center text-text-secondary">
+            {emptyText}
+          </p>
+        )
       ) : (
         <div className="space-y-2.5">
           {dokumente.map((doc) => {
             const datum = fmtDatum(doc.datum);
             const description = doc.beschreibung?.trim() || null;
-            const metaBits = [
-              datum !== "—" ? `Datum · ${datum}` : null,
-              doc.meta?.trim() || null,
-            ].filter(Boolean) as string[];
 
             return (
               <PortalDokumentCard
@@ -312,56 +196,33 @@ export function DokumenteTabelle({
                 title={doc.name}
                 description={description}
                 meta={
-                  metaBits.length > 0 ? (
-                    <>
-                      {metaBits.map((bit) => (
-                        <span
-                          key={bit}
-                          className="portal-text-meta text-text-tertiary"
-                        >
-                          {bit}
+                  <PortalDokumentMetaLine
+                    datum={datum !== "—" ? datum : null}
+                    extra={
+                      doc.meta?.trim() ? (
+                        <span className="portal-text-meta text-text-tertiary">
+                          {datum !== "—" ? `· ${doc.meta.trim()}` : doc.meta.trim()}
                         </span>
-                      ))}
-                    </>
-                  ) : (
-                    <span className="portal-text-meta text-text-tertiary">
-                      Kein Datum
-                    </span>
-                  )
+                      ) : null
+                    }
+                  />
                 }
                 actions={
-                  <DocActions
-                    doc={doc}
-                    onOpen={openOrFallback}
-                    onDelete={onDeleteDoc}
+                  <PortalDokumentActions
+                    href={doc.href}
+                    name={doc.name}
+                    kannLoeschen={Boolean(doc.canDelete && onDeleteDoc)}
+                    onDelete={
+                      onDeleteDoc ? () => onDeleteDoc(doc) : undefined
+                    }
+                    onOpen={() => openOrFallback(doc)}
                   />
                 }
               />
             );
           })}
 
-          {upload ? (
-            <div className="space-y-2.5 pt-1">
-              <UploadZone
-                upload={upload}
-                className="flex items-center gap-2 rounded-xl border-2 border-dashed border-border-default bg-[var(--p2-selected,#f0f2f0)] px-3.5 py-4 hover:bg-[var(--p2-hover,#eef1ef)]"
-              >
-                <Upload
-                  className="h-5 w-5 shrink-0 text-accent"
-                  aria-hidden
-                />
-                <div className="min-w-0">
-                  <p className="portal-text-body font-semibold text-text-primary">
-                    Weitere Dokumente hinzufügen
-                  </p>
-                  <p className="portal-text-meta text-text-tertiary">
-                    {upload.hint?.trim() || "Tippen oder Datei hier ablegen"}
-                  </p>
-                </div>
-              </UploadZone>
-              <UploadFooter upload={upload} />
-            </div>
-          ) : null}
+          {uploadZone}
         </div>
       )}
     </section>

@@ -15,6 +15,7 @@ import {
   EinstellungenEdField,
   EinstellungenEditModal,
   EinstellungenGrid2,
+  EinstellungenPfList,
   EinstellungenPfRow,
   EinstellungenSectionHeader,
 } from "@/components/shared/PortalEinstellungenUi";
@@ -223,18 +224,11 @@ export function PartnerFirmendatenScreen({
 
           return (
             <div className="space-y-6">
-              <div className="flex items-start justify-between gap-2">
-                <EinstellungenSectionHeader title="Daten" />
-                <button
-                  type="button"
-                  onClick={openEdit}
-                  aria-label="Daten bearbeiten"
-                  title="Bearbeiten"
-                  className="inline-flex h-9 shrink-0 items-center justify-center rounded-full border border-border-default bg-white px-3.5 text-[12.5px] font-semibold text-text-secondary hover:border-accent/40 hover:text-accent"
-                >
-                  Bearbeiten
-                </button>
-              </div>
+              <EinstellungenSectionHeader
+                title="Daten"
+                onEdit={openEdit}
+                editLabel="Daten bearbeiten"
+              />
 
               <div className="space-y-3">
                 <EinstellungenSectionHeader title={HW_FIRMEN_SECTIONS.logo} />
@@ -290,57 +284,47 @@ export function PartnerFirmendatenScreen({
                 <EinstellungenSectionHeader
                   title={HW_FIRMEN_SECTIONS.anschrift}
                 />
-                <div className="flex flex-col gap-4">
-                  <EinstellungenGrid2>
-                    <EinstellungenPfRow
-                      label="Firmenname"
-                      value={dash(saved.firma)}
-                    />
-                    <EinstellungenPfRow
-                      label="Inhaber / Geschäftsführung"
-                      value={dash(saved.inhaber)}
-                    />
-                  </EinstellungenGrid2>
-                  <EinstellungenGrid2>
-                    <EinstellungenPfRow
-                      label="Straße"
-                      value={dash(saved.strasse)}
-                    />
-                    <EinstellungenPfRow
-                      label="Hausnummer"
-                      value={dash(saved.hausnummer)}
-                    />
-                  </EinstellungenGrid2>
-                  <EinstellungenGrid2>
-                    <EinstellungenPfRow label="PLZ" value={dash(saved.plz)} />
-                    <EinstellungenPfRow label="Ort" value={dash(saved.ort)} />
-                  </EinstellungenGrid2>
-                  <EinstellungenGrid2>
-                    <EinstellungenPfRow
-                      label="Telefon"
-                      value={dash(saved.tel)}
-                    />
-                    <EinstellungenPfRow
-                      label="E-Mail"
-                      value={dash(saved.mail)}
-                    />
-                  </EinstellungenGrid2>
-                </div>
+                <EinstellungenPfList>
+                  <EinstellungenPfRow
+                    label="Firmenname"
+                    value={dash(saved.firma)}
+                  />
+                  <EinstellungenPfRow
+                    label="Inhaber / Geschäftsführung"
+                    value={dash(saved.inhaber)}
+                  />
+                  <EinstellungenPfRow
+                    label="Straße"
+                    value={dash(saved.strasse)}
+                  />
+                  <EinstellungenPfRow
+                    label="Hausnummer"
+                    value={dash(saved.hausnummer)}
+                  />
+                  <EinstellungenPfRow label="PLZ" value={dash(saved.plz)} />
+                  <EinstellungenPfRow label="Ort" value={dash(saved.ort)} />
+                  <EinstellungenPfRow
+                    label="Telefon"
+                    value={dash(saved.tel)}
+                  />
+                  <EinstellungenPfRow
+                    label="E-Mail"
+                    value={dash(saved.mail)}
+                  />
+                </EinstellungenPfList>
               </div>
 
               <div className="space-y-3">
                 <EinstellungenSectionHeader title={HW_FIRMEN_SECTIONS.steuer} />
-                <div className="flex flex-col gap-4">
-                  <EinstellungenGrid2>
-                    <EinstellungenPfRow
-                      label="USt-IdNr."
-                      value={dash(saved.ustid)}
-                    />
-                    <EinstellungenPfRow
-                      label="Steuernummer"
-                      value={dash(saved.steuernr)}
-                    />
-                  </EinstellungenGrid2>
+                <EinstellungenPfList>
+                  <EinstellungenPfRow
+                    label="USt-IdNr."
+                    value={dash(saved.ustid)}
+                  />
+                  <EinstellungenPfRow
+                    label="Steuernummer"
+                    value={dash(saved.steuernr)}
+                  />
                   <EinstellungenPfRow
                     label="Handelsregister"
                     value={dash(saved.hrb)}
@@ -349,18 +333,16 @@ export function PartnerFirmendatenScreen({
                     label="Kleinunternehmer §19 UStG"
                     value={saved.kleinunternehmer ? "Ja" : "Nein"}
                   />
-                </div>
+                </EinstellungenPfList>
               </div>
 
               <div className="space-y-3">
                 <EinstellungenSectionHeader title={HW_FIRMEN_SECTIONS.bank} />
-                <div className="flex flex-col gap-4">
+                <EinstellungenPfList>
                   <EinstellungenPfRow label="IBAN" value={dash(saved.iban)} />
-                  <EinstellungenGrid2>
-                    <EinstellungenPfRow label="BIC" value={dash(saved.bic)} />
-                    <EinstellungenPfRow label="Bank" value={dash(saved.bank)} />
-                  </EinstellungenGrid2>
-                </div>
+                  <EinstellungenPfRow label="BIC" value={dash(saved.bic)} />
+                  <EinstellungenPfRow label="Bank" value={dash(saved.bank)} />
+                </EinstellungenPfList>
               </div>
 
               <PortalKontoSicherheitPanel signOutHref="/partner/login" />

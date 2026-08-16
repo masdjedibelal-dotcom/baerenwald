@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import {
   EinstellungenEditModal,
   EinstellungenEuroSlider,
+  EinstellungenPfList,
   EinstellungenPfRow,
   EinstellungenSectionHeader,
   EinstellungenSheetCard,
@@ -191,7 +192,7 @@ export function OrganisationFreigabeRegelnPanel({
         title={EINSTELLUNGEN_SCHWELLE_TITLE}
         onEdit={isAdmin ? openEdit : undefined}
       />
-      <div className="flex flex-col gap-[11px]">
+      <EinstellungenPfList>
         <EinstellungenPfRow
           label={<SofortmassnahmeAkutTitleWithFaelle />}
           value={akutDirekt ? "Ja" : "Nein"}
@@ -206,7 +207,7 @@ export function OrganisationFreigabeRegelnPanel({
             value={formatEinstellungenSchwelle(schwelle)}
           />
         ) : null}
-      </div>
+      </EinstellungenPfList>
 
       <EinstellungenEditModal
         open={editOpen}

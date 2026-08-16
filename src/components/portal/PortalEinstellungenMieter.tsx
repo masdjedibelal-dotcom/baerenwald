@@ -9,6 +9,7 @@ import { PortalPushSettingsPanel } from "@/components/shared/PortalPushSettingsP
 import {
   EinstellungenEdField,
   EinstellungenEditModal,
+  EinstellungenPfList,
   EinstellungenPfRow,
   EinstellungenSectionHeader,
 } from "@/components/shared/PortalEinstellungenUi";
@@ -123,14 +124,16 @@ export function PortalEinstellungenMieter({
               <div className="space-y-4">
                 <div className="space-y-2.5">
                   <EinstellungenSectionHeader title={MIETER_KONTO_ZUGANG_TITLE} />
-                  <EinstellungenPfRow
-                    label="Wohnung"
-                    value={wohnung?.trim() || "—"}
-                  />
-                  <EinstellungenPfRow
-                    label="Portal bereitgestellt von"
-                    value={orgName?.trim() || "—"}
-                  />
+                  <EinstellungenPfList>
+                    <EinstellungenPfRow
+                      label="Wohnung"
+                      value={wohnung?.trim() || "—"}
+                    />
+                    <EinstellungenPfRow
+                      label="Portal bereitgestellt von"
+                      value={orgName?.trim() || "—"}
+                    />
+                  </EinstellungenPfList>
                   <p className="portal-text-meta leading-relaxed text-text-secondary">
                     {mieterKontoZugangHinweis(zugangMail)}
                   </p>
@@ -173,9 +176,11 @@ export function PortalEinstellungenMieter({
                 onEdit={openEdit}
                 editLabel="Telefon bearbeiten"
               />
-              <EinstellungenPfRow label="Name" value={name?.trim() || "—"} />
-              <EinstellungenPfRow label="E-Mail" value={email?.trim() || "—"} />
-              <EinstellungenPfRow label="Telefon" value={savedTel || "—"} />
+              <EinstellungenPfList>
+                <EinstellungenPfRow label="Name" value={name?.trim() || "—"} />
+                <EinstellungenPfRow label="E-Mail" value={email?.trim() || "—"} />
+                <EinstellungenPfRow label="Telefon" value={savedTel || "—"} />
+              </EinstellungenPfList>
               <p className="portal-text-meta leading-relaxed text-text-secondary">
                 Name oder E-Mail ändern? Schreiben Sie Ihrer Verwaltung:{" "}
                 <a

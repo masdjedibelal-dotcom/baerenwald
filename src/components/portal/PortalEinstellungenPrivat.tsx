@@ -9,6 +9,7 @@ import { PortalPushSettingsPanel } from "@/components/shared/PortalPushSettingsP
 import {
   EinstellungenEdField,
   EinstellungenEditModal,
+  EinstellungenPfList,
   EinstellungenPfRow,
   EinstellungenSectionHeader,
 } from "@/components/shared/PortalEinstellungenUi";
@@ -96,9 +97,11 @@ export function PortalEinstellungenPrivat({
                 onEdit={openEdit}
                 editLabel="Profil bearbeiten"
               />
-              <EinstellungenPfRow label="Name" value={savedName || "—"} />
-              <EinstellungenPfRow label="E-Mail" value={email?.trim() || "—"} />
-              <EinstellungenPfRow label="Telefon" value={savedTel || "—"} />
+              <EinstellungenPfList>
+                <EinstellungenPfRow label="Name" value={savedName || "—"} />
+                <EinstellungenPfRow label="E-Mail" value={email?.trim() || "—"} />
+                <EinstellungenPfRow label="Telefon" value={savedTel || "—"} />
+              </EinstellungenPfList>
               <p className="portal-text-label normal-case tracking-normal text-text-tertiary">
                 E-Mail-Änderung nur über Support (Verifizierung).
               </p>

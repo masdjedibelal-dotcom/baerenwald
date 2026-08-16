@@ -2,7 +2,6 @@
 
 import Image from "next/image";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Pencil } from "lucide-react";
 
 import type { OrganisationKunde } from "@/lib/org/types";
 import {
@@ -14,6 +13,7 @@ import {
   EinstellungenEdField,
   EinstellungenEditModal,
   EinstellungenGrid2,
+  EinstellungenPfList,
   EinstellungenPfRow,
   EinstellungenSectionHeader,
 } from "@/components/shared/PortalEinstellungenUi";
@@ -216,38 +216,25 @@ export function OrganisationPortalAngabenPanel({
       </div>
 
       <div className="space-y-3">
-        <div className="flex items-start justify-between gap-2">
-          <EinstellungenSectionHeader title="Angaben fürs Portal" />
-          {!readOnly ? (
-            <button
-              type="button"
-              onClick={openEdit}
-              aria-label="Portal-Angaben bearbeiten"
-              title="Bearbeiten"
-              className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-border-default bg-white text-text-secondary hover:border-accent/40 hover:text-accent"
-            >
-              <Pencil className="h-4 w-4" aria-hidden />
-            </button>
-          ) : null}
-        </div>
-        <div className="flex flex-col gap-[11px]">
+        <EinstellungenSectionHeader
+          title="Angaben fürs Portal"
+          onEdit={readOnly ? undefined : openEdit}
+          editLabel="Portal-Angaben bearbeiten"
+        />
+        <EinstellungenPfList>
           <EinstellungenPfRow label="Zusatz / Rolle" value={dash(saved.sub)} />
           <EinstellungenPfRow
             label="Namenskürzel"
             value={dash(saved.logo)}
           />
-          <EinstellungenGrid2>
-            <EinstellungenPfRow label="Straße" value={dash(saved.strasse)} />
-            <EinstellungenPfRow
-              label="Hausnummer"
-              value={dash(saved.hausnummer)}
-            />
-          </EinstellungenGrid2>
-          <EinstellungenGrid2>
-            <EinstellungenPfRow label="PLZ" value={dash(saved.plz)} />
-            <EinstellungenPfRow label="Ort" value={dash(saved.ort)} />
-          </EinstellungenGrid2>
-        </div>
+          <EinstellungenPfRow label="Straße" value={dash(saved.strasse)} />
+          <EinstellungenPfRow
+            label="Hausnummer"
+            value={dash(saved.hausnummer)}
+          />
+          <EinstellungenPfRow label="PLZ" value={dash(saved.plz)} />
+          <EinstellungenPfRow label="Ort" value={dash(saved.ort)} />
+        </EinstellungenPfList>
       </div>
 
       {edit ? (

@@ -12,20 +12,44 @@ import { PortalModalShell } from "@/components/shared/PortalModalShell";
 import { PORTAL_VAR } from "@/lib/portal2/tokens";
 import { cn } from "@/lib/utils";
 
-/** Read-only Feld: Label oben, Wert als Klartext (kein Box-Fill). */
+/** Read-only Zeile: Label links, Wert rechts — scannbar auf Mobil. */
 export function EinstellungenPfRow({
   label,
   value,
+  className,
 }: {
   label: ReactNode;
   value: string;
+  className?: string;
 }) {
   return (
-    <div className="min-w-0 py-0.5">
-      <div className="portal-text-label normal-case tracking-wide text-text-tertiary">
+    <div
+      className={cn(
+        "flex min-w-0 items-baseline justify-between gap-3 py-2.5",
+        className
+      )}
+    >
+      <div className="max-w-[44%] shrink-0 text-[13px] font-semibold leading-snug text-text-primary">
         {label}
       </div>
-      <p className="portal-text-card-title mt-0.5 font-semibold">{value}</p>
+      <p className="min-w-0 flex-1 text-right text-[14.5px] font-semibold leading-snug text-text-primary [overflow-wrap:anywhere]">
+        {value}
+      </p>
+    </div>
+  );
+}
+
+/** Liste von PfRows mit Trennlinien. */
+export function EinstellungenPfList({
+  children,
+  className,
+}: {
+  children: ReactNode;
+  className?: string;
+}) {
+  return (
+    <div className={cn("divide-y divide-border-light", className)}>
+      {children}
     </div>
   );
 }
@@ -50,9 +74,7 @@ export function EinstellungenEdField({
 }) {
   return (
     <label className="flex flex-col gap-1">
-      <span className="portal-text-label normal-case tracking-wide text-text-tertiary">
-        {label}
-      </span>
+      <span className="text-[13px] font-semibold text-text-primary">{label}</span>
       <input
         type={type}
         className="portal-field w-full"
@@ -71,7 +93,7 @@ export function EinstellungenInfoBox({ children }: { children: ReactNode }) {
   return <PortalDetailInfoBox>{children}</PortalDetailInfoBox>;
 }
 
-/** Abschnittskopf: Label + Stift (öffnet Edit-Modal). */
+/** Abschnittskopf: Label + farbiges Stift-Icon (öffnet Edit-Sheet). */
 export function EinstellungenSectionHeader({
   title,
   onEdit,
@@ -82,17 +104,19 @@ export function EinstellungenSectionHeader({
   editLabel?: string;
 }) {
   return (
-    <div className="mb-2 flex items-center justify-between gap-2">
-      <p className="portal-text-label normal-case text-text-tertiary">{title}</p>
+    <div className="mb-1 flex items-center justify-between gap-2">
+      <p className="text-[12.5px] font-bold uppercase tracking-wide text-text-secondary">
+        {title}
+      </p>
       {onEdit ? (
         <button
           type="button"
           onClick={onEdit}
           aria-label={editLabel}
           title={editLabel}
-          className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-border-default bg-white text-text-secondary transition-colors hover:border-accent/40 hover:text-accent"
+          className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-accent text-white shadow-sm transition-colors hover:bg-accent-hover"
         >
-          <Pencil className="h-4 w-4" aria-hidden />
+          <Pencil className="h-4 w-4" aria-hidden strokeWidth={2.25} />
         </button>
       ) : null}
     </div>

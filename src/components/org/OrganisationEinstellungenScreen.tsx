@@ -8,6 +8,7 @@ import { PortalKontoSicherheitPanel } from "@/components/shared/PortalKontoSiche
 import { PortalEinstellungenShell } from "@/components/shared/PortalEinstellungenShell";
 import { PortalPushSettingsPanel } from "@/components/shared/PortalPushSettingsPanel";
 import {
+  EinstellungenPfList,
   EinstellungenPfRow,
   EinstellungenSectionHeader,
 } from "@/components/shared/PortalEinstellungenUi";
@@ -48,14 +49,14 @@ export function OrganisationEinstellungenScreen({
 
               <div className="space-y-3">
                 <EinstellungenSectionHeader title="Profil" />
-                <div className="flex flex-col gap-[11px]">
+                <EinstellungenPfList>
                   <EinstellungenPfRow label="Name" value={displayName} />
                   <EinstellungenPfRow
                     label="E-Mail"
                     value={kunde.email?.trim() || "—"}
                   />
                   <EinstellungenPfRow label="Telefon" value={tel} />
-                </div>
+                </EinstellungenPfList>
               </div>
 
               <OrganisationMieterLegalLinksPanel

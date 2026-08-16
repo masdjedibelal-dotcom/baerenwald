@@ -88,9 +88,9 @@
   --p2-line: rgba(0, 0, 0, 0.09);
   --p2-line2: rgba(0, 0, 0, 0.06);
   --p2-ink: #142019;
-  --p2-sub: #2e3833;
-  --p2-faint: #55615b;
-  --p2-faint2: #7a857f;
+  --p2-sub: #1f2924;
+  --p2-faint: #3d4a44;
+  --p2-faint2: #5c6963;
   --p2-primary: #2e7d52;
   --p2-primary-dk: #2a724b;
   --p2-primary-soft: #e7f1e9;
@@ -346,7 +346,7 @@ h3 {
     font-weight: 600;
     letter-spacing: 0.04em;
     text-transform: uppercase;
-    color: var(--p2-faint, #55615b);
+    color: var(--p2-sub, #2e3833);
   }
 
   .portal-text-title {

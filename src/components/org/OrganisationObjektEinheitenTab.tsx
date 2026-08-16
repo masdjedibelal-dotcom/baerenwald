@@ -1,14 +1,21 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { ChevronDown, ChevronRight } from "lucide-react";
+import { ChevronRight } from "lucide-react";
 
 import { OrganisationObjektMieterMenu } from "@/components/org/OrganisationObjektMieterMenu";
 import { PortalConfirmDialog } from "@/components/shared/PortalDetailUi";
 import { PortalInboxEmpty } from "@/components/shared/PortalEmptyState";
 import {
+  PortalActionMenu,
+  type PortalActionMenuItem,
+} from "@/components/shared/PortalActionMenu";
+import { PortalModalShell } from "@/components/shared/PortalModalShell";
+import {
   EinstellungenEdField,
   EinstellungenEditModal,
+  EinstellungenPfList,
+  EinstellungenPfRow,
   EinstellungenToggle,
 } from "@/components/shared/PortalEinstellungenUi";
 import {
@@ -51,8 +58,15 @@ type Props = {
   onEinheitenChange?: () => void;
 };
 
+function splitName(full: string): { vorname: string; nachname: string } {
+  const parts = full.trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return { vorname: "", nachname: "" };
+  if (parts.length === 1) return { vorname: parts[0]!, nachname: "" };
+  return { vorname: parts[0]!, nachname: parts.slice(1).join(" ") };
+}
+
 /**
- * Objekt → Einheiten → darunter Mieter/Eigentümer (pro Einheit).
+ * Objekt → Einheiten: flache Liste → Sheet/Slide-over (Mobil + Desktop).
  */
 export function OrganisationObjektEinheitenTab({
   objektId,
@@ -62,10 +76,12 @@ export function OrganisationObjektEinheitenTab({
 }: Props) {
   const [einheiten, setEinheiten] = useState<Einheit[]>([]);
   const [bewohner, setBewohner] = useState<Bewohner[]>([]);
-  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [detailId, setDetailId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const [einheitFormOpen, setEinheitFormOpen] = useState(false);
+  const [einheitForm, setEinheitForm] = useState<
+    null | { mode: "create" } | { mode: "edit"; id: string }
+  >(null);
   const [bezeichnung, setBezeichnung] = useState("");
   const [etage, setEtage] = useState("");
   const [m2, setM2] = useState("");
@@ -74,6 +90,7 @@ export function OrganisationObjektEinheitenTab({
   const [personForm, setPersonForm] = useState<{
     einheitId: string;
     rolle: PersonRolle;
+    editId?: string;
   } | null>(null);
   const [vorname, setVorname] = useState("");
   const [nachname, setNachname] = useState("");
@@ -128,39 +145,68 @@ export function OrganisationObjektEinheitenTab({
     return map;
   }, [bewohner]);
 
-  function openEinheitForm() {
+  const detailEinheit = detailId
+    ? (einheiten.find((e) => e.id === detailId) ?? null)
+    : null;
+
+  function openEinheitCreate() {
     setBezeichnung("");
     setEtage("");
     setM2("");
-    setEinheitFormOpen(true);
+    setEinheitForm({ mode: "create" });
+  }
+
+  function openEinheitEdit(u: Einheit) {
+    setBezeichnung(u.bezeichnung);
+    setEtage(u.etage?.trim() || "");
+    setM2(u.wohnflaeche_m2 != null ? String(u.wohnflaeche_m2) : "");
+    setEinheitForm({ mode: "edit", id: u.id });
   }
 
   function closeEinheitForm() {
     if (einheitBusy) return;
-    setEinheitFormOpen(false);
+    setEinheitForm(null);
   }
 
   async function saveEinheit() {
     const label = bezeichnung.trim();
-    if (!label) return;
+    if (!label || !einheitForm) return;
     setEinheitBusy(true);
     try {
+      const body =
+        einheitForm.mode === "create"
+          ? {
+              objektId,
+              bezeichnung: label,
+              etage: etage.trim() || null,
+              wohnflaeche_m2: m2.trim()
+                ? Number(m2.replace(",", "."))
+                : null,
+            }
+          : {
+              id: einheitForm.id,
+              bezeichnung: label,
+              etage: etage.trim() || null,
+              wohnflaeche_m2: m2.trim()
+                ? Number(m2.replace(",", "."))
+                : null,
+            };
       const res = await fetch("/api/org/objekte/einheiten", {
-        method: "POST",
+        method: einheitForm.mode === "create" ? "POST" : "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          objektId,
-          bezeichnung: label,
-          etage: etage.trim() || null,
-          wohnflaeche_m2: m2.trim() ? Number(m2.replace(",", ".")) : null,
-        }),
+        body: JSON.stringify(body),
       });
       const json = (await res.json()) as { error?: string };
       if (!res.ok) {
-        portalToastError("Einheit nicht angelegt", json.error);
+        portalToastError(
+          einheitForm.mode === "create"
+            ? "Einheit nicht angelegt"
+            : "Einheit nicht gespeichert",
+          json.error
+        );
         return;
       }
-      setEinheitFormOpen(false);
+      setEinheitForm(null);
       orgPortalToast.objektAktualisiert();
       await load();
       onEinheitenChange?.();
@@ -169,7 +215,7 @@ export function OrganisationObjektEinheitenTab({
     }
   }
 
-  function openPersonForm(einheitId: string, rolle: PersonRolle) {
+  function openPersonCreate(einheitId: string, rolle: PersonRolle) {
     setVorname("");
     setNachname("");
     setEmail("");
@@ -177,6 +223,21 @@ export function OrganisationObjektEinheitenTab({
     setSeVerwaltung(false);
     setMieteHinweis("");
     setPersonForm({ einheitId, rolle });
+  }
+
+  function openPersonEdit(b: Bewohner) {
+    const parts = splitName(b.name);
+    setVorname(parts.vorname);
+    setNachname(parts.nachname);
+    setEmail(b.email?.trim() || "");
+    setTelefon(b.telefon?.trim() || "");
+    setSeVerwaltung(Boolean(b.sondereigentum_verwaltung));
+    setMieteHinweis(b.miete_hinweis?.trim() || "");
+    setPersonForm({
+      einheitId: b.objekt_einheit_id,
+      rolle: b.rolle === "eigentuemer" ? "eigentuemer" : "mieter",
+      editId: b.id,
+    });
   }
 
   function closePersonForm() {
@@ -189,34 +250,56 @@ export function OrganisationObjektEinheitenTab({
 
   async function savePerson() {
     if (!personForm || !canSubmitPerson) return;
-    const name = [vorname, nachname].map((s) => s.trim()).filter(Boolean).join(" ");
+    const name = [vorname, nachname]
+      .map((s) => s.trim())
+      .filter(Boolean)
+      .join(" ");
     setPersonBusy(true);
     try {
+      const isEdit = Boolean(personForm.editId);
       const res = await fetch("/api/org/einheit-bewohner", {
-        method: "POST",
+        method: isEdit ? "PATCH" : "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          objektId,
-          einheitId: personForm.einheitId,
-          name,
-          email: email.trim() || undefined,
-          telefon: telefon.trim() || undefined,
-          rolle: personForm.rolle,
-          sondereigentum_verwaltung:
-            personForm.rolle === "eigentuemer" ? seVerwaltung : false,
-          miete_hinweis:
-            personForm.rolle === "mieter"
-              ? mieteHinweis.trim() || undefined
-              : undefined,
-        }),
+        body: JSON.stringify(
+          isEdit
+            ? {
+                id: personForm.editId,
+                name,
+                email: email.trim() || "",
+                telefon: telefon.trim() || "",
+                rolle: personForm.rolle,
+                sondereigentum_verwaltung:
+                  personForm.rolle === "eigentuemer" ? seVerwaltung : false,
+                miete_hinweis:
+                  personForm.rolle === "mieter"
+                    ? mieteHinweis.trim() || null
+                    : null,
+              }
+            : {
+                objektId,
+                einheitId: personForm.einheitId,
+                name,
+                email: email.trim() || undefined,
+                telefon: telefon.trim() || undefined,
+                rolle: personForm.rolle,
+                sondereigentum_verwaltung:
+                  personForm.rolle === "eigentuemer" ? seVerwaltung : false,
+                miete_hinweis:
+                  personForm.rolle === "mieter"
+                    ? mieteHinweis.trim() || undefined
+                    : undefined,
+              }
+        ),
       });
       const json = (await res.json()) as { error?: string };
       if (!res.ok) {
-        portalToastError("Anlegen fehlgeschlagen", json.error);
+        portalToastError(
+          isEdit ? "Speichern fehlgeschlagen" : "Anlegen fehlgeschlagen",
+          json.error
+        );
         return;
       }
       setPersonForm(null);
-      setExpandedId(personForm.einheitId);
       orgPortalToast.objektAktualisiert();
       await load();
     } finally {
@@ -244,7 +327,7 @@ export function OrganisationObjektEinheitenTab({
         portalToastError("Einheit nicht entfernt", json.error);
         return;
       }
-      if (expandedId === id) setExpandedId(null);
+      if (detailId === id) setDetailId(null);
       orgPortalToast.objektAktualisiert();
       await load();
       onEinheitenChange?.();
@@ -317,6 +400,26 @@ export function OrganisationObjektEinheitenTab({
     }
   }
 
+  function einheitMenuItems(u: Einheit): PortalActionMenuItem[] {
+    return [
+      {
+        label: "Bearbeiten",
+        onClick: () => openEinheitEdit(u),
+      },
+      {
+        label: "Einheit entfernen",
+        danger: true,
+        dividerBefore: true,
+        onClick: () =>
+          setConfirm({
+            kind: "einheit",
+            id: u.id,
+            label: u.bezeichnung,
+          }),
+      },
+    ];
+  }
+
   function renderPersonList(
     einheit: Einheit,
     rolle: PersonRolle,
@@ -326,53 +429,69 @@ export function OrganisationObjektEinheitenTab({
     return (
       <div className="space-y-2">
         <div className="flex items-center justify-between gap-2">
-          <p className="text-[12px] font-bold uppercase tracking-wide text-text-tertiary">
+          <p className="text-[12.5px] font-bold uppercase tracking-wide text-text-secondary">
             {title}
           </p>
           <button
             type="button"
             className="rounded-lg border border-border-default bg-white px-2.5 py-1 text-[12px] font-semibold text-text-secondary hover:border-accent/40 hover:text-accent"
-            onClick={() => openPersonForm(einheit.id, rolle)}
+            onClick={() => openPersonCreate(einheit.id, rolle)}
           >
             ＋ {title}
           </button>
         </div>
         {people.length === 0 ? (
-          <p className="text-[12.5px] text-text-tertiary">Noch keine {title}.</p>
+          <p className="text-[13px] text-text-secondary">Noch keine {title}.</p>
         ) : (
-          <ul className="space-y-1.5">
+          <ul className="divide-y divide-border-light rounded-xl border border-border-light bg-white">
             {people.map((b) => {
               const mail = b.email?.trim() || "";
+              const tel = b.telefon?.trim() || "";
               const statusKey = resolveObjMieterPortalStatus({ email: mail });
               const status = OBJ_MIETER_PORTAL_STATUS[statusKey];
               const initial = (b.name.trim()[0] || "?").toUpperCase();
+              const metaBits = [
+                mail || null,
+                tel || null,
+                rolle === "eigentuemer"
+                  ? b.sondereigentum_verwaltung
+                    ? "SE-Verwaltung"
+                    : null
+                  : status,
+                rolle === "mieter" && b.miete_hinweis?.trim()
+                  ? b.miete_hinweis.trim()
+                  : null,
+              ].filter(Boolean);
+
               return (
                 <li
                   key={b.id}
-                  className="flex items-center gap-2.5 rounded-lg border border-border-light bg-white px-3 py-2.5"
+                  className="flex items-center gap-2.5 px-3 py-2.5"
                 >
-                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-muted text-xs font-bold text-text-primary">
-                    {initial}
-                  </span>
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-[13px] font-semibold text-text-primary">
-                      {b.name}
-                    </p>
-                    <p className="truncate text-[11.5px] text-text-tertiary">
-                      {mail || "—"}
-                      {rolle === "eigentuemer"
-                        ? b.sondereigentum_verwaltung
-                          ? " · SE-Verwaltung"
-                          : ""
-                        : ` · ${status}`}
-                    </p>
-                  </div>
+                  <button
+                    type="button"
+                    className="flex min-w-0 flex-1 items-center gap-2.5 text-left"
+                    onClick={() => openPersonEdit(b)}
+                  >
+                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-muted text-xs font-bold text-text-primary">
+                      {initial}
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-[14px] font-semibold text-text-primary">
+                        {b.name}
+                      </p>
+                      <p className="truncate text-[12.5px] text-text-secondary">
+                        {metaBits.join(" · ") || "Keine Kontaktdaten"}
+                      </p>
+                    </div>
+                  </button>
                   <OrganisationObjektMieterMenu
                     hasEmail={Boolean(mail)}
                     onEinladen={() =>
                       void einladenPerson(b, einheit.bezeichnung)
                     }
                     onVorgaenge={onGotoVorgaenge}
+                    onBearbeiten={() => openPersonEdit(b)}
                     onEntfernen={() =>
                       setConfirm({
                         kind: "person",
@@ -394,6 +513,8 @@ export function OrganisationObjektEinheitenTab({
     personForm &&
     einheiten.find((e) => e.id === personForm.einheitId)?.bezeichnung;
 
+  const personEditing = Boolean(personForm?.editId);
+
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between gap-2">
@@ -405,7 +526,7 @@ export function OrganisationObjektEinheitenTab({
         <button
           type="button"
           className="rounded-[9px] border border-border-default bg-white px-3 py-1.5 text-[12.5px] font-semibold text-text-secondary hover:border-accent/40 hover:text-accent"
-          onClick={openEinheitForm}
+          onClick={openEinheitCreate}
         >
           ＋ Einheit
         </button>
@@ -418,16 +539,15 @@ export function OrganisationObjektEinheitenTab({
       ) : einheiten.length === 0 ? (
         <PortalInboxEmpty
           title="Noch keine Einheiten"
-          description="Legen Sie zuerst eine Einheit an — danach können Sie Mieter und Eigentümer zuordnen."
+          description="Anzahl im Objekt-Stamm erhöhen — oder hier eine Einheit manuell anlegen."
           compact
         />
       ) : (
-        <ul className="space-y-2">
+        <ul className="divide-y divide-border-light overflow-hidden rounded-xl border border-border-default bg-white">
           {einheiten.map((u) => {
             const people = byEinheit.get(u.id) ?? [];
             const mieter = people.filter((p) => p.rolle !== "eigentuemer");
             const eigentuemer = people.filter((p) => p.rolle === "eigentuemer");
-            const open = expandedId === u.id;
             const badge = people.length > 0 ? "belegt" : "leer";
             const meta = [
               u.etage?.trim() ? `Etage ${u.etage.trim()}` : null,
@@ -441,27 +561,17 @@ export function OrganisationObjektEinheitenTab({
               .join(" · ");
 
             return (
-              <li
-                key={u.id}
-                className="overflow-hidden rounded-xl border border-border-default bg-white"
-              >
+              <li key={u.id} className="flex items-stretch">
                 <button
                   type="button"
-                  className="flex w-full items-center gap-2 px-3.5 py-3 text-left"
-                  onClick={() =>
-                    setExpandedId((cur) => (cur === u.id ? null : u.id))
-                  }
+                  className="flex min-w-0 flex-1 items-center gap-2 px-3.5 py-3 text-left hover:bg-muted/40"
+                  onClick={() => setDetailId(u.id)}
                 >
-                  {open ? (
-                    <ChevronDown className="h-4 w-4 shrink-0 text-text-tertiary" />
-                  ) : (
-                    <ChevronRight className="h-4 w-4 shrink-0 text-text-tertiary" />
-                  )}
                   <div className="min-w-0 flex-1">
-                    <p className="truncate text-[13.5px] font-semibold text-text-primary">
+                    <p className="truncate text-[14.5px] font-semibold text-text-primary">
                       {u.bezeichnung}
                     </p>
-                    <p className="truncate text-[12px] text-text-secondary">
+                    <p className="truncate text-[13px] text-text-secondary">
                       {meta || "Keine Personen"}
                     </p>
                   </div>
@@ -475,42 +585,111 @@ export function OrganisationObjektEinheitenTab({
                   >
                     {badge}
                   </span>
+                  <ChevronRight
+                    className="h-4 w-4 shrink-0 text-text-tertiary"
+                    aria-hidden
+                  />
                 </button>
-
-                {open ? (
-                  <div className="space-y-4 border-t border-border-light bg-[#fafaf9] px-3.5 py-3.5">
-                    {renderPersonList(u, "eigentuemer", eigentuemer)}
-                    {renderPersonList(u, "mieter", mieter)}
-                    <button
-                      type="button"
-                      className="text-[12px] font-semibold text-red-600 hover:underline"
-                      onClick={() =>
-                        setConfirm({
-                          kind: "einheit",
-                          id: u.id,
-                          label: u.bezeichnung,
-                        })
-                      }
-                    >
-                      Einheit entfernen
-                    </button>
-                  </div>
-                ) : null}
+                <div className="flex items-center border-l border-border-light px-1.5">
+                  <PortalActionMenu
+                    title={u.bezeichnung}
+                    items={einheitMenuItems(u)}
+                    variant="popover"
+                    triggerLabel="Einheit-Menü"
+                  />
+                </div>
               </li>
             );
           })}
         </ul>
       )}
 
+      <PortalModalShell
+        open={Boolean(detailEinheit)}
+        title={detailEinheit?.bezeichnung ?? "Einheit"}
+        subtitle={
+          detailEinheit
+            ? [
+                detailEinheit.etage?.trim()
+                  ? `Etage ${detailEinheit.etage.trim()}`
+                  : null,
+                detailEinheit.wohnflaeche_m2 != null
+                  ? `${detailEinheit.wohnflaeche_m2} m²`
+                  : null,
+              ]
+                .filter(Boolean)
+                .join(" · ") || null
+            : null
+        }
+        onClose={() => setDetailId(null)}
+        variant="edit"
+        headerExtra={
+          detailEinheit ? (
+            <PortalActionMenu
+              title={detailEinheit.bezeichnung}
+              items={einheitMenuItems(detailEinheit)}
+              variant="popover"
+              triggerLabel="Einheit-Menü"
+            />
+          ) : null
+        }
+      >
+        {detailEinheit ? (
+          <div className="space-y-5">
+            <EinstellungenPfList>
+              <EinstellungenPfRow
+                label="Bezeichnung"
+                value={detailEinheit.bezeichnung}
+              />
+              <EinstellungenPfRow
+                label="Etage"
+                value={detailEinheit.etage?.trim() || "—"}
+              />
+              <EinstellungenPfRow
+                label="Wohnfläche"
+                value={
+                  detailEinheit.wohnflaeche_m2 != null
+                    ? `${detailEinheit.wohnflaeche_m2} m²`
+                    : "—"
+                }
+              />
+            </EinstellungenPfList>
+
+            {renderPersonList(
+              detailEinheit,
+              "eigentuemer",
+              (byEinheit.get(detailEinheit.id) ?? []).filter(
+                (p) => p.rolle === "eigentuemer"
+              )
+            )}
+            {renderPersonList(
+              detailEinheit,
+              "mieter",
+              (byEinheit.get(detailEinheit.id) ?? []).filter(
+                (p) => p.rolle !== "eigentuemer"
+              )
+            )}
+          </div>
+        ) : null}
+      </PortalModalShell>
+
       <EinstellungenEditModal
-        open={einheitFormOpen}
-        title="Einheit anlegen"
-        subtitle="Danach können Sie Mieter und Eigentümer dieser Einheit zuordnen."
+        open={Boolean(einheitForm)}
+        title={
+          einheitForm?.mode === "edit"
+            ? "Einheit bearbeiten"
+            : "Einheit anlegen"
+        }
+        subtitle={
+          einheitForm?.mode === "edit"
+            ? "Bezeichnung, Etage und Fläche."
+            : "Danach Mieter und Eigentümer zuordnen."
+        }
         onClose={closeEinheitForm}
         onSave={() => void saveEinheit()}
         saving={einheitBusy}
         saveDisabled={!bezeichnung.trim()}
-        saveLabel="Anlegen"
+        saveLabel={einheitForm?.mode === "edit" ? "Speichern" : "Anlegen"}
       >
         <EinstellungenEdField
           label="Bezeichnung"
@@ -536,19 +715,21 @@ export function OrganisationObjektEinheitenTab({
         open={Boolean(personForm)}
         title={
           personForm?.rolle === "eigentuemer"
-            ? "Eigentümer hinzufügen"
-            : "Mieter hinzufügen"
+            ? personEditing
+              ? "Eigentümer bearbeiten"
+              : "Eigentümer hinzufügen"
+            : personEditing
+              ? "Mieter bearbeiten"
+              : "Mieter hinzufügen"
         }
         subtitle={
-          personEinheitLabel
-            ? `Einheit: ${personEinheitLabel}`
-            : undefined
+          personEinheitLabel ? `Einheit: ${personEinheitLabel}` : undefined
         }
         onClose={closePersonForm}
         onSave={() => void savePerson()}
         saving={personBusy}
         saveDisabled={!canSubmitPerson}
-        saveLabel="Hinzufügen"
+        saveLabel={personEditing ? "Speichern" : "Hinzufügen"}
       >
         <div className="grid grid-cols-2 gap-2">
           <EinstellungenEdField

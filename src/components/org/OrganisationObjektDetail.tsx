@@ -12,6 +12,7 @@ import {
   EinstellungenEdField,
   EinstellungenEditModal,
   EinstellungenEuroSlider,
+  EinstellungenPfList,
   EinstellungenPfRow,
   EinstellungenSectionHeader,
   EinstellungenSheetCard,
@@ -355,7 +356,7 @@ export function OrganisationObjektDetail({
       <div className="space-y-6">
         <div className="space-y-3">
           <EinstellungenSectionHeader title="Objektdaten" onEdit={onEdit} />
-          <div className="flex flex-col gap-[11px]">
+          <EinstellungenPfList>
             <EinstellungenPfRow label="Bezeichnung" value={dash(objekt.titel)} />
             <EinstellungenPfRow label="Typ" value={dash(typLine)} />
             <EinstellungenPfRow
@@ -368,7 +369,7 @@ export function OrganisationObjektDetail({
               label="Einheiten"
               value={we === 1 ? "1 Einheit" : `${we} Einheiten`}
             />
-          </div>
+          </EinstellungenPfList>
         </div>
 
         <div className="space-y-3">
@@ -376,11 +377,11 @@ export function OrganisationObjektDetail({
             title="Ansprechpartner"
             onEdit={openKontaktEdit}
           />
-          <div className="flex flex-col gap-[11px]">
+          <EinstellungenPfList>
             <EinstellungenPfRow label="Name" value={dash(kontaktName)} />
             <EinstellungenPfRow label="Telefon" value={dash(kontaktTel)} />
             <EinstellungenPfRow label="E-Mail" value={dash(kontaktEmail)} />
-          </div>
+          </EinstellungenPfList>
           <EinstellungenEditModal
             open={kontaktEditOpen}
             title="Ansprechpartner bearbeiten"
@@ -419,7 +420,7 @@ export function OrganisationObjektDetail({
             title="Gebäudeversicherung"
             onEdit={openVersEdit}
           />
-          <div className="flex flex-col gap-[11px]">
+          <EinstellungenPfList>
             <EinstellungenPfRow label="Versicherer" value={dash(versicherer)} />
             <EinstellungenPfRow label="Policen-Nr." value={dash(objVersNr)} />
             <EinstellungenPfRow
@@ -434,7 +435,7 @@ export function OrganisationObjektDetail({
               label="Automatische Schadenakte"
               value={autoSchadenakte ? "Ein" : "Aus"}
             />
-          </div>
+          </EinstellungenPfList>
           <EinstellungenEditModal
             open={versEditOpen}
             title="Gebäudeversicherung bearbeiten"
@@ -543,7 +544,7 @@ export function OrganisationObjektDetail({
           title={EINSTELLUNGEN_SCHWELLE_TITLE}
           onEdit={openFreigabeEdit}
         />
-        <div className="flex flex-col gap-[11px]">
+        <EinstellungenPfList>
           <EinstellungenPfRow
             label={<SofortmassnahmeAkutTitleWithFaelle />}
             value={akutDirekt ? "Ja" : "Nein"}
@@ -558,7 +559,7 @@ export function OrganisationObjektDetail({
               value={formatEinstellungenSchwelle(schwelle)}
             />
           ) : null}
-        </div>
+        </EinstellungenPfList>
 
         <EinstellungenEditModal
           open={freigabeEditOpen}

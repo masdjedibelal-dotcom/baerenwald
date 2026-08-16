@@ -5,6 +5,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   EinstellungenEdField,
   EinstellungenEditModal,
+  EinstellungenPfList,
   EinstellungenPfRow,
   EinstellungenSectionHeader,
 } from "@/components/shared/PortalEinstellungenUi";
@@ -119,13 +120,13 @@ export function OrganisationMieterLegalLinksPanel({
         title="Impressum & Datenschutz (Mieter)"
         onEdit={readOnly ? undefined : openEdit}
       />
-      <div className="flex flex-col gap-[11px]">
+      <EinstellungenPfList>
         <EinstellungenPfRow label="Impressum" value={dash(saved.impressum)} />
         <EinstellungenPfRow
           label="Datenschutz"
           value={dash(saved.datenschutz)}
         />
-      </div>
+      </EinstellungenPfList>
 
       {!legalReady ? (
         <p className="text-[12.5px] leading-relaxed text-text-secondary">

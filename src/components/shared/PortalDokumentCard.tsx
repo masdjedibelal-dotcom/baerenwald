@@ -45,9 +45,7 @@ export function PortalDokumentCard({
           </p>
         ) : null}
         {meta ? (
-          <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1.5">
-            {meta}
-          </div>
+          <div className="mt-1.5 min-w-0">{meta}</div>
         ) : null}
         {children}
         {error ? (

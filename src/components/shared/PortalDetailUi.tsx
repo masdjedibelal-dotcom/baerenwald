@@ -177,13 +177,16 @@ export function PortalDetailSection({
   children,
   className,
 }: {
-  title: string;
+  /** Leer/undefined = kein Überschrift (wenn Tab den Titel schon trägt). */
+  title?: string | null;
   children: React.ReactNode;
   className?: string;
 }) {
   return (
     <section className={cn("space-y-2.5", className)}>
-      <h4 className="portal-text-section">{title}</h4>
+      {title?.trim() ? (
+        <h4 className="portal-text-section">{title.trim()}</h4>
+      ) : null}
       {children}
     </section>
   );
@@ -197,16 +200,18 @@ export function PortalDetailKeyValues({
   const visible = rows.filter((r) => r.value != null && r.value !== "" && r.value !== "—");
   if (!visible.length) return null;
   return (
-    <dl className="portal-text-body divide-y divide-border-light">
+    <dl className="divide-y divide-border-light">
       {visible.map((row) => (
         <div
           key={row.label}
-          className="grid grid-cols-1 gap-0.5 py-2.5 sm:grid-cols-[38%_1fr] sm:items-baseline sm:gap-4"
+          className="flex min-w-0 items-baseline justify-between gap-3 py-2.5"
         >
-          <dt className="portal-text-label normal-case tracking-wide text-text-tertiary">
+          <dt className="max-w-[44%] shrink-0 text-[13px] font-semibold leading-snug text-text-primary">
             {row.label}
           </dt>
-          <dd className="portal-text-meta text-text-primary">{row.value}</dd>
+          <dd className="min-w-0 flex-1 text-right text-[14.5px] font-semibold leading-snug text-text-primary [overflow-wrap:anywhere]">
+            {row.value}
+          </dd>
         </div>
       ))}
     </dl>
