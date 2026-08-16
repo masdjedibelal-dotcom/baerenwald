@@ -157,7 +157,8 @@ export function partnerAuftragKannRechnungHochladen(
   item: PartnerAuftragItem,
   opts?: { abschlussDoneLocal?: boolean }
 ): boolean {
-  if (!item.angebotHandwerkerId) return false;
+  // Direktauftrag braucht keine angebot_handwerker-Zeile in der UI —
+  // Server legt sie intern an und rechnet aus Auftrags-Leistungen.
   if (item.status.toLowerCase() === "storniert") return false;
   if (item.hw_rechnung_eingereicht_at) return false;
   if (!partnerHwRechnungCrmFreigegeben(item)) return false;

@@ -77,12 +77,15 @@ function aggregateBeschreibung(
 
 /**
  * Positionen für Auto-Angebot/Rechnung.
- * Festpreis aus hw_konditionen; Regie = Zeit × Stundensatz (Titel/Beschreibung aus Position/Einträgen).
+ * Festpreis aus hw_konditionen bzw. preis_partner am Auftrag;
+ * Regie = Zeit × Stundensatz (Titel/Beschreibung aus Position/Einträgen).
  */
 export async function buildPartnerAutoDocPositionen(opts: {
   handwerkerId: string;
-  angebotId: string | null;
-  hwKonditionen: unknown;
+  angebotId?: string | null;
+  /** Direktauftrag: Positionen ohne Umweg über Angebot laden. */
+  auftragId?: string | null;
+  hwKonditionen?: unknown;
   art: "angebot" | "rechnung";
   overrides?: AutoDocRegieOverride[];
 }): Promise<{
@@ -97,8 +100,8 @@ export async function buildPartnerAutoDocPositionen(opts: {
   const kond = parsePartnerHwKonditionen(opts.hwKonditionen);
   const kondPos = kond?.positionen ?? [];
 
-  let auftragId: string | null = null;
-  if (opts.angebotId) {
+  let auftragId = opts.auftragId?.trim() || null;
+  if (!auftragId && opts.angebotId) {
     const { data: auf } = await supabaseAdmin
       .from("auftraege")
       .select("id")

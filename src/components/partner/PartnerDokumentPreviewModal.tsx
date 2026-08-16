@@ -28,7 +28,10 @@ type Step = "ask" | "fehlend" | "preview";
 
 type Props = {
   open: boolean;
-  anfrageId: string;
+  /** Klassischer Angebot-Pfad (optional bei Rechnung mit auftragId). */
+  anfrageId?: string | null;
+  /** Direktauftrag/Akut: Rechnung aus Auftrags-Leistungen. */
+  auftragId?: string | null;
   art: "angebot" | "rechnung";
   leistungsZeitraum?: string;
   onClose: () => void;
@@ -46,11 +49,11 @@ type Props = {
 
 /**
  * Auto-Dokument: optional Ja/Nein → ggf. fehlende Daten → Preview → Submit.
- * Parent steuert `open` (z. B. Sticky-CTA Rechnung).
  */
 export function PartnerDokumentPreviewModal({
   open,
   anfrageId,
+  auftragId,
   art,
   leistungsZeitraum,
   onClose,
@@ -106,6 +109,7 @@ export function PartnerDokumentPreviewModal({
     return runUpload(async () => {
       const res = await previewPartnerAutoDokument({
         anfrageId,
+        auftragId,
         art,
         overrides: withOverrides,
       });
@@ -176,7 +180,7 @@ export function PartnerDokumentPreviewModal({
     }
     // Nur bei Öffnen / Kontextwechsel laden — nicht bei jedem Render.
     // eslint-disable-next-line react-hooks/exhaustive-deps -- intentional open gate
-  }, [open, anfrageId, art, autoSkipAsk]);
+  }, [open, anfrageId, auftragId, art, autoSkipAsk]);
 
   async function handleJa() {
     await loadPreview([]);
@@ -208,6 +212,7 @@ export function PartnerDokumentPreviewModal({
 
       const res = await previewPartnerAutoDokument({
         anfrageId,
+        auftragId,
         art,
         overrides,
       });
@@ -242,12 +247,13 @@ export function PartnerDokumentPreviewModal({
     await runUpload(async () => {
       const res =
         art === "angebot"
-          ? await submitPartnerAutoAngebot(anfrageId, {
+          ? await submitPartnerAutoAngebot(String(anfrageId ?? preview?.anfrageId ?? ""), {
               dokumentNr: nr,
               overrides,
             })
           : await submitPartnerAutoRechnung({
               anfrageId,
+              auftragId,
               leistungsZeitraum,
               dokumentNr: nr,
               overrides,

@@ -180,11 +180,12 @@ assert.equal(
 assert.equal(
   partnerAuftragKannRechnungHochladen({
     ...item,
-    status: "abgeschlossen",
+    angebotHandwerkerId: null,
+    angebotHwStatus: "uebernommen",
     hw_abschluss_signiert_am: "2026-07-24T10:00:00Z",
   }),
   true,
-  "Rechnung auch bei erledigtem Auftrag"
+  "Direktauftrag: Rechnung ohne angebotHandwerkerId möglich"
 );
 
 console.log("audit F-wave abnahme checks passed.");

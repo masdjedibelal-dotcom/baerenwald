@@ -216,6 +216,7 @@ async function resolveDocPositionen(opts: {
   handwerkerId: string;
   row: Record<string, unknown>;
   art: "angebot" | "rechnung";
+  auftragId?: string | null;
   overrides?: AutoDocRegieOverride[];
 }) {
   const angebotId = opts.row.angebot_id
@@ -224,6 +225,7 @@ async function resolveDocPositionen(opts: {
   const built = await buildPartnerAutoDocPositionen({
     handwerkerId: opts.handwerkerId,
     angebotId,
+    auftragId: opts.auftragId ?? null,
     hwKonditionen: opts.row.hw_konditionen,
     art: opts.art,
     overrides: opts.overrides,
@@ -267,16 +269,26 @@ function firmendatenMissingFields(
   return labels.map((l) => map[l] ?? { key: l, label: l, scope: "firmendaten", kind: "text" });
 }
 
-async function loadAnfrageCtx(anfrageId: string, handwerkerId: string) {
+type DocCtx = {
+  anfrageId: string;
+  auftragId: string | null;
+  betreff: string;
+  objektOrt: string;
+  row: Record<string, unknown>;
+};
+
+/** Robuster AH-Load ohne fragile Nested-Selects (leads.ort existiert z. B. nicht). */
+async function loadAnfrageCtx(
+  anfrageId: string,
+  handwerkerId: string
+): Promise<{ ok: true; ctx: DocCtx } | { ok: false; error: string }> {
   const { data: row, error } = await supabaseAdmin
     .from("angebot_handwerker")
     .select(
       `
       id, handwerker_id, status, hw_status, hw_konditionen, hw_preis_netto,
       hw_angebot_pdf_url, hw_angebot_anhang_urls, hw_rechnung_eingereicht_at,
-      hw_eingereicht_at, bestaetigt_at, angebot_id,
-      gewerke(name),
-      angebote(projektbeschreibung, notizen, kunden(plz, ort), leads(plz, ort, strasse))
+      hw_eingereicht_at, bestaetigt_at, angebot_id, gewerk_id
     `
     )
     .eq("id", anfrageId)
@@ -284,62 +296,193 @@ async function loadAnfrageCtx(anfrageId: string, handwerkerId: string) {
 
   if (error || !row) {
     console.warn("[partner] loadAnfrageCtx:", error?.message ?? "no row", anfrageId);
-    return { ok: false as const, error: "Anfrage nicht gefunden." };
+    return { ok: false, error: "Anfrage nicht gefunden." };
   }
   if (String(row.handwerker_id) !== handwerkerId) {
-    return { ok: false as const, error: "Keine Berechtigung." };
+    return { ok: false, error: "Keine Berechtigung." };
   }
-  return { ok: true as const, row: row as Record<string, unknown> };
-}
 
-function objektOrtFromAnfrage(row: Record<string, unknown>): string {
-  const ang = Array.isArray(row.angebote) ? row.angebote[0] : row.angebote;
-  if (!ang || typeof ang !== "object") return "";
-  const a = ang as Record<string, unknown>;
-  const kunde = Array.isArray(a.kunden) ? a.kunden[0] : a.kunden;
-  const lead = Array.isArray(a.leads) ? a.leads[0] : a.leads;
-  const plz =
-    (kunde as { plz?: string } | null)?.plz ||
-    (lead as { plz?: string } | null)?.plz ||
-    "";
-  const ort =
-    (kunde as { ort?: string } | null)?.ort ||
-    (lead as { ort?: string } | null)?.ort ||
-    "";
-  return [plz, ort].filter(Boolean).join(" ").trim();
-}
+  const angebotId = row.angebot_id ? String(row.angebot_id) : null;
+  let betreff = "Partnerleistung";
+  let objektOrt = "";
+  let auftragId: string | null = null;
 
-function betreffFromAnfrage(row: Record<string, unknown>): string {
-  const ang = Array.isArray(row.angebote) ? row.angebote[0] : row.angebote;
-  const projekt =
-    ang && typeof ang === "object"
-      ? String(
-          (ang as { projektbeschreibung?: string | null }).projektbeschreibung ??
-            ""
-        ).trim()
+  if (angebotId) {
+    const { data: ang } = await supabaseAdmin
+      .from("angebote")
+      .select("projektbeschreibung, kunde_id, lead_id")
+      .eq("id", angebotId)
+      .maybeSingle();
+    const projekt = String(ang?.projektbeschreibung ?? "").trim();
+    if (projekt) betreff = projekt;
+
+    const { data: auf } = await supabaseAdmin
+      .from("auftraege")
+      .select("id, titel, kunde_id, lead_id")
+      .eq("angebot_id", angebotId)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (auf?.id) {
+      auftragId = String(auf.id);
+      const t = String(auf.titel ?? "").trim();
+      if (t) betreff = t;
+    }
+
+    const kundeId = (auf?.kunde_id ?? ang?.kunde_id)
+      ? String(auf?.kunde_id ?? ang?.kunde_id)
       : "";
-  const gw = Array.isArray(row.gewerke) ? row.gewerke[0] : row.gewerke;
-  const gewerk = gw ? String((gw as { name?: string }).name ?? "").trim() : "";
-  return projekt || gewerk || "Partnerleistung";
+    if (kundeId) {
+      const { data: kunde } = await supabaseAdmin
+        .from("kunden")
+        .select("plz, ort")
+        .eq("id", kundeId)
+        .maybeSingle();
+      objektOrt = [kunde?.plz, kunde?.ort].filter(Boolean).join(" ").trim();
+    }
+  }
+
+  if (row.gewerk_id && betreff === "Partnerleistung") {
+    const { data: gw } = await supabaseAdmin
+      .from("gewerke")
+      .select("name")
+      .eq("id", row.gewerk_id)
+      .maybeSingle();
+    const name = String(gw?.name ?? "").trim();
+    if (name) betreff = name;
+  }
+
+  return {
+    ok: true,
+    ctx: {
+      anfrageId: String(row.id),
+      auftragId,
+      betreff,
+      objektOrt,
+      row: row as Record<string, unknown>,
+    },
+  };
+}
+
+/**
+ * Rechnung aus Auftrag/Leistungen — unabhängig davon, ob der Vorgang
+ * über Angebot oder Direktauftrag/Akut entstanden ist.
+ * Speicherung läuft intern weiter über angebot_handwerker (CRM-Eingang).
+ */
+async function loadAuftragRechnungCtx(
+  auftragId: string,
+  handwerkerId: string
+): Promise<{ ok: true; ctx: DocCtx } | { ok: false; error: string }> {
+  const id = auftragId.trim();
+  const { data: auftrag, error } = await supabaseAdmin
+    .from("auftraege")
+    .select("id, titel, angebot_id, kunde_id, lead_id, handwerker_bestaetigt_at, status")
+    .eq("id", id)
+    .maybeSingle();
+
+  if (error || !auftrag) {
+    return { ok: false, error: "Auftrag nicht gefunden." };
+  }
+
+  const { data: zuw } = await supabaseAdmin
+    .from("auftrag_handwerker")
+    .select("id")
+    .eq("auftrag_id", id)
+    .eq("handwerker_id", handwerkerId)
+    .limit(1)
+    .maybeSingle();
+  const { data: pos } = await supabaseAdmin
+    .from("auftrag_positionen")
+    .select("id")
+    .eq("auftrag_id", id)
+    .eq("handwerker_id", handwerkerId)
+    .limit(1)
+    .maybeSingle();
+  if (!zuw?.id && !pos?.id) {
+    return { ok: false, error: "Keine Berechtigung für diesen Auftrag." };
+  }
+
+  const { ensurePartnerAngebotHandwerkerForAuftrag } = await import(
+    "@/lib/partner/ensure-partner-angebot-handwerker-for-auftrag"
+  );
+  const ensured = await ensurePartnerAngebotHandwerkerForAuftrag({
+    auftragId: id,
+    handwerkerId,
+    markAccepted: true,
+  });
+  if (!ensured.ok) return ensured;
+
+  const ah = await loadAnfrageCtx(ensured.anfrageId, handwerkerId);
+  if (!ah.ok) return ah;
+
+  let objektOrt = ah.ctx.objektOrt;
+  if (!objektOrt && auftrag.kunde_id) {
+    const { data: kunde } = await supabaseAdmin
+      .from("kunden")
+      .select("plz, ort")
+      .eq("id", String(auftrag.kunde_id))
+      .maybeSingle();
+    objektOrt = [kunde?.plz, kunde?.ort].filter(Boolean).join(" ").trim();
+  }
+
+  return {
+    ok: true,
+    ctx: {
+      ...ah.ctx,
+      auftragId: id,
+      betreff: String(auftrag.titel ?? "").trim() || ah.ctx.betreff,
+      objektOrt,
+    },
+  };
+}
+
+async function resolveRechnungCtx(input: {
+  anfrageId?: string | null;
+  auftragId?: string | null;
+  handwerkerId: string;
+}): Promise<{ ok: true; ctx: DocCtx } | { ok: false; error: string }> {
+  const auftragId = input.auftragId?.trim() || "";
+  const anfrageId = input.anfrageId?.trim() || "";
+  if (auftragId) {
+    return loadAuftragRechnungCtx(auftragId, input.handwerkerId);
+  }
+  if (anfrageId) {
+    return loadAnfrageCtx(anfrageId, input.handwerkerId);
+  }
+  return { ok: false, error: "Auftrag oder Anfrage fehlt." };
 }
 
 /** Preview-Daten für Auto-Angebot / Auto-Rechnung. */
 export async function previewPartnerAutoDokument(input: {
-  anfrageId: string;
+  /** Klassischer Angebot-Pfad. */
+  anfrageId?: string | null;
+  /** Direktauftrag/Akut: Rechnung aus Auftrags-Leistungen. */
+  auftragId?: string | null;
   art: "angebot" | "rechnung";
   overrides?: AutoDocRegieOverride[];
 }): Promise<{ ok: true; preview: PartnerAutoDocPreview } | { ok: false; error: string }> {
   const auth = await partnerAuth();
   if (!auth.ok) return auth;
 
-  const ctx = await loadAnfrageCtx(input.anfrageId.trim(), auth.handwerkerId);
-  if (!ctx.ok) return ctx;
+  const resolved =
+    input.art === "rechnung"
+      ? await resolveRechnungCtx({
+          anfrageId: input.anfrageId,
+          auftragId: input.auftragId,
+          handwerkerId: auth.handwerkerId,
+        })
+      : input.anfrageId?.trim()
+        ? await loadAnfrageCtx(input.anfrageId.trim(), auth.handwerkerId)
+        : { ok: false as const, error: "Anfrage fehlt." };
+  if (!resolved.ok) return resolved;
+  const { ctx } = resolved;
 
   const hw = await loadHandwerkerAbsender(auth.handwerkerId);
   const built = await resolveDocPositionen({
     handwerkerId: auth.handwerkerId,
     row: ctx.row,
     art: input.art,
+    auftragId: ctx.auftragId,
     overrides: input.overrides,
   });
   if (!built.positionen.length) {
@@ -366,11 +509,11 @@ export async function previewPartnerAutoDokument(input: {
   return {
     ok: true,
     preview: {
-      anfrageId: input.anfrageId.trim(),
+      anfrageId: ctx.anfrageId,
       art: input.art,
       dokumentNr,
-      betreff: betreffFromAnfrage(ctx.row),
-      objektOrt: objektOrtFromAnfrage(ctx.row),
+      betreff: ctx.betreff,
+      objektOrt: ctx.objektOrt,
       positionen: built.positionen.map((p) => ({
         titel: p.titel,
         beschreibung: p.beschreibung,
@@ -397,8 +540,9 @@ export async function submitPartnerAutoAngebot(
   if (!auth.ok) return auth;
 
   const id = anfrageId.trim();
-  const ctx = await loadAnfrageCtx(id, auth.handwerkerId);
-  if (!ctx.ok) return ctx;
+  const resolved = await loadAnfrageCtx(id, auth.handwerkerId);
+  if (!resolved.ok) return resolved;
+  const { ctx } = resolved;
 
   if (!isAngenommenStatus(String(ctx.row.status ?? ""))) {
     return { ok: false, error: "Nur nach Annahme möglich." };
@@ -426,6 +570,7 @@ export async function submitPartnerAutoAngebot(
     handwerkerId: auth.handwerkerId,
     row: ctx.row,
     art: "angebot",
+    auftragId: ctx.auftragId,
     overrides: opts?.overrides,
   });
   if (!built.positionen.length) {
@@ -452,8 +597,8 @@ export async function submitPartnerAutoAngebot(
     empfaenger: getPartnerDocEmpfaenger(),
     dokumentNr,
     datum: new Date().toISOString(),
-    betreff: betreffFromAnfrage(ctx.row),
-    objektOrt: objektOrtFromAnfrage(ctx.row),
+    betreff: ctx.betreff,
+    objektOrt: ctx.objektOrt,
     positionen: built.positionen,
     logoBytes,
     gueltigTage: 30,
@@ -503,7 +648,8 @@ export async function submitPartnerAutoAngebot(
 
 /** Konzept B: Rechnung erzeugen und einreichen. */
 export async function submitPartnerAutoRechnung(input: {
-  anfrageId: string;
+  anfrageId?: string | null;
+  auftragId?: string | null;
   leistungsZeitraum?: string;
   /** Eigene interne Rechnungsnummer; sonst Vorschlag aus Nummerkreis. */
   dokumentNr?: string;
@@ -512,9 +658,14 @@ export async function submitPartnerAutoRechnung(input: {
   const auth = await partnerAuth();
   if (!auth.ok) return auth;
 
-  const id = input.anfrageId.trim();
-  const ctx = await loadAnfrageCtx(id, auth.handwerkerId);
-  if (!ctx.ok) return ctx;
+  const resolved = await resolveRechnungCtx({
+    anfrageId: input.anfrageId,
+    auftragId: input.auftragId,
+    handwerkerId: auth.handwerkerId,
+  });
+  if (!resolved.ok) return resolved;
+  const { ctx } = resolved;
+  const id = ctx.anfrageId;
 
   if (!isAngenommenStatus(String(ctx.row.status ?? ""))) {
     return { ok: false, error: "Nur für angenommene Vorgänge möglich." };
@@ -551,6 +702,7 @@ export async function submitPartnerAutoRechnung(input: {
     handwerkerId: auth.handwerkerId,
     row: ctx.row,
     art: "rechnung",
+    auftragId: ctx.auftragId,
     overrides: input.overrides,
   });
   if (!built.positionen.length) {
@@ -579,10 +731,12 @@ export async function submitPartnerAutoRechnung(input: {
     empfaenger: getPartnerDocEmpfaenger(),
     dokumentNr,
     datum: new Date().toISOString(),
-    betreff: betreffFromAnfrage(ctx.row),
-    objektOrt: objektOrtFromAnfrage(ctx.row),
+    betreff: ctx.betreff,
+    objektOrt: ctx.objektOrt,
     leistungsZeitraum: input.leistungsZeitraum?.trim() || undefined,
-    auftragsRef: String(ctx.row.angebot_id ?? id).slice(0, 8).toUpperCase(),
+    auftragsRef: String(ctx.auftragId ?? ctx.row.angebot_id ?? id)
+      .slice(0, 8)
+      .toUpperCase(),
     positionen: built.positionen,
     logoBytes,
     abnahmeHinweis: "Leistungen laut Abschlussdokumentation erbracht.",
@@ -621,7 +775,6 @@ export async function submitPartnerAutoRechnung(input: {
       .eq("id", auth.handwerkerId);
   }
 
-  const gw = Array.isArray(ctx.row.gewerke) ? ctx.row.gewerke[0] : ctx.row.gewerke;
   const rechnungPdfUrl = await resolvePartnerFileUrl(
     upload.path,
     MAIL_PDF_LINK_TTL_SEC
@@ -629,8 +782,8 @@ export async function submitPartnerAutoRechnung(input: {
   void sendPartnerInternalRechnungMail({
     handwerkerName: hw.absender.inhaber || hw.absender.firma,
     firma: hw.absender.firma,
-    gewerkName: String((gw as { name?: string } | null)?.name ?? "Gewerk"),
-    plz: objektOrtFromAnfrage(ctx.row).split(/\s+/)[0] || "—",
+    gewerkName: ctx.betreff,
+    plz: ctx.objektOrt.split(/\s+/)[0] || "—",
     angebotId: String(ctx.row.angebot_id ?? id),
     rechnungPdfUrl,
   });

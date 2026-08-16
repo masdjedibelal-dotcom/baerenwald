@@ -265,12 +265,13 @@ export function PartnerAuftragDetail({
   }
 
   async function onRechnungErstellen() {
-    if (!item.angebotHandwerkerId || uploadBusy || rechnungGateBusy) return;
+    if (uploadBusy || rechnungGateBusy) return;
     setRechnungGateBusy(true);
     try {
       await runUpload(async () => {
         const res = await previewPartnerAutoDokument({
-          anfrageId: item.angebotHandwerkerId!,
+          auftragId: item.id,
+          anfrageId: item.angebotHandwerkerId,
           art: "rechnung",
         });
         if (!res.ok) {
@@ -731,30 +732,29 @@ export function PartnerAuftragDetail({
         }}
       />
 
-      {item.angebotHandwerkerId ? (
-        <PartnerDokumentPreviewModal
-          open={rechnungDocOpen}
-          anfrageId={item.angebotHandwerkerId}
-          art="rechnung"
-          skipAsk
-          leistungsZeitraum={
-            abschlussDone || Boolean(item.hw_abschluss_signiert_am)
-              ? new Date().toLocaleDateString("de-DE")
-              : undefined
-          }
-          onClose={() => setRechnungDocOpen(false)}
-          onSuccess={() => {
-            setRechnungDocOpen(false);
-            void refresh();
-          }}
-          onFirmendatenMissing={(labels) => {
-            setRechnungDocOpen(false);
-            setFirmendatenMissing(labels);
-            setFirmendatenFehlenOpen(true);
-          }}
-          allowSkip={false}
-        />
-      ) : null}
+      <PartnerDokumentPreviewModal
+        open={rechnungDocOpen}
+        auftragId={item.id}
+        anfrageId={item.angebotHandwerkerId}
+        art="rechnung"
+        skipAsk
+        leistungsZeitraum={
+          abschlussDone || Boolean(item.hw_abschluss_signiert_am)
+            ? new Date().toLocaleDateString("de-DE")
+            : undefined
+        }
+        onClose={() => setRechnungDocOpen(false)}
+        onSuccess={() => {
+          setRechnungDocOpen(false);
+          void refresh();
+        }}
+        onFirmendatenMissing={(labels) => {
+          setRechnungDocOpen(false);
+          setFirmendatenMissing(labels);
+          setFirmendatenFehlenOpen(true);
+        }}
+        allowSkip={false}
+      />
 
       <PartnerFirmendatenFehlenDialog
         open={firmendatenFehlenOpen}
