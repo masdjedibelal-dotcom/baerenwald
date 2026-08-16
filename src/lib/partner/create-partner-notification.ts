@@ -206,12 +206,9 @@ export async function createPartnerNotification(
         handwerkerName,
         subjectLine: subject,
         portalUrl: portalUrl || partnerLoginUrl(),
-        bautagebuch: notifyTyp === "bautagebuch",
       }),
       disclaimer:
-        notifyTyp === "bautagebuch"
-          ? "Du erhältst diese Mail, weil Bärenwald dich um einen Bautagebuch-Eintrag gebeten hat."
-          : "Du erhältst diese Mail, weil dir im Partner-Portal ein Vorgang zugewiesen wurde.",
+        "Du erhältst diese Mail, weil dir im Partner-Portal ein Vorgang zugewiesen wurde.",
       footerNote: "Bärenwald München · Partner-Portal",
     });
 
