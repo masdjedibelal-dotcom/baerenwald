@@ -38,6 +38,8 @@ type Props = {
    * Objekt-Link/Aushang: Objekt ist fest — kein Sprung zur HV-Objektliste.
    */
   objektLocked?: boolean;
+  /** HV-Whitelist Sofortmaßnahme (leer = nichts geht direkt). */
+  akutFallIds?: readonly string[];
   prefill?: {
     name?: string;
     email?: string;
@@ -74,6 +76,7 @@ export function MeldeFormular({
   mode = "melden",
   einladungToken,
   objektLocked = false,
+  akutFallIds = [],
   prefill,
 }: Props) {
   const router = useRouter();
@@ -167,6 +170,7 @@ export function MeldeFormular({
             : [objektAdresse, objektPlzOrt].filter(Boolean).join(" · ") || null,
           datenschutzHref,
           impressumHref,
+          akutFallIds,
         }}
         onClose={() => {
           if (mode === "ergaenzen") {

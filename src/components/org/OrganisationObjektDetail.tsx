@@ -22,7 +22,7 @@ import {
   EinstellungenSheetCard,
   EinstellungenToggle,
 } from "@/components/shared/PortalEinstellungenUi";
-import { SofortmassnahmeAkutTitleWithFaelle } from "@/components/org/SofortmassnahmeFaelleLink";
+import { SofortmassnahmeAkutTitle } from "@/components/org/SofortmassnahmeFaelleLink";
 import { PortalListCard } from "@/components/shared/PortalListCard";
 import { leadBelongsToObjekt } from "@/lib/org/match-lead-objekt";
 import { meldeKategorieLabel } from "@/lib/org/melde-kategorien";
@@ -30,7 +30,6 @@ import { meldeKategorieFromLead } from "@/lib/org/org-eingang-utils";
 import type { OrganisationLead, OrganisationObjekt } from "@/lib/org/types";
 import type { PortalEinladungHvBlock } from "@/lib/portal2/portal-einladungen";
 import {
-  EINSTELLUNGEN_AKUT_INTRO,
   EINSTELLUNGEN_SCHWELLE_BETRAG_INTRO,
   EINSTELLUNGEN_SCHWELLE_BETRAG_TITLE,
   EINSTELLUNGEN_SCHWELLE_SLIDER_MAX,
@@ -793,7 +792,7 @@ export function OrganisationObjektDetail({
         />
         <EinstellungenPfList>
           <EinstellungenPfRow
-            label={<SofortmassnahmeAkutTitleWithFaelle />}
+            label={<SofortmassnahmeAkutTitle />}
             value={akutDirekt ? "Ja" : "Nein"}
           />
           <EinstellungenPfRow
@@ -818,11 +817,11 @@ export function OrganisationObjektDetail({
           <EinstellungenToggle
             checked={editAkut}
             onChange={setEditAkut}
-            title={<SofortmassnahmeAkutTitleWithFaelle />}
+            title={<SofortmassnahmeAkutTitle />}
             description={
               editAkut
-                ? `${EINSTELLUNGEN_AKUT_INTRO} Aktiv: Sofortmaßnahmen ohne Ihre Freigabe, nur Info.`
-                : "Aus: Auch Sofortmaßnahmen laufen über Angebot und Freigabe."
+                ? "Aktiv: Die in den Einstellungen ausgewählten Sofortmaßnahme-Fälle gehen ohne Freigabe (nur Info)."
+                : "Aus: Auch Sofortmaßnahmen an diesem Objekt brauchen Freigabe."
             }
           />
           <EinstellungenToggle

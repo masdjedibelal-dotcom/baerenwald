@@ -48,6 +48,8 @@ export type OrganisationKunde = {
   freigabe_modus: FreigabeModus;
   freigabe_schwelle_eur: number | null;
   notfall_direkt: boolean;
+  /** Whitelist Sofortmaßnahme-Fall-IDs; leer = nichts geht direkt. */
+  akut_fall_ids?: string[] | null;
   kleinreparatur_aktiv: boolean;
   /** Neue Meldungen automatisch an Objekt-Hausmeister (hm_pruefung). */
   hm_auto_zuweisen?: boolean;

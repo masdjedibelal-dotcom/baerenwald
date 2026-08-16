@@ -9,18 +9,51 @@ import {
   resolveAngebotZugestelltForHvFreigabe,
 } from "../src/lib/org/freigabe-bypass";
 import { isMeldeDirektauftrag } from "../src/lib/funnel/melde-direktauftrag";
+import { ALL_AKUT_FALL_IDS } from "../src/lib/org/sofortmassnahme-faelle";
 
 function check(name: string, actual: unknown, expected: unknown): void {
   assert.equal(actual, expected, name);
   console.log(`ok  ${name}`);
 }
 
+const ALL = ALL_AKUT_FALL_IDS;
+
 check(
   "klingel/sonstiges → kein Direktauftrag",
-  isMeldeDirektauftrag("sonstiges", {
-    melde_problem: "klingel",
-    melde_seit_wann: "eine_woche",
-  }),
+  isMeldeDirektauftrag(
+    "sonstiges",
+    {
+      melde_problem: "klingel",
+      melde_seit_wann: "eine_woche",
+    },
+    ALL
+  ),
+  false
+);
+
+check(
+  "Leere HV-Liste → kein Direktauftrag (auch bei akutem Symptom)",
+  isMeldeDirektauftrag(
+    "wasser",
+    {
+      melde_problem: "wasser_austritt",
+      melde_laeuft_noch: "ja",
+    },
+    []
+  ),
+  false
+);
+
+check(
+  "Whitelist ohne diesen Fall → kein Direktauftrag",
+  isMeldeDirektauftrag(
+    "wasser",
+    {
+      melde_problem: "wasser_austritt",
+      melde_laeuft_noch: "ja",
+    },
+    ["strom_kein"]
+  ),
   false
 );
 
@@ -100,143 +133,207 @@ check(
 
 check(
   "Wasser läuft noch → Direktauftrag",
-  isMeldeDirektauftrag("wasser", {
-    melde_problem: "wasser_austritt",
-    melde_laeuft_noch: "ja",
-  }),
+  isMeldeDirektauftrag(
+    "wasser",
+    {
+      melde_problem: "wasser_austritt",
+      melde_laeuft_noch: "ja",
+    },
+    ALL
+  ),
   true
 );
 
 check(
   "Wasser Verstopfung → kein Direktauftrag",
-  isMeldeDirektauftrag("wasser", {
-    melde_problem: "verstopfung",
-  }),
+  isMeldeDirektauftrag(
+    "wasser",
+    {
+      melde_problem: "verstopfung",
+    },
+    ALL
+  ),
   false
 );
 
 check(
   "Heizung alles kalt → Direktauftrag",
-  isMeldeDirektauftrag("heizung", {
-    melde_problem: "wohnung_kalt",
-    melde_heizung_kalt: "ja",
-  }),
+  isMeldeDirektauftrag(
+    "heizung",
+    {
+      melde_problem: "wohnung_kalt",
+      melde_heizung_kalt: "ja",
+    },
+    ALL
+  ),
   true
 );
 
 check(
   "Heizung kein Warmwasser → Direktauftrag",
-  isMeldeDirektauftrag("heizung", {
-    melde_problem: "kein_warmwasser",
-  }),
+  isMeldeDirektauftrag(
+    "heizung",
+    {
+      melde_problem: "kein_warmwasser",
+    },
+    ALL
+  ),
   true
 );
 
 check(
   "Heizung Geräusche → kein Direktauftrag",
-  isMeldeDirektauftrag("heizung", {
-    melde_problem: "geraeusche",
-  }),
+  isMeldeDirektauftrag(
+    "heizung",
+    {
+      melde_problem: "geraeusche",
+    },
+    ALL
+  ),
   false
 );
 
 check(
   "Strom kein Strom → Direktauftrag",
-  isMeldeDirektauftrag("strom", {
-    melde_problem: "kein_strom",
-  }),
+  isMeldeDirektauftrag(
+    "strom",
+    {
+      melde_problem: "kein_strom",
+    },
+    ALL
+  ),
   true
 );
 
 check(
   "Strom FI wieder raus → Direktauftrag",
-  isMeldeDirektauftrag("strom", {
-    melde_problem: "fi_sicherung",
-    melde_sicherung_raus: "ja",
-    melde_wieder_raus: "ja",
-  }),
+  isMeldeDirektauftrag(
+    "strom",
+    {
+      melde_problem: "fi_sicherung",
+      melde_sicherung_raus: "ja",
+      melde_wieder_raus: "ja",
+    },
+    ALL
+  ),
   true
 );
 
 check(
   "Strom einzelner Punkt → kein Direktauftrag",
-  isMeldeDirektauftrag("strom", {
-    melde_problem: "einzelner_punkt",
-  }),
+  isMeldeDirektauftrag(
+    "strom",
+    {
+      melde_problem: "einzelner_punkt",
+    },
+    ALL
+  ),
   false
 );
 
 check(
   "Fenster Scheibe kaputt → Direktauftrag",
-  isMeldeDirektauftrag("fenster_tuer", {
-    melde_problem: "scheibe_kaputt",
-  }),
+  isMeldeDirektauftrag(
+    "fenster_tuer",
+    {
+      melde_problem: "scheibe_kaputt",
+    },
+    ALL
+  ),
   true
 );
 
 check(
   "Fenster Tür nicht zu Wohnungs-/Haustür → Direktauftrag",
-  isMeldeDirektauftrag("fenster_tuer", {
-    melde_problem: "tuer_schloss",
-    melde_ort_tuer: "wohnungstuer",
-    melde_geht_zu: "nein",
-  }),
+  isMeldeDirektauftrag(
+    "fenster_tuer",
+    {
+      melde_problem: "tuer_schloss",
+      melde_ort_tuer: "wohnungstuer",
+      melde_geht_zu: "nein",
+    },
+    ALL
+  ),
   true
 );
 
 check(
   "Fenster Tür klemmt aber geht zu → kein Direktauftrag",
-  isMeldeDirektauftrag("fenster_tuer", {
-    melde_problem: "tuer_schloss",
-    melde_ort_tuer: "wohnungstuer",
-    melde_geht_zu: "ja",
-  }),
+  isMeldeDirektauftrag(
+    "fenster_tuer",
+    {
+      melde_problem: "tuer_schloss",
+      melde_ort_tuer: "wohnungstuer",
+      melde_geht_zu: "ja",
+    },
+    ALL
+  ),
   false
 );
 
 check(
   "Fenster Balkontür nicht zu → kein Direktauftrag",
-  isMeldeDirektauftrag("fenster_tuer", {
-    melde_problem: "tuer_schloss",
-    melde_ort_tuer: "balkontuer",
-    melde_geht_zu: "nein",
-  }),
+  isMeldeDirektauftrag(
+    "fenster_tuer",
+    {
+      melde_problem: "tuer_schloss",
+      melde_ort_tuer: "balkontuer",
+      melde_geht_zu: "nein",
+    },
+    ALL
+  ),
   false
 );
 
 check(
   "Dach Rinne bei Regen → Direktauftrag",
-  isMeldeDirektauftrag("dach", {
-    melde_problem: "regenrinne_ueber",
-    melde_bei_regen: "ja",
-  }),
+  isMeldeDirektauftrag(
+    "dach",
+    {
+      melde_problem: "regenrinne_ueber",
+      melde_bei_regen: "ja",
+    },
+    ALL
+  ),
   true
 );
 
 check(
   "Dach Ziegel unklar → Direktauftrag",
-  isMeldeDirektauftrag("dach", {
-    melde_problem: "ziegel_boden",
-    melde_bei_regen: "weiss_nicht",
-  }),
+  isMeldeDirektauftrag(
+    "dach",
+    {
+      melde_problem: "ziegel_boden",
+      melde_bei_regen: "weiss_nicht",
+    },
+    ALL
+  ),
   true
 );
 
 check(
   "Dach Rinne nicht bei Regen → kein Direktauftrag",
-  isMeldeDirektauftrag("dach", {
-    melde_problem: "regenrinne_ueber",
-    melde_bei_regen: "nein",
-  }),
+  isMeldeDirektauftrag(
+    "dach",
+    {
+      melde_problem: "regenrinne_ueber",
+      melde_bei_regen: "nein",
+    },
+    ALL
+  ),
   false
 );
 
 check(
   "Schimmel → kein Direktauftrag",
-  isMeldeDirektauftrag("schimmel", {
-    melde_problem: "schimmel_feucht",
-    melde_ort: "bad",
-  }),
+  isMeldeDirektauftrag(
+    "schimmel",
+    {
+      melde_problem: "schimmel_feucht",
+      melde_ort: "bad",
+    },
+    ALL
+  ),
   false
 );
 

@@ -6,6 +6,7 @@
 import { leadIstMeldeDirektauftrag } from "@/lib/funnel/melde-direktauftrag";
 import { notifyCrmOrgPortal } from "@/lib/org/notify-crm-org";
 import { effektiveNotfallDirekt } from "@/lib/org/org-direktauftrag";
+import { normalizeAkutFallIds } from "@/lib/org/sofortmassnahme-faelle";
 import { supabaseAdmin } from "@/lib/supabase";
 
 /**
@@ -51,7 +52,7 @@ export async function finalizeOrgSelfCreatedLead(
     if (kundeId) {
       const { data: org } = await supabaseAdmin
         .from("kunden")
-        .select("notfall_direkt")
+        .select("notfall_direkt, akut_fall_ids")
         .eq("id", kundeId)
         .maybeSingle();
       let objektRule: { notfall_direkt: boolean | null } | null = null;
@@ -72,6 +73,13 @@ export async function finalizeOrgSelfCreatedLead(
         { notfall_direkt: org?.notfall_direkt !== false },
         objektRule
       );
+      const allowed = normalizeAkutFallIds(
+        (org as { akut_fall_ids?: unknown } | null)?.akut_fall_ids
+      );
+      // Leere Liste = kein Bypass (auch bei manuellem Akut-Flag)
+      if (!allowed.length) {
+        notfallDirektAktiv = false;
+      }
     }
     if (notfallDirektAktiv) {
       patch.freigabe_bypass_grund = "akut";

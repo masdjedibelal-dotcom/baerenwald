@@ -13,6 +13,8 @@ import {
   type MeldeBereichId,
 } from "@/lib/org/melde-bereiche";
 import { mapMeldeToPrice } from "@/lib/org/map-melde-to-price";
+import { isMeldeDirektauftrag } from "@/lib/funnel/melde-direktauftrag";
+import { normalizeAkutFallIds } from "@/lib/org/sofortmassnahme-faelle";
 import type { MeldeKategorie } from "@/lib/org/types";
 
 export type PersistMeldungLeadInput = {
@@ -65,30 +67,29 @@ export async function persistMeldungLead(input: PersistMeldungLeadInput) {
     dringlichkeit: input.dringlichkeit,
   });
 
-  const direktauftrag =
-    input.direktauftrag === true ||
-    input.notfall === true ||
-    input.kategorie === "notfall";
-
-  const initial = initialHvMeldungState();
-  let zeitraum = meldeKategorieToZeitraum(input.kategorie);
-  if (direktauftrag) zeitraum = "sofort";
-  else if (input.dringlichkeit) zeitraum = input.dringlichkeit;
-
-  // Situation „notfall“ nur bei Sofortmaßnahme — für CRM/Legacy; HV-Badge nutzt Kategorie nicht mehr.
-  const situation = direktauftrag
-    ? "notfall"
-    : meldeKategorieToSituation(input.kategorie);
-
-  // Effektive Direktbeauftragung-Regel (Org + Objekt-Override)
+  // Effektive Direktbeauftragung: Toggle (Org/Objekt) + HV-Fall-Whitelist (leer = nie)
   let notfallDirektAktiv = true;
+  let akutFallIds: string[] = [];
   {
-    const { data: org } = await supabaseAdmin
+    const { data: org, error: orgErr } = await supabaseAdmin
       .from("kunden")
-      .select("notfall_direkt")
+      .select("notfall_direkt, akut_fall_ids")
       .eq("id", input.auftraggeber_kunde_id)
       .maybeSingle();
-    notfallDirektAktiv = org?.notfall_direkt !== false;
+    if (orgErr) {
+      const { data: orgLegacy } = await supabaseAdmin
+        .from("kunden")
+        .select("notfall_direkt")
+        .eq("id", input.auftraggeber_kunde_id)
+        .maybeSingle();
+      notfallDirektAktiv = orgLegacy?.notfall_direkt !== false;
+      akutFallIds = [];
+    } else {
+      notfallDirektAktiv = org?.notfall_direkt !== false;
+      akutFallIds = normalizeAkutFallIds(
+        (org as { akut_fall_ids?: unknown } | null)?.akut_fall_ids
+      );
+    }
     if (input.kunde_objekt_id) {
       const { data: obj } = await supabaseAdmin
         .from("kunden_objekte")
@@ -100,6 +101,34 @@ export async function persistMeldungLead(input: PersistMeldungLeadInput) {
       }
     }
   }
+
+  const matchedWhitelist =
+    isMeldeBereichId(input.bereichId) &&
+    isMeldeDirektauftrag(
+      input.bereichId,
+      input.fachdetailAnswers,
+      akutFallIds
+    );
+
+  // HV selbst: manueller Akut-Flag nur wenn Whitelist nicht leer und Toggle an
+  const hvManuellAkut =
+    input.erfassung_von === "organisation" &&
+    (input.direktauftrag === true ||
+      input.notfall === true ||
+      input.kategorie === "notfall") &&
+    akutFallIds.length > 0;
+
+  const direktauftrag = matchedWhitelist || hvManuellAkut;
+
+  const initial = initialHvMeldungState();
+  let zeitraum = meldeKategorieToZeitraum(input.kategorie);
+  if (direktauftrag) zeitraum = "sofort";
+  else if (input.dringlichkeit) zeitraum = input.dringlichkeit;
+
+  // Situation „notfall“ nur bei Sofortmaßnahme — für CRM/Legacy; HV-Badge nutzt Kategorie nicht mehr.
+  const situation = direktauftrag
+    ? "notfall"
+    : meldeKategorieToSituation(input.kategorie);
 
   const bypassAktiv = direktauftrag && notfallDirektAktiv;
 

@@ -1,6 +1,6 @@
 /**
  * Sofortmaßnahmen → Direktauftrag (ohne HV-Angebotsfreigabe).
- * Nicht Bereich pauschal, sondern harte Fachfragen / Symptome.
+ * Matching pro Fall-ID; HV-Whitelist entscheidet (leer = nichts).
  */
 
 import {
@@ -10,6 +10,7 @@ import {
   normalizeMeldeStromProblem,
   normalizeMeldeWasserProblem,
 } from "@/lib/funnel/melde-dynamic-questions";
+import type { AkutFallId } from "@/lib/org/sofortmassnahme-faelle";
 import type { MeldeBereichId } from "@/lib/org/melde-bereiche";
 import type { MeldeKategorie } from "@/lib/org/types";
 
@@ -30,32 +31,35 @@ function problemIs(
   return ids.includes(ans(a, "melde_problem"));
 }
 
-/**
- * True = Sofortmaßnahme (Notdienst / Schaden stoppen).
- * False = normaler Vorgang mit Angebot/Freigabe.
- */
-export function isMeldeDirektauftrag(
+/** Welche Katalog-Fälle passen zu den Funnel-Antworten (unabhängig von HV-Whitelist). */
+export function matchAkutFallIds(
   bereichId: MeldeBereichId,
   answers: MeldeDirektauftragAnswers | null | undefined
-): boolean {
+): AkutFallId[] {
   const a = answers ?? {};
+  const hit: AkutFallId[] = [];
 
   if (bereichId === "wasser") {
     const problem = normalizeMeldeWasserProblem(ans(a, "melde_problem"));
     const laeuft = ans(a, "melde_laeuft_noch");
-    // Legacy: starkes Symptom ohne Folgefrage
-    if (problemIs(a, "laeuft", "ueberschwemmt", "laeuft_stark")) return true;
-    if (laeuft === "ja" || laeuft === "weiss_nicht") return true;
+    if (problemIs(a, "laeuft", "ueberschwemmt", "laeuft_stark")) {
+      hit.push("wasser_laeuft");
+    }
+    if (laeuft === "ja" || laeuft === "weiss_nicht") {
+      if (!hit.includes("wasser_laeuft")) hit.push("wasser_laeuft");
+    }
     if (
       (problem === "von_decke_wand" ||
         problemIs(a, "von_decke", "von_oben")) &&
       laeuft !== "nein"
     ) {
-      return true;
+      hit.push("wasser_decke_wand");
     }
     const gefahr = ans(a, "melde_gefahr");
-    if (gefahr === "rutsch" || gefahr === "strom") return true;
-    return false;
+    if (gefahr === "rutsch" || gefahr === "strom") {
+      hit.push("wasser_gefahr");
+    }
+    return hit;
   }
 
   if (bereichId === "strom") {
@@ -63,13 +67,18 @@ export function isMeldeDirektauftrag(
     const sicherung = ans(a, "melde_sicherung_raus");
     const wieder = ans(a, "melde_wieder_raus");
 
-    if (problem === "kein_strom" || problemIs(a, "kein_strom")) return true;
+    if (problem === "kein_strom" || problemIs(a, "kein_strom")) {
+      hit.push("strom_kein");
+    }
 
     if (problem === "fi_sicherung" || problemIs(a, "fi_sicherung")) {
-      if (wieder === "ja" || wieder === "weiss_nicht") return true;
-      if (sicherung === "ja" && wieder !== "nein") return true;
+      if (wieder === "ja" || wieder === "weiss_nicht") {
+        hit.push("strom_fi_wieder");
+      } else if (sicherung === "ja" && wieder !== "nein") {
+        hit.push("strom_fi_wieder");
+      }
     }
-    return false;
+    return hit;
   }
 
   if (bereichId === "heizung") {
@@ -77,52 +86,67 @@ export function isMeldeDirektauftrag(
     const kaltUmfang = ans(a, "melde_heizung_kalt");
     const laeuft = ans(a, "melde_laeuft_noch");
 
-    if (problem === "wohnung_kalt" && kaltUmfang === "ja") return true;
-    // Legacy: kalt + melde_heizung_kalt ja
-    if (problemIs(a, "kalt", "nicht_warm") && kaltUmfang === "ja") return true;
+    if (problem === "wohnung_kalt" && kaltUmfang === "ja") {
+      hit.push("heizung_wohnung_kalt");
+    }
+    if (problemIs(a, "kalt", "nicht_warm") && kaltUmfang === "ja") {
+      if (!hit.includes("heizung_wohnung_kalt")) hit.push("heizung_wohnung_kalt");
+    }
 
-    if (problem === "kein_warmwasser") return true;
-    // Legacy: kein_ww + warmwasser nein (oder Problem allein)
-    if (problemIs(a, "kein_ww")) {
-      if (ans(a, "melde_warmwasser") !== "ja") return true;
+    if (problem === "kein_warmwasser") {
+      hit.push("heizung_kein_warmwasser");
+    }
+    if (problemIs(a, "kein_ww") && ans(a, "melde_warmwasser") !== "ja") {
+      if (!hit.includes("heizung_kein_warmwasser")) {
+        hit.push("heizung_kein_warmwasser");
+      }
     }
 
     if (
       problem === "wasser_am_hk" &&
       (laeuft === "ja" || laeuft === "weiss_nicht")
     ) {
-      return true;
+      hit.push("heizung_wasser_hk");
     }
-    // Legacy: tropft_hk + gerade eben
     if (
       problemIs(a, "tropft_hk", "wasser_aus") &&
       (laeuft === "ja" ||
         laeuft === "weiss_nicht" ||
         ans(a, "melde_seit_wann") === "gerade_eben")
     ) {
-      return true;
+      if (!hit.includes("heizung_wasser_hk")) hit.push("heizung_wasser_hk");
     }
-    return false;
+    return hit;
   }
 
   if (bereichId === "dach") {
     const problem = normalizeMeldeDachProblem(ans(a, "melde_problem"));
     const beiRegen = ans(a, "melde_bei_regen");
     const seit = ans(a, "melde_seit_wann");
-    if (problemIs(a, "dach_undicht")) return true;
+    if (problemIs(a, "dach_undicht")) {
+      hit.push("dach_undicht");
+    }
     if (
       (problem === "regenrinne_ueber" ||
         problem === "wasser_fassade" ||
         problem === "ziegel_boden" ||
-        problemIs(a, "regenrinne_ueber", "wasser_fassade", "ziegel_boden", "ziegel", "rinne", "fallrohr")) &&
+        problemIs(
+          a,
+          "regenrinne_ueber",
+          "wasser_fassade",
+          "ziegel_boden",
+          "ziegel",
+          "rinne",
+          "fallrohr"
+        )) &&
       (beiRegen === "ja" ||
         beiRegen === "weiss_nicht" ||
         seit === "gerade_eben" ||
         seit === "heute")
     ) {
-      return true;
+      hit.push("dach_rinne_akut");
     }
-    return false;
+    return hit;
   }
 
   if (bereichId === "fenster_tuer") {
@@ -131,17 +155,15 @@ export function isMeldeDirektauftrag(
       problem === "scheibe_kaputt" ||
       problemIs(a, "scheibe_kaputt", "glas")
     ) {
-      return true;
+      hit.push("fenster_scheibe");
     }
-    // Legacy: explizites Schloss / Schlüssel
     if (
       problemIs(a, "schloss") ||
       ans(a, "melde_tuer_detail") === "schluessel"
     ) {
-      return true;
+      hit.push("fenster_schloss");
     }
-    const ort =
-      ans(a, "melde_ort_tuer") || ans(a, "melde_ort_schluessel");
+    const ort = ans(a, "melde_ort_tuer") || ans(a, "melde_ort_schluessel");
     const istTuer =
       problem === "tuer_schloss" ||
       problemIs(a, "tuer_problem", "tuer_klemmt", "schloss");
@@ -150,13 +172,29 @@ export function isMeldeDirektauftrag(
       ans(a, "melde_geht_zu") === "nein" &&
       (ort === "wohnungstuer" || ort === "haustuer")
     ) {
-      return true;
+      hit.push("fenster_tuer_nicht_absperrbar");
     }
-    return false;
+    return hit;
   }
 
-  // Schimmel / Sonstiges → kein Direktauftrag
-  return false;
+  return hit;
+}
+
+/**
+ * True = Sofortmaßnahme laut HV-Whitelist.
+ * `allowedFallIds` leer / fehlend → nie Direktauftrag.
+ */
+export function isMeldeDirektauftrag(
+  bereichId: MeldeBereichId,
+  answers: MeldeDirektauftragAnswers | null | undefined,
+  allowedFallIds: readonly string[] | null | undefined
+): boolean {
+  const allowed = (allowedFallIds ?? [])
+    .map((id) => String(id).trim())
+    .filter(Boolean);
+  if (!allowed.length) return false;
+  const allowedSet = new Set(allowed);
+  return matchAkutFallIds(bereichId, answers).some((id) => allowedSet.has(id));
 }
 
 /** Melde-Kategorie für Persistenz — nie pauschal „notfall“ aus dem Bereich. */
@@ -197,7 +235,6 @@ export function leadIstMeldeDirektauftrag(lead: {
     | undefined;
   if (!fd || typeof fd !== "object") return false;
   if (fd.direktauftrag === true) return true;
-  // Legacy: frühere Auto-Notfälle / explizites Flag
   if (fd.notfall === true || fd.havarie === true) return true;
   return (
     typeof fd.melde_kategorie === "string" &&

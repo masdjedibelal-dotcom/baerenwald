@@ -59,6 +59,7 @@ export default async function MeldenOrgPage({ params }: Props) {
     orgKennung: kontext.org.org_kennung,
     datenschutzHref: legal.datenschutz,
     impressumHref: legal.impressum,
+    akutFallIds: kontext.org.akut_fall_ids ?? [],
   };
 
   if (kontext.objekt) {

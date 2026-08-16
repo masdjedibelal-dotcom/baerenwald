@@ -45,7 +45,7 @@ export const EINSTELLUNGEN_AKUT_TITLE =
   "Direktbeauftragung bei Sofortmaßnahme" as const;
 
 export const EINSTELLUNGEN_AKUT_INTRO =
-  "Beispiel: Wasser läuft, kein Strom, Heizung ausgefallen, Dach undicht. Keine Freigabe nötig — nur Info an Sie." as const;
+  "Nur ausgewählte Sofortmaßnahme-Fälle. Leere Fall-Liste = nichts geht direkt." as const;
 
 export const EINSTELLUNGEN_UNTER_SCHWELLE_TITLE =
   "Direktbeauftragung wenn unter Schwelle" as const;

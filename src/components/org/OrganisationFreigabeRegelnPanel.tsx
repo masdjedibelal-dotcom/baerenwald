@@ -11,7 +11,11 @@ import {
   EinstellungenSheetCard,
   EinstellungenToggle,
 } from "@/components/shared/PortalEinstellungenUi";
-import { SofortmassnahmeAkutTitleWithFaelle } from "@/components/org/SofortmassnahmeFaelleLink";
+import {
+  SofortmassnahmeAkutTitle,
+  SofortmassnahmeFaelleEditor,
+} from "@/components/org/SofortmassnahmeFaelleLink";
+import { normalizeAkutFallIds } from "@/lib/org/sofortmassnahme-faelle";
 import type { OrganisationKunde } from "@/lib/org/types";
 import {
   EINSTELLUNGEN_AKUT_INTRO,
@@ -42,7 +46,7 @@ function schwelleAktivFromKunde(
 }
 
 /**
- * Freigabe-Regeln: Sofortmaßnahme → unter Schwelle → optional Betrag.
+ * Freigabe-Regeln: Sofortmaßnahme (Fälle) → unter Schwelle → optional Betrag.
  */
 export function OrganisationFreigabeRegelnPanel({
   kunde,
@@ -61,12 +65,16 @@ export function OrganisationFreigabeRegelnPanel({
     schwelleAktivFromKunde(kunde.freigabe_schwelle_eur)
   );
   const [akutDirekt, setAkutDirekt] = useState(kunde.notfall_direkt !== false);
+  const [akutFaelle, setAkutFaelle] = useState(() =>
+    normalizeAkutFallIds(kunde.akut_fall_ids)
+  );
   const [hmAuto, setHmAuto] = useState(Boolean(kunde.hm_auto_zuweisen));
 
   const [editOpen, setEditOpen] = useState(false);
   const [editSchwelle, setEditSchwelle] = useState(schwelle);
   const [editSchwelleAktiv, setEditSchwelleAktiv] = useState(schwelleAktiv);
   const [editAkut, setEditAkut] = useState(akutDirekt);
+  const [editAkutFaelle, setEditAkutFaelle] = useState(akutFaelle);
   const [editHmAuto, setEditHmAuto] = useState(hmAuto);
   const [saving, setSaving] = useState(false);
   const [migratedModus, setMigratedModus] = useState(false);
@@ -82,8 +90,14 @@ export function OrganisationFreigabeRegelnPanel({
       )
     );
     setAkutDirekt(kunde.notfall_direkt !== false);
+    setAkutFaelle(normalizeAkutFallIds(kunde.akut_fall_ids));
     setHmAuto(Boolean(kunde.hm_auto_zuweisen));
-  }, [kunde.freigabe_schwelle_eur, kunde.notfall_direkt, kunde.hm_auto_zuweisen]);
+  }, [
+    kunde.freigabe_schwelle_eur,
+    kunde.notfall_direkt,
+    kunde.akut_fall_ids,
+    kunde.hm_auto_zuweisen,
+  ]);
 
   useEffect(() => {
     if (!isAdmin || migratedModus) return;
@@ -128,6 +142,7 @@ export function OrganisationFreigabeRegelnPanel({
     setEditSchwelle(schwelle);
     setEditSchwelleAktiv(schwelleAktiv);
     setEditAkut(akutDirekt);
+    setEditAkutFaelle(akutFaelle);
     setEditHmAuto(hmAuto);
     setEditOpen(true);
   }
@@ -158,6 +173,7 @@ export function OrganisationFreigabeRegelnPanel({
             : null,
           kleinreparatur_aktiv: false,
           notfall_direkt: editAkut,
+          akut_fall_ids: editAkutFaelle,
           hm_auto_zuweisen: editHmAuto,
         }),
       });
@@ -172,6 +188,7 @@ export function OrganisationFreigabeRegelnPanel({
       setSchwelle(nextSchwelle);
       setSchwelleAktiv(editSchwelleAktiv);
       setAkutDirekt(editAkut);
+      setAkutFaelle(editAkutFaelle);
       setHmAuto(editHmAuto);
       setEditOpen(false);
       orgPortalToast.einstellungenGespeichert();
@@ -182,6 +199,13 @@ export function OrganisationFreigabeRegelnPanel({
       setSaving(false);
     }
   }
+
+  const faelleValue =
+    akutFaelle.length === 0
+      ? "Keine (nichts geht direkt)"
+      : akutFaelle.length === 1
+        ? "1 Fall"
+        : `${akutFaelle.length} Fälle`;
 
   return (
     <div className="space-y-3">
@@ -200,9 +224,10 @@ export function OrganisationFreigabeRegelnPanel({
       />
       <EinstellungenPfList>
         <EinstellungenPfRow
-          label={<SofortmassnahmeAkutTitleWithFaelle />}
+          label={<SofortmassnahmeAkutTitle />}
           value={akutDirekt ? "Ja" : "Nein"}
         />
+        <EinstellungenPfRow label="Sofortmaßnahme-Fälle" value={faelleValue} />
         <EinstellungenPfRow
           label={EINSTELLUNGEN_UNTER_SCHWELLE_TITLE}
           value={schwelleAktiv ? "Ja" : "Nein"}
@@ -229,13 +254,23 @@ export function OrganisationFreigabeRegelnPanel({
         <EinstellungenToggle
           checked={editAkut}
           onChange={setEditAkut}
-          title={<SofortmassnahmeAkutTitleWithFaelle />}
+          title={<SofortmassnahmeAkutTitle />}
           description={
             editAkut
-              ? `${EINSTELLUNGEN_AKUT_INTRO} Aktiv: Sofortmaßnahmen ohne Ihre Freigabe, nur Info.`
+              ? `${EINSTELLUNGEN_AKUT_INTRO} Aktiv: Nur die ausgewählten Fälle ohne Ihre Freigabe, nur Info.`
               : "Aus: Auch Sofortmaßnahmen laufen über Angebot und Freigabe."
           }
         />
+        <EinstellungenSheetCard
+          title="Sofortmaßnahme-Fälle"
+          description="Leer = nichts geht direkt — unabhängig vom Schalter oben."
+        >
+          <SofortmassnahmeFaelleEditor
+            selected={editAkutFaelle}
+            onChange={setEditAkutFaelle}
+            disabled={saving}
+          />
+        </EinstellungenSheetCard>
         <EinstellungenToggle
           checked={editSchwelleAktiv}
           onChange={onToggleUnterSchwelle}

@@ -69,6 +69,7 @@ export default async function MeldenObjektPage({ params }: Props) {
       objektLocked={Boolean(obj)}
       datenschutzHref={legal.datenschutz}
       impressumHref={legal.impressum}
+      akutFallIds={kontext.org.akut_fall_ids ?? []}
     />
   );
 }

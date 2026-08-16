@@ -46,6 +46,7 @@ import {
   isMeldeDirektauftrag,
   meldeKategorieForDirektauftragFlow,
 } from "@/lib/funnel/melde-direktauftrag";
+import { ALL_AKUT_FALL_IDS } from "@/lib/org/sofortmassnahme-faelle";
 import { calculatePrice, isBwZuKomplexErgebnis } from "@/lib/funnel/price-calc";
 import {
   applyGroesseStepCopy,
@@ -108,6 +109,8 @@ export type PortalFunnelMeldeCtx = {
   /** Rechtslinks: Verwaltung (nicht Website-Bärenwald) */
   datenschutzHref?: string;
   impressumHref?: string;
+  /** HV-Whitelist Sofortmaßnahme; leer = nichts geht direkt (UI). */
+  akutFallIds?: readonly string[];
 };
 
 export type PortalFunnelPrefill = {
@@ -269,6 +272,7 @@ export function PortalFunnelHost({
   const cfg = funnelVariant(channel);
   const [objekte, setObjekte] = useState(objekteProp);
   const stepLayout = layout === "page" ? "page" : "modal";
+  const meldeAkutFallIds = melde?.akutFallIds ?? [];
 
   const initialSituation: Situation | null = cfg.forceKaputt
     ? "kaputt"
@@ -488,7 +492,8 @@ export function PortalFunnelHost({
     if (!b) return false;
     return isMeldeDirektauftrag(
       kaputtBereichToMeldeId(b),
-      state.fachdetails?.fachdetailAnswers ?? {}
+      state.fachdetails?.fachdetailAnswers ?? {},
+      ALL_AKUT_FALL_IDS
     );
   }, [
     isHvIntern,
@@ -588,7 +593,7 @@ export function PortalFunnelHost({
       const answers = state.fachdetails?.fachdetailAnswers ?? {};
       const direktauftrag = isHvIntern
         ? hvAkut
-        : isMeldeDirektauftrag(bereichId, answers);
+        : isMeldeDirektauftrag(bereichId, answers, meldeAkutFallIds);
       const kategorie = meldeKategorieForDirektauftragFlow(
         bereichId,
         direktauftrag
@@ -644,6 +649,7 @@ export function PortalFunnelHost({
     groesseConfig,
     isHvIntern,
     hvAkut,
+    meldeAkutFallIds,
   ]);
 
   const reliablePrice = portalPriceIsReliable(price);
@@ -1300,7 +1306,11 @@ export function PortalFunnelHost({
         const fachAnswers = compactFachdetailAnswers(
           state.fachdetails?.fachdetailAnswers
         );
-        const direktauftrag = isMeldeDirektauftrag(bereichId, fachAnswers);
+        const direktauftrag = isMeldeDirektauftrag(
+          bereichId,
+          fachAnswers,
+          meldeAkutFallIds
+        );
         const kategorie = meldeKategorieForDirektauftragFlow(
           bereichId,
           direktauftrag
