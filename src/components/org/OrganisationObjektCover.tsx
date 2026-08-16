@@ -7,6 +7,7 @@ import {
   isPortalDefaultMediaUrl,
   resolveObjektCoverSrc,
 } from "@/lib/portal2/portal-media";
+import { usePortalUploadBusy } from "@/components/shared/usePortalUploadBusy";
 import { orgPortalToast, portalToastError } from "@/lib/shared/portal-toast";
 import { cn } from "@/lib/utils";
 
@@ -36,7 +37,7 @@ export function OrganisationObjektCover({
   canUpload = true,
 }: Props) {
   const inputRef = useRef<HTMLInputElement>(null);
-  const [busy, setBusy] = useState(false);
+  const { uploadBusy: busy, runUpload } = usePortalUploadBusy();
   const [preview, setPreview] = useState<string | null>(null);
   const [dragging, setDragging] = useState(false);
   const [imgFailed, setImgFailed] = useState(false);
@@ -57,8 +58,7 @@ export function OrganisationObjektCover({
       portalToastError("Nur Bilder erlaubt");
       return;
     }
-    setBusy(true);
-    try {
+    await runUpload(async () => {
       const local = URL.createObjectURL(file);
       setPreview(local);
       setImgFailed(false);
@@ -78,12 +78,10 @@ export function OrganisationObjektCover({
       setPreview(json.cover_url);
       onUploaded?.(json.cover_url);
       orgPortalToast.saved();
-    } catch {
+    }).catch(() => {
       setPreview(null);
       portalToastError("Upload fehlgeschlagen");
-    } finally {
-      setBusy(false);
-    }
+    });
   };
 
   const onDrop = (e: DragEvent) => {

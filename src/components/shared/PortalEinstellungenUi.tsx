@@ -93,31 +93,39 @@ export function EinstellungenInfoBox({ children }: { children: ReactNode }) {
   return <PortalDetailInfoBox>{children}</PortalDetailInfoBox>;
 }
 
-/** Abschnittskopf: Label + farbiges Stift-Icon (öffnet Edit-Sheet). */
+/** Abschnittskopf: Label + optionale Aktionen / Stift-Icon. */
 export function EinstellungenSectionHeader({
   title,
   onEdit,
   editLabel = "Bearbeiten",
+  trailing,
 }: {
   title: string;
   onEdit?: () => void;
   editLabel?: string;
+  /** z. B. ⋯-Menü links vom Stift. */
+  trailing?: ReactNode;
 }) {
   return (
     <div className="mb-1 flex items-center justify-between gap-2">
       <p className="text-[12.5px] font-bold uppercase tracking-wide text-text-secondary">
         {title}
       </p>
-      {onEdit ? (
-        <button
-          type="button"
-          onClick={onEdit}
-          aria-label={editLabel}
-          title={editLabel}
-          className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-accent text-white shadow-sm transition-colors hover:bg-accent-hover"
-        >
-          <Pencil className="h-4 w-4" aria-hidden strokeWidth={2.25} />
-        </button>
+      {onEdit || trailing ? (
+        <div className="flex items-center gap-1.5">
+          {trailing}
+          {onEdit ? (
+            <button
+              type="button"
+              onClick={onEdit}
+              aria-label={editLabel}
+              title={editLabel}
+              className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-accent text-white shadow-sm transition-colors hover:bg-accent-hover"
+            >
+              <Pencil className="h-4 w-4" aria-hidden strokeWidth={2.25} />
+            </button>
+          ) : null}
+        </div>
       ) : null}
     </div>
   );

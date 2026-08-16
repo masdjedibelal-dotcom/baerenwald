@@ -5,6 +5,7 @@ import {
   createHausmeisterEinladung,
   listOrgHausmeister,
   loadHausmeisterForObjekt,
+  unassignHausmeisterFromObjekt,
   upsertOrgHausmeister,
   buildHausmeisterEinladungMailto,
 } from "@/lib/org/org-hausmeister";
@@ -150,4 +151,30 @@ export async function POST(req: Request) {
   }
 
   return NextResponse.json({ ok: true, hausmeisterId: hmId });
+}
+
+/** Zuordnung vom Objekt entfernen: DELETE ?objektId= */
+export async function DELETE(req: Request) {
+  const session = await requireOrganisationSession();
+  if (!session.ok) {
+    return NextResponse.json({ error: session.error }, { status: session.status });
+  }
+  const write = requireOrgWrite(session);
+  if (!write.ok) {
+    return NextResponse.json({ error: write.error }, { status: write.status });
+  }
+
+  const objektId = new URL(req.url).searchParams.get("objektId")?.trim() || "";
+  if (!objektId) {
+    return NextResponse.json({ error: "objektId fehlt." }, { status: 400 });
+  }
+
+  const res = await unassignHausmeisterFromObjekt({
+    orgKundeId: session.kunde.id,
+    objektId,
+  });
+  if (!res.ok) {
+    return NextResponse.json({ error: res.error }, { status: 400 });
+  }
+  return NextResponse.json({ ok: true });
 }

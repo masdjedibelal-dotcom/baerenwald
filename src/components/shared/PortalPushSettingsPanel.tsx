@@ -6,6 +6,7 @@ import {
   EinstellungenSectionHeader,
   EinstellungenToggle,
 } from "@/components/shared/PortalEinstellungenUi";
+import { usePortalBusy } from "@/components/shared/PortalBusyContext";
 import {
   canRequestPushPermission,
   isPushClientSupported,
@@ -26,6 +27,7 @@ export function PortalPushSettingsPanel({ portal }: Props) {
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [statusHint, setStatusHint] = useState<string>("");
+  const { runBusy } = usePortalBusy();
 
   const refreshHint = useCallback(() => {
     const gate = canRequestPushPermission();
@@ -78,14 +80,16 @@ export function PortalPushSettingsPanel({ portal }: Props) {
     if (busy) return;
     setBusy(true);
     try {
-      await setPushEnabled(next, portal);
-      setEnabled(next);
-      portalToastSuccess(
-        next
-          ? "Push-Benachrichtigungen aktiviert"
-          : "Push-Benachrichtigungen deaktiviert"
-      );
-      refreshHint();
+      await runBusy(async () => {
+        await setPushEnabled(next, portal);
+        setEnabled(next);
+        portalToastSuccess(
+          next
+            ? "Push-Benachrichtigungen aktiviert"
+            : "Push-Benachrichtigungen deaktiviert"
+        );
+        refreshHint();
+      });
     } catch (e) {
       portalToastError(
         e instanceof Error ? e.message : "Einstellung konnte nicht gespeichert werden."
@@ -99,13 +103,15 @@ export function PortalPushSettingsPanel({ portal }: Props) {
   async function sendTest() {
     setBusy(true);
     try {
-      const res = await fetch("/api/push/test", { method: "POST" });
-      const json = (await res.json().catch(() => ({}))) as { error?: string };
-      if (!res.ok) {
-        portalToastError(json.error || "Test fehlgeschlagen.");
-        return;
-      }
-      portalToastSuccess("Testnachricht gesendet");
+      await runBusy(async () => {
+        const res = await fetch("/api/push/test", { method: "POST" });
+        const json = (await res.json().catch(() => ({}))) as { error?: string };
+        if (!res.ok) {
+          portalToastError(json.error || "Test fehlgeschlagen.");
+          return;
+        }
+        portalToastSuccess("Testnachricht gesendet");
+      });
     } finally {
       setBusy(false);
     }

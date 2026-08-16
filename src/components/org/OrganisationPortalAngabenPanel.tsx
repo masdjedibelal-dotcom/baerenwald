@@ -17,6 +17,7 @@ import {
   EinstellungenPfRow,
   EinstellungenSectionHeader,
 } from "@/components/shared/PortalEinstellungenUi";
+import { usePortalUploadBusy } from "@/components/shared/usePortalUploadBusy";
 import { orgPortalToast, portalToastError } from "@/lib/shared/portal-toast";
 
 type Props = {
@@ -63,7 +64,7 @@ export function OrganisationPortalAngabenPanel({
   const [edit, setEdit] = useState<Draft | null>(null);
   const [editOpen, setEditOpen] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [logoBusy, setLogoBusy] = useState(false);
+  const { uploadBusy: logoBusy, runUpload } = usePortalUploadBusy();
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
   const logoInputRef = useRef<HTMLInputElement>(null);
 
@@ -125,13 +126,12 @@ export function OrganisationPortalAngabenPanel({
   }
 
   async function uploadLogo(file: File) {
-    if (readOnly) return;
+    if (readOnly || logoBusy) return;
     if (!file.type.startsWith("image/")) {
       portalToastError("Nur Bilder erlaubt");
       return;
     }
-    setLogoBusy(true);
-    try {
+    await runUpload(async () => {
       setLogoPreview(URL.createObjectURL(file));
       const fd = new FormData();
       fd.set("kind", "logo");
@@ -149,12 +149,10 @@ export function OrganisationPortalAngabenPanel({
       setLogoPreview(json.url);
       orgPortalToast.saved();
       onSaved();
-    } catch {
+    }).catch(() => {
       setLogoPreview(null);
       portalToastError("Upload fehlgeschlagen");
-    } finally {
-      setLogoBusy(false);
-    }
+    });
   }
 
   return (

@@ -37,14 +37,14 @@ export type PortalActionMenuProps = {
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
   /**
-   * `sheet` — mobil Bottom Sheet / Desktop Side-Over (Default).
-   * `popover` — verankertes Dropdown am Trigger.
+   * `popover` — verankertes Dropdown am Trigger (Default für ⋯-Menüs).
+   * `sheet` — mobil Bottom Sheet / Desktop Side-Over (nur wenn explizit gewünscht).
    */
   variant?: "sheet" | "popover";
 };
 
 /**
- * Action-Menü: Sheet (Default) oder Popover am Trigger.
+ * Action-Menü: Popover am Trigger (⋯) oder optional Sheet/Side-Over.
  * Nested: Item mit `submenu` öffnet Unterliste.
  */
 export function PortalActionMenu({
@@ -56,7 +56,7 @@ export function PortalActionMenu({
   className,
   open: openProp,
   onOpenChange,
-  variant = "sheet",
+  variant = "popover",
 }: PortalActionMenuProps) {
   const [uncontrolledOpen, setUncontrolledOpen] = useState(false);
   const controlled = openProp !== undefined;

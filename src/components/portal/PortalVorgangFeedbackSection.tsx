@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 import { submitPortalMieterFeedback } from "@/app/actions/portal-feedback";
+import { usePortalBusy } from "@/components/shared/PortalBusyContext";
 import { PortalDetailSuccessBox } from "@/components/shared/PortalDetailUi";
 import { kundePortalToast } from "@/lib/shared/portal-toast";
 import { cn } from "@/lib/utils";
@@ -18,6 +19,7 @@ export function PortalVorgangFeedbackSection({
   mieterFeedback?: { sterne: number; freitext?: string | null } | null;
 }) {
   const router = useRouter();
+  const { runBusy } = usePortalBusy();
   const [sterne, setSterne] = useState(0);
   const [freitext, setFreitext] = useState("");
   const [busy, setBusy] = useState(false);
@@ -53,19 +55,24 @@ export function PortalVorgangFeedbackSection({
     if (sterne < 1) return;
     setBusy(true);
     setError(null);
-    const res = await submitPortalMieterFeedback({
-      leadId,
-      sterne,
-      freitext: freitext.trim() || undefined,
-    });
-    setBusy(false);
-    if (!res.ok) {
-      setError(res.error);
-      return;
+    try {
+      await runBusy(async () => {
+        const res = await submitPortalMieterFeedback({
+          leadId,
+          sterne,
+          freitext: freitext.trim() || undefined,
+        });
+        if (!res.ok) {
+          setError(res.error);
+          return;
+        }
+        setDone(true);
+        kundePortalToast.feedbackGesendet();
+        router.refresh();
+      });
+    } finally {
+      setBusy(false);
     }
-    setDone(true);
-    kundePortalToast.feedbackGesendet();
-    router.refresh();
   }
 
   return (

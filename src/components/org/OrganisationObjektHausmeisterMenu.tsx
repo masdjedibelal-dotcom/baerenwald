@@ -4,36 +4,35 @@ import {
   PortalActionMenu,
   type PortalActionMenuItem,
 } from "@/components/shared/PortalActionMenu";
-import { OBJ_MIETER_MENU } from "@/lib/portal2/objekte";
 
 type Props = {
-  hasEmail?: boolean;
   onEinladen: () => void;
-  onVorgaenge: () => void;
   onEntfernen: () => void;
   onBearbeiten?: () => void;
+  /** Ohne E-Mail: Link-Senden disabled. */
+  canEinladen?: boolean;
 };
 
 /**
- * Mieter/Eigentümer-⋯ — Popover am Trigger (alle Portale).
+ * Hausmeister-⋯ am Objekt: Portal-Link senden · Löschen (Popover).
  */
-export function OrganisationObjektMieterMenu({
+export function OrganisationObjektHausmeisterMenu({
   onEinladen,
-  onVorgaenge,
   onEntfernen,
   onBearbeiten,
+  canEinladen = true,
 }: Props) {
   const items: PortalActionMenuItem[] = [
     {
-      label: OBJ_MIETER_MENU.einladen,
+      label: "Portal-Link senden",
       onClick: onEinladen,
+      disabled: !canEinladen,
     },
     ...(onBearbeiten
-      ? [{ label: OBJ_MIETER_MENU.bearbeiten, onClick: onBearbeiten }]
+      ? [{ label: "Bearbeiten", onClick: onBearbeiten }]
       : []),
-    { label: OBJ_MIETER_MENU.vorgaenge, onClick: onVorgaenge },
     {
-      label: OBJ_MIETER_MENU.entfernen,
+      label: "Löschen",
       onClick: onEntfernen,
       danger: true,
       dividerBefore: true,
@@ -42,10 +41,10 @@ export function OrganisationObjektMieterMenu({
 
   return (
     <PortalActionMenu
-      title="Person"
+      title="Hausmeister"
       items={items}
       variant="popover"
-      triggerLabel="Personen-Menü"
+      triggerLabel="Hausmeister-Menü"
     />
   );
 }

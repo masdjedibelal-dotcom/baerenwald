@@ -183,6 +183,29 @@ export async function assignHausmeisterToObjekt(input: {
   return { ok: true };
 }
 
+/** Zuordnung Objekt↔HM entfernen (Person bleibt in der Org). */
+export async function unassignHausmeisterFromObjekt(input: {
+  orgKundeId: string;
+  objektId: string;
+}): Promise<{ ok: true } | { ok: false; error: string }> {
+  const { data: obj } = await supabaseAdmin
+    .from("kunden_objekte")
+    .select("id")
+    .eq("id", input.objektId)
+    .eq("kunde_id", input.orgKundeId)
+    .maybeSingle();
+  if (!obj?.id) return { ok: false, error: "Objekt nicht gefunden." };
+
+  const { error } = await supabaseAdmin
+    .from("hausmeister_objekte")
+    .delete()
+    .eq("kunde_objekt_id", input.objektId);
+  if (error && !/does not exist|relation/i.test(error.message)) {
+    return { ok: false, error: error.message };
+  }
+  return { ok: true };
+}
+
 export async function createHausmeisterEinladung(input: {
   orgKundeId: string;
   orgHausmeisterId: string;
@@ -199,8 +222,19 @@ export async function createHausmeisterEinladung(input: {
     .eq("org_kunde_id", input.orgKundeId)
     .maybeSingle();
   if (!hm?.id) return { ok: false, error: "Hausmeister nicht gefunden." };
-  if (!hm.portal_zugang || !String(hm.email ?? "").trim()) {
-    return { ok: false, error: "Kein Portal-Zugang / keine E-Mail." };
+  const email = String(hm.email ?? "").trim();
+  if (!email) {
+    return { ok: false, error: "E-Mail fehlt — bitte zuerst hinterlegen." };
+  }
+  if (!hm.portal_zugang) {
+    await supabaseAdmin
+      .from("org_hausmeister")
+      .update({
+        portal_zugang: true,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", hm.id)
+      .eq("org_kunde_id", input.orgKundeId);
   }
 
   const token = createPortalEinladungToken();

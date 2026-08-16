@@ -2,7 +2,9 @@
 
 import { useEffect, useState } from "react";
 
+import { PortalContentBusy } from "@/components/shared/PortalContentBusy";
 import { PortalModalShell } from "@/components/shared/PortalModalShell";
+import { usePortalBusy } from "@/components/shared/PortalBusyContext";
 import { getOrgAvTextForVersion } from "@/lib/org/org-av-text";
 import {
   ORG_AV_VERSION_CURRENT,
@@ -36,6 +38,7 @@ export function OrganisationWhitelabelGate({ kunde, canComplete, onComplete }: P
   const [avOpen, setAvOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { runBusy } = usePortalBusy();
 
   const ready = orgWhitelabelReady(kunde);
 
@@ -65,23 +68,25 @@ export function OrganisationWhitelabelGate({ kunde, canComplete, onComplete }: P
     }
     setBusy(true);
     try {
-      const res = await fetch("/api/org/whitelabel", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          av_akzeptiert: true,
-          mieter_kontakt_telefon: tel,
-          mieter_kontakt_email: mail,
-          mieter_kontakt_hinweis: hint || null,
-        }),
+      await runBusy(async () => {
+        const res = await fetch("/api/org/whitelabel", {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            av_akzeptiert: true,
+            mieter_kontakt_telefon: tel,
+            mieter_kontakt_email: mail,
+            mieter_kontakt_hinweis: hint || null,
+          }),
+        });
+        const json = (await res.json()) as { error?: string };
+        if (!res.ok) {
+          setError(json.error ?? "Speichern fehlgeschlagen.");
+          return;
+        }
+        orgPortalToast.saved();
+        onComplete();
       });
-      const json = (await res.json()) as { error?: string };
-      if (!res.ok) {
-        setError(json.error ?? "Speichern fehlgeschlagen.");
-        return;
-      }
-      orgPortalToast.saved();
-      onComplete();
     } finally {
       setBusy(false);
     }
@@ -214,9 +219,18 @@ export function OrganisationWhitelabelGate({ kunde, canComplete, onComplete }: P
         {canComplete ? (
           <form
             onSubmit={save}
-            className={`${panelClass} touch-auto overscroll-contain`}
+            className={`${panelClass} relative touch-auto overscroll-contain`}
             onClick={(e) => e.stopPropagation()}
           >
+            {busy ? (
+              <div className="absolute inset-0 z-10 flex items-center justify-center rounded-[inherit] bg-white/80">
+                <PortalContentBusy
+                  title="Wird gespeichert…"
+                  body="Einen Moment bitte."
+                  className="!min-h-0 !py-8"
+                />
+              </div>
+            ) : null}
             {inner}
           </form>
         ) : (

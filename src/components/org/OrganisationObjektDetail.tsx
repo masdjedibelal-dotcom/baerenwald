@@ -4,10 +4,13 @@ import { useEffect, useMemo, useState } from "react";
 
 import { OrganisationObjektDokumentePanel } from "@/components/org/OrganisationObjektDokumentePanel";
 import { OrganisationObjektEinheitenTab } from "@/components/org/OrganisationObjektEinheitenTab";
+import { OrganisationObjektHausmeisterMenu } from "@/components/org/OrganisationObjektHausmeisterMenu";
+import { PortalConfirmDialog } from "@/components/shared/PortalDetailUi";
 import { PortalDetailCover } from "@/components/shared/PortalDetailCover";
 import { PortalDetailHead } from "@/components/shared/PortalDetailUi";
 import { PortalDetailTabs } from "@/components/shared/PortalDetailTabs";
 import { PortalInboxEmpty } from "@/components/shared/PortalEmptyState";
+import { usePortalBusy } from "@/components/shared/PortalBusyContext";
 import {
   EinstellungenEdField,
   EinstellungenEditModal,
@@ -93,6 +96,7 @@ export function OrganisationObjektDetail({
   hv,
   dokumenteByLeadId = {},
 }: Props) {
+  const { runBusy } = usePortalBusy();
   const [tab, setTab] = useState<ObjDetailTabId>("stamm");
   const [schwelleAktiv, setSchwelleAktiv] = useState(
     () =>
@@ -142,6 +146,7 @@ export function OrganisationObjektDetail({
   const [editHmEmail, setEditHmEmail] = useState("");
   const [editHmPortal, setEditHmPortal] = useState(false);
   const [hmSaving, setHmSaving] = useState(false);
+  const [hmConfirmRemove, setHmConfirmRemove] = useState(false);
 
   const [versicherer, setVersicherer] = useState(objekt.versicherer ?? "");
   const [objVersNr, setObjVersNr] = useState(objekt.versicherungs_nr ?? "");
@@ -316,6 +321,74 @@ export function OrganisationObjektDetail({
     }
   }
 
+  async function inviteHausmeister() {
+    if (!hmAmObjekt?.id) return;
+    if (!hmAmObjekt.email?.trim()) {
+      portalToastError(
+        "Portal-Link nicht möglich",
+        "Bitte zuerst eine E-Mail beim Hausmeister hinterlegen."
+      );
+      return;
+    }
+    await runBusy(async () => {
+      const res = await fetch("/api/org/hausmeister", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          objektId: objekt.id,
+          hausmeisterId: hmAmObjekt.id,
+          portalZugang: true,
+          invite: true,
+        }),
+      });
+      const json = (await res.json()) as {
+        error?: string;
+        inviteMailto?: string | null;
+      };
+      if (!res.ok) {
+        portalToastError("Einladung fehlgeschlagen", json.error);
+        return;
+      }
+      if (json.inviteMailto) {
+        window.location.href = json.inviteMailto;
+      } else {
+        orgPortalToast.saved();
+      }
+      const reload = await fetch(
+        `/api/org/hausmeister?objektId=${encodeURIComponent(objekt.id)}`
+      );
+      const j = (await reload.json()) as {
+        hausmeister?: typeof hmOptions;
+        amObjekt?: typeof hmAmObjekt;
+      };
+      setHmOptions(j.hausmeister ?? []);
+      setHmAmObjekt(j.amObjekt ?? null);
+    });
+  }
+
+  async function removeHausmeister() {
+    setHmSaving(true);
+    try {
+      await runBusy(async () => {
+        const res = await fetch(
+          `/api/org/hausmeister?objektId=${encodeURIComponent(objekt.id)}`,
+          { method: "DELETE" }
+        );
+        const json = (await res.json()) as { error?: string };
+        if (!res.ok) {
+          portalToastError("Hausmeister nicht entfernt", json.error);
+          return;
+        }
+        setHmAmObjekt(null);
+        setHmConfirmRemove(false);
+        orgPortalToast.objektAktualisiert();
+        onRefresh();
+      });
+    } finally {
+      setHmSaving(false);
+    }
+  }
+
   function openVersEdit() {
     setEditVersicherer(versicherer);
     setEditVersNr(objVersNr);
@@ -446,6 +519,16 @@ export function OrganisationObjektDetail({
           <EinstellungenSectionHeader
             title="Hausmeister"
             onEdit={openHmEdit}
+            trailing={
+              hmAmObjekt ? (
+                <OrganisationObjektHausmeisterMenu
+                  canEinladen={Boolean(hmAmObjekt.email?.trim())}
+                  onEinladen={() => void inviteHausmeister()}
+                  onBearbeiten={openHmEdit}
+                  onEntfernen={() => setHmConfirmRemove(true)}
+                />
+              ) : null
+            }
           />
           <EinstellungenPfList>
             <EinstellungenPfRow
@@ -543,6 +626,20 @@ export function OrganisationObjektDetail({
               </>
             ) : null}
           </EinstellungenEditModal>
+          <PortalConfirmDialog
+            open={hmConfirmRemove}
+            title="Hausmeister entfernen?"
+            description={
+              hmAmObjekt
+                ? `${hmAmObjekt.name} wird von diesem Objekt entfernt. Die Person bleibt für andere Objekte erhalten.`
+                : "Hausmeister von diesem Objekt entfernen?"
+            }
+            confirmLabel="Entfernen"
+            confirmVariant="danger"
+            loading={hmSaving}
+            onCancel={() => setHmConfirmRemove(false)}
+            onConfirm={() => void removeHausmeister()}
+          />
         </div>
 
         <div className="space-y-3">
