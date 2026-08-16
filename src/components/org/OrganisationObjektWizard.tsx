@@ -355,8 +355,8 @@ export function OrganisationObjektWizard({
                 onChange={(e) => set("hmPortalZugang", e.target.checked)}
               />
               <span className="text-[13px] text-text-secondary">
-                Portal-Zugang — sieht nur eigene Objekte und erhält eine
-                Einladung per E-Mail
+                Portal einladen — Konto erst nach Registrierung über den Link
+                aktiv; sieht dann nur eigene Objekte
               </span>
             </label>
             {draft.hmPortalZugang ? (
@@ -434,7 +434,10 @@ export function OrganisationObjektWizard({
                   "Gewählt"
               : draft.hmName || draft.kontakt || "—"
           )}
-          {row("Portal-Zugang", draft.hmPortalZugang ? "Ja" : "Nein")}
+          {row(
+            "Portal",
+            draft.hmPortalZugang ? "Einladung geplant" : "Nein"
+          )}
           {row(
             "Regeln",
             formatObjRegelnReview(!!draft.autopass, schwelle)

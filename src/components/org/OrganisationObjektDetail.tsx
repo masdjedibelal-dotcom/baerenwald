@@ -52,6 +52,10 @@ import {
 } from "@/lib/portal2/objekte";
 import { orgPortalToast, portalToastError } from "@/lib/shared/portal-toast";
 import {
+  HAUSMEISTER_PORTAL_STATUS_LABEL,
+  resolveHausmeisterPortalStatus,
+} from "@/lib/org/objekt-hausmeister";
+import {
   plattformStatusLabel,
   plattformStatusPillClass,
   resolvePlattformStatus,
@@ -536,12 +540,12 @@ export function OrganisationObjektDetail({
               value={dash(hmAmObjekt?.name ?? "")}
             />
             <EinstellungenPfRow
-              label="Portal-Zugang"
+              label="Portal"
               value={
                 hmAmObjekt
-                  ? hmAmObjekt.portal_zugang
-                    ? "Ja"
-                    : "Nein"
+                  ? HAUSMEISTER_PORTAL_STATUS_LABEL[
+                      resolveHausmeisterPortalStatus(hmAmObjekt)
+                    ]
                   : "—"
               }
             />
@@ -610,7 +614,8 @@ export function OrganisationObjektDetail({
                     onChange={(e) => setEditHmPortal(e.target.checked)}
                   />
                   <span className="text-[13px] text-text-secondary">
-                    Portal-Zugang — Einladung per E-Mail
+                    Portal einladen — Konto ist erst nach Registrierung über den
+                    Link aktiv
                   </span>
                 </label>
                 {editHmPortal ? (

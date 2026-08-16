@@ -68,11 +68,12 @@ async function tryHausmeisterActor(
 
   const { data: hm } = await supabaseAdmin
     .from("org_hausmeister")
-    .select("id, org_kunde_id, portal_zugang")
+    .select("id, org_kunde_id, portal_kunde_id")
     .eq("portal_kunde_id", kundeId)
     .limit(1)
     .maybeSingle();
-  if (!hm?.org_kunde_id || !hm.portal_zugang) return null;
+  // Nur aktivierte Konten (portal_kunde_id gesetzt) — nicht bloß „Einladung geplant“
+  if (!hm?.org_kunde_id || !hm.portal_kunde_id) return null;
 
   const objektIds = await listObjektIdsForHausmeisterPortalKunde(kundeId);
   return {

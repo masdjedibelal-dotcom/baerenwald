@@ -226,6 +226,8 @@ export async function createHausmeisterEinladung(input: {
   if (!email) {
     return { ok: false, error: "E-Mail fehlt — bitte zuerst hinterlegen." };
   }
+  // portal_zugang = „Portal vorgesehen / Einladung“ — Konto erst bei Redeem
+  // (portal_kunde_id). Hier nur Intent setzen, kein aktives Konto anlegen.
   if (!hm.portal_zugang) {
     await supabaseAdmin
       .from("org_hausmeister")

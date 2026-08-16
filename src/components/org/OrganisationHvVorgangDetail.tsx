@@ -399,10 +399,16 @@ export function OrganisationHvVorgangDetail({
           `/api/org/hausmeister?objektId=${encodeURIComponent(kundeObjektId)}`
         );
         const json = (await res.json()) as {
-          amObjekt?: { portal_zugang?: boolean } | null;
+          amObjekt?: {
+            portal_zugang?: boolean;
+            portal_kunde_id?: string | null;
+          } | null;
         };
         if (!cancelled) {
-          setHmPortalZugang(Boolean(json.amObjekt?.portal_zugang));
+          // Checkliste nur read-only, wenn HM-Konto wirklich aktiv ist
+          setHmPortalZugang(
+            Boolean(String(json.amObjekt?.portal_kunde_id ?? "").trim())
+          );
         }
       } catch {
         if (!cancelled) setHmPortalZugang(false);

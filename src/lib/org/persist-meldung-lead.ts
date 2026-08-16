@@ -216,7 +216,7 @@ export async function persistMeldungLead(input: PersistMeldungLeadInput) {
           durchgefuehrtVon: hm?.name ?? "Hausmeister",
           createdByKundeId: input.auftraggeber_kunde_id,
         });
-        if (hm?.email && hm.portalZugang) {
+        if (hm?.email && (hm.portalKundeId || hm.portalZugang)) {
           const { notifyHausmeisterPruefung } = await import(
             "@/lib/org/notify-hausmeister-pruefung"
           );

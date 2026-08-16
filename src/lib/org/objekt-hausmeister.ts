@@ -8,8 +8,45 @@ export type HausmeisterKontakt = {
   name: string;
   email: string | null;
   telefon: string | null;
+  /** HV will Portal / Einladung — noch kein aktives Konto. */
   portalZugang?: boolean;
+  /** Portal-Konto ist nach Registrierung/Redeem verknüpft (= aktiviert). */
   portalKundeId?: string | null;
+};
+
+/** Konto wirklich aktiv (Redeem), nicht nur „Portal geplant“. */
+export function hausmeisterPortalIstAktiv(hm: {
+  portalKundeId?: string | null;
+  portal_kunde_id?: string | null;
+} | null | undefined): boolean {
+  const id =
+    hm?.portalKundeId?.trim() ||
+    (hm as { portal_kunde_id?: string | null } | null | undefined)
+      ?.portal_kunde_id?.trim() ||
+    "";
+  return Boolean(id);
+}
+
+export type HausmeisterPortalStatus = "aktiv" | "eingeladen" | "nicht";
+
+export function resolveHausmeisterPortalStatus(hm: {
+  portal_zugang?: boolean | null;
+  portalZugang?: boolean | null;
+  portal_kunde_id?: string | null;
+  portalKundeId?: string | null;
+} | null | undefined): HausmeisterPortalStatus {
+  if (hausmeisterPortalIstAktiv(hm)) return "aktiv";
+  if (hm?.portal_zugang || hm?.portalZugang) return "eingeladen";
+  return "nicht";
+}
+
+export const HAUSMEISTER_PORTAL_STATUS_LABEL: Record<
+  HausmeisterPortalStatus,
+  string
+> = {
+  aktiv: "Aktiviert",
+  eingeladen: "Einladung ausstehend",
+  nicht: "Nein",
 };
 
 /** Erster / zugewiesener Hausmeister am Objekt (org_hausmeister oder Legacy-Kontakt). */

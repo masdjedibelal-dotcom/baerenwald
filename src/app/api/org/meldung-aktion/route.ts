@@ -127,7 +127,11 @@ export async function POST(req: Request) {
       console.warn("[meldung-aktion] befund:", befundRes.error);
     }
 
-    if (hm?.email && hm.portalZugang) {
+    // Mail an HM nur wenn E-Mail da und Portal vorgesehen oder schon aktiv
+    if (
+      hm?.email &&
+      (hm.portalKundeId || hm.portalZugang)
+    ) {
       void notifyHausmeisterPruefung({
         leadId,
         toEmail: hm.email,
