@@ -36,7 +36,7 @@ export default async function PortalRegisterPage({ searchParams }: Props) {
   };
 
   const subtitle = locked
-    ? "Angaben aus Ihrer Schadenmeldung — bitte vergeben Sie ein Passwort und stimmen Sie zu."
+    ? "Angaben aus Ihrer Schadenmeldung — bitte Kundentyp wählen, Passwort vergeben und zustimmen."
     : "Nutzen Sie dieselbe E-Mail wie bei Ihrer Anfrage — wir verknüpfen Ihre Daten automatisch.";
 
   return (

@@ -152,9 +152,10 @@ export function PartnerPositionLebenszyklusList({
   const [nachtragOpen, setNachtragOpen] = useState(false);
   const [nachtragTitel, setNachtragTitel] = useState("");
   const [nachtragBegruendung, setNachtragBegruendung] = useState("");
-  const [nachtragEur, setNachtragEur] = useState("");
+  const [nachtragStundensatz, setNachtragStundensatz] = useState("");
   const [nachtragHours, setNachtragHours] = useState(0);
   const [nachtragMins, setNachtragMins] = useState(0);
+  const [nachtragFotos, setNachtragFotos] = useState<File[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [beschreibung, setBeschreibung] = useState("");
   const [erledigtFotos, setErledigtFotos] = useState<File[]>([]);
@@ -230,6 +231,25 @@ export function PartnerPositionLebenszyklusList({
     }
   }
 
+  async function normalizeFotosList(formData: FormData): Promise<boolean> {
+    const raw = formData
+      .getAll("fotos")
+      .filter((f): f is File => f instanceof File && f.size > 0);
+    if (!raw.length) return true;
+    formData.delete("fotos");
+    try {
+      for (const f of raw.slice(0, 5)) {
+        formData.append("fotos", await normalizePartnerCameraPhoto(f));
+      }
+      return true;
+    } catch {
+      portalToastError(
+        "Foto konnte nicht verarbeitet werden. Bitte erneut versuchen."
+      );
+      return false;
+    }
+  }
+
   function hasFoto(formData: FormData, field: string): boolean {
     const f = formData.get(field);
     return f instanceof File && f.size > 0;
@@ -244,20 +264,19 @@ export function PartnerPositionLebenszyklusList({
     const mode = sheet.mode;
     const positionId = sheet.position.id;
 
-    // Regie: Start-/Ende-Slots → einheitlich als foto / foto_ende
+    // Regie: Start-Slot → einheitlich als foto (Duplikat foto_start entfernen)
     const startSlot = formData.get("foto_start");
     if (startSlot instanceof File && startSlot.size > 0) {
       formData.set("foto", startSlot);
     }
+    formData.delete("foto_start");
 
     if (sheetIsRegie && (mode === "start" || mode === "erledigt")) {
-      const needStart = mode === "start";
-      const needEnde = mode === "start" || mode === "erledigt";
-      if (needStart && !hasFoto(formData, "foto") && !hasFoto(formData, "foto_start")) {
+      if (mode === "start" && !hasFoto(formData, "foto")) {
         portalToastError("Bitte ein Start-Foto hinzufügen.");
         return;
       }
-      if (needEnde && !hasFoto(formData, "foto_ende")) {
+      if (mode === "erledigt" && !hasFoto(formData, "foto_ende")) {
         portalToastError("Bitte ein Ende-Foto hinzufügen.");
         return;
       }
@@ -266,11 +285,12 @@ export function PartnerPositionLebenszyklusList({
         portalToastError("Bitte eine kurze Beschreibung angeben.");
         return;
       }
-      if (mode === "start" || mode === "erledigt") {
+      // Gesamtzeit erst beim Abschluss — Start und Ende sind zeitlich getrennt
+      if (mode === "erledigt") {
         const std = Number(formData.get("zeitStd") ?? 0);
         const min = Number(formData.get("zeitMin") ?? 0);
         if (!Number.isFinite(std) || !Number.isFinite(min) || std * 60 + min <= 0) {
-          portalToastError("Bitte die Gesamtzeit Aufwand auswählen.");
+          portalToastError("Bitte die tatsächliche Zeit Aufwand auswählen.");
           return;
         }
       }
@@ -281,8 +301,10 @@ export function PartnerPositionLebenszyklusList({
       let ok = false;
       try {
         await runBusy(async () => {
+          // Immer vor Upload verdichten (wie bei normalen Updates)
           if (!(await normalizeFotoField(formData, "foto"))) return;
           if (!(await normalizeFotoField(formData, "foto_ende"))) return;
+          if (!(await normalizeFotosList(formData))) return;
 
           const captureStart =
             String(formData.get("captureAt_start") ?? "").trim() ||
@@ -296,8 +318,15 @@ export function PartnerPositionLebenszyklusList({
           if (mode === "erledigt" && !sheetIsRegie && erledigtFotos.length) {
             formData.delete("fotos");
             formData.delete("foto");
-            for (const f of erledigtFotos.slice(0, 5)) {
-              formData.append("fotos", f);
+            try {
+              for (const f of erledigtFotos.slice(0, 5)) {
+                formData.append("fotos", await normalizePartnerCameraPhoto(f));
+              }
+            } catch {
+              portalToastError(
+                "Foto konnte nicht verarbeitet werden. Bitte erneut versuchen."
+              );
+              return;
             }
           }
 
@@ -308,6 +337,7 @@ export function PartnerPositionLebenszyklusList({
                 portalToastError(startRes.error);
                 return;
               }
+              // Ende optional mitgeben (Legacy) — normalerweise erst später beim Abschluss
               if (hasEnde) {
                 const endeFd = new FormData();
                 endeFd.set("positionId", positionId);
@@ -331,7 +361,9 @@ export function PartnerPositionLebenszyklusList({
                 }
               }
               portalToastSuccess(
-                hasEnde ? HW_DOKU_STORY.positionEndeToast : "Update gespeichert."
+                hasEnde
+                  ? HW_DOKU_STORY.positionEndeToast
+                  : "Start-Foto gespeichert — Arbeit gestartet."
               );
             } else if (mode === "fortschritt") {
               const res = await addPartnerPositionFortschritt(formData);
@@ -387,9 +419,10 @@ export function PartnerPositionLebenszyklusList({
     setNachtragOpen(false);
     setNachtragTitel("");
     setNachtragBegruendung("");
-    setNachtragEur("");
+    setNachtragStundensatz("");
     setNachtragHours(0);
     setNachtragMins(0);
+    setNachtragFotos([]);
   }
 
   function submitNachtrag() {
@@ -405,7 +438,9 @@ export function PartnerPositionLebenszyklusList({
     formData.set("auftragId", auftragId);
     formData.set("titel", nachtragTitel.trim());
     formData.set("begruendung", nachtragBegruendung.trim());
-    if (nachtragEur.trim()) formData.set("schaetzungEur", nachtragEur.trim());
+    if (nachtragStundensatz.trim()) {
+      formData.set("stundensatz", nachtragStundensatz.trim());
+    }
     const totalMin = nachtragHours * 60 + nachtragMins;
     if (totalMin > 0) formData.set("schaetzungMinuten", String(totalMin));
     if (submitting) return;
@@ -413,6 +448,16 @@ export function PartnerPositionLebenszyklusList({
     void (async () => {
       try {
         await runBusy(async () => {
+          try {
+            for (const f of nachtragFotos.slice(0, 5)) {
+              formData.append("fotos", await normalizePartnerCameraPhoto(f));
+            }
+          } catch {
+            portalToastError(
+              "Foto konnte nicht verarbeitet werden. Bitte erneut versuchen."
+            );
+            return;
+          }
           const res = await createPartnerWeitereArbeit(formData);
           if (!res.ok) {
             portalToastError(res.error);
@@ -425,9 +470,10 @@ export function PartnerPositionLebenszyklusList({
           setNachtragOpen(false);
           setNachtragTitel("");
           setNachtragBegruendung("");
-          setNachtragEur("");
+          setNachtragStundensatz("");
           setNachtragHours(0);
           setNachtragMins(0);
+          setNachtragFotos([]);
         }, Math.max(PORTAL_BUSY_MIN_MS, 600));
       } finally {
         setSubmitting(false);
@@ -619,7 +665,7 @@ export function PartnerPositionLebenszyklusList({
                           className="btn-pill-primary flex-1"
                           onClick={() => setSheet({ mode: "start", position: p })}
                         >
-                          Update
+                          {isRegie ? "Start (Foto)" : "Update"}
                         </button>
                         {!isRegie ? (
                           <button
@@ -652,7 +698,7 @@ export function PartnerPositionLebenszyklusList({
                             setSheet({ mode: "erledigt", position: p })
                           }
                         >
-                          Erledigt markieren
+                          {isRegie ? "Ende (Foto)" : "Erledigt markieren"}
                         </button>
                       </div>
                     ) : null}
@@ -679,7 +725,16 @@ export function PartnerPositionLebenszyklusList({
         <PortalModalShell
           open
           title={
-            sheet.mode === "erledigt" ? "Erledigt" : "Update"
+            sheet.mode === "erledigt"
+              ? sheet.position.typ === "regie" ||
+                sheet.position.verguetung === "aufwand"
+                ? "Ende dokumentieren"
+                : "Erledigt"
+              : sheet.mode === "start" &&
+                  (sheet.position.typ === "regie" ||
+                    sheet.position.verguetung === "aufwand")
+                ? "Start dokumentieren"
+                : "Update"
           }
           subtitle={sheet.position.leistung_name}
           onClose={closeSheet}
@@ -724,24 +779,20 @@ export function PartnerPositionLebenszyklusList({
               <input type="hidden" name="anfrageId" value={anfrageId} />
             ) : null}
 
-            {sheetIsRegie &&
-            (sheet.mode === "start" || sheet.mode === "erledigt") ? (
-              <div className="grid grid-cols-2 gap-2.5">
-                <PartnerDirektKameraSlot
-                  name="foto_start"
-                  captureAtName="captureAt_start"
-                  label="Start"
-                  required={sheet.mode === "start"}
-                  compact
-                />
-                <PartnerDirektKameraSlot
-                  name="foto_ende"
-                  captureAtName="captureAt_ende"
-                  label="Ende"
-                  required={sheet.mode === "start" || sheet.mode === "erledigt"}
-                  compact
-                />
-              </div>
+            {sheetIsRegie && sheet.mode === "start" ? (
+              <PartnerDirektKameraSlot
+                name="foto_start"
+                captureAtName="captureAt_start"
+                label="Start-Foto"
+                required
+              />
+            ) : sheetIsRegie && sheet.mode === "erledigt" ? (
+              <PartnerDirektKameraSlot
+                name="foto_ende"
+                captureAtName="captureAt_ende"
+                label="Ende-Foto"
+                required
+              />
             ) : erledigtMulti ? (
               <PartnerMultiFotoSlot
                 label="Ergebnis-Foto"
@@ -768,11 +819,9 @@ export function PartnerPositionLebenszyklusList({
             </div>
 
             {sheetIsRegie &&
-            (sheet.mode === "start" ||
-              sheet.mode === "fortschritt" ||
-              sheet.mode === "erledigt") ? (
+            (sheet.mode === "fortschritt" || sheet.mode === "erledigt") ? (
               <div className="mt-3 space-y-1">
-                <p className="portal-form-label">Gesamtzeit Aufwand</p>
+                <p className="portal-form-label">Tatsächliche Zeit Aufwand</p>
                 <div className="flex items-center gap-1.5">
                   <select
                     name="zeitStd"
@@ -822,8 +871,12 @@ export function PartnerPositionLebenszyklusList({
                 {submitting
                   ? "Speichern…"
                   : sheet.mode === "erledigt"
-                    ? "Erledigt speichern"
-                    : "Update speichern"}
+                    ? sheetIsRegie
+                      ? "Ende-Foto speichern"
+                      : "Erledigt speichern"
+                    : sheet.mode === "start" && sheetIsRegie
+                      ? "Start-Foto speichern"
+                      : "Update speichern"}
               </button>
             </div>
           </form>
@@ -842,7 +895,8 @@ export function PartnerPositionLebenszyklusList({
           !submitting &&
           (nachtragTitel.trim().length > 0 ||
             nachtragBegruendung.trim().length > 0 ||
-            nachtragEur.trim().length > 0 ||
+            nachtragStundensatz.trim().length > 0 ||
+            nachtragFotos.length > 0 ||
             nachtragHours > 0 ||
             nachtragMins > 0)
         }
@@ -852,6 +906,12 @@ export function PartnerPositionLebenszyklusList({
         busyBody="Einen Moment — Bärenwald erhält die Meldung."
       >
         <div className="flex flex-col gap-3">
+          <PartnerMultiFotoSlot
+            label="Fotos"
+            required={false}
+            value={nachtragFotos}
+            onChange={setNachtragFotos}
+          />
           <label className="flex flex-col gap-1">
             <span className="text-[11.5px] font-bold tracking-wide text-text-tertiary">
               Titel *
@@ -882,20 +942,20 @@ export function PartnerPositionLebenszyklusList({
           <div className="grid grid-cols-2 gap-2">
             <label className="flex flex-col gap-1">
               <span className="text-[11.5px] font-bold tracking-wide text-text-tertiary">
-                Betrag in €
+                Stundensatz in €
               </span>
               <input
                 type="text"
                 inputMode="decimal"
-                value={nachtragEur}
-                onChange={(e) => setNachtragEur(e.target.value)}
-                placeholder="z. B. 180"
+                value={nachtragStundensatz}
+                onChange={(e) => setNachtragStundensatz(e.target.value)}
+                placeholder="z. B. 65"
                 className="portal-input w-full rounded-xl border border-border-default px-3 py-2.5"
               />
             </label>
             <div className="flex flex-col gap-1">
               <span className="text-[11.5px] font-bold tracking-wide text-text-tertiary">
-                Zeit in HH:MM
+                Geschätzte Zeit Aufwand
               </span>
               <div className="flex items-center gap-1.5">
                 <select

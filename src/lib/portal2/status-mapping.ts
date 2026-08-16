@@ -243,8 +243,8 @@ export function portalFlowTimeline(
 }
 
 /**
- * Mieter-Detail-Timeline: kein Angebots-Schritt, „Auftrag“ → „Bestätigung“.
- * Schritte = MIETER_STG (Eingegangen · In Bearbeitung · Bestätigung · Erledigt).
+ * Mieter-Detail-Timeline: kein Angebots-Schritt, „Auftrag“ → „Beauftragt“.
+ * Schritte = MIETER_STG (Eingegangen · In Bearbeitung · Beauftragt · Vor Ort · Erledigt).
  */
 export function portalMieterFlowTimeline(
   current: PortalMockStatusId

@@ -251,7 +251,7 @@ export async function startPartnerPosition(
 
   if (isRegie) {
     if (!foto.file) {
-      return { ok: false, error: "Bei Regie ist das Update-Foto Pflicht." };
+      return { ok: false, error: "Bei Regie ist das Start-Foto Pflicht." };
     }
     if (!beschreibung?.trim()) {
       return { ok: false, error: "Bitte eine kurze Beschreibung angeben." };
@@ -560,11 +560,16 @@ export async function completePartnerPosition(
 
   const now = new Date().toISOString();
   // F1: Nur Dokumentation (leistung_status) — handwerker_status=erledigt erst nach Abnahme-Signatur
+  const mengeUpdate =
+    isRegie && zeitMinuten != null && zeitMinuten > 0
+      ? { menge: Math.round((zeitMinuten / 60) * 100) / 100, einheit: "Std" }
+      : {};
   await supabaseAdmin
     .from("auftrag_positionen")
     .update({
       leistung_status: "erledigt",
       erledigt_am: now,
+      ...mengeUpdate,
     })
     .eq("id", positionId);
 
@@ -590,7 +595,10 @@ export async function createPartnerWeitereArbeit(
   const auftragId = String(formData.get("auftragId") ?? "").trim();
   const titel = String(formData.get("titel") ?? "").trim();
   const begruendung = String(formData.get("begruendung") ?? "").trim();
-  const schaetzungEurRaw = String(formData.get("schaetzungEur") ?? "").trim();
+  // Stundensatz (€/h) — Legacy-Feld schaetzungEur weiterhin akzeptieren
+  const stundensatzRaw = String(
+    formData.get("stundensatz") ?? formData.get("schaetzungEur") ?? ""
+  ).trim();
   const schaetzungMinRaw = String(formData.get("schaetzungMinuten") ?? "").trim();
   if (!auftragId) return { ok: false, error: "Auftrag fehlt." };
   if (titel.length < 4) {
@@ -611,13 +619,15 @@ export async function createPartnerWeitereArbeit(
     return { ok: false, error: "Auftrag ist abgeschlossen (read-only)." };
   }
 
-  const schaetzungEur = schaetzungEurRaw
-    ? Number(schaetzungEurRaw.replace(",", "."))
+  const stundensatzParsed = stundensatzRaw
+    ? Number(stundensatzRaw.replace(",", "."))
     : null;
   const schaetzungMinuten = schaetzungMinRaw ? Number(schaetzungMinRaw) : null;
-  const preisPartner =
-    schaetzungEur != null && Number.isFinite(schaetzungEur) && schaetzungEur > 0
-      ? Math.round(schaetzungEur * 100) / 100
+  const stundensatz =
+    stundensatzParsed != null &&
+    Number.isFinite(stundensatzParsed) &&
+    stundensatzParsed > 0
+      ? Math.round(stundensatzParsed * 100) / 100
       : null;
   const mengeStd =
     schaetzungMinuten != null &&
@@ -625,6 +635,12 @@ export async function createPartnerWeitereArbeit(
     schaetzungMinuten > 0
       ? Math.round((schaetzungMinuten / 60) * 100) / 100
       : 1;
+  const zeitMinuten =
+    schaetzungMinuten != null &&
+    Number.isFinite(schaetzungMinuten) &&
+    schaetzungMinuten > 0
+      ? Math.round(schaetzungMinuten)
+      : null;
 
   const beschreibungParts = [
     begruendung || null,
@@ -654,7 +670,9 @@ export async function createPartnerWeitereArbeit(
       leistung_status: "offen",
       anerkennung_status: "in_pruefung",
       handwerker_status: "bestaetigt",
-      ...(preisPartner != null ? { preis_partner: preisPartner } : {}),
+      ...(stundensatz != null
+        ? { stundensatz, preis_partner: stundensatz }
+        : {}),
       sort_order: Number(maxSort?.sort_order ?? 0) + 1,
     })
     .select("id")
@@ -664,10 +682,40 @@ export async function createPartnerWeitereArbeit(
     return {
       ok: false,
       error:
-        /typ|verguetung|anerkennung/i.test(error.message)
+        /typ|verguetung|anerkennung|stundensatz/i.test(error.message)
           ? "Migration Positions-Lebenszyklus fehlt noch — bitte DB aktualisieren."
           : error.message,
     };
+  }
+
+  const positionId = String(inserted.id);
+  const fotos = parseFotosFromForm(formData);
+  let eintragId = "";
+  if (fotos.length > 0 || begruendung) {
+    const eintrag = await insertEintrag({
+      positionId,
+      typ: "weitere_arbeit",
+      beschreibung: begruendung || titel,
+      zeitMinuten,
+      handwerkerId: auth.handwerkerId,
+      auftragId,
+      leistungName: titel,
+    });
+    if (!eintrag.ok) return eintrag;
+    eintragId = eintrag.id;
+    for (const file of fotos) {
+      const attached = await attachFoto({
+        eintragId,
+        handwerkerId: auth.handwerkerId,
+        auftragId,
+        positionId,
+        file,
+        captureAt: null,
+        nachgereicht: false,
+        nachreichGrund: null,
+      });
+      if (!attached.ok) return attached;
+    }
   }
 
   await writeAuditEvent({
@@ -676,13 +724,12 @@ export async function createPartnerWeitereArbeit(
     aktion: "weitere_arbeit_angelegt",
     actorRolle: "partner",
     payload: {
-      position_id: inserted.id,
+      position_id: positionId,
       titel,
-      schaetzung_eur: preisPartner,
-      schaetzung_minuten:
-        schaetzungMinuten != null && Number.isFinite(schaetzungMinuten)
-          ? Math.round(schaetzungMinuten)
-          : null,
+      stundensatz,
+      schaetzung_minuten: zeitMinuten,
+      foto_count: fotos.length,
+      eintrag_id: eintragId || null,
     },
   });
 
@@ -703,7 +750,7 @@ export async function createPartnerWeitereArbeit(
         },
         body: JSON.stringify({
           auftragId,
-          positionId: String(inserted.id),
+          positionId,
           typ: "weitere_arbeit",
           titel,
         }),
@@ -715,5 +762,5 @@ export async function createPartnerWeitereArbeit(
   }
 
   revalidatePath("/partner");
-  return { ok: true, eintragId: "", positionId: String(inserted.id) };
+  return { ok: true, eintragId, positionId };
 }

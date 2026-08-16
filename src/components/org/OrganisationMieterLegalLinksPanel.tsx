@@ -10,7 +10,7 @@ import {
   EinstellungenSectionHeader,
 } from "@/components/shared/PortalEinstellungenUi";
 import {
-  isAbsoluteHttpUrl,
+  normalizeOrgHttpUrl,
   orgMeldeLegalUrlsReady,
   ORG_MELDE_LEGAL_REQUIRED_HINT,
 } from "@/lib/org/melde-legal-urls";
@@ -78,20 +78,17 @@ export function OrganisationMieterLegalLinksPanel({
 
   const persist = useCallback(async () => {
     if (readOnly || !edit) return;
-    if (
-      !isAbsoluteHttpUrl(edit.impressum) ||
-      !isAbsoluteHttpUrl(edit.datenschutz)
-    ) {
+    const impressum = normalizeOrgHttpUrl(edit.impressum);
+    const datenschutz = normalizeOrgHttpUrl(edit.datenschutz);
+    if (!impressum || !datenschutz) {
       setError(
-        "Beide Links sind Pflicht — bitte vollständige https://-Adressen eingeben."
+        "Beide Links sind Pflicht — z. B. www.firma.de/impressum (https:// wird ergänzt)."
       );
       return;
     }
     setError(null);
     setSaving(true);
     try {
-      const impressum = new URL(edit.impressum.trim()).toString();
-      const datenschutz = new URL(edit.datenschutz.trim()).toString();
       const res = await fetch("/api/org/branding", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
@@ -138,7 +135,7 @@ export function OrganisationMieterLegalLinksPanel({
         <EinstellungenEditModal
           open={editOpen}
           title="Impressum & Datenschutz bearbeiten"
-          subtitle="Beide Links sind Pflicht für Melde-Link, QR und Aushang."
+          subtitle="Beide Links sind Pflicht für Melde-Link, QR und Aushang. www.… reicht — https:// wird ergänzt."
           onClose={closeEdit}
           onSave={() => void persist()}
           saving={saving}
@@ -146,7 +143,7 @@ export function OrganisationMieterLegalLinksPanel({
           <EinstellungenEdField
             label="Impressum-URL"
             value={edit.impressum}
-            placeholder="https://ihre-verwaltung.de/impressum"
+            placeholder="www.ihre-verwaltung.de/impressum"
             onChange={(v) => {
               setEdit({ ...edit, impressum: v });
               setError(null);
@@ -155,7 +152,7 @@ export function OrganisationMieterLegalLinksPanel({
           <EinstellungenEdField
             label="Datenschutz-URL"
             value={edit.datenschutz}
-            placeholder="https://ihre-verwaltung.de/datenschutz"
+            placeholder="www.ihre-verwaltung.de/datenschutz"
             onChange={(v) => {
               setEdit({ ...edit, datenschutz: v });
               setError(null);

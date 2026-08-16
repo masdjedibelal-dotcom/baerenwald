@@ -3,7 +3,10 @@ import { NextResponse } from "next/server";
 import { canOfferKleinreparatur } from "@/lib/org/hv-meldung-workflow";
 import { notifyCrmOrgPortal } from "@/lib/org/notify-crm-org";
 import { notifyHausmeisterPruefung } from "@/lib/org/notify-hausmeister-pruefung";
-import { loadObjektHausmeisterKontakt } from "@/lib/org/objekt-hausmeister";
+import {
+  assertHausmeisterDelegierbar,
+  loadObjektHausmeisterKontakt,
+} from "@/lib/org/objekt-hausmeister";
 import { requireOrganisationSession } from "@/lib/org/require-org-session";
 import { requireOrgWrite } from "@/lib/org/assert-org-objekt";
 import { supabaseAdmin } from "@/lib/supabase";
@@ -26,7 +29,7 @@ type Body = {
 
 /**
  * HV-Aktion auf Meldung:
- * - hm_begutachten (neu → hm_pruefung, nur mit HM-Kontakt)
+ * - hm_begutachten (neu → hm_pruefung; Objekt-HM + aktives Portal-Konto Pflicht)
  * - direkt_baerenwald / angebot_einfordern (neu|hm_pruefung → angebot_eingefordert)
  * - ablehnen / kleinreparatur (Legacy)
  */
@@ -104,8 +107,13 @@ export async function POST(req: Request) {
       );
     }
 
-    const hm = await loadObjektHausmeisterKontakt(lead.kunde_objekt_id);
-    // HM-Pfad immer möglich (Name am Befund optional aus Zuordnung)
+    const hmGate = assertHausmeisterDelegierbar(
+      await loadObjektHausmeisterKontakt(lead.kunde_objekt_id)
+    );
+    if (!hmGate.ok) {
+      return NextResponse.json({ error: hmGate.error }, { status: 409 });
+    }
+    const hm = hmGate.hm;
 
     const { error: updErr } = await supabaseAdmin
       .from("leads")
@@ -142,18 +150,14 @@ export async function POST(req: Request) {
     );
     const befundRes = await insertLeadBefundIfMissing({
       leadId,
-      durchgefuehrtVon: hm?.name ?? "Hausmeister",
+      durchgefuehrtVon: hm.name,
       createdByKundeId: session.kunde.id,
     });
     if (!befundRes.ok) {
       console.warn("[meldung-aktion] befund:", befundRes.error);
     }
 
-    // Mail an HM nur wenn E-Mail da und Portal vorgesehen oder schon aktiv
-    if (
-      hm?.email &&
-      (hm.portalKundeId || hm.portalZugang)
-    ) {
+    if (hm.email) {
       void notifyHausmeisterPruefung({
         leadId,
         toEmail: hm.email,

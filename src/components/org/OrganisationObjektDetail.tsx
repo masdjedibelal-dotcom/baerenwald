@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 import { OrganisationObjektDokumentePanel } from "@/components/org/OrganisationObjektDokumentePanel";
 import { OrganisationObjektEinheitenTab } from "@/components/org/OrganisationObjektEinheitenTab";
 import { OrganisationObjektHausmeisterMenu } from "@/components/org/OrganisationObjektHausmeisterMenu";
+import { OrganisationObjektKontaktePanel } from "@/components/org/OrganisationObjektKontaktePanel";
 import { PortalConfirmDialog } from "@/components/shared/PortalDetailUi";
 import { PortalDetailCover } from "@/components/shared/PortalDetailCover";
 import { PortalDetailHead } from "@/components/shared/PortalDetailUi";
@@ -274,6 +275,18 @@ export function OrganisationObjektDetail({
   }
 
   async function saveHmEdit() {
+    const name = editHmName.trim();
+    if (!name && hmMode === "new") {
+      portalToastError("Name fehlt");
+      return;
+    }
+    if (editHmPortal && !editHmEmail.trim()) {
+      portalToastError(
+        "E-Mail fehlt",
+        "Für Portal-Zugang bitte eine E-Mail angeben."
+      );
+      return;
+    }
     setHmSaving(true);
     try {
       const body =
@@ -281,12 +294,15 @@ export function OrganisationObjektDetail({
           ? {
               objektId: objekt.id,
               hausmeisterId: editHmId,
+              name: name || undefined,
+              email: editHmEmail.trim() || null,
+              portalZugang: editHmPortal,
               invite: false,
             }
           : {
               objektId: objekt.id,
-              name: editHmName.trim(),
-              email: editHmPortal ? editHmEmail.trim() : null,
+              name,
+              email: editHmPortal ? editHmEmail.trim() : editHmEmail.trim() || null,
               portalZugang: editHmPortal,
               invite: editHmPortal,
             };
@@ -597,39 +613,34 @@ export function OrganisationObjektDetail({
                 <option value="__new__">＋ Neu anlegen</option>
               </select>
             </label>
-            {hmMode === "new" ? (
-              <>
-                <EinstellungenEdField
-                  label="Name"
-                  value={editHmName}
-                  onChange={setEditHmName}
-                  placeholder="Max Mustermann"
-                  autoComplete="name"
-                />
-                <label className="flex items-start gap-3 rounded-[10px] border border-border-light bg-white p-3">
-                  <input
-                    type="checkbox"
-                    className="mt-0.5"
-                    checked={editHmPortal}
-                    onChange={(e) => setEditHmPortal(e.target.checked)}
-                  />
-                  <span className="text-[13px] text-text-secondary">
-                    Portal einladen — Konto ist erst nach Registrierung über den
-                    Link aktiv
-                  </span>
-                </label>
-                {editHmPortal ? (
-                  <EinstellungenEdField
-                    label="E-Mail"
-                    type="email"
-                    value={editHmEmail}
-                    onChange={setEditHmEmail}
-                    placeholder="name@firma.de"
-                    autoComplete="email"
-                  />
-                ) : null}
-              </>
-            ) : null}
+            <EinstellungenEdField
+              label="Name"
+              value={editHmName}
+              onChange={setEditHmName}
+              placeholder="Max Mustermann"
+              autoComplete="name"
+            />
+            <EinstellungenEdField
+              label="E-Mail"
+              type="email"
+              value={editHmEmail}
+              onChange={setEditHmEmail}
+              placeholder="name@firma.de"
+              autoComplete="email"
+            />
+            <label className="flex items-start gap-3 rounded-[10px] border border-border-light bg-white p-3">
+              <input
+                type="checkbox"
+                className="mt-0.5"
+                checked={editHmPortal}
+                onChange={(e) => setEditHmPortal(e.target.checked)}
+              />
+              <span className="text-[13px] text-text-secondary">
+                {hmMode === "new"
+                  ? "Portal einladen — Konto ist erst nach Registrierung über den Link aktiv"
+                  : "Portal-Zugang — Einladung über das Menü (⋯) möglich"}
+              </span>
+            </label>
           </EinstellungenEditModal>
           <PortalConfirmDialog
             open={hmConfirmRemove}
@@ -646,6 +657,8 @@ export function OrganisationObjektDetail({
             onConfirm={() => void removeHausmeister()}
           />
         </div>
+
+        <OrganisationObjektKontaktePanel objektId={objekt.id} />
 
         <div className="space-y-3">
           <EinstellungenSectionHeader

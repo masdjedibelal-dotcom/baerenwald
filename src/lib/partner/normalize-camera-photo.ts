@@ -1,6 +1,9 @@
 import { PARTNER_MAX_PHOTO_BYTES } from "@/lib/partner/partner-upload-limits";
 
-const MAX_EDGE = 1920;
+/** Lange Kante nach Verkleinerung — reicht für CRM/Bautagebuch. */
+const MAX_EDGE = 1600;
+/** Zielgröße nach Encode (Server-Action + Storage bleiben schlank). */
+const TARGET_BYTES = Math.min(1.5 * 1024 * 1024, PARTNER_MAX_PHOTO_BYTES * 0.35);
 
 function isLikelyHeic(file: File): boolean {
   const mime = (file.type || "").toLowerCase();
@@ -18,36 +21,50 @@ function jpegName(original: string): string {
   return `${base}.jpg`;
 }
 
+function loadImage(file: File): Promise<HTMLImageElement> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      resolve(img);
+    };
+    img.onerror = () => {
+      URL.revokeObjectURL(url);
+      reject(new Error("Bild konnte nicht geladen werden."));
+    };
+    img.src = url;
+  });
+}
+
+function canvasToJpeg(
+  canvas: HTMLCanvasElement,
+  quality: number
+): Promise<Blob | null> {
+  return new Promise((resolve) => {
+    canvas.toBlob((blob) => resolve(blob), "image/jpeg", quality);
+  });
+}
+
 /**
- * Kamera-/Galerie-Fotos für Partner-Uploads aufnehmen:
- * HEIC → JPEG, große Aufnahmen runterrechnen (unter PARTNER_MAX_PHOTO_BYTES).
+ * Kamera-/Galerie-Fotos für Partner-Uploads:
+ * immer auf JPEG + begrenzte Kante verdichten (auch wenn die Datei „nur“ 3–4 MB ist).
+ * Verhindert Server-Action-Timeouts bei Regie mit Start/Ende/mehreren Fotos.
  */
 export async function normalizePartnerCameraPhoto(file: File): Promise<File> {
   if (!file.size) return file;
   if ((file.type || "").toLowerCase() === "application/pdf") return file;
   if (file.name.toLowerCase().endsWith(".pdf")) return file;
 
-  const needsConvert =
-    isLikelyHeic(file) ||
-    file.size > PARTNER_MAX_PHOTO_BYTES * 0.85 ||
-    !file.type ||
-    !["image/jpeg", "image/jpg", "image/png", "image/webp"].includes(
-      file.type.toLowerCase()
-    );
+  try {
+    const img = await loadImage(file);
+    let edge = MAX_EDGE;
+    let quality = 0.78;
 
-  if (!needsConvert && file.size <= PARTNER_MAX_PHOTO_BYTES) {
-    return file;
-  }
-
-  return new Promise((resolve) => {
-    const img = new Image();
-    const url = URL.createObjectURL(file);
-
-    img.onload = () => {
-      URL.revokeObjectURL(url);
+    for (let attempt = 0; attempt < 6; attempt++) {
       let { width, height } = img;
-      if (width > MAX_EDGE || height > MAX_EDGE) {
-        const ratio = Math.min(MAX_EDGE / width, MAX_EDGE / height);
+      if (width > edge || height > edge) {
+        const ratio = Math.min(edge / width, edge / height);
         width = Math.round(width * ratio);
         height = Math.round(height * ratio);
       }
@@ -56,43 +73,38 @@ export async function normalizePartnerCameraPhoto(file: File): Promise<File> {
       canvas.width = Math.max(1, width);
       canvas.height = Math.max(1, height);
       const ctx = canvas.getContext("2d");
-      if (!ctx) {
-        resolve(file);
-        return;
-      }
+      if (!ctx) break;
       ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
 
-      const tryQuality = (quality: number) => {
-        canvas.toBlob(
-          (blob) => {
-            if (!blob) {
-              resolve(file);
-              return;
-            }
-            if (blob.size > PARTNER_MAX_PHOTO_BYTES && quality > 0.45) {
-              tryQuality(Math.max(0.45, quality - 0.15));
-              return;
-            }
-            resolve(
-              new File([blob], jpegName(file.name), {
-                type: "image/jpeg",
-                lastModified: Date.now(),
-              })
-            );
-          },
-          "image/jpeg",
-          quality
-        );
-      };
+      const blob = await canvasToJpeg(canvas, quality);
+      if (!blob) break;
 
-      tryQuality(0.82);
-    };
+      if (blob.size <= TARGET_BYTES || (quality <= 0.42 && edge <= 960)) {
+        if (blob.size > PARTNER_MAX_PHOTO_BYTES) {
+          throw new Error("Foto bleibt nach Verkleinerung zu groß.");
+        }
+        return new File([blob], jpegName(file.name), {
+          type: "image/jpeg",
+          lastModified: Date.now(),
+        });
+      }
 
-    img.onerror = () => {
-      URL.revokeObjectURL(url);
-      resolve(file);
-    };
+      if (quality > 0.42) {
+        quality = Math.max(0.42, quality - 0.12);
+      } else {
+        edge = Math.max(960, Math.round(edge * 0.75));
+        quality = 0.72;
+      }
+    }
+  } catch {
+    /* Fallback unten */
+  }
 
-    img.src = url;
-  });
+  // HEIC o. Ä. nicht lesbar → Original nur behalten wenn unter Limit
+  if (isLikelyHeic(file) || file.size > PARTNER_MAX_PHOTO_BYTES) {
+    throw new Error(
+      "Foto konnte nicht verkleinert werden. Bitte erneut mit der Kamera aufnehmen."
+    );
+  }
+  return file;
 }

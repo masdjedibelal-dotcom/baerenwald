@@ -26,6 +26,8 @@ type RechnungDokumentInput = {
   status?: string | null;
   rechnungsdatum?: string | null;
   gesendet_at?: string | null;
+  /** Partner-Eingang — nie im Kunden-/HV-Portal zeigen */
+  richtung?: string | null;
 };
 
 type TimelineDokumentInput = {
@@ -85,6 +87,7 @@ export function dokumenteFromRechnungen(
 ): PortalDokument[] {
   const rows: PortalDokument[] = [];
   for (const r of rechnungen) {
+    if (String(r.richtung ?? "").toLowerCase() === "eingehend") continue;
     const st = (r.status || "").toLowerCase().replace(/[\s-]+/g, "_");
     if (st === "entwurf" || st === "storniert") continue;
     const href = r.pdf_url?.trim();

@@ -163,22 +163,24 @@ export const MIETER_STG = [
     id: "in_bearbeitung",
     title_de: "In Bearbeitung",
     title_en: "In progress",
-    subtitle_de: "Ihre Verwaltung bearbeitet Ihre Meldung.",
-    subtitle_en: "Your property manager is handling your report.",
+    subtitle_de:
+      "Ihre Verwaltung prüft die Meldung und organisiert die nächsten Schritte.",
+    subtitle_en:
+      "Your property manager is reviewing the report and arranging next steps.",
   },
   {
     id: "beauftragt",
-    title_de: "Bestätigung",
-    title_en: "Confirmation",
-    subtitle_de: "Ihre Verwaltung hat die Ausführung bestätigt.",
-    subtitle_en: "Your property manager confirmed the work will be carried out.",
+    title_de: "Beauftragt",
+    title_en: "Assigned",
+    subtitle_de: "Ein Handwerksbetrieb wurde beauftragt — Termin folgt.",
+    subtitle_en: "A craftsperson has been assigned — a visit will follow.",
   },
   {
     id: "vor_ort",
     title_de: "Handwerker vor Ort",
     title_en: "Craftsperson on site",
-    subtitle_de: "Der Handwerker hat die Ankunft bestätigt und arbeitet vor Ort.",
-    subtitle_en: "The craftsperson confirmed arrival and is working on site.",
+    subtitle_de: "Der Handwerker ist vor Ort und arbeitet am Schaden.",
+    subtitle_en: "The craftsperson is on site and working on the issue.",
   },
   {
     id: "erledigt",

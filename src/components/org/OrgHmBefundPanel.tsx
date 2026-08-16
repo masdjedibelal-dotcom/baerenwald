@@ -634,8 +634,8 @@ export function OrgHmBefundPanel({
                 }}
                 contextHint={[
                   `Prüfpunkt: ${editPunkt.titel}`,
-                  befund?.vorlage_key
-                    ? `Vorlage: ${befund.vorlage_key}`
+                  befund?.vorlage_key && isBefundVorlageKey(befund.vorlage_key)
+                    ? `Vorlage: ${getBefundVorlage(befund.vorlage_key).label}`
                     : null,
                 ]
                   .filter(Boolean)

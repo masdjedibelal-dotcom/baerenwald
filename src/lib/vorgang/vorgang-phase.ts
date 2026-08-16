@@ -24,7 +24,7 @@ export type MieterStatusStufe =
 const MIETER_LABELS: Record<MieterStatusStufe, string> = {
   eingegangen: "Eingegangen",
   in_bearbeitung: "In Bearbeitung",
-  beauftragt: "Bestätigung",
+  beauftragt: "Beauftragt",
   vor_ort: "Handwerker vor Ort",
   erledigt: "Erledigt",
 };
@@ -46,6 +46,9 @@ export function resolveMieterStatusStufe(
   const phase = (lead.vorgang_phase ?? "").trim();
   if (phase === "beauftragt" || phase === "abnahme") return "beauftragt";
   if (phase === "abgelehnt") return "erledigt";
+
+  // Auftrag existiert → für Mieter mind. „Beauftragt“ (auch wenn Lead-Phase noch hinterherhinkt)
+  if (auftrag) return "beauftragt";
 
   const hv = (lead.hv_meldung_status ?? "").trim();
   if (hv === "abgelehnt") return "erledigt";

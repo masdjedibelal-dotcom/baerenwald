@@ -613,7 +613,7 @@ export function PartnerDokumentPreviewModal({
               <p className="text-[14px] leading-relaxed" style={{ color: PORTAL_VAR.sub }}>
                 {art === "angebot"
                   ? "Wir erstellen automatisch dein Angebot an Bärenwald. Es erscheint unter Dokumente bei dir und bei Bärenwald."
-                  : "Wir erstellen automatisch deine Rechnung. Regiepositionen rechnen wir aus erfasster Zeit × hinterlegtem Stundensatz."}
+                  : "Wir erstellen automatisch deine Rechnung. Regiepositionen übernehmen wir mit Stundensatz aus der Anmeldung und der tatsächlichen Zeit aus dem Erledigt-Eintrag — ohne erneute Abfrage."}
               </p>
               <p className="text-[12.5px]" style={{ color: PORTAL_VAR.faint }}>
                 Fehlende Pflichtangaben kannst du im nächsten Schritt nachtragen.

@@ -8,16 +8,31 @@ export function meldeImpressumUrl(orgSlug: string): string {
   return `/melden/${encodeURIComponent(orgSlug)}/impressum`;
 }
 
-/** Absolute http(s)-URL — für Aushang-Freigabe und Speichern. */
-export function isAbsoluteHttpUrl(raw: string | null | undefined): boolean {
-  const s = String(raw ?? "").trim();
-  if (!s) return false;
+/**
+ * Nutzer-Eingabe → absolute http(s)-URL.
+ * Akzeptiert `https://…`, `http://…`, `www.…` und `domain.de/…` (hängt `https://` voran).
+ */
+export function normalizeOrgHttpUrl(
+  raw: string | null | undefined
+): string | null {
+  let s = String(raw ?? "").trim();
+  if (!s) return null;
+  if (/^\/\//.test(s)) s = `https:${s}`;
+  else if (!/^https?:\/\//i.test(s)) s = `https://${s}`;
   try {
     const u = new URL(s);
-    return u.protocol === "http:" || u.protocol === "https:";
+    if (u.protocol !== "http:" && u.protocol !== "https:") return null;
+    // Host ohne Punkt (z. B. "foo") ablehnen — mind. Domain-artig
+    if (!u.hostname.includes(".")) return null;
+    return u.toString();
   } catch {
-    return false;
+    return null;
   }
+}
+
+/** Absolute http(s)-URL — inkl. Eingaben wie www.… (nach Normalisierung). */
+export function isAbsoluteHttpUrl(raw: string | null | undefined): boolean {
+  return normalizeOrgHttpUrl(raw) != null;
 }
 
 /**

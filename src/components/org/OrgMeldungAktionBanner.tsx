@@ -8,6 +8,7 @@ import {
   funnelDirektauftragFromDaten,
   hvFreigabeEntfaellt,
 } from "@/lib/org/freigabe-bypass";
+import { fetchObjektHmDelegierbar } from "@/lib/org/fetch-objekt-hm-delegierbar";
 import { isHvDirektauftragInfoOnly } from "@/lib/org/org-direktauftrag";
 import { orgPortalToast } from "@/lib/shared/portal-toast";
 import type {
@@ -50,8 +51,14 @@ export function OrgMeldungAktionBanner({
   const isHmPruefung = status === "hm_pruefung";
 
   useEffect(() => {
-    // HM-Pfad immer verfügbar (Zuordnung optional für Name/Mail)
-    setHasHm(true);
+    let cancelled = false;
+    void (async () => {
+      const st = await fetchObjektHmDelegierbar(lead.kunde_objekt_id);
+      if (!cancelled) setHasHm(st.canDelegate);
+    })();
+    return () => {
+      cancelled = true;
+    };
   }, [lead.kunde_objekt_id, isNeu, isHmPruefung]);
 
   if (lead.einladung_status === "offen") return null;

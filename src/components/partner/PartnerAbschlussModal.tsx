@@ -373,7 +373,7 @@ export function PartnerAbschlussModal({
                   className="text-[12px] font-semibold"
                   style={{ color: PORTAL_VAR.sub }}
                 >
-                  Handwerker / Ausführender Betrieb *
+                  Handwerker vor Ort *
                 </span>
                 <input
                   required
@@ -397,7 +397,7 @@ export function PartnerAbschlussModal({
                   className="text-[12px] font-semibold"
                   style={{ color: PORTAL_VAR.sub }}
                 >
-                  Kunde / Auftraggeber vor Ort *
+                  Kunde vor Ort *
                 </span>
                 <input
                   required

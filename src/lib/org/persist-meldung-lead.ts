@@ -145,12 +145,55 @@ export async function persistMeldungLead(input: PersistMeldungLeadInput) {
         ? { terminwunsch: input.terminwunsch }
         : {}),
       ...(input.ort?.trim() ? { ort: input.ort.trim() } : {}),
+      ...(input.strasse?.trim() ? { strasse: input.strasse.trim() } : {}),
+      ...(input.hausnummer?.trim()
+        ? { hausnummer: input.hausnummer.trim() }
+        : {}),
+      ...(input.plz?.trim() ? { plz: input.plz.trim() } : {}),
       fotos: input.fotos ?? [],
       quelle: input.kanal,
     },
   });
 
   if (!result.ok) return result;
+
+  // Objekt-Adresse aus Melde nachziehen, wenn am Objekt noch leer
+  if (input.kunde_objekt_id?.trim()) {
+    try {
+      const oid = input.kunde_objekt_id.trim();
+      const { data: obj } = await supabaseAdmin
+        .from("kunden_objekte")
+        .select("id, strasse, hausnummer, plz, ort")
+        .eq("id", oid)
+        .maybeSingle();
+      if (obj) {
+        const patchObj: Record<string, string> = {};
+        if (!String(obj.strasse ?? "").trim() && input.strasse?.trim()) {
+          patchObj.strasse = input.strasse.trim();
+        }
+        if (
+          !String(obj.hausnummer ?? "").trim() &&
+          input.hausnummer?.trim()
+        ) {
+          patchObj.hausnummer = input.hausnummer.trim();
+        }
+        if (!String(obj.plz ?? "").trim() && input.plz?.trim()) {
+          patchObj.plz = input.plz.trim();
+        }
+        if (!String(obj.ort ?? "").trim() && input.ort?.trim()) {
+          patchObj.ort = input.ort.trim();
+        }
+        if (Object.keys(patchObj).length) {
+          await supabaseAdmin
+            .from("kunden_objekte")
+            .update(patchObj)
+            .eq("id", oid);
+        }
+      }
+    } catch (e) {
+      console.warn("[persistMeldungLead] objekt adresse backfill:", e);
+    }
+  }
 
   const token = generateMeldeTrackingToken();
   const vorschlag = vorgeschlagenerKostentraeger({
@@ -200,41 +243,50 @@ export async function persistMeldungLead(input: PersistMeldungLeadInput) {
         .eq("id", input.auftraggeber_kunde_id)
         .maybeSingle();
       if (orgHm?.hm_auto_zuweisen === true) {
-        const { loadObjektHausmeisterKontakt } = await import(
-          "@/lib/org/objekt-hausmeister"
-        );
+        const {
+          assertHausmeisterDelegierbar,
+          loadObjektHausmeisterKontakt,
+        } = await import("@/lib/org/objekt-hausmeister");
         const { insertLeadBefundIfMissing } = await import(
           "@/lib/org/lead-befund-create"
         );
-        const hm = await loadObjektHausmeisterKontakt(input.kunde_objekt_id);
-        await supabaseAdmin
-          .from("leads")
-          .update({ hv_meldung_status: "hm_pruefung" })
-          .eq("id", result.id);
-        await insertLeadBefundIfMissing({
-          leadId: result.id,
-          durchgefuehrtVon: hm?.name ?? "Hausmeister",
-          createdByKundeId: input.auftraggeber_kunde_id,
-        });
-        if (hm?.email && (hm.portalKundeId || hm.portalZugang)) {
-          const { notifyHausmeisterPruefung } = await import(
-            "@/lib/org/notify-hausmeister-pruefung"
-          );
-          void notifyHausmeisterPruefung({
-            leadId: result.id,
-            toEmail: hm.email,
-            kontaktName: hm.name,
-          });
-        }
-        void import("@/lib/portal/notify-portal-hausmeister").then(
-          ({ notifyPortalHausmeisterNeuerVorgang }) =>
-            notifyPortalHausmeisterNeuerVorgang({
-              leadId: result.id,
-              kundeObjektId: input.kunde_objekt_id,
-            }).catch((e) =>
-              console.warn("[persistMeldungLead] hm portal notify:", e)
-            )
+        const hmGate = assertHausmeisterDelegierbar(
+          await loadObjektHausmeisterKontakt(input.kunde_objekt_id)
         );
+        if (!hmGate.ok) {
+          // Auto-Pfad still: ohne aktiven Objekt-HM bleibt Status neu
+          console.warn("[persistMeldungLead] hm_auto skip:", hmGate.error);
+        } else {
+          const hm = hmGate.hm;
+          await supabaseAdmin
+            .from("leads")
+            .update({ hv_meldung_status: "hm_pruefung" })
+            .eq("id", result.id);
+          await insertLeadBefundIfMissing({
+            leadId: result.id,
+            durchgefuehrtVon: hm.name,
+            createdByKundeId: input.auftraggeber_kunde_id,
+          });
+          if (hm.email) {
+            const { notifyHausmeisterPruefung } = await import(
+              "@/lib/org/notify-hausmeister-pruefung"
+            );
+            void notifyHausmeisterPruefung({
+              leadId: result.id,
+              toEmail: hm.email,
+              kontaktName: hm.name,
+            });
+          }
+          void import("@/lib/portal/notify-portal-hausmeister").then(
+            ({ notifyPortalHausmeisterNeuerVorgang }) =>
+              notifyPortalHausmeisterNeuerVorgang({
+                leadId: result.id,
+                kundeObjektId: input.kunde_objekt_id,
+              }).catch((e) =>
+                console.warn("[persistMeldungLead] hm portal notify:", e)
+              )
+          );
+        }
       }
     } catch (e) {
       console.warn("[persistMeldungLead] hm_auto:", e);

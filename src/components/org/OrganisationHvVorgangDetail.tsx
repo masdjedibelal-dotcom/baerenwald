@@ -22,6 +22,7 @@ import {
   hvFreigabeEntfaellt,
   resolveAngebotZugestelltForHvFreigabe,
 } from "@/lib/org/freigabe-bypass";
+import { fetchObjektHmDelegierbar } from "@/lib/org/fetch-objekt-hm-delegierbar";
 import { acceptKundeAngebot, rejectKundeAngebot } from "@/app/actions/portal-angebot";
 import {
   countUnreadBautagebuch,
@@ -372,7 +373,7 @@ export function OrganisationHvVorgangDetail({
   const [accepted, setAccepted] = useState(false);
   const [rejected, setRejected] = useState(false);
   const [btUnread, setBtUnread] = useState(0);
-  const [hasHmKontakt, setHasHmKontakt] = useState(true);
+  const [hasHmKontakt, setHasHmKontakt] = useState(false);
   const [hmPortalZugang, setHmPortalZugang] = useState(false);
   const [hasBefund, setHasBefund] = useState(false);
   const [activeSection, setActiveSection] =
@@ -409,36 +410,23 @@ export function OrganisationHvVorgangDetail({
 
   useEffect(() => {
     if (mieterStatusMode) {
-      setHasHmKontakt(true);
+      setHasHmKontakt(false);
       setHmPortalZugang(false);
       return;
     }
     let cancelled = false;
     void (async () => {
-      setHasHmKontakt(true);
       if (!kundeObjektId) {
-        setHmPortalZugang(false);
+        if (!cancelled) {
+          setHasHmKontakt(false);
+          setHmPortalZugang(false);
+        }
         return;
       }
-      try {
-        const res = await fetch(
-          `/api/org/hausmeister?objektId=${encodeURIComponent(kundeObjektId)}`
-        );
-        const json = (await res.json()) as {
-          amObjekt?: {
-            portal_zugang?: boolean;
-            portal_kunde_id?: string | null;
-          } | null;
-        };
-        if (!cancelled) {
-          // Checkliste nur read-only, wenn HM-Konto wirklich aktiv ist
-          setHmPortalZugang(
-            Boolean(String(json.amObjekt?.portal_kunde_id ?? "").trim())
-          );
-        }
-      } catch {
-        if (!cancelled) setHmPortalZugang(false);
-      }
+      const st = await fetchObjektHmDelegierbar(kundeObjektId);
+      if (cancelled) return;
+      setHasHmKontakt(st.canDelegate);
+      setHmPortalZugang(st.portalAktiv);
     })();
     return () => {
       cancelled = true;
@@ -509,7 +497,10 @@ export function OrganisationHvVorgangDetail({
       : actionKindRaw;
   /** Nie Freigeben/Ablehnen (Kostenfreigabe), wenn Bypass greift — auch bei Angebots-Tab. */
   const showFreigabeButtons =
-    !freigabeNichtNoetig && actionKindRaw === "freigabe";
+    !freigabeNichtNoetig &&
+    actionKindRaw === "freigabe" &&
+    hvStatusNorm !== "hm_pruefung" &&
+    hvStatusNorm !== "hm_erledigt";
   const empfohlen = pickEmpfohlenesAngebot(offers);
   const statusLabel =
     statusLabelOverride?.trim() || PORTAL_STATUS[displayFlowStatus].label;
@@ -1212,7 +1203,17 @@ export function OrganisationHvVorgangDetail({
               <VorgangDetailBlocks
                 vm={uebersichtVm}
                 detailsActions={
-                  showFreigabeButtons ? (
+                  hvStatusNorm === "hm_pruefung" ? (
+                    <div className="space-y-1 rounded-xl border border-border-default bg-white px-3.5 py-3">
+                      <p className="portal-text-card-title">
+                        Hausmeister-Prüfung läuft
+                      </p>
+                      <p className="portal-text-body text-text-secondary">
+                        Der Vorgang liegt beim Hausmeister. Fortschritt und
+                        Checkliste unter Tab „Hausmeister“.
+                      </p>
+                    </div>
+                  ) : showFreigabeButtons ? (
                     <>
                       <ActionBtn
                         label={HV_DETAIL_COPY.ablehnen}

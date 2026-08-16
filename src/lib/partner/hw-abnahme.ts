@@ -25,7 +25,7 @@ export const HW_ABNAHME_COPY = {
   rechnungFirmendatenHint:
     "Firmendaten unvollständig (z. B. Straße) — bitte unter Einstellungen ergänzen.",
   kundeSigHint:
-    "Gegenzeichnung vor Ort empfohlen — Name ist Pflicht, Zeichnung bitte mit dem Kunden.",
+    "Gegenzeichnung vor Ort empfohlen — Name „Kunde vor Ort“ ist Pflicht, Zeichnung bitte mit dem Kunden.",
   kundeSigRequiredSoft: "Bitte den Kunden vor Ort gegenzeichnen lassen.",
   mobileSigHint:
     "Tipp: Querformat oder größeres Feld für die Unterschrift nutzen.",

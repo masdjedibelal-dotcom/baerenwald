@@ -2,7 +2,10 @@ import { NextResponse } from "next/server";
 
 import { writeAuditEvent } from "@/lib/audit/write-audit-event";
 import { ensureOrgKennung } from "@/lib/org/ensure-org-kennung";
-import { orgMeldeLegalUrlsReady } from "@/lib/org/melde-legal-urls";
+import {
+  normalizeOrgHttpUrl,
+  orgMeldeLegalUrlsReady,
+} from "@/lib/org/melde-legal-urls";
 import { requireOrgAdminSession } from "@/lib/org/require-org-session";
 import {
   findBrandPresetByPrimary,
@@ -37,13 +40,8 @@ type Body = {
 function normalizeHttpUrlOrNull(v: unknown): string | null | "invalid" {
   const s = String(v ?? "").trim();
   if (!s) return null;
-  try {
-    const u = new URL(s);
-    if (u.protocol !== "http:" && u.protocol !== "https:") return "invalid";
-    return u.toString();
-  } catch {
-    return "invalid";
-  }
+  const n = normalizeOrgHttpUrl(s);
+  return n ?? "invalid";
 }
 
 function trimOrNull(v: unknown): string | null {
@@ -113,7 +111,7 @@ export async function PATCH(req: Request) {
     const u = normalizeHttpUrlOrNull(body.impressum_url);
     if (u === "invalid") {
       return NextResponse.json(
-        { error: "Impressum-URL ungültig (https://…)." },
+        { error: "Impressum-URL ungültig (z. B. www.firma.de/impressum)." },
         { status: 400 }
       );
     }
@@ -123,7 +121,7 @@ export async function PATCH(req: Request) {
     const u = normalizeHttpUrlOrNull(body.datenschutz_url);
     if (u === "invalid") {
       return NextResponse.json(
-        { error: "Datenschutz-URL ungültig (https://…)." },
+        { error: "Datenschutz-URL ungültig (z. B. www.firma.de/datenschutz)." },
         { status: 400 }
       );
     }

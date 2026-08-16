@@ -169,7 +169,7 @@ export const orgPortalToast = {
   hmBegutachten() {
     portalToastSuccess(
       "Hausmeister-Prüfung gestartet",
-      "Checkliste ist im Tab „Hausmeister“ bereit. Optional wurde der Kontakt per E-Mail informiert."
+      "Der Vorgang liegt beim Hausmeister. Checkliste unter Tab „Hausmeister“; der HM wurde benachrichtigt."
     );
   },
   hmErledigt() {

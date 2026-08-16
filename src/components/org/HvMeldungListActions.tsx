@@ -3,6 +3,7 @@
 import { useEffect, useState, type CSSProperties } from "react";
 
 import { isHvDirektauftragInfoOnly } from "@/lib/org/org-direktauftrag";
+import { fetchObjektHmDelegierbar } from "@/lib/org/fetch-objekt-hm-delegierbar";
 import { orgPortalToast } from "@/lib/shared/portal-toast";
 import { PORTAL_VAR } from "@/lib/portal2/tokens";
 import type {
@@ -65,7 +66,14 @@ export function HvMeldungListActions({
   const isHmPruefung = status === "hm_pruefung";
 
   useEffect(() => {
-    setHasHm(true);
+    let cancelled = false;
+    void (async () => {
+      const st = await fetchObjektHmDelegierbar(lead.kunde_objekt_id);
+      if (!cancelled) setHasHm(st.canDelegate);
+    })();
+    return () => {
+      cancelled = true;
+    };
   }, [lead.kunde_objekt_id, isNeu]);
 
   if (lead.einladung_status === "offen") return null;

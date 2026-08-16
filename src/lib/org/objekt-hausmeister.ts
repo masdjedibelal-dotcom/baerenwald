@@ -58,6 +58,38 @@ export async function loadObjektHausmeisterKontakt(
   return toKontakt(hm);
 }
 
+/**
+ * Delegation (hm_begutachten): Objekt-HM muss zugewiesen und Portal-Konto aktiv sein.
+ */
+export function assertHausmeisterDelegierbar(
+  hm: HausmeisterKontakt | null | undefined
+):
+  | { ok: true; hm: HausmeisterKontakt }
+  | { ok: false; error: string } {
+  if (!hm) {
+    return {
+      ok: false,
+      error:
+        "Am Objekt ist kein Hausmeister zugewiesen. Bitte unter Objekt → Hausmeister zuweisen.",
+    };
+  }
+  if (!hausmeisterPortalIstAktiv(hm)) {
+    return {
+      ok: false,
+      error: hm.portalZugang
+        ? "Hausmeister-Portal ist noch nicht aktiviert. Bitte Einladung abschließen, bevor Sie delegieren."
+        : "Hausmeister hat keinen aktiven Portal-Zugang. Bitte unter Objekt → Hausmeister Portal aktivieren.",
+    };
+  }
+  return { ok: true, hm };
+}
+
+export function hausmeisterKannDelegiertWerden(
+  hm: HausmeisterKontakt | null | undefined
+): boolean {
+  return assertHausmeisterDelegierbar(hm).ok;
+}
+
 function toKontakt(hm: HausmeisterAmObjekt): HausmeisterKontakt {
   return {
     id: hm.id,

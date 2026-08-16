@@ -17,6 +17,10 @@ import { linkPortalHandwerkerToAuthUser } from "@/lib/partner/link-portal-handwe
 import { PARTNER_AUTH_COPY } from "@/lib/partner/partner-auth-copy";
 import { verifyPartnerRegistrationEmail } from "@/lib/partner/partner-registration-eligibility";
 import { linkPortalKundeToAuthUser } from "@/lib/portal/link-portal-kunde";
+import {
+  normalizePortalRegisterKundeTyp,
+  type PortalRegisterKundeTyp,
+} from "@/lib/portal/portal-register-kunde-typ";
 import { isSupabaseConfigured, supabaseAdmin } from "@/lib/supabase";
 
 export type PortalSignupOtpResult = { ok: true } | { ok: false; error: string };
@@ -49,6 +53,8 @@ export async function registerMeinBaerenwaldWithOtp(input: {
   telefon?: string;
   password: string;
   einladungToken?: string;
+  /** privat | gewerbe | hausverwaltung — Pflicht außer bei Einladung */
+  kundentyp?: string;
 }): Promise<PortalSignupOtpResult> {
   const allowed = await assertPortalEmailAllowed(input.email);
   if (!allowed.ok) return allowed;
@@ -61,12 +67,20 @@ export async function registerMeinBaerenwaldWithOtp(input: {
   const name = input.name.trim();
   const password = input.password;
   const telefon = (input.telefon ?? "").trim() || null;
+  const invite = Boolean(input.einladungToken?.trim());
+  const kundentyp = normalizePortalRegisterKundeTyp(input.kundentyp);
 
   if (!email || !name) {
     return { ok: false, error: "Bitte Name und E-Mail angeben." };
   }
   if (password.length < 8) {
     return { ok: false, error: "Passwort mindestens 8 Zeichen." };
+  }
+  if (!invite && !kundentyp) {
+    return {
+      ok: false,
+      error: "Bitte wählen Sie, ob Privat, Gewerbe oder Hausverwaltung.",
+    };
   }
 
   const already = await isPortalAuthEmailRegistered(email);
@@ -84,6 +98,7 @@ export async function registerMeinBaerenwaldWithOtp(input: {
     datenschutz_akzeptiert_at: now,
     agb_akzeptiert_at: now,
   };
+  if (kundentyp) meta.kundentyp = kundentyp;
   if (input.einladungToken?.trim()) {
     meta.portal_einladung_token = input.einladungToken.trim();
   }
@@ -252,6 +267,9 @@ export async function confirmPortalSignupCode(opts: {
     result.userId
   );
   const meta = (userData.user?.user_metadata ?? {}) as Record<string, unknown>;
+  const kundentyp = normalizePortalRegisterKundeTyp(meta.kundentyp) as
+    | PortalRegisterKundeTyp
+    | null;
   const link = await linkPortalKundeToAuthUser({
     userId: result.userId,
     email,
@@ -260,6 +278,7 @@ export async function confirmPortalSignupCode(opts: {
         ? meta.name
         : email.split("@")[0] ?? email,
     telefon: typeof meta.telefon === "string" ? meta.telefon : null,
+    typ: kundentyp,
   });
   if (!link.ok) return { ok: false, error: link.error };
 

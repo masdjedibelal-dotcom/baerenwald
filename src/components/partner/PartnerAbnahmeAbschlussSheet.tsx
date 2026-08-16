@@ -36,8 +36,8 @@ const STEPS = [
   { id: "leistungen", label: "Leistungen" },
   { id: "maengel", label: "Mängel" },
   { id: "angaben", label: "Angaben" },
-  { id: "sig_hw", label: "Ihre Signatur" },
-  { id: "sig_kunde", label: "Kunde" },
+  { id: "sig_hw", label: "Handwerker vor Ort" },
+  { id: "sig_kunde", label: "Kunde vor Ort" },
 ] as const;
 
 type Step = (typeof STEPS)[number]["id"];
@@ -311,7 +311,7 @@ export function PartnerAbnahmeAbschlussSheet({
         return;
       }
       if (!vertreter.trim()) {
-        setError("Vertreter (Auftragnehmer) ist Pflicht.");
+        setError("Handwerker vor Ort (Name) ist Pflicht.");
         return;
       }
       if (!hwName.trim()) setHwName(vertreter.trim());
@@ -425,8 +425,8 @@ export function PartnerAbnahmeAbschlussSheet({
         : step === "angaben"
           ? "Abnahme-Angaben"
           : step === "sig_hw"
-            ? "Ihre Signatur"
-            : "Kunden-Signatur";
+            ? "Handwerker vor Ort"
+            : "Kunde vor Ort";
 
   const subtitle = loading
     ? "Bitte warten — danach kehren Sie zum Vorgang zurück"
@@ -707,12 +707,12 @@ export function PartnerAbnahmeAbschlussSheet({
 
                 <label className="block space-y-1">
                   <span className="text-[12px] font-semibold text-text-tertiary">
-                    Vertreter vor Ort *
+                    Handwerker vor Ort *
                   </span>
                   <input
                     value={vertreter}
                     onChange={(e) => setVertreter(e.target.value)}
-                    placeholder="Ihr Name"
+                    placeholder="Name des Handwerkers"
                     className="portal-input w-full rounded-xl border border-border-default px-3 py-3 text-[15px]"
                     required
                   />
@@ -780,7 +780,7 @@ export function PartnerAbnahmeAbschlussSheet({
                 </p>
                 <label className="block space-y-1.5">
                   <span className="text-[12px] font-semibold text-text-tertiary">
-                    Ihr Name *
+                    Handwerker vor Ort *
                   </span>
                   <input
                     value={hwName}
@@ -791,7 +791,7 @@ export function PartnerAbnahmeAbschlussSheet({
                 </label>
                 <div>
                   <p className="mb-1.5 text-[12px] font-semibold text-text-tertiary">
-                    Signatur *
+                    Signatur Handwerker *
                   </p>
                   <SignatureCanvas
                     onChange={(has, url) => {
@@ -810,7 +810,7 @@ export function PartnerAbnahmeAbschlussSheet({
                 </p>
                 <label className="block space-y-1.5">
                   <span className="text-[12px] font-semibold text-text-tertiary">
-                    Name Kunde *
+                    Kunde vor Ort *
                   </span>
                   <input
                     value={kundeName}
@@ -821,7 +821,7 @@ export function PartnerAbnahmeAbschlussSheet({
                 </label>
                 <div>
                   <p className="mb-1.5 text-[12px] font-semibold text-text-tertiary">
-                    Signatur Kunde *
+                    Signatur Kunde vor Ort *
                   </p>
                   <SignatureCanvas
                     onChange={(has, url) => {

@@ -8,7 +8,12 @@ import { registerMeinBaerenwaldWithOtp } from "@/app/actions/portal-signup-otp";
 import { PortalAuthBusy } from "@/components/portal/auth/PortalAuthBusy";
 import { PortalSignupOtpStep } from "@/components/portal/PortalSignupOtpStep";
 import { AUTH_INVITE } from "@/lib/portal2/auth";
+import {
+  PORTAL_REGISTER_KUNDE_TYP_OPTIONS,
+  type PortalRegisterKundeTyp,
+} from "@/lib/portal/portal-register-kunde-typ";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
+import { cn } from "@/lib/utils";
 
 export type PortalRegisterPrefill = {
   name?: string;
@@ -63,6 +68,10 @@ export function PortalRegisterForm({
   const [name, setName] = useState(initialName);
   const [email, setEmail] = useState(initialEmail);
   const [telefon, setTelefon] = useState(initialTelefon);
+  const [kundentyp, setKundentyp] = useState<PortalRegisterKundeTyp | null>(
+    null
+  );
+  const [kundentypError, setKundentypError] = useState(false);
   const [password, setPassword] = useState("");
   const [datenschutz, setDatenschutz] = useState(false);
   const [agb, setAgb] = useState(false);
@@ -73,6 +82,11 @@ export function PortalRegisterForm({
   const [awaitingOtp, setAwaitingOtp] = useState(false);
 
   const inviteToken = einladungToken?.trim() || "";
+  const askKundeTyp = !inviteToken;
+  const nameLabel =
+    kundentyp === "gewerbe" || kundentyp === "hausverwaltung"
+      ? "Firma / Name"
+      : "Name";
   const nextPath =
     searchParams.get("next") ||
     (inviteToken
@@ -87,7 +101,7 @@ export function PortalRegisterForm({
     (inviteToken
       ? AUTH_INVITE.lockedHint
       : locked
-        ? "Ihre Angaben aus der Schadenmeldung sind übernommen. Bitte nur noch ein Passwort vergeben und die Zustimmung erteilen."
+        ? "Ihre Angaben aus der Schadenmeldung sind übernommen. Bitte Kundentyp wählen, Passwort vergeben und die Zustimmung erteilen."
         : null);
 
   async function redeemInviteIfNeeded() {
@@ -109,6 +123,12 @@ export function PortalRegisterForm({
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     let hasError = false;
+    if (askKundeTyp && !kundentyp) {
+      setKundentypError(true);
+      hasError = true;
+    } else {
+      setKundentypError(false);
+    }
     if (!datenschutz) {
       setDatenschutzError(true);
       hasError = true;
@@ -131,6 +151,7 @@ export function PortalRegisterForm({
       telefon,
       password,
       einladungToken: inviteToken || undefined,
+      kundentyp: askKundeTyp ? kundentyp ?? undefined : undefined,
     });
     setLoading(false);
     if (!result.ok) {
@@ -219,7 +240,7 @@ export function PortalRegisterForm({
       ) : null}
 
       <label className="block space-y-1.5">
-        <span className="portal-form-label">Name</span>
+        <span className="portal-form-label">{nameLabel}</span>
         <input
           type="text"
           autoComplete="name"
@@ -232,6 +253,45 @@ export function PortalRegisterForm({
           className={fieldClass}
         />
       </label>
+
+      {askKundeTyp ? (
+        <fieldset className="space-y-2">
+          <legend className="portal-form-label">Ich bin …</legend>
+          <div className="grid gap-2 sm:grid-cols-3">
+            {PORTAL_REGISTER_KUNDE_TYP_OPTIONS.map((opt) => {
+              const active = kundentyp === opt.value;
+              return (
+                <button
+                  key={opt.value}
+                  type="button"
+                  onClick={() => {
+                    setKundentyp(opt.value);
+                    setKundentypError(false);
+                  }}
+                  className={cn(
+                    "rounded-xl border px-3 py-3 text-left transition",
+                    active
+                      ? "border-accent bg-accent/5 ring-1 ring-accent"
+                      : "border-border-default bg-surface-card hover:border-accent/40"
+                  )}
+                >
+                  <span className="block text-sm font-semibold text-text-primary">
+                    {opt.label}
+                  </span>
+                  <span className="mt-0.5 block text-[12px] leading-snug text-text-secondary">
+                    {opt.hint}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+          {kundentypError ? (
+            <p className="portal-text-body text-red-700">
+              Bitte wählen Sie Privat, Gewerbe oder Hausverwaltung.
+            </p>
+          ) : null}
+        </fieldset>
+      ) : null}
 
       <label className="block space-y-1.5">
         <span className="portal-form-label">E-Mail</span>

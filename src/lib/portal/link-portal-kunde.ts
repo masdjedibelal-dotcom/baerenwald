@@ -9,6 +9,11 @@ import {
   KUNDE_PORTAL_GESPERRT_MESSAGE,
 } from "@/lib/kunden/kunde-portal-gesperrt";
 import { mapKundenPortalError } from "@/lib/kunden/kunde-portal-errors";
+import {
+  normalizePortalRegisterKundeTyp,
+  portalModusForRegisterKundeTyp,
+  type PortalRegisterKundeTyp,
+} from "@/lib/portal/portal-register-kunde-typ";
 import { supabaseAdmin } from "@/lib/supabase";
 
 function fail(
@@ -193,11 +198,14 @@ export async function linkPortalKundeToAuthUser(opts: {
   email: string;
   name?: string | null;
   telefon?: string | null;
+  /** Selbstregistrierung: privat | gewerbe | hausverwaltung → CRM `kunden.typ` */
+  typ?: PortalRegisterKundeTyp | string | null;
 }): Promise<LinkPortalKundeResult> {
   const email = normalizeKundenEmail(opts.email);
   if (!email) {
     return { ok: false, error: "Keine E-Mail-Adresse im Konto." };
   }
+  const registerTyp = normalizePortalRegisterKundeTyp(opts.typ);
 
   try {
     const gesperrt = await isKundePortalGesperrt({ email });
@@ -280,9 +288,13 @@ export async function linkPortalKundeToAuthUser(opts: {
     email.split("@")[0]?.replace(/[._]/g, " ") ||
     "Kunde";
 
-  // HV-Objektakte: E-Mail gehört zu Bewohner/Hausmeister → Portal-Stub, kein CRM-Privatkunde
+  // HV-Objektakte: E-Mail gehört zu Bewohner/Hausmeister → Portal-Stub, kein CRM-Stammtyp
   const hvRole = await resolveHvPortalRolleByEmail(email);
-  const portalModus = hvRole?.portalModus ?? "privat";
+  const crmTyp: PortalRegisterKundeTyp = hvRole
+    ? "privat"
+    : registerTyp ?? "privat";
+  const portalModus =
+    hvRole?.portalModus ?? portalModusForRegisterKundeTyp(crmTyp);
 
   const { data: neu, error: insErr } = await supabaseAdmin
     .from("kunden")
@@ -290,7 +302,7 @@ export async function linkPortalKundeToAuthUser(opts: {
       name: hvRole?.name || name,
       email,
       telefon: opts.telefon?.trim() || hvRole?.telefon || null,
-      typ: "privat",
+      typ: crmTyp,
       portal_modus: portalModus,
       auth_user_id: opts.userId,
     })

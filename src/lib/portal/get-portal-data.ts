@@ -555,7 +555,7 @@ export async function getPortalDataForKunde(
           : supabaseAdmin
               .from("rechnungen")
               .select(
-                "id, auftrag_id, rechnungsnummer, pdf_url, status, rechnungsdatum, gesendet_at, faellig_am, created_at, updated_at, brutto, netto, rechnung_art, abschlag_index, bezahlt_at"
+                "id, auftrag_id, rechnungsnummer, pdf_url, status, rechnungsdatum, gesendet_at, faellig_am, created_at, updated_at, brutto, netto, rechnung_art, abschlag_index, bezahlt_at, richtung"
               )
               .in("auftrag_id", auftragIds),
         listMode
@@ -858,6 +858,11 @@ export async function getPortalDataForKunde(
 
       const auftragRechnungen = (rechnungen ?? [])
         .filter((r) => String(r.auftrag_id) === auftragId)
+        .filter(
+          (r) =>
+            String((r as { richtung?: string | null }).richtung ?? "") !==
+            "eingehend"
+        )
         .map((r) => {
           const base = mapPortalRechnungForResolver(r);
           const bruttoRaw = (r as { brutto?: number | null }).brutto;
@@ -882,6 +887,10 @@ export async function getPortalDataForKunde(
               typeof (r as { bezahlt_at?: string | null }).bezahlt_at ===
               "string"
                 ? (r as { bezahlt_at: string }).bezahlt_at
+                : null,
+            richtung:
+              typeof (r as { richtung?: string | null }).richtung === "string"
+                ? (r as { richtung: string }).richtung
                 : null,
           };
         });
@@ -941,7 +950,10 @@ export async function getPortalDataForKunde(
           {
             angebot: angebot ?? null,
             rechnungen: (rechnungen ?? []).filter(
-              (r) => String(r.auftrag_id) === auftragId
+              (r) =>
+                String(r.auftrag_id) === auftragId &&
+                String((r as { richtung?: string | null }).richtung ?? "") !==
+                  "eingehend"
             ),
             timeline: (timeline ?? []).filter(
               (t) => String(t.auftrag_id) === auftragId
