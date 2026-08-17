@@ -333,7 +333,7 @@ export function OrganisationObjektKontaktePanel({ objektId }: Props) {
         description={
           removeTarget
             ? `${removeTarget.name} wird von diesem Objekt entfernt.`
-            : undefined
+            : ""
         }
         confirmLabel="Entfernen"
         confirmVariant="danger"
