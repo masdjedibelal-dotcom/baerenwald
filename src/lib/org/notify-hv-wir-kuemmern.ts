@@ -1,4 +1,5 @@
 import { buildOrgWirKuemmernUnsHtml } from "@/lib/email/meldung-mail-templates";
+import { sendBrandedMail } from "@/lib/email/send-branded-mail";
 import { withPortalDetailDeepLink } from "@/lib/portal2/portal-detail-deep-link";
 import { supabaseAdmin } from "@/lib/supabase";
 import { isValidEmail } from "@/lib/validation";
@@ -53,7 +54,7 @@ export async function notifyHvWirKuemmernUns(input: {
 
   const resend = new Resend(resendKey);
   try {
-    await resend.emails.send({
+    await sendBrandedMail(resend, {
       from:
         process.env.RESEND_FROM_SYSTEM ??
         "System <system@baerenwaldmuenchen.de>",

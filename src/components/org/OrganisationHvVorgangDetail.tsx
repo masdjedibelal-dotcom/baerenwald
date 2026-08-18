@@ -13,6 +13,7 @@ import { PortalDocOpenButton } from "@/components/shared/PortalDocOpenButton";
 import { PortalDetailCover } from "@/components/shared/PortalDetailCover";
 import {
   PortalDetailHead,
+  PortalDetailLayout,
   PortalDetailStickyActions,
 } from "@/components/shared/PortalDetailUi";
 import { VorgangDetailSectionNav } from "@/components/shared/VorgangDetailSectionNav";
@@ -1143,8 +1144,22 @@ export function OrganisationHvVorgangDetail({
     if (id === "bautagebuch") onBautagebuchViewed();
   }
 
+  const actionFooter =
+    actionKind === "angebot" && showAcceptCta ? (
+      <PortalDetailStickyActions
+        primaryLabel={HV_DETAIL_COPY.empfohlenAnnehmen}
+        onPrimary={() => void acceptAngebotAct()}
+        primaryDisabled={busy}
+        primaryLoading={busy}
+        secondaryLabel={HV_DETAIL_COPY.ablehnen}
+        onSecondary={() => void rejectAngebotAct()}
+        secondaryDisabled={busy}
+      />
+    ) : undefined;
+
   return (
-    <div className="flex flex-col">
+    <PortalDetailLayout footer={actionFooter}>
+      <div className="flex flex-col">
       <PortalDetailCover
         coverUrl={coverUrl}
         onBack={onBack}
@@ -1319,30 +1334,9 @@ export function OrganisationHvVorgangDetail({
             </DetailCard>
           ) : null}
 
-          {actionKind === "angebot" && showAcceptCta ? (
-            <div
-              className="mt-1 space-y-2 border-t pt-4"
-              style={{ borderColor: PORTAL_VAR.line2 }}
-            >
-              <p
-                className="portal-text-meta font-semibold sm:hidden"
-                style={{ color: PORTAL_VAR.ink }}
-              >
-                {HV_DETAIL_COPY.angebotAnnehmenTitle}
-              </p>
-              <PortalDetailStickyActions
-                primaryLabel={HV_DETAIL_COPY.empfohlenAnnehmen}
-                onPrimary={() => void acceptAngebotAct()}
-                primaryDisabled={busy}
-                primaryLoading={busy}
-                secondaryLabel={HV_DETAIL_COPY.ablehnen}
-                onSecondary={() => void rejectAngebotAct()}
-                secondaryDisabled={busy}
-              />
-            </div>
-          ) : null}
         </div>
       </div>
-    </div>
+      </div>
+    </PortalDetailLayout>
   );
 }

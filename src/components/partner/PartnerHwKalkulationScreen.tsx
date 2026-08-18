@@ -27,6 +27,8 @@ type Props = {
   initialPositionen?: HwKalkPosition[];
   onDone: () => void;
   onCancel: () => void;
+  /** Partner-Einholung ohne LV: Positionen + Summen, ohne HV-Hilfstexte. */
+  variant?: "default" | "einholung";
 };
 
 /**
@@ -38,13 +40,17 @@ export function PartnerHwKalkulationScreen({
   initialPositionen,
   onDone,
   onCancel,
+  variant = "default",
 }: Props) {
+  const einholung = variant === "einholung";
   const [modus, setModus] = useState<"kalkulieren" | "upload">("kalkulieren");
   const [positionen, setPositionen] = useState<HwKalkPosition[]>(
     () =>
       initialPositionen?.length
         ? initialPositionen.map((p) => ({ ...p }))
-        : DEFAULT_HW_POSITIONEN.map((p) => ({ ...p }))
+        : einholung
+          ? [{ pos: "", menge: "1 Stk.", einzel: 0, gewerk: "Sonstiges" }]
+          : DEFAULT_HW_POSITIONEN.map((p) => ({ ...p }))
   );
   const [dauer, setDauer] = useState("2–3 Werktage");
   const [busy, setBusy] = useState(false);
@@ -80,36 +86,40 @@ export function PartnerHwKalkulationScreen({
   }
 
   return (
-    <PartnerDetailSection title="Kalkulation / Angebot">
-      <p className="portal-text-body text-text-secondary mb-3">
-        Positionen anlegen, Summen prüfen und einreichen. Das Angebot erscheint
-        bei Bärenwald und der Verwaltung als empfohlenes Angebot.
-      </p>
+    <PartnerDetailSection title={einholung ? "Angebot" : "Kalkulation / Angebot"}>
+      {einholung ? null : (
+        <p className="portal-text-body text-text-secondary mb-3">
+          Positionen anlegen, Summen prüfen und einreichen. Das Angebot erscheint
+          bei Bärenwald und der Verwaltung als empfohlenes Angebot.
+        </p>
+      )}
 
-      <div className="mb-3 flex rounded-[10px] bg-muted p-1">
-        {(
-          [
-            ["kalkulieren", "Kalkulieren"],
-            ["upload", "PDF-Upload (Standard)"],
-          ] as const
-        ).map(([key, label]) => (
-          <button
-            key={key}
-            type="button"
-            className={cn(
-              "flex-1 rounded-lg py-2 text-[13px] font-semibold",
-              modus === key
-                ? "bg-white text-text-primary shadow-sm"
-                : "text-text-secondary"
-            )}
-            onClick={() => setModus(key)}
-          >
-            {label}
-          </button>
-        ))}
-      </div>
+      {einholung ? null : (
+        <div className="mb-3 flex rounded-[10px] bg-muted p-1">
+          {(
+            [
+              ["kalkulieren", "Kalkulieren"],
+              ["upload", "PDF-Upload (Standard)"],
+            ] as const
+          ).map(([key, label]) => (
+            <button
+              key={key}
+              type="button"
+              className={cn(
+                "flex-1 rounded-lg py-2 text-[13px] font-semibold",
+                modus === key
+                  ? "bg-white text-text-primary shadow-sm"
+                  : "text-text-secondary"
+              )}
+              onClick={() => setModus(key)}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+      )}
 
-      {modus === "kalkulieren" ? (
+      {modus === "kalkulieren" || einholung ? (
         <div className="space-y-0 overflow-hidden rounded-xl border border-border-default bg-white">
           {positionen.map((p, i) => (
             <div
@@ -167,7 +177,7 @@ export function PartnerHwKalkulationScreen({
         </p>
       )}
 
-      {modus === "kalkulieren" ? (
+      {modus === "kalkulieren" || einholung ? (
         <button
           type="button"
           className="mt-2 text-[13px] font-semibold text-accent"
@@ -177,16 +187,18 @@ export function PartnerHwKalkulationScreen({
         </button>
       ) : null}
 
-      <label className="mt-4 block">
-        <span className="portal-text-meta text-text-tertiary">
-          Voraussichtliche Dauer
-        </span>
-        <input
-          className="portal-input mt-1 w-full rounded-lg border border-border-default px-3 py-2 text-sm"
-          value={dauer}
-          onChange={(e) => setDauer(e.target.value)}
-        />
-      </label>
+      {einholung ? null : (
+        <label className="mt-4 block">
+          <span className="portal-text-meta text-text-tertiary">
+            Voraussichtliche Dauer
+          </span>
+          <input
+            className="portal-input mt-1 w-full rounded-lg border border-border-default px-3 py-2 text-sm"
+            value={dauer}
+            onChange={(e) => setDauer(e.target.value)}
+          />
+        </label>
+      )}
 
       <div className="mt-4 rounded-xl bg-muted/40 px-4 py-3 text-sm">
         <div className="flex justify-between">
@@ -201,7 +213,7 @@ export function PartnerHwKalkulationScreen({
           <span>Brutto</span>
           <span>{formatHwMoney(sum.brutto)}</span>
         </div>
-        {unterSchwelle ? (
+        {einholung ? null : unterSchwelle ? (
           <p className="mt-2 text-xs font-semibold text-[#1F6A3F]">
             Unter Freigabeschwelle ({formatHwMoney(schwelleEur)}) — nach
             Einreichung oft ohne HV-Freigabe-Schritt (Bärenwald Auto-Pfad).

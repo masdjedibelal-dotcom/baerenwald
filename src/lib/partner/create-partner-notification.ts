@@ -1,5 +1,7 @@
 import { Resend } from "resend";
 
+import { sendBrandedMail } from "@/lib/email/send-branded-mail";
+
 import {
   buildStandardMailHtml,
   mailBegruessungHtml,
@@ -237,7 +239,7 @@ export async function createPartnerNotification(
       footerNote: "Bärenwald München · Partner-Portal",
     });
 
-    await resend.emails.send({
+    await sendBrandedMail(resend, {
       from: systemFrom(),
       to,
       subject,

@@ -1,5 +1,7 @@
 import { Resend } from "resend";
 
+import { sendBrandedMail } from "@/lib/email/send-branded-mail";
+
 import { SITE_CONFIG } from "@/lib/config";
 import {
   buildStandardMailHtml,
@@ -147,7 +149,7 @@ ${tokenBlock}`,
   );
 
   try {
-    const { error } = await resend.emails.send({
+    const { error } = await sendBrandedMail(resend, {
       from: systemFrom(),
       to: opts.to.trim(),
       subject: `Neue Anfrage: ${opts.gewerkName} — Bärenwald Partner`,
@@ -249,7 +251,7 @@ ${mailBtn("Zum Partner-Portal →", portalLink)}
   );
 
   try {
-    const { error } = await resend.emails.send({
+    const { error } = await sendBrandedMail(resend, {
       from: systemFrom(),
       to: opts.to.trim(),
       subject,
@@ -305,7 +307,7 @@ ${mailBtn("Zum Partner-Portal", portalHref)}`;
   const html = mailShell(headline, body, headline);
 
   try {
-    const { error } = await resend.emails.send({
+    const { error } = await sendBrandedMail(resend, {
       from: systemFrom(),
       to: opts.to.trim(),
       subject,
@@ -364,7 +366,7 @@ ${mailBtn("Zum Partner-Portal", portalHref)}
   );
 
   try {
-    const { error } = await resend.emails.send({
+    const { error } = await sendBrandedMail(resend, {
       from: systemFrom(),
       to: opts.to.trim(),
       ...(opts.cc?.length ? { cc: opts.cc } : {}),
@@ -454,7 +456,7 @@ ${mailActionButtons({
   );
 
   try {
-    await resend.emails.send({
+    await sendBrandedMail(resend, {
       from: systemFrom(),
       to,
       subject: `HW-Konditionen: ${opts.gewerkName} — ${hw}`,
@@ -500,7 +502,7 @@ ${mailActionButtons({
   );
 
   try {
-    await resend.emails.send({
+    await sendBrandedMail(resend, {
       from: systemFrom(),
       to,
       subject: `Eingehende Rechnung: ${hw} — ${opts.gewerkName}`,
@@ -551,7 +553,7 @@ export async function sendPartnerInternalBautagebuchMail(opts: {
   });
 
   try {
-    await resend.emails.send({
+    await sendBrandedMail(resend, {
       from: systemFrom(),
       to,
       subject: `Bautagebuch: ${opts.auftragTitel} — ${hw}`,
@@ -617,7 +619,7 @@ ${mailActionButtons({ crmUrl: crm, crmLabel: "Angebot im CRM öffnen" })}`
     : `${opts.handwerkerName} hat abgelehnt — ${opts.gewerkName}`;
 
   try {
-    await resend.emails.send({
+    await sendBrandedMail(resend, {
       from: systemFrom(),
       to,
       subject,
@@ -664,7 +666,7 @@ ${mailActionButtons({
   );
 
   try {
-    await resend.emails.send({
+    await sendBrandedMail(resend, {
       from: systemFrom(),
       to,
       subject: `Erledigt gemeldet: ${opts.auftragTitel} — ${hw}`,
@@ -703,7 +705,7 @@ ${mailActionButtons({ crmUrl, crmLabel: "Vorgang im CRM öffnen" })}`
   );
 
   try {
-    await resend.emails.send({
+    await sendBrandedMail(resend, {
       from: systemFrom(),
       to,
       subject: `Mängelmeldung HV: ${opts.hvName}`,

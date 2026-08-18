@@ -3,6 +3,7 @@
 import { PartnerAuftragAnfrageDetail } from "@/components/partner/PartnerAuftragAnfrageDetail";
 import { PartnerAuftragDetail } from "@/components/partner/PartnerAuftragDetail";
 import { PartnerOffenDetail } from "@/components/partner/PartnerOffenDetail";
+import { PartnerEinholungDetail } from "@/components/partner/PartnerEinholungDetail";
 import type { PartnerVorgangItem } from "@/lib/partner/build-partner-vorgaenge";
 import type { PartnerHandwerkerProfil } from "@/lib/partner/get-partner-data";
 import {
@@ -123,6 +124,15 @@ export function VorgangCard({
 
   const offenItem = resolveOffenDetailItem(vorgang);
   if (offenItem && (state === "geaendert" || state === "neu")) {
+    if (offenItem.ohne_lv) {
+      return (
+        <PartnerEinholungDetail
+          item={offenItem}
+          onBack={onBack}
+          onConfirmed={onUpdated}
+        />
+      );
+    }
     return (
       <PartnerOffenDetail
         item={offenItem}

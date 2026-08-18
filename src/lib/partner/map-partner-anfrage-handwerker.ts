@@ -48,6 +48,8 @@ export const PARTNER_ANGEBOT_EMBED = `
   gesamt_fix,
   gesamt_min,
   gesamt_max,
+  leistungsumfang,
+  projektbeschreibung,
   kunde_objekt_id,
   kunden(plz, ort, name),
   leads(${PARTNER_LEAD_EMBED})
@@ -79,6 +81,8 @@ export async function mapAngebotHandwerkerRow(
     gesamt_fix?: number | null;
     gesamt_min?: number | null;
     gesamt_max?: number | null;
+    leistungsumfang?: string | null;
+    projektbeschreibung?: string | null;
     kunde_objekt_id?: string | null;
     kunden: unknown;
     leads: unknown;
@@ -124,15 +128,20 @@ export async function mapAngebotHandwerkerRow(
   const gewerk_name = gw?.name?.trim() || "Gewerk";
   const plz = lead?.objekt?.plz?.trim() || kunde?.plz?.trim() || lead?.plz?.trim() || "—";
   const ort = lead?.objekt?.ort?.trim() || kunde?.ort?.trim() || "—";
+  const ohneLv = Boolean(row.ohne_lv);
   const listen_titel = resolvePartnerListenTitel({
     gewerk_name,
     plz,
     ort,
     lead,
-    fallbackTitel: angebot_titel,
+    fallbackTitel: ohneLv
+      ? angebote?.leistungsumfang?.trim() || angebot_titel
+      : angebot_titel,
   });
   const crm_leistungsumfang =
-    parseWizardMetaFromNotizen(angebote?.notizen)?.leistungsumfang ?? null;
+    angebote?.leistungsumfang?.trim() ||
+    parseWizardMetaFromNotizen(angebote?.notizen)?.leistungsumfang ||
+    null;
 
   return {
     id: String(row.id),
@@ -151,15 +160,17 @@ export async function mapAngebotHandwerkerRow(
     plz,
     ort,
     zeitraum: lead?.zeitraum?.trim() || leadRow?.zeitraum?.trim() || "",
-    positionen: pos.map((p) => ({
-      leistung: p.leistung,
-      beschreibung:
-        p.beschreibung && p.beschreibung !== p.leistung ? p.beschreibung : undefined,
-      menge: p.menge,
-      einheit: p.einheit,
-    })),
+    positionen: ohneLv
+      ? []
+      : pos.map((p) => ({
+          leistung: p.leistung,
+          beschreibung:
+            p.beschreibung && p.beschreibung !== p.leistung ? p.beschreibung : undefined,
+          menge: p.menge,
+          einheit: p.einheit,
+        })),
     lead,
-    crm_positionen_raw: angebote?.positionen,
+    crm_positionen_raw: ohneLv ? [] : angebote?.positionen,
     crm_gesamt_fix:
       angebote?.gesamt_fix != null ? Number(angebote.gesamt_fix) : null,
     crm_gesamt_min:
@@ -167,6 +178,8 @@ export async function mapAngebotHandwerkerRow(
     crm_gesamt_max:
       angebote?.gesamt_max != null ? Number(angebote.gesamt_max) : null,
     crm_leistungsumfang,
+    crm_projektbeschreibung: angebote?.projektbeschreibung?.trim() || null,
+    ohne_lv: ohneLv,
     hw_status: (row.hw_status as string | null) ?? undefined,
     hw_eingereicht_at: (row.hw_eingereicht_at as string | null) ?? undefined,
     bestaetigt_at: (row.bestaetigt_at as string | null) ?? undefined,

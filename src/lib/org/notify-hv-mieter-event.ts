@@ -1,4 +1,5 @@
 import { buildOrgHvMieterEventHtml } from "@/lib/email/meldung-mail-templates";
+import { sendBrandedMail } from "@/lib/email/send-branded-mail";
 import { createHvNotification } from "@/lib/org/create-hv-notification";
 import {
   portalDeepLinkTabFromNotifTyp,
@@ -68,7 +69,7 @@ export async function notifyHvMieterEvent(input: {
 
   const resend = new Resend(resendKey);
   try {
-    await resend.emails.send({
+    await sendBrandedMail(resend, {
       from:
         process.env.RESEND_FROM_SYSTEM ??
         "System <system@baerenwaldmuenchen.de>",

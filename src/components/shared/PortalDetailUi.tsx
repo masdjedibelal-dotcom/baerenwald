@@ -1,6 +1,8 @@
 "use client";
 
 import { Info } from "lucide-react";
+import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 
 import {
   LeistungStatusDot,
@@ -8,6 +10,8 @@ import {
 } from "@/components/shared/LeistungStatusDot";
 import { PortalModalShell } from "@/components/shared/PortalModalShell";
 import { PortalSheetConfirm } from "@/components/shared/PortalSheetConfirm";
+import { useIsPortalMobile } from "@/lib/portal2/use-is-portal-mobile";
+import { usePortalMobileScrollChrome } from "@/lib/portal2/use-portal-mobile-scroll-chrome";
 import { cn } from "@/lib/utils";
 import { stripHtmlToPlainText } from "@/lib/portal/portal-display";
 
@@ -387,35 +391,67 @@ export function PortalDetailLeistungenPreisListe({
 export function PortalDetailLayout({
   children,
   footer,
-  footerStickyMobile = false,
 }: {
   children: React.ReactNode;
   footer?: React.ReactNode;
-  /** Mobile: Footer über Bottom-Nav fixieren (z. B. Rechnung-CTAs). */
-  footerStickyMobile?: boolean;
 }) {
+  const isMobile = useIsPortalMobile();
+  const hasCta = Boolean(footer);
+  const { scrolled, canScroll } = usePortalMobileScrollChrome(
+    isMobile && hasCta
+  );
+  const useHybrid = isMobile && hasCta && canScroll;
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => setMounted(true), []);
+
+  useEffect(() => {
+    const root = document.body;
+    if (!useHybrid) {
+      root.classList.remove(
+        "has-portal-detail-cta",
+        "portal-detail-cta-mode"
+      );
+      return;
+    }
+    root.classList.add("has-portal-detail-cta");
+    root.classList.toggle("portal-detail-cta-mode", scrolled);
+    return () => {
+      root.classList.remove(
+        "has-portal-detail-cta",
+        "portal-detail-cta-mode"
+      );
+    };
+  }, [useHybrid, scrolled]);
+
+  const mobileBar =
+    mounted && useHybrid && footer
+      ? createPortal(
+          <div
+            className={cn(
+              "portal-detail-mobile-cta",
+              !scrolled && "portal-detail-mobile-cta--hidden"
+            )}
+            role="toolbar"
+            aria-label="Aktionen"
+            aria-hidden={!scrolled}
+            inert={!scrolled ? true : undefined}
+          >
+            <div className="portal-detail-mobile-cta__inner">{footer}</div>
+          </div>,
+          document.body
+        )
+      : null;
+
   return (
     <div className="flex min-h-0 flex-col">
-      <div
-        className={cn(
-          "portal-detail-layout space-y-5",
-          "pb-2",
-          footerStickyMobile && footer && "max-lg:pb-[5.5rem]"
-        )}
-      >
-        {children}
-      </div>
-      {footer ? (
-        <div
-          className={cn(
-            "mt-5 border-t border-[var(--p2-line)] px-4 py-4 lg:px-6",
-            footerStickyMobile &&
-              "max-lg:fixed max-lg:inset-x-0 max-lg:bottom-[var(--portal-mobile-nav-h)] max-lg:z-40 max-lg:mt-0 max-lg:border-t max-lg:bg-[var(--p2-panel,#fff)]/95 max-lg:px-4 max-lg:py-3 max-lg:backdrop-blur-sm max-lg:shadow-[0_-4px_16px_rgba(0,0,0,0.06)]"
-          )}
-        >
+      <div className="portal-detail-layout space-y-5 pb-2">{children}</div>
+      {footer && !useHybrid ? (
+        <div className="mt-5 border-t border-[var(--p2-line)] px-4 py-4 lg:px-6">
           {footer}
         </div>
       ) : null}
+      {mobileBar}
     </div>
   );
 }

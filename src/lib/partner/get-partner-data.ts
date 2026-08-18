@@ -136,6 +136,9 @@ export type PartnerAnfrageItem = {
   crm_gesamt_max?: number | null;
   /** Leistungsumfang aus CRM-Angebot (wizard_meta in Notizen). */
   crm_leistungsumfang?: string | null;
+  crm_projektbeschreibung?: string | null;
+  /** Partner erstellt/lädt eigenes Angebot — kein LV von Bärenwald. */
+  ohne_lv?: boolean;
   auftrag_id?: string | null;
   /** Status des verknüpften Auftrags (z. B. offen = noch in Angebote, in_arbeit = Aufträge). */
   auftrag_status?: string | null;
@@ -386,6 +389,7 @@ const ANGEBOT_HANDWERKER_BASE_SELECT = `
   hw_crm_notiz,
   hw_crm_antwort_at,
   hw_konditionen,
+  ohne_lv,
   bestaetigt_at,
   gewerke(name),
   angebote(${PARTNER_ANGEBOT_EMBED})
@@ -544,11 +548,25 @@ export async function getPartnerDataForHandwerker(
 
   if (!handwerker) return null;
 
-  const { data: rows, error: anfragenRowsError } = await supabaseAdmin
+  const firstAh = await supabaseAdmin
     .from("angebot_handwerker")
     .select(ANGEBOT_HANDWERKER_BASE_SELECT)
     .eq("handwerker_id", id)
     .order("gesendet_at", { ascending: false });
+
+  let ahRows = firstAh.data;
+  let anfragenRowsError = firstAh.error;
+
+  if (anfragenRowsError && /ohne_lv/i.test(anfragenRowsError.message)) {
+    const fallbackSelect = ANGEBOT_HANDWERKER_BASE_SELECT.replace(/\n\s*ohne_lv,/, "");
+    const retryAh = await supabaseAdmin
+      .from("angebot_handwerker")
+      .select(fallbackSelect)
+      .eq("handwerker_id", id)
+      .order("gesendet_at", { ascending: false });
+    ahRows = retryAh.data as typeof ahRows;
+    anfragenRowsError = retryAh.error;
+  }
 
   if (anfragenRowsError) {
     console.error(
@@ -557,7 +575,7 @@ export async function getPartnerDataForHandwerker(
     );
   }
 
-  const rawRows = (rows ?? []) as Array<Record<string, unknown>>;
+  const rawRows = (ahRows ?? []) as Array<Record<string, unknown>>;
   const objektById = await loadPartnerObjektById(
     collectObjektIdsFromAngebotHandwerkerRows(rawRows)
   );
