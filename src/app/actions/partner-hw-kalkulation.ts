@@ -178,7 +178,7 @@ export async function submitPartnerHwKalkulation(input: {
         ohneLv || String(ah.status).toLowerCase() === "offen"
           ? "akzeptiert"
           : ah.status,
-      antwort_at: now,
+      ...(ohneLv ? {} : { antwort_at: now }),
     })
     .eq("id", anfrageId)
     .eq("handwerker_id", link.handwerkerId);

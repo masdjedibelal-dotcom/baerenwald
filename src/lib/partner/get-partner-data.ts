@@ -105,6 +105,7 @@ export type PartnerAnfrageItem = {
     beschreibung?: string;
     menge: number;
     einheit?: string;
+    gewerk_name?: string;
   }>;
   hw_status?: string;
   hw_eingereicht_at?: string;
@@ -433,22 +434,92 @@ function collectObjektIdsFromAngebotHandwerkerRows(
   return uniqueIds(ids);
 }
 
+async function loadInternLvByLead(
+  leadIds: string[]
+): Promise<Map<string, { positionen: unknown; leistungsumfang: string | null }>> {
+  const unique = [...new Set(leadIds.map((id) => id.trim()).filter(Boolean))];
+  const out = new Map<string, { positionen: unknown; leistungsumfang: string | null }>();
+  if (!unique.length) return out;
+  const { data, error } = await supabaseAdmin
+    .from("angebote")
+    .select("lead_id, positionen, leistungsumfang, created_at")
+    .eq("ist_partner_einholung", true)
+    .in("lead_id", unique)
+    .order("created_at", { ascending: false });
+  if (error) {
+    if (!/ist_partner_einholung|column/i.test(error.message)) {
+      console.warn("[partner] intern LV-Vorgabe:", error.message);
+    }
+    return out;
+  }
+  for (const row of data ?? []) {
+    const lid = String((row as { lead_id?: string }).lead_id ?? "").trim();
+    if (!lid || out.has(lid)) continue;
+    out.set(lid, {
+      positionen: (row as { positionen?: unknown }).positionen,
+      leistungsumfang:
+        typeof (row as { leistungsumfang?: string | null }).leistungsumfang === "string"
+          ? (row as { leistungsumfang: string }).leistungsumfang.trim() || null
+          : null,
+    });
+  }
+  return out;
+}
+
+function oneAngebot(
+  row: Record<string, unknown>
+): Record<string, unknown> | null {
+  const raw = row.angebote;
+  if (raw == null) return null;
+  return (Array.isArray(raw) ? raw[0] : raw) as Record<string, unknown>;
+}
+
+function oneLead(
+  angebot: Record<string, unknown> | null
+): Record<string, unknown> | null {
+  if (!angebot) return null;
+  const raw = angebot.leads;
+  if (raw == null) return null;
+  return (Array.isArray(raw) ? raw[0] : raw) as Record<string, unknown>;
+}
+
 async function mapAngebotHandwerkerRows(
   rows: Array<Record<string, unknown>>,
   objektById: Map<string, PartnerKundenObjektRow>,
   resolveFile: (p: string | null | undefined) => Promise<string | null> = resolvePartnerFileUrl
 ): Promise<PartnerAnfrageItem[]> {
+  const overlayLeadIds: string[] = [];
+  for (const row of rows) {
+    if (!row.ohne_lv) continue;
+    const ang = oneAngebot(row);
+    if (ang?.ist_partner_einholung === true) continue;
+    const lead = oneLead(ang);
+    const lid = typeof lead?.id === "string" ? lead.id.trim() : "";
+    if (lid) overlayLeadIds.push(lid);
+  }
+  const internByLead = await loadInternLvByLead(overlayLeadIds);
   const mapAnhaenge = (raw: Record<string, unknown>) =>
     mapHwAngebotAnhaenge(raw, resolveFile);
   return Promise.all(
-    rows.map((row) =>
-      mapAngebotHandwerkerRow(
+    rows.map((row) => {
+      const ang = oneAngebot(row);
+      const lead = oneLead(ang);
+      const lid = typeof lead?.id === "string" ? lead.id.trim() : "";
+      const intern = internByLead.get(lid);
+      const useIntern = Boolean(row.ohne_lv) && ang?.ist_partner_einholung !== true;
+      return mapAngebotHandwerkerRow(
         row,
         objektById,
         mapAnhaenge,
-        resolveFile
-      )
-    )
+        resolveFile,
+        useIntern
+          ? {
+              lvVorgabePositionen: intern?.positionen,
+              lvLeistungsumfang: intern?.leistungsumfang,
+            }
+          : undefined
+      );
+    })
   );
 }
 
@@ -557,8 +628,10 @@ export async function getPartnerDataForHandwerker(
   let ahRows = firstAh.data;
   let anfragenRowsError = firstAh.error;
 
-  if (anfragenRowsError && /ohne_lv/i.test(anfragenRowsError.message)) {
-    const fallbackSelect = ANGEBOT_HANDWERKER_BASE_SELECT.replace(/\n\s*ohne_lv,/, "");
+  if (anfragenRowsError && /ohne_lv|ist_partner_einholung/i.test(anfragenRowsError.message)) {
+    const fallbackSelect = ANGEBOT_HANDWERKER_BASE_SELECT
+      .replace(/\n\s*ohne_lv,/, "")
+      .replace(/\n\s*ist_partner_einholung,/, "");
     const retryAh = await supabaseAdmin
       .from("angebot_handwerker")
       .select(fallbackSelect)

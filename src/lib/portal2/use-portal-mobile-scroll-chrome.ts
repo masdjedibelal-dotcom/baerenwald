@@ -11,8 +11,13 @@ type PortalMobileScrollChrome = {
   canScroll: boolean;
 };
 
+function scrollingRoot(): HTMLElement {
+  return (document.scrollingElement as HTMLElement | null) ?? document.documentElement;
+}
+
 function getScrollY(): number {
   return (
+    scrollingRoot().scrollTop ||
     window.scrollY ||
     document.documentElement.scrollTop ||
     document.body.scrollTop ||
@@ -21,11 +26,8 @@ function getScrollY(): number {
 }
 
 function getOverflowPx(): number {
-  const height = Math.max(
-    document.documentElement.scrollHeight,
-    document.body.scrollHeight
-  );
-  return height - window.innerHeight;
+  const root = scrollingRoot();
+  return Math.max(root.scrollHeight, document.body.scrollHeight) - window.innerHeight;
 }
 
 /**

@@ -10,12 +10,15 @@ import {
 import { usePortalBusy } from "@/components/shared/PortalBusyContext";
 import {
   DEFAULT_HW_POSITIONEN,
+  HW_MENGE_EINHEITEN,
   formatHwMoney,
   hwKalkAdd,
   hwKalkDel,
   hwKalkPatch,
   hwKalkSumme,
   hwKalkValid,
+  joinHwMenge,
+  splitHwMenge,
   type HwKalkPosition,
 } from "@/lib/portal2/hw-kalkulation";
 import { partnerPortalToast, portalToastError } from "@/lib/shared/portal-toast";
@@ -86,7 +89,7 @@ export function PartnerHwKalkulationScreen({
   }
 
   return (
-    <PartnerDetailSection title={einholung ? "Angebot" : "Kalkulation / Angebot"}>
+    <PartnerDetailSection title={einholung ? "Leistungsverzeichnis" : "Kalkulation / Angebot"}>
       {einholung ? null : (
         <p className="portal-text-body text-text-secondary mb-3">
           Positionen anlegen, Summen prüfen und einreichen. Das Angebot erscheint
@@ -121,7 +124,14 @@ export function PartnerHwKalkulationScreen({
 
       {modus === "kalkulieren" || einholung ? (
         <div className="space-y-0 overflow-hidden rounded-xl border border-border-default bg-white">
-          {positionen.map((p, i) => (
+          {positionen.map((p, i) => {
+            const { faktor, einheit } = splitHwMenge(p.menge);
+            const extraEinheit = (HW_MENGE_EINHEITEN as readonly string[]).includes(
+              einheit
+            )
+              ? null
+              : einheit;
+            return (
             <div
               key={i}
               className="flex flex-wrap items-center gap-2 border-b border-border-light px-3 py-2.5 last:border-b-0"
@@ -135,14 +145,43 @@ export function PartnerHwKalkulationScreen({
                 }
               />
               <input
-                className="portal-input w-[74px] rounded-lg border border-border-default px-2 py-2 text-center text-sm"
-                value={p.menge}
+                className="portal-input w-[72px] rounded-lg border border-border-default px-2 py-2 text-center text-sm"
+                inputMode="decimal"
+                value={faktor}
                 onChange={(e) =>
                   setPositionen(
-                    hwKalkPatch(positionen, i, "menge", e.target.value)
+                    hwKalkPatch(
+                      positionen,
+                      i,
+                      "menge",
+                      joinHwMenge(e.target.value, einheit)
+                    )
                   )
                 }
               />
+              <select
+                className="portal-input w-[88px] rounded-lg border border-border-default px-1.5 py-2 text-sm"
+                value={einheit}
+                onChange={(e) =>
+                  setPositionen(
+                    hwKalkPatch(
+                      positionen,
+                      i,
+                      "menge",
+                      joinHwMenge(faktor, e.target.value)
+                    )
+                  )
+                }
+              >
+                {extraEinheit ? (
+                  <option value={extraEinheit}>{extraEinheit}</option>
+                ) : null}
+                {HW_MENGE_EINHEITEN.map((u) => (
+                  <option key={u} value={u}>
+                    {u}
+                  </option>
+                ))}
+              </select>
               <div className="relative">
                 <input
                   type="number"
@@ -167,7 +206,8 @@ export function PartnerHwKalkulationScreen({
                 ×
               </button>
             </div>
-          ))}
+            );
+          })}
         </div>
       ) : (
         <p className="rounded-xl border border-dashed border-border-default p-4 text-sm text-text-secondary">
@@ -235,7 +275,7 @@ export function PartnerHwKalkulationScreen({
           disabled={busy || !canSubmit}
           onClick={() => void onSubmit()}
         >
-          {busy ? "Wird eingereicht…" : "Angebot einreichen"}
+          {busy ? "Wird eingereicht…" : einholung ? "LV einreichen" : "Angebot einreichen"}
         </button>
         <button
           type="button"

@@ -238,7 +238,6 @@ export async function submitPartnerEinholungAngebotPdf(
       hw_status: "eingereicht",
       hw_eingereicht_at: row.hw_eingereicht_at || now,
       status: "akzeptiert",
-      antwort_at: now,
     })
     .eq("id", anfrageId)
     .eq("handwerker_id", link.handwerkerId);

@@ -51,6 +51,7 @@ export const PARTNER_ANGEBOT_EMBED = `
   leistungsumfang,
   projektbeschreibung,
   kunde_objekt_id,
+  ist_partner_einholung,
   kunden(plz, ort, name),
   leads(${PARTNER_LEAD_EMBED})
 `;
@@ -72,7 +73,8 @@ export async function mapAngebotHandwerkerRow(
   row: Record<string, unknown>,
   objektById: Map<string, PartnerKundenObjektRow>,
   mapHwAngebotAnhaenge: (raw: Record<string, unknown>) => Promise<AnhaengeFields>,
-  resolveRechnungUrl: (path: string | null) => Promise<string | null>
+  resolveRechnungUrl: (path: string | null) => Promise<string | null>,
+  opts?: { lvVorgabePositionen?: unknown; lvLeistungsumfang?: string | null }
 ): Promise<PartnerAnfrageItem> {
   const angebote = one(row.angebote) as {
     angebotsnr?: string | null;
@@ -84,6 +86,7 @@ export async function mapAngebotHandwerkerRow(
     leistungsumfang?: string | null;
     projektbeschreibung?: string | null;
     kunde_objekt_id?: string | null;
+    ist_partner_einholung?: boolean | null;
     kunden: unknown;
     leads: unknown;
   } | null;
@@ -103,7 +106,15 @@ export async function mapAngebotHandwerkerRow(
     kundeOrt: kunde?.ort,
     objektById,
   });
-  const pos = parseAngebotPositionen(angebote?.positionen).filter((p) => {
+  const ohneLv = Boolean(row.ohne_lv);
+  const internGehaeuse = angebote?.ist_partner_einholung === true;
+  const lvVorgabeRaw = ohneLv
+    ? internGehaeuse
+      ? angebote?.positionen
+      : opts?.lvVorgabePositionen ?? null
+    : angebote?.positionen;
+  const pos = parseAngebotPositionen(lvVorgabeRaw).filter((p) => {
+    if (ohneLv) return true;
     if (gewerkId && p.gewerk_id && p.gewerk_id !== gewerkId) return false;
     if (handwerkerId && p.handwerker_id && p.handwerker_id !== handwerkerId) {
       return false;
@@ -128,17 +139,19 @@ export async function mapAngebotHandwerkerRow(
   const gewerk_name = gw?.name?.trim() || "Gewerk";
   const plz = lead?.objekt?.plz?.trim() || kunde?.plz?.trim() || lead?.plz?.trim() || "—";
   const ort = lead?.objekt?.ort?.trim() || kunde?.ort?.trim() || "—";
-  const ohneLv = Boolean(row.ohne_lv);
   const listen_titel = resolvePartnerListenTitel({
     gewerk_name,
     plz,
     ort,
     lead,
     fallbackTitel: ohneLv
-      ? angebote?.leistungsumfang?.trim() || angebot_titel
+      ? opts?.lvLeistungsumfang?.trim() ||
+        angebote?.leistungsumfang?.trim() ||
+        angebot_titel
       : angebot_titel,
   });
   const crm_leistungsumfang =
+    (ohneLv ? opts?.lvLeistungsumfang?.trim() : null) ||
     angebote?.leistungsumfang?.trim() ||
     parseWizardMetaFromNotizen(angebote?.notizen)?.leistungsumfang ||
     null;
@@ -160,23 +173,22 @@ export async function mapAngebotHandwerkerRow(
     plz,
     ort,
     zeitraum: lead?.zeitraum?.trim() || leadRow?.zeitraum?.trim() || "",
-    positionen: ohneLv
-      ? []
-      : pos.map((p) => ({
-          leistung: p.leistung,
-          beschreibung:
-            p.beschreibung && p.beschreibung !== p.leistung ? p.beschreibung : undefined,
-          menge: p.menge,
-          einheit: p.einheit,
-        })),
+    positionen: pos.map((p) => ({
+      leistung: p.leistung,
+      beschreibung:
+        p.beschreibung && p.beschreibung !== p.leistung ? p.beschreibung : undefined,
+      menge: p.menge,
+      einheit: p.einheit,
+      gewerk_name: p.gewerk_name,
+    })),
     lead,
-    crm_positionen_raw: ohneLv ? [] : angebote?.positionen,
+    crm_positionen_raw: ohneLv ? lvVorgabeRaw : angebote?.positionen,
     crm_gesamt_fix:
-      angebote?.gesamt_fix != null ? Number(angebote.gesamt_fix) : null,
+      ohneLv || angebote?.gesamt_fix == null ? null : Number(angebote.gesamt_fix),
     crm_gesamt_min:
-      angebote?.gesamt_min != null ? Number(angebote.gesamt_min) : null,
+      ohneLv || angebote?.gesamt_min == null ? null : Number(angebote.gesamt_min),
     crm_gesamt_max:
-      angebote?.gesamt_max != null ? Number(angebote.gesamt_max) : null,
+      ohneLv || angebote?.gesamt_max == null ? null : Number(angebote.gesamt_max),
     crm_leistungsumfang,
     crm_projektbeschreibung: angebote?.projektbeschreibung?.trim() || null,
     ohne_lv: ohneLv,

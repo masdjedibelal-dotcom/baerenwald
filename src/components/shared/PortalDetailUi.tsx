@@ -444,7 +444,7 @@ export function PortalDetailLayout({
       : null;
 
   return (
-    <div className="flex min-h-0 flex-col">
+    <div className="flex flex-col">
       <div className="portal-detail-layout space-y-5 pb-2">{children}</div>
       {footer && !useHybrid ? (
         <div className="mt-5 border-t border-[var(--p2-line)] px-4 py-4 lg:px-6">

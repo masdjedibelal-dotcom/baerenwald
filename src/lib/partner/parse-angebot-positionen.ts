@@ -7,6 +7,7 @@ export type PartnerAngebotPosition = {
   beschreibung?: string;
   menge: number;
   einheit?: string;
+  gewerk_name?: string;
 };
 
 export function parseAngebotPositionen(raw: unknown): PartnerAngebotPosition[] {
@@ -35,6 +36,8 @@ export function parseAngebotPositionen(raw: unknown): PartnerAngebotPosition[] {
         : typeof p.notiz_extern === "string"
           ? stripHtmlToPlainText(p.notiz_extern)
           : "";
+    const gewerkName =
+      typeof p.gewerk_name === "string" ? p.gewerk_name.trim() : "";
     out.push({
       gewerk_id: typeof p.gewerk_id === "string" ? p.gewerk_id : undefined,
       handwerker_id: typeof p.handwerker_id === "string" ? p.handwerker_id : undefined,
@@ -42,6 +45,7 @@ export function parseAngebotPositionen(raw: unknown): PartnerAngebotPosition[] {
       beschreibung: beschreibungRaw || undefined,
       menge,
       einheit: typeof p.einheit === "string" ? p.einheit.trim() : undefined,
+      gewerk_name: gewerkName || undefined,
     });
   }
   return out;

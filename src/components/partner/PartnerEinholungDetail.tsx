@@ -48,6 +48,7 @@ import {
 } from "@/lib/partner/partner-portal-display";
 import { partnerPortalToast, portalToastError } from "@/lib/shared/portal-toast";
 import { usePortalUploadBusy } from "@/components/shared/usePortalUploadBusy";
+import { joinHwMenge, type HwKalkPosition } from "@/lib/portal2/hw-kalkulation";
 
 export function PartnerEinholungDetail({
   item,
@@ -78,6 +79,22 @@ export function PartnerEinholungDetail({
   const beschreibung = item.crm_projektbeschreibung?.trim() || "";
   const aufgabeNotiz = item.aufgabe_notiz?.trim() || item.hw_crm_notiz?.trim() || "";
   const statusLabel = partnerOffenStatusLabel(item.offen_karten_typ);
+  const lvStartPositionen = useMemo((): HwKalkPosition[] | undefined => {
+    const mapped = (item.positionen ?? [])
+      .map((p) => {
+        const pos = p.leistung.trim();
+        if (!pos) return null;
+        const faktor = String(p.menge > 0 ? p.menge : 1).replace(".", ",");
+        return {
+          pos,
+          menge: joinHwMenge(faktor, p.einheit || "Stk."),
+          einzel: 0,
+          gewerk: p.gewerk_name?.trim() || item.gewerk_name || "Sonstiges",
+        } satisfies HwKalkPosition;
+      })
+      .filter((x): x is HwKalkPosition => x != null);
+    return mapped.length ? mapped : undefined;
+  }, [item.positionen, item.gewerk_name]);
   const statusPillKey = partnerOffenStatusPillKey(item.offen_karten_typ);
   const heroMeta = partnerDetailOrtMetaLine(item.lead);
 
@@ -173,6 +190,7 @@ export function PartnerEinholungDetail({
           <PartnerHwKalkulationScreen
             anfrageId={item.id}
             variant="einholung"
+            initialPositionen={lvStartPositionen}
             onDone={finish}
             onCancel={() => setView("detail")}
           />
@@ -236,7 +254,7 @@ export function PartnerEinholungDetail({
 
   const actionFooter = eingereicht ? null : !showReject ? (
     <PortalDetailStickyActions
-      primaryLabel="Angebot erstellen"
+      primaryLabel="LV erstellen"
       onPrimary={() => setView("erstellen")}
       secondaryLabel="Angebot hochladen"
       onSecondary={() => setView("upload")}
