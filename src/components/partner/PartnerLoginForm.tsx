@@ -7,6 +7,7 @@ import { useState } from "react";
 import { assertPartnerEmailAllowed } from "@/app/actions/assert-partner-email-allowed";
 import { PortalAuthBusy } from "@/components/portal/auth/PortalAuthBusy";
 import { PortalSignupOtpStep } from "@/components/portal/PortalSignupOtpStep";
+import { StagingAuthHint } from "@/components/portal/auth/StagingAuthHint";
 import { PartnerAuthFlowHint } from "@/components/partner/PartnerAuthFlowHint";
 import { PARTNER_AUTH_COPY } from "@/lib/partner/partner-auth-copy";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
@@ -107,6 +108,7 @@ export function PartnerLoginForm() {
 
   return (
     <form onSubmit={onSubmit} className="space-y-4">
+      <StagingAuthHint variant="partner" />
       <PartnerAuthFlowHint variant="login" />
       {otpConfirmed ? (
         <p className="rounded-lg bg-accent-light/60 px-3 py-3 portal-text-body text-accent">

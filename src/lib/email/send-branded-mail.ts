@@ -10,6 +10,12 @@ function toBase64(content: Buffer | Uint8Array | string): string {
   return Buffer.from(content).toString("base64");
 }
 
+function htmlFromPayload(payload: CreateEmailOptions): string {
+  if (!("html" in payload)) return "";
+  const value = payload.html;
+  return typeof value === "string" ? value : "";
+}
+
 /**
  * Sendet HTML-Mails mit eingebettetem Logo (CID), damit der Header
  * nicht von Website-URL / Image-Proxy abhängt.
@@ -19,12 +25,12 @@ export async function sendBrandedMail(
   payload: CreateEmailOptions,
   options?: CreateEmailRequestOptions
 ) {
-  const html =
-    typeof payload.html === "string"
-      ? rewriteMailLogoUrlsToCid(payload.html)
-      : payload.html;
-  const logos =
-    typeof html === "string" ? inlineLogoAttachmentsForHtml(html) : [];
+  const sourceHtml = htmlFromPayload(payload);
+  if (!sourceHtml) {
+    throw new Error("Email HTML content is required");
+  }
+  const html: string = rewriteMailLogoUrlsToCid(sourceHtml);
+  const logos = inlineLogoAttachmentsForHtml(html);
   const extra = payload.attachments ?? [];
   const attachments = [
     ...logos.map((logo) => ({
@@ -36,12 +42,10 @@ export async function sendBrandedMail(
     })),
     ...extra,
   ];
-  return resend.emails.send(
-    {
-      ...payload,
-      html,
-      ...(attachments.length ? { attachments } : {}),
-    },
-    options
-  );
+  const sendPayload: CreateEmailOptions = {
+    ...payload,
+    html,
+    ...(attachments.length ? { attachments } : {}),
+  };
+  return resend.emails.send(sendPayload, options);
 }

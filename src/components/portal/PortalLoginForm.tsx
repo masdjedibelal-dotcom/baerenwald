@@ -12,6 +12,7 @@ import {
 } from "@/components/portal/auth/AuthPrimitives";
 import { PortalAuthBusy } from "@/components/portal/auth/PortalAuthBusy";
 import { PortalSignupOtpStep } from "@/components/portal/PortalSignupOtpStep";
+import { StagingAuthHint } from "@/components/portal/auth/StagingAuthHint";
 import { assertPortalEmailAllowed } from "@/app/actions/assert-portal-email-allowed";
 import { AUTH_LOGIN, type AuthPortalRole } from "@/lib/portal2/auth";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
@@ -179,6 +180,7 @@ export function PortalLoginForm({
 
   return (
     <form onSubmit={(e) => void onSubmit(e)} className="space-y-0">
+      <StagingAuthHint variant="kunde" />
       {otpConfirmed ? (
         <p className="mb-4 rounded-lg bg-accent-light/60 px-3 py-3 text-sm text-accent">
           E-Mail bestätigt. Sie können sich jetzt anmelden.

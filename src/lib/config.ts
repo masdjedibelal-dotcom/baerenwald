@@ -1,15 +1,14 @@
 /**
  * Zentrale Betriebs-Konfiguration — Akzent entspricht Design-Token --acc.
  */
+import { publicSiteOrigin } from "@/lib/staging";
+
 const accentFromEnv =
   typeof process !== "undefined" && process.env.NEXT_PUBLIC_ACCENT_COLOR
     ? process.env.NEXT_PUBLIC_ACCENT_COLOR
     : "#2E7D52";
 
-const siteUrl =
-  typeof process !== "undefined" && process.env.NEXT_PUBLIC_SITE_URL
-    ? process.env.NEXT_PUBLIC_SITE_URL.replace(/\/$/, "")
-    : "https://baerenwaldmuenchen.de";
+const siteUrl = publicSiteOrigin();
 
 export const SITE_CONFIG = {
   companyName: "Bärenwald",

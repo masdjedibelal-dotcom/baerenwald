@@ -7,6 +7,12 @@ import {
   establishPortalSessionForEmail,
 } from "@/lib/auth/crm-impersonation-session";
 import { applyAuthSessionCookieOptions } from "@/lib/supabase/auth-session";
+import {
+  isStagingDeploy,
+  isStagingHostName,
+  isStagingSupabase,
+  STAGING_WEBSITE_ORIGIN,
+} from "@/lib/staging";
 
 type ImpersonationPayload = {
   email: string;
@@ -58,6 +64,19 @@ function verifyToken(token: string): ImpersonationPayload | null {
  * dann landen Session-Cookies auf der falschen Domain → Login-Seite.
  */
 function redirectOrigin(request: Request): string {
+  const fwdHost = request.headers.get("x-forwarded-host")?.split(",")[0]?.trim();
+  const host = (fwdHost || request.headers.get("host")?.trim() || "").replace(
+    /:\d+$/,
+    ""
+  );
+  const fwdProto =
+    request.headers.get("x-forwarded-proto")?.split(",")[0]?.trim() || "https";
+
+  if (isStagingHostName(host) || isStagingSupabase() || isStagingDeploy()) {
+    if (host && isStagingHostName(host)) return `${fwdProto}://${host}`;
+    return STAGING_WEBSITE_ORIGIN;
+  }
+
   const configured = process.env.NEXT_PUBLIC_SITE_URL?.trim()?.replace(/\/$/, "");
   if (configured) {
     try {
@@ -66,14 +85,6 @@ function redirectOrigin(request: Request): string {
       /* fall through */
     }
   }
-
-  const fwdHost = request.headers.get("x-forwarded-host")?.split(",")[0]?.trim();
-  const host = (fwdHost || request.headers.get("host")?.trim() || "").replace(
-    /:\d+$/,
-    ""
-  );
-  const fwdProto =
-    request.headers.get("x-forwarded-proto")?.split(",")[0]?.trim() || "https";
 
   if (host && !/\.netlify\.app$/i.test(host)) {
     return `${fwdProto}://${host}`;

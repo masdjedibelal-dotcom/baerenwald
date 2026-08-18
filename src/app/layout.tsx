@@ -5,6 +5,7 @@ import "./globals.css";
 import { JsonLdLocalBusiness } from "@/components/JsonLd";
 import { PortalToaster } from "@/components/shared/PortalToaster";
 import { OG_IMAGE, SITE_CONFIG } from "@/lib/config";
+import { isStagingDeploy, publicSiteOrigin } from "@/lib/staging";
 import { PHProvider } from "./providers";
 
 const plusJakarta = Plus_Jakarta_Sans({
@@ -20,7 +21,8 @@ const lora = Lora({
   variable: "--font-display",
 });
 
-const BASE_URL = "https://baerenwaldmuenchen.de";
+const BASE_URL = publicSiteOrigin();
+const staging = isStagingDeploy();
 
 export const metadata: Metadata = {
   metadataBase: new URL(BASE_URL),
@@ -37,14 +39,20 @@ export const metadata: Metadata = {
   creator: "Bärenwald München",
   publisher: "Bärenwald München",
 
-  robots: {
-    index: true,
-    follow: true,
-    googleBot: {
-      index: true,
-      follow: true,
-    },
-  },
+  robots: staging
+    ? {
+        index: false,
+        follow: false,
+        googleBot: { index: false, follow: false },
+      }
+    : {
+        index: true,
+        follow: true,
+        googleBot: {
+          index: true,
+          follow: true,
+        },
+      },
 
   openGraph: {
     type: "website",
